@@ -18,7 +18,6 @@ from __future__ import division
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
-from scipy import ndimage
 
 
 def visualize_box_mask(im, results, labels, mask_resolution=14, threshold=0.5):

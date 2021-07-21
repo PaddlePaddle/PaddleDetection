@@ -2,16 +2,19 @@
 
 ## 内容
 - [简介](#简介)
-- [DOTA数据集](#DOTA数据集)
+- [准备数据](#准备数据)
+- [开始训练](#开始训练)
 - [模型库](#模型库)
-- [训练说明](#训练说明)
+- [预测部署](#预测部署)
 
 ## 简介
 
 [S2ANet](https://arxiv.org/pdf/2008.09397.pdf)是用于检测旋转框的模型，要求使用PaddlePaddle 2.0.1(可使用pip安装) 或适当的[develop版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-release)。
 
 
-## DOTA数据集
+## 准备数据
+
+### DOTA数据
 [DOTA Dataset]是航空影像中物体检测的数据集，包含2806张图像，每张图像4000*4000分辨率。
 
 |  数据版本  |  类别数  |   图像数   |  图像尺寸  |    实例数    |     标注方式     |
@@ -27,19 +30,22 @@ DOTA数据集中总共有2806张图像，其中1411张图像作为训练集，45
 
 设置`crop_size=1024, stride=824, gap=200`参数切割数据后，训练集15749张图像，评估集5297张图像，测试集10833张图像。
 
-## 模型库
+### 自定义数据
 
-### S2ANet模型
+数据标注有两种方式：
 
-|     模型     | GPU个数  |  Conv类型  |   mAP    |   模型下载   |   配置文件   |
-|:-----------:|:-------:|:----------:|:--------:| :----------:| :---------: |
-|   S2ANet    |    8    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_1x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_conv_1x_dota.yml)                   |
+- 第一种是标注旋转矩形，可以通过旋转矩形标注工具[roLabelImg](https://github.com/cgvict/roLabelImg) 来标注旋转矩形框。
 
-**注意：**这里使用`multiclass_nms`，与原作者使用nms略有不同，精度相比原始论文中高0.15 (71.27-->71.42)。
+- 第二种是标注四边形，通过脚本转成外接旋转矩形，这样得到的标注可能跟真实的物体框有一定误差。
 
-## 训练说明
+然后将标注结果转换成coco标注格式，其中每个`bbox`的格式为 `[x_center, y_center, width, height, angle]`，这里角度以弧度表示。
 
-### 1. 旋转框IOU计算OP
+参考[脊椎间盘数据集](https://aistudio.baidu.com/aistudio/datasetdetail/85885) ，我们将数据集划分为训练集(230)、测试集(57)，数据地址为：[spine_coco](https://paddledet.bj.bcebos.com/data/spine_coco.tar) 。该数据集图像数量比较少，使用这个数据集可以快速训练S2ANet模型。
+
+
+## 开始训练
+
+### 1. 安装旋转框IOU计算OP
 
 旋转框IOU计算OP[ext_op](../../ppdet/ext_op)是参考Paddle[自定义外部算子](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/07_new_op/new_custom_op.html) 的方式开发。
 
@@ -82,27 +88,59 @@ cd PaddleDetecetion/ppdet/ext_op
 python3.7 test.py
 ```
 
-### 2. 数据格式
-DOTA 数据集中实例是按照任意四边形标注，在进行训练模型前，需要参考[DOTA2COCO](https://github.com/CAPTAIN-WHU/DOTA_devkit/blob/master/DOTA2COCO.py) 转换成`[xc, yc, bow_w, bow_h, angle]`格式，并以coco数据格式存储。
+### 2. 训练
+**注意：**
+配置文件中学习率是按照8卡GPU训练设置的，如果使用单卡GPU训练，请将学习率设置为原来的1/8。
 
-## 评估
+GPU单卡训练
+```bash
+export CUDA_VISIBLE_DEVICES=0
+python3.7 tools/train.py -c configs/dota/s2anet_1x_spine.yml
+```
 
+GPU多卡训练
+```bash
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+python3.7 -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/dota/s2anet_1x_spine.yml
+```
+
+可以通过`--eval`开启边训练边测试。
+
+### 2. 评估
+```bash
+python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weitghts=output/s2anet_1x_spine/model_final.pdparams
+```
+
+### 3. 预测
+执行如下命令，会将图像预测结果保存到`output_dir`文件夹下。
+```bash
+python3.7 tools/infer.py -c configs/dota/s2anet_1x_spine.yml -o weitghts=output/s2anet_1x_spine/model_final.pdparams --infer_img=demo/39006.jpg
+```
+
+### 4. DOTA数据评估
 执行如下命令，会在`output_dir`文件夹下将每个图像预测结果保存到同文件夹名的txt文本中。
 ```
 python3.7 tools/infer.py -c configs/dota/s2anet_1x_dota.yml -o weights=./weights/s2anet_1x_dota.pdparams  --infer_dir=dota_test_images --draw_threshold=0.05 --save_txt=True --output_dir=output
 ```
 
-
 请参考[DOTA_devkit](https://github.com/CAPTAIN-WHU/DOTA_devkit) 生成评估文件，评估文件格式请参考[DOTA Test](http://captain.whu.edu.cn/DOTAweb/tasks.html) ，生成zip文件，每个类一个txt文件，txt文件中每行格式为：`image_id score x1 y1 x2 y2 x3 y3 x4 y4`，提交服务器进行评估。
+
+## 模型库
+
+### S2ANet模型
+
+|     模型     | GPU个数  |  Conv类型  |   mAP    |   模型下载   |   配置文件   |
+|:-----------:|:-------:|:----------:|:--------:| :----------:| :---------: |
+|   S2ANet    |    8    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_1x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_conv_1x_dota.yml)                   |
+
+**注意：**这里使用`multiclass_nms`，与原作者使用nms略有不同，精度相比原始论文中高0.15 (71.27-->71.42)。
+
 
 ## 预测部署
 
 Paddle中`multiclass_nms`算子的输入支持四边形输入，因此部署时可以不需要依赖旋转框IOU计算算子。
 
-```bash
-# 预测
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/dota/s2anet_1x_dota.yml -o weights=model.pdparams --infer_img=demo/P0072__1.0__0___0.png
-```
+部署教程请参考[预测部署](../../deploy/README.md)
 
 
 ## Citations

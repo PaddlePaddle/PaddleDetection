@@ -236,7 +236,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
     - [S2ANet](configs/dota/README.md)
 - [关键点检测](configs/keypoint)
     - HigherHRNet
-    - HRNeet
+    - HRNet
 - [多目标跟踪](configs/mot/README_cn.md)
     - [DeepSORT](configs/mot/deepsort/README_cn.md)
     - [JDE](configs/mot/jde/README_cn.md)
@@ -276,7 +276,8 @@ v2.0版本已经在`04/2021`发布，全面支持动态图版本，新增支持B
 ## 贡献代码
 
 我们非常欢迎你可以为PaddleDetection提供代码，也十分感谢你的反馈。
-
+- 感谢[Mandroide](https://github.com/Mandroide)清理代码并且统一部分函数接口。
+- 感谢[FL77N](https://github.com/FL77N/)贡献`Sparse-RCNN`模型代码。
 
 ## 引用
 

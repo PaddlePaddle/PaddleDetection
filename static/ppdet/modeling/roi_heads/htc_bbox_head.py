@@ -17,12 +17,10 @@ from __future__ import division
 from __future__ import print_function
 import paddle.fluid as fluid
 from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import Normal, Xavier
+from paddle.fluid.initializer import Normal
 from paddle.fluid.regularizer import L2Decay
-from paddle.fluid.initializer import MSRA
 
 from ppdet.modeling.ops import MultiClassNMS
-from ppdet.modeling.ops import ConvNorm
 from ppdet.modeling.losses import SmoothL1Loss
 from ppdet.core.workspace import register
 

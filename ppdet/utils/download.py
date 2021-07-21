@@ -29,10 +29,10 @@ import binascii
 import tarfile
 import zipfile
 
-from .voc_utils import create_list
 from ppdet.core.workspace import BASE_KEY
-
 from .logger import setup_logger
+from .voc_utils import create_list
+
 logger = setup_logger(__name__)
 
 __all__ = [
@@ -93,6 +93,9 @@ DATASETS = {
     'roadsign_coco': ([(
         'https://paddlemodels.bj.bcebos.com/object_detection/roadsign_coco.tar',
         '49ce5a9b5ad0d6266163cd01de4b018e', ), ], ['annotations', 'images']),
+    'spine_coco': ([(
+        'https://paddledet.bj.bcebos.com/data/spine_coco.tar',
+        '7ed69ae73f842cd2a8cf4f58dc3c5535', ), ], ['annotations', 'images']),
     'mot': (),
     'objects365': ()
 }

@@ -13,10 +13,8 @@
 # limitations under the License.
 import os
 import cv2
-import json
 import math
 import numpy as np
-import argparse
 
 HAT_SCALES = {
     '1.png': [3.0, 0.9, .0],

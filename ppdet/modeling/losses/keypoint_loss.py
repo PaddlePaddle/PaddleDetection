@@ -20,7 +20,7 @@ from itertools import cycle, islice
 from collections import abc
 import paddle
 import paddle.nn as nn
-import paddle.nn.functional as F
+
 from ppdet.core.workspace import register, serializable
 
 __all__ = ['HrHRNetLoss', 'KeyPointMSELoss']

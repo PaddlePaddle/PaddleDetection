@@ -31,6 +31,8 @@ config->EnableTensorRtEngine(1 << 20             /*workspace_size*/,
                              false             /*use_calib_mode*/);
 
 ```
+**注意:**
+  --run_benchmark如果设置为True，则需要安装依赖`pip install pynvml psutil GPUtil`。
 
 ### 3.2 TensorRT固定尺寸预测
 

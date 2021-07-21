@@ -24,7 +24,7 @@ import numpy as np
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
-
+from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_box
 from ppdet.modeling.mot.utils import Timer, load_det_results
 from ppdet.modeling.mot import visualization as mot_vis
 
@@ -75,7 +75,7 @@ class Tracker(object):
         if self.cfg.metric == 'MOT':
             self._metrics = [MOTMetric(), ]
         else:
-            logger.warn("Metric not support for metric type {}".format(
+            logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))
             self._metrics = []
 
@@ -112,7 +112,8 @@ class Tracker(object):
                       dataloader,
                       save_dir=None,
                       show_image=False,
-                      frame_rate=30):
+                      frame_rate=30,
+                      draw_threshold=0):
         if save_dir:
             if not os.path.exists(save_dir): os.makedirs(save_dir)
         tracker = self.model.tracker
@@ -140,6 +141,7 @@ class Tracker(object):
                 tlwh = t.tlwh
                 tid = t.track_id
                 tscore = t.score
+                if tscore < draw_threshold: continue
                 vertical = tlwh[2] / tlwh[3] > 1.6
                 if tlwh[2] * tlwh[3] > tracker.min_box_area and not vertical:
                     online_tlwhs.append(tlwh)
@@ -162,7 +164,8 @@ class Tracker(object):
                       save_dir=None,
                       show_image=False,
                       frame_rate=30,
-                      det_file=''):
+                      det_file='',
+                      draw_threshold=0):
         if save_dir:
             if not os.path.exists(save_dir): os.makedirs(save_dir)
         tracker = self.model.tracker
@@ -185,12 +188,16 @@ class Tracker(object):
                 logger.info('Processing frame {} ({:.2f} fps)'.format(
                     frame_id, 1. / max(1e-5, timer.average_time)))
 
+            ori_image = data['ori_image']
+            input_shape = data['image'].shape[2:]
+            im_shape = data['im_shape']
+            scale_factor = data['scale_factor']
             timer.tic()
             if not use_detector:
-                timer.tic()
                 dets = dets_list[frame_id]
                 bbox_tlwh = paddle.to_tensor(dets['bbox'], dtype='float32')
                 pred_scores = paddle.to_tensor(dets['score'], dtype='float32')
+                if pred_scores < draw_threshold: continue
                 if bbox_tlwh.shape[0] > 0:
                     pred_bboxes = paddle.concat(
                         (bbox_tlwh[:, 0:2],
@@ -199,14 +206,35 @@ class Tracker(object):
                 else:
                     pred_bboxes = []
                     pred_scores = []
-                data.update({
-                    'pred_bboxes': pred_bboxes,
-                    'pred_scores': pred_scores
-                })
+            else:
+                outs = self.model.detector(data)
+                if outs['bbox_num'] > 0:
+                    pred_bboxes = scale_coords(outs['bbox'][:, 2:], input_shape,
+                                               im_shape, scale_factor)
+                    pred_scores = outs['bbox'][:, 1:2]
+                else:
+                    pred_bboxes = []
+                    pred_scores = []
 
-            # forward
-            timer.tic()
-            detections = self.model(data)
+            pred_bboxes = clip_box(pred_bboxes, input_shape, im_shape,
+                                   scale_factor)
+            bbox_tlwh = paddle.concat(
+                (pred_bboxes[:, 0:2],
+                 pred_bboxes[:, 2:4] - pred_bboxes[:, 0:2] + 1),
+                axis=1)
+
+            crops, pred_scores = get_crops(
+                pred_bboxes, ori_image, pred_scores, w=64, h=192)
+            crops = paddle.to_tensor(crops)
+            pred_scores = paddle.to_tensor(pred_scores)
+
+            data.update({'crops': crops})
+            features = self.model(data)
+            features = features.numpy()
+            detections = [
+                Detection(tlwh, score, feat)
+                for tlwh, score, feat in zip(bbox_tlwh, pred_scores, features)
+            ]
             self.model.tracker.predict()
             online_targets = self.model.tracker.update(detections)
 
@@ -254,18 +282,25 @@ class Tracker(object):
         n_frame = 0
         timer_avgs, timer_calls = [], []
         for seq in seqs:
+            if not os.path.isdir(os.path.join(data_root, seq)):
+                continue
+            infer_dir = os.path.join(data_root, seq, 'img1')
+            seqinfo = os.path.join(data_root, seq, 'seqinfo.ini')
+            if not os.path.exists(seqinfo) or not os.path.exists(
+                    infer_dir) or not os.path.isdir(infer_dir):
+                continue
+
             save_dir = os.path.join(output_dir, 'mot_outputs',
                                     seq) if save_images or save_videos else None
             logger.info('start seq: {}'.format(seq))
 
-            infer_dir = os.path.join(data_root, seq, 'img1')
             images = self.get_infer_images(infer_dir)
             self.dataset.set_images(images)
 
             dataloader = create('EvalMOTReader')(self.dataset, 0)
 
             result_filename = os.path.join(result_root, '{}.txt'.format(seq))
-            meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
+            meta_info = open(seqinfo).read()
             frame_rate = int(meta_info[meta_info.find('frameRate') + 10:
                                        meta_info.find('\nseqLength')])
             with paddle.no_grad():
@@ -337,13 +372,22 @@ class Tracker(object):
 
     def mot_predict(self,
                     video_file,
+                    image_dir,
                     output_dir,
                     data_type='mot',
                     model_type='JDE',
                     save_images=False,
                     save_videos=True,
                     show_image=False,
-                    det_results_dir=''):
+                    det_results_dir='',
+                    draw_threshold=0.5):
+        assert video_file is not None or image_dir is not None, \
+            "--video_file or --image_dir should be set."
+        assert video_file is None or os.path.isfile(video_file), \
+                "{} is not a file".format(video_file)
+        assert image_dir is None or os.path.isdir(image_dir), \
+                "{} is not a directory".format(image_dir)
+
         if not os.path.exists(output_dir): os.makedirs(output_dir)
         result_root = os.path.join(output_dir, 'mot_results')
         if not os.path.exists(result_root): os.makedirs(result_root)
@@ -352,13 +396,26 @@ class Tracker(object):
         assert model_type in ['JDE', 'DeepSORT', 'FairMOT'], \
             "model_type should be 'JDE', 'DeepSORT' or 'FairMOT'"
 
-        # run tracking
-        seq = video_file.split('/')[-1].split('.')[0]
+        # run tracking        
+        if video_file:
+            seq = video_file.split('/')[-1].split('.')[0]
+            self.dataset.set_video(video_file)
+            logger.info('Starting tracking video {}'.format(video_file))
+        elif image_dir:
+            seq = image_dir.split('/')[-1].split('.')[0]
+            images = [
+                '{}/{}'.format(image_dir, x) for x in os.listdir(image_dir)
+            ]
+            images.sort()
+            self.dataset.set_images(images)
+            logger.info('Starting tracking folder {}, found {} images'.format(
+                image_dir, len(images)))
+        else:
+            raise ValueError('--video_file or --image_dir should be set.')
+
         save_dir = os.path.join(output_dir, 'mot_outputs',
                                 seq) if save_images or save_videos else None
-        logger.info('Starting tracking {}'.format(video_file))
 
-        self.dataset.set_video(video_file)
         dataloader = create('TestMOTReader')(self.dataset, 0)
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
         frame_rate = self.dataset.frame_rate
@@ -369,7 +426,8 @@ class Tracker(object):
                     dataloader,
                     save_dir=save_dir,
                     show_image=show_image,
-                    frame_rate=frame_rate)
+                    frame_rate=frame_rate,
+                    draw_threshold=draw_threshold)
             elif model_type in ['DeepSORT']:
                 results, nf, ta, tc = self._eval_seq_sde(
                     dataloader,
@@ -377,7 +435,8 @@ class Tracker(object):
                     show_image=show_image,
                     frame_rate=frame_rate,
                     det_file=os.path.join(det_results_dir,
-                                          '{}.txt'.format(seq)))
+                                          '{}.txt'.format(seq)),
+                    draw_threshold=draw_threshold)
             else:
                 raise ValueError(model_type)
 

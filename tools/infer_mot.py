@@ -15,7 +15,10 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import os, sys
+
+import os
+import sys
+
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
@@ -24,7 +27,6 @@ if parent_path not in sys.path:
 # ignore warning log
 import warnings
 warnings.filterwarnings('ignore')
-import glob
 
 import paddle
 from paddle.distributed import ParallelEnv
@@ -41,6 +43,11 @@ def parse_args():
     parser = ArgsParser()
     parser.add_argument(
         '--video_file', type=str, default=None, help='Video name for tracking.')
+    parser.add_argument(
+        "--image_dir",
+        type=str,
+        default=None,
+        help="Directory for images to perform inference on.")
     parser.add_argument(
         "--data_type",
         type=str,
@@ -68,6 +75,11 @@ def parse_args():
         '--show_image',
         action='store_true',
         help='Show tracking results (image).')
+    parser.add_argument(
+        "--draw_threshold",
+        type=float,
+        default=0.5,
+        help="Threshold to reserve the result for visualization.")
     args = parser.parse_args()
     return args
 
@@ -88,13 +100,15 @@ def run(FLAGS, cfg):
     # inference
     tracker.mot_predict(
         video_file=FLAGS.video_file,
+        image_dir=FLAGS.image_dir,
         data_type=FLAGS.data_type,
         model_type=cfg.architecture,
         output_dir=FLAGS.output_dir,
         save_images=FLAGS.save_images,
         save_videos=FLAGS.save_videos,
         show_image=FLAGS.show_image,
-        det_results_dir=FLAGS.det_results_dir)
+        det_results_dir=FLAGS.det_results_dir,
+        draw_threshold=FLAGS.draw_threshold)
 
 
 def main():

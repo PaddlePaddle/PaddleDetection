@@ -17,14 +17,11 @@ from __future__ import division
 from __future__ import print_function
 
 import math
-import copy
 import paddle
 import paddle.nn as nn
 
 import paddle.optimizer as optimizer
-from paddle.optimizer.lr import CosineAnnealingDecay
 import paddle.regularizer as regularizer
-from paddle import cos
 
 from ppdet.core.workspace import register, serializable
 
@@ -244,10 +241,11 @@ class OptimizerBuilder():
         optim_args = self.optimizer.copy()
         optim_type = optim_args['type']
         del optim_args['type']
+        if optim_type != 'AdamW':
+            optim_args['weight_decay'] = regularization
         op = getattr(optimizer, optim_type)
         return op(learning_rate=learning_rate,
                   parameters=params,
-                  weight_decay=regularization,
                   grad_clip=grad_clip,
                   **optim_args)
 

@@ -108,6 +108,7 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 **注意**：  
 （1）优先级顺序：`camera_id` > `video_file` > `image_dir` > `image_file`。
 （2）如果提示找不到`opencv_world346.dll`，把`D:\projects\packages\opencv3_4_6\build\x64\vc14\bin`文件夹下的`opencv_world346.dll`拷贝到`main.exe`文件夹下即可。
+（3）--run_benchmark如果设置为True，则需要安装依赖`pip install pynvml psutil GPUtil`。
 
 
 `样例一`：

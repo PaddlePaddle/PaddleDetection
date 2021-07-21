@@ -1,0 +1,44 @@
+architecture: DETR
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vb_normal_pretrained.pdparams
+hidden_dim: 256
+
+
+DETR:
+  backbone: ResNet
+  transformer: DETRTransformer
+  detr_head: DETRHead
+  post_process: DETRBBoxPostProcess
+
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [3]
+  lr_mult_list: [0.0, 0.1, 0.1, 0.1]
+  num_stages: 4
+
+
+DETRTransformer:
+  num_queries: 100
+  position_embed_type: sine
+  nhead: 8
+  num_encoder_layers: 6
+  num_decoder_layers: 6
+  dim_feedforward: 2048
+  dropout: 0.1
+  activation: relu
+
+
+DETRHead:
+  num_mlp_layers: 3
+
+
+DETRLoss:
+  loss_coeff: {class: 1, bbox: 5, giou: 2, no_object: 0.1, mask: 1, dice: 1}
+  aux_loss: True
+
+
+HungarianMatcher:
+  matcher_coeff: {class: 1, bbox: 5, giou: 2}

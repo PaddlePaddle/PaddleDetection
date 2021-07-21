@@ -21,7 +21,6 @@ import paddle
 import paddle.nn as nn
 from paddle import ParamAttr
 from paddle import to_tensor
-from paddle.nn import Conv2D, BatchNorm2D, GroupNorm
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant, XavierUniform
 from paddle.regularizer import L2Decay
@@ -29,6 +28,7 @@ from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling.bbox_utils import delta2bbox
 from . import ops
+from .initializer import xavier_uniform_, constant_
 
 from paddle.vision.ops import DeformConv2D
 
@@ -250,6 +250,47 @@ class LiteConv(nn.Layer):
         return out
 
 
+class DropBlock(nn.Layer):
+    def __init__(self, block_size, keep_prob, name, data_format='NCHW'):
+        """
+        DropBlock layer, see https://arxiv.org/abs/1810.12890
+
+        Args:
+            block_size (int): block size
+            keep_prob (int): keep probability
+            name (str): layer name
+            data_format (str): data format, NCHW or NHWC
+        """
+        super(DropBlock, self).__init__()
+        self.block_size = block_size
+        self.keep_prob = keep_prob
+        self.name = name
+        self.data_format = data_format
+
+    def forward(self, x):
+        if not self.training or self.keep_prob == 1:
+            return x
+        else:
+            gamma = (1. - self.keep_prob) / (self.block_size**2)
+            if self.data_format == 'NCHW':
+                shape = x.shape[2:]
+            else:
+                shape = x.shape[1:3]
+            for s in shape:
+                gamma *= s / (s - self.block_size + 1)
+
+            matrix = paddle.cast(paddle.rand(x.shape, x.dtype) < gamma, x.dtype)
+            mask_inv = F.max_pool2d(
+                matrix,
+                self.block_size,
+                stride=1,
+                padding=self.block_size // 2,
+                data_format=self.data_format)
+            mask = 1. - mask_inv
+            y = x * mask * (mask.numel() / mask.sum())
+            return y
+
+
 @register
 @serializable
 class AnchorGeneratorSSD(object):
@@ -345,7 +386,11 @@ class RCNNBox(object):
         scale_list = []
         origin_shape_list = []
 
-        batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
+        batch_size = 1
+        if isinstance(roi, list):
+            batch_size = len(roi)
+        else:
+            batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
         # bbox_pred.shape: [N, C*4]
         for idx in range(batch_size):
             roi_per_im = roi[idx]
@@ -714,6 +759,8 @@ class FCOSBox(object):
 
         # recover the location to original image
         im_scale = paddle.concat([scale_factor, scale_factor], axis=1)
+        im_scale = paddle.expand(im_scale, [box_reg_decoding.shape[0], 4])
+        im_scale = paddle.reshape(im_scale, [box_reg_decoding.shape[0], -1, 4])
         box_reg_decoding = box_reg_decoding / im_scale
         box_cls_ch_last = box_cls_ch_last * box_ctn_ch_last
         return box_cls_ch_last, box_reg_decoding
@@ -781,7 +828,7 @@ class TTFBox(object):
 
         return topk_score, topk_inds, topk_clses, topk_ys, topk_xs
 
-    def __call__(self, hm, wh, im_shape, scale_factor):
+    def _decode(self, hm, wh, im_shape, scale_factor):
         heatmap = F.sigmoid(hm)
         heat = self._simple_nms(heatmap)
         scores, inds, clses, ys, xs = self._topk(heat)
@@ -819,6 +866,19 @@ class TTFBox(object):
         valid_ind = paddle.nonzero(scores > self.score_thresh)
         results = paddle.gather(results, valid_ind)
         return results, paddle.shape(results)[0:1]
+
+    def __call__(self, hm, wh, im_shape, scale_factor):
+        results = []
+        results_num = []
+        for i in range(scale_factor.shape[0]):
+            result, num = self._decode(hm[i:i + 1, ], wh[i:i + 1, ],
+                                       im_shape[i:i + 1, ],
+                                       scale_factor[i:i + 1, ])
+            results.append(result)
+            results_num.append(num)
+        results = paddle.concat(results, axis=0)
+        results_num = paddle.concat(results_num, axis=0)
+        return results, results_num
 
 
 @register
@@ -864,37 +924,41 @@ class JDEBox(object):
         gy2 = gy + gh * 0.5
         return paddle.stack([gx1, gy1, gx2, gy2], axis=1)
 
-    def decode_delta_map(self, delta_map, anchors):
-        nB, nA, nGh, nGw, _ = delta_map.shape[:]
-        anchor_mesh = self.generate_anchor(nGh, nGw, anchors)
-        # only support bs=1
+    def decode_delta_map(self, nA, nGh, nGw, delta_map, anchor_vec):
+        anchor_mesh = self.generate_anchor(nGh, nGw, anchor_vec)
         anchor_mesh = paddle.unsqueeze(anchor_mesh, 0)
-
         pred_list = self.decode_delta(
             paddle.reshape(
                 delta_map, shape=[-1, 4]),
             paddle.reshape(
                 anchor_mesh, shape=[-1, 4]))
-        pred_map = paddle.reshape(pred_list, shape=[nB, nA * nGh * nGw, 4])
+        pred_map = paddle.reshape(pred_list, shape=[nA * nGh * nGw, 4])
         return pred_map
 
     def _postprocessing_by_level(self, nA, stride, head_out, anchor_vec):
-        boxes_shape = head_out.shape
-        nB, nGh, nGw = 1, boxes_shape[-2], boxes_shape[-1]
-        # only support bs=1
-        p = paddle.reshape(
-            head_out, shape=[nB, nA, self.num_classes + 5, nGh, nGw])
-        p = paddle.transpose(p, perm=[0, 1, 3, 4, 2])  # [nB, 4, nGh, nGw, 6]
-        p_box = p[:, :, :, :, :4]
-        boxes = self.decode_delta_map(p_box, anchor_vec)  # [nB, 4*nGh*nGw, 4]
-        boxes = boxes * stride
+        boxes_shape = head_out.shape  # [nB, nA*6, nGh, nGw]
+        nGh, nGw = boxes_shape[-2], boxes_shape[-1]
+        nB = 1  # TODO: only support bs=1 now
+        boxes_list, scores_list = [], []
+        for idx in range(nB):
+            p = paddle.reshape(
+                head_out[idx], shape=[nA, self.num_classes + 5, nGh, nGw])
+            p = paddle.transpose(p, perm=[0, 2, 3, 1])  # [nA, nGh, nGw, 6]
+            delta_map = p[:, :, :, :4]
+            boxes = self.decode_delta_map(nA, nGh, nGw, delta_map, anchor_vec)
+            # [nA * nGh * nGw, 4]
+            boxes_list.append(boxes * stride)
 
-        p_conf = paddle.transpose(
-            p[:, :, :, :, 4:6], perm=[0, 4, 1, 2, 3])  # [nB, 2, 4, 19, 34]
-        p_conf = F.softmax(
-            p_conf, axis=1)[:, 1, :, :, :].unsqueeze(-1)  # [nB, 4, 19, 34, 1]
-        scores = paddle.reshape(p_conf, shape=[nB, nA * nGh * nGw, 1])
-        return boxes, scores
+            p_conf = paddle.transpose(
+                p[:, :, :, 4:6], perm=[3, 0, 1, 2])  # [2, nA, nGh, nGw]
+            p_conf = F.softmax(
+                p_conf, axis=0)[1, :, :, :].unsqueeze(-1)  # [nA, nGh, nGw, 1]
+            scores = paddle.reshape(p_conf, shape=[nA * nGh * nGw, 1])
+            scores_list.append(scores)
+
+        boxes_results = paddle.stack(boxes_list)
+        scores_results = paddle.stack(scores_list)
+        return boxes_results, scores_results
 
     def __call__(self, yolo_head_out, anchors):
         bbox_pred_list = []
@@ -1127,3 +1191,200 @@ class Concat(nn.Layer):
 
     def extra_repr(self):
         return 'dim={}'.format(self.dim)
+
+
+def _convert_attention_mask(attn_mask, dtype):
+    """
+    Convert the attention mask to the target dtype we expect.
+    Parameters:
+        attn_mask (Tensor, optional): A tensor used in multi-head attention
+                to prevents attention to some unwanted positions, usually the
+                paddings or the subsequent positions. It is a tensor with shape
+                broadcasted to `[batch_size, n_head, sequence_length, sequence_length]`.
+                When the data type is bool, the unwanted positions have `False` 
+                values and the others have `True` values. When the data type is 
+                int, the unwanted positions have 0 values and the others have 1 
+                values. When the data type is float, the unwanted positions have 
+                `-INF` values and the others have 0 values. It can be None when 
+                nothing wanted or needed to be prevented attention to. Default None.
+        dtype (VarType): The target type of `attn_mask` we expect.
+    Returns:
+        Tensor: A Tensor with shape same as input `attn_mask`, with data type `dtype`.
+    """
+    return nn.layer.transformer._convert_attention_mask(attn_mask, dtype)
+
+
+class MultiHeadAttention(nn.Layer):
+    """
+    Attention mapps queries and a set of key-value pairs to outputs, and
+    Multi-Head Attention performs multiple parallel attention to jointly attending
+    to information from different representation subspaces.
+
+    Please refer to `Attention Is All You Need <https://arxiv.org/pdf/1706.03762.pdf>`_
+    for more details.
+
+    Parameters:
+        embed_dim (int): The expected feature size in the input and output.
+        num_heads (int): The number of heads in multi-head attention.
+        dropout (float, optional): The dropout probability used on attention
+            weights to drop some attention targets. 0 for no dropout. Default 0
+        kdim (int, optional): The feature size in key. If None, assumed equal to
+            `embed_dim`. Default None.
+        vdim (int, optional): The feature size in value. If None, assumed equal to
+            `embed_dim`. Default None.
+        need_weights (bool, optional): Indicate whether to return the attention
+            weights. Default False.
+
+    Examples:
+
+        .. code-block:: python
+
+            import paddle
+
+            # encoder input: [batch_size, sequence_length, d_model]
+            query = paddle.rand((2, 4, 128))
+            # self attention mask: [batch_size, num_heads, query_len, query_len]
+            attn_mask = paddle.rand((2, 2, 4, 4))
+            multi_head_attn = paddle.nn.MultiHeadAttention(128, 2)
+            output = multi_head_attn(query, None, None, attn_mask=attn_mask)  # [2, 4, 128]
+    """
+
+    def __init__(self,
+                 embed_dim,
+                 num_heads,
+                 dropout=0.,
+                 kdim=None,
+                 vdim=None,
+                 need_weights=False):
+        super(MultiHeadAttention, self).__init__()
+        self.embed_dim = embed_dim
+        self.kdim = kdim if kdim is not None else embed_dim
+        self.vdim = vdim if vdim is not None else embed_dim
+        self._qkv_same_embed_dim = self.kdim == embed_dim and self.vdim == embed_dim
+
+        self.num_heads = num_heads
+        self.dropout = dropout
+        self.need_weights = need_weights
+
+        self.head_dim = embed_dim // num_heads
+        assert self.head_dim * num_heads == self.embed_dim, "embed_dim must be divisible by num_heads"
+
+        if self._qkv_same_embed_dim:
+            self.in_proj_weight = self.create_parameter(
+                shape=[embed_dim, 3 * embed_dim],
+                attr=None,
+                dtype=self._dtype,
+                is_bias=False)
+            self.in_proj_bias = self.create_parameter(
+                shape=[3 * embed_dim],
+                attr=None,
+                dtype=self._dtype,
+                is_bias=True)
+        else:
+            self.q_proj = nn.Linear(embed_dim, embed_dim)
+            self.k_proj = nn.Linear(self.kdim, embed_dim)
+            self.v_proj = nn.Linear(self.vdim, embed_dim)
+
+        self.out_proj = nn.Linear(embed_dim, embed_dim)
+        self._type_list = ('q_proj', 'k_proj', 'v_proj')
+
+        self._reset_parameters()
+
+    def _reset_parameters(self):
+        for p in self.parameters():
+            if p.dim() > 1:
+                xavier_uniform_(p)
+            else:
+                constant_(p)
+
+    def compute_qkv(self, tensor, index):
+        if self._qkv_same_embed_dim:
+            tensor = F.linear(
+                x=tensor,
+                weight=self.in_proj_weight[:, index * self.embed_dim:(index + 1)
+                                           * self.embed_dim],
+                bias=self.in_proj_bias[index * self.embed_dim:(index + 1) *
+                                       self.embed_dim]
+                if self.in_proj_bias is not None else None)
+        else:
+            tensor = getattr(self, self._type_list[index])(tensor)
+        tensor = tensor.reshape(
+            [0, 0, self.num_heads, self.head_dim]).transpose([0, 2, 1, 3])
+        return tensor
+
+    def forward(self, query, key=None, value=None, attn_mask=None):
+        r"""
+        Applies multi-head attention to map queries and a set of key-value pairs
+        to outputs.
+
+        Parameters:
+            query (Tensor): The queries for multi-head attention. It is a
+                tensor with shape `[batch_size, query_length, embed_dim]`. The
+                data type should be float32 or float64.
+            key (Tensor, optional): The keys for multi-head attention. It is
+                a tensor with shape `[batch_size, key_length, kdim]`. The
+                data type should be float32 or float64. If None, use `query` as
+                `key`. Default None.
+            value (Tensor, optional): The values for multi-head attention. It
+                is a tensor with shape `[batch_size, value_length, vdim]`.
+                The data type should be float32 or float64. If None, use `query` as
+                `value`. Default None.
+            attn_mask (Tensor, optional): A tensor used in multi-head attention
+                to prevents attention to some unwanted positions, usually the
+                paddings or the subsequent positions. It is a tensor with shape
+                broadcasted to `[batch_size, n_head, sequence_length, sequence_length]`.
+                When the data type is bool, the unwanted positions have `False`
+                values and the others have `True` values. When the data type is
+                int, the unwanted positions have 0 values and the others have 1
+                values. When the data type is float, the unwanted positions have
+                `-INF` values and the others have 0 values. It can be None when
+                nothing wanted or needed to be prevented attention to. Default None.
+
+        Returns:
+            Tensor|tuple: It is a tensor that has the same shape and data type \
+                as `query`, representing attention output. Or a tuple if \
+                `need_weights` is True or `cache` is not None. If `need_weights` \
+                is True, except for attention output, the tuple also includes \
+                the attention weights tensor shaped `[batch_size, num_heads, query_length, key_length]`. \
+                If `cache` is not None, the tuple then includes the new cache \
+                having the same type as `cache`, and if it is `StaticCache`, it \
+                is same as the input `cache`, if it is `Cache`, the new cache \
+                reserves tensors concatanating raw tensors with intermediate \
+                results of current query.
+        """
+        key = query if key is None else key
+        value = query if value is None else value
+        # compute q ,k ,v
+        q, k, v = (self.compute_qkv(t, i)
+                   for i, t in enumerate([query, key, value]))
+
+        # scale dot product attention
+        product = paddle.matmul(x=q, y=k, transpose_y=True)
+        scaling = float(self.head_dim)**-0.5
+        product = product * scaling
+
+        if attn_mask is not None:
+            # Support bool or int mask
+            attn_mask = _convert_attention_mask(attn_mask, product.dtype)
+            product = product + attn_mask
+        weights = F.softmax(product)
+        if self.dropout:
+            weights = F.dropout(
+                weights,
+                self.dropout,
+                training=self.training,
+                mode="upscale_in_train")
+
+        out = paddle.matmul(weights, v)
+
+        # combine heads
+        out = paddle.transpose(out, perm=[0, 2, 1, 3])
+        out = paddle.reshape(x=out, shape=[0, 0, out.shape[2] * out.shape[3]])
+
+        # project to output
+        out = self.out_proj(out)
+
+        outs = [out]
+        if self.need_weights:
+            outs.append(weights)
+        return out if len(outs) == 1 else tuple(outs)

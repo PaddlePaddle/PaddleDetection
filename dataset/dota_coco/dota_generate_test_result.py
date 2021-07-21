@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import os
-import os.path as osp
 import re
-import json
 import glob
-import cv2
+
 import numpy as np
 from multiprocessing import Pool
 from functools import partial
@@ -80,10 +77,10 @@ def py_cpu_nms_poly_fast(dets, thresh):
 
     polys = []
     for i in range(len(dets)):
-        tm_polygon = [dets[i][0], dets[i][1],
-                        dets[i][2], dets[i][3],
-                        dets[i][4], dets[i][5],
-                        dets[i][6], dets[i][7]]
+        tm_polygon = [
+            dets[i][0], dets[i][1], dets[i][2], dets[i][3], dets[i][4],
+            dets[i][5], dets[i][6], dets[i][7]
+        ]
         polys.append(tm_polygon)
     polys = np.array(polys)
     order = scores.argsort()[::-1]
@@ -124,7 +121,7 @@ def py_cpu_nms_poly_fast(dets, thresh):
 
 def poly2origpoly(poly, x, y, rate):
     origpoly = []
-    for i in range(int(len(poly)/2)):
+    for i in range(int(len(poly) / 2)):
         tmp_x = float(poly[i * 2] + x) / float(rate)
         tmp_y = float(poly[i * 2 + 1] + y) / float(rate)
         origpoly.append(tmp_x)
@@ -196,11 +193,14 @@ def merge_single(output_dir, nms, pred_class_lst):
             for det in nameboxnmsdict[imgname]:
                 confidence = det[-1]
                 bbox = det[0:-1]
-                outline = imgname + ' ' + str(confidence) + ' ' + ' '.join(map(str, bbox))
+                outline = imgname + ' ' + str(confidence) + ' ' + ' '.join(
+                    map(str, bbox))
                 f_out.write(outline + '\n')
 
 
-def dota_generate_test_result(pred_txt_dir, output_dir='output', dota_version='v1.0'):
+def dota_generate_test_result(pred_txt_dir,
+                              output_dir='output',
+                              dota_version='v1.0'):
     """
     pred_txt_dir: dir of pred txt
     output_dir: dir of output
@@ -228,7 +228,8 @@ def dota_generate_test_result(pred_txt_dir, output_dir='output', dota_version='v
 
     pred_classes_lst = []
     for class_name in pred_classes.keys():
-        print('class_name: {}, count: {}'.format(class_name, len(pred_classes[class_name])))
+        print('class_name: {}, count: {}'.format(class_name,
+                                                 len(pred_classes[class_name])))
         pred_classes_lst.append((class_name, pred_classes[class_name]))
 
     # step2: merge
@@ -241,7 +242,8 @@ def dota_generate_test_result(pred_txt_dir, output_dir='output', dota_version='v
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='dota anno to coco')
     parser.add_argument('--pred_txt_dir', help='path of pred txt dir')
-    parser.add_argument('--output_dir', help='path of output dir', default='output')
+    parser.add_argument(
+        '--output_dir', help='path of output dir', default='output')
     parser.add_argument(
         '--dota_version',
         help='dota_version, v1.0 or v1.5 or v2.0',
@@ -251,5 +253,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # process
-    dota_generate_test_result(args.pred_txt_dir, args.output_dir, args.dota_version)
+    dota_generate_test_result(args.pred_txt_dir, args.output_dir,
+                              args.dota_version)
     print('done!')

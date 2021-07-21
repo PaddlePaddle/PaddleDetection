@@ -52,7 +52,7 @@ def _make_python_representer(cls):
     if hasattr(inspect, 'getfullargspec'):
         argspec = inspect.getfullargspec(cls)
     else:
-        argspec = inspect.getargspec(cls.__init__)
+        argspec = inspect.getfullargspec(cls.__init__)
     argnames = [arg for arg in argspec.args if arg != 'self']
 
     def python_representer(dumper, obj):

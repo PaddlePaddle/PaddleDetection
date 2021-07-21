@@ -14,7 +14,6 @@
 
 #include <glog/logging.h>
 
-#include <dirent.h>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -126,37 +125,6 @@ static void MkDirs(const std::string& path) {
 
   MkDirs(DirName(path));
   MkDir(path);
-}
-
-void GetAllFiles(const char *dir_name,
-                          std::vector<std::string> &all_inputs) {
-  if (NULL == dir_name) {
-    std::cout << " dir_name is null ! " << std::endl;
-    return;
-  }
-  struct stat s;
-  lstat(dir_name, &s);
-  if (!S_ISDIR(s.st_mode)) {
-    std::cout << "dir_name is not a valid directory !" << std::endl;
-    all_inputs.push_back(dir_name);
-    return;
-  } else {
-    struct dirent *filename; // return value for readdir()
-    DIR *dir;                // return value for opendir()
-    dir = opendir(dir_name);
-    if (NULL == dir) {
-      std::cout << "Can not open dir " << dir_name << std::endl;
-      return;
-    }
-    std::cout << "Successfully opened the dir !" << std::endl;
-    while ((filename = readdir(dir)) != NULL) {
-      if (strcmp(filename->d_name, ".") == 0 ||
-          strcmp(filename->d_name, "..") == 0)
-        continue;
-      all_inputs.push_back(dir_name + std::string("/") +
-                           std::string(filename->d_name));
-    }
-  }
 }
 
 void PredictVideo(const std::string& video_path,
@@ -280,15 +248,17 @@ void PredictImage(const std::vector<std::string> all_img_paths,
 
       int item_start_idx = 0;
       for (int i = 0; i < left_image_cnt; i++) {
-        std::cout << all_img_paths.at(idx * batch_size + i) << " bbox_num " << bbox_num[i] << std::endl;
-        if (bbox_num[i] <= 1) {
-            continue;
-        }
+        cv::Mat im = batch_imgs[i];
+        std::vector<PaddleDetection::ObjectResult> im_result;
+        int detect_num = 0;
+ 
         for (int j = 0; j < bbox_num[i]; j++) {
           PaddleDetection::ObjectResult item = result[item_start_idx + j];
-          if (item.confidence < threshold) {
+          if (item.confidence < threshold || item.class_id == -1) {
             continue;
           }
+          detect_num += 1;
+          im_result.push_back(item);
           if (item.rect.size() > 6){
             is_rbox = true;
             printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
@@ -313,20 +283,9 @@ void PredictImage(const std::vector<std::string> all_img_paths,
               item.rect[3]);
           }
         }
+        std::cout << all_img_paths.at(idx * batch_size + i) << " The number of detected box: " << detect_num << std::endl;
         item_start_idx = item_start_idx + bbox_num[i];
-      }
-      // Visualization result
-      int bbox_idx = 0;
-      for (int bs = 0; bs < batch_imgs.size(); bs++) {
-        if (bbox_num[bs] <= 1) {
-            continue;
-        }
-        cv::Mat im = batch_imgs[bs];
-        std::vector<PaddleDetection::ObjectResult> im_result;
-        for (int k = 0; k < bbox_num[bs]; k++) {
-          im_result.push_back(result[bbox_idx+k]);
-        }
-        bbox_idx += bbox_num[bs];
+        // Visualization result
         cv::Mat vis_img = PaddleDetection::VisualizeResult(
             im, im_result, labels, colormap, is_rbox);
         std::vector<int> compression_params;
@@ -336,10 +295,10 @@ void PredictImage(const std::vector<std::string> all_img_paths,
         if (output_dir.rfind(OS_PATH_SEP) != output_dir.size() - 1) {
           output_path += OS_PATH_SEP;
         }
-        std::string image_file_path = all_img_paths.at(idx * batch_size + bs);
+        std::string image_file_path = all_img_paths.at(idx * batch_size + i);
         output_path += image_file_path.substr(image_file_path.find_last_of('/') + 1);
         cv::imwrite(output_path, vis_img, compression_params);
-        printf("Visualized output saved as %s\n", output_path.c_str());
+        printf("Visualized output saved as %s\n", output_path.c_str());       
       }
     }
     det_t[0] += det_times[0];
@@ -384,17 +343,21 @@ int main(int argc, char** argv) {
     if (!PathExists(FLAGS_output_dir)) {
       MkDirs(FLAGS_output_dir);
     }
-    std::vector<std::string> all_imgs;
+    std::vector<std::string> all_img_paths;
+    std::vector<cv::String> cv_all_img_paths;
     if (!FLAGS_image_file.empty()) {
-      all_imgs.push_back(FLAGS_image_file);
+      all_img_paths.push_back(FLAGS_image_file);
       if (FLAGS_batch_size > 1) {
         std::cout << "batch_size should be 1, when set `image_file`." << std::endl;
 	return -1;
       }
     } else {
-      GetAllFiles((char *)FLAGS_image_dir.c_str(), all_imgs);
+        cv::glob(FLAGS_image_dir, cv_all_img_paths);
+        for (const auto & img_path : cv_all_img_paths) {
+          all_img_paths.push_back(img_path);
+        }
     }
-    PredictImage(all_imgs, FLAGS_batch_size, FLAGS_threshold,
+    PredictImage(all_img_paths, FLAGS_batch_size, FLAGS_threshold,
 		 FLAGS_run_benchmark, &det, FLAGS_output_dir);
   }
   return 0;

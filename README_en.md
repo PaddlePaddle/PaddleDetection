@@ -250,7 +250,7 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
   - [S2ANet](configs/dota/README.md)
 - [Keypoint detection](configs/keypoint)
   - HigherHRNet
-  - HRNeet
+  - HRNet
 - [Multi-Object Tracking](configs/mot/README.md)
   - [DeepSORT](configs/mot/deepsort/README.md)
   - [JDE](configs/mot/jde/README.md)
@@ -282,6 +282,8 @@ PaddleDetection is released under the [Apache 2.0 license](LICENSE).
 ## Contributing
 
 Contributions are highly welcomed and we would really appreciate your feedback!!
+- Thanks [Mandroide](https://github.com/Mandroide) for cleaning the code and unifying some function interface.
+- Thanks [FL77N](https://github.com/FL77N/) for contributing the code of `Sparse-RCNN` model.
 
 ## Citation
 

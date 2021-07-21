@@ -35,7 +35,7 @@ def argsparser():
         default=None,
         help="Dir of image file, `image_file` has a higher priority.")
     parser.add_argument(
-        "--batch_size", type=int, default=1, help="batch_size for infer.")
+        "--batch_size", type=int, default=1, help="batch_size for inference.")
     parser.add_argument(
         "--video_file",
         type=str,
@@ -103,11 +103,27 @@ def argsparser():
     parser.add_argument(
         '--save_images',
         action='store_true',
-        help='Save tracking results (image).')
+        help='Save visualization image results.')
     parser.add_argument(
-        '--save_results',
+        '--save_mot_txts',
         action='store_true',
         help='Save tracking results (txt).')
+    parser.add_argument(
+        "--reid_model_dir",
+        type=str,
+        default=None,
+        help=("Directory include:'model.pdiparams', 'model.pdmodel', "
+              "'infer_cfg.yml', created by tools/export_model.py."))
+    parser.add_argument(
+        "--reid_batch_size",
+        type=int,
+        default=50,
+        help="max batch_size for reid model inference.")
+    parser.add_argument(
+        '--use_dark',
+        type=bool,
+        default=True,
+        help='whether to use darkpose to get better keypoint position predict ')
     return parser
 
 

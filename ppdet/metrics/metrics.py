@@ -31,7 +31,12 @@ from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'Metric', 'COCOMetric', 'VOCMetric', 'WiderFaceMetric', 'get_infer_results'
+    'Metric',
+    'COCOMetric',
+    'VOCMetric',
+    'WiderFaceMetric',
+    'get_infer_results',
+    'RBoxMetric',
 ]
 
 COCO_SIGMAS = np.array([
@@ -299,3 +304,94 @@ class WiderFaceMetric(Metric):
             pred_dir='output/pred',
             eval_mode='widerface',
             multi_scale=self.multi_scale)
+
+
+class RBoxMetric(Metric):
+    def __init__(self, anno_file, **kwargs):
+        assert os.path.isfile(anno_file), \
+                "anno_file {} not a file".format(anno_file)
+        assert os.path.exists(anno_file), "anno_file {} not exists".format(
+            anno_file)
+        self.anno_file = anno_file
+        self.gt_anno = json.load(open(self.anno_file))
+        cats = self.gt_anno['categories']
+        self.clsid2catid = {i: cat['id'] for i, cat in enumerate(cats)}
+        self.catid2clsid = {cat['id']: i for i, cat in enumerate(cats)}
+        self.catid2name = {cat['id']: cat['name'] for cat in cats}
+        self.classwise = kwargs.get('classwise', False)
+        self.output_eval = kwargs.get('output_eval', None)
+        # TODO: bias should be unified
+        self.bias = kwargs.get('bias', 0)
+        self.save_prediction_only = kwargs.get('save_prediction_only', False)
+        self.iou_type = kwargs.get('IouType', 'bbox')
+        self.overlap_thresh = kwargs.get('overlap_thresh', 0.5)
+        self.map_type = kwargs.get('map_type', '11point')
+        self.evaluate_difficult = kwargs.get('evaluate_difficult', False)
+        class_num = len(self.catid2name)
+        self.detection_map = DetectionMAP(
+            class_num=class_num,
+            overlap_thresh=self.overlap_thresh,
+            map_type=self.map_type,
+            is_bbox_normalized=False,
+            evaluate_difficult=self.evaluate_difficult,
+            catid2name=self.catid2name,
+            classwise=self.classwise)
+
+        self.reset()
+
+    def reset(self):
+        self.result_bbox = []
+        self.detection_map.reset()
+
+    def update(self, inputs, outputs):
+        outs = {}
+        # outputs Tensor -> numpy.ndarray
+        for k, v in outputs.items():
+            outs[k] = v.numpy() if isinstance(v, paddle.Tensor) else v
+
+        im_id = inputs['im_id']
+        outs['im_id'] = im_id.numpy() if isinstance(im_id,
+                                                    paddle.Tensor) else im_id
+
+        infer_results = get_infer_results(
+            outs, self.clsid2catid, bias=self.bias)
+        self.result_bbox += infer_results[
+            'bbox'] if 'bbox' in infer_results else []
+        bbox = [b['bbox'] for b in self.result_bbox]
+        score = [b['score'] for b in self.result_bbox]
+        label = [b['category_id'] for b in self.result_bbox]
+        label = [self.catid2clsid[e] for e in label]
+        gt_box = [
+            e['bbox'] for e in self.gt_anno['annotations']
+            if e['image_id'] == outs['im_id']
+        ]
+        gt_label = [
+            e['category_id'] for e in self.gt_anno['annotations']
+            if e['image_id'] == outs['im_id']
+        ]
+        gt_label = [self.catid2clsid[e] for e in gt_label]
+        self.detection_map.update(bbox, score, label, gt_box, gt_label)
+
+    def accumulate(self):
+        if len(self.result_bbox) > 0:
+            output = "bbox.json"
+            if self.output_eval:
+                output = os.path.join(self.output_eval, output)
+            with open(output, 'w') as f:
+                json.dump(self.result_bbox, f)
+                logger.info('The bbox result is saved to bbox.json.')
+
+            if self.save_prediction_only:
+                logger.info('The bbox result is saved to {} and do not '
+                            'evaluate the mAP.'.format(output))
+            else:
+                logger.info("Accumulating evaluatation results...")
+                self.detection_map.accumulate()
+
+    def log(self):
+        map_stat = 100. * self.detection_map.get_map()
+        logger.info("mAP({:.2f}, {}) = {:.2f}%".format(self.overlap_thresh,
+                                                       self.map_type, map_stat))
+
+    def get_results(self):
+        return {'bbox': [self.detection_map.get_map()]}

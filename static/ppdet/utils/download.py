@@ -321,7 +321,7 @@ def _download(url, path, md5sum=None):
             shutil.move(tmp_fullname, fullname)
             return fullname
         else:
-            logger.warn(
+            logger.warning(
                 "Download from url imcomplete, try downloading again...")
             os.remove(tmp_fullname)
             continue

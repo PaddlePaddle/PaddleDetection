@@ -39,7 +39,7 @@ or
 pip install -r requirements.txt
 ```
 **Notes:**
-- Install `cython_bbox` for Windows: `pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`. You can refer to this [tutorial](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)
+- Install `cython_bbox` for Windows: `pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`. You can refer to this [tutorial](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows).
 - Evaluation on Windows CUDA 11 environment may not be normally. It will be repaired as soon as possible. You can change to CUDA 10.2 or CUDA 10.1 environment for normal evaluation.
 
 
@@ -163,7 +163,7 @@ In the annotation text, each line is describing a bounding box and has the follo
 ```
 **Notes:**
 - `class` should be `0`. Only single-class multi-object tracking is supported now.
-- `identity` is an integer from `0` to `num_identities - 1`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
+- `identity` is an integer from `1` to `num_identities`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
 - `[x_center] [y_center] [width] [height]` are the center coordinates, width and height, note that they are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
 
 ### Dataset Directory
@@ -224,11 +224,10 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_d
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=output/fairmot_dla34_30e_1088x608/model_final.pdparams
 ```
 **Notes:**
- The default evaluation dataset is MOT-16 Train Set. If you want to change the evaluation dataset, please refer to the following code and modify `configs/datasets/mot.yml`：
+ The default evaluation dataset is MOT-16 Train Set. If you want to change the evaluation dataset, please refer to the following code and modify `configs/datasets/mot.yml`, modify `data_root`：
 ```
 EvalMOTDataset:
   !MOTImageFolder
-    task: MOT17_train
     dataset_dir: dataset/mot
     data_root: MOT17/images/train
     keep_ori_im: False # set True if save visualization images or video
@@ -242,9 +241,39 @@ Inference a vidoe on single GPU with following command:
 # inference on video and save a video
 CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams --video_file={your video name}.mp4  --save_videos
 ```
+
+Inference a image folder on single GPU with following command:
+
+```bash
+# inference image folder and save a video
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams --image_dir={your infer images folder} --save_videos
+```
+
 **Notes:**
  Please make sure that [ffmpeg](https://ffmpeg.org/ffmpeg.html) is installed first, on Linux(Ubuntu) platform you can directly install it by the following command:`apt-get update && apt-get install -y ffmpeg`.
 
+
+### 4. Export model
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams
+```
+
+### 5. Using exported model for python inference
+
+```bash
+python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608 --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+```
+**Notes:**
+The tracking model is used to predict the video, and does not support the prediction of a single image. The visualization video of the tracking results is saved by default. You can add `--save_mot_txts` to save the txt result file, or `--save_images` to save the visualization images.
+
+### 6. Using exported MOT and keypoint model for unite python inference
+
+```bash
+python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inference/fairmot_dla34_30e_1088x608/ --keypoint_model_dir=output_inference/higherhrnet_hrnet_w32_512/ --video_file={your video name}.mp4 --device=GPU
+```
+**Notes:**
+ Keypoint model export tutorial: `configs/keypoint/README.md`.
 
 ## Citations
 ```

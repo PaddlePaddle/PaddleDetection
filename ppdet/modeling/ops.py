@@ -21,12 +21,7 @@ from paddle.regularizer import L2Decay
 from paddle.fluid.framework import Variable, in_dygraph_mode
 from paddle.fluid import core
 from paddle.fluid.layer_helper import LayerHelper
-from paddle.fluid.dygraph import layers
-from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype, convert_dtype
-import math
-import six
-import numpy as np
-from functools import reduce
+from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype
 
 __all__ = [
     'roi_pool',
@@ -993,7 +988,7 @@ def multiclass_nms(bboxes,
 
     else:
         output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
-        index = helper.create_variable_for_type_inference(dtype='int')
+        index = helper.create_variable_for_type_inference(dtype='int32')
 
         inputs = {'BBoxes': bboxes, 'Scores': scores}
         outputs = {'Out': output, 'Index': index}
@@ -1136,7 +1131,7 @@ def matrix_nms(bboxes,
     else:
         helper = LayerHelper('matrix_nms', **locals())
         output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
-        index = helper.create_variable_for_type_inference(dtype='int')
+        index = helper.create_variable_for_type_inference(dtype='int32')
         outputs = {'Out': output, 'Index': index}
         if return_rois_num:
             rois_num = helper.create_variable_for_type_inference(dtype='int32')

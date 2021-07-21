@@ -13,12 +13,10 @@
 # limitations under the License.
 
 import os
-import time
 import yaml
 import glob
 from functools import reduce
 
-from PIL import Image
 import cv2
 import numpy as np
 import math
@@ -27,7 +25,7 @@ from paddle.inference import Config
 from paddle.inference import create_predictor
 
 from benchmark_utils import PaddleInferBenchmark
-from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride
+from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize
 from visualize import visualize_box_mask
 from utils import argsparser, Timer, get_current_memory_mb
 
@@ -41,13 +39,16 @@ SUPPORT_MODELS = {
     'SOLOv2',
     'TTFNet',
     'S2ANet',
+    'JDE',
+    'FairMOT',
+    'DeepSORT',
 }
 
 
 class Detector(object):
     """
     Args:
-        config (object): config of model, defined by `Config(model_dir)`
+        pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
@@ -55,8 +56,10 @@ class Detector(object):
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
-        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
-        threshold (float): threshold to reserve the result for output.
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN
     """
 
     def __init__(self,
@@ -121,7 +124,7 @@ class Detector(object):
     def predict(self, image_list, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
-            image_list (list): ,list of image
+            image_list (list): list of image
             threshold (float): threshold of predicted box' score
         Returns:
             results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
@@ -163,13 +166,16 @@ class Detector(object):
         results = []
         if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
             print('[WARNNING] No object detected.')
-            results = {'boxes': np.array([]), 'boxes_num': [0]}
+            results = {'boxes': np.array([[]]), 'boxes_num': [0]}
         else:
             results = self.postprocess(
                 np_boxes, np_masks, inputs, np_boxes_num, threshold=threshold)
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += len(image_list)
         return results
+
+    def get_timer(self):
+        return self.det_times
 
 
 class DetectorSOLOv2(Detector):
@@ -183,7 +189,10 @@ class DetectorSOLOv2(Detector):
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
-        threshold (float): threshold to reserve the result for output.
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN 
     """
 
     def __init__(self,
@@ -269,8 +278,8 @@ class DetectorSOLOv2(Detector):
 def create_inputs(imgs, im_info):
     """generate input for different model type
     Args:
-        im (np.ndarray): image (np.ndarray)
-        im_info (dict): info of image
+        imgs (list(numpy)): list of images (np.ndarray)
+        im_info (list(dict)): list of image info
     Returns:
         inputs (dict): input of model
     """
@@ -278,33 +287,32 @@ def create_inputs(imgs, im_info):
 
     im_shape = []
     scale_factor = []
+    if len(imgs) == 1:
+        inputs['image'] = np.array((imgs[0], )).astype('float32')
+        inputs['im_shape'] = np.array(
+            (im_info[0]['im_shape'], )).astype('float32')
+        inputs['scale_factor'] = np.array(
+            (im_info[0]['scale_factor'], )).astype('float32')
+        return inputs
+
     for e in im_info:
         im_shape.append(np.array((e['im_shape'], )).astype('float32'))
         scale_factor.append(np.array((e['scale_factor'], )).astype('float32'))
 
-    origin_scale_factor = np.concatenate(scale_factor, axis=0)
+    inputs['im_shape'] = np.concatenate(im_shape, axis=0)
+    inputs['scale_factor'] = np.concatenate(scale_factor, axis=0)
 
     imgs_shape = [[e.shape[1], e.shape[2]] for e in imgs]
     max_shape_h = max([e[0] for e in imgs_shape])
     max_shape_w = max([e[1] for e in imgs_shape])
     padding_imgs = []
-    padding_imgs_shape = []
-    padding_imgs_scale = []
     for img in imgs:
         im_c, im_h, im_w = img.shape[:]
         padding_im = np.zeros(
             (im_c, max_shape_h, max_shape_w), dtype=np.float32)
         padding_im[:, :im_h, :im_w] = img
         padding_imgs.append(padding_im)
-        padding_imgs_shape.append(
-            np.array([max_shape_h, max_shape_w]).astype('float32'))
-        rescale = [
-            float(max_shape_h) / float(im_h), float(max_shape_w) / float(im_w)
-        ]
-        padding_imgs_scale.append(np.array(rescale).astype('float32'))
     inputs['image'] = np.stack(padding_imgs, axis=0)
-    inputs['im_shape'] = np.stack(padding_imgs_shape, axis=0)
-    inputs['scale_factor'] = origin_scale_factor
     return inputs
 
 
@@ -328,6 +336,9 @@ class PredictConfig():
         self.use_dynamic_shape = yml_conf['use_dynamic_shape']
         if 'mask' in yml_conf:
             self.mask = yml_conf['mask']
+        self.tracker = None
+        if 'tracker' in yml_conf:
+            self.tracker = yml_conf['tracker']
         self.print_config()
 
     def check_model(self, yml_conf):

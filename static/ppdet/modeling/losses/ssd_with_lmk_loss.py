@@ -14,7 +14,6 @@
 
 import paddle.fluid as fluid
 from paddle.fluid.layer_helper import LayerHelper
-from paddle.fluid.framework import Variable
 import paddle.fluid.layers as layers
 from paddle.fluid.layers import (tensor, iou_similarity, bipartite_match,
                                  target_assign, box_coder)
