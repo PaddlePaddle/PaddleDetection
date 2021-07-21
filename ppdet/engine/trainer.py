@@ -293,11 +293,6 @@ class Trainer(object):
     def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
 
-        # if validation in training is enabled, metrics should be re-init
-        if validate:
-            self._init_metrics(validate=validate)
-            self._reset_metrics()
-
         model = self.model
         if self.cfg.get('fleet', False):
             model = fleet.distributed_model(model)
@@ -394,6 +389,10 @@ class Trainer(object):
                         self._eval_dataset,
                         self.cfg.worker_num,
                         batch_sampler=self._eval_batch_sampler)
+                        # if validation in training is enabled, metrics should be re-init
+                if validate:
+                    self._init_metrics(validate=validate)
+                    self._reset_metrics()
                 with paddle.no_grad():
                     self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
