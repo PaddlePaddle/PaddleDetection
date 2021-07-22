@@ -19,7 +19,7 @@ PP-YOLO reached mmAP(IoU=0.5:0.95) as 45.9% on COCO test-dev2017 dataset, and in
   <img src="../../docs/images/ppyolo_map_fps.png" width=500 />
 </div>
 
-PP-YOLO improved performance and speed of YOLOv3 with following methods:
+PP-YOLO and PP-YOLOv2 improved performance and speed of YOLOv3 with following methods:
 
 - Better backbone: ResNet50vd-DCN
 - Larger training batch size: 8 GPUs and mini-batch size as 24 on each GPU
@@ -31,6 +31,9 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 - [CoordConv](https://arxiv.org/abs/1807.03247)
 - [Spatial Pyramid Pooling](https://arxiv.org/abs/1406.4729)
 - Better ImageNet pretrain weights
+- [PAN](https://arxiv.org/abs/1803.01534)
+- Iou aware Loss
+- larger input size
 
 ## Model Zoo
 
@@ -219,6 +222,12 @@ Optimizing method and ablation experiments of PP-YOLO compared with YOLOv3.
 ## Citation
 
 ```
+@article{huang2021pp,
+  title={PP-YOLOv2: A Practical Object Detector},
+  author={Huang, Xin and Wang, Xinxin and Lv, Wenyu and Bai, Xiaying and Long, Xiang and Deng, Kaipeng and Dang, Qingqing and Han, Shumin and Liu, Qiwen and Hu, Xiaoguang and others},
+  journal={arXiv preprint arXiv:2104.10419},
+  year={2021}
+}
 @misc{long2020ppyolo,
 title={PP-YOLO: An Effective and Efficient Implementation of Object Detector},
 author={Xiang Long and Kaipeng Deng and Guanzhong Wang and Yang Zhang and Qingqing Dang and Yuan Gao and Hui Shen and Jianguo Ren and Shumin Han and Errui Ding and Shilei Wen},
