@@ -3,7 +3,7 @@ _BASE_: [
 ]
 
 metric: KITTI
-weights: output/fairmot_dla34_30e_1088x608_kitti/model_final
+weights: output/fairmot_dla34_30e_1088x608_kitticars/model_final
 
 # for MOT training
 TrainDataset:
