@@ -239,7 +239,10 @@ def draw_pose(imgfile,
                      'for example: `pip install matplotlib`.')
         raise e
 
+    img = cv2.imread(imgfile) if type(imgfile) == str else imgfile
     skeletons, scores = results['keypoint']
+    if len(skeletons) == 0:
+        return img
     kpt_nums = skeletons.shape[1]
     if kpt_nums == 17:  #plot coco keypoint
         EDGES = [(0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6), (5, 7), (6, 8),
@@ -256,8 +259,6 @@ def draw_pose(imgfile,
             [170, 0, 255], [255, 0, 255], [255, 0, 170], [255, 0, 85]]
     cmap = matplotlib.cm.get_cmap('hsv')
     plt.figure()
-
-    img = cv2.imread(imgfile) if type(imgfile) == str else imgfile
 
     color_set = results['colors'] if 'colors' in results else None
 
