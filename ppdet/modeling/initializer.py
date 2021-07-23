@@ -267,7 +267,7 @@ def linear_init_(module):
 
 
 def conv_init_(module):
-    bound = 1 / math.sqrt(math.prod(module.weight.shape[1:]))
+    bound = 1 / np.sqrt(np.prod(module.weight.shape[1:]))
     uniform_(module.weight, -bound, bound)
     uniform_(module.bias, -bound, bound)
 
