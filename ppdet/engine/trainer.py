@@ -292,11 +292,7 @@ class Trainer(object):
 
     def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
-
-        # if validation in training is enabled, metrics should be re-init
-        if validate:
-            self._init_metrics(validate=validate)
-            self._reset_metrics()
+        Init_mark = False
 
         model = self.model
         if self.cfg.get('fleet', False):
@@ -394,6 +390,12 @@ class Trainer(object):
                         self._eval_dataset,
                         self.cfg.worker_num,
                         batch_sampler=self._eval_batch_sampler)
+                # if validation in training is enabled, metrics should be re-init
+                # Init_mark makes sure this code will only execute once
+                if validate and Init_mark == False:
+                    Init_mark = True
+                    self._init_metrics(validate=validate)
+                    self._reset_metrics()
                 with paddle.no_grad():
                     self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
@@ -558,14 +560,12 @@ class Trainer(object):
                     shape=[None, 3, 192, 64], name='crops')
             })
 
-
-        static_model = paddle.jit.to_static(
-                self.model, input_spec=input_spec)
+        static_model = paddle.jit.to_static(self.model, input_spec=input_spec)
         # NOTE: dy2st do not pruned program, but jit.save will prune program
         # input spec, prune input spec here and save with pruned input spec
         pruned_input_spec = self._prune_input_spec(
-                input_spec, static_model.forward.main_program,
-                static_model.forward.outputs)
+            input_spec, static_model.forward.main_program,
+            static_model.forward.outputs)
 
         # dy2st and save model
         if 'slim' not in self.cfg or self.cfg['slim_type'] != 'QAT':
