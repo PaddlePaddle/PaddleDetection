@@ -28,7 +28,7 @@ from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_bo
 from ppdet.modeling.mot.utils import Timer, load_det_results
 from ppdet.modeling.mot import visualization as mot_vis
 
-from ppdet.metrics import Metric, MOTMetric
+from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric
 import ppdet.utils.stats as stats
 
 from .callbacks import Callback, ComposeCallback
@@ -74,6 +74,8 @@ class Tracker(object):
 
         if self.cfg.metric == 'MOT':
             self._metrics = [MOTMetric(), ]
+        elif self.cfg.metric == 'KITTI':
+            self._metrics = [KITTIMOTMetric(), ]
         else:
             logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -329,7 +331,7 @@ class Tracker(object):
             if save_videos:
                 output_video_path = os.path.join(save_dir, '..',
                                                  '{}_vis.mp4'.format(seq))
-                cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
+                cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" {}'.format(
                     save_dir, output_video_path)
                 os.system(cmd_str)
                 logger.info('Save video in {}.'.format(output_video_path))
@@ -445,7 +447,7 @@ class Tracker(object):
         if save_videos:
             output_video_path = os.path.join(save_dir, '..',
                                              '{}_vis.mp4'.format(seq))
-            cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
+            cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" {}'.format(
                 save_dir, output_video_path)
             os.system(cmd_str)
             logger.info('Save video in {}'.format(output_video_path))
@@ -454,7 +456,7 @@ class Tracker(object):
         if data_type in ['mot', 'mcmot', 'lab']:
             save_format = '{frame},{id},{x1},{y1},{w},{h},{score},-1,-1,-1\n'
         elif data_type == 'kitti':
-            save_format = '{frame} {id} pedestrian 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
+            save_format = '{frame} {id} car 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
         else:
             raise ValueError(data_type)
 

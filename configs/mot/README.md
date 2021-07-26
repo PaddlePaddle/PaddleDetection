@@ -6,6 +6,7 @@ English | [简体中文](README_cn.md)
 - [Introduction](#Introduction)
 - [Installation](#Installation)
 - [Model Zoo](#Model_Zoo)
+- [Feature Tracking Model](#Feature_Tracking_Model)
 - [Dataset Preparation](#Dataset_Preparation)
 - [Getting Start](#Getting_Start)
 - [Citations](#Citations)
@@ -129,6 +130,28 @@ If you use a stronger detection model, you can get better results. Each txt is t
 
 **Notes:**
  FairMOT used 8 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
+
+
+## Feature Tracking Model
+
+### 【Head Tracking](./headtracking21/README.md)
+
+### FairMOT Results on HT-21 Training Set
+|    backbone      |  input shape |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  download | config |
+| :--------------| :------- | :----: | :----: | :---: | :----: | :---: | :------: | :----: |:----: |
+| DLA-34         | 1088x608 |  67.2 |  70.4  |   9403  |  124840  |  255007  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
+
+### FairMOT Results on HT-21 Test Set
+|    backbone      |  input shape |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  download | config |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: | :----: |
+| DLA-34         | 1088x608 |  58.2  |  61.3  |  13166   |  141872  |  197074 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
+
+### [Vehicle Tracking](./kitticars/README.md)
+### FairMOT Results on KITTI tracking (2D bounding-boxes) Training Set (Car)
+
+|    backbone    | input shape |  MOTA   |   FPS   |  download | config |
+| :--------------| :------- | :-----: | :-----: | :------: | :----: |
+| DLA-34         | 1088x608 |   67.9  |    -    |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitticars.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/kitticars/fairmot_dla34_30e_1088x608_kitticars.yml) |
 
 
 ## Dataset Preparation

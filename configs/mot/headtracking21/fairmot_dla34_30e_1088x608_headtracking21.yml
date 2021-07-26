@@ -1,7 +1,8 @@
 _BASE_: [
-  '../fairmot_dla34_30e_1088x608.yml'
+  '../fairmot/fairmot_dla34_30e_1088x608.yml'
 ]
 
+weights: output/fairmot_dla34_30e_1088x608_headtracking21/model_final
 
 # for MOT training
 TrainDataset:
@@ -11,7 +12,7 @@ TrainDataset:
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
 
 # for MOT evaluation
-# If you want to change the MOT evaluation dataset, please modify 'task' and 'data_root'
+# If you want to change the MOT evaluation dataset, please modify 'data_root'
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
@@ -20,6 +21,6 @@ EvalMOTDataset:
 
 # for MOT video inference
 TestMOTDataset:
-  !MOTVideoDataset
+  !MOTImageFolder
     dataset_dir: dataset/mot
     keep_ori_im: True # set True if save visualization images or video
