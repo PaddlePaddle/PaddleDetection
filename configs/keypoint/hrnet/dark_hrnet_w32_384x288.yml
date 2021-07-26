@@ -111,7 +111,7 @@ TrainReader:
         std: *global_std
         is_scale: true
     - Permute: {}
-  batch_size: 64
+  batch_size: 32
   shuffle: true
   drop_last: false
 
