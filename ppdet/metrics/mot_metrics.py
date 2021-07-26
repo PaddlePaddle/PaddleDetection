@@ -314,6 +314,7 @@ class JDEDetMetric(Metric):
 Following code is borrow from https://github.com/xingyizhou/CenterTrack/blob/master/src/tools/eval_kitti_track/evaluate_tracking.py
 """
 
+
 class tData:
     """
         Utility class to load data.
@@ -1151,7 +1152,8 @@ class KITTIEvaluation(object):
         """
         summary = self.createSummary()
         if save_summary:
-            filename = os.path.join(self.result_path, "summary_%s.txt" % self.cls)
+            filename = os.path.join(self.result_path,
+                                    "summary_%s.txt" % self.cls)
             dump = open(filename, "w+")
             dump.write(summary)
             dump.close()

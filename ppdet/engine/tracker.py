@@ -331,7 +331,7 @@ class Tracker(object):
             if save_videos:
                 output_video_path = os.path.join(save_dir, '..',
                                                  '{}_vis.mp4'.format(seq))
-                cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
+                cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" {}'.format(
                     save_dir, output_video_path)
                 os.system(cmd_str)
                 logger.info('Save video in {}.'.format(output_video_path))
@@ -447,7 +447,7 @@ class Tracker(object):
         if save_videos:
             output_video_path = os.path.join(save_dir, '..',
                                              '{}_vis.mp4'.format(seq))
-            cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
+            cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" {}'.format(
                 save_dir, output_video_path)
             os.system(cmd_str)
             logger.info('Save video in {}'.format(output_video_path))
