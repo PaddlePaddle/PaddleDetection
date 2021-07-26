@@ -179,6 +179,7 @@ def write_mot_results(filename, results, data_type='mot'):
 
 def predict_image(detector, image_list):
     results = []
+    image_list.sort()
     for i, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
         if FLAGS.run_benchmark:
