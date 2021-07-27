@@ -19,11 +19,9 @@ TrainReader:
   batch_size: 6
   shuffle: True
   drop_last: True
-
+  use_shared_memory: True
 
 EvalMOTReader:
-  inputs_def:
-    image_shape: [3, 608, 1088]
   sample_transforms:
     - Decode: {}
     - LetterBoxResize: {target_size: [608, 1088]}
@@ -36,6 +34,7 @@ TestMOTReader:
   inputs_def:
     image_shape: [3, 608, 1088]
   sample_transforms:
+    - Decode: {}
     - LetterBoxResize: {target_size: [608, 1088]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
     - Permute: {}

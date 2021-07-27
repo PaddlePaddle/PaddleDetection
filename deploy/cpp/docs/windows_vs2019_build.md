@@ -5,8 +5,16 @@ Windows 平台下，我们使用`Visual Studio 2019 Community` 进行了测试�
 
 ## 前置条件
 * Visual Studio 2019 (根据Paddle预测库所使用的VS版本选择，请参考 [Visual Studio 不同版本二进制兼容性](https://docs.microsoft.com/zh-cn/cpp/porting/binary-compat-2015-2017?view=vs-2019) )
-* CUDA 9.0 / CUDA 10.0，cudnn 7+ （仅在使用GPU版本的预测库时需要）
+* CUDA 9.0 / CUDA 10.0，cudnn 7+ / TensoRT（仅在使用GPU版本的预测库时需要）
 * CMake 3.0+ [CMake下载](https://cmake.org/download/)
+
+**特别注意：windows下预测库需要的TensorRT版本为：**。
+
+|  预测库版本   | TensorRT版本  |
+|  ----  | ----  |
+| cuda10.1_cudnn7.6_avx_mkl_trt6 |  TensorRT-6.0.1.5  |
+| cuda10.2_cudnn7.6_avx_mkl_trt7 |  TensorRT-7.0.0.11 |
+| cuda11.0_cudnn8.0_avx_mkl_trt7 |  TensorRT-7.2.1.6  |
 
 请确保系统已经安装好上述基本软件，我们使用的是`VS2019`的社区版。
 
@@ -108,6 +116,7 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 **注意**：  
 （1）优先级顺序：`camera_id` > `video_file` > `image_dir` > `image_file`。
 （2）如果提示找不到`opencv_world346.dll`，把`D:\projects\packages\opencv3_4_6\build\x64\vc14\bin`文件夹下的`opencv_world346.dll`拷贝到`main.exe`文件夹下即可。
+（3）--run_benchmark如果设置为True，则需要安装依赖`pip install pynvml psutil GPUtil`。
 
 
 `样例一`：

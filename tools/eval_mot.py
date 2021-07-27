@@ -42,11 +42,6 @@ logger = setup_logger('eval')
 def parse_args():
     parser = ArgsParser()
     parser.add_argument(
-        "--data_type",
-        type=str,
-        default='mot',
-        help='Data type of tracking dataset, should be in ["mot", "kitti"]')
-    parser.add_argument(
         "--det_results_dir",
         type=str,
         default='',
@@ -73,11 +68,11 @@ def parse_args():
 
 
 def run(FLAGS, cfg):
-    task = cfg['EvalMOTDataset'].task
     dataset_dir = cfg['EvalMOTDataset'].dataset_dir
     data_root = cfg['EvalMOTDataset'].data_root
     data_root = '{}/{}'.format(dataset_dir, data_root)
-    seqs = cfg['MOTDataZoo'][task]
+    seqs = os.listdir(data_root)
+    seqs.sort()
 
     # build Tracker
     tracker = Tracker(cfg, mode='eval')
@@ -95,7 +90,7 @@ def run(FLAGS, cfg):
     tracker.mot_evaluate(
         data_root=data_root,
         seqs=seqs,
-        data_type=FLAGS.data_type,
+        data_type=cfg.metric.lower(),
         model_type=cfg.architecture,
         output_dir=FLAGS.output_dir,
         save_images=FLAGS.save_images,

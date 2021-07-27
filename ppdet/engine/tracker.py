@@ -28,7 +28,7 @@ from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_bo
 from ppdet.modeling.mot.utils import Timer, load_det_results
 from ppdet.modeling.mot import visualization as mot_vis
 
-from ppdet.metrics import Metric, MOTMetric
+from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric
 import ppdet.utils.stats as stats
 
 from .callbacks import Callback, ComposeCallback
@@ -74,6 +74,8 @@ class Tracker(object):
 
         if self.cfg.metric == 'MOT':
             self._metrics = [MOTMetric(), ]
+        elif self.cfg.metric == 'KITTI':
+            self._metrics = [KITTIMOTMetric(), ]
         else:
             logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -282,18 +284,25 @@ class Tracker(object):
         n_frame = 0
         timer_avgs, timer_calls = [], []
         for seq in seqs:
+            if not os.path.isdir(os.path.join(data_root, seq)):
+                continue
+            infer_dir = os.path.join(data_root, seq, 'img1')
+            seqinfo = os.path.join(data_root, seq, 'seqinfo.ini')
+            if not os.path.exists(seqinfo) or not os.path.exists(
+                    infer_dir) or not os.path.isdir(infer_dir):
+                continue
+
             save_dir = os.path.join(output_dir, 'mot_outputs',
                                     seq) if save_images or save_videos else None
             logger.info('start seq: {}'.format(seq))
 
-            infer_dir = os.path.join(data_root, seq, 'img1')
             images = self.get_infer_images(infer_dir)
             self.dataset.set_images(images)
 
             dataloader = create('EvalMOTReader')(self.dataset, 0)
 
             result_filename = os.path.join(result_root, '{}.txt'.format(seq))
-            meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
+            meta_info = open(seqinfo).read()
             frame_rate = int(meta_info[meta_info.find('frameRate') + 10:
                                        meta_info.find('\nseqLength')])
             with paddle.no_grad():
@@ -322,7 +331,7 @@ class Tracker(object):
             if save_videos:
                 output_video_path = os.path.join(save_dir, '..',
                                                  '{}_vis.mp4'.format(seq))
-                cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
+                cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" {}'.format(
                     save_dir, output_video_path)
                 os.system(cmd_str)
                 logger.info('Save video in {}.'.format(output_video_path))
@@ -365,6 +374,7 @@ class Tracker(object):
 
     def mot_predict(self,
                     video_file,
+                    image_dir,
                     output_dir,
                     data_type='mot',
                     model_type='JDE',
@@ -373,6 +383,13 @@ class Tracker(object):
                     show_image=False,
                     det_results_dir='',
                     draw_threshold=0.5):
+        assert video_file is not None or image_dir is not None, \
+            "--video_file or --image_dir should be set."
+        assert video_file is None or os.path.isfile(video_file), \
+                "{} is not a file".format(video_file)
+        assert image_dir is None or os.path.isdir(image_dir), \
+                "{} is not a directory".format(image_dir)
+
         if not os.path.exists(output_dir): os.makedirs(output_dir)
         result_root = os.path.join(output_dir, 'mot_results')
         if not os.path.exists(result_root): os.makedirs(result_root)
@@ -381,13 +398,26 @@ class Tracker(object):
         assert model_type in ['JDE', 'DeepSORT', 'FairMOT'], \
             "model_type should be 'JDE', 'DeepSORT' or 'FairMOT'"
 
-        # run tracking
-        seq = video_file.split('/')[-1].split('.')[0]
+        # run tracking        
+        if video_file:
+            seq = video_file.split('/')[-1].split('.')[0]
+            self.dataset.set_video(video_file)
+            logger.info('Starting tracking video {}'.format(video_file))
+        elif image_dir:
+            seq = image_dir.split('/')[-1].split('.')[0]
+            images = [
+                '{}/{}'.format(image_dir, x) for x in os.listdir(image_dir)
+            ]
+            images.sort()
+            self.dataset.set_images(images)
+            logger.info('Starting tracking folder {}, found {} images'.format(
+                image_dir, len(images)))
+        else:
+            raise ValueError('--video_file or --image_dir should be set.')
+
         save_dir = os.path.join(output_dir, 'mot_outputs',
                                 seq) if save_images or save_videos else None
-        logger.info('Starting tracking {}'.format(video_file))
 
-        self.dataset.set_video(video_file)
         dataloader = create('TestMOTReader')(self.dataset, 0)
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
         frame_rate = self.dataset.frame_rate
@@ -417,7 +447,7 @@ class Tracker(object):
         if save_videos:
             output_video_path = os.path.join(save_dir, '..',
                                              '{}_vis.mp4'.format(seq))
-            cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
+            cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" {}'.format(
                 save_dir, output_video_path)
             os.system(cmd_str)
             logger.info('Save video in {}'.format(output_video_path))
@@ -426,7 +456,7 @@ class Tracker(object):
         if data_type in ['mot', 'mcmot', 'lab']:
             save_format = '{frame},{id},{x1},{y1},{w},{h},{score},-1,-1,-1\n'
         elif data_type == 'kitti':
-            save_format = '{frame} {id} pedestrian 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
+            save_format = '{frame} {id} car 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
         else:
             raise ValueError(data_type)
 

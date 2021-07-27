@@ -56,6 +56,7 @@ def mot_keypoint_unite_predict_image(mot_model,
                                      keypoint_model,
                                      image_list,
                                      keypoint_batch_size=1):
+    image_list.sort()
     for i, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
 
@@ -178,7 +179,9 @@ def mot_keypoint_unite_predict_video(mot_model,
             keypoint_results,
             visual_thread=FLAGS.keypoint_threshold,
             returnimg=True,
-            ids=online_ids)
+            ids=online_ids
+            if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown' else
+            None)
 
         online_im = mot_vis.plot_tracking(
             im,

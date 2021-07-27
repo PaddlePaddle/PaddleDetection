@@ -297,6 +297,7 @@ class SDE_ReID(object):
 
 def predict_image(detector, reid_model, image_list):
     results = []
+    image_list.sort()
     for i, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
         if FLAGS.run_benchmark:

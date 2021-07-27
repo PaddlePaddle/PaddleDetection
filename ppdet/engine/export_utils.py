@@ -60,9 +60,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     label_list = [str(cat) for cat in catid2name.values()]
 
     sample_transforms = reader_cfg['sample_transforms']
-    if arch != 'mot_arch':
-        sample_transforms = sample_transforms[1:]
-    for st in sample_transforms:
+    for st in sample_transforms[1:]:
         for key, value in st.items():
             p = {'type': key}
             if key == 'Resize':

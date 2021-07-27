@@ -1,5 +1,5 @@
 architecture: S2ANet
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
 weights: output/s2anet_r50_fpn_1x_dota/model_final.pdparams
 
 
@@ -12,6 +12,7 @@ S2ANet:
 
 ResNet:
   depth: 50
+  variant: d
   norm_type: bn
   return_idx: [1,2,3]
   num_stages: 4
@@ -33,11 +34,9 @@ S2ANetHead:
   feat_in: 256
   feat_out: 256
   num_classes: 15
-  align_conv_type: 'Conv'  # AlignConv Conv
+  align_conv_type: 'AlignConv'  # AlignConv Conv
   align_conv_size: 3
   use_sigmoid_cls: True
-  reg_loss_weight: [ 1.0, 1.0, 1.0, 1.0, 1.1 ]
-  cls_loss_weight: [ 1.1, 1.05 ]
 
 RBoxAssigner:
   pos_iou_thr: 0.5
@@ -54,3 +53,4 @@ S2ANetBBoxPostProcess:
     score_threshold: 0.05
     nms_threshold: 0.1
     normalized: False
+    #background_label: -1

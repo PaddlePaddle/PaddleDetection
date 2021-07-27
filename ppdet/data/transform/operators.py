@@ -33,7 +33,7 @@ import math
 import numpy as np
 import os
 import copy
-
+import logging
 import cv2
 from PIL import Image, ImageDraw
 
@@ -194,7 +194,7 @@ class RandomErasingImage(BaseOperator):
         Args:
             prob (float): probability to carry out random erasing
             lower (float): lower limit of the erasing area ratio
-            heigher (float): upper limit of the erasing area ratio
+            higher (float): upper limit of the erasing area ratio
             aspect_ratio (float): aspect ratio of the erasing region
         """
         super(RandomErasingImage, self).__init__()
@@ -646,7 +646,7 @@ class Resize(BaseOperator):
 
             mask = mask_util.decode(rle)
             mask = cv2.resize(
-                image,
+                mask,
                 None,
                 None,
                 fx=im_scale_x,
