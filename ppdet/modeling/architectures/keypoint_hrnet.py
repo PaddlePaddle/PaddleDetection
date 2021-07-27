@@ -50,6 +50,7 @@ class TopDownHRNet(BaseArch):
             backbone (nn.Layer): backbone instance
             post_process (object): `HRNetPostProcess` instance
             flip_perm (list): The left-right joints exchange order list
+            use_dark(bool): Whether to use DARK in post processing
         """
         super(TopDownHRNet, self).__init__()
         self.backbone = backbone
