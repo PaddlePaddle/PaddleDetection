@@ -23,6 +23,107 @@ from ppdet.modeling.proposal_generator.target_layer import RBoxAssigner
 import numpy as np
 
 
+class S2ANetAnchorGenerator_np(object):
+    """
+    S2ANetAnchorGenerator by np
+    """
+
+    def __init__(self,
+                 base_size=8,
+                 scales=1.0,
+                 ratios=1.0,
+                 scale_major=True,
+                 ctr=None):
+        self.base_size = base_size
+        self.scales = scales
+        self.ratios = ratios
+        self.scale_major = scale_major
+        self.ctr = ctr
+        self.base_anchors = self.gen_base_anchors()
+
+    @property
+    def num_base_anchors(self):
+        return self.base_anchors.shape[0]
+
+    def gen_base_anchors(self):
+        w = self.base_size
+        h = self.base_size
+        if self.ctr is None:
+            x_ctr = 0.5 * (w - 1)
+            y_ctr = 0.5 * (h - 1)
+        else:
+            x_ctr, y_ctr = self.ctr
+
+        h_ratios = np.sqrt(self.ratios)
+        w_ratios = 1 / h_ratios
+        if self.scale_major:
+            ws = (w * w_ratios[:] * self.scales[:]).reshape([-1])
+            hs = (h * h_ratios[:] * self.scales[:]).reshape([-1])
+        else:
+            ws = (w * self.scales[:] * w_ratios[:]).reshape([-1])
+            hs = (h * self.scales[:] * h_ratios[:]).reshape([-1])
+
+        # yapf: disable
+        base_anchors = np.stack(
+            [
+                x_ctr - 0.5 * (ws - 1), y_ctr - 0.5 * (hs - 1),
+                x_ctr + 0.5 * (ws - 1), y_ctr + 0.5 * (hs - 1)
+            ],
+            axis=-1)
+        base_anchors = np.round(base_anchors)
+        # yapf: enable
+
+        return base_anchors
+
+    def _meshgrid(self, x, y, row_major=True):
+        xx, yy = np.meshgrid(x, y)
+        xx = xx.reshape(-1)
+        yy = yy.reshape(-1)
+        if row_major:
+            return xx, yy
+        else:
+            return yy, xx
+
+    def __call__(self, featmap_size, stride=16):
+        # featmap_size*stride project it to original area
+        base_anchors = self.base_anchors
+        feat_h = featmap_size[0]
+        feat_w = featmap_size[1]
+        feat_h = feat_h.numpy() if not isinstance(feat_h, np.ndarray) else feat_h
+        feat_w = feat_w.numpy() if not isinstance(feat_w, np.ndarray) else feat_w
+        stride = stride.numpy() if not isinstance(stride, np.ndarray) else stride
+        shift_x = np.arange(0, feat_w, 1, 'int32') * stride
+        shift_y = np.arange(0, feat_h, 1, 'int32') * stride
+        shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
+        shifts = np.stack([shift_xx, shift_yy, shift_xx, shift_yy], axis=-1)
+        # shifts = shifts.type_as(base_anchors)
+        # first feat_w elements correspond to the first row of shifts
+        # add A anchors (1, A, 4) to K shifts (K, 1, 4) to get
+        # shifted anchors (K, A, 4), reshape to (K*A, 4)
+
+        #all_anchors = base_anchors[:, :] + shifts[:, :]
+        all_anchors = base_anchors[None, :, :] + shifts[:, None, :]
+        all_anchors = all_anchors.reshape([-1, 4])
+        # first A rows correspond to A anchors of (0, 0) in feature map,
+        # then (0, 1), (0, 2), ...
+        return all_anchors
+
+    def valid_flags(self, featmap_size, valid_size):
+        feat_h, feat_w = featmap_size
+        valid_h, valid_w = valid_size
+        assert valid_h <= feat_h and valid_w <= feat_w
+        valid_x = np.zeros([feat_w], dtype='uint8')
+        valid_y = np.zeros([feat_h], dtype='uint8')
+        valid_x[:valid_w] = 1
+        valid_y[:valid_h] = 1
+        valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
+        valid = valid_xx & valid_yy
+        valid = valid.reshape([-1])
+
+        # valid = valid[:, None].expand(
+        #    [valid.size(0), self.num_base_anchors]).reshape([-1])
+        return valid
+
 class S2ANetAnchorGenerator(nn.Layer):
     """
     AnchorGenerator by paddle
@@ -228,7 +329,8 @@ class S2ANetHead(nn.Layer):
                  anchor_assign=RBoxAssigner().__dict__,
                  reg_loss_weight=[1.0, 1.0, 1.0, 1.0, 1.0],
                  cls_loss_weight=[1.0, 1.0],
-                 reg_loss_type='l1'):
+                 reg_loss_type='l1',
+                 use_paddle_anchor=False):
         super(S2ANetHead, self).__init__()
         self.stacked_convs = stacked_convs
         self.feat_in = feat_in
@@ -254,17 +356,25 @@ class S2ANetHead(nn.Layer):
         self.alpha = 1.0
         self.beta = 1.0
         self.reg_loss_type = reg_loss_type
+        self.use_paddle_anchor = use_paddle_anchor
 
         self.s2anet_head_out = None
 
         # anchor
         self.anchor_generators = []
         for anchor_base in self.anchor_base_sizes:
+            if not self.use_paddle_anchor:
+                self.anchor_generators.append(
+                    S2ANetAnchorGenerator_np(anchor_base, anchor_scales,
+                                          anchor_ratios))
+            else:
+                print('self.use_paddle_anchor', self.use_paddle_anchor)
                 self.anchor_generators.append(
                     S2ANetAnchorGenerator(anchor_base, anchor_scales,
-                                          anchor_ratios))
+                                             anchor_ratios))
 
-        self.anchor_generators = nn.LayerList(self.anchor_generators)
+        if self.use_paddle_anchor:
+            self.anchor_generators = nn.LayerList(self.anchor_generators)
         self.fam_cls_convs = nn.Sequential()
         self.fam_reg_convs = nn.Sequential()
 
@@ -523,7 +633,7 @@ class S2ANetHead(nn.Layer):
         return loss
 
     def get_fam_loss(self, fam_target, s2anet_head_out, reg_loss_type='gwd'):
-        (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
+        (labels, label_weights, bbox_targets, bbox_weights, bbox_gt_bboxes, pos_inds,
          neg_inds) = fam_target
         fam_cls_branch_list, fam_reg_branch_list, odm_cls_branch_list, odm_reg_branch_list = s2anet_head_out
 
@@ -543,7 +653,6 @@ class S2ANetHead(nn.Layer):
 
             feat_bbox_targets = bbox_targets[st_idx:st_idx + feat_anchor_num, :]
             feat_bbox_weights = bbox_weights[st_idx:st_idx + feat_anchor_num, :]
-            st_idx += feat_anchor_num
 
             # step2: calc cls loss
             feat_labels = feat_labels.reshape(-1)
@@ -590,18 +699,46 @@ class S2ANetHead(nn.Layer):
             fam_bbox_pred = paddle.reshape(fam_bbox_pred, [-1, 5])
             fam_bbox = self.smooth_l1_loss(fam_bbox_pred, feat_bbox_targets)
 
-            # iou_factor
+            fam_bbox = self.smooth_l1_loss(fam_bbox_pred, feat_bbox_targets)
+            loss_weight = paddle.to_tensor(
+                self.reg_loss_weight, dtype='float32', stop_gradient=True)
+            fam_bbox = paddle.multiply(fam_bbox, loss_weight)
+            feat_bbox_weights = paddle.to_tensor(
+                feat_bbox_weights, stop_gradient=True)
+
             if reg_loss_type == 'l1':
-                fam_bbox = self.smooth_l1_loss(fam_bbox_pred, feat_bbox_targets)
-                loss_weight = paddle.to_tensor(
-                    self.reg_loss_weight, dtype='float32', stop_gradient=True)
-                fam_bbox = paddle.multiply(fam_bbox, loss_weight)
-                feat_bbox_weights = paddle.to_tensor(
-                    feat_bbox_weights, stop_gradient=True)
                 fam_bbox = fam_bbox * feat_bbox_weights
                 fam_bbox_total = paddle.sum(fam_bbox) / num_total_samples
+            elif reg_loss_type == 'iou' or reg_loss_type == 'gwd':
+                fam_bbox = paddle.sum(fam_bbox, axis=-1)
+                feat_bbox_weights = paddle.sum(feat_bbox_weights, axis=-1)
+                try:
+                    from rbox_iou_ops import rbox_iou
+                except Exception as e:
+                    print("import custom_ops error, try install rbox_iou_ops " \
+                          "following ppdet/ext_op/README.md", e)
+                    sys.stdout.flush()
+                    sys.exit(-1)
+                # calc iou
+                fam_bbox_decode = self.delta2rbox(self.base_anchors_list[idx], fam_bbox_pred)
+                bbox_gt_bboxes = paddle.to_tensor(bbox_gt_bboxes, dtype=fam_bbox_decode.dtype, place=fam_bbox_decode.place)
+                bbox_gt_bboxes.stop_gradient = True
+                iou = rbox_iou(fam_bbox_decode, bbox_gt_bboxes)
+                iou = paddle.diag(iou)
+
+                if reg_loss_type == 'iou':
+                    EPS = paddle.to_tensor(1e-8, dtype='float32', stop_gradient=True)
+                    iou_factor = -1.0 * paddle.log(iou + EPS) / (fam_bbox + EPS)
+                    iou_factor.stop_gradient = True
+                    #fam_bbox = fam_bbox * iou_factor
+                elif reg_loss_type == 'gwd':
+                    bbox_gt_bboxes_level = bbox_gt_bboxes[st_idx:st_idx + feat_anchor_num, :]
+                    fam_bbox_total = self.gwd_loss(fam_bbox_decode, bbox_gt_bboxes_level)
+                    fam_bbox_total = fam_bbox_total * feat_bbox_weights
+                    fam_bbox_total = paddle.sum(fam_bbox_total)
 
             fam_bbox_losses.append(fam_bbox_total)
+            st_idx += feat_anchor_num
 
         fam_cls_loss = paddle.add_n(fam_cls_losses)
         fam_cls_loss_weight = paddle.to_tensor(
@@ -611,7 +748,7 @@ class S2ANetHead(nn.Layer):
         return fam_cls_loss, fam_reg_loss
 
     def get_odm_loss(self, odm_target, s2anet_head_out, reg_loss_type='gwd'):
-        (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
+        (labels, label_weights, bbox_targets, bbox_weights, bbox_gt_bboxes, pos_inds,
          neg_inds) = odm_target
         fam_cls_branch_list, fam_reg_branch_list, odm_cls_branch_list, odm_reg_branch_list = s2anet_head_out
 
@@ -631,7 +768,6 @@ class S2ANetHead(nn.Layer):
 
             feat_bbox_targets = bbox_targets[st_idx:st_idx + feat_anchor_num, :]
             feat_bbox_weights = bbox_weights[st_idx:st_idx + feat_anchor_num, :]
-            st_idx += feat_anchor_num
 
             # step2: calc cls loss
             feat_labels = feat_labels.reshape(-1)
@@ -676,19 +812,47 @@ class S2ANetHead(nn.Layer):
             odm_bbox_pred = paddle.squeeze(odm_bbox_pred, axis=0)
             odm_bbox_pred = paddle.reshape(odm_bbox_pred, [-1, 5])
             odm_bbox = self.smooth_l1_loss(odm_bbox_pred, feat_bbox_targets)
-            
-            # iou_factor odm not use_iou                             
+
+            loss_weight = paddle.to_tensor(                                                              
+                self.reg_loss_weight, dtype='float32', stop_gradient=True)                               
+            odm_bbox = paddle.multiply(odm_bbox, loss_weight)                                            
+            feat_bbox_weights = paddle.to_tensor(                                                        
+                feat_bbox_weights, stop_gradient=True)
+
             if reg_loss_type == 'l1':
-                odm_bbox = self.smooth_l1_loss(odm_bbox_pred, feat_bbox_targets)
-                loss_weight = paddle.to_tensor(
-                    self.reg_loss_weight, dtype='float32', stop_gradient=True)
-                odm_bbox = paddle.multiply(odm_bbox, loss_weight)
-                feat_bbox_weights = paddle.to_tensor(
-                    feat_bbox_weights, stop_gradient=True)
                 odm_bbox = odm_bbox * feat_bbox_weights
                 odm_bbox_total = paddle.sum(odm_bbox) / num_total_samples
-            
+            elif reg_loss_type == 'iou' or reg_loss_type == 'gwd':
+                odm_bbox = paddle.sum(odm_bbox, axis=-1)
+                feat_bbox_weights = paddle.sum(feat_bbox_weights, axis=-1)
+                try:
+                    from rbox_iou_ops import rbox_iou
+                except Exception as e:
+                    print("import custom_ops error, try install rbox_iou_ops " \
+                          "following ppdet/ext_op/README.md", e)
+                    sys.stdout.flush()
+                    sys.exit(-1)
+                # calc iou
+                odm_bbox_decode = self.delta2rbox(self.refine_anchor_list[idx], odm_bbox_pred)
+                bbox_gt_bboxes = paddle.to_tensor(bbox_gt_bboxes, dtype=odm_bbox_decode.dtype,
+                                                  place=odm_bbox_decode.place)
+                bbox_gt_bboxes.stop_gradient = True
+                iou = rbox_iou(odm_bbox_decode, bbox_gt_bboxes)
+                iou = paddle.diag(iou)
+
+                if reg_loss_type == 'iou':
+                    EPS = paddle.to_tensor(1e-8, dtype='float32', stop_gradient=True)
+                    iou_factor = -1.0 * paddle.log(iou + EPS) / (odm_bbox + EPS)
+                    iou_factor.stop_gradient = True
+                    # odm_bbox = odm_bbox * iou_factor
+                elif reg_loss_type == 'gwd':
+                    bbox_gt_bboxes_level = bbox_gt_bboxes[st_idx:st_idx + feat_anchor_num, :]
+                    odm_bbox_total = self.gwd_loss(odm_bbox_decode, bbox_gt_bboxes_level)
+                    odm_bbox_total = odm_bbox_total * feat_bbox_weights
+                    odm_bbox_total = paddle.sum(odm_bbox_total)
+
             odm_bbox_losses.append(odm_bbox_total)
+            st_idx += feat_anchor_num
 
         odm_cls_loss = paddle.add_n(odm_cls_losses)
         odm_cls_loss_weight = paddle.to_tensor(
@@ -886,3 +1050,99 @@ class S2ANetHead(nn.Layer):
         bbox_delta = paddle.reshape(bbox_preds, [-1, 5])
         bboxes = self.delta2rbox(anchors, bbox_delta)
         return bboxes
+
+    def trace(self, A):
+        tr = paddle.diagonal(A, axis1=-2, axis2=-1)
+        tr = paddle.sum(tr, axis=-1)
+        return tr
+
+    def sqrt_newton_schulz_autograd(self, A, numIters):
+        A_shape = A.shape
+        batchSize = A_shape[0]
+        dim = A_shape[1]
+
+        normA = A * A
+        normA = paddle.sum(normA, axis=1)
+        normA = paddle.sum(normA, axis=1)
+        normA = paddle.sqrt(normA)
+        normA1 = normA.reshape([batchSize, 1, 1])
+        Y = paddle.divide(A, paddle.expand_as(normA1, A))
+        I = paddle.eye(dim, dim).reshape([1, dim, dim])
+        l0 = []
+        for i in range(batchSize):
+            l0.append(I)
+        I = paddle.concat(l0, axis=0)
+        I.stop_gradient = False
+        Z = paddle.eye(dim, dim).reshape([1, dim, dim])
+        l1 = []
+        for i in range(batchSize):
+            l1.append(Z)
+        Z = paddle.concat(l1, axis=0)
+        Z.stop_gradient = False
+
+        for i in range(numIters):
+            T = 0.5 * (3.0 * I - Z.bmm(Y))
+            Y = Y.bmm(T)
+            Z = T.bmm(Z)
+        sA = Y * paddle.sqrt(normA1).reshape([batchSize, 1, 1])
+        sA = paddle.expand_as(sA, A)
+        return sA
+
+    def wasserstein_distance_sigma(sigma1, sigma2):
+        wasserstein_distance_item2 = paddle.matmul(sigma1, sigma1) + paddle.matmul(
+            sigma2, sigma2) - 2 * self.sqrt_newton_schulz_autograd(
+            paddle.matmul(
+                paddle.matmul(sigma1, paddle.matmul(sigma2, sigma2)), sigma1),
+            10)
+        wasserstein_distance_item2 = self.trace(wasserstein_distance_item2)
+
+        return wasserstein_distance_item2
+
+    def xywhr2xyrs(self, xywhr):
+        xywhr = paddle.reshape(xywhr, [-1, 5])
+        xy = xywhr[:, :2]
+        wh = paddle.clip(xywhr[:, 2:4], min=1e-7, max=1e7)
+        r = xywhr[:, 4]
+        cos_r = paddle.cos(r)
+        sin_r = paddle.sin(r)
+        R = paddle.stack((cos_r, -sin_r, sin_r, cos_r), axis=-1).reshape([-1, 2, 2])
+        S = 0.5 * paddle.nn.functional.diag_embed(wh)
+        return xy, R, S
+
+    def gwd_loss(self, pred, target, fun='log', tau=1.0, alpha=1.0, normalize=False):
+
+        xy_p, R_p, S_p = self.xywhr2xyrs(pred)
+        xy_t, R_t, S_t = self.xywhr2xyrs(target)
+
+        xy_distance = (xy_p - xy_t).square().sum(axis=-1)
+
+        Sigma_p = R_p.matmul(S_p.square()).matmul(R_p.transpose([0, 2, 1]))
+        Sigma_t = R_t.matmul(S_t.square()).matmul(R_t.transpose([0, 2, 1]))
+
+        whr_distance = paddle.diagonal(S_p, axis1=-2, axis2=-1).square().sum(axis=-1)
+
+        whr_distance = whr_distance + paddle.diagonal(S_t, axis1=-2, axis2=-1).square().sum(
+            axis=-1)
+        _t = Sigma_p.matmul(Sigma_t)
+
+        _t_tr = paddle.diagonal(_t, axis1=-2, axis2=-1).sum(axis=-1)
+        _t_det_sqrt = paddle.diagonal(S_p, axis1=-2, axis2=-1).prod(axis=-1)
+        _t_det_sqrt = _t_det_sqrt * paddle.diagonal(S_t, axis1=-2, axis2=-1).prod(axis=-1)
+        whr_distance = whr_distance + (-2) * (
+            (_t_tr + 2 * _t_det_sqrt).clip(0).sqrt())
+
+        distance = (xy_distance + alpha * alpha * whr_distance).clip(0)
+
+        if normalize:
+            wh_p = pred[..., 2:4].clip(min=1e-7, max=1e7)
+            wh_t = target[..., 2:4].clip(min=1e-7, max=1e7)
+            scale = ((wh_p.log() + wh_t.log()).sum(dim=-1) / 4).exp()
+            distance = distance / scale
+
+        if fun == 'log':
+            distance = paddle.log1p(distance)
+
+        if tau >= 1.0:
+            return 1 - 1 / (tau + distance)
+
+        return distance

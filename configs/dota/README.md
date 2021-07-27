@@ -129,9 +129,10 @@ python3.7 tools/infer.py -c configs/dota/s2anet_1x_dota.yml -o weights=./weights
 
 ### S2ANet模型
 
-|     模型     | GPU个数  |  Conv类型  |   mAP    |   模型下载   |   配置文件   |
-|:-----------:|:-------:|:----------:|:--------:| :----------:| :---------: |
-|   S2ANet    |    8    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_1x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_conv_1x_dota.yml)                   |
+|     模型     |  Conv类型  |   mAP    |   模型下载   |   配置文件   |
+|:-----------:|:----------:|:--------:| :----------:| :---------: |
+|   S2ANet    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_1x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_conv_1x_dota.yml)                   |
+|   S2ANet    |  AlignConv |   74.0   |  [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_alignconv_2x_dota.yml)                   |
 
 **注意：**这里使用`multiclass_nms`，与原作者使用nms略有不同，精度相比原始论文中高0.15 (71.27-->71.42)。
 
