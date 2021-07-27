@@ -42,7 +42,7 @@ TRT_MIN_SUBGRAPH = {
     'DeepSORT': 3,
     'JDE': 10,
     'FairMOT': 5,
-    'GFL': 3,
+    'GFL': 16,
     'PicoDet': 3,
 }
 

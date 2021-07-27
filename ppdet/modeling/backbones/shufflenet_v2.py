@@ -19,7 +19,7 @@ from __future__ import print_function
 import paddle
 import paddle.nn as nn
 from paddle import ParamAttr
-from paddle.nn import Conv2D, MaxPool2D, AdaptiveAvgPool2D, BatchNorm, Linear
+from paddle.nn import Conv2D, MaxPool2D, AdaptiveAvgPool2D, BatchNorm
 from paddle.nn.initializer import KaimingNormal
 
 from ppdet.core.workspace import register, serializable
@@ -46,16 +46,14 @@ def channel_shuffle(x, groups):
 
 
 class ConvBNLayer(nn.Layer):
-    def __init__(
-            self,
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride,
-            padding,
-            groups=1,
-            act=None,
-            name=None, ):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride,
+                 padding,
+                 groups=1,
+                 act=None):
         super(ConvBNLayer, self).__init__()
         self._conv = Conv2D(
             in_channels=in_channels,
@@ -64,17 +62,10 @@ class ConvBNLayer(nn.Layer):
             stride=stride,
             padding=padding,
             groups=groups,
-            weight_attr=ParamAttr(
-                initializer=KaimingNormal(), name=name + "_weights"),
+            weight_attr=ParamAttr(initializer=KaimingNormal()),
             bias_attr=False)
 
-        self._batch_norm = BatchNorm(
-            out_channels,
-            param_attr=ParamAttr(name=name + "_bn_scale"),
-            bias_attr=ParamAttr(name=name + "_bn_offset"),
-            act=act,
-            moving_mean_name=name + "_bn_mean",
-            moving_variance_name=name + "_bn_variance")
+        self._batch_norm = BatchNorm(out_channels, act=act)
 
     def forward(self, inputs):
         y = self._conv(inputs)
@@ -83,8 +74,7 @@ class ConvBNLayer(nn.Layer):
 
 
 class InvertedResidual(nn.Layer):
-    def __init__(self, in_channels, out_channels, stride, act="relu",
-                 name=None):
+    def __init__(self, in_channels, out_channels, stride, act="relu"):
         super(InvertedResidual, self).__init__()
         self._conv_pw = ConvBNLayer(
             in_channels=in_channels // 2,
@@ -93,8 +83,7 @@ class InvertedResidual(nn.Layer):
             stride=1,
             padding=0,
             groups=1,
-            act=act,
-            name='stage_' + name + '_conv1')
+            act=act)
         self._conv_dw = ConvBNLayer(
             in_channels=out_channels // 2,
             out_channels=out_channels // 2,
@@ -102,8 +91,7 @@ class InvertedResidual(nn.Layer):
             stride=stride,
             padding=1,
             groups=out_channels // 2,
-            act=None,
-            name='stage_' + name + '_conv2')
+            act=None)
         self._conv_linear = ConvBNLayer(
             in_channels=out_channels // 2,
             out_channels=out_channels // 2,
@@ -111,8 +99,7 @@ class InvertedResidual(nn.Layer):
             stride=1,
             padding=0,
             groups=1,
-            act=act,
-            name='stage_' + name + '_conv3')
+            act=act)
 
     def forward(self, inputs):
         x1, x2 = paddle.split(
@@ -127,8 +114,7 @@ class InvertedResidual(nn.Layer):
 
 
 class InvertedResidualDS(nn.Layer):
-    def __init__(self, in_channels, out_channels, stride, act="relu",
-                 name=None):
+    def __init__(self, in_channels, out_channels, stride, act="relu"):
         super(InvertedResidualDS, self).__init__()
 
         # branch1
@@ -139,8 +125,7 @@ class InvertedResidualDS(nn.Layer):
             stride=stride,
             padding=1,
             groups=in_channels,
-            act=None,
-            name='stage_' + name + '_conv4')
+            act=None)
         self._conv_linear_1 = ConvBNLayer(
             in_channels=in_channels,
             out_channels=out_channels // 2,
@@ -148,8 +133,7 @@ class InvertedResidualDS(nn.Layer):
             stride=1,
             padding=0,
             groups=1,
-            act=act,
-            name='stage_' + name + '_conv5')
+            act=act)
         # branch2
         self._conv_pw_2 = ConvBNLayer(
             in_channels=in_channels,
@@ -158,8 +142,7 @@ class InvertedResidualDS(nn.Layer):
             stride=1,
             padding=0,
             groups=1,
-            act=act,
-            name='stage_' + name + '_conv1')
+            act=act)
         self._conv_dw_2 = ConvBNLayer(
             in_channels=out_channels // 2,
             out_channels=out_channels // 2,
@@ -167,8 +150,7 @@ class InvertedResidualDS(nn.Layer):
             stride=stride,
             padding=1,
             groups=out_channels // 2,
-            act=None,
-            name='stage_' + name + '_conv2')
+            act=None)
         self._conv_linear_2 = ConvBNLayer(
             in_channels=out_channels // 2,
             out_channels=out_channels // 2,
@@ -176,8 +158,7 @@ class InvertedResidualDS(nn.Layer):
             stride=1,
             padding=0,
             groups=1,
-            act=act,
-            name='stage_' + name + '_conv3')
+            act=act)
 
     def forward(self, inputs):
         x1 = self._conv_dw_1(inputs)
@@ -231,8 +212,7 @@ class ShuffleNetV2(nn.Layer):
             kernel_size=3,
             stride=2,
             padding=1,
-            act=act,
-            name='stage1_conv')
+            act=act)
         self._max_pool = MaxPool2D(kernel_size=3, stride=2, padding=1)
         self._feature_idx += 1
 
@@ -247,8 +227,7 @@ class ShuffleNetV2(nn.Layer):
                             in_channels=stage_out_channels[stage_id + 1],
                             out_channels=stage_out_channels[stage_id + 2],
                             stride=2,
-                            act=act,
-                            name=str(stage_id + 2) + '_' + str(i + 1)))
+                            act=act))
                 else:
                     block = self.add_sublayer(
                         name=str(stage_id + 2) + '_' + str(i + 1),
@@ -256,8 +235,7 @@ class ShuffleNetV2(nn.Layer):
                             in_channels=stage_out_channels[stage_id + 2],
                             out_channels=stage_out_channels[stage_id + 2],
                             stride=1,
-                            act=act,
-                            name=str(stage_id + 2) + '_' + str(i + 1)))
+                            act=act))
                 self._block_list.append(block)
                 self._feature_idx += 1
                 self._update_out_channels(stage_out_channels[stage_id + 2],
@@ -271,8 +249,7 @@ class ShuffleNetV2(nn.Layer):
                 kernel_size=1,
                 stride=1,
                 padding=0,
-                act=act,
-                name='conv5')
+                act=act)
             self._feature_idx += 1
             self._update_out_channels(stage_out_channels[-1], self._feature_idx,
                                       self.feature_maps)

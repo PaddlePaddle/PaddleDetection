@@ -27,7 +27,6 @@ import numpy as np
 from .operators import register_op, BaseOperator, Resize
 from .op_helper import jaccard_overlap, gaussian2D
 from .atss_assigner import ATSSAssigner
-from .max_iou_assigner import MaxIoUAssigner
 from scipy import ndimage
 
 from ppdet.modeling import bbox_utils
