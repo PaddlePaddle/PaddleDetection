@@ -97,7 +97,10 @@ DATASETS = {
         'https://paddledet.bj.bcebos.com/data/spine_coco.tar',
         '7ed69ae73f842cd2a8cf4f58dc3c5535', ), ], ['annotations', 'images']),
     'mot': (),
-    'objects365': ()
+    'objects365': (),
+    'coco_ce': ([(
+        'https://paddledet.bj.bcebos.com/data/coco_ce.tar',
+        'eadd1b79bc2f069f2744b1dd4e0c0329', ), ], [])
 }
 
 DOWNLOAD_RETRY_LIMIT = 3
