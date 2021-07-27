@@ -1,0 +1,40 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/picodet_mbv3_0_5x.yml',
+  '_base_/optimizer_280e.yml',
+  '_base_/picodet_320_reader.yml',
+]
+
+weights: output/picodet_m_mbv3_320_coco/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV3_large_x1_0_ssld_pretrained.pdparams
+find_unused_parameters: True
+use_ema: true
+ema_decay: 0.9998
+snapshot_epoch: 10
+
+MobileNetV3:
+  model_name: large
+  scale: 1.0
+  with_extra_blocks: false
+  extra_block_filters: []
+  feature_maps: [7, 13, 16]
+
+PAN:
+  out_channel: 128
+  start_level: 0
+  end_level: 3
+  spatial_scales: [0.125, 0.0625, 0.03125]
+
+PicoHead:
+  conv_feat:
+    name: PicoFeat
+    feat_in: 128
+    feat_out: 128
+    num_convs: 2
+    norm_type: bn
+    share_cls_reg: True
+  feat_in_chan: 128
+
+TrainReader:
+  batch_size: 88

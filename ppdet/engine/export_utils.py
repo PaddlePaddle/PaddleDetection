@@ -42,6 +42,8 @@ TRT_MIN_SUBGRAPH = {
     'DeepSORT': 3,
     'JDE': 10,
     'FairMOT': 5,
+    'GFL': 16,
+    'PicoDet': 3,
 }
 
 KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
@@ -116,8 +118,9 @@ def _dump_infer_config(config, path, image_shape, model):
             break
     if not arch_state:
         logger.error(
-            'Architecture: {} is not supported for exporting model now'.format(
-                infer_arch))
+            'Architecture: {} is not supported for exporting model now.\n'.
+            format(infer_arch) +
+            'Please set TRT_MIN_SUBGRAPH in ppdet/engine/export_utils.py')
         os._exit(0)
     if 'Mask' in infer_arch:
         infer_cfg['mask'] = True

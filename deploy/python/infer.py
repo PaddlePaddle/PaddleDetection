@@ -42,6 +42,8 @@ SUPPORT_MODELS = {
     'JDE',
     'FairMOT',
     'DeepSORT',
+    'GFL',
+    'PicoDet',
 }
 
 
