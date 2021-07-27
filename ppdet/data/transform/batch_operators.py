@@ -22,9 +22,11 @@ except Exception:
     from collections import Sequence
 
 import cv2
+import math
 import numpy as np
 from .operators import register_op, BaseOperator, Resize
 from .op_helper import jaccard_overlap, gaussian2D
+from .atss_assigner import ATSSAssigner
 from scipy import ndimage
 
 from ppdet.modeling import bbox_utils
@@ -33,7 +35,8 @@ logger = setup_logger(__name__)
 
 __all__ = [
     'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
-    'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseRCNNTarget', 'PadMaskBatch'
+    'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseRCNNTarget', 'PadMaskBatch',
+    'Gt2GFLTarget'
 ]
 
 
@@ -177,8 +180,6 @@ class Gt2YoloTarget(BaseOperator):
         h, w = samples[0]['image'].shape[1:3]
         an_hw = np.array(self.anchors) / np.array([[w, h]])
         for sample in samples:
-            # im, gt_bbox, gt_class, gt_score = sample
-            im = sample['image']
             gt_bbox = sample['gt_bbox']
             gt_class = sample['gt_class']
             if 'gt_score' not in sample:
@@ -367,7 +368,6 @@ class Gt2FCOSTarget(BaseOperator):
             "object_sizes_of_interest', and 'downsample_ratios' should have same length."
 
         for sample in samples:
-            # im, gt_bbox, gt_class, gt_score = sample
             im = sample['image']
             bboxes = sample['gt_bbox']
             gt_class = sample['gt_class']
@@ -463,6 +463,134 @@ class Gt2FCOSTarget(BaseOperator):
             sample.pop('difficult', None)
             sample.pop('gt_class', None)
             sample.pop('gt_bbox', None)
+        return samples
+
+
+@register_op
+class Gt2GFLTarget(BaseOperator):
+    """
+    Generate GFocal loss targets by groud truth data
+    """
+
+    def __init__(self,
+                 num_classes=80,
+                 downsample_ratios=[8, 16, 32, 64, 128],
+                 grid_cell_scale=4,
+                 cell_offset=0):
+        super(Gt2GFLTarget, self).__init__()
+        self.num_classes = num_classes
+        self.downsample_ratios = downsample_ratios
+        self.grid_cell_scale = grid_cell_scale
+        self.cell_offset = cell_offset
+
+        self.assigner = ATSSAssigner()
+
+    def get_grid_cells(self, featmap_size, scale, stride, offset=0):
+        """
+        Generate grid cells of a feature map for target assignment.
+        Args:
+            featmap_size: Size of a single level feature map.
+            scale: Grid cell scale.
+            stride: Down sample stride of the feature map.
+            offset: Offset of grid cells.
+        return:
+            Grid_cells xyxy position. Size should be [feat_w * feat_h, 4]
+        """
+        cell_size = stride * scale
+        h, w = featmap_size
+        x_range = (np.arange(w, dtype=np.float32) + offset) * stride
+        y_range = (np.arange(h, dtype=np.float32) + offset) * stride
+        x, y = np.meshgrid(x_range, y_range)
+        y = y.flatten()
+        x = x.flatten()
+        grid_cells = np.stack(
+            [
+                x - 0.5 * cell_size, y - 0.5 * cell_size, x + 0.5 * cell_size,
+                y + 0.5 * cell_size
+            ],
+            axis=-1)
+        return grid_cells
+
+    def get_sample(self, assign_gt_inds, gt_bboxes):
+        pos_inds = np.unique(np.nonzero(assign_gt_inds > 0)[0])
+        neg_inds = np.unique(np.nonzero(assign_gt_inds == 0)[0])
+        pos_assigned_gt_inds = assign_gt_inds[pos_inds] - 1
+
+        if gt_bboxes.size == 0:
+            # hack for index error case
+            assert pos_assigned_gt_inds.size == 0
+            pos_gt_bboxes = np.empty_like(gt_bboxes).reshape(-1, 4)
+        else:
+            if len(gt_bboxes.shape) < 2:
+                gt_bboxes = gt_bboxes.resize(-1, 4)
+            pos_gt_bboxes = gt_bboxes[pos_assigned_gt_inds, :]
+        return pos_inds, neg_inds, pos_gt_bboxes, pos_assigned_gt_inds
+
+    def __call__(self, samples, context=None):
+        assert len(samples) > 0
+        batch_size = len(samples)
+        # get grid cells of image
+        h, w = samples[0]['image'].shape[1:3]
+        multi_level_grid_cells = []
+        for stride in self.downsample_ratios:
+            featmap_size = (int(math.ceil(h / stride)),
+                            int(math.ceil(w / stride)))
+            multi_level_grid_cells.append(
+                self.get_grid_cells(featmap_size, self.grid_cell_scale, stride,
+                                    self.cell_offset))
+        mlvl_grid_cells_list = [
+            multi_level_grid_cells for i in range(batch_size)
+        ]
+        # pixel cell number of multi-level feature maps
+        num_level_cells = [
+            grid_cells.shape[0] for grid_cells in mlvl_grid_cells_list[0]
+        ]
+        num_level_cells_list = [num_level_cells] * batch_size
+        # concat all level cells and to a single array
+        for i in range(batch_size):
+            mlvl_grid_cells_list[i] = np.concatenate(mlvl_grid_cells_list[i])
+        # target assign on all images
+        for sample, grid_cells, num_level_cells in zip(
+                samples, mlvl_grid_cells_list, num_level_cells_list):
+            gt_bboxes = sample['gt_bbox']
+            gt_labels = sample['gt_class'].squeeze()
+            if gt_labels.size == 1:
+                gt_labels = np.array([gt_labels]).astype(np.int32)
+            gt_bboxes_ignore = None
+            assign_gt_inds, _ = self.assigner(grid_cells, num_level_cells,
+                                              gt_bboxes, gt_bboxes_ignore,
+                                              gt_labels)
+            pos_inds, neg_inds, pos_gt_bboxes, pos_assigned_gt_inds = self.get_sample(
+                assign_gt_inds, gt_bboxes)
+
+            num_cells = grid_cells.shape[0]
+            bbox_targets = np.zeros_like(grid_cells)
+            bbox_weights = np.zeros_like(grid_cells)
+            labels = np.ones([num_cells], dtype=np.int64) * self.num_classes
+            label_weights = np.zeros([num_cells], dtype=np.float32)
+
+            if len(pos_inds) > 0:
+                pos_bbox_targets = pos_gt_bboxes
+                bbox_targets[pos_inds, :] = pos_bbox_targets
+                bbox_weights[pos_inds, :] = 1.0
+                if not np.any(gt_labels):
+                    labels[pos_inds] = 0
+                else:
+                    labels[pos_inds] = gt_labels[pos_assigned_gt_inds]
+
+                label_weights[pos_inds] = 1.0
+            if len(neg_inds) > 0:
+                label_weights[neg_inds] = 1.0
+            sample['grid_cells'] = grid_cells
+            sample['labels'] = labels
+            sample['label_weights'] = label_weights
+            sample['bbox_targets'] = bbox_targets
+            sample['pos_num'] = max(pos_inds.size, 1)
+            sample.pop('is_crowd', None)
+            sample.pop('difficult', None)
+            sample.pop('gt_class', None)
+            sample.pop('gt_bbox', None)
+            sample.pop('gt_score', None)
         return samples
 
 

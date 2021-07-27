@@ -1,0 +1,38 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/picodet_shufflenetv2_1x.yml',
+  '_base_/optimizer_280e.yml',
+  '_base_/picodet_416_reader.yml',
+]
+
+weights: output/picodet_s_shufflenetv2_320_coco/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ShuffleNetV2_x1_5_pretrained.pdparams
+find_unused_parameters: True
+use_ema: true
+ema_decay: 0.9998
+snapshot_epoch: 10
+
+ShuffleNetV2:
+  scale: 1.5
+  feature_maps: [5, 13, 17]
+  act: leaky_relu
+
+PAN:
+  out_channel: 128
+  start_level: 0
+  end_level: 3
+  spatial_scales: [0.125, 0.0625, 0.03125]
+
+PicoHead:
+  conv_feat:
+    name: PicoFeat
+    feat_in: 128
+    feat_out: 128
+    num_convs: 2
+    norm_type: bn
+    share_cls_reg: True
+  feat_in_chan: 128
+
+TrainReader:
+  batch_size: 88

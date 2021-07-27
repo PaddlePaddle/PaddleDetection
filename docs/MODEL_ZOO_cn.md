@@ -79,6 +79,14 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 请参考[Res2Net](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/res2net/)
 
+### GFL
+
+请参考[GFL](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl)
+
+### PicoDet
+
+请参考[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet)
+
 
 ## 旋转框检测
 
