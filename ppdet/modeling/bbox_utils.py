@@ -100,7 +100,7 @@ def clip_bbox(boxes, im_shape):
 def nonempty_bbox(boxes, min_size=0, return_mask=False):
     w = boxes[:, 2] - boxes[:, 0]
     h = boxes[:, 3] - boxes[:, 1]
-    mask = paddle.logical_and(w > min_size, w > min_size)
+    mask = paddle.logical_and(h > min_size, w > min_size)
     if return_mask:
         return mask
     keep = paddle.nonzero(mask).flatten()
