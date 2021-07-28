@@ -33,8 +33,12 @@ im = preprocess(sys.argv[1])
 fetch_map = client.predict(
     feed={
         "image": im,
-        "im_size": np.array(list(im.shape[1:])),
+        "im_shape": np.array(list(im.shape[1:])).reshape(-1),
+        "scale_factor": np.array([1.0, 1.0]).reshape(-1),
     },
-    fetch=["multiclass_nms_0.tmp_0"])
+    fetch=["save_infer_model/scale_0.tmp_1"],
+    batch=False)
+print(fetch_map)
 fetch_map["image"] = sys.argv[1]
 postprocess(fetch_map)
+
