@@ -7,6 +7,13 @@ _BASE_: [
 ]
 weights: output/s2anet_1x_dota/model_final
 
+ResNet:
+  depth: 50
+  variant: b
+  norm_type: bn
+  return_idx: [1,2,3]
+  num_stages: 4
+
 S2ANetHead:
   anchor_strides: [8, 16, 32, 64, 128]
   anchor_scales: [4]
