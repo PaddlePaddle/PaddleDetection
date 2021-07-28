@@ -42,6 +42,8 @@ TRT_MIN_SUBGRAPH = {
     'DeepSORT': 3,
     'JDE': 10,
     'FairMOT': 5,
+    'GFL': 16,
+    'PicoDet': 3,
 }
 
 KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
@@ -58,9 +60,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     label_list = [str(cat) for cat in catid2name.values()]
 
     sample_transforms = reader_cfg['sample_transforms']
-    if arch != 'mot_arch':
-        sample_transforms = sample_transforms[1:]
-    for st in sample_transforms:
+    for st in sample_transforms[1:]:
         for key, value in st.items():
             p = {'type': key}
             if key == 'Resize':
@@ -83,6 +83,13 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     return preprocess_list, label_list
 
 
+def _parse_tracker(tracker_cfg):
+    tracker_params = {}
+    for k, v in tracker_cfg.items():
+        tracker_params.update({k: v})
+    return tracker_params
+
+
 def _dump_infer_config(config, path, image_shape, model):
     arch_state = False
     from ppdet.core.config.yaml_helpers import setup_orderdict
@@ -96,6 +103,13 @@ def _dump_infer_config(config, path, image_shape, model):
     })
     infer_arch = config['architecture']
 
+    if infer_arch in MOT_ARCH:
+        if infer_arch == 'DeepSORT':
+            tracker_cfg = config['DeepSORTTracker']
+        else:
+            tracker_cfg = config['JDETracker']
+        infer_cfg['tracker'] = _parse_tracker(tracker_cfg)
+
     for arch, min_subgraph_size in TRT_MIN_SUBGRAPH.items():
         if arch in infer_arch:
             infer_cfg['arch'] = arch
@@ -104,8 +118,9 @@ def _dump_infer_config(config, path, image_shape, model):
             break
     if not arch_state:
         logger.error(
-            'Architecture: {} is not supported for exporting model now'.format(
-                infer_arch))
+            'Architecture: {} is not supported for exporting model now.\n'.
+            format(infer_arch) +
+            'Please set TRT_MIN_SUBGRAPH in ppdet/engine/export_utils.py')
         os._exit(0)
     if 'Mask' in infer_arch:
         infer_cfg['mask'] = True

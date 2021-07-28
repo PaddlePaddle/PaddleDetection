@@ -41,9 +41,11 @@ python deploy/python/infer.py --model_dir=./inference/yolov3_mobilenet_v1_roadsi
 | --run_benchmark | Option| 是否运行benchmark，同时需指定`--image_file`或`--image_dir`，默认为False |
 | --enable_mkldnn | Option | CPU预测中是否开启MKLDNN加速，默认为False |
 | --cpu_threads | Option| 设置cpu线程数，默认为1 |
+| --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
 
 说明：
 
 - 参数优先级顺序：`camera_id` > `video_file` > `image_dir` > `image_file`。
 - run_mode：fluid代表使用AnalysisPredictor，精度float32来推理，其他参数指用AnalysisPredictor，TensorRT不同精度来推理。
 - 如果安装的PaddlePaddle不支持基于TensorRT进行预测，需要自行编译，详细可参考[预测库编译教程](https://paddleinference.paddlepaddle.org.cn/user_guides/source_compile.html)。
+- --run_benchmark如果设置为True，则需要安装依赖`pip install pynvml psutil GPUtil`。

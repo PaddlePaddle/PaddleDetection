@@ -50,9 +50,7 @@ def _no_grad_normal_(tensor, mean=0., std=1.):
 
 def _no_grad_fill_(tensor, value=0.):
     with paddle.no_grad():
-        v = paddle.rand(shape=tensor.shape, dtype=tensor.dtype)
-        v[...] = value
-        tensor.set_value(v)
+        tensor.set_value(paddle.full_like(tensor, value, dtype=tensor.dtype))
     return tensor
 
 
@@ -269,7 +267,7 @@ def linear_init_(module):
 
 
 def conv_init_(module):
-    bound = 1 / math.sqrt(math.prod(module.weight.shape[1:]))
+    bound = 1 / np.sqrt(np.prod(module.weight.shape[1:]))
     uniform_(module.weight, -bound, bound)
     uniform_(module.bias, -bound, bound)
 

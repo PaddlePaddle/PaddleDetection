@@ -6,6 +6,7 @@
 - [简介](#简介)
 - [安装依赖](#安装依赖)
 - [模型库](#模型库)
+- [特色垂类跟踪模型](#特色垂类跟踪模型)
 - [数据集准备](#数据集准备)
 - [快速开始](#快速开始)
 - [引用](#引用)
@@ -131,6 +132,28 @@ wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
  FairMOT使用8个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
 
 
+## 特色垂类跟踪模型
+
+### 【人头跟踪（Head Tracking)](./headtracking21/README.md)
+
+### FairMOT在HT-21 Training Set上结果
+|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
+| :--------------| :------- | :----: | :----: | :---: | :----: | :---: | :------: | :----: |:----: |
+| DLA-34         | 1088x608 |  67.2 |  70.4  |   9403  |  124840  |  255007  |     -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
+
+### FairMOT在HT-21 Test Set上结果
+|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: | :----: |
+| DLA-34         | 1088x608 |  58.2  |  61.3  |  13166   |  141872  |  197074 |    -     | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
+
+### [车辆跟踪 (Vehicle Tracking)](./kitticars/README.md)
+### FairMOT在KITTI tracking (2D bounding-boxes) Training Set上Car类别的结果
+
+|    骨干网络      |  输入尺寸 |  MOTA   |   FPS   |  下载链接 | 配置文件 |
+| :--------------| :------- | :-----: | :-----: | :------: | :----: |
+| DLA-34         | 1088x608 |   67.9  |    -    |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitticars.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/kitticars/fairmot_dla34_30e_1088x608_kitticars.yml) |
+
+
 ## 数据集准备
 
 ### MOT数据集
@@ -222,11 +245,10 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_d
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=output/fairmot_dla34_30e_1088x608/model_final.pdparams
 ```
 **注意:**
- 默认评估的是MOT-16 Train Set数据集, 如需换评估数据集可参照以下代码修改`configs/datasets/mot.yml`：
+ 默认评估的是MOT-16 Train Set数据集，如需换评估数据集可参照以下代码修改`configs/datasets/mot.yml`，修改`data_root`：
 ```
 EvalMOTDataset:
   !MOTImageFolder
-    task: MOT17_train
     dataset_dir: dataset/mot
     data_root: MOT17/images/train
     keep_ori_im: False # set True if save visualization images or video
@@ -239,6 +261,13 @@ EvalMOTDataset:
 ```bash
 # 预测一个视频
 CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams --video_file={your video name}.mp4  --save_videos
+```
+
+使用单个GPU通过如下命令预测一个图片文件夹，并保存为视频
+
+```bash
+# 预测一个图片文件夹
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams --image_dir={your infer images folder} --save_videos
 ```
 
 **注意:**
