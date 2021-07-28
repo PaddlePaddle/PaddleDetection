@@ -151,12 +151,9 @@ class FCOSHead(nn.Layer):
                 kernel_size=3,
                 stride=1,
                 padding=1,
-                weight_attr=ParamAttr(
-                    name=conv_cls_name + "_weights",
-                    initializer=Normal(
-                        mean=0., std=0.01)),
+                weight_attr=ParamAttr(initializer=Normal(
+                    mean=0., std=0.01)),
                 bias_attr=ParamAttr(
-                    name=conv_cls_name + "_bias",
                     initializer=Constant(value=bias_init_value))))
 
         conv_reg_name = "fcos_head_reg"
@@ -168,13 +165,9 @@ class FCOSHead(nn.Layer):
                 kernel_size=3,
                 stride=1,
                 padding=1,
-                weight_attr=ParamAttr(
-                    name=conv_reg_name + "_weights",
-                    initializer=Normal(
-                        mean=0., std=0.01)),
-                bias_attr=ParamAttr(
-                    name=conv_reg_name + "_bias",
-                    initializer=Constant(value=0))))
+                weight_attr=ParamAttr(initializer=Normal(
+                    mean=0., std=0.01)),
+                bias_attr=ParamAttr(initializer=Constant(value=0))))
 
         conv_centerness_name = "fcos_head_centerness"
         self.fcos_head_centerness = self.add_sublayer(
@@ -185,13 +178,9 @@ class FCOSHead(nn.Layer):
                 kernel_size=3,
                 stride=1,
                 padding=1,
-                weight_attr=ParamAttr(
-                    name=conv_centerness_name + "_weights",
-                    initializer=Normal(
-                        mean=0., std=0.01)),
-                bias_attr=ParamAttr(
-                    name=conv_centerness_name + "_bias",
-                    initializer=Constant(value=0))))
+                weight_attr=ParamAttr(initializer=Normal(
+                    mean=0., std=0.01)),
+                bias_attr=ParamAttr(initializer=Constant(value=0))))
 
         self.scales_regs = []
         for i in range(len(self.fpn_stride)):

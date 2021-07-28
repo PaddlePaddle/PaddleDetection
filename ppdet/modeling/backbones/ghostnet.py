@@ -100,21 +100,15 @@ class SEBlock(nn.Layer):
             num_channels,
             med_ch,
             weight_attr=ParamAttr(
-                learning_rate=lr_mult,
-                initializer=Uniform(-stdv, stdv),
-                name=name + "_1_weights"),
-            bias_attr=ParamAttr(
-                learning_rate=lr_mult, name=name + "_1_offset"))
+                learning_rate=lr_mult, initializer=Uniform(-stdv, stdv)),
+            bias_attr=ParamAttr(learning_rate=lr_mult))
         stdv = 1.0 / math.sqrt(med_ch * 1.0)
         self.excitation = Linear(
             med_ch,
             num_channels,
             weight_attr=ParamAttr(
-                learning_rate=lr_mult,
-                initializer=Uniform(-stdv, stdv),
-                name=name + "_2_weights"),
-            bias_attr=ParamAttr(
-                learning_rate=lr_mult, name=name + "_2_offset"))
+                learning_rate=lr_mult, initializer=Uniform(-stdv, stdv)),
+            bias_attr=ParamAttr(learning_rate=lr_mult))
 
     def forward(self, inputs):
         pool = self.pool2d_gap(inputs)
