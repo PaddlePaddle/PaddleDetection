@@ -23,4 +23,4 @@ S2ANetHead:
   use_sigmoid_cls: True
   reg_loss_weight: [1.0, 1.0, 1.0, 1.0, 1.05]
   cls_loss_weight: [1.05, 1.0]
-  #reg_loss_type: 'l1' # 'l1' 'gwd'
+  reg_loss_type: 'l1'

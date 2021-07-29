@@ -69,7 +69,7 @@ class S2ANetAnchorGenerator(nn.Layer):
         return base_anchors
 
     def _meshgrid(self, x, y, row_major=True):
-        yy, xx = paddle.meshgrid(x, y)
+        yy, xx = paddle.meshgrid(y, x)
         yy = yy.reshape([-1])
         xx = xx.reshape([-1])
         if row_major:
@@ -846,7 +846,7 @@ class S2ANetHead(nn.Layer):
             bbox_pred = paddle.reshape(bbox_pred, [-1, 5])
             anchors = paddle.reshape(anchors, [-1, 5])
 
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
+            if scores.shape[0] > nms_pre:
                 # Get maximum scores for foreground classes.
                 if use_sigmoid_cls:
                     max_scores = paddle.max(scores, axis=1)
