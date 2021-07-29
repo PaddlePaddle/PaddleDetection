@@ -137,7 +137,8 @@ def mot_keypoint_unite_predict_video(mot_model,
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
-    writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+    if not FLAGS.save_images:
+        writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     frame_id = 0
     timer_mot = FPSTimer()
     timer_kp = FPSTimer()
@@ -202,8 +203,8 @@ def mot_keypoint_unite_predict_video(mot_model,
                 os.makedirs(save_dir)
             cv2.imwrite(
                 os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
-
-        writer.write(im)
+        else:
+            writer.write(im)
         if camera_id != -1:
             cv2.imshow('Tracking and keypoint results', im)
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -212,7 +213,15 @@ def mot_keypoint_unite_predict_video(mot_model,
         result_filename = os.path.join(FLAGS.output_dir,
                                        video_name.split('.')[-2] + '.txt')
         write_mot_results(result_filename, mot_results)
-    writer.release()
+
+    if FLAGS.save_images:
+        save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
+        cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" {}'.format(
+            save_dir, out_path)
+        os.system(cmd_str)
+        print('Save video in {}.'.format(out_path))
+    else:
+        writer.release()
 
 
 def main():
