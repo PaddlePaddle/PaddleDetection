@@ -49,11 +49,6 @@ def parse_args():
         default=None,
         help="Directory for images to perform inference on.")
     parser.add_argument(
-        "--data_type",
-        type=str,
-        default='mot',
-        help='Data type of tracking dataset, should be in ["mot", "kitti"]')
-    parser.add_argument(
         "--det_results_dir",
         type=str,
         default='',
@@ -101,7 +96,7 @@ def run(FLAGS, cfg):
     tracker.mot_predict(
         video_file=FLAGS.video_file,
         image_dir=FLAGS.image_dir,
-        data_type=FLAGS.data_type,
+        data_type=cfg.metric.lower(),
         model_type=cfg.architecture,
         output_dir=FLAGS.output_dir,
         save_images=FLAGS.save_images,
