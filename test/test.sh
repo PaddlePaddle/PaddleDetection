@@ -170,9 +170,10 @@ function func_inference(){
                         set_cpu_threads=$(func_set_params "${cpu_threads_key}" "${threads}")
                         set_model_dir=$(func_set_params "${infer_model_key}" "${_model_dir}")
                         set_infer_params1=$(func_set_params "${infer_key1}" "${infer_value1}")
-                        command="${_python} ${_script} ${use_gpu_key}=${use_gpu} ${use_mkldnn_key}=${use_mkldnn} ${set_cpu_threads} ${set_model_dir} ${set_batchsize} ${set_infer_data} ${set_benchmark} ${set_infer_params1} 2>&1 | tee ${_save_log_path} "
+                        #command="${_python} ${_script} ${use_gpu_key}=${use_gpu} ${use_mkldnn_key}=${use_mkldnn} ${set_cpu_threads} ${set_model_dir} ${set_batchsize} ${set_infer_data} ${set_benchmark} ${set_infer_params1} 2>&1 | tee ${_save_log_path} "
+                        command="${_python} ${_script} ${use_gpu_key}=${use_gpu} ${use_mkldnn_key}=${use_mkldnn} ${set_cpu_threads} ${set_model_dir} ${set_batchsize} ${set_infer_data} ${set_benchmark} ${set_infer_params1} > ${_save_log_path} "
                         echo $command
-                        #eval $command
+                        eval $command
                         #status_check $? "${command}" "${status_log}"
                     done
                 done
@@ -294,6 +295,7 @@ else
                 fi
                 # run train
                 eval "unset CUDA_VISIBLE_DEVICES"
+                echo $cmd
                 eval $cmd
                 status_check $? "${cmd}" "${status_log}"
 
@@ -314,13 +316,17 @@ else
                     # run export model
                     save_infer_path="${save_log}"
                     export_cmd="${python} ${run_export} ${export_weight}=${save_log}/${train_model_name} ${save_infer_key}=${save_infer_path}"
+                    echo $export_cmd
+                    sleep 2
                     eval $export_cmd
                     status_check $? "${export_cmd}" "${status_log}"
 
                     #run inference
                     eval $env
                     save_infer_path="${save_log}"
-                    func_inference "${python}" "${inference_py}" "${save_infer_path}" "${LOG_PATH}" "${train_infer_img_dir}" "${flag_quant}"
+                    echo "start infer"
+                    #sleep 1000
+                    func_inference "${python}" "${inference_py}" "${infer_model}" "${LOG_PATH}" "${train_infer_img_dir}" "${flag_quant}"
                     eval "unset CUDA_VISIBLE_DEVICES"
                 fi
             done  # done with:    for trainer in ${trainer_list[*]}; do
