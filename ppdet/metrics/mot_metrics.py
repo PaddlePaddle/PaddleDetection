@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
 # See the License for the specific language governing permissions and   
 # limitations under the License.
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -309,6 +310,11 @@ class JDEDetMetric(Metric):
         return self.map_stat
 
 
+"""
+Following code is borrow from https://github.com/xingyizhou/CenterTrack/blob/master/src/tools/eval_kitti_track/evaluate_tracking.py
+"""
+
+
 class tData:
     """
         Utility class to load data.
@@ -363,8 +369,8 @@ class KITTIEvaluation(object):
              falsepositives - number of false positives (FP)
              missed         - number of missed targets (FN)
     """
-    def __init__(self, t_sha, gt_path="./tools/eval_kitti_track/data/tracking",\
-                min_overlap=0.5, max_truncation = 0, min_height = 25, max_occlusion = 2, cls="car",\
+    def __init__(self, result_path, gt_path, min_overlap=0.5, max_truncation = 0,\
+                min_height = 25, max_occlusion = 2, cls="car",\
                 n_frames=[], seqs=[], n_sequences=0):
         # get number of sequences and
         # get number of frames per sequence from test mapping
@@ -376,8 +382,7 @@ class KITTIEvaluation(object):
 
         self.cls = cls  # class to evaluate, i.e. pedestrian or car
 
-        self.t_sha = t_sha
-        self.t_path = os.path.join(t_sha)
+        self.result_path = result_path
 
         # statistics and numbers for evaluation
         self.n_gt = 0  # number of ground truth detections minus ignored false negatives and true positives
@@ -441,9 +446,6 @@ class KITTIEvaluation(object):
         self.ign_trajectories = [[] for x in range(self.n_sequences)]
 
     def loadGroundtruth(self):
-        """
-            Helper function to load ground truth.
-        """
         try:
             self._loadData(self.gt_path, cls=self.cls, loading_groundtruth=True)
         except IOError:
@@ -451,12 +453,9 @@ class KITTIEvaluation(object):
         return True
 
     def loadTracker(self):
-        """
-            Helper function to load tracker data.
-        """
         try:
             if not self._loadData(
-                    self.t_path, cls=self.cls, loading_groundtruth=False):
+                    self.result_path, cls=self.cls, loading_groundtruth=False):
                 return False
         except IOError:
             return False
@@ -1153,7 +1152,8 @@ class KITTIEvaluation(object):
         """
         summary = self.createSummary()
         if save_summary:
-            filename = os.path.join(self.t_sha, "summary_%s.txt" % self.cls)
+            filename = os.path.join(self.result_path,
+                                    "summary_%s.txt" % self.cls)
             dump = open(filename, "w+")
             dump.write(summary)
             dump.close()
@@ -1199,7 +1199,7 @@ class KITTIMOTMetric(Metric):
 
     def accumulate(self):
         logger.info("Processing Result for KITTI Tracking Benchmark")
-        e = self.MOTEvaluator(t_sha=self.result_root, gt_path=self.gt_path,\
+        e = self.MOTEvaluator(result_path=self.result_root, gt_path=self.gt_path,\
             n_frames=self.n_frames, seqs=self.seqs, n_sequences=self.n_sequences)
         try:
             if not e.loadTracker():
