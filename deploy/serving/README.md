@@ -16,7 +16,7 @@ python tools/infer.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --infer_i
 PaddleDetection在训练过程包括网络的前向和优化器相关参数，而在部署过程中，我们只需要前向参数，具体参考:[导出模型](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/EXPORT_MODEL.md)
 
 ```
-python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o weights=weights/yolov3_darknet53_270e_coco.pdparams --export_serving_model=True
+python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams --export_serving_model=True
 ```
 
 以上命令会在`output_inference/`文件夹下生成一个`yolov3_darknet53_270e_coco`文件夹：
