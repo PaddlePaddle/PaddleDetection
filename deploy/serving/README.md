@@ -10,7 +10,7 @@ python tools/infer.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --infer_i
 ```
 
 ## 2. 安装 paddle serving
-请参考[PaddleServing](https://github.com/PaddlePaddle/Serving/tree/v0.5.0) 中安装教程安装
+请参考[PaddleServing](https://github.com/PaddlePaddle/Serving/tree/v0.6.0) 中安装教程安装（版本>=0.6.0）。
 
 ## 3. 导出模型
 PaddleDetection在训练过程包括网络的前向和优化器相关参数，而在部署过程中，我们只需要前向参数，具体参考:[导出模型](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/EXPORT_MODEL.md)
@@ -87,7 +87,7 @@ fetch_var {
 cd output_inference/yolov3_darknet53_270e_coco/
 
 # GPU
-python -m paddle_serving_server_gpu.serve --model serving_server --port 9393 --gpu_ids 0
+python -m paddle_serving_server.serve --model serving_server --port 9393 --gpu_ids 0
 
 # CPU
 python -m paddle_serving_server.serve --model serving_server --port 9393
