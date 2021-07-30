@@ -8,9 +8,9 @@ _BASE_: [
 
 weights: output/s2anet_1x_spine/model_final
 
-# for 8 card
+# for 4 card
 LearningRate:
-  base_lr: 0.01
+  base_lr: 0.005
 
 S2ANetHead:
   anchor_strides: [8, 16, 32, 64, 128]
@@ -26,5 +26,4 @@ S2ANetHead:
   use_sigmoid_cls: True
   reg_loss_weight: [1.0, 1.0, 1.0, 1.0, 1.05]
   cls_loss_weight: [1.05, 1.0]
-  reg_loss_type: gwd
-  use_paddle_anchor: False
+  reg_loss_type: 'l1'
