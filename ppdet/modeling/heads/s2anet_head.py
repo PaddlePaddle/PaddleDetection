@@ -551,32 +551,29 @@ class S2ANetHead(nn.Layer):
             fam_cls_score1 = fam_cls_score
 
             feat_labels = paddle.to_tensor(feat_labels)
-            if (feat_labels >= 0).astype(paddle.int32).sum() > 0:
-                feat_labels_one_hot = paddle.nn.functional.one_hot(
-                    feat_labels, self.cls_out_channels + 1)
-                feat_labels_one_hot = feat_labels_one_hot[:, 1:]
-                feat_labels_one_hot.stop_gradient = True
+            feat_labels_one_hot = paddle.nn.functional.one_hot(
+                feat_labels, self.cls_out_channels + 1)
+            feat_labels_one_hot = feat_labels_one_hot[:, 1:]
+            feat_labels_one_hot.stop_gradient = True
 
-                num_total_samples = paddle.to_tensor(
-                    num_total_samples, dtype='float32', stop_gradient=True)
+            num_total_samples = paddle.to_tensor(
+                num_total_samples, dtype='float32', stop_gradient=True)
 
-                fam_cls = F.sigmoid_focal_loss(
-                    fam_cls_score1,
-                    feat_labels_one_hot,
-                    normalizer=num_total_samples,
-                    reduction='none')
+            fam_cls = F.sigmoid_focal_loss(
+                fam_cls_score1,
+                feat_labels_one_hot,
+                normalizer=num_total_samples,
+                reduction='none')
 
-                feat_label_weights = feat_label_weights.reshape(
-                    feat_label_weights.shape[0], 1)
-                feat_label_weights = np.repeat(
-                    feat_label_weights, self.cls_out_channels, axis=1)
-                feat_label_weights = paddle.to_tensor(
-                    feat_label_weights, stop_gradient=True)
+            feat_label_weights = feat_label_weights.reshape(
+                feat_label_weights.shape[0], 1)
+            feat_label_weights = np.repeat(
+                feat_label_weights, self.cls_out_channels, axis=1)
+            feat_label_weights = paddle.to_tensor(
+                feat_label_weights, stop_gradient=True)
 
-                fam_cls = fam_cls * feat_label_weights
-                fam_cls_total = paddle.sum(fam_cls)
-            else:
-                fam_cls_total = paddle.zeros([0], dtype=fam_cls_score1.dtype)
+            fam_cls = fam_cls * feat_label_weights
+            fam_cls_total = paddle.sum(fam_cls)
             fam_cls_losses.append(fam_cls_total)
 
             # step3: regression loss
@@ -673,31 +670,28 @@ class S2ANetHead(nn.Layer):
             odm_cls_score1 = odm_cls_score
 
             feat_labels = paddle.to_tensor(feat_labels)
-            if (feat_labels >= 0).astype(paddle.int32).sum() > 0:
-                feat_labels_one_hot = paddle.nn.functional.one_hot(
-                    feat_labels, self.cls_out_channels + 1)
-                feat_labels_one_hot = feat_labels_one_hot[:, 1:]
-                feat_labels_one_hot.stop_gradient = True
+            feat_labels_one_hot = paddle.nn.functional.one_hot(
+                feat_labels, self.cls_out_channels + 1)
+            feat_labels_one_hot = feat_labels_one_hot[:, 1:]
+            feat_labels_one_hot.stop_gradient = True
 
-                num_total_samples = paddle.to_tensor(
-                    num_total_samples, dtype='float32', stop_gradient=True)
-                odm_cls = F.sigmoid_focal_loss(
-                    odm_cls_score1,
-                    feat_labels_one_hot,
-                    normalizer=num_total_samples,
-                    reduction='none')
+            num_total_samples = paddle.to_tensor(
+                num_total_samples, dtype='float32', stop_gradient=True)
+            odm_cls = F.sigmoid_focal_loss(
+                odm_cls_score1,
+                feat_labels_one_hot,
+                normalizer=num_total_samples,
+                reduction='none')
 
-                feat_label_weights = feat_label_weights.reshape(
-                    feat_label_weights.shape[0], 1)
-                feat_label_weights = np.repeat(
-                    feat_label_weights, self.cls_out_channels, axis=1)
-                feat_label_weights = paddle.to_tensor(feat_label_weights)
-                feat_label_weights.stop_gradient = True
+            feat_label_weights = feat_label_weights.reshape(
+                feat_label_weights.shape[0], 1)
+            feat_label_weights = np.repeat(
+                feat_label_weights, self.cls_out_channels, axis=1)
+            feat_label_weights = paddle.to_tensor(feat_label_weights)
+            feat_label_weights.stop_gradient = True
 
-                odm_cls = odm_cls * feat_label_weights
-                odm_cls_total = paddle.sum(odm_cls)
-            else:
-                odm_cls_total = paddle.zeros([0], dtype=odm_cls_score1.dtype)
+            odm_cls = odm_cls * feat_label_weights
+            odm_cls_total = paddle.sum(odm_cls)
             odm_cls_losses.append(odm_cls_total)
 
             # # step3: regression loss
