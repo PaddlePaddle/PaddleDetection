@@ -1,7 +1,7 @@
 ---
 name: "\U0001F41B  提出Bug / Bug Report"
 about: 提出PaddleDetection使用中存在的Bug / Report a bug in PaddleDetection
-title: ''
+title: "[BUG]"
 labels: ''
 assignees: ''
 

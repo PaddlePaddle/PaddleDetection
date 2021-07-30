@@ -1,7 +1,7 @@
 ---
 name: "\U0001F680  新功能需求 / Feature Request"
 about: 提出一个新的功能需求或改进建议 / Suggest an improvement for PaddleDetection
-title: ''
+title: "[Feature Request]"
 labels: ''
 assignees: ''
 

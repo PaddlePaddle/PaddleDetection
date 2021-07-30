@@ -2,7 +2,7 @@
 name: "\U0001F4D6  文档优化 / Documentation Improvement"
 about: 对现有的文档教程提出修改建议 / Suggest an improvement about existing documentation or tutorials
   in PaddleDetection.
-title: ''
+title: "[Document Improvement]"
 labels: ''
 assignees: ''
 
