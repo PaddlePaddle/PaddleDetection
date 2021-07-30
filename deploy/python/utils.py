@@ -170,15 +170,16 @@ class Timer(Times):
         print("total_time(ms): {}, img_num: {}".format(total_time * 1000,
                                                        self.img_num))
         preprocess_time = round(
-            self.preprocess_time_s.value() / self.img_num,
+            self.preprocess_time_s.value() / max(1, self.img_num),
             4) if average else self.preprocess_time_s.value()
         postprocess_time = round(
-            self.postprocess_time_s.value() / self.img_num,
+            self.postprocess_time_s.value() / max(1, self.img_num),
             4) if average else self.postprocess_time_s.value()
-        inference_time = round(self.inference_time_s.value() / self.img_num,
+        inference_time = round(self.inference_time_s.value() /
+                               max(1, self.img_num),
                                4) if average else self.inference_time_s.value()
 
-        average_latency = total_time / self.img_num
+        average_latency = total_time / max(1, self.img_num)
         print("average latency time(ms): {:.2f}, QPS: {:2f}".format(
             average_latency * 1000, 1 / average_latency))
         print(
@@ -189,13 +190,13 @@ class Timer(Times):
     def report(self, average=False):
         dic = {}
         dic['preprocess_time_s'] = round(
-            self.preprocess_time_s.value() / self.img_num,
+            self.preprocess_time_s.value() / max(1, self.img_num),
             4) if average else self.preprocess_time_s.value()
         dic['postprocess_time_s'] = round(
-            self.postprocess_time_s.value() / self.img_num,
+            self.postprocess_time_s.value() / max(1, self.img_num),
             4) if average else self.postprocess_time_s.value()
         dic['inference_time_s'] = round(
-            self.inference_time_s.value() / self.img_num,
+            self.inference_time_s.value() / max(1, self.img_num),
             4) if average else self.inference_time_s.value()
         dic['img_num'] = self.img_num
         total_time = self.preprocess_time_s.value(
@@ -228,3 +229,4 @@ def get_current_memory_mb():
         meminfo = pynvml.nvmlDeviceGetMemoryInfo(handle)
         gpu_mem = meminfo.used / 1024. / 1024.
     return round(cpu_mem, 4), round(gpu_mem, 4), round(gpu_percent, 4)
+
