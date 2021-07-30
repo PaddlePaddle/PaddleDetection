@@ -91,6 +91,8 @@ class JDE_Detector(Detector):
 
     def postprocess(self, pred_dets, pred_embs, threshold):
         online_targets = self.tracker.update(pred_dets, pred_embs)
+        if online_targets == []:
+            return [pred_dets[0][:4]], [pred_dets[0][4]], [1]
         online_tlwhs, online_ids = [], []
         online_scores = []
         for t in online_targets:
