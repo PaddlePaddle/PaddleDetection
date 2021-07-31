@@ -69,7 +69,7 @@ class S2ANetAnchorGenerator(nn.Layer):
         return base_anchors
 
     def _meshgrid(self, x, y, row_major=True):
-        yy, xx = paddle.meshgrid(x, y)
+        yy, xx = paddle.meshgrid(y, x)
         yy = yy.reshape([-1])
         xx = xx.reshape([-1])
         if row_major:
@@ -264,7 +264,7 @@ class S2ANetHead(nn.Layer):
         for anchor_base in self.anchor_base_sizes:
             self.anchor_generators.append(
                 S2ANetAnchorGenerator(anchor_base, anchor_scales,
-                                          anchor_ratios))
+                                      anchor_ratios))
 
         self.anchor_generators = nn.LayerList(self.anchor_generators)
         self.fam_cls_convs = nn.Sequential()
@@ -577,7 +577,6 @@ class S2ANetHead(nn.Layer):
             fam_cls_losses.append(fam_cls_total)
 
             # step3: regression loss
-            fam_bbox_pred = fam_reg_branch_list[idx]
             feat_bbox_targets = paddle.to_tensor(
                 feat_bbox_targets, dtype='float32', stop_gradient=True)
             feat_bbox_targets = paddle.reshape(feat_bbox_targets, [-1, 5])
@@ -585,8 +584,6 @@ class S2ANetHead(nn.Layer):
             fam_bbox_pred = fam_reg_branch_list[idx]
             fam_bbox_pred = paddle.squeeze(fam_bbox_pred, axis=0)
             fam_bbox_pred = paddle.reshape(fam_bbox_pred, [-1, 5])
-            fam_bbox = self.smooth_l1_loss(fam_bbox_pred, feat_bbox_targets)
-
             fam_bbox = self.smooth_l1_loss(fam_bbox_pred, feat_bbox_targets)
             loss_weight = paddle.to_tensor(
                 self.reg_loss_weight, dtype='float32', stop_gradient=True)
@@ -846,7 +843,7 @@ class S2ANetHead(nn.Layer):
             bbox_pred = paddle.reshape(bbox_pred, [-1, 5])
             anchors = paddle.reshape(anchors, [-1, 5])
 
-            if nms_pre > 0 and scores.shape[0] > nms_pre:
+            if scores.shape[0] > nms_pre:
                 # Get maximum scores for foreground classes.
                 if use_sigmoid_cls:
                     max_scores = paddle.max(scores, axis=1)
