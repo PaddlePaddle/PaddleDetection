@@ -39,7 +39,7 @@ KeyPointMSELoss:
 
 #####optimizer
 LearningRate:
-  base_lr: 0.001
+  base_lr: 0.002
   schedulers:
   - !PiecewiseDecay
     milestones: [170, 200]

@@ -674,7 +674,11 @@ class LiteHRNet(nn.Layer):
         booktitle={CVPR},year={2021}
     }
     Args:
-        network_type (str): the network_type should be one of ["lite_18", "lite_30", "naive", "wider_naive"]
+        network_type (str): the network_type should be one of ["lite_18", "lite_30", "naive", "wider_naive"],
+                            "naive": Simply combining the shuffle block in ShuffleNet and the highresolution design pattern in HRNet.
+                            "wider_naive": Naive network with wider channels in each block.
+                            "lite_18": Lite-HRNet-18, which replaces the pointwise convolution in a shuffle block by conditional channel weighting.
+                            "lite_30": Lite-HRNet-30, with more blocks compared with Lite-HRNet-18.
         freeze_at (int): the stage to freeze
         freeze_norm (bool): whether to freeze norm in HRNet
         norm_decay (float): weight decay for normalization layer weights
