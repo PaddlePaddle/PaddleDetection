@@ -50,17 +50,17 @@ DOTA数据集中总共有2806张图像，其中1411张图像作为训练集，45
 旋转框IOU计算OP[ext_op](../../ppdet/ext_op)是参考Paddle[自定义外部算子](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/07_new_op/new_custom_op.html) 的方式开发。
 
 若使用旋转框IOU计算OP，需要环境满足：
-- PaddlePaddle >= 2.0.1
+- PaddlePaddle >= 2.1.1
 - GCC == 8.2
 
-推荐使用docker镜像[paddle:2.0.1-gpu-cuda10.1-cudnn7](registry.baidubce.com/paddlepaddle/paddle:2.0.1-gpu-cuda10.1-cudnn7)。
+推荐使用docker镜像[paddle:2.0.1-gpu-cuda10.1-cudnn7](registry.baidubce.com/paddlepaddle/paddle:2.1.1-gpu-cuda10.2-cudnn7)。
 
 执行如下命令下载镜像并启动容器：
 ```
-sudo nvidia-docker run -it --name paddle_s2anet -v $PWD:/paddle --network=host registry.baidubce.com/paddlepaddle/paddle:2.0.1-gpu-cuda10.1-cudnn7 /bin/bash
+sudo nvidia-docker run -it --name paddle_s2anet -v $PWD:/paddle --network=host registry.baidubce.com/paddlepaddle/paddle:2.1.1-gpu-cuda10.2-cudnn7 /bin/bash
 ```
 
-镜像中paddle2.0.1已安装好，进入python3.7，执行如下代码检查paddle安装是否正常：
+镜像中paddle已安装好，进入python3.7，执行如下代码检查paddle安装是否正常：
 ```
 import paddle
 print(paddle.__version__)
@@ -92,6 +92,14 @@ python3.7 test.py
 **注意：**
 配置文件中学习率是按照4卡GPU训练设置的，如果使用单卡GPU训练，请将学习率设置为原来的1/4。
 
+准备数据
+```bash
+cd dataset/spine_coco
+wget https://paddledet.bj.bcebos.com/data/spine_coco.tar
+tar -xvf spine_coco.tar
+cd ../../
+```
+
 GPU单卡训练
 ```bash
 export CUDA_VISIBLE_DEVICES=0
@@ -100,21 +108,21 @@ python3.7 tools/train.py -c configs/dota/s2anet_1x_spine.yml
 
 GPU多卡训练
 ```bash
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-python3.7 -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/dota/s2anet_1x_spine.yml
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+python3.7 -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/dota/s2anet_1x_spine.yml
 ```
 
 可以通过`--eval`开启边训练边测试。
 
 ### 2. 评估
 ```bash
-python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weitghts=output/s2anet_1x_spine/model_final.pdparams
+python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2anet_1x_spine/model_final.pdparams
 ```
 
 ### 3. 预测
 执行如下命令，会将图像预测结果保存到`output_dir`文件夹下。
 ```bash
-python3.7 tools/infer.py -c configs/dota/s2anet_1x_spine.yml -o weitghts=output/s2anet_1x_spine/model_final.pdparams --infer_img=demo/39006.jpg
+python3.7 tools/infer.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2anet_1x_spine/model_final.pdparams --infer_img=demo/39006.jpg
 ```
 
 ### 4. DOTA数据评估
@@ -134,7 +142,7 @@ python3.7 tools/infer.py -c configs/dota/s2anet_1x_dota.yml -o weights=./weights
 |   S2ANet    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_1x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_conv_1x_dota.yml)                   |
 |   S2ANet    |  AlignConv |   74.0   |  [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_alignconv_2x_dota.yml)                   |
 
-**注意：**这里使用`multiclass_nms`，与原作者使用nms略有不同，精度相比原始论文中高0.15 (71.27-->71.42)。
+**注意：** 这里使用`multiclass_nms`，与原作者使用nms略有不同。
 
 
 ## 预测部署
