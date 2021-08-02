@@ -20,6 +20,8 @@ from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from ..modeling.keypoint_utils import oks_nms
 from scipy.io import loadmat, savemat
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
 
 __all__ = ['KeyPointTopDownCOCOEval', 'KeyPointTopDownMPIIEval']
 
@@ -38,7 +40,8 @@ class KeyPointTopDownCOCOEval(object):
                  output_eval,
                  iou_type='keypoints',
                  in_vis_thre=0.2,
-                 oks_thre=0.9):
+                 oks_thre=0.9,
+                 save_prediction_only=False):
         super(KeyPointTopDownCOCOEval, self).__init__()
         self.coco = COCO(anno_file)
         self.num_samples = num_samples
@@ -48,6 +51,7 @@ class KeyPointTopDownCOCOEval(object):
         self.oks_thre = oks_thre
         self.output_eval = output_eval
         self.res_file = os.path.join(output_eval, "keypoints_results.json")
+        self.save_prediction_only = save_prediction_only
         self.reset()
 
     def reset(self):
@@ -90,6 +94,7 @@ class KeyPointTopDownCOCOEval(object):
             os.makedirs(self.output_eval)
         with open(self.res_file, 'w') as f:
             json.dump(results, f, sort_keys=True, indent=4)
+            logger.info(f'The keypoint result is saved to {self.res_file}.')
         try:
             json.load(open(self.res_file))
         except Exception:
@@ -178,6 +183,10 @@ class KeyPointTopDownCOCOEval(object):
         self.get_final_results(self.results['all_preds'],
                                self.results['all_boxes'],
                                self.results['image_path'])
+        if self.save_prediction_only:
+            logger.info(f'The keypoint result is saved to {self.res_file} '
+                        'and do not evaluate the mAP.')
+            return
         coco_dt = self.coco.loadRes(self.res_file)
         coco_eval = COCOeval(self.coco, coco_dt, 'keypoints')
         coco_eval.params.useSegm = None
@@ -191,6 +200,8 @@ class KeyPointTopDownCOCOEval(object):
         self.eval_results['keypoint'] = keypoint_stats
 
     def log(self):
+        if self.save_prediction_only:
+            return
         stats_names = [
             'AP', 'Ap .5', 'AP .75', 'AP (M)', 'AP (L)', 'AR', 'AR .5',
             'AR .75', 'AR (M)', 'AR (L)'
@@ -213,9 +224,12 @@ class KeyPointTopDownMPIIEval(object):
                  num_samples,
                  num_joints,
                  output_eval,
-                 oks_thre=0.9):
+                 oks_thre=0.9,
+                 save_prediction_only=False):
         super(KeyPointTopDownMPIIEval, self).__init__()
         self.ann_file = anno_file
+        self.res_file = os.path.join(output_eval, "keypoints_results.json")
+        self.save_prediction_only = save_prediction_only
         self.reset()
 
     def reset(self):
@@ -239,9 +253,32 @@ class KeyPointTopDownMPIIEval(object):
         self.results.append(results)
 
     def accumulate(self):
+        self._mpii_keypoint_results_save()
+        if self.save_prediction_only:
+            logger.info(f'The keypoint result is saved to {self.res_file} '
+                        'and do not evaluate the mAP.')
+            return
+
         self.eval_results = self.evaluate(self.results)
 
+    def _mpii_keypoint_results_save(self):
+        results = []
+        for res in self.results:
+            if len(res) == 0:
+                continue
+            result = [{
+                'preds': res['preds'][k].tolist(),
+                'boxes': res['boxes'][k].tolist(),
+                'image_path': res['image_path'][k],
+            } for k in range(len(res))]
+            results.extend(result)
+        with open(self.res_file, 'w') as f:
+            json.dump(results, f, sort_keys=True, indent=4)
+            logger.info(f'The keypoint result is saved to {self.res_file}.')
+
     def log(self):
+        if self.save_prediction_only:
+            return
         for item, value in self.eval_results.items():
             print("{} : {}".format(item, value))
 
