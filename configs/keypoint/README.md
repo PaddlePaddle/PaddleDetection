@@ -75,6 +75,9 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/eval.py -c configs/keypoint/higherhrnet/hig
 
 #MPII DataSet
 CUDA_VISIBLE_DEVICES=0 python3 tools/eval.py -c configs/keypoint/hrnet/hrnet_w32_256x256_mpii.yml
+
+#当只需要保存评估预测的结果时，可以通过设置save_prediction_only参数实现，评估预测结果默认保存在output/keypoints_results.json文件中
+CUDA_VISIBLE_DEVICES=0 python3 tools/eval.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml --save_prediction_only
 ```
 
 ​    **模型预测：**
