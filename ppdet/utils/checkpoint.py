@@ -55,41 +55,6 @@ def _get_unique_endpoints(trainer_endpoints):
     return unique_endpoints
 
 
-def get_weights_path_dist(path):
-    env = os.environ
-    if 'PADDLE_TRAINERS_NUM' in env and 'PADDLE_TRAINER_ID' in env:
-        trainer_id = int(env['PADDLE_TRAINER_ID'])
-        num_trainers = int(env['PADDLE_TRAINERS_NUM'])
-        if num_trainers <= 1:
-            path = get_weights_path(path)
-        else:
-            from ppdet.utils.download import map_path, WEIGHTS_HOME
-            weight_path = map_path(path, WEIGHTS_HOME)
-            lock_path = weight_path + '.lock'
-            if not os.path.exists(weight_path):
-                from paddle.distributed import ParallelEnv
-                unique_endpoints = _get_unique_endpoints(ParallelEnv()
-                                                         .trainer_endpoints[:])
-                try:
-                    os.makedirs(os.path.dirname(weight_path))
-                except OSError as e:
-                    if e.errno != errno.EEXIST:
-                        raise
-                with open(lock_path, 'w'):  # touch    
-                    os.utime(lock_path, None)
-                if ParallelEnv().current_endpoint in unique_endpoints:
-                    get_weights_path(path)
-                    os.remove(lock_path)
-                else:
-                    while os.path.exists(lock_path):
-                        time.sleep(1)
-            path = weight_path
-    else:
-        path = get_weights_path(path)
-
-    return path
-
-
 def _strip_postfix(path):
     path, ext = os.path.splitext(path)
     assert ext in ['', '.pdparams', '.pdopt', '.pdmodel'], \
@@ -99,7 +64,7 @@ def _strip_postfix(path):
 
 def load_weight(model, weight, optimizer=None):
     if is_url(weight):
-        weight = get_weights_path_dist(weight)
+        weight = get_weights_path(weight)
 
     path = _strip_postfix(weight)
     pdparam_path = path + '.pdparams'
@@ -205,7 +170,7 @@ def match_state_dict(model_state_dict, weight_state_dict):
 
 def load_pretrain_weight(model, pretrain_weight):
     if is_url(pretrain_weight):
-        pretrain_weight = get_weights_path_dist(pretrain_weight)
+        pretrain_weight = get_weights_path(pretrain_weight)
 
     path = _strip_postfix(pretrain_weight)
     if not (os.path.isdir(path) or os.path.isfile(path) or
