@@ -15,6 +15,7 @@
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
+from paddle.nn import AdaptiveAvgPool2D, Linear, Uniform
 from paddle.regularizer import L2Decay
 from paddle import ParamAttr
 from paddle.nn.initializer import Normal
