@@ -23,6 +23,7 @@ from paddle.nn.initializer import Normal, Constant
 from ppdet.core.workspace import register
 from ppdet.modeling.shape_spec import ShapeSpec
 from ppdet.modeling.ops import channel_shuffle
+from .. import layers as L
 
 __all__ = ['LiteHRNet']
 
@@ -576,13 +577,13 @@ class LiteHRNetModule(nn.Layer):
                 if j > i:
                     fuse_layer.append(
                         nn.Sequential(
-                            nn.Conv2D(
+                            L.Conv2d(
                                 self.in_channels[j],
                                 self.in_channels[i],
                                 kernel_size=1,
                                 stride=1,
                                 padding=0,
-                                bias_attr=False, ),
+                                bias=False, ),
                             nn.BatchNorm(self.in_channels[i]),
                             nn.Upsample(
                                 scale_factor=2**(j - i), mode='nearest')))
@@ -594,42 +595,42 @@ class LiteHRNetModule(nn.Layer):
                         if k == i - j - 1:
                             conv_downsamples.append(
                                 nn.Sequential(
-                                    nn.Conv2D(
+                                    L.Conv2d(
                                         self.in_channels[j],
                                         self.in_channels[j],
                                         kernel_size=3,
                                         stride=2,
                                         padding=1,
                                         groups=self.in_channels[j],
-                                        bias_attr=False, ),
+                                        bias=False, ),
                                     nn.BatchNorm(self.in_channels[j]),
-                                    nn.Conv2D(
+                                    L.Conv2d(
                                         self.in_channels[j],
                                         self.in_channels[i],
                                         kernel_size=1,
                                         stride=1,
                                         padding=0,
-                                        bias_attr=False, ),
+                                        bias=False, ),
                                     nn.BatchNorm(self.in_channels[i])))
                         else:
                             conv_downsamples.append(
                                 nn.Sequential(
-                                    nn.Conv2D(
+                                    L.Conv2d(
                                         self.in_channels[j],
                                         self.in_channels[j],
                                         kernel_size=3,
                                         stride=2,
                                         padding=1,
                                         groups=self.in_channels[j],
-                                        bias_attr=False, ),
+                                        bias=False, ),
                                     nn.BatchNorm(self.in_channels[j]),
-                                    nn.Conv2D(
+                                    L.Conv2d(
                                         self.in_channels[j],
                                         self.in_channels[j],
                                         kernel_size=1,
                                         stride=1,
                                         padding=0,
-                                        bias_attr=False, ),
+                                        bias=False, ),
                                     nn.BatchNorm(self.in_channels[j]),
                                     nn.ReLU()))
 
@@ -674,11 +675,7 @@ class LiteHRNet(nn.Layer):
         booktitle={CVPR},year={2021}
     }
     Args:
-        network_type (str): the network_type should be one of ["lite_18", "lite_30", "naive", "wider_naive"],
-                            "naive": Simply combining the shuffle block in ShuffleNet and the highresolution design pattern in HRNet.
-                            "wider_naive": Naive network with wider channels in each block.
-                            "lite_18": Lite-HRNet-18, which replaces the pointwise convolution in a shuffle block by conditional channel weighting.
-                            "lite_30": Lite-HRNet-30, with more blocks compared with Lite-HRNet-18.
+        network_type (str): the network_type should be one of ["lite_18", "lite_30", "naive", "wider_naive"]
         freeze_at (int): the stage to freeze
         freeze_norm (bool): whether to freeze norm in HRNet
         norm_decay (float): weight decay for normalization layer weights
@@ -770,22 +767,22 @@ class LiteHRNet(nn.Layer):
                 if num_channels_cur_layer[i] != num_channels_pre_layer[i]:
                     transition_layers.append(
                         nn.Sequential(
-                            nn.Conv2D(
+                            L.Conv2d(
                                 num_channels_pre_layer[i],
                                 num_channels_pre_layer[i],
                                 kernel_size=3,
                                 stride=1,
                                 padding=1,
                                 groups=num_channels_pre_layer[i],
-                                bias_attr=False),
+                                bias=False),
                             nn.BatchNorm(num_channels_pre_layer[i]),
-                            nn.Conv2D(
+                            L.Conv2d(
                                 num_channels_pre_layer[i],
                                 num_channels_cur_layer[i],
                                 kernel_size=1,
                                 stride=1,
                                 padding=0,
-                                bias_attr=False, ),
+                                bias=False, ),
                             nn.BatchNorm(num_channels_cur_layer[i]),
                             nn.ReLU()))
                 else:
@@ -795,16 +792,16 @@ class LiteHRNet(nn.Layer):
                 for j in range(i + 1 - num_branches_pre):
                     conv_downsamples.append(
                         nn.Sequential(
-                            nn.Conv2D(
+                            L.Conv2d(
                                 num_channels_pre_layer[-1],
                                 num_channels_pre_layer[-1],
                                 groups=num_channels_pre_layer[-1],
                                 kernel_size=3,
                                 stride=2,
                                 padding=1,
-                                bias_attr=False, ),
+                                bias=False, ),
                             nn.BatchNorm(num_channels_pre_layer[-1]),
-                            nn.Conv2D(
+                            L.Conv2d(
                                 num_channels_pre_layer[-1],
                                 num_channels_cur_layer[i]
                                 if j == i - num_branches_pre else
@@ -812,7 +809,7 @@ class LiteHRNet(nn.Layer):
                                 kernel_size=1,
                                 stride=1,
                                 padding=0,
-                                bias_attr=False, ),
+                                bias=False, ),
                             nn.BatchNorm(num_channels_cur_layer[i]
                                          if j == i - num_branches_pre else
                                          num_channels_pre_layer[-1]),
