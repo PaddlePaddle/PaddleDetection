@@ -44,6 +44,11 @@ def parse_args():
     parser.add_argument(
         '--video_file', type=str, default=None, help='Video name for tracking.')
     parser.add_argument(
+        '--frame_rate',
+        type=int,
+        default=-1,
+        help='Video frame rate for tracking.')
+    parser.add_argument(
         "--image_dir",
         type=str,
         default=None,
@@ -95,6 +100,7 @@ def run(FLAGS, cfg):
     # inference
     tracker.mot_predict(
         video_file=FLAGS.video_file,
+        frame_rate=FLAGS.frame_rate,
         image_dir=FLAGS.image_dir,
         data_type=cfg.metric.lower(),
         model_type=cfg.architecture,
