@@ -12,10 +12,10 @@ train_model_name:yolov3_darknet53_270e_coco/model_final.pdparams
 train_infer_img_dir:./demo1/
 null:null
 ##
-trainer:norm_train|pact_train
+trainer:norm_train|fpgm_train|pact_train
 norm_train:tools/train.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
-pact_train:null
-fpgm_train:null
+pact_train:tools/train.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --slim_config configs/slim/quant/yolov3_darknet_qat.yml -o
+fpgm_train:tools/train.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --slim_config configs/slim/prune/yolov3_darknet_prune_fpgm.yml -o
 distill_train:null
 null:null
 null:null
