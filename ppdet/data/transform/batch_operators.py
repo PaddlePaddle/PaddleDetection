@@ -895,7 +895,6 @@ class Gt2SparseRCNNTarget(BaseOperator):
                 sample["scale_factor_wh"] = np.array(
                     [sample["scale_factor"][1], sample["scale_factor"][0]],
                     dtype=np.float32)
-                sample.pop("scale_factor")
             else:
                 sample["scale_factor_wh"] = np.array(
                     [1.0, 1.0], dtype=np.float32)
