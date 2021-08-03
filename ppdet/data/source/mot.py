@@ -234,6 +234,7 @@ class MOTImageFolder(DetDataset):
     Load MOT dataset with MOT format from image folder or video .
     Args:
         video_file (str): path of the video file, default ''.
+        frame_rate (int): frame rate of the video, use cv2 VideoCapture if not set.
         dataset_dir (str): root directory for dataset.
         keep_ori_im (bool): whether to keep original image, default False. 
             Set True when used during MOT model inference while saving
@@ -242,6 +243,7 @@ class MOTImageFolder(DetDataset):
 
     def __init__(self,
                  video_file=None,
+                 frame_rate=-1,
                  dataset_dir=None,
                  data_root=None,
                  image_dir=None,
@@ -255,7 +257,7 @@ class MOTImageFolder(DetDataset):
         self.keep_ori_im = keep_ori_im
         self._imid2path = {}
         self.roidbs = None
-        self.frame_rate = 30
+        self.frame_rate = frame_rate
 
     def check_or_download_dataset(self):
         return
@@ -263,17 +265,21 @@ class MOTImageFolder(DetDataset):
     def parse_dataset(self, ):
         if not self.roidbs:
             if self.video_file is None:
+                self.frame_rate = 30  # set as default if infer image folder
                 self.roidbs = self._load_images()
             else:
                 self.roidbs = self._load_video_images()
 
     def _load_video_images(self):
-        cap = cv2.VideoCapture(self.video_file)
-        self.frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
+        if self.frame_rate == -1:
+            # if frame_rate is not set for video, use cv2.VideoCapture
+            cap = cv2.VideoCapture(self.video_file)
+            self.frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
 
         extension = self.video_file.split('.')[-1]
         output_path = self.video_file.replace('.{}'.format(extension), '')
-        frames_path = video2frames(self.video_file, output_path)
+        frames_path = video2frames(self.video_file, output_path,
+                                   self.frame_rate)
         self.video_frames = sorted(
             glob.glob(os.path.join(frames_path, '*.png')))
 
@@ -334,8 +340,10 @@ class MOTImageFolder(DetDataset):
         self.image_dir = images
         self.roidbs = self._load_images()
 
-    def set_video(self, video_file):
+    def set_video(self, video_file, frame_rate):
+        # update video_file and frame_rate by command line of tools/infer_mot.py
         self.video_file = video_file
+        self.frame_rate = frame_rate
         assert os.path.isfile(self.video_file) and _is_valid_video(self.video_file), \
                 "wrong or unsupported file format: {}".format(self.video_file)
         self.roidbs = self._load_video_images()
@@ -345,7 +353,7 @@ def _is_valid_video(f, extensions=('.mp4', '.avi', '.mov', '.rmvb', 'flv')):
     return f.lower().endswith(extensions)
 
 
-def video2frames(video_path, outpath, **kargs):
+def video2frames(video_path, outpath, frame_rate, **kargs):
     def _dict2str(kargs):
         cmd_str = ''
         for k, v in kargs.items():
@@ -363,7 +371,9 @@ def video2frames(video_path, outpath, **kargs):
     outformat = os.path.join(out_full_path, '%08d.png')
 
     cmd = ffmpeg
-    cmd = ffmpeg + [' -i ', video_path, ' -start_number ', ' 0 ', outformat]
+    cmd = ffmpeg + [
+        ' -i ', video_path, ' -r ', str(frame_rate), ' -f image2 ', outformat
+    ]
     cmd = ''.join(cmd) + _dict2str(kargs)
 
     try:

@@ -374,6 +374,7 @@ class Tracker(object):
 
     def mot_predict(self,
                     video_file,
+                    frame_rate,
                     image_dir,
                     output_dir,
                     data_type='mot',
@@ -401,7 +402,7 @@ class Tracker(object):
         # run tracking        
         if video_file:
             seq = video_file.split('/')[-1].split('.')[0]
-            self.dataset.set_video(video_file)
+            self.dataset.set_video(video_file, frame_rate)
             logger.info('Starting tracking video {}'.format(video_file))
         elif image_dir:
             seq = image_dir.split('/')[-1].split('.')[0]
@@ -420,7 +421,8 @@ class Tracker(object):
 
         dataloader = create('TestMOTReader')(self.dataset, 0)
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
-        frame_rate = self.dataset.frame_rate
+        if frame_rate == -1:
+            frame_rate = self.dataset.frame_rate
 
         with paddle.no_grad():
             if model_type in ['JDE', 'FairMOT']:
