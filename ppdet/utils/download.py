@@ -381,6 +381,38 @@ def _download(url, path, md5sum=None):
         return fullname
 
 
+def _download_dist(url, path, md5sum=None):
+    env = os.environ
+    if 'PADDLE_TRAINERS_NUM' in env and 'PADDLE_TRAINER_ID' in env:
+        trainer_id = int(env['PADDLE_TRAINER_ID'])
+        num_trainers = int(env['PADDLE_TRAINERS_NUM'])
+        if num_trainers <= 1:
+            return _download(url, path, md5sum)
+        else:
+            fname = osp.split(url)[-1]
+            fullname = osp.join(path, fname)
+            lock_path = fullname + '.download.lock'
+
+            if not osp.isdir(path):
+                os.makedirs(path)
+
+            if not osp.exists(fullname):
+                from paddle.distributed import ParallelEnv
+                unique_endpoints = _get_unique_endpoints(ParallelEnv()
+                                                         .trainer_endpoints[:])
+                with open(lock_path, 'w'):  # touch    
+                    os.utime(lock_path, None)
+                if ParallelEnv().current_endpoint in unique_endpoints:
+                    _download(url, path, md5sum)
+                    os.remove(lock_path)
+                else:
+                    while os.path.exists(lock_path):
+                        time.sleep(0.5)
+            return fullname
+    else:
+        return _download(url, path, md5sum)
+
+
 def _check_exist_file_md5(filename, md5sum, url):
     # if md5sum is None, and file to check is weights file, 
     # read md5um from url and check, else check md5sum directly
@@ -456,6 +488,42 @@ def _decompress(fname):
 
     shutil.rmtree(fpath_tmp)
     os.remove(fname)
+
+
+def _decompress_dist(fname):
+    env = os.environ
+    if 'PADDLE_TRAINERS_NUM' in env and 'PADDLE_TRAINER_ID' in env:
+        trainer_id = int(env['PADDLE_TRAINER_ID'])
+        num_trainers = int(env['PADDLE_TRAINERS_NUM'])
+        if num_trainers <= 1:
+            _decompress(fname)
+        else:
+            lock_path = fname + '.decompress.lock'
+            from paddle.distributed import ParallelEnv
+            unique_endpoints = _get_unique_endpoints(ParallelEnv()
+                                                     .trainer_endpoints[:])
+            # NOTE(dkp): _decompress_dist always performed after
+            # _download_dist, in _download_dist sub-trainers is waiting
+            # for download lock file release with sleeping, if decompress
+            # prograss is very fast and finished with in the sleeping gap
+            # time, e.g in tiny dataset such as coco_ce, spine_coco, main
+            # trainer may finish decompress and release lock file, so we
+            # only craete lock file in main trainer and all sub-trainer
+            # wait 1s for main trainer to create lock file, for 1s is
+            # twice as sleeping gap, this waiting time can keep all
+            # trainer pipeline in order
+            # **change this if you have more elegent methods**
+            if ParallelEnv().current_endpoint in unique_endpoints:
+                with open(lock_path, 'w'):  # touch    
+                    os.utime(lock_path, None)
+                _decompress(fname)
+                os.remove(lock_path)
+            else:
+                time.sleep(1)
+                while os.path.exists(lock_path):
+                    time.sleep(0.5)
+    else:
+        _decompress(fname)
 
 
 def _move_and_merge_tree(src, dst):
