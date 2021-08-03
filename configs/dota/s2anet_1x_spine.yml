@@ -8,9 +8,9 @@ _BASE_: [
 
 weights: output/s2anet_1x_spine/model_final
 
-# for 4 card
+# for 8 card
 LearningRate:
-  base_lr: 0.005
+  base_lr: 0.01
 
 S2ANetHead:
   anchor_strides: [8, 16, 32, 64, 128]
