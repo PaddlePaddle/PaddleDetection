@@ -1,21 +1,21 @@
 ===========================train_params===========================
 model_name:yolov3_darknet53_270e_coco
 python:python3.7
-gpu_list:0|0,1
-Global.use_gpu:True|True
-Global.auto_cast:False
-Global.epoch_num:lite_train_infer=2|whole_train_infer=300
-Global.save_model_dir:./output/
-Train.loader.batch_size_per_card:lite_train_infer=2|whole_train_infer=4
-Global.pretrained_model:null
-train_model_name:latest
-train_infer_img_dir:./dataset/coco_ce/
+gpu_list:0
+use_gpu:True
+auto_cast:null
+epoch:lite_train_infer=1|whole_train_infer=12
+save_dir:./output/
+TrainReader.batch_size:lite_train_infer=2|whole_train_infer=4
+weights:null
+train_model_name:yolov3_darknet53_270e_coco/model_final.pdparams
+train_infer_img_dir:./demo1/
 null:null
 ##
-trainer:norm_train|pact_train
+trainer:norm_train|fpgm_train|pact_train
 norm_train:tools/train.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
-pact_train:null
-fpgm_train:null
+pact_train:tools/train.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --slim_config configs/slim/quant/yolov3_darknet_qat.yml -o
+fpgm_train:tools/train.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --slim_config configs/slim/prune/yolov3_darknet_prune_fpgm.yml -o
 distill_train:null
 null:null
 null:null
@@ -25,8 +25,8 @@ eval:tools/eval.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
 null:null
 ##
 ===========================infer_params===========================
-Global.save_inference_dir:./output/
-Global.pretrained_model:
+--output_dir:./output/
+weights:
 norm_export:tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
 quant_export:deploy/slim/quantization/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
 fpgm_export:deploy/slim/prune/export_prune_model.py
@@ -35,13 +35,13 @@ null:null
 null:null
 ##
 inference:deploy/python/infer.py
---device:cpu|gpu
+--device:gpu
 --enable_mkldnn:False|True
 --cpu_threads:1|4
 --batch_size:1|2
 --use_tensorrt:null
 --run_mode:fluid
---model_dir:./output_inference/yolov3_darknet53_270e_coco/
+--model_dir:tests/output/norm_train_gpus_0_autocast_null/yolov3_darknet53_270e_coco/
 --image_dir:./demo1/
 --save_log_path:null
 --run_benchmark:True
