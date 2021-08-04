@@ -100,8 +100,8 @@ python3.7 tools/train.py -c configs/dota/s2anet_1x_spine.yml
 
 GPU多卡训练
 ```bash
-export CUDA_VISIBLE_DEVICES=0,1,2,3
-python3.7 -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/dota/s2anet_1x_spine.yml
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+python3.7 -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/dota/s2anet_1x_spine.yml
 ```
 
 可以通过`--eval`开启边训练边测试。
