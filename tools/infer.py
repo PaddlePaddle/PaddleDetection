@@ -140,7 +140,6 @@ def main():
     cfg = load_config(FLAGS.config)
     cfg['use_vdl'] = FLAGS.use_vdl
     cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
-    merge_config(FLAGS.opt)
 
     place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
 
@@ -150,6 +149,7 @@ def main():
     if FLAGS.slim_config:
         cfg = build_slim_model(cfg, FLAGS.slim_config, mode='test')
 
+    merge_config(FLAGS.opt)
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()
