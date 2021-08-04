@@ -25,24 +25,9 @@ from paddle.nn.initializer import KaimingNormal
 from ppdet.core.workspace import register, serializable
 from numbers import Integral
 from ..shape_spec import ShapeSpec
+from ppdet.modeling.ops import channel_shuffle
 
 __all__ = ['ShuffleNetV2']
-
-
-def channel_shuffle(x, groups):
-    batch_size, num_channels, height, width = x.shape[0:4]
-    channels_per_group = num_channels // groups
-
-    # reshape
-    x = paddle.reshape(
-        x=x, shape=[batch_size, groups, channels_per_group, height, width])
-
-    # transpose
-    x = paddle.transpose(x=x, perm=[0, 2, 1, 3, 4])
-
-    # flatten
-    x = paddle.reshape(x=x, shape=[batch_size, num_channels, height, width])
-    return x
 
 
 class ConvBNLayer(nn.Layer):
