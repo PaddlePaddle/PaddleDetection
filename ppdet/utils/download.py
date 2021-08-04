@@ -20,6 +20,7 @@ import os
 import os.path as osp
 import sys
 import yaml
+import time
 import shutil
 import requests
 import tqdm
@@ -29,6 +30,7 @@ import binascii
 import tarfile
 import zipfile
 
+from paddle.utils.download import _get_unique_endpoints
 from ppdet.core.workspace import BASE_KEY
 from .logger import setup_logger
 from .voc_utils import create_list
@@ -144,8 +146,8 @@ def get_config_path(url):
     cfg_url = parse_url(cfg_url)
 
     # 3. download and decompress
-    cfg_fullname = _download(cfg_url, osp.dirname(CONFIGS_HOME))
-    _decompress(cfg_fullname)
+    cfg_fullname = _download_dist(cfg_url, osp.dirname(CONFIGS_HOME))
+    _decompress_dist(cfg_fullname)
 
     # 4. check config file existing
     if os.path.isfile(path):
@@ -281,12 +283,12 @@ def get_path(url, root_dir, md5sum=None, check_exist=True):
         else:
             os.remove(fullpath)
 
-    fullname = _download(url, root_dir, md5sum)
+    fullname = _download_dist(url, root_dir, md5sum)
 
     # new weights format which postfix is 'pdparams' not
     # need to decompress
     if osp.splitext(fullname)[-1] not in ['.pdparams', '.yml']:
-        _decompress(fullname)
+        _decompress_dist(fullname)
 
     return fullpath, False
 
