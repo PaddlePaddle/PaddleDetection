@@ -98,11 +98,11 @@ def main():
     # TODO: to be refined in the future
     if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn':
         FLAGS.opt['norm_type'] = 'bn'
-    merge_config(FLAGS.opt)
 
     if FLAGS.slim_config:
         cfg = build_slim_model(cfg, FLAGS.slim_config, mode='test')
 
+    merge_config(FLAGS.opt)
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()

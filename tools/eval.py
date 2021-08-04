@@ -115,7 +115,6 @@ def main():
     cfg['classwise'] = True if FLAGS.classwise else False
     cfg['output_eval'] = FLAGS.output_eval
     cfg['save_prediction_only'] = FLAGS.save_prediction_only
-    merge_config(FLAGS.opt)
 
     place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
 
@@ -125,6 +124,7 @@ def main():
     if FLAGS.slim_config:
         cfg = build_slim_model(cfg, FLAGS.slim_config, mode='eval')
 
+    merge_config(FLAGS.opt)
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()
