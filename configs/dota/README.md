@@ -9,7 +9,7 @@
 
 ## 简介
 
-[S2ANet](https://arxiv.org/pdf/2008.09397.pdf)是用于检测旋转框的模型，要求使用PaddlePaddle 2.0.1(可使用pip安装) 或适当的[develop版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-release)。
+[S2ANet](https://arxiv.org/pdf/2008.09397.pdf)是用于检测旋转框的模型，要求使用PaddlePaddle 2.1.1(可使用pip安装) 或适当的[develop版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-release)。
 
 
 ## 准备数据
@@ -53,11 +53,11 @@ DOTA数据集中总共有2806张图像，其中1411张图像作为训练集，45
 - PaddlePaddle >= 2.1.1
 - GCC == 8.2
 
-推荐使用docker镜像[paddle:2.0.1-gpu-cuda10.1-cudnn7](registry.baidubce.com/paddlepaddle/paddle:2.1.1-gpu-cuda10.2-cudnn7)。
+推荐使用docker镜像[paddle:2.1.1-gpu-cuda10.1-cudnn7](registry.baidubce.com/paddlepaddle/paddle:2.1.1-gpu-cuda10.1-cudnn7)。
 
 执行如下命令下载镜像并启动容器：
 ```
-sudo nvidia-docker run -it --name paddle_s2anet -v $PWD:/paddle --network=host registry.baidubce.com/paddlepaddle/paddle:2.1.1-gpu-cuda10.2-cudnn7 /bin/bash
+sudo nvidia-docker run -it --name paddle_s2anet -v $PWD:/paddle --network=host registry.baidubce.com/paddlepaddle/paddle:2.1.1-gpu-cuda10.1-cudnn7 /bin/bash
 ```
 
 镜像中paddle已安装好，进入python3.7，执行如下代码检查paddle安装是否正常：
@@ -90,15 +90,7 @@ python3.7 test.py
 
 ### 2. 训练
 **注意：**
-配置文件中学习率是按照4卡GPU训练设置的，如果使用单卡GPU训练，请将学习率设置为原来的1/4。
-
-准备数据
-```bash
-cd dataset/spine_coco
-wget https://paddledet.bj.bcebos.com/data/spine_coco.tar
-tar -xvf spine_coco.tar
-cd ../../
-```
+配置文件中学习率是按照8卡GPU训练设置的，如果使用单卡GPU训练，请将学习率设置为原来的1/8。
 
 GPU单卡训练
 ```bash
@@ -108,25 +100,26 @@ python3.7 tools/train.py -c configs/dota/s2anet_1x_spine.yml
 
 GPU多卡训练
 ```bash
-export CUDA_VISIBLE_DEVICES=0,1,2,3
-python3.7 -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/dota/s2anet_1x_spine.yml
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+python3.7 -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/dota/s2anet_1x_spine.yml
 ```
 
 可以通过`--eval`开启边训练边测试。
 
-### 2. 评估
+### 3. 评估
 ```bash
 python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2anet_1x_spine/model_final.pdparams
 ```
+** 注意：**  dota数据集中是train和val数据作为训练集一起训练的，对dota数据集进行评估时需要自定义设置评估数据集配置。
 
-### 3. 预测
-执行如下命令，会将图像预测结果保存到`output_dir`文件夹下。
+### 4. 预测
+执行如下命令，会将图像预测结果保存到`output`文件夹下。
 ```bash
 python3.7 tools/infer.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2anet_1x_spine/model_final.pdparams --infer_img=demo/39006.jpg
 ```
 
-### 4. DOTA数据评估
-执行如下命令，会在`output_dir`文件夹下将每个图像预测结果保存到同文件夹名的txt文本中。
+### 5. DOTA数据评估
+执行如下命令，会在`output`文件夹下将每个图像预测结果保存到同文件夹名的txt文本中。
 ```
 python3.7 tools/infer.py -c configs/dota/s2anet_1x_dota.yml -o weights=./weights/s2anet_1x_dota.pdparams  --infer_dir=dota_test_images --draw_threshold=0.05 --save_txt=True --output_dir=output
 ```
