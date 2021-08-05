@@ -1,0 +1,4 @@
+pynvml
+psutil
+GPUtil
+paddleslim
