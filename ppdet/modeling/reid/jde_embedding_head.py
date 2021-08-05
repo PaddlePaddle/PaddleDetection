@@ -92,9 +92,7 @@ class JDEEmbeddingHead(nn.Layer):
                     kernel_size=3,
                     stride=1,
                     padding=1,
-                    weight_attr=ParamAttr(name=name + '.conv.weights'),
-                    bias_attr=ParamAttr(
-                        name=name + '.conv.bias', regularizer=L2Decay(0.))))
+                    bias_attr=ParamAttr(regularizer=L2Decay(0.))))
             self.identify_outputs.append(identify_output)
 
             loss_p_cls = self.add_sublayer('cls.{}'.format(i), LossParam(-4.15))

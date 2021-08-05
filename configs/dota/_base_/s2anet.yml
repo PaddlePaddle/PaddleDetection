@@ -53,4 +53,3 @@ S2ANetBBoxPostProcess:
     score_threshold: 0.05
     nms_threshold: 0.1
     normalized: False
-    #background_label: -1

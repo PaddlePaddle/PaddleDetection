@@ -89,16 +89,12 @@ class PCBPyramid(nn.Layer):
             if idx_branches >= sum(self.num_in_each_level[0:idx_levels + 1]):
                 idx_levels += 1
 
-            name = "Linear_branch_id_{}".format(idx_branches)
             fc = nn.Linear(
                 in_features=num_conv_out_channels,
                 out_features=self.num_classes,
-                weight_attr=ParamAttr(
-                    name=name + "_weights",
-                    initializer=Normal(
-                        mean=0., std=0.001)),
-                bias_attr=ParamAttr(
-                    name=name + "_bias", initializer=Constant(value=0.)))
+                weight_attr=ParamAttr(initializer=Normal(
+                    mean=0., std=0.001)),
+                bias_attr=ParamAttr(initializer=Constant(value=0.)))
             pyramid_fc_list.append(fc)
         return pyramid_conv_list, pyramid_fc_list
 
