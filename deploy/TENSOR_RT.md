@@ -73,7 +73,7 @@ Paddle预测库关于动态尺寸输入请查看[Paddle CPP预测](https://www.p
 
 以`Faster RCNN`为例，使用动态尺寸输入预测：
 ```
-python python/infer.py --model_dir=./output_inference/faster_rcnn_r50_fpn_1x_coco/ --image_file=.s/demo/000000014439.jpg --device=GPU --run_mode=trt_fp16 --run_benchmark=True --trt_max_shape=1280 --trt_min_shape=800 --trt_opt_shape=960
+python python/infer.py --model_dir=./output_inference/faster_rcnn_r50_fpn_1x_coco/ --image_file=./demo/000000014439.jpg --device=GPU --run_mode=trt_fp16 --run_benchmark=True --trt_max_shape=1280 --trt_min_shape=800 --trt_opt_shape=960
 ```
 
 ## 4、常见问题QA
