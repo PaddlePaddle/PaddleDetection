@@ -251,6 +251,7 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 - [Keypoint detection](configs/keypoint)
   - HigherHRNet
   - HRNet
+  - LiteHRNet
 - [Multi-Object Tracking](configs/mot/README.md)
   - [DeepSORT](configs/mot/deepsort/README.md)
   - [JDE](configs/mot/jde/README.md)

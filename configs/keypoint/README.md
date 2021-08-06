@@ -14,21 +14,25 @@
 
 ####   Model Zoo
 COCO数据集
-| 模型              | 输入尺寸 | 通道数 | AP(coco val) |                           模型下载                           | 配置文件                                                    |
-| :---------------- | -------- | ------ | :----------: | :----------------------------------------------------------: | ----------------------------------------------------------- |
-| HigherHRNet       | 512      | 32     |     67.1     | [higherhrnet_hrnet_w32_512.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_512.yml)       |
-| HigherHRNet       | 640      | 32     |     68.3     | [higherhrnet_hrnet_w32_640.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_640.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_640.yml)       |
-| HigherHRNet+SWAHR | 512      | 32     |     68.9     | [higherhrnet_hrnet_w32_512_swahr.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512_swahr.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_512_swahr.yml) |
-| HRNet             | 256x192  | 32     |     76.9     | [hrnet_w32_256x192.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams) | [config](./hrnet/hrnet_w32_256x192.yml)                     |
-| HRNet             | 384x288  | 32     |     77.8     | [hrnet_w32_384x288.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams) | [config](./hrnet/hrnet_w32_384x288.yml)                     |
-| HRNet+DarkPose             | 256x192  | 32     |     78.0     | [dark_hrnet_w32_256x192.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/dark_hrnet_w32_256x192.pdparams) | [config](./hrnet/dark_hrnet_w32_256x192.yml)                     |
-| HRNet+DarkPose             | 384x288  | 32     |     78.3     | [dark_hrnet_w32_384x288.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/dark_hrnet_w32_384x288.pdparams) | [config](./hrnet/dark_hrnet_w32_384x288.yml)                     |
+| 模型              | 输入尺寸 | AP(coco val) |                           模型下载                           | 配置文件                                                    |
+| :---------------- | -------- | :----------: | :----------------------------------------------------------: | ----------------------------------------------------------- |
+| HigherHRNet-w32       | 512      |     67.1     | [higherhrnet_hrnet_w32_512.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_512.yml)       |
+| HigherHRNet-w32       | 640      |     68.3     | [higherhrnet_hrnet_w32_640.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_640.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_640.yml)       |
+| HigherHRNet-w32+SWAHR | 512      |     68.9     | [higherhrnet_hrnet_w32_512_swahr.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512_swahr.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_512_swahr.yml) |
+| HRNet-w32             | 256x192  |     76.9     | [hrnet_w32_256x192.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams) | [config](./hrnet/hrnet_w32_256x192.yml)                     |
+| HRNet-w32             | 384x288  |     77.8     | [hrnet_w32_384x288.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams) | [config](./hrnet/hrnet_w32_384x288.yml)                     |
+| HRNet-w32+DarkPose             | 256x192  |     78.0     | [dark_hrnet_w32_256x192.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/dark_hrnet_w32_256x192.pdparams) | [config](./hrnet/dark_hrnet_w32_256x192.yml)                     |
+| HRNet-w32+DarkPose             | 384x288  |     78.3     | [dark_hrnet_w32_384x288.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/dark_hrnet_w32_384x288.pdparams) | [config](./hrnet/dark_hrnet_w32_384x288.yml)                     |
+| LiteHRNet-18                   | 256x192  |     66.5     | [lite_hrnet_18_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_18_256x192_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_18_256x192_coco.yml)     |
+| LiteHRNet-30                   | 256x192  |     69.4     | [lite_hrnet_30_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_256x192_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_256x192_coco.yml)     |
+
+
 备注： Top-Down模型测试AP结果基于GroundTruth标注框
 
 MPII数据集
-| 模型  | 输入尺寸 | 通道数 | PCKh(Mean) | PCKh(Mean@0.1) |                           模型下载                           | 配置文件                                     |
-| :---- | -------- | ------ | :--------: | :------------: | :----------------------------------------------------------: | -------------------------------------------- |
-| HRNet | 256x256  | 32     |    90.6    |      38.5      | [hrnet_w32_256x256_mpii.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x256_mpii.pdparams) | [config](./hrnet/hrnet_w32_256x256_mpii.yml) |
+| 模型  | 输入尺寸 | PCKh(Mean) | PCKh(Mean@0.1) |                           模型下载                           | 配置文件                                     |
+| :---- | -------- | :--------: | :------------: | :----------------------------------------------------------: | -------------------------------------------- |
+| HRNet-w32 | 256x256  |    90.6    |      38.5      | [hrnet_w32_256x256_mpii.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x256_mpii.pdparams) | [config](./hrnet/hrnet_w32_256x256_mpii.yml) |
 
 
 ## 快速开始
@@ -145,5 +149,12 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
     booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
     month = {June},
     year = {2020}
+}
+
+@inproceedings{Yulitehrnet21,
+  title={Lite-HRNet: A Lightweight High-Resolution Network},
+  author={Yu, Changqian and Xiao, Bin and Gao, Changxin and Yuan, Lu and Zhang, Lei and Sang, Nong and Wang, Jingdong},
+  booktitle={CVPR},
+  year={2021}
 }
 ```
