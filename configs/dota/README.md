@@ -121,7 +121,7 @@ python3.7 tools/infer.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s
 ### 5. DOTA数据评估
 执行如下命令，会在`output`文件夹下将每个图像预测结果保存到同文件夹名的txt文本中。
 ```
-python3.7 tools/infer.py -c configs/dota/s2anet_1x_dota.yml -o weights=./weights/s2anet_1x_dota.pdparams  --infer_dir=dota_test_images --draw_threshold=0.05 --save_txt=True --output_dir=output
+python3.7 tools/infer.py -c configs/dota/s2anet_alignconv_2x_dota.yml -o weights=./weights/s2anet_alignconv_2x_dota.pdparams  --infer_dir=dota_test_images --draw_threshold=0.05 --save_txt=True --output_dir=output
 ```
 
 请参考[DOTA_devkit](https://github.com/CAPTAIN-WHU/DOTA_devkit) 生成评估文件，评估文件格式请参考[DOTA Test](http://captain.whu.edu.cn/DOTAweb/tasks.html) ，生成zip文件，每个类一个txt文件，txt文件中每行格式为：`image_id score x1 y1 x2 y2 x3 y3 x4 y4`，提交服务器进行评估。
@@ -144,6 +144,7 @@ Paddle中`multiclass_nms`算子的输入支持四边形输入，因此部署时�
 
 部署教程请参考[预测部署](../../deploy/README.md)
 
+**注意：** 由于paddle.detach函数动转静时会导致导出模型尺寸错误，因此在配置文件中增加了`is_training`参数，导出模型预测部署时需要将改参数设置为`False`
 
 ## Citations
 ```
