@@ -21,3 +21,4 @@ S2ANetHead:
   use_sigmoid_cls: True
   reg_loss_weight: [1.0, 1.0, 1.0, 1.0, 1.1]
   cls_loss_weight: [1.1, 1.05]
+  is_training: True
