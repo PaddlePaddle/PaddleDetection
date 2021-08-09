@@ -237,6 +237,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 - [关键点检测](configs/keypoint)
     - HigherHRNet
     - HRNet
+    - LiteHRNet
 - [多目标跟踪](configs/mot/README_cn.md)
     - [DeepSORT](configs/mot/deepsort/README_cn.md)
     - [JDE](configs/mot/jde/README_cn.md)
