@@ -19,10 +19,10 @@ import shutil
 import subprocess
 from setuptools import find_packages, setup
 
-
 # ==============  version definition  ==============
 
-PPDET_VERSION = "2.1.0"
+PPDET_VERSION = "2.2.0"
+
 
 def parse_version():
     return PPDET_VERSION.replace('-', '')
@@ -31,8 +31,9 @@ def parse_version():
 def git_commit():
     try:
         cmd = ['git', 'rev-parse', 'HEAD']
-        git_commit = subprocess.Popen(cmd, stdout = subprocess.PIPE,
-            ).communicate()[0].strip()
+        git_commit = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE, ).communicate()[0].strip()
         git_commit = git_commit.decode()
     except:
         git_commit = 'Unknown'
@@ -49,9 +50,8 @@ commit          = '%(commit)s'
 
     _git_commit = git_commit()
     with open(filename, 'w') as f:
-        f.write(ver_str % {
-            'version': PPDET_VERSION,
-            'commit': _git_commit})
+        f.write(ver_str % {'version': PPDET_VERSION, 'commit': _git_commit})
+
 
 write_version_py()
 
