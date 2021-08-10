@@ -195,6 +195,10 @@ def get_dataset_path(path, annotation, image_dir):
                         "Please apply and download the dataset following docs/tutorials/PrepareMOTDataSet.md".
                         format(name))
 
+            if name == "spine_coco":
+                if _dataset_exists(data_dir, annotation, image_dir):
+                    return data_dir
+
             # For voc, only check dir VOCdevkit/VOC2012, VOCdevkit/VOC2007
             if name in ['voc', 'fruit', 'roadsign_voc']:
                 exists = True
