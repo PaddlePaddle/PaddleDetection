@@ -128,6 +128,8 @@ def main():
     if FLAGS.slim_config:
         cfg = build_slim_model(cfg, FLAGS.slim_config)
 
+    # FIXME: Temporarily solve the priority problem of FLAGS.opt
+    merge_config(FLAGS.opt)
     check.check_config(cfg)
     check.check_gpu(cfg.use_gpu)
     check.check_version()
