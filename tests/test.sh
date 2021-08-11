@@ -312,7 +312,7 @@ else
 
                 # load pretrain from norm training if current trainer is pact or fpgm trainer
                 if [ ${trainer} = ${pact_key} ] || [ ${trainer} = ${fpgm_key} ]; then
-                    set_pretrain="${load_norm_train_model}"
+                    set_pretrain=$(func_set_params "${pretrain_model_key}" "${save_log}/${train_model_name}")
                 fi
 
                 set_save_model=$(func_set_params "${save_model_key}" "${save_log}")
@@ -328,15 +328,11 @@ else
                 eval $cmd
                 status_check $? "${cmd}" "${status_log}"
 
-                set_eval_pretrain=$(func_set_params "${pretrain_model_key}" "${save_log}/${train_model_name}")
-                # save norm trained models to set pretrain for pact training and fpgm training
-                if [ ${trainer} = ${trainer_norm} ]; then
-                    load_norm_train_model=${set_eval_pretrain}
-                fi
+                set_eval_trained_weight=$(func_set_params "weights" "${save_log}/${train_model_name}")
                 # run eval
                 if [ ${eval_py} != "null" ]; then
                     set_eval_params1=$(func_set_params "${eval_key1}" "${eval_value1}")
-                    eval_cmd="${python} ${eval_py} ${set_eval_pretrain} ${set_use_gpu} ${set_eval_params1}"
+                    eval_cmd="${python} ${eval_py} ${set_eval_trained_weight} ${set_use_gpu} ${set_eval_params1}"
                     eval $eval_cmd
                     status_check $? "${eval_cmd}" "${status_log}"
                 fi

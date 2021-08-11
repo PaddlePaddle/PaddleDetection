@@ -7,10 +7,10 @@ auto_cast:null
 epoch:lite_train_infer=1|whole_train_infer=365
 save_dir:./output/
 TrainReader.batch_size:lite_train_infer=2|whole_train_infer=12
-weights:null
+pretrain_weights:./tests/weights/ppyolov2_r50vd_dcn_365e_coco.pdparams
 train_model_name:ppyolov2_r50vd_dcn_365e_coco/model_final.pdparams
 train_infer_img_dir:./tests/demo/
-pretrain_weights:./tests/weights/ppyolov2_r50vd_dcn_365e_coco.pdparams
+filename:ppyolov2_r50vd_dcn_365e_coco
 ##
 trainer:norm_train
 norm_train:tools/train.py -c configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml -o
