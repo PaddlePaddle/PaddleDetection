@@ -392,8 +392,7 @@ def predict_video(detector, reid_model, camera_id):
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
             cv2.imwrite(
-                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)),
-                im)
+                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
         else:
             writer.write(im)
         frame_id += 1
