@@ -15,7 +15,7 @@ PaddleDetection提供了Paddle Inference、Paddle Serving、Paddle-Lite多种部
 
 ### 1.1 导出模型
 
-使用`tools/export_model.py`脚本导出模型已经部署时使用的配置文件，配置文件名字为`infer_cfg.yml`。模型导出脚本如下：
+使用`tools/export_model.py`脚本导出模型以及部署时使用的配置文件，配置文件名字为`infer_cfg.yml`。模型导出脚本如下：
 ```bash
 # 导出YOLOv3模型
 python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o weights=output/yolov3_mobilenet_v1_roadsign/best_model.pdparams
