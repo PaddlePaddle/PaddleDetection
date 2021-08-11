@@ -357,7 +357,7 @@ def boxes_iou(boxes1, boxes2):
     '''
     area1 = box_area(boxes1)
     area2 = box_area(boxes2)
-    
+
     lt = paddle.maximum(boxes1.unsqueeze(-2)[:, :, :2], boxes2[:, :2])
     rb = paddle.minimum(boxes1.unsqueeze(-2)[:, :, 2:], boxes2[:, 2:])
 
