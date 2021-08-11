@@ -66,10 +66,16 @@ else
     rm -rf coco_ce/ && cd ../../
     if [[ ${model_name} = "yolov3_darknet53_270e_coco" ]]; then
         wget -nc -P ./tests/weights/ https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams
+        wget -nc -P ./tests/weights/ https://paddledet.bj.bcebos.com/models/slim/yolov3_darknet_coco_qat.pdparams
+        wget -nc -P ./tests/weights/ https://paddledet.bj.bcebos.com/models/slim/yolov3_darknet_prune_fpgm.pdparams
     elif [[ ${model_name} = "ppyolo_r50vd_dcn_1x_coco" ]]; then
         wget -nc -P ./tests/weights/ https://paddledet.bj.bcebos.com/models/ppyolo_r50vd_dcn_1x_coco.pdparams
+        wget -nc -P ./tests/weights/ https://paddledet.bj.bcebos.com/models/slim/ppyolo_r50vd_qat_pact.pdparams
+        wget -nc -P ./tests/weights/ https://paddledet.bj.bcebos.com/models/slim/ppyolo_r50vd_prune_fpgm.pdparams
     elif [[ ${model_name} = "ppyolo_mbv3_large_coco" ]]; then
         wget -nc -P ./tests/weights/ https://paddledet.bj.bcebos.com/models/ppyolo_mbv3_large_coco.pdparams
+        wget -nc -P ./tests/weights/ https://paddledet.bj.bcebos.com/models/slim/ppyolo_mbv3_large_qat.pdparams
+        wget -nc -P ./tests/weights/ https://paddledet.bj.bcebos.com/models/slim/ppyolo_mbv3_large_prune_fpgm.pdparams
     elif [[ ${model_name} = "ppyolov2_r50vd_dcn_365e_coco" ]]; then
         wget -nc -P ./tests/weights/ https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams
     elif [[ ${model_name} = "mask_rcnn_r50_fpn_1x_coco" ]]; then

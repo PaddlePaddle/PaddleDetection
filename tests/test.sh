@@ -231,12 +231,13 @@ if [ ${MODE} = "infer" ]; then
     IFS="|"
     infer_run_exports=(${infer_export_list})
     infer_quant_flag=(${infer_is_quant})
+    set_train_params1=$(func_set_params "${train_param_key1}" "${train_param_value1}")
     for infer_model in ${infer_model_dir_list[*]}; do
         # run export
         if [ ${infer_run_exports[Count]} != "null" ];then
-            set_export_weight=$(func_set_params "${export_weight}" "${infer_model}")
-            set_save_infer_key=$(func_set_params "${save_infer_key}" "${infer_model}")
-            export_cmd="${python} ${norm_export} ${set_export_weight} ${set_save_infer_key}"
+            set_export_weight=$(func_set_params "${export_weight}" "${infer_run_exports[Count]}/${infer_model}")
+            set_save_infer_key=$(func_set_params "${save_infer_key}" "${infer_run_exports[Count]}")
+            export_cmd="${python} ${norm_export} ${set_export_weight} ${set_train_params1} ${set_save_infer_key}"
             eval $export_cmd
             status_export=$?
             if [ ${status_export} = 0 ];then
@@ -245,6 +246,7 @@ if [ ${MODE} = "infer" ]; then
         fi
         #run inference
         is_quant=${infer_quant_flag[Count]}
+        infer_model="${infer_run_exports[Count]}/${train_param_value1}"
         func_inference "${python}" "${inference_py}" "${infer_model}" "${LOG_PATH}" "${infer_img_dir}" ${is_quant}
         Count=$(($Count + 1))
     done

@@ -34,9 +34,9 @@ distill_export:null
 export1:null
 export2:null
 ##
-infer_model:./tests/weights/ppyolo_r50vd_dcn_1x_coco.pdparams
-infer_export:True
-infer_quant:False
+infer_model:ppyolo_r50vd_dcn_1x_coco.pdparams|ppyolo_r50vd_qat_pact.pdparams|ppyolo_r50vd_prune_fpgm.pdparams
+infer_export:./tests/weights|./tests/weights|./tests/weights
+infer_quant:False|True|False
 inference:deploy/python/infer.py
 --device:gpu|cpu
 --enable_mkldnn:False|True
