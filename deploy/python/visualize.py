@@ -240,7 +240,9 @@ def draw_pose(imgfile,
         raise e
 
     skeletons, scores = results['keypoint']
-    kpt_nums = skeletons.shape[1]
+    kpt_nums = 17
+    if len(skeletons) > 0:
+        kpt_nums = skeletons.shape[1]
     if kpt_nums == 17:  #plot coco keypoint
         EDGES = [(0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6), (5, 7), (6, 8),
                  (7, 9), (8, 10), (5, 11), (6, 12), (11, 13), (12, 14),

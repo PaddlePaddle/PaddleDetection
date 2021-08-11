@@ -149,7 +149,12 @@ class ImageFolder(DetDataset):
         self.sample_num = sample_num
 
     def check_or_download_dataset(self):
-        return
+        if self.dataset_dir:
+            # NOTE: ImageFolder is only used for prediction, in
+            #       infer mode, image_dir is set by set_images
+            #       so we only check anno_path here
+            self.dataset_dir = get_dataset_path(self.dataset_dir,
+                                                self.anno_path, None)
 
     def parse_dataset(self, ):
         if not self.roidbs:

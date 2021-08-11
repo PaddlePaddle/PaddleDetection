@@ -238,7 +238,7 @@ class DetectionMAP(object):
         """
         self.class_score_poss = [[] for _ in range(self.class_num)]
         self.class_gt_counts = [0] * self.class_num
-        self.mAP = None
+        self.mAP = 0.0
 
     def accumulate(self):
         """

@@ -1,11 +1,11 @@
 _BASE_: [
   '../datasets/dota.yml',
   '../runtime.yml',
-  '_base_/s2anet_optimizer_1x.yml',
+  '_base_/s2anet_optimizer_2x.yml',
   '_base_/s2anet.yml',
   '_base_/s2anet_reader.yml',
 ]
-weights: output/s2anet_1x_dota/model_final
+weights: output/s2anet_conv_1x_dota/model_final
 
 S2ANetHead:
   anchor_strides: [8, 16, 32, 64, 128]
@@ -21,3 +21,4 @@ S2ANetHead:
   use_sigmoid_cls: True
   reg_loss_weight: [1.0, 1.0, 1.0, 1.0, 1.1]
   cls_loss_weight: [1.1, 1.05]
+  is_training: True

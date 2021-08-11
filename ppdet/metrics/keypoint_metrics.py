@@ -14,7 +14,7 @@
 
 import os
 import json
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import numpy as np
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
