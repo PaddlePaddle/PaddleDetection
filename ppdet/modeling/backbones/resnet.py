@@ -186,7 +186,6 @@ class BasicBlock(nn.Layer):
                  dcn_v2=False,
                  std_senet=False):
         super(BasicBlock, self).__init__()
-        assert dcn_v2 is False, "Not implemented yet."
         assert groups == 1 and base_width == 64, 'BasicBlock only supports groups=1 and base_width=64'
 
         self.shortcut = shortcut
@@ -239,7 +238,8 @@ class BasicBlock(nn.Layer):
             norm_type=norm_type,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
-            lr=lr)
+            lr=lr,
+            dcn_v2=dcn_v2)
 
         self.std_senet = std_senet
         if self.std_senet:
