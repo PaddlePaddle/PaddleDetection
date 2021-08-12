@@ -39,6 +39,6 @@ TestReader:
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
-  - Gt2SparseRCNNTarget: {train: false}
+  - Gt2SparseRCNNTarget: {}
   batch_size: 1
   shuffle: false
