@@ -36,7 +36,7 @@ logger = setup_logger(__name__)
 __all__ = [
     'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
     'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseRCNNTarget', 'PadMaskBatch',
-    'Gt2GFLTarget'
+    'Gt2GFLTarget', 'Gt2CenterTarget',
 ]
 
 
@@ -967,3 +967,24 @@ class PadMaskBatch(BaseOperator):
                 data['gt_rbox'] = rbox
 
         return samples
+
+@register_op
+class Gt2CenterTarget(BaseOperator):
+    """
+    Gt2CenterTarget
+    Generate CenterNet targets by ground truth data
+    
+    Args:
+        down_ratio(int): the down ratio from images to heatmap, 4 by default.
+        alpha(float): the alpha parameter to generate gaussian target.
+            0.54 by default.
+    """
+
+    def __init__(self, num_classes=80, down_ratio=4, alpha=0.54):
+        super(Gt2TTFTarget, self).__init__()
+        self.down_ratio = down_ratio
+        self.num_classes = num_classes
+        self.alpha = alpha
+
+    #def __call__(self, samples, context=None):
+
