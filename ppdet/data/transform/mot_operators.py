@@ -108,7 +108,9 @@ class LetterBoxResize(BaseOperator):
         if not isinstance(im, np.ndarray):
             raise TypeError("{}: image type is not numpy.".format(self))
         if len(im.shape) != 3:
-            raise ImageError('{}: image is not 3-dimensional.'.format(self))
+            from PIL import UnidentifiedImageError
+            raise UnidentifiedImageError(
+                '{}: image is not 3-dimensional.'.format(self))
 
         # apply image
         height, width = self.target_size
@@ -135,7 +137,7 @@ class MOTRandomAffine(BaseOperator):
 
     Args:
         degrees (list[2]): the rotate range to apply, transform range is [min, max]
-        translate (list[2]): the translate range to apply, ransform range is [min, max]
+        translate (list[2]): the translate range to apply, transform range is [min, max]
         scale (list[2]): the scale range to apply, transform range is [min, max]
         shear (list[2]): the shear range to apply, transform range is [min, max]
         borderValue (list[3]): value used in case of a constant border when appling

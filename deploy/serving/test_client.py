@@ -41,4 +41,3 @@ fetch_map = client.predict(
 print(fetch_map)
 fetch_map["image"] = sys.argv[1]
 postprocess(fetch_map)
-
