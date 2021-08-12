@@ -10,7 +10,6 @@ TrainReader:
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
-  - Gt2SparseRCNNTarget: {}
   batch_size: 4
   shuffle: true
   drop_last: true
@@ -25,7 +24,6 @@ EvalReader:
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
-  - Gt2SparseRCNNTarget: {}
   batch_size: 1
   shuffle: false
   drop_last: false

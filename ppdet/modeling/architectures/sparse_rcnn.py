@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import paddle
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
@@ -55,6 +56,23 @@ class SparseRCNN(BaseArch):
         }
 
     def _forward(self):
+        if isinstance(self.inputs["im_shape"], list):
+            self.inputs["im_shape"] = paddle.concat(self.inputs["im_shape"])
+
+        if isinstance(self.inputs["scale_factor"], list):
+            self.inputs["scale_factor"] = paddle.concat(self.inputs["scale_factor"])
+
+        if "scale_factor" in self.inputs:
+            self.inputs["scale_factor_wh"] = paddle.concat([self.inputs["scale_factor"][:, 1:2], 
+                                                            self.inputs["scale_factor"][:, 0:1]], axis=-1)
+        else:
+            self.inputs["scale_factor_wh"] = paddle.ones([len(self.inputs["im_shape"]), 2]).astype("float32")
+
+        self.inputs["img_whwh"] = paddle.concat([self.inputs["im_shape"][:, 1:2],
+                                                 self.inputs["im_shape"][:, 0:1],
+                                                 self.inputs["im_shape"][:, 1:2],
+                                                 self.inputs["im_shape"][:, 0:1]], axis=-1)
+
         body_feats = self.backbone(self.inputs)
         fpn_feats = self.neck(body_feats)
         head_outs = self.head(fpn_feats, self.inputs["img_whwh"])
@@ -65,27 +83,26 @@ class SparseRCNN(BaseArch):
                 self.inputs["scale_factor_wh"], self.inputs["img_whwh"])
             return bboxes
         else:
-            return head_outs
+            batch_gt_class = self.inputs["gt_class"]
+            batch_gt_box = self.inputs["gt_bbox"]
+            batch_whwh = self.inputs["img_whwh"]
+            targets = []
+
+            for i in range(len(batch_gt_class)):
+                boxes = batch_gt_box[i]
+                labels = batch_gt_class[i].squeeze(-1)
+                img_whwh = batch_whwh[i]
+                img_whwh_tgt = img_whwh.unsqueeze(0).tile([int(boxes.shape[0]), 1])
+                targets.append({
+                    "boxes": boxes,
+                    "labels": labels,
+                    "img_whwh": img_whwh,
+                    "img_whwh_tgt": img_whwh_tgt
+                })
+            return head_outs, targets
 
     def get_loss(self):
-        batch_gt_class = self.inputs["gt_class"]
-        batch_gt_box = self.inputs["gt_bbox"]
-        batch_whwh = self.inputs["img_whwh"]
-        targets = []
-
-        for i in range(len(batch_gt_class)):
-            boxes = batch_gt_box[i]
-            labels = batch_gt_class[i].squeeze(-1)
-            img_whwh = batch_whwh[i]
-            img_whwh_tgt = img_whwh.unsqueeze(0).tile([int(boxes.shape[0]), 1])
-            targets.append({
-                "boxes": boxes,
-                "labels": labels,
-                "img_whwh": img_whwh,
-                "img_whwh_tgt": img_whwh_tgt
-            })
-
-        outputs = self._forward()
+        outputs, targets = self._forward()
         loss_dict = self.head.get_loss(outputs, targets)
         acc = loss_dict["acc"]
         loss_dict.pop("acc")
