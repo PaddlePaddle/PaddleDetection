@@ -19,7 +19,7 @@ English | [简体中文](README_cn.md)
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
 | DLA-34(paper)  | 1088x608 |  83.3  |  81.9  |   544  |  3822  |  14095  |     -   |    -   |   -    |
-| DLA-34         | 1088x608 |  83.7  |  83.3  |   435  |  3829  |  13764  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+| DLA-34         | 1088x608 |  83.2  |  83.1  |   499  |  3861  |  14223  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 
 ### FairMOT Results on MOT-16 Test Set
@@ -27,19 +27,19 @@ English | [简体中文](README_cn.md)
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
 | DLA-34(paper)  | 1088x608 |  74.9  |  72.8  |  1074  |    -   |    -   |   25.9   |    -   |   -    |
-| DLA-34         | 1088x608 |  74.8  |  74.4  |  930   |  7038  |  37994 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+| DLA-34         | 1088x608 |  75.0  |  74.7  |  919   |  7934  |  36747 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 **Notes:**
- FairMOT used 8 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
+ FairMOT used 2 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
 
 ## Getting Start
 
 ### 1. Training
 
-Training FairMOT on 8 GPUs with following command
+Training FairMOT on 2 GPUs with following command
 
 ```bash
-python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml
+python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml
 ```
 
 
