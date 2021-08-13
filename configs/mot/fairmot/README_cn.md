@@ -19,26 +19,26 @@
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
 | :--------------| :------- | :----: | :----: | :---: | :----: | :---: | :------: | :----: |:----: |
 | DLA-34(paper)  | 1088x608 |  83.3  |  81.9  |  544  |  3822  | 14095 |    -     |   -   |   -   |
-| DLA-34         | 1088x608 |  83.7  |  83.3  |  435  |  3829  | 13764 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+| DLA-34         | 1088x608 |  83.2  |  83.1  |  499  |  3861  | 14223 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 ### FairMOT在MOT-16 Test Set上结果
 
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: | :----: |
 | DLA-34(paper)  | 1088x608 |  74.9  |  72.8  |  1074  |    -   |    -   |   25.9   |    -   |   -    |
-| DLA-34         | 1088x608 |  74.8  |  74.4  |  930   |  7038  |  37994 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+| DLA-34         | 1088x608 |  75.0  |  74.7  |  919   |  7934  |  36747 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 **注意:**
- FairMOT使用8个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
+ FairMOT使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
 
 ## 快速开始
 
 ### 1. 训练
 
-使用8GPU通过如下命令一键式启动训练
+使用2个GPU通过如下命令一键式启动训练
 
 ```bash
-python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml
+python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml
 ```
 
 ### 2. 评估
