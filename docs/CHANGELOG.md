@@ -20,7 +20,7 @@
     - 新增关键点检测模型联合PP-YOLO预测部署支持
 
 - 文档：
-    - WIndows预测部署文档新增TensorRT版本说明
+    - Windows预测部署文档新增TensorRT版本说明
     - FAQ文档更新发布
 
 - 问题修复：
