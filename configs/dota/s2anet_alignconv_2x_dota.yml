@@ -21,7 +21,7 @@ S2ANetHead:
   align_conv_type: 'AlignConv'  # AlignConv Conv
   align_conv_size: 3
   use_sigmoid_cls: True
-  reg_loss_weight: [1.0, 1.0, 1.0, 1.0, 1.05]
-  cls_loss_weight: [1.05, 1.0]
+  reg_loss_weight: [1.0, 1.0, 1.0, 1.0, 1.1]
+  cls_loss_weight: [1.1, 1.05]
   reg_loss_type: 'l1'
   is_training: True
