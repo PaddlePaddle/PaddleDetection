@@ -264,6 +264,8 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 ## 版本更新
 
+v2.2版本已经在`08/2021`发布，全新发布Transformer检测系列模型，新增关键点检测Dark HRNet模型，新增人头、车辆跟踪垂类模型，发布旋转框检测S2ANet优化模型，主流模型支持batch size > 1预测部署，详细内容请参考[版本更新文档](docs/CHANGELOG.md)
+
 v2.1版本已经在`05/2021`发布，全新发布关键点检测和多目标跟踪能力，支持无标注框检测，发布PPYOLO系列模型压缩模型，新增ONNX模型导出教程，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 v2.0版本已经在`04/2021`发布，全面支持动态图版本，新增支持BlazeFace, PSSDet等系列模型和大量骨干网络，发布PP-YOLO v2, PP-YOLO tiny和旋转框检测S2ANet模型。支持模型蒸馏、VisualDL，新增动态图预测部署benchmark，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
