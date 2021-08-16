@@ -109,13 +109,23 @@ python3.7 -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c 
 ### 3. 评估
 ```bash
 python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2anet_1x_spine/model_final.pdparams
+
+# 使用提供训练好的模型评估
+python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=https://paddledet.bj.bcebos.com/models/s2anet_1x_spine.pdparams
 ```
-** 注意：**  dota数据集中是train和val数据作为训练集一起训练的，对dota数据集进行评估时需要自定义设置评估数据集配置。
+** 注意：** 
+(1) dota数据集中是train和val数据作为训练集一起训练的，对dota数据集进行评估时需要自定义设置评估数据集配置。
+
+(2) 骨骼数据集是由分割数据转换而来，由于椎间盘不同类别对于检测任务而言区别很小，且s2anet算法最后得出的分数较低，评估时默认阈值为0.5，mAP较低是正常的。建议通过可视化查看检测结果。
 
 ### 4. 预测
 执行如下命令，会将图像预测结果保存到`output`文件夹下。
 ```bash
-python3.7 tools/infer.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2anet_1x_spine/model_final.pdparams --infer_img=demo/39006.jpg
+python3.7 tools/infer.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2anet_1x_spine/model_final.pdparams --infer_img=demo/39006.jpg --draw_threshold=0.3
+```
+使用提供训练好的模型预测：
+```bash
+python3.7 tools/infer.py -c configs/dota/s2anet_1x_spine.yml -o weights=https://paddledet.bj.bcebos.com/models/s2anet_1x_spine.pdparams --infer_img=demo/39006.jpg --draw_threshold=0.3
 ```
 
 ### 5. DOTA数据评估
@@ -124,7 +134,7 @@ python3.7 tools/infer.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s
 python3.7 tools/infer.py -c configs/dota/s2anet_alignconv_2x_dota.yml -o weights=./weights/s2anet_alignconv_2x_dota.pdparams  --infer_dir=dota_test_images --draw_threshold=0.05 --save_txt=True --output_dir=output
 ```
 
-请参考[DOTA_devkit](https://github.com/CAPTAIN-WHU/DOTA_devkit) 生成评估文件，评估文件格式请参考[DOTA Test](http://captain.whu.edu.cn/DOTAweb/tasks.html) ，生成zip文件，每个类一个txt文件，txt文件中每行格式为：`image_id score x1 y1 x2 y2 x3 y3 x4 y4`，提交服务器进行评估。
+请参考[DOTA_devkit](https://github.com/CAPTAIN-WHU/DOTA_devkit) 生成评估文件，评估文件格式请参考[DOTA Test](http://captain.whu.edu.cn/DOTAweb/tasks.html) ，生成zip文件，每个类一个txt文件，txt文件中每行格式为：`image_id score x1 y1 x2 y2 x3 y3 x4 y4`，提交服务器进行评估。您也可以参考`dataset/dota_coco/dota_generate_test_result.py`脚本生成评估文件，提交到服务器。
 
 ## 模型库
 
@@ -132,7 +142,7 @@ python3.7 tools/infer.py -c configs/dota/s2anet_alignconv_2x_dota.yml -o weights
 
 |     模型     |  Conv类型  |   mAP    |   模型下载   |   配置文件   |
 |:-----------:|:----------:|:--------:| :----------:| :---------: |
-|   S2ANet    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_1x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_conv_1x_dota.yml)                   |
+|   S2ANet    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_conv_2x_dota.yml)                   |
 |   S2ANet    |  AlignConv |   74.0   |  [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_alignconv_2x_dota.yml)                   |
 
 **注意：** 这里使用`multiclass_nms`，与原作者使用nms略有不同。
