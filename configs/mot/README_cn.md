@@ -42,6 +42,7 @@ pip install -r requirements.txt
 **注意：**
 - `cython_bbox`在windows上安装：`pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`。可参考这个[教程](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)。
 - Windows cuda 11环境下可能无法正常评估，会尽快修复，可换到cuda 10.2或cuda 10.1环境下进行正常评估。
+- 预测需确保已安装[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
 
 ## 模型库
 
@@ -129,7 +130,7 @@ wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
 | DLA-34         | 1088x608 |  74.8  |  74.4  |  930   |  7038  |  37994 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 **注意:**
- FairMOT使用8个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
+ FairMOT使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
 
 
 ## 特色垂类跟踪模型
@@ -227,10 +228,10 @@ dataset/mot
 
 ### 1. 训练
 
-FairMOT使用8GPU通过如下命令一键式启动训练
+FairMOT使用2个GPU通过如下命令一键式启动训练
 
 ```bash
-python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml
+python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml
 ```
 
 ### 2. 评估

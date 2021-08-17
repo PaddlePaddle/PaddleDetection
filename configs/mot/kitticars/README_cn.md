@@ -18,14 +18,14 @@
 | DLA-34         | 1088x608 |   67.9  |    -    |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitticars.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/kitticars/fairmot_dla34_30e_1088x608_kitticars.yml) |
 
 **注意:**
- FairMOT使用8个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
+ FairMOT使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
 
 ## 快速开始
 
 ### 1. 训练
-使用8GPU通过如下命令一键式启动训练
+使用2个GPU通过如下命令一键式启动训练
 ```bash
-python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608_kitticars/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/kitticars/fairmot_dla34_30e_1088x608_kitticars.yml
+python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608_kitticars/ --gpus 0,1 tools/train.py -c configs/mot/kitticars/fairmot_dla34_30e_1088x608_kitticars.yml
 ```
 
 ### 2. 评估
