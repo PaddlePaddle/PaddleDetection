@@ -42,6 +42,7 @@ pip install -r requirements.txt
 **Notes:**
 - Install `cython_bbox` for Windows: `pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`. You can refer to this [tutorial](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows).
 - Evaluation on Windows CUDA 11 environment may not be normally. It will be repaired as soon as possible. You can change to CUDA 10.2 or CUDA 10.1 environment for normal evaluation.
+- Please make sure that [ffmpeg](https://ffmpeg.org/ffmpeg.html) is installed first, on Linux(Ubuntu) platform you can directly install it by the following command:`apt-get update && apt-get install -y ffmpeg`.
 
 
 ## Model Zoo
@@ -129,7 +130,7 @@ If you use a stronger detection model, you can get better results. Each txt is t
 | DLA-34         | 1088x608 |  74.8  |  74.4  |  930   |  7038  |  37994 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 **Notes:**
- FairMOT used 8 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
+ FairMOT used 2 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
 
 
 ## Feature Tracking Model
@@ -229,10 +230,10 @@ dataset/mot
 
 ### 1. Training
 
-Training FairMOT on 8 GPUs with following command
+Training FairMOT on 2 GPUs with following command
 
 ```bash
-python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml
+python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml
 ```
 
 ### 2. Evaluation
