@@ -21,14 +21,14 @@
 | DLA-34         | 1088x608 |  58.2  |  61.3  |  13166   |  141872  |  197074 |    -     | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/mot/headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
 
 **注意:**
- FairMOT使用8个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
+ FairMOT使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
 
 ## 快速开始
 
 ### 1. 训练
-使用8GPU通过如下命令一键式启动训练
+使用2个GPU通过如下命令一键式启动训练
 ```bash
-python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608_headtracking21/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml
+python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608_headtracking21/ --gpus 0,1 tools/train.py -c configs/mot/headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml
 ```
 
 ### 2. 评估
