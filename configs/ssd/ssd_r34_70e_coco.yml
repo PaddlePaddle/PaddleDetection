@@ -1,0 +1,11 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_70e.yml',
+  '_base_/ssd_r34_300.yml',
+  '_base_/ssd_r34_reader.yml',
+]
+weights: output/ssd_r34_70e_coco/model_final
+
+log_iter: 100
+snapshot_epoch: 5
