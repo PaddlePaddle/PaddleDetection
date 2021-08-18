@@ -78,12 +78,11 @@ class FairMOT(BaseArch):
 
             det_loss = det_outs['det_loss']
             loss = self.loss(det_loss, reid_loss)
-            loss.update({
-                'heatmap_loss': det_outs['heatmap_loss'],
-                'size_loss': det_outs['size_loss'],
-                'offset_loss': det_outs['offset_loss'],
-                'reid_loss': reid_loss
-            })
+            for k, v in det_outs.items():
+                if k in ['det_loss', 'neck_feat']:
+                    continue
+                loss[k] = v
+            loss['reid_loss'] = reid_loss
             return loss
         else:
             embedding = self.reid(neck_feat, self.inputs)

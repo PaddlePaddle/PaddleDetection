@@ -36,7 +36,7 @@ logger = setup_logger(__name__)
 
 __all__ = [
     'RGBReverse', 'LetterBoxResize', 'MOTRandomAffine', 'Gt2JDETargetThres',
-    'Gt2JDETargetMax', 'Gt2FairMOTTarget'
+    'Gt2JDETargetMax', 'Gt2FairMOTTarget', 'Gt2PPMOTTarget'
 ]
 
 
@@ -634,3 +634,140 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
         sq3 = np.sqrt(b3**2 - 4 * a3 * c3)
         r3 = (b3 + sq3) / 2
         return min(r1, r2, r3)
+
+
+class Gt2PPMOTTarget(Gt2TTFTarget):
+    __shared__ = ['num_classes']
+    """
+    Generate FairMOT targets by ground truth data.
+    Difference between Gt2FairMOTTarget and Gt2TTFTarget are:
+        1. the gaussian kernal radius to generate a heatmap.
+        2. the targets needed during traing.
+    
+    Args:
+        num_classes(int): the number of classes.
+        down_ratio(int): the down ratio from images to heatmap, 4 by default.
+        max_objs(int): the maximum number of ground truth objects in a image, 500 by default.
+    """
+
+    def __init__(self, num_classes=1, down_ratio=4, max_objs=500, alpha=0.54):
+        super(Gt2TTFTarget, self).__init__()
+        self.down_ratio = down_ratio
+        self.num_classes = num_classes
+        self.max_objs = max_objs
+        self.alpha = alpha
+
+    def __call__(self, samples, context=None):
+        for b_id, sample in enumerate(samples):
+            output_h = sample['image'].shape[1] // self.down_ratio
+            output_w = sample['image'].shape[2] // self.down_ratio
+
+            heatmap = np.zeros(
+                (self.num_classes, output_h, output_w), dtype='float32')
+            box_target = np.ones((4, output_h, output_w), dtype='float32') * -1
+            reg_weight = np.zeros((1, output_h, output_w), dtype='float32')
+
+            index = np.zeros((self.max_objs, ), dtype=np.int64)
+            index_mask = np.zeros((self.max_objs, ), dtype=np.int32)
+            reid = np.zeros((self.max_objs, ), dtype=np.int64)
+
+            gt_bbox = sample['gt_bbox']
+            #gt_bbox[:, 0::2] = np.clip(gt_bbox[:, 0::2], 0, sample['image'].shape[2])
+            #gt_bbox[:, 1::2] = np.clip(gt_bbox[:, 1::2], 0, sample['image'].shape[1])           
+
+            gt_class = sample['gt_class']
+            gt_ide = sample['gt_ide']
+
+            #bbox_w = gt_bbox[:, 2] - gt_bbox[:, 0] + 1
+            #bbox_h = gt_bbox[:, 3] - gt_bbox[:, 1] + 1
+            import copy
+            bbox_amodal = copy.deepcopy(gt_bbox)
+            bbox_amodal[:, 0] = bbox_amodal[:, 0] - bbox_amodal[:, 2] / 2.
+            bbox_amodal[:, 1] = bbox_amodal[:, 1] - bbox_amodal[:, 3] / 2.
+            bbox_amodal[:, 2] = bbox_amodal[:, 0] + bbox_amodal[:, 2]
+            bbox_amodal[:, 3] = bbox_amodal[:, 1] + bbox_amodal[:, 3]
+            bbox_amodal[:, 0::2] = bbox_amodal[:, 0::2] * sample['image'].shape[
+                2]
+            bbox_amodal[:, 1::2] = bbox_amodal[:, 1::2] * sample['image'].shape[
+                1]
+
+            bbox_w = gt_bbox[:, 2]
+            bbox_h = gt_bbox[:, 3]
+            #area = bbox_w * bbox_h
+            area = bbox_w * bbox_h * sample['image'].shape[2] * sample[
+                'image'].shape[1]
+            boxes_areas_log = np.log(area)
+            boxes_ind = np.argsort(boxes_areas_log, axis=0)[::-1]
+            boxes_area_topk_log = boxes_areas_log[boxes_ind]
+            gt_bbox = gt_bbox[boxes_ind]
+            gt_class = gt_class[boxes_ind]
+
+            #feat_gt_bbox = gt_bbox / self.down_ratio
+            #feat_gt_bbox[:, 0::2] = np.clip(feat_gt_bbox[:, 0::2], 0, output_w - 1)
+            #feat_gt_bbox[:, 1::2] = np.clip(feat_gt_bbox[:, 1::2], 0, output_h - 1)
+            #feat_hs, feat_ws = (feat_gt_bbox[:, 3] - feat_gt_bbox[:, 1],
+            #                    feat_gt_bbox[:, 2] - feat_gt_bbox[:, 0])
+
+            feat_gt_bbox = gt_bbox
+            feat_gt_bbox[:, 0::2] = gt_bbox[:, 0::2] * output_w
+            feat_gt_bbox[:, 1::2] = gt_bbox[:, 1::2] * output_h
+            feat_gt_bbox[:, 0] = np.clip(feat_gt_bbox[:, 0], 0, output_w - 1)
+            feat_gt_bbox[:, 1] = np.clip(feat_gt_bbox[:, 1], 0, output_h - 1)
+            feat_ws = feat_gt_bbox[:, 2]
+            feat_hs = feat_gt_bbox[:, 3]
+
+            #ct_inds = np.stack(
+            #    [(gt_bbox[:, 0] + gt_bbox[:, 2]) / 2,
+            #     (gt_bbox[:, 1] + gt_bbox[:, 3]) / 2],
+            #    axis=1) / self.down_ratio
+            ct_inds = np.stack([feat_gt_bbox[:, 0], feat_gt_bbox[:, 1]], axis=1)
+
+            h_radiuses_alpha = (feat_hs / 2. * self.alpha).astype('int32')
+            w_radiuses_alpha = (feat_ws / 2. * self.alpha).astype('int32')
+
+            for k in range(len(gt_bbox)):
+                h = feat_hs[k]
+                w = feat_ws[k]
+                if h > 0 and w > 0:
+                    cls_id = gt_class[k]
+                    fake_heatmap = np.zeros(
+                        (output_h, output_w), dtype='float32')
+                    self.draw_truncate_gaussian(fake_heatmap, ct_inds[k],
+                                                h_radiuses_alpha[k],
+                                                w_radiuses_alpha[k])
+
+                    heatmap[cls_id] = np.maximum(heatmap[cls_id], fake_heatmap)
+                    box_target_inds = fake_heatmap > 0
+                    #box_target[:, box_target_inds] = gt_bbox[k][:, None]
+                    box_target[:, box_target_inds] = bbox_amodal[k][:, None]
+
+                    local_heatmap = fake_heatmap[box_target_inds]
+                    ct_div = np.sum(local_heatmap)
+                    local_heatmap *= boxes_area_topk_log[k]
+                    reg_weight[0, box_target_inds] = local_heatmap / ct_div
+
+                    ide = gt_ide[k][0]
+
+                    ct = np.array(
+                        [ct_inds[k, 0], ct_inds[k, 1]], dtype=np.float32)
+                    ct_int = ct.astype(np.int32)
+                    #print('*********ct_int', ct_int, " gt_bbox", gt_bbox[k, :], ">>>>>>>>>>")
+                    index[k] = ct_int[1] * output_w + ct_int[0]
+                    #print('********index', index[k])
+                    index_mask[k] = 1
+                    reid[k] = ide
+                else:
+                    print('a invalid gt_bbox')
+            sample['ttf_heatmap'] = heatmap
+            sample['ttf_box_target'] = box_target
+            sample['ttf_reg_weight'] = reg_weight
+            sample['index'] = index
+            sample['index_mask'] = index_mask
+            sample['reid'] = reid
+            sample.pop('is_crowd', None)
+            sample.pop('difficult', None)
+            sample.pop('gt_class', None)
+            sample.pop('gt_bbox', None)
+            sample.pop('gt_score', None)
+            sample.pop('gt_ide', None)
+        return samples

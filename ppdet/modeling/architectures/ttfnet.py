@@ -42,12 +42,14 @@ class TTFNet(BaseArch):
                  backbone='DarkNet',
                  neck='TTFFPN',
                  ttf_head='TTFHead',
-                 post_process='BBoxPostProcess'):
+                 post_process='BBoxPostProcess',
+                 for_mot=False):
         super(TTFNet, self).__init__()
         self.backbone = backbone
         self.neck = neck
         self.ttf_head = ttf_head
         self.post_process = post_process
+        self.for_mot = for_mot
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -70,8 +72,21 @@ class TTFNet(BaseArch):
         body_feats = self.neck(body_feats)
         hm, wh = self.ttf_head(body_feats)
         if self.training:
+            if self.for_mot:
+                return hm, wh, body_feats
             return hm, wh
         else:
+            if self.for_mot:
+                bbox, bbox_inds = self.post_process(hm, wh,
+                                                    self.inputs['im_shape'],
+                                                    self.inputs['scale_factor'])
+                output = {
+                    "bbox": bbox,
+                    "bbox_inds": bbox_inds,
+                    "neck_feat": body_feats
+                }
+                return output
+
             bbox, bbox_num = self.post_process(hm, wh, self.inputs['im_shape'],
                                                self.inputs['scale_factor'])
             return bbox, bbox_num
@@ -81,18 +96,28 @@ class TTFNet(BaseArch):
         heatmap = self.inputs['ttf_heatmap']
         box_target = self.inputs['ttf_box_target']
         reg_weight = self.inputs['ttf_reg_weight']
-        hm, wh = self._forward()
+        if self.for_mot:
+            hm, wh, neck_feat = self._forward()
+        else:
+            hm, wh = self._forward()
         head_loss = self.ttf_head.get_loss(hm, wh, heatmap, box_target,
                                            reg_weight)
         loss.update(head_loss)
         total_loss = paddle.add_n(list(loss.values()))
+        if self.for_mot:
+            loss['det_loss'] = total_loss
+            loss['neck_feat'] = neck_feat
+            return loss
         loss.update({'loss': total_loss})
         return loss
 
     def get_pred(self):
-        bbox_pred, bbox_num = self._forward()
-        output = {
-            "bbox": bbox_pred,
-            "bbox_num": bbox_num,
-        }
-        return output
+        if self.for_mot:
+            return self._forward()
+        else:
+            bbox_pred, bbox_num = self._forward()
+            output = {
+                "bbox": bbox_pred,
+                "bbox_num": bbox_num,
+            }
+            return output
