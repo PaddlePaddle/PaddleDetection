@@ -544,26 +544,45 @@ class TopDownAffine(object):
 
     """
 
-    def __init__(self, trainsize):
+    def __init__(self, trainsize, use_udp=False):
         self.trainsize = trainsize
+        self.use_udp = use_udp
 
     def __call__(self, records):
         image = records['image']
         joints = records['joints']
         joints_vis = records['joints_vis']
         rot = records['rotate'] if "rotate" in records else 0
-        trans = get_affine_transform(records['center'], records['scale'] * 200,
-                                     rot, self.trainsize)
-        trans_joint = get_affine_transform(
-            records['center'], records['scale'] * 200, rot,
-            [self.trainsize[0] / 4, self.trainsize[1] / 4])
-        image = cv2.warpAffine(
-            image,
-            trans, (int(self.trainsize[0]), int(self.trainsize[1])),
-            flags=cv2.INTER_LINEAR)
-        for i in range(joints.shape[0]):
-            if joints_vis[i, 0] > 0.0:
-                joints[i, 0:2] = affine_transform(joints[i, 0:2], trans_joint)
+        if self.use_udp:
+            trans = get_warp_matrix(
+                rot, records['center'] * 2.0,
+                [self.trainsize[0] - 1.0, self.trainsize[1] - 1.0],
+                records['scale'] * 200.0)
+            trans_joint = get_warp_matrix(
+                rot, records['center'] * 2.0,
+                [(self.trainsize[0] - 1.0) / 4, (self.trainsize[1] - 1.0) / 4],
+                records['scale'] * 200)
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
+            joints[:, 0:2] = warp_affine_joints(joints[:, 0:2].copy(),
+                                                trans_joint)
+        else:
+            trans = get_affine_transform(records['center'], records['scale'] *
+                                         200, rot, self.trainsize)
+            trans_joint = get_affine_transform(
+                records['center'], records['scale'] * 200, rot,
+                [self.trainsize[0] / 4, self.trainsize[1] / 4])
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
+            for i in range(joints.shape[0]):
+                if joints_vis[i, 0] > 0.0:
+                    joints[i, 0:2] = affine_transform(joints[i, 0:2],
+                                                      trans_joint)
+
         records['image'] = image
         records['joints'] = joints
 
