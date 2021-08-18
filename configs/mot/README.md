@@ -41,7 +41,6 @@ pip install -r requirements.txt
 ```
 **Notes:**
 - Install `cython_bbox` for Windows: `pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`. You can refer to this [tutorial](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows).
-- Evaluation on Windows CUDA 11 environment may not be normally. It will be repaired as soon as possible. You can change to CUDA 10.2 or CUDA 10.1 environment for normal evaluation.
 - Please make sure that [ffmpeg](https://ffmpeg.org/ffmpeg.html) is installed first, on Linux(Ubuntu) platform you can directly install it by the following command:`apt-get update && apt-get install -y ffmpeg`.
 
 
@@ -135,7 +134,7 @@ If you use a stronger detection model, you can get better results. Each txt is t
 
 ## Feature Tracking Model
 
-### 【Head Tracking](./headtracking21/README.md)
+### [Head Tracking](./headtracking21/README.md)
 
 ### FairMOT Results on HT-21 Training Set
 |    backbone      |  input shape |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  download | config |
