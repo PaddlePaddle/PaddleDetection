@@ -41,7 +41,6 @@ pip install -r requirements.txt
 ```
 **注意：**
 - `cython_bbox`在windows上安装：`pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`。可参考这个[教程](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)。
-- Windows cuda 11环境下可能无法正常评估，会尽快修复，可换到cuda 10.2或cuda 10.1环境下进行正常评估。
 - 预测需确保已安装[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
 
 ## 模型库
@@ -135,7 +134,7 @@ wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
 
 ## 特色垂类跟踪模型
 
-### 【人头跟踪（Head Tracking)](./headtracking21/README.md)
+### [人头跟踪（Head Tracking)](./headtracking21/README.md)
 
 ### FairMOT在HT-21 Training Set上结果
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
