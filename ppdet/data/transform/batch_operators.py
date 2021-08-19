@@ -594,6 +594,7 @@ class Gt2GFLTarget(BaseOperator):
         return samples
 
 
+'''
 @register_op
 class Gt2TTFTarget(BaseOperator):
     __shared__ = ['num_classes']
@@ -667,6 +668,93 @@ class Gt2TTFTarget(BaseOperator):
             sample['ttf_heatmap'] = heatmap
             sample['ttf_box_target'] = box_target
             sample['ttf_reg_weight'] = reg_weight
+            sample.pop('gt_ide', None)
+            sample.pop('is_crowd', None)
+            sample.pop('difficult', None)
+            sample.pop('gt_class', None)
+            sample.pop('gt_bbox', None)
+            sample.pop('gt_score', None)
+        return samples
+'''
+
+
+@register_op
+class Gt2TTFTarget(BaseOperator):
+    __shared__ = ['num_classes']
+    """
+    Gt2TTFTarget
+    Generate TTFNet targets by ground truth data
+    
+    Args:
+        num_classes(int): the number of classes.
+        down_ratio(int): the down ratio from images to heatmap, 4 by default.
+        alpha(float): the alpha parameter to generate gaussian target.
+            0.54 by default.
+    """
+
+    def __init__(self, num_classes=80, down_ratio=4, alpha=0.54):
+        super(Gt2TTFTarget, self).__init__()
+        self.down_ratio = down_ratio
+        self.num_classes = num_classes
+        self.alpha = alpha
+
+    def __call__(self, samples, context=None):
+        output_h, output_w = samples[0]['image'].shape[1:]
+        feat_h = output_h // self.down_ratio
+        feat_w = output_w // self.down_ratio
+        for sample in samples:
+            heatmap = np.zeros(
+                (self.num_classes, feat_h, feat_w), dtype='float32')
+            box_target = np.ones((4, feat_h, feat_w), dtype='float32') * -1
+            reg_weight = np.zeros((1, feat_h, feat_w), dtype='float32')
+
+            gt_bbox = sample['gt_bbox']
+            gt_class = sample['gt_class']
+
+            bbox_w = gt_bbox[:, 2] - gt_bbox[:, 0] + 1
+            bbox_h = gt_bbox[:, 3] - gt_bbox[:, 1] + 1
+            area = bbox_w * bbox_h
+            boxes_areas_log = np.log(area)
+            boxes_ind = np.argsort(boxes_areas_log, axis=0)[::-1]
+            boxes_area_topk_log = boxes_areas_log[boxes_ind]
+            gt_bbox = gt_bbox[boxes_ind]
+            gt_class = gt_class[boxes_ind]
+
+            feat_gt_bbox = gt_bbox / self.down_ratio
+            feat_gt_bbox[:, 0::2] = np.clip(feat_gt_bbox[:, 0::2], 0,
+                                            feat_w - 1)
+            feat_gt_bbox[:, 1::2] = np.clip(feat_gt_bbox[:, 1::2], 0,
+                                            feat_h - 1)
+            feat_hs, feat_ws = (feat_gt_bbox[:, 3] - feat_gt_bbox[:, 1],
+                                feat_gt_bbox[:, 2] - feat_gt_bbox[:, 0])
+
+            ct_inds = np.stack(
+                [(gt_bbox[:, 0] + gt_bbox[:, 2]) / 2,
+                 (gt_bbox[:, 1] + gt_bbox[:, 3]) / 2],
+                axis=1) / self.down_ratio
+
+            h_radiuses_alpha = (feat_hs / 2. * self.alpha).astype('int32')
+            w_radiuses_alpha = (feat_ws / 2. * self.alpha).astype('int32')
+
+            for k in range(len(gt_bbox)):
+                cls_id = gt_class[k]
+                fake_heatmap = np.zeros((feat_h, feat_w), dtype='float32')
+                self.draw_truncate_gaussian(fake_heatmap, ct_inds[k],
+                                            h_radiuses_alpha[k],
+                                            w_radiuses_alpha[k])
+
+                heatmap[cls_id] = np.maximum(heatmap[cls_id], fake_heatmap)
+                box_target_inds = fake_heatmap > 0
+                box_target[:, box_target_inds] = gt_bbox[k][:, None]
+
+                local_heatmap = fake_heatmap[box_target_inds]
+                ct_div = np.sum(local_heatmap)
+                local_heatmap *= boxes_area_topk_log[k]
+                reg_weight[0, box_target_inds] = local_heatmap / ct_div
+            sample['ttf_heatmap'] = heatmap
+            sample['ttf_box_target'] = box_target
+            sample['ttf_reg_weight'] = reg_weight
+            sample.pop('gt_ide', None)
             sample.pop('is_crowd', None)
             sample.pop('difficult', None)
             sample.pop('gt_class', None)

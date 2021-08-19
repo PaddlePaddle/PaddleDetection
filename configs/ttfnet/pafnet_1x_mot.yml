@@ -67,6 +67,7 @@ TrainDataset:
 EvalDataset:
   !MOTDataSet
     dataset_dir: /root/data/mot #dataset/mot
-    image_lists: ['citypersons.val', 'caltech.val'] # for detection evaluation
+    #image_lists: ['citypersons.val', 'caltech.val'] # for detection evaluation
+    image_lists: ['mot17.val']
     # image_lists: ['caltech.10k.val', 'cuhksysu.val', 'prw.val'] # for reid evaluation
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']

@@ -855,6 +855,7 @@ class TTFBox(object):
         n, c, feat_h, feat_w = hm.shape[:]
         padw = (feat_w * self.down_ratio - im_shape[0, 1]) / 2
         padh = (feat_h * self.down_ratio - im_shape[0, 0]) / 2
+        #print("padw padh: ", padw, padh)
         x1 = x1 - padw
         y1 = y1 - padh
         x2 = x2 - padw

@@ -98,6 +98,11 @@ class LetterBoxResize(BaseOperator):
         bboxes[:, 1] = ratio * h * (bbox0[:, 1] - bbox0[:, 3] / 2) + padh
         bboxes[:, 2] = ratio * w * (bbox0[:, 0] + bbox0[:, 2] / 2) + padw
         bboxes[:, 3] = ratio * h * (bbox0[:, 1] + bbox0[:, 3] / 2) + padh
+        #bboxes[:, 0] = w * (bbox0[:, 0] - bbox0[:, 2] / 2)
+        #bboxes[:, 1] = h * (bbox0[:, 1] - bbox0[:, 3] / 2)
+        #bboxes[:, 2] = w * (bbox0[:, 0] + bbox0[:, 2] / 2)
+        #bboxes[:, 3] = h * (bbox0[:, 1] + bbox0[:, 3] / 2)
+
         return bboxes
 
     def apply(self, sample, context=None):
@@ -672,14 +677,11 @@ class Gt2PPMOTTarget(Gt2TTFTarget):
             reid = np.zeros((self.max_objs, ), dtype=np.int64)
 
             gt_bbox = sample['gt_bbox']
-            #gt_bbox[:, 0::2] = np.clip(gt_bbox[:, 0::2], 0, sample['image'].shape[2])
-            #gt_bbox[:, 1::2] = np.clip(gt_bbox[:, 1::2], 0, sample['image'].shape[1])           
+            #print('********gt_bbox', gt_bbox)
 
             gt_class = sample['gt_class']
             gt_ide = sample['gt_ide']
 
-            #bbox_w = gt_bbox[:, 2] - gt_bbox[:, 0] + 1
-            #bbox_h = gt_bbox[:, 3] - gt_bbox[:, 1] + 1
             import copy
             bbox_amodal = copy.deepcopy(gt_bbox)
             bbox_amodal[:, 0] = bbox_amodal[:, 0] - bbox_amodal[:, 2] / 2.
@@ -690,37 +692,35 @@ class Gt2PPMOTTarget(Gt2TTFTarget):
                 2]
             bbox_amodal[:, 1::2] = bbox_amodal[:, 1::2] * sample['image'].shape[
                 1]
+            #print('*******bbox_amodal', bbox_amodal)
 
             bbox_w = gt_bbox[:, 2]
             bbox_h = gt_bbox[:, 3]
-            #area = bbox_w * bbox_h
             area = bbox_w * bbox_h * sample['image'].shape[2] * sample[
                 'image'].shape[1]
+            #print('******area', area)
             boxes_areas_log = np.log(area)
             boxes_ind = np.argsort(boxes_areas_log, axis=0)[::-1]
             boxes_area_topk_log = boxes_areas_log[boxes_ind]
+            #print('******boxes_ind', boxes_ind)
             gt_bbox = gt_bbox[boxes_ind]
             gt_class = gt_class[boxes_ind]
-
-            #feat_gt_bbox = gt_bbox / self.down_ratio
-            #feat_gt_bbox[:, 0::2] = np.clip(feat_gt_bbox[:, 0::2], 0, output_w - 1)
-            #feat_gt_bbox[:, 1::2] = np.clip(feat_gt_bbox[:, 1::2], 0, output_h - 1)
-            #feat_hs, feat_ws = (feat_gt_bbox[:, 3] - feat_gt_bbox[:, 1],
-            #                    feat_gt_bbox[:, 2] - feat_gt_bbox[:, 0])
+            #print('******gt_bbox', gt_bbox)
+            #print('******gt_class', gt_class)
 
             feat_gt_bbox = gt_bbox
             feat_gt_bbox[:, 0::2] = gt_bbox[:, 0::2] * output_w
             feat_gt_bbox[:, 1::2] = gt_bbox[:, 1::2] * output_h
+            #print('****feat_gt_bbox', feat_gt_bbox)
             feat_gt_bbox[:, 0] = np.clip(feat_gt_bbox[:, 0], 0, output_w - 1)
             feat_gt_bbox[:, 1] = np.clip(feat_gt_bbox[:, 1], 0, output_h - 1)
             feat_ws = feat_gt_bbox[:, 2]
             feat_hs = feat_gt_bbox[:, 3]
+            #print('******feat_ws', feat_ws)
+            #print('******feat_hs', feat_hs)
 
-            #ct_inds = np.stack(
-            #    [(gt_bbox[:, 0] + gt_bbox[:, 2]) / 2,
-            #     (gt_bbox[:, 1] + gt_bbox[:, 3]) / 2],
-            #    axis=1) / self.down_ratio
             ct_inds = np.stack([feat_gt_bbox[:, 0], feat_gt_bbox[:, 1]], axis=1)
+            #print('******ct_inds', ct_inds)
 
             h_radiuses_alpha = (feat_hs / 2. * self.alpha).astype('int32')
             w_radiuses_alpha = (feat_ws / 2. * self.alpha).astype('int32')
@@ -738,8 +738,9 @@ class Gt2PPMOTTarget(Gt2TTFTarget):
 
                     heatmap[cls_id] = np.maximum(heatmap[cls_id], fake_heatmap)
                     box_target_inds = fake_heatmap > 0
-                    #box_target[:, box_target_inds] = gt_bbox[k][:, None]
+                    #print('*******box_target_inds', box_target_inds)
                     box_target[:, box_target_inds] = bbox_amodal[k][:, None]
+                    #print('*******bbox_target', box_target[:, box_target_inds] )
 
                     local_heatmap = fake_heatmap[box_target_inds]
                     ct_div = np.sum(local_heatmap)
@@ -751,9 +752,7 @@ class Gt2PPMOTTarget(Gt2TTFTarget):
                     ct = np.array(
                         [ct_inds[k, 0], ct_inds[k, 1]], dtype=np.float32)
                     ct_int = ct.astype(np.int32)
-                    #print('*********ct_int', ct_int, " gt_bbox", gt_bbox[k, :], ">>>>>>>>>>")
                     index[k] = ct_int[1] * output_w + ct_int[0]
-                    #print('********index', index[k])
                     index_mask[k] = 1
                     reid[k] = ide
                 else:
