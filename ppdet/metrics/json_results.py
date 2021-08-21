@@ -27,7 +27,13 @@ def get_det_res(bboxes, bbox_nums, image_id, label_to_cat_id_map, bias=0):
             num_id, score, xmin, ymin, xmax, ymax = dt.tolist()
             if int(num_id) < 0:
                 continue
-            category_id = label_to_cat_id_map[int(num_id)]
+            # when a model is trained for customer dataset but initialed with pretrained model,
+            # there is possiblities to genereate class_id not in the map
+            klass_id = int(num_id)
+            if label_to_cat_id_map.get(klass_id, None) is None:
+              category_id = 0 # background
+            else:
+              category_id = label_to_cat_id_map[klass_id]
             w = xmax - xmin + bias
             h = ymax - ymin + bias
             bbox = [xmin, ymin, w, h]
