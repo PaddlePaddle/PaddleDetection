@@ -2,21 +2,22 @@
 
 ## Introduction
 
-[Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection](https://arxiv.org/abs/2006.04388) and [Generalized Focal Loss V2](https://arxiv.org/pdf/2011.12885.pdf)
-
-
+We reproduce the object detection results in the paper [Generalized Focal Loss: Learning Qualified and Distributed Bounding Boxes for Dense Object Detection](https://arxiv.org/abs/2006.04388) and [Generalized Focal Loss V2](https://arxiv.org/pdf/2011.12885.pdf). And We use a better performing pre-trained model and ResNet-vd structure to improve mAP.
 
 ## Model Zoo
 
-| Backbone        | Model      | images/GPU | lr schedule |FPS | Box AP |                           download                          | config |
+| Backbone        | Model      | batch-size/GPU | lr schedule |FPS | Box AP |                           download                          | config |
 | :-------------- | :------------- | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
-| ResNet50-FPN    | GFL           |    2    |   1x      |     ----     |  40.1  | [download](https://paddledet.bj.bcebos.com/models/gfl_r50_fpn_1x_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl/gfl_r50_fpn_1x_coco.yml) |
-| ResNet50-FPN    | GFLv2       |    2    |   1x      |     ----     |  40.4  | [download](https://paddledet.bj.bcebos.com/models/gflv2_r50_fpn_1x_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl/gflv2_r50_fpn_1x_coco.yml) |
+| ResNet50    | GFL           |    2    |   1x      |     ----     |  41.0  | [model](https://paddledet.bj.bcebos.com/models/gfl_r50_fpn_1x_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_gfl_r50_fpn_1x_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl/gfl_r50_fpn_1x_coco.yml) |
+| ResNet101-vd   | GFL           |    2    |   2x      |     ----     |  46.8  | [model](https://paddledet.bj.bcebos.com/models/gfl_r101vd_fpn_mstrain_2x_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_gfl_r101vd_fpn_mstrain_2x_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl/gfl_r101vd_fpn_mstrain_2x_coco.yml) |
+| ResNet34-vd    | GFL           |    2    |   1x      |     ----     |  40.8  | [model](https://paddledet.bj.bcebos.com/models/gfl_r34vd_1x_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_gfl_r34vd_1x_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl/gfl_r34vd_1x_coco.yml) |
+| ResNet18-vd   | GFL           |    2    |   1x      |     ----     |  36.6  | [model](https://paddledet.bj.bcebos.com/models/gfl_r18vd_1x_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_gfl_r18vd_1x_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl/gfl_r18vd_1x_coco.yml) |
+| ResNet50    | GFLv2       |    2    |   1x      |     ----     |  41.2  | [model](https://paddledet.bj.bcebos.com/models/gflv2_r50_fpn_1x_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_gflv2_r50_fpn_1x_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl/gflv2_r50_fpn_1x_coco.yml) |
 
 
 **Notes:**
 
-- GFL is trained on COCO train2017 dataset and evaluated on val2017 results of `mAP(IoU=0.5:0.95)`.
+- GFL is trained on COCO train2017 dataset with 8 GPUs and evaluated on val2017 results of `mAP(IoU=0.5:0.95)`.
 
 ## Citations
 ```

@@ -90,8 +90,12 @@ class Trainer(object):
 
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         if self.use_ema:
+            cycle_epoch = self.cfg.get('cycle_epoch', -1)
             self.ema = ModelEMA(
-                cfg['ema_decay'], self.model, use_thres_step=True)
+                cfg['ema_decay'],
+                self.model,
+                use_thres_step=True,
+                cycle_epoch=cycle_epoch)
 
         # EvalDataset build with BatchSampler to evaluate in single device
         # TODO: multi-device evaluate
@@ -547,8 +551,9 @@ class Trainer(object):
         if image_shape is None:
             image_shape = [3, -1, -1]
 
-        self.model.eval()
         if hasattr(self.model, 'deploy'): self.model.deploy = True
+        if hasattr(self.cfg, 'lite_deploy'):
+            self.model.lite_deploy = self.cfg.lite_deploy
 
         # Save infer cfg
         _dump_infer_config(self.cfg,

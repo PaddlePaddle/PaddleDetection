@@ -251,13 +251,21 @@ class OptimizerBuilder():
 
 
 class ModelEMA(object):
-    def __init__(self, decay, model, use_thres_step=False):
+    def __init__(self, decay, model, use_thres_step=False, cycle_epoch=-1):
         self.step = 0
+        self.epoch = 0
         self.decay = decay
         self.state_dict = dict()
         for k, v in model.state_dict().items():
             self.state_dict[k] = paddle.zeros_like(v)
         self.use_thres_step = use_thres_step
+        self.cycle_epoch = cycle_epoch
+
+    def reset(self):
+        self.step = 0
+        self.epoch = 0
+        for k, v in self.state_dict.items():
+            self.state_dict[k] = paddle.zeros_like(v)
 
     def update(self, model):
         if self.use_thres_step:
@@ -280,4 +288,8 @@ class ModelEMA(object):
             v = v / (1 - self._decay**self.step)
             v.stop_gradient = True
             state_dict[k] = v
+        self.epoch += 1
+        if self.cycle_epoch > 0 and self.epoch == self.cycle_epoch:
+            self.reset()
+
         return state_dict

@@ -6,8 +6,9 @@ _BASE_: [
   '_base_/picodet_416_reader.yml',
 ]
 
-weights: output/picodet_s_shufflenetv2_320_coco/model_final
+weights: output/picodet_s_shufflenetv2_416_coco/model_final
 find_unused_parameters: True
 use_ema: true
 ema_decay: 0.9998
 snapshot_epoch: 10
+cycle_epoch: 40
