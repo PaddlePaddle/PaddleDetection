@@ -19,6 +19,7 @@ from __future__ import division
 import inspect
 import importlib
 import re
+from copy import deepcopy
 
 try:
     from docstring_parser import parse as doc_parse
@@ -52,6 +53,13 @@ class SchemaValue(object):
     def has_default(self):
         return hasattr(self, 'default')
 
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        newone = cls.__new__(cls)
+        for k, v in self.items():
+            newone[k] = v
+        return newone
+
 
 class SchemaDict(dict):
     def __init__(self, **kwargs):
@@ -59,6 +67,7 @@ class SchemaDict(dict):
         self.schema = {}
         self.strict = False
         self.doc = ""
+        self.cfg = None
         self.update(kwargs)
 
     def __setitem__(self, key, value):
@@ -83,12 +92,23 @@ class SchemaDict(dict):
         newone.update(self)
         return newone
 
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        newone = cls.__new__(cls)
+        newone.__dict__.update(self.__dict__)
+        newone.update(self)
+        newone.cfg = memo.get('cfg', None)
+        return newone
+
     def set_schema(self, key, value):
         assert isinstance(value, SchemaValue)
         self.schema[key] = value
 
     def set_strict(self, strict):
         self.strict = strict
+
+    def set_cfg(self, cfg):
+        self.cfg = cfg
 
     def has_default(self, key):
         return key in self.schema and self.schema[key].has_default()

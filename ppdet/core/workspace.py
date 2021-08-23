@@ -22,6 +22,7 @@ import sys
 
 import yaml
 import collections
+from copy import deepcopy
 
 try:
     collectionsAbc = collections.abc
@@ -67,10 +68,33 @@ class AttrDict(dict):
             return self[key]
         raise AttributeError("object has no attribute '{}'".format(key))
 
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        newone = cls.__new__(cls)
+        # set current config to memo, all sub-object SchemaDict
+        # set cfg attribute to its global config, use for create
+        # function to find current processing config by SchemaDict
+        memo['cfg'] = newone
+        for k, v in self.items():
+            newone[k] = deepcopy(v, memo)
+        return newone
+
 
 global_config = AttrDict()
 
+# NOTE: in order for loading multiple configs and create multiple
+#       models, load_config return a unique config AttrDict for
+#       each config filename, this 'filename: config AttrDict'
+#       stores in CONFIGS
+CONFIGS = {}
+
 BASE_KEY = '_BASE_'
+
+
+def _get_config_by_filename(filename):
+    if filename not in CONFIGS:
+        CONFIGS[filename] = copy.deepcopy(global_config)
+    return CONFIGS[filename]
 
 
 # parse and load _BASE_ recursively
@@ -113,9 +137,11 @@ def load_config(file_path):
     # load config from file and merge into global config
     cfg = _load_config_with_base(file_path)
     cfg['filename'] = os.path.splitext(os.path.split(file_path)[-1])[0]
-    merge_config(cfg)
 
-    return global_config
+    unique_cfg = _get_config_by_filename(cfg['filename'])
+    merge_config(cfg, unique_cfg)
+
+    return unique_cfg
 
 
 def dict_merge(dct, merge_dct):
@@ -139,18 +165,31 @@ def dict_merge(dct, merge_dct):
     return dct
 
 
-def merge_config(config, another_cfg=None):
+def merge_config(config, dst_config=None):
     """
     Merge config into global config or another_cfg.
 
     Args:
         config (dict): Config to be merged.
+        dst_config (dict): Config to merge to.
 
     Returns: global config
     """
-    global global_config
-    dct = another_cfg or global_config
-    return dict_merge(dct, config)
+    if dst_config is not None:
+        return dict_merge(dst_config, config)
+
+    num_cfg = len(CONFIGS)
+    if num_cfg  > 1:
+        raise RuntimeError("You are processing {} configs at the "
+                "same time(call load_config {} times to load "
+                "different config files), you should call merge_config"
+                "function with specified config in this situation, "
+                "e.g. merge_config(cfg1, cfg)".format(num_cfg, num_cfg))
+    else:
+        dst_config = list(CONFIGS.values())[0]
+
+    return dict_merge(dst_config, config)
+    
 
 
 def get_registered_modules():
@@ -195,51 +234,74 @@ def register(cls):
     if hasattr(cls, '__op__'):
         cls = make_partial(cls)
     global_config[cls.__name__] = extract_schema(cls)
+    # add a link SchemaDict -> config AttrDict, for find config AttrDict
+    # in create, while create only pass SchemaDict as input
+    global_config[cls.__name__].set_cfg(global_config)
     return cls
 
 
-def create(cls_or_name, **kwargs):
+def create(cls_or_name, config=None, **kwargs):
     """
     Create an instance of given module class.
 
     Args:
         cls_or_name (type or str): Class of which to create instance.
+        config (AttrDict): the config object which you are currently
+                           processing, this must be set if you are
+                           processing multiple configs.
 
     Returns: instance of type `cls_or_name`
     """
     assert type(cls_or_name) in [type, str
                                  ], "should be a class or name of a class"
     name = type(cls_or_name) == str and cls_or_name or cls_or_name.__name__
-    assert name in global_config and \
-        isinstance(global_config[name], SchemaDict), \
+
+    if config is not None:
+        cur_global_config = config
+    else:
+        num_cfg = len(CONFIGS)
+        if num_cfg  > 1:
+            if getattr(cls_or_name, 'cfg', None) is not None:
+                cur_global_config = cls_or_name.cfg
+            else:
+                raise RuntimeError("You are processing {} configs at the "
+                        "same time(call load_config {} times to load "
+                        "different config files), you shole call create "
+                        "function with specified config in this situation, "
+                        "e.g. create(cfg.architecture, config=cfg)".format(num_cfg, num_cfg))
+        else:
+            cur_global_config = list(CONFIGS.values())[0]
+
+    assert name in cur_global_config and \
+        isinstance(cur_global_config[name], SchemaDict), \
         "the module {} is not registered".format(name)
-    config = global_config[name]
-    cls = getattr(config.pymodule, name)
+    cfg = cur_global_config[name]
+    cls = getattr(cfg.pymodule, name)
     cls_kwargs = {}
-    cls_kwargs.update(global_config[name])
+    cls_kwargs.update(cur_global_config[name])
 
     # parse `shared` annoation of registered modules
-    if getattr(config, 'shared', None):
-        for k in config.shared:
-            target_key = config[k]
-            shared_conf = config.schema[k].default
+    if getattr(cfg, 'shared', None):
+        for k in cfg.shared:
+            target_key = cfg[k]
+            shared_conf = cfg.schema[k].default
             assert isinstance(shared_conf, SharedConfig)
             if target_key is not None and not isinstance(target_key,
                                                          SharedConfig):
                 continue  # value is given for the module
-            elif shared_conf.key in global_config:
+            elif shared_conf.key in cur_global_config:
                 # `key` is present in config
-                cls_kwargs[k] = global_config[shared_conf.key]
+                cls_kwargs[k] = cur_global_config[shared_conf.key]
             else:
                 cls_kwargs[k] = shared_conf.default_value
 
     # parse `inject` annoation of registered modules
     if getattr(cls, 'from_config', None):
-        cls_kwargs.update(cls.from_config(config, **kwargs))
+        cls_kwargs.update(cls.from_config(cfg, **kwargs))
 
-    if getattr(config, 'inject', None):
-        for k in config.inject:
-            target_key = config[k]
+    if getattr(cfg, 'inject', None):
+        for k in cfg.inject:
+            target_key = cfg[k]
             # optional dependency
             if target_key is None:
                 continue
@@ -248,11 +310,11 @@ def create(cls_or_name, **kwargs):
                 if 'name' not in target_key.keys():
                     continue
                 inject_name = str(target_key['name'])
-                if inject_name not in global_config:
+                if inject_name not in cur_global_config:
                     raise ValueError(
                         "Missing injection name {} and check it's name in cfg file".
                         format(k))
-                target = global_config[inject_name]
+                target = cur_global_config[inject_name]
                 for i, v in target_key.items():
                     if i == 'name':
                         continue
@@ -260,9 +322,9 @@ def create(cls_or_name, **kwargs):
                 if isinstance(target, SchemaDict):
                     cls_kwargs[k] = create(inject_name)
             elif isinstance(target_key, str):
-                if target_key not in global_config:
+                if target_key not in cur_global_config:
                     raise ValueError("Missing injection config:", target_key)
-                target = global_config[target_key]
+                target = cur_global_config[target_key]
                 if isinstance(target, SchemaDict):
                     cls_kwargs[k] = create(target_key)
                 elif hasattr(target, '__dict__'):  # serialized object

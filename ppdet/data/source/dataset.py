@@ -109,6 +109,13 @@ class DetDataset(Dataset):
         if self.anno_path is None:
             return
         return os.path.join(self.dataset_dir, self.anno_path)
+    
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        newone = cls.__new__(cls)
+        for k, v in self.__dict__.items():
+            setattr(newone, k, v)
+        return newone
 
 
 def _is_valid_file(f, extensions=('.jpg', '.jpeg', '.png', '.bmp')):
