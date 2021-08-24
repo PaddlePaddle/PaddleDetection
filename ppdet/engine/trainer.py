@@ -109,7 +109,7 @@ class Trainer(object):
             self.lr = create('LearningRate')(steps_per_epoch)
             self.optimizer = create('OptimizerBuilder')(self.lr,
                                                         self.model.parameters())
-            
+
             configs = {
                 'pruning_strategy': 'gmp',
                 'stable_iterations': self.cfg.stable_epochs * steps_per_epoch,
@@ -119,11 +119,12 @@ class Trainer(object):
                 'pruning_steps': self.cfg.pruning_steps,
                 'initial_ratio': self.cfg.initial_ratio,
             }
-            self.pruner = make_unstructured_pruner(self.model
-                                              mode='ratio',
-                                              ratio=self.cfg.ratio,
-                                              skip_params_type=self.cfg.skip_params_type,
-                                              configs=configs)
+            self.pruner = make_unstructured_pruner(
+                self.model,
+                mode='ratio',
+                ratio=self.cfg.ratio,
+                skip_params_type=self.cfg.skip_params_type,
+                configs=configs)
 
         self._nranks = dist.get_world_size()
         self._local_rank = dist.get_rank()
@@ -390,6 +391,8 @@ class Trainer(object):
                     self.status['training_staus'].update(outputs)
 
                 self.status['batch_time'].update(time.time() - iter_tic)
+                self.pruner.update_params()
+                print(UnstructuredPruner.total_sparse(self.model))
                 self._compose_callback.on_step_end(self.status)
                 if self.use_ema:
                     self.ema.update(self.model)
@@ -423,6 +426,7 @@ class Trainer(object):
                     self._init_metrics(validate=validate)
                     self._reset_metrics()
                 with paddle.no_grad():
+                    self.pruner.update_params()
                     self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
 

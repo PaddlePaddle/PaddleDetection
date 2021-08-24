@@ -12,7 +12,10 @@ LearningRate:
   base_lr: 0.02
   schedulers:
   - !PiecewiseDecay
-    step_epochs: 187 234
+    gamma: 0.1
+    milestones:
+    - 187
+    - 234
   - !LinearWarmup
     start_factor: 0.1
     steps: 0

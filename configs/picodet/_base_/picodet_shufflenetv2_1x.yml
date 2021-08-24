@@ -1,5 +1,5 @@
 architecture: PicoDet
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ShuffleNetV2_x1_0_pretrained.pdparams
+pretrained_weights: picodet_m_shufflenetv2_320_coco.pdparams
 
 PicoDet:
   backbone: ShuffleNetV2

@@ -66,7 +66,7 @@ class PicoFeat(nn.Layer):
                     ConvNormLayer(
                         ch_in=in_c,
                         ch_out=feat_out,
-                        filter_size=3,
+                        filter_size=5,
                         stride=1,
                         groups=feat_out,
                         norm_type=norm_type,
@@ -91,7 +91,7 @@ class PicoFeat(nn.Layer):
                         ConvNormLayer(
                             ch_in=in_c,
                             ch_out=feat_out,
-                            filter_size=3,
+                            filter_size=5,
                             stride=1,
                             groups=feat_out,
                             norm_type=norm_type,
