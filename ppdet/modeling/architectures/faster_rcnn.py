@@ -53,14 +53,14 @@ class FasterRCNN(BaseArch):
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
-        backbone = create(cfg['backbone'])
+        backbone = create(cfg['backbone'], cfg.root)
         kwargs = {'input_shape': backbone.out_shape}
-        neck = cfg['neck'] and create(cfg['neck'], **kwargs)
+        neck = cfg['neck'] and create(cfg['neck'], cfg.root, **kwargs)
 
         out_shape = neck and neck.out_shape or backbone.out_shape
         kwargs = {'input_shape': out_shape}
-        rpn_head = create(cfg['rpn_head'], **kwargs)
-        bbox_head = create(cfg['bbox_head'], **kwargs)
+        rpn_head = create(cfg['rpn_head'], cfg.root, **kwargs)
+        bbox_head = create(cfg['bbox_head'], cfg.root, **kwargs)
         return {
             'backbone': backbone,
             'neck': neck,

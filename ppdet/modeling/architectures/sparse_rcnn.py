@@ -40,13 +40,13 @@ class SparseRCNN(BaseArch):
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
-        backbone = create(cfg['backbone'])
+        backbone = create(cfg['backbone'], cfg.root)
 
         kwargs = {'input_shape': backbone.out_shape}
-        neck = create(cfg['neck'], **kwargs)
+        neck = create(cfg['neck'], cfg.root, **kwargs)
 
         kwargs = {'roi_input_shape': neck.out_shape}
-        head = create(cfg['head'], **kwargs)
+        head = create(cfg['head'], cfg.root, **kwargs)
 
         return {
             'backbone': backbone,

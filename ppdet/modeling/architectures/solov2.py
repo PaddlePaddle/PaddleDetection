@@ -47,14 +47,14 @@ class SOLOv2(BaseArch):
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
-        backbone = create(cfg['backbone'])
+        backbone = create(cfg['backbone'], cfg.root)
 
         kwargs = {'input_shape': backbone.out_shape}
-        neck = create(cfg['neck'], **kwargs)
+        neck = create(cfg['neck'], cfg.root, **kwargs)
 
         kwargs = {'input_shape': neck.out_shape}
-        solov2_head = create(cfg['solov2_head'], **kwargs)
-        mask_head = create(cfg['mask_head'], **kwargs)
+        solov2_head = create(cfg['solov2_head'], cfg.root, **kwargs)
+        mask_head = create(cfg['mask_head'], cfg.root, **kwargs)
 
         return {
             'backbone': backbone,

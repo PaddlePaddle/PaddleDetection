@@ -59,15 +59,15 @@ class YOLOv3(BaseArch):
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
         # backbone
-        backbone = create(cfg['backbone'])
+        backbone = create(cfg['backbone'], cfg.root)
 
         # fpn
         kwargs = {'input_shape': backbone.out_shape}
-        neck = create(cfg['neck'], **kwargs)
+        neck = create(cfg['neck'], cfg.root, **kwargs)
 
         # head
         kwargs = {'input_shape': neck.out_shape}
-        yolo_head = create(cfg['yolo_head'], **kwargs)
+        yolo_head = create(cfg['yolo_head'], cfg.root, **kwargs)
 
         return {
             'backbone': backbone,

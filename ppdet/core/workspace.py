@@ -62,6 +62,7 @@ class AttrDict(dict):
     def __init__(self, **kwargs):
         super(AttrDict, self).__init__()
         super(AttrDict, self).update(kwargs)
+        self.root = None
 
     def __getattr__(self, key):
         if key in self:
@@ -72,9 +73,9 @@ class AttrDict(dict):
         cls = self.__class__
         newone = cls.__new__(cls)
         # set current config to memo, all sub-object SchemaDict
-        # set cfg attribute to its global config, use for create
+        # set root attribute to its global config, use for create
         # function to find current processing config by SchemaDict
-        memo['cfg'] = newone
+        memo['root'] = newone
         for k, v in self.items():
             newone[k] = deepcopy(v, memo)
         return newone
@@ -93,7 +94,9 @@ BASE_KEY = '_BASE_'
 
 def _get_config_by_filename(filename):
     if filename not in CONFIGS:
-        CONFIGS[filename] = copy.deepcopy(global_config)
+        new_global_config = deepcopy(global_config)
+        new_global_config.root = global_config
+        CONFIGS[filename] = new_global_config
     return CONFIGS[filename]
 
 
@@ -236,7 +239,7 @@ def register(cls):
     global_config[cls.__name__] = extract_schema(cls)
     # add a link SchemaDict -> config AttrDict, for find config AttrDict
     # in create, while create only pass SchemaDict as input
-    global_config[cls.__name__].set_cfg(global_config)
+    global_config[cls.__name__].set_root(global_config)
     return cls
 
 
@@ -320,17 +323,18 @@ def create(cls_or_name, config=None, **kwargs):
                         continue
                     target[i] = v
                 if isinstance(target, SchemaDict):
-                    cls_kwargs[k] = create(inject_name)
+                    cls_kwargs[k] = create(inject_name, cur_global_config)
             elif isinstance(target_key, str):
                 if target_key not in cur_global_config:
                     raise ValueError("Missing injection config:", target_key)
                 target = cur_global_config[target_key]
                 if isinstance(target, SchemaDict):
-                    cls_kwargs[k] = create(target_key)
+                    cls_kwargs[k] = create(target_key, cur_global_config)
                 elif hasattr(target, '__dict__'):  # serialized object
                     cls_kwargs[k] = target
             else:
                 raise ValueError("Unsupported injection type:", target_key)
+
     # prevent modification of global config values of reference types
     # (e.g., list, dict) from within the created module instances
     #kwargs = copy.deepcopy(kwargs)

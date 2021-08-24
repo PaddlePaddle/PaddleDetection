@@ -67,7 +67,7 @@ class SchemaDict(dict):
         self.schema = {}
         self.strict = False
         self.doc = ""
-        self.cfg = None
+        self.root = None 
         self.update(kwargs)
 
     def __setitem__(self, key, value):
@@ -97,7 +97,7 @@ class SchemaDict(dict):
         newone = cls.__new__(cls)
         newone.__dict__.update(self.__dict__)
         newone.update(self)
-        newone.cfg = memo.get('cfg', None)
+        newone.root = memo.get('root', None)
         return newone
 
     def set_schema(self, key, value):
@@ -107,8 +107,8 @@ class SchemaDict(dict):
     def set_strict(self, strict):
         self.strict = strict
 
-    def set_cfg(self, cfg):
-        self.cfg = cfg
+    def set_root(self, root):
+        self.root = root
 
     def has_default(self, key):
         return key in self.schema and self.schema[key].has_default()

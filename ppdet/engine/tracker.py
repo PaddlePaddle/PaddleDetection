@@ -51,7 +51,7 @@ class Tracker(object):
         self.dataset = cfg['{}MOTDataset'.format(self.mode.capitalize())]
 
         # build model
-        self.model = create(cfg.architecture)
+        self.model = create(cfg.architecture, cfg)
 
         self.status = {}
         self.start_epoch = 0

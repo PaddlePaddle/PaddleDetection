@@ -83,7 +83,7 @@ class Trainer(object):
 
         # build model
         if 'model' not in self.cfg:
-            self.model = create(cfg.architecture)
+            self.model = create(cfg.architecture, cfg)
         else:
             self.model = self.cfg.model
             self.is_loaded_weights = True

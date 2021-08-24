@@ -45,11 +45,11 @@ class SSD(BaseArch):
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
         # backbone
-        backbone = create(cfg['backbone'])
+        backbone = create(cfg['backbone'], cfg.root)
 
         # head
         kwargs = {'input_shape': backbone.out_shape}
-        ssd_head = create(cfg['ssd_head'], **kwargs)
+        ssd_head = create(cfg['ssd_head'], cfg.root, **kwargs)
 
         return {
             'backbone': backbone,

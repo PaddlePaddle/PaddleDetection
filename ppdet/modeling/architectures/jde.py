@@ -53,12 +53,12 @@ class JDE(BaseArch):
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
-        detector = create(cfg['detector'])
+        detector = create(cfg['detector'], cfg.root)
         kwargs = {'input_shape': detector.neck.out_shape}
 
-        reid = create(cfg['reid'], **kwargs)
+        reid = create(cfg['reid'], cfg.root, **kwargs)
 
-        tracker = create(cfg['tracker'])
+        tracker = create(cfg['tracker'], cfg.root)
 
         return {
             "detector": detector,

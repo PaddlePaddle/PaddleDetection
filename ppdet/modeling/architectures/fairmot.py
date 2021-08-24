@@ -52,12 +52,12 @@ class FairMOT(BaseArch):
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
-        detector = create(cfg['detector'])
+        detector = create(cfg['detector'], cfg.root)
 
         kwargs = {'input_shape': detector.neck.out_shape}
-        reid = create(cfg['reid'], **kwargs)
-        loss = create(cfg['loss'])
-        tracker = create(cfg['tracker'])
+        reid = create(cfg['reid'], cfg.root, **kwargs)
+        loss = create(cfg['loss'], cfg.root)
+        tracker = create(cfg['tracker'], cfg.root)
 
         return {
             'detector': detector,
