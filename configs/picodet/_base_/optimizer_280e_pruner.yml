@@ -1,0 +1,26 @@
+epoch: 280
+
+stable_epochs: 0
+pruning_epochs: 140
+tunning_epochs: 140
+pruning_steps: 280
+ratio: 0.80
+initial_ratio: 0.15
+skip_params_type: exclude_conv1x1
+
+LearningRate:
+  base_lr: 0.02
+  schedulers:
+  - !PiecewiseDecay
+    step_epochs: 187 234
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 0
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2

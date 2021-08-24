@@ -38,6 +38,7 @@ from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_in
 from ppdet.metrics import RBoxMetric, JDEDetMetric
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
+from ppdet.slim.unstructured_pruner import UnstructuredPruner, make_unstructured_pruner
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter
 from .export_utils import _dump_infer_config
@@ -108,6 +109,21 @@ class Trainer(object):
             self.lr = create('LearningRate')(steps_per_epoch)
             self.optimizer = create('OptimizerBuilder')(self.lr,
                                                         self.model.parameters())
+            
+            configs = {
+                'pruning_strategy': 'gmp',
+                'stable_iterations': self.cfg.stable_epochs * steps_per_epoch,
+                'pruning_iterations': self.cfg.pruning_epochs * steps_per_epoch,
+                'tunning_iterations': self.cfg.tunning_epochs * steps_per_epoch,
+                'resume_iteration': 0,
+                'pruning_steps': self.cfg.pruning_steps,
+                'initial_ratio': self.cfg.initial_ratio,
+            }
+            self.pruner = make_unstructured_pruner(self.model
+                                              mode='ratio',
+                                              ratio=self.cfg.ratio,
+                                              skip_params_type=self.cfg.skip_params_type,
+                                              configs=configs)
 
         self._nranks = dist.get_world_size()
         self._local_rank = dist.get_rank()
@@ -366,6 +382,7 @@ class Trainer(object):
 
                 curr_lr = self.optimizer.get_lr()
                 self.lr.step()
+                self.pruner.step()
                 self.optimizer.clear_grad()
                 self.status['learning_rate'] = curr_lr
 
