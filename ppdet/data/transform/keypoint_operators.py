@@ -39,7 +39,7 @@ __all__ = [
     'RandomAffine', 'KeyPointFlip', 'TagGenerate', 'ToHeatmaps',
     'NormalizePermute', 'EvalAffine', 'RandomFlipHalfBodyTransform',
     'TopDownAffine', 'ToHeatmapsTopDown', 'ToHeatmapsTopDown_DARK',
-    'TopDownEvalAffine'
+    'ToHeatmapsTopDown_UDP', 'TopDownEvalAffine'
 ]
 
 
@@ -566,8 +566,7 @@ class TopDownAffine(object):
                 image,
                 trans, (int(self.trainsize[0]), int(self.trainsize[1])),
                 flags=cv2.INTER_LINEAR)
-            joints[:, 0:2] = warp_affine_joints(joints[:, 0:2].copy(),
-                                                trans_joint)
+            joints[:, 0:2] = warp_affine_joints(joints[:, 0:2].copy(), trans)
         else:
             trans = get_affine_transform(records['center'], records['scale'] *
                                          200, rot, self.trainsize)
@@ -737,6 +736,78 @@ class ToHeatmapsTopDown_DARK(object):
             if v > 0.5:
                 target[joint_id] = np.exp(-(
                     (x - mu_x)**2 + (y - mu_y)**2) / (2 * self.sigma**2))
+        records['target'] = target
+        records['target_weight'] = target_weight
+        del records['joints'], records['joints_vis']
+
+        return records
+
+
+@register_keypointop
+class ToHeatmapsTopDown_UDP(object):
+    """to generate the gaussian heatmaps of keypoint for heatmap loss.
+        ref: Huang et al. The Devil is in the Details: Delving into Unbiased Data Processing
+        for Human Pose Estimation (CVPR 2020).
+
+    Args:
+        hmsize (list): [w, h] output heatmap's size
+        sigma (float): the std of gaussin kernel genereted
+        records(dict): the dict contained the image and coords
+
+    Returns:
+        records (dict): contain the heatmaps used to heatmaploss
+
+    """
+
+    def __init__(self, hmsize, sigma):
+        super(ToHeatmapsTopDown_UDP, self).__init__()
+        self.hmsize = np.array(hmsize)
+        self.sigma = sigma
+
+    def __call__(self, records):
+        joints = records['joints']
+        joints_vis = records['joints_vis']
+        num_joints = joints.shape[0]
+        image_size = np.array(
+            [records['image'].shape[1], records['image'].shape[0]])
+        target_weight = np.ones((num_joints, 1), dtype=np.float32)
+        target_weight[:, 0] = joints_vis[:, 0]
+        target = np.zeros(
+            (num_joints, self.hmsize[1], self.hmsize[0]), dtype=np.float32)
+        tmp_size = self.sigma * 3
+        size = 2 * tmp_size + 1
+        x = np.arange(0, size, 1, np.float32)
+        y = x[:, None]
+        for joint_id in range(num_joints):
+            feat_stride = (image_size - 1.0) / (self.hmsize - 1.0)
+            mu_x = int(joints[joint_id][0] / feat_stride[0] + 0.5)
+            mu_y = int(joints[joint_id][1] / feat_stride[1] + 0.5)
+            # Check that any part of the gaussian is in-bounds
+            ul = [int(mu_x - tmp_size), int(mu_y - tmp_size)]
+            br = [int(mu_x + tmp_size + 1), int(mu_y + tmp_size + 1)]
+            if ul[0] >= self.hmsize[0] or ul[1] >= self.hmsize[1] or br[
+                    0] < 0 or br[1] < 0:
+                # If not, just return the image as is
+                target_weight[joint_id] = 0
+                continue
+
+            mu_x_ac = joints[joint_id][0] / feat_stride[0]
+            mu_y_ac = joints[joint_id][1] / feat_stride[1]
+            x0 = y0 = size // 2
+            x0 += mu_x_ac - mu_x
+            y0 += mu_y_ac - mu_y
+            g = np.exp(-((x - x0)**2 + (y - y0)**2) / (2 * self.sigma**2))
+            # Usable gaussian range
+            g_x = max(0, -ul[0]), min(br[0], self.hmsize[0]) - ul[0]
+            g_y = max(0, -ul[1]), min(br[1], self.hmsize[1]) - ul[1]
+            # Image range
+            img_x = max(0, ul[0]), min(br[0], self.hmsize[0])
+            img_y = max(0, ul[1]), min(br[1], self.hmsize[1])
+
+            v = target_weight[joint_id]
+            if v > 0.5:
+                target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = g[g_y[
+                    0]:g_y[1], g_x[0]:g_x[1]]
         records['target'] = target
         records['target_weight'] = target_weight
         del records['joints'], records['joints_vis']
