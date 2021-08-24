@@ -95,7 +95,7 @@ BASE_KEY = '_BASE_'
 def _get_config_by_filename(filename):
     if filename not in CONFIGS:
         new_global_config = deepcopy(global_config)
-        new_global_config.root = global_config
+        new_global_config.root = new_global_config
         CONFIGS[filename] = new_global_config
     return CONFIGS[filename]
 
