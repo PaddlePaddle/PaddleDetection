@@ -182,17 +182,17 @@ def merge_config(config, dst_config=None):
         return dict_merge(dst_config, config)
 
     num_cfg = len(CONFIGS)
-    if num_cfg  > 1:
-        raise RuntimeError("You are processing {} configs at the "
-                "same time(call load_config {} times to load "
-                "different config files), you should call merge_config"
-                "function with specified config in this situation, "
-                "e.g. merge_config(cfg1, cfg)".format(num_cfg, num_cfg))
+    if num_cfg > 1:
+        raise RuntimeError(
+            "You are processing {} configs at the "
+            "same time(call load_config {} times to load "
+            "different config files), you should call merge_config"
+            "function with specified config in this situation, "
+            "e.g. merge_config(cfg1, cfg)".format(num_cfg, num_cfg))
     else:
         dst_config = list(CONFIGS.values())[0]
 
     return dict_merge(dst_config, config)
-    
 
 
 def get_registered_modules():
@@ -263,15 +263,17 @@ def create(cls_or_name, config=None, **kwargs):
         cur_global_config = config
     else:
         num_cfg = len(CONFIGS)
-        if num_cfg  > 1:
+        if num_cfg > 1:
             if getattr(cls_or_name, 'cfg', None) is not None:
                 cur_global_config = cls_or_name.cfg
             else:
-                raise RuntimeError("You are processing {} configs at the "
-                        "same time(call load_config {} times to load "
-                        "different config files), you should call create "
-                        "function with specified config in this situation, "
-                        "e.g. create(cfg.architecture, config=cfg)".format(num_cfg, num_cfg))
+                raise RuntimeError(
+                    "You are processing {} configs at the "
+                    "same time(call load_config {} times to load "
+                    "different config files), you should call create "
+                    "function with specified config in this situation, "
+                    "e.g. create(cfg.architecture, config=cfg)".format(num_cfg,
+                                                                       num_cfg))
         else:
             cur_global_config = list(CONFIGS.values())[0]
 

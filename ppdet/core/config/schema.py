@@ -67,7 +67,7 @@ class SchemaDict(dict):
         self.schema = {}
         self.strict = False
         self.doc = ""
-        self.root = None 
+        self.root = None
         self.update(kwargs)
 
     def __setitem__(self, key, value):

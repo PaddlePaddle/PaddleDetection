@@ -74,7 +74,8 @@ class CascadeRCNN(BaseArch):
 
         out_shape = neck and out_shape or bbox_head.get_head().out_shape
         kwargs = {'input_shape': out_shape}
-        mask_head = cfg['mask_head'] and create(cfg['mask_head'], cfg.root, **kwargs)
+        mask_head = cfg['mask_head'] and create(cfg['mask_head'], cfg.root, **
+                                                kwargs)
         return {
             'backbone': backbone,
             'neck': neck,
