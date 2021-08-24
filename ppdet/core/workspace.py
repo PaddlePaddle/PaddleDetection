@@ -269,7 +269,7 @@ def create(cls_or_name, config=None, **kwargs):
             else:
                 raise RuntimeError("You are processing {} configs at the "
                         "same time(call load_config {} times to load "
-                        "different config files), you shole call create "
+                        "different config files), you should call create "
                         "function with specified config in this situation, "
                         "e.g. create(cfg.architecture, config=cfg)".format(num_cfg, num_cfg))
         else:
