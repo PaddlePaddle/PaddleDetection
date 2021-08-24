@@ -189,6 +189,9 @@ def merge_config(config, dst_config=None):
             "different config files), you should call merge_config"
             "function with specified config in this situation, "
             "e.g. merge_config(cfg1, cfg)".format(num_cfg, num_cfg))
+    elif num_cfg == 0:
+        raise RuntimeError("no config loaded, please call load_config "
+                           "firstly")
     else:
         dst_config = list(CONFIGS.values())[0]
 
@@ -274,6 +277,9 @@ def create(cls_or_name, config=None, **kwargs):
                     "function with specified config in this situation, "
                     "e.g. create(cfg.architecture, config=cfg)".format(num_cfg,
                                                                        num_cfg))
+        elif num_cfg == 0:
+            raise RuntimeError("no config loaded, please call load_config "
+                               "firstly")
         else:
             cur_global_config = list(CONFIGS.values())[0]
 
