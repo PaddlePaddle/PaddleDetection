@@ -51,13 +51,13 @@ class FCOS(BaseArch):
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
-        backbone = create(cfg['backbone'], cfg.root)
+        backbone = create(cfg['backbone'], cfg)
 
         kwargs = {'input_shape': backbone.out_shape}
-        neck = create(cfg['neck'], cfg.root, **kwargs)
+        neck = create(cfg['neck'], cfg, **kwargs)
 
         kwargs = {'input_shape': neck.out_shape}
-        fcos_head = create(cfg['fcos_head'], cfg.root, **kwargs)
+        fcos_head = create(cfg['fcos_head'], cfg, **kwargs)
 
         return {
             'backbone': backbone,

@@ -64,18 +64,18 @@ class MaskRCNN(BaseArch):
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
-        backbone = create(cfg['backbone'], cfg.root)
+        backbone = create(cfg['backbone'], cfg)
         kwargs = {'input_shape': backbone.out_shape}
-        neck = cfg['neck'] and create(cfg['neck'], cfg.root, **kwargs)
+        neck = cfg['neck'] and create(cfg['neck'], cfg, **kwargs)
 
         out_shape = neck and neck.out_shape or backbone.out_shape
         kwargs = {'input_shape': out_shape}
-        rpn_head = create(cfg['rpn_head'], cfg.root, **kwargs)
-        bbox_head = create(cfg['bbox_head'], cfg.root, **kwargs)
+        rpn_head = create(cfg['rpn_head'], cfg, **kwargs)
+        bbox_head = create(cfg['bbox_head'], cfg, **kwargs)
 
         out_shape = neck and out_shape or bbox_head.get_head().out_shape
         kwargs = {'input_shape': out_shape}
-        mask_head = create(cfg['mask_head'], cfg.root, **kwargs)
+        mask_head = create(cfg['mask_head'], cfg, **kwargs)
         return {
             'backbone': backbone,
             'neck': neck,

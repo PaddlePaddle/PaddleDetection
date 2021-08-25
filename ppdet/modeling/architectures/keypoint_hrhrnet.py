@@ -63,11 +63,11 @@ class HigherHRNet(BaseArch):
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
         # backbone
-        backbone = create(cfg['backbone'], cfg.root)
+        backbone = create(cfg['backbone'], cfg)
         # head
         kwargs = {'input_shape': backbone.out_shape}
-        hrhrnet_head = create(cfg['hrhrnet_head'], cfg.root, **kwargs)
-        post_process = create(cfg['post_process'], cfg.root)
+        hrhrnet_head = create(cfg['hrhrnet_head'], cfg, **kwargs)
+        post_process = create(cfg['post_process'], cfg)
 
         return {
             'backbone': backbone,

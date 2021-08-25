@@ -49,15 +49,15 @@ class S2ANet(BaseArch):
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
-        backbone = create(cfg['backbone'], cfg.root)
+        backbone = create(cfg['backbone'], cfg)
         kwargs = {'input_shape': backbone.out_shape}
-        neck = cfg['neck'] and create(cfg['neck'], cfg.root, **kwargs)
+        neck = cfg['neck'] and create(cfg['neck'], cfg, **kwargs)
 
         out_shape = neck and neck.out_shape or backbone.out_shape
         kwargs = {'input_shape': out_shape}
-        s2anet_head = create(cfg['s2anet_head'], cfg.root, **kwargs)
+        s2anet_head = create(cfg['s2anet_head'], cfg, **kwargs)
         s2anet_bbox_post_process = create(cfg['s2anet_bbox_post_process'],
-                                          cfg.root, **kwargs)
+                                          cfg, **kwargs)
 
         return {
             'backbone': backbone,

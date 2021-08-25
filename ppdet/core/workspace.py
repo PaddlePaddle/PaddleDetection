@@ -263,12 +263,12 @@ def create(cls_or_name, config=None, **kwargs):
     name = type(cls_or_name) == str and cls_or_name or cls_or_name.__name__
 
     if config is not None:
-        cur_global_config = config
+        cur_global_config = getattr(config, 'root', None) or config
     else:
         num_cfg = len(CONFIGS)
         if num_cfg > 1:
-            if getattr(cls_or_name, 'cfg', None) is not None:
-                cur_global_config = cls_or_name.cfg
+            if getattr(cls_or_name, 'root', None) is not None:
+                cur_global_config = cls_or_name.root
             else:
                 raise RuntimeError(
                     "You are processing {} configs at the "
