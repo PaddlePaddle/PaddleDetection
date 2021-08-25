@@ -98,7 +98,7 @@ def main():
     # TODO: to be refined in the future
     if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn':
         FLAGS.opt['norm_type'] = 'bn'
-    merge_config(FLAGS.opt)
+    merge_config(FLAGS.opt, cfg)
 
     if FLAGS.slim_config:
         cfg = build_slim_model(cfg, FLAGS.slim_config, mode='test')

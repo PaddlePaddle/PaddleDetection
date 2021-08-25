@@ -37,24 +37,24 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
     elif slim_load_cfg['slim'] == 'DistillPrune':
         if mode == 'train':
             model = DistillModel(cfg, slim_cfg)
-            pruner = create(cfg.pruner)
+            pruner = create(cfg.pruner, cfg)
             pruner(model.student_model)
         else:
-            model = create(cfg.architecture)
+            model = create(cfg.architecture, cfg)
             weights = cfg.weights
-            load_config(slim_cfg)
-            pruner = create(cfg.pruner)
+            slim_cfg = load_config(slim_cfg)
+            pruner = create(cfg.pruner, slim_cfg)
             model = pruner(model)
             load_pretrain_weight(model, weights)
         cfg['model'] = model
-        cfg['slim_type'] = cfg.slim
+        cfg['slim_type'] = slim_cfg.slim
     else:
-        load_config(slim_cfg)
-        model = create(cfg.architecture)
+        slim_cfg = load_config(slim_cfg)
+        model = create(cfg.architecture, cfg)
         if mode == 'train':
             load_pretrain_weight(model, cfg.pretrain_weights)
-        slim = create(cfg.slim)
-        cfg['slim_type'] = cfg.slim
+        slim = create(slim_cfg.slim, slim_cfg)
+        cfg['slim_type'] = slim_cfg.slim
         cfg['model'] = slim(model)
         cfg['slim'] = slim
         if mode != 'train':

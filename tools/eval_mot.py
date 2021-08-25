@@ -102,7 +102,7 @@ def run(FLAGS, cfg):
 def main():
     FLAGS = parse_args()
     cfg = load_config(FLAGS.config)
-    merge_config(FLAGS.opt)
+    merge_config(FLAGS.opt, cfg)
 
     check_config(cfg)
     check_gpu(cfg.use_gpu)

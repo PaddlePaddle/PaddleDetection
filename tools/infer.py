@@ -140,7 +140,7 @@ def main():
     cfg = load_config(FLAGS.config)
     cfg['use_vdl'] = FLAGS.use_vdl
     cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
-    merge_config(FLAGS.opt)
+    merge_config(FLAGS.opt, cfg)
 
     place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
 

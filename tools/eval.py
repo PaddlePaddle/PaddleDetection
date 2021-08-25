@@ -115,7 +115,7 @@ def main():
     cfg['classwise'] = True if FLAGS.classwise else False
     cfg['output_eval'] = FLAGS.output_eval
     cfg['save_prediction_only'] = FLAGS.save_prediction_only
-    merge_config(FLAGS.opt)
+    merge_config(FLAGS.opt, cfg)
 
     place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
 
