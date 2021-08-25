@@ -96,7 +96,7 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
             </ul>
         </ul>
         <ul>
-          <li><b>Face-Detction</b></li>
+          <li><b>Face-Detection</b></li>
             <ul>
              <li>FaceBoxes</li>
              <li>BlazeFace</li>
@@ -262,7 +262,7 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
   - [Vehicle detection](configs/vehicle/README.md)
 - Competition Plan
   - [Objects365 2019 Challenge champion model](static/docs/featured_model/champion_model/CACascadeRCNN.md)
-  - [Best single model of Open Images 2019-Object Detction](static/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
+  - [Best single model of Open Images 2019-Object Detection](static/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 
 ## Applications
 
