@@ -392,7 +392,7 @@ class Trainer(object):
 
                 self.status['batch_time'].update(time.time() - iter_tic)
                 self.pruner.update_params()
-                print(UnstructuredPruner.total_sparse(self.model))
+                # print(UnstructuredPruner.total_sparse(self.model))
                 self._compose_callback.on_step_end(self.status)
                 if self.use_ema:
                     self.ema.update(self.model)
@@ -427,6 +427,7 @@ class Trainer(object):
                     self._reset_metrics()
                 with paddle.no_grad():
                     self.pruner.update_params()
+                    print(UnstructuredPruner.total_sparse(self.model))
                     self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
 
