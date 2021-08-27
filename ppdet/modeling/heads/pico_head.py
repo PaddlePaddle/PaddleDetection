@@ -66,7 +66,7 @@ class PicoFeat(nn.Layer):
                     ConvNormLayer(
                         ch_in=in_c,
                         ch_out=feat_out,
-                        filter_size=3,
+                        filter_size=5,
                         stride=1,
                         groups=feat_out,
                         norm_type=norm_type,
@@ -91,7 +91,7 @@ class PicoFeat(nn.Layer):
                         ConvNormLayer(
                             ch_in=in_c,
                             ch_out=feat_out,
-                            filter_size=3,
+                            filter_size=5,
                             stride=1,
                             groups=feat_out,
                             norm_type=norm_type,
@@ -249,80 +249,9 @@ class PicoHead(GFLHead):
 
             if not self.training:
                 cls_score = F.sigmoid(cls_score.transpose([0, 2, 3, 1]))
-                bbox_pred = self.distribution_project(
-                    bbox_pred.transpose([0, 2, 3, 1])) * self.fpn_stride[i]
+                bbox_pred = bbox_pred.transpose([0, 2, 3, 1])
 
             cls_logits_list.append(cls_score)
             bboxes_reg_list.append(bbox_pred)
 
         return (cls_logits_list, bboxes_reg_list)
-
-    def get_bboxes_single(self,
-                          cls_scores,
-                          bbox_preds,
-                          img_shape,
-                          scale_factor,
-                          rescale=True,
-                          cell_offset=0):
-        assert len(cls_scores) == len(bbox_preds)
-        mlvl_bboxes = []
-        mlvl_scores = []
-        for stride, cls_score, bbox_pred in zip(self.fpn_stride, cls_scores,
-                                                bbox_preds):
-            featmap_size = cls_score.shape[0:2]
-            y, x = self.get_single_level_center_point(
-                featmap_size, stride, cell_offset=cell_offset)
-            center_points = paddle.stack([x, y], axis=-1)
-            scores = cls_score.reshape([-1, self.cls_out_channels])
-
-            if scores.shape[0] > self.nms_pre:
-                max_scores = scores.max(axis=1)
-                _, topk_inds = max_scores.topk(self.nms_pre)
-                center_points = center_points.gather(topk_inds)
-                bbox_pred = bbox_pred.gather(topk_inds)
-                scores = scores.gather(topk_inds)
-
-            bboxes = distance2bbox(
-                center_points, bbox_pred, max_shape=img_shape)
-            mlvl_bboxes.append(bboxes)
-            mlvl_scores.append(scores)
-        mlvl_bboxes = paddle.concat(mlvl_bboxes)
-        if rescale:
-            # [h_scale, w_scale] to [w_scale, h_scale, w_scale, h_scale]
-            im_scale = paddle.concat([scale_factor[::-1], scale_factor[::-1]])
-            mlvl_bboxes /= im_scale
-        mlvl_scores = paddle.concat(mlvl_scores)
-        mlvl_scores = mlvl_scores.transpose([1, 0])
-        return mlvl_bboxes, mlvl_scores
-
-    def decode(self, cls_scores, bbox_preds, im_shape, scale_factor,
-               cell_offset):
-        batch_bboxes = []
-        batch_scores = []
-        batch_size = cls_scores[0].shape[0]
-        for img_id in range(batch_size):
-            num_levels = len(cls_scores)
-            cls_score_list = [cls_scores[i][img_id] for i in range(num_levels)]
-            bbox_pred_list = [
-                bbox_preds[i].reshape([batch_size, -1, 4])[img_id]
-                for i in range(num_levels)
-            ]
-            bboxes, scores = self.get_bboxes_single(
-                cls_score_list,
-                bbox_pred_list,
-                im_shape[img_id],
-                scale_factor[img_id],
-                cell_offset=cell_offset)
-            batch_bboxes.append(bboxes)
-            batch_scores.append(scores)
-        batch_bboxes = paddle.stack(batch_bboxes, axis=0)
-        batch_scores = paddle.stack(batch_scores, axis=0)
-
-        return batch_bboxes, batch_scores
-
-    def post_process(self, gfl_head_outs, im_shape, scale_factor):
-        cls_scores, bboxes_reg = gfl_head_outs
-        bboxes, score = self.decode(cls_scores, bboxes_reg, im_shape,
-                                    scale_factor, self.cell_offset)
-        bbox_pred, bbox_num, _ = self.nms(bboxes, score)
-        return bbox_pred, bbox_num
