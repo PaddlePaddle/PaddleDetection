@@ -245,6 +245,9 @@ class GFLHead(nn.Layer):
             if self.dgqp_module:
                 quality_score = self.dgqp_module(bbox_reg)
                 cls_logits = F.sigmoid(cls_logits) * quality_score
+            if not self.training:
+                cls_logits = F.sigmoid(cls_logits.transpose([0, 2, 3, 1]))
+                bbox_reg = bbox_reg.transpose([0, 2, 3, 1])
             cls_logits_list.append(cls_logits)
             bboxes_reg_list.append(bbox_reg)
 
@@ -288,6 +291,11 @@ class GFLHead(nn.Layer):
         bbox_targets_list = self._images_to_levels(gt_meta['bbox_targets'],
                                                    num_level_anchors)
         num_total_pos = sum(gt_meta['pos_num'])
+        try:
+            num_total_pos = paddle.distributed.all_reduce(num_total_pos.clone(
+            )) / paddle.distributed.get_world_size()
+        except:
+            num_total_pos = max(num_total_pos, 1)
 
         loss_bbox_list, loss_dfl_list, loss_qfl_list, avg_factor = [], [], [], []
         for cls_score, bbox_pred, grid_cells, labels, label_weights, bbox_targets, stride in zip(
@@ -316,7 +324,7 @@ class GFLHead(nn.Layer):
 
                 weight_targets = F.sigmoid(cls_score.detach())
                 weight_targets = paddle.gather(
-                    weight_targets.max(axis=1), pos_inds, axis=0)
+                    weight_targets.max(axis=1, keepdim=True), pos_inds, axis=0)
                 pos_bbox_pred_corners = self.distribution_project(pos_bbox_pred)
                 pos_decode_bbox_pred = distance2bbox(pos_grid_cell_centers,
                                                      pos_bbox_pred_corners)
@@ -333,20 +341,18 @@ class GFLHead(nn.Layer):
                 # regression loss
                 loss_bbox = paddle.sum(
                     self.loss_bbox(pos_decode_bbox_pred,
-                                   pos_decode_bbox_targets) *
-                    weight_targets.mean(axis=-1))
+                                   pos_decode_bbox_targets) * weight_targets)
 
                 # dfl loss
                 loss_dfl = self.loss_dfl(
                     pred_corners,
                     target_corners,
-                    weight=weight_targets.unsqueeze(-1).expand([-1, 4]).reshape(
-                        [-1]),
+                    weight=weight_targets.expand([-1, 4]).reshape([-1]),
                     avg_factor=4.0)
             else:
                 loss_bbox = bbox_pred.sum() * 0
                 loss_dfl = bbox_pred.sum() * 0
-                weight_targets = paddle.to_tensor([0])
+                weight_targets = paddle.to_tensor([0], dtype='float32')
 
             # qfl loss
             score = paddle.to_tensor(score)
@@ -360,6 +366,12 @@ class GFLHead(nn.Layer):
             avg_factor.append(weight_targets.sum())
 
         avg_factor = sum(avg_factor)
+        try:
+            avg_factor = paddle.distributed.all_reduce(avg_factor.clone())
+            avg_factor = paddle.clip(
+                avg_factor / paddle.distributed.get_world_size(), min=1)
+        except:
+            avg_factor = max(avg_factor.item(), 1)
         if avg_factor <= 0:
             loss_qfl = paddle.to_tensor(0, dtype='float32', stop_gradient=False)
             loss_bbox = paddle.to_tensor(
@@ -407,14 +419,11 @@ class GFLHead(nn.Layer):
         mlvl_scores = []
         for stride, cls_score, bbox_pred in zip(self.fpn_stride, cls_scores,
                                                 bbox_preds):
-            featmap_size = cls_score.shape[-2:]
+            featmap_size = cls_score.shape[:2]
             y, x = self.get_single_level_center_point(
                 featmap_size, stride, cell_offset=cell_offset)
             center_points = paddle.stack([x, y], axis=-1)
-            scores = F.sigmoid(
-                cls_score.transpose([1, 2, 0]).reshape(
-                    [-1, self.cls_out_channels]))
-            bbox_pred = bbox_pred.transpose([1, 2, 0])
+            scores = cls_score.reshape([-1, self.cls_out_channels])
             bbox_pred = self.distribution_project(bbox_pred) * stride
 
             if scores.shape[0] > self.nms_pre:
@@ -434,10 +443,6 @@ class GFLHead(nn.Layer):
             im_scale = paddle.concat([scale_factor[::-1], scale_factor[::-1]])
             mlvl_bboxes /= im_scale
         mlvl_scores = paddle.concat(mlvl_scores)
-        if self.use_sigmoid:
-            # add a dummy background class to the backend when use_sigmoid
-            padding = paddle.zeros([mlvl_scores.shape[0], 1])
-            mlvl_scores = paddle.concat([mlvl_scores, padding], axis=1)
         mlvl_scores = mlvl_scores.transpose([1, 0])
         return mlvl_bboxes, mlvl_scores
 
