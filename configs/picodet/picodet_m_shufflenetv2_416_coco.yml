@@ -10,9 +10,8 @@ weights: output/picodet_m_shufflenetv2_416_coco/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ShuffleNetV2_x1_5_pretrained.pdparams
 find_unused_parameters: True
 use_ema: true
-ema_decay: 0.9998
-snapshot_epoch: 10
 cycle_epoch: 40
+snapshot_epoch: 10
 
 ShuffleNetV2:
   scale: 1.5

@@ -251,7 +251,26 @@ class OptimizerBuilder():
 
 
 class ModelEMA(object):
-    def __init__(self, decay, model, use_thres_step=False, cycle_epoch=-1):
+    """
+    Exponential Weighted Average for Deep Neutal Networks
+    Args:
+        model (nn.Layer): Detector of model.
+        decay (int):  The decay used for updating ema parameter.
+            Ema's parameter are updated with the formula:
+           `ema_param = decay * ema_param + (1 - decay) * cur_param`.
+            Defaults is 0.9998.
+        use_thres_step (bool): Whether set decay by thres_step or not 
+        cycle_epoch (int): The epoch of interval to reset ema_param and 
+            step. Defaults is -1, which means not reset. Its function is to
+            add a regular effect to ema, which is set according to experience 
+            and is effective when the total training epoch is large.
+    """
+
+    def __init__(self,
+                 model,
+                 decay=0.9998,
+                 use_thres_step=False,
+                 cycle_epoch=-1):
         self.step = 0
         self.epoch = 0
         self.decay = decay

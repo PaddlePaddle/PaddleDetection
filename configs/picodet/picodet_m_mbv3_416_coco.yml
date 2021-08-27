@@ -9,9 +9,8 @@ _BASE_: [
 weights: output/picodet_m_mbv3_416_coco/model_final
 find_unused_parameters: True
 use_ema: true
-ema_decay: 0.9998
-snapshot_epoch: 10
 cycle_epoch: 40
+snapshot_epoch: 10
 
 TrainReader:
   batch_size: 56
