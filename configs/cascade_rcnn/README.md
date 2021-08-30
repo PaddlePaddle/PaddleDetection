@@ -11,7 +11,6 @@
 | ResNet50-vd-SSLDv2-FPN | Cascade Mask         |    1    |   1x    |     ----     |  44.9  |    39.1    | [下载链接](https://paddledet.bj.bcebos.com/models/cascade_mask_rcnn_r50_vd_fpn_ssld_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/cascade_rcnn/cascade_mask_rcnn_r50_vd_fpn_ssld_1x_coco.yml) |
 | ResNet50-vd-SSLDv2-FPN | Cascade Mask         |    1    |   2x    |     ----     |  45.7  |    39.7    | [下载链接](https://paddledet.bj.bcebos.com/models/cascade_mask_rcnn_r50_vd_fpn_ssld_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/cascade_rcnn/cascade_mask_rcnn_r50_vd_fpn_ssld_2x_coco.yml) |
 
-**注意：** Cascade R-CNN模型精度依赖Paddle develop分支修改，精度复现须使用[每日版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)或2.0.1版本(将于2021.03发布)，使用Paddle 2.0.0版本会有少量精度损失。
 
 ## Citations
 ```
