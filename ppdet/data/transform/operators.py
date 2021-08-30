@@ -1699,6 +1699,25 @@ class BboxXYXY2XYWH(BaseOperator):
 
 
 @register_op
+class BboxXYWH2XYXY(BaseOperator):
+    """
+    Convert bbox XYWH format to XYXY format.
+    """
+
+    def __init__(self):
+        super(BboxXYWH2XYXY, self).__init__()
+
+    def apply(self, sample, context=None):
+        assert 'gt_bbox' in sample
+        bbox0 = sample['gt_bbox'].copy()
+        sample['gt_bbox'][:, 0] = bbox0[:, 0] - bbox0[:, 2] / 2
+        sample['gt_bbox'][:, 1] = bbox0[:, 1] - bbox0[:, 3] / 2
+        sample['gt_bbox'][:, 2] = bbox0[:, 0] + bbox0[:, 2] / 2
+        sample['gt_bbox'][:, 3] = bbox0[:, 1] + bbox0[:, 3] / 2
+        return sample
+
+
+@register_op
 class PadBox(BaseOperator):
     def __init__(self, num_max_boxes=50):
         """

@@ -102,7 +102,6 @@ class LetterBoxResize(BaseOperator):
         #bboxes[:, 1] = h * (bbox0[:, 1] - bbox0[:, 3] / 2)
         #bboxes[:, 2] = w * (bbox0[:, 0] + bbox0[:, 2] / 2)
         #bboxes[:, 3] = h * (bbox0[:, 1] + bbox0[:, 3] / 2)
-
         return bboxes
 
     def apply(self, sample, context=None):
