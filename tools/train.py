@@ -81,6 +81,16 @@ def parse_args():
         action='store_true',
         default=False,
         help='Whether to save the evaluation results only')
+    parser.add_argument(
+        '--save_proposals',
+        action='store_true',
+        default=False,
+        help='Whether to save the train proposals')
+    parser.add_argument(
+        '--proposals_path',
+        type=str,
+        default="sniper/proposals.json",
+        help='Train proposals directory')
     args = parser.parse_args()
     return args
 
@@ -117,6 +127,8 @@ def main():
     cfg['use_vdl'] = FLAGS.use_vdl
     cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
     cfg['save_prediction_only'] = FLAGS.save_prediction_only
+    cfg['save_proposals'] = FLAGS.save_proposals
+    cfg['proposals_path'] = FLAGS.proposals_path
     merge_config(FLAGS.opt)
 
     place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
