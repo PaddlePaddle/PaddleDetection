@@ -122,7 +122,8 @@ def _dump_infer_config(config, path, image_shape, model):
             format(infer_arch) +
             'Please set TRT_MIN_SUBGRAPH in ppdet/engine/export_utils.py')
         os._exit(0)
-    if 'Mask' in infer_arch:
+    if 'mask_head' in config[config['architecture']] and config[config[
+            'architecture']]['mask_head']:
         infer_cfg['mask'] = True
     label_arch = 'detection_arch'
     if infer_arch in KEYPOINT_ARCH:
