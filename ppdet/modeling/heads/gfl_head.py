@@ -419,7 +419,9 @@ class GFLHead(nn.Layer):
         mlvl_scores = []
         for stride, cls_score, bbox_pred in zip(self.fpn_stride, cls_scores,
                                                 bbox_preds):
-            featmap_size = cls_score.shape[:2]
+            featmap_size = [
+                paddle.shape(cls_score)[0], paddle.shape(cls_score)[1]
+            ]
             y, x = self.get_single_level_center_point(
                 featmap_size, stride, cell_offset=cell_offset)
             center_points = paddle.stack([x, y], axis=-1)
