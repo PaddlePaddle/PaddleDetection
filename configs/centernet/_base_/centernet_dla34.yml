@@ -1,0 +1,24 @@
+architecture: CenterNet
+pretrain_weights: DLA34_backbone_pretrain.pdparams #DLA34_pretrain.pdparams
+#pretrain_weights: ./dla34.pdparams #https://paddledet.bj.bcebos.com/models/pretrained/fairmot_dla34_crowdhuman_pretrained.pdparams
+weights:  DLA34_pretrain.pdparams
+
+CenterNet:
+  backbone: DLA
+  neck: CenterNetDLAFPN
+  head: CenterNetHead
+  post_process: CenterNetPostProcess
+
+DLA:
+  depth: 34
+
+CenterNetDLAFPN:
+  down_ratio: 4
+
+CenterNetHead:
+  head_planes: 256
+  regress_ltrb: False
+
+CenterNetPostProcess:
+  max_per_img: 100
+  regress_ltrb: False

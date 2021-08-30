@@ -418,7 +418,7 @@ class CenterNetPostProcess(TTFBox):
 
     """
 
-    __shared__ = ['down_ratio']
+    __shared__ = ['down_ratio', 'for_mot']
 
     def __init__(self,
                  max_per_img=500,
@@ -463,6 +463,7 @@ class CenterNetPostProcess(TTFBox):
             y2 = ys + wh[:, 1:2] / 2
 
         n, c, feat_h, feat_w = hm.shape[:]
+
         padw = (feat_w * self.down_ratio - im_shape[0, 1]) / 2
         padh = (feat_h * self.down_ratio - im_shape[0, 0]) / 2
         x1 = x1 * self.down_ratio
@@ -476,6 +477,7 @@ class CenterNetPostProcess(TTFBox):
         y2 = y2 - padh
 
         bboxes = paddle.concat([x1, y1, x2, y2], axis=1)
+        #print('bboxes after decode: ', bboxes)
         scale_y = scale_factor[:, 0:1]
         scale_x = scale_factor[:, 1:2]
         scale_expand = paddle.concat(
@@ -484,6 +486,7 @@ class CenterNetPostProcess(TTFBox):
         boxes_shape.stop_gradient = True
         scale_expand = paddle.expand(scale_expand, shape=boxes_shape)
         bboxes = paddle.divide(bboxes, scale_expand)
+        #print('bboxes after scale: ', bboxes)
         if self.for_mot:
             results = paddle.concat([bboxes, scores, clses], axis=1)
             return results, inds

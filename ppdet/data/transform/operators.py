@@ -41,11 +41,11 @@ from ppdet.core.workspace import serializable
 from ppdet.modeling import bbox_utils
 from ..reader import Compose
 
-from .op_helper import (satisfy_sample_constraint, filter_and_process,
-                        generate_sample_bbox, clip_bbox, data_anchor_sampling,
-                        satisfy_sample_constraint_coverage, crop_image_sampling,
-                        generate_sample_bbox_square, bbox_area_sampling,
-                        is_poly, transform_bbox)
+from .op_helper import (
+    satisfy_sample_constraint, filter_and_process, generate_sample_bbox,
+    clip_bbox, data_anchor_sampling, satisfy_sample_constraint_coverage,
+    crop_image_sampling, generate_sample_bbox_square, bbox_area_sampling,
+    is_poly, transform_bbox, gaussian_radius, draw_umich_gaussian)
 
 from ppdet.utils.logger import setup_logger
 from ...modeling.keypoint_utils import get_affine_transform, affine_transform
@@ -2884,7 +2884,17 @@ class RandomSizeCrop(BaseOperator):
 
 @register_op
 class FlipWarpAffine(BaseOperator):
-    def __init__(self, keep_res=False, pad=31, input_h=512, input_w=512, not_rand_crop=False, scale=0.4, shift=0.1, flip=0.5, use_random=True):
+    def __init__(self,
+                 keep_res=False,
+                 pad=31,
+                 input_h=512,
+                 input_w=512,
+                 not_rand_crop=False,
+                 scale=0.4,
+                 shift=0.1,
+                 flip=0.5,
+                 is_scale=True,
+                 use_random=True):
         """FlipWarpAffine
         """
         super(FlipWarpAffine, self).__init__()
@@ -2896,6 +2906,7 @@ class FlipWarpAffine(BaseOperator):
         self.scale = scale
         self.shift = shift
         self.flip = flip
+        self.is_scale = is_scale
         self.use_random = use_random
 
     def _get_border(self, border, size):
@@ -2905,23 +2916,26 @@ class FlipWarpAffine(BaseOperator):
         return border // i
 
     def apply(self, sample, context=None):
+        img = sample['image']
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
             return sample
 
-        img = sample['image']
         h, w = img.shape[:2]
-        gt_bbox = sample['gt_bbox']
 
-        c = np.array([w / 2., h / 2.], dtype=np.float32)
         if self.keep_res:
             input_h = (h | self.pad) + 1
             input_w = (w | self.pad) + 1
             s = np.array([input_w, input_h], dtype=np.float32)
+            c = np.array([w // 2, h // 2], dtype=np.float32)
+
         else:
             s = max(h, w) * 1.0
             input_h, input_w = self.input_h, self.input_w
+            c = np.array([w / 2., h / 2.], dtype=np.float32)
 
-        if use_random:
+        if self.use_random:
+            gt_bbox = sample['gt_bbox']
             if not self.not_rand_crop:
                 s = s * np.random.choice(np.arange(0.6, 1.4, 0.1))
                 w_border = self._get_border(128, w)
@@ -2931,26 +2945,29 @@ class FlipWarpAffine(BaseOperator):
             else:
                 sf = self.scale
                 cf = self.shift
-                c[0] += s * np.clip(np.random.randn()*cf, -2*cf, 2*cf)
-                c[1] += s * np.clip(np.random.randn()*cf, -2*cf, 2*cf)
-                s = s * np.clip(np.random.randn()*sf + 1, 1 - sf, 1 + sf)
+                c[0] += s * np.clip(np.random.randn() * cf, -2 * cf, 2 * cf)
+                c[1] += s * np.clip(np.random.randn() * cf, -2 * cf, 2 * cf)
+                s = s * np.clip(np.random.randn() * sf + 1, 1 - sf, 1 + sf)
 
             if np.random.random() < self.flip:
-                flipped = True
                 img = img[:, ::-1, :]
-                c[0] =  width - c[0] - 1 
+                c[0] = w - c[0] - 1
                 oldx1 = gt_bbox[:, 0].copy()
                 oldx2 = gt_bbox[:, 2].copy()
                 gt_bbox[:, 0] = w - oldx2 - 1
                 gt_bbox[:, 2] = w - oldx1 - 1
+            sample['gt_bbox'] = gt_bbox
 
-        trans_input = get_affine_transform(
-            c, s, 0, [input_w, input_h])
-        inp = cv2.warpAffine(img, trans_input,
-                         (input_w, input_h),
-                         flags=cv2.INTER_LINEAR)
-        sample['img'] = inp
-        sample['gt_bbox'] = gt_bbox
+        trans_input = get_affine_transform(c, s, 0, [input_w, input_h])
+        if not self.use_random:
+            img = cv2.resize(img, (w, h))
+        inp = cv2.warpAffine(
+            img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR)
+        if self.is_scale:
+            inp = (inp.astype(np.float32) / 255.)
+        sample['image'] = inp
+        sample['center'] = c
+        sample['scale'] = s
         return sample
 
 
@@ -2961,17 +2978,13 @@ class CenterRandColor(BaseOperator):
         saturation (float): saturation settings.
         contrast (float): contrast settings.
         brightness (float): brightness settings.
-        is_scale (bool): whether to scale the input image.
     """
 
-    def __init__(self,
-                 saturation=0.4,
-                 contrast=0.4,
-                 brightness=0.4,
-                 is_scale=True):
-        super(CenterRandColor, self).__init__(
-            saturation=saturation, contrast=contrast, brightness=brightness)
-        self.is_scale = is_scale
+    def __init__(self, saturation=0.4, contrast=0.4, brightness=0.4):
+        super(CenterRandColor, self).__init__()
+        self.saturation = saturation
+        self.contrast = contrast
+        self.brightness = brightness
 
     def apply_saturation(self, img, img_gray):
         alpha = 1. + np.random.uniform(
@@ -2998,9 +3011,6 @@ class CenterRandColor(BaseOperator):
 
     def __call__(self, sample, context=None):
         img = sample['image']
-        if self.is_scale:
-            img = img.astype(np.float32, copy=False)
-            img /= 255.
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         functions = [
             self.apply_brightness,
@@ -3013,3 +3023,77 @@ class CenterRandColor(BaseOperator):
         sample['image'] = img
         return sample
 
+
+@register_op
+class Gt2CenterTarget(BaseOperator):
+    """Gt2CenterTarget
+    """
+
+    def __init__(self, down_ratio, num_classes=80, max_objs=128):
+        super(Gt2CenterTarget, self).__init__()
+        self.down_ratio = down_ratio
+        self.num_classes = num_classes
+        self.max_objs = max_objs
+
+    def __call__(self, sample, context=None):
+        input_h, input_w = sample['image'].shape[1:]
+        output_h = input_h // self.down_ratio
+        output_w = input_w // self.down_ratio
+        num_classes = self.num_classes
+        c = sample['center']
+        s = sample['scale']
+        gt_bbox = sample['gt_bbox']
+        gt_class = sample['gt_class']
+
+        hm = np.zeros((num_classes, output_h, output_w), dtype=np.float32)
+        wh = np.zeros((self.max_objs, 2), dtype=np.float32)
+        dense_wh = np.zeros((2, output_h, output_w), dtype=np.float32)
+        reg = np.zeros((self.max_objs, 2), dtype=np.float32)
+        ind = np.zeros((self.max_objs), dtype=np.int64)
+        reg_mask = np.zeros((self.max_objs), dtype=np.int32)
+        cat_spec_wh = np.zeros(
+            (self.max_objs, num_classes * 2), dtype=np.float32)
+        cat_spec_mask = np.zeros(
+            (self.max_objs, num_classes * 2), dtype=np.int32)
+
+        trans_output = get_affine_transform(c, [s, s], 0, [output_w, output_h])
+
+        gt_det = []
+        for i, (bbox, cls) in enumerate(zip(gt_bbox, gt_class)):
+            cls = int(cls)
+            bbox[:2] = affine_transform(bbox[:2], trans_output)
+            bbox[2:] = affine_transform(bbox[2:], trans_output)
+            bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, output_w - 1)
+            bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, output_h - 1)
+            h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
+            if h > 0 and w > 0:
+                radius = gaussian_radius((math.ceil(h), math.ceil(w)), 0.7)
+                radius = max(0, int(radius))
+                ct = np.array(
+                    [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2],
+                    dtype=np.float32)
+                ct_int = ct.astype(np.int32)
+                draw_umich_gaussian(hm[cls], ct_int, radius)
+                wh[i] = 1. * w, 1. * h
+                ind[i] = ct_int[1] * output_w + ct_int[0]
+                reg[i] = ct - ct_int
+                reg_mask[i] = 1
+                cat_spec_wh[i, cls * 2:cls * 2 + 2] = wh[i]
+                cat_spec_mask[i, cls * 2:cls * 2 + 2] = 1
+                gt_det.append([
+                    ct[0] - w / 2, ct[1] - h / 2, ct[0] + w / 2, ct[1] + h / 2,
+                    1, cls
+                ])
+
+        sample.pop('gt_bbox', None)
+        sample.pop('gt_class', None)
+        sample.pop('center', None)
+        sample.pop('scale', None)
+        sample.pop('is_crowd', None)
+        sample.pop('difficult', None)
+        sample['heatmap'] = hm
+        sample['index_mask'] = reg_mask
+        sample['index'] = ind
+        sample['size'] = wh
+        sample['offset'] = reg
+        return sample
