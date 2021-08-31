@@ -219,7 +219,7 @@ class BBoxHead(nn.Layer):
         kwargs = RoIAlign.from_config(cfg, input_shape)
         roi_pooler.update(kwargs)
         kwargs = {'input_shape': input_shape}
-        head = create(cfg['head'], cfg, **kwargs)
+        head = create(cfg['head'], **kwargs)
         return {
             'roi_extractor': roi_pooler,
             'head': head,

@@ -46,6 +46,7 @@ class SchemaValue(object):
         self.name = name
         self.doc = doc
         self.type = type
+        self.root = None
 
     def set_default(self, value):
         self.default = value
@@ -58,6 +59,7 @@ class SchemaValue(object):
         newone = cls.__new__(cls)
         for k, v in self.items():
             newone[k] = v
+        newone.root = memo.get('root', None)
         return newone
 
 

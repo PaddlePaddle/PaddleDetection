@@ -81,6 +81,14 @@ class AttrDict(dict):
         return newone
 
 
+class AttrStr(str):
+    def __new__(cls, value, *args, **kwargs):
+        return str.__new__(cls, value)
+
+    def __init__(self, value, root=None):
+        self.root = root
+
+
 global_config = AttrDict()
 
 # NOTE: in order for loading multiple configs and create multiple
@@ -98,6 +106,28 @@ def _get_config_by_filename(filename):
         new_global_config.root = new_global_config
         CONFIGS[filename] = new_global_config
     return CONFIGS[filename]
+
+
+def _parse_attr_str(config):
+    def _parse_recursive(config, root):
+        if isinstance(config, collectionsAbc.Mapping):
+            for k, v in config.items():
+                if isinstance(v, str):
+                    config[k] = AttrStr(v)
+                    config[k].root = root
+                elif isinstance(v, (collectionsAbc.Mapping,
+                                  collectionsAbc.Sequence)):
+                    _parse_recursive(v, root)
+        elif isinstance(config, (list, tuple)):
+            for i, v in enumerate(config):
+                if isinstance(v, str):
+                    config[i] = AttrStr(v)
+                    config[i].root = root
+                elif isinstance(v, (collectionsAbc.Mapping,
+                                  collectionsAbc.Sequence)):
+                    _parse_recursive(v, root)
+
+    _parse_recursive(config, config)
 
 
 # parse and load _BASE_ recursively
@@ -143,6 +173,7 @@ def load_config(file_path):
 
     unique_cfg = _get_config_by_filename(cfg['filename'])
     merge_config(cfg, unique_cfg)
+    _parse_attr_str(unique_cfg)
 
     return unique_cfg
 
@@ -258,30 +289,23 @@ def create(cls_or_name, config=None, **kwargs):
 
     Returns: instance of type `cls_or_name`
     """
-    assert type(cls_or_name) in [type, str
+    assert type(cls_or_name) in [type, str, AttrStr
                                  ], "should be a class or name of a class"
-    name = type(cls_or_name) == str and cls_or_name or cls_or_name.__name__
+    name = type(cls_or_name) != type and cls_or_name or cls_or_name.__name__
 
-    if config is not None:
-        cur_global_config = getattr(config, 'root', None) or config
-    else:
+    cur_global_config = config or getattr(cls_or_name, 'root', None)
+    if cur_global_config is None:
         num_cfg = len(CONFIGS)
-        if num_cfg > 1:
-            if getattr(cls_or_name, 'root', None) is not None:
-                cur_global_config = cls_or_name.root
-            else:
-                raise RuntimeError(
-                    "You are processing {} configs at the "
-                    "same time(call load_config {} times to load "
-                    "different config files), you should call create "
-                    "function with specified config in this situation, "
-                    "e.g. create(cfg.architecture, config=cfg)".format(num_cfg,
-                                                                       num_cfg))
-        elif num_cfg == 0:
-            raise RuntimeError("no config loaded, please call load_config "
-                               "firstly")
-        else:
+        if num_cfg == 1:
             cur_global_config = list(CONFIGS.values())[0]
+        else:
+            raise RuntimeError(
+                "You are processing {} configs at the "
+                "same time(call load_config {} times to load "
+                "different config files), you should call create "
+                "function with specified config in this situation, "
+                "e.g. create(cfg.architecture, config=cfg)".format(num_cfg,
+                                                                   num_cfg))
 
     assert name in cur_global_config and \
         isinstance(cur_global_config[name], SchemaDict), \
@@ -317,7 +341,15 @@ def create(cls_or_name, config=None, **kwargs):
             if target_key is None:
                 continue
 
-            if isinstance(target_key, dict) or hasattr(target_key, '__dict__'):
+            if isinstance(target_key, str):
+                if target_key not in cur_global_config:
+                    raise ValueError("Missing injection config:", target_key)
+                target = cur_global_config[target_key]
+                if isinstance(target, SchemaDict):
+                    cls_kwargs[k] = create(target_key, cur_global_config)
+                elif hasattr(target, '__dict__'):  # serialized object
+                    cls_kwargs[k] = target
+            elif isinstance(target_key, dict) or hasattr(target_key, '__dict__'):
                 if 'name' not in target_key.keys():
                     continue
                 inject_name = str(target_key['name'])
@@ -332,14 +364,6 @@ def create(cls_or_name, config=None, **kwargs):
                     target[i] = v
                 if isinstance(target, SchemaDict):
                     cls_kwargs[k] = create(inject_name, cur_global_config)
-            elif isinstance(target_key, str):
-                if target_key not in cur_global_config:
-                    raise ValueError("Missing injection config:", target_key)
-                target = cur_global_config[target_key]
-                if isinstance(target, SchemaDict):
-                    cls_kwargs[k] = create(target_key, cur_global_config)
-                elif hasattr(target, '__dict__'):  # serialized object
-                    cls_kwargs[k] = target
             else:
                 raise ValueError("Unsupported injection type:", target_key)
 
