@@ -27,7 +27,8 @@ def rpn_anchor_target(anchors,
                       batch_size=1,
                       ignore_thresh=-1,
                       is_crowd=None,
-                      weights=[1., 1., 1., 1.]):
+                      weights=[1., 1., 1., 1.],
+                      assign_on_cpu=False):
     tgt_labels = []
     tgt_bboxes = []
     tgt_deltas = []
@@ -37,7 +38,7 @@ def rpn_anchor_target(anchors,
         # Step1: match anchor and gt_bbox
         matches, match_labels = label_box(
             anchors, gt_bbox, rpn_positive_overlap, rpn_negative_overlap, True,
-            ignore_thresh, is_crowd_i)
+            ignore_thresh, is_crowd_i, assign_on_cpu)
         # Step2: sample anchor 
         fg_inds, bg_inds = subsample_labels(match_labels, rpn_batch_size_per_im,
                                             rpn_fg_fraction, 0, use_random)
@@ -70,8 +71,13 @@ def label_box(anchors,
               negative_overlap,
               allow_low_quality,
               ignore_thresh,
-              is_crowd=None):
-    iou = bbox_overlaps(gt_boxes, anchors)
+              is_crowd=None,
+              assign_on_cpu=False):
+    if assign_on_cpu:
+        with paddle.fluid.framework._dygraph_place_guard(paddle.CPUPlace()):
+            iou = bbox_overlaps(gt_boxes, anchors)
+    else:
+        iou = bbox_overlaps(gt_boxes, anchors)
     n_gt = gt_boxes.shape[0]
     if n_gt == 0 or is_crowd is None:
         n_gt_crowd = 0
@@ -176,7 +182,8 @@ def generate_proposal_target(rpn_rois,
                              is_crowd=None,
                              use_random=True,
                              is_cascade=False,
-                             cascade_iou=0.5):
+                             cascade_iou=0.5,
+                             assign_on_cpu=False):
 
     rois_with_gt = []
     tgt_labels = []
@@ -201,7 +208,8 @@ def generate_proposal_target(rpn_rois,
 
         # Step1: label bbox
         matches, match_labels = label_box(bbox, gt_bbox, fg_thresh, bg_thresh,
-                                          False, ignore_thresh, is_crowd_i)
+                                          False, ignore_thresh, is_crowd_i,
+                                          assign_on_cpu)
         # Step2: sample bbox 
         sampled_inds, sampled_gt_classes = sample_bbox(
             matches, match_labels, gt_class, batch_size_per_im, fg_fraction,
