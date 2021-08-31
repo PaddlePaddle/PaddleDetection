@@ -70,7 +70,7 @@ class Trainer(object):
             sys.exit(1)
 
         if self.mode == 'train':
-            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
+            self.loader = create('{}Reader'.format(self.mode.capitalize(), self.cfg), cfg)(
                 self.dataset, cfg.worker_num)
 
         if cfg.architecture == 'JDE' and self.mode == 'train':
@@ -103,15 +103,15 @@ class Trainer(object):
         if self.mode == 'eval':
             self._eval_batch_sampler = paddle.io.BatchSampler(
                 self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
-            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
+            self.loader = create('{}Reader'.format(self.mode.capitalize()), cfg)(
                 self.dataset, cfg.worker_num, self._eval_batch_sampler)
         # TestDataset build after user set images, skip loader creation here
 
         # build optimizer in train mode
         if self.mode == 'train':
             steps_per_epoch = len(self.loader)
-            self.lr = create('LearningRate')(steps_per_epoch)
-            self.optimizer = create('OptimizerBuilder')(self.lr,
+            self.lr = create('LearningRate', cfg)(steps_per_epoch)
+            self.optimizer = create('OptimizerBuilder', cfg)(self.lr,
                                                         self.model.parameters())
 
         self._nranks = dist.get_world_size()
@@ -400,7 +400,7 @@ class Trainer(object):
                         paddle.io.BatchSampler(
                             self._eval_dataset,
                             batch_size=self.cfg.EvalReader['batch_size'])
-                    self._eval_loader = create('EvalReader')(
+                    self._eval_loader = create('EvalReader', self.cfg)(
                         self._eval_dataset,
                         self.cfg.worker_num,
                         batch_sampler=self._eval_batch_sampler)
@@ -460,7 +460,7 @@ class Trainer(object):
                 output_dir='output',
                 save_txt=False):
         self.dataset.set_images(images)
-        loader = create('TestReader')(self.dataset, 0)
+        loader = create('TestReader', self.cfg)(self.dataset, 0)
 
         imid2path = self.dataset.get_imid2path()
 

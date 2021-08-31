@@ -32,14 +32,14 @@ class DistillModel(nn.Layer):
     def __init__(self, cfg, slim_cfg):
         super(DistillModel, self).__init__()
 
-        self.student_model = create(cfg.architecture, cfg)
+        self.student_model = create(cfg.architecture)
         logger.debug('Load student model pretrain_weights:{}'.format(
             cfg.pretrain_weights))
         load_pretrain_weight(self.student_model, cfg.pretrain_weights)
 
         slim_cfg = load_config(slim_cfg)
-        self.teacher_model = create(slim_cfg.architecture, slim_config)
-        self.distill_loss = create(slim_cfg.distill_loss, slim_config)
+        self.teacher_model = create(slim_cfg.architecture)
+        self.distill_loss = create(slim_cfg.distill_loss)
         logger.debug('Load teacher model pretrain_weights:{}'.format(
             slim_cfg.pretrain_weights))
         load_pretrain_weight(self.teacher_model, slim_cfg.pretrain_weights)
