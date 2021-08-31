@@ -65,7 +65,7 @@ class TopDownHRNet(BaseArch):
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
         # backbone
-        backbone = create(cfg['backbone'], cfg)
+        backbone = create(cfg['backbone'])
 
         return {'backbone': backbone, }
 

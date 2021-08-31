@@ -42,17 +42,17 @@ class DETR(BaseArch):
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
         # backbone
-        backbone = create(cfg['backbone'], cfg)
+        backbone = create(cfg['backbone'])
         # transformer
         kwargs = {'input_shape': backbone.out_shape}
-        transformer = create(cfg['transformer'], cfg, **kwargs)
+        transformer = create(cfg['transformer'], **kwargs)
         # head
         kwargs = {
             'hidden_dim': transformer.hidden_dim,
             'nhead': transformer.nhead,
             'input_shape': backbone.out_shape
         }
-        detr_head = create(cfg['detr_head'], cfg, **kwargs)
+        detr_head = create(cfg['detr_head'], **kwargs)
 
         return {
             'backbone': backbone,

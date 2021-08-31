@@ -48,11 +48,11 @@ class DeepSORT(BaseArch):
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
         if cfg['detector'] != 'None':
-            detector = create(cfg['detector'], cfg)
+            detector = create(cfg['detector'])
         else:
             detector = None
-        reid = create(cfg['reid'], cfg)
-        tracker = create(cfg['tracker'], cfg)
+        reid = create(cfg['reid'])
+        tracker = create(cfg['tracker'])
 
         return {
             "detector": detector,

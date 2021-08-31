@@ -48,13 +48,13 @@ class BlazeFace(BaseArch):
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
         # backbone
-        backbone = create(cfg['backbone'], cfg)
+        backbone = create(cfg['backbone'])
         # fpn
         kwargs = {'input_shape': backbone.out_shape}
-        neck = create(cfg['neck'], cfg, **kwargs)
+        neck = create(cfg['neck'], **kwargs)
         # head
         kwargs = {'input_shape': neck.out_shape}
-        blaze_head = create(cfg['blaze_head'], cfg, **kwargs)
+        blaze_head = create(cfg['blaze_head'], **kwargs)
 
         return {
             'backbone': backbone,
