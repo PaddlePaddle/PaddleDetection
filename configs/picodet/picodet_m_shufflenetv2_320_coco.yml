@@ -6,11 +6,11 @@ _BASE_: [
   '_base_/picodet_320_reader.yml',
 ]
 
-weights: output/picodet_s_shufflenetv2_320_coco/model_final
+weights: output/picodet_m_shufflenetv2_320_coco/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ShuffleNetV2_x1_5_pretrained.pdparams
 find_unused_parameters: True
 use_ema: true
-ema_decay: 0.9998
+cycle_epoch: 40
 snapshot_epoch: 10
 
 ShuffleNetV2:

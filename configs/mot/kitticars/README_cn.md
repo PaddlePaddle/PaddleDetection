@@ -15,7 +15,7 @@
 
 |    骨干网络      |  输入尺寸 |  MOTA   |   FPS   |  下载链接 | 配置文件 |
 | :--------------| :------- | :-----: | :-----: | :------: | :----: |
-| DLA-34         | 1088x608 |   67.9  |    -    |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitticars.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/kitticars/fairmot_dla34_30e_1088x608_kitticars.yml) |
+| DLA-34         | 1088x608 |   53.9  |    -    |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitticars.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/kitticars/fairmot_dla34_30e_1088x608_kitticars.yml) |
 
 **注意:**
  FairMOT使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
