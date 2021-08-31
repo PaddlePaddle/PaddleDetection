@@ -87,7 +87,7 @@ def get_categories(metric_type, anno_file=None, arch=None):
     ) == 'keypointtopdownmpiieval':
         return (None, {'id': 'keypoint'})
 
-    elif metric_type.lower() in ['mot', 'motdet', 'reid', 'KITTI']:
+    elif metric_type.lower() in ['mot', 'motdet', 'reid', 'kitti']:
         return _mot_category()
 
     else:
