@@ -36,10 +36,18 @@ logger = setup_logger(__name__)
 registered_ops = []
 
 __all__ = [
-    'RandomAffine', 'KeyPointFlip', 'TagGenerate', 'ToHeatmaps',
-    'NormalizePermute', 'EvalAffine', 'RandomFlipHalfBodyTransform',
-    'TopDownAffine', 'ToHeatmapsTopDown', 'ToHeatmapsTopDown_DARK',
-    'TopDownEvalAffine'
+    'RandomAffine',
+    'KeyPointFlip',
+    'TagGenerate',
+    'ToHeatmaps',
+    'NormalizePermute',
+    'EvalAffine',
+    'RandomFlipHalfBodyTransform',
+    'TopDownAffine',
+    'ToHeatmapsTopDown',
+    'ToHeatmapsTopDown_DARK',
+    'TopDownEvalAffine',
+    'AugmentationbyInformantionDropping',
 ]
 
 
@@ -528,6 +536,54 @@ class RandomFlipHalfBodyTransform(object):
         records['scale'] = s
         records['rotate'] = r
 
+        return records
+
+
+@register_keypointop
+class AugmentationbyInformantionDropping(object):
+    """AID: Augmentation by Informantion Dropping. Please refer 
+        to https://arxiv.org/abs/2008.07139 
+    
+    Args:
+        prob_cutout (float): The probability of the Cutout augmentation.
+        radius_factor (float): Size factor of cutout area.
+        num_patch (int): Number of patches to be cutout.                       
+        records(dict): the dict contained the image and coords
+        
+    Returns:
+        records (dict): contain the image and coords after tranformed
+    
+    """
+
+    def __init__(self, prob_cutout=0.0, radius_factor=0.2, num_patch=1):
+        self.prob_cutout = prob_cutout
+        self.radius_factor = radius_factor
+        self.num_patch = num_patch
+
+    def _cutout(self, img):
+        height, width, _ = img.shape
+        img = img.reshape((height * width, -1))
+        feat_x_int = np.arange(0, width)
+        feat_y_int = np.arange(0, height)
+        feat_x_int, feat_y_int = np.meshgrid(feat_x_int, feat_y_int)
+        feat_x_int = feat_x_int.reshape((-1, ))
+        feat_y_int = feat_y_int.reshape((-1, ))
+        for _ in range(self.num_patch):
+            center = [np.random.rand() * width, np.random.rand() * height]
+            radius = self.radius_factor * (1 + np.random.rand(2)) * width
+            x_offset = (center[0] - feat_x_int) / radius[0]
+            y_offset = (center[1] - feat_y_int) / radius[1]
+            dis = x_offset**2 + y_offset**2
+            keep_pos = np.where((dis <= 1) & (dis >= 0))[0]
+            img[keep_pos, :] = 0
+        img = img.reshape((height, width, -1))
+        return img
+
+    def __call__(self, records):
+        img = records['image']
+        if np.random.rand() < self.prob_cutout:
+            img = self._cutout(img)
+        records['image'] = img
         return records
 
 
