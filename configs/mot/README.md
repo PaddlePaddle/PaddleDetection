@@ -41,7 +41,6 @@ pip install -r requirements.txt
 ```
 **Notes:**
 - Install `cython_bbox` for Windows: `pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`. You can refer to this [tutorial](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows).
-- Evaluation on Windows CUDA 11 environment may not be normally. It will be repaired as soon as possible. You can change to CUDA 10.2 or CUDA 10.1 environment for normal evaluation.
 - Please make sure that [ffmpeg](https://ffmpeg.org/ffmpeg.html) is installed first, on Linux(Ubuntu) platform you can directly install it by the following command:`apt-get update && apt-get install -y ffmpeg`.
 
 
@@ -119,7 +118,7 @@ If you use a stronger detection model, you can get better results. Each txt is t
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
 | DLA-34(paper)  | 1088x608 |  83.3  |  81.9  |   544  |  3822  |  14095  |     -   |    -   |   -    |
-| DLA-34         | 1088x608 |  83.7  |  83.3  |   435  |  3829  |  13764  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+| DLA-34         | 1088x608 |  83.2  |  83.1  |   499  |  3861  |  14223  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 
 ### FairMOT Results on MOT-16 Test Set
@@ -127,7 +126,7 @@ If you use a stronger detection model, you can get better results. Each txt is t
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
 | DLA-34(paper)  | 1088x608 |  74.9  |  72.8  |  1074  |    -   |    -   |   25.9   |    -   |   -    |
-| DLA-34         | 1088x608 |  74.8  |  74.4  |  930   |  7038  |  37994 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+| DLA-34         | 1088x608 |  75.0  |  74.7  |  919   |  7934  |  36747 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 **Notes:**
  FairMOT used 2 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
@@ -135,7 +134,7 @@ If you use a stronger detection model, you can get better results. Each txt is t
 
 ## Feature Tracking Model
 
-### 【Head Tracking](./headtracking21/README.md)
+### [Head Tracking](./headtracking21/README.md)
 
 ### FairMOT Results on HT-21 Training Set
 |    backbone      |  input shape |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  download | config |
@@ -152,7 +151,7 @@ If you use a stronger detection model, you can get better results. Each txt is t
 
 |    backbone    | input shape |  MOTA   |   FPS   |  download | config |
 | :--------------| :------- | :-----: | :-----: | :------: | :----: |
-| DLA-34         | 1088x608 |   67.9  |    -    |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitticars.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/kitticars/fairmot_dla34_30e_1088x608_kitticars.yml) |
+| DLA-34         | 1088x608 |   53.9  |    -    |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitticars.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/kitticars/fairmot_dla34_30e_1088x608_kitticars.yml) |
 
 
 ## Dataset Preparation

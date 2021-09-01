@@ -1,5 +1,5 @@
 architecture: PicoDet
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV3_large_x0_5_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV3_large_x1_0_ssld_pretrained.pdparams
 
 PicoDet:
   backbone: MobileNetV3
@@ -8,13 +8,13 @@ PicoDet:
 
 MobileNetV3:
   model_name: large
-  scale: 0.5
+  scale: 1.0
   with_extra_blocks: false
   extra_block_filters: []
   feature_maps: [7, 13, 16]
 
 PAN:
-  out_channel: 96
+  out_channel: 128
   start_level: 0
   end_level: 3
   spatial_scales: [0.125, 0.0625, 0.03125]
@@ -22,13 +22,13 @@ PAN:
 PicoHead:
   conv_feat:
     name: PicoFeat
-    feat_in: 96
-    feat_out: 96
+    feat_in: 128
+    feat_out: 128
     num_convs: 2
     norm_type: bn
     share_cls_reg: True
   fpn_stride: [8, 16, 32]
-  feat_in_chan: 96
+  feat_in_chan: 128
   prior_prob: 0.01
   reg_max: 7
   cell_offset: 0.5
