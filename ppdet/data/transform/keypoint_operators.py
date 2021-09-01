@@ -601,8 +601,9 @@ class TopDownEvalAffine(object):
 
     """
 
-    def __init__(self, trainsize):
+    def __init__(self, trainsize, use_udp=False):
         self.trainsize = trainsize
+        self.use_udp = use_udp
 
     def __call__(self, records):
         image = records['image']
@@ -610,11 +611,21 @@ class TopDownEvalAffine(object):
         imshape = records['im_shape'][::-1]
         center = imshape / 2.
         scale = imshape
-        trans = get_affine_transform(center, scale, rot, self.trainsize)
-        image = cv2.warpAffine(
-            image,
-            trans, (int(self.trainsize[0]), int(self.trainsize[1])),
-            flags=cv2.INTER_LINEAR)
+
+        if self.use_udp:
+            trans = get_warp_matrix(
+                rot, center * 2.0,
+                [self.trainsize[0] - 1.0, self.trainsize[1] - 1.0], scale)
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
+        else:
+            trans = get_affine_transform(center, scale, rot, self.trainsize)
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
         records['image'] = image
 
         return records
