@@ -74,8 +74,9 @@ def label_box(anchors,
               is_crowd=None,
               assign_on_cpu=False):
     if assign_on_cpu:
-        with paddle.fluid.framework._dygraph_place_guard(paddle.CPUPlace()):
-            iou = bbox_overlaps(gt_boxes, anchors)
+        paddle.set_device("cpu")
+        iou = bbox_overlaps(gt_boxes, anchors)
+        paddle.set_device("gpu")
     else:
         iou = bbox_overlaps(gt_boxes, anchors)
     n_gt = gt_boxes.shape[0]
