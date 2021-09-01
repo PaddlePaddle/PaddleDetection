@@ -37,7 +37,7 @@ __all__ = ['MOTEvaluator', 'MOTMetric', 'JDEDetMetric', 'KITTIMOTMetric']
 
 def read_mot_results(filename, is_gt=False, is_ignore=False):
     valid_labels = {1}
-    ignore_labels = {2, 7, 8, 12}
+    ignore_labels = {2, 7, 8, 12} # only in motchallenge datasets like 'MOT16'
     results_dict = dict()
     if os.path.isfile(filename):
         with open(filename, 'r') as f:
