@@ -673,9 +673,6 @@ class SwinTransformer(nn.Layer):
             else:  #model in local path
                 path = pretrained
             self.set_state_dict(paddle.load(path))
-            print('###################################################')
-            print('###############Success load the mode###############')
-            print('###################################################')
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
