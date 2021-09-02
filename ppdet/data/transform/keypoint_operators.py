@@ -546,7 +546,7 @@ class AugmentationbyInformantionDropping(object):
     
     Args:
         prob_cutout (float): The probability of the Cutout augmentation.
-        radius_factor (float): Size factor of cutout area.
+        offset_factor (float): Offset factor of cutout center.
         num_patch (int): Number of patches to be cutout.                       
         records(dict): the dict contained the image and coords
         
@@ -555,12 +555,17 @@ class AugmentationbyInformantionDropping(object):
     
     """
 
-    def __init__(self, prob_cutout=0.0, radius_factor=0.2, num_patch=1):
+    def __init__(self,
+                 trainsize,
+                 prob_cutout=0.0,
+                 offset_factor=0.2,
+                 num_patch=1):
         self.prob_cutout = prob_cutout
-        self.radius_factor = radius_factor
+        self.offset_factor = offset_factor
         self.num_patch = num_patch
+        self.trainsize = trainsize
 
-    def _cutout(self, img):
+    def _cutout(self, img, joints, joints_vis):
         height, width, _ = img.shape
         img = img.reshape((height * width, -1))
         feat_x_int = np.arange(0, width)
@@ -569,10 +574,14 @@ class AugmentationbyInformantionDropping(object):
         feat_x_int = feat_x_int.reshape((-1, ))
         feat_y_int = feat_y_int.reshape((-1, ))
         for _ in range(self.num_patch):
-            center = [np.random.rand() * width, np.random.rand() * height]
-            radius = self.radius_factor * (1 + np.random.rand(2)) * width
-            x_offset = (center[0] - feat_x_int) / radius[0]
-            y_offset = (center[1] - feat_y_int) / radius[1]
+            vis_idx, _ = np.where(joints_vis > 0)
+            occlusion_joint_id = np.random.choice(vis_idx)
+            center = joints[occlusion_joint_id, 0:2]
+            offset = np.random.randn(2) * self.trainsize[0] * self.offset_factor
+            center = center + offset
+            radius = np.random.uniform(0.1, 0.2) * self.trainsize[0]
+            x_offset = (center[0] - feat_x_int) / radius
+            y_offset = (center[1] - feat_y_int) / radius
             dis = x_offset**2 + y_offset**2
             keep_pos = np.where((dis <= 1) & (dis >= 0))[0]
             img[keep_pos, :] = 0
@@ -581,8 +590,10 @@ class AugmentationbyInformantionDropping(object):
 
     def __call__(self, records):
         img = records['image']
+        joints = records['joints']
+        joints_vis = records['joints_vis']
         if np.random.rand() < self.prob_cutout:
-            img = self._cutout(img)
+            img = self._cutout(img, joints, joints_vis)
         records['image'] = img
         return records
 
