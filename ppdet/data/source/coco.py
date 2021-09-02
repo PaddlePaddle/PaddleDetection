@@ -48,7 +48,7 @@ class COCODataSet(DetDataset):
                  data_fields=['image'],
                  sample_num=-1,
                  load_crowd=False,
-                 allow_empty=False,
+                 allow_empty=True,
                  empty_ratio=1.):
         super(COCODataSet, self).__init__(dataset_dir, image_dir, anno_path,
                                           data_fields, sample_num)
@@ -243,7 +243,7 @@ class COCODataSet(DetDataset):
                 break
         assert ct > 0, 'not found any coco record in %s' % (anno_path)
         logger.debug('{} samples in file {}'.format(ct, anno_path))
-        if len(empty_records) > 0:
+        if self.allow_empty and len(empty_records) > 0:
             empty_records = self._sample_empty(empty_records, len(records))
             records += empty_records
         self.roidbs = records
