@@ -16,14 +16,14 @@ import numpy as np
 import math
 import paddle
 import paddle.nn as nn
-from paddle.nn.initializer import KaimingUniform
+from paddle.nn.initializer import KaimingUniform, Uniform
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling.layers import ConvNormLayer
 from ..shape_spec import ShapeSpec
 
 
 def fill_up_weights(up):
-    weight = up.weight
+    weight = up.weight.numpy()
     f = math.ceil(weight.shape[2] / 2)
     c = (2 * f - 1 - f % 2) / (2. * f)
     for i in range(weight.shape[2]):
@@ -32,6 +32,7 @@ def fill_up_weights(up):
                 (1 - math.fabs(i / f - c)) * (1 - math.fabs(j / f - c))
     for c in range(1, weight.shape[0]):
         weight[c, 0, :, :] = weight[0, 0, :, :]
+    up.weight.set_value(weight)
 
 
 class IDAUp(nn.Layer):
@@ -40,6 +41,8 @@ class IDAUp(nn.Layer):
         for i in range(1, len(ch_ins)):
             ch_in = ch_ins[i]
             up_s = int(up_strides[i])
+            fan_in = ch_in * 3 * 3
+            stdv = 1. / math.sqrt(fan_in)
             proj = nn.Sequential(
                 ConvNormLayer(
                     ch_in,
@@ -50,7 +53,8 @@ class IDAUp(nn.Layer):
                     bias_on=dcn_v2,
                     norm_decay=None,
                     dcn_lr_scale=1.,
-                    dcn_regularizer=None),
+                    dcn_regularizer=None,
+                    initializer=Uniform(-stdv, stdv)),
                 nn.ReLU())
             node = nn.Sequential(
                 ConvNormLayer(
@@ -62,21 +66,19 @@ class IDAUp(nn.Layer):
                     bias_on=dcn_v2,
                     norm_decay=None,
                     dcn_lr_scale=1.,
-                    dcn_regularizer=None),
+                    dcn_regularizer=None,
+                    initializer=Uniform(-stdv, stdv)),
                 nn.ReLU())
 
-            param_attr = paddle.ParamAttr(initializer=KaimingUniform())
             up = nn.Conv2DTranspose(
                 ch_out,
                 ch_out,
                 kernel_size=up_s * 2,
-                weight_attr=param_attr,
                 stride=up_s,
                 padding=up_s // 2,
                 groups=ch_out,
                 bias_attr=False)
-            # TODO: uncomment fill_up_weights
-            #fill_up_weights(up)
+            fill_up_weights(up)
             setattr(self, 'proj_' + str(i), proj)
             setattr(self, 'up_' + str(i), up)
             setattr(self, 'node_' + str(i), node)
