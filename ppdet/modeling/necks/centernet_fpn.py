@@ -16,6 +16,7 @@ import numpy as np
 import math
 import paddle
 import paddle.nn as nn
+from paddle import ParamAttr
 from paddle.nn.initializer import KaimingUniform, Uniform
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling.layers import ConvNormLayer
@@ -70,6 +71,9 @@ class IDAUp(nn.Layer):
                     initializer=Uniform(-stdv, stdv)),
                 nn.ReLU())
 
+            kernel_size = up_s * 2
+            fan_in = ch_out * kernel_size * kernel_size
+            stdv = 1. / math.sqrt(fan_in)
             up = nn.Conv2DTranspose(
                 ch_out,
                 ch_out,
@@ -77,6 +81,7 @@ class IDAUp(nn.Layer):
                 stride=up_s,
                 padding=up_s // 2,
                 groups=ch_out,
+                weight_attr=ParamAttr(initializer=Uniform(-stdv, stdv)),
                 bias_attr=False)
             fill_up_weights(up)
             setattr(self, 'proj_' + str(i), proj)
@@ -137,6 +142,8 @@ class CenterNetDLAFPN(nn.Layer):
         out_channel (int): the channel of the output feature, 0 by default means
             the channel of the input feature whose down ratio is `down_ratio`
         dcn_v2 (bool): whether use the DCNv2, true by default
+        first_level (int|None): the first level of input feature fed into the upsamplng block.
+            if None, the first level stands for logs(down_ratio)
         
     """
 
@@ -145,9 +152,11 @@ class CenterNetDLAFPN(nn.Layer):
                  down_ratio=4,
                  last_level=5,
                  out_channel=0,
-                 dcn_v2=True):
+                 dcn_v2=True,
+                 first_level=None):
         super(CenterNetDLAFPN, self).__init__()
-        self.first_level = int(np.log2(down_ratio))
+        self.first_level = int(np.log2(
+            down_ratio)) if first_level is None else first_level
         self.down_ratio = down_ratio
         self.last_level = last_level
         scales = [2**i for i in range(len(in_channels[self.first_level:]))]
