@@ -601,7 +601,21 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
                     index_mask[k] = 1
                     reid[k] = ide
                     bbox_xys[k] = bbox_xy
-
+                    #print('K:', k)
+            #show_image = sample['image'].transpose((1, 2, 0)).astype('uint8')
+            #show_heatmap = heatmap * 255
+            #show_heatmap = show_heatmap.astype('uint8')
+            #show_heatmap = show_heatmap.transpose((1, 2, 0))
+            #show_heatmap = cv2.resize(show_heatmap, (show_image.shape[1], show_image.shape[0]))
+            #pseudo_image = np.zeros(show_image.shape, show_image.dtype)
+            #pseudo_image[:, :, 0] = show_heatmap
+            #pseudo_image[:, :, 1] = show_heatmap
+            #pseudo_image[:, :, 2] = show_heatmap
+            #show_heatmap = cv2.addWeighted(show_image, 0.3,
+            #                               pseudo_image, 0.7,
+            #                               0)
+            #
+            #cv2.imwrite('fairmot_heatmap.jpg', show_heatmap)
             sample['heatmap'] = heatmap
             sample['index'] = index
             sample['offset'] = center_offset

@@ -195,6 +195,7 @@ def load_pretrain_weight(model, pretrain_weight):
     #        continue
     #    new_param_state_dict[k.split('detector.')[-1]] = v
     #param_state_dict = new_param_state_dict
+    #print(param_state_dict)
     param_state_dict = match_state_dict(model_dict, param_state_dict)
 
     model.set_dict(param_state_dict)
