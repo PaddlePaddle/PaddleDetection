@@ -49,7 +49,7 @@ class FairMOTEmbeddingHead(nn.Layer):
                 ch_head, ch_emb, kernel_size=1, stride=1, padding=0, bias=True))
         bound = 1 / math.sqrt(ch_emb)
         param_attr = paddle.ParamAttr(initializer=Uniform(-bound, bound))
-        bias_attr = paddle.ParamAttr(initializer=initializer=Constant(0.))
+        bias_attr = paddle.ParamAttr(initializer=Constant(0.))
         self.classifier = nn.Linear(
             ch_emb,
             num_identifiers,
