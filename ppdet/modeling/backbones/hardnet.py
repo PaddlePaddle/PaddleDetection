@@ -144,13 +144,16 @@ class HarDBlock(nn.Layer):
 class HarDNet(nn.Layer):
     def __init__(self,
                  depth_wise=False,
+                 return_idx=[5,10,15,18],
                  arch=85):
         super().__init__()
         first_ch = [32, 64]
         second_kernel = 3
         max_pool = True
         grmul = 1.7
-        #drop_rate = 0.1
+        self.return_idx = return_idx
+        self._out_channels = [192, 320, 720, 1252]
+        self._out_strides = [4, 8, 16, 32]
 
         # HarDNet68
         ch_list = [128, 256, 320, 640, 1024]
@@ -165,7 +168,6 @@ class HarDNet(nn.Layer):
             gr = [24, 24, 28, 36, 48, 256]
             n_layers = [8, 16, 16, 16, 16, 4]
             downSamp = [1, 0, 1, 0, 1, 0]
-            #drop_rate = 0.2
 
         elif arch == 39:
             # HarDNet39
@@ -179,9 +181,6 @@ class HarDNet(nn.Layer):
         if depth_wise:
             second_kernel = 1
             max_pool = False
-            #drop_rate = 0.05
-
-        self._out_channels = ch_list
 
         blks = len(n_layers)
         self.base = nn.LayerList([])
@@ -223,24 +222,17 @@ class HarDNet(nn.Layer):
                     self.base.append(nn.MaxPool2D(kernel_size=2, stride=2))
                 else:
                     self.base.append(DWConvLayer(ch, ch, stride=2))
-        '''
-        ch = ch_list[blks - 1]
-        layers = []
-        if with_pool:
-            layers.append(nn.AdaptiveAvgPool2D((1, 1)))
-        if class_num > 0:
-            layers.append(nn.Flatten())
-            layers.append(nn.Dropout(drop_rate))
-            layers.append(nn.Linear(ch, class_num))
-        self.base.append(nn.Sequential(*layers))
-        '''
+
 
     def forward(self, inputs):
         x = inputs['image']
-        for layer in self.base:
+        outs = []
+        for i, layer in enumerate(self.base):
+            if i in self.return_idx:
+                outs.append(x)
             x = layer(x)
-        return x
+        return outs
 
     @property
     def out_shape(self):
-        return [ShapeSpec(channels=self._out_channels[-1])]
+        return [ShapeSpec(channels=self._out_channels[i]) for i in range(4)]
