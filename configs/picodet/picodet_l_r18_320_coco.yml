@@ -2,11 +2,11 @@ _BASE_: [
   '../datasets/coco_detection.yml',
   '../runtime.yml',
   '_base_/picodet_mbv3_0_5x.yml',
-  '_base_/optimizer_280e.yml',
+  '_base_/optimizer_300e.yml',
   '_base_/picodet_320_reader.yml',
 ]
 
-weights: output/picodet_m_r18_320_coco/model_final
+weights: output/picodet_l_r18_320_coco/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet18_vd_pretrained.pdparams
 find_unused_parameters: True
 use_ema: true
