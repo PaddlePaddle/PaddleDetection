@@ -83,7 +83,7 @@ class FairMOT(BaseArch):
             det_loss = det_outs['det_loss']
             loss = self.loss(det_loss, reid_loss)
             for k, v in det_outs.items():
-                if k in ['det_loss', 'neck_feat']:
+                if k in ['det_loss', 'neck_feat', 'loss']:
                     continue
                 loss[k] = v
             loss['reid_loss'] = reid_loss

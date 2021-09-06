@@ -36,7 +36,7 @@ def fill_up_weights(up):
 
 
 class IDAUp(nn.Layer):
-    def __init__(self, ch_ins, ch_out, up_strides, dcn_v2=True):
+    def __init__(self, ch_ins, ch_out, up_strides, dcn_v2=True, norm_type='bn'):
         super(IDAUp, self).__init__()
         for i in range(1, len(ch_ins)):
             ch_in = ch_ins[i]
@@ -54,7 +54,8 @@ class IDAUp(nn.Layer):
                     norm_decay=None,
                     dcn_lr_scale=1.,
                     dcn_regularizer=None,
-                    initializer=Uniform(-stdv, stdv)),
+                    initializer=Uniform(-stdv, stdv),
+                    norm_type=norm_type),
                 nn.ReLU())
             node = nn.Sequential(
                 ConvNormLayer(
@@ -67,9 +68,14 @@ class IDAUp(nn.Layer):
                     norm_decay=None,
                     dcn_lr_scale=1.,
                     dcn_regularizer=None,
-                    initializer=Uniform(-stdv, stdv)),
+                    initializer=Uniform(-stdv, stdv),
+                    norm_type=norm_type),
                 nn.ReLU())
 
+
+            kernel_size = up_s * 2
+            fan_in = ch_out * kernel_size * kernel_size
+            stdv = 1. / math.sqrt(fan_in)
             up = nn.Conv2DTranspose(
                 ch_out,
                 ch_out,
@@ -77,6 +83,7 @@ class IDAUp(nn.Layer):
                 stride=up_s,
                 padding=up_s // 2,
                 groups=ch_out,
+                weight_attr=paddle.ParamAttr(initializer=Uniform(-stdv, stdv)),
                 bias_attr=False)
             fill_up_weights(up)
             setattr(self, 'proj_' + str(i), proj)
@@ -95,7 +102,7 @@ class IDAUp(nn.Layer):
 
 
 class DLAUp(nn.Layer):
-    def __init__(self, start_level, channels, scales, ch_in=None, dcn_v2=True):
+    def __init__(self, start_level, channels, scales, ch_in=None, dcn_v2=True,  norm_type='bn'):
         super(DLAUp, self).__init__()
         self.start_level = start_level
         if ch_in is None:
@@ -112,7 +119,8 @@ class DLAUp(nn.Layer):
                     ch_in[j:],
                     channels[j],
                     scales[j:] // scales[j],
-                    dcn_v2=dcn_v2))
+                    dcn_v2=dcn_v2,
+                    norm_type=norm_type))
             scales[j + 1:] = scales[j]
             ch_in[j + 1:] = [channels[j] for _ in channels[j + 1:]]
 
@@ -140,12 +148,15 @@ class CenterNetDLAFPN(nn.Layer):
         
     """
 
+    __shared__ = ['norm_type']
+
     def __init__(self,
                  in_channels,
                  down_ratio=4,
                  last_level=5,
                  out_channel=0,
-                 dcn_v2=True):
+                 dcn_v2=True,
+                 norm_type='bn'):
         super(CenterNetDLAFPN, self).__init__()
         self.first_level = int(np.log2(down_ratio))
         self.down_ratio = down_ratio
@@ -155,7 +166,8 @@ class CenterNetDLAFPN(nn.Layer):
             self.first_level,
             in_channels[self.first_level:],
             scales,
-            dcn_v2=dcn_v2)
+            dcn_v2=dcn_v2,
+            norm_type=norm_type)
         self.out_channel = out_channel
         if out_channel == 0:
             self.out_channel = in_channels[self.first_level]
@@ -163,7 +175,8 @@ class CenterNetDLAFPN(nn.Layer):
             in_channels[self.first_level:self.last_level],
             self.out_channel,
             [2**i for i in range(self.last_level - self.first_level)],
-            dcn_v2=dcn_v2)
+            dcn_v2=dcn_v2,
+            norm_type=norm_type)
 
     @classmethod
     def from_config(cls, cfg, input_shape):
