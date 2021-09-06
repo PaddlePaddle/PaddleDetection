@@ -21,6 +21,7 @@ import paddle.nn as nn
 from paddle import ParamAttr
 from paddle.nn import Conv2D, MaxPool2D, AdaptiveAvgPool2D, BatchNorm
 from paddle.nn.initializer import KaimingNormal
+from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register, serializable
 from numbers import Integral
@@ -50,7 +51,11 @@ class ConvBNLayer(nn.Layer):
             weight_attr=ParamAttr(initializer=KaimingNormal()),
             bias_attr=False)
 
-        self._batch_norm = BatchNorm(out_channels, act=act)
+        self._batch_norm = BatchNorm(
+            out_channels,
+            param_attr=ParamAttr(regularizer=L2Decay(0.0)),
+            bias_attr=ParamAttr(regularizer=L2Decay(0.0)),
+            act=act)
 
     def forward(self, inputs):
         y = self._conv(inputs)
@@ -159,14 +164,9 @@ class InvertedResidualDS(nn.Layer):
 @register
 @serializable
 class ShuffleNetV2(nn.Layer):
-    def __init__(self,
-                 scale=1.0,
-                 act="relu",
-                 feature_maps=[5, 13, 17],
-                 with_last_conv=False):
+    def __init__(self, scale=1.0, act="relu", feature_maps=[5, 13, 17]):
         super(ShuffleNetV2, self).__init__()
         self.scale = scale
-        self.with_last_conv = with_last_conv
         if isinstance(feature_maps, Integral):
             feature_maps = [feature_maps]
         self.feature_maps = feature_maps
@@ -226,19 +226,6 @@ class ShuffleNetV2(nn.Layer):
                 self._update_out_channels(stage_out_channels[stage_id + 2],
                                           self._feature_idx, self.feature_maps)
 
-        if self.with_last_conv:
-            # last_conv
-            self._last_conv = ConvBNLayer(
-                in_channels=stage_out_channels[-2],
-                out_channels=stage_out_channels[-1],
-                kernel_size=1,
-                stride=1,
-                padding=0,
-                act=act)
-            self._feature_idx += 1
-            self._update_out_channels(stage_out_channels[-1], self._feature_idx,
-                                      self.feature_maps)
-
     def _update_out_channels(self, channel, feature_idx, feature_maps):
         if feature_idx in feature_maps:
             self._out_channels.append(channel)
@@ -252,9 +239,6 @@ class ShuffleNetV2(nn.Layer):
             if i + 2 in self.feature_maps:
                 outs.append(y)
 
-        if self.with_last_conv:
-            y = self._last_conv(y)
-            outs.append(y)
         return outs
 
     @property

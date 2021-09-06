@@ -195,8 +195,8 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 - [安装说明](docs/tutorials/INSTALL_cn.md)
 - [数据准备](docs/tutorials/PrepareDataSet.md)
-- [30分钟上手PaddleDetcion](docs/tutorials/GETTING_STARTED_cn.md)
-- [常见问题汇总](docs/tutorials/FAQ.md)
+- [30分钟上手PaddleDetecion](docs/tutorials/GETTING_STARTED_cn.md)
+- [FAQ/常见问题汇总](docs/tutorials/FAQ)
 
 
 ### 进阶教程
@@ -237,6 +237,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 - [关键点检测](configs/keypoint)
     - HigherHRNet
     - HRNet
+    - LiteHRNet
 - [多目标跟踪](configs/mot/README_cn.md)
     - [DeepSORT](configs/mot/deepsort/README_cn.md)
     - [JDE](configs/mot/jde/README_cn.md)
@@ -262,6 +263,8 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 - [使用SSD-MobileNetv1完成一个项目--准备数据集到完成树莓派部署](https://github.com/PaddleCV-FAQ/PaddleDetection-FAQ/blob/main/Lite%E9%83%A8%E7%BD%B2/ssd_mobilenet_v1_for_raspi.md)
 
 ## 版本更新
+
+v2.2版本已经在`08/2021`发布，全新发布Transformer检测系列模型，新增关键点检测Dark HRNet模型，新增人头、车辆跟踪垂类模型，发布旋转框检测S2ANet优化模型，主流模型支持batch size > 1预测部署，详细内容请参考[版本更新文档](docs/CHANGELOG.md)
 
 v2.1版本已经在`05/2021`发布，全新发布关键点检测和多目标跟踪能力，支持无标注框检测，发布PPYOLO系列模型压缩模型，新增ONNX模型导出教程，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 

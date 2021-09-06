@@ -392,8 +392,7 @@ def predict_video(detector, reid_model, camera_id):
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
             cv2.imwrite(
-                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)),
-                im)
+                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
         else:
             writer.write(im)
         frame_id += 1
@@ -409,7 +408,7 @@ def predict_video(detector, reid_model, camera_id):
 
     if FLAGS.save_images:
         save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
-        cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" {}'.format(
+        cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
             save_dir, out_path)
         os.system(cmd_str)
         print('Save video in {}.'.format(out_path))

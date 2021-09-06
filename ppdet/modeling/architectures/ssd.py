@@ -36,11 +36,19 @@ class SSD(BaseArch):
     __category__ = 'architecture'
     __inject__ = ['post_process']
 
-    def __init__(self, backbone, ssd_head, post_process):
+    def __init__(self, backbone, ssd_head, post_process, r34_backbone=False):
         super(SSD, self).__init__()
         self.backbone = backbone
         self.ssd_head = ssd_head
         self.post_process = post_process
+        self.r34_backbone = r34_backbone
+        if self.r34_backbone:
+            from ppdet.modeling.backbones.resnet import ResNet
+            assert isinstance(self.backbone, ResNet) and \
+                   self.backbone.depth == 34, \
+                "If you set r34_backbone=True, please use ResNet-34 as backbone."
+            self.backbone.res_layers[2].blocks[0].branch2a.conv._stride = [1, 1]
+            self.backbone.res_layers[2].blocks[0].short.conv._stride = [1, 1]
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
