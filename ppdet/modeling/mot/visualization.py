@@ -16,6 +16,18 @@ import cv2
 import numpy as np
 
 
+def mkdirs_if_missing(d):
+    if not osp.exists(d):
+        os.makedirs(d)
+
+def mkfile_if_missing(fileDirPath):
+    if not osp.exists(fileDirPath):
+        fileDir = str.join('/',fileDirPath.split('/')[0:-1])
+        mkdirs_if_missing(fileDir)
+        filePath = fileDirPath.split('/')[-1]
+        os.system(f'cd {fileDir} \n touch {filePath}')
+
+
 def tlwhs_to_tlbrs(tlwhs):
     tlbrs = np.copy(tlwhs)
     if len(tlbrs) == 0:
