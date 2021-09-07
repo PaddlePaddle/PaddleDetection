@@ -312,16 +312,14 @@ class Gt2YoloTargetPlain(BaseOperator):
                     valid_bbox = gt_bbox[valid_flags]
                     valid_class = gt_class[valid_flags]
                     valid_score = gt_score[valid_flags]
-                    gi = np.floor(valid_bbox[:, 0] /
-                                  downsample).astype(np.int32)
-                    gx = valid_bbox[:, 0] - gi
-                    gj = np.floor(valid_bbox[:, 1] /
-                                  downsample).astype(np.int32)
-                    gy = valid_bbox[:, 1] - gj
+                    gx = valid_bbox[:, 0] / downsample
+                    gi = np.floor(gx).astype(np.int32)
+                    gy = valid_bbox[:, 1] / downsample
+                    gj = np.floor(gy).astype(np.int32)
                     gw = np.log(valid_bbox[:, 2])
                     gh = np.log(valid_bbox[:, 3])
-                    target[0, 0, gj, gi] = gx
-                    target[0, 1, gj, gi] = gy
+                    target[0, 0, gj, gi] = gx - gi
+                    target[0, 1, gj, gi] = gy - gj
                     target[0, 2, gj, gi] = gw
                     target[0, 3, gj, gi] = gh
                     target[0, 4, gj, gi] = 2.0 - gw * gh / (w * h)
