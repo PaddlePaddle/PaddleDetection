@@ -22,6 +22,7 @@ except Exception:
     from collections import Sequence
 
 import cv2
+import os
 import math
 import numpy as np
 from .operators import register_op, BaseOperator, Resize
@@ -34,9 +35,9 @@ from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
-    'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseRCNNTarget', 'PadMaskBatch',
-    'Gt2GFLTarget'
+    'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2YoloTargetPlain',
+    'Gt2FCOSTarget', 'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseRCNNTarget',
+    'PadMaskBatch', 'Gt2GFLTarget'
 ]
 
 
@@ -262,6 +263,73 @@ class Gt2YoloTarget(BaseOperator):
                 sample['target{}'.format(i)] = target
 
             # remove useless gt_class and gt_score after target calculated
+            sample.pop('gt_class')
+            sample.pop('gt_score')
+
+        return samples
+
+
+@register_op
+class Gt2YoloTargetPlain(BaseOperator):
+    """
+    Generate YOLOv3 targets by groud truth data, this operator is only used in
+    fine grained YOLOv3 loss mode
+    """
+
+    def __init__(self,
+                 object_sizes_boundary=[96, 32],
+                 downsample_ratio=[32, 16, 8],
+                 num_classes=80,
+                 iou_thresh=1.):
+        super(Gt2YoloTargetPlain, self).__init__()
+        self.object_sizes_boundary = object_sizes_boundary
+        self.downsample_ratio = downsample_ratio
+        self.num_classes = num_classes
+        self.iou_thresh = iou_thresh
+
+    def __call__(self, samples, context=None):
+
+        h, w = samples[0]['image'].shape[1:3]
+        boundary = [max(h, w), ] + self.object_sizes_boundary + [0, ]
+        n = len(boundary) - 1
+        for sample in samples:
+            gt_bbox = sample['gt_bbox']
+            gt_class = sample['gt_class']
+            if 'gt_score' not in sample:
+                sample['gt_score'] = np.ones(
+                    (gt_bbox.shape[0], ), dtype=np.float32)
+            gt_score = sample['gt_score']
+            for i in range(n):
+                downsample = self.downsample_ratio[i]
+                grid_h = int(h / downsample)
+                grid_w = int(w / downsample)
+                target = np.zeros(
+                    (1, 6 + self.num_classes, grid_h, grid_w), dtype=np.float32)
+                br, bl = boundary[i], boundary[i + 1]
+                valid_flags = ((gt_bbox[:, 2:4]).max(1) > bl) & (
+                    (gt_bbox[:, 2:4]).max(1) <= br)
+                if valid_flags.sum() > 0:
+                    valid_bbox = gt_bbox[valid_flags]
+                    valid_class = gt_class[valid_flags]
+                    valid_score = gt_score[valid_flags]
+                    gi = np.floor(valid_bbox[:, 0] /
+                                  downsample).astype(np.int32)
+                    gx = valid_bbox[:, 0] - gi
+                    gj = np.floor(valid_bbox[:, 1] /
+                                  downsample).astype(np.int32)
+                    gy = valid_bbox[:, 1] - gj
+                    gw = np.log(valid_bbox[:, 2])
+                    gh = np.log(valid_bbox[:, 3])
+                    target[0, 0, gj, gi] = gx
+                    target[0, 1, gj, gi] = gy
+                    target[0, 2, gj, gi] = gw
+                    target[0, 3, gj, gi] = gh
+                    target[0, 4, gj, gi] = 2.0 - gw * gh / (w * h)
+                    target[0, 5, gj, gi] = valid_score
+                    target[0, 6 + valid_class, gj, gi] = 1.
+
+                sample['target{}'.format(i)] = target
+
             sample.pop('gt_class')
             sample.pop('gt_score')
 

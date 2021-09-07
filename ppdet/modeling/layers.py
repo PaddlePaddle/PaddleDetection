@@ -552,6 +552,67 @@ class YOLOBox(object):
 
 @register
 @serializable
+class YOLOPBox(object):
+    __shared__ = ['num_classes']
+
+    def __init__(self,
+                 num_classes=80,
+                 downsample_ratio=32,
+                 clip_bbox=True,
+                 scale_x_y=1.05):
+        self.num_classes = num_classes
+        self.downsample_ratio = downsample_ratio
+        self.clip_bbox = clip_bbox
+        self.scale_x_y = scale_x_y
+
+    def __call__(self, yolo_head_out, anchors, im_shape, scale_factor):
+        boxes_list = []
+        scores_list = []
+        origin_shape = im_shape / scale_factor
+        origin_shape = paddle.cast(origin_shape, 'int32')
+        for i, head_out in enumerate(yolo_head_out):
+            boxes, scores = self.yolop_box(
+                head_out, origin_shape, self.num_classes,
+                self.downsample_ratio // 2**i, self.clip_bbox, self.scale_x_y)
+            boxes_list.append(boxes)
+            scores_list.append(paddle.transpose(scores, perm=[0, 2, 1]))
+        yolo_boxes = paddle.concat(boxes_list, axis=1)
+        yolo_scores = paddle.concat(scores_list, axis=2)
+        return yolo_boxes, yolo_scores
+
+    def yolop_box(self, feat, origin_shape, num_classes, downsample, clip_bbox,
+                  scale_x_y):
+        b = paddle.shape(feat)[0]
+        c, h, w = feat.shape[1:]
+        feat = feat.transpose((0, 2, 3, 1)).reshape((b, h * w, c))
+        yv, xv = paddle.meshgrid([paddle.arange(h), paddle.arange(w)])
+        grid = paddle.cast(paddle.stack((xv, yv), 2), dtype=feat.dtype)
+        grid = grid.reshape((1, h * w, 2))
+        pxy = (scale_x_y * feat[:, :, 0:2] - (0.5 * (scale_x_y - 1.)) + grid)
+        pwh = paddle.exp(feat[:, :, 2:4])
+        px1y1 = pxy - 0.5 * pwh
+        px2y2 = pxy + 0.5 * pwh
+        if self.clip_bbox:
+            px1 = paddle.clip(px1y1[:, :, 0:1], min=0., max=w)
+            py1 = paddle.clip(px1y1[:, :, 1:2], min=0., max=h)
+            px2 = paddle.clip(px2y2[:, :, 0:1], min=0., max=w)
+            py2 = paddle.clip(px2y2[:, :, 1:2], min=0., max=h)
+
+        scale_x = origin_shape[:, 1:2].reshape((b, 1, 1)) / w
+        scale_y = origin_shape[:, 0:1].reshape((b, 1, 1)) / h
+
+        px1 = px1 * scale_x
+        py1 = py1 * scale_y
+        px2 = px2 * scale_x
+        py2 = py2 * scale_y
+
+        bboxes = paddle.concat([px1, py1, px2, py2], axis=-1)
+        scores = F.sigmoid(feat[:, :, 5:]) * F.sigmoid(feat[:, :, 4:5])
+        return bboxes, scores
+
+
+@register
+@serializable
 class SSDBox(object):
     def __init__(self, is_normalized=True):
         self.is_normalized = is_normalized
@@ -1415,7 +1476,7 @@ class ConvMixer(nn.Layer):
         Seq, ActBn = nn.Sequential, lambda x: Seq(x, nn.GELU(), nn.BatchNorm2D(dim))
         Residual = type('Residual', (Seq, ),
                         {'forward': lambda self, x: self[0](x) + x})
-        return Seq(*[
+        return Seq(* [
             Seq(Residual(
                 ActBn(
                     nn.Conv2D(
