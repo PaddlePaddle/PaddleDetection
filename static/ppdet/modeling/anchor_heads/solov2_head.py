@@ -379,6 +379,9 @@ class SOLOv2Head(object):
                     dtype="float32",
                     value=self.segm_strides[_ind]))
         strides = fluid.layers.concat(strides)
+        strides = fluid.layers.concat(
+            [strides, fluid.layers.zeros(
+                shape=[1], dtype='float32')])
         strides = fluid.layers.gather(strides, index=inds[:, 0])
 
         # mask encoding.
