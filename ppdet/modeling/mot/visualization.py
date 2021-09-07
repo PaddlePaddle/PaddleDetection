@@ -167,14 +167,12 @@ def plot_trajectory(image,
         color = get_color(abs(obj_id))
         cv2.rectangle(
             im, intbox[0:2], intbox[2:4], color=color, thickness=line_thickness)
-
         cv2.putText(
             im,
             id_text, (intbox[0], intbox[1] + 10),
             cv2.FONT_HERSHEY_PLAIN,
             text_scale, (0, 0, 255),
             thickness=text_thickness)
-
         if scores is not None:
             text = '{:.2f}'.format(float(scores[i]))
             cv2.putText(
