@@ -316,8 +316,8 @@ class Gt2YoloTargetPlain(BaseOperator):
                     gi = np.floor(gx).astype(np.int32)
                     gy = valid_bbox[:, 1] / downsample
                     gj = np.floor(gy).astype(np.int32)
-                    gw = np.log(valid_bbox[:, 2])
-                    gh = np.log(valid_bbox[:, 3])
+                    gw = np.log(valid_bbox[:, 2] / downsample)
+                    gh = np.log(valid_bbox[:, 3] / downsample)
                     target[0, 0, gj, gi] = gx - gi
                     target[0, 1, gj, gi] = gy - gj
                     target[0, 2, gj, gi] = gw

@@ -32,8 +32,8 @@ def decode_yolo(box, downsample_ratio):
     grid = make_grid(grid_h, grid_w, x.dtype).reshape((1, 1, grid_h, grid_w, 2))
     x1 = (x + grid[:, :, :, :, 0:1]) * downsample_ratio
     y1 = (y + grid[:, :, :, :, 1:2]) * downsample_ratio
-    w1 = paddle.exp(w)
-    h1 = paddle.exp(h)
+    w1 = paddle.exp(w) * downsample_ratio
+    h1 = paddle.exp(h) * downsample_ratio
 
     return [x1, y1, w1, h1]
 

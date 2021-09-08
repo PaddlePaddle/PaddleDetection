@@ -590,7 +590,7 @@ class YOLOPBox(object):
         grid = grid.reshape((1, h * w, 2))
         pxy = (scale_x_y * F.sigmoid(feat[:, :, 0:2]) -
                (0.5 * (scale_x_y - 1.)) + grid)
-        pwh = paddle.exp(feat[:, :, 2:4]) / downsample
+        pwh = paddle.exp(feat[:, :, 2:4])
         px1y1 = pxy - 0.5 * pwh
         px2y2 = pxy + 0.5 * pwh
         if self.clip_bbox:
