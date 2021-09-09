@@ -17,7 +17,7 @@ import math
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn.initializer import KaimingUniform, Uniform
+from paddle.nn.initializer import KaimingUniform, Constant, Uniform
 from ppdet.core.workspace import register
 from ppdet.modeling.heads.centernet_head import ConvLayer
 
@@ -47,9 +47,9 @@ class FairMOTEmbeddingHead(nn.Layer):
             nn.ReLU(),
             ConvLayer(
                 ch_head, ch_emb, kernel_size=1, stride=1, padding=0, bias=True))
-        param_attr = paddle.ParamAttr(initializer=KaimingUniform())
         bound = 1 / math.sqrt(ch_emb)
-        bias_attr = paddle.ParamAttr(initializer=Uniform(-bound, bound))
+        param_attr = paddle.ParamAttr(initializer=Uniform(-bound, bound))
+        bias_attr = paddle.ParamAttr(initializer=Constant(0.))
         self.classifier = nn.Linear(
             ch_emb,
             num_identifiers,

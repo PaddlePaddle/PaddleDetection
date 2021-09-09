@@ -60,7 +60,7 @@ class Trainer(object):
         self.is_loaded_weights = False
 
         # build data loader
-        if cfg.architecture in MOT_ARCH and self.mode in ['eval', 'test']:
+        if cfg.architecture in MOT_ARCH and self.mode in ['eval', 'test'] and cfg.metric == 'MOT':
             self.dataset = cfg['{}MOTDataset'.format(self.mode.capitalize())]
         else:
             self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]

@@ -1,4 +1,4 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#. Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -84,9 +84,14 @@ def load_weight(model, weight, optimizer=None):
             logger.info('Unmatched key: {}'.format(key))
             incorrect_keys += 1
 
-    assert incorrect_keys == 0, "Load weight {} incorrectly, \
+    #assert incorrect_keys == 0, "Load weight {} incorrectly, \
+    #        {} keys unmatched, please check again.".format(weight,
+    #                                                       incorrect_keys)
+    if incorrect_keys > 0:
+        logger.info("Load weight {} incorrectly, \
             {} keys unmatched, please check again.".format(weight,
-                                                           incorrect_keys)
+                                                           incorrect_keys))
+    
     logger.info('Finish resuming model weights: {}'.format(pdparam_path))
 
     model.set_dict(model_weight)
@@ -191,6 +196,13 @@ def load_pretrain_weight(model, pretrain_weight):
 
     weights_path = path + '.pdparams'
     param_state_dict = paddle.load(weights_path)
+    #new_param_state_dict = {}
+    #for k, v in param_state_dict.items():
+    #    if 'detector.' not in k:
+    #        continue
+    #    new_param_state_dict[k.split('detector.')[-1]] = v
+    #param_state_dict = new_param_state_dict
+    #print(param_state_dict)
     param_state_dict = match_state_dict(model_dict, param_state_dict)
 
     model.set_dict(param_state_dict)

@@ -1,0 +1,85 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/ttfnet_darknet53.yml',
+  '_base_/ttfnet_reader.yml',
+]
+weights: output/pafnet_1x_mot_det/model_final.pdparams
+#pretrain_weights: https://paddledet.bj.bcebos.com/models/pafnet_10x_coco.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ttfnet_darknet53_1x_coco.pdparams
+epoch: 36
+metric: MOTDet
+num_classes: 1
+
+#BBoxPostProcess:
+#  decode:
+#    name: TTFBox
+#    max_per_img: 500
+#    score_thresh: -1
+#    down_ratio: 4
+
+LearningRate:
+  base_lr: 0.005
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [24, 33]
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 500
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0004
+    type: L2
+
+num_workers: 4
+TrainReader:
+  sample_transforms:
+  - Decode: {}
+  #- RGBReverse: {}
+  #- AugmentHSV: {}
+  - LetterBoxResize: {target_size: [608, 1088]}
+  #- MOTRandomAffine: {reject_outside: True}
+  - RandomFlip: {}
+  #- RGBReverse: {}
+  - NormalizeImage: {mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375], is_scale: false}
+  - Permute: {}
+  batch_transforms:
+  - Gt2TTFTarget: {down_ratio: 4}
+  #- PadBatch: {pad_to_stride: 32}
+  batch_size: 12
+  shuffle: true
+  drop_last: true
+  use_shared_memory: true
+
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - NormalizeImage: {mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375], is_scale: false}
+    - Permute: {}
+  batch_size: 1
+  drop_last: false
+
+# for MOT training
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: /paddle/dataset/mix
+    image_lists: ['mot17.half', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
+    #image_lists: ['mot17.train']
+    #image_lists: ['mot17.half']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+EvalDataset:
+  !MOTDataSet
+    dataset_dir: /paddle/dataset/mix #dataset/mot
+    #image_lists: ['citypersons.val', 'caltech.val'] # for detection evaluation
+    image_lists: ['mot17.half.val']
+    # image_lists: ['caltech.10k.val', 'cuhksysu.val', 'prw.val'] # for reid evaluation
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']

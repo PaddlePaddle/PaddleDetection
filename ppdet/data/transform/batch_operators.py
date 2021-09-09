@@ -594,6 +594,7 @@ class Gt2GFLTarget(BaseOperator):
         return samples
 
 
+'''
 @register_op
 class Gt2TTFTarget(BaseOperator):
     __shared__ = ['num_classes']
@@ -667,6 +668,172 @@ class Gt2TTFTarget(BaseOperator):
             sample['ttf_heatmap'] = heatmap
             sample['ttf_box_target'] = box_target
             sample['ttf_reg_weight'] = reg_weight
+            sample.pop('gt_ide', None)
+            sample.pop('is_crowd', None)
+            sample.pop('difficult', None)
+            sample.pop('gt_class', None)
+            sample.pop('gt_bbox', None)
+            sample.pop('gt_score', None)
+        return samples
+'''
+
+
+@register_op
+class Gt2TTFTarget(BaseOperator):
+    __shared__ = ['num_classes']
+    """
+    Gt2TTFTarget
+    Generate TTFNet targets by ground truth data
+    
+    Args:
+        num_classes(int): the number of classes.
+        down_ratio(int): the down ratio from images to heatmap, 4 by default.
+        alpha(float): the alpha parameter to generate gaussian target.
+            0.54 by default.
+    """
+
+    def __init__(self, num_classes=80, down_ratio=4, alpha=0.54, bbox_alpha=0.54):
+        super(Gt2TTFTarget, self).__init__()
+        self.down_ratio = down_ratio
+        self.num_classes = num_classes
+        self.alpha = alpha
+        self.bbox_alpha = bbox_alpha
+
+    def __call__(self, samples, context=None):
+        output_h, output_w = samples[0]['image'].shape[1:]
+        feat_h = output_h // self.down_ratio
+        feat_w = output_w // self.down_ratio
+        for sample in samples:
+            heatmap = np.zeros(
+                (self.num_classes, feat_h, feat_w), dtype='float32')
+            box_target = np.ones((4, feat_h, feat_w), dtype='float32') * -1
+            reg_weight = np.zeros((1, feat_h, feat_w), dtype='float32')
+
+            gt_bbox = sample['gt_bbox']
+            gt_class = sample['gt_class']
+
+            bbox_w = gt_bbox[:, 2] - gt_bbox[:, 0] + 1
+            bbox_h = gt_bbox[:, 3] - gt_bbox[:, 1] + 1
+            area = bbox_w * bbox_h
+            boxes_areas_log = np.log(area)
+            boxes_ind = np.argsort(boxes_areas_log, axis=0)[::-1]
+            boxes_area_topk_log = boxes_areas_log[boxes_ind]
+            gt_bbox = gt_bbox[boxes_ind]
+            gt_class = gt_class[boxes_ind]
+
+            feat_gt_bbox = gt_bbox / self.down_ratio
+            #feat_gt_bbox[:, 0::2] = np.clip(feat_gt_bbox[:, 0::2], 0,
+            #                                feat_w - 1)
+            #feat_gt_bbox[:, 1::2] = np.clip(feat_gt_bbox[:, 1::2], 0,
+            #                                feat_h - 1)
+            feat_hs, feat_ws = (feat_gt_bbox[:, 3] - feat_gt_bbox[:, 1],
+                                feat_gt_bbox[:, 2] - feat_gt_bbox[:, 0])
+
+            ct_inds = np.stack(
+                [(gt_bbox[:, 0] + gt_bbox[:, 2]) / 2,
+                 (gt_bbox[:, 1] + gt_bbox[:, 3]) / 2],
+                axis=1) / self.down_ratio
+            ct_inds[:, 0] = np.clip(ct_inds[:, 0], 0, feat_w - 1)
+            ct_inds[:, 1] = np.clip(ct_inds[:, 1], 0, feat_h - 1)
+
+            h_radiuses_alpha = (feat_hs / 2. * self.alpha).astype('int32')
+            w_radiuses_alpha = (feat_ws / 2. * self.alpha).astype('int32')
+            bbox_h_radiuses_alpha = (feat_hs / 2. * self.bbox_alpha).astype('int32')
+            bbox_w_radiuses_alpha = (feat_ws / 2. * self.bbox_alpha).astype('int32')
+
+            #show_image = sample['image'].transpose((1, 2, 0)).astype('uint8')
+            for k in range(len(gt_bbox)):
+                cls_id = gt_class[k]
+                fake_heatmap = np.zeros((feat_h, feat_w), dtype='float32')
+                self.draw_truncate_gaussian(fake_heatmap, ct_inds[k],
+                                            h_radiuses_alpha[k],
+                                            w_radiuses_alpha[k])
+                bbox_fake_heatmap = np.zeros((feat_h, feat_w), dtype='float32')
+                self.draw_truncate_gaussian(bbox_fake_heatmap, ct_inds[k],
+                                            bbox_h_radiuses_alpha[k],
+                                            bbox_w_radiuses_alpha[k])
+
+                heatmap[cls_id] = np.maximum(heatmap[cls_id], fake_heatmap)
+                box_target_inds = bbox_fake_heatmap > 0
+                #box_target[:, box_target_inds] = gt_bbox[k][:, None]
+
+                local_heatmap = bbox_fake_heatmap[box_target_inds]
+                ct_div = np.sum(local_heatmap)
+                local_heatmap *= boxes_area_topk_log[k]
+                weight_heatmap = np.zeros((feat_h, feat_w), dtype='float32')
+                weight_heatmap[box_target_inds] = local_heatmap / ct_div - reg_weight[0, box_target_inds]
+                weight_inds = weight_heatmap > 0
+                #reg_weight[0, box_target_inds] = local_heatmap / ct_div
+                reg_weight[0, box_target_inds] = np.maximum(reg_weight[0, box_target_inds],
+                                                           local_heatmap / ct_div)
+                #print('k: ', k)
+                #print("gt_bbox: {} feat_gt_bbox: {} ct_inds: {} h_radiuses_alpha: {} w_radiuses_alpha: {}".format(
+                #    gt_bbox[k, :] / self.down_ratio,
+                #    feat_gt_bbox[k, :],
+                #    ct_inds[k], h_radiuses_alpha[k], w_radiuses_alpha[k]))
+                #print('weight_inds: ', weight_inds.shape, np.sum(weight_inds), weight_inds.shape[0] * weight_inds.shape[0])   
+                #print('box_target_inds: ', box_target_inds.shape, np.sum(box_target_inds), box_target_inds.shape[0] * box_target_inds.shape[1])
+                box_target[:, weight_inds] = gt_bbox[k][:, None]
+    
+                #if k == 0:
+                #    print('ct_div: ', ct_div)
+                #    print('boxes_area_topk_log: ', boxes_area_topk_log[k])
+                #    print('local_heatmap: ', local_heatmap)
+                #    print('local_heatmap / ct_div: ', local_heatmap / ct_div)
+                #    show_fake_heatmap = fake_heatmap * 255
+                #    show_fake_heatmap = show_fake_heatmap.astype('uint8')
+                #    show_fake_heatmap = np.expand_dims(show_fake_heatmap, axis=2)
+                #    #cv2.imwrite('./reg_weight/ttfnet_fake_heatmap_{}.jpg'.format(k), show_fake_heatmap)
+
+                #show_reg_weight = reg_weight * 255
+                #show_reg_weight = np.clip(show_reg_weight, 0, 255)
+                #show_reg_weight = show_reg_weight.astype('uint8')
+                #show_reg_weight = show_reg_weight.transpose((1, 2, 0))
+                #show_reg_weight = cv2.resize(show_reg_weight, (show_image.shape[1], show_image.shape[0]))
+                #pseudo_reg_weight = np.zeros(show_image.shape, show_image.dtype)
+                #pseudo_reg_weight[:, :, 0] = show_reg_weight
+                #pseudo_reg_weight[:, :, 1] = show_reg_weight
+                #pseudo_reg_weight[:, :, 2] = show_reg_weight
+                #show_reg_weight = cv2.addWeighted(show_image, 0.3,
+                #                               pseudo_reg_weight, 0.7,
+                #                               0)
+                #cv2.imwrite('./reg_weight/ttfnet_reg_weight_{}.jpg'.format(k), show_reg_weight)
+                #show_image = cv2.rectangle(show_image,
+                #                           tuple(gt_bbox[k][0:2].astype('int32')),
+                #                           tuple(gt_bbox[k][2:4].astype('int32')),
+                #                           (255, 0, 0),
+                #                           1)
+            #show_heatmap = heatmap * 255
+            #show_heatmap = np.clip(show_heatmap, 0, 255)
+            #show_heatmap = show_heatmap.astype('uint8')
+            #show_heatmap = show_heatmap.transpose((1, 2, 0))
+            #show_heatmap = cv2.resize(show_heatmap, (show_image.shape[1], show_image.shape[0]))
+            #pseudo_image = np.zeros(show_image.shape, show_image.dtype)
+            #pseudo_image[:, :, 0] = show_heatmap
+            #pseudo_image[:, :, 1] = show_heatmap
+            #pseudo_image[:, :, 2] = show_heatmap
+            #show_heatmap = cv2.addWeighted(show_image, 0.3,
+            #                               pseudo_image, 0.7,
+            #                               0)
+            #cv2.imwrite('ttfnet_heatmap.jpg', show_heatmap)
+            #show_reg_weight = reg_weight * 255
+            #show_reg_weight = np.clip(show_reg_weight, 0, 255)
+            #show_reg_weight = show_reg_weight.astype('uint8')
+            #show_reg_weight = show_reg_weight.transpose((1, 2, 0))
+            #show_reg_weight = cv2.resize(show_reg_weight, (show_image.shape[1], show_image.shape[0]))
+            #pseudo_reg_weight = np.zeros(show_image.shape, show_image.dtype)
+            #pseudo_reg_weight[:, :, 0] = show_reg_weight
+            #pseudo_reg_weight[:, :, 1] = show_reg_weight
+            #pseudo_reg_weight[:, :, 2] = show_reg_weight
+            #show_reg_weight = cv2.addWeighted(show_image, 0.3,
+            #                               pseudo_reg_weight, 0.7,
+            #                               0)
+            #cv2.imwrite('ttfnet_reg_weight.jpg', show_reg_weight)
+            #cv2.imwrite('ttfnet_gtbbox.jpg', show_image)
+            sample['ttf_heatmap'] = heatmap
+            sample['ttf_box_target'] = box_target
+            sample['ttf_reg_weight'] = reg_weight
+            sample.pop('gt_ide', None)
             sample.pop('is_crowd', None)
             sample.pop('difficult', None)
             sample.pop('gt_class', None)

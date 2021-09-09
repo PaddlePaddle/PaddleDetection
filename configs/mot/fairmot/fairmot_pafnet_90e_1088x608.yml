@@ -1,0 +1,119 @@
+_BASE_: [
+  '../../datasets/mot.yml',
+  '../../runtime.yml',
+  '_base_/optimizer_30e.yml',
+  '_base_/fairmot_dla34.yml',
+  '_base_/fairmot_reader_1088x608.yml',
+]
+
+FairMOT:
+  detector: TTFNet
+  reid: FairMOTEmbeddingHead
+  loss: FairMOTLoss
+  tracker: JDETracker
+
+TTFNet:
+  backbone: ResNet
+  neck: TTFFPN
+  ttf_head: TTFHead
+  post_process: BBoxPostProcess
+  for_mot: true
+
+ResNet:
+  depth: 50
+  variant: d
+  return_idx: [0, 1, 2, 3]
+  freeze_at: -1
+  norm_decay: 0.
+  variant: d
+  dcn_v2_stages: [1, 2, 3]
+
+TTFFPN:
+  planes: [256, 128, 64]
+  shortcut_num: [3, 2, 1]
+
+TTFHead:
+  dcn_head: true
+  hm_loss:
+    name: CTFocalLoss
+    loss_weight: 1.
+  wh_loss:
+    name: GIoULoss
+    loss_weight: 5.
+    reduction: sum
+
+
+BBoxPostProcess:
+  decode:
+    name: TTFBox
+    max_per_img: 100
+    score_thresh: 0.01
+    down_ratio: 4
+    for_mot: true
+
+JDETracker:
+  conf_thres: 0.4
+  tracked_thresh: 0.4
+  metric_type: cosine
+
+metric: MOT
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_pretrained.pdparams
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+log_iter: 1
+snapshot_epoch: 3
+
+epoch: 90
+LearningRate:
+  base_lr: 0.0002
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [60,]
+    use_warmup: False
+
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - RGBReverse: {}
+    - AugmentHSV: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - MOTRandomAffine: {reject_outside: False}
+    - RandomFlip: {}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375], is_scale: false}
+    - RGBReverse: {}
+    - Permute: {}
+  batch_transforms:
+    - Gt2PPMOTTarget: {}
+  batch_size: 6
+  shuffle: true
+  drop_last: true
+  use_shared_memory: true
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - NormalizeImage: {mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375], is_scale: false}
+    - Permute: {}
+  batch_size: 1
+  drop_last: false
+
+# for MOT training
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: /root/data/mot
+    image_lists: ['mot17.half', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
+    #image_lists: ['mot17.half']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+# for MOT evaluation
+# If you want to change the MOT evaluation dataset, please modify 'data_root'
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: /root/data/mot
+    data_root: MOT17/images/half
+    keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT

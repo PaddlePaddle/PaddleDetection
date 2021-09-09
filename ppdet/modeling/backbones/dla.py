@@ -23,7 +23,7 @@ DLA_cfg = {34: ([1, 1, 1, 2, 2, 1], [16, 32, 64, 128, 256, 512])}
 
 
 class BasicBlock(nn.Layer):
-    def __init__(self, ch_in, ch_out, stride=1):
+    def __init__(self, ch_in, ch_out, stride=1, norm_type='bn'):
         super(BasicBlock, self).__init__()
         self.conv1 = ConvNormLayer(
             ch_in,
@@ -31,14 +31,16 @@ class BasicBlock(nn.Layer):
             filter_size=3,
             stride=stride,
             bias_on=False,
-            norm_decay=None)
+            norm_decay=None,
+            norm_type=norm_type)
         self.conv2 = ConvNormLayer(
             ch_out,
             ch_out,
             filter_size=3,
             stride=1,
             bias_on=False,
-            norm_decay=None)
+            norm_decay=None,
+            norm_type=norm_type)
 
     def forward(self, inputs, residual=None):
         if residual is None:
@@ -56,7 +58,7 @@ class BasicBlock(nn.Layer):
 
 
 class Root(nn.Layer):
-    def __init__(self, ch_in, ch_out, kernel_size, residual):
+    def __init__(self, ch_in, ch_out, kernel_size, residual, norm_type='bn'):
         super(Root, self).__init__()
         self.conv = ConvNormLayer(
             ch_in,
@@ -64,7 +66,8 @@ class Root(nn.Layer):
             filter_size=1,
             stride=1,
             bias_on=False,
-            norm_decay=None)
+            norm_decay=None,
+            norm_type=norm_type)
         self.residual = residual
 
     def forward(self, inputs):
@@ -87,15 +90,16 @@ class Tree(nn.Layer):
                  level_root=False,
                  root_dim=0,
                  root_kernel_size=1,
-                 root_residual=False):
+                 root_residual=False,
+                 norm_type='bn'):
         super(Tree, self).__init__()
         if root_dim == 0:
             root_dim = 2 * ch_out
         if level_root:
             root_dim += ch_in
         if level == 1:
-            self.tree1 = block(ch_in, ch_out, stride)
-            self.tree2 = block(ch_out, ch_out, 1)
+            self.tree1 = block(ch_in, ch_out, stride, norm_type)
+            self.tree2 = block(ch_out, ch_out, 1, norm_type)
         else:
             self.tree1 = Tree(
                 level - 1,
@@ -105,7 +109,8 @@ class Tree(nn.Layer):
                 stride,
                 root_dim=0,
                 root_kernel_size=root_kernel_size,
-                root_residual=root_residual)
+                root_residual=root_residual,
+                norm_type=norm_type)
             self.tree2 = Tree(
                 level - 1,
                 block,
@@ -114,10 +119,11 @@ class Tree(nn.Layer):
                 1,
                 root_dim=root_dim + ch_out,
                 root_kernel_size=root_kernel_size,
-                root_residual=root_residual)
+                root_residual=root_residual,
+                norm_type=norm_type)
 
         if level == 1:
-            self.root = Root(root_dim, ch_out, root_kernel_size, root_residual)
+            self.root = Root(root_dim, ch_out, root_kernel_size, root_residual, norm_type=norm_type)
         self.level_root = level_root
         self.root_dim = root_dim
         self.downsample = None
@@ -132,7 +138,8 @@ class Tree(nn.Layer):
                 filter_size=1,
                 stride=1,
                 bias_on=False,
-                norm_decay=None)
+                norm_decay=None,
+                norm_type=norm_type)
 
     def forward(self, x, residual=None, children=None):
         children = [] if children is None else children
@@ -162,7 +169,9 @@ class DLA(nn.Layer):
 
     """
 
-    def __init__(self, depth=34, residual_root=False):
+    __shared__ = ['norm_type']
+
+    def __init__(self, depth=34, residual_root=False, norm_type='bn'):
         super(DLA, self).__init__()
         levels, channels = DLA_cfg[depth]
         if depth == 34:
@@ -175,11 +184,12 @@ class DLA(nn.Layer):
                 filter_size=7,
                 stride=1,
                 bias_on=False,
-                norm_decay=None),
+                norm_decay=None,
+                norm_type=norm_type),
             nn.ReLU())
-        self.level0 = self._make_conv_level(channels[0], channels[0], levels[0])
+        self.level0 = self._make_conv_level(channels[0], channels[0], levels[0], norm_type=norm_type)
         self.level1 = self._make_conv_level(
-            channels[0], channels[1], levels[1], stride=2)
+            channels[0], channels[1], levels[1], stride=2, norm_type=norm_type)
         self.level2 = Tree(
             levels[2],
             block,
@@ -187,7 +197,8 @@ class DLA(nn.Layer):
             channels[2],
             2,
             level_root=False,
-            root_residual=residual_root)
+            root_residual=residual_root,
+            norm_type=norm_type)
         self.level3 = Tree(
             levels[3],
             block,
@@ -195,7 +206,8 @@ class DLA(nn.Layer):
             channels[3],
             2,
             level_root=True,
-            root_residual=residual_root)
+            root_residual=residual_root,
+            norm_type=norm_type)
         self.level4 = Tree(
             levels[4],
             block,
@@ -203,7 +215,8 @@ class DLA(nn.Layer):
             channels[4],
             2,
             level_root=True,
-            root_residual=residual_root)
+            root_residual=residual_root,
+            norm_type=norm_type)
         self.level5 = Tree(
             levels[5],
             block,
@@ -211,9 +224,10 @@ class DLA(nn.Layer):
             channels[5],
             2,
             level_root=True,
-            root_residual=residual_root)
+            root_residual=residual_root,
+            norm_type=norm_type)
 
-    def _make_conv_level(self, ch_in, ch_out, conv_num, stride=1):
+    def _make_conv_level(self, ch_in, ch_out, conv_num, stride=1, norm_type='bn'):
         modules = []
         for i in range(conv_num):
             modules.extend([
@@ -223,7 +237,8 @@ class DLA(nn.Layer):
                     filter_size=3,
                     stride=stride if i == 0 else 1,
                     bias_on=False,
-                    norm_decay=None), nn.ReLU()
+                    norm_decay=None,
+                    norm_type=norm_type), nn.ReLU()
             ])
             ch_in = ch_out
         return nn.Sequential(*modules)

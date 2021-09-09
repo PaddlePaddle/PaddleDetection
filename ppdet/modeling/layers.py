@@ -784,11 +784,16 @@ class FCOSBox(object):
 class TTFBox(object):
     __shared__ = ['down_ratio']
 
-    def __init__(self, max_per_img=100, score_thresh=0.01, down_ratio=4):
+    def __init__(self,
+                 max_per_img=100,
+                 score_thresh=0.01,
+                 down_ratio=4,
+                 for_mot=False):
         super(TTFBox, self).__init__()
         self.max_per_img = max_per_img
         self.score_thresh = score_thresh
         self.down_ratio = down_ratio
+        self.for_mot = for_mot
 
     def _simple_nms(self, heat, kernel=3):
         """
@@ -846,6 +851,16 @@ class TTFBox(object):
         x2 = xs + wh[:, 2:3]
         y2 = ys + wh[:, 3:4]
 
+        #if self.for_mot:
+        n, c, feat_h, feat_w = hm.shape[:]
+        padw = (feat_w * self.down_ratio - im_shape[0, 1]) / 2
+        padh = (feat_h * self.down_ratio - im_shape[0, 0]) / 2
+        #print("padw padh: ", padw, padh)
+        x1 = x1 - padw
+        y1 = y1 - padh
+        x2 = x2 - padw
+        y2 = y2 - padh
+
         bboxes = paddle.concat([x1, y1, x2, y2], axis=1)
 
         scale_y = scale_factor[:, 0:1]
@@ -856,6 +871,9 @@ class TTFBox(object):
         boxes_shape.stop_gradient = True
         scale_expand = paddle.expand(scale_expand, shape=boxes_shape)
         bboxes = paddle.divide(bboxes, scale_expand)
+        if self.for_mot:
+            results = paddle.concat([bboxes, scores, clses], axis=1)
+            return results, inds
         results = paddle.concat([clses, scores, bboxes], axis=1)
         # hack: append result with cls=-1 and score=1. to avoid all scores
         # are less than score_thresh which may cause error in gather.
@@ -868,6 +886,9 @@ class TTFBox(object):
         return results, paddle.shape(results)[0:1]
 
     def __call__(self, hm, wh, im_shape, scale_factor):
+        if self.for_mot:
+            result, inds = self._decode(hm, wh, im_shape, scale_factor)
+            return result, inds
         results = []
         results_num = []
         for i in range(scale_factor.shape[0]):

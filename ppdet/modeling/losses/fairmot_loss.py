@@ -19,19 +19,20 @@ from __future__ import print_function
 import paddle
 import paddle.nn as nn
 from paddle.nn.initializer import Constant
-from ppdet.core.workspace import register
+from ppdet.core.workspace import register, serializable
 
 __all__ = ['FairMOTLoss']
 
 
 @register
+@serializable
 class FairMOTLoss(nn.Layer):
-    def __init__(self):
+    def __init__(self, det_weight=-1.85, reid_weight=-1.05):
         super(FairMOTLoss, self).__init__()
         self.det_weight = self.create_parameter(
-            shape=[1], default_initializer=Constant(-1.85))
+            shape=[1], default_initializer=Constant(det_weight))
         self.reid_weight = self.create_parameter(
-            shape=[1], default_initializer=Constant(-1.05))
+            shape=[1], default_initializer=Constant(reid_weight))
 
     def forward(self, det_loss, reid_loss):
         loss = paddle.exp(-self.det_weight) * det_loss + paddle.exp(

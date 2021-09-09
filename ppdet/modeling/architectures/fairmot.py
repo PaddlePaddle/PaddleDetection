@@ -43,12 +43,14 @@ class FairMOT(BaseArch):
                  detector='CenterNet',
                  reid='FairMOTEmbeddingHead',
                  tracker='JDETracker',
-                 loss='FairMOTLoss'):
+                 loss='FairMOTLoss',
+                 for_mot=True):
         super(FairMOT, self).__init__()
         self.detector = detector
         self.reid = reid
         self.tracker = tracker
         self.loss = loss
+        self.for_mot = for_mot
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -72,18 +74,19 @@ class FairMOT(BaseArch):
         # train: det_loss, heatmap_loss, size_loss, offset_loss, neck_feat
         # eval/infer: bbox, bbox_inds, neck_feat
         det_outs = self.detector(self.inputs)
+        if not self.for_mot:
+            return det_outs
         neck_feat = det_outs['neck_feat']
         if self.training:
             reid_loss = self.reid(neck_feat, self.inputs)
 
             det_loss = det_outs['det_loss']
             loss = self.loss(det_loss, reid_loss)
-            loss.update({
-                'heatmap_loss': det_outs['heatmap_loss'],
-                'size_loss': det_outs['size_loss'],
-                'offset_loss': det_outs['offset_loss'],
-                'reid_loss': reid_loss
-            })
+            for k, v in det_outs.items():
+                if k in ['det_loss', 'neck_feat', 'loss']:
+                    continue
+                loss[k] = v
+            loss['reid_loss'] = reid_loss
             return loss
         else:
             embedding = self.reid(neck_feat, self.inputs)

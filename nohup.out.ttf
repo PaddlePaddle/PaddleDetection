@@ -1,0 +1,367 @@
+WARNING 2021-08-19 15:48:34,201 launch.py:359] Not found distinct arguments and compiled with cuda or xpu. Default use collective mode
+INFO 2021-08-19 15:48:34,202 launch_utils.py:510] Local start 4 processes. First process distributed environment info (Only For Debug): 
+    +=======================================================================================+
+    |                        Distributed Envs                      Value                    |
+    +---------------------------------------------------------------------------------------+
+    |                       PADDLE_TRAINER_ID                        0                      |
+    |                 PADDLE_CURRENT_ENDPOINT                 127.0.0.1:60001               |
+    |                     PADDLE_TRAINERS_NUM                        4                      |
+    |                PADDLE_TRAINER_ENDPOINTS  ... 0.1:60002,127.0.0.1:60003,127.0.0.1:60004|
+    |                     PADDLE_RANK_IN_NODE                        0                      |
+    |                 PADDLE_LOCAL_DEVICE_IDS                        0                      |
+    |                 PADDLE_WORLD_DEVICE_IDS                     0,1,2,3                   |
+    |                     FLAGS_selected_gpus                        0                      |
+    |             FLAGS_selected_accelerators                        0                      |
+    +=======================================================================================+
+
+INFO 2021-08-19 15:48:34,202 launch_utils.py:514] details abouts PADDLE_TRAINER_ENDPOINTS can be found in ./ttf_darknet53_1x_mix_mot17//endpoints.log, and detail running logs maybe found in ./ttf_darknet53_1x_mix_mot17//workerlog.0
+-----------  Configuration Arguments -----------
+gpus: 0,1,2,3
+heter_worker_num: None
+heter_workers: 
+http_port: None
+ips: 127.0.0.1
+log_dir: ./ttf_darknet53_1x_mix_mot17/
+nproc_per_node: None
+run_mode: None
+server_num: None
+servers: 
+training_script: tools/train.py
+training_script_args: ['-c', 'configs/ttfnet/ttfnet_darknet53_1x_mix.yml']
+worker_num: None
+workers: 
+------------------------------------------------
+launch train in GPU mode!
+launch proc_id:11000 idx:0
+launch proc_id:11003 idx:1
+launch proc_id:11006 idx:2
+launch proc_id:11009 idx:3
+Warning: import ppdet from source directory without installing, run 'python setup.py install' to install ppdet firstly
+W0819 15:48:40.158138 11000 gen_comm_id_helper.cc:120] connect addr=127.0.0.1:60002 failed 1 times with reason: Connection refused retry after 0.5 seconds
+I0819 15:48:40.658540 11000 nccl_context.cc:74] init nccl context nranks: 4 local rank: 0 gpu id: 0 ring id: 0
+W0819 15:48:42.798548 11000 device_context.cc:404] Please NOTE: device: 0, GPU Compute Capability: 7.0, Driver API Version: 11.2, Runtime API Version: 10.1
+W0819 15:48:42.798761 11000 device_context.cc:422] device: 0, cuDNN Version: 7.6.
+[08/19 15:48:48] ppdet.data.source.mot INFO: ================================================================================
+[08/19 15:48:48] ppdet.data.source.mot INFO: MOT dataset summary: 
+[08/19 15:48:48] ppdet.data.source.mot INFO: OrderedDict([('mot17.train', 547)])
+[08/19 15:48:48] ppdet.data.source.mot INFO: total images: 5316
+[08/19 15:48:48] ppdet.data.source.mot INFO: image start index: OrderedDict([('mot17.train', 0)])
+[08/19 15:48:48] ppdet.data.source.mot INFO: total identities: 548
+[08/19 15:48:48] ppdet.data.source.mot INFO: identity start index: OrderedDict([('mot17.train', 0)])
+[08/19 15:48:48] ppdet.data.source.mot INFO: ================================================================================
+[08/19 15:48:55] ppdet.utils.checkpoint INFO: The shape [80] in pretrained weight ttf_head.hm_head.head.bias is unmatched with the shape [1] in model ttf_head.hm_head.head.bias. And the weight ttf_head.hm_head.head.bias will not be loaded
+[08/19 15:48:55] ppdet.utils.checkpoint INFO: The shape [80, 128, 1, 1] in pretrained weight ttf_head.hm_head.head.weight is unmatched with the shape [1, 128, 1, 1] in model ttf_head.hm_head.head.weight. And the weight ttf_head.hm_head.head.weight will not be loaded
+[08/19 15:48:55] ppdet.utils.checkpoint INFO: Finish loading model weights: /root/.cache/paddle/weights/ttfnet_darknet53_1x_coco.pdparams
+[08/19 15:48:59] ppdet.engine INFO: Epoch: [0] [  0/221] learning_rate: 0.000375 hm_loss: 4.424473 wh_loss: 2.241434 loss: 6.665907 eta: 6:09:00 batch_cost: 4.1744 data_cost: 0.0024 ips: 1.4373 images/s
+[08/19 15:49:05] ppdet.engine INFO: Epoch: [0] [ 20/221] learning_rate: 0.000510 hm_loss: 2.828712 wh_loss: 1.820809 loss: 4.644265 eta: 0:42:41 batch_cost: 0.3003 data_cost: 0.0634 ips: 19.9797 images/s
+[08/19 15:49:12] ppdet.engine INFO: Epoch: [0] [ 40/221] learning_rate: 0.000645 hm_loss: 1.155822 wh_loss: 1.589260 loss: 2.721928 eta: 0:37:18 batch_cost: 0.3625 data_cost: 0.0503 ips: 16.5499 images/s
+[08/19 15:49:19] ppdet.engine INFO: Epoch: [0] [ 60/221] learning_rate: 0.000780 hm_loss: 0.950582 wh_loss: 1.598685 loss: 2.532268 eta: 0:34:57 batch_cost: 0.3484 data_cost: 0.0084 ips: 17.2219 images/s
+[08/19 15:49:27] ppdet.engine INFO: Epoch: [0] [ 80/221] learning_rate: 0.000915 hm_loss: 0.818681 wh_loss: 1.435273 loss: 2.273950 eta: 0:33:59 batch_cost: 0.3612 data_cost: 0.0025 ips: 16.6110 images/s
+[08/19 15:49:34] ppdet.engine INFO: Epoch: [0] [100/221] learning_rate: 0.001050 hm_loss: 0.761809 wh_loss: 1.400702 loss: 2.158122 eta: 0:33:39 batch_cost: 0.3786 data_cost: 0.0005 ips: 15.8487 images/s
+[08/19 15:49:41] ppdet.engine INFO: Epoch: [0] [120/221] learning_rate: 0.001185 hm_loss: 0.688118 wh_loss: 1.295296 loss: 1.978206 eta: 0:33:02 batch_cost: 0.3535 data_cost: 0.0079 ips: 16.9720 images/s
+[08/19 15:49:49] ppdet.engine INFO: Epoch: [0] [140/221] learning_rate: 0.001320 hm_loss: 0.683846 wh_loss: 1.252702 loss: 1.925194 eta: 0:32:40 batch_cost: 0.3639 data_cost: 0.0357 ips: 16.4885 images/s
+[08/19 15:49:56] ppdet.engine INFO: Epoch: [0] [160/221] learning_rate: 0.001455 hm_loss: 0.636385 wh_loss: 1.192893 loss: 1.861341 eta: 0:32:26 batch_cost: 0.3697 data_cost: 0.0180 ips: 16.2292 images/s
+[08/19 15:50:04] ppdet.engine INFO: Epoch: [0] [180/221] learning_rate: 0.001590 hm_loss: 0.614028 wh_loss: 1.204804 loss: 1.789413 eta: 0:32:19 batch_cost: 0.3788 data_cost: 0.0113 ips: 15.8398 images/s
+[08/19 15:50:11] ppdet.engine INFO: Epoch: [0] [200/221] learning_rate: 0.001725 hm_loss: 0.598639 wh_loss: 1.220563 loss: 1.821938 eta: 0:32:02 batch_cost: 0.3599 data_cost: 0.0375 ips: 16.6694 images/s
+[08/19 15:50:18] ppdet.engine INFO: Epoch: [0] [220/221] learning_rate: 0.001860 hm_loss: 0.614971 wh_loss: 1.240687 loss: 1.862479 eta: 0:31:33 batch_cost: 0.3299 data_cost: 0.1042 ips: 18.1884 images/s
+[08/19 15:50:19] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 15:50:20] ppdet.engine INFO: Epoch: [1] [  0/221] learning_rate: 0.001867 hm_loss: 0.614971 wh_loss: 1.240687 loss: 1.862479 eta: 0:31:29 batch_cost: 0.3254 data_cost: 0.0986 ips: 18.4383 images/s
+[08/19 15:50:26] ppdet.engine INFO: Epoch: [1] [ 20/221] learning_rate: 0.002002 hm_loss: 0.568887 wh_loss: 1.162479 loss: 1.732227 eta: 0:30:59 batch_cost: 0.3171 data_cost: 0.0993 ips: 18.9244 images/s
+[08/19 15:50:33] ppdet.engine INFO: Epoch: [1] [ 40/221] learning_rate: 0.002137 hm_loss: 0.549466 wh_loss: 1.188019 loss: 1.788412 eta: 0:30:52 batch_cost: 0.3682 data_cost: 0.1388 ips: 16.2949 images/s
+[08/19 15:50:41] ppdet.engine INFO: Epoch: [1] [ 60/221] learning_rate: 0.002272 hm_loss: 0.520765 wh_loss: 1.118703 loss: 1.622751 eta: 0:30:49 batch_cost: 0.3802 data_cost: 0.1607 ips: 15.7792 images/s
+[08/19 15:50:48] ppdet.engine INFO: Epoch: [1] [ 80/221] learning_rate: 0.002407 hm_loss: 0.499445 wh_loss: 1.169040 loss: 1.669478 eta: 0:30:36 batch_cost: 0.3495 data_cost: 0.1364 ips: 17.1662 images/s
+[08/19 15:50:55] ppdet.engine INFO: Epoch: [1] [100/221] learning_rate: 0.002542 hm_loss: 0.506265 wh_loss: 1.153509 loss: 1.651608 eta: 0:30:29 batch_cost: 0.3702 data_cost: 0.1631 ips: 16.2094 images/s
+[08/19 15:51:03] ppdet.engine INFO: Epoch: [1] [120/221] learning_rate: 0.002677 hm_loss: 0.475813 wh_loss: 1.069777 loss: 1.566269 eta: 0:30:22 batch_cost: 0.3681 data_cost: 0.1630 ips: 16.3000 images/s
+[08/19 15:51:10] ppdet.engine INFO: Epoch: [1] [140/221] learning_rate: 0.002812 hm_loss: 0.472044 wh_loss: 1.030383 loss: 1.513734 eta: 0:30:09 batch_cost: 0.3467 data_cost: 0.1422 ips: 17.3085 images/s
+[08/19 15:51:16] ppdet.engine INFO: Epoch: [1] [160/221] learning_rate: 0.002947 hm_loss: 0.477464 wh_loss: 1.079741 loss: 1.558419 eta: 0:29:54 batch_cost: 0.3347 data_cost: 0.1339 ips: 17.9291 images/s
+[08/19 15:51:23] ppdet.engine INFO: Epoch: [1] [180/221] learning_rate: 0.003082 hm_loss: 0.470103 wh_loss: 1.129639 loss: 1.616118 eta: 0:29:43 batch_cost: 0.3510 data_cost: 0.1354 ips: 17.0931 images/s
+[08/19 15:51:30] ppdet.engine INFO: Epoch: [1] [200/221] learning_rate: 0.003217 hm_loss: 0.443197 wh_loss: 1.023727 loss: 1.461751 eta: 0:29:31 batch_cost: 0.3432 data_cost: 0.1351 ips: 17.4826 images/s
+[08/19 15:51:37] ppdet.engine INFO: Epoch: [1] [220/221] learning_rate: 0.003352 hm_loss: 0.470288 wh_loss: 1.059281 loss: 1.530289 eta: 0:29:21 batch_cost: 0.3490 data_cost: 0.1402 ips: 17.1923 images/s
+[08/19 15:51:39] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 15:51:39] ppdet.engine INFO: Epoch: [2] [  0/221] learning_rate: 0.003358 hm_loss: 0.470288 wh_loss: 1.059281 loss: 1.530289 eta: 0:29:19 batch_cost: 0.3311 data_cost: 0.1232 ips: 18.1234 images/s
+[08/19 15:51:46] ppdet.engine INFO: Epoch: [2] [ 20/221] learning_rate: 0.003493 hm_loss: 0.388595 wh_loss: 0.996365 loss: 1.394394 eta: 0:29:03 batch_cost: 0.3194 data_cost: 0.0369 ips: 18.7879 images/s
+[08/19 15:51:53] ppdet.engine INFO: Epoch: [2] [ 40/221] learning_rate: 0.003628 hm_loss: 0.415678 wh_loss: 1.017943 loss: 1.443325 eta: 0:28:57 batch_cost: 0.3680 data_cost: 0.0909 ips: 16.3063 images/s
+[08/19 15:52:00] ppdet.engine INFO: Epoch: [2] [ 60/221] learning_rate: 0.003750 hm_loss: 0.386361 wh_loss: 0.988641 loss: 1.379555 eta: 0:28:48 batch_cost: 0.3526 data_cost: 0.1486 ips: 17.0150 images/s
+[08/19 15:52:07] ppdet.engine INFO: Epoch: [2] [ 80/221] learning_rate: 0.003750 hm_loss: 0.436845 wh_loss: 1.096041 loss: 1.534175 eta: 0:28:38 batch_cost: 0.3408 data_cost: 0.1322 ips: 17.6069 images/s
+[08/19 15:52:14] ppdet.engine INFO: Epoch: [2] [100/221] learning_rate: 0.003750 hm_loss: 0.398539 wh_loss: 0.974886 loss: 1.388785 eta: 0:28:29 batch_cost: 0.3482 data_cost: 0.1352 ips: 17.2323 images/s
+[08/19 15:52:21] ppdet.engine INFO: Epoch: [2] [120/221] learning_rate: 0.003750 hm_loss: 0.384715 wh_loss: 0.984766 loss: 1.370005 eta: 0:28:20 batch_cost: 0.3494 data_cost: 0.1317 ips: 17.1729 images/s
+[08/19 15:52:27] ppdet.engine INFO: Epoch: [2] [140/221] learning_rate: 0.003750 hm_loss: 0.387749 wh_loss: 0.974793 loss: 1.293539 eta: 0:28:07 batch_cost: 0.3230 data_cost: 0.1251 ips: 18.5747 images/s
+[08/19 15:52:35] ppdet.engine INFO: Epoch: [2] [160/221] learning_rate: 0.003750 hm_loss: 0.353819 wh_loss: 0.926753 loss: 1.275622 eta: 0:28:02 batch_cost: 0.3727 data_cost: 0.1688 ips: 16.1004 images/s
+[08/19 15:52:42] ppdet.engine INFO: Epoch: [2] [180/221] learning_rate: 0.003750 hm_loss: 0.343625 wh_loss: 0.921184 loss: 1.298967 eta: 0:27:55 batch_cost: 0.3602 data_cost: 0.1433 ips: 16.6551 images/s
+[08/19 15:52:48] ppdet.engine INFO: Epoch: [2] [200/221] learning_rate: 0.003750 hm_loss: 0.340906 wh_loss: 0.926707 loss: 1.300789 eta: 0:27:37 batch_cost: 0.2823 data_cost: 0.0916 ips: 21.2569 images/s
+[08/19 15:52:52] ppdet.engine INFO: Epoch: [2] [220/221] learning_rate: 0.003750 hm_loss: 0.359950 wh_loss: 0.903407 loss: 1.280884 eta: 0:27:11 batch_cost: 0.2197 data_cost: 0.0234 ips: 27.3155 images/s
+[08/19 15:52:54] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 15:52:54] ppdet.engine INFO: Epoch: [3] [  0/221] learning_rate: 0.003750 hm_loss: 0.344799 wh_loss: 0.889786 loss: 1.274961 eta: 0:27:10 batch_cost: 0.2224 data_cost: 0.0215 ips: 26.9745 images/s
+[08/19 15:53:01] ppdet.engine INFO: Epoch: [3] [ 20/221] learning_rate: 0.003750 hm_loss: 0.329796 wh_loss: 0.840293 loss: 1.196477 eta: 0:27:01 batch_cost: 0.3330 data_cost: 0.0823 ips: 18.0201 images/s
+[08/19 15:53:08] ppdet.engine INFO: Epoch: [3] [ 40/221] learning_rate: 0.003750 hm_loss: 0.356143 wh_loss: 0.941502 loss: 1.297645 eta: 0:26:55 batch_cost: 0.3626 data_cost: 0.0112 ips: 16.5465 images/s
+[08/19 15:53:16] ppdet.engine INFO: Epoch: [3] [ 60/221] learning_rate: 0.003750 hm_loss: 0.360286 wh_loss: 0.959925 loss: 1.332927 eta: 0:26:51 batch_cost: 0.3741 data_cost: 0.0019 ips: 16.0364 images/s
+[08/19 15:53:23] ppdet.engine INFO: Epoch: [3] [ 80/221] learning_rate: 0.003750 hm_loss: 0.327724 wh_loss: 0.904631 loss: 1.229305 eta: 0:26:48 batch_cost: 0.3806 data_cost: 0.0010 ips: 15.7661 images/s
+[08/19 15:53:31] ppdet.engine INFO: Epoch: [3] [100/221] learning_rate: 0.003750 hm_loss: 0.308491 wh_loss: 0.910518 loss: 1.221487 eta: 0:26:45 batch_cost: 0.3892 data_cost: 0.0004 ips: 15.4146 images/s
+[08/19 15:53:39] ppdet.engine INFO: Epoch: [3] [120/221] learning_rate: 0.003750 hm_loss: 0.328619 wh_loss: 0.955926 loss: 1.317706 eta: 0:26:40 batch_cost: 0.3718 data_cost: 0.0032 ips: 16.1388 images/s
+[08/19 15:53:46] ppdet.engine INFO: Epoch: [3] [140/221] learning_rate: 0.003750 hm_loss: 0.301311 wh_loss: 0.942956 loss: 1.243063 eta: 0:26:36 batch_cost: 0.3867 data_cost: 0.0046 ips: 15.5157 images/s
+[08/19 15:53:54] ppdet.engine INFO: Epoch: [3] [160/221] learning_rate: 0.003750 hm_loss: 0.321552 wh_loss: 0.945072 loss: 1.258205 eta: 0:26:30 batch_cost: 0.3646 data_cost: 0.0144 ips: 16.4558 images/s
+[08/19 15:54:01] ppdet.engine INFO: Epoch: [3] [180/221] learning_rate: 0.003750 hm_loss: 0.257824 wh_loss: 0.843816 loss: 1.100904 eta: 0:26:25 batch_cost: 0.3723 data_cost: 0.0258 ips: 16.1178 images/s
+[08/19 15:54:09] ppdet.engine INFO: Epoch: [3] [200/221] learning_rate: 0.003750 hm_loss: 0.301038 wh_loss: 0.878719 loss: 1.196914 eta: 0:26:20 batch_cost: 0.3714 data_cost: 0.0988 ips: 16.1555 images/s
+[08/19 15:54:16] ppdet.engine INFO: Epoch: [3] [220/221] learning_rate: 0.003750 hm_loss: 0.270639 wh_loss: 0.796511 loss: 1.087099 eta: 0:26:14 batch_cost: 0.3671 data_cost: 0.1499 ips: 16.3427 images/s
+[08/19 15:54:18] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 15:54:18] ppdet.engine INFO: Epoch: [4] [  0/221] learning_rate: 0.003750 hm_loss: 0.264293 wh_loss: 0.796511 loss: 1.087099 eta: 0:26:12 batch_cost: 0.3610 data_cost: 0.1437 ips: 16.6212 images/s
+[08/19 15:54:25] ppdet.engine INFO: Epoch: [4] [ 20/221] learning_rate: 0.003750 hm_loss: 0.265910 wh_loss: 0.783058 loss: 1.066759 eta: 0:26:02 batch_cost: 0.3175 data_cost: 0.0917 ips: 18.9001 images/s
+[08/19 15:54:32] ppdet.engine INFO: Epoch: [4] [ 40/221] learning_rate: 0.003750 hm_loss: 0.263688 wh_loss: 0.795772 loss: 1.061158 eta: 0:25:56 batch_cost: 0.3685 data_cost: 0.1489 ips: 16.2828 images/s
+[08/19 15:54:39] ppdet.engine INFO: Epoch: [4] [ 60/221] learning_rate: 0.003750 hm_loss: 0.248710 wh_loss: 0.830039 loss: 1.082004 eta: 0:25:49 batch_cost: 0.3583 data_cost: 0.0981 ips: 16.7479 images/s
+[08/19 15:54:47] ppdet.engine INFO: Epoch: [4] [ 80/221] learning_rate: 0.003750 hm_loss: 0.262298 wh_loss: 0.830709 loss: 1.067115 eta: 0:25:44 batch_cost: 0.3833 data_cost: 0.0215 ips: 15.6538 images/s
+[08/19 15:54:55] ppdet.engine INFO: Epoch: [4] [100/221] learning_rate: 0.003750 hm_loss: 0.280719 wh_loss: 0.847389 loss: 1.115757 eta: 0:25:39 batch_cost: 0.3812 data_cost: 0.0185 ips: 15.7390 images/s
+[08/19 15:55:02] ppdet.engine INFO: Epoch: [4] [120/221] learning_rate: 0.003750 hm_loss: 0.265624 wh_loss: 0.812754 loss: 1.065073 eta: 0:25:34 batch_cost: 0.3765 data_cost: 0.0018 ips: 15.9372 images/s
+[08/19 15:55:10] ppdet.engine INFO: Epoch: [4] [140/221] learning_rate: 0.003750 hm_loss: 0.240435 wh_loss: 0.768725 loss: 1.002334 eta: 0:25:29 batch_cost: 0.3837 data_cost: 0.0014 ips: 15.6368 images/s
+[08/19 15:55:17] ppdet.engine INFO: Epoch: [4] [160/221] learning_rate: 0.003750 hm_loss: 0.275161 wh_loss: 0.848933 loss: 1.109763 eta: 0:25:21 batch_cost: 0.3498 data_cost: 0.0030 ips: 17.1517 images/s
+[08/19 15:55:24] ppdet.engine INFO: Epoch: [4] [180/221] learning_rate: 0.003750 hm_loss: 0.272434 wh_loss: 0.825470 loss: 1.109153 eta: 0:25:16 batch_cost: 0.3752 data_cost: 0.0003 ips: 15.9916 images/s
+[08/19 15:55:32] ppdet.engine INFO: Epoch: [4] [200/221] learning_rate: 0.003750 hm_loss: 0.238693 wh_loss: 0.796513 loss: 1.053542 eta: 0:25:10 batch_cost: 0.3754 data_cost: 0.0020 ips: 15.9829 images/s
+[08/19 15:55:39] ppdet.engine INFO: Epoch: [4] [220/221] learning_rate: 0.003750 hm_loss: 0.296508 wh_loss: 0.853451 loss: 1.145592 eta: 0:25:02 batch_cost: 0.3487 data_cost: 0.0019 ips: 17.2062 images/s
+[08/19 15:55:41] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 15:55:41] ppdet.engine INFO: Epoch: [5] [  0/221] learning_rate: 0.003750 hm_loss: 0.296508 wh_loss: 0.853451 loss: 1.145592 eta: 0:25:01 batch_cost: 0.3527 data_cost: 0.0027 ips: 17.0100 images/s
+[08/19 15:55:47] ppdet.engine INFO: Epoch: [5] [ 20/221] learning_rate: 0.003750 hm_loss: 0.255804 wh_loss: 0.795094 loss: 1.019275 eta: 0:24:51 batch_cost: 0.3080 data_cost: 0.0645 ips: 19.4774 images/s
+[08/19 15:55:54] ppdet.engine INFO: Epoch: [5] [ 40/221] learning_rate: 0.003750 hm_loss: 0.259669 wh_loss: 0.789885 loss: 1.035871 eta: 0:24:43 batch_cost: 0.3543 data_cost: 0.0597 ips: 16.9365 images/s
+[08/19 15:56:02] ppdet.engine INFO: Epoch: [5] [ 60/221] learning_rate: 0.003750 hm_loss: 0.230106 wh_loss: 0.845200 loss: 1.064110 eta: 0:24:36 batch_cost: 0.3550 data_cost: 0.0437 ips: 16.8992 images/s
+[08/19 15:56:08] ppdet.engine INFO: Epoch: [5] [ 80/221] learning_rate: 0.003750 hm_loss: 0.265889 wh_loss: 0.822596 loss: 1.080061 eta: 0:24:28 batch_cost: 0.3447 data_cost: 0.0834 ips: 17.4062 images/s
+[08/19 15:56:16] ppdet.engine INFO: Epoch: [5] [100/221] learning_rate: 0.003750 hm_loss: 0.229004 wh_loss: 0.751127 loss: 0.989258 eta: 0:24:21 batch_cost: 0.3569 data_cost: 0.0259 ips: 16.8114 images/s
+[08/19 15:56:23] ppdet.engine INFO: Epoch: [5] [120/221] learning_rate: 0.003750 hm_loss: 0.273380 wh_loss: 0.867922 loss: 1.148606 eta: 0:24:13 batch_cost: 0.3467 data_cost: 0.1212 ips: 17.3052 images/s
+[08/19 15:56:30] ppdet.engine INFO: Epoch: [5] [140/221] learning_rate: 0.003750 hm_loss: 0.271992 wh_loss: 0.812647 loss: 1.078665 eta: 0:24:07 batch_cost: 0.3691 data_cost: 0.0720 ips: 16.2556 images/s
+[08/19 15:56:37] ppdet.engine INFO: Epoch: [5] [160/221] learning_rate: 0.003750 hm_loss: 0.223039 wh_loss: 0.814783 loss: 1.017152 eta: 0:23:59 batch_cost: 0.3484 data_cost: 0.1380 ips: 17.2202 images/s
+[08/19 15:56:44] ppdet.engine INFO: Epoch: [5] [180/221] learning_rate: 0.003750 hm_loss: 0.251812 wh_loss: 0.821582 loss: 1.065272 eta: 0:23:52 batch_cost: 0.3630 data_cost: 0.1638 ips: 16.5271 images/s
+[08/19 15:56:51] ppdet.engine INFO: Epoch: [5] [200/221] learning_rate: 0.003750 hm_loss: 0.221572 wh_loss: 0.778105 loss: 0.972417 eta: 0:23:46 batch_cost: 0.3616 data_cost: 0.1450 ips: 16.5909 images/s
+[08/19 15:56:59] ppdet.engine INFO: Epoch: [5] [220/221] learning_rate: 0.003750 hm_loss: 0.207706 wh_loss: 0.748226 loss: 0.964048 eta: 0:23:40 batch_cost: 0.3755 data_cost: 0.1617 ips: 15.9772 images/s
+[08/19 15:57:01] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 15:57:01] ppdet.engine INFO: Epoch: [6] [  0/221] learning_rate: 0.003750 hm_loss: 0.207706 wh_loss: 0.775299 loss: 0.996853 eta: 0:23:39 batch_cost: 0.3551 data_cost: 0.1414 ips: 16.8987 images/s
+[08/19 15:57:08] ppdet.engine INFO: Epoch: [6] [ 20/221] learning_rate: 0.003750 hm_loss: 0.223747 wh_loss: 0.807604 loss: 1.043339 eta: 0:23:30 batch_cost: 0.3237 data_cost: 0.0755 ips: 18.5379 images/s
+[08/19 15:57:15] ppdet.engine INFO: Epoch: [6] [ 40/221] learning_rate: 0.003750 hm_loss: 0.230472 wh_loss: 0.785222 loss: 1.003654 eta: 0:23:23 batch_cost: 0.3545 data_cost: 0.1576 ips: 16.9245 images/s
+[08/19 15:57:22] ppdet.engine INFO: Epoch: [6] [ 60/221] learning_rate: 0.003750 hm_loss: 0.226849 wh_loss: 0.783629 loss: 1.007789 eta: 0:23:16 batch_cost: 0.3756 data_cost: 0.1626 ips: 15.9762 images/s
+[08/19 15:57:30] ppdet.engine INFO: Epoch: [6] [ 80/221] learning_rate: 0.003750 hm_loss: 0.177692 wh_loss: 0.724326 loss: 0.895386 eta: 0:23:10 batch_cost: 0.3622 data_cost: 0.1444 ips: 16.5637 images/s
+[08/19 15:57:37] ppdet.engine INFO: Epoch: [6] [100/221] learning_rate: 0.003750 hm_loss: 0.206343 wh_loss: 0.741613 loss: 0.960783 eta: 0:23:03 batch_cost: 0.3614 data_cost: 0.1326 ips: 16.6025 images/s
+[08/19 15:57:44] ppdet.engine INFO: Epoch: [6] [120/221] learning_rate: 0.003750 hm_loss: 0.232457 wh_loss: 0.809260 loss: 1.018465 eta: 0:22:55 batch_cost: 0.3514 data_cost: 0.1490 ips: 17.0755 images/s
+[08/19 15:57:52] ppdet.engine INFO: Epoch: [6] [140/221] learning_rate: 0.003750 hm_loss: 0.188770 wh_loss: 0.736947 loss: 0.937979 eta: 0:22:50 batch_cost: 0.3879 data_cost: 0.1659 ips: 15.4672 images/s
+[08/19 15:57:59] ppdet.engine INFO: Epoch: [6] [160/221] learning_rate: 0.003750 hm_loss: 0.200506 wh_loss: 0.754322 loss: 0.945291 eta: 0:22:44 batch_cost: 0.3758 data_cost: 0.1632 ips: 15.9668 images/s
+[08/19 15:58:06] ppdet.engine INFO: Epoch: [6] [180/221] learning_rate: 0.003750 hm_loss: 0.246483 wh_loss: 0.812587 loss: 1.047547 eta: 0:22:37 batch_cost: 0.3577 data_cost: 0.1345 ips: 16.7761 images/s
+[08/19 15:58:14] ppdet.engine INFO: Epoch: [6] [200/221] learning_rate: 0.003750 hm_loss: 0.259372 wh_loss: 0.800825 loss: 1.058551 eta: 0:22:31 batch_cost: 0.3908 data_cost: 0.1547 ips: 15.3534 images/s
+[08/19 15:58:21] ppdet.engine INFO: Epoch: [6] [220/221] learning_rate: 0.003750 hm_loss: 0.235321 wh_loss: 0.779890 loss: 1.027877 eta: 0:22:24 batch_cost: 0.3491 data_cost: 0.1442 ips: 17.1876 images/s
+[08/19 15:58:23] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 15:58:23] ppdet.engine INFO: Epoch: [7] [  0/221] learning_rate: 0.003750 hm_loss: 0.235321 wh_loss: 0.779890 loss: 1.027877 eta: 0:22:23 batch_cost: 0.3503 data_cost: 0.1452 ips: 17.1277 images/s
+[08/19 15:58:30] ppdet.engine INFO: Epoch: [7] [ 20/221] learning_rate: 0.003750 hm_loss: 0.203845 wh_loss: 0.779604 loss: 0.999806 eta: 0:22:16 batch_cost: 0.3557 data_cost: 0.1371 ips: 16.8680 images/s
+[08/19 15:58:38] ppdet.engine INFO: Epoch: [7] [ 40/221] learning_rate: 0.003750 hm_loss: 0.176576 wh_loss: 0.679407 loss: 0.862791 eta: 0:22:10 batch_cost: 0.3951 data_cost: 0.1834 ips: 15.1849 images/s
+[08/19 15:58:46] ppdet.engine INFO: Epoch: [7] [ 60/221] learning_rate: 0.003750 hm_loss: 0.174903 wh_loss: 0.725641 loss: 0.894002 eta: 0:22:05 batch_cost: 0.3926 data_cost: 0.1782 ips: 15.2839 images/s
+[08/19 15:58:54] ppdet.engine INFO: Epoch: [7] [ 80/221] learning_rate: 0.003750 hm_loss: 0.174455 wh_loss: 0.716287 loss: 0.886032 eta: 0:21:59 batch_cost: 0.3926 data_cost: 0.1861 ips: 15.2808 images/s
+[08/19 15:59:01] ppdet.engine INFO: Epoch: [7] [100/221] learning_rate: 0.003750 hm_loss: 0.153134 wh_loss: 0.657305 loss: 0.815811 eta: 0:21:52 batch_cost: 0.3670 data_cost: 0.1593 ips: 16.3469 images/s
+[08/19 15:59:09] ppdet.engine INFO: Epoch: [7] [120/221] learning_rate: 0.003750 hm_loss: 0.181897 wh_loss: 0.690324 loss: 0.868819 eta: 0:21:47 batch_cost: 0.4016 data_cost: 0.1882 ips: 14.9409 images/s
+[08/19 15:59:17] ppdet.engine INFO: Epoch: [7] [140/221] learning_rate: 0.003750 hm_loss: 0.201414 wh_loss: 0.723229 loss: 0.922648 eta: 0:21:42 batch_cost: 0.4022 data_cost: 0.1659 ips: 14.9184 images/s
+[08/19 15:59:25] ppdet.engine INFO: Epoch: [7] [160/221] learning_rate: 0.003750 hm_loss: 0.213026 wh_loss: 0.724153 loss: 0.954550 eta: 0:21:35 batch_cost: 0.3850 data_cost: 0.1611 ips: 15.5850 images/s
+[08/19 15:59:32] ppdet.engine INFO: Epoch: [7] [180/221] learning_rate: 0.003750 hm_loss: 0.184481 wh_loss: 0.709528 loss: 0.915641 eta: 0:21:26 batch_cost: 0.3186 data_cost: 0.1120 ips: 18.8343 images/s
+[08/19 15:59:36] ppdet.engine INFO: Epoch: [7] [200/221] learning_rate: 0.003750 hm_loss: 0.173784 wh_loss: 0.648749 loss: 0.820852 eta: 0:21:13 batch_cost: 0.2159 data_cost: 0.0384 ips: 27.7932 images/s
+[08/19 15:59:43] ppdet.engine INFO: Epoch: [7] [220/221] learning_rate: 0.003750 hm_loss: 0.200056 wh_loss: 0.659141 loss: 0.840835 eta: 0:21:06 batch_cost: 0.3531 data_cost: 0.0940 ips: 16.9926 images/s
+[08/19 15:59:45] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 15:59:45] ppdet.engine INFO: Epoch: [8] [  0/221] learning_rate: 0.000375 hm_loss: 0.178134 wh_loss: 0.659141 loss: 0.840835 eta: 0:21:05 batch_cost: 0.3552 data_cost: 0.0943 ips: 16.8920 images/s
+[08/19 15:59:52] ppdet.engine INFO: Epoch: [8] [ 20/221] learning_rate: 0.000375 hm_loss: 0.149483 wh_loss: 0.634816 loss: 0.776758 eta: 0:20:58 batch_cost: 0.3442 data_cost: 0.1173 ips: 17.4310 images/s
+[08/19 16:00:00] ppdet.engine INFO: Epoch: [8] [ 40/221] learning_rate: 0.000375 hm_loss: 0.165493 wh_loss: 0.672391 loss: 0.847273 eta: 0:20:52 batch_cost: 0.3958 data_cost: 0.1952 ips: 15.1606 images/s
+[08/19 16:00:08] ppdet.engine INFO: Epoch: [8] [ 60/221] learning_rate: 0.000375 hm_loss: 0.155386 wh_loss: 0.659888 loss: 0.836259 eta: 0:20:46 batch_cost: 0.3803 data_cost: 0.1616 ips: 15.7781 images/s
+[08/19 16:00:15] ppdet.engine INFO: Epoch: [8] [ 80/221] learning_rate: 0.000375 hm_loss: 0.153815 wh_loss: 0.663219 loss: 0.807176 eta: 0:20:39 batch_cost: 0.3590 data_cost: 0.1012 ips: 16.7131 images/s
+[08/19 16:00:23] ppdet.engine INFO: Epoch: [8] [100/221] learning_rate: 0.000375 hm_loss: 0.146024 wh_loss: 0.627692 loss: 0.773923 eta: 0:20:32 batch_cost: 0.3828 data_cost: 0.1620 ips: 15.6746 images/s
+[08/19 16:00:30] ppdet.engine INFO: Epoch: [8] [120/221] learning_rate: 0.000375 hm_loss: 0.154718 wh_loss: 0.627102 loss: 0.780745 eta: 0:20:26 batch_cost: 0.3734 data_cost: 0.1516 ips: 16.0680 images/s
+[08/19 16:00:38] ppdet.engine INFO: Epoch: [8] [140/221] learning_rate: 0.000375 hm_loss: 0.162642 wh_loss: 0.606032 loss: 0.743166 eta: 0:20:20 batch_cost: 0.3953 data_cost: 0.0848 ips: 15.1799 images/s
+[08/19 16:00:46] ppdet.engine INFO: Epoch: [8] [160/221] learning_rate: 0.000375 hm_loss: 0.173408 wh_loss: 0.709813 loss: 0.859055 eta: 0:20:13 batch_cost: 0.3765 data_cost: 0.1352 ips: 15.9357 images/s
+[08/19 16:00:53] ppdet.engine INFO: Epoch: [8] [180/221] learning_rate: 0.000375 hm_loss: 0.166334 wh_loss: 0.690605 loss: 0.836776 eta: 0:20:06 batch_cost: 0.3470 data_cost: 0.1297 ips: 17.2887 images/s
+[08/19 16:01:00] ppdet.engine INFO: Epoch: [8] [200/221] learning_rate: 0.000375 hm_loss: 0.125078 wh_loss: 0.569569 loss: 0.692422 eta: 0:19:59 batch_cost: 0.3747 data_cost: 0.1673 ips: 16.0149 images/s
+[08/19 16:01:08] ppdet.engine INFO: Epoch: [8] [220/221] learning_rate: 0.000375 hm_loss: 0.151416 wh_loss: 0.609793 loss: 0.774636 eta: 0:19:52 batch_cost: 0.3724 data_cost: 0.1500 ips: 16.1117 images/s
+[08/19 16:01:09] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:01:09] ppdet.engine INFO: Epoch: [9] [  0/221] learning_rate: 0.000375 hm_loss: 0.156137 wh_loss: 0.617135 loss: 0.786691 eta: 0:19:52 batch_cost: 0.3574 data_cost: 0.1336 ips: 16.7899 images/s
+[08/19 16:01:16] ppdet.engine INFO: Epoch: [9] [ 20/221] learning_rate: 0.000375 hm_loss: 0.163850 wh_loss: 0.694477 loss: 0.870491 eta: 0:19:44 batch_cost: 0.3509 data_cost: 0.0078 ips: 17.0977 images/s
+[08/19 16:01:24] ppdet.engine INFO: Epoch: [9] [ 40/221] learning_rate: 0.000375 hm_loss: 0.140206 wh_loss: 0.617787 loss: 0.764049 eta: 0:19:38 batch_cost: 0.4009 data_cost: 0.0075 ips: 14.9656 images/s
+[08/19 16:01:32] ppdet.engine INFO: Epoch: [9] [ 60/221] learning_rate: 0.000375 hm_loss: 0.142146 wh_loss: 0.583819 loss: 0.743420 eta: 0:19:32 batch_cost: 0.3884 data_cost: 0.0065 ips: 15.4471 images/s
+[08/19 16:01:40] ppdet.engine INFO: Epoch: [9] [ 80/221] learning_rate: 0.000375 hm_loss: 0.139583 wh_loss: 0.616504 loss: 0.752131 eta: 0:19:25 batch_cost: 0.3726 data_cost: 0.0044 ips: 16.1048 images/s
+[08/19 16:01:47] ppdet.engine INFO: Epoch: [9] [100/221] learning_rate: 0.000375 hm_loss: 0.168463 wh_loss: 0.669126 loss: 0.821634 eta: 0:19:18 batch_cost: 0.3622 data_cost: 0.0060 ips: 16.5646 images/s
+[08/19 16:01:54] ppdet.engine INFO: Epoch: [9] [120/221] learning_rate: 0.000375 hm_loss: 0.183967 wh_loss: 0.658513 loss: 0.861120 eta: 0:19:11 batch_cost: 0.3642 data_cost: 0.0102 ips: 16.4743 images/s
+[08/19 16:02:02] ppdet.engine INFO: Epoch: [9] [140/221] learning_rate: 0.000375 hm_loss: 0.154710 wh_loss: 0.616841 loss: 0.760899 eta: 0:19:05 batch_cost: 0.3900 data_cost: 0.0022 ips: 15.3850 images/s
+[08/19 16:02:10] ppdet.engine INFO: Epoch: [9] [160/221] learning_rate: 0.000375 hm_loss: 0.145967 wh_loss: 0.586373 loss: 0.725640 eta: 0:18:58 batch_cost: 0.3884 data_cost: 0.0012 ips: 15.4476 images/s
+[08/19 16:02:17] ppdet.engine INFO: Epoch: [9] [180/221] learning_rate: 0.000375 hm_loss: 0.180572 wh_loss: 0.686925 loss: 0.841293 eta: 0:18:51 batch_cost: 0.3750 data_cost: 0.0077 ips: 16.0015 images/s
+[08/19 16:02:25] ppdet.engine INFO: Epoch: [9] [200/221] learning_rate: 0.000375 hm_loss: 0.177714 wh_loss: 0.675050 loss: 0.849397 eta: 0:18:44 batch_cost: 0.3588 data_cost: 0.0003 ips: 16.7222 images/s
+[08/19 16:02:32] ppdet.engine INFO: Epoch: [9] [220/221] learning_rate: 0.000375 hm_loss: 0.160983 wh_loss: 0.709971 loss: 0.887644 eta: 0:18:37 batch_cost: 0.3672 data_cost: 0.0030 ips: 16.3414 images/s
+[08/19 16:02:34] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:02:34] ppdet.engine INFO: Epoch: [10] [  0/221] learning_rate: 0.000375 hm_loss: 0.165501 wh_loss: 0.749651 loss: 0.907768 eta: 0:18:37 batch_cost: 0.3512 data_cost: 0.0035 ips: 17.0826 images/s
+[08/19 16:02:41] ppdet.engine INFO: Epoch: [10] [ 20/221] learning_rate: 0.000375 hm_loss: 0.139842 wh_loss: 0.624203 loss: 0.745830 eta: 0:18:29 batch_cost: 0.3429 data_cost: 0.0346 ips: 17.4982 images/s
+[08/19 16:02:48] ppdet.engine INFO: Epoch: [10] [ 40/221] learning_rate: 0.000375 hm_loss: 0.169746 wh_loss: 0.625577 loss: 0.794990 eta: 0:18:21 batch_cost: 0.3496 data_cost: 0.0057 ips: 17.1624 images/s
+[08/19 16:02:55] ppdet.engine INFO: Epoch: [10] [ 60/221] learning_rate: 0.000375 hm_loss: 0.163429 wh_loss: 0.604314 loss: 0.761608 eta: 0:18:14 batch_cost: 0.3681 data_cost: 0.0505 ips: 16.2992 images/s
+[08/19 16:03:03] ppdet.engine INFO: Epoch: [10] [ 80/221] learning_rate: 0.000375 hm_loss: 0.155221 wh_loss: 0.628772 loss: 0.778762 eta: 0:18:08 batch_cost: 0.3872 data_cost: 0.0575 ips: 15.4958 images/s
+[08/19 16:03:11] ppdet.engine INFO: Epoch: [10] [100/221] learning_rate: 0.000375 hm_loss: 0.178937 wh_loss: 0.705569 loss: 0.893185 eta: 0:18:01 batch_cost: 0.3789 data_cost: 0.0194 ips: 15.8349 images/s
+[08/19 16:03:18] ppdet.engine INFO: Epoch: [10] [120/221] learning_rate: 0.000375 hm_loss: 0.130311 wh_loss: 0.580977 loss: 0.731946 eta: 0:17:54 batch_cost: 0.3719 data_cost: 0.0018 ips: 16.1317 images/s
+[08/19 16:03:26] ppdet.engine INFO: Epoch: [10] [140/221] learning_rate: 0.000375 hm_loss: 0.142879 wh_loss: 0.627043 loss: 0.763777 eta: 0:17:48 batch_cost: 0.4040 data_cost: 0.0086 ips: 14.8533 images/s
+[08/19 16:03:34] ppdet.engine INFO: Epoch: [10] [160/221] learning_rate: 0.000375 hm_loss: 0.137514 wh_loss: 0.557108 loss: 0.722083 eta: 0:17:41 batch_cost: 0.3704 data_cost: 0.0037 ips: 16.1989 images/s
+[08/19 16:03:41] ppdet.engine INFO: Epoch: [10] [180/221] learning_rate: 0.000375 hm_loss: 0.147455 wh_loss: 0.631168 loss: 0.781637 eta: 0:17:34 batch_cost: 0.3675 data_cost: 0.0010 ips: 16.3268 images/s
+[08/19 16:03:49] ppdet.engine INFO: Epoch: [10] [200/221] learning_rate: 0.000375 hm_loss: 0.172087 wh_loss: 0.723307 loss: 0.880606 eta: 0:17:27 batch_cost: 0.3716 data_cost: 0.0082 ips: 16.1463 images/s
+[08/19 16:03:56] ppdet.engine INFO: Epoch: [10] [220/221] learning_rate: 0.000375 hm_loss: 0.142739 wh_loss: 0.593703 loss: 0.740948 eta: 0:17:20 batch_cost: 0.3796 data_cost: 0.0052 ips: 15.8046 images/s
+[08/19 16:03:58] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:03:58] ppdet.engine INFO: Epoch: [11] [  0/221] learning_rate: 0.000037 hm_loss: 0.142739 wh_loss: 0.593703 loss: 0.740948 eta: 0:17:19 batch_cost: 0.3552 data_cost: 0.0052 ips: 16.8901 images/s
+[08/19 16:04:05] ppdet.engine INFO: Epoch: [11] [ 20/221] learning_rate: 0.000037 hm_loss: 0.139499 wh_loss: 0.607005 loss: 0.732646 eta: 0:17:12 batch_cost: 0.3438 data_cost: 0.1175 ips: 17.4505 images/s
+[08/19 16:04:12] ppdet.engine INFO: Epoch: [11] [ 40/221] learning_rate: 0.000037 hm_loss: 0.119613 wh_loss: 0.581804 loss: 0.689122 eta: 0:17:05 batch_cost: 0.3676 data_cost: 0.1494 ips: 16.3227 images/s
+[08/19 16:04:20] ppdet.engine INFO: Epoch: [11] [ 60/221] learning_rate: 0.000037 hm_loss: 0.125786 wh_loss: 0.578082 loss: 0.706742 eta: 0:16:57 batch_cost: 0.3619 data_cost: 0.1254 ips: 16.5813 images/s
+[08/19 16:04:27] ppdet.engine INFO: Epoch: [11] [ 80/221] learning_rate: 0.000037 hm_loss: 0.137256 wh_loss: 0.589576 loss: 0.720929 eta: 0:16:50 batch_cost: 0.3612 data_cost: 0.1464 ips: 16.6096 images/s
+[08/19 16:04:34] ppdet.engine INFO: Epoch: [11] [100/221] learning_rate: 0.000037 hm_loss: 0.156088 wh_loss: 0.610752 loss: 0.775381 eta: 0:16:43 batch_cost: 0.3633 data_cost: 0.0938 ips: 16.5134 images/s
+[08/19 16:04:42] ppdet.engine INFO: Epoch: [11] [120/221] learning_rate: 0.000037 hm_loss: 0.138405 wh_loss: 0.593898 loss: 0.740269 eta: 0:16:36 batch_cost: 0.3620 data_cost: 0.0154 ips: 16.5737 images/s
+[08/19 16:04:49] ppdet.engine INFO: Epoch: [11] [140/221] learning_rate: 0.000037 hm_loss: 0.134260 wh_loss: 0.589204 loss: 0.732037 eta: 0:16:29 batch_cost: 0.3866 data_cost: 0.0037 ips: 15.5189 images/s
+[08/19 16:04:57] ppdet.engine INFO: Epoch: [11] [160/221] learning_rate: 0.000037 hm_loss: 0.164696 wh_loss: 0.667062 loss: 0.828480 eta: 0:16:22 batch_cost: 0.3829 data_cost: 0.1155 ips: 15.6686 images/s
+[08/19 16:05:05] ppdet.engine INFO: Epoch: [11] [180/221] learning_rate: 0.000037 hm_loss: 0.154734 wh_loss: 0.621908 loss: 0.787974 eta: 0:16:15 batch_cost: 0.3743 data_cost: 0.0088 ips: 16.0317 images/s
+[08/19 16:05:12] ppdet.engine INFO: Epoch: [11] [200/221] learning_rate: 0.000037 hm_loss: 0.150667 wh_loss: 0.647520 loss: 0.796607 eta: 0:16:08 batch_cost: 0.3700 data_cost: 0.0780 ips: 16.2144 images/s
+[08/19 16:05:19] ppdet.engine INFO: Epoch: [11] [220/221] learning_rate: 0.000037 hm_loss: 0.171041 wh_loss: 0.639105 loss: 0.821065 eta: 0:16:01 batch_cost: 0.3703 data_cost: 0.0741 ips: 16.2052 images/s
+[08/19 16:05:22] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:05:22] ppdet.engine INFO: Epoch: [12] [  0/221] learning_rate: 0.000037 hm_loss: 0.156546 wh_loss: 0.626267 loss: 0.794105 eta: 0:16:00 batch_cost: 0.3645 data_cost: 0.0743 ips: 16.4629 images/s
+[08/19 16:05:29] ppdet.engine INFO: Epoch: [12] [ 20/221] learning_rate: 0.000037 hm_loss: 0.133171 wh_loss: 0.613423 loss: 0.761213 eta: 0:15:52 batch_cost: 0.3268 data_cost: 0.1177 ips: 18.3585 images/s
+[08/19 16:05:37] ppdet.engine INFO: Epoch: [12] [ 40/221] learning_rate: 0.000037 hm_loss: 0.144080 wh_loss: 0.625039 loss: 0.772226 eta: 0:15:46 batch_cost: 0.4078 data_cost: 0.0739 ips: 14.7129 images/s
+[08/19 16:05:44] ppdet.engine INFO: Epoch: [12] [ 60/221] learning_rate: 0.000037 hm_loss: 0.128197 wh_loss: 0.548198 loss: 0.674829 eta: 0:15:39 batch_cost: 0.3679 data_cost: 0.0077 ips: 16.3081 images/s
+[08/19 16:05:52] ppdet.engine INFO: Epoch: [12] [ 80/221] learning_rate: 0.000037 hm_loss: 0.160670 wh_loss: 0.620302 loss: 0.765165 eta: 0:15:32 batch_cost: 0.3969 data_cost: 0.0018 ips: 15.1163 images/s
+[08/19 16:06:00] ppdet.engine INFO: Epoch: [12] [100/221] learning_rate: 0.000037 hm_loss: 0.124199 wh_loss: 0.596032 loss: 0.729411 eta: 0:15:26 batch_cost: 0.3880 data_cost: 0.0013 ips: 15.4636 images/s
+[08/19 16:06:07] ppdet.engine INFO: Epoch: [12] [120/221] learning_rate: 0.000037 hm_loss: 0.139855 wh_loss: 0.603380 loss: 0.746274 eta: 0:15:18 batch_cost: 0.3711 data_cost: 0.0259 ips: 16.1683 images/s
+[08/19 16:06:15] ppdet.engine INFO: Epoch: [12] [140/221] learning_rate: 0.000037 hm_loss: 0.140221 wh_loss: 0.637163 loss: 0.781420 eta: 0:15:11 batch_cost: 0.3789 data_cost: 0.1650 ips: 15.8366 images/s
+[08/19 16:06:22] ppdet.engine INFO: Epoch: [12] [160/221] learning_rate: 0.000037 hm_loss: 0.147137 wh_loss: 0.606983 loss: 0.752104 eta: 0:15:04 batch_cost: 0.3758 data_cost: 0.0859 ips: 15.9644 images/s
+[08/19 16:06:27] ppdet.engine INFO: Epoch: [12] [180/221] learning_rate: 0.000037 hm_loss: 0.158034 wh_loss: 0.648391 loss: 0.794853 eta: 0:14:55 batch_cost: 0.2435 data_cost: 0.0143 ips: 24.6418 images/s
+[08/19 16:06:32] ppdet.engine INFO: Epoch: [12] [200/221] learning_rate: 0.000037 hm_loss: 0.128797 wh_loss: 0.585089 loss: 0.712762 eta: 0:14:46 batch_cost: 0.2330 data_cost: 0.0265 ips: 25.7470 images/s
+[08/19 16:06:39] ppdet.engine INFO: Epoch: [12] [220/221] learning_rate: 0.000037 hm_loss: 0.167561 wh_loss: 0.676862 loss: 0.831206 eta: 0:14:38 batch_cost: 0.3530 data_cost: 0.1085 ips: 16.9981 images/s
+[08/19 16:06:41] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:06:41] ppdet.engine INFO: Epoch: [13] [  0/221] learning_rate: 0.000037 hm_loss: 0.167561 wh_loss: 0.676862 loss: 0.831206 eta: 0:14:38 batch_cost: 0.3547 data_cost: 0.1087 ips: 16.9141 images/s
+[08/19 16:06:47] ppdet.engine INFO: Epoch: [13] [ 20/221] learning_rate: 0.000037 hm_loss: 0.137317 wh_loss: 0.599529 loss: 0.722205 eta: 0:14:30 batch_cost: 0.3042 data_cost: 0.0889 ips: 19.7264 images/s
+[08/19 16:06:56] ppdet.engine INFO: Epoch: [13] [ 40/221] learning_rate: 0.000037 hm_loss: 0.123404 wh_loss: 0.592754 loss: 0.720030 eta: 0:14:23 batch_cost: 0.4249 data_cost: 0.0538 ips: 14.1211 images/s
+[08/19 16:07:03] ppdet.engine INFO: Epoch: [13] [ 60/221] learning_rate: 0.000037 hm_loss: 0.132546 wh_loss: 0.603761 loss: 0.738873 eta: 0:14:16 batch_cost: 0.3556 data_cost: 0.0040 ips: 16.8717 images/s
+[08/19 16:07:10] ppdet.engine INFO: Epoch: [13] [ 80/221] learning_rate: 0.000037 hm_loss: 0.126378 wh_loss: 0.610140 loss: 0.727827 eta: 0:14:09 batch_cost: 0.3648 data_cost: 0.0674 ips: 16.4460 images/s
+[08/19 16:07:18] ppdet.engine INFO: Epoch: [13] [100/221] learning_rate: 0.000037 hm_loss: 0.122110 wh_loss: 0.598902 loss: 0.718931 eta: 0:14:02 batch_cost: 0.3874 data_cost: 0.1658 ips: 15.4891 images/s
+[08/19 16:07:26] ppdet.engine INFO: Epoch: [13] [120/221] learning_rate: 0.000037 hm_loss: 0.123888 wh_loss: 0.588032 loss: 0.723280 eta: 0:13:55 batch_cost: 0.3673 data_cost: 0.1476 ips: 16.3362 images/s
+[08/19 16:07:33] ppdet.engine INFO: Epoch: [13] [140/221] learning_rate: 0.000037 hm_loss: 0.135644 wh_loss: 0.605342 loss: 0.752795 eta: 0:13:48 batch_cost: 0.3837 data_cost: 0.1621 ips: 15.6360 images/s
+[08/19 16:07:41] ppdet.engine INFO: Epoch: [13] [160/221] learning_rate: 0.000037 hm_loss: 0.183830 wh_loss: 0.707436 loss: 0.897211 eta: 0:13:41 batch_cost: 0.3815 data_cost: 0.1710 ips: 15.7283 images/s
+[08/19 16:07:49] ppdet.engine INFO: Epoch: [13] [180/221] learning_rate: 0.000037 hm_loss: 0.166049 wh_loss: 0.693678 loss: 0.848964 eta: 0:13:34 batch_cost: 0.3857 data_cost: 0.1797 ips: 15.5545 images/s
+[08/19 16:07:56] ppdet.engine INFO: Epoch: [13] [200/221] learning_rate: 0.000037 hm_loss: 0.145718 wh_loss: 0.645905 loss: 0.788574 eta: 0:13:27 batch_cost: 0.3871 data_cost: 0.1660 ips: 15.4993 images/s
+[08/19 16:08:04] ppdet.engine INFO: Epoch: [13] [220/221] learning_rate: 0.000037 hm_loss: 0.148861 wh_loss: 0.575863 loss: 0.717825 eta: 0:13:20 batch_cost: 0.3671 data_cost: 0.1530 ips: 16.3439 images/s
+[08/19 16:08:05] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:08:06] ppdet.engine INFO: Epoch: [14] [  0/221] learning_rate: 0.000037 hm_loss: 0.148861 wh_loss: 0.575863 loss: 0.717825 eta: 0:13:20 batch_cost: 0.3547 data_cost: 0.1406 ips: 16.9171 images/s
+[08/19 16:08:13] ppdet.engine INFO: Epoch: [14] [ 20/221] learning_rate: 0.000037 hm_loss: 0.151339 wh_loss: 0.603656 loss: 0.761801 eta: 0:13:12 batch_cost: 0.3421 data_cost: 0.1019 ips: 17.5379 images/s
+[08/19 16:08:20] ppdet.engine INFO: Epoch: [14] [ 40/221] learning_rate: 0.000037 hm_loss: 0.120076 wh_loss: 0.585969 loss: 0.711293 eta: 0:13:05 batch_cost: 0.3756 data_cost: 0.1523 ips: 15.9765 images/s
+[08/19 16:08:28] ppdet.engine INFO: Epoch: [14] [ 60/221] learning_rate: 0.000037 hm_loss: 0.138691 wh_loss: 0.612265 loss: 0.762706 eta: 0:12:58 batch_cost: 0.3791 data_cost: 0.1677 ips: 15.8282 images/s
+[08/19 16:08:36] ppdet.engine INFO: Epoch: [14] [ 80/221] learning_rate: 0.000037 hm_loss: 0.159239 wh_loss: 0.618742 loss: 0.765186 eta: 0:12:52 batch_cost: 0.4032 data_cost: 0.1630 ips: 14.8794 images/s
+[08/19 16:08:44] ppdet.engine INFO: Epoch: [14] [100/221] learning_rate: 0.000037 hm_loss: 0.141422 wh_loss: 0.584019 loss: 0.734628 eta: 0:12:45 batch_cost: 0.3885 data_cost: 0.0646 ips: 15.4426 images/s
+[08/19 16:08:51] ppdet.engine INFO: Epoch: [14] [120/221] learning_rate: 0.000037 hm_loss: 0.178548 wh_loss: 0.720114 loss: 0.901609 eta: 0:12:37 batch_cost: 0.3594 data_cost: 0.0050 ips: 16.6952 images/s
+[08/19 16:08:58] ppdet.engine INFO: Epoch: [14] [140/221] learning_rate: 0.000037 hm_loss: 0.129553 wh_loss: 0.574337 loss: 0.701054 eta: 0:12:30 batch_cost: 0.3710 data_cost: 0.0026 ips: 16.1743 images/s
+[08/19 16:09:06] ppdet.engine INFO: Epoch: [14] [160/221] learning_rate: 0.000037 hm_loss: 0.148124 wh_loss: 0.644995 loss: 0.800660 eta: 0:12:23 batch_cost: 0.3949 data_cost: 0.0031 ips: 15.1944 images/s
+[08/19 16:09:14] ppdet.engine INFO: Epoch: [14] [180/221] learning_rate: 0.000037 hm_loss: 0.155302 wh_loss: 0.629688 loss: 0.790300 eta: 0:12:16 batch_cost: 0.3691 data_cost: 0.0095 ips: 16.2550 images/s
+[08/19 16:09:21] ppdet.engine INFO: Epoch: [14] [200/221] learning_rate: 0.000037 hm_loss: 0.135867 wh_loss: 0.564216 loss: 0.703388 eta: 0:12:09 batch_cost: 0.3591 data_cost: 0.0351 ips: 16.7062 images/s
+[08/19 16:09:28] ppdet.engine INFO: Epoch: [14] [220/221] learning_rate: 0.000037 hm_loss: 0.157808 wh_loss: 0.657241 loss: 0.793454 eta: 0:12:02 batch_cost: 0.3758 data_cost: 0.0408 ips: 15.9648 images/s
+[08/19 16:09:30] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:09:30] ppdet.engine INFO: Epoch: [15] [  0/221] learning_rate: 0.000037 hm_loss: 0.157808 wh_loss: 0.657241 loss: 0.815043 eta: 0:12:01 batch_cost: 0.3637 data_cost: 0.0280 ips: 16.4954 images/s
+[08/19 16:09:37] ppdet.engine INFO: Epoch: [15] [ 20/221] learning_rate: 0.000037 hm_loss: 0.166797 wh_loss: 0.697373 loss: 0.827156 eta: 0:11:54 batch_cost: 0.3236 data_cost: 0.1006 ips: 18.5417 images/s
+[08/19 16:09:45] ppdet.engine INFO: Epoch: [15] [ 40/221] learning_rate: 0.000037 hm_loss: 0.142109 wh_loss: 0.583015 loss: 0.710353 eta: 0:11:47 batch_cost: 0.3957 data_cost: 0.1759 ips: 15.1646 images/s
+[08/19 16:09:53] ppdet.engine INFO: Epoch: [15] [ 60/221] learning_rate: 0.000037 hm_loss: 0.159861 wh_loss: 0.671877 loss: 0.822941 eta: 0:11:40 batch_cost: 0.3823 data_cost: 0.1605 ips: 15.6939 images/s
+[08/19 16:10:00] ppdet.engine INFO: Epoch: [15] [ 80/221] learning_rate: 0.000037 hm_loss: 0.155124 wh_loss: 0.637287 loss: 0.796223 eta: 0:11:33 batch_cost: 0.3934 data_cost: 0.1854 ips: 15.2516 images/s
+[08/19 16:10:08] ppdet.engine INFO: Epoch: [15] [100/221] learning_rate: 0.000037 hm_loss: 0.155328 wh_loss: 0.671281 loss: 0.822357 eta: 0:11:26 batch_cost: 0.3753 data_cost: 0.1603 ips: 15.9886 images/s
+[08/19 16:10:16] ppdet.engine INFO: Epoch: [15] [120/221] learning_rate: 0.000037 hm_loss: 0.148028 wh_loss: 0.607438 loss: 0.738768 eta: 0:11:19 batch_cost: 0.3817 data_cost: 0.1631 ips: 15.7177 images/s
+[08/19 16:10:24] ppdet.engine INFO: Epoch: [15] [140/221] learning_rate: 0.000037 hm_loss: 0.134046 wh_loss: 0.586960 loss: 0.731829 eta: 0:11:12 batch_cost: 0.3966 data_cost: 0.0540 ips: 15.1282 images/s
+[08/19 16:10:32] ppdet.engine INFO: Epoch: [15] [160/221] learning_rate: 0.000037 hm_loss: 0.133254 wh_loss: 0.604154 loss: 0.736159 eta: 0:11:05 batch_cost: 0.4223 data_cost: 0.0006 ips: 14.2063 images/s
+[08/19 16:10:39] ppdet.engine INFO: Epoch: [15] [180/221] learning_rate: 0.000037 hm_loss: 0.134056 wh_loss: 0.626902 loss: 0.749818 eta: 0:10:58 batch_cost: 0.3518 data_cost: 0.0003 ips: 17.0531 images/s
+[08/19 16:10:47] ppdet.engine INFO: Epoch: [15] [200/221] learning_rate: 0.000037 hm_loss: 0.130703 wh_loss: 0.576220 loss: 0.717191 eta: 0:10:51 batch_cost: 0.3856 data_cost: 0.0075 ips: 15.5590 images/s
+[08/19 16:10:54] ppdet.engine INFO: Epoch: [15] [220/221] learning_rate: 0.000037 hm_loss: 0.150508 wh_loss: 0.665048 loss: 0.807366 eta: 0:10:43 batch_cost: 0.3705 data_cost: 0.0054 ips: 16.1962 images/s
+[08/19 16:10:56] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:10:56] ppdet.engine INFO: Epoch: [16] [  0/221] learning_rate: 0.000037 hm_loss: 0.144626 wh_loss: 0.646981 loss: 0.800573 eta: 0:10:43 batch_cost: 0.3674 data_cost: 0.0049 ips: 16.3328 images/s
+[08/19 16:11:03] ppdet.engine INFO: Epoch: [16] [ 20/221] learning_rate: 0.000037 hm_loss: 0.137654 wh_loss: 0.590566 loss: 0.734498 eta: 0:10:35 batch_cost: 0.3135 data_cost: 0.0659 ips: 19.1404 images/s
+[08/19 16:11:10] ppdet.engine INFO: Epoch: [16] [ 40/221] learning_rate: 0.000037 hm_loss: 0.145671 wh_loss: 0.610186 loss: 0.744931 eta: 0:10:28 batch_cost: 0.3750 data_cost: 0.0647 ips: 15.9997 images/s
+[08/19 16:11:18] ppdet.engine INFO: Epoch: [16] [ 60/221] learning_rate: 0.000037 hm_loss: 0.170569 wh_loss: 0.688911 loss: 0.851101 eta: 0:10:21 batch_cost: 0.3955 data_cost: 0.0143 ips: 15.1703 images/s
+[08/19 16:11:25] ppdet.engine INFO: Epoch: [16] [ 80/221] learning_rate: 0.000037 hm_loss: 0.138455 wh_loss: 0.595354 loss: 0.738814 eta: 0:10:14 batch_cost: 0.3607 data_cost: 0.0066 ips: 16.6335 images/s
+[08/19 16:11:33] ppdet.engine INFO: Epoch: [16] [100/221] learning_rate: 0.000037 hm_loss: 0.149740 wh_loss: 0.658931 loss: 0.807353 eta: 0:10:07 batch_cost: 0.3794 data_cost: 0.0210 ips: 15.8162 images/s
+[08/19 16:11:40] ppdet.engine INFO: Epoch: [16] [120/221] learning_rate: 0.000037 hm_loss: 0.145935 wh_loss: 0.614192 loss: 0.765623 eta: 0:09:59 batch_cost: 0.3579 data_cost: 0.1322 ips: 16.7636 images/s
+[08/19 16:11:47] ppdet.engine INFO: Epoch: [16] [140/221] learning_rate: 0.000037 hm_loss: 0.135120 wh_loss: 0.574489 loss: 0.726194 eta: 0:09:52 batch_cost: 0.3499 data_cost: 0.1457 ips: 17.1491 images/s
+[08/19 16:11:55] ppdet.engine INFO: Epoch: [16] [160/221] learning_rate: 0.000037 hm_loss: 0.146417 wh_loss: 0.647062 loss: 0.786094 eta: 0:09:45 batch_cost: 0.3781 data_cost: 0.0611 ips: 15.8672 images/s
+[08/19 16:12:02] ppdet.engine INFO: Epoch: [16] [180/221] learning_rate: 0.000037 hm_loss: 0.127046 wh_loss: 0.562946 loss: 0.682476 eta: 0:09:38 batch_cost: 0.3833 data_cost: 0.0220 ips: 15.6541 images/s
+[08/19 16:12:10] ppdet.engine INFO: Epoch: [16] [200/221] learning_rate: 0.000037 hm_loss: 0.143122 wh_loss: 0.589519 loss: 0.729048 eta: 0:09:30 batch_cost: 0.3710 data_cost: 0.0781 ips: 16.1736 images/s
+[08/19 16:12:17] ppdet.engine INFO: Epoch: [16] [220/221] learning_rate: 0.000037 hm_loss: 0.157098 wh_loss: 0.615729 loss: 0.785333 eta: 0:09:23 batch_cost: 0.3614 data_cost: 0.1604 ips: 16.6038 images/s
+[08/19 16:12:19] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:12:19] ppdet.engine INFO: Epoch: [17] [  0/221] learning_rate: 0.000037 hm_loss: 0.157098 wh_loss: 0.620118 loss: 0.785333 eta: 0:09:23 batch_cost: 0.3434 data_cost: 0.1409 ips: 17.4734 images/s
+[08/19 16:12:25] ppdet.engine INFO: Epoch: [17] [ 20/221] learning_rate: 0.000037 hm_loss: 0.125907 wh_loss: 0.592311 loss: 0.719920 eta: 0:09:15 batch_cost: 0.3043 data_cost: 0.0870 ips: 19.7158 images/s
+[08/19 16:12:33] ppdet.engine INFO: Epoch: [17] [ 40/221] learning_rate: 0.000037 hm_loss: 0.131866 wh_loss: 0.613336 loss: 0.748242 eta: 0:09:08 batch_cost: 0.3677 data_cost: 0.0901 ips: 16.3189 images/s
+[08/19 16:12:40] ppdet.engine INFO: Epoch: [17] [ 60/221] learning_rate: 0.000037 hm_loss: 0.135558 wh_loss: 0.650843 loss: 0.791435 eta: 0:09:00 batch_cost: 0.3651 data_cost: 0.0131 ips: 16.4330 images/s
+[08/19 16:12:48] ppdet.engine INFO: Epoch: [17] [ 80/221] learning_rate: 0.000037 hm_loss: 0.130421 wh_loss: 0.531352 loss: 0.668802 eta: 0:08:53 batch_cost: 0.3861 data_cost: 0.0007 ips: 15.5388 images/s
+[08/19 16:12:55] ppdet.engine INFO: Epoch: [17] [100/221] learning_rate: 0.000037 hm_loss: 0.141426 wh_loss: 0.625859 loss: 0.767054 eta: 0:08:46 batch_cost: 0.3693 data_cost: 0.0023 ips: 16.2478 images/s
+[08/19 16:13:02] ppdet.engine INFO: Epoch: [17] [120/221] learning_rate: 0.000037 hm_loss: 0.141517 wh_loss: 0.619384 loss: 0.761115 eta: 0:08:39 batch_cost: 0.3645 data_cost: 0.0040 ips: 16.4587 images/s
+[08/19 16:13:09] ppdet.engine INFO: Epoch: [17] [140/221] learning_rate: 0.000037 hm_loss: 0.141554 wh_loss: 0.554729 loss: 0.700999 eta: 0:08:31 batch_cost: 0.3472 data_cost: 0.0026 ips: 17.2825 images/s
+[08/19 16:13:17] ppdet.engine INFO: Epoch: [17] [160/221] learning_rate: 0.000037 hm_loss: 0.145601 wh_loss: 0.642339 loss: 0.783330 eta: 0:08:24 batch_cost: 0.3709 data_cost: 0.0022 ips: 16.1776 images/s
+[08/19 16:13:23] ppdet.engine INFO: Epoch: [17] [180/221] learning_rate: 0.000037 hm_loss: 0.146692 wh_loss: 0.618727 loss: 0.771957 eta: 0:08:17 batch_cost: 0.3181 data_cost: 0.0013 ips: 18.8612 images/s
+[08/19 16:13:27] ppdet.engine INFO: Epoch: [17] [200/221] learning_rate: 0.000037 hm_loss: 0.143482 wh_loss: 0.609628 loss: 0.775573 eta: 0:08:08 batch_cost: 0.1993 data_cost: 0.0002 ips: 30.1129 images/s
+[08/19 16:13:34] ppdet.engine INFO: Epoch: [17] [220/221] learning_rate: 0.000037 hm_loss: 0.127069 wh_loss: 0.577505 loss: 0.708809 eta: 0:08:01 batch_cost: 0.3278 data_cost: 0.0069 ips: 18.3050 images/s
+[08/19 16:13:36] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:13:36] ppdet.engine INFO: Epoch: [18] [  0/221] learning_rate: 0.000037 hm_loss: 0.127069 wh_loss: 0.577505 loss: 0.708809 eta: 0:08:00 batch_cost: 0.3315 data_cost: 0.0069 ips: 18.0969 images/s
+[08/19 16:13:43] ppdet.engine INFO: Epoch: [18] [ 20/221] learning_rate: 0.000037 hm_loss: 0.127963 wh_loss: 0.615296 loss: 0.742884 eta: 0:07:53 batch_cost: 0.3517 data_cost: 0.1194 ips: 17.0583 images/s
+[08/19 16:13:51] ppdet.engine INFO: Epoch: [18] [ 40/221] learning_rate: 0.000037 hm_loss: 0.137833 wh_loss: 0.638581 loss: 0.780023 eta: 0:07:46 batch_cost: 0.3944 data_cost: 0.1679 ips: 15.2111 images/s
+[08/19 16:13:59] ppdet.engine INFO: Epoch: [18] [ 60/221] learning_rate: 0.000037 hm_loss: 0.156065 wh_loss: 0.634099 loss: 0.796906 eta: 0:07:39 batch_cost: 0.3802 data_cost: 0.1055 ips: 15.7817 images/s
+[08/19 16:14:06] ppdet.engine INFO: Epoch: [18] [ 80/221] learning_rate: 0.000037 hm_loss: 0.143815 wh_loss: 0.589858 loss: 0.743792 eta: 0:07:32 batch_cost: 0.3896 data_cost: 0.1271 ips: 15.4015 images/s
+[08/19 16:14:14] ppdet.engine INFO: Epoch: [18] [100/221] learning_rate: 0.000037 hm_loss: 0.122038 wh_loss: 0.542600 loss: 0.671656 eta: 0:07:25 batch_cost: 0.3949 data_cost: 0.1718 ips: 15.1924 images/s
+[08/19 16:14:22] ppdet.engine INFO: Epoch: [18] [120/221] learning_rate: 0.000037 hm_loss: 0.171267 wh_loss: 0.625222 loss: 0.803844 eta: 0:07:17 batch_cost: 0.3669 data_cost: 0.1561 ips: 16.3531 images/s
+[08/19 16:14:29] ppdet.engine INFO: Epoch: [18] [140/221] learning_rate: 0.000037 hm_loss: 0.130002 wh_loss: 0.611117 loss: 0.748734 eta: 0:07:10 batch_cost: 0.3627 data_cost: 0.1289 ips: 16.5414 images/s
+[08/19 16:14:36] ppdet.engine INFO: Epoch: [18] [160/221] learning_rate: 0.000037 hm_loss: 0.118398 wh_loss: 0.566232 loss: 0.689603 eta: 0:07:03 batch_cost: 0.3600 data_cost: 0.0680 ips: 16.6646 images/s
+[08/19 16:14:44] ppdet.engine INFO: Epoch: [18] [180/221] learning_rate: 0.000037 hm_loss: 0.151550 wh_loss: 0.624344 loss: 0.770402 eta: 0:06:56 batch_cost: 0.3706 data_cost: 0.0839 ips: 16.1908 images/s
+[08/19 16:14:51] ppdet.engine INFO: Epoch: [18] [200/221] learning_rate: 0.000037 hm_loss: 0.122407 wh_loss: 0.539336 loss: 0.661442 eta: 0:06:48 batch_cost: 0.3776 data_cost: 0.0492 ips: 15.8910 images/s
+[08/19 16:14:59] ppdet.engine INFO: Epoch: [18] [220/221] learning_rate: 0.000037 hm_loss: 0.145038 wh_loss: 0.627472 loss: 0.778506 eta: 0:06:41 batch_cost: 0.3851 data_cost: 0.0063 ips: 15.5793 images/s
+[08/19 16:15:01] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:15:01] ppdet.engine INFO: Epoch: [19] [  0/221] learning_rate: 0.000037 hm_loss: 0.145038 wh_loss: 0.627472 loss: 0.778506 eta: 0:06:41 batch_cost: 0.3690 data_cost: 0.0065 ips: 16.2587 images/s
+[08/19 16:15:08] ppdet.engine INFO: Epoch: [19] [ 20/221] learning_rate: 0.000037 hm_loss: 0.147062 wh_loss: 0.600224 loss: 0.731658 eta: 0:06:33 batch_cost: 0.3399 data_cost: 0.1172 ips: 17.6541 images/s
+[08/19 16:15:15] ppdet.engine INFO: Epoch: [19] [ 40/221] learning_rate: 0.000037 hm_loss: 0.141006 wh_loss: 0.632022 loss: 0.770288 eta: 0:06:26 batch_cost: 0.3618 data_cost: 0.1171 ips: 16.5834 images/s
+[08/19 16:15:23] ppdet.engine INFO: Epoch: [19] [ 60/221] learning_rate: 0.000037 hm_loss: 0.151100 wh_loss: 0.606658 loss: 0.782352 eta: 0:06:19 batch_cost: 0.3932 data_cost: 0.0836 ips: 15.2587 images/s
+[08/19 16:15:30] ppdet.engine INFO: Epoch: [19] [ 80/221] learning_rate: 0.000037 hm_loss: 0.146961 wh_loss: 0.632653 loss: 0.778213 eta: 0:06:12 batch_cost: 0.3606 data_cost: 0.0924 ips: 16.6408 images/s
+[08/19 16:15:38] ppdet.engine INFO: Epoch: [19] [100/221] learning_rate: 0.000037 hm_loss: 0.150904 wh_loss: 0.611732 loss: 0.758022 eta: 0:06:05 batch_cost: 0.3731 data_cost: 0.1351 ips: 16.0796 images/s
+[08/19 16:15:46] ppdet.engine INFO: Epoch: [19] [120/221] learning_rate: 0.000037 hm_loss: 0.119245 wh_loss: 0.555223 loss: 0.675373 eta: 0:05:57 batch_cost: 0.3837 data_cost: 0.0827 ips: 15.6366 images/s
+[08/19 16:15:53] ppdet.engine INFO: Epoch: [19] [140/221] learning_rate: 0.000037 hm_loss: 0.127365 wh_loss: 0.626256 loss: 0.743946 eta: 0:05:50 batch_cost: 0.3719 data_cost: 0.1305 ips: 16.1348 images/s
+[08/19 16:16:01] ppdet.engine INFO: Epoch: [19] [160/221] learning_rate: 0.000037 hm_loss: 0.144891 wh_loss: 0.583191 loss: 0.748533 eta: 0:05:43 batch_cost: 0.3937 data_cost: 0.1480 ips: 15.2401 images/s
+[08/19 16:16:08] ppdet.engine INFO: Epoch: [19] [180/221] learning_rate: 0.000037 hm_loss: 0.129382 wh_loss: 0.588867 loss: 0.708548 eta: 0:05:36 batch_cost: 0.3726 data_cost: 0.1473 ips: 16.1032 images/s
+[08/19 16:16:16] ppdet.engine INFO: Epoch: [19] [200/221] learning_rate: 0.000037 hm_loss: 0.130497 wh_loss: 0.602233 loss: 0.721640 eta: 0:05:29 batch_cost: 0.3658 data_cost: 0.0839 ips: 16.4035 images/s
+[08/19 16:16:23] ppdet.engine INFO: Epoch: [19] [220/221] learning_rate: 0.000037 hm_loss: 0.141903 wh_loss: 0.618164 loss: 0.749470 eta: 0:05:21 batch_cost: 0.3555 data_cost: 0.1408 ips: 16.8765 images/s
+[08/19 16:16:25] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:16:25] ppdet.engine INFO: Epoch: [20] [  0/221] learning_rate: 0.000037 hm_loss: 0.137902 wh_loss: 0.584349 loss: 0.717480 eta: 0:05:21 batch_cost: 0.3438 data_cost: 0.1298 ips: 17.4511 images/s
+[08/19 16:16:31] ppdet.engine INFO: Epoch: [20] [ 20/221] learning_rate: 0.000037 hm_loss: 0.144246 wh_loss: 0.599127 loss: 0.753348 eta: 0:05:13 batch_cost: 0.3186 data_cost: 0.0772 ips: 18.8338 images/s
+[08/19 16:16:39] ppdet.engine INFO: Epoch: [20] [ 40/221] learning_rate: 0.000037 hm_loss: 0.121187 wh_loss: 0.578454 loss: 0.705583 eta: 0:05:06 batch_cost: 0.3701 data_cost: 0.0173 ips: 16.2132 images/s
+[08/19 16:16:46] ppdet.engine INFO: Epoch: [20] [ 60/221] learning_rate: 0.000037 hm_loss: 0.140152 wh_loss: 0.607609 loss: 0.761354 eta: 0:04:59 batch_cost: 0.3825 data_cost: 0.0076 ips: 15.6882 images/s
+[08/19 16:16:54] ppdet.engine INFO: Epoch: [20] [ 80/221] learning_rate: 0.000037 hm_loss: 0.157032 wh_loss: 0.611747 loss: 0.787850 eta: 0:04:52 batch_cost: 0.3813 data_cost: 0.0018 ips: 15.7367 images/s
+[08/19 16:17:02] ppdet.engine INFO: Epoch: [20] [100/221] learning_rate: 0.000037 hm_loss: 0.125502 wh_loss: 0.574739 loss: 0.703451 eta: 0:04:45 batch_cost: 0.3759 data_cost: 0.0016 ips: 15.9621 images/s
+[08/19 16:17:09] ppdet.engine INFO: Epoch: [20] [120/221] learning_rate: 0.000037 hm_loss: 0.134855 wh_loss: 0.582644 loss: 0.713881 eta: 0:04:37 batch_cost: 0.3777 data_cost: 0.0028 ips: 15.8877 images/s
+[08/19 16:17:17] ppdet.engine INFO: Epoch: [20] [140/221] learning_rate: 0.000037 hm_loss: 0.152059 wh_loss: 0.636347 loss: 0.800378 eta: 0:04:30 batch_cost: 0.3780 data_cost: 0.0031 ips: 15.8718 images/s
+[08/19 16:17:24] ppdet.engine INFO: Epoch: [20] [160/221] learning_rate: 0.000037 hm_loss: 0.137765 wh_loss: 0.656267 loss: 0.786485 eta: 0:04:23 batch_cost: 0.3680 data_cost: 0.1081 ips: 16.3063 images/s
+[08/19 16:17:32] ppdet.engine INFO: Epoch: [20] [180/221] learning_rate: 0.000037 hm_loss: 0.138193 wh_loss: 0.579781 loss: 0.722159 eta: 0:04:16 batch_cost: 0.4004 data_cost: 0.1854 ips: 14.9842 images/s
+[08/19 16:17:40] ppdet.engine INFO: Epoch: [20] [200/221] learning_rate: 0.000037 hm_loss: 0.135375 wh_loss: 0.624994 loss: 0.748967 eta: 0:04:08 batch_cost: 0.3731 data_cost: 0.1561 ips: 16.0825 images/s
+[08/19 16:17:47] ppdet.engine INFO: Epoch: [20] [220/221] learning_rate: 0.000037 hm_loss: 0.135490 wh_loss: 0.584122 loss: 0.718516 eta: 0:04:01 batch_cost: 0.3715 data_cost: 0.1693 ips: 16.1501 images/s
+[08/19 16:17:49] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:17:49] ppdet.engine INFO: Epoch: [21] [  0/221] learning_rate: 0.000037 hm_loss: 0.129457 wh_loss: 0.573482 loss: 0.699576 eta: 0:04:01 batch_cost: 0.3579 data_cost: 0.1556 ips: 16.7647 images/s
+[08/19 16:17:56] ppdet.engine INFO: Epoch: [21] [ 20/221] learning_rate: 0.000037 hm_loss: 0.140184 wh_loss: 0.621359 loss: 0.766705 eta: 0:03:53 batch_cost: 0.3347 data_cost: 0.1171 ips: 17.9290 images/s
+[08/19 16:18:03] ppdet.engine INFO: Epoch: [21] [ 40/221] learning_rate: 0.000037 hm_loss: 0.125179 wh_loss: 0.636538 loss: 0.748694 eta: 0:03:46 batch_cost: 0.3573 data_cost: 0.1484 ips: 16.7940 images/s
+[08/19 16:18:10] ppdet.engine INFO: Epoch: [21] [ 60/221] learning_rate: 0.000037 hm_loss: 0.133114 wh_loss: 0.592582 loss: 0.728582 eta: 0:03:39 batch_cost: 0.3637 data_cost: 0.1435 ips: 16.4962 images/s
+[08/19 16:18:18] ppdet.engine INFO: Epoch: [21] [ 80/221] learning_rate: 0.000037 hm_loss: 0.142474 wh_loss: 0.632044 loss: 0.770210 eta: 0:03:32 batch_cost: 0.3662 data_cost: 0.1633 ips: 16.3844 images/s
+[08/19 16:18:25] ppdet.engine INFO: Epoch: [21] [100/221] learning_rate: 0.000037 hm_loss: 0.150015 wh_loss: 0.621255 loss: 0.771798 eta: 0:03:24 batch_cost: 0.3524 data_cost: 0.1383 ips: 17.0251 images/s
+[08/19 16:18:32] ppdet.engine INFO: Epoch: [21] [120/221] learning_rate: 0.000037 hm_loss: 0.129781 wh_loss: 0.599143 loss: 0.718241 eta: 0:03:17 batch_cost: 0.3586 data_cost: 0.1448 ips: 16.7298 images/s
+[08/19 16:18:39] ppdet.engine INFO: Epoch: [21] [140/221] learning_rate: 0.000037 hm_loss: 0.131214 wh_loss: 0.600162 loss: 0.737346 eta: 0:03:10 batch_cost: 0.3723 data_cost: 0.1612 ips: 16.1158 images/s
+INFO 2021-08-19 16:21:54,449 launch.py:268] Local processes completed.
+[08/19 16:18:46] ppdet.engine INFO: Epoch: [21] [160/221] learning_rate: 0.000037 hm_loss: 0.136811 wh_loss: 0.601511 loss: 0.720219 eta: 0:03:02 batch_cost: 0.3390 data_cost: 0.0928 ips: 17.6984 images/s
+[08/19 16:18:54] ppdet.engine INFO: Epoch: [21] [180/221] learning_rate: 0.000037 hm_loss: 0.139780 wh_loss: 0.638412 loss: 0.776827 eta: 0:02:55 batch_cost: 0.3730 data_cost: 0.1067 ips: 16.0871 images/s
+[08/19 16:19:01] ppdet.engine INFO: Epoch: [21] [200/221] learning_rate: 0.000037 hm_loss: 0.137787 wh_loss: 0.601221 loss: 0.737338 eta: 0:02:48 batch_cost: 0.3585 data_cost: 0.1467 ips: 16.7344 images/s
+[08/19 16:19:08] ppdet.engine INFO: Epoch: [21] [220/221] learning_rate: 0.000037 hm_loss: 0.121572 wh_loss: 0.595661 loss: 0.719421 eta: 0:02:41 batch_cost: 0.3797 data_cost: 0.1422 ips: 15.8015 images/s
+[08/19 16:19:10] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:19:11] ppdet.engine INFO: Epoch: [22] [  0/221] learning_rate: 0.000037 hm_loss: 0.127595 wh_loss: 0.614376 loss: 0.743248 eta: 0:02:40 batch_cost: 0.3790 data_cost: 0.1422 ips: 15.8299 images/s
+[08/19 16:19:17] ppdet.engine INFO: Epoch: [22] [ 20/221] learning_rate: 0.000037 hm_loss: 0.136438 wh_loss: 0.602498 loss: 0.731224 eta: 0:02:33 batch_cost: 0.3359 data_cost: 0.1107 ips: 17.8604 images/s
+[08/19 16:19:25] ppdet.engine INFO: Epoch: [22] [ 40/221] learning_rate: 0.000037 hm_loss: 0.166213 wh_loss: 0.652847 loss: 0.826511 eta: 0:02:26 batch_cost: 0.3624 data_cost: 0.1428 ips: 16.5561 images/s
+[08/19 16:19:32] ppdet.engine INFO: Epoch: [22] [ 60/221] learning_rate: 0.000037 hm_loss: 0.140246 wh_loss: 0.678669 loss: 0.813700 eta: 0:02:18 batch_cost: 0.3690 data_cost: 0.1382 ips: 16.2594 images/s
+[08/19 16:19:40] ppdet.engine INFO: Epoch: [22] [ 80/221] learning_rate: 0.000037 hm_loss: 0.147940 wh_loss: 0.625084 loss: 0.776059 eta: 0:02:11 batch_cost: 0.3836 data_cost: 0.1675 ips: 15.6422 images/s
+[08/19 16:19:47] ppdet.engine INFO: Epoch: [22] [100/221] learning_rate: 0.000037 hm_loss: 0.142252 wh_loss: 0.594830 loss: 0.735518 eta: 0:02:04 batch_cost: 0.3584 data_cost: 0.1429 ips: 16.7406 images/s
+[08/19 16:19:54] ppdet.engine INFO: Epoch: [22] [120/221] learning_rate: 0.000037 hm_loss: 0.145095 wh_loss: 0.584993 loss: 0.724703 eta: 0:01:57 batch_cost: 0.3613 data_cost: 0.1551 ips: 16.6071 images/s
+[08/19 16:20:02] ppdet.engine INFO: Epoch: [22] [140/221] learning_rate: 0.000037 hm_loss: 0.139030 wh_loss: 0.572908 loss: 0.711085 eta: 0:01:49 batch_cost: 0.3838 data_cost: 0.1707 ips: 15.6327 images/s
+[08/19 16:20:09] ppdet.engine INFO: Epoch: [22] [160/221] learning_rate: 0.000037 hm_loss: 0.157154 wh_loss: 0.634328 loss: 0.801471 eta: 0:01:42 batch_cost: 0.3812 data_cost: 0.1508 ips: 15.7378 images/s
+[08/19 16:20:17] ppdet.engine INFO: Epoch: [22] [180/221] learning_rate: 0.000037 hm_loss: 0.153038 wh_loss: 0.658645 loss: 0.823934 eta: 0:01:35 batch_cost: 0.3746 data_cost: 0.1664 ips: 16.0159 images/s
+[08/19 16:20:22] ppdet.engine INFO: Epoch: [22] [200/221] learning_rate: 0.000037 hm_loss: 0.140133 wh_loss: 0.608078 loss: 0.746596 eta: 0:01:27 batch_cost: 0.2321 data_cost: 0.0554 ips: 25.8538 images/s
+[08/19 16:20:27] ppdet.engine INFO: Epoch: [22] [220/221] learning_rate: 0.000037 hm_loss: 0.123203 wh_loss: 0.588575 loss: 0.723532 eta: 0:01:20 batch_cost: 0.2801 data_cost: 0.0767 ips: 21.4194 images/s
+[08/19 16:20:29] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix
+[08/19 16:20:30] ppdet.engine INFO: Epoch: [23] [  0/221] learning_rate: 0.000037 hm_loss: 0.123203 wh_loss: 0.588575 loss: 0.723532 eta: 0:01:20 batch_cost: 0.2805 data_cost: 0.0768 ips: 21.3890 images/s
+[08/19 16:20:36] ppdet.engine INFO: Epoch: [23] [ 20/221] learning_rate: 0.000037 hm_loss: 0.139248 wh_loss: 0.612937 loss: 0.752185 eta: 0:01:12 batch_cost: 0.3264 data_cost: 0.0967 ips: 18.3809 images/s
+[08/19 16:20:44] ppdet.engine INFO: Epoch: [23] [ 40/221] learning_rate: 0.000037 hm_loss: 0.137088 wh_loss: 0.569926 loss: 0.694087 eta: 0:01:05 batch_cost: 0.3928 data_cost: 0.1527 ips: 15.2738 images/s
+[08/19 16:20:52] ppdet.engine INFO: Epoch: [23] [ 60/221] learning_rate: 0.000037 hm_loss: 0.115248 wh_loss: 0.550931 loss: 0.666128 eta: 0:00:58 batch_cost: 0.3778 data_cost: 0.1304 ips: 15.8832 images/s
+[08/19 16:20:59] ppdet.engine INFO: Epoch: [23] [ 80/221] learning_rate: 0.000037 hm_loss: 0.150775 wh_loss: 0.656539 loss: 0.804434 eta: 0:00:51 batch_cost: 0.3815 data_cost: 0.0553 ips: 15.7258 images/s
+[08/19 16:21:07] ppdet.engine INFO: Epoch: [23] [100/221] learning_rate: 0.000037 hm_loss: 0.133403 wh_loss: 0.584327 loss: 0.715355 eta: 0:00:43 batch_cost: 0.3700 data_cost: 0.0266 ips: 16.2142 images/s
+[08/19 16:21:14] ppdet.engine INFO: Epoch: [23] [120/221] learning_rate: 0.000037 hm_loss: 0.152327 wh_loss: 0.603873 loss: 0.744084 eta: 0:00:36 batch_cost: 0.3752 data_cost: 0.0104 ips: 15.9909 images/s
+[08/19 16:21:22] ppdet.engine INFO: Epoch: [23] [140/221] learning_rate: 0.000037 hm_loss: 0.160996 wh_loss: 0.607288 loss: 0.780498 eta: 0:00:29 batch_cost: 0.3675 data_cost: 0.0099 ips: 16.3264 images/s
+[08/19 16:21:29] ppdet.engine INFO: Epoch: [23] [160/221] learning_rate: 0.000037 hm_loss: 0.134749 wh_loss: 0.632708 loss: 0.778500 eta: 0:00:22 batch_cost: 0.3784 data_cost: 0.0032 ips: 15.8581 images/s
+[08/19 16:21:37] ppdet.engine INFO: Epoch: [23] [180/221] learning_rate: 0.000037 hm_loss: 0.139918 wh_loss: 0.569777 loss: 0.719347 eta: 0:00:14 batch_cost: 0.3730 data_cost: 0.0007 ips: 16.0873 images/s
+[08/19 16:21:44] ppdet.engine INFO: Epoch: [23] [200/221] learning_rate: 0.000037 hm_loss: 0.154265 wh_loss: 0.643735 loss: 0.808670 eta: 0:00:07 batch_cost: 0.3640 data_cost: 0.0038 ips: 16.4844 images/s
+[08/19 16:21:50] ppdet.engine INFO: Epoch: [23] [220/221] learning_rate: 0.000037 hm_loss: 0.160463 wh_loss: 0.658195 loss: 0.824718 eta: 0:00:00 batch_cost: 0.3112 data_cost: 0.0008 ips: 19.2778 images/s
+[08/19 16:21:52] ppdet.utils.checkpoint INFO: Save checkpoint: output_ttf_mot17/ttfnet_darknet53_1x_mix

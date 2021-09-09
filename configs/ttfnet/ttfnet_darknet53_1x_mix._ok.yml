@@ -1,0 +1,115 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/ttfnet_darknet53.yml',
+  '_base_/ttfnet_reader.yml',
+]
+weights: output_ttf_mot17/ttfnet_darknet53_1x_mix/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ttfnet_darknet53_1x_coco.pdparams
+metric: MOTDet
+save_dir: output_ttf_mot17
+num_classes: 1
+epoch: 24
+
+LearningRate:
+  base_lr: 0.00375
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [8, 11]
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 500
+
+
+TrainReader:
+  sample_transforms:
+  - Decode: {}
+  #- RandomFlip: {prob: 0.5}
+  #- Resize: {interp: 1, target_size: [512, 512], keep_ratio: False}
+  - LetterBoxResize: {target_size: [512, 512]}
+  - RandomFlip: {}
+  - NormalizeImage: {mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375], is_scale: false}
+  - Permute: {}
+  batch_transforms:
+  - Gt2TTFTarget: {down_ratio: 4}
+  - PadBatch: {pad_to_stride: 32}
+  batch_size: 6
+  shuffle: true
+  drop_last: true
+  use_shared_memory: true
+
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [512, 512]}
+    - NormalizeImage: {mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375], is_scale: false}
+    - Permute: {}
+  batch_size: 1
+  drop_last: false
+
+
+
+#TrainReader:
+#  sample_transforms:
+#    - Decode: {}
+#    #- RGBReverse: {}
+#    #- AugmentHSV: {}
+#    - LetterBoxResize: {target_size: [608, 1088]}
+#    #- MOTRandomAffine: {reject_outside: False}
+#    - RandomFlip: {}
+#    - BboxXYXY2XYWH: {}
+#    - NormalizeBox: {}
+#    - NormalizeImage: {mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375], is_scale: false}
+#    #- RGBReverse: {}
+#    - Permute: {}
+#  batch_transforms:
+#    - Gt2PPMOTTarget: {}
+#  batch_size: 6
+#  shuffle: true
+#  drop_last: true
+#  use_shared_memory: true
+
+#EvalReader:
+#  sample_transforms:
+#    - Decode: {}
+#    - LetterBoxResize: {target_size: [608, 1088]}
+#    - NormalizeImage: {mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375], is_scale: false}
+#    - Permute: {}
+#  batch_size: 1
+#  drop_last: false
+#
+#
+#TestReader:
+#  sample_transforms:
+#    - Decode: {}
+#    - LetterBoxResize: {target_size: [608, 1088]}
+#    - NormalizeImage: {mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375], is_scale: false}
+#    - Permute: {}
+#  batch_size: 1
+#  drop_last: false
+
+
+# for MOT training
+
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: /root/data/mot
+    #image_lists: ['mot17.train', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
+    image_lists: ['mot17.train']
+    #image_lists: ['mot17.duiqi']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+EvalDataset:
+  !MOTDataSet
+    dataset_dir: /root/data/mot #dataset/mot
+    #image_lists: ['citypersons.val', 'caltech.val'] # for detection evaluation
+    image_lists: ['mot17.val']
+    # image_lists: ['caltech.10k.val', 'cuhksysu.val', 'prw.val'] # for reid evaluation
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+TestDataset:
+  !ImageFolder
+    dataset_dir: dataset/mot
