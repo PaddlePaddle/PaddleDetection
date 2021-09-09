@@ -146,13 +146,20 @@ If you use a stronger detection model, you can get better results. Each txt is t
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: | :----: |
 | DLA-34         | 1088x608 |  58.2  |  61.3  |  13166   |  141872  |  197074 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
 
-### [Vehicle Tracking](./kitticars/README.md)
-### FairMOT Results on KITTI tracking (2D bounding-boxes) Training Set (Car)
+### [Pedestrian Tracking](./pedestrian/README.md)
+### FairMOT Results on each val-set of Pedestrian category
+|    Dataset      |  input shape |  MOTA  |  IDF1  |  FPS   |  download | config |
+| :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
+|  PathTrack    | 1088x608 |  44.9 |    59.3   |    -   |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_pathtrack.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/pedestrian/fairmot_dla34_30e_1088x608_pathtrack.yml) |
+|  VisDrone     | 1088x608 |  49.2 |   63.1 |    -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_pedestrian.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/pedestrian/fairmot_dla34_30e_1088x608_visdrone_pedestrian.yml) |
 
-|    backbone    | input shape |  MOTA   |   FPS   |  download | config |
-| :--------------| :------- | :-----: | :-----: | :------: | :----: |
-| DLA-34         | 1088x608 |   53.9  |    -    |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitticars.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/kitticars/fairmot_dla34_30e_1088x608_kitticars.yml) |
-
+### [Vehicle Tracking](./vehicle/README.md)
+### FairMOT Results on each val-set of Vehicle category
+|    Dataset      |  input shape |  MOTA  |  IDF1  |  FPS   |  download | config |
+| :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
+|  BDD100K      | 1088x608 |  34.9 |  39.9  |    -    | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100k_vehicle.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100k_vehicle.yml) |
+|  KITTI        | 1088x608 |  53.9 |    -   |    -   |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/vehicle/fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
+|  VisDrone     | 1088x608 |  29.8 |   51.3 |    -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/vehicle/fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
 
 ## Dataset Preparation
 
