@@ -20,6 +20,7 @@
 | :--------------| :------- | :----: | :----: | :---: | :----: | :---: | :------: | :----: |:----: |
 | DLA-34(paper)  | 1088x608 |  83.3  |  81.9  |  544  |  3822  | 14095 |    -     |   -   |   -   |
 | DLA-34         | 1088x608 |  83.2  |  83.1  |  499  |  3861  | 14223 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+| HRNet-v2 W18   | 1088x608 |  78.7  |  73.3  |  850  |  5019  | 17670 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.yml.yml) |
 
 ### FairMOT在MOT-16 Test Set上结果
 
@@ -27,9 +28,11 @@
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: | :----: |
 | DLA-34(paper)  | 1088x608 |  74.9  |  72.8  |  1074  |    -   |    -   |   25.9   |    -   |   -    |
 | DLA-34         | 1088x608 |  75.0  |  74.7  |  919   |  7934  |  36747 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+| HRNetV2 W18   | 1088x608 |  71.6  |  66.2  |  1260  |  7620  | 42904 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.yml.yml) |
 
 **注意:**
- FairMOT使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
+ FairMOT DLA-34使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
+ FairMOT HRNetV2 W18使用8个GPU进行训练，每个GPU上batch size为4，训练30个epoch。
 
 ## 快速开始
 

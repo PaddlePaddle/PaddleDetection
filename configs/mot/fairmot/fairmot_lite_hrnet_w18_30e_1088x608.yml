@@ -1,10 +1,32 @@
 _BASE_: [
   '../../datasets/mot.yml',
   '../../runtime.yml',
-  '_base_/optimizer_30e.yml',
+  '_base_/optimizer_30e_sgd.yml',
   '_base_/fairmot_lite_hrnet_w18.yml',
   '_base_/fairmot_reader_1088x608.yml',
 ]
 
-metric: MOT
+worker_num: 4
+TrainReader:
+  inputs_def:
+    image_shape: [3, 608, 1088]
+  sample_transforms:
+    - Decode: {}
+    - RGBReverse: {}
+    - AugmentHSV: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - MOTRandomAffine: {reject_outside: False}
+    - RandomFlip: {}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - RGBReverse: {}
+    - Permute: {}
+  batch_transforms:
+    - Gt2FairMOTTarget: {}
+  batch_size: 4
+  shuffle: True
+  drop_last: True
+  use_shared_memory: True
+
 weights: output/fairmot_lite_hrnet_w18_30e_1088x608/model_final
