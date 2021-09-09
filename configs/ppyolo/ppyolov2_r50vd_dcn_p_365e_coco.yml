@@ -13,7 +13,7 @@ weights: output/ppyolov2_r50vd_dcn_p_365e_coco/model_final
 epoch: 180
 
 LearningRate:
-  base_lr: 0.005
+  base_lr: 0.0025
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
