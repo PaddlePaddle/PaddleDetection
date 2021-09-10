@@ -18,6 +18,7 @@ PaddleDetection 依赖 PaddlePaddle 版本关系：
 
 |  PaddleDetection版本  | PaddlePaddle版本  |    备注    |
 | :------------------: | :---------------: | :-------: |
+|    release/2.2       |       >= 2.1.2    |     默认使用动态图模式    |
 |    release/2.1       |       >= 2.1.0    |     默认使用动态图模式    |
 |    release/2.0       |       >= 2.0.1    |     默认使用动态图模式    |
 |    release/2.0-rc    |       >= 2.0.1    |     --    |

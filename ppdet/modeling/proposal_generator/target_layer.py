@@ -22,6 +22,7 @@ import numpy as np
 @register
 @serializable
 class RPNTargetAssign(object):
+    __shared__ = ['assign_on_cpu']
     """
     RPN targets assignment module
 
@@ -48,6 +49,8 @@ class RPNTargetAssign(object):
             if the value is larger than zero.
         use_random (bool): Use random sampling to choose foreground and 
             background boxes, default true.
+        assign_on_cpu (bool): In case the number of gt box is too large, 
+            compute IoU on CPU, default false.
     """
 
     def __init__(self,
@@ -56,7 +59,8 @@ class RPNTargetAssign(object):
                  positive_overlap=0.7,
                  negative_overlap=0.3,
                  ignore_thresh=-1.,
-                 use_random=True):
+                 use_random=True,
+                 assign_on_cpu=False):
         super(RPNTargetAssign, self).__init__()
         self.batch_size_per_im = batch_size_per_im
         self.fg_fraction = fg_fraction
@@ -64,6 +68,7 @@ class RPNTargetAssign(object):
         self.negative_overlap = negative_overlap
         self.ignore_thresh = ignore_thresh
         self.use_random = use_random
+        self.assign_on_cpu = assign_on_cpu
 
     def __call__(self, inputs, anchors):
         """
@@ -74,9 +79,17 @@ class RPNTargetAssign(object):
         is_crowd = inputs.get('is_crowd', None)
         batch_size = len(gt_boxes)
         tgt_labels, tgt_bboxes, tgt_deltas = rpn_anchor_target(
-            anchors, gt_boxes, self.batch_size_per_im, self.positive_overlap,
-            self.negative_overlap, self.fg_fraction, self.use_random,
-            batch_size, self.ignore_thresh, is_crowd)
+            anchors,
+            gt_boxes,
+            self.batch_size_per_im,
+            self.positive_overlap,
+            self.negative_overlap,
+            self.fg_fraction,
+            self.use_random,
+            batch_size,
+            self.ignore_thresh,
+            is_crowd,
+            assign_on_cpu=self.assign_on_cpu)
         norm = self.batch_size_per_im * batch_size
 
         return tgt_labels, tgt_bboxes, tgt_deltas, norm
@@ -84,7 +97,7 @@ class RPNTargetAssign(object):
 
 @register
 class BBoxAssigner(object):
-    __shared__ = ['num_classes']
+    __shared__ = ['num_classes', 'assign_on_cpu']
     """
     RCNN targets assignment module
 
@@ -113,6 +126,8 @@ class BBoxAssigner(object):
         cascade_iou (list[iou]): The list of overlap to select foreground and
             background of each stage, which is only used In Cascade RCNN.
         num_classes (int): The number of class.
+        assign_on_cpu (bool): In case the number of gt box is too large, 
+            compute IoU on CPU, default false.
     """
 
     def __init__(self,
@@ -123,7 +138,8 @@ class BBoxAssigner(object):
                  ignore_thresh=-1.,
                  use_random=True,
                  cascade_iou=[0.5, 0.6, 0.7],
-                 num_classes=80):
+                 num_classes=80,
+                 assign_on_cpu=False):
         super(BBoxAssigner, self).__init__()
         self.batch_size_per_im = batch_size_per_im
         self.fg_fraction = fg_fraction
@@ -133,6 +149,7 @@ class BBoxAssigner(object):
         self.use_random = use_random
         self.cascade_iou = cascade_iou
         self.num_classes = num_classes
+        self.assign_on_cpu = assign_on_cpu
 
     def __call__(self,
                  rpn_rois,
@@ -149,7 +166,7 @@ class BBoxAssigner(object):
             rpn_rois, gt_classes, gt_boxes, self.batch_size_per_im,
             self.fg_fraction, self.fg_thresh, self.bg_thresh, self.num_classes,
             self.ignore_thresh, is_crowd, self.use_random, is_cascade,
-            self.cascade_iou[stage])
+            self.cascade_iou[stage], self.assign_on_cpu)
         rois = outs[0]
         rois_num = outs[-1]
         # tgt_labels, tgt_bboxes, tgt_gt_inds
