@@ -5,3 +5,5 @@ _BASE_: [
   '_base_/centernet_dla34.yml',
   '_base_/centernet_reader.yml',
 ]
+
+weights: output/centernet_dla34_1x/model_final

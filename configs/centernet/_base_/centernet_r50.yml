@@ -1,7 +1,5 @@
 architecture: CenterNet
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_pretrained.pdparams #centernet_paddle_init.pdparams #DLA34_backbone_pretrain.pdparams #DLA34_pretrain.pdparams
-#pretrain_weights: ./dla34.pdparams #https://paddledet.bj.bcebos.com/models/pretrained/fairmot_dla34_crowdhuman_pretrained.pdparams
-weights:  DLA34_pretrain.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_pretrained.pdparams
 norm_type: sync_bn
 use_ema: true
 ema_decay: 0.9998
