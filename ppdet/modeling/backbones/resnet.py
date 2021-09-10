@@ -573,21 +573,15 @@ class ResNet(nn.Layer):
     def out_shape(self):
         return [
             ShapeSpec(
-                channels=3, stride=1), ShapeSpec(
-                    channels=64, stride=2)
-        ] + [
-            ShapeSpec(
                 channels=self._out_channels[i], stride=self._out_strides[i])
             for i in self.return_idx
         ]
 
     def forward(self, inputs):
         x = inputs['image']
-        outs = [x]
         conv1 = self.conv1(x)
-        outs.append(conv1)
         x = F.max_pool2d(conv1, kernel_size=3, stride=2, padding=1)
-        #outs = []
+        outs = []
         for idx, stage in enumerate(self.res_layers):
             x = stage(x)
             if idx in self.return_idx:
