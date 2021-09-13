@@ -21,7 +21,10 @@ ResNet:
 
 
 CenterNetDLAFPN:
+  first_level: 0
+  last_level: 4
   down_ratio: 4
+  dcn_v2: False
 
 CenterNetHead:
   head_planes: 256
