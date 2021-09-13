@@ -243,7 +243,7 @@ class COCODataSet(DetDataset):
                 break
         assert ct > 0, 'not found any coco record in %s' % (anno_path)
         logger.debug('{} samples in file {}'.format(ct, anno_path))
-        if len(empty_records) > 0:
+        if self.allow_empty and len(empty_records) > 0:
             empty_records = self._sample_empty(empty_records, len(records))
             records += empty_records
         self.roidbs = records

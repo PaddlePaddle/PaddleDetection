@@ -26,10 +26,10 @@ CenterNetHarDNetFPN:
   out_channel: 0
 
 CenterNetHead:
-  head_planes: 256
+  head_planes: 128
 
 FairMOTEmbeddingHead:
-  ch_head: 256
+  ch_head: 128
 
 CenterNetPostProcess:
   for_mot: True
