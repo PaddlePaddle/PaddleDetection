@@ -1,5 +1,5 @@
 architecture: FairMOT
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/HarDNet85_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/centernet_hardnet85_coco.pdparams
 
 FairMOT:
   detector: CenterNet
@@ -9,22 +9,27 @@ FairMOT:
 
 CenterNet:
   backbone: HarDNet
-  neck: CenterNetDLAFPN
+  neck: CenterNetHarDNetFPN
   head: CenterNetHead
   post_process: CenterNetPostProcess
   for_mot: True
 
-CenterNetDLAFPN:
-  down_ratio: 4
-  last_level: 3
-  out_channel: 0
-  first_level: 0
-  dcn_v2: True
-
 HarDNet:
   depth_wise: False
-  return_idx: [5,10,15,18]
+  return_idx: [1,3,8,13]
   arch: 85
+
+CenterNetHarDNetFPN:
+  num_layers: 85
+  down_ratio: 4
+  last_level: 4
+  out_channel: 0
+
+CenterNetHead:
+  head_planes: 256
+
+FairMOTEmbeddingHead:
+  ch_head: 256
 
 CenterNetPostProcess:
   for_mot: True

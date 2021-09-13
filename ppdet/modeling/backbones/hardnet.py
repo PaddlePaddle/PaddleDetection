@@ -92,6 +92,9 @@ class HarDBlock(nn.Layer):
         # print("Blk out =",self.out_channels)
         self.layers = nn.LayerList(layers_)
 
+    def get_out_ch(self):
+        return self.out_channels
+
     def get_link(self, layer, base_ch, growth_rate, grmul):
         if layer == 0:
             return base_ch, 0, []
@@ -142,45 +145,45 @@ class HarDBlock(nn.Layer):
 
 @register
 class HarDNet(nn.Layer):
-    def __init__(self,
-                 depth_wise=False,
-                 return_idx=[5,10,15,18],
-                 arch=85):
+    def __init__(self, depth_wise=False, return_idx=[
+            1,
+            3,
+            8,
+            13,
+    ], arch=85):
         super().__init__()
-        first_ch = [32, 64]
-        second_kernel = 3
-        max_pool = True
-        grmul = 1.7
-        self.return_idx = return_idx
-        self._out_channels = [192, 320, 720, 1252]
-        self._out_strides = [4, 8, 16, 32]
-
-        # HarDNet68
-        ch_list = [128, 256, 320, 640, 1024]
-        gr = [14, 16, 20, 40, 160]
-        n_layers = [8, 16, 16, 16, 4]
-        downSamp = [1, 0, 1, 1, 0]
-
         if arch == 85:
-            # HarDNet85
             first_ch = [48, 96]
-            ch_list = [192, 256, 320, 480, 720, 1280]
-            gr = [24, 24, 28, 36, 48, 256]
-            n_layers = [8, 16, 16, 16, 16, 4]
-            downSamp = [1, 0, 1, 0, 1, 0]
-
+            second_kernel = 3
+            ch_list = [192, 256, 320, 480, 720]
+            grmul = 1.7
+            gr = [24, 24, 28, 36, 48]
+            n_layers = [8, 16, 16, 16, 16]
+        elif arch == 68:
+            first_ch = [32, 64]
+            second_kernel = 3
+            ch_list = [128, 256, 320, 640]
+            grmul = 1.7
+            gr = [14, 16, 20, 40]
+            n_layers = [8, 16, 16, 16]
         elif arch == 39:
-            # HarDNet39
             first_ch = [24, 48]
+            second_kernel = 3
             ch_list = [96, 320, 640, 1024]
             grmul = 1.6
             gr = [16, 20, 64, 160]
             n_layers = [4, 16, 8, 4]
-            downSamp = [1, 1, 1, 0]
+        else:
+            print("Error: HarDNet", arch, " has no implementation.")
+            exit()
 
+        self.return_idx = return_idx
+        self._out_channels = [96, 214, 458, 784]
+
+        avg_pool = True
         if depth_wise:
             second_kernel = 1
-            max_pool = False
+            avg_pool = False
 
         blks = len(n_layers)
         self.base = nn.LayerList([])
@@ -199,9 +202,9 @@ class HarDNet(nn.Layer):
             ConvLayer(
                 first_ch[0], first_ch[1], kernel_size=second_kernel))
 
-        # Maxpooling or DWConv3x3 downsampling
-        if max_pool:
-            self.base.append(nn.MaxPool2D(kernel_size=3, stride=2, padding=1))
+        # Avgpooling or DWConv3x3 downsampling
+        if avg_pool:
+            self.base.append(nn.AvgPool2D(kernel_size=3, stride=2, padding=1))
         else:
             self.base.append(DWConvLayer(first_ch[1], first_ch[1], stride=2))
 
@@ -212,25 +215,23 @@ class HarDNet(nn.Layer):
             ch = blk.out_channels
             self.base.append(blk)
 
-            if i == blks - 1 and arch == 85:
-                self.base.append(nn.Dropout(0.1))
-
-            self.base.append(ConvLayer(ch, ch_list[i], kernel_size=1))
+            if i != blks - 1:
+                self.base.append(ConvLayer(ch, ch_list[i], kernel_size=1))
             ch = ch_list[i]
-            if downSamp[i] == 1:
-                if max_pool:
-                    self.base.append(nn.MaxPool2D(kernel_size=2, stride=2))
-                else:
-                    self.base.append(DWConvLayer(ch, ch, stride=2))
-
+            if i == 0:
+                self.base.append(
+                    nn.AvgPool2D(
+                        kernel_size=2, stride=2, ceil_mode=True))  ###
+            elif i != blks - 1 and i != 1 and i != 3:
+                self.base.append(nn.AvgPool2D(kernel_size=2, stride=2))
 
     def forward(self, inputs):
         x = inputs['image']
         outs = []
         for i, layer in enumerate(self.base):
+            x = layer(x)
             if i in self.return_idx:
                 outs.append(x)
-            x = layer(x)
         return outs
 
     @property
