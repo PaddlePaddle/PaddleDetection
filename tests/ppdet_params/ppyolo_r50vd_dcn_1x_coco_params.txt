@@ -3,7 +3,7 @@ model_name:ppyolo_r50vd_dcn_1x_coco
 python:python3.7
 gpu_list:0
 use_gpu:True
-auto_cast:null
+auto_cast:null|amp
 epoch:lite_train_infer=1|whole_train_infer=405
 save_dir:./output/
 TrainReader.batch_size:lite_train_infer=2|whole_train_infer=24
@@ -43,7 +43,7 @@ inference:deploy/python/infer.py
 --cpu_threads:1|4
 --batch_size:1|2
 --use_tensorrt:null
---run_mode:fluid
+--run_mode:fluid|trt_fp32|trt_fp16|trt_int8
 --model_dir:
 --image_dir:./dataset/coco/val2017/
 --save_log_path:null
