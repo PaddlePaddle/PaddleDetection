@@ -279,7 +279,7 @@ class DropBlock(nn.Layer):
             for s in shape:
                 gamma *= s / (s - self.block_size + 1)
 
-            matrix = paddle.cast(paddle.rand(x.shape, x.dtype) < gamma, x.dtype)
+            matrix = paddle.cast(paddle.rand(x.shape) < gamma, x.dtype)
             mask_inv = F.max_pool2d(
                 matrix,
                 self.block_size,
