@@ -124,8 +124,8 @@ infer_export_list=$(func_parser_value "${lines[37]}")
 infer_is_quant=$(func_parser_value "${lines[38]}")
 # parser inference
 inference_py=$(func_parser_value "${lines[39]}")
-use_gpu_key=$(func_parser_key "${lines[40]}")
-use_gpu_list=$(func_parser_value "${lines[40]}")
+device_key=$(func_parser_key "${lines[40]}")
+device_list=$(func_parser_value "${lines[40]}")
 use_mkldnn_key=$(func_parser_key "${lines[41]}")
 use_mkldnn_list=$(func_parser_value "${lines[41]}")
 cpu_threads_key=$(func_parser_key "${lines[42]}")
@@ -159,8 +159,8 @@ function func_inference(){
     _img_dir=$5
     _flag_quant=$6
     # inference
-    for use_gpu in ${use_gpu_list[*]}; do
-        if [ ${use_gpu} = "False" ] || [ ${use_gpu} = "cpu" ]; then
+    for device in ${device_list[*]}; do
+        if [ ${device} = "False" ] || [ ${device} = "cpu" ]; then
             for use_mkldnn in ${use_mkldnn_list[*]}; do
                 if [ ${use_mkldnn} = "False" ] && [ ${_flag_quant} = "True" ]; then
                     continue
@@ -174,7 +174,7 @@ function func_inference(){
                         set_cpu_threads=$(func_set_params "${cpu_threads_key}" "${threads}")
                         set_model_dir=$(func_set_params "${infer_model_key}" "${_model_dir}")
                         set_infer_params1=$(func_set_params "${infer_key1}" "${infer_value1}")
-                        command="${_python} ${_script} ${use_gpu_key}=${use_gpu} ${use_mkldnn_key}=${use_mkldnn} ${set_cpu_threads} ${set_model_dir} ${set_batchsize} ${set_infer_data} ${set_benchmark} ${set_infer_params1} > ${_save_log_path} 2>&1 "
+                        command="${_python} ${_script} ${device_key}=${device} ${use_mkldnn_key}=${use_mkldnn} ${set_cpu_threads} ${set_model_dir} ${set_batchsize} ${set_infer_data} ${set_benchmark} ${set_infer_params1} > ${_save_log_path} 2>&1 "
                         eval $command
                         last_status=${PIPESTATUS[0]}
                         eval "cat ${_save_log_path}"
@@ -182,7 +182,7 @@ function func_inference(){
                     done
                 done
             done
-        elif [ ${use_gpu} = "True" ] || [ ${use_gpu} = "gpu" ]; then
+        elif [ ${device} = "True" ] || [ ${device} = "gpu" ]; then
             for use_trt in ${use_trt_list[*]}; do
                 for precision in ${precision_list[*]}; do
                     if [[ ${_flag_quant} = "False" ]] && [[ ${precision} =~ "int8" ]]; then
@@ -203,7 +203,7 @@ function func_inference(){
                         set_precision=$(func_set_params "${precision_key}" "${precision}")
                         set_model_dir=$(func_set_params "${infer_model_key}" "${_model_dir}")
                         set_infer_params1=$(func_set_params "${infer_key1}" "${infer_value1}")
-                        command="${_python} ${_script} ${use_gpu_key}=${use_gpu} ${set_tensorrt} ${set_precision} ${set_model_dir} ${set_batchsize} ${set_infer_data} ${set_benchmark} ${set_infer_params1} > ${_save_log_path} 2>&1 "
+                        command="${_python} ${_script} ${device_key}=${device} ${set_tensorrt} ${set_precision} ${set_model_dir} ${set_batchsize} ${set_infer_data} ${set_benchmark} ${set_infer_params1} > ${_save_log_path} 2>&1 "
                         eval $command
                         last_status=${PIPESTATUS[0]}
                         eval "cat ${_save_log_path}"
@@ -330,7 +330,7 @@ else
                     cmd="${python} -m paddle.distributed.launch --ips=${ips} --gpus=${gpu} ${run_train} ${set_save_model} ${set_pretrain} ${set_epoch} ${set_batchsize} ${set_train_params1} ${set_autocast}"
                 fi
                 # run train
-                eval "unset CUDA_VISIBLE_DEVICES"
+                # eval "unset CUDA_VISIBLE_DEVICES"
                 eval $cmd
                 status_check $? "${cmd}" "${status_log}"
 
@@ -356,7 +356,7 @@ else
                     eval $env
                     save_infer_path="${save_log}/${train_param_value1}"
                     func_inference "${python}" "${inference_py}" "${save_infer_path}" "${LOG_PATH}" "${train_infer_img_dir}" "${flag_quant}"
-                    eval "unset CUDA_VISIBLE_DEVICES"
+                    # eval "unset CUDA_VISIBLE_DEVICES"
                 fi
             done  # done with:    for trainer in ${trainer_list[*]}; do
         done      # done with:    for autocast in ${autocast_list[*]}; do
