@@ -1,16 +1,16 @@
 _BASE_: [
-  'faster_rcnn_swin_transformer_tiny_1x_coco.yml',
+  'faster_rcnn_swin_tiny_1x_coco.yml',
 ]
-weights: output/faster_swin_transformer_tiny_3x/model_final
+weights: output/faster_rcnn_swin_tiny_2x_coco/model_final
 
-epoch: 36
+epoch: 24
 
 LearningRate:
   base_lr: 0.0001
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
-    milestones: [24, 33]
+    milestones: [16, 22]
   - !LinearWarmup
     start_factor: 0.1
     steps: 1000
