@@ -322,7 +322,7 @@ class Gt2YoloTargetPlain(BaseOperator):
                     target[0, 1, gj, gi] = gy - gj
                     target[0, 2, gj, gi] = gw
                     target[0, 3, gj, gi] = gh
-                    target[0, 4, gj, gi] = 2.0 - gw * gh / (w * h)
+                    target[0, 4, gj, gi] = 2.0 - gw * gh / (grid_w * grid_h)
                     target[0, 5, gj, gi] = valid_score
                     target[0, 6 + valid_class, gj, gi] = 1.
 
