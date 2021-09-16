@@ -67,12 +67,12 @@ python -c "import paddle; print(paddle.__version__)"
 cd <path/to/clone/PaddleDetection>
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
 
+# 安装其他依赖
+pip install -r requirements.txt
+
 # 编译安装paddledet
 cd PaddleDetection
 python setup.py install
-
-# 安装其他依赖
-pip install -r requirements.txt
 ```
 
 **注意**
