@@ -283,6 +283,9 @@ else
                     run_train=${pact_trainer}
                     run_export=${pact_export}
                     flag_quant=True
+                    if [ ${autocast} = "amp" ]; then
+                        continue
+                    fi
                 elif [ ${trainer} = "${fpgm_key}" ]; then
                     run_train=${fpgm_trainer}
                     run_export=${fpgm_export}
