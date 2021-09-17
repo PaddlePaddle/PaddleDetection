@@ -39,14 +39,15 @@ class FairMOTEmbeddingHead(nn.Layer):
                  in_channels,
                  ch_head=256,
                  ch_emb=128,
-                 num_identifiers=14455):
+                 num_identifiers=14455,
+                 use_dcn=False):
         super(FairMOTEmbeddingHead, self).__init__()
         self.reid = nn.Sequential(
             ConvLayer(
-                in_channels, ch_head, kernel_size=3, padding=1, bias=True),
+                in_channels, ch_head, kernel_size=3, padding=1, bias=True, use_dcn=use_dcn),
             nn.ReLU(),
             ConvLayer(
-                ch_head, ch_emb, kernel_size=1, stride=1, padding=0, bias=True))
+                ch_head, ch_emb, kernel_size=1, stride=1, padding=0, bias=True, use_dcn=use_dcn))
         bound = 1 / math.sqrt(ch_emb)
         param_attr = paddle.ParamAttr(initializer=Uniform(-bound, bound))
         bias_attr = paddle.ParamAttr(initializer=Constant(0.))

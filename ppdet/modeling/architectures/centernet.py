@@ -69,6 +69,24 @@ class CenterNet(BaseArch):
         head_out = self.head(neck_feat, self.inputs)
         if self.for_mot:
             head_out.update({'neck_feat': neck_feat})
+        #show_image = self.inputs['image'].numpy().squeeze().transpose((1, 2, 0))                                                                          
+        #                                                                                                                                                  
+        #show_image = (show_image * 255).astype('uint8')                                                                                                   
+        #show_heatmap = head_out['heatmap'].numpy().squeeze(axis=0) * 255                                                                                  
+        #show_heatmap = show_heatmap.astype('uint8')                                                                                                       
+        #show_heatmap = show_heatmap.transpose((1, 2, 0))                                                                                                  
+        #import cv2                                                                                                                                        
+        #import numpy as np                                                                                                                                
+        #show_heatmap = cv2.resize(show_heatmap, (show_image.shape[1], show_image.shape[0]))                                                               
+        #pseudo_image = np.zeros(show_image.shape, show_image.dtype)                                                                                       
+        #pseudo_image[:, :, 0] = show_heatmap                                                                                                              
+        #pseudo_image[:, :, 1] = show_heatmap                                                                                                              
+        #pseudo_image[:, :, 2] = show_heatmap                                                                                                              
+        #show_heatmap = cv2.addWeighted(show_image, 0.3,                                                                                                   
+        #                               pseudo_image, 0.7,                                                                                                 
+        #                               0)                                                                                                                 
+        #                                                                                                                                                  
+        #cv2.imwrite('fairmot_heatmap_{}.jpg'.format(self.inputs['im_id'].numpy()), show_heatmap)
         return head_out
 
     def get_pred(self):

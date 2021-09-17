@@ -156,9 +156,11 @@ class CenterNetDLAFPN(nn.Layer):
                  last_level=5,
                  out_channel=0,
                  dcn_v2=True,
-                 norm_type='bn'):
+                 norm_type='bn',
+                 first_level=None):
         super(CenterNetDLAFPN, self).__init__()
-        self.first_level = int(np.log2(down_ratio))
+        self.first_level = int(np.log2(
+            down_ratio)) if first_level is None else first_level
         self.down_ratio = down_ratio
         self.last_level = last_level
         scales = [2**i for i in range(len(in_channels[self.first_level:]))]

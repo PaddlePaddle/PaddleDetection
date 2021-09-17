@@ -55,7 +55,7 @@ EvalReader:
 
 EvalDataset:
   !MOTDataSet
-    dataset_dir: /paddle/dataset/mix #dataset/mot
+    dataset_dir: /root/data/mot/ #dataset/mot
     #image_lists: ['citypersons.val', 'caltech.val'] # for detection evaluation
     image_lists: ['mot17.half']
     # image_lists: ['caltech.10k.val', 'cuhksysu.val', 'prw.val'] # for reid evaluation

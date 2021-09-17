@@ -19,6 +19,7 @@ import paddle.nn.functional as F
 from paddle.nn.initializer import KaimingUniform, Constant, Uniform
 from ppdet.core.workspace import register
 from ppdet.modeling.losses import CTFocalLoss
+from ppdet.modeling.layers import DeformableConvV2
 
 
 class ConvLayer(nn.Layer):
@@ -30,7 +31,8 @@ class ConvLayer(nn.Layer):
                  padding=0,
                  dilation=1,
                  groups=1,
-                 bias=False):
+                 bias=False,
+                 use_dcn=False):
         super(ConvLayer, self).__init__()
         bias_attr = False
         fan_in = ch_in * kernel_size**2
@@ -38,16 +40,30 @@ class ConvLayer(nn.Layer):
         param_attr = paddle.ParamAttr(initializer=Uniform(-bound, bound))
         if bias:
             bias_attr = paddle.ParamAttr(initializer=Constant(0.))
-        self.conv = nn.Conv2D(
-            in_channels=ch_in,
-            out_channels=ch_out,
-            kernel_size=kernel_size,
-            stride=stride,
-            padding=padding,
-            dilation=dilation,
-            groups=groups,
-            weight_attr=param_attr,
-            bias_attr=bias_attr)
+        if not use_dcn:
+            self.conv = nn.Conv2D(
+                in_channels=ch_in,
+                out_channels=ch_out,
+                kernel_size=kernel_size,
+                stride=stride,
+                padding=padding,
+                dilation=dilation,
+                groups=groups,
+                weight_attr=param_attr,
+                bias_attr=bias_attr)
+        else:
+            self.conv = DeformableConvV2(
+                in_channels=ch_in,
+                out_channels=ch_out,
+                kernel_size=kernel_size,
+                stride=stride,
+                padding=(kernel_size - 1) // 2,
+                groups=groups,
+                weight_attr=param_attr,
+                bias_attr=bias_attr,
+                lr_scale=1.,
+                dcn_bias_regularizer=None,
+                dcn_bias_lr_scale=1.)
 
     def forward(self, inputs):
         out = self.conv(inputs)
@@ -79,7 +95,8 @@ class CenterNetHead(nn.Layer):
                  heatmap_weight=1,
                  regress_ltrb=True,
                  size_weight=0.1,
-                 offset_weight=1):
+                 offset_weight=1,
+		 use_dcn=False):
         super(CenterNetHead, self).__init__()
         self.weights = {
             'heatmap': heatmap_weight,
@@ -88,7 +105,7 @@ class CenterNetHead(nn.Layer):
         }
         self.heatmap = nn.Sequential(
             ConvLayer(
-                in_channels, head_planes, kernel_size=3, padding=1, bias=True),
+                in_channels, head_planes, kernel_size=3, padding=1, bias=True, use_dcn=use_dcn),
             nn.ReLU(),
             ConvLayer(
                 head_planes,
@@ -100,7 +117,7 @@ class CenterNetHead(nn.Layer):
         self.heatmap[2].conv.bias[:] = -2.19
         self.size = nn.Sequential(
             ConvLayer(
-                in_channels, head_planes, kernel_size=3, padding=1, bias=True),
+                in_channels, head_planes, kernel_size=3, padding=1, bias=True, use_dcn=use_dcn),
             nn.ReLU(),
             ConvLayer(
                 head_planes,
@@ -111,7 +128,7 @@ class CenterNetHead(nn.Layer):
                 bias=True))
         self.offset = nn.Sequential(
             ConvLayer(
-                in_channels, head_planes, kernel_size=3, padding=1, bias=True),
+                in_channels, head_planes, kernel_size=3, padding=1, bias=True, use_dcn=use_dcn),
             nn.ReLU(),
             ConvLayer(
                 head_planes, 2, kernel_size=1, stride=1, padding=0, bias=True))

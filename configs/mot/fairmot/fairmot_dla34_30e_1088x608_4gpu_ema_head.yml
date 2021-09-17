@@ -1,0 +1,67 @@
+_BASE_: [
+  '../../datasets/mot.yml',
+  '../../runtime.yml',
+  '_base_/optimizer_30e.yml',
+  '_base_/fairmot_dla34.yml',
+  '_base_/fairmot_reader_1088x608.yml',
+]
+
+metric: MOT
+weights: output/fairmot_dla34_30e_1088x608/model_final
+pretrain_weights: ctdet_coco_dla_2x.pdparams 
+
+use_ema: true                                                                                                       
+ema_decay: 0.9998
+norm_type: sync_bn
+
+LearningRate:
+  base_lr: 0.0002
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [20,]
+    use_warmup: False
+
+# for MOT training                                                                                                  
+TrainDataset:                                                                                                       
+  !MOTDataSet                                                                                                       
+    dataset_dir: /root/data/mot                                                            
+    image_lists: ['mot17.half', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']     
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']                                                         
+                                                                                                                    
+# for MOT evaluation                                                                                                
+# If you want to change the MOT evaluation dataset, please modify 'data_root'                                       
+EvalMOTDataset:                                                                                                     
+  !MOTImageFolder                                                                                                   
+    dataset_dir: /root/data/mot                                                            
+    data_root: MOT17/images/half                                                                                    
+    keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT                        
+                                                                                                                    
+# for MOT video inference                                                                                           
+TestMOTDataset:                                                                                                     
+  !MOTImageFolder                                                                                                   
+    dataset_dir: dataset/mot                                                                                        
+    keep_ori_im: True # set True if save visualization images or video                                              
+                                                                                                                    
+worker_num: 4 
+TrainReader:
+  inputs_def:
+    image_shape: [3, 608, 1088]
+  sample_transforms:
+    - Decode: {}
+    - RGBReverse: {}
+    - AugmentHSV: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - MOTRandomAffine: {reject_outside: False}
+    - RandomFlip: {}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - RGBReverse: {}
+    - Permute: {}
+  batch_transforms:
+    - Gt2FairMOTTarget: {alpha: -1, head: True}
+  batch_size: 6
+  shuffle: True
+  drop_last: True
+  use_shared_memory: True

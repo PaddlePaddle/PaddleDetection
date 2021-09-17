@@ -672,12 +672,13 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
         max_objs(int): the maximum number of ground truth objects in a image, 500 by default.
     """
 
-    def __init__(self, num_classes=1, down_ratio=4, max_objs=500, alpha=0.54):
+    def __init__(self, num_classes=1, down_ratio=4, max_objs=500, alpha=-1, head=False):
         super(Gt2TTFTarget, self).__init__()
         self.down_ratio = down_ratio
         self.num_classes = num_classes
         self.max_objs = max_objs
         self.alpha = alpha
+        self.head = head
 
     def __call__(self, samples, context=None):
         for b_id, sample in enumerate(samples):
@@ -699,7 +700,8 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
 
             for k in range(len(gt_bbox)):
                 cls_id = gt_class[k][0]
-                bbox = gt_bbox[k]
+                #bbox = gt_bbox[k]
+                bbox = copy.deepcopy(gt_bbox[k])
                 ide = gt_ide[k][0]
                 bbox[[0, 2]] = bbox[[0, 2]] * output_w
                 bbox[[1, 3]] = bbox[[1, 3]] * output_h
@@ -719,17 +721,28 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
                 bbox_xy[2] = bbox_xy[0] + bbox_xy[2]
                 bbox_xy[3] = bbox_xy[1] + bbox_xy[3]
 
+                if self.head:
+                    bbox[0] = (bbox_amodal[0] + bbox_amodal[2]) / 2.
+                    bbox[1] = (7 * bbox_amodal[1] + bbox_amodal[3]) / 8.
+                    bbox[0] = np.clip(bbox[0], 0, output_w - 1)
+                    bbox[1] = np.clip(bbox[1], 0, output_h - 1)
+
                 if h > 0 and w > 0:
-                    #radius = self.gaussian_radius((math.ceil(h), math.ceil(w)))
-                    #radius = max(0, int(radius))
-                    h_radiuses_alpha = h / 2. * self.alpha
-                    w_radiuses_alpha = w / 2. * self.alpha
-                    h_radiuses_alpha = h_radiuses_alpha.astype('int32')
-                    w_radiuses_alpha = w_radiuses_alpha.astype('int32')
+                    radius = self.gaussian_radius((math.ceil(h), math.ceil(w)))
+                    radius = max(0, int(radius))
                     ct = np.array([bbox[0], bbox[1]], dtype=np.float32)
                     ct_int = ct.astype(np.int32)
-                    self.draw_truncate_gaussian(heatmap[cls_id], ct_int, h_radiuses_alpha,
-                                                w_radiuses_alpha)
+                    if self.alpha > 0:
+                        h_radiuses_alpha = h / 2. * self.alpha
+                        w_radiuses_alpha = w / 2. * self.alpha
+                        h_radiuses_alpha = h_radiuses_alpha.astype('int32')
+                        w_radiuses_alpha = w_radiuses_alpha.astype('int32')
+                        self.draw_truncate_gaussian(heatmap[cls_id], ct_int, h_radiuses_alpha,
+                                                    w_radiuses_alpha)
+                    else:
+                        self.draw_truncate_gaussian(heatmap[cls_id], ct_int, radius,
+                                                    radius)
+                    
                     bbox_size[k] = ct[0] - bbox_amodal[0], ct[1] - bbox_amodal[1], \
                             bbox_amodal[2] - ct[0], bbox_amodal[3] - ct[1]
 
@@ -739,20 +752,20 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
                     reid[k] = ide
                     bbox_xys[k] = bbox_xy
                     #print('K:', k)
-            #show_image = sample['image'].transpose((1, 2, 0)).astype('uint8')
-            #show_heatmap = heatmap * 255
-            #show_heatmap = show_heatmap.astype('uint8')
-            #show_heatmap = show_heatmap.transpose((1, 2, 0))
-            #show_heatmap = cv2.resize(show_heatmap, (show_image.shape[1], show_image.shape[0]))
-            #pseudo_image = np.zeros(show_image.shape, show_image.dtype)
-            #pseudo_image[:, :, 0] = show_heatmap
-            #pseudo_image[:, :, 1] = show_heatmap
-            #pseudo_image[:, :, 2] = show_heatmap
-            #show_heatmap = cv2.addWeighted(show_image, 0.3,
-            #                               pseudo_image, 0.7,
-            #                               0)
-            #
-            #cv2.imwrite('fairmot_heatmap.jpg', show_heatmap)
+            show_image = sample['image'].transpose((1, 2, 0)).astype('uint8')
+            show_heatmap = heatmap * 255
+            show_heatmap = show_heatmap.astype('uint8')
+            show_heatmap = show_heatmap.transpose((1, 2, 0))
+            show_heatmap = cv2.resize(show_heatmap, (show_image.shape[1], show_image.shape[0]))
+            pseudo_image = np.zeros(show_image.shape, show_image.dtype)
+            pseudo_image[:, :, 0] = show_heatmap
+            pseudo_image[:, :, 1] = show_heatmap
+            pseudo_image[:, :, 2] = show_heatmap
+            show_heatmap = cv2.addWeighted(show_image, 0.3,
+                                           pseudo_image, 0.7,
+                                           0)
+            
+            cv2.imwrite('fairmot_heatmap.jpg', show_heatmap)
             sample['heatmap'] = heatmap
             sample['index'] = index
             sample['offset'] = center_offset

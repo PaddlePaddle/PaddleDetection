@@ -45,8 +45,8 @@ from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
                         satisfy_sample_constraint_coverage, crop_image_sampling,
                         generate_sample_bbox_square, bbox_area_sampling,
-                        is_poly, transform_bbox)
-
+                        is_poly, transform_bbox, )
+from ...modeling.keypoint_utils import get_affine_transform
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
@@ -2898,3 +2898,50 @@ class RandomSizeCrop(BaseOperator):
 
         region = self.get_crop_params(sample['image'].shape[:2], [h, w])
         return self.crop(sample, region)
+
+
+@register_op
+class WarpAffine(BaseOperator):
+    def __init__(self,
+                 keep_res=False,
+                 pad=31,
+                 input_h=512,
+                 input_w=512,
+                 scale=0.4,
+                 shift=0.1):
+        """WarpAffine
+        Warp affine the image
+        """
+        super(WarpAffine, self).__init__()
+        self.keep_res = keep_res
+        self.pad = pad
+        self.input_h = input_h
+        self.input_w = input_w
+        self.scale = scale
+        self.shift = shift
+
+    def apply(self, sample, context=None):
+        img = sample['image']
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
+            return sample
+
+        h, w = img.shape[:2]
+
+        if self.keep_res:
+            input_h = (h | self.pad) + 1
+            input_w = (w | self.pad) + 1
+            s = np.array([input_w, input_h], dtype=np.float32)
+            c = np.array([w // 2, h // 2], dtype=np.float32)
+
+        else:
+            s = max(h, w) * 1.0
+            input_h, input_w = self.input_h, self.input_w
+            c = np.array([w / 2., h / 2.], dtype=np.float32)
+
+        trans_input = get_affine_transform(c, s, 0, [input_w, input_h])
+        img = cv2.resize(img, (w, h))
+        inp = cv2.warpAffine(
+            img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR)
+        sample['image'] = inp
+        return sample
