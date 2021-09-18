@@ -38,8 +38,7 @@ import cv2
 from PIL import Image, ImageDraw
 import pickle
 import threading
-mutex = threading.Lock()
-import fcntl
+MUTEX = threading.Lock()
 
 from ppdet.core.workspace import serializable
 from ppdet.modeling import bbox_utils
@@ -164,8 +163,8 @@ def _make_dirs(dirname):
 @register_op
 class DecodeCache(BaseOperator):
     def __init__(self, cache_root=None):
-        """ Transform the image data to numpy format following the rgb format
-        """
+        '''decode image and caching
+        '''
         super(DecodeCache, self).__init__()
 
         self.use_cache = False if cache_root is None else True 
@@ -178,14 +177,12 @@ class DecodeCache(BaseOperator):
 
         if self.use_cache and os.path.exists(self.cache_path(self.cache_root, sample['im_file'])):
             path = self.cache_path(self.cache_root, sample['im_file'])
-            with open(path, 'rb') as f:
-                im = pickle.load(f)
+            im = self.load(path)
 
         else:
             if 'image' not in sample:
                 with open(sample['im_file'], 'rb') as f:
                     sample['image'] = f.read()
-                # sample.pop('im_file')
 
             im = sample['image']
             data = np.frombuffer(im, dtype='uint8')
@@ -198,12 +195,12 @@ class DecodeCache(BaseOperator):
                 path = self.cache_path(self.cache_root, sample['im_file'])
                 self.dump(im, path)
 
-            sample['image'] = im
-            sample['h'] = im.shape[0]
-            sample['w'] = im.shape[1]
+        sample['image'] = im
+        sample['h'] = im.shape[0]
+        sample['w'] = im.shape[1]
 
-            sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
-            sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
+        sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
+        sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
 
         return sample
 
@@ -212,20 +209,23 @@ class DecodeCache(BaseOperator):
         return os.path.join(dir_oot, os.path.basename(im_file) + '.pkl')
 
     @staticmethod
+    def load(path):
+        with open(path, 'rb') as f:
+            im = pickle.load(f)
+        return im 
+
+    @staticmethod
     def dump(obj, path):
-        # mutex.acquire()
-        # fcntl.flock()
+        MUTEX.acquire()
         try:
             with open(path, 'wb') as f:
-                fcntl.LOCK_EX(f, fcntl.LOCK_EX)
                 pickle.dump(obj, f)
-                fcntl.LOCK_EX(f, fcntl.F_UNLCK)
-        except:
-            pass
-        finally:
-            # mutex.release()
-            pass
 
+        except Exception as e:
+            logger.warning('dump {} occurs exception {}'.format(path, str(e)))
+
+        finally:
+            MUTEX.release()
 
 @register_op
 class Permute(BaseOperator):
