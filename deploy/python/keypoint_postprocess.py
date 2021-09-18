@@ -106,6 +106,7 @@ class HrHRNetPostProcess(object):
             # pad the cost matrix, otherwise new pose are ignored
             if num_valid > num_clusters:
                 cost = np.pad(cost, ((0, 0), (0, num_valid - num_clusters)),
+                              'constant',
                               constant_values=((0, 0), (0, 1e-10)))
             rows, cols = linear_sum_assignment(cost)
             for y, x in zip(rows, cols):

@@ -10,6 +10,9 @@ __pycache__/
 # C extensions
 *.so
 
+# bin file
+.DS_Store
+
 # json file
 *.json
 

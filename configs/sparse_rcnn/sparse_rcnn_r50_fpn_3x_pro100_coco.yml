@@ -7,4 +7,4 @@ _BASE_: [
 ]
 
 num_classes: 80
-weights: output/sparse_rcnn_r50b_fpn_pro100/model_final
+weights: output/sparse_rcnn_r50_fpn_3x_pro100_coco/model_final

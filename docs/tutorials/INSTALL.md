@@ -6,7 +6,7 @@ English | [简体中文](INSTALL_cn.md)
 This document covers how to install PaddleDetection and its dependencies
 (including PaddlePaddle), together with COCO and Pascal VOC dataset.
 
-For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/tree/develop).
+For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2).
 
 ## Requirements:
 
@@ -22,6 +22,7 @@ Dependency of PaddleDetection and PaddlePaddle:
 
 | PaddleDetection version | PaddlePaddle version  |    tips    |
 | :----------------: | :---------------: | :-------: |
+|    release/2.2       |       >= 2.1.2   |     Dygraph mode is set as default    |
 |    release/2.1       |       >= 2.1.0   |     Dygraph mode is set as default    |
 |    release/2.0       |       >= 2.0.1    |     Dygraph mode is set as default    |
 |    release/2.0-rc    |       >= 2.0.1    |     --    |
