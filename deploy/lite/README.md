@@ -130,10 +130,13 @@ cd PaddleDetection_root_path
 python tools/export_model.py -c configs/ppyolo/ppyolo_tiny_650e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolo_tiny_650e_coco.pdparams
 
 # 将inference模型转化为Paddle-Lite优化模型
-paddle_lite_opt --model_file=output_inference/ppyolo_tiny_650e_coco/model.pdmodel --param_file=output_inference/ppyolo_tiny_650e_coco/model.pdiparams --optimize_out=ppyolo_tiny
+paddle_lite_opt  --valid_targets=arm --optimize_out_type=naive_buffe --model_file=output_inference/ppyolo_tiny_650e_coco/model.pdmodel --param_file=output_inference/ppyolo_tiny_650e_coco/model.pdiparams --optimize_out=output_inference/ppyolo_tiny_650e_coco/model
+
+# 将inference模型配置转化为json格式
+python deploy/lite/convert_yml_to_json.py output_inference/ppyolo_tiny_650e_coco/infer_cfg.yml
 ```
 
-最终在当前文件夹下生成`ppyolo_tiny.nb`的文件。
+最终在output_inference/ppyolo_tiny_650e_coco/文件夹下生成`ppyolo_tiny.nb` 和 `infer_cfg.json`的文件。
 
 **注意**：`--optimize_out` 参数为优化后模型的保存路径，无需加后缀`.nb`；`--model_file` 参数为模型结构信息文件的路径，`--param_file` 参数为模型权重信息文件的路径，请注意文件名。
 
@@ -168,82 +171,96 @@ List of devices attached
 744be294    device
 ```
 
-4. 准备优化后的模型、预测库文件、测试图像和类别映射文件。
+4. 编译lite部署代码生成移动端可执行文件
 
 ```shell
-cd PaddleDetection_root_path
+cd {PadddleDetection_Root}
 cd deploy/lite/
 
-# 将预测库文件、测试图像和使用的类别字典文件放置在预测库中的demo/cxx/detection文件夹下
 inference_lite_path=/{lite prediction library path}/inference_lite_lib.android.armv8.gcc.c++_static.with_extra.with_cv/
-mkdir -p  $inference_lite_path/demo/cxx/detection/debug/
-cp ../../ppyolo_tiny.nb $inference_lite_path/demo/cxx/detection/debug/
-cp  ./coco_label_list.txt  $inference_lite_path/demo/cxx/detection/debug/
-cp Makefile run_detection.cc  $inference_lite_path/demo/cxx/detection/
-cp ./config_ppyolo_tiny.txt  $inference_lite_path/demo/cxx/detection/debug/
-cp ../../demo/000000014439.jpg  $inference_lite_path/demo/cxx/detection/debug/
+mkdir $inference_lite_path/demo/cxx/lite
 
+cp -r Makefile src/ include/ runtime_config.json $inference_lite_path/demo/cxx/lite
 
-# 进入lite demo的工作目录
-cd /{lite prediction library path}/inference_lite_lib.android.armv8/
-cd demo/cxx/detection/
+cd $inference_lite_path/demo/cxx/lite
 
-# 将C++预测动态库so文件复制到debug文件夹中
-cp ../../../cxx/lib/libpaddle_light_api_shared.so ./debug/
-```
-
-执行完成后，detection文件夹下将有如下文件格式：
+# 执行编译，等待完成后得到可执行文件main
+make ARM_ABI = arm8
+#如果是arm7，则执行 make ARM_ABI = arm7 (或者在Makefile中修改该项)
 
 ```
-demo/cxx/detection/
-|-- debug/
-|   |--ppyolo_tiny.nb                   优化后的检测器模型文件
-|   |--000000014439.jpg                 待测试图像
-|   |--coco_label_list.txt              类别映射文件
-|   |--libpaddle_light_api_shared.so    C++预测库文件
-|   |--config_ppyolo_tiny.txt           检测模型预测超参数配置
-|-- run_detection.cc                    目标检测代码文件
-|-- Makefile                            编译文件
+
+5. 准备优化后的模型、预测库文件、测试图像。
+
+```shell
+mdkir deploy
+cp main runtime_config.json deploy/
+cd deploy
+mkdir model_det
+mkdir model_keypoint
+
+# 将优化后的模型、预测库文件、测试图像放置在预测库中的demo/cxx/detection文件夹下
+cp {PadddleDetection_Root}/output_inference/ppyolo_tiny_650e_coco/model.nb ./model_det/
+cp {PadddleDetection_Root}/output_inference/ppyolo_tiny_650e_coco/infer_cfg.json ./model_det/
+
+# 如果需要关键点模型，则只需一下操作
+cp {PadddleDetection_Root}/output_inference/hrnet_w32_256x192/model.nb ./model_keypoint/
+cp {PadddleDetection_Root}/output_inference/hrnet_w32_256x192/infer_cfg.json ./model_keypoint/
+
+# 将测试图像复制到deploy文件夹中
+cp [your_test_img].jpg ./demo.jpg
+
+# 将C++预测动态库so文件复制到deploy文件夹中
+cp ../../../cxx/lib/libpaddle_light_api_shared.so ./
+```
+
+执行完成后，deploy文件夹下将有如下文件格式：
+
+```
+deploy/
+|-- model_det/
+|   |--mdoel.nb                   优化后的检测模型文件
+|   |--infer_cfg.json             检测器模型配置文件
+|-- model_keypoint/
+|   |--mdoel.nb                   优化后的关键点模型文件
+|   |--infer_cfg.json             关键点模型配置文件
+|-- main                          生成的移动端执行文件
+|-- runtime_config.json           移动端执行时参数配置文件
+|-- libpaddle_light_api_shared.so Paddle-Lite库文件
 ```
 
 **注意：**
-
-* 上述文件中，`coco_label_list.txt` 是COCO数据集的类别映射文件，如果使用自定义的类别，需要更换该类别映射文件。
-
-*  `config_ppyolo_tiny.txt` 包含了检测器的超参数，如下：
+*  `runtime_config.json` 包含了检测器的超参数，请按需进行修改（注意配置中路径及文件需存在）：
 
 ```shell
-model_file ./ppyolo_tiny.nb         # 模型文件地址
-label_path ./coco_label_list.txt    # 类别映射文本文件
-num_threads 1                       # 线程数
-enable_benchmark 1                  # 是否运行benchmark
-Resize 320,320                      # resize图像尺寸
-keep_ratio False                    # 是否keep ratio
-mean 0.485,0.456,0.406              # 预处理均值
-std 0.229,0.224,0.225               # 预处理方差
-precision fp32                      # 模型精度
+{
+  "model_dir_det": "./model_det/",              #检测器模型路径
+  "batch_size_det": 1,                          #检测预测时batchsize
+  "threshold_det": 0.5,                         #检测器输出阈值
+  "model_dir_keypoint": "./model_keypoint/",    #关键点模型路径（不使用需为空字符）
+  "batch_size_keypoint": 8,                     #关键点预测时batchsize
+  "threshold_keypoint": 0.5,                    #关键点输出阈值
+  "image_file": "demo.jpg",                     #测试图片
+  "image_dir": "",                              #测试图片文件夹
+  "run_benchmark": false,                       #性能测试开关
+  "cpu_threads": 1                              #线程数
+}
 ```
 
-5. 启动调试，上述步骤完成后就可以使用ADB将文件夹 `debug/` push到手机上运行，步骤如下：
+6. 启动调试，上述步骤完成后就可以使用ADB将文件夹 `deploy/` push到手机上运行，步骤如下：
 
 ```shell
-# 执行编译，得到可执行文件detect_system
-# 如果是编译armv7的执行程序，需要使用 Makefile_armv7 替换 Makefile 文件
-make
-
-# 将编译得到的可执行文件移动到debug文件夹中
-mv detect_system ./debug/
-
-# 将上述debug文件夹push到手机上
-adb push debug /data/local/tmp/
+# 将上述deploy文件夹push到手机上
+adb push deploy /data/local/tmp/
 
 adb shell
-cd /data/local/tmp/debug
-export LD_LIBRARY_PATH=/data/local/tmp/debug:$LD_LIBRARY_PATH
+cd /data/local/tmp/deploy
+export LD_LIBRARY_PATH=/data/local/tmp/deploy:$LD_LIBRARY_PATH
 
-# detect_system可执行文件的使用方式为:
-# ./detect_system 配置文件路径  测试图像路径
-./detect_system ./config_ppyolo_tiny.txt ./000000014439.jpg
+# 修改权限为可执行
+chmod 777 main
+# 执行程序
+./main
 ```
 
 如果对代码做了修改，则需要重新编译并push到手机上。
@@ -260,4 +277,4 @@ Q1：如果想更换模型怎么办，需要重新按照流程走一遍吗？
 A1：如果已经走通了上述步骤，更换模型只需要替换 `.nb` 模型文件即可，同时要注意修改下配置文件中的 `.nb` 文件路径以及类别映射文件（如有必要）。
 
 Q2：换一个图测试怎么做？  
-A2：替换 debug 下的测试图像为你想要测试的图像，使用 ADB 再次 push 到手机上即可。
+A2：替换 deploy 下的测试图像为你想要测试的图像，使用 ADB 再次 push 到手机上即可。
