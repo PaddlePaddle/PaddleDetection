@@ -39,6 +39,7 @@ from PIL import Image, ImageDraw
 import pickle
 import threading
 mutex = threading.Lock()
+import fcntl
 
 from ppdet.core.workspace import serializable
 from ppdet.modeling import bbox_utils
@@ -212,14 +213,18 @@ class DecodeCache(BaseOperator):
 
     @staticmethod
     def dump(obj, path):
-        mutex.acquire()
+        # mutex.acquire()
+        # fcntl.flock()
         try:
             with open(path, 'wb') as f:
+                fcntl.LOCK_EX(f, fcntl.LOCK_EX)
                 pickle.dump(obj, f)
+                fcntl.LOCK_EX(f, fcntl.F_UNLCK)
         except:
             pass
         finally:
-            mutex.release()
+            # mutex.release()
+            pass
 
 
 @register_op
