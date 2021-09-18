@@ -36,6 +36,9 @@ import copy
 import logging
 import cv2
 from PIL import Image, ImageDraw
+import pickle
+import threading
+mutex = threading.Lock()
 
 from ppdet.core.workspace import serializable
 from ppdet.modeling import bbox_utils
@@ -147,6 +150,76 @@ class Decode(BaseOperator):
         sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
         sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
         return sample
+
+
+def _make_dirs(dirname):
+    try:
+        from pathlib import Path
+    except ImportError:
+        from pathlib2 import Path
+    Path(dirname).mkdir(exist_ok=True)
+
+
+@register_op
+class DecodeCache(BaseOperator):
+    def __init__(self, cache_root=None):
+        """ Transform the image data to numpy format following the rgb format
+        """
+        super(DecodeCache, self).__init__()
+
+        self.use_cache = False if cache_root is None else True 
+        self.cache_root = cache_root
+
+        if cache_root is not None:
+            _make_dirs(cache_root)
+
+    def apply(self, sample, context=None):
+
+        if self.use_cache and os.path.exists(self.cache_path(self.cache_root, sample['im_file'])):
+            path = self.cache_path(self.cache_root, sample['im_file'])
+            with open(path, 'rb') as f:
+                im = pickle.load(f)
+
+        else:
+            if 'image' not in sample:
+                with open(sample['im_file'], 'rb') as f:
+                    sample['image'] = f.read()
+                # sample.pop('im_file')
+
+            im = sample['image']
+            data = np.frombuffer(im, dtype='uint8')
+            im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
+            if 'keep_ori_im' in sample and sample['keep_ori_im']:
+                sample['ori_image'] = im
+            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+
+            if self.use_cache and not os.path.exists(self.cache_path(self.cache_root, sample['im_file'])):
+                path = self.cache_path(self.cache_root, sample['im_file'])
+                self.dump(im, path)
+
+            sample['image'] = im
+            sample['h'] = im.shape[0]
+            sample['w'] = im.shape[1]
+
+            sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
+            sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
+
+        return sample
+
+    @staticmethod
+    def cache_path(dir_oot, im_file):
+        return os.path.join(dir_oot, os.path.basename(im_file) + '.pkl')
+
+    @staticmethod
+    def dump(obj, path):
+        mutex.acquire()
+        try:
+            with open(path, 'wb') as f:
+                pickle.dump(obj, f)
+        except:
+            pass
+        finally:
+            mutex.release()
 
 
 @register_op
