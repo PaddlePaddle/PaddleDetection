@@ -24,6 +24,7 @@ from ppdet.core.workspace import register
 from ppdet.modeling.losses import CTFocalLoss
 from ppdet.modeling.layers import DeformableConvV2
 from ppdet.data.transform.op_helper import gaussian2D
+from ppdet.modeling.losses.iou_loss import GIoULoss
 
 class ConvLayer(nn.Layer):
     def __init__(self,
@@ -102,7 +103,8 @@ class CenterNetHead(nn.Layer):
 		         use_dcn=False,
                  poto=False,
                  poto_alpha=0.8,
-                 max_objs=500):
+                 max_objs=500,
+                 size_loss='l1'):
         super(CenterNetHead, self).__init__()
         self.weights = {
             'heatmap': heatmap_weight,
@@ -144,6 +146,9 @@ class CenterNetHead(nn.Layer):
         self.poto_alpha = poto_alpha
         self.max_objs = max_objs
         self.num_classes = num_classes
+        if size_loss == 'giou':
+            self.iou_loss = GIoULoss(reduction='sum')
+        
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -198,8 +203,18 @@ class CenterNetHead(nn.Layer):
         pos_num = size_mask.sum()
         size_mask.stop_gradient = True
         size_target.stop_gradient = True
-        size_loss = F.l1_loss(
-            pos_size * size_mask, size_target * size_mask, reduction='sum')
+        if hasattr(self, 'iou_loss'):
+            symbol = np.ones(pos_size.shape, 'float32')
+            symbol[:, :, 0:2] = -1
+            symbol = paddle.to_tensor(symbol, dtype='float32')
+            symbol.stop_gradient = True
+            pred_size = pos_size * symbol
+            gt_size = size_target * symbol
+            gt_size.stop_gradient = True
+            size_loss = self.iou_loss(pred_size * size_mask, gt_size * size_mask, iou_weight=size_mask)
+        else:
+            size_loss = F.l1_loss(
+                pos_size * size_mask, size_target * size_mask, reduction='sum')
         size_loss = size_loss / (pos_num + 1e-4)
 
 
@@ -255,6 +270,22 @@ class CenterNetHead(nn.Layer):
             paddle.zeros([1], dtype=inter.dtype))
         return iou 
 
+    @paddle.no_grad()
+    def _create_grid_offsets(self, size, stride, offset):
+        bs, c, grid_height, grid_width = paddle.shape(size)
+        shifts_start = offset * stride
+        shifts_x = paddle.arange(
+            shifts_start, grid_width * stride + shifts_start, step=stride,
+            dtype=size.dtype
+        )
+        shifts_y = paddle.arange(
+            shifts_start, grid_height * stride + shifts_start, step=stride,
+            dtype=size.dtype
+        )
+        shift_y, shift_x = paddle.meshgrid(shifts_y, shifts_x)
+        shift_x = paddle.reshape(shift_x, [-1, 1])
+        shift_y = paddle.reshape(shift_y, [-1, 1])
+        return shift_x, shift_y
 
     @paddle.no_grad()
     def get_ground_truth(self, heatmap, size, weights, inputs):
@@ -269,14 +300,8 @@ class CenterNetHead(nn.Layer):
 
 
         bs, c, output_h, output_w = paddle.shape(heatmap).numpy()
-        x = paddle.arange(0, output_w)
-        y = paddle.arange(0, output_h)
-        grid_y, grid_x = paddle.meshgrid(y, x)
-        center_x = paddle.reshape(grid_x, [-1, 1])
-        center_y = paddle.reshape(grid_y, [-1, 1])
-        
-        center_x = paddle.cast(center_x, size.dtype)
-        center_y = paddle.cast(center_y, size.dtype)
+        #bs = heatmap.shape[0]
+        center_x, center_y = self._create_grid_offsets(size, 4, 0.5)
         center_xyxy = paddle.concat([center_x, center_y, center_x, center_y], 1)
         symbol = np.ones(center_xyxy.shape, 'float32')
         symbol[:, 0:2] = -1
@@ -380,15 +405,16 @@ class CenterNetHead(nn.Layer):
             #print('shift_idxs: ', shift_idxs)
             for k, (gt_idx, shift_idx) in enumerate(zip(gt_idxs, shift_idxs)):
                 bbox_w, bbox_h = gt_bbox_per_img_data[gt_idx, 2:]
-                radius = self.gaussian_radius((math.ceil(bbox_h), math.ceil(bbox_w)))
+                radius = self.gaussian_radius((math.ceil(bbox_h / 4.), math.ceil(bbox_w / 4.)))
                 radius = max(0, int(radius))
-                ct_int = center_data[shift_idx, :]
+                ct = center_data[shift_idx, :]
+                ct_int = ((ct - 0.5 * 4 ) / 4).astype('int32')
                 cls_id = gt_class_per_img_data[gt_idx]
                 self.draw_truncate_gaussian(target_heatmap[cls_id], ct_int, radius,
                                                     radius)
                 bbox_amodal = gt_xxyy_data[gt_idx]
-                target_bbox_size[k] = ct_int[0] - bbox_amodal[0], ct_int[1] - bbox_amodal[1], \
-                        bbox_amodal[2] - ct_int[0], bbox_amodal[3] - ct_int[1]
+                target_bbox_size[k] = ct[0] - bbox_amodal[0], ct[1] - bbox_amodal[1], \
+                        bbox_amodal[2] - ct[0], bbox_amodal[3] - ct[1]
 
                 target_index[k] = shift_idx
                 target_mask[k] = 1
@@ -399,22 +425,22 @@ class CenterNetHead(nn.Layer):
             target_mask_list.append(target_mask)
             target_reid_list.append(target_reid)
  
-            #import cv2
-            #image = inputs['image'].numpy()[i] * 255
-            #show_image = image.transpose((1, 2, 0)).astype('uint8')
-            #show_heatmap = target_heatmap * 255
-            #show_heatmap = show_heatmap.astype('uint8')
-            #show_heatmap = show_heatmap.transpose((1, 2, 0))
-            #show_heatmap = cv2.resize(show_heatmap, (show_image.shape[1], show_image.shape[0]))
-            #pseudo_image = np.zeros(show_image.shape, show_image.dtype)
-            #pseudo_image[:, :, 0] = show_heatmap
-            #pseudo_image[:, :, 1] = show_heatmap
-            #pseudo_image[:, :, 2] = show_heatmap
-            #show_heatmap = cv2.addWeighted(show_image, 0.3,
-            #                               pseudo_image, 0.7,
-            #                               0)
-            #
-            #cv2.imwrite('fairmot_heatmap.jpg', show_heatmap)
+            import cv2
+            image = inputs['image'].numpy()[i] * 255
+            show_image = image.transpose((1, 2, 0)).astype('uint8')
+            show_heatmap = target_heatmap * 255
+            show_heatmap = show_heatmap.astype('uint8')
+            show_heatmap = show_heatmap.transpose((1, 2, 0))
+            show_heatmap = cv2.resize(show_heatmap, (show_image.shape[1], show_image.shape[0]))
+            pseudo_image = np.zeros(show_image.shape, show_image.dtype)
+            pseudo_image[:, :, 0] = show_heatmap
+            pseudo_image[:, :, 1] = show_heatmap
+            pseudo_image[:, :, 2] = show_heatmap
+            show_heatmap = cv2.addWeighted(show_image, 0.3,
+                                           pseudo_image, 0.7,
+                                           0)
+            
+            cv2.imwrite('giou/fairmot_heatmap.jpg', show_heatmap)
             
            
         inputs['heatmap'] = paddle.to_tensor(target_heatmap_list)

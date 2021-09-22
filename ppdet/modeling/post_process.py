@@ -467,10 +467,11 @@ class CenterNetPostProcess(TTFBox):
         n, c, feat_h, feat_w = hm.shape[:]
         padw = (feat_w * self.down_ratio - im_shape[0, 1]) / 2
         padh = (feat_h * self.down_ratio - im_shape[0, 0]) / 2
-        x1 = x1 * self.down_ratio
-        y1 = y1 * self.down_ratio
-        x2 = x2 * self.down_ratio
-        y2 = y2 * self.down_ratio
+        if reg is not None:
+            x1 = x1 * self.down_ratio
+            y1 = y1 * self.down_ratio
+            x2 = x2 * self.down_ratio
+            y2 = y2 * self.down_ratio
 
         x1 = x1 - padw
         y1 = y1 - padh

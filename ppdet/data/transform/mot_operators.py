@@ -685,12 +685,36 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
 
     def __call__(self, samples, context=None):
         if self.poto:
+            #for b_id, sample in enumerate(samples):
+            #    output_h = sample['image'].shape[1] // self.down_ratio
+            #    output_w = sample['image'].shape[2] // self.down_ratio
+            #    bbox = copy.deepcopy(sample['gt_bbox'])
+            #    bbox[:, 0::2] = bbox[:, 0::2] * output_w
+            #    bbox[:, 1::2] = bbox[:, 1::2] * output_h
+            #    gt_bbox = np.zeros((self.max_objs, 4), dtype=np.float32)
+            #    gt_class = np.zeros((self.max_objs), dtype=np.int32)
+            #    gt_ide = np.zeros((self.max_objs), dtype=np.int32)
+            #    index_mask = np.zeros((self.max_objs), dtype=np.int32)
+            #    gt_bbox[0:len(sample['gt_bbox']), :] = bbox
+            #    gt_class[0:len(sample['gt_bbox'])] = sample['gt_class'][:, 0]
+            #    gt_ide[0:len(sample['gt_bbox'])] = sample['gt_ide'][:, 0]
+            #    index_mask[0:len(sample['gt_bbox'])] = 1
+            #    sample['gt_bbox'] = gt_bbox
+            #    sample['gt_class'] = gt_class
+            #    sample['gt_ide'] = gt_ide
+            #    sample['mask'] = index_mask
+            #    
+            #    sample.pop('is_crowd', None)
+            #    sample.pop('difficult', None)
+            #    sample.pop('gt_score', None)
+
+            #return samples
+        
             for b_id, sample in enumerate(samples):
-                output_h = sample['image'].shape[1] // self.down_ratio
-                output_w = sample['image'].shape[2] // self.down_ratio
+                im_h, im_w = sample['image'].shape[1:]
                 bbox = copy.deepcopy(sample['gt_bbox'])
-                bbox[:, 0::2] = bbox[:, 0::2] * output_w
-                bbox[:, 1::2] = bbox[:, 1::2] * output_h
+                bbox[:, 0::2] = bbox[:, 0::2] * im_w
+                bbox[:, 1::2] = bbox[:, 1::2] * im_h
                 gt_bbox = np.zeros((self.max_objs, 4), dtype=np.float32)
                 gt_class = np.zeros((self.max_objs), dtype=np.int32)
                 gt_ide = np.zeros((self.max_objs), dtype=np.int32)
@@ -709,6 +733,8 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
                 sample.pop('gt_score', None)
 
             return samples
+        
+
 
         for b_id, sample in enumerate(samples):
             output_h = sample['image'].shape[1] // self.down_ratio
