@@ -98,7 +98,8 @@ class CenterNetHead(nn.Layer):
                 stride=1,
                 padding=0,
                 bias=True))
-        self.heatmap[2].conv.bias[:] = -2.19
+        with paddle.no_grad():
+            self.heatmap[2].conv.bias[:] = -2.19
         self.size = nn.Sequential(
             ConvLayer(
                 in_channels, head_planes, kernel_size=3, padding=1, bias=True),
