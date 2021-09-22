@@ -104,7 +104,9 @@ class CenterNetHead(nn.Layer):
                  poto=False,
                  poto_alpha=0.8,
                  max_objs=500,
-                 size_loss='l1'):
+                 size_loss='l1',
+                 poto_method='mul',
+                 poto_heatmap_clip='True'):
         super(CenterNetHead, self).__init__()
         self.weights = {
             'heatmap': heatmap_weight,
@@ -148,6 +150,8 @@ class CenterNetHead(nn.Layer):
         self.num_classes = num_classes
         if size_loss == 'giou':
             self.iou_loss = GIoULoss(reduction='sum')
+        self.poto_method = poto_method
+        self.poto_heatmap_clip = poto_heatmap_clip
         
 
     @classmethod
@@ -346,7 +350,10 @@ class CenterNetHead(nn.Layer):
             
             pred_bbox_per_img = center_xyxy + symbol * size_per_img
             
-            heatmap_per_img = paddle.clip(F.sigmoid(heatmap_per_img), 1e-4, 1 - 1e-4)
+            if self.poto_heatmap_clip:
+                heatmap_per_img = paddle.clip(F.sigmoid(heatmap_per_img), 1e-4, 1 - 1e-4)
+            else:
+                heatmap_per_img = F.sigmoid(heatmap_per_img)
             heatmap_per_img = paddle.transpose(heatmap_per_img, [0, 2, 3, 1]) 
             #np.save('heatmap_per_img.npy', heatmap_per_img.numpy())
             heatmap_per_img = paddle.reshape(heatmap_per_img, [-1, self.num_classes])
@@ -369,7 +376,10 @@ class CenterNetHead(nn.Layer):
             #np.save('iou.npy', iou.numpy())
             quality_cls = prob ** (1 - self.poto_alpha)
             quality_iou = iou ** self.poto_alpha
-            quality= quality_cls * quality_iou
+            if self.poto_method == 'mul':
+                quality = quality_cls * quality_iou
+            elif self.poto_method == 'add':
+                quality = quality_cls + quality_iou
             #np.save('quality.npy', quality.numpy())
             num_gt, num_pred = quality.shape
             expand_gt_x1 = paddle.transpose(paddle.expand(gt_x1, shape=[num_pred, num_gt, 1]), [1, 0, 2])
