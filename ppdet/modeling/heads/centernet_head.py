@@ -106,7 +106,8 @@ class CenterNetHead(nn.Layer):
                  max_objs=500,
                  size_loss='l1',
                  poto_method='mul',
-                 poto_heatmap_clip='True'):
+                 poto_heatmap_clip='True',
+                 size_base=1.):
         super(CenterNetHead, self).__init__()
         self.weights = {
             'heatmap': heatmap_weight,
@@ -152,7 +153,7 @@ class CenterNetHead(nn.Layer):
             self.iou_loss = GIoULoss(reduction='sum')
         self.poto_method = poto_method
         self.poto_heatmap_clip = poto_heatmap_clip
-        
+        self.size_base = size_base
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -163,6 +164,7 @@ class CenterNetHead(nn.Layer):
     def forward(self, feat, inputs):
         heatmap = self.heatmap(feat)
         size = self.size(feat)
+        size = size * self.size_base
         if not self.poto:
             offset = self.offset(feat)
         else:
@@ -450,7 +452,7 @@ class CenterNetHead(nn.Layer):
                                            pseudo_image, 0.7,
                                            0)
             
-            cv2.imwrite('giou/fairmot_heatmap.jpg', show_heatmap)
+            cv2.imwrite('centernet_mot17half_coco_poto_imscale_giou5base16/fairmot_heatmap.jpg', show_heatmap)
             
            
         inputs['heatmap'] = paddle.to_tensor(target_heatmap_list)

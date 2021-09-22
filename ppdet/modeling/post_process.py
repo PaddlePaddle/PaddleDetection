@@ -448,6 +448,9 @@ class CenterNetPostProcess(TTFBox):
             reg = paddle.gather(reg, inds)
             xs = xs + reg[:, 0:1]
             ys = ys + reg[:, 1:2]
+        else:
+            xs = xs * self.down_ratio + 0.5 * self.down_ratio
+            ys = ys * self.down_ratio + 0.5 * self.down_ratio
 
         wh_t = paddle.transpose(wh, [0, 2, 3, 1])
         wh = paddle.reshape(wh_t, [-1, paddle.shape(wh_t)[-1]])
