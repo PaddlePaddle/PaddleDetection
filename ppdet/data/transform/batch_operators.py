@@ -675,9 +675,29 @@ class Gt2TTFTarget(BaseOperator):
             sample.pop('gt_bbox', None)
             sample.pop('gt_score', None)
         return samples
+
+    def draw_truncate_gaussian(self, heatmap, center, h_radius, w_radius):
+        h, w = 2 * h_radius + 1, 2 * w_radius + 1
+        sigma_x = w / 6
+        sigma_y = h / 6
+        gaussian = gaussian2D((h, w), sigma_x, sigma_y)
+
+        x, y = int(center[0]), int(center[1])
+
+        height, width = heatmap.shape[0:2]
+
+        left, right = min(x, w_radius), min(width - x, w_radius + 1)
+        top, bottom = min(y, h_radius), min(height - y, h_radius + 1)
+
+        masked_heatmap = heatmap[y - top:y + bottom, x - left:x + right]
+        masked_gaussian = gaussian[h_radius - top:h_radius + bottom, w_radius -
+                                   left:w_radius + right]
+        if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0:
+            heatmap[y - top:y + bottom, x - left:x + right] = np.maximum(
+                masked_heatmap, masked_gaussian)
+        return heatmap
+
 '''
-
-
 @register_op
 class Gt2TTFTarget(BaseOperator):
     __shared__ = ['num_classes']

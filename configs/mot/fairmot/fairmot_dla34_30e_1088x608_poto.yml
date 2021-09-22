@@ -1,0 +1,87 @@
+_BASE_: [
+  '../../datasets/mot.yml',
+  '../../runtime.yml',
+  '_base_/optimizer_30e.yml',
+  '_base_/fairmot_dla34.yml',
+  '_base_/fairmot_reader_1088x608.yml',
+]
+
+metric: MOT
+weights: output/fairmot_dla34_30e_1088x608/model_final
+pretrain_weights: /paddle/test/PaddleDetection/ctdet_coco_dla_2x.pdparams
+
+CenterNet:
+  backbone: DLA
+  neck: CenterNetDLAFPN
+  head: CenterNetHead
+  post_process: CenterNetPostProcess
+  for_mot: True
+
+CenterNetHead:
+  poto: True
+  poto_alpha: 0.8
+
+epoch: 30
+log_iter: 20
+
+LearningRate:
+  base_lr: 0.0002
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [20,]
+    use_warmup: False
+
+OptimizerBuilder:
+  optimizer:
+    type: Adam
+  regularizer: NULL
+
+worker_num: 4
+TrainReader:
+  inputs_def:
+    image_shape: [3, 608, 1088]
+  sample_transforms:
+    - Decode: {}
+    - RGBReverse: {}
+    - AugmentHSV: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - MOTRandomAffine: {reject_outside: False}
+    - RandomFlip: {}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - RGBReverse: {}
+    - Permute: {}
+  batch_transforms:
+    - Gt2FairMOTTarget: {poto: True}
+  batch_size: 6
+  shuffle: True
+  drop_last: True
+  use_shared_memory: True
+
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - Permute: {}
+  batch_size: 1
+
+
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: /paddle/dataset/mix
+    image_lists: ['mot17.half', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
+    #image_lists: ['mot17.half']
+    #image_lists: ['mot17.half.duiqi']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+
+
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: /paddle/dataset/mix
+    data_root: MOT17/images/half
+    keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT

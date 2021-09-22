@@ -256,7 +256,7 @@ class Trainer(object):
                     save_prediction_only=save_prediction_only)
             ]
         elif self.cfg.metric == 'MOTDet':
-            self._metrics = [JDEDetMetric(), ]
+            self._metrics = [JDEDetMetric(overlap_thresh=0.5), ]
         else:
             logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))

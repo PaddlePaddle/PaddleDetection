@@ -437,15 +437,17 @@ class CenterNetPostProcess(TTFBox):
         scores = paddle.tensor.unsqueeze(scores, [1])
         clses = paddle.tensor.unsqueeze(clses, [1])
 
-        reg_t = paddle.transpose(reg, [0, 2, 3, 1])
-        # Like TTFBox, batch size is 1.
-        # TODO: support batch size > 1
-        reg = paddle.reshape(reg_t, [-1, paddle.shape(reg_t)[-1]])
-        reg = paddle.gather(reg, inds)
+
         xs = paddle.cast(xs, 'float32')
         ys = paddle.cast(ys, 'float32')
-        xs = xs + reg[:, 0:1]
-        ys = ys + reg[:, 1:2]
+        if reg is not None:
+            reg_t = paddle.transpose(reg, [0, 2, 3, 1])
+            # Like TTFBox, batch size is 1.
+            # TODO: support batch size > 1
+            reg = paddle.reshape(reg_t, [-1, paddle.shape(reg_t)[-1]])
+            reg = paddle.gather(reg, inds)
+            xs = xs + reg[:, 0:1]
+            ys = ys + reg[:, 1:2]
 
         wh_t = paddle.transpose(wh, [0, 2, 3, 1])
         wh = paddle.reshape(wh_t, [-1, paddle.shape(wh_t)[-1]])

@@ -1,0 +1,96 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  #'_base_/optimizer_10x.yml',
+  #'_base_/pafnet.yml',
+  #'_base_/pafnet_reader.yml',
+]
+metric: MOTDet
+num_classes: 1
+use_gpu: true
+architecture: CenterNet
+
+pretrain_weights: /paddle/test/PaddleDetection/ctdet_coco_dla_2x.pdparams
+
+
+CenterNet:
+  backbone: DLA
+  neck: CenterNetDLAFPN
+  head: CenterNetHead
+  post_process: CenterNetPostProcess
+  for_mot: False
+
+CenterNetHead:
+  poto: True
+  poto_alpha: 0.8
+
+CenterNetPostProcess:
+  for_mot: False
+  max_per_img: 200
+
+epoch: 30
+log_iter: 20
+
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [20,]
+    use_warmup: False
+
+OptimizerBuilder:
+  optimizer:
+    type: Adam
+  regularizer: NULL
+
+worker_num: 4
+TrainReader:
+  inputs_def:
+    image_shape: [3, 608, 1088]
+  sample_transforms:
+    - Decode: {}
+    - RGBReverse: {}
+    - AugmentHSV: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - MOTRandomAffine: {reject_outside: False}
+    - RandomFlip: {}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - RGBReverse: {}
+    - Permute: {}
+  batch_transforms:
+    - Gt2FairMOTTarget: {poto: True}
+  batch_size: 6
+  shuffle: True
+  drop_last: True
+  use_shared_memory: True
+
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - Permute: {}
+  batch_size: 1
+
+
+# for MOT training
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: /paddle/dataset/mix
+    #image_lists: ['mot17.half', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
+    image_lists: ['mot17.half']
+    #image_lists: ['mot17.half.duiqi']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+
+EvalDataset:
+  !MOTDataSet
+    dataset_dir: /paddle/dataset/mix #dataset/mot
+    #image_lists: ['citypersons.val', 'caltech.val'] # for detection evaluation
+    image_lists: ['mot17.half.val']
+    # image_lists: ['caltech.10k.val', 'cuhksysu.val', 'prw.val'] # for reid evaluation
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
