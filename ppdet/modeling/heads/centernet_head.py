@@ -107,7 +107,8 @@ class CenterNetHead(nn.Layer):
                  size_loss='l1',
                  poto_method='mul',
                  poto_heatmap_clip='True',
-                 size_base=1.):
+                 size_base=1.,
+                 center_sampling_radius=0):
         super(CenterNetHead, self).__init__()
         self.weights = {
             'heatmap': heatmap_weight,
@@ -154,6 +155,7 @@ class CenterNetHead(nn.Layer):
         self.poto_method = poto_method
         self.poto_heatmap_clip = poto_heatmap_clip
         self.size_base = size_base
+        self.center_sampling_radius = center_sampling_radius
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -384,10 +386,29 @@ class CenterNetHead(nn.Layer):
                 quality = quality_cls + quality_iou
             #np.save('quality.npy', quality.numpy())
             num_gt, num_pred = quality.shape
-            expand_gt_x1 = paddle.transpose(paddle.expand(gt_x1, shape=[num_pred, num_gt, 1]), [1, 0, 2])
-            expand_gt_y1 = paddle.transpose(paddle.expand(gt_y1, shape=[num_pred, num_gt, 1]), [1, 0, 2])
-            expand_gt_x2 = paddle.transpose(paddle.expand(gt_x2, shape=[num_pred, num_gt, 1]), [1, 0, 2])
-            expand_gt_y2 = paddle.transpose(paddle.expand(gt_y2, shape=[num_pred, num_gt, 1]), [1, 0, 2])
+            if self.center_sampling_radius > 0:
+                gt_c_x1 = gt_bbox_per_img[:, 0] - self.center_sampling_radius * 4
+                gt_c_y1 = gt_bbox_per_img[:, 1] - self.center_sampling_radius * 4
+                gt_c_x2 = gt_c_x1 + self.center_sampling_radius * 4
+                gt_c_y2 = gt_c_y1 + self.center_sampling_radius * 4
+                gt_c_x1 = paddle.maximum(gt_c_x1, gt_xxyy[:, 0])                
+                gt_c_y1 = paddle.maximum(gt_c_y1, gt_xxyy[:, 1])
+                gt_c_x2 = paddle.minimum(gt_c_x2, gt_xxyy[:, 2])
+                gt_c_y2 = paddle.minimum(gt_c_y2, gt_xxyy[:, 3])
+                gt_c_x1 = paddle.unsqueeze(gt_c_x1, 1) 
+                gt_c_y1 = paddle.unsqueeze(gt_c_y1, 1)
+                gt_c_x2 = paddle.unsqueeze(gt_c_x2, 1)
+                gt_c_y2 = paddle.unsqueeze(gt_c_y2, 1)
+                gt_c_xxyy = paddle.concat([gt_c_x1, gt_c_y1, gt_c_x2, gt_c_y2], 1)
+                expand_gt_x1 = paddle.transpose(paddle.expand(gt_c_x1, shape=[num_pred, num_gt, 1]), [1, 0, 2])
+                expand_gt_y1 = paddle.transpose(paddle.expand(gt_c_y1, shape=[num_pred, num_gt, 1]), [1, 0, 2])
+                expand_gt_x2 = paddle.transpose(paddle.expand(gt_c_x2, shape=[num_pred, num_gt, 1]), [1, 0, 2])
+                expand_gt_y2 = paddle.transpose(paddle.expand(gt_c_y2, shape=[num_pred, num_gt, 1]), [1, 0, 2])
+            else:
+                expand_gt_x1 = paddle.transpose(paddle.expand(gt_x1, shape=[num_pred, num_gt, 1]), [1, 0, 2])
+                expand_gt_y1 = paddle.transpose(paddle.expand(gt_y1, shape=[num_pred, num_gt, 1]), [1, 0, 2])
+                expand_gt_x2 = paddle.transpose(paddle.expand(gt_x2, shape=[num_pred, num_gt, 1]), [1, 0, 2])
+                expand_gt_y2 = paddle.transpose(paddle.expand(gt_y2, shape=[num_pred, num_gt, 1]), [1, 0, 2])
             expand_center_x = paddle.expand(center_x, shape=[num_gt, num_pred, 1])
             expand_center_y = paddle.expand(center_y, shape=[num_gt, num_pred, 1])
             x1_is_in = expand_center_x >= expand_gt_x1
@@ -452,7 +473,7 @@ class CenterNetHead(nn.Layer):
                                            pseudo_image, 0.7,
                                            0)
             
-            cv2.imwrite('centernet_mot17half_coco_poto_imscale_giou5base16/fairmot_heatmap.jpg', show_heatmap)
+            cv2.imwrite('centernet_mot17half_coco_poto_imscale_giou_center/fairmot_heatmap.jpg', show_heatmap)
             
            
         inputs['heatmap'] = paddle.to_tensor(target_heatmap_list)
