@@ -88,9 +88,6 @@ class Trainer(object):
             self.model = self.cfg.model
             self.is_loaded_weights = True
 
-        #normalize params for deploy
-        self.model.load_meanstd(cfg['TestReader']['sample_transforms'])
-
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         if self.use_ema:
             ema_decay = self.cfg.get('ema_decay', 0.9998)
@@ -555,11 +552,7 @@ class Trainer(object):
         if image_shape is None:
             image_shape = [3, -1, -1]
 
-        if hasattr(self.model, 'deploy'):
-            self.model.deploy = True
-        if hasattr(self.model, 'fuse_norm'):
-            self.model.fuse_norm = self.cfg['TestReader'].get('fuse_normalize',
-                                                              False)
+        if hasattr(self.model, 'deploy'): self.model.deploy = True
         if hasattr(self.cfg, 'lite_deploy'):
             self.model.lite_deploy = self.cfg.lite_deploy
 
