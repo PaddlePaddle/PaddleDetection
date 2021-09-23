@@ -76,12 +76,7 @@ class TopDownHRNet(BaseArch):
         if self.training:
             return self.loss(hrnet_outputs, self.inputs)
         elif self.deploy:
-            outshape = hrnet_outputs.shape
-            max_idx = paddle.argmax(
-                hrnet_outputs.reshape(
-                    (outshape[0], outshape[1], outshape[2] * outshape[3])),
-                axis=-1)
-            return hrnet_outputs, max_idx
+            return hrnet_outputs
         else:
             if self.flip:
                 self.inputs['image'] = self.inputs['image'].flip([3])
