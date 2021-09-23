@@ -21,8 +21,7 @@ import sys
 
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
-if parent_path not in sys.path:
-    sys.path.append(parent_path)
+sys.path.insert(0, parent_path)
 
 # ignore warning log
 import warnings
@@ -41,11 +40,6 @@ logger = setup_logger('eval')
 
 def parse_args():
     parser = ArgsParser()
-    parser.add_argument(
-        "--data_type",
-        type=str,
-        default='mot',
-        help='Data type of tracking dataset, should be in ["mot", "kitti"]')
     parser.add_argument(
         "--det_results_dir",
         type=str,
@@ -95,7 +89,7 @@ def run(FLAGS, cfg):
     tracker.mot_evaluate(
         data_root=data_root,
         seqs=seqs,
-        data_type=FLAGS.data_type,
+        data_type=cfg.metric.lower(),
         model_type=cfg.architecture,
         output_dir=FLAGS.output_dir,
         save_images=FLAGS.save_images,

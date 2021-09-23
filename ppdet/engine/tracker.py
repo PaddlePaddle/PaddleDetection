@@ -28,7 +28,7 @@ from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_bo
 from ppdet.modeling.mot.utils import Timer, load_det_results
 from ppdet.modeling.mot import visualization as mot_vis
 
-from ppdet.metrics import Metric, MOTMetric
+from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric
 import ppdet.utils.stats as stats
 
 from .callbacks import Callback, ComposeCallback
@@ -74,6 +74,8 @@ class Tracker(object):
 
         if self.cfg.metric == 'MOT':
             self._metrics = [MOTMetric(), ]
+        elif self.cfg.metric == 'KITTI':
+            self._metrics = [KITTIMOTMetric(), ]
         else:
             logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -372,6 +374,7 @@ class Tracker(object):
 
     def mot_predict(self,
                     video_file,
+                    frame_rate,
                     image_dir,
                     output_dir,
                     data_type='mot',
@@ -399,7 +402,7 @@ class Tracker(object):
         # run tracking        
         if video_file:
             seq = video_file.split('/')[-1].split('.')[0]
-            self.dataset.set_video(video_file)
+            self.dataset.set_video(video_file, frame_rate)
             logger.info('Starting tracking video {}'.format(video_file))
         elif image_dir:
             seq = image_dir.split('/')[-1].split('.')[0]
@@ -418,7 +421,8 @@ class Tracker(object):
 
         dataloader = create('TestMOTReader')(self.dataset, 0)
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
-        frame_rate = self.dataset.frame_rate
+        if frame_rate == -1:
+            frame_rate = self.dataset.frame_rate
 
         with paddle.no_grad():
             if model_type in ['JDE', 'FairMOT']:
@@ -454,7 +458,7 @@ class Tracker(object):
         if data_type in ['mot', 'mcmot', 'lab']:
             save_format = '{frame},{id},{x1},{y1},{w},{h},{score},-1,-1,-1\n'
         elif data_type == 'kitti':
-            save_format = '{frame} {id} pedestrian 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
+            save_format = '{frame} {id} car 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
         else:
             raise ValueError(data_type)
 

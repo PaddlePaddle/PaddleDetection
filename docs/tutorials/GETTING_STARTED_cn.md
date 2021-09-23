@@ -243,7 +243,7 @@ python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml 
 PaddleDetection提供了PaddleInference、PaddleServing、PaddleLite多种部署形式，支持服务端、移动端、嵌入式等多种平台，提供了完善的Python和C++部署方案。
 * 在这里，我们以Python为例，说明如何使用PaddleInference进行模型部署
 ```bash
-python deploy/python/infer.py --model_dir=./inference/yolov3_mobilenet_v1_roadsign --image_file=demo/road554.png --use_gpu=True
+python deploy/python/infer.py --model_dir=./output_inference/yolov3_mobilenet_v1_roadsign --image_file=demo/road554.png --device=GPU
 ```
 * 同时`infer.py`提供了丰富的接口，用户进行接入视频文件、摄像头进行预测，更多内容请参考[Python端预测部署](../../deploy/python.md)
 ### PaddleDetection支持的部署形式说明

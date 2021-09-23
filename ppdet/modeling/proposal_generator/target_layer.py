@@ -451,16 +451,17 @@ class RBoxAssigner(object):
         anchors_num = anchors.shape[0]
         bbox_targets = np.zeros_like(anchors)
         bbox_weights = np.zeros_like(anchors)
+        bbox_gt_bboxes = np.zeros_like(anchors)
         pos_labels = np.ones(anchors_num, dtype=np.int32) * -1
         pos_labels_weights = np.zeros(anchors_num, dtype=np.float32)
 
         pos_sampled_anchors = anchors[pos_inds]
-        #print('ancho target pos_inds', pos_inds, len(pos_inds))
         pos_sampled_gt_boxes = gt_bboxes[anchor_gt_bbox_inds[pos_inds]]
         if len(pos_inds) > 0:
             pos_bbox_targets = self.rbox2delta(pos_sampled_anchors,
                                                pos_sampled_gt_boxes)
             bbox_targets[pos_inds, :] = pos_bbox_targets
+            bbox_gt_bboxes[pos_inds, :] = pos_sampled_gt_boxes
             bbox_weights[pos_inds, :] = 1.0
 
             pos_labels[pos_inds] = labels[pos_inds]
@@ -469,4 +470,4 @@ class RBoxAssigner(object):
         if len(neg_inds) > 0:
             pos_labels_weights[neg_inds] = 1.0
         return (pos_labels, pos_labels_weights, bbox_targets, bbox_weights,
-                pos_inds, neg_inds)
+                bbox_gt_bboxes, pos_inds, neg_inds)

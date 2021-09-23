@@ -218,23 +218,35 @@ def draw_segm(image,
     return Image.fromarray(img_array.astype('uint8'))
 
 
-def map_coco_to_personlab(keypoints):
-    permute = [0, 6, 8, 10, 5, 7, 9, 12, 14, 16, 11, 13, 15, 2, 1, 4, 3]
-    return keypoints[:, permute, :]
-
-
-def draw_pose(image, results, visual_thread=0.6, save_name='pose.jpg'):
+def draw_pose(image,
+              results,
+              visual_thread=0.6,
+              save_name='pose.jpg',
+              save_dir='output',
+              returnimg=False,
+              ids=None):
     try:
         import matplotlib.pyplot as plt
         import matplotlib
         plt.switch_backend('agg')
     except Exception as e:
-        logger.error('Matplotlib not found, plaese install matplotlib.'
+        logger.error('Matplotlib not found, please install matplotlib.'
                      'for example: `pip install matplotlib`.')
         raise e
-    EDGES = [(0, 14), (0, 13), (0, 4), (0, 1), (14, 16), (13, 15), (4, 10),
-             (1, 7), (10, 11), (7, 8), (11, 12), (8, 9), (4, 5), (1, 2), (5, 6),
-             (2, 3)]
+
+    skeletons = np.array([item['keypoints'] for item in results])
+    kpt_nums = 17
+    if len(skeletons) > 0:
+        kpt_nums = int(skeletons.shape[1] / 3)
+    skeletons = skeletons.reshape(-1, kpt_nums, 3)
+    if kpt_nums == 17:  #plot coco keypoint
+        EDGES = [(0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6), (5, 7), (6, 8),
+                 (7, 9), (8, 10), (5, 11), (6, 12), (11, 13), (12, 14),
+                 (13, 15), (14, 16), (11, 12)]
+    else:  #plot mpii keypoint
+        EDGES = [(0, 1), (1, 2), (3, 4), (4, 5), (2, 6), (3, 6), (6, 7), (7, 8),
+                 (8, 9), (10, 11), (11, 12), (13, 14), (14, 15), (8, 12),
+                 (8, 13)]
     NUM_EDGES = len(EDGES)
 
     colors = [[255, 0, 0], [255, 85, 0], [255, 170, 0], [255, 255, 0], [170, 255, 0], [85, 255, 0], [0, 255, 0], \
@@ -242,22 +254,36 @@ def draw_pose(image, results, visual_thread=0.6, save_name='pose.jpg'):
             [170, 0, 255], [255, 0, 255], [255, 0, 170], [255, 0, 85]]
     cmap = matplotlib.cm.get_cmap('hsv')
     plt.figure()
-    skeletons = np.array([item['keypoints'] for item in results]).reshape(-1,
-                                                                          17, 3)
-    img = np.array(image).astype('float32')
-    canvas = img.copy()
 
-    for i in range(17):
-        rgba = np.array(cmap(1 - i / 17. - 1. / 34))
-        rgba[0:3] *= 255
+    img = np.array(image).astype('float32')
+
+    color_set = results['colors'] if 'colors' in results else None
+
+    if 'bbox' in results and ids is None:
+        bboxs = results['bbox']
+        for j, rect in enumerate(bboxs):
+            xmin, ymin, xmax, ymax = rect
+            color = colors[0] if color_set is None else colors[color_set[j] %
+                                                               len(colors)]
+            cv2.rectangle(img, (xmin, ymin), (xmax, ymax), color, 1)
+
+    canvas = img.copy()
+    for i in range(kpt_nums):
         for j in range(len(skeletons)):
             if skeletons[j][i, 2] < visual_thread:
                 continue
+            if ids is None:
+                color = colors[i] if color_set is None else colors[color_set[j]
+                                                                   %
+                                                                   len(colors)]
+            else:
+                color = get_color(ids[j])
+
             cv2.circle(
                 canvas,
                 tuple(skeletons[j][i, 0:2].astype('int32')),
                 2,
-                colors[i],
+                color,
                 thickness=-1)
 
     to_plot = cv2.addWeighted(img, 0.3, canvas, 0.7, 0)
@@ -265,7 +291,6 @@ def draw_pose(image, results, visual_thread=0.6, save_name='pose.jpg'):
 
     stickwidth = 2
 
-    skeletons = map_coco_to_personlab(skeletons)
     for i in range(NUM_EDGES):
         for j in range(len(skeletons)):
             edge = EDGES[i]
@@ -283,7 +308,13 @@ def draw_pose(image, results, visual_thread=0.6, save_name='pose.jpg'):
             polygon = cv2.ellipse2Poly((int(mY), int(mX)),
                                        (int(length / 2), stickwidth),
                                        int(angle), 0, 360, 1)
-            cv2.fillConvexPoly(cur_canvas, polygon, colors[i])
+            if ids is None:
+                color = colors[i] if color_set is None else colors[color_set[j]
+                                                                   %
+                                                                   len(colors)]
+            else:
+                color = get_color(ids[j])
+            cv2.fillConvexPoly(cur_canvas, polygon, color)
             canvas = cv2.addWeighted(canvas, 0.4, cur_canvas, 0.6, 0)
     image = Image.fromarray(canvas.astype('uint8'))
     plt.close()

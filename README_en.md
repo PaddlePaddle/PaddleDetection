@@ -96,7 +96,7 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
             </ul>
         </ul>
         <ul>
-          <li><b>Face-Detction</b></li>
+          <li><b>Face-Detection</b></li>
             <ul>
              <li>FaceBoxes</li>
              <li>BlazeFace</li>
@@ -261,13 +261,15 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
   - [Vehicle detection](configs/vehicle/README.md)
 - Competition Plan
   - [Objects365 2019 Challenge champion model](static/docs/featured_model/champion_model/CACascadeRCNN.md)
-  - [Best single model of Open Images 2019-Object Detction](static/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
+  - [Best single model of Open Images 2019-Object Detection](static/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 
 ## Applications
 
 - [Christmas portrait automatic generation tool](static/application/christmas)
 
 ## Updates
+
+v2.2 was released at `08/2021`, release Transformer detection models, release Dark HRNet keypoint detection model, release tracking models of head and vehicle, release optimized S2ANet model, inference with batch size > 1 supported for main architectures. Please refer to [change log](docs/CHANGELOG.md) for details.
 
 v2.1 was released at `05/2021`, Release Keypoint Detection and Multi-Object Tracking. Release model compression for PPYOLO series. Update documents such as export ONNX model. Please refer to [change log](docs/CHANGELOG.md) for details.
 

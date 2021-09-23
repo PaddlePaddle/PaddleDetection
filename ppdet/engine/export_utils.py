@@ -119,7 +119,8 @@ def _dump_infer_config(config, path, image_shape, model):
             'Architecture: {} is not supported for exporting model now'.format(
                 infer_arch))
         os._exit(0)
-    if 'Mask' in infer_arch:
+    if 'mask_head' in config[config['architecture']] and config[config[
+            'architecture']]['mask_head']:
         infer_cfg['mask'] = True
     label_arch = 'detection_arch'
     if infer_arch in KEYPOINT_ARCH:
@@ -135,11 +136,6 @@ def _dump_infer_config(config, path, image_shape, model):
 
     infer_cfg['Preprocess'], infer_cfg['label_list'] = _parse_reader(
         reader_cfg, dataset_cfg, config['metric'], label_arch, image_shape)
-
-    if infer_arch == 'S2ANet':
-        # TODO: move background to num_classes
-        if infer_cfg['label_list'][0] != 'background':
-            infer_cfg['label_list'].insert(0, 'background')
 
     yaml.dump(infer_cfg, open(path, 'w'))
     logger.info("Export inference config file to {}".format(os.path.join(path)))

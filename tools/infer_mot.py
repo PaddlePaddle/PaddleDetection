@@ -21,8 +21,7 @@ import sys
 
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
-if parent_path not in sys.path:
-    sys.path.append(parent_path)
+sys.path.insert(0, parent_path)
 
 # ignore warning log
 import warnings
@@ -44,15 +43,15 @@ def parse_args():
     parser.add_argument(
         '--video_file', type=str, default=None, help='Video name for tracking.')
     parser.add_argument(
+        '--frame_rate',
+        type=int,
+        default=-1,
+        help='Video frame rate for tracking.')
+    parser.add_argument(
         "--image_dir",
         type=str,
         default=None,
         help="Directory for images to perform inference on.")
-    parser.add_argument(
-        "--data_type",
-        type=str,
-        default='mot',
-        help='Data type of tracking dataset, should be in ["mot", "kitti"]')
     parser.add_argument(
         "--det_results_dir",
         type=str,
@@ -100,8 +99,9 @@ def run(FLAGS, cfg):
     # inference
     tracker.mot_predict(
         video_file=FLAGS.video_file,
+        frame_rate=FLAGS.frame_rate,
         image_dir=FLAGS.image_dir,
-        data_type=FLAGS.data_type,
+        data_type=cfg.metric.lower(),
         model_type=cfg.architecture,
         output_dir=FLAGS.output_dir,
         save_images=FLAGS.save_images,

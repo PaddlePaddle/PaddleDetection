@@ -297,6 +297,7 @@ class SDE_ReID(object):
 
 def predict_image(detector, reid_model, image_list):
     results = []
+    image_list.sort()
     for i, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
         if FLAGS.run_benchmark:
@@ -355,7 +356,8 @@ def predict_video(detector, reid_model, camera_id):
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
-    writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+    if not FLAGS.save_images:
+        writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     frame_id = 0
     timer = MOTTimer()
     results = []
@@ -378,7 +380,7 @@ def predict_video(detector, reid_model, camera_id):
 
         results.append((frame_id + 1, online_tlwhs, online_scores, online_ids))
         fps = 1. / timer.average_time
-        online_im = mot_vis.plot_tracking(
+        im = mot_vis.plot_tracking(
             frame,
             online_tlwhs,
             online_ids,
@@ -390,12 +392,11 @@ def predict_video(detector, reid_model, camera_id):
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
             cv2.imwrite(
-                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)),
-                online_im)
+                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
+        else:
+            writer.write(im)
         frame_id += 1
         print('detect frame:%d' % (frame_id))
-        im = np.array(online_im)
-        writer.write(im)
         if camera_id != -1:
             cv2.imshow('Tracking Detection', im)
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -404,7 +405,15 @@ def predict_video(detector, reid_model, camera_id):
         result_filename = os.path.join(FLAGS.output_dir,
                                        video_name.split('.')[-2] + '.txt')
         write_mot_results(result_filename, results)
-    writer.release()
+
+    if FLAGS.save_images:
+        save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
+        cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
+            save_dir, out_path)
+        os.system(cmd_str)
+        print('Save video in {}.'.format(out_path))
+    else:
+        writer.release()
 
 
 def main():
