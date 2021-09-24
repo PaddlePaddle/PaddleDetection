@@ -31,6 +31,9 @@ class BaseArch(nn.Layer):
                 if item['NormalizeImage']['is_scale']:
                     self.scale = 1. / 255.
                 break
+        if self.data_format == 'NHWC':
+            self.mean = self.mean.reshape(1, 1, 1, 3)
+            self.std = self.std.reshape(1, 1, 1, 3)
 
     def forward(self, inputs):
         if self.data_format == 'NHWC':
@@ -39,7 +42,7 @@ class BaseArch(nn.Layer):
 
         if self.fuse_norm:
             image = inputs['image']
-            self.inputs['image'] = (image / 255. - self.mean) / self.std
+            self.inputs['image'] = (image * self.scale - self.mean) / self.std
             self.inputs['im_shape'] = inputs['im_shape']
             self.inputs['scale_factor'] = inputs['scale_factor']
         else:

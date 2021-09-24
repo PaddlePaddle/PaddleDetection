@@ -59,4 +59,5 @@ void get_final_preds(std::vector<float>& heatmap,
                      std::vector<float>& center,
                      std::vector<float> scale,
                      std::vector<float>& preds,
-                     int batchid);
+                     int batchid,
+                     bool DARK = true);

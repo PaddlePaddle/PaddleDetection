@@ -1,4 +1,4 @@
-//   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+//   Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,11 +57,13 @@ class KeyPointDetector {
                             const int trt_min_shape = 1,
                             const int trt_max_shape = 1280,
                             const int trt_opt_shape = 640,
-                            bool trt_calib_mode = false) {
+                            bool trt_calib_mode = false,
+                            bool use_dark = true) {
     this->device_ = device;
     this->gpu_id_ = gpu_id;
     this->cpu_math_library_num_threads_ = cpu_threads;
     this->use_mkldnn_ = use_mkldnn;
+    this->use_dark = use_dark;
 
     this->trt_min_shape_ = trt_min_shape;
     this->trt_max_shape_ = trt_max_shape;
@@ -99,6 +101,7 @@ class KeyPointDetector {
   std::string device_ = "CPU";
   int gpu_id_ = 0;
   int cpu_math_library_num_threads_ = 1;
+  bool use_dark = true;
   bool use_mkldnn_ = false;
   int min_subgraph_size_ = 3;
   bool use_dynamic_shape_ = false;

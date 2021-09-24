@@ -165,20 +165,25 @@ void CropImg(cv::Mat &img, cv::Mat &crop_img, std::vector<int> &area, std::vecto
     int center_y = (crop_y1 + crop_y2)/2.;
     int half_h = (crop_y2 - crop_y1)/2.;
     int half_w = (crop_x2 - crop_x1)/2.;
+    
+    //adjust h or w to keep image ratio, expand the shorter edge
     if (half_h*3 > half_w*4){
       half_w = static_cast<int>(half_h*0.75);
     }
     else{
       half_h = static_cast<int>(half_w*4/3);
     }
+
     crop_x1 = std::max(0, center_x - static_cast<int>(half_w*(1+expandratio)));
     crop_y1 = std::max(0, center_y - static_cast<int>(half_h*(1+expandratio)));
     crop_x2 = std::min(img.cols -1, static_cast<int>(center_x + half_w*(1+expandratio)));
     crop_y2 = std::min(img.rows - 1, static_cast<int>(center_y + half_h*(1+expandratio)));
     crop_img = img(cv::Range(crop_y1, crop_y2+1), cv::Range(crop_x1, crop_x2 + 1));
+
     center.clear();
     center.emplace_back((crop_x1+crop_x2)/2);
     center.emplace_back((crop_y1+crop_y2)/2);
+
     scale.clear();
     scale.emplace_back((crop_x2-crop_x1));
     scale.emplace_back((crop_y2-crop_y1));

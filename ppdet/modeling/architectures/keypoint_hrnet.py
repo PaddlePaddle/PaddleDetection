@@ -204,6 +204,10 @@ class HRNetPostProcess(object):
         return coord
 
     def dark_postprocess(self, hm, coords, kernelsize):
+        '''DARK postpocessing, Zhang et al. Distribution-Aware Coordinate
+        Representation for Human Pose Estimation (CVPR 2020).
+        '''
+
         hm = self.gaussian_blur(hm, kernelsize)
         hm = np.maximum(hm, 1e-10)
         hm = np.log(hm)

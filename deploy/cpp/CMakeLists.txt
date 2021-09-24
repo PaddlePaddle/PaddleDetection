@@ -5,6 +5,7 @@ option(WITH_MKL        "Compile demo with MKL/OpenBlas support,defaultuseMKL."  
 option(WITH_GPU        "Compile demo with GPU/CPU, default use CPU."                    ON)
 option(WITH_TENSORRT   "Compile demo with TensorRT."                                    OFF)
 
+option(WITH_KEYPOINT        "Whether to Compile KeyPoint detector"                    ON)
 
 SET(PADDLE_DIR "" CACHE PATH "Location of libraries")
 SET(PADDLE_LIB_NAME "" CACHE STRING "libpaddle_inference")
@@ -19,6 +20,12 @@ include(cmake/yaml-cpp.cmake)
 include_directories("${CMAKE_SOURCE_DIR}/")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/src/ext-yaml-cpp/include")
 link_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/lib")
+
+if (WITH_KEYPOINT)
+    set(SRCS src/main_keypoint.cc src/preprocess_op.cc src/object_detector.cc src/keypoint_detector.cc src/keypoint_postprocess.cc)
+else ()
+    set(SRCS src/main.cc src/preprocess_op.cc src/object_detector.cc)
+endif()
 
 macro(safe_set_static_flag)
     foreach(flag_var
@@ -217,13 +224,13 @@ if (NOT WIN32)
 endif()
 
 set(DEPS ${DEPS} ${OpenCV_LIBS})
-add_executable(main_keypoint src/main_keypoint.cc src/preprocess_op.cc src/object_detector.cc src/keypoint_detector.cc src/keypoint_postprocess.cc)
-ADD_DEPENDENCIES(main_keypoint ext-yaml-cpp)
+add_executable(main ${SRCS})
+ADD_DEPENDENCIES(main ext-yaml-cpp)
 message("DEPS:" $DEPS)
-target_link_libraries(main_keypoint ${DEPS})
+target_link_libraries(main ${DEPS})
 
 if (WIN32 AND WITH_MKL)
-    add_custom_command(TARGET main_keypoint POST_BUILD
+    add_custom_command(TARGET main POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mklml/lib/mklml.dll ./mklml.dll
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mklml/lib/libiomp5md.dll ./libiomp5md.dll
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mkldnn/lib/mkldnn.dll ./mkldnn.dll
@@ -235,7 +242,7 @@ if (WIN32 AND WITH_MKL)
 endif()
 
 if (WIN32)
-    add_custom_command(TARGET main_keypoint POST_BUILD
+    add_custom_command(TARGET main POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/paddle/lib/${PADDLE_LIB_NAME}.dll ./release/${PADDLE_LIB_NAME}.dll
     )
 endif()

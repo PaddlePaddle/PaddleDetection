@@ -1,4 +1,4 @@
-//   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+//   Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -94,7 +94,11 @@ void KeyPointDetector::LoadModel(const std::string& model_dir,
   predictor_ = std::move(CreatePredictor(config));
 }
 
-const int edge[][2] = {{0, 1},
+// Visualiztion MaskDetector results
+cv::Mat VisualizeKptsResult(const cv::Mat& img,
+                            const std::vector<KeyPointResult>& results,
+                            const std::vector<int>& colormap) {
+  const int edge[][2] = {{0, 1},
                        {0, 2},
                        {1, 3},
                        {2, 4},
@@ -111,10 +115,6 @@ const int edge[][2] = {{0, 1},
                        {13, 15},
                        {14, 16},
                        {11, 12}};
-// Visualiztion MaskDetector results
-cv::Mat VisualizeKptsResult(const cv::Mat& img,
-                            const std::vector<KeyPointResult>& results,
-                            const std::vector<int>& colormap) {
   cv::Mat vis_img = img.clone();
   for (int batchid = 0; batchid < results.size(); batchid++) {
     for (int i = 0; i < results[batchid].num_joints; i++) {
@@ -167,7 +167,8 @@ void KeyPointDetector::Postprocess(std::vector<float>& output,
                     center_bs[batchid],
                     scale_bs[batchid],
                     preds,
-                    batchid);
+                    batchid,
+                    this->use_dark);
     KeyPointResult result_item;
     result_item.num_joints = output_shape[1];
     result_item.keypoints.clear();

@@ -1,4 +1,4 @@
-//   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+//   Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ DEFINE_string(model_dir_keypoint, "", "Path of keypoint detector inference model
 DEFINE_string(image_file, "", "Path of input image");
 DEFINE_string(image_dir, "", "Dir of input image, `image_file` has a higher priority.");
 DEFINE_int32(batch_size, 1, "batch_size of object detector");
-DEFINE_int32(batch_size_keypoint, 1, "batch_size of keypoint detector");
+DEFINE_int32(batch_size_keypoint, 8, "batch_size of keypoint detector");
 DEFINE_string(video_file, "", "Path of input video, `video_file` or `camera_id` has a highest priority.");
 DEFINE_int32(camera_id, -1, "Device id of camera to predict");
 DEFINE_bool(use_gpu, false, "Deprecated, please use `--device` to set the device you want to run.");
@@ -59,7 +59,7 @@ DEFINE_int32(trt_min_shape, 1, "Min shape of TRT DynamicShapeI");
 DEFINE_int32(trt_max_shape, 1280, "Max shape of TRT DynamicShapeI");
 DEFINE_int32(trt_opt_shape, 640, "Opt shape of TRT DynamicShapeI");
 DEFINE_bool(trt_calib_mode, false, "If the model is produced by TRT offline quantitative calibration, trt_calib_mode need to set True");
-
+DEFINE_bool(use_dark, true, "Whether use dark decode in keypoint postprocess");
 
 void PrintBenchmarkLog(std::vector<double> det_time, int img_num){
   LOG(INFO) << "----------------------- Config info -----------------------";
@@ -447,7 +447,7 @@ int main(int argc, char** argv) {
       keypoint = new PaddleDetection::KeyPointDetector(FLAGS_model_dir_keypoint, FLAGS_device, FLAGS_use_mkldnn,
                         FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_batch_size,FLAGS_gpu_id,
                         FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape,
-			FLAGS_trt_calib_mode);
+			FLAGS_trt_calib_mode, FLAGS_use_dark);
   }
   // Do inference on input video or image
   if (!FLAGS_video_file.empty() || FLAGS_camera_id != -1) {
