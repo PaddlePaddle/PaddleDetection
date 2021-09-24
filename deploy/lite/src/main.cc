@@ -308,7 +308,8 @@ int main(int argc, char** argv) {
     keypoint = new PaddleDetection::KeyPointDetector(
         RT_Config["model_dir_keypoint"].as<std::string>(),
         RT_Config["cpu_threads"].as<int>(),
-        RT_Config["batch_size_keypoint"].as<int>());
+        RT_Config["batch_size_keypoint"].as<int>(),
+        RT_Config["use_dark_decode"].as<bool>());
     RT_Config["batch_size_det"] = 1;
     printf(
         "batchsize of detection forced to be 1 while keypoint model is not "

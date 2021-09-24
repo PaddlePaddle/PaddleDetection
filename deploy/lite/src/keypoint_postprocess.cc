@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include "include/keypoint_postprocess.h"
+#define PI 3.1415926535
+#define HALF_CIRCLE_DEGREE 180
 
 cv::Point2f get_3rd_point(cv::Point2f& a, cv::Point2f& b) {
   cv::Point2f direct{a.x - b.x, a.y - b.y};
@@ -31,7 +33,7 @@ std::vector<float> get_dir(float src_point_x,
 }
 
 void affine_tranform(
-    float pt_x, float pt_y, cv::Mat& trans, float* preds, int p) {
+    float pt_x, float pt_y, cv::Mat& trans, std::vector<float>& preds, int p) {
   double new1[3] = {pt_x, pt_y, 1.0};
   cv::Mat new_pt(3, 1, trans.type(), new1);
   cv::Mat w = trans * new_pt;
@@ -48,7 +50,7 @@ void get_affine_transform(std::vector<float>& center,
   float src_w = scale[0];
   float dst_w = static_cast<float>(output_size[0]);
   float dst_h = static_cast<float>(output_size[1]);
-  float rot_rad = rot * 3.1415926535 / 180;
+  float rot_rad = rot * PI / HALF_CIRCLE_DEGREE;
   std::vector<float> src_dir = get_dir(-0.5 * src_w, 0, rot_rad);
   std::vector<float> dst_dir{-0.5 * dst_w, 0.0};
   cv::Point2f srcPoint2f[3], dstPoint2f[3];
@@ -67,12 +69,12 @@ void get_affine_transform(std::vector<float>& center,
   }
 }
 
-void transform_preds(float* coords,
+void transform_preds(std::vector<float>& coords,
                      std::vector<float>& center,
                      std::vector<float>& scale,
                      std::vector<int>& output_size,
                      std::vector<int64_t>& dim,
-                     float* target_coords) {
+                     std::vector<float>& target_coords) {
   cv::Mat trans(2, 3, CV_64FC1);
   get_affine_transform(center, scale, 0, output_size, trans, 1);
   for (int p = 0; p < dim[1]; ++p) {
@@ -81,10 +83,10 @@ void transform_preds(float* coords,
 }
 
 // only for batchsize == 1
-void get_max_preds(float* heatmap,
+void get_max_preds(std::vector<float>& heatmap,
                    std::vector<int>& dim,
-                   float* preds,
-                   float* maxvals,
+                   std::vector<float>& preds,
+                   std::vector<float>& maxvals,
                    int batchid,
                    int joint_idx) {
   int num_joints = dim[1];
@@ -106,14 +108,75 @@ void get_max_preds(float* heatmap,
   }
 }
 
-void get_final_preds(float* heatmap,
+
+void dark_parse(std::vector<float>& heatmap,
+                std::vector<int64_t>& dim,
+                std::vector<float>& coords,
+                int px, 
+                int py, 
+                int index,
+                int ch){
+  /*DARK postpocessing, Zhang et al. Distribution-Aware Coordinate
+  Representation for Human Pose Estimation (CVPR 2020).
+  1) offset = - hassian.inv() * derivative
+  2) dx = (heatmap[x+1] - heatmap[x-1])/2.
+  3) dxx = (dx[x+1] - dx[x-1])/2.
+  4) derivative = Mat([dx, dy])
+  5) hassian = Mat([[dxx, dxy], [dxy, dyy]])
+  */
+  std::vector<float>::const_iterator first1 = heatmap.begin() + index;
+  std::vector<float>::const_iterator last1  = heatmap.begin() + index + dim[2]*dim[3];
+  std::vector<float> heatmap_ch(first1, last1);
+  cv::Mat heatmap_mat{heatmap_ch};
+  heatmap_mat.resize(dim[2],dim[3]);
+  cv::GaussianBlur(heatmap_mat, heatmap_mat, cv::Size(3,3), 0, 0);
+  heatmap_ch.assign(heatmap_mat.datastart, heatmap_mat.dataend);
+
+  float epsilon = 1e-10;
+  //sample heatmap to get values in around target location
+  float xy = log(fmax(heatmap_ch[py * dim[3] + px], epsilon));
+  float xr = log(fmax(heatmap_ch[py * dim[3] + px + 1], epsilon));
+  float xl = log(fmax(heatmap_ch[py * dim[3] + px - 1], epsilon));
+
+  float xr2 = log(fmax(heatmap_ch[py * dim[3] + px + 2], epsilon));
+  float xl2 = log(fmax(heatmap_ch[py * dim[3] + px - 2], epsilon));
+  float yu = log(fmax(heatmap_ch[(py + 1) * dim[3] + px], epsilon));
+  float yd = log(fmax(heatmap_ch[(py - 1) * dim[3] + px], epsilon));
+  float yu2 = log(fmax(heatmap_ch[(py + 2) * dim[3] + px], epsilon));
+  float yd2 = log(fmax(heatmap_ch[(py - 2) * dim[3] + px], epsilon));
+  float xryu = log(fmax(heatmap_ch[(py + 1) * dim[3] + px + 1], epsilon));
+  float xryd = log(fmax(heatmap_ch[(py - 1) * dim[3] + px + 1], epsilon));
+  float xlyu = log(fmax(heatmap_ch[(py + 1) * dim[3] + px - 1], epsilon));
+  float xlyd = log(fmax(heatmap_ch[(py - 1) * dim[3] + px - 1], epsilon));
+
+  //compute dx/dy and dxx/dyy with sampled values
+  float dx = 0.5 * (xr - xl);
+  float dy = 0.5 * (yu - yd);
+  float dxx = 0.25 * (xr2 - 2*xy + xl2);
+  float dxy = 0.25 * (xryu - xryd - xlyu + xlyd);
+  float dyy = 0.25 * (yu2 - 2*xy + yd2);
+
+  //finally get offset by derivative and hassian, which combined by dx/dy and dxx/dyy
+  if(dxx * dyy - dxy*dxy != 0){
+    float M[2][2] = {dxx, dxy, dxy, dyy};
+    float D[2] = {dx, dy};
+    cv::Mat hassian(2,2,CV_32F,M);
+    cv::Mat derivative(2,1,CV_32F,D);
+    cv::Mat offset = - hassian.inv() * derivative;
+    coords[ch * 2] += offset.at<float>(0,0);
+    coords[ch * 2 + 1] += offset.at<float>(1,0);
+  }
+}
+
+void get_final_preds(std::vector<float>& heatmap,
                      std::vector<int64_t>& dim,
-                     int64_t* idxout,
+                     std::vector<int64_t>& idxout,
                      std::vector<int64_t>& idxdim,
                      std::vector<float>& center,
                      std::vector<float> scale,
-                     float* preds,
-                     int batchid) {
+                     std::vector<float>& preds,
+                     int batchid,
+                     bool DARK) {
   std::vector<float> coords;
   coords.resize(dim[1] * 2);
   int heatmap_height = dim[2];
@@ -130,18 +193,23 @@ void get_final_preds(float* heatmap,
     int px = int(coords[j * 2] + 0.5);
     int py = int(coords[j * 2 + 1] + 0.5);
 
-    if (px > 1 && px < heatmap_width - 1) {
-      float diff_x = heatmap[index + py * dim[3] + px + 1] -
-                     heatmap[index + py * dim[3] + px - 1];
-      coords[j * 2] += diff_x > 0 ? 1 : -1 * 0.25;
+    if(DARK && px > 1 && px < heatmap_width - 2){
+      dark_parse(heatmap, dim, coords, px, py, index, j);
     }
-    if (py > 1 && py < heatmap_height - 1) {
-      float diff_y = heatmap[index + (py + 1) * dim[3] + px] -
-                     heatmap[index + (py - 1) * dim[3] + px];
-      coords[j * 2 + 1] += diff_y > 0 ? 1 : -1 * 0.25;
+    else{
+      if (px > 0 && px < heatmap_width - 1) {
+        float diff_x = heatmap[index + py * dim[3] + px + 1] -
+                      heatmap[index + py * dim[3] + px - 1];
+        coords[j * 2] += diff_x > 0 ? 1 : -1 * 0.25;
+      }
+      if (py > 0 && py < heatmap_height - 1) {
+        float diff_y = heatmap[index + (py + 1) * dim[3] + px] -
+                      heatmap[index + (py - 1) * dim[3] + px];
+        coords[j * 2 + 1] += diff_y > 0 ? 1 : -1 * 0.25;
+      }
     }
   }
-
+  
   std::vector<int> img_size{heatmap_width, heatmap_height};
-  transform_preds(coords.data(), center, scale, img_size, dim, preds);
+  transform_preds(coords, center, scale, img_size, dim, preds);
 }

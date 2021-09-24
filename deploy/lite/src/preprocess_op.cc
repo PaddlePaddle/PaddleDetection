@@ -31,7 +31,7 @@ void InitInfo::Run(cv::Mat* im, ImageBlob* data) {
 void NormalizeImage::Run(cv::Mat* im, ImageBlob* data) {
   double e = 1.0;
   if (is_scale_) {
-    e /= 255.0;
+    e *= 1./255.0;
   }
   (*im).convertTo(*im, CV_32FC3, e);
   for (int h = 0; h < im->rows; h++) {
@@ -151,15 +151,18 @@ void CropImg(cv::Mat& img,
   int crop_y1 = std::max(0, area[1]);
   int crop_x2 = std::min(img.cols - 1, area[2]);
   int crop_y2 = std::min(img.rows - 1, area[3]);
+  
   int center_x = (crop_x1 + crop_x2) / 2.;
   int center_y = (crop_y1 + crop_y2) / 2.;
   int half_h = (crop_y2 - crop_y1) / 2.;
   int half_w = (crop_x2 - crop_x1) / 2.;
+
   if (half_h * 3 > half_w * 4) {
     half_w = static_cast<int>(half_h * 0.75);
   } else {
     half_h = static_cast<int>(half_w * 4 / 3);
   }
+
   crop_x1 =
       std::max(0, center_x - static_cast<int>(half_w * (1 + expandratio)));
   crop_y1 =
@@ -170,6 +173,7 @@ void CropImg(cv::Mat& img,
                      static_cast<int>(center_y + half_h * (1 + expandratio)));
   crop_img =
       img(cv::Range(crop_y1, crop_y2 + 1), cv::Range(crop_x1, crop_x2 + 1));
+
   center.clear();
   center.emplace_back((crop_x1 + crop_x2) / 2);
   center.emplace_back((crop_y1 + crop_y2) / 2);
