@@ -203,7 +203,7 @@ class RandomErasingImage(BaseOperator):
         self.higher = higher
         self.aspect_ratio = aspect_ratio
 
-    def apply(self, sample):
+    def apply(self, sample, context=None):
         gt_bbox = sample['gt_bbox']
         im = sample['image']
         if not isinstance(im, np.ndarray):
@@ -231,7 +231,7 @@ class RandomErasingImage(BaseOperator):
                 off_y1 = random.randint(0, int(h_bbox - h))
                 off_x1 = random.randint(0, int(w_bbox - w))
                 im[int(y1 + off_y1):int(y1 + off_y1 + h), int(x1 + off_x1):int(
-                    x1 + off_x1 + w), :] = 0
+                    x1 + off_x1 + w), :] = 127.5
         sample['image'] = im
         return sample
 

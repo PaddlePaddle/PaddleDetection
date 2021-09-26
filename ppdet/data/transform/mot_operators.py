@@ -674,7 +674,7 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
         max_objs(int): the maximum number of ground truth objects in a image, 500 by default.
     """
 
-    def __init__(self, num_classes=1, down_ratio=4, max_objs=500, alpha=-1, head=False, poto=False):
+    def __init__(self, num_classes=1, down_ratio=4, max_objs=500, alpha=-1, head=False, poto=False, offset=True):
         super(Gt2TTFTarget, self).__init__()
         self.down_ratio = down_ratio
         self.num_classes = num_classes
@@ -682,6 +682,7 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
         self.alpha = alpha
         self.head = head
         self.poto = poto
+        self.offset = offset
 
     def __call__(self, samples, context=None):
         if self.poto:
@@ -734,106 +735,190 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
 
             return samples
         
+        if self.offset:
+            for b_id, sample in enumerate(samples):
+                output_h = sample['image'].shape[1] // self.down_ratio
+                output_w = sample['image'].shape[2] // self.down_ratio
 
+                heatmap = np.zeros(
+                    (self.num_classes, output_h, output_w), dtype='float32')
+                bbox_size = np.zeros((self.max_objs, 4), dtype=np.float32)
+                center_offset = np.zeros((self.max_objs, 2), dtype=np.float32)
+                index = np.zeros((self.max_objs, ), dtype=np.int64)
+                index_mask = np.zeros((self.max_objs, ), dtype=np.int32)
+                reid = np.zeros((self.max_objs, ), dtype=np.int64)
+                bbox_xys = np.zeros((self.max_objs, 4), dtype=np.float32)
 
-        for b_id, sample in enumerate(samples):
-            output_h = sample['image'].shape[1] // self.down_ratio
-            output_w = sample['image'].shape[2] // self.down_ratio
+                gt_bbox = sample['gt_bbox']
+                gt_class = sample['gt_class']
+                gt_ide = sample['gt_ide']
 
-            heatmap = np.zeros(
-                (self.num_classes, output_h, output_w), dtype='float32')
-            bbox_size = np.zeros((self.max_objs, 4), dtype=np.float32)
-            center_offset = np.zeros((self.max_objs, 2), dtype=np.float32)
-            index = np.zeros((self.max_objs, ), dtype=np.int64)
-            index_mask = np.zeros((self.max_objs, ), dtype=np.int32)
-            reid = np.zeros((self.max_objs, ), dtype=np.int64)
-            bbox_xys = np.zeros((self.max_objs, 4), dtype=np.float32)
-
-            gt_bbox = sample['gt_bbox']
-            gt_class = sample['gt_class']
-            gt_ide = sample['gt_ide']
-
-            for k in range(len(gt_bbox)):
-                cls_id = gt_class[k][0]
-                #bbox = gt_bbox[k]
-                bbox = copy.deepcopy(gt_bbox[k])
-                ide = gt_ide[k][0]
-                bbox[[0, 2]] = bbox[[0, 2]] * output_w
-                bbox[[1, 3]] = bbox[[1, 3]] * output_h
-                bbox_amodal = copy.deepcopy(bbox)
-                bbox_amodal[0] = bbox_amodal[0] - bbox_amodal[2] / 2.
-                bbox_amodal[1] = bbox_amodal[1] - bbox_amodal[3] / 2.
-                bbox_amodal[2] = bbox_amodal[0] + bbox_amodal[2]
-                bbox_amodal[3] = bbox_amodal[1] + bbox_amodal[3]
-                bbox[0] = np.clip(bbox[0], 0, output_w - 1)
-                bbox[1] = np.clip(bbox[1], 0, output_h - 1)
-                h = bbox[3]
-                w = bbox[2]
-
-                bbox_xy = copy.deepcopy(bbox)
-                bbox_xy[0] = bbox_xy[0] - bbox_xy[2] / 2
-                bbox_xy[1] = bbox_xy[1] - bbox_xy[3] / 2
-                bbox_xy[2] = bbox_xy[0] + bbox_xy[2]
-                bbox_xy[3] = bbox_xy[1] + bbox_xy[3]
-
-                if self.head:
-                    bbox[0] = (bbox_amodal[0] + bbox_amodal[2]) / 2.
-                    bbox[1] = (7 * bbox_amodal[1] + bbox_amodal[3]) / 8.
+                for k in range(len(gt_bbox)):
+                    cls_id = gt_class[k][0]
+                    #bbox = gt_bbox[k]
+                    bbox = copy.deepcopy(gt_bbox[k])
+                    ide = gt_ide[k][0]
+                    bbox[[0, 2]] = bbox[[0, 2]] * output_w
+                    bbox[[1, 3]] = bbox[[1, 3]] * output_h
+                    bbox_amodal = copy.deepcopy(bbox)
+                    bbox_amodal[0] = bbox_amodal[0] - bbox_amodal[2] / 2.
+                    bbox_amodal[1] = bbox_amodal[1] - bbox_amodal[3] / 2.
+                    bbox_amodal[2] = bbox_amodal[0] + bbox_amodal[2]
+                    bbox_amodal[3] = bbox_amodal[1] + bbox_amodal[3]
                     bbox[0] = np.clip(bbox[0], 0, output_w - 1)
                     bbox[1] = np.clip(bbox[1], 0, output_h - 1)
+                    h = bbox[3]
+                    w = bbox[2]
 
-                if h > 0 and w > 0:
-                    radius = self.gaussian_radius((math.ceil(h), math.ceil(w)))
-                    radius = max(0, int(radius))
-                    ct = np.array([bbox[0], bbox[1]], dtype=np.float32)
-                    ct_int = ct.astype(np.int32)
-                    if self.alpha > 0:
-                        h_radiuses_alpha = h / 2. * self.alpha
-                        w_radiuses_alpha = w / 2. * self.alpha
-                        h_radiuses_alpha = h_radiuses_alpha.astype('int32')
-                        w_radiuses_alpha = w_radiuses_alpha.astype('int32')
-                        self.draw_truncate_gaussian(heatmap[cls_id], ct_int, h_radiuses_alpha,
-                                                    w_radiuses_alpha)
-                    else:
+                    bbox_xy = copy.deepcopy(bbox)
+                    bbox_xy[0] = bbox_xy[0] - bbox_xy[2] / 2
+                    bbox_xy[1] = bbox_xy[1] - bbox_xy[3] / 2
+                    bbox_xy[2] = bbox_xy[0] + bbox_xy[2]
+                    bbox_xy[3] = bbox_xy[1] + bbox_xy[3]
+
+                    if self.head:
+                        bbox[0] = (bbox_amodal[0] + bbox_amodal[2]) / 2.
+                        bbox[1] = (7 * bbox_amodal[1] + bbox_amodal[3]) / 8.
+                        bbox[0] = np.clip(bbox[0], 0, output_w - 1)
+                        bbox[1] = np.clip(bbox[1], 0, output_h - 1)
+
+                    if h > 0 and w > 0:
+                        radius = self.gaussian_radius((math.ceil(h), math.ceil(w)))
+                        radius = max(0, int(radius))
+                        ct = np.array([bbox[0], bbox[1]], dtype=np.float32)
+                        ct_int = ct.astype(np.int32)
+                        if self.alpha > 0:
+                            h_radiuses_alpha = h / 2. * self.alpha
+                            w_radiuses_alpha = w / 2. * self.alpha
+                            h_radiuses_alpha = h_radiuses_alpha.astype('int32')
+                            w_radiuses_alpha = w_radiuses_alpha.astype('int32')
+                            self.draw_truncate_gaussian(heatmap[cls_id], ct_int, h_radiuses_alpha,
+                                                        w_radiuses_alpha)
+                        else:
+                            self.draw_truncate_gaussian(heatmap[cls_id], ct_int, radius,
+                                                        radius)
+                        
+                        bbox_size[k] = ct[0] - bbox_amodal[0], ct[1] - bbox_amodal[1], \
+                                bbox_amodal[2] - ct[0], bbox_amodal[3] - ct[1]
+
+                        index[k] = ct_int[1] * output_w + ct_int[0]
+                        center_offset[k] = ct - ct_int
+                        index_mask[k] = 1
+                        reid[k] = ide
+                        bbox_xys[k] = bbox_xy
+                        #print('K:', k)
+                #show_image = sample['image'].transpose((1, 2, 0)).astype('uint8')
+                #show_heatmap = heatmap * 255
+                #show_heatmap = show_heatmap.astype('uint8')
+                #show_heatmap = show_heatmap.transpose((1, 2, 0))
+                #show_heatmap = cv2.resize(show_heatmap, (show_image.shape[1], show_image.shape[0]))
+                #pseudo_image = np.zeros(show_image.shape, show_image.dtype)
+                #pseudo_image[:, :, 0] = show_heatmap
+                #pseudo_image[:, :, 1] = show_heatmap
+                #pseudo_image[:, :, 2] = show_heatmap
+                #show_heatmap = cv2.addWeighted(show_image, 0.3,
+                #                               pseudo_image, 0.7,
+                #                               0)
+                #
+                #cv2.imwrite('fairmot_heatmap.jpg', show_heatmap)
+                sample['heatmap'] = heatmap
+                sample['index'] = index
+                sample['offset'] = center_offset
+                sample['size'] = bbox_size
+                sample['index_mask'] = index_mask
+                sample['reid'] = reid
+                sample['bbox_xys'] = bbox_xys
+                sample.pop('is_crowd', None)
+                sample.pop('difficult', None)
+                sample.pop('gt_class', None)
+                sample.pop('gt_bbox', None)
+                sample.pop('gt_score', None)
+                sample.pop('gt_ide', None)
+        else:
+            for b_id, sample in enumerate(samples):
+                output_h = sample['image'].shape[1]
+                output_w = sample['image'].shape[2]
+
+                heatmap = np.zeros(
+                    (self.num_classes, output_h // self.down_ratio, output_w // self.down_ratio), dtype='float32')
+                bbox_size = np.zeros((self.max_objs, 4), dtype=np.float32)
+                center_offset = np.zeros((self.max_objs, 2), dtype=np.float32)
+                index = np.zeros((self.max_objs, ), dtype=np.int64)
+                index_mask = np.zeros((self.max_objs, ), dtype=np.int32)
+                reid = np.zeros((self.max_objs, ), dtype=np.int64)
+                bbox_xys = np.zeros((self.max_objs, 4), dtype=np.float32)
+                bbox_wh = np.zeros((self.max_objs, 2), dtype=np.float32)
+
+                gt_bbox = sample['gt_bbox']
+                gt_class = sample['gt_class']
+                gt_ide = sample['gt_ide']
+
+                for k in range(len(gt_bbox)):
+                    cls_id = gt_class[k][0]
+                    bbox = copy.deepcopy(gt_bbox[k])
+                    ide = gt_ide[k][0]
+                    bbox[[0, 2]] = bbox[[0, 2]] * output_w
+                    bbox[[1, 3]] = bbox[[1, 3]] * output_h
+                    bbox_amodal = copy.deepcopy(bbox)
+                    bbox_amodal[0] = bbox_amodal[0] - bbox_amodal[2] / 2.
+                    bbox_amodal[1] = bbox_amodal[1] - bbox_amodal[3] / 2.
+                    bbox_amodal[2] = bbox_amodal[0] + bbox_amodal[2]
+                    bbox_amodal[3] = bbox_amodal[1] + bbox_amodal[3]
+                    bbox[0] = np.clip(bbox[0], 0, output_w - 1)
+                    bbox[1] = np.clip(bbox[1], 0, output_h - 1)
+                    h = bbox[3]
+                    w = bbox[2]
+
+                    bbox_xy = copy.deepcopy(bbox)
+                    bbox_xy[0] = bbox_xy[0] - bbox_xy[2] / 2
+                    bbox_xy[1] = bbox_xy[1] - bbox_xy[3] / 2
+                    bbox_xy[2] = bbox_xy[0] + bbox_xy[2]
+                    bbox_xy[3] = bbox_xy[1] + bbox_xy[3]
+
+                    if h > 0 and w > 0:
+                        radius = self.gaussian_radius((math.ceil(float(h) / self.down_ratio), math.ceil(float(w) / self.down_ratio)))
+                        radius = max(0, int(radius))
+                        ct = np.array([bbox[0] / float(self.down_ratio), bbox[1] / float(self.down_ratio)], dtype=np.float32)
+                        ct_int = ct.astype(np.int32)
                         self.draw_truncate_gaussian(heatmap[cls_id], ct_int, radius,
                                                     radius)
-                    
-                    bbox_size[k] = ct[0] - bbox_amodal[0], ct[1] - bbox_amodal[1], \
-                            bbox_amodal[2] - ct[0], bbox_amodal[3] - ct[1]
+                        ct = ct_int * self.down_ratio + 0.5 * self.down_ratio
+                        bbox_size[k] = ct[0] - bbox_amodal[0], ct[1] - bbox_amodal[1], \
+                                bbox_amodal[2] - ct[0], bbox_amodal[3] - ct[1]
 
-                    index[k] = ct_int[1] * output_w + ct_int[0]
-                    center_offset[k] = ct - ct_int
-                    index_mask[k] = 1
-                    reid[k] = ide
-                    bbox_xys[k] = bbox_xy
-                    #print('K:', k)
-            #show_image = sample['image'].transpose((1, 2, 0)).astype('uint8')
-            #show_heatmap = heatmap * 255
-            #show_heatmap = show_heatmap.astype('uint8')
-            #show_heatmap = show_heatmap.transpose((1, 2, 0))
-            #show_heatmap = cv2.resize(show_heatmap, (show_image.shape[1], show_image.shape[0]))
-            #pseudo_image = np.zeros(show_image.shape, show_image.dtype)
-            #pseudo_image[:, :, 0] = show_heatmap
-            #pseudo_image[:, :, 1] = show_heatmap
-            #pseudo_image[:, :, 2] = show_heatmap
-            #show_heatmap = cv2.addWeighted(show_image, 0.3,
-            #                               pseudo_image, 0.7,
-            #                               0)
-            #
-            #cv2.imwrite('fairmot_heatmap.jpg', show_heatmap)
-            sample['heatmap'] = heatmap
-            sample['index'] = index
-            sample['offset'] = center_offset
-            sample['size'] = bbox_size
-            sample['index_mask'] = index_mask
-            sample['reid'] = reid
-            sample['bbox_xys'] = bbox_xys
-            sample.pop('is_crowd', None)
-            sample.pop('difficult', None)
-            sample.pop('gt_class', None)
-            sample.pop('gt_bbox', None)
-            sample.pop('gt_score', None)
-            sample.pop('gt_ide', None)
+                        index[k] = ct_int[1] * (output_w / self.down_ratio) + ct_int[0]
+                        index_mask[k] = 1
+                        reid[k] = ide
+                        bbox_xys[k] = bbox_xy
+                        bbox_wh[k] = w, h
+                #show_image = sample['image'] * 255
+                #show_image = show_image.transpose((1, 2, 0)).astype('uint8')
+                #show_heatmap = heatmap * 255
+                #show_heatmap = show_heatmap.astype('uint8')
+                #show_heatmap = show_heatmap.transpose((1, 2, 0))
+                #show_heatmap = cv2.resize(show_heatmap, (show_image.shape[1], show_image.shape[0]))
+                #pseudo_image = np.zeros(show_image.shape, show_image.dtype)
+                #pseudo_image[:, :, 0] = show_heatmap
+                #pseudo_image[:, :, 1] = show_heatmap
+                #pseudo_image[:, :, 2] = show_heatmap
+                #show_heatmap = cv2.addWeighted(show_image, 0.3,
+                #                               pseudo_image, 0.7,
+                #                               0)
+                #
+                #cv2.imwrite('fairmot_heatmap.jpg', show_heatmap)
+                sample['heatmap'] = heatmap
+                sample['index'] = index
+                sample['size'] = bbox_size
+                sample['index_mask'] = index_mask
+                sample['reid'] = reid
+                sample['bbox_xys'] = bbox_xys
+                sample['wh'] = bbox_wh
+                sample.pop('is_crowd', None)
+                sample.pop('difficult', None)
+                sample.pop('gt_class', None)
+                sample.pop('gt_bbox', None)
+                sample.pop('gt_score', None)
+                sample.pop('gt_ide', None)
         return samples
 
     def gaussian_radius(self, det_size, min_overlap=0.7):

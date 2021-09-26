@@ -106,14 +106,22 @@ class CenterNetHead(nn.Layer):
                  max_objs=500,
                  size_loss='l1',
                  poto_method='mul',
-                 poto_heatmap_clip='True',
+                 poto_heatmap_clip=True,
                  size_base=1.,
-                 center_sampling_radius=0):
+                 center_sampling_radius=0,
+                 has_offset=True,
+                 size_relu=False,
+                 size_with_wh=False,
+                 wh_base=4.,
+                 wh_weight=1,
+                 wh_relu=False,
+                 poto_begin=-1):
         super(CenterNetHead, self).__init__()
         self.weights = {
             'heatmap': heatmap_weight,
             'size': size_weight,
-            'offset': offset_weight
+            'offset': offset_weight,
+            'wh': wh_weight
         }
         self.heatmap = nn.Sequential(
             ConvLayer(
@@ -138,8 +146,15 @@ class CenterNetHead(nn.Layer):
                 stride=1,
                 padding=0,
                 bias=True))
-        if not poto:
+        if not poto and has_offset:
             self.offset = nn.Sequential(
+                ConvLayer(
+                    in_channels, head_planes, kernel_size=3, padding=1, bias=True, use_dcn=use_dcn),
+                nn.ReLU(),
+                ConvLayer(
+                    head_planes, 2, kernel_size=1, stride=1, padding=0, bias=True))
+        if size_with_wh:
+            self.wh = nn.Sequential(
                 ConvLayer(
                     in_channels, head_planes, kernel_size=3, padding=1, bias=True, use_dcn=use_dcn),
                 nn.ReLU(),
@@ -156,6 +171,11 @@ class CenterNetHead(nn.Layer):
         self.poto_heatmap_clip = poto_heatmap_clip
         self.size_base = size_base
         self.center_sampling_radius = center_sampling_radius
+        self.has_offset = has_offset
+        self.size_relu = size_relu
+        self.wh_base = wh_base
+        self.wh_relu = wh_relu
+        self.poto_begin = poto_begin
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -166,30 +186,57 @@ class CenterNetHead(nn.Layer):
     def forward(self, feat, inputs):
         heatmap = self.heatmap(feat)
         size = self.size(feat)
-        size = size * self.size_base
-        if not self.poto:
+        if hasattr(self, 'wh'):
+            wh = self.wh(feat)
+            if self.wh_relu:
+                wh = F.relu(wh)
+            else:
+                wh = F.sigmoid(wh)
+            bs, c, feat_h, feat_w = wh.shape
+            im_h = feat_h * 4
+            im_w = feat_w * 4
+            im_size = paddle.to_tensor([im_w, im_h], dtype='float32', stop_gradient=True)
+            im_size = paddle.expand(im_size, [bs, feat_h, feat_w, 2])
+            im_size = paddle.transpose(im_size, [0, 3, 1, 2])
+            im_size.stop_gradient = True
+            wh = self.wh_base * wh
+            wh = wh * im_size
+            if self.size_relu:
+                size = F.relu(size)
+            else:
+                size = F.sigmoid(size)
+            whwh = paddle.concat([wh, wh], axis=1)
+            size = size * whwh
+        else:
+            if self.size_relu:
+                size = F.relu(size)
+            size = size * self.size_base
+            wh = None
+        if not self.poto and self.has_offset:
             offset = self.offset(feat)
         else:
             offset = None
         if self.training:
-            loss = self.get_loss(heatmap, size, offset, self.weights, inputs)
+            loss = self.get_loss(heatmap, size, offset, self.weights, inputs, wh)
             return loss
         else:
             heatmap = F.sigmoid(heatmap)
             return {'heatmap': heatmap, 'size': size, 'offset': offset}
 
-    def get_loss_w_poto(self, heatmap, size, offset, weights, inputs):
-        inputs = self.get_ground_truth(heatmap, size, weights, inputs)
-        return self.get_loss_wo_poto(heatmap, size, offset, weights, inputs)
+    def get_loss_w_poto(self, heatmap, size, offset, weights, inputs, wh):
+        inputs = self.get_ground_truth(heatmap, size, weights, inputs, wh)
+        return self.get_loss_wo_poto(heatmap, size, offset, weights, inputs, wh)
 
 
-    def get_loss_wo_poto(self, heatmap, size, offset, weights, inputs):
+    def get_loss_wo_poto(self, heatmap, size, offset, weights, inputs, wh):
         heatmap_target = inputs['heatmap']
         size_target = inputs['size']
         if offset is not None:
             offset_target = inputs['offset']
         index = inputs['index']
         mask = inputs['index_mask']
+        if wh is not None:
+            wh_target = inputs['wh']
         heatmap = paddle.clip(F.sigmoid(heatmap), 1e-4, 1 - 1e-4)
         heatmap_loss = self.focal_loss(heatmap, heatmap_target)
 
@@ -244,6 +291,22 @@ class CenterNetHead(nn.Layer):
                 reduction='sum')
             offset_loss = offset_loss / (pos_num + 1e-4)
             det_loss = det_loss + weights['offset'] * offset_loss
+        if wh is not None:
+            wh = paddle.transpose(wh, perm=[0, 2, 3, 1])
+            wh_n, wh_h, wh_w, wh_c = wh.shape
+            wh = paddle.reshape(wh, shape=[wh_n, -1, wh_c])
+            pos_wh = paddle.gather_nd(wh, index=index)
+            wh_mask = paddle.expand_as(mask, pos_wh)
+            wh_mask = paddle.cast(wh_mask, dtype=pos_wh.dtype)
+            pos_num = wh_mask.sum()
+            wh_mask.stop_gradient = True
+            wh_target.stop_gradient = True
+            wh_loss = F.l1_loss(
+                pos_wh * wh_mask,
+                wh_target * wh_mask,
+                reduction='sum')
+            wh_loss = wh_loss / (pos_num + 1e-4)
+            det_loss = det_loss + weights['wh'] * wh_loss
 
         loss = {
             'det_loss': det_loss,
@@ -253,6 +316,9 @@ class CenterNetHead(nn.Layer):
         }
         if offset is not None:
             loss.update({'offset_loss': offset_loss})
+        if wh is not None:
+            loss.update({'wh_loss': wh_loss})
+        
         return loss
 
 
@@ -296,7 +362,7 @@ class CenterNetHead(nn.Layer):
         return shift_x, shift_y
 
     @paddle.no_grad()
-    def get_ground_truth(self, heatmap, size, weights, inputs):
+    def get_ground_truth(self, heatmap, size, weights, inputs, wh):
         gt_class = inputs['gt_class']
         gt_bbox = inputs['gt_bbox']
         gt_ide = inputs['gt_ide']
@@ -319,7 +385,9 @@ class CenterNetHead(nn.Layer):
         target_bbox_size_list = []
         target_index_list = []
         target_mask_list = []
-        target_reid_list = []        
+        target_reid_list = []
+        if wh is not None:
+            target_bbox_wh_list = []
 
         for i in range(bs):
             target_heatmap = np.zeros(
@@ -328,6 +396,7 @@ class CenterNetHead(nn.Layer):
             target_index = np.zeros((self.max_objs, ), dtype=np.int64)
             target_mask = np.zeros((self.max_objs, ), dtype=np.int32)
             target_reid = np.zeros((self.max_objs, ), dtype=np.int64)
+            target_bbox_wh = np.zeros((self.max_objs, 2), dtype=np.float32)
             
 
             gt_class_per_img = paddle.slice(gt_class, axes=[0], starts=[i], ends=[i+1])
@@ -349,9 +418,7 @@ class CenterNetHead(nn.Layer):
             size_per_img = paddle.slice(size, axes=[0], starts=[i], ends=[i+1])
 
             size_per_img = paddle.transpose(size_per_img, [0, 2, 3, 1])
-            #np.save('size_per_img.npy', size_per_img.numpy())
             size_per_img = paddle.reshape(size_per_img, [-1, 4])
-            
             pred_bbox_per_img = center_xyxy + symbol * size_per_img
             
             if self.poto_heatmap_clip:
@@ -386,11 +453,11 @@ class CenterNetHead(nn.Layer):
                 quality = quality_cls + quality_iou
             #np.save('quality.npy', quality.numpy())
             num_gt, num_pred = quality.shape
-            if self.center_sampling_radius > 0:
+            if self.poto_begin > -1 and inputs['epoch_id'] < self.poto_begin and self.center_sampling_radius > 0:
                 gt_c_x1 = gt_bbox_per_img[:, 0] - self.center_sampling_radius * 4
                 gt_c_y1 = gt_bbox_per_img[:, 1] - self.center_sampling_radius * 4
-                gt_c_x2 = gt_c_x1 + self.center_sampling_radius * 4
-                gt_c_y2 = gt_c_y1 + self.center_sampling_radius * 4
+                gt_c_x2 = gt_c_x1 + self.center_sampling_radius * 4 * 2
+                gt_c_y2 = gt_c_y1 + self.center_sampling_radius * 4 * 2
                 gt_c_x1 = paddle.maximum(gt_c_x1, gt_xxyy[:, 0])                
                 gt_c_y1 = paddle.maximum(gt_c_y1, gt_xxyy[:, 1])
                 gt_c_x2 = paddle.minimum(gt_c_x2, gt_xxyy[:, 2])
@@ -411,10 +478,10 @@ class CenterNetHead(nn.Layer):
                 expand_gt_y2 = paddle.transpose(paddle.expand(gt_y2, shape=[num_pred, num_gt, 1]), [1, 0, 2])
             expand_center_x = paddle.expand(center_x, shape=[num_gt, num_pred, 1])
             expand_center_y = paddle.expand(center_y, shape=[num_gt, num_pred, 1])
-            x1_is_in = expand_center_x >= expand_gt_x1
-            x2_is_in = expand_center_x <= expand_gt_x2
-            y1_is_in = expand_center_y >= expand_gt_y1
-            y2_is_in = expand_center_y <= expand_gt_y2
+            x1_is_in = expand_center_x > expand_gt_x1
+            x2_is_in = expand_center_x < expand_gt_x2
+            y1_is_in = expand_center_y > expand_gt_y1
+            y2_is_in = expand_center_y < expand_gt_y2
             is_in = paddle.concat([x1_is_in, y1_is_in, x2_is_in, y2_is_in], 2) 
             is_in = paddle.cast(is_in, dtype='int32')
             is_in = paddle.prod(is_in, axis=2)
@@ -422,6 +489,26 @@ class CenterNetHead(nn.Layer):
             not_in = paddle.cast(not_in, quality.dtype)
             #np.save('not_in.npy', not_in.numpy())
             quality = paddle.where(not_in == -1, not_in, quality)
+
+            if inputs['step_id'] % 100 == 0:
+                quality_cls = paddle.where(not_in == -1, not_in, quality_cls)
+                quality_iou = paddle.where(not_in == -1, not_in, quality_iou)
+                quality_data = quality.numpy()
+                quality_cls_data = quality_cls.numpy()
+                quality_iou_data = quality_iou.numpy()
+                quality_data[quality_data < 0] = 0
+                quality_data[quality_data > 1] = 1
+                quality_cls_data[quality_cls_data < 0] = 0
+                quality_cls_data[quality_cls_data > 1] = 1
+                quality_iou_data[quality_iou_data < 0] = 0
+                quality_iou_data[quality_iou_data > 1] = 1
+                quality_data = quality_data * 255
+                quality_cls_data = quality_cls_data * 255
+                quality_iou_data = quality_iou_data * 255
+                quality_data = quality_data.astype('uint8')
+                quality_cls_data = quality_cls_data.astype('uint8')
+                quality_iou_data = quality_iou_data.astype('uint8')
+
             #np.save('quality_in.npy', quality.numpy())
             gt_idxs, shift_idxs = linear_sum_assignment(quality.numpy(), maximize=True)
             #np.save('gt_idxs.npy', gt_idxs)
@@ -452,12 +539,72 @@ class CenterNetHead(nn.Layer):
                 target_index[k] = shift_idx
                 target_mask[k] = 1
                 target_reid[k] = gt_ide_per_img_data[gt_idx]
+                if wh is not None:
+                    target_bbox_wh[k] = bbox_w, bbox_h
+
+                if inputs['step_id'] % 100 == 0:
+                    import cv2
+                    image = inputs['image'].numpy()[i] * 255
+                    show_image = image.transpose((1, 2, 0)).astype('uint8')
+                    show_image = cv2.resize(show_image, (output_w, output_h))
+                    quality_cls_data_gi = quality_cls_data[gt_idx, :]
+                    quality_iou_data_gi = quality_iou_data[gt_idx, :]
+                    quality_data_gi = quality_data[gt_idx, :]
+                    quality_data_gi = quality_data_gi.reshape([output_h, output_w])
+                    quality_cls_data_gi = quality_cls_data_gi.reshape([output_h, output_w])
+                    quality_iou_data_gi = quality_iou_data_gi.reshape([output_h, output_w])
+
+                    pseudo_quality_data = np.zeros(show_image.shape, show_image.dtype)
+                    pseudo_quality_data[:, :, 0] = quality_data_gi
+                    pseudo_quality_data[:, :, 1] = quality_data_gi
+                    pseudo_quality_data[:, :, 2] = quality_data_gi
+                    pseudo_quality_data = cv2.addWeighted(show_image, 0.4,
+                                                     pseudo_quality_data, 0.6,
+                                                     0)
+                    pseudo_quality_cls_data = np.zeros(show_image.shape, show_image.dtype)
+                    pseudo_quality_cls_data[:, :, 0] = quality_cls_data_gi
+                    pseudo_quality_cls_data[:, :, 1] = quality_cls_data_gi
+                    pseudo_quality_cls_data[:, :, 2] = quality_cls_data_gi
+                    pseudo_quality_cls_data = cv2.addWeighted(show_image, 0.4,
+                                                         pseudo_quality_cls_data, 0.6,
+                                                         0)
+                    pseudo_quality_iou_data = np.zeros(show_image.shape, show_image.dtype)
+                    pseudo_quality_iou_data[:, :, 0] = quality_iou_data_gi 
+                    pseudo_quality_iou_data[:, :, 1] = quality_iou_data_gi 
+                    pseudo_quality_iou_data[:, :, 2] = quality_iou_data_gi 
+                    pseudo_quality_iou_data = cv2.addWeighted(show_image, 0.4,
+                                                         pseudo_quality_iou_data, 0.6,
+                                                         0)
+                    show_heatmap = np.zeros(
+                        (self.num_classes, output_h, output_w), dtype='float32')
+                    self.draw_truncate_gaussian(show_heatmap[cls_id], ct_int, radius,
+                                                radius)
+                    show_heatmap = show_heatmap * 255
+                    show_heatmap = show_heatmap.astype('uint8')
+                    show_heatmap = show_heatmap.transpose((1, 2, 0))
+                    show_heatmap = cv2.resize(show_heatmap, (show_image.shape[1], show_image.shape[0]))
+                    pseudo_image = np.zeros(show_image.shape, show_image.dtype)
+                    pseudo_image[:, :, 0] = show_heatmap
+                    pseudo_image[:, :, 1] = show_heatmap
+                    pseudo_image[:, :, 2] = show_heatmap
+                    show_heatmap = cv2.addWeighted(show_image, 0.4,
+                                                   pseudo_image, 0.6,
+                                                   0)
+                    show_quality_cls_iou = np.concatenate([pseudo_quality_cls_data, pseudo_quality_iou_data], axis=1)
+                    show_quality_heatmap = np.concatenate([pseudo_quality_data, show_heatmap], axis=1)
+                    show_quality = np.concatenate([show_quality_cls_iou, show_quality_heatmap], axis=0)
+                    cv2.imwrite('centernet_mot17half_coco_poto_imscale_giou2_noequal_potobegin2_sizerelu4/test_duiqi/{}_{}_show_quality_{}.jpg'.format(inputs['epoch_id'], inputs['step_id'], k), show_quality)
+
+
             target_heatmap_list.append(target_heatmap)
             target_bbox_size_list.append(target_bbox_size)
             target_index_list.append(target_index)
             target_mask_list.append(target_mask)
             target_reid_list.append(target_reid)
+            if wh is not None:
+                target_bbox_wh_list.append(target_bbox_wh)
  
+            
             import cv2
             image = inputs['image'].numpy()[i] * 255
             show_image = image.transpose((1, 2, 0)).astype('uint8')
@@ -473,13 +620,15 @@ class CenterNetHead(nn.Layer):
                                            pseudo_image, 0.7,
                                            0)
             
-            cv2.imwrite('centernet_mot17half_coco_poto_imscale_giou_center/fairmot_heatmap.jpg', show_heatmap)
+            cv2.imwrite('centernet_mot17half_coco_poto_imscale_giou2_noequal_potobegin2_sizerelu4/fairmot_heatmap.jpg', show_heatmap)
             
            
         inputs['heatmap'] = paddle.to_tensor(target_heatmap_list)
         inputs['size'] = paddle.to_tensor(target_bbox_size_list)
         inputs['index'] = paddle.to_tensor(target_index_list)
         inputs['index_mask'] = paddle.to_tensor(target_mask_list)
+        if wh is not None:
+            inputs['wh'] = paddle.to_tensor(target_bbox_wh_list)
         inputs['reid'] = paddle.to_tensor(target_reid_list)
         
         return inputs
@@ -529,8 +678,8 @@ class CenterNetHead(nn.Layer):
         return min(r1, r2, r3)
 
 
-    def get_loss(self, heatmap, size, offset, weights, inputs):
+    def get_loss(self, heatmap, size, offset, weights, inputs, wh):
         if self.poto:
-            return self.get_loss_w_poto(heatmap, size, offset, weights, inputs)
+            return self.get_loss_w_poto(heatmap, size, offset, weights, inputs, wh)
         else:
-            return self.get_loss_wo_poto(heatmap, size, offset, weights, inputs)
+            return self.get_loss_wo_poto(heatmap, size, offset, weights, inputs, wh)

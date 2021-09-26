@@ -363,6 +363,8 @@ class Trainer(object):
                     scaler.minimize(self.optimizer, scaled_loss)
                 else:
                     # model forward
+                    data['step_id'] = step_id
+                    data['epoch_id'] = epoch_id
                     outputs = model(data)
                     loss = outputs['loss']
                     # model backward
