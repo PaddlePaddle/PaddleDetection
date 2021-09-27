@@ -286,6 +286,12 @@ class ModelEMA(object):
         for k, v in self.state_dict.items():
             self.state_dict[k] = paddle.zeros_like(v)
 
+    def resume(self, state_dict, step):
+        for k, v in state_dict.items():
+            self.state_dict[k] = v
+
+        self.step = step
+
     def update(self, model):
         if self.use_thres_step:
             decay = min(self.decay, (1 + self.step) / (10 + self.step))

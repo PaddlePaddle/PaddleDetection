@@ -62,7 +62,7 @@ def _strip_postfix(path):
     return path
 
 
-def load_weight(model, weight, optimizer=None):
+def load_weight(model, weight, optimizer=None, ema=None):
     if is_url(weight):
         weight = get_weights_path(weight)
 
@@ -101,6 +101,11 @@ def load_weight(model, weight, optimizer=None):
         if 'last_epoch' in optim_state_dict:
             last_epoch = optim_state_dict.pop('last_epoch')
         optimizer.set_state_dict(optim_state_dict)
+
+        if ema is not None and os.path.exists(path + '_ema.pdparams'):
+            ema_state_dict = paddle.load(path + '_ema.pdparams')
+            ema.resume(ema_state_dict,
+                       optim_state_dict['LR_Scheduler']['last_epoch'])
 
     return last_epoch
 
