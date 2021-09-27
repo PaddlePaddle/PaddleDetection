@@ -116,6 +116,21 @@ class PadStride : public PreprocessOp {
   int stride_;
 };
 
+class TopDownEvalAffine : public PreprocessOp {
+ public:
+  virtual void Init(const YAML::Node& item) {
+    trainsize_ = item["trainsize"].as<std::vector<int>>();
+ }
+
+  virtual void Run(cv::Mat* im, ImageBlob* data);
+
+ private:
+  int interp_ = 1;
+  std::vector<int> trainsize_;
+};
+
+void CropImg(cv::Mat &img, cv::Mat &crop_img, std::vector<int> &area, std::vector<float> &center, std::vector<float> &scale, float expandratio=0.15);
+
 class Preprocessor {
  public:
   void Init(const YAML::Node& config_node) {
@@ -139,6 +154,8 @@ class Preprocessor {
     } else if (name == "PadStride") {
       // use PadStride instead of PadBatch
       return std::make_shared<PadStride>();
+    } else if (name == "TopDownEvalAffine") {
+      return std::make_shared<TopDownEvalAffine>();
     }
     std::cerr << "can not find function of OP: " << name << " and return: nullptr" << std::endl;
     return nullptr;
