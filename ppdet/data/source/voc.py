@@ -55,7 +55,7 @@ class VOCDataSet(DetDataset):
                  data_fields=['image'],
                  sample_num=-1,
                  label_list=None,
-                 allow_empty=True,
+                 allow_empty=False,
                  empty_ratio=1.):
         super(VOCDataSet, self).__init__(
             dataset_dir=dataset_dir,

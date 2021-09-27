@@ -1,7 +1,7 @@
 _BASE_: [
-  'faster_rcnn_swin_transformer_tiny_1x_coco.yml',
+  'faster_rcnn_swin_tiny_fpn_1x_coco.yml',
 ]
-weights: output/faster_swin_transformer_tiny_2x/model_final
+weights: output/faster_rcnn_swin_tiny_fpn_2x_coco/model_final
 
 epoch: 24
 
