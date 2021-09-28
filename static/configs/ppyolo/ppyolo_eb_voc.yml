@@ -5,12 +5,14 @@ log_smooth_window: 20
 save_dir: output
 snapshot_iter: 3000
 metric: VOC
-map_type: 11point
-pretrain_weights: cc_yolo_pretrain/cc_yolo_pretrain.pdparams
-weights: output/cc-yolo/best_model
-num_classes: 9
+map_type: integral
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet34_vd_pretrained.tar
+weights: output/ppyolo_eb_voc/best_model
+num_classes: 20
 use_fine_grained_loss: true
 log_iter: 1000
+use_ema: true
+ema_decay: 0.9998
 
 YOLOv3:
   backbone: ResNet_EB
