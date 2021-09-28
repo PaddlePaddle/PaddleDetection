@@ -6,5 +6,4 @@ _BASE_: [
   '_base_/fairmot_reader_864x480.yml',
 ]
 
-metric: MOT
 weights: output/fairmot_dla34_30e_864x480/model_final
