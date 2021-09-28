@@ -49,9 +49,11 @@ class KeyPointDetector {
  public:
   explicit KeyPointDetector(const std::string& model_dir,
                             int cpu_threads = 1,
-                            const int batch_size = 1) {
+                            const int batch_size = 1,
+                            bool use_dark = true) {
     config_.load_config(model_dir);
     threshold_ = config_.draw_threshold_;
+    use_dark_ = use_dark;
     preprocessor_.Init(config_.preprocess_info_);
     printf("before keypoint detector\n");
     LoadModel(model_dir, cpu_threads);
@@ -76,14 +78,16 @@ class KeyPointDetector {
     return config_.label_list_;
   }
 
+  bool use_dark(){return this->use_dark_;}
+
  private:
   // Preprocess image and copy data to input buffer
   void Preprocess(const cv::Mat& image_mat);
   // Postprocess result
-  void Postprocess(const std::vector<float> output,
-                   const std::vector<int64_t> output_shape,
-                   const std::vector<int64_t> idxout,
-                   const std::vector<int64_t> idx_shape,
+  void Postprocess(std::vector<float>& output,
+                   std::vector<int64_t>& output_shape,
+                   std::vector<int64_t>& idxout,
+                   std::vector<int64_t>& idx_shape,
                    std::vector<KeyPointResult>* result,
                    std::vector<std::vector<float>>& center,
                    std::vector<std::vector<float>>& scale);
@@ -95,6 +99,7 @@ class KeyPointDetector {
   std::vector<int64_t> idx_data_;
   float threshold_;
   ConfigPaser config_;
+  bool use_dark_;
 };
 
 }  // namespace PaddleDetection

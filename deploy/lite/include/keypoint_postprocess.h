@@ -22,34 +22,35 @@
 std::vector<float> get_3rd_point(std::vector<float>& a, std::vector<float>& b);
 std::vector<float> get_dir(float src_point_x, float src_point_y, float rot_rad);
 void affine_tranform(
-    float pt_x, float pt_y, cv::Mat& trans, float* x, int p, int num);
+    float pt_x, float pt_y, cv::Mat& trans, std::vector<float>& x, int p, int num);
 cv::Mat get_affine_transform(std::vector<float>& center,
                              std::vector<float>& scale,
                              float rot,
                              std::vector<int>& output_size,
                              int inv);
-void transform_preds(float* coords,
+void transform_preds(std::vector<float>& coords,
                      std::vector<float>& center,
                      std::vector<float>& scale,
                      std::vector<int>& output_size,
                      std::vector<int>& dim,
-                     float* target_coords);
+                     std::vector<float>& target_coords);
 void box_to_center_scale(std::vector<int>& box,
                          int width,
                          int height,
                          std::vector<float>& center,
                          std::vector<float>& scale);
-void get_max_preds(float* heatmap,
+void get_max_preds(std::vector<float>& heatmap,
                    std::vector<int64_t>& dim,
-                   float* preds,
-                   float* maxvals,
+                   std::vector<float>& preds,
+                   std::vector<float>& maxvals,
                    int batchid,
                    int joint_idx);
-void get_final_preds(float* heatmap,
+void get_final_preds(std::vector<float>& heatmap,
                      std::vector<int64_t>& dim,
-                     int64_t* idxout,
+                     std::vector<int64_t>& idxout,
                      std::vector<int64_t>& idxdim,
                      std::vector<float>& center,
                      std::vector<float> scale,
-                     float* preds,
-                     int batchid);
+                     std::vector<float>& preds,
+                     int batchid,
+                     bool DARK = true);
