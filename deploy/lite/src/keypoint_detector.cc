@@ -29,7 +29,11 @@ void KeyPointDetector::LoadModel(std::string model_file, int num_theads) {
   predictor_ = std::move(CreatePaddlePredictor<MobileConfig>(config));
 }
 
-const int edge[][2] = {{0, 1},
+// Visualiztion MaskDetector results
+cv::Mat VisualizeKptsResult(const cv::Mat& img,
+                            const std::vector<KeyPointResult>& results,
+                            const std::vector<int>& colormap) {
+  const int edge[][2] = {{0, 1},
                        {0, 2},
                        {1, 3},
                        {2, 4},
@@ -46,10 +50,6 @@ const int edge[][2] = {{0, 1},
                        {13, 15},
                        {14, 16},
                        {11, 12}};
-// Visualiztion MaskDetector results
-cv::Mat VisualizeKptsResult(const cv::Mat& img,
-                            const std::vector<KeyPointResult>& results,
-                            const std::vector<int>& colormap) {
   cv::Mat vis_img = img.clone();
   for (int batchid = 0; batchid < results.size(); batchid++) {
     for (int i = 0; i < results[batchid].num_joints; i++) {
@@ -85,24 +85,25 @@ void KeyPointDetector::Preprocess(const cv::Mat& ori_im) {
   preprocessor_.Run(&im, &inputs_);
 }
 
-void KeyPointDetector::Postprocess(std::vector<float> output,
-                                   std::vector<int64_t> output_shape,
-                                   std::vector<int64_t> idxout,
-                                   std::vector<int64_t> idx_shape,
+void KeyPointDetector::Postprocess(std::vector<float>& output,
+                                   std::vector<int64_t>& output_shape,
+                                   std::vector<int64_t>& idxout,
+                                   std::vector<int64_t>& idx_shape,
                                    std::vector<KeyPointResult>* result,
                                    std::vector<std::vector<float>>& center_bs,
                                    std::vector<std::vector<float>>& scale_bs) {
-  float* preds = new float[output_shape[1] * 3]{0};
+  std::vector<float> preds(output_shape[1] * 3, 0);
 
   for (int batchid = 0; batchid < output_shape[0]; batchid++) {
-    get_final_preds(const_cast<float*>(output.data()),
+    get_final_preds(output,
                     output_shape,
-                    idxout.data(),
+                    idxout,
                     idx_shape,
                     center_bs[batchid],
                     scale_bs[batchid],
                     preds,
-                    batchid);
+                    batchid,
+                    this->use_dark());
     KeyPointResult result_item;
     result_item.num_joints = output_shape[1];
     result_item.keypoints.clear();
@@ -113,7 +114,6 @@ void KeyPointDetector::Postprocess(std::vector<float> output,
     }
     result->push_back(result_item);
   }
-  delete[] preds;
 }
 
 void KeyPointDetector::Predict(const std::vector<cv::Mat> imgs,
