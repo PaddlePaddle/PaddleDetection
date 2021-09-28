@@ -19,7 +19,7 @@ CenterNetDLAFPN:
   last_level: 5
   out_channel: 0
   dcn_v2: True
-  with_sge: False
+  with_sge: True
 
 CenterNetHead:
   head_planes: 256
@@ -27,8 +27,8 @@ CenterNetHead:
   regress_ltrb: True
   size_weight: 0.1
   size_loss: 'L1'
-  offset_weight: 1
-  iou_weight: 0
+  offset_weight: 0
+  iou_weight: 1
 
 FairMOTEmbeddingHead:
   ch_head: 256
