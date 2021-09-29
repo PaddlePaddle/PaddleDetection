@@ -76,7 +76,12 @@ class TopDownHRNet(BaseArch):
         if self.training:
             return self.loss(hrnet_outputs, self.inputs)
         elif self.deploy:
-            return hrnet_outputs
+            outshape = hrnet_outputs.shape
+            max_idx = paddle.argmax(
+                hrnet_outputs.reshape(
+                    (outshape[0], outshape[1], outshape[2] * outshape[3])),
+                axis=-1)
+            return hrnet_outputs, max_idx
         else:
             if self.flip:
                 self.inputs['image'] = self.inputs['image'].flip([3])
@@ -199,6 +204,10 @@ class HRNetPostProcess(object):
         return coord
 
     def dark_postprocess(self, hm, coords, kernelsize):
+        '''DARK postpocessing, Zhang et al. Distribution-Aware Coordinate
+        Representation for Human Pose Estimation (CVPR 2020).
+        '''
+
         hm = self.gaussian_blur(hm, kernelsize)
         hm = np.maximum(hm, 1e-10)
         hm = np.log(hm)
