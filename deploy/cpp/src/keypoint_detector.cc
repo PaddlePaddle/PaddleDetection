@@ -17,16 +17,81 @@
 #include <iomanip>
 #include "include/keypoint_detector.h"
 
+using namespace paddle_infer;
+
 namespace PaddleDetection {
 
 // Load Model and create model predictor
-void KeyPointDetector::LoadModel(std::string model_file, int num_theads) {
-  MobileConfig config;
-  config.set_threads(num_theads);
-  config.set_model_from_file(model_file + "/model.nb");
-  config.set_power_mode(LITE_POWER_HIGH);
+void KeyPointDetector::LoadModel(const std::string& model_dir,
+                                 const int batch_size,
+                                 const std::string& run_mode) {
+  paddle_infer::Config config;
+  std::string prog_file = model_dir + OS_PATH_SEP + "model.pdmodel";
+  std::string params_file = model_dir + OS_PATH_SEP + "model.pdiparams";
+  config.SetModel(prog_file, params_file);
+  if (this->device_ == "GPU") {
+    config.EnableUseGpu(200, this->gpu_id_);
+    config.SwitchIrOptim(true);
+    // use tensorrt
+    if (run_mode != "fluid") {
+      auto precision = paddle_infer::Config::Precision::kFloat32;
+      if (run_mode == "trt_fp32") {
+        precision = paddle_infer::Config::Precision::kFloat32;
+      } else if (run_mode == "trt_fp16") {
+        precision = paddle_infer::Config::Precision::kHalf;
+      } else if (run_mode == "trt_int8") {
+        precision = paddle_infer::Config::Precision::kInt8;
+      } else {
+        printf(
+            "run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
+      }
+      // set tensorrt
+      config.EnableTensorRtEngine(1 << 30,
+                                  batch_size,
+                                  this->min_subgraph_size_,
+                                  precision,
+                                  false,
+                                  this->trt_calib_mode_);
 
-  predictor_ = std::move(CreatePaddlePredictor<MobileConfig>(config));
+      // set use dynamic shape
+      if (this->use_dynamic_shape_) {
+        // set DynamicShsape for image tensor
+        const std::vector<int> min_input_shape = {
+            1, 3, this->trt_min_shape_, this->trt_min_shape_};
+        const std::vector<int> max_input_shape = {
+            1, 3, this->trt_max_shape_, this->trt_max_shape_};
+        const std::vector<int> opt_input_shape = {
+            1, 3, this->trt_opt_shape_, this->trt_opt_shape_};
+        const std::map<std::string, std::vector<int>> map_min_input_shape = {
+            {"image", min_input_shape}};
+        const std::map<std::string, std::vector<int>> map_max_input_shape = {
+            {"image", max_input_shape}};
+        const std::map<std::string, std::vector<int>> map_opt_input_shape = {
+            {"image", opt_input_shape}};
+
+        config.SetTRTDynamicShapeInfo(
+            map_min_input_shape, map_max_input_shape, map_opt_input_shape);
+        std::cout << "TensorRT dynamic shape enabled" << std::endl;
+      }
+    }
+
+  } else if (this->device_ == "XPU") {
+    config.EnableXpu(10 * 1024 * 1024);
+  } else {
+    config.DisableGpu();
+    if (this->use_mkldnn_) {
+      config.EnableMKLDNN();
+      // cache 10 different shapes for mkldnn to avoid memory leak
+      config.SetMkldnnCacheCapacity(10);
+    }
+    config.SetCpuMathLibraryNumThreads(this->cpu_math_library_num_threads_);
+  }
+  config.SwitchUseFeedFetchOps(false);
+  config.SwitchIrOptim(true);
+  config.DisableGlogInfo();
+  // Memory optimization
+  config.EnableMemoryOptim();
+  predictor_ = std::move(CreatePredictor(config));
 }
 
 // Visualiztion MaskDetector results
@@ -86,9 +151,9 @@ void KeyPointDetector::Preprocess(const cv::Mat& ori_im) {
 }
 
 void KeyPointDetector::Postprocess(std::vector<float>& output,
-                                   std::vector<int64_t>& output_shape,
+                                   std::vector<int> output_shape,
                                    std::vector<int64_t>& idxout,
-                                   std::vector<int64_t>& idx_shape,
+                                   std::vector<int> idx_shape,
                                    std::vector<KeyPointResult>* result,
                                    std::vector<std::vector<float>>& center_bs,
                                    std::vector<std::vector<float>>& scale_bs) {
@@ -103,7 +168,7 @@ void KeyPointDetector::Postprocess(std::vector<float>& output,
                     scale_bs[batchid],
                     preds,
                     batchid,
-                    this->use_dark());
+                    this->use_dark);
     KeyPointResult result_item;
     result_item.num_joints = output_shape[1];
     result_item.keypoints.clear();
@@ -129,11 +194,18 @@ void KeyPointDetector::Predict(const std::vector<cv::Mat> imgs,
 
   // in_data_batch
   std::vector<float> in_data_all;
+  std::vector<float> im_shape_all(batch_size * 2);
+  std::vector<float> scale_factor_all(batch_size * 2);
 
   // Preprocess image
   for (int bs_idx = 0; bs_idx < batch_size; bs_idx++) {
     cv::Mat im = imgs.at(bs_idx);
     Preprocess(im);
+    im_shape_all[bs_idx * 2] = inputs_.im_shape_[0];
+    im_shape_all[bs_idx * 2 + 1] = inputs_.im_shape_[1];
+
+    scale_factor_all[bs_idx * 2] = inputs_.scale_factor_[0];
+    scale_factor_all[bs_idx * 2 + 1] = inputs_.scale_factor_[1];
 
     // TODO: reduce cost time
     in_data_all.insert(
@@ -144,26 +216,48 @@ void KeyPointDetector::Predict(const std::vector<cv::Mat> imgs,
 
   auto input_names = predictor_->GetInputNames();
   for (const auto& tensor_name : input_names) {
-    auto in_tensor = predictor_->GetInputByName(tensor_name);
+    auto in_tensor = predictor_->GetInputHandle(tensor_name);
     if (tensor_name == "image") {
       int rh = inputs_.in_net_shape_[0];
       int rw = inputs_.in_net_shape_[1];
-      in_tensor->Resize({batch_size, 3, rh, rw});
-      auto* inptr = in_tensor->mutable_data<float>();
-      std::copy_n(in_data_all.data(), in_data_all.size(), inptr);
+      in_tensor->Reshape({batch_size, 3, rh, rw});
+      in_tensor->CopyFromCpu(in_data_all.data());
+    } else if (tensor_name == "im_shape") {
+      in_tensor->Reshape({batch_size, 2});
+      in_tensor->CopyFromCpu(im_shape_all.data());
+    } else if (tensor_name == "scale_factor") {
+      in_tensor->Reshape({batch_size, 2});
+      in_tensor->CopyFromCpu(scale_factor_all.data());
     }
   }
 
   auto preprocess_end = std::chrono::steady_clock::now();
-  std::vector<int64_t> output_shape, idx_shape;
+  std::vector<int> output_shape, idx_shape;
   // Run predictor
   // warmup
   for (int i = 0; i < warmup; i++) {
     predictor_->Run();
     // Get output tensor
     auto output_names = predictor_->GetOutputNames();
-    auto out_tensor = predictor_->GetTensor(output_names[0]);
-    auto idx_tensor = predictor_->GetTensor(output_names[1]);
+    auto out_tensor = predictor_->GetOutputHandle(output_names[0]);
+    output_shape = out_tensor->shape();
+    // Calculate output length
+    int output_size = 1;
+    for (int j = 0; j < output_shape.size(); ++j) {
+      output_size *= output_shape[j];
+    }
+    output_data_.resize(output_size);
+    out_tensor->CopyToCpu(output_data_.data());
+
+    auto idx_tensor = predictor_->GetOutputHandle(output_names[1]);
+    idx_shape = idx_tensor->shape();
+    // Calculate output length
+    output_size = 1;
+    for (int j = 0; j < idx_shape.size(); ++j) {
+      output_size *= idx_shape[j];
+    }
+    idx_data_.resize(output_size);
+    idx_tensor->CopyToCpu(idx_data_.data());
   }
 
   auto inference_start = std::chrono::steady_clock::now();
@@ -171,7 +265,7 @@ void KeyPointDetector::Predict(const std::vector<cv::Mat> imgs,
     predictor_->Run();
     // Get output tensor
     auto output_names = predictor_->GetOutputNames();
-    auto out_tensor = predictor_->GetTensor(output_names[0]);
+    auto out_tensor = predictor_->GetOutputHandle(output_names[0]);
     output_shape = out_tensor->shape();
     // Calculate output length
     int output_size = 1;
@@ -182,10 +276,9 @@ void KeyPointDetector::Predict(const std::vector<cv::Mat> imgs,
       std::cerr << "[WARNING] No object detected." << std::endl;
     }
     output_data_.resize(output_size);
-    std::copy_n(
-        out_tensor->mutable_data<float>(), output_size, output_data_.data());
+    out_tensor->CopyToCpu(output_data_.data());
 
-    auto idx_tensor = predictor_->GetTensor(output_names[1]);
+    auto idx_tensor = predictor_->GetOutputHandle(output_names[1]);
     idx_shape = idx_tensor->shape();
     // Calculate output length
     output_size = 1;
@@ -193,8 +286,7 @@ void KeyPointDetector::Predict(const std::vector<cv::Mat> imgs,
       output_size *= idx_shape[j];
     }
     idx_data_.resize(output_size);
-    std::copy_n(
-        idx_tensor->mutable_data<int64_t>(), output_size, idx_data_.data());
+    idx_tensor->CopyToCpu(idx_data_.data());
   }
   auto inference_end = std::chrono::steady_clock::now();
   auto postprocess_start = std::chrono::steady_clock::now();

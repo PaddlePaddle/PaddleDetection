@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+#include <math.h>
 #include "include/keypoint_postprocess.h"
 #define PI 3.1415926535
 #define HALF_CIRCLE_DEGREE 180
@@ -73,7 +73,7 @@ void transform_preds(std::vector<float>& coords,
                      std::vector<float>& center,
                      std::vector<float>& scale,
                      std::vector<int>& output_size,
-                     std::vector<int64_t>& dim,
+                     std::vector<int>& dim,
                      std::vector<float>& target_coords) {
   cv::Mat trans(2, 3, CV_64FC1);
   get_affine_transform(center, scale, 0, output_size, trans, 1);
@@ -83,10 +83,10 @@ void transform_preds(std::vector<float>& coords,
 }
 
 // only for batchsize == 1
-void get_max_preds(std::vector<float>& heatmap,
+void get_max_preds(float* heatmap,
                    std::vector<int>& dim,
                    std::vector<float>& preds,
-                   std::vector<float>& maxvals,
+                   float* maxvals,
                    int batchid,
                    int joint_idx) {
   int num_joints = dim[1];
@@ -108,9 +108,8 @@ void get_max_preds(std::vector<float>& heatmap,
   }
 }
 
-
 void dark_parse(std::vector<float>& heatmap,
-                std::vector<int64_t>& dim,
+                std::vector<int>& dim,
                 std::vector<float>& coords,
                 int px, 
                 int py, 
@@ -169,9 +168,9 @@ void dark_parse(std::vector<float>& heatmap,
 }
 
 void get_final_preds(std::vector<float>& heatmap,
-                     std::vector<int64_t>& dim,
+                     std::vector<int>& dim,
                      std::vector<int64_t>& idxout,
-                     std::vector<int64_t>& idxdim,
+                     std::vector<int>& idxdim,
                      std::vector<float>& center,
                      std::vector<float> scale,
                      std::vector<float>& preds,
@@ -209,7 +208,7 @@ void get_final_preds(std::vector<float>& heatmap,
       }
     }
   }
-  
+
   std::vector<int> img_size{heatmap_width, heatmap_height};
   transform_preds(coords, center, scale, img_size, dim, preds);
 }
