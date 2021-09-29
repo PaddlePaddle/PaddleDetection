@@ -189,7 +189,8 @@ class CenterNetHead(nn.Layer):
         # heatmap head loss: CTFocalLoss
         heatmap_target = inputs['heatmap']
         heatmap = paddle.clip(F.sigmoid(heatmap), 1e-4, 1 - 1e-4)
-        heatmap_loss = CTFocalLoss(heatmap, heatmap_target)
+        ctfocal_loss = CTFocalLoss()
+        heatmap_loss = ctfocal_loss(heatmap, heatmap_target)
 
         # size head loss: L1 loss or GIoU loss
         index = inputs['index']
@@ -236,7 +237,7 @@ class CenterNetHead(nn.Layer):
             size_loss = size_loss / (pos_num + 1e-4)
 
         # offset head loss: L1 loss
-        if offset and self.offset_weight:
+        if self.offset_weight:
             offset_target = inputs['offset']
             offset = paddle.transpose(offset, perm=[0, 2, 3, 1])
             offset_n, offset_h, offset_w, offset_c = offset.shape
@@ -254,7 +255,7 @@ class CenterNetHead(nn.Layer):
             offset_loss = offset_loss / (pos_num + 1e-4)
 
         # iou head loss: GIoU loss
-        if iou and self.iou_weight:
+        if self.iou_weight:
             iou = paddle.transpose(iou, perm=[0, 2, 3, 1])
             iou_n, iou_h, iou_w, iou_c = iou.shape
             iou = paddle.reshape(iou, shape=[iou_n, -1, iou_c])
