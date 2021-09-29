@@ -35,6 +35,66 @@
  FairMOT均使用DLA-34为骨干网络，2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
 
 
+## 数据集准备和处理
+
+### 1、数据集处理代码说明
+代码统一都在configs/mot/vehicle/tools目录下
+```
+# bdd100kmot
+tools/bdd100kmot/bdd100k_vehicle.sh: 通过执行bdd2mot.py、bdd100k2mot.py和gen_labels_MOT.py生成bdd100k_vehicle 数据集
+tools/bdd100kmot/bdd2mot.py: 将bdd100k全集转换成mot格式
+tools/bdd100kmot/bdd100k2mot.py： 抽取指定的类别
+tools/bdd100kmot/gen_labels_MOT.py： 生层单类别的labels_with_ids文件
+# visdrone
+tools/visdrone/visdrone2mot.py: 放到visdrone数据集里面，生成visdrone_vehicle
+```
+
+### 2、bdd100k_vehicle数据集处理
+```
+# bdd100k生成bdd100k_vehicle mot格式的数据，抽取类别classes=2,3,4,9,10 (car, truck, bus, trailer, other vehicle)
+<<--生成前目录-->>
+├── bdd100k_path
+│   ├── images
+│   ├── labels
+<<--生成后目录-->>
+├── bdd100k_path
+│   ├── images
+│   ├── labels
+│   ├── bdd100k_vehicle
+│   │   ├── images
+│   │   │   ├── train
+│   │   │   ├── val
+│   │   ├── labels_with_ids
+│   │   │   ├── train
+│   │   │   ├── val
+# 执行
+sh bdd100k_vehicle.sh
+```
+
+### 3、visdrone_vehicle数据集处理
+```
+# 复制tool/visdrone/visdrone2mot.py脚本到数据集目录下
+# bdd100k生成bdd100k_vehicle mot格式的数据，抽取类别classes=4,5,6,9 (car, van, truck, bus)
+<<--生成前目录-->>
+├── VisDrone2019-MOT-val
+│   ├── annotations
+│   ├── sequences
+│   ├── visdrone2mot.py
+<<--生成后目录-->>
+├── VisDrone2019-MOT-val
+│   ├── annotations
+│   ├── sequences
+│   ├── visdrone2mot.py
+│   ├── visdrone-vehicle
+│   │   ├── images
+│   │   │   ├── val
+│   │   ├── labels_with_ids
+│   │   │   ├── val
+# 执行
+python visdrone2mot.py --transMot=True --dataname=visdrone_vehicle --phase=val 
+# python visdrone2mot.py --transMot=True --dataname=visdrone_vehicle --phase=train
+```
+
 ## 快速开始
 
 ### 1. 训练
