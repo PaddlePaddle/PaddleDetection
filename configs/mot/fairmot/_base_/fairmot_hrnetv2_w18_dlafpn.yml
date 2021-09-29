@@ -1,0 +1,36 @@
+architecture: FairMOT
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/HRNet_W18_C_pretrained.pdparams
+
+FairMOT:
+  detector: CenterNet
+  reid: FairMOTEmbeddingHead
+  loss: FairMOTLoss
+  tracker: JDETracker
+
+CenterNet:
+  backbone: HRNet
+  head: CenterNetHead
+  post_process: CenterNetPostProcess
+  neck: CenterNetDLAFPN
+  for_mot: True
+
+HRNet:
+  width: 18
+  freeze_at: 0
+  return_idx: [0, 1, 2, 3]
+  upsample: False
+
+CenterNetDLAFPN:
+  down_ratio: 4
+  last_level: 3
+  out_channel: 0
+  first_level: 0
+  dcn_v2: False
+
+CenterNetPostProcess:
+  for_mot: True
+
+JDETracker:
+  conf_thres: 0.4
+  tracked_thresh: 0.4
+  metric_type: cosine

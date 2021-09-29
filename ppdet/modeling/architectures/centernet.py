@@ -29,7 +29,7 @@ class CenterNet(BaseArch):
 
     Args:
         backbone (object): backbone instance
-        neck (object): 'CenterDLAFPN' instance
+        neck (object): FPN instance, default None, use 'CenterDLAFPN' in FairMOT
         head (object): 'CenterHead' instance
         post_process (object): 'CenterNetPostProcess' instance
         for_mot (bool): whether return other features used in tracking model
@@ -39,7 +39,7 @@ class CenterNet(BaseArch):
     __inject__ = ['post_process']
 
     def __init__(self,
-                 backbone='DLA',
+                 backbone,
                  neck='CenterDLAFPN',
                  head='CenterHead',
                  post_process='CenterNetPostProcess',
@@ -56,16 +56,18 @@ class CenterNet(BaseArch):
         backbone = create(cfg['backbone'])
 
         kwargs = {'input_shape': backbone.out_shape}
-        neck = create(cfg['neck'], **kwargs)
+        neck = cfg['neck'] and create(cfg['neck'], **kwargs)
 
-        kwargs = {'input_shape': neck.out_shape}
+        out_shape = neck and neck.out_shape or backbone.out_shape
+        kwargs = {'input_shape': out_shape}
         head = create(cfg['head'], **kwargs)
 
         return {'backbone': backbone, 'neck': neck, "head": head}
 
     def _forward(self):
-        body_feats = self.backbone(self.inputs)
-        neck_feat = self.neck(body_feats)
+        neck_feat = self.backbone(self.inputs)
+        if self.neck is not None:
+            neck_feat = self.neck(neck_feat)
         head_out = self.head(neck_feat, self.inputs)
         if self.for_mot:
             head_out.update({'neck_feat': neck_feat})
