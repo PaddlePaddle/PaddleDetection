@@ -119,7 +119,16 @@ def main():
     cfg['save_prediction_only'] = FLAGS.save_prediction_only
     merge_config(FLAGS.opt)
 
-    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
+    # disable npu in config by default
+    if 'use_npu' not in cfg:
+        cfg.use_npu = False
+
+    if cfg.use_gpu:
+        place = paddle.set_device('gpu')
+    elif cfg.use_npu:
+        place = paddle.set_device('npu')
+    else:
+        place = paddle.set_device('cpu')
 
     if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn' and not cfg.use_gpu:
         cfg['norm_type'] = 'bn'
@@ -129,6 +138,7 @@ def main():
 
     check.check_config(cfg)
     check.check_gpu(cfg.use_gpu)
+    check.check_npu(cfg.use_npu)
     check.check_version()
 
     run(FLAGS, cfg)

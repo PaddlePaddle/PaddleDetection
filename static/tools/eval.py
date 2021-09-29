@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 try:
     from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
     import ppdet.utils.checkpoint as checkpoint
-    from ppdet.utils.check import check_gpu, check_xpu, check_version, check_config, enable_static_mode
+    from ppdet.utils.check import check_gpu, check_xpu, check_npu, check_version, check_config, enable_static_mode
 
     from ppdet.data.reader import create_reader
 
@@ -63,6 +63,10 @@ def main():
     check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+    # disable npu in config by default and check use_npu
+    if 'use_npu' not in cfg:
+        cfg.use_npu = False
+    check_npu(cfg.use_npu)
     use_xpu = False
     if hasattr(cfg, 'use_xpu'):
         check_xpu(cfg.use_xpu)
@@ -73,6 +77,9 @@ def main():
     assert not (use_xpu and cfg.use_gpu), \
             'Can not run on both XPU and GPU'
 
+    assert not (cfg.use_npu and cfg.use_gpu), \
+            'Can not run on both NPU and GPU'
+
     main_arch = cfg.architecture
 
     multi_scale_test = getattr(cfg, 'MultiScaleTEST', None)
@@ -80,6 +87,8 @@ def main():
     # define executor
     if cfg.use_gpu:
         place = fluid.CUDAPlace(0)
+    elif cfg.use_npu:
+        place = fluid.NPUPlace(0)
     elif use_xpu:
         place = fluid.XPUPlace(0)
     else:
@@ -117,7 +126,7 @@ def main():
         return
 
     compile_program = fluid.CompiledProgram(eval_prog).with_data_parallel()
-    if use_xpu:
+    if use_xpu or cfg.use_npu:
         compile_program = eval_prog
 
     assert cfg.metric != 'OID', "eval process of OID dataset \
