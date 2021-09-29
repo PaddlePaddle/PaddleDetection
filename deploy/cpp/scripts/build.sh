@@ -25,6 +25,9 @@ CUDA_LIB=/path/to/cuda/lib
 # CUDNN 的 lib 路径
 CUDNN_LIB=/path/to/cudnn/lib
 
+# 是否开启关键点模型预测功能
+WITH_KEYPOINT=ON
+
 
 MACHINE_TYPE=`uname -m`
 echo "MACHINE_TYPE: "${MACHINE_TYPE}
@@ -73,7 +76,8 @@ cmake .. \
     -DCUDA_LIB=${CUDA_LIB} \
     -DCUDNN_LIB=${CUDNN_LIB} \
     -DOPENCV_DIR=${OPENCV_DIR} \
-    -DPADDLE_LIB_NAME=${PADDLE_LIB_NAME}
+    -DPADDLE_LIB_NAME=${PADDLE_LIB_NAME} \
+    -DWITH_KEYPOINT=${WITH_KEYPOINT}
 
 make
 echo "make finished!"

@@ -30,13 +30,13 @@ git clone https://github.com/PaddlePaddle/PaddleDetection.git
 **说明**：其中`C++`预测代码在`PaddleDetection/deploy/cpp` 目录，该目录不依赖任何`PaddleDetection`下其他目录。
 
 
-### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
+### Step2: 下载PaddlePaddle C++ 预测库 paddle_inference
 
 PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://paddleinference.paddlepaddle.org.cn/user_guides/download_lib.html#windows)
 
-解压后`D:\projects\fluid_inference`目录包含内容为：
+解压后`D:\projects\paddle_inference`目录包含内容为：
 ```
-fluid_inference
+paddle_inference
 ├── paddle # paddle核心库和头文件
 |
 ├── third_party # 第三方依赖库和头文件
@@ -72,16 +72,16 @@ cd D:\projects\PaddleDetection\deploy\cpp
 | PADDLE_DIR | Paddle预测库的路径 |
 | PADDLE_LIB_NAME | Paddle 预测库名称 |
 
-**注意：** 1. 使用`CPU`版预测库，请把`WITH_GPU`的勾去掉 2. 如果使用的是`openblas`版本，请把`WITH_MKL`勾去掉
+**注意：** 1. 使用`CPU`版预测库，请把`WITH_GPU`的勾去掉 2. 如果使用的是`openblas`版本，请把`WITH_MKL`勾去掉 3.如无需使用关键点模型可以把`WITH_KEYPOINT`勾去掉
 
 执行如下命令项目文件：
 ```
-cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=ON -DCMAKE_BUILD_TYPE=Release -DCUDA_LIB=path_to_cuda_lib -DCUDNN_LIB=path_to_cudnn_lib -DPADDLE_DIR=path_to_paddle_lib -DPADDLE_LIB_NAME=paddle_inference -DOPENCV_DIR=path_to_opencv
+cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=ON -DCMAKE_BUILD_TYPE=Release -DCUDA_LIB=path_to_cuda_lib -DCUDNN_LIB=path_to_cudnn_lib -DPADDLE_DIR=path_to_paddle_lib -DPADDLE_LIB_NAME=paddle_inference -DOPENCV_DIR=path_to_opencv -DWITH_KEYPOINT=ON
 ```
 
 例如：
 ```
-cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=ON -DCMAKE_BUILD_TYPE=Release -DCUDA_LIB=D:\projects\packages\cuda10_0\lib\x64 -DCUDNN_LIB=D:\projects\packages\cuda10_0\lib\x64 -DPADDLE_DIR=D:\projects\packages\fluid_inference -DPADDLE_LIB_NAME=paddle_inference -DOPENCV_DIR=D:\projects\packages\opencv3_4_6
+cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=ON -DCMAKE_BUILD_TYPE=Release -DCUDA_LIB=D:\projects\packages\cuda10_0\lib\x64 -DCUDNN_LIB=D:\projects\packages\cuda10_0\lib\x64 -DPADDLE_DIR=D:\projects\packages\paddle_inference -DPADDLE_LIB_NAME=paddle_inference -DOPENCV_DIR=D:\projects\packages\opencv3_4_6 -DWITH_KEYPOINT=ON
 ```
 
 3. 编译
@@ -99,7 +99,8 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 
 |  参数   | 说明  |
 |  ----  | ----  |
-| --model_dir  | 导出的预测模型所在路径 |
+| --model_dir  | 导出的检测预测模型所在路径 |
+| --model_dir_keypoint  | Option | 导出的关键点预测模型所在路径 |
 | --image_file  | 要预测的图片文件路径 |
 | --image_dir  |  要预测的图片文件夹路径   |
 | --video_file  | 要预测的视频文件路径 |
@@ -107,11 +108,13 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 | --device  | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
 | --gpu_id  |  指定进行推理的GPU device id(默认值为0)|
 | --run_mode | 使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
-| --batch_size  | 预测时的batch size，在指定`image_dir`时有效 |
-| --run_benchmark | 是否重复预测来进行benchmark测速 |
-| --output_dir | 输出图片所在的文件夹, 默认为output |
+| --batch_size  | 检测模型预测时的batch size，在指定`image_dir`时有效 |
+| --batch_size_keypoint  | 关键点模型预测时的batch size，默认为8 |
+| --run_benchmark | 是否重复预测来进行benchmark测速 ｜
+| --output_dir | 输出图片所在的文件夹, 默认为output ｜
 | --use_mkldnn | CPU预测中是否开启MKLDNN加速 |
 | --cpu_threads | 设置cpu线程数，默认为1 |
+| --use_dark | 关键点模型输出预测是否使用DarkPose后处理，默认为true |
 
 **注意**：  
 （1）优先级顺序：`camera_id` > `video_file` > `image_dir` > `image_file`。
@@ -135,6 +138,14 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 ```
 
 视频文件目前支持`.mp4`格式的预测，`可视化预测结果`会保存在当前目录下`output.mp4`文件中。
+
+
+`样例三`：
+```shell
+#使用关键点模型与检测模型联合预测，使用 `GPU`预测  
+#检测模型检测到的人送入关键点模型进行关键点预测
+.\main --model_dir=D:\\models\\yolov3_darknet --model_dir_keypoint=D:\\models\\hrnet_w32_256x192 --image_file=D:\\images\\test.jpeg --device=GPU
+```
 
 
 ## 性能测试

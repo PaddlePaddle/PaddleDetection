@@ -34,13 +34,13 @@ cat /etc/nv_tegra_release
 **说明**：其中`C++`预测代码在`/root/projects/PaddleDetection/deploy/cpp` 目录，该目录不依赖任何`PaddleDetection`下其他目录。
 
 
-### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
+### Step2: 下载PaddlePaddle C++ 预测库 paddle_inference
 
 解压下载的[nv_jetson_cuda10_cudnn7.6_trt6(jetpack4.3)](https://paddle-inference-lib.bj.bcebos.com/2.0.1-nv-jetson-jetpack4.3-all/paddle_inference.tgz) 。
 
-下载并解压后`/root/projects/fluid_inference`目录包含内容为：
+下载并解压后`/root/projects/paddle_inference`目录包含内容为：
 ```
-fluid_inference
+paddle_inference
 ├── paddle # paddle核心库和头文件
 |
 ├── third_party # 第三方依赖库和头文件
@@ -74,7 +74,7 @@ TENSORRT_INC_DIR=/usr/include/aarch64-linux-gnu
 TENSORRT_LIB_DIR=/usr/lib/aarch64-linux-gnu
 
 # Paddle 预测库路径
-PADDLE_DIR=/path/to/fluid_inference/
+PADDLE_DIR=/path/to/paddle_inference/
 
 # Paddle 预测库名称
 PADDLE_LIB_NAME=paddle_inference
@@ -88,6 +88,9 @@ CUDA_LIB=/usr/local/cuda-10.0/lib64
 
 # CUDNN 的 lib 路径
 CUDNN_LIB=/usr/lib/aarch64-linux-gnu
+
+# 是否开启关键点模型预测功能
+WITH_KEYPOINT=ON
 
 # OPENCV_DIR 的路径
 # linux平台请下载：https://bj.bcebos.com/paddleseg/deploy/opencv3.4.6gcc4.8ffmpeg.tar.gz2，并解压到deps文件夹下
@@ -107,7 +110,8 @@ cmake .. \
     -DCUDA_LIB=${CUDA_LIB} \
     -DCUDNN_LIB=${CUDNN_LIB} \
     -DOPENCV_DIR=${OPENCV_DIR} \
-    -DPADDLE_LIB_NAME={PADDLE_LIB_NAME}
+    -DPADDLE_LIB_NAME={PADDLE_LIB_NAME} \
+    -DWITH_KEYPOINT=${WITH_KEYPOINT}
 make
 ```
 
@@ -129,7 +133,7 @@ TENSORRT_INC_DIR=/usr/include/aarch64-linux-gnu
 TENSORRT_LIB_DIR=/usr/lib/aarch64-linux-gnu
 
 # Paddle 预测库路径
-PADDLE_DIR=/home/nvidia/PaddleDetection_infer/fluid_inference/
+PADDLE_DIR=/home/nvidia/PaddleDetection_infer/paddle_inference/
 
 # Paddle 预测库名称
 PADDLE_LIB_NAME=paddle_inference
@@ -143,6 +147,9 @@ CUDA_LIB=/usr/local/cuda-10.0/lib64
 
 # CUDNN 的 lib 路径
 CUDNN_LIB=/usr/lib/aarch64-linux-gnu/
+
+# 是否开启关键点模型预测功能
+WITH_KEYPOINT=ON
 ```
 
 修改脚本设置好主要参数后，执行`build`脚本：
@@ -154,7 +161,8 @@ CUDNN_LIB=/usr/lib/aarch64-linux-gnu/
 编译成功后，预测入口程序为`build/main`其主要命令参数说明如下：
 |  参数   | 说明  |
 |  ----  | ----  |
-| --model_dir  | 导出的预测模型所在路径 |
+| --model_dir  | 导出的检测预测模型所在路径 |
+| --model_dir_keypoint  | Option | 导出的关键点预测模型所在路径 |
 | --image_file  | 要预测的图片文件路径 |
 | --image_dir  |  要预测的图片文件夹路径   |
 | --video_file  | 要预测的视频文件路径 |
@@ -162,11 +170,13 @@ CUDNN_LIB=/usr/lib/aarch64-linux-gnu/
 | --device  | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
 | --gpu_id  |  指定进行推理的GPU device id(默认值为0)|
 | --run_mode | 使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
-| --batch_size |预测时的batch size，在指定`image_dir`时有效 |
+| --batch_size  | 检测模型预测时的batch size，在指定`image_dir`时有效 |
+| --batch_size_keypoint  | 关键点模型预测时的batch size，默认为8 |
 | --run_benchmark | 是否重复预测来进行benchmark测速 ｜
 | --output_dir | 输出图片所在的文件夹, 默认为output ｜
 | --use_mkldnn | CPU预测中是否开启MKLDNN加速 |
 | --cpu_threads | 设置cpu线程数，默认为1 |
+| --use_dark | 关键点模型输出预测是否使用DarkPose后处理，默认为true |
 
 **注意**:
 - 优先级顺序：`camera_id` > `video_file` > `image_dir` > `image_file`。
@@ -189,6 +199,12 @@ CUDNN_LIB=/usr/lib/aarch64-linux-gnu/
 ```
 视频文件目前支持`.mp4`格式的预测，`可视化预测结果`会保存在当前目录下`output.mp4`文件中。
 
+`样例三`：
+```shell
+#使用关键点模型与检测模型联合预测，使用 `GPU`预测  
+#检测模型检测到的人送入关键点模型进行关键点预测
+./main --model_dir=/root/projects/models/yolov3_darknet --model_dir_keypoint=/root/projects/models/hrnet_w32_256x192 --image_file=/root/projects/images/test.jpeg --device=GPU
+```
 
 ## 性能测试
 benchmark请查看[BENCHMARK_INFER](../../BENCHMARK_INFER.md)
