@@ -40,7 +40,7 @@ class CenterNet(BaseArch):
 
     def __init__(self,
                  backbone,
-                 neck=None,
+                 neck='CenterDLAFPN',
                  head='CenterHead',
                  post_process='CenterNetPostProcess',
                  for_mot=False):
