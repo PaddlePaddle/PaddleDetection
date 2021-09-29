@@ -1,0 +1,41 @@
+worker_num: 4
+TrainReader:
+  inputs_def:
+    image_shape: [3, 320, 576]
+  sample_transforms:
+    - Decode: {}
+    - RGBReverse: {}
+    - AugmentHSV: {}
+    - LetterBoxResize: {target_size: [320, 576]}
+    - MOTRandomAffine: {reject_outside: False}
+    - RandomFlip: {}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - RGBReverse: {}
+    - Permute: {}
+  batch_transforms:
+    - Gt2FairMOTTarget: {}
+  batch_size: 6
+  shuffle: True
+  drop_last: True
+  use_shared_memory: True
+
+EvalMOTReader:
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [320, 576]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - Permute: {}
+  batch_size: 1
+
+
+TestMOTReader:
+  inputs_def:
+    image_shape: [3, 320, 576]
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [320, 576]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - Permute: {}
+  batch_size: 1
