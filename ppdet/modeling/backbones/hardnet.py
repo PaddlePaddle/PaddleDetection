@@ -161,13 +161,6 @@ class HarDNet(nn.Layer):
             grmul = 1.7
             gr = [14, 16, 20, 40]
             n_layers = [8, 16, 16, 16]
-        elif arch == 39:
-            first_ch = [24, 48]
-            second_kernel = 3
-            ch_list = [96, 320, 640, 1024]
-            grmul = 1.6
-            gr = [16, 20, 64, 160]
-            n_layers = [4, 16, 8, 4]
 
         self.return_idx = return_idx
         self._out_channels = [96, 214, 458, 784]

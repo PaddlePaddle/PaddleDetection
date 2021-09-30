@@ -232,6 +232,8 @@ class CenterNetHarDNetFPN(nn.Layer):
         self.down_ratio = down_ratio
         self.last_level = last_level
         self.last_pool = nn.AvgPool2D(kernel_size=2, stride=2)
+
+        assert num_layers in [68, 85], "HarDNet-{} not support.".format(num_layers)
         if num_layers == 85:
             self.last_proj = ConvLayer(784, 256, kernel_size=1)
             self.last_blk = HarDBlock(768, 80, 1.7, 8)
