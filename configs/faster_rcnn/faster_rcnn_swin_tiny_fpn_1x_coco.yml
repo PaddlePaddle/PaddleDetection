@@ -1,0 +1,8 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_swin_1x.yml',
+  '_base_/faster_rcnn_swin_tiny_fpn.yml',
+  '_base_/faster_rcnn_swin_reader.yml',
+]
+weights: output/faster_rcnn_swin_tiny_fpn_1x_coco/model_final

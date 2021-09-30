@@ -37,7 +37,7 @@ __all__ = ['MOTEvaluator', 'MOTMetric', 'JDEDetMetric', 'KITTIMOTMetric']
 
 def read_mot_results(filename, is_gt=False, is_ignore=False):
     valid_labels = {1}
-    ignore_labels = {2, 7, 8, 12}
+    ignore_labels = {2, 7, 8, 12}  # only in motchallenge datasets like 'MOT16'
     results_dict = dict()
     if os.path.isfile(filename):
         with open(filename, 'r') as f:
@@ -53,11 +53,10 @@ def read_mot_results(filename, is_gt=False, is_ignore=False):
                 box_size = float(linelist[4]) * float(linelist[5])
 
                 if is_gt:
-                    if 'MOT16-' in filename or 'MOT17-' in filename or 'MOT15-' in filename or 'MOT20-' in filename:
-                        label = int(float(linelist[7]))
-                        mark = int(float(linelist[6]))
-                        if mark == 0 or label not in valid_labels:
-                            continue
+                    label = int(float(linelist[7]))
+                    mark = int(float(linelist[6]))
+                    if mark == 0 or label not in valid_labels:
+                        continue
                     score = 1
                 elif is_ignore:
                     if 'MOT16-' in filename or 'MOT17-' in filename or 'MOT15-' in filename or 'MOT20-' in filename:

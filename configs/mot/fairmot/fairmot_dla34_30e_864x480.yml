@@ -1,0 +1,9 @@
+_BASE_: [
+  '../../datasets/mot.yml',
+  '../../runtime.yml',
+  '_base_/optimizer_30e.yml',
+  '_base_/fairmot_dla34.yml',
+  '_base_/fairmot_reader_864x480.yml',
+]
+
+weights: output/fairmot_dla34_30e_864x480/model_final

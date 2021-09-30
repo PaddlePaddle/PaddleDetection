@@ -408,8 +408,8 @@ def predict_video(detector, reid_model, camera_id):
 
     if FLAGS.save_images:
         save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
-        cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
-            save_dir, out_path)
+        cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(save_dir,
+                                                              out_path)
         os.system(cmd_str)
         print('Save video in {}.'.format(out_path))
     else:

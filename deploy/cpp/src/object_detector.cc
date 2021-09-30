@@ -256,9 +256,9 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
     // TODO: reduce cost time
     in_data_all.insert(in_data_all.end(), inputs_.im_data_.begin(), inputs_.im_data_.end());
   }
-
+  auto preprocess_end = std::chrono::steady_clock::now();
   // Prepare input tensor
-  
+
   auto input_names = predictor_->GetInputNames();
   for (const auto& tensor_name : input_names) {
     auto in_tensor = predictor_->GetInputHandle(tensor_name);
@@ -276,7 +276,6 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
     }
   }
   
-  auto preprocess_end = std::chrono::steady_clock::now();
   // Run predictor
   // warmup
   for (int i = 0; i < warmup; i++)
