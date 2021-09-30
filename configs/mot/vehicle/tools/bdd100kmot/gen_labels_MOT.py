@@ -17,6 +17,7 @@ import os.path as osp
 import numpy as np
 import argparse
 
+
 def mkdirs(d):
     if not osp.exists(d):
         os.makedirs(d)
@@ -24,14 +25,16 @@ def mkdirs(d):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='BDD100K to MOT format')
-    parser.add_argument("--mot_data", default='/paddle/dataset/bdd100kmot/bdd100k_small')
+    parser.add_argument(
+        "--mot_data", default='/paddle/dataset/bdd100kmot/bdd100k_small')
     parser.add_argument("--phase", default='train')
     args = parser.parse_args()
 
     MOT_data = args.mot_data
     phase = args.phase
-    seq_root = osp.join(MOT_data,'bdd100kmot_vehicle','images',phase)
-    label_root = osp.join(MOT_data,'bdd100kmot_vehicle','labels_with_ids',phase)
+    seq_root = osp.join(MOT_data, 'bdd100kmot_vehicle', 'images', phase)
+    label_root = osp.join(MOT_data, 'bdd100kmot_vehicle', 'labels_with_ids',
+                          phase)
     mkdirs(label_root)
     seqs = [s for s in os.listdir(seq_root)]
     tid_curr = 0
@@ -60,7 +63,8 @@ if __name__ == "__main__":
                 tid_last = tid
             x += w / 2
             y += h / 2
-            label_fpath = osp.join(seq_label_root, seq+ '-' + '{:07d}.txt'.format(fid))
+            label_fpath = osp.join(seq_label_root,
+                                   seq + '-' + '{:07d}.txt'.format(fid))
             label_str = '0 {:d} {:.6f} {:.6f} {:.6f} {:.6f}\n'.format(
                 tid_curr, x / seq_width, y / seq_height, w / seq_width,
                 h / seq_height)

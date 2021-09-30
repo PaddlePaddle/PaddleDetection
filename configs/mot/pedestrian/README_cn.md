@@ -52,7 +52,7 @@ tools/visdrone/visdrone2mot.py: 生成visdrone_pedestrian据集
 │   │   ├── labels_with_ids
 │   │   │   ├── val
 # 执行
-python visdrone2mot.py --transMot=True --data_name=visdrone_pedestrian --phase=val 
+python visdrone2mot.py --transMot=True --data_name=visdrone_pedestrian --phase=val
 python visdrone2mot.py --transMot=True --data_name=visdrone_pedestrian --phase=train
 ```
 
@@ -104,16 +104,16 @@ python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34
   year={2020}
 }
 
-@INPROCEEDINGS{8237302, 
-author={S. {Manen} and M. {Gygli} and D. {Dai} and L. V. {Gool}}, 
-booktitle={2017 IEEE International Conference on Computer Vision (ICCV)}, 
-title={PathTrack: Fast Trajectory Annotation with Path Supervision}, 
-year={2017}, 
-volume={}, 
-number={}, 
+@INPROCEEDINGS{8237302,
+author={S. {Manen} and M. {Gygli} and D. {Dai} and L. V. {Gool}},
+booktitle={2017 IEEE International Conference on Computer Vision (ICCV)},
+title={PathTrack: Fast Trajectory Annotation with Path Supervision},
+year={2017},
+volume={},
+number={},
 pages={290-299},
-doi={10.1109/ICCV.2017.40}, 
-ISSN={2380-7504}, 
+doi={10.1109/ICCV.2017.40},
+ISSN={2380-7504},
 month={Oct},}
 
 @article{zhu2018vision,
@@ -126,6 +126,6 @@ month={Oct},}
   title={Vision Meets Drones: Past, Present and Future},
   author={Zhu, Pengfei and Wen, Longyin and Du, Dawei and Bian, Xiao and Hu, Qinghua and Ling, Haibin},
   journal={arXiv preprint arXiv:2001.06303},
-  year={2020} 
+  year={2020}
 }
 ```

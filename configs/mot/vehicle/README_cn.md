@@ -83,7 +83,7 @@ sh gen_bdd100kmot_vehicle.sh
 │   │   ├── labels_with_ids
 │   │   │   ├── val
 # 执行
-python visdrone2mot.py --transMot=True --data_name=visdrone_vehicle --phase=val 
+python visdrone2mot.py --transMot=True --data_name=visdrone_vehicle --phase=val
 python visdrone2mot.py --transMot=True --data_name=visdrone_vehicle --phase=train
 ```
 
@@ -161,6 +161,6 @@ python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34
   title={Vision Meets Drones: Past, Present and Future},
   author={Zhu, Pengfei and Wen, Longyin and Du, Dawei and Bian, Xiao and Hu, Qinghua and Ling, Haibin},
   journal={arXiv preprint arXiv:2001.06303},
-  year={2020} 
+  year={2020}
 }
 ```
