@@ -126,11 +126,11 @@ class TaskDecomposition(nn.Layer):
         weight = F.relu(self.la_conv1(avg_feat))
         weight = F.sigmoid(self.la_conv2(weight))
 
-        # here we first compute the product between layer attention weight and conv weight,
-        # and then compute the convolution between new conv weight and feature map,
+        # here new_conv_weight = layer_attention_weight * conv_weight
         # in order to save memory and FLOPs.
         conv_weight = weight.reshape([b, 1, self.stacked_convs, 1]) * \
-                          self.reduction_conv.conv.weight.reshape([1, self.feat_channels, self.stacked_convs, self.feat_channels])
+            self.reduction_conv.conv.weight.reshape(
+            [1, self.feat_channels, self.stacked_convs, self.feat_channels])
         conv_weight = conv_weight.reshape(
             [b, self.feat_channels, self.in_channels])
         feat = feat.reshape([b, self.in_channels, h * w])
@@ -295,12 +295,13 @@ class TOODHead(nn.Layer):
 
     @staticmethod
     def _deform_sampling(feat, offset):
-        """ Sampling the feature x according to offset.
+        """ Sampling the feature according to offset.
         Args:
             feat (Tensor): Feature
             offset (Tensor): Spatial offset for for feature sampliing
         """
         # it is an equivalent implementation of bilinear interpolation
+        # you can also use F.grid_sample instead
         c = feat.shape[1]
         weight = paddle.ones([c, 1, 1, 1])
         y = deform_conv2d(feat, offset, weight, deformable_groups=c, groups=c)

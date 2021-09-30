@@ -2,6 +2,7 @@
 
 ## Introduction
 
+[TOOD: Task-aligned One-stage Object Detection](https://arxiv.org/abs/2108.07755)
 
 TOOD is an object detection model. We reproduced the model of the paper.
 
