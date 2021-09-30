@@ -118,7 +118,9 @@ If you use a stronger detection model, you can get better results. Each txt is t
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
 | DLA-34(paper)  | 1088x608 |  83.3  |  81.9  |   544  |  3822  |  14095  |     -   |    -   |   -    |
-| DLA-34         | 1088x608 |  83.2  |  83.1  |   499  |  3861  |  14223  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+| DLA-34         | 1088x608 |  83.2  |  83.1  |   499  |  3861  |  14223  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](./fairmot/fairmot_dla34_30e_1088x608.yml) |
+| DLA-34         | 864x480 |  80.8  |  81.1  |  561  |  3643  | 16967 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_864x480.pdparams) | [config](./fairmot/fairmot_dla34_30e_864x480.yml) |
+| DLA-34         | 576x320 |  74.0  |  76.1  |  640  |  4989  | 23034 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_576x320.pdparams) | [config](./fairmot/fairmot_dla34_30e_576x320.yml) |
 
 
 ### FairMOT Results on MOT-16 Test Set
@@ -126,10 +128,42 @@ If you use a stronger detection model, you can get better results. Each txt is t
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
 | DLA-34(paper)  | 1088x608 |  74.9  |  72.8  |  1074  |    -   |    -   |   25.9   |    -   |   -    |
-| DLA-34         | 1088x608 |  75.0  |  74.7  |  919   |  7934  |  36747 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+| DLA-34         | 1088x608 |  75.0  |  74.7  |  919   |  7934  |  36747 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](./fairmot/fairmot_dla34_30e_1088x608.yml) |
+| DLA-34         | 864x480 |  73.0  |  72.6  |  977   |  7578  |  40601 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_864x480.pdparams) | [config](./fairmot/fairmot_dla34_30e_864x480.yml) |
+| DLA-34         | 576x320 |  69.9  |  70.2  |  1044   |  8869  |  44898 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_576x320.pdparams) | [config](./fairmot/fairmot_dla34_30e_576x320.yml) |
 
 **Notes:**
- FairMOT used 2 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
+ FairMOT DLA-34 used 2 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
+
+
+### FairMOT enhance model
+### Results on MOT-16 Test Set
+| backbone       | input shape |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  download | config |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| DLA-34         | 1088x608 |  75.9  |  74.7  |  1021   |  11425  |  31475 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_dla34_30e_1088x608.pdparams) | [config](./fairmot_enhance_dla34_30e_1088x608.yml) |
+
+### Results on MOT-17 Test Set
+| backbone       | input shape |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  download  | config |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| DLA-34         | 1088x608 |  75.3  |  74.2  |  3270  |  29112  | 106749 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_dla34_30e_1088x608.pdparams) | [config](./fairmot_enhance_dla34_30e_1088x608.yml) |
+
+**注意:**
+ FairMOT enhance DLA-34 used 8 GPUs for training and mini-batch size as 16 on each GPU，and trained for 60 epoches. The crowdhuman dataset is added to the train-set during training.
+
+
+### FairMOT light model
+### Results on MOT-16 Test Set
+| backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| HRNetV2-W18   | 1088x608 |  71.7  |  66.6  |  1340  |  8642  | 41592 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.pdparams) | [config](./fairmot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.yml) |
+
+### Results on MOT-17 Test Set
+| backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| HRNetV2-W18   | 1088x608 |  70.7  |  65.7  |  4281  |  22485  | 138468 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.pdparams) | [config](./fairmot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.yml) |
+
+**Notes:**
+ FairMOT HRNetV2-W18 used 8 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches. Only ImageNet pre-train model is used, and the optimizer adopts Momentum. The crowdhuman dataset is added to the train-set during training.
 
 
 ## Feature Tracking Model
@@ -139,20 +173,27 @@ If you use a stronger detection model, you can get better results. Each txt is t
 ### FairMOT Results on HT-21 Training Set
 |    backbone      |  input shape |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  download | config |
 | :--------------| :------- | :----: | :----: | :---: | :----: | :---: | :------: | :----: |:----: |
-| DLA-34         | 1088x608 |  67.2 |  70.4  |   9403  |  124840  |  255007  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
+| DLA-34         | 1088x608 |  64.7 |  69.0  |   8533  |  148817  |  234970  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
 
 ### FairMOT Results on HT-21 Test Set
 |    backbone      |  input shape |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: | :----: |
-| DLA-34         | 1088x608 |  58.2  |  61.3  |  13166   |  141872  |  197074 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
+| DLA-34         | 1088x608 |  60.8  |  62.8  |  12781   |  118109  |  198896 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
 
-### [Vehicle Tracking](./kitticars/README.md)
-### FairMOT Results on KITTI tracking (2D bounding-boxes) Training Set (Car)
+### [Pedestrian Tracking](./pedestrian/README.md)
+### FairMOT Results on each val-set of Pedestrian category
+|    Dataset      |  input shape |  MOTA  |  IDF1  |  FPS   |  download | config |
+| :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
+|  PathTrack    | 1088x608 |  44.9 |    59.3   |    -   |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_pathtrack.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/pedestrian/fairmot_dla34_30e_1088x608_pathtrack.yml) |
+|  VisDrone     | 1088x608 |  49.2 |   63.1 |    -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_pedestrian.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/pedestrian/fairmot_dla34_30e_1088x608_visdrone_pedestrian.yml) |
 
-|    backbone    | input shape |  MOTA   |   FPS   |  download | config |
-| :--------------| :------- | :-----: | :-----: | :------: | :----: |
-| DLA-34         | 1088x608 |   53.9  |    -    |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitticars.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/kitticars/fairmot_dla34_30e_1088x608_kitticars.yml) |
-
+### [Vehicle Tracking](./vehicle/README.md)
+### FairMOT Results on each val-set of Vehicle category
+|    Dataset      |  input shape |  MOTA  |  IDF1  |  FPS   |  download | config |
+| :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
+|  BDD100K      | 1088x608 |  34.9 |  39.9  |    -    | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100k_vehicle.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100k_vehicle.yml) |
+|  KITTI        | 1088x608 |  53.9 |    -   |    -   |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/vehicle/fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
+|  VisDrone     | 1088x608 |  29.8 |   51.3 |    -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/vehicle/fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
 
 ## Dataset Preparation
 

@@ -203,8 +203,10 @@ class CenterNetDLAFPN(nn.Layer):
         last_level (int): the last level of input feature fed into the upsamplng block
         out_channel (int): the channel of the output feature, 0 by default means
             the channel of the input feature whose down ratio is `down_ratio`
-        dcn_v2 (bool): whether use the DCNv2, true by default
-        
+        first_level (int): the first level of input feature fed into the upsamplng
+            block, -1 by default and it will be calculated by down_ratio
+        dcn_v2 (bool): whether use the DCNv2, True by default
+        with_sge (bool): whether use SGE attention, False by default
     """
 
     def __init__(self,
@@ -212,10 +214,12 @@ class CenterNetDLAFPN(nn.Layer):
                  down_ratio=4,
                  last_level=5,
                  out_channel=0,
+                 first_level=-1,
                  dcn_v2=True,
                  with_sge=False):
         super(CenterNetDLAFPN, self).__init__()
-        self.first_level = int(np.log2(down_ratio))
+        self.first_level = int(np.log2(
+            down_ratio)) if first_level == -1 else first_level
         self.down_ratio = down_ratio
         self.last_level = last_level
         scales = [2**i for i in range(len(in_channels[self.first_level:]))]
