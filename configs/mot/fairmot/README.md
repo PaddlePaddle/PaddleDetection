@@ -36,7 +36,7 @@ English | [简体中文](README_cn.md)
 **Notes:**
  FairMOT DLA-34 used 2 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
 
-### FairMOT light model 
+### FairMOT light model
 ### Results on MOT-16 Test Set
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
