@@ -1,0 +1,9 @@
+_BASE_: [
+  '../../datasets/mot.yml',
+  '../../runtime.yml',
+  '_base_/optimizer_30e.yml',
+  '_base_/fairmot_hardnet85.yml',
+  '_base_/fairmot_reader_1088x608.yml',
+]
+
+weights: output/fairmot_hardnet85_30e_1088x608/model_final
