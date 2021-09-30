@@ -15,3 +15,4 @@ sklearn
 motmetrics
 openpyxl
 cython_bbox
+git+https://github.com/bdd100k/bdd100k #only for bbd eval
