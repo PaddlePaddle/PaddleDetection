@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## 将gt转成labels_with_ids文件
-
-import os.path as osp
 import os
+import os.path as osp
 import numpy as np
 import argparse
+
 def mkdirs(d):
     if not osp.exists(d):
         os.makedirs(d)
@@ -31,15 +30,14 @@ if __name__ == "__main__":
 
     MOT_data = args.mot_data
     phase = args.phase
-    seq_root = osp.join(MOT_data,'bdd100k_vehicle','images',phase)
-    label_root = osp.join(MOT_data,'bdd100k_vehicle','labels_with_ids',phase)
+    seq_root = osp.join(MOT_data,'bdd100kmot_vehicle','images',phase)
+    label_root = osp.join(MOT_data,'bdd100kmot_vehicle','labels_with_ids',phase)
     mkdirs(label_root)
     seqs = [s for s in os.listdir(seq_root)]
     tid_curr = 0
     tid_last = -1
 
-    # delete oriign labels_with_ids
-    os.system(f'rm -r {MOT_data}/bdd100k_vehicle/labels_with_ids')
+    os.system(f'rm -r {MOT_data}/bdd100kmot_vehicle/labels_with_ids')
     for seq in seqs:
         print('seq => ', seq)
         seq_info = open(osp.join(seq_root, seq, 'seqinfo.ini')).read()
@@ -55,8 +53,6 @@ if __name__ == "__main__":
         mkdirs(seq_label_root)
 
         for fid, tid, x, y, w, h, mark, label, _ in gt:
-            # if mark == 0 or not label == 1:
-            #     continue
             fid = int(fid)
             tid = int(tid)
             if not tid == tid_last:

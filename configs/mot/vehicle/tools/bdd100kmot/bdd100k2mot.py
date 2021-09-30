@@ -1,3 +1,17 @@
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import glob
 import os
 import os.path as osp
@@ -5,19 +19,47 @@ import cv2
 import random
 import numpy as np
 import argparse
-# attention!!!
-# 转换的流程是，先通过bbd2mot.py生成mot的数据，然后从mot的基础数据集上面
-# 生成全量的labels_with_ids，然后生成gt(是筛选之后的gt),gt再生成筛选之后
-# 的labels_with_ids
 
 def mkdir_if_missing(d):
     if not osp.exists(d):
         os.makedirs(d)
 
+def bdd2mot_tracking(img_dir, label_dir, save_img_dir, save_label_dir):
+    label_jsons = os.listdir(label_dir)
+    for label_json in tqdm(label_jsons):
+        with open(os.path.join(label_dir, label_json)) as f:
+            labels_json = json.load(f)
+            for label_json in labels_json:
+                img_name = label_json['name']
+                video_name = label_json['videoName']
+                labels = label_json['labels']
+                txt_string = ""
+                for label in labels:
+                    category = label['category']
+                    x1 = label['box2d']['x1']
+                    x2 = label['box2d']['x2']
+                    y1 = label['box2d']['y1']
+                    y2 = label['box2d']['y2']
+                    width = x2 - x1
+                    height = y2 - y1
+                    x_center = (x1+x2)/2./args.width
+                    y_center = (y1+y2)/2./args.height
+                    width /= args.width
+                    height /= args.height
+                    identity = int(label['id'])
+                    # [class] [identity] [x_center] [y_center] [width] [height]
+                    txt_string += "{} {} {} {} {} {}\n".format(attr_id_dict[category], identity, x_center, y_center, width, height)
+                
+                fn_label = os.path.join(save_label_dir, img_name[:-4]+'.txt')
+                source_img = os.path.join(img_dir, video_name, img_name)
+                target_img = os.path.join(save_img_dir, img_name)
+                with open(fn_label, 'w') as f:
+                    f.write(txt_string)
+                os.system('cp {} {}'.format(source_img, target_img))
+
 def transBBOx(bbox):
     # bbox --> cx cy w h
     bbox = list(map(lambda x : float(x), bbox))
-
     bbox[0] = (bbox[0] - bbox[2]/2) * 1280
     bbox[1] = (bbox[1] - bbox[3]/2) * 720
     bbox[2] = bbox[2] * 1280
@@ -33,7 +75,6 @@ def genSingleImageMot(inputPath, classes = []):
     result = {}
     for labelPath in labelPaths:
         frame = str(int(labelPath.split('-')[-1].replace('.txt', '')))
-        # print('loading => ', int(frame), labelPath)
         with open(labelPath, 'r') as labelPathFile:
             lines = labelPathFile.readlines()
             for line in lines:
@@ -41,7 +82,6 @@ def genSingleImageMot(inputPath, classes = []):
                 lineArray = line.split(' ')
                 if len(classes) > 0:
                     if lineArray[0] in classes:
-                        #add frame
                         lineArray.append(frame)
                         allLines.append(lineArray)
                 else:
@@ -58,16 +98,14 @@ def genSingleImageMot(inputPath, classes = []):
         id_idx += 1
         for id_line in resultMap[rid]:
             mot_line = []
-            mot_line.append(id_line[-1]) # frame
-            # mot_line.append(rid) # id
+            mot_line.append(id_line[-1])
             mot_line.append(str(id_idx))
-            #bbox scale
             id_line_temp = transBBOx(id_line[2:6])
-            mot_line.extend(id_line_temp) # bbox
-            mot_line.append('1') # come into
-            # mot_line.append(id_line[0]) # class 
-            mot_line.append('1') # class => 1
-            mot_line.append('1')  # visual
+            mot_line.extend(id_line_temp)
+            mot_line.append('1') 
+            # mot_line.append(id_line[0]) # origin class 
+            mot_line.append('1') # permanent class  => 1
+            mot_line.append('1')
             mot_gt.append(mot_line) 
                 
     result = list(map(lambda line:str.join(',', line),mot_gt))
@@ -89,10 +127,9 @@ def genSeqInfo(seqInfoPath):
     with open(seqInfoPath, 'w') as seqFile:
         seqFile.write(seqInfoStr)
 
-def genMotGtForDemo(dataDir, classes = []):
+def genMotGt(dataDir, classes = []):
     seqLists = sorted(glob.glob(dataDir))
     for seqList in seqLists:
-        # print('processing...', seqList)
         inputPath = osp.join(seqList, 'img1')
         outputPath = seqList.replace('labels_with_ids', 'images')
         outputPath = osp.join(outputPath, 'gt')
@@ -102,7 +139,6 @@ def genMotGtForDemo(dataDir, classes = []):
         seqList = seqList.replace('labels_with_ids', 'images')
         seqInfoPath = osp.join(seqList,'seqinfo.ini')
         genSeqInfo(seqInfoPath)
-
 
 def updateSeqInfo(dataDir, phase):
     seqPath = osp.join(dataDir,'labels_with_ids', phase)
@@ -119,7 +155,6 @@ def updateSeqInfo(dataDir, phase):
         seqInfoPath = seqInfoPath + '/seqinfo.ini'
         with open(seqInfoPath, 'w') as seqFile:
             seqFile.write(seqInfoStr)
-
 
 def VisualDataset(datasetPath, phase='train', seqName='', frameId=1):
     trainPath = osp.join(datasetPath, 'labels_with_ids', phase)
@@ -203,9 +238,7 @@ def formatOrigin(datapath, phase):
         seqName = str.join('-', seqName.split('-')[0:-1]).replace('.txt','')
         seqPath = osp.join(label_with_idPath, seqName, 'img1')
         mkdir_if_missing(seqPath)
-        # print(txtList,'--> ',seqPath)
         os.system(f'mv {txtList} {seqPath}')
-
 
 def copyImg(fromRootPath, toRootPath, phase):
     fromPath = osp.join(fromRootPath, 'images', phase)
@@ -227,38 +260,62 @@ def copyImg(fromRootPath, toRootPath, phase):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='BDD100K to MOT format')
-    parser.add_argument("--data_path", default='/paddle/dataset/bdd100kmot/bdd100k_small')
+    parser.add_argument("--data_path", default='/path/to/bdd100k')
     parser.add_argument("--phase", default='train')
     parser.add_argument("--classes", default='2,3,4,9,10')
+
+    parser.add_argument("--img_dir", default="/path/to/bdd/image/")
+    parser.add_argument("--label_dir", default="/path/to/bdd/label/")
+    parser.add_argument("--save_path", default="/save/path")
+    parser.add_argument("--height", default=720)
+    parser.add_argument("--width", default=1280)
     args = parser.parse_args()
 
+    ### for bdd tracking dataset
+    attr_dict = dict()
+    attr_dict["categories"] = [
+        {"supercategory": "none", "id": 0, "name": "pedestrian"},
+        {"supercategory": "none", "id": 1, "name": "rider"},
+        {"supercategory": "none", "id": 2, "name": "car"},
+        {"supercategory": "none", "id": 3, "name": "truck"},
+        {"supercategory": "none", "id": 4, "name": "bus"},
+        {"supercategory": "none", "id": 5, "name": "train"},
+        {"supercategory": "none", "id": 6, "name": "motorcycle"},
+        {"supercategory": "none", "id": 7, "name": "bicycle"},
+        {"supercategory": "none", "id": 8, "name": "other person"},
+        {"supercategory": "none", "id": 9, "name": "trailer"},
+        {"supercategory": "none", "id": 10, "name": "other vehicle"}
+    ]
+    attr_id_dict = {i['name']: i['id'] for i in attr_dict['categories']}
+
+    # create BDD training set tracking in MOT format
+    print('Loading and converting training set...')
+    train_img_dir = os.path.join(args.img_dir, 'train')
+    train_label_dir = os.path.join(args.label_dir, 'train')
+    save_img_dir = os.path.join(args.save_path, 'images', 'train')
+    save_label_dir = os.path.join(args.save_path, 'labels_with_ids', 'train')
+    if not os.path.exists(save_img_dir): os.makedirs(save_img_dir)
+    if not os.path.exists(save_label_dir): os.makedirs(save_label_dir)
+    bdd2mot_tracking(train_img_dir, train_label_dir, save_img_dir, save_label_dir)
+
+    # create BDD validation set tracking in MOT format
+    print('Loading and converting validation set...')
+    val_img_dir = os.path.join(args.img_dir, 'val')
+    val_label_dir = os.path.join(args.label_dir, 'val')
+    save_img_dir = os.path.join(args.save_path, 'images', 'val')
+    save_label_dir = os.path.join(args.save_path, 'labels_with_ids', 'val')
+    if not os.path.exists(save_img_dir): os.makedirs(save_img_dir)
+    if not os.path.exists(save_label_dir): os.makedirs(save_label_dir)
+    bdd2mot_tracking(val_img_dir, val_label_dir, save_img_dir, save_label_dir)
+
+    # gen gt file
     dataPath = args.data_path
     phase = args.phase
     classes = args.classes.split(',')
-    # print(dataPath, phase, classes)
-    formatOrigin(osp.join(dataPath, 'bdd100k_vehicle'), phase) # fromat格式
-    # classes = [ '2','3','4','9','10']
-    dataDir = osp.join(osp.join(dataPath, 'bdd100k_vehicle'), 'labels_with_ids', phase)+'/*'
-    genMotGtForDemo(dataDir, classes=classes)
-    copyImg(dataPath, osp.join(dataPath, 'bdd100k_vehicle'), phase)
-    updateSeqInfo(osp.join(dataPath, 'bdd100k_vehicle'), phase)
-    gen_image_list(osp.join(dataPath, 'bdd100k_vehicle'), phase)
-    # delete useless file
-    os.system(f'rm -r {dataPath}/bdd100k_vehicle/images/'+phase+'/*.jpg')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    formatOrigin(osp.join(dataPath, 'bdd100kmot_vehicle'), phase) 
+    dataDir = osp.join(osp.join(dataPath, 'bdd100kmot_vehicle'), 'labels_with_ids', phase)+'/*'
+    genMotGt(dataDir, classes=classes)
+    copyImg(dataPath, osp.join(dataPath, 'bdd100kmot_vehicle'), phase)
+    updateSeqInfo(osp.join(dataPath, 'bdd100kmot_vehicle'), phase)
+    gen_image_list(osp.join(dataPath, 'bdd100kmot_vehicle'), phase)
+    os.system(f'rm -r {dataPath}/bdd100kmot_vehicle/images/'+phase+'/*.jpg')

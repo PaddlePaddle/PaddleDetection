@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import glob
 import os
 import os.path as osp
@@ -223,9 +222,9 @@ def parse_arguments():
     parser.add_argument("--genImageList", type=bool, default=False)
     parser.add_argument("--visualImg", type=bool, default=False)
     parser.add_argument("--visualGt", type=bool, default=False)
-    parser.add_argument("--data_name", type=str, default='visdrone_vehicle')
+    parser.add_argument("--data_name", type=str, default='visdrone_pedestrain')
     parser.add_argument("--phase", type=str, default='train')
-    parser.add_argument("--classes", type=str, default='4,5,6,9')
+    parser.add_argument("--classes", type=str, default='1, 2') # pedestrian and people
     return parser.parse_args()
 
 

@@ -6,14 +6,9 @@
 行人跟踪的主要应用之一是交通监控。
 
 [PathTrack](https://www.trace.ethz.ch/publications/2017/pathtrack/index.html)包含720个视频序列，有着超过15000个行人的轨迹。包含了街景、舞蹈、体育运动、采访等各种场景的，大部分是移动摄像头拍摄场景。该数据集只有Pedestrian一类标注作为跟踪任务。
-<div align="center">
-  <img src='../../../docs/images/fairmot_pedestrian_pathtrack.gif' width='800'/>
-</div>
 
 [VisDrone](http://aiskyeye.com)是无人机视角拍摄的数据集，是以俯视视角为主。该数据集涵盖不同位置（取自中国数千个相距数千公里的14个不同城市）、不同环境（城市和乡村）、不同物体（行人、车辆、自行车等）和不同密度（稀疏和拥挤的场景）。[VisDrone2019-MOT](https://github.com/VisDrone/VisDrone-Dataset)包含56个视频序列用于训练，7个视频序列用于验证。此处针对VisDrone2019-MOT多目标跟踪数据集进行提取，抽取出类别为pedestrian和people的数据组合成一个大的Pedestrian类别。
-<div align="center">
-  <img src='../../../docs/images/fairmot_pedestrian_visdrone.gif' width='800'/>
-</div>
+
 
 ## 模型库
 
@@ -21,12 +16,45 @@
 
 |    数据集      |  输入尺寸 |  MOTA  |  IDF1  |  FPS   |  下载链接 | 配置文件 |
 | :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
-|  PathTrack    | 1088x608 |  44.9 |    59.3   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_pathtrack.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/pedestrian/fairmot_dla34_30e_1088x608_pathtrack.yml) |
-|  VisDrone     | 1088x608 |  49.2 |   63.1 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_pedestrian.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/pedestrian/fairmot_dla34_30e_1088x608_visdrone_pedestrian.yml) |
+|  PathTrack    | 1088x608 |  44.9 |    59.3   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_pathtrack.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_pathtrack.yml) |
+|  VisDrone     | 1088x608 |  49.2 |   63.1 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_pedestrian.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_visdrone_pedestrian.yml) |
 
 **注意:**
  FairMOT均使用DLA-34为骨干网络，2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
 
+
+## 数据集准备和处理
+
+### 1、数据集处理代码说明
+代码统一都在tools目录下
+```
+# visdrone
+tools/visdrone/visdrone2mot.py: 生成visdrone_pedestrian据集
+```
+
+### 2、visdrone_pedestrian数据集处理
+```
+# 复制tool/visdrone/visdrone2mot.py到数据集目录下
+# 生成visdrone_pedestrian MOT格式的数据，抽取类别classes=1,2 (pedestrian, people)
+<<--生成前目录-->>
+├── VisDrone2019-MOT-val
+│   ├── annotations
+│   ├── sequences
+│   ├── visdrone2mot.py
+<<--生成后目录-->>
+├── VisDrone2019-MOT-val
+│   ├── annotations
+│   ├── sequences
+│   ├── visdrone2mot.py
+│   ├── visdrone_pedestrian
+│   │   ├── images
+│   │   │   ├── val
+│   │   ├── labels_with_ids
+│   │   │   ├── val
+# 执行
+python visdrone2mot.py --transMot=True --data_name=visdrone_pedestrian --phase=val 
+python visdrone2mot.py --transMot=True --data_name=visdrone_pedestrian --phase=train
+```
 
 ## 快速开始
 

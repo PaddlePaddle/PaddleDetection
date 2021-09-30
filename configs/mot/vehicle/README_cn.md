@@ -6,20 +6,12 @@
 车辆跟踪的主要应用之一是交通监控。在监控场景中，大多是从公共区域的监控摄像头视角拍摄车辆，获取图像后再进行车辆检测和跟踪。
 
 
-[BDD100K](https://www.bdd100k.com)是伯克利大学AI实验室（BAIR）提出的一个驾驶视频数据集，是以驾驶员视角为主。该数据集不仅分多类别标注，还分晴天、多云等六种天气，住宅区、公路等六种场景，白天、夜晚等三个时间段，以及是否遮挡、是否截断。BDD100K MOT数据集包含1400个视频序列用于训练，200个视频序列用于验证。每个视频序列大约40秒长，每秒5帧，因此每个视频大约有200帧。此处针对BDD100K MOT数据集进行提取，抽取出类别为car、truck、bus的数据组合成一个Vehicle类别。
-<div align="center">
-  <img src='../../../docs/images/fairmot_vehicle_bdd100k.gif' width='800'/>
-</div>
+[BDD100K](https://www.bdd100k.com)是伯克利大学AI实验室（BAIR）提出的一个驾驶视频数据集，是以驾驶员视角为主。该数据集不仅分多类别标注，还分晴天、多云等六种天气，住宅区、公路等六种场景，白天、夜晚等三个时间段，以及是否遮挡、是否截断。BDD100K MOT数据集包含1400个视频序列用于训练，200个视频序列用于验证。每个视频序列大约40秒长，每秒5帧，因此每个视频大约有200帧。此处针对BDD100K MOT数据集进行提取，抽取出类别为car, truck, bus, trailer, other vehicle的数据组合成一个Vehicle类别。
 
 [KITTI](http://www.cvlibs.net/datasets/kitti)是一个包含市区、乡村和高速公路等场景采集的数据集，每张图像中最多达15辆车和30个行人，还有各种程度的遮挡与截断。[KITTI-Tracking](http://www.cvlibs.net/datasets/kitti/eval_tracking.php)(2D bounding-boxes)数据集一共有50个视频序列，21个为训练集，29个为测试集，目标是估计类别Car和Pedestrian的目标轨迹，此处抽取出类别为Car的数据作为一个Vehicle类别。
-<div align="center">
-  <img src="../../../docs/images/fairmot_vehicle_kitti.gif" width='800'/>
-</div>
 
 [VisDrone](http://aiskyeye.com)是无人机视角拍摄的数据集，是以俯视视角为主。该数据集涵盖不同位置（取自中国数千个相距数千公里的14个不同城市）、不同环境（城市和乡村）、不同物体（行人、车辆、自行车等）和不同密度（稀疏和拥挤的场景）。[VisDrone2019-MOT](https://github.com/VisDrone/VisDrone-Dataset)包含56个视频序列用于训练，7个视频序列用于验证。此处针对VisDrone2019-MOT多目标跟踪数据集进行提取，抽取出类别为car、van、truck、bus的数据组合成一个Vehicle类别。
-<div align="center">
-  <img src='../../../docs/images/fairmot_vehicle_visdrone.gif' width='800'/>
-</div>
+
 
 ## 模型库
 
@@ -27,9 +19,9 @@
 
 |    数据集      |  输入尺寸 |  MOTA  |  IDF1  |  FPS   |  下载链接 | 配置文件 |
 | :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
-|  BDD100K      | 1088x608 |  34.9 |  39.9  |    -    | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100k_vehicle.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100k_vehicle.yml) |
-|  KITTI        | 1088x608 |  53.9 |    -   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/vehicle/fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
-|  VisDrone     | 1088x608 |  29.8 |   51.3 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/vehicle/fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
+|  BDD100K      | 1088x608 |  34.9 |  39.9  |    -    | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml) |
+|  KITTI        | 1088x608 |  53.9 |    -   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
+|  VisDrone     | 1088x608 |  29.8 |   51.3 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
 
 **注意:**
  FairMOT均使用DLA-34为骨干网络，2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
@@ -38,20 +30,20 @@
 ## 数据集准备和处理
 
 ### 1、数据集处理代码说明
-代码统一都在configs/mot/vehicle/tools目录下
+代码统一都在tools目录下
 ```
 # bdd100kmot
-tools/bdd100kmot/bdd100k_vehicle.sh: 通过执行bdd2mot.py、bdd100k2mot.py和gen_labels_MOT.py生成bdd100k_vehicle 数据集
-tools/bdd100kmot/bdd2mot.py: 将bdd100k全集转换成mot格式
-tools/bdd100kmot/bdd100k2mot.py： 抽取指定的类别
-tools/bdd100kmot/gen_labels_MOT.py： 生层单类别的labels_with_ids文件
+tools/bdd100kmot/gen_bdd100kmot_vehicle.sh：通过执行bdd100k2mot.py和gen_labels_MOT.py生成bdd100kmot_vehicle 数据集
+tools/bdd100kmot/bdd100k2mot.py：将bdd100k全集转换成mot格式
+tools/bdd100kmot/gen_labels_MOT.py：生成单类别的labels_with_ids文件
 # visdrone
-tools/visdrone/visdrone2mot.py: 放到visdrone数据集里面，生成visdrone_vehicle
+tools/visdrone/visdrone2mot.py：生成visdrone_vehicle
 ```
 
 ### 2、bdd100k_vehicle数据集处理
 ```
-# bdd100k生成bdd100k_vehicle mot格式的数据，抽取类别classes=2,3,4,9,10 (car, truck, bus, trailer, other vehicle)
+# 复制tools/bdd100kmot里的代码到数据集目录下
+# 生成bdd100kmot_vehicle MOT格式的数据，抽取类别classes=2,3,4,9,10 (car, truck, bus, trailer, other vehicle)
 <<--生成前目录-->>
 ├── bdd100k_path
 │   ├── images
@@ -60,7 +52,7 @@ tools/visdrone/visdrone2mot.py: 放到visdrone数据集里面，生成visdrone_v
 ├── bdd100k_path
 │   ├── images
 │   ├── labels
-│   ├── bdd100k_vehicle
+│   ├── bdd100kmot_vehicle
 │   │   ├── images
 │   │   │   ├── train
 │   │   │   ├── val
@@ -68,13 +60,13 @@ tools/visdrone/visdrone2mot.py: 放到visdrone数据集里面，生成visdrone_v
 │   │   │   ├── train
 │   │   │   ├── val
 # 执行
-sh bdd100k_vehicle.sh
+sh gen_bdd100kmot_vehicle.sh
 ```
 
 ### 3、visdrone_vehicle数据集处理
 ```
-# 复制tool/visdrone/visdrone2mot.py脚本到数据集目录下
-# bdd100k生成bdd100k_vehicle mot格式的数据，抽取类别classes=4,5,6,9 (car, van, truck, bus)
+# 复制tools/visdrone/visdrone2mot.py到数据集目录下
+# 生成visdrone_vehicle MOT格式的数据，抽取类别classes=4,5,6,9 (car, van, truck, bus)
 <<--生成前目录-->>
 ├── VisDrone2019-MOT-val
 │   ├── annotations
@@ -91,8 +83,8 @@ sh bdd100k_vehicle.sh
 │   │   ├── labels_with_ids
 │   │   │   ├── val
 # 执行
-python visdrone2mot.py --transMot=True --dataname=visdrone_vehicle --phase=val 
-# python visdrone2mot.py --transMot=True --dataname=visdrone_vehicle --phase=train
+python visdrone2mot.py --transMot=True --data_name=visdrone_vehicle --phase=val 
+python visdrone2mot.py --transMot=True --data_name=visdrone_vehicle --phase=train
 ```
 
 ## 快速开始
