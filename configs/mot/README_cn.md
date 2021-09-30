@@ -136,6 +136,21 @@ wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
  FairMOT DLA-34均使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
 
 
+### FairMOT enhance模型
+### 在MOT-16 Test Set上结果
+|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| HarDNet-85     | 1088x608 |  75.0  |  70.0  |  1050   |  11837  |  32774 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_hardnet85_30e_1088x608.pdparams) | [配置文件](./fairmot/fairmot_enhance_hardnet85_30e_1088x608.yml) |
+
+### 在MOT-17 Test Set上结果
+|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| HarDNet-85     | 1088x608 |  74.7  |  70.7  |  3210  |  29790  | 109914 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_hardnet85_30e_1088x608.pdparams) | [配置文件](./fairmot/fairmot_enhance_hardnet85_30e_1088x608.yml) |
+
+**注意:**
+ FairMOT enhance HarDNet-85 使用8个GPU进行训练，每个GPU上batch size为10，训练30个epoch，并且训练集中加入了crowdhuman数据集一起参与训练。
+
+
 ### FairMOT轻量级模型
 ### 在MOT-16 Test Set上结果
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
