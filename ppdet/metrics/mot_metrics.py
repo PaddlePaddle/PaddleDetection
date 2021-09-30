@@ -32,7 +32,10 @@ from .munkres import Munkres
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['MOTEvaluator', 'MOTMetric', 'JDEDetMetric', 'KITTIMOTMetric']
+__all__ = [
+    'MOTEvaluator', 'MOTMetric', 'JDEDetMetric', 'KITTIMOTMetric',
+    'BDD100KMetric'
+]
 
 
 def read_mot_results(filename, is_gt=False, is_ignore=False):
@@ -1230,3 +1233,164 @@ class KITTIMOTMetric(Metric):
 
     def get_results(self):
         return self.strsummary
+
+
+def BDD100KMetric(data_root, result_root, bdd100k_gt_class_map):
+    try:
+        import bdd100k
+    except Exception as e:
+        os.system('pip install git+https://github.com/bdd100k/bdd100k')
+    from scalabel.eval.mot import acc_single_video_mot, evaluate_track
+    from scalabel.label.io import group_and_sort, load
+    from bdd100k.label.to_scalabel import bdd100k_to_scalabel
+    from scalabel.common.parallel import NPROC, pmap
+    from bdd100k.common.utils import load_bdd100k_config
+    from scalabel.label.io import parse
+    import numpy as np
+    import glob
+    import json
+    from functools import partial
+    from scalabel.label.typing import Dataset
+    import copy
+    import os
+    import os.path as osp
+    import cv2
+    import random
+    task = 'box_track'
+    iou_thr = 0.5
+    ignore_iof_thr = 0.5
+    bdd100k_config = load_bdd100k_config(task)
+    id2orginid = {}
+    cls2id = {
+        'pedestrian': 0,
+        'rider': 1,
+        'car': 2,
+        'truck': 3,
+        'bus': 4,
+        'train': 5,
+        'motorcycle': 6,
+        'bicycle': 7,
+        'other person': 8,
+        'trailer': 9,
+        'other vehicle': 10
+    }
+    # category
+    id2cls = {
+        0: 'pedestrian',
+        1: 'rider',
+        2: 'car',
+        3: 'truck',
+        4: 'bus',
+        5: 'train',
+        6: 'motorcycle',
+        7: 'bicycle',
+        8: 'other person',
+        9: 'trailer',
+        10: 'other vehicle'
+    }
+    for key in bdd100k_gt_class_map.keys():
+        id2orginid[bdd100k_gt_class_map[key]] = cls2id[key]
+    print('**********************id2orginid**************************',
+          id2orginid)
+
+    result_txts = glob.glob(result_root + '/*.txt')
+    infer_result = {}
+    for result_txt in result_txts:
+        seq_name = result_txt.split('/')[-1].replace('.txt', '')
+        infer_result[seq_name] = np.loadtxt(
+            result_txt, delimiter=',', dtype=str).tolist()
+    raw_frames = []
+    seq_list = glob.glob(data_root + '/*')
+    gt_map = {}
+    global_id = 0
+    for seq_item in seq_list:
+        seq_name = seq_item.split('/')[-1]
+        gt_map[seq_name] = []
+        gt_txt_path = osp.join(seq_item, 'gt', 'gt.txt')
+        gt_annos = np.loadtxt(gt_txt_path, delimiter=',', dtype=float)
+        frame_ids = list(set(np.squeeze(gt_annos[..., 0]).tolist()))
+        frameIndex = 0
+        labels = []
+        for frame_id in frame_ids:
+            frame_id_anno = gt_annos[gt_annos[..., 0] == frame_id]
+            label_map = {}
+            label_map['name'] = seq_name + '-%07d' % frame_id + '.jpg'
+            label_map['labels'] = []
+            label_map['videoName'] = seq_name
+            label_map['frameIndex'] = frameIndex
+            frameIndex += 1
+            for _frame_id, _id, _x, _y, _w, _h, _come_into, _category, _visual in frame_id_anno:
+                global_id += 1
+                single_label = {}
+                single_label['id'] = '%8d' % global_id
+                single_label['category'] = id2cls[id2orginid[int(_category)]]
+                single_label['attributes'] = {}
+                single_label['attributes']['occluded'] = False
+                single_label['attributes']['truncated'] = False
+                single_label['attributes']['crowd'] = False
+                single_label['box2d'] = {}
+                single_label['box2d']['x1'] = _x
+                single_label['box2d']['y1'] = _y
+                single_label['box2d']['x2'] = _x + _w
+                single_label['box2d']['y2'] = _y + _h
+                label_map['labels'].append(single_label)
+            gt_map[seq_name].append(label_map)
+    bdd_val_seq = copy.deepcopy(gt_map)
+    assert len(bdd_val_seq.keys()) == len(infer_result.keys())
+    all_idMap = {}
+    global_id = 0
+    for seq_name in infer_result.keys():
+        seq_name = seq_name.split("/")[-1].replace(".txt", "")
+        cur_seq_val = bdd_val_seq[seq_name]
+        labels = np.array(infer_result[seq_name], dtype=float)
+        labels[:, 4] = labels[:, 2] + labels[:, 4]
+        labels[:, 5] = labels[:, 3] + labels[:, 5]
+        frame_list = np.array(labels[:, 0], dtype=int)
+        frame_list = list(set(frame_list))
+        for frame_id in frame_list:
+            frame_map = {}
+            name = seq_name + "-" + "%07d" % frame_id + ".jpg"
+            frame_map["name"] = name
+            frame_map["labels"] = []
+            frame_labels = labels[labels[:, 0] == frame_id]
+            curId = 0
+            for frame_laebl in frame_labels:
+                oriId = str(int(frame_laebl[1]))
+                if oriId in all_idMap.keys():
+                    curId = all_idMap[oriId]
+                else:
+                    all_idMap[oriId] = str(global_id)
+                    curId = str(global_id)
+                    global_id += 1
+                box2d_map = {}
+                box2d = {
+                    "x1": frame_laebl[2],
+                    "y1": frame_laebl[3],
+                    "x2": frame_laebl[4],
+                    "y2": frame_laebl[5],
+                }
+                box2d_map["box2d"] = box2d
+                box2d_map["category"] = "car"
+                box2d_map["id"] = str(curId)
+                frame_map["labels"].append(box2d_map)
+            for cur_seq_val_jpg in cur_seq_val:
+                if cur_seq_val_jpg["name"] == name:
+                    cur_seq_val_jpg["labels"] = frame_map["labels"]
+        raw_frames.extend(cur_seq_val)
+    parse_ = partial(parse, validate_frames=True)
+    gt_frames = []
+    for gt_key in gt_map.keys():
+        gt_frames.extend(gt_map[gt_key])
+    gt_dataset = Dataset(frames=list(map(parse_, gt_frames)), config=None)
+    infer_dataset = Dataset(frames=list(map(parse_, raw_frames)), config=None)
+    results = evaluate_track(
+        acc_single_video_mot,
+        gts=group_and_sort(
+            bdd100k_to_scalabel(gt_dataset.frames, bdd100k_config)),
+        results=group_and_sort(
+            bdd100k_to_scalabel(infer_dataset.frames, bdd100k_config)),
+        config=bdd100k_config.scalabel,
+        iou_thr=iou_thr,
+        ignore_iof_thr=ignore_iof_thr,
+        nproc=1)
+    return results

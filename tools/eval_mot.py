@@ -84,7 +84,6 @@ def run(FLAGS, cfg):
             tracker.load_weights_sde(None, cfg.reid_weights)
     else:
         tracker.load_weights_jde(cfg.weights)
-
     # inference
     tracker.mot_evaluate(
         data_root=data_root,
@@ -95,7 +94,8 @@ def run(FLAGS, cfg):
         save_images=FLAGS.save_images,
         save_videos=FLAGS.save_videos,
         show_image=FLAGS.show_image,
-        det_results_dir=FLAGS.det_results_dir)
+        det_results_dir=FLAGS.det_results_dir,
+        bdd100k_gt_class_map=cfg.bdd100k_gt_class_map)
 
 
 def main():

@@ -28,7 +28,7 @@ from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_bo
 from ppdet.modeling.mot.utils import Timer, load_det_results
 from ppdet.modeling.mot import visualization as mot_vis
 
-from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric
+from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric, BDD100KMetric
 import ppdet.utils.stats as stats
 
 from .callbacks import Callback, ComposeCallback
@@ -270,11 +270,12 @@ class Tracker(object):
                      save_images=False,
                      save_videos=False,
                      show_image=False,
-                     det_results_dir=''):
+                     det_results_dir='',
+                     bdd100k_gt_class_map={}):
         if not os.path.exists(output_dir): os.makedirs(output_dir)
         result_root = os.path.join(output_dir, 'mot_results')
         if not os.path.exists(result_root): os.makedirs(result_root)
-        assert data_type in ['mot', 'kitti'], \
+        assert data_type in ['mot', 'kitti', 'bdd100k'], \
             "data_type should be 'mot' or 'kitti'"
         assert model_type in ['JDE', 'DeepSORT', 'FairMOT'], \
             "model_type should be 'JDE', 'DeepSORT' or 'FairMOT'"
@@ -322,7 +323,9 @@ class Tracker(object):
                                               '{}.txt'.format(seq)))
                 else:
                     raise ValueError(model_type)
-
+            if data_type == 'bdd100k':
+                self.write_mot_results(result_filename, results, data_type)
+                continue
             self.write_mot_results(result_filename, results, data_type)
             n_frame += nf
             timer_avgs.append(ta)
@@ -341,20 +344,23 @@ class Tracker(object):
             for metric in self._metrics:
                 metric.update(data_root, seq, data_type, result_root,
                               result_filename)
+        if data_type == 'bdd100k':
+            ret = BDD100KMetric(data_root, result_root, bdd100k_gt_class_map)
+            logger.info(ret)
+        else:
+            timer_avgs = np.asarray(timer_avgs)
+            timer_calls = np.asarray(timer_calls)
+            all_time = np.dot(timer_avgs, timer_calls)
+            avg_time = all_time / np.sum(timer_calls)
+            logger.info('Time elapsed: {:.2f} seconds, FPS: {:.2f}'.format(
+                all_time, 1.0 / avg_time))
 
-        timer_avgs = np.asarray(timer_avgs)
-        timer_calls = np.asarray(timer_calls)
-        all_time = np.dot(timer_avgs, timer_calls)
-        avg_time = all_time / np.sum(timer_calls)
-        logger.info('Time elapsed: {:.2f} seconds, FPS: {:.2f}'.format(
-            all_time, 1.0 / avg_time))
-
-        # accumulate metric to log out
-        for metric in self._metrics:
-            metric.accumulate()
-            metric.log()
-        # reset metric states for metric may performed multiple times
-        self._reset_metrics()
+            # accumulate metric to log out
+            for metric in self._metrics:
+                metric.accumulate()
+                metric.log()
+            # reset metric states for metric may performed multiple times
+            self._reset_metrics()
 
     def get_infer_images(self, infer_dir):
         assert infer_dir is None or os.path.isdir(infer_dir), \
@@ -455,7 +461,7 @@ class Tracker(object):
             logger.info('Save video in {}'.format(output_video_path))
 
     def write_mot_results(self, filename, results, data_type='mot'):
-        if data_type in ['mot', 'mcmot', 'lab']:
+        if data_type in ['mot', 'mcmot', 'lab', 'bdd100k']:
             save_format = '{frame},{id},{x1},{y1},{w},{h},{score},-1,-1,-1\n'
         elif data_type == 'kitti':
             save_format = '{frame} {id} car 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
@@ -502,150 +508,3 @@ class Tracker(object):
             cv2.imwrite(
                 os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)),
                 online_im)
-
-    def evalBdd100kWithGt(self,
-                          evalPath,
-                          result_root,
-                          id2orginid={1: 2,
-                                      2: 3,
-                                      3: 4,
-                                      4: 9,
-                                      5: 10}):
-        import argparse
-        from scalabel.eval.mot import acc_single_video_mot, evaluate_track
-        from scalabel.label.io import group_and_sort, load
-        from bdd100k.label.to_scalabel import bdd100k_to_scalabel
-        from scalabel.common.parallel import NPROC, pmap
-        from bdd100k.common.utils import load_bdd100k_config
-        from scalabel.label.io import parse
-        import numpy as np
-        import glob
-        import json
-        from functools import partial
-        from scalabel.label.typing import Dataset
-        import copy
-        import os
-        import os.path as osp
-        import cv2
-        import random
-        task = 'box_track'
-        iou_thr = 0.5
-        ignore_iof_thr = 0.5
-        bdd100k_config = load_bdd100k_config(task)
-        # category
-        id2cls = {
-            0: 'pedestrian',
-            1: 'rider',
-            2: 'car',
-            3: 'truck',
-            4: 'bus',
-            5: 'train',
-            6: 'motorcycle',
-            7: 'bicycle',
-            8: 'other person',
-            9: 'trailer',
-            10: 'other vehicle'
-        }
-        result_txts = glob.glob(result_root + '/*.txt')
-        infer_result = {}
-        for result_txt in result_txts:
-            seqName = result_txt.split('/')[-1].replace('.txt', '')
-            infer_result[seqName] = np.loadtxt(
-                result_txt, delimiter=',', dtype=str).tolist()
-        raw_frames = []
-        seqList = glob.glob(evalPath + '/*')
-        gtMap = {}
-        global_id = 0
-        for seqItem in seqList:
-            seqName = seqItem.split('/')[-1]
-            gtMap[seqName] = []
-            gtTxtPath = osp.join(seqItem, 'gt', 'gt.txt')
-            gtAnnos = np.loadtxt(gtTxtPath, delimiter=',', dtype=float)
-            frameIds = list(set(np.squeeze(gtAnnos[..., 0]).tolist()))
-            frameIndex = 0
-            labels = []
-            for frameId in frameIds:
-                frameId_anno = gtAnnos[gtAnnos[..., 0] == frameId]
-                label_map = {}
-                label_map['name'] = seqName + '-%07d' % frameId + '.jpg'
-                label_map['labels'] = []
-                label_map['videoName'] = seqName
-                label_map['frameIndex'] = frameIndex
-                frameIndex += 1
-                for _frameId, _id, _x, _y, _w, _h, _come_into, _category, _visual in frameId_anno:
-                    global_id += 1
-                    single_label = {}
-                    single_label['id'] = '%8d' % global_id
-                    single_label['category'] = id2cls[id2orginid[int(
-                        _category)]]
-                    single_label['attributes'] = {}
-                    single_label['attributes']['occluded'] = False
-                    single_label['attributes']['truncated'] = False
-                    single_label['attributes']['crowd'] = False
-                    single_label['box2d'] = {}
-                    single_label['box2d']['x1'] = _x
-                    single_label['box2d']['y1'] = _y
-                    single_label['box2d']['x2'] = _x + _w
-                    single_label['box2d']['y2'] = _y + _h
-                    label_map['labels'].append(single_label)
-                gtMap[seqName].append(label_map)
-        bdd_val_seq = copy.deepcopy(gtMap)
-        assert len(bdd_val_seq.keys()) == len(infer_result.keys())
-        all_idMap = {}
-        global_id = 0
-        for seqName in infer_result.keys():
-            seqName = seqName.split("/")[-1].replace(".txt", "")
-            cur_seq_val = bdd_val_seq[seqName]
-            labels = np.array(infer_result[seqName], dtype=float)
-            labels[:, 4] = labels[:, 2] + labels[:, 4]
-            labels[:, 5] = labels[:, 3] + labels[:, 5]
-            frameList = np.array(labels[:, 0], dtype=int)
-            frameList = list(set(frameList))
-            for frameId in frameList:
-                frameMap = {}
-                name = seqName + "-" + "%07d" % frameId + ".jpg"
-                frameMap["name"] = name
-                frameMap["labels"] = []
-                myLabels = labels[labels[:, 0] == frameId]
-                curId = 0
-                for myLabel in myLabels:
-                    oriId = str(int(myLabel[1]))
-                    if oriId in all_idMap.keys():
-                        curId = all_idMap[oriId]
-                    else:
-                        all_idMap[oriId] = str(global_id)
-                        curId = str(global_id)
-                        global_id += 1
-                    box2dMap = {}
-                    box2d = {
-                        "x1": myLabel[2],
-                        "y1": myLabel[3],
-                        "x2": myLabel[4],
-                        "y2": myLabel[5],
-                    }
-                    box2dMap["box2d"] = box2d
-                    box2dMap["category"] = "car"
-                    box2dMap["id"] = str(curId)
-                    frameMap["labels"].append(box2dMap)
-                for cur_seq_val_jpg in cur_seq_val:
-                    if cur_seq_val_jpg["name"] == name:
-                        cur_seq_val_jpg["labels"] = frameMap["labels"]
-            raw_frames.extend(cur_seq_val)
-        parse_ = partial(parse, validate_frames=True)
-        gt_frames = []
-        for gt_key in gtMap.keys():
-            gt_frames.extend(gtMap[gt_key])
-        gt_dataset = Dataset(frames=list(map(parse_, gt_frames)), config=None)
-        infer_dataset = Dataset(
-            frames=list(map(parse_, raw_frames)), config=None)
-        results = evaluate_track(
-            acc_single_video_mot,
-            gts=group_and_sort(
-                bdd100k_to_scalabel(gt_dataset.frames, bdd100k_config)),
-            results=group_and_sort(
-                bdd100k_to_scalabel(infer_dataset.frames, bdd100k_config)),
-            config=bdd100k_config.scalabel,
-            iou_thr=iou_thr,
-            ignore_iof_thr=ignore_iof_thr,
-            nproc=1, )
-        return results

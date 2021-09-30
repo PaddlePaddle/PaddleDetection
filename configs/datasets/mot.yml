@@ -21,3 +21,10 @@ TestMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
     keep_ori_im: True # set True if save visualization images or video
+
+# gt.txt mapping relationship for bdd100k evaluation, effective when metric: bdd100k
+bdd100k_gt_class_map:
+  car: 1
+  truck: 2
+  bus: 3
+  trailer: 4

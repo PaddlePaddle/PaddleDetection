@@ -67,6 +67,7 @@ def readme():
 def parse_requirements(fname):
     with open(fname, encoding="utf-8-sig") as f:
         requirements = f.readlines()
+    print('**********requirements********', requirements)
     return requirements
 
 
