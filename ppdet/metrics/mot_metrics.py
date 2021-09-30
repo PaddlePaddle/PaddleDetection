@@ -1290,9 +1290,6 @@ def BDD100KMetric(data_root, result_root, bdd100k_gt_class_map):
     }
     for key in bdd100k_gt_class_map.keys():
         id2orginid[bdd100k_gt_class_map[key]] = cls2id[key]
-    print('**********************id2orginid**************************',
-          id2orginid)
-
     result_txts = glob.glob(result_root + '/*.txt')
     infer_result = {}
     for result_txt in result_txts:
