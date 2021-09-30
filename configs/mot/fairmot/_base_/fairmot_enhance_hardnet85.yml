@@ -29,7 +29,7 @@ CenterNetHead:
   head_planes: 128
 
 FairMOTEmbeddingHead:
-  ch_head: 128
+  ch_head: 512
 
 CenterNetPostProcess:
   for_mot: True

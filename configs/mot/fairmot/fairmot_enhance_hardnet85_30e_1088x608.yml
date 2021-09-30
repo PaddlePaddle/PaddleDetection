@@ -2,9 +2,12 @@ _BASE_: [
   '../../datasets/mot.yml',
   '../../runtime.yml',
   '_base_/optimizer_30e.yml',
-  '_base_/fairmot_hardnet85.yml',
+  '_base_/fairmot_enhance_hardnet85.yml',
   '_base_/fairmot_reader_1088x608.yml',
 ]
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
 
 worker_num: 4
 TrainReader:
@@ -43,4 +46,4 @@ OptimizerBuilder:
     type: Adam
   regularizer: NULL
 
-weights: output/fairmot_hardnet85_30e_1088x608/model_final
+weights: output/fairmot_enhance_hardnet85_30e_1088x608/model_final
