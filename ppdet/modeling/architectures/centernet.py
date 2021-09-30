@@ -30,7 +30,7 @@ class CenterNet(BaseArch):
     Args:
         backbone (object): backbone instance
         neck (object): FPN instance, default use 'CenterNetDLAFPN'
-        head (object): 'CenterHead' instance
+        head (object): 'CenterNetHead' instance
         post_process (object): 'CenterNetPostProcess' instance
         for_mot (bool): whether return other features used in tracking model
 
@@ -41,7 +41,7 @@ class CenterNet(BaseArch):
     def __init__(self,
                  backbone,
                  neck='CenterNetDLAFPN',
-                 head='CenterHead',
+                 head='CenterNetHead',
                  post_process='CenterNetPostProcess',
                  for_mot=False):
         super(CenterNet, self).__init__()

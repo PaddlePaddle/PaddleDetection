@@ -77,7 +77,7 @@ class HarDBlock(nn.Layer):
         self.keepBase = keepBase
         self.links = []
         layers_ = []
-        self.out_channels = 0  # if upsample else in_channels
+        self.out_channels = 0
         for i in range(n_layers):
             outch, inch, link = self.get_link(i + 1, in_channels, growth_rate,
                                               grmul)
@@ -89,7 +89,6 @@ class HarDBlock(nn.Layer):
 
             if (i % 2 == 0) or (i == n_layers - 1):
                 self.out_channels += outch
-        # print("Blk out =",self.out_channels)
         self.layers = nn.LayerList(layers_)
 
     def get_out_ch(self):
@@ -145,13 +144,9 @@ class HarDBlock(nn.Layer):
 
 @register
 class HarDNet(nn.Layer):
-    def __init__(self, depth_wise=False, return_idx=[
-            1,
-            3,
-            8,
-            13,
-    ], arch=85):
-        super().__init__()
+    def __init__(self, depth_wise=False, return_idx=[1, 3, 8, 13], arch=85):
+        super(HarDNet, self).__init__()
+        assert arch in [39, 68, 85], "HarDNet-{} not support.".format(arch)
         if arch == 85:
             first_ch = [48, 96]
             second_kernel = 3
@@ -173,9 +168,6 @@ class HarDNet(nn.Layer):
             grmul = 1.6
             gr = [16, 20, 64, 160]
             n_layers = [4, 16, 8, 4]
-        else:
-            print("Error: HarDNet", arch, " has no implementation.")
-            exit()
 
         self.return_idx = return_idx
         self._out_channels = [96, 214, 458, 784]
@@ -221,7 +213,7 @@ class HarDNet(nn.Layer):
             if i == 0:
                 self.base.append(
                     nn.AvgPool2D(
-                        kernel_size=2, stride=2, ceil_mode=True))  ###
+                        kernel_size=2, stride=2, ceil_mode=True))
             elif i != blks - 1 and i != 1 and i != 3:
                 self.base.append(nn.AvgPool2D(kernel_size=2, stride=2))
 
