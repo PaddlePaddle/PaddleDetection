@@ -52,7 +52,6 @@ class ConvLayer(nn.Layer):
 
     def forward(self, inputs):
         out = self.conv(inputs)
-
         return out
 
 
@@ -70,7 +69,6 @@ class CenterNetHead(nn.Layer):
         size_loss (): the type of size regression loss, 'L1 loss' by default.
         offset_weight (float): the weight of center offset loss, 1 by default.
         iou_weight (float): the weight of iou head loss, 0 by default.
-
     """
 
     __shared__ = ['num_classes']
@@ -123,8 +121,7 @@ class CenterNetHead(nn.Layer):
         self.size_loss = size_loss
 
         # offset head (optinal)
-        self.offset_weight = offset_weight
-        if self.offset_weight > 0:
+        if offset_weight > 0:
             self.offset = nn.Sequential(
                 ConvLayer(
                     in_channels,
@@ -142,8 +139,7 @@ class CenterNetHead(nn.Layer):
                     bias=True))
 
         # iou head (optinal)
-        self.iou_weight = iou_weight
-        if self.iou_weight > 0:
+        if iou_weight > 0:
             self.iou = nn.Sequential(
                 ConvLayer(
                     in_channels,
@@ -169,8 +165,8 @@ class CenterNetHead(nn.Layer):
     def forward(self, feat, inputs):
         heatmap = self.heatmap(feat)
         size = self.size(feat)
-        offset = self.offset(feat) if self.offset_weight else None
-        iou = self.iou(feat) if self.iou_weight else None
+        offset = self.offset(feat) if hasattr(self, 'offset_weight') else None
+        iou = self.iou(feat) if hasattr(self, 'iou_weight') else None
 
         if self.training:
             loss = self.get_loss(
@@ -179,9 +175,9 @@ class CenterNetHead(nn.Layer):
         else:
             heatmap = F.sigmoid(heatmap)
             head_outs = {'heatmap': heatmap, 'size': size}
-            if self.offset_weight:
+            if offset is not None:
                 head_outs.update({'offset': offset})
-            if self.iou_weight:
+            if iou is not None:
                 head_outs.update({'iou': iou})
             return head_outs
 
@@ -237,7 +233,7 @@ class CenterNetHead(nn.Layer):
             size_loss = size_loss / (pos_num + 1e-4)
 
         # offset head loss: L1 loss
-        if self.offset_weight:
+        if offset is not None:
             offset_target = inputs['offset']
             offset = paddle.transpose(offset, perm=[0, 2, 3, 1])
             offset_n, offset_h, offset_w, offset_c = offset.shape
@@ -255,7 +251,7 @@ class CenterNetHead(nn.Layer):
             offset_loss = offset_loss / (pos_num + 1e-4)
 
         # iou head loss: GIoU loss
-        if self.iou_weight:
+        if iou is not None:
             iou = paddle.transpose(iou, perm=[0, 2, 3, 1])
             iou_n, iou_h, iou_w, iou_c = iou.shape
             iou = paddle.reshape(iou, shape=[iou_n, -1, iou_c])
@@ -287,10 +283,10 @@ class CenterNetHead(nn.Layer):
         }
         det_loss = weights['heatmap'] * heatmap_loss + weights[
             'size'] * size_loss
-        if self.offset_weight:
+        if offset is not None:
             losses.update({'offset_loss': offset_loss})
             det_loss = det_loss + weights['offset'] * offset_loss
-        if self.iou_weight:
+        if iou is not None:
             losses.update({'iou_loss': iou_loss})
             det_loss = det_loss + weights['iou'] * iou_loss
         losses.update({'det_loss': det_loss})
