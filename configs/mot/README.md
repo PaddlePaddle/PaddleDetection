@@ -136,6 +136,21 @@ If you use a stronger detection model, you can get better results. Each txt is t
  FairMOT DLA-34 used 2 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
 
 
+### FairMOT enhance model
+### Results on MOT-16 Test Set
+| backbone       | input shape |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  download | config |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| HarDNet-85     | 1088x608 |  75.0  |  70.0  |  1050   |  11837  |  32774 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_hardnet85_30e_1088x608.pdparams) | [config](./fairmot/fairmot_enhance_hardnet85_30e_1088x608.yml) |
+
+### Results on MOT-17 Test Set
+| backbone       | input shape |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  download  | config |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| HarDNet-85     | 1088x608 |  74.7  |  70.7  |  3210  |  29790  | 109914 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_hardnet85_30e_1088x608.pdparams) | [config](./fairmot/fairmot_enhance_hardnet85_30e_1088x608.yml) |
+
+**注意:**
+ FairMOT enhance HarDNet-85 used 8 GPUs for training and mini-batch size as 10 on each GPU，and trained for 30 epoches. The crowdhuman dataset is added to the train-set during training.
+
+
 ### FairMOT light model
 ### Results on MOT-16 Test Set
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
