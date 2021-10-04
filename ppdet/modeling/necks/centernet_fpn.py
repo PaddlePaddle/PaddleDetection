@@ -16,10 +16,14 @@ import numpy as np
 import math
 import paddle
 import paddle.nn as nn
+import paddle.nn.functional as F
 from paddle.nn.initializer import KaimingUniform
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling.layers import ConvNormLayer
+from ppdet.modeling.backbones.hardnet import ConvLayer, HarDBlock
 from ..shape_spec import ShapeSpec
+
+__all__ = ['CenterNetDLAFPN', 'CenterNetHarDNetFPN']
 
 
 def fill_up_weights(up):
@@ -171,6 +175,7 @@ class CenterNetDLAFPN(nn.Layer):
         return {'in_channels': [i.channels for i in input_shape]}
 
     def forward(self, body_feats):
+
         dla_up_feats = self.dla_up(body_feats)
 
         ida_up_feats = []
@@ -180,6 +185,143 @@ class CenterNetDLAFPN(nn.Layer):
         self.ida_up(ida_up_feats, 0, len(ida_up_feats))
 
         return ida_up_feats[-1]
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=self.out_channel, stride=self.down_ratio)]
+
+
+class TransitionUp(nn.Layer):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+
+    def forward(self, x, skip, concat=True):
+        w, h = skip.shape[2], skip.shape[3]
+        out = F.interpolate(x, size=(w, h), mode="bilinear", align_corners=True)
+        if concat:
+            out = paddle.concat([out, skip], 1)
+        return out
+
+
+@register
+@serializable
+class CenterNetHarDNetFPN(nn.Layer):
+    """
+    Args:
+        in_channels (list): number of input feature channels from backbone.
+            [96, 214, 458, 784] by default, means the channels of HarDNet85
+        num_layers (int): HarDNet laters, 85 by default
+        down_ratio (int): the down ratio from images to heatmap, 4 by default
+        first_level (int): the first level of input feature fed into the
+            upsamplng block
+        last_level (int): the last level of input feature fed into the upsamplng block
+        out_channel (int): the channel of the output feature, 0 by default means
+            the channel of the input feature whose down ratio is `down_ratio`
+    """
+
+    def __init__(self,
+                 in_channels,
+                 num_layers=85,
+                 down_ratio=4,
+                 first_level=-1,
+                 last_level=4,
+                 out_channel=0):
+        super(CenterNetHarDNetFPN, self).__init__()
+        self.first_level = int(np.log2(
+            down_ratio)) - 1 if first_level == -1 else first_level
+        self.down_ratio = down_ratio
+        self.last_level = last_level
+        self.last_pool = nn.AvgPool2D(kernel_size=2, stride=2)
+
+        assert num_layers in [68, 85], "HarDNet-{} not support.".format(num_layers)
+        if num_layers == 85:
+            self.last_proj = ConvLayer(784, 256, kernel_size=1)
+            self.last_blk = HarDBlock(768, 80, 1.7, 8)
+            self.skip_nodes = [1, 3, 8, 13]
+            self.SC = [32, 32, 0]
+            gr = [64, 48, 28]
+            layers = [8, 8, 4]
+            ch_list2 = [224 + self.SC[0], 160 + self.SC[1], 96 + self.SC[2]]
+            channels = [96, 214, 458, 784]
+            self.skip_lv = 3
+
+        elif num_layers == 68:
+            self.last_proj = ConvLayer(654, 192, kernel_size=1)
+            self.last_blk = HarDBlock(576, 72, 1.7, 8)
+            self.skip_nodes = [1, 3, 8, 11]
+            self.SC = [32, 32, 0]
+            gr = [48, 32, 20]
+            layers = [8, 8, 4]
+            ch_list2 = [224 + self.SC[0], 96 + self.SC[1], 64 + self.SC[2]]
+            channels = [64, 124, 328, 654]
+            self.skip_lv = 2
+
+        self.transUpBlocks = nn.LayerList([])
+        self.denseBlocksUp = nn.LayerList([])
+        self.conv1x1_up = nn.LayerList([])
+        self.avg9x9 = nn.AvgPool2D(kernel_size=(9, 9), stride=1, padding=(4, 4))
+        prev_ch = self.last_blk.get_out_ch()
+
+        for i in range(3):
+            skip_ch = channels[3 - i]
+            self.transUpBlocks.append(TransitionUp(prev_ch, prev_ch))
+            if i < self.skip_lv:
+                cur_ch = prev_ch + skip_ch
+            else:
+                cur_ch = prev_ch
+            self.conv1x1_up.append(
+                ConvLayer(
+                    cur_ch, ch_list2[i], kernel_size=1))
+            cur_ch = ch_list2[i]
+            cur_ch -= self.SC[i]
+            cur_ch *= 3
+
+            blk = HarDBlock(cur_ch, gr[i], 1.7, layers[i])
+            self.denseBlocksUp.append(blk)
+            prev_ch = blk.get_out_ch()
+
+        prev_ch += self.SC[0] + self.SC[1] + self.SC[2]
+        self.out_channel = prev_ch
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {'in_channels': [i.channels for i in input_shape]}
+
+    def forward(self, body_feats):
+        x = body_feats[-1]
+        x_sc = []
+        x = self.last_proj(x)
+        x = self.last_pool(x)
+        x2 = self.avg9x9(x)
+        x3 = x / (x.sum((2, 3), keepdim=True) + 0.1)
+        x = paddle.concat([x, x2, x3], 1)
+        x = self.last_blk(x)
+
+        for i in range(3):
+            skip_x = body_feats[3 - i]
+            x = self.transUpBlocks[i](x, skip_x, (i < self.skip_lv))
+            x = self.conv1x1_up[i](x)
+            if self.SC[i] > 0:
+                end = x.shape[1]
+                x_sc.append(x[:, end - self.SC[i]:, :, :])
+                x = x[:, :end - self.SC[i], :, :]
+            x2 = self.avg9x9(x)
+            x3 = x / (x.sum((2, 3), keepdim=True) + 0.1)
+            x = paddle.concat([x, x2, x3], 1)
+            x = self.denseBlocksUp[i](x)
+
+        scs = [x]
+        for i in range(3):
+            if self.SC[i] > 0:
+                scs.insert(
+                    0,
+                    F.interpolate(
+                        x_sc[i],
+                        size=(x.shape[2], x.shape[3]),
+                        mode="bilinear",
+                        align_corners=True))
+        neck_feat = paddle.concat(scs, 1)
+        return neck_feat
 
     @property
     def out_shape(self):
