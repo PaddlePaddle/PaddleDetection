@@ -27,47 +27,7 @@ from ..initializer import normal_, constant_, bias_init_with_prob
 from ppdet.modeling.bbox_utils import bbox_center
 from ..losses import GIoULoss
 from paddle.vision.ops import deform_conv2d
-
-
-class ConvNormLayer(nn.Layer):
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 groups=1,
-                 norm_type='bn',
-                 norm_groups=32,
-                 bias_attr=False):
-        super(ConvNormLayer, self).__init__()
-        assert norm_type in ['bn', 'sync_bn', 'gn']
-
-        self.conv = nn.Conv2D(
-            in_channels=in_channels,
-            out_channels=out_channels,
-            kernel_size=kernel_size,
-            stride=stride,
-            padding=(kernel_size - 1) // 2,
-            groups=groups,
-            bias_attr=bias_attr)
-
-        if norm_type == 'bn':
-            self.norm = nn.BatchNorm2D(out_channels)
-        elif norm_type == 'sync_bn':
-            self.norm = nn.SyncBatchNorm(out_channels)
-        elif norm_type == 'gn':
-            self.norm = nn.GroupNorm(
-                num_groups=norm_groups, num_channels=out_channels)
-
-        self._init_weights()
-
-    def _init_weights(self):
-        normal_(self.conv.weight, std=0.001)
-
-    def forward(self, inputs):
-        out = self.conv(inputs)
-        out = self.norm(out)
-        return out
+from ppdet.modeling.layers import ConvNormLayer
 
 
 class ScaleReg(nn.Layer):
@@ -109,7 +69,8 @@ class TaskDecomposition(nn.Layer):
         self.reduction_conv = ConvNormLayer(
             self.in_channels,
             self.feat_channels,
-            kernel_size=1,
+            filter_size=1,
+            stride=1,
             norm_type=self.norm_type,
             norm_groups=self.norm_groups)
 
@@ -187,7 +148,8 @@ class TOODHead(nn.Layer):
                 ConvNormLayer(
                     self.feat_channels,
                     self.feat_channels,
-                    kernel_size=3,
+                    filter_size=3,
+                    stride=1,
                     norm_type=norm_type,
                     norm_groups=norm_groups))
 
