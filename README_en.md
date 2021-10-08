@@ -205,9 +205,9 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 
 ### Get Started
 
-- [Installation guide](docs/tutorials/INSTALL_en.md)
-- [Prepare dataset](docs/tutorials/PrepareDataSet.md)
-- [Quick start on PaddleDetection](docs/tutorials/GETTING_STARTED_cn.md)
+- [Installation guide](docs/tutorials/INSTALL.md)
+- [Prepare dataset](docs/tutorials/PrepareDataSet_en.md)
+- [Quick start on PaddleDetection](docs/tutorials/GETTING_STARTED.md)
 
 
 ### Advanced Tutorials
