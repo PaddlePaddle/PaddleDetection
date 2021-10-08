@@ -1,29 +1,31 @@
 # How to Prepare Training Data
 ## Directory
-- [Description of object detection data](Description_of_Object_Detection_Data)
-- [Prepare Training Data](#Prepare_Training_Data)
-    - [VOC Data](#VOC_Data)
-        - [VOC Dataset Download ](#VOC_Dataset_Download )
-        - [Introduction to VOC Data Annotation File](#Introduction_to_VOC_Data_Annotation_File)
-    - [COCO Data](#COCO_Data)
-        - [COCO Dataset Download](#COCO_Data_Download)
-        - [Description of COCO Data Annotation  ](#Description_of_COCO_Data_Annotation)
-    - [User Data](#User_Data)
-        - [Convert User Data to VOC Data](#Convert_User_Data_to_VOC_Data)
-        - [Convert User Data to COCO Data](#Convert_User_Data_to_COCO_Data)
-        - [Reader of User Define Data ](#Reader_of_User_Define_Data)
-    - [Example of User Data Conversion](#Example_of_User_Data_Conversion)
+- [How to Prepare Training Data](#how-to-prepare-training-data)
+  - [Directory](#directory)
+    - [Description of Object Detection Data](#description-of-object-detection-data)
+    - [Prepare Training Data](#prepare-training-data)
+      - [VOC Data](#voc-data)
+        - [VOC Dataset Download](#voc-dataset-download)
+        - [Introduction to VOC Data Annotation File](#introduction-to-voc-data-annotation-file)
+      - [COCO Data](#coco-data)
+        - [COCO Data Download](#coco-data-download)
+        - [Description of COCO Data Annotation](#description-of-coco-data-annotation)
+      - [User Data](#user-data)
+        - [Convert User Data to VOC Data](#convert-user-data-to-voc-data)
+        - [Convert User Data to COCO Data](#convert-user-data-to-coco-data)
+        - [Reader of User Define Data](#reader-of-user-define-data)
+      - [Example of User Data Conversion](#example-of-user-data-conversion)
 
 ### Description of Object Detection Data
 The data of object detection is more complex than classification. In an image, it is necessary to mark the position and category of each object.
 
 The general object position is represented by a rectangular box, which is generally expressed in the following three ways
 
-|      Expression    |                                    Explanation                                 |
-| :----------------: | :----------------------------------------------------------------------------: |
-|     x1,y1,x2,y2    | (x1,y1)is the top left coordinate, (x2,y2)is the bottom right coordonate       |  
-|     x1,y1,w,h      | (x1,y1)is the top left coordinate, w is width of object, h is height of object |
-|     xc,yc,w,h      | (xc,yc)is center of object, w is width of object, h is height of object        |  
+| Expression  |                                  Explanation                                   |
+| :---------: | :----------------------------------------------------------------------------: |
+| x1,y1,x2,y2 |    (x1,y1)is the top left coordinate, (x2,y2)is the bottom right coordonate    |
+|  x1,y1,w,h  | (x1,y1)is the top left coordinate, w is width of object, h is height of object |
+|  xc,yc,w,h  |    (xc,yc)is center of object, w is width of object, h is height of object     |
 
 Common object detection datasets such as Pascal VOC, adopting `[x1,y1,x2,y2]` to express the bounding box of object. COCO engage `[x1,y1,w,h]` , [format](https://cocodataset.org/#format-data).
 
@@ -136,13 +138,13 @@ The XML file contains the following fields：
     ```
 - object field, indict each object, including:
 
-    |    laebl    |    explanation    |
-    | :--------: | :-----------: |
-    |   name    |     name of object class       |  
-    |   pose    |    attitude description of the target object (non required field)  |  
-    |   truncated    |   If the occlusion of the object exceeds 15-20% and is outside the bounding box，mark it as `truncated` (non required field)    |  
-    |   difficult    |   objects that are difficult to recognize are marked as`difficult` (non required field)      |  
-    |   bndbox son laebl    |  (xmin,ymin) top left coordinate, (xmax,ymax) bottom right coordinate  |  
+    |      laebl       |                                                        explanation                                                         |
+    | :--------------: | :------------------------------------------------------------------------------------------------------------------------: |
+    |       name       |                                                    name of object class                                                    |
+    |       pose       |                               attitude description of the target object (non required field)                               |
+    |    truncated     | If the occlusion of the object exceeds 15-20% and is outside the bounding box，mark it as `truncated` (non required field) |
+    |    difficult     |                   objects that are difficult to recognize are marked as`difficult` (non required field)                    |
+    | bndbox son laebl |                            (xmin,ymin) top left coordinate, (xmax,ymax) bottom right coordinate                            |
 
 
 #### COCO Data
@@ -413,10 +415,10 @@ After preparing the data, we should generally understand the data, such as image
 
 Roadsign dataset statistics:
 
-|    data    |    number of images    |
-| :--------: | :-----------: |
-|   train    |     701       |
-|   valid    |     176       |
+| data  | number of images |
+| :---: | :--------------: |
+| train |       701        |
+| valid |       176        |
 
 **Explanation:**
  (1) For user data, it is recommended to carefully check the data before training to avoid crash during training due to wrong data annotation format or incomplete image data
