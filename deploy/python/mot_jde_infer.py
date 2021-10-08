@@ -257,11 +257,12 @@ def predict_video(detector, camera_id):
             save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
-            result_filename = os.path.join(save_dir, '{:05d}.txt'.format(frame_id))
-            if results[-1][2]==[]:
+            result_filename = os.path.join(save_dir,
+                                           '{:05d}.txt'.format(frame_id))
+            if results[-1][2] == []:
                 tlwhs = [tlwh for tlwh in bbox_tlwh]
                 scores = [score for score in pred_scores]
-                result = (frame_id + 1, tlwhs, scores, [-1]*len(tlwhs))
+                result = (frame_id + 1, tlwhs, scores, [-1] * len(tlwhs))
             else:
                 result = results[-1]
             write_mot_results(result_filename, [result])

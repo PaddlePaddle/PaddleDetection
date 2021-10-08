@@ -135,13 +135,14 @@ class SDE_Detector(Detector):
             enable_mkldnn=enable_mkldnn)
         assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
 
-    def postprocess(self, boxes, input_shape, im_shape, scale_factor,
-                    threshold, scaled):
+    def postprocess(self, boxes, input_shape, im_shape, scale_factor, threshold,
+                    scaled):
         if not scaled:
             # postprocess output of jde yolov3 detector
             pred_bboxes = scale_coords(boxes[:, 2:], input_shape, im_shape,
-                                    scale_factor)
-            pred_bboxes = clip_box(pred_bboxes, input_shape, im_shape, scale_factor)
+                                       scale_factor)
+            pred_bboxes = clip_box(pred_bboxes, input_shape, im_shape,
+                                   scale_factor)
         else:
             # postprocess output of general detector
             pred_bboxes = boxes[:, 2:]
@@ -317,7 +318,8 @@ def predict_image(detector, reid_model, image_list):
             detector.gpu_util += gu
             print('Test iter {}, file name:{}'.format(i, img_file))
         else:
-            pred_bboxes, pred_scores = detector.predict([frame], FLAGS.scaled, FLAGS.threshold)
+            pred_bboxes, pred_scores = detector.predict([frame], FLAGS.scaled,
+                                                        FLAGS.threshold)
 
         # process
         bbox_tlwh = np.concatenate(
@@ -373,7 +375,8 @@ def predict_video(detector, reid_model, camera_id):
         if not ret:
             break
         timer.tic()
-        pred_bboxes, pred_scores = detector.predict([frame], FLAGS.scaled, FLAGS.threshold)
+        pred_bboxes, pred_scores = detector.predict([frame], FLAGS.scaled,
+                                                    FLAGS.threshold)
         timer.toc()
         bbox_tlwh = np.concatenate(
             (pred_bboxes[:, 0:2],
@@ -407,11 +410,12 @@ def predict_video(detector, reid_model, camera_id):
             save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
-            result_filename = os.path.join(save_dir, '{:05d}.txt'.format(frame_id))
-            if results[-1][2]==[]:
+            result_filename = os.path.join(save_dir,
+                                           '{:05d}.txt'.format(frame_id))
+            if results[-1][2] == []:
                 tlwhs = [tlwh for tlwh in bbox_tlwh]
                 scores = [score for score in pred_scores]
-                result = (frame_id + 1, tlwhs, scores, [-1]*len(tlwhs))
+                result = (frame_id + 1, tlwhs, scores, [-1] * len(tlwhs))
             else:
                 result = results[-1]
             write_mot_results(result_filename, [result])

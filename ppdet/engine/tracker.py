@@ -213,8 +213,9 @@ class Tracker(object):
                 outs = self.model.detector(data)
                 if outs['bbox_num'] > 0:
                     if not scaled:
-                        pred_bboxes = scale_coords(outs['bbox'][:, 2:], input_shape,
-                                                im_shape, scale_factor)
+                        pred_bboxes = scale_coords(outs['bbox'][:, 2:],
+                                                   input_shape, im_shape,
+                                                   scale_factor)
                     else:
                         pred_bboxes = outs['bbox'][:, 2:]
                     pred_scores = outs['bbox'][:, 1:2]

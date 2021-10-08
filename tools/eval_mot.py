@@ -66,7 +66,8 @@ def parse_args():
         '--scaled',
         type=bool,
         default=False,
-        help='Whether coords after detector outputs are scaled , False in JDE YOLOv3, True in general detector.')
+        help="Whether coords after detector outputs are scaled, False in JDE YOLOv3 "
+        "True in general detector.")
     args = parser.parse_args()
     return args
 

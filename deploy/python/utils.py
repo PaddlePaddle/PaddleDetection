@@ -116,7 +116,8 @@ def argsparser():
         '--scaled',
         type=bool,
         default=False,
-        help='Whether coords after detector outputs are scaled , False in JDE YOLOv3, True in general detector.')
+        help="Whether coords after detector outputs are scaled, False in JDE YOLOv3 "
+        "True in general detector.")
     parser.add_argument(
         "--reid_model_dir",
         type=str,

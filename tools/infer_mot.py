@@ -78,7 +78,8 @@ def parse_args():
         '--scaled',
         type=bool,
         default=False,
-        help='Whether coords after detector outputs are scaled , False in JDE YOLOv3, True in general detector.')
+        help="Whether coords after detector outputs are scaled, False in JDE YOLOv3 "
+        "True in general detector.")
     parser.add_argument(
         "--draw_threshold",
         type=float,
