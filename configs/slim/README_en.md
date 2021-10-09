@@ -1,13 +1,13 @@
 # 模型压缩
 
-In Paddle Detection, a complete tutorial and benchmarks for model compression based on [Paddle Slim](https://github.com/PaddlePaddle/PaddleSlim) are provided. Currently supported methods:
+In PaddleDetection, a complete tutorial and benchmarks for model compression based on [PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim) are provided. Currently supported methods:
 
 - [clipping](prune)
 - [quantitative](quant)
 - [distillation](distill)
 - [The joint strategy](extensions)
 
-It is recommended that you use a combination of clipping and distillation training, or use clipping and quantization for test model compression. The following takes YOL Ov3 as an example to carry out cutting, distillation and quantization experiments.
+It is recommended that you use a combination of clipping and distillation training, or use clipping and quantization for test model compression. The following takes YOLOv3 as an example to carry out cutting, distillation and quantization experiments.
 
 ## Experimental Environment
 

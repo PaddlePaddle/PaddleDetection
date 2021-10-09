@@ -5,9 +5,9 @@
 ### 2.2(08.10/2021)
 
 - Model richness:
-    - Publish the Transformer test model: DETR、Deformable DETR、Sparse RCNN
+    - Publish the Transformer test model: DETR, Deformable DETR, Sparse RCNN
     - Key point test new Dark model, release Dark HRNet model
-    - Publish THE MPII dataset HRNet keypoint detection model
+    - Publish the MPII dataset HRNet keypoint detection model
     - Release head and vehicle tracking vertical model
 
 - Model optimization:
@@ -70,7 +70,7 @@
   - Forecast deployment:
     - Publish forecast benchmark data for major models
     - Adaptive to TensorRT6, support TensorRT dynamic size input, support TensorRT int8 quantitative prediction
-    - 7 types of models including PP YOLO, YOLOv3, SSD, TTFNet, FCOS, Faster RCNN are deployed in Python/CPP/TRT prediction on Linux, Windows and NV Jetson platforms
+    - 7 types of models including PP-YOLO, YOLOv3, SSD, TTFNet, FCOS, Faster RCNN are deployed in Python/CPP/TRT prediction on Linux, Windows and NV Jetson platforms
 
   - Detection model compression:
     - Distillation: Added dynamic map distillation support and released YOLOv3-MobileNetV1 distillation model
@@ -114,7 +114,7 @@
   - Dynamic graph support:
     -  Support for Faster-RCNN, Mask-RCNN, FPN, Cascade Faster/Mask RCNN, YOLOv3 and SSD models, trial version.
   - Model upgrade:
-    - Updated PP-YOLO Mobile Netv3 large and small models with improved accuracy, and added clipping and distillation models.
+    - Updated PP-YOLO Mobile-Netv3 large and small models with improved accuracy, and added clipping and distillation models.
   - New features:
     - Support VisualDL visual data preprocessing pictures.
 
@@ -203,7 +203,7 @@
     - Clipping + distillation: release MobileNet-YOLOv3 clipping + distillation solution and model, 69.6% based on COCO DATA FLOPS, 64.5% based on TensorRT prediction acceleration, 0.3% mAP; Release ResNet50vd-DCN-YOLOv3 tailoring + distillation solution and model, 43.7% based on COCO Data FLOPS, 24.0% based on TensorRT prediction acceleration, mAP + 0.6%.
     - Search: Open source Blaze Face Nas complete search solution.
   - Predict deployment:
-    - 集Integrated TensorRT, support FP16, FP32, INT8 quantitative inference acceleration.
+    - Integrated TensorRT, support FP16, FP32, INT8 quantitative inference acceleration.
   - Document:
     - Add detailed data preprocessing module to introduce documents and implement custom data Reader documents.
     - Added documentation on how to add algorithm models.
@@ -217,7 +217,7 @@
 
 ### 21/11/2019
 - Add CascadeClsAware RCNN model.
-- Add CBNet，ResNet200 and Non-local model.
+- Add CBNet, ResNet200 and Non-local model.
 - Add SoftNMS.
 - Add Open Image V5 dataset and Objects365 dataset model
 

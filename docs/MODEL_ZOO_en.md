@@ -11,7 +11,7 @@
 ## General Settings
 
 - All models were trained and tested in the COCO17 dataset.
-- Unless special instructions, all the Res Net backbone network using [ResNet-B](https://arxiv.org/pdf/1812.01187) structure.
+- Unless special instructions, all the ResNet backbone network using [ResNet-B](https://arxiv.org/pdf/1812.01187) structure.
 - **Inference time (FPS)**: The reasoning time was calculated on a Tesla V100 GPU by `tools/eval.py` testing all validation sets in FPS (number of pictures/second). CuDNN version is 7.5, including data loading, network forward execution and post-processing, and Batch size is 1.
 
 ## Training strategy
@@ -21,7 +21,7 @@
 - 2X strategy is twice as much as strategy 1X, and the learning rate adjustment position is twice as much as strategy 1X.
 
 ## ImageNet pretraining model
-Paddle provides a skeleton network pretraining model based on Image Net. All pre-training models were trained by standard Imagenet 1K data set. Res Net and Mobile Net are high-precision pre-training models obtained by cosine learning rate adjustment strategy or SSLD knowledge distillation training. Model details are available at [PaddleClas](https://github.com/PaddlePaddle/PaddleClas).
+Paddle provides a skeleton network pretraining model based on ImageNet. All pre-training models were trained by standard Imagenet 1K data set. Res Net and Mobile Net are high-precision pre-training models obtained by cosine learning rate adjustment strategy or SSLD knowledge distillation training. Model details are available at [PaddleClas](https://github.com/PaddlePaddle/PaddleClas).
 
 
 ## Baseline
