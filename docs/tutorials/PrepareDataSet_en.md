@@ -410,7 +410,7 @@ trafficlight
 ./images/road681.png ./annotations/road681.xml
 ```
 
-You can also download the prepared data[]](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar) ，unzip to `dataset/roadsign_voc/`  
+You can also download [the prepared data](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar), unzip to `dataset/roadsign_voc/`  
 After preparing the data, we should generally understand the data, such as image quantity, image size, number of target areas of each type, target area size, etc. If necessary, clean the data.
 
 Roadsign dataset statistics:
