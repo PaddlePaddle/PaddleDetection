@@ -20,13 +20,13 @@
 
 ## Introduction
 
-[S2ANet](https://arxiv.org/pdf/2008.09397.pdf) is used to detect rotating frame's model, Required use of Paddles PADDles 2.1.1(can be installed using PIP) Or proper [develop version](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-release).
+[S2ANet](https://arxiv.org/pdf/2008.09397.pdf) is used to detect rotating frame's model, Required use of PaddlePaddle 2.1.1(can be installed using PIP) Or proper [develop version](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-release).
 
 
 ## Prepare Data
 
 ### DOTA data
-[DOTA Dataset] is a Dataset of object detection in aerial images, which contains 2806 images with a resolution of 4000 4000 per image.
+[DOTA Dataset] is a Dataset of object detection in aerial images, which contains 2806 images with a resolution of 4000x4000 per image.
 
 |  Data version  |  categories  |   images   |  size  |    instances    |     annotation method     |
 |:--------:|:-------:|:---------:|:---------:| :---------:| :------------: |
@@ -35,7 +35,7 @@
 
 Note: OBB annotation is an arbitrary quadrilateral; The vertices are arranged in clockwise order. The HBB annotation mode is the outer rectangle of the indicator note example.
 
-There were 2,806 images in the DOTA dataset, including 1411 images as a training set, 458 images as an evaluation set, and the remaining 937 images as a test set.
+There were 2,806 images in the DOTA dataset, including 1,411 images as a training set, 458 images as an evaluation set, and the remaining 937 images as a test set.
 
 If you need to cut the image data, please refer to the [DOTA_devkit](https://github.com/CAPTAIN-WHU/DOTA_devkit).
 
@@ -51,7 +51,7 @@ There are two ways to annotate data:
 
 Then convert the annotation result into coco annotation format, where each `bbox` is in the format of `[x_center, y_center, width, height, angle]`, where the Angle is expressed in radians.
 
-Reference [spinal disk data set](https://aistudio.baidu.com/aistudio/datasetdetail/85885), we will data set is divided into training set (230), the test set (57), data address is: [spine_coco](https://paddledet.bj.bcebos.com/data/spine_coco.tar). The data set has a small number of images, which can be used to train the S2A Net model quickly.
+Reference [spinal disk data set](https://aistudio.baidu.com/aistudio/datasetdetail/85885), we will data set is divided into training set (230), the test set (57), data address is: [spine_coco](https://paddledet.bj.bcebos.com/data/spine_coco.tar). The data set has a small number of images, which can be used to train the S2ANet model quickly.
 
 
 ## Start Training
@@ -125,7 +125,7 @@ python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2
 python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=https://paddledet.bj.bcebos.com/models/s2anet_1x_spine.pdparams
 ```
 **Attention:** 
-(1) The DOTA dataset is trained together with train and VAL data as a training set, and the evaluation dataset configuration needs to be customized when evaluating the DOTA dataset.
+(1) The DOTA dataset is trained together with train and val data as a training set, and the evaluation dataset configuration needs to be customized when evaluating the DOTA dataset.
 
 (2) Bone data set is transformed from segmented data. As there is little difference between different types of discs for detection tasks, and the score obtained by S2ANET algorithm is low, the default threshold for evaluation is 0.5, a low mAP is normal. You are advised to view the detection result visually.
 
@@ -140,11 +140,11 @@ python3.7 tools/infer.py -c configs/dota/s2anet_1x_spine.yml -o weights=https://
 ```
 
 ### 5. DOTA Data evaluation
-Execute the following command, will save each image prediction result in `output` folder TXT text with the same folder name.
+Execute the following command, will save each image prediction result in `output` folder txt text with the same folder name.
 ```
 python3.7 tools/infer.py -c configs/dota/s2anet_alignconv_2x_dota.yml -o weights=./weights/s2anet_alignconv_2x_dota.pdparams  --infer_dir=dota_test_images --draw_threshold=0.05 --save_txt=True --output_dir=output
 ```
-Please refer to [DOTA_devkit](https://github.com/CAPTAIN-WHU/DOTA_devkit) generate assessment files, Assessment file format, please refer to [DOTA Test](http://captain.whu.edu.cn/DOTAweb/tasks.html), and generate the zip file, each class a TXT file, every row in the TXT file format for: `image_id score x1 y1 x2 y2 x3 y3 x4 y4` You can also reference the `dataset/dota_coco/dota_generate_test_result.py` script to generate an evaluation file and submit it to the server.
+Please refer to [DOTA_devkit](https://github.com/CAPTAIN-WHU/DOTA_devkit) generate assessment files, Assessment file format, please refer to [DOTA Test](http://captain.whu.edu.cn/DOTAweb/tasks.html), and generate the zip file, each class a txt file, every row in the txt file format for: `image_id score x1 y1 x2 y2 x3 y3 x4 y4` You can also reference the `dataset/dota_coco/dota_generate_test_result.py` script to generate an evaluation file and submit it to the server.
 
 ## Model Library
 
