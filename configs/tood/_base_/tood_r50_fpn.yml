@@ -1,0 +1,42 @@
+architecture: TOOD
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+
+TOOD:
+  backbone: ResNet
+  neck: FPN
+  head: TOODHead
+
+ResNet:
+  depth: 50
+  variant: b
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1, 2, 3]
+  num_stages: 4
+
+FPN:
+  out_channel: 256
+  spatial_scales: [0.125, 0.0625, 0.03125]
+  extra_stage: 2
+  has_extra_convs: true
+  use_c5: false
+
+TOODHead:
+  stacked_convs: 6
+  grid_cell_scale: 8
+  static_assigner_epoch: 4
+  loss_weight: { class: 1.0, iou: 2.0 }
+  static_assigner:
+    name: ATSSAssigner
+    topk: 9
+  assigner:
+    name: TaskAlignedAssigner
+    topk: 13
+    alpha: 1.0
+    beta: 6.0
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.05
+    nms_threshold: 0.6

@@ -645,3 +645,15 @@ def distance2bbox(points, distance, max_shape=None):
         x2 = x2.clip(min=0, max=max_shape[1])
         y2 = y2.clip(min=0, max=max_shape[0])
     return paddle.stack([x1, y1, x2, y2], -1)
+
+
+def bbox_center(boxes):
+    """Get bbox centers from boxes.
+    Args:
+        boxes (Tensor): boxes with shape (N, 4), "xmin, ymin, xmax, ymax" format.
+    Returns:
+        Tensor: boxes centers with shape (N, 2), "cx, cy" format.
+    """
+    boxes_cx = (boxes[:, 0] + boxes[:, 2]) / 2
+    boxes_cy = (boxes[:, 1] + boxes[:, 3]) / 2
+    return paddle.stack([boxes_cx, boxes_cy], axis=-1)
