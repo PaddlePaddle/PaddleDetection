@@ -1,6 +1,6 @@
 # CACascade RCNN
 ## Intorduction
-Objects365 2019 Challenge CA Cascade RCNN is one of the best single models won by Baidu Visual Technology Department in Objects365 2019 Challenge. Objects365 is a new data set in the field of universal object detection, which aims to promote detection research on different objects in natural scenes. Objects365 marks 365 object classes on 630,000 images, and there are more than 10 million boundary boxes in the training set. This is one of the best single models in Full Track.
+Objects365 2019 Challenge CACascade RCNN is one of the best single models won by Baidu Visual Technology Department in Objects365 2019 Challenge. Objects365 is a new data set in the field of universal object detection, which aims to promote detection research on different objects in natural scenes. Objects365 marks 365 object classes on 630,000 images, and there are more than 10 million boundary boxes in the training set. This is one of the best single models in Full Track.
 
 ![](../../images/obj365_gt.png)
 
@@ -10,7 +10,7 @@ According to the characteristics of large-scale object detection algorithm, we p
 
 ![](../../images/cas.png)
 
-The best single model published this time is a two-stage detection model based on Cascade RCNN, which replaces Backbone with a more powerful SE Net154 model, Deformable Conv module and a more complex two-stage network structure. As the Batch Size is relatively small, Group Normalization operation is added and multi-scale training is used, which has achieved very good results. The pre-training model was trained on ImageNet and COCO dataset successively, among which Mask branch was added in COCO dataset training, and the rest structure was the same as CA Cascade RCNN, which was automatically downloaded when the training started.
+The best single model published this time is a two-stage detection model based on Cascade RCNN, which replaces Backbone with a more powerful SENet154 model, Deformable Conv module and a more complex two-stage network structure. As the Batch Size is relatively small, Group Normalization operation is added and multi-scale training is used, which has achieved very good results. The pre-training model was trained on ImageNet and COCO dataset successively, among which Mask branch was added in COCO dataset training, and the rest structure was the same as CACascade RCNN, which was automatically downloaded when the training started.
 
 ## Method of use
 
