@@ -20,7 +20,7 @@
 ## Quick Start
 
 ### Data preparation
-We use [WIDER-FACE data set](http://shuoyang1213.me/WIDERFACE/) for training and model tests, the official web site provides detailed data is introduced.
+We use [WIDER-FACE dataset](http://shuoyang1213.me/WIDERFACE/) for training and model tests, the official web site provides detailed data is introduced.
 - WIDER-Face data source:  
 - Load a data set of type `wider_face` using the following directory structure:
   ```
@@ -47,7 +47,7 @@ We use [WIDER-FACE data set](http://shuoyang1213.me/WIDERFACE/) for training and
   ```
 
 - Manually download the dataset:
-To download the WIDER FACE data set, run the following command:
+To download the WIDER-FACE dataset, run the following command:
 ```
 cd dataset/wider_face && ./download_wider_face.sh
 ```
@@ -70,7 +70,7 @@ BlazeNeck:
 
 
 ### Training and Evaluation
-The training process and evaluation process methods are consistent with other algorithms, please refer to them[GETTING_STARTED_cn.md](../../docs/tutorials/GETTING_STARTED_cn.md)。  
+The training process and evaluation process methods are consistent with other algorithms, please refer to [GETTING_STARTED_cn.md](../../docs/tutorials/GETTING_STARTED_cn.md)。  
 **Attention:** Face detection models currently do not support training and evaluation.
 
 #### Evaluated on the WIDER-FACE Dataset
