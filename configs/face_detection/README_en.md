@@ -15,7 +15,7 @@
 | BlazeFace-FPN-SSH  | 640  |    8    | 1000e     | 0.907 / 0.883 / 0.793 | - | 0.479 |[link](https://paddledet.bj.bcebos.com/models/blazeface_fpn_ssh_1000e.pdparams) | [Configuration File](https://github.com/PaddlePaddle/PaddleDetection/tree/release/develop/configs/face_detection/blazeface_fpn_ssh_1000e.yml) |
 
 **Attention:**  
-- We use a multi-scale evaluation strategy to get the mAP in `Easy/Medium/Hard Set`. Please refer to the [evaluation on the WIDER FACE data set](#在WIDER-FACE数据集上评估) for details.
+- We use a multi-scale evaluation strategy to get the mAP in `Easy/Medium/Hard Set`. Please refer to the [evaluation on the WIDER FACE data set](#Evaluated-on-the-WIDER-FACE-Dataset) for details.
 
 ## Quick Start
 
@@ -73,7 +73,7 @@ BlazeNeck:
 The training process and evaluation process methods are consistent with other algorithms, please refer to them[GETTING_STARTED_cn.md](../../docs/tutorials/GETTING_STARTED_cn.md)。  
 **Attention:** Face detection models currently do not support training and evaluation.
 
-#### Evaluated on the WIDER-FACE data set
+#### Evaluated on the WIDER-FACE Dataset
 - Step 1: Evaluate and generate a result file:
 ```shell
 python -u tools/eval.py -c configs/face_detection/blazeface_1000e.yml \
