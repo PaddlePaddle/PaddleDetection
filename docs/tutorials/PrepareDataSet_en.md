@@ -246,11 +246,11 @@ The JSON file contains the following keys:
     ```
 
 #### User Data
-There are three processing methods for user data:
-(1) Convert user data into VOC data (only include labels necessary for object detection as required)
-(2) Convert user data into coco data (only include labels necessary for object detection as required)
-(3) Customize a reader for user data (for complex data, you need to customize the reader)
-
+There are three processing methods for user data:  
+  (1) Convert user data into VOC data (only include labels necessary for object detection as required)  
+  (2) Convert user data into coco data (only include labels necessary for object detection as required)  
+  (3) Customize a reader for user data (for complex data, you need to customize the reader)  
+ 
 ##### Convert User Data to VOC Data
 After the user dataset is converted to VOC data, the directory structure is as follows (note that the path name and file name in the dataset should not use Chinese as far as possible to avoid errors caused by Chinese coding problems):
 
@@ -330,19 +330,17 @@ dataset/xxx/
 ```
 
 ##### Reader of User Define Data  
-If new data in the dataset needs to be added to paddedetection, you can refer to the [add new data source] (../advanced_tutorials/READER.md#2.3_Customizing_Dataset) document section in the data processing document to develop corresponding code to complete the new data source support. At the same time, you can read the [data processing document] (../advanced_tutorials/READER.md) for specific code analysis of data processing
+  If new data in the dataset needs to be added to paddedetection, you can refer to the [add new data source] (../advanced_tutorials/READER.md#2.3_Customizing_Dataset) document section in the data processing document to develop corresponding code to complete the new data source support. At the same time, you can read the [data processing document] (../advanced_tutorials/READER.md) for specific code analysis of data processing
 
 
 #### Example of User Data Conversion
-Take [Kaggle Dataset](https://www.kaggle.com/andrewmvd/road-sign-detection) competition data as an example to illustrate how to prepare custom data.
-the dataset of Kaggle [road-sign-detection](https://www.kaggle.com/andrewmvd/road-sign-detection) competition contains 877 images, four categories：crosswalk，speedlimit，stop，trafficlight.
-Available for download from kaggle, also available from [link](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar).
-Example diagram of road sign dataset:  
-![](../images/road554.png)
+  Take [Kaggle Dataset](https://www.kaggle.com/andrewmvd/road-sign-detection) competition data as an example to illustrate how to prepare custom data. The dataset of Kaggle [road-sign-detection](https://www.kaggle.com/andrewmvd/road-sign-detection) competition contains 877 images, four categories：crosswalk，speedlimit，stop，trafficlight. Available for download from kaggle, also available from [link](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar).
+  Example diagram of road sign dataset:  
+  ![](../images/road554.png)
 
 ```
 # Downing and unziping data
->>cd $(ppdet_root)/dataset
+  >>cd $(ppdet_root)/dataset
 # Download and unzip the kaggle dataset. The current file organization is as follows
 
 ├── annotations
