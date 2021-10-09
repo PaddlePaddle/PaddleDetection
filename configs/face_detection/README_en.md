@@ -60,10 +60,10 @@ BlazeNet:
    blaze_filters: [[24, 24], [24, 24], [24, 48, 2], [48, 48], [48, 48]]
    double_blaze_filters: [[48, 24, 96, 2], [96, 24, 96], [96, 24, 96],
                            [96, 24, 96, 2], [96, 24, 96], [96, 24, 96]]
-   act: hard_swish #配置backbone中BlazeBlock的激活函数，基础模型为relu，增加FPN和SSH时需使用hard_swish
+   act: hard_swish #Configure Blaze Block activation function in Backbone. The basic model is Relu. hard_swish is needed to add FPN and SSH
 
 BlazeNeck:
-   neck_type : fpn_ssh #可选only_fpn、only_ssh和fpn_ssh
+   neck_type : fpn_ssh #only_fpn, only_ssh and fpn_ssh
    in_channel: [96,96]
 ```
 
@@ -100,7 +100,7 @@ python3 setup.py build_ext --inplace
 python3 evaluation.py -p /path/to/PaddleDetection/output/pred -g /path/to/eval_tools/ground_truth
 ```
 
-Method 2: Mat Lab evaluation:
+Method 2: MatLab evaluation:
 ```
 # Change the name of save result path and draw curve in `eval_tools/wider_eval.m`:
 pred_dir = './pred';  
