@@ -5,7 +5,7 @@ CascadeCA RCNN is the best single model of Baidu Visual Technology Department in
 ![](../../images/oidv5_gt.png)
 
 ## Methods described
-This model combines the current better detection methods. Specifically, it uses ResNet200VD as the backbone of the detection model, The imagenet classification the training model in [here](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/image_classification/README_en.md) download; CascadeCA RCNN, Feature Pyramid Networks, Non-local, Deformable V2 and other methods are combined. It should be noted here that the standard CascadeRCNN only predicts two boxes (foreground and background, using the score information to determine the category to which the final foreground belongs), while this model separately predicts one box (Cascade Class Aware) for each category. The final block diagram of the model is shown in the figure below.
+This model combines the current better detection methods. Specifically, it uses ResNet200VD as the backbone of the detection model, The imagenet classification the training model in [here](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/image_classification/README_en.md) download; CascadeCA RCNN, Feature Pyramid Networks, Non-local, Deformable-V2 and other methods are combined. It should be noted here that the standard CascadeRCNN only predicts two boxes (foreground and background, using the score information to determine the category to which the final foreground belongs), while this model separately predicts one box (Cascade Class Aware) for each category. The final block diagram of the model is shown in the figure below.
 
 ![](../../images/oidv5_model_framework.png)
 

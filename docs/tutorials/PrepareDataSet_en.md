@@ -27,16 +27,16 @@ The general object position is represented by a rectangular box, which is genera
 |  x1,y1,w,h  | (x1,y1)is the top left coordinate, w is width of object, h is height of object |
 |  xc,yc,w,h  |    (xc,yc)is center of object, w is width of object, h is height of object     |
 
-Common object detection datasets such as Pascal VOC, adopting `[x1,y1,x2,y2]` to express the bounding box of object. COCO engage `[x1,y1,w,h]` , [format](https://cocodataset.org/#format-data).
+Common object detection datasets such as Pascal VOC, adopting `[x1,y1,x2,y2]` to express the bounding box of object. COCO uses `[x1,y1,w,h]` , [format](https://cocodataset.org/#format-data).
 
 ### Prepare Training Data
 PaddleDetection is supported [COCO](http://cocodataset.org) and [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) and [WIDER-FACE](http://shuoyang1213.me/WIDERFACE/) datasets by default.
 
 It also supports custom data sources including:
 
-(1) Convert custom data to VOC format;
-(2) Convert custom data to COOC format;
-(3) Customize a new data source, and add custom reader;
+(1) Convert custom data to VOC format;  
+(2) Convert custom data to COOC format;  
+(3) Customize a new data source, and add custom reader;  
 
 firstly, enter `PaddleDetection` root directory
 
@@ -337,7 +337,7 @@ If new data in the dataset needs to be added to paddedetection, you can refer to
 Take [Kaggle Dataset](https://www.kaggle.com/andrewmvd/road-sign-detection) competition data as an example to illustrate how to prepare custom data.
 the dataset of Kaggle [road-sign-detection](https://www.kaggle.com/andrewmvd/road-sign-detection) competition contains 877 images, four categories：crosswalk，speedlimit，stop，trafficlight.
 Available for download from kaggle, also available from [link](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar).
-Example diagram of road sign dataset:
+Example diagram of road sign dataset:  
 ![](../images/road554.png)
 
 ```
@@ -420,6 +420,6 @@ Roadsign dataset statistics:
 | train |       701        |
 | valid |       176        |
 
-**Explanation:**
- (1) For user data, it is recommended to carefully check the data before training to avoid crash during training due to wrong data annotation format or incomplete image data
-(2) If the image size is too large, it will occupy more memory without limiting the read data size, which will cause memory / video memory overflow. Please set batch reasonably_ Size, you can try from small to large
+**Explanation:**  
+  (1) For user data, it is recommended to carefully check the data before training to avoid crash during training due to wrong data annotation format or incomplete image data  
+  (2) If the image size is too large, it will occupy more memory without limiting the read data size, which will cause memory / video memory overflow. Please set batch reasonably_ Size, you can try from small to large
