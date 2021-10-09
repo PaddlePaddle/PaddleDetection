@@ -261,7 +261,7 @@ def predict_video(detector, camera_id):
                                            '{:05d}.txt'.format(frame_id))
             if results[-1][2] == []:
                 tlwhs = [tlwh for tlwh in bbox_tlwh]
-                scores = [score for score in pred_scores]
+                scores = [score[0] for score in pred_scores]
                 result = (frame_id + 1, tlwhs, scores, [-1] * len(tlwhs))
             else:
                 result = results[-1]

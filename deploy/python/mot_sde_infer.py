@@ -328,7 +328,8 @@ def predict_image(detector, reid_model, image_list):
             axis=1)
         crops, pred_scores = reid_model.get_crops(
             pred_bboxes, frame, pred_scores, w=64, h=192)
-
+        if len(crops) == 0:
+            continue
         if FLAGS.run_benchmark:
             online_tlwhs, online_scores, online_ids = reid_model.predict(
                 crops, bbox_tlwh, pred_scores, warmup=10, repeats=10)
@@ -384,7 +385,8 @@ def predict_video(detector, reid_model, camera_id):
             axis=1)
         crops, pred_scores = reid_model.get_crops(
             pred_bboxes, frame, pred_scores, w=64, h=192)
-
+        if len(crops) == 0:
+            continue
         online_tlwhs, online_scores, online_ids = reid_model.predict(
             crops, bbox_tlwh, pred_scores)
 
@@ -414,7 +416,7 @@ def predict_video(detector, reid_model, camera_id):
                                            '{:05d}.txt'.format(frame_id))
             if results[-1][2] == []:
                 tlwhs = [tlwh for tlwh in bbox_tlwh]
-                scores = [score for score in pred_scores]
+                scores = [score[0] for score in pred_scores]
                 result = (frame_id + 1, tlwhs, scores, [-1] * len(tlwhs))
             else:
                 result = results[-1]
