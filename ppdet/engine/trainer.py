@@ -352,6 +352,7 @@ class Trainer(object):
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
                 self._compose_callback.on_step_begin(self.status)
+                data['epoch_id'] = epoch_id
 
                 if self.cfg.get('fp16', False):
                     with amp.auto_cast(enable=self.cfg.use_gpu):
