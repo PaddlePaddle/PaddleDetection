@@ -20,7 +20,7 @@
 
 ## Introduction
 
-[S2ANet](https://arxiv.org/pdf/2008.09397.pdf) is used to detect rotating frame's model, Required use of Paddles PADDles 2.1.1(can be installed using PIP) Or proper [develop版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-release).
+[S2ANet](https://arxiv.org/pdf/2008.09397.pdf) is used to detect rotating frame's model, Required use of Paddles PADDles 2.1.1(can be installed using PIP) Or proper [develop version](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-release).
 
 
 ## Prepare Data
