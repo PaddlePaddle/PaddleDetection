@@ -138,7 +138,7 @@ The XML file contains the following fields：
     ```
 - object field, indict each object, including:
 
-    |      laebl       |                                                        explanation                                                         |
+    |      Label       |                                                        Explanation                                                         |
     | :--------------: | :------------------------------------------------------------------------------------------------------------------------: |
     |       name       |                                                    name of object class                                                    |
     |       pose       |                               attitude description of the target object (non required field)                               |
