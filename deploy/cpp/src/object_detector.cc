@@ -283,28 +283,49 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
     predictor_->Run();
     // Get output tensor
     auto output_names = predictor_->GetOutputNames();
-    auto out_tensor = predictor_->GetOutputHandle(output_names[0]);
-    std::vector<int> output_shape = out_tensor->shape();
-    auto out_bbox_num = predictor_->GetOutputHandle(output_names[1]);
-    std::vector<int> out_bbox_num_shape = out_bbox_num->shape();
-    // Calculate output length
-    int output_size = 1;
-    for (int j = 0; j < output_shape.size(); ++j) {
-      output_size *= output_shape[j];
-    }
+    if (config_.arch_ == "PicoDet") {
+      for (auto out_name : output_names) {
+        auto output_tensor = predictor_->GetOutputHandle(out_name);
+        std::vector<int> output_shape = output_tensor->shape();
+        if (i == 0) {
+          num_class_ = output_shape[2];
+        }
+        if (i == config_.fpn_stride_.size()) {
+          reg_max_ = output_shape[2] / 4 - 1;
+        }
+        int out_num = std::accumulate(output_shape.begin(), output_shape.end(), 
+                              1, std::multiplies<int>());
+        std::vector<float> out_data;
+        out_data.resize(out_num);
+        output_tensor->CopyToCpu(out_data.data());
+        float *buffer = new float[out_data.size()];
+        memcpy(buffer, &out_data[0], out_data.size()*sizeof(float));
+        output_data_list_.push_back(buffer);
+      }
+    } else{
+      auto out_tensor = predictor_->GetOutputHandle(output_names[0]);
+      std::vector<int> output_shape = out_tensor->shape();
+      auto out_bbox_num = predictor_->GetOutputHandle(output_names[1]);
+      std::vector<int> out_bbox_num_shape = out_bbox_num->shape();
+      // Calculate output length
+      int output_size = 1;
+      for (int j = 0; j < output_shape.size(); ++j) {
+        output_size *= output_shape[j];
+      }
 
-    if (output_size < 6) {
-      std::cerr << "[WARNING] No object detected." << std::endl;
-    }
-    output_data_.resize(output_size);
-    out_tensor->CopyToCpu(output_data_.data()); 
+      if (output_size < 6) {
+        std::cerr << "[WARNING] No object detected." << std::endl;
+      }
+      output_data_.resize(output_size);
+      out_tensor->CopyToCpu(output_data_.data());
 
-    int out_bbox_num_size = 1;
-    for (int j = 0; j < out_bbox_num_shape.size(); ++j) {
-      out_bbox_num_size *= out_bbox_num_shape[j];
+      int out_bbox_num_size = 1;
+      for (int j = 0; j < out_bbox_num_shape.size(); ++j) {
+        out_bbox_num_size *= out_bbox_num_shape[j];
+      }
+      out_bbox_num_data_.resize(out_bbox_num_size);
+      out_bbox_num->CopyToCpu(out_bbox_num_data_.data());
     }
-    out_bbox_num_data_.resize(out_bbox_num_size);
-    out_bbox_num->CopyToCpu(out_bbox_num_data_.data());
   }
   
   bool is_rbox = false;
@@ -313,41 +334,70 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   {
     predictor_->Run();
     // Get output tensor
+    output_data_list_.clear();
     auto output_names = predictor_->GetOutputNames();
-    auto out_tensor = predictor_->GetOutputHandle(output_names[0]);
-    std::vector<int> output_shape = out_tensor->shape();
-    auto out_bbox_num = predictor_->GetOutputHandle(output_names[1]);
-    std::vector<int> out_bbox_num_shape = out_bbox_num->shape();
-    // Calculate output length
-    int output_size = 1;
-    for (int j = 0; j < output_shape.size(); ++j) {
-      output_size *= output_shape[j];
-    }
-    is_rbox = output_shape[output_shape.size()-1] % 10 == 0;
+    if (config_.arch_ == "PicoDet") {
+      for (int i = 0; i < output_names.size(); i++) {
+        auto output_tensor = predictor_->GetOutputHandle(output_names[i]);
+        std::vector<int> output_shape = output_tensor->shape();
+        if (i == 0) {
+          num_class_ = output_shape[2];
+        }
+        if (i == config_.fpn_stride_.size()) {
+          reg_max_ = output_shape[2] / 4 - 1;
+        }
+        int out_num = std::accumulate(output_shape.begin(), output_shape.end(), 
+                              1, std::multiplies<int>());
+        std::vector<float> out_data;
+        out_data.resize(out_num);
+        output_tensor->CopyToCpu(out_data.data());
+        float *buffer = new float[out_data.size()];
+        memcpy(buffer, &out_data[0], out_data.size()*sizeof(float));
+        output_data_list_.push_back(buffer);
+      }
+    } else{
+      auto out_tensor = predictor_->GetOutputHandle(output_names[0]);
+      std::vector<int> output_shape = out_tensor->shape();
+      auto out_bbox_num = predictor_->GetOutputHandle(output_names[1]);
+      std::vector<int> out_bbox_num_shape = out_bbox_num->shape();
+      // Calculate output length
+      int output_size = 1;
+      for (int j = 0; j < output_shape.size(); ++j) {
+        output_size *= output_shape[j];
+      }
+      is_rbox = output_shape[output_shape.size()-1] % 10 == 0;
 
-    if (output_size < 6) {
-      std::cerr << "[WARNING] No object detected." << std::endl;
-    }
-    output_data_.resize(output_size);
-    out_tensor->CopyToCpu(output_data_.data()); 
+      if (output_size < 6) {
+        std::cerr << "[WARNING] No object detected." << std::endl;
+      }
+      output_data_.resize(output_size);
+      out_tensor->CopyToCpu(output_data_.data()); 
 
-    int out_bbox_num_size = 1;
-    for (int j = 0; j < out_bbox_num_shape.size(); ++j) {
-      out_bbox_num_size *= out_bbox_num_shape[j];
+      int out_bbox_num_size = 1;
+      for (int j = 0; j < out_bbox_num_shape.size(); ++j) {
+        out_bbox_num_size *= out_bbox_num_shape[j];
+      }
+      out_bbox_num_data_.resize(out_bbox_num_size);
+      out_bbox_num->CopyToCpu(out_bbox_num_data_.data());
     }
-    out_bbox_num_data_.resize(out_bbox_num_size);
-    out_bbox_num->CopyToCpu(out_bbox_num_data_.data());
   }
+  predictor_->ClearIntermediateTensor();
   auto inference_end = std::chrono::steady_clock::now();
   auto postprocess_start = std::chrono::steady_clock::now();
   // Postprocessing result
   result->clear();
-  Postprocess(imgs, result, out_bbox_num_data_, is_rbox);
   bbox_num->clear();
-  for (int k=0; k<out_bbox_num_data_.size(); k++) {
-    int tmp = out_bbox_num_data_[k];
-    bbox_num->push_back(tmp);
+  if (config_.arch_ == "PicoDet") {
+    picodet_postprocess(result, output_data_list_);
+    bbox_num->push_back(result->size());
+  } else {
+    Postprocess(imgs, result, out_bbox_num_data_, is_rbox);
+    for (int k=0; k<out_bbox_num_data_.size(); k++) {
+      int tmp = out_bbox_num_data_[k];
+      bbox_num->push_back(tmp);
+    }
   }
+  
   auto postprocess_end = std::chrono::steady_clock::now();
 
   std::chrono::duration<float> preprocess_diff = preprocess_end - preprocess_start;

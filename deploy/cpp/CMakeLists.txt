@@ -5,7 +5,7 @@ option(WITH_MKL        "Compile demo with MKL/OpenBlas support,defaultuseMKL."  
 option(WITH_GPU        "Compile demo with GPU/CPU, default use CPU."                    ON)
 option(WITH_TENSORRT   "Compile demo with TensorRT."                                    OFF)
 
-option(WITH_KEYPOINT        "Whether to Compile KeyPoint detector"                    ON)
+option(WITH_KEYPOINT        "Whether to Compile KeyPoint detector"                    OFF)
 
 SET(PADDLE_DIR "" CACHE PATH "Location of libraries")
 SET(PADDLE_LIB_NAME "" CACHE STRING "libpaddle_inference")
