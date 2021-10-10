@@ -24,7 +24,7 @@ Paddle Lite是飞桨轻量化推理引擎，为手机、IOT端提供高效推理
 1. [**建议**]直接下载，预测库下载链接如下：
       |平台|预测库下载链接|
       |-|-|
-      |Android|[arm7](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.8/inference_lite_lib.android.armv7.gcc.c++_static.with_extra.with_cv.tar.gz) / [arm8](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.8/inference_lite_lib.android.armv8.gcc.c++_static.with_extra.with_cv.tar.gz)|
+      |Android|[arm7](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.9.1/inference_lite_lib.android.armv7.clang.c++_static.with_extra.with_cv.tar.gz) / [arm8](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.9.1/inference_lite_lib.android.armv8.clang.c++_static.with_extra.with_cv.tar.gz)|
 
 **注意**：1. 如果是从 Paddle-Lite [官方文档](https://paddle-lite.readthedocs.io/zh/latest/quick_start/release_lib.html#android-toolchain-gcc)下载的预测库，注意选择`with_extra=ON，with_cv=ON`的下载链接。2. 目前只提供Android端demo，IOS端demo可以参考[Paddle-Lite IOS demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo/tree/master/PaddleLite-ios-demo)
 
@@ -40,7 +40,7 @@ git checkout develop
 
 **注意**：编译Paddle-Lite获得预测库时，需要打开`--with_cv=ON --with_extra=ON`两个选项，`--arch`表示`arm`版本，这里指定为armv8，更多编译命令介绍请参考[链接](https://paddle-lite.readthedocs.io/zh/latest/source_compile/compile_andriod.html#id2)。
 
-直接下载预测库并解压后，可以得到`inference_lite_lib.android.armv8.gcc.c++_static.with_extra.with_cv/`文件夹，通过编译Paddle-Lite得到的预测库位于`Paddle-Lite/build.lite.android.armv8.gcc/inference_lite_lib.android.armv8/`文件夹下。
+直接下载预测库并解压后，可以得到`inference_lite_lib.android.armv8.clang.c++_static.with_extra.with_cv/`文件夹，通过编译Paddle-Lite得到的预测库位于`Paddle-Lite/build.lite.android.armv8.gcc/inference_lite_lib.android.armv8/`文件夹下。
 预测库的文件目录如下：
 
 ```
@@ -120,7 +120,7 @@ Paddle-Lite 提供了多种策略来自动优化原始的模型，其中包括�
 
 #### 2.1.3 转换示例
 
-下面以PaddleDetection中的 `PP-YOLO-tiny` 模型为例，介绍使用`paddle_lite_opt`完成预训练模型到inference模型，再到Paddle-Lite优化模型的转换。
+下面以PaddleDetection中的 `ppyolo` 模型为例，介绍使用`paddle_lite_opt`完成预训练模型到inference模型，再到Paddle-Lite优化模型的转换。
 
 ```shell
 # 进入PaddleDetection根目录
@@ -130,7 +130,7 @@ cd PaddleDetection_root_path
 python tools/export_model.py -c configs/ppyolo/ppyolo_tiny_650e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolo_tiny_650e_coco.pdparams
 
 # 将inference模型转化为Paddle-Lite优化模型
-paddle_lite_opt  --valid_targets=arm --optimize_out_type=naive_buffe --model_file=output_inference/ppyolo_tiny_650e_coco/model.pdmodel --param_file=output_inference/ppyolo_tiny_650e_coco/model.pdiparams --optimize_out=output_inference/ppyolo_tiny_650e_coco/model
+paddle_lite_opt  --valid_targets=arm --model_file=output_inference/ppyolo_tiny_650e_coco/model.pdmodel --param_file=output_inference/ppyolo_tiny_650e_coco/model.pdiparams --optimize_out=output_inference/ppyolo_tiny_650e_coco/model
 
 # 将inference模型配置转化为json格式
 python deploy/lite/convert_yml_to_json.py output_inference/ppyolo_tiny_650e_coco/infer_cfg.yml
@@ -180,7 +180,7 @@ cd deploy/lite/
 inference_lite_path=/{lite prediction library path}/inference_lite_lib.android.armv8.gcc.c++_static.with_extra.with_cv/
 mkdir $inference_lite_path/demo/cxx/lite
 
-cp -r Makefile src/ include/ runtime_config.json $inference_lite_path/demo/cxx/lite
+cp -r Makefile src/ include/ *runtime_config.json $inference_lite_path/demo/cxx/lite
 
 cd $inference_lite_path/demo/cxx/lite
 
@@ -194,7 +194,7 @@ make ARM_ABI = arm8
 
 ```shell
 mdkir deploy
-cp main runtime_config.json deploy/
+cp main *runtime_config.json deploy/
 cd deploy
 mkdir model_det
 mkdir model_keypoint
@@ -219,31 +219,42 @@ cp ../../../cxx/lib/libpaddle_light_api_shared.so ./
 ```
 deploy/
 |-- model_det/
-|   |--mdoel.nb                   优化后的检测模型文件
-|   |--infer_cfg.json             检测器模型配置文件
+|   |--mdoel.nb                    优化后的检测模型文件
+|   |--infer_cfg.json              检测器模型配置文件
 |-- model_keypoint/
-|   |--mdoel.nb                   优化后的关键点模型文件
-|   |--infer_cfg.json             关键点模型配置文件
-|-- main                          生成的移动端执行文件
-|-- runtime_config.json           移动端执行时参数配置文件
-|-- libpaddle_light_api_shared.so Paddle-Lite库文件
+|   |--mdoel.nb                    优化后的关键点模型文件
+|   |--infer_cfg.json              关键点模型配置文件
+|-- main                           生成的移动端执行文件
+|-- det_runtime_config.json        目标检测执行时参数配置文件
+|-- keypoint_runtime_config.json   关键点检测执行时参数配置文件
+|-- libpaddle_light_api_shared.so  Paddle-Lite库文件
 ```
 
 **注意：**
-*  `runtime_config.json` 包含了检测器的超参数，请按需进行修改（注意配置中路径及文件需存在）：
+*  `det_runtime_config.json` 包含了目标检测的超参数，请按需进行修改：
 
 ```shell
 {
   "model_dir_det": "./model_det/",              #检测器模型路径
   "batch_size_det": 1,                          #检测预测时batchsize
   "threshold_det": 0.5,                         #检测器输出阈值
+  "image_file": "demo.jpg",                     #测试图片
+  "image_dir": "",                              #测试图片文件夹
+  "run_benchmark": false,                       #性能测试开关
+  "cpu_threads": 4                              #线程数
+}
+```
+
+*  `keypoint_runtime_config.json` 包含了关键点检测的超参数，请按需进行修改：
+```shell
+{
   "model_dir_keypoint": "./model_keypoint/",    #关键点模型路径（不使用需为空字符）
   "batch_size_keypoint": 8,                     #关键点预测时batchsize
   "threshold_keypoint": 0.5,                    #关键点输出阈值
   "image_file": "demo.jpg",                     #测试图片
   "image_dir": "",                              #测试图片文件夹
   "run_benchmark": false,                       #性能测试开关
-  "cpu_threads": 1                              #线程数
+  "cpu_threads": 4                              #线程数
 }
 ```
 
@@ -259,8 +270,8 @@ export LD_LIBRARY_PATH=/data/local/tmp/deploy:$LD_LIBRARY_PATH
 
 # 修改权限为可执行
 chmod 777 main
-# 执行程序
-./main
+# 以检测为例，执行程序
+./main det_runtime_config.json
 ```
 
 如果对代码做了修改，则需要重新编译并push到手机上。
