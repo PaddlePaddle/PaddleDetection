@@ -137,7 +137,7 @@
     - PP-YOLO supports rectangular input images.
 
   - Documents:
-    - Added target detection whole process tutorial, added Jetson platform deployment tutorial.
+    - Added object detection whole process tutorial, added Jetson platform deployment tutorial.
 
 
 ### v0.4.0(07/2020)
@@ -147,7 +147,7 @@
     - New HTC model, base version aligned with competing products, COCO dataset accuracy up to 42.2%.
     - BlazeFace key point detection model was added, with an accuracy of 85.2% in Wider-Face's Easy-Set.
     - ACFPN model was added, and the accuracy of COCO dataset reached 39.6%.
-    - General target detection model (including 676 classes) on the publisher side. On the COCO dataset with the same strategy, when V100 is 19.5FPS, the COCO mAP can reach 49.4%.
+    - General object detection model (including 676 classes) on the publisher side. On the COCO dataset with the same strategy, when V100 is 19.5FPS, the COCO mAP can reach 49.4%.
 
   - Mobile terminal model optimization:
     - Added SSD Lite series optimization models, including Ghost Net Backbone, FPN components, etc., with accuracy improved by 0.5% and 1.5%.

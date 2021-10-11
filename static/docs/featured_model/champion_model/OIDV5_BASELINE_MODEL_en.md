@@ -1,6 +1,6 @@
 # CascadeCA RCNN
 ## Introduction
-CascadeCA RCNN is the best single model of Baidu Visual Technology Department in Google AI Open Images 2019 Object Detction competition. This single model helped the team win the second place among more than 500 parameter teams. Open Images Dataset V5(OIDV5) contains 500 categories, 173W training Images and more than 1400W labeled borders. It is the largest Open Dataset of target detection known at present. Dataset address [https://storage.googleapis.com/openimages/web/index.html](https://storage.googleapis.com/openimages/web/index.html), Address of team's technical proposal report in competition [https://arxiv.org/pdf/1911.07171.pdf](https://arxiv.org/pdf/1911.07171.pdf)
+CascadeCA RCNN is the best single model of Baidu Visual Technology Department in Google AI Open Images 2019 Object Detction competition. This single model helped the team win the second place among more than 500 parameter teams. Open Images Dataset V5(OIDV5) contains 500 categories, 173W training Images and more than 1400W labeled borders. It is the largest Open Dataset of object detection known at present. Dataset address [https://storage.googleapis.com/openimages/web/index.html](https://storage.googleapis.com/openimages/web/index.html), Address of team's technical proposal report in competition [https://arxiv.org/pdf/1911.07171.pdf](https://arxiv.org/pdf/1911.07171.pdf)
 
 ![](../../images/oidv5_gt.png)
 

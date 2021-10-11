@@ -2,7 +2,7 @@
 
 ## Introduction
 
-TTFNet is a network used for real-time target detection and friendly to training time. It improves the slow convergence speed of CenterNet and proposes a new method to generate training samples using Gaussian kernel, which effectively eliminates the fuzziness existing in Anchor Free head. At the same time, the simple and lightweight network structure is also easy to expand the task.
+TTFNet is a network used for real-time object detection and friendly to training time. It improves the slow convergence speed of CenterNet and proposes a new method to generate training samples using Gaussian kernel, which effectively eliminates the fuzziness existing in Anchor Free head. At the same time, the simple and lightweight network structure is also easy to expand the task.
 
 
 **Characteristics:**
