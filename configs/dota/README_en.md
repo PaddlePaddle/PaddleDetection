@@ -6,7 +6,7 @@
   - [Introduction](#introduction)
   - [Prepare Data](#prepare-data)
     - [DOTA data](#dota-data)
-    - [Custom data](#custom-data)
+    - [Customize Data](#customize-data)
   - [Start Training](#start-training)
     - [1. Install the rotating frame IOU and calculate the OP](#1-install-the-rotating-frame-iou-and-calculate-the-op)
     - [2. Train](#2-train)
@@ -20,13 +20,13 @@
 
 ## Introduction
 
-[S2ANet](https://arxiv.org/pdf/2008.09397.pdf) is used to detect rotating frame's model, Required use of PaddlePaddle 2.1.1(can be installed using PIP) Or proper [develop version](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-release).
+[S2ANet](https://arxiv.org/pdf/2008.09397.pdf) is used to detect rotating frame's model, required use of PaddlePaddle 2.1.1(can be installed using PIP) or proper [develop version](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-release).
 
 
 ## Prepare Data
 
 ### DOTA data
-[DOTA Dataset] is a Dataset of object detection in aerial images, which contains 2806 images with a resolution of 4000x4000 per image.
+[DOTA Dataset] is a dataset of object detection in aerial images, which contains 2806 images with a resolution of 4000x4000 per image.
 
 |  Data version  |  categories  |   images   |  size  |    instances    |     annotation method     |
 |:--------:|:-------:|:---------:|:---------:| :---------:| :------------: |
@@ -41,7 +41,7 @@ If you need to cut the image data, please refer to the [DOTA_devkit](https://git
 
 After setting `crop_size=1024, stride=824, gap=200` parameters to cut data, there are 15,749 images in the training set, 5,297 images in the evaluation set, and 10,833 images in the test set.
 
-### Custom data
+### Customize Data
 
 There are two ways to annotate data:
 
@@ -49,16 +49,16 @@ There are two ways to annotate data:
 
 - The second is to mark the quadrilateral, through the script into an external rotating rectangle, so that the obtained mark may have a certain error with the real object frame.
 
-Then convert the annotation result into coco annotation format, where each `bbox` is in the format of `[x_center, y_center, width, height, angle]`, where the Angle is expressed in radians.
+Then convert the annotation result into coco annotation format, where each `bbox` is in the format of `[x_center, y_center, width, height, angle]`, where the angle is expressed in radians.
 
-Reference [spinal disk data set](https://aistudio.baidu.com/aistudio/datasetdetail/85885), we will data set is divided into training set (230), the test set (57), data address is: [spine_coco](https://paddledet.bj.bcebos.com/data/spine_coco.tar). The data set has a small number of images, which can be used to train the S2ANet model quickly.
+Reference [spinal disk dataset](https://aistudio.baidu.com/aistudio/datasetdetail/85885), we divide dataset into training set (230), the test set (57), data address is: [spine_coco](https://paddledet.bj.bcebos.com/data/spine_coco.tar). The dataset has a small number of images, which can be used to train the S2ANet model quickly.
 
 
 ## Start Training
 
 ### 1. Install the rotating frame IOU and calculate the OP
 
-Rotate box IOU calculate [ext_op](../../ppdet/ext_op) is a reference Paddle [custom external operator](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/07_new_op/new_custom_op.html).
+Rotate box IoU calculate [ext_op](../../ppdet/ext_op) is a reference PaddlePaddle [custom external operator](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/07_new_op/new_custom_op.html).
 
 To use the rotating frame IOU to calculate the OP, the following conditions must be met:
 - PaddlePaddle >= 2.1.1
@@ -71,14 +71,14 @@ Run the following command to download the image and start the container:
 sudo nvidia-docker run -it --name paddle_s2anet -v $PWD:/paddle --network=host registry.baidubce.com/paddlepaddle/paddle:2.1.1-gpu-cuda10.1-cudnn7 /bin/bash
 ```
 
-If the paddles are installed in the mirror, go to PYTHon3.7 and run the following code to check whether the paddles are installed properly:
+If the PaddlePaddle are installed in the mirror, go to python3.7 and run the following code to check whether the PaddlePaddle are installed properly:
 ```
 import paddle
 print(paddle.__version__)
 paddle.utils.run_check()
 ```
 
-enter `ppdet/ext_op` filefold，install：
+enter `ppdet/ext_op` directory, install：
 ```
 python3.7 setup.py install
 ```
@@ -127,7 +127,7 @@ python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=https://p
 **Attention:** 
 (1) The DOTA dataset is trained together with train and val data as a training set, and the evaluation dataset configuration needs to be customized when evaluating the DOTA dataset.
 
-(2) Bone data set is transformed from segmented data. As there is little difference between different types of discs for detection tasks, and the score obtained by S2ANET algorithm is low, the default threshold for evaluation is 0.5, a low mAP is normal. You are advised to view the detection result visually.
+(2) Bone dataset is transformed from segmented data. As there is little difference between different types of discs for detection tasks, and the score obtained by S2ANET algorithm is low, the default threshold for evaluation is 0.5, a low mAP is normal. You are advised to view the detection result visually.
 
 ### 4. Prediction
 Executing the following command will save the image prediction results to the `output` folder.
@@ -164,7 +164,7 @@ The inputs of the `multiclass_nms` operator in Paddle support quadrilateral inpu
 
 Please refer to the deployment tutorial[Predict deployment](../../deploy/README_en.md)
 
-**Attention:** The `is_training` parameter was added to the configuration file because the paddles. Detach function would cause the size error of the exported model when it went quiet, and the exported model would need to be set to `False` to predict deployment
+**Attention:** The `is_training` parameter was added to the configuration file because the `paddle.Detach` function would cause the size error of the exported model when it went quiet, and the exported model would need to be set to `False` to predict deployment
 
 ## Citations
 ```

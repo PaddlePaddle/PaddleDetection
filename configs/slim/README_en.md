@@ -1,4 +1,4 @@
-# 模型压缩
+# Model Compression
 
 In PaddleDetection, a complete tutorial and benchmarks for model compression based on [PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim) are provided. Currently supported methods:
 
@@ -17,7 +17,7 @@ It is recommended that you use a combination of clipping and distillation traini
 - CUDA 10.1+
 - cuDNN >=7.6.5
 
-**Relationship between PaddleDetection, Paddle and PaddleSlim version**
+**Version Dependency between PaddleDetection, Paddle and PaddleSlim Version**
 | PaddleDetection Version | PaddlePaddle Version | PaddleSlim Version |                                                                                               Note                                                                                               |
 | :---------------------: | :------------------: | :----------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 |       release/2.1       |       >= 2.1.0       |        2.1         | Quantitative model exports rely on the latest Paddle Develop branch, available in[PaddlePaddle Daily version](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev) |
@@ -48,7 +48,7 @@ python tools/train.py -c configs/{MODEL.yml} --slim_config configs/slim/{SLIM_CO
 - `--slim_config`: Specify the compression policy profile.
 
 
-### Assessment
+### Evaluation
 
 ```shell
 python tools/eval.py -c configs/{MODEL.yml} --slim_config configs/slim/{SLIM_CONFIG.yml} -o weights=output/{SLIM_CONFIG}/model_final
@@ -72,9 +72,9 @@ python tools/infer.py -c configs/{MODEL.yml} --slim_config configs/slim/{SLIM_CO
 - `--infer_img`: Specifies the test image path.
 
 
-## Full chain deployment
+## Full Chain Deployment
 
-### The model is derived from moving to static
+### the model is derived from moving to static
 
 ```shell
 python tools/export_model.py -c configs/{MODEL.yml} --slim_config configs/slim/{SLIM_CONFIG.yml} -o weights=output/{SLIM_CONFIG}/model_final
@@ -84,7 +84,7 @@ python tools/export_model.py -c configs/{MODEL.yml} --slim_config configs/slim/{
 - `--slim_config`: Specify the compression policy profile.
 - `-o weights`: Specifies the path of the model trained by the compression algorithm.
 
-### Deployment of prediction
+### prediction and deployment
 
 - Paddle-Inference Prediction：
     - [Python Deployment](../../deploy/python/README.md)
@@ -95,16 +95,16 @@ python tools/export_model.py -c configs/{MODEL.yml} --slim_config configs/slim/{
 
 ## Benchmark
 
-### clipping
+### Clipping
 
-#### Pascal VOC上benchmark
+#### Pascal VOC Benchmark
 
 |       Model        | Compression Strategy  |     GFLOPs     | Model Volume(MB) | Input Size | Predict Delay(SD855) |   Box AP   |                                              Download                                              |                                                      Model Configuration File                                                      |                                              Compression Algorithm Configuration File                                               |
 | :----------------: | :-------------------: | :------------: | :--------------: | :--------: | :------------------: | :--------: | :------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------: |
 | YOLOv3-MobileNetV1 |       baseline        |     24.13      |        93        |    608     |       332.0ms        |    75.1    |        [link](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_270e_voc.pdparams)        | [configuration file](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v1_270e_voc.yml) |                                                                  -                                                                  |
 | YOLOv3-MobileNetV1 | 剪裁-l1_norm(sensity) | 15.78(-34.49%) |     66(-29%)     |    608     |          -           | 78.4(+3.3) | [link](https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_voc_prune_l1_norm.pdparams) | [configuration file](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v1_270e_voc.yml) | [slim configuration file](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/prune/yolov3_prune_l1_norm.yml) |
 
-#### COCO上benchmark
+#### COCO Benchmark
 |           Mode            | Compression Strategy | GFLOPs | Model Volume(MB) | Input Size | Predict Delay(SD855) | Box AP |                                         Download                                          |                                                     Model Configuration File                                                     |                                                  Compression Algorithm Configuration File                                                   |
 | :-----------------------: | :------------------: | :----: | :--------------: | :--------: | :------------------: | :----: | :---------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------: |
 | PP-YOLO-MobileNetV3_large |       baseline       |   --   |       18.5       |    608     |        25.1ms        |  23.2  |      [link](https://paddledet.bj.bcebos.com/models/ppyolo_mbv3_large_coco.pdparams)       |   [configuration file](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/ppyolo_mbv3_large_coco.yml)   |                                                                      -                                                                      |
@@ -120,7 +120,7 @@ Description:
 
 ### Quantitative
 
-#### COCO benchmark
+#### COCO Benchmark
 
 | Model                     | Compression Strategy       | Input Size  | Model Volume(MB) | Prediction Delay(V100) | Prediction Delay(SD855) |        Box AP         |                                          Download                                           |                                 Download of Inference Model                                 |                                                          Model Configuration File                                                          |                                                 Compression Algorithm Configuration File                                                 |
 | ------------------------- | -------------------------- | ----------- | :--------------: | :--------------------: | :---------------------: | :-------------------: | :-----------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------: |
@@ -143,11 +143,11 @@ Description:
 
 Description:
 - The above V100 prediction delay non-quantified model is tested by TensorRT FP32, and the quantified model is tested by TensorRT INT8, and both of them include NMS time.
-- The SD855 predicts the delay for deployment using Paddle Lite, using the ARM8 architecture and using 4 Threads (4 Threads) to reason the delay.
+- The SD855 predicts the delay for deployment using PaddleLite, using the ARM8 architecture and using 4 Threads (4 Threads) to reason the delay.
 
 ### Distillation
 
-#### COCO benchmark
+#### COCO Benchmark
 
 | Model              | Compression Strategy | Input Size |   Box AP   |                                           Download                                            |                                                       Model Configuration File                                                       |                                                      Compression Strategy Configuration File                                                      |
 | ------------------ | -------------------- | ---------- | :--------: | :-------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -156,9 +156,9 @@ Description:
 
 - Please refer to the specific distillation method[Distillation Policy Document](distill/README.md)
 
-### Distillation clipping combined strategy
+### Distillation Clipping Combined Strategy
 
-#### COCO benchmark
+#### COCO Benchmark
 
 | Model              | Compression Strategy     | Input Size |    GFLOPs    | Model Volume(MB) | Prediction Delay(SD855) |   Box AP   |                                              Download                                               |                                                       Model Configuration File                                                       |                                                          Compression Algorithm Configuration File                                                          |
 | ------------------ | ------------------------ | ---------- | :----------: | :--------------: | :---------------------: | :--------: | :-------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------: |

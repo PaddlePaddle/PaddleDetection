@@ -14,10 +14,10 @@
     - AlignConv optimization model was released by S2ANet, and DOTA dataset mAP was optimized to 74.0
 
 - Predict deployment
-    - Mainstream models support batch size>1 predictive deployment, including YOLOv3，PP-YOLO，Faster RCNN，SSD，TTFNet，FCOS
+    - Mainstream models support batch size>1 predictive deployment, including YOLOv3, PP-YOLO, Faster RCNN, SSD, TTFNet,  FCOS
     - New addition of target tracking models (JDE, Fair Mot, Deep Sort) Python side prediction deployment support, and support for TensorRT prediction
-    - Fair Mot joint key point detection model deployment Python side predictive deployment support
-    - Added support for key point detection model combined with PP YOLO prediction deployment
+    - FairMot joint key point detection model deployment Python side predictive deployment support
+    - Added support for key point detection model combined with PP-YOLO prediction deployment
 
 - Documents:
     - New TensorRT version notes to Windows Predictive Deployment documentation
@@ -25,25 +25,25 @@
 
 - Problem fixes:
     - Fixed PP-YOLO series model training convergence problem
-    - Fixed the problem of no label data training when batch_size>1
+    - Fixed the problem of no label data training when batch_size > 1
 
 
 ### 2.1(05.20/2021)
 - Model richness enhancement:
-    - Key point model: HRNet，HigherHRNet
+    - Key point model: HRNet, HigherHRNet
     - Publish the multi-target tracking model: DeepSort, FairMot, JDE
 
 - Basic framework Capabilities:
     - Supports training without labels
 
 - Forecast deployment:
-    - Paddle Inference YOLOv3 series model support batch size>1 prediction
+    - Paddle Inference YOLOv3 series model support batch_size>1 prediction
     - Rotating frame detection S2ANet model prediction deployment is open
     - Incremental quantization model benchmark
     - Add dynamic graph model and static graph model: Paddle-Lite demo
 
 - Detection model compression:
-    - Release PPYOLO series model compression model
+    - Release PP-YOLO series model compression model
 
 - Documents:
     - Update quick start, forecast deployment and other tutorial documentation
@@ -92,7 +92,7 @@
     - Added pedestrian and vehicle vertical object detection models
 
   - New dynamic graph basic module:
-    - Add MobileNetV3 and HRNet backbone networks
+    - Added MobileNetV3 and HRNet backbone networks
     - Improved roi-align calculation logic for RCNN series models (depending on Paddle Develop or version 2.0.1)
     - Added support for Synchronized Batch Norm
     - Added support for Modulated Deformable Convolution
@@ -123,14 +123,14 @@
 
 
 ### v0.5.0(11/2020)
-  - odel richness enhancement:
+  - Model richness enhancement:
     - SOLOv2 series models were released, in which the SOLOv2-Light-R50-VD-DCN-FPN model achieved 38.6 FPS on a single gpu V100, accelerating by 24%, and the accuracy of COCO verification set reached 38.8%, improving by 2.4 absolute percentage points.
     - Added Android mobile terminal detection demo, including SSD, YOLO series model, can directly scan code installation experience.
 
   - Mobile terminal model optimization:
     - Added to PACT's new quantization strategy, YOLOv3 Mobilenetv3 is 0.7% better than normal quantization on COCO datasets.
 
-  - ase of use and functional components:
+  - Ease of use and functional components:
     - Enhance the function of generate_proposal_labels operator to avoid nan risk of the model.
     - Fixed several problems with deploy python and C++ prediction.
     - Unified COCO and VOC datasets under the evaluation process, support the output of a single class of AP and P-R curves.
@@ -159,7 +159,7 @@
     - The new multi-machine training method, the average acceleration ratio of two machines to single machine is 80%, multi-machine training support needs to be further verified.
 
 ### v0.3.0(05/2020)
-  - odel richness enhancement:
+  - Model richness enhancement:
     - Efficientdet-D0 model added, speed and accuracy is better than competing products.
     - Added YOLOv4 prediction model, precision aligned with competing products; Added YOLOv4 fine tuning training on Pascal VOC datasets with accuracy of 85.5%.
     - YOLOv3 added MobileNetV3 backbone network, COCO data set accuracy reached 31.6%.
@@ -191,12 +191,12 @@
     - Trunk network: CBResNet is added.
     - Loss module: Loss of YOLOv3 supports fine-grained OP combinations.
     - Regular module: Added the Drop Block module.
-  - unction optimization and improvement:
+  - Function optimization and improvement:
     - Accelerate YOLOv3 data preprocessing and increase the overall training speed by 40%.
     - Optimize data preprocessing logic to improve ease of use.
     - dd face detection prediction benchmark data.
     - Added C++ prediction engine Python API prediction example.
-  - detection model compression:
+  - Detection model compression:
     - clipping: Release MobileNet-YOLOv3 clipping scheme and model, based on VOC data FLOPs 69.6%, mAP + 1.4%, based on COCO DATA FLOPS 28.8%, mAP + 0.9%; Release ResNet50vd-DCN-YOLOv3 clipped solution and model based on COCO datasets 18.4%, mAP + 0.8%.
     - Distillation: Release MobileNet-YOLOv3 distillation scheme and model, based on VOC data mAP + 2.8%, COCO data mAP + 2.1%.
     - Quantification: Release quantification models of YOLOv3 Mobile Net and Blaze Face.

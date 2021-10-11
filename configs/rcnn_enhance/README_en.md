@@ -1,8 +1,8 @@
-## Server-end practical target detection scheme
+## Practical Server Side Detection
 
 ### Introduction
 
-* In recent years, the target detection task in image has been widely concerned by academia and industry. ResNet50VD pretraining model based on SSLD distillation program training in [PaddleClas](https://github.com/PaddlePaddle/PaddleClas) (Top1 on Image Net1k verification set) Acc is 82.39%), combined with the rich operator of PaddleDetection, PaddlePaddle provides a Practical Server Side Detection scheme PSS DET(Practical Server Side Detection). Based on COCO2017 target detection data set, when V100 single card predicted speed is 61FPS, COCO mAP can reach 41.2%.
+* In recent years, the object detection task in image has been widely concerned by academia and industry. ResNet50vd pretraining model based on SSLD distillation program training in [PaddleClas](https://github.com/PaddlePaddle/PaddleClas) (Top1 on ImageNet1k verification set) Acc is 82.39%), combined with the rich operator of PaddleDetection, PaddlePaddle provides a practical server side detection scheme PSS-DET(Practical Server Side Detection). Based on COCO2017 object detection dataset, V100 single gpu prediction speed is 61FPS, COCO mAP can reach 41.2%.
 
 
 ### Model library

@@ -1,6 +1,6 @@
 # PaddleDetection Predict deployment
 
-Paddle Detection provides multiple deployment forms of Paddle Inference, Paddle Serving and Paddle Lite, supports multiple platforms such as server, mobile and embedded, and provides a complete Python and C++ deployment solution
+PaddleDetection provides multiple deployment forms of Paddle Inference, Paddle Serving and Paddle-Lite, supports multiple platforms such as server, mobile and embedded, and provides a complete Python and C++ deployment solution
 
 ## PaddleDetection This section describes the supported deployment modes
 | formalization    | language | Tutorial    | Equipment/Platform        |
@@ -18,17 +18,17 @@ Paddle Detection provides multiple deployment forms of Paddle Inference, Paddle 
 Use the `tools/export_model.py` script to export the model and the configuration file used during deployment. The configuration file name is `infer_cfg.yml`. The model export script is as follows
 
 ```bash
-# The YOL Ov3 model is derived
+# The YOLOv3 model is derived
 python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o weights=output/yolov3_mobilenet_v1_roadsign/best_model.pdparams
 ```
-The prediction model will be exported to the `output_inference/yolov3_mobilenet_v1_roadsign` directory `infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel` For details on MODEL EXPORT, please refer to the documentation [Tutorial on Paddle Detection MODEL EXPORT](Model.md).
+The prediction model will be exported to the `output_inference/yolov3_mobilenet_v1_roadsign` directory `infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`. For details on model export, please refer to the documentation [Tutorial on Paddle Detection MODEL EXPORT](EXPORT_MODEL_sh.md).
 
-### 1.2 Use Paddle Inference to make predictions
+### 1.2 Use Paddle Inference to Make Predictions
 * Python deployment supports `CPU`, `GPU` and `XPU` environments, Windows, Linux, and NV Jetson embedded devices. Reference Documentation [Python Deployment](python/README.md)
 * C++ deployment supports `CPU`, `GPU` and `XPU` environments, Windows and Linux systems, and NV Jetson embedded devices. Reference documentation [C++ deployment](cpp/README.md)
-* Paddle Detection supports TensorRT acceleration. Please refer to the documentation for [TensorRT Predictive Deployment Tutorial](TENSOR_RT.md)
+* PaddleDetection supports TensorRT acceleration. Please refer to the documentation for [TensorRT Predictive Deployment Tutorial](TENSOR_RT.md)
 
-**Attention:**  Paddle prediction library version requires >=2.1, and Batch_size>1 only supports YOLOv3 and PP-YOLO.
+**Attention:**  Paddle prediction library version requires >=2.1, and batch_size>1 only supports YOLOv3 and PP-YOLO.
 
 ##  2.PaddleServing Deployment
 ### 2.1 Export model
@@ -39,7 +39,7 @@ python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml 
 ```
 The prediction model will be exported to the `output_inference/yolov3_darknet53_270e_coco` directory `infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`, `serving_client/` and `serving_server/` folder.
 
-For details on MODEL EXPORT, please refer to the documentation [Tutorial on Paddle Detection MODEL EXPORT](EXPORT_MODEL.md).
+For details on model export, please refer to the documentation [Tutorial on Paddle Detection MODEL EXPORT](EXPORT_MODEL_en.md).
 
 ### 2.2 Predictions are made using Paddle Serving
 * [Install PaddleServing](https://github.com/PaddlePaddle/Serving/blob/develop/README.md#installation)

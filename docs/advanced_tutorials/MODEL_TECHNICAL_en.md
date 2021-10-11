@@ -1,25 +1,25 @@
-# Added Model Algorithm
-In order to make better use of PaddleDetection, we will introduce the main model technical details and application of Paddle Detection in this document
+# How to Create Model Algorithm
+In order to make better use of PaddleDetection, we will introduce the main model technical details and application of PaddleDetection in this document
 
 ## Directory
-- [Added Model Algorithm](#added-model-algorithm)
+- [How to Create Model Algorithm](#how-to-create-model-algorithm)
   - [Directory](#directory)
-    - [1.Introduction](#1introduction)
-    - [2.Added Model](#2added-model)
-      - [2.1Added Model Structure](#21added-model-structure)
-        - [2.1.1Added Backbone](#211added-backbone)
-        - [2.1.2Added Neck](#212added-neck)
-        - [2.1.3Added Head](#213added-head)
-        - [2.1.4Added Loss](#214added-loss)
-        - [2.1.5Added Post-processing Module](#215added-post-processing-module)
-        - [2.1.6Added Architecture](#216added-architecture)
-      - [2.2Added a Configuration File](#22added-a-configuration-file)
-        - [2.2.1Network Structure Configuration File](#221network-structure-configuration-file)
-        - [2.2.2Optimizer configuration file](#222optimizer-configuration-file)
+    - [1. Introduction](#1-introduction)
+    - [2. Create Model](#2-create-model)
+      - [2.1 Create Model Structure](#21-create-model-structure)
+        - [2.1.1 Create Backbone](#211-create-backbone)
+        - [2.1.2 Create Neck](#212-create-neck)
+        - [2.1.3 Create Head](#213-create-head)
+        - [2.1.4 Create Loss](#214-create-loss)
+        - [2.1.5 Create Post-processing Module](#215-create-post-processing-module)
+        - [2.1.6 Create Architecture](#216-create-architecture)
+      - [2.2 Create Configuration File](#22-create-configuration-file)
+        - [2.2.1 Network Structure Configuration File](#221-network-structure-configuration-file)
+        - [2.2.2 Optimizer configuration file](#222-optimizer-configuration-file)
         - [2.2.3Reader Configuration File](#223reader-configuration-file)
 
-### 1.Introduction
-Each model in the Paddle Detecion corresponds to a folder. In the case of Yolov3, models in the Yolov3 family correspond to the `configs/yolov3` folder. Yolov3 Darknet's general configuration file `configs/yolov3/yolov3_darknet53_270e_coco.yml`.
+### 1. Introduction
+Each model in the PaddleDetecion corresponds to a folder. In the case of Yolov3, models in the Yolov3 family correspond to the `configs/yolov3` folder. Yolov3 Darknet's general configuration file `configs/yolov3/yolov3_darknet53_270e_coco.yml`.
 ```
 _BASE_: [
   '../datasets/coco_detection.yml', # Dataset configuration file shared by all models
@@ -33,7 +33,7 @@ _BASE_: [
 snapshot_epoch: 5
 weights: output/yolov3_darknet53_270e_coco/model_final
 ```
-As you can see, the modules in the configuration file are clearly divided into optimizer, network structure, and Reader modules, with the exception of the common dataset configuration and runtime configuration. Rich optimizers, learning rate adjustment strategies, preprocessing operators, etc., are supported in Paddle Detection, so most of the time you don't need to write the optimizer and reader-related code, just configure it in the configuration file. Therefore, the main purpose of adding a new model is to build the network structure.
+As you can see, the modules in the configuration file are clearly divided into optimizer, network structure, and reader modules, with the exception of the common dataset configuration and runtime configuration. Rich optimizers, learning rate adjustment strategies, preprocessing operators, etc., are supported in PaddleDetection, so most of the time you don't need to write the optimizer and reader-related code, just configure it in the configuration file. Therefore, the main purpose of adding a new model is to build the network structure.
 
 In `ppdet/modeling/`, all of the Paddle Detection network structures are defined and combined in the form of components. The main components of the network structure are as follows:
 ```
@@ -70,14 +70,14 @@ In `ppdet/modeling/`, all of the Paddle Detection network structures are defined
 
 ![](../images/model_figure.png)
 
-### 2.Added Model
-Next, the modeling process is described in detail by taking the single-stage detector YOL Ov3 as an example, so that you can quickly build a new model according to this idea.
+### 2. Create Model
+Next, the modeling process is described in detail by taking the single-stage detector YOLOv3 as an example, so that you can quickly build a new model according to this idea.
 
-#### 2.1Added Model Structure
+#### 2.1 Create Model Structure
 
-##### 2.1.1Added Backbone
+##### 2.1.1 Create Backbone
 
-All existing Backbone network code in Paddle Detection is placed under `ppdet/modeling/backbones` directory, so we created `darknet.py` as follows:
+All existing Backbone network code in PaddleDetection is placed under `ppdet/modeling/backbones` directory, so we created `darknet.py` as follows:
 ```python
 import paddle.nn as nn
 from ppdet.core.workspace import register, serializable
@@ -111,11 +111,11 @@ from . import darknet
 from .darknet import *
 ```
 **A few notes:**
-- To flexibly configure networks in the YAML configuration file, all Backbone nodes need to register in `ppdet.core.workspace` as shown in the preceding example. In addition, `serializable` can be used to enable Backbone to support serialization;
-- All Backbone needs to inherit the `paddle.nn.Layer` class and implement the forward function. In addition, it is necessary to implement the out Shape attribute to define the channel information of the output feature map. For details, please refer to the source code.
-- `__shared__` To realize global sharing of configuration parameters, these parameters can be shared by all registration modules, such as backbone, Neck, head, and Loss. 
+- To flexibly configure networks in the YAML configuration file, all backbone nodes need to register in `ppdet.core.workspace` as shown in the preceding example. In addition, `serializable` can be used to enable backbone to support serialization;
+- All backbone needs to inherit the `paddle.nn.Layer` class and implement the forward function. In addition, it is necessary to implement the out shape attribute to define the channel information of the output feature map. For details, please refer to the source code.
+- `__shared__` To realize global sharing of configuration parameters, these parameters can be shared by all registration modules, such as backbone, neck, head, and loss. 
 
-##### 2.1.2Added Neck
+##### 2.1.2 Create Neck
 The feature fusion module is placed under the `ppdet/modeling/necks` directory and we create the following `yolo_fpn.py`:
 
 ``` python
@@ -155,10 +155,10 @@ from .yolo_fpn import *
 **A few notes:**
 - The neck module needs to be registered with `register` and can be serialized with `serializable`.
 - The neck module needs to inherit the `paddle.nn.Layer` class and implement the forward function. In addition, the `out_shape` attribute needs to be implemented to define the channel information of the output feature map, and the class function `from_config` needs to be implemented to deduce the input channel in the configuration file and initialize `YOLOv3FPN`.
-- The NECK module can use `shared` to implement global sharing of configuration parameters.
+- The neck module can use `shared` to implement global sharing of configuration parameters.
 
-##### 2.1.3Added Head
-The Head module is all stored in the `ppdet/modeling/heads` directory, where we create `yolo_head.py` as follows
+##### 2.1.3 Create Head
+The head module is all stored in the `ppdet/modeling/heads` directory, where we create `yolo_head.py` as follows
 ``` python
 import paddle.nn as nn
 from ppdet.core.workspace import register
@@ -190,12 +190,12 @@ from . import yolo_head
 from .yolo_head import *
 ```
 **A few notes:**
-- The Head module needs to register with `register`.
-- The Head module needs to inherit the `paddle.nn.Layer` class and implement the forward function.
+- The head module needs to register with `register`.
+- The head module needs to inherit the `paddle.nn.Layer` class and implement the forward function.
 - `__inject__` indicates that the module encapsulated in the global dictionary is imported. Such as loss, etc.
 
-##### 2.1.4Added Loss
-The Loss modules are all stored under `ppdet/modeling/losses` directory, where we created `yolo_loss.py`
+##### 2.1.4 Create Loss
+The loss modules are all stored under `ppdet/modeling/losses` directory, where we created `yolo_loss.py`
 ```python
 import paddle.nn as nn
 from ppdet.core.workspace import register
@@ -231,7 +231,7 @@ from .yolo_loss import *
 - The loss module needs to inherit the `paddle.nn.Layer` class and implement the forward function.
 - `__inject__` modules that have been encapsulated in the global dictionary can be used. Some parameters can be globally shared with `__shared__` configuration.
 
-##### 2.1.5Added Post-processing Module
+##### 2.1.5 Create Post-processing Module
 The post-processing module is defined in `ppdet/modeling/post_process.py`, where the `BBoxPostProcess` class is defined for post-processing operations, as follows:
 ``` python
 from ppdet.core.workspace import register
@@ -253,7 +253,7 @@ class BBoxPostProcess(object):
 - Post-processing modules need to register with `register`
 - `__inject__` modules encapsulated in the global dictionary, such as decode and NMS. Decode and NMS are defined in `ppdet/modeling/layers.py`.
 
-##### 2.1.6Added Architecture
+##### 2.1.6 Create Architecture
 
 All architecture network code is placed in `ppdet/modeling/architectures` directory, `meta_arch.py` defines the `BaseArch` class, the code is as follows:
 ``` python
@@ -316,15 +316,15 @@ class YOLOv3(BaseArch):
         pass
 ```
 
-**几点说明：**
+**A few notes:**
 - All architecture needs to be registered using a `register`
 - When constructing a complete network, `__category__ = 'architecture'` must be set to represent a complete object detection model;
-- Backbone, neck, YOLO Head, post Process and other inspection components are passed into the architecture to form the final network. Modularization of detection like this improves the reusability of detection models, and multiple models can be obtained by combining different detection components.
-- The from Config class function implements the automatic configuration of channels when modules are combined.
+- Backbone, neck, YOLO head, post-process and other inspection components are passed into the architecture to form the final network. Modularization of detection like this improves the reusability of detection models, and multiple models can be obtained by combining different detection components.
+- The from config class function implements the automatic configuration of channels when modules are combined.
 
-#### 2.2Added a Configuration File
+#### 2.2 Create Configuration File
 
-##### 2.2.1Network Structure Configuration File
+##### 2.2.1 Network Structure Configuration File
 The configuration of the yolov3 network structure is defined in the `configs/yolov3/_base_/` folder. For example, `yolov3_darknet53.yml` defines the network structure of Yolov3 Darknet as follows:
 ```
 architecture: YOLOv3
@@ -370,10 +370,10 @@ BBoxPostProcess:
     nms_top_k: 1000
 
 ```
-In the configuration file, you need to specify the network architecture, pretrain weights to specify the URL or path of the training model, and norm type to share as global parameters. The definition of the model is defined in the file from top to bottom, corresponding to the model components in the previous section. For some model components, if the default parameters are used, you do not need to configure them, such as `yolo_fpn` above. By changing related configuration, we can easily combine another model, such as `configs/yolov3/_base_/yolov3_mobilenet_v1.yml` to switch backbone from Darknet to Mobile Net.
+In the configuration file, you need to specify the network architecture, pretrain weights to specify the URL or path of the training model, and norm type to share as global parameters. The definition of the model is defined in the file from top to bottom, corresponding to the model components in the previous section. For some model components, if the default parameters are used, you do not need to configure them, such as `yolo_fpn` above. By changing related configuration, we can easily combine another model, such as `configs/yolov3/_base_/yolov3_mobilenet_v1.yml` to switch backbone from Darknet to MobileNet.
 
-##### 2.2.2Optimizer configuration file
-The optimizer profile defines the optimizer used by the model and the learning rate scheduling strategy. Currently, a variety of optimizers and learning rate strategies have been integrated in Paddle Detection, as described in the code `ppdet/optimizer.py`. For example, the optimizer configuration file for yolov3 is defined in `configs/yolov3/_base_/optimizer_270e.yml` as follows:
+##### 2.2.2 Optimizer configuration file
+The optimizer profile defines the optimizer used by the model and the learning rate scheduling strategy. Currently, a variety of optimizers and learning rate strategies have been integrated in PaddleDetection, as described in the code `ppdet/optimizer.py`. For example, the optimizer configuration file for yolov3 is defined in `configs/yolov3/_base_/optimizer_270e.yml` as follows:
 ```
 epoch: 270
 
@@ -383,7 +383,7 @@ LearningRate:
   - !PiecewiseDecay
     gamma: 0.1
     milestones:
-    # epoch数目
+    # epoch number
     - 216
     - 243
   - !LinearWarmup
@@ -399,7 +399,7 @@ OptimizerBuilder:
     type: L2
 ```
 **A few notes:**
-- Optimizer builder. Optimizer specifies the type and parameters of the Optimizer. Currently support the optimizer can reference [PaddlePaddle official documentation] (https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/optimizer/Overview_cn.html)
+- Optimizer builder. Optimizer specifies the type and parameters of the Optimizer. Currently support the optimizer can reference [PaddlePaddle official documentation](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/optimizer/Overview_cn.html)
 - The `LearningRate.schedulers` sets the combination of different Learning Rate adjustment strategies. Paddle currently supports a variety of Learning Rate adjustment strategies. Specific also can reference [Paddle Paddle official documentation](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/optimizer/Overview_cn.html). It is important to note that you need to simply package the learning rate adjustment strategy in Paddle, which can be found in the source code `ppdet/optimizer.py`.
 
 

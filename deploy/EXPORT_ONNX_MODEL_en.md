@@ -17,7 +17,7 @@ The function of saving ONNX is provided by [Paddle2ONNX](https://github.com/Padd
 ## Export Tutorial
 
 ### Step 1. Export the Paddle deployment model
-Export procedure reference document[Tutorial on PaddleDetection deployment model export](./EXPORT_MODEL_en.md), Take YOLOv3 of COCO data set training as an example
+Export procedure reference document[Tutorial on PaddleDetection deployment model export](./EXPORT_MODEL_en.md), take YOLOv3 of COCO data set training as an example
 ```
 cd PaddleDetection
 python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml \

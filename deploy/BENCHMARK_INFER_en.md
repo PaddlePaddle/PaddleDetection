@@ -6,10 +6,10 @@
   - CUDNN 7.6
   - TensorRT-6.0.1
   - PaddlePaddle v2.0.1
-  - The Gpus are Tesla V100 and GTX 1080 Ti and Jetson AGX Xavier
+  - The GPUS are Tesla V100 and GTX 1080 Ti and Jetson AGX Xavier
 - 2、Test Method:
-  - In order to compare the inference speed of different models, the input is 3x640x640, use `demo/000000014439_640x640.jpg`.
-  - Batch Size=1
+  - In order to compare the inference speed of different models, the input shape is 3x640x640, use `demo/000000014439_640x640.jpg`.
+  - Batch_size=1
   - Delete the warmup time of the first 100 rounds and test the average time of 100 rounds in ms/image, including network calculation time and data copy time to CPU.
   - Using Fluid C++ prediction engine: including Fluid C++ prediction, Fluid TensorRT prediction, the following test Float32 (FP32) and Float16 (FP16) inference speed.
 
