@@ -1,6 +1,6 @@
 # CACascade RCNN
 ## Intorduction
-Objects365 2019 Challenge CACascade RCNN is one of the best single models won by Baidu Visual Technology Department in Objects365 2019 Challenge. Objects365 is a new data set in the field of universal object detection, which aims to promote detection research on different objects in natural scenes. Objects365 marks 365 object classes on 630,000 images, and there are more than 10 million boundary boxes in the training set. This is one of the best single models in Full Track.
+Objects365 2019 Challenge CACascade RCNN is one of the best single models won by Baidu Visual Technology Department in Objects365 2019 Challenge. Objects365 is a new dataset in the field of universal object detection, which aims to promote detection research on different objects in natural scenes. Objects365 marks 365 object classes on 630,000 images, and there are more than 10 million boundary boxes in the training set. This is one of the best single models in Full Track.
 
 ![](../../images/obj365_gt.png)
 

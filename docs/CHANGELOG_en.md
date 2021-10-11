@@ -56,7 +56,7 @@
   **Description:** Since version 2.0, dynamic graphs are used as the default version of Paddle Detection, the original `dygraph` directory is switched to the root directory, and the original static graph implementation is moved to the `static` directory.
 
   - Enhancement of dynamic graph model richness:
-    - PP-YOLOv2 and PP-YOLO tiny models were published. The accuracy of PP-YOLOv2 COCO Test data set reached 49.5%, and the prediction speed of V100 reached 68.9 FPS
+    - PP-YOLOv2 and PP-YOLO tiny models were published. The accuracy of PP-YOLOv2 COCO Test dataset reached 49.5%, and the prediction speed of V100 reached 68.9 FPS
     - Release the rotary frame detection model S2ANet
     - Release the two-phase utility model PSS-Det
     - Publish the face detection model Blazeface
@@ -142,12 +142,12 @@
 
 ### v0.4.0(07/2020)
   - Model richness enhancement:
-    - The PPYOLO model was released. The accuracy of COCO data set reached 45.2%, and the prediction speed of single gpu V100 reached 72.9 FPS, which was better than that of YOL Ov4 model.
-    - New TTFNet model, base version aligned with competing products, COCO data set accuracy up to 32.9%.
-    - New HTC model, base version aligned with competing products, COCO data set accuracy up to 42.2%.
+    - The PPYOLO model was released. The accuracy of COCO dataset reached 45.2%, and the prediction speed of single gpu V100 reached 72.9 FPS, which was better than that of YOL Ov4 model.
+    - New TTFNet model, base version aligned with competing products, COCO dataset accuracy up to 32.9%.
+    - New HTC model, base version aligned with competing products, COCO dataset accuracy up to 42.2%.
     - BlazeFace key point detection model was added, with an accuracy of 85.2% in Wider-Face's Easy-Set.
-    - ACFPN model was added, and the accuracy of COCO data set reached 39.6%.
-    - General target detection model (including 676 classes) on the publisher side. On the COCO data set with the same strategy, when V100 is 19.5FPS, the COCO mAP can reach 49.4%.
+    - ACFPN model was added, and the accuracy of COCO dataset reached 39.6%.
+    - General target detection model (including 676 classes) on the publisher side. On the COCO dataset with the same strategy, when V100 is 19.5FPS, the COCO mAP can reach 49.4%.
 
   - Mobile terminal model optimization:
     - Added SSD Lite series optimization models, including Ghost Net Backbone, FPN components, etc., with accuracy improved by 0.5% and 1.5%.
@@ -162,7 +162,7 @@
   - Model richness enhancement:
     - Efficientdet-D0 model added, speed and accuracy is better than competing products.
     - Added YOLOv4 prediction model, precision aligned with competing products; Added YOLOv4 fine tuning training on Pascal VOC datasets with accuracy of 85.5%.
-    - YOLOv3 added MobileNetV3 backbone network, COCO data set accuracy reached 31.6%.
+    - YOLOv3 added MobileNetV3 backbone network, COCO dataset accuracy reached 31.6%.
     - Add Anchor-free model FCOS, the accuracy is better than competing products.
     - Anchor-free model Cornernet Squeeze was added, the accuracy was better than competing products, and the accuracy of COCO dataset of optimized model was 38.2% and +3.7%, 5% faster than YOL Ov3 Darknet53.
     - The CascadeRCNN-ResNet50vd model, which is a practical object detection model on the server side, is added, and its speed and accuracy are better than that of the competitive EfficientDet.

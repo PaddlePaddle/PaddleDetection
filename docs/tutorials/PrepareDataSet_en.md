@@ -153,7 +153,7 @@ The coco dataset refers to the data used in the coco competition. Customizing co
 
 
 ##### COCO Data Download
-- The coco data set is downloaded automatically through the code. The data set is large and takes a long time to download
+- The coco dataset is downloaded automatically through the code. The dataset is large and takes a long time to download
 
     ```
     # automatically download coco datasets by executing code
@@ -292,7 +292,7 @@ classname2
 ```
 
 ##### Convert User Data to COCO Data
-`x2coco.py` is provided in `./tools/` to convert VOC data set, labelme labeled data set or cityscape data set into coco data, for example:
+`x2coco.py` is provided in `./tools/` to convert VOC dataset, labelme labeled dataset or cityscape dataset into coco data, for example:
 
 （1）Conversion of labelme data to coco data:
 ```bash

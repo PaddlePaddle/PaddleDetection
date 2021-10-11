@@ -12,7 +12,7 @@ This model combines the current better detection methods. Specifically, it uses 
 
 Due to the serious category imbalance of OIDV5, the strategy of dynamic sampling is adopted to select samples and carry out training. Multi-scale training is used to solve the problem of large border area. In addition, the team used Libra Loss instead of Smooth L1 Loss to calculate the loss of the prediction box; In the prediction, SoftNMS method is used for post-processing to ensure that more boxes can be recalled.
 
-About 189 categories of Objects365 Dataset and OIDV5 are repeated, so the two data sets are combined for training to expand the training data of OIDV5. Finally, the model and its performance indicators are shown in the following table. More specific model training and integration strategies can be seen: [OIDV5 technical report](https://arxiv.org/pdf/1911.07171.pdf)。
+About 189 categories of Objects365 Dataset and OIDV5 are repeated, so the two datasets are combined for training to expand the training data of OIDV5. Finally, the model and its performance indicators are shown in the following table. More specific model training and integration strategies can be seen: [OIDV5 technical report](https://arxiv.org/pdf/1911.07171.pdf)。
 
 The training results of OIDV5 model are as follows.
 
@@ -33,7 +33,7 @@ COCO and Objects365 Dataset have the same data format. Currently, they only supp
 
 ## Method of use
 
-OIDV5 data set format is different from COCO, currently only single image prediction is supported. OIDV5 model evaluation method can be referred to [documentation](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/challenge_evaluation.md)
+OIDV5 dataset format is different from COCO, currently only single image prediction is supported. OIDV5 model evaluation method can be referred to [documentation](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/challenge_evaluation.md)
 
 1. Download the model and unzip it.
 

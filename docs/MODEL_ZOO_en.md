@@ -21,7 +21,7 @@
 - 2X strategy is twice as much as strategy 1X, and the learning rate adjustment position is twice as much as strategy 1X.
 
 ## ImageNet pretraining model
-Paddle provides a skeleton network pretraining model based on ImageNet. All pre-training models were trained by standard Imagenet 1K data set. Res Net and Mobile Net are high-precision pre-training models obtained by cosine learning rate adjustment strategy or SSLD knowledge distillation training. Model details are available at [PaddleClas](https://github.com/PaddlePaddle/PaddleClas).
+Paddle provides a skeleton network pretraining model based on ImageNet. All pre-training models were trained by standard Imagenet 1K dataset. Res Net and Mobile Net are high-precision pre-training models obtained by cosine learning rate adjustment strategy or SSLD knowledge distillation training. Model details are available at [PaddleClas](https://github.com/PaddlePaddle/PaddleClas).
 
 
 ## Baseline

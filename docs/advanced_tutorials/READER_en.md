@@ -23,11 +23,11 @@ The main components of the data processing module are as follows:
   ppdet/data/
   ├── reader.py     # Reader module based on Dataloader encapsulation
   ├── source  # Data source management module
-  │   ├── dataset.py      # Defines the data source base class from which various data sets are inherited
+  │   ├── dataset.py      # Defines the data source base class from which various datasets are inherited
   │   ├── coco.py         # The COCO dataset parses and formats the data
   │   ├── voc.py          # Pascal VOC datasets parse and format data
   │   ├── widerface.py    # The WIDER-FACE dataset parses and formats data
-  │   ├── category.py    # Category information for the relevant data set
+  │   ├── category.py    # Category information for the relevant dataset
   ├── transform  # Data preprocessing module
   │   ├── batch_operators.py  # Define all kinds of preprocessing operators based on batch data
   │   ├── op_helper.py    # The auxiliary function of the preprocessing operator
@@ -45,7 +45,7 @@ The dataset is defined in the `source` directory, where `dataset.py` defines the
 | :-----------------------: | :------------------------------------------: | :---------------------------------------: | :-------------------------------------------------------------------------------------------------------------: |
 |        \_\_len\_\_        |                      no                      | int, the number of samples in the dataset |                                        Filter out the unlabeled samples                                         |
 |      \_\_getitem\_\_      |         int, The index of the sample         |      dict, Index idx to sample ROIDB      |                                      Get the sample roidb after transform                                       |
-| check_or_download_dataset |                      no                      |                    no                     | Check whether the data set exists, if not, download, currently support COCO, VOC, Widerface and other data sets |
+| check_or_download_dataset |                      no                      |                    no                     | Check whether the dataset exists, if not, download, currently support COCO, VOC, Widerface and other datasets |
 |        set_kwargs         | Optional arguments, given as key-value pairs |                    no                     |                     Currently used to support receiving mixup, cutMix and other parameters                      |
 |       set_transform       |       A series of transform functions        |                    no                     |                                    Set the transform function of the dataset                                    |
 |         set_epoch         |              int, current epoch              |                    no                     |                                Interaction between dataset and training process                                 |
@@ -69,7 +69,7 @@ When a dataset class inherits from `DetDataSet`, it simply implements the Parse 
 
 The contents of the xxx_rec can also be controlled by the Data fields parameter of `DetDataSet`, that is, some unwanted fields can be filtered out, but in most cases you do not need to change them. The default configuration in `configs/datasets` will do.
 
-In addition, a dictionary `cname2cid` holds the mapping of category names to IDS in the Parse dataset function. In coco data set, can use [coco API](https://github.com/cocodataset/cocoapi) from the label category name of the file to load data set, and set up the dictionary. In the VOC dataset, if `use_default_label=False` is set, the category list will be read from `label_list.txt`, otherwise the VOC default category list will be used.
+In addition, a dictionary `cname2cid` holds the mapping of category names to IDS in the Parse dataset function. In coco dataset, can use [coco API](https://github.com/cocodataset/cocoapi) from the label category name of the file to load dataset, and set up the dictionary. In the VOC dataset, if `use_default_label=False` is set, the category list will be read from `label_list.txt`, otherwise the VOC default category list will be used.
 
 #### 2.1COCO Dataset
 COCO datasets are currently divided into COCO2014 and COCO2017, which are mainly composed of JSON files and image files, and their organizational structure is shown as follows:
@@ -124,7 +124,7 @@ The `VOCDataSet` dataset is defined and registered in `source/voc.py` . It inher
 
 
 #### 2.3Customize Dataset
-If the COCO Data Set and VOC Data Set do not meet your requirements, you can load your Data Set by customizing it. There are only two steps to implement a custom dataset
+If the COCO dataset and VOC dataset do not meet your requirements, you can load your dataset by customizing it. There are only two steps to implement a custom dataset
 
 1. create`source/xxx.py`, define class `XXXDataSet` extends from `DetDataSet` base class, complete registration and serialization, and rewrite `parse_dataset`methods to update `roidbs` and `cname2cid`:
   ```python
@@ -271,14 +271,14 @@ TrainDataset:
   !COCODataSet
     image_dir: train2017 # The path where the training set image resides relative to the dataset_dir
     anno_path: annotations/instances_train2017.json # Path to the annotation file of the training set relative to the dataset_dir
-    dataset_dir: dataset/coco #The path where the data set is located relative to the PaddleDetection path
+    dataset_dir: dataset/coco #The path where the dataset is located relative to the PaddleDetection path
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd'] # Controls the fields contained in the sample output of the dataset
 
 EvalDataset:
   !COCODataSet
     image_dir: val2017 # The path where the images of the validation set reside relative to the dataset_dir
     anno_path: annotations/instances_val2017.json # The path to the annotation file of the validation set relative to the dataset_dir
-    dataset_dir: dataset/coco # The path where the data set is located relative to the PaddleDetection path
+    dataset_dir: dataset/coco # The path where the dataset is located relative to the PaddleDetection path
 TestDataset:
   !ImageFolder
     anno_path: dataset/coco/annotations/instances_val2017.json # The path of the annotation file of the verification set, relative to the path of PaddleDetection
