@@ -414,6 +414,8 @@ def predict_video(detector, reid_model, camera_id):
                 os.makedirs(save_dir)
             result_filename = os.path.join(save_dir,
                                            '{:05d}.txt'.format(frame_id))
+            # First few frames, the model may have no tracking results but have
+            # detection results，use the detection results instead, and set id -1.
             if results[-1][2] == []:
                 tlwhs = [tlwh for tlwh in bbox_tlwh]
                 scores = [score[0] for score in pred_scores]

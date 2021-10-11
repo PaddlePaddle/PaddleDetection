@@ -92,7 +92,9 @@ class JDE_Detector(Detector):
     def postprocess(self, pred_dets, pred_embs, threshold):
         online_targets = self.tracker.update(pred_dets, pred_embs)
         if online_targets == []:
-            return [pred_dets[0][:4]], [pred_dets[0][4]], [1]
+            # First few frames, the model may have no tracking results but have
+            # detection results，use the detection results instead, and set id -1.
+            return [pred_dets[0][:4]], [pred_dets[0][4]], [-1]
         online_tlwhs, online_ids = [], []
         online_scores = []
         for t in online_targets:
@@ -259,13 +261,7 @@ def predict_video(detector, camera_id):
                 os.makedirs(save_dir)
             result_filename = os.path.join(save_dir,
                                            '{:05d}.txt'.format(frame_id))
-            if results[-1][2] == []:
-                tlwhs = [tlwh for tlwh in bbox_tlwh]
-                scores = [score[0] for score in pred_scores]
-                result = (frame_id + 1, tlwhs, scores, [-1] * len(tlwhs))
-            else:
-                result = results[-1]
-            write_mot_results(result_filename, [result])
+            write_mot_results(result_filename, [results[-1]])
 
         frame_id += 1
         print('detect frame:%d' % (frame_id))

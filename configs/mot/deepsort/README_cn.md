@@ -75,6 +75,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort
 **注意:**
  JDE YOLOv3行人检测模型是和JDE和FairMOT使用同样的MOT数据集训练的，这个模型与普通YOLOv3模型最大的区别是使用了JDEBBoxPostProcess后处理，结果输出坐标没有缩放回原图。
  普通YOLOv3行人检测模型不是用MOT数据集训练的，所以精度效果更低, 其模型输出坐标是缩放回原图的。
+ `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
 
 ### 2. 预测
 

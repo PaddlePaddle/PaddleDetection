@@ -74,6 +74,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort
 **Notes:**
 JDE YOLOv3 pedestrian detector is trained with the same MOT dataset as JDE and FairMOT. In addition, the biggest difference between this model and general YOLOv3 model is that JDEBBoxPostProcess post-processing, and the output coordinates are not scaled back to the original image.
 General YOLOv3 pedestrian detector is not trained on MOT dataset, so the performance is lower. But the output coordinates are scaled back to the original image.
+ `--scaled` means whether the coords after detector outputs are scaled back to the original image, False in JDE YOLOv3, True in general detector.
 
 ### 2. Inference
 

@@ -44,11 +44,6 @@ YOLOv3Head:
   anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
   loss: YOLOv3Loss
 
-YOLOv3Loss:
-  ignore_thresh: 0.7
-  downsample: [32, 16, 8]
-  label_smooth: false
-
 BBoxPostProcess:
   decode:
     name: YOLOBox
