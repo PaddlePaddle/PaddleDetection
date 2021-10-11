@@ -14,6 +14,7 @@
 
 import numpy as np
 import paddle
+import paddle.nn.functional as F
 from ..bbox_utils import bbox2delta, bbox_overlaps
 
 
@@ -126,7 +127,11 @@ def subsample_labels(labels,
                      num_samples,
                      fg_fraction,
                      bg_label=0,
-                     use_random=True):
+                     use_random=True,
+                     bbox_head=None,
+                     body_feats=None,
+                     rois=None,
+                     matches=None):
     positive = paddle.nonzero(
         paddle.logical_and(labels != -1, labels != bg_label))
     negative = paddle.nonzero(labels == bg_label)
@@ -141,6 +146,35 @@ def subsample_labels(labels,
         return fg_inds, bg_inds
 
     # randomly select positive and negative examples
+
+    if bbox_head is not None:
+        rois_feat = bbox_head.roi_extractor(body_feats, rois, paddle.Tensor(np.full([1,], 1001, dtype=np.int32)))
+        bbox_feat = bbox_head.head(rois_feat)
+        if bbox_head.with_pool:
+            feat = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
+            feat = paddle.squeeze(feat, axis=[2, 3])
+        else:
+            feat = bbox_feat
+        scores = bbox_head.bbox_score(feat)
+        deltas = bbox_head.bbox_delta(feat)
+
+        if bbox_head.training:
+            sampled_inds = paddle.concat([positive, negative])
+            sampled_gt_classes = paddle.gather(labels, sampled_inds)
+
+            gt_bbox = rois[0][-1].reshape((1,-1))
+            sampled_gt_ind = paddle.gather(matches, sampled_inds)
+            if gt_bbox.shape[0] > 0:
+                sampled_bbox = paddle.gather(gt_bbox, sampled_gt_ind)
+
+            tgt_labels = [sampled_gt_classes]
+            tgt_bboxes = [sampled_bbox]
+            tgt_gt_inds = [sampled_gt_ind]
+
+
+            targets = [tgt_labels, tgt_bboxes, tgt_gt_inds]
+            loss = bbox_head.get_loss(scores, deltas, targets, rois,
+                                 bbox_head.bbox_weight)
 
     negative = negative.cast('int32').flatten()
     bg_perm = paddle.randperm(negative.numel(), dtype='int32')
@@ -176,7 +210,9 @@ def generate_proposal_target(rpn_rois,
                              is_crowd=None,
                              use_random=True,
                              is_cascade=False,
-                             cascade_iou=0.5):
+                             cascade_iou=0.5,
+                             bbox_head=None,
+                             body_feats=None):
 
     rois_with_gt = []
     tgt_labels = []
@@ -205,7 +241,7 @@ def generate_proposal_target(rpn_rois,
         # Step2: sample bbox 
         sampled_inds, sampled_gt_classes = sample_bbox(
             matches, match_labels, gt_class, batch_size_per_im, fg_fraction,
-            num_classes, use_random, is_cascade)
+            num_classes, use_random, is_cascade, bbox_head=bbox_head, body_feats=body_feats, rois=[bbox])
 
         # Step3: make output 
         rois_per_image = bbox if is_cascade else paddle.gather(bbox,
@@ -237,7 +273,10 @@ def sample_bbox(matches,
                 fg_fraction,
                 num_classes,
                 use_random=True,
-                is_cascade=False):
+                is_cascade=False,
+                bbox_head=None,
+                body_feats=None,
+                rois = None):
 
     n_gt = gt_classes.shape[0]
     if n_gt == 0:
@@ -257,7 +296,7 @@ def sample_bbox(matches,
     rois_per_image = int(batch_size_per_im)
 
     fg_inds, bg_inds = subsample_labels(gt_classes, rois_per_image, fg_fraction,
-                                        num_classes, use_random)
+                                        num_classes, use_random, bbox_head=bbox_head, body_feats=body_feats, rois=rois, matches=matches)
     if fg_inds.shape[0] == 0 and bg_inds.shape[0] == 0:
         # fake output labeled with -1 when all boxes are neither
         # foreground nor background
