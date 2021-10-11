@@ -16,7 +16,7 @@ In order to make better use of PaddleDetection, we will introduce the main model
       - [2.2 Create Configuration File](#22-create-configuration-file)
         - [2.2.1 Network Structure Configuration File](#221-network-structure-configuration-file)
         - [2.2.2 Optimizer configuration file](#222-optimizer-configuration-file)
-        - [2.2.3Reader Configuration File](#223reader-configuration-file)
+        - [2.2.3 Reader Configuration File](#223-reader-configuration-file)
 
 ### 1. Introduction
 Each model in the PaddleDetecion corresponds to a folder. In the case of Yolov3, models in the Yolov3 family correspond to the `configs/yolov3` folder. Yolov3 Darknet's general configuration file `configs/yolov3/yolov3_darknet53_270e_coco.yml`.
@@ -403,7 +403,7 @@ OptimizerBuilder:
 - The `LearningRate.schedulers` sets the combination of different Learning Rate adjustment strategies. Paddle currently supports a variety of Learning Rate adjustment strategies. Specific also can reference [Paddle Paddle official documentation](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/optimizer/Overview_cn.html). It is important to note that you need to simply package the learning rate adjustment strategy in Paddle, which can be found in the source code `ppdet/optimizer.py`.
 
 
-##### 2.2.3Reader Configuration File
+##### 2.2.3 Reader Configuration File
 For Reader configuration, see [Reader configuration documentation](./READER_en.md#5.Configuration-and-Operation).
 
 > After reading this document, you should have some experience in model construction and configuration of Paddle Detection, and you will understand it more thoroughly with the source code. If you have other questions or suggestions about model technology, please send us an issue. We welcome your feedback.
