@@ -162,7 +162,8 @@ def subsample_labels(labels,
             sampled_inds = paddle.concat([positive, negative])
             sampled_gt_classes = paddle.gather(labels, sampled_inds)
 
-            gt_bbox = rois[0][-1].reshape((1,-1))
+            # the gt box is added to roi list as last item
+            gt_bbox = rois[0][-1].reshape((-1, 4))
             sampled_gt_ind = paddle.gather(matches, sampled_inds)
             if gt_bbox.shape[0] > 0:
                 sampled_bbox = paddle.gather(gt_bbox, sampled_gt_ind)
