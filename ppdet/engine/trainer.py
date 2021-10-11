@@ -113,20 +113,32 @@ class Trainer(object):
         # build optimizer in train mode
         if self.mode == 'train':
             steps_per_epoch = len(self.loader)
-            optimizer_builder = create('OptimizerBuilder')
-            
             self.lr = create('LearningRate')(steps_per_epoch)
+            optimizer_builder = create('OptimizerBuilder')
 
             if 'without_weight_decay_params' in optimizer_builder.optimizer:
-                keys = optimizer_builder.optimizer['without_weight_decay_params']
-                params = [{'params': [p for n, p in self.model.named_parameters() if any([k in n for k in keys])], 'weight_decay': 0.}, {'params': [p for n, p in self.model.named_parameters() if all([k not in n for k in keys])],} ]
+                keys = optimizer_builder.optimizer[
+                    'without_weight_decay_params']
+                params = [{
+                    'params': [
+                        p for n, p in self.model.named_parameters()
+                        if any([k in n for k in keys])
+                    ],
+                    'weight_decay': 0.
+                }, {
+                    'params': [
+                        p for n, p in self.model.named_parameters()
+                        if all([k not in n for k in keys])
+                    ],
+                }]
                 del optimizer_builder.optimizer['without_weight_decay_params']
-                
+
                 self.optimizer = optimizer_builder(self.lr, params)
 
             else:
-                self.optimizer = optimizer_builder(self.lr, self.model.parameters())
-            
+                self.optimizer = optimizer_builder(self.lr,
+                                                   self.model.parameters())
+
         self._nranks = dist.get_world_size()
         self._local_rank = dist.get_rank()
 
