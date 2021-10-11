@@ -15,3 +15,4 @@ OptimizerBuilder:
   optimizer:
     type: AdamW
     weight_decay: 0.05
+    without_weight_decay_params: ['absolute_pos_embed', 'relative_position_bias_table', 'norm']
