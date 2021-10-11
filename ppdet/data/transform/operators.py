@@ -167,7 +167,7 @@ class DecodeCache(BaseOperator):
         '''
         super(DecodeCache, self).__init__()
 
-        self.use_cache = False if cache_root is None else True 
+        self.use_cache = False if cache_root is None else True
         self.cache_root = cache_root
 
         if cache_root is not None:
@@ -175,7 +175,8 @@ class DecodeCache(BaseOperator):
 
     def apply(self, sample, context=None):
 
-        if self.use_cache and os.path.exists(self.cache_path(self.cache_root, sample['im_file'])):
+        if self.use_cache and os.path.exists(
+                self.cache_path(self.cache_root, sample['im_file'])):
             path = self.cache_path(self.cache_root, sample['im_file'])
             im = self.load(path)
 
@@ -191,7 +192,8 @@ class DecodeCache(BaseOperator):
                 sample['ori_image'] = im
             im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
-            if self.use_cache and not os.path.exists(self.cache_path(self.cache_root, sample['im_file'])):
+            if self.use_cache and not os.path.exists(
+                    self.cache_path(self.cache_root, sample['im_file'])):
                 path = self.cache_path(self.cache_root, sample['im_file'])
                 self.dump(im, path)
 
@@ -212,7 +214,7 @@ class DecodeCache(BaseOperator):
     def load(path):
         with open(path, 'rb') as f:
             im = pickle.load(f)
-        return im 
+        return im
 
     @staticmethod
     def dump(obj, path):
@@ -226,6 +228,7 @@ class DecodeCache(BaseOperator):
 
         finally:
             MUTEX.release()
+
 
 @register_op
 class Permute(BaseOperator):
