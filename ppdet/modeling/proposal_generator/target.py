@@ -175,7 +175,9 @@ def subsample_labels(labels,
 
             targets = [tgt_labels, tgt_bboxes, tgt_gt_inds]
             loss = bbox_head.get_loss(scores, deltas, targets, rois,
-                                 bbox_head.bbox_weight)
+                                 bbox_head.bbox_weight, reduction=False)
+            # it seems only cls loss is used for OHEM?
+            l = loss['loss_bbox_cls']
 
     negative = negative.cast('int32').flatten()
     bg_perm = paddle.randperm(negative.numel(), dtype='int32')
@@ -227,6 +229,7 @@ def generate_proposal_target(rpn_rois,
     bg_thresh = cascade_iou if is_cascade else bg_thresh
     for i, rpn_roi in enumerate(rpn_rois):
         gt_bbox = gt_boxes[i]
+        # TODO: need test for multilpe gt_boxes: gt_bbox.shape[0]>1. now only 1 single gt_box is tested.
         is_crowd_i = is_crowd[i] if is_crowd else None
         gt_class = paddle.squeeze(gt_classes[i], axis=-1)
 
