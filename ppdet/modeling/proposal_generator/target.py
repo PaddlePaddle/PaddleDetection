@@ -148,7 +148,7 @@ def subsample_labels(labels,
     # randomly select positive and negative examples
 
     if bbox_head is not None:
-        rois_feat = bbox_head.roi_extractor(body_feats, rois, paddle.Tensor(np.full([1,], 1001, dtype=np.int32)))
+        rois_feat = bbox_head.roi_extractor(body_feats, rois, paddle.Tensor(np.full([1,], rois[0].shape[0], dtype=np.int32)))
         bbox_feat = bbox_head.head(rois_feat)
         if bbox_head.with_pool:
             feat = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
