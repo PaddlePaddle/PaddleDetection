@@ -260,7 +260,7 @@ class BBoxHead(nn.Layer):
             pred = self.get_prediction(scores, deltas)
             return pred, self.head
 
-    def get_loss(self, scores, deltas, targets, rois, bbox_weight):
+    def get_loss(self, scores, deltas, targets, rois, bbox_weight, reduction=True):
         """
         scores (Tensor): scores from bbox head outputs
         deltas (Tensor): deltas from bbox head outputs
@@ -284,7 +284,7 @@ class BBoxHead(nn.Layer):
             tgt_labels = tgt_labels.cast('int64')
             tgt_labels.stop_gradient = True
             loss_bbox_cls = F.cross_entropy(
-                input=scores, label=tgt_labels, reduction='mean')
+                input=scores, label=tgt_labels, reduction='mean' if reduction else 'none')
             loss_bbox[cls_name] = loss_bbox_cls
 
         # bbox reg
@@ -326,11 +326,18 @@ class BBoxHead(nn.Layer):
             reg_delta = self.bbox_transform(reg_delta)
             reg_target = self.bbox_transform(reg_target)
             loss_bbox_reg = self.bbox_loss(
-                reg_delta, reg_target).sum() / tgt_labels.shape[0]
+                reg_delta, reg_target)
+            if reduction:
+                loss_bbox_reg = loss_bbox_reg.sum() / tgt_labels.shape[0]
+            else:
+                loss_bbox_reg = loss_bbox_reg.sum(axis=-1)
             loss_bbox_reg *= self.num_classes
         else:
-            loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
-            ) / tgt_labels.shape[0]
+            loss_bbox_reg = paddle.abs(reg_delta - reg_target)
+            if reduction:
+                loss_bbox_reg = loss_bbox_reg.sum() / tgt_labels.shape[0]
+            else:
+                loss_bbox_reg = loss_bbox_reg.sum(axis=-1)
 
         loss_bbox[reg_name] = loss_bbox_reg
 
