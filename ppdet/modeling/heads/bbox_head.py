@@ -22,6 +22,7 @@ from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register, create
 from .roi_extractor import RoIAlign
+from ..proposal_generator.target_layer import OHEMBBoxAssigner
 from ..shape_spec import ShapeSpec
 from ..bbox_utils import bbox2delta
 from ppdet.modeling.layers import ConvNormLayer
@@ -234,7 +235,10 @@ class BBoxHead(nn.Layer):
         inputs (dict{Tensor}): The ground-truth of image
         """
         if self.training:
-            rois, rois_num, targets = self.bbox_assigner(rois, rois_num, inputs)
+            if isinstance(self.bbox_assigner, OHEMBBoxAssigner):
+                rois, rois_num, targets = self.bbox_assigner(rois, rois_num, inputs, self, body_feats)
+            else:
+                rois, rois_num, targets = self.bbox_assigner(rois, rois_num, inputs)
             self.assigned_rois = (rois, rois_num)
             self.assigned_targets = targets
 
