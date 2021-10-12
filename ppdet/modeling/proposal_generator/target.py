@@ -255,10 +255,16 @@ def generate_proposal_target(rpn_rois,
         # Step1: label bbox
         matches, match_labels = label_box(bbox, gt_bbox, fg_thresh, bg_thresh,
                                           False, ignore_thresh, is_crowd_i)
+
+        cur_body_feats = None
+        if body_feats is not None:
+            cur_body_feats = []
+            for f in body_feats:
+                cur_body_feats.append(f[i,:].unsqueeze(0))
         # Step2: sample bbox 
         sampled_inds, sampled_gt_classes = sample_bbox(
             matches, match_labels, gt_class, batch_size_per_im, fg_fraction,
-            num_classes, use_random, is_cascade, bbox_head=bbox_head, body_feats=body_feats, rois=[bbox])
+            num_classes, use_random, is_cascade, bbox_head=bbox_head, body_feats=cur_body_feats, rois=[bbox])
 
         # Step3: make output 
         rois_per_image = bbox if is_cascade else paddle.gather(bbox,
