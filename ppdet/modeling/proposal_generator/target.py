@@ -145,8 +145,10 @@ def subsample_labels(labels,
         bg_inds = paddle.zeros([0], dtype='int32')
         return fg_inds, bg_inds
 
-    # randomly select positive and negative examples
+    negative = negative.cast('int32').flatten()
+    positive = positive.cast('int32').flatten()
 
+    # OHEM
     if bbox_head is not None:
         rois_feat = bbox_head.roi_extractor(body_feats, rois, paddle.Tensor(np.full([1,], rois[0].shape[0], dtype=np.int32)))
         bbox_feat = bbox_head.head(rois_feat)
@@ -179,24 +181,35 @@ def subsample_labels(labels,
             # it seems only cls loss is used for OHEM?
             l = loss['loss_bbox_cls']
 
-    negative = negative.cast('int32').flatten()
-    bg_perm = paddle.randperm(negative.numel(), dtype='int32')
-    bg_perm = paddle.slice(bg_perm, axes=[0], starts=[0], ends=[bg_num])
-    if use_random:
-        bg_inds = paddle.gather(negative, bg_perm)
-    else:
-        bg_inds = paddle.slice(negative, axes=[0], starts=[0], ends=[bg_num])
-    if fg_num == 0:
-        fg_inds = paddle.zeros([0], dtype='int32')
-        return fg_inds, bg_inds
+            if positive.numel() > fg_num:
+                _, fg_inds = l.gather(positive).topk(k=fg_num)
+                fg_inds = fg_inds.cast('int32')
+            else:
+                fg_inds = positive.cast('int32').flatten()
 
-    positive = positive.cast('int32').flatten()
-    fg_perm = paddle.randperm(positive.numel(), dtype='int32')
-    fg_perm = paddle.slice(fg_perm, axes=[0], starts=[0], ends=[fg_num])
-    if use_random:
-        fg_inds = paddle.gather(positive, fg_perm)
+            if negative.numel() > bg_num:
+                _, bg_inds = l.gather(negative).topk(k=bg_num)
+                bg_inds = bg_inds.cast('int32')
+            else:
+                bg_inds = negative.cast('int32').flatten()
     else:
-        fg_inds = paddle.slice(positive, axes=[0], starts=[0], ends=[fg_num])
+        # randomly select positive and negative examples
+        bg_perm = paddle.randperm(negative.numel(), dtype='int32')
+        bg_perm = paddle.slice(bg_perm, axes=[0], starts=[0], ends=[bg_num])
+        if use_random:
+            bg_inds = paddle.gather(negative, bg_perm)
+        else:
+            bg_inds = paddle.slice(negative, axes=[0], starts=[0], ends=[bg_num])
+        if fg_num == 0:
+            fg_inds = paddle.zeros([0], dtype='int32')
+            return fg_inds, bg_inds
+
+        fg_perm = paddle.randperm(positive.numel(), dtype='int32')
+        fg_perm = paddle.slice(fg_perm, axes=[0], starts=[0], ends=[fg_num])
+        if use_random:
+            fg_inds = paddle.gather(positive, fg_perm)
+        else:
+            fg_inds = paddle.slice(positive, axes=[0], starts=[0], ends=[fg_num])
 
     return fg_inds, bg_inds
 
