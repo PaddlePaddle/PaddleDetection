@@ -38,6 +38,7 @@ from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_in
 from ppdet.metrics import RBoxMetric, JDEDetMetric
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
+from ppdet.utils import profiler
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter
 from .export_utils import _dump_infer_config
@@ -340,6 +341,7 @@ class Trainer(object):
 
         if self.cfg.get('print_flops', False):
             self._flops(self.loader)
+        profiler_options = self.cfg.get('profiler_options', None)
 
         for epoch_id in range(self.start_epoch, self.cfg.epoch):
             self.status['mode'] = 'train'
@@ -351,6 +353,7 @@ class Trainer(object):
             for step_id, data in enumerate(self.loader):
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
+                profiler.add_profiler_step(profiler_options)
                 self._compose_callback.on_step_begin(self.status)
                 data['epoch_id'] = epoch_id
 
