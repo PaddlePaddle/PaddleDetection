@@ -160,12 +160,12 @@ class BBoxAssigner(object):
 class OHEMBBoxAssigner(object):
     __shared__ = ['num_classes']
     """
-    RCNN targets assignment module
+    RCNN targets assignment module with OHEM (Online Hard Example Mining)
 
     The assignment consists of three steps:
         1. Match RoIs and ground-truth box, label the RoIs with foreground
            or background sample
-        2. Sample anchors to keep the properly ratio between foreground and 
+        2. Sort anchors by loss, then sample anchors with highest loss to keep the properly ratio between foreground and 
            background
         3. Generate the targets for classification and regression branch
 
