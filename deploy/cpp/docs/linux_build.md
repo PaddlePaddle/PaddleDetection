@@ -5,7 +5,7 @@
 
 ## 前置条件
 * G++ 8.2
-* CUDA 9.0 / CUDA 10.0, cudnn 7+ （仅在使用GPU版本的预测库时需要）
+* CUDA 9.0 / CUDA 10.1, cudnn 7+ （仅在使用GPU版本的预测库时需要）
 * CMake 3.0+
 
 请确保系统已经安装好上述基本软件，**下面所有示例以工作目录为 `/root/projects/`演示**。
@@ -133,7 +133,7 @@ make
 `样例二`:
 ```shell
 #使用 `GPU`预测视频`/root/projects/videos/test.mp4`
-./build/main --model_dir=/root/projects/models/yolov3_darknet --video_path=/root/projects/images/test.mp4 --device=GPU
+./build/main --model_dir=/root/projects/models/yolov3_darknet --video_file=/root/projects/images/test.mp4 --device=GPU
 ```
 视频文件目前支持`.mp4`格式的预测，`可视化预测结果`会保存在当前目录下`output.mp4`文件中。
 
