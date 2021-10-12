@@ -287,6 +287,7 @@ PaddleDetection is released under the [Apache 2.0 license](LICENSE).
 Contributions are highly welcomed and we would really appreciate your feedback!!
 - Thanks [Mandroide](https://github.com/Mandroide) for cleaning the code and unifying some function interface.
 - Thanks [FL77N](https://github.com/FL77N/) for contributing the code of `Sparse-RCNN` model.
+- Thanks [Chen-Song](https://github.com/Chen-Song) for contributing the code of `Swin Faster-RCNN` model.
 
 ## Citation
 
