@@ -26,12 +26,15 @@ function _train(){
         fcos) model_yml="configs/fcos/fcos_r50_fpn_1x_coco.yml" ;;
         deformable_detr) model_yml="configs/deformable_detr/deformable_detr_r50_1x_coco.yml" ;;
         gfl) model_yml="configs/gfl/gfl_r50_fpn_1x_coco.yml" ;;
+        hrnet) model_yml="configs/keypoint/hrnet/hrnet_w32_256x192.yml" ;;
+        higherhrnet) model_yml="configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml" ;;
+        solov2) model_yml="configs/solov2/solov2_r50_fpn_1x_coco.yml" ;;
         *) echo "Undefined model_name"; exit 1;
     esac
 
     set_batch_size="TrainReader.batch_size=${batch_size}"
     set_max_epoch="epoch=${max_epoch}"
-    set_log_iter="log_iter=10"
+    set_log_iter="log_iter=1"
     if [ ${fp_item} = "fp16" ]; then
         set_fp_item="--fp16"
     else
