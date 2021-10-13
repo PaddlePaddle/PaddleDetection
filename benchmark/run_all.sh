@@ -8,7 +8,7 @@
 # run prepare.sh
 bash benchmark/prepare.sh
 
-model_name_list=(faster_rcnn fcos deformable_detr gfl)
+model_name_list=(faster_rcnn fcos deformable_detr gfl jde fairmot)
 fp_item_list=(fp32)
 max_epoch=1
 
@@ -19,6 +19,8 @@ for model_name in ${model_name_list[@]}; do
               fcos) bs_list=(2 8) ;;
               deformable_detr) bs_list=(2) ;;
               gfl) bs_list=(2 8) ;;
+              jde) bs_list=(4 14) ;;
+              fairmot) bs_list=(6 22) ;;
               *) echo "wrong model_name"; exit 1;
           esac
           for bs_item in ${bs_list[@]}

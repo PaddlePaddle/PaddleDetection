@@ -26,6 +26,8 @@ function _train(){
         fcos) model_yml="configs/fcos/fcos_r50_fpn_1x_coco.yml" ;;
         deformable_detr) model_yml="configs/deformable_detr/deformable_detr_r50_1x_coco.yml" ;;
         gfl) model_yml="configs/gfl/gfl_r50_fpn_1x_coco.yml" ;;
+        jde) model_yml="configs/mot/jde/jde_darknet53_30e_1088x608.yml" ;;
+        fairmot) model_yml="configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml" ;;
         *) echo "Undefined model_name"; exit 1;
     esac
 

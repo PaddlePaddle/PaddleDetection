@@ -33,7 +33,7 @@ bash benchmark/run_all.sh
 
 ### 运行指定模型
 * Usage：bash run_benchmark.sh ${run_mode} ${batch_size} ${fp_item} ${max_epoch} ${model_name}
-* model_name: faster_rcnn, fcos, deformable_detr, gfl
+* model_name: faster_rcnn, fcos, deformable_detr, gfl, jde, fairmot
 ```
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
 cd PaddleDetection
