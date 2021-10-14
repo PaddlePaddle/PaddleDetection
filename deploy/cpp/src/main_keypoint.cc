@@ -169,7 +169,7 @@ void PredictVideo(const std::string& video_path,
     return;
   }
 
-  std::vector<PaddleDetection::ObjectResult> result;
+  std::vector<ObjectResult> result;
   std::vector<int> bbox_num;
   std::vector<double> det_times;
   auto labels = det->GetLabelList();
@@ -287,7 +287,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
     }
     
     // Store all detected result
-    std::vector<PaddleDetection::ObjectResult> result;
+    std::vector<ObjectResult> result;
     std::vector<int> bbox_num;
     std::vector<double> det_times;
 
@@ -310,10 +310,10 @@ void PredictImage(const std::vector<std::string> all_img_paths,
     int item_start_idx = 0;
     for (int i = 0; i < left_image_cnt; i++) {
       cv::Mat im = batch_imgs[i];
-      std::vector<PaddleDetection::ObjectResult> im_result;
+      std::vector<ObjectResult> im_result;
       int detect_num = 0;
       for (int j = 0; j < bbox_num[i]; j++) {
-        PaddleDetection::ObjectResult item = result[item_start_idx + j];
+        ObjectResult item = result[item_start_idx + j];
         if (item.confidence < threshold || item.class_id == -1) {
           continue;
         }

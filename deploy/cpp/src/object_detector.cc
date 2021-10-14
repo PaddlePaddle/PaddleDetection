@@ -17,7 +17,6 @@
 #include <chrono>
 #include "include/object_detector.h"
 
-
 using namespace paddle_infer;
 
 namespace PaddleDetection {
@@ -287,12 +286,6 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
       for (auto out_name : output_names) {
         auto output_tensor = predictor_->GetOutputHandle(out_name);
         std::vector<int> output_shape = output_tensor->shape();
-        if (i == 0) {
-          num_class_ = output_shape[2];
-        }
-        if (i == config_.fpn_stride_.size()) {
-          reg_max_ = output_shape[2] / 4 - 1;
-        }
         int out_num = std::accumulate(output_shape.begin(), output_shape.end(), 
                               1, std::multiplies<int>());
         std::vector<float> out_data;
@@ -330,6 +323,8 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   
   bool is_rbox = false;
   auto inference_start = std::chrono::steady_clock::now();
+  int reg_max = 7;
+  int num_class = 80;
   for (int i = 0; i < repeats; i++)
   {
     predictor_->Run();
@@ -341,10 +336,10 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
         auto output_tensor = predictor_->GetOutputHandle(output_names[i]);
         std::vector<int> output_shape = output_tensor->shape();
         if (i == 0) {
-          num_class_ = output_shape[2];
+          num_class = output_shape[2];
         }
         if (i == config_.fpn_stride_.size()) {
-          reg_max_ = output_shape[2] / 4 - 1;
+          reg_max = output_shape[2] / 4 - 1;
         }
         int out_num = std::accumulate(output_shape.begin(), output_shape.end(), 
                               1, std::multiplies<int>());
@@ -388,7 +383,10 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   result->clear();
   bbox_num->clear();
   if (config_.arch_ == "PicoDet") {
-    picodet_postprocess(result, output_data_list_);
+    picodet_postprocess(result, output_data_list_, config_.fpn_stride_, 
+        inputs_.im_shape_, inputs_.scale_factor_,
+        config_.nms_info_["score_threshold"].as<float>(), 
+        config_.nms_info_["nms_threshold"].as<float>(), num_class, reg_max);
     bbox_num->push_back(result->size());
   } else {
     Postprocess(imgs, result, out_bbox_num_data_, is_rbox);
