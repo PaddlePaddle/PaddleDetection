@@ -8,6 +8,7 @@
 | ResNet50-vd          | Faster         |    1    |   1x    |     ----     |  37.6  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/faster_rcnn/faster_rcnn_r50_vd_1x_coco.yml) |
 | ResNet101            | Faster         |    1    |   1x    |     ----     |  39.0  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r101_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/faster_rcnn/faster_rcnn_r101_1x_coco.yml) |
 | ResNet34-FPN         | Faster         |    1    |   1x    |     ----     |  37.8  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r34_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/faster_rcnn/faster_rcnn_r34_fpn_1x_coco.yml) |
+| ResNet34-OHEM-FPN         | Faster         |    1    |   1x    |     ----     |  ----  | ---- | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/faster_rcnn/faster_rcnn_r34_fpn_ohem_1x_coco.yml) |
 | ResNet34-vd-FPN      | Faster         |    1    |   1x    |     ----     |  38.5  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r34_vd_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/faster_rcnn/faster_rcnn_r34_vd_fpn_1x_coco.yml) |
 | ResNet50-FPN         | Faster         |    1    |   1x    |     ----     |  38.4  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml) |
 | ResNet50-FPN         | Faster         |    1    |   2x    |     ----     |  40.0  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/faster_rcnn/faster_rcnn_r50_fpn_2x_coco.yml) |
@@ -21,6 +22,10 @@
 | ResNet50-vd-SSLDv2-FPN | Faster       |    1    |   1x    |     ----     |  41.4  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_fpn_ssld_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/faster_rcnn/faster_rcnn_r50_vd_fpn_ssld_1x_coco.yml) |
 | ResNet50-vd-SSLDv2-FPN | Faster       |    1    |   2x    |     ----     |  42.3  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_ssld_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/faster_rcnn/faster_rcnn_r50_vd_ssld_fpn_2x_coco.yml) |
 
+
+**注意事项:**  
+
+- OHEM (Online Hard Example Mining) 参考自论文[Training Region-based Object Detectors with Online Hard Example Mining](https://arxiv.org/abs/1604.03540).
 
 ## Citations
 ```
