@@ -25,7 +25,17 @@ class BaseArch(nn.Layer):
         if self.training:
             out = self.get_loss()
         else:
-            out = self.get_pred()
+            inputs_list = []
+            if type(inputs) not in (list, tuple):
+                inputs_list.append(inputs)
+            else:
+                inputs_list.extend(inputs)
+
+            outs = []
+            for inp in inputs_list:
+                self.inputs = inp
+                outs.append(self.get_pred())
+            out = outs[0]
         return out
 
     def build_inputs(self, data, input_def):
