@@ -2,6 +2,32 @@
 
 ## 最新版本信息
 
+### 2.2(08.10/2021)
+
+- 模型丰富度：
+    - 发布Transformer检测模型：DETR、Deformable DETR、Sparse RCNN
+    - 关键点检测新增Dark模型，发布Dark HRNet模型
+    - 发布MPII数据集HRNet关键点检测模型
+    - 发布人头、车辆跟踪垂类模型
+
+- 模型优化：
+    - 旋转框检测模型S2ANet发布Align Conv优化模型，DOTA数据集mAP优化至74.0
+
+- 预测部署
+    - 主流模型支持batch size>1预测部署，包含YOLOv3，PP-YOLO，Faster RCNN，SSD，TTFNet，FCOS
+    - 新增多目标跟踪模型(JDE, FairMot, DeepSort) Python端预测部署支持，并支持TensorRT预测
+    - 新增多目标跟踪模型FairMot联合关键点检测模型部署Python端预测部署支持
+    - 新增关键点检测模型联合PP-YOLO预测部署支持
+
+- 文档：
+    - Windows预测部署文档新增TensorRT版本说明
+    - FAQ文档更新发布
+
+- 问题修复：
+    - 修复PP-YOLO系列模型训练收敛性问题
+    - 修复batch size>1时无标签数据训练问题
+
+
 ### 2.1(05.20/2021)
 - 模型丰富度提升：
     - 发布关键点模型HRNet，HigherHRNet

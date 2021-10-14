@@ -376,11 +376,8 @@ def video2frames(video_path, outpath, frame_rate, **kargs):
     ]
     cmd = ''.join(cmd) + _dict2str(kargs)
 
-    try:
-        os.system(cmd)
-    except:
-        raise RuntimeError('ffmpeg process video: {} error'.format(vid_name))
-        sys.stdout.flush()
+    if os.system(cmd) != 0:
+        raise RuntimeError('ffmpeg process video: {} error'.format(video_path))
         sys.exit(-1)
 
     sys.stdout.flush()

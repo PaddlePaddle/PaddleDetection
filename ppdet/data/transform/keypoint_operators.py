@@ -36,10 +36,19 @@ logger = setup_logger(__name__)
 registered_ops = []
 
 __all__ = [
-    'RandomAffine', 'KeyPointFlip', 'TagGenerate', 'ToHeatmaps',
-    'NormalizePermute', 'EvalAffine', 'RandomFlipHalfBodyTransform',
-    'TopDownAffine', 'ToHeatmapsTopDown', 'ToHeatmapsTopDown_DARK',
-    'ToHeatmapsTopDown_UDP', 'TopDownEvalAffine'
+    'RandomAffine',
+    'KeyPointFlip',
+    'TagGenerate',
+    'ToHeatmaps',
+    'NormalizePermute',
+    'EvalAffine',
+    'RandomFlipHalfBodyTransform',
+    'TopDownAffine',
+    'ToHeatmapsTopDown',
+    'ToHeatmapsTopDown_DARK',
+    'TopDownEvalAffine',
+    'AugmentationbyInformantionDropping',
+    'ToHeatmapsTopDown_UDP',
 ]
 
 
@@ -528,6 +537,65 @@ class RandomFlipHalfBodyTransform(object):
         records['scale'] = s
         records['rotate'] = r
 
+        return records
+
+
+@register_keypointop
+class AugmentationbyInformantionDropping(object):
+    """AID: Augmentation by Informantion Dropping. Please refer 
+        to https://arxiv.org/abs/2008.07139 
+    
+    Args:
+        prob_cutout (float): The probability of the Cutout augmentation.
+        offset_factor (float): Offset factor of cutout center.
+        num_patch (int): Number of patches to be cutout.                       
+        records(dict): the dict contained the image and coords
+        
+    Returns:
+        records (dict): contain the image and coords after tranformed
+    
+    """
+
+    def __init__(self,
+                 trainsize,
+                 prob_cutout=0.0,
+                 offset_factor=0.2,
+                 num_patch=1):
+        self.prob_cutout = prob_cutout
+        self.offset_factor = offset_factor
+        self.num_patch = num_patch
+        self.trainsize = trainsize
+
+    def _cutout(self, img, joints, joints_vis):
+        height, width, _ = img.shape
+        img = img.reshape((height * width, -1))
+        feat_x_int = np.arange(0, width)
+        feat_y_int = np.arange(0, height)
+        feat_x_int, feat_y_int = np.meshgrid(feat_x_int, feat_y_int)
+        feat_x_int = feat_x_int.reshape((-1, ))
+        feat_y_int = feat_y_int.reshape((-1, ))
+        for _ in range(self.num_patch):
+            vis_idx, _ = np.where(joints_vis > 0)
+            occlusion_joint_id = np.random.choice(vis_idx)
+            center = joints[occlusion_joint_id, 0:2]
+            offset = np.random.randn(2) * self.trainsize[0] * self.offset_factor
+            center = center + offset
+            radius = np.random.uniform(0.1, 0.2) * self.trainsize[0]
+            x_offset = (center[0] - feat_x_int) / radius
+            y_offset = (center[1] - feat_y_int) / radius
+            dis = x_offset**2 + y_offset**2
+            keep_pos = np.where((dis <= 1) & (dis >= 0))[0]
+            img[keep_pos, :] = 0
+        img = img.reshape((height, width, -1))
+        return img
+
+    def __call__(self, records):
+        img = records['image']
+        joints = records['joints']
+        joints_vis = records['joints_vis']
+        if np.random.rand() < self.prob_cutout:
+            img = self._cutout(img, joints, joints_vis)
+        records['image'] = img
         return records
 
 
