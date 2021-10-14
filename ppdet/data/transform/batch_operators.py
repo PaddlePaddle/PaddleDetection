@@ -58,7 +58,12 @@ class PadBatch(BaseOperator):
         """
         coarsest_stride = self.pad_to_stride
 
-        max_shape = np.array([data['image'].shape for data in samples]).max(
+        if type(samples) in (list, tuple):
+            inner_samples = samples[0]
+        else:
+            inner_samples = samples
+
+        max_shape = np.array([data['image'].shape for data in inner_samples]).max(
             axis=0)
         if coarsest_stride > 0:
             max_shape[1] = int(
@@ -66,7 +71,7 @@ class PadBatch(BaseOperator):
             max_shape[2] = int(
                 np.ceil(max_shape[2] / coarsest_stride) * coarsest_stride)
 
-        for data in samples:
+        for data in inner_samples:
             im = data['image']
             im_c, im_h, im_w = im.shape[:]
             padding_im = np.zeros(
