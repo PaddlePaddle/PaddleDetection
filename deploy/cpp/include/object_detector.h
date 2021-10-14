@@ -122,7 +122,6 @@ class ObjectDetector {
   Preprocessor preprocessor_;
   ImageBlob inputs_;
   std::vector<float> output_data_;
-  std::vector<const float *> output_data_list_;
   std::vector<int> out_bbox_num_data_;
   float threshold_;
   ConfigPaser config_;

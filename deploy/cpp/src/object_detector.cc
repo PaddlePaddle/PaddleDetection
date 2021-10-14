@@ -241,6 +241,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   std::vector<float> in_data_all;
   std::vector<float> im_shape_all(batch_size * 2);
   std::vector<float> scale_factor_all(batch_size * 2);
+  std::vector<const float *> output_data_list_;
   
   // Preprocess image
   for (int bs_idx = 0; bs_idx < batch_size; bs_idx++) {
