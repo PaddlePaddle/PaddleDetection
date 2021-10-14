@@ -178,8 +178,6 @@ class ATSSAssigner(object):
         """
         bboxes = bboxes[:, :4]
         num_gt, num_bboxes = gt_bboxes.shape[0], bboxes.shape[0]
-        # compute iou between all bbox and gt
-        overlaps = bbox_overlaps(bboxes, gt_bboxes)
 
         # assign 0 by default
         assigned_gt_inds = np.zeros((num_bboxes, ), dtype=np.int64)
@@ -194,8 +192,10 @@ class ATSSAssigner(object):
                 assigned_labels = None
             else:
                 assigned_labels = -np.ones((num_bboxes, ), dtype=np.int64)
-            return assigned_gt_inds, max_overlaps, assigned_labels
+            return assigned_gt_inds, max_overlaps
 
+        # compute iou between all bbox and gt
+        overlaps = bbox_overlaps(bboxes, gt_bboxes)
         # compute center distance between all bbox and gt
         gt_cx = (gt_bboxes[:, 0] + gt_bboxes[:, 2]) / 2.0
         gt_cy = (gt_bboxes[:, 1] + gt_bboxes[:, 3]) / 2.0

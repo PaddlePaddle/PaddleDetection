@@ -46,9 +46,9 @@ __all__ = [
     'TopDownAffine',
     'ToHeatmapsTopDown',
     'ToHeatmapsTopDown_DARK',
+    'ToHeatmapsTopDown_UDP',
     'TopDownEvalAffine',
     'AugmentationbyInformantionDropping',
-    'ToHeatmapsTopDown_UDP',
 ]
 
 
@@ -605,6 +605,7 @@ class TopDownAffine(object):
 
     Args:
         trainsize (list): [w, h], the standard size used to train
+        use_udp (bool): whether to use Unbiased Data Processing.
         records(dict): the dict contained the image and coords
 
     Returns:
@@ -626,10 +627,6 @@ class TopDownAffine(object):
                 rot, records['center'] * 2.0,
                 [self.trainsize[0] - 1.0, self.trainsize[1] - 1.0],
                 records['scale'] * 200.0)
-            trans_joint = get_warp_matrix(
-                rot, records['center'] * 2.0,
-                [(self.trainsize[0] - 1.0) / 4, (self.trainsize[1] - 1.0) / 4],
-                records['scale'] * 200)
             image = cv2.warpAffine(
                 image,
                 trans, (int(self.trainsize[0]), int(self.trainsize[1])),
@@ -638,17 +635,13 @@ class TopDownAffine(object):
         else:
             trans = get_affine_transform(records['center'], records['scale'] *
                                          200, rot, self.trainsize)
-            trans_joint = get_affine_transform(
-                records['center'], records['scale'] * 200, rot,
-                [self.trainsize[0] / 4, self.trainsize[1] / 4])
             image = cv2.warpAffine(
                 image,
                 trans, (int(self.trainsize[0]), int(self.trainsize[1])),
                 flags=cv2.INTER_LINEAR)
             for i in range(joints.shape[0]):
                 if joints_vis[i, 0] > 0.0:
-                    joints[i, 0:2] = affine_transform(joints[i, 0:2],
-                                                      trans_joint)
+                    joints[i, 0:2] = affine_transform(joints[i, 0:2], trans)
 
         records['image'] = image
         records['joints'] = joints
@@ -662,6 +655,7 @@ class TopDownEvalAffine(object):
 
     Args:
         trainsize (list): [w, h], the standard size used to train
+        use_udp (bool): whether to use Unbiased Data Processing.
         records(dict): the dict contained the image and coords
 
     Returns:
@@ -729,10 +723,10 @@ class ToHeatmapsTopDown(object):
         target = np.zeros(
             (num_joints, self.hmsize[1], self.hmsize[0]), dtype=np.float32)
         tmp_size = self.sigma * 3
+        feat_stride = image_size / self.hmsize
         for joint_id in range(num_joints):
-            feat_stride = image_size / self.hmsize
-            mu_x = int(joints[joint_id][0] + 0.5)
-            mu_y = int(joints[joint_id][1] + 0.5)
+            mu_x = int(joints[joint_id][0] + 0.5) / feat_stride[0]
+            mu_y = int(joints[joint_id][1] + 0.5) / feat_stride[1]
             # Check that any part of the gaussian is in-bounds
             ul = [int(mu_x - tmp_size), int(mu_y - tmp_size)]
             br = [int(mu_x + tmp_size + 1), int(mu_y + tmp_size + 1)]
@@ -790,14 +784,17 @@ class ToHeatmapsTopDown_DARK(object):
         joints = records['joints']
         joints_vis = records['joints_vis']
         num_joints = joints.shape[0]
+        image_size = np.array(
+            [records['image'].shape[1], records['image'].shape[0]])
         target_weight = np.ones((num_joints, 1), dtype=np.float32)
         target_weight[:, 0] = joints_vis[:, 0]
         target = np.zeros(
             (num_joints, self.hmsize[1], self.hmsize[0]), dtype=np.float32)
         tmp_size = self.sigma * 3
+        feat_stride = image_size / self.hmsize
         for joint_id in range(num_joints):
-            mu_x = joints[joint_id][0]
-            mu_y = joints[joint_id][1]
+            mu_x = joints[joint_id][0] / feat_stride[0]
+            mu_y = joints[joint_id][1] / feat_stride[1]
             # Check that any part of the gaussian is in-bounds
             ul = [int(mu_x - tmp_size), int(mu_y - tmp_size)]
             br = [int(mu_x + tmp_size + 1), int(mu_y + tmp_size + 1)]
@@ -835,7 +832,6 @@ class ToHeatmapsTopDown_UDP(object):
 
     Returns:
         records (dict): contain the heatmaps used to heatmaploss
-
     """
 
     def __init__(self, hmsize, sigma):
@@ -857,8 +853,8 @@ class ToHeatmapsTopDown_UDP(object):
         size = 2 * tmp_size + 1
         x = np.arange(0, size, 1, np.float32)
         y = x[:, None]
+        feat_stride = (image_size - 1.0) / (self.hmsize - 1.0)
         for joint_id in range(num_joints):
-            feat_stride = (image_size - 1.0) / (self.hmsize - 1.0)
             mu_x = int(joints[joint_id][0] / feat_stride[0] + 0.5)
             mu_y = int(joints[joint_id][1] / feat_stride[1] + 0.5)
             # Check that any part of the gaussian is in-bounds

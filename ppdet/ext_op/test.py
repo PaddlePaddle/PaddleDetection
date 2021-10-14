@@ -3,41 +3,15 @@ import sys
 import time
 from shapely.geometry import Polygon
 import paddle
-
-paddle.set_device('gpu:0')
-paddle.disable_static()
+import unittest
 
 try:
     from rbox_iou_ops import rbox_iou
 except Exception as e:
-    print('import custom_ops error', e)
+    print('import rbox_iou_ops error', e)
     sys.exit(-1)
 
-# generate random data
-rbox1 = np.random.rand(13000, 5)
-rbox2 = np.random.rand(7, 5)
 
-# x1 y1 w h [0, 0.5]
-rbox1[:, 0:4] = rbox1[:, 0:4] * 0.45 + 0.001
-rbox2[:, 0:4] = rbox2[:, 0:4] * 0.45 + 0.001
-
-# generate rbox
-rbox1[:, 4] = rbox1[:, 4] - 0.5
-rbox2[:, 4] = rbox2[:, 4] - 0.5
-
-print('rbox1', rbox1.shape, 'rbox2', rbox2.shape)
-
-# to paddle tensor
-pd_rbox1 = paddle.to_tensor(rbox1)
-pd_rbox2 = paddle.to_tensor(rbox2)
-
-iou = rbox_iou(pd_rbox1, pd_rbox2)
-start_time = time.time()
-print('paddle time:', time.time() - start_time)
-print('iou is', iou.cpu().shape)
-
-
-# get gt
 def rbox2poly_single(rrect, get_best_begin_point=False):
     """
     rrect:[x_ctr,y_ctr,w,h,angle]
@@ -54,7 +28,7 @@ def rbox2poly_single(rrect, get_best_begin_point=False):
     poly = R.dot(rect)
     x0, x1, x2, x3 = poly[0, :4] + x_ctr
     y0, y1, y2, y3 = poly[1, :4] + y_ctr
-    poly = np.array([x0, y0, x1, y1, x2, y2, x3, y3], dtype=np.float32)
+    poly = np.array([x0, y0, x1, y1, x2, y2, x3, y3], dtype=np.float64)
     return poly
 
 
@@ -87,8 +61,6 @@ def intersection(g, p):
 
     g = Polygon(g)
     p = Polygon(p)
-    #g = g.buffer(0)
-    #p = p.buffer(0)
     if not g.is_valid or not p.is_valid:
         return 0
 
@@ -100,7 +72,6 @@ def intersection(g, p):
         return inter / union
 
 
-# rbox_iou by python
 def rbox_overlaps(anchors, gt_bboxes, use_cv2=False):
     """
 
@@ -118,7 +89,7 @@ def rbox_overlaps(anchors, gt_bboxes, use_cv2=False):
     anchors_ploy = [rbox2poly_single(e) for e in anchors]
 
     num_gt, num_anchors = len(gt_bboxes_ploy), len(anchors_ploy)
-    iou = np.zeros((num_gt, num_anchors), dtype=np.float32)
+    iou = np.zeros((num_gt, num_anchors), dtype=np.float64)
 
     start_time = time.time()
     for i in range(num_gt):
@@ -129,23 +100,57 @@ def rbox_overlaps(anchors, gt_bboxes, use_cv2=False):
                 print('cur gt_bboxes_ploy[i]', gt_bboxes_ploy[i],
                       'anchors_ploy[j]', anchors_ploy[j], e)
     iou = iou.T
-    print('intersection  all sp_time', time.time() - start_time)
     return iou
 
 
-# make coor as int
-ploy_rbox1 = rbox1
-ploy_rbox2 = rbox2
-ploy_rbox1[:, 0:4] = rbox1[:, 0:4] * 1024
-ploy_rbox2[:, 0:4] = rbox2[:, 0:4] * 1024
+def gen_sample(n):
+    rbox = np.random.rand(n, 5)
+    rbox[:, 0:4] = rbox[:, 0:4] * 0.45 + 0.001
+    rbox[:, 4] = rbox[:, 4] - 0.5
+    return rbox
 
-start_time = time.time()
-iou_py = rbox_overlaps(ploy_rbox1, ploy_rbox2, use_cv2=False)
-print('rbox time', time.time() - start_time)
-print(iou_py.shape)
 
-iou_pd = iou.cpu().numpy()
-sum_abs_diff = np.sum(np.abs(iou_pd - iou_py))
-print('sum of abs diff', sum_abs_diff)
-if sum_abs_diff < 0.02:
-    print("rbox_iou OP compute right!")
+class RBoxIoUTest(unittest.TestCase):
+    def setUp(self):
+        self.initTestCase()
+        self.rbox1 = gen_sample(self.n)
+        self.rbox2 = gen_sample(self.m)
+
+    def initTestCase(self):
+        self.n = 13000
+        self.m = 7
+
+    def assertAllClose(self, x, y, msg, atol=5e-1, rtol=1e-2):
+        self.assertTrue(np.allclose(x, y, atol=atol, rtol=rtol), msg=msg)
+
+    def get_places(self):
+        places = [paddle.CPUPlace()]
+        if paddle.device.is_compiled_with_cuda():
+            places.append(paddle.CUDAPlace(0))
+
+        return places
+
+    def check_output(self, place):
+        paddle.disable_static()
+        pd_rbox1 = paddle.to_tensor(self.rbox1, place=place)
+        pd_rbox2 = paddle.to_tensor(self.rbox2, place=place)
+        actual_t = rbox_iou(pd_rbox1, pd_rbox2).numpy()
+        poly_rbox1 = self.rbox1
+        poly_rbox2 = self.rbox2
+        poly_rbox1[:, 0:4] = self.rbox1[:, 0:4] * 1024
+        poly_rbox2[:, 0:4] = self.rbox2[:, 0:4] * 1024
+        expect_t = rbox_overlaps(poly_rbox1, poly_rbox2, use_cv2=False)
+        self.assertAllClose(
+            actual_t,
+            expect_t,
+            msg="rbox_iou has diff at {} \nExpect {}\nBut got {}".format(
+                str(place), str(expect_t), str(actual_t)))
+
+    def test_output(self):
+        places = self.get_places()
+        for place in places:
+            self.check_output(place)
+
+
+if __name__ == "__main__":
+    unittest.main()
