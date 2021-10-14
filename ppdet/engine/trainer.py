@@ -41,7 +41,7 @@ import ppdet.utils.stats as stats
 from ppdet.utils import profiler
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter
-from .export_utils import _dump_infer_config
+from .export_utils import _dump_infer_config, _prune_input_spec
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('ppdet.engine')
@@ -541,12 +541,7 @@ class Trainer(object):
         name, ext = os.path.splitext(image_name)
         return os.path.join(output_dir, "{}".format(name)) + ext
 
-    def export(self, output_dir='output_inference'):
-        self.model.eval()
-        model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
-        save_dir = os.path.join(output_dir, model_name)
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
+    def _get_infer_cfg_and_input_spec(self, save_dir, prune_input=True):
         image_shape = None
         if self.cfg.architecture in MOT_ARCH:
             test_reader_name = 'TestMOTReader'
@@ -555,9 +550,11 @@ class Trainer(object):
         if 'inputs_def' in self.cfg[test_reader_name]:
             inputs_def = self.cfg[test_reader_name]['inputs_def']
             image_shape = inputs_def.get('image_shape', None)
-        # set image_shape=[3, -1, -1] as default
+        # set image_shape=[None, 3, -1, -1] as default
         if image_shape is None:
-            image_shape = [3, -1, -1]
+            image_shape = [None, 3, -1, -1]
+        if len(image_shape) == 3:
+            image_shape = [None] + image_shape
 
         if hasattr(self.model, 'deploy'):
             self.model.deploy = True
@@ -574,7 +571,7 @@ class Trainer(object):
 
         input_spec = [{
             "image": InputSpec(
-                shape=[None] + image_shape, name='image'),
+                shape=image_shape, name='image'),
             "im_shape": InputSpec(
                 shape=[None, 2], name='im_shape'),
             "scale_factor": InputSpec(
@@ -585,13 +582,29 @@ class Trainer(object):
                 "crops": InputSpec(
                     shape=[None, 3, 192, 64], name='crops')
             })
+        if prune_input:
+            static_model = paddle.jit.to_static(
+                self.model, input_spec=input_spec)
+            # NOTE: dy2st do not pruned program, but jit.save will prune program
+            # input spec, prune input spec here and save with pruned input spec
+            pruned_input_spec = _prune_input_spec(
+                input_spec, static_model.forward.main_program,
+                static_model.forward.outputs)
+        else:
+            static_model = None
+            pruned_input_spec = input_spec
 
-        static_model = paddle.jit.to_static(self.model, input_spec=input_spec)
-        # NOTE: dy2st do not pruned program, but jit.save will prune program
-        # input spec, prune input spec here and save with pruned input spec
-        pruned_input_spec = self._prune_input_spec(
-            input_spec, static_model.forward.main_program,
-            static_model.forward.outputs)
+        return static_model, pruned_input_spec
+
+    def export(self, output_dir='output_inference'):
+        self.model.eval()
+        model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
+        save_dir = os.path.join(output_dir, model_name)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        static_model, pruned_input_spec = self._get_infer_cfg_and_input_spec(
+            save_dir)
 
         # dy2st and save model
         if 'slim' not in self.cfg or self.cfg['slim_type'] != 'QAT':
@@ -606,22 +619,26 @@ class Trainer(object):
                 input_spec=pruned_input_spec)
         logger.info("Export model and saved in {}".format(save_dir))
 
-    def _prune_input_spec(self, input_spec, program, targets):
-        # try to prune static program to figure out pruned input spec
-        # so we perform following operations in static mode
-        paddle.enable_static()
-        pruned_input_spec = [{}]
-        program = program.clone()
-        program = program._prune(targets=targets)
-        global_block = program.global_block()
-        for name, spec in input_spec[0].items():
-            try:
-                v = global_block.var(name)
-                pruned_input_spec[0][name] = spec
-            except Exception:
-                pass
-        paddle.disable_static()
-        return pruned_input_spec
+    def post_quant(self, output_dir='output_inference'):
+        model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
+        save_dir = os.path.join(output_dir, model_name)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        for idx, data in enumerate(self.loader):
+            self.model(data)
+            if idx == int(self.cfg.get('quant_batch_num', 10)):
+                break
+
+        # TODO: support prune input_spec
+        _, pruned_input_spec = self._get_infer_cfg_and_input_spec(
+            save_dir, prune_input=False)
+
+        self.cfg.slim.save_quantized_model(
+            self.model,
+            os.path.join(save_dir, 'model'),
+            input_spec=pruned_input_spec)
+        logger.info("Export Post-Quant model and saved in {}".format(save_dir))
 
     def _flops(self, loader):
         self.model.eval()

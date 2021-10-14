@@ -4,10 +4,11 @@
 
 - [剪裁](prune)
 - [量化](quant)
+- [离线量化](post_quant)
 - [蒸馏](distill)
 - [联合策略](extensions)
 
-推荐您使用剪裁和蒸馏联合训练，或者使用剪裁和量化，进行检测模型压缩。 下面以YOLOv3为例，进行剪裁、蒸馏和量化实验。
+推荐您使用剪裁和蒸馏联合训练，或者使用剪裁、量化训练和离线量化，进行检测模型压缩。 下面以YOLOv3为例，进行剪裁、蒸馏和量化实验。
 
 ## 实验环境
 
@@ -20,7 +21,8 @@
 **PaddleDetection、 PaddlePaddle与PaddleSlim 版本关系:**
 |  PaddleDetection版本  | PaddlePaddle版本  | PaddleSlim版本 |  备注    |
 | :------------------: | :---------------: | :-------: |:---------------: |
-| release/2.1       |       >= 2.1.0       | 2.1      |  量化模型导出依赖最新Paddle develop分支，可在[PaddlePaddle每日版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)中下载安装  |
+| release/2.3       |       >= 2.1       | 2.1      | 离线量化依赖Paddle 2.2及PaddleSlim 2.2 |
+| release/2.1 | 2.2    |       >= 2.1.0       | 2.1      |  量化模型导出依赖最新Paddle develop分支，可在[PaddlePaddle每日版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)中下载安装  |
 | release/2.0       |       >= 2.0.1       | 2.0      | 量化依赖Paddle 2.1及PaddleSlim 2.1 |
 
 
@@ -144,6 +146,16 @@ python tools/export_model.py -c configs/{MODEL.yml} --slim_config configs/slim/{
 说明：
 - 上述V100预测时延非量化模型均是使用TensorRT-FP32测试，量化模型均使用TensorRT-INT8测试，并且都包含NMS耗时。
 - SD855预测时延为使用PaddleLite部署，使用arm8架构并使用4线程(4 Threads)推理时延。
+
+### 离线量化
+需要准备val集，用来对离线量化模型进行校准，运行方式：
+```shell
+python tools/post_quant.py -c configs/{MODEL.yml} --slim_config configs/slim/post_quant/{SLIM_CONFIG.yml}
+```
+例如：
+```shell
+python3.7 tools/post_quant.py -c configs/ppyolo/ppyolo_mbv3_large_coco.yml --slim_config=configs/slim/post_quant/ppyolo_mbv3_large_ptq.yml
+```
 
 ### 蒸馏
 
