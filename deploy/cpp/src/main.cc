@@ -32,16 +32,14 @@
 #endif
 
 #include "include/object_detector.h"
-#include "include/jde_detector.h"
 #include <gflags/gflags.h>
-#include <opencv2/opencv.hpp>
 
 
 DEFINE_string(model_dir, "", "Path of inference model");
 DEFINE_string(image_file, "", "Path of input image");
 DEFINE_string(image_dir, "", "Dir of input image, `image_file` has a higher priority.");
 DEFINE_int32(batch_size, 1, "batch_size");
-DEFINE_string(video_file, "/paddle/PaddleDetection/deploy/test.mp4", "Path of input video, `video_file` or `camera_id` has a highest priority.");
+DEFINE_string(video_file, "", "Path of input video, `video_file` or `camera_id` has a highest priority.");
 DEFINE_int32(camera_id, -1, "Device id of camera to predict");
 DEFINE_bool(use_gpu, false, "Deprecated, please use `--device` to set the device you want to run.");
 DEFINE_string(device, "CPU", "Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU.");
@@ -56,7 +54,6 @@ DEFINE_int32(trt_min_shape, 1, "Min shape of TRT DynamicShapeI");
 DEFINE_int32(trt_max_shape, 1280, "Max shape of TRT DynamicShapeI");
 DEFINE_int32(trt_opt_shape, 640, "Opt shape of TRT DynamicShapeI");
 DEFINE_bool(trt_calib_mode, false, "If the model is produced by TRT offline quantitative calibration, trt_calib_mode need to set True");
-DEFINE_bool(for_track, false, "Whether inference for tracking");
 
 void PrintBenchmarkLog(std::vector<double> det_time, int img_num){
   LOG(INFO) << "----------------------- Config info -----------------------";
@@ -128,64 +125,6 @@ static void MkDirs(const std::string& path) {
 
   MkDirs(DirName(path));
   MkDir(path);
-}
-
-void PredictVideo(const std::string& video_path,
-                  PaddleDetection::JDEDetector* mot) {
-  // Open video
-  cv::VideoCapture capture;
-  if (FLAGS_camera_id != -1){
-    capture.open(FLAGS_camera_id);
-  }else{
-    capture.open(video_path.c_str());
-  }
-  if (!capture.isOpened()) {
-    printf("can not open video : %s\n", video_path.c_str());
-    return;
-  }
-
-  // Get Video info : resolution, fps
-  int video_width = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_WIDTH));
-  int video_height = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_HEIGHT));
-  int video_fps = static_cast<int>(capture.get(CV_CAP_PROP_FPS));
-
-  // Create VideoWriter for output
-  cv::VideoWriter video_out;
-  std::string video_out_path = "mot_output.mp4";
-  video_out.open(video_out_path.c_str(),
-                 0x00000021,
-                 video_fps,
-                 cv::Size(video_width, video_height),
-                 true);
-  if (!video_out.isOpened()) {
-    printf("create video writer failed!\n");
-    return;
-  }
-
-  PaddleDetection::MOT_Result result;
-  std::vector<double> det_times;
-  double times;
-  // Capture all frames and do inference
-  cv::Mat frame;
-  int frame_id = 0;
-  while (capture.read(frame)) {
-    if (frame.empty()) {
-      break;
-    }
-    std::vector<cv::Mat> imgs;
-    imgs.push_back(frame);
-    det_times.clear();
-    mot->Predict(imgs, 0.5, 0, 1, &result, &det_times);
-    times = std::accumulate(det_times.begin(), det_times.end(), 0);
-
-    cv::Mat out_im = PaddleDetection::VisualizeTrackResult(
-        frame, result, 1000./times, frame_id);
-    
-    video_out.write(out_im);
-    frame_id += 1;
-  }
-  capture.release();
-  video_out.release();
 }
 
 void PredictVideo(const std::string& video_path,
@@ -392,33 +331,15 @@ int main(int argc, char** argv) {
     std::cout << "Deprecated, please use `--device` to set the device you want to run.";
     return -1;
   }
-
+  // Load model and create a object detector
+  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_device, FLAGS_use_mkldnn,
+                        FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_batch_size,FLAGS_gpu_id,
+                        FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape,
+			FLAGS_trt_calib_mode);
   // Do inference on input video or image
   if (!FLAGS_video_file.empty() || FLAGS_camera_id != -1) {
-    if (FLAGS_for_track) {
-      PaddleDetection::JDEDetector mot(FLAGS_model_dir, FLAGS_device, FLAGS_use_mkldnn,
-                        FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_batch_size,FLAGS_gpu_id,
-                        FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape,
-			FLAGS_trt_calib_mode);
-     
-      PredictVideo(FLAGS_video_file, &mot);
-    } else {
-      PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_device, FLAGS_use_mkldnn,
-                        FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_batch_size,FLAGS_gpu_id,
-                        FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape,
-			FLAGS_trt_calib_mode);
-      PredictVideo(FLAGS_video_file, &det);    
-    }
+    PredictVideo(FLAGS_video_file, &det);
   } else if (!FLAGS_image_file.empty() || !FLAGS_image_dir.empty()) {
-    if (FLAGS_for_track) {
-        std::cout << "Only support video input when inference for tracking." << std::endl;
-        return -1;
-    }
-    PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_device, FLAGS_use_mkldnn,
-                        FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_batch_size,FLAGS_gpu_id,
-                        FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape,
-			FLAGS_trt_calib_mode);
-   
     if (!PathExists(FLAGS_output_dir)) {
       MkDirs(FLAGS_output_dir);
     }
@@ -436,7 +357,6 @@ int main(int argc, char** argv) {
           all_img_paths.push_back(img_path);
         }
     }
-
     PredictImage(all_img_paths, FLAGS_batch_size, FLAGS_threshold,
 		 FLAGS_run_benchmark, &det, FLAGS_output_dir);
   }

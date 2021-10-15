@@ -38,8 +38,6 @@
 
 
 DEFINE_string(model_dir, "", "Path of inference model");
-DEFINE_string(image_file, "", "Path of input image");
-DEFINE_string(image_dir, "", "Dir of input image, `image_file` has a higher priority.");
 DEFINE_int32(batch_size, 1, "batch_size");
 DEFINE_string(video_file, "", "Path of input video, `video_file` or `camera_id` has a highest priority.");
 DEFINE_int32(camera_id, -1, "Device id of camera to predict");
@@ -56,7 +54,6 @@ DEFINE_int32(trt_min_shape, 1, "Min shape of TRT DynamicShapeI");
 DEFINE_int32(trt_max_shape, 1280, "Max shape of TRT DynamicShapeI");
 DEFINE_int32(trt_opt_shape, 640, "Opt shape of TRT DynamicShapeI");
 DEFINE_bool(trt_calib_mode, false, "If the model is produced by TRT offline quantitative calibration, trt_calib_mode need to set True");
-DEFINE_bool(for_track, false, "Whether inference for tracking");
 
 void PrintBenchmarkLog(std::vector<double> det_time, int img_num){
   LOG(INFO) << "----------------------- Config info -----------------------";
@@ -186,194 +183,14 @@ void PredictVideo(const std::string& video_path,
   }
   capture.release();
   video_out.release();
-}
-
-void PredictVideo(const std::string& video_path,
-                  PaddleDetection::ObjectDetector* det) {
-  // Open video
-  cv::VideoCapture capture;
-  if (FLAGS_camera_id != -1){
-    capture.open(FLAGS_camera_id);
-  }else{
-    capture.open(video_path.c_str());
-  }
-  if (!capture.isOpened()) {
-    printf("can not open video : %s\n", video_path.c_str());
-    return;
-  }
-
-  // Get Video info : resolution, fps
-  int video_width = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_WIDTH));
-  int video_height = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_HEIGHT));
-  int video_fps = static_cast<int>(capture.get(CV_CAP_PROP_FPS));
-
-  // Create VideoWriter for output
-  cv::VideoWriter video_out;
-  std::string video_out_path = "output.mp4";
-  video_out.open(video_out_path.c_str(),
-                 0x00000021,
-                 video_fps,
-                 cv::Size(video_width, video_height),
-                 true);
-  if (!video_out.isOpened()) {
-    printf("create video writer failed!\n");
-    return;
-  }
-
-  std::vector<PaddleDetection::ObjectResult> result;
-  std::vector<int> bbox_num;
-  std::vector<double> det_times;
-  auto labels = det->GetLabelList();
-  auto colormap = PaddleDetection::GenerateColorMap(labels.size());
-  // Capture all frames and do inference
-  cv::Mat frame;
-  int frame_id = 0;
-  bool is_rbox = false;
-  while (capture.read(frame)) {
-    if (frame.empty()) {
-      break;
-    }
-    std::vector<cv::Mat> imgs;
-    imgs.push_back(frame);
-    det->Predict(imgs, 0.5, 0, 1, &result, &bbox_num, &det_times);
-    for (const auto& item : result) {
-      if (item.rect.size() > 6){
-      is_rbox = true;
-      printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
-          item.class_id,
-          item.confidence,
-          item.rect[0],
-          item.rect[1],
-          item.rect[2],
-          item.rect[3],
-          item.rect[4],
-          item.rect[5],
-          item.rect[6],
-          item.rect[7]);
-      }
-      else{
-        printf("class=%d confidence=%.4f rect=[%d %d %d %d]\n",
-          item.class_id,
-          item.confidence,
-          item.rect[0],
-          item.rect[1],
-          item.rect[2],
-          item.rect[3]);
-      }
-   }
-
-   cv::Mat out_im = PaddleDetection::VisualizeResult(
-        frame, result, labels, colormap, is_rbox);
-
-    video_out.write(out_im);
-    frame_id += 1;
-  }
-  capture.release();
-  video_out.release();
-}
-
-void PredictImage(const std::vector<std::string> all_img_paths,
-                  const int batch_size,
-                  const double threshold,
-                  const bool run_benchmark,
-                  PaddleDetection::ObjectDetector* det,
-                  const std::string& output_dir = "output") {
-  std::vector<double> det_t = {0, 0, 0};
-  int steps = ceil(float(all_img_paths.size()) / batch_size);
-  printf("total images = %d, batch_size = %d, total steps = %d\n",
-                all_img_paths.size(), batch_size, steps);
-  for (int idx = 0; idx < steps; idx++) {
-    std::vector<cv::Mat> batch_imgs;
-    int left_image_cnt = all_img_paths.size() - idx * batch_size;
-    if (left_image_cnt > batch_size) {
-      left_image_cnt = batch_size;
-    }
-    for (int bs = 0; bs < left_image_cnt; bs++) {
-      std::string image_file_path = all_img_paths.at(idx * batch_size+bs);
-      cv::Mat im = cv::imread(image_file_path, 1);
-      batch_imgs.insert(batch_imgs.end(), im);
-    }
-    
-    // Store all detected result
-    std::vector<PaddleDetection::ObjectResult> result;
-    std::vector<int> bbox_num;
-    std::vector<double> det_times;
-    bool is_rbox = false;
-    if (run_benchmark) {
-      det->Predict(batch_imgs, threshold, 10, 10, &result, &bbox_num,  &det_times);
-    } else {
-      det->Predict(batch_imgs, 0.5, 0, 1, &result, &bbox_num, &det_times);
-      // get labels and colormap
-      auto labels = det->GetLabelList();
-      auto colormap = PaddleDetection::GenerateColorMap(labels.size());
-
-      int item_start_idx = 0;
-      for (int i = 0; i < left_image_cnt; i++) {
-        cv::Mat im = batch_imgs[i];
-        std::vector<PaddleDetection::ObjectResult> im_result;
-        int detect_num = 0;
- 
-        for (int j = 0; j < bbox_num[i]; j++) {
-          PaddleDetection::ObjectResult item = result[item_start_idx + j];
-          if (item.confidence < threshold || item.class_id == -1) {
-            continue;
-          }
-          detect_num += 1;
-          im_result.push_back(item);
-          if (item.rect.size() > 6){
-            is_rbox = true;
-            printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
-              item.class_id,
-              item.confidence,
-              item.rect[0],
-              item.rect[1],
-              item.rect[2],
-              item.rect[3],
-              item.rect[4],
-              item.rect[5],
-              item.rect[6],
-              item.rect[7]);
-          }
-          else{
-            printf("class=%d confidence=%.4f rect=[%d %d %d %d]\n",
-              item.class_id,
-              item.confidence,
-              item.rect[0],
-              item.rect[1],
-              item.rect[2],
-              item.rect[3]);
-          }
-        }
-        std::cout << all_img_paths.at(idx * batch_size + i) << " The number of detected box: " << detect_num << std::endl;
-        item_start_idx = item_start_idx + bbox_num[i];
-        // Visualization result
-        cv::Mat vis_img = PaddleDetection::VisualizeResult(
-            im, im_result, labels, colormap, is_rbox);
-        std::vector<int> compression_params;
-        compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
-        compression_params.push_back(95);
-        std::string output_path(output_dir);
-        if (output_dir.rfind(OS_PATH_SEP) != output_dir.size() - 1) {
-          output_path += OS_PATH_SEP;
-        }
-        std::string image_file_path = all_img_paths.at(idx * batch_size + i);
-        output_path += image_file_path.substr(image_file_path.find_last_of('/') + 1);
-        cv::imwrite(output_path, vis_img, compression_params);
-        printf("Visualized output saved as %s\n", output_path.c_str());       
-      }
-    }
-    det_t[0] += det_times[0];
-    det_t[1] += det_times[1];
-    det_t[2] += det_times[2];
-  }
-  PrintBenchmarkLog(det_t, all_img_paths.size());
+  printf("Visualized output saved as %s\n", video_out_path.c_str());      
 }
 
 int main(int argc, char** argv) {
   // Parsing command-line
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_model_dir.empty()
-      || FLAGS_video_file.empty())) {
+      || FLAGS_video_file.empty()) {
     std::cout << "Usage: ./main --model_dir=/PATH/TO/INFERENCE_MODEL/ "
                 << "--video_file=/PATH/TO/INPUT/VIDEO/" << std::endl;
     return -1;
