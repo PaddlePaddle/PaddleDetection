@@ -58,7 +58,8 @@ class PadBatch(BaseOperator):
         """
         coarsest_stride = self.pad_to_stride
 
-        if type(samples) in (list, tuple):
+        # multi scale input is nested list
+        if type(samples) in (list, tuple) and type(samples[0]) in (list, tuple):
             inner_samples = samples[0]
         else:
             inner_samples = samples
