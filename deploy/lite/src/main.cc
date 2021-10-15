@@ -71,6 +71,18 @@ void PrintBenchmarkLog(std::vector<double> det_time, int img_num) {
             << ", postprocess_time(ms): " << det_time[2] / img_num << std::endl;
 }
 
+void PrintTotalIimeLog(double det_time,
+                       double keypoint_time,
+                       double crop_time) {
+  std::cout << "----------------------- Time info ------------------------"
+            << std::endl;
+  std::cout << "Total Pipeline time(ms): "
+            << det_time + keypoint_time + crop_time << std::endl;
+  std::cout << "average det time(ms): " << det_time
+            << ", average keypoint time(ms): " << keypoint_time
+            << ", average crop time(ms): " << crop_time << std::endl;
+}
+
 static std::string DirName(const std::string& filepath) {
   auto pos = filepath.rfind(OS_PATH_SEP);
   if (pos == std::string::npos) {
@@ -114,6 +126,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
   int steps = ceil(float(all_img_paths.size()) / batch_size_det);
   int kpts_imgs = 0;
   std::vector<double> keypoint_t = {0, 0, 0};
+  double midtimecost = 0;
   for (int idx = 0; idx < steps; idx++) {
     std::vector<cv::Mat> batch_imgs;
     int left_image_cnt = all_img_paths.size() - idx * batch_size_det;
@@ -143,6 +156,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
     } else {
       det->Predict(batch_imgs, 0.5, 0, 1, &result, &bbox_num, &det_times);
     }
+
     // get labels and colormap
     auto labels = det->GetLabelList();
     auto colormap = PaddleDetection::GenerateColorMap(labels.size());
@@ -196,6 +210,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
       if (keypoint) {
         int imsize = im_result.size();
         for (int i = 0; i < imsize; i++) {
+          auto keypoint_start_time = std::chrono::steady_clock::now();
           auto item = im_result[i];
           cv::Mat crop_img;
           std::vector<double> keypoint_times;
@@ -210,6 +225,11 @@ void PredictImage(const std::vector<std::string> all_img_paths,
             imgs_kpts.emplace_back(crop_img);
             kpts_imgs += 1;
           }
+          auto keypoint_crop_time = std::chrono::steady_clock::now();
+
+          std::chrono::duration<float> midtimediff =
+              keypoint_crop_time - keypoint_start_time;
+          midtimecost += double(midtimediff.count() * 1000);
 
           if (imgs_kpts.size() == RT_Config["batch_size_keypoint"].as<int>() ||
               ((i == imsize - 1) && !imgs_kpts.empty())) {
@@ -265,6 +285,9 @@ void PredictImage(const std::vector<std::string> all_img_paths,
   }
   PrintBenchmarkLog(det_t, all_img_paths.size());
   PrintBenchmarkLog(keypoint_t, kpts_imgs);
+  PrintTotalIimeLog((det_t[0] + det_t[1] + det_t[2]) / all_img_paths.size(),
+                    (keypoint_t[0] + keypoint_t[1] + keypoint_t[2]) / kpts_imgs,
+                    midtimecost / all_img_paths.size());
 }
 
 int main(int argc, char** argv) {
