@@ -19,6 +19,9 @@ for model_name in ${model_name_list[@]}; do
               fcos) bs_list=(2 8) ;;
               deformable_detr) bs_list=(2) ;;
               gfl) bs_list=(2 8) ;;
+              hrnet) bs_list=(64 160) ;;
+              higherhrnet) bs_list=(20 24) ;;
+              solov2) bs_list=(2 4) ;;
               *) echo "wrong model_name"; exit 1;
           esac
           for bs_item in ${bs_list[@]}
