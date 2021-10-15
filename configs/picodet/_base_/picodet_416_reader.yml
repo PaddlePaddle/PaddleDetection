@@ -4,17 +4,16 @@ TrainReader:
   - Decode: {}
   - RandomCrop: {}
   - RandomFlip: {prob: 0.5}
-  - Resize: {target_size: [416, 416], keep_ratio: False, interp: 1}
-  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
   - RandomDistort: {}
-  - Permute: {}
   batch_transforms:
-  - PadBatch: {pad_to_stride: 32}
+  - BatchRandomResize: {target_size: [352, 384, 416, 448, 480], random_size: True, random_interp: True, keep_ratio: False}
+  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - Permute: {}
   - Gt2GFLTarget:
       downsample_ratios: [8, 16, 32]
       grid_cell_scale: 5
       cell_offset: 0.5
-  batch_size: 96
+  batch_size: 80
   shuffle: true
   drop_last: true
 
@@ -22,7 +21,7 @@ TrainReader:
 EvalReader:
   sample_transforms:
   - Decode: {}
-  - Resize: {interp: 1, target_size: [416, 416], keep_ratio: False}
+  - Resize: {interp: 2, target_size: [416, 416], keep_ratio: False}
   - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
   - Permute: {}
   batch_transforms:
@@ -36,7 +35,7 @@ TestReader:
     image_shape: [3, 416, 416]
   sample_transforms:
   - Decode: {}
-  - Resize: {interp: 1, target_size: [416, 416], keep_ratio: False}
+  - Resize: {interp: 2, target_size: [416, 416], keep_ratio: False}
   - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
   - Permute: {}
   batch_transforms:

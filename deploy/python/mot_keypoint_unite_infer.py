@@ -216,8 +216,8 @@ def mot_keypoint_unite_predict_video(mot_model,
 
     if FLAGS.save_images:
         save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
-        cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
-            save_dir, out_path)
+        cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(save_dir,
+                                                              out_path)
         os.system(cmd_str)
         print('Save video in {}.'.format(out_path))
     else:

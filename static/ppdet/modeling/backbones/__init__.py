@@ -35,6 +35,7 @@ from . import bifpn
 from . import cspdarknet
 from . import acfpn
 from . import ghostnet
+from . import resnet_eb
 
 from .resnet import *
 from .resnext import *
@@ -57,3 +58,4 @@ from .bifpn import *
 from .cspdarknet import *
 from .acfpn import *
 from .ghostnet import *
+from .resnet_eb import *

@@ -1,0 +1,13 @@
+{
+  "model_dir_det": "./model_det/",
+  "batch_size_det": 1,
+  "threshold_det": 0.5,
+  "model_dir_keypoint": "./model_keypoint/",
+  "batch_size_keypoint": 8,
+  "threshold_keypoint": 0.5,
+  "image_file": "./demo.jpg",
+  "image_dir": "",
+  "run_benchmark": false,
+  "cpu_threads": 4,
+  "use_dark_decode": true
+}

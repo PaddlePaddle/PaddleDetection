@@ -569,6 +569,7 @@ class HRNet(nn.Layer):
         freeze_norm (bool): whether to freeze norm in HRNet
         norm_decay (float): weight decay for normalization layer weights
         return_idx (List): the stage to return
+        upsample (bool): whether to upsample and concat the backbone feats
     """
 
     def __init__(self,
@@ -577,7 +578,8 @@ class HRNet(nn.Layer):
                  freeze_at=0,
                  freeze_norm=True,
                  norm_decay=0.,
-                 return_idx=[0, 1, 2, 3]):
+                 return_idx=[0, 1, 2, 3],
+                 upsample=False):
         super(HRNet, self).__init__()
 
         self.width = width
@@ -588,6 +590,7 @@ class HRNet(nn.Layer):
         assert len(return_idx) > 0, "need one or more return index"
         self.freeze_at = freeze_at
         self.return_idx = return_idx
+        self.upsample = upsample
 
         self.channels = {
             18: [[18, 36], [18, 36, 72], [18, 36, 72, 144]],
@@ -602,8 +605,8 @@ class HRNet(nn.Layer):
 
         channels_2, channels_3, channels_4 = self.channels[width]
         num_modules_2, num_modules_3, num_modules_4 = 1, 4, 3
-        self._out_channels = channels_4
-        self._out_strides = [4, 8, 16, 32]
+        self._out_channels = [sum(channels_4)] if self.upsample else channels_4
+        self._out_strides = [4] if self.upsample else [4, 8, 16, 32]
 
         self.conv_layer1_1 = ConvNormLayer(
             ch_in=3,
@@ -695,6 +698,15 @@ class HRNet(nn.Layer):
 
         st4 = self.st4(tr3)
 
+        if self.upsample:
+            # Upsampling
+            x0_h, x0_w = st4[0].shape[2:4]
+            x1 = F.upsample(st4[1], size=(x0_h, x0_w), mode='bilinear')
+            x2 = F.upsample(st4[2], size=(x0_h, x0_w), mode='bilinear')
+            x3 = F.upsample(st4[3], size=(x0_h, x0_w), mode='bilinear')
+            x = paddle.concat([st4[0], x1, x2, x3], 1)
+            return x
+
         res = []
         for i, layer in enumerate(st4):
             if i == self.freeze_at:
@@ -706,6 +718,8 @@ class HRNet(nn.Layer):
 
     @property
     def out_shape(self):
+        if self.upsample:
+            self.return_idx = [0]
         return [
             ShapeSpec(
                 channels=self._out_channels[i], stride=self._out_strides[i])
