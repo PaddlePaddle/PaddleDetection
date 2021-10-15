@@ -8,7 +8,7 @@
 # run prepare.sh
 bash benchmark/prepare.sh
 
-model_name_list=(faster_rcnn fcos deformable_detr gfl)
+model_name_list=(faster_rcnn fcos deformable_detr gfl hrnet higherhrnet solov2 jde fairmot)
 fp_item_list=(fp32)
 max_epoch=1
 
@@ -22,6 +22,8 @@ for model_name in ${model_name_list[@]}; do
               hrnet) bs_list=(64 160) ;;
               higherhrnet) bs_list=(20 24) ;;
               solov2) bs_list=(2 4) ;;
+              jde) bs_list=(4 14) ;;
+              fairmot) bs_list=(6 22) ;;
               *) echo "wrong model_name"; exit 1;
           esac
           for bs_item in ${bs_list[@]}
@@ -29,7 +31,7 @@ for model_name in ${model_name_list[@]}; do
             echo "index is speed, 1gpus, begin, ${model_name}"
             run_mode=sp
             CUDA_VISIBLE_DEVICES=0 bash benchmark/run_benchmark.sh ${run_mode} ${bs_item} \
-             ${fp_item} ${max_epoch} ${model_name}     #  (5min)
+             ${fp_item} ${max_epoch} ${model_name}
             sleep 60
 
             echo "index is speed, 8gpus, run_mode is multi_process, begin, ${model_name}"
