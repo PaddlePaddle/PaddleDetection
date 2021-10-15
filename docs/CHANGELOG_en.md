@@ -74,7 +74,7 @@
 
   - Detection model compression:
     - Distillation: Added dynamic map distillation support and released YOLOv3-MobileNetV1 distillation model
-    - Joint strategy: new dynamic graph clipping + distillation joint strategy compression scheme, and release YOLOv3-MobileNetV1 clipping + distillation compression model
+    - Joint strategy: new dynamic graph prunning + distillation joint strategy compression scheme, and release YOLOv3-MobileNetV1 prunning + distillation compression model
     - Problem fix: Fixed dynamic graph quantization model export problem
 
   - Documents:
@@ -102,7 +102,7 @@
     - Dynamic graph prediction deployment supports TensorRT mode FP32, FP16 inference acceleration
 
   - Detection model compression:
-    - Clipping: Added dynamic graph clipping support, and released YOLOv3-MobileNetV1 clipping model
+    - Prunning: Added dynamic graph prunning support, and released YOLOv3-MobileNetV1 prunning model
     - Quantization: Added quantization support of dynamic graph, and released quantization models of YOLOv3-MobileNetV1 and YOLOv3-MobileNetV3
 
   - Documents:
@@ -114,7 +114,7 @@
   - Dynamic graph support:
     -  Support for Faster-RCNN, Mask-RCNN, FPN, Cascade Faster/Mask RCNN, YOLOv3 and SSD models, trial version.
   - Model upgrade:
-    - Updated PP-YOLO Mobile-Netv3 large and small models with improved accuracy, and added clipping and distillation models.
+    - Updated PP-YOLO Mobile-Netv3 large and small models with improved accuracy, and added prunning and distillation models.
   - New features:
     - Support VisualDL visual data preprocessing pictures.
 
@@ -197,10 +197,10 @@
     - dd face detection prediction benchmark data.
     - Added C++ prediction engine Python API prediction example.
   - Detection model compression:
-    - clipping: Release MobileNet-YOLOv3 clipping scheme and model, based on VOC data FLOPs 69.6%, mAP + 1.4%, based on COCO DATA FLOPS 28.8%, mAP + 0.9%; Release ResNet50vd-DCN-YOLOv3 clipped solution and model based on COCO datasets 18.4%, mAP + 0.8%.
+    - prunning: Release MobileNet-YOLOv3 prunning scheme and model, based on VOC data FLOPs 69.6%, mAP + 1.4%, based on COCO DATA FLOPS 28.8%, mAP + 0.9%; Release ResNet50vd-DCN-YOLOv3 clipped solution and model based on COCO datasets 18.4%, mAP + 0.8%.
     - Distillation: Release MobileNet-YOLOv3 distillation scheme and model, based on VOC data mAP + 2.8%, COCO data mAP + 2.1%.
     - Quantification: Release quantification models of YOLOv3 Mobile Net and Blaze Face.
-    - Clipping + distillation: release MobileNet-YOLOv3 clipping + distillation solution and model, 69.6% based on COCO DATA FLOPS, 64.5% based on TensorRT prediction acceleration, 0.3% mAP; Release ResNet50vd-DCN-YOLOv3 tailoring + distillation solution and model, 43.7% based on COCO Data FLOPS, 24.0% based on TensorRT prediction acceleration, mAP + 0.6%.
+    - Prunning + distillation: release MobileNet-YOLOv3 prunning + distillation solution and model, 69.6% based on COCO DATA FLOPS, 64.5% based on TensorRT prediction acceleration, 0.3% mAP; Release ResNet50vd-DCN-YOLOv3 tailoring + distillation solution and model, 43.7% based on COCO Data FLOPS, 24.0% based on TensorRT prediction acceleration, mAP + 0.6%.
     - Search: Open source Blaze Face Nas complete search solution.
   - Predict deployment:
     - Integrated TensorRT, support FP16, FP32, INT8 quantitative inference acceleration.
