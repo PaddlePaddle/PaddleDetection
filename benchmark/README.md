@@ -33,7 +33,7 @@ bash benchmark/run_all.sh
 
 ### 运行指定模型
 * Usage：bash run_benchmark.sh ${run_mode} ${batch_size} ${fp_item} ${max_epoch} ${model_name}
-* model_name: faster_rcnn, fcos, deformable_detr, gfl
+* model_name: faster_rcnn, fcos, deformable_detr, gfl, hrnet, higherhrnet, solov2, jde, fairmot
 ```
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
 cd PaddleDetection
@@ -42,5 +42,5 @@ bash benchmark/prepare.sh
 # 单卡
 CUDA_VISIBLE_DEVICES=0 bash benchmark/run_benchmark.sh sp 2 fp32 1 faster_rcnn
 # 多卡
-CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 bash run_benchmark.sh mp 2 fp32 1 faster_rcnn
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 bash benchmark/run_benchmark.sh mp 2 fp32 1 faster_rcnn
 ```
