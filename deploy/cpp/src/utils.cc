@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "include/util.h"
+#include "include/utils.h"
+
+namespace DetectionUtils {
 
 void nms(std::vector<ObjectResult> &input_boxes, float nms_threshold)
 {
@@ -49,3 +51,5 @@ void nms(std::vector<ObjectResult> &input_boxes, float nms_threshold)
     }
   }
 }
+
+}  // namespace DetectionUtils

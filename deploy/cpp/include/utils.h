@@ -22,6 +22,8 @@
 #include <numeric>
 #include <algorithm>
 
+namespace DetectionUtils {
+
 // Object Detection Result
 struct ObjectResult {
   // Rectangle coordinates of detected object: left, right, top, down
@@ -33,3 +35,5 @@ struct ObjectResult {
 };
 
 void nms(std::vector<ObjectResult> &input_boxes, float nms_threshold);
+
+}  // namespace DetectionUtils

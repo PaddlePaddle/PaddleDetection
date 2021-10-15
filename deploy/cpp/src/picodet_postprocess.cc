@@ -14,10 +14,8 @@
 
 #include "include/picodet_postprocess.h"
 
-float fast_exp(float x)
-{
-    union
-    {
+float fast_exp(float x) {
+    union {
         uint32_t i;
         float f;
     } v{};
@@ -26,19 +24,16 @@ float fast_exp(float x)
 }
 
 template <typename _Tp>
-int activation_function_softmax(const _Tp *src, _Tp *dst, int length)
-{
+int activation_function_softmax(const _Tp *src, _Tp *dst, int length) {
     const _Tp alpha = *std::max_element(src, src + length);
     _Tp denominator{0};
 
-    for (int i = 0; i < length; ++i)
-    {
+    for (int i = 0; i < length; ++i) {
         dst[i] = fast_exp(src[i] - alpha);
         denominator += dst[i];
     }
 
-    for (int i = 0; i < length; ++i)
-    {
+    for (int i = 0; i < length; ++i) {
         dst[i] /= denominator;
     }
 
@@ -46,21 +41,18 @@ int activation_function_softmax(const _Tp *src, _Tp *dst, int length)
 }
 
 // PicoDet decode
-ObjectResult disPred2Bbox(const float *&dfl_det, int label, float score,
+DetectionUtils::ObjectResult disPred2Bbox(const float *&dfl_det, int label, float score,
                       int x, int y, int stride, std::vector<float> im_shape,
-                      int reg_max)
-{
+                      int reg_max) {
     float ct_x = (x + 0.5) * stride;
     float ct_y = (y + 0.5) * stride;
     std::vector<float> dis_pred;
     dis_pred.resize(4);
-    for (int i = 0; i < 4; i++)
-    {
+    for (int i = 0; i < 4; i++) {
       float dis = 0;
       float* dis_after_sm = new float[reg_max + 1];
       activation_function_softmax(dfl_det + i * (reg_max + 1), dis_after_sm, reg_max + 1);
-      for (int j = 0; j < reg_max + 1; j++)
-      {
+      for (int j = 0; j < reg_max + 1; j++) {
           dis += j * dis_after_sm[j];
       }
       dis *= stride;
@@ -72,7 +64,7 @@ ObjectResult disPred2Bbox(const float *&dfl_det, int label, float score,
     int xmax = (int)(std::min)(ct_x + dis_pred[2], (float)im_shape[0]);
     int ymax = (int)(std::min)(ct_y + dis_pred[3], (float)im_shape[1]);
 
-    ObjectResult result_item;
+    DetectionUtils::ObjectResult result_item;
     result_item.rect = {xmin, ymin, xmax, ymax};
     result_item.class_id = label;
     result_item.confidence = score;
@@ -81,7 +73,7 @@ ObjectResult disPred2Bbox(const float *&dfl_det, int label, float score,
 }
 
 
-void picodet_postprocess(std::vector<ObjectResult>* results,
+void PicoDetPostProcess(std::vector<DetectionUtils::ObjectResult>* results,
                          std::vector<const float *> outs,
                          std::vector<int> fpn_stride,
                          std::vector<float> im_shape,
@@ -89,32 +81,27 @@ void picodet_postprocess(std::vector<ObjectResult>* results,
                          float score_threshold,
                          float nms_threshold,
                          int num_class,
-                         int reg_max)
-{
-  std::vector<std::vector<ObjectResult>> bbox_results;
+                         int reg_max) {
+  std::vector<std::vector<DetectionUtils::ObjectResult>> bbox_results;
   bbox_results.resize(num_class);
   int in_h = im_shape[0], in_w = im_shape[1];
   for (int i = 0; i < fpn_stride.size(); ++i) {
     int feature_h = in_h / fpn_stride[i];
     int feature_w = in_w / fpn_stride[i];
-    for (int idx = 0; idx < feature_h * feature_w; idx++)
-    {
+    for (int idx = 0; idx < feature_h * feature_w; idx++) {
       const float *scores = outs[i] + (idx * num_class);
 
       int row = idx / feature_w;
       int col = idx % feature_w;
       float score = 0;
       int cur_label = 0;
-      for (int label = 0; label < num_class; label++)
-      {
-        if (scores[label] > score)
-        {
+      for (int label = 0; label < num_class; label++) {
+        if (scores[label] > score) {
           score = scores[label];
           cur_label = label;
         }
       }
-      if (score > score_threshold)
-      {
+      if (score > score_threshold) {
         const float *bbox_pred = outs[i + fpn_stride.size()]
               + (idx * 4 * (reg_max + 1));
         bbox_results[cur_label].push_back(disPred2Bbox(bbox_pred, 
@@ -122,12 +109,10 @@ void picodet_postprocess(std::vector<ObjectResult>* results,
       }
     }
   }
-  for (int i = 0; i < (int)bbox_results.size(); i++)
-  {
-    nms(bbox_results[i], nms_threshold);
+  for (int i = 0; i < (int)bbox_results.size(); i++) {
+    DetectionUtils::nms(bbox_results[i], nms_threshold);
 
-    for (auto box : bbox_results[i])
-    {
+    for (auto box : bbox_results[i]) {
         box.rect[0] = box.rect[0] / scale_factor[1];
         box.rect[2] = box.rect[2] / scale_factor[1];
         box.rect[1] = box.rect[1] / scale_factor[0];

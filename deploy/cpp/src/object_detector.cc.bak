@@ -288,12 +288,12 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
     predictor_->Run();
     // Get output tensor
     auto output_names = predictor_->GetOutputNames();
-    for (int j = 0; j < output_names.size(); j++) {
-      auto output_tensor = predictor_->GetOutputHandle(output_names[j]);
+    for (auto out_name : output_names) {
+      auto output_tensor = predictor_->GetOutputHandle(out_name);
       std::vector<int> output_shape = output_tensor->shape();
       int out_num = std::accumulate(output_shape.begin(), output_shape.end(), 
                             1, std::multiplies<int>());
-      if (config_.arch_ != "PicoDet" && j == 1) {
+      if (config_.arch_ != "PicoDet") {
         out_bbox_num_data_.resize(out_num);
         output_tensor->CopyToCpu(out_bbox_num_data_.data());
       } else {
@@ -320,7 +320,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
                             1, std::multiplies<int>());
       out_num_list.push_back(out_num);
       output_shape_list.push_back(output_shape);
-      if (config_.arch_ != "PicoDet" && j == 1) {
+      if (config_.arch_ != "PicoDet") {
         out_bbox_num_data_.resize(out_num);
         output_tensor->CopyToCpu(out_bbox_num_data_.data());
       } else {
@@ -329,6 +329,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
         output_tensor->CopyToCpu(out_data.data());
         out_tensor_list.push_back(out_data);
       }
+      
     }
   }
   auto inference_end = std::chrono::steady_clock::now();

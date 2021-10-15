@@ -21,9 +21,9 @@
 #include <ctime>
 #include <numeric>
 
-#include "include/util.h"
+#include "include/utils.h"
 
-void picodet_postprocess(std::vector<ObjectResult>* results,
+void PicoDetPostProcess(std::vector<DetectionUtils::ObjectResult>* results,
                          std::vector<const float *> outs,
                          std::vector<int> fpn_stride,
                          std::vector<float> im_shape,
