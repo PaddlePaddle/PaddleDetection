@@ -23,7 +23,9 @@
 
 #include "include/utils.h"
 
-void PicoDetPostProcess(std::vector<DetectionUtils::ObjectResult>* results,
+namespace PaddleDetection {
+
+void PicoDetPostProcess(std::vector<PaddleDetection::ObjectResult>* results,
                          std::vector<const float *> outs,
                          std::vector<int> fpn_stride,
                          std::vector<float> im_shape,
@@ -32,3 +34,5 @@ void PicoDetPostProcess(std::vector<DetectionUtils::ObjectResult>* results,
                          float nms_threshold = 0.5,
                          int num_class = 80,
                          int reg_max = 7);
+
+}  // namespace PaddleDetection

@@ -22,7 +22,7 @@
 #include <numeric>
 #include <algorithm>
 
-namespace DetectionUtils {
+namespace PaddleDetection {
 
 // Object Detection Result
 struct ObjectResult {
@@ -36,4 +36,4 @@ struct ObjectResult {
 
 void nms(std::vector<ObjectResult> &input_boxes, float nms_threshold);
 
-}  // namespace DetectionUtils
+}  // namespace PaddleDetection

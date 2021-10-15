@@ -42,7 +42,7 @@ std::vector<int> GenerateColorMap(int num_class);
 
 // Visualiztion Detection Result
 cv::Mat VisualizeResult(const cv::Mat& img,
-                     const std::vector<DetectionUtils::ObjectResult>& results,
+                     const std::vector<PaddleDetection::ObjectResult>& results,
                      const std::vector<std::string>& lables,
                      const std::vector<int>& colormap,
                      const bool is_rbox);
@@ -89,7 +89,7 @@ class ObjectDetector {
       const double threshold = 0.5,
       const int warmup = 0,
       const int repeats = 1,
-      std::vector<DetectionUtils::ObjectResult>* result = nullptr,
+      std::vector<PaddleDetection::ObjectResult>* result = nullptr,
       std::vector<int>* bbox_num = nullptr,
       std::vector<double>* times = nullptr);
 
@@ -114,7 +114,7 @@ class ObjectDetector {
   // Postprocess result
   void Postprocess(
       const std::vector<cv::Mat> mats,
-      std::vector<DetectionUtils::ObjectResult>* result,
+      std::vector<PaddleDetection::ObjectResult>* result,
       std::vector<int> bbox_num,
       bool is_rbox);
 

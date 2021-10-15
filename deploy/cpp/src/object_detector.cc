@@ -93,7 +93,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
 
 // Visualiztion MaskDetector results
 cv::Mat VisualizeResult(const cv::Mat& img,
-                        const std::vector<DetectionUtils::ObjectResult>& results,
+                        const std::vector<PaddleDetection::ObjectResult>& results,
                         const std::vector<std::string>& lables,
                         const std::vector<int>& colormap,
                         const bool is_rbox=false) {
@@ -170,7 +170,7 @@ void ObjectDetector::Preprocess(const cv::Mat& ori_im) {
 
 void ObjectDetector::Postprocess(
     const std::vector<cv::Mat> mats,
-    std::vector<DetectionUtils::ObjectResult>* result,
+    std::vector<PaddleDetection::ObjectResult>* result,
     std::vector<int> bbox_num,
     bool is_rbox=false) {
   result->clear();
@@ -198,7 +198,7 @@ void ObjectDetector::Postprocess(
         int x4 = (output_data_[8 + j * 10] * rw);
         int y4 = (output_data_[9 + j * 10] * rh);
           
-        DetectionUtils::ObjectResult result_item;
+        PaddleDetection::ObjectResult result_item;
         result_item.rect = {x1, y1, x2, y2, x3, y3, x4, y4};
         result_item.class_id = class_id;
         result_item.confidence = score;
@@ -216,7 +216,7 @@ void ObjectDetector::Postprocess(
         int wd = xmax - xmin;
         int hd = ymax - ymin;
           
-        DetectionUtils::ObjectResult result_item;
+        PaddleDetection::ObjectResult result_item;
         result_item.rect = {xmin, ymin, xmax, ymax};
         result_item.class_id = class_id;
         result_item.confidence = score;
@@ -231,7 +231,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
       const double threshold,
       const int warmup,
       const int repeats,
-      std::vector<DetectionUtils::ObjectResult>* result,
+      std::vector<PaddleDetection::ObjectResult>* result,
       std::vector<int>* bbox_num,
       std::vector<double>* times) {
   auto preprocess_start = std::chrono::steady_clock::now();
@@ -348,7 +348,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
       memcpy(buffer, &out_tensor_list[i][0], out_tensor_list[i].size()*sizeof(float));
       output_data_list_.push_back(buffer);
     }
-    PicoDetPostProcess(result, output_data_list_, config_.fpn_stride_, 
+    PaddleDetection::PicoDetPostProcess(result, output_data_list_, config_.fpn_stride_, 
         inputs_.im_shape_, inputs_.scale_factor_,
         config_.nms_info_["score_threshold"].as<float>(), 
         config_.nms_info_["nms_threshold"].as<float>(), num_class, reg_max);

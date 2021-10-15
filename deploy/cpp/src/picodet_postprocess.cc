@@ -14,6 +14,8 @@
 
 #include "include/picodet_postprocess.h"
 
+namespace PaddleDetection {
+
 float fast_exp(float x) {
     union {
         uint32_t i;
@@ -41,7 +43,7 @@ int activation_function_softmax(const _Tp *src, _Tp *dst, int length) {
 }
 
 // PicoDet decode
-DetectionUtils::ObjectResult disPred2Bbox(const float *&dfl_det, int label, float score,
+PaddleDetection::ObjectResult disPred2Bbox(const float *&dfl_det, int label, float score,
                       int x, int y, int stride, std::vector<float> im_shape,
                       int reg_max) {
     float ct_x = (x + 0.5) * stride;
@@ -64,7 +66,7 @@ DetectionUtils::ObjectResult disPred2Bbox(const float *&dfl_det, int label, floa
     int xmax = (int)(std::min)(ct_x + dis_pred[2], (float)im_shape[0]);
     int ymax = (int)(std::min)(ct_y + dis_pred[3], (float)im_shape[1]);
 
-    DetectionUtils::ObjectResult result_item;
+    PaddleDetection::ObjectResult result_item;
     result_item.rect = {xmin, ymin, xmax, ymax};
     result_item.class_id = label;
     result_item.confidence = score;
@@ -73,7 +75,7 @@ DetectionUtils::ObjectResult disPred2Bbox(const float *&dfl_det, int label, floa
 }
 
 
-void PicoDetPostProcess(std::vector<DetectionUtils::ObjectResult>* results,
+void PicoDetPostProcess(std::vector<PaddleDetection::ObjectResult>* results,
                          std::vector<const float *> outs,
                          std::vector<int> fpn_stride,
                          std::vector<float> im_shape,
@@ -82,7 +84,7 @@ void PicoDetPostProcess(std::vector<DetectionUtils::ObjectResult>* results,
                          float nms_threshold,
                          int num_class,
                          int reg_max) {
-  std::vector<std::vector<DetectionUtils::ObjectResult>> bbox_results;
+  std::vector<std::vector<PaddleDetection::ObjectResult>> bbox_results;
   bbox_results.resize(num_class);
   int in_h = im_shape[0], in_w = im_shape[1];
   for (int i = 0; i < fpn_stride.size(); ++i) {
@@ -110,7 +112,7 @@ void PicoDetPostProcess(std::vector<DetectionUtils::ObjectResult>* results,
     }
   }
   for (int i = 0; i < (int)bbox_results.size(); i++) {
-    DetectionUtils::nms(bbox_results[i], nms_threshold);
+    PaddleDetection::nms(bbox_results[i], nms_threshold);
 
     for (auto box : bbox_results[i]) {
         box.rect[0] = box.rect[0] / scale_factor[1];
@@ -121,3 +123,5 @@ void PicoDetPostProcess(std::vector<DetectionUtils::ObjectResult>* results,
     }
   }
 }
+
+}  // namespace PaddleDetection
