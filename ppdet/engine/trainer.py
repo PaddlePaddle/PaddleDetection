@@ -428,7 +428,11 @@ class Trainer(object):
             for metric in self._metrics:
                 metric.update(data, outs)
 
-            sample_num += data['im_id'].numpy().shape[0]
+            # multi-scale inputs: all inputs have same im_id
+            if type(data) in (list, tuple):
+                sample_num += data[0]['im_id'].numpy().shape[0]
+            else:
+                sample_num += data['im_id'].numpy().shape[0]
             self._compose_callback.on_step_end(self.status)
 
         self.status['sample_num'] = sample_num

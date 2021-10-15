@@ -97,7 +97,11 @@ class COCOMetric(Metric):
         for k, v in outputs.items():
             outs[k] = v.numpy() if isinstance(v, paddle.Tensor) else v
 
-        im_id = inputs['im_id']
+        # multi-scale inputs: all inputs have same im_id
+        if type(inputs) in (list, tuple):
+            im_id = inputs[0]['im_id']
+        else:
+            im_id = inputs['im_id']
         outs['im_id'] = im_id.numpy() if isinstance(im_id,
                                                     paddle.Tensor) else im_id
 
