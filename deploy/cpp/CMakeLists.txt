@@ -217,7 +217,7 @@ if (NOT WIN32)
 endif()
 
 set(DEPS ${DEPS} ${OpenCV_LIBS})
-add_executable(main src/main.cc src/preprocess_op.cc src/object_detector.cc)
+add_executable(main src/main.cc src/preprocess_op.cc src/object_detector.cc src/jde_detector.cc src/tracker.cc src/trajectory.cc src/lapjv.cpp)
 ADD_DEPENDENCIES(main ext-yaml-cpp)
 message("DEPS:" $DEPS)
 target_link_libraries(main ${DEPS})
