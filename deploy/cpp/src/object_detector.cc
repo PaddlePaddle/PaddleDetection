@@ -172,6 +172,7 @@ void ObjectDetector::Postprocess(
     const std::vector<cv::Mat> mats,
     std::vector<PaddleDetection::ObjectResult>* result,
     std::vector<int> bbox_num,
+    std::vector<float> output_data_,
     bool is_rbox=false) {
   result->clear();
   int start_idx = 0;
@@ -242,6 +243,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   std::vector<float> im_shape_all(batch_size * 2);
   std::vector<float> scale_factor_all(batch_size * 2);
   std::vector<const float *> output_data_list_;
+  std::vector<int> out_bbox_num_data_;
   
   // Preprocess image
   for (int bs_idx = 0; bs_idx < batch_size; bs_idx++) {
@@ -278,7 +280,6 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   
   // Run predictor
   std::vector<std::vector<float>> out_tensor_list;
-  std::vector<int> out_num_list;
   std::vector<std::vector<int>> output_shape_list;
   bool is_rbox = false;
   int reg_max = 7;
@@ -293,7 +294,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
       std::vector<int> output_shape = output_tensor->shape();
       int out_num = std::accumulate(output_shape.begin(), output_shape.end(), 
                             1, std::multiplies<int>());
-      if (config_.arch_ != "PicoDet" && j == 1) {
+      if (output_tensor->type() == paddle_infer::DataType::INT32) {
         out_bbox_num_data_.resize(out_num);
         output_tensor->CopyToCpu(out_bbox_num_data_.data());
       } else {
@@ -310,7 +311,6 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
     predictor_->Run();
     // Get output tensor
     out_tensor_list.clear();
-    out_num_list.clear();
     output_shape_list.clear();
     auto output_names = predictor_->GetOutputNames();
     for (int j = 0; j < output_names.size(); j++) {
@@ -318,9 +318,8 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
       std::vector<int> output_shape = output_tensor->shape();
       int out_num = std::accumulate(output_shape.begin(), output_shape.end(), 
                             1, std::multiplies<int>());
-      out_num_list.push_back(out_num);
       output_shape_list.push_back(output_shape);
-      if (config_.arch_ != "PicoDet" && j == 1) {
+      if (output_tensor->type() == paddle_infer::DataType::INT32) {
         out_bbox_num_data_.resize(out_num);
         output_tensor->CopyToCpu(out_bbox_num_data_.data());
       } else {
@@ -345,22 +344,19 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
         reg_max = output_shape_list[i][2] / 4 - 1;
       }
       float *buffer = new float[out_tensor_list[i].size()];
-      memcpy(buffer, &out_tensor_list[i][0], out_tensor_list[i].size()*sizeof(float));
+      memcpy(buffer, &out_tensor_list[i][0], 
+                out_tensor_list[i].size()*sizeof(float));
       output_data_list_.push_back(buffer);
     }
-    PaddleDetection::PicoDetPostProcess(result, output_data_list_, config_.fpn_stride_, 
+    PaddleDetection::PicoDetPostProcess(
+        result, output_data_list_, config_.fpn_stride_, 
         inputs_.im_shape_, inputs_.scale_factor_,
         config_.nms_info_["score_threshold"].as<float>(), 
         config_.nms_info_["nms_threshold"].as<float>(), num_class, reg_max);
     bbox_num->push_back(result->size());
   } else {
-    if (out_num_list[0] < 6) {
-      std::cerr << "[WARNING] No object detected." << std::endl;
-    }
     is_rbox = output_shape_list[0][output_shape_list[0].size()-1] % 10 == 0;
-    output_data_.resize(out_num_list[0]);
-    out_tensor_list[0].assign(output_data_.begin(), output_data_.end());
-    Postprocess(imgs, result, out_bbox_num_data_, is_rbox);
+    Postprocess(imgs, result, out_bbox_num_data_, out_tensor_list[0], is_rbox);
     for (int k=0; k < out_bbox_num_data_.size(); k++) {
       int tmp = out_bbox_num_data_[k];
       bbox_num->push_back(tmp);

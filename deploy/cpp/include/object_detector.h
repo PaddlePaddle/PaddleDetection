@@ -116,13 +116,12 @@ class ObjectDetector {
       const std::vector<cv::Mat> mats,
       std::vector<PaddleDetection::ObjectResult>* result,
       std::vector<int> bbox_num,
+      std::vector<float> output_data_,
       bool is_rbox);
 
   std::shared_ptr<Predictor> predictor_;
   Preprocessor preprocessor_;
   ImageBlob inputs_;
-  std::vector<float> output_data_;
-  std::vector<int> out_bbox_num_data_;
   float threshold_;
   ConfigPaser config_;
 
