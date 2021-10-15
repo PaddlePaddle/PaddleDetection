@@ -204,6 +204,8 @@ class DecodeCache(BaseOperator):
         sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
         sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
 
+        sample.pop('im_file')
+
         return sample
 
     @staticmethod

@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -xe
-# Usage：CUDA_VISIBLE_DEVICES=0 bash run_benchmark.sh ${run_mode} ${batch_size} ${fp_item} ${max_epoch} ${model_name}
+# Usage：CUDA_VISIBLE_DEVICES=0 bash benchmark/run_benchmark.sh ${run_mode} ${batch_size} ${fp_item} ${max_epoch} ${model_name}
 python="python3.7"
 # Parameter description
 function _set_params(){
     run_mode=${1:-"sp"}            # sp|mp
-    batch_size=${2:-"2"}           #
+    batch_size=${2:-"2"}
     fp_item=${3:-"fp32"}           # fp32|fp16
-    max_epoch=${4:-"1"}            #
+    max_epoch=${4:-"1"}
     model_name=${5:-"model_name"}
-    run_log_path=${TRAIN_LOG_DIR:-$(pwd)}  # TRAIN_LOG_DIR
+    run_log_path=${TRAIN_LOG_DIR:-$(pwd)}
 
     device=${CUDA_VISIBLE_DEVICES//,/ }
     arr=(${device})
@@ -26,6 +26,9 @@ function _train(){
         fcos) model_yml="configs/fcos/fcos_r50_fpn_1x_coco.yml" ;;
         deformable_detr) model_yml="configs/deformable_detr/deformable_detr_r50_1x_coco.yml" ;;
         gfl) model_yml="configs/gfl/gfl_r50_fpn_1x_coco.yml" ;;
+        hrnet) model_yml="configs/keypoint/hrnet/hrnet_w32_256x192.yml" ;;
+        higherhrnet) model_yml="configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml" ;;
+        solov2) model_yml="configs/solov2/solov2_r50_fpn_1x_coco.yml" ;;
         jde) model_yml="configs/mot/jde/jde_darknet53_30e_1088x608.yml" ;;
         fairmot) model_yml="configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml" ;;
         *) echo "Undefined model_name"; exit 1;
@@ -33,7 +36,7 @@ function _train(){
 
     set_batch_size="TrainReader.batch_size=${batch_size}"
     set_max_epoch="epoch=${max_epoch}"
-    set_log_iter="log_iter=10"
+    set_log_iter="log_iter=1"
     if [ ${fp_item} = "fp16" ]; then
         set_fp_item="--fp16"
     else
@@ -49,7 +52,7 @@ function _train(){
             log_parse_file="mylog/workerlog.0" ;;
         *) echo "choose run_mode(sp or mp)"; exit 1;
     esac
-#
+
     timeout 15m ${train_cmd} > ${log_file} 2>&1
     if [ $? -ne 0 ];then
         echo -e "${train_cmd}, FAIL"

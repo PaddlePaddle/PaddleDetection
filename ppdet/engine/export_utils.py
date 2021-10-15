@@ -20,6 +20,7 @@ import os
 import yaml
 from collections import OrderedDict
 
+import paddle
 from ppdet.data.source.category import get_categories
 
 from ppdet.utils.logger import setup_logger
@@ -48,6 +49,24 @@ TRT_MIN_SUBGRAPH = {
 
 KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
 MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT']
+
+
+def _prune_input_spec(input_spec, program, targets):
+    # try to prune static program to figure out pruned input spec
+    # so we perform following operations in static mode
+    paddle.enable_static()
+    pruned_input_spec = [{}]
+    program = program.clone()
+    program = program._prune(targets=targets)
+    global_block = program.global_block()
+    for name, spec in input_spec[0].items():
+        try:
+            v = global_block.var(name)
+            pruned_input_spec[0][name] = spec
+        except Exception:
+            pass
+    paddle.disable_static()
+    return pruned_input_spec
 
 
 def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
@@ -97,7 +116,7 @@ def _dump_infer_config(config, path, image_shape, model):
     arch_state = False
     from ppdet.core.config.yaml_helpers import setup_orderdict
     setup_orderdict()
-    use_dynamic_shape = True if image_shape[1] == -1 else False
+    use_dynamic_shape = True if image_shape[2] == -1 else False
     infer_cfg = OrderedDict({
         'mode': 'fluid',
         'draw_threshold': 0.5,
@@ -141,7 +160,7 @@ def _dump_infer_config(config, path, image_shape, model):
         dataset_cfg = config['TestDataset']
 
     infer_cfg['Preprocess'], infer_cfg['label_list'] = _parse_reader(
-        reader_cfg, dataset_cfg, config['metric'], label_arch, image_shape)
+        reader_cfg, dataset_cfg, config['metric'], label_arch, image_shape[1:])
 
     yaml.dump(infer_cfg, open(path, 'w'))
     logger.info("Export inference config file to {}".format(os.path.join(path)))
