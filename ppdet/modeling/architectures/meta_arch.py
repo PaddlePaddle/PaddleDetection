@@ -2,9 +2,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import numpy as np
 import paddle
 import paddle.nn as nn
 from ppdet.core.workspace import register
+from static.ppdet.utils.post_process import nms
 
 __all__ = ['BaseArch']
 
@@ -26,6 +28,7 @@ class BaseArch(nn.Layer):
             out = self.get_loss()
         else:
             inputs_list = []
+            # multi-scale input
             if type(inputs) not in (list, tuple):
                 inputs_list.append(inputs)
             else:
@@ -35,7 +38,44 @@ class BaseArch(nn.Layer):
             for inp in inputs_list:
                 self.inputs = inp
                 outs.append(self.get_pred())
-            out = outs[0]
+
+            # multi-scale test
+            if len(outs)>1:
+                out = self.merge_multi_scale_predictions(outs)
+            else:
+                out = outs[0]
+        return out
+
+    def merge_multi_scale_predictions(self, outs):
+        # default values for architectures not included in following list
+        num_classes = 80
+        nms_threshold = 0.5
+        keep_top_k = 100
+
+        if self.__class__.__name__ in ('CascadeRCNN', ):
+            num_classes = self.bbox_head.num_classes
+            keep_top_k = self.bbox_head.nms.keep_top_k
+            nms_threshold = self.bbox_head.nms.nms_threshold
+        elif self.__class__.__name__ in ('FasterRCNN', 'MaskRCNN'):
+            num_classes = self.bbox_head.num_classes
+            keep_top_k = self.bbox_post_process.nms.keep_top_k
+            nms_threshold = self.bbox_post_process.nms.nms_threshold
+
+        final_boxes = []
+        all_scale_outs = paddle.concat([o['bbox'] for o in outs]).numpy()
+        for c in range(num_classes):
+            idxs = all_scale_outs[:, 0] == c
+            if np.count_nonzero(idxs) == 0:
+                continue
+            r = nms(all_scale_outs[idxs, 1:], nms_threshold)
+            final_boxes.append(np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+        out = np.concatenate(final_boxes)
+        out = np.concatenate(sorted(out, key=lambda e: e[1])[-keep_top_k:]).reshape((-1, 6))
+        out = {
+            'bbox': paddle.to_tensor(out),
+            'bbox_num': paddle.to_tensor(np.array([out.shape[0], ]))
+        }
+
         return out
 
     def build_inputs(self, data, input_def):
