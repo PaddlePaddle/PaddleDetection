@@ -475,7 +475,10 @@ class Trainer(object):
             outs = self.model(data)
 
             for key in ['im_shape', 'scale_factor', 'im_id']:
-                outs[key] = data[key]
+                if type(data) in (tuple, list):
+                    outs[key] = data[0][key]
+                else:
+                    outs[key] = data[key]
             for key, value in outs.items():
                 if hasattr(value, 'numpy'):
                     outs[key] = value.numpy()
