@@ -271,7 +271,7 @@ class ShuffleUnit(nn.Layer):
                  norm_decay=0.):
         super(ShuffleUnit, self).__init__()
         branch_channel = out_channel // 2
-        stride = self.stride
+        self.stride = stride
         if self.stride == 1:
             assert (
                 in_channel == branch_channel * 2,
@@ -544,11 +544,11 @@ class LiteHRNetModule(nn.Layer):
                     norm_decay=norm_decay))
         return nn.Sequential(*layers)
 
-    def _make_naive_branchs(self,
-                            num_branches,
-                            num_blocks,
-                            freeze_norm=False,
-                            norm_decay=0.):
+    def _make_naive_branches(self,
+                             num_branches,
+                             num_blocks,
+                             freeze_norm=False,
+                             norm_decay=0.):
         branches = []
         for branch_idx in range(num_branches):
             layers = []
@@ -644,7 +644,7 @@ class LiteHRNetModule(nn.Layer):
             out = self.layers(x)
         elif self.module_type == 'NAIVE':
             for i in range(self.num_branches):
-                x[i] = self.layers(x[i])
+                x[i] = self.layers[i](x[i])
             out = x
         if self.with_fuse:
             out_fuse = []
