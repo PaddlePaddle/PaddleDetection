@@ -185,6 +185,7 @@ class Checkpointer(Callback):
                             key, self.best_ap))
 
                 if 'ema_eval' in status and status['ema_eval']:
+                    end_epoch = self.model.cfg.epoch
                     weight = self.weight
                     save_name = '{}_ema'.format(
                         str(epoch_id)

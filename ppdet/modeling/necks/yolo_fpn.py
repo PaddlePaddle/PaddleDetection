@@ -114,7 +114,7 @@ class SPP(nn.Layer):
                  ch_out,
                  k,
                  pool_size,
-                 norm_type,
+                 norm_type='bn',
                  freeze_norm=False,
                  name='',
                  act='leaky',
@@ -978,6 +978,222 @@ class PPYOLOPAN(nn.Layer):
             return {'yolo_feats': pan_feats[::-1], 'emb_feats': emb_feats}
         else:
             return pan_feats[::-1]
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {'in_channels': [i.channels for i in input_shape], }
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=c) for c in self._out_channels]
+
+
+class EffectiveSELayer(nn.Layer):
+    """ Effective Squeeze-Excitation
+    From `CenterMask : Real-Time Anchor-Free Instance Segmentation` - https://arxiv.org/abs/1911.06667
+    """
+
+    def __init__(self, channels, act='hardsigmoid'):
+        super(EffectiveSELayer, self).__init__()
+        self.fc = nn.Conv2D(channels, channels, kernel_size=1, padding=0)
+        self.act = act
+
+    def forward(self, x):
+        x_se = x.mean((2, 3), keepdim=True)
+        x_se = self.fc(x_se)
+        return x * getattr(F, self.act)(x_se)
+
+
+class FusionConvV2(nn.Layer):
+    def __init__(self, ch_in, ch_out, act='leaky'):
+        super(FusionConvV2, self).__init__()
+
+        ch_mid = int(ch_out // 2)
+        self.conv1 = ConvBNLayer(ch_in, ch_mid, 1, act=act)
+        self.conv2 = ConvBNLayer(ch_mid, ch_mid, 3, padding=1, act=act)
+        self.conv3 = ConvBNLayer(ch_mid, ch_mid, 3, padding=1, act=act)
+        self.conv4 = ConvBNLayer(ch_mid * 2, ch_out, 1, act=act)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        y1 = self.conv2(x)
+        y2 = self.conv3(y1)
+        y = paddle.concat([y1, y2], axis=1)
+        y = self.conv4(y)
+        return y
+
+
+class CSPFusionBlock(nn.Layer):
+    def __init__(self, ch_in, ch_out, n, attn='eca', act='leaky', spp=False):
+        super(CSPFusionBlock, self).__init__()
+
+        ch_mid = int(ch_out // 2)
+        self.conv1 = ConvBNLayer(ch_in, ch_mid, 1, act=act)
+        self.convs = nn.Sequential()
+        next_ch_in = ch_in
+        for i in range(n):
+            self.convs.add_sublayer(
+                str(i), FusionConvV2(
+                    next_ch_in, ch_mid, act=act))
+            if i == (n - 1) // 2 and spp:
+                self.convs.add_sublayer(
+                    'spp', SPP(ch_mid * 4, ch_mid, 1, [5, 9, 13], act=act))
+            next_ch_in = ch_mid
+
+        if attn:
+            self.attn = EffectiveSELayer(ch_mid * 2, act='sigmoid')
+        else:
+            self.attn = None
+        self.conv2 = ConvBNLayer(ch_mid * 2, ch_out, 1, act=act)
+
+    def forward(self, x):
+        y1 = self.conv1(x)
+        y2 = self.convs(x)
+        y = paddle.concat([y1, y2], axis=1)
+        if self.attn is not None:
+            y = self.attn(y)
+
+        y = self.conv2(y)
+        return y
+
+
+@register
+@serializable
+class CustomPAN(nn.Layer):
+    __shared__ = ['norm_type', 'data_format']
+
+    def __init__(self,
+                 in_channels=[256, 512, 1024],
+                 out_channels=[1024, 512, 256],
+                 norm_type='bn',
+                 act='leaky',
+                 block_func='FusionBlock',
+                 block_per_stage=2,
+                 layer_per_block=2,
+                 drop_block=False,
+                 block_size=3,
+                 keep_prob=0.9,
+                 spp=False,
+                 data_format='NCHW'):
+
+        super(CustomPAN, self).__init__()
+        self.num_blocks = len(in_channels)
+        self.data_format = data_format
+        self._out_channels = out_channels
+        in_channels = in_channels[::-1]
+        fpn_stages = []
+        fpn_routes = []
+        for i, (ch_in, ch_out) in enumerate(zip(in_channels, out_channels)):
+            if i > 0:
+                ch_in += ch_pre // 2
+
+            stage = nn.Sequential()
+            for j in range(block_per_stage):
+                if block_func == 'CSPFusionBlock':
+                    stage.add_sublayer(
+                        str(j),
+                        CSPFusionBlock(
+                            ch_in if j == 0 else ch_out,
+                            ch_out,
+                            layer_per_block,
+                            attn='eca',
+                            act=act,
+                            spp=spp))
+                if block_func not in [
+                        'FusionBlockV3', 'FusionBlockV2', 'CSPFusionBlock'
+                ] and i == 0 and spp and j == (layer_per_block - 1) // 2:
+                    stage.add_sublayer(
+                        'spp',
+                        SPP(ch_out * 4,
+                            ch_out,
+                            1, [5, 9, 13],
+                            act=act,
+                            norm_type=norm_type))
+
+            if drop_block:
+                stage.add_sublayer('drop', DropBlock(block_size, keep_prob))
+
+            fpn_stages.append(stage)
+
+            if i < self.num_blocks - 1:
+                fpn_routes.append(
+                    ConvBNLayer(
+                        ch_in=ch_out,
+                        ch_out=ch_out // 2,
+                        filter_size=1,
+                        stride=1,
+                        padding=0,
+                        act=act,
+                        norm_type=norm_type,
+                        data_format=data_format))
+
+            ch_pre = ch_out
+
+        self.fpn_stages = nn.LayerList(fpn_stages)
+        self.fpn_routes = nn.LayerList(fpn_routes)
+
+        pan_stages = []
+        pan_routes = []
+        for i in reversed(range(self.num_blocks - 1)):
+            pan_routes.append(
+                ConvBNLayer(
+                    ch_in=out_channels[i + 1],
+                    ch_out=out_channels[i + 1],
+                    filter_size=3,
+                    stride=2,
+                    padding=1,
+                    act=act,
+                    norm_type=norm_type,
+                    data_format=data_format))
+
+            ch_in = out_channels[i] + out_channels[i + 1]
+            ch_out = out_channels[i]
+            stage = nn.Sequential()
+            for j in range(block_per_stage):
+                if block_func == 'CSPFusionBlock':
+                    stage.add_sublayer(
+                        str(j),
+                        CSPFusionBlock(
+                            ch_in if j == 0 else ch_out,
+                            ch_out,
+                            layer_per_block,
+                            attn='eca',
+                            act=act,
+                            spp=False))
+
+            if drop_block:
+                stage.add_sublayer('drop', DropBlock(block_size, keep_prob))
+
+            pan_stages.append(stage)
+
+        self.pan_stages = nn.LayerList(pan_stages[::-1])
+        self.pan_routes = nn.LayerList(pan_routes[::-1])
+
+    def forward(self, blocks, for_mot=False):
+        blocks = blocks[::-1]
+        fpn_feats = []
+
+        for i, block in enumerate(blocks):
+            if i > 0:
+                block = paddle.concat([route, block], axis=1)
+            route = self.fpn_stages[i](block)
+            fpn_feats.append(route)
+
+            if i < self.num_blocks - 1:
+                route = self.fpn_routes[i](route)
+                route = F.interpolate(
+                    route, scale_factor=2., data_format=self.data_format)
+
+        pan_feats = [fpn_feats[-1], ]
+        route = fpn_feats[-1]
+        for i in reversed(range(self.num_blocks - 1)):
+            block = fpn_feats[i]
+            route = self.pan_routes[i](route)
+            block = paddle.concat([route, block], axis=1)
+            route = self.pan_stages[i](block)
+            pan_feats.append(route)
+
+        return pan_feats[::-1]
 
     @classmethod
     def from_config(cls, cfg, input_shape):

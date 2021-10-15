@@ -1,0 +1,58 @@
+architecture: YOLOv3
+pretrain_weights: cspdarknet53.pdparams
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+
+YOLOv3:
+  backbone: CSPDarkNet
+  neck: CustomPAN
+  yolo_head: YOLOPHead
+  post_process: BBoxPostProcess
+
+CSPDarkNet:
+  layers: 53
+  return_idx: [2, 3, 4]
+
+CustomPAN:
+  block_per_stage: 1
+  layer_per_block: 2
+  act: 'mish'
+  block_func: 'CSPFusionBlock'
+  block_size: 3
+  keep_prob: 0.9
+  spp: true
+
+YOLOPHead:
+  loss: YOLOPLoss
+  iou_aware: true
+  iou_aware_factor: 0.5
+
+YOLOPLoss:
+  ignore_thresh: 0.7
+  downsample: [32, 16, 8]
+  label_smooth: false
+  scale_x_y: 1.05
+  iou_loss: IouLoss
+  iou_aware_loss: IouAwareLoss
+
+IouLoss:
+  loss_weight: 2.5
+  loss_square: true
+
+IouAwareLoss:
+  loss_weight: 1.0
+
+BBoxPostProcess:
+  decode:
+    name: YOLOPBox
+    downsample_ratio: 32
+    clip_bbox: true
+    scale_x_y: 1.05
+  nms:
+    name: MatrixNMS
+    keep_top_k: 100
+    score_threshold: 0.01
+    post_threshold: 0.01
+    nms_top_k: -1
+    background_label: -1
