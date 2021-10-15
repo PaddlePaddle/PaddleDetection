@@ -56,7 +56,7 @@ wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
 - `width,height`是真实的像素宽高
 - `conf`是目标得分设置为`1`(已经按检测的得分阈值筛选出的检测结果)
 
-- 第2种方式是同时加载检测模型和ReID模型，此处选用JDE版本的YOLOv3，具体配置见`configs/mot/deepsort/_base_/deepsort_yolov3_darknet53_pcb_pyramid_r101.yml`
+- 第2种方式是同时加载检测模型和ReID模型，此处选用JDE版本的YOLOv3，具体配置见`configs/mot/deepsort/_base_/deepsort_jde_yolov3_darknet53_pcb_pyramid_r101.yml`。加载其他通用检测模型可参照`configs/mot/deepsort/_base_/deepsort_yolov3_darknet53_pcb_pyramid_r101.yml`进行修改。
 
 ## 快速开始
 
@@ -66,42 +66,61 @@ wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
 # 加载检测结果文件和ReID模型，得到跟踪结果
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml --det_results_dir {your detection results}
 
-# 加载检测模型和ReID模型，得到跟踪结果
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml
+# 加载JDE YOLOv3行人检测模型和ReID模型，得到跟踪结果
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid_r101.yml
+
+# 或者加载普通YOLOv3行人检测模型和ReID模型，得到跟踪结果
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml --scaled=True
 ```
+**注意:**
+ JDE YOLOv3行人检测模型是和JDE和FairMOT使用同样的MOT数据集训练的，这个模型与普通YOLOv3模型最大的区别是使用了JDEBBoxPostProcess后处理，结果输出坐标没有缩放回原图。
+ 普通YOLOv3行人检测模型不是用MOT数据集训练的，所以精度效果更低, 其模型输出坐标是缩放回原图的。
+ `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
 
 ### 2. 预测
 
 使用单个GPU通过如下命令预测一个视频，并保存为视频
 
 ```bash
-# 加载检测模型和ReID模型，得到跟踪结果
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml --video_file={your video name}.mp4  --save_videos
+# 加载JDE YOLOv3行人检测模型和ReID模型，并保存为视频
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid_r101.yml --video_file={your video name}.mp4  --save_videos
+
+# 或者加载普通YOLOv3行人检测模型和ReID模型，并保存为视频
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml --video_file={your video name}.mp4 --scaled=True --save_videos
 ```
 
 **注意:**
  请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
+ `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
+
 
 ### 3. 导出预测模型
 
 ```bash
-1.先导出检测模型
+# 1.先导出检测模型
+# 导出JDE YOLOv3行人检测模型
 CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/jde_yolov3_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608.pdparams
 
-2.再导出ReID模型
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams
+# 或导出普通YOLOv3行人检测模型
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/pedestrian/pedestrian_yolov3_darknet.yml -o weights=https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams
 
-或
+
+# 2.再导出ReID模型
 CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams
 ```
 
 ### 4. 用导出的模型基于Python去预测
 
 ```bash
-python deploy/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608/ --reid_model_dir=output_inference/deepsort_yolov3_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+# 用导出JDE YOLOv3行人检测模型
+python deploy/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+
+# 或用导出的普通yolov3行人检测模型
+python deploy/python/mot_sde_infer.py --model_dir=output_inference/pedestrian_yolov3_darknet/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
 ```
 **注意:**
- 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_mot_txt_per_img`(对每张图片保存一个txt)表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
 
 ## 引用
 ```

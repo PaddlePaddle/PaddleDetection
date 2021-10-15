@@ -1,7 +1,7 @@
 _BASE_: [
   '../../datasets/mot.yml',
   '../../runtime.yml',
-  '_base_/deepsort_yolov3_darknet53_pcb_pyramid_r101.yml',
+  '_base_/deepsort_jde_yolov3_darknet53_pcb_pyramid_r101.yml',
   '_base_/deepsort_reader_1088x608.yml',
 ]
 
@@ -11,7 +11,7 @@ EvalMOTDataset:
     data_root: MOT16/images/train
     keep_ori_im: True # set as True in DeepSORT
 
-det_weights: https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams
+det_weights: https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608.pdparams
 reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams
 
 DeepSORT:
@@ -19,10 +19,11 @@ DeepSORT:
   reid: PCBPyramid
   tracker: DeepSORTTracker
 
-# General version YOLOv3
-# Using BBoxPostProcess and the bboxes output are scaled to the original image.
+# JDE version YOLOv3 detector for MOT dataset.
+# The most obvious difference is JDEBBoxPostProcess and the bboxes coordinates
+# output are not scaled to the original image.
 YOLOv3:
   backbone: DarkNet
   neck: YOLOv3FPN
   yolo_head: YOLOv3Head
-  post_process: BBoxPostProcess
+  post_process: JDEBBoxPostProcess
