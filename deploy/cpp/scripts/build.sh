@@ -38,11 +38,11 @@ then
   echo "set OPENCV_DIR for x86_64"
   # linux系统通过以下命令下载预编译的opencv
   mkdir -p $(pwd)/deps && cd $(pwd)/deps
-  wget -c https://paddledet.bj.bcebos.com/data/opencv3.4.6gcc8.2ffmpeg.zip
-  unzip opencv3.4.6gcc8.2ffmpeg.zip && cd ..
+  wget -c https://paddledet.bj.bcebos.com/data/opencv-3.4.16_gcc8.2_ffmpeg.tar.gz
+  tar -xvf opencv-3.4.16_gcc8.2_ffmpeg.tar.gz && cd ..
 
   # set OPENCV_DIR
-  OPENCV_DIR=$(pwd)/deps/opencv3.4.6gcc8.2ffmpeg
+  OPENCV_DIR=$(pwd)/deps/opencv-3.4.16_gcc8.2_ffmpeg
 
 elif [ "$MACHINE_TYPE" = "aarch64" ]
 then
