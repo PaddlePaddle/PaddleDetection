@@ -139,10 +139,10 @@ void PredictImage(const std::vector<std::string> all_img_paths,
     bool is_rbox = false;
     if (run_benchmark) {
       det->Predict(
-          batch_imgs, threshold_det, 10, 10, &result, &bbox_num, &det_times);
+          batch_imgs, threshold_det, 50, 50, &result, &bbox_num, &det_times);
     } else {
       det->Predict(
-	  batch_imgs, threshold_det, 0, 1, &result, &bbox_num, &det_times);
+          batch_imgs, threshold_det, 0, 1, &result, &bbox_num, &det_times);
     }
     // get labels and colormap
     auto labels = det->GetLabelList();
@@ -253,7 +253,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
         cv::Mat vis_img = PaddleDetection::VisualizeResult(
             im, im_result, labels, colormap, is_rbox);
         std::string det_savepath =
-            output_path +
+            output_path + "result_" +
             image_file_path.substr(image_file_path.find_last_of('/') + 1);
         cv::imwrite(det_savepath, vis_img, compression_params);
         printf("Visualized output saved as %s\n", det_savepath.c_str());
@@ -265,19 +265,23 @@ void PredictImage(const std::vector<std::string> all_img_paths,
     det_t[2] += det_times[2];
   }
   PrintBenchmarkLog(det_t, all_img_paths.size());
-  PrintBenchmarkLog(keypoint_t, kpts_imgs);
+  if (keypoint) {
+    PrintBenchmarkLog(keypoint_t, kpts_imgs);
+  }
 }
 
 int main(int argc, char** argv) {
   std::cout << "Usage: " << argv[0]
             << " [config_path](option) [image_dir](option)\n";
-  std::string config_path = "runtime_config.json";
+  if (argc < 2) {
+    std::cout << "Usage: ./main det_runtime_config.json" << std::endl;
+    return -1;
+  }
+  std::string config_path = argv[1];
   std::string img_path = "";
-  if (argc >= 2) {
-    config_path = argv[1];
-    if (argc >= 3) {
-      img_path = argv[2];
-    }
+    
+  if (argc >= 3) {
+    img_path = argv[2];
   }
   // Parsing command-line
   PaddleDetection::load_jsonf(config_path, RT_Config);

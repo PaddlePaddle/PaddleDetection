@@ -31,7 +31,7 @@ void ObjectDetector::LoadModel(std::string model_file, int num_theads) {
 
 // Visualiztion MaskDetector results
 cv::Mat VisualizeResult(const cv::Mat& img,
-                        const std::vector<ObjectResult>& results,
+                        const std::vector<PaddleDetection::ObjectResult>& results,
                         const std::vector<std::string>& lables,
                         const std::vector<int>& colormap,
                         const bool is_rbox = false) {
@@ -100,7 +100,7 @@ void ObjectDetector::Preprocess(const cv::Mat& ori_im) {
 }
 
 void ObjectDetector::Postprocess(const std::vector<cv::Mat> mats,
-                                 std::vector<ObjectResult>* result,
+                                 std::vector<PaddleDetection::ObjectResult>* result,
                                  std::vector<int> bbox_num,
                                  bool is_rbox = false) {
   result->clear();
@@ -128,7 +128,7 @@ void ObjectDetector::Postprocess(const std::vector<cv::Mat> mats,
         int x4 = (output_data_[8 + j * 10] * rw);
         int y4 = (output_data_[9 + j * 10] * rh);
 
-        ObjectResult result_item;
+        PaddleDetection::ObjectResult result_item;
         result_item.rect = {x1, y1, x2, y2, x3, y3, x4, y4};
         result_item.class_id = class_id;
         result_item.confidence = score;
@@ -145,7 +145,7 @@ void ObjectDetector::Postprocess(const std::vector<cv::Mat> mats,
         int wd = xmax - xmin;
         int hd = ymax - ymin;
 
-        ObjectResult result_item;
+        PaddleDetection::ObjectResult result_item;
         result_item.rect = {xmin, ymin, xmax, ymax};
         result_item.class_id = class_id;
         result_item.confidence = score;
@@ -160,7 +160,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat>& imgs,
                              const double threshold,
                              const int warmup,
                              const int repeats,
-                             std::vector<ObjectResult>* result,
+                             std::vector<PaddleDetection::ObjectResult>* result,
                              std::vector<int>* bbox_num,
                              std::vector<double>* times) {
   auto preprocess_start = std::chrono::steady_clock::now();
@@ -185,6 +185,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat>& imgs,
         in_data_all.end(), inputs_.im_data_.begin(), inputs_.im_data_.end());
   }
   auto preprocess_end = std::chrono::steady_clock::now();
+  std::vector<const float *> output_data_list_;
   // Prepare input tensor
 
   auto input_names = predictor_->GetInputNames();
@@ -214,16 +215,10 @@ void ObjectDetector::Predict(const std::vector<cv::Mat>& imgs,
     // Get output tensor
     auto output_names = predictor_->GetOutputNames();
     if (config_.arch_ == "PicoDet") {
-      for (auto out_name : output_names) {
-        auto output_tensor = predictor_->GetTensor(out_name);
+      for (int j = 0; j < output_names.size(); j++) {
+        auto output_tensor = predictor_->GetTensor(output_names[j]);
         const float* outptr = output_tensor->data<float>();
         std::vector<int64_t> output_shape = output_tensor->shape();
-        if (i == 0) {
-          num_class_ = output_shape[2];
-        }
-        if (i == config_.fpn_stride_.size()) {
-          reg_max_ = output_shape[2] / 4 - 1;
-        }
         output_data_list_.push_back(outptr);
       }
     } else {
@@ -236,57 +231,64 @@ void ObjectDetector::Predict(const std::vector<cv::Mat>& imgs,
   auto inference_start = std::chrono::steady_clock::now();
   for (int i = 0; i < repeats; i++) {
     predictor_->Run();
-    // Get output tensor
-    output_data_list_.clear();
-    auto output_names = predictor_->GetOutputNames();
-    if (config_.arch_ == "PicoDet") {
-      for (auto out_name : output_names) {
-        auto output_tensor = predictor_->GetTensor(out_name);
-        const float* outptr = output_tensor->data<float>();
-        std::vector<int64_t> output_shape = output_tensor->shape();
-        if (i == 0) {
-          num_class_ = output_shape[2];
-        }
-        if (i == config_.fpn_stride_.size()) {
-          reg_max_ = output_shape[2] / 4 - 1;
-        }
-        output_data_list_.push_back(outptr);
-      }
-    } else {
-      auto output_tensor = predictor_->GetTensor(output_names[0]);
-      auto output_shape = output_tensor->shape();
-      auto out_bbox_num = predictor_->GetTensor(output_names[1]);
-      auto out_bbox_num_shape = out_bbox_num->shape();
-      // Calculate output length
-      int output_size = 1;
-      for (int j = 0; j < output_shape.size(); ++j) {
-        output_size *= output_shape[j];
-      }
-      is_rbox = output_shape[output_shape.size() - 1] % 10 == 0;
-
-      if (output_size < 6) {
-        std::cerr << "[WARNING] No object detected." << std::endl;
-      }
-      output_data_.resize(output_size);
-      std::copy_n(
-          output_tensor->mutable_data<float>(), output_size, output_data_.data());
-
-      int out_bbox_num_size = 1;
-      for (int j = 0; j < out_bbox_num_shape.size(); ++j) {
-        out_bbox_num_size *= out_bbox_num_shape[j];
-      }
-      out_bbox_num_data_.resize(out_bbox_num_size);
-      std::copy_n(out_bbox_num->mutable_data<int>(),
-                  out_bbox_num_size,
-                  out_bbox_num_data_.data());
-    }
   }
   auto inference_end = std::chrono::steady_clock::now();
   auto postprocess_start = std::chrono::steady_clock::now();
+  // Get output tensor
+  output_data_list_.clear();
+  int num_class = 80;
+  int reg_max = 7;
+  auto output_names = predictor_->GetOutputNames();
+  // TODO: Unified model output.
+  if (config_.arch_ == "PicoDet") {
+    for (int i = 0; i < output_names.size(); i++) {
+      auto output_tensor = predictor_->GetTensor(output_names[i]);
+      const float* outptr = output_tensor->data<float>();
+      std::vector<int64_t> output_shape = output_tensor->shape();
+      if (i == 0) {
+        num_class = output_shape[2];
+      }
+      if (i == config_.fpn_stride_.size()) {
+        reg_max = output_shape[2] / 4 - 1;
+      }
+      output_data_list_.push_back(outptr);
+    }
+  } else {
+    auto output_tensor = predictor_->GetTensor(output_names[0]);
+    auto output_shape = output_tensor->shape();
+    auto out_bbox_num = predictor_->GetTensor(output_names[1]);
+    auto out_bbox_num_shape = out_bbox_num->shape();
+    // Calculate output length
+    int output_size = 1;
+    for (int j = 0; j < output_shape.size(); ++j) {
+      output_size *= output_shape[j];
+    }
+    is_rbox = output_shape[output_shape.size() - 1] % 10 == 0;
+
+    if (output_size < 6) {
+      std::cerr << "[WARNING] No object detected." << std::endl;
+    }
+    output_data_.resize(output_size);
+    std::copy_n(
+        output_tensor->mutable_data<float>(), output_size, output_data_.data());
+
+    int out_bbox_num_size = 1;
+    for (int j = 0; j < out_bbox_num_shape.size(); ++j) {
+      out_bbox_num_size *= out_bbox_num_shape[j];
+    }
+    out_bbox_num_data_.resize(out_bbox_num_size);
+    std::copy_n(out_bbox_num->mutable_data<int>(),
+                out_bbox_num_size,
+                out_bbox_num_data_.data());
+  }
   // Postprocessing result
   result->clear();
   if (config_.arch_ == "PicoDet") {
-    picodet_postprocess(result, output_data_list_);
+    PaddleDetection::PicoDetPostProcess(
+        result, output_data_list_, config_.fpn_stride_, 
+        inputs_.im_shape_, inputs_.scale_factor_,
+        config_.nms_info_["score_threshold"].as<float>(), 
+        config_.nms_info_["nms_threshold"].as<float>(), num_class, reg_max);
     bbox_num->push_back(result->size());
   } else {
     Postprocess(imgs, result, out_bbox_num_data_, is_rbox);
