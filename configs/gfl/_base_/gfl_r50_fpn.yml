@@ -32,7 +32,7 @@ GFLHead:
   fpn_stride: [8, 16, 32, 64, 128]
   prior_prob: 0.01
   reg_max: 16
-  loss_qfl:
+  loss_class:
     name: QualityFocalLoss
     use_sigmoid: True
     beta: 2.0
