@@ -41,7 +41,7 @@ class PicoDet(BaseArch):
         self.backbone = backbone
         self.neck = neck
         self.head = head
-        self.lite_deploy = False
+        self.deploy = False
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -62,8 +62,8 @@ class PicoDet(BaseArch):
     def _forward(self):
         body_feats = self.backbone(self.inputs)
         fpn_feats = self.neck(body_feats)
-        head_outs = self.head(fpn_feats)
-        if self.training or self.lite_deploy:
+        head_outs = self.head(fpn_feats, self.deploy)
+        if self.training or self.deploy:
             return head_outs
         else:
             im_shape = self.inputs['im_shape']
@@ -83,7 +83,7 @@ class PicoDet(BaseArch):
         return loss
 
     def get_pred(self):
-        if self.lite_deploy:
+        if self.deploy:
             return {'picodet': self._forward()[0]}
         else:
             bbox_pred, bbox_num = self._forward()

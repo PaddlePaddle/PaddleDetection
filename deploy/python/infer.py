@@ -25,6 +25,7 @@ from paddle.inference import Config
 from paddle.inference import create_predictor
 
 from benchmark_utils import PaddleInferBenchmark
+from picodet_postprocess import PicoDetPostProcess
 from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize
 from visualize import visualize_box_mask
 from utils import argsparser, Timer, get_current_memory_mb
@@ -277,6 +278,111 @@ class DetectorSOLOv2(Detector):
             boxes_num=np_boxes_num)
 
 
+class DetectorPicoDet(Detector):
+    """
+    Args:
+        config (object): config of model, defined by `Config(model_dir)`
+        model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
+        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN 
+    """
+
+    def __init__(self,
+                 pred_config,
+                 model_dir,
+                 device='CPU',
+                 run_mode='fluid',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False):
+        self.pred_config = pred_config
+        self.predictor, self.config = load_predictor(
+            model_dir,
+            run_mode=run_mode,
+            batch_size=batch_size,
+            min_subgraph_size=self.pred_config.min_subgraph_size,
+            device=device,
+            use_dynamic_shape=self.pred_config.use_dynamic_shape,
+            trt_min_shape=trt_min_shape,
+            trt_max_shape=trt_max_shape,
+            trt_opt_shape=trt_opt_shape,
+            trt_calib_mode=trt_calib_mode,
+            cpu_threads=cpu_threads,
+            enable_mkldnn=enable_mkldnn)
+        self.det_times = Timer()
+        self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
+
+    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
+        '''
+        Args:
+            image (str/np.ndarray): path of image/ np.ndarray read by cv2
+            threshold (float): threshold of predicted box' score
+        Returns:
+            results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
+                            matix element:[class, score, x_min, y_min, x_max, y_max]
+        '''
+        self.det_times.preprocess_time_s.start()
+        inputs = self.preprocess(image)
+        self.det_times.preprocess_time_s.end()
+        input_names = self.predictor.get_input_names()
+        for i in range(len(input_names)):
+            input_tensor = self.predictor.get_input_handle(input_names[i])
+            input_tensor.copy_from_cpu(inputs[input_names[i]])
+        np_score_list, np_boxes_list = [], []
+        for i in range(warmup):
+            self.predictor.run()
+            np_score_list.clear()
+            np_boxes_list.clear()
+            output_names = self.predictor.get_output_names()
+            num_outs = int(len(output_names) / 2)
+            for out_idx in range(num_outs):
+                np_score_list.append(
+                    self.predictor.get_output_handle(output_names[out_idx])
+                    .copy_to_cpu())
+                np_boxes_list.append(
+                    self.predictor.get_output_handle(output_names[
+                        out_idx + num_outs]).copy_to_cpu())
+
+        self.det_times.inference_time_s.start()
+        for i in range(repeats):
+            self.predictor.run()
+            np_score_list.clear()
+            np_boxes_list.clear()
+            output_names = self.predictor.get_output_names()
+            num_outs = int(len(output_names) / 2)
+            for out_idx in range(num_outs):
+                np_score_list.append(
+                    self.predictor.get_output_handle(output_names[out_idx])
+                    .copy_to_cpu())
+                np_boxes_list.append(
+                    self.predictor.get_output_handle(output_names[
+                        out_idx + num_outs]).copy_to_cpu())
+        self.det_times.inference_time_s.end(repeats=repeats)
+        self.det_times.img_num += 1
+        self.det_times.postprocess_time_s.start()
+        self.postprocess = PicoDetPostProcess(
+            inputs['image'].shape[2:],
+            inputs['im_shape'],
+            inputs['scale_factor'],
+            strides=self.pred_config.fpn_stride,
+            nms_threshold=self.pred_config.nms['nms_threshold'])
+        np_boxes, np_boxes_num = self.postprocess(np_score_list, np_boxes_list)
+        self.det_times.postprocess_time_s.end()
+        return dict(boxes=np_boxes, boxes_num=np_boxes_num)
+
+
 def create_inputs(imgs, im_info):
     """generate input for different model type
     Args:
@@ -341,6 +447,10 @@ class PredictConfig():
         self.tracker = None
         if 'tracker' in yml_conf:
             self.tracker = yml_conf['tracker']
+        if 'NMS' in yml_conf:
+            self.nms = yml_conf['NMS']
+        if 'fpn_stride' in yml_conf:
+            self.fpn_stride = yml_conf['fpn_stride']
         self.print_config()
 
     def check_model(self, yml_conf):
@@ -595,31 +705,23 @@ def predict_video(detector, camera_id):
 
 def main():
     pred_config = PredictConfig(FLAGS.model_dir)
-    detector = Detector(
-        pred_config,
-        FLAGS.model_dir,
-        device=FLAGS.device,
-        run_mode=FLAGS.run_mode,
-        batch_size=FLAGS.batch_size,
-        trt_min_shape=FLAGS.trt_min_shape,
-        trt_max_shape=FLAGS.trt_max_shape,
-        trt_opt_shape=FLAGS.trt_opt_shape,
-        trt_calib_mode=FLAGS.trt_calib_mode,
-        cpu_threads=FLAGS.cpu_threads,
-        enable_mkldnn=FLAGS.enable_mkldnn)
+    detector_func = 'Detector'
     if pred_config.arch == 'SOLOv2':
-        detector = DetectorSOLOv2(
-            pred_config,
-            FLAGS.model_dir,
-            device=FLAGS.device,
-            run_mode=FLAGS.run_mode,
-            batch_size=FLAGS.batch_size,
-            trt_min_shape=FLAGS.trt_min_shape,
-            trt_max_shape=FLAGS.trt_max_shape,
-            trt_opt_shape=FLAGS.trt_opt_shape,
-            trt_calib_mode=FLAGS.trt_calib_mode,
-            cpu_threads=FLAGS.cpu_threads,
-            enable_mkldnn=FLAGS.enable_mkldnn)
+        detector_func = 'DetectorSOLOv2'
+    elif pred_config.arch == 'PicoDet':
+        detector_func = 'DetectorPicoDet'
+
+    detector = eval(detector_func)(pred_config,
+                                   FLAGS.model_dir,
+                                   device=FLAGS.device,
+                                   run_mode=FLAGS.run_mode,
+                                   batch_size=FLAGS.batch_size,
+                                   trt_min_shape=FLAGS.trt_min_shape,
+                                   trt_max_shape=FLAGS.trt_max_shape,
+                                   trt_opt_shape=FLAGS.trt_opt_shape,
+                                   trt_calib_mode=FLAGS.trt_calib_mode,
+                                   cpu_threads=FLAGS.cpu_threads,
+                                   enable_mkldnn=FLAGS.enable_mkldnn)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
