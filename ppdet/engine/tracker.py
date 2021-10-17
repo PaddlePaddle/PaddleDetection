@@ -15,12 +15,13 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
+from IPython import embed
 import os
 import cv2
 import glob
 import paddle
 import numpy as np
+from collections import defaultdict
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
@@ -29,6 +30,7 @@ from ppdet.modeling.mot.utils import Timer, load_det_results
 from ppdet.modeling.mot import visualization as mot_vis
 
 from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric
+from ppdet.metrics import MCMOTMetric
 import ppdet.utils.stats as stats
 
 from .callbacks import Callback, ComposeCallback
@@ -74,6 +76,8 @@ class Tracker(object):
 
         if self.cfg.metric == 'MOT':
             self._metrics = [MOTMetric(), ]
+        elif self.cfg.metric == 'MCMOT':
+            self._metrics = [MCMOTMetric(self.cfg.num_classes), ]
         elif self.cfg.metric == 'KITTI':
             self._metrics = [KITTIMOTMetric(), ]
         else:
@@ -122,7 +126,7 @@ class Tracker(object):
         tracker.max_time_lost = int(frame_rate / 30.0 * tracker.track_buffer)
 
         timer = Timer()
-        results = []
+        results = [] if self.cfg.num_classes == 1 else defaultdict(list)
         frame_id = 0
         self.status['mode'] = 'track'
         self.model.eval()
@@ -135,28 +139,48 @@ class Tracker(object):
             # forward
             timer.tic()
             pred_dets, pred_embs = self.model(data)
-            online_targets = self.model.tracker.update(pred_dets, pred_embs)
+            if self.cfg.num_classes == 1:
+                online_targets = self.model.tracker.update(pred_dets, pred_embs)
+                online_tlwhs, online_scores, online_ids = [], [], []
+                for t in online_targets:
+                    tlwh = t.tlwh
+                    tid = t.track_id
+                    tscore = t.score
+                    if tscore < draw_threshold: continue
+                    vertical = tlwh[2] / tlwh[3] > 1.6
+                    if tlwh[2] * tlwh[3] > tracker.min_box_area and not vertical:
+                        online_tlwhs.append(tlwh)
+                        online_ids.append(tid)
+                        online_scores.append(tscore)
+                # save results
+                results.append(
+                    (frame_id + 1, online_tlwhs, online_scores, online_ids))
+            else:
+                # mcmot
+                assert isinstance(pred_dets, list) and isinstance(pred_embs, list)
+                # mc tracker
+                online_targets_dict = self.model.tracker.update(pred_dets, pred_embs)
+                online_tlwhs, online_scores, online_ids = defaultdict(list), defaultdict(list), defaultdict(list)
+                for cls_id in range(self.cfg.num_classes):
+                    online_targets = online_targets_dict[cls_id]
+                    for t in online_targets:
+                        tlwh = t.tlwh
+                        tid = t.track_id
+                        tscore = t.score
+                        if tscore < draw_threshold: continue
+                        vertical = tlwh[2] / tlwh[3] > 1.6
+                        if tlwh[2] * tlwh[3] > tracker.min_box_area and not vertical:
+                            online_tlwhs[cls_id].append(tlwh)
+                            online_ids[cls_id].append(tid)
+                            online_scores[cls_id].append(tscore)
+                    # save results
+                    results[cls_id].append(
+                        (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id], online_ids[cls_id]))
 
-            online_tlwhs, online_ids = [], []
-            online_scores = []
-            for t in online_targets:
-                tlwh = t.tlwh
-                tid = t.track_id
-                tscore = t.score
-                if tscore < draw_threshold: continue
-                vertical = tlwh[2] / tlwh[3] > 1.6
-                if tlwh[2] * tlwh[3] > tracker.min_box_area and not vertical:
-                    online_tlwhs.append(tlwh)
-                    online_ids.append(tid)
-                    online_scores.append(tscore)
             timer.toc()
-
-            # save results
-            results.append(
-                (frame_id + 1, online_tlwhs, online_scores, online_ids))
-            self.save_results(data, frame_id, online_ids, online_tlwhs,
-                              online_scores, timer.average_time, show_image,
-                              save_dir)
+            self.save_vis_results(data, frame_id, online_ids, online_tlwhs,
+                                online_scores, timer.average_time, show_image,
+                                save_dir)
             frame_id += 1
 
         return results, frame_id, timer.average_time, timer.calls
@@ -254,7 +278,7 @@ class Tracker(object):
             # save results
             results.append(
                 (frame_id + 1, online_tlwhs, online_scores, online_ids))
-            self.save_results(data, frame_id, online_ids, online_tlwhs,
+            self.save_vis_results(data, frame_id, online_ids, online_tlwhs,
                               online_scores, timer.average_time, show_image,
                               save_dir)
             frame_id += 1
@@ -274,23 +298,23 @@ class Tracker(object):
         if not os.path.exists(output_dir): os.makedirs(output_dir)
         result_root = os.path.join(output_dir, 'mot_results')
         if not os.path.exists(result_root): os.makedirs(result_root)
-        assert data_type in ['mot', 'kitti'], \
-            "data_type should be 'mot' or 'kitti'"
+        assert data_type in ['mot', 'mcmot', 'kitti'], \
+            "data_type should be 'mot', 'mcmot' or 'kitti'"
         assert model_type in ['JDE', 'DeepSORT', 'FairMOT'], \
             "model_type should be 'JDE', 'DeepSORT' or 'FairMOT'"
 
         # run tracking
-
         n_frame = 0
         timer_avgs, timer_calls = [], []
         for seq in seqs:
             if not os.path.isdir(os.path.join(data_root, seq)):
                 continue
-            infer_dir = os.path.join(data_root, seq, 'img1')
-            seqinfo = os.path.join(data_root, seq, 'seqinfo.ini')
-            if not os.path.exists(seqinfo) or not os.path.exists(
-                    infer_dir) or not os.path.isdir(infer_dir):
-                continue
+            infer_dir = os.path.join(data_root, seq) ##### todo
+            #infer_dir = os.path.join(data_root, seq, 'img1')
+            #seqinfo = os.path.join(data_root, seq, 'seqinfo.ini')
+            #if not os.path.exists(seqinfo) or not os.path.exists(
+            #        infer_dir) or not os.path.isdir(infer_dir):
+            #    continue
 
             save_dir = os.path.join(output_dir, 'mot_outputs',
                                     seq) if save_images or save_videos else None
@@ -302,9 +326,8 @@ class Tracker(object):
             dataloader = create('EvalMOTReader')(self.dataset, 0)
 
             result_filename = os.path.join(result_root, '{}.txt'.format(seq))
-            meta_info = open(seqinfo).read()
-            frame_rate = int(meta_info[meta_info.find('frameRate') + 10:
-                                       meta_info.find('\nseqLength')])
+            #meta_info = open(seqinfo).read()
+            frame_rate = 30 #int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
             with paddle.no_grad():
                 if model_type in ['JDE', 'FairMOT']:
                     results, nf, ta, tc = self._eval_seq_jde(
@@ -394,8 +417,8 @@ class Tracker(object):
         if not os.path.exists(output_dir): os.makedirs(output_dir)
         result_root = os.path.join(output_dir, 'mot_results')
         if not os.path.exists(result_root): os.makedirs(result_root)
-        assert data_type in ['mot', 'kitti'], \
-            "data_type should be 'mot' or 'kitti'"
+        assert data_type in ['mot', 'mcmot', 'kitti'], \
+            "data_type should be 'mot', 'mcmot' or 'kitti'"
         assert model_type in ['JDE', 'DeepSORT', 'FairMOT'], \
             "model_type should be 'JDE', 'DeepSORT' or 'FairMOT'"
 
@@ -455,14 +478,18 @@ class Tracker(object):
             logger.info('Save video in {}'.format(output_video_path))
 
     def write_mot_results(self, filename, results, data_type='mot'):
-        if data_type in ['mot', 'mcmot', 'lab']:
+        if data_type == 'mot':
             save_format = '{frame},{id},{x1},{y1},{w},{h},{score},-1,-1,-1\n'
         elif data_type == 'kitti':
             save_format = '{frame} {id} car 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
+        elif data_type == 'mcmot':
+            assert isinstance(results, dict) and self.cfg.num_classes > 1
+            save_format = '{frame},{id},{x1},{y1},{w},{h},{score},{cls_id}\n'
         else:
             raise ValueError(data_type)
 
-        with open(filename, 'w') as f:
+        f = open(filename, 'w')
+        if self.cfg.num_classes == 1:
             for frame_id, tlwhs, tscores, track_ids in results:
                 if data_type == 'kitti':
                     frame_id -= 1
@@ -470,32 +497,50 @@ class Tracker(object):
                     if track_id < 0:
                         continue
                     x1, y1, w, h = tlwh
-                    x2, y2 = x1 + w, y1 + h
                     line = save_format.format(
                         frame=frame_id,
                         id=track_id,
-                        x1=x1,
-                        y1=y1,
-                        x2=x2,
-                        y2=y2,
-                        w=w,
-                        h=h,
+                        x1=x1, y1=y1, w=w, h=h,
                         score=score)
                     f.write(line)
+        else:
+            for cls_id in range(self.cfg.num_classes):
+                for frame_id, tlwhs, tscores, track_ids in results[cls_id]:
+                    for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
+                        if track_id < 0:
+                            continue
+                        x1, y1, w, h = tlwh
+                        line = save_format.format(
+                            frame=frame_id,
+                            cls_id=cls_id,
+                            id=track_id,
+                            x1=x1, y1=y1, w=w, h=h,
+                            score=score)
+                        f.write(line)
         logger.info('MOT results save in {}'.format(filename))
 
-    def save_results(self, data, frame_id, online_ids, online_tlwhs,
-                     online_scores, average_time, show_image, save_dir):
+    def save_vis_results(self, data, frame_id, online_ids, online_tlwhs,
+                         online_scores, average_time, show_image, save_dir):
         if show_image or save_dir is not None:
             assert 'ori_image' in data
             img0 = data['ori_image'].numpy()[0]
-            online_im = mot_vis.plot_tracking(
-                img0,
-                online_tlwhs,
-                online_ids,
-                online_scores,
-                frame_id=frame_id,
-                fps=1. / average_time)
+            if self.cfg.num_classes == 1:
+                online_im = mot_vis.plot_tracking(
+                    img0,
+                    online_tlwhs,
+                    online_ids,
+                    online_scores,
+                    frame_id=frame_id,
+                    fps=1. / average_time)
+            else:
+                online_im = mot_vis.plot_tracking_dict(
+                    img0,
+                    self.cfg.num_classes,
+                    online_tlwhs,
+                    online_ids,
+                    online_scores,
+                    frame_id=frame_id,
+                    fps=1. / average_time)
         if show_image:
             cv2.imshow('online_im', online_im)
         if save_dir is not None:

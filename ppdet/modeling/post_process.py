@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from IPython import embed
 import numpy as np
 import paddle
 import paddle.nn as nn
@@ -415,12 +415,12 @@ class CenterNetPostProcess(TTFBox):
         regress_ltrb (bool): whether to regress left/top/right/bottom or
             width/height for a box, true by default.
         for_mot (bool): whether return other features used in tracking model.
-
     """
 
-    __shared__ = ['down_ratio']
+    __shared__ = ['down_ratio', 'num_classes']
 
     def __init__(self,
+                 num_classes=1,
                  max_per_img=500,
                  down_ratio=4,
                  regress_ltrb=True,
@@ -430,10 +430,47 @@ class CenterNetPostProcess(TTFBox):
         self.down_ratio = down_ratio
         self.regress_ltrb = regress_ltrb
         self.for_mot = for_mot
+        self.num_classes = num_classes
+
+    def _topk(self, scores, num_classes=1):
+        """
+        Select top k scores and decode to get xy coordinates.
+        """
+        k = self.max_per_img
+        shape_fm = paddle.shape(scores)
+        shape_fm.stop_gradient = True
+        cat, height, width = shape_fm[1], shape_fm[2], shape_fm[3]
+        # batch size is 1
+        scores_r = paddle.reshape(scores, [cat, -1])
+        topk_scores, topk_inds = paddle.topk(scores_r, k)
+        topk_scores, topk_inds = paddle.topk(scores_r, k)
+        topk_ys = topk_inds // width
+        topk_xs = topk_inds % width
+
+        topk_score_r = paddle.reshape(topk_scores, [-1])
+        topk_score, topk_ind = paddle.topk(topk_score_r, k)
+        k_t = paddle.full(paddle.shape(topk_ind), k, dtype='int64')
+        topk_clses = paddle.cast(paddle.floor_divide(topk_ind, k_t), 'float32')
+
+        topk_inds = paddle.reshape(topk_inds, [-1])
+        topk_ys = paddle.reshape(topk_ys, [-1, 1])
+        topk_xs = paddle.reshape(topk_xs, [-1, 1])
+        topk_inds = paddle.gather(topk_inds, topk_ind)
+        topk_ys = paddle.gather(topk_ys, topk_ind)
+        topk_xs = paddle.gather(topk_xs, topk_ind)
+
+        # 计算每个类别对应的topk索引
+        cls_inds_masks = paddle.full((num_classes, k), False)
+        for cls_id in range(num_classes):
+            inds_masks = topk_clses == cls_id
+            inds_masks = paddle.cast(inds_masks, 'float32')
+            cls_inds_masks[cls_id] = inds_masks
+
+        return topk_score, topk_inds, topk_clses, topk_ys, topk_xs, cls_inds_masks
 
     def __call__(self, hm, wh, reg, im_shape, scale_factor):
         heat = self._simple_nms(hm)
-        scores, inds, clses, ys, xs = self._topk(heat)
+        scores, inds, clses, ys, xs, cls_inds_masks = self._topk(heat, self.num_classes)
         scores = paddle.tensor.unsqueeze(scores, [1])
         clses = paddle.tensor.unsqueeze(clses, [1])
 
@@ -486,7 +523,7 @@ class CenterNetPostProcess(TTFBox):
         bboxes = paddle.divide(bboxes, scale_expand)
         if self.for_mot:
             results = paddle.concat([bboxes, scores, clses], axis=1)
-            return results, inds
+            return results, inds, cls_inds_masks
         else:
             results = paddle.concat([clses, scores, bboxes], axis=1)
             return results, paddle.shape(results)[0:1]

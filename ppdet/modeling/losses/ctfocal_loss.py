@@ -17,10 +17,12 @@ from __future__ import division
 from __future__ import print_function
 
 import paddle
-
+import paddle.nn as nn
+import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
+from IPython import embed
 
-__all__ = ['CTFocalLoss']
+__all__ = ['CTFocalLoss', 'MC_CTFocalLoss']
 
 
 @register
@@ -65,3 +67,32 @@ class CTFocalLoss(object):
         ct_focal_loss = (pos_loss + neg_loss) / (
             fg_num + paddle.cast(fg_num == 0, 'float32'))
         return ct_focal_loss * self.loss_weight
+
+
+@register
+@serializable
+class MC_CTFocalLoss(object):
+    """
+    MC_CTFocalLoss: multi-class CornerNet & CenterNet Focal Loss
+    Args:
+        loss_weight (float): loss weight
+        gamma (float): gamma parameter for Focal Loss
+    """
+    def __init__(self,
+                 num_ids,
+                 gamma=1.5):
+        super(MC_CTFocalLoss, self).__init__()
+        self.num_ids = num_ids
+        self.gamma = gamma
+
+    def __call__(self, pred, target):
+        prob = F.softmax(x=paddle.reshape(pred, [-1, self.num_ids]), axis=1)
+        prob = paddle.clip(prob, 1e-4, 1.0)
+
+        target_ = paddle.zeros([target.shape[0], self.num_ids], dtype='float32')
+        target_.scatter_(1, paddle.reshape(target, [-1, 1]), 1.0)
+
+        batch_loss = - paddle.pow(1 - prob, self.gamma) * paddle.log(prob) * target_
+        batch_loss = paddle.sum(batch_loss, axis=1)
+        loss = batch_loss.mean()
+        return loss

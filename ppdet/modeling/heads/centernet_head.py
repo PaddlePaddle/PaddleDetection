@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from IPython import embed
 import math
 import paddle
 import paddle.nn as nn
@@ -61,7 +61,7 @@ class CenterNetHead(nn.Layer):
     """
     Args:
         in_channels (int): the channel number of input to CenterNetHead.
-        num_classes (int): the number of classes, 80 by default.
+        num_classes (int): the number of classes, 80 (COCO dataset) by default.
         head_planes (int): the channel number in all head, 256 by default.
         heatmap_weight (float): the weight of heatmap loss, 1 by default.
         regress_ltrb (bool): whether to regress left/top/right/bottom or
@@ -82,6 +82,7 @@ class CenterNetHead(nn.Layer):
                  size_weight=0.1,
                  offset_weight=1):
         super(CenterNetHead, self).__init__()
+        self.regress_ltrb = regress_ltrb
         self.weights = {
             'heatmap': heatmap_weight,
             'size': size_weight,
@@ -138,7 +139,10 @@ class CenterNetHead(nn.Layer):
 
     def get_loss(self, heatmap, size, offset, weights, inputs):
         heatmap_target = inputs['heatmap']
-        size_target = inputs['size']
+        if self.regress_ltrb:
+            size_target = inputs['size'] # [6, 500, 4]
+        else:
+            size_target = inputs['size'][:,:,0:2] + inputs['size'][:,:,2:] # [6, 500, 2]
         offset_target = inputs['offset']
         index = inputs['index']
         mask = inputs['index_mask']

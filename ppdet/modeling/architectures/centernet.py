@@ -76,7 +76,7 @@ class CenterNet(BaseArch):
     def get_pred(self):
         head_out = self._forward()
         if self.for_mot:
-            bbox, bbox_inds = self.post_process(
+            bbox, bbox_inds, cls_inds_masks = self.post_process(
                 head_out['heatmap'],
                 head_out['size'],
                 head_out['offset'],
@@ -85,6 +85,7 @@ class CenterNet(BaseArch):
             output = {
                 "bbox": bbox,
                 "bbox_inds": bbox_inds,
+                "cls_inds_masks": cls_inds_masks,
                 "neck_feat": head_out['neck_feat']
             }
         else:

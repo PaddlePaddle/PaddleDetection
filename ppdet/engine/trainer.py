@@ -78,8 +78,12 @@ class Trainer(object):
                 'num_identifiers'] = self.dataset.total_identities
 
         if cfg.architecture == 'FairMOT' and self.mode == 'train':
-            cfg['FairMOTEmbeddingHead'][
-                'num_identifiers'] = self.dataset.total_identities
+            if cfg['num_classes'] > 1:
+                cfg['FairMOTEmbeddingHead'][
+                    'num_identifiers_dict'] = self.dataset.total_identities_dict
+            else:
+                cfg['FairMOTEmbeddingHead'][
+                    'num_identifiers'] = self.dataset.total_identities
 
         # build model
         if 'model' not in self.cfg:
@@ -319,7 +323,7 @@ class Trainer(object):
             find_unused_parameters = self.cfg[
                 'find_unused_parameters'] if 'find_unused_parameters' in self.cfg else False
             model = paddle.DataParallel(
-                self.model, find_unused_parameters=find_unused_parameters)
+                self.model) #, find_unused_parameters=find_unused_parameters)
 
         # initial fp16
         if self.cfg.get('fp16', False):

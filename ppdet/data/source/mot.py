@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from IPython import embed
 import os
 import sys
 import cv2
 import glob
 import numpy as np
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 try:
     from collections.abc import Sequence
 except Exception:
@@ -225,6 +225,182 @@ class MOTDataSet(DetDataset):
 def mot_label():
     labels_map = {'person': 0}
     return labels_map
+
+
+@register
+@serializable
+class MCMOTDataSet(DetDataset):
+    def __init__(self,
+                 dataset_dir=None,
+                 image_lists=[],
+                 data_fields=['image'],
+                 reid_cls_ids='0,1,2,3,4,5,6,7,8,9',
+                 sample_num=-1):
+        super(MCMOTDataSet, self).__init__(
+            dataset_dir=dataset_dir,
+            data_fields=data_fields,
+            sample_num=sample_num)
+        self.dataset_dir = dataset_dir
+        self.image_lists = image_lists
+        if isinstance(self.image_lists, str):
+            self.image_lists = [self.image_lists]
+        self.roidbs = None
+        self.cname2cid = None
+        
+        self.reid_cls_ids = reid_cls_ids
+        self.num_classes = len(reid_cls_ids.split(','))
+
+    def get_anno(self):
+        if self.image_lists == []:
+            return
+        # only used to get categories and metric
+        return os.path.join(self.dataset_dir, 'image_lists',
+                            self.image_lists[0])
+
+    def parse_dataset(self):
+        self.img_files = OrderedDict()
+        self.img_start_index = OrderedDict()
+        self.label_files = OrderedDict()
+        self.tid_num = OrderedDict()
+        # for mcmot
+        self.tid_start_idx_of_cls_ids = defaultdict(dict)
+        # self.tid_start_index = OrderedDict()
+
+        img_index = 0
+        for data_name in self.image_lists:
+            # check every data image list
+            image_lists_dir = os.path.join(self.dataset_dir, 'image_lists')
+            assert os.path.isdir(image_lists_dir), \
+                "The {} is not a directory.".format(image_lists_dir)
+
+            list_path = os.path.join(image_lists_dir, data_name)
+            assert os.path.exists(list_path), \
+                "The list path {} does not exist.".format(list_path)
+
+            # record img_files, filter out empty ones
+            with open(list_path, 'r') as file:
+                self.img_files[data_name] = file.readlines()
+                self.img_files[data_name] = [
+                    os.path.join(self.dataset_dir, x.strip())
+                    for x in self.img_files[data_name]
+                ]
+                self.img_files[data_name] = list(
+                    filter(lambda x: len(x) > 0, self.img_files[data_name]))
+
+                self.img_start_index[data_name] = img_index
+                img_index += len(self.img_files[data_name])
+
+            # record label_files
+            self.label_files[data_name] = [
+                x.replace('images', 'labels_with_ids').replace(
+                    '.png', '.txt').replace('.jpg', '.txt')
+                for x in self.img_files[data_name]
+            ]
+
+        for data_name, label_paths in self.label_files.items():
+            max_ids_dict = defaultdict(int)  # using max_ids_dict rather than max_index
+            for lp in label_paths:
+                lb = np.loadtxt(lp)
+                if len(lb) < 1:
+                    continue
+                lb = lb.reshape(-1, 6)
+                for item in lb:  # label中每一个item(检测目标)
+                    if item[1] > max_ids_dict[int(item[0])]:  # item[0]: cls_id, item[1]: track id
+                        max_ids_dict[int(item[0])] = int(item[1])
+            # track id number
+            self.tid_num[data_name] = max_ids_dict # 每个子数据集按照需要reid的cls_id组织成dict
+
+        # self.tid_start_idx_of_cls_ids = defaultdict(dict)
+        last_idx_dict = defaultdict(int)  # 从0开始
+        for i, (k, v) in enumerate(self.tid_num.items()): # 统计每一个子数据集
+            for cls_id, id_num in v.items():  # 统计这个子数据集的每一个类别, v是一个max_ids_dict
+                self.tid_start_idx_of_cls_ids[k][cls_id] = last_idx_dict[cls_id]
+                last_idx_dict[cls_id] += id_num
+
+        self.total_identities_dict = defaultdict(int)
+        for k, v in last_idx_dict.items():
+            self.total_identities_dict[k] = int(v)  # 每个类别的tack ids数量
+
+        self.total_identities = 14455
+
+        self.num_imgs_each_data = [len(x) for x in self.img_files.values()]
+        self.total_imgs = sum(self.num_imgs_each_data)
+
+        logger.info('=' * 80)
+        logger.info('MOT dataset summary: ')
+        logger.info(self.tid_num)
+        logger.info('Total images: {}'.format(self.total_imgs))
+        logger.info('Image start index: {}'.format(self.img_start_index))
+        logger.info('Total identities dict: ') # {}'.format(self.total_identities_dict))
+        for k, v in self.total_identities_dict.items():
+            # logger.info('Total {:d} IDs of {}'.format(v, id2cls[k]))
+            logger.info('Total {:d} IDs of class {}'.format(v, k))
+        # logger.info('total total_identities: {}'.format(self.total_identities))
+        logger.info('identity start index by class: ') #{}'.format(self.tid_start_idx_of_cls_ids))
+        for k, v in self.tid_start_idx_of_cls_ids.items():
+            for cls_id, start_idx in v.items():
+                logger.info('Start index of dataset {} class {:d} is {:d}'
+                    .format(k, cls_id, start_idx))
+        # logger.info('identity start index: {}'.format(self.tid_start_index))
+        logger.info('=' * 80)
+
+        records = []
+        cname2cid = mot_label()
+
+        for img_index in range(self.total_imgs):
+            for i, (k, v) in enumerate(self.img_start_index.items()):
+                if img_index >= v:
+                    data_name = list(self.label_files.keys())[i]
+                    start_index = v
+            img_file = self.img_files[data_name][img_index - start_index]
+            lbl_file = self.label_files[data_name][img_index - start_index]
+
+            if not os.path.exists(img_file):
+                logger.warning('Illegal image file: {}, and it will be ignored'.
+                               format(img_file))
+                continue
+            if not os.path.isfile(lbl_file):
+                logger.warning('Illegal label file: {}, and it will be ignored'.
+                               format(lbl_file))
+                continue
+
+            labels = np.loadtxt(lbl_file, dtype=np.float32).reshape(-1, 6)
+            # each row in labels (N, 6) is [gt_class, gt_identity, cx, cy, w, h]
+
+            cx, cy = labels[:, 2], labels[:, 3]
+            w, h = labels[:, 4], labels[:, 5]
+            gt_bbox = np.stack((cx, cy, w, h)).T.astype('float32')
+            gt_class = labels[:, 0:1].astype('int32')
+            gt_score = np.ones((len(labels), 1)).astype('float32')
+            gt_ide = labels[:, 1:2].astype('int32')
+            for i, _ in enumerate(gt_ide):
+                if gt_ide[i] > -1:
+                    cls_id = int(gt_class[i]) ###
+                    start_idx = self.tid_start_idx_of_cls_ids[data_name][cls_id]
+                    gt_ide[i] += start_idx
+
+            mot_rec = {
+                'im_file': img_file,
+                'im_id': img_index,
+            } if 'image' in self.data_fields else {}
+
+            gt_rec = {
+                'gt_class': gt_class,
+                'gt_score': gt_score,
+                'gt_bbox': gt_bbox,
+                'gt_ide': gt_ide,
+            }
+
+            for k, v in gt_rec.items():
+                if k in self.data_fields:
+                    mot_rec[k] = v
+
+            records.append(mot_rec)
+            if self.sample_num > 0 and img_index >= self.sample_num:
+                break
+        assert len(records) > 0, 'not found any mot record in %s' % (
+            self.image_lists)
+        self.roidbs, self.cname2cid = records, cname2cid
 
 
 @register

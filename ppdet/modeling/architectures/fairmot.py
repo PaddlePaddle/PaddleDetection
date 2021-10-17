@@ -87,13 +87,7 @@ class FairMOT(BaseArch):
             })
             return loss
         else:
-            embedding = self.reid(neck_feat, self.inputs)
-            bbox_inds = det_outs['bbox_inds']
-            embedding = paddle.transpose(embedding, [0, 2, 3, 1])
-            embedding = paddle.reshape(embedding,
-                                       [-1, paddle.shape(embedding)[-1]])
-            pred_embs = paddle.gather(embedding, bbox_inds)
-            pred_dets = det_outs['bbox']
+            pred_dets, pred_embs = self.reid(neck_feat, self.inputs, det_outs['bbox'], det_outs['bbox_inds'], det_outs['cls_inds_masks'])
             return pred_dets, pred_embs
 
     def get_pred(self):

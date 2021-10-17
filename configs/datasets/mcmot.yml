@@ -1,0 +1,24 @@
+metric: MCMOT
+num_classes: 10
+
+# for MCMOT training
+TrainDataset:
+  !MCMOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['visdrone_mcmot.val']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+    reid_cls_ids: '0,1,2,3,4,5,6,7,8,9'
+
+# for MCMOT evaluation
+# If you want to change the MCMOT evaluation dataset, please modify 'data_root'
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: visdrone_mcmot/images/demo
+    keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
+
+# for MCMOT video inference
+TestMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    keep_ori_im: True # set True if save visualization images or video

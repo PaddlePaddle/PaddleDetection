@@ -521,7 +521,7 @@ class Gt2JDETargetMax(BaseOperator):
                 sample['tconf{}'.format(i)] = tconf
                 sample['tide{}'.format(i)] = tid
 
-
+from IPython import embed
 class Gt2FairMOTTarget(Gt2TTFTarget):
     __shared__ = ['num_classes']
     """
@@ -555,6 +555,11 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
             index_mask = np.zeros((self.max_objs, ), dtype=np.int32)
             reid = np.zeros((self.max_objs, ), dtype=np.int64)
             bbox_xys = np.zeros((self.max_objs, 4), dtype=np.float32)
+            if self.num_classes > 1:
+                # 每个目标类别都对应一组track ids
+                cls_tr_ids = np.zeros((self.num_classes, output_h, output_w), dtype=np.int64)
+                # @even, class id map: 每个(x, y)处的目标类别, 都初始化为-1
+                cls_id_map = np.full((output_h, output_w), -1, dtype=np.int64)  # H×W
 
             gt_bbox = sample['gt_bbox']
             gt_class = sample['gt_class']
@@ -597,6 +602,12 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
                     index_mask[k] = 1
                     reid[k] = ide
                     bbox_xys[k] = bbox_xy
+                    if self.num_classes > 1:
+                        # reid[k] = ide -1 ###
+                        # 取output feature map的每个(y, x)处的目标类别
+                        cls_id_map[ct_int[1], ct_int[0]] = cls_id  # H×W
+                        # 记录该类别对应的track ids
+                        cls_tr_ids[cls_id][ct_int[1]][ct_int[0]] = ide - 1  # track id从1开始的, 转换成从0开始
 
             sample['heatmap'] = heatmap
             sample['index'] = index
@@ -604,6 +615,9 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
             sample['size'] = bbox_size
             sample['index_mask'] = index_mask
             sample['reid'] = reid
+            if self.num_classes > 1:
+                sample['cls_id_map'] = cls_id_map  # feature map上每个(x, y)处的目标类别id
+                sample['cls_tr_ids'] = cls_tr_ids
             sample['bbox_xys'] = bbox_xys
             sample.pop('is_crowd', None)
             sample.pop('difficult', None)

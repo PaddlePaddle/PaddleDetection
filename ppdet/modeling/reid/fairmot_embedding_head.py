@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
 # See the License for the specific language governing permissions and   
 # limitations under the License.
-
+from IPython import embed
 import numpy as np
 import math
 import paddle
@@ -26,6 +26,7 @@ __all__ = ['FairMOTEmbeddingHead']
 
 @register
 class FairMOTEmbeddingHead(nn.Layer):
+    __shared__ = ['num_classes']
     """
     Args:
         in_channels (int): the channel number of input to FairMOTEmbeddingHead.
@@ -39,8 +40,15 @@ class FairMOTEmbeddingHead(nn.Layer):
                  in_channels,
                  ch_head=256,
                  ch_emb=128,
-                 num_identifiers=14455):
+                 num_classes=1,
+                 num_identifiers=14455,
+                 num_identifiers_dict={}):
         super(FairMOTEmbeddingHead, self).__init__()
+        assert num_classes >= 1
+        self.num_classes = num_classes
+        self.ch_emb = ch_emb
+        self.num_identifiers = num_identifiers
+        self.num_identifiers_dict = num_identifiers_dict
         self.reid = nn.Sequential(
             ConvLayer(
                 in_channels, ch_head, kernel_size=3, padding=1, bias=True),
@@ -50,15 +58,30 @@ class FairMOTEmbeddingHead(nn.Layer):
         param_attr = paddle.ParamAttr(initializer=KaimingUniform())
         bound = 1 / math.sqrt(ch_emb)
         bias_attr = paddle.ParamAttr(initializer=Uniform(-bound, bound))
-        self.classifier = nn.Linear(
-            ch_emb,
-            num_identifiers,
-            weight_attr=param_attr,
-            bias_attr=bias_attr)
         self.reid_loss = nn.CrossEntropyLoss(ignore_index=-1, reduction='sum')
-        # When num_identifiers is 1, emb_scale is set as 1
-        self.emb_scale = math.sqrt(2) * math.log(
-            num_identifiers - 1) if num_identifiers > 1 else 1
+
+        if num_classes == 1:
+            self.classifier = nn.Linear(
+                ch_emb,
+                num_identifiers,
+                weight_attr=param_attr,
+                bias_attr=bias_attr)
+            # When num_identifiers is 1, emb_scale is set as 1
+            self.emb_scale = math.sqrt(2) * math.log(
+                num_identifiers - 1) if num_identifiers > 1 else 1
+        else:
+            #assert not self.num_identifiers_dict == {}
+            self.classifiers = dict() # 使用ModuleList或ModuleDict才可以自动注册参数
+            self.emb_scale_dict = dict()
+            # self.focal_loss_dict = nn.ModuleDict()
+            for cls_id, nID in self.num_identifiers_dict.items():
+                self.classifiers[str(cls_id)] = nn.Linear(
+                    ch_emb,
+                    nID,
+                    weight_attr=param_attr,
+                    bias_attr=bias_attr)
+                # When num_identifiers is 1, emb_scale is set as 1
+                self.emb_scale_dict[str(cls_id)] = math.sqrt(2) * math.log(nID - 1) if nID > 1 else 1
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -66,14 +89,42 @@ class FairMOTEmbeddingHead(nn.Layer):
             input_shape = input_shape[0]
         return {'in_channels': input_shape.channels}
 
-    def forward(self, feat, inputs):
+    def forward(self, feat, inputs, det_outs=None, bbox_inds=None, cls_inds_masks=None):
         reid_feat = self.reid(feat)
         if self.training:
-            loss = self.get_loss(reid_feat, inputs)
+            if self.num_classes == 1:
+                loss = self.get_loss(reid_feat, inputs)
+            else:
+                loss = self.get_mc_loss(reid_feat, inputs)
             return loss
         else:
+            assert det_outs is not None and  bbox_inds is not None
             reid_feat = F.normalize(reid_feat)
-            return reid_feat
+            embedding = paddle.transpose(reid_feat, [0, 2, 3, 1]) # [1, 152, 272, 128]
+            embedding = paddle.reshape(embedding, [-1, self.ch_emb])
+            if self.num_classes == 1:
+                pred_dets = det_outs
+                pred_embs = paddle.gather(embedding, bbox_inds)
+            else:
+                pred_dets, pred_embs = [], []
+                for cls_id in range(self.num_classes):  # cls_id starts from 0
+                    pos_num = cls_inds_masks[cls_id].sum().numpy()
+                    if pos_num == 0:
+                        pred_dets.append(paddle.zeros([1, 5]))
+                        pred_embs.append(paddle.zeros([1, 1]))
+                        continue
+
+                    cls_inds_mask = cls_inds_masks[cls_id] > 0
+
+                    bbox_mask = paddle.nonzero(cls_inds_mask) # [94, 1]
+                    cls_det_outs = paddle.gather_nd(det_outs, bbox_mask)  # [500, 6] -> [94, 6]
+                    pred_dets.append(cls_det_outs)
+                    cls_inds = paddle.masked_select(bbox_inds, cls_inds_mask)
+                    cls_inds = cls_inds.unsqueeze(-1) # [94, 1]
+                    cls_embedding = paddle.gather_nd(embedding, cls_inds)  # [41344, 128] -> [94, 128]
+                    pred_embs.append(cls_embedding)
+
+            return pred_dets, pred_embs
 
     def get_loss(self, feat, inputs):
         index = inputs['index']
@@ -113,3 +164,59 @@ class FairMOTEmbeddingHead(nn.Layer):
             loss = loss / count
 
         return loss
+
+    def get_mc_loss(self, feat, inputs):
+        # feat.shape = [6, 128, 152, 272]
+        assert 'cls_id_map' in inputs and 'cls_tr_ids' in inputs
+        index = inputs['index'] # [6, 500]
+        mask = inputs['index_mask'] # [6, 500]
+        # target = inputs['reid'] # [6, 500]
+        ### todo
+        # heatmap = inputs['heatmap'] # [6, 10, 152, 272]
+        cls_id_map = inputs['cls_id_map'] # [6, 152, 272]
+        cls_tr_ids = inputs['cls_tr_ids'] # [6, 10, 152, 272] # gt id in mcloss
+
+        feat = paddle.transpose(feat, perm=[0, 2, 3, 1]) # [6, 152, 272, 128]
+        feat_n, feat_h, feat_w, feat_c = feat.shape
+        feat = paddle.reshape(feat, shape=[feat_n, -1, feat_c]) # [6, 41344, 128]
+        
+        index = paddle.unsqueeze(index, 2) # [6, 500, 1]
+        batch_inds = list()
+        for i in range(feat_n):
+            batch_ind = paddle.full(
+                shape=[1, index.shape[1], 1], fill_value=i, dtype='int64')
+            batch_inds.append(batch_ind)
+        batch_inds = paddle.concat(batch_inds, axis=0)
+        index = paddle.concat(x=[batch_inds, index], axis=2) # [6, 500, 2]
+        feat = paddle.gather_nd(feat, index=index) # [6, 500, 128]
+
+        mask = paddle.unsqueeze(mask, axis=2)
+        mask = paddle.expand_as(mask, feat)
+        mask.stop_gradient = True
+        feat = paddle.masked_select(feat, mask > 0)
+        feat = paddle.reshape(feat, shape=[-1, feat_c]) # [204, 128]
+
+        reid_losses = 0
+        # dict_items([(0, 227), (1, 117), (9, 100), (2, 48), (3, 201), (6, 20), (4, 40), (5, 8), (7, 12), (8, 3)])
+        for cls_id, id_num in self.num_identifiers_dict.items():
+            # target
+            cur_cls_tr_ids = paddle.reshape(cls_tr_ids[:, cls_id, :, :], shape=[feat_n, -1]) # [6, 152*272]
+            cls_id_target = paddle.gather_nd(cur_cls_tr_ids, index=index) # [6, 500]
+            mask = inputs['index_mask']
+            cls_id_target = paddle.masked_select(cls_id_target, mask > 0)
+            cls_id_target.stop_gradient = True
+
+            # feat
+            cls_id_feat = self.emb_scale_dict[str(cls_id)] * F.normalize(feat)  # n × emb_dim
+            cls_id_pred = self.classifiers[str(cls_id)](cls_id_feat)
+
+            loss = self.reid_loss(cls_id_pred, cls_id_target)
+            valid = (cls_id_target != self.reid_loss.ignore_index)
+            valid.stop_gradient = True
+            count = paddle.sum((paddle.cast(valid, dtype=np.int32)))
+            count.stop_gradient = True
+            if count > 0:
+                loss = loss / count
+            reid_losses += loss
+
+        return reid_losses
