@@ -226,7 +226,7 @@ class PicoHead(GFLHead):
                         bias_attr=ParamAttr(initializer=Constant(value=0))))
                 self.head_reg_list.append(head_reg)
 
-    def forward(self, fpn_feats):
+    def forward(self, fpn_feats, deploy=False):
         assert len(fpn_feats) == len(
             self.fpn_stride
         ), "The size of fpn_feats is not equal to size of fpn_stride"
@@ -243,11 +243,19 @@ class PicoHead(GFLHead):
             else:
                 cls_score = self.head_cls_list[i](conv_cls_feat)
                 bbox_pred = self.head_reg_list[i](conv_reg_feat)
+
             if self.dgqp_module:
                 quality_score = self.dgqp_module(bbox_pred)
                 cls_score = F.sigmoid(cls_score) * quality_score
 
-            if not self.training:
+            if deploy:
+                # Now only supports batch size = 1 in deploy
+                # TODO(ygh): support batch size > 1
+                cls_score = F.sigmoid(cls_score).reshape(
+                    [1, self.cls_out_channels, -1]).transpose([0, 2, 1])
+                bbox_pred = bbox_pred.reshape([1, (self.reg_max + 1) * 4,
+                                               -1]).transpose([0, 2, 1])
+            elif not self.training:
                 cls_score = F.sigmoid(cls_score.transpose([0, 2, 3, 1]))
                 bbox_pred = bbox_pred.transpose([0, 2, 3, 1])
 

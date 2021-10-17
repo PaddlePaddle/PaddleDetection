@@ -561,8 +561,6 @@ class Trainer(object):
         if hasattr(self.model, 'fuse_norm'):
             self.model.fuse_norm = self.cfg['TestReader'].get('fuse_normalize',
                                                               False)
-        if hasattr(self.cfg, 'lite_deploy'):
-            self.model.lite_deploy = self.cfg.lite_deploy
 
         # Save infer cfg
         _dump_infer_config(self.cfg,

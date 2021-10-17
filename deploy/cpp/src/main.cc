@@ -241,7 +241,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
     if (run_benchmark) {
       det->Predict(batch_imgs, threshold, 10, 10, &result, &bbox_num,  &det_times);
     } else {
-      det->Predict(batch_imgs, 0.5, 0, 1, &result, &bbox_num, &det_times);
+      det->Predict(batch_imgs, threshold, 0, 1, &result, &bbox_num, &det_times);
       // get labels and colormap
       auto labels = det->GetLabelList();
       auto colormap = PaddleDetection::GenerateColorMap(labels.size());
@@ -251,7 +251,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
         cv::Mat im = batch_imgs[i];
         std::vector<PaddleDetection::ObjectResult> im_result;
         int detect_num = 0;
- 
+
         for (int j = 0; j < bbox_num[i]; j++) {
           PaddleDetection::ObjectResult item = result[item_start_idx + j];
           if (item.confidence < threshold || item.class_id == -1) {

@@ -17,7 +17,6 @@
 #include <chrono>
 #include "include/object_detector.h"
 
-
 using namespace paddle_infer;
 
 namespace PaddleDetection {
@@ -94,7 +93,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
 
 // Visualiztion MaskDetector results
 cv::Mat VisualizeResult(const cv::Mat& img,
-                        const std::vector<ObjectResult>& results,
+                        const std::vector<PaddleDetection::ObjectResult>& results,
                         const std::vector<std::string>& lables,
                         const std::vector<int>& colormap,
                         const bool is_rbox=false) {
@@ -171,8 +170,9 @@ void ObjectDetector::Preprocess(const cv::Mat& ori_im) {
 
 void ObjectDetector::Postprocess(
     const std::vector<cv::Mat> mats,
-    std::vector<ObjectResult>* result,
+    std::vector<PaddleDetection::ObjectResult>* result,
     std::vector<int> bbox_num,
+    std::vector<float> output_data_,
     bool is_rbox=false) {
   result->clear();
   int start_idx = 0;
@@ -199,7 +199,7 @@ void ObjectDetector::Postprocess(
         int x4 = (output_data_[8 + j * 10] * rw);
         int y4 = (output_data_[9 + j * 10] * rh);
           
-        ObjectResult result_item;
+        PaddleDetection::ObjectResult result_item;
         result_item.rect = {x1, y1, x2, y2, x3, y3, x4, y4};
         result_item.class_id = class_id;
         result_item.confidence = score;
@@ -217,7 +217,7 @@ void ObjectDetector::Postprocess(
         int wd = xmax - xmin;
         int hd = ymax - ymin;
           
-        ObjectResult result_item;
+        PaddleDetection::ObjectResult result_item;
         result_item.rect = {xmin, ymin, xmax, ymax};
         result_item.class_id = class_id;
         result_item.confidence = score;
@@ -232,7 +232,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
       const double threshold,
       const int warmup,
       const int repeats,
-      std::vector<ObjectResult>* result,
+      std::vector<PaddleDetection::ObjectResult>* result,
       std::vector<int>* bbox_num,
       std::vector<double>* times) {
   auto preprocess_start = std::chrono::steady_clock::now();
@@ -242,6 +242,8 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   std::vector<float> in_data_all;
   std::vector<float> im_shape_all(batch_size * 2);
   std::vector<float> scale_factor_all(batch_size * 2);
+  std::vector<const float *> output_data_list_;
+  std::vector<int> out_bbox_num_data_;
   
   // Preprocess image
   for (int bs_idx = 0; bs_idx < batch_size; bs_idx++) {
@@ -277,77 +279,90 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   }
   
   // Run predictor
-  // warmup
-  for (int i = 0; i < warmup; i++)
-  {
-    predictor_->Run();
-    // Get output tensor
-    auto output_names = predictor_->GetOutputNames();
-    auto out_tensor = predictor_->GetOutputHandle(output_names[0]);
-    std::vector<int> output_shape = out_tensor->shape();
-    auto out_bbox_num = predictor_->GetOutputHandle(output_names[1]);
-    std::vector<int> out_bbox_num_shape = out_bbox_num->shape();
-    // Calculate output length
-    int output_size = 1;
-    for (int j = 0; j < output_shape.size(); ++j) {
-      output_size *= output_shape[j];
-    }
-
-    if (output_size < 6) {
-      std::cerr << "[WARNING] No object detected." << std::endl;
-    }
-    output_data_.resize(output_size);
-    out_tensor->CopyToCpu(output_data_.data()); 
-
-    int out_bbox_num_size = 1;
-    for (int j = 0; j < out_bbox_num_shape.size(); ++j) {
-      out_bbox_num_size *= out_bbox_num_shape[j];
-    }
-    out_bbox_num_data_.resize(out_bbox_num_size);
-    out_bbox_num->CopyToCpu(out_bbox_num_data_.data());
-  }
-  
+  std::vector<std::vector<float>> out_tensor_list;
+  std::vector<std::vector<int>> output_shape_list;
   bool is_rbox = false;
-  auto inference_start = std::chrono::steady_clock::now();
-  for (int i = 0; i < repeats; i++)
-  {
+  int reg_max = 7;
+  int num_class = 80;
+  // warmup
+  for (int i = 0; i < warmup; i++) {
     predictor_->Run();
     // Get output tensor
     auto output_names = predictor_->GetOutputNames();
-    auto out_tensor = predictor_->GetOutputHandle(output_names[0]);
-    std::vector<int> output_shape = out_tensor->shape();
-    auto out_bbox_num = predictor_->GetOutputHandle(output_names[1]);
-    std::vector<int> out_bbox_num_shape = out_bbox_num->shape();
-    // Calculate output length
-    int output_size = 1;
-    for (int j = 0; j < output_shape.size(); ++j) {
-      output_size *= output_shape[j];
+    for (int j = 0; j < output_names.size(); j++) {
+      auto output_tensor = predictor_->GetOutputHandle(output_names[j]);
+      std::vector<int> output_shape = output_tensor->shape();
+      int out_num = std::accumulate(output_shape.begin(), output_shape.end(), 
+                            1, std::multiplies<int>());
+      if (output_tensor->type() == paddle_infer::DataType::INT32) {
+        out_bbox_num_data_.resize(out_num);
+        output_tensor->CopyToCpu(out_bbox_num_data_.data());
+      } else {
+        std::vector<float> out_data;
+        out_data.resize(out_num);
+        output_tensor->CopyToCpu(out_data.data());
+        out_tensor_list.push_back(out_data);
+      }
     }
-    is_rbox = output_shape[output_shape.size()-1] % 10 == 0;
+  }
 
-    if (output_size < 6) {
-      std::cerr << "[WARNING] No object detected." << std::endl;
+  auto inference_start = std::chrono::steady_clock::now();
+  for (int i = 0; i < repeats; i++) {
+    predictor_->Run();
+    // Get output tensor
+    out_tensor_list.clear();
+    output_shape_list.clear();
+    auto output_names = predictor_->GetOutputNames();
+    for (int j = 0; j < output_names.size(); j++) {
+      auto output_tensor = predictor_->GetOutputHandle(output_names[j]);
+      std::vector<int> output_shape = output_tensor->shape();
+      int out_num = std::accumulate(output_shape.begin(), output_shape.end(), 
+                            1, std::multiplies<int>());
+      output_shape_list.push_back(output_shape);
+      if (output_tensor->type() == paddle_infer::DataType::INT32) {
+        out_bbox_num_data_.resize(out_num);
+        output_tensor->CopyToCpu(out_bbox_num_data_.data());
+      } else {
+        std::vector<float> out_data;
+        out_data.resize(out_num);
+        output_tensor->CopyToCpu(out_data.data());
+        out_tensor_list.push_back(out_data);
+      }
     }
-    output_data_.resize(output_size);
-    out_tensor->CopyToCpu(output_data_.data()); 
-
-    int out_bbox_num_size = 1;
-    for (int j = 0; j < out_bbox_num_shape.size(); ++j) {
-      out_bbox_num_size *= out_bbox_num_shape[j];
-    }
-    out_bbox_num_data_.resize(out_bbox_num_size);
-    out_bbox_num->CopyToCpu(out_bbox_num_data_.data());
   }
   auto inference_end = std::chrono::steady_clock::now();
   auto postprocess_start = std::chrono::steady_clock::now();
   // Postprocessing result
   result->clear();
-  Postprocess(imgs, result, out_bbox_num_data_, is_rbox);
   bbox_num->clear();
-  for (int k=0; k<out_bbox_num_data_.size(); k++) {
-    int tmp = out_bbox_num_data_[k];
-    bbox_num->push_back(tmp);
+  if (config_.arch_ == "PicoDet") {
+    for (int i = 0; i < out_tensor_list.size(); i++) {
+      if (i == 0) {
+        num_class = output_shape_list[i][2];
+      }
+      if (i == config_.fpn_stride_.size()) {
+        reg_max = output_shape_list[i][2] / 4 - 1;
+      }
+      float *buffer = new float[out_tensor_list[i].size()];
+      memcpy(buffer, &out_tensor_list[i][0], 
+                out_tensor_list[i].size()*sizeof(float));
+      output_data_list_.push_back(buffer);
+    }
+    PaddleDetection::PicoDetPostProcess(
+        result, output_data_list_, config_.fpn_stride_, 
+        inputs_.im_shape_, inputs_.scale_factor_,
+        config_.nms_info_["score_threshold"].as<float>(), 
+        config_.nms_info_["nms_threshold"].as<float>(), num_class, reg_max);
+    bbox_num->push_back(result->size());
+  } else {
+    is_rbox = output_shape_list[0][output_shape_list[0].size()-1] % 10 == 0;
+    Postprocess(imgs, result, out_bbox_num_data_, out_tensor_list[0], is_rbox);
+    for (int k=0; k < out_bbox_num_data_.size(); k++) {
+      int tmp = out_bbox_num_data_[k];
+      bbox_num->push_back(tmp);
+    }
   }
+  
   auto postprocess_end = std::chrono::steady_clock::now();
 
   std::chrono::duration<float> preprocess_diff = preprocess_end - preprocess_start;
