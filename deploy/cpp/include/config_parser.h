@@ -99,6 +99,16 @@ class ConfigPaser {
       return false;
     }
 
+    // Get conf_thresh for tracker
+    if (config["tracker"].IsDefined()) {
+      if (config["tracker"]["conf_thres"].IsDefined()) {
+        conf_thresh_ = config["tracker"]["conf_thres"].as<float>();
+      } else {
+        std::cerr << "Please set conf_thres in tracker." << std::endl;
+        return false;
+      }
+    }
+
     // Get NMS for postprocess
     if (config["NMS"].IsDefined()) {
       nms_info_ = config["NMS"];
@@ -122,6 +132,7 @@ class ConfigPaser {
   std::vector<std::string> label_list_;
   std::vector<int> fpn_stride_;
   bool use_dynamic_shape_;
+  float conf_thresh_;
 };
 
 }  // namespace PaddleDetection
