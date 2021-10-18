@@ -543,6 +543,8 @@ class Trainer(object):
 
     def _get_infer_cfg_and_input_spec(self, save_dir, prune_input=True):
         image_shape = None
+        im_shape = [None, 2]
+        scale_factor = [None, 2]
         if self.cfg.architecture in MOT_ARCH:
             test_reader_name = 'TestMOTReader'
         else:
@@ -553,8 +555,12 @@ class Trainer(object):
         # set image_shape=[None, 3, -1, -1] as default
         if image_shape is None:
             image_shape = [None, 3, -1, -1]
+
         if len(image_shape) == 3:
             image_shape = [None] + image_shape
+        else:
+            im_shape = [image_shape[0], 2]
+            scale_factor = [image_shape[0], 2]
 
         if hasattr(self.model, 'deploy'):
             self.model.deploy = True
@@ -571,9 +577,9 @@ class Trainer(object):
             "image": InputSpec(
                 shape=image_shape, name='image'),
             "im_shape": InputSpec(
-                shape=[None, 2], name='im_shape'),
+                shape=im_shape, name='im_shape'),
             "scale_factor": InputSpec(
-                shape=[None, 2], name='scale_factor')
+                shape=scale_factor, name='scale_factor')
         }]
         if self.cfg.architecture == 'DeepSORT':
             input_spec[0].update({
