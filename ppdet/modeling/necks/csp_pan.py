@@ -55,7 +55,7 @@ class ConvBNLayer(nn.Layer):
         return x
 
 
-class DP_Module(nn.Layer):
+class DPModule(nn.Layer):
     """
     Depth-wise and point-wise module.
      Args:
@@ -73,7 +73,7 @@ class DP_Module(nn.Layer):
                  kernel_size=3,
                  stride=1,
                  act='leaky_relu'):
-        super(DP_Module, self).__init__()
+        super(DPModule, self).__init__()
         initializer = nn.initializer.KaimingUniform()
         self.act = act
         self.dwconv = nn.Conv2D(
@@ -137,7 +137,7 @@ class DarknetBottleneck(nn.Layer):
                  act="leaky_relu"):
         super(DarknetBottleneck, self).__init__()
         hidden_channels = int(out_channels * expansion)
-        conv_func = DP_Module if use_depthwise else ConvBNLayer
+        conv_func = DPModule if use_depthwise else ConvBNLayer
         self.conv1 = ConvBNLayer(
             in_channel=in_channels,
             out_channel=hidden_channels,
@@ -263,7 +263,7 @@ class CSPPAN(nn.Layer):
         self.out_channels = out_channels
         self.spatial_scales = spatial_scales
         self.num_features = num_features
-        conv_func = DP_Module if use_depthwise else ConvBNLayer
+        conv_func = DPModule if use_depthwise else ConvBNLayer
 
         if self.num_features == 4:
             self.first_top_conv = conv_func(

@@ -26,7 +26,7 @@ from paddle.nn.initializer import Normal, Constant
 
 from ppdet.core.workspace import register
 from ppdet.modeling.layers import ConvNormLayer
-from .sim_otahead import OTAVFLHead
+from .simota_head import OTAVFLHead
 
 
 @register
