@@ -56,6 +56,8 @@ class BaseArch(nn.Layer):
             num_classes = self.bbox_head.num_classes
             keep_top_k = self.bbox_post_process.nms.keep_top_k
             nms_threshold = self.bbox_post_process.nms.nms_threshold
+        else:
+            raise Exception("Multi scale test only supports CascadeRCNN, FasterRCNN and MaskRCNN for now")
 
         final_boxes = []
         all_scale_outs = paddle.concat([o['bbox'] for o in outs]).numpy()
