@@ -37,6 +37,7 @@ class CenterNet(BaseArch):
     """
     __category__ = 'architecture'
     __inject__ = ['post_process']
+    __shared__ = ['for_mot']
 
     def __init__(self,
                  backbone,
@@ -71,6 +72,8 @@ class CenterNet(BaseArch):
         head_out = self.head(neck_feat, self.inputs)
         if self.for_mot:
             head_out.update({'neck_feat': neck_feat})
+        elif self.training:
+            head_out['loss'] = head_out.pop('det_loss')
         return head_out
 
     def get_pred(self):

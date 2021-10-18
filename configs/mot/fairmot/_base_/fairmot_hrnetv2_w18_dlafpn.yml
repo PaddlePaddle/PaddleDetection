@@ -1,5 +1,6 @@
 architecture: FairMOT
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/HRNet_W18_C_pretrained.pdparams
+for_mot: True
 
 FairMOT:
   detector: CenterNet
@@ -12,7 +13,6 @@ CenterNet:
   head: CenterNetHead
   post_process: CenterNetPostProcess
   neck: CenterNetDLAFPN
-  for_mot: True
 
 HRNet:
   width: 18
@@ -28,7 +28,7 @@ CenterNetDLAFPN:
   dcn_v2: False
 
 CenterNetPostProcess:
-  for_mot: True
+  max_per_img: 500
 
 JDETracker:
   conf_thres: 0.4

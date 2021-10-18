@@ -48,9 +48,10 @@ from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
                         satisfy_sample_constraint_coverage, crop_image_sampling,
                         generate_sample_bbox_square, bbox_area_sampling,
-                        is_poly, transform_bbox)
+                        is_poly, transform_bbox, get_border)
 
 from ppdet.utils.logger import setup_logger
+from ppdet.modeling.keypoint_utils import get_affine_transform, affine_transform
 logger = setup_logger(__name__)
 
 registered_ops = []
@@ -2962,3 +2963,189 @@ class RandomSizeCrop(BaseOperator):
 
         region = self.get_crop_params(sample['image'].shape[:2], [h, w])
         return self.crop(sample, region)
+
+
+@register_op
+class WarpAffine(BaseOperator):
+    def __init__(self,
+                 keep_res=False,
+                 pad=31,
+                 input_h=512,
+                 input_w=512,
+                 scale=0.4,
+                 shift=0.1):
+        """WarpAffine
+        Warp affine the image
+        """
+        super(WarpAffine, self).__init__()
+        self.keep_res = keep_res
+        self.pad = pad
+        self.input_h = input_h
+        self.input_w = input_w
+        self.scale = scale
+        self.shift = shift
+
+    def apply(self, sample, context=None):
+        img = sample['image']
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
+            return sample
+
+        h, w = img.shape[:2]
+
+        if self.keep_res:
+            input_h = (h | self.pad) + 1
+            input_w = (w | self.pad) + 1
+            s = np.array([input_w, input_h], dtype=np.float32)
+            c = np.array([w // 2, h // 2], dtype=np.float32)
+
+        else:
+            s = max(h, w) * 1.0
+            input_h, input_w = self.input_h, self.input_w
+            c = np.array([w / 2., h / 2.], dtype=np.float32)
+
+        trans_input = get_affine_transform(c, s, 0, [input_w, input_h])
+        img = cv2.resize(img, (w, h))
+        inp = cv2.warpAffine(
+            img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR)
+        sample['image'] = inp
+        return sample
+
+
+@register_op
+class FlipWarpAffine(BaseOperator):
+    def __init__(self,
+                 keep_res=False,
+                 pad=31,
+                 input_h=512,
+                 input_w=512,
+                 not_rand_crop=False,
+                 scale=0.4,
+                 shift=0.1,
+                 flip=0.5,
+                 is_scale=True,
+                 use_random=True):
+        """FlipWarpAffine
+        1. Random Crop
+        2. Flip the image horizontal
+        3. Warp affine the image 
+        """
+        super(FlipWarpAffine, self).__init__()
+        self.keep_res = keep_res
+        self.pad = pad
+        self.input_h = input_h
+        self.input_w = input_w
+        self.not_rand_crop = not_rand_crop
+        self.scale = scale
+        self.shift = shift
+        self.flip = flip
+        self.is_scale = is_scale
+        self.use_random = use_random
+
+    def apply(self, sample, context=None):
+        img = sample['image']
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
+            return sample
+
+        h, w = img.shape[:2]
+
+        if self.keep_res:
+            input_h = (h | self.pad) + 1
+            input_w = (w | self.pad) + 1
+            s = np.array([input_w, input_h], dtype=np.float32)
+            c = np.array([w // 2, h // 2], dtype=np.float32)
+
+        else:
+            s = max(h, w) * 1.0
+            input_h, input_w = self.input_h, self.input_w
+            c = np.array([w / 2., h / 2.], dtype=np.float32)
+
+        if self.use_random:
+            gt_bbox = sample['gt_bbox']
+            if not self.not_rand_crop:
+                s = s * np.random.choice(np.arange(0.6, 1.4, 0.1))
+                w_border = get_border(128, w)
+                h_border = get_border(128, h)
+                c[0] = np.random.randint(low=w_border, high=w - w_border)
+                c[1] = np.random.randint(low=h_border, high=h - h_border)
+            else:
+                sf = self.scale
+                cf = self.shift
+                c[0] += s * np.clip(np.random.randn() * cf, -2 * cf, 2 * cf)
+                c[1] += s * np.clip(np.random.randn() * cf, -2 * cf, 2 * cf)
+                s = s * np.clip(np.random.randn() * sf + 1, 1 - sf, 1 + sf)
+
+            if np.random.random() < self.flip:
+                img = img[:, ::-1, :]
+                c[0] = w - c[0] - 1
+                oldx1 = gt_bbox[:, 0].copy()
+                oldx2 = gt_bbox[:, 2].copy()
+                gt_bbox[:, 0] = w - oldx2 - 1
+                gt_bbox[:, 2] = w - oldx1 - 1
+            sample['gt_bbox'] = gt_bbox
+
+        trans_input = get_affine_transform(c, s, 0, [input_w, input_h])
+        if not self.use_random:
+            img = cv2.resize(img, (w, h))
+        inp = cv2.warpAffine(
+            img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR)
+        if self.is_scale:
+            inp = (inp.astype(np.float32) / 255.)
+        sample['image'] = inp
+        sample['center'] = c
+        sample['scale'] = s
+        return sample
+
+
+@register_op
+class CenterRandColor(BaseOperator):
+    """Random color for CenterNet series models.
+    Args:
+        saturation (float): saturation settings.
+        contrast (float): contrast settings.
+        brightness (float): brightness settings.
+    """
+
+    def __init__(self, saturation=0.4, contrast=0.4, brightness=0.4):
+        super(CenterRandColor, self).__init__()
+        self.saturation = saturation
+        self.contrast = contrast
+        self.brightness = brightness
+
+    def apply_saturation(self, img, img_gray):
+        alpha = 1. + np.random.uniform(
+            low=-self.saturation, high=self.saturation)
+        self._blend(alpha, img, img_gray[:, :, None])
+        return img
+
+    def apply_contrast(self, img, img_gray):
+        alpha = 1. + np.random.uniform(low=-self.contrast, high=self.contrast)
+        img_mean = img_gray.mean()
+        self._blend(alpha, img, img_mean)
+        return img
+
+    def apply_brightness(self, img, img_gray):
+        alpha = 1 + np.random.uniform(
+            low=-self.brightness, high=self.brightness)
+        img *= alpha
+        return img
+
+    def _blend(self, alpha, img, img_mean):
+        img *= alpha
+        img_mean *= (1 - alpha)
+        img += img_mean
+
+    def __call__(self, sample, context=None):
+        img = sample['image']
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        functions = [
+            self.apply_brightness,
+            self.apply_contrast,
+            self.apply_saturation,
+        ]
+        distortions = np.random.permutation(functions)
+        for func in distortions:
+            img = func(img, img_gray)
+        sample['image'] = img
+        return sample

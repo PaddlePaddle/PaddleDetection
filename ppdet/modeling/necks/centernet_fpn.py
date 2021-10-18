@@ -16,8 +16,9 @@ import numpy as np
 import math
 import paddle
 import paddle.nn as nn
+from paddle import ParamAttr
+from paddle.nn.initializer import Uniform
 import paddle.nn.functional as F
-from paddle.nn.initializer import KaimingUniform
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling.layers import ConvNormLayer
 from ppdet.modeling.backbones.hardnet import ConvLayer, HarDBlock
@@ -27,7 +28,7 @@ __all__ = ['CenterNetDLAFPN', 'CenterNetHarDNetFPN']
 
 
 def fill_up_weights(up):
-    weight = up.weight
+    weight = up.weight.numpy()
     f = math.ceil(weight.shape[2] / 2)
     c = (2 * f - 1 - f % 2) / (2. * f)
     for i in range(weight.shape[2]):
@@ -36,6 +37,7 @@ def fill_up_weights(up):
                 (1 - math.fabs(i / f - c)) * (1 - math.fabs(j / f - c))
     for c in range(1, weight.shape[0]):
         weight[c, 0, :, :] = weight[0, 0, :, :]
+    up.weight.set_value(weight)
 
 
 class IDAUp(nn.Layer):
@@ -44,6 +46,8 @@ class IDAUp(nn.Layer):
         for i in range(1, len(ch_ins)):
             ch_in = ch_ins[i]
             up_s = int(up_strides[i])
+            fan_in = ch_in * 3 * 3
+            stdv = 1. / math.sqrt(fan_in)
             proj = nn.Sequential(
                 ConvNormLayer(
                     ch_in,
@@ -54,7 +58,8 @@ class IDAUp(nn.Layer):
                     bias_on=dcn_v2,
                     norm_decay=None,
                     dcn_lr_scale=1.,
-                    dcn_regularizer=None),
+                    dcn_regularizer=None,
+                    initializer=Uniform(-stdv, stdv)),
                 nn.ReLU())
             node = nn.Sequential(
                 ConvNormLayer(
@@ -66,21 +71,23 @@ class IDAUp(nn.Layer):
                     bias_on=dcn_v2,
                     norm_decay=None,
                     dcn_lr_scale=1.,
-                    dcn_regularizer=None),
+                    dcn_regularizer=None,
+                    initializer=Uniform(-stdv, stdv)),
                 nn.ReLU())
 
-            param_attr = paddle.ParamAttr(initializer=KaimingUniform())
+            kernel_size = up_s * 2
+            fan_in = ch_out * kernel_size * kernel_size
+            stdv = 1. / math.sqrt(fan_in)
             up = nn.Conv2DTranspose(
                 ch_out,
                 ch_out,
                 kernel_size=up_s * 2,
-                weight_attr=param_attr,
                 stride=up_s,
                 padding=up_s // 2,
                 groups=ch_out,
+                weight_attr=ParamAttr(initializer=Uniform(-stdv, stdv)),
                 bias_attr=False)
-            # TODO: uncomment fill_up_weights
-            #fill_up_weights(up)
+            fill_up_weights(up)
             setattr(self, 'proj_' + str(i), proj)
             setattr(self, 'up_' + str(i), up)
             setattr(self, 'node_' + str(i), node)
@@ -138,9 +145,10 @@ class CenterNetDLAFPN(nn.Layer):
         last_level (int): the last level of input feature fed into the upsamplng block
         out_channel (int): the channel of the output feature, 0 by default means
             the channel of the input feature whose down ratio is `down_ratio`
-        first_level (int): the first level of input feature fed into the upsamplng
-            block, -1 by default and it will be calculated by down_ratio
         dcn_v2 (bool): whether use the DCNv2, true by default
+        first_level (int|None): the first level of input feature fed into the upsamplng block.
+            if None, the first level stands for logs(down_ratio)
+        
     """
 
     def __init__(self,
@@ -148,11 +156,13 @@ class CenterNetDLAFPN(nn.Layer):
                  down_ratio=4,
                  last_level=5,
                  out_channel=0,
-                 first_level=-1,
-                 dcn_v2=True):
+                 dcn_v2=True,
+                 first_level=None):
         super(CenterNetDLAFPN, self).__init__()
         self.first_level = int(np.log2(
-            down_ratio)) if first_level == -1 else first_level
+            down_ratio)) if first_level is None else first_level
+        assert self.first_level >= 0, "first level in CenterNetDLAFPN should be greater or equal to 0, but received {}".format(
+            self.first_level)
         self.down_ratio = down_ratio
         self.last_level = last_level
         scales = [2**i for i in range(len(in_channels[self.first_level:]))]
@@ -212,8 +222,9 @@ class CenterNetHarDNetFPN(nn.Layer):
             [96, 214, 458, 784] by default, means the channels of HarDNet85
         num_layers (int): HarDNet laters, 85 by default
         down_ratio (int): the down ratio from images to heatmap, 4 by default
-        first_level (int): the first level of input feature fed into the
-            upsamplng block
+        first_level (int|None): the first level of input feature fed into the upsamplng block.
+            if None, the first level stands for logs(down_ratio) - 1
+
         last_level (int): the last level of input feature fed into the upsamplng block
         out_channel (int): the channel of the output feature, 0 by default means
             the channel of the input feature whose down ratio is `down_ratio`
@@ -223,17 +234,20 @@ class CenterNetHarDNetFPN(nn.Layer):
                  in_channels,
                  num_layers=85,
                  down_ratio=4,
-                 first_level=-1,
+                 first_level=None,
                  last_level=4,
                  out_channel=0):
         super(CenterNetHarDNetFPN, self).__init__()
         self.first_level = int(np.log2(
-            down_ratio)) - 1 if first_level == -1 else first_level
+            down_ratio)) - 1 if first_level is None else first_level
+        assert self.first_level >= 0, "first level in CenterNetDLAFPN should be greater or equal to 0, but received {}".format(
+            self.first_level)
         self.down_ratio = down_ratio
         self.last_level = last_level
         self.last_pool = nn.AvgPool2D(kernel_size=2, stride=2)
 
-        assert num_layers in [68, 85], "HarDNet-{} not support.".format(num_layers)
+        assert num_layers in [68, 85], "HarDNet-{} not support.".format(
+            num_layers)
         if num_layers == 85:
             self.last_proj = ConvLayer(784, 256, kernel_size=1)
             self.last_blk = HarDBlock(768, 80, 1.7, 8)
