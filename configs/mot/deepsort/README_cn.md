@@ -6,6 +6,7 @@
 - [简介](#简介)
 - [模型库](#模型库)
 - [快速开始](#快速开始)
+- [适配其他检测器](适配其他检测器)
 - [引用](#引用)
 
 ## 简介
@@ -121,6 +122,9 @@ python deploy/python/mot_sde_infer.py --model_dir=output_inference/pedestrian_yo
 **注意:**
  跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_mot_txt_per_img`(对每张图片保存一个txt)表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
  `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
+
+## 适配其他检测器
+
 
 ## 引用
 ```

@@ -1,13 +1,12 @@
 _BASE_: [
-  '../../datasets/mot.yml',
-  '../../runtime.yml',
-  '../jde/_base_/optimizer_30e.yml',
-  '../jde/_base_/jde_reader_1088x608.yml',
+  '../../../datasets/mot.yml',
+  '../../../runtime.yml',
+  '../../jde/_base_/optimizer_30e.yml',
+  '../../jde/_base_/jde_reader_1088x608.yml',
 ]
-weights: output/jde_yolov3_darknet53_30e_1088x608/model_final
+weights: output/jde_yolov3_darknet53_30e_mix/model_final
 
 metric: MOTDet
-
 EvalReader:
   inputs_def:
     num_max_boxes: 50
@@ -38,6 +37,8 @@ TestDataset:
   !ImageFolder
     anno_path: None
 
+
+# detector configuration
 architecture: YOLOv3
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
 
