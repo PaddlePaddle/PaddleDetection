@@ -52,11 +52,7 @@ class BaseArch(nn.Layer):
         nms_threshold = 0.5
         keep_top_k = 100
 
-        if self.__class__.__name__ in ('CascadeRCNN', ):
-            num_classes = self.bbox_head.num_classes
-            keep_top_k = self.bbox_head.nms.keep_top_k
-            nms_threshold = self.bbox_head.nms.nms_threshold
-        elif self.__class__.__name__ in ('FasterRCNN', 'MaskRCNN'):
+        if self.__class__.__name__ in ('CascadeRCNN', 'FasterRCNN', 'MaskRCNN'):
             num_classes = self.bbox_head.num_classes
             keep_top_k = self.bbox_post_process.nms.keep_top_k
             nms_threshold = self.bbox_post_process.nms.nms_threshold
