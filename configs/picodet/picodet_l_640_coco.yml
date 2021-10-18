@@ -29,3 +29,15 @@ PicoHead:
     norm_type: bn
     share_cls_reg: False
   feat_in_chan: 128
+
+TrainReader:
+  batch_size: 48
+
+LearningRate:
+  base_lr: 0.3
+  schedulers:
+  - !CosineDecay
+    max_epochs: 300
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 300

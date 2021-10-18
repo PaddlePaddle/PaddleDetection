@@ -241,7 +241,7 @@ class CSPPAN(nn.Layer):
         in_channels (List[int]): Number of input channels per scale.
         out_channels (int): Number of output channels (used at each scale)
         kernel_size (int): The conv2d kernel size of this Module.
-        num_features
+        num_features (int): Number of output features of CSPPAN module.
         num_csp_blocks (int): Number of bottlenecks in CSPLayer. Default: 1
         use_depthwise (bool): Whether to depthwise separable convolution in
             blocks. Default: True
