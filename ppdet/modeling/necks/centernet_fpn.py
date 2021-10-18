@@ -145,8 +145,6 @@ class CenterNetDLAFPN(nn.Layer):
         last_level (int): the last level of input feature fed into the upsamplng block
         out_channel (int): the channel of the output feature, 0 by default means
             the channel of the input feature whose down ratio is `down_ratio`
-        first_level (int): the first level of input feature fed into the upsamplng
-            block, -1 by default and it will be calculated by down_ratio
         dcn_v2 (bool): whether use the DCNv2, true by default
         first_level (int|None): the first level of input feature fed into the upsamplng block.
             if None, the first level stands for logs(down_ratio)
@@ -163,6 +161,8 @@ class CenterNetDLAFPN(nn.Layer):
         super(CenterNetDLAFPN, self).__init__()
         self.first_level = int(np.log2(
             down_ratio)) if first_level is None else first_level
+        assert self.first_level >= 0, "first level in CenterNetDLAFPN should be greater or equal to 0, but received {}".format(
+            self.first_level)
         self.down_ratio = down_ratio
         self.last_level = last_level
         scales = [2**i for i in range(len(in_channels[self.first_level:]))]
@@ -222,8 +222,9 @@ class CenterNetHarDNetFPN(nn.Layer):
             [96, 214, 458, 784] by default, means the channels of HarDNet85
         num_layers (int): HarDNet laters, 85 by default
         down_ratio (int): the down ratio from images to heatmap, 4 by default
-        first_level (int): the first level of input feature fed into the
-            upsamplng block
+        first_level (int|None): the first level of input feature fed into the upsamplng block.
+            if None, the first level stands for logs(down_ratio) - 1
+
         last_level (int): the last level of input feature fed into the upsamplng block
         out_channel (int): the channel of the output feature, 0 by default means
             the channel of the input feature whose down ratio is `down_ratio`
@@ -233,12 +234,14 @@ class CenterNetHarDNetFPN(nn.Layer):
                  in_channels,
                  num_layers=85,
                  down_ratio=4,
-                 first_level=-1,
+                 first_level=None,
                  last_level=4,
                  out_channel=0):
         super(CenterNetHarDNetFPN, self).__init__()
         self.first_level = int(np.log2(
-            down_ratio)) - 1 if first_level == -1 else first_level
+            down_ratio)) - 1 if first_level is None else first_level
+        assert self.first_level >= 0, "first level in CenterNetDLAFPN should be greater or equal to 0, but received {}".format(
+            self.first_level)
         self.down_ratio = down_ratio
         self.last_level = last_level
         self.last_pool = nn.AvgPool2D(kernel_size=2, stride=2)

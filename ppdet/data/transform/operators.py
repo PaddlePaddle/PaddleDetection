@@ -44,11 +44,11 @@ from ppdet.core.workspace import serializable
 from ppdet.modeling import bbox_utils
 from ..reader import Compose
 
-from .op_helper import (
-    satisfy_sample_constraint, filter_and_process, generate_sample_bbox,
-    clip_bbox, data_anchor_sampling, satisfy_sample_constraint_coverage,
-    crop_image_sampling, generate_sample_bbox_square, bbox_area_sampling,
-    is_poly, transform_bbox, gaussian_radius, draw_umich_gaussian, get_border)
+from .op_helper import (satisfy_sample_constraint, filter_and_process,
+                        generate_sample_bbox, clip_bbox, data_anchor_sampling,
+                        satisfy_sample_constraint_coverage, crop_image_sampling,
+                        generate_sample_bbox_square, bbox_area_sampling,
+                        is_poly, transform_bbox, get_border)
 
 from ppdet.utils.logger import setup_logger
 from ...modeling.keypoint_utils import get_affine_transform, affine_transform
@@ -3148,79 +3148,4 @@ class CenterRandColor(BaseOperator):
         for func in distortions:
             img = func(img, img_gray)
         sample['image'] = img
-        return sample
-
-
-@register_op
-class Gt2CenterTarget(BaseOperator):
-    """Gt2CenterTarget
-    """
-
-    def __init__(self, down_ratio, num_classes=80, max_objs=128):
-        super(Gt2CenterTarget, self).__init__()
-        self.down_ratio = down_ratio
-        self.num_classes = num_classes
-        self.max_objs = max_objs
-
-    def __call__(self, sample, context=None):
-        input_h, input_w = sample['image'].shape[1:]
-        output_h = input_h // self.down_ratio
-        output_w = input_w // self.down_ratio
-        num_classes = self.num_classes
-        c = sample['center']
-        s = sample['scale']
-        gt_bbox = sample['gt_bbox']
-        gt_class = sample['gt_class']
-
-        hm = np.zeros((num_classes, output_h, output_w), dtype=np.float32)
-        wh = np.zeros((self.max_objs, 2), dtype=np.float32)
-        dense_wh = np.zeros((2, output_h, output_w), dtype=np.float32)
-        reg = np.zeros((self.max_objs, 2), dtype=np.float32)
-        ind = np.zeros((self.max_objs), dtype=np.int64)
-        reg_mask = np.zeros((self.max_objs), dtype=np.int32)
-        cat_spec_wh = np.zeros(
-            (self.max_objs, num_classes * 2), dtype=np.float32)
-        cat_spec_mask = np.zeros(
-            (self.max_objs, num_classes * 2), dtype=np.int32)
-
-        trans_output = get_affine_transform(c, [s, s], 0, [output_w, output_h])
-
-        gt_det = []
-        for i, (bbox, cls) in enumerate(zip(gt_bbox, gt_class)):
-            cls = int(cls)
-            bbox[:2] = affine_transform(bbox[:2], trans_output)
-            bbox[2:] = affine_transform(bbox[2:], trans_output)
-            bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, output_w - 1)
-            bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, output_h - 1)
-            h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
-            if h > 0 and w > 0:
-                radius = gaussian_radius((math.ceil(h), math.ceil(w)), 0.7)
-                radius = max(0, int(radius))
-                ct = np.array(
-                    [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2],
-                    dtype=np.float32)
-                ct_int = ct.astype(np.int32)
-                draw_umich_gaussian(hm[cls], ct_int, radius)
-                wh[i] = 1. * w, 1. * h
-                ind[i] = ct_int[1] * output_w + ct_int[0]
-                reg[i] = ct - ct_int
-                reg_mask[i] = 1
-                cat_spec_wh[i, cls * 2:cls * 2 + 2] = wh[i]
-                cat_spec_mask[i, cls * 2:cls * 2 + 2] = 1
-                gt_det.append([
-                    ct[0] - w / 2, ct[1] - h / 2, ct[0] + w / 2, ct[1] + h / 2,
-                    1, cls
-                ])
-
-        sample.pop('gt_bbox', None)
-        sample.pop('gt_class', None)
-        sample.pop('center', None)
-        sample.pop('scale', None)
-        sample.pop('is_crowd', None)
-        sample.pop('difficult', None)
-        sample['heatmap'] = hm
-        sample['index_mask'] = reg_mask
-        sample['index'] = ind
-        sample['size'] = wh
-        sample['offset'] = reg
         return sample
