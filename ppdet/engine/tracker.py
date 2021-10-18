@@ -166,6 +166,7 @@ class Tracker(object):
                       save_dir=None,
                       show_image=False,
                       frame_rate=30,
+                      scaled=False,
                       det_file='',
                       draw_threshold=0):
         if save_dir:
@@ -211,8 +212,12 @@ class Tracker(object):
             else:
                 outs = self.model.detector(data)
                 if outs['bbox_num'] > 0:
-                    pred_bboxes = scale_coords(outs['bbox'][:, 2:], input_shape,
-                                               im_shape, scale_factor)
+                    if not scaled:
+                        pred_bboxes = scale_coords(outs['bbox'][:, 2:],
+                                                   input_shape, im_shape,
+                                                   scale_factor)
+                    else:
+                        pred_bboxes = outs['bbox'][:, 2:]
                     pred_scores = outs['bbox'][:, 1:2]
                 else:
                     pred_bboxes = []
@@ -270,6 +275,7 @@ class Tracker(object):
                      save_images=False,
                      save_videos=False,
                      show_image=False,
+                     scaled=False,
                      det_results_dir=''):
         if not os.path.exists(output_dir): os.makedirs(output_dir)
         result_root = os.path.join(output_dir, 'mot_results')
@@ -318,6 +324,7 @@ class Tracker(object):
                         save_dir=save_dir,
                         show_image=show_image,
                         frame_rate=frame_rate,
+                        scaled=scaled,
                         det_file=os.path.join(det_results_dir,
                                               '{}.txt'.format(seq)))
                 else:
@@ -382,6 +389,7 @@ class Tracker(object):
                     save_images=False,
                     save_videos=True,
                     show_image=False,
+                    scaled=False,
                     det_results_dir='',
                     draw_threshold=0.5):
         assert video_file is not None or image_dir is not None, \
@@ -438,6 +446,7 @@ class Tracker(object):
                     save_dir=save_dir,
                     show_image=show_image,
                     frame_rate=frame_rate,
+                    scaled=scaled,
                     det_file=os.path.join(det_results_dir,
                                           '{}.txt'.format(seq)),
                     draw_threshold=draw_threshold)

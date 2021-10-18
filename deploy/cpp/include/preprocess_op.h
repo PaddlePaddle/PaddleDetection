@@ -86,7 +86,6 @@ class Resize : public PreprocessOp {
  public:
   virtual void Init(const YAML::Node& item) {
     interp_ = item["interp"].as<int>();
-    //max_size_ = item["target_size"].as<int>();
     keep_ratio_ = item["keep_ratio"].as<bool>();
     target_size_ = item["target_size"].as<std::vector<int>>();
  }

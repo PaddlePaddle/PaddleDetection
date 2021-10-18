@@ -1,3 +1,7 @@
+# DeepSORT does not need to train on MOT dataset, only used for evaluation.
+# MOT dataset needs to be trained on the detector(like YOLOv3) only using bboxes.
+# And gt IDs don't need to be trained.
+
 EvalMOTReader:
   sample_transforms:
     - Decode: {}

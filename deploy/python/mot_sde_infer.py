@@ -135,20 +135,29 @@ class SDE_Detector(Detector):
             enable_mkldnn=enable_mkldnn)
         assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
 
-    def postprocess(self, boxes, input_shape, im_shape, scale_factor,
-                    threshold):
-        pred_bboxes = scale_coords(boxes[:, 2:], input_shape, im_shape,
+    def postprocess(self, boxes, input_shape, im_shape, scale_factor, threshold,
+                    scaled):
+        if not scaled:
+            # postprocess output of jde yolov3 detector
+            pred_bboxes = scale_coords(boxes[:, 2:], input_shape, im_shape,
+                                       scale_factor)
+            pred_bboxes = clip_box(pred_bboxes, input_shape, im_shape,
                                    scale_factor)
-        pred_bboxes = clip_box(pred_bboxes, input_shape, im_shape, scale_factor)
+        else:
+            # postprocess output of general detector
+            pred_bboxes = boxes[:, 2:]
+
         pred_scores = boxes[:, 1:2]
         keep_mask = pred_scores[:, 0] >= threshold
         return pred_bboxes[keep_mask], pred_scores[keep_mask]
 
-    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
+    def predict(self, image, scaled, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
             image (np.ndarray): image numpy data
             threshold (float): threshold of predicted box' score
+            scaled (bool): whether the coords after detector outputs are scaled,
+                default False in jde yolov3, set True in general detector.
         Returns:
             pred_bboxes, pred_scores (np.ndarray)
         '''
@@ -181,7 +190,7 @@ class SDE_Detector(Detector):
         im_shape = inputs['im_shape']
         scale_factor = inputs['scale_factor']
         pred_bboxes, pred_scores = self.postprocess(
-            boxes, input_shape, im_shape, scale_factor, threshold)
+            boxes, input_shape, im_shape, scale_factor, threshold, scaled)
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
         return pred_bboxes, pred_scores
@@ -302,14 +311,14 @@ def predict_image(detector, reid_model, image_list):
         frame = cv2.imread(img_file)
         if FLAGS.run_benchmark:
             pred_bboxes, pred_scores = detector.predict(
-                [frame], FLAGS.threshold, warmup=10, repeats=10)
+                [frame], FLAGS.scaled, FLAGS.threshold, warmup=10, repeats=10)
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
             detector.gpu_mem += gm
             detector.gpu_util += gu
             print('Test iter {}, file name:{}'.format(i, img_file))
         else:
-            pred_bboxes, pred_scores = detector.predict([frame],
+            pred_bboxes, pred_scores = detector.predict([frame], FLAGS.scaled,
                                                         FLAGS.threshold)
 
         # process
@@ -319,7 +328,8 @@ def predict_image(detector, reid_model, image_list):
             axis=1)
         crops, pred_scores = reid_model.get_crops(
             pred_bboxes, frame, pred_scores, w=64, h=192)
-
+        if len(crops) == 0:
+            continue
         if FLAGS.run_benchmark:
             online_tlwhs, online_scores, online_ids = reid_model.predict(
                 crops, bbox_tlwh, pred_scores, warmup=10, repeats=10)
@@ -366,7 +376,8 @@ def predict_video(detector, reid_model, camera_id):
         if not ret:
             break
         timer.tic()
-        pred_bboxes, pred_scores = detector.predict([frame], FLAGS.threshold)
+        pred_bboxes, pred_scores = detector.predict([frame], FLAGS.scaled,
+                                                    FLAGS.threshold)
         timer.toc()
         bbox_tlwh = np.concatenate(
             (pred_bboxes[:, 0:2],
@@ -374,7 +385,8 @@ def predict_video(detector, reid_model, camera_id):
             axis=1)
         crops, pred_scores = reid_model.get_crops(
             pred_bboxes, frame, pred_scores, w=64, h=192)
-
+        if len(crops) == 0:
+            continue
         online_tlwhs, online_scores, online_ids = reid_model.predict(
             crops, bbox_tlwh, pred_scores)
 
@@ -395,6 +407,23 @@ def predict_video(detector, reid_model, camera_id):
                 os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
         else:
             writer.write(im)
+
+        if FLAGS.save_mot_txt_per_img:
+            save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            result_filename = os.path.join(save_dir,
+                                           '{:05d}.txt'.format(frame_id))
+            # First few frames, the model may have no tracking results but have
+            # detection results，use the detection results instead, and set id -1.
+            if results[-1][2] == []:
+                tlwhs = [tlwh for tlwh in bbox_tlwh]
+                scores = [score[0] for score in pred_scores]
+                result = (frame_id + 1, tlwhs, scores, [-1] * len(tlwhs))
+            else:
+                result = results[-1]
+            write_mot_results(result_filename, [result])
+
         frame_id += 1
         print('detect frame:%d' % (frame_id))
         if camera_id != -1:

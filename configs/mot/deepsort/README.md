@@ -55,7 +55,7 @@ If you use a stronger detection model, you can get better results. Each txt is t
 - `width,height` is the pixel width and height
 - `conf` is the object score with default value `1` (the results had been filtered out according to the detection score threshold)
 
-- 2.Load the detection model and the ReID model at the same time. Here, the JDE version of YOLOv3 is selected. For more detail of configuration, see `configs/mot/deepsort/_base_/deepsort_yolov3_darknet53_pcb_pyramid_r101.yml`.
+- 2. Load the detection model and the ReID model at the same time. Here, the JDE version of YOLOv3 is selected. For more detail of configuration, see `configs/mot/deepsort/_base_/deepsort_jde_yolov3_darknet53_pcb_pyramid_r101.yml`. Load other general detection model, you can refer to `configs/mot/deepsort/_base_/deepsort_yolov3_darknet53_pcb_pyramid_r101.yml`.
 
 ## Getting Start
 
@@ -65,40 +65,60 @@ If you use a stronger detection model, you can get better results. Each txt is t
 # Load the result file and ReID model to get the tracking result
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml --det_results_dir {your detection results}
 
-# Load the detection model and ReID model to get the tracking results
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml
+# Load JDE YOLOv3 detector and ReID model to get the tracking results
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid_r101.yml
+
+# or Load genernal YOLOv3 detector and ReID model to get the tracking results
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml --scaled=True
 ```
+**Notes:**
+JDE YOLOv3 pedestrian detector is trained with the same MOT dataset as JDE and FairMOT. In addition, the biggest difference between this model and general YOLOv3 model is that JDEBBoxPostProcess post-processing, and the output coordinates are not scaled back to the original image.
+General YOLOv3 pedestrian detector is not trained on MOT dataset, so the performance is lower. But the output coordinates are scaled back to the original image.
+ `--scaled` means whether the coords after detector outputs are scaled back to the original image, False in JDE YOLOv3, True in general detector.
 
 ### 2. Inference
 
 Inference a vidoe on single GPU with following command:
 
 ```bash
-# inference on video and save a video
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml --video_file={your video name}.mp4  --save_videos
+# load JDE YOLOv3 pedestrian detector and ReID model to get tracking results
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid_r101.yml --video_file={your video name}.mp4  --save_videos
+
+# or load general YOLOv3 pedestrian detector and ReID model to get tracking results
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml --video_file={your video name}.mp4 --scaled=True --save_videos
 ```
 **Notes:**
  Please make sure that [ffmpeg](https://ffmpeg.org/ffmpeg.html) is installed first, on Linux(Ubuntu) platform you can directly install it by the following command:`apt-get update && apt-get install -y ffmpeg`.
+ `--scaled` means whether the coords after detector outputs are scaled back to the original image, False in JDE YOLOv3, True in general detector.
 
 ### 3. Export model
 
 ```bash
-1.export detection model
+# 1.export detection model
+# export JDE YOLOv3 pedestrian detector
 CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/jde_yolov3_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608.pdparams
 
-2.export ReID model
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams
-or
+# or export general YOLOv3 pedestrian detector
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/pedestrian/pedestrian_yolov3_darknet.yml -o weights=https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams
+
+
+# 2. export ReID model
 CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams
 ```
 
 ### 4. Using exported model for python inference
 
 ```bash
-python deploy/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608/ --reid_model_dir=output_inference/deepsort_yolov3_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+# using exported JDE YOLOv3 pedestrian detector
+python deploy/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+
+# or using exported general YOLOv3 pedestrian detector
+python deploy/python/mot_sde_infer.py --model_dir=output_inference/pedestrian_yolov3_darknet/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
 ```
 **Notes:**
-The tracking model is used to predict the video, and does not support the prediction of a single image. The visualization video of the tracking results is saved by default. You can add `--save_mot_txts` to save the txt result file, or `--save_images` to save the visualization images.
+The tracking model is used to predict the video, and does not support the prediction of a single image. The visualization video of the tracking results is saved by default. You can add `--save_mot_txts`(save a txt for every video) or `--save_mot_txt_per_img`(save a txt for every image) to save the txt result file, or `--save_images` to save the visualization images.
+ `--scaled` means whether the coords after detector outputs are scaled back to the original image, False in JDE YOLOv3, True in general detector.
+
 
 ## Citations
 ```

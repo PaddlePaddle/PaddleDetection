@@ -19,6 +19,7 @@
 #include <memory>
 #include <utility>
 #include <ctime>
+#include <numeric>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -28,20 +29,12 @@
 
 #include "include/preprocess_op.h"
 #include "include/config_parser.h"
+#include "include/utils.h"
+#include "include/picodet_postprocess.h"
 
 using namespace paddle_infer;
 
 namespace PaddleDetection {
-// Object Detection Result
-struct ObjectResult {
-  // Rectangle coordinates of detected object: left, right, top, down
-  std::vector<int> rect;
-  // Class id of detected object
-  int class_id;
-  // Confidence of detected object
-  float confidence;
-};
-
 
 // Generate visualization colormap for each class
 std::vector<int> GenerateColorMap(int num_class);
@@ -49,7 +42,7 @@ std::vector<int> GenerateColorMap(int num_class);
 
 // Visualiztion Detection Result
 cv::Mat VisualizeResult(const cv::Mat& img,
-                     const std::vector<ObjectResult>& results,
+                     const std::vector<PaddleDetection::ObjectResult>& results,
                      const std::vector<std::string>& lables,
                      const std::vector<int>& colormap,
                      const bool is_rbox);
@@ -96,7 +89,7 @@ class ObjectDetector {
       const double threshold = 0.5,
       const int warmup = 0,
       const int repeats = 1,
-      std::vector<ObjectResult>* result = nullptr,
+      std::vector<PaddleDetection::ObjectResult>* result = nullptr,
       std::vector<int>* bbox_num = nullptr,
       std::vector<double>* times = nullptr);
 
@@ -121,17 +114,17 @@ class ObjectDetector {
   // Postprocess result
   void Postprocess(
       const std::vector<cv::Mat> mats,
-      std::vector<ObjectResult>* result,
+      std::vector<PaddleDetection::ObjectResult>* result,
       std::vector<int> bbox_num,
+      std::vector<float> output_data_,
       bool is_rbox);
 
   std::shared_ptr<Predictor> predictor_;
   Preprocessor preprocessor_;
   ImageBlob inputs_;
-  std::vector<float> output_data_;
-  std::vector<int> out_bbox_num_data_;
   float threshold_;
   ConfigPaser config_;
+
 };
 
 }  // namespace PaddleDetection

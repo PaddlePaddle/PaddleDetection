@@ -92,7 +92,9 @@ class JDE_Detector(Detector):
     def postprocess(self, pred_dets, pred_embs, threshold):
         online_targets = self.tracker.update(pred_dets, pred_embs)
         if online_targets == []:
-            return [pred_dets[0][:4]], [pred_dets[0][4]], [1]
+            # First few frames, the model may have no tracking results but have
+            # detection results，use the detection results instead, and set id -1.
+            return [pred_dets[0][:4]], [pred_dets[0][4]], [-1]
         online_tlwhs, online_ids = [], []
         online_scores = []
         for t in online_targets:
@@ -162,8 +164,6 @@ def write_mot_results(filename, results, data_type='mot'):
             if data_type == 'kitti':
                 frame_id -= 1
             for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
-                if track_id < 0:
-                    continue
                 x1, y1, w, h = tlwh
                 x2, y2 = x1 + w, y1 + h
                 line = save_format.format(
@@ -254,6 +254,15 @@ def predict_video(detector, camera_id):
                 os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
         else:
             writer.write(im)
+
+        if FLAGS.save_mot_txt_per_img:
+            save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            result_filename = os.path.join(save_dir,
+                                           '{:05d}.txt'.format(frame_id))
+            write_mot_results(result_filename, [results[-1]])
+
         frame_id += 1
         print('detect frame:%d' % (frame_id))
         if camera_id != -1:
