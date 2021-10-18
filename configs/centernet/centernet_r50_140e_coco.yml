@@ -6,4 +6,4 @@ _BASE_: [
   '_base_/centernet_reader.yml',
 ]
 
-weights: output/centernet_r50_1x/model_final
+weights: output/centernet_r50_140e_coco/model_final
