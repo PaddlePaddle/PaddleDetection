@@ -5,21 +5,22 @@
 
 We developed a series of lightweight models, which named `PicoDet`. Because of its excellent performance, it is very suitable for deployment on mobile or CPU.
 
+- 🌟 Higher mAP:  The **first** model which within 1M parameter with mAP reaching 30+.
+- 🚀 Faster latency: 114FPS on mobile ARM CPU.
+- 😊 Deploy friendly: support PaddleLite/MNN/NCNN/OpenVINO and provide C++/Python/Android implementation.
+- 😍 Advanced algorithm: use the most advanced algorithms and innovate, such as ESNet, CSP-PAN, SimOTA with VFL, etc.
+
 
 ## Requirements
 - PaddlePaddle >= 2.1.2
 - PaddleSlim >= 2.1.1
 
 ## Comming soon
-- [ ] Benchmark of PicoDet.
-- [ ] deploy for most platforms, such as PaddleLite、MNN、ncnn、openvino etc.
-- [ ] PicoDet-XS and PicoDet-L series of model.
-- [ ] Slim for PicoDet.
+- [ ] More series of model, such as Smaller or larger model.
+- [ ] Pretrained models for more scenarios.
 - [ ] More features in need.
 
 ## Model Zoo
-
-### PicoDet-S
 
 | Model                  | Input size | lr schedule | Box AP(0.5:0.95) | Box AP(0.5) | FLOPS | Model Size | Inference Time |                           download                          | config |
 | :------------------------ | :-------: | :-------: | :------: | :---: | :---: | :---: | :------------:  | :-------------------------------------------------: | :-----: |
