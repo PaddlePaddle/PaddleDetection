@@ -78,12 +78,26 @@ class ConfigPaser {
       return false;
     }
 
+    // Get NMS for postprocess
+    if (config.isMember("NMS")) {
+      nms_info_ = config["NMS"];
+    }
+    // Get fpn_stride in PicoDet
+    if (config.isMember("fpn_stride")) {
+      fpn_stride_.clear();
+      for (auto item : config["fpn_stride"]) {
+        fpn_stride_.emplace_back(item.as<int>());
+      }
+    }
+
     return true;
   }
   float draw_threshold_;
   std::string arch_;
   Json::Value preprocess_info_;
+  Json::Value nms_info_;
   std::vector<std::string> label_list_;
+  std::vector<int> fpn_stride_;
 };
 
 }  // namespace PaddleDetection

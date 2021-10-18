@@ -1,0 +1,10 @@
+{
+    "model_dir_det": "./model_det/",
+    "batch_size_det": 1,
+    "threshold_det": 0.5,
+    "image_file": "./demo.jpg",
+    "image_dir": "",
+    "run_benchmark": false,
+    "cpu_threads": 4
+  }
+  
