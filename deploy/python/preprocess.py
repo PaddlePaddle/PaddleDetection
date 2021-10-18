@@ -264,8 +264,10 @@ class WarpAffine(object):
         self.shift = shift
 
     def _get_3rd_point(self, a, b):
-        assert len(a) == 2
-        assert len(b) == 2
+        assert len(
+            a) == 2, 'input of _get_3rd_point should be point with length of 2'
+        assert len(
+            b) == 2, 'input of _get_3rd_point should be point with length of 2'
         direction = a - b
         third_pt = b + np.array([-direction[1], direction[0]], dtype=np.float32)
         return third_pt
@@ -299,8 +301,7 @@ class WarpAffine(object):
 
         Args:
         center (np.ndarray[2, ]): Center of the bounding box (x, y).
-        scale (np.ndarray[2, ]): Scale of the bounding box
-            wrt [width, height].
+        input_size (np.ndarray[2, ]): Size of input feature (width, height).
         rot (float): Rotation angle (degree).
         output_size (np.ndarray[2, ]): Size of the destination heatmaps.
         shift (0-100%): Shift translation ratio wrt the width/height.
@@ -315,8 +316,7 @@ class WarpAffine(object):
         assert len(output_size) == 2
         assert len(shift) == 2
 
-        if not isinstance(input_size, np.ndarray) and not isinstance(input_size,
-                                                                     list):
+        if not isinstance(input_size, (np.ndarray, list)):
             input_size = np.array([input_size, input_size], dtype=np.float32)
         scale_tmp = input_size
 

@@ -17,7 +17,7 @@ import math
 import paddle
 import paddle.nn as nn
 from paddle import ParamAttr
-from paddle.nn.initializer import KaimingUniform, Uniform
+from paddle.nn.initializer import Uniform
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling.layers import ConvNormLayer

@@ -16,7 +16,7 @@ import math
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn.initializer import KaimingUniform, Constant, Uniform
+from paddle.nn.initializer import Constant, Uniform
 from ppdet.core.workspace import register
 from ppdet.modeling.losses import CTFocalLoss
 
