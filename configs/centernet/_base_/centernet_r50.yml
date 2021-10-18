@@ -1,0 +1,35 @@
+architecture: CenterNet
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_pretrained.pdparams
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+
+CenterNet:
+  backbone: ResNet
+  neck: CenterNetDLAFPN
+  head: CenterNetHead
+  post_process: CenterNetPostProcess
+
+ResNet:
+  depth: 50
+  variant: d
+  return_idx: [0, 1, 2, 3]
+  freeze_at: -1
+  norm_decay: 0.
+  variant: d
+  dcn_v2_stages: [3]
+
+
+CenterNetDLAFPN:
+  first_level: 0
+  last_level: 4
+  down_ratio: 4
+  dcn_v2: False
+
+CenterNetHead:
+  head_planes: 256
+  regress_ltrb: False
+
+CenterNetPostProcess:
+  max_per_img: 100
+  regress_ltrb: False

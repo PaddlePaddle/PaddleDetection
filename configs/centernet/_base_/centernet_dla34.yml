@@ -1,0 +1,22 @@
+architecture: CenterNet
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/DLA34_pretrain.pdparams
+
+CenterNet:
+  backbone: DLA
+  neck: CenterNetDLAFPN
+  head: CenterNetHead
+  post_process: CenterNetPostProcess
+
+DLA:
+  depth: 34
+
+CenterNetDLAFPN:
+  down_ratio: 4
+
+CenterNetHead:
+  head_planes: 256
+  regress_ltrb: False
+
+CenterNetPostProcess:
+  max_per_img: 100
+  regress_ltrb: False

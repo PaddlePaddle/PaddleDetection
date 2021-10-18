@@ -418,7 +418,7 @@ class CenterNetPostProcess(TTFBox):
 
     """
 
-    __shared__ = ['down_ratio']
+    __shared__ = ['down_ratio', 'for_mot']
 
     def __init__(self,
                  max_per_img=500,
