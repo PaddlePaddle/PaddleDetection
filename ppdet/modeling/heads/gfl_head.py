@@ -150,14 +150,14 @@ class GFLHead(nn.Layer):
         num_classes (int): Number of classes
         fpn_stride (list): The stride of each FPN Layer
         prior_prob (float): Used to set the bias init for the class prediction layer
-        loss_qfl (object):
-        loss_dfl (object):
-        loss_bbox (object):
+        loss_class (object): Instance of QualityFocalLoss.
+        loss_dfl (object): Instance of DistributionFocalLoss.
+        loss_bbox (object): Instance of bbox loss.
         reg_max: Max value of integral set :math: `{0, ..., reg_max}`
                 n QFL setting. Default: 16.
     """
     __inject__ = [
-        'conv_feat', 'dgqp_module', 'loss_qfl', 'loss_dfl', 'loss_bbox', 'nms'
+        'conv_feat', 'dgqp_module', 'loss_class', 'loss_dfl', 'loss_bbox', 'nms'
     ]
     __shared__ = ['num_classes']
 
@@ -167,7 +167,7 @@ class GFLHead(nn.Layer):
                  num_classes=80,
                  fpn_stride=[8, 16, 32, 64, 128],
                  prior_prob=0.01,
-                 loss_qfl='QualityFocalLoss',
+                 loss_class='QualityFocalLoss',
                  loss_dfl='DistributionFocalLoss',
                  loss_bbox='GIoULoss',
                  reg_max=16,
@@ -181,7 +181,7 @@ class GFLHead(nn.Layer):
         self.num_classes = num_classes
         self.fpn_stride = fpn_stride
         self.prior_prob = prior_prob
-        self.loss_qfl = loss_qfl
+        self.loss_qfl = loss_class
         self.loss_dfl = loss_dfl
         self.loss_bbox = loss_bbox
         self.reg_max = reg_max

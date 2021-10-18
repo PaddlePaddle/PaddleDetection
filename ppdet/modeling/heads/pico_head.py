@@ -26,9 +26,7 @@ from paddle.nn.initializer import Normal, Constant
 
 from ppdet.core.workspace import register
 from ppdet.modeling.layers import ConvNormLayer
-from ppdet.modeling.bbox_utils import distance2bbox, bbox2distance
-from ppdet.data.transform.atss_assigner import bbox_overlaps
-from .gfl_head import GFLHead
+from .simota_head import OTAVFLHead
 
 
 @register
@@ -49,11 +47,13 @@ class PicoFeat(nn.Layer):
                  num_fpn_stride=3,
                  num_convs=2,
                  norm_type='bn',
-                 share_cls_reg=False):
+                 share_cls_reg=False,
+                 act='hard_swish'):
         super(PicoFeat, self).__init__()
         self.num_convs = num_convs
         self.norm_type = norm_type
         self.share_cls_reg = share_cls_reg
+        self.act = act
         self.cls_convs = []
         self.reg_convs = []
         for stage_idx in range(num_fpn_stride):
@@ -112,35 +112,43 @@ class PicoFeat(nn.Layer):
             self.cls_convs.append(cls_subnet_convs)
             self.reg_convs.append(reg_subnet_convs)
 
+    def act_func(self, x):
+        if self.act == "leaky_relu":
+            x = F.leaky_relu(x)
+        elif self.act == "hard_swish":
+            x = F.hardswish(x)
+        return x
+
     def forward(self, fpn_feat, stage_idx):
         assert stage_idx < len(self.cls_convs)
         cls_feat = fpn_feat
         reg_feat = fpn_feat
         for i in range(len(self.cls_convs[stage_idx])):
-            cls_feat = F.leaky_relu(self.cls_convs[stage_idx][i](cls_feat), 0.1)
+            cls_feat = self.act_func(self.cls_convs[stage_idx][i](cls_feat))
             if not self.share_cls_reg:
-                reg_feat = F.leaky_relu(self.reg_convs[stage_idx][i](reg_feat),
-                                        0.1)
+                reg_feat = self.act_func(self.reg_convs[stage_idx][i](reg_feat))
         return cls_feat, reg_feat
 
 
 @register
-class PicoHead(GFLHead):
+class PicoHead(OTAVFLHead):
     """
     PicoHead
     Args:
-        conv_feat (object): Instance of 'LiteGFLFeat'
+        conv_feat (object): Instance of 'PicoFeat'
         num_classes (int): Number of classes
         fpn_stride (list): The stride of each FPN Layer
         prior_prob (float): Used to set the bias init for the class prediction layer
-        loss_qfl (object):
-        loss_dfl (object):
-        loss_bbox (object):
+        loss_class (object): Instance of VariFocalLoss.
+        loss_dfl (object): Instance of DistributionFocalLoss.
+        loss_bbox (object): Instance of bbox loss.
+        assigner (object): Instance of label assigner.
         reg_max: Max value of integral set :math: `{0, ..., reg_max}`
-                n QFL setting. Default: 16.
+                n QFL setting. Default: 7.
     """
     __inject__ = [
-        'conv_feat', 'dgqp_module', 'loss_qfl', 'loss_dfl', 'loss_bbox', 'nms'
+        'conv_feat', 'dgqp_module', 'loss_class', 'loss_dfl', 'loss_bbox',
+        'assigner', 'nms'
     ]
     __shared__ = ['num_classes']
 
@@ -150,9 +158,10 @@ class PicoHead(GFLHead):
                  num_classes=80,
                  fpn_stride=[8, 16, 32],
                  prior_prob=0.01,
-                 loss_qfl='QualityFocalLoss',
+                 loss_class='VariFocalLoss',
                  loss_dfl='DistributionFocalLoss',
                  loss_bbox='GIoULoss',
+                 assigner='SimOTAAssigner',
                  reg_max=16,
                  feat_in_chan=96,
                  nms=None,
@@ -164,9 +173,10 @@ class PicoHead(GFLHead):
             num_classes=num_classes,
             fpn_stride=fpn_stride,
             prior_prob=prior_prob,
-            loss_qfl=loss_qfl,
+            loss_class=loss_class,
             loss_dfl=loss_dfl,
             loss_bbox=loss_bbox,
+            assigner=assigner,
             reg_max=reg_max,
             feat_in_chan=feat_in_chan,
             nms=nms,
@@ -176,15 +186,17 @@ class PicoHead(GFLHead):
         self.num_classes = num_classes
         self.fpn_stride = fpn_stride
         self.prior_prob = prior_prob
-        self.loss_qfl = loss_qfl
+        self.loss_vfl = loss_class
         self.loss_dfl = loss_dfl
         self.loss_bbox = loss_bbox
+        self.assigner = assigner
         self.reg_max = reg_max
         self.feat_in_chan = feat_in_chan
         self.nms = nms
         self.nms_pre = nms_pre
         self.cell_offset = cell_offset
-        self.use_sigmoid = self.loss_qfl.use_sigmoid
+
+        self.use_sigmoid = self.loss_vfl.use_sigmoid
         if self.use_sigmoid:
             self.cls_out_channels = self.num_classes
         else:
