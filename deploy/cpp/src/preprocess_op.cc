@@ -84,6 +84,7 @@ void Resize::Run(cv::Mat* im, ImageBlob* data) {
   };
 }
 
+
 std::pair<float, float> Resize::GenerateScale(const cv::Mat& im) {
   std::pair<float, float> resize_scale;
   int origin_w = im.cols;
@@ -106,6 +107,65 @@ std::pair<float, float> Resize::GenerateScale(const cv::Mat& im) {
     resize_scale.second =
         static_cast<float>(target_size_[0]) / static_cast<float>(origin_h);
   }
+  return resize_scale;
+}
+
+void LetterBoxResize::Run(cv::Mat* im, ImageBlob* data) {
+  float resize_scale = GenerateScale(*im);
+  int new_shape_w = std::round(im->cols * resize_scale);
+  int new_shape_h = std::round(im->rows * resize_scale);
+  data->im_shape_ = {
+      static_cast<float>(new_shape_h),
+      static_cast<float>(new_shape_w)
+  };
+  float padw = (target_size_[1] - new_shape_w) / 2.;
+  float padh = (target_size_[0] - new_shape_h) / 2.;
+  
+  int top = std::round(padh - 0.1);
+  int bottom = std::round(padh + 0.1);
+  int left = std::round(padw - 0.1);
+  int right = std::round(padw + 0.1);
+
+  cv::resize(
+        *im, *im, cv::Size(new_shape_w, new_shape_h), 0, 0, cv::INTER_AREA); 
+
+  data->in_net_shape_ = {
+    static_cast<float>(im->rows),
+    static_cast<float>(im->cols),
+  };
+  cv::copyMakeBorder(
+    *im,
+    *im,
+    top,
+    bottom,
+    left,
+    right,
+    cv::BORDER_CONSTANT,
+    cv::Scalar(127.5));
+
+  data->in_net_shape_ = {
+    static_cast<float>(im->rows),
+    static_cast<float>(im->cols),
+  };
+
+  data->scale_factor_ = {
+    resize_scale,
+    resize_scale,
+  };
+ 
+
+}
+
+float LetterBoxResize::GenerateScale(const cv::Mat& im) {
+  int origin_w = im.cols;
+  int origin_h = im.rows;
+
+  int target_h = target_size_[0];
+  int target_w = target_size_[1];
+
+  float ratio_h = static_cast<float>(target_h) / static_cast<float>(origin_h);
+  float ratio_w = static_cast<float>(target_w) / static_cast<float>(origin_w);
+  float resize_scale = std::min(ratio_h, ratio_w); 
   return resize_scale;
 }
 
@@ -145,7 +205,7 @@ void TopDownEvalAffine::Run(cv::Mat* im, ImageBlob* data) {
 
 // Preprocessor op running order
 const std::vector<std::string> Preprocessor::RUN_ORDER = {
-  "InitInfo", "TopDownEvalAffine", "Resize", "NormalizeImage", "PadStride", "Permute"
+  "InitInfo", "TopDownEvalAffine", "Resize", "LetterBoxResize", "NormalizeImage", "PadStride", "Permute"
 };
 
 void Preprocessor::Run(cv::Mat* im, ImageBlob* data) {

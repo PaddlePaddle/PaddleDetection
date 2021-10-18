@@ -102,6 +102,20 @@ class Resize : public PreprocessOp {
   std::vector<int> in_net_shape_;
 };
 
+class LetterBoxResize : public PreprocessOp {
+ public:
+  virtual void Init(const YAML::Node& item) {
+    target_size_ = item["target_size"].as<std::vector<int>>();
+ }
+
+  float GenerateScale(const cv::Mat& im);
+
+  virtual void Run(cv::Mat* im, ImageBlob* data);
+
+ private:
+  std::vector<int> target_size_;
+  std::vector<int> in_net_shape_;
+};
 // Models with FPN need input shape % stride == 0
 class PadStride : public PreprocessOp {
  public:
@@ -146,6 +160,8 @@ class Preprocessor {
   std::shared_ptr<PreprocessOp> CreateOp(const std::string& name) {
     if (name == "Resize") {
       return std::make_shared<Resize>();
+    } else if (name == "LetterBoxResize") {
+      return std::make_shared<LetterBoxResize>();
     } else if (name == "Permute") {
       return std::make_shared<Permute>();
     } else if (name == "NormalizeImage") {
