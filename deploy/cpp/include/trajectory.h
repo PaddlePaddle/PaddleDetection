@@ -65,6 +65,7 @@ public:
     Trajectory(const Trajectory &other);
     Trajectory &operator=(const Trajectory &rhs);
     virtual ~Trajectory(void) {};
+
     static int next_id();
     virtual const cv::Mat &predict(void);
     virtual void update(Trajectory &traj, int timestamp, bool update_embedding=true);
@@ -72,6 +73,7 @@ public:
     virtual void reactivate(Trajectory &traj, int timestamp, bool newid=false);
     virtual void mark_lost(void);
     virtual void mark_removed(void);
+
     friend TrajectoryPool operator+(const TrajectoryPool &a, const TrajectoryPool &b);
     friend TrajectoryPool operator+(const TrajectoryPool &a, const TrajectoryPtrPool &b);
     friend TrajectoryPool &operator+=(TrajectoryPool &a, const TrajectoryPtrPool &b);
@@ -80,12 +82,15 @@ public:
     friend TrajectoryPtrPool operator+(const TrajectoryPtrPool &a, const TrajectoryPtrPool &b);
     friend TrajectoryPtrPool operator+(const TrajectoryPtrPool &a, TrajectoryPool &b);
     friend TrajectoryPtrPool operator-(const TrajectoryPtrPool &a, const TrajectoryPtrPool &b);
+
     friend cv::Mat embedding_distance(const TrajectoryPool &a, const TrajectoryPool &b);
     friend cv::Mat embedding_distance(const TrajectoryPtrPool &a, const TrajectoryPtrPool &b);
     friend cv::Mat embedding_distance(const TrajectoryPtrPool &a, const TrajectoryPool &b);
+
     friend cv::Mat mahalanobis_distance(const TrajectoryPool &a, const TrajectoryPool &b);
     friend cv::Mat mahalanobis_distance(const TrajectoryPtrPool &a, const TrajectoryPtrPool &b);
     friend cv::Mat mahalanobis_distance(const TrajectoryPtrPool &a, const TrajectoryPool &b);
+
     friend cv::Mat iou_distance(const TrajectoryPool &a, const TrajectoryPool &b);
     friend cv::Mat iou_distance(const TrajectoryPtrPool &a, const TrajectoryPtrPool &b);
     friend cv::Mat iou_distance(const TrajectoryPtrPool &a, const TrajectoryPool &b);

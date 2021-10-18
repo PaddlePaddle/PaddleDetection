@@ -40,11 +40,8 @@ int _ccrrt_dense(const int n, float *cost[],
                 v[j] = c;
                 y[j] = i;
             }
-            PRINTF("i=%d, j=%d, c[i,j]=%f, v[j]=%f y[j]=%d\n", i, j, c, v[j], y[j]);
         }
     }
-    PRINT_COST_ARRAY(v, n);
-    PRINT_INDEX_ARRAY(y, n);
     NEW(unique, bool, n);
     memset(unique, TRUE, n);
     {
@@ -76,7 +73,6 @@ int _ccrrt_dense(const int n, float *cost[],
                     min = c;
                 }
             }
-            PRINTF("v[%d] = %f - %f\n", j, v[j], min);
             v[j] -= min;
         }
     }
@@ -95,10 +91,6 @@ int _carr_dense(
     int current = 0;
     int new_free_rows = 0;
     int rr_cnt = 0;
-    PRINT_INDEX_ARRAY(x, n);
-    PRINT_INDEX_ARRAY(y, n);
-    PRINT_COST_ARRAY(v, n);
-    PRINT_INDEX_ARRAY(free_rows, n_free_rows);
     while (current < n_free_rows) {
         int i0;
         int j1, j2;
@@ -106,14 +98,12 @@ int _carr_dense(
         bool v1_lowers;
 
         rr_cnt++;
-        PRINTF("current = %d rr_cnt = %d\n", current, rr_cnt);
         const int free_i = free_rows[current++];
         j1 = 0;
         v1 = cost[free_i][0] - v[0];
         j2 = -1;
         v2 = LARGE;
         for (int j = 1; j < n; j++) {
-            PRINTF("%d = %f %d = %f\n", j1, v1, j2, v2);
             const float c = cost[free_i][j] - v[j];
             if (c < v2) {
                 if (c >= v1) {
@@ -130,7 +120,6 @@ int _carr_dense(
         i0 = y[j1];
         v1_new = v[j1] - (v2 - v1);
         v1_lowers = v1_new < v[j1];
-        //PRINTF("%d %d 1=%d,%f 2=%d,%f v1'=%f(%d,%g) \n", free_i, i0, j1, v1, j2, v2, v1_new, v1_lowers, v[j1] - v1_new);
         if (rr_cnt < current * n) {
             if (v1_lowers) {
                 v[j1] = v1_new;
@@ -146,7 +135,6 @@ int _carr_dense(
                 }
             }
         } else {
-            PRINTF("rr_cnt=%d >= %d (current=%d * n=%d)\n", rr_cnt, current * n, current, n);
             if (i0 >= 0) {
                 free_rows[new_free_rows++] = i0;
             }
@@ -195,7 +183,6 @@ int _scan_dense(const int n, float *cost[],
         const int i = y[j];
         const float mind = d[j];
         h = cost[i][j] - v[j] - mind;
-        PRINTF("i=%d j=%d h=%f\n", i, j, h);
         // For all columns in TODO
         for (int k = hi; k < n; k++) {
             j = cols[k];
@@ -245,15 +232,11 @@ int find_path_dense(
         pred[i] = start_i;
         d[i] = cost[start_i][i] - v[i];
     }
-    PRINT_COST_ARRAY(d, n);
     while (final_j == -1) {
         // No columns left on the SCAN list.
         if (lo == hi) {
-            PRINTF("%d..%d -> find\n", lo, hi);
             n_ready = lo;
             hi = _find_dense(n, lo, d, cols, y);
-            PRINTF("check %d..%d\n", lo, hi);
-            PRINT_INDEX_ARRAY(cols, n);
             for (int k = lo; k < hi; k++) {
                 const int j = cols[k];
                 if (y[j] < 0) {
@@ -262,17 +245,11 @@ int find_path_dense(
             }
         }
         if (final_j == -1) {
-            PRINTF("%d..%d -> scan\n", lo, hi);
             final_j = _scan_dense(
                     n, cost, &lo, &hi, d, cols, pred, y, v);
-            PRINT_COST_ARRAY(d, n);
-            PRINT_INDEX_ARRAY(cols, n);
-            PRINT_INDEX_ARRAY(pred, n);
         }
     }
 
-    PRINTF("found final_j=%d\n", final_j);
-    PRINT_INDEX_ARRAY(cols, n);
     {
         const float mind = d[cols[lo]];
         for (int k = 0; k < n_ready; k++) {
@@ -303,22 +280,12 @@ int _ca_dense(
         int i = -1, j;
         int k = 0;
 
-        PRINTF("looking at free_i=%d\n", *pfree_i);
         j = find_path_dense(n, cost, *pfree_i, y, v, pred);
-        ASSERT(j >= 0);
-        ASSERT(j < n);
         while (i != *pfree_i) {
-            PRINTF("augment %d\n", j);
-            PRINT_INDEX_ARRAY(pred, n);
             i = pred[j];
-            PRINTF("y[%d]=%d -> %d\n", j, y[j], i);
             y[j] = i;
-            PRINT_INDEX_ARRAY(x, n);
             SWAP_INDICES(j, x[i]);
             k++;
-            if (k >= n) {
-                ASSERT(FALSE);
-            }
         }
     }
     FREE(pred);
@@ -330,7 +297,7 @@ int _ca_dense(
  */
 int lapjv_internal(
     const cv::Mat &cost, const bool extend_cost, const float cost_limit,
-    float *opt, int *x, int *y ) {
+    int *x, int *y ) {
     int n_rows = cost.rows;
     int n_cols = cost.cols;
     int n;
@@ -415,9 +382,6 @@ int lapjv_internal(
         x[i] = x_c[i];
         if (x[i] >= n_cols) {
           x[i] = -1;
-        }
-        if (x[i] != -1) {
-          *opt += cost_expand.at<float>(i, x[i]);
         }
       }      
       if (i < n_cols) {

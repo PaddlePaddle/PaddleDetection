@@ -259,7 +259,7 @@ void JDETracker::linear_assignment(const cv::Mat &cost, float cost_limit, Match 
     cv::Mat x(cost.rows, 1, CV_32S);
     cv::Mat y(cost.cols, 1, CV_32S);    
 
-    int state = lapjv_internal(cost, true, cost_limit, &opt,
+    lapjv_internal(cost, true, cost_limit,
         (int *)x.data, (int *)y.data);
      
     for (int i = 0; i < x.rows; ++i)
