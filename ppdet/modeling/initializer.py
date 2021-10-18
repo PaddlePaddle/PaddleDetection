@@ -272,6 +272,12 @@ def conv_init_(module):
     uniform_(module.bias, -bound, bound)
 
 
+def bias_init_with_prob(prior_prob=0.01):
+    """initialize conv/fc bias value according to a given probability value."""
+    bias_init = float(-np.log((1 - prior_prob) / prior_prob))
+    return bias_init
+
+
 @paddle.no_grad()
 def reset_initialized_parameter(model, include_self=True):
     """

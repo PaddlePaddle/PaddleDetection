@@ -18,6 +18,7 @@ PaddleDetection 依赖 PaddlePaddle 版本关系：
 
 |  PaddleDetection版本  | PaddlePaddle版本  |    备注    |
 | :------------------: | :---------------: | :-------: |
+|    release/2.2       |       >= 2.1.2    |     默认使用动态图模式    |
 |    release/2.1       |       >= 2.1.0    |     默认使用动态图模式    |
 |    release/2.0       |       >= 2.0.1    |     默认使用动态图模式    |
 |    release/2.0-rc    |       >= 2.0.1    |     --    |
@@ -66,12 +67,12 @@ python -c "import paddle; print(paddle.__version__)"
 cd <path/to/clone/PaddleDetection>
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
 
+# 安装其他依赖
+pip install -r requirements.txt
+
 # 编译安装paddledet
 cd PaddleDetection
 python setup.py install
-
-# 安装其他依赖
-pip install -r requirements.txt
 ```
 
 **注意**

@@ -109,6 +109,16 @@ def argsparser():
         action='store_true',
         help='Save tracking results (txt).')
     parser.add_argument(
+        '--save_mot_txt_per_img',
+        action='store_true',
+        help='Save tracking results (txt) for each image.')
+    parser.add_argument(
+        '--scaled',
+        type=bool,
+        default=False,
+        help="Whether coords after detector outputs are scaled, False in JDE YOLOv3 "
+        "True in general detector.")
+    parser.add_argument(
         "--reid_model_dir",
         type=str,
         default=None,
@@ -229,4 +239,3 @@ def get_current_memory_mb():
         meminfo = pynvml.nvmlDeviceGetMemoryInfo(handle)
         gpu_mem = meminfo.used / 1024. / 1024.
     return round(cpu_mem, 4), round(gpu_mem, 4), round(gpu_percent, 4)
-

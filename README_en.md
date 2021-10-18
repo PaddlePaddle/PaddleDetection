@@ -96,7 +96,7 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
             </ul>
         </ul>
         <ul>
-          <li><b>Face-Detction</b></li>
+          <li><b>Face-Detection</b></li>
             <ul>
              <li>FaceBoxes</li>
              <li>BlazeFace</li>
@@ -251,6 +251,7 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 - [Keypoint detection](configs/keypoint)
   - HigherHRNet
   - HRNet
+  - LiteHRNet
 - [Multi-Object Tracking](configs/mot/README.md)
   - [DeepSORT](configs/mot/deepsort/README.md)
   - [JDE](configs/mot/jde/README.md)
@@ -261,13 +262,15 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
   - [Vehicle detection](configs/vehicle/README.md)
 - Competition Plan
   - [Objects365 2019 Challenge champion model](static/docs/featured_model/champion_model/CACascadeRCNN.md)
-  - [Best single model of Open Images 2019-Object Detction](static/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
+  - [Best single model of Open Images 2019-Object Detection](static/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 
 ## Applications
 
 - [Christmas portrait automatic generation tool](static/application/christmas)
 
 ## Updates
+
+v2.2 was released at `08/2021`, release Transformer detection models, release Dark HRNet keypoint detection model, release tracking models of head and vehicle, release optimized S2ANet model, inference with batch size > 1 supported for main architectures. Please refer to [change log](docs/CHANGELOG.md) for details.
 
 v2.1 was released at `05/2021`, Release Keypoint Detection and Multi-Object Tracking. Release model compression for PPYOLO series. Update documents such as export ONNX model. Please refer to [change log](docs/CHANGELOG.md) for details.
 
@@ -284,6 +287,7 @@ PaddleDetection is released under the [Apache 2.0 license](LICENSE).
 Contributions are highly welcomed and we would really appreciate your feedback!!
 - Thanks [Mandroide](https://github.com/Mandroide) for cleaning the code and unifying some function interface.
 - Thanks [FL77N](https://github.com/FL77N/) for contributing the code of `Sparse-RCNN` model.
+- Thanks [Chen-Song](https://github.com/Chen-Song) for contributing the code of `Swin Faster-RCNN` model.
 
 ## Citation
 

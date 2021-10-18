@@ -195,8 +195,8 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 - [安装说明](docs/tutorials/INSTALL_cn.md)
 - [数据准备](docs/tutorials/PrepareDataSet.md)
-- [30分钟上手PaddleDetcion](docs/tutorials/GETTING_STARTED_cn.md)
-- [常见问题汇总](docs/tutorials/FAQ.md)
+- [30分钟上手PaddleDetecion](docs/tutorials/GETTING_STARTED_cn.md)
+- [FAQ/常见问题汇总](docs/tutorials/FAQ)
 
 
 ### 进阶教程
@@ -237,6 +237,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 - [关键点检测](configs/keypoint)
     - HigherHRNet
     - HRNet
+    - LiteHRNet
 - [多目标跟踪](configs/mot/README_cn.md)
     - [DeepSORT](configs/mot/deepsort/README_cn.md)
     - [JDE](configs/mot/jde/README_cn.md)
@@ -263,6 +264,8 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 ## 版本更新
 
+v2.2版本已经在`08/2021`发布，全新发布Transformer检测系列模型，新增关键点检测Dark HRNet模型，新增人头、车辆跟踪垂类模型，发布旋转框检测S2ANet优化模型，主流模型支持batch size > 1预测部署，详细内容请参考[版本更新文档](docs/CHANGELOG.md)
+
 v2.1版本已经在`05/2021`发布，全新发布关键点检测和多目标跟踪能力，支持无标注框检测，发布PPYOLO系列模型压缩模型，新增ONNX模型导出教程，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 v2.0版本已经在`04/2021`发布，全面支持动态图版本，新增支持BlazeFace, PSSDet等系列模型和大量骨干网络，发布PP-YOLO v2, PP-YOLO tiny和旋转框检测S2ANet模型。支持模型蒸馏、VisualDL，新增动态图预测部署benchmark，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
@@ -277,7 +280,8 @@ v2.0版本已经在`04/2021`发布，全面支持动态图版本，新增支持B
 
 我们非常欢迎你可以为PaddleDetection提供代码，也十分感谢你的反馈。
 - 感谢[Mandroide](https://github.com/Mandroide)清理代码并且统一部分函数接口。
-- 感谢[FL77N](https://github.com/FL77N/)贡献`Sparse-RCNN`模型代码。
+- 感谢[FL77N](https://github.com/FL77N/)贡献`Sparse-RCNN`模型。
+- 感谢[Chen-Song](https://github.com/Chen-Song)贡献`Swin Faster-RCNN`模型。
 
 ## 引用
 

@@ -195,6 +195,10 @@ def get_dataset_path(path, annotation, image_dir):
                         "Please apply and download the dataset following docs/tutorials/PrepareMOTDataSet.md".
                         format(name))
 
+            if name == "spine_coco":
+                if _dataset_exists(data_dir, annotation, image_dir):
+                    return data_dir
+
             # For voc, only check dir VOCdevkit/VOC2012, VOCdevkit/VOC2007
             if name in ['voc', 'fruit', 'roadsign_voc']:
                 exists = True
@@ -412,7 +416,7 @@ def _download_dist(url, path, md5sum=None):
                     os.remove(lock_path)
                 else:
                     while os.path.exists(lock_path):
-                        time.sleep(1)
+                        time.sleep(0.5)
             return fullname
     else:
         return _download(url, path, md5sum)
@@ -507,14 +511,26 @@ def _decompress_dist(fname):
             from paddle.distributed import ParallelEnv
             unique_endpoints = _get_unique_endpoints(ParallelEnv()
                                                      .trainer_endpoints[:])
-            with open(lock_path, 'w'):  # touch    
-                os.utime(lock_path, None)
+            # NOTE(dkp): _decompress_dist always performed after
+            # _download_dist, in _download_dist sub-trainers is waiting
+            # for download lock file release with sleeping, if decompress
+            # prograss is very fast and finished with in the sleeping gap
+            # time, e.g in tiny dataset such as coco_ce, spine_coco, main
+            # trainer may finish decompress and release lock file, so we
+            # only craete lock file in main trainer and all sub-trainer
+            # wait 1s for main trainer to create lock file, for 1s is
+            # twice as sleeping gap, this waiting time can keep all
+            # trainer pipeline in order
+            # **change this if you have more elegent methods**
             if ParallelEnv().current_endpoint in unique_endpoints:
+                with open(lock_path, 'w'):  # touch    
+                    os.utime(lock_path, None)
                 _decompress(fname)
                 os.remove(lock_path)
             else:
+                time.sleep(1)
                 while os.path.exists(lock_path):
-                    time.sleep(1)
+                    time.sleep(0.5)
     else:
         _decompress(fname)
 

@@ -24,14 +24,14 @@ __all__ = ['YOLOv3FPN', 'PPYOLOFPN', 'PPYOLOTinyFPN', 'PPYOLOPAN']
 
 
 def add_coord(x, data_format):
-    shape = paddle.shape(x)
+    b = paddle.shape(x)[0]
     if data_format == 'NCHW':
-        b, h, w = shape[0], shape[2], shape[3]
+        h, w = x.shape[2], x.shape[3]
     else:
-        b, h, w = shape[0], shape[1], shape[2]
+        h, w = x.shape[1], x.shape[2]
 
-    gx = paddle.arange(w, dtype=x.dtype) / ((w - 1.) * 2.0) - 1.
-    gy = paddle.arange(h, dtype=x.dtype) / ((h - 1.) * 2.0) - 1.
+    gx = paddle.cast(paddle.arange(w) / ((w - 1.) * 2.0) - 1., x.dtype)
+    gy = paddle.cast(paddle.arange(h) / ((h - 1.) * 2.0) - 1., x.dtype)
 
     if data_format == 'NCHW':
         gx = gx.reshape([1, 1, 1, w]).expand([b, 1, h, w])

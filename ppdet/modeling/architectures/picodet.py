@@ -62,7 +62,7 @@ class PicoDet(BaseArch):
     def _forward(self):
         body_feats = self.backbone(self.inputs)
         fpn_feats = self.neck(body_feats)
-        head_outs = self.head(fpn_feats)
+        head_outs = self.head(fpn_feats, self.deploy)
         if self.training or self.deploy:
             return head_outs
         else:

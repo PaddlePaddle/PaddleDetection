@@ -488,6 +488,9 @@ class SOLOv2Head(nn.Layer):
                     fill_value=self.segm_strides[_ind],
                     dtype="int32"))
         strides = paddle.concat(strides)
+        strides = paddle.concat(
+            [strides, paddle.zeros(
+                shape=[1], dtype='int32')])
         strides = paddle.gather(strides, index=inds[:, 0])
 
         # mask encoding.

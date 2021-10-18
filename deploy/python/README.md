@@ -21,7 +21,7 @@ PaddleDetection在训练过程包括网络的前向和优化器相关参数，�
 在终端输入以下命令进行预测：
 
 ```bash
-python deploy/python/infer.py --model_dir=./inference/yolov3_mobilenet_v1_roadsign --image_file=./demo/road554.png --device=GPU
+python deploy/python/infer.py --model_dir=./output_inference/yolov3_mobilenet_v1_roadsign --image_file=./demo/road554.png --device=GPU
 ```
 
 参数说明如下:

@@ -6,5 +6,5 @@ _BASE_: [
   '_base_/gfl_reader.yml',
 ]
 
-weights: output/gfl_r50_fpn_1x_coco/model_final
+weights: output/gflv2_r50_fpn_1x_coco/model_final
 find_unused_parameters: True

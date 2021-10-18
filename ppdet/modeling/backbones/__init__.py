@@ -25,6 +25,9 @@ from . import senet
 from . import res2net
 from . import dla
 from . import shufflenet_v2
+from . import swin_transformer
+from . import lcnet
+from . import hardnet
 
 from .vgg import *
 from .resnet import *
@@ -39,3 +42,6 @@ from .senet import *
 from .res2net import *
 from .dla import *
 from .shufflenet_v2 import *
+from .swin_transformer import *
+from .lcnet import *
+from .hardnet import *

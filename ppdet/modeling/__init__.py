@@ -28,6 +28,7 @@ from . import layers
 from . import reid
 from . import mot
 from . import transformers
+from . import assigners
 
 from .ops import *
 from .backbones import *
@@ -41,3 +42,4 @@ from .layers import *
 from .reid import *
 from .mot import *
 from .transformers import *
+from .assigners import *

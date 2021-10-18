@@ -228,9 +228,10 @@ class S2ANetHead(nn.Layer):
                  align_conv_size=3,
                  use_sigmoid_cls=True,
                  anchor_assign=RBoxAssigner().__dict__,
-                 reg_loss_weight=[1.0, 1.0, 1.0, 1.0, 1.0],
-                 cls_loss_weight=[1.0, 1.0],
-                 reg_loss_type='l1'):
+                 reg_loss_weight=[1.0, 1.0, 1.0, 1.0, 1.1],
+                 cls_loss_weight=[1.1, 1.05],
+                 reg_loss_type='l1',
+                 is_training=True):
         super(S2ANetHead, self).__init__()
         self.stacked_convs = stacked_convs
         self.feat_in = feat_in
@@ -256,6 +257,7 @@ class S2ANetHead(nn.Layer):
         self.alpha = 1.0
         self.beta = 1.0
         self.reg_loss_type = reg_loss_type
+        self.is_training = is_training
 
         self.s2anet_head_out = None
 
@@ -446,10 +448,12 @@ class S2ANetHead(nn.Layer):
             init_anchors = self.rect2rbox(init_anchors)
             self.base_anchors_list.append(init_anchors)
 
-            fam_reg1 = fam_reg
-            fam_reg1.stop_gradient = True
-            refine_anchor = self.bbox_decode(fam_reg1, init_anchors)
-            #refine_anchor = self.bbox_decode(fam_reg.detach(), init_anchors)
+            if self.is_training:
+                refine_anchor = self.bbox_decode(fam_reg.detach(), init_anchors)
+            else:
+                fam_reg1 = fam_reg.clone()
+                fam_reg1.stop_gradient = True
+                refine_anchor = self.bbox_decode(fam_reg1, init_anchors)
 
             self.refine_anchor_list.append(refine_anchor)
 
@@ -615,19 +619,13 @@ class S2ANetHead(nn.Layer):
                 iou = rbox_iou(fam_bbox_decode, bbox_gt_bboxes)
                 iou = paddle.diag(iou)
 
-                if reg_loss_type == 'iou':
-                    EPS = paddle.to_tensor(
-                        1e-8, dtype='float32', stop_gradient=True)
-                    iou_factor = -1.0 * paddle.log(iou + EPS) / (fam_bbox + EPS)
-                    iou_factor.stop_gradient = True
-                    #fam_bbox = fam_bbox * iou_factor
-                elif reg_loss_type == 'gwd':
+                if reg_loss_type == 'gwd':
                     bbox_gt_bboxes_level = bbox_gt_bboxes[st_idx:st_idx +
                                                           feat_anchor_num, :]
                     fam_bbox_total = self.gwd_loss(fam_bbox_decode,
                                                    bbox_gt_bboxes_level)
                     fam_bbox_total = fam_bbox_total * feat_bbox_weights
-                    fam_bbox_total = paddle.sum(fam_bbox_total)
+                    fam_bbox_total = paddle.sum(fam_bbox_total) / num_total_samples
 
             fam_bbox_losses.append(fam_bbox_total)
             st_idx += feat_anchor_num
@@ -735,19 +733,13 @@ class S2ANetHead(nn.Layer):
                 iou = rbox_iou(odm_bbox_decode, bbox_gt_bboxes)
                 iou = paddle.diag(iou)
 
-                if reg_loss_type == 'iou':
-                    EPS = paddle.to_tensor(
-                        1e-8, dtype='float32', stop_gradient=True)
-                    iou_factor = -1.0 * paddle.log(iou + EPS) / (odm_bbox + EPS)
-                    iou_factor.stop_gradient = True
-                    # odm_bbox = odm_bbox * iou_factor
-                elif reg_loss_type == 'gwd':
+                if reg_loss_type == 'gwd':
                     bbox_gt_bboxes_level = bbox_gt_bboxes[st_idx:st_idx +
                                                           feat_anchor_num, :]
                     odm_bbox_total = self.gwd_loss(odm_bbox_decode,
                                                    bbox_gt_bboxes_level)
                     odm_bbox_total = odm_bbox_total * feat_bbox_weights
-                    odm_bbox_total = paddle.sum(odm_bbox_total)
+                    odm_bbox_total = paddle.sum(odm_bbox_total) / num_total_samples
 
             odm_bbox_losses.append(odm_bbox_total)
             st_idx += feat_anchor_num
