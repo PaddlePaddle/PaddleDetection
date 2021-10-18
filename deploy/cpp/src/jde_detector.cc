@@ -1,4 +1,4 @@
-//   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+//   Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -345,11 +345,11 @@ void JDEDetector::Predict(const std::vector<cv::Mat> imgs,
   auto postprocess_end = std::chrono::steady_clock::now();
 
   std::chrono::duration<float> preprocess_diff = preprocess_end - preprocess_start;
-  times->push_back(double(preprocess_diff.count() * 1000));
+  (*times)[0] += double(preprocess_diff.count() * 1000);
   std::chrono::duration<float> inference_diff = inference_end - inference_start;
-  times->push_back(double(inference_diff.count() / repeats * 1000));
+  (*times)[1] += double(inference_diff.count() * 1000);
   std::chrono::duration<float> postprocess_diff = postprocess_end - postprocess_start;
-  times->push_back(double(postprocess_diff.count() * 1000));
+  (*times)[2] += double(postprocess_diff.count() * 1000);
 }
 
 cv::Scalar GetColor(int idx) {

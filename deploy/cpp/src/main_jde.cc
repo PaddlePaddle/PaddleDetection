@@ -1,4 +1,4 @@
-//   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+//   Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ void PrintBenchmarkLog(std::vector<double> det_time, int img_num){
             << std::accumulate(det_time.begin(), det_time.end(), 0);
   LOG(INFO) << "preproce_time(ms): " << det_time[0] / img_num
             << ", inference_time(ms): " << det_time[1] / img_num
-            << ", postprocess_time(ms): " << det_time[2];
+            << ", postprocess_time(ms): " << det_time[2] / img_num;
 }
 
 static std::string DirName(const std::string &filepath) {
@@ -160,7 +160,7 @@ void PredictVideo(const std::string& video_path,
   }
 
   PaddleDetection::MOT_Result result;
-  std::vector<double> det_times;
+  std::vector<double> det_times(3);
   double times;
   // Capture all frames and do inference
   cv::Mat frame;
@@ -171,18 +171,18 @@ void PredictVideo(const std::string& video_path,
     }
     std::vector<cv::Mat> imgs;
     imgs.push_back(frame);
-    det_times.clear();
     mot->Predict(imgs, 0.5, 0, 1, &result, &det_times);
-    times = std::accumulate(det_times.begin(), det_times.end(), 0);
+    frame_id += 1;
+    times = std::accumulate(det_times.begin(), det_times.end(), 0) / frame_id;
 
     cv::Mat out_im = PaddleDetection::VisualizeTrackResult(
         frame, result, 1000./times, frame_id);
     
     video_out.write(out_im);
-    frame_id += 1;
   }
   capture.release();
   video_out.release();
+  PrintBenchmarkLog(det_times, frame_id);
   printf("Visualized output saved as %s\n", video_out_path.c_str());      
 }
 
