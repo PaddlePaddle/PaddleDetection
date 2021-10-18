@@ -18,8 +18,8 @@ English | [简体中文](README_cn.md)
 | backbone       | input shape | mAP   |    FPS    | download | config |
 | :--------------| :------- |  :----: | :------: | :----: |:-----: |
 | DLA-34(paper)  | 512x512 |  37.4  |     -   |    -   |   -    |
-| DLA-34         | 512x512 |  37.6  |     -   | [model](https://bj.bcebos.com/v1/paddledet/models/centernet_dla34_1x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/centernet_dla34_1x.yml) |
-| ResNet50 + DLAUp  | 512x512 |  38.9  |     -   | [model](https://bj.bcebos.com/v1/paddledet/models/centernet_r50_1x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/centernet_r50_1x.yml) |
+| DLA-34         | 512x512 |  37.6  |     -   | [model](https://bj.bcebos.com/v1/paddledet/models/centernet_dla34_140e.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/centernet_dla34_1x.yml) |
+| ResNet50 + DLAUp  | 512x512 |  38.9  |     -   | [model](https://bj.bcebos.com/v1/paddledet/models/centernet_r50_140e.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/centernet_r50_1x.yml) |
 
 ## Citations
 ```
