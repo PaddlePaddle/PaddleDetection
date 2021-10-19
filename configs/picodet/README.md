@@ -22,7 +22,7 @@ We developed a series of lightweight models, which named `PicoDet`. Because of i
 ## Model Zoo
 
 | Model                  | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | FLOPS<br>(G) | Params<br>(M) | Latency<br>(ms) |                           download                          | config |
-| :------------------------ | :-------: | :-------: | :------: | :---: | :---: | :---: | :------------:  | :-------------------------------------------------: | :-----: |
+| :------------------------ | :-------:  | :------: | :---: | :---: | :---: | :------------:  | :-------------------------------------------------: | :-----: |
 | PicoDet-S    | 320*320    |   27.1     | 41.4 | -- | 3.9M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_320_coco.yml) |
 | PicoDet-M    | 320*320   |  30.9     | 45.7 |  -- | 8.4M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_m_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_320_coco.yml) |
 | PicoDet-L    | 320*320   |  32.6     | 47.9 |  -- | 13M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_l_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_320_coco.yml) |
@@ -74,7 +74,9 @@ paddle_lite_opt --model_dir=inference_model/picodet_s_320_coco --valid_targets=a
 
 <details>
 <summary>3. Convert to ONNX</summary>
+
 - Install [Paddle2ONNX](https://github.com/PaddlePaddle/Paddle2ONNX) >= 0.7 and ONNX > 1.10.1, for details, please refer to [Tutorials of Export ONNX Model](../../deploy/EXPORT_ONNX_MODEL.md)
+
 ```shell
 pip install onnx
 pip install paddle2onnx
