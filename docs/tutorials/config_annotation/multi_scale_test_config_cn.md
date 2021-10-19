@@ -37,3 +37,9 @@ TestReader:
 `target_size: [700 , 900]` 项设置不同的预测尺度。
 
 通过在`EvalReader.sample_transforms`或`TestReader.sample_transforms`中设置`MultiscaleTestResize`项，可以在评估过程或预测过程中开启多尺度测试。
+
+---
+
+###注意
+
+目前多尺度测试只支持CascadeRCNN, FasterRCNN and MaskRCNN网络, 并且batch size需要是1.

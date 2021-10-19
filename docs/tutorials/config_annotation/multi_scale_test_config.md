@@ -37,3 +37,9 @@ The input image will be scaled into different scales, then model generated predi
 `target_size: [700 , 900]` property is used to specify different scales. 
 
 It can be plugged into evaluation process or test (inference) process, by adding `MultiscaleTestResize` entry to `EvalReader.sample_transforms` or `TestReader.sample_transforms`
+
+---
+
+###Note
+
+Now only CascadeRCNN, FasterRCNN and MaskRCNN are supported for multi scale testing. And batch size must be 1.
