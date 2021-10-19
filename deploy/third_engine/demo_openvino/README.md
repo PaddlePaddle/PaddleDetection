@@ -101,7 +101,7 @@ make
 
 
 ## Run demo
-Download PicoDet openvino model [PicoDet openvino model download link](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_m_416_ncnn.zip).
+Download PicoDet openvino model [PicoDet openvino model download link](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_m_416_openvino.zip).
 
 move picodet openvino model files to the demo's weight folder. Then run these commands:
 
