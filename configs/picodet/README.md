@@ -5,13 +5,13 @@
 
 We developed a series of lightweight models, which named `PicoDet`. Because of its excellent performance, it is very suitable for deployment on mobile or CPU.
 
-- 🌟 Higher mAP: the **first** object detectors that surpass mAP **30+** within 1M parameters when the input size is 416.
+- 🌟 Higher mAP: the **first** object detectors that surpass mAP(0.5:0.95) **30+** within 1M parameters when the input size is 416.
 - 🚀 Faster latency: 114FPS on mobile ARM CPU.
 - 😊 Deploy friendly: support PaddleLite/MNN/NCNN/OpenVINO and provide C++/Python/Android implementation.
 - 😍 Advanced algorithm: use the most advanced algorithms and innovate, such as ESNet, CSP-PAN, SimOTA with VFL, etc.
 
 ### Comming soon
-- [ ] More series of model, such as Smaller or larger model.
+- [ ] More series of model, such as smaller or larger model.
 - [ ] Pretrained models for more scenarios.
 - [ ] More features in need.
 
@@ -21,7 +21,7 @@ We developed a series of lightweight models, which named `PicoDet`. Because of i
 
 ## Model Zoo
 
-| Model                  | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | FLOPS<br>(G) | Params<br>(M) | Latency<br>(ms) |                           download                          | config |
+| Model                  | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | FLOPS<br><sup>(G) | Params<br><sup>(M) | Latency<br><sup>(ms) |                           download                          | config |
 | :------------------------ | :-------:  | :------: | :---: | :---: | :---: | :------------:  | :-------------------------------------------------: | :-----: |
 | PicoDet-S    | 320*320    |   27.1     | 41.4 | -- | 3.9M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_320_coco.yml) |
 | PicoDet-M    | 320*320   |  30.9     | 45.7 |  -- | 8.4M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_m_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_320_coco.yml) |
@@ -113,6 +113,34 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco/ \
 - [MNN C++ demo]()
 - [OpenVINO C++ demo]()
 - [Android demo]()
+
+## Slim
+
+### quantization
+
+<details>
+<summary>Quant aware</summary>
+
+Configure the quant config and start training:
+
+```shell
+python tools/train.py -c configs/picodet/picodet_s_320_coco.yml \
+          --slim_config configs/slim/quant/picodet_s_quant.yml --eval
+```
+
+</details>
+
+<details>
+<summary>Post quant</summary>
+
+Configure the post quant config and start calibrate model:
+
+```shell
+python tools/posy_quant.py -c configs/picodet/picodet_s_320_coco.yml \
+          --slim_config configs/slim/posy_quant/picodet_s_quant.yml
+```
+
+</details>
 
 ## Cite PiocDet
 If you use PiocDet in your research, please cite our work by using the following BibTeX entry:

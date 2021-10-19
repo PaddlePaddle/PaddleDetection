@@ -1,0 +1,10 @@
+weights:  https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams
+slim: PTQ
+
+PTQ:
+  ptq_config: {
+      'activation_quantizer': 'HistQuantizer',
+      'upsample_bins': 127,
+      'hist_percent': 0.999}
+  quant_batch_num: 10
+  fuse: True
