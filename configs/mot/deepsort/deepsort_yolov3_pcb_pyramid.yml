@@ -7,10 +7,10 @@ _BASE_: [
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
-    data_root: MOT17/images/half
+    data_root: MOT16/images/train
     keep_ori_im: True # set as True in DeepSORT
 
-det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_640x640_mot17half.pdparams
+det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/yolov3_darknet53_270e_608x608_pedestrian.pdparams
 reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams
 
 
@@ -19,7 +19,7 @@ architecture: DeepSORT
 pretrain_weights: None
 
 DeepSORT:
-  detector: YOLOv3 # PPYOLOv2 version
+  detector: YOLOv3 # General YOLOv3 version
   reid: PCBPyramid
   tracker: DeepSORTTracker
 
@@ -36,28 +36,24 @@ DeepSORTTracker:
   max_iou_distance: 0.9
   motion: KalmanFilter
 
-# detector configuration: PPYOLOv2 version
+
+# detector configuration: General YOLOv3 version
+architecture: YOLOv3
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
 norm_type: sync_bn
+
 YOLOv3:
-  backbone: ResNet
-  neck: PPYOLOPAN
+  backbone: DarkNet
+  neck: YOLOv3FPN
   yolo_head: YOLOv3Head
   post_process: BBoxPostProcess
 
-ResNet:
-  depth: 50
-  variant: d
-  return_idx: [1, 2, 3]
-  dcn_v2_stages: [3]
-  freeze_at: -1
-  freeze_norm: false
-  norm_decay: 0.
+DarkNet:
+  depth: 53
+  return_idx: [2, 3, 4]
 
-PPYOLOPAN:
-  drop_block: true
-  block_size: 3
-  keep_prob: 0.9
-  spp: true
+# use default config
+# YOLOv3FPN:
 
 YOLOv3Head:
   anchors: [[10, 13], [16, 30], [33, 23],
@@ -65,35 +61,21 @@ YOLOv3Head:
             [116, 90], [156, 198], [373, 326]]
   anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
   loss: YOLOv3Loss
-  iou_aware: true
-  iou_aware_factor: 0.5
 
 YOLOv3Loss:
   ignore_thresh: 0.7
   downsample: [32, 16, 8]
   label_smooth: false
-  scale_x_y: 1.05
-  iou_loss: IouLoss
-  iou_aware_loss: IouAwareLoss
-
-IouLoss:
-  loss_weight: 2.5
-  loss_square: true
-
-IouAwareLoss:
-  loss_weight: 1.0
 
 BBoxPostProcess:
   decode:
     name: YOLOBox
-    conf_thresh: 0.01
+    conf_thresh: 0.005
     downsample_ratio: 32
     clip_bbox: true
-    scale_x_y: 1.05
   nms:
-    name: MatrixNMS
+    name: MultiClassNMS
     keep_top_k: 100
     score_threshold: 0.01
-    post_threshold: 0.01
-    nms_top_k: -1
-    background_label: -1
+    nms_threshold: 0.45
+    nms_top_k: 1000

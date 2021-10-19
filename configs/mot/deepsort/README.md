@@ -64,13 +64,13 @@ If you use a stronger detection model, you can get better results. Each txt is t
 
 ```bash
 # Load the result file and ReID model to get the tracking result
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml --det_results_dir {your detection results}
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml --det_results_dir {your detection results}
 
 # Load JDE YOLOv3 detector and ReID model to get the tracking results
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid_r101.yml
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid.yml
 
 # or Load genernal YOLOv3 detector and ReID model to get the tracking results
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml --scaled=True
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid.yml --scaled=True
 ```
 **Notes:**
 JDE YOLOv3 pedestrian detector is trained with the same MOT dataset as JDE and FairMOT. In addition, the biggest difference between this model and general YOLOv3 model is that JDEBBoxPostProcess post-processing, and the output coordinates are not scaled back to the original image.
@@ -83,10 +83,10 @@ Inference a vidoe on single GPU with following command:
 
 ```bash
 # load JDE YOLOv3 pedestrian detector and ReID model to get tracking results
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid_r101.yml --video_file={your video name}.mp4  --save_videos
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid.yml --video_file={your video name}.mp4  --save_videos
 
 # or load general YOLOv3 pedestrian detector and ReID model to get tracking results
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml --video_file={your video name}.mp4 --scaled=True --save_videos
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid.yml --video_file={your video name}.mp4 --scaled=True --save_videos
 ```
 **Notes:**
  Please make sure that [ffmpeg](https://ffmpeg.org/ffmpeg.html) is installed first, on Linux(Ubuntu) platform you can directly install it by the following command:`apt-get update && apt-get install -y ffmpeg`.
@@ -97,24 +97,24 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsor
 ```bash
 # 1.export detection model
 # export JDE YOLOv3 pedestrian detector
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/jde_yolov3_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/jde_yolov3_darknet53_30e_1088x608_mix.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams
 
 # or export general YOLOv3 pedestrian detector
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/pedestrian/pedestrian_yolov3_darknet.yml -o weights=https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/yolov3_darknet53_270e_608x608_pedestrian.yml -o weights=https://paddledet.bj.bcebos.com/mot/deepsort/yolov3_darknet53_270e_608x608_pedestrian.pdparams
 
 
 # 2. export ReID model
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams
 ```
 
 ### 4. Using exported model for python inference
 
 ```bash
 # using exported JDE YOLOv3 pedestrian detector
-python deploy/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+python deploy/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608_mix/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --save_mot_txts
 
 # or using exported general YOLOv3 pedestrian detector
-python deploy/python/mot_sde_infer.py --model_dir=output_inference/pedestrian_yolov3_darknet/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
+python deploy/python/mot_sde_infer.py --model_dir=output_inference/yolov3_darknet53_270e_608x608_pedestrian/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
 ```
 **Notes:**
 The tracking model is used to predict the video, and does not support the prediction of a single image. The visualization video of the tracking results is saved by default. You can add `--save_mot_txts`(save a txt for every video) or `--save_mot_txt_per_img`(save a txt for every image) to save the txt result file, or `--save_images` to save the visualization images.
@@ -122,7 +122,41 @@ The tracking model is used to predict the video, and does not support the predic
 
 
 ## Adaption
+### 1. Description of configuration file directory
 
+- The `detector/` folder contains the detection model config files. The dataset needs to be converted to COCO format to facilitate training, evaluation and inference, and the ground truth of IDs does not need to be trained. You can config any other detection model here by yourself, just ensure that the output result is the coordinate of the result boxes.
+
+- The `reid/` folder contains the ReID model config files. `deepsort_pcb_pyramid_r101.yml` is a ReID model trained on Market1501 (751 classes) dataset.
+
+### 2. Steps of adaptation
+
+1. First, convert the dataset into COCO format, train according to the general detection model config. You can generate `xxx_detector.yml` by referring to the model config files in the `detector/` folder, which already supports Faster R-CNN,YOLOv3,PPYOLOv2,JDE YOLOv3,PicoDet.
+
+2. Generate `deepsort_xxx_detector_pcb_pyramid.yml`, where the config of `DeepSORT.detector` is just the `xxx_detector.yml`, `EvalMOTDataset` and `det_weights` can be set by yourself.
+
+### 3. Steps for use
+
+#### 1. Load the detection model and ReID model to evaluate:
+```
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_xxx_detector_pcb_pyramid.yml --scaled=True
+```
+#### 2. Load detection model and ReID model for inference:
+```
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_xxx_detector_pcb_pyramid.yml --video_file={your video name}.mp4 --scaled=True --save_videos
+```
+#### 3. Export detection model and ReID model:
+```
+# export detection model
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/xxx_detector.yml
+# export ReID model
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams
+```
+#### 4. Deploy inference using the exported detection model and ReID model:
+```
+python deploy/python/mot_sde_infer.py --model_dir=output_inference/xxx_detector./ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
+```
+**Note:**
+ `--scaled` means whether the coords after detector outputs are scaled back to the original image, False in JDE YOLOv3, True in general detector.
 
 ## Citations
 ```

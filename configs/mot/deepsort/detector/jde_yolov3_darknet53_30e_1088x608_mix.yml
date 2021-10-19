@@ -7,6 +7,7 @@ _BASE_: [
 weights: output/jde_yolov3_darknet53_30e_mix/model_final
 
 metric: MOTDet
+num_classes: 1
 EvalReader:
   inputs_def:
     num_max_boxes: 50

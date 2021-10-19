@@ -10,7 +10,7 @@ EvalMOTDataset:
     data_root: MOT16/images/train
     keep_ori_im: True # set as True in DeepSORT
 
-det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608.pdparams
+det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams
 reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams
 
 

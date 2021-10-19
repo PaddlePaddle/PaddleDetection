@@ -65,13 +65,13 @@ wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
 
 ```bash
 # 加载检测结果文件和ReID模型，得到跟踪结果
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml --det_results_dir {your detection results}
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml --det_results_dir {your detection results}
 
 # 加载JDE YOLOv3行人检测模型和ReID模型，得到跟踪结果
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid_r101.yml
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid.yml
 
 # 或者加载普通YOLOv3行人检测模型和ReID模型，得到跟踪结果
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml --scaled=True
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid.yml --scaled=True
 ```
 **注意:**
  JDE YOLOv3行人检测模型是和JDE和FairMOT使用同样的MOT数据集训练的，这个模型与普通YOLOv3模型最大的区别是使用了JDEBBoxPostProcess后处理，结果输出坐标没有缩放回原图。
@@ -84,10 +84,10 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort
 
 ```bash
 # 加载JDE YOLOv3行人检测模型和ReID模型，并保存为视频
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid_r101.yml --video_file={your video name}.mp4  --save_videos
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid.yml --video_file={your video name}.mp4  --save_videos
 
 # 或者加载普通YOLOv3行人检测模型和ReID模型，并保存为视频
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml --video_file={your video name}.mp4 --scaled=True --save_videos
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid.yml --video_file={your video name}.mp4 --scaled=True --save_videos
 ```
 
 **注意:**
@@ -100,30 +100,63 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsor
 ```bash
 # 1.先导出检测模型
 # 导出JDE YOLOv3行人检测模型
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/jde_yolov3_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/jde_yolov3_darknet53_30e_1088x608_mix.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams
 
 # 或导出普通YOLOv3行人检测模型
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/pedestrian/pedestrian_yolov3_darknet.yml -o weights=https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/yolov3_darknet53_270e_608x608_pedestrian.yml -o weights=https://paddledet.bj.bcebos.com/mot/deepsort/yolov3_darknet53_270e_608x608_pedestrian.pdparams
 
 
 # 2.再导出ReID模型
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams
 ```
 
 ### 4. 用导出的模型基于Python去预测
 
 ```bash
 # 用导出JDE YOLOv3行人检测模型
-python deploy/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+python deploy/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608_mix/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --save_mot_txts
 
 # 或用导出的普通yolov3行人检测模型
-python deploy/python/mot_sde_infer.py --model_dir=output_inference/pedestrian_yolov3_darknet/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
+python deploy/python/mot_sde_infer.py --model_dir=output_inference/yolov3_darknet53_270e_608x608_pedestrian/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
 ```
 **注意:**
  跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_mot_txt_per_img`(对每张图片保存一个txt)表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
  `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
 
+
 ## 适配其他检测器
+
+### 1、配置文件目录说明
+- `detector/`文件夹里的是检测模型配置文件，需要将数据集转为COCO格式方便单独训练、验证和推理部署，并且ID的真实标签不需要参与进去。用户可以在此自行配置任何检测模型，只需保证输出结果是结果框的坐标即可。
+- `reid/`文件夹里的是ReID模型配置文件，此处提供的是`deepsort_pcb_pyramid_r101.yml`，是Market1501(751类人)数据集上训练的ReID模型。
+
+### 2、适配的具体步骤
+1.先将数据集制作成COCO格式按通用检测模型配置来训练，参照`detector/`文件夹里的模型配置文件，如制作生成`xxx_detector.yml`, 已经支持有Faster R-CNN、YOLOv3、PPYOLOv2、JDE YOLOv3和PicoDet等模型。
+
+2.制作`deepsort_xxx_detector_pcb_pyramid.yml`, 其中`DeepSORT.detector`的配置就是`xxx_detector.yml`, `EvalMOTDataset`和`det_weights`可以自行设置。
+
+### 3、使用的具体步骤
+#### 1.加载检测模型和ReID模型去评估: 
+```
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_xxx_detector_pcb_pyramid.yml --scaled=True
+```
+#### 2.加载检测模型和ReID模型去推理: 
+```
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_xxx_detector_pcb_pyramid.yml --video_file={your video name}.mp4 --scaled=True --save_videos
+```
+#### 3.导出检测模型和ReID模型: 
+```
+# 导出检测模型
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/xxx_detector.yml
+# 导出ReID模型
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams
+```
+#### 4.使用导出的检测模型和ReID模型去部署:
+```
+python deploy/python/mot_sde_infer.py --model_dir=output_inference/xxx_detector./ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
+```
+**注意:**
+ `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
 
 
 ## 引用
