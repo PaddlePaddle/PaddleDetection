@@ -33,8 +33,7 @@ class TestMultiScaleInference(unittest.TestCase):
         cfg = load_config(self.mstest_cfg_file)
         trainer = Trainer(cfg, mode='eval')
 
-        if not os.path.exists(cfg.weights):
-            cfg.weights = '/home/gbstack/Downloads/faster_rcnn_r34_fpn_1x_coco.pdparams'
+        cfg.weights = 'https://paddledet.bj.bcebos.com/models/faster_rcnn_r34_fpn_1x_coco.pdparams'
         trainer.load_weights(cfg.weights)
 
         trainer.evaluate()
@@ -44,8 +43,7 @@ class TestMultiScaleInference(unittest.TestCase):
         cfg = load_config(self.mstest_cfg_file)
         trainer = Trainer(cfg, mode='test')
 
-        if not os.path.exists(cfg.weights):
-            cfg.weights = '/home/gbstack/Downloads/faster_rcnn_r34_fpn_1x_coco.pdparams'
+        cfg.weights = 'https://paddledet.bj.bcebos.com/models/faster_rcnn_r34_fpn_1x_coco.pdparams'
         trainer.load_weights(cfg.weights)
 
         # input images to predict
