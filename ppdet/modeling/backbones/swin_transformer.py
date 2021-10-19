@@ -537,7 +537,7 @@ class PatchEmbed(nn.Layer):
         B, C, H, W = x.shape
         # assert [H, W] == self.img_size[:2], "Input image size ({H}*{W}) doesn't match model ({}*{}).".format(H, W, self.img_size[0], self.img_size[1])
         if W % self.patch_size[1] != 0:
-            x = F.pad(x, [0, self.patch_size[1] - W % self.patch_size[1]])
+            x = F.pad(x, [0, self.patch_size[1] - W % self.patch_size[1], 0, 0])
         if H % self.patch_size[0] != 0:
             x = F.pad(x, [0, 0, 0, self.patch_size[0] - H % self.patch_size[0]])
 
