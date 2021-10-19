@@ -21,6 +21,7 @@ import sys
 import json
 import paddle
 import numpy as np
+import typing
 
 from .map_utils import prune_zero_padding, DetectionMAP
 from .coco_utils import get_infer_results, cocoapi_eval
@@ -98,7 +99,7 @@ class COCOMetric(Metric):
             outs[k] = v.numpy() if isinstance(v, paddle.Tensor) else v
 
         # multi-scale inputs: all inputs have same im_id
-        if type(inputs) in (list, tuple):
+        if isinstance(inputs, typing.Sequence):
             im_id = inputs[0]['im_id']
         else:
             im_id = inputs['im_id']

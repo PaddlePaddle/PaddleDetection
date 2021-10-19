@@ -5,6 +5,8 @@ from __future__ import print_function
 import numpy as np
 import paddle
 import paddle.nn as nn
+import typing
+
 from ppdet.core.workspace import register
 from static.ppdet.utils.post_process import nms
 
@@ -29,7 +31,7 @@ class BaseArch(nn.Layer):
         else:
             inputs_list = []
             # multi-scale input
-            if type(inputs) not in (list, tuple):
+            if not isinstance(inputs, typing.Sequence):
                 inputs_list.append(inputs)
             else:
                 inputs_list.extend(inputs)

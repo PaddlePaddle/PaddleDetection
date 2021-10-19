@@ -16,6 +16,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import typing
+
 try:
     from collections.abc import Sequence
 except Exception:
@@ -59,7 +61,7 @@ class PadBatch(BaseOperator):
         coarsest_stride = self.pad_to_stride
 
         # multi scale input is nested list
-        if type(samples) in (list, tuple) and type(samples[0]) in (list, tuple):
+        if isinstance(samples, typing.Sequence) and len(samples) > 0 and isinstance(samples[0], typing.Sequence):
             inner_samples = samples[0]
         else:
             inner_samples = samples
