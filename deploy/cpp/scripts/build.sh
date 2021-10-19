@@ -26,8 +26,10 @@ CUDA_LIB=/path/to/cuda/lib
 CUDNN_LIB=/path/to/cudnn/lib
 
 # 是否开启关键点模型预测功能
-WITH_KEYPOINT=ON
+WITH_KEYPOINT=OFF
 
+# 是否开启跟踪模型预测功能
+WITH_MOT=OFF
 
 MACHINE_TYPE=`uname -m`
 echo "MACHINE_TYPE: "${MACHINE_TYPE}
@@ -77,7 +79,8 @@ cmake .. \
     -DCUDNN_LIB=${CUDNN_LIB} \
     -DOPENCV_DIR=${OPENCV_DIR} \
     -DPADDLE_LIB_NAME=${PADDLE_LIB_NAME} \
-    -DWITH_KEYPOINT=${WITH_KEYPOINT}
+    -DWITH_KEYPOINT=${WITH_KEYPOINT} \
+    -DWITH_MOT=${WITH_MOT}
 
 make
 echo "make finished!"
