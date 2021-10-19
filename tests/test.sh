@@ -119,8 +119,8 @@ export_key2=$(func_parser_key "${lines[34]}")
 export_value2=$(func_parser_value "${lines[34]}")
 
 # parser inference model
-infer_model_dir_list=$(func_parser_value "${lines[36]}")
-infer_export_list=$(func_parser_value "${lines[37]}")
+infer_model_name_list=$(func_parser_value "${lines[36]}")
+infer_model_dir=$(func_parser_value "${lines[37]}")
 infer_is_quant=$(func_parser_value "${lines[38]}")
 # parser inference
 inference_py=$(func_parser_value "${lines[39]}")
@@ -185,14 +185,13 @@ function func_inference(){
         elif [ ${device} = "True" ] || [ ${device} = "gpu" ]; then
             for use_trt in ${use_trt_list[*]}; do
                 for precision in ${precision_list[*]}; do
-                    if [[ ${_flag_quant} = "False" ]] && [[ ${precision} =~ "int8" ]]; then
-                        continue
-                    fi
-                    if [[ ${precision} =~ "fp16" || ${precision} =~ "int8" ]] && [ ${use_trt} = "False" ]; then
-                        continue
-                    fi
-                    if [[ ${use_trt} = "False" || ${precision} =~ "int8" ]] && [ ${_flag_quant} = "True" ]; then
-                        continue
+                    if [[ ${precision} != "fluid" ]]; then
+                        if [[ ${_flag_quant} = "False" ]] && [[ ${precision} = "trt_int8" ]]; then
+                            continue
+                        fi
+                        if [[ ${_flag_quant} = "True" ]] && [[ ${precision} != "trt_int8" ]]; then
+                            continue
+                        fi
                     fi
                     for batch_size in ${batch_size_list[*]}; do
                         _save_log_path="${_log_path}/infer_gpu_usetrt_${use_trt}_precision_${precision}_batchsize_${batch_size}.log"
@@ -229,27 +228,44 @@ if [ ${MODE} = "infer" ]; then
     eval $env
     export Count=0
     IFS="|"
-    infer_run_exports=(${infer_export_list})
     infer_quant_flag=(${infer_is_quant})
     set_train_params1=$(func_set_params "${train_param_key1}" "${train_param_value1}")
-    for infer_model in ${infer_model_dir_list[*]}; do
+    set_save_infer_key=$(func_set_params "${save_infer_key}" "${infer_model_dir}")
+    infer_model="${infer_model_dir}/${train_param_value1}"
+    for infer_model_name in ${infer_model_name_list[*]}; do
         # run export
-        if [ ${infer_run_exports[Count]} != "null" ];then
-            set_export_weight=$(func_set_params "${export_weight}" "${infer_run_exports[Count]}/${infer_model}")
-            set_save_infer_key=$(func_set_params "${save_infer_key}" "${infer_run_exports[Count]}")
-            export_cmd="${python} ${norm_export} ${set_export_weight} ${set_train_params1} ${set_save_infer_key}"
-            eval $export_cmd
-            status_export=$?
-            if [ ${status_export} = 0 ];then
-                status_check $status_export "${export_cmd}" "${status_log}"
-            fi
+        case ${Count} in
+            0) run_export=${norm_export} ;;
+            1) run_export=${pact_export} ;;
+            2) run_export=${fpgm_export} ;;
+            *) echo "Undefined run_export"; exit 1;
+        esac
+        set_export_weight=$(func_set_params "${export_weight}" "${infer_model_dir}/${infer_model_name}")
+        export_cmd="${python} ${run_export} ${set_export_weight} ${set_train_params1} ${set_save_infer_key}"
+        eval $export_cmd
+        status_export=$?
+        if [ ${status_export} = 0 ];then
+            status_check $status_export "${export_cmd}" "${status_log}"
         fi
         #run inference
         is_quant=${infer_quant_flag[Count]}
-        infer_model="${infer_run_exports[Count]}/${train_param_value1}"
         func_inference "${python}" "${inference_py}" "${infer_model}" "${LOG_PATH}" "${infer_img_dir}" ${is_quant}
         Count=$(($Count + 1))
     done
+
+    # kl quant
+    if [ ${export_key1} = "kl_quant" ]; then
+        # run kl quant
+        kl_cmd="${python} ${export_value1} ${set_train_params1} ${set_save_infer_key}"
+        eval $kl_cmd
+        status_export=$?
+        if [ ${status_export} = 0 ];then
+            status_check $status_export "${kl_cmd}" "${status_log}"
+        fi
+        # run inference
+        is_quant=True
+        func_inference "${python}" "${inference_py}" "${infer_model}" "${LOG_PATH}" "${infer_img_dir}" ${is_quant}
+    fi
 
 else
     IFS="|"

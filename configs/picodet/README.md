@@ -5,41 +5,29 @@
 
 We developed a series of lightweight models, which named `PicoDet`. Because of its excellent performance, it is very suitable for deployment on mobile or CPU.
 
-Optimizing method of we use:
-- [ATSS](https://arxiv.org/abs/1912.02424)
-- [Generalized Focal Loss](https://arxiv.org/abs/2006.04388)
-- Lr Cosine Decay and cycle-EMA
-- lightweight head
+- 🌟 Higher mAP:  The **first** model which within 1M parameter with mAP reaching 30+.
+- 🚀 Faster latency: 114FPS on mobile ARM CPU.
+- 😊 Deploy friendly: support PaddleLite/MNN/NCNN/OpenVINO and provide C++/Python/Android implementation.
+- 😍 Advanced algorithm: use the most advanced algorithms and innovate, such as ESNet, CSP-PAN, SimOTA with VFL, etc.
+
 
 ## Requirements
-- PaddlePaddle == 2.1.2
+- PaddlePaddle >= 2.1.2
 - PaddleSlim >= 2.1.1
 
 ## Comming soon
-- [ ] Benchmark of PicoDet.
-- [ ] deploy for most platforms, such as PaddleLite、MNN、ncnn、openvino etc.
-- [ ] PicoDet-XS and PicoDet-L series of model.
-- [ ] Slim for PicoDet.
+- [ ] More series of model, such as Smaller or larger model.
+- [ ] Pretrained models for more scenarios.
 - [ ] More features in need.
 
 ## Model Zoo
 
-### PicoDet-S
-
-| Backbone                  | Input size | lr schedule | Box AP(0.5:0.95) | Box AP(0.5) | FLOPS | Model Size | Inference Time |                           download                          | config |
+| Model                  | Input size | lr schedule | Box AP(0.5:0.95) | Box AP(0.5) | FLOPS | Model Size | Inference Time |                           download                          | config |
 | :------------------------ | :-------: | :-------: | :------: | :---: | :---: | :---: | :------------:  | :-------------------------------------------------: | :-----: |
-| ShuffleNetv2-1x    | 320*320    |   280e      |   22.8     | 37.7 | -- | 3.8M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_s_shufflenetv2_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_shufflenetv2_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_shufflenetv2_320_coco.yml) |
-| ShuffleNetv2-1x    | 416*416    |   280e      |   25.3     | 41.1 | -- | 3.8M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_s_shufflenetv2_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_shufflenetv2_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_shufflenetv2_416_coco.yml) |
-
-
-### PicoDet-M
-
-| Backbone                  | Input size | lr schedule | Box AP(0.5:0.95) | Box AP(0.5) | FLOPS | Model Size | Inference Time |                           download                          | config |
-| :------------------------ | :-------: | :-------: | :-----------: | :---: | :---: | :---: | :-----: | :-------------------------------------------------: | :-----: |
-| ShuffleNetv2-1.5x    | 320*320   |   280e      |   25.3     | 41.2 |  -- | 8.1M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_m_shufflenetv2_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_shufflenetv2_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_shufflenetv2_320_coco.yml) |
-| MobileNetv3-large-1x    | 320*320   |   280e      |   26.7     | 44.1 |  -- | 11.6M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_m_mbv3_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_mbv3_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_mbv3_320_coco.yml) |
-| ShuffleNetv2-1.5x    | 416*416     |   280e      |   28.0     | 44.3 |  -- | 8.1M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_m_shufflenetv2_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_shufflenetv2_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_shufflenetv2_416_coco.yml) |
-| MobileNetv3-large-1x    | 416*416  |   280e      |   29.3     | 47.2 |  -- | 11.6M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_m_mbv3_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_mbv3_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_mbv3_416_coco.yml) |
+| PicoDet-S    | 320*320    |   300e      |   27.1     | 41.4 | -- | 3.9M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_320_coco.yml) |
+| PicoDet-S    | 416*416    |   300e      |   30.6     | 45.5 | -- | 3.9M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_s_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_416_coco.yml) |
+| PicoDet-M    | 320*320   |   300e      |  -     | 41.2 |  -- | 8.4M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_m_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_320_coco.yml) |
+| PicoDet-M    | 416*416   |   300e      |   34.3     | 49.8 |  -- | 8.4M | -- | [model](https://paddledet.bj.bcebos.com/models/picodet_m_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_416_coco.yml) |
 
 
 **Notes:**

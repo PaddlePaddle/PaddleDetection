@@ -25,18 +25,26 @@ import cv2
 import math
 import numpy as np
 from .operators import register_op, BaseOperator, Resize
-from .op_helper import jaccard_overlap, gaussian2D
+from .op_helper import jaccard_overlap, gaussian2D, gaussian_radius, draw_umich_gaussian
 from .atss_assigner import ATSSAssigner
 from scipy import ndimage
 
 from ppdet.modeling import bbox_utils
 from ppdet.utils.logger import setup_logger
+from ppdet.modeling.keypoint_utils import get_affine_transform, affine_transform
 logger = setup_logger(__name__)
 
 __all__ = [
-    'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
-    'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseRCNNTarget', 'PadMaskBatch',
-    'Gt2GFLTarget'
+    'PadBatch',
+    'BatchRandomResize',
+    'Gt2YoloTarget',
+    'Gt2FCOSTarget',
+    'Gt2TTFTarget',
+    'Gt2Solov2Target',
+    'Gt2SparseRCNNTarget',
+    'PadMaskBatch',
+    'Gt2GFLTarget',
+    'Gt2CenterNetTarget',
 ]
 
 
@@ -967,3 +975,84 @@ class PadMaskBatch(BaseOperator):
                 data['gt_rbox'] = rbox
 
         return samples
+
+
+@register_op
+class Gt2CenterNetTarget(BaseOperator):
+    """Gt2CenterNetTarget
+    Genterate CenterNet targets by ground-truth
+    Args:
+        down_ratio (int): The down sample ratio between output feature and 
+                          input image.
+        num_classes (int): The number of classes, 80 by default.
+        max_objs (int): The maximum objects detected, 128 by default.
+    """
+
+    def __init__(self, down_ratio, num_classes=80, max_objs=128):
+        super(Gt2CenterNetTarget, self).__init__()
+        self.down_ratio = down_ratio
+        self.num_classes = num_classes
+        self.max_objs = max_objs
+
+    def __call__(self, sample, context=None):
+        input_h, input_w = sample['image'].shape[1:]
+        output_h = input_h // self.down_ratio
+        output_w = input_w // self.down_ratio
+        num_classes = self.num_classes
+        c = sample['center']
+        s = sample['scale']
+        gt_bbox = sample['gt_bbox']
+        gt_class = sample['gt_class']
+
+        hm = np.zeros((num_classes, output_h, output_w), dtype=np.float32)
+        wh = np.zeros((self.max_objs, 2), dtype=np.float32)
+        dense_wh = np.zeros((2, output_h, output_w), dtype=np.float32)
+        reg = np.zeros((self.max_objs, 2), dtype=np.float32)
+        ind = np.zeros((self.max_objs), dtype=np.int64)
+        reg_mask = np.zeros((self.max_objs), dtype=np.int32)
+        cat_spec_wh = np.zeros(
+            (self.max_objs, num_classes * 2), dtype=np.float32)
+        cat_spec_mask = np.zeros(
+            (self.max_objs, num_classes * 2), dtype=np.int32)
+
+        trans_output = get_affine_transform(c, [s, s], 0, [output_w, output_h])
+
+        gt_det = []
+        for i, (bbox, cls) in enumerate(zip(gt_bbox, gt_class)):
+            cls = int(cls)
+            bbox[:2] = affine_transform(bbox[:2], trans_output)
+            bbox[2:] = affine_transform(bbox[2:], trans_output)
+            bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, output_w - 1)
+            bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, output_h - 1)
+            h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
+            if h > 0 and w > 0:
+                radius = gaussian_radius((math.ceil(h), math.ceil(w)), 0.7)
+                radius = max(0, int(radius))
+                ct = np.array(
+                    [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2],
+                    dtype=np.float32)
+                ct_int = ct.astype(np.int32)
+                draw_umich_gaussian(hm[cls], ct_int, radius)
+                wh[i] = 1. * w, 1. * h
+                ind[i] = ct_int[1] * output_w + ct_int[0]
+                reg[i] = ct - ct_int
+                reg_mask[i] = 1
+                cat_spec_wh[i, cls * 2:cls * 2 + 2] = wh[i]
+                cat_spec_mask[i, cls * 2:cls * 2 + 2] = 1
+                gt_det.append([
+                    ct[0] - w / 2, ct[1] - h / 2, ct[0] + w / 2, ct[1] + h / 2,
+                    1, cls
+                ])
+
+        sample.pop('gt_bbox', None)
+        sample.pop('gt_class', None)
+        sample.pop('center', None)
+        sample.pop('scale', None)
+        sample.pop('is_crowd', None)
+        sample.pop('difficult', None)
+        sample['heatmap'] = hm
+        sample['index_mask'] = reg_mask
+        sample['index'] = ind
+        sample['size'] = wh
+        sample['offset'] = reg
+        return sample

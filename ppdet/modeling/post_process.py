@@ -417,7 +417,7 @@ class CenterNetPostProcess(TTFBox):
         for_mot (bool): whether return other features used in tracking model.
     """
 
-    __shared__ = ['down_ratio', 'num_classes']
+    __shared__ = ['down_ratio', 'for_mot', 'num_classes']
 
     def __init__(self,
                  num_classes=1,

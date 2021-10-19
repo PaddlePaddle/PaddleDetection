@@ -26,9 +26,11 @@ from . import s2anet_head
 from . import keypoint_hrhrnet_head
 from . import centernet_head
 from . import gfl_head
+from . import simota_head
 from . import pico_head
 from . import detr_head
 from . import sparsercnn_head
+from . import tood_head
 
 from .bbox_head import *
 from .mask_head import *
@@ -44,6 +46,8 @@ from .s2anet_head import *
 from .keypoint_hrhrnet_head import *
 from .centernet_head import *
 from .gfl_head import *
+from .simota_head import *
 from .pico_head import *
 from .detr_head import *
 from .sparsercnn_head import *
+from .tood_head import *

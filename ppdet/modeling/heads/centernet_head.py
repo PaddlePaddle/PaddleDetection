@@ -16,7 +16,7 @@ import math
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn.initializer import KaimingUniform
+from paddle.nn.initializer import Constant, Uniform
 from ppdet.core.workspace import register
 from ppdet.modeling.losses import CTFocalLoss
 
@@ -35,10 +35,9 @@ class ConvLayer(nn.Layer):
         bias_attr = False
         fan_in = ch_in * kernel_size**2
         bound = 1 / math.sqrt(fan_in)
-        param_attr = paddle.ParamAttr(initializer=KaimingUniform())
+        param_attr = paddle.ParamAttr(initializer=Uniform(-bound, bound))
         if bias:
-            bias_attr = paddle.ParamAttr(
-                initializer=nn.initializer.Uniform(-bound, bound))
+            bias_attr = paddle.ParamAttr(initializer=Constant(0.))
         self.conv = nn.Conv2D(
             in_channels=ch_in,
             out_channels=ch_out,

@@ -37,7 +37,7 @@ GFLHead:
     reg_topk: 4
     reg_channels: 64
     add_mean: True
-  loss_qfl:
+  loss_class:
     name: QualityFocalLoss
     use_sigmoid: False
     beta: 2.0

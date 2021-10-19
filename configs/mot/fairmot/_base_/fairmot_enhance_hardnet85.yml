@@ -1,5 +1,6 @@
 architecture: FairMOT
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/centernet_hardnet85_coco.pdparams
+for_mot: True
 
 FairMOT:
   detector: CenterNet
@@ -12,7 +13,6 @@ CenterNet:
   neck: CenterNetHarDNetFPN
   head: CenterNetHead
   post_process: CenterNetPostProcess
-  for_mot: True
 
 HarDNet:
   depth_wise: False
@@ -32,7 +32,8 @@ FairMOTEmbeddingHead:
   ch_head: 512
 
 CenterNetPostProcess:
-  for_mot: True
+  max_per_img: 500
+  regress_ltrb: True
 
 JDETracker:
   conf_thres: 0.4
