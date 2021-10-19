@@ -45,9 +45,11 @@ class TestMultiScaleInference(unittest.TestCase):
 
         cfg.weights = 'https://paddledet.bj.bcebos.com/models/faster_rcnn_r34_fpn_1x_coco.pdparams'
         trainer.load_weights(cfg.weights)
+        tests_img_root = os.path.join(os.path.dirname(__file__), 'imgs')
 
         # input images to predict
-        imgs = ['/dataset/coco2017/val2017/000000000139.jpg', '/dataset/coco2017/val2017/000000000724.jpg']
+        imgs = ['coco2017_val2017_000000000139.jpg', 'coco2017_val2017_000000000724.jpg']
+        imgs = [os.path.join(tests_img_root, img) for img in imgs]
         trainer.predict(imgs,
                         draw_threshold=0.5,
                         output_dir='output',
