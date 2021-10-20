@@ -139,9 +139,11 @@ class CenterNetHead(nn.Layer):
     def get_loss(self, heatmap, size, offset, weights, inputs):
         heatmap_target = inputs['heatmap']
         if self.regress_ltrb:
-            size_target = inputs['size'] # [6, 500, 4]
+            size_target = inputs['size']  
+            # shape: [bs, max_per_img, 4]
         else:
-            size_target = inputs['size'][:,:,0:2] + inputs['size'][:,:,2:] # [6, 500, 2]
+            size_target = inputs['size'][:, :, 0:2] + inputs['size'][:, :, 2:]
+            # shape: [bs, max_per_img, 2]
         offset_target = inputs['offset']
         index = inputs['index']
         mask = inputs['index_mask']

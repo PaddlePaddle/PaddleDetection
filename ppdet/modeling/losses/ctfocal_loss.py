@@ -75,13 +75,13 @@ class CTFocalLoss(object):
 class MC_CTFocalLoss(object):
     """
     MC_CTFocalLoss: multi-class CornerNet & CenterNet Focal Loss
+
     Args:
         loss_weight (float): loss weight
         gamma (float): gamma parameter for Focal Loss
     """
-    def __init__(self,
-                 num_ids,
-                 gamma=1.5):
+
+    def __init__(self, num_ids, gamma=1.5):
         super(MC_CTFocalLoss, self).__init__()
         self.num_ids = num_ids
         self.gamma = gamma
@@ -93,7 +93,8 @@ class MC_CTFocalLoss(object):
         target_ = paddle.zeros([target.shape[0], self.num_ids], dtype='float32')
         target_.scatter_(1, paddle.reshape(target, [-1, 1]), 1.0)
 
-        batch_loss = - paddle.pow(1 - prob, self.gamma) * paddle.log(prob) * target_
+        batch_loss = -paddle.pow(1 - prob,
+                                 self.gamma) * paddle.log(prob) * target_
         batch_loss = paddle.sum(batch_loss, axis=1)
         loss = batch_loss.mean()
         return loss

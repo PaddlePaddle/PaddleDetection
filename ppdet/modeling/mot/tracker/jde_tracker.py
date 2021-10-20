@@ -361,12 +361,13 @@ class MCJDETracker(object):
                 pred_dets = pred_dets.numpy()
                 pred_embs = pred_embs.numpy()
                 detections = [
-                    MCSTrack(MCSTrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f, self.num_classes, cls_id, 30)
+                    MCSTrack(
+                        MCSTrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f,
+                        self.num_classes, cls_id, 30)
                     for (tlbrs, f) in zip(pred_dets, pred_embs)
                 ]
             else:
                 detections = []
-
             ''' Add newly detected tracklets to tracked_stracks'''
             unconfirmed_dict = defaultdict(list)
             tracked_tracks_dict = defaultdict(list)
@@ -377,21 +378,21 @@ class MCJDETracker(object):
                 else:
                     # Active tracks are added to the local list 'tracked_stracks'
                     tracked_tracks_dict[cls_id].append(track)
-
             """ Step 2: First association, with embedding"""
             # building tracking pool for the current frame
             track_pool_dict = defaultdict(list)
-            track_pool_dict[cls_id] = joint_stracks(tracked_tracks_dict[cls_id], self.lost_tracks_dict[cls_id])
+            track_pool_dict[cls_id] = joint_stracks(
+                tracked_tracks_dict[cls_id], self.lost_tracks_dict[cls_id])
 
             # Predict the current location with KF
             STrack.multi_predict(track_pool_dict[cls_id], self.motion)
 
             dists = matching.embedding_distance(
                 track_pool_dict[cls_id], detections, metric=self.metric_type)
-            dists = matching.fuse_motion(self.motion, dists, track_pool_dict[cls_id],
-                                        detections)
+            dists = matching.fuse_motion(self.motion, dists,
+                                         track_pool_dict[cls_id], detections)
             matches, u_track, u_detection = matching.linear_assignment(
-                dists, thresh=self.tracked_thresh) # thresh=0.7
+                dists, thresh=self.tracked_thresh)  # thresh=0.7
 
             for i_tracked, idet in matches:
                 # i_tracked is the id of the track and idet is the detection
@@ -414,7 +415,7 @@ class MCJDETracker(object):
             for i in u_track:
                 if track_pool_dict[cls_id][i].state == TrackState.Tracked:
                     r_tracked_stracks.append(track_pool_dict[cls_id][i])
-                    
+
             dists = matching.iou_distance(r_tracked_stracks, detections)
             matches, u_track, u_detection = matching.linear_assignment(
                 dists, thresh=self.r_tracked_thresh)
@@ -434,20 +435,20 @@ class MCJDETracker(object):
                 if not track.state == TrackState.Lost:
                     track.mark_lost()
                     lost_tracks_dict[cls_id].append(track)
-
             '''Deal with unconfirmed tracks, usually tracks with only one beginning frame'''
             detections = [detections[i] for i in u_detection]
             dists = matching.iou_distance(unconfirmed_dict[cls_id], detections)
             matches, u_unconfirmed, u_detection = matching.linear_assignment(
                 dists, thresh=self.unconfirmed_thresh)
             for i_tracked, idet in matches:
-                unconfirmed_dict[cls_id][i_tracked].update(detections[idet], self.frame_id)
-                activated_tracks_dict[cls_id].append(unconfirmed_dict[cls_id][i_tracked])
+                unconfirmed_dict[cls_id][i_tracked].update(detections[idet],
+                                                           self.frame_id)
+                activated_tracks_dict[cls_id].append(unconfirmed_dict[cls_id][
+                    i_tracked])
             for it in u_unconfirmed:
                 track = unconfirmed_dict[cls_id][it]
                 track.mark_removed()
                 removed_tracks_dict[cls_id].append(track)
-
             """ Step 4: Init new stracks"""
             for inew in u_detection:
                 track = detections[inew]
@@ -455,31 +456,36 @@ class MCJDETracker(object):
                     continue
                 track.activate(self.motion, self.frame_id)
                 activated_tracks_dict[cls_id].append(track)
-
             """ Step 5: Update state"""
             for track in self.lost_tracks_dict[cls_id]:
                 if self.frame_id - track.end_frame > self.max_time_lost:
                     track.mark_removed()
                     removed_tracks_dict[cls_id].append(track)
 
-            self.tracked_tracks_dict[cls_id] = [t for t in self.tracked_tracks_dict[cls_id] if
-                                                t.state == TrackState.Tracked]
-            self.tracked_tracks_dict[cls_id] = joint_stracks(self.tracked_tracks_dict[cls_id],
-                                                           activated_tracks_dict[cls_id])
-            self.tracked_tracks_dict[cls_id] = joint_stracks(self.tracked_tracks_dict[cls_id],
-                                                           refined_tracks_dict[cls_id])
-            self.lost_tracks_dict[cls_id] = sub_stracks(self.lost_tracks_dict[cls_id],
-                                                       self.tracked_tracks_dict[cls_id])
+            self.tracked_tracks_dict[cls_id] = [
+                t for t in self.tracked_tracks_dict[cls_id]
+                if t.state == TrackState.Tracked
+            ]
+            self.tracked_tracks_dict[cls_id] = joint_stracks(
+                self.tracked_tracks_dict[cls_id], activated_tracks_dict[cls_id])
+            self.tracked_tracks_dict[cls_id] = joint_stracks(
+                self.tracked_tracks_dict[cls_id], refined_tracks_dict[cls_id])
+            self.lost_tracks_dict[cls_id] = sub_stracks(
+                self.lost_tracks_dict[cls_id], self.tracked_tracks_dict[cls_id])
             self.lost_tracks_dict[cls_id].extend(lost_tracks_dict[cls_id])
-            self.lost_tracks_dict[cls_id] = sub_stracks(self.lost_tracks_dict[cls_id],
-                                                       self.removed_tracks_dict[cls_id])
+            self.lost_tracks_dict[cls_id] = sub_stracks(
+                self.lost_tracks_dict[cls_id], self.removed_tracks_dict[cls_id])
             self.removed_tracks_dict[cls_id].extend(removed_tracks_dict[cls_id])
-            self.tracked_tracks_dict[cls_id], self.lost_tracks_dict[cls_id] = remove_duplicate_stracks(
-                self.tracked_tracks_dict[cls_id],
-                self.lost_tracks_dict[cls_id])
+            self.tracked_tracks_dict[cls_id], self.lost_tracks_dict[
+                cls_id] = remove_duplicate_stracks(
+                    self.tracked_tracks_dict[cls_id],
+                    self.lost_tracks_dict[cls_id])
 
             # get scores of lost tracks
-            output_tracks_dict[cls_id] = [track for track in self.tracked_tracks_dict[cls_id] if track.is_activated]
+            output_tracks_dict[cls_id] = [
+                track for track in self.tracked_tracks_dict[cls_id]
+                if track.is_activated
+            ]
 
             logger.debug('===========Frame {}=========='.format(self.frame_id))
             logger.debug('Activated: {}'.format(

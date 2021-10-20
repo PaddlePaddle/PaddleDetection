@@ -246,7 +246,7 @@ class MCMOTDataSet(DetDataset):
             self.image_lists = [self.image_lists]
         self.roidbs = None
         self.cname2cid = None
-        
+
         self.reid_cls_ids = reid_cls_ids
         self.num_classes = len(reid_cls_ids.split(','))
 
@@ -262,9 +262,7 @@ class MCMOTDataSet(DetDataset):
         self.img_start_index = OrderedDict()
         self.label_files = OrderedDict()
         self.tid_num = OrderedDict()
-        # for mcmot
-        self.tid_start_idx_of_cls_ids = defaultdict(dict)
-        # self.tid_start_index = OrderedDict()
+        self.tid_start_idx_of_cls_ids = defaultdict(dict) # for MCMOT
 
         img_index = 0
         for data_name in self.image_lists:
@@ -298,30 +296,30 @@ class MCMOTDataSet(DetDataset):
             ]
 
         for data_name, label_paths in self.label_files.items():
-            max_ids_dict = defaultdict(int)  # using max_ids_dict rather than max_index
+            max_ids_dict = defaultdict(
+                int)  # using max_ids_dict rather than max_index
             for lp in label_paths:
                 lb = np.loadtxt(lp)
                 if len(lb) < 1:
                     continue
                 lb = lb.reshape(-1, 6)
-                for item in lb:  # label中每一个item(检测目标)
-                    if item[1] > max_ids_dict[int(item[0])]:  # item[0]: cls_id, item[1]: track id
+                for item in lb:
+                    if item[1] > max_ids_dict[int(item[0])]:  
+                        # item[0]: cls_id
+                        # item[1]: track id
                         max_ids_dict[int(item[0])] = int(item[1])
             # track id number
-            self.tid_num[data_name] = max_ids_dict # 每个子数据集按照需要reid的cls_id组织成dict
+            self.tid_num[data_name] = max_ids_dict
 
-        # self.tid_start_idx_of_cls_ids = defaultdict(dict)
-        last_idx_dict = defaultdict(int)  # 从0开始
-        for i, (k, v) in enumerate(self.tid_num.items()): # 统计每一个子数据集
-            for cls_id, id_num in v.items():  # 统计这个子数据集的每一个类别, v是一个max_ids_dict
+        last_idx_dict = defaultdict(int)
+        for i, (k, v) in enumerate(self.tid_num.items()):  # each sub dataset
+            for cls_id, id_num in v.items():  # v is a max_ids_dict
                 self.tid_start_idx_of_cls_ids[k][cls_id] = last_idx_dict[cls_id]
                 last_idx_dict[cls_id] += id_num
 
         self.total_identities_dict = defaultdict(int)
         for k, v in last_idx_dict.items():
-            self.total_identities_dict[k] = int(v)  # 每个类别的tack ids数量
-
-        self.total_identities = 14455
+            self.total_identities_dict[k] = int(v)  # total ids of each category
 
         self.num_imgs_each_data = [len(x) for x in self.img_files.values()]
         self.total_imgs = sum(self.num_imgs_each_data)
@@ -331,17 +329,15 @@ class MCMOTDataSet(DetDataset):
         logger.info(self.tid_num)
         logger.info('Total images: {}'.format(self.total_imgs))
         logger.info('Image start index: {}'.format(self.img_start_index))
-        logger.info('Total identities dict: ') # {}'.format(self.total_identities_dict))
+        logger.info('Total identities dict: ')
         for k, v in self.total_identities_dict.items():
             # logger.info('Total {:d} IDs of {}'.format(v, id2cls[k]))
             logger.info('Total {:d} IDs of class {}'.format(v, k))
-        # logger.info('total total_identities: {}'.format(self.total_identities))
-        logger.info('identity start index by class: ') #{}'.format(self.tid_start_idx_of_cls_ids))
+        logger.info('identity start index by class: ')
         for k, v in self.tid_start_idx_of_cls_ids.items():
             for cls_id, start_idx in v.items():
                 logger.info('Start index of dataset {} class {:d} is {:d}'
-                    .format(k, cls_id, start_idx))
-        # logger.info('identity start index: {}'.format(self.tid_start_index))
+                            .format(k, cls_id, start_idx))
         logger.info('=' * 80)
 
         records = []
@@ -375,7 +371,7 @@ class MCMOTDataSet(DetDataset):
             gt_ide = labels[:, 1:2].astype('int32')
             for i, _ in enumerate(gt_ide):
                 if gt_ide[i] > -1:
-                    cls_id = int(gt_class[i]) ###
+                    cls_id = int(gt_class[i])
                     start_idx = self.tid_start_idx_of_cls_ids[data_name][cls_id]
                     gt_ide[i] += start_idx
 

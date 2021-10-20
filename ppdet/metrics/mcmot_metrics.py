@@ -38,36 +38,13 @@ logger = setup_logger(__name__)
 
 __all__ = ['MCMOTEvaluator', 'MCMOTMetric']
 
-
 metrics_list = [
-    'num_frames',
-    'num_matches',
-    'num_switches',
-    'num_transfer',
-    'num_ascend',
-    'num_migrate',
-    'num_false_positives',
-    'num_misses',
-    'num_detections',
-    'num_objects',
-    'num_predictions',
-    'num_unique_objects',
-    'mostly_tracked',
-    'partially_tracked',
-    'mostly_lost',
-    'num_fragmentations',
-    'motp',
-    'mota',
-    'precision',
-    'recall',
-    'idfp',
-    'idfn',
-    'idtp',
-    'idp',
-    'idr',
-    'idf1'
+    'num_frames', 'num_matches', 'num_switches', 'num_transfer', 'num_ascend',
+    'num_migrate', 'num_false_positives', 'num_misses', 'num_detections',
+    'num_objects', 'num_predictions', 'num_unique_objects', 'mostly_tracked',
+    'partially_tracked', 'mostly_lost', 'num_fragmentations', 'motp', 'mota',
+    'precision', 'recall', 'idfp', 'idfn', 'idtp', 'idp', 'idr', 'idf1'
 ]
-
 
 name_map = {
     'num_frames': 'num_frames',
@@ -101,7 +78,7 @@ name_map = {
 
 def parse_accs_metrics(seq_acc, index_name, verbose=False):
     """
-    从 motmetrics 类中解析多个MOTAccumulator的评估指标
+    Parse the evaluation indicators of multiple MOTAccumulator 
     """
     mh = mm.metrics.create()
     summary = MCMOTEvaluator.get_summary(seq_acc, index_name, metrics_list)
@@ -109,10 +86,7 @@ def parse_accs_metrics(seq_acc, index_name, verbose=False):
                                      summary.loc['OVERALL', 'num_detections']
     if verbose:
         strsummary = mm.io.render_summary(
-            summary,
-            formatters=mh.formatters,
-            namemap=name_map
-        )
+            summary, formatters=mh.formatters, namemap=name_map)
         print(strsummary)
 
     return summary
@@ -120,38 +94,16 @@ def parse_accs_metrics(seq_acc, index_name, verbose=False):
 
 def seqs_overall_metrics(summary_df, verbose=False):
     """
-    计算多个序列中的 overall metrics
+    Calculate overall metrics for multiple sequences
     """
     add_col = [
-        'num_frames',
-        'num_matches',
-        'num_switches',
-        'num_transfer',
-        'num_ascend',
-        'num_migrate',
-        'num_false_positives',
-        'num_misses',
-        'num_detections',
-        'num_objects',
-        'num_predictions',
-        'num_unique_objects',
-        'mostly_tracked',
-        'partially_tracked',
-        'mostly_lost',
-        'num_fragmentations',
-        'idfp',
-        'idfn',
-        'idtp'
+        'num_frames', 'num_matches', 'num_switches', 'num_transfer',
+        'num_ascend', 'num_migrate', 'num_false_positives', 'num_misses',
+        'num_detections', 'num_objects', 'num_predictions',
+        'num_unique_objects', 'mostly_tracked', 'partially_tracked',
+        'mostly_lost', 'num_fragmentations', 'idfp', 'idfn', 'idtp'
     ]
-    calc_col = [
-        'motp',
-        'mota',
-        'precision',
-        'recall',
-        'idp',
-        'idr',
-        'idf1'
-    ]
+    calc_col = ['motp', 'mota', 'precision', 'recall', 'idp', 'idr', 'idf1']
     calc_df = summary_df.copy()
 
     overall_dic = {}
@@ -159,18 +111,16 @@ def seqs_overall_metrics(summary_df, verbose=False):
         overall_dic[col] = calc_df[col].sum()
 
     for col in calc_col:
-        overall_dic[col] = getattr(MCMOTMetricOverall, col + '_overall')(calc_df, overall_dic)
+        overall_dic[col] = getattr(MCMOTMetricOverall, col + '_overall')(
+            calc_df, overall_dic)
 
-    overall_df = pd.DataFrame(overall_dic,index=['overall_calc'])
+    overall_df = pd.DataFrame(overall_dic, index=['overall_calc'])
     calc_df = pd.concat([calc_df, overall_df])
 
     if verbose:
         mh = mm.metrics.create()
         str_calc_df = mm.io.render_summary(
-            calc_df,
-            formatters=mh.formatters,
-            namemap=name_map
-        )
+            calc_df, formatters=mh.formatters, namemap=name_map)
         print(str_calc_df)
 
     return calc_df
@@ -178,38 +128,46 @@ def seqs_overall_metrics(summary_df, verbose=False):
 
 class MCMOTMetricOverall(object):
     def motp_overall(summary_df, overall_dic):
-        motp = quiet_divide((summary_df['motp'] * summary_df['num_detections']).sum(), overall_dic['num_detections'])
+        motp = quiet_divide((summary_df['motp'] *
+                             summary_df['num_detections']).sum(),
+                            overall_dic['num_detections'])
         return motp
 
     def mota_overall(summary_df, overall_dic):
         del summary_df
-        mota = 1. - quiet_divide((overall_dic['num_misses'] + overall_dic['num_switches'] + overall_dic['num_false_positives']),
-                                overall_dic['num_objects'])
+        mota = 1. - quiet_divide(
+            (overall_dic['num_misses'] + overall_dic['num_switches'] +
+             overall_dic['num_false_positives']), overall_dic['num_objects'])
         return mota
 
     def precision_overall(summary_df, overall_dic):
         del summary_df
-        precision = quiet_divide(overall_dic['num_detections'], (overall_dic['num_false_positives'] + overall_dic['num_detections']))
+        precision = quiet_divide(overall_dic['num_detections'], (
+            overall_dic['num_false_positives'] + overall_dic['num_detections']))
         return precision
 
     def recall_overall(summary_df, overall_dic):
         del summary_df
-        recall = quiet_divide(overall_dic['num_detections'], overall_dic['num_objects'])
+        recall = quiet_divide(overall_dic['num_detections'],
+                              overall_dic['num_objects'])
         return recall
 
     def idp_overall(summary_df, overall_dic):
         del summary_df
-        idp = quiet_divide(overall_dic['idtp'], (overall_dic['idtp'] + overall_dic['idfp']))
+        idp = quiet_divide(overall_dic['idtp'],
+                           (overall_dic['idtp'] + overall_dic['idfp']))
         return idp
 
     def idr_overall(summary_df, overall_dic):
         del summary_df
-        idr = quiet_divide(overall_dic['idtp'], (overall_dic['idtp'] + overall_dic['idfn']))
+        idr = quiet_divide(overall_dic['idtp'],
+                           (overall_dic['idtp'] + overall_dic['idfn']))
         return idr
 
     def idf1_overall(summary_df, overall_dic):
         del summary_df
-        idf1 = quiet_divide(2. * overall_dic['idtp'], (overall_dic['num_objects'] + overall_dic['num_predictions']))
+        idf1 = quiet_divide(2. * overall_dic['idtp'], (
+            overall_dic['num_objects'] + overall_dic['num_predictions']))
         return idf1
 
 
@@ -222,7 +180,7 @@ def read_mcmot_results_union(filename, is_gt, is_ignore):
         if is_ignore:
             return results_dict
         if is_gt:
-            # 线下测试使用
+            # only for test use
             all_result = all_result[all_result[:, 7] != 0]
             all_result[:, 7] = all_result[:, 7] - 1
 
@@ -236,7 +194,7 @@ def read_mcmot_results_union(filename, is_gt, is_ignore):
         for cls in class_unique:
             result_cls_split = all_result[all_result[:, 7] == cls]
             result_cls_split[:, 1] = result_cls_split[:, 1] + last_max_id
-            # 保证每个类别的 track id 各不相同
+            # make sure track id different between every category
             last_max_id = max(np.unique(result_cls_split[:, 1])) + 1
             result_cls_list.append(result_cls_split)
 
@@ -277,7 +235,7 @@ def read_mcmot_results(filename, is_gt, is_ignore):
                 cid = int(linelist[7])
                 if is_gt:
                     score = 1
-                    # 线下测试用 线上删除
+                    # only for test use
                     cid -= 1
                 else:
                     score = float(linelist[6])
@@ -291,17 +249,24 @@ def read_mcmot_results(filename, is_gt, is_ignore):
     return results_dict
 
 
-def read_results(filename, data_type, is_gt=False, is_ignore=False, multi_class=False, union=False):
+def read_results(filename,
+                 data_type,
+                 is_gt=False,
+                 is_ignore=False,
+                 multi_class=False,
+                 union=False):
     if data_type in ['mcmot', 'lab']:
         if multi_class:
             if union:
-                # 将所有类别联合进行评估(不同类别间的 track id 不能重复)
+                # The results are evaluated by union all the categories.
+                # Track IDs between different categories cannot be duplicate.
                 read_fun = read_mcmot_results_union
             else:
-                # 按类别将结果分开进行评估
+                # The results are evaluated separately by category.
                 read_fun = read_mcmot_results
         else:
-            raise ValueError('multi_class: {}, MCMOT should have cls_id.'.format(multi_class))
+            raise ValueError('multi_class: {}, MCMOT should have cls_id.'.
+                             format(multi_class))
     else:
         raise ValueError('Unknown data type: {}'.format(data_type))
 
@@ -343,7 +308,9 @@ class MCMOTEvaluator(object):
 
     def load_annotations(self):
         assert self.data_type == 'mcmot'
-        self.gt_filename = os.path.join(self.data_root, 'annotations', '{}.txt'.format(self.seq_name))
+        self.gt_filename = os.path.join(self.data_root, '../', '../',
+                                        'annotations',
+                                        '{}.txt'.format(self.seq_name))
 
     def reset_accumulator(self):
         import motmetrics as mm
@@ -358,12 +325,13 @@ class MCMOTEvaluator(object):
             gt_tlwhs, gt_ids, gt_cls = unzip_objs_cls(gt_objs)[:3]
 
             # get distance matrix
-            iou_distance = mm.distances.iou_matrix(gt_tlwhs, trk_tlwhs, max_iou=0.5)
+            iou_distance = mm.distances.iou_matrix(
+                gt_tlwhs, trk_tlwhs, max_iou=0.5)
 
-            # 将不同类别对象之间的距离设置为nan
+            # Set the distance between objects of different categories to nan
             gt_cls_len = len(gt_cls)
             trk_cls_len = len(trk_cls)
-            # 当 gt 和 trk 又一个数目为0时，iou_distance 维度为(0,0)
+            # When the number of GT or Trk is 0, iou_distance dimension is (0,0)
             if gt_cls_len != 0 and trk_cls_len != 0:
                 gt_cls = gt_cls.reshape(gt_cls_len, 1)
                 gt_cls = np.repeat(gt_cls, trk_cls_len, axis=1)
@@ -376,11 +344,13 @@ class MCMOTEvaluator(object):
             gt_tlwhs, gt_ids = unzip_objs(gt_objs)[:2]
 
             # get distance matrix
-            iou_distance = mm.distances.iou_matrix(gt_tlwhs, trk_tlwhs, max_iou=0.5)
+            iou_distance = mm.distances.iou_matrix(
+                gt_tlwhs, trk_tlwhs, max_iou=0.5)
 
         self.acc.update(gt_ids, trk_ids, iou_distance)
 
-        if rtn_events and iou_distance.size > 0 and hasattr(self.acc, 'mot_events'):
+        if rtn_events and iou_distance.size > 0 and hasattr(self.acc,
+                                                            'mot_events'):
             events = self.acc.mot_events  # only supported by https://github.com/longcw/py-motmetrics
         else:
             events = None
@@ -388,15 +358,17 @@ class MCMOTEvaluator(object):
 
     def eval_file(self, result_filename):
         # evaluation of each category
-        gt_frame_dict = read_results(self.gt_filename, self.data_type, is_gt=True, multi_class=True)
-        result_frame_dict = read_results(result_filename, self.data_type, is_gt=False, multi_class=True)
+        gt_frame_dict = read_results(
+            self.gt_filename, self.data_type, is_gt=True, multi_class=True)
+        result_frame_dict = read_results(
+            result_filename, self.data_type, is_gt=False, multi_class=True)
 
         for cid in range(self.num_classes):
             self.reset_accumulator()
             cls_result_frame_dict = result_frame_dict.setdefault(cid, dict())
             cls_gt_frame_dict = gt_frame_dict.setdefault(cid, dict())
 
-            # 仅评估有标注帧
+            # only labeled frames will be evaluated
             frames = sorted(list(set(cls_gt_frame_dict.keys())))
 
             for frame_id in frames:
@@ -450,33 +422,38 @@ class MCMOTMetric(Metric):
         self.seqs = []
 
     def update(self, data_root, seq, data_type, result_root, result_filename):
-        evaluator = self.MCMOTEvaluator(data_root, seq, data_type, self.num_classes)
+        evaluator = self.MCMOTEvaluator(data_root, seq, data_type,
+                                        self.num_classes)
         seq_acc = evaluator.eval_file(result_filename)
         self.accs.append(seq_acc)
         self.seqs.append(seq)
         self.result_root = result_root
 
-        cls_index_name = ['{}_{}'.format(seq, i) for i in range(self.num_classes)]
-        summary = parse_accs_metrics(seq_acc, cls_index_name) #
-        summary.rename(index={'OVERALL': '{}_OVERALL'.format(seq)}, inplace=True)
+        cls_index_name = [
+            '{}_{}'.format(seq, i) for i in range(self.num_classes)
+        ]
+        summary = parse_accs_metrics(seq_acc, cls_index_name)
+        summary.rename(
+            index={'OVERALL': '{}_OVERALL'.format(seq)}, inplace=True)
         for row in range(len(summary)):
-            self.seqs_overall[row].append(summary.iloc[row: row+1])
+            self.seqs_overall[row].append(summary.iloc[row:row + 1])
 
     def accumulate(self):
-        ###
         self.cls_summary_list = []
         for row in range(self.num_classes):
             seqs_cls_df = pd.concat(self.seqs_overall[row])
             seqs_cls_summary = seqs_overall_metrics(seqs_cls_df)
             cls_summary_overall = seqs_cls_summary.iloc[-1:].copy()
-            cls_summary_overall.rename(index={'overall_calc': 'overall_calc_{}'.format(row)}, inplace=True)
+            cls_summary_overall.rename(
+                index={'overall_calc': 'overall_calc_{}'.format(row)},
+                inplace=True)
             self.cls_summary_list.append(cls_summary_overall)
 
     def log(self):
-        #print(self.strsummary)
-        # 生成按序列统计的评估结果和按类别统计的评估结果
-        seqs_summary = seqs_overall_metrics(pd.concat(self.seqs_overall[self.num_classes]), verbose=True)
-        class_summary = seqs_overall_metrics(pd.concat(self.cls_summary_list), verbose=True)
+        seqs_summary = seqs_overall_metrics(
+            pd.concat(self.seqs_overall[self.num_classes]), verbose=True)
+        class_summary = seqs_overall_metrics(
+            pd.concat(self.cls_summary_list), verbose=True)
 
     def get_results(self):
-        return 'self.strsummary'
+        return 1

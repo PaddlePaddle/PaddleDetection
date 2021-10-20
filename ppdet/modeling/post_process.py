@@ -459,7 +459,7 @@ class CenterNetPostProcess(TTFBox):
         topk_ys = paddle.gather(topk_ys, topk_ind)
         topk_xs = paddle.gather(topk_xs, topk_ind)
 
-        # 计算每个类别对应的topk索引
+        # calculate the topk index of each category
         cls_inds_masks = paddle.full((num_classes, k), False)
         for cls_id in range(num_classes):
             inds_masks = topk_clses == cls_id
@@ -470,7 +470,8 @@ class CenterNetPostProcess(TTFBox):
 
     def __call__(self, hm, wh, reg, im_shape, scale_factor):
         heat = self._simple_nms(hm)
-        scores, inds, clses, ys, xs, cls_inds_masks = self._topk(heat, self.num_classes)
+        scores, inds, clses, ys, xs, cls_inds_masks = self._topk(
+            heat, self.num_classes)
         scores = paddle.tensor.unsqueeze(scores, [1])
         clses = paddle.tensor.unsqueeze(clses, [1])
 

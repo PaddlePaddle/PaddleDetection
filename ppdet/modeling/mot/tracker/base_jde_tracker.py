@@ -125,7 +125,7 @@ class MCBaseTrack(object):
             MCBaseTrack._count_dict[cls_id] = 0
 
     @staticmethod
-    def reset_track_count(cls_id): ###
+    def reset_track_count(cls_id):
         MCBaseTrack._count_dict[cls_id] = 0
 
     def activate(self, *args):
@@ -291,7 +291,13 @@ class STrack(BaseTrack):
 @register
 @serializable
 class MCSTrack(MCBaseTrack):
-    def __init__(self, tlwh, score, temp_feat, num_classes, cls_id, buff_size=30):
+    def __init__(self,
+                 tlwh,
+                 score,
+                 temp_feat,
+                 num_classes,
+                 cls_id,
+                 buff_size=30):
         # object class id
         self.cls_id = cls_id
         # wait activate
@@ -315,7 +321,8 @@ class MCSTrack(MCBaseTrack):
         if self.smooth_feat is None:
             self.smooth_feat = feat
         else:
-            self.smooth_feat = self.alpha * self.smooth_feat + (1.0 - self.alpha) * feat
+            self.smooth_feat = self.alpha * self.smooth_feat + (1.0 - self.alpha
+                                                                ) * feat
         self.features.append(feat)
         self.smooth_feat /= np.linalg.norm(self.smooth_feat)
 
@@ -323,13 +330,15 @@ class MCSTrack(MCBaseTrack):
         mean_state = self.mean.copy()
         if self.state != TrackState.Tracked:
             mean_state[7] = 0
-        self.mean, self.covariance = self.kalman_filter.predict(mean_state, self.covariance)
+        self.mean, self.covariance = self.kalman_filter.predict(mean_state,
+                                                                self.covariance)
 
     @staticmethod
     def multi_predict(tracks, kalman_filter):
         if len(tracks) > 0:
             multi_mean = np.asarray([track.mean.copy() for track in tracks])
-            multi_covariance = np.asarray([track.covariance for track in tracks])
+            multi_covariance = np.asarray(
+                [track.covariance for track in tracks])
             for i, st in enumerate(tracks):
                 if st.state != TrackState.Tracked:
                     multi_mean[i][7] = 0
@@ -339,7 +348,7 @@ class MCSTrack(MCBaseTrack):
                 tracks[i].mean = mean
                 tracks[i].covariance = cov
 
-    def reset_track_id(self): ####
+    def reset_track_id(self):  ####
         self.reset_track_count(self.cls_id)
 
     def activate(self, kalman_filter, frame_id):
@@ -360,9 +369,8 @@ class MCSTrack(MCBaseTrack):
         self.start_frame = frame_id
 
     def re_activate(self, new_track, frame_id, new_id=False):
-        self.mean, self.covariance = self.kalman_filter.update(self.mean,
-                                                               self.covariance,
-                                                               self.tlwh_to_xyah(new_track.tlwh))
+        self.mean, self.covariance = self.kalman_filter.update(
+            self.mean, self.covariance, self.tlwh_to_xyah(new_track.tlwh))
         self.update_features(new_track.curr_feat)
         self.track_len = 0
         self.state = TrackState.Tracked
@@ -376,9 +384,8 @@ class MCSTrack(MCBaseTrack):
         self.track_len += 1
 
         new_tlwh = new_track.tlwh
-        self.mean, self.covariance = self.kalman_filter.update(self.mean,
-                                                               self.covariance,
-                                                               self.tlwh_to_xyah(new_tlwh))
+        self.mean, self.covariance = self.kalman_filter.update(
+            self.mean, self.covariance, self.tlwh_to_xyah(new_tlwh))
         self.state = TrackState.Tracked  # set flag 'tracked'
         self.is_activated = True  # set flag 'activated'
 
@@ -434,7 +441,8 @@ class MCSTrack(MCBaseTrack):
         return ret
 
     def __repr__(self):
-        return 'OT_({}-{})_({}-{})'.format(self.cls_id, self.track_id, self.start_frame, self.end_frame)
+        return 'OT_({}-{})_({}-{})'.format(self.cls_id, self.track_id,
+                                           self.start_frame, self.end_frame)
 
 
 def joint_stracks(tlista, tlistb):

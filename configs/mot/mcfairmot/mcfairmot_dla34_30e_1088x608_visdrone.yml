@@ -17,6 +17,7 @@ CenterNetHead:
 CenterNetPostProcess:
   for_mot: True
   regress_ltrb: False
+  max_per_img: 200
 
 MCJDETracker:
   conf_thres: 0.4

@@ -135,7 +135,6 @@ class Tracker(object):
             if frame_id % 40 == 0:
                 logger.info('Processing frame {} ({:.2f} fps)'.format(
                     frame_id, 1. / max(1e-5, timer.average_time)))
-
             # forward
             timer.tic()
             pred_dets, pred_embs = self.model(data)
@@ -148,7 +147,8 @@ class Tracker(object):
                     tscore = t.score
                     if tscore < draw_threshold: continue
                     vertical = tlwh[2] / tlwh[3] > 1.6
-                    if tlwh[2] * tlwh[3] > tracker.min_box_area and not vertical:
+                    if tlwh[2] * tlwh[
+                            3] > tracker.min_box_area and not vertical:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
                         online_scores.append(tscore)
@@ -156,31 +156,32 @@ class Tracker(object):
                 results.append(
                     (frame_id + 1, online_tlwhs, online_scores, online_ids))
             else:
-                # mcmot
-                assert isinstance(pred_dets, list) and isinstance(pred_embs, list)
-                # mc tracker
-                online_targets_dict = self.model.tracker.update(pred_dets, pred_embs)
-                online_tlwhs, online_scores, online_ids = defaultdict(list), defaultdict(list), defaultdict(list)
+                # for MCMOT
+                assert isinstance(pred_dets, list) and isinstance(pred_embs,
+                                                                  list)
+                online_targets_dict = self.model.tracker.update(pred_dets,
+                                                                pred_embs)
+                online_tlwhs, online_scores, online_ids = defaultdict(
+                    list), defaultdict(list), defaultdict(list)
                 for cls_id in range(self.cfg.num_classes):
                     online_targets = online_targets_dict[cls_id]
                     for t in online_targets:
                         tlwh = t.tlwh
                         tid = t.track_id
                         tscore = t.score
-                        if tscore < draw_threshold: continue
-                        vertical = tlwh[2] / tlwh[3] > 1.6
-                        if tlwh[2] * tlwh[3] > tracker.min_box_area and not vertical:
+                        if tlwh[2] * tlwh[3] > tracker.min_box_area:
                             online_tlwhs[cls_id].append(tlwh)
                             online_ids[cls_id].append(tid)
                             online_scores[cls_id].append(tscore)
                     # save results
                     results[cls_id].append(
-                        (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id], online_ids[cls_id]))
+                        (frame_id + 1, online_tlwhs[cls_id],
+                         online_scores[cls_id], online_ids[cls_id]))
 
             timer.toc()
             self.save_vis_results(data, frame_id, online_ids, online_tlwhs,
-                                online_scores, timer.average_time, show_image,
-                                save_dir)
+                                  online_scores, timer.average_time, show_image,
+                                  save_dir)
             frame_id += 1
 
         return results, frame_id, timer.average_time, timer.calls
@@ -284,8 +285,8 @@ class Tracker(object):
             results.append(
                 (frame_id + 1, online_tlwhs, online_scores, online_ids))
             self.save_vis_results(data, frame_id, online_ids, online_tlwhs,
-                              online_scores, timer.average_time, show_image,
-                              save_dir)
+                                  online_scores, timer.average_time, show_image,
+                                  save_dir)
             frame_id += 1
 
         return results, frame_id, timer.average_time, timer.calls
@@ -313,27 +314,30 @@ class Tracker(object):
         n_frame = 0
         timer_avgs, timer_calls = [], []
         for seq in seqs:
-            if not os.path.isdir(os.path.join(data_root, seq)):
+            infer_dir = os.path.join(data_root, seq)
+            if not os.path.exists(infer_dir) or not os.path.isdir(infer_dir):
+                logger.warning("Seq {} error, {} has no images.".format(
+                    seq, infer_dir))
                 continue
-            infer_dir = os.path.join(data_root, seq) ##### todo
-            #infer_dir = os.path.join(data_root, seq, 'img1')
-            #seqinfo = os.path.join(data_root, seq, 'seqinfo.ini')
-            #if not os.path.exists(seqinfo) or not os.path.exists(
-            #        infer_dir) or not os.path.isdir(infer_dir):
-            #    continue
+            if os.path.exists(os.path.join(infer_dir, 'img1')):
+                infer_dir = os.path.join(infer_dir, 'img1')
+
+            frame_rate = 30
+            seqinfo = os.path.join(data_root, seq, 'seqinfo.ini')
+            if os.path.exists(seqinfo):
+                meta_info = open(seqinfo).read()
+                frame_rate = int(meta_info[meta_info.find('frameRate') + 10:
+                                           meta_info.find('\nseqLength')])
 
             save_dir = os.path.join(output_dir, 'mot_outputs',
                                     seq) if save_images or save_videos else None
             logger.info('start seq: {}'.format(seq))
 
-            images = self.get_infer_images(infer_dir)
-            self.dataset.set_images(images)
-
+            self.dataset.set_images(self.get_infer_images(infer_dir))
             dataloader = create('EvalMOTReader')(self.dataset, 0)
 
             result_filename = os.path.join(result_root, '{}.txt'.format(seq))
-            #meta_info = open(seqinfo).read()
-            frame_rate = 30 #int(meta_info[meta_info.find('frameRate') + 10:meta_info.find('\nseqLength')])
+
             with paddle.no_grad():
                 if model_type in ['JDE', 'FairMOT']:
                     results, nf, ta, tc = self._eval_seq_jde(
@@ -509,7 +513,10 @@ class Tracker(object):
                     line = save_format.format(
                         frame=frame_id,
                         id=track_id,
-                        x1=x1, y1=y1, w=w, h=h,
+                        x1=x1,
+                        y1=y1,
+                        w=w,
+                        h=h,
                         score=score)
                     f.write(line)
         else:
@@ -523,7 +530,10 @@ class Tracker(object):
                             frame=frame_id,
                             cls_id=cls_id,
                             id=track_id,
-                            x1=x1, y1=y1, w=w, h=h,
+                            x1=x1,
+                            y1=y1,
+                            w=w,
+                            h=h,
                             score=score)
                         f.write(line)
         logger.info('MOT results save in {}'.format(filename))
