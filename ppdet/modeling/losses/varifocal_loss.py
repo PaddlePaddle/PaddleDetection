@@ -34,9 +34,9 @@ def varifocal_loss(pred,
     """`Varifocal Loss <https://arxiv.org/abs/2008.13367>`_
 
     Args:
-        pred (torch.Tensor): The prediction with shape (N, C), C is the
+        pred (Tensor): The prediction with shape (N, C), C is the
             number of classes
-        target (torch.Tensor): The learning target of the iou-aware
+        target (Tensor): The learning target of the iou-aware
             classification score with shape (N, C), C is the number of classes.
         alpha (float, optional): A balance factor for the negative part of
             Varifocal Loss, which is different from the alpha of Focal Loss.
@@ -108,27 +108,18 @@ class VarifocalLoss(nn.Layer):
         self.reduction = reduction
         self.loss_weight = loss_weight
 
-    def forward(self,
-                pred,
-                target,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None):
+    def forward(self, pred, target, weight=None, avg_factor=None):
         """Forward function.
 
         Args:
-            pred (torch.Tensor): The prediction.
-            target (torch.Tensor): The learning target of the prediction.
-            weight (torch.Tensor, optional): The weight of loss for each
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            weight (Tensor, optional): The weight of loss for each
                 prediction. Defaults to None.
             avg_factor (int, optional): Average factor that is used to average
                 the loss. Defaults to None.
-            reduction_override (str, optional): The reduction method used to
-                override the original reduction method of the loss.
-                Options are "none", "mean" and "sum".
-
         Returns:
-            torch.Tensor: The calculated loss
+            Tensor: The calculated loss
         """
         loss = self.loss_weight * varifocal_loss(
             pred,
