@@ -246,9 +246,11 @@ class OptimizerBuilder():
         op = getattr(optimizer, optim_type)
 
         if 'param_groups' in optim_args:
+            assert isinstance(optim_args['param_groups'], list), ''
+
             params, visited = [], []
             for group in optim_args['param_groups']:
-                assert 'params' in group, ''
+                assert 'params' in group and isinstance(group, dict), ''
                 _params = {
                     n: p
                     for n, p in model.named_parameters()
