@@ -445,7 +445,7 @@ int main(int argc, char** argv) {
   if (!FLAGS_model_dir_keypoint.empty())
   {
       keypoint = new PaddleDetection::KeyPointDetector(FLAGS_model_dir_keypoint, FLAGS_device, FLAGS_use_mkldnn,
-                        FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_batch_size,FLAGS_gpu_id,
+                        FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_batch_size_keypoint, FLAGS_gpu_id,
                         FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape,
 			FLAGS_trt_calib_mode, FLAGS_use_dark);
   }

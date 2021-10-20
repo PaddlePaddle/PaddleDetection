@@ -76,11 +76,11 @@ void PrintTotalIimeLog(double det_time,
                        double crop_time) {
   std::cout << "----------------------- Time info ------------------------"
             << std::endl;
-  std::cout << "Total Pipeline time(ms): "
+  std::cout << "Total Pipeline time(ms) per image: "
             << det_time + keypoint_time + crop_time << std::endl;
-  std::cout << "average det time(ms): " << det_time
-            << ", average keypoint time(ms): " << keypoint_time
-            << ", average crop time(ms): " << crop_time << std::endl;
+  std::cout << "Average det time(ms) per image: " << det_time
+            << ", average keypoint time(ms) per image: " << keypoint_time
+            << ", average crop time(ms) per image: " << crop_time << std::endl;
 }
 
 static std::string DirName(const std::string& filepath) {
@@ -287,10 +287,11 @@ void PredictImage(const std::vector<std::string> all_img_paths,
   PrintBenchmarkLog(det_t, all_img_paths.size());
   if (keypoint) {
     PrintBenchmarkLog(keypoint_t, kpts_imgs);
-  }
-  PrintTotalIimeLog((det_t[0] + det_t[1] + det_t[2]) / all_img_paths.size(),
-                    (keypoint_t[0] + keypoint_t[1] + keypoint_t[2]) / kpts_imgs,
+    PrintTotalIimeLog((det_t[0] + det_t[1] + det_t[2]) / all_img_paths.size(),
+                    (keypoint_t[0] + keypoint_t[1] + keypoint_t[2]) / all_img_paths.size(),
                     midtimecost / all_img_paths.size());
+  }
+
 }
 
 int main(int argc, char** argv) {
