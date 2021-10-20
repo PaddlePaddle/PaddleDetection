@@ -225,7 +225,7 @@ class OptimizerBuilder():
         self.regularizer = regularizer
         self.optimizer = optimizer
 
-    def __call__(self, learning_rate, params=None):
+    def __call__(self, learning_rate, model=None):
         if self.clip_grad_by_norm is not None:
             grad_clip = nn.ClipGradByGlobalNorm(
                 clip_norm=self.clip_grad_by_norm)
@@ -244,6 +244,37 @@ class OptimizerBuilder():
         if optim_type != 'AdamW':
             optim_args['weight_decay'] = regularization
         op = getattr(optimizer, optim_type)
+
+        if 'param_groups' in optim_args:
+            params, visited = [], []
+            for group in optim_args['param_groups']:
+                assert 'params' in group, ''
+                _params = {
+                    n: p
+                    for n, p in model.named_parameters()
+                    if any([k in n for k in group['params']])
+                }
+                group.update({'params': list(_params.values())})
+
+                params.append(group)
+                visited.extend(list(_params.keys()))
+
+            ext_params = [
+                p for n, p in model.named_parameters() if n not in visited
+            ]
+
+            if len(ext_params) < len(model.parameters()):
+                params.append({'params': ext_params})
+
+            elif len(ext_params) > len(model.parameters()):
+                raise RuntimeError
+
+            params = params.copy()
+            optim_args.pop('param_groups')
+
+        else:
+            params = model.parameters()
+
         return op(learning_rate=learning_rate,
                   parameters=params,
                   grad_clip=grad_clip,
