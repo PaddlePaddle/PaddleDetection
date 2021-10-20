@@ -9,7 +9,6 @@ import numpy as np
 from scipy.special import softmax
 from tqdm import tqdm
 
-# Copy from picodet/util/visualization.py
 _COLORS = (np.array([
     0.000,
     0.447,
@@ -320,7 +319,6 @@ def overlay_bbox_cv(img, all_box, class_names):
     all_box.sort(key=lambda v: v[5])
     for box in all_box:
         label, x0, y0, x1, y1, score = box
-        # color = self.cmap(i)[:3]
         color = (_COLORS[label] * 255).astype(np.uint8).tolist()
         text = "{}:{:.1f}%".format(class_names[label], score * 100)
         txt_color = (0, 0, 0) if np.mean(_COLORS[label]) > 0.5 else (255, 255,
@@ -353,18 +351,14 @@ def hard_nms(box_scores, iou_threshold, top_k=-1, candidate_size=200):
     scores = box_scores[:, -1]
     boxes = box_scores[:, :-1]
     picked = []
-    # _, indexes = scores.sort(descending=True)
     indexes = np.argsort(scores)
-    # indexes = indexes[:candidate_size]
     indexes = indexes[-candidate_size:]
     while len(indexes) > 0:
-        # current = indexes[0]
         current = indexes[-1]
         picked.append(current)
         if 0 < top_k == len(picked) or len(indexes) == 1:
             break
         current_box = boxes[current, :]
-        # indexes = indexes[1:]
         indexes = indexes[:-1]
         rest_boxes = boxes[indexes, :]
         iou = iou_of(

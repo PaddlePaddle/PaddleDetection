@@ -43,16 +43,10 @@ PicoDet::PicoDet(const char* model_path)
     InferenceEngine::InputsDataMap inputs_map(model.getInputsInfo());
     input_name_ = inputs_map.begin()->first;
     InferenceEngine::InputInfo::Ptr input_info = inputs_map.begin()->second;
-    //input_info->setPrecision(InferenceEngine::Precision::FP32);
-    //input_info->setLayout(InferenceEngine::Layout::NCHW);
-
-
-
     //prepare output settings
     InferenceEngine::OutputsDataMap outputs_map(model.getOutputsInfo());
     for (auto &output_info : outputs_map)
     {
-        //std::cout<< "Output:" << output_info.first <<std::endl;
         output_info.second->setPrecision(InferenceEngine::Precision::FP32);
     }
 
@@ -99,8 +93,6 @@ void PicoDet::preprocess(cv::Mat& image, InferenceEngine::Blob::Ptr& blob)
 
 std::vector<BoxInfo> PicoDet::detect(cv::Mat image, float score_threshold, float nms_threshold)
 {
-    //auto start = std::chrono::steady_clock::now();
-
     InferenceEngine::Blob::Ptr input_blob = infer_request_.GetBlob(input_name_);
     preprocess(image, input_blob);
 
@@ -137,10 +129,6 @@ std::vector<BoxInfo> PicoDet::detect(cv::Mat image, float score_threshold, float
             dets.push_back(box);
         }
     }
-
-    //auto end = std::chrono::steady_clock::now();
-    //double time = std::chrono::duration<double, std::milli>(end - start).count();
-    //std::cout << "inference time:" << time << "ms" << std::endl;
     return dets;
 }
 
@@ -148,7 +136,6 @@ void PicoDet::decode_infer(const float*& cls_pred, const float*& dis_pred, int s
 {
     int feature_h = input_size_ / stride;
     int feature_w = input_size_ / stride;
-    //cv::Mat debug_heatmap = cv::Mat::zeros(feature_h, feature_w, CV_8UC3);
     for (int idx = 0; idx < feature_h * feature_w; idx++)
     {
         int row = idx / feature_w;
@@ -166,11 +153,8 @@ void PicoDet::decode_infer(const float*& cls_pred, const float*& dis_pred, int s
         }
         if (score > threshold)
         {
-            //std::cout << row << "," << col <<" label:" << cur_label << " score:" << score << std::endl;
             const float* bbox_pred = dis_pred + idx * (reg_max_ + 1) * 4;
             results[cur_label].push_back(this->disPred2Bbox(bbox_pred, cur_label, score, col, row, stride));
-            //debug_heatmap.at<cv::Vec3b>(row, col)[0] = 255;
-            //cv::imshow("debug", debug_heatmap);
         }
 
     }
@@ -192,7 +176,6 @@ BoxInfo PicoDet::disPred2Bbox(const float*& dfl_det, int label, float score, int
             dis += j * dis_after_sm[j];
         }
         dis *= stride;
-        //std::cout << "dis:" << dis << std::endl;
         dis_pred[i] = dis;
         delete[] dis_after_sm;
     }
@@ -200,8 +183,6 @@ BoxInfo PicoDet::disPred2Bbox(const float*& dfl_det, int label, float score, int
     float ymin = (std::max)(ct_y - dis_pred[1], .0f);
     float xmax = (std::min)(ct_x + dis_pred[2], (float)this->input_size_);
     float ymax = (std::min)(ct_y + dis_pred[3], (float)this->input_size_);
-
-    //std::cout << xmin << "," << ymin << "," << xmax << "," << xmax << "," << std::endl;
     return BoxInfo { xmin, ymin, xmax, ymax, score, label };
 }
 

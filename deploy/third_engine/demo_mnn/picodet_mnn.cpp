@@ -52,7 +52,6 @@ int PicoDet::detect(cv::Mat &raw_image, std::vector<BoxInfo> &result_list)
 
     auto start = chrono::steady_clock::now();
 
-
     // run network
     PicoDet_interpreter->runSession(PicoDet_session);
 
@@ -101,12 +100,9 @@ void PicoDet::decode_infer(MNN::Tensor *cls_pred, MNN::Tensor *dis_pred, int str
     int feature_h = in_h / stride;
     int feature_w = in_w / stride;
 
-    //cv::Mat debug_heatmap = cv::Mat(feature_h, feature_w, CV_8UC3);
     for (int idx = 0; idx < feature_h * feature_w; idx++)
     {
-        // scores is a tensor with shape [feature_h * feature_w, num_class]
         const float *scores = cls_pred->host<float>() + (idx * num_class);
-
         int row = idx / feature_w;
         int col = idx % feature_w;
         float score = 0;
@@ -121,12 +117,8 @@ void PicoDet::decode_infer(MNN::Tensor *cls_pred, MNN::Tensor *dis_pred, int str
         }
         if (score > threshold)
         {
-            //std::cout << "label:" << cur_label << " score:" << score << std::endl;
-            // bbox is a tensor with shape [feature_h * feature_w, 4_points * 8_distribution_bite]
             const float *bbox_pred = dis_pred->host<float>() + (idx * 4 * (reg_max + 1));
             results[cur_label].push_back(disPred2Bbox(bbox_pred, cur_label, score, col, row, stride));
-            //debug_heatmap.at<cv::Vec3b>(row, col)[0] = 255;
-            //cv::imshow("debug", debug_heatmap);
         }
     }
 }
@@ -147,7 +139,6 @@ BoxInfo PicoDet::disPred2Bbox(const float *&dfl_det, int label, float score, int
             dis += j * dis_after_sm[j];
         }
         dis *= stride;
-        //std::cout << "dis:" << dis << std::endl;
         dis_pred[i] = dis;
         delete[] dis_after_sm;
     }
@@ -155,8 +146,6 @@ BoxInfo PicoDet::disPred2Bbox(const float *&dfl_det, int label, float score, int
     float ymin = (std::max)(ct_y - dis_pred[1], .0f);
     float xmax = (std::min)(ct_x + dis_pred[2], (float)in_w);
     float ymax = (std::min)(ct_y + dis_pred[3], (float)in_h);
-
-    //std::cout << xmin << "," << ymin << "," << xmax << "," << xmax << "," << std::endl;
     return BoxInfo{xmin, ymin, xmax, ymax, score, label};
 }
 

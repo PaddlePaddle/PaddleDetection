@@ -1,8 +1,3 @@
-//
-// Create by RangiLyu
-// 2021 / 1 / 12
-//
-
 #ifndef _NANODET_OPENVINO_H_
 #define _NANODET_OPENVINO_H_
 
@@ -62,4 +57,4 @@ private:
 };
 
 
-#endif //_NANODE_TOPENVINO_H_
+#endif
