@@ -254,9 +254,10 @@ class OptimizerBuilder():
                     for n, p in model.named_parameters()
                     if any([k in n for k in group['params']])
                 }
-                group.update({'params': list(_params.values())})
+                _group = group.copy()
+                _group = _group.update({'params': list(_params.values())})
 
-                params.append(group)
+                params.append(_group)
                 visited.extend(list(_params.keys()))
 
             ext_params = [
@@ -269,7 +270,6 @@ class OptimizerBuilder():
             elif len(ext_params) > len(model.parameters()):
                 raise RuntimeError
 
-            params = params.copy()
             optim_args.pop('param_groups')
 
         else:
