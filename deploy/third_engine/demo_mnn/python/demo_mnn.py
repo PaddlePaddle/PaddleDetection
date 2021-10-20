@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# reference from https://github.com/RangiLyu/nanodet
+# reference from https://github.com/RangiLyu/nanodet/tree/main/demo_mnn
 
 # -*- coding: utf-8 -*-
 import argparse
