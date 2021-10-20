@@ -16,16 +16,16 @@ This code is borrow from https://github.com/Zhongdao/Towards-Realtime-MOT/blob/m
 """
 
 import paddle
-
+import numpy as np
 from ..matching import jde_matching as matching
-from .base_jde_tracker import TrackState, BaseTrack, STrack
+from .base_jde_tracker import TrackState, BaseTrack, STrack, ByteSTrack
 from .base_jde_tracker import joint_stracks, sub_stracks, remove_duplicate_stracks
 
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['JDETracker']
+__all__ = ['JDETracker', 'ByteTracker']
 
 
 @register
@@ -228,6 +228,212 @@ class JDETracker(object):
                 removed_stracks.append(track)
 
         # Update the self.tracked_stracks and self.lost_stracks using the updates in this step.
+        self.tracked_stracks = [
+            t for t in self.tracked_stracks if t.state == TrackState.Tracked
+        ]
+        self.tracked_stracks = joint_stracks(self.tracked_stracks,
+                                             activated_starcks)
+        self.tracked_stracks = joint_stracks(self.tracked_stracks,
+                                             refind_stracks)
+
+        self.lost_stracks = sub_stracks(self.lost_stracks, self.tracked_stracks)
+        self.lost_stracks.extend(lost_stracks)
+        self.lost_stracks = sub_stracks(self.lost_stracks, self.removed_stracks)
+        self.removed_stracks.extend(removed_stracks)
+        self.tracked_stracks, self.lost_stracks = remove_duplicate_stracks(
+            self.tracked_stracks, self.lost_stracks)
+        # get scores of lost tracks
+        output_stracks = [
+            track for track in self.tracked_stracks if track.is_activated
+        ]
+
+        logger.debug('===========Frame {}=========='.format(self.frame_id))
+        logger.debug('Activated: {}'.format(
+            [track.track_id for track in activated_starcks]))
+        logger.debug('Refind: {}'.format(
+            [track.track_id for track in refind_stracks]))
+        logger.debug('Lost: {}'.format(
+            [track.track_id for track in lost_stracks]))
+        logger.debug('Removed: {}'.format(
+            [track.track_id for track in removed_stracks]))
+
+        return output_stracks
+
+
+@register
+@serializable
+class ByteTracker(object):
+    __inject__ = ['motion']
+    """
+    ByteTracker: see https://arxiv.org/abs/2110.06864
+
+    Args:
+        det_thresh (float): threshold of detection score
+        track_buffer (int): buffer for tracker
+        min_box_area (int): min box area to filter out low quality boxes
+        match_thres (float): 
+        unconfirmed_thresh (float): linear assignment threshold of 
+            unconfirmed stracks and unmatched detections
+        motion (object): KalmanFilter instance
+        conf_thres (float): confidence threshold for tracking
+        low_conf_thres (float): lower confidence threshold for tracking
+    """
+
+    def __init__(self,
+                 det_thresh=0.5,
+                 track_buffer=30,
+                 min_box_area=200,
+                 match_thres=0.8,
+                 unconfirmed_thresh=0.7,
+                 motion='KalmanFilter',
+                 conf_thres=0.4,
+                 low_conf_thres=0.2):
+        self.det_thresh = conf_thres + 0.1
+        self.track_buffer = track_buffer
+        self.min_box_area = min_box_area
+        self.match_thres = match_thres
+        self.unconfirmed_thresh = unconfirmed_thresh
+        self.motion = motion
+        self.conf_thres = conf_thres
+        self.low_conf_thres = low_conf_thres
+
+        self.frame_id = 0
+        self.tracked_stracks = []
+        self.lost_stracks = []
+        self.removed_stracks = []
+
+        self.max_time_lost = 0
+        # max_time_lost will be calculated: int(frame_rate / 30.0 * track_buffer)
+
+    def update(self, pred_dets, pred_embs):
+        """
+        Processes the image frame and finds bounding box(detections).
+        Associates the detection with corresponding tracklets and also handles
+            lost, removed, refound and active tracklets.
+
+        Args:
+            pred_dets (Tensor): Detection results of the image, shape is [N, 5].
+            pred_embs (Tensor): Embedding results of the image, shape is [N, 512],
+                no use here.
+
+        Return:
+            output_stracks (list): The list contains information regarding the
+                online_tracklets for the recieved image tensor.
+        """
+        self.frame_id += 1
+        activated_starcks = []
+        refind_stracks = []
+        lost_stracks = []
+        removed_stracks = []
+
+        remain_inds = paddle.nonzero(pred_dets[:, 4] > self.conf_thres)
+        if remain_inds.shape[0] == 0:
+            dets = paddle.zeros([0, 1])
+        else:
+            dets = paddle.gather(pred_dets, remain_inds)
+
+        # Filter out the image with box_num = 0. dets = [[0.0, 0.0, 0.0 ,0.0]]
+        empty_pred = True if len(dets) == 1 and paddle.sum(
+            dets) == 0.0 else False
+        """ Step 1: Network forward, get detections & embeddings"""
+        if len(dets) > 0 and not empty_pred:
+            dets = dets.numpy()
+            detections = [
+                ByteSTrack(ByteSTrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4])
+                for tlbrs in dets
+            ]
+        else:
+            detections = []
+        ''' Add newly detected tracklets to tracked_stracks'''
+        unconfirmed = []
+        tracked_stracks = []  # type: list[ByteSTrack]
+        for track in self.tracked_stracks:
+            if not track.is_activated:
+                unconfirmed.append(track)
+            else:
+                tracked_stracks.append(track)
+        """ Step 2: First association, with IOU"""
+        strack_pool = joint_stracks(tracked_stracks, self.lost_stracks)
+        # Predict the current location with KF
+        ByteSTrack.multi_predict(strack_pool, self.motion)
+
+        dists = matching.iou_distance(strack_pool, detections)
+        matches, u_track, u_detection = matching.linear_assignment(
+            dists, thresh=self.match_thres)  # not tracked_thresh
+
+        for itracked, idet in matches:
+            track = strack_pool[itracked]
+            det = detections[idet]
+            if track.state == TrackState.Tracked:
+                track.update(detections[idet], self.frame_id)
+                activated_starcks.append(track)
+            else:
+                track.re_activate(det, self.frame_id, new_id=False)
+                refind_stracks.append(track)
+
+        # special in ByteTracker
+        pred_dets = pred_dets.numpy()
+        inds_low = pred_dets[:, 4] > self.low_conf_thres
+        inds_high = pred_dets[:, 4] < self.conf_thres
+        inds_second = np.logical_and(inds_low, inds_high)
+        pred_dets_second = pred_dets[inds_second]
+
+        # association the untrack to the low score detections
+        if len(pred_dets_second) > 0:
+            '''Detections'''
+            detections_second = [
+                ByteSTrack(ByteSTrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4])
+                for tlbrs in pred_dets_second[:, :5]
+            ]
+        else:
+            detections_second = []
+        r_tracked_stracks = [
+            strack_pool[i] for i in u_track
+            if strack_pool[i].state == TrackState.Tracked
+        ]
+        dists = matching.iou_distance(r_tracked_stracks, detections_second)
+        matches, u_track, u_detection_second = matching.linear_assignment(
+            dists, thresh=0.4)
+        for itracked, idet in matches:
+            track = r_tracked_stracks[itracked]
+            det = detections_second[idet]
+            if track.state == TrackState.Tracked:
+                track.update(det, self.frame_id)
+                activated_starcks.append(track)
+            else:
+                track.re_activate(det, self.frame_id, new_id=False)
+                refind_stracks.append(track)
+
+        for it in u_track:
+            track = r_tracked_stracks[it]
+            if not track.state == TrackState.Lost:
+                track.mark_lost()
+                lost_stracks.append(track)
+        '''Deal with unconfirmed tracks, usually tracks with only one beginning frame'''
+        detections = [detections[i] for i in u_detection]
+        dists = matching.iou_distance(unconfirmed, detections)
+        matches, u_unconfirmed, u_detection = matching.linear_assignment(
+            dists, thresh=self.unconfirmed_thresh)  # 0.7 default
+        for itracked, idet in matches:
+            unconfirmed[itracked].update(detections[idet], self.frame_id)
+            activated_starcks.append(unconfirmed[itracked])
+        for it in u_unconfirmed:
+            track = unconfirmed[it]
+            track.mark_removed()
+            removed_stracks.append(track)
+        """ Step 4: Init new stracks"""
+        for inew in u_detection:
+            track = detections[inew]
+            if track.score < self.det_thresh:
+                continue
+            track.activate(self.motion, self.frame_id)
+            activated_starcks.append(track)
+        """ Step 5: Update state"""
+        for track in self.lost_stracks:
+            if self.frame_id - track.end_frame > self.max_time_lost:
+                track.mark_removed()
+                removed_stracks.append(track)
+
         self.tracked_stracks = [
             t for t in self.tracked_stracks if t.state == TrackState.Tracked
         ]
