@@ -48,6 +48,14 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
             load_pretrain_weight(model, weights)
         cfg['model'] = model
         cfg['slim_type'] = cfg.slim
+    elif slim_load_cfg['slim'] == 'PTQ':
+        model = create(cfg.architecture)
+        load_config(slim_cfg)
+        load_pretrain_weight(model, cfg.weights)
+        slim = create(cfg.slim)
+        cfg['slim_type'] = cfg.slim
+        cfg['model'] = slim(model)
+        cfg['slim'] = slim
     else:
         load_config(slim_cfg)
         model = create(cfg.architecture)

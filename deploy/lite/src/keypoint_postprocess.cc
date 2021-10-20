@@ -52,7 +52,7 @@ void get_affine_transform(std::vector<float>& center,
   float dst_h = static_cast<float>(output_size[1]);
   float rot_rad = rot * PI / HALF_CIRCLE_DEGREE;
   std::vector<float> src_dir = get_dir(-0.5 * src_w, 0, rot_rad);
-  std::vector<float> dst_dir{-0.5 * dst_w, 0.0};
+  std::vector<float> dst_dir{static_cast<float>(-0.5) * dst_w, 0.0};
   cv::Point2f srcPoint2f[3], dstPoint2f[3];
   srcPoint2f[0] = cv::Point2f(center[0], center[1]);
   srcPoint2f[1] = cv::Point2f(center[0] + src_dir[0], center[1] + src_dir[1]);

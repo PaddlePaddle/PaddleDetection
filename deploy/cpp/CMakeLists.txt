@@ -5,7 +5,8 @@ option(WITH_MKL        "Compile demo with MKL/OpenBlas support,defaultuseMKL."  
 option(WITH_GPU        "Compile demo with GPU/CPU, default use CPU."                    ON)
 option(WITH_TENSORRT   "Compile demo with TensorRT."                                    OFF)
 
-option(WITH_KEYPOINT        "Whether to Compile KeyPoint detector"                    ON)
+option(WITH_KEYPOINT        "Whether to Compile KeyPoint detector"                    OFF)
+option(WITH_MOT       "Whether to Compile MOT detector" OFF)
 
 SET(PADDLE_DIR "" CACHE PATH "Location of libraries")
 SET(PADDLE_LIB_NAME "" CACHE STRING "libpaddle_inference")
@@ -22,9 +23,11 @@ include_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/src/ext-yaml-cpp/i
 link_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/lib")
 
 if (WITH_KEYPOINT)
-    set(SRCS src/main_keypoint.cc src/preprocess_op.cc src/object_detector.cc src/keypoint_detector.cc src/keypoint_postprocess.cc)
+    set(SRCS src/main_keypoint.cc src/preprocess_op.cc src/object_detector.cc src/picodet_postprocess.cc src/utils.cc src/keypoint_detector.cc src/keypoint_postprocess.cc)
+elseif (WITH_MOT)
+    set(SRCS src/main_jde.cc src/preprocess_op.cc src/object_detector.cc src/jde_detector.cc src/tracker.cc src/trajectory.cc src/lapjv.cpp src/picodet_postprocess.cc src/utils.cc)
 else ()
-    set(SRCS src/main.cc src/preprocess_op.cc src/object_detector.cc)
+    set(SRCS src/main.cc src/preprocess_op.cc src/object_detector.cc src/picodet_postprocess.cc src/utils.cc)
 endif()
 
 macro(safe_set_static_flag)

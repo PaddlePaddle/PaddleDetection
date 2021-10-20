@@ -49,3 +49,36 @@ class QAT(object):
     def save_quantized_model(self, layer, path, input_spec=None, **config):
         self.quanter.save_quantized_model(
             model=layer, path=path, input_spec=input_spec, **config)
+
+
+@register
+@serializable
+class PTQ(object):
+    def __init__(self,
+                 ptq_config,
+                 quant_batch_num=10,
+                 output_dir='output_inference',
+                 fuse=True,
+                 fuse_list=None):
+        super(PTQ, self).__init__()
+        self.ptq_config = ptq_config
+        self.quant_batch_num = quant_batch_num
+        self.output_dir = output_dir
+        self.fuse = fuse
+        self.fuse_list = fuse_list
+
+    def __call__(self, model):
+        paddleslim = try_import('paddleslim')
+        self.ptq = paddleslim.PTQ(**self.ptq_config)
+        model.eval()
+        quant_model = self.ptq.quantize(
+            model, fuse=self.fuse, fuse_list=self.fuse_list)
+
+        return quant_model
+
+    def save_quantized_model(self,
+                             quant_model,
+                             quantize_model_path,
+                             input_spec=None):
+        self.ptq.save_quantized_model(quant_model, quantize_model_path,
+                                      input_spec)

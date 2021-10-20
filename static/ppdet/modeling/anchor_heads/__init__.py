@@ -22,6 +22,7 @@ from . import corner_head
 from . import efficient_head
 from . import ttf_head
 from . import solov2_head
+from . import eb_head
 
 from .rpn_head import *
 from .yolo_head import *
@@ -31,3 +32,4 @@ from .corner_head import *
 from .efficient_head import *
 from .ttf_head import *
 from .solov2_head import *
+from .eb_head import *

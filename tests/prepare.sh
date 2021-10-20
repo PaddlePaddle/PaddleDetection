@@ -60,6 +60,7 @@ elif [ ${MODE} = "whole_infer" ];then
     cd ../../ && mkdir -p ./tests/demo/
     cp -u dataset/coco/val2017/* ./tests/demo/
 else
+    mv ./dataset/coco/download_coco.py . && rm -rf ./dataset/coco/* && mv ./download_coco.py ./dataset/coco/
     # prepare infer data
     wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/coco_ce.tar
     cd ./dataset/coco/ && tar -xvf coco_ce.tar && mv -u coco_ce/* .

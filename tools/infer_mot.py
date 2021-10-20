@@ -75,6 +75,12 @@ def parse_args():
         action='store_true',
         help='Show tracking results (image).')
     parser.add_argument(
+        '--scaled',
+        type=bool,
+        default=False,
+        help="Whether coords after detector outputs are scaled, False in JDE YOLOv3 "
+        "True in general detector.")
+    parser.add_argument(
         "--draw_threshold",
         type=float,
         default=0.5,
@@ -107,6 +113,7 @@ def run(FLAGS, cfg):
         save_images=FLAGS.save_images,
         save_videos=FLAGS.save_videos,
         show_image=FLAGS.show_image,
+        scaled=FLAGS.scaled,
         det_results_dir=FLAGS.det_results_dir,
         draw_threshold=FLAGS.draw_threshold)
 
