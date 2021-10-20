@@ -102,8 +102,4 @@ For speed benchmark
 ```
 
 ## Reference
-
-[Paddle ONNX Simplifier](https://github.com/PaddlePaddle/PaddleSlim)
-
-
 [MNN](https://github.com/alibaba/MNN)

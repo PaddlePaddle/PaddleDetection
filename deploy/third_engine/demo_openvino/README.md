@@ -2,7 +2,7 @@
 
 This fold provides PicoDet inference code using
 [Intel's OpenVINO Toolkit](https://software.intel.com/content/www/us/en/develop/tools/openvino-toolkit.html). Most of the implements in this fold are same as *demo_ncnn*.  
-**Recommand** to use the ***tar.gz file to install instead of github method.
+**Recommand** to use the xxx.tar.gz file to install instead of github method.
 
 
 ## Install OpenVINO Toolkit

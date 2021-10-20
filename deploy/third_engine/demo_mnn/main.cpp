@@ -1,3 +1,18 @@
+// Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// reference from https://github.com/RangiLyu/nanodet
+
 #include "picodet_mnn.hpp"
 #include <iostream>
 #include <opencv2/core/core.hpp>
@@ -42,14 +57,11 @@ int resize_uniform(cv::Mat& src, cv::Mat& dst, cv::Size dst_size, object_rect& e
         effect_area.height = dst_h;
         return 0;
     }
-
-    //std::cout << "tmp: (" << tmp_h << ", " << tmp_w << ")" << std::endl;
     cv::Mat tmp;
     cv::resize(src, tmp, cv::Size(tmp_w, tmp_h));
 
     if (tmp_w != dst_w) {
         int index_w = floor((dst_w - tmp_w) / 2.0);
-        //std::cout << "index_w: " << index_w << std::endl;
         for (int i = 0; i < dst_h; i++) {
             memcpy(dst.data + i * dst_w * 3 + index_w * 3, tmp.data + i * tmp_w * 3, tmp_w * 3);
         }
@@ -60,7 +72,6 @@ int resize_uniform(cv::Mat& src, cv::Mat& dst, cv::Size dst_size, object_rect& e
     }
     else if (tmp_h != dst_h) {
         int index_h = floor((dst_h - tmp_h) / 2.0);
-        //std::cout << "index_h: " << index_h << std::endl;
         memcpy(dst.data + index_h * dst_w * 3, tmp.data, tmp_w * tmp_h * 3);
         effect_area.x = 0;
         effect_area.y = index_h;
@@ -70,14 +81,11 @@ int resize_uniform(cv::Mat& src, cv::Mat& dst, cv::Size dst_size, object_rect& e
     else {
         printf("error\n");
     }
-    //cv::imwrite("dst", dst);
-    //cv::waitKey(0);
     return 0;
 }
 
 const int color_list[80][3] =
 {
-    //{255 ,255 ,255}, //bg
     {216 , 82 , 24},
     {236 ,176 , 31},
     {125 , 46 ,141},
@@ -191,9 +199,6 @@ void draw_bboxes(const cv::Mat& bgr, const std::vector<BoxInfo>& bboxes, object_
     {
         const BoxInfo& bbox = bboxes[i];
         cv::Scalar color = cv::Scalar(color_list[bbox.label][0], color_list[bbox.label][1], color_list[bbox.label][2]);
-        //fprintf(stderr, "%d = %.5f at %.2f %.2f %.2f %.2f\n", bbox.label, bbox.score,
-        //    bbox.x1, bbox.y1, bbox.x2, bbox.y2);
-
         cv::rectangle(image, cv::Rect(cv::Point((bbox.x1 - effect_roi.x) * width_ratio, (bbox.y1 - effect_roi.y) * height_ratio),
                                       cv::Point((bbox.x2 - effect_roi.x) * width_ratio, (bbox.y2 - effect_roi.y) * height_ratio)), color);
 
@@ -231,8 +236,6 @@ void draw_bboxes(const cv::Mat& bgr, const std::vector<BoxInfo>& bboxes, object_
 
 int image_demo(PicoDet &detector, const char* imagepath)
 {
-    // const char* imagepath = "D:/Dataset/coco/val2017/*.jpg";
-
     std::vector<cv::String> filenames;
     cv::glob(imagepath, filenames, false);
 

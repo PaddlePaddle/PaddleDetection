@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 # find_package(OpenCV REQUIRED PATHS "/work/dependence/opencv/opencv-3.4.3/build")
 find_package(OpenCV REQUIRED)
 include_directories(
-        /paddle/VscodeWorkspace/Experiment/NCNN/MNN/include/MNN
-        /paddle/VscodeWorkspace/Experiment/NCNN/MNN/include
+        /path/to/MNN/include/MNN
+        /path/to/MNN/include
         .
 )
 link_directories(mnn/lib)

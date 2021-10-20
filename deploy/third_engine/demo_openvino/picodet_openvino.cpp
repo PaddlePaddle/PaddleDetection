@@ -1,3 +1,18 @@
+// Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// reference from https://github.com/RangiLyu/nanodet
+
 #include "picodet_openvino.h"
 
 inline float fast_exp(float x)
@@ -72,11 +87,8 @@ void PicoDet::preprocess(cv::Mat& image, InferenceEngine::Blob::Ptr& blob)
         THROW_IE_EXCEPTION << "We expect blob to be inherited from MemoryBlob in matU8ToBlob, "
             << "but by fact we were not able to cast inputBlob to MemoryBlob";
     }
-    // locked memory holder should be alive all time while access to its buffer happens
     auto mblobHolder = mblob->wmap();
-
     float *blob_data = mblobHolder.as<float *>();
-
 
     for (size_t c = 0; c < channels; c++)
     {
@@ -115,7 +127,6 @@ std::vector<BoxInfo> PicoDet::detect(cv::Mat image, float score_threshold, float
         auto mcls_pred = InferenceEngine::as<InferenceEngine::MemoryBlob>(cls_pred_blob);
         auto mcls_pred_holder = mcls_pred->rmap();
         const float *cls_pred = mcls_pred_holder.as<const float *>();
-        // std::cout << "c:" << cls_pred.c << " h:" << cls_pred.h <<" w:" <<cls_pred.w <<std::endl;
         this->decode_infer(cls_pred, dis_pred, head_info.stride, score_threshold, results);
     }
 
