@@ -1,8 +1,3 @@
-//
-// Create by RangiLyu
-// 2021 / 1 / 12
-//
-
 #ifndef _NANODET_OPENVINO_H_
 #define _NANODET_OPENVINO_H_
 
@@ -37,8 +32,6 @@ public:
 
     InferenceEngine::ExecutableNetwork network_;
     InferenceEngine::InferRequest infer_request_;
-    // static bool hasGPU;
-
     std::vector<HeadInfo> heads_info_{
         // cls_pred|dis_pred|stride
         {"save_infer_model/scale_0.tmp_1", "save_infer_model/scale_4.tmp_1", 8},
@@ -62,4 +55,4 @@ private:
 };
 
 
-#endif //_NANODE_TOPENVINO_H_
+#endif
