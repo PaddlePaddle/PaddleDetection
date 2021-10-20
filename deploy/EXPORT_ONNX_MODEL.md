@@ -11,6 +11,7 @@ PaddleDetection模型支持保存为ONNX格式，目前测试支持的列表如�
 | PAFNet | 11 |- |
 | TTFNet | 11 |-|
 | SSD | 11 |仅支持batch=1推理 |
+| PicoDet | 11 |仅支持batch=1推理 |
 
 保存ONNX的功能由[Paddle2ONNX](https://github.com/PaddlePaddle/Paddle2ONNX)提供，如在转换中有相关问题反馈，可在Paddle2ONNX的Github项目中通过[ISSUE](https://github.com/PaddlePaddle/Paddle2ONNX/issues)与工程师交流。
 

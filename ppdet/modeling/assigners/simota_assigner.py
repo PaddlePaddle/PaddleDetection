@@ -196,7 +196,6 @@ class SimOTAAssigner(object):
         num_valid = valid_decoded_bbox.shape[0]
 
         pairwise_ious = batch_bbox_overlaps(valid_decoded_bbox, gt_bboxes)
-        iou_cost = -paddle.log(pairwise_ious + eps)
         if self.use_vfl:
             gt_vfl_labels = gt_labels.squeeze(-1).unsqueeze(0).tile(
                 [num_valid, 1]).reshape([-1])
@@ -216,6 +215,7 @@ class SimOTAAssigner(object):
                 paddle.logical_not(is_in_boxes_and_center).cast('float32') * INF
             )
         else:
+            iou_cost = -paddle.log(pairwise_ious + eps)
             gt_onehot_label = (F.one_hot(
                 gt_labels.squeeze(-1).cast(paddle.int64),
                 pred_scores.shape[-1]).cast('float32').unsqueeze(0).tile(
