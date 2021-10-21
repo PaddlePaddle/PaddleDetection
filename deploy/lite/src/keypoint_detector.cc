@@ -32,28 +32,29 @@ void KeyPointDetector::LoadModel(std::string model_file, int num_theads) {
 // Visualiztion MaskDetector results
 cv::Mat VisualizeKptsResult(const cv::Mat& img,
                             const std::vector<KeyPointResult>& results,
-                            const std::vector<int>& colormap) {
+                            const std::vector<int>& colormap,
+                            float threshold) {
   const int edge[][2] = {{0, 1},
-                       {0, 2},
-                       {1, 3},
-                       {2, 4},
-                       {3, 5},
-                       {4, 6},
-                       {5, 7},
-                       {6, 8},
-                       {7, 9},
-                       {8, 10},
-                       {5, 11},
-                       {6, 12},
-                       {11, 13},
-                       {12, 14},
-                       {13, 15},
-                       {14, 16},
-                       {11, 12}};
+                         {0, 2},
+                         {1, 3},
+                         {2, 4},
+                         {3, 5},
+                         {4, 6},
+                         {5, 7},
+                         {6, 8},
+                         {7, 9},
+                         {8, 10},
+                         {5, 11},
+                         {6, 12},
+                         {11, 13},
+                         {12, 14},
+                         {13, 15},
+                         {14, 16},
+                         {11, 12}};
   cv::Mat vis_img = img.clone();
   for (int batchid = 0; batchid < results.size(); batchid++) {
     for (int i = 0; i < results[batchid].num_joints; i++) {
-      if (results[batchid].keypoints[i * 3] > 0.5) {
+      if (results[batchid].keypoints[i * 3] > threshold) {
         int x_coord = int(results[batchid].keypoints[i * 3 + 1]);
         int y_coord = int(results[batchid].keypoints[i * 3 + 2]);
         cv::circle(vis_img,
@@ -64,15 +65,18 @@ cv::Mat VisualizeKptsResult(const cv::Mat& img,
       }
     }
     for (int i = 0; i < results[batchid].num_joints; i++) {
-      int x_start = int(results[batchid].keypoints[edge[i][0] * 3 + 1]);
-      int y_start = int(results[batchid].keypoints[edge[i][0] * 3 + 2]);
-      int x_end = int(results[batchid].keypoints[edge[i][1] * 3 + 1]);
-      int y_end = int(results[batchid].keypoints[edge[i][1] * 3 + 2]);
-      cv::line(vis_img,
-               cv::Point2d(x_start, y_start),
-               cv::Point2d(x_end, y_end),
-               colormap[i],
-               1);
+      if (results[batchid].keypoints[edge[i][0] * 3] > threshold &&
+          results[batchid].keypoints[edge[i][1] * 3] > threshold) {
+        int x_start = int(results[batchid].keypoints[edge[i][0] * 3 + 1]);
+        int y_start = int(results[batchid].keypoints[edge[i][0] * 3 + 2]);
+        int x_end = int(results[batchid].keypoints[edge[i][1] * 3 + 1]);
+        int y_end = int(results[batchid].keypoints[edge[i][1] * 3 + 2]);
+        cv::line(vis_img,
+                 cv::Point2d(x_start, y_start),
+                 cv::Point2d(x_end, y_end),
+                 colormap[i],
+                 1);
+      }
     }
   }
   return vis_img;
@@ -119,7 +123,6 @@ void KeyPointDetector::Postprocess(std::vector<float>& output,
 void KeyPointDetector::Predict(const std::vector<cv::Mat> imgs,
                                std::vector<std::vector<float>>& center_bs,
                                std::vector<std::vector<float>>& scale_bs,
-                               const double threshold,
                                const int warmup,
                                const int repeats,
                                std::vector<KeyPointResult>* result,
