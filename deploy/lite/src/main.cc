@@ -238,7 +238,6 @@ void PredictImage(const std::vector<std::string> all_img_paths,
               keypoint->Predict(imgs_kpts,
                                 center_bs,
                                 scale_bs,
-                                0.5,
                                 10,
                                 10,
                                 &result_kpts,
@@ -247,7 +246,6 @@ void PredictImage(const std::vector<std::string> all_img_paths,
               keypoint->Predict(imgs_kpts,
                                 center_bs,
                                 scale_bs,
-                                0.5,
                                 0,
                                 1,
                                 &result_kpts,
@@ -265,7 +263,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
             output_path + "keypoint_" +
             image_file_path.substr(image_file_path.find_last_of('/') + 1);
         cv::Mat kpts_vis_img =
-            VisualizeKptsResult(im, result_kpts, colormap_kpts);
+            VisualizeKptsResult(im, result_kpts, colormap_kpts, keypoint->get_threshold());
         cv::imwrite(kpts_savepath, kpts_vis_img, compression_params);
         printf("Visualized output saved as %s\n", kpts_savepath.c_str());
       } else {
