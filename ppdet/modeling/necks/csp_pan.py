@@ -34,7 +34,7 @@ class ConvBNLayer(nn.Layer):
         super(ConvBNLayer, self).__init__()
         initializer = nn.initializer.KaimingUniform()
         self.act = act
-        assert self.act in ['leaky_relu', "hard_swish"]
+        assert self.act in ['leaky_relu', "hard_swish", "relu"]
         self.conv = nn.Conv2D(
             in_channels=in_channel,
             out_channels=out_channel,
@@ -52,6 +52,9 @@ class ConvBNLayer(nn.Layer):
             x = F.leaky_relu(x)
         elif self.act == "hard_swish":
             x = F.hardswish(x)
+        elif self.act == "relu":
+            x = F.relu(x)
+
         return x
 
 
@@ -101,6 +104,9 @@ class DPModule(nn.Layer):
             x = F.leaky_relu(x)
         elif self.act == "hard_swish":
             x = F.hardswish(x)
+        elif self.act == "relu":
+            x = F.relu(x)
+
         return x
 
     def forward(self, x):
@@ -194,7 +200,7 @@ class CSPLayer(nn.Layer):
         self.final_conv = ConvBNLayer(
             2 * mid_channels, out_channels, 1, act=act)
 
-        self.blocks = nn.Sequential(* [
+        self.blocks = nn.Sequential(*[
             DarknetBottleneck(
                 mid_channels,
                 mid_channels,
