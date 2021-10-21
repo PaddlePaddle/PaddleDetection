@@ -303,8 +303,14 @@ class YOLOv3Head(object):
         return route, tip
 
     def _upsample(self, input, scale=2, name=None):
+        align_corners = True
+        if fluid.core.is_compiled_with_npu():
+            align_corners = False
         out = fluid.layers.resize_nearest(
-            input=input, scale=float(scale), name=name)
+            input=input,
+            scale=float(scale),
+            name=name,
+            align_corners=align_corners)
         return out
 
     def _parse_anchors(self, anchors):
@@ -520,8 +526,14 @@ class YOLOv4Head(YOLOv3Head):
         self.spp_stage = spp_stage
 
     def _upsample(self, input, scale=2, name=None):
+        align_corners = True
+        if fluid.core.is_compiled_with_npu():
+            align_corners = False
         out = fluid.layers.resize_nearest(
-            input=input, scale=float(scale), name=name)
+            input=input,
+            scale=float(scale),
+            name=name,
+            align_corners=align_corners)
         return out
 
     def max_pool(self, input, size):

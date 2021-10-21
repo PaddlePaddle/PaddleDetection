@@ -50,7 +50,7 @@ try:
     from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
     from ppdet.utils.stats import TrainingStats
     from ppdet.utils.cli import ArgsParser
-    from ppdet.utils.check import check_gpu, check_xpu, check_version, check_config, enable_static_mode
+    from ppdet.utils.check import check_gpu, check_xpu, check_npu, check_version, check_config, enable_static_mode
     import ppdet.utils.checkpoint as checkpoint
 except ImportError as e:
     if sys.argv[0].find('static') >= 0:
@@ -87,6 +87,10 @@ def main():
     check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+    # disable npu in config by default and check use_npu
+    if 'use_npu' not in cfg:
+        cfg.use_npu = False
+    check_npu(cfg.use_npu)
     use_xpu = False
     if hasattr(cfg, 'use_xpu'):
         check_xpu(cfg.use_xpu)
@@ -97,6 +101,9 @@ def main():
     assert not (use_xpu and cfg.use_gpu), \
             'Can not run on both XPU and GPU'
 
+    assert not (cfg.use_npu and cfg.use_gpu), \
+            'Can not run on both NPU and GPU'
+
     save_only = getattr(cfg, 'save_prediction_only', False)
     if save_only:
         raise NotImplementedError('The config file only support prediction,'
@@ -105,6 +112,8 @@ def main():
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
+    if cfg.use_npu:
+        devices_num = fluid.core.get_npu_device_count()
     elif use_xpu:
         # ToDo(qingshu): XPU only support single card now
         devices_num = 1
@@ -113,6 +122,8 @@ def main():
 
     if cfg.use_gpu and 'FLAGS_selected_gpus' in env:
         device_id = int(env['FLAGS_selected_gpus'])
+    elif cfg.use_npu and 'FLAGS_selected_npus' in env:
+        device_id = int(env['FLAGS_selected_npus'])
     elif use_xpu and 'FLAGS_selected_xpus' in env:
         device_id = int(env['FLAGS_selected_xpus'])
     else:
@@ -120,6 +131,8 @@ def main():
 
     if cfg.use_gpu:
         place = fluid.CUDAPlace(device_id)
+    elif cfg.use_npu:
+        place = fluid.NPUPlace(device_id)
     elif use_xpu:
         place = fluid.XPUPlace(device_id)
     else:
@@ -216,12 +229,12 @@ def main():
         loss_name=loss.name,
         build_strategy=build_strategy,
         exec_strategy=exec_strategy)
-    if use_xpu:
+    if use_xpu or cfg.use_npu:
         compiled_train_prog = train_prog
 
     if FLAGS.eval:
         compiled_eval_prog = fluid.CompiledProgram(eval_prog)
-        if use_xpu:
+        if use_xpu or cfg.use_npu:
             compiled_eval_prog = eval_prog
 
     fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
