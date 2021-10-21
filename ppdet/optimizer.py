@@ -248,16 +248,19 @@ class OptimizerBuilder():
         if 'param_groups' in optim_args:
             assert isinstance(optim_args['param_groups'], list), ''
 
+            param_groups = optim_args.pop('param_groups')
+
             params, visited = [], []
-            for group in optim_args['param_groups']:
-                assert 'params' in group and isinstance(group, dict), ''
+            for group in param_groups:
+                assert 'params' in group and isinstance(
+                    group, dict) and isinstance(group['params'], list), ''
                 _params = {
                     n: p
                     for n, p in model.named_parameters()
                     if any([k in n for k in group['params']])
                 }
                 _group = group.copy()
-                _group = _group.update({'params': list(_params.values())})
+                _group.update({'params': list(_params.values())})
 
                 params.append(_group)
                 visited.extend(list(_params.keys()))
@@ -271,8 +274,6 @@ class OptimizerBuilder():
 
             elif len(ext_params) > len(model.parameters()):
                 raise RuntimeError
-
-            optim_args.pop('param_groups')
 
         else:
             params = model.parameters()
