@@ -62,17 +62,21 @@ class ConvBNLayer(nn.Layer):
             padding=padding,
             groups=num_groups,
             weight_attr=ParamAttr(
-                learning_rate=lr_mult, regularizer=L2Decay(conv_decay)),
+                learning_rate=lr_mult,
+                regularizer=L2Decay(conv_decay),
+                name=name + "_weights"),
             bias_attr=False)
 
         norm_lr = 0. if freeze_norm else lr_mult
         param_attr = ParamAttr(
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay),
+            name=name + "_bn_scale",
             trainable=False if freeze_norm else True)
         bias_attr = ParamAttr(
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay),
+            name=name + "_bn_offset",
             trainable=False if freeze_norm else True)
         global_stats = True if freeze_norm else False
         if norm_type == 'sync_bn':
@@ -84,7 +88,9 @@ class ConvBNLayer(nn.Layer):
                 act=None,
                 param_attr=param_attr,
                 bias_attr=bias_attr,
-                use_global_stats=global_stats)
+                use_global_stats=global_stats,
+                moving_mean_name=name + '_bn_mean',
+                moving_variance_name=name + '_bn_variance')
         norm_params = self.bn.parameters()
         if freeze_norm:
             for param in norm_params:
@@ -197,9 +203,13 @@ class SEModule(nn.Layer):
             stride=1,
             padding=0,
             weight_attr=ParamAttr(
-                learning_rate=lr_mult, regularizer=L2Decay(conv_decay)),
+                learning_rate=lr_mult,
+                regularizer=L2Decay(conv_decay),
+                name=name + "_1_weights"),
             bias_attr=ParamAttr(
-                learning_rate=lr_mult, regularizer=L2Decay(conv_decay)))
+                learning_rate=lr_mult,
+                regularizer=L2Decay(conv_decay),
+                name=name + "_1_offset"))
         self.conv2 = nn.Conv2D(
             in_channels=mid_channels,
             out_channels=channel,
@@ -207,9 +217,13 @@ class SEModule(nn.Layer):
             stride=1,
             padding=0,
             weight_attr=ParamAttr(
-                learning_rate=lr_mult, regularizer=L2Decay(conv_decay)),
+                learning_rate=lr_mult,
+                regularizer=L2Decay(conv_decay),
+                name=name + "_2_weights"),
             bias_attr=ParamAttr(
-                learning_rate=lr_mult, regularizer=L2Decay(conv_decay)))
+                learning_rate=lr_mult,
+                regularizer=L2Decay(conv_decay),
+                name=name + "_2_offset"))
 
     def forward(self, inputs):
         outputs = self.avg_pool(inputs)

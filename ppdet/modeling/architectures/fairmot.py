@@ -53,9 +53,8 @@ class FairMOT(BaseArch):
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
         detector = create(cfg['detector'])
-        detector_out_shape = detector.neck and detector.neck.out_shape or detector.backbone.out_shape
 
-        kwargs = {'input_shape': detector_out_shape}
+        kwargs = {'input_shape': detector.neck.out_shape}
         reid = create(cfg['reid'], **kwargs)
         loss = create(cfg['loss'])
         tracker = create(cfg['tracker'])
@@ -92,9 +91,12 @@ class FairMOT(BaseArch):
             embedding = paddle.transpose(embedding, [0, 2, 3, 1])
             embedding = paddle.reshape(embedding,
                                        [-1, paddle.shape(embedding)[-1]])
-            pred_embs = paddle.gather(embedding, bbox_inds)
-            pred_dets = det_outs['bbox']
-            return pred_dets, pred_embs
+            id_feature = paddle.gather(embedding, bbox_inds)
+            dets = det_outs['bbox']
+            id_feature = id_feature
+            # Note: the tracker only considers batch_size=1 and num_classses=1
+            online_targets = self.tracker.update(dets, id_feature)
+            return online_targets
 
     def get_pred(self):
         output = self._forward()

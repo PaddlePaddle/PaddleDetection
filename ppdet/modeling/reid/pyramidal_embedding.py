@@ -78,7 +78,8 @@ class PCBPyramid(nn.Layer):
         for idx_branches in range(self.num_branches):
             if idx_branches >= sum(self.num_in_each_level[0:idx_levels + 1]):
                 idx_levels += 1
-
+            if self.used_levels[idx_levels] == 0:
+                continue
             pyramid_conv_list.append(
                 nn.Sequential(
                     nn.Conv2D(input_ch, num_conv_out_channels, 1),
@@ -88,13 +89,18 @@ class PCBPyramid(nn.Layer):
         for idx_branches in range(self.num_branches):
             if idx_branches >= sum(self.num_in_each_level[0:idx_levels + 1]):
                 idx_levels += 1
-
+            if self.used_levels[idx_levels] == 0:
+                continue
+            name = "Linear_branch_id_{}".format(idx_branches)
             fc = nn.Linear(
                 in_features=num_conv_out_channels,
                 out_features=self.num_classes,
-                weight_attr=ParamAttr(initializer=Normal(
-                    mean=0., std=0.001)),
-                bias_attr=ParamAttr(initializer=Constant(value=0.)))
+                weight_attr=ParamAttr(
+                    name=name + "_weights",
+                    initializer=Normal(
+                        mean=0., std=0.001)),
+                bias_attr=ParamAttr(
+                    name=name + "_bias", initializer=Constant(value=0.)))
             pyramid_fc_list.append(fc)
         return pyramid_conv_list, pyramid_fc_list
 
@@ -107,6 +113,8 @@ class PCBPyramid(nn.Layer):
         for idx_branches in range(self.num_branches):
             if idx_branches >= sum(self.num_in_each_level[0:idx_levels + 1]):
                 idx_levels += 1
+            if self.used_levels[idx_levels] == 0:
+                continue
             idx_in_each_level = idx_branches - sum(self.num_in_each_level[
                 0:idx_levels])
             stripe_size_in_each_level = each_stripe_size * (idx_levels + 1)

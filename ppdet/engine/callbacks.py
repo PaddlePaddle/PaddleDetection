@@ -20,7 +20,9 @@ import os
 import sys
 import datetime
 import six
+import numpy as np
 
+import paddle
 import paddle.distributed as dist
 
 from ppdet.utils.checkpoint import save_model
@@ -173,7 +175,7 @@ class Checkpointer(Callback):
                         else:
                             key = 'mask'
                         if key not in map_res:
-                            logger.warning("Evaluation results empty, this may be due to " \
+                            logger.warn("Evaluation results empty, this may be due to " \
                                         "training iterations being too few or not " \
                                         "loading the correct weights.")
                             return
@@ -215,8 +217,7 @@ class VisualDLWriter(Callback):
             logger.error('visualdl not found, plaese install visualdl. '
                          'for example: `pip install visualdl`.')
             raise e
-        self.vdl_writer = LogWriter(
-            model.cfg.get('vdl_log_dir', 'vdl_log_dir/scalar'))
+        self.vdl_writer = LogWriter(model.cfg.get('vdl_log_dir', 'vdl_log_dir/scalar'))
         self.vdl_loss_step = 0
         self.vdl_mAP_step = 0
         self.vdl_image_step = 0

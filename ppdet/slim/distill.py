@@ -20,11 +20,12 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 
-from ppdet.core.workspace import register, create, load_config
+from ppdet.core.workspace import register, serializable, load_config
+from ppdet.core.workspace import create
+from ppdet.utils.logger import setup_logger
 from ppdet.modeling import ops
 from ppdet.utils.checkpoint import load_pretrain_weight
-from ppdet.utils.logger import setup_logger
-
+from ppdet.modeling.losses import YOLOv3Loss
 logger = setup_logger(__name__)
 
 

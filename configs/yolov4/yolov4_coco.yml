@@ -1,0 +1,33 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  './_base_/yolov4.yml',
+  './_base_/yolov4_reader.yml',
+]
+
+snapshot_epoch: 1
+weights: output/best_model
+
+epoch: 300
+
+LearningRate:
+  base_lr: 0.0013
+  schedulers:
+  - !PiecewiseDecay
+    gamma: [0.6, 0.3, 0.1]
+    milestones:
+    - 120
+    - 180
+    - 220
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 1000
+
+OptimizerBuilder:
+  clip_grad_by_value: 5.
+  optimizer:
+    momentum: 0.949
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2

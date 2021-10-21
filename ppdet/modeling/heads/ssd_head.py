@@ -28,7 +28,7 @@ class SepConvLayer(nn.Layer):
                  out_channels,
                  kernel_size=3,
                  padding=1,
-                 conv_decay=0.):
+                 conv_decay=0):
         super(SepConvLayer, self).__init__()
         self.dw_conv = nn.Conv2D(
             in_channels=in_channels,
@@ -61,35 +61,6 @@ class SepConvLayer(nn.Layer):
         return x
 
 
-class SSDExtraHead(nn.Layer):
-    def __init__(self,
-                 in_channels=256,
-                 out_channels=([256, 512], [256, 512], [128, 256], [128, 256],
-                               [128, 256]),
-                 strides=(2, 2, 2, 1, 1),
-                 paddings=(1, 1, 1, 0, 0)):
-        super(SSDExtraHead, self).__init__()
-        self.convs = nn.LayerList()
-        for out_channel, stride, padding in zip(out_channels, strides,
-                                                paddings):
-            self.convs.append(
-                self._make_layers(in_channels, out_channel[0], out_channel[1],
-                                  stride, padding))
-            in_channels = out_channel[-1]
-
-    def _make_layers(self, c_in, c_hidden, c_out, stride_3x3, padding_3x3):
-        return nn.Sequential(
-            nn.Conv2D(c_in, c_hidden, 1),
-            nn.ReLU(),
-            nn.Conv2D(c_hidden, c_out, 3, stride_3x3, padding_3x3), nn.ReLU())
-
-    def forward(self, x):
-        out = [x]
-        for conv_layer in self.convs:
-            out.append(conv_layer(out[-1]))
-        return out
-
-
 @register
 class SSDHead(nn.Layer):
     """
@@ -104,7 +75,6 @@ class SSDHead(nn.Layer):
         use_sepconv (bool): Use SepConvLayer if true
         conv_decay (float): Conv regularization coeff
         loss (object): 'SSDLoss' instance
-        use_extra_head (bool): If use ResNet34 as baskbone, you should set `use_extra_head`=True
     """
 
     __shared__ = ['num_classes']
@@ -118,19 +88,13 @@ class SSDHead(nn.Layer):
                  padding=1,
                  use_sepconv=False,
                  conv_decay=0.,
-                 loss='SSDLoss',
-                 use_extra_head=False):
+                 loss='SSDLoss'):
         super(SSDHead, self).__init__()
         # add background class
         self.num_classes = num_classes + 1
         self.in_channels = in_channels
         self.anchor_generator = anchor_generator
         self.loss = loss
-        self.use_extra_head = use_extra_head
-
-        if self.use_extra_head:
-            self.ssd_extra_head = SSDExtraHead()
-            self.in_channels = [256, 512, 512, 256, 256, 256]
 
         if isinstance(anchor_generator, dict):
             self.anchor_generator = AnchorGeneratorSSD(**anchor_generator)
@@ -144,7 +108,7 @@ class SSDHead(nn.Layer):
                 box_conv = self.add_sublayer(
                     box_conv_name,
                     nn.Conv2D(
-                        in_channels=self.in_channels[i],
+                        in_channels=in_channels[i],
                         out_channels=num_prior * 4,
                         kernel_size=kernel_size,
                         padding=padding))
@@ -152,7 +116,7 @@ class SSDHead(nn.Layer):
                 box_conv = self.add_sublayer(
                     box_conv_name,
                     SepConvLayer(
-                        in_channels=self.in_channels[i],
+                        in_channels=in_channels[i],
                         out_channels=num_prior * 4,
                         kernel_size=kernel_size,
                         padding=padding,
@@ -164,7 +128,7 @@ class SSDHead(nn.Layer):
                 score_conv = self.add_sublayer(
                     score_conv_name,
                     nn.Conv2D(
-                        in_channels=self.in_channels[i],
+                        in_channels=in_channels[i],
                         out_channels=num_prior * self.num_classes,
                         kernel_size=kernel_size,
                         padding=padding))
@@ -172,7 +136,7 @@ class SSDHead(nn.Layer):
                 score_conv = self.add_sublayer(
                     score_conv_name,
                     SepConvLayer(
-                        in_channels=self.in_channels[i],
+                        in_channels=in_channels[i],
                         out_channels=num_prior * self.num_classes,
                         kernel_size=kernel_size,
                         padding=padding,
@@ -184,13 +148,9 @@ class SSDHead(nn.Layer):
         return {'in_channels': [i.channels for i in input_shape], }
 
     def forward(self, feats, image, gt_bbox=None, gt_class=None):
-        if self.use_extra_head:
-            assert len(feats) == 1, \
-                ("If you set use_extra_head=True, backbone feature "
-                 "list length should be 1.")
-            feats = self.ssd_extra_head(feats[0])
         box_preds = []
         cls_scores = []
+        prior_boxes = []
         for feat, box_conv, score_conv in zip(feats, self.box_convs,
                                               self.score_convs):
             box_pred = box_conv(feat)

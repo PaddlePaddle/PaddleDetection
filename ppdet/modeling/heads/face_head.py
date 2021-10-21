@@ -14,8 +14,11 @@
 
 import paddle
 import paddle.nn as nn
-
+import paddle.nn.functional as F
 from ppdet.core.workspace import register
+from paddle.regularizer import L2Decay
+from paddle import ParamAttr
+
 from ..layers import AnchorGeneratorSSD
 
 

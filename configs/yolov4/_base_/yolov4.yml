@@ -1,0 +1,40 @@
+architecture: YOLOv3
+pretrain_weights: output/pretrained.pdparams
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+
+YOLOv3:
+  backbone: CSPDarkNet
+  neck: YOLOv4_Neck
+  yolo_head: YOLOv3Head
+  post_process: BBoxPostProcess
+
+YOLOv3Head:
+  anchors: [[12, 16], [19, 36], [40, 28], [36, 75], [76, 55], [72, 146], [142, 110], [192, 243], [459, 401]]
+  anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+  loss: YOLOv4Loss
+
+YOLOv4Loss:
+  ignore_thresh: 0.7
+  downsample: [32, 16, 8]
+  label_smooth: true
+  scale_x_y: 1.05
+  iou_loss: IouLoss
+
+IouLoss:
+  ciou: true
+
+BBoxPostProcess:
+  decode:
+    name: YOLOBox
+    conf_thresh: 0.001
+    downsample_ratio: 32
+    clip_bbox: true
+    scale_x_y: 1.05
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 120
+    nms_threshold: 0.45
+    nms_top_k: -1
+    score_threshold: 0.001

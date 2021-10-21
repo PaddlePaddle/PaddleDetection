@@ -20,7 +20,7 @@ from itertools import cycle, islice
 from collections import abc
 import paddle
 import paddle.nn as nn
-
+import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 
 __all__ = ['HrHRNetLoss', 'KeyPointMSELoss']
@@ -29,7 +29,7 @@ __all__ = ['HrHRNetLoss', 'KeyPointMSELoss']
 @register
 @serializable
 class KeyPointMSELoss(nn.Layer):
-    def __init__(self, use_target_weight=True, loss_scale=0.5):
+    def __init__(self, use_target_weight=True):
         """
         KeyPointMSELoss layer
 
@@ -39,7 +39,6 @@ class KeyPointMSELoss(nn.Layer):
         super(KeyPointMSELoss, self).__init__()
         self.criterion = nn.MSELoss(reduction='mean')
         self.use_target_weight = use_target_weight
-        self.loss_scale = loss_scale
 
     def forward(self, output, records):
         target = records['target']
@@ -51,16 +50,16 @@ class KeyPointMSELoss(nn.Layer):
         heatmaps_gt = target.reshape(
             (batch_size, num_joints, -1)).split(num_joints, 1)
         loss = 0
+
         for idx in range(num_joints):
             heatmap_pred = heatmaps_pred[idx].squeeze()
             heatmap_gt = heatmaps_gt[idx].squeeze()
             if self.use_target_weight:
-                loss += self.loss_scale * self.criterion(
+                loss += 0.5 * self.criterion(
                     heatmap_pred.multiply(target_weight[:, idx]),
                     heatmap_gt.multiply(target_weight[:, idx]))
             else:
-                loss += self.loss_scale * self.criterion(heatmap_pred,
-                                                         heatmap_gt)
+                loss += 0.5 * self.criterion(heatmap_pred, heatmap_gt)
         keypoint_losses = dict()
         keypoint_losses['loss'] = loss / num_joints
         return keypoint_losses

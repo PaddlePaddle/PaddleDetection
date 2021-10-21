@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import paddle
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
@@ -29,20 +30,19 @@ class CenterNet(BaseArch):
 
     Args:
         backbone (object): backbone instance
-        neck (object): FPN instance, default use 'CenterNetDLAFPN'
-        head (object): 'CenterNetHead' instance
+        neck (object): 'CenterDLAFPN' instance
+        head (object): 'CenterHead' instance
         post_process (object): 'CenterNetPostProcess' instance
         for_mot (bool): whether return other features used in tracking model
 
     """
     __category__ = 'architecture'
     __inject__ = ['post_process']
-    __shared__ = ['for_mot']
 
     def __init__(self,
-                 backbone,
-                 neck='CenterNetDLAFPN',
-                 head='CenterNetHead',
+                 backbone='DLA',
+                 neck='CenterDLAFPN',
+                 head='CenterHead',
                  post_process='CenterNetPostProcess',
                  for_mot=False):
         super(CenterNet, self).__init__()
@@ -57,23 +57,19 @@ class CenterNet(BaseArch):
         backbone = create(cfg['backbone'])
 
         kwargs = {'input_shape': backbone.out_shape}
-        neck = cfg['neck'] and create(cfg['neck'], **kwargs)
+        neck = create(cfg['neck'], **kwargs)
 
-        out_shape = neck and neck.out_shape or backbone.out_shape
-        kwargs = {'input_shape': out_shape}
+        kwargs = {'input_shape': neck.out_shape}
         head = create(cfg['head'], **kwargs)
 
         return {'backbone': backbone, 'neck': neck, "head": head}
 
     def _forward(self):
-        neck_feat = self.backbone(self.inputs)
-        if self.neck is not None:
-            neck_feat = self.neck(neck_feat)
+        body_feats = self.backbone(self.inputs)
+        neck_feat = self.neck(body_feats)
         head_out = self.head(neck_feat, self.inputs)
         if self.for_mot:
             head_out.update({'neck_feat': neck_feat})
-        elif self.training:
-            head_out['loss'] = head_out.pop('det_loss')
         return head_out
 
     def get_pred(self):

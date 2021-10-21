@@ -15,17 +15,16 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
-import os
-import sys
-
+import os, sys
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
-sys.path.insert(0, parent_path)
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 # ignore warning log
 import warnings
 warnings.filterwarnings('ignore')
+import glob
 
 import paddle
 from paddle.distributed import ParallelEnv
@@ -43,19 +42,14 @@ def parse_args():
     parser.add_argument(
         '--video_file', type=str, default=None, help='Video name for tracking.')
     parser.add_argument(
-        '--frame_rate',
-        type=int,
-        default=-1,
-        help='Video frame rate for tracking.')
-    parser.add_argument(
-        "--image_dir",
+        "--data_type",
         type=str,
-        default=None,
-        help="Directory for images to perform inference on.")
+        default='mot',
+        help='Data type of tracking dataset, should be in ["mot", "kitti"]')
     parser.add_argument(
         "--det_results_dir",
         type=str,
-        default='',
+        default=None,
         help="Directory name for detection results.")
     parser.add_argument(
         '--output_dir',
@@ -74,17 +68,6 @@ def parse_args():
         '--show_image',
         action='store_true',
         help='Show tracking results (image).')
-    parser.add_argument(
-        '--scaled',
-        type=bool,
-        default=False,
-        help="Whether coords after detector outputs are scaled, False in JDE YOLOv3 "
-        "True in general detector.")
-    parser.add_argument(
-        "--draw_threshold",
-        type=float,
-        default=0.5,
-        help="Threshold to reserve the result for visualization.")
     args = parser.parse_args()
     return args
 
@@ -105,17 +88,13 @@ def run(FLAGS, cfg):
     # inference
     tracker.mot_predict(
         video_file=FLAGS.video_file,
-        frame_rate=FLAGS.frame_rate,
-        image_dir=FLAGS.image_dir,
-        data_type=cfg.metric.lower(),
+        data_type=FLAGS.data_type,
         model_type=cfg.architecture,
         output_dir=FLAGS.output_dir,
         save_images=FLAGS.save_images,
         save_videos=FLAGS.save_videos,
         show_image=FLAGS.show_image,
-        scaled=FLAGS.scaled,
-        det_results_dir=FLAGS.det_results_dir,
-        draw_threshold=FLAGS.draw_threshold)
+        det_results_dir=FLAGS.det_results_dir)
 
 
 def main():

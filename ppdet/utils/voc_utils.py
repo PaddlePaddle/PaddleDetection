@@ -20,6 +20,7 @@ import os
 import os.path as osp
 import re
 import random
+import shutil
 
 __all__ = ['create_list']
 

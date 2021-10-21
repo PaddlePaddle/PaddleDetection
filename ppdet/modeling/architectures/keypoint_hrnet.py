@@ -19,7 +19,6 @@ from __future__ import print_function
 import paddle
 import numpy as np
 import math
-import cv2
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 from ..keypoint_utils import transform_preds
@@ -41,20 +40,18 @@ class TopDownHRNet(BaseArch):
                  post_process='HRNetPostProcess',
                  flip_perm=None,
                  flip=True,
-                 shift_heatmap=True,
-                 use_dark=True):
+                 shift_heatmap=True):
         """
-        HRNet network, see https://arxiv.org/abs/1902.09212
+        HRNnet network, see https://arxiv.org/abs/1902.09212
 
         Args:
             backbone (nn.Layer): backbone instance
             post_process (object): `HRNetPostProcess` instance
             flip_perm (list): The left-right joints exchange order list
-            use_dark(bool): Whether to use DARK in post processing
         """
         super(TopDownHRNet, self).__init__()
         self.backbone = backbone
-        self.post_process = HRNetPostProcess(use_dark)
+        self.post_process = HRNetPostProcess()
         self.loss = loss
         self.flip_perm = flip_perm
         self.flip = flip
@@ -76,12 +73,7 @@ class TopDownHRNet(BaseArch):
         if self.training:
             return self.loss(hrnet_outputs, self.inputs)
         elif self.deploy:
-            outshape = hrnet_outputs.shape
-            max_idx = paddle.argmax(
-                hrnet_outputs.reshape(
-                    (outshape[0], outshape[1], outshape[2] * outshape[3])),
-                axis=-1)
-            return hrnet_outputs, max_idx
+            return hrnet_outputs
         else:
             if self.flip:
                 self.inputs['image'] = self.inputs['image'].flip([3])
@@ -126,9 +118,6 @@ class TopDownHRNet(BaseArch):
 
 
 class HRNetPostProcess(object):
-    def __init__(self, use_dark=True):
-        self.use_dark = use_dark
-
     def get_max_preds(self, heatmaps):
         '''get predictions from score maps
 
@@ -165,58 +154,7 @@ class HRNetPostProcess(object):
 
         return preds, maxvals
 
-    def gaussian_blur(self, heatmap, kernel):
-        border = (kernel - 1) // 2
-        batch_size = heatmap.shape[0]
-        num_joints = heatmap.shape[1]
-        height = heatmap.shape[2]
-        width = heatmap.shape[3]
-        for i in range(batch_size):
-            for j in range(num_joints):
-                origin_max = np.max(heatmap[i, j])
-                dr = np.zeros((height + 2 * border, width + 2 * border))
-                dr[border:-border, border:-border] = heatmap[i, j].copy()
-                dr = cv2.GaussianBlur(dr, (kernel, kernel), 0)
-                heatmap[i, j] = dr[border:-border, border:-border].copy()
-                heatmap[i, j] *= origin_max / np.max(heatmap[i, j])
-        return heatmap
-
-    def dark_parse(self, hm, coord):
-        heatmap_height = hm.shape[0]
-        heatmap_width = hm.shape[1]
-        px = int(coord[0])
-        py = int(coord[1])
-        if 1 < px < heatmap_width - 2 and 1 < py < heatmap_height - 2:
-            dx = 0.5 * (hm[py][px + 1] - hm[py][px - 1])
-            dy = 0.5 * (hm[py + 1][px] - hm[py - 1][px])
-            dxx = 0.25 * (hm[py][px + 2] - 2 * hm[py][px] + hm[py][px - 2])
-            dxy = 0.25 * (hm[py+1][px+1] - hm[py-1][px+1] - hm[py+1][px-1] \
-                + hm[py-1][px-1])
-            dyy = 0.25 * (
-                hm[py + 2 * 1][px] - 2 * hm[py][px] + hm[py - 2 * 1][px])
-            derivative = np.matrix([[dx], [dy]])
-            hessian = np.matrix([[dxx, dxy], [dxy, dyy]])
-            if dxx * dyy - dxy**2 != 0:
-                hessianinv = hessian.I
-                offset = -hessianinv * derivative
-                offset = np.squeeze(np.array(offset.T), axis=0)
-                coord += offset
-        return coord
-
-    def dark_postprocess(self, hm, coords, kernelsize):
-        '''DARK postpocessing, Zhang et al. Distribution-Aware Coordinate
-        Representation for Human Pose Estimation (CVPR 2020).
-        '''
-
-        hm = self.gaussian_blur(hm, kernelsize)
-        hm = np.maximum(hm, 1e-10)
-        hm = np.log(hm)
-        for n in range(coords.shape[0]):
-            for p in range(coords.shape[1]):
-                coords[n, p] = self.dark_parse(hm[n][p], coords[n][p])
-        return coords
-
-    def get_final_preds(self, heatmaps, center, scale, kernelsize=3):
+    def get_final_preds(self, heatmaps, center, scale):
         """the highest heatvalue location with a quarter offset in the
         direction from the highest response to the second highest response.
 
@@ -229,25 +167,23 @@ class HRNetPostProcess(object):
             preds: numpy.ndarray([batch_size, num_joints, 2]), keypoints coords
             maxvals: numpy.ndarray([batch_size, num_joints, 1]), the maximum confidence of the keypoints
         """
+
         coords, maxvals = self.get_max_preds(heatmaps)
 
         heatmap_height = heatmaps.shape[2]
         heatmap_width = heatmaps.shape[3]
 
-        if self.use_dark:
-            coords = self.dark_postprocess(heatmaps, coords, kernelsize)
-        else:
-            for n in range(coords.shape[0]):
-                for p in range(coords.shape[1]):
-                    hm = heatmaps[n][p]
-                    px = int(math.floor(coords[n][p][0] + 0.5))
-                    py = int(math.floor(coords[n][p][1] + 0.5))
-                    if 1 < px < heatmap_width - 1 and 1 < py < heatmap_height - 1:
-                        diff = np.array([
-                            hm[py][px + 1] - hm[py][px - 1],
-                            hm[py + 1][px] - hm[py - 1][px]
-                        ])
-                        coords[n][p] += np.sign(diff) * .25
+        for n in range(coords.shape[0]):
+            for p in range(coords.shape[1]):
+                hm = heatmaps[n][p]
+                px = int(math.floor(coords[n][p][0] + 0.5))
+                py = int(math.floor(coords[n][p][1] + 0.5))
+                if 1 < px < heatmap_width - 1 and 1 < py < heatmap_height - 1:
+                    diff = np.array([
+                        hm[py][px + 1] - hm[py][px - 1],
+                        hm[py + 1][px] - hm[py - 1][px]
+                    ])
+                    coords[n][p] += np.sign(diff) * .25
         preds = coords.copy()
 
         # Transform back

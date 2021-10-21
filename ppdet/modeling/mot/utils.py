@@ -82,7 +82,7 @@ class Detection(object):
     def __init__(self, tlwh, confidence, feature):
         self.tlwh = np.asarray(tlwh, dtype=np.float32)
         self.confidence = np.asarray(confidence, dtype=np.float32)
-        self.feature = feature
+        self.feature = feature.numpy()
 
     def to_tlbr(self):
         """
@@ -113,21 +113,22 @@ def load_det_results(det_file, num_frames):
         results = {'bbox': [], 'score': []}
         lables_with_frame = labels[labels[:, 0] == frame_i + 1]
         for l in lables_with_frame:
-            results['bbox'].append(l[1:5])
-            results['score'].append(l[5])
+            results['bbox'].append(l[2:6])
+            results['score'].append(l[6])
         results_list.append(results)
     return results_list
 
 
 def scale_coords(coords, input_shape, im_shape, scale_factor):
     im_shape = im_shape.numpy()[0]
-    ratio = scale_factor[0][0]
-    pad_w = (input_shape[1] - int(im_shape[1])) / 2
-    pad_h = (input_shape[0] - int(im_shape[0])) / 2
-    coords = paddle.cast(coords, 'float32')
+    ratio = scale_factor.numpy()[0][0]
+    img0_shape = [int(im_shape[0] / ratio), int(im_shape[1] / ratio)]
+
+    pad_w = (input_shape[1] - round(img0_shape[1] * ratio)) / 2
+    pad_h = (input_shape[0] - round(img0_shape[0] * ratio)) / 2
     coords[:, 0::2] -= pad_w
     coords[:, 1::2] -= pad_h
-    coords[:, 0:4] /= ratio
+    coords[:, 0:4] /= paddle.to_tensor(ratio)
     coords[:, :4] = paddle.clip(coords[:, :4], min=0, max=coords[:, :4].max())
     return coords.round()
 

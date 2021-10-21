@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import errno
 import os
 import time
+import re
 import numpy as np
 import paddle
 import paddle.nn as nn
@@ -55,6 +56,41 @@ def _get_unique_endpoints(trainer_endpoints):
     return unique_endpoints
 
 
+def get_weights_path_dist(path):
+    env = os.environ
+    if 'PADDLE_TRAINERS_NUM' in env and 'PADDLE_TRAINER_ID' in env:
+        trainer_id = int(env['PADDLE_TRAINER_ID'])
+        num_trainers = int(env['PADDLE_TRAINERS_NUM'])
+        if num_trainers <= 1:
+            path = get_weights_path(path)
+        else:
+            from ppdet.utils.download import map_path, WEIGHTS_HOME
+            weight_path = map_path(path, WEIGHTS_HOME)
+            lock_path = weight_path + '.lock'
+            if not os.path.exists(weight_path):
+                from paddle.distributed import ParallelEnv
+                unique_endpoints = _get_unique_endpoints(ParallelEnv()
+                                                         .trainer_endpoints[:])
+                try:
+                    os.makedirs(os.path.dirname(weight_path))
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        raise
+                with open(lock_path, 'w'):  # touch    
+                    os.utime(lock_path, None)
+                if ParallelEnv().current_endpoint in unique_endpoints:
+                    get_weights_path(path)
+                    os.remove(lock_path)
+                else:
+                    while os.path.exists(lock_path):
+                        time.sleep(1)
+            path = weight_path
+    else:
+        path = get_weights_path(path)
+
+    return path
+
+
 def _strip_postfix(path):
     path, ext = os.path.splitext(path)
     assert ext in ['', '.pdparams', '.pdopt', '.pdmodel'], \
@@ -64,7 +100,7 @@ def _strip_postfix(path):
 
 def load_weight(model, weight, optimizer=None):
     if is_url(weight):
-        weight = get_weights_path(weight)
+        weight = get_weights_path_dist(weight)
 
     path = _strip_postfix(weight)
     pdparam_path = path + '.pdparams'
@@ -93,6 +129,7 @@ def load_weight(model, weight, optimizer=None):
 
     last_epoch = 0
     if optimizer is not None and os.path.exists(path + '.pdopt'):
+        print('Load pdopt file!')
         optim_state_dict = paddle.load(path + '.pdopt')
         # to solve resume bug, will it be fixed in paddle 2.0
         for key in optimizer.state_dict().keys():
@@ -105,79 +142,9 @@ def load_weight(model, weight, optimizer=None):
     return last_epoch
 
 
-def match_state_dict(model_state_dict, weight_state_dict):
-    """
-    Match between the model state dict and pretrained weight state dict.
-    Return the matched state dict.
-
-    The method supposes that all the names in pretrained weight state dict are
-    subclass of the names in models`, if the prefix 'backbone.' in pretrained weight
-    keys is stripped. And we could get the candidates for each model key. Then we 
-    select the name with the longest matched size as the final match result. For
-    example, the model state dict has the name of 
-    'backbone.res2.res2a.branch2a.conv.weight' and the pretrained weight as
-    name of 'res2.res2a.branch2a.conv.weight' and 'branch2a.conv.weight'. We
-    match the 'res2.res2a.branch2a.conv.weight' to the model key.
-    """
-
-    model_keys = sorted(model_state_dict.keys())
-    weight_keys = sorted(weight_state_dict.keys())
-
-    def match(a, b):
-        if a.startswith('backbone.res5'):
-            # In Faster RCNN, res5 pretrained weights have prefix of backbone, 
-            # however, the corresponding model weights have difficult prefix,
-            # bbox_head.
-            b = b[9:]
-        return a == b or a.endswith("." + b)
-
-    match_matrix = np.zeros([len(model_keys), len(weight_keys)])
-    for i, m_k in enumerate(model_keys):
-        for j, w_k in enumerate(weight_keys):
-            if match(m_k, w_k):
-                match_matrix[i, j] = len(w_k)
-    max_id = match_matrix.argmax(1)
-    max_len = match_matrix.max(1)
-    max_id[max_len == 0] = -1
-    not_load_weight_name = []
-    for match_idx in range(len(max_id)):
-        if match_idx < len(weight_keys) and max_id[match_idx] == -1:
-            not_load_weight_name.append(weight_keys[match_idx])
-    if len(not_load_weight_name) > 0:
-        logger.info('{} in pretrained weight is not used in the model, '
-                    'and its will not be loaded'.format(not_load_weight_name))
-    matched_keys = {}
-    result_state_dict = {}
-    for model_id, weight_id in enumerate(max_id):
-        if weight_id == -1:
-            continue
-        model_key = model_keys[model_id]
-        weight_key = weight_keys[weight_id]
-        weight_value = weight_state_dict[weight_key]
-        model_value_shape = list(model_state_dict[model_key].shape)
-
-        if list(weight_value.shape) != model_value_shape:
-            logger.info(
-                'The shape {} in pretrained weight {} is unmatched with '
-                'the shape {} in model {}. And the weight {} will not be '
-                'loaded'.format(weight_value.shape, weight_key,
-                                model_value_shape, model_key, weight_key))
-            continue
-
-        assert model_key not in result_state_dict
-        result_state_dict[model_key] = weight_value
-        if weight_key in matched_keys:
-            raise ValueError('Ambiguity weight {} loaded, it matches at least '
-                             '{} and {} in the model'.format(
-                                 weight_key, model_key, matched_keys[
-                                     weight_key]))
-        matched_keys[weight_key] = model_key
-    return result_state_dict
-
-
 def load_pretrain_weight(model, pretrain_weight):
     if is_url(pretrain_weight):
-        pretrain_weight = get_weights_path(pretrain_weight)
+        pretrain_weight = get_weights_path_dist(pretrain_weight)
 
     path = _strip_postfix(pretrain_weight)
     if not (os.path.isdir(path) or os.path.isfile(path) or
@@ -191,7 +158,31 @@ def load_pretrain_weight(model, pretrain_weight):
 
     weights_path = path + '.pdparams'
     param_state_dict = paddle.load(weights_path)
-    param_state_dict = match_state_dict(model_dict, param_state_dict)
+    ignore_weights = set()
+
+    # hack: fit for faster rcnn. Pretrain weights contain prefix of 'backbone'
+    # while res5 module is located in bbox_head.head. Replace the prefix of
+    # res5 with 'bbox_head.head' to load pretrain weights correctly.
+    for k in list(param_state_dict.keys()):
+        if 'backbone.res5' in k:
+            new_k = k.replace('backbone', 'bbox_head.head')
+            if new_k in model_dict.keys():
+                value = param_state_dict.pop(k)
+                param_state_dict[new_k] = value
+
+    for name, weight in param_state_dict.items():
+        if name in model_dict.keys():
+            if list(weight.shape) != list(model_dict[name].shape):
+                logger.info(
+                    '{} not used, shape {} unmatched with {} in model.'.format(
+                        name, weight.shape, list(model_dict[name].shape)))
+                ignore_weights.add(name)
+        else:
+            logger.info('Redundant weight {} and ignore it.'.format(name))
+            ignore_weights.add(name)
+
+    for weight in ignore_weights:
+        param_state_dict.pop(weight, None)
 
     model.set_dict(param_state_dict)
     logger.info('Finish loading model weights: {}'.format(weights_path))

@@ -15,17 +15,16 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
-import os
-import sys
-
+import os, sys
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
-sys.path.insert(0, parent_path)
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 # ignore warning log
 import warnings
 warnings.filterwarnings('ignore')
+import glob
 
 import paddle
 from paddle.distributed import ParallelEnv
@@ -41,9 +40,14 @@ logger = setup_logger('eval')
 def parse_args():
     parser = ArgsParser()
     parser.add_argument(
+        "--data_type",
+        type=str,
+        default='mot',
+        help='Data type of tracking dataset, should be in ["mot", "kitti"]')
+    parser.add_argument(
         "--det_results_dir",
         type=str,
-        default='',
+        default=None,
         help="Directory name for detection results.")
     parser.add_argument(
         '--output_dir',
@@ -62,22 +66,16 @@ def parse_args():
         '--show_image',
         action='store_true',
         help='Show tracking results (image).')
-    parser.add_argument(
-        '--scaled',
-        type=bool,
-        default=False,
-        help="Whether coords after detector outputs are scaled, False in JDE YOLOv3 "
-        "True in general detector.")
     args = parser.parse_args()
     return args
 
 
 def run(FLAGS, cfg):
+    task = cfg['EvalMOTDataset'].task
     dataset_dir = cfg['EvalMOTDataset'].dataset_dir
     data_root = cfg['EvalMOTDataset'].data_root
     data_root = '{}/{}'.format(dataset_dir, data_root)
-    seqs = os.listdir(data_root)
-    seqs.sort()
+    seqs = cfg['MOTDataZoo'][task]
 
     # build Tracker
     tracker = Tracker(cfg, mode='eval')
@@ -95,13 +93,12 @@ def run(FLAGS, cfg):
     tracker.mot_evaluate(
         data_root=data_root,
         seqs=seqs,
-        data_type=cfg.metric.lower(),
+        data_type=FLAGS.data_type,
         model_type=cfg.architecture,
         output_dir=FLAGS.output_dir,
         save_images=FLAGS.save_images,
         save_videos=FLAGS.save_videos,
         show_image=FLAGS.show_image,
-        scaled=FLAGS.scaled,
         det_results_dir=FLAGS.det_results_dir)
 
 

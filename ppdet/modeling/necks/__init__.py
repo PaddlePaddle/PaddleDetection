@@ -17,9 +17,7 @@ from . import yolo_fpn
 from . import hrfpn
 from . import ttf_fpn
 from . import centernet_fpn
-from . import pan
-from . import bifpn
-from . import csp_pan
+from . import yolov4_neck
 
 from .fpn import *
 from .yolo_fpn import *
@@ -27,6 +25,4 @@ from .hrfpn import *
 from .ttf_fpn import *
 from .centernet_fpn import *
 from .blazeface_fpn import *
-from .pan import *
-from .bifpn import *
-from .csp_pan import *
+from .yolov4_neck import *

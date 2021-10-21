@@ -50,13 +50,23 @@ class ConvBNLayer(nn.Layer):
             dilation=dilation,
             groups=groups,
             weight_attr=ParamAttr(
+                name=name + "_weights",
                 learning_rate=lr_mult,
                 initializer=Normal(0, math.sqrt(2. / conv_stdv))),
             bias_attr=False,
             data_format=data_format)
-
+        if name == "conv1":
+            bn_name = "bn_" + name
+        else:
+            bn_name = "bn" + name[3:]
         self._batch_norm = nn.BatchNorm(
-            num_filters, act=act, data_layout=data_format)
+            num_filters,
+            act=act,
+            param_attr=ParamAttr(name=bn_name + "_scale"),
+            bias_attr=ParamAttr(bn_name + "_offset"),
+            moving_mean_name=bn_name + "_mean",
+            moving_variance_name=bn_name + "_variance",
+            data_layout=data_format)
 
     def forward(self, inputs):
         y = self._conv(inputs)

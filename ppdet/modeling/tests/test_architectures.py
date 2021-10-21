@@ -55,15 +55,5 @@ class TestSSD(TestFasterRCNN):
         self.cfg_file = 'configs/ssd/ssd_vgg16_300_240e_voc.yml'
 
 
-class TestGFL(TestFasterRCNN):
-    def set_config(self):
-        self.cfg_file = 'configs/gfl/gfl_r50_fpn_1x_coco.yml'
-
-
-class TestPicoDet(TestFasterRCNN):
-    def set_config(self):
-        self.cfg_file = 'configs/picodet/picodet_s_shufflenetv2_320_coco.yml'
-
-
 if __name__ == '__main__':
     unittest.main()

@@ -15,13 +15,11 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
-import os
-import sys
-
+import os, sys
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
-sys.path.insert(0, parent_path)
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 # ignore warning log
 import warnings
@@ -31,7 +29,7 @@ import glob
 import paddle
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.engine import Trainer
-from ppdet.utils.check import check_gpu, check_npu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.slim import build_slim_model
 
@@ -141,16 +139,7 @@ def main():
     cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
     merge_config(FLAGS.opt)
 
-    # disable npu in config by default
-    if 'use_npu' not in cfg:
-        cfg.use_npu = False
-
-    if cfg.use_gpu:
-        place = paddle.set_device('gpu')
-    elif cfg.use_npu:
-        place = paddle.set_device('npu')
-    else:
-        place = paddle.set_device('cpu')
+    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
 
     if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn' and not cfg.use_gpu:
         cfg['norm_type'] = 'bn'
@@ -160,7 +149,6 @@ def main():
 
     check_config(cfg)
     check_gpu(cfg.use_gpu)
-    check_npu(cfg.use_npu)
     check_version()
 
     run(FLAGS, cfg)

@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
 import math
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn.initializer import Constant, Uniform
+from paddle import ParamAttr
+from paddle.nn.initializer import KaimingUniform
 from ppdet.core.workspace import register
 from ppdet.modeling.losses import CTFocalLoss
 
@@ -35,9 +37,10 @@ class ConvLayer(nn.Layer):
         bias_attr = False
         fan_in = ch_in * kernel_size**2
         bound = 1 / math.sqrt(fan_in)
-        param_attr = paddle.ParamAttr(initializer=Uniform(-bound, bound))
+        param_attr = paddle.ParamAttr(initializer=KaimingUniform())
         if bias:
-            bias_attr = paddle.ParamAttr(initializer=Constant(0.))
+            bias_attr = paddle.ParamAttr(
+                initializer=nn.initializer.Uniform(-bound, bound))
         self.conv = nn.Conv2D(
             in_channels=ch_in,
             out_channels=ch_out,
@@ -97,8 +100,7 @@ class CenterNetHead(nn.Layer):
                 stride=1,
                 padding=0,
                 bias=True))
-        with paddle.no_grad():
-            self.heatmap[2].conv.bias[:] = -2.19
+        self.heatmap[2].conv.bias[:] = -2.19
         self.size = nn.Sequential(
             ConvLayer(
                 in_channels, head_planes, kernel_size=3, padding=1, bias=True),

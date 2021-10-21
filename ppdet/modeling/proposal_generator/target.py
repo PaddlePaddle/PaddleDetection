@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import six
+import math
 import numpy as np
 import paddle
 from ..bbox_utils import bbox2delta, bbox_overlaps
+import copy
 
 
 def rpn_anchor_target(anchors,
@@ -27,8 +30,7 @@ def rpn_anchor_target(anchors,
                       batch_size=1,
                       ignore_thresh=-1,
                       is_crowd=None,
-                      weights=[1., 1., 1., 1.],
-                      assign_on_cpu=False):
+                      weights=[1., 1., 1., 1.]):
     tgt_labels = []
     tgt_bboxes = []
     tgt_deltas = []
@@ -38,7 +40,7 @@ def rpn_anchor_target(anchors,
         # Step1: match anchor and gt_bbox
         matches, match_labels = label_box(
             anchors, gt_bbox, rpn_positive_overlap, rpn_negative_overlap, True,
-            ignore_thresh, is_crowd_i, assign_on_cpu)
+            ignore_thresh, is_crowd_i)
         # Step2: sample anchor 
         fg_inds, bg_inds = subsample_labels(match_labels, rpn_batch_size_per_im,
                                             rpn_fg_fraction, 0, use_random)
@@ -71,14 +73,8 @@ def label_box(anchors,
               negative_overlap,
               allow_low_quality,
               ignore_thresh,
-              is_crowd=None,
-              assign_on_cpu=False):
-    if assign_on_cpu:
-        paddle.set_device("cpu")
-        iou = bbox_overlaps(gt_boxes, anchors)
-        paddle.set_device("gpu")
-    else:
-        iou = bbox_overlaps(gt_boxes, anchors)
+              is_crowd=None):
+    iou = bbox_overlaps(gt_boxes, anchors)
     n_gt = gt_boxes.shape[0]
     if n_gt == 0 or is_crowd is None:
         n_gt_crowd = 0
@@ -183,8 +179,7 @@ def generate_proposal_target(rpn_rois,
                              is_crowd=None,
                              use_random=True,
                              is_cascade=False,
-                             cascade_iou=0.5,
-                             assign_on_cpu=False):
+                             cascade_iou=0.5):
 
     rois_with_gt = []
     tgt_labels = []
@@ -209,8 +204,7 @@ def generate_proposal_target(rpn_rois,
 
         # Step1: label bbox
         matches, match_labels = label_box(bbox, gt_bbox, fg_thresh, bg_thresh,
-                                          False, ignore_thresh, is_crowd_i,
-                                          assign_on_cpu)
+                                          False, ignore_thresh, is_crowd_i)
         # Step2: sample bbox 
         sampled_inds, sampled_gt_classes = sample_bbox(
             matches, match_labels, gt_class, batch_size_per_im, fg_fraction,
@@ -224,8 +218,7 @@ def generate_proposal_target(rpn_rois,
         if gt_bbox.shape[0] > 0:
             sampled_bbox = paddle.gather(gt_bbox, sampled_gt_ind)
         else:
-            num = rois_per_image.shape[0]
-            sampled_bbox = paddle.zeros([num, 4], dtype='float32')
+            sampled_bbox = paddle.zeros([0, 4], dtype='float32')
 
         rois_per_image.stop_gradient = True
         sampled_gt_ind.stop_gradient = True

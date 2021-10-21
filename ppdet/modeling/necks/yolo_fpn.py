@@ -15,8 +15,8 @@
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
+from paddle import ParamAttr
 from ppdet.core.workspace import register, serializable
-from ppdet.modeling.layers import DropBlock
 from ..backbones.darknet import ConvBNLayer
 from ..shape_spec import ShapeSpec
 
@@ -24,24 +24,28 @@ __all__ = ['YOLOv3FPN', 'PPYOLOFPN', 'PPYOLOTinyFPN', 'PPYOLOPAN']
 
 
 def add_coord(x, data_format):
-    b = paddle.shape(x)[0]
+    b = x.shape[0]
     if data_format == 'NCHW':
-        h, w = x.shape[2], x.shape[3]
+        h = x.shape[2]
+        w = x.shape[3]
     else:
-        h, w = x.shape[1], x.shape[2]
+        h = x.shape[1]
+        w = x.shape[2]
 
-    gx = paddle.cast(paddle.arange(w) / ((w - 1.) * 2.0) - 1., x.dtype)
-    gy = paddle.cast(paddle.arange(h) / ((h - 1.) * 2.0) - 1., x.dtype)
-
+    gx = paddle.arange(w, dtype='float32') / (w - 1.) * 2.0 - 1.
     if data_format == 'NCHW':
         gx = gx.reshape([1, 1, 1, w]).expand([b, 1, h, w])
-        gy = gy.reshape([1, 1, h, 1]).expand([b, 1, h, w])
     else:
         gx = gx.reshape([1, 1, w, 1]).expand([b, h, w, 1])
-        gy = gy.reshape([1, h, 1, 1]).expand([b, h, w, 1])
-
     gx.stop_gradient = True
+
+    gy = paddle.arange(h, dtype='float32') / (h - 1.) * 2.0 - 1.
+    if data_format == 'NCHW':
+        gy = gy.reshape([1, 1, h, 1]).expand([b, 1, h, w])
+    else:
+        gy = gy.reshape([1, h, 1, 1]).expand([b, h, w, 1])
     gy.stop_gradient = True
+
     return gx, gy
 
 
@@ -167,6 +171,47 @@ class SPP(nn.Layer):
 
         y = self.conv(y)
         return y
+
+
+class DropBlock(nn.Layer):
+    def __init__(self, block_size, keep_prob, name, data_format='NCHW'):
+        """
+        DropBlock layer, see https://arxiv.org/abs/1810.12890
+
+        Args:
+            block_size (int): block size
+            keep_prob (int): keep probability
+            name (str): layer name
+            data_format (str): data format, NCHW or NHWC
+        """
+        super(DropBlock, self).__init__()
+        self.block_size = block_size
+        self.keep_prob = keep_prob
+        self.name = name
+        self.data_format = data_format
+
+    def forward(self, x):
+        if not self.training or self.keep_prob == 1:
+            return x
+        else:
+            gamma = (1. - self.keep_prob) / (self.block_size**2)
+            if self.data_format == 'NCHW':
+                shape = x.shape[2:]
+            else:
+                shape = x.shape[1:3]
+            for s in shape:
+                gamma *= s / (s - self.block_size + 1)
+
+            matrix = paddle.cast(paddle.rand(x.shape, x.dtype) < gamma, x.dtype)
+            mask_inv = F.max_pool2d(
+                matrix,
+                self.block_size,
+                stride=1,
+                padding=self.block_size // 2,
+                data_format=self.data_format)
+            mask = 1. - mask_inv
+            y = x * mask * (mask.numel() / mask.sum())
+            return y
 
 
 class CoordConv(nn.Layer):

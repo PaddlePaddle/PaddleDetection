@@ -17,7 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import paddle
-
+import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 
 __all__ = ['CTFocalLoss']
@@ -53,12 +53,11 @@ class CTFocalLoss(object):
         bg_map = paddle.cast(target < 1, 'float32')
         bg_map.stop_gradient = True
 
-        neg_weights = paddle.pow(1 - target, 4)
+        neg_weights = paddle.pow(1 - target, 4) * bg_map
         pos_loss = 0 - paddle.log(pred) * paddle.pow(1 - pred,
                                                      self.gamma) * fg_map
-
         neg_loss = 0 - paddle.log(1 - pred) * paddle.pow(
-            pred, self.gamma) * neg_weights * bg_map
+            pred, self.gamma) * neg_weights
         pos_loss = paddle.sum(pos_loss)
         neg_loss = paddle.sum(neg_loss)
 

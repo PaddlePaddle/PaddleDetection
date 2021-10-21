@@ -13,19 +13,21 @@
 # limitations under the License.
 
 import os
+import copy
 import traceback
 import six
 import sys
+import multiprocessing as mp
 if sys.version_info >= (3, 0):
-    pass
+    import queue as Queue
 else:
-    pass
+    import Queue
 import numpy as np
 
 from paddle.io import DataLoader, DistributedBatchSampler
 from paddle.fluid.dataloader.collate import default_collate_fn
 
-from ppdet.core.workspace import register
+from ppdet.core.workspace import register, serializable, create
 from . import transform
 from .shm_utils import _get_shared_memory_size_in_M
 
@@ -54,9 +56,9 @@ class Compose(object):
                 data = f(data)
             except Exception as e:
                 stack_info = traceback.format_exc()
-                logger.warning("fail to map sample transform [{}] "
-                               "with error: {} and stack:\n{}".format(
-                                   f, e, str(stack_info)))
+                logger.warn("fail to map sample transform [{}] "
+                            "with error: {} and stack:\n{}".format(
+                                f, e, str(stack_info)))
                 raise e
 
         return data
@@ -73,9 +75,9 @@ class BatchCompose(Compose):
                 data = f(data)
             except Exception as e:
                 stack_info = traceback.format_exc()
-                logger.warning("fail to map batch transform [{}] "
-                               "with error: {} and stack:\n{}".format(
-                                   f, e, str(stack_info)))
+                logger.warn("fail to map batch transform [{}] "
+                            "with error: {} and stack:\n{}".format(
+                                f, e, str(stack_info)))
                 raise e
 
         # remove keys which is not needed by model
@@ -183,8 +185,8 @@ class BaseDataLoader(object):
         if use_shared_memory:
             shm_size = _get_shared_memory_size_in_M()
             if shm_size is not None and shm_size < 1024.:
-                logger.warning("Shared memory size is less than 1G, "
-                               "disable shared_memory in DataLoader")
+                logger.warn("Shared memory size is less than 1G, "
+                            "disable shared_memory in DataLoader")
                 use_shared_memory = False
 
         self.dataloader = DataLoader(

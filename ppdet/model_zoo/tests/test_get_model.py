@@ -21,6 +21,7 @@ import paddle
 import ppdet
 import unittest
 
+
 # NOTE: weights downloading costs time, we choose
 #       a small model for unittesting
 MODEL_NAME = 'ppyolo/ppyolo_tiny_650e_coco'

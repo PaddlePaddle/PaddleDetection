@@ -186,6 +186,7 @@ class BasicBlock(nn.Layer):
                  dcn_v2=False,
                  std_senet=False):
         super(BasicBlock, self).__init__()
+        assert dcn_v2 is False, "Not implemented yet."
         assert groups == 1 and base_width == 64, 'BasicBlock only supports groups=1 and base_width=64'
 
         self.shortcut = shortcut
@@ -238,8 +239,7 @@ class BasicBlock(nn.Layer):
             norm_type=norm_type,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
-            lr=lr,
-            dcn_v2=dcn_v2)
+            lr=lr)
 
         self.std_senet = std_senet
         if self.std_senet:
@@ -560,15 +560,6 @@ class ResNet(nn.Layer):
             self.res_layers.append(res_layer)
             self.ch_in = self._out_channels[i]
 
-        if freeze_at >= 0:
-            self._freeze_parameters(self.conv1)
-            for i in range(min(freeze_at + 1, num_stages)):
-                self._freeze_parameters(self.res_layers[i])
-
-    def _freeze_parameters(self, m):
-        for p in m.parameters():
-            p.stop_gradient = True
-
     @property
     def out_shape(self):
         return [
@@ -584,6 +575,8 @@ class ResNet(nn.Layer):
         outs = []
         for idx, stage in enumerate(self.res_layers):
             x = stage(x)
+            if idx == self.freeze_at:
+                x.stop_gradient = True
             if idx in self.return_idx:
                 outs.append(x)
         return outs

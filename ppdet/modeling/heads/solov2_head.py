@@ -22,7 +22,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant
 
-from ppdet.modeling.layers import ConvNormLayer, MaskMatrixNMS, DropBlock
+from ppdet.modeling.layers import ConvNormLayer, MaskMatrixNMS
 from ppdet.core.workspace import register
 
 from six.moves import zip
@@ -43,7 +43,6 @@ class SOLOv2MaskHead(nn.Layer):
         end_level (int): The position where the input ends.
         use_dcn_in_tower (bool): Whether to use dcn in tower or not.
     """
-    __shared__ = ['norm_type']
 
     def __init__(self,
                  in_channels=256,
@@ -51,8 +50,7 @@ class SOLOv2MaskHead(nn.Layer):
                  out_channels=256,
                  start_level=0,
                  end_level=3,
-                 use_dcn_in_tower=False,
-                 norm_type='gn'):
+                 use_dcn_in_tower=False):
         super(SOLOv2MaskHead, self).__init__()
         assert start_level >= 0 and end_level >= start_level
         self.in_channels = in_channels
@@ -60,22 +58,24 @@ class SOLOv2MaskHead(nn.Layer):
         self.mid_channels = mid_channels
         self.use_dcn_in_tower = use_dcn_in_tower
         self.range_level = end_level - start_level + 1
-        self.use_dcn = True if self.use_dcn_in_tower else False
+        # TODO: add DeformConvNorm
+        conv_type = [ConvNormLayer]
+        self.conv_func = conv_type[0]
+        if self.use_dcn_in_tower:
+            self.conv_func = conv_type[1]
         self.convs_all_levels = []
-        self.norm_type = norm_type
         for i in range(start_level, end_level + 1):
             conv_feat_name = 'mask_feat_head.convs_all_levels.{}'.format(i)
             conv_pre_feat = nn.Sequential()
             if i == start_level:
                 conv_pre_feat.add_sublayer(
                     conv_feat_name + '.conv' + str(i),
-                    ConvNormLayer(
+                    self.conv_func(
                         ch_in=self.in_channels,
                         ch_out=self.mid_channels,
                         filter_size=3,
                         stride=1,
-                        use_dcn=self.use_dcn,
-                        norm_type=self.norm_type))
+                        norm_type='gn'))
                 self.add_sublayer('conv_pre_feat' + str(i), conv_pre_feat)
                 self.convs_all_levels.append(conv_pre_feat)
             else:
@@ -87,13 +87,12 @@ class SOLOv2MaskHead(nn.Layer):
                         ch_in = self.mid_channels
                     conv_pre_feat.add_sublayer(
                         conv_feat_name + '.conv' + str(j),
-                        ConvNormLayer(
+                        self.conv_func(
                             ch_in=ch_in,
                             ch_out=self.mid_channels,
                             filter_size=3,
                             stride=1,
-                            use_dcn=self.use_dcn,
-                            norm_type=self.norm_type))
+                            norm_type='gn'))
                     conv_pre_feat.add_sublayer(
                         conv_feat_name + '.conv' + str(j) + 'act', nn.ReLU())
                     conv_pre_feat.add_sublayer(
@@ -106,13 +105,12 @@ class SOLOv2MaskHead(nn.Layer):
         conv_pred_name = 'mask_feat_head.conv_pred.0'
         self.conv_pred = self.add_sublayer(
             conv_pred_name,
-            ConvNormLayer(
+            self.conv_func(
                 ch_in=self.mid_channels,
                 ch_out=self.out_channels,
                 filter_size=1,
                 stride=1,
-                use_dcn=self.use_dcn,
-                norm_type=self.norm_type))
+                norm_type='gn'))
 
     def forward(self, inputs):
         """
@@ -167,7 +165,7 @@ class SOLOv2Head(nn.Layer):
         mask_nms (object): MaskMatrixNMS instance.
     """
     __inject__ = ['solov2_loss', 'mask_nms']
-    __shared__ = ['norm_type', 'num_classes']
+    __shared__ = ['num_classes']
 
     def __init__(self,
                  num_classes=80,
@@ -181,9 +179,7 @@ class SOLOv2Head(nn.Layer):
                  solov2_loss=None,
                  score_threshold=0.1,
                  mask_threshold=0.5,
-                 mask_nms=None,
-                 norm_type='gn',
-                 drop_block=False):
+                 mask_nms=None):
         super(SOLOv2Head, self).__init__()
         self.num_classes = num_classes
         self.in_channels = in_channels
@@ -198,34 +194,33 @@ class SOLOv2Head(nn.Layer):
         self.mask_nms = mask_nms
         self.score_threshold = score_threshold
         self.mask_threshold = mask_threshold
-        self.norm_type = norm_type
-        self.drop_block = drop_block
 
+        conv_type = [ConvNormLayer]
+        self.conv_func = conv_type[0]
         self.kernel_pred_convs = []
         self.cate_pred_convs = []
         for i in range(self.stacked_convs):
-            use_dcn = True if i in self.dcn_v2_stages else False
+            if i in self.dcn_v2_stages:
+                self.conv_func = conv_type[1]
             ch_in = self.in_channels + 2 if i == 0 else self.seg_feat_channels
             kernel_conv = self.add_sublayer(
                 'bbox_head.kernel_convs.' + str(i),
-                ConvNormLayer(
+                self.conv_func(
                     ch_in=ch_in,
                     ch_out=self.seg_feat_channels,
                     filter_size=3,
                     stride=1,
-                    use_dcn=use_dcn,
-                    norm_type=self.norm_type))
+                    norm_type='gn'))
             self.kernel_pred_convs.append(kernel_conv)
             ch_in = self.in_channels if i == 0 else self.seg_feat_channels
             cate_conv = self.add_sublayer(
                 'bbox_head.cate_convs.' + str(i),
-                ConvNormLayer(
+                self.conv_func(
                     ch_in=ch_in,
                     ch_out=self.seg_feat_channels,
                     filter_size=3,
                     stride=1,
-                    use_dcn=use_dcn,
-                    norm_type=self.norm_type))
+                    norm_type='gn'))
             self.cate_pred_convs.append(cate_conv)
 
         self.solo_kernel = self.add_sublayer(
@@ -251,10 +246,6 @@ class SOLOv2Head(nn.Layer):
                     mean=0., std=0.01)),
                 bias_attr=ParamAttr(initializer=Constant(
                     value=float(-np.log((1 - 0.01) / 0.01))))))
-
-        if self.drop_block and self.training:
-            self.drop_block_fun = DropBlock(
-                block_size=3, keep_prob=0.9, name='solo_cate.dropblock')
 
     def _points_nms(self, heat, kernel_size=2):
         hmax = F.max_pool2d(heat, kernel_size=kernel_size, stride=1, padding=1)
@@ -324,14 +315,10 @@ class SOLOv2Head(nn.Layer):
 
         for kernel_layer in self.kernel_pred_convs:
             kernel_feat = F.relu(kernel_layer(kernel_feat))
-        if self.drop_block and self.training:
-            kernel_feat = self.drop_block_fun(kernel_feat)
         kernel_pred = self.solo_kernel(kernel_feat)
         # cate branch
         for cate_layer in self.cate_pred_convs:
             cate_feat = F.relu(cate_layer(cate_feat))
-        if self.drop_block and self.training:
-            cate_feat = self.drop_block_fun(cate_feat)
         cate_pred = self.solo_cate(cate_feat)
 
         if not self.training:
@@ -475,8 +462,7 @@ class SOLOv2Head(nn.Layer):
         # cate_labels & kernel_preds
         cate_labels = inds[:, 1]
         kernel_preds = paddle.gather(kernel_preds, index=inds[:, 0])
-        cate_score_idx = paddle.add(inds[:, 0] * self.cate_out_channels,
-                                    cate_labels)
+        cate_score_idx = paddle.add(inds[:, 0] * 80, cate_labels)
         cate_scores = paddle.gather(cate_preds, index=cate_score_idx)
 
         size_trans = np.power(self.seg_num_grids, 2)
@@ -488,9 +474,6 @@ class SOLOv2Head(nn.Layer):
                     fill_value=self.segm_strides[_ind],
                     dtype="int32"))
         strides = paddle.concat(strides)
-        strides = paddle.concat(
-            [strides, paddle.zeros(
-                shape=[1], dtype='int32')])
         strides = paddle.gather(strides, index=inds[:, 0])
 
         # mask encoding.

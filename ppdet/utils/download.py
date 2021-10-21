@@ -20,7 +20,6 @@ import os
 import os.path as osp
 import sys
 import yaml
-import time
 import shutil
 import requests
 import tqdm
@@ -30,11 +29,10 @@ import binascii
 import tarfile
 import zipfile
 
-from paddle.utils.download import _get_unique_endpoints
-from ppdet.core.workspace import BASE_KEY
-from .logger import setup_logger
 from .voc_utils import create_list
+from ppdet.core.workspace import BASE_KEY
 
+from .logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
@@ -70,9 +68,6 @@ DATASETS = {
         (
             'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar',
             'b6e924de25625d8de591ea690078ad9f', ),
-        (
-            'https://paddledet.bj.bcebos.com/data/label_list.txt',
-            '5ae5d62183cfb6f6d3ac109359d06a1b', ),
     ], ["VOCdevkit/VOC2012", "VOCdevkit/VOC2007"]),
     'wider_face': ([
         (
@@ -95,14 +90,8 @@ DATASETS = {
     'roadsign_coco': ([(
         'https://paddlemodels.bj.bcebos.com/object_detection/roadsign_coco.tar',
         '49ce5a9b5ad0d6266163cd01de4b018e', ), ], ['annotations', 'images']),
-    'spine_coco': ([(
-        'https://paddledet.bj.bcebos.com/data/spine_coco.tar',
-        '7ed69ae73f842cd2a8cf4f58dc3c5535', ), ], ['annotations', 'images']),
     'mot': (),
-    'objects365': (),
-    'coco_ce': ([(
-        'https://paddledet.bj.bcebos.com/data/coco_ce.tar',
-        'eadd1b79bc2f069f2744b1dd4e0c0329', ), ], [])
+    'objects365': ()
 }
 
 DOWNLOAD_RETRY_LIMIT = 3
@@ -129,36 +118,44 @@ def get_config_path(url):
     download it from url.
     """
     url = parse_url(url)
-    path = map_path(url, CONFIGS_HOME, path_depth=2)
-    if os.path.isfile(path):
-        return path
+    path, _ = get_path(url, CONFIGS_HOME)
+    _download_config(path, url, CONFIGS_HOME)
 
-    # config file not found, try download
-    # 1. clear configs directory
-    if osp.isdir(CONFIGS_HOME):
-        shutil.rmtree(CONFIGS_HOME)
+    return path
 
-    # 2. get url
-    try:
-        from ppdet import __version__ as version
-    except ImportError:
-        version = None
 
-    cfg_url = "ppdet://configs/{}/configs.tar".format(version) \
-                if version else "ppdet://configs/configs.tar"
-    cfg_url = parse_url(cfg_url)
+def _download_config(cfg_path, cfg_url, cur_dir):
+    with open(cfg_path) as f:
+        cfg = yaml.load(f, Loader=yaml.Loader)
 
-    # 3. download and decompress
-    cfg_fullname = _download_dist(cfg_url, osp.dirname(CONFIGS_HOME))
-    _decompress_dist(cfg_fullname)
+    # download dependence base ymls
+    if BASE_KEY in cfg:
+        base_ymls = list(cfg[BASE_KEY])
+        for base_yml in base_ymls:
+            if base_yml.startswith("~"):
+                base_yml = os.path.expanduser(base_yml)
+                relpath = osp.relpath(base_yml, cfg_path)
+            if not base_yml.startswith('/'):
+                relpath = base_yml
+                base_yml = os.path.join(os.path.dirname(cfg_path), base_yml)
 
-    # 4. check config file existing
-    if os.path.isfile(path):
-        return path
-    else:
-        logger.error("Get config {} failed after download, please contact us on " \
-            "https://github.com/PaddlePaddle/PaddleDetection/issues".format(path))
-        sys.exit(1)
+            if osp.isfile(base_yml):
+                logger.debug("Found _BASE_ config: {}".format(base_yml))
+                continue
+
+            # download to CONFIGS_HOME firstly
+            base_yml_url = osp.join(osp.split(cfg_url)[0], relpath)
+            path, _ = get_path(base_yml_url, CONFIGS_HOME)
+
+            # move from CONFIGS_HOME to dst_path to restore config directory structure
+            dst_path = osp.join(cur_dir, relpath)
+            dst_dir = osp.split(dst_path)[0]
+            if not osp.isdir(dst_dir):
+                os.makedirs(dst_dir)
+            shutil.move(path, dst_path)
+
+            # perfrom download base yml recursively
+            _download_config(dst_path, base_yml_url, osp.split(dst_path)[0])
 
 
 def get_dataset_path(path, annotation, image_dir):
@@ -194,10 +191,6 @@ def get_dataset_path(path, annotation, image_dir):
                         "Dataset {} is not valid for download automatically. "
                         "Please apply and download the dataset following docs/tutorials/PrepareMOTDataSet.md".
                         format(name))
-
-            if name == "spine_coco":
-                if _dataset_exists(data_dir, annotation, image_dir):
-                    return data_dir
 
             # For voc, only check dir VOCdevkit/VOC2012, VOCdevkit/VOC2007
             if name in ['voc', 'fruit', 'roadsign_voc']:
@@ -242,15 +235,11 @@ def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
     logger.debug("Create voc file list finished")
 
 
-def map_path(url, root_dir, path_depth=1):
+def map_path(url, root_dir):
     # parse path after download to decompress under root_dir
-    assert path_depth > 0, "path_depth should be a positive integer"
-    dirname = url
-    for _ in range(path_depth):
-        dirname = osp.dirname(dirname)
-    fpath = osp.relpath(url, dirname)
-
+    fname = osp.split(url)[-1]
     zip_formats = ['.zip', '.tar', '.gz']
+    fpath = fname
     for zip_format in zip_formats:
         fpath = fpath.replace(zip_format, '')
     return osp.join(root_dir, fpath)
@@ -290,12 +279,12 @@ def get_path(url, root_dir, md5sum=None, check_exist=True):
         else:
             os.remove(fullpath)
 
-    fullname = _download_dist(url, root_dir, md5sum)
+    fullname = _download(url, root_dir, md5sum)
 
     # new weights format which postfix is 'pdparams' not
     # need to decompress
     if osp.splitext(fullname)[-1] not in ['.pdparams', '.yml']:
-        _decompress_dist(fullname)
+        _decompress(fullname)
 
     return fullpath, False
 
@@ -361,6 +350,7 @@ def _download(url, path, md5sum=None):
 
         logger.info("Downloading {} from {}".format(fname, url))
 
+        
         # NOTE: windows path join may incur \, which is invalid in url
         if sys.platform == "win32":
             url = url.replace('\\', '/')
@@ -388,38 +378,6 @@ def _download(url, path, md5sum=None):
                         f.write(chunk)
         shutil.move(tmp_fullname, fullname)
         return fullname
-
-
-def _download_dist(url, path, md5sum=None):
-    env = os.environ
-    if 'PADDLE_TRAINERS_NUM' in env and 'PADDLE_TRAINER_ID' in env:
-        trainer_id = int(env['PADDLE_TRAINER_ID'])
-        num_trainers = int(env['PADDLE_TRAINERS_NUM'])
-        if num_trainers <= 1:
-            return _download(url, path, md5sum)
-        else:
-            fname = osp.split(url)[-1]
-            fullname = osp.join(path, fname)
-            lock_path = fullname + '.download.lock'
-
-            if not osp.isdir(path):
-                os.makedirs(path)
-
-            if not osp.exists(fullname):
-                from paddle.distributed import ParallelEnv
-                unique_endpoints = _get_unique_endpoints(ParallelEnv()
-                                                         .trainer_endpoints[:])
-                with open(lock_path, 'w'):  # touch    
-                    os.utime(lock_path, None)
-                if ParallelEnv().current_endpoint in unique_endpoints:
-                    _download(url, path, md5sum)
-                    os.remove(lock_path)
-                else:
-                    while os.path.exists(lock_path):
-                        time.sleep(0.5)
-            return fullname
-    else:
-        return _download(url, path, md5sum)
 
 
 def _check_exist_file_md5(filename, md5sum, url):
@@ -485,8 +443,6 @@ def _decompress(fname):
     elif fname.find('zip') >= 0:
         with zipfile.ZipFile(fname) as zf:
             zf.extractall(path=fpath_tmp)
-    elif fname.find('.txt') >= 0:
-        return
     else:
         raise TypeError("Unsupport compress file type {}".format(fname))
 
@@ -497,42 +453,6 @@ def _decompress(fname):
 
     shutil.rmtree(fpath_tmp)
     os.remove(fname)
-
-
-def _decompress_dist(fname):
-    env = os.environ
-    if 'PADDLE_TRAINERS_NUM' in env and 'PADDLE_TRAINER_ID' in env:
-        trainer_id = int(env['PADDLE_TRAINER_ID'])
-        num_trainers = int(env['PADDLE_TRAINERS_NUM'])
-        if num_trainers <= 1:
-            _decompress(fname)
-        else:
-            lock_path = fname + '.decompress.lock'
-            from paddle.distributed import ParallelEnv
-            unique_endpoints = _get_unique_endpoints(ParallelEnv()
-                                                     .trainer_endpoints[:])
-            # NOTE(dkp): _decompress_dist always performed after
-            # _download_dist, in _download_dist sub-trainers is waiting
-            # for download lock file release with sleeping, if decompress
-            # prograss is very fast and finished with in the sleeping gap
-            # time, e.g in tiny dataset such as coco_ce, spine_coco, main
-            # trainer may finish decompress and release lock file, so we
-            # only craete lock file in main trainer and all sub-trainer
-            # wait 1s for main trainer to create lock file, for 1s is
-            # twice as sleeping gap, this waiting time can keep all
-            # trainer pipeline in order
-            # **change this if you have more elegent methods**
-            if ParallelEnv().current_endpoint in unique_endpoints:
-                with open(lock_path, 'w'):  # touch    
-                    os.utime(lock_path, None)
-                _decompress(fname)
-                os.remove(lock_path)
-            else:
-                time.sleep(1)
-                while os.path.exists(lock_path):
-                    time.sleep(0.5)
-    else:
-        _decompress(fname)
 
 
 def _move_and_merge_tree(src, dst):

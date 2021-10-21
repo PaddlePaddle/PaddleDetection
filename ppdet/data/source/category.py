@@ -39,7 +39,7 @@ def get_categories(metric_type, anno_file=None, arch=None):
     if arch == 'keypoint_arch':
         return (None, {'id': 'keypoint'})
 
-    if metric_type.lower() == 'coco' or metric_type.lower() == 'rbox':
+    if metric_type.lower() == 'coco':
         if anno_file and os.path.isfile(anno_file):
             # lazy import pycocotools here
             from pycocotools.coco import COCO
@@ -77,32 +77,28 @@ def get_categories(metric_type, anno_file=None, arch=None):
 
     elif metric_type.lower() == 'oid':
         if anno_file and os.path.isfile(anno_file):
-            logger.warning("only default categories support for OID19")
+            logger.warn("only default categories support for OID19")
         return _oid19_category()
 
     elif metric_type.lower() == 'widerface':
         return _widerface_category()
 
-    elif metric_type.lower() == 'keypointtopdowncocoeval' or metric_type.lower(
-    ) == 'keypointtopdownmpiieval':
+    elif metric_type.lower() == 'keypointtopdowncocoeval':
         return (None, {'id': 'keypoint'})
 
     elif metric_type.lower() in ['mot', 'motdet', 'reid']:
         return _mot_category()
 
-    elif metric_type.lower() in ['kitti', 'bdd100k']:
-        return _mot_category(category='car')
-
     else:
         raise ValueError("unknown metric type {}".format(metric_type))
 
 
-def _mot_category(category='person'):
+def _mot_category():
     """
     Get class id to category id map and category id
     to category name map of mot dataset
     """
-    label_map = {category: 0}
+    label_map = {'person': 0}
     label_map = sorted(label_map.items(), key=lambda x: x[1])
     cats = [l[0] for l in label_map]
 

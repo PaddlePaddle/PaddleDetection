@@ -19,9 +19,9 @@ from __future__ import print_function
 import numpy as np
 
 import paddle
-
+import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
-from ..bbox_utils import bbox_iou
+from ..bbox_utils import xywh2xyxy, bbox_iou
 
 __all__ = ['IouLoss', 'GIoULoss', 'DIouLoss']
 
@@ -41,7 +41,7 @@ class IouLoss(object):
     """
 
     def __init__(self,
-                 loss_weight=2.5,
+                 loss_weight=1.,
                  giou=False,
                  diou=False,
                  ciou=False,

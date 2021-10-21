@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
+import math
 import paddle
 import paddle.nn.functional as F
 from paddle import ParamAttr
 import paddle.nn as nn
 from paddle.nn.initializer import KaimingNormal
 from ppdet.core.workspace import register, serializable
+from ppdet.modeling.layers import ConvNormLayer
 from ..shape_spec import ShapeSpec
 
 __all__ = ['BlazeNeck']
@@ -51,14 +54,25 @@ class ConvBNLayer(nn.Layer):
             padding=padding,
             groups=num_groups,
             weight_attr=ParamAttr(
-                learning_rate=conv_lr, initializer=KaimingNormal()),
+                learning_rate=conv_lr,
+                initializer=KaimingNormal(),
+                name=name + "_weights"),
             bias_attr=False)
 
+        param_attr = ParamAttr(name=name + "_bn_scale")
+        bias_attr = ParamAttr(name=name + "_bn_offset")
         if norm_type == 'sync_bn':
-            self._batch_norm = nn.SyncBatchNorm(out_channels)
+            self._batch_norm = nn.SyncBatchNorm(
+                out_channels, weight_attr=param_attr, bias_attr=bias_attr)
         else:
             self._batch_norm = nn.BatchNorm(
-                out_channels, act=None, use_global_stats=False)
+                out_channels,
+                act=None,
+                param_attr=param_attr,
+                bias_attr=bias_attr,
+                use_global_stats=False,
+                moving_mean_name=name + '_bn_mean',
+                moving_variance_name=name + '_bn_variance')
 
     def forward(self, x):
         x = self._conv(x)

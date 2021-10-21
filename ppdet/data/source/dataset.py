@@ -14,7 +14,7 @@
 
 import os
 import numpy as np
-
+from collections import OrderedDict
 try:
     from collections.abc import Sequence
 except Exception:
@@ -149,12 +149,7 @@ class ImageFolder(DetDataset):
         self.sample_num = sample_num
 
     def check_or_download_dataset(self):
-        if self.dataset_dir:
-            # NOTE: ImageFolder is only used for prediction, in
-            #       infer mode, image_dir is set by set_images
-            #       so we only check anno_path here
-            self.dataset_dir = get_dataset_path(self.dataset_dir,
-                                                self.anno_path, None)
+        return
 
     def parse_dataset(self, ):
         if not self.roidbs:

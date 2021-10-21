@@ -48,7 +48,8 @@ def get_affine_transform(center,
 
     Args:
         center (np.ndarray[2, ]): Center of the bounding box (x, y).
-        input_size (np.ndarray[2, ]): Size of input feature (width, height).
+        scale (np.ndarray[2, ]): Scale of the bounding box
+            wrt [width, height].
         rot (float): Rotation angle (degree).
         output_size (np.ndarray[2, ]): Size of the destination heatmaps.
         shift (0-100%): Shift translation ratio wrt the width/height.
@@ -60,11 +61,10 @@ def get_affine_transform(center,
         np.ndarray: The transform matrix.
     """
     assert len(center) == 2
+    assert len(input_size) == 2
     assert len(output_size) == 2
     assert len(shift) == 2
 
-    if not isinstance(input_size, (np.ndarray, list)):
-        input_size = np.array([input_size, input_size], dtype=np.float32)
     scale_tmp = input_size
 
     shift = np.array(shift)
@@ -77,7 +77,6 @@ def get_affine_transform(center,
     dst_dir = np.array([0., dst_w * -0.5])
 
     src = np.zeros((3, 2), dtype=np.float32)
-
     src[0, :] = center + scale_tmp * shift
     src[1, :] = center + src_dir + scale_tmp * shift
     src[2, :] = _get_3rd_point(src[0, :], src[1, :])
@@ -109,10 +108,8 @@ def _get_3rd_point(a, b):
     Returns:
         np.ndarray: The 3rd point.
     """
-    assert len(
-        a) == 2, 'input of _get_3rd_point should be point with length of 2'
-    assert len(
-        b) == 2, 'input of _get_3rd_point should be point with length of 2'
+    assert len(a) == 2
+    assert len(b) == 2
     direction = a - b
     third_pt = b + np.array([-direction[1], direction[0]], dtype=np.float32)
 

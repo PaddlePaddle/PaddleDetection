@@ -16,6 +16,7 @@ from __future__ import print_function
 import unittest
 
 import contextlib
+import numpy as np
 
 import paddle
 import paddle.fluid as fluid
