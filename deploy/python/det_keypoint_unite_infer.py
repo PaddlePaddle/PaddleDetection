@@ -133,22 +133,24 @@ def topdown_unite_predict_video(detector,
                                 topdown_keypoint_detector,
                                 camera_id,
                                 keypoint_batch_size=1):
+    video_name = 'output.mp4'
     if camera_id != -1:
         capture = cv2.VideoCapture(camera_id)
-        video_name = 'output.mp4'
     else:
         capture = cv2.VideoCapture(FLAGS.video_file)
         video_name = os.path.splitext(os.path.basename(FLAGS.video_file))[
             0] + '.mp4'
-    fps = 30
+    # Get Video info : resolution, fps, frame count
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    # yapf: disable
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    # yapf: enable
+    fps = int(capture.get(cv2.CAP_PROP_FPS))
+    frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    print("fps: %d, frame_count: %d" % (fps, frame_count))
+
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     index = 0
     while (1):
@@ -156,7 +158,7 @@ def topdown_unite_predict_video(detector,
         if not ret:
             break
         index += 1
-        print('detect frame:%d' % (index))
+        print('detect frame: %d' % (index))
 
         frame2 = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = detector.predict([frame2], FLAGS.det_threshold)
