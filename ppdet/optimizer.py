@@ -252,8 +252,9 @@ class OptimizerBuilder():
 
             params, visited = [], []
             for group in param_groups:
-                assert 'params' in group and isinstance(
-                    group, dict) and isinstance(group['params'], list), ''
+                assert isinstance(group,
+                                  dict) and 'params' in group and isinstance(
+                                      group['params'], list), ''
                 _params = {
                     n: p
                     for n, p in model.named_parameters()
