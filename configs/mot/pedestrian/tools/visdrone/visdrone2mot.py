@@ -249,7 +249,7 @@ def parse_arguments():
     parser.add_argument("--genImageList", type=bool, default=False)
     parser.add_argument("--visualImg", type=bool, default=False)
     parser.add_argument("--visualGt", type=bool, default=False)
-    parser.add_argument("--data_name", type=str, default='visdrone_pedestrain')
+    parser.add_argument("--data_name", type=str, default='visdrone_pedestrian')
     parser.add_argument("--phase", type=str, default='train')
     parser.add_argument(
         "--classes", type=str, default='1, 2')  # pedestrian and people
