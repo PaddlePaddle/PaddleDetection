@@ -113,8 +113,7 @@ PP-YOLO在Pascal VOC数据集上训练模型如下:
 | PP-YOLO            |    8    |       12      | ResNet50vd |     608     |          84.9          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/ppyolo/ppyolo_voc.yml)                   |
 | PP-YOLO            |    8    |       12      | ResNet50vd |     416     |          84.3          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/ppyolo/ppyolo_voc.yml)                   |
 | PP-YOLO            |    8    |       12      | ResNet50vd |     320     |          82.2          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/ppyolo/ppyolo_voc.yml)                   |
-
-| PP-YOLO_EB            |     8      |      8    | ResNet34vd |     480     |          86.43         | [model](https://bj.bcebos.com/v1/paddlemodels/object_detection/ppyolo_eb_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/ppyolo/ppyolo_eb_voc.yml)                   |
+| PP-YOLO_EB            |     8      |      8    | ResNet34vd |     480     |          86.4         | [model](https://bj.bcebos.com/v1/paddlemodels/object_detection/ppyolo_eb_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/ppyolo/ppyolo_eb_voc.yml)                   |
 
 **注意:** PP-YOLO-EB是针对[EdgeBoard](https://ai.baidu.com/tech/hardware/deepkit)硬件专门设计的模型.
 
