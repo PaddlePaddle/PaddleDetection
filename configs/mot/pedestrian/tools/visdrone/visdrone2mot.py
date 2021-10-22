@@ -23,8 +23,9 @@ import random
 # The object category indicates the type of annotated object, 
 # (i.e., ignored regions(0), pedestrian(1), people(2), bicycle(3), car(4), van(5), truck(6), tricycle(7), awning-tricycle(8), bus(9), motor(10),others(11))
 
+# Extract single class or multi class
 isExtractMultiClass = False
-# These sequences are excluded because there are too few pedestrians or pedestrians
+# These sequences are excluded because there are too few pedestrians
 exclude_seq = [
     "uav0000117_02622_v", "uav0000182_00000_v", "uav0000268_05773_v",
     "uav0000305_00000_v"
