@@ -24,6 +24,7 @@ import random
 # (i.e., ignored regions(0), pedestrian(1), people(2), bicycle(3), car(4), van(5), truck(6), tricycle(7), awning-tricycle(8), bus(9), motor(10),others(11))
 
 isExtractMultiClass = False
+# The sequence is excluded because there are too few vehicles
 exclude_seq = ["uav0000086_00000_v"]
 
 
