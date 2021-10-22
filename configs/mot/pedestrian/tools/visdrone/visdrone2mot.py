@@ -23,6 +23,12 @@ import random
 # The object category indicates the type of annotated object, 
 # (i.e., ignored regions(0), pedestrian(1), people(2), bicycle(3), car(4), van(5), truck(6), tricycle(7), awning-tricycle(8), bus(9), motor(10),others(11))
 
+isExtractMultiClass = False
+exclude_seq = [
+    "uav0000117_02622_v", "uav0000182_00000_v", "uav0000268_05773_v",
+    "uav0000305_00000_v"
+]
+
 
 def mkdir_if_missing(d):
     if not osp.exists(d):
@@ -46,7 +52,7 @@ def genGtFile(seqPath, outPath, classes=[]):
                 newLine = line[0:6]
                 newLine[1] = str(id_idx)
                 newLine.append('1')
-                if (len(classes) > 1):
+                if (len(classes) > 1 and isExtractMultiClass):
                     class_index = str(classes.index(line[7]) + 1)
                     newLine.append(class_index)
                 else:
@@ -98,6 +104,8 @@ def genMotLabels(datasetPath, outputFileName, classes=['2']):
     annotationsList = glob.glob(osp.join(annotationsPath, '*.txt'))
     for annotationPath in annotationsList:
         seqName = annotationPath.split('/')[-1].replace('.txt', '')
+        if seqName in exclude_seq:
+            continue
         mkdir_if_missing(osp.join(datasetPath, outputFileName, seqName, 'gt'))
         mkdir_if_missing(osp.join(datasetPath, outputFileName, seqName, 'img1'))
         genGtFile(annotationPath,
@@ -249,10 +257,10 @@ def parse_arguments():
     parser.add_argument("--genImageList", type=bool, default=False)
     parser.add_argument("--visualImg", type=bool, default=False)
     parser.add_argument("--visualGt", type=bool, default=False)
-    parser.add_argument("--data_name", type=str, default='visdrone_pedestrain')
+    parser.add_argument("--data_name", type=str, default='visdrone_pedestrian')
     parser.add_argument("--phase", type=str, default='train')
     parser.add_argument(
-        "--classes", type=str, default='1, 2')  # pedestrian and people
+        "--classes", type=str, default='1,2')  # pedestrian and people
     return parser.parse_args()
 
 
