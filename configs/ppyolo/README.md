@@ -189,11 +189,6 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inferenc
 ```
 
 
-## Future work
-
-1. more PP-YOLO tiny model
-2. PP-YOLO model with more backbones
-
 ## Appendix
 
 Optimizing method and ablation experiments of PP-YOLO compared with YOLOv3.

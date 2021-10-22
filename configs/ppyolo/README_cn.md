@@ -182,11 +182,6 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inferenc
 ```
 
 
-## 未来工作
-
-1. 发布PP-YOLO-tiny模型
-2. 发布更多骨干网络的PP-YOLO模型
-
 ## 附录
 
 PP-YOLO模型相对于YOLOv3模型优化项消融实验数据如下表所示。
