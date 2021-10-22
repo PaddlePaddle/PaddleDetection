@@ -59,14 +59,10 @@ class ConvBNLayer(nn.Layer):
 
         param_attr = ParamAttr(regularizer=L2Decay(norm_decay))
         bias_attr = ParamAttr(regularizer=L2Decay(norm_decay))
-        if norm_type == 'sync_bn':
-            self._batch_norm = nn.SyncBatchNorm(
-                out_channels, weight_attr=param_attr, bias_attr=bias_attr)
-        else:
-            self._batch_norm = nn.BatchNorm(
+        if norm_type in ['sync_bn', 'bn']:
+            self._batch_norm = nn.BatchNorm2D(
                 out_channels,
-                act=None,
-                param_attr=param_attr,
+                weight_attr=param_attr,
                 bias_attr=bias_attr,
                 use_global_stats=False)
 

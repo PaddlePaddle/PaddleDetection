@@ -336,6 +336,12 @@ class Trainer(object):
         assert self.mode == 'train', "Model not in 'train' mode"
         Init_mark = False
 
+        sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
+                   self.cfg.use_gpu and self._nranks > 1)
+        if sync_bn:
+            self.model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(
+                self.model)
+
         model = self.model
         if self.cfg.get('fleet', False):
             model = fleet.distributed_model(model)

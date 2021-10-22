@@ -52,10 +52,8 @@ class SeparableConvLayer(nn.Layer):
         self.pointwise_conv = nn.Conv2D(in_channels, self.out_channels, 1)
 
         # norm type
-        if self.norm_type == 'bn':
+        if self.norm_type in ['bn', 'sync_bn']:
             self.norm = nn.BatchNorm2D(self.out_channels)
-        elif self.norm_type == 'sync_bn':
-            self.norm = nn.SyncBatchNorm(self.out_channels)
         elif self.norm_type == 'gn':
             self.norm = nn.GroupNorm(
                 num_groups=self.norm_groups, num_channels=self.out_channels)
