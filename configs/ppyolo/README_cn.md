@@ -19,7 +19,7 @@ PP-YOLO在[COCO](http://cocodataset.org) test-dev2017数据集上精度达到45.
   <img src="../../docs/images/ppyolo_map_fps.png" width=500 />
 </div>
 
-PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
+PP-YOLO和PP-YOLOv2从如下方面优化和提升YOLOv3模型的精度和速度：
 
 - 更优的骨干网络: ResNet50vd-DCN
 - 更大的训练batch size: 8 GPUs，每GPU batch_size=24，对应调整学习率和迭代轮数
@@ -31,6 +31,9 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 - [CoordConv](https://arxiv.org/abs/1807.03247)
 - [Spatial Pyramid Pooling](https://arxiv.org/abs/1406.4729)
 - 更优的预训练模型
+- [PAN](https://arxiv.org/abs/1803.01534)
+- Iou aware Loss
+- 更大的输入尺寸
 
 ## 模型库
 
@@ -212,6 +215,12 @@ PP-YOLO模型相对于YOLOv3模型优化项消融实验数据如下表所示。
 ## 引用
 
 ```
+@article{huang2021pp,
+  title={PP-YOLOv2: A Practical Object Detector},
+  author={Huang, Xin and Wang, Xinxin and Lv, Wenyu and Bai, Xiaying and Long, Xiang and Deng, Kaipeng and Dang, Qingqing and Han, Shumin and Liu, Qiwen and Hu, Xiaoguang and others},
+  journal={arXiv preprint arXiv:2104.10419},
+  year={2021}
+}
 @misc{long2020ppyolo,
 title={PP-YOLO: An Effective and Efficient Implementation of Object Detector},
 author={Xiang Long and Kaipeng Deng and Guanzhong Wang and Yang Zhang and Qingqing Dang and Yuan Gao and Hui Shen and Jianguo Ren and Shumin Han and Errui Ding and Shilei Wen},
