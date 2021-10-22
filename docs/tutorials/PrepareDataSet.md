@@ -13,6 +13,7 @@
         - [用户数据转成COCO数据](#用户数据转成COCO数据)
         - [用户数据自定义reader](#用户数据自定义reader)
     - [用户数据数据转换示例](#用户数据数据转换示例)
+- [(可选)生成Anchor](#(可选)生成Anchor)
 
 ### 目标检测数据说明  
 
@@ -421,3 +422,21 @@ roadsign数据集统计:
 **说明：**
 （1）用户数据，建议在训练前仔细检查数据，避免因数据标注格式错误或图像数据不完整造成训练过程中的crash
 （2）如果图像尺寸太大的话，在不限制读入数据尺寸情况下，占用内存较多，会造成内存/显存溢出，请合理设置batch_size，可从小到大尝试
+
+
+### (可选)生成Anchor
+在yolo系列模型中，大多数情况下使用默认的anchor设置即可, 你也可以运行`tools/anchor_cluster.py`来得到适用于你的数据集Anchor，使用方法如下：
+``` bash
+python tools/anchor_cluster.py -c configs/ppyolo/ppyolo.yml -n 9 -s 608 -m v2 -i 1000
+```
+目前`tools/anchor_cluster.py`支持的主要参数配置如下表所示：
+
+|    参数    |    用途    |    默认值    |    备注    |
+|:------:|:------:|:------:|:------:|
+| -c/--config | 模型的配置文件 | 无默认值 | 必须指定 |
+| -n/--n | 聚类的簇数 | 9 | Anchor的数目 |
+| -s/--size | 图片的输入尺寸 | None | 若指定，则使用指定的尺寸，如果不指定, 则尝试从配置文件中读取图片尺寸 |
+|  -m/--method  |  使用的Anchor聚类方法  |  v2  |  目前只支持yolov2/v5的聚类算法  |
+|  -i/--iters  |  kmeans聚类算法的迭代次数  |  1000  | kmeans算法收敛或者达到迭代次数后终止 |
+| -gi/--gen_iters |  遗传算法的迭代次数  | 1000 |  该参数只用于yolov5的Anchor聚类算法  |
+| -t/--thresh|  Anchor尺度的阈值  | 0.25 | 该参数只用于yolov5的Anchor聚类算法 |
