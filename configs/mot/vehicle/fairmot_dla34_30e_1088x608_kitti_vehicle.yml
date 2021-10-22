@@ -3,13 +3,13 @@ _BASE_: [
 ]
 
 metric: KITTI
-weights: output/fairmot_dla34_30e_1088x608_kitticars/model_final
+weights: output/fairmot_dla34_30e_1088x608_kitti_vehicle/model_final
 
 # for MOT training
 TrainDataset:
   !MOTDataSet
     dataset_dir: dataset/mot
-    image_lists: ['kitticars.train']
+    image_lists: ['kitti_vehicle.train']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
 
 # for MOT evaluation
@@ -17,7 +17,7 @@ TrainDataset:
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
-    data_root: kitticars/images/test
+    data_root: kitti_vehicle/images/train
     keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
 
 # for MOT video inference
@@ -25,3 +25,17 @@ TestMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
     keep_ori_im: True # set True if save visualization images or video
+
+# model config
+FairMOT:
+  detector: CenterNet
+  reid: FairMOTEmbeddingHead
+  loss: FairMOTLoss
+  tracker: JDETracker
+
+JDETracker:
+  min_box_area: 200
+  vertical_ratio: 0 # no need to filter bboxes according to w/h
+  conf_thres: 0.4
+  tracked_thresh: 0.4
+  metric_type: cosine
