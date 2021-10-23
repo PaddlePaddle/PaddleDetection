@@ -63,7 +63,7 @@ def batch_norm(ch,
         trainable=False if freeze_norm else True)
 
     if norm_type in ['sync_bn', 'bn']:
-        batch_norm = nn.BatchNorm2D(
+        norm_layer = nn.BatchNorm2D(
             ch,
             weight_attr=weight_attr,
             bias_attr=bias_attr,
