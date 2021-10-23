@@ -25,3 +25,17 @@ TestMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
     keep_ori_im: True # set True if save visualization images or video
+
+# model config
+FairMOT:
+  detector: CenterNet
+  reid: FairMOTEmbeddingHead
+  loss: FairMOTLoss
+  tracker: JDETracker
+
+JDETracker:
+  min_box_area: 0
+  vertical_ratio: 0 # no need to filter bboxes according to w/h
+  conf_thres: 0.4
+  tracked_thresh: 0.4
+  metric_type: cosine
