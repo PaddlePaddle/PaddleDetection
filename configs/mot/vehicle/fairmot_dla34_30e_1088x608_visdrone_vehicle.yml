@@ -33,7 +33,7 @@ FairMOT:
   tracker: JDETracker
 
 JDETracker:
-  min_box_area: 200
+  min_box_area: 0
   vertical_ratio: 0 # no need to filter bboxes according to w/h
   conf_thres: 0.4
   tracked_thresh: 0.4
