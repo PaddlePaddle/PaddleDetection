@@ -146,12 +146,13 @@ class Tracker(object):
                     tid = t.track_id
                     tscore = t.score
                     if tscore < draw_threshold: continue
-                    vertical = tlwh[2] / tlwh[3] > 1.6
-                    if tlwh[2] * tlwh[
-                            3] > tracker.min_box_area and not vertical:
-                        online_tlwhs.append(tlwh)
-                        online_ids.append(tid)
-                        online_scores.append(tscore)
+                    if tlwh[2] * tlwh[3] <= tracker.min_box_area: continue
+                    if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                            3] > tracker.vertical_ratio:
+                        continue
+                    online_tlwhs.append(tlwh)
+                    online_ids.append(tid)
+                    online_scores.append(tscore)
                 # save results
                 results.append(
                     (frame_id + 1, online_tlwhs, online_scores, online_ids))
@@ -169,10 +170,13 @@ class Tracker(object):
                         tlwh = t.tlwh
                         tid = t.track_id
                         tscore = t.score
-                        if tlwh[2] * tlwh[3] > tracker.min_box_area:
-                            online_tlwhs[cls_id].append(tlwh)
-                            online_ids[cls_id].append(tid)
-                            online_scores[cls_id].append(tscore)
+                        if tlwh[2] * tlwh[3] <= tracker.min_box_area: continue
+                        if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                                3] > tracker.vertical_ratio:
+                            continue
+                        online_tlwhs[cls_id].append(tlwh)
+                        online_ids[cls_id].append(tid)
+                        online_scores[cls_id].append(tscore)
                     # save results
                     results[cls_id].append(
                         (frame_id + 1, online_tlwhs[cls_id],

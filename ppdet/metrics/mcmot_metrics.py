@@ -38,7 +38,7 @@ logger = setup_logger(__name__)
 
 __all__ = ['MCMOTEvaluator', 'MCMOTMetric']
 
-metrics_list = [
+METRICS_LIST = [
     'num_frames', 'num_matches', 'num_switches', 'num_transfer', 'num_ascend',
     'num_migrate', 'num_false_positives', 'num_misses', 'num_detections',
     'num_objects', 'num_predictions', 'num_unique_objects', 'mostly_tracked',
@@ -46,7 +46,7 @@ metrics_list = [
     'precision', 'recall', 'idfp', 'idfn', 'idtp', 'idp', 'idr', 'idf1'
 ]
 
-name_map = {
+NAME_MAP = {
     'num_frames': 'num_frames',
     'num_matches': 'num_matches',
     'num_switches': 'IDs',
@@ -81,12 +81,12 @@ def parse_accs_metrics(seq_acc, index_name, verbose=False):
     Parse the evaluation indicators of multiple MOTAccumulator 
     """
     mh = mm.metrics.create()
-    summary = MCMOTEvaluator.get_summary(seq_acc, index_name, metrics_list)
+    summary = MCMOTEvaluator.get_summary(seq_acc, index_name, METRICS_LIST)
     summary.loc['OVERALL', 'motp'] = (summary['motp'] * summary['num_detections']).sum() / \
                                      summary.loc['OVERALL', 'num_detections']
     if verbose:
         strsummary = mm.io.render_summary(
-            summary, formatters=mh.formatters, namemap=name_map)
+            summary, formatters=mh.formatters, namemap=NAME_MAP)
         print(strsummary)
 
     return summary
@@ -120,7 +120,7 @@ def seqs_overall_metrics(summary_df, verbose=False):
     if verbose:
         mh = mm.metrics.create()
         str_calc_df = mm.io.render_summary(
-            calc_df, formatters=mh.formatters, namemap=name_map)
+            calc_df, formatters=mh.formatters, namemap=NAME_MAP)
         print(str_calc_df)
 
     return calc_df
@@ -309,7 +309,7 @@ class MCMOTEvaluator(object):
     def load_annotations(self):
         assert self.data_type == 'mcmot'
         self.gt_filename = os.path.join(self.data_root, '../', '../',
-                                        'annotations',
+                                        'sequences',
                                         '{}.txt'.format(self.seq_name))
 
     def reset_accumulator(self):

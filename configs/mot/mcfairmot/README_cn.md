@@ -84,13 +84,4 @@ python deploy/python/mot_jde_infer.py --model_dir=output_inference/mcfairmot_dla
   journal={arXiv preprint arXiv:2001.06303},
   year={2020}
 }
-
-@InProceedings{bdd100k,
-    author = {Yu, Fisher and Chen, Haofeng and Wang, Xin and Xian, Wenqi and Chen,
-              Yingying and Liu, Fangchen and Madhavan, Vashisht and Darrell, Trevor},
-    title = {BDD100K: A Diverse Driving Dataset for Heterogeneous Multitask Learning},
-    booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-    month = {June},
-    year = {2020}
-}
 ```

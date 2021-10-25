@@ -348,7 +348,7 @@ class MCSTrack(MCBaseTrack):
                 tracks[i].mean = mean
                 tracks[i].covariance = cov
 
-    def reset_track_id(self):  ####
+    def reset_track_id(self):
         self.reset_track_count(self.cls_id)
 
     def activate(self, kalman_filter, frame_id):

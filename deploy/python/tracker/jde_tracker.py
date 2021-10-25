@@ -31,6 +31,9 @@ class JDETracker(object):
         det_thresh (float): threshold of detection score
         track_buffer (int): buffer for tracker
         min_box_area (int): min box area to filter out low quality boxes
+        vertical_ratio (float): w/h, the vertical ratio of the bbox to filter
+            bad results, set 1.6 default for pedestrian tracking. If set -1 
+            means no need to filter bboxes.
         tracked_thresh (float): linear assignment threshold of tracked 
             stracks and detections
         r_tracked_thresh (float): linear assignment threshold of 
@@ -47,6 +50,7 @@ class JDETracker(object):
                  det_thresh=0.3,
                  track_buffer=30,
                  min_box_area=200,
+                 vertical_ratio=1.6,
                  tracked_thresh=0.7,
                  r_tracked_thresh=0.5,
                  unconfirmed_thresh=0.7,
@@ -56,6 +60,8 @@ class JDETracker(object):
         self.det_thresh = det_thresh
         self.track_buffer = track_buffer
         self.min_box_area = min_box_area
+        self.vertical_ratio = vertical_ratio
+
         self.tracked_thresh = tracked_thresh
         self.r_tracked_thresh = r_tracked_thresh
         self.unconfirmed_thresh = unconfirmed_thresh

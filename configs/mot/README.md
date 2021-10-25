@@ -191,9 +191,9 @@ If you use a stronger detection model, you can get better results. Each txt is t
 ### FairMOT Results on each val-set of Vehicle category
 |    Dataset      |  input shape |  MOTA  |  IDF1  |  FPS   |  download | config |
 | :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
-|  BDD100K      | 1088x608 |  34.9 |  39.9  |    -    | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100k_vehicle.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100k_vehicle.yml) |
-|  KITTI        | 1088x608 |  53.9 |    -   |    -   |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/vehicle/fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
-|  VisDrone     | 1088x608 |  29.8 |   51.3 |    -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/vehicle/fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
+|  BDD100K      | 1088x608 |  43.5 |  50.0  |    -    | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100k_vehicle.pdparams) | [config](./vehicle/fairmot_dla34_30e_1088x608_bdd100k_vehicle.yml) |
+|  KITTI        | 1088x608 |  82.7 |    -   |    -   |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [config](./vehicle/fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
+|  VisDrone     | 1088x608 |  52.1 |   63.3 |    -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [config](./vehicle/fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
 
 ## Dataset Preparation
 

@@ -831,7 +831,7 @@ def _oid19_category():
 
 
 def _visdrone_category():
-    clsid2catid = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9}
+    clsid2catid =  {i: i for i in range(10)}
 
     catid2name = {
         0: 'pedestrian',

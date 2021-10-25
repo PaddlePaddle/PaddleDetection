@@ -84,13 +84,4 @@ The tracking model is used to predict the video, and does not support the predic
   journal={arXiv preprint arXiv:2001.06303},
   year={2020}
 }
-
-@InProceedings{bdd100k,
-    author = {Yu, Fisher and Chen, Haofeng and Wang, Xin and Xian, Wenqi and Chen,
-              Yingying and Liu, Fangchen and Madhavan, Vashisht and Darrell, Trevor},
-    title = {BDD100K: A Diverse Driving Dataset for Heterogeneous Multitask Learning},
-    booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
-    month = {June},
-    year = {2020}
-}
 ```

@@ -41,6 +41,9 @@ class JDETracker(object):
         det_thresh (float): threshold of detection score
         track_buffer (int): buffer for tracker
         min_box_area (int): min box area to filter out low quality boxes
+        vertical_ratio (float): w/h, the vertical ratio of the bbox to filter
+            bad results, set 1.6 default for pedestrian tracking. If set <0 
+            means no need to filter bboxes.
         tracked_thresh (float): linear assignment threshold of tracked 
             stracks and detections
         r_tracked_thresh (float): linear assignment threshold of 
@@ -57,6 +60,7 @@ class JDETracker(object):
                  det_thresh=0.3,
                  track_buffer=30,
                  min_box_area=200,
+                 vertical_ratio=1.6,
                  tracked_thresh=0.7,
                  r_tracked_thresh=0.5,
                  unconfirmed_thresh=0.7,
@@ -66,6 +70,8 @@ class JDETracker(object):
         self.det_thresh = det_thresh
         self.track_buffer = track_buffer
         self.min_box_area = min_box_area
+        self.vertical_ratio = vertical_ratio
+
         self.tracked_thresh = tracked_thresh
         self.r_tracked_thresh = r_tracked_thresh
         self.unconfirmed_thresh = unconfirmed_thresh
@@ -275,6 +281,8 @@ class MCJDETracker(object):
         det_thresh (float): threshold of detection score
         track_buffer (int): buffer for tracker
         min_box_area (int): min box area to filter out low quality boxes
+        vertical_ratio (float): w/h, the vertical ratio of the bbox to filter
+            bad results. If set <0 means no need to filter bboxes.
         tracked_thresh (float): linear assignment threshold of tracked 
             stracks and detections
         r_tracked_thresh (float): linear assignment threshold of 
@@ -291,7 +299,8 @@ class MCJDETracker(object):
                  num_classes=10,
                  det_thresh=0.3,
                  track_buffer=30,
-                 min_box_area=200,
+                 min_box_area=0,
+                 vertical_ratio=0,
                  tracked_thresh=0.7,
                  r_tracked_thresh=0.5,
                  unconfirmed_thresh=0.7,
@@ -302,6 +311,8 @@ class MCJDETracker(object):
         self.det_thresh = det_thresh
         self.track_buffer = track_buffer
         self.min_box_area = min_box_area
+        self.vertical_ratio = vertical_ratio
+
         self.tracked_thresh = tracked_thresh
         self.r_tracked_thresh = r_tracked_thresh
         self.unconfirmed_thresh = unconfirmed_thresh
@@ -328,8 +339,8 @@ class MCJDETracker(object):
             pred_embs_dict (dict(Tensor)): Embedding results of the image.
 
         Return:
-            output_stracks (list): The list contains information regarding the
-                online_tracklets for the recieved image tensor.
+            output_stracks_dict (dict(list)): The list contains information
+                regarding the online_tracklets for the recieved image tensor.
         """
         self.frame_id += 1
         if self.frame_id == 1:
@@ -361,8 +372,7 @@ class MCJDETracker(object):
                 pred_embs = pred_embs.numpy()
                 detections = [
                     MCSTrack(
-                        MCSTrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f,
-                        self.num_classes, cls_id, 30)
+                        MCSTrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f, self.num_classes, cls_id, 30)
                     for (tlbrs, f) in zip(pred_dets, pred_embs)
                 ]
             else:
