@@ -12,6 +12,7 @@ find_unused_parameters: True
 use_ema: true
 cycle_epoch: 40
 snapshot_epoch: 10
+epoch: 250
 
 ESNet:
   scale: 1.25
