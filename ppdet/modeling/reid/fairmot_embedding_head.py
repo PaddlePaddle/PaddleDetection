@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
 # See the License for the specific language governing permissions and   
 # limitations under the License.
-from IPython import embed
+
 import numpy as np
 import math
 import paddle
@@ -33,7 +33,7 @@ class FairMOTEmbeddingHead(nn.Layer):
         ch_head (int): the channel of features before fed into embedding, 256 by default.
         ch_emb (int): the channel of the embedding feature, 128 by default.
         num_identifiers (int): the number of identifiers, 14455 by default.
-
+        num_identifiers_dict (dict): the number of identifiers of each category.
     """
 
     def __init__(self,
@@ -109,25 +109,25 @@ class FairMOTEmbeddingHead(nn.Layer):
                 pred_embs = paddle.gather(embedding, bbox_inds)
             else:
                 pred_dets, pred_embs = [], []
-                for cls_id in range(self.num_classes):  # cls_id starts from 0
+                for cls_id in range(self.num_classes):
                     pos_num = cls_inds_masks[cls_id].sum().numpy()
                     if pos_num == 0:
-                        # for model export and deploy infer
+                        # give fake outputs for model export and deploy infer
                         pred_dets.append(paddle.zeros([1, 5]))
                         pred_embs.append(paddle.zeros([1, 1]))
                         continue
 
                     cls_inds_mask = cls_inds_masks[cls_id] > 0
 
-                    bbox_mask = paddle.nonzero(cls_inds_mask)  # [94, 1]
+                    bbox_mask = paddle.nonzero(cls_inds_mask)
                     cls_det_outs = paddle.gather_nd(
-                        det_outs, bbox_mask)  # [500, 6] -> [94, 6]
+                        det_outs, bbox_mask)
                     pred_dets.append(cls_det_outs)
 
                     cls_inds = paddle.masked_select(bbox_inds, cls_inds_mask)
-                    cls_inds = cls_inds.unsqueeze(-1)  # [94, 1]
+                    cls_inds = cls_inds.unsqueeze(-1)
                     cls_embedding = paddle.gather_nd(
-                        embedding, cls_inds)  # [41344, 128] -> [94, 128]
+                        embedding, cls_inds)
                     pred_embs.append(cls_embedding)
 
             return pred_dets, pred_embs
@@ -174,42 +174,38 @@ class FairMOTEmbeddingHead(nn.Layer):
     def get_mc_loss(self, feat, inputs):
         # feat.shape = [bs, ch_emb, h, w]
         assert 'cls_id_map' in inputs and 'cls_tr_ids' in inputs
-        index = inputs['index']  # [6, 500]
-        mask = inputs['index_mask']  # [6, 500]
-        # target = inputs['reid'] # [6, 500]
-        ### todo
-        # heatmap = inputs['heatmap'] # [6, 10, 152, 272]
-        cls_id_map = inputs['cls_id_map']  # [6, 152, 272]
-        cls_tr_ids = inputs['cls_tr_ids']  # [6, 10, 152, 272] # gt id in mcloss
+        index = inputs['index']
+        mask = inputs['index_mask']
+        cls_id_map = inputs['cls_id_map']  # [bs, h, w]
+        cls_tr_ids = inputs['cls_tr_ids']  # [bs, num_classes, h, w]
 
-        feat = paddle.transpose(feat, perm=[0, 2, 3, 1])  # [6, 152, 272, 128]
+        feat = paddle.transpose(feat, perm=[0, 2, 3, 1])
         feat_n, feat_h, feat_w, feat_c = feat.shape
-        feat = paddle.reshape(
-            feat, shape=[feat_n, -1, feat_c])  # [6, 41344, 128]
+        feat = paddle.reshape(feat, shape=[feat_n, -1, feat_c])
 
-        index = paddle.unsqueeze(index, 2)  # [6, 500, 1]
+        index = paddle.unsqueeze(index, 2)
         batch_inds = list()
         for i in range(feat_n):
             batch_ind = paddle.full(
                 shape=[1, index.shape[1], 1], fill_value=i, dtype='int64')
             batch_inds.append(batch_ind)
         batch_inds = paddle.concat(batch_inds, axis=0)
-        index = paddle.concat(x=[batch_inds, index], axis=2)  # [6, 500, 2]
-        feat = paddle.gather_nd(feat, index=index)  # [6, 500, 128]
+        index = paddle.concat(x=[batch_inds, index], axis=2)
+        feat = paddle.gather_nd(feat, index=index)
 
         mask = paddle.unsqueeze(mask, axis=2)
         mask = paddle.expand_as(mask, feat)
         mask.stop_gradient = True
         feat = paddle.masked_select(feat, mask > 0)
-        feat = paddle.reshape(feat, shape=[-1, feat_c])  # [204, 128]
+        feat = paddle.reshape(feat, shape=[-1, feat_c])
 
         reid_losses = 0
         for cls_id, id_num in self.num_identifiers_dict.items():
             # target
             cur_cls_tr_ids = paddle.reshape(
-                cls_tr_ids[:, cls_id, :, :], shape=[feat_n, -1])  # [6, 152*272]
+                cls_tr_ids[:, cls_id, :, :], shape=[feat_n, -1])  # [bs, h*w]
             cls_id_target = paddle.gather_nd(
-                cur_cls_tr_ids, index=index)  # [6, 500]
+                cur_cls_tr_ids, index=index)
             mask = inputs['index_mask']
             cls_id_target = paddle.masked_select(cls_id_target, mask > 0)
             cls_id_target.stop_gradient = True

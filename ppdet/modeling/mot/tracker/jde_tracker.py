@@ -18,7 +18,6 @@ This code is borrow from https://github.com/Zhongdao/Towards-Realtime-MOT/blob/m
 import numpy as np
 from collections import defaultdict
 import paddle
-from IPython import embed
 
 from ..matching import jde_matching as matching
 from .base_jde_tracker import TrackState, STrack, MCSTrack
@@ -325,8 +324,8 @@ class MCJDETracker(object):
             lost, removed, refound and active tracklets.
 
         Args:
-            pred_dets (Tensor): Detection results of the image, shape is [N, 5].
-            pred_embs (Tensor): Embedding results of the image, shape is [N, 512].
+            pred_dets_dict (dict(Tensor)): Detection results of the image.
+            pred_embs_dict (dict(Tensor)): Embedding results of the image.
 
         Return:
             output_stracks (list): The list contains information regarding the

@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from IPython import embed
+
 import os
 import sys
 import cv2
@@ -296,8 +296,8 @@ class MCMOTDataSet(DetDataset):
             ]
 
         for data_name, label_paths in self.label_files.items():
-            max_ids_dict = defaultdict(
-                int)  # using max_ids_dict rather than max_index
+            # using max_ids_dict rather than max_index
+            max_ids_dict = defaultdict(int)  
             for lp in label_paths:
                 lb = np.loadtxt(lp)
                 if len(lb) < 1:
@@ -331,7 +331,6 @@ class MCMOTDataSet(DetDataset):
         logger.info('Image start index: {}'.format(self.img_start_index))
         logger.info('Total identities dict: ')
         for k, v in self.total_identities_dict.items():
-            # logger.info('Total {:d} IDs of {}'.format(v, id2cls[k]))
             logger.info('Total {:d} IDs of class {}'.format(v, k))
         logger.info('identity start index by class: ')
         for k, v in self.tid_start_idx_of_cls_ids.items():

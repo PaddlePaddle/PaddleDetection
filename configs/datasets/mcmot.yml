@@ -5,7 +5,7 @@ num_classes: 10
 TrainDataset:
   !MCMOTDataSet
     dataset_dir: dataset/mot
-    image_lists: ['visdrone_mcmot.val']
+    image_lists: ['visdrone_mcmot.train']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
     reid_cls_ids: '0,1,2,3,4,5,6,7,8,9' # default VisDrone2019 MOT dataset with 10 classes, you can modify it for your needs.
 
@@ -14,7 +14,7 @@ TrainDataset:
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
-    data_root: visdrone_mcmot/images/demo
+    data_root: visdrone_mcmot/images/val
     keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
 
 # for MCMOT video inference

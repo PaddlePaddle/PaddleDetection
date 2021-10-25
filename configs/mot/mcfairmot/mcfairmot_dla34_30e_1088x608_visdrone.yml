@@ -9,7 +9,7 @@ FairMOT:
   detector: CenterNet
   reid: FairMOTEmbeddingHead
   loss: FairMOTLoss
-  tracker: MCJDETracker
+  tracker: MCJDETracker # multi-class tracker
 
 CenterNetHead:
   regress_ltrb: False
@@ -25,3 +25,58 @@ MCJDETracker:
   metric_type: cosine
 
 weights: output/mcfairmot_dla34_30e_1088x608_visdrone/model_final
+
+epoch: 30
+LearningRate:
+  base_lr: 0.0005
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [10, 20]
+    use_warmup: False
+
+OptimizerBuilder:
+  optimizer:
+    type: Adam
+  regularizer: NULL
+
+
+worker_num: 4
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - RGBReverse: {}
+    - AugmentHSV: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - MOTRandomAffine: {reject_outside: False}
+    - RandomFlip: {}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - RGBReverse: {}
+    - Permute: {}
+  batch_transforms:
+    - Gt2FairMOTTarget: {}
+  batch_size: 6
+  shuffle: True
+  drop_last: True
+  use_shared_memory: True
+
+EvalMOTReader:
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+
+TestMOTReader:
+  inputs_def:
+    image_shape: [3, 608, 1088]
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - Permute: {}
+  batch_size: 1

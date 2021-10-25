@@ -17,15 +17,15 @@ MCFairMOT是[FairMOT](https://arxiv.org/abs/2004.01888)的多类别扩展版本�
 ### MCFairMOT DLA-34 在VisDrone2019 MOT val-set上结果
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS   |   FPS   |  下载链接 | 配置文件 |
 | :--------------| :------- | :----: | :----: | :---:  | :------: | :----: |:----: |
-| DLA-34         | 1088x608 |  20.0  |  38.4  |  1389  |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_dla34_30e_1088x608_visdrone.pdparams) | [配置文件](./mcfairmot_dla34_30e_1088x608_visdrone.yml) |
+| DLA-34         | 1088x608 |  24.3  |  41.6  |  2314  |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_dla34_30e_1088x608_visdrone.pdparams) | [配置文件](./mcfairmot_dla34_30e_1088x608_visdrone.yml) |
 
 
 ## 快速开始
 
 ### 1. 训练
-使用4个GPU通过如下命令一键式启动训练
+使用8个GPU通过如下命令一键式启动训练
 ```bash
-python -m paddle.distributed.launch --log_dir=./mcfairmot_dla34_30e_1088x608_visdrone/ --gpus 0,1,2,3 tools/train.py -c configs/mot/mcfairmot/mcfairmot_dla34_30e_1088x608_visdrone.yml
+python -m paddle.distributed.launch --log_dir=./mcfairmot_dla34_30e_1088x608_visdrone/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/mcfairmot/mcfairmot_dla34_30e_1088x608_visdrone.yml
 ```
 
 ### 2. 评估
