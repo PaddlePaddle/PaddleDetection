@@ -560,8 +560,7 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
                 # each category corresponds to a set of track ids
                 cls_tr_ids = np.zeros(
                     (self.num_classes, output_h, output_w), dtype=np.int64)
-                cls_id_map = np.full(
-                    (output_h, output_w), -1, dtype=np.int64)
+                cls_id_map = np.full((output_h, output_w), -1, dtype=np.int64)
 
             gt_bbox = sample['gt_bbox']
             gt_class = sample['gt_class']

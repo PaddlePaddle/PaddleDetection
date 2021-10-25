@@ -101,7 +101,7 @@ class FairMOTEmbeddingHead(nn.Layer):
         else:
             assert det_outs is not None and bbox_inds is not None
             reid_feat = F.normalize(reid_feat)
-            embedding = paddle.transpose(reid_feat, [0, 2, 3, 1])  
+            embedding = paddle.transpose(reid_feat, [0, 2, 3, 1])
             embedding = paddle.reshape(embedding, [-1, self.ch_emb])
             # embedding shape: [bs * h * w, ch_emb]
             if self.num_classes == 1:
@@ -120,14 +120,12 @@ class FairMOTEmbeddingHead(nn.Layer):
                     cls_inds_mask = cls_inds_masks[cls_id] > 0
 
                     bbox_mask = paddle.nonzero(cls_inds_mask)
-                    cls_det_outs = paddle.gather_nd(
-                        det_outs, bbox_mask)
+                    cls_det_outs = paddle.gather_nd(det_outs, bbox_mask)
                     pred_dets.append(cls_det_outs)
 
                     cls_inds = paddle.masked_select(bbox_inds, cls_inds_mask)
                     cls_inds = cls_inds.unsqueeze(-1)
-                    cls_embedding = paddle.gather_nd(
-                        embedding, cls_inds)
+                    cls_embedding = paddle.gather_nd(embedding, cls_inds)
                     pred_embs.append(cls_embedding)
 
             return pred_dets, pred_embs
@@ -204,8 +202,7 @@ class FairMOTEmbeddingHead(nn.Layer):
             # target
             cur_cls_tr_ids = paddle.reshape(
                 cls_tr_ids[:, cls_id, :, :], shape=[feat_n, -1])  # [bs, h*w]
-            cls_id_target = paddle.gather_nd(
-                cur_cls_tr_ids, index=index)
+            cls_id_target = paddle.gather_nd(cur_cls_tr_ids, index=index)
             mask = inputs['index_mask']
             cls_id_target = paddle.masked_select(cls_id_target, mask > 0)
             cls_id_target.stop_gradient = True

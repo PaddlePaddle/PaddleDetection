@@ -372,7 +372,8 @@ class MCJDETracker(object):
                 pred_embs = pred_embs.numpy()
                 detections = [
                     MCSTrack(
-                        MCSTrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f, self.num_classes, cls_id, 30)
+                        MCSTrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f,
+                        self.num_classes, cls_id, 30)
                     for (tlbrs, f) in zip(pred_dets, pred_embs)
                 ]
             else:

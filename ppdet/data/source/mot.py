@@ -262,7 +262,7 @@ class MCMOTDataSet(DetDataset):
         self.img_start_index = OrderedDict()
         self.label_files = OrderedDict()
         self.tid_num = OrderedDict()
-        self.tid_start_idx_of_cls_ids = defaultdict(dict) # for MCMOT
+        self.tid_start_idx_of_cls_ids = defaultdict(dict)  # for MCMOT
 
         img_index = 0
         for data_name in self.image_lists:
@@ -297,14 +297,14 @@ class MCMOTDataSet(DetDataset):
 
         for data_name, label_paths in self.label_files.items():
             # using max_ids_dict rather than max_index
-            max_ids_dict = defaultdict(int)  
+            max_ids_dict = defaultdict(int)
             for lp in label_paths:
                 lb = np.loadtxt(lp)
                 if len(lb) < 1:
                     continue
                 lb = lb.reshape(-1, 6)
                 for item in lb:
-                    if item[1] > max_ids_dict[int(item[0])]:  
+                    if item[1] > max_ids_dict[int(item[0])]:
                         # item[0]: cls_id
                         # item[1]: track id
                         max_ids_dict[int(item[0])] = int(item[1])

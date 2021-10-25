@@ -18,7 +18,10 @@ MCFairMOT是[FairMOT](https://arxiv.org/abs/2004.01888)的多类别扩展版本�
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS   |   FPS   |  下载链接 | 配置文件 |
 | :--------------| :------- | :----: | :----: | :---:  | :------: | :----: |:----: |
 | DLA-34         | 1088x608 |  24.3  |  41.6  |  2314  |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_dla34_30e_1088x608_visdrone.pdparams) | [配置文件](./mcfairmot_dla34_30e_1088x608_visdrone.yml) |
+| HRNetV2-W18    | 1088x608 |  -  |  -  |  -  |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.pdparams) | [配置文件](./mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.yml) |
 
+**注意:**
+ MOTA是VisDrone2019 MOT数据集10类目标的平均MOTA, 其值也等于所有评估的视频序列的平均MOTA。
 
 ## 快速开始
 
@@ -39,6 +42,13 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/mcfairmot/mcfairm
 ```
 **注意:**
  默认评估的是VisDrone2019 MOT val-set数据集, 如需换评估数据集可参照以下代码修改`configs/datasets/mcmot.yml`：
+```
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: your_dataset/images/val
+    keep_ori_im: False # set True if save visualization images or video
+```
 
 ### 3. 预测
 使用单个GPU通过如下命令预测一个视频，并保存为视频

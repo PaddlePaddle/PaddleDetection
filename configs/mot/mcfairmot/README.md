@@ -17,6 +17,10 @@ MCFairMOT is the Multi-class extended version of [FairMOT](https://arxiv.org/abs
 | backbone       | input shape | MOTA | IDF1 |  IDS    |   FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :---:  | :------: | :----: |:----: |
 | DLA-34         | 1088x608 |  24.3  |  41.6  |  2314  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_dla34_30e_1088x608_visdrone.pdparams) | [config](./mcfairmot_dla34_30e_1088x608_visdrone.yml) |
+| HRNetV2-W18    | 1088x608 |  -  |  -  |  -  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.pdparams) | [config](./mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.yml) |
+
+**Notes:**
+ MOTA is the average MOTA of 10 catecories in the VisDrone2019 MOT dataset, and its value is also equal to the average MOTA of all the evaluated video sequences.
 
 
 ## Getting Start
@@ -37,7 +41,14 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/mcfairmot/mcfairm
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/mcfairmot/mcfairmot_dla34_30e_1088x608_visdrone.yml -o weights=output/mcfairmot_dla34_30e_1088x608_visdrone/model_final.pdparams
 ```
 **Notes:**
- The default evaluation dataset is VisDrone2019 Val Set. If you want to change the evaluation dataset, please refer to the following code and modify `configs/datasets/mcmot.yml`：
+ The default evaluation dataset is VisDrone2019 MOT val-set. If you want to change the evaluation dataset, please refer to the following code and modify `configs/datasets/mcmot.yml`：
+```
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: your_dataset/images/val
+    keep_ori_im: False # set True if save visualization images or video
+```
 
 ### 3. Inference
 Inference a vidoe on single GPU with following command:
