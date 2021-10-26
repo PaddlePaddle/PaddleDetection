@@ -74,7 +74,7 @@ class ConvBNLayer(nn.Layer):
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay),
             trainable=False if freeze_norm else True)
-        global_stats = True if freeze_norm else False
+        global_stats = True if freeze_norm else None
         if norm_type in ['sync_bn', 'bn']:
             self.bn = nn.BatchNorm2D(
                 out_c,
