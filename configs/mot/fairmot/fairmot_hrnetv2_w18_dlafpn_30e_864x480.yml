@@ -3,7 +3,7 @@ _BASE_: [
   '../../runtime.yml',
   '_base_/optimizer_30e_momentum.yml',
   '_base_/fairmot_hrnetv2_w18_dlafpn.yml',
-  '_base_/fairmot_reader_1088x608.yml',
+  '_base_/fairmot_reader_864x480.yml',
 ]
 
 norm_type: sync_bn
@@ -20,12 +20,12 @@ TrainDataset:
 worker_num: 4
 TrainReader:
   inputs_def:
-    image_shape: [3, 608, 1088]
+    image_shape: [3, 480, 864]
   sample_transforms:
     - Decode: {}
     - RGBReverse: {}
     - AugmentHSV: {}
-    - LetterBoxResize: {target_size: [608, 1088]}
+    - LetterBoxResize: {target_size: [480, 864]}
     - MOTRandomAffine: {reject_outside: False}
     - RandomFlip: {}
     - BboxXYXY2XYWH: {}
@@ -40,4 +40,4 @@ TrainReader:
   drop_last: True
   use_shared_memory: True
 
-weights: output/fairmot_hrnetv2_w18_dlafpn_30e_1088x608/model_final
+weights: output/fairmot_hrnetv2_w18_dlafpn_30e_864x480/model_final
