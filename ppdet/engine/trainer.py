@@ -597,6 +597,13 @@ class Trainer(object):
             static_model = None
             pruned_input_spec = input_spec
 
+        # TODO: Hard code, delete it when support prune input_spec.
+        if self.cfg.architecture == 'PicoDet':
+            pruned_input_spec = [{
+                "image": InputSpec(
+                    shape=image_shape, name='image')
+            }]
+
         return static_model, pruned_input_spec
 
     def export(self, output_dir='output_inference'):
