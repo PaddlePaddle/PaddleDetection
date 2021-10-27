@@ -83,7 +83,7 @@ class ConvBNLayer(nn.Layer):
 
         self.bn = BatchNorm2D(
             num_filters,
-            param_attr=ParamAttr(regularizer=L2Decay(0.0)),
+            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
             bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
         self.hardswish = nn.Hardswish()
 

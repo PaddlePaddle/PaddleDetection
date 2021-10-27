@@ -53,7 +53,7 @@ class ConvBNLayer(nn.Layer):
 
         self._batch_norm = BatchNorm2D(
             out_channels,
-            param_attr=ParamAttr(regularizer=L2Decay(0.0)),
+            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
             bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
         self.act = act
 
