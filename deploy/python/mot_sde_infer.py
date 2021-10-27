@@ -156,15 +156,15 @@ class SDE_Detector(Detector):
             pred_bboxes = boxes[:, 2:]
 
         pred_xyxys, keep_idx = clip_box(pred_bboxes, input_shape, im_shape,
-                               scale_factor)
+                                        scale_factor)
         pred_scores = boxes[:, 1:2][keep_idx[0]]
         pred_cls_ids = boxes[:, 0:1][keep_idx[0]]
         pred_tlwhs = np.concatenate(
-            (pred_xyxys[:, 0:2],
-             pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
+            (pred_xyxys[:, 0:2], pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
             axis=1)
 
-        pred_dets = np.concatenate((pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
+        pred_dets = np.concatenate(
+            (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
 
         return pred_dets[over_thres_idx], pred_xyxys[over_thres_idx]
 
@@ -251,10 +251,10 @@ class SDE_ReID(object):
         assert pred_config.tracker, "Tracking model should have tracker"
         pt = pred_config.tracker
         max_age = pt['max_age'] if 'max_age' in pt else 30
-        max_iou_distance = pt['max_iou_distance'] if 'max_iou_distance' in pt else 0.7
+        max_iou_distance = pt[
+            'max_iou_distance'] if 'max_iou_distance' in pt else 0.7
         self.tracker = DeepSORTTracker(
-            max_age=max_age,
-            max_iou_distance=max_iou_distance)
+            max_age=max_age, max_iou_distance=max_iou_distance)
 
     def get_crops(self, xyxy, ori_img):
         w, h = self.tracker.input_size
@@ -272,7 +272,7 @@ class SDE_ReID(object):
 
     def preprocess(self, crops):
         # to keep fast speed, only use topk crops
-        crops = crops[: self.batch_size]
+        crops = crops[:self.batch_size]
         inputs = {}
         inputs['crops'] = np.array(crops).astype('float32')
         return inputs
@@ -290,7 +290,8 @@ class SDE_ReID(object):
             tscore = t.score
             tid = t.track_id
             if tlwh[2] * tlwh[3] <= tracker.min_box_area: continue
-            if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[3] > tracker.vertical_ratio:
+            if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                    3] > tracker.vertical_ratio:
                 continue
             online_tlwhs.append(tlwh)
             online_scores.append(tscore)
@@ -323,8 +324,8 @@ class SDE_ReID(object):
         self.det_times.inference_time_s.end(repeats=repeats)
 
         self.det_times.postprocess_time_s.start()
-        online_tlwhs, online_scores, online_ids = self.postprocess(
-            pred_dets, pred_embs)
+        online_tlwhs, online_scores, online_ids = self.postprocess(pred_dets,
+                                                                   pred_embs)
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
 
@@ -344,10 +345,12 @@ def predict_image(detector, reid_model, image_list):
             detector.gpu_util += gu
             print('Test iter {}, file name:{}'.format(i, img_file))
         else:
-            pred_dets, pred_xyxys = detector.predict([frame], FLAGS.scaled, FLAGS.threshold)
+            pred_dets, pred_xyxys = detector.predict([frame], FLAGS.scaled,
+                                                     FLAGS.threshold)
 
         if len(pred_dets) == 1 and sum(pred_dets) == 0:
-            print('Frame {} has no object, try to modify score threshold.'.format(i))
+            print('Frame {} has no object, try to modify score threshold.'.
+                  format(i))
             online_im = frame
         else:
             # reid process
@@ -399,10 +402,12 @@ def predict_video(detector, reid_model, camera_id):
         if not ret:
             break
         timer.tic()
-        pred_dets, pred_xyxys = detector.predict([frame], FLAGS.scaled, FLAGS.threshold)
+        pred_dets, pred_xyxys = detector.predict([frame], FLAGS.scaled,
+                                                 FLAGS.threshold)
 
         if len(pred_dets) == 1 and sum(pred_dets) == 0:
-            print('Frame {} has no object, try to modify score threshold.'.format(frame_id))
+            print('Frame {} has no object, try to modify score threshold.'.
+                  format(frame_id))
             timer.toc()
             im = frame
         else:
@@ -410,7 +415,8 @@ def predict_video(detector, reid_model, camera_id):
             crops = reid_model.get_crops(pred_xyxys, frame)
             online_tlwhs, online_scores, online_ids = reid_model.predict(
                 crops, pred_dets)
-            results.append((frame_id + 1, online_tlwhs, online_scores, online_ids))
+            results.append(
+                (frame_id + 1, online_tlwhs, online_scores, online_ids))
             timer.toc()
 
             fps = 1. / timer.average_time
@@ -421,7 +427,7 @@ def predict_video(detector, reid_model, camera_id):
                 online_scores,
                 frame_id=frame_id,
                 fps=fps)
-            
+
         if FLAGS.save_images:
             save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
             if not os.path.exists(save_dir):

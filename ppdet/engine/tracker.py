@@ -205,14 +205,18 @@ class Tracker(object):
                 if pred_scores < draw_threshold: continue
                 if bbox_tlwh.shape[0] > 0:
                     # detector outputs: pred_cls_ids, pred_scores, pred_bboxes
-                    pred_cls_ids = paddle.to_tensor(dets['cls_id'], dtype='float32')
-                    pred_scores = paddle.to_tensor(dets['score'], dtype='float32')
+                    pred_cls_ids = paddle.to_tensor(
+                        dets['cls_id'], dtype='float32')
+                    pred_scores = paddle.to_tensor(
+                        dets['score'], dtype='float32')
                     pred_bboxes = paddle.concat(
                         (bbox_tlwh[:, 0:2],
                          bbox_tlwh[:, 2:4] + bbox_tlwh[:, 0:2]),
                         axis=1)
                 else:
-                    logger.warning('Frame {} has not object, try to modify score threshold.'.format(frame_id))
+                    logger.warning(
+                        'Frame {} has not object, try to modify score threshold.'.
+                        format(frame_id))
                     frame_id += 1
                     continue
             else:
@@ -231,22 +235,29 @@ class Tracker(object):
                     else:
                         pred_bboxes = outs['bbox'][:, 2:]
                 else:
-                    logger.warning('Frame {} has not object, try to modify score threshold.'.format(frame_id))
+                    logger.warning(
+                        'Frame {} has not object, try to modify score threshold.'.
+                        format(frame_id))
                     frame_id += 1
                     continue
 
             pred_xyxys, keep_idx = clip_box(pred_bboxes, input_shape, im_shape,
-                                   scale_factor)
+                                            scale_factor)
             pred_scores = paddle.gather_nd(pred_scores, keep_idx).unsqueeze(1)
             pred_cls_ids = paddle.gather_nd(pred_cls_ids, keep_idx).unsqueeze(1)
             pred_tlwhs = paddle.concat(
                 (pred_xyxys[:, 0:2],
                  pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
                 axis=1)
-            pred_dets = paddle.concat((pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
+            pred_dets = paddle.concat(
+                (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
 
             tracker = self.model.tracker
-            crops = get_crops(pred_xyxys, ori_image, w=tracker.input_size[0], h=tracker.input_size[1])
+            crops = get_crops(
+                pred_xyxys,
+                ori_image,
+                w=tracker.input_size[0],
+                h=tracker.input_size[1])
             crops = paddle.to_tensor(crops)
 
             data.update({'crops': crops})
@@ -264,7 +275,8 @@ class Tracker(object):
                 tid = t.track_id
                 if tscore < draw_threshold: continue
                 if tlwh[2] * tlwh[3] <= tracker.min_box_area: continue
-                if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[3] > tracker.vertical_ratio:
+                if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                        3] > tracker.vertical_ratio:
                     continue
                 online_tlwhs.append(tlwh)
                 online_scores.append(tscore)

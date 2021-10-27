@@ -136,15 +136,15 @@ python deploy/python/mot_sde_infer.py --model_dir=output_inference/yolov3_darkne
 2.制作`deepsort_xxx_detector_pcb_pyramid.yml`, 其中`DeepSORT.detector`的配置就是`xxx_detector.yml`, `EvalMOTDataset`和`det_weights`可以自行设置。
 
 ### 3、使用的具体步骤
-#### 1.加载检测模型和ReID模型去评估: 
+#### 1.加载检测模型和ReID模型去评估:
 ```
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_xxx_detector_pcb_pyramid.yml --scaled=True
 ```
-#### 2.加载检测模型和ReID模型去推理: 
+#### 2.加载检测模型和ReID模型去推理:
 ```
 CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_xxx_detector_pcb_pyramid.yml --video_file={your video name}.mp4 --scaled=True --save_videos
 ```
-#### 3.导出检测模型和ReID模型: 
+#### 3.导出检测模型和ReID模型:
 ```
 # 导出检测模型
 CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/xxx_detector.yml

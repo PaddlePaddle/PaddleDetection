@@ -83,7 +83,7 @@ class Detection(object):
     def __init__(self, tlwh, score, feature, cls_id):
         self.tlwh = np.asarray(tlwh, dtype=np.float32)
         self.score = float(score)
-        self.feature = np.asarray(feature, dtype=np.float32) #feature.numpy()
+        self.feature = np.asarray(feature, dtype=np.float32)
         self.cls_id = int(cls_id)
 
     def to_tlbr(self):

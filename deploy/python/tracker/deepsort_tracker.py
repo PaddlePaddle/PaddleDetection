@@ -96,7 +96,8 @@ class DeepSORTTracker(object):
 
         detections = [
             Detection(tlwh, score, feat, cls_id)
-            for tlwh, score, feat, cls_id in zip(pred_tlwhs, pred_scores, pred_embs, pred_cls_ids)
+            for tlwh, score, feat, cls_id in zip(pred_tlwhs, pred_scores,
+                                                 pred_embs, pred_cls_ids)
         ]
 
         # Run matching cascade.
