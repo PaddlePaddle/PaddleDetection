@@ -114,6 +114,14 @@ class ATSSAssigner(nn.Layer):
         num_anchors, _ = anchor_bboxes.shape
         batch_size, num_max_boxes, _ = gt_bboxes.shape
 
+        # negative batch
+        if num_max_boxes == 0:
+            assigned_labels = paddle.full([batch_size, num_anchors], bg_index)
+            assigned_bboxes = paddle.zeros([batch_size, num_anchors, 4])
+            assigned_scores = paddle.zeros(
+                [batch_size, num_anchors, self.num_classes])
+            return assigned_labels, assigned_bboxes, assigned_scores
+
         # 1. compute iou between gt and anchor bbox, [B, n, L]
         ious = iou_similarity(gt_bboxes.reshape([-1, 4]), anchor_bboxes)
         ious = ious.reshape([batch_size, -1, num_anchors])

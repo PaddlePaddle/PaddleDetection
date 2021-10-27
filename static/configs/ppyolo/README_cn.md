@@ -19,7 +19,7 @@ PP-YOLO在[COCO](http://cocodataset.org) test-dev2017数据集上精度达到45.
   <img src="../../docs/images/ppyolo_map_fps.png" width=500 />
 </div>
 
-PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
+PP-YOLO和PP-YOLOv2从如下方面优化和提升YOLOv3模型的精度和速度：
 
 - 更优的骨干网络: ResNet50vd-DCN
 - 更大的训练batch size: 8 GPUs，每GPU batch_size=24，对应调整学习率和迭代轮数
@@ -31,6 +31,9 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 - [CoordConv](https://arxiv.org/abs/1807.03247)
 - [Spatial Pyramid Pooling](https://arxiv.org/abs/1406.4729)
 - 更优的预训练模型
+- [PAN](https://arxiv.org/abs/1803.01534)
+- Iou aware Loss
+- 更大的输入尺寸
 
 ## 模型库
 
@@ -110,6 +113,10 @@ PP-YOLO在Pascal VOC数据集上训练模型如下:
 | PP-YOLO            |    8    |       12      | ResNet50vd |     608     |          84.9          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/ppyolo/ppyolo_voc.yml)                   |
 | PP-YOLO            |    8    |       12      | ResNet50vd |     416     |          84.3          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/ppyolo/ppyolo_voc.yml)                   |
 | PP-YOLO            |    8    |       12      | ResNet50vd |     320     |          82.2          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/ppyolo/ppyolo_voc.yml)                   |
+| PP-YOLO_EB            |     8      |      8    | ResNet34vd |     480     |          86.4         | [model](https://bj.bcebos.com/v1/paddlemodels/object_detection/ppyolo_eb_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/ppyolo/ppyolo_eb_voc.yml)                   |
+
+**注意:** PP-YOLO-EB是针对[EdgeBoard](https://ai.baidu.com/tech/hardware/deepkit)硬件专门设计的模型.
+
 
 ## 使用说明
 
@@ -188,11 +195,6 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output/ppyolo -
 CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output/ppyolo --image_file=demo/000000014439_640x640.jpg --use_gpu=True --run_benchmark=True --run_mode=trt_fp16
 ```
 
-## 未来工作
-
-1. 发布PP-YOLO-tiny模型
-2. 发布更多骨干网络的PP-YOLO模型
-
 ## 附录
 
 PP-YOLO模型相对于YOLOv3模型优化项消融实验数据如下表所示。
@@ -217,3 +219,29 @@ PP-YOLO模型相对于YOLOv3模型优化项消融实验数据如下表所示。
 - Box AP为在COCO train2017数据集训练，val2017和test-dev2017数据集上评估`mAP(IoU=0.5:0.95)`数据
 - 推理速度为单卡V100上，batch size=1, 使用上述benchmark测试方法的测试结果，测试环境配置为CUDA 10.2，CUDNN 7.5.1
 - [YOLOv3-DarkNet53](../yolov3_darknet.yml)精度38.9为PaddleDetection优化后的YOLOv3模型，可参见[模型库](../../docs/MODEL_ZOO_cn.md)
+
+
+## 引用
+
+```
+@article{huang2021pp,
+  title={PP-YOLOv2: A Practical Object Detector},
+  author={Huang, Xin and Wang, Xinxin and Lv, Wenyu and Bai, Xiaying and Long, Xiang and Deng, Kaipeng and Dang, Qingqing and Han, Shumin and Liu, Qiwen and Hu, Xiaoguang and others},
+  journal={arXiv preprint arXiv:2104.10419},
+  year={2021}
+}
+@misc{long2020ppyolo,
+title={PP-YOLO: An Effective and Efficient Implementation of Object Detector},
+author={Xiang Long and Kaipeng Deng and Guanzhong Wang and Yang Zhang and Qingqing Dang and Yuan Gao and Hui Shen and Jianguo Ren and Shumin Han and Errui Ding and Shilei Wen},
+year={2020},
+eprint={2007.12099},
+archivePrefix={arXiv},
+primaryClass={cs.CV}
+}
+@misc{ppdet2019,
+title={PaddleDetection, Object detection and instance segmentation toolkit based on PaddlePaddle.},
+author={PaddlePaddle Authors},
+howpublished = {\url{https://github.com/PaddlePaddle/PaddleDetection}},
+year={2019}
+}
+```

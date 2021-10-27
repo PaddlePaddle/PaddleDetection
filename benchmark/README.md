@@ -2,6 +2,7 @@
 
 ```
 ├── benchmark
+│   ├── analysis_log.py
 │   ├── prepare.sh
 │   ├── README.md
 │   ├── run_all.sh
@@ -18,7 +19,7 @@
 单模型运行脚本，可完成指定模型的测试方案
 
 ## Docker 运行环境
-* docker image: paddlepaddle/paddle:latest-gpu-cuda10.1-cudnn7
+* docker image: registry.baidubce.com/paddlepaddle/paddle:2.1.2-gpu-cuda10.2-cudnn7
 * paddle = 2.1.2
 * python = 3.7
 

@@ -23,6 +23,11 @@ import random
 # The object category indicates the type of annotated object, 
 # (i.e., ignored regions(0), pedestrian(1), people(2), bicycle(3), car(4), van(5), truck(6), tricycle(7), awning-tricycle(8), bus(9), motor(10),others(11))
 
+# Extract single class or multi class
+isExtractMultiClass = False
+# The sequence is excluded because there are too few vehicles
+exclude_seq = ["uav0000086_00000_v"]
+
 
 def mkdir_if_missing(d):
     if not osp.exists(d):
@@ -46,7 +51,7 @@ def genGtFile(seqPath, outPath, classes=[]):
                 newLine = line[0:6]
                 newLine[1] = str(id_idx)
                 newLine.append('1')
-                if (len(classes) > 1):
+                if (len(classes) > 1 and isExtractMultiClass):
                     class_index = str(classes.index(line[7]) + 1)
                     newLine.append(class_index)
                 else:
@@ -98,6 +103,8 @@ def genMotLabels(datasetPath, outputFileName, classes=['2']):
     annotationsList = glob.glob(osp.join(annotationsPath, '*.txt'))
     for annotationPath in annotationsList:
         seqName = annotationPath.split('/')[-1].replace('.txt', '')
+        if seqName in exclude_seq:
+            continue
         mkdir_if_missing(osp.join(datasetPath, outputFileName, seqName, 'gt'))
         mkdir_if_missing(osp.join(datasetPath, outputFileName, seqName, 'img1'))
         genGtFile(annotationPath,

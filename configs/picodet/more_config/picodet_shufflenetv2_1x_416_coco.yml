@@ -6,21 +6,22 @@ _BASE_: [
   '../_base_/picodet_416_reader.yml',
 ]
 
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x1_0_pretrained.pdparams
-weights: output/picodet_lcnet_416_coco/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ShuffleNetV2_x1_0_pretrained.pdparams
+weights: output/picodet_shufflenetv2_1x_416_coco/model_final
 find_unused_parameters: True
 use_ema: true
 cycle_epoch: 40
 snapshot_epoch: 10
 
 PicoDet:
-  backbone: LCNet
+  backbone: ShuffleNetV2
   neck: CSPPAN
   head: PicoHead
 
-LCNet:
+ShuffleNetV2:
   scale: 1.0
-  feature_maps: [3, 4, 5]
+  feature_maps: [5, 13, 17]
+  act: leaky_relu
 
 CSPPAN:
   out_channels: 96

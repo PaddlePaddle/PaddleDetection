@@ -31,6 +31,19 @@ def nccl2_prepare(trainer_id, startup_prog, main_prog):
         program=main_prog)
 
 
+def collective_prepare(trainer_id, startup_prog, main_prog):
+    config = fluid.DistributeTranspilerConfig()
+    config.mode = "collective"
+    config.collective_mode = "grad_allreduce"
+    t = fluid.DistributeTranspiler(config=config)
+    t.transpile(
+        trainer_id,
+        trainers=os.environ.get('PADDLE_TRAINER_ENDPOINTS'),
+        current_endpoint=os.environ.get('PADDLE_CURRENT_ENDPOINT'),
+        startup_program=startup_prog,
+        program=main_prog)
+
+
 def prepare_for_multi_process(exe, build_strategy, startup_prog, main_prog):
     trainer_id = int(os.environ.get('PADDLE_TRAINER_ID', 0))
     num_trainers = int(os.environ.get('PADDLE_TRAINERS_NUM', 1))
@@ -38,4 +51,7 @@ def prepare_for_multi_process(exe, build_strategy, startup_prog, main_prog):
         return
     build_strategy.num_trainers = num_trainers
     build_strategy.trainer_id = trainer_id
-    nccl2_prepare(trainer_id, startup_prog, main_prog)
+    if fluid.core.is_compiled_with_npu():
+        collective_prepare(trainer_id, startup_prog, main_prog)
+    else:
+        nccl2_prepare(trainer_id, startup_prog, main_prog)

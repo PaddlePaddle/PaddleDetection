@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 __all__ = [
     'check_gpu',
     'check_xpu',
+    'check_npu',
     'check_version',
     'check_config',
     'check_py_func',
@@ -48,6 +49,25 @@ def check_xpu(use_xpu):
 
     try:
         if use_xpu and not fluid.is_compiled_with_xpu():
+            logger.error(err)
+            sys.exit(1)
+    except Exception as e:
+        pass
+
+
+def check_npu(use_npu):
+    """
+    Log error and exit when set use_npu=true in paddlepaddle
+    cpu/gpu/xpu version.
+    """
+    err = "Config use_npu cannot be set as true while you are " \
+          "using paddlepaddle cpu/gpu/xpu version ! \nPlease try: \n" \
+          "\t1. Install paddlepaddle-npu to run model on NPU \n" \
+          "\t2. Set use_npu as false in config file to run " \
+          "model on CPU/GPU/XPU"
+
+    try:
+        if use_npu and not fluid.is_compiled_with_npu():
             logger.error(err)
             sys.exit(1)
     except Exception as e:

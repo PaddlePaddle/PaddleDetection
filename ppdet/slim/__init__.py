@@ -63,6 +63,9 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
             load_pretrain_weight(model, cfg.pretrain_weights)
         slim = create(cfg.slim)
         cfg['slim_type'] = cfg.slim
+        # TODO: fix quant export model in framework.
+        if mode == 'test' and slim_load_cfg['slim'] == 'QAT':
+            slim.quant_config['activation_preprocess_type'] = None
         cfg['model'] = slim(model)
         cfg['slim'] = slim
         if mode != 'train':

@@ -19,12 +19,12 @@
 
 |    数据集      |  输入尺寸 |  MOTA  |  IDF1  |  FPS   |  下载链接 | 配置文件 |
 | :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
-|  BDD100K      | 1088x608 |  34.9 |  39.9  |    -    | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml) |
-|  KITTI        | 1088x608 |  53.9 |    -   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
-|  VisDrone     | 1088x608 |  29.8 |   51.3 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
+|  BDD100K      | 1088x608 |  43.5 |  50.0  |    -    | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml) |
+|  KITTI        | 1088x608 |  82.7 |    -   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
+|  VisDrone     | 1088x608 |  52.1 |   63.3 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
 
 **注意:**
- FairMOT均使用DLA-34为骨干网络，2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
+ FairMOT均使用DLA-34为骨干网络，4个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
 
 
 ## 数据集准备和处理
