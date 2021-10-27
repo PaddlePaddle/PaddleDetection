@@ -1,13 +1,16 @@
 _BASE_: [
+  'detector/yolov3_darknet53_270e_608x608_pedestrian.yml',
   '../../datasets/mot.yml',
   '../../runtime.yml',
   '_base_/deepsort_reader_1088x608.yml',
 ]
+metric: MOT
+num_classes: 1
 
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
-    data_root: MOT16/images/train
+    data_root: MOT17/images/half
     keep_ori_im: True # set as True in DeepSORT
 
 det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/yolov3_darknet53_270e_608x608_pedestrian.pdparams
@@ -38,38 +41,18 @@ DeepSORTTracker:
 
 
 # detector configuration: General YOLOv3 version
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
-norm_type: sync_bn
-
+# see 'configs/mot/deepsort/detector/yolov3_darknet53_270e_608x608_pedestrian.yml'
 YOLOv3:
   backbone: DarkNet
   neck: YOLOv3FPN
   yolo_head: YOLOv3Head
   post_process: BBoxPostProcess
 
-DarkNet:
-  depth: 53
-  return_idx: [2, 3, 4]
-
-# use default config
-# YOLOv3FPN:
-
-YOLOv3Head:
-  anchors: [[10, 13], [16, 30], [33, 23],
-            [30, 61], [62, 45], [59, 119],
-            [116, 90], [156, 198], [373, 326]]
-  anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
-  loss: YOLOv3Loss
-
-YOLOv3Loss:
-  ignore_thresh: 0.7
-  downsample: [32, 16, 8]
-  label_smooth: false
-
+# Tracking requires higher quality boxes, so decode.conf_thresh will be higher
 BBoxPostProcess:
   decode:
     name: YOLOBox
-    conf_thresh: 0.005
+    conf_thresh: 0.1 # 0.005 in original detector
     downsample_ratio: 32
     clip_bbox: true
   nms:

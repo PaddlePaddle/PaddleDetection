@@ -1,8 +1,11 @@
 _BASE_: [
+  'detector/picodet_s_shufflenetv2_300e_416x416_mot17half.yml',
   '../../datasets/mot.yml',
   '../../runtime.yml',
   '_base_/deepsort_reader_1088x608.yml',
 ]
+metric: MOT
+num_classes: 1
 
 EvalMOTDataset:
   !MOTImageFolder
@@ -36,22 +39,13 @@ DeepSORTTracker:
   max_iou_distance: 0.9
   motion: KalmanFilter
 
+
 # detector configuration
+# see 'configs/mot/deepsort/detector/picodet_s_shufflenetv2_300e_416x416_mot17half.yml'
 PicoDet:
   backbone: ShuffleNetV2
   neck: PAN
   head: PicoHead
-
-ShuffleNetV2:
-  scale: 1.0
-  feature_maps: [5, 13, 17]
-  act: leaky_relu
-
-PAN:
-  out_channel: 96
-  start_level: 0
-  end_level: 3
-  spatial_scales: [0.125, 0.0625, 0.03125]
 
 PicoHead:
   conv_feat:
@@ -81,5 +75,5 @@ PicoHead:
     name: MultiClassNMS
     nms_top_k: 1000
     keep_top_k: 100
-    score_threshold: 0.025
+    score_threshold: 0.25 # 0.025 in original detector
     nms_threshold: 0.6

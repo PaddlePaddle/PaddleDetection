@@ -1,13 +1,16 @@
 _BASE_: [
+  'detector/jde_yolov3_darknet53_30e_1088x608_mix.yml',
   '../../datasets/mot.yml',
   '../../runtime.yml',
   '_base_/deepsort_reader_1088x608.yml',
 ]
+metric: MOT
+num_classes: 1
 
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
-    data_root: MOT16/images/train
+    data_root: MOT17/images/half
     keep_ori_im: True # set as True in DeepSORT
 
 det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams
@@ -37,6 +40,7 @@ DeepSORTTracker:
   motion: KalmanFilter
 
 # detector configuration: JDE version YOLOv3
+# see 'configs/mot/deepsort/detector/jde_yolov3_darknet53_30e_1088x608_mix.yml'
 # The most obvious difference from general YOLOv3 is the JDEBBoxPostProcess and the bboxes coordinates output are not scaled to the original image.
 YOLOv3:
   backbone: DarkNet
@@ -44,21 +48,7 @@ YOLOv3:
   yolo_head: YOLOv3Head
   post_process: JDEBBoxPostProcess
 
-DarkNet:
-  depth: 53
-  return_idx: [2, 3, 4]
-  freeze_norm: True
-
-YOLOv3FPN:
-  freeze_norm: True
-
-YOLOv3Head:
-  anchors: [[128,384], [180,540], [256,640], [512,640],
-            [32,96], [45,135], [64,192], [90,271],
-            [8,24], [11,34], [16,48], [23,68]]
-  anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
-  loss: JDEDetectionLoss
-
+# Tracking requires higher quality boxes, so decode.conf_thresh will be higher
 JDEBBoxPostProcess:
   decode:
     name: JDEBox

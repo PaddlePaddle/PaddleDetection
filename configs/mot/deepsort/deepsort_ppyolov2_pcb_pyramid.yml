@@ -1,8 +1,11 @@
 _BASE_: [
+  'detector/ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml',
   '../../datasets/mot.yml',
   '../../runtime.yml',
   '_base_/deepsort_reader_1088x608.yml',
 ]
+metric: MOT
+num_classes: 1
 
 EvalMOTDataset:
   !MOTImageFolder
@@ -37,7 +40,7 @@ DeepSORTTracker:
   motion: KalmanFilter
 
 # detector configuration: PPYOLOv2 version
-norm_type: sync_bn
+# see 'configs/mot/deepsort/detector/ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml'
 YOLOv3:
   backbone: ResNet
   neck: PPYOLOPAN
@@ -53,47 +56,18 @@ ResNet:
   freeze_norm: false
   norm_decay: 0.
 
-PPYOLOPAN:
-  drop_block: true
-  block_size: 3
-  keep_prob: 0.9
-  spp: true
-
-YOLOv3Head:
-  anchors: [[10, 13], [16, 30], [33, 23],
-            [30, 61], [62, 45], [59, 119],
-            [116, 90], [156, 198], [373, 326]]
-  anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
-  loss: YOLOv3Loss
-  iou_aware: true
-  iou_aware_factor: 0.5
-
-YOLOv3Loss:
-  ignore_thresh: 0.7
-  downsample: [32, 16, 8]
-  label_smooth: false
-  scale_x_y: 1.05
-  iou_loss: IouLoss
-  iou_aware_loss: IouAwareLoss
-
-IouLoss:
-  loss_weight: 2.5
-  loss_square: true
-
-IouAwareLoss:
-  loss_weight: 1.0
-
+# Tracking requires higher quality boxes, so decode.conf_thresh will be higher
 BBoxPostProcess:
   decode:
     name: YOLOBox
-    conf_thresh: 0.01
+    conf_thresh: 0.25 # 0.01 in original detector
     downsample_ratio: 32
     clip_bbox: true
     scale_x_y: 1.05
   nms:
     name: MatrixNMS
     keep_top_k: 100
-    score_threshold: 0.01
-    post_threshold: 0.01
+    score_threshold: 0.25 # 0.01 in original detector
+    post_threshold: 0.25 # 0.01 in original detector
     nms_top_k: -1
     background_label: -1
