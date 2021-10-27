@@ -70,7 +70,7 @@ class FairMOT(BaseArch):
     def _forward(self):
         loss = dict()
         # det_outs keys:
-        # train: neck_feat, det_loss, heatmap_loss, size_loss (optional: offset_loss, iou_loss)
+        # train: neck_feat, det_loss, heatmap_loss, size_loss, offset_loss (optional: iou_loss)
         # eval/infer: neck_feat, bbox, bbox_inds
         det_outs = self.detector(self.inputs)
         neck_feat = det_outs['neck_feat']
