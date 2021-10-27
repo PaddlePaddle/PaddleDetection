@@ -8,7 +8,7 @@ import paddle.nn as nn
 import typing
 
 from ppdet.core.workspace import register
-from static.ppdet.utils.post_process import nms
+from ppdet.modeling.post_process import nms
 
 __all__ = ['BaseArch']
 
