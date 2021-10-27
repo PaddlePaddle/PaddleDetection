@@ -23,7 +23,6 @@ from preprocess import preprocess
 from tracker import DeepSORTTracker
 from ppdet.modeling.mot import visualization as mot_vis
 from ppdet.modeling.mot.utils import Timer as MOTTimer
-from ppdet.modeling.mot.utils import Detection
 
 from paddle.inference import Config
 from paddle.inference import create_predictor
@@ -250,7 +249,12 @@ class SDE_ReID(object):
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
         self.batch_size = batch_size
         assert pred_config.tracker, "Tracking model should have tracker"
-        self.tracker = DeepSORTTracker()
+        pt = pred_config.tracker
+        max_age = pt['max_age'] if 'max_age' in pt else 30
+        max_iou_distance = pt['max_iou_distance'] if 'max_iou_distance' in pt else 0.7
+        self.tracker = DeepSORTTracker(
+            max_age=max_age,
+            max_iou_distance=max_iou_distance)
 
     def get_crops(self, xyxy, ori_img):
         w, h = self.tracker.input_size

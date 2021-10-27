@@ -56,11 +56,11 @@ class DeepSORTTracker(object):
                  min_box_area=0,
                  vertical_ratio=-1,
                  budget=100,
-                 max_age=30,
+                 max_age=70,
                  n_init=3,
                  metric_type='cosine',
                  matching_threshold=0.2,
-                 max_iou_distance=0.7,
+                 max_iou_distance=0.9,
                  motion='KalmanFilter'):
         self.input_size = input_size
         self.min_box_area = min_box_area
