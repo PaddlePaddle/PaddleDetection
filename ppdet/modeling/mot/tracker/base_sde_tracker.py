@@ -15,6 +15,7 @@
 This code is borrow from https://github.com/nwojke/deep_sort/blob/master/deep_sort/track.py
 """
 
+import datetime
 from ppdet.core.workspace import register, serializable
 
 __all__ = ['TrackState', 'Track']
@@ -50,6 +51,8 @@ class Track(object):
             `n_init` frames.
         max_age (int): The maximum number of consecutive misses before the track
             state is set to `Deleted`.
+        cls_id (int): The category id of the tracked box.
+        score (float): The confidence score of the tracked box.
         feature (Optional[ndarray]): Feature vector of the detection this track
             originates from. If not None, this feature is added to the `features` cache.
 
@@ -69,6 +72,8 @@ class Track(object):
                  track_id,
                  n_init,
                  max_age,
+                 cls_id,
+                 score,
                  feature=None):
         self.mean = mean
         self.covariance = covariance
@@ -76,6 +81,9 @@ class Track(object):
         self.hits = 1
         self.age = 1
         self.time_since_update = 0
+        self.cls_id = cls_id
+        self.score = score
+        self.start_time = datetime.datetime.now()
 
         self.state = TrackState.Tentative
         self.features = []
@@ -117,6 +125,8 @@ class Track(object):
                                                           self.covariance,
                                                           detection.to_xyah())
         self.features.append(detection.feature)
+        self.cls_id = detection.cls_id
+        self.score = detection.score
 
         self.hits += 1
         self.time_since_update = 0

@@ -49,13 +49,13 @@ wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
 ```
 如果使用更强的检测模型，可以取得更好的结果。其中每个txt是每个视频中所有图片的检测结果，每行都描述一个边界框，格式如下：
 ```
-[frame_id],[bb_left],[bb_top],[width],[height],[conf]
+[frame_id],[x0],[y0],[w],[h],[score],[class_id]
 ```
 - `frame_id`是图片帧的序号
-- `bb_left`是目标框的左边界的x坐标
-- `bb_top`是目标框的上边界的y坐标
-- `width,height`是真实的像素宽高
-- `conf`是目标得分设置为`1`(已经按检测的得分阈值筛选出的检测结果)
+- `x0,y0`是目标框的左上角x和y坐标
+- `w,h`是目标框的像素宽高
+- `score`是目标框的得分
+- `class_id`是目标框的类别
 
 - 第2种方式是同时加载检测模型和ReID模型，此处选用JDE版本的YOLOv3，具体配置见`configs/mot/deepsort/_base_/deepsort_jde_yolov3_darknet53_pcb_pyramid_r101.yml`。加载其他通用检测模型可参照`configs/mot/deepsort/_base_/deepsort_yolov3_darknet53_pcb_pyramid_r101.yml`进行修改。
 

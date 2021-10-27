@@ -48,13 +48,13 @@ wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
 ```
 If you use a stronger detection model, you can get better results. Each txt is the detection result of all the pictures extracted from each video, and each line describes a bounding box with the following format:
 ```
-[frame_id],[bb_left],[bb_top],[width],[height],[conf]
+[frame_id],[x0],[y0],[w],[h],[score],[class_id]
 ```
-- `frame_id` is the frame number of the image
-- `bb_left` is the X coordinate of the left bound of the object box
-- `bb_top` is the Y coordinate of the upper bound of the object box
-- `width,height` is the pixel width and height
-- `conf` is the object score with default value `1` (the results had been filtered out according to the detection score threshold)
+- `frame_id` is the frame number of the image.
+- `x0,y0` is the X and Y coordinate of the top left bound of the object box.
+- `w,h` is the pixel width and height of the object box.
+- `score` is the confidence score of the object box.
+- `class_id` is the category id of the object box.
 
 - 2. Load the detection model and the ReID model at the same time. Here, the JDE version of YOLOv3 is selected. For more detail of configuration, see `configs/mot/deepsort/_base_/deepsort_jde_yolov3_darknet53_pcb_pyramid_r101.yml`. Load other general detection model, you can refer to `configs/mot/deepsort/_base_/deepsort_yolov3_darknet53_pcb_pyramid_r101.yml`.
 

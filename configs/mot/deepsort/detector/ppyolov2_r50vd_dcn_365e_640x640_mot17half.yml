@@ -1,7 +1,7 @@
 _BASE_: [
   '../../../ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml',
 ]
-weights: output/ppyolov2_r50vd_dcn_365e_mot17half/model_final
+weights: output/ppyolov2_r50vd_dcn_365e_640x640_mot17half/model_final
 
 num_classes: 1
 TrainDataset:

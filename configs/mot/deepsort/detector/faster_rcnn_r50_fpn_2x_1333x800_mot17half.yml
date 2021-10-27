@@ -1,7 +1,7 @@
 _BASE_: [
   '../../../faster_rcnn/faster_rcnn_r50_fpn_2x_coco.yml',
 ]
-weights: output/faster_rcnn_r50_fpn_2x_mot17half/model_final
+weights: output/faster_rcnn_r50_fpn_2x_1333x800_mot17half/model_final
 
 num_classes: 1
 TrainDataset:

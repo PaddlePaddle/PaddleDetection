@@ -1,7 +1,7 @@
 _BASE_: [
   '../../../picodet/picodet_s_shufflenetv2_416_coco.yml',
 ]
-weights: output/picodet_s_shufflenetv2_416_mot17half/model_final
+weights: output/picodet_s_shufflenetv2_300e_416x416_mot17half/model_final
 
 num_classes: 1
 TrainDataset:

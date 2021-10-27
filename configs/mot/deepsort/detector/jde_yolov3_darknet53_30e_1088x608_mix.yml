@@ -4,7 +4,7 @@ _BASE_: [
   '../../jde/_base_/optimizer_30e.yml',
   '../../jde/_base_/jde_reader_1088x608.yml',
 ]
-weights: output/jde_yolov3_darknet53_30e_mix/model_final
+weights: output/jde_yolov3_darknet53_30e_1088x608_mix/model_final
 
 metric: MOTDet
 num_classes: 1
