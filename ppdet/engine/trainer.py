@@ -22,7 +22,6 @@ import copy
 import time
 
 import numpy as np
-import typing
 from PIL import Image
 
 import paddle
@@ -429,11 +428,7 @@ class Trainer(object):
             for metric in self._metrics:
                 metric.update(data, outs)
 
-            # multi-scale inputs: all inputs have same im_id
-            if isinstance(data, typing.Sequence):
-                sample_num += data[0]['im_id'].numpy().shape[0]
-            else:
-                sample_num += data['im_id'].numpy().shape[0]
+            sample_num += data['im_id'].numpy().shape[0]
             self._compose_callback.on_step_end(self.status)
 
         self.status['sample_num'] = sample_num
@@ -476,10 +471,7 @@ class Trainer(object):
             outs = self.model(data)
 
             for key in ['im_shape', 'scale_factor', 'im_id']:
-                if isinstance(data, typing.Sequence):
-                    outs[key] = data[0][key]
-                else:
-                    outs[key] = data[key]
+                outs[key] = data[key]
             for key, value in outs.items():
                 if hasattr(value, 'numpy'):
                     outs[key] = value.numpy()
