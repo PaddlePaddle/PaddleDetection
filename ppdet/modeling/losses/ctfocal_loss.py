@@ -53,11 +53,12 @@ class CTFocalLoss(object):
         bg_map = paddle.cast(target < 1, 'float32')
         bg_map.stop_gradient = True
 
-        neg_weights = paddle.pow(1 - target, 4) * bg_map
+        neg_weights = paddle.pow(1 - target, 4)
         pos_loss = 0 - paddle.log(pred) * paddle.pow(1 - pred,
                                                      self.gamma) * fg_map
+
         neg_loss = 0 - paddle.log(1 - pred) * paddle.pow(
-            pred, self.gamma) * neg_weights
+            pred, self.gamma) * neg_weights * bg_map
         pos_loss = paddle.sum(pos_loss)
         neg_loss = paddle.sum(neg_loss)
 

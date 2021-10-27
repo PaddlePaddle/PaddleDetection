@@ -225,7 +225,7 @@ class OptimizerBuilder():
         self.regularizer = regularizer
         self.optimizer = optimizer
 
-    def __call__(self, learning_rate, params=None):
+    def __call__(self, learning_rate, model=None):
         if self.clip_grad_by_norm is not None:
             grad_clip = nn.ClipGradByGlobalNorm(
                 clip_norm=self.clip_grad_by_norm)
@@ -244,6 +244,25 @@ class OptimizerBuilder():
         if optim_type != 'AdamW':
             optim_args['weight_decay'] = regularization
         op = getattr(optimizer, optim_type)
+
+        if 'without_weight_decay_params' in optim_args:
+            keys = optim_args['without_weight_decay_params']
+            params = [{
+                'params': [
+                    p for n, p in model.named_parameters()
+                    if any([k in n for k in keys])
+                ],
+                'weight_decay': 0.
+            }, {
+                'params': [
+                    p for n, p in model.named_parameters()
+                    if all([k not in n for k in keys])
+                ]
+            }]
+            del optim_args['without_weight_decay_params']
+        else:
+            params = model.parameters()
+
         return op(learning_rate=learning_rate,
                   parameters=params,
                   grad_clip=grad_clip,

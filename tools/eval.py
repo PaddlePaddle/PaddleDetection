@@ -30,7 +30,7 @@ warnings.filterwarnings('ignore')
 import paddle
 
 from ppdet.core.workspace import load_config, merge_config
-from ppdet.utils.check import check_gpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_npu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.engine import Trainer, init_parallel_env
 from ppdet.metrics.coco_utils import json_eval_results
@@ -116,7 +116,16 @@ def main():
     cfg['save_prediction_only'] = FLAGS.save_prediction_only
     merge_config(FLAGS.opt)
 
-    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
+    # disable npu in config by default
+    if 'use_npu' not in cfg:
+        cfg.use_npu = False
+
+    if cfg.use_gpu:
+        place = paddle.set_device('gpu')
+    elif cfg.use_npu:
+        place = paddle.set_device('npu')
+    else:
+        place = paddle.set_device('cpu')
 
     if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn' and not cfg.use_gpu:
         cfg['norm_type'] = 'bn'
@@ -126,6 +135,7 @@ def main():
 
     check_config(cfg)
     check_gpu(cfg.use_gpu)
+    check_npu(cfg.use_npu)
     check_version()
 
     run(FLAGS, cfg)

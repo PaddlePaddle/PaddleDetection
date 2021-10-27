@@ -32,6 +32,7 @@ from .operators import BaseOperator, register_op
 from .batch_operators import Gt2TTFTarget
 from ppdet.modeling.bbox_utils import bbox_iou_np_expand
 from ppdet.utils.logger import setup_logger
+from .op_helper import gaussian_radius
 logger = setup_logger(__name__)
 
 __all__ = [
@@ -583,7 +584,7 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
                 bbox_xy[3] = bbox_xy[1] + bbox_xy[3]
 
                 if h > 0 and w > 0:
-                    radius = self.gaussian_radius((math.ceil(h), math.ceil(w)))
+                    radius = gaussian_radius((math.ceil(h), math.ceil(w)), 0.7)
                     radius = max(0, int(radius))
                     ct = np.array([bbox[0], bbox[1]], dtype=np.float32)
                     ct_int = ct.astype(np.int32)
@@ -612,25 +613,3 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
             sample.pop('gt_score', None)
             sample.pop('gt_ide', None)
         return samples
-
-    def gaussian_radius(self, det_size, min_overlap=0.7):
-        height, width = det_size
-
-        a1 = 1
-        b1 = (height + width)
-        c1 = width * height * (1 - min_overlap) / (1 + min_overlap)
-        sq1 = np.sqrt(b1**2 - 4 * a1 * c1)
-        r1 = (b1 + sq1) / 2
-
-        a2 = 4
-        b2 = 2 * (height + width)
-        c2 = (1 - min_overlap) * width * height
-        sq2 = np.sqrt(b2**2 - 4 * a2 * c2)
-        r2 = (b2 + sq2) / 2
-
-        a3 = 4 * min_overlap
-        b3 = -2 * min_overlap * (height + width)
-        c3 = (min_overlap - 1) * width * height
-        sq3 = np.sqrt(b3**2 - 4 * a3 * c3)
-        r3 = (b3 + sq3) / 2
-        return min(r1, r2, r3)

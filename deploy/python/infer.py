@@ -26,7 +26,7 @@ from paddle.inference import create_predictor
 
 from benchmark_utils import PaddleInferBenchmark
 from picodet_postprocess import PicoDetPostProcess
-from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize
+from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine
 from visualize import visualize_box_mask
 from utils import argsparser, Timer, get_current_memory_mb
 
@@ -45,6 +45,7 @@ SUPPORT_MODELS = {
     'DeepSORT',
     'GFL',
     'PicoDet',
+    'CenterNet',
 }
 
 
@@ -169,7 +170,7 @@ class Detector(object):
         results = []
         if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
             print('[WARNNING] No object detected.')
-            results = {'boxes': np.array([[]]), 'boxes_num': [0]}
+            results = {'boxes': np.zeros([0, 6]), 'boxes_num': [0]}
         else:
             results = self.postprocess(
                 np_boxes, np_masks, inputs, np_boxes_num, threshold=threshold)

@@ -43,7 +43,8 @@ struct KeyPointResult {
 // Visualiztion KeyPoint Result
 cv::Mat VisualizeKptsResult(const cv::Mat& img,
                             const std::vector<KeyPointResult>& results,
-                            const std::vector<int>& colormap);
+                            const std::vector<int>& colormap,
+                            float threshold = 0.2);
 
 class KeyPointDetector {
  public:
@@ -67,7 +68,6 @@ class KeyPointDetector {
   void Predict(const std::vector<cv::Mat> imgs,
                std::vector<std::vector<float>>& center,
                std::vector<std::vector<float>>& scale,
-               const double threshold = 0.5,
                const int warmup = 0,
                const int repeats = 1,
                std::vector<KeyPointResult>* result = nullptr,
@@ -79,6 +79,8 @@ class KeyPointDetector {
   }
 
   bool use_dark(){return this->use_dark_;}
+
+  inline float get_threshold() {return threshold_;};
 
  private:
   // Preprocess image and copy data to input buffer

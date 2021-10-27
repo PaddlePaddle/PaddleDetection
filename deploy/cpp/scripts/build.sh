@@ -26,8 +26,10 @@ CUDA_LIB=/path/to/cuda/lib
 CUDNN_LIB=/path/to/cudnn/lib
 
 # 是否开启关键点模型预测功能
-WITH_KEYPOINT=ON
+WITH_KEYPOINT=OFF
 
+# 是否开启跟踪模型预测功能
+WITH_MOT=OFF
 
 MACHINE_TYPE=`uname -m`
 echo "MACHINE_TYPE: "${MACHINE_TYPE}
@@ -49,11 +51,11 @@ then
   echo "set OPENCV_DIR for aarch64"
   # TX2平台通过以下命令下载预编译的opencv
   mkdir -p $(pwd)/deps && cd $(pwd)/deps
-  wget -c https://paddlemodels.bj.bcebos.com/TX2_JetPack4.3_opencv_3.4.10_gcc7.5.0.zip
-  unzip TX2_JetPack4.3_opencv_3.4.10_gcc7.5.0.zip && cd ..
+  wget -c https://bj.bcebos.com/v1/paddledet/data/TX2_JetPack4.3_opencv_3.4.6_gcc7.5.0.tar.gz
+  tar -xvf TX2_JetPack4.3_opencv_3.4.6_gcc7.5.0.tar.gz && cd ..
 
   # set OPENCV_DIR
-  OPENCV_DIR=$(pwd)/deps/TX2_JetPack4.3_opencv_3.4.10_gcc7.5.0/
+  OPENCV_DIR=$(pwd)/deps/TX2_JetPack4.3_opencv_3.4.6_gcc7.5.0/
 
 else
   echo "Please set OPENCV_DIR manually"
@@ -77,7 +79,8 @@ cmake .. \
     -DCUDNN_LIB=${CUDNN_LIB} \
     -DOPENCV_DIR=${OPENCV_DIR} \
     -DPADDLE_LIB_NAME=${PADDLE_LIB_NAME} \
-    -DWITH_KEYPOINT=${WITH_KEYPOINT}
+    -DWITH_KEYPOINT=${WITH_KEYPOINT} \
+    -DWITH_MOT=${WITH_MOT}
 
 make
 echo "make finished!"

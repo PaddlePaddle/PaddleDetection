@@ -28,7 +28,7 @@ class BaseArch(nn.Layer):
                     'mean']).reshape((1, 3, 1, 1))
                 self.std = paddle.to_tensor(item['NormalizeImage'][
                     'std']).reshape((1, 3, 1, 1))
-                if item['NormalizeImage']['is_scale']:
+                if item['NormalizeImage'].get('is_scale', True):
                     self.scale = 1. / 255.
                 break
         if self.data_format == 'NHWC':

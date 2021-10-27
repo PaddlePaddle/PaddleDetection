@@ -1,4 +1,4 @@
-pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_s_shufflenetv2_320_coco.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams
 slim: QAT
 
 QAT:
@@ -9,15 +9,15 @@ QAT:
     'quantizable_layer_type': ['Conv2D', 'Linear']}
   print_model: False
 
-epoch: 80
+epoch: 50
 LearningRate:
   base_lr: 0.001
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
     milestones:
-    - 60
-    - 70
+    - 30
+    - 40
   - !LinearWarmup
     start_factor: 0.
     steps: 100
