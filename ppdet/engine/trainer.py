@@ -115,8 +115,7 @@ class Trainer(object):
         if self.mode == 'train':
             steps_per_epoch = len(self.loader)
             self.lr = create('LearningRate')(steps_per_epoch)
-            self.optimizer = create('OptimizerBuilder')(self.lr,
-                                                        self.model.parameters())
+            self.optimizer = create('OptimizerBuilder')(self.lr, self.model)
 
         self._nranks = dist.get_world_size()
         self._local_rank = dist.get_rank()
@@ -597,6 +596,13 @@ class Trainer(object):
         else:
             static_model = None
             pruned_input_spec = input_spec
+
+        # TODO: Hard code, delete it when support prune input_spec.
+        if self.cfg.architecture == 'PicoDet':
+            pruned_input_spec = [{
+                "image": InputSpec(
+                    shape=image_shape, name='image')
+            }]
 
         return static_model, pruned_input_spec
 

@@ -81,10 +81,14 @@ class JDE_Detector(Detector):
         assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
         assert pred_config.tracker, "Tracking model should have tracker"
         tp = pred_config.tracker
+        min_box_area = tp['min_box_area'] if 'min_box_area' in tp else 200
+        vertical_ratio = tp['vertical_ratio'] if 'vertical_ratio' in tp else 1.6
         conf_thres = tp['conf_thres'] if 'conf_thres' in tp else 0.
         tracked_thresh = tp['tracked_thresh'] if 'tracked_thresh' in tp else 0.7
         metric_type = tp['metric_type'] if 'metric_type' in tp else 'euclidean'
         self.tracker = JDETracker(
+            min_box_area=min_box_area,
+            vertical_ratio=vertical_ratio,
             conf_thres=conf_thres,
             tracked_thresh=tracked_thresh,
             metric_type=metric_type)
@@ -102,11 +106,13 @@ class JDE_Detector(Detector):
             tid = t.track_id
             tscore = t.score
             if tscore < threshold: continue
-            vertical = tlwh[2] / tlwh[3] > 1.6
-            if tlwh[2] * tlwh[3] > self.tracker.min_box_area and not vertical:
-                online_tlwhs.append(tlwh)
-                online_ids.append(tid)
-                online_scores.append(tscore)
+            if tlwh[2] * tlwh[3] <= self.tracker.min_box_area: continue
+            if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                    3] > self.tracker.vertical_ratio:
+                continue
+            online_tlwhs.append(tlwh)
+            online_ids.append(tid)
+            online_scores.append(tscore)
         return online_tlwhs, online_scores, online_ids
 
     def predict(self, image_list, threshold=0.5, warmup=0, repeats=1):

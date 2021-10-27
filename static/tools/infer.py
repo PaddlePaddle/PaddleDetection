@@ -41,7 +41,7 @@ try:
 
     from ppdet.utils.eval_utils import parse_fetches
     from ppdet.utils.cli import ArgsParser
-    from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
+    from ppdet.utils.check import check_gpu, check_npu, check_version, check_config, enable_static_mode
     from ppdet.utils.visualizer import visualize_results
     import ppdet.utils.checkpoint as checkpoint
 
@@ -109,6 +109,10 @@ def main():
     check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+    # disable npu in config by default and check use_npu
+    if 'use_npu' not in cfg:
+        cfg.use_npu = False
+    check_npu(cfg.use_npu)
     # check if paddlepaddle version is satisfied
     check_version()
 
@@ -119,7 +123,12 @@ def main():
     test_images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
     dataset.set_images(test_images)
 
-    place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
+    if cfg.use_gpu:
+        place = fluid.CUDAPlace(0)
+    elif cfg.use_npu:
+        place = fluid.NPUPlace(0)
+    else:
+        place = fluid.CPUPlace()
     exe = fluid.Executor(place)
 
     model = create(main_arch)

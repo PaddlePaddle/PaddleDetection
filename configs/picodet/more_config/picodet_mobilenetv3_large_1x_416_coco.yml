@@ -7,11 +7,12 @@ _BASE_: [
 ]
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV3_large_x1_0_ssld_pretrained.pdparams
-weights: output/picodet_mobilenetv3_416_coco/model_final
+weights: output/picodet_mobilenetv3_large_1x_416_coco/model_final
 find_unused_parameters: True
 use_ema: true
 cycle_epoch: 40
 snapshot_epoch: 10
+epoch: 180
 
 PicoDet:
   backbone: MobileNetV3
