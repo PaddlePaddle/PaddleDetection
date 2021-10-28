@@ -31,7 +31,7 @@ We developed a series of lightweight models, which named `PicoDet`. Because of i
 | PicoDet-L |  416*416   |          35.9           |        51.7        |        3.24        |       3.69        |              23.36              |            **21.85**            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_416_coco.yml) |
 | PicoDet-L |  640*640   |          40.3           |        57.1        |        3.24        |       8.74        |              54.11              |            **50.55**            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_640_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_640_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_640_coco.yml) |
 
-**Attetnion:** * represents NCNN inference speed, # represents NCNN inference speed.
+**Attetnion:** * represents NCNN inference speed, # represents Paddle-Lite inference speed.
 
 <details>
 <summary>Table Notes (click to expand)</summary>
@@ -50,7 +50,7 @@ We developed a series of lightweight models, which named `PicoDet`. Because of i
 | PicoDet-MobileNetv3-large 1x |  416*416   |          35.6           |        52.0        |        3.55        |       2.80        |              20.71              |            **17.88**            | [model](https://paddledet.bj.bcebos.com/models/picodet_mobilenetv3_large_1x_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_mobilenetv3_large_1x_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/more_config/picodet_mobilenetv3_large_1x_416_coco.yml) |
 | PicoDet-LCNet 1.5x           |  416*416   |          36.3           |        52.2        |        3.10        |       3.85        |              21.29              |            **20.8**             |           [model](https://paddledet.bj.bcebos.com/models/picodet_lcnet_1_5x_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_lcnet_1_5x_416_coco.log)           | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/more_config/picodet_lcnet_1_5x_416_coco.yml)           |
 
-**Attetnion:** * represents NCNN inference speed, # represents NCNN inference speed.
+**Attetnion:** * represents NCNN inference speed, # represents Paddle-Lite inference speed.
 
 
 ## Deployment
