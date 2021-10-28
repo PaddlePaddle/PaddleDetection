@@ -16,6 +16,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import typing
+
 try:
     from collections.abc import Sequence
 except Exception:
@@ -69,7 +71,13 @@ class PadBatch(BaseOperator):
         """
         coarsest_stride = self.pad_to_stride
 
-        max_shape = np.array([data['image'].shape for data in samples]).max(
+        # multi scale input is nested list
+        if isinstance(samples, typing.Sequence) and len(samples) > 0 and isinstance(samples[0], typing.Sequence):
+            inner_samples = samples[0]
+        else:
+            inner_samples = samples
+
+        max_shape = np.array([data['image'].shape for data in inner_samples]).max(
             axis=0)
         if coarsest_stride > 0:
             max_shape[1] = int(
@@ -77,7 +85,7 @@ class PadBatch(BaseOperator):
             max_shape[2] = int(
                 np.ceil(max_shape[2] / coarsest_stride) * coarsest_stride)
 
-        for data in samples:
+        for data in inner_samples:
             im = data['image']
             im_c, im_h, im_w = im.shape[:]
             padding_im = np.zeros(
