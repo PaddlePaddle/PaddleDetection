@@ -179,7 +179,7 @@ class COCODataSet(DetDataset):
                 gt_poly = [None] * num_bbox
 
                 has_segmentation = False
-                for i, box in enumerate(bboxes):
+                for i, box in reversed(list(enumerate(bboxes))):
                     catid = box['category_id']
                     gt_class[i][0] = self.catid2clsid[catid]
                     gt_bbox[i, :] = box['clean_bbox']
@@ -193,11 +193,10 @@ class COCODataSet(DetDataset):
                     elif 'segmentation' in box and box['segmentation']:
                         if not np.array(box['segmentation']
                                         ).size > 0 and not self.allow_empty:
-                            bboxes.pop(i)
                             gt_poly.pop(i)
-                            np.delete(is_crowd, i)
-                            np.delete(gt_class, i)
-                            np.delete(gt_bbox, i)
+                            is_crowd = np.delete(is_crowd, i)
+                            gt_class = np.delete(gt_class, i)
+                            gt_bbox = np.delete(gt_bbox, i)
                         else:
                             gt_poly[i] = box['segmentation']
                         has_segmentation = True

@@ -234,6 +234,41 @@ class DecodeCache(BaseOperator):
 
 
 @register_op
+class SniperDecodeCrop(BaseOperator):
+    def __init__(self):
+        super(SniperDecodeCrop, self).__init__()
+
+    def __call__(self, sample, context=None):
+        if 'image' not in sample:
+            with open(sample['im_file'], 'rb') as f:
+                sample['image'] = f.read()
+            sample.pop('im_file')
+
+        im = sample['image']
+        data = np.frombuffer(im, dtype='uint8')
+        im = cv2.imdecode(data, cv2.IMREAD_COLOR)  # BGR mode, but need RGB mode
+        if 'keep_ori_im' in sample and sample['keep_ori_im']:
+            sample['ori_image'] = im
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+
+        chip = sample['chip']
+        x1, y1, x2, y2 = [int(xi) for xi in chip]
+        im = im[max(y1, 0):min(y2, im.shape[0]),
+                max(x1, 0):min(x2, im.shape[1]), :]
+
+        sample['image'] = im
+        h = im.shape[0]
+        w = im.shape[1]
+        # sample['im_info'] = [h, w, 1.0]
+        sample['h'] = h
+        sample['w'] = w
+
+        sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
+        sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
+        return sample
+
+
+@register_op
 class Permute(BaseOperator):
     def __init__(self):
         """
