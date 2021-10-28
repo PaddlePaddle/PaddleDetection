@@ -39,34 +39,47 @@ void PrintBenchmarkLog(std::vector<double> det_time, int img_num) {
             << std::endl;
   std::cout << "batch_size_det: " << RT_Config["batch_size_det"].as<int>()
             << std::endl;
-  std::cout << "batch_size_keypoint: "
-            << RT_Config["batch_size_keypoint"].as<int>() << std::endl;
   std::cout << "----------------------- Model info -----------------------"
             << std::endl;
   RT_Config["model_dir_det"].as<std::string>().erase(
       RT_Config["model_dir_det"].as<std::string>().find_last_not_of("/") + 1);
   std::cout
       << "detection model_name: "
-      << RT_Config["model_dir_det"].as<std::string>().substr(
-             RT_Config["model_dir_det"].as<std::string>().find_last_of('/') + 1)
-      << std::endl;
-  RT_Config["model_dir_keypoint"].as<std::string>().erase(
-      RT_Config["model_dir_keypoint"].as<std::string>().find_last_not_of("/") +
-      1);
-  std::cout
-      << "keypoint model_name: "
-      << RT_Config["model_dir_keypoint"].as<std::string>().substr(
-             RT_Config["model_dir_keypoint"].as<std::string>().find_last_of(
-                 '/') +
-             1)
+      << RT_Config["model_dir_det"].as<std::string>()
       << std::endl;
   std::cout << "----------------------- Perf info ------------------------"
             << std::endl;
   std::cout << "Total number of predicted data: " << img_num
             << " and total time spent(ms): "
-            << std::accumulate(det_time.begin(), det_time.end(), 0)
+            << std::accumulate(det_time.begin(), det_time.end(), 0.)
             << std::endl;
+  img_num = std::max(1, img_num);
   std::cout << "preproce_time(ms): " << det_time[0] / img_num
+            << ", inference_time(ms): " << det_time[1] / img_num
+            << ", postprocess_time(ms): " << det_time[2] / img_num << std::endl;
+}
+
+void PrintKptsBenchmarkLog(std::vector<double> det_time, int img_num){
+  std::cout << "----------------------- Data info -----------------------"
+            << std::endl;
+  std::cout << "batch_size_keypoint: "
+            << RT_Config["batch_size_keypoint"].as<int>() << std::endl;
+  std::cout << "----------------------- Model info -----------------------"
+            << std::endl;
+  RT_Config["model_dir_keypoint"].as<std::string>().erase(
+      RT_Config["model_dir_keypoint"].as<std::string>().find_last_not_of("/") +
+      1);
+  std::cout
+      << "keypoint model_name: "
+      << RT_Config["model_dir_keypoint"].as<std::string>() << std::endl;
+  std::cout << "----------------------- Perf info ------------------------"
+            << std::endl;
+  std::cout << "Total number of predicted data: " << img_num
+            << " and total time spent(ms): "
+            << std::accumulate(det_time.begin(), det_time.end(), 0.) << std::endl;
+  img_num = std::max(1, img_num);
+  std::cout << "Average time cost per person:" << std::endl 
+            << "preproce_time(ms): " << det_time[0] / img_num
             << ", inference_time(ms): " << det_time[1] / img_num
             << ", postprocess_time(ms): " << det_time[2] / img_num << std::endl;
 }
@@ -284,7 +297,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
   }
   PrintBenchmarkLog(det_t, all_img_paths.size());
   if (keypoint) {
-    PrintBenchmarkLog(keypoint_t, kpts_imgs);
+    PrintKptsBenchmarkLog(keypoint_t, kpts_imgs);
     PrintTotalIimeLog((det_t[0] + det_t[1] + det_t[2]) / all_img_paths.size(),
                     (keypoint_t[0] + keypoint_t[1] + keypoint_t[2]) / all_img_paths.size(),
                     midtimecost / all_img_paths.size());

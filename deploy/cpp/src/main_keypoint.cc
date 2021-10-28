@@ -79,17 +79,32 @@ void PrintBenchmarkLog(std::vector<double> det_time, int img_num){
   LOG(INFO) << "cpu_math_library_num_threads: " << FLAGS_cpu_threads;
   LOG(INFO) << "----------------------- Data info -----------------------";
   LOG(INFO) << "batch_size: " << FLAGS_batch_size;
-  LOG(INFO) << "batch_size_keypoint: " << FLAGS_batch_size_keypoint;
   LOG(INFO) << "input_shape: " << "dynamic shape";
   LOG(INFO) << "----------------------- Model info -----------------------";
   FLAGS_model_dir.erase(FLAGS_model_dir.find_last_not_of("/") + 1);
-  LOG(INFO) << "model_name: " << FLAGS_model_dir.substr(FLAGS_model_dir.find_last_of('/') + 1);
-  FLAGS_model_dir_keypoint.erase(FLAGS_model_dir_keypoint.find_last_not_of("/") + 1);
-  LOG(INFO) << "model_name: " << FLAGS_model_dir_keypoint.substr(FLAGS_model_dir_keypoint.find_last_of('/') + 1);
+  LOG(INFO) << "model_name: " << FLAGS_model_dir;
   LOG(INFO) << "----------------------- Perf info ------------------------";
   LOG(INFO) << "Total number of predicted data: " << img_num
             << " and total time spent(ms): "
-            << std::accumulate(det_time.begin(), det_time.end(), 0);
+            << std::accumulate(det_time.begin(), det_time.end(), 0.);
+  img_num = std::max(1, img_num);
+  LOG(INFO) << "preproce_time(ms): " << det_time[0] / img_num
+            << ", inference_time(ms): " << det_time[1] / img_num
+            << ", postprocess_time(ms): " << det_time[2] / img_num;
+}
+
+void PrintKptsBenchmarkLog(std::vector<double> det_time, int img_num){
+  LOG(INFO) << "----------------------- Data info -----------------------";
+  LOG(INFO) << "batch_size_keypoint: " << FLAGS_batch_size_keypoint;
+  LOG(INFO) << "----------------------- Model info -----------------------";
+  FLAGS_model_dir_keypoint.erase(FLAGS_model_dir_keypoint.find_last_not_of("/") + 1);
+  LOG(INFO) << "keypoint_model_name: " << FLAGS_model_dir_keypoint;
+  LOG(INFO) << "----------------------- Perf info ------------------------";
+  LOG(INFO) << "Total number of predicted data: " << img_num
+            << " and total time spent(ms): "
+            << std::accumulate(det_time.begin(), det_time.end(), 0.);
+  img_num = std::max(1, img_num);
+  LOG(INFO) << "Average time cost per person:";
   LOG(INFO) << "preproce_time(ms): " << det_time[0] / img_num
             << ", inference_time(ms): " << det_time[1] / img_num
             << ", postprocess_time(ms): " << det_time[2] / img_num;
@@ -424,7 +439,9 @@ void PredictImage(const std::vector<std::string> all_img_paths,
     det_t[2] += det_times[2];
   }
   PrintBenchmarkLog(det_t, all_img_paths.size());
-  PrintBenchmarkLog(keypoint_t, kpts_imgs);
+  if (keypoint) {
+    PrintKptsBenchmarkLog(keypoint_t, kpts_imgs);
+  }
 }
 
 int main(int argc, char** argv) {
