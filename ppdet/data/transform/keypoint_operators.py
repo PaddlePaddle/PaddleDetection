@@ -28,7 +28,7 @@ import numpy as np
 import math
 import copy
 
-from ...modeling.keypoint_utils import get_affine_mat_kernel, warp_affine_joints, get_affine_transform, affine_transform
+from ...modeling.keypoint_utils import get_affine_mat_kernel, warp_affine_joints, get_affine_transform, affine_transform, get_warp_matrix
 from ppdet.core.workspace import serializable
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
@@ -36,10 +36,19 @@ logger = setup_logger(__name__)
 registered_ops = []
 
 __all__ = [
-    'RandomAffine', 'KeyPointFlip', 'TagGenerate', 'ToHeatmaps',
-    'NormalizePermute', 'EvalAffine', 'RandomFlipHalfBodyTransform',
-    'TopDownAffine', 'ToHeatmapsTopDown', 'ToHeatmapsTopDown_DARK',
-    'TopDownEvalAffine'
+    'RandomAffine',
+    'KeyPointFlip',
+    'TagGenerate',
+    'ToHeatmaps',
+    'NormalizePermute',
+    'EvalAffine',
+    'RandomFlipHalfBodyTransform',
+    'TopDownAffine',
+    'ToHeatmapsTopDown',
+    'ToHeatmapsTopDown_DARK',
+    'ToHeatmapsTopDown_UDP',
+    'TopDownEvalAffine',
+    'AugmentationbyInformantionDropping',
 ]
 
 
@@ -94,37 +103,6 @@ class KeyPointFlip(object):
         records['joints'] = kpts_lst
         records['mask'] = mask_lst
         return records
-
-
-def get_warp_matrix(theta, size_input, size_dst, size_target):
-    """Calculate the transformation matrix under the constraint of unbiased.
-    Paper ref: Huang et al. The Devil is in the Details: Delving into Unbiased
-    Data Processing for Human Pose Estimation (CVPR 2020).
-
-    Args:
-        theta (float): Rotation angle in degrees.
-        size_input (np.ndarray): Size of input image [w, h].
-        size_dst (np.ndarray): Size of output image [w, h].
-        size_target (np.ndarray): Size of ROI in input plane [w, h].
-
-    Returns:
-        matrix (np.ndarray): A matrix for transformation.
-    """
-    theta = np.deg2rad(theta)
-    matrix = np.zeros((2, 3), dtype=np.float32)
-    scale_x = size_dst[0] / size_target[0]
-    scale_y = size_dst[1] / size_target[1]
-    matrix[0, 0] = math.cos(theta) * scale_x
-    matrix[0, 1] = -math.sin(theta) * scale_x
-    matrix[0, 2] = scale_x * (
-        -0.5 * size_input[0] * math.cos(theta) + 0.5 * size_input[1] *
-        math.sin(theta) + 0.5 * size_target[0])
-    matrix[1, 0] = math.sin(theta) * scale_y
-    matrix[1, 1] = math.cos(theta) * scale_y
-    matrix[1, 2] = scale_y * (
-        -0.5 * size_input[0] * math.sin(theta) - 0.5 * size_input[1] *
-        math.cos(theta) + 0.5 * size_target[1])
-    return matrix
 
 
 @register_keypointop
@@ -532,11 +510,71 @@ class RandomFlipHalfBodyTransform(object):
 
 
 @register_keypointop
+class AugmentationbyInformantionDropping(object):
+    """AID: Augmentation by Informantion Dropping. Please refer 
+        to https://arxiv.org/abs/2008.07139 
+    
+    Args:
+        prob_cutout (float): The probability of the Cutout augmentation.
+        offset_factor (float): Offset factor of cutout center.
+        num_patch (int): Number of patches to be cutout.                       
+        records(dict): the dict contained the image and coords
+        
+    Returns:
+        records (dict): contain the image and coords after tranformed
+    
+    """
+
+    def __init__(self,
+                 trainsize,
+                 prob_cutout=0.0,
+                 offset_factor=0.2,
+                 num_patch=1):
+        self.prob_cutout = prob_cutout
+        self.offset_factor = offset_factor
+        self.num_patch = num_patch
+        self.trainsize = trainsize
+
+    def _cutout(self, img, joints, joints_vis):
+        height, width, _ = img.shape
+        img = img.reshape((height * width, -1))
+        feat_x_int = np.arange(0, width)
+        feat_y_int = np.arange(0, height)
+        feat_x_int, feat_y_int = np.meshgrid(feat_x_int, feat_y_int)
+        feat_x_int = feat_x_int.reshape((-1, ))
+        feat_y_int = feat_y_int.reshape((-1, ))
+        for _ in range(self.num_patch):
+            vis_idx, _ = np.where(joints_vis > 0)
+            occlusion_joint_id = np.random.choice(vis_idx)
+            center = joints[occlusion_joint_id, 0:2]
+            offset = np.random.randn(2) * self.trainsize[0] * self.offset_factor
+            center = center + offset
+            radius = np.random.uniform(0.1, 0.2) * self.trainsize[0]
+            x_offset = (center[0] - feat_x_int) / radius
+            y_offset = (center[1] - feat_y_int) / radius
+            dis = x_offset**2 + y_offset**2
+            keep_pos = np.where((dis <= 1) & (dis >= 0))[0]
+            img[keep_pos, :] = 0
+        img = img.reshape((height, width, -1))
+        return img
+
+    def __call__(self, records):
+        img = records['image']
+        joints = records['joints']
+        joints_vis = records['joints_vis']
+        if np.random.rand() < self.prob_cutout:
+            img = self._cutout(img, joints, joints_vis)
+        records['image'] = img
+        return records
+
+
+@register_keypointop
 class TopDownAffine(object):
     """apply affine transform to image and coords
 
     Args:
         trainsize (list): [w, h], the standard size used to train
+        use_udp (bool): whether to use Unbiased Data Processing.
         records(dict): the dict contained the image and coords
 
     Returns:
@@ -544,26 +582,36 @@ class TopDownAffine(object):
 
     """
 
-    def __init__(self, trainsize):
+    def __init__(self, trainsize, use_udp=False):
         self.trainsize = trainsize
+        self.use_udp = use_udp
 
     def __call__(self, records):
         image = records['image']
         joints = records['joints']
         joints_vis = records['joints_vis']
         rot = records['rotate'] if "rotate" in records else 0
-        trans = get_affine_transform(records['center'], records['scale'] * 200,
-                                     rot, self.trainsize)
-        trans_joint = get_affine_transform(
-            records['center'], records['scale'] * 200, rot,
-            [self.trainsize[0] / 4, self.trainsize[1] / 4])
-        image = cv2.warpAffine(
-            image,
-            trans, (int(self.trainsize[0]), int(self.trainsize[1])),
-            flags=cv2.INTER_LINEAR)
-        for i in range(joints.shape[0]):
-            if joints_vis[i, 0] > 0.0:
-                joints[i, 0:2] = affine_transform(joints[i, 0:2], trans_joint)
+        if self.use_udp:
+            trans = get_warp_matrix(
+                rot, records['center'] * 2.0,
+                [self.trainsize[0] - 1.0, self.trainsize[1] - 1.0],
+                records['scale'] * 200.0)
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
+            joints[:, 0:2] = warp_affine_joints(joints[:, 0:2].copy(), trans)
+        else:
+            trans = get_affine_transform(records['center'], records['scale'] *
+                                         200, rot, self.trainsize)
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
+            for i in range(joints.shape[0]):
+                if joints_vis[i, 0] > 0.0:
+                    joints[i, 0:2] = affine_transform(joints[i, 0:2], trans)
+
         records['image'] = image
         records['joints'] = joints
 
@@ -576,6 +624,7 @@ class TopDownEvalAffine(object):
 
     Args:
         trainsize (list): [w, h], the standard size used to train
+        use_udp (bool): whether to use Unbiased Data Processing.
         records(dict): the dict contained the image and coords
 
     Returns:
@@ -583,8 +632,9 @@ class TopDownEvalAffine(object):
 
     """
 
-    def __init__(self, trainsize):
+    def __init__(self, trainsize, use_udp=False):
         self.trainsize = trainsize
+        self.use_udp = use_udp
 
     def __call__(self, records):
         image = records['image']
@@ -592,11 +642,21 @@ class TopDownEvalAffine(object):
         imshape = records['im_shape'][::-1]
         center = imshape / 2.
         scale = imshape
-        trans = get_affine_transform(center, scale, rot, self.trainsize)
-        image = cv2.warpAffine(
-            image,
-            trans, (int(self.trainsize[0]), int(self.trainsize[1])),
-            flags=cv2.INTER_LINEAR)
+
+        if self.use_udp:
+            trans = get_warp_matrix(
+                rot, center * 2.0,
+                [self.trainsize[0] - 1.0, self.trainsize[1] - 1.0], scale)
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
+        else:
+            trans = get_affine_transform(center, scale, rot, self.trainsize)
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
         records['image'] = image
 
         return records
@@ -632,10 +692,10 @@ class ToHeatmapsTopDown(object):
         target = np.zeros(
             (num_joints, self.hmsize[1], self.hmsize[0]), dtype=np.float32)
         tmp_size = self.sigma * 3
+        feat_stride = image_size / self.hmsize
         for joint_id in range(num_joints):
-            feat_stride = image_size / self.hmsize
-            mu_x = int(joints[joint_id][0] + 0.5)
-            mu_y = int(joints[joint_id][1] + 0.5)
+            mu_x = int(joints[joint_id][0] + 0.5) / feat_stride[0]
+            mu_y = int(joints[joint_id][1] + 0.5) / feat_stride[1]
             # Check that any part of the gaussian is in-bounds
             ul = [int(mu_x - tmp_size), int(mu_y - tmp_size)]
             br = [int(mu_x + tmp_size + 1), int(mu_y + tmp_size + 1)]
@@ -693,14 +753,17 @@ class ToHeatmapsTopDown_DARK(object):
         joints = records['joints']
         joints_vis = records['joints_vis']
         num_joints = joints.shape[0]
+        image_size = np.array(
+            [records['image'].shape[1], records['image'].shape[0]])
         target_weight = np.ones((num_joints, 1), dtype=np.float32)
         target_weight[:, 0] = joints_vis[:, 0]
         target = np.zeros(
             (num_joints, self.hmsize[1], self.hmsize[0]), dtype=np.float32)
         tmp_size = self.sigma * 3
+        feat_stride = image_size / self.hmsize
         for joint_id in range(num_joints):
-            mu_x = joints[joint_id][0]
-            mu_y = joints[joint_id][1]
+            mu_x = joints[joint_id][0] / feat_stride[0]
+            mu_y = joints[joint_id][1] / feat_stride[1]
             # Check that any part of the gaussian is in-bounds
             ul = [int(mu_x - tmp_size), int(mu_y - tmp_size)]
             br = [int(mu_x + tmp_size + 1), int(mu_y + tmp_size + 1)]
@@ -718,6 +781,77 @@ class ToHeatmapsTopDown_DARK(object):
             if v > 0.5:
                 target[joint_id] = np.exp(-(
                     (x - mu_x)**2 + (y - mu_y)**2) / (2 * self.sigma**2))
+        records['target'] = target
+        records['target_weight'] = target_weight
+        del records['joints'], records['joints_vis']
+
+        return records
+
+
+@register_keypointop
+class ToHeatmapsTopDown_UDP(object):
+    """to generate the gaussian heatmaps of keypoint for heatmap loss.
+        ref: Huang et al. The Devil is in the Details: Delving into Unbiased Data Processing
+        for Human Pose Estimation (CVPR 2020).
+
+    Args:
+        hmsize (list): [w, h] output heatmap's size
+        sigma (float): the std of gaussin kernel genereted
+        records(dict): the dict contained the image and coords
+
+    Returns:
+        records (dict): contain the heatmaps used to heatmaploss
+    """
+
+    def __init__(self, hmsize, sigma):
+        super(ToHeatmapsTopDown_UDP, self).__init__()
+        self.hmsize = np.array(hmsize)
+        self.sigma = sigma
+
+    def __call__(self, records):
+        joints = records['joints']
+        joints_vis = records['joints_vis']
+        num_joints = joints.shape[0]
+        image_size = np.array(
+            [records['image'].shape[1], records['image'].shape[0]])
+        target_weight = np.ones((num_joints, 1), dtype=np.float32)
+        target_weight[:, 0] = joints_vis[:, 0]
+        target = np.zeros(
+            (num_joints, self.hmsize[1], self.hmsize[0]), dtype=np.float32)
+        tmp_size = self.sigma * 3
+        size = 2 * tmp_size + 1
+        x = np.arange(0, size, 1, np.float32)
+        y = x[:, None]
+        feat_stride = (image_size - 1.0) / (self.hmsize - 1.0)
+        for joint_id in range(num_joints):
+            mu_x = int(joints[joint_id][0] / feat_stride[0] + 0.5)
+            mu_y = int(joints[joint_id][1] / feat_stride[1] + 0.5)
+            # Check that any part of the gaussian is in-bounds
+            ul = [int(mu_x - tmp_size), int(mu_y - tmp_size)]
+            br = [int(mu_x + tmp_size + 1), int(mu_y + tmp_size + 1)]
+            if ul[0] >= self.hmsize[0] or ul[1] >= self.hmsize[1] or br[
+                    0] < 0 or br[1] < 0:
+                # If not, just return the image as is
+                target_weight[joint_id] = 0
+                continue
+
+            mu_x_ac = joints[joint_id][0] / feat_stride[0]
+            mu_y_ac = joints[joint_id][1] / feat_stride[1]
+            x0 = y0 = size // 2
+            x0 += mu_x_ac - mu_x
+            y0 += mu_y_ac - mu_y
+            g = np.exp(-((x - x0)**2 + (y - y0)**2) / (2 * self.sigma**2))
+            # Usable gaussian range
+            g_x = max(0, -ul[0]), min(br[0], self.hmsize[0]) - ul[0]
+            g_y = max(0, -ul[1]), min(br[1], self.hmsize[1]) - ul[1]
+            # Image range
+            img_x = max(0, ul[0]), min(br[0], self.hmsize[0])
+            img_y = max(0, ul[1]), min(br[1], self.hmsize[1])
+
+            v = target_weight[joint_id]
+            if v > 0.5:
+                target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = g[g_y[
+                    0]:g_y[1], g_x[0]:g_x[1]]
         records['target'] = target
         records['target_weight'] = target_weight
         del records['joints'], records['joints_vis']
