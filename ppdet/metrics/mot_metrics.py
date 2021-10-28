@@ -375,7 +375,7 @@ class KITTIEvaluation(object):
         # get number of sequences and
         # get number of frames per sequence from test mapping
         # (created while extracting the benchmark)
-        self.gt_path = os.path.join(gt_path, "label_02")
+        self.gt_path = os.path.join(gt_path, "../labels")
         self.n_frames = n_frames
         self.sequence_name = seqs
         self.n_sequences = n_sequences
@@ -1177,7 +1177,7 @@ class KITTIMOTMetric(Metric):
         assert data_type == 'kitti', "data_type should 'kitti'"
         self.result_root = result_root
         self.gt_path = data_root
-        gt_path = '{}/label_02/{}.txt'.format(data_root, seq)
+        gt_path = '{}/../labels/{}.txt'.format(data_root, seq)
         gt = open(gt_path, "r")
         max_frame = 0
         for line in gt:

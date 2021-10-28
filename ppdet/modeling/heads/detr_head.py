@@ -307,9 +307,11 @@ class DeformableDETRHead(nn.Layer):
         linear_init_(self.score_head)
         constant_(self.score_head.bias, -4.595)
         constant_(self.bbox_head.layers[-1].weight)
-        bias = paddle.zeros_like(self.bbox_head.layers[-1].bias)
-        bias[2:] = -2.0
-        self.bbox_head.layers[-1].bias.set_value(bias)
+        
+        with paddle.no_grad():
+            bias = paddle.zeros_like(self.bbox_head.layers[-1].bias)
+            bias[2:] = -2.0
+            self.bbox_head.layers[-1].bias.set_value(bias)
 
     @classmethod
     def from_config(cls, cfg, hidden_dim, nhead, input_shape):

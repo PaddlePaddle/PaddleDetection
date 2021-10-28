@@ -144,11 +144,13 @@ class Tracker(object):
                 tid = t.track_id
                 tscore = t.score
                 if tscore < draw_threshold: continue
-                vertical = tlwh[2] / tlwh[3] > 1.6
-                if tlwh[2] * tlwh[3] > tracker.min_box_area and not vertical:
-                    online_tlwhs.append(tlwh)
-                    online_ids.append(tid)
-                    online_scores.append(tscore)
+                if tlwh[2] * tlwh[3] <= tracker.min_box_area: continue
+                if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                        3] > tracker.vertical_ratio:
+                    continue
+                online_tlwhs.append(tlwh)
+                online_ids.append(tid)
+                online_scores.append(tscore)
             timer.toc()
 
             # save results

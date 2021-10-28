@@ -119,7 +119,8 @@ def _dump_infer_config(config, path, image_shape, model):
             'Architecture: {} is not supported for exporting model now'.format(
                 infer_arch))
         os._exit(0)
-    if 'Mask' in infer_arch:
+    if 'mask_head' in config[config['architecture']] and config[config[
+            'architecture']]['mask_head']:
         infer_cfg['mask'] = True
     label_arch = 'detection_arch'
     if infer_arch in KEYPOINT_ARCH:
