@@ -41,12 +41,14 @@ English | [简体中文](README_cn.md)
 ### Results on MOT-16 Test Set
 | backbone       | input shape |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| HarDNet-85     | 1088x608 |  75.0  |  70.0  |  1050   |  11837  |  32774 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_hardnet85_30e_1088x608.pdparams) | [config](./fairmot_enhance_hardnet85_30e_1088x608.yml) |
+| DLA-34         | 1088x608 |  76.0  |  72.9  |  1342   |  12520  |  29863 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_dla34_60e_1088x608.pdparams) | [config](./fairmot_enhance_dla34_60e_1088x608.yml) |
+| HarDNet-85     | 1088x608 |  75.2  |  73.0  |  1338   |  12330  |  31462 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_hardnet85_30e_1088x608.pdparams) | [config](./fairmot_enhance_hardnet85_30e_1088x608.yml) |
 
 ### Results on MOT-17 Test Set
 | backbone       | input shape |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  download  | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| HarDNet-85     | 1088x608 |  74.7  |  70.7  |  3210  |  29790  | 109914 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_hardnet85_30e_1088x608.pdparams) | [config](./fairmot_enhance_hardnet85_30e_1088x608.yml) |
+| DLA-34         | 1088x608 |  75.6  |  72.4  |  4224   |  32055  |  101256 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_dla34_60e_1088x608.pdparams) | [config](./fairmot_enhance_dla34_60e_1088x608.yml) |
+| HarDNet-85     | 1088x608 |  75.0  |  72.5  |  3942  |  31086  | 105777 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_hardnet85_30e_1088x608.pdparams) | [config](./fairmot_enhance_hardnet85_30e_1088x608.yml) |
 
 **注意:**
  FairMOT enhance HarDNet-85 used 8 GPUs for training and mini-batch size as 10 on each GPU，and trained for 30 epoches. The crowdhuman dataset is added to the train-set during training.

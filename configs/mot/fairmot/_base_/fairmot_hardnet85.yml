@@ -6,7 +6,7 @@ FairMOT:
   detector: CenterNet
   reid: FairMOTEmbeddingHead
   loss: FairMOTLoss
-  tracker: ByteTracker
+  tracker: JDETracker
 
 CenterNet:
   backbone: HarDNet
@@ -35,7 +35,7 @@ CenterNetPostProcess:
   max_per_img: 500
   regress_ltrb: True
 
-ByteTracker:
-  match_thres: 0.8
+JDETracker:
   conf_thres: 0.4
-  low_conf_thres: 0.2
+  tracked_thresh: 0.4
+  metric_type: cosine

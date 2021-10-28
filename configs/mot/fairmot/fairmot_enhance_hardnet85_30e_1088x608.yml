@@ -2,7 +2,7 @@ _BASE_: [
   '../../datasets/mot.yml',
   '../../runtime.yml',
   '_base_/optimizer_30e.yml',
-  '_base_/fairmot_enhance_hardnet85.yml',
+  '_base_/fairmot_hardnet85.yml',
   '_base_/fairmot_reader_1088x608.yml',
 ]
 norm_type: sync_bn
@@ -47,3 +47,14 @@ OptimizerBuilder:
   regularizer: NULL
 
 weights: output/fairmot_enhance_hardnet85_30e_1088x608/model_final
+
+FairMOT:
+  detector: CenterNet
+  reid: FairMOTEmbeddingHead
+  loss: FairMOTLoss
+  tracker: ByteTracker
+
+ByteTracker:
+  match_thres: 0.8
+  conf_thres: 0.4
+  low_conf_thres: 0.2
