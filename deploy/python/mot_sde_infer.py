@@ -355,18 +355,18 @@ def predict_video(detector, reid_model, camera_id):
     else:
         capture = cv2.VideoCapture(FLAGS.video_file)
         video_name = os.path.split(FLAGS.video_file)[-1]
-    fps = 30
-    frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-    print('frame_count', frame_count)
+    # Get Video info : resolution, fps, frame count
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    # yapf: disable
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    # yapf: enable
+    fps = int(capture.get(cv2.CAP_PROP_FPS))
+    frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    print("fps: %d, frame_count: %d" % (fps, frame_count))
+
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
     if not FLAGS.save_images:
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     frame_id = 0
     timer = MOTTimer()
@@ -425,7 +425,7 @@ def predict_video(detector, reid_model, camera_id):
             write_mot_results(result_filename, [result])
 
         frame_id += 1
-        print('detect frame:%d' % (frame_id))
+        print('detect frame: %d' % (frame_id))
         if camera_id != -1:
             cv2.imshow('Tracking Detection', im)
             if cv2.waitKey(1) & 0xFF == ord('q'):
