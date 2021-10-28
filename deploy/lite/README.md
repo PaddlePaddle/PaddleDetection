@@ -193,7 +193,7 @@ make ARM_ABI = arm8
 5. 准备优化后的模型、预测库文件、测试图像。
 
 ```shell
-mdkir deploy
+mkdir deploy
 cp main *runtime_config.json deploy/
 cd deploy
 mkdir model_det
