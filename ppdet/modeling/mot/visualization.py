@@ -127,7 +127,10 @@ def plot_tracking_dict(image,
             x1, y1, w, h = tlwh
             intbox = tuple(map(int, (x1, y1, x1 + w, y1 + h)))
             obj_id = int(obj_ids[i])
-            id_text = 'class{}_id{}'.format(cls_id, int(obj_id))
+            if num_classes == 1:
+                id_text = '{}'.format(int(obj_id))
+            else:
+                id_text = 'class{}_id{}'.format(cls_id, int(obj_id))
 
             _line_thickness = 1 if obj_id <= 0 else line_thickness
             color = get_color(abs(obj_id))

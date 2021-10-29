@@ -11,26 +11,7 @@ FairMOT:
   detector: CenterNet
   reid: FairMOTEmbeddingHead
   loss: FairMOTLoss
-  tracker: MCJDETracker # multi-class tracker
-
-CenterNet:
-  backbone: HRNet
-  neck: CenterNetDLAFPN
-  head: CenterNetHead
-  post_process: CenterNetPostProcess
-
-HRNet:
-  width: 18
-  freeze_at: 0
-  return_idx: [0, 1, 2, 3]
-  upsample: False
-
-CenterNetDLAFPN:
-  down_ratio: 4
-  last_level: 3
-  out_channel: 0
-  first_level: 0
-  dcn_v2: False
+  tracker: JDETracker # multi-class tracker
 
 CenterNetHead:
   regress_ltrb: False
@@ -39,7 +20,7 @@ CenterNetPostProcess:
   regress_ltrb: False
   max_per_img: 200
 
-MCJDETracker:
+JDETracker:
   conf_thres: 0.4
   tracked_thresh: 0.4
   metric_type: cosine
@@ -60,43 +41,5 @@ OptimizerBuilder:
     type: Adam
   regularizer: NULL
 
-
-worker_num: 4
 TrainReader:
-  sample_transforms:
-    - Decode: {}
-    - RGBReverse: {}
-    - AugmentHSV: {}
-    - LetterBoxResize: {target_size: [608, 1088]}
-    - MOTRandomAffine: {reject_outside: False}
-    - RandomFlip: {}
-    - BboxXYXY2XYWH: {}
-    - NormalizeBox: {}
-    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
-    - RGBReverse: {}
-    - Permute: {}
-  batch_transforms:
-    - Gt2FairMOTTarget: {}
   batch_size: 4
-  shuffle: True
-  drop_last: True
-  use_shared_memory: True
-
-EvalMOTReader:
-  sample_transforms:
-    - Decode: {}
-    - LetterBoxResize: {target_size: [608, 1088]}
-    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
-    - Permute: {}
-  batch_size: 1
-
-
-TestMOTReader:
-  inputs_def:
-    image_shape: [3, 608, 1088]
-  sample_transforms:
-    - Decode: {}
-    - LetterBoxResize: {target_size: [608, 1088]}
-    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
-    - Permute: {}
-  batch_size: 1
