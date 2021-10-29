@@ -172,7 +172,8 @@ void Pipeline::PrintBenchmarkLog(std::vector<double> det_time, int img_num){
   LOG(INFO) << "----------------------- Perf info ------------------------";
   LOG(INFO) << "Total number of predicted data: " << img_num
             << " and total time spent(ms): "
-            << std::accumulate(det_time.begin(), det_time.end(), 0);
+            << std::accumulate(det_time.begin(), det_time.end(), 0.);
+  img_num = std::max(1, img_num);
   LOG(INFO) << "preproce_time(ms): " << det_time[0] / img_num
             << ", inference_time(ms): " << det_time[1] / img_num
             << ", postprocess_time(ms): " << det_time[2] / img_num;

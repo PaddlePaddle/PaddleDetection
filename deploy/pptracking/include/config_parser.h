@@ -52,12 +52,12 @@ class ConfigPaser {
       return false;
     }
 
-    // Get model arch : YOLO, SSD, RetinaNet, RCNN, Face
+    // Get model arch: FairMot or YOLO/Picodet/LCNet for DeepSort
     if (config["arch"].IsDefined()) {
       arch_ = config["arch"].as<std::string>();
     } else {
       std::cerr << "Please set model arch,"
-                << "support value : YOLO, SSD, RetinaNet, RCNN, Face."
+                << "support value : FairMot, YOLO, PicoDet, LCNet etc"
                 << std::endl;
       return false;
     }
