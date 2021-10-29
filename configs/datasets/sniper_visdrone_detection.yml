@@ -1,0 +1,47 @@
+metric: SNIPERCOCO
+num_classes: 9
+
+TrainDataset:
+  !SniperCOCODataSet
+    image_dir: train
+    anno_path: annotations/train.json
+    dataset_dir: dataset/VisDrone2019_coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+    allow_empty: true
+    is_trainset: true
+    image_target_sizes: [8145, 2742]
+    valid_box_ratio_ranges: [[-1, 0.03142857142857144], [0.02333211853008726, -1]]
+    chip_target_size: 1536
+    chip_target_stride: 1184
+    use_neg_chip: false
+    max_neg_num_per_im: 8
+
+
+EvalDataset:
+  !SniperCOCODataSet
+    image_dir: val
+    anno_path: annotations/val.json
+    dataset_dir: dataset/VisDrone2019_coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+    allow_empty: true
+    is_trainset: false
+    image_target_sizes: [8145, 2742]
+    valid_box_ratio_ranges: [[-1, 0.03142857142857144], [0.02333211853008726, -1]]
+    chip_target_size: 1536
+    chip_target_stride: 1184
+    max_per_img: -1
+    nms_thresh: 0.5
+
+TestDataset:
+  !SniperCOCODataSet
+    image_dir: val
+    dataset_dir: dataset/VisDrone2019_coco
+    is_trainset: false
+    image_target_sizes: [8145, 2742]
+    valid_box_ratio_ranges: [[-1, 0.03142857142857144], [0.02333211853008726, -1]]
+    chip_target_size: 1536
+    chip_target_stride: 1184
+    max_per_img: -1
+    nms_thresh: 0.5
+
+
