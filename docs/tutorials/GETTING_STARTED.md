@@ -137,8 +137,8 @@ list below can be viewed by `--help`
 
 ## Deployment
 
-Please refer to [depolyment](../../deploy/README.md)
+Please refer to [depolyment](../../deploy/README_en.md)
 
 ## Model Compression
 
-Please refer to [slim](../../configs/slim/README.md)
+Please refer to [slim](../../configs/slim/README_en.md)
