@@ -13,7 +13,7 @@ cd "$DIR"
 
 # Download the data.
 echo "Downloading..."
-# external link to the Faces in the Wild data set and annotations file
+# external link to the Faces in the Wild dataset and annotations file
 wget http://tamaraberg.com/faceDataset/originalPics.tar.gz
 wget http://vis-www.cs.umass.edu/fddb/FDDB-folds.tgz
 wget http://vis-www.cs.umass.edu/fddb/evaluation.tgz

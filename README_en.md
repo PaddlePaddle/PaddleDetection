@@ -198,40 +198,40 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 
 - `PP-YOLO v2` is optimized version of `PP-YOLO` which has mAP of 49.5% and 68.9FPS on Tesla V100
 
-- All these models can be get in [Model Zoo](#ModelZoo)
+- All these models can be get in [Model Zoo](#Model-Zoo)
 
 
 ## Tutorials
 
 ### Get Started
 
-- [Installation guide](docs/tutorials/INSTALL_en.md)
-- [Prepare dataset](docs/tutorials/PrepareDataSet.md)
-- [Quick start on PaddleDetection](docs/tutorials/GETTING_STARTED_cn.md)
+- [Installation guide](docs/tutorials/INSTALL.md)
+- [Prepare dataset](docs/tutorials/PrepareDataSet_en.md)
+- [Quick start on PaddleDetection](docs/tutorials/GETTING_STARTED.md)
 
 
 ### Advanced Tutorials
 
 - Parameter configuration
-  - [Parameter configuration for RCNN model](docs/tutorials/config_annotation/faster_rcnn_r50_fpn_1x_coco_annotation.md)
-  - [Parameter configuration for PP-YOLO model](docs/tutorials/config_annotation/ppyolo_r50vd_dcn_1x_coco_annotation.md)
+  - [Parameter configuration for RCNN model](docs/tutorials/config_annotation/faster_rcnn_r50_fpn_1x_coco_annotation_en.md)
+  - [Parameter configuration for PP-YOLO model](docs/tutorials/config_annotation/ppyolo_r50vd_dcn_1x_coco_annotation_en.md)
 
 - Model Compression(Based on [PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim))
   - [Prune/Quant/Distill](configs/slim)
 
 - Inference and deployment
-  - [Export model for inference](deploy/EXPORT_MODEL.md)
-  - [Paddle Inference](deploy/README.md)
+  - [Export model for inference](deploy/EXPORT_MODEL_en.md)
+  - [Paddle Inference](deploy/README_en.md)
       - [Python inference](deploy/python)
       - [C++ inference](deploy/cpp)
   - [Paddle-Lite](deploy/lite)
   - [Paddle Serving](deploy/serving)
-  - [Export ONNX model](deploy/EXPORT_ONNX_MODEL.md)
-  - [Inference benchmark](deploy/BENCHMARK_INFER.md)
+  - [Export ONNX model](deploy/EXPORT_ONNX_MODEL_en.md)
+  - [Inference benchmark](deploy/BENCHMARK_INFER_en.md)
 
 - Advanced development
-  - [New data augmentations](docs/advanced_tutorials/READER.md)
-  - [New detection algorithms](docs/advanced_tutorials/MODEL_TECHNICAL.md)
+  - [New data augmentations](docs/advanced_tutorials/READER_en.md)
+  - [New detection algorithms](docs/advanced_tutorials/MODEL_TECHNICAL_en.md)
 
 
 ## Model Zoo
@@ -239,15 +239,15 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 - Universal object detection
   - [Model library and baselines](docs/MODEL_ZOO_cn.md)
   - [PP-YOLO](configs/ppyolo/README.md)
-  - [Enhanced Anchor Free model--TTFNet](configs/ttfnet/README.md)
-  - [Mobile models](static/configs/mobile/README.md)
-  - [676 classes of object detection](static/docs/featured_model/LARGE_SCALE_DET_MODEL.md)
-  - [Two-stage practical PSS-Det](configs/rcnn_enhance/README.md)
+  - [Enhanced Anchor Free model--TTFNet](configs/ttfnet/README_en.md)
+  - [Mobile models](static/configs/mobile/README_en.md)
+  - [676 classes of object detection](static/docs/featured_model/LARGE_SCALE_DET_MODEL_en.md)
+  - [Two-stage practical PSS-Det](configs/rcnn_enhance/README_en.md)
   - [SSLD pretrained models](docs/feature_models/SSLD_PRETRAINED_MODEL_en.md)
 - Universal instance segmentation
   - [SOLOv2](configs/solov2/README.md)
 - Rotation object detection
-  - [S2ANet](configs/dota/README.md)
+  - [S2ANet](configs/dota/README_en.md)
 - [Keypoint detection](configs/keypoint)
   - HigherHRNet
   - HRNet
@@ -257,12 +257,12 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
   - [JDE](configs/mot/jde/README.md)
   - [FairMOT](configs/mot/fairmot/README.md)
 - Vertical field
-  - [Face detection](configs/face_detection/README.md)
+  - [Face detection](configs/face_detection/README_en.md)
   - [Pedestrian detection](configs/pedestrian/README.md)
   - [Vehicle detection](configs/vehicle/README.md)
 - Competition Plan
-  - [Objects365 2019 Challenge champion model](static/docs/featured_model/champion_model/CACascadeRCNN.md)
-  - [Best single model of Open Images 2019-Object Detection](static/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
+  - [Objects365 2019 Challenge champion model](static/docs/featured_model/champion_model/CACascadeRCNN_en.md)
+  - [Best single model of Open Images 2019-Object Detection](static/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL_en.md)
 
 ## Applications
 
@@ -270,11 +270,11 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 
 ## Updates
 
-v2.2 was released at `08/2021`, release Transformer detection models, release Dark HRNet keypoint detection model, release tracking models of head and vehicle, release optimized S2ANet model, inference with batch size > 1 supported for main architectures. Please refer to [change log](docs/CHANGELOG.md) for details.
+v2.2 was released at `08/2021`, release Transformer detection models, release Dark HRNet keypoint detection model, release tracking models of head and vehicle, release optimized S2ANet model, inference with batch size > 1 supported for main architectures. Please refer to [change log](docs/CHANGELOG_en.md) for details.
 
-v2.1 was released at `05/2021`, Release Keypoint Detection and Multi-Object Tracking. Release model compression for PPYOLO series. Update documents such as export ONNX model. Please refer to [change log](docs/CHANGELOG.md) for details.
+v2.1 was released at `05/2021`, Release Keypoint Detection and Multi-Object Tracking. Release model compression for PPYOLO series. Update documents such as export ONNX model. Please refer to [change log](docs/CHANGELOG_en.md) for details.
 
-v2.0 was released at `04/2021`, fully support dygraph version, which add BlazeFace, PSS-Det and plenty backbones, release `PP-YOLOv2`, `PP-YOLO tiny` and `S2ANet`, support model distillation and VisualDL, add inference benchmark, etc. Please refer to [change log](docs/CHANGELOG.md) for details.
+v2.0 was released at `04/2021`, fully support dygraph version, which add BlazeFace, PSS-Det and plenty backbones, release `PP-YOLOv2`, `PP-YOLO tiny` and `S2ANet`, support model distillation and VisualDL, add inference benchmark, etc. Please refer to [change log](docs/CHANGELOG_en.md) for details.
 
 
 ## License
