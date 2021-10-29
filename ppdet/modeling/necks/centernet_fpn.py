@@ -27,6 +27,74 @@ from ..shape_spec import ShapeSpec
 __all__ = ['CenterNetDLAFPN', 'CenterNetHarDNetFPN']
 
 
+# SGE attention
+class BasicConv(nn.Layer):
+    def __init__(self,
+                 in_planes,
+                 out_planes,
+                 kernel_size,
+                 stride=1,
+                 padding=0,
+                 dilation=1,
+                 groups=1,
+                 relu=True,
+                 bn=True,
+                 bias_attr=False):
+        super(BasicConv, self).__init__()
+        self.out_channels = out_planes
+        self.conv = nn.Conv2D(
+            in_planes,
+            out_planes,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            groups=groups,
+            bias_attr=bias_attr)
+        self.bn = nn.BatchNorm2D(
+            out_planes,
+            epsilon=1e-5,
+            momentum=0.01,
+            weight_attr=False,
+            bias_attr=False) if bn else None
+        self.relu = nn.ReLU() if relu else None
+
+    def forward(self, x):
+        x = self.conv(x)
+        if self.bn is not None:
+            x = self.bn(x)
+        if self.relu is not None:
+            x = self.relu(x)
+        return x
+
+
+class ChannelPool(nn.Layer):
+    def forward(self, x):
+        return paddle.concat(
+            (paddle.max(x, 1).unsqueeze(1), paddle.mean(x, 1).unsqueeze(1)),
+            axis=1)
+
+
+class SpatialGate(nn.Layer):
+    def __init__(self):
+        super(SpatialGate, self).__init__()
+        kernel_size = 7
+        self.compress = ChannelPool()
+        self.spatial = BasicConv(
+            2,
+            1,
+            kernel_size,
+            stride=1,
+            padding=(kernel_size - 1) // 2,
+            relu=False)
+
+    def forward(self, x):
+        x_compress = self.compress(x)
+        x_out = self.spatial(x_compress)
+        scale = F.sigmoid(x_out)  # broadcasting
+        return x * scale
+
+
 def fill_up_weights(up):
     weight = up.weight.numpy()
     f = math.ceil(weight.shape[2] / 2)
@@ -145,10 +213,10 @@ class CenterNetDLAFPN(nn.Layer):
         last_level (int): the last level of input feature fed into the upsamplng block
         out_channel (int): the channel of the output feature, 0 by default means
             the channel of the input feature whose down ratio is `down_ratio`
-        dcn_v2 (bool): whether use the DCNv2, true by default
-        first_level (int|None): the first level of input feature fed into the upsamplng block.
+        first_level (None): the first level of input feature fed into the upsamplng block.
             if None, the first level stands for logs(down_ratio)
-        
+        dcn_v2 (bool): whether use the DCNv2, True by default
+        with_sge (bool): whether use SGE attention, False by default
     """
 
     def __init__(self,
@@ -156,8 +224,9 @@ class CenterNetDLAFPN(nn.Layer):
                  down_ratio=4,
                  last_level=5,
                  out_channel=0,
+                 first_level=None,
                  dcn_v2=True,
-                 first_level=None):
+                 with_sge=False):
         super(CenterNetDLAFPN, self).__init__()
         self.first_level = int(np.log2(
             down_ratio)) if first_level is None else first_level
@@ -180,6 +249,10 @@ class CenterNetDLAFPN(nn.Layer):
             [2**i for i in range(self.last_level - self.first_level)],
             dcn_v2=dcn_v2)
 
+        self.with_sge = with_sge
+        if self.with_sge:
+            self.sge_attention = SpatialGate()
+
     @classmethod
     def from_config(cls, cfg, input_shape):
         return {'in_channels': [i.channels for i in input_shape]}
@@ -194,7 +267,10 @@ class CenterNetDLAFPN(nn.Layer):
 
         self.ida_up(ida_up_feats, 0, len(ida_up_feats))
 
-        return ida_up_feats[-1]
+        feat = ida_up_feats[-1]
+        if self.with_sge:
+            feat = self.sge_attention(feat)
+        return feat
 
     @property
     def out_shape(self):
