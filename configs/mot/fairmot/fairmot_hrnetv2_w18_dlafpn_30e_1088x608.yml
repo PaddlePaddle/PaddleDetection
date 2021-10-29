@@ -6,6 +6,10 @@ _BASE_: [
   '_base_/fairmot_reader_1088x608.yml',
 ]
 
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+
 # for MOT training
 TrainDataset:
   !MOTDataSet

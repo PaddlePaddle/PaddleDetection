@@ -20,15 +20,19 @@ import os
 import sys
 import datetime
 import six
+import copy
+import json
 
+import paddle
 import paddle.distributed as dist
 
 from ppdet.utils.checkpoint import save_model
+from ppdet.metrics import get_infer_results
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('ppdet.engine')
 
-__all__ = ['Callback', 'ComposeCallback', 'LogPrinter', 'Checkpointer']
+__all__ = ['Callback', 'ComposeCallback', 'LogPrinter', 'Checkpointer', 'VisualDLWriter', 'SniperProposalsGenerator']
 
 
 class Callback(object):
@@ -45,6 +49,12 @@ class Callback(object):
         pass
 
     def on_epoch_end(self, status):
+        pass
+
+    def on_train_begin(self, status):
+        pass
+
+    def on_train_end(self, status):
         pass
 
 
@@ -71,6 +81,14 @@ class ComposeCallback(object):
     def on_epoch_end(self, status):
         for c in self._callbacks:
             c.on_epoch_end(status)
+
+    def on_train_begin(self, status):
+        for c in self._callbacks:
+            c.on_train_begin(status)
+
+    def on_train_end(self, status):
+        for c in self._callbacks:
+            c.on_train_end(status)
 
 
 class LogPrinter(Callback):
@@ -256,3 +274,62 @@ class VisualDLWriter(Callback):
                                                    map_value[0],
                                                    self.vdl_mAP_step)
                 self.vdl_mAP_step += 1
+
+
+class SniperProposalsGenerator(Callback):
+    def __init__(self, model):
+        super(SniperProposalsGenerator, self).__init__(model)
+        ori_dataset = self.model.dataset
+        self.dataset = self._create_new_dataset(ori_dataset)
+        self.loader = self.model.loader
+        self.cfg = self.model.cfg
+        self.infer_model = self.model.model
+
+    def _create_new_dataset(self, ori_dataset):
+        dataset = copy.deepcopy(ori_dataset)
+        # init anno_cropper
+        dataset.init_anno_cropper()
+        # generate infer roidbs
+        ori_roidbs = dataset.get_ori_roidbs()
+        roidbs = dataset.anno_cropper.crop_infer_anno_records(ori_roidbs)
+        # set new roidbs
+        dataset.set_roidbs(roidbs)
+
+        return dataset
+
+    def _eval_with_loader(self, loader):
+        results = []
+        with paddle.no_grad():
+            self.infer_model.eval()
+            for step_id, data in enumerate(loader):
+                outs = self.infer_model(data)
+                for key in ['im_shape', 'scale_factor', 'im_id']:
+                    outs[key] = data[key]
+                for key, value in outs.items():
+                    if hasattr(value, 'numpy'):
+                        outs[key] = value.numpy()
+
+                results.append(outs)
+
+        return results
+
+    def on_train_end(self, status):
+        self.loader.dataset = self.dataset
+        results = self._eval_with_loader(self.loader)
+        results = self.dataset.anno_cropper.aggregate_chips_detections(results)
+        # sniper
+        proposals = []
+        clsid2catid = {v: k for k, v in self.dataset.catid2clsid.items()}
+        for outs in results:
+            batch_res = get_infer_results(outs, clsid2catid)
+            start = 0
+            for i, im_id in enumerate(outs['im_id']):
+                bbox_num = outs['bbox_num']
+                end = start + bbox_num[i]
+                bbox_res = batch_res['bbox'][start:end] \
+                    if 'bbox' in batch_res else None
+                if bbox_res:
+                    proposals += bbox_res
+        logger.info("save proposals in {}".format(self.cfg.proposals_path))
+        with open(self.cfg.proposals_path, 'w') as f:
+            json.dump(proposals, f)
