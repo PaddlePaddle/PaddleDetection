@@ -2,6 +2,36 @@
 
 ## 最新版本信息
 
+### 2.3(11.03/2021)
+
+- 特色模型:
+  - 检测: 轻量级移动端检测模型PP-PicoDet，精度速度达到移动端SOTA
+  - 关键点: 轻量级移动端关键点模型PP-TinyPose
+
+- 模型丰富度:
+  - 检测：
+    - 新增Swin-Transformer目标检测模型
+    - 新增TOOD(Task-aligned One-stage Object Detection)模型
+    - 新增GFL(Generalized Focal Loss)目标检测模型
+    - 发布Sniper小目标检测优化方法，支持Faster RCNN及PP-YOLO系列模型
+    - 发布针对EdgeBoard优化的PP-YOLO-EB模型
+
+  - 跟踪
+    - 发布fairmot 高精度模型、小尺度模型和轻量级模型
+    - 发布行人、人头和车辆实跟踪垂类模型库，覆盖航拍监控、自动驾驶、密集人群、极小目标等场景
+    - DeepSORT模型适配PP-YOLO, PP-PicoDet等更多检测器
+
+  - 关键点
+    - 新增Lite HRNet模型
+
+- 预测部署:
+  - YOLOv3系列模型支持NPU预测部署
+  - FairMot模型C++预测部署打通
+  - 关键点系列模型C++预测部署打通, Paddle Lite预测部署打通
+
+- 文档:
+  - 新增各系列模型英文文档
+
 ### 2.2(08.10/2021)
 
 - 模型丰富度：

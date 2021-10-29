@@ -1,31 +1,27 @@
 English | [简体中文](README_cn.md)
 
-### PaddleDetection 2.0 is ready! Dygraph mode is set by default and static graph code base is [here](static)
 
-### [Keypoint detection](configs/keypoint) and [Multi-Object Tracking](configs/mot) are released!
+# Product news
 
-### Highly effective PPYOLO v2 and ultra lightweight PPYOLO tiny are released! [link](configs/ppyolo/README.md)
+- 2021.11.03: Release [release/2.3]((https://github.com/PaddlePaddle/Paddleetection/tree/release/2.3) version. Release mobile object detection model ⚡[PP-PicoDet](configs/picodet), mobile keypoint detection model ⚡[PP-TinyPose](configs/keypoint/tiny_pose). Release object detection models, including [Swin-Transformer](configs/faster_rcnn), [TOOD](configs/tood), [GFL](configs/gfl), release [Sniper](configs/sniper) tiny object detection models and optimized [PP-YOLO-EB](configs/ppyolo) model for EdgeBoard. Release mobile keypoint detection model [Lite HRNet](configs/keypoint).
+- 2021.08.10: Release [release/2.2]((https://github.com/PaddlePaddle/Paddleetection/tree/release/2.2) version. Release Transformer object detection models, including [DETR](configs/detr), [Deformable DETR](configs/deformable_detr), [Sparse RCNN](configs/sparse_rcnn). Release [keypoint detection](configs/keypoint) models, including DarkHRNet and model trained on MPII dataset. Release [head-tracking](configs/mot/headtracking21) and [vehicle-tracking](configs/mot/vehicle) multi-object tracking models.
+- 2021.05.20: Release [release/2.1]((https://github.com/PaddlePaddle/Paddleetection/tree/release/2.1) version. Release [Keypoint Detection](configs/keypoint), including HigherHRNet and HRNet, [Multi-Object Tracking](configs/mot), including DeepSORT，JDE and FairMOT. Release model compression for PPYOLO series models.Update documents such as [EXPORT ONNX MODEL](deploy/EXPORT_ONNX_MODEL.md).
 
-### SOTA Anchor Free model -- PAFNet is released! [link](configs/ttfnet/README.md)
 
 # Introduction
 
-PaddleDetection is an end-to-end object detection development kit based on PaddlePaddle, which aims to help developers in the whole development of constructing, training, optimizing and deploying detection models in a faster and better way.
+PaddleDetection is an end-to-end object detection development kit based on PaddlePaddle, which implements varied mainstream object detection, instance segmentation, tracking and keypoint detection algorithms in modular designwhich with configurable modules such as network components, data augmentations and losses, and release many kinds SOTA industry practice models, integrates abilities of model compression and cross-platform high-performance deployment, aims to help developers in the whole end-to-end development in a faster and better way.
 
-PaddleDetection implements varied mainstream object detection algorithms in modular design, and provides wealthy data augmentation methods, network components(such as backbones), loss functions, etc., and integrates abilities of model compression and cross-platform high-performance deployment.
+### PaddleDetection provides image processing capabilities such as object detection, instance segmentation, multi-object tracking, keypoint detection and etc.
 
-After a long time of industry practice polishing, PaddleDetection has had smooth and excellent user experience, it has been widely used by developers in more than ten industries such as industrial quality inspection, remote sensing image object detection, automatic inspection, new retail, Internet, and scientific research.
-
-<div align="center">
-  <img src="static/docs/images/football.gif" width='800'/>
-  <img src="docs/images/mot_pose_demo_640x360.gif" width='800'/>
+<div width="900" align="center">
+  <img src="docs/images/det.jpg" width="400" height="300" title="目标检测"/>
+  <img src="docs/images/ins.jpg" width="400" height="300" title="实例分割"/>
 </div>
-
-### Product news
-
-- 2021.05.20: Release `release/2.1` version. Release [Keypoint Detection](configs/keypoint), including HigherHRNet and HRNet, [Multi-Object Tracking](configs/mot), including DeepSORT，JDE and FairMOT. Release model compression for PPYOLO series models.Update documents such as [EXPORT ONNX MODEL](deploy/EXPORT_ONNX_MODEL.md). Please refer to [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1) for details.
-- 2021.04.14: Release `release/2.0` version. Dygraph mode in PaddleDetection is fully supported. Cover all the algorithm of static graph and update the performance of mainstream detection models. Release [`PP-YOLO v2` and `PP-YOLO tiny`](configs/ppyolo/README.md), enhanced anchor free model [PAFNet](configs/ttfnet/README.md) and [`S2ANet`](configs/dota/README.md) which is aimed at rotation object detection.Please refer to [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0) for details.
-- 2020.02.07: Release `release/2.0-rc` version, Please refer to [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0-rc) for details.
+<div width="900" align="center">
+  <img src="docs/images/mot.gif" width="400" height="300" title="多目标跟踪"/>
+  <img src="docs/images/pose.gif" width="400" height="300" title="关键点检测"/>
+</div>
 
 
 ### Features
