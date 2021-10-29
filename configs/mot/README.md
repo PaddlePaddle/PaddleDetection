@@ -164,9 +164,11 @@ If you use a stronger detection model, you can get better results. Each txt is t
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
 | HRNetV2-W18   | 1088x608 |  70.7  |  65.7  |  4281  |  22485  | 138468 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.pdparams) | [config](./fairmot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.yml) |
+| HRNetV2-W18   | 864x480  |  70.3  |  65.8  |  4056  |  18927  | 144486 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_864x480.pdparams) | [config](./fairmot/fairmot_hrnetv2_w18_dlafpn_30e_864x480.yml) |
+| HRNetV2-W18   | 576x320  |  65.3  |  64.8  |  4137  |  28860  | 163017 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.pdparams) | [config](./fairmot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.yml) |
 
 **Notes:**
- FairMOT HRNetV2-W18 used 8 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches. Only ImageNet pre-train model is used, and the optimizer adopts Momentum. The crowdhuman dataset is added to the train-set during training.
+ FairMOT HRNetV2-W18 used 8 GPUs for training and mini-batch size as 4 on each GPU, and trained for 30 epoches. Only ImageNet pre-train model is used, and the optimizer adopts Momentum. The crowdhuman dataset is added to the train-set during training.
 
 
 ## Feature Tracking Model
