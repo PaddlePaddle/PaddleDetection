@@ -4,7 +4,7 @@
 
 # 产品动态
 - 2021.11.03: 发布[release/2.3版本](https://github.com/PaddlePaddd
-    le/PaddleDetection/tree/release/2.3)，发布轻量级检测特色模型⚡⚡[PP-PicoDet](configs/picodet)，发布轻量级关键点特色模型⚡⚡[PP-TinyPose](configs/keypoint/tiny_pose)。新增[Swin Transformer](configs/faster_rcnn)，[TOOD](configs/tood)，[GFL](configs/gfl)目标检测模型。发布[Sniper](configs/sniper)小目标检测优化模型，发布针对EdgeBoard优化[PP-YOLO-EB](configs/ppyolo)模型。新增[Lite HRNet](configs/keypoint)关键点模型并支持Paddle Lite部署。
+    le/PaddleDetection/tree/release/2.3)，发布轻量级检测特色模型⚡[PP-PicoDet](configs/picodet)⚡，发布轻量级关键点特色模型⚡[PP-TinyPose](configs/keypoint/tiny_pose)⚡。新增[Swin Transformer](configs/faster_rcnn)，[TOOD](configs/tood)，[GFL](configs/gfl)目标检测模型。发布[Sniper](configs/sniper)小目标检测优化模型，发布针对EdgeBoard优化[PP-YOLO-EB](configs/ppyolo)模型。新增[Lite HRNet](configs/keypoint)关键点模型并支持Paddle Lite部署。
 - 2021.08.10: 发布[release/2.2版本]((https://github.com/PaddlePaddd
     le/PaddleDetection/tree/release/2.2))，发布Transformer检测系列模型，包括[DETR](configs/detr), [Deformable DETR](configs/deformable_detr), [Sparse RCNN](configs/sparse_rcnn)。新增Dark HRNet关键点模型和MPII数据集[关键点模型](configs/keypoint)，新增[人头](configs/mot/headtracking21)、[车辆](configs/mot/vehicle)跟踪垂类模型。
 - 2021.05.20: 发布[release/2.1版本](https://github.com/PaddlePaddd
