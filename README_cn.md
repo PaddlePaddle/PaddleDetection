@@ -2,11 +2,13 @@
 
 # PaddleDetection
 
-### PaddleDetection 2.0全面升级！目前默认使用动态图版本，静态图版本位于[static](./static)中
-### 全新发布[关键点检测](configs/keypoint)和[多目标跟踪](configs/mot)能力！欢迎使用
-### 超高性价比PPYOLO v2和1.3M超轻量PPYOLO tiny全新出炉！[欢迎使用](configs/ppyolo/README_cn.md)
-### Anchor Free SOTA模型PAFNet发布！[欢迎使用](configs/ttfnet/README.md)
-
+# 产品动态
+- 2021.11.03: 发布[release/2.3版本](https://github.com/PaddlePaddd
+    le/PaddleDetection/tree/release/2.3)，发布轻量级检测特色模型⚡⚡[PP-PicoDet](configs/picodet)，发布轻量级关键点特色模型⚡⚡[PP-TinyPose](configs/keypoint/tiny_pose)。新增[Swin Transformer](configs/faster_rcnn)，[TOOD](configs/tood)，[GFL](configs/gfl)目标检测模型。发布[Sniper](configs/sniper)小目标检测优化模型，发布针对EdgeBoard优化[PP-YOLO-EB](configs/ppyolo)模型。新增[Lite HRNet](configs/keypoint)关键点模型并支持Paddle Lite部署。
+- 2021.08.10: 发布[release/2.2版本]((https://github.com/PaddlePaddd
+    le/PaddleDetection/tree/release/2.2))，发布Transformer检测系列模型，包括[DETR](configs/detr), [Deformable DETR](configs/deformable_detr), [Sparse RCNN](configs/sparse_rcnn)。新增Dark HRNet关键点模型和MPII数据集[关键点模型](configs/keypoint)，新增[人头](configs/mot/headtracking21)、[车辆](configs/mot/vehicle)跟踪垂类模型。
+- 2021.05.20: 发布[release/2.1版本](https://github.com/PaddlePaddd
+    le/PaddleDetection/tree/release/2.1)，新增[关键点检测](configs/keypoint)，模型包括HigherHRNet，HRNet。新增[多目标跟踪](configs/mot)能力，模型包括DeepSORT，JDE，FairMOT。发布PPYOLO系列模型压缩模型，新增[ONNX模型导出教程](deploy/EXPORT_ONNX_MODEL.md)。
 
 # 简介
 
@@ -21,10 +23,6 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
   <img src="docs/images/mot_pose_demo_640x360.gif" width='800'/>
 </div>
 
-### 产品动态
-- 2021.05.20: 发布release/2.1版本，新增[关键点检测](configs/keypoint)，模型包括HigherHRNet，HRNet。新增[多目标跟踪](configs/mot)能力，模型包括DeepSORT，JDE，FairMOT。发布PPYOLO系列模型压缩模型，新增[ONNX模型导出教程](deploy/EXPORT_ONNX_MODEL.md)，详情参考[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1)
-- 2021.04.14: 发布release/2.0版本，PaddleDetection全面支持动态图，覆盖静态图模型算法，全面升级模型效果，同时发布[PP-YOLO v2, PPYOLO tiny](configs/ppyolo/README_cn.md)模型，增强版anchor free模型[PAFNet](configs/ttfnet/README.md)，新增旋转框检测[S2ANet](configs/dota/README.md)模型，详情参考[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0)
-- 2021.02.07: 发布release/2.0-rc版本，PaddleDetection动态图试用版本，详情参考[PaddleDetection动态图](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0-rc)。
 
 ### 特性
 
