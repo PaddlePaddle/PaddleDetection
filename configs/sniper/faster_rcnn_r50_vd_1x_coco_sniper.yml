@@ -1,0 +1,19 @@
+_BASE_: [
+  '../datasets/sniper_coco_detection.yml',
+  '../runtime.yml',
+  '../faster_rcnn/_base_/optimizer_1x.yml',
+  '../faster_rcnn/_base_/faster_rcnn_r50.yml',
+  '_base_/faster_reader.yml',
+]
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_1x_coco.pdparams
+weights: output/faster_rcnn_r50_vd_1x_coco/model_final
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  variant: d
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [2]
+  num_stages: 3
