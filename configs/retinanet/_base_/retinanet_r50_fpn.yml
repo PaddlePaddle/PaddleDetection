@@ -1,0 +1,49 @@
+architecture: RetinaNet
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+
+RetinaNet:
+  backbone: ResNet
+  neck: FPN
+  anchor_generator: AnchorGenerator
+  head: RetinaNetHead
+  postprocess: RetinaNetPostProcess
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1,2,3]
+  num_stages: 4
+
+FPN:
+  out_channel: 256
+  spatial_scales: [0.125, 0.0625, 0.03125]
+  extra_stage: 2
+  has_extra_convs: true
+
+AnchorGenerator:
+  anchor_sizes: !!python/object/apply:eval ["[[x, x * 2**(1.0/3), x * 2**(2.0/3) ] for x in [32, 64, 128, 256, 512 ]]"]
+  aspect_ratios: [0.5, 1.0, 2.0]
+  strides: [8.0, 16.0, 32.0, 64.0, 128.0]
+
+RetinaNetHead:
+  num_classes: 80
+  num_convs: 4
+  loss_func: RetinaNetLoss
+  prior_prob: 0.01
+
+RetinaNetPostProcess:
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    nms_threshold: 0.5
+  bbox_reg_weights: [1.0, 1.0, 1.0, 1.0]
+
+RetinaNetLoss:
+  focal_loss_alpha: 0.25
+  focal_loss_gamma: 2.0
+  smoothl1_loss_delta: 0.0
+  positive_thresh: 0.5
+  negative_thresh: 0.4
