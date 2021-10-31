@@ -35,12 +35,13 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval
-from ppdet.metrics import RBoxMetric, JDEDetMetric
+from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric
+from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 from ppdet.utils import profiler
 
-from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter
+from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter,SniperProposalsGenerator
 from .export_utils import _dump_infer_config, _prune_input_spec
 
 from ppdet.utils.logger import setup_logger
@@ -137,6 +138,8 @@ class Trainer(object):
             self._callbacks = [LogPrinter(self), Checkpointer(self)]
             if self.cfg.get('use_vdl', False):
                 self._callbacks.append(VisualDLWriter(self))
+            if self.cfg.get('save_proposals', False):
+                self._callbacks.append(SniperProposalsGenerator(self))
             self._compose_callback = ComposeCallback(self._callbacks)
         elif self.mode == 'eval':
             self._callbacks = [LogPrinter(self)]
@@ -155,7 +158,7 @@ class Trainer(object):
             self._metrics = []
             return
         classwise = self.cfg['classwise'] if 'classwise' in self.cfg else False
-        if self.cfg.metric == 'COCO':
+        if self.cfg.metric == 'COCO' or self.cfg.metric == "SNIPERCOCO":
             # TODO: bias should be unified
             bias = self.cfg['bias'] if 'bias' in self.cfg else 0
             output_eval = self.cfg['output_eval'] \
@@ -170,22 +173,38 @@ class Trainer(object):
             # when do validation in train, annotation file should be get from
             # EvalReader instead of self.dataset(which is TrainReader)
             anno_file = self.dataset.get_anno()
+            dataset = self.dataset
             if self.mode == 'train' and validate:
                 eval_dataset = self.cfg['EvalDataset']
                 eval_dataset.check_or_download_dataset()
                 anno_file = eval_dataset.get_anno()
+                dataset = eval_dataset
 
             IouType = self.cfg['IouType'] if 'IouType' in self.cfg else 'bbox'
-            self._metrics = [
-                COCOMetric(
-                    anno_file=anno_file,
-                    clsid2catid=clsid2catid,
-                    classwise=classwise,
-                    output_eval=output_eval,
-                    bias=bias,
-                    IouType=IouType,
-                    save_prediction_only=save_prediction_only)
-            ]
+            if self.cfg.metric == "COCO":
+                self._metrics = [
+                    COCOMetric(
+                        anno_file=anno_file,
+                        clsid2catid=clsid2catid,
+                        classwise=classwise,
+                        output_eval=output_eval,
+                        bias=bias,
+                        IouType=IouType,
+                        save_prediction_only=save_prediction_only)
+                ]
+            elif self.cfg.metric == "SNIPERCOCO": # sniper
+                self._metrics = [
+                    SNIPERCOCOMetric(
+                        anno_file=anno_file,
+                        dataset=dataset,
+                        clsid2catid=clsid2catid,
+                        classwise=classwise,
+                        output_eval=output_eval,
+                        bias=bias,
+                        IouType=IouType,
+                        save_prediction_only=save_prediction_only
+                    )
+                ]
         elif self.cfg.metric == 'RBOX':
             # TODO: bias should be unified
             bias = self.cfg['bias'] if 'bias' in self.cfg else 0
@@ -342,6 +361,8 @@ class Trainer(object):
             self._flops(self.loader)
         profiler_options = self.cfg.get('profiler_options', None)
 
+        self._compose_callback.on_train_begin(self.status)
+
         for epoch_id in range(self.start_epoch, self.cfg.epoch):
             self.status['mode'] = 'train'
             self.status['epoch_id'] = epoch_id
@@ -424,6 +445,8 @@ class Trainer(object):
             if self.use_ema:
                 self.model.set_dict(weight)
 
+        self._compose_callback.on_train_end(self.status)
+
     def _eval_with_loader(self, loader):
         sample_num = 0
         tic = time.time()
@@ -479,6 +502,7 @@ class Trainer(object):
         self.model.eval()
         if self.cfg.get('print_flops', False):
             self._flops(loader)
+        results = []
         for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
             # forward
@@ -489,7 +513,12 @@ class Trainer(object):
             for key, value in outs.items():
                 if hasattr(value, 'numpy'):
                     outs[key] = value.numpy()
+            results.append(outs)
+        # sniper
+        if type(self.dataset) == SniperCOCODataSet:
+            results = self.dataset.anno_cropper.aggregate_chips_detections(results)
 
+        for outs in results:
             batch_res = get_infer_results(outs, clsid2catid)
             bbox_num = outs['bbox_num']
 

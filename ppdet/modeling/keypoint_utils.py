@@ -95,6 +95,37 @@ def get_affine_transform(center,
     return trans
 
 
+def get_warp_matrix(theta, size_input, size_dst, size_target):
+    """Calculate the transformation matrix under the constraint of unbiased.
+    Paper ref: Huang et al. The Devil is in the Details: Delving into Unbiased
+    Data Processing for Human Pose Estimation (CVPR 2020).
+
+    Args:
+        theta (float): Rotation angle in degrees.
+        size_input (np.ndarray): Size of input image [w, h].
+        size_dst (np.ndarray): Size of output image [w, h].
+        size_target (np.ndarray): Size of ROI in input plane [w, h].
+
+    Returns:
+        matrix (np.ndarray): A matrix for transformation.
+    """
+    theta = np.deg2rad(theta)
+    matrix = np.zeros((2, 3), dtype=np.float32)
+    scale_x = size_dst[0] / size_target[0]
+    scale_y = size_dst[1] / size_target[1]
+    matrix[0, 0] = np.cos(theta) * scale_x
+    matrix[0, 1] = -np.sin(theta) * scale_x
+    matrix[0, 2] = scale_x * (
+        -0.5 * size_input[0] * np.cos(theta) + 0.5 * size_input[1] *
+        np.sin(theta) + 0.5 * size_target[0])
+    matrix[1, 0] = np.sin(theta) * scale_y
+    matrix[1, 1] = np.cos(theta) * scale_y
+    matrix[1, 2] = scale_y * (
+        -0.5 * size_input[0] * np.sin(theta) - 0.5 * size_input[1] *
+        np.cos(theta) + 0.5 * size_target[1])
+    return matrix
+
+
 def _get_3rd_point(a, b):
     """To calculate the affine matrix, three pairs of points are required. This
     function is used to get the 3rd point, given 2D points a & b.

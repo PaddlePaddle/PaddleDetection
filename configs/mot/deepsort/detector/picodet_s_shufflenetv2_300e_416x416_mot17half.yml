@@ -1,7 +1,7 @@
 _BASE_: [
-  '../../../picodet/picodet_s_shufflenetv2_416_coco.yml',
+  '../../../picodet/picodet_l_640_coco.yml',
 ]
-weights: output/picodet_s_shufflenetv2_300e_416x416_mot17half/model_final
+weights: output/picodet_l_esnet_300e_640x640_mot17half/model_final
 
 num_classes: 1
 TrainDataset:
@@ -18,47 +18,58 @@ EvalDataset:
     dataset_dir: dataset/mot/MOT17
 
 
+TrainReader:
+  # batch_size: 80
+  batch_size: 20
+
+LearningRate:
+  # base_lr: 0.4
+  base_lr: 0.1
+
 # detector configuration
 architecture: PicoDet
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ShuffleNetV2_x1_0_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ESNet_x1_25_pretrained.pdparams
 find_unused_parameters: True
 use_ema: true
 cycle_epoch: 40
 snapshot_epoch: 10
+epoch: 250
 
 PicoDet:
-  backbone: ShuffleNetV2
-  neck: PAN
+  backbone: ESNet
+  neck: CSPPAN
   head: PicoHead
 
-ShuffleNetV2:
-  scale: 1.0
-  feature_maps: [5, 13, 17]
-  act: leaky_relu
+ESNet:
+  scale: 1.25
+  feature_maps: [4, 11, 14]
+  act: hard_swish
+  channel_ratio: [0.875, 0.5, 1.0, 0.625, 0.5, 0.75, 0.625, 0.625, 0.5, 0.625, 1.0, 0.625, 0.75]
 
-PAN:
-  out_channel: 96
-  start_level: 0
-  end_level: 3
-  spatial_scales: [0.125, 0.0625, 0.03125]
+CSPPAN:
+  out_channels: 128
+  use_depthwise: True
+  num_csp_blocks: 1
+  num_features: 4
 
 PicoHead:
   conv_feat:
     name: PicoFeat
-    feat_in: 96
-    feat_out: 96
-    num_convs: 2
+    feat_in: 128
+    feat_out: 128
+    num_convs: 4
+    num_fpn_stride: 4
     norm_type: bn
-    share_cls_reg: True
-  fpn_stride: [8, 16, 32]
-  feat_in_chan: 96
+    share_cls_reg: False
+  fpn_stride: [8, 16, 32, 64]
+  feat_in_chan: 128
   prior_prob: 0.01
   reg_max: 7
   cell_offset: 0.5
-  loss_qfl:
-    name: QualityFocalLoss
+  loss_class:
+    name: VarifocalLoss
     use_sigmoid: True
-    beta: 2.0
+    iou_weighted: True
     loss_weight: 1.0
   loss_dfl:
     name: DistributionFocalLoss
@@ -66,6 +77,10 @@ PicoHead:
   loss_bbox:
     name: GIoULoss
     loss_weight: 2.0
+  assigner:
+    name: SimOTAAssigner
+    candidate_topk: 10
+    iou_weight: 6
   nms:
     name: MultiClassNMS
     nms_top_k: 1000
