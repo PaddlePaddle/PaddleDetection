@@ -42,4 +42,4 @@ OptimizerBuilder:
   regularizer: NULL
 
 TrainReader:
-  batch_size: 4
+  batch_size: 8

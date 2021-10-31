@@ -105,11 +105,12 @@ class FairMOTEmbeddingHead(nn.Layer):
             embedding = paddle.reshape(embedding, [-1, self.ch_emb])
             # embedding shape: [bs * h * w, ch_emb]
 
-            pred_dets, pred_embs = [], []
             if self.num_classes == 1:
+                pred_dets, pred_embs = list(), list()
                 pred_dets.append(det_outs)
                 pred_embs.append(paddle.gather(embedding, bbox_inds))
             else:
+                pred_dets, pred_embs = [], []
                 for cls_id in range(self.num_classes):
                     pos_num = cls_inds_masks[cls_id].sum().numpy()
                     if pos_num == 0:

@@ -500,7 +500,7 @@ class CenterNetPostProcess(TTFBox):
             x2 = xs + wh[:, 0:1] / 2
             y2 = ys + wh[:, 1:2] / 2
 
-        n, c, feat_h, feat_w = hm.shape[:]
+        feat_h, feat_w = paddle.shape(hm)[2], paddle.shape(hm)[3]
         padw = (feat_w * self.down_ratio - im_shape[0, 1]) / 2
         padh = (feat_h * self.down_ratio - im_shape[0, 0]) / 2
         x1 = x1 * self.down_ratio

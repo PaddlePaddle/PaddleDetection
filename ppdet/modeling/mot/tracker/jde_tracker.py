@@ -80,9 +80,9 @@ class JDETracker(object):
         self.metric_type = metric_type
 
         self.frame_id = 0
-        self.tracked_tracks_dict = defaultdict(list)  # value type: list[STrack]
-        self.lost_tracks_dict = defaultdict(list)  # value type: list[STrack]
-        self.removed_tracks_dict = defaultdict(list)  # value type: list[STrack]
+        self.tracked_tracks_dict = defaultdict(list) # dict(list[STrack])
+        self.lost_tracks_dict = defaultdict(list) # dict(list[STrack])
+        self.removed_tracks_dict = defaultdict(list) # dict(list[STrack])
 
         self.max_time_lost = 0
         # max_time_lost will be calculated: int(frame_rate / 30.0 * track_buffer)
@@ -137,6 +137,7 @@ class JDETracker(object):
                 ]
             else:
                 detections = []
+
             ''' Add newly detected tracklets to tracked_stracks'''
             unconfirmed_dict = defaultdict(list)
             tracked_tracks_dict = defaultdict(list)

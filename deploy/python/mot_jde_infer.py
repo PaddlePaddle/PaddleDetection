@@ -17,6 +17,8 @@ import time
 import yaml
 import cv2
 import numpy as np
+from collections import defaultdict
+
 import paddle
 from benchmark_utils import PaddleInferBenchmark
 from preprocess import preprocess
@@ -92,27 +94,30 @@ class JDE_Detector(Detector):
             conf_thres=conf_thres,
             tracked_thresh=tracked_thresh,
             metric_type=metric_type)
+        self.num_classes = 10
 
     def postprocess(self, pred_dets, pred_embs, threshold):
-        online_targets = self.tracker.update(pred_dets, pred_embs)
-        if online_targets == []:
-            # First few frames, the model may have no tracking results but have
-            # detection results，use the detection results instead, and set id -1.
-            return [pred_dets[0][:4]], [pred_dets[0][4]], [-1]
-        online_tlwhs, online_ids = [], []
-        online_scores = []
-        for t in online_targets:
-            tlwh = t.tlwh
-            tid = t.track_id
-            tscore = t.score
-            if tscore < threshold: continue
-            if tlwh[2] * tlwh[3] <= self.tracker.min_box_area: continue
-            if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
-                    3] > self.tracker.vertical_ratio:
-                continue
-            online_tlwhs.append(tlwh)
-            online_ids.append(tid)
-            online_scores.append(tscore)
+        online_targets_dict = self.tracker.update(pred_dets, pred_embs)
+        #if online_targets == []:
+        #    # First few frames, the model may have no tracking results but have
+        #    # detection results，use the detection results instead, and set id -1.
+        #    return [pred_dets[0][:4]], [pred_dets[0][4]], [-1]
+        online_tlwhs = defaultdict(list)
+        online_scores = defaultdict(list)
+        online_ids = defaultdict(list)
+        for cls_id in range(self.num_classes):
+            online_targets = online_targets_dict[cls_id]
+            for t in online_targets:
+                tlwh = t.tlwh
+                tid = t.track_id
+                tscore = t.score
+                if tlwh[2] * tlwh[3] <= self.tracker.min_box_area: continue
+                if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                        3] > self.tracker.vertical_ratio:
+                    continue
+                online_tlwhs[cls_id].append(tlwh)
+                online_ids[cls_id].append(tid)
+                online_scores[cls_id].append(tscore)
         return online_tlwhs, online_scores, online_ids
 
     def predict(self, image_list, threshold=0.5, warmup=0, repeats=1):
@@ -121,7 +126,7 @@ class JDE_Detector(Detector):
             image_list (list): list of image
             threshold (float): threshold of predicted box' score
         Returns:
-            online_tlwhs, online_scores, online_ids (np.ndarray)
+            online_tlwhs, online_scores, online_ids (dict[np.array])
         '''
         self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image_list)
@@ -158,30 +163,35 @@ class JDE_Detector(Detector):
 
 
 def write_mot_results(filename, results, data_type='mot'):
-    if data_type in ['mot', 'mcmot', 'lab']:
-        save_format = '{frame},{id},{x1},{y1},{w},{h},{score},-1,-1,-1\n'
+    if data_type in ['mot', 'mcmot']:
+        save_format = '{frame},{id},{x1},{y1},{w},{h},{score},{cls_id},-1,-1\n'
     elif data_type == 'kitti':
-        save_format = '{frame} {id} pedestrian 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
+        save_format = '{frame} {id} car 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
     else:
         raise ValueError(data_type)
 
-    with open(filename, 'w') as f:
-        for frame_id, tlwhs, tscores, track_ids in results:
-            if data_type == 'kitti':
-                frame_id -= 1
+    f = open(filename, 'w')
+    for cls_id in range(len(results)):
+        for frame_id, tlwhs, tscores, track_ids in results[cls_id]:
             for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
+                if track_id < 0: continue
+                if data_type == 'kitti':
+                    frame_id -= 1
+                elif data_type == 'mot':
+                    cls_id = -1
+                elif data_type == 'mcmot':
+                    cls_id = cls_id
+
                 x1, y1, w, h = tlwh
-                x2, y2 = x1 + w, y1 + h
                 line = save_format.format(
                     frame=frame_id,
                     id=track_id,
                     x1=x1,
                     y1=y1,
-                    x2=x2,
-                    y2=y2,
                     w=w,
                     h=h,
-                    score=score)
+                    score=score,
+                    cls_id=cls_id)
                 f.write(line)
 
 
