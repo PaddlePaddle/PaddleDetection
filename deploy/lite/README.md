@@ -24,7 +24,7 @@ Paddle Lite是飞桨轻量化推理引擎，为手机、IOT端提供高效推理
 1. [**建议**]直接下载，预测库下载链接如下：
       |平台|预测库下载链接|
       |-|-|
-      |Android|[arm7](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.9.1/inference_lite_lib.android.armv7.clang.c++_static.with_extra.with_cv.tar.gz) / [arm8](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.9.1/inference_lite_lib.android.armv8.clang.c++_static.with_extra.with_cv.tar.gz)|
+      |Android|[arm7](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.10-rc/inference_lite_lib.android.armv7.clang.c++_static.with_extra.with_cv.tar.gz) / [arm8](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.10-rc/inference_lite_lib.android.armv8.clang.c++_static.with_extra.with_cv.tar.gz)|
 
 **注意**：1. 如果是从 Paddle-Lite [官方文档](https://paddle-lite.readthedocs.io/zh/latest/quick_start/release_lib.html#android-toolchain-gcc)下载的预测库，注意选择`with_extra=ON，with_cv=ON`的下载链接。2. 目前只提供Android端demo，IOS端demo可以参考[Paddle-Lite IOS demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo/tree/master/PaddleLite-ios-demo)
 
@@ -77,13 +77,13 @@ Paddle-Lite 提供了多种策略来自动优化原始的模型，其中包括�
 **注意**：如果已经准备好了 `.nb` 结尾的模型文件，可以跳过此步骤。
 
 #### 2.1.1 安装paddle_lite_opt工具
-安装paddle_lite_opt工具有如下两种方法：
+安装`paddle_lite_opt`工具有如下两种方法：
 1. [**建议**]pip安装paddlelite并进行转换
     ```shell
-    pip install paddlelite
+    pip install paddlelite==2.10rc
     ```
 
-2. 源码编译Paddle-Lite生成opt工具
+2. 源码编译Paddle-Lite生成`paddle_lite_opt`工具
 
     模型优化需要Paddle-Lite的`opt`可执行文件，可以通过编译Paddle-Lite源码获得，编译步骤如下：
     ```shell
@@ -120,23 +120,24 @@ Paddle-Lite 提供了多种策略来自动优化原始的模型，其中包括�
 
 #### 2.1.3 转换示例
 
-下面以PaddleDetection中的 `ppyolo` 模型为例，介绍使用`paddle_lite_opt`完成预训练模型到inference模型，再到Paddle-Lite优化模型的转换。
+下面以PaddleDetection中的 `PicoDet` 模型为例，介绍使用`paddle_lite_opt`完成预训练模型到inference模型，再到Paddle-Lite优化模型的转换。
 
 ```shell
 # 进入PaddleDetection根目录
 cd PaddleDetection_root_path
 
 # 将预训练模型导出为inference模型
-python tools/export_model.py -c configs/ppyolo/ppyolo_tiny_650e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolo_tiny_650e_coco.pdparams
+python tools/export_model.py -c configs/picodet/picodet_s_320_coco.yml \
+              -o weights=https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams --output_dir=output_inference
 
 # 将inference模型转化为Paddle-Lite优化模型
-paddle_lite_opt  --valid_targets=arm --model_file=output_inference/ppyolo_tiny_650e_coco/model.pdmodel --param_file=output_inference/ppyolo_tiny_650e_coco/model.pdiparams --optimize_out=output_inference/ppyolo_tiny_650e_coco/model
+paddle_lite_opt  --valid_targets=arm --model_file=output_inference/picodet_s_320_coco/model.pdmodel --param_file=output_inference/picodet_s_320_coco/model.pdiparams --optimize_out=output_inference/picodet_s_320_coco/model
 
 # 将inference模型配置转化为json格式
-python deploy/lite/convert_yml_to_json.py output_inference/ppyolo_tiny_650e_coco/infer_cfg.yml
+python deploy/lite/convert_yml_to_json.py output_inference/picodet_s_320_coco/infer_cfg.yml
 ```
 
-最终在output_inference/ppyolo_tiny_650e_coco/文件夹下生成`ppyolo_tiny.nb` 和 `infer_cfg.json`的文件。
+最终在output_inference/picodet_s_320_coco/文件夹下生成`model.nb` 和 `infer_cfg.json`的文件。
 
 **注意**：`--optimize_out` 参数为优化后模型的保存路径，无需加后缀`.nb`；`--model_file` 参数为模型结构信息文件的路径，`--param_file` 参数为模型权重信息文件的路径，请注意文件名。
 
@@ -185,7 +186,7 @@ cp -r Makefile src/ include/ *runtime_config.json $inference_lite_path/demo/cxx/
 cd $inference_lite_path/demo/cxx/lite
 
 # 执行编译，等待完成后得到可执行文件main
-make ARM_ABI = arm8
+make ARM_ABI=arm8
 #如果是arm7，则执行 make ARM_ABI = arm7 (或者在Makefile中修改该项)
 
 ```
@@ -200,10 +201,10 @@ mkdir model_det
 mkdir model_keypoint
 
 # 将优化后的模型、预测库文件、测试图像放置在预测库中的demo/cxx/detection文件夹下
-cp {PadddleDetection_Root}/output_inference/ppyolo_tiny_650e_coco/model.nb ./model_det/
-cp {PadddleDetection_Root}/output_inference/ppyolo_tiny_650e_coco/infer_cfg.json ./model_det/
+cp {PadddleDetection_Root}/output_inference/picodet_s_320_coco/model.nb ./model_det/
+cp {PadddleDetection_Root}/output_inference/picodet_s_320_coco/infer_cfg.json ./model_det/
 
-# 如果需要关键点模型，则只需一下操作
+# 如果需要关键点模型，则只需操作：
 cp {PadddleDetection_Root}/output_inference/hrnet_w32_256x192/model.nb ./model_keypoint/
 cp {PadddleDetection_Root}/output_inference/hrnet_w32_256x192/infer_cfg.json ./model_keypoint/
 
@@ -219,10 +220,10 @@ cp ../../../cxx/lib/libpaddle_light_api_shared.so ./
 ```
 deploy/
 |-- model_det/
-|   |--mdoel.nb                    优化后的检测模型文件
+|   |--model.nb                    优化后的检测模型文件
 |   |--infer_cfg.json              检测器模型配置文件
 |-- model_keypoint/
-|   |--mdoel.nb                    优化后的关键点模型文件
+|   |--model.nb                    优化后的关键点模型文件
 |   |--infer_cfg.json              关键点模型配置文件
 |-- main                           生成的移动端执行文件
 |-- det_runtime_config.json        目标检测执行时参数配置文件
@@ -240,7 +241,7 @@ deploy/
   "threshold_det": 0.5,                         #检测器输出阈值
   "image_file": "demo.jpg",                     #测试图片
   "image_dir": "",                              #测试图片文件夹
-  "run_benchmark": false,                       #性能测试开关
+  "run_benchmark": true,                       #性能测试开关
   "cpu_threads": 4                              #线程数
 }
 ```
@@ -253,7 +254,7 @@ deploy/
   "threshold_keypoint": 0.5,                    #关键点输出阈值
   "image_file": "demo.jpg",                     #测试图片
   "image_dir": "",                              #测试图片文件夹
-  "run_benchmark": false,                       #性能测试开关
+  "run_benchmark": true,                       #性能测试开关
   "cpu_threads": 4                              #线程数
 }
 ```

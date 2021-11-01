@@ -129,15 +129,11 @@ class SimOTAAssigner(object):
         valid_mask[valid_mask.copy()] = fg_mask_inboxes
 
         matched_gt_inds = matching_matrix[fg_mask_inboxes, :].argmax(1)
-        matched_pred_ious = (matching_matrix *
-                             pairwise_ious.numpy()).sum(1)[fg_mask_inboxes]
 
-        matched_pred_ious = paddle.to_tensor(
-            matched_pred_ious, place=pairwise_ious.place)
         matched_gt_inds = paddle.to_tensor(
             matched_gt_inds, place=pairwise_ious.place)
 
-        return matched_pred_ious, matched_gt_inds, valid_mask
+        return matched_gt_inds, valid_mask
 
     def get_sample(self, assign_gt_inds, gt_bboxes):
         pos_inds = np.unique(np.nonzero(assign_gt_inds > 0)[0])
@@ -231,7 +227,7 @@ class SimOTAAssigner(object):
                 paddle.logical_not(is_in_boxes_and_center).cast('float32') * INF
             )
 
-        matched_pred_ious, matched_gt_inds, valid_mask = \
+        matched_gt_inds, valid_mask = \
             self.dynamic_k_matching(
                 cost_matrix, pairwise_ious, num_gt, valid_mask.numpy())
 
