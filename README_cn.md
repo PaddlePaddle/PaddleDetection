@@ -13,13 +13,8 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
 
 ### PaddleDetection提供了目标检测、实例分割、多目标跟踪、关键点检测等多种能力
 
-<div width="900" align="center">
-  <img src="docs/images/det.jpg" width="400" height="300" title="目标检测"/>
-  <img src="docs/images/ins.jpg" width="400" height="300" title="实例分割"/>
-</div>
-<div width="900" align="center">
-  <img src="docs/images/mot.gif" width="400" height="300" title="多目标跟踪"/>
-  <img src="docs/images/pose.gif" width="400" height="300" title="关键点检测"/>
+<div width="1000" align="center">
+  <img src="docs/images/ppdet.gif"/>
 </div>
 
 

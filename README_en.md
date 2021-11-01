@@ -14,13 +14,8 @@ PaddleDetection is an end-to-end object detection development kit based on Paddl
 
 ### PaddleDetection provides image processing capabilities such as object detection, instance segmentation, multi-object tracking, keypoint detection and etc.
 
-<div width="900" align="center">
-  <img src="docs/images/det.jpg" width="400" height="300" title="目标检测"/>
-  <img src="docs/images/ins.jpg" width="400" height="300" title="实例分割"/>
-</div>
-<div width="900" align="center">
-  <img src="docs/images/mot.gif" width="400" height="300" title="多目标跟踪"/>
-  <img src="docs/images/pose.gif" width="400" height="300" title="关键点检测"/>
+<div width="1000" align="center">
+  <img src="docs/images/ppdet.gif"/>
 </div>
 
 
