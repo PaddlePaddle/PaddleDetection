@@ -3,7 +3,7 @@ English | [简体中文](README_cn.md)
 
 # Product news
 
-- 2021.11.03: Release [release/2.3]((https://github.com/PaddlePaddle/Paddleetection/tree/release/2.3) version. Release mobile object detection model ⚡[PP-PicoDet](configs/picodet), mobile keypoint detection model ⚡[PP-TinyPose](configs/keypoint/tiny_pose). Release object detection models, including [Swin-Transformer](configs/faster_rcnn), [TOOD](configs/tood), [GFL](configs/gfl), release [Sniper](configs/sniper) tiny object detection models and optimized [PP-YOLO-EB](configs/ppyolo) model for EdgeBoard. Release mobile keypoint detection model [Lite HRNet](configs/keypoint).
+- 2021.11.03: Release [release/2.3](https://github.com/PaddlePaddle/Paddleetection/tree/release/2.3) version. Release mobile object detection model ⚡[PP-PicoDet](configs/picodet), mobile keypoint detection model ⚡[PP-TinyPose](configs/keypoint/tiny_pose). Release object detection models, including [Swin-Transformer](configs/faster_rcnn), [TOOD](configs/tood), [GFL](configs/gfl), release [Sniper](configs/sniper) tiny object detection models and optimized [PP-YOLO-EB](configs/ppyolo) model for EdgeBoard. Release mobile keypoint detection model [Lite HRNet](configs/keypoint).
 - 2021.08.10: Release [release/2.2](https://github.com/PaddlePaddle/Paddleetection/tree/release/2.2) version. Release Transformer object detection models, including [DETR](configs/detr), [Deformable DETR](configs/deformable_detr), [Sparse RCNN](configs/sparse_rcnn). Release [keypoint detection](configs/keypoint) models, including DarkHRNet and model trained on MPII dataset. Release [head-tracking](configs/mot/headtracking21) and [vehicle-tracking](configs/mot/vehicle) multi-object tracking models.
 - 2021.05.20: Release [release/2.1]((https://github.com/PaddlePaddle/Paddleetection/tree/release/2.1) version. Release [Keypoint Detection](configs/keypoint), including HigherHRNet and HRNet, [Multi-Object Tracking](configs/mot), including DeepSORT，JDE and FairMOT. Release model compression for PPYOLO series models.Update documents such as [EXPORT ONNX MODEL](deploy/EXPORT_ONNX_MODEL.md).
 
@@ -35,7 +35,7 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
 
 #### Overview of Kit Structures
 
-<table>
+<table align="center">
   <tbody>
     <tr align="center" valign="bottom">
       <td>
@@ -60,7 +60,7 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
             <li>Cascade-RCNN</li>
             <li>Libra RCNN</li>
             <li>Hybrid Task RCNN</li>
-            <li>PSS-Det RCNN</li>
+            <li>PSS-Det</li>
           </ul>
         </ul>
         <ul><li><b>One-Stage Detection</b></li>
@@ -68,7 +68,7 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
             <li>RetinaNet</li>
             <li>YOLOv3</li>
             <li>YOLOv4</li>  
-            <li>PP-YOLO</li>
+            <li>PP-YOLOv1/v2/Tiny</li>
             <li>SSD</li>
           </ul>
         </ul>
@@ -77,6 +77,7 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
             <li>CornerNet-Squeeze</li>
             <li>FCOS</li>  
             <li>TTFNet</li>
+            <li>PicoDet</li>
           </ul>
         </ul>
         <ul>
@@ -87,11 +88,34 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
             </ul>
         </ul>
         <ul>
-          <li><b>Face-Detection</b></li>
+          <li><b>Face-Detction</b></li>
             <ul>
              <li>FaceBoxes</li>
              <li>BlazeFace</li>
              <li>BlazeFace-NAS</li>
+            </ul>
+        </ul>
+        <ul>
+          <li><b>Transformer</b></li>
+            <ul>
+             <li>DETR/Deformable DETR</li>
+             <li>Sparse RCNN</li>
+             <li>Swin Transformer</li>
+            </ul>
+        </ul>
+        <ul>
+          <li><b>Multi-Object-Tracking</b></li>
+            <ul>
+             <li>JDE</li>
+             <li>FairMOT</li>
+             <li>DeepSort</li>
+            </ul>
+        </ul>
+        <ul>
+          <li><b>KeyPoint-Detection</b></li>
+            <ul>
+             <li>HRNet</li>
+             <li>HigherHRNet</li>
             </ul>
         </ul>
       </td>
@@ -111,6 +135,7 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
           <li>MobileNetv1/v3</li>  
           <li>GhostNet</li>
           <li>Efficientnet</li>  
+          <li>BlazeNet</li>  
         </ul>
       </td>
       <td>
@@ -120,6 +145,11 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
             <li>Group Norm</li>
             <li>DCNv2</li>
             <li>Non-local</li>
+          </ul>  
+        </ul>
+        <ul><li><b>KeyPoint</b></li>
+          <ul>
+            <li>DarkPose</li>
           </ul>  
         </ul>
         <ul><li><b>FPN</b></li>
@@ -153,15 +183,18 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
       <td>
         <ul>
           <li>Resize</li>  
+          <li>Lighting</li>  
           <li>Flipping</li>  
           <li>Expand</li>
           <li>Crop</li>
           <li>Color Distort</li>  
           <li>Random Erasing</li>  
           <li>Mixup </li>
+          <li>Mosaic</li>
           <li>Cutmix </li>
           <li>Grid Mask</li>
           <li>Auto Augment</li>  
+          <li>Random Perspective</li>  
         </ul>  
       </td>  
     </tr>
