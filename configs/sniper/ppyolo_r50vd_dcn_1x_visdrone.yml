@@ -8,7 +8,7 @@ _BASE_: [
 
 snapshot_epoch: 8
 use_ema: true
-weights: output/ppyolo_r50vd_dcn_1x_visdrone_coco/model_final
+weights: output/ppyolo_r50vd_dcn_1x_visdrone/model_final
 
 epoch: 192
 
