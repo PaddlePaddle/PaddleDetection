@@ -28,7 +28,7 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
 
 ### 套件结构概览
 
-<table>
+<table align="center">
   <tbody>
     <tr align="center" valign="bottom">
       <td>
@@ -61,7 +61,7 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
             <li>RetinaNet</li>
             <li>YOLOv3</li>
             <li>YOLOv4</li>  
-            <li>PP-YOLO</li>
+            <li>PP-YOLOv1/v2/Tiny</li>
             <li>SSD</li>
           </ul>
         </ul>
@@ -70,6 +70,7 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
             <li>CornerNet-Squeeze</li>
             <li>FCOS</li>  
             <li>TTFNet</li>
+            <li>PicoDet</li>
           </ul>
         </ul>
         <ul>
@@ -85,6 +86,29 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
              <li>FaceBoxes</li>
              <li>BlazeFace</li>
              <li>BlazeFace-NAS</li>
+            </ul>
+        </ul>
+        <ul>
+          <li><b>Transformer</b></li>
+            <ul>
+             <li>DETR/Deformable DETR</li>
+             <li>Sparse RCNN</li>
+             <li>Swin Transformer</li>
+            </ul>
+        </ul>
+        <ul>
+          <li><b>Multi-Object-Tracking</b></li>
+            <ul>
+             <li>JDE</li>
+             <li>FairMOT</li>
+             <li>DeepSort</li>
+            </ul>
+        </ul>
+        <ul>
+          <li><b>KeyPoint-Detection</b></li>
+            <ul>
+             <li>HRNet</li>
+             <li>HigherHRNet</li>
             </ul>
         </ul>
       </td>
@@ -104,6 +128,7 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
           <li>MobileNetv1/v3</li>  
           <li>GhostNet</li>
           <li>Efficientnet</li>  
+          <li>BlazeNet</li>  
         </ul>
       </td>
       <td>
@@ -113,6 +138,11 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
             <li>Group Norm</li>
             <li>DCNv2</li>
             <li>Non-local</li>
+          </ul>  
+        </ul>
+        <ul><li><b>KeyPoint</b></li>
+          <ul>
+            <li>DarkPose</li>
           </ul>  
         </ul>
         <ul><li><b>FPN</b></li>
@@ -146,15 +176,18 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
       <td>
         <ul>
           <li>Resize</li>  
+          <li>Lighting</li>  
           <li>Flipping</li>  
           <li>Expand</li>
           <li>Crop</li>
           <li>Color Distort</li>  
           <li>Random Erasing</li>  
           <li>Mixup </li>
+          <li>Mosaic</li>
           <li>Cutmix </li>
           <li>Grid Mask</li>
           <li>Auto Augment</li>  
+          <li>Random Perspective</li>  
         </ul>  
       </td>  
     </tr>
