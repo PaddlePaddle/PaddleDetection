@@ -5,7 +5,7 @@ _BASE_: [
   '_base_/faster_rcnn_r50_fpn.yml',
   '_base_/faster_fpn_reader.yml',
 ]
-weights: output/faster_rcnn_r50_fpn_1x_coco_visdrone/model_final
+weights: output/faster_rcnn_r50_fpn_1x_visdrone/model_final
 
 
 metric: COCO
