@@ -33,16 +33,16 @@ cv::Scalar GetColor(int idx);
 
 // Visualize Tracking Results
 cv::Mat VisualizeTrackResult(const cv::Mat& img,
-                     const MOT_Result& results,
+                     const MOTResult& results,
                      const float fps, const int frame_id);
 
 // Pedestrian/Vehicle Counting
-void FlowStatistic(const MOT_Result& results, const int frame_id,
+void FlowStatistic(const MOTResult& results, const int frame_id,
                    std::vector<int>* count_list, 
                    std::vector<int>* in_count_list, 
                    std::vector<int>* out_count_list);
 
 // Save Tracking Results
-void SaveResult(const MOT_Result& results, const std::string& output_dir);
+void SaveResult(const MOTResult& results, const std::string& output_dir);
 
 } // namespace PaddleDetection

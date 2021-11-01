@@ -36,13 +36,13 @@ void SDEPredictor::Preprocess(const cv::Mat& ori_im) {
 
 void SDEPredictor::Postprocess(
     const cv::Mat dets, const cv::Mat emb,
-    MOT_Result* result) {
+    MOTResult* result) {
   throw "Not Implement";
 }
 
 void SDEPredictor::Predict(const std::vector<cv::Mat> imgs,
       const double threshold,
-      MOT_Result* result,
+      MOTResult* result,
       std::vector<double>* times) {
   throw "Not Implement";
 }

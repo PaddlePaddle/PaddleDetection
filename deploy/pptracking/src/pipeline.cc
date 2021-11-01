@@ -110,7 +110,7 @@ void Pipeline::PredictSCT(const std::string& video_path) {
     return;
   }
 
-  PaddleDetection::MOT_Result result;
+  PaddleDetection::MOTResult result;
   std::vector<double> det_times(3);
   std::vector<int> count_list;
   std::vector<int> in_count_list;

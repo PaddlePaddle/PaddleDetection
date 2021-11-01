@@ -91,7 +91,7 @@ void JDEPredictor::Preprocess(const cv::Mat& ori_im) {
 
 void JDEPredictor::Postprocess(
     const cv::Mat dets, const cv::Mat emb,
-    MOT_Result* result) {
+    MOTResult* result) {
   result->clear();
   std::vector<Track> tracks;
   std::vector<int> valid;
@@ -103,8 +103,8 @@ void JDEPredictor::Postprocess(
   }
   JDETracker::instance()->update(new_dets, new_emb, tracks);
   if (tracks.size() == 0) {
-    MOT_Track mot_track;
-    MOT_Rect ret = {*dets.ptr<float>(0, 0), 
+    MOTTrack mot_track;
+    Rect ret = {*dets.ptr<float>(0, 0), 
                     *dets.ptr<float>(0, 1),
                     *dets.ptr<float>(0, 2),
                     *dets.ptr<float>(0, 3)};
@@ -123,8 +123,8 @@ void JDEPredictor::Postprocess(
         bool vertical = w / h > 1.6;
         float area = w * h;
         if (area > min_box_area_ && !vertical) {
-          MOT_Track mot_track;
-          MOT_Rect ret = {titer->ltrb[0],
+          MOTTrack mot_track;
+          Rect ret = {titer->ltrb[0],
                           titer->ltrb[1],
                           titer->ltrb[2],
                           titer->ltrb[3]};
@@ -140,7 +140,7 @@ void JDEPredictor::Postprocess(
 
 void JDEPredictor::Predict(const std::vector<cv::Mat> imgs,
       const double threshold,
-      MOT_Result* result,
+      MOTResult* result,
       std::vector<double>* times) {
   auto preprocess_start = std::chrono::steady_clock::now();
   int batch_size = imgs.size();

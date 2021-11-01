@@ -29,7 +29,7 @@ cv::Scalar GetColor(int idx) {
 }
 
 cv::Mat VisualizeTrackResult(const cv::Mat& img,
-                        const MOT_Result& results,
+                        const MOTResult& results,
                         const float fps, const int frame_id) {
   cv::Mat vis_img = img.clone();
   int im_h = img.rows;
@@ -97,14 +97,14 @@ cv::Mat VisualizeTrackResult(const cv::Mat& img,
   return vis_img;
 }
 
-void FlowStatistic(const MOT_Result& results, const int frame_id,
+void FlowStatistic(const MOTResult& results, const int frame_id,
                    std::vector<int>* count_list, 
                    std::vector<int>* in_count_list, 
                    std::vector<int>* out_count_list) {
   throw "Not Implement";
 }
 
-void SaveResult(const MOT_Result& results, const std::string& output_dir) {
+void SaveResult(const MOTResult& results, const std::string& output_dir) {
   throw "Not Implement";
 }
 

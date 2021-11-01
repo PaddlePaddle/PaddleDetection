@@ -24,7 +24,7 @@ namespace PaddleDetection {
 
 void Predictor::Predict(const std::vector<cv::Mat> imgs,
       const double threshold,
-      MOT_Result* result,
+      MOTResult* result,
       std::vector<double>* times) {
   if (use_jde_) {
     jde_sct_->Predict(imgs, threshold, result, times);

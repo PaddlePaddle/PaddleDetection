@@ -25,7 +25,7 @@
 
 namespace PaddleDetection {
 
-struct MOT_Rect
+struct Rect
 {
     float left;
     float top;
@@ -33,14 +33,14 @@ struct MOT_Rect
     float bottom;
 };
 
-struct MOT_Track
+struct MOTTrack
 {
     int ids;
     float score;
-    MOT_Rect rects;
+    Rect rects;
     int class_id = -1;
 };
 
-typedef std::vector<MOT_Track> MOT_Result;
+typedef std::vector<MOTTrack> MOTResult;
 
 }  // namespace PaddleDetection

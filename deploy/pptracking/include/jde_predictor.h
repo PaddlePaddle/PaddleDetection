@@ -67,7 +67,7 @@ class JDEPredictor {
   // Run predictor
   void Predict(const std::vector<cv::Mat> imgs,
       const double threshold = 0.5,
-      MOT_Result* result = nullptr,
+      MOTResult* result = nullptr,
       std::vector<double>* times = nullptr);
 
  private:
@@ -84,7 +84,7 @@ class JDEPredictor {
   // Postprocess result
   void Postprocess(
       const cv::Mat dets, const cv::Mat emb,
-      MOT_Result* result);
+      MOTResult* result);
 
   std::shared_ptr<Predictor> predictor_;
   Preprocessor preprocessor_;

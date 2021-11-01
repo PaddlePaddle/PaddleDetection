@@ -67,7 +67,7 @@ class Predictor {
   // Run predictor
   void Predict(const std::vector<cv::Mat> imgs,
       const double threshold = 0.5,
-      MOT_Result* result = nullptr,
+      MOTResult* result = nullptr,
       std::vector<double>* times = nullptr);
 
  private:
