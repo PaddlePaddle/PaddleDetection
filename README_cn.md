@@ -181,8 +181,10 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
 - `PP-YOLO v2`是对`PP-YOLO`模型的进一步优化，在COCO数据集精度49.5%，Tesla V100预测速度68.9FPS
 - 图中模型均可在[模型库](#模型库)中获取
 
+各移动端模型在COCO数据集上精度mAP和高通骁龙865处理器上预测速度(FPS)对比图。
+
 <div align="center">
-  <img src="docs/images/mobile_fps_map.png" />
+  <img src="docs/images/mobile_fps_map.png" width=600/>
 </div>
 
 **说明：**

@@ -173,10 +173,29 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
 </table>
 
 #### Overview of Model Performance
-The relationship between COCO mAP and FPS on Tesla V100 of representative models of each architectures and backbones.
+
+The relationship between COCO mAP and FPS on Tesla V100 of representative models of each server side architectures and backbones.
 
 <div align="center">
   <img src="docs/images/fps_map.png" />
+  </div>
+
+  **NOTE:**
+
+  - `CBResNet stands` for `Cascade-Faster-RCNN-CBResNet200vd-FPN`, which has highest mAP on COCO as 53.3%
+
+  - `Cascade-Faster-RCNN` stands for `Cascade-Faster-RCNN-ResNet50vd-DCN`, which has been optimized to 20 FPS inference speed when COCO mAP as 47.8% in PaddleDetection models
+
+  - `PP-YOLO` achieves mAP of 45.9% on COCO and 72.9FPS on Tesla V100. Both precision and speed surpass [YOLOv4](https://arxiv.org/abs/2004.10934)
+
+  - `PP-YOLO v2` is optimized version of `PP-YOLO` which has mAP of 49.5% and 68.9FPS on Tesla V100
+
+  - All these models can be get in [Model Zoo](#ModelZoo)
+
+The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of representative mobile side models.
+
+<div align="center">
+  <img src="docs/images/fps_map.png" width=600 />
 </div>
 
 **NOTE:**
