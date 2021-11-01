@@ -113,7 +113,7 @@ python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2
 # 使用提供训练好的模型评估
 python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=https://paddledet.bj.bcebos.com/models/s2anet_1x_spine.pdparams
 ```
-** 注意：** 
+** 注意：**
 (1) dota数据集中是train和val数据作为训练集一起训练的，对dota数据集进行评估时需要自定义设置评估数据集配置。
 
 (2) 骨骼数据集是由分割数据转换而来，由于椎间盘不同类别对于检测任务而言区别很小，且s2anet算法最后得出的分数较低，评估时默认阈值为0.5，mAP较低是正常的。建议通过可视化查看检测结果。
@@ -142,8 +142,8 @@ python3.7 tools/infer.py -c configs/dota/s2anet_alignconv_2x_dota.yml -o weights
 
 |     模型     |  Conv类型  |   mAP    |   模型下载   |   配置文件   |
 |:-----------:|:----------:|:--------:| :----------:| :---------: |
-|   S2ANet    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_conv_2x_dota.yml)                   |
-|   S2ANet    |  AlignConv |   74.0   |  [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_alignconv_2x_dota.yml)                   |
+|   S2ANet    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/dota/s2anet_conv_2x_dota.yml)                   |
+|   S2ANet    |  AlignConv |   74.0   |  [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/dota/s2anet_alignconv_2x_dota.yml)                   |
 
 **注意：** 这里使用`multiclass_nms`，与原作者使用nms略有不同。
 

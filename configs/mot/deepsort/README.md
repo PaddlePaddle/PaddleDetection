@@ -17,15 +17,15 @@ English | [简体中文](README_cn.md)
 
 | backbone  | input shape | MOTA | IDF1 |  IDS  |   FP  |   FN  |   FPS  | det result/model |ReID model| config |
 | :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :---: | :---: | :---: |
-| ResNet-101 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  - | [det result](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
-| ResNet-101 | 1088x608 |  68.3  |  56.5  | 1722 |  17337 | 15890 |  - | [det model](https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608.pdparams) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| ResNet-101 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  - | [det result](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| ResNet-101 | 1088x608 |  68.3  |  56.5  | 1722 |  17337 | 15890 |  - | [det model](https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608.pdparams) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
 
 ### DeepSORT Results on MOT-16 Test Set
 
 | backbone  | input shape | MOTA | IDF1 |  IDS  |   FP  |   FN  |   FPS  | det result/model |ReID model| config |
 | :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :---: | :---: | :---: |
-| ResNet-101 | 1088x608 |  64.1  |  53.0  | 1024  |  12457  | 51919 |  - |[det result](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
-| ResNet-101 | 1088x608 |  61.2  |  48.5  | 1799  |  25796  | 43232 |  - | [det model](https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608.pdparams)  |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| ResNet-101 | 1088x608 |  64.1  |  53.0  | 1024  |  12457  | 51919 |  - |[det result](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| ResNet-101 | 1088x608 |  61.2  |  48.5  | 1799  |  25796  | 43232 |  - | [det model](https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608.pdparams)  |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
 
 **Notes:**
 DeepSORT does not need to train on MOT dataset, only used for evaluation. Now it supports two evaluation methods.
