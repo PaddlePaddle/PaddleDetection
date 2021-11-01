@@ -5,8 +5,8 @@
 ## 模型库
 | 有无sniper   | GPU个数    | 每张GPU图片个数 | 骨架网络             | 数据集     | 学习率策略 | Box AP |                           模型下载                          | 配置文件 |
 | :---------------- | :-------------------: | :------------------: | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
-| w/o sniper   |    4    |    1    | ResNet-r50-FPN      | [VisDrone](https://github.com/VisDrone/VisDrone-Dataset)  |   1x    |  23.3  | [下载链接](https://bj.bcebos.com/v1/paddledet/models/faster_rcnn_r50_fpn_1x_visdrone.pdparams ) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/sniper/faster_rcnn_r50_fpn_1x_sniper_coco.yml) |
-| w sniper |    4    |    1    | ResNet-r50-FPN      | [VisDrone](https://github.com/VisDrone/VisDrone-Dataset)    |   1x    |  29.7  | [下载链接](https://bj.bcebos.com/v1/paddledet/models/faster_rcnn_r50_fpn_1x_sniper_visdrone.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/sniper/faster_rcnn_r50_fpn_2x_sniper_coco.yml) |
+| w/o sniper   |    4    |    1    | ResNet-r50-FPN      | [VisDrone](https://github.com/VisDrone/VisDrone-Dataset)  |   1x    |  23.3  | [下载链接](https://bj.bcebos.com/v1/paddledet/models/faster_rcnn_r50_fpn_1x_visdrone.pdparams ) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/sniper/faster_rcnn_r50_fpn_1x_sniper_coco.yml) |
+| w sniper |    4    |    1    | ResNet-r50-FPN      | [VisDrone](https://github.com/VisDrone/VisDrone-Dataset)    |   1x    |  29.7  | [下载链接](https://bj.bcebos.com/v1/paddledet/models/faster_rcnn_r50_fpn_1x_sniper_visdrone.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/sniper/faster_rcnn_r50_fpn_2x_sniper_coco.yml) |
 
 
 ### 注意

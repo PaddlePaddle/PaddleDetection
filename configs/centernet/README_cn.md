@@ -18,8 +18,8 @@
 | 骨干网络       | 输入尺寸 | mAP   |    FPS    | 下载链接 | 配置文件 |
 | :--------------| :------- |  :----: | :------: | :----: |:-----: |
 | DLA-34(paper)  | 512x512 |  37.4  |     -   |    -   |   -    |
-| DLA-34         | 512x512 |  37.6  |     -   | [下载链接](https://bj.bcebos.com/v1/paddledet/models/centernet_dla34_140e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/centernet_dla34_140e_coco.yml) |
-| ResNet50 + DLAUp  | 512x512 |  38.9  |     -   | [下载链接](https://bj.bcebos.com/v1/paddledet/models/centernet_r50_140e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/centernet_r50_140e_coco.yml) |
+| DLA-34         | 512x512 |  37.6  |     -   | [下载链接](https://bj.bcebos.com/v1/paddledet/models/centernet_dla34_140e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/centernet/centernet_dla34_140e_coco.yml) |
+| ResNet50 + DLAUp  | 512x512 |  38.9  |     -   | [下载链接](https://bj.bcebos.com/v1/paddledet/models/centernet_r50_140e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/centernet/centernet_r50_140e_coco.yml) |
 
 
 ## 引用

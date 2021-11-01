@@ -124,7 +124,7 @@ python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2
 # Use a trained model to evaluate
 python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=https://paddledet.bj.bcebos.com/models/s2anet_1x_spine.pdparams
 ```
-**Attention:** 
+**Attention:**
 (1) The DOTA dataset is trained together with train and val data as a training set, and the evaluation dataset configuration needs to be customized when evaluating the DOTA dataset.
 
 (2) Bone dataset is transformed from segmented data. As there is little difference between different types of discs for detection tasks, and the score obtained by S2ANET algorithm is low, the default threshold for evaluation is 0.5, a low mAP is normal. You are advised to view the detection result visually.
@@ -152,8 +152,8 @@ Please refer to [DOTA_devkit](https://github.com/CAPTAIN-WHU/DOTA_devkit) genera
 
 |     Model     |  Conv Type  |   mAP    |   Model Download   |   Configuration File   |
 |:-----------:|:----------:|:--------:| :----------:| :---------: |
-|   S2ANet    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_conv_2x_dota.yml)                   |
-|   S2ANet    |  AlignConv |   74.0   |  [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_alignconv_2x_dota.yml)                   |
+|   S2ANet    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/dota/s2anet_conv_2x_dota.yml)                   |
+|   S2ANet    |  AlignConv |   74.0   |  [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/dota/s2anet_alignconv_2x_dota.yml)                   |
 
 **Attention:** `multiclass_nms` is used here, which is slightly different from the original author's use of NMS.
 
