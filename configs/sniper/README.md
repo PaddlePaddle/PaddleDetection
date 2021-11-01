@@ -6,8 +6,8 @@ English | [简体中文](README_cn.md)
 
 | Sniper   | GPU number    | images/GPU |    Model  |    Dataset     | Schedulers | Box AP |          Download                  | Config |
 | :---------------- | :-------------------: | :------------------: | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
-| w/o   |    4    |    1    | ResNet-r50-FPN      | [VisDrone](https://github.com/VisDrone/VisDrone-Dataset)  |   1x    |  23.3  | [Download Link](https://bj.bcebos.com/v1/paddledet/models/faster_rcnn_r50_fpn_1x_visdrone.pdparams ) | [Config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/sniper/faster_rcnn_r50_fpn_1x_sniper_coco.yml) |
-| w/ |    4    |    1    | ResNet-r50-FPN      | [VisDrone](https://github.com/VisDrone/VisDrone-Dataset)   |   1x    |  29.7  | [Download Link](https://bj.bcebos.com/v1/paddledet/models/faster_rcnn_r50_fpn_1x_sniper_visdrone.pdparams) | [Config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/sniper/faster_rcnn_r50_fpn_2x_sniper_coco.yml) |
+| w/o   |    4    |    1    | ResNet-r50-FPN      | [VisDrone](https://github.com/VisDrone/VisDrone-Dataset)  |   1x    |  23.3  | [Download Link](https://bj.bcebos.com/v1/paddledet/models/faster_rcnn_r50_fpn_1x_visdrone.pdparams ) | [config](./faster_rcnn_r50_fpn_1x_visdrone.yml) |
+| w/ |    4    |    1    | ResNet-r50-FPN      | [VisDrone](https://github.com/VisDrone/VisDrone-Dataset)   |   1x    |  29.7  | [Download Link](https://bj.bcebos.com/v1/paddledet/models/faster_rcnn_r50_fpn_1x_sniper_visdrone.pdparams) | [config](./faster_rcnn_r50_fpn_1x_sniper_visdrone.yml) |
 
 ### Note
 > Here, we use VisDrone dataset, and to detect 9 objects including `person, bicycles, car, van, truck, tricyle, awning-tricyle, bus, motor`.
@@ -21,18 +21,18 @@ python tools/sniper_params_stats.py FasterRCNN annotations/instances_train2017.j
 ```
 b. optional: trian detector to get negative proposals.
 ```bash
-python -m paddle.distributed.launch --log_dir=./sniper/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/sniper/faster_rcnn_r50_fpn_2x_sniper_coco.yml --save_proposals --proposals_path=./proposals.json &>sniper.log 2>&1 &
+python -m paddle.distributed.launch --log_dir=./sniper/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/sniper/faster_rcnn_r50_fpn_1x_sniper_visdrone.yml --save_proposals --proposals_path=./proposals.json &>sniper.log 2>&1 &
 ```
 c. train models
 ```bash
-python -m paddle.distributed.launch --log_dir=./sniper/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/sniper/faster_rcnn_r50_fpn_2x_sniper_coco.yml --eval &>sniper.log 2>&1 &
+python -m paddle.distributed.launch --log_dir=./sniper/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/sniper/faster_rcnn_r50_fpn_1x_sniper_visdrone.yml --eval &>sniper.log 2>&1 &
 ```
 
 ### 2. Evaluation
 Evaluating SNIPER on custom dataset in single GPU with following commands:
 ```bash
 # use saved checkpoint in training
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/sniper/faster_rcnn_r50_fpn_2x_sniper_coco.yml -o weights=output/faster_rcnn_r50_fpn_2x_sniper_coco/model_final
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/sniper/faster_rcnn_r50_fpn_1x_sniper_visdrone.yml -o weights=output/faster_rcnn_r50_fpn_1x_sniper_visdrone/model_final
 ```
 
 ### 3. Inference
@@ -40,10 +40,10 @@ Inference images in single GPU with following commands, use `--infer_img` to inf
 
 ```bash
 # inference single image
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/sniper/faster_rcnn_r50_fpn_2x_sniper_coco.yml -o weights=output/faster_rcnn_r50_fpn_2x_sniper_coco/model_final --infer_img=demo/P0861__1.0__1154___824.png
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/sniper/faster_rcnn_r50_fpn_1x_sniper_visdrone.yml -o weights=output/faster_rcnn_r50_fpn_1x_sniper_visdrone/model_final --infer_img=demo/P0861__1.0__1154___824.png
 
 # inference all images in the directory
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/sniper/faster_rcnn_r50_fpn_2x_sniper_coco.yml -o weights=output/faster_rcnn_r50_fpn_2x_sniper_coco/model_final --infer_dir=demo
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/sniper/faster_rcnn_r50_fpn_1x_sniper_visdrone.yml -o weights=output/faster_rcnn_r50_fpn_1x_sniper_visdrone/model_final --infer_dir=demo
 ```
 
 ## Citations
