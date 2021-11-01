@@ -201,7 +201,7 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
 **NOTE:**
 
 - All data tested on Qualcomm Snapdragon 865(4\*A77 + 4\*A55) processor with batch size of 1 and CPU threads of 4, and use NCNN library in testing, benchmark scripts is publiced at [MobileDetBenchmark](https://github.com/JiweiMaster/MobileDetBenchmark)
-- [PP-PicoDet](configs/picodet) and [PP-YOLO-Tiny](configs/ppyolo) are developed by PaddleDetection.
+- [PP-PicoDet](configs/picodet) and [PP-YOLO-Tiny](configs/ppyolo) are developed and released by PaddleDetection, other models are not provided in PaddleDetection.
 
 ## Tutorials
 
