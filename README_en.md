@@ -228,7 +228,7 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of representative mobile side models.
 
 <div align="center">
-  <img src="docs/images/fps_map.png" width=600 />
+  <img src="docs/images/mobile_fps_map.png" width=600 />
 </div>
 
 **NOTE:**
