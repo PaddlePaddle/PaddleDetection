@@ -57,7 +57,7 @@ We developed a series of lightweight models, named `PP-PicoDet`. Because of the 
 | Model     | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params<br><sup>(M) | FLOPS<br><sup>(G) | Latency<sup><small>[NCNN](#latency)</small><sup><br><sup>(ms) |
 | :-------- | :--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :-----------------------------: |
 | YOLOv3-Tiny |  416*416   |          16.6           |        33.1      |        8.86        |       5.62        |             25.42               |
-| YOLOv3-Tiny |  416*416   |          21.7           |        40.2        |        6.06           |       6.96           |             23.69               |
+| YOLOv4-Tiny |  416*416   |          21.7           |        40.2        |        6.06           |       6.96           |             23.69               |
 | PP-YOLO-Tiny |  320*320       |          20.6         |        -              |   1.08             |    0.58             |    6.75                           |  
 | PP-YOLO-Tiny |  416*416   |          22.7          |    -               |    1.08               |    1.02             |    10.48                          |  
 | Nanodet-M |  320*320      |          20.6            |    -               |    0.95               |    0.72             |    8.71                           |  
@@ -67,9 +67,6 @@ We developed a series of lightweight models, named `PP-PicoDet`. Because of the 
 | YOLOX-Tiny     |  416*416   |          32.8          |    -               |    5.06               |    6.45             |    32.77                          |
 | YOLOv5n |  640*640       |          28.4             |    46.0            |    1.9                |    4.5              |    40.35                          |
 | YOLOv5s |  640*640       |          37.2             |    56.0            |    7.2                |    16.5             |    78.05                          |
-
-
-</details>
 
 
 ## Deployment
@@ -138,6 +135,7 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco/ \
   python -m onnxsim picodet_s_320_coco.onnx picodet_s_processed.onnx
   ```
 
+</details>
 
 ### Deploy
 
