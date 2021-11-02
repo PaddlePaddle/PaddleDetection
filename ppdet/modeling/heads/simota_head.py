@@ -127,11 +127,6 @@ class OTAHead(GFLHead):
                            gt_labels):
         """Compute targets for priors in a single image.
         """
-        num_gts = gt_labels.shape[0]
-        # No target
-        if num_gts == 0:
-            pass
-
         centors, labels, label_weights, bbox_targets, pos_num = self.assigner(
             F.sigmoid(cls_preds), centors, decoded_bboxes, gt_bboxes, gt_labels)
 
