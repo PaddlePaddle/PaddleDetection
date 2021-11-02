@@ -1,9 +1,9 @@
 _BASE_: [
   '../datasets/coco_detection.yml',
   '../runtime.yml',
-  '_base_/optimizer_1x.yml',
-  '_base_/faster_rcnn_r50_fpn.yml',
-  '_base_/faster_fpn_reader.yml',
+  '../faster_rcnn/_base_/optimizer_1x.yml',
+  '../faster_rcnn/_base_/faster_rcnn_r50_fpn.yml',
+  '../faster_rcnn/_base_/faster_fpn_reader.yml',
 ]
 weights: output/faster_rcnn_r50_fpn_1x_visdrone/model_final
 
