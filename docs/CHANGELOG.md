@@ -1,3 +1,5 @@
+简体中文 | [English](./CHANGELOG_en.md)
+
 # 版本更新信息
 
 ## 最新版本信息
@@ -17,7 +19,7 @@
     - 发布针对EdgeBoard优化的PP-YOLO-EB模型
 
   - 跟踪
-    - 发布FairMOT高精度模型、小尺度模型和轻量级模型
+    - 发布FairMot高精度模型、小尺度模型和轻量级模型
     - 发布行人、人头和车辆实跟踪垂类模型库，覆盖航拍监控、自动驾驶、密集人群、极小目标等场景
     - DeepSORT模型适配PP-YOLO, PP-PicoDet等更多检测器
 

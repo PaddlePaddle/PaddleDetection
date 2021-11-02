@@ -305,11 +305,7 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
 
 ## Updates
 
-v2.2 was released at `08/2021`, release Transformer detection models, release Dark HRNet keypoint detection model, release tracking models of head and vehicle, release optimized S2ANet model, inference with batch size > 1 supported for main architectures. Please refer to [change log](docs/CHANGELOG_en.md) for details.
-
-v2.1 was released at `05/2021`, Release Keypoint Detection and Multi-Object Tracking. Release model compression for PPYOLO series. Update documents such as export ONNX model. Please refer to [change log](docs/CHANGELOG_en.md) for details.
-
-v2.0 was released at `04/2021`, fully support dygraph version, which add BlazeFace, PSS-Det and plenty backbones, release `PP-YOLOv2`, `PP-YOLO tiny` and `S2ANet`, support model distillation and VisualDL, add inference benchmark, etc. Please refer to [change log](docs/CHANGELOG_en.md) for details.
+Updates please refer to [change log](docs/CHANGELOG_en.md) for details.
 
 
 ## License
