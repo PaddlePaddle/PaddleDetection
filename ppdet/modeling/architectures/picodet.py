@@ -64,7 +64,7 @@ class PicoDet(BaseArch):
         fpn_feats = self.neck(body_feats)
         head_outs = self.head(fpn_feats, self.deploy)
         if self.training or self.deploy:
-            return head_outs
+            return head_outs, None
         else:
             im_shape = self.inputs['im_shape']
             scale_factor = self.inputs['scale_factor']
