@@ -3,19 +3,19 @@
 ![](../../docs/images/picedet_demo.jpeg)
 ## Introduction
 
-We developed a series of lightweight models, which named `PP-PicoDet`. Because of its excellent performance, it is very suitable for deployment on mobile or CPU. For more details, please refer to our [report on arXiv](https://arxiv.org/abs/2111.00902).
+We developed a series of lightweight models, named `PP-PicoDet`. Because of the excellent performance, our models are very suitable for deployment on mobile or CPU. For more details, please refer to our [report on arXiv](https://arxiv.org/abs/2111.00902).
 
 - 🌟 Higher mAP: the **first** object detectors that surpass mAP(0.5:0.95) **30+** within 1M parameters when the input size is 416.
 - 🚀 Faster latency: 150FPS on mobile ARM CPU.
 - 😊 Deploy friendly: support PaddleLite/MNN/NCNN/OpenVINO and provide C++/Python/Android implementation.
-- 😍 Advanced algorithm: use the most advanced algorithms and innovate, such as ESNet, CSP-PAN, SimOTA with VFL, etc.
+- 😍 Advanced algorithm: use the most advanced algorithms and offer innovation, such as ESNet, CSP-PAN, SimOTA with VFL, etc.
 
 
 <div align="center">
   <img src="../../docs/images/picodet_map.png" width='600'/>
 </div>
 
-### Comming soon
+### Comming Soon
 - [ ] More series of model, such as smaller or larger model.
 - [ ] Pretrained models for more scenarios.
 - [ ] More features in need.
@@ -35,7 +35,7 @@ We developed a series of lightweight models, which named `PP-PicoDet`. Because o
 | PicoDet-L |  416*416   |          36.6           |        52.5        |        3.30        |       3.76        |              23.36              |            **21.85**            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_416_coco.yml) |
 | PicoDet-L |  640*640   |          40.9           |        57.6        |        3.30        |       8.91        |              54.11              |            **50.55**            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_640_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_640_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_640_coco.yml) |
 
-#### More config
+#### More Configs
 
 | Model     | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params<br><sup>(M) | FLOPS<br><sup>(G) | Latency<sup><small>[NCNN](#latency)</small><sup><br><sup>(ms) | Latency<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  download  | config |
 | :--------------------------- | :--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :-----------------------------: | :-----------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -52,10 +52,26 @@ We developed a series of lightweight models, which named `PP-PicoDet`. Because o
 
 </details>
 
+#### Benchmark of Other Models
+
+| Model     | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params<br><sup>(M) | FLOPS<br><sup>(G) | Latency<sup><small>[NCNN](#latency)</small><sup><br><sup>(ms) |
+| :-------- | :--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :-----------------------------: |
+| YOLOv3-Tiny |  416*416   |          16.6           |        33.1      |        8.86        |       5.62        |             25.42               |
+| YOLOv4-Tiny |  416*416   |          21.7           |        40.2        |        6.06           |       6.96           |             23.69               |
+| PP-YOLO-Tiny |  320*320       |          20.6         |        -              |   1.08             |    0.58             |    6.75                           |  
+| PP-YOLO-Tiny |  416*416   |          22.7          |    -               |    1.08               |    1.02             |    10.48                          |  
+| Nanodet-M |  320*320      |          20.6            |    -               |    0.95               |    0.72             |    8.71                           |  
+| Nanodet-M |  416*416   |          23.5             |    -               |    0.95               |    1.2              |  13.35                          |
+| Nanodet-M 1.5x |  416*416   |          26.8        |    -                  | 2.08               |    2.42             |    15.83                          |
+| YOLOX-Nano     |  416*416   |          25.8          |    -               |    0.91               |    1.08             |    19.23                          |
+| YOLOX-Tiny     |  416*416   |          32.8          |    -               |    5.06               |    6.45             |    32.77                          |
+| YOLOv5n |  640*640       |          28.4             |    46.0            |    1.9                |    4.5              |    40.35                          |
+| YOLOv5s |  640*640       |          37.2             |    56.0            |    7.2                |    16.5             |    78.05                          |
+
 
 ## Deployment
 
-### Export and Convert model
+### Export and Convert Model
 
 <details>
 <summary>1. Export model (click to expand)</summary>
@@ -131,14 +147,13 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco/ \
 - [Android demo](https://github.com/JiweiMaster/PP-PicoDet-Android-Demo)
 
 
+Android demo visualization:
 <div align="center">
   <img src="../../docs/images/picodet_android_demo1.jpg" height="500px" ><img src="../../docs/images/picodet_android_demo2.jpg" height="500px" ><img src="../../docs/images/picodet_android_demo3.jpg" height="500px" ><img src="../../docs/images/picodet_android_demo4.jpg" height="500px" >
 </div>
 
 
-## Slim
-
-### quantization
+## Quantization
 
 <details open>
 <summary>Requirements:</summary>
@@ -176,11 +191,11 @@ python tools/post_quant.py -c configs/picodet/picodet_s_320_coco.yml \
           --slim_config configs/slim/post_quant/picodet_s_ptq.yml
 ```
 
-- Notes: Now the accuracy of post quant is abnormal and it is being debugged.
+- Notes: Now the accuracy of post quant is abnormal and this problem is being solved.
 
 </details>
 
-## Cite PiocDet
+## Cite PP-PiocDet
 If you use PiocDet in your research, please cite our work by using the following BibTeX entry:
 ```
 @misc{yu2021pppicodet,
