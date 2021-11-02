@@ -13,11 +13,15 @@
 # limitations under the License.
 
 from . import jde_embedding_head
-from . import pyramidal_embedding
-from . import resnet
 from . import fairmot_embedding_head
+from . import resnet
+from . import pyramidal_embedding
+from . import pplcnet
+from . import pplcnet_embedding
 
-from .jde_embedding_head import *
-from .pyramidal_embedding import *
-from .resnet import *
 from .fairmot_embedding_head import *
+from .jde_embedding_head import *
+from .resnet import *
+from .pyramidal_embedding import *
+from .pplcnet import *
+from .pplcnet_embedding import *

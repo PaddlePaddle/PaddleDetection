@@ -11,11 +11,11 @@ _BASE_: [
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
-    data_root: MOT16/images/train
+    data_root: kitti_vehicle/images/train
     keep_ori_im: True # set as True in DeepSORT
 
 det_weights: None
-reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort_pplcnet_vehicle.pdparams
 
 
 # A ReID only configuration of DeepSORT, detector should be None.
@@ -24,12 +24,12 @@ pretrain_weights: None
 
 DeepSORT:
   detector: None
-  reid: PCBPyramid
+  reid: PPLCNetEmbedding
   tracker: DeepSORTTracker
 
-PCBPyramid:
-  num_conv_out_channels: 128
-  num_classes: 751 # default 751 classes in Market-1501 dataset.
+PPLCNetEmbedding:
+  input_ch: 1280
+  output_ch: 512
 
 DeepSORTTracker:
   input_size: [64, 192]
