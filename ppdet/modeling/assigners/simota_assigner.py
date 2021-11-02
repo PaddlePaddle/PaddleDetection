@@ -172,16 +172,11 @@ class SimOTAAssigner(object):
             (num_bboxes, ), 0, dtype=paddle.int64).numpy()
         if num_gt == 0 or num_bboxes == 0:
             # No ground truth or boxes, return empty assignment
-            max_overlaps = decoded_bboxes.new_zeros((num_bboxes, ))
-            if num_gt == 0:
-                # No truth, assign everything to background
-                assigned_gt_inds[:] = 0
-            if gt_labels is None:
-                assigned_labels = None
-            else:
-                assigned_labels = paddle.full(
-                    (num_bboxes, ), -1, dtype=paddle.int64)
-            return
+            priors = priors.numpy()
+            labels = np.ones([num_bboxes], dtype=np.int64) * self.num_classes
+            label_weights = np.ones([num_bboxes], dtype=np.float32)
+            bbox_targets = np.zeros_like(priors)
+            return priors, labels, label_weights, bbox_targets, 0
 
         valid_mask, is_in_boxes_and_center = self.get_in_gt_and_in_center_info(
             priors, gt_bboxes)
@@ -238,8 +233,6 @@ class SimOTAAssigner(object):
         gt_bboxes = gt_bboxes.numpy()
 
         assigned_gt_inds[valid_mask] = matched_gt_inds + 1
-        assigned_labels = np.full((num_bboxes, ), self.num_classes)
-        assigned_labels[valid_mask] = gt_labels.squeeze(-1)[matched_gt_inds]
 
         pos_inds, neg_inds, pos_gt_bboxes, pos_assigned_gt_inds \
             = self.get_sample(assigned_gt_inds, gt_bboxes)
