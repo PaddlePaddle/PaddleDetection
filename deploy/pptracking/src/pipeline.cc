@@ -32,23 +32,34 @@ void Pipeline::SetInput(std::string& input_video) {
 void Pipeline::SelectModel(const std::string& scene,
                            const bool tiny_obj,
                            const bool is_mct) {
-  // Single camera model
-  // use deepsort for multiclass tracking
-  // use fairmot for single class tracking
+  // Single camera model, based on FairMot
   if (scene == "pedestrian") {
+    if (tiny_obj) {
+      track_model_dir_ = "../pedestrian_track_tiny";
+    } else {
       track_model_dir_ = "../pedestrian_track";
+    }
   } else if (scene != "vehicle") {
+    if (tiny_obj) {
+      track_model_dir_ = "../vehicle_track_tiny";
+    } else {
       track_model_dir_ = "../vehicle_track";
+    }
   } else if (scene == "multiclass") {
-      det_model_dir_ = "../multiclass_det";
-      reid_model_dir_ = "../multiclass_reid";
+    if (tiny_obj) {
+      track_model_dir_ = "../multiclass_track_tiny";
+    } else {
+      track_model_dir_ = "../multiclass_track";
+    }
   }
 
-  // Multi-camera model
+  // Multi-camera model, based on PicoDet & LCNet
   if (is_mct && scene == "pedestrian") {
-      mct_model_dir_ = "../pedestrian_mct";
+    det_model_dir_ = "../pedestrian_det";
+    reid_model_dir_ = "../pedestrian_reid";
   } else if (is_mct && scene == "vehicle") {
-      mct_model_dir_ = "../vehicle_mct";
+    det_model_dir_ = "../vehicle_det";
+    reid_model_dir_ = "../vehicle_reid";
   } else if (is_mct && scene == "multiclass") {
       throw "Multi-camera tracking is not supported in multiclass scene now.";
   } 
@@ -56,7 +67,7 @@ void Pipeline::SelectModel(const std::string& scene,
 
 void Pipeline::Run() {
 
-  if (track_model_dir_.empty()) {
+  if (track_model_dir_.empty() && det_model_dir_.empty()) {
     std::cout << "Pipeline must use SelectModel before Run";
     return;
   }
@@ -65,7 +76,7 @@ void Pipeline::Run() {
     return;
   }
 
-  if (mct_model_dir_.empty()) {
+  if (!track_model_dir_.empty()) {
     // single camera
     if (input_.size() > 1) {
       throw "Single camera tracking except single video, but received %d", input_.size();
@@ -96,9 +107,14 @@ void Pipeline::PredictSCT(const std::string& video_path) {
   int video_height = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_HEIGHT));
   int video_fps = static_cast<int>(capture.get(CV_CAP_PROP_FPS));
 
+  LOG(INFO) << "----------------------- Input info -----------------------";
+  LOG(INFO) << "video_width: " << video_width;
+  LOG(INFO) << "video_height: " << video_height;
+  LOG(INFO) << "input fps: " << video_fps;
+
   // Create VideoWriter for output
   cv::VideoWriter video_out;
-  std::string video_out_path = "mot_output.mp4";
+  std::string video_out_path = output_dir_ + OS_PATH_SEP + "mot_output.mp4";
   int fcc = cv::VideoWriter::fourcc('m','p','4','v');
   video_out.open(video_out_path.c_str(),
                  fcc, //0x00000021,
@@ -116,19 +132,34 @@ void Pipeline::PredictSCT(const std::string& video_path) {
   std::vector<int> in_count_list;
   std::vector<int> out_count_list;
   double times;
+  double total_time;
   // Capture all frames and do inference
   cv::Mat frame;
   int frame_id = 0;
+  std::string result_output_path = output_dir_ + OS_PATH_SEP + "mot_output.txt";
+  
+  FILE * fp;
+  if (save_result_) {
+    if((fp = fopen(result_output_path.c_str(), "w+")) == NULL) {
+      printf("Open file error.\n");
+      return;
+    }
+    fprintf(fp, "result format: frame_id, track_id, x1, y1, x2, y2, w, h\n");
+  }
+  LOG(INFO) << "------------------- Predict info ------------------------";
   while (capture.read(frame)) {
     if (frame.empty()) {
       break;
     }
     std::vector<cv::Mat> imgs;
     imgs.push_back(frame);
-    printf("frame_id: %d\n", frame_id);
     sct.Predict(imgs, threshold_, &result, &det_times);
     frame_id += 1;
-    times = std::accumulate(det_times.begin(), det_times.end(), 0) / frame_id;
+    total_time = std::accumulate(det_times.begin(), det_times.end(), 0.);
+    times = total_time / frame_id;
+   
+    LOG(INFO) << "frame_id: " << frame_id 
+              << " predict time(s): "<< total_time / 1000;
 
     cv::Mat out_im = PaddleDetection::VisualizeTrackResult(
         frame, result, 1000./times, frame_id);
@@ -139,14 +170,20 @@ void Pipeline::PredictSCT(const std::string& video_path) {
       PaddleDetection::FlowStatistic(result, frame_id, &count_list, &in_count_list, &out_count_list);
     }
     if (save_result_) {
-      PaddleDetection::SaveResult(result, output_dir_);
+      PaddleDetection::SaveSCTResult(result, frame_id, fp);
     }
     video_out.write(out_im);
   }
   capture.release();
   video_out.release();
   PrintBenchmarkLog(det_times, frame_id);
-  printf("Visualized output saved as %s\n", video_out_path.c_str());
+  LOG(INFO) << "-------------------- Final Output info -------------------";
+  LOG(INFO) << "Total frame: " << frame_id;
+  LOG(INFO) << "Visualized output saved as" << video_out_path.c_str();
+  if (save_result_) {
+    fclose(fp);
+    LOG(INFO) << "txt result output saved as" << result_output_path.c_str();
+  }
 }
 
 void Pipeline::PredictMCT(const std::vector<std::string> video_path) {
@@ -171,8 +208,8 @@ void Pipeline::PrintBenchmarkLog(std::vector<double> det_time, int img_num){
   LOG(INFO) << "cpu_math_library_num_threads: " << cpu_threads_;
   LOG(INFO) << "----------------------- Perf info ------------------------";
   LOG(INFO) << "Total number of predicted data: " << img_num
-            << " and total time spent(ms): "
-            << std::accumulate(det_time.begin(), det_time.end(), 0.);
+            << " and total time spent(s): "
+            << std::accumulate(det_time.begin(), det_time.end(), 0.) / 1000;
   img_num = std::max(1, img_num);
   LOG(INFO) << "preproce_time(ms): " << det_time[0] / img_num
             << ", inference_time(ms): " << det_time[1] / img_num

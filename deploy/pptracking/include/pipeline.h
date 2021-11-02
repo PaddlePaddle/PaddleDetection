@@ -86,7 +86,6 @@ class Pipeline {
   std::string track_model_dir_;
   std::string det_model_dir_;
   std::string reid_model_dir_;
-  std::string mct_model_dir_;
   std::string run_mode_ = "fluid";
   int gpu_id_ = 0;
   bool use_mkldnn_ = false;

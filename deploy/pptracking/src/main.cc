@@ -112,10 +112,14 @@ int main(int argc, char** argv) {
     return -1;
   }
 
+  if (!PathExists(FLAGS_output_dir)) {
+    MkDirs(FLAGS_output_dir);
+  }
+
   PaddleDetection::Pipeline pipeline(
                     FLAGS_device, FLAGS_threshold, 
                     FLAGS_output_dir, FLAGS_run_mode, FLAGS_gpu_id, 
-                    FLAGS_use_mkldnn, FLAGS_cpu_threads,
+                    FLAGS_use_mkldnn, FLAGS_cpu_threads, FLAGS_trt_calib_mode,
                     FLAGS_count, FLAGS_save_result);
 
   pipeline.SelectModel(FLAGS_scene, FLAGS_tiny_obj, FLAGS_is_mct);
