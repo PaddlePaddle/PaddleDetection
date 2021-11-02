@@ -18,20 +18,27 @@
 
 |  骨干网络  |  输入尺寸  |  MOTA  |  IDF1  |  IDS |   FP   |   FN  |  FPS | 检测结果或模型 | ReID模型 |配置文件 |
 | :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :-----:| :-----: | :-----: |
-| ResNet-101 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./deepsort_pcb_pyramid_r101.yml) |
-| ResNet-101 | 1088x608 |  68.3  |  56.5  | 1722 |  17337 | 15890 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./deepsort_pcb_pyramid_r101.yml) |
-| PPLCNet    | 1088x608 |  72.2  |  59.5  | 1087  |  8034  | 21481 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./deepsort_pplcnet.yml) |
-| PPLCNet    | 1088x608 |  68.1  |  53.6  | 1979 |  17446 | 15766 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./deepsort_pplcnet.yml) |
+| ResNet-101 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./reid/deepsort_pcb_pyramid_r101.yml) |
+| ResNet-101 | 1088x608 |  68.3  |  56.5  | 1722 |  17337 | 15890 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./deepsort_jde_yolov3_pcb_pyramid.yml) |
+| PPLCNet    | 1088x608 |  72.2  |  59.5  | 1087  |  8034  | 21481 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./reid/deepsort_pplcnet.yml) |
+| PPLCNet    | 1088x608 |  68.1  |  53.6  | 1979 |  17446 | 15766 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./deepsort_jde_yolov3_pplcnet.yml) |
 
 ### DeepSORT在MOT-16 Test Set上结果
 
 |  骨干网络  |  输入尺寸  |  MOTA  |  IDF1  |  IDS |   FP   |   FN  |  FPS | 检测结果或模型 | ReID模型 |配置文件 |
 | :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :-----: | :-----: |:-----: |
-| ResNet-101 | 1088x608 |  64.1  |  53.0  | 1024  |  12457  | 51919 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) | [ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./deepsort_pcb_pyramid_r101.yml) |
-| ResNet-101 | 1088x608 |  61.2  |  48.5  | 1799  |  25796  | 43232 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams)  |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./deepsort_pcb_pyramid_r101.yml) |
-| PPLCNet    | 1088x608 |  64.0  |  51.3  | 1208  |  12697  | 51784 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./deepsort_pplcnet.yml) |
-| PPLCNet    | 1088x608 |  61.1  |  48.8  | 2010 |  25401 | 43432 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./deepsort_pplcnet.yml) |
+| ResNet-101 | 1088x608 |  64.1  |  53.0  | 1024  |  12457  | 51919 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) | [ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./reid/deepsort_pcb_pyramid_r101.yml) |
+| ResNet-101 | 1088x608 |  61.2  |  48.5  | 1799  |  25796  | 43232 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams)  |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./deepsort_jde_yolov3_pcb_pyramid.yml) |
+| PPLCNet    | 1088x608 |  64.0  |  51.3  | 1208  |  12697  | 51784 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./reid/deepsort_pplcnet.yml) |
+| PPLCNet    | 1088x608 |  61.1  |  48.8  | 2010 |  25401 | 43432 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./deepsort_jde_yolov3_pplcnet.yml) |
 
+
+### DeepSORT在MOT-17 half Val Set上结果
+
+|  检测器    |  ReID       |  MOTA  |  FPS | 配置文件 |
+| :-------- | :-----      | :----: |:---: | :-----: |
+| YOLOv3    | PPLCNet     |  45.8  |   -  |[配置文件](./deepsort_yolov3_pplcnet.yml) |
+| PPYOLOv2  | PPLCNet     |  47.8  |   -  |[配置文件](./deepsort_ppyolov2_pplcnet.yml) |
 
 **注意:**
 

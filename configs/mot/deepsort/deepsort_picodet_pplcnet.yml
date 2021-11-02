@@ -1,5 +1,5 @@
 _BASE_: [
-  'detector/picodet_s_shufflenetv2_300e_416x416_mot17half.yml',
+  'detector/picodet_l_esnet_300e_896x896_mot17half.yml',
   '../../datasets/mot.yml',
   '../../runtime.yml',
   '_base_/deepsort_reader_1088x608.yml',
@@ -13,8 +13,8 @@ EvalMOTDataset:
     data_root: MOT17/images/half
     keep_ori_im: True # set as True in DeepSORT
 
-det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_s_shufflenetv2_300e_416x416_mot17half.pdparams
-reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams
+det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_l_esnet_300e_896x896_mot17half.pdparams
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams
 
 
 # DeepSORT configuration
@@ -23,15 +23,15 @@ pretrain_weights: None
 
 DeepSORT:
   detector: PicoDet
-  reid: PCBPyramid
+  reid: PPLCNetEmbedding
   tracker: DeepSORTTracker
 
 
 # reid and tracker configuration
-# see 'configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml'
-PCBPyramid:
-  num_conv_out_channels: 128
-  num_classes: 751
+# see 'configs/mot/deepsort/reid/deepsort_pplcnet.yml'
+PPLCNetEmbedding:
+  input_ch: 1280
+  output_ch: 512
 
 DeepSORTTracker:
   input_size: [64, 192]
@@ -88,3 +88,4 @@ PicoHead:
     keep_top_k: 100
     score_threshold: 0.25 # 0.025 in original detector
     nms_threshold: 0.6
+

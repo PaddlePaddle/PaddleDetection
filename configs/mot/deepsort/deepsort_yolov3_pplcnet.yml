@@ -14,7 +14,7 @@ EvalMOTDataset:
     keep_ori_im: True # set as True in DeepSORT
 
 det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/yolov3_darknet53_270e_608x608_pedestrian.pdparams
-reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams
 
 
 # DeepSORT configuration
@@ -23,15 +23,15 @@ pretrain_weights: None
 
 DeepSORT:
   detector: YOLOv3 # General YOLOv3 version
-  reid: PCBPyramid
+  reid: PPLCNetEmbedding
   tracker: DeepSORTTracker
 
 
 # reid and tracker configuration
-# see 'configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml'
-PCBPyramid:
-  num_conv_out_channels: 128
-  num_classes: 751
+# see 'configs/mot/deepsort/reid/deepsort_pplcnet.yml'
+PPLCNetEmbedding:
+  input_ch: 1280
+  output_ch: 512
 
 DeepSORTTracker:
   input_size: [64, 192]
