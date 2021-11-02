@@ -20,16 +20,19 @@ ESNet:
   act: hard_swish
   channel_ratio: [0.875, 0.5, 1.0, 0.625, 0.5, 0.75, 0.625, 0.625, 0.5, 0.625, 1.0, 0.625, 0.75]
 
+CSPPAN:
+  out_channels: 160
+
 PicoHead:
   conv_feat:
     name: PicoFeat
-    feat_in: 128
-    feat_out: 128
+    feat_in: 160
+    feat_out: 160
     num_convs: 4
     num_fpn_stride: 4
     norm_type: bn
-    share_cls_reg: False
-  feat_in_chan: 128
+    share_cls_reg: True
+  feat_in_chan: 160
 
 TrainReader:
   batch_size: 32
