@@ -4,7 +4,7 @@
 
 # 产品动态
 - 2021.11.03: 发布[release/2.3版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3)，发布**轻量级检测特色模型**⚡[PP-PicoDet](configs/picodet)，发布**轻量级关键点特色模型**⚡[PP-TinyPose](configs/keypoint/tiny_pose)。新增[Swin Transformer](configs/faster_rcnn)，[TOOD](configs/tood)，[GFL](configs/gfl)目标检测模型。发布[Sniper](configs/sniper)小目标检测优化模型，发布针对EdgeBoard优化[PP-YOLO-EB](configs/ppyolo)模型。新增轻量化关键点模型[Lite HRNet](configs/keypoint)关键点模型并支持Paddle Lite部署。
-- 2021.08.10: 发布[release/2.2版本]((https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2))，发布Transformer检测系列模型，包括[DETR](configs/detr), [Deformable DETR](configs/deformable_detr), [Sparse RCNN](configs/sparse_rcnn)。新增Dark HRNet关键点模型和MPII数据集[关键点模型](configs/keypoint)，新增[人头](configs/mot/headtracking21)、[车辆](configs/mot/vehicle)跟踪垂类模型。
+- 2021.08.10: 发布[release/2.2版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2)，发布Transformer检测系列模型，包括[DETR](configs/detr), [Deformable DETR](configs/deformable_detr), [Sparse RCNN](configs/sparse_rcnn)。新增Dark HRNet关键点模型和MPII数据集[关键点模型](configs/keypoint)，新增[人头](configs/mot/headtracking21)、[车辆](configs/mot/vehicle)跟踪垂类模型。
 - 2021.05.20: 发布[release/2.1版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1)，新增[关键点检测](configs/keypoint)，模型包括HigherHRNet，HRNet。新增[多目标跟踪](configs/mot)能力，模型包括DeepSORT，JDE，FairMOT。发布PPYOLO系列模型压缩模型，新增[ONNX模型导出教程](deploy/EXPORT_ONNX_MODEL.md)。
 
 # 简介
@@ -13,13 +13,8 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
 
 ### PaddleDetection提供了目标检测、实例分割、多目标跟踪、关键点检测等多种能力
 
-<div width="900" align="center">
-  <img src="docs/images/det.jpg" width="400" height="300" title="目标检测"/>
-  <img src="docs/images/ins.jpg" width="400" height="300" title="实例分割"/>
-</div>
-<div width="900" align="center">
-  <img src="docs/images/mot.gif" width="400" height="300" title="多目标跟踪"/>
-  <img src="docs/images/pose.gif" width="400" height="300" title="关键点检测"/>
+<div width="1000" align="center">
+  <img src="docs/images/ppdet.gif"/>
 </div>
 
 
@@ -33,7 +28,7 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
 
 ### 套件结构概览
 
-<table>
+<table align="center">
   <tbody>
     <tr align="center" valign="bottom">
       <td>
@@ -66,7 +61,7 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
             <li>RetinaNet</li>
             <li>YOLOv3</li>
             <li>YOLOv4</li>  
-            <li>PP-YOLO</li>
+            <li>PP-YOLOv1/v2/Tiny</li>
             <li>SSD</li>
           </ul>
         </ul>
@@ -75,6 +70,7 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
             <li>CornerNet-Squeeze</li>
             <li>FCOS</li>  
             <li>TTFNet</li>
+            <li>PicoDet</li>
           </ul>
         </ul>
         <ul>
@@ -90,6 +86,29 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
              <li>FaceBoxes</li>
              <li>BlazeFace</li>
              <li>BlazeFace-NAS</li>
+            </ul>
+        </ul>
+        <ul>
+          <li><b>Transformer</b></li>
+            <ul>
+             <li>DETR/Deformable DETR</li>
+             <li>Sparse RCNN</li>
+             <li>Swin Transformer</li>
+            </ul>
+        </ul>
+        <ul>
+          <li><b>Multi-Object-Tracking</b></li>
+            <ul>
+             <li>JDE</li>
+             <li>FairMOT</li>
+             <li>DeepSort</li>
+            </ul>
+        </ul>
+        <ul>
+          <li><b>KeyPoint-Detection</b></li>
+            <ul>
+             <li>HRNet</li>
+             <li>HigherHRNet</li>
             </ul>
         </ul>
       </td>
@@ -109,6 +128,7 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
           <li>MobileNetv1/v3</li>  
           <li>GhostNet</li>
           <li>Efficientnet</li>  
+          <li>BlazeNet</li>  
         </ul>
       </td>
       <td>
@@ -118,6 +138,11 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
             <li>Group Norm</li>
             <li>DCNv2</li>
             <li>Non-local</li>
+          </ul>  
+        </ul>
+        <ul><li><b>KeyPoint</b></li>
+          <ul>
+            <li>DarkPose</li>
           </ul>  
         </ul>
         <ul><li><b>FPN</b></li>
@@ -151,15 +176,18 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
       <td>
         <ul>
           <li>Resize</li>  
+          <li>Lighting</li>  
           <li>Flipping</li>  
           <li>Expand</li>
           <li>Crop</li>
           <li>Color Distort</li>  
           <li>Random Erasing</li>  
           <li>Mixup </li>
+          <li>Mosaic</li>
           <li>Cutmix </li>
           <li>Grid Mask</li>
           <li>Auto Augment</li>  
+          <li>Random Perspective</li>  
         </ul>  
       </td>  
     </tr>
@@ -185,6 +213,16 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
 - `PP-YOLO`在COCO数据集精度45.9%，Tesla V100预测速度72.9FPS，精度速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)
 - `PP-YOLO v2`是对`PP-YOLO`模型的进一步优化，在COCO数据集精度49.5%，Tesla V100预测速度68.9FPS
 - 图中模型均可在[模型库](#模型库)中获取
+
+各移动端模型在COCO数据集上精度mAP和高通骁龙865处理器上预测速度(FPS)对比图。
+
+<div align="center">
+  <img src="docs/images/mobile_fps_map.png" width=600/>
+</div>
+
+**说明：**
+- 测试数据均使用高通骁龙865(4\*A77 + 4\*A55)处理器batch size为1, 开启4线程测试，测试使用NCNN预测库，测试脚本见[MobileDetBenchmark](https://github.com/JiweiMaster/MobileDetBenchmark)
+- [PP-PicoDet](configs/picodet)及[PP-YOLO-Tiny](configs/ppyolo)为PaddleDetection自研模型，其余模型PaddleDetection暂未提供
 
 ## 文档教程
 
