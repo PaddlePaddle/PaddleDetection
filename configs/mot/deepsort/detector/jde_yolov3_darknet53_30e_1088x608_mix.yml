@@ -31,7 +31,7 @@ TestReader:
 EvalDataset:
   !MOTDataSet
     dataset_dir: dataset/mot
-    image_lists: ['mot16.train']
+    image_lists: ['mot17.half']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
 
 TestDataset:

@@ -5,7 +5,8 @@ _BASE_: [
 weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/pedestrian_yolov3_darknet.pdparams
 num_classes: 1
 
-# This pedestrian dataset used is not open temporarily, only the trained yolov3 model is provided.
+# This pedestrian training dataset used is not open temporarily.
+# Only the trained yolov3 model is provided, but you can eval on MOT17 half val dataset.
 TrainDataset:
   !COCODataSet
     dataset_dir: dataset/pedestrian
@@ -15,13 +16,9 @@ TrainDataset:
 
 EvalDataset:
   !COCODataSet
-    dataset_dir: dataset/pedestrian
-    anno_path: annotations/instances_val2017.json
-    image_dir: val2017
-
-TestDataset:
-  !ImageFolder
-    anno_path: configs/pedestrian/pedestrian.json
+    dataset_dir: dataset/mot/MOT17/images
+    anno_path: annotations/val_half.json
+    image_dir: train
 
 
 # detector configuration

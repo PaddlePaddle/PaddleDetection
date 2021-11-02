@@ -15,7 +15,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from IPython import embed
+
 import os
 import cv2
 import glob
@@ -201,14 +201,12 @@ class Tracker(object):
             if not use_detector:
                 dets = dets_list[frame_id]
                 bbox_tlwh = paddle.to_tensor(dets['bbox'], dtype='float32')
-                pred_scores = paddle.to_tensor(dets['score'], dtype='float32')
-                if pred_scores < draw_threshold: continue
                 if bbox_tlwh.shape[0] > 0:
                     # detector outputs: pred_cls_ids, pred_scores, pred_bboxes
                     pred_cls_ids = paddle.to_tensor(
-                        dets['cls_id'], dtype='float32')
+                        dets['cls_id'], dtype='float32').unsqueeze(1)
                     pred_scores = paddle.to_tensor(
-                        dets['score'], dtype='float32')
+                        dets['score'], dtype='float32').unsqueeze(1)
                     pred_bboxes = paddle.concat(
                         (bbox_tlwh[:, 0:2],
                          bbox_tlwh[:, 2:4] + bbox_tlwh[:, 0:2]),
