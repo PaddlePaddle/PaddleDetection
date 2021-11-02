@@ -1,6 +1,37 @@
+English | [简体中文](./CHANGELOG.md)
+
 # Version Update Information
 
 ## Last Version Information
+
+### 2.3(11.03/2021)
+
+- Feature models:
+    - Object detection: The lightweight object detection model PP-PicoDet, performace and inference speed reaches SOTA on mobile side
+    - Keypoint detection: The lightweight keypoint detection model PP-TinyPose for mobile side
+
+- Model richness:
+    - Object detection:
+        - Publish Swin-Transformer object detection model
+        - Publish TOOD(Task-aligned One-stage Object Detection) model
+        - Publish GFL(Generalized Focal Loss) object detection model
+        - Publish Sniper optimization method for tiny object detection, supporting Faster RCNN and PP-YOLO series models
+        - Publish PP-YOLO optimized model PP-YOLO-EB for EdgeBoard
+    - Multi-object tracking:
+        - Publish high-precision, small-scale and lightweight model based on FairMot
+        - Publish real-time tracking model zoo for pedestrian, head and vehicle tracking, including scenarios such as aerial surveillance, autonomous driving, dense crowds, and tiny object tracking
+        - DeepSort support PP-YOLO, PP-PicoDet as object detector
+    - Keypoint detection:
+        - Publish Lite HRNet model
+
+- Inference deployment:
+    - Support NPU deployment for YOLOv3 series
+    - Support C++ deployment for FairMot
+    - Support C++ and PaddleLite deployment for keypoint detection series model
+
+- Documents:
+    - Add series English documents
+
 
 ### 2.2(08.10/2021)
 
@@ -13,7 +44,7 @@
 - Model optimization:
     - AlignConv optimization model was released by S2ANet, and DOTA dataset mAP was optimized to 74.0
 
-- Predict deployment
+- Inference deployment
     - Mainstream models support batch size>1 predictive deployment, including YOLOv3, PP-YOLO, Faster RCNN, SSD, TTFNet,  FCOS
     - New addition of target tracking models (JDE, Fair Mot, Deep Sort) Python side prediction deployment support, and support for TensorRT prediction
     - FairMot joint key point detection model deployment Python side predictive deployment support
@@ -23,7 +54,7 @@
     - New TensorRT version notes to Windows Predictive Deployment documentation
     - FAQ documents are updated
 
-- Problem fixes:
+- Bug fixes:
     - Fixed PP-YOLO series model training convergence problem
     - Fixed the problem of no label data training when batch_size > 1
 
