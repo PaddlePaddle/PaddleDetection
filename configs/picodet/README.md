@@ -3,12 +3,17 @@
 ![](../../docs/images/picedet_demo.jpeg)
 ## Introduction
 
-We developed a series of lightweight models, which named `PP-PicoDet`. Because of its excellent performance, it is very suitable for deployment on mobile or CPU.
+We developed a series of lightweight models, which named `PP-PicoDet`. Because of its excellent performance, it is very suitable for deployment on mobile or CPU. For more details, please refer to our [report on arXiv](https://arxiv.org/abs/2111.00902).
 
 - 🌟 Higher mAP: the **first** object detectors that surpass mAP(0.5:0.95) **30+** within 1M parameters when the input size is 416.
 - 🚀 Faster latency: 150FPS on mobile ARM CPU.
 - 😊 Deploy friendly: support PaddleLite/MNN/NCNN/OpenVINO and provide C++/Python/Android implementation.
 - 😍 Advanced algorithm: use the most advanced algorithms and innovate, such as ESNet, CSP-PAN, SimOTA with VFL, etc.
+
+
+<div align="center">
+  <img src="../../docs/images/picodet_map.png" width='600'/>
+</div>
 
 ### Comming soon
 - [ ] More series of model, such as smaller or larger model.
@@ -41,7 +46,7 @@ We developed a series of lightweight models, which named `PP-PicoDet`. Because o
 <details open>
 <summary><b>Table Notes:</b></summary>
 
-- <a name="latency">Latency:</a> All our models test on `Qualcomm Snapdragon 865(4\*A77+4\*A55)` with 4 threads by arm8 and with FP16. In the above table, test latency on [NCNN](https://github.com/Tencent/ncnn) and `Lite`->[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite).  And testing latency with code:[MobileDetBenchmark](https://github.com/JiweiMaster/MobileDetBenchmark).
+- <a name="latency">Latency:</a> All our models test on `Qualcomm Snapdragon 865(4xA77+4xA55)` with 4 threads by arm8 and with FP16. In the above table, test latency on [NCNN](https://github.com/Tencent/ncnn) and `Lite`->[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite).  And testing latency with code: [MobileDetBenchmark](https://github.com/JiweiMaster/MobileDetBenchmark).
 - PicoDet is trained on COCO train2017 dataset and evaluated on COCO val2017.
 - PicoDet used 4 or 8 GPUs for training and all checkpoints are trained with default settings and hyperparameters.
 
@@ -123,7 +128,13 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco/ \
 - [NCNN C++/Python demo](../../deploy/third_engine/demo_ncnn)
 - [MNN C++/Python demo](../../deploy/third_engine/demo_mnn)
 - [OpenVINO C++/Python demo](../../deploy/third_engine/demo_openvino)
-- [Android demo]()
+- [Android demo](https://github.com/JiweiMaster/PP-PicoDet-Android-Demo)
+
+
+<div align="center">
+  <img src="../../docs/images/picodet_android_demo1.jpg" height="500px" ><img src="../../docs/images/picodet_android_demo2.jpg" height="500px" ><img src="../../docs/images/picodet_android_demo3.jpg" height="500px" ><img src="../../docs/images/picodet_android_demo4.jpg" height="500px" >
+</div>
+
 
 ## Slim
 
@@ -172,6 +183,13 @@ python tools/post_quant.py -c configs/picodet/picodet_s_320_coco.yml \
 ## Cite PiocDet
 If you use PiocDet in your research, please cite our work by using the following BibTeX entry:
 ```
-comming soon
+@misc{yu2021pppicodet,
+      title={PP-PicoDet: A Better Real-Time Object Detector on Mobile Devices},
+      author={Guanghua Yu and Qinyao Chang and Wenyu Lv and Chang Xu and Cheng Cui and Wei Ji and Qingqing Dang and Kaipeng Deng and Guanzhong Wang and Yuning Du and Baohua Lai and Qiwen Liu and Xiaoguang Hu and Dianhai Yu and Yanjun Ma},
+      year={2021},
+      eprint={2111.00902},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
 
 ```
