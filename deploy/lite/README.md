@@ -22,9 +22,11 @@ Paddle Lite是飞桨轻量化推理引擎，为手机、IOT端提供高效推理
 
 预测库有两种获取方式：
 1. [**建议**]直接下载，预测库下载链接如下：
-      |平台|预测库下载链接|
-      |-|-|
-      |Android|[arm7](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.10-rc/inference_lite_lib.android.armv7.clang.c++_static.with_extra.with_cv.tar.gz) / [arm8](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.10-rc/inference_lite_lib.android.armv8.clang.c++_static.with_extra.with_cv.tar.gz)|
+      |平台| 架构 | 预测库下载链接|
+      |-|-|-|
+      |Android| arm7 | [inference_lite_lib](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.10-rc/inference_lite_lib.android.armv7.clang.c++_static.with_extra.with_cv.tar.gz) |
+      | Android | arm8 | [inference_lite_lib](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.10-rc/inference_lite_lib.android.armv8.clang.c++_static.with_extra.with_cv.tar.gz)  |
+      | Android | arm8(FP16) | [inference_lite_lib](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.10-rc/inference_lite_lib.android.armv8_clang_c++_static_with_extra_with_cv_with_fp16.tiny_publish.zip)  |
 
 **注意**：1. 如果是从 Paddle-Lite [官方文档](https://paddle-lite.readthedocs.io/zh/latest/quick_start/release_lib.html#android-toolchain-gcc)下载的预测库，注意选择`with_extra=ON，with_cv=ON`的下载链接。2. 目前只提供Android端demo，IOS端demo可以参考[Paddle-Lite IOS demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo/tree/master/PaddleLite-ios-demo)
 
@@ -35,7 +37,10 @@ git clone https://github.com/PaddlePaddle/Paddle-Lite.git
 cd Paddle-Lite
 # 如果使用编译方式，建议使用develop分支编译预测库
 git checkout develop
-./lite/tools/build_android.sh  --arch=armv8  --with_cv=ON --with_extra=ON
+# FP32
+./lite/tools/build_android.sh --arch=armv8 --toolchain=clang --with_cv=ON --with_extra=ON
+# FP16
+./lite/tools/build_android.sh --arch=armv8 --toolchain=clang --with_cv=ON --with_extra=ON --with_arm82_fp16=ON
 ```
 
 **注意**：编译Paddle-Lite获得预测库时，需要打开`--with_cv=ON --with_extra=ON`两个选项，`--arch`表示`arm`版本，这里指定为armv8，更多编译命令介绍请参考[链接](https://paddle-lite.readthedocs.io/zh/latest/source_compile/compile_andriod.html#id2)。
@@ -131,7 +136,10 @@ python tools/export_model.py -c configs/picodet/picodet_s_320_coco.yml \
               -o weights=https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams --output_dir=output_inference
 
 # 将inference模型转化为Paddle-Lite优化模型
+# FP32
 paddle_lite_opt  --valid_targets=arm --model_file=output_inference/picodet_s_320_coco/model.pdmodel --param_file=output_inference/picodet_s_320_coco/model.pdiparams --optimize_out=output_inference/picodet_s_320_coco/model
+# FP16
+paddle_lite_opt  --valid_targets=arm --model_file=output_inference/picodet_s_320_coco/model.pdmodel --param_file=output_inference/picodet_s_320_coco/model.pdiparams --optimize_out=output_inference/picodet_s_320_coco/model --enable_fp16=true
 
 # 将inference模型配置转化为json格式
 python deploy/lite/convert_yml_to_json.py output_inference/picodet_s_320_coco/infer_cfg.yml
@@ -144,7 +152,7 @@ python deploy/lite/convert_yml_to_json.py output_inference/picodet_s_320_coco/in
 ### 2.2 与手机联调
 
 首先需要进行一些准备工作。
-1. 准备一台arm8的安卓手机，如果编译的预测库和opt文件是armv7，则需要arm7的手机，并修改Makefile中`ARM_ABI = arm7`。
+1. 准备一台arm8的安卓手机，如果编译的预测库是armv7，则需要arm7的手机，并修改Makefile中`ARM_ABI=arm7`。
 2. 电脑上安装ADB工具，用于调试。 ADB安装方式如下：
 
     2.1. MAC电脑安装ADB:
