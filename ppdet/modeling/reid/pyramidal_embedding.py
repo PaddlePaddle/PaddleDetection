@@ -37,7 +37,8 @@ class PCBPyramid(nn.Layer):
         input_ch (int): Number of channels of the input feature.
         num_stripes (int): Number of sub-parts.
         used_levels (tuple): Whether the level is used, 1 means used.
-        num_classes (int): Number of classes for identities.
+        num_classes (int): Number of classes for identities, default 751 in
+            Market-1501 dataset.
         last_conv_stride (int): Stride of the last conv.
         last_conv_dilation (int): Dilation of the last conv.
         num_conv_out_channels (int): Number of channels of conv feature.
