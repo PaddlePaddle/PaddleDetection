@@ -75,7 +75,7 @@ class PicoDet(BaseArch):
     def get_loss(self, ):
         loss = {}
 
-        head_outs = self._forward()
+        head_outs, _ = self._forward()
         loss_gfl = self.head.get_loss(head_outs, self.inputs)
         loss.update(loss_gfl)
         total_loss = paddle.add_n(list(loss.values()))
