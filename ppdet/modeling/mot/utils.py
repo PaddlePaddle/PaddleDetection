@@ -72,17 +72,19 @@ class Detection(object):
     This class represents a bounding box detection in a single image.
 
     Args:
-        tlwh (ndarray): Bounding box in format `(top left x, top left y,
+        tlwh (Tensor): Bounding box in format `(top left x, top left y,
             width, height)`.
-        confidence (ndarray): Detector confidence score.
+        score (Tensor): Bounding box confidence score.
         feature (Tensor): A feature vector that describes the object 
             contained in this image.
+        cls_id (Tensor): Bounding box category id.
     """
 
-    def __init__(self, tlwh, confidence, feature):
+    def __init__(self, tlwh, score, feature, cls_id):
         self.tlwh = np.asarray(tlwh, dtype=np.float32)
-        self.confidence = np.asarray(confidence, dtype=np.float32)
-        self.feature = feature
+        self.score = float(score)
+        self.feature = np.asarray(feature, dtype=np.float32)
+        self.cls_id = int(cls_id)
 
     def to_tlbr(self):
         """
@@ -106,15 +108,20 @@ class Detection(object):
 
 def load_det_results(det_file, num_frames):
     assert os.path.exists(det_file) and os.path.isfile(det_file), \
-        'Error: det_file: {} not exist or not a file.'.format(det_file)
+        '{} is not exist or not a file.'.format(det_file)
     labels = np.loadtxt(det_file, dtype='float32', delimiter=',')
+    assert labels.shape[1] == 7, \
+        "Each line of {} should have 7 items: '[frame_id],[x0],[y0],[w],[h],[score],[class_id]'.".format(det_file)
     results_list = []
-    for frame_i in range(0, num_frames):
-        results = {'bbox': [], 'score': []}
+    for frame_i in range(num_frames):
+        results = {'bbox': [], 'score': [], 'cls_id': []}
         lables_with_frame = labels[labels[:, 0] == frame_i + 1]
+        # each line of lables_with_frame:
+        # [frame_id],[x0],[y0],[w],[h],[score],[class_id]
         for l in lables_with_frame:
             results['bbox'].append(l[1:5])
             results['score'].append(l[5])
+            results['cls_id'].append(l[6])
         results_list.append(results)
     return results_list
 
@@ -139,26 +146,24 @@ def clip_box(xyxy, input_shape, im_shape, scale_factor):
 
     xyxy[:, 0::2] = paddle.clip(xyxy[:, 0::2], min=0, max=img0_shape[1])
     xyxy[:, 1::2] = paddle.clip(xyxy[:, 1::2], min=0, max=img0_shape[0])
-    return xyxy
+    w = xyxy[:, 2:3] - xyxy[:, 0:1]
+    h = xyxy[:, 3:4] - xyxy[:, 1:2]
+    mask = paddle.logical_and(h > 0, w > 0)
+    keep_idx = paddle.nonzero(mask)
+    xyxy = paddle.gather_nd(xyxy, keep_idx[:, :1])
+    return xyxy, keep_idx
 
 
-def get_crops(xyxy, ori_img, pred_scores, w, h):
+def get_crops(xyxy, ori_img, w, h):
     crops = []
-    keep_scores = []
     xyxy = xyxy.numpy().astype(np.int64)
     ori_img = ori_img.numpy()
     ori_img = np.squeeze(ori_img, axis=0).transpose(1, 0, 2)
-    pred_scores = pred_scores.numpy()
     for i, bbox in enumerate(xyxy):
-        if bbox[2] <= bbox[0] or bbox[3] <= bbox[1]:
-            continue
         crop = ori_img[bbox[0]:bbox[2], bbox[1]:bbox[3], :]
         crops.append(crop)
-        keep_scores.append(pred_scores[i])
-    if len(crops) == 0:
-        return [], []
     crops = preprocess_reid(crops, w, h)
-    return crops, keep_scores
+    return crops
 
 
 def preprocess_reid(imgs,
