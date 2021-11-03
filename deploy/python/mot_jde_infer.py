@@ -98,10 +98,7 @@ class JDE_Detector(Detector):
 
     def postprocess(self, pred_dets, pred_embs, threshold):
         online_targets_dict = self.tracker.update(pred_dets, pred_embs)
-        #if online_targets == []:
-        #    # First few frames, the model may have no tracking results but have
-        #    # detection results，use the detection results instead, and set id -1.
-        #    return [pred_dets[0][:4]], [pred_dets[0][4]], [-1]
+
         online_tlwhs = defaultdict(list)
         online_scores = defaultdict(list)
         online_ids = defaultdict(list)
@@ -111,6 +108,7 @@ class JDE_Detector(Detector):
                 tlwh = t.tlwh
                 tid = t.track_id
                 tscore = t.score
+                if tscore < threshold: continue
                 if tlwh[2] * tlwh[3] <= self.tracker.min_box_area: continue
                 if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
                         3] > self.tracker.vertical_ratio:
