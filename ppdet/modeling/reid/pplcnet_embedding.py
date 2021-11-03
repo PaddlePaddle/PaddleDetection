@@ -152,10 +152,18 @@ class SEModule(nn.Layer):
 
 
 class PPLCNet(nn.Layer):
-    def __init__(self,
-                 scale=1.0,
-                 class_expand=1280):
-        super().__init__()
+    """
+    PP-LCNet, see https://arxiv.org/abs/2109.15099.
+    This code is different from PPLCNet in ppdet/modeling/backbones/lcnet.py
+    or in PaddleClas, because the output is the flatten feature of last_conv.
+
+    Args:
+        scale (float): Scale ratio of channels.
+        class_expand (int): Number of channels of conv feature.
+    """
+
+    def __init__(self, scale=1.0, class_expand=1280):
+        super(PPLCNet, self).__init__()
         self.scale = scale
         self.class_expand = class_expand
 
@@ -216,7 +224,6 @@ class PPLCNet(nn.Layer):
         ])
 
         self.avg_pool = AdaptiveAvgPool2D(1)
-
         self.last_conv = Conv2D(
             in_channels=make_divisible(NET_CONFIG["blocks6"][-1][2] * scale),
             out_channels=self.class_expand,
@@ -224,7 +231,6 @@ class PPLCNet(nn.Layer):
             stride=1,
             padding=0,
             bias_attr=False)
-
         self.hardswish = nn.Hardswish()
         self.flatten = nn.Flatten(start_axis=1, stop_axis=-1)
 

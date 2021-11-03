@@ -26,14 +26,12 @@
 ## 快速开始
 
 通过如下命令一键式启动训练和评估
-```
+```bash
 job_name=ppyolov2_r50vd_dcn_365e_640x640_mot17half
 config=configs/mot/deepsort/detector/${job_name}.yml
 log_dir=log_dir/${job_name}
-
 # 1. training
 python -m paddle.distributed.launch --log_dir=${log_dir} --gpus 0,1,2,3,4,5,6,7 tools/train.py -c ${config}
-
 # 2. evaluation
 CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c ${config} -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/${job_name}.pdparams
 ```
