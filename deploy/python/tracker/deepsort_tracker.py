@@ -20,6 +20,7 @@ from ppdet.modeling.mot.motion import KalmanFilter
 from ppdet.modeling.mot.matching.deepsort_matching import NearestNeighborDistanceMetric
 from ppdet.modeling.mot.matching.deepsort_matching import iou_cost, min_cost_matching, matching_cascade, gate_cost_matrix
 from ppdet.modeling.mot.tracker.base_sde_tracker import Track
+from ppdet.modeling.mot.utils import Detection
 
 __all__ = ['DeepSORTTracker']
 
@@ -29,7 +30,12 @@ class DeepSORTTracker(object):
     DeepSORT tracker
 
     Args:
-        img_size (list): input image size, [h, w]
+        input_size (list): input feature map size to reid model, [h, w] format,
+            [64, 192] as default.
+        min_box_area (int): min box area to filter out low quality boxes
+        vertical_ratio (float): w/h, the vertical ratio of the bbox to filter
+            bad results, set 1.6 default for pedestrian tracking. If set <=0
+            means no need to filter bboxes.
         budget (int): If not None, fix samples per class to at most this number.
             Removes the oldest samples when the budget is reached.
         max_age (int): maximum number of missed misses before a track is deleted
@@ -46,15 +52,19 @@ class DeepSORTTracker(object):
     """
 
     def __init__(self,
-                 img_size=[608, 1088],
+                 input_size=[64, 192],
+                 min_box_area=0,
+                 vertical_ratio=-1,
                  budget=100,
-                 max_age=30,
+                 max_age=70,
                  n_init=3,
                  metric_type='cosine',
                  matching_threshold=0.2,
-                 max_iou_distance=0.7,
+                 max_iou_distance=0.9,
                  motion='KalmanFilter'):
-        self.img_size = img_size
+        self.input_size = input_size
+        self.min_box_area = min_box_area
+        self.vertical_ratio = vertical_ratio
         self.max_age = max_age
         self.n_init = n_init
         self.metric = NearestNeighborDistanceMetric(metric_type,
@@ -73,13 +83,23 @@ class DeepSORTTracker(object):
         for track in self.tracks:
             track.predict(self.motion)
 
-    def update(self, detections):
+    def update(self, pred_dets, pred_embs):
         """
-        Perform measurement update and track management.
-        Args:
-            detections (list): List[ppdet.modeling.mot.utils.Detection]
-            A list of detections at the current time step.
+            pred_dets (Tensor): Detection results of the image, shape is [N, 6].
+            pred_embs (Tensor): Embedding results of the image, shape is [N, 128],
+                usually pred_embs.shape[1] can be a multiple of 128, in PCB
+                Pyramidal model is 128*21.
         """
+        pred_tlwhs = pred_dets[:, :4]
+        pred_scores = pred_dets[:, 4:5]
+        pred_cls_ids = pred_dets[:, 5:]
+
+        detections = [
+            Detection(tlwh, score, feat, cls_id)
+            for tlwh, score, feat, cls_id in zip(pred_tlwhs, pred_scores,
+                                                 pred_embs, pred_cls_ids)
+        ]
+
         # Run matching cascade.
         matches, unmatched_tracks, unmatched_detections = \
             self._match(detections)
@@ -154,5 +174,5 @@ class DeepSORTTracker(object):
         mean, covariance = self.motion.initiate(detection.to_xyah())
         self.tracks.append(
             Track(mean, covariance, self._next_id, self.n_init, self.max_age,
-                  detection.feature))
+                  detection.cls_id, detection.score, detection.feature))
         self._next_id += 1

@@ -137,8 +137,7 @@ class Tracker(object):
             pred_dets, pred_embs = self.model(data)
             online_targets = self.model.tracker.update(pred_dets, pred_embs)
 
-            online_tlwhs, online_ids = [], []
-            online_scores = []
+            online_tlwhs, online_scores, online_ids = [], [], []
             for t in online_targets:
                 tlwh = t.tlwh
                 tid = t.track_id
@@ -173,7 +172,6 @@ class Tracker(object):
                       draw_threshold=0):
         if save_dir:
             if not os.path.exists(save_dir): os.makedirs(save_dir)
-        tracker = self.model.tracker
         use_detector = False if not self.model.detector else True
 
         timer = Timer()
@@ -197,65 +195,90 @@ class Tracker(object):
             input_shape = data['image'].shape[2:]
             im_shape = data['im_shape']
             scale_factor = data['scale_factor']
+
+            # forward
             timer.tic()
             if not use_detector:
                 dets = dets_list[frame_id]
                 bbox_tlwh = paddle.to_tensor(dets['bbox'], dtype='float32')
-                pred_scores = paddle.to_tensor(dets['score'], dtype='float32')
-                if pred_scores < draw_threshold: continue
                 if bbox_tlwh.shape[0] > 0:
+                    # detector outputs: pred_cls_ids, pred_scores, pred_bboxes
+                    pred_cls_ids = paddle.to_tensor(
+                        dets['cls_id'], dtype='float32').unsqueeze(1)
+                    pred_scores = paddle.to_tensor(
+                        dets['score'], dtype='float32').unsqueeze(1)
                     pred_bboxes = paddle.concat(
                         (bbox_tlwh[:, 0:2],
                          bbox_tlwh[:, 2:4] + bbox_tlwh[:, 0:2]),
                         axis=1)
                 else:
-                    pred_bboxes = []
-                    pred_scores = []
+                    logger.warning(
+                        'Frame {} has not object, try to modify score threshold.'.
+                        format(frame_id))
+                    frame_id += 1
+                    continue
             else:
                 outs = self.model.detector(data)
                 if outs['bbox_num'] > 0:
+                    # detector outputs: pred_cls_ids, pred_scores, pred_bboxes
+                    pred_cls_ids = outs['bbox'][:, 0:1]
+                    pred_scores = outs['bbox'][:, 1:2]
                     if not scaled:
+                        # scaled means whether the coords after detector outputs
+                        # have been scaled back to the original image, set True 
+                        # in general detector, set False in JDE YOLOv3.
                         pred_bboxes = scale_coords(outs['bbox'][:, 2:],
                                                    input_shape, im_shape,
                                                    scale_factor)
                     else:
                         pred_bboxes = outs['bbox'][:, 2:]
-                    pred_scores = outs['bbox'][:, 1:2]
                 else:
-                    pred_bboxes = []
-                    pred_scores = []
+                    logger.warning(
+                        'Frame {} has not object, try to modify score threshold.'.
+                        format(frame_id))
+                    frame_id += 1
+                    continue
 
-            pred_bboxes = clip_box(pred_bboxes, input_shape, im_shape,
-                                   scale_factor)
-            bbox_tlwh = paddle.concat(
-                (pred_bboxes[:, 0:2],
-                 pred_bboxes[:, 2:4] - pred_bboxes[:, 0:2] + 1),
+            pred_xyxys, keep_idx = clip_box(pred_bboxes, input_shape, im_shape,
+                                            scale_factor)
+            pred_scores = paddle.gather_nd(pred_scores, keep_idx).unsqueeze(1)
+            pred_cls_ids = paddle.gather_nd(pred_cls_ids, keep_idx).unsqueeze(1)
+            pred_tlwhs = paddle.concat(
+                (pred_xyxys[:, 0:2],
+                 pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
                 axis=1)
+            pred_dets = paddle.concat(
+                (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
 
-            crops, pred_scores = get_crops(
-                pred_bboxes, ori_image, pred_scores, w=64, h=192)
+            tracker = self.model.tracker
+            crops = get_crops(
+                pred_xyxys,
+                ori_image,
+                w=tracker.input_size[0],
+                h=tracker.input_size[1])
             crops = paddle.to_tensor(crops)
-            pred_scores = paddle.to_tensor(pred_scores)
 
             data.update({'crops': crops})
-            features = self.model(data)
-            features = features.numpy()
-            detections = [
-                Detection(tlwh, score, feat)
-                for tlwh, score, feat in zip(bbox_tlwh, pred_scores, features)
-            ]
-            self.model.tracker.predict()
-            online_targets = self.model.tracker.update(detections)
+            pred_embs = self.model(data)
 
-            online_tlwhs = []
-            online_scores = []
-            online_ids = []
-            for track in online_targets:
-                if not track.is_confirmed() or track.time_since_update > 1:
+            tracker.predict()
+            online_targets = tracker.update(pred_dets, pred_embs)
+
+            online_tlwhs, online_scores, online_ids = [], [], []
+            for t in online_targets:
+                if not t.is_confirmed() or t.time_since_update > 1:
                     continue
-                online_tlwhs.append(track.to_tlwh())
-                online_scores.append(1.0)
-                online_ids.append(track.track_id)
+                tlwh = t.to_tlwh()
+                tscore = t.score
+                tid = t.track_id
+                if tscore < draw_threshold: continue
+                if tlwh[2] * tlwh[3] <= tracker.min_box_area: continue
+                if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                        3] > tracker.vertical_ratio:
+                    continue
+                online_tlwhs.append(tlwh)
+                online_scores.append(tscore)
+                online_ids.append(tid)
             timer.toc()
 
             # save results
