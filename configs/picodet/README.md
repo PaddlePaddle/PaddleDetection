@@ -195,6 +195,15 @@ python tools/post_quant.py -c configs/picodet/picodet_s_320_coco.yml \
 
 </details>
 
+## FAQ
+
+<details>
+<summary>Out of memory error.</summary>
+
+Please reduce the `batch_size` of `TrainReader` in config.
+
+</details>
+
 ## Cite PP-PiocDet
 If you use PiocDet in your research, please cite our work by using the following BibTeX entry:
 ```
