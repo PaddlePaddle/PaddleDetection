@@ -20,9 +20,6 @@ We developed a series of lightweight models, named `PP-PicoDet`. Because of the 
 - [ ] Pretrained models for more scenarios.
 - [ ] More features in need.
 
-## Requirements
-- PaddlePaddle >= 2.1.2
-
 ## Benchmark
 
 | Model     | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params<br><sup>(M) | FLOPS<br><sup>(G) | Latency<sup><small>[NCNN](#latency)</small><sup><br><sup>(ms) | Latency<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  download  | config |
@@ -67,6 +64,62 @@ We developed a series of lightweight models, named `PP-PicoDet`. Because of the 
 | YOLOX-Tiny     |  416*416   |          32.8          |    -               |    5.06               |    6.45             |    32.77                          |
 | YOLOv5n |  640*640       |          28.4             |    46.0            |    1.9                |    4.5              |    40.35                          |
 | YOLOv5s |  640*640       |          37.2             |    56.0            |    7.2                |    16.5             |    78.05                          |
+
+
+## Quick Start
+
+<details open>
+<summary>Requirements:</summary>
+
+- PaddlePaddle >= 2.1.2
+
+</details>
+
+<details>
+<summary>Installation</summary>
+
+- [Installation guide](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/INSTALL.md)
+- [Prepare dataset](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/PrepareDataSet_en.md)
+
+</details>
+
+<details>
+<summary>Training and Evaluation</summary>
+
+- Training model on single-GPU:
+
+```shell
+# training on single-GPU
+export CUDA_VISIBLE_DEVICES=0
+python tools/train.py -c configs/picodet/picodet_s_320_coco.yml --eval
+```
+
+- Training model on multi-GPU:
+
+
+```shell
+# training on single-GPU
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/picodet/picodet_s_320_coco.yml --eval
+```
+
+- Evaluation:
+
+```shell
+python tools/eval.py -c configs/picodet/picodet_s_320_coco.yml \
+              -o weights=https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams
+```
+
+- Infer:
+
+```shell
+python tools/infer.py -c configs/picodet/picodet_s_320_coco.yml \
+              -o weights=https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams
+```
+
+Detail also can refer to [Quick start guide](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/GETTING_STARTED.md).
+
+</details>
 
 
 ## Deployment
