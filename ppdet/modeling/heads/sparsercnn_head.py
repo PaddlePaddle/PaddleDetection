@@ -11,6 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+This code is based on https://github.com/PeizeSun/SparseR-CNN/blob/main/projects/SparseRCNN/sparsercnn/head.py
+Ths copyright of PeizeSun/SparseR-CNN is as follows:
+MIT License [see LICENSE for details]
+"""
 
 from __future__ import absolute_import
 from __future__ import division
