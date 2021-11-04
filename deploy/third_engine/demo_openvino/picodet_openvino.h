@@ -21,6 +21,8 @@
 #include <opencv2/core.hpp>
 #include <inference_engine.hpp>
 
+#define image_size 416
+
 
 typedef struct HeadInfo
 {
@@ -66,7 +68,7 @@ private:
     BoxInfo disPred2Bbox(const float*& dfl_det, int label, float score, int x, int y, int stride);
     static void nms(std::vector<BoxInfo>& result, float nms_threshold);
     std::string input_name_;
-    int input_size_ = 320;
+    int input_size_ = image_size;
     int num_class_ = 80;
     int reg_max_ = 7;
 
