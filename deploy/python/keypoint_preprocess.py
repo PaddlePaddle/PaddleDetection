@@ -109,7 +109,10 @@ def get_affine_transform(center,
 
 
 def get_warp_matrix(theta, size_input, size_dst, size_target):
-    """Calculate the transformation matrix under the constraint of unbiased.
+    """This code is based on 
+        https://github.com/open-mmlab/mmpose/blob/master/mmpose/core/post_processing/post_transforms.py
+
+        Calculate the transformation matrix under the constraint of unbiased.
     Paper ref: Huang et al. The Devil is in the Details: Delving into Unbiased
     Data Processing for Human Pose Estimation (CVPR 2020).
 
