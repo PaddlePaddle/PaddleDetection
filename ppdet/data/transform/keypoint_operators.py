@@ -682,6 +682,10 @@ class ToHeatmapsTopDown(object):
         self.sigma = sigma
 
     def __call__(self, records):
+        """refer to
+            https://github.com/leoxiaobin/deep-high-resolution-net.pytorch
+            Copyright (c) Microsoft, under the MIT License.
+        """
         joints = records['joints']
         joints_vis = records['joints_vis']
         num_joints = joints.shape[0]
