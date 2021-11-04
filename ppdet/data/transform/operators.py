@@ -48,7 +48,7 @@ from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
                         satisfy_sample_constraint_coverage, crop_image_sampling,
                         generate_sample_bbox_square, bbox_area_sampling,
-                        is_poly, transform_bbox, get_border)
+                        is_poly, get_border)
 
 from ppdet.utils.logger import setup_logger
 from ppdet.modeling.keypoint_utils import get_affine_transform, affine_transform
@@ -2476,6 +2476,9 @@ class RandomSelect(BaseOperator):
     """
     Randomly choose a transformation between transforms1 and transforms2,
     and the probability of choosing transforms1 is p.
+
+    The code is based on https://github.com/facebookresearch/detr/blob/main/datasets/transforms.py
+
     """
 
     def __init__(self, transforms1, transforms2, p=0.5):
@@ -2833,6 +2836,10 @@ class WarpAffine(BaseOperator):
                  shift=0.1):
         """WarpAffine
         Warp affine the image
+
+        The code is based on https://github.com/xingyizhou/CenterNet/blob/master/src/lib/datasets/sample/ctdet.py
+
+
         """
         super(WarpAffine, self).__init__()
         self.keep_res = keep_res
