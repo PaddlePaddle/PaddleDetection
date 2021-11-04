@@ -29,7 +29,7 @@ from tracker import JDETracker
 from mot_jde_infer import JDE_Detector, write_mot_results
 from infer import Detector, PredictConfig, print_arguments, get_test_images
 from ppdet.modeling.mot import visualization as mot_vis
-from ppdet.modeling.mot.utils import Timer as FPSTimer
+from ppdet.modeling.mot.utils import MOTTimer as FPSTimer
 from utils import get_current_memory_mb
 from det_keypoint_unite_infer import predict_with_given_det, bench_log
 

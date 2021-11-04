@@ -7,7 +7,9 @@ TrainDataset:
     dataset_dir: dataset/mot
     image_lists: ['visdrone_mcmot.train']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
-    reid_cls_ids: '0,1,2,3,4,5,6,7,8,9' # default VisDrone2019 MOT dataset with 10 classes, you can modify it for your needs.
+    reid_cls_ids: '0,1,2,3,4,5,6,7,8,9'
+    # using VisDrone2019 MOT dataset with 10 classes as default
+    # you can modify it for your needs.
 
 # for MCMOT evaluation
 # If you want to change the MCMOT evaluation dataset, please modify 'data_root'

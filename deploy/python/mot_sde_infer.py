@@ -22,7 +22,7 @@ from benchmark_utils import PaddleInferBenchmark
 from preprocess import preprocess
 from tracker import DeepSORTTracker
 from ppdet.modeling.mot import visualization as mot_vis
-from ppdet.modeling.mot.utils import Timer as MOTTimer
+from ppdet.modeling.mot.utils import MOTTimer
 
 from paddle.inference import Config
 from paddle.inference import create_predictor

@@ -38,7 +38,7 @@ class TrackState(object):
 @register
 @serializable
 class BaseTrack(object):
-    _count_dict = defaultdict(int) # support single class and multi classes
+    _count_dict = defaultdict(int)  # support single class and multi classes
 
     track_id = 0
     is_activated = False

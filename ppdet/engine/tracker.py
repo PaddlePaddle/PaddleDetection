@@ -26,8 +26,7 @@ from collections import defaultdict
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_box
-from ppdet.modeling.mot.utils import Timer, load_det_results
-from ppdet.modeling.mot import visualization as mot_vis
+from ppdet.modeling.mot.utils import MOTTimer, load_det_results, write_mot_results, save_vis_results
 
 from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric
 from ppdet.metrics import MCMOTMetric
@@ -125,11 +124,11 @@ class Tracker(object):
         tracker = self.model.tracker
         tracker.max_time_lost = int(frame_rate / 30.0 * tracker.track_buffer)
 
-        timer = Timer()
+        timer = MOTTimer()
         frame_id = 0
         self.status['mode'] = 'track'
         self.model.eval()
-        results = defaultdict(list) # support single class and multi classes
+        results = defaultdict(list)  # support single class and multi classes
 
         for step_id, data in enumerate(dataloader):
             self.status['step_id'] = step_id
@@ -139,11 +138,10 @@ class Tracker(object):
             # forward
             timer.tic()
             pred_dets, pred_embs = self.model(data)
-            assert isinstance(pred_dets, list) and isinstance(pred_embs, list)
-            assert len(pred_dets) == self.cfg.num_classes
-            assert len(pred_embs) == self.cfg.num_classes
 
-            online_targets_dict = self.model.tracker.update(pred_dets, pred_embs)
+            pred_dets, pred_embs = pred_dets.numpy(), pred_embs.numpy()
+            online_targets_dict = self.model.tracker.update(pred_dets,
+                                                            pred_embs)
             online_tlwhs = defaultdict(list)
             online_scores = defaultdict(list)
             online_ids = defaultdict(list)
@@ -162,13 +160,13 @@ class Tracker(object):
                     online_scores[cls_id].append(tscore)
                 # save results
                 results[cls_id].append(
-                    (frame_id + 1, online_tlwhs[cls_id],
-                     online_scores[cls_id], online_ids[cls_id]))
+                    (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id],
+                     online_ids[cls_id]))
 
             timer.toc()
-            self.save_vis_results(data, frame_id, online_ids, online_tlwhs,
-                                  online_scores, timer.average_time, show_image,
-                                  save_dir)
+            save_vis_results(data, frame_id, online_ids, online_tlwhs,
+                             online_scores, timer.average_time, show_image,
+                             save_dir, self.cfg.num_classes)
             frame_id += 1
 
         return results, frame_id, timer.average_time, timer.calls
@@ -185,7 +183,7 @@ class Tracker(object):
             if not os.path.exists(save_dir): os.makedirs(save_dir)
         use_detector = False if not self.model.detector else True
 
-        timer = Timer()
+        timer = MOTTimer()
         results = []
         frame_id = 0
         self.status['mode'] = 'track'
@@ -295,9 +293,9 @@ class Tracker(object):
             # save results
             results.append(
                 (frame_id + 1, online_tlwhs, online_scores, online_ids))
-            self.save_vis_results(data, frame_id, online_ids, online_tlwhs,
-                                  online_scores, timer.average_time, show_image,
-                                  save_dir)
+            save_vis_results(data, frame_id, online_ids, online_tlwhs,
+                             online_scores, timer.average_time, show_image,
+                             save_dir, self.cfg.num_classes)
             frame_id += 1
 
         return results, frame_id, timer.average_time, timer.calls
@@ -368,7 +366,8 @@ class Tracker(object):
                 else:
                     raise ValueError(model_type)
 
-            self.write_mot_results(result_filename, results, data_type)
+            write_mot_results(result_filename, results, data_type,
+                              self.cfg.num_classes)
             n_frame += nf
             timer_avgs.append(ta)
             timer_calls.append(tc)
@@ -491,7 +490,8 @@ class Tracker(object):
             else:
                 raise ValueError(model_type)
 
-        self.write_mot_results(result_filename, results, data_type)
+        write_mot_results(result_filename, results, data_type,
+                          self.cfg.num_classes)
 
         if save_videos:
             output_video_path = os.path.join(save_dir, '..',
@@ -500,57 +500,3 @@ class Tracker(object):
                 save_dir, output_video_path)
             os.system(cmd_str)
             logger.info('Save video in {}'.format(output_video_path))
-
-    def write_mot_results(self, filename, results, data_type='mot'):
-        if data_type in ['mot', 'mcmot']:
-            save_format = '{frame},{id},{x1},{y1},{w},{h},{score},{cls_id},-1,-1\n'
-        elif data_type == 'kitti':
-            save_format = '{frame} {id} car 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
-        else:
-            raise ValueError(data_type)
-
-        f = open(filename, 'w')
-        for cls_id in range(self.cfg.num_classes):
-            for frame_id, tlwhs, tscores, track_ids in results[cls_id]:
-                for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
-                    if track_id < 0:
-                        continue
-                    if data_type == 'kitti':
-                        frame_id -= 1
-                    elif data_type == 'mot':
-                        cls_id = -1
-                    elif data_type == 'mcmot':
-                        cls_id = cls_id
-
-                    x1, y1, w, h = tlwh
-                    line = save_format.format(
-                        frame=frame_id,
-                        id=track_id,
-                        x1=x1,
-                        y1=y1,
-                        w=w,
-                        h=h,
-                        score=score,
-                        cls_id=cls_id)
-                    f.write(line)
-        logger.info('MOT results save in {}'.format(filename))
-
-    def save_vis_results(self, data, frame_id, online_ids, online_tlwhs,
-                         online_scores, average_time, show_image, save_dir):
-        if show_image or save_dir is not None:
-            assert 'ori_image' in data
-            img0 = data['ori_image'].numpy()[0]
-            online_im = mot_vis.plot_tracking_dict(
-                img0,
-                self.cfg.num_classes,
-                online_tlwhs,
-                online_ids,
-                online_scores,
-                frame_id=frame_id,
-                fps=1. / average_time)
-        if show_image:
-            cv2.imshow('online_im', online_im)
-        if save_dir is not None:
-            cv2.imwrite(
-                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)),
-                online_im)

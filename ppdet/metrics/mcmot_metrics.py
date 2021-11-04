@@ -359,9 +359,17 @@ class MCMOTEvaluator(object):
     def eval_file(self, result_filename):
         # evaluation of each category
         gt_frame_dict = read_results(
-            self.gt_filename, self.data_type, is_gt=True, multi_class=True, union=False)
+            self.gt_filename,
+            self.data_type,
+            is_gt=True,
+            multi_class=True,
+            union=False)
         result_frame_dict = read_results(
-            result_filename, self.data_type, is_gt=False, multi_class=True, union=False)
+            result_filename,
+            self.data_type,
+            is_gt=False,
+            multi_class=True,
+            union=False)
 
         for cid in range(self.num_classes):
             self.reset_accumulator()

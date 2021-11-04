@@ -41,7 +41,7 @@ from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 from ppdet.utils import profiler
 
-from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter,SniperProposalsGenerator
+from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator
 from .export_utils import _dump_infer_config, _prune_input_spec
 
 from ppdet.utils.logger import setup_logger
@@ -196,7 +196,7 @@ class Trainer(object):
                         IouType=IouType,
                         save_prediction_only=save_prediction_only)
                 ]
-            elif self.cfg.metric == "SNIPERCOCO": # sniper
+            elif self.cfg.metric == "SNIPERCOCO":  # sniper
                 self._metrics = [
                     SNIPERCOCOMetric(
                         anno_file=anno_file,
@@ -206,8 +206,7 @@ class Trainer(object):
                         output_eval=output_eval,
                         bias=bias,
                         IouType=IouType,
-                        save_prediction_only=save_prediction_only
-                    )
+                        save_prediction_only=save_prediction_only)
                 ]
         elif self.cfg.metric == 'RBOX':
             # TODO: bias should be unified
@@ -520,7 +519,8 @@ class Trainer(object):
             results.append(outs)
         # sniper
         if type(self.dataset) == SniperCOCODataSet:
-            results = self.dataset.anno_cropper.aggregate_chips_detections(results)
+            results = self.dataset.anno_cropper.aggregate_chips_detections(
+                results)
 
         for outs in results:
             batch_res = get_infer_results(outs, clsid2catid)

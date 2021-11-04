@@ -85,12 +85,35 @@ class FairMOTEmbeddingHead(nn.Layer):
             input_shape = input_shape[0]
         return {'in_channels': input_shape.channels}
 
+    def process_by_class(self, det_outs, embedding, bbox_inds, topk_clses):
+        pred_dets, pred_embs = [], []
+        for cls_id in range(self.num_classes):
+            inds_masks = topk_clses == cls_id
+            inds_masks = paddle.cast(inds_masks, 'float32')
+
+            pos_num = inds_masks.sum().numpy()
+            if pos_num == 0:
+                continue
+
+            cls_inds_mask = inds_masks > 0
+
+            bbox_mask = paddle.nonzero(cls_inds_mask)
+            cls_det_outs = paddle.gather_nd(det_outs, bbox_mask)
+            pred_dets.append(cls_det_outs)
+
+            cls_inds = paddle.masked_select(bbox_inds, cls_inds_mask)
+            cls_inds = cls_inds.unsqueeze(-1)
+            cls_embedding = paddle.gather_nd(embedding, cls_inds)
+            pred_embs.append(cls_embedding)
+
+        return paddle.concat(pred_dets), paddle.concat(pred_embs)
+
     def forward(self,
                 feat,
                 inputs,
                 det_outs=None,
                 bbox_inds=None,
-                cls_inds_masks=None):
+                topk_clses=None):
         reid_feat = self.reid(feat)
         if self.training:
             if self.num_classes == 1:
@@ -106,30 +129,11 @@ class FairMOTEmbeddingHead(nn.Layer):
             # embedding shape: [bs * h * w, ch_emb]
 
             if self.num_classes == 1:
-                pred_dets, pred_embs = list(), list()
-                pred_dets.append(det_outs)
-                pred_embs.append(paddle.gather(embedding, bbox_inds))
+                pred_dets = det_outs
+                pred_embs = paddle.gather(embedding, bbox_inds)
             else:
-                pred_dets, pred_embs = [], []
-                for cls_id in range(self.num_classes):
-                    pos_num = cls_inds_masks[cls_id].sum().numpy()
-                    if pos_num == 0:
-                        # give fake outputs for model export and deploy infer
-                        pred_dets.append(paddle.zeros([1, 5]))
-                        pred_embs.append(paddle.zeros([1, 1]))
-                        continue
-
-                    cls_inds_mask = cls_inds_masks[cls_id] > 0
-
-                    bbox_mask = paddle.nonzero(cls_inds_mask)
-                    cls_det_outs = paddle.gather_nd(det_outs, bbox_mask)
-                    pred_dets.append(cls_det_outs)
-
-                    cls_inds = paddle.masked_select(bbox_inds, cls_inds_mask)
-                    cls_inds = cls_inds.unsqueeze(-1)
-                    cls_embedding = paddle.gather_nd(embedding, cls_inds)
-                    pred_embs.append(cls_embedding)
-
+                pred_dets, pred_embs = self.process_by_class(
+                    det_outs, embedding, bbox_inds, topk_clses)
             return pred_dets, pred_embs
 
     def get_loss(self, feat, inputs):

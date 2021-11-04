@@ -201,7 +201,8 @@ class CenterNetHead(nn.Layer):
                 size_target = inputs['size']
                 # shape: [bs, max_per_img, 4]
             else:
-                size_target = inputs['size'][:, :, 0:2] + inputs['size'][:, :, 2:]
+                size_target = inputs['size'][:, :, 0:2] + inputs['size'][:, :,
+                                                                         2:]
                 # shape: [bs, max_per_img, 2]
 
             size_target.stop_gradient = True

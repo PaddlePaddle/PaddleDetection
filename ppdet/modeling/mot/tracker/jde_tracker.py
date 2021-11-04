@@ -80,22 +80,24 @@ class JDETracker(object):
         self.metric_type = metric_type
 
         self.frame_id = 0
-        self.tracked_tracks_dict = defaultdict(list) # dict(list[STrack])
-        self.lost_tracks_dict = defaultdict(list) # dict(list[STrack])
-        self.removed_tracks_dict = defaultdict(list) # dict(list[STrack])
+        self.tracked_tracks_dict = defaultdict(list)  # dict(list[STrack])
+        self.lost_tracks_dict = defaultdict(list)  # dict(list[STrack])
+        self.removed_tracks_dict = defaultdict(list)  # dict(list[STrack])
 
         self.max_time_lost = 0
         # max_time_lost will be calculated: int(frame_rate / 30.0 * track_buffer)
 
-    def update(self, pred_dets_dict, pred_embs_dict):
+    def update(self, pred_dets, pred_embs):
         """
         Processes the image frame and finds bounding box(detections).
         Associates the detection with corresponding tracklets and also handles
             lost, removed, refound and active tracklets.
 
         Args:
-            pred_dets_dict (dict(Tensor)): Detection results of the image.
-            pred_embs_dict (dict(Tensor)): Embedding results of the image.
+            pred_dets (np.array): Detection results of the image, the shape is
+                [N, 6], means 'x0, y0, x1, y1, score, cls_id'.
+            pred_embs (np.array): Embedding results of the image, the shape is
+                [N, 128] or [N, 512].
 
         Return:
             output_stracks_dict (dict(list)): The list contains information
@@ -110,34 +112,31 @@ class JDETracker(object):
         removed_tracks_dict = defaultdict(list)
         output_tracks_dict = defaultdict(list)
 
+        pred_dets_dict = defaultdict(list)
+        pred_embs_dict = defaultdict(list)
+
+        # unify single and multi classes detection and embedding results
         for cls_id in range(self.num_classes):
-            pred_dets = pred_dets_dict[cls_id]
-            pred_embs = pred_embs_dict[cls_id]
+            cls_idx = (pred_dets[:, 5:] == cls_id).squeeze(-1)
+            pred_dets_dict[cls_id] = pred_dets[cls_idx]
+            pred_embs_dict[cls_id] = pred_embs[cls_idx]
 
-            remain_inds = paddle.nonzero(pred_dets[:, 4] > self.conf_thres)
-            if remain_inds.shape[0] == 0:
-                pred_dets = paddle.zeros([1, 5])
-                pred_embs = paddle.zeros([1, 1])
-            else:
-                pred_dets = paddle.gather(pred_dets, remain_inds)
-                pred_embs = paddle.gather(pred_embs, remain_inds)
-
-            # Filter out the image with box_num = 0. pred_dets = [[0.0, 0.0, 0.0 ,0.0]]
-            empty_pred = True if len(pred_dets) == 1 and paddle.sum(
-                pred_dets) == 0.0 else False
-            """ Step 1: Network forward, get detections & embeddings"""
-            if len(pred_dets) > 0 and not empty_pred:
-                pred_dets = pred_dets.numpy()
-                pred_embs = pred_embs.numpy()
+        for cls_id in range(self.num_classes):
+            """ Step 1: Get detections by class"""
+            pred_dets_cls = pred_dets_dict[cls_id]
+            pred_embs_cls = pred_embs_dict[cls_id]
+            remain_inds = (pred_dets_cls[:, 4:5] > self.conf_thres).squeeze(-1)
+            if remain_inds.sum() > 0:
+                pred_dets_cls = pred_dets_cls[remain_inds]
+                pred_embs_cls = pred_embs_cls[remain_inds]
                 detections = [
                     STrack(
                         STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f,
                         self.num_classes, cls_id, 30)
-                    for (tlbrs, f) in zip(pred_dets, pred_embs)
+                    for (tlbrs, f) in zip(pred_dets_cls, pred_embs_cls)
                 ]
             else:
                 detections = []
-
             ''' Add newly detected tracklets to tracked_stracks'''
             unconfirmed_dict = defaultdict(list)
             tracked_tracks_dict = defaultdict(list)
@@ -154,7 +153,7 @@ class JDETracker(object):
             track_pool_dict[cls_id] = joint_stracks(
                 tracked_tracks_dict[cls_id], self.lost_tracks_dict[cls_id])
 
-            # Predict the current location with KF
+            # Predict the current location with KalmanFilter
             STrack.multi_predict(track_pool_dict[cls_id], self.motion)
 
             dists = matching.embedding_distance(
@@ -162,7 +161,7 @@ class JDETracker(object):
             dists = matching.fuse_motion(self.motion, dists,
                                          track_pool_dict[cls_id], detections)
             matches, u_track, u_detection = matching.linear_assignment(
-                dists, thresh=self.tracked_thresh)  # thresh=0.7
+                dists, thresh=self.tracked_thresh)
 
             for i_tracked, idet in matches:
                 # i_tracked is the id of the track and idet is the detection
