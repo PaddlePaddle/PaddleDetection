@@ -35,7 +35,14 @@ def box_flip(boxes, im_shape):
 
 
 def nms(dets, thresh):
-    """Apply classic DPM-style greedy NMS."""
+    """
+    The code is based on:
+    https://github.com/facebookresearch/Detectron/blob/main/detectron/utils/cython_nms.pyx
+    Ths copyright of sshaoshuai/PointRCNN is as follows:
+    MIT License
+
+    Apply classic DPM-style greedy NMS.
+    """
     if dets.shape[0] == 0:
         return dets[[], :]
     scores = dets[:, 0]
@@ -91,6 +98,12 @@ def nms(dets, thresh):
 
 
 def soft_nms(dets, sigma, thres):
+    """
+    The code is based on:
+    https://github.com/facebookresearch/Detectron/blob/main/detectron/utils/cython_nms.pyx
+    Ths copyright of sshaoshuai/PointRCNN is as follows:
+    MIT License
+    """
     dets_final = []
     while len(dets) > 0:
         maxpos = np.argmax(dets[:, 0])

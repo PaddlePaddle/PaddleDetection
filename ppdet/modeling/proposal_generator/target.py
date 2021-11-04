@@ -279,6 +279,9 @@ def sample_bbox(matches,
 
 def polygons_to_mask(polygons, height, width):
     """
+    The code is based on:
+    https://github.com/facebookresearch/detectron2/blob/main/detectron2/structures/masks.py
+
     Args:
         polygons (list[ndarray]): each array has shape (Nx2,)
         height, width (int)
@@ -293,6 +296,10 @@ def polygons_to_mask(polygons, height, width):
 
 
 def rasterize_polygons_within_box(poly, box, resolution):
+    """
+    The code is based on:
+    https://github.com/facebookresearch/detectron2/blob/main/detectron2/structures/masks.py
+    """
     w, h = box[2] - box[0], box[3] - box[1]
     polygons = [np.asarray(p, dtype=np.float64) for p in poly]
     for p in polygons:
