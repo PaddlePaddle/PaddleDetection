@@ -25,7 +25,7 @@ function _train(){
     set_optimizer_lr_mp=" "
     # parse model_name
     case ${model_name} in
-        faster_rcnn) model_yml="configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml"
+        faster_rcnn) model_yml="benchmark/configs/faster_rcnn_r50_fpn_1x_coco.yml"
             set_optimizer_lr_sp="LearningRate.base_lr=0.001" ;;
         fcos) model_yml="configs/fcos/fcos_r50_fpn_1x_coco.yml"
             set_optimizer_lr_sp="LearningRate.base_lr=0.001" ;;
