@@ -194,7 +194,7 @@ class PicoDetPostProcess(object):
                 picked_box_probs.append(box_probs)
                 picked_labels.extend([class_index] * box_probs.shape[0])
             if not picked_box_probs:
-                return np.array([]), np.array([]), np.array([])
+                return np.array([]), np.array([])
             picked_box_probs = np.concatenate(picked_box_probs)
 
             # resize output boxes
