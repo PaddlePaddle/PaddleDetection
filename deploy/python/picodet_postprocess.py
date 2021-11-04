@@ -193,29 +193,34 @@ class PicoDetPostProcess(object):
                     top_k=self.keep_top_k, )
                 picked_box_probs.append(box_probs)
                 picked_labels.extend([class_index] * box_probs.shape[0])
-            if not picked_box_probs:
-                return np.array([]), np.array([]), np.array([])
-            picked_box_probs = np.concatenate(picked_box_probs)
 
-            # resize output boxes
-            picked_box_probs[:, :4] = self.warp_boxes(picked_box_probs[:, :4],
-                                                      self.ori_shape[batch_id])
-            im_scale = np.concatenate([
-                self.scale_factor[batch_id][::-1],
-                self.scale_factor[batch_id][::-1]
-            ])
-            picked_box_probs[:, :4] /= im_scale
-            # clas score box
-            out_boxes_list.append(
-                np.concatenate(
-                    [
-                        np.expand_dims(
-                            np.array(picked_labels), axis=-1), np.expand_dims(
-                                picked_box_probs[:, 4], axis=-1),
-                        picked_box_probs[:, :4]
-                    ],
-                    axis=1))
-            out_boxes_num.append(len(picked_labels))
+            if len(picked_box_probs) == 0:
+                out_boxes_list.append(np.empty((0, 4)))
+                out_boxes_num.append(0)
+
+            else:
+                picked_box_probs = np.concatenate(picked_box_probs)
+
+                # resize output boxes
+                picked_box_probs[:, :4] = self.warp_boxes(
+                    picked_box_probs[:, :4], self.ori_shape[batch_id])
+                im_scale = np.concatenate([
+                    self.scale_factor[batch_id][::-1],
+                    self.scale_factor[batch_id][::-1]
+                ])
+                picked_box_probs[:, :4] /= im_scale
+                # clas score box
+                out_boxes_list.append(
+                    np.concatenate(
+                        [
+                            np.expand_dims(
+                                np.array(picked_labels),
+                                axis=-1), np.expand_dims(
+                                    picked_box_probs[:, 4], axis=-1),
+                            picked_box_probs[:, :4]
+                        ],
+                        axis=1))
+                out_boxes_num.append(len(picked_labels))
 
         out_boxes_list = np.concatenate(out_boxes_list, axis=0)
         out_boxes_num = np.asarray(out_boxes_num).astype(np.int32)
