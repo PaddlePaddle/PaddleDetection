@@ -707,6 +707,8 @@ class Gt2TTFTarget(BaseOperator):
 @register_op
 class Gt2Solov2Target(BaseOperator):
     """Assign mask target and labels in SOLOv2 network.
+    The code of this function is based on:
+        https://github.com/WXinlong/SOLO/blob/master/mmdet/models/anchor_heads/solov2_head.py#L271
     Args:
         num_grids (list): The list of feature map grids size.
         scale_ranges (list): The list of mask boundary range.
