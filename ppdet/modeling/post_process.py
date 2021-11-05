@@ -141,6 +141,13 @@ class BBoxPostProcess(nn.Layer):
 
 @register
 class MaskPostProcess(object):
+    """
+    refer to:
+    https://github.com/facebookresearch/detectron2/layers/mask_ops.py
+
+    Get Mask output according to the output from model
+    """
+
     def __init__(self, binary_thresh=0.5):
         super(MaskPostProcess, self).__init__()
         self.binary_thresh = binary_thresh
