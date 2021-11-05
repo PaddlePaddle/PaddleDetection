@@ -105,7 +105,7 @@ void FlowStatistic(const MOTResult& results, const int frame_id,
 }
 
 void SaveSCTResult(const MOTResult& results, const int frame_id, FILE* fp) {
-  // result format: frame_id, track_id, x1, y1, x2, y2, w, h
+  // result format: frame_id, track_id, x1, y1, w, h
   if (results.size() == 0) {
     printf("The output result is empty!");
     return;

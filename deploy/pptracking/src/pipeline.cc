@@ -144,7 +144,7 @@ void Pipeline::PredictSCT(const std::string& video_path) {
       printf("Open file error.\n");
       return;
     }
-    fprintf(fp, "result format: frame_id, track_id, x1, y1, x2, y2, w, h\n");
+    fprintf(fp, "result format: frame_id, track_id, x1, y1, w, h\n");
   }
   LOG(INFO) << "------------------- Predict info ------------------------";
   while (capture.read(frame)) {
@@ -179,10 +179,10 @@ void Pipeline::PredictSCT(const std::string& video_path) {
   PrintBenchmarkLog(det_times, frame_id);
   LOG(INFO) << "-------------------- Final Output info -------------------";
   LOG(INFO) << "Total frame: " << frame_id;
-  LOG(INFO) << "Visualized output saved as" << video_out_path.c_str();
+  LOG(INFO) << "Visualized output saved as " << video_out_path.c_str();
   if (save_result_) {
     fclose(fp);
-    LOG(INFO) << "txt result output saved as" << result_output_path.c_str();
+    LOG(INFO) << "txt result output saved as " << result_output_path.c_str();
   }
 }
 
