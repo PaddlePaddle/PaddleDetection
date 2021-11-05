@@ -32,7 +32,8 @@ class FairMOTEmbeddingHead(nn.Layer):
         in_channels (int): the channel number of input to FairMOTEmbeddingHead.
         ch_head (int): the channel of features before fed into embedding, 256 by default.
         ch_emb (int): the channel of the embedding feature, 128 by default.
-        num_identities_dict (dict): the number of identities of each category.
+        num_identities_dict (dict): the number of identities of each category,
+            support single class and multi-calss, {0: 14455} as default. 
     """
 
     def __init__(self,
@@ -40,7 +41,7 @@ class FairMOTEmbeddingHead(nn.Layer):
                  ch_head=256,
                  ch_emb=128,
                  num_classes=1,
-                 num_identities_dict={}):
+                 num_identities_dict={0: 14455}):
         super(FairMOTEmbeddingHead, self).__init__()
         assert num_classes >= 1
         self.num_classes = num_classes

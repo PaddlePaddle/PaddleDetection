@@ -6,7 +6,7 @@ num_classes: 10
 TrainDataset:
   !MCMOTDataSet
     dataset_dir: dataset/mot
-    image_lists: ['visdrone_mcmot.val']
+    image_lists: ['visdrone_mcmot.train']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
     label_list: label_list.txt
 
