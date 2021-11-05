@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// The code is based on:
+// https://github.com/CnybTseng/JDE/blob/master/platforms/common/jdetracker.cpp
+// Ths copyright of CnybTseng/JDE is as follows:
+// MIT License 
+
 #include <map>
 #include <stdio.h>
 #include <limits.h>
