@@ -43,6 +43,6 @@ void FlowStatistic(const MOTResult& results, const int frame_id,
                    std::vector<int>* out_count_list);
 
 // Save Tracking Results
-void SaveResult(const MOTResult& results, const std::string& output_dir);
+void SaveMOTResult(const MOTResult& results, const int frame_id, std::vector<std::string>& records);
 
 } // namespace PaddleDetection

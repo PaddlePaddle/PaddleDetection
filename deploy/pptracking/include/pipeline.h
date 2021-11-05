@@ -50,7 +50,7 @@ class Pipeline {
                   const bool save_result=false,
                   const std::string& scene="pedestrian",
                   const bool tiny_obj=false,
-                  const bool is_mct=false) {
+                  const bool is_mtmct=false) {
     std::vector<std::string> input;
     this->input_ = input;
     this->device_ = device;
@@ -63,7 +63,7 @@ class Pipeline {
     this->trt_calib_mode_ = trt_calib_mode;
     this->count_ = count;
     this->save_result_ = save_result;
-    SelectModel(scene, tiny_obj, is_mct);
+    SelectModel(scene, tiny_obj, is_mtmct);
     InitPredictor();
   }
 
@@ -73,14 +73,14 @@ class Pipeline {
   void SetInput(std::string& input_video);
   void ClearInput();
 
-  // Run pipeline
+  // Run pipeline in video
   void Run();
-  void RunStream();
+  void PredictMOT(const std::string& video_path);
+  void PredictMTMCT(const std::vector<std::string> video_inputs);
 
-  void PredictSCT(const std::string& video_path);
-  void PredictSCT(const cv::Mat stream);
-  void PredictMCT(const std::vector<std::string> video_inputs);
-  void PredictMCT(const std::vector<cv::Mat> streams);
+  // Run pipeline in stream
+  void RunMOTStream(const cv::Mat img, const int frame_id, cv::Mat out_img, std::vector<std::string>& records, std::vector<int>& count_list, std::vector<int>& in_count_list, std::vector<int>& out_count_list);
+  void RunMTMCTStream(const std::vector<cv::Mat> imgs, std::vector<std::string>& records);
 
   void PrintBenchmarkLog(std::vector<double> det_time, int img_num);
 
@@ -88,7 +88,7 @@ class Pipeline {
   // Select model according to scenes, it must execute before Run()
   void SelectModel(const std::string& scene="pedestrian",
                    const bool tiny_obj=false,
-                   const bool is_mct=false);
+                   const bool is_mtmct=false);
   void InitPredictor();
 
   std::shared_ptr<PaddleDetection::JDEPredictor> jde_sct_;
@@ -102,7 +102,6 @@ class Pipeline {
   std::string track_model_dir_;
   std::string det_model_dir_;
   std::string reid_model_dir_;
-  std::string mct_model_dir_;
   std::string run_mode_ = "fluid";
   int gpu_id_ = 0;
   bool use_mkldnn_ = false;

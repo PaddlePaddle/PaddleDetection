@@ -104,9 +104,30 @@ void FlowStatistic(const MOTResult& results, const int frame_id,
   throw "Not Implement";
 }
 
-void SaveResult(const MOTResult& results, const std::string& output_dir) {
-  throw "Not Implement";
+void SaveMOTResult(const MOTResult& results, const int frame_id, std::vector<std::string>& records) {
+  // result format: frame_id, track_id, x1, y1, w, h
+  std::string record;
+  for (int i = 0; i < results.size(); ++i) {
+    MOTTrack mot_track = results[i];
+    int ids = mot_track.ids;
+    float score = mot_track.score;
+    Rect rects = mot_track.rects;
+    float x1 = rects.left;
+    float y1 = rects.top;
+    float x2 = rects.right;
+    float y2 = rects.bottom;
+    float w = x2 - x1;
+    float h = y2 - y1;
+    if (w == 0 || h == 0) {
+      continue;
+    }
+    std::ostringstream os;
+    os << frame_id << " " << ids << ""
+       << x1 << " " << y1 << " "
+       << w << " " << h <<"\n";
+    record = os.str();
+    records.push_back(record);
+  }
 }
-
 
 } // namespace PaddleDetection
