@@ -27,11 +27,10 @@ __all__ = ['KeyPointTopDownCOCOEval', 'KeyPointTopDownMPIIEval']
 
 
 class KeyPointTopDownCOCOEval(object):
-    '''
-    Adapted from
+    """refer to
         https://github.com/leoxiaobin/deep-high-resolution-net.pytorch
         Copyright (c) Microsoft, under the MIT License.
-    '''
+    """
 
     def __init__(self,
                  anno_file,
@@ -286,7 +285,7 @@ class KeyPointTopDownMPIIEval(object):
         return self.eval_results
 
     def evaluate(self, outputs, savepath=None):
-        """Evaluate PCKh for MPII dataset. Adapted from
+        """Evaluate PCKh for MPII dataset. refer to
         https://github.com/leoxiaobin/deep-high-resolution-net.pytorch
         Copyright (c) Microsoft, under the MIT License.
 

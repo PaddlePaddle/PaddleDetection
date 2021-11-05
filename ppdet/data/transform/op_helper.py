@@ -464,65 +464,6 @@ def gaussian2D(shape, sigma_x=1, sigma_y=1):
     return h
 
 
-def transform_bbox(sample,
-                   M,
-                   w,
-                   h,
-                   area_thr=0.25,
-                   wh_thr=2,
-                   ar_thr=20,
-                   perspective=False):
-    """
-    transfrom bbox according to tranformation matrix M,
-    refer to https://github.com/ultralytics/yolov5/blob/develop/utils/datasets.py
-    """
-    bbox = sample['gt_bbox']
-    label = sample['gt_class']
-    # rotate bbox
-    n = len(bbox)
-    xy = np.ones((n * 4, 3), dtype=np.float32)
-    xy[:, :2] = bbox[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(n * 4, 2)
-    # xy = xy @ M.T
-    xy = np.matmul(xy, M.T)
-    if perspective:
-        xy = (xy[:, :2] / xy[:, 2:3]).reshape(n, 8)
-    else:
-        xy = xy[:, :2].reshape(n, 8)
-    # get new bboxes
-    x = xy[:, [0, 2, 4, 6]]
-    y = xy[:, [1, 3, 5, 7]]
-    bbox = np.concatenate(
-        (x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
-    # clip boxes
-    mask = filter_bbox(bbox, w, h, area_thr)
-    sample['gt_bbox'] = bbox[mask]
-    sample['gt_class'] = sample['gt_class'][mask]
-    if 'is_crowd' in sample:
-        sample['is_crowd'] = sample['is_crowd'][mask]
-    if 'difficult' in sample:
-        sample['difficult'] = sample['difficult'][mask]
-    return sample
-
-
-def filter_bbox(bbox, w, h, area_thr=0.25, wh_thr=2, ar_thr=20):
-    """
-    filter bbox, refer to https://github.com/ultralytics/yolov5/blob/develop/utils/datasets.py
-    """
-    # clip boxes
-    area1 = (bbox[:, 2:4] - bbox[:, 0:2]).prod(1)
-    bbox[:, [0, 2]] = bbox[:, [0, 2]].clip(0, w)
-    bbox[:, [1, 3]] = bbox[:, [1, 3]].clip(0, h)
-    # compute
-    area2 = (bbox[:, 2:4] - bbox[:, 0:2]).prod(1)
-    area_ratio = area2 / (area1 + 1e-16)
-    wh = bbox[:, 2:4] - bbox[:, 0:2]
-    ar_ratio = np.maximum(wh[:, 1] / (wh[:, 0] + 1e-16),
-                          wh[:, 0] / (wh[:, 1] + 1e-16))
-    mask = (area_ratio > area_thr) & (
-        (wh > wh_thr).all(1)) & (ar_ratio < ar_thr)
-    return mask
-
-
 def draw_umich_gaussian(heatmap, center, radius, k=1):
     """
     draw_umich_gaussian, refer to https://github.com/xingyizhou/CenterNet/blob/master/src/lib/utils/image.py#L126
