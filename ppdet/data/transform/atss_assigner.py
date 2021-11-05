@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# The code is based on:
+# https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/bbox/assigners/atss_assigner.py
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function

@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# The code is based on:
+# https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/dense_heads/yolox_head.py
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -30,29 +33,7 @@ from ppdet.core.workspace import register
 from ppdet.modeling.bbox_utils import distance2bbox, bbox2distance
 from ppdet.data.transform.atss_assigner import bbox_overlaps
 
-from .gfl_head import GFLHead, ScaleReg, Integral
-
-
-def multi_apply(func, *args, **kwargs):
-    """Apply function to a list of arguments.
-
-    Note:
-        This function applies the ``func`` to multiple inputs and
-        map the multiple outputs of the ``func`` into different
-        list. Each list contains the same type of outputs corresponding
-        to different inputs.
-
-    Args:
-        func (Function): A function that will be applied to a list of
-            arguments
-
-    Returns:
-        tuple(list): A tuple containing multiple list, each list contains \
-            a kind of returned results by the function
-    """
-    pfunc = partial(func, **kwargs) if kwargs else func
-    map_results = map(pfunc, *args)
-    return tuple(map(list, zip(*map_results)))
+from .gfl_head import GFLHead
 
 
 @register
@@ -123,14 +104,15 @@ class OTAHead(GFLHead):
 
         self.assigner = assigner
 
-    def _get_target_single(self, cls_preds, centors, decoded_bboxes, gt_bboxes,
-                           gt_labels):
+    def _get_target_single(self, flatten_cls_pred, flatten_center_and_stride,
+                           flatten_bbox, gt_bboxes, gt_labels):
         """Compute targets for priors in a single image.
         """
-        centors, labels, label_weights, bbox_targets, pos_num = self.assigner(
-            F.sigmoid(cls_preds), centors, decoded_bboxes, gt_bboxes, gt_labels)
+        pos_num, label, label_weight, bbox_target = self.assigner(
+            F.sigmoid(flatten_cls_pred), flatten_center_and_stride,
+            flatten_bbox, gt_bboxes, gt_labels)
 
-        return (centors, labels, label_weights, bbox_targets, pos_num)
+        return (pos_num, label, label_weight, bbox_target)
 
     def get_loss(self, head_outs, gt_meta):
         cls_scores, bbox_preds = head_outs
@@ -142,26 +124,25 @@ class OTAHead(GFLHead):
                          for featmap in cls_scores]
 
         decode_bbox_preds = []
-        mlvl_centors = []
-        with_stride = True
+        center_and_strides = []
         for featmap_size, stride, bbox_pred in zip(featmap_sizes,
                                                    self.fpn_stride, bbox_preds):
 
+            # center in origin image
             yy, xx = self.get_single_level_center_point(featmap_size, stride,
                                                         self.cell_offset)
-            if with_stride:
-                stride_w = paddle.full((len(xx), ), stride)
-                stride_h = paddle.full((len(yy), ), stride)
-            centers = paddle.stack([xx, yy, stride_w, stride_h], -1).tile(
+
+            center_and_stride = paddle.stack([xx, yy, stride, stride], -1).tile(
                 [num_imgs, 1, 1])
-            mlvl_centors.append(centers)
-            centers_in_feature = centers.reshape([-1, 4])[:, :-2] / stride
+            center_and_strides.append(center_and_stride)
+            center_in_feature = center_and_stride.reshape(
+                [-1, 4])[:, :-2] / stride
             bbox_pred = bbox_pred.transpose([0, 2, 3, 1]).reshape(
                 [num_imgs, -1, 4 * (self.reg_max + 1)])
-            pred_corners = self.distribution_project(bbox_pred)
-            decode_bbox_pred = distance2bbox(
-                centers_in_feature, pred_corners).reshape([num_imgs, -1, 4])
-            decode_bbox_preds.append(decode_bbox_pred * stride)
+            pred_distances = self.distribution_project(bbox_pred)
+            decode_bbox_pred_wo_stride = distance2bbox(
+                center_in_feature, pred_distances).reshape([num_imgs, -1, 4])
+            decode_bbox_preds.append(decode_bbox_pred_wo_stride * stride)
 
         flatten_cls_preds = [
             cls_pred.transpose([0, 2, 3, 1]).reshape(
@@ -170,27 +151,33 @@ class OTAHead(GFLHead):
         ]
         flatten_cls_preds = paddle.concat(flatten_cls_preds, axis=1)
         flatten_bboxes = paddle.concat(decode_bbox_preds, axis=1)
-        flatten_centors = paddle.concat(mlvl_centors, axis=1)
+        flatten_center_and_strides = paddle.concat(center_and_strides, axis=1)
 
-        gt_box, gt_labels = gt_meta['gt_bbox'], gt_meta['gt_class']
-        (centors, labels, label_weights, bbox_targets, pos_num) = multi_apply(
-            self._get_target_single,
-            flatten_cls_preds.detach(),
-            flatten_centors.detach(),
-            flatten_bboxes.detach(), gt_box, gt_labels)
+        gt_boxes, gt_labels = gt_meta['gt_bbox'], gt_meta['gt_class']
+        pos_num_l, label_l, label_weight_l, bbox_target_l = [], [], [], []
+        for flatten_cls_pred,flatten_center_and_stride,flatten_bbox,gt_box, gt_label \
+            in zip(flatten_cls_preds.detach(),flatten_center_and_strides.detach(), \
+                   flatten_bboxes.detach(),gt_boxes, gt_labels):
+            pos_num, label, label_weight, bbox_target = self._get_target_single(
+                flatten_cls_pred, flatten_center_and_stride, flatten_bbox,
+                gt_box, gt_label)
+            pos_num_l.append(pos_num)
+            label_l.append(label)
+            label_weight_l.append(label_weight)
+            bbox_target_l.append(bbox_target)
 
-        centors = paddle.to_tensor(np.stack(centors, axis=0))
-        labels = paddle.to_tensor(np.stack(labels, axis=0))
-        label_weights = paddle.to_tensor(np.stack(label_weights, axis=0))
-        bbox_targets = paddle.to_tensor(np.stack(bbox_targets, axis=0))
+        labels = paddle.to_tensor(np.stack(label_l, axis=0))
+        label_weights = paddle.to_tensor(np.stack(label_weight_l, axis=0))
+        bbox_targets = paddle.to_tensor(np.stack(bbox_target_l, axis=0))
 
-        centors_list = self._images_to_levels(centors, num_level_anchors)
+        center_and_strides_list = self._images_to_levels(
+            flatten_center_and_strides, num_level_anchors)
         labels_list = self._images_to_levels(labels, num_level_anchors)
         label_weights_list = self._images_to_levels(label_weights,
                                                     num_level_anchors)
         bbox_targets_list = self._images_to_levels(bbox_targets,
                                                    num_level_anchors)
-        num_total_pos = sum(pos_num)
+        num_total_pos = sum(pos_num_l)
         try:
             num_total_pos = paddle.distributed.all_reduce(num_total_pos.clone(
             )) / paddle.distributed.get_world_size()
@@ -198,10 +185,10 @@ class OTAHead(GFLHead):
             num_total_pos = max(num_total_pos, 1)
 
         loss_bbox_list, loss_dfl_list, loss_qfl_list, avg_factor = [], [], [], []
-        for cls_score, bbox_pred, grid_cells, labels, label_weights, bbox_targets, stride in zip(
-                cls_scores, bbox_preds, centors_list, labels_list,
+        for cls_score, bbox_pred, center_and_strides, labels, label_weights, bbox_targets, stride in zip(
+                cls_scores, bbox_preds, center_and_strides_list, labels_list,
                 label_weights_list, bbox_targets_list, self.fpn_stride):
-            grid_cells = grid_cells.reshape([-1, 4])
+            center_and_strides = center_and_strides.reshape([-1, 4])
             cls_score = cls_score.transpose([0, 2, 3, 1]).reshape(
                 [-1, self.cls_out_channels])
             bbox_pred = bbox_pred.transpose([0, 2, 3, 1]).reshape(
@@ -219,14 +206,14 @@ class OTAHead(GFLHead):
             if len(pos_inds) > 0:
                 pos_bbox_targets = paddle.gather(bbox_targets, pos_inds, axis=0)
                 pos_bbox_pred = paddle.gather(bbox_pred, pos_inds, axis=0)
-                pos_grid_cell_centers = paddle.gather(
-                    grid_cells[:, :-2], pos_inds, axis=0) / stride
+                pos_centers = paddle.gather(
+                    center_and_strides[:, :-2], pos_inds, axis=0) / stride
 
                 weight_targets = F.sigmoid(cls_score.detach())
                 weight_targets = paddle.gather(
                     weight_targets.max(axis=1, keepdim=True), pos_inds, axis=0)
                 pos_bbox_pred_corners = self.distribution_project(pos_bbox_pred)
-                pos_decode_bbox_pred = distance2bbox(pos_grid_cell_centers,
+                pos_decode_bbox_pred = distance2bbox(pos_centers,
                                                      pos_bbox_pred_corners)
                 pos_decode_bbox_targets = pos_bbox_targets / stride
                 bbox_iou = bbox_overlaps(
@@ -236,7 +223,7 @@ class OTAHead(GFLHead):
                 score[pos_inds.numpy()] = bbox_iou
 
                 pred_corners = pos_bbox_pred.reshape([-1, self.reg_max + 1])
-                target_corners = bbox2distance(pos_grid_cell_centers,
+                target_corners = bbox2distance(pos_centers,
                                                pos_decode_bbox_targets,
                                                self.reg_max).reshape([-1])
                 # regression loss
@@ -355,26 +342,24 @@ class OTAVFLHead(OTAHead):
                          for featmap in cls_scores]
 
         decode_bbox_preds = []
-        mlvl_centors = []
-        with_stride = True
+        center_and_strides = []
         for featmap_size, stride, bbox_pred in zip(featmap_sizes,
                                                    self.fpn_stride, bbox_preds):
-
+            # center in origin image
             yy, xx = self.get_single_level_center_point(featmap_size, stride,
                                                         self.cell_offset)
-            if with_stride:
-                stride_w = paddle.full((len(xx), ), stride)
-                stride_h = paddle.full((len(yy), ), stride)
-            centers = paddle.stack([xx, yy, stride_w, stride_h], -1).tile(
-                [num_imgs, 1, 1])
-            mlvl_centors.append(centers)
-            centers_in_feature = centers.reshape([-1, 4])[:, :-2] / stride
+            strides = paddle.full((len(xx), ), stride)
+            center_and_stride = paddle.stack([xx, yy, strides, strides],
+                                             -1).tile([num_imgs, 1, 1])
+            center_and_strides.append(center_and_stride)
+            center_in_feature = center_and_stride.reshape(
+                [-1, 4])[:, :-2] / stride
             bbox_pred = bbox_pred.transpose([0, 2, 3, 1]).reshape(
                 [num_imgs, -1, 4 * (self.reg_max + 1)])
-            pred_corners = self.distribution_project(bbox_pred)
-            decode_bbox_pred = distance2bbox(
-                centers_in_feature, pred_corners).reshape([num_imgs, -1, 4])
-            decode_bbox_preds.append(decode_bbox_pred * stride)
+            pred_distances = self.distribution_project(bbox_pred)
+            decode_bbox_pred_wo_stride = distance2bbox(
+                center_in_feature, pred_distances).reshape([num_imgs, -1, 4])
+            decode_bbox_preds.append(decode_bbox_pred_wo_stride * stride)
 
         flatten_cls_preds = [
             cls_pred.transpose([0, 2, 3, 1]).reshape(
@@ -383,27 +368,33 @@ class OTAVFLHead(OTAHead):
         ]
         flatten_cls_preds = paddle.concat(flatten_cls_preds, axis=1)
         flatten_bboxes = paddle.concat(decode_bbox_preds, axis=1)
-        flatten_centors = paddle.concat(mlvl_centors, axis=1)
+        flatten_center_and_strides = paddle.concat(center_and_strides, axis=1)
 
-        gt_box, gt_labels = gt_meta['gt_bbox'], gt_meta['gt_class']
-        (centors, labels, label_weights, bbox_targets, pos_num) = multi_apply(
-            self._get_target_single,
-            flatten_cls_preds.detach(),
-            flatten_centors.detach(),
-            flatten_bboxes.detach(), gt_box, gt_labels)
+        gt_boxes, gt_labels = gt_meta['gt_bbox'], gt_meta['gt_class']
+        pos_num_l, label_l, label_weight_l, bbox_target_l = [], [], [], []
+        for flatten_cls_pred, flatten_center_and_stride, flatten_bbox,gt_box,gt_label \
+                in zip(flatten_cls_preds.detach(), flatten_center_and_strides.detach(), \
+                       flatten_bboxes.detach(),gt_boxes,gt_labels):
+            pos_num, label, label_weight, bbox_target = self._get_target_single(
+                flatten_cls_pred, flatten_center_and_stride, flatten_bbox,
+                gt_box, gt_label)
+            pos_num_l.append(pos_num)
+            label_l.append(label)
+            label_weight_l.append(label_weight)
+            bbox_target_l.append(bbox_target)
 
-        centors = paddle.to_tensor(np.stack(centors, axis=0))
-        labels = paddle.to_tensor(np.stack(labels, axis=0))
-        label_weights = paddle.to_tensor(np.stack(label_weights, axis=0))
-        bbox_targets = paddle.to_tensor(np.stack(bbox_targets, axis=0))
+        labels = paddle.to_tensor(np.stack(label_l, axis=0))
+        label_weights = paddle.to_tensor(np.stack(label_weight_l, axis=0))
+        bbox_targets = paddle.to_tensor(np.stack(bbox_target_l, axis=0))
 
-        centors_list = self._images_to_levels(centors, num_level_anchors)
+        center_and_strides_list = self._images_to_levels(
+            flatten_center_and_strides, num_level_anchors)
         labels_list = self._images_to_levels(labels, num_level_anchors)
         label_weights_list = self._images_to_levels(label_weights,
                                                     num_level_anchors)
         bbox_targets_list = self._images_to_levels(bbox_targets,
                                                    num_level_anchors)
-        num_total_pos = sum(pos_num)
+        num_total_pos = sum(pos_num_l)
         try:
             num_total_pos = paddle.distributed.all_reduce(num_total_pos.clone(
             )) / paddle.distributed.get_world_size()
@@ -411,17 +402,16 @@ class OTAVFLHead(OTAHead):
             num_total_pos = max(num_total_pos, 1)
 
         loss_bbox_list, loss_dfl_list, loss_vfl_list, avg_factor = [], [], [], []
-        for cls_score, bbox_pred, grid_cells, labels, label_weights, bbox_targets, stride in zip(
-                cls_scores, bbox_preds, centors_list, labels_list,
+        for cls_score, bbox_pred, center_and_strides, labels, label_weights, bbox_targets, stride in zip(
+                cls_scores, bbox_preds, center_and_strides_list, labels_list,
                 label_weights_list, bbox_targets_list, self.fpn_stride):
-            grid_cells = grid_cells.reshape([-1, 4])
+            center_and_strides = center_and_strides.reshape([-1, 4])
             cls_score = cls_score.transpose([0, 2, 3, 1]).reshape(
                 [-1, self.cls_out_channels])
             bbox_pred = bbox_pred.transpose([0, 2, 3, 1]).reshape(
                 [-1, 4 * (self.reg_max + 1)])
             bbox_targets = bbox_targets.reshape([-1, 4])
             labels = labels.reshape([-1])
-            label_weights = label_weights.reshape([-1])
 
             bg_class_ind = self.num_classes
             pos_inds = paddle.nonzero(
@@ -433,14 +423,14 @@ class OTAVFLHead(OTAHead):
             if len(pos_inds) > 0:
                 pos_bbox_targets = paddle.gather(bbox_targets, pos_inds, axis=0)
                 pos_bbox_pred = paddle.gather(bbox_pred, pos_inds, axis=0)
-                pos_grid_cell_centers = paddle.gather(
-                    grid_cells[:, :-2], pos_inds, axis=0) / stride
+                pos_centers = paddle.gather(
+                    center_and_strides[:, :-2], pos_inds, axis=0) / stride
 
                 weight_targets = F.sigmoid(cls_score.detach())
                 weight_targets = paddle.gather(
                     weight_targets.max(axis=1, keepdim=True), pos_inds, axis=0)
                 pos_bbox_pred_corners = self.distribution_project(pos_bbox_pred)
-                pos_decode_bbox_pred = distance2bbox(pos_grid_cell_centers,
+                pos_decode_bbox_pred = distance2bbox(pos_centers,
                                                      pos_bbox_pred_corners)
                 pos_decode_bbox_targets = pos_bbox_targets / stride
                 bbox_iou = bbox_overlaps(
@@ -453,7 +443,7 @@ class OTAVFLHead(OTAHead):
                 vfl_score[pos_inds.numpy(), pos_labels] = bbox_iou
 
                 pred_corners = pos_bbox_pred.reshape([-1, self.reg_max + 1])
-                target_corners = bbox2distance(pos_grid_cell_centers,
+                target_corners = bbox2distance(pos_centers,
                                                pos_decode_bbox_targets,
                                                self.reg_max).reshape([-1])
                 # regression loss

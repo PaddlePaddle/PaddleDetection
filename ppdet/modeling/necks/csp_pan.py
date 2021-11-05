@@ -11,10 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
 # See the License for the specific language governing permissions and   
 # limitations under the License.
-"""
-This code is refer from:
-https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/necks/yolox_pafpn.py
-"""
+
+# The code is based on:
+# https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/necks/yolox_pafpn.py
 
 import paddle
 import paddle.nn as nn
