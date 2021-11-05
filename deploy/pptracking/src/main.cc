@@ -115,10 +115,10 @@ int main(int argc, char** argv) {
   PaddleDetection::Pipeline pipeline(
                     FLAGS_device, FLAGS_threshold, 
                     FLAGS_output_dir, FLAGS_run_mode, FLAGS_gpu_id, 
-                    FLAGS_use_mkldnn, FLAGS_cpu_threads,
-                    FLAGS_count, FLAGS_save_result);
+                    FLAGS_use_mkldnn, FLAGS_cpu_threads, FLAGS_trt_calib_mode,
+                    FLAGS_count, FLAGS_save_result, FLAGS_scene, FLAGS_tiny_obj, 
+                    FLAGS_is_mct);
 
-  pipeline.SelectModel(FLAGS_scene, FLAGS_tiny_obj, FLAGS_is_mct);
   pipeline.SetInput(FLAGS_video_file);
   if (!FLAGS_video_other_file.empty()) {
     pipeline.SetInput(FLAGS_video_other_file);

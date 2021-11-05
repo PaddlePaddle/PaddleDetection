@@ -29,6 +29,11 @@ void Pipeline::SetInput(std::string& input_video) {
   input_.push_back(input_video);
 }
 
+void Pipeline::ClearInput() {
+  input_.clear();
+  stream_.clear();
+}
+
 void Pipeline::SelectModel(const std::string& scene,
                            const bool tiny_obj,
                            const bool is_mct) {
@@ -53,6 +58,20 @@ void Pipeline::SelectModel(const std::string& scene,
       throw "Multi-camera tracking is not supported in multiclass scene now.";
   } 
 }
+
+void Pipeline::InitPredictor() {
+  if (track_model_dir_.empty() && det_model_dir_.empty()) {
+    throw "Predictor must receive track_model or det_model!";
+  }
+
+  if (!track_model_dir_.empty()) {
+    jde_sct_ = std::make_shared<PaddleDetection::JDEPredictor>(device_, track_model_dir_, threshold_, run_mode_, gpu_id_, use_mkldnn_, cpu_threads_, trt_calib_mode_);
+  }
+  if (!det_model_dir_.empty()) {
+    sde_sct_ = std::make_shared<PaddleDetection::SDEPredictor>(device_, det_model_dir_, reid_model_dir_, threshold_, run_mode_, gpu_id_, use_mkldnn_, cpu_threads_, trt_calib_mode_);
+  }
+}
+
 
 void Pipeline::Run() {
 
@@ -80,9 +99,36 @@ void Pipeline::Run() {
   }
 }
 
+
+void Pipeline::RunStream() {
+
+  if (track_model_dir_.empty() && det_model_dir_.empty()) {
+    std::cout << "Pipeline must use SelectModel before Run";
+    return;
+  }
+  if (stream_.size() == 0) {
+    std::cout << "Pipeline must use SetStream before RunStream";
+    return;
+  }
+
+  if (!track_model_dir_.empty()) {
+    // single camera
+    if (stream_.size() > 1) {
+      throw "Single camera tracking except single stream input, but received %d", stream_.size();
+    }
+    PredictSCT(stream_[0]);
+  } else {
+    // multi cameras
+    if (stream_.size() != 2) {
+      throw "Multi camera tracking except two stream input, but received %d", stream_.size();
+    }
+    PredictMCT(stream_);
+  }
+}
+
+
 void Pipeline::PredictSCT(const std::string& video_path) {
 
-  PaddleDetection::Predictor sct(device_, track_model_dir_, det_model_dir_, reid_model_dir_, threshold_, run_mode_, gpu_id_, use_mkldnn_, cpu_threads_, trt_calib_mode_);
   // Open video
   cv::VideoCapture capture;
   capture.open(video_path.c_str());
@@ -119,6 +165,17 @@ void Pipeline::PredictSCT(const std::string& video_path) {
   // Capture all frames and do inference
   cv::Mat frame;
   int frame_id = 0;
+  std::string result_output_path = output_dir_ + OS_PATH_SEP + "mot_output.txt";
+  
+  FILE * fp;
+  if (save_result_) {
+    if((fp = fopen(result_output_path.c_str(), "w+")) == NULL) {
+      printf("Create %s error.\n", result_output_path.c_str());
+      return;
+    }
+    fprintf(fp, "result format: frame_id, track_id, x1, y1, x2, y2, w, h\n");
+  }
+  LOG(INFO) << "------------------- Predict info ------------------------";
   while (capture.read(frame)) {
     if (frame.empty()) {
       break;
