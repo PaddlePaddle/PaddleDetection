@@ -21,9 +21,9 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant
 from paddle import ParamAttr
-from paddle.nn import AdaptiveAvgPool2D, BatchNorm, Conv2D, Dropout, Linear
+from paddle.nn import AdaptiveAvgPool2D, BatchNorm, Conv2D, Linear
 from paddle.regularizer import L2Decay
-from paddle.nn.initializer import KaimingNormal
+from paddle.nn.initializer import KaimingNormal, XavierNormal
 from ppdet.core.workspace import register
 
 __all__ = ['PPLCNetEmbedding']
@@ -250,6 +250,17 @@ class PPLCNet(nn.Layer):
         return x
 
 
+class FC(nn.Layer):
+    def __init__(self, input_ch, output_ch):
+        super(FC, self).__init__()
+        weight_attr = ParamAttr(initializer=XavierNormal())
+        self.fc = paddle.nn.Linear(input_ch, output_ch, weight_attr=weight_attr)
+
+    def forward(self, x):
+        out = self.fc(x)
+        return out
+
+
 @register
 class PPLCNetEmbedding(nn.Layer):
     """
@@ -262,7 +273,7 @@ class PPLCNetEmbedding(nn.Layer):
     def __init__(self, scale=2.5, input_ch=1280, output_ch=512):
         super(PPLCNetEmbedding, self).__init__()
         self.backbone = PPLCNet(scale=scale)
-        self.neck = nn.Linear(input_ch, output_ch)
+        self.neck = FC(input_ch, output_ch)
 
     def forward(self, x):
         feat = self.backbone(x)

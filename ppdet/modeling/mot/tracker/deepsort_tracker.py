@@ -17,6 +17,7 @@ This code is borrow from https://github.com/nwojke/deep_sort/blob/master/deep_so
 
 import numpy as np
 
+from ..motion import KalmanFilter
 from ..matching.deepsort_matching import NearestNeighborDistanceMetric
 from ..matching.deepsort_matching import iou_cost, min_cost_matching, matching_cascade, gate_cost_matrix
 from .base_sde_tracker import Track
@@ -32,7 +33,6 @@ __all__ = ['DeepSORTTracker']
 @register
 @serializable
 class DeepSORTTracker(object):
-    __inject__ = ['motion']
     """
     DeepSORT tracker
 
@@ -77,7 +77,8 @@ class DeepSORTTracker(object):
         self.metric = NearestNeighborDistanceMetric(metric_type,
                                                     matching_threshold, budget)
         self.max_iou_distance = max_iou_distance
-        self.motion = motion
+        if motion == 'KalmanFilter':
+            self.motion = KalmanFilter()
 
         self.tracks = []
         self._next_id = 1
@@ -94,14 +95,14 @@ class DeepSORTTracker(object):
         """
         Perform measurement update and track management.
         Args:
-            pred_dets (Tensor): Detection results of the image, shape is [N, 6].
-            pred_embs (Tensor): Embedding results of the image, shape is [N, 128],
-                usually pred_embs.shape[1] can be a multiple of 128, in PCB 
-                Pyramidal model is 128*21.
+            pred_dets (np.array): Detection results of the image, the shape is
+                [N, 6], means 'x0, y0, x1, y1, score, cls_id'.
+            pred_embs (np.array): Embedding results of the image, the shape is
+                [N, 128], usually pred_embs.shape[1] is a multiple of 128.
         """
         pred_tlwhs = pred_dets[:, :4]
-        pred_scores = pred_dets[:, 4:5].squeeze(1)
-        pred_cls_ids = pred_dets[:, 5:].squeeze(1)
+        pred_scores = pred_dets[:, 4:5]
+        pred_cls_ids = pred_dets[:, 5:]
 
         detections = [
             Detection(tlwh, score, feat, cls_id)
