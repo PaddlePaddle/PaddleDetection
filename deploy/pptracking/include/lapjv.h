@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// The code is based on:
+// https://github.com/gatagat/lap/blob/master/lap/lapjv.h
+// Ths copyright of gatagat/lap is as follows:
+// MIT License
 
 #ifndef LAPJV_H
 #define LAPJV_H
