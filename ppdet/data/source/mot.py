@@ -32,7 +32,8 @@ logger = setup_logger(__name__)
 @serializable
 class MOTDataSet(DetDataset):
     """
-    Load dataset with MOT format.
+    Load dataset with MOT format, only support single class MOT.
+
     Args:
         dataset_dir (str): root directory for dataset.
         image_lists (str|list): mot data image lists, muiti-source mot dataset.
@@ -152,18 +153,17 @@ class MOTDataSet(DetDataset):
             self.tid_start_index[k] = last_index
             last_index += v
 
-        self.total_identities = int(last_index + 1)
+        self.num_identities_dict = defaultdict(int)
+        self.num_identities_dict[0] = int(last_index + 1) # single class
         self.num_imgs_each_data = [len(x) for x in self.img_files.values()]
         self.total_imgs = sum(self.num_imgs_each_data)
 
-        logger.info('=' * 80)
         logger.info('MOT dataset summary: ')
         logger.info(self.tid_num)
-        logger.info('total images: {}'.format(self.total_imgs))
-        logger.info('image start index: {}'.format(self.img_start_index))
-        logger.info('total identities: {}'.format(self.total_identities))
-        logger.info('identity start index: {}'.format(self.tid_start_index))
-        logger.info('=' * 80)
+        logger.info('Total images: {}'.format(self.total_imgs))
+        logger.info('Image start index: {}'.format(self.img_start_index))
+        logger.info('Total identities: {}'.format(self.num_identities_dict[0]))
+        logger.info('Identity start index: {}'.format(self.tid_start_index))
 
         records = []
         cname2cid = mot_label()
@@ -222,30 +222,33 @@ class MOTDataSet(DetDataset):
         self.roidbs, self.cname2cid = records, cname2cid
 
 
-def mot_label():
-    labels_map = {'person': 0}
-    return labels_map
-
-
-def visdrone_mcmot_label():
-    labels_map = {
-        'pedestrian': 0,
-        'people': 1,
-        'bicycle': 2,
-        'car': 3,
-        'van': 4,
-        'truck': 5,
-        'tricycle': 6,
-        'awning-tricycle': 7,
-        'bus': 8,
-        'motor': 9,
-    }
-    return labels_map
-
-
 @register
 @serializable
 class MCMOTDataSet(DetDataset):
+    """
+    Load dataset with MOT format, support multi-class MOT.
+
+    Args:
+        dataset_dir (str): root directory for dataset.
+        image_lists (list(str)): mcmot data image lists, muiti-source mcmot dataset.
+        data_fields (list): key name of data dictionary, at least have 'image'.
+        label_list (str): if use_default_label is False, will load
+            mapping between category and class index.
+        sample_num (int): number of samples to load, -1 means all.
+
+    Notes:
+        MCMOT datasets root directory following this:
+            dataset/mot
+            |——————image_lists
+            |        |——————visdrone_mcmot.train  
+            |        |——————visdrone_mcmot.val   
+            visdrone_mcmot
+            |——————images
+            |        └——————train
+            |        └——————val
+            └——————labels_with_ids
+                        └——————train
+    """
     def __init__(self,
                  dataset_dir=None,
                  image_lists=[],
@@ -331,9 +334,9 @@ class MCMOTDataSet(DetDataset):
                 self.tid_start_idx_of_cls_ids[k][cls_id] = last_idx_dict[cls_id]
                 last_idx_dict[cls_id] += id_num
 
-        self.total_identities_dict = defaultdict(int)
+        self.num_identities_dict = defaultdict(int)
         for k, v in last_idx_dict.items():
-            self.total_identities_dict[k] = int(v)  # total ids of each category
+            self.num_identities_dict[k] = int(v)  # total ids of each category
 
         self.num_imgs_each_data = [len(x) for x in self.img_files.values()]
         self.total_imgs = sum(self.num_imgs_each_data)
@@ -358,16 +361,16 @@ class MCMOTDataSet(DetDataset):
             cname2cid = visdrone_mcmot_label()
         cid2cname = dict([(v, k) for (k, v) in cname2cid.items()])
 
-        logger.info('MOT dataset summary: ')
+        logger.info('MCMOT dataset summary: ')
         logger.info(self.tid_num)
         logger.info('Total images: {}'.format(self.total_imgs))
         logger.info('Image start index: {}'.format(self.img_start_index))
 
         logger.info('Total identities of each category: ')
-        total_identities_dict = sorted(
-            self.total_identities_dict.items(), key=lambda x: x[0])
+        self.num_identities_dict = sorted(
+            self.num_identities_dict.items(), key=lambda x: x[0])
         total_IDs_all_cats = 0
-        for (k, v) in total_identities_dict:
+        for (k, v) in self.num_identities_dict:
             logger.info('Category {} [{}] has {} IDs.'.format(k, cid2cname[k],
                                                               v))
             total_IDs_all_cats += v
@@ -593,3 +596,24 @@ def video2frames(video_path, outpath, frame_rate, **kargs):
 
     sys.stdout.flush()
     return out_full_path
+
+
+def mot_label():
+    labels_map = {'person': 0}
+    return labels_map
+
+
+def visdrone_mcmot_label():
+    labels_map = {
+        'pedestrian': 0,
+        'people': 1,
+        'bicycle': 2,
+        'car': 3,
+        'van': 4,
+        'truck': 5,
+        'tricycle': 6,
+        'awning-tricycle': 7,
+        'bus': 8,
+        'motor': 9,
+    }
+    return labels_map

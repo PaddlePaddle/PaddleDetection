@@ -17,7 +17,7 @@ MCFairMOT is the Multi-class extended version of [FairMOT](https://arxiv.org/abs
 | backbone       | input shape | MOTA | IDF1 |  IDS    |   FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :---:  | :------: | :----: |:----: |
 | DLA-34         | 1088x608 |  24.3  |  41.6  |  2314  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_dla34_30e_1088x608_visdrone.pdparams) | [config](./mcfairmot_dla34_30e_1088x608_visdrone.yml) |
-| HRNetV2-W18    | 1088x608 |  -  |  -  |  -  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.pdparams) | [config](./mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.yml) |
+| HRNetV2-W18    | 1088x608 |  20.4  |  39.9  |  2603  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.pdparams) | [config](./mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.yml) |
 
 **Notes:**
  MOTA is the average MOTA of 10 catecories in the VisDrone2019 MOT dataset, and its value is also equal to the average MOTA of all the evaluated video sequences.
@@ -82,17 +82,14 @@ The tracking model is used to predict the video, and does not support the predic
   year={2020}
 }
 
-@article{zhu2018vision,
-  title={Vision meets drones: A challenge},
-  author={Zhu, Pengfei and Wen, Longyin and Bian, Xiao and Ling, Haibin and Hu, Qinghua},
-  journal={arXiv preprint arXiv:1804.07437},
-  year={2018}
-}
-
-@article{zhu2020vision,
-  title={Vision Meets Drones: Past, Present and Future},
-  author={Zhu, Pengfei and Wen, Longyin and Du, Dawei and Bian, Xiao and Hu, Qinghua and Ling, Haibin},
-  journal={arXiv preprint arXiv:2001.06303},
-  year={2020}
+@ARTICLE{9573394,
+  author={Zhu, Pengfei and Wen, Longyin and Du, Dawei and Bian, Xiao and Fan, Heng and Hu, Qinghua and Ling, Haibin},
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence}, 
+  title={Detection and Tracking Meet Drones Challenge}, 
+  year={2021},
+  volume={},
+  number={},
+  pages={1-1},
+  doi={10.1109/TPAMI.2021.3119563}
 }
 ```

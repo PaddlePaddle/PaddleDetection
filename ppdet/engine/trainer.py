@@ -77,15 +77,12 @@ class Trainer(object):
 
         if cfg.architecture == 'JDE' and self.mode == 'train':
             cfg['JDEEmbeddingHead'][
-                'num_identifiers'] = self.dataset.total_identities
+                'num_identities'] = self.dataset.num_identities_dict[0]
+            # JDE only support single class MOT now.
 
         if cfg.architecture == 'FairMOT' and self.mode == 'train':
-            if cfg['num_classes'] > 1:
-                cfg['FairMOTEmbeddingHead'][
-                    'num_identifiers_dict'] = self.dataset.total_identities_dict
-            else:
-                cfg['FairMOTEmbeddingHead'][
-                    'num_identifiers'] = self.dataset.total_identities
+            cfg['FairMOTEmbeddingHead']['num_identities_dict'] = self.dataset.num_identities_dict
+            # FairMOT support single class and multi-class MOT now.
 
         # build model
         if 'model' not in self.cfg:

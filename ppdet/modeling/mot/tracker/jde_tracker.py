@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+This code is based on https://github.com/Zhongdao/Towards-Realtime-MOT/blob/master/tracker/multitracker.py
+"""
 
 import numpy as np
 from collections import defaultdict
@@ -41,7 +44,8 @@ class JDETracker(object):
         track_buffer (int): buffer for tracker
         min_box_area (int): min box area to filter out low quality boxes
         vertical_ratio (float): w/h, the vertical ratio of the bbox to filter
-            bad results. If set <0 means no need to filter bboxes.
+            bad results. If set <0 means no need to filter bboxes，usually set
+            1.6 for pedestrian tracking.
         tracked_thresh (float): linear assignment threshold of tracked 
             stracks and detections
         r_tracked_thresh (float): linear assignment threshold of 
@@ -58,8 +62,8 @@ class JDETracker(object):
                  num_classes=1,
                  det_thresh=0.3,
                  track_buffer=30,
-                 min_box_area=0,
-                 vertical_ratio=0,
+                 min_box_area=200,
+                 vertical_ratio=1.6,
                  tracked_thresh=0.7,
                  r_tracked_thresh=0.5,
                  unconfirmed_thresh=0.7,

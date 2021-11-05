@@ -32,8 +32,7 @@ class FairMOTEmbeddingHead(nn.Layer):
         in_channels (int): the channel number of input to FairMOTEmbeddingHead.
         ch_head (int): the channel of features before fed into embedding, 256 by default.
         ch_emb (int): the channel of the embedding feature, 128 by default.
-        num_identifiers (int): the number of identifiers, 14455 by default.
-        num_identifiers_dict (dict): the number of identifiers of each category.
+        num_identities_dict (dict): the number of identities of each category.
     """
 
     def __init__(self,
@@ -41,14 +40,12 @@ class FairMOTEmbeddingHead(nn.Layer):
                  ch_head=256,
                  ch_emb=128,
                  num_classes=1,
-                 num_identifiers=14455,
-                 num_identifiers_dict={}):
+                 num_identities_dict={}):
         super(FairMOTEmbeddingHead, self).__init__()
         assert num_classes >= 1
         self.num_classes = num_classes
         self.ch_emb = ch_emb
-        self.num_identifiers = num_identifiers
-        self.num_identifiers_dict = num_identifiers_dict
+        self.num_identities_dict = num_identities_dict
         self.reid = nn.Sequential(
             ConvLayer(
                 in_channels, ch_head, kernel_size=3, padding=1, bias=True),
@@ -61,21 +58,22 @@ class FairMOTEmbeddingHead(nn.Layer):
         self.reid_loss = nn.CrossEntropyLoss(ignore_index=-1, reduction='sum')
 
         if num_classes == 1:
+            nID = self.num_identities_dict[0] # single class
             self.classifier = nn.Linear(
                 ch_emb,
-                num_identifiers,
+                nID,
                 weight_attr=param_attr,
                 bias_attr=bias_attr)
-            # When num_identifiers is 1, emb_scale is set as 1
+            # When num_identities(nID) is 1, emb_scale is set as 1
             self.emb_scale = math.sqrt(2) * math.log(
-                num_identifiers - 1) if num_identifiers > 1 else 1
+                nID - 1) if nID > 1 else 1
         else:
             self.classifiers = dict()
             self.emb_scale_dict = dict()
-            for cls_id, nID in self.num_identifiers_dict.items():
+            for cls_id, nID in self.num_identities_dict.items():
                 self.classifiers[str(cls_id)] = nn.Linear(
                     ch_emb, nID, weight_attr=param_attr, bias_attr=bias_attr)
-                # When num_identifiers is 1, emb_scale is set as 1
+                # When num_identities(nID) is 1, emb_scale is set as 1
                 self.emb_scale_dict[str(cls_id)] = math.sqrt(2) * math.log(
                     nID - 1) if nID > 1 else 1
 
@@ -204,7 +202,7 @@ class FairMOTEmbeddingHead(nn.Layer):
         feat = paddle.reshape(feat, shape=[-1, feat_c])
 
         reid_losses = 0
-        for cls_id, id_num in self.num_identifiers_dict.items():
+        for cls_id, id_num in self.num_identities_dict.items():
             # target
             cur_cls_tr_ids = paddle.reshape(
                 cls_tr_ids[:, cls_id, :, :], shape=[feat_n, -1])  # [bs, h*w]
