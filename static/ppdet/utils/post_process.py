@@ -36,10 +36,8 @@ def box_flip(boxes, im_shape):
 
 def nms(dets, thresh):
     """
-    The code is based on:
+    refer to:
     https://github.com/facebookresearch/Detectron/blob/main/detectron/utils/cython_nms.pyx
-    Ths copyright of sshaoshuai/PointRCNN is as follows:
-    MIT License
 
     Apply classic DPM-style greedy NMS.
     """
@@ -99,10 +97,8 @@ def nms(dets, thresh):
 
 def soft_nms(dets, sigma, thres):
     """
-    The code is based on:
+    refer to:
     https://github.com/facebookresearch/Detectron/blob/main/detectron/utils/cython_nms.pyx
-    Ths copyright of sshaoshuai/PointRCNN is as follows:
-    MIT License
     """
     dets_final = []
     while len(dets) > 0:
