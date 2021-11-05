@@ -48,6 +48,10 @@ class ScaleReg(nn.Layer):
 
 
 class TaskDecomposition(nn.Layer):
+    """This code is based on
+        https://github.com/fcjian/TOOD/blob/master/mmdet/models/dense_heads/tood_head.py
+    """
+
     def __init__(
             self,
             feat_channels,
@@ -105,6 +109,9 @@ class TaskDecomposition(nn.Layer):
 
 @register
 class TOODHead(nn.Layer):
+    """This code is based on
+        https://github.com/fcjian/TOOD/blob/master/mmdet/models/dense_heads/tood_head.py
+    """
     __inject__ = ['nms', 'static_assigner', 'assigner']
     __shared__ = ['num_classes']
 

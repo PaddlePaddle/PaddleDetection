@@ -79,7 +79,10 @@ class ATSSAssigner(nn.Layer):
                 gt_bboxes,
                 bg_index,
                 gt_scores=None):
-        r"""The assignment is done in following steps
+        r"""This code is based on
+            https://github.com/fcjian/TOOD/blob/master/mmdet/core/bbox/assigners/atss_assigner.py
+
+        The assignment is done in following steps
         1. compute iou between all bbox (bbox of all pyramid levels) and gt
         2. compute center distance between all bbox and gt
         3. on each pyramid level, for each gt, select k bbox whose center
