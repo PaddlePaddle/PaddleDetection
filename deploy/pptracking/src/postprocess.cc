@@ -124,7 +124,7 @@ void SaveSCTResult(const MOTResult& results, const int frame_id, FILE* fp) {
     if (w == 0 || h == 0) {
       continue;
     }
-    fprintf(fp, "%d, %d, %f, %f, %f, %f, %f, %f, -1, -1, -1\n", frame_id, ids, x1, y1, x2, y2, w, h);
+    fprintf(fp, "%d, %d, %f, %f, %f, %f, -1, -1, -1\n", frame_id, ids, x1, y1, w, h);
   }
 }
 
