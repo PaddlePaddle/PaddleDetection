@@ -415,7 +415,6 @@ class CenterNetPostProcess(TTFBox):
         regress_ltrb (bool): whether to regress left/top/right/bottom or
             width/height for a box, true by default.
         for_mot (bool): whether return other features used in tracking model.
-
     """
 
     __shared__ = ['down_ratio', 'for_mot']
@@ -433,9 +432,9 @@ class CenterNetPostProcess(TTFBox):
 
     def __call__(self, hm, wh, reg, im_shape, scale_factor):
         heat = self._simple_nms(hm)
-        scores, inds, clses, ys, xs = self._topk(heat)
+        scores, inds, topk_clses, ys, xs = self._topk(heat)
         scores = paddle.tensor.unsqueeze(scores, [1])
-        clses = paddle.tensor.unsqueeze(clses, [1])
+        clses = paddle.tensor.unsqueeze(topk_clses, [1])
 
         reg_t = paddle.transpose(reg, [0, 2, 3, 1])
         # Like TTFBox, batch size is 1.
@@ -486,10 +485,10 @@ class CenterNetPostProcess(TTFBox):
         bboxes = paddle.divide(bboxes, scale_expand)
         if self.for_mot:
             results = paddle.concat([bboxes, scores, clses], axis=1)
-            return results, inds
+            return results, inds, topk_clses
         else:
             results = paddle.concat([clses, scores, bboxes], axis=1)
-            return results, paddle.shape(results)[0:1]
+            return results, paddle.shape(results)[0:1], topk_clses
 
 
 @register
