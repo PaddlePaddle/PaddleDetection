@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+this code is based on https://github.com/open-mmlab/mmpose/mmpose/core/post_processing/post_transforms.py
+"""
 import cv2
 import numpy as np
 

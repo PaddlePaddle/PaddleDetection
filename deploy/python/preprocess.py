@@ -14,6 +14,7 @@
 
 import cv2
 import numpy as np
+from keypoint_preprocess import get_affine_transform
 
 
 def decode_image(im_file, im_info):
@@ -263,90 +264,6 @@ class WarpAffine(object):
         self.scale = scale
         self.shift = shift
 
-    def _get_3rd_point(self, a, b):
-        assert len(
-            a) == 2, 'input of _get_3rd_point should be point with length of 2'
-        assert len(
-            b) == 2, 'input of _get_3rd_point should be point with length of 2'
-        direction = a - b
-        third_pt = b + np.array([-direction[1], direction[0]], dtype=np.float32)
-        return third_pt
-
-    def rotate_point(self, pt, angle_rad):
-        """Rotate a point by an angle.
-
-        Args:
-        pt (list[float]): 2 dimensional point to be rotated
-        angle_rad (float): rotation angle by radian
-
-        Returns:
-        list[float]: Rotated point.
-        """
-        assert len(pt) == 2
-        sn, cs = np.sin(angle_rad), np.cos(angle_rad)
-        new_x = pt[0] * cs - pt[1] * sn
-        new_y = pt[0] * sn + pt[1] * cs
-        rotated_pt = [new_x, new_y]
-
-        return rotated_pt
-
-    def get_affine_transform(self,
-                             center,
-                             input_size,
-                             rot,
-                             output_size,
-                             shift=(0., 0.),
-                             inv=False):
-        """Get the affine transform matrix, given the center/scale/rot/output_size.
-
-        Args:
-        center (np.ndarray[2, ]): Center of the bounding box (x, y).
-        input_size (np.ndarray[2, ]): Size of input feature (width, height).
-        rot (float): Rotation angle (degree).
-        output_size (np.ndarray[2, ]): Size of the destination heatmaps.
-        shift (0-100%): Shift translation ratio wrt the width/height.
-            Default (0., 0.).
-        inv (bool): Option to inverse the affine transform direction.
-            (inv=False: src->dst or inv=True: dst->src)
-
-        Returns:
-        np.ndarray: The transform matrix.
-        """
-        assert len(center) == 2
-        assert len(output_size) == 2
-        assert len(shift) == 2
-
-        if not isinstance(input_size, (np.ndarray, list)):
-            input_size = np.array([input_size, input_size], dtype=np.float32)
-        scale_tmp = input_size
-
-        shift = np.array(shift)
-        src_w = scale_tmp[0]
-        dst_w = output_size[0]
-        dst_h = output_size[1]
-
-        rot_rad = np.pi * rot / 180
-        src_dir = self.rotate_point([0., src_w * -0.5], rot_rad)
-        dst_dir = np.array([0., dst_w * -0.5])
-
-        src = np.zeros((3, 2), dtype=np.float32)
-
-        src[0, :] = center + scale_tmp * shift
-        src[1, :] = center + src_dir + scale_tmp * shift
-        src[2, :] = self._get_3rd_point(src[0, :], src[1, :])
-
-        dst = np.zeros((3, 2), dtype=np.float32)
-        dst[0, :] = [dst_w * 0.5, dst_h * 0.5]
-        dst[1, :] = np.array([dst_w * 0.5, dst_h * 0.5]) + dst_dir
-        dst[2, :] = self._get_3rd_point(dst[0, :], dst[1, :])
-
-        if inv:
-            trans = cv2.getAffineTransform(np.float32(dst), np.float32(src))
-        else:
-            trans = cv2.getAffineTransform(np.float32(src), np.float32(dst))
-
-        return trans
-
     def __call__(self, im, im_info):
         """
         Args:
@@ -371,7 +288,7 @@ class WarpAffine(object):
             input_h, input_w = self.input_h, self.input_w
             c = np.array([w / 2., h / 2.], dtype=np.float32)
 
-        trans_input = self.get_affine_transform(c, s, 0, [input_w, input_h])
+        trans_input = get_affine_transform(c, s, 0, [input_w, input_h])
         img = cv2.resize(img, (w, h))
         inp = cv2.warpAffine(
             img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR)
