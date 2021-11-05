@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import jde_tracker
 from . import deepsort_tracker
 
-from .jde_tracker import *
 from .deepsort_tracker import *
