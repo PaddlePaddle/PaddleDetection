@@ -180,7 +180,7 @@ class CoordConv(nn.Layer):
                  name='',
                  data_format='NCHW'):
         """
-        CoordConv layer
+        CoordConv layer, see https://arxiv.org/abs/1807.03247
 
         Args:
             ch_in (int): input channel
