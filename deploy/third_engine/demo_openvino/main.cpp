@@ -235,7 +235,7 @@ int image_demo(PicoDet& detector, const char* imagepath)
         }
         object_rect effect_roi;
         cv::Mat resized_img;
-        resize_uniform(image, resized_img, cv::Size(416, 416), effect_roi);
+        resize_uniform(image, resized_img, cv::Size(image_size, image_size), effect_roi);
         auto results = detector.detect(resized_img, 0.4, 0.5);
         draw_bboxes(image, results, effect_roi);
     }
