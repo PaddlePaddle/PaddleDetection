@@ -20,17 +20,17 @@ import numpy as np
 from collections import defaultdict
 
 import paddle
-from benchmark_utils import PaddleInferBenchmark
-from preprocess import preprocess
-
-from tracker import JDETracker
-from ppdet.modeling.mot.visualization import plot_tracking_dict
-from ppdet.modeling.mot.utils import MOTTimer, write_mot_results
-
 from paddle.inference import Config
 from paddle.inference import create_predictor
+
+from preprocess import preprocess
 from utils import argsparser, Timer, get_current_memory_mb
 from infer import Detector, get_test_images, print_arguments, PredictConfig
+from benchmark_utils import PaddleInferBenchmark
+
+from ppdet.modeling.mot.tracker import JDETracker
+from ppdet.modeling.mot.visualization import plot_tracking_dict
+from ppdet.modeling.mot.utils import MOTTimer, write_mot_results
 
 # Global dictionary
 MOT_SUPPORT_MODELS = {

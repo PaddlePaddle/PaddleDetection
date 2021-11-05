@@ -17,6 +17,7 @@ from collections import defaultdict
 import paddle
 
 from ..matching import jde_matching as matching
+from ..motion import KalmanFilter
 from .base_jde_tracker import TrackState, STrack
 from .base_jde_tracker import joint_stracks, sub_stracks, remove_duplicate_stracks
 
@@ -30,7 +31,6 @@ __all__ = ['JDETracker']
 @register
 @serializable
 class JDETracker(object):
-    __inject__ = ['motion']
     __shared__ = ['num_classes']
     """
     JDE tracker, support single class and multi classes
@@ -48,7 +48,7 @@ class JDETracker(object):
             tracked stracks and unmatched detections
         unconfirmed_thresh (float): linear assignment threshold of 
             unconfirmed stracks and unmatched detections
-        motion (object): KalmanFilter instance
+        motion (str): motion model, KalmanFilter as default
         conf_thres (float): confidence threshold for tracking
         metric_type (str): either "euclidean" or "cosine", the distance metric 
             used for measurement to track association.
@@ -75,7 +75,8 @@ class JDETracker(object):
         self.tracked_thresh = tracked_thresh
         self.r_tracked_thresh = r_tracked_thresh
         self.unconfirmed_thresh = unconfirmed_thresh
-        self.motion = motion
+        if motion == 'KalmanFilter':
+            self.motion = KalmanFilter()
         self.conf_thres = conf_thres
         self.metric_type = metric_type
 

@@ -227,6 +227,22 @@ def mot_label():
     return labels_map
 
 
+def visdrone_mcmot_label():
+    labels_map = {
+        'pedestrian': 0,
+        'people': 1,
+        'bicycle': 2,
+        'car': 3,
+        'van': 4,
+        'truck': 5,
+        'tricycle': 6,
+        'awning-tricycle': 7,
+        'bus': 8,
+        'motor': 9,
+    }
+    return labels_map
+
+
 @register
 @serializable
 class MCMOTDataSet(DetDataset):
@@ -234,7 +250,7 @@ class MCMOTDataSet(DetDataset):
                  dataset_dir=None,
                  image_lists=[],
                  data_fields=['image'],
-                 reid_cls_ids='0,1,2,3,4,5,6,7,8,9',
+                 label_list=None,
                  sample_num=-1):
         super(MCMOTDataSet, self).__init__(
             dataset_dir=dataset_dir,
@@ -244,11 +260,9 @@ class MCMOTDataSet(DetDataset):
         self.image_lists = image_lists
         if isinstance(self.image_lists, str):
             self.image_lists = [self.image_lists]
+        self.label_list = label_list
         self.roidbs = None
         self.cname2cid = None
-
-        self.reid_cls_ids = reid_cls_ids
-        self.num_classes = len(reid_cls_ids.split(','))
 
     def get_anno(self):
         if self.image_lists == []:
@@ -324,24 +338,50 @@ class MCMOTDataSet(DetDataset):
         self.num_imgs_each_data = [len(x) for x in self.img_files.values()]
         self.total_imgs = sum(self.num_imgs_each_data)
 
-        logger.info('=' * 80)
+        # cname2cid and cid2cname 
+        cname2cid = {}
+        if self.label_list:
+            # if use label_list for multi source mix dataset, 
+            # please make sure label_list in the first sub_dataset at least.
+            sub_dataset = self.image_lists[0].split('.')[0]
+            label_path = os.path.join(self.dataset_dir, sub_dataset,
+                                      self.label_list)
+            if not os.path.exists(label_path):
+                raise ValueError("label_list {} does not exists".format(
+                    label_path))
+            with open(label_path, 'r') as fr:
+                label_id = 0
+                for line in fr.readlines():
+                    cname2cid[line.strip()] = label_id
+                    label_id += 1
+        else:
+            cname2cid = visdrone_mcmot_label()
+        cid2cname = dict([(v, k) for (k, v) in cname2cid.items()])
+
         logger.info('MOT dataset summary: ')
         logger.info(self.tid_num)
         logger.info('Total images: {}'.format(self.total_imgs))
         logger.info('Image start index: {}'.format(self.img_start_index))
-        logger.info('Total identities dict: ')
-        for k, v in self.total_identities_dict.items():
-            logger.info('Total {:d} IDs of class {}'.format(v, k))
-        logger.info('identity start index by class: ')
+
+        logger.info('Total identities of each category: ')
+        total_identities_dict = sorted(
+            self.total_identities_dict.items(), key=lambda x: x[0])
+        total_IDs_all_cats = 0
+        for (k, v) in total_identities_dict:
+            logger.info('Category {} [{}] has {} IDs.'.format(k, cid2cname[k],
+                                                              v))
+            total_IDs_all_cats += v
+        logger.info('Total identities of all categories: {}'.format(
+            total_IDs_all_cats))
+
+        logger.info('Identity start index of each category: ')
         for k, v in self.tid_start_idx_of_cls_ids.items():
-            for cls_id, start_idx in v.items():
-                logger.info('Start index of dataset {} class {:d} is {:d}'
+            sorted_v = sorted(v.items(), key=lambda x: x[0])
+            for (cls_id, start_idx) in sorted_v:
+                logger.info('Start index of dataset {} category {:d} is {:d}'
                             .format(k, cls_id, start_idx))
-        logger.info('=' * 80)
 
         records = []
-        cname2cid = mot_label()
-
         for img_index in range(self.total_imgs):
             for i, (k, v) in enumerate(self.img_start_index.items()):
                 if img_index >= v:
