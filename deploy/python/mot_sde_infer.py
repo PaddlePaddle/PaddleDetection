@@ -17,19 +17,21 @@ import time
 import yaml
 import cv2
 import numpy as np
-import paddle
-from benchmark_utils import PaddleInferBenchmark
-from preprocess import preprocess
-from tracker import DeepSORTTracker
-from ppdet.modeling.mot import visualization as mot_vis
-from ppdet.modeling.mot.utils import MOTTimer
+from collections import defaultdict
 
+import paddle
 from paddle.inference import Config
 from paddle.inference import create_predictor
+
+from preprocess import preprocess
 from utils import argsparser, Timer, get_current_memory_mb
-from infer import get_test_images, print_arguments, PredictConfig, Detector
-from mot_jde_infer import write_mot_results
+from infer import Detector, get_test_images, print_arguments, PredictConfig
 from infer import load_predictor
+from benchmark_utils import PaddleInferBenchmark
+
+from ppdet.modeling.mot.tracker import DeepSORTTracker
+from ppdet.modeling.mot.visualization import plot_tracking
+from ppdet.modeling.mot.utils import MOTTimer, write_mot_results
 
 # Global dictionary
 MOT_SUPPORT_MODELS = {'DeepSORT'}
@@ -362,7 +364,7 @@ def predict_image(detector, reid_model, image_list):
             else:
                 online_tlwhs, online_scores, online_ids = reid_model.predict(
                     crops, pred_dets)
-                online_im = mot_vis.plot_tracking(
+                online_im = plot_tracking(
                     frame, online_tlwhs, online_ids, online_scores, frame_id=i)
 
         if FLAGS.save_images:
@@ -396,7 +398,7 @@ def predict_video(detector, reid_model, camera_id):
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     frame_id = 0
     timer = MOTTimer()
-    results = []
+    results = defaultdict(list)
     while (1):
         ret, frame = capture.read()
         if not ret:
@@ -415,12 +417,12 @@ def predict_video(detector, reid_model, camera_id):
             crops = reid_model.get_crops(pred_xyxys, frame)
             online_tlwhs, online_scores, online_ids = reid_model.predict(
                 crops, pred_dets)
-            results.append(
+            results[0].append(
                 (frame_id + 1, online_tlwhs, online_scores, online_ids))
             timer.toc()
 
             fps = 1. / timer.average_time
-            im = mot_vis.plot_tracking(
+            im = plot_tracking(
                 frame,
                 online_tlwhs,
                 online_ids,
@@ -436,23 +438,6 @@ def predict_video(detector, reid_model, camera_id):
                 os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
         else:
             writer.write(im)
-
-        if FLAGS.save_mot_txt_per_img:
-            save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
-            if not os.path.exists(save_dir):
-                os.makedirs(save_dir)
-            result_filename = os.path.join(save_dir,
-                                           '{:05d}.txt'.format(frame_id))
-            # First few frames, the model may have no tracking results but have
-            # detection results，use the detection results instead, and set id -1.
-            if results[-1][2] == []:
-                tlwhs = [tlwh for tlwh in pred_dets[:, :4]]
-                scores = [score[0] for score in pred_dets[:, 4:5]]
-                ids = [-1] * len(tlwhs)
-                result = (frame_id + 1, tlwhs, scores, ids)
-            else:
-                result = results[-1]
-            write_mot_results(result_filename, [result])
 
         frame_id += 1
         print('detect frame:%d' % (frame_id))

@@ -105,7 +105,7 @@ class JDE(BaseArch):
 
                 nms_keep_idx = det_outs['nms_keep_idx']
 
-                pred_dets = paddle.concat((bbox[:, 2:], bbox[:, 1:2]), axis=1)
+                pred_dets = paddle.concat((bbox[:, 2:], bbox[:, 1:2], bbox[:, 0:1]), axis=1)
 
                 emb_valid = paddle.gather_nd(emb_outs, boxes_idx)
                 pred_embs = paddle.gather_nd(emb_valid, nms_keep_idx)
