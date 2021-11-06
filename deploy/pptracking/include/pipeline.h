@@ -31,7 +31,8 @@
 #include <sys/stat.h>
 #endif
 
-#include "include/predictor.h"
+#include "include/jde_predictor.h"
+#include "include/sde_predictor.h"
 
 namespace PaddleDetection {
 
@@ -46,7 +47,10 @@ class Pipeline {
                   const int cpu_threads=1,
                   const bool trt_calib_mode=false,
                   const bool count=false,
-                  const bool save_result=false) {
+                  const bool save_result=false,
+                  const std::string& scene="pedestrian",
+                  const bool tiny_obj=false,
+                  const bool is_mtmct=false) {
     std::vector<std::string> input;
     this->input_ = input;
     this->device_ = device;
@@ -59,34 +63,45 @@ class Pipeline {
     this->trt_calib_mode_ = trt_calib_mode;
     this->count_ = count;
     this->save_result_ = save_result;
+    SelectModel(scene, tiny_obj, is_mtmct);
+    InitPredictor();
   }
 
 
-  // Select model according to scenes, it must execute before Run()
-  void SelectModel(const std::string& scene="pedestrian",
-                   const bool tiny_obj=false,
-                   const bool is_mct=false);
 
   // Set input, it must execute before Run()
   void SetInput(std::string& input_video);
+  void ClearInput();
 
-  // Run pipeline
+  // Run pipeline in video
   void Run();
+  void PredictMOT(const std::string& video_path);
+  void PredictMTMCT(const std::vector<std::string> video_inputs);
 
-  void PredictSCT(const std::string& video_path);
-  void PredictMCT(const std::vector<std::string> video_inputs);
+  // Run pipeline in stream
+  void RunMOTStream(const cv::Mat img, const int frame_id, cv::Mat out_img, std::vector<std::string>& records, std::vector<int>& count_list, std::vector<int>& in_count_list, std::vector<int>& out_count_list);
+  void RunMTMCTStream(const std::vector<cv::Mat> imgs, std::vector<std::string>& records);
 
   void PrintBenchmarkLog(std::vector<double> det_time, int img_num);
 
  private:
+  // Select model according to scenes, it must execute before Run()
+  void SelectModel(const std::string& scene="pedestrian",
+                   const bool tiny_obj=false,
+                   const bool is_mtmct=false);
+  void InitPredictor();
+
+  std::shared_ptr<PaddleDetection::JDEPredictor> jde_sct_;
+  std::shared_ptr<PaddleDetection::SDEPredictor> sde_sct_;
+
   std::vector<std::string> input_;
+  std::vector<cv::Mat> stream_;
   std::string device_;
   double threshold_;
   std::string output_dir_;
   std::string track_model_dir_;
   std::string det_model_dir_;
   std::string reid_model_dir_;
-  std::string mct_model_dir_;
   std::string run_mode_ = "fluid";
   int gpu_id_ = 0;
   bool use_mkldnn_ = false;

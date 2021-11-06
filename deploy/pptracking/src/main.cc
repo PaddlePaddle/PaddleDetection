@@ -36,7 +36,7 @@
 
 
 DEFINE_string(video_file, "", "Path of input video.");
-DEFINE_string(video_other_file, "", "Path of other input video used for MCT.");
+DEFINE_string(video_other_file, "", "Path of other input video used for MTMCT.");
 DEFINE_string(device, "CPU", "Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU.");
 DEFINE_double(threshold, 0.5, "Threshold of score.");
 DEFINE_string(output_dir, "output", "Directory of output visualization files.");
@@ -49,7 +49,7 @@ DEFINE_bool(tiny_obj, false, "Whether tracking tiny object");
 DEFINE_bool(count, false, "Whether counting after tracking");
 DEFINE_bool(save_result, false, "Whether saving result after tracking");
 DEFINE_string(scene, "", "scene of tracking system, it can be : pedestrian/vehicle/multiclass");
-DEFINE_bool(is_mct, false, "Whether use multi-camera tracking");
+DEFINE_bool(is_mtmct, false, "Whether use multi-target multi-camera tracking");
 
 static std::string DirName(const std::string &filepath) {
   auto pos = filepath.rfind(OS_PATH_SEP);
@@ -112,13 +112,17 @@ int main(int argc, char** argv) {
     return -1;
   }
 
+  if (!PathExists(FLAGS_output_dir)) {
+    MkDirs(FLAGS_output_dir);
+  }
+
   PaddleDetection::Pipeline pipeline(
                     FLAGS_device, FLAGS_threshold, 
                     FLAGS_output_dir, FLAGS_run_mode, FLAGS_gpu_id, 
-                    FLAGS_use_mkldnn, FLAGS_cpu_threads,
-                    FLAGS_count, FLAGS_save_result);
+                    FLAGS_use_mkldnn, FLAGS_cpu_threads, FLAGS_trt_calib_mode,
+                    FLAGS_count, FLAGS_save_result, FLAGS_scene, FLAGS_tiny_obj, 
+                    FLAGS_is_mtmct);
 
-  pipeline.SelectModel(FLAGS_scene, FLAGS_tiny_obj, FLAGS_is_mct);
   pipeline.SetInput(FLAGS_video_file);
   if (!FLAGS_video_other_file.empty()) {
     pipeline.SetInput(FLAGS_video_other_file);
