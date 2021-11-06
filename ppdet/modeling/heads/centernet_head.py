@@ -59,7 +59,7 @@ class CenterNetHead(nn.Layer):
     """
     Args:
         in_channels (int): the channel number of input to CenterNetHead.
-        num_classes (int): the number of classes, 80 by default.
+        num_classes (int): the number of classes, 80 (COCO dataset) by default.
         head_planes (int): the channel number in all head, 256 by default.
         heatmap_weight (float): the weight of heatmap loss, 1 by default.
         regress_ltrb (bool): whether to regress left/top/right/bottom or
@@ -83,6 +83,7 @@ class CenterNetHead(nn.Layer):
                  offset_weight=1,
                  iou_weight=0):
         super(CenterNetHead, self).__init__()
+        self.regress_ltrb = regress_ltrb
         self.weights = {
             'heatmap': heatmap_weight,
             'size': size_weight,
@@ -196,7 +197,14 @@ class CenterNetHead(nn.Layer):
         pos_num = size_mask.sum()
         size_mask.stop_gradient = True
         if self.size_loss == 'L1':
-            size_target = inputs['size']
+            if self.regress_ltrb:
+                size_target = inputs['size']
+                # shape: [bs, max_per_img, 4]
+            else:
+                size_target = inputs['size'][:, :, 0:2] + inputs['size'][:, :,
+                                                                         2:]
+                # shape: [bs, max_per_img, 2]
+
             size_target.stop_gradient = True
             size_loss = F.l1_loss(
                 pos_size * size_mask, size_target * size_mask, reduction='sum')

@@ -33,7 +33,6 @@ CenterNetHead:
 FairMOTEmbeddingHead:
   ch_head: 256
   ch_emb: 128
-  num_identifiers: 14455 # for mix dataset (Caltech, CityPersons, CUHK-SYSU, PRW, ETHZ and MOT16)
 
 CenterNetPostProcess:
   max_per_img: 500
