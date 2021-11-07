@@ -17,9 +17,8 @@
 // Ths copyright of gatagat/lap is as follows:
 // MIT License
 
-#ifndef LAPJV_H
-#define LAPJV_H
-
+#ifndef DEPLOY_PPTRACKING_INCLUDE_LAPJV_H_
+#define DEPLOY_PPTRACKING_INCLUDE_LAPJV_H_
 #define LARGE 1000000
 
 #if !defined TRUE
@@ -29,9 +28,21 @@
 #define FALSE 0
 #endif
 
-#define NEW(x, t, n) if ((x = (t *)malloc(sizeof(t) * (n))) == 0) {return -1;}
-#define FREE(x) if (x != 0) { free(x); x = 0; }
-#define SWAP_INDICES(a, b) { int_t _temp_index = a; a = b; b = _temp_index; }
+#define NEW(x, t, n)                                               \
+  if ((x = reinterpret_cast<t *>(malloc(sizeof(t) * (n)))) == 0) { \
+    return -1;                                                     \
+  }
+#define FREE(x) \
+  if (x != 0) { \
+    free(x);    \
+    x = 0;      \
+  }
+#define SWAP_INDICES(a, b) \
+  {                        \
+    int_t _temp_index = a; \
+    a = b;                 \
+    b = _temp_index;       \
+  }
 #include <opencv2/opencv.hpp>
 
 namespace PaddleDetection {
@@ -42,11 +53,12 @@ typedef double cost_t;
 typedef char boolean;
 typedef enum fp_t { FP_1 = 1, FP_2 = 2, FP_DYNAMIC = 3 } fp_t;
 
-int lapjv_internal(
-    const cv::Mat &cost, const bool extend_cost, const float cost_limit,
-    int *x, int *y);
+int lapjv_internal(const cv::Mat &cost,
+                   const bool extend_cost,
+                   const float cost_limit,
+                   int *x,
+                   int *y);
 
-} // namespace PaddleDetection
+}  // namespace PaddleDetection
 
-#endif // LAPJV_H
-
+#endif  // DEPLOY_PPTRACKING_INCLUDE_LAPJV_H_

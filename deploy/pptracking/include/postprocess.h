@@ -14,15 +14,15 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <utility>
 #include <ctime>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #include "include/utils.h"
 
@@ -33,16 +33,20 @@ cv::Scalar GetColor(int idx);
 
 // Visualize Tracking Results
 cv::Mat VisualizeTrackResult(const cv::Mat& img,
-                     const MOTResult& results,
-                     const float fps, const int frame_id);
+                             const MOTResult& results,
+                             const float fps,
+                             const int frame_id);
 
 // Pedestrian/Vehicle Counting
-void FlowStatistic(const MOTResult& results, const int frame_id,
-                   std::vector<int>* count_list, 
-                   std::vector<int>* in_count_list, 
+void FlowStatistic(const MOTResult& results,
+                   const int frame_id,
+                   std::vector<int>* count_list,
+                   std::vector<int>* in_count_list,
                    std::vector<int>* out_count_list);
 
 // Save Tracking Results
-void SaveMOTResult(const MOTResult& results, const int frame_id, std::vector<std::string>& records);
+void SaveMOTResult(const MOTResult& results,
+                   const int frame_id,
+                   std::vector<std::string>* records);
 
-} // namespace PaddleDetection
+}  // namespace PaddleDetection

@@ -13,18 +13,17 @@
 // limitations under the License.
 #include <sstream>
 // for setprecision
-#include <iomanip>
 #include <chrono>
+#include <iomanip>
 #include "include/jde_predictor.h"
 
-
-using namespace paddle_infer;
+using namespace paddle_infer;  // NOLINT
 
 namespace PaddleDetection {
 
 // Load Model and create model predictor
 void JDEPredictor::LoadModel(const std::string& model_dir,
-                               const std::string& run_mode) {
+                             const std::string& run_mode) {
   paddle_infer::Config config;
   std::string prog_file = model_dir + OS_PATH_SEP + "model.pdmodel";
   std::string params_file = model_dir + OS_PATH_SEP + "model.pdiparams";
@@ -37,26 +36,24 @@ void JDEPredictor::LoadModel(const std::string& model_dir,
       auto precision = paddle_infer::Config::Precision::kFloat32;
       if (run_mode == "trt_fp32") {
         precision = paddle_infer::Config::Precision::kFloat32;
-      }
-      else if (run_mode == "trt_fp16") {
+      } else if (run_mode == "trt_fp16") {
         precision = paddle_infer::Config::Precision::kHalf;
-      }
-      else if (run_mode == "trt_int8") {
+      } else if (run_mode == "trt_int8") {
         precision = paddle_infer::Config::Precision::kInt8;
       } else {
-          printf("run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
+        printf(
+            "run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
       }
       // set tensorrt
-      config.EnableTensorRtEngine(
-          1 << 30,
-          1,
-          this->min_subgraph_size_,
-          precision,
-          false,
-          this->trt_calib_mode_);
+      config.EnableTensorRtEngine(1 << 30,
+                                  1,
+                                  this->min_subgraph_size_,
+                                  precision,
+                                  false,
+                                  this->trt_calib_mode_);
     }
-  } else if (this->device_ == "XPU"){
-    config.EnableXpu(10*1024*1024);
+  } else if (this->device_ == "XPU") {
+    config.EnableXpu(10 * 1024 * 1024);
   } else {
     config.DisableGpu();
     if (this->use_mkldnn_) {
@@ -74,7 +71,9 @@ void JDEPredictor::LoadModel(const std::string& model_dir,
   predictor_ = std::move(CreatePredictor(config));
 }
 
-void FilterDets(const float conf_thresh, const cv::Mat dets, std::vector<int>* index) {
+void FilterDets(const float conf_thresh,
+                const cv::Mat dets,
+                std::vector<int>* index) {
   for (int i = 0; i < dets.rows; ++i) {
     float score = *dets.ptr<float>(i, 4);
     if (score > conf_thresh) {
@@ -89,9 +88,9 @@ void JDEPredictor::Preprocess(const cv::Mat& ori_im) {
   preprocessor_.Run(&im, &inputs_);
 }
 
-void JDEPredictor::Postprocess(
-    const cv::Mat dets, const cv::Mat emb,
-    MOTResult* result) {
+void JDEPredictor::Postprocess(const cv::Mat dets,
+                               const cv::Mat emb,
+                               MOTResult* result) {
   result->clear();
   std::vector<Track> tracks;
   std::vector<int> valid;
@@ -101,13 +100,13 @@ void JDEPredictor::Postprocess(
     new_dets.push_back(dets.row(valid[i]));
     new_emb.push_back(emb.row(valid[i]));
   }
-  JDETracker::instance()->update(new_dets, new_emb, tracks);
+  JDETracker::instance()->update(new_dets, new_emb, &tracks);
   if (tracks.size() == 0) {
     MOTTrack mot_track;
-    Rect ret = {*dets.ptr<float>(0, 0), 
-                    *dets.ptr<float>(0, 1),
-                    *dets.ptr<float>(0, 2),
-                    *dets.ptr<float>(0, 3)};
+    Rect ret = {*dets.ptr<float>(0, 0),
+                *dets.ptr<float>(0, 1),
+                *dets.ptr<float>(0, 2),
+                *dets.ptr<float>(0, 3)};
     mot_track.ids = 1;
     mot_track.score = *dets.ptr<float>(0, 4);
     mot_track.rects = ret;
@@ -124,24 +123,22 @@ void JDEPredictor::Postprocess(
         float area = w * h;
         if (area > min_box_area_ && !vertical) {
           MOTTrack mot_track;
-          Rect ret = {titer->ltrb[0],
-                          titer->ltrb[1],
-                          titer->ltrb[2],
-                          titer->ltrb[3]};
+          Rect ret = {
+              titer->ltrb[0], titer->ltrb[1], titer->ltrb[2], titer->ltrb[3]};
           mot_track.rects = ret;
           mot_track.score = titer->score;
           mot_track.ids = titer->id;
           result->push_back(mot_track);
         }
       }
-    } 
+    }
   }
 }
 
 void JDEPredictor::Predict(const std::vector<cv::Mat> imgs,
-      const double threshold,
-      MOTResult* result,
-      std::vector<double>* times) {
+                           const double threshold,
+                           MOTResult* result,
+                           std::vector<double>* times) {
   auto preprocess_start = std::chrono::steady_clock::now();
   int batch_size = imgs.size();
 
@@ -149,7 +146,7 @@ void JDEPredictor::Predict(const std::vector<cv::Mat> imgs,
   std::vector<float> in_data_all;
   std::vector<float> im_shape_all(batch_size * 2);
   std::vector<float> scale_factor_all(batch_size * 2);
-  
+
   // Preprocess image
   for (int bs_idx = 0; bs_idx < batch_size; bs_idx++) {
     cv::Mat im = imgs.at(bs_idx);
@@ -160,8 +157,8 @@ void JDEPredictor::Predict(const std::vector<cv::Mat> imgs,
     scale_factor_all[bs_idx * 2] = inputs_.scale_factor_[0];
     scale_factor_all[bs_idx * 2 + 1] = inputs_.scale_factor_[1];
 
-    // TODO: reduce cost time
-    in_data_all.insert(in_data_all.end(), inputs_.im_data_.begin(), inputs_.im_data_.end());
+    in_data_all.insert(
+        in_data_all.end(), inputs_.im_data_.begin(), inputs_.im_data_.end());
   }
 
   // Prepare input tensor
@@ -181,7 +178,7 @@ void JDEPredictor::Predict(const std::vector<cv::Mat> imgs,
       in_tensor->CopyFromCpu(scale_factor_all.data());
     }
   }
-  
+
   auto preprocess_end = std::chrono::steady_clock::now();
   std::vector<int> bbox_shape;
   std::vector<int> emb_shape;
@@ -207,7 +204,7 @@ void JDEPredictor::Predict(const std::vector<cv::Mat> imgs,
   }
 
   bbox_data_.resize(bbox_size);
-  bbox_tensor->CopyToCpu(bbox_data_.data()); 
+  bbox_tensor->CopyToCpu(bbox_data_.data());
 
   emb_data_.resize(emb_size);
   emb_tensor->CopyToCpu(emb_data_.data());
@@ -224,12 +221,14 @@ void JDEPredictor::Predict(const std::vector<cv::Mat> imgs,
 
   auto postprocess_end = std::chrono::steady_clock::now();
 
-  std::chrono::duration<float> preprocess_diff = preprocess_end - preprocess_start;
-  (*times)[0] += double(preprocess_diff.count() * 1000);
+  std::chrono::duration<float> preprocess_diff =
+      preprocess_end - preprocess_start;
+  (*times)[0] += static_cast<double>(preprocess_diff.count() * 1000);
   std::chrono::duration<float> inference_diff = inference_end - inference_start;
-  (*times)[1] += double(inference_diff.count() * 1000);
-  std::chrono::duration<float> postprocess_diff = postprocess_end - postprocess_start;
-  (*times)[2] += double(postprocess_diff.count() * 1000);
+  (*times)[1] += static_cast<double>(inference_diff.count() * 1000);
+  std::chrono::duration<float> postprocess_diff =
+      postprocess_end - postprocess_start;
+  (*times)[2] += static_cast<double>(postprocess_diff.count() * 1000);
 }
 
 }  // namespace PaddleDetection
