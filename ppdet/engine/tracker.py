@@ -21,12 +21,19 @@ import cv2
 import glob
 import paddle
 import numpy as np
+import re
 from collections import defaultdict
+import os.path as osp
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_box
 from ppdet.modeling.mot.utils import MOTTimer, load_det_results, write_mot_results, save_vis_results
+from ppdet.modeling.mot.mtmct_utils.aicty_eval import print_mtmct_result
+from ppdet.modeling.mot.mtmct_utils.trajectory_fusion import trajectory_fusion,parse_bias,parse_pt
+from ppdet.modeling.mot.mtmct_utils.sub_cluster import sub_cluster
+from ppdet.modeling.mot.mtmct_utils.gen_res import gen_res
+
 
 from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric
 from ppdet.metrics import MCMOTMetric
@@ -170,6 +177,122 @@ class Tracker(object):
             frame_id += 1
 
         return results, frame_id, timer.average_time, timer.calls
+
+    def _eval_seq_sde_mtmct(self,
+                      dataloader,
+                      save_dir=None,
+                      show_image=False,
+                      frame_rate=30,
+                      scaled=False,
+                      det_file='',
+                      draw_threshold=0,
+                      seq_name=''):
+        if save_dir:
+            if not os.path.exists(save_dir): os.makedirs(save_dir)
+        use_detector = False if not self.model.detector else True
+
+        timer = MOTTimer()
+        results = defaultdict(list)
+        frame_id = 0
+        self.status['mode'] = 'track'
+        self.model.eval()
+        self.model.reid.eval()
+        if not use_detector:
+            dets_list = load_det_results(det_file, len(dataloader))
+            logger.info('Finish loading detection results file {}.'.format(
+                det_file))
+        mot_feat={}
+        for step_id, data in enumerate(dataloader):
+            self.status['step_id'] = step_id
+            if frame_id % 40 == 0:
+                logger.info('Processing frame {} ({:.2f} fps)'.format(
+                    frame_id, 1. / max(1e-5, timer.average_time)))
+
+            ori_image = data['ori_image']
+            input_shape = data['image'].shape[2:]
+            im_shape = data['im_shape']
+            scale_factor = data['scale_factor']
+
+            # forward
+            timer.tic()
+            if not use_detector:
+                dets = dets_list[frame_id]
+                bbox_tlwh = paddle.to_tensor(dets['bbox'], dtype='float32')
+                if bbox_tlwh.shape[0] > 0:
+                    # detector outputs: pred_cls_ids, pred_scores, pred_bboxes
+                    pred_cls_ids = paddle.to_tensor(
+                        dets['cls_id'], dtype='float32').unsqueeze(1)
+                    pred_scores = paddle.to_tensor(
+                        dets['score'], dtype='float32').unsqueeze(1)
+                    pred_bboxes = paddle.concat(
+                        (bbox_tlwh[:, 0:2],
+                         bbox_tlwh[:, 2:4] + bbox_tlwh[:, 0:2]),
+                        axis=1)
+                else:
+                    logger.warning(
+                        'Frame {} has not object, try to modify score threshold.'.
+                        format(frame_id))
+                    frame_id += 1
+                    continue
+            else:
+                outs = self.model.detector(data)
+                if outs['bbox_num'] > 0:
+                    # detector outputs: pred_cls_ids, pred_scores, pred_bboxes
+                    pred_cls_ids = outs['bbox'][:, 0:1]
+                    pred_scores = outs['bbox'][:, 1:2]
+                    if not scaled:
+                        # scaled means whether the coords after detector outputs
+                        # have been scaled back to the original image, set True 
+                        # in general detector, set False in JDE YOLOv3.
+                        pred_bboxes = scale_coords(outs['bbox'][:, 2:],
+                                                   input_shape, im_shape,
+                                                   scale_factor)
+                    else:
+                        pred_bboxes = outs['bbox'][:, 2:]
+                else:
+                    logger.warning(
+                        'Frame {} has not object, try to modify score threshold.'.
+                        format(frame_id))
+                    frame_id += 1
+                    continue
+
+            pred_xyxys, keep_idx = clip_box(pred_bboxes, input_shape, im_shape,
+                                            scale_factor)
+            pred_scores = paddle.gather_nd(pred_scores, keep_idx).unsqueeze(1)
+            pred_cls_ids = paddle.gather_nd(pred_cls_ids, keep_idx).unsqueeze(1)
+            pred_tlwhs = paddle.concat(
+                (pred_xyxys[:, 0:2],
+                 pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
+                axis=1)
+            pred_dets = paddle.concat(
+                (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
+
+            tracker = self.model.tracker
+            crops = get_crops(
+                pred_xyxys,
+                ori_image,
+                w=tracker.input_size[0],
+                h=tracker.input_size[1])
+            crops = paddle.to_tensor(crops)
+
+            data.update({'crops': crops})
+            pred_embs = self.model(data)
+            pred_dets, pred_embs = pred_dets.numpy(), pred_embs.numpy()
+
+            tracker.predict()
+            online_targets = tracker.update(pred_dets, pred_embs)
+
+            for idx, pred_emb in enumerate(pred_embs):
+                feat_data = {}
+                feat_data['bbox'] = np.array(pred_xyxys[idx]).tolist()
+                feat_data['frame'] = f"{frame_id:06d}"
+                feat_data['id'] = online_targets[idx].track_id
+                trackid = feat_data['id'] # trackid
+                feat_data['imgname'] = f'{seq_name}_{trackid}_{frame_id}.jpg'
+                feat_data['feat'] = np.array(np.array(pred_emb).tolist())
+                mot_feat[feat_data['imgname']] = feat_data
+            frame_id += 1
+        return mot_feat
 
     def _eval_seq_sde(self,
                       dataloader,
@@ -373,33 +496,93 @@ class Tracker(object):
             timer_avgs.append(ta)
             timer_calls.append(tc)
 
-            if save_videos:
-                output_video_path = os.path.join(save_dir, '..',
-                                                 '{}_vis.mp4'.format(seq))
-                cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
-                    save_dir, output_video_path)
-                os.system(cmd_str)
-                logger.info('Save video in {}.'.format(output_video_path))
+    def mot_evaluate_mtmct(self,
+                     data_root,
+                     seqs,
+                     output_dir,
+                     data_type='mot',
+                     model_type='JDE',
+                     save_images=False,
+                     save_videos=False,
+                     show_image=False,
+                     scaled=False,
+                     det_results_dir='',
+                     cameras_bias={},
+                     score_thr=0.1):
+        if not os.path.exists(output_dir): os.makedirs(output_dir)
+        result_root = os.path.join(output_dir, 'mot_results')
+        if not os.path.exists(result_root): os.makedirs(result_root)
+        assert data_type in ['mot', 'mcmot', 'kitti'], \
+            "data_type should be 'mot', 'mcmot' or 'kitti'"
+        assert model_type in ['JDE', 'DeepSORT', 'FairMOT', 'MTMCT_DeepSort'], \
+            "model_type should be 'JDE', 'DeepSORT' or 'FairMOT' or 'MTMCT_DeepSort'"
 
-            logger.info('Evaluate seq: {}'.format(seq))
-            # update metrics
-            for metric in self._metrics:
-                metric.update(data_root, seq, data_type, result_root,
-                              result_filename)
+        # run tracking
+        n_frame = 0
+        timer_avgs, timer_calls = [], []
+        #
+        mot_features = []
+        cid_tid_dict = dict()
+        cid_bias = parse_bias(cameras_bias)
+        scene_cluster = list(cid_bias.keys())
+        mot_feature = {}
+        #
+        for seq in seqs:
+            infer_dir = os.path.join(data_root, seq)
+            if not os.path.exists(infer_dir) or not os.path.isdir(infer_dir):
+                logger.warning("Seq {} error, {} has no images.".format(
+                    seq, infer_dir))
+                continue
+            if os.path.exists(os.path.join(infer_dir, 'img1')):
+                infer_dir = os.path.join(infer_dir, 'img1')
 
-        timer_avgs = np.asarray(timer_avgs)
-        timer_calls = np.asarray(timer_calls)
-        all_time = np.dot(timer_avgs, timer_calls)
-        avg_time = all_time / np.sum(timer_calls)
-        logger.info('Time elapsed: {:.2f} seconds, FPS: {:.2f}'.format(
-            all_time, 1.0 / avg_time))
+            frame_rate = 30
+            seqinfo = os.path.join(data_root, seq, 'seqinfo.ini')
+            if os.path.exists(seqinfo):
+                meta_info = open(seqinfo).read()
+                frame_rate = int(meta_info[meta_info.find('frameRate') + 10:
+                                           meta_info.find('\nseqLength')])
 
-        # accumulate metric to log out
-        for metric in self._metrics:
-            metric.accumulate()
-            metric.log()
-        # reset metric states for metric may performed multiple times
-        self._reset_metrics()
+            save_dir = os.path.join(output_dir, 'mot_outputs',
+                                    seq) if save_images or save_videos else None
+            logger.info('start seq: {}'.format(seq))
+
+            self.dataset.set_images(self.get_infer_images(infer_dir))
+            dataloader = create('EvalMOTReader')(self.dataset, 0)
+
+            result_filename = os.path.join(result_root, '{}.txt'.format(seq))
+
+            with paddle.no_grad():
+                if model_type in ['MTMCT_DeepSort']:
+                    mot_feature = self._eval_seq_sde_mtmct(
+                        dataloader,
+                        save_dir=save_dir,
+                        show_image=show_image,
+                        frame_rate=frame_rate,
+                        scaled=scaled,
+                        det_file=os.path.join(det_results_dir,
+                                              '{}.txt'.format(seq)),
+                        seq_name=seq)
+                else:
+                    raise ValueError(model_type)
+            # from mot_feature gen mot_list
+            mot_features.append(mot_feature)
+            cid = int(re.sub('[a-z,A-Z]',"",seq))
+            cur_bias = cid_bias[cid]
+            tid_data = trajectory_fusion(mot_feature, cid, cid_bias)
+            # single seq process
+            for line in tid_data:
+                tracklet = tid_data[line]
+                tid = tracklet['tid']
+                if (cid, tid) not in cid_tid_dict:
+                    cid_tid_dict[(cid, tid)] = tracklet
+        # output result
+        map_tid = sub_cluster(cid_tid_dict, scene_cluster, score_thr)
+        pred_mtmct_file = osp.join(output_dir, 'mtmct_result.txt')
+        gen_res(pred_mtmct_file, scene_cluster, map_tid, mot_features)
+        data_root_gt = osp.join(str.join('/', data_root.split('/')[0:-1]),'gt','gt.txt')
+        print_mtmct_result(data_root_gt, pred_mtmct_file)
+
 
     def get_infer_images(self, infer_dir):
         assert infer_dir is None or os.path.isdir(infer_dir), \

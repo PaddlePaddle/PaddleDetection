@@ -92,18 +92,33 @@ def run(FLAGS, cfg):
         tracker.load_weights_jde(cfg.weights)
 
     # inference
-    tracker.mot_evaluate(
-        data_root=data_root,
-        seqs=seqs,
-        data_type=cfg.metric.lower(),
-        model_type=cfg.architecture,
-        output_dir=FLAGS.output_dir,
-        save_images=FLAGS.save_images,
-        save_videos=FLAGS.save_videos,
-        show_image=FLAGS.show_image,
-        scaled=FLAGS.scaled,
-        det_results_dir=FLAGS.det_results_dir)
-
+    cfg.architecture = 'MTMCT_DeepSort'
+    if cfg.architecture in ['MTMCT_DeepSort']:
+        tracker.mot_evaluate_mtmct(
+            data_root=data_root,
+            seqs=seqs,
+            data_type=cfg.metric.lower(),
+            model_type=cfg.architecture,
+            output_dir=FLAGS.output_dir,
+            save_images=FLAGS.save_images,
+            save_videos=FLAGS.save_videos,
+            show_image=FLAGS.show_image,
+            scaled=FLAGS.scaled,
+            det_results_dir=FLAGS.det_results_dir,
+            cameras_bias=cfg.cameras_bias,
+            score_thr=cfg.score_thr)
+    else:
+        tracker.mot_evaluate(
+            data_root=data_root,
+            seqs=seqs,
+            data_type=cfg.metric.lower(),
+            model_type=cfg.architecture,
+            output_dir=FLAGS.output_dir,
+            save_images=FLAGS.save_images,
+            save_videos=FLAGS.save_videos,
+            show_image=FLAGS.show_image,
+            scaled=FLAGS.scaled,
+            det_results_dir=FLAGS.det_results_dir)
 
 def main():
     FLAGS = parse_args()
