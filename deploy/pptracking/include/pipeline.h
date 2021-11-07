@@ -50,7 +50,8 @@ class Pipeline {
                   const bool save_result=false,
                   const std::string& scene="pedestrian",
                   const bool tiny_obj=false,
-                  const bool is_mtmct=false) {
+                  const bool is_mtmct=false,
+                  const int secs_interval=10) {
     std::vector<std::string> input;
     this->input_ = input;
     this->device_ = device;
@@ -62,6 +63,7 @@ class Pipeline {
     this->cpu_threads_ = cpu_threads;
     this->trt_calib_mode_ = trt_calib_mode;
     this->count_ = count;
+    this->secs_interval_ = secs_interval_;
     this->save_result_ = save_result;
     SelectModel(scene, tiny_obj, is_mtmct);
     InitPredictor();
@@ -79,7 +81,12 @@ class Pipeline {
   void PredictMTMCT(const std::vector<std::string> video_inputs);
 
   // Run pipeline in stream
-  void RunMOTStream(const cv::Mat img, const int frame_id, cv::Mat out_img, std::vector<std::string>& records, std::vector<int>& count_list, std::vector<int>& in_count_list, std::vector<int>& out_count_list);
+  void RunMOTStream(const cv::Mat img, const int frame_id,
+                    const int video_fps, const Rect entrance,
+                    cv::Mat out_img, std::vector<std::string>& records,
+                    std::set<int>& count_set, std::set<int>& interval_count_set,
+                    std::vector<int>& in_count_list, std::vector<int>& out_count_list,
+                    std::map<int, std::vector<float>>& prev_center);
   void RunMTMCTStream(const std::vector<cv::Mat> imgs, std::vector<std::string>& records);
 
   void PrintBenchmarkLog(std::vector<double> det_time, int img_num);
@@ -109,6 +116,7 @@ class Pipeline {
   bool trt_calib_mode_ = false;
   bool count_ = false;
   bool save_result_ = false;
+  int secs_interval_ = 10;
 };
 
 } // namespace PaddleDetection

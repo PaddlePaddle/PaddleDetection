@@ -147,9 +147,13 @@ void Pipeline::PredictMOT(const std::string& video_path) {
 
   PaddleDetection::MOTResult result;
   std::vector<double> det_times(3);
-  std::vector<int> count_list;
+  std::set<int> count_set;
+  std::set<int> interval_count_set;
   std::vector<int> in_count_list;
   std::vector<int> out_count_list;
+  std::map<int, std::vector<float>> prev_center;
+  Rect entrance = {
+    0, float(video_height) / 2, float(video_width), float(video_height) / 2};
   double times;
   double total_time;
   // Capture all frames and do inference
@@ -176,12 +180,15 @@ void Pipeline::PredictMOT(const std::string& video_path) {
 
     cv::Mat out_img = PaddleDetection::VisualizeTrackResult(
         frame, result, 1000./times, frame_id);
-    
     if (count_) {
       // Count total number 
       // Count in & out number
-      PaddleDetection::FlowStatistic(result, frame_id, &count_list, &in_count_list, &out_count_list);
+      PaddleDetection::FlowStatistic(
+        result, frame_id, secs_interval_, video_fps, entrance, output_dir_,
+        &count_set, &interval_count_set, &in_count_list, &out_count_list,
+        &prev_center);
     }
+
     if (save_result_) {
       PaddleDetection::SaveMOTResult(result, frame_id, records);
     }
@@ -214,7 +221,12 @@ void Pipeline::PredictMTMCT(const std::vector<std::string> video_path) {
   throw "Not Implement!";
 }
 
-void Pipeline::RunMOTStream(const cv::Mat img, const int frame_id, cv::Mat out_img, std::vector<std::string>& records, std::vector<int>& count_list, std::vector<int>& in_count_list, std::vector<int>& out_count_list) {
+void Pipeline::RunMOTStream(const cv::Mat img, const int frame_id,
+  const int video_fps, const Rect entrance,
+  cv::Mat out_img, std::vector<std::string>& records,
+  std::set<int>& count_set, std::set<int>& interval_count_set,
+  std::vector<int>& in_count_list, std::vector<int>& out_count_list,
+  std::map<int, std::vector<float>>& prev_center) {
   PaddleDetection::MOTResult result;
   std::vector<double> det_times(3);
   double times;
@@ -236,7 +248,10 @@ void Pipeline::RunMOTStream(const cv::Mat img, const int frame_id, cv::Mat out_i
   if (count_) {
     // Count total number 
     // Count in & out number
-    PaddleDetection::FlowStatistic(result, frame_id, &count_list, &in_count_list, &out_count_list);
+    PaddleDetection::FlowStatistic(
+      result, frame_id, secs_interval_, video_fps, entrance, output_dir_,
+      &count_set, &interval_count_set, &in_count_list, &out_count_list,
+      &prev_center);
   }
 
   PrintBenchmarkLog(det_times, frame_id);

@@ -98,10 +98,76 @@ cv::Mat VisualizeTrackResult(const cv::Mat& img,
 }
 
 void FlowStatistic(const MOTResult& results, const int frame_id,
-                   std::vector<int>* count_list, 
+                   const int secs_interval, const int video_fps,
+                   const Rect entrance, const std::string output_dir,
+                   std::set<int>* count_set,
+                   std::set<int>* interval_count_set, 
                    std::vector<int>* in_count_list, 
-                   std::vector<int>* out_count_list) {
-  throw "Not Implement";
+                   std::vector<int>* out_count_list,
+                   std::map<int, std::vector<float>>* prev_center) {
+  if (frame_id == 0) {
+    interval_count_set->clear();
+  }
+  
+  // Count in and out number
+  // Use horizontal center line as the entrance just for simplification
+  float entrance_y = entrance.top; 
+  for (const auto& result : results) {
+    float center_x = (result.rects.left + result.rects.right) / 2;
+    float center_y = (result.rects.top + result.rects.bottom) / 2;
+    int ids = result.ids;
+    std::map<int, std::vector<float>>::iterator iter;  
+    iter = prev_center->find(ids);
+    if (iter != prev_center->end()) {
+      if (iter->second[1] <= entrance_y && center_y > entrance_y) {
+        in_count_list->push_back(ids);
+      }
+      if (iter->second[1] >= entrance_y && center_y < entrance_y) {
+        out_count_list->push_back(ids);
+      }
+      (*prev_center)[ids][0] = center_x;
+      (*prev_center)[ids][1] = center_y;
+    } else {
+      prev_center->insert(
+        std::pair<int, std::vector<float>>(ids, {center_x, center_y}));
+    }
+  }
+
+  // Count totol number, number at a manual-setting interval
+  for (const auto& result : results) {
+    count_set->insert(result.ids);
+    interval_count_set->insert(result.ids);
+  }
+
+  printf("Frame id: %d, Total count: %d, In count: %d, Out count: %d",
+    frame_id, count_set->size(), in_count_list->size(), out_count_list->size());
+  // Reset counting at the interval beginning
+  int curr_interval_count = -1;
+  if (frame_id % video_fps == 0 && frame_id / video_fps % secs_interval == 0) {
+    curr_interval_count = interval_count_set->size();
+    printf(", Count during %d secs: %d\n", secs_interval, curr_interval_count);
+    interval_count_set->clear();
+  }
+  printf("\n");
+
+  FILE * fp;
+  std::string result_output_path = output_dir + OS_PATH_SEP + "flow_statistic.txt";
+  std::string file_mode = "w+";
+  if (frame_id > 2)
+    file_mode = "a";
+  if((fp = fopen(result_output_path.c_str(), file_mode.c_str())) == NULL) {
+    printf("Open %s error.\n", result_output_path);
+    return;
+  }
+  
+  fprintf(fp, "Frame id: %d, Total count: %d, In count: %d, Out count: %d",
+    frame_id, count_set->size(), in_count_list->size(), out_count_list->size());
+  // Note: if the input video duration is small than the interval.
+  // printf will not be done.
+  if (curr_interval_count > -1)
+    fprintf(fp, ", Count during %d secs: %d", secs_interval, curr_interval_count);
+  fprintf(fp, "\n");
+  fclose(fp);
 }
 
 void SaveMOTResult(const MOTResult& results, const int frame_id, std::vector<std::string>& records) {

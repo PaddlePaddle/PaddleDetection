@@ -47,6 +47,7 @@ DEFINE_int32(cpu_threads, 1, "Num of threads with CPU");
 DEFINE_bool(trt_calib_mode, false, "If the model is produced by TRT offline quantitative calibration, trt_calib_mode need to set True");
 DEFINE_bool(tiny_obj, false, "Whether tracking tiny object");
 DEFINE_bool(count, false, "Whether counting after tracking");
+DEFINE_int32(secs_interval, 10, "The seconds interval to count after tracking");
 DEFINE_bool(save_result, false, "Whether saving result after tracking");
 DEFINE_string(scene, "", "scene of tracking system, it can be : pedestrian/vehicle/multiclass");
 DEFINE_bool(is_mtmct, false, "Whether use multi-target multi-camera tracking");
@@ -121,7 +122,7 @@ int main(int argc, char** argv) {
                     FLAGS_output_dir, FLAGS_run_mode, FLAGS_gpu_id, 
                     FLAGS_use_mkldnn, FLAGS_cpu_threads, FLAGS_trt_calib_mode,
                     FLAGS_count, FLAGS_save_result, FLAGS_scene, FLAGS_tiny_obj, 
-                    FLAGS_is_mtmct);
+                    FLAGS_is_mtmct, FLAGS_secs_interval);
 
   pipeline.SetInput(FLAGS_video_file);
   if (!FLAGS_video_other_file.empty()) {
