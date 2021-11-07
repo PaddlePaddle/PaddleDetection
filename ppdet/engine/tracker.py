@@ -184,7 +184,7 @@ class Tracker(object):
         use_detector = False if not self.model.detector else True
 
         timer = MOTTimer()
-        results = []
+        results = defaultdict(list)
         frame_id = 0
         self.status['mode'] = 'track'
         self.model.eval()
@@ -269,6 +269,7 @@ class Tracker(object):
 
             data.update({'crops': crops})
             pred_embs = self.model(data)
+            pred_dets, pred_embs = pred_dets.numpy(), pred_embs.numpy()
 
             tracker.predict()
             online_targets = tracker.update(pred_dets, pred_embs)
@@ -291,7 +292,7 @@ class Tracker(object):
             timer.toc()
 
             # save results
-            results.append(
+            results[0].append(
                 (frame_id + 1, online_tlwhs, online_scores, online_ids))
             save_vis_results(data, frame_id, online_ids, online_tlwhs,
                              online_scores, timer.average_time, show_image,
