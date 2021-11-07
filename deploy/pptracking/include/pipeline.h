@@ -79,7 +79,7 @@ class Pipeline {
   void PredictMTMCT(const std::vector<std::string> video_inputs);
 
   // Run pipeline in stream
-  void RunMOTStream(const cv::Mat img, const int frame_id, cv::Mat out_img, std::vector<std::string>& records, std::vector<int>& count_list, std::vector<int>& in_count_list, std::vector<int>& out_count_list);
+  void RunMOTStream(const cv::Mat img, const int frame_id, cv::Mat& out_img, std::vector<std::string>& records, std::vector<int>& count_list, std::vector<int>& in_count_list, std::vector<int>& out_count_list);
   void RunMTMCTStream(const std::vector<cv::Mat> imgs, std::vector<std::string>& records);
 
   void PrintBenchmarkLog(std::vector<double> det_time, int img_num);
