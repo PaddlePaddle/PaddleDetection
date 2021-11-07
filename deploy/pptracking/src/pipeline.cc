@@ -214,7 +214,7 @@ void Pipeline::PredictMTMCT(const std::vector<std::string> video_path) {
   throw "Not Implement!";
 }
 
-void Pipeline::RunMOTStream(const cv::Mat img, const int frame_id, cv::Mat out_img, std::vector<std::string>& records, std::vector<int>& count_list, std::vector<int>& in_count_list, std::vector<int>& out_count_list) {
+void Pipeline::RunMOTStream(const cv::Mat img, const int frame_id, cv::Mat& out_img, std::vector<std::string>& records, std::vector<int>& count_list, std::vector<int>& in_count_list, std::vector<int>& out_count_list) {
   PaddleDetection::MOTResult result;
   std::vector<double> det_times(3);
   double times;
