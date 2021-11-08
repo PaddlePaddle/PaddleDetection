@@ -182,7 +182,8 @@ def predict_image(detector, image_list):
             online_tlwhs, online_scores, online_ids = detector.predict(
                 [frame], FLAGS.threshold)
             online_im = plot_tracking_dict(frame, num_classes, online_tlwhs,
-                                           online_ids, online_scores, frame_id, ids2names)
+                                           online_ids, online_scores, frame_id,
+                                           ids2names)
             if FLAGS.save_images:
                 if not os.path.exists(FLAGS.output_dir):
                     os.makedirs(FLAGS.output_dir)

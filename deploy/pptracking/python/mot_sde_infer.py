@@ -271,8 +271,8 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
         assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
         self.pred_config = pred_config
 
-    def postprocess_bboxes(self, boxes, input_shape, im_shape, scale_factor, threshold,
-                    scaled):
+    def postprocess_bboxes(self, boxes, input_shape, im_shape, scale_factor,
+                           threshold):
         over_thres_idx = np.nonzero(boxes[:, 1:2] >= threshold)[0]
         if len(over_thres_idx) == 0:
             pred_dets = np.zeros((1, 6), dtype=np.float32)
@@ -360,10 +360,9 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
             im_shape = inputs['im_shape']
             scale_factor = inputs['scale_factor']
             pred_dets, pred_xyxys = self.postprocess_bboxes(
-                boxes, input_shape, im_shape, scale_factor, threshold, scaled)
+                boxes, input_shape, im_shape, scale_factor, threshold)
 
         return pred_dets, pred_xyxys
-        
 
 
 class SDE_ReID(object):
@@ -496,7 +495,7 @@ def predict_image(detector, reid_model, image_list):
             pred_dets, pred_xyxys = detector.predict([frame], FLAGS.scaled,
                                                      FLAGS.threshold)
 
-        if len(pred_dets) == 1 and sum(pred_dets) == 0:
+        if len(pred_dets) == 1 and np.sum(pred_dets) == 0:
             print('Frame {} has no object, try to modify score threshold.'.
                   format(i))
             online_im = frame
@@ -625,7 +624,6 @@ def main():
                                    trt_calib_mode=FLAGS.trt_calib_mode,
                                    cpu_threads=FLAGS.cpu_threads,
                                    enable_mkldnn=FLAGS.enable_mkldnn)
-
 
     pred_config = PredictConfig(FLAGS.reid_model_dir)
     reid_model = SDE_ReID(
