@@ -100,9 +100,12 @@ cv::Mat VisualizeTrackResult(const cv::Mat& img,
   return vis_img;
 }
 
-void FlowStatistic(const MOTResult& results, const int frame_id,
-                   const int secs_interval, const bool count,
-                   const int video_fps, const Rect entrance, 
+void FlowStatistic(const MOTResult& results,
+                   const int frame_id,
+                   const int secs_interval,
+                   const bool count,
+                   const int video_fps,
+                   const Rect entrance, 
                    std::set<int>* count_set,
                    std::set<int>* interval_count_set, 
                    std::vector<int>* in_count_list, 
