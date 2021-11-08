@@ -161,6 +161,7 @@ void Pipeline::PredictMOT(const std::string& video_path) {
   int frame_id = 0;
   
   std::vector<std::string> records;
+  std::vector<std::string> flow_records;
   records.push_back("result format: frame_id, track_id, x1, y1, w, h\n");
 
   LOG(INFO) << "------------------- Predict info ------------------------";
@@ -180,14 +181,10 @@ void Pipeline::PredictMOT(const std::string& video_path) {
 
     cv::Mat out_img = PaddleDetection::VisualizeTrackResult(
         frame, result, 1000./times, frame_id);
-    if (count_) {
-      // Count total number 
-      // Count in & out number
-      PaddleDetection::FlowStatistic(
-        result, frame_id, secs_interval_, video_fps, entrance, output_dir_,
-        &count_set, &interval_count_set, &in_count_list, &out_count_list,
-        &prev_center);
-    }
+    PaddleDetection::FlowStatistic(
+      result, frame_id, secs_interval_, count_, video_fps, entrance,
+      &count_set, &interval_count_set, &in_count_list, &out_count_list,
+      &prev_center, &flow_records);
 
     if (save_result_) {
       PaddleDetection::SaveMOTResult(result, frame_id, records);
@@ -214,6 +211,18 @@ void Pipeline::PredictMOT(const std::string& video_path) {
 
     fclose(fp);
     LOG(INFO) << "txt result output saved as " << result_output_path.c_str();
+
+    result_output_path = output_dir_ + OS_PATH_SEP + "flow_statistic.txt";
+    if((fp = fopen(result_output_path.c_str(), "w+")) == NULL) {
+      printf("Open %s error.\n", result_output_path);
+      return;
+    }
+    
+    for (int l; l < flow_records.size(); ++l) {
+      fprintf(fp, flow_records[l].c_str());
+    }
+    fclose(fp);
+    LOG(INFO) << "txt flow statistic saved as " << result_output_path.c_str();
   }
 }
 
@@ -226,7 +235,8 @@ void Pipeline::RunMOTStream(const cv::Mat img, const int frame_id,
   cv::Mat out_img, std::vector<std::string>& records,
   std::set<int>& count_set, std::set<int>& interval_count_set,
   std::vector<int>& in_count_list, std::vector<int>& out_count_list,
-  std::map<int, std::vector<float>>& prev_center) {
+  std::map<int, std::vector<float>>& prev_center,
+  std::vector<std::string>& flow_records) {
   PaddleDetection::MOTResult result;
   std::vector<double> det_times(3);
   double times;
@@ -245,14 +255,12 @@ void Pipeline::RunMOTStream(const cv::Mat img, const int frame_id,
   out_img = PaddleDetection::VisualizeTrackResult(
     img, result, 1000./times, frame_id);
 
-  if (count_) {
-    // Count total number 
-    // Count in & out number
-    PaddleDetection::FlowStatistic(
-      result, frame_id, secs_interval_, video_fps, entrance, output_dir_,
-      &count_set, &interval_count_set, &in_count_list, &out_count_list,
-      &prev_center);
-  }
+  // Count total number 
+  // Count in & out number
+  PaddleDetection::FlowStatistic(
+    result, frame_id, secs_interval_, count_, video_fps, entrance,
+    &count_set, &interval_count_set, &in_count_list, &out_count_list,
+    &prev_center, &flow_records);
 
   PrintBenchmarkLog(det_times, frame_id);
   if (save_result_) {

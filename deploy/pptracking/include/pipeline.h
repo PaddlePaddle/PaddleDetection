@@ -86,7 +86,8 @@ class Pipeline {
                     cv::Mat out_img, std::vector<std::string>& records,
                     std::set<int>& count_set, std::set<int>& interval_count_set,
                     std::vector<int>& in_count_list, std::vector<int>& out_count_list,
-                    std::map<int, std::vector<float>>& prev_center);
+                    std::map<int, std::vector<float>>& prev_center,
+                    std::vector<std::string>& flow_records);
   void RunMTMCTStream(const std::vector<cv::Mat> imgs, std::vector<std::string>& records);
 
   void PrintBenchmarkLog(std::vector<double> det_time, int img_num);
