@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef DEPLOY_PPTRACKING_INCLUDE_PIPELINE_H_
+#define DEPLOY_PPTRACKING_INCLUDE_PIPELINE_H_
+
 #include <glog/logging.h>
 
+#include <math.h>
+#include <sys/types.h>
+#include <algorithm>
 #include <iostream>
+#include <numeric>
 #include <string>
 #include <vector>
-#include <numeric>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <math.h>
-#include <algorithm>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -39,18 +41,18 @@ namespace PaddleDetection {
 class Pipeline {
  public:
   explicit Pipeline(const std::string& device,
-                  const double threshold,
-                  const std::string& output_dir,
-                  const std::string& run_mode="fluid",
-                  const int gpu_id=0,
-                  const bool use_mkldnn=false,
-                  const int cpu_threads=1,
-                  const bool trt_calib_mode=false,
-                  const bool count=false,
-                  const bool save_result=false,
-                  const std::string& scene="pedestrian",
-                  const bool tiny_obj=false,
-                  const bool is_mtmct=false) {
+                    const double threshold,
+                    const std::string& output_dir,
+                    const std::string& run_mode = "fluid",
+                    const int gpu_id = 0,
+                    const bool use_mkldnn = false,
+                    const int cpu_threads = 1,
+                    const bool trt_calib_mode = false,
+                    const bool count = false,
+                    const bool save_result = false,
+                    const std::string& scene = "pedestrian",
+                    const bool tiny_obj = false,
+                    const bool is_mtmct = false) {
     std::vector<std::string> input;
     this->input_ = input;
     this->device_ = device;
@@ -67,10 +69,8 @@ class Pipeline {
     InitPredictor();
   }
 
-
-
   // Set input, it must execute before Run()
-  void SetInput(std::string& input_video);
+  void SetInput(const std::string& input_video);
   void ClearInput();
 
   // Run pipeline in video
@@ -79,16 +79,23 @@ class Pipeline {
   void PredictMTMCT(const std::vector<std::string> video_inputs);
 
   // Run pipeline in stream
-  void RunMOTStream(const cv::Mat img, const int frame_id, cv::Mat& out_img, std::vector<std::string>& records, std::vector<int>& count_list, std::vector<int>& in_count_list, std::vector<int>& out_count_list);
-  void RunMTMCTStream(const std::vector<cv::Mat> imgs, std::vector<std::string>& records);
+  void RunMOTStream(const cv::Mat img,
+                    const int frame_id,
+                    cv::Mat out_img,
+                    std::vector<std::string>* records,
+                    std::vector<int>* count_list,
+                    std::vector<int>* in_count_list,
+                    std::vector<int>* out_count_list);
+  void RunMTMCTStream(const std::vector<cv::Mat> imgs,
+                      std::vector<std::string>* records);
 
-  void PrintBenchmarkLog(std::vector<double> det_time, int img_num);
+  void PrintBenchmarkLog(const std::vector<double> det_time, const int img_num);
 
  private:
   // Select model according to scenes, it must execute before Run()
-  void SelectModel(const std::string& scene="pedestrian",
-                   const bool tiny_obj=false,
-                   const bool is_mtmct=false);
+  void SelectModel(const std::string& scene = "pedestrian",
+                   const bool tiny_obj = false,
+                   const bool is_mtmct = false);
   void InitPredictor();
 
   std::shared_ptr<PaddleDetection::JDEPredictor> jde_sct_;
@@ -111,4 +118,6 @@ class Pipeline {
   bool save_result_ = false;
 };
 
-} // namespace PaddleDetection
+}  // namespace PaddleDetection
+
+#endif  // DEPLOY_PPTRACKING_INCLUDE_PIPELINE_H_

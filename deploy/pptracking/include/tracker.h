@@ -15,49 +15,58 @@
 // The code is based on:
 // https://github.com/CnybTseng/JDE/blob/master/platforms/common/jdetracker.h
 // Ths copyright of CnybTseng/JDE is as follows:
-// MIT License 
+// MIT License
 
 #pragma once
 
 #include <map>
 #include <vector>
-#include <opencv2/opencv.hpp>
 
-#include "trajectory.h"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include "include/trajectory.h"
 
 namespace PaddleDetection {
 
 typedef std::map<int, int> Match;
 typedef std::map<int, int>::iterator MatchIterator;
 
-struct Track
-{
-    int id;
-    float score;
-    cv::Vec4f ltrb;
+struct Track {
+  int id;
+  float score;
+  cv::Vec4f ltrb;
 };
 
-class JDETracker
-{
-public:
-    static JDETracker *instance(void);
-    virtual bool update(const cv::Mat &dets, const cv::Mat &emb, std::vector<Track> &tracks);
-private:
-    JDETracker(void);
-    virtual ~JDETracker(void) {}
-    cv::Mat motion_distance(const TrajectoryPtrPool &a, const TrajectoryPool &b);
-    void linear_assignment(const cv::Mat &cost, float cost_limit, Match &matches,
-        std::vector<int> &mismatch_row, std::vector<int> &mismatch_col);
-    void remove_duplicate_trajectory(TrajectoryPool &a, TrajectoryPool &b, float iou_thresh=0.15f);
-private:
-    static JDETracker *me;
-    int timestamp;
-    TrajectoryPool tracked_trajectories;
-    TrajectoryPool lost_trajectories;
-    TrajectoryPool removed_trajectories;
-    int max_lost_time;
-    float lambda;
-    float det_thresh;
+class JDETracker {
+ public:
+  static JDETracker *instance(void);
+  virtual bool update(const cv::Mat &dets,
+                      const cv::Mat &emb,
+                      std::vector<Track> *tracks);
+
+ private:
+  JDETracker(void);
+  virtual ~JDETracker(void) {}
+  cv::Mat motion_distance(const TrajectoryPtrPool &a, const TrajectoryPool &b);
+  void linear_assignment(const cv::Mat &cost,
+                         float cost_limit,
+                         Match *matches,
+                         std::vector<int> *mismatch_row,
+                         std::vector<int> *mismatch_col);
+  void remove_duplicate_trajectory(TrajectoryPool *a,
+                                   TrajectoryPool *b,
+                                   float iou_thresh = 0.15f);
+
+ private:
+  static JDETracker *me;
+  int timestamp;
+  TrajectoryPool tracked_trajectories;
+  TrajectoryPool lost_trajectories;
+  TrajectoryPool removed_trajectories;
+  int max_lost_time;
+  float lambda;
+  float det_thresh;
 };
 
-} // namespace PaddleDetection
+}  // namespace PaddleDetection

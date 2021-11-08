@@ -14,57 +14,60 @@
 
 #include <sstream>
 // for setprecision
-#include <iomanip>
 #include <chrono>
+#include <iomanip>
 #include "include/postprocess.h"
 
 namespace PaddleDetection {
 
 cv::Scalar GetColor(int idx) {
   idx = idx * 3;
-  cv::Scalar color = cv::Scalar((37 * idx) % 255, 
-                                (17 * idx) % 255, 
-                                (29 * idx) % 255);
+  cv::Scalar color =
+      cv::Scalar((37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255);
   return color;
 }
 
 cv::Mat VisualizeTrackResult(const cv::Mat& img,
-                        const MOTResult& results,
-                        const float fps, const int frame_id) {
+                             const MOTResult& results,
+                             const float fps,
+                             const int frame_id) {
   cv::Mat vis_img = img.clone();
   int im_h = img.rows;
   int im_w = img.cols;
-  float text_scale = std::max(1, int(im_w / 1600.));
+  float text_scale = std::max(1, static_cast<int>(im_w / 1600.));
   float text_thickness = 2.;
-  float line_thickness = std::max(1, int(im_w / 500.));
+  float line_thickness = std::max(1, static_cast<int>(im_w / 500.));
 
   std::ostringstream oss;
   oss << std::setiosflags(std::ios::fixed) << std::setprecision(4);
-  oss << "frame: " << frame_id<<" ";
-  oss << "fps: " << fps<<" ";
+  oss << "frame: " << frame_id << " ";
+  oss << "fps: " << fps << " ";
   oss << "num: " << results.size();
   std::string text = oss.str();
 
   cv::Point origin;
   origin.x = 0;
-  origin.y = int(15 * text_scale);
-  cv::putText(
-        vis_img,
-        text,
-        origin,
-        cv::FONT_HERSHEY_PLAIN,
-        text_scale, (0, 0, 255), 2);
+  origin.y = static_cast<int>(15 * text_scale);
+  cv::putText(vis_img,
+              text,
+              origin,
+              cv::FONT_HERSHEY_PLAIN,
+              text_scale,
+              (0, 0, 255),
+              2);
 
   for (int i = 0; i < results.size(); ++i) {
     const int obj_id = results[i].ids;
     const float score = results[i].score;
-    
+
     cv::Scalar color = GetColor(obj_id);
 
     cv::Point pt1 = cv::Point(results[i].rects.left, results[i].rects.top);
     cv::Point pt2 = cv::Point(results[i].rects.right, results[i].rects.bottom);
-    cv::Point id_pt = cv::Point(results[i].rects.left, results[i].rects.top + 10);
-    cv::Point score_pt = cv::Point(results[i].rects.left, results[i].rects.top - 10);
+    cv::Point id_pt =
+        cv::Point(results[i].rects.left, results[i].rects.top + 10);
+    cv::Point score_pt =
+        cv::Point(results[i].rects.left, results[i].rects.top - 10);
     cv::rectangle(vis_img, pt1, pt2, color, line_thickness);
 
     std::ostringstream idoss;
@@ -92,19 +95,21 @@ cv::Mat VisualizeTrackResult(const cv::Mat& img,
                 text_scale,
                 cv::Scalar(0, 255, 255),
                 text_thickness);
-   
   }
   return vis_img;
 }
 
-void FlowStatistic(const MOTResult& results, const int frame_id,
-                   std::vector<int>* count_list, 
-                   std::vector<int>* in_count_list, 
+void FlowStatistic(const MOTResult& results,
+                   const int frame_id,
+                   std::vector<int>* count_list,
+                   std::vector<int>* in_count_list,
                    std::vector<int>* out_count_list) {
   throw "Not Implement";
 }
 
-void SaveMOTResult(const MOTResult& results, const int frame_id, std::vector<std::string>& records) {
+void SaveMOTResult(const MOTResult& results,
+                   const int frame_id,
+                   std::vector<std::string>* records) {
   // result format: frame_id, track_id, x1, y1, w, h
   std::string record;
   for (int i = 0; i < results.size(); ++i) {
@@ -122,12 +127,11 @@ void SaveMOTResult(const MOTResult& results, const int frame_id, std::vector<std
       continue;
     }
     std::ostringstream os;
-    os << frame_id << " " << ids << ""
-       << x1 << " " << y1 << " "
-       << w << " " << h <<"\n";
+    os << frame_id << " " << ids << "" << x1 << " " << y1 << " " << w << " "
+       << h << "\n";
     record = os.str();
-    records.push_back(record);
+    records->push_back(record);
   }
 }
 
-} // namespace PaddleDetection
+}  // namespace PaddleDetection

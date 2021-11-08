@@ -14,37 +14,37 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <utility>
 #include <ctime>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
-#include "paddle_inference_api.h" // NOLINT
+#include "paddle_inference_api.h"  // NOLINT
 
-#include "include/preprocess_op.h"
 #include "include/config_parser.h"
+#include "include/preprocess_op.h"
 #include "include/utils.h"
 
-using namespace paddle_infer;
+using namespace paddle_infer;  // NOLINT
 
 namespace PaddleDetection {
 
 class JDEPredictor {
  public:
-  explicit JDEPredictor(const std::string& device="CPU",
-                         const std::string& model_dir="",
-                         const double threshold=-1.,
-                         const std::string& run_mode="fluid",
-                         const int gpu_id=0,
-                         const bool use_mkldnn=false,
-                         const int cpu_threads=1,
-                         bool trt_calib_mode=false,
-                         const int min_box_area=200) {
+  explicit JDEPredictor(const std::string& device = "CPU",
+                        const std::string& model_dir = "",
+                        const double threshold = -1.,
+                        const std::string& run_mode = "fluid",
+                        const int gpu_id = 0,
+                        const bool use_mkldnn = false,
+                        const int cpu_threads = 1,
+                        bool trt_calib_mode = false,
+                        const int min_box_area = 200) {
     this->device_ = device;
     this->gpu_id_ = gpu_id;
     this->use_mkldnn_ = use_mkldnn;
@@ -60,15 +60,14 @@ class JDEPredictor {
   }
 
   // Load Paddle inference model
-  void LoadModel(
-    const std::string& model_dir,
-    const std::string& run_mode = "fluid");
+  void LoadModel(const std::string& model_dir,
+                 const std::string& run_mode = "fluid");
 
   // Run predictor
   void Predict(const std::vector<cv::Mat> imgs,
-      const double threshold = 0.5,
-      MOTResult* result = nullptr,
-      std::vector<double>* times = nullptr);
+               const double threshold = 0.5,
+               MOTResult* result = nullptr,
+               std::vector<double>* times = nullptr);
 
  private:
   std::string device_ = "CPU";
@@ -82,9 +81,7 @@ class JDEPredictor {
   // Preprocess image and copy data to input buffer
   void Preprocess(const cv::Mat& image_mat);
   // Postprocess result
-  void Postprocess(
-      const cv::Mat dets, const cv::Mat emb,
-      MOTResult* result);
+  void Postprocess(const cv::Mat dets, const cv::Mat emb, MOTResult* result);
 
   std::shared_ptr<Predictor> predictor_;
   Preprocessor preprocessor_;
