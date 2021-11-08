@@ -53,7 +53,7 @@ class Pipeline {
                     const std::string& scene = "pedestrian",
                     const bool tiny_obj = false,
                     const bool is_mtmct = false,
-                    const int secs_interval=10) {
+                    const int secs_interval = 10) {
     std::vector<std::string> input;
     this->input_ = input;
     this->device_ = device;
