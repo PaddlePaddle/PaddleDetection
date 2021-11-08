@@ -17,13 +17,11 @@ import cv2
 import time
 import paddle
 import numpy as np
-from .visualization import plot_tracking_dict
 
 __all__ = [
     'MOTTimer',
     'Detection',
     'write_mot_results',
-    'save_vis_results',
     'load_det_results',
     'preprocess_reid',
     'get_crops',
@@ -142,33 +140,6 @@ def write_mot_results(filename, results, data_type='mot', num_classes=1):
                     cls_id=cls_id)
                 f.write(line)
     print('MOT results save in {}'.format(filename))
-
-
-def save_vis_results(data,
-                     frame_id,
-                     online_ids,
-                     online_tlwhs,
-                     online_scores,
-                     average_time,
-                     show_image,
-                     save_dir,
-                     num_classes=1):
-    if show_image or save_dir is not None:
-        assert 'ori_image' in data
-        img0 = data['ori_image'].numpy()[0]
-        online_im = plot_tracking_dict(
-            img0,
-            num_classes,
-            online_tlwhs,
-            online_ids,
-            online_scores,
-            frame_id=frame_id,
-            fps=1. / average_time)
-    if show_image:
-        cv2.imshow('online_im', online_im)
-    if save_dir is not None:
-        cv2.imwrite(
-            os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), online_im)
 
 
 def load_det_results(det_file, num_frames):

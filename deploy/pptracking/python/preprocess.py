@@ -1,4 +1,4 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -160,6 +160,35 @@ class Permute(object):
         """
         im = im.transpose((2, 0, 1)).copy()
         return im, im_info
+
+
+class PadStride(object):
+    """ padding image for model with FPN, instead PadBatch(pad_to_stride) in original config
+    Args:
+        stride (bool): model with FPN need image shape % stride == 0
+    """
+
+    def __init__(self, stride=0):
+        self.coarsest_stride = stride
+
+    def __call__(self, im, im_info):
+        """
+        Args:
+            im (np.ndarray): image (np.ndarray)
+            im_info (dict): info of image
+        Returns:
+            im (np.ndarray):  processed image (np.ndarray)
+            im_info (dict): info of processed image
+        """
+        coarsest_stride = self.coarsest_stride
+        if coarsest_stride <= 0:
+            return im, im_info
+        im_c, im_h, im_w = im.shape
+        pad_h = int(np.ceil(float(im_h) / coarsest_stride) * coarsest_stride)
+        pad_w = int(np.ceil(float(im_w) / coarsest_stride) * coarsest_stride)
+        padding_im = np.zeros((im_c, pad_h, pad_w), dtype=np.float32)
+        padding_im[:, :im_h, :im_w] = im
+        return padding_im, im_info
 
 
 class LetterBoxResize(object):

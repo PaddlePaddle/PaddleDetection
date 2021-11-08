@@ -15,11 +15,9 @@
 from . import matching
 from . import tracker
 from . import motion
-from . import visualization
 from . import utils
 
 from .matching import *
 from .tracker import *
 from .motion import *
-from .visualization import *
 from .utils import *

@@ -66,11 +66,6 @@ def argsparser():
         help="Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU."
     )
     parser.add_argument(
-        "--use_gpu",
-        type=ast.literal_eval,
-        default=False,
-        help="Deprecated, please use `--device`.")
-    parser.add_argument(
         "--run_benchmark",
         type=ast.literal_eval,
         default=False,
@@ -109,10 +104,6 @@ def argsparser():
         action='store_true',
         help='Save tracking results (txt).')
     parser.add_argument(
-        '--save_mot_txt_per_img',
-        action='store_true',
-        help='Save tracking results (txt) for each image.')
-    parser.add_argument(
         '--scaled',
         type=bool,
         default=False,
@@ -129,11 +120,6 @@ def argsparser():
         type=int,
         default=50,
         help="max batch_size for reid model inference.")
-    parser.add_argument(
-        '--use_dark',
-        type=bool,
-        default=True,
-        help='whether to use darkpose to get better keypoint position predict ')
     return parser
 
 

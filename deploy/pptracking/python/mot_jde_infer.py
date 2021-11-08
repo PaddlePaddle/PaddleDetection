@@ -26,9 +26,9 @@ from paddle.inference import create_predictor
 from utils import argsparser, Timer, get_current_memory_mb
 from infer import Detector, get_test_images, print_arguments, PredictConfig
 from benchmark_utils import PaddleInferBenchmark
+from visualize import plot_tracking_dict
 
 from mot.tracker import JDETracker
-from mot.visualization import plot_tracking_dict
 from mot.utils import MOTTimer, write_mot_results
 
 # Global dictionary
