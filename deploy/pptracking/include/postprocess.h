@@ -14,15 +14,16 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <utility>
 #include <ctime>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+#include <set>
 
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 #include "include/utils.h"
 
@@ -33,13 +34,17 @@ cv::Scalar GetColor(int idx);
 
 // Visualize Tracking Results
 cv::Mat VisualizeTrackResult(const cv::Mat& img,
-                     const MOTResult& results,
-                     const float fps, const int frame_id);
+                             const MOTResult& results,
+                             const float fps,
+                             const int frame_id);
 
 // Pedestrian/Vehicle Counting
-void FlowStatistic(const MOTResult& results, const int frame_id,
-                   const int secs_interval, const bool count,
-                   const int video_fps, const Rect entrance,
+void FlowStatistic(const MOTResult& results,
+                   const int frame_id,
+                   const int secs_interval,
+                   const bool count,
+                   const int video_fps,
+                   const Rect entrance,
                    std::set<int>* count_set,
                    std::set<int>* interval_count_set,
                    std::vector<int>* in_count_list,
@@ -47,7 +52,10 @@ void FlowStatistic(const MOTResult& results, const int frame_id,
                    std::map<int, std::vector<float>>* prev_center,
                    std::vector<std::string>* records);
 
-// Save Tracking Results
-void SaveMOTResult(const MOTResult& results, const int frame_id, std::vector<std::string>& records);
 
-} // namespace PaddleDetection
+// Save Tracking Results
+void SaveMOTResult(const MOTResult& results,
+                   const int frame_id,
+                   std::vector<std::string>* records);
+
+}  // namespace PaddleDetection
