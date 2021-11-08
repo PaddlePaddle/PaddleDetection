@@ -13,12 +13,11 @@
 // limitations under the License.
 #include <sstream>
 // for setprecision
-#include <iomanip>
 #include <chrono>
+#include <iomanip>
 #include "include/sde_predictor.h"
 
-
-using namespace paddle_infer;
+using namespace paddle_infer;  // NOLINT
 
 namespace PaddleDetection {
 
@@ -29,21 +28,18 @@ void SDEPredictor::LoadModel(const std::string& det_model_dir,
   throw "Not Implement";
 }
 
+void SDEPredictor::Preprocess(const cv::Mat& ori_im) { throw "Not Implement"; }
 
-void SDEPredictor::Preprocess(const cv::Mat& ori_im) {
-  throw "Not Implement";
-}
-
-void SDEPredictor::Postprocess(
-    const cv::Mat dets, const cv::Mat emb,
-    MOTResult* result) {
+void SDEPredictor::Postprocess(const cv::Mat dets,
+                               const cv::Mat emb,
+                               MOTResult* result) {
   throw "Not Implement";
 }
 
 void SDEPredictor::Predict(const std::vector<cv::Mat> imgs,
-      const double threshold,
-      MOTResult* result,
-      std::vector<double>* times) {
+                           const double threshold,
+                           MOTResult* result,
+                           std::vector<double>* times) {
   throw "Not Implement";
 }
 

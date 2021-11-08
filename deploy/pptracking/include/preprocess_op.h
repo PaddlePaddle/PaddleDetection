@@ -17,16 +17,16 @@
 #include <glog/logging.h>
 #include <yaml-cpp/yaml.h>
 
-#include <vector>
-#include <string>
-#include <utility>
-#include <memory>
-#include <unordered_map>
 #include <iostream>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 namespace PaddleDetection {
 
@@ -40,7 +40,7 @@ class ImageBlob {
   // in net data shape(after pad)
   std::vector<float> in_net_shape_;
   // Evaluation image width and height
-  //std::vector<float>  eval_im_size_f_;
+  // std::vector<float>  eval_im_size_f_;
   // Scale factor for image size to origin image size
   std::vector<float> scale_factor_;
 };
@@ -52,7 +52,7 @@ class PreprocessOp {
   virtual void Run(cv::Mat* im, ImageBlob* data) = 0;
 };
 
-class InitInfo : public PreprocessOp{
+class InitInfo : public PreprocessOp {
  public:
   virtual void Init(const YAML::Node& item) {}
   virtual void Run(cv::Mat* im, ImageBlob* data);
@@ -79,7 +79,6 @@ class Permute : public PreprocessOp {
  public:
   virtual void Init(const YAML::Node& item) {}
   virtual void Run(cv::Mat* im, ImageBlob* data);
-
 };
 
 class Resize : public PreprocessOp {
@@ -88,7 +87,7 @@ class Resize : public PreprocessOp {
     interp_ = item["interp"].as<int>();
     keep_ratio_ = item["keep_ratio"].as<bool>();
     target_size_ = item["target_size"].as<std::vector<int>>();
- }
+  }
 
   // Compute best resize scale for x-dimension, y-dimension
   std::pair<float, float> GenerateScale(const cv::Mat& im);
@@ -106,7 +105,7 @@ class LetterBoxResize : public PreprocessOp {
  public:
   virtual void Init(const YAML::Node& item) {
     target_size_ = item["target_size"].as<std::vector<int>>();
- }
+  }
 
   float GenerateScale(const cv::Mat& im);
 
@@ -154,8 +153,9 @@ class Preprocessor {
     } else if (name == "PadStride") {
       // use PadStride instead of PadBatch
       return std::make_shared<PadStride>();
-    } 
-    std::cerr << "can not find function of OP: " << name << " and return: nullptr" << std::endl;
+    }
+    std::cerr << "can not find function of OP: " << name
+              << " and return: nullptr" << std::endl;
     return nullptr;
   }
 
@@ -169,4 +169,3 @@ class Preprocessor {
 };
 
 }  // namespace PaddleDetection
-

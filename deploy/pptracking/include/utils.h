@@ -14,31 +14,29 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-#include <utility>
+#include <algorithm>
 #include <ctime>
 #include <numeric>
-#include <algorithm>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "include/tracker.h"
 
 namespace PaddleDetection {
 
-struct Rect
-{
-    float left;
-    float top;
-    float right;
-    float bottom;
+struct Rect {
+  float left;
+  float top;
+  float right;
+  float bottom;
 };
 
-struct MOTTrack
-{
-    int ids;
-    float score;
-    Rect rects;
-    int class_id = -1;
+struct MOTTrack {
+  int ids;
+  float score;
+  Rect rects;
+  int class_id = -1;
 };
 
 typedef std::vector<MOTTrack> MOTResult;
