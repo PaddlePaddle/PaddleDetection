@@ -195,6 +195,8 @@ void Pipeline::PredictMOT(const std::string& video_path) {
 
     cv::Mat out_img = PaddleDetection::VisualizeTrackResult(
         frame, result, 1000. / times, frame_id);
+    
+   // TODO: the entrance line can be set by users
     PaddleDetection::FlowStatistic(
         result, frame_id, secs_interval_, count_, video_fps, entrance,
         &id_set, &interval_id_set, &in_id_list, &out_id_list,

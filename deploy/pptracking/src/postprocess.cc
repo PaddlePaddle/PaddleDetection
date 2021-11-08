@@ -124,6 +124,8 @@ void FlowStatistic(const MOTResult& results,
     // If a person was in the below the horizontal center line 
     // at the previous frame and locates in the below the line at the current frame,
     // the out number is increased by one.
+    // TODO: if the entrance is not the horizontal center line,
+    // the counting method should be optimized.
     
     float entrance_y = entrance.top; 
     for (const auto& result : results) {
