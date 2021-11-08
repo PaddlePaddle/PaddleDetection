@@ -160,10 +160,10 @@ void Pipeline::PredictMOT(const std::string& video_path) {
 
   PaddleDetection::MOTResult result;
   std::vector<double> det_times(3);
-  std::set<int> count_set;
-  std::set<int> interval_count_set;
-  std::vector<int> in_count_list;
-  std::vector<int> out_count_list;
+  std::set<int> id_set;
+  std::set<int> interval_id_set;
+  std::vector<int> in_id_list;
+  std::vector<int> out_id_list;
   std::map<int, std::vector<float>> prev_center;
   Rect entrance = {0, static_cast<float>(video_height) / 2,
                    static_cast<float>(video_width),
@@ -197,7 +197,7 @@ void Pipeline::PredictMOT(const std::string& video_path) {
         frame, result, 1000. / times, frame_id);
     PaddleDetection::FlowStatistic(
         result, frame_id, secs_interval_, count_, video_fps, entrance,
-        &count_set, &interval_count_set, &in_count_list, &out_count_list,
+        &id_set, &interval_id_set, &in_id_list, &out_id_list,
         &prev_center, &flow_records);
 
     if (save_result_) {
@@ -251,10 +251,10 @@ void Pipeline::RunMOTStream(const cv::Mat img,
                             const Rect entrance,
                             cv::Mat out_img,
                             std::vector<std::string>* records,
-                            std::set<int>* count_set,
-                            std::set<int>* interval_count_set,
-                            std::vector<int>* in_count_list,
-                            std::vector<int>* out_count_list,
+                            std::set<int>* id_set,
+                            std::set<int>* interval_id_set,
+                            std::vector<int>* in_id_list,
+                            std::vector<int>* out_id_list,
                             std::map<int, std::vector<float>>* prev_center,
                             std::vector<std::string>* flow_records) {
   PaddleDetection::MOTResult result;
@@ -278,9 +278,9 @@ void Pipeline::RunMOTStream(const cv::Mat img,
   // Count total number
   // Count in & out number
   PaddleDetection::FlowStatistic(result, frame_id, secs_interval_, count_,
-                                 video_fps, entrance, count_set,
-                                 interval_count_set, in_count_list,
-                                 out_count_list, prev_center, flow_records);
+                                 video_fps, entrance, id_set,
+                                 interval_id_set, in_id_list,
+                                 out_id_list, prev_center, flow_records);
 
   PrintBenchmarkLog(det_times, frame_id);
   if (save_result_) {

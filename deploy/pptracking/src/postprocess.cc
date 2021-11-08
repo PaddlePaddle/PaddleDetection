@@ -106,14 +106,14 @@ void FlowStatistic(const MOTResult& results,
                    const bool count,
                    const int video_fps,
                    const Rect entrance, 
-                   std::set<int>* count_set,
-                   std::set<int>* interval_count_set, 
-                   std::vector<int>* in_count_list, 
-                   std::vector<int>* out_count_list,
+                   std::set<int>* id_set,
+                   std::set<int>* interval_id_set, 
+                   std::vector<int>* in_id_list, 
+                   std::vector<int>* out_id_list,
                    std::map<int, std::vector<float>>* prev_center,
                    std::vector<std::string>* records) {
   if (frame_id == 0)
-    interval_count_set->clear();
+    interval_id_set->clear();
   
   if (count) {
     // Count in and out number: 
@@ -134,10 +134,10 @@ void FlowStatistic(const MOTResult& results,
       iter = prev_center->find(ids);
       if (iter != prev_center->end()) {
         if (iter->second[1] <= entrance_y && center_y > entrance_y) {
-          in_count_list->push_back(ids);
+          in_id_list->push_back(ids);
         }
         if (iter->second[1] >= entrance_y && center_y < entrance_y) {
-          out_count_list->push_back(ids);
+          out_id_list->push_back(ids);
         }
         (*prev_center)[ids][0] = center_x;
         (*prev_center)[ids][1] = center_y;
@@ -150,25 +150,25 @@ void FlowStatistic(const MOTResult& results,
 
   // Count totol number, number at a manual-setting interval
   for (const auto& result : results) {
-    count_set->insert(result.ids);
-    interval_count_set->insert(result.ids);
+    id_set->insert(result.ids);
+    interval_id_set->insert(result.ids);
   }
 
   std::ostringstream os;
   os << "Frame id: " << frame_id
-     << ", Total count: " << count_set->size();
+     << ", Total count: " << id_set->size();
   if (count) {
-    os << ", In count: " << in_count_list->size()
-       << ", Out count: " << out_count_list->size();
+    os << ", In count: " << in_id_list->size()
+       << ", Out count: " << out_id_list->size();
   }
 
   // Reset counting at the interval beginning
   int curr_interval_count = -1;
   if (frame_id % video_fps == 0 && frame_id / video_fps % secs_interval == 0) {
-    curr_interval_count = interval_count_set->size();
+    curr_interval_count = interval_id_set->size();
     os << ", Count during " << secs_interval
        << " secs: " << curr_interval_count;
-    interval_count_set->clear();
+    interval_id_set->clear();
   }
   os << "\n";
   std::string record = os.str();
