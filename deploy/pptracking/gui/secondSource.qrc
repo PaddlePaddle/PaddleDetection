@@ -1,0 +1,16 @@
+<RCC>
+  <qresource prefix="1">
+    <file>source/second/menu_car.PNG</file>
+    <file>source/second/menu_muti_object.PNG</file>
+    <file>source/second/menu_pedestrian.PNG</file>
+    <file>source/second/pause.png</file>
+    <file>source/second/start.png</file>
+    <file>source/second/ToolTip.PNG</file>
+    <file>source/second/light_down.png</file>
+    <file>source/second/light_up.png</file>
+    <file>source/second/加号.png</file>
+    <file>source/second/normal_triangle_down.png</file>
+    <file>source/second/normal_triangle_up.png</file>
+    <file>source/second/加号@2x.png</file>
+  </qresource>
+</RCC>

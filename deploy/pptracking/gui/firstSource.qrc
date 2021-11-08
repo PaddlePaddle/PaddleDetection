@@ -1,0 +1,33 @@
+<RCC>
+  <qresource prefix="1">
+    <file>source/first/small.PNG</file>
+    <file>source/first/1.PNG</file>
+    <file>source/first/icon／车流量统计.png</file>
+    <file>source/first/icon／车流量统计@2x.png</file>
+    <file>source/first/icon／单镜头.png</file>
+    <file>source/first/icon／单镜头@2x.png</file>
+    <file>source/first/icon／轨迹跟踪.png</file>
+    <file>source/first/icon／轨迹跟踪@2x.png</file>
+    <file>source/first/icon／跨镜头.png</file>
+    <file>source/first/icon／跨镜头@2x.png</file>
+    <file>source/first/icon／人流量统计.png</file>
+    <file>source/first/icon／人流量统计@2x.png</file>
+    <file>source/first/icon／小目标跟踪.png</file>
+    <file>source/first/icon／小目标跟踪@2x.png</file>
+    <file>source/first/icon／行人车辆检测.png</file>
+    <file>source/first/icon／行人车辆检测@2x.png</file>
+    <file>source/first/icon-车辆跟踪.png</file>
+    <file>source/first/icon-车辆跟踪@2x.png</file>
+    <file>source/first/icon-多类别跟踪.png</file>
+    <file>source/first/icon-多类别跟踪@2x.png</file>
+    <file>source/first/icon-行人跟踪.png</file>
+    <file>source/first/icon-行人跟踪@2x.png</file>
+    <file>source/first/PP.PNG</file>
+    <file>source/first/播放(1).png</file>
+    <file>source/first/播放(2).png</file>
+    <file>source/first/播放.png</file>
+    <file>source/first/播放@2x(1).png</file>
+    <file>source/first/播放@2x(2).png</file>
+    <file>source/first/播放@2x.png</file>
+  </qresource>
+</RCC>

@@ -1,0 +1,1449 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1919</width>
+    <height>1079</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="styleSheet">
+    <string notr="true">QWidget{
+background:#F9F9F9;
+}</string>
+   </property>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>171</width>
+      <height>81</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap resource="../firstSource.qrc">:/1/source/first/PP.PNG</pixmap>
+    </property>
+    <property name="scaledContents">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>1920</width>
+      <height>96</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{
+width: 1920px;
+height: 96px;
+background: #F9F9F9;
+box-shadow: 0px 4px 0px 0px rgba(221, 221, 221, 0.3);
+}</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>212</width>
+      <height>112</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{
+width: 212px;
+height: 112px;
+background: linear-gradient(270deg, #5453FF 0%, #553BD2 100%);
+box-shadow: 0px 0px 20px 0px rgba(109, 80, 249, 0.4);
+}</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap resource="../firstSource.qrc">:/1/source/first/1.PNG</pixmap>
+    </property>
+    <property name="scaledContents">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>256</x>
+      <y>22</y>
+      <width>651</width>
+      <height>52</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{
+width: 592px;
+height: 52px;
+font-size: 36px;
+font-family: AlibabaPuHuiTi_2_75_SemiBold;
+background: #F9F9F9;
+color: #4E4EF2;
+line-height: 52px;
+font-weight: bold;
+}</string>
+    </property>
+    <property name="text">
+     <string>PP-Tracking 行人/车辆实时跟踪系统</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_5">
+    <property name="geometry">
+     <rect>
+      <x>168</x>
+      <y>188</y>
+      <width>121</width>
+      <height>32</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{
+width: 107px;
+height: 32px;
+font-size: 24px;
+font-family: AlibabaPuHuiTi_2_85_Bold;
+color: #888888;
+line-height: 32px;
+font-weight:bold
+}</string>
+    </property>
+    <property name="text">
+     <string>行人跟踪/</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_6">
+    <property name="geometry">
+     <rect>
+      <x>283</x>
+      <y>168</y>
+      <width>251</width>
+      <height>52</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{
+width: 237px;
+height: 52px;
+font-size: 48px;
+font-family: AlibabaPuHuiTi_2_55_Regular;
+color: #333333;
+line-height: 52px;
+font-weight:bold;
+}</string>
+    </property>
+    <property name="text">
+     <string>单镜头跟踪</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="widget" native="true">
+    <property name="geometry">
+     <rect>
+      <x>168</x>
+      <y>250</y>
+      <width>1584</width>
+      <height>830</height>
+     </rect>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::LeftToRight</enum>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QWidget{
+width: 1584px;
+height: 830px;
+background: #FFFFFF;
+}</string>
+    </property>
+    <widget class="QPushButton" name="pushButton">
+     <property name="geometry">
+      <rect>
+       <x>60</x>
+       <y>40</y>
+       <width>120</width>
+       <height>44</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+width: 120px;
+height: 44px;
+background: #F5F5F5;
+border-radius: 4px;
+border: 1px solid #CCCCCC;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #B8B8B8;
+line-height: 26px;
+font-weight:bold
+}</string>
+     </property>
+     <property name="text">
+      <string>开始运行</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_2">
+     <property name="geometry">
+      <rect>
+       <x>188</x>
+       <y>40</y>
+       <width>120</width>
+       <height>44</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+width: 120px;
+height: 44px;
+background: #4E4EF2;
+border-radius: 4px;
+
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #FFFFFF;
+line-height: 26px;
+font-weight:bold
+}</string>
+     </property>
+     <property name="text">
+      <string>暂停运行</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_3">
+     <property name="geometry">
+      <rect>
+       <x>316</x>
+       <y>40</y>
+       <width>120</width>
+       <height>44</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+width: 120px;
+height: 44px;
+background: #4E4EF2;
+border-radius: 4px;
+width: 71px;
+height: 26px;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #FFFFFF;
+line-height: 26px;
+font-weight:bold
+}</string>
+     </property>
+     <property name="text">
+      <string>停止运行</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_4">
+     <property name="geometry">
+      <rect>
+       <x>444</x>
+       <y>40</y>
+       <width>120</width>
+       <height>44</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+width: 120px;
+height: 44px;
+background: #4E4EF2;
+border-radius: 4px;
+width: 71px;
+height: 26px;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #FFFFFF;
+line-height: 26px;
+font-weight:bold
+}</string>
+     </property>
+     <property name="text">
+      <string>取消轨迹</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_7">
+     <property name="geometry">
+      <rect>
+       <x>60</x>
+       <y>108</y>
+       <width>960</width>
+       <height>540</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QLabel{
+width: 960px;
+height: 540px;
+}</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_8">
+     <property name="geometry">
+      <rect>
+       <x>60</x>
+       <y>679</y>
+       <width>111</width>
+       <height>36</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QLabel{
+width: 119px;
+height: 36px;
+font-size: 24px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #333333;
+line-height: 36px;
+font-weight:bold;
+}</string>
+     </property>
+     <property name="text">
+      <string>阙值调试：</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_12">
+     <property name="geometry">
+      <rect>
+       <x>608</x>
+       <y>679</y>
+       <width>111</width>
+       <height>36</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QLabel{
+width: 119px;
+height: 36px;
+font-size: 24px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #333333;
+line-height: 36px;
+font-weight:bold;
+}</string>
+     </property>
+     <property name="text">
+      <string>运行信息</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_13">
+     <property name="geometry">
+      <rect>
+       <x>727</x>
+       <y>684</y>
+       <width>89</width>
+       <height>26</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QLabel{
+width: 89px;
+height: 26px;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #888888;
+line-height: 26px;
+font-weight:bold;
+}</string>
+     </property>
+     <property name="text">
+      <string>检测进度：</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_8">
+     <property name="geometry">
+      <rect>
+       <x>1251</x>
+       <y>40</y>
+       <width>126</width>
+       <height>44</height>
+      </rect>
+     </property>
+     <property name="whatsThis">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;3411212&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+width: 126px;
+                height: 44px;
+                background: #FFFFFF;
+                border-radius: 4px;
+                border: 1px solid #4E4EF2;
+                font-size: 18px;
+                font-family: AlibabaPuHuiTi_2_65_Medium;
+                color: #4E4EF2;
+                line-height: 26px;
+                font-weight:bold;
+}</string>
+     </property>
+     <property name="text">
+      <string>导出txt文件</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_9">
+     <property name="geometry">
+      <rect>
+       <x>1385</x>
+       <y>40</y>
+       <width>139</width>
+       <height>44</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">width: 126px;
+                height: 44px;
+                background: #FFFFFF;
+                border-radius: 4px;
+                border: 1px solid #4E4EF2;
+                font-size: 18px;
+                font-family: AlibabaPuHuiTi_2_65_Medium;
+                color: #4E4EF2;
+                line-height: 26px;
+                font-weight:bold;</string>
+     </property>
+     <property name="text">
+      <string>导出视频结果</string>
+     </property>
+    </widget>
+    <widget class="QWidget" name="widget_2" native="true">
+     <property name="geometry">
+      <rect>
+       <x>1050</x>
+       <y>108</y>
+       <width>474</width>
+       <height>190</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QWidget{
+width: 474px;
+height: 190px;
+background: #FFFFFF;
+box-shadow: 0px 0px 50px 0px rgba(0, 0, 0, 0.06);
+border-radius: 12px;
+border: 1px solid rgba(221, 221, 221, 0.3);
+}</string>
+     </property>
+     <widget class="QLabel" name="label_14">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>16</y>
+        <width>111</width>
+        <height>36</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLabel{
+width: 95px;
+height: 36px;
+font-size: 24px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #333333;
+line-height: 36px;
+
+border-radius: 0px;
+border: 0px solid rgba(221, 221, 221, 0.3);
+
+font-weight:bold;
+}</string>
+      </property>
+      <property name="text">
+       <string>数据监测</string>
+      </property>
+     </widget>
+     <widget class="QWidget" name="widget_4" native="true">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>68</y>
+        <width>134</width>
+        <height>102</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QWidget{
+width: 134px;
+height: 102px;
+background: #F9F9F9;
+border-radius: 8px;
+}</string>
+      </property>
+      <widget class="QLabel" name="label_25">
+       <property name="geometry">
+        <rect>
+         <x>16</x>
+         <y>16</y>
+         <width>111</width>
+         <height>26</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QLabel{
+width: 102px;
+height: 26px;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #888888;
+line-height: 26px;
+font-weight:bold;
+
+border-radius: 0px;
+border:0px
+}</string>
+       </property>
+       <property name="text">
+        <string>输入FPS(Hz)</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_26">
+       <property name="geometry">
+        <rect>
+         <x>16</x>
+         <y>50</y>
+         <width>101</width>
+         <height>36</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QLabel{
+width: 25px;
+height: 36px;
+font-size: 36px;
+font-family: AlibabaPuHuiTi_2_85_Bold;
+color: #333333;
+line-height: 36px;
+font-weight:bold;
+
+border-radius:0px;
+border:0px
+}</string>
+       </property>
+       <property name="text">
+        <string>-</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="widget_5" native="true">
+      <property name="geometry">
+       <rect>
+        <x>170</x>
+        <y>68</y>
+        <width>134</width>
+        <height>102</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QWidget{
+width: 134px;
+height: 102px;
+background: #F9F9F9;
+border-radius: 8px;
+}</string>
+      </property>
+      <widget class="QLabel" name="label_27">
+       <property name="geometry">
+        <rect>
+         <x>16</x>
+         <y>16</y>
+         <width>111</width>
+         <height>26</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QLabel{
+width: 102px;
+height: 26px;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #888888;
+line-height: 26px;
+font-weight:bold;
+
+border-radius: 0px;
+border:0px
+}</string>
+       </property>
+       <property name="text">
+        <string>检测用时(s)</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_28">
+       <property name="geometry">
+        <rect>
+         <x>16</x>
+         <y>50</y>
+         <width>101</width>
+         <height>36</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QLabel{
+width: 25px;
+height: 36px;
+font-size: 36px;
+font-family: AlibabaPuHuiTi_2_85_Bold;
+color: #333333;
+line-height: 36px;
+font-weight:bold;
+
+border-radius:0px;
+border:0px
+}</string>
+       </property>
+       <property name="text">
+        <string>-</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="widget_6" native="true">
+      <property name="geometry">
+       <rect>
+        <x>320</x>
+        <y>68</y>
+        <width>134</width>
+        <height>102</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QWidget{
+width: 134px;
+height: 102px;
+background: #F9F9F9;
+border-radius: 8px;
+}</string>
+      </property>
+      <widget class="QLabel" name="label_29">
+       <property name="geometry">
+        <rect>
+         <x>16</x>
+         <y>16</y>
+         <width>111</width>
+         <height>26</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QLabel{
+width: 102px;
+height: 26px;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #888888;
+line-height: 26px;
+font-weight:bold;
+
+border-radius: 0px;
+border:0px
+}</string>
+       </property>
+       <property name="text">
+        <string>总人数(人次)</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_30">
+       <property name="geometry">
+        <rect>
+         <x>16</x>
+         <y>50</y>
+         <width>101</width>
+         <height>36</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QLabel{
+width: 25px;
+height: 36px;
+font-size: 36px;
+font-family: AlibabaPuHuiTi_2_85_Bold;
+color: #333333;
+line-height: 36px;
+font-weight:bold;
+
+border-radius:0px;
+border:0px
+}</string>
+       </property>
+       <property name="text">
+        <string>-</string>
+       </property>
+      </widget>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="widget_3" native="true">
+     <property name="geometry">
+      <rect>
+       <x>1050</x>
+       <y>314</y>
+       <width>474</width>
+       <height>334</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QWidget{
+width: 474px;
+height: 334px;
+background: #FFFFFF;
+box-shadow: 0px 0px 50px 0px rgba(0, 0, 0, 0.06);
+border-radius: 12px;
+border: 1px solid rgba(221, 221, 221, 0.3);
+}
+</string>
+     </property>
+     <widget class="QLabel" name="label_15">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>16</y>
+        <width>141</width>
+        <height>36</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLabel{
+border-radius: 0px;
+border: 0px solid rgba(221, 221, 221, 0.3);
+font-weight:bold;
+width: 119px;
+height: 36px;
+font-size: 24px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #333333;
+line-height: 36px;
+}</string>
+      </property>
+      <property name="text">
+       <string>车流量监测</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton_10">
+      <property name="geometry">
+       <rect>
+        <x>334</x>
+        <y>14</y>
+        <width>120</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QPushButton{
+width: 120px;
+height: 40px;
+border-radius: 4px;
+border: 1px solid #4E4EF2;
+font-weight:bold;
+width: 80px;
+height: 24px;
+font-size: 16px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #4E4EF2;
+line-height: 24px;
+}</string>
+      </property>
+      <property name="text">
+       <string>开启出入口</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_16">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>281</y>
+        <width>111</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLabel{
+width: 111px;
+height: 26px;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_55_Regular;
+color: #333333;
+line-height: 26px;
+font-weight:bold;
+border-radius: 0px;
+border: 0px solid rgba(221, 221, 221, 0.3);
+}</string>
+      </property>
+      <property name="text">
+       <string>时段长度(s)：</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_20">
+      <property name="geometry">
+       <rect>
+        <x>250</x>
+        <y>284</y>
+        <width>131</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLabel{
+width: 111px;
+height: 26px;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_55_Regular;
+color: #333333;
+line-height: 26px;
+font-weight:bold;
+border-radius: 0px;
+border: 0px solid rgba(221, 221, 221, 0.3);
+}</string>
+      </property>
+      <property name="text">
+       <string>人流密度标准：</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_21">
+      <property name="geometry">
+       <rect>
+        <x>374</x>
+        <y>274</y>
+        <width>80</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLabel{
+width: 80px;
+height: 40px;
+background: #FFFFFF;
+border-radius: 4px;
+border: 1px solid #CCCCCC;
+
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #333333;
+line-height: 26px;
+font-weight:bold;
+}</string>
+      </property>
+      <property name="text">
+       <string>-</string>
+      </property>
+     </widget>
+     <widget class="QWidget" name="widget_7" native="true">
+      <property name="geometry">
+       <rect>
+        <x>315</x>
+        <y>68</y>
+        <width>139</width>
+        <height>102</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QWidget{
+width: 134px;
+height: 102px;
+background: #F9F9F9;
+border-radius: 8px;
+}</string>
+      </property>
+      <widget class="QLabel" name="label_31">
+       <property name="geometry">
+        <rect>
+         <x>16</x>
+         <y>16</y>
+         <width>121</width>
+         <height>26</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QLabel{
+width: 102px;
+height: 26px;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #888888;
+line-height: 26px;
+font-weight:bold;
+
+border-radius: 0px;
+border:0px
+}</string>
+       </property>
+       <property name="text">
+        <string>当前时段人流</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_32">
+       <property name="geometry">
+        <rect>
+         <x>16</x>
+         <y>50</y>
+         <width>101</width>
+         <height>36</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QLabel{
+width: 25px;
+height: 36px;
+font-size: 36px;
+font-family: AlibabaPuHuiTi_2_85_Bold;
+color: #333333;
+line-height: 36px;
+font-weight:bold;
+
+border-radius:0px;
+border:0px
+}</string>
+       </property>
+       <property name="text">
+        <string>-</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QLabel" name="label_33">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>68</y>
+        <width>279</width>
+        <height>180</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLabel{
+width: 279px;
+height: 180px;
+background: #FFFFFF;
+border-radius: 8px;
+border: 1px solid rgba(221, 221, 221, 0.6);
+}</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="lineEdit_2">
+      <property name="geometry">
+       <rect>
+        <x>131</x>
+        <y>274</y>
+        <width>80</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLineEdit{
+width: 80px;
+height: 40px;
+background: #FFFFFF;
+border-radius: 4px;
+border: 1px solid #CCCCCC;
+
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #333333;
+line-height: 26px;
+font-weight:bold;
+}</string>
+      </property>
+      <property name="text">
+       <string>100</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_9">
+      <property name="geometry">
+       <rect>
+        <x>187</x>
+        <y>274</y>
+        <width>24</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLabel{
+width: 24px;
+height: 21px;
+background: #FFFFFF;
+border-radius: 4px 4px 0px 0px;
+border: 1px solid #CCCCCC;
+}</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_17">
+      <property name="geometry">
+       <rect>
+        <x>187</x>
+        <y>294</y>
+        <width>24</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLabel{
+width: 24px;
+height: 21px;
+background: #FFFFFF;
+border-radius:4px;
+border: 1px solid #CCCCCC;
+}</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton_5">
+      <property name="geometry">
+       <rect>
+        <x>191</x>
+        <y>276</y>
+        <width>16</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QPushButton{
+image:url(:/1/source/second/normal_triangle_up.png);
+border:0px
+}
+
+QPushButton:hover{
+image:url(:/1/source/second/light_up.png);
+border:0px
+}</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton_6">
+      <property name="geometry">
+       <rect>
+        <x>191</x>
+        <y>296</y>
+        <width>16</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QPushButton{
+image:url(:/1/source/second/normal_triangle_down.png);
+border:0px
+}
+QPushButton:hover{
+image:url(:/1/source/second/light_down.png);
+border:0px
+}</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+     <zorder>lineEdit_2</zorder>
+     <zorder>label_15</zorder>
+     <zorder>pushButton_10</zorder>
+     <zorder>label_16</zorder>
+     <zorder>label_20</zorder>
+     <zorder>label_21</zorder>
+     <zorder>widget_7</zorder>
+     <zorder>label_33</zorder>
+     <zorder>label_9</zorder>
+     <zorder>pushButton_5</zorder>
+     <zorder>label_17</zorder>
+     <zorder>pushButton_6</zorder>
+    </widget>
+    <widget class="QLabel" name="label_22">
+     <property name="geometry">
+      <rect>
+       <x>1016</x>
+       <y>684</y>
+       <width>89</width>
+       <height>26</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QLabel{
+width: 89px;
+height: 26px;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #888888;
+line-height: 26px;
+font-weight:bold;
+}</string>
+     </property>
+     <property name="text">
+      <string>当前帧数：</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_23">
+     <property name="geometry">
+      <rect>
+       <x>1247</x>
+       <y>684</y>
+       <width>51</width>
+       <height>26</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QLabel{
+width: 89px;
+height: 26px;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #888888;
+line-height: 26px;
+font-weight:bold;
+}</string>
+     </property>
+     <property name="text">
+      <string>时间：</string>
+     </property>
+    </widget>
+    <widget class="QWidget" name="widget_8" native="true">
+     <property name="geometry">
+      <rect>
+       <x>816</x>
+       <y>694</y>
+       <width>120</width>
+       <height>6</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QWidget{
+width: 120px;
+height: 6px;
+background: rgba(221, 221, 221, 0.6);
+border-radius: 5px;
+}</string>
+     </property>
+     <widget class="QLabel" name="label_progressBar">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>54</width>
+        <height>6</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLabel{
+width: 70px;
+height: 6px;
+background: #4E4EF2;
+border-radius: 5px;
+}</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QLabel" name="label_progressBar_num">
+     <property name="geometry">
+      <rect>
+       <x>852</x>
+       <y>654</y>
+       <width>48</width>
+       <height>36</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QLabel{
+width: 48px;
+height: 36px;
+font-size: 24px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #4E4EF2;
+line-height: 36px;
+font-weight:bold
+}</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_frames">
+     <property name="geometry">
+      <rect>
+       <x>1105</x>
+       <y>684</y>
+       <width>111</width>
+       <height>26</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QLabel{
+width: 89px;
+height: 26px;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #888888;
+line-height: 26px;
+font-weight:bold;
+}</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_time">
+     <property name="geometry">
+      <rect>
+       <x>1301</x>
+       <y>684</y>
+       <width>251</width>
+       <height>26</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QLabel{
+width: 89px;
+height: 26px;
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #888888;
+line-height: 26px;
+font-weight:bold;
+}</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_10">
+     <property name="geometry">
+      <rect>
+       <x>240</x>
+       <y>680</y>
+       <width>24</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QLabel{
+width: 24px;
+height: 21px;
+background: #FFFFFF;
+border-radius: 4px 4px 0px 0px;
+border: 1px solid #CCCCCC;
+}</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_18">
+     <property name="geometry">
+      <rect>
+       <x>240</x>
+       <y>700</y>
+       <width>24</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QLabel{
+width: 24px;
+height: 21px;
+background: #FFFFFF;
+border-radius:4px;
+border: 1px solid #CCCCCC;
+}</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_7">
+     <property name="geometry">
+      <rect>
+       <x>244</x>
+       <y>682</y>
+       <width>16</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+image:url(:/1/source/second/normal_triangle_up.png);
+border:0px
+}
+
+QPushButton:hover{
+image:url(:/1/source/second/light_up.png);
+border:0px
+}</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_11">
+     <property name="geometry">
+      <rect>
+       <x>244</x>
+       <y>702</y>
+       <width>16</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton{
+image:url(:/1/source/second/normal_triangle_down.png);
+border:0px
+}
+QPushButton:hover{
+image:url(:/1/source/second/light_down.png);
+border:0px
+}</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_confi_tip">
+     <property name="geometry">
+      <rect>
+       <x>70</x>
+       <y>590</y>
+       <width>301</width>
+       <height>91</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QLabel{
+width: 300px;
+height: 108px;
+opacity: 0.1;
+background:url(:/1/source/second/ToolTip.PNG);
+background-repeat: no-repeat;
+
+font-size: 14px;
+font-family: AlibabaPuHuiTi_2_55_Regular;
+color: #FFFFFF;
+line-height: 22px;
+padding:10px
+}</string>
+     </property>
+     <property name="text">
+      <string>阙值调试释义：内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容</string>
+     </property>
+     <property name="scaledContents">
+      <bool>true</bool>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QLabel" name="label_txt_tip">
+    <property name="geometry">
+     <rect>
+      <x>1340</x>
+      <y>190</y>
+      <width>301</width>
+      <height>91</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel{
+width: 300px;
+height: 108px;
+opacity: 0.1;
+background:url(:/1/source/second/ToolTip.PNG);
+background-repeat: no-repeat;
+
+font-size: 14px;
+font-family: AlibabaPuHuiTi_2_55_Regular;
+color: #FFFFFF;
+line-height: 22px;
+padding:10px
+}</string>
+    </property>
+    <property name="text">
+     <string>导出txt文件释义：内容内容内容内容内容内容内容内容内容内容内容内容内容内容</string>
+    </property>
+    <property name="scaledContents">
+     <bool>true</bool>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_12">
+    <property name="geometry">
+     <rect>
+      <x>1632</x>
+      <y>178</y>
+      <width>120</width>
+      <height>44</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton{
+width: 120px;
+height: 44px;
+background: #4E4EF2;
+border-radius: 4px;
+
+font-size: 18px;
+font-family: AlibabaPuHuiTi_2_65_Medium;
+color: #FFFFFF;
+line-height: 26px;
+font-weight:bold
+}</string>
+    </property>
+    <property name="text">
+     <string>返回</string>
+    </property>
+   </widget>
+   <zorder>label_3</zorder>
+   <zorder>label</zorder>
+   <zorder>label_4</zorder>
+   <zorder>label_2</zorder>
+   <zorder>label_5</zorder>
+   <zorder>label_6</zorder>
+   <zorder>widget</zorder>
+   <zorder>pushButton_12</zorder>
+   <zorder>label_txt_tip</zorder>
+  </widget>
+ </widget>
+ <resources>
+  <include location="../firstSource.qrc"/>
+  <include location="../secondSource.qrc"/>
+ </resources>
+ <connections/>
+</ui>
