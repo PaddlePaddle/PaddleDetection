@@ -1,0 +1,40 @@
+_BASE_: [
+  '../fairmot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.yml'
+]
+
+weights: output/fairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100kmot_vehicle/model_final
+
+# for MOT training
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['bdd100kmot_vehicle.train']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+# for MOT evaluation
+# If you want to change the MOT evaluation dataset, please modify 'data_root'
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: bdd100kmot_vehicle/images/val
+    keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
+
+# for MOT video inference
+TestMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    keep_ori_im: True # set True if save visualization images or video
+
+# model config
+FairMOT:
+  detector: CenterNet
+  reid: FairMOTEmbeddingHead
+  loss: FairMOTLoss
+  tracker: JDETracker
+
+JDETracker:
+  min_box_area: 0
+  vertical_ratio: 0 # no need to filter bboxes according to w/h
+  conf_thres: 0.4
+  tracked_thresh: 0.4
+  metric_type: cosine
