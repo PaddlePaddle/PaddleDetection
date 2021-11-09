@@ -11,6 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+This code is based on https://github.com/microsoft/Swin-Transformer/blob/main/models/swin_transformer.py
+Ths copyright of microsoft/Swin-Transformer is as follows:
+MIT License [see LICENSE for details]
+"""
 
 import paddle
 import paddle.nn as nn
