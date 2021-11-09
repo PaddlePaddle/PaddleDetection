@@ -18,6 +18,8 @@ MCFairMOT is the Multi-class extended version of [FairMOT](https://arxiv.org/abs
 | :--------------| :------- | :----: | :----: | :---:  | :------: | :----: |:----: |
 | DLA-34         | 1088x608 |  24.3  |  41.6  |  2314  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_dla34_30e_1088x608_visdrone.pdparams) | [config](./mcfairmot_dla34_30e_1088x608_visdrone.yml) |
 | HRNetV2-W18    | 1088x608 |  20.4  |  39.9  |  2603  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.pdparams) | [config](./mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.yml) |
+| HRNetV2-W18    | 864x480 |  18.2  |  38.7  |  2416  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone.pdparams) | [config](./mcfairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone.yml) |
+| HRNetV2-W18    | 576x320 |  12.0  |  33.8  |  2178  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone.pdparams) | [config](./mcfairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone.yml) |
 
 **Notes:**
  MOTA is the average MOTA of 10 catecories in the VisDrone2019 MOT dataset, and its value is also equal to the average MOTA of all the evaluated video sequences.
