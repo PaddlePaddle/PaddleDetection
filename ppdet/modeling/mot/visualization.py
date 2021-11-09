@@ -28,7 +28,7 @@ def plot_tracking(image,
                   scores=None,
                   frame_id=0,
                   fps=0.,
-                  ids2=None):
+                  ids2names=[]):
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
 
@@ -52,15 +52,16 @@ def plot_tracking(image,
         intbox = tuple(map(int, (x1, y1, x1 + w, y1 + h)))
         obj_id = int(obj_ids[i])
         id_text = '{}'.format(int(obj_id))
-        if ids2 is not None:
-            id_text = id_text + ', {}'.format(int(ids2[i]))
+        if ids2names != []:
+            assert len(ids2names) == 1, "plot_tracking only supports single classes."
+            id_text = '{}_'.format(ids2names[0]) + id_text
         _line_thickness = 1 if obj_id <= 0 else line_thickness
         color = get_color(abs(obj_id))
         cv2.rectangle(
             im, intbox[0:2], intbox[2:4], color=color, thickness=line_thickness)
         cv2.putText(
             im,
-            id_text, (intbox[0], intbox[1] + 10),
+            id_text, (intbox[0], intbox[1] - 10),
             cv2.FONT_HERSHEY_PLAIN,
             text_scale, (0, 0, 255),
             thickness=text_thickness)
@@ -69,7 +70,7 @@ def plot_tracking(image,
             text = '{:.2f}'.format(float(scores[i]))
             cv2.putText(
                 im,
-                text, (intbox[0], intbox[1] - 10),
+                text, (intbox[0], intbox[1] + 10),
                 cv2.FONT_HERSHEY_PLAIN,
                 text_scale, (0, 255, 255),
                 thickness=text_thickness)
@@ -83,7 +84,7 @@ def plot_tracking_dict(image,
                        scores_dict,
                        frame_id=0,
                        fps=0.,
-                       ids2=None):
+                       ids2names=[]):
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
 
@@ -111,10 +112,12 @@ def plot_tracking_dict(image,
             x1, y1, w, h = tlwh
             intbox = tuple(map(int, (x1, y1, x1 + w, y1 + h)))
             obj_id = int(obj_ids[i])
-            if num_classes == 1:
-                id_text = '{}'.format(int(obj_id))
+
+            id_text = '{}'.format(int(obj_id))
+            if ids2names != []:
+                id_text = '{}_{}'.format(ids2names[cls_id], id_text)
             else:
-                id_text = 'class{}_id{}'.format(cls_id, int(obj_id))
+                id_text = 'class{}_{}'.format(cls_id, id_text)
 
             _line_thickness = 1 if obj_id <= 0 else line_thickness
             color = get_color(abs(obj_id))
@@ -126,7 +129,7 @@ def plot_tracking_dict(image,
                 thickness=line_thickness)
             cv2.putText(
                 im,
-                id_text, (intbox[0], intbox[1] + 10),
+                id_text, (intbox[0], intbox[1] - 10),
                 cv2.FONT_HERSHEY_PLAIN,
                 text_scale, (0, 0, 255),
                 thickness=text_thickness)
@@ -135,7 +138,7 @@ def plot_tracking_dict(image,
                 text = '{:.2f}'.format(float(scores[i]))
                 cv2.putText(
                     im,
-                    text, (intbox[0], intbox[1] - 10),
+                    text, (intbox[0], intbox[1] + 10),
                     cv2.FONT_HERSHEY_PLAIN,
                     text_scale, (0, 255, 255),
                     thickness=text_thickness)
