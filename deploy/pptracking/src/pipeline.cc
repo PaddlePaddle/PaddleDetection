@@ -227,8 +227,9 @@ void Pipeline::PredictMOT(const std::string& video_path) {
     }
 
     fclose(fp);
-    result_output_path = output_dir_ + OS_PATH_SEP + "flow_statistic.txt";
     LOG(INFO) << "txt result output saved as " << result_output_path.c_str();
+    
+    result_output_path = output_dir_ + OS_PATH_SEP + "flow_statistic.txt";
     if ((fp = fopen(result_output_path.c_str(), "w+")) == NULL) {
       printf("Open %s error.\n", result_output_path);
       return;
