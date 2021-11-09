@@ -23,9 +23,9 @@ import paddle
 from paddle.inference import Config
 from paddle.inference import create_predictor
 
-from preprocess import preprocess
+from picodet_postprocess import PicoDetPostProcess
 from utils import argsparser, Timer, get_current_memory_mb
-from infer import Detector, get_test_images, print_arguments, PredictConfig
+from infer import Detector, DetectorPicoDet, get_test_images, print_arguments, PredictConfig
 from infer import load_predictor
 from benchmark_utils import PaddleInferBenchmark
 
@@ -139,6 +139,7 @@ class SDE_Detector(Detector):
             cpu_threads=cpu_threads,
             enable_mkldnn=enable_mkldnn)
         assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
+        self.pred_config = pred_config
 
     def postprocess(self, boxes, input_shape, im_shape, scale_factor, threshold,
                     scaled):
@@ -147,6 +148,8 @@ class SDE_Detector(Detector):
             pred_dets = np.zeros((1, 6), dtype=np.float32)
             pred_xyxys = np.zeros((1, 4), dtype=np.float32)
             return pred_dets, pred_xyxys
+        else:
+            boxes = boxes[over_thres_idx]
 
         if not scaled:
             # scaled means whether the coords after detector outputs
@@ -159,6 +162,11 @@ class SDE_Detector(Detector):
 
         pred_xyxys, keep_idx = clip_box(pred_bboxes, input_shape, im_shape,
                                         scale_factor)
+        if len(keep_idx[0]) == 0:
+            pred_dets = np.zeros((1, 6), dtype=np.float32)
+            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
+            return pred_dets, pred_xyxys
+
         pred_scores = boxes[:, 1:2][keep_idx[0]]
         pred_cls_ids = boxes[:, 0:1][keep_idx[0]]
         pred_tlwhs = np.concatenate(
@@ -168,7 +176,7 @@ class SDE_Detector(Detector):
         pred_dets = np.concatenate(
             (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
 
-        return pred_dets[over_thres_idx], pred_xyxys[over_thres_idx]
+        return pred_dets, pred_xyxys
 
     def predict(self, image, scaled, threshold=0.5, warmup=0, repeats=1):
         '''
@@ -219,6 +227,142 @@ class SDE_Detector(Detector):
         self.det_times.img_num += 1
         return pred_dets, pred_xyxys
 
+
+class SDE_DetectorPicoDet(DetectorPicoDet):
+    """
+    Args:
+        pred_config (object): config of model, defined by `Config(model_dir)`
+        model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
+        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN
+    """
+
+    def __init__(self,
+                 pred_config,
+                 model_dir,
+                 device='CPU',
+                 run_mode='fluid',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1088,
+                 trt_opt_shape=608,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False):
+        super(SDE_DetectorPicoDet, self).__init__(
+            pred_config=pred_config,
+            model_dir=model_dir,
+            device=device,
+            run_mode=run_mode,
+            batch_size=batch_size,
+            trt_min_shape=trt_min_shape,
+            trt_max_shape=trt_max_shape,
+            trt_opt_shape=trt_opt_shape,
+            trt_calib_mode=trt_calib_mode,
+            cpu_threads=cpu_threads,
+            enable_mkldnn=enable_mkldnn)
+        assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
+        self.pred_config = pred_config
+
+    def postprocess_bboxes(self, boxes, input_shape, im_shape, scale_factor, threshold):
+        over_thres_idx = np.nonzero(boxes[:, 1:2] >= threshold)[0]
+        if len(over_thres_idx) == 0:
+            pred_dets = np.zeros((1, 6), dtype=np.float32)
+            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
+            return pred_dets, pred_xyxys
+        else:
+            boxes = boxes[over_thres_idx]
+
+        pred_bboxes = boxes[:, 2:]
+
+        pred_xyxys, keep_idx = clip_box(pred_bboxes, input_shape, im_shape,
+                                        scale_factor)
+        if len(keep_idx[0]) == 0:
+            pred_dets = np.zeros((1, 6), dtype=np.float32)
+            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
+            return pred_dets, pred_xyxys
+
+        pred_scores = boxes[:, 1:2][keep_idx[0]]
+        pred_cls_ids = boxes[:, 0:1][keep_idx[0]]
+        pred_tlwhs = np.concatenate(
+            (pred_xyxys[:, 0:2], pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
+            axis=1)
+
+        pred_dets = np.concatenate(
+            (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
+        return pred_dets, pred_xyxys
+
+    def predict(self, image, scaled, threshold=0.5, warmup=0, repeats=1):
+        '''
+        Args:
+            image (np.ndarray): image numpy data
+            threshold (float): threshold of predicted box' score
+            scaled (bool): whether the coords after detector outputs are scaled,
+                default False in jde yolov3, set True in general detector.
+        Returns:
+            pred_dets (np.ndarray, [N, 6])
+        '''
+        self.det_times.preprocess_time_s.start()
+        inputs = self.preprocess(image)
+        self.det_times.preprocess_time_s.end()
+
+        input_names = self.predictor.get_input_names()
+        for i in range(len(input_names)):
+            input_tensor = self.predictor.get_input_handle(input_names[i])
+            input_tensor.copy_from_cpu(inputs[input_names[i]])
+
+        np_score_list, np_boxes_list = [], []
+        for i in range(warmup):
+            self.predictor.run()
+            output_names = self.predictor.get_output_names()
+            boxes_tensor = self.predictor.get_output_handle(output_names[0])
+            boxes = boxes_tensor.copy_to_cpu()
+
+        self.det_times.inference_time_s.start()
+        for i in range(repeats):
+            self.predictor.run()
+            np_score_list.clear()
+            np_boxes_list.clear()
+            output_names = self.predictor.get_output_names()
+            num_outs = int(len(output_names) / 2)
+            for out_idx in range(num_outs):
+                np_score_list.append(
+                    self.predictor.get_output_handle(output_names[out_idx])
+                    .copy_to_cpu())
+                np_boxes_list.append(
+                    self.predictor.get_output_handle(output_names[
+                        out_idx + num_outs]).copy_to_cpu())
+
+        self.det_times.inference_time_s.end(repeats=repeats)
+        self.det_times.img_num += 1
+        self.det_times.postprocess_time_s.start()
+        self.postprocess = PicoDetPostProcess(
+            inputs['image'].shape[2:],
+            inputs['im_shape'],
+            inputs['scale_factor'],
+            strides=self.pred_config.fpn_stride,
+            nms_threshold=self.pred_config.nms['nms_threshold'])
+        boxes, boxes_num = self.postprocess(np_score_list, np_boxes_list)
+
+        if len(boxes) == 0:
+            pred_dets = np.zeros((1, 6), dtype=np.float32)
+            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
+        else:
+            input_shape = inputs['image'].shape[2:]
+            im_shape = inputs['im_shape']
+            scale_factor = inputs['scale_factor']
+            pred_dets, pred_xyxys = self.postprocess_bboxes(
+                boxes, input_shape, im_shape, scale_factor, threshold)
+
+        return pred_dets, pred_xyxys
+        
 
 class SDE_ReID(object):
     def __init__(self,
@@ -350,7 +494,7 @@ def predict_image(detector, reid_model, image_list):
             pred_dets, pred_xyxys = detector.predict([frame], FLAGS.scaled,
                                                      FLAGS.threshold)
 
-        if len(pred_dets) == 1 and sum(pred_dets) == 0:
+        if len(pred_dets) == 1 and np.sum(pred_dets) == 0:
             print('Frame {} has no object, try to modify score threshold.'.
                   format(i))
             online_im = frame
@@ -407,7 +551,7 @@ def predict_video(detector, reid_model, camera_id):
         pred_dets, pred_xyxys = detector.predict([frame], FLAGS.scaled,
                                                  FLAGS.threshold)
 
-        if len(pred_dets) == 1 and sum(pred_dets) == 0:
+        if len(pred_dets) == 1 and np.sum(pred_dets) == 0:
             print('Frame {} has no object, try to modify score threshold.'.
                   format(frame_id))
             timer.toc()
@@ -464,17 +608,21 @@ def predict_video(detector, reid_model, camera_id):
 
 def main():
     pred_config = PredictConfig(FLAGS.model_dir)
-    detector = SDE_Detector(
-        pred_config,
-        FLAGS.model_dir,
-        device=FLAGS.device,
-        run_mode=FLAGS.run_mode,
-        trt_min_shape=FLAGS.trt_min_shape,
-        trt_max_shape=FLAGS.trt_max_shape,
-        trt_opt_shape=FLAGS.trt_opt_shape,
-        trt_calib_mode=FLAGS.trt_calib_mode,
-        cpu_threads=FLAGS.cpu_threads,
-        enable_mkldnn=FLAGS.enable_mkldnn)
+    detector_func = 'SDE_Detector'
+    if pred_config.arch == 'PicoDet':
+        detector_func = 'SDE_DetectorPicoDet'
+
+    detector = eval(detector_func)(pred_config,
+                                   FLAGS.model_dir,
+                                   device=FLAGS.device,
+                                   run_mode=FLAGS.run_mode,
+                                   batch_size=FLAGS.batch_size,
+                                   trt_min_shape=FLAGS.trt_min_shape,
+                                   trt_max_shape=FLAGS.trt_max_shape,
+                                   trt_opt_shape=FLAGS.trt_opt_shape,
+                                   trt_calib_mode=FLAGS.trt_calib_mode,
+                                   cpu_threads=FLAGS.cpu_threads,
+                                   enable_mkldnn=FLAGS.enable_mkldnn)
 
     pred_config = PredictConfig(FLAGS.reid_model_dir)
     reid_model = SDE_ReID(

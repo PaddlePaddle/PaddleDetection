@@ -23,7 +23,6 @@ import paddle
 from paddle.inference import Config
 from paddle.inference import create_predictor
 
-from preprocess import preprocess
 from utils import argsparser, Timer, get_current_memory_mb
 from infer import Detector, get_test_images, print_arguments, PredictConfig
 from benchmark_utils import PaddleInferBenchmark
@@ -167,6 +166,8 @@ def predict_image(detector, image_list):
     results = []
     num_classes = detector.num_classes
     data_type = 'mcmot' if num_classes > 1 else 'mot'
+    ids2names = detector.pred_config.labels
+
     image_list.sort()
     for frame_id, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
@@ -181,7 +182,8 @@ def predict_image(detector, image_list):
             online_tlwhs, online_scores, online_ids = detector.predict(
                 [frame], FLAGS.threshold)
             online_im = plot_tracking_dict(frame, num_classes, online_tlwhs,
-                                           online_ids, online_scores, frame_id)
+                                           online_ids, online_scores, frame_id,
+                                           ids2names)
             if FLAGS.save_images:
                 if not os.path.exists(FLAGS.output_dir):
                     os.makedirs(FLAGS.output_dir)
@@ -216,6 +218,8 @@ def predict_video(detector, camera_id):
     results = defaultdict(list)  # support single class and multi classes
     num_classes = detector.num_classes
     data_type = 'mcmot' if num_classes > 1 else 'mot'
+    ids2names = detector.pred_config.labels
+
     while (1):
         ret, frame = capture.read()
         if not ret:
@@ -237,7 +241,8 @@ def predict_video(detector, camera_id):
             online_ids,
             online_scores,
             frame_id=frame_id,
-            fps=fps)
+            fps=fps,
+            ids2names=ids2names)
         if FLAGS.save_images:
             save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
             if not os.path.exists(save_dir):
