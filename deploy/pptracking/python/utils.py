@@ -120,6 +120,16 @@ def argsparser():
         type=int,
         default=50,
         help="max batch_size for reid model inference.")
+    parser.add_argument(
+        "--do_entrance_counting",
+        action='store_true',
+        help="Whether counting the numbers of identifiers entering "
+        "or getting out from the entrance.")
+    parser.add_argument(
+        "--secs_interval",
+        type=int,
+        default=10,
+        help="The seconds interval to count after tracking")
     return parser
 
 
