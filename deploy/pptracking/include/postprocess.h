@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <glog/logging.h>
+
 #include <ctime>
 #include <memory>
 #include <string>
@@ -42,7 +44,7 @@ cv::Mat VisualizeTrackResult(const cv::Mat& img,
 void FlowStatistic(const MOTResult& results,
                    const int frame_id,
                    const int secs_interval,
-                   const bool count,
+                   const bool do_entrance_counting,
                    const int video_fps,
                    const Rect entrance,
                    std::set<int>* id_set,

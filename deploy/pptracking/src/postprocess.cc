@@ -103,7 +103,7 @@ cv::Mat VisualizeTrackResult(const cv::Mat& img,
 void FlowStatistic(const MOTResult& results,
                    const int frame_id,
                    const int secs_interval,
-                   const bool count,
+                   const bool do_entrance_counting,
                    const int video_fps,
                    const Rect entrance, 
                    std::set<int>* id_set,
@@ -115,7 +115,7 @@ void FlowStatistic(const MOTResult& results,
   if (frame_id == 0)
     interval_id_set->clear();
   
-  if (count) {
+  if (do_entrance_counting) {
     // Count in and out number: 
     // Use horizontal center line as the entrance just for simplification.
     // If a person located in the above the horizontal center line 
@@ -159,7 +159,7 @@ void FlowStatistic(const MOTResult& results,
   std::ostringstream os;
   os << "Frame id: " << frame_id
      << ", Total count: " << id_set->size();
-  if (count) {
+  if (do_entrance_counting) {
     os << ", In count: " << in_id_list->size()
        << ", Out count: " << out_id_list->size();
   }
@@ -175,7 +175,7 @@ void FlowStatistic(const MOTResult& results,
   os << "\n";
   std::string record = os.str();
   records->push_back(record);
-  std::cout << record;
+  LOG(INFO) << record;
 }
 
 void SaveMOTResult(const MOTResult& results,

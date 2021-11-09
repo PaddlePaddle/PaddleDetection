@@ -198,7 +198,7 @@ void Pipeline::PredictMOT(const std::string& video_path) {
     
    // TODO: the entrance line can be set by users
     PaddleDetection::FlowStatistic(
-        result, frame_id, secs_interval_, count_, video_fps, entrance,
+        result, frame_id, secs_interval_, do_entrance_counting_, video_fps, entrance,
         &id_set, &interval_id_set, &in_id_list, &out_id_list,
         &prev_center, &flow_records);
 
@@ -227,14 +227,12 @@ void Pipeline::PredictMOT(const std::string& video_path) {
     }
 
     fclose(fp);
-    LOG(INFO) << "txt result output saved as " << result_output_path.c_str();
-
     result_output_path = output_dir_ + OS_PATH_SEP + "flow_statistic.txt";
+    LOG(INFO) << "txt result output saved as " << result_output_path.c_str();
     if ((fp = fopen(result_output_path.c_str(), "w+")) == NULL) {
       printf("Open %s error.\n", result_output_path);
       return;
     }
-
     for (int l; l < flow_records.size(); ++l) {
       fprintf(fp, flow_records[l].c_str());
     }
@@ -279,7 +277,7 @@ void Pipeline::RunMOTStream(const cv::Mat img,
 
   // Count total number
   // Count in & out number
-  PaddleDetection::FlowStatistic(result, frame_id, secs_interval_, count_,
+  PaddleDetection::FlowStatistic(result, frame_id, secs_interval_, do_entrance_counting_,
                                  video_fps, entrance, id_set,
                                  interval_id_set, in_id_list,
                                  out_id_list, prev_center, flow_records);

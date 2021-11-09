@@ -48,7 +48,7 @@ class Pipeline {
                     const bool use_mkldnn = false,
                     const int cpu_threads = 1,
                     const bool trt_calib_mode = false,
-                    const bool count = false,
+                    const bool do_entrance_counting = false,
                     const bool save_result = false,
                     const std::string& scene = "pedestrian",
                     const bool tiny_obj = false,
@@ -64,7 +64,7 @@ class Pipeline {
     this->use_mkldnn_ = use_mkldnn;
     this->cpu_threads_ = cpu_threads;
     this->trt_calib_mode_ = trt_calib_mode;
-    this->count_ = count;
+    this->do_entrance_counting_ = do_entrance_counting;
     this->secs_interval_ = secs_interval_;
     this->save_result_ = save_result;
     SelectModel(scene, tiny_obj, is_mtmct);
@@ -121,7 +121,7 @@ class Pipeline {
   bool use_mkldnn_ = false;
   int cpu_threads_ = 1;
   bool trt_calib_mode_ = false;
-  bool count_ = false;
+  bool do_entrance_counting_ = false;
   bool save_result_ = false;
   int secs_interval_ = 10;
 };
