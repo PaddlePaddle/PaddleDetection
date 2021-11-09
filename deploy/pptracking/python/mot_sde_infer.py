@@ -25,8 +25,8 @@ from paddle.inference import create_predictor
 
 from picodet_postprocess import PicoDetPostProcess
 from utils import argsparser, Timer, get_current_memory_mb
-from infer import Detector, DetectorPicoDet, get_test_images, print_arguments, PredictConfig
-from infer import load_predictor
+from det_infer import Detector, DetectorPicoDet, get_test_images, print_arguments, PredictConfig
+from det_infer import load_predictor
 from benchmark_utils import PaddleInferBenchmark
 from visualize import plot_tracking
 

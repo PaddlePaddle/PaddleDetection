@@ -24,7 +24,7 @@ from paddle.inference import Config
 from paddle.inference import create_predictor
 
 from utils import argsparser, Timer, get_current_memory_mb
-from infer import Detector, get_test_images, print_arguments, PredictConfig
+from det_infer import Detector, get_test_images, print_arguments, PredictConfig
 from benchmark_utils import PaddleInferBenchmark
 from visualize import plot_tracking_dict
 
