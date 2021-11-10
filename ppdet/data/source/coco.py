@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import os
+from queue import Queue
+
 import numpy as np
 from ppdet.core.workspace import register, serializable
 from .dataset import DetDataset
