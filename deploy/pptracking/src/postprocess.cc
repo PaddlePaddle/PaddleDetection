@@ -16,6 +16,7 @@
 // for setprecision
 #include <chrono>
 #include <iomanip>
+#include <iostream>
 #include "include/postprocess.h"
 
 namespace PaddleDetection {
@@ -101,10 +102,80 @@ cv::Mat VisualizeTrackResult(const cv::Mat& img,
 
 void FlowStatistic(const MOTResult& results,
                    const int frame_id,
-                   std::vector<int>* count_list,
-                   std::vector<int>* in_count_list,
-                   std::vector<int>* out_count_list) {
-  throw "Not Implement";
+                   const int secs_interval,
+                   const bool do_entrance_counting,
+                   const int video_fps,
+                   const Rect entrance, 
+                   std::set<int>* id_set,
+                   std::set<int>* interval_id_set, 
+                   std::vector<int>* in_id_list, 
+                   std::vector<int>* out_id_list,
+                   std::map<int, std::vector<float>>* prev_center,
+                   std::vector<std::string>* records) {
+  if (frame_id == 0)
+    interval_id_set->clear();
+  
+  if (do_entrance_counting) {
+    // Count in and out number: 
+    // Use horizontal center line as the entrance just for simplification.
+    // If a person located in the above the horizontal center line 
+    // at the previous frame and is in the below the line at the current frame,
+    // the in number is increased by one.
+    // If a person was in the below the horizontal center line 
+    // at the previous frame and locates in the below the line at the current frame,
+    // the out number is increased by one.
+    // TODO: if the entrance is not the horizontal center line,
+    // the counting method should be optimized.
+    
+    float entrance_y = entrance.top; 
+    for (const auto& result : results) {
+      float center_x = (result.rects.left + result.rects.right) / 2;
+      float center_y = (result.rects.top + result.rects.bottom) / 2;
+      int ids = result.ids;
+      std::map<int, std::vector<float>>::iterator iter;  
+      iter = prev_center->find(ids);
+      if (iter != prev_center->end()) {
+        if (iter->second[1] <= entrance_y && center_y > entrance_y) {
+          in_id_list->push_back(ids);
+        }
+        if (iter->second[1] >= entrance_y && center_y < entrance_y) {
+          out_id_list->push_back(ids);
+        }
+        (*prev_center)[ids][0] = center_x;
+        (*prev_center)[ids][1] = center_y;
+      } else {
+        prev_center->insert(
+          std::pair<int, std::vector<float>>(ids, {center_x, center_y}));
+      }
+    }
+  }
+
+  // Count totol number, number at a manual-setting interval
+  for (const auto& result : results) {
+    id_set->insert(result.ids);
+    interval_id_set->insert(result.ids);
+  }
+
+  std::ostringstream os;
+  os << "Frame id: " << frame_id
+     << ", Total count: " << id_set->size();
+  if (do_entrance_counting) {
+    os << ", In count: " << in_id_list->size()
+       << ", Out count: " << out_id_list->size();
+  }
+
+  // Reset counting at the interval beginning
+  int curr_interval_count = -1;
+  if (frame_id % video_fps == 0 && frame_id / video_fps % secs_interval == 0) {
+    curr_interval_count = interval_id_set->size();
+    os << ", Count during " << secs_interval
+       << " secs: " << curr_interval_count;
+    interval_id_set->clear();
+  }
+  os << "\n";
+  std::string record = os.str();
+  records->push_back(record);
+  LOG(INFO) << record;
 }
 
 void SaveMOTResult(const MOTResult& results,
