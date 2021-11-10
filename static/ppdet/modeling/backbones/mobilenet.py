@@ -23,11 +23,11 @@ from paddle.fluid.regularizer import L2Decay
 from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
 
-__all__ = ['MobileNet']
+__all__ = ['MobileNetFuse']
 
 
 @register
-class MobileNet(object):
+class MobileNetFuse(object):
     """
     MobileNet v1, see https://arxiv.org/abs/1704.04861
 
