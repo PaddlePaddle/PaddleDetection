@@ -48,11 +48,12 @@ class Pipeline {
                     const bool use_mkldnn = false,
                     const int cpu_threads = 1,
                     const bool trt_calib_mode = false,
-                    const bool count = false,
+                    const bool do_entrance_counting = false,
                     const bool save_result = false,
                     const std::string& scene = "pedestrian",
                     const bool tiny_obj = false,
-                    const bool is_mtmct = false) {
+                    const bool is_mtmct = false,
+                    const int secs_interval = 10) {
     std::vector<std::string> input;
     this->input_ = input;
     this->device_ = device;
@@ -63,7 +64,8 @@ class Pipeline {
     this->use_mkldnn_ = use_mkldnn;
     this->cpu_threads_ = cpu_threads;
     this->trt_calib_mode_ = trt_calib_mode;
-    this->count_ = count;
+    this->do_entrance_counting_ = do_entrance_counting;
+    this->secs_interval_ = secs_interval_;
     this->save_result_ = save_result;
     SelectModel(scene, tiny_obj, is_mtmct);
     InitPredictor();
@@ -81,11 +83,16 @@ class Pipeline {
   // Run pipeline in stream
   void RunMOTStream(const cv::Mat img,
                     const int frame_id,
+                    const int video_fps,
+                    const Rect entrance,
                     cv::Mat out_img,
                     std::vector<std::string>* records,
-                    std::vector<int>* count_list,
+                    std::set<int>* count_set,
+                    std::set<int>* interval_count_set,
                     std::vector<int>* in_count_list,
-                    std::vector<int>* out_count_list);
+                    std::vector<int>* out_count_list,
+                    std::map<int, std::vector<float>>* prev_center,
+                    std::vector<std::string>* flow_records);
   void RunMTMCTStream(const std::vector<cv::Mat> imgs,
                       std::vector<std::string>* records);
 
@@ -114,8 +121,9 @@ class Pipeline {
   bool use_mkldnn_ = false;
   int cpu_threads_ = 1;
   bool trt_calib_mode_ = false;
-  bool count_ = false;
+  bool do_entrance_counting_ = false;
   bool save_result_ = false;
+  int secs_interval_ = 10;
 };
 
 }  // namespace PaddleDetection

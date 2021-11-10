@@ -54,7 +54,10 @@ DEFINE_bool(trt_calib_mode,
             "If the model is produced by TRT offline quantitative calibration, "
             "trt_calib_mode need to set True");
 DEFINE_bool(tiny_obj, false, "Whether tracking tiny object");
-DEFINE_bool(count, false, "Whether counting after tracking");
+DEFINE_bool(do_entrance_counting, false,
+            "Whether counting the numbers of identifiers entering "
+            "or getting out from the entrance.");
+DEFINE_int32(secs_interval, 10, "The seconds interval to count after tracking");
 DEFINE_bool(save_result, false, "Whether saving result after tracking");
 DEFINE_string(
     scene,
@@ -140,11 +143,12 @@ int main(int argc, char** argv) {
                                      FLAGS_use_mkldnn,
                                      FLAGS_cpu_threads,
                                      FLAGS_trt_calib_mode,
-                                     FLAGS_count,
+                                     FLAGS_do_entrance_counting,
                                      FLAGS_save_result,
                                      FLAGS_scene,
                                      FLAGS_tiny_obj,
-                                     FLAGS_is_mtmct);
+                                     FLAGS_is_mtmct,
+                                     FLAGS_secs_interval);
 
   pipeline.SetInput(FLAGS_video_file);
   if (!FLAGS_video_other_file.empty()) {
