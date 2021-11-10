@@ -20,6 +20,10 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
 
+from queue import Queue
+
+from ..compose import Compose
+
 try:
     from collections.abc import Sequence
 except Exception:
@@ -39,7 +43,6 @@ from PIL import Image, ImageDraw
 
 from ppdet.core.workspace import serializable
 from ppdet.modeling import bbox_utils
-from ..reader import Compose
 
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
@@ -151,13 +154,17 @@ class Decode(BaseOperator):
 
 @register_op
 class Permute(BaseOperator):
-    def __init__(self):
+    def __init__(self, use_dali=False):
         """
         Change the channel to be (C, H, W)
         """
         super(Permute, self).__init__()
+        self.use_dali = use_dali
 
     def apply(self, sample, context=None):
+        if self.use_dali:
+            return sample
+
         im = sample['image']
         im = im.transpose((2, 0, 1))
         sample['image'] = im
@@ -239,13 +246,16 @@ class RandomErasingImage(BaseOperator):
 @register_op
 class NormalizeImage(BaseOperator):
     def __init__(self, mean=[0.485, 0.456, 0.406], std=[1, 1, 1],
-                 is_scale=True):
+                 is_scale=True,
+                 use_dali=False,
+                 ):
         """
         Args:
             mean (list): the pixel mean
             std (list): the pixel variance
         """
         super(NormalizeImage, self).__init__()
+        self.use_dali = use_dali
         self.mean = mean
         self.std = std
         self.is_scale = is_scale
@@ -262,6 +272,9 @@ class NormalizeImage(BaseOperator):
             1.(optional) Scale the image to [0,1]
             2. Each pixel minus mean and is divided by std
         """
+        if self.use_dali:
+            return sample
+
         im = sample['image']
         im = im.astype(np.float32, copy=False)
         mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
@@ -347,8 +360,10 @@ class RandomDistort(BaseOperator):
                  brightness=[0.5, 1.5, 0.5],
                  random_apply=True,
                  count=4,
-                 random_channel=False):
+                 random_channel=False,
+                 use_dali=False):
         super(RandomDistort, self).__init__()
+        self.use_dali = use_dali
         self.hue = hue
         self.saturation = saturation
         self.contrast = contrast
@@ -409,6 +424,9 @@ class RandomDistort(BaseOperator):
         return img
 
     def apply(self, sample, context=None):
+        if self.use_dali:
+            return sample
+
         img = sample['image']
         if self.random_apply:
             functions = [
@@ -486,13 +504,15 @@ class AutoAugment(BaseOperator):
 
 @register_op
 class RandomFlip(BaseOperator):
-    def __init__(self, prob=0.5):
+    def __init__(self, prob=0.5, use_dali=False):
         """
         Args:
             prob (float): the probability of flipping image
         """
         super(RandomFlip, self).__init__()
+        self.use_dali = use_dali
         self.prob = prob
+        self.flip_queue = Queue()
         if not (isinstance(self.prob, float)):
             raise TypeError("{}: input type is invalid.".format(self))
 
@@ -565,7 +585,10 @@ class RandomFlip(BaseOperator):
         if np.random.uniform(0, 1) < self.prob:
             im = sample['image']
             height, width = im.shape[:2]
-            im = self.apply_image(im)
+            if not self.use_dali:
+                im = self.apply_image(im)
+            else:
+                self.flip_queue.put(1)
             if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
                 sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], width)
             if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
@@ -587,12 +610,16 @@ class RandomFlip(BaseOperator):
 
             sample['flipped'] = True
             sample['image'] = im
+
+        elif self.use_dali:
+            self.flip_queue.put(0)
+
         return sample
 
 
 @register_op
 class Resize(BaseOperator):
-    def __init__(self, target_size, keep_ratio, interp=cv2.INTER_LINEAR):
+    def __init__(self, target_size, keep_ratio, interp=cv2.INTER_LINEAR, use_dali=False):
         """
         Resize image to target size. if keep_ratio is True, 
         resize the image's long side to the maximum of target_size
@@ -603,6 +630,7 @@ class Resize(BaseOperator):
             interp (int): the interpolation method
         """
         super(Resize, self).__init__()
+        self.use_dali = use_dali
         self.keep_ratio = keep_ratio
         self.interp = interp
         if not isinstance(target_size, (Integral, Sequence)):
@@ -681,8 +709,10 @@ class Resize(BaseOperator):
         if len(im.shape) != 3:
             raise ImageError('{}: image is not 3-dimensional.'.format(self))
 
-        # apply image
-        im_shape = im.shape
+        if not self.use_dali:
+            im_shape = im.shape
+        else:
+            im_shape = sample['im_shape']
         if self.keep_ratio:
 
             im_size_min = np.min(im_shape[0:2])
@@ -704,8 +734,11 @@ class Resize(BaseOperator):
             im_scale_y = resize_h / im_shape[0]
             im_scale_x = resize_w / im_shape[1]
 
-        im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
-        sample['image'] = im
+        if not self.use_dali:
+            # apply image
+            im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
+            sample['image'] = im
+
         sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
         if 'scale_factor' in sample:
             scale_factor = sample['scale_factor']
@@ -881,8 +914,11 @@ class RandomExpand(BaseOperator):
         fill_value (list): color value used to fill the canvas. in RGB order.
     """
 
-    def __init__(self, ratio=4., prob=0.5, fill_value=(127.5, 127.5, 127.5)):
+    def __init__(self, ratio=4., prob=0.5,
+                 fill_value=(127.5, 127.5, 127.5),
+                 use_dali=False):
         super(RandomExpand, self).__init__()
+        self.use_dali = use_dali
         assert ratio > 1.01, "expand ratio must be larger than 1.01"
         self.ratio = ratio
         self.prob = prob
@@ -893,9 +929,11 @@ class RandomExpand(BaseOperator):
         if not isinstance(fill_value, tuple):
             fill_value = tuple(fill_value)
         self.fill_value = fill_value
+        self.expand_queue = Queue()
 
     def apply(self, sample, context=None):
         if np.random.uniform(0., 1.) < self.prob:
+            self.expand_queue.put((0, 0, 1))
             return sample
 
         im = sample['image']
@@ -904,17 +942,24 @@ class RandomExpand(BaseOperator):
         h = int(height * ratio)
         w = int(width * ratio)
         if not h > height or not w > width:
+            self.expand_queue.put((0, 0, 1))
             return sample
         y = np.random.randint(0, h - height)
         x = np.random.randint(0, w - width)
         offsets, size = [x, y], [h, w]
 
-        pad = Pad(size,
-                  pad_mode=-1,
-                  offsets=offsets,
-                  fill_value=self.fill_value)
+        sample['im_shape'] = np.array([h, w], dtype=np.float32)
+        self.expand_queue.put((x/w, y/h, ratio))
 
-        return pad(sample, context=context)
+        if not self.use_dali:
+            pad = Pad(size,
+                      pad_mode=-1,
+                      offsets=offsets,
+                      fill_value=self.fill_value)
+
+            return pad(sample, context=context)
+        else:
+            return sample
 
 
 @register_op
@@ -1201,8 +1246,10 @@ class RandomCrop(BaseOperator):
                  num_attempts=50,
                  allow_no_crop=True,
                  cover_all_box=False,
-                 is_mask_crop=False):
+                 is_mask_crop=False,
+                 use_dali=False):
         super(RandomCrop, self).__init__()
+        self.use_dali = use_dali
         self.aspect_ratio = aspect_ratio
         self.thresholds = thresholds
         self.scaling = scaling
@@ -1210,6 +1257,7 @@ class RandomCrop(BaseOperator):
         self.allow_no_crop = allow_no_crop
         self.cover_all_box = cover_all_box
         self.is_mask_crop = is_mask_crop
+        self.crop_box_queue = Queue()
 
     def crop_segms(self, segms, valid_ids, crop, height, width):
         def _crop_poly(segm, crop):
@@ -1284,7 +1332,11 @@ class RandomCrop(BaseOperator):
         if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
             return sample
 
-        h, w = sample['image'].shape[:2]
+        if not self.use_dali:
+            h, w = sample['image'].shape[:2]
+        else:
+            h, w = sample['im_shape']
+
         gt_bbox = sample['gt_bbox']
 
         # NOTE Original method attempts to generate one candidate for each
@@ -1302,6 +1354,7 @@ class RandomCrop(BaseOperator):
 
         for thresh in thresholds:
             if thresh == 'no_crop':
+                self.crop_box_queue.put((0, 0, w, h))
                 return sample
 
             found = False
@@ -1326,6 +1379,7 @@ class RandomCrop(BaseOperator):
                 crop_w = int(crop_w)
                 crop_y = np.random.randint(0, h - crop_h)
                 crop_x = np.random.randint(0, w - crop_w)
+
                 crop_box = [crop_x, crop_y, crop_x + crop_w, crop_y + crop_h]
                 iou = self._iou_matrix(
                     gt_bbox, np.array(
@@ -1341,6 +1395,9 @@ class RandomCrop(BaseOperator):
                         crop_box, dtype=np.float32))
                 if valid_ids.size > 0:
                     found = True
+                    self.crop_box_queue.put((crop_x/w, crop_y/h, crop_w, crop_h))
+                    sample['im_shape'] = np.array([crop_h, crop_w], dtype=np.float32)
+                    # print('put',(crop_x/w, crop_y/h, crop_w, crop_h))
                     break
 
             if found:
@@ -1374,7 +1431,9 @@ class RandomCrop(BaseOperator):
                     sample['gt_segm'] = np.take(
                         sample['gt_segm'], valid_ids, axis=0)
 
-                sample['image'] = self._crop_image(sample['image'], crop_box)
+                if not self.use_dali:
+                    sample['image'] = self._crop_image(sample['image'], crop_box)
+
                 sample['gt_bbox'] = np.take(cropped_box, valid_ids, axis=0)
                 sample['gt_class'] = np.take(
                     sample['gt_class'], valid_ids, axis=0)
@@ -1386,6 +1445,9 @@ class RandomCrop(BaseOperator):
                     sample['is_crowd'] = np.take(
                         sample['is_crowd'], valid_ids, axis=0)
                 return sample
+
+        self.crop_box_queue.put((0, 0, w, h))
+        # print('put',(0, 0, w, h))
 
         return sample
 
@@ -1653,13 +1715,18 @@ class Mixup(BaseOperator):
 class NormalizeBox(BaseOperator):
     """Transform the bounding box's coornidates to [0,1]."""
 
-    def __init__(self):
+    def __init__(self, use_dali=False):
         super(NormalizeBox, self).__init__()
+        self.use_dali = use_dali
 
     def apply(self, sample, context):
         im = sample['image']
         gt_bbox = sample['gt_bbox']
-        height, width, _ = im.shape
+        if not self.use_dali:
+            height, width, _ = im.shape
+        else:
+            height, width = sample['im_shape']
+
         for i in range(gt_bbox.shape[0]):
             gt_bbox[i][0] = gt_bbox[i][0] / width
             gt_bbox[i][1] = gt_bbox[i][1] / height
