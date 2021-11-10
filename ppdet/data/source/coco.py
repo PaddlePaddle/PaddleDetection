@@ -246,3 +246,31 @@ class COCODataSet(DetDataset):
             empty_records = self._sample_empty(empty_records, len(records))
             records += empty_records
         self.roidbs = records
+
+
+@register
+@serializable
+class DALICOCODataSet(COCODataSet):
+    def __init__(self, **kwargs):
+        super(DALICOCODataSet, self).__init__(**kwargs)
+        self.last_idx = -1
+        self.last_item = None
+        self.last_batch = []
+        self.last_batch_idxs = []
+        self.batch_queue = Queue()
+
+    def __getitem__(self, idx):
+        self.last_idx = idx
+        r = super(DALICOCODataSet, self).__getitem__(idx)
+        self.last_item = r
+        self.last_batch.append(r)
+        self.last_batch_idxs.append(idx)
+        self.batch_queue.put(r)
+        result = np.ascontiguousarray(r['image']).astype(np.float32)
+        # print(result.dtype)
+        return result
+
+    def pop_last_batch(self):
+        b = self.last_batch
+        self.last_batch = []
+        return b
