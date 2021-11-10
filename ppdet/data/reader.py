@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import os
-import traceback
 import six
 import sys
+
+from .compose import Compose, BatchCompose
+
 if sys.version_info >= (3, 0):
     pass
 else:
@@ -23,82 +25,14 @@ else:
 import numpy as np
 
 from paddle.io import DataLoader, DistributedBatchSampler
-from paddle.fluid.dataloader.collate import default_collate_fn
 
 from ppdet.core.workspace import register
-from . import transform
 from .shm_utils import _get_shared_memory_size_in_M
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('reader')
 
 MAIN_PID = os.getpid()
-
-
-class Compose(object):
-    def __init__(self, transforms, num_classes=80):
-        self.transforms = transforms
-        self.transforms_cls = []
-        for t in self.transforms:
-            for k, v in t.items():
-                op_cls = getattr(transform, k)
-                f = op_cls(**v)
-                if hasattr(f, 'num_classes'):
-                    f.num_classes = num_classes
-
-                self.transforms_cls.append(f)
-
-    def __call__(self, data):
-        for f in self.transforms_cls:
-            try:
-                data = f(data)
-            except Exception as e:
-                stack_info = traceback.format_exc()
-                logger.warning("fail to map sample transform [{}] "
-                               "with error: {} and stack:\n{}".format(
-                                   f, e, str(stack_info)))
-                raise e
-
-        return data
-
-
-class BatchCompose(Compose):
-    def __init__(self, transforms, num_classes=80, collate_batch=True):
-        super(BatchCompose, self).__init__(transforms, num_classes)
-        self.collate_batch = collate_batch
-
-    def __call__(self, data):
-        for f in self.transforms_cls:
-            try:
-                data = f(data)
-            except Exception as e:
-                stack_info = traceback.format_exc()
-                logger.warning("fail to map batch transform [{}] "
-                               "with error: {} and stack:\n{}".format(
-                                   f, e, str(stack_info)))
-                raise e
-
-        # remove keys which is not needed by model
-        extra_key = ['h', 'w', 'flipped']
-        for k in extra_key:
-            for sample in data:
-                if k in sample:
-                    sample.pop(k)
-
-        # batch data, if user-define batch function needed
-        # use user-defined here
-        if self.collate_batch:
-            batch_data = default_collate_fn(data)
-        else:
-            batch_data = {}
-            for k in data[0].keys():
-                tmp_data = []
-                for i in range(len(data)):
-                    tmp_data.append(data[i][k])
-                if not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k:
-                    tmp_data = np.stack(tmp_data, axis=0)
-                batch_data[k] = tmp_data
-        return batch_data
 
 
 class BaseDataLoader(object):
@@ -144,7 +78,7 @@ class BaseDataLoader(object):
         self._sample_transforms = Compose(
             sample_transforms, num_classes=num_classes)
 
-        # batch transfrom 
+        # batch transfrom
         self._batch_transforms = BatchCompose(batch_transforms, num_classes,
                                               collate_batch)
         self.batch_size = batch_size
@@ -187,14 +121,35 @@ class BaseDataLoader(object):
                                "disable shared_memory in DataLoader")
                 use_shared_memory = False
 
-        self.dataloader = DataLoader(
-            dataset=self.dataset,
-            batch_sampler=self._batch_sampler,
-            collate_fn=self._batch_transforms,
-            num_workers=worker_num,
-            return_list=return_list,
-            use_shared_memory=use_shared_memory)
-        self.loader = iter(self.dataloader)
+        if 'DALI' in self.dataset.__class__.__name__:
+            from .dali import COCOPipeline, DALICOCOIterator
+
+            for t in self._sample_transforms.transforms_cls:
+                if hasattr(t, 'use_dali'):
+                    setattr(t, 'use_dali', True)
+
+            # self._batch_transforms.collate_batch = False
+            self._batch_transforms.use_dali = True
+
+            p = COCOPipeline(self.dataset, batch_size=self.batch_size,
+                             transforms=self._sample_transforms,
+                             batch_transforms=self._batch_transforms)
+            p.build()
+
+            self.dataloader = DALICOCOIterator(
+                [p],
+                ['data', 'size']
+            )
+            self.loader = self.dataloader
+        else:
+            self.dataloader = DataLoader(
+                dataset=self.dataset,
+                batch_sampler=self._batch_sampler,
+                collate_fn=self._batch_transforms,
+                num_workers=worker_num,
+                return_list=return_list,
+                use_shared_memory=use_shared_memory)
+            self.loader = iter(self.dataloader)
 
         return self
 
