@@ -12,7 +12,7 @@ weights: output/ssd_mobilenet_v1_voc/model_final
 num_classes: 21
 
 SSD:
-  backbone: MobileNet
+  backbone: MobileNetFuse
   multi_box_head: MultiBoxHead
   output_decoder:
     background_label: 0
@@ -22,7 +22,7 @@ SSD:
     nms_top_k: 400
     score_threshold: 0.01
 
-MobileNet:
+MobileNetFuse:
   norm_decay: 0.
   conv_group_scale: 1
   conv_learning_rate: 0.1
