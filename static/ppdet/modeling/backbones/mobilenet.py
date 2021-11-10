@@ -87,19 +87,18 @@ class MobileNet(object):
             param_attr=parameter_attr,
             bias_attr=False)
 
-        bn_name = name + "_bn"
-        norm_decay = self.norm_decay
-        bn_param_attr = ParamAttr(
-            regularizer=L2Decay(norm_decay), name=bn_name + '_scale')
-        bn_bias_attr = ParamAttr(
-            regularizer=L2Decay(norm_decay), name=bn_name + '_offset')
-        return fluid.layers.batch_norm(
-            input=conv,
-            act=act,
-            param_attr=bn_param_attr,
-            bias_attr=bn_bias_attr,
-            moving_mean_name=bn_name + '_mean',
-            moving_variance_name=bn_name + '_variance')
+        eleadd_y_name = "fuse_conv_bn/conv2d_eltwise_y_in/" + name
+        eleadd_y = fluid.layers.create_parameter(
+            name=eleadd_y_name,
+            shape=[num_filters],
+            dtype='float32')
+        eleadd = fluid.layers.elementwise_add(
+            x=conv,
+            y=eleadd_y,
+            axis=1,
+            act='relu')
+
+        return eleadd
 
     def depthwise_separable(self,
                             input,
