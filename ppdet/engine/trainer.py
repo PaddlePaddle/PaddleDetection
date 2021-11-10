@@ -43,6 +43,8 @@ from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, Wife
 from .export_utils import _dump_infer_config
 
 from ppdet.utils.logger import setup_logger
+from ..data import BatchRandomResize
+
 logger = setup_logger('ppdet.engine')
 
 __all__ = ['Trainer']
@@ -338,6 +340,35 @@ class Trainer(object):
             model.train()
             iter_tic = time.time()
             for step_id, data in enumerate(self.loader):
+                if 'DALI' in self.dataset.__class__.__name__:
+                    # print(np.array(data[0]['data']).shape)
+                    size = int(paddle.Tensor(data[0]['size']).numpy()[0][0])
+                    d = {}
+
+                    b = []
+                    for _ in range(self.loader.batch_size):
+                        b.append(self.dataset.batch_queue.get())
+
+                    for t in self.loader._batch_transforms.transforms_cls:
+                        if hasattr(t, 'use_dali'):
+                            setattr(t, 'use_dali', True)
+
+                        if isinstance(t, BatchRandomResize):
+                            t.generated_target_size = size
+
+                    b = self.loader._batch_transforms(b)
+
+                    for k in b.keys():
+                        try:
+                            b[k] = paddle.Tensor(b[k])
+                        except:
+                            # print(sys.exc_info())
+                            pass
+
+                    # using LoDTensor will got error when forwarding
+                    b['image'] = paddle.Tensor(data[0]['data'])
+                    data = b
+
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
                 self._compose_callback.on_step_begin(self.status)
