@@ -211,7 +211,8 @@ def predict_video(detector, camera_id):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
     if not FLAGS.save_images:
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        video_format = 'mp4v'
+        fourcc = cv2.VideoWriter_fourcc(*video_format)
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     frame_id = 0
     timer = MOTTimer()
@@ -243,6 +244,7 @@ def predict_video(detector, camera_id):
             results[cls_id].append((frame_id + 1, online_tlwhs[cls_id],
                                     online_scores[cls_id], online_ids[cls_id]))
 
+        fps = 1. / timer.duration
         # NOTE: just implement flow statistic for one class
         if num_classes == 1:
             result = (frame_id + 1, online_tlwhs[0], online_scores[0],
@@ -262,7 +264,6 @@ def predict_video(detector, camera_id):
             raise NotImplementedError(
                 'Multi-class flow counting is not implemented now!')
 
-        fps = 1. / timer.average_time
         im = plot_tracking_dict(
             frame,
             num_classes,
@@ -282,7 +283,7 @@ def predict_video(detector, camera_id):
             writer.write(im)
 
         frame_id += 1
-        print('detect frame: %d' % (frame_id))
+        print('detect frame: %d, fps: %f' % (frame_id, fps))
         if camera_id != -1:
             cv2.imshow('Tracking Detection', im)
             if cv2.waitKey(1) & 0xFF == ord('q'):

@@ -17,6 +17,7 @@ import cv2
 import time
 import paddle
 import numpy as np
+import collections
 
 __all__ = [
     'MOTTimer', 'Detection', 'write_mot_results', 'load_det_results',
@@ -29,13 +30,11 @@ class MOTTimer(object):
     This class used to compute and print the current FPS while evaling.
     """
 
-    def __init__(self):
-        self.total_time = 0.
-        self.calls = 0
+    def __init__(self, window_size=20):
         self.start_time = 0.
         self.diff = 0.
-        self.average_time = 0.
         self.duration = 0.
+        self.deque = collections.deque(maxlen=window_size)
 
     def tic(self):
         # using time.time instead of time.clock because time time.clock
@@ -44,21 +43,16 @@ class MOTTimer(object):
 
     def toc(self, average=True):
         self.diff = time.time() - self.start_time
-        self.total_time += self.diff
-        self.calls += 1
-        self.average_time = self.total_time / self.calls
+        self.deque.append(self.diff)
         if average:
-            self.duration = self.average_time
+            self.duration = np.mean(self.deque)
         else:
-            self.duration = self.diff
+            self.duration = np.sum(self.deque)
         return self.duration
 
     def clear(self):
-        self.total_time = 0.
-        self.calls = 0
         self.start_time = 0.
         self.diff = 0.
-        self.average_time = 0.
         self.duration = 0.
 
 
