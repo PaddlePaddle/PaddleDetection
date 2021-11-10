@@ -19,14 +19,8 @@ import paddle
 import numpy as np
 
 __all__ = [
-    'MOTTimer',
-    'Detection',
-    'write_mot_results',
-    'load_det_results',
-    'preprocess_reid',
-    'get_crops',
-    'clip_box',
-    'scale_coords',
+    'MOTTimer', 'Detection', 'write_mot_results', 'load_det_results',
+    'preprocess_reid', 'get_crops', 'clip_box', 'scale_coords', 'flow_statistic'
 ]
 
 
@@ -219,3 +213,81 @@ def preprocess_reid(imgs,
         im_batch.append(img)
     im_batch = np.concatenate(im_batch, 0)
     return im_batch
+
+
+def flow_statistic(result,
+                   secs_interval,
+                   do_entrance_counting,
+                   video_fps,
+                   entrance,
+                   id_set,
+                   interval_id_set,
+                   in_id_list,
+                   out_id_list,
+                   prev_center,
+                   records,
+                   data_type,
+                   num_classes=1):
+    # Count in and out number: 
+    # Use horizontal center line as the entrance just for simplification.
+    # If a person located in the above the horizontal center line 
+    # at the previous frame and is in the below the line at the current frame,
+    # the in number is increased by one.
+    # If a person was in the below the horizontal center line 
+    # at the previous frame and locates in the below the line at the current frame,
+    # the out number is increased by one.
+    # TODO: if the entrance is not the horizontal center line,
+    # the counting method should be optimized.
+    if do_entrance_counting:
+        entrance_y = entrance[1]  # xmin, ymin, xmax, ymax
+        frame_id, tlwhs, tscores, track_ids = result
+        for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
+            if track_id < 0: continue
+            if data_type == 'kitti':
+                frame_id -= 1
+
+            x1, y1, w, h = tlwh
+            center_x = x1 + w / 2.
+            center_y = y1 + h / 2.
+            if track_id in prev_center:
+                if prev_center[track_id][1] <= entrance_y and \
+                   center_y > entrance_y:
+                    in_id_list.append(track_id)
+                if prev_center[track_id][1] >= entrance_y and \
+                   center_y < entrance_y:
+                    out_id_list.append(track_id)
+                prev_center[track_id][0] = center_x
+                prev_center[track_id][1] = center_y
+            else:
+                prev_center[track_id] = [center_x, center_y]
+    # Count totol number, number at a manual-setting interval
+    frame_id, tlwhs, tscores, track_ids = result
+    for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
+        if track_id < 0: continue
+        id_set.add(track_id)
+        interval_id_set.add(track_id)
+
+    # Reset counting at the interval beginning
+    if frame_id % video_fps == 0 and frame_id / video_fps % secs_interval == 0:
+        curr_interval_count = len(interval_id_set)
+        interval_id_set.clear()
+    info = "Frame id: {}, Total count: {}".format(frame_id, len(id_set))
+    if do_entrance_counting:
+        info += ", In count: {}, Out count: {}".format(
+            len(in_id_list), len(out_id_list))
+    if frame_id % video_fps == 0 and frame_id / video_fps % secs_interval == 0:
+        info += ", Count during {} secs: {}".format(secs_interval,
+                                                    curr_interval_count)
+        interval_id_set.clear()
+    print(info)
+    info += "\n"
+    records.append(info)
+
+    return {
+        "id_set": id_set,
+        "interval_id_set": interval_id_set,
+        "in_id_list": in_id_list,
+        "out_id_list": out_id_list,
+        "prev_center": prev_center,
+        "records": records
+    }
