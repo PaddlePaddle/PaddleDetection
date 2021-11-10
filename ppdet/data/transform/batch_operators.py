@@ -113,8 +113,10 @@ class BatchRandomResize(BaseOperator):
                  keep_ratio,
                  interp=cv2.INTER_NEAREST,
                  random_size=True,
-                 random_interp=False):
+                 random_interp=False,
+                 use_dali=False):
         super(BatchRandomResize, self).__init__()
+        self.use_dali = use_dali
         self.keep_ratio = keep_ratio
         self.interps = [
             cv2.INTER_NEAREST,
@@ -134,20 +136,30 @@ class BatchRandomResize(BaseOperator):
         self.random_size = random_size
         self.random_interp = random_interp
 
+        self.generated_target_size = None
+
     def __call__(self, samples, context=None):
-        if self.random_size:
-            index = np.random.choice(len(self.target_size))
-            target_size = self.target_size[index]
+        if self.use_dali and self.generated_target_size is not None:
+            target_size = self.generated_target_size
         else:
-            target_size = self.target_size
+            target_size = self.generate_target_size()
 
         if self.random_interp:
             interp = np.random.choice(self.interps)
         else:
             interp = self.interp
 
-        resizer = Resize(target_size, keep_ratio=self.keep_ratio, interp=interp)
+        resizer = Resize(target_size, keep_ratio=self.keep_ratio, interp=interp, use_dali=self.use_dali)
         return resizer(samples, context=context)
+
+    def generate_target_size(self):
+        if self.random_size:
+            index = np.random.choice(len(self.target_size))
+            target_size = self.target_size[index]
+        else:
+            target_size = self.target_size
+        self.generated_target_size = target_size
+        return target_size
 
 
 @register_op
@@ -162,8 +174,10 @@ class Gt2YoloTarget(BaseOperator):
                  anchor_masks,
                  downsample_ratios,
                  num_classes=80,
-                 iou_thresh=1.):
+                 iou_thresh=1.,
+                 use_dali=False):
         super(Gt2YoloTarget, self).__init__()
+        self.use_dali = use_dali
         self.anchors = anchors
         self.anchor_masks = anchor_masks
         self.downsample_ratios = downsample_ratios
@@ -174,7 +188,11 @@ class Gt2YoloTarget(BaseOperator):
         assert len(self.anchor_masks) == len(self.downsample_ratios), \
             "anchor_masks', and 'downsample_ratios' should have same length."
 
-        h, w = samples[0]['image'].shape[1:3]
+        if self.use_dali:
+            h, w = samples[0]['im_shape']
+        else:
+            h, w = samples[0]['image'].shape[1:3]
+
         an_hw = np.array(self.anchors) / np.array([[w, h]])
         for sample in samples:
             # im, gt_bbox, gt_class, gt_score = sample
