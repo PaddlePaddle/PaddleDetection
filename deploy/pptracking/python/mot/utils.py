@@ -241,7 +241,6 @@ def flow_statistic(result,
     if do_entrance_counting:
         entrance_y = entrance[1]  # xmin, ymin, xmax, ymax
         frame_id, tlwhs, tscores, track_ids = result
-        print(frame_id)
         for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
             if track_id < 0: continue
             if data_type == 'kitti':

@@ -259,7 +259,8 @@ def predict_video(detector, camera_id):
             records = statistic['records']
 
         elif num_classes > 1 and do_entrance_counting:
-            print('Multi-class flow counting is not implemented now!')
+            raise NotImplementedError(
+                'Multi-class flow counting is not implemented now!')
 
         fps = 1. / timer.average_time
         im = plot_tracking_dict(
@@ -300,6 +301,7 @@ def predict_video(detector, camera_id):
             for line in records:
                 f.write(line)
             print('Flow statistic save in {}'.format(result_filename))
+            f.close()
 
     if FLAGS.save_images:
         save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
