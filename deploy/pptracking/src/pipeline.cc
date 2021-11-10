@@ -18,6 +18,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+
 #include "include/pipeline.h"
 #include "include/postprocess.h"
 #include "include/predictor.h"
@@ -159,9 +160,14 @@ void Pipeline::PredictMOT(const std::string& video_path) {
 
   PaddleDetection::MOTResult result;
   std::vector<double> det_times(3);
-  std::vector<int> count_list;
-  std::vector<int> in_count_list;
-  std::vector<int> out_count_list;
+  std::set<int> id_set;
+  std::set<int> interval_id_set;
+  std::vector<int> in_id_list;
+  std::vector<int> out_id_list;
+  std::map<int, std::vector<float>> prev_center;
+  Rect entrance = {0, static_cast<float>(video_height) / 2,
+                   static_cast<float>(video_width),
+                   static_cast<float>(video_height) / 2};
   double times;
   double total_time;
   // Capture all frames and do inference
@@ -169,6 +175,7 @@ void Pipeline::PredictMOT(const std::string& video_path) {
   int frame_id = 0;
 
   std::vector<std::string> records;
+  std::vector<std::string> flow_records;
   records.push_back("result format: frame_id, track_id, x1, y1, w, h\n");
 
   LOG(INFO) << "------------------- Predict info ------------------------";
@@ -188,13 +195,13 @@ void Pipeline::PredictMOT(const std::string& video_path) {
 
     cv::Mat out_img = PaddleDetection::VisualizeTrackResult(
         frame, result, 1000. / times, frame_id);
+    
+   // TODO: the entrance line can be set by users
+    PaddleDetection::FlowStatistic(
+        result, frame_id, secs_interval_, do_entrance_counting_, video_fps, entrance,
+        &id_set, &interval_id_set, &in_id_list, &out_id_list,
+        &prev_center, &flow_records);
 
-    if (count_) {
-      // Count total number
-      // Count in & out number
-      PaddleDetection::FlowStatistic(
-          result, frame_id, &count_list, &in_count_list, &out_count_list);
-    }
     if (save_result_) {
       PaddleDetection::SaveMOTResult(result, frame_id, &records);
     }
@@ -221,6 +228,17 @@ void Pipeline::PredictMOT(const std::string& video_path) {
 
     fclose(fp);
     LOG(INFO) << "txt result output saved as " << result_output_path.c_str();
+    
+    result_output_path = output_dir_ + OS_PATH_SEP + "flow_statistic.txt";
+    if ((fp = fopen(result_output_path.c_str(), "w+")) == NULL) {
+      printf("Open %s error.\n", result_output_path);
+      return;
+    }
+    for (int l; l < flow_records.size(); ++l) {
+      fprintf(fp, flow_records[l].c_str());
+    }
+    fclose(fp);
+    LOG(INFO) << "txt flow statistic saved as " << result_output_path.c_str();
   }
 }
 
@@ -230,11 +248,16 @@ void Pipeline::PredictMTMCT(const std::vector<std::string> video_path) {
 
 void Pipeline::RunMOTStream(const cv::Mat img,
                             const int frame_id,
+                            const int video_fps,
+                            const Rect entrance,
                             cv::Mat out_img,
                             std::vector<std::string>* records,
-                            std::vector<int>* count_list,
-                            std::vector<int>* in_count_list,
-                            std::vector<int>* out_count_list) {
+                            std::set<int>* id_set,
+                            std::set<int>* interval_id_set,
+                            std::vector<int>* in_id_list,
+                            std::vector<int>* out_id_list,
+                            std::map<int, std::vector<float>>* prev_center,
+                            std::vector<std::string>* flow_records) {
   PaddleDetection::MOTResult result;
   std::vector<double> det_times(3);
   double times;
@@ -250,15 +273,15 @@ void Pipeline::RunMOTStream(const cv::Mat img,
   LOG(INFO) << "frame_id: " << frame_id
             << " predict time(s): " << total_time / 1000;
 
-  out_img = PaddleDetection::VisualizeTrackResult(
-      img, result, 1000. / times, frame_id);
+  out_img = PaddleDetection::VisualizeTrackResult(img, result, 1000. / times,
+                                                  frame_id);
 
-  if (count_) {
-    // Count total number
-    // Count in & out number
-    PaddleDetection::FlowStatistic(
-        result, frame_id, count_list, in_count_list, out_count_list);
-  }
+  // Count total number
+  // Count in & out number
+  PaddleDetection::FlowStatistic(result, frame_id, secs_interval_, do_entrance_counting_,
+                                 video_fps, entrance, id_set,
+                                 interval_id_set, in_id_list,
+                                 out_id_list, prev_center, flow_records);
 
   PrintBenchmarkLog(det_times, frame_id);
   if (save_result_) {
@@ -303,4 +326,4 @@ void Pipeline::PrintBenchmarkLog(const std::vector<double> det_time,
             << ", postprocess_time(ms): " << det_time[2] / num;
 }
 
-}  // namespace PaddleDetection
+} // namespace PaddleDetection

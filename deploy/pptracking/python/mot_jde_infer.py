@@ -29,7 +29,7 @@ from benchmark_utils import PaddleInferBenchmark
 from visualize import plot_tracking_dict
 
 from mot.tracker import JDETracker
-from mot.utils import MOTTimer, write_mot_results
+from mot.utils import MOTTimer, write_mot_results, flow_statistic
 
 # Global dictionary
 MOT_SUPPORT_MODELS = {
@@ -221,6 +221,16 @@ def predict_video(detector, camera_id):
     data_type = 'mcmot' if num_classes > 1 else 'mot'
     ids2names = detector.pred_config.labels
 
+    if num_classes == 1:
+        id_set = set()
+        interval_id_set = set()
+        in_id_list = list()
+        out_id_list = list()
+        prev_center = dict()
+        records = list()
+        entrance = [0, height / 2., width, height / 2.]
+
+    video_fps = fps
     while (1):
         ret, frame = capture.read()
         if not ret:
@@ -235,6 +245,25 @@ def predict_video(detector, camera_id):
                                     online_scores[cls_id], online_ids[cls_id]))
 
         fps = 1. / timer.duration
+        # NOTE: just implement flow statistic for one class
+        if num_classes == 1:
+            result = (frame_id + 1, online_tlwhs[0], online_scores[0],
+                      online_ids[0])
+            statistic = flow_statistic(
+                result, FLAGS.secs_interval, FLAGS.do_entrance_counting,
+                video_fps, entrance, id_set, interval_id_set, in_id_list,
+                out_id_list, prev_center, records, data_type, num_classes)
+            id_set = statistic['id_set']
+            interval_id_set = statistic['interval_id_set']
+            in_id_list = statistic['in_id_list']
+            out_id_list = statistic['out_id_list']
+            prev_center = statistic['prev_center']
+            records = statistic['records']
+
+        elif num_classes > 1 and do_entrance_counting:
+            raise NotImplementedError(
+                'Multi-class flow counting is not implemented now!')
+
         im = plot_tracking_dict(
             frame,
             num_classes,
@@ -264,6 +293,16 @@ def predict_video(detector, camera_id):
                                        video_name.split('.')[-2] + '.txt')
 
         write_mot_results(result_filename, results, data_type, num_classes)
+
+        if num_classes == 1:
+            result_filename = os.path.join(
+                FLAGS.output_dir,
+                video_name.split('.')[-2] + '_flow_statistic.txt')
+            f = open(result_filename, 'w')
+            for line in records:
+                f.write(line)
+            print('Flow statistic save in {}'.format(result_filename))
+            f.close()
 
     if FLAGS.save_images:
         save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])

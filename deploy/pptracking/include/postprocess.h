@@ -14,11 +14,14 @@
 
 #pragma once
 
+#include <glog/logging.h>
+
 #include <ctime>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+#include <set>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -40,9 +43,17 @@ cv::Mat VisualizeTrackResult(const cv::Mat& img,
 // Pedestrian/Vehicle Counting
 void FlowStatistic(const MOTResult& results,
                    const int frame_id,
-                   std::vector<int>* count_list,
-                   std::vector<int>* in_count_list,
-                   std::vector<int>* out_count_list);
+                   const int secs_interval,
+                   const bool do_entrance_counting,
+                   const int video_fps,
+                   const Rect entrance,
+                   std::set<int>* id_set,
+                   std::set<int>* interval_id_set,
+                   std::vector<int>* in_id_list,
+                   std::vector<int>* out_id_list,
+                   std::map<int, std::vector<float>>* prev_center,
+                   std::vector<std::string>* records);
+
 
 // Save Tracking Results
 void SaveMOTResult(const MOTResult& results,
