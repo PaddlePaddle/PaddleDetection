@@ -54,7 +54,8 @@ DEFINE_bool(trt_calib_mode,
             "If the model is produced by TRT offline quantitative calibration, "
             "trt_calib_mode need to set True");
 DEFINE_bool(tiny_obj, false, "Whether tracking tiny object");
-DEFINE_bool(do_entrance_counting, false,
+DEFINE_bool(do_entrance_counting,
+            false,
             "Whether counting the numbers of identifiers entering "
             "or getting out from the entrance.");
 DEFINE_int32(secs_interval, 10, "The seconds interval to count after tracking");
@@ -64,6 +65,9 @@ DEFINE_string(
     "",
     "scene of tracking system, it can be : pedestrian/vehicle/multiclass");
 DEFINE_bool(is_mtmct, false, "Whether use multi-target multi-camera tracking");
+DEFINE_string(track_model_dir, "", "Path of tracking model");
+DEFINE_string(det_model_dir, "", "Path of detection model");
+DEFINE_string(reid_model_dir, "", "Path of reid model");
 
 static std::string DirName(const std::string& filepath) {
   auto pos = filepath.rfind(OS_PATH_SEP);
@@ -109,15 +113,21 @@ static void MkDirs(const std::string& path) {
 int main(int argc, char** argv) {
   // Parsing command-line
   google::ParseCommandLineFlags(&argc, &argv, true);
-  if (FLAGS_video_file.empty() || FLAGS_scene.empty()) {
-    std::cout << "Usage: ./main "
-              << "-video_file=/PATH/TO/INPUT/IMAGE/ "
-              << "-scene=pedestrian/vehicle/multiclass" << std::endl;
+  bool has_model_dir =
+      !(FLAGS_track_model_dir.empty() && FLAGS_det_model_dir.empty() &&
+        FLAGS_reid_model_dir.empty());
+  if (FLAGS_video_file.empty() || (FLAGS_scene.empty() && !has_model_dir)) {
+    LOG(ERROR) << "Usage: \n"
+               << "1. ./main -video_file=/PATH/TO/INPUT/IMAGE/ "
+               << "-scene=pedestrian/vehicle/multiclass\n"
+               << "2. ./main -video_file=/PATH/TO/INPUT/IMAGE/ "
+               << "-track_model_dir=/PATH/TO/MODEL_DIR" << std::endl;
+
     return -1;
   }
   if (!(FLAGS_run_mode == "fluid" || FLAGS_run_mode == "trt_fp32" ||
         FLAGS_run_mode == "trt_fp16" || FLAGS_run_mode == "trt_int8")) {
-    std::cout
+    LOG(ERROR)
         << "run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'.";
     return -1;
   }
@@ -127,7 +137,7 @@ int main(int argc, char** argv) {
             ::toupper);
   if (!(FLAGS_device == "CPU" || FLAGS_device == "GPU" ||
         FLAGS_device == "XPU")) {
-    std::cout << "device should be 'CPU', 'GPU' or 'XPU'.";
+    LOG(ERROR) << "device should be 'CPU', 'GPU' or 'XPU'.";
     return -1;
   }
 
@@ -148,7 +158,10 @@ int main(int argc, char** argv) {
                                      FLAGS_scene,
                                      FLAGS_tiny_obj,
                                      FLAGS_is_mtmct,
-                                     FLAGS_secs_interval);
+                                     FLAGS_secs_interval,
+                                     FLAGS_track_model_dir,
+                                     FLAGS_det_model_dir,
+                                     FLAGS_reid_model_dir);
 
   pipeline.SetInput(FLAGS_video_file);
   if (!FLAGS_video_other_file.empty()) {
