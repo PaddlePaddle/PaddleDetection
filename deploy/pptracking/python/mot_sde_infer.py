@@ -25,13 +25,13 @@ from paddle.inference import create_predictor
 
 from picodet_postprocess import PicoDetPostProcess
 from utils import argsparser, Timer, get_current_memory_mb
-from infer import Detector, DetectorPicoDet, get_test_images, print_arguments, PredictConfig
-from infer import load_predictor
+from det_infer import Detector, DetectorPicoDet, get_test_images, print_arguments, PredictConfig
+from det_infer import load_predictor
 from benchmark_utils import PaddleInferBenchmark
+from visualize import plot_tracking
 
-from ppdet.modeling.mot.tracker import DeepSORTTracker
-from ppdet.modeling.mot.visualization import plot_tracking
-from ppdet.modeling.mot.utils import MOTTimer, write_mot_results
+from mot.tracker import DeepSORTTracker
+from mot.utils import MOTTimer, write_mot_results, flow_statistic
 
 # Global dictionary
 MOT_SUPPORT_MODELS = {'DeepSORT'}
@@ -271,7 +271,8 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
         assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
         self.pred_config = pred_config
 
-    def postprocess_bboxes(self, boxes, input_shape, im_shape, scale_factor, threshold):
+    def postprocess_bboxes(self, boxes, input_shape, im_shape, scale_factor,
+                           threshold):
         over_thres_idx = np.nonzero(boxes[:, 1:2] >= threshold)[0]
         if len(over_thres_idx) == 0:
             pred_dets = np.zeros((1, 6), dtype=np.float32)
@@ -362,7 +363,7 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
                 boxes, input_shape, im_shape, scale_factor, threshold)
 
         return pred_dets, pred_xyxys
-        
+
 
 class SDE_ReID(object):
     def __init__(self,
@@ -538,11 +539,21 @@ def predict_video(detector, reid_model, camera_id):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
     if not FLAGS.save_images:
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        video_format = 'mp4v'
+        fourcc = cv2.VideoWriter_fourcc(*video_format)
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     frame_id = 0
     timer = MOTTimer()
     results = defaultdict(list)
+    id_set = set()
+    interval_id_set = set()
+    in_id_list = list()
+    out_id_list = list()
+    prev_center = dict()
+    records = list()
+    entrance = [0, height / 2., width, height / 2.]
+    video_fps = fps
+
     while (1):
         ret, frame = capture.read()
         if not ret:
@@ -563,9 +574,22 @@ def predict_video(detector, reid_model, camera_id):
                 crops, pred_dets)
             results[0].append(
                 (frame_id + 1, online_tlwhs, online_scores, online_ids))
+            # NOTE: just implement flow statistic for one class
+            result = (frame_id + 1, online_tlwhs, online_scores, online_ids)
+            statistic = flow_statistic(
+                result, FLAGS.secs_interval, FLAGS.do_entrance_counting,
+                video_fps, entrance, id_set, interval_id_set, in_id_list,
+                out_id_list, prev_center, records)
+            id_set = statistic['id_set']
+            interval_id_set = statistic['interval_id_set']
+            in_id_list = statistic['in_id_list']
+            out_id_list = statistic['out_id_list']
+            prev_center = statistic['prev_center']
+            records = statistic['records']
+
             timer.toc()
 
-            fps = 1. / timer.average_time
+            fps = 1. / timer.duration
             im = plot_tracking(
                 frame,
                 online_tlwhs,
@@ -584,7 +608,7 @@ def predict_video(detector, reid_model, camera_id):
             writer.write(im)
 
         frame_id += 1
-        print('detect frame:%d' % (frame_id))
+        print('detect frame:%d, fps: %f' % (frame_id, fps))
 
         if camera_id != -1:
             cv2.imshow('Tracking Detection', im)
@@ -595,6 +619,14 @@ def predict_video(detector, reid_model, camera_id):
         result_filename = os.path.join(FLAGS.output_dir,
                                        video_name.split('.')[-2] + '.txt')
         write_mot_results(result_filename, results)
+
+        result_filename = os.path.join(
+            FLAGS.output_dir, video_name.split('.')[-2] + '_flow_statistic.txt')
+        f = open(result_filename, 'w')
+        for line in records:
+            f.write(line)
+        print('Flow statistic save in {}'.format(result_filename))
+        f.close()
 
     if FLAGS.save_images:
         save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
