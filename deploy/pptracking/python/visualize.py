@@ -128,7 +128,9 @@ def plot_tracking(image,
                   scores=None,
                   frame_id=0,
                   fps=0.,
-                  ids2names=[]):
+                  ids2names=[],
+                  do_entrance_counting=False,
+                  entrance=None):
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
 
@@ -153,7 +155,8 @@ def plot_tracking(image,
         obj_id = int(obj_ids[i])
         id_text = '{}'.format(int(obj_id))
         if ids2names != []:
-            assert len(ids2names) == 1, "plot_tracking only supports single classes."
+            assert len(
+                ids2names) == 1, "plot_tracking only supports single classes."
             id_text = '{}_'.format(ids2names[0]) + id_text
         _line_thickness = 1 if obj_id <= 0 else line_thickness
         color = get_color(abs(obj_id))
@@ -174,6 +177,15 @@ def plot_tracking(image,
                 cv2.FONT_HERSHEY_PLAIN,
                 text_scale, (0, 255, 255),
                 thickness=text_thickness)
+
+    if do_entrance_counting:
+        entrance_line = tuple(map(int, entrance))
+        cv2.rectangle(
+            im,
+            entrance_line[0:2],
+            entrance_line[2:4],
+            color=(0, 255, 255),
+            thickness=line_thickness)
     return im
 
 
@@ -184,7 +196,9 @@ def plot_tracking_dict(image,
                        scores_dict,
                        frame_id=0,
                        fps=0.,
-                       ids2names=[]):
+                       ids2names=[],
+                       do_entrance_counting=False,
+                       entrance=None):
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
 
@@ -242,4 +256,12 @@ def plot_tracking_dict(image,
                     cv2.FONT_HERSHEY_PLAIN,
                     text_scale, (0, 255, 255),
                     thickness=text_thickness)
+    if num_classes == 1 and do_entrance_counting:
+        entrance_line = tuple(map(int, entrance))
+        cv2.rectangle(
+            im,
+            entrance_line[0:2],
+            entrance_line[2:4],
+            color=(0, 255, 255),
+            thickness=line_thickness)
     return im

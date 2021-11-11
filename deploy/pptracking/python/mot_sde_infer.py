@@ -596,7 +596,9 @@ def predict_video(detector, reid_model, camera_id):
                 online_ids,
                 online_scores,
                 frame_id=frame_id,
-                fps=fps)
+                fps=fps,
+                do_entrance_counting=FLAGS.do_entrance_counting,
+                entrance=entrance)
 
         if FLAGS.save_images:
             save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
