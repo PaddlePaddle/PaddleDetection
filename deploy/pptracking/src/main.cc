@@ -117,16 +117,17 @@ int main(int argc, char** argv) {
       !(FLAGS_track_model_dir.empty() && FLAGS_det_model_dir.empty() &&
         FLAGS_reid_model_dir.empty());
   if (FLAGS_video_file.empty() || (FLAGS_scene.empty() && !has_model_dir)) {
-    std::cout << "Usage: \n"
-              << "1. ./main -video_file=/PATH/TO/INPUT/IMAGE/ "
-              << "-scene=pedestrian/vehicle/multiclass\n"
-              << "2. ./main -video_file=/PATH/TO/INPUT/IMAGE/ "
-              << "-track_model_dir=/PATH/TO/MODEL_DIR" << std::endl;
+    LOG(ERROR) << "Usage: \n"
+               << "1. ./main -video_file=/PATH/TO/INPUT/IMAGE/ "
+               << "-scene=pedestrian/vehicle/multiclass\n"
+               << "2. ./main -video_file=/PATH/TO/INPUT/IMAGE/ "
+               << "-track_model_dir=/PATH/TO/MODEL_DIR" << std::endl;
+
     return -1;
   }
   if (!(FLAGS_run_mode == "fluid" || FLAGS_run_mode == "trt_fp32" ||
         FLAGS_run_mode == "trt_fp16" || FLAGS_run_mode == "trt_int8")) {
-    std::cout
+    LOG(ERROR)
         << "run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'.";
     return -1;
   }
@@ -136,7 +137,7 @@ int main(int argc, char** argv) {
             ::toupper);
   if (!(FLAGS_device == "CPU" || FLAGS_device == "GPU" ||
         FLAGS_device == "XPU")) {
-    std::cout << "device should be 'CPU', 'GPU' or 'XPU'.";
+    LOG(ERROR) << "device should be 'CPU', 'GPU' or 'XPU'.";
     return -1;
   }
 

@@ -114,11 +114,11 @@ void Pipeline::InitPredictor() {
 
 void Pipeline::Run() {
   if (track_model_dir_.empty() && det_model_dir_.empty()) {
-    std::cout << "Pipeline must use SelectModel before Run";
+    LOG(ERROR) << "Pipeline must use SelectModel before Run";
     return;
   }
   if (input_.size() == 0) {
-    std::cout << "Pipeline must use SetInput before Run";
+    LOG(ERROR) << "Pipeline must use SetInput before Run";
     return;
   }
 
