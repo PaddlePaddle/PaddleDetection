@@ -220,7 +220,7 @@ def flow_statistic(result,
                    out_id_list,
                    prev_center,
                    records,
-                   data_type,
+                   data_type='mot',
                    num_classes=1):
     # Count in and out number: 
     # Use horizontal center line as the entrance just for simplification.
