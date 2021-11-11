@@ -1,0 +1,28 @@
+_BASE_: [
+  '../../deepsort/detector/picodet_l_esnet_300e_896x896_mot17half.yml'
+]
+weights: output/picodet_l_esnet_300e_896x896_aicity_vehicle/model_final
+
+num_classes: 1
+TrainDataset:
+  !COCODataSet
+    image_dir: AICityImage
+    anno_path: AICityImage/train2017.json
+    dataset_dir: dataset/coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: AICityImage
+    anno_path: AICityImage/train2017.json
+    dataset_dir: dataset/coco
+
+TestDataset:
+  !ImageFolder
+    anno_path: AICityImage/train2017.json
+
+TrainReader:
+  batch_size: 15
+
+LearningRate:
+  base_lr: 0.1

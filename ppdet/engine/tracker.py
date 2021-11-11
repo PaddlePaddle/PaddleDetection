@@ -19,14 +19,18 @@ from __future__ import print_function
 import os
 import cv2
 import glob
+import re
 import paddle
 import numpy as np
+import os.path as osp
 from collections import defaultdict
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_box
 from ppdet.modeling.mot.utils import MOTTimer, load_det_results, write_mot_results, save_vis_results
+from ppdet.modeling.mot.mtmct_utils import print_results, print_mtmct_result
+from ppdet.modeling.mot.mtmct_utils import trajectory_fusion, parse_pt, parse_bias, gen_res, sub_cluster
 
 from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric
 from ppdet.metrics import MCMOTMetric
@@ -176,6 +180,7 @@ class Tracker(object):
                       save_dir=None,
                       show_image=False,
                       frame_rate=30,
+                      seq_name='',
                       scaled=False,
                       det_file='',
                       draw_threshold=0):
@@ -193,6 +198,10 @@ class Tracker(object):
             dets_list = load_det_results(det_file, len(dataloader))
             logger.info('Finish loading detection results file {}.'.format(
                 det_file))
+
+        ForMTMCT = True if 'cameras_bias' in self.cfg else False
+        if ForMTMCT:
+            mot_features_dict = {}
 
         for step_id, data in enumerate(dataloader):
             self.status['step_id'] = step_id
@@ -275,6 +284,9 @@ class Tracker(object):
             online_targets = tracker.update(pred_dets, pred_embs)
 
             online_tlwhs, online_scores, online_ids = [], [], []
+            if ForMTMCT:
+                online_tlbrs, online_feats = [], []
+
             for t in online_targets:
                 if not t.is_confirmed() or t.time_since_update > 1:
                     continue
@@ -289,6 +301,9 @@ class Tracker(object):
                 online_tlwhs.append(tlwh)
                 online_scores.append(tscore)
                 online_ids.append(tid)
+                if ForMTMCT:
+                    online_tlbrs.append(t.to_tlbr())
+                    online_feats.append(t.feat)
             timer.toc()
 
             # save results
@@ -297,9 +312,21 @@ class Tracker(object):
             save_vis_results(data, frame_id, online_ids, online_tlwhs,
                              online_scores, timer.average_time, show_image,
                              save_dir, self.cfg.num_classes)
+            if ForMTMCT:
+                for _tlbr, _id, _feat in zip(online_tlbrs, online_ids, online_feats):
+                    feat_data = {}
+                    feat_data['bbox'] = _tlbr
+                    feat_data['frame'] = f"{frame_id:06d}"
+                    feat_data['id'] = _id
+                    feat_data['imgname'] = f'{seq_name}_{_id}_{frame_id}.jpg'
+                    feat_data['feat'] = _feat
+                    mot_features_dict[feat_data['imgname']] = feat_data
             frame_id += 1
 
-        return results, frame_id, timer.average_time, timer.calls
+        if ForMTMCT:
+            return mot_features_dict, frame_id, timer.average_time, timer.calls
+        else:
+            return results, frame_id, timer.average_time, timer.calls
 
     def mot_evaluate(self,
                      data_root,
@@ -319,6 +346,17 @@ class Tracker(object):
             "data_type should be 'mot', 'mcmot' or 'kitti'"
         assert model_type in ['JDE', 'DeepSORT', 'FairMOT'], \
             "model_type should be 'JDE', 'DeepSORT' or 'FairMOT'"
+
+        ForMTMCT = True if 'cameras_bias' in self.cfg else False
+        if ForMTMCT:
+            score_thr = self.cfg.score_thr
+            use_ff = self.cfg.use_ff
+            use_rerank = self.cfg.use_rerank
+
+            mot_features_list = []
+            cid_tid_dict = dict()
+            cid_bias = parse_bias(self.cfg.cameras_bias)
+            scene_cluster = list(cid_bias.keys())
 
         # run tracking
         n_frame = 0
@@ -361,14 +399,16 @@ class Tracker(object):
                         save_dir=save_dir,
                         show_image=show_image,
                         frame_rate=frame_rate,
+                        seq_name=seq,
                         scaled=scaled,
                         det_file=os.path.join(det_results_dir,
                                               '{}.txt'.format(seq)))
                 else:
                     raise ValueError(model_type)
-
-            write_mot_results(result_filename, results, data_type,
-                              self.cfg.num_classes)
+            
+            if not ForMTMCT:
+                write_mot_results(result_filename, results, data_type,
+                                self.cfg.num_classes)
             n_frame += nf
             timer_avgs.append(ta)
             timer_calls.append(tc)
@@ -382,10 +422,23 @@ class Tracker(object):
                 logger.info('Save video in {}.'.format(output_video_path))
 
             logger.info('Evaluate seq: {}'.format(seq))
-            # update metrics
-            for metric in self._metrics:
-                metric.update(data_root, seq, data_type, result_root,
-                              result_filename)
+            if ForMTMCT:
+                # from mot_feature gen mot_list
+                mot_features_list.append(results)
+                cid = int(re.sub('[a-z,A-Z]',"",seq))
+                tid_data = trajectory_fusion(results, cid, cid_bias)
+                
+                # single seq process
+                for line in tid_data:
+                    tracklet = tid_data[line]
+                    tid = tracklet['tid']
+                    if (cid, tid) not in cid_tid_dict:
+                        cid_tid_dict[(cid, tid)] = tracklet
+            else:
+                # update metrics
+                for metric in self._metrics:
+                    metric.update(data_root, seq, data_type, result_root,
+                                result_filename)
 
         timer_avgs = np.asarray(timer_avgs)
         timer_calls = np.asarray(timer_calls)
@@ -394,12 +447,19 @@ class Tracker(object):
         logger.info('Time elapsed: {:.2f} seconds, FPS: {:.2f}'.format(
             all_time, 1.0 / avg_time))
 
-        # accumulate metric to log out
-        for metric in self._metrics:
-            metric.accumulate()
-            metric.log()
-        # reset metric states for metric may performed multiple times
-        self._reset_metrics()
+        if ForMTMCT:
+            map_tid = sub_cluster(cid_tid_dict, scene_cluster, score_thr, use_ff, use_rerank)
+            pred_mtmct_file = osp.join(output_dir, 'mtmct_result.txt')
+            gen_res(pred_mtmct_file, scene_cluster, map_tid, mot_features_list)
+            data_root_gt = osp.join(str.join('/', data_root.split('/')[0:-1]),'gt','gt.txt')
+            print_mtmct_result(data_root_gt, pred_mtmct_file)
+        else:
+            # accumulate metric to log out
+            for metric in self._metrics:
+                metric.accumulate()
+                metric.log()
+            # reset metric states for metric may performed multiple times
+            self._reset_metrics()
 
     def get_infer_images(self, infer_dir):
         assert infer_dir is None or os.path.isdir(infer_dir), \
@@ -501,3 +561,28 @@ class Tracker(object):
                 save_dir, output_video_path)
             os.system(cmd_str)
             logger.info('Save video in {}'.format(output_video_path))
+
+        ForMTMCT = True if 'cameras_bias' in self.cfg else False
+        if ForMTMCT:
+            score_thr = self.cfg.score_thr
+            use_ff = self.cfg.use_ff
+            use_rerank = self.cfg.use_rerank
+
+            mot_features_list = []
+            cid_tid_dict = dict()
+            cid_bias = parse_bias(self.cfg.cameras_bias)
+            scene_cluster = list(cid_bias.keys())
+            # from mot_feature gen mot_list
+            mot_features_list.append(results)
+            cid = int(re.sub('[a-z,A-Z]',"",seq))
+            tid_data = trajectory_fusion(results, cid, cid_bias)
+            # single seq process
+            for line in tid_data:
+                tracklet = tid_data[line]
+                tid = tracklet['tid']
+                if (cid, tid) not in cid_tid_dict:
+                    cid_tid_dict[(cid, tid)] = tracklet
+
+            map_tid = sub_cluster(cid_tid_dict, scene_cluster, score_thr, use_ff, use_rerank)
+            pred_mtmct_file = osp.join(output_dir, 'mtmct_result.txt')
+            gen_res(pred_mtmct_file, scene_cluster, map_tid, mot_features_list)
