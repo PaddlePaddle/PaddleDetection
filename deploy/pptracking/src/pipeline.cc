@@ -228,6 +228,14 @@ void Pipeline::PredictMOT(const std::string& video_path) {
     if (save_result_) {
       PaddleDetection::SaveMOTResult(result, frame_id, &records);
     }
+
+    // Draw the entrance line
+    if (do_entrance_counting_) {
+      float line_thickness = std::max(1, static_cast<int>(video_width / 500.));
+      cv::Point pt1 = cv::Point(entrance.left, entrance.top);
+      cv::Point pt2 = cv::Point(entrance.right, entrance.bottom);
+      cv::line(out_img, pt1, pt2, cv::Scalar(0, 255, 255), line_thickness);
+    }
     video_out.write(out_img);
   }
   capture.release();
