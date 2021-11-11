@@ -273,6 +273,17 @@ def predict_video(detector, camera_id):
             frame_id=frame_id,
             fps=fps,
             ids2names=ids2names)
+        if num_classes == 1 and FLAGS.do_entrance_counting:
+            line_thickness = max(1, int(width / 500.))
+            color = (0, 255, 255)
+            entrance_line = tuple(map(int, entrance))
+            cv2.rectangle(
+                im,
+                entrance_line[0:2],
+                entrance_line[2:4],
+                color=color,
+                thickness=line_thickness)
+
         if FLAGS.save_images:
             save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
             if not os.path.exists(save_dir):

@@ -597,6 +597,16 @@ def predict_video(detector, reid_model, camera_id):
                 online_scores,
                 frame_id=frame_id,
                 fps=fps)
+        if FLAGS.do_entrance_counting:
+            line_thickness = max(1, int(width / 500.))
+            color = (0, 255, 255)
+            entrance_line = tuple(map(int, entrance))
+            cv2.rectangle(
+                im,
+                entrance_line[0:2],
+                entrance_line[2:4],
+                color=color,
+                thickness=line_thickness)
 
         if FLAGS.save_images:
             save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
