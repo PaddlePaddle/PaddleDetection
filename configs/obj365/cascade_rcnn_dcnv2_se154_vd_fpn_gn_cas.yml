@@ -222,6 +222,8 @@ EvalReader:
 
 TestReader:
   batch_size: 1
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
     !ImageFolder
     anno_path: dataset/obj365/annotations/val.json
