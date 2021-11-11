@@ -367,10 +367,10 @@ class MCMOTDataSet(DetDataset):
         logger.info('Image start index: {}'.format(self.img_start_index))
 
         logger.info('Total identities of each category: ')
-        self.num_identities_dict = sorted(
+        num_identities_dict = sorted(
             self.num_identities_dict.items(), key=lambda x: x[0])
         total_IDs_all_cats = 0
-        for (k, v) in self.num_identities_dict:
+        for (k, v) in num_identities_dict:
             logger.info('Category {} [{}] has {} IDs.'.format(k, cid2cname[k],
                                                               v))
             total_IDs_all_cats += v
