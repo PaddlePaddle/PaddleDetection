@@ -2,24 +2,24 @@ _BASE_: [
   '../deepsort/deepsort_picodet_pplcnet.yml'
 ]
 
+num_classes: 1
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot/aic21mtmct_vehicle
+    data_root: S01/images
+    keep_ori_im: True # set as True in DeepSORT
+
 # config for MTMCT, cameras_bias will be reset if change scenes or cameras
 # len(cameras_bias) is the number of cameras
 score_thr: 0.1
 use_ff: True
 use_rerank: True
 cameras_bias:
-  c006: 0
-  c007: 0
-
-num_classes: 1
-EvalMOTDataset:
-  !MOTImageFolder
-    dataset_dir: dataset/mot/aic21mtmct_vehicle
-    data_root: S02/images
-    keep_ori_im: True # set as True in DeepSORT
+  c003: 0
+  c004: 0
 
 det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_l_esnet_300e_896x896_aicity_vehicle.pdparams
-reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet_vehicle.pdparams
 
 # DeepSORT configuration
 architecture: DeepSORT

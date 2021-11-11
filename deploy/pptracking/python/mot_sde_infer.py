@@ -16,6 +16,7 @@ import os
 import time
 import yaml
 import cv2
+import re
 import numpy as np
 from collections import defaultdict
 
@@ -32,6 +33,7 @@ from visualize import plot_tracking
 
 from mot.tracker import DeepSORTTracker
 from mot.utils import MOTTimer, write_mot_results, flow_statistic
+from mot.mtmct_utils import parse_bias, trajectory_fusion, sub_cluster, gen_res, print_mtmct_result
 
 # Global dictionary
 MOT_SUPPORT_MODELS = {'DeepSORT'}
@@ -638,6 +640,159 @@ def predict_video(detector, reid_model, camera_id):
         writer.release()
 
 
+def predict_mtmct_per_video(detector, reid_model, video_file, output_dir):
+    capture = cv2.VideoCapture(video_file)
+    width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = int(capture.get(cv2.CAP_PROP_FPS))
+    frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    print("fps: %d, frame_count: %d" % (fps, frame_count))
+
+    video_name = os.path.split(video_file)[-1]
+    out_path = os.path.join(output_dir, video_name)
+    if not FLAGS.save_images:
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+    frame_id = 0
+    timer = MOTTimer()
+    results = defaultdict(list)
+    while (1):
+        ret, frame = capture.read()
+        if not ret:
+            break
+        timer.tic()
+        pred_dets, pred_xyxys = detector.predict([frame], FLAGS.scaled,
+                                                 FLAGS.threshold)
+
+        if len(pred_dets) == 1 and np.sum(pred_dets) == 0:
+            print('Frame {} has no object, try to modify score threshold.'.
+                  format(frame_id))
+            timer.toc()
+            im = frame
+        else:
+            # reid process
+            crops = reid_model.get_crops(pred_xyxys, frame)
+            online_tlwhs, online_scores, online_ids = reid_model.predict(
+                crops, pred_dets)
+            results[0].append(
+                (frame_id + 1, online_tlwhs, online_scores, online_ids))
+            timer.toc()
+            
+            fps = 1. / timer.average_time
+            im = plot_tracking(
+                frame,
+                online_tlwhs,
+                online_ids,
+                online_scores,
+                frame_id=frame_id,
+                fps=fps)
+        if FLAGS.save_images:
+            save_dir = os.path.join(output_dir, video_name.split('.')[-2])
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            cv2.imwrite(
+                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
+        else:
+            writer.write(im)
+
+        frame_id += 1
+        print('detect frame:%d' % (frame_id))
+
+    if FLAGS.save_mot_txts:
+        result_filename = os.path.join(output_dir,
+                                       video_name.split('.')[-2] + '.txt')
+        write_mot_results(result_filename, results)
+
+    if FLAGS.save_images:
+        save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
+        cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(save_dir,
+                                                              out_path)
+        os.system(cmd_str)
+        print('Save video in {}.'.format(out_path))
+    else:
+        writer.release()
+
+    return results[0]
+
+def predict_mtmct_per_folder(detector, reid_model, fpath, output_dir):
+    image_list = os.listdir(fpath)
+    image_list.sort()
+    results = defaultdict(list)
+    seq_name = fpath.split('/')[-1]
+    for frame_id, img_file in enumerate(image_list):
+        frame = cv2.imread(os.path.join(fpath, img_file))
+        pred_dets, pred_xyxys = detector.predict([frame], FLAGS.scaled,
+                                                 FLAGS.threshold)
+        if len(pred_dets) == 1 and np.sum(pred_dets) == 0:
+            print('Frame {} has no object, try to modify score threshold.'.
+                  format(frame_id))
+            online_im = frame
+        else:
+            # reid process
+            crops = reid_model.get_crops(pred_xyxys, frame)
+
+            if FLAGS.run_benchmark:
+                online_tlwhs, online_scores, online_ids = reid_model.predict(
+                    crops, pred_dets, warmup=10, repeats=10)
+            else:
+                online_tlwhs, online_scores, online_ids = reid_model.predict(
+                    crops, pred_dets)
+                online_im = plot_tracking(
+                    frame, online_tlwhs, online_ids, online_scores, frame_id)
+                results[0].append(
+                    (frame_id + 1, online_tlwhs, online_scores, online_ids))
+        if FLAGS.save_images:
+            save_dir = os.path.join(output_dir, seq_name)
+            if not os.path.exists(save_dir): os.makedirs(save_dir)
+            img_name = os.path.split(img_file)[-1]
+            out_path = os.path.join(save_dir, img_name)
+            cv2.imwrite(out_path, online_im)
+            if frame_id % 40 == 0:
+                print("save result to: " + out_path)
+    return results[0]
+
+def predict_mtmct(detector, reid_model, mtmct_dir):
+    # todo: should set by pred_config
+    score_thr = 0.1
+    use_ff = False
+    use_rerank = False
+    cameras_bias = {'c003': 0, 'c004': 0}
+
+    mot_features_list = []
+    cid_tid_dict = dict()
+    cid_bias = parse_bias(cameras_bias)
+    scene_cluster = list(cid_bias.keys())
+
+    output_dir = FLAGS.output_dir
+    if not os.path.exists(output_dir): os.makedirs(output_dir)
+
+    seqs = os.listdir(mtmct_dir)
+    seqs.sort()
+    for seq in seqs:
+        fpath = os.path.join(mtmct_dir, seq)
+        if os.path.isfile(fpath):
+            mot_features = predict_mtmct_per_video(detector, reid_model, fpath, output_dir)
+        elif os.path.isdir(fpath):
+            mot_features = predict_mtmct_per_folder(detector, reid_model, fpath, output_dir)
+        else:
+            print('{} is not a video or image folder.'.format(fpath))
+            continue
+        # from mot_feature gen mot_list
+        mot_features_list.append(mot_features)
+        cid = int(re.sub('[a-z,A-Z]', "", seq))
+        tid_data = trajectory_fusion(mot_features, cid, cid_bias)
+        # single seq process
+        for line in tid_data:
+            tracklet = tid_data[line]
+            tid = tracklet['tid']
+            if (cid, tid) not in cid_tid_dict:
+                cid_tid_dict[(cid, tid)] = tracklet
+
+    map_tid = sub_cluster(cid_tid_dict, scene_cluster, score_thr, use_ff, use_rerank)
+    pred_mtmct_file = osp.join(output_dir, 'mtmct_result.txt')
+    gen_res(pred_mtmct_file, scene_cluster, map_tid, mot_features_list)
+
+
 def main():
     pred_config = PredictConfig(FLAGS.model_dir)
     detector_func = 'SDE_Detector'
@@ -673,6 +828,8 @@ def main():
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
         predict_video(detector, reid_model, FLAGS.camera_id)
+    elif FLAGS.mtmct_dir is not None:
+        predict_mtmct(detector, reid_model, FLAGS.mtmct_dir)
     else:
         # predict from image
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)

@@ -13,10 +13,8 @@ EvalMOTDataset:
     data_root: S01/images
     keep_ori_im: True # set as True in DeepSORT
 
-det_weights: None
-reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort_pplcnet_vehicle.pdparams
-
-# config for MTMCT
+# config for MTMCT, cameras_bias will be reset if change scenes or cameras
+# len(cameras_bias) is the number of cameras
 score_thr: 0.1
 use_ff: False
 use_rerank: False
@@ -26,3 +24,6 @@ cameras_bias:
   c003: 0
   c004: 0
   c005: 0
+
+det_weights: None
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort_pplcnet_vehicle.pdparams

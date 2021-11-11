@@ -131,6 +131,11 @@ def argsparser():
         type=int,
         default=10,
         help="The seconds interval to count after tracking")
+    parser.add_argument(
+        "--mtmct_dir",
+        type=str,
+        default=None,
+        help="The MTMCT scene video folder.")
     return parser
 
 
