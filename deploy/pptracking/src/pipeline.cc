@@ -36,7 +36,21 @@ void Pipeline::ClearInput() {
 
 void Pipeline::SelectModel(const std::string& scene,
                            const bool tiny_obj,
-                           const bool is_mtmct) {
+                           const bool is_mtmct,
+                           const std::string track_model_dir,
+                           const std::string det_model_dir,
+                           const std::string reid_model_dir) {
+  // model_dir has higher priority
+  if (!track_model_dir.empty()) {
+    track_model_dir_ = track_model_dir;
+    return;
+  }
+  if (!det_model_dir.empty() && !reid_model_dir.empty()) {
+    det_model_dir_ = det_model_dir;
+    reid_model_dir_ = reid_model_dir;
+    return;
+  }
+
   // Single camera model, based on FairMot
   if (scene == "pedestrian") {
     if (tiny_obj) {
@@ -100,11 +114,11 @@ void Pipeline::InitPredictor() {
 
 void Pipeline::Run() {
   if (track_model_dir_.empty() && det_model_dir_.empty()) {
-    std::cout << "Pipeline must use SelectModel before Run";
+    LOG(ERROR) << "Pipeline must use SelectModel before Run";
     return;
   }
   if (input_.size() == 0) {
-    std::cout << "Pipeline must use SetInput before Run";
+    LOG(ERROR) << "Pipeline must use SetInput before Run";
     return;
   }
 
@@ -165,7 +179,8 @@ void Pipeline::PredictMOT(const std::string& video_path) {
   std::vector<int> in_id_list;
   std::vector<int> out_id_list;
   std::map<int, std::vector<float>> prev_center;
-  Rect entrance = {0, static_cast<float>(video_height) / 2,
+  Rect entrance = {0,
+                   static_cast<float>(video_height) / 2,
                    static_cast<float>(video_width),
                    static_cast<float>(video_height) / 2};
   double times;
@@ -195,12 +210,20 @@ void Pipeline::PredictMOT(const std::string& video_path) {
 
     cv::Mat out_img = PaddleDetection::VisualizeTrackResult(
         frame, result, 1000. / times, frame_id);
-    
-   // TODO: the entrance line can be set by users
-    PaddleDetection::FlowStatistic(
-        result, frame_id, secs_interval_, do_entrance_counting_, video_fps, entrance,
-        &id_set, &interval_id_set, &in_id_list, &out_id_list,
-        &prev_center, &flow_records);
+
+    // TODO(qianhui): the entrance line can be set by users
+    PaddleDetection::FlowStatistic(result,
+                                   frame_id,
+                                   secs_interval_,
+                                   do_entrance_counting_,
+                                   video_fps,
+                                   entrance,
+                                   &id_set,
+                                   &interval_id_set,
+                                   &in_id_list,
+                                   &out_id_list,
+                                   &prev_center,
+                                   &flow_records);
 
     if (save_result_) {
       PaddleDetection::SaveMOTResult(result, frame_id, &records);
@@ -228,7 +251,7 @@ void Pipeline::PredictMOT(const std::string& video_path) {
 
     fclose(fp);
     LOG(INFO) << "txt result output saved as " << result_output_path.c_str();
-    
+
     result_output_path = output_dir_ + OS_PATH_SEP + "flow_statistic.txt";
     if ((fp = fopen(result_output_path.c_str(), "w+")) == NULL) {
       printf("Open %s error.\n", result_output_path);
@@ -273,15 +296,23 @@ void Pipeline::RunMOTStream(const cv::Mat img,
   LOG(INFO) << "frame_id: " << frame_id
             << " predict time(s): " << total_time / 1000;
 
-  out_img = PaddleDetection::VisualizeTrackResult(img, result, 1000. / times,
-                                                  frame_id);
+  out_img = PaddleDetection::VisualizeTrackResult(
+      img, result, 1000. / times, frame_id);
 
   // Count total number
   // Count in & out number
-  PaddleDetection::FlowStatistic(result, frame_id, secs_interval_, do_entrance_counting_,
-                                 video_fps, entrance, id_set,
-                                 interval_id_set, in_id_list,
-                                 out_id_list, prev_center, flow_records);
+  PaddleDetection::FlowStatistic(result,
+                                 frame_id,
+                                 secs_interval_,
+                                 do_entrance_counting_,
+                                 video_fps,
+                                 entrance,
+                                 id_set,
+                                 interval_id_set,
+                                 in_id_list,
+                                 out_id_list,
+                                 prev_center,
+                                 flow_records);
 
   PrintBenchmarkLog(det_times, frame_id);
   if (save_result_) {
@@ -326,4 +357,4 @@ void Pipeline::PrintBenchmarkLog(const std::vector<double> det_time,
             << ", postprocess_time(ms): " << det_time[2] / num;
 }
 
-} // namespace PaddleDetection
+}  // namespace PaddleDetection
