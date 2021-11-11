@@ -1,0 +1,20 @@
+metric: COCO
+num_classes: 1
+
+TrainDataset:
+  !COCODataSet
+    image_dir: ./
+    anno_path: mainbody_train.json
+    dataset_dir: dataset/mainbody_train/
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: ./
+    anno_path: mainbody_val.json
+    dataset_dir: dataset/mainbody_val/
+
+TestDataset:
+  !ImageFolder
+    anno_path: mainbody_val.json
+    dataset_dir: dataset/mainbody_val/

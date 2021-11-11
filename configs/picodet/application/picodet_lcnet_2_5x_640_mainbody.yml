@@ -1,0 +1,23 @@
+_BASE_: [
+  '../../datasets/mainbody_detection.yml',
+  '../../runtime.yml',
+  '../_base_/picodet_esnet.yml',
+  '../_base_/optimizer_100e.yml',
+  '../_base_/picodet_640_reader.yml',
+]
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x2_5_ssld_pretrained.pdparams
+weights: output/picodet_lcnet_2_5x_640_mainbody/model_final
+find_unused_parameters: True
+use_ema: true
+cycle_epoch: 20
+snapshot_epoch: 2
+
+PicoDet:
+  backbone: LCNet
+  neck: CSPPAN
+  head: PicoHead
+
+LCNet:
+  scale: 2.5
+  feature_maps: [3, 4, 5]
