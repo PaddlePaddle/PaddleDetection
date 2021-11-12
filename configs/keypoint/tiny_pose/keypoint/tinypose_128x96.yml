@@ -77,7 +77,7 @@ EvalDataset:
     trainsize: *trainsize
     pixel_std: *pixel_std
     use_gt_bbox: True
-    image_thre: 0.0
+    image_thre: 0.5
 
 TestDataset:
   !ImageFolder
