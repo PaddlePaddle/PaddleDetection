@@ -23,11 +23,11 @@ from paddle.fluid.regularizer import L2Decay
 from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
 
-__all__ = ['MobileNet']
+__all__ = ['MobileNetFuse']
 
 
 @register
-class MobileNet(object):
+class MobileNetFuse(object):
     """
     MobileNet v1, see https://arxiv.org/abs/1704.04861
 
@@ -59,6 +59,8 @@ class MobileNet(object):
         self.with_extra_blocks = with_extra_blocks
         self.extra_block_filters = extra_block_filters
         self.prefix_name = weight_prefix_name
+        self.conv2d_counter = 0
+        self.depthwise_conv2d_counter = 0
 
     def _conv_norm(self,
                    input,
@@ -87,19 +89,26 @@ class MobileNet(object):
             param_attr=parameter_attr,
             bias_attr=False)
 
-        bn_name = name + "_bn"
-        norm_decay = self.norm_decay
-        bn_param_attr = ParamAttr(
-            regularizer=L2Decay(norm_decay), name=bn_name + '_scale')
-        bn_bias_attr = ParamAttr(
-            regularizer=L2Decay(norm_decay), name=bn_name + '_offset')
-        return fluid.layers.batch_norm(
-            input=conv,
-            act=act,
-            param_attr=bn_param_attr,
-            bias_attr=bn_bias_attr,
-            moving_mean_name=bn_name + '_mean',
-            moving_variance_name=bn_name + '_variance')
+        if num_groups > 1:  # depthwise conv2d
+            conv2d_idx = self.depthwise_conv2d_counter
+            eleadd_y_name = "fuse_conv_bn/depthwise_conv2d_eltwise_y_in/" + str(conv2d_idx)
+            self.depthwise_conv2d_counter += 1
+        else:  # conv2d
+            conv2d_idx = self.conv2d_counter
+            eleadd_y_name = "fuse_conv_bn/conv2d_eltwise_y_in/" + str(conv2d_idx)
+            self.conv2d_counter += 1
+
+        eleadd_y = fluid.layers.create_parameter(
+            name=eleadd_y_name,
+            shape=[num_filters],
+            dtype='float32')
+        eleadd = fluid.layers.elementwise_add(
+            x=conv,
+            y=eleadd_y,
+            axis=1,
+            act=act)
+
+        return eleadd
 
     def depthwise_separable(self,
                             input,
