@@ -23,6 +23,7 @@ from . import fairmot
 from . import centernet
 from . import detr
 from . import sparse_rcnn
+from . import paa
 
 from .meta_arch import *
 from .faster_rcnn import *

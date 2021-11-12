@@ -27,6 +27,7 @@ from . import keypoint_hrhrnet_head
 from . import centernet_head
 from . import detr_head
 from . import sparsercnn_head
+from . import paa_head
 
 from .bbox_head import *
 from .mask_head import *
