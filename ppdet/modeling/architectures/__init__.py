@@ -26,6 +26,7 @@ from . import picodet
 from . import detr
 from . import sparse_rcnn
 from . import tood
+from . import paa
 
 from .meta_arch import *
 from .faster_rcnn import *
