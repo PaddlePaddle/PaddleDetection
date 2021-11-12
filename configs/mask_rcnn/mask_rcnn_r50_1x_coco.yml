@@ -6,3 +6,26 @@ _BASE_: [
   '_base_/mask_reader.yml',
 ]
 weights: output/mask_rcnn_r50_1x_coco/model_final
+
+epoch: 5
+
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [3,]
+  - !LinearWarmup
+    start_factor: 0.001
+    steps: 1
+
+OptimizerBuilder:
+  clip_grad_by_norm: 0.1
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0
+    type: L2
+
+worker_num: 0
