@@ -121,21 +121,22 @@ def write_mot_results(filename, results, data_type='mot', num_classes=1):
     f = open(filename, 'w')
     for cls_id in range(num_classes):
         for frame_id, tlwhs, tscores, track_ids in results[cls_id]:
+            if data_type == 'kitti':
+                frame_id -= 1
             for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
                 if track_id < 0: continue
-                if data_type == 'kitti':
-                    frame_id -= 1
-                elif data_type == 'mot':
+                if data_type == 'mot':
                     cls_id = -1
-                elif data_type == 'mcmot':
-                    cls_id = cls_id
 
                 x1, y1, w, h = tlwh
+                x2, y2 = x1 + w, y1 + h
                 line = save_format.format(
                     frame=frame_id,
                     id=track_id,
                     x1=x1,
                     y1=y1,
+                    x2=x2,
+                    y2=y2,
                     w=w,
                     h=h,
                     score=score,
