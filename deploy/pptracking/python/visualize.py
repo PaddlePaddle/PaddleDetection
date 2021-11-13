@@ -213,13 +213,6 @@ def plot_tracking_dict(image,
 
     radius = max(5, int(im_w / 140.))
 
-    cv2.putText(
-        im,
-        records[-1], (0, int(30 * text_scale)),
-        cv2.FONT_HERSHEY_PLAIN,
-        text_scale, (0, 0, 255),
-        thickness=2)
-
     for cls_id in range(num_classes):
         tlwhs = tlwhs_dict[cls_id]
         obj_ids = obj_ids_dict[cls_id]
@@ -238,8 +231,8 @@ def plot_tracking_dict(image,
             intbox = tuple(map(int, (x1, y1, x1 + w, y1 + h)))
             center = tuple(map(int, (x1 + w / 2., y1 + h / 2.)))
             obj_id = int(obj_ids[i])
-            record_id.add(obj_id)
             if center_traj is not None:
+                record_id.add(obj_id)
                 if obj_id not in center_traj:
                     center_traj[obj_id] = deque(maxlen=30)
                 center_traj[obj_id].append(center)

@@ -220,10 +220,11 @@ def predict_video(detector, camera_id):
     num_classes = detector.num_classes
     data_type = 'mcmot' if num_classes > 1 else 'mot'
     ids2names = detector.pred_config.labels
+    center_traj = None
+    entrance = None
+    records = None
     if FLAGS.draw_center_traj:
         center_traj = {}
-    else:
-        center_traj = None
 
     if num_classes == 1:
         id_set = set()
@@ -265,7 +266,7 @@ def predict_video(detector, camera_id):
             prev_center = statistic['prev_center']
             records = statistic['records']
 
-        elif num_classes > 1 and do_entrance_counting:
+        elif num_classes > 1 and FLAGS.do_entrance_counting:
             raise NotImplementedError(
                 'Multi-class flow counting is not implemented now!')
         im = plot_tracking_dict(
