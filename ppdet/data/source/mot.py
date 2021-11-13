@@ -271,8 +271,7 @@ class MCMOTDataSet(DetDataset):
         if self.image_lists == []:
             return
         # only used to get categories and metric
-        return os.path.join(self.dataset_dir, 'image_lists',
-                            self.image_lists[0])
+        return os.path.join(self.dataset_dir, self.image_lists[0].split('.')[0], 'label_list.txt')
 
     def parse_dataset(self):
         self.img_files = OrderedDict()

@@ -33,7 +33,10 @@ from visualize import plot_tracking
 
 from mot.tracker import DeepSORTTracker
 from mot.utils import MOTTimer, write_mot_results, flow_statistic
-from mot.mtmct_utils import parse_bias, trajectory_fusion, sub_cluster, gen_res, print_mtmct_result
+
+from mot.mtmct.utils import parse_bias
+from mot.mtmct.postprocess import trajectory_fusion, sub_cluster, gen_res, print_mtmct_result
+from mot.mtmct.postprocess import get_mtmct_matching_results, save_mtmct_crops, save_mtmct_vis_results
 
 # Global dictionary
 MOT_SUPPORT_MODELS = {'DeepSORT'}
@@ -753,17 +756,33 @@ def predict_mtmct_per_folder(detector, reid_model, fpath, output_dir):
                 print("save result to: " + out_path)
     return results[0]
 
-def predict_mtmct(detector, reid_model, mtmct_dir):
-    # todo: should set by pred_config
-    score_thr = 0.1
-    use_ff = False
-    use_rerank = False
-    cameras_bias = {'c003': 0, 'c004': 0}
+def predict_mtmct(detector, reid_model, mtmct_dir, mtmct_cfg):
+    MTMCT = mtmct_cfg.MTMCT
+    assert MTMCT == True, 'predict_mtmct should be used for MTMCT.'
 
-    mot_features_list = []
-    cid_tid_dict = dict()
+    cameras_bias = mtmct_cfg.cameras_bias
     cid_bias = parse_bias(cameras_bias)
     scene_cluster = list(cid_bias.keys())
+
+    # 1.zone releated parameters
+    use_zone = mtmct_cfg.use_zone
+    zone_path = mtmct_cfg.zone_path
+    
+    # 2.tricks parameters, can be used for other mtmct dataset
+    use_ff = mtmct_cfg.use_ff
+    use_rerank = mtmct_cfg.use_rerank
+
+    # 3.camera releated parameters
+    use_camera = mtmct_cfg.use_camera
+    use_st_filter = mtmct_cfg.use_st_filter
+
+    # 4.zone releated parameters
+    use_roi = mtmct_cfg.use_roi
+    roi_dir = mtmct_cfg.roi_dir
+
+    mot_features_list = []
+    mot_list_breaks = []
+    cid_tid_dict = dict()
 
     output_dir = FLAGS.output_dir
     if not os.path.exists(output_dir): os.makedirs(output_dir)
@@ -779,10 +798,12 @@ def predict_mtmct(detector, reid_model, mtmct_dir):
         else:
             print('{} is not a video or image folder.'.format(fpath))
             continue
+
         # from mot_feature gen mot_list
-        mot_features_list.append(mot_features)
+        mot_features_list.append(results)
         cid = int(re.sub('[a-z,A-Z]', "", seq))
-        tid_data = trajectory_fusion(mot_features, cid, cid_bias)
+        tid_data, mot_list_break = trajectory_fusion(results, cid, cid_bias, use_zone=use_zone, zone_path=zone_path)
+        mot_list_breaks.append(mot_list_break)
         # single seq process
         for line in tid_data:
             tracklet = tid_data[line]
@@ -790,9 +811,20 @@ def predict_mtmct(detector, reid_model, mtmct_dir):
             if (cid, tid) not in cid_tid_dict:
                 cid_tid_dict[(cid, tid)] = tracklet
 
-    map_tid = sub_cluster(cid_tid_dict, scene_cluster, score_thr, use_ff, use_rerank)
+    map_tid = sub_cluster(cid_tid_dict, scene_cluster, use_ff=use_ff, use_rerank=use_rerank, use_camera=use_camera, use_st_filter=use_st_filter)
+
     pred_mtmct_file = osp.join(output_dir, 'mtmct_result.txt')
-    gen_res(pred_mtmct_file, scene_cluster, map_tid, mot_features_list)
+    if use_camera:
+        gen_res(pred_mtmct_file, scene_cluster, map_tid, mot_features_list)
+    else:
+        gen_res(pred_mtmct_file, scene_cluster, map_tid, mot_list_breaks, use_roi=use_roi, roi_dir=data_root)
+    # accumulate metric to log out
+    data_root_gt = osp.join(str.join('/', data_root.split('/')[0:-1]),'gt','gt.txt')
+    print_mtmct_result(data_root_gt, pred_mtmct_file)
+
+    carame_results, cid_tid_fid_res = get_mtmct_matching_results(pred_mtmct_file)
+    save_mtmct_crops(cid_tid_fid_res, images_dir=data_root, crops_dir=output_dir)
+    save_mtmct_vis_results(carame_results, images_dir=data_root, save_dir=output_dir, save_videos=save_videos)
 
 
 def main():
@@ -830,8 +862,13 @@ def main():
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
         predict_video(detector, reid_model, FLAGS.camera_id)
+
     elif FLAGS.mtmct_dir is not None:
-        predict_mtmct(detector, reid_model, FLAGS.mtmct_dir)
+        mtmct_cfg_file = FLAGS.mtmct_cfg
+        with open(mtmct_cfg_file) as f:
+            mtmct_cfg = yaml.safe_load(f)
+        predict_mtmct(detector, reid_model, FLAGS.mtmct_dir, mtmct_cfg)
+
     else:
         # predict from image
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)

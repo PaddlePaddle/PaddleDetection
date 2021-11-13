@@ -108,23 +108,9 @@ def run(FLAGS, cfg):
         tracker.load_weights_jde(cfg.weights)
 
     # inference
-    if FLAGS.mtmct_dir is not None:
-        # inference for MTMCT (multi-camera MOT)
-        tracker.mtmct_predict(
-            mtmct_dir=FLAGS.mtmct_dir,
-            frame_rate=FLAGS.frame_rate,
-            data_type=cfg.metric.lower(),
-            model_type=cfg.architecture,
-            output_dir=FLAGS.output_dir,
-            save_images=FLAGS.save_images,
-            save_videos=FLAGS.save_videos,
-            show_image=FLAGS.show_image,
-            scaled=FLAGS.scaled,
-            det_results_dir=FLAGS.det_results_dir,
-            draw_threshold=FLAGS.draw_threshold)
-    else:
+    if not tracker.MTMCT:
         # inference for single camera MOT
-        tracker.mot_predict(
+        tracker.mot_predict_seq(
             video_file=FLAGS.video_file,
             frame_rate=FLAGS.frame_rate,
             image_dir=FLAGS.image_dir,
@@ -137,6 +123,20 @@ def run(FLAGS, cfg):
             scaled=FLAGS.scaled,
             det_results_dir=FLAGS.det_results_dir,
             draw_threshold=FLAGS.draw_threshold)
+    else:
+        # inference for multi-camera MOT (MTMCT)
+        tracker.mtmct_predict(
+            frame_rate=FLAGS.frame_rate,
+            data_type=cfg.metric.lower(),
+            model_type=cfg.architecture,
+            output_dir=FLAGS.output_dir,
+            save_images=FLAGS.save_images,
+            save_videos=FLAGS.save_videos,
+            show_image=FLAGS.show_image,
+            scaled=FLAGS.scaled,
+            det_results_dir=FLAGS.det_results_dir,
+            draw_threshold=FLAGS.draw_threshold,
+            mtmct_dir=FLAGS.mtmct_dir)
 
 
 def main():

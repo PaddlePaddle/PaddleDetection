@@ -1,5 +1,5 @@
 _BASE_: [
-  '../deepsort/deepsort_picodet_pplcnet.yml'
+  '../deepsort/deepsort_ppyolov2_pplcnet.yml'
 ]
 num_classes: 1
 EvalMOTDataset:
@@ -27,44 +27,22 @@ use_roi: True
 roi_dir: dataset/mot/aic21mtmct_vehicle/S06/zone
 
 
-det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_l_esnet_300e_896x896_aicity_vehicle.pdparams
+det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_640x640_aicity_vehicle.pdparams
 reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet_vehicle.pdparams
 
-EvalMOTReader:
-  sample_transforms:
-  - Decode: {}
-  - Resize: {interp: 2, target_size: [640, 640], keep_ratio: False}
-  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
-  - Permute: {}
-  batch_transforms:
-  - PadBatch: {pad_to_stride: 32}
-  batch_size: 1
-  shuffle: false
-
-TestMOTReader:
-  sample_transforms:
-  - Decode: {}
-  - Resize: {interp: 2, target_size: [640, 640], keep_ratio: False}
-  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
-  - Permute: {}
-  batch_transforms:
-  - PadBatch: {pad_to_stride: 32}
-  batch_size: 1
-  shuffle: false
-
-
 # DeepSORT configuration
-# see 'configs/mot/deepsort/deepsort_picodet_pplcnet.yml'
+# see 'configs/mot/deepsort/deepsort_ppyolov2_pplcnet.yml'
 architecture: DeepSORT
 pretrain_weights: None
 
 DeepSORT:
-  detector: PicoDet
+  detector: YOLOv3 # PPYOLOv2 version
   reid: PPLCNetEmbedding
   tracker: DeepSORTTracker
 
+
 # reid and tracker configuration
-# see 'configs/mot/deepsort/reid/deepsort_pplcnet_vehicle.yml'
+# see 'configs/mot/deepsort/reid/deepsort_pplcnet.yml'
 PPLCNetEmbedding:
   input_ch: 1280
   output_ch: 512

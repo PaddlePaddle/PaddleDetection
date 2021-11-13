@@ -140,6 +140,11 @@ def argsparser():
         type=str,
         default=None,
         help="The MTMCT scene video folder.")
+    parser.add_argument(
+        "--mtmct_cfg",
+        type=str,
+        default='mtmct.yml',
+        help="The MTMCT config.")
     return parser
 
 

@@ -92,18 +92,32 @@ def run(FLAGS, cfg):
         tracker.load_weights_jde(cfg.weights)
 
     # inference
-    tracker.mot_evaluate(
-        data_root=data_root,
-        seqs=seqs,
-        data_type=cfg.metric.lower(),
-        model_type=cfg.architecture,
-        output_dir=FLAGS.output_dir,
-        save_images=FLAGS.save_images,
-        save_videos=FLAGS.save_videos,
-        show_image=FLAGS.show_image,
-        scaled=FLAGS.scaled,
-        det_results_dir=FLAGS.det_results_dir)
-
+    if not tracker.MTMCT:
+        # inference for single camera MOT
+        tracker.mot_evaluate(
+            data_root=data_root,
+            seqs=seqs,
+            data_type=cfg.metric.lower(),
+            model_type=cfg.architecture,
+            output_dir=FLAGS.output_dir,
+            save_images=FLAGS.save_images,
+            save_videos=FLAGS.save_videos,
+            show_image=FLAGS.show_image,
+            scaled=FLAGS.scaled,
+            det_results_dir=FLAGS.det_results_dir)
+    else:
+        # inference for multi-camera MOT (MTMCT)
+        tracker.mtmct_evaluate(
+            data_root=data_root,
+            seqs=seqs,
+            data_type=cfg.metric.lower(),
+            model_type=cfg.architecture,
+            output_dir=FLAGS.output_dir,
+            save_images=FLAGS.save_images,
+            save_videos=FLAGS.save_videos,
+            show_image=FLAGS.show_image,
+            scaled=FLAGS.scaled,
+            det_results_dir=FLAGS.det_results_dir)
 
 def main():
     FLAGS = parse_args()
