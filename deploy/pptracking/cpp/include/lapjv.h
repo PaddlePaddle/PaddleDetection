@@ -17,8 +17,8 @@
 // Ths copyright of gatagat/lap is as follows:
 // MIT License
 
-#ifndef DEPLOY_PPTRACKING_INCLUDE_LAPJV_H_
-#define DEPLOY_PPTRACKING_INCLUDE_LAPJV_H_
+#ifndef DEPLOY_PPTRACKING_CPP_INCLUDE_LAPJV_H_
+#define DEPLOY_PPTRACKING_CPP_INCLUDE_LAPJV_H_
 #define LARGE 1000000
 
 #if !defined TRUE
@@ -61,4 +61,4 @@ int lapjv_internal(const cv::Mat &cost,
 
 }  // namespace PaddleDetection
 
-#endif  // DEPLOY_PPTRACKING_INCLUDE_LAPJV_H_
+#endif  // DEPLOY_PPTRACKING_CPP_INCLUDE_LAPJV_H_
