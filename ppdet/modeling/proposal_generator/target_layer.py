@@ -15,8 +15,72 @@ import sys
 import paddle
 from ppdet.core.workspace import register, serializable
 
-from .target import rpn_anchor_target, generate_proposal_target, generate_mask_target, libra_generate_proposal_target
+from .target import rpn_anchor_target, generate_proposal_target, generate_mask_target, libra_generate_proposal_target, \
+    paa_anchor_target
 import numpy as np
+
+
+@register
+@serializable
+class PAATargetAssign(object):
+    """
+    PAA targets assignment module
+
+    The assignment consists of three steps:
+        1. Match anchor and ground-truth box, label the anchor with foreground
+           or background sample
+        2. Sample anchors to keep the properly ratio between foreground and
+           background
+        3. Generate the targets for classification and regression branch
+
+
+    Args:
+        batch_size_per_im (int): Total number of RPN samples per image.
+            default 256
+        fg_fraction (float): Fraction of anchors that is labeled
+            foreground, default 0.5
+        positive_overlap (float): Minimum overlap required between an anchor
+            and ground-truth box for the (anchor, gt box) pair to be
+            a foreground sample. default 0.7
+        negative_overlap (float): Maximum overlap allowed between an anchor
+            and ground-truth box for the (anchor, gt box) pair to be
+            a background sample. default 0.3
+        ignore_thresh(float): Threshold for ignoring the is_crowd ground-truth
+            if the value is larger than zero.
+        use_random (bool): Use random sampling to choose foreground and
+            background boxes, default true.
+    """
+
+    def __init__(self,
+                 batch_size_per_im=256,
+                 fg_fraction=0.5,
+                 positive_overlap=0.7,
+                 negative_overlap=0.3,
+                 ignore_thresh=-1.,
+                 use_random=True):
+        super(PAATargetAssign, self).__init__()
+        self.batch_size_per_im = batch_size_per_im
+        self.fg_fraction = fg_fraction
+        self.positive_overlap = positive_overlap
+        self.negative_overlap = negative_overlap
+        self.ignore_thresh = ignore_thresh
+        self.use_random = use_random
+
+    def __call__(self, inputs, anchors):
+        """
+        inputs: ground-truth instances.
+        anchor_box (Tensor): [num_anchors, 4], num_anchors are all anchors in all feature maps.
+        """
+        gt_boxes = inputs['gt_bbox']
+        is_crowd = inputs.get('is_crowd', None)
+        batch_size = len(gt_boxes)
+        tgt_labels, tgt_bboxes, gt_inds, tgt_deltas = paa_anchor_target(
+            anchors, gt_boxes, self.batch_size_per_im, self.positive_overlap,
+            self.negative_overlap, self.fg_fraction, self.use_random,
+            batch_size, self.ignore_thresh, is_crowd)
+        norm = self.batch_size_per_im * batch_size
+
+        return tgt_labels, tgt_bboxes, gt_inds, tgt_deltas, norm
 
 
 @register
