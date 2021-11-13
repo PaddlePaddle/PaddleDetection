@@ -13,19 +13,18 @@
 // limitations under the License.
 #include <sstream>
 // for setprecision
-#include <iomanip>
 #include <chrono>
+#include <iomanip>
 #include "include/predictor.h"
 
-
-using namespace paddle_infer;
+using namespace paddle_infer;  // NOLINT
 
 namespace PaddleDetection {
 
 void Predictor::Predict(const std::vector<cv::Mat> imgs,
-      const double threshold,
-      MOTResult* result,
-      std::vector<double>* times) {
+                        const double threshold,
+                        MOTResult* result,
+                        std::vector<double>* times) {
   if (use_jde_) {
     jde_sct_->Predict(imgs, threshold, result, times);
   } else {

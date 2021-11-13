@@ -105,34 +105,34 @@ void FlowStatistic(const MOTResult& results,
                    const int secs_interval,
                    const bool do_entrance_counting,
                    const int video_fps,
-                   const Rect entrance, 
+                   const Rect entrance,
                    std::set<int>* id_set,
-                   std::set<int>* interval_id_set, 
-                   std::vector<int>* in_id_list, 
+                   std::set<int>* interval_id_set,
+                   std::vector<int>* in_id_list,
                    std::vector<int>* out_id_list,
                    std::map<int, std::vector<float>>* prev_center,
                    std::vector<std::string>* records) {
-  if (frame_id == 0)
-    interval_id_set->clear();
-  
+  if (frame_id == 0) interval_id_set->clear();
+
   if (do_entrance_counting) {
-    // Count in and out number: 
+    // Count in and out number:
     // Use horizontal center line as the entrance just for simplification.
-    // If a person located in the above the horizontal center line 
+    // If a person located in the above the horizontal center line
     // at the previous frame and is in the below the line at the current frame,
     // the in number is increased by one.
-    // If a person was in the below the horizontal center line 
-    // at the previous frame and locates in the below the line at the current frame,
+    // If a person was in the below the horizontal center line
+    // at the previous frame and locates in the below the line at the current
+    // frame,
     // the out number is increased by one.
-    // TODO: if the entrance is not the horizontal center line,
+    // TODO(qianhui): if the entrance is not the horizontal center line,
     // the counting method should be optimized.
-    
-    float entrance_y = entrance.top; 
+
+    float entrance_y = entrance.top;
     for (const auto& result : results) {
       float center_x = (result.rects.left + result.rects.right) / 2;
       float center_y = (result.rects.top + result.rects.bottom) / 2;
       int ids = result.ids;
-      std::map<int, std::vector<float>>::iterator iter;  
+      std::map<int, std::vector<float>>::iterator iter;
       iter = prev_center->find(ids);
       if (iter != prev_center->end()) {
         if (iter->second[1] <= entrance_y && center_y > entrance_y) {
@@ -145,7 +145,7 @@ void FlowStatistic(const MOTResult& results,
         (*prev_center)[ids][1] = center_y;
       } else {
         prev_center->insert(
-          std::pair<int, std::vector<float>>(ids, {center_x, center_y}));
+            std::pair<int, std::vector<float>>(ids, {center_x, center_y}));
       }
     }
   }
@@ -157,8 +157,7 @@ void FlowStatistic(const MOTResult& results,
   }
 
   std::ostringstream os;
-  os << "Frame id: " << frame_id
-     << ", Total count: " << id_set->size();
+  os << "Frame id: " << frame_id << ", Total count: " << id_set->size();
   if (do_entrance_counting) {
     os << ", In count: " << in_id_list->size()
        << ", Out count: " << out_id_list->size();

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DEPLOY_PPTRACKING_INCLUDE_PIPELINE_H_
-#define DEPLOY_PPTRACKING_INCLUDE_PIPELINE_H_
+#ifndef DEPLOY_PPTRACKING_CPP_INCLUDE_PIPELINE_H_
+#define DEPLOY_PPTRACKING_CPP_INCLUDE_PIPELINE_H_
 
 #include <glog/logging.h>
 
@@ -139,4 +139,4 @@ class Pipeline {
 
 }  // namespace PaddleDetection
 
-#endif  // DEPLOY_PPTRACKING_INCLUDE_PIPELINE_H_
+#endif  // DEPLOY_PPTRACKING_CPP_INCLUDE_PIPELINE_H_
