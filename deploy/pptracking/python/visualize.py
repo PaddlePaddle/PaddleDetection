@@ -20,6 +20,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw
 import math
+from collections import deque
 
 
 def visualize_box_mask(im, results, labels, threshold=0.5):
@@ -198,7 +199,9 @@ def plot_tracking_dict(image,
                        fps=0.,
                        ids2names=[],
                        do_entrance_counting=False,
-                       entrance=None):
+                       entrance=None,
+                       records=None,
+                       center_traj=None):
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
 
@@ -222,10 +225,17 @@ def plot_tracking_dict(image,
             text_scale, (0, 0, 255),
             thickness=2)
 
+        record_id = set()
         for i, tlwh in enumerate(tlwhs):
             x1, y1, w, h = tlwh
             intbox = tuple(map(int, (x1, y1, x1 + w, y1 + h)))
+            center = tuple(map(int, (x1 + w / 2., y1 + h / 2.)))
             obj_id = int(obj_ids[i])
+            if center_traj is not None:
+                record_id.add(obj_id)
+                if obj_id not in center_traj:
+                    center_traj[obj_id] = deque(maxlen=30)
+                center_traj[obj_id].append(center)
 
             id_text = '{}'.format(int(obj_id))
             if ids2names != []:
@@ -264,4 +274,11 @@ def plot_tracking_dict(image,
             entrance_line[2:4],
             color=(0, 255, 255),
             thickness=line_thickness)
+
+    if center_traj is not None:
+        for i in center_traj.keys():
+            if i not in record_id:
+                continue
+            for point in center_traj[i]:
+                cv2.circle(im, point, 3, (0, 0, 255), -1)
     return im
