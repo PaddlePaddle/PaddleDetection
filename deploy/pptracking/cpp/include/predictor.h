@@ -52,6 +52,10 @@ class Predictor {
       throw "Predictor must receive track_model or det_model!";
     }
 
+    if (!track_model_dir.empty() && !det_model_dir.empty()) {
+      throw "Predictor only receive one of track_model or det_model!";
+    }
+
     if (!track_model_dir.empty()) {
       jde_sct_ =
           std::make_shared<PaddleDetection::JDEPredictor>(device,
