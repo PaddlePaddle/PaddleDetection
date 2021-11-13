@@ -17,6 +17,55 @@ import paddle
 from ..bbox_utils import bbox2delta, bbox_overlaps
 
 
+def paa_anchor_target(anchors,
+                      gt_boxes,
+                      rpn_batch_size_per_im,
+                      rpn_positive_overlap,
+                      rpn_negative_overlap,
+                      rpn_fg_fraction,
+                      use_random=True,
+                      batch_size=1,
+                      ignore_thresh=-1,
+                      is_crowd=None,
+                      weights=[1., 1., 1., 1.]):
+    tgt_labels = []
+    tgt_bboxes = []
+    tgt_deltas = []
+    gt_inds = []
+    for i in range(batch_size):
+        gt_bbox = gt_boxes[i]
+        is_crowd_i = is_crowd[i] if is_crowd else None
+        # Step1: match anchor and gt_bbox
+        matches, match_labels = label_box(
+            anchors, gt_bbox, rpn_positive_overlap, rpn_negative_overlap, True,
+            ignore_thresh, is_crowd_i)
+        # Step2: sample anchor
+        fg_inds, bg_inds = subsample_labels(match_labels, rpn_batch_size_per_im,
+                                            rpn_fg_fraction, 0, use_random)
+        # Fill with the ignore label (-1), then set positive and negative labels
+        labels = paddle.full(match_labels.shape, -1, dtype='int32')
+        if bg_inds.shape[0] > 0:
+            labels = paddle.scatter(labels, bg_inds, paddle.zeros_like(bg_inds))
+        if fg_inds.shape[0] > 0:
+            labels = paddle.scatter(labels, fg_inds, paddle.ones_like(fg_inds))
+        # Step3: make output
+        if gt_bbox.shape[0] == 0:
+            matched_gt_boxes = paddle.zeros([0, 4])
+            tgt_delta = paddle.zeros([0, 4])
+        else:
+            matched_gt_boxes = paddle.gather(gt_bbox, matches)
+            tgt_delta = bbox2delta(anchors, matched_gt_boxes, weights)
+            matched_gt_boxes.stop_gradient = True
+            tgt_delta.stop_gradient = True
+        labels.stop_gradient = True
+        tgt_labels.append(labels)
+        tgt_bboxes.append(matched_gt_boxes)
+        tgt_deltas.append(tgt_delta)
+        gt_inds.append(matches)
+
+    return tgt_labels, tgt_bboxes, gt_inds, tgt_deltas
+
+
 def rpn_anchor_target(anchors,
                       gt_boxes,
                       rpn_batch_size_per_im,
