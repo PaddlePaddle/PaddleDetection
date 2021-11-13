@@ -1,4 +1,9 @@
 import numpy as np
+try:
+    import sklearn.mixture as skm
+except ImportError:
+    skm = None
+
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -6,7 +11,7 @@ from paddle.nn.initializer import Normal
 
 from ppdet.core.workspace import register
 from ...modeling.proposal_generator.anchor_generator import AnchorGenerator
-from ...modeling.proposal_generator.target_layer import RPNTargetAssign
+from ...modeling.proposal_generator.target_layer import PAATargetAssign
 
 
 @register
@@ -16,7 +21,7 @@ class PAAHead(nn.Layer):
 
     Args:
         anchor_generator (dict): configure of anchor generation
-        rpn_target_assign (dict): configure of rpn targets assignment
+        target_assign (dict): configure of paa targets assignment
         train_proposal (dict): configure of proposals generation
             at the stage of training
         test_proposal (dict): configure of proposals generation
@@ -28,17 +33,21 @@ class PAAHead(nn.Layer):
     def __init__(self,
                  head,
                  anchor_generator=AnchorGenerator().__dict__,
-                 rpn_target_assign=RPNTargetAssign().__dict__,
+                 target_assign=PAATargetAssign().__dict__,
                  in_channel=1024,
-                 num_classes=80):
+                 num_classes=80,
+                 topk=9,
+                 covariance_type='diag'):
         super(PAAHead, self).__init__()
+        self.covariance_type = covariance_type
         self.head = head
         self.anchor_generator = anchor_generator
-        self.rpn_target_assign = rpn_target_assign
+        self.target_assign = target_assign
+        self.topk = topk
         if isinstance(anchor_generator, dict):
             self.anchor_generator = AnchorGenerator(**anchor_generator)
-        if isinstance(rpn_target_assign, dict):
-            self.rpn_target_assign = RPNTargetAssign(**rpn_target_assign)
+        if isinstance(target_assign, dict):
+            self.target_assign = PAATargetAssign(**target_assign)
 
         num_anchors = self.anchor_generator.num_anchors
 
@@ -129,36 +138,43 @@ class PAAHead(nn.Layer):
         label = label.clone()
         num_gt = pos_gt_inds.max() + 1
         num_level = len(anchors)
-        num_anchors_each_level = [item.size(0) for item in anchors]
+        num_anchors_each_level = [item.shape[0] for item in anchors]
         num_anchors_each_level.insert(0, 0)
         inds_level_interval = np.cumsum(num_anchors_each_level)
         pos_level_mask = []
         for i in range(num_level):
-            mask = (pos_inds >= inds_level_interval[i]) & (
-                pos_inds < inds_level_interval[i + 1])
+            mask = paddle.logical_and((pos_inds >= inds_level_interval[i]), (pos_inds < inds_level_interval[i + 1]))
             pos_level_mask.append(mask)
-        pos_inds_after_paa = [label.new_tensor([])]
-        ignore_inds_after_paa = [label.new_tensor([])]
+        pos_inds_after_paa = [paddle.Tensor(np.array([]))]
+        ignore_inds_after_paa = [paddle.Tensor(np.array([]))]
         for gt_ind in range(num_gt):
             pos_inds_gmm = []
             pos_loss_gmm = []
             gt_mask = pos_gt_inds == gt_ind
             for level in range(num_level):
                 level_mask = pos_level_mask[level]
-                level_gt_mask = level_mask & gt_mask
-                value, topk_inds = pos_losses[level_gt_mask].topk(
-                    min(level_gt_mask.sum(), self.topk), largest=False)
-                pos_inds_gmm.append(pos_inds[level_gt_mask][topk_inds])
+                level_gt_mask = paddle.nonzero(paddle.logical_and(level_mask, gt_mask))
+                if level_gt_mask.sum() == 0:
+                    value = paddle.Tensor()
+                    topk_inds = paddle.Tensor()
+                else:
+                    value, topk_inds = pos_losses.gather(level_gt_mask).topk(min(len(level_gt_mask), self.topk), largest=False)
+
+                pos_inds_gmm.append(pos_inds.gather(level_gt_mask).gather(topk_inds))
                 pos_loss_gmm.append(value)
-            pos_inds_gmm = torch.cat(pos_inds_gmm)
-            pos_loss_gmm = torch.cat(pos_loss_gmm)
+
+            pos_inds_gmm = paddle.concat(pos_inds_gmm)
+            pos_loss_gmm = paddle.concat(pos_loss_gmm)
             # fix gmm need at least two sample
             if len(pos_inds_gmm) < 2:
                 continue
-            device = pos_inds_gmm.device
-            pos_loss_gmm, sort_inds = pos_loss_gmm.sort()
-            pos_inds_gmm = pos_inds_gmm[sort_inds]
-            pos_loss_gmm = pos_loss_gmm.view(-1, 1).cpu().numpy()
+            # device = pos_inds_gmm.device
+            # pos_loss_gmm, sort_inds = pos_loss_gmm.sort()
+            sort_inds = pos_loss_gmm.argsort()
+            pos_loss_gmm = pos_loss_gmm.gather(sort_inds)
+            pos_inds_gmm = pos_inds_gmm.gather(sort_inds)
+            # pos_loss_gmm = pos_loss_gmm.view(-1, 1).cpu().numpy()
+            pos_loss_gmm = pos_loss_gmm.reshape((-1, 1)).numpy()
             min_loss, max_loss = pos_loss_gmm.min(), pos_loss_gmm.max()
             means_init = np.array([min_loss, max_loss]).reshape(2, 1)
             weights_init = np.array([0.5, 0.5])
@@ -181,8 +197,10 @@ class PAAHead(nn.Layer):
             gmm.fit(pos_loss_gmm)
             gmm_assignment = gmm.predict(pos_loss_gmm)
             scores = gmm.score_samples(pos_loss_gmm)
-            gmm_assignment = torch.from_numpy(gmm_assignment).to(device)
-            scores = torch.from_numpy(scores).to(device)
+            # gmm_assignment = torch.from_numpy(gmm_assignment).to(device)
+            gmm_assignment = paddle.Tensor(gmm_assignment)
+            # scores = torch.from_numpy(scores).to(device)
+            scores = paddle.Tensor(scores)
 
             pos_inds_temp, ignore_inds_temp = self.gmm_separation_scheme(
                 gmm_assignment, scores, pos_inds_gmm)
@@ -196,6 +214,44 @@ class PAAHead(nn.Layer):
         label[reassign_ids] = self.num_classes
         num_pos = len(pos_inds_after_paa)
         return label, num_pos
+
+
+    def gmm_separation_scheme(self, gmm_assignment, scores, pos_inds_gmm):
+        """A general separation scheme for gmm model.
+
+        It separates a GMM distribution of candidate samples into three
+        parts, 0 1 and uncertain areas, and you can implement other
+        separation schemes by rewriting this function.
+
+        Args:
+            gmm_assignment (Tensor): The prediction of GMM which is of shape
+                (num_samples,). The 0/1 value indicates the distribution
+                that each sample comes from.
+            scores (Tensor): The probability of sample coming from the
+                fit GMM distribution. The tensor is of shape (num_samples,).
+            pos_inds_gmm (Tensor): All the indexes of samples which are used
+                to fit GMM model. The tensor is of shape (num_samples,)
+
+        Returns:
+            tuple[Tensor]: The indices of positive and ignored samples.
+
+                - pos_inds_temp (Tensor): Indices of positive samples.
+                - ignore_inds_temp (Tensor): Indices of ignore samples.
+        """
+        # The implementation is (c) in Fig.3 in origin paper instead of (b).
+        # You can refer to issues such as
+        # https://github.com/kkhoot/PAA/issues/8 and
+        # https://github.com/kkhoot/PAA/issues/9.
+        fgs = gmm_assignment == 0
+        # pos_inds_temp = fgs.new_tensor([], dtype=torch.long)
+        pos_inds_temp = paddle.Tensor()
+        # ignore_inds_temp = fgs.new_tensor([], dtype=torch.long)
+        ignore_inds_temp = paddle.Tensor()
+        if fgs.nonzero().numel():
+            _, pos_thr_ind = scores[fgs].topk(1)
+            pos_inds_temp = pos_inds_gmm[fgs][:pos_thr_ind + 1]
+            ignore_inds_temp = pos_inds_gmm.new_tensor([])
+        return pos_inds_temp, ignore_inds_temp
 
 
     def get_loss(self, pred_scores, pred_deltas, anchors, inputs):
@@ -224,8 +280,7 @@ class PAAHead(nn.Layer):
         ]
         deltas = paddle.concat(deltas, axis=1)
 
-        score_tgt, bbox_tgt, loc_tgt, norm = self.rpn_target_assign(inputs,
-                                                                    anchors)
+        score_tgt, bbox_tgt, gt_inds, loc_tgt, norm = self.target_assign(inputs, anchors)
 
         scores = paddle.reshape(x=scores, shape=(-1, ))
         deltas = paddle.reshape(x=deltas, shape=(-1, 4))
@@ -233,8 +288,11 @@ class PAAHead(nn.Layer):
         score_tgt = paddle.concat(score_tgt)
         score_tgt.stop_gradient = True
 
+        gt_inds = paddle.concat(gt_inds)
+
         pos_mask = score_tgt == 1
         pos_ind = paddle.nonzero(pos_mask)
+        pos_gt_inds = paddle.gather(gt_inds, pos_ind)
 
         valid_mask = score_tgt >= 0
         valid_ind = paddle.nonzero(valid_mask)
@@ -264,7 +322,7 @@ class PAAHead(nn.Layer):
 
         score = self.get_anchor_score(anchors, score_pred_pos, loc_pred, score_label_pos, loc_tgt)
 
-        self.paa_reassign(score, score_label, pos_ind, )
+        self.paa_reassign(score, score_tgt, pos_ind.reshape((-1,)), pos_gt_inds, multi_level_anchors)
 
         return {
             'loss_rpn_cls': loss_rpn_cls / norm,
