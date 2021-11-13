@@ -21,7 +21,7 @@ import paddle
 
 from det_keypoint_unite_utils import argsparser
 from preprocess import decode_image
-from infer import Detector, PredictConfig, print_arguments, get_test_images
+from infer import Detector, DetectorPicoDet, PredictConfig, print_arguments, get_test_images
 from keypoint_infer import KeyPoint_Detector, PredictConfig_KeyPoint
 from visualize import draw_pose
 from benchmark_utils import PaddleInferBenchmark
@@ -217,17 +217,20 @@ def topdown_unite_predict_video(detector,
 
 def main():
     pred_config = PredictConfig(FLAGS.det_model_dir)
-    detector = Detector(
-        pred_config,
-        FLAGS.det_model_dir,
-        device=FLAGS.device,
-        run_mode=FLAGS.run_mode,
-        trt_min_shape=FLAGS.trt_min_shape,
-        trt_max_shape=FLAGS.trt_max_shape,
-        trt_opt_shape=FLAGS.trt_opt_shape,
-        trt_calib_mode=FLAGS.trt_calib_mode,
-        cpu_threads=FLAGS.cpu_threads,
-        enable_mkldnn=FLAGS.enable_mkldnn)
+    detector_func = 'Detector'
+    if pred_config.arch == 'PicoDet':
+        detector_func = 'DetectorPicoDet'
+
+    detector = eval(detector_func)(pred_config,
+                                   FLAGS.det_model_dir,
+                                   device=FLAGS.device,
+                                   run_mode=FLAGS.run_mode,
+                                   trt_min_shape=FLAGS.trt_min_shape,
+                                   trt_max_shape=FLAGS.trt_max_shape,
+                                   trt_opt_shape=FLAGS.trt_opt_shape,
+                                   trt_calib_mode=FLAGS.trt_calib_mode,
+                                   cpu_threads=FLAGS.cpu_threads,
+                                   enable_mkldnn=FLAGS.enable_mkldnn)
 
     pred_config = PredictConfig_KeyPoint(FLAGS.keypoint_model_dir)
     assert KEYPOINT_SUPPORT_MODELS[
