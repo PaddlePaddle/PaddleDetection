@@ -2,16 +2,16 @@ use_gpu: true
 log_iter: 5
 save_dir: output
 snapshot_epoch: 10
-weights: output/tinypose_256x192/model_final
+weights: output/tinypose_128x96/model_final
 epoch: 420
 num_joints: &num_joints 17
 pixel_std: &pixel_std 200
 metric: KeyPointTopDownCOCOEval
 num_classes: 1
-train_height: &train_height 256
-train_width: &train_width 192
+train_height: &train_height 128
+train_width: &train_width 96
 trainsize: &trainsize [*train_width, *train_height]
-hmsize: &hmsize [48, 64]
+hmsize: &hmsize [24, 32]
 flip_perm: &flip_perm [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16]]
 
 
@@ -39,7 +39,7 @@ KeyPointMSELoss:
 
 #####optimizer
 LearningRate:
-  base_lr: 0.002
+  base_lr: 0.008
   schedulers:
   - !PiecewiseDecay
     milestones: [380, 410]
@@ -77,7 +77,7 @@ EvalDataset:
     trainsize: *trainsize
     pixel_std: *pixel_std
     use_gt_bbox: True
-    image_thre: 0.0
+    image_thre: 0.5
 
 TestDataset:
   !ImageFolder
@@ -107,14 +107,14 @@ TrainReader:
         use_udp: true
     - ToHeatmapsTopDown_DARK:
         hmsize: *hmsize
-        sigma: 2
+        sigma: 1
   batch_transforms:
     - NormalizeImage:
         mean: *global_mean
         std: *global_std
         is_scale: true
     - Permute: {}
-  batch_size: 128
+  batch_size: 512
   shuffle: true
   drop_last: false
 
