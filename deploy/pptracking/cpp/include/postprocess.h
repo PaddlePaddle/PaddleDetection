@@ -18,10 +18,10 @@
 
 #include <ctime>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
-#include <set>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -53,7 +53,6 @@ void FlowStatistic(const MOTResult& results,
                    std::vector<int>* out_id_list,
                    std::map<int, std::vector<float>>* prev_center,
                    std::vector<std::string>* records);
-
 
 // Save Tracking Results
 void SaveMOTResult(const MOTResult& results,
