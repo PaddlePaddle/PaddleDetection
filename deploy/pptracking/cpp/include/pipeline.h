@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DEPLOY_PPTRACKING_INCLUDE_PIPELINE_H_
-#define DEPLOY_PPTRACKING_INCLUDE_PIPELINE_H_
+#ifndef DEPLOY_PPTRACKING_CPP_INCLUDE_PIPELINE_H_
+#define DEPLOY_PPTRACKING_CPP_INCLUDE_PIPELINE_H_
 
 #include <glog/logging.h>
 
@@ -53,7 +53,10 @@ class Pipeline {
                     const std::string& scene = "pedestrian",
                     const bool tiny_obj = false,
                     const bool is_mtmct = false,
-                    const int secs_interval = 10) {
+                    const int secs_interval = 10,
+                    const std::string track_model_dir = "",
+                    const std::string det_model_dir = "",
+                    const std::string reid_model_dir = "") {
     std::vector<std::string> input;
     this->input_ = input;
     this->device_ = device;
@@ -67,7 +70,12 @@ class Pipeline {
     this->do_entrance_counting_ = do_entrance_counting;
     this->secs_interval_ = secs_interval_;
     this->save_result_ = save_result;
-    SelectModel(scene, tiny_obj, is_mtmct);
+    SelectModel(scene,
+                tiny_obj,
+                is_mtmct,
+                track_model_dir,
+                det_model_dir,
+                reid_model_dir);
     InitPredictor();
   }
 
@@ -102,7 +110,10 @@ class Pipeline {
   // Select model according to scenes, it must execute before Run()
   void SelectModel(const std::string& scene = "pedestrian",
                    const bool tiny_obj = false,
-                   const bool is_mtmct = false);
+                   const bool is_mtmct = false,
+                   const std::string track_model_dir = "",
+                   const std::string det_model_dir = "",
+                   const std::string reid_model_dir = "");
   void InitPredictor();
 
   std::shared_ptr<PaddleDetection::JDEPredictor> jde_sct_;
@@ -128,4 +139,4 @@ class Pipeline {
 
 }  // namespace PaddleDetection
 
-#endif  // DEPLOY_PPTRACKING_INCLUDE_PIPELINE_H_
+#endif  // DEPLOY_PPTRACKING_CPP_INCLUDE_PIPELINE_H_

@@ -22,7 +22,7 @@ import copy
 import time
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
 import paddle
 import paddle.distributed as dist
@@ -527,6 +527,7 @@ class Trainer(object):
             for i, im_id in enumerate(outs['im_id']):
                 image_path = imid2path[int(im_id)]
                 image = Image.open(image_path).convert('RGB')
+                image = ImageOps.exif_transpose(image)
                 self.status['original_image'] = np.array(image.copy())
 
                 end = start + bbox_num[i]

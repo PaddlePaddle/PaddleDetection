@@ -132,6 +132,10 @@ def argsparser():
         default=10,
         help="The seconds interval to count after tracking")
     parser.add_argument(
+        "--draw_center_traj",
+        action='store_true',
+        help="Whether drawing the trajectory of center")
+    parser.add_argument(
         "--mtmct_dir",
         type=str,
         default=None,
