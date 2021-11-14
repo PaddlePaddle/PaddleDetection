@@ -215,39 +215,67 @@ class Tracker(object):
                 logger.info('Processing frame {} ({:.2f} fps)'.format(
                     frame_id, 1. / max(1e-5, timer.average_time)))
 
-            ori_image = data['ori_image']
-            input_shape = data['image'].shape[2:]
-            im_shape = data['im_shape']
-            scale_factor = data['scale_factor']
+            ori_image = data['ori_image'] # [bs, H, W, 3]
+            ori_image_shape = data['ori_image'].shape[1:3]
+            # ori_image_shape: [H, W]
+
+            input_shape = data['image'].shape[2:] 
+            # input_shape: [h, w], before data transforms, set in model config
+
+            im_shape = data['im_shape'][0].numpy()
+            # im_shape: [new_h, new_w], after data transforms
+            scale_factor = data['scale_factor'][0].numpy()
+
+            empty_detections = False
+            # when it has no detected bboxes, will not inference reid model 
+            # and if visualize, use original image instead
 
             # forward
             timer.tic()
             if not use_detector:
                 dets = dets_list[frame_id]
-                bbox_tlwh = paddle.to_tensor(dets['bbox'], dtype='float32')
+                bbox_tlwh = np.array(dets['bbox'], dtype='float32')
                 if bbox_tlwh.shape[0] > 0:
                     # detector outputs: pred_cls_ids, pred_scores, pred_bboxes
-                    pred_cls_ids = paddle.to_tensor(
-                        dets['cls_id'], dtype='float32').unsqueeze(1)
-                    pred_scores = paddle.to_tensor(
-                        dets['score'], dtype='float32').unsqueeze(1)
-                    pred_bboxes = paddle.concat(
-                        (bbox_tlwh[:, 0:2],
-                         bbox_tlwh[:, 2:4] + bbox_tlwh[:, 0:2]),
+                    pred_cls_ids = np.array(dets['cls_id'], dtype='float32')
+                    pred_scores = np.array(dets['score'], dtype='float32')
+                    pred_bboxes = np.concatenate(
+                        (bbox_tlwh[:, 0:2], bbox_tlwh[:, 2:4] + bbox_tlwh[:, 0:2]),
                         axis=1)
                 else:
                     logger.warning(
                         'Frame {} has not object, try to modify score threshold.'.
                         format(frame_id))
-                    frame_id += 1
-                    continue
+                    empty_detections = True
             else:
                 outs = self.model.detector(data)
-                if outs['bbox_num'] > 0:
+                outs['bbox'] = outs['bbox'].numpy()
+                outs['bbox_num'] = outs['bbox_num'].numpy()
+
+                # todo: use coco model
+                if np.unique(outs['bbox'][:, 0]).shape[0] > 1:
+                    outs_bbox = outs['bbox']
+                    # 2:car -- 5:bus -- 7:truck
+                    outs_bbox = np.array(list(map(lambda bbox : bbox.tolist(), list(filter(lambda bbox : bbox[0] in [2,5,7], outs_bbox)))))
+                    # filter result [] is empty
+                    if outs_bbox.shape[0] == 0:
+                        empty_detections = True
+                        outs_bbox = np.zeros((1, 6), dtype=np.float32)
+
+                    outs_bbox[:, 0] = outs_bbox[:, 0] * 0 # class_id set to 0
+                    bbox_num = [outs_bbox.shape[0]]
+                    outs['bbox'] = outs_bbox
+                    outs['bbox_num'] = np.array([outs_bbox.shape[0]])
+
+
+                if outs['bbox_num'] > 0 and empty_detections == False:
                     # detector outputs: pred_cls_ids, pred_scores, pred_bboxes
                     pred_cls_ids = outs['bbox'][:, 0:1]
                     pred_scores = outs['bbox'][:, 1:2]
                     if not scaled:
+                        # Note: scaled=False only in JDE YOLOv3 or other detectors
+                        # with LetterBoxResize and JDEBBoxPostProcess.
+                        #
                         # scaled means whether the coords after detector outputs
                         # have been scaled back to the original image, set True 
                         # in general detector, set False in JDE YOLOv3.
@@ -258,20 +286,35 @@ class Tracker(object):
                         pred_bboxes = outs['bbox'][:, 2:]
                 else:
                     logger.warning(
-                        'Frame {} has not object, try to modify score threshold.'.
+                        'Frame {} has not detected object, try to modify score threshold.'.
                         format(frame_id))
-                    frame_id += 1
-                    continue
+                    empty_detections = True
+            
+            if not empty_detections:
+                pred_xyxys, keep_idx = clip_box(pred_bboxes, ori_image_shape)
+                if len(keep_idx[0]) == 0:
+                    logger.warning(
+                        'Frame {} has not detected object left after clip_box.'.
+                        format(frame_id))
+                    empty_detections = True
+            
+            if empty_detections:
+                timer.toc()
+                # if visualize, use original image instead
+                online_ids, online_tlwhs, online_scores = None, None, None
+                save_vis_results(data, frame_id, online_ids, online_tlwhs,
+                                online_scores, timer.average_time, show_image,
+                                save_dir, self.cfg.num_classes)
+                frame_id += 1
+                # thus will not inference reid model
+                continue
 
-            pred_xyxys, keep_idx = clip_box(pred_bboxes, input_shape, im_shape,
-                                            scale_factor)
-            pred_scores = paddle.gather_nd(pred_scores, keep_idx).unsqueeze(1)
-            pred_cls_ids = paddle.gather_nd(pred_cls_ids, keep_idx).unsqueeze(1)
-            pred_tlwhs = paddle.concat(
-                (pred_xyxys[:, 0:2],
-                 pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
+            pred_scores = pred_scores[keep_idx[0]]
+            pred_cls_ids = pred_cls_ids[keep_idx[0]]
+            pred_tlwhs = np.concatenate(
+                (pred_xyxys[:, 0:2], pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
                 axis=1)
-            pred_dets = paddle.concat(
+            pred_dets = np.concatenate(
                 (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
 
             tracker = self.model.tracker
@@ -283,8 +326,7 @@ class Tracker(object):
             crops = paddle.to_tensor(crops)
 
             data.update({'crops': crops})
-            pred_embs = self.model(data)
-            pred_dets, pred_embs = pred_dets.numpy(), pred_embs.numpy()
+            pred_embs = self.model(data).numpy()
 
             tracker.predict()
             online_targets = tracker.update(pred_dets, pred_embs)

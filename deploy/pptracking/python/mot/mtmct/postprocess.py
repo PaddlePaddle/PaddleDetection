@@ -17,9 +17,10 @@ import cv2
 from tqdm import tqdm
 import pickle
 import os.path as osp
-from os.path import join as opj
+import numpy as np
 
-from .utils import parse_pt_gt, get_labels, compare_dataframes_mtmc
+from .utils import parse_pt_gt, parse_pt, compare_dataframes_mtmc
+from .utils import get_labels
 from .camera_utils import get_labels_with_camera
 from .zone import Zone
 
