@@ -53,7 +53,8 @@ def plot_tracking(image,
         obj_id = int(obj_ids[i])
         id_text = '{}'.format(int(obj_id))
         if ids2names != []:
-            assert len(ids2names) == 1, "plot_tracking only supports single classes."
+            assert len(
+                ids2names) == 1, "plot_tracking only supports single classes."
             id_text = '{}_'.format(ids2names[0]) + id_text
         _line_thickness = 1 if obj_id <= 0 else line_thickness
         color = get_color(abs(obj_id))

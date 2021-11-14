@@ -1,7 +1,12 @@
 _BASE_: [
   '../deepsort/deepsort_picodet_pplcnet.yml'
 ]
-num_classes: 1
+num_classes: 80 #1
+coco_labels: [1] # person
+det_weights: https://paddledet.bj.bcebos.com/models/picodet_l_640_coco.pdparams
+# det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_l_esnet_300e_896x896_wildtrack.pdparams
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams
+
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot/wildtrack
@@ -26,9 +31,6 @@ use_st_filter: False
 use_roi: False
 roi_dir: ''
 
-
-det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_l_esnet_300e_896x896_wildtrack.pdparams
-reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams
 
 EvalMOTReader:
   sample_transforms:

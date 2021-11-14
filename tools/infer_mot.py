@@ -89,7 +89,7 @@ def parse_args():
         "--mtmct_dir",
         type=str,
         default=None,
-        help="The MTMCT scene video folder.")
+        help="Directory for MTMCT scene image folders.")
     args = parser.parse_args()
     return args
 
