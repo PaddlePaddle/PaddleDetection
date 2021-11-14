@@ -17,7 +17,7 @@ import cv2
 import time
 import paddle
 import numpy as np
-from .visualization import plot_tracking_dict
+from .visualization import plot_tracking_dict, plot_tracking
 
 __all__ = [
     'MOTTimer',
@@ -157,14 +157,23 @@ def save_vis_results(data,
     if show_image or save_dir is not None:
         assert 'ori_image' in data
         img0 = data['ori_image'].numpy()[0]
-        online_im = plot_tracking_dict(
-            img0,
-            num_classes,
-            online_tlwhs,
-            online_ids,
-            online_scores,
-            frame_id=frame_id,
-            fps=1. / average_time)
+        if isinstance(online_tlwhs, dict):
+            online_im = plot_tracking_dict(
+                img0,
+                num_classes,
+                online_tlwhs,
+                online_ids,
+                online_scores,
+                frame_id=frame_id,
+                fps=1. / average_time)
+        else:
+            online_im = plot_tracking(
+                img0,
+                online_tlwhs,
+                online_ids,
+                online_scores,
+                frame_id=frame_id,
+                fps=1. / average_time)
     if show_image:
         cv2.imshow('online_im', online_im)
     if save_dir is not None:

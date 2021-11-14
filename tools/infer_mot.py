@@ -85,6 +85,11 @@ def parse_args():
         type=float,
         default=0.5,
         help="Threshold to reserve the result for visualization.")
+    parser.add_argument(
+        "--mtmct_dir",
+        type=str,
+        default=None,
+        help="The MTMCT scene video folder.")
     args = parser.parse_args()
     return args
 
@@ -103,19 +108,35 @@ def run(FLAGS, cfg):
         tracker.load_weights_jde(cfg.weights)
 
     # inference
-    tracker.mot_predict(
-        video_file=FLAGS.video_file,
-        frame_rate=FLAGS.frame_rate,
-        image_dir=FLAGS.image_dir,
-        data_type=cfg.metric.lower(),
-        model_type=cfg.architecture,
-        output_dir=FLAGS.output_dir,
-        save_images=FLAGS.save_images,
-        save_videos=FLAGS.save_videos,
-        show_image=FLAGS.show_image,
-        scaled=FLAGS.scaled,
-        det_results_dir=FLAGS.det_results_dir,
-        draw_threshold=FLAGS.draw_threshold)
+    if not tracker.MTMCT:
+        # inference for single camera MOT
+        tracker.mot_predict_seq(
+            video_file=FLAGS.video_file,
+            frame_rate=FLAGS.frame_rate,
+            image_dir=FLAGS.image_dir,
+            data_type=cfg.metric.lower(),
+            model_type=cfg.architecture,
+            output_dir=FLAGS.output_dir,
+            save_images=FLAGS.save_images,
+            save_videos=FLAGS.save_videos,
+            show_image=FLAGS.show_image,
+            scaled=FLAGS.scaled,
+            det_results_dir=FLAGS.det_results_dir,
+            draw_threshold=FLAGS.draw_threshold)
+    else:
+        # inference for multi-camera MOT (MTMCT)
+        tracker.mtmct_predict(
+            frame_rate=FLAGS.frame_rate,
+            data_type=cfg.metric.lower(),
+            model_type=cfg.architecture,
+            output_dir=FLAGS.output_dir,
+            save_images=FLAGS.save_images,
+            save_videos=FLAGS.save_videos,
+            show_image=FLAGS.show_image,
+            scaled=FLAGS.scaled,
+            det_results_dir=FLAGS.det_results_dir,
+            draw_threshold=FLAGS.draw_threshold,
+            mtmct_dir=FLAGS.mtmct_dir)
 
 
 def main():

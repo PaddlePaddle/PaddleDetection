@@ -1,0 +1,29 @@
+# This config represents a ReID only configuration of DeepSORT, it has two uses.
+# One is used for loading the detection results and ReID model to get tracking results;
+# Another is used for exporting the ReID model to deploy infer.
+
+_BASE_: [
+  '../../deepsort/reid/deepsort_pplcnet_vehicle.yml'
+]
+
+num_classes: 1
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mtmct
+    data_root: S01/images
+    keep_ori_im: True # set as True in DeepSORT
+
+# config for MTMCT, cameras_bias will be reset if change scenes or cameras
+# len(cameras_bias) is the number of cameras
+score_thr: 0.1
+use_ff: False
+use_rerank: False
+cameras_bias:
+  c001: 0
+  c002: 0
+  c003: 0
+  c004: 0
+  c005: 0
+
+det_weights: None
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort_pplcnet_vehicle.pdparams
