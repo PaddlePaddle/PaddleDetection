@@ -126,8 +126,7 @@ class YOLOv2AnchorCluster(BaseAnchorCluster):
         """
         YOLOv2 Anchor Cluster
 
-        Reference:
-            https://github.com/AlexeyAB/darknet/blob/master/scripts/gen_anchors.py
+        The code is based on https://github.com/AlexeyAB/darknet/blob/master/scripts/gen_anchors.py
 
         Args:
             n (int): number of clusters
@@ -196,103 +195,6 @@ class YOLOv2AnchorCluster(BaseAnchorCluster):
         return centers
 
 
-class YOLOv5AnchorCluster(BaseAnchorCluster):
-    def __init__(self,
-                 n,
-                 dataset,
-                 size,
-                 cache_path,
-                 cache,
-                 iters=300,
-                 gen_iters=1000,
-                 thresh=0.25,
-                 verbose=True):
-        super(YOLOv5AnchorCluster, self).__init__(
-            n, cache_path, cache, verbose=verbose)
-        """
-        YOLOv5 Anchor Cluster
-
-        Reference:
-            https://github.com/ultralytics/yolov5/blob/master/utils/general.py
-
-        Args:
-            n (int): number of clusters
-            dataset (DataSet): DataSet instance, VOC or COCO
-            size (list): [w, h]
-            cache_path (str): cache directory path
-            cache (bool): whether using cache
-            iters (int): iters of kmeans algorithm
-            gen_iters (int): iters of genetic algorithm
-            threshold (float): anchor scale threshold
-            verbose (bool): whether print results
-        """
-        self.dataset = dataset
-        self.size = size
-        self.iters = iters
-        self.gen_iters = gen_iters
-        self.thresh = thresh
-
-    def print_result(self, centers):
-        whs = self.whs
-        centers = centers[np.argsort(centers.prod(1))]
-        x, best = self.metric(whs, centers)
-        bpr, aat = (
-            best > self.thresh).mean(), (x > self.thresh).mean() * self.n
-        logger.info(
-            'thresh=%.2f: %.4f best possible recall, %.2f anchors past thr' %
-            (self.thresh, bpr, aat))
-        logger.info(
-            'n=%g, img_size=%s, metric_all=%.3f/%.3f-mean/best, past_thresh=%.3f-mean: '
-            % (self.n, self.size, x.mean(), best.mean(),
-               x[x > self.thresh].mean()))
-        logger.info('%d anchor cluster result: [w, h]' % self.n)
-        for w, h in centers:
-            logger.info('[%d, %d]' % (round(w), round(h)))
-
-    def metric(self, whs, centers):
-        r = whs[:, None] / centers[None]
-        x = np.minimum(r, 1. / r).min(2)
-        return x, x.max(1)
-
-    def fitness(self, whs, centers):
-        _, best = self.metric(whs, centers)
-        return (best * (best > self.thresh)).mean()
-
-    def calc_anchors(self):
-        self.whs = self.whs * self.shapes / self.shapes.max(
-            1, keepdims=True) * np.array([self.size])
-        wh0 = self.whs
-        i = (wh0 < 3.0).any(1).sum()
-        if i:
-            logger.warning('Extremely small objects found. %d of %d'
-                           'labels are < 3 pixels in width or height' %
-                           (i, len(wh0)))
-
-        wh = wh0[(wh0 >= 2.0).any(1)]
-        logger.info('Running kmeans for %g anchors on %g points...' %
-                    (self.n, len(wh)))
-        s = wh.std(0)
-        centers, dist = kmeans(wh / s, self.n, iter=self.iters)
-        centers *= s
-
-        f, sh, mp, s = self.fitness(wh, centers), centers.shape, 0.9, 0.1
-        pbar = tqdm(
-            range(self.gen_iters),
-            desc='Evolving anchors with Genetic Algorithm')
-        for _ in pbar:
-            v = np.ones(sh)
-            while (v == 1).all():
-                v = ((np.random.random(sh) < mp) * np.random.random() *
-                     np.random.randn(*sh) * s + 1).clip(0.3, 3.0)
-            new_centers = (centers.copy() * v).clip(min=2.0)
-            new_f = self.fitness(wh, new_centers)
-            if new_f > f:
-                f, centers = new_f, new_centers.copy()
-                pbar.desc = 'Evolving anchors with Genetic Algorithm: fitness = %.4f' % f
-
-        return centers
-
-
 def main():
     parser = ArgsParser()
     parser.add_argument(
@@ -303,18 +205,6 @@ def main():
         default=1000,
         type=int,
         help='num of iterations for kmeans')
-    parser.add_argument(
-        '--gen_iters',
-        '-gi',
-        default=1000,
-        type=int,
-        help='num of iterations for genetic algorithm')
-    parser.add_argument(
-        '--thresh',
-        '-t',
-        default=0.25,
-        type=float,
-        help='anchor scale threshold')
     parser.add_argument(
         '--verbose', '-v', default=True, type=bool, help='whether print result')
     parser.add_argument(
@@ -328,7 +218,7 @@ def main():
         '-m',
         default='v2',
         type=str,
-        help='cluster method, [v2, v5] are supported now')
+        help='cluster method, v2 is only supported now')
     parser.add_argument(
         '--cache_path', default='cache', type=str, help='cache path')
     parser.add_argument(
@@ -353,18 +243,14 @@ def main():
             size = int(FLAGS.size)
             size = [size, size]
 
-    elif 'image_shape' in cfg['TrainReader']['inputs_def']:
-        size = cfg['TrainReader']['inputs_def']['image_shape'][1:]
+    elif 'image_shape' in cfg['TestReader']['inputs_def']:
+        size = cfg['TestReader']['inputs_def']['image_shape'][1:]
     else:
         raise ValueError('size is not specified')
 
     if FLAGS.method == 'v2':
         cluster = YOLOv2AnchorCluster(FLAGS.n, dataset, size, FLAGS.cache_path,
                                       FLAGS.cache, FLAGS.iters, FLAGS.verbose)
-    elif FLAGS.method == 'v5':
-        cluster = YOLOv5AnchorCluster(FLAGS.n, dataset, size, FLAGS.cache_path,
-                                      FLAGS.cache, FLAGS.iters, FLAGS.gen_iters,
-                                      FLAGS.thresh, FLAGS.verbose)
     else:
         raise ValueError('cluster method: %s is not supported' % FLAGS.method)
 

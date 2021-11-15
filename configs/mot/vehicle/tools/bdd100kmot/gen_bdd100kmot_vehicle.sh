@@ -1,6 +1,6 @@
-data_path=bdd100k_path
-img_dir=${data_path}/images
-label_dir=${data_path}/labels
+data_path=bdd100k
+img_dir=${data_path}/images/track
+label_dir=${data_path}/labels/box_track_20
 save_path=${data_path}/bdd100kmot_vehicle
 
 phasetrain=train

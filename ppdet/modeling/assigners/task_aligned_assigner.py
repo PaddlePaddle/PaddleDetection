@@ -47,7 +47,10 @@ class TaskAlignedAssigner(nn.Layer):
                 gt_bboxes,
                 bg_index,
                 gt_scores=None):
-        r"""The assignment is done in following steps
+        r"""This code is based on
+            https://github.com/fcjian/TOOD/blob/master/mmdet/core/bbox/assigners/task_aligned_assigner.py
+
+        The assignment is done in following steps
         1. compute alignment metric between all bbox (bbox of all pyramid levels) and gt
         2. select top-k bbox as candidates for each gt
         3. limit the positive sample's center in gt (because the anchor-free detector

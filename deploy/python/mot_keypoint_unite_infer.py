@@ -15,23 +15,23 @@
 import os
 import cv2
 import math
-import numpy as np
-import paddle
 import copy
+import numpy as np
+from collections import defaultdict
+import paddle
+
+from utils import get_current_memory_mb
+from infer import Detector, PredictConfig, print_arguments, get_test_images
+from visualize import draw_pose
 
 from mot_keypoint_unite_utils import argsparser
 from keypoint_infer import KeyPoint_Detector, PredictConfig_KeyPoint
-from visualize import draw_pose
-from benchmark_utils import PaddleInferBenchmark
-from utils import Timer
-
-from tracker import JDETracker
-from mot_jde_infer import JDE_Detector, write_mot_results
-from infer import Detector, PredictConfig, print_arguments, get_test_images
-from ppdet.modeling.mot import visualization as mot_vis
-from ppdet.modeling.mot.utils import Timer as FPSTimer
-from utils import get_current_memory_mb
 from det_keypoint_unite_infer import predict_with_given_det, bench_log
+from mot_jde_infer import JDE_Detector
+
+from ppdet.modeling.mot.visualization import plot_tracking_dict
+from ppdet.modeling.mot.utils import MOTTimer as FPSTimer
+from ppdet.modeling.mot.utils import write_mot_results
 
 # Global dictionary
 KEYPOINT_SUPPORT_MODELS = {
@@ -56,6 +56,9 @@ def mot_keypoint_unite_predict_image(mot_model,
                                      keypoint_model,
                                      image_list,
                                      keypoint_batch_size=1):
+    num_classes = mot_model.num_classes
+    assert num_classes == 1, 'Only one category mot model supported for uniting keypoint deploy.'
+    data_type = 'mot'
     image_list.sort()
     for i, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
@@ -104,9 +107,13 @@ def mot_keypoint_unite_predict_image(mot_model,
                 if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown'
                 else None)
 
-            online_im = mot_vis.plot_tracking(
-                im, online_tlwhs, online_ids, online_scores, frame_id=i)
-
+            online_im = plot_tracking_dict(
+                im,
+                num_classes,
+                online_tlwhs,
+                online_ids,
+                online_scores,
+                frame_id=i)
             if FLAGS.save_images:
                 if not os.path.exists(FLAGS.output_dir):
                     os.makedirs(FLAGS.output_dir)
@@ -143,7 +150,13 @@ def mot_keypoint_unite_predict_video(mot_model,
     timer_mot = FPSTimer()
     timer_kp = FPSTimer()
     timer_mot_kp = FPSTimer()
-    mot_results = []
+
+    # support single class and multi classes, but should be single class here
+    mot_results = defaultdict(list)
+    num_classes = mot_model.num_classes
+    assert num_classes == 1, 'Only one category mot model supported for uniting keypoint deploy.'
+    data_type = 'mot'
+
     while (1):
         ret, frame = capture.read()
         if not ret:
@@ -153,15 +166,15 @@ def mot_keypoint_unite_predict_video(mot_model,
         online_tlwhs, online_scores, online_ids = mot_model.predict(
             [frame], FLAGS.mot_threshold)
         timer_mot.toc()
-        mot_results.append(
-            (frame_id + 1, online_tlwhs, online_scores, online_ids))
+        mot_results[0].append(
+            (frame_id + 1, online_tlwhs[0], online_scores[0], online_ids[0]))
         mot_fps = 1. / timer_mot.average_time
 
         timer_kp.tic()
 
         keypoint_arch = keypoint_model.pred_config.arch
         if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown':
-            results = convert_mot_to_det(online_tlwhs, online_scores)
+            results = convert_mot_to_det(online_tlwhs[0], online_scores[0])
             keypoint_results = predict_with_given_det(
                 frame, results, keypoint_model, keypoint_batch_size,
                 FLAGS.mot_threshold, FLAGS.keypoint_threshold,
@@ -184,8 +197,9 @@ def mot_keypoint_unite_predict_video(mot_model,
             if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown' else
             None)
 
-        online_im = mot_vis.plot_tracking(
+        online_im = plot_tracking_dict(
             im,
+            num_classes,
             online_tlwhs,
             online_ids,
             online_scores,
@@ -212,7 +226,7 @@ def mot_keypoint_unite_predict_video(mot_model,
     if FLAGS.save_mot_txts:
         result_filename = os.path.join(FLAGS.output_dir,
                                        video_name.split('.')[-2] + '.txt')
-        write_mot_results(result_filename, mot_results)
+        write_mot_results(result_filename, mot_results, data_type, num_classes)
 
     if FLAGS.save_images:
         save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])

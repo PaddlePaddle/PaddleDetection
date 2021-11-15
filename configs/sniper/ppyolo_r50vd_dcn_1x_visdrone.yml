@@ -1,0 +1,54 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '../ppyolo/_base_/ppyolo_r50vd_dcn.yml',
+  '../ppyolo/_base_/optimizer_1x.yml',
+  '../ppyolo/_base_/ppyolo_reader.yml',
+]
+
+snapshot_epoch: 8
+use_ema: true
+weights: output/ppyolo_r50vd_dcn_1x_visdrone/model_final
+
+epoch: 192
+
+LearningRate:
+  base_lr: 0.005
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 153
+    - 173
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 4000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+
+metric: COCO
+num_classes: 9
+
+TrainDataset:
+  !COCODataSet
+    image_dir: train
+    anno_path: annotations/train.json
+    dataset_dir: dataset/VisDrone2019_coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: val
+    anno_path: annotations/val.json
+    dataset_dir: dataset/VisDrone2019_coco
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/val.json

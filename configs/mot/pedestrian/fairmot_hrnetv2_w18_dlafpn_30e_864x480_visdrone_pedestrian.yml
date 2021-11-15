@@ -1,0 +1,26 @@
+_BASE_: [
+  '../fairmot/fairmot_hrnetv2_w18_dlafpn_30e_864x480.yml'
+]
+
+weights: output/fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_pedestrian/model_final
+
+# for MOT training
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['visdrone_pedestrian.train']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+# for MOT evaluation
+# If you want to change the MOT evaluation dataset, please modify 'data_root'
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: visdrone_pedestrian/images/val
+    keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
+
+# for MOT video inference
+TestMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    keep_ori_im: True # set True if save visualization images or video

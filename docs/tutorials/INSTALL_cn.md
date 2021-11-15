@@ -18,6 +18,8 @@ PaddleDetection 依赖 PaddlePaddle 版本关系：
 
 |  PaddleDetection版本  | PaddlePaddle版本  |    备注    |
 | :------------------: | :---------------: | :-------: |
+|    develop           |       >= 2.2.0rc |     Dygraph mode is set as default    |
+|    release/2.3       |       >= 2.2.0rc |     Dygraph mode is set as default    |
 |    release/2.2       |       >= 2.1.2    |     默认使用动态图模式    |
 |    release/2.1       |       >= 2.1.0    |     默认使用动态图模式    |
 |    release/2.0       |       >= 2.0.1    |     默认使用动态图模式    |
@@ -68,10 +70,10 @@ cd <path/to/clone/PaddleDetection>
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
 
 # 安装其他依赖
+cd PaddleDetection
 pip install -r requirements.txt
 
 # 编译安装paddledet
-cd PaddleDetection
 python setup.py install
 ```
 
@@ -94,9 +96,9 @@ python ppdet/modeling/tests/test_architectures.py
 测试通过后会提示如下信息：
 
 ```
-.....
+.......
 ----------------------------------------------------------------------
-Ran 5 tests in 4.280s
+Ran 7 tests in 12.816s
 OK
 ```
 

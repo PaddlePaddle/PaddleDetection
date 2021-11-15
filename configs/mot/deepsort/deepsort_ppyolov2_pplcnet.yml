@@ -1,0 +1,80 @@
+_BASE_: [
+  'detector/ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml',
+  '../../datasets/mot.yml',
+  '../../runtime.yml',
+  '_base_/deepsort_reader_1088x608.yml',
+]
+metric: MOT
+num_classes: 1
+
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: MOT17/images/half
+    keep_ori_im: True # set as True in DeepSORT
+
+det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_640x640_mot17half.pdparams
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams
+
+
+# DeepSORT configuration
+architecture: DeepSORT
+pretrain_weights: None
+
+DeepSORT:
+  detector: YOLOv3 # PPYOLOv2 version
+  reid: PPLCNetEmbedding
+  tracker: DeepSORTTracker
+
+
+# reid and tracker configuration
+# see 'configs/mot/deepsort/reid/deepsort_pplcnet.yml'
+PPLCNetEmbedding:
+  input_ch: 1280
+  output_ch: 512
+
+DeepSORTTracker:
+  input_size: [64, 192]
+  min_box_area: 0
+  vertical_ratio: -1
+  budget: 100
+  max_age: 70
+  n_init: 3
+  metric_type: cosine
+  matching_threshold: 0.2
+  max_iou_distance: 0.9
+  motion: KalmanFilter
+
+
+# detector configuration: PPYOLOv2 version
+# see 'configs/mot/deepsort/detector/ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml'
+YOLOv3:
+  backbone: ResNet
+  neck: PPYOLOPAN
+  yolo_head: YOLOv3Head
+  post_process: BBoxPostProcess
+
+ResNet:
+  depth: 50
+  variant: d
+  return_idx: [1, 2, 3]
+  dcn_v2_stages: [3]
+  freeze_at: -1
+  freeze_norm: false
+  norm_decay: 0.
+
+# Tracking requires higher quality boxes, so decode.conf_thresh will be higher
+BBoxPostProcess:
+  decode:
+    name: YOLOBox
+    conf_thresh: 0.25 # 0.01 in original detector
+    downsample_ratio: 32
+    clip_bbox: true
+    scale_x_y: 1.05
+  nms:
+    name: MatrixNMS
+    keep_top_k: 100
+    score_threshold: 0.25 # 0.01 in original detector
+    post_threshold: 0.25 # 0.01 in original detector
+    nms_top_k: -1
+    background_label: -1

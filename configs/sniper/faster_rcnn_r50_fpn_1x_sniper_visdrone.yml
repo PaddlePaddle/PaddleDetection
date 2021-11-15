@@ -5,7 +5,5 @@ _BASE_: [
   '../faster_rcnn/_base_/optimizer_1x.yml',
   '_base_/faster_fpn_reader.yml',
 ]
-weights: output/faster_rcnn_r50_1x_visdrone_coco/model_final
+weights: output/faster_rcnn_r50_fpn_1x_sniper_visdrone/model_final
 find_unused_parameters: true
-
-
