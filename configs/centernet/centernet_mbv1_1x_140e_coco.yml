@@ -1,0 +1,12 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_140e.yml',
+  '_base_/centernet_mbv1_1x.yml',
+  '_base_/centernet_reader.yml',
+]
+
+weights: output/centernet_mbv1_1x_140e_coco/model_finalp
+
+TrainReader:
+  batch_size: 32
