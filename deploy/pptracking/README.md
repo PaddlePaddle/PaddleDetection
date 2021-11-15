@@ -8,6 +8,8 @@ PP-Tracking是基于飞桨深度学习框架的业界首个开源实时跟踪系
 
 <div width="1000" align="center">
   <img src="../../docs/images/pptracking-demo.gif"/>
+  <br>
+  视频来源：VisDrone2021, BDD100K开源数据集</div>
 </div>
 
 ### 一、快速开始
