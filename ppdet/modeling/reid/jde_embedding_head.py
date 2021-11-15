@@ -49,7 +49,7 @@ class JDEEmbeddingHead(nn.Layer):
     JDEEmbeddingHead
     Args:
         num_classes(int): Number of classes. Only support one class tracking.
-        num_identifiers(int): Number of identifiers.
+        num_identities(int): Number of identities.
         anchor_levels(int): Number of anchor levels, same as FPN levels.
         anchor_scales(int): Number of anchor scales on each FPN level.
         embedding_dim(int): Embedding dimension. Default: 512.
@@ -60,7 +60,7 @@ class JDEEmbeddingHead(nn.Layer):
     def __init__(
             self,
             num_classes=1,
-            num_identifiers=14455,  # defined by dataset.total_identities when training
+            num_identities=14455,  # dataset.num_identities_dict[0]
             anchor_levels=3,
             anchor_scales=4,
             embedding_dim=512,
@@ -68,7 +68,7 @@ class JDEEmbeddingHead(nn.Layer):
             jde_loss='JDELoss'):
         super(JDEEmbeddingHead, self).__init__()
         self.num_classes = num_classes
-        self.num_identifiers = num_identifiers
+        self.num_identities = num_identities
         self.anchor_levels = anchor_levels
         self.anchor_scales = anchor_scales
         self.embedding_dim = embedding_dim
@@ -76,7 +76,7 @@ class JDEEmbeddingHead(nn.Layer):
         self.jde_loss = jde_loss
 
         self.emb_scale = math.sqrt(2) * math.log(
-            self.num_identifiers - 1) if self.num_identifiers > 1 else 1
+            self.num_identities - 1) if self.num_identities > 1 else 1
 
         self.identify_outputs = []
         self.loss_params_cls = []
@@ -106,7 +106,7 @@ class JDEEmbeddingHead(nn.Layer):
             'classifier',
             nn.Linear(
                 self.embedding_dim,
-                self.num_identifiers,
+                self.num_identities,
                 weight_attr=ParamAttr(
                     learning_rate=1., initializer=Normal(
                         mean=0.0, std=0.01)),

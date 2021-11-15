@@ -17,18 +17,20 @@ import time
 import yaml
 import cv2
 import numpy as np
+from collections import defaultdict
+
 import paddle
-from benchmark_utils import PaddleInferBenchmark
-from preprocess import preprocess
-
-from tracker import JDETracker
-from ppdet.modeling.mot import visualization as mot_vis
-from ppdet.modeling.mot.utils import Timer as MOTTimer
-
 from paddle.inference import Config
 from paddle.inference import create_predictor
+
+from preprocess import preprocess
 from utils import argsparser, Timer, get_current_memory_mb
 from infer import Detector, get_test_images, print_arguments, PredictConfig
+from benchmark_utils import PaddleInferBenchmark
+
+from ppdet.modeling.mot.tracker import JDETracker
+from ppdet.modeling.mot.visualization import plot_tracking_dict
+from ppdet.modeling.mot.utils import MOTTimer, write_mot_results
 
 # Global dictionary
 MOT_SUPPORT_MODELS = {
@@ -80,13 +82,17 @@ class JDE_Detector(Detector):
             enable_mkldnn=enable_mkldnn)
         assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
         assert pred_config.tracker, "Tracking model should have tracker"
+        self.num_classes = len(pred_config.labels)
+
         tp = pred_config.tracker
         min_box_area = tp['min_box_area'] if 'min_box_area' in tp else 200
         vertical_ratio = tp['vertical_ratio'] if 'vertical_ratio' in tp else 1.6
         conf_thres = tp['conf_thres'] if 'conf_thres' in tp else 0.
         tracked_thresh = tp['tracked_thresh'] if 'tracked_thresh' in tp else 0.7
         metric_type = tp['metric_type'] if 'metric_type' in tp else 'euclidean'
+
         self.tracker = JDETracker(
+            num_classes=self.num_classes,
             min_box_area=min_box_area,
             vertical_ratio=vertical_ratio,
             conf_thres=conf_thres,
@@ -94,25 +100,25 @@ class JDE_Detector(Detector):
             metric_type=metric_type)
 
     def postprocess(self, pred_dets, pred_embs, threshold):
-        online_targets = self.tracker.update(pred_dets, pred_embs)
-        if online_targets == []:
-            # First few frames, the model may have no tracking results but have
-            # detection results，use the detection results instead, and set id -1.
-            return [pred_dets[0][:4]], [pred_dets[0][4]], [-1]
-        online_tlwhs, online_ids = [], []
-        online_scores = []
-        for t in online_targets:
-            tlwh = t.tlwh
-            tid = t.track_id
-            tscore = t.score
-            if tscore < threshold: continue
-            if tlwh[2] * tlwh[3] <= self.tracker.min_box_area: continue
-            if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
-                    3] > self.tracker.vertical_ratio:
-                continue
-            online_tlwhs.append(tlwh)
-            online_ids.append(tid)
-            online_scores.append(tscore)
+        online_targets_dict = self.tracker.update(pred_dets, pred_embs)
+
+        online_tlwhs = defaultdict(list)
+        online_scores = defaultdict(list)
+        online_ids = defaultdict(list)
+        for cls_id in range(self.num_classes):
+            online_targets = online_targets_dict[cls_id]
+            for t in online_targets:
+                tlwh = t.tlwh
+                tid = t.track_id
+                tscore = t.score
+                if tscore < threshold: continue
+                if tlwh[2] * tlwh[3] <= self.tracker.min_box_area: continue
+                if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                        3] > self.tracker.vertical_ratio:
+                    continue
+                online_tlwhs[cls_id].append(tlwh)
+                online_ids[cls_id].append(tid)
+                online_scores[cls_id].append(tscore)
         return online_tlwhs, online_scores, online_ids
 
     def predict(self, image_list, threshold=0.5, warmup=0, repeats=1):
@@ -121,7 +127,7 @@ class JDE_Detector(Detector):
             image_list (list): list of image
             threshold (float): threshold of predicted box' score
         Returns:
-            online_tlwhs, online_scores, online_ids (np.ndarray)
+            online_tlwhs, online_scores, online_ids (dict[np.array])
         '''
         self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image_list)
@@ -157,38 +163,12 @@ class JDE_Detector(Detector):
         return online_tlwhs, online_scores, online_ids
 
 
-def write_mot_results(filename, results, data_type='mot'):
-    if data_type in ['mot', 'mcmot', 'lab']:
-        save_format = '{frame},{id},{x1},{y1},{w},{h},{score},-1,-1,-1\n'
-    elif data_type == 'kitti':
-        save_format = '{frame} {id} pedestrian 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
-    else:
-        raise ValueError(data_type)
-
-    with open(filename, 'w') as f:
-        for frame_id, tlwhs, tscores, track_ids in results:
-            if data_type == 'kitti':
-                frame_id -= 1
-            for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
-                x1, y1, w, h = tlwh
-                x2, y2 = x1 + w, y1 + h
-                line = save_format.format(
-                    frame=frame_id,
-                    id=track_id,
-                    x1=x1,
-                    y1=y1,
-                    x2=x2,
-                    y2=y2,
-                    w=w,
-                    h=h,
-                    score=score)
-                f.write(line)
-
-
 def predict_image(detector, image_list):
     results = []
+    num_classes = detector.num_classes
+    data_type = 'mcmot' if num_classes > 1 else 'mot'
     image_list.sort()
-    for i, img_file in enumerate(image_list):
+    for frame_id, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
         if FLAGS.run_benchmark:
             detector.predict([frame], FLAGS.threshold, warmup=10, repeats=10)
@@ -196,12 +176,12 @@ def predict_image(detector, image_list):
             detector.cpu_mem += cm
             detector.gpu_mem += gm
             detector.gpu_util += gu
-            print('Test iter {}, file name:{}'.format(i, img_file))
+            print('Test iter {}, file name:{}'.format(frame_id, img_file))
         else:
             online_tlwhs, online_scores, online_ids = detector.predict(
                 [frame], FLAGS.threshold)
-            online_im = mot_vis.plot_tracking(
-                frame, online_tlwhs, online_ids, online_scores, frame_id=i)
+            online_im = plot_tracking_dict(frame, num_classes, online_tlwhs,
+                                           online_ids, online_scores, frame_id)
             if FLAGS.save_images:
                 if not os.path.exists(FLAGS.output_dir):
                     os.makedirs(FLAGS.output_dir)
@@ -233,7 +213,9 @@ def predict_video(detector, camera_id):
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     frame_id = 0
     timer = MOTTimer()
-    results = []
+    results = defaultdict(list)  # support single class and multi classes
+    num_classes = detector.num_classes
+    data_type = 'mcmot' if num_classes > 1 else 'mot'
     while (1):
         ret, frame = capture.read()
         if not ret:
@@ -243,10 +225,14 @@ def predict_video(detector, camera_id):
             [frame], FLAGS.threshold)
         timer.toc()
 
-        results.append((frame_id + 1, online_tlwhs, online_scores, online_ids))
+        for cls_id in range(num_classes):
+            results[cls_id].append((frame_id + 1, online_tlwhs[cls_id],
+                                    online_scores[cls_id], online_ids[cls_id]))
+
         fps = 1. / timer.average_time
-        im = mot_vis.plot_tracking(
+        im = plot_tracking_dict(
             frame,
+            num_classes,
             online_tlwhs,
             online_ids,
             online_scores,
@@ -261,14 +247,6 @@ def predict_video(detector, camera_id):
         else:
             writer.write(im)
 
-        if FLAGS.save_mot_txt_per_img:
-            save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
-            if not os.path.exists(save_dir):
-                os.makedirs(save_dir)
-            result_filename = os.path.join(save_dir,
-                                           '{:05d}.txt'.format(frame_id))
-            write_mot_results(result_filename, [results[-1]])
-
         frame_id += 1
         print('detect frame: %d' % (frame_id))
         if camera_id != -1:
@@ -278,7 +256,8 @@ def predict_video(detector, camera_id):
     if FLAGS.save_mot_txts:
         result_filename = os.path.join(FLAGS.output_dir,
                                        video_name.split('.')[-2] + '.txt')
-        write_mot_results(result_filename, results)
+
+        write_mot_results(result_filename, results, data_type, num_classes)
 
     if FLAGS.save_images:
         save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])

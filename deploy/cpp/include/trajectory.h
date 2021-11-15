@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// The code is based on:
+// https://github.com/CnybTseng/JDE/blob/master/platforms/common/trajectory.h
+// Ths copyright of CnybTseng/JDE is as follows:
+// MIT License
+
 #pragma once
 
 #include <vector>
