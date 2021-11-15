@@ -28,6 +28,8 @@ Paddledetection implements three MOT algorithms of these two series.
 
 <div align="center">
   <img src="../../docs/images/mot16_jde.gif" width=500 />
+  <br>
+  demo resource: MOT17 dataset</div>
 </div>
 
 
