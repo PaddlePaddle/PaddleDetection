@@ -43,7 +43,9 @@ def paa_anchor_target(anchors,
         fg_inds, bg_inds = subsample_labels(match_labels, rpn_batch_size_per_im,
                                             rpn_fg_fraction, 0, use_random)
         # Fill with the ignore label (-1), then set positive and negative labels
-        labels = paddle.full(match_labels.shape, -1, dtype='int32')
+        # labels = paddle.full(match_labels.shape, -1, dtype='int32')
+        # PAA use 0 as default
+        labels = paddle.full(match_labels.shape, 0, dtype='int32')
         if bg_inds.shape[0] > 0:
             labels = paddle.scatter(labels, bg_inds, paddle.zeros_like(bg_inds))
         if fg_inds.shape[0] > 0:

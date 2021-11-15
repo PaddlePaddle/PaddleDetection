@@ -52,10 +52,10 @@ class PAA(BaseArch):
         if self.neck is not None:
             body_feats = self.neck(body_feats)
         if self.training:
-            bbox_loss, _ = self.bbox_head(body_feats, self.inputs)
+            bbox_loss = self.bbox_head(body_feats, self.inputs)
             return bbox_loss
         else:
-            preds, _ = self.bbox_head(body_feats, None)
+            preds = self.bbox_head(body_feats, None)
 
             im_shape = self.inputs['im_shape']
             scale_factor = self.inputs['scale_factor']

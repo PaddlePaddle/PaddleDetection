@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 try:
     import sklearn.mixture as skm
@@ -43,6 +45,7 @@ class PAAHead(nn.Layer):
         self.head = head
         self.anchor_generator = anchor_generator
         self.target_assign = target_assign
+        self.num_classes = num_classes
         self.topk = topk
         if isinstance(anchor_generator, dict):
             self.anchor_generator = AnchorGenerator(**anchor_generator)
@@ -160,8 +163,16 @@ class PAAHead(nn.Layer):
                 else:
                     value, topk_inds = pos_losses.gather(level_gt_mask).topk(min(len(level_gt_mask), self.topk), largest=False)
 
-                pos_inds_gmm.append(pos_inds.gather(level_gt_mask).gather(topk_inds))
+                pos_gts = pos_inds.gather(level_gt_mask)
+                # print(level_gt_mask.shape, pos_gts.shape)
+                if pos_gts.shape[0] == 0:
+                    continue
+                pos_inds_gmm.append(pos_gts.gather(topk_inds))
                 pos_loss_gmm.append(value)
+
+            # paddle.concat doesn't support empty sequence
+            if len(pos_inds_gmm) == 0:
+                continue
 
             pos_inds_gmm = paddle.concat(pos_inds_gmm)
             pos_loss_gmm = paddle.concat(pos_loss_gmm)
@@ -193,8 +204,16 @@ class PAAHead(nn.Layer):
                 weights_init=weights_init,
                 means_init=means_init,
                 precisions_init=precisions_init,
-                covariance_type=self.covariance_type)
-            gmm.fit(pos_loss_gmm)
+                covariance_type=self.covariance_type,
+                reg_covar=1e-5
+            )
+            print(pos_loss_gmm, pos_loss_gmm.shape)
+            try:
+                gmm.fit(pos_loss_gmm)
+            except:
+                print(sys.exc_info())
+                continue
+
             gmm_assignment = gmm.predict(pos_loss_gmm)
             scores = gmm.score_samples(pos_loss_gmm)
             # gmm_assignment = torch.from_numpy(gmm_assignment).to(device)
@@ -207,12 +226,24 @@ class PAAHead(nn.Layer):
             pos_inds_after_paa.append(pos_inds_temp)
             ignore_inds_after_paa.append(ignore_inds_temp)
 
-        pos_inds_after_paa = torch.cat(pos_inds_after_paa)
-        ignore_inds_after_paa = torch.cat(ignore_inds_after_paa)
-        reassign_mask = (pos_inds.unsqueeze(1) != pos_inds_after_paa).all(1)
-        reassign_ids = pos_inds[reassign_mask]
-        label[reassign_ids] = self.num_classes
-        num_pos = len(pos_inds_after_paa)
+        num_pos = 0
+        for inds in pos_inds_after_paa:
+            print(inds)
+            num_pos += len(inds)
+
+        if num_pos>0:
+            pos_inds_after_paa = paddle.concat(pos_inds_after_paa)
+            # ignore_inds_after_paa = paddle.concat(ignore_inds_after_paa)
+            reassign_mask = (pos_inds.unsqueeze(1) != pos_inds_after_paa).all(1)
+            reassign_ids = pos_inds.gather(reassign_mask.nonzero())
+            # label[reassign_ids] = self.num_classes
+            for id in reassign_ids:
+                # label[id] = self.num_classes
+                # softmax need label cannot be larger than classes count
+                label[id] = self.num_classes - 1
+
+            # num_pos = len(pos_inds_after_paa)
+
         return label, num_pos
 
 
@@ -243,14 +274,16 @@ class PAAHead(nn.Layer):
         # https://github.com/kkhoot/PAA/issues/8 and
         # https://github.com/kkhoot/PAA/issues/9.
         fgs = gmm_assignment == 0
+        fgs = fgs.nonzero()
         # pos_inds_temp = fgs.new_tensor([], dtype=torch.long)
         pos_inds_temp = paddle.Tensor()
         # ignore_inds_temp = fgs.new_tensor([], dtype=torch.long)
         ignore_inds_temp = paddle.Tensor()
         if fgs.nonzero().numel():
-            _, pos_thr_ind = scores[fgs].topk(1)
-            pos_inds_temp = pos_inds_gmm[fgs][:pos_thr_ind + 1]
-            ignore_inds_temp = pos_inds_gmm.new_tensor([])
+            _, pos_thr_ind = scores.gather(fgs).topk(1)
+            pos_inds_temp = pos_inds_gmm.gather(fgs)[:pos_thr_ind + 1]
+            # ignore_inds_temp = pos_inds_gmm.new_tensor([])
+            ignore_inds_temp = paddle.Tensor()
         return pos_inds_temp, ignore_inds_temp
 
 
@@ -312,8 +345,8 @@ class PAAHead(nn.Layer):
             loss_rpn_reg = paddle.zeros([1], dtype='float32')
         else:
             loc_pred = paddle.gather(deltas, pos_ind)
-            loc_tgt = paddle.concat(loc_tgt)
-            loc_tgt = paddle.gather(loc_tgt, pos_ind)
+            origin_loc_tgt = paddle.concat(loc_tgt)
+            loc_tgt = paddle.gather(origin_loc_tgt, pos_ind)
             loc_tgt.stop_gradient = True
             # loss_rpn_reg = paddle.abs(loc_pred - loc_tgt).sum()
 
@@ -322,9 +355,84 @@ class PAAHead(nn.Layer):
 
         score = self.get_anchor_score(anchors, score_pred_pos, loc_pred, score_label_pos, loc_tgt)
 
-        self.paa_reassign(score, score_tgt, pos_ind.reshape((-1,)), pos_gt_inds, multi_level_anchors)
+        reassign_labels, num_pos = self.paa_reassign(score, score_tgt, pos_ind.reshape((-1,)), pos_gt_inds, multi_level_anchors)
+
+        cls_scores = [
+            paddle.reshape(
+                paddle.transpose(
+                    v, perm=[0, 2, 3, 1]),
+                shape=(v.shape[0], -1, self.num_classes)) for v in pred_scores
+        ]
+        cls_scores = paddle.concat(cls_scores, axis=1)
+        cls_scores = [v for v in cls_scores]
+
+        bbox_preds = [
+            paddle.reshape(
+                paddle.transpose(
+                    v, perm=[0, 2, 3, 1]),
+                shape=(v.shape[0], -1, 4)) for v in pred_deltas
+        ]
+        bbox_preds = paddle.concat(bbox_preds, axis=1)
+        bbox_preds = [v for v in bbox_preds]
+        # convert all tensor list to a flatten tensor
+        # cls_scores = paddle.concat(cls_scores, 0).view(-1, cls_scores[0].size(-1))
+        cls_scores = paddle.concat(cls_scores, 0)
+        # bbox_preds = paddle.concat(bbox_preds, 0).view(-1, bbox_preds[0].size(-1))
+        bbox_preds = paddle.concat(bbox_preds, 0)
+        # iou_preds = paddle.concat(iou_preds, 0).view(-1, iou_preds[0].size(-1))
+        # labels = paddle.concat(reassign_labels, 0).view(-1)
+        labels = reassign_labels
+        # flatten_anchors = paddle.concat([paddle.concat(item, 0) for item in multi_level_anchors])
+        flatten_anchors = paddle.concat(multi_level_anchors)
+
+        # pos_inds_flatten = ((labels >= 0)
+        #                     &
+        #                     (labels < self.num_classes)).nonzero().reshape(-1)
+        # pos_inds_flatten = paddle.logical_and((labels >= 0), (labels < self.num_classes)).nonzero().reshape([-1])
+        pos_inds_flatten = paddle.logical_and((labels > 0), (labels < self.num_classes)).nonzero().reshape([-1])
+
+        # losses_cls = self.loss_cls(
+        #     cls_scores,
+        #     labels,
+        #     avg_factor=max(num_pos, len(img_metas)))  # avoid num_pos=0
+
+        losses_cls = F.cross_entropy(cls_scores, labels.cast('int64'))
+
+        if num_pos:
+            # pos_bbox_pred = self.bbox_coder.decode(
+            #     flatten_anchors[pos_inds_flatten],
+            #     bbox_preds[pos_inds_flatten])
+            # pos_bbox_pred = bbox_preds[pos_inds_flatten]
+            pos_bbox_pred = bbox_preds.gather(pos_inds_flatten)
+            # pos_bbox_target = loc_tgt[pos_inds_flatten]
+            pos_bbox_target = origin_loc_tgt.gather(pos_inds_flatten)
+
+            # iou_target = bbox_overlaps(
+            #     pos_bbox_pred.detach(), pos_bbox_target, is_aligned=True)
+            # losses_iou = self.loss_centerness(
+            #     iou_preds[pos_inds_flatten],
+            #     iou_target.unsqueeze(-1),
+            #     avg_factor=num_pos)
+
+            # losses_bbox = self.loss_bbox(
+            #     pos_bbox_pred,
+            #     pos_bbox_target,
+            #     # iou_target.clamp(min=EPS),
+            #     # avg_factor=iou_target.sum()
+            # )
+            losses_bbox = paddle.abs(pos_bbox_pred - pos_bbox_target).mean()
+        else:
+            # losses_iou = iou_preds.sum() * 0
+            losses_bbox = bbox_preds.sum() * 0
+
+        # return dict(
+        #     loss_cls=losses_cls, loss_bbox=losses_bbox,
+        #     # loss_iou=losses_iou
+        # )
 
         return {
-            'loss_rpn_cls': loss_rpn_cls / norm,
-            'loss_rpn_reg': loss_rpn_reg / norm
+            # 'loss_bbox_cls': loss_rpn_cls / norm,
+            'loss_bbox_cls': losses_cls,
+            # 'loss_bbox_reg': loss_rpn_reg / norm
+            'loss_bbox_reg': losses_bbox
         }
