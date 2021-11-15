@@ -27,7 +27,7 @@ from .utils import parse_pt_gt, parse_pt, compare_dataframes_mtmc
 from .utils import get_labels, getData, gen_new_mot
 from .camera_utils import get_labels_with_camera
 from .zone import Zone
-from ..visualization import plot_tracking
+from ..utils import plot_tracking
 
 __all__ = [
     'trajectory_fusion',
@@ -271,9 +271,13 @@ def save_mtmct_crops(cid_tid_fid_res,
                      width=300,
                      height=200):
     carame_ids = cid_tid_fid_res.keys()
-    seqs = os.listdir(images_dir)
-    seqs.sort()
+    seqs_folder = os.listdir(images_dir)
+    seqs = []
+    for x in seqs_folder:
+        if os.path.isdir(os.path.join(images_dir, x)):
+            seqs.append(x)
     assert len(seqs) == len(carame_ids)
+    seqs.sort()
 
     if not os.path.exists(crops_dir):
         os.makedirs(crops_dir)
@@ -316,9 +320,13 @@ def save_mtmct_vis_results(carame_results,
                            save_videos=False):
     # carame_results: 'cid, tid, fid, x1, y1, w, h'
     carame_ids = carame_results.keys()
-    seqs = os.listdir(images_dir)
-    seqs.sort()
+    seqs_folder = os.listdir(images_dir)
+    seqs = []
+    for x in seqs_folder:
+        if os.path.isdir(os.path.join(images_dir, x)):
+            seqs.append(x)
     assert len(seqs) == len(carame_ids)
+    seqs.sort()
 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -326,7 +334,7 @@ def save_mtmct_vis_results(carame_results,
     for i, c_id in enumerate(carame_ids):
         print("Start visualization for camera {} of sequence {}.".format(
             c_id, seqs[i]))
-        cid_save_dir = os.path.join(save_dir, 'cid{}'.format(c_id))
+        cid_save_dir = os.path.join(save_dir, '{}'.format(seqs[i]))
         if not os.path.exists(cid_save_dir):
             os.makedirs(cid_save_dir)
 
@@ -359,7 +367,7 @@ def save_mtmct_vis_results(carame_results,
             output_video_path = os.path.join(cid_save_dir, '..',
                                              '{}_mtmct_vis.mp4'.format(seqs[i]))
             cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
-                save_dir, output_video_path)
+                cid_save_dir, output_video_path)
             os.system(cmd_str)
             print('Save camera {} video in {}.'.format(seqs[i],
                                                        output_video_path))

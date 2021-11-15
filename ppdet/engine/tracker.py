@@ -559,8 +559,6 @@ class Tracker(object):
             self.dataset.set_images(self.get_infer_images(infer_dir))
             dataloader = create('EvalMOTReader')(self.dataset, 0)
 
-            result_filename = os.path.join(result_root, '{}.txt'.format(seq))
-
             with paddle.no_grad():
                 if model_type in ['JDE', 'FairMOT']:
                     results, nf, ta, tc = self._eval_seq_jde(
