@@ -433,17 +433,8 @@ def parse_pt_gt(mot_feature):
 # eval result
 def compare_dataframes_mtmc(gts, ts):
     """Compute ID-based evaluation metrics for MTMCT
-    
-    Params
-    ------
-    gts : pandas.DataFrame
-        Ground truth data.
-    ts : pandas.DataFrame
-        Prediction/test data.
-    Returns
-    -------
-    df : pandas.DataFrame
-        Results of the evaluations in a df with only the 'idf1', 'idp', and 'idr' columns.
+    Return:
+        df (pandas.DataFrame): Results of the evaluations in a df with only the 'idf1', 'idp', and 'idr' columns.
     """
     gtds = []
     tsds = []

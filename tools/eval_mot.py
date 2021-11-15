@@ -119,6 +119,7 @@ def run(FLAGS, cfg):
             scaled=FLAGS.scaled,
             det_results_dir=FLAGS.det_results_dir)
 
+
 def main():
     FLAGS = parse_args()
     cfg = load_config(FLAGS.config)

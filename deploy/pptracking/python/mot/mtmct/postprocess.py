@@ -290,7 +290,9 @@ def save_mtmct_crops(cid_tid_fid_res,
             all_images.sort()
 
             for f_id in cid_tid_fid_res[c_id][t_id].keys():
-                im_path = os.path.join(infer_dir, all_images[f_id])
+                frame_idx = f_id - 1 if f_id > 0 else 0
+                im_path = os.path.join(infer_dir, all_images[frame_idx])
+                
                 im = cv2.imread(im_path)  # (H, W, 3)
 
                 track = cid_tid_fid_res[c_id][t_id][f_id][

@@ -15,11 +15,12 @@
 import os
 import cv2
 import numpy as np
+from sklearn.cluster import AgglomerativeClustering
 
 BBOX_B = 10 / 15
 
 
-class Zone():
+class Zone(object):
     def __init__(self, zone_path='datasets/zone'):
         # 0: b 1: g 3: r 123:w
         # w r not high speed
@@ -224,8 +225,9 @@ class Zone():
                 have_break = False
                 for f in frame_list:
                     now_bbox = tracklet_dict[f]['bbox']
-                    if pre_bbox == -1:
-                        pre_bbox = now_bbox
+                    if type(pre_bbox) == int:
+                        if pre_bbox == -1:
+                            pre_bbox = now_bbox
                     now_arrow = now_bbox[0] - pre_bbox[0]
                     if pre_arrow * now_arrow < 0 and len(
                             new_tracklet_dict) > 15 and not have_break:
@@ -236,6 +238,7 @@ class Zone():
                         tracklet_dict[f]['id'] = new_num_tracklets
                     new_tracklet_dict[f] = tracklet_dict[f]
                     pre_bbox, pre_arrow = now_bbox, now_arrow
+
                 if have_break:
                     new_mot_list[new_num_tracklets] = new_tracklet_dict
                     new_num_tracklets += 1
