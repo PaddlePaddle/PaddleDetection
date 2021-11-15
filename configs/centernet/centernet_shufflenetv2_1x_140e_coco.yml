@@ -1,12 +1,20 @@
 _BASE_: [
-  '../datasets/coco_detection.yml',
-  '../runtime.yml',
-  '_base_/optimizer_140e.yml',
-  '_base_/centernet_shufflenetv2_2x.yml',
-  '_base_/centernet_reader.yml',
+  'centernet_r50_140e_coco.yml'
 ]
 
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ShuffleNetV2_x1_0_pretrained.pdparams
 weights: output/centernet_shufflenetv2_1x_140e_coco/model_finalp
+
+CenterNet:
+  backbone: ShuffleNetV2
+  neck: CenterNetDLAFPN
+  head: CenterNetHead
+  post_process: CenterNetPostProcess
+
+ShuffleNetV2:
+  scale: 1.0
+  feature_maps: [1, 5, 13, 17]
+  act: leaky_relu
 
 TrainReader:
   batch_size: 32
