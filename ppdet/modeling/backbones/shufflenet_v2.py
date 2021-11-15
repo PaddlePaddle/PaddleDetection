@@ -200,7 +200,8 @@ class ShuffleNetV2(nn.Layer):
             act=act)
         self._max_pool = MaxPool2D(kernel_size=3, stride=2, padding=1)
         self._feature_idx += 1
-
+        self._update_out_channels(stage_out_channels[1],
+                                  self._feature_idx, self.feature_maps)
         # 2. bottleneck sequences
         self._block_list = []
         for stage_id, num_repeat in enumerate(stage_repeats):
@@ -231,9 +232,10 @@ class ShuffleNetV2(nn.Layer):
             self._out_channels.append(channel)
 
     def forward(self, inputs):
+        outs = []
         y = self._conv1(inputs['image'])
         y = self._max_pool(y)
-        outs = []
+        outs.append(y)
         for i, inv in enumerate(self._block_list):
             y = inv(y)
             if i + 2 in self.feature_maps:
