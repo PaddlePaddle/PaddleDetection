@@ -396,7 +396,9 @@ class PAAHead(nn.Layer):
         #     labels,
         #     avg_factor=max(num_pos, len(img_metas)))  # avoid num_pos=0
 
-        losses_cls = F.cross_entropy(cls_scores, labels.cast('int64'))
+        # F.one_hot()
+        # losses_cls = F.cross_entropy(cls_scores, labels.cast('int64'))
+        losses_cls = F.sigmoid_focal_loss(cls_scores, F.one_hot(labels, self.num_classes+1), reduction='mean')
 
         if num_pos:
             # pos_bbox_pred = self.bbox_coder.decode(
