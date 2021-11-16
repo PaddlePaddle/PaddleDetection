@@ -10,7 +10,7 @@ For general information about PaddleDetection, please see [README.md](https://gi
 
 ## Requirements:
 
-- PaddlePaddle 2.1
+- PaddlePaddle 2.2
 - OS 64 bit
 - Python 3(3.5.1+/3.6/3.7/3.8/3.9)，64 bit
 - pip/pip3(9.0.1+), 64 bit
@@ -40,7 +40,7 @@ Dependency of PaddleDetection and PaddlePaddle:
 ```
 
 # CUDA10.1
-python -m pip install paddlepaddle-gpu==2.1.0.post101 -f https://paddlepaddle.org.cn/whl/mkl/stable.html
+python -m pip install paddlepaddle-gpu==2.2.0.post101 -f https://www.paddlepaddle.org.cn/whl/linux/mkl/avx/stable.html
 
 # CPU
 python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple

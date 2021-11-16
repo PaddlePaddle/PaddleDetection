@@ -7,7 +7,7 @@
 
 ## 环境要求
 
-- PaddlePaddle 2.1
+- PaddlePaddle 2.2
 - OS 64位操作系统
 - Python 3(3.5.1+/3.6/3.7/3.8/3.9)，64位版本
 - pip/pip3(9.0.1+)，64位版本
@@ -34,7 +34,7 @@ PaddleDetection 依赖 PaddlePaddle 版本关系：
 
 ```
 # CUDA10.1
-python -m pip install paddlepaddle-gpu==2.1.0.post101 -f https://paddlepaddle.org.cn/whl/mkl/stable.html
+python -m pip install paddlepaddle-gpu==2.2.0.post101 -f https://www.paddlepaddle.org.cn/whl/linux/mkl/avx/stable.html
 
 # CPU
 python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
