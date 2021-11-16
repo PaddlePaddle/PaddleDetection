@@ -69,8 +69,14 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
             <li>Deformable DETR</li>
             <li>Swin Transformer</li>
             <li>Sparse RCNN</li>
+        </ul>
+        <li><b>Instance Segmentation</b></li>
+        <ul>
             <li>Mask RCNN</li>
             <li>SOLOv2</li>
+        </ul>
+        <li><b>Face Detection</b></li>
+        <ul>
             <li>FaceBoxes</li>
             <li>BlazeFace</li>
             <li>BlazeFace-NAS</li>
