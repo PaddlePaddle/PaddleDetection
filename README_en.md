@@ -65,12 +65,13 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
             <li>RetinaNet</li>
             <li>YOLOv3</li>
             <li>YOLOv4</li>  
-            <li>PP-YOLOv1/v2/Tiny</li>
+            <li>PP-YOLOv1/v2</li>
+            <li>PP-YOLO-Tiny</li>
             <li>SSD</li>
             <li>CornerNet-Squeeze</li>
             <li>FCOS</li>  
             <li>TTFNet</li>
-            <li>PicoDet</li>
+            <li>PP-PicoDet</li>
             <li>DETR</li>
             <li>Deformable DETR</li>
             <li>Swin Transformer</li>
