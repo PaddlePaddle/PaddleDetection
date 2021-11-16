@@ -159,7 +159,7 @@ class PAAHead(nn.Layer):
             for level in range(num_level):
                 level_mask = pos_level_mask[level]
                 level_gt_mask = paddle.nonzero(paddle.logical_and(level_mask, gt_mask))
-                if level_gt_mask.sum() == 0:
+                if level_gt_mask.sum() == 0 or len(level_gt_mask)==0:
                     value = paddle.Tensor()
                     topk_inds = paddle.Tensor()
                 else:
@@ -207,7 +207,7 @@ class PAAHead(nn.Layer):
                 means_init=means_init,
                 precisions_init=precisions_init,
                 covariance_type=self.covariance_type,
-                reg_covar=1e-5
+                # reg_covar=1e-5
             )
             print(pos_loss_gmm, pos_loss_gmm.shape)
             try:
