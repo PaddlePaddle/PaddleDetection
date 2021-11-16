@@ -1,35 +1,37 @@
 _BASE_: [
   '../deepsort/deepsort_ppyolov2_pplcnet.yml'
 ]
-num_classes: 80 #1
-coco_labels: [2, 5, 7] # (car,bus,truck)
-det_weights: https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams
-# det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_640x640_aicity_vehicle.pdparams
+num_classes: 1
+det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle.pdparams
 reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet_vehicle.pdparams
 
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot/aic21mtmct_vehicle
-    data_root: S01/images
+    data_root: S06/images
     keep_ori_im: True # set as True in DeepSORT
 
 # config for MTMCT
 MTMCT: True
 cameras_bias:
-  c003: 0
-  c004: 0
+  c041: 0
+  c042: 0
+  c043: 0
+  c044: 0
+  c045: 0
+  c046: 0
 # 1.zone releated parameters
-use_zone: False
-zone_path: ''
+use_zone: True
+zone_path: dataset/mot/aic21mtmct_vehicle/S06/zone
 # 2.tricks parameters, can be used for other mtmct dataset
 use_ff: True
 use_rerank: True
 # 3.camera releated parameters
-use_camera: False
+use_camera: True
 use_st_filter: False
 # 4.zone releated parameters
-use_roi: False
-roi_dir: ''
+use_roi: True
+roi_dir: dataset/mot/aic21mtmct_vehicle/S06/images
 
 
 EvalMOTReader:
@@ -66,7 +68,6 @@ DeepSORT:
 
 
 # reid and tracker configuration
-# see 'configs/mot/deepsort/reid/deepsort_pplcnet_vehicle.yml'
 PPLCNetEmbedding:
   input_ch: 1280
   output_ch: 512
@@ -85,7 +86,7 @@ DeepSORTTracker:
 
 
 # detector configuration: PPYOLOv2 version
-# see 'configs/mot/deepsort/detector/ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml'
+# see 'configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml'
 YOLOv3:
   backbone: ResNet
   neck: PPYOLOPAN

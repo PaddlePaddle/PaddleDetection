@@ -276,6 +276,7 @@ class Tracker(object):
                     outs_bbox[:, 0] = outs_bbox[:, 0] * 0
                     outs['bbox'] = outs_bbox
                     outs['bbox_num'] = np.array([outs_bbox.shape[0]])
+                # TODO: whether to use coco trained model
 
                 if outs['bbox_num'] > 0 and empty_detections == False:
                     # detector outputs: pred_cls_ids, pred_scores, pred_bboxes
