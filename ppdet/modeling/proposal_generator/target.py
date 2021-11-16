@@ -19,37 +19,43 @@ from ..bbox_utils import bbox2delta, bbox_overlaps
 
 def paa_anchor_target(anchors,
                       gt_boxes,
-                      rpn_batch_size_per_im,
-                      rpn_positive_overlap,
-                      rpn_negative_overlap,
-                      rpn_fg_fraction,
+                      gt_labels,
+                      batch_size_per_im,
+                      positive_overlap,
+                      negative_overlap,
+                      fg_fraction,
                       use_random=True,
                       batch_size=1,
                       ignore_thresh=-1,
                       is_crowd=None,
-                      weights=[1., 1., 1., 1.]):
+                      weights=[1., 1., 1., 1.],
+                      num_classes=80):
     tgt_labels = []
     tgt_bboxes = []
     tgt_deltas = []
     gt_inds = []
     for i in range(batch_size):
         gt_bbox = gt_boxes[i]
+        gt_label = gt_labels[i]
         is_crowd_i = is_crowd[i] if is_crowd else None
         # Step1: match anchor and gt_bbox
         matches, match_labels = label_box(
-            anchors, gt_bbox, rpn_positive_overlap, rpn_negative_overlap, True,
+            anchors, gt_bbox, positive_overlap, negative_overlap, True,
             ignore_thresh, is_crowd_i)
         # Step2: sample anchor
-        fg_inds, bg_inds = subsample_labels(match_labels, rpn_batch_size_per_im,
-                                            rpn_fg_fraction, 0, use_random)
+        fg_inds, bg_inds = paa_subsample_labels(match_labels, batch_size_per_im,
+                                                fg_fraction, 0, use_random)
         # Fill with the ignore label (-1), then set positive and negative labels
         # labels = paddle.full(match_labels.shape, -1, dtype='int32')
-        # PAA use 0 as default
-        labels = paddle.full(match_labels.shape, 0, dtype='int32')
+        # PAA use num_classes as default
+        # labels = paddle.full(match_labels.shape, 0, dtype='int32')
+        labels = paddle.full(match_labels.shape, num_classes, dtype='int32')
         if bg_inds.shape[0] > 0:
-            labels = paddle.scatter(labels, bg_inds, paddle.zeros_like(bg_inds))
+            # labels = paddle.scatter(labels, bg_inds, paddle.zeros_like(bg_inds))
+            labels = paddle.scatter(labels, bg_inds, paddle.full_like(bg_inds, num_classes))
         if fg_inds.shape[0] > 0:
-            labels = paddle.scatter(labels, fg_inds, paddle.ones_like(fg_inds))
+            # labels = paddle.scatter(labels, fg_inds, paddle.ones_like(fg_inds))
+            labels = paddle.scatter(labels, fg_inds, paddle.gather(gt_label, matches).gather(fg_inds).reshape([-1]))
         # Step3: make output
         if gt_bbox.shape[0] == 0:
             matched_gt_boxes = paddle.zeros([0, 4])
