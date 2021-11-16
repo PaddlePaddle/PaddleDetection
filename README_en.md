@@ -98,10 +98,13 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
         <ul>
           <li><b>Transformer</b></li>
             <ul>
-             <li>DETR/Deformable DETR</li>
-             <li>Sparse RCNN</li>
+             <li>DETR</li>
+             <li>Deformable DETR</li>
              <li>Swin Transformer</li>
             </ul>
+        </ul>
+        <ul>
+          <li><b>Sparse RCNN</b></li>
         </ul>
         <ul>
           <li><b>Multi-Object-Tracking</b></li>
