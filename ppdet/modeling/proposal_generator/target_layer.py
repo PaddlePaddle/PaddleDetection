@@ -66,18 +66,19 @@ class PAATargetAssign(object):
         self.ignore_thresh = ignore_thresh
         self.use_random = use_random
 
-    def __call__(self, inputs, anchors):
+    def __call__(self, inputs, anchors, num_classes):
         """
         inputs: ground-truth instances.
         anchor_box (Tensor): [num_anchors, 4], num_anchors are all anchors in all feature maps.
         """
         gt_boxes = inputs['gt_bbox']
+        gt_labels = inputs['gt_class']
         is_crowd = inputs.get('is_crowd', None)
         batch_size = len(gt_boxes)
         tgt_labels, tgt_bboxes, gt_inds, tgt_deltas = paa_anchor_target(
-            anchors, gt_boxes, self.batch_size_per_im, self.positive_overlap,
+            anchors, gt_boxes, gt_labels, self.batch_size_per_im, self.positive_overlap,
             self.negative_overlap, self.fg_fraction, self.use_random,
-            batch_size, self.ignore_thresh, is_crowd)
+            batch_size, self.ignore_thresh, is_crowd, num_classes=num_classes)
         norm = self.batch_size_per_im * batch_size
 
         return tgt_labels, tgt_bboxes, gt_inds, tgt_deltas, norm
