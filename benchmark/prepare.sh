@@ -9,9 +9,9 @@ wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/coco_benchmark.
 cd ./dataset/coco/ && tar -xvf coco_benchmark.tar && mv -u coco_benchmark/* .
 rm -rf coco_benchmark/
 
-cd ../
+cd ../../
 rm -rf ./dataset/mot/*
 # prepare mot mini train data
 wget -nc -P ./dataset/mot/ https://paddledet.bj.bcebos.com/data/mot_benchmark.tar
 cd ./dataset/mot/ && tar -xvf mot_benchmark.tar && mv -u mot_benchmark/* .
-#rm -rf mot_benchmark/
+rm -rf mot_benchmark/
