@@ -240,14 +240,11 @@ class PAAHead(nn.Layer):
             reassign_ids = pos_inds.gather(reassign_mask.nonzero())
             # label[reassign_ids] = self.num_classes
             for id in reassign_ids:
-                # label[id] = self.num_classes
-                # softmax need label cannot be larger than classes count
-                label[id] = self.num_classes - 1
+                label[id] = self.num_classes
 
             # num_pos = len(pos_inds_after_paa)
 
         return label, num_pos
-
 
     def gmm_separation_scheme(self, gmm_assignment, scores, pos_inds_gmm):
         """A general separation scheme for gmm model.
@@ -288,7 +285,6 @@ class PAAHead(nn.Layer):
             ignore_inds_temp = paddle.Tensor()
         return pos_inds_temp, ignore_inds_temp
 
-
     def get_loss(self, pred_scores, pred_deltas, anchors, inputs):
         """
         pred_scores (list[Tensor]): Multi-level scores prediction
@@ -315,7 +311,7 @@ class PAAHead(nn.Layer):
         ]
         deltas = paddle.concat(deltas, axis=1)
 
-        score_tgt, bbox_tgt, gt_inds, loc_tgt, norm = self.target_assign(inputs, anchors)
+        score_tgt, bbox_tgt, gt_inds, loc_tgt, norm = self.target_assign(inputs, anchors, self.num_classes)
 
         scores = paddle.reshape(x=scores, shape=(-1, ))
         deltas = paddle.reshape(x=deltas, shape=(-1, 4))
@@ -325,7 +321,7 @@ class PAAHead(nn.Layer):
 
         gt_inds = paddle.concat(gt_inds)
 
-        pos_mask = score_tgt == 1
+        pos_mask = score_tgt != self.num_classes
         pos_ind = paddle.nonzero(pos_mask)
         pos_gt_inds = paddle.gather(gt_inds, pos_ind)
 
