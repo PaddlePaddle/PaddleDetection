@@ -57,7 +57,7 @@ class PAAHead(nn.Layer):
         # classification scores
         self.cls_conv = nn.Conv2D(
             in_channels=in_channel,
-            out_channels=num_anchors * num_classes,
+            out_channels=num_anchors * (num_classes+1),
             kernel_size=1,
             padding=0,
             weight_attr=paddle.ParamAttr(initializer=Normal(
@@ -365,7 +365,7 @@ class PAAHead(nn.Layer):
             paddle.reshape(
                 paddle.transpose(
                     v, perm=[0, 2, 3, 1]),
-                shape=(v.shape[0], -1, self.num_classes)) for v in pred_scores
+                shape=(v.shape[0], -1, self.num_classes+1)) for v in pred_scores
         ]
         cls_scores = paddle.concat(cls_scores, axis=1)
         cls_scores = [v for v in cls_scores]
