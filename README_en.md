@@ -53,7 +53,7 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
     </tr>
     <tr valign="top">
       <td>
-        <ul><li><b>Two-Stage Detection</b></li>
+        <ul><li><b>Object Detection</b></li>
           <ul>
             <li>Faster RCNN</li>
             <li>FPN</li>
@@ -61,61 +61,33 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
             <li>Libra RCNN</li>
             <li>Hybrid Task RCNN</li>
             <li>PSS-Det</li>
-          </ul>
-        </ul>
-        <ul><li><b>One-Stage Detection</b></li>
-          <ul>
             <li>RetinaNet</li>
             <li>YOLOv3</li>
             <li>YOLOv4</li>  
             <li>PP-YOLOv1/v2/Tiny</li>
             <li>SSD</li>
-          </ul>
-        </ul>
-        <ul><li><b>Anchor Free</b></li>
-          <ul>
             <li>CornerNet-Squeeze</li>
             <li>FCOS</li>  
             <li>TTFNet</li>
             <li>PicoDet</li>
-          </ul>
+            <li>Mask RCNN</li>
+            <li>SOLOv2</li>
+            <li>FaceBoxes</li>
+            <li>BlazeFace</li>
+            <li>BlazeFace-NAS</li>
+            <li>DETR</li>
+            <li>Deformable DETR</li>
+            <li>Swin Transformer</li>
+            <li><b>Sparse RCNN</b></li>
         </ul>
-        <ul>
-          <li><b>Instance Segmentation</b></li>
-            <ul>
-             <li>Mask RCNN</li>
-             <li>SOLOv2</li>
-            </ul>
-        </ul>
-        <ul>
-          <li><b>Face-Detction</b></li>
-            <ul>
-             <li>FaceBoxes</li>
-             <li>BlazeFace</li>
-             <li>BlazeFace-NAS</li>
-            </ul>
-        </ul>
-        <ul>
-          <li><b>Transformer</b></li>
-            <ul>
-             <li>DETR</li>
-             <li>Deformable DETR</li>
-             <li>Swin Transformer</li>
-            </ul>
-        </ul>
-        <ul>
-          <li><b>Sparse RCNN</b></li>
-        </ul>
-        <ul>
-          <li><b>Multi-Object-Tracking</b></li>
+        <ul><li><b>Multi-Object-Tracking</b></li>
             <ul>
              <li>JDE</li>
              <li>FairMOT</li>
              <li>DeepSort</li>
             </ul>
         </ul>
-        <ul>
-          <li><b>KeyPoint-Detection</b></li>
+        <ul><li><b>KeyPoint-Detection</b></li>
             <ul>
              <li>HRNet</li>
              <li>HigherHRNet</li>
