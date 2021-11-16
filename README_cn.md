@@ -46,7 +46,8 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
     </tr>
     <tr valign="top">
       <td>
-        <ul><li><b>Object Detection</b></li>
+        <ul>
+          <li><b>Object Detection</b></li>
           <ul>
             <li>Faster RCNN</li>
             <li>FPN</li>
@@ -63,29 +64,28 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
             <li>FCOS</li>  
             <li>TTFNet</li>
             <li>PicoDet</li>
+            <li>DETR</li>
+            <li>Deformable DETR</li>
+            <li>Swin Transformer</li>
+            <li>Sparse RCNN</li>
             <li>Mask RCNN</li>
             <li>SOLOv2</li>
             <li>FaceBoxes</li>
             <li>BlazeFace</li>
             <li>BlazeFace-NAS</li>
-            <li>DETR</li>
-            <li>Deformable DETR</li>
-            <li>Swin Transformer</li>
-            <li><b>Sparse RCNN</b></li>
         </ul>
-        <ul><li><b>Multi-Object-Tracking</b></li>
-            <ul>
-             <li>JDE</li>
-             <li>FairMOT</li>
-             <li>DeepSort</li>
-            </ul>
+        <li><b>Multi-Object-Tracking</b></li>
+        <ul>
+            <li>JDE</li>
+            <li>FairMOT</li>
+            <li>DeepSort</li>
         </ul>
-        <ul><li><b>KeyPoint-Detection</b></li>
-            <ul>
-             <li>HRNet</li>
-             <li>HigherHRNet</li>
-            </ul>
+        <li><b>KeyPoint-Detection</b></li>
+        <ul>
+            <li>HRNet</li>
+            <li>HigherHRNet</li>
         </ul>
+      </ul>
       </td>
       <td>
         <ul>
