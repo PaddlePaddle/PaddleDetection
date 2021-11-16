@@ -51,6 +51,12 @@ PAAHead:
     aspect_ratios: [ 0.5, 1.0, 2.0 ]
     anchor_sizes: [ [ 32 ], [ 64 ], [ 128 ], [ 256 ], [ 512 ] ]
     strides: [ 4, 8, 16, 32, 64 ]
+  target_assign:
+    batch_size_per_im: 256
+    fg_fraction: 0.5
+    negative_overlap: 0.1
+    positive_overlap: 0.1
+    use_random: True
 #  roi_extractor:
 #    resolution: 7
 #    sampling_ratio: 0
