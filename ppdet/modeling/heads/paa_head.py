@@ -101,6 +101,8 @@ class PAAHead(nn.Layer):
     # only calculate score for positive targets
     def get_anchor_score(self, anchors, scores, bbox_pred, score_tgt, bbox_tgt):
         loss_cls = F.binary_cross_entropy_with_logits(logit=scores, label=score_tgt, reduction="none")
+        # TODO: original code is using bbox absolute distance loss, here we use percentage
+        #  to calculate, so it's much lower than original version
         loss_reg = paddle.abs(bbox_pred - bbox_tgt).mean(axis=-1)
 
         return loss_cls+loss_reg
@@ -353,6 +355,8 @@ class PAAHead(nn.Layer):
         score_pred_pos = paddle.gather(scores, pos_ind)
         score_label_pos = paddle.gather(score_tgt, pos_ind).cast('float32')
 
+        # TODO: the score_label_pos (extracted from score_tgt) should contain
+        #  num_classes classes, but not only objectness
         score = self.get_anchor_score(anchors, score_pred_pos, loc_pred, score_label_pos, loc_tgt)
 
         reassign_labels, num_pos = self.paa_reassign(score, score_tgt, pos_ind.reshape((-1,)), pos_gt_inds, multi_level_anchors)
@@ -401,6 +405,8 @@ class PAAHead(nn.Layer):
         losses_cls = F.sigmoid_focal_loss(cls_scores, F.one_hot(labels, self.num_classes+1), reduction='mean')
 
         if num_pos:
+            # TODO: both pos_bbox_pred, pos_bbox_target are percentage, original
+            #  code is using bbox aboslute size, so original version loss is larger
             # pos_bbox_pred = self.bbox_coder.decode(
             #     flatten_anchors[pos_inds_flatten],
             #     bbox_preds[pos_inds_flatten])
