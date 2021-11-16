@@ -180,6 +180,21 @@ def label_box(anchors,
     return matches, match_labels
 
 
+def paa_subsample_labels(labels,
+                     num_samples,
+                     fg_fraction,
+                     bg_label=0,
+                     use_random=True):
+    positive = paddle.nonzero(
+        paddle.logical_and(labels != -1, labels != bg_label))
+    negative = paddle.nonzero(labels == bg_label)
+
+    bg_inds = negative.cast('int32').flatten()
+    fg_inds = positive.cast('int32').flatten()
+
+    return fg_inds, bg_inds
+
+
 def subsample_labels(labels,
                      num_samples,
                      fg_fraction,
