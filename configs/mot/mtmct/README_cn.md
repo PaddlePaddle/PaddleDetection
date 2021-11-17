@@ -9,7 +9,9 @@ English | [简体中文](README_cn.md)
 - [引用](#引用)
 
 ## 简介
-MTMCT (Multi-Target Multi-Camera Tracking) 跨镜头多目标跟踪是某一场景下的不同摄像头拍摄的视频进行多目标跟踪，是跟踪领域一个非常重要的研究课题，在安防监控、自动驾驶、智慧城市等行业起着重要作用。MTMCT预测的是同一场景下的不同摄像头拍摄的视频，其方法的效果受场景先验知识和相机数量角度拓扑结构等信息的影响较大，PaddleDetection此处提供的是去除场景和相机相关优化方法后的一个基础版本的MTMCT算法实现，如果要继续提高效果，需要专门针对该场景和相机信息设计后处理算法。此处选用DeepSORT方案做MTMCT，为了达到实时性选用了PaddleDetection自研的PPYOLOv2和PP-PicoDet作为检测器，选用PaddleClas自研的轻量级网络PP-LCNet作为ReID模型。MTMCT是[PP-Tracking](../../../deploy/pptracking/python)项目中的重要的一个方向，具体可前往该目录使用。
+MTMCT (Multi-Target Multi-Camera Tracking) 跨镜头多目标跟踪是某一场景下的不同摄像头拍摄的视频进行多目标跟踪，是跟踪领域一个非常重要的研究课题，在安防监控、自动驾驶、智慧城市等行业起着重要作用。MTMCT预测的是同一场景下的不同摄像头拍摄的视频，其方法的效果受场景先验知识和相机数量角度拓扑结构等信息的影响较大，PaddleDetection此处提供的是去除场景和相机相关优化方法后的一个基础版本的MTMCT算法实现，如果要继续提高效果，需要专门针对该场景和相机信息设计后处理算法。此处选用DeepSORT方案做MTMCT，为了达到实时性选用了PaddleDetection自研的PPYOLOv2和PP-PicoDet作为检测器，选用PaddleClas自研的轻量级网络PP-LCNet作为ReID模型。
+
+MTMCT是[PP-Tracking](../../../deploy/pptracking)项目中一个非常重要的方向，[PP-Tracking](../../../deploy/pptracking/README.md)是基于PaddlePaddle深度学习框架的业界首个开源实时跟踪系统。针对实际业务的难点痛点，PP-Tracking内置行人车辆跟踪、跨镜头跟踪、多类别跟踪、小目标跟踪及流量计数等能力与产业应用，同时提供可视化开发界面。模型集成多目标跟踪，目标检测，ReID轻量级算法，进一步提升PP-Tracking在服务器端部署性能。同时支持python，C++部署，适配Linux，Nvidia Jetson多平台环境。具体可前往该目录使用。
 
 
 ## 模型库
@@ -95,7 +97,7 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21
   `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
   `--mtmct_dir`是MTMCT预测的某个场景的文件夹名字，里面包含该场景不同摄像头拍摄视频的图片文件夹，其数量至少为两个。
   MTMCT跨镜头跟踪输出结果为视频和txt形式。每个图片文件夹各生成一个可视化的跨镜头跟踪结果，与单镜头跟踪的结果是不同的，单镜头跟踪的结果在几个视频文件夹间是独立无关的。MTMCT的结果txt只有一个，比单镜头跟踪结果txt多了第一列镜头id号。
-  MTMCT是[PP-Tracking](../../../deploy/pptracking/python)项目中的重要的一个方向，具体可前往该目录使用。
+  MTMCT是[PP-Tracking](../../../deploy/pptracking)项目中的一个非常重要的方向，具体可前往该目录使用。
 
 
 ## 引用
