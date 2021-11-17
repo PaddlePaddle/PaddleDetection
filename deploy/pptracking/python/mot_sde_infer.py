@@ -19,7 +19,6 @@ import cv2
 import re
 import numpy as np
 from collections import defaultdict
-import re
 
 import paddle
 from paddle.inference import Config

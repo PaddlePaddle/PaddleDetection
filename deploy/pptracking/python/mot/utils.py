@@ -15,7 +15,6 @@
 import os
 import cv2
 import time
-import paddle
 import numpy as np
 import collections
 
@@ -307,13 +306,10 @@ def plot_tracking(image,
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
 
-    top_view = np.zeros([im_w, im_w, 3], dtype=np.uint8) + 255
-
     text_scale = max(1, image.shape[1] / 1600.)
     text_thickness = 2
     line_thickness = max(1, int(image.shape[1] / 500.))
 
-    radius = max(5, int(im_w / 140.))
     if fps > 0:
         _line = 'frame: %d fps: %.2f num: %d' % (frame_id, fps, len(tlwhs))
     else:

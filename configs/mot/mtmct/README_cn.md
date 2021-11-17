@@ -94,6 +94,8 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21
   跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)，或`--save_images`表示保存跟踪结果可视化图片。
   `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
   `--mtmct_dir`是MTMCT预测的某个场景的文件夹名字，里面包含该场景不同摄像头拍摄视频的图片文件夹，其数量至少为两个。
+  MTMCT跨镜头跟踪输出结果为视频和txt形式。每个图片文件夹各生成一个可视化的跨镜头跟踪结果，与单镜头跟踪的结果是不同的，单镜头跟踪的结果在几个视频文件夹间是独立无关的。MTMCT的结果txt只有一个，比单镜头跟踪结果txt多了第一列镜头id号。
+  MTMCT是[PP-Tracking](../../../deploy/pptracking/python)项目中的重要的一个方向，具体可前往该目录使用。
 
 
 ## 引用
