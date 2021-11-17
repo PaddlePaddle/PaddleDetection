@@ -24,10 +24,15 @@ Paddledetection implements three MOT algorithms of these two series.
 
 - [FairMOT](https://arxiv.org/abs/2004.01888) is based on an Anchor Free detector Centernet, which overcomes the problem of anchor and feature misalignment in anchor based detection framework. The fusion of deep and shallow features enables the detection and ReID tasks to obtain the required features respectively. It also uses low dimensional ReID features. FairMOT is a simple baseline composed of two homogeneous branches propose to predict the pixel level target score and ReID features. It achieves the fairness between the two tasks and  obtains a higher level of real-time MOT performance.
 
-<div align="center">
-  <img src="../../docs/images/mot16_jde.gif" width=500 />
+[PP-Tracking](../../deploy/pptracking/README.md) is the first open source real-time tracking system based on PaddlePaddle deep learning framework. Aiming at the difficulties and pain points of the actual business, PP-Tracking has built-in capabilities and industrial applications such as pedestrian and vehicle tracking, cross-camera tracking, multi-class tracking, small target tracking and traffic counting, and provides a visual development interface. The model integrates multi-object tracking, object detection and ReID lightweight algorithm to further improve the deployment performance of PP-Tracking on the server. It also supports Python and C + + deployment and adapts to Linux, NVIDIA and Jetson multi platform environment.。
+<div width="1000" align="center">
+  <img src="../../docs/images/pptracking.png"/>
+</div>
+
+<div width="1000" align="center">
+  <img src="../../docs/images/pptracking-demo.gif"/>
   <br>
-  demo resource: MOT17 dataset</div>
+  video source：VisDrone2021, BDD100K dataset</div>
 </div>
 
 

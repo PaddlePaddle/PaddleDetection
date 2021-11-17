@@ -24,10 +24,15 @@ PaddleDetection实现了这两个系列的3种多目标跟踪算法。
 
 - [FairMOT](https://arxiv.org/abs/2004.01888)以Anchor Free的CenterNet检测器为基础，克服了Anchor-Based的检测框架中anchor和特征不对齐问题，深浅层特征融合使得检测和ReID任务各自获得所需要的特征，并且使用低维度ReID特征，提出了一种由两个同质分支组成的简单baseline来预测像素级目标得分和ReID特征，实现了两个任务之间的公平性，并获得了更高水平的实时多目标跟踪精度。
 
-<div align="center">
-  <img src="../../docs/images/mot16_jde.gif" width=500 />
+[PP-Tracking](../../deploy/pptracking/README.md)是基于PaddlePaddle深度学习框架的业界首个开源实时跟踪系统。针对实际业务的难点痛点，PP-Tracking内置行人车辆跟踪、跨镜头跟踪、多类别跟踪、小目标跟踪及流量计数等能力与产业应用，同时提供可视化开发界面。模型集成多目标跟踪，目标检测，ReID轻量级算法，进一步提升PP-Tracking在服务器端部署性能。同时支持python，C++部署，适配Linux，Nvidia Jetson多平台环境。
+<div width="1000" align="center">
+  <img src="../../docs/images/pptracking.png"/>
+</div>
+
+<div width="1000" align="center">
+  <img src="../../docs/images/pptracking-demo.gif"/>
   <br>
-  视频来源：MOT17开源数据集</div>
+  视频来源：VisDrone2021, BDD100K开源数据集</div>
 </div>
 
 
