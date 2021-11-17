@@ -433,7 +433,7 @@ class PAAHead(nn.Layer):
         #                     &
         #                     (labels < self.num_classes)).nonzero().reshape(-1)
         # pos_inds_flatten = paddle.logical_and((labels >= 0), (labels < self.num_classes)).nonzero().reshape([-1])
-        pos_inds_flatten = paddle.logical_and((labels > 0), (labels < self.num_classes)).nonzero().reshape([-1])
+        pos_inds_flatten = paddle.logical_and((labels >= 0), (labels < self.num_classes)).nonzero().reshape([-1])
 
         # losses_cls = self.loss_cls(
         #     cls_scores,
