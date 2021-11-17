@@ -28,6 +28,8 @@ PaddleDetection实现了这两个系列的3种多目标跟踪算法。
 
 <div align="center">
   <img src="../../docs/images/mot16_jde.gif" width=500 />
+  <br>
+  视频来源：MOT17开源数据集</div>
 </div>
 
 
