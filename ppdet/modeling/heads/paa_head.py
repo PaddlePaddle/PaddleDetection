@@ -1,6 +1,9 @@
 import sys
 
 import numpy as np
+
+from ..bbox_utils import delta2bbox, bbox_iou
+
 try:
     import sklearn.mixture as skm
 except ImportError:
@@ -39,8 +42,10 @@ class PAAHead(nn.Layer):
                  in_channel=1024,
                  num_classes=80,
                  topk=9,
+                 stacked_convs=4,
                  covariance_type='diag'):
         super(PAAHead, self).__init__()
+        self.stacked_convs = stacked_convs
         self.covariance_type = covariance_type
         self.head = head
         self.anchor_generator = anchor_generator
@@ -54,25 +59,37 @@ class PAAHead(nn.Layer):
 
         num_anchors = self.anchor_generator.num_anchors
 
+        self.cls_convs = nn.LayerList()
+        self.reg_convs = nn.LayerList()
+        for i in range(self.stacked_convs):
+            self.cls_convs.append(nn.Conv2D(256, 256, 3, padding=1))
+            self.reg_convs.append(nn.Conv2D(256, 256, 3, padding=1))
+
         # classification scores
-        self.cls_conv = nn.Conv2D(
+        self.paa_cls = nn.Conv2D(
             in_channels=in_channel,
             out_channels=num_anchors * (num_classes+1),
             kernel_size=1,
             padding=0,
             weight_attr=paddle.ParamAttr(initializer=Normal(
                 mean=0., std=0.01)))
-        self.cls_conv.skip_quant = True
+        self.paa_cls.skip_quant = True
 
         # regression deltas
-        self.reg_conv = nn.Conv2D(
+        self.paa_reg = nn.Conv2D(
             in_channels=in_channel,
             out_channels=4 * num_anchors,
             kernel_size=1,
             padding=0,
             weight_attr=paddle.ParamAttr(initializer=Normal(
                 mean=0., std=0.01)))
-        self.reg_conv.skip_quant = True
+        self.paa_reg.skip_quant = True
+
+        self.iou_branch = nn.Conv2D(
+            in_channels=in_channel,
+            out_channels=1 * num_anchors,
+            kernel_size=3,
+            padding=1)
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -84,16 +101,34 @@ class PAAHead(nn.Layer):
     def forward(self, feats, inputs):
         scores = []
         deltas = []
+        iou_preds = []
+
+        cls_feats = []
+        reg_feats = []
 
         for feat in feats:
-            scores.append(self.cls_conv(feat))
-            deltas.append(self.reg_conv(feat))
+            cls_feat = feat
+            for cls_conv in self.cls_convs:
+                cls_feat = cls_conv(cls_feat)
+            cls_feats.append(cls_feat)
+
+            reg_feat = feat
+            for reg_conv in self.reg_convs:
+                reg_feat = reg_conv(reg_feat)
+            reg_feats.append(reg_feat)
+
+        for cls_feat in cls_feats:
+            scores.append(self.paa_cls(cls_feat))
+
+        for reg_feat in reg_feats:
+            deltas.append(self.paa_reg(reg_feat))
+            iou_preds.append(self.iou_branch(reg_feat))
 
         anchors = self.anchor_generator(feats)
 
         # rois, rois_num = self._gen_proposal(scores, deltas, anchors, inputs)
         if self.training:
-            loss = self.get_loss(scores, deltas, anchors, inputs)
+            loss = self.get_loss(scores, deltas, iou_preds, anchors, inputs)
             return loss
         else:
             return None
@@ -285,7 +320,7 @@ class PAAHead(nn.Layer):
             ignore_inds_temp = paddle.Tensor()
         return pos_inds_temp, ignore_inds_temp
 
-    def get_loss(self, pred_scores, pred_deltas, anchors, inputs):
+    def get_loss(self, pred_scores, pred_deltas, iou_preds, anchors, inputs):
         """
         pred_scores (list[Tensor]): Multi-level scores prediction
         pred_deltas (list[Tensor]): Multi-level deltas prediction
@@ -379,7 +414,16 @@ class PAAHead(nn.Layer):
         cls_scores = paddle.concat(cls_scores, 0)
         # bbox_preds = paddle.concat(bbox_preds, 0).view(-1, bbox_preds[0].size(-1))
         bbox_preds = paddle.concat(bbox_preds, 0)
+
         # iou_preds = paddle.concat(iou_preds, 0).view(-1, iou_preds[0].size(-1))
+        iou_preds = [
+            paddle.reshape(
+                paddle.transpose(
+                    v, perm=[0, 2, 3, 1]),
+                shape=(v.shape[0], -1, 1)) for v in iou_preds
+        ]
+        iou_preds = paddle.concat(iou_preds, axis=1).reshape([-1,1])
+
         # labels = paddle.concat(reassign_labels, 0).view(-1)
         labels = reassign_labels
         # flatten_anchors = paddle.concat([paddle.concat(item, 0) for item in multi_level_anchors])
@@ -407,9 +451,20 @@ class PAAHead(nn.Layer):
             #     flatten_anchors[pos_inds_flatten],
             #     bbox_preds[pos_inds_flatten])
             # pos_bbox_pred = bbox_preds[pos_inds_flatten]
+            aligned_anchors = paddle.concat([anchors]*pred_scores[0].shape[0])
+            pos_aligned_anchors = paddle.gather(aligned_anchors, pos_inds_flatten)
             pos_bbox_pred = bbox_preds.gather(pos_inds_flatten)
+            pos_bbox_pred_absolute = delta2bbox(pos_bbox_pred, pos_aligned_anchors, [1,1,1,1]).reshape([-1,4])
             # pos_bbox_target = loc_tgt[pos_inds_flatten]
             pos_bbox_target = origin_loc_tgt.gather(pos_inds_flatten)
+            pos_bbox_target_absolute = delta2bbox(pos_bbox_target, pos_aligned_anchors, [1, 1, 1, 1]).reshape([-1,4])
+            # iou = bbox_overlaps(pos_bbox_pred_absolute.reshape([-1,4]), pos_bbox_target_absolute.reshape([-1,4]))
+            iou = []
+            for i in range(pos_bbox_pred_absolute.shape[0]):
+                iou.append(bbox_iou(pos_bbox_pred_absolute[i], pos_bbox_target_absolute[i]))
+            iou = paddle.concat(iou)
+
+            iou_loss = F.binary_cross_entropy_with_logits(iou_preds.gather(pos_inds_flatten), iou.reshape([-1,1]))
 
             # iou_target = bbox_overlaps(
             #     pos_bbox_pred.detach(), pos_bbox_target, is_aligned=True)
@@ -426,7 +481,7 @@ class PAAHead(nn.Layer):
             # )
             losses_bbox = paddle.abs(pos_bbox_pred - pos_bbox_target).mean()
         else:
-            # losses_iou = iou_preds.sum() * 0
+            iou_loss = iou_preds.sum() * 0
             losses_bbox = bbox_preds.sum() * 0
 
         # return dict(
@@ -438,5 +493,6 @@ class PAAHead(nn.Layer):
             # 'loss_bbox_cls': loss_rpn_cls / norm,
             'loss_bbox_cls': losses_cls,
             # 'loss_bbox_reg': loss_rpn_reg / norm
-            'loss_bbox_reg': losses_bbox
+            'loss_bbox_reg': losses_bbox,
+            'loss_iou': iou_loss
         }
