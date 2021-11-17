@@ -9,16 +9,16 @@ English | [简体中文](README_cn.md)
 - [引用](#引用)
 
 ## 简介
-MTMCT (Multi-Target Multi-Camera Tracking) 跨镜头多目标跟踪是某一场景下的不同摄像头拍摄的视频进行多目标跟踪，是跟踪领域一个非常重要的研究课题，在安防监控、自动驾驶、智慧城市等行业起着重要作用。MTMCT预测的是同一场景下的不同摄像头拍摄的视频，其方法的效果受场景先验知识和相机数量角度拓扑结构等信息的影响较大，PaddleDetection此处提供的是去除场景和相机相关优化方法后的一个基础版本的MTMCT算法实现，如果要继续提高效果，需要专门针对该场景和相机信息设计后处理算法。此处选用DeepSORT方案做MTMCT，为了达到实时性选用了PaddleDetection自研的PPYOLOv2和PP-PicoDet作为检测器，选用PaddleClas自研的轻量级网络PP-LCNet作为ReID模型。
+MTMCT (Multi-Target Multi-Camera Tracking) 跨镜头多目标跟踪是某一场景下的不同摄像头拍摄的视频进行多目标跟踪，是跟踪领域一个非常重要的研究课题，在安防监控、自动驾驶、智慧城市等行业起着重要作用。MTMCT预测的是同一场景下的不同摄像头拍摄的视频，其方法的效果受场景先验知识和相机数量角度拓扑结构等信息的影响较大，PaddleDetection此处提供的是去除场景和相机相关优化方法后的一个基础版本的MTMCT算法实现，如果要继续提高效果，需要专门针对该场景和相机信息设计后处理算法。此处选用DeepSORT方案做MTMCT，为了达到实时性选用了PaddleDetection自研的PPYOLOv2和PP-PicoDet作为检测器，选用PaddleClas自研的轻量级网络PP-LCNet作为ReID模型。MTMCT是[PP-Tracking](../../../deploy/pptracking/python)项目中的重要的一个方向，具体可前往该目录使用。
 
 
 ## 模型库
 ### DeepSORT在 AIC21 MTMCT(CityFlow) 车辆跨境跟踪数据集Test集上的结果
 
-|  检测器       |  输入尺度     |  ReID    |  场景   |  Tricks |  IDF1  |   IDP   |   IDR  | Precision |  Recall  |  FPS  | 配置文件 |
-|  :---------  | :---------  | :-------  | :----- | :------ |:-----  |:------- |:-----  |:--------- |:-------- |:----- |:------  |
-| PP-PicoDet   | 640x640     | PP-LCNet  | S06    |    -    | 0.3617 | 0.4417  | 0.3062 |   0.6266  | 0.4343   | -     |[配置文件](./deepsort_picodet_pplcnet_aic21mtmct_vehicle.yml)  |
-| PPYOLOv2     | 640x640     | PP-LCNet  | S06    |    -    | 0.4450 | 0.4611  | 0.4300 |   0.6385  | 0.5954   | -     |[配置文件](./deepsort_ppyolov2_pplcnet_aic21mtmct_vehicle.yml) |
+|  检测器       |  输入尺度     |  ReID    |  场景   |  Tricks |  IDF1  |   IDP   |   IDR  | Precision |  Recall  |  FPS  | 检测器下载链接 | ReID下载链接 |
+|  :---------  | :---------  | :-------  | :----- | :------ |:-----  |:------- |:-----  |:--------- |:-------- |:----- |:------  | :------  |
+| PP-PicoDet   | 640x640     | PP-LCNet  | S06    |    -    | 0.3617 | 0.4417  | 0.3062 |   0.6266  | 0.4343   | -     |[Detector](https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_l_640_aic21mtmct_vehicle.tar)    |[ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet_vehicle.tar) |
+| PPYOLOv2     | 640x640     | PP-LCNet  | S06    |    -    | 0.4450 | 0.4611  | 0.4300 |   0.6385  | 0.5954   | -     |[Detector](https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle.tar)   |[ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet_vehicle.tar) |
 
 **注意:**
   S06是AIC21 MTMCT数据集Test集的场景名称，S06场景下有’c041,c042,c043,c044,c045,c046‘共6个摄像头的视频。
@@ -68,49 +68,8 @@ python gen_aicity_mtmct_data.py ./AIC21_Track3_MTMC_Tracking/train/S01
 
 
 ## 快速开始
-### 1. 训练
-使用8卡GPU训练一个PicoDet车辆检测器
-```bash
-python -m paddle.distributed.launch --log_dir=./picodet_l_640_aic21mtmct_vehicle/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/picodet/picodet_l_640_coco.yml
-```
-**注意:**
- PP-PicoDet是轻量级检测模型，其训练请参考[configs/picodet](../../picodet/README.md)，并注意修改种类数和数据集路径。
- PP-LCNet是轻量级ReID模型，其训练请参考[PaddleClas](https://github.com/PaddlePaddle/PaddleClas)，是在VERI-Wild车辆重识别数据集训练得到的权重，建议直接使用无需重训。
 
-
-### 2. 评估
-DeepSORT同时加载检测器和ReID进行评估:
-```bash
-config=configs/mot/mtmct/deepsort_picodet_pplcnet_aic21mtmct_vehicle.yml
-
-CUDA_VISIBLE_DEVICES=6 python3.7 tools/eval_mot.py -c ${config} --scaled=True
-```
-**注意:**
-  默认是评估S01场景下的’c001,c002,c003,c004,c005‘共5个摄像头的视频. 如需换评估数据集可修改`data_root`和`dataset_dir`：
-  ```
-  EvalMOTDataset:
-    !MOTImageFolder
-      dataset_dir: dataset/mtmct
-      data_root: S01/images
-      keep_ori_im: True # set as True in DeepSORT
-  ```
-  `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
-
-
-### 3. 预测
-预测一个场景下的不同摄像头拍摄的视频集
-```bash
-config=configs/mot/mtmct/deepsort_picodet_pplcnet_aic21mtmct_vehicle.yml
-
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c ${config} --scaled=True --mtmct_dir={your mtmct scene video folder}  --save_videos
-```
-**注意:**
-  请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
-  `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
-  MTMCT预测的是同一场景下的不同摄像头拍摄的视频，`--mtmct_dir`是场景视频的文件夹名字，里面包含不同摄像头拍摄的视频，视频数量至少为两个。
-
-
-### 4. 导出模型
+### 1. 导出模型
 Step 1：下载导出的检测模型
 ```bash
 wget https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_l_640_aic21mtmct_vehicle.tar
@@ -121,8 +80,12 @@ Step 2：下载导出的ReID模型
 wget https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet_vehicle.tar
 tar -xvf deepsort_pplcnet_vehicle.tar
 ```
+**注意:**
+  PP-PicoDet是轻量级检测模型，其训练请参考[configs/picodet](../../picodet/README.md)，并注意修改种类数和数据集路径。
+  PP-LCNet是轻量级ReID模型，其训练请参考[PaddleClas](https://github.com/PaddlePaddle/PaddleClas)，是在VERI-Wild车辆重识别数据集训练得到的权重，建议直接使用无需重训。
 
-### 5. 用导出的模型基于Python去预测
+
+### 2. 用导出的模型基于Python去预测
 ```bash
 # 用导出PicoDet车辆检测模型和PPLCNet车辆ReID模型
 python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir={your mtmct scene video folder} --device=GPU --scaled=True --save_mot_txts --save_images
