@@ -224,7 +224,7 @@ def predict_video(detector, camera_id):
     entrance = None
     records = None
     if FLAGS.draw_center_traj:
-        center_traj = {}
+        center_traj = [{} for i in range(num_classes)]
 
     if num_classes == 1:
         id_set = set()
