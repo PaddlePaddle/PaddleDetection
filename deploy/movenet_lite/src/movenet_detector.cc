@@ -36,51 +36,53 @@ cv::Mat VisualizeResult(const cv::Mat& img,
                         float threshold) {
   cv::Mat vis_img = img.clone();
   printf("\nINFO: Detect person number: %d\n", results.size());
-  for (int i = 0; i < results.size(); ++i) {
-    printf("INFO: Number {%d} rect :[ %d %d %d %d ]\n", i+1, 
-           static_cast<int>(results[i].rect[0]), 
-           static_cast<int>(results[i].rect[1]), 
-           static_cast<int>(results[i].rect[2]), 
-           static_cast<int>(results[i].rect[3]));
-    // Configure color and text size
-    std::ostringstream oss;
-    oss << std::setiosflags(std::ios::fixed) << std::setprecision(4);
-    oss << results[i].confidence;
-    std::string text = oss.str();
-    int c1 = colormap[i*3];
-    int c2 = colormap[i*3 + 1];
-    int c3 = colormap[i*3 + 2];
-    cv::Scalar roi_color = cv::Scalar(c1, c2, c3);
-    int font_face = cv::FONT_HERSHEY_COMPLEX_SMALL;
-    double font_scale = 0.5f;
-    float thickness = 0.5;
-    cv::Size text_size =
-        cv::getTextSize(text, font_face, font_scale, thickness, nullptr);
-    cv::Point origin;
+  if (results.size() > 1) {
+    for (int i = 0; i < results.size(); ++i) {
+      printf("INFO: Number {%d} rect :[ %d %d %d %d ]\n", i+1, 
+            static_cast<int>(results[i].rect[0]), 
+            static_cast<int>(results[i].rect[1]), 
+            static_cast<int>(results[i].rect[2]), 
+            static_cast<int>(results[i].rect[3]));
+      // Configure color and text size
+      std::ostringstream oss;
+      oss << std::setiosflags(std::ios::fixed) << std::setprecision(4);
+      oss << results[i].confidence;
+      std::string text = oss.str();
+      int c1 = colormap[i*3];
+      int c2 = colormap[i*3 + 1];
+      int c3 = colormap[i*3 + 2];
+      cv::Scalar roi_color = cv::Scalar(c1, c2, c3);
+      int font_face = cv::FONT_HERSHEY_COMPLEX_SMALL;
+      double font_scale = 0.5f;
+      float thickness = 0.5;
+      cv::Size text_size =
+          cv::getTextSize(text, font_face, font_scale, thickness, nullptr);
+      cv::Point origin;
 
-    int w = results[i].rect[2] - results[i].rect[0];
-    int h = results[i].rect[3] - results[i].rect[1];
-    cv::Rect roi = cv::Rect(results[i].rect[0], results[i].rect[1], w, h);
-    // Draw roi object, text, and background
-    cv::rectangle(vis_img, roi, roi_color, 2);
+      int w = results[i].rect[2] - results[i].rect[0];
+      int h = results[i].rect[3] - results[i].rect[1];
+      cv::Rect roi = cv::Rect(results[i].rect[0], results[i].rect[1], w, h);
+      // Draw roi object, text, and background
+      cv::rectangle(vis_img, roi, roi_color, 2);
 
-    origin.x = results[i].rect[0];
-    origin.y = results[i].rect[1];
+      origin.x = results[i].rect[0];
+      origin.y = results[i].rect[1];
 
-    // Configure text background
-    cv::Rect text_back = cv::Rect(results[i].rect[0],
-                                  results[i].rect[1] - text_size.height,
-                                  text_size.width,
-                                  text_size.height);
-    // Draw text, and background
-    cv::rectangle(vis_img, text_back, roi_color, -1);
-    cv::putText(vis_img,
-                text,
-                origin,
-                font_face,
-                font_scale,
-                cv::Scalar(255, 255, 255),
-                thickness);
+      // Configure text background
+      cv::Rect text_back = cv::Rect(results[i].rect[0],
+                                    results[i].rect[1] - text_size.height,
+                                    text_size.width,
+                                    text_size.height);
+      // Draw text, and background
+      cv::rectangle(vis_img, text_back, roi_color, -1);
+      cv::putText(vis_img,
+                  text,
+                  origin,
+                  font_face,
+                  font_scale,
+                  cv::Scalar(255, 255, 255),
+                  thickness);
+    }
   }
 
   const int edge[][2] = {{0, 1},
@@ -147,7 +149,7 @@ void ObjectDetector::Preprocess(const cv::Mat& ori_im) {
 }
 
 void ObjectDetector::Postprocess(const std::vector<cv::Mat> mats,
-                                 std::vector<ObjectResult>* result) {
+                                 std::vector<ObjectResult>* result, int personnum) {
   int h = mats[0].rows;
   int w = mats[0].cols;
   if (h > w) {
@@ -159,19 +161,24 @@ void ObjectDetector::Postprocess(const std::vector<cv::Mat> mats,
     h = w;
   }
 
-  for (int i=0; i<6; i++){
-    float conf = output_data_[55 + i*56];
-    if(conf < threshold_){
-      continue;
+  for (int i=0; i<personnum; i++){
+    float conf = 1.;
+    if(personnum > 1) {
+      conf = output_data_[55 + i*56];
+      if(conf < threshold_){
+        continue;
+      }
     }
     ObjectResult itemres;
     itemres.rect.resize(4);
     itemres.kpts.resize(17*3);
     itemres.confidence = conf;
-    itemres.rect[0] = output_data_[52 + i*56]*w;
-    itemres.rect[1] = output_data_[51 + i*56]*h;
-    itemres.rect[2] = output_data_[54 + i*56]*w;
-    itemres.rect[3] = output_data_[53 + i*56]*h;
+    if (personnum > 1) {
+      itemres.rect[0] = output_data_[52 + i*56]*w;
+      itemres.rect[1] = output_data_[51 + i*56]*h;
+      itemres.rect[2] = output_data_[54 + i*56]*w;
+      itemres.rect[3] = output_data_[53 + i*56]*h;
+    }
     for (int j=0; j<17; j++) {
       itemres.kpts[j*3] = output_data_[j*3 + 2 + i*56];
       itemres.kpts[j*3 + 1] = output_data_[j*3 + 1 + i*56]*w;
@@ -179,7 +186,6 @@ void ObjectDetector::Postprocess(const std::vector<cv::Mat> mats,
     }
     result->emplace_back(itemres);
   }
-  
 }
 
 void ObjectDetector::Predict(const std::vector<cv::Mat>& imgs,
@@ -231,6 +237,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat>& imgs,
   }
 
   auto inference_start = std::chrono::steady_clock::now();
+  int personnum = 1;
   for (int i = 0; i < repeats; i++) {
     predictor_->Run();
     // Get output tensor
@@ -242,6 +249,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat>& imgs,
     for (int j = 0; j < output_shape.size(); ++j) {
       output_size *= output_shape[j];
     }
+    personnum = output_shape[1];
 
     if (output_size < 6) {
       std::cerr << "[WARNING] No object detected." << std::endl;
@@ -254,7 +262,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat>& imgs,
   auto postprocess_start = std::chrono::steady_clock::now();
   // Postprocessing result
   result->clear();
-  Postprocess(imgs, result);
+  Postprocess(imgs, result, personnum);
   auto postprocess_end = std::chrono::steady_clock::now();
 
   std::chrono::duration<float> preprocess_diff =
