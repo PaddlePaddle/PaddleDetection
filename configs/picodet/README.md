@@ -212,7 +212,7 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco/ \
 - [PaddleLite C++ demo](../../deploy/lite)
 - [NCNN C++/Python demo](../../deploy/third_engine/demo_ncnn)
 - [MNN C++/Python demo](../../deploy/third_engine/demo_mnn)
-- [OpenVINO C++/Python demo](../../deploy/third_engine/demo_openvino)
+- [OpenVINO C++ demo](../../deploy/third_engine/demo_openvino)
 - [Android demo](https://github.com/JiweiMaster/PP-PicoDet-Android-Demo)
 
 
@@ -220,11 +220,6 @@ Android demo visualization:
 <div align="center">
   <img src="../../docs/images/picodet_android_demo1.jpg" height="500px" ><img src="../../docs/images/picodet_android_demo2.jpg" height="500px" ><img src="../../docs/images/picodet_android_demo3.jpg" height="500px" ><img src="../../docs/images/picodet_android_demo4.jpg" height="500px" >
 </div>
-
-
-## Application
-
-- **Pedestrian detection:** model zoo of `PicoDet-S-Pedestrian` please refer to [PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/tiny_pose#%E8%A1%8C%E4%BA%BA%E6%A3%80%E6%B5%8B%E6%A8%A1%E5%9E%8B)
 
 
 ## Quantization
@@ -271,6 +266,10 @@ python tools/post_quant.py -c configs/picodet/picodet_s_320_coco.yml \
 
 </details>
 
+## Application
+
+- **Pedestrian detection:** model zoo of `PicoDet-S-Pedestrian` please refer to [PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/tiny_pose#%E8%A1%8C%E4%BA%BA%E6%A3%80%E6%B5%8B%E6%A8%A1%E5%9E%8B)
+
 ## FAQ
 
 <details>
@@ -298,8 +297,8 @@ Please use `PicoDet-LCNet` model, which has fewer `transpose` operators.
 </details>
 
 
-## Cite PP-PiocDet
-If you use PiocDet in your research, please cite our work by using the following BibTeX entry:
+## Cite PP-PicoDet
+If you use PicoDet in your research, please cite our work by using the following BibTeX entry:
 ```
 @misc{yu2021pppicodet,
       title={PP-PicoDet: A Better Real-Time Object Detector on Mobile Devices},
