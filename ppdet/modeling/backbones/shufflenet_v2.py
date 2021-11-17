@@ -232,10 +232,9 @@ class ShuffleNetV2(nn.Layer):
             self._out_channels.append(channel)
 
     def forward(self, inputs):
-        outs = []
         y = self._conv1(inputs['image'])
         y = self._max_pool(y)
-        outs.append(y)
+        outs = []
         for i, inv in enumerate(self._block_list):
             y = inv(y)
             if i + 2 in self.feature_maps:
