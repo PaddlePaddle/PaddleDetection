@@ -200,8 +200,7 @@ class ShuffleNetV2(nn.Layer):
             act=act)
         self._max_pool = MaxPool2D(kernel_size=3, stride=2, padding=1)
         self._feature_idx += 1
-        self._update_out_channels(stage_out_channels[1],
-                                  self._feature_idx, self.feature_maps)
+
         # 2. bottleneck sequences
         self._block_list = []
         for stage_id, num_repeat in enumerate(stage_repeats):
