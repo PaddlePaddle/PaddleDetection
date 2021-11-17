@@ -191,10 +191,9 @@ make ARM_ABI = arm8
 
 ```shell
 mdkir deploy
-cp main runtime_config.json deploy/
+cp movenet runtime_config.json deploy/
 cd deploy
 mkdir model_det
-mkdir model_keypoint
 
 # 将优化后的模型、预测库文件、测试图像放置在预测库中的demo/cxx/detection文件夹下
 cp {PadddleDetection_Root}/output_inference/movenet/movenet.nb ./model_det/
@@ -229,7 +228,7 @@ deploy/
   "threshold_det": 0.5,                         #检测器输出阈值
   "image_file": "demo.jpg",                     #测试图片
   "image_dir": "",                              #测试图片文件夹
-  "run_benchmark": false,                       #性能测试开关
+  "run_benchmark": true,                        #性能测试开关，速度测试需置为true（多次预测取时间平均值）
   "cpu_threads": 1                              #线程数
 }
 ```
@@ -245,9 +244,9 @@ cd /data/local/tmp/deploy
 export LD_LIBRARY_PATH=/data/local/tmp/deploy:$LD_LIBRARY_PATH
 
 # 修改权限为可执行
-chmod 777 main
+chmod 777 movenet
 # 执行程序
-./main
+./movenet
 ```
 
 如果对代码做了修改，则需要重新编译并push到手机上。
