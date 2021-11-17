@@ -114,8 +114,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
     std::vector<PaddleDetection::ObjectResult> result;
     std::vector<double> det_times;
     if (run_benchmark) {
-      det->Predict(
-          batch_imgs, threshold_det, 10, 10, &result, &det_times);
+      det->Predict(batch_imgs, threshold_det, 10, 10, &result, &det_times);
     } else {
       det->Predict(batch_imgs, threshold_det, 0, 1, &result, &det_times);
     }
@@ -134,8 +133,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
       }
       std::string image_file_path = all_img_paths.at(idx * batch_size_det + i);
       // Visualization result
-      cv::Mat vis_img = PaddleDetection::VisualizeResult(
-          im, result, colormap);
+      cv::Mat vis_img = PaddleDetection::VisualizeResult(im, result, colormap);
       std::string det_savepath =
           output_path +
           image_file_path.substr(image_file_path.find_last_of('/') + 1);

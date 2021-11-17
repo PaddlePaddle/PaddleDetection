@@ -84,7 +84,7 @@ class ObjectDetector {
   void Preprocess(const cv::Mat& image_mat);
   // Postprocess result
   void Postprocess(const std::vector<cv::Mat> mats,
-                   std::vector<ObjectResult>* result, 
+                   std::vector<ObjectResult>* result,
                    int personnum);
 
   std::shared_ptr<PaddlePredictor> predictor_;

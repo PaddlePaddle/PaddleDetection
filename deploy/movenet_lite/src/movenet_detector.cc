@@ -38,19 +38,20 @@ cv::Mat VisualizeResult(const cv::Mat& img,
   printf("\nINFO: Detect person number: %d\n", results.size());
   if (results.size() > 1) {
     for (int i = 0; i < results.size(); ++i) {
-      printf("INFO: Number {%d} rect :[ %d %d %d %d ]\n", i+1, 
-            static_cast<int>(results[i].rect[0]), 
-            static_cast<int>(results[i].rect[1]), 
-            static_cast<int>(results[i].rect[2]), 
-            static_cast<int>(results[i].rect[3]));
+      printf("INFO: Number {%d} rect :[ %d %d %d %d ]\n",
+             i + 1,
+             static_cast<int>(results[i].rect[0]),
+             static_cast<int>(results[i].rect[1]),
+             static_cast<int>(results[i].rect[2]),
+             static_cast<int>(results[i].rect[3]));
       // Configure color and text size
       std::ostringstream oss;
       oss << std::setiosflags(std::ios::fixed) << std::setprecision(4);
       oss << results[i].confidence;
       std::string text = oss.str();
-      int c1 = colormap[i*3];
-      int c2 = colormap[i*3 + 1];
-      int c3 = colormap[i*3 + 2];
+      int c1 = colormap[i * 3];
+      int c2 = colormap[i * 3 + 1];
+      int c3 = colormap[i * 3 + 2];
       cv::Scalar roi_color = cv::Scalar(c1, c2, c3);
       int font_face = cv::FONT_HERSHEY_COMPLEX_SMALL;
       double font_scale = 0.5f;
@@ -86,55 +87,52 @@ cv::Mat VisualizeResult(const cv::Mat& img,
   }
 
   const int edge[][2] = {{0, 1},
-                       {0, 2},
-                       {1, 3},
-                       {2, 4},
-                       {3, 5},
-                       {4, 6},
-                       {5, 7},
-                       {6, 8},
-                       {7, 9},
-                       {8, 10},
-                       {5, 11},
-                       {6, 12},
-                       {11, 13},
-                       {12, 14},
-                       {13, 15},
-                       {14, 16},
-                       {11, 12}};
+                         {0, 2},
+                         {1, 3},
+                         {2, 4},
+                         {3, 5},
+                         {4, 6},
+                         {5, 7},
+                         {6, 8},
+                         {7, 9},
+                         {8, 10},
+                         {5, 11},
+                         {6, 12},
+                         {11, 13},
+                         {12, 14},
+                         {13, 15},
+                         {14, 16},
+                         {11, 12}};
   for (int batchid = 0; batchid < results.size(); batchid++) {
     for (int i = 0; i < 17; i++) {
-      int c1 = colormap[i*3];
-      int c2 = colormap[i*3 + 1];
-      int c3 = colormap[i*3 + 2];
+      int c1 = colormap[i * 3];
+      int c2 = colormap[i * 3 + 1];
+      int c3 = colormap[i * 3 + 2];
       cv::Scalar roi_color = cv::Scalar(c1, c2, c3);
 
       if (results[batchid].kpts[i * 3] > threshold) {
         int x_coord = int(results[batchid].kpts[i * 3 + 1]);
         int y_coord = int(results[batchid].kpts[i * 3 + 2]);
-        cv::circle(vis_img,
-                   cv::Point2d(x_coord, y_coord),
-                   1,
-                   roi_color,
-                   2);
+        cv::circle(vis_img, cv::Point2d(x_coord, y_coord), 1, roi_color, 2);
       }
     }
     for (int i = 0; i < 17; i++) {
-      int c1 = colormap[i*3];
-      int c2 = colormap[i*3 + 1];
-      int c3 = colormap[i*3 + 2];
+      int c1 = colormap[i * 3];
+      int c2 = colormap[i * 3 + 1];
+      int c3 = colormap[i * 3 + 2];
       cv::Scalar roi_color = cv::Scalar(c1, c2, c3);
 
-      if (results[batchid].kpts[edge[i][0] * 3] > threshold && results[batchid].kpts[edge[i][1] * 3] > threshold) {
+      if (results[batchid].kpts[edge[i][0] * 3] > threshold &&
+          results[batchid].kpts[edge[i][1] * 3] > threshold) {
         int x_start = int(results[batchid].kpts[edge[i][0] * 3 + 1]);
         int y_start = int(results[batchid].kpts[edge[i][0] * 3 + 2]);
         int x_end = int(results[batchid].kpts[edge[i][1] * 3 + 1]);
         int y_end = int(results[batchid].kpts[edge[i][1] * 3 + 2]);
         cv::line(vis_img,
-                cv::Point2d(x_start, y_start),
-                cv::Point2d(x_end, y_end),
-                roi_color,
-                3);
+                 cv::Point2d(x_start, y_start),
+                 cv::Point2d(x_end, y_end),
+                 roi_color,
+                 3);
       }
     }
   }
@@ -149,40 +147,39 @@ void ObjectDetector::Preprocess(const cv::Mat& ori_im) {
 }
 
 void ObjectDetector::Postprocess(const std::vector<cv::Mat> mats,
-                                 std::vector<ObjectResult>* result, int personnum) {
+                                 std::vector<ObjectResult>* result,
+                                 int personnum) {
   int h = mats[0].rows;
   int w = mats[0].cols;
   if (h > w) {
-    // int opad = static_cast<int>((h/32.)*32);
-    // w += opad - w%opad;
     w = h;
   }
   if (w > h) {
     h = w;
   }
 
-  for (int i=0; i<personnum; i++){
+  for (int i = 0; i < personnum; i++) {
     float conf = 1.;
-    if(personnum > 1) {
-      conf = output_data_[55 + i*56];
-      if(conf < threshold_){
+    if (personnum > 1) {
+      conf = output_data_[55 + i * 56];
+      if (conf < threshold_) {
         continue;
       }
     }
     ObjectResult itemres;
     itemres.rect.resize(4);
-    itemres.kpts.resize(17*3);
+    itemres.kpts.resize(17 * 3);
     itemres.confidence = conf;
     if (personnum > 1) {
-      itemres.rect[0] = output_data_[52 + i*56]*w;
-      itemres.rect[1] = output_data_[51 + i*56]*h;
-      itemres.rect[2] = output_data_[54 + i*56]*w;
-      itemres.rect[3] = output_data_[53 + i*56]*h;
+      itemres.rect[0] = output_data_[52 + i * 56] * w;
+      itemres.rect[1] = output_data_[51 + i * 56] * h;
+      itemres.rect[2] = output_data_[54 + i * 56] * w;
+      itemres.rect[3] = output_data_[53 + i * 56] * h;
     }
-    for (int j=0; j<17; j++) {
-      itemres.kpts[j*3] = output_data_[j*3 + 2 + i*56];
-      itemres.kpts[j*3 + 1] = output_data_[j*3 + 1 + i*56]*w;
-      itemres.kpts[j*3 + 2] = output_data_[j*3 + i*56]*h;
+    for (int j = 0; j < 17; j++) {
+      itemres.kpts[j * 3] = output_data_[j * 3 + 2 + i * 56];
+      itemres.kpts[j * 3 + 1] = output_data_[j * 3 + 1 + i * 56] * w;
+      itemres.kpts[j * 3 + 2] = output_data_[j * 3 + i * 56] * h;
     }
     result->emplace_back(itemres);
   }
