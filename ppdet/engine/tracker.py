@@ -854,10 +854,10 @@ class Tracker(object):
                 pred_mtmct_file)
             crops_dir = os.path.join(output_dir, 'mtmct_crops')
             save_mtmct_crops(
-                cid_tid_fid_res, images_dir=data_root, crops_dir=crops_dir)
+                cid_tid_fid_res, images_dir=mtmct_dir, crops_dir=crops_dir)
             save_dir = os.path.join(output_dir, 'mtmct_vis')
             save_mtmct_vis_results(
                 carame_results,
-                images_dir=data_root,
+                images_dir=mtmct_dir,
                 save_dir=save_dir,
                 save_videos=save_videos)

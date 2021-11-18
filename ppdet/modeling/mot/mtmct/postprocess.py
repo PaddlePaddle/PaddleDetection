@@ -17,8 +17,6 @@ import cv2
 from tqdm import tqdm
 import pickle
 import os
-import os.path as osp
-from os.path import join as opj
 import numpy as np
 import motmetrics as mm
 from functools import reduce
@@ -359,7 +357,7 @@ def save_mtmct_vis_results(carame_results,
             output_video_path = os.path.join(cid_save_dir, '..',
                                              '{}_mtmct_vis.mp4'.format(seqs[i]))
             cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
-                save_dir, output_video_path)
+                cid_save_dir, output_video_path)
             os.system(cmd_str)
             print('Save camera {} video in {}.'.format(seqs[i],
                                                        output_video_path))
