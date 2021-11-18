@@ -56,11 +56,13 @@ class CosineDecay(object):
         max_iters = self.max_epochs * int(step_per_epoch)
 
         if boundary is not None and value is not None and self.use_warmup:
+            warmup_iters = len(boundary)
             for i in range(int(boundary[-1]), max_iters):
                 boundary.append(i)
 
-                decayed_lr = base_lr * 0.5 * (
-                    math.cos(i * math.pi / max_iters) + 1)
+                decayed_lr = base_lr * 0.5 * (math.cos(
+                    (i - warmup_iters) * math.pi /
+                    (max_iters - warmup_iters)) + 1)
                 value.append(decayed_lr)
             return optimizer.lr.PiecewiseDecay(boundary, value)
 

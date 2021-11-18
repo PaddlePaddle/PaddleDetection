@@ -664,30 +664,30 @@ def predict_image(detector, image_list, batch_size=1):
 
 
 def predict_video(detector, camera_id):
+    video_out_name = 'output.mp4'
     if camera_id != -1:
         capture = cv2.VideoCapture(camera_id)
-        video_name = 'output.mp4'
     else:
         capture = cv2.VideoCapture(FLAGS.video_file)
-        video_name = os.path.split(FLAGS.video_file)[-1]
-    fps = 30
-    frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-    print('frame_count', frame_count)
+        video_out_name = os.path.split(FLAGS.video_file)[-1]
+    # Get Video info : resolution, fps, frame count
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    # yapf: disable
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    # yapf: enable
+    fps = int(capture.get(cv2.CAP_PROP_FPS))
+    frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    print("fps: %d, frame_count: %d" % (fps, frame_count))
+
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
-    out_path = os.path.join(FLAGS.output_dir, video_name)
+    out_path = os.path.join(FLAGS.output_dir, video_out_name)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     index = 1
     while (1):
         ret, frame = capture.read()
         if not ret:
             break
-        print('detect frame:%d' % (index))
+        print('detect frame: %d' % (index))
         index += 1
         results = detector.predict([frame], FLAGS.threshold)
         im = visualize_box_mask(

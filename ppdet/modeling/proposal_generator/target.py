@@ -279,9 +279,12 @@ def sample_bbox(matches,
 
 def polygons_to_mask(polygons, height, width):
     """
+    Convert the polygons to mask format
+
     Args:
         polygons (list[ndarray]): each array has shape (Nx2,)
-        height, width (int)
+        height (int): mask height
+        width (int): mask width
     Returns:
         ndarray: a bool mask of shape (height, width)
     """

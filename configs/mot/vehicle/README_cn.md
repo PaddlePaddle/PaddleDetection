@@ -17,11 +17,15 @@
 
 ### FairMOT在各个数据集val-set上Vehicle类别的结果
 
-|    数据集      |  输入尺寸 |  MOTA  |  IDF1  |  FPS   |  下载链接 | 配置文件 |
-| :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
-|  BDD100K      | 1088x608 |  43.5 |  50.0  |    -    | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml) |
-|  KITTI        | 1088x608 |  82.7 |    -   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
-|  VisDrone     | 1088x608 |  52.1 |   63.3 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
+|    数据集      |  骨干网络   |  输入尺寸 |  MOTA  |  IDF1  |  FPS   |  下载链接 | 配置文件 |
+| :-------------| :-------- | :------- | :----: | :----: | :----: | :-----: |:------: |
+|  BDD100K      |   DLA-34  | 1088x608 |  43.5 |  50.0  |    -    | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml) |
+|  BDD100K      | HRNetv2-W18| 576x320 |  32.6 |  38.7  |    -    | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100kmot_vehicle.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100kmot_vehicle.yml) |
+|  KITTI        |   DLA-34  | 1088x608 |  82.7 |    -   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
+|  VisDrone     |   DLA-34  | 1088x608 |  52.1 |   63.3 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
+|  VisDrone     | HRNetv2-W18| 1088x608 |  46.0 |   56.8 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle.yml) |
+|  VisDrone     | HRNetv2-W18| 864x480 |  43.7 |   56.1 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_vehicle.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_vehicle.yml) |
+|  VisDrone     | HRNetv2-W18| 576x320 |  39.8 |   52.4 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_vehicle.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_vehicle.yml) |
 
 **注意:**
  FairMOT均使用DLA-34为骨干网络，4个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
@@ -40,16 +44,16 @@ tools/bdd100kmot/gen_labels_MOT.py：生成单类别的labels_with_ids文件
 tools/visdrone/visdrone2mot.py：生成visdrone_vehicle
 ```
 
-### 2、bdd100k_vehicle数据集处理
+### 2、bdd100kmot_vehicle数据集处理
 ```
 # 复制tools/bdd100kmot里的代码到数据集目录下
 # 生成bdd100kmot_vehicle MOT格式的数据，抽取类别classes=2,3,4,9,10 (car, truck, bus, trailer, other vehicle)
 <<--生成前目录-->>
-├── bdd100k_path
+├── bdd100k
 │   ├── images
 │   ├── labels
 <<--生成后目录-->>
-├── bdd100k_path
+├── bdd100k
 │   ├── images
 │   ├── labels
 │   ├── bdd100kmot_vehicle
@@ -77,10 +81,12 @@ sh gen_bdd100kmot_vehicle.sh
 │   ├── annotations
 │   ├── sequences
 │   ├── visdrone2mot.py
-│   ├── visdrone-vehicle
+│   ├── visdrone_vehicle
 │   │   ├── images
+│   │   │   ├── train
 │   │   │   ├── val
 │   │   ├── labels_with_ids
+│   │   │   ├── train
 │   │   │   ├── val
 # 执行
 python visdrone2mot.py --transMot=True --data_name=visdrone_vehicle --phase=val
@@ -92,36 +98,36 @@ python visdrone2mot.py --transMot=True --data_name=visdrone_vehicle --phase=trai
 ### 1. 训练
 使用2个GPU通过如下命令一键式启动训练
 ```bash
-python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608_bdd100k_vehicle/ --gpus 0,1 tools/train.py -c configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100k_vehicle.yml
+python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608_bdd100kmot_vehicle/ --gpus 0,1 tools/train.py -c configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml
 ```
 
 ### 2. 评估
 使用单张GPU通过如下命令一键式启动评估
 ```bash
 # 使用PaddleDetection发布的权重
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100k_vehicle.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100k_vehicle.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.pdparams
 
 # 使用训练保存的checkpoint
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100k_vehicle.yml -o weights=output/fairmot_dla34_30e_1088x608_bdd100k_vehicle/model_final.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml -o weights=output/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle/model_final.pdparams
 ```
 
 ### 3. 预测
 使用单个GPU通过如下命令预测一个视频，并保存为视频
 ```bash
 # 预测一个视频
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100k_vehicle.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100k_vehicle.pdparams --video_file={your video name}.mp4  --save_videos
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.pdparams --video_file={your video name}.mp4  --save_videos
 ```
 **注意:**
  请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
 
 ### 4. 导出预测模型
 ```bash
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100k_vehicle.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100k_vehicle.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.pdparams
 ```
 
 ### 5. 用导出的模型基于Python去预测
 ```bash
-python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608_bdd100k_vehicle --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle --video_file={your video name}.mp4 --device=GPU --save_mot_txts
 ```
 **注意:**
  跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
@@ -151,16 +157,14 @@ python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34
   year = {2012}
 }
 
-@article{zhu2018vision,
-  title={Vision meets drones: A challenge},
-  author={Zhu, Pengfei and Wen, Longyin and Bian, Xiao and Ling, Haibin and Hu, Qinghua},
-  journal={arXiv preprint arXiv:1804.07437},
-  year={2018}
-}
-@article{zhu2020vision,
-  title={Vision Meets Drones: Past, Present and Future},
-  author={Zhu, Pengfei and Wen, Longyin and Du, Dawei and Bian, Xiao and Hu, Qinghua and Ling, Haibin},
-  journal={arXiv preprint arXiv:2001.06303},
-  year={2020}
+@ARTICLE{9573394,
+  author={Zhu, Pengfei and Wen, Longyin and Du, Dawei and Bian, Xiao and Fan, Heng and Hu, Qinghua and Ling, Haibin},
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence}, 
+  title={Detection and Tracking Meet Drones Challenge}, 
+  year={2021},
+  volume={},
+  number={},
+  pages={1-1},
+  doi={10.1109/TPAMI.2021.3119563}
 }
 ```

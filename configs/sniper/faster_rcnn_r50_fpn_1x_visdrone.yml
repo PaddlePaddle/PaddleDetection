@@ -1,0 +1,29 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '../faster_rcnn/_base_/optimizer_1x.yml',
+  '../faster_rcnn/_base_/faster_rcnn_r50_fpn.yml',
+  '../faster_rcnn/_base_/faster_fpn_reader.yml',
+]
+weights: output/faster_rcnn_r50_fpn_1x_visdrone/model_final
+
+
+metric: COCO
+num_classes: 9
+
+TrainDataset:
+  !COCODataSet
+    image_dir: train
+    anno_path: annotations/train.json
+    dataset_dir: dataset/VisDrone2019_coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: val
+    anno_path: annotations/val.json
+    dataset_dir: dataset/VisDrone2019_coco
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/val.json

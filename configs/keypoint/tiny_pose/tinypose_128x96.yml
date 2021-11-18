@@ -1,0 +1,147 @@
+use_gpu: true
+log_iter: 5
+save_dir: output
+snapshot_epoch: 10
+weights: output/tinypose_128x96/model_final
+epoch: 420
+num_joints: &num_joints 17
+pixel_std: &pixel_std 200
+metric: KeyPointTopDownCOCOEval
+num_classes: 1
+train_height: &train_height 128
+train_width: &train_width 96
+trainsize: &trainsize [*train_width, *train_height]
+hmsize: &hmsize [24, 32]
+flip_perm: &flip_perm [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16]]
+
+
+#####model
+architecture: TopDownHRNet
+
+TopDownHRNet:
+  backbone: LiteHRNet
+  post_process: HRNetPostProcess
+  flip_perm: *flip_perm
+  num_joints: *num_joints
+  width: &width 40
+  loss: KeyPointMSELoss
+  use_dark: true
+
+LiteHRNet:
+  network_type: wider_naive
+  freeze_at: -1
+  freeze_norm: false
+  return_idx: [0]
+
+KeyPointMSELoss:
+  use_target_weight: true
+  loss_scale: 1.0
+
+#####optimizer
+LearningRate:
+  base_lr: 0.008
+  schedulers:
+  - !PiecewiseDecay
+    milestones: [380, 410]
+    gamma: 0.1
+  - !LinearWarmup
+    start_factor: 0.001
+    steps: 500
+
+OptimizerBuilder:
+  optimizer:
+    type: Adam
+  regularizer:
+    factor: 0.0
+    type: L2
+
+
+#####data
+TrainDataset:
+  !KeypointTopDownCocoDataset
+    image_dir: ""
+    anno_path: aic_coco_train_cocoformat.json
+    dataset_dir: dataset
+    num_joints: *num_joints
+    trainsize: *trainsize
+    pixel_std: *pixel_std
+    use_gt_bbox: True
+
+
+EvalDataset:
+  !KeypointTopDownCocoDataset
+    image_dir: val2017
+    anno_path: annotations/person_keypoints_val2017.json
+    dataset_dir: dataset/coco
+    num_joints: *num_joints
+    trainsize: *trainsize
+    pixel_std: *pixel_std
+    use_gt_bbox: True
+    image_thre: 0.5
+
+TestDataset:
+  !ImageFolder
+    anno_path: dataset/coco/keypoint_imagelist.txt
+
+worker_num: 2
+global_mean: &global_mean [0.485, 0.456, 0.406]
+global_std: &global_std [0.229, 0.224, 0.225]
+TrainReader:
+  sample_transforms:
+    - RandomFlipHalfBodyTransform:
+        scale: 0.25
+        rot: 30
+        num_joints_half_body: 8
+        prob_half_body: 0.3
+        pixel_std: *pixel_std
+        trainsize: *trainsize
+        upper_body_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        flip_pairs: *flip_perm
+    - AugmentationbyInformantionDropping:
+        prob_cutout: 0.5
+        offset_factor: 0.05
+        num_patch: 1
+        trainsize: *trainsize
+    - TopDownAffine:
+        trainsize: *trainsize
+        use_udp: true
+    - ToHeatmapsTopDown_DARK:
+        hmsize: *hmsize
+        sigma: 1
+  batch_transforms:
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - Permute: {}
+  batch_size: 512
+  shuffle: true
+  drop_last: false
+
+EvalReader:
+  sample_transforms:
+    - TopDownAffine:
+        trainsize: *trainsize
+        use_udp: true
+  batch_transforms:
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - Permute: {}
+  batch_size: 16
+
+TestReader:
+  inputs_def:
+    image_shape: [3, *train_height, *train_width]
+  sample_transforms:
+    - Decode: {}
+    - TopDownEvalAffine:
+        trainsize: *trainsize
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - Permute: {}
+  batch_size: 1
+  fuse_normalize: false

@@ -1,0 +1,44 @@
+# This config represents a ReID only configuration of DeepSORT, it has two uses.
+# One is used for loading the detection results and ReID model to get tracking results;
+# Another is used for exporting the ReID model to deploy infer.
+
+_BASE_: [
+  '../../../datasets/mot.yml',
+  '../../../runtime.yml',
+  '../_base_/deepsort_reader_1088x608.yml',
+]
+
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: MOT16/images/train
+    keep_ori_im: True # set as True in DeepSORT
+
+det_weights: None
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams
+
+
+# A ReID only configuration of DeepSORT, detector should be None.
+architecture: DeepSORT
+pretrain_weights: None
+
+DeepSORT:
+  detector: None
+  reid: PCBPyramid
+  tracker: DeepSORTTracker
+
+PCBPyramid:
+  num_conv_out_channels: 128
+  num_classes: 751 # default 751 classes in Market-1501 dataset.
+
+DeepSORTTracker:
+  input_size: [64, 192]
+  min_box_area: 0     # 0 means no need to filter out too small boxes
+  vertical_ratio: -1  # -1 means no need to filter out bboxes, usuallly set 1.6 for pedestrian
+  budget: 100
+  max_age: 70
+  n_init: 3
+  metric_type: cosine
+  matching_threshold: 0.2
+  max_iou_distance: 0.9
+  motion: KalmanFilter

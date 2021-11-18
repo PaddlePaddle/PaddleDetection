@@ -469,7 +469,7 @@ class RBoxAssigner(object):
         bbox_targets = np.zeros_like(anchors)
         bbox_weights = np.zeros_like(anchors)
         bbox_gt_bboxes = np.zeros_like(anchors)
-        pos_labels = np.ones(anchors_num, dtype=np.int32) * -1
+        pos_labels = np.zeros(anchors_num, dtype=np.int32)
         pos_labels_weights = np.zeros(anchors_num, dtype=np.float32)
 
         pos_sampled_anchors = anchors[pos_inds]
