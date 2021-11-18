@@ -130,7 +130,11 @@ class PAAHead(nn.Layer):
             loss = self.get_loss(scores, deltas, iou_preds, anchors, inputs)
             return loss
         else:
-            return None
+            return self.get_prediction(scores, deltas), anchors
+
+    def get_prediction(self, score, delta):
+        bbox_prob = F.softmax(score)
+        return delta, bbox_prob
 
     # only calculate score for positive targets
     def get_anchor_score(self, anchors, scores, bbox_pred, label_tgt, bbox_tgt):

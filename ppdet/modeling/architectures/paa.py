@@ -55,11 +55,11 @@ class PAA(BaseArch):
             bbox_loss = self.bbox_head(body_feats, self.inputs)
             return bbox_loss
         else:
-            preds = self.bbox_head(body_feats, None)
+            preds, anchors = self.bbox_head(body_feats, None)
 
             im_shape = self.inputs['im_shape']
             scale_factor = self.inputs['scale_factor']
-            bbox, bbox_num = self.bbox_post_process(preds,
+            bbox, bbox_num = self.bbox_post_process(preds, anchors,
                                                     im_shape, scale_factor)
 
             # rescale the prediction back to origin image
