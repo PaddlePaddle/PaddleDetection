@@ -154,7 +154,7 @@ class MOTDataSet(DetDataset):
             last_index += v
 
         self.num_identities_dict = defaultdict(int)
-        self.num_identities_dict[0] = int(last_index + 1) # single class
+        self.num_identities_dict[0] = int(last_index + 1)  # single class
         self.num_imgs_each_data = [len(x) for x in self.img_files.values()]
         self.total_imgs = sum(self.num_imgs_each_data)
 
@@ -249,6 +249,7 @@ class MCMOTDataSet(DetDataset):
             └——————labels_with_ids
                         └——————train
     """
+
     def __init__(self,
                  dataset_dir=None,
                  image_lists=[],
@@ -343,22 +344,26 @@ class MCMOTDataSet(DetDataset):
 
         # cname2cid and cid2cname 
         cname2cid = {}
-        if self.label_list:
+        if self.label_list is not None:
             # if use label_list for multi source mix dataset, 
             # please make sure label_list in the first sub_dataset at least.
             sub_dataset = self.image_lists[0].split('.')[0]
             label_path = os.path.join(self.dataset_dir, sub_dataset,
                                       self.label_list)
             if not os.path.exists(label_path):
-                raise ValueError("label_list {} does not exists".format(
-                    label_path))
-            with open(label_path, 'r') as fr:
-                label_id = 0
-                for line in fr.readlines():
-                    cname2cid[line.strip()] = label_id
-                    label_id += 1
+                logger.info(
+                    "Note: label_list {} does not exists, use VisDrone 10 classes labels as default.".
+                    format(label_path))
+                cname2cid = visdrone_mcmot_label()
+            else:
+                with open(label_path, 'r') as fr:
+                    label_id = 0
+                    for line in fr.readlines():
+                        cname2cid[line.strip()] = label_id
+                        label_id += 1
         else:
             cname2cid = visdrone_mcmot_label()
+
         cid2cname = dict([(v, k) for (k, v) in cname2cid.items()])
 
         logger.info('MCMOT dataset summary: ')

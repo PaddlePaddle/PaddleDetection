@@ -9,6 +9,13 @@ norm_type: sync_bn
 use_ema: true
 ema_decay: 0.9998
 
+# add crowdhuman
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['mot17.train', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train', 'crowdhuman.train', 'crowdhuman.val']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
 worker_num: 4
 TrainReader:
   inputs_def:
