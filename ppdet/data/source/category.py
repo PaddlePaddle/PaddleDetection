@@ -39,7 +39,8 @@ def get_categories(metric_type, anno_file=None, arch=None):
     if arch == 'keypoint_arch':
         return (None, {'id': 'keypoint'})
 
-    if metric_type.lower() == 'coco' or metric_type.lower() == 'rbox' or metric_type.lower() == 'snipercoco':
+    if metric_type.lower() == 'coco' or metric_type.lower(
+    ) == 'rbox' or metric_type.lower() == 'snipercoco':
         if anno_file and os.path.isfile(anno_file):
             # lazy import pycocotools here
             from pycocotools.coco import COCO
@@ -53,6 +54,9 @@ def get_categories(metric_type, anno_file=None, arch=None):
 
         # anno file not exist, load default categories of COCO17
         else:
+            if metric_type.lower() == 'rbox':
+                return _dota_category()
+
             return _coco17_category()
 
     elif metric_type.lower() == 'voc':
@@ -291,6 +295,34 @@ def _coco17_category():
     clsid2catid = {k - 1: v for k, v in clsid2catid.items()}
     catid2name.pop(0)
 
+    return clsid2catid, catid2name
+
+
+def _dota_category():
+    """
+    Get class id to category id map and category id
+    to category name map of dota dataset
+    """
+    catid2name = {
+        0: 'background',
+        1: 'plane',
+        2: 'baseball-diamond',
+        3: 'bridge',
+        4: 'ground-track-field',
+        5: 'small-vehicle',
+        6: 'large-vehicle',
+        7: 'ship',
+        8: 'tennis-court',
+        9: 'basketball-court',
+        10: 'storage-tank',
+        11: 'soccer-ball-field',
+        12: 'roundabout',
+        13: 'harbor',
+        14: 'swimming-pool',
+        15: 'helicopter'
+    }
+    catid2name.pop(0)
+    clsid2catid = {i: i + 1 for i in range(len(catid2name))}
     return clsid2catid, catid2name
 
 
