@@ -345,7 +345,7 @@ class PAAHead(nn.Layer):
         ]
         deltas = paddle.concat(deltas, axis=1)
 
-        label_tgt, bbox_tgt, gt_inds, loc_tgt, norm = self.target_assign(inputs, anchors, self.num_classes)
+        label_tgt, bbox_tgt, gt_inds, deltas_tgt, norm = self.target_assign(inputs, anchors, self.num_classes)
 
         scores = paddle.reshape(x=scores, shape=(-1, ))
         deltas = paddle.reshape(x=deltas, shape=(-1, 4))
@@ -359,35 +359,15 @@ class PAAHead(nn.Layer):
         pos_ind = paddle.nonzero(pos_mask)
         pos_gt_inds = paddle.gather(gt_inds, pos_ind)
 
-        valid_mask = label_tgt >= 0
-        valid_ind = paddle.nonzero(valid_mask)
-
-        # cls loss
-        if valid_ind.shape[0] == 0:
-            loss_rpn_cls = paddle.zeros([1], dtype='float32')
-        else:
-            score_pred = paddle.gather(scores, valid_ind)
-            score_label = paddle.gather(label_tgt, valid_ind).cast('float32')
-            score_label.stop_gradient = True
-            # loss_rpn_cls = F.binary_cross_entropy_with_logits(
-            #     logit=score_pred, label=score_label, reduction="sum")
-
-        # reg loss
-        if pos_ind.shape[0] == 0:
-            loss_rpn_reg = paddle.zeros([1], dtype='float32')
-        else:
-            loc_pred = paddle.gather(deltas, pos_ind)
-            origin_loc_tgt = paddle.concat(loc_tgt)
-            loc_tgt = paddle.gather(origin_loc_tgt, pos_ind)
-            loc_tgt.stop_gradient = True
-            # loss_rpn_reg = paddle.abs(loc_pred - loc_tgt).sum()
+        loc_pred = paddle.gather(deltas, pos_ind)
+        origin_deltas_tgt = paddle.concat(deltas_tgt)
+        deltas_tgt = paddle.gather(origin_deltas_tgt, pos_ind)
+        deltas_tgt.stop_gradient = True
 
         score_pred_pos = paddle.gather(scores, pos_ind)
-        score_label_pos = paddle.gather(label_tgt, pos_ind).cast('float32')
+        label_tgt_pos = paddle.gather(label_tgt, pos_ind).cast('float32')
 
-        # TODO: the score_label_pos (extracted from label_tgt) should contain
-        #  num_classes classes, but not only objectness
-        score = self.get_anchor_score(anchors, score_pred_pos, loc_pred, score_label_pos, loc_tgt)
+        score = self.get_anchor_score(anchors, score_pred_pos, loc_pred, label_tgt_pos, deltas_tgt)
 
         reassign_labels, num_pos = self.paa_reassign(score, label_tgt, pos_ind.reshape((-1,)), pos_gt_inds, multi_level_anchors)
 
@@ -439,13 +419,10 @@ class PAAHead(nn.Layer):
         #     labels,
         #     avg_factor=max(num_pos, len(img_metas)))  # avoid num_pos=0
 
-        # F.one_hot()
         # losses_cls = F.cross_entropy(cls_scores, labels.cast('int64'))
         losses_cls = F.sigmoid_focal_loss(cls_scores, F.one_hot(labels, self.num_classes+1), reduction='mean')
 
         if num_pos:
-            # TODO: both pos_bbox_pred, pos_bbox_target are percentage, original
-            #  code is using bbox aboslute size, so original version loss is larger
             # pos_bbox_pred = self.bbox_coder.decode(
             #     flatten_anchors[pos_inds_flatten],
             #     bbox_preds[pos_inds_flatten])
@@ -454,8 +431,8 @@ class PAAHead(nn.Layer):
             pos_aligned_anchors = paddle.gather(aligned_anchors, pos_inds_flatten)
             pos_bbox_pred = bbox_preds.gather(pos_inds_flatten)
             pos_bbox_pred_absolute = delta2bbox(pos_bbox_pred, pos_aligned_anchors, [1,1,1,1]).reshape([-1,4])
-            # pos_bbox_target = loc_tgt[pos_inds_flatten]
-            pos_bbox_target = origin_loc_tgt.gather(pos_inds_flatten)
+            # pos_bbox_target = deltas_tgt[pos_inds_flatten]
+            pos_bbox_target = origin_deltas_tgt.gather(pos_inds_flatten)
             pos_bbox_target_absolute = delta2bbox(pos_bbox_target, pos_aligned_anchors, [1, 1, 1, 1]).reshape([-1,4])
             # iou = bbox_overlaps(pos_bbox_pred_absolute.reshape([-1,4]), pos_bbox_target_absolute.reshape([-1,4]))
             iou = []
@@ -482,11 +459,6 @@ class PAAHead(nn.Layer):
         else:
             iou_loss = iou_preds.sum() * 0
             losses_bbox = bbox_preds.sum() * 0
-
-        # return dict(
-        #     loss_cls=losses_cls, loss_bbox=losses_bbox,
-        #     # loss_iou=losses_iou
-        # )
 
         return {
             # 'loss_bbox_cls': losses_cls / norm,
