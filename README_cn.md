@@ -46,7 +46,8 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
     </tr>
     <tr valign="top">
       <td>
-        <ul><li><b>Two-Stage Detection</b></li>
+        <ul>
+          <li><b>Object Detection</b></li>
           <ul>
             <li>Faster RCNN</li>
             <li>FPN</li>
@@ -54,63 +55,44 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
             <li>Libra RCNN</li>
             <li>Hybrid Task RCNN</li>
             <li>PSS-Det</li>
-          </ul>
-        </ul>
-        <ul><li><b>One-Stage Detection</b></li>
-          <ul>
             <li>RetinaNet</li>
             <li>YOLOv3</li>
             <li>YOLOv4</li>  
-            <li>PP-YOLOv1/v2/Tiny</li>
+            <li>PP-YOLOv1/v2</li>
+            <li>PP-YOLO-Tiny</li>
             <li>SSD</li>
-          </ul>
-        </ul>
-        <ul><li><b>Anchor Free</b></li>
-          <ul>
             <li>CornerNet-Squeeze</li>
             <li>FCOS</li>  
             <li>TTFNet</li>
-            <li>PicoDet</li>
-          </ul>
+            <li>PP-PicoDet</li>
+            <li>DETR</li>
+            <li>Deformable DETR</li>
+            <li>Swin Transformer</li>
+            <li>Sparse RCNN</li>
         </ul>
+        <li><b>Instance Segmentation</b></li>
         <ul>
-          <li><b>Instance Segmentation</b></li>
-            <ul>
-             <li>Mask RCNN</li>
-             <li>SOLOv2</li>
-            </ul>
+            <li>Mask RCNN</li>
+            <li>SOLOv2</li>
         </ul>
+        <li><b>Face Detection</b></li>
         <ul>
-          <li><b>Face-Detction</b></li>
-            <ul>
-             <li>FaceBoxes</li>
-             <li>BlazeFace</li>
-             <li>BlazeFace-NAS</li>
-            </ul>
+            <li>FaceBoxes</li>
+            <li>BlazeFace</li>
+            <li>BlazeFace-NAS</li>
         </ul>
+        <li><b>Multi-Object-Tracking</b></li>
         <ul>
-          <li><b>Transformer</b></li>
-            <ul>
-             <li>DETR/Deformable DETR</li>
-             <li>Sparse RCNN</li>
-             <li>Swin Transformer</li>
-            </ul>
+            <li>JDE</li>
+            <li>FairMOT</li>
+            <li>DeepSort</li>
         </ul>
+        <li><b>KeyPoint-Detection</b></li>
         <ul>
-          <li><b>Multi-Object-Tracking</b></li>
-            <ul>
-             <li>JDE</li>
-             <li>FairMOT</li>
-             <li>DeepSort</li>
-            </ul>
+            <li>HRNet</li>
+            <li>HigherHRNet</li>
         </ul>
-        <ul>
-          <li><b>KeyPoint-Detection</b></li>
-            <ul>
-             <li>HRNet</li>
-             <li>HigherHRNet</li>
-            </ul>
-        </ul>
+      </ul>
       </td>
       <td>
         <ul>
