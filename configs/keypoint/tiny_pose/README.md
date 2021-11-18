@@ -1,5 +1,10 @@
 # PP-TinyPose
 
+<div align="center">
+  <img src="../../../docs/images/tinypose_demo.png"/>
+  <center>图片来源：COCO2017开源数据集</center>
+</div>
+
 ## 简介
 PP-TinyPose是PaddleDetecion针对移动端设备优化的实时姿态检测模型，可流畅地在移动端设备上执行多人姿态估计任务。借助PaddleDetecion自研的优秀轻量级检测模型[PicoDet](../../picodet/README.md)，我们同时提供了特色的轻量级垂类行人检测模型。TinyPose的运行环境有以下依赖要求：
 - [PaddlePaddle](https://github.com/PaddlePaddle/Paddle)>=2.2
@@ -7,15 +12,20 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时姿态检测模�
 如希望在移动端部署，则还需要：
 - [Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite)>=2.10
 
+
+<div align="center">
+  <img src="../../../docs/images/tinypose_pipeline.png" width='800'/>
+</div>
+
 ## 模型库
 ### 姿态检测模型
-| 模型  | 输入尺寸 | AP (coco val) | 单人推理耗时 (FP32)| 单人推理耗时（FP16) | 配置文件 | 模型权重 | 预测部署模型 | Paddle-Lite部署模型（FP32) | Paddle-Lite部署模型（FP16)|
+| 模型  | 输入尺寸 | AP (COCO Val) | 单人推理耗时 (FP32)| 单人推理耗时（FP16) | 配置文件 | 模型权重 | 预测部署模型 | Paddle-Lite部署模型（FP32) | Paddle-Lite部署模型（FP16)|
 | :------------------------ | :-------:  | :------: | :------: |:---: | :---: | :---: | :---: | :---: | :---: |
 | PP-TinyPose | 128*96 | 58.1 | 4.57ms | 3.27ms | [Config](./tinypose_128x96.yml) |[Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
-| PP-TinyPose | 256*192 | 68.8 | 14.07ms | 8.33ms | [Config](./tinypose_256x192.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.nb) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.tar) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
+| PP-TinyPose | 256*192 | 68.8 | 14.07ms | 8.33ms | [Config](./tinypose_256x192.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
 
 ### 行人检测模型
-| 模型  | 输入尺寸 | mAP (coco val) | 平均推理耗时 (FP32) | 平均推理耗时 (FP16) | 配置文件 | 模型权重 | 预测部署模型 | Paddle-Lite部署模型（FP32) | Paddle-Lite部署模型（FP16)|
+| 模型  | 输入尺寸 | mAP (COCO Val) | 平均推理耗时 (FP32) | 平均推理耗时 (FP16) | 配置文件 | 模型权重 | 预测部署模型 | Paddle-Lite部署模型（FP32) | Paddle-Lite部署模型（FP16)|
 | :------------------------ | :-------:  | :------: | :------: | :---: | :---: | :---: | :---: | :---: | :---: |
 | PicoDet-S-Pedestrian | 192*192 | 29.0 | 4.30ms |  2.37ms | [Config](../../picodet/application/pedestrian_detection/picodet_s_192_pedestrian.yml) |[Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb) |
 | PicoDet-S-Pedestrian | 320*320 | 38.5 | 10.26ms |  6.30ms | [Config](../../picodet/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb) |
@@ -28,7 +38,7 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时姿态检测模�
 - 推理速度测试环境为 Qualcomm Snapdragon 865，采用arm8下4线程推理得到。
 
 ### Pipeline性能
-| 行人检测模型  | 姿态检测模型 | mAP (coco val) | 单人耗时 (FP32) |  单人耗时 (FP16) | 6人耗时 (FP32) | 6人耗时 (FP16)|
+| 行人检测模型  | 姿态检测模型 | mAP (COCO Val) | 单人耗时 (FP32) |  单人耗时 (FP16) | 6人耗时 (FP32) | 6人耗时 (FP16)|
 | :------------------------ | :-------:  | :------: | :---: | :---: | :---: | :---: |
 | PicoDet-S-Pedestrian-192*192 | PP-TinyPose-128*96 | 36.7 | 11.72 ms| 8.18 ms | 36.22 ms| 26.33 ms |
 | PicoDet-S-Pedestrian-320*320 | PP-TinyPose-128*96 | 44.2 | 19.45 ms| 14.41 ms | 44.0 ms| 32.57 ms |
