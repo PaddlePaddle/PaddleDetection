@@ -2,7 +2,7 @@ import sys
 
 import numpy as np
 
-from ..bbox_utils import delta2bbox, bbox_iou
+from ..bbox_utils import delta2bbox, bbox_iou, bbox_overlaps
 
 try:
     import sklearn.mixture as skm
@@ -496,3 +496,71 @@ class PAAHead(nn.Layer):
             'loss_bbox_reg': losses_bbox,
             'loss_iou': iou_loss
         }
+
+    def score_voting(self, det_bboxes, det_labels, mlvl_bboxes,
+                     mlvl_nms_scores, score_thr):
+        """Implementation of score voting method works on each remaining boxes
+        after NMS procedure.
+
+        Args:
+            det_bboxes (Tensor): Remaining boxes after NMS procedure,
+                with shape (k, 5), each dimension means
+                (x1, y1, x2, y2, score).
+            det_labels (Tensor): The label of remaining boxes, with shape
+                (k, 1),Labels are 0-based.
+            mlvl_bboxes (Tensor): All boxes before the NMS procedure,
+                with shape (num_anchors,4).
+            mlvl_nms_scores (Tensor): The scores of all boxes which is used
+                in the NMS procedure, with shape (num_anchors, num_class)
+            mlvl_iou_preds (Tensor): The predictions of IOU of all boxes
+                before the NMS procedure, with shape (num_anchors, 1)
+            score_thr (float): The score threshold of bboxes.
+
+        Returns:
+            tuple: Usually returns a tuple containing voting results.
+
+                - det_bboxes_voted (Tensor): Remaining boxes after
+                    score voting procedure, with shape (k, 5), each
+                    dimension means (x1, y1, x2, y2, score).
+                - det_labels_voted (Tensor): Label of remaining bboxes
+                    after voting, with shape (num_anchors,).
+        """
+        candidate_mask = mlvl_nms_scores > score_thr
+        candidate_mask_nonzeros = candidate_mask.nonzero()
+        candidate_inds = candidate_mask_nonzeros[:, 0]
+        candidate_labels = candidate_mask_nonzeros[:, 1]
+        candidate_bboxes = mlvl_bboxes[candidate_inds]
+        candidate_scores = mlvl_nms_scores[candidate_mask]
+        det_bboxes_voted = []
+        det_labels_voted = []
+        for cls in range(self.cls_out_channels):
+            candidate_cls_mask = candidate_labels == cls
+            if not candidate_cls_mask.any():
+                continue
+            candidate_cls_scores = candidate_scores[candidate_cls_mask]
+            candidate_cls_bboxes = candidate_bboxes[candidate_cls_mask]
+            det_cls_mask = det_labels == cls
+            det_cls_bboxes = det_bboxes[det_cls_mask].view(
+                -1, det_bboxes.size(-1))
+            det_candidate_ious = bbox_overlaps(det_cls_bboxes[:, :4],
+                                               candidate_cls_bboxes)
+            for det_ind in range(len(det_cls_bboxes)):
+                single_det_ious = det_candidate_ious[det_ind]
+                pos_ious_mask = single_det_ious > 0.01
+                pos_ious = single_det_ious[pos_ious_mask]
+                pos_bboxes = candidate_cls_bboxes[pos_ious_mask]
+                pos_scores = candidate_cls_scores[pos_ious_mask]
+                pis = (paddle.exp(-(1 - pos_ious)**2 / 0.025) *
+                       pos_scores)[:, None]
+                voted_box = paddle.sum(
+                    pis * pos_bboxes, dim=0) / paddle.sum(
+                        pis, dim=0)
+                voted_score = det_cls_bboxes[det_ind][-1:][None, :]
+                det_bboxes_voted.append(
+                    paddle.concat((voted_box[None, :], voted_score), dim=1))
+                det_labels_voted.append(cls)
+
+        det_bboxes_voted = paddle.concat(det_bboxes_voted, dim=0)
+        det_labels_voted = det_labels.new_tensor(det_labels_voted)
+        return det_bboxes_voted, det_labels_voted
+
