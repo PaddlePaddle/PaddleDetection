@@ -19,7 +19,7 @@ include_directories("${CMAKE_SOURCE_DIR}/")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/src/ext-yaml-cpp/include")
 link_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/lib")
 
-set(SRCS src/main.cc src/preprocess_op.cc src/pipeline.cc src/jde_predictor.cc src/sde_predictor.cc src/tracker.cc src/trajectory.cc src/lapjv.cpp src/base_predictor.cc src/postprocess.cc)
+set(SRCS src/main.cc src/preprocess_op.cc src/pipeline.cc src/jde_predictor.cc src/sde_predictor.cc src/tracker.cc src/trajectory.cc src/lapjv.cpp src/postprocess.cc)
 
 macro(safe_set_static_flag)
     foreach(flag_var
