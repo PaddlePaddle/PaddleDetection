@@ -93,7 +93,6 @@ class PAAHead(nn.Layer):
 
     @classmethod
     def from_config(cls, cfg, input_shape):
-        # FPN share same rpn head
         if isinstance(input_shape, (list, tuple)):
             input_shape = input_shape[0]
         return {'in_channel': input_shape.channels}
@@ -134,8 +133,8 @@ class PAAHead(nn.Layer):
             return None
 
     # only calculate score for positive targets
-    def get_anchor_score(self, anchors, scores, bbox_pred, score_tgt, bbox_tgt):
-        loss_cls = F.binary_cross_entropy_with_logits(logit=scores, label=score_tgt, reduction="none")
+    def get_anchor_score(self, anchors, scores, bbox_pred, label_tgt, bbox_tgt):
+        loss_cls = F.binary_cross_entropy_with_logits(logit=scores, label=label_tgt, reduction="none")
         # TODO: original code is using bbox absolute distance loss, here we use percentage
         #  to calculate, so it's much lower than original version
         loss_reg = paddle.abs(bbox_pred - bbox_tgt).mean(axis=-1)
@@ -346,21 +345,21 @@ class PAAHead(nn.Layer):
         ]
         deltas = paddle.concat(deltas, axis=1)
 
-        score_tgt, bbox_tgt, gt_inds, loc_tgt, norm = self.target_assign(inputs, anchors, self.num_classes)
+        label_tgt, bbox_tgt, gt_inds, loc_tgt, norm = self.target_assign(inputs, anchors, self.num_classes)
 
         scores = paddle.reshape(x=scores, shape=(-1, ))
         deltas = paddle.reshape(x=deltas, shape=(-1, 4))
 
-        score_tgt = paddle.concat(score_tgt)
-        score_tgt.stop_gradient = True
+        label_tgt = paddle.concat(label_tgt)
+        label_tgt.stop_gradient = True
 
         gt_inds = paddle.concat(gt_inds)
 
-        pos_mask = score_tgt != self.num_classes
+        pos_mask = label_tgt != self.num_classes
         pos_ind = paddle.nonzero(pos_mask)
         pos_gt_inds = paddle.gather(gt_inds, pos_ind)
 
-        valid_mask = score_tgt >= 0
+        valid_mask = label_tgt >= 0
         valid_ind = paddle.nonzero(valid_mask)
 
         # cls loss
@@ -368,7 +367,7 @@ class PAAHead(nn.Layer):
             loss_rpn_cls = paddle.zeros([1], dtype='float32')
         else:
             score_pred = paddle.gather(scores, valid_ind)
-            score_label = paddle.gather(score_tgt, valid_ind).cast('float32')
+            score_label = paddle.gather(label_tgt, valid_ind).cast('float32')
             score_label.stop_gradient = True
             # loss_rpn_cls = F.binary_cross_entropy_with_logits(
             #     logit=score_pred, label=score_label, reduction="sum")
@@ -384,13 +383,13 @@ class PAAHead(nn.Layer):
             # loss_rpn_reg = paddle.abs(loc_pred - loc_tgt).sum()
 
         score_pred_pos = paddle.gather(scores, pos_ind)
-        score_label_pos = paddle.gather(score_tgt, pos_ind).cast('float32')
+        score_label_pos = paddle.gather(label_tgt, pos_ind).cast('float32')
 
-        # TODO: the score_label_pos (extracted from score_tgt) should contain
+        # TODO: the score_label_pos (extracted from label_tgt) should contain
         #  num_classes classes, but not only objectness
         score = self.get_anchor_score(anchors, score_pred_pos, loc_pred, score_label_pos, loc_tgt)
 
-        reassign_labels, num_pos = self.paa_reassign(score, score_tgt, pos_ind.reshape((-1,)), pos_gt_inds, multi_level_anchors)
+        reassign_labels, num_pos = self.paa_reassign(score, label_tgt, pos_ind.reshape((-1,)), pos_gt_inds, multi_level_anchors)
 
         cls_scores = [
             paddle.reshape(
@@ -490,9 +489,9 @@ class PAAHead(nn.Layer):
         # )
 
         return {
-            # 'loss_bbox_cls': loss_rpn_cls / norm,
+            # 'loss_bbox_cls': losses_cls / norm,
             'loss_bbox_cls': losses_cls,
-            # 'loss_bbox_reg': loss_rpn_reg / norm
+            # 'loss_bbox_reg': losses_bbox / norm
             'loss_bbox_reg': losses_bbox,
             'loss_iou': iou_loss
         }

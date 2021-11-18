@@ -35,7 +35,7 @@ class PAATargetAssign(object):
 
 
     Args:
-        batch_size_per_im (int): Total number of RPN samples per image.
+        batch_size_per_im (int): Total number of samples per image.
             default 256
         fg_fraction (float): Fraction of anchors that is labeled
             foreground, default 0.5
