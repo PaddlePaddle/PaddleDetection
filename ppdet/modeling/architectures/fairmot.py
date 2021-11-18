@@ -70,8 +70,8 @@ class FairMOT(BaseArch):
     def _forward(self):
         loss = dict()
         # det_outs keys:
-        # train: det_loss, heatmap_loss, size_loss, offset_loss, neck_feat
-        # eval/infer: bbox, bbox_inds, neck_feat
+        # train: neck_feat, det_loss, heatmap_loss, size_loss, offset_loss (optional: iou_loss)
+        # eval/infer: neck_feat, bbox, bbox_inds
         det_outs = self.detector(self.inputs)
         neck_feat = det_outs['neck_feat']
         if self.training:
@@ -79,21 +79,16 @@ class FairMOT(BaseArch):
 
             det_loss = det_outs['det_loss']
             loss = self.loss(det_loss, reid_loss)
-            loss.update({
-                'heatmap_loss': det_outs['heatmap_loss'],
-                'size_loss': det_outs['size_loss'],
-                'offset_loss': det_outs['offset_loss'],
-                'reid_loss': reid_loss
-            })
+            for k, v in det_outs.items():
+                if 'loss' not in k:
+                    continue
+                loss.update({k: v})
+            loss.update({'reid_loss': reid_loss})
             return loss
         else:
-            embedding = self.reid(neck_feat, self.inputs)
-            bbox_inds = det_outs['bbox_inds']
-            embedding = paddle.transpose(embedding, [0, 2, 3, 1])
-            embedding = paddle.reshape(embedding,
-                                       [-1, paddle.shape(embedding)[-1]])
-            pred_embs = paddle.gather(embedding, bbox_inds)
-            pred_dets = det_outs['bbox']
+            pred_dets, pred_embs = self.reid(
+                neck_feat, self.inputs, det_outs['bbox'], det_outs['bbox_inds'],
+                det_outs['topk_clses'])
             return pred_dets, pred_embs
 
     def get_pred(self):

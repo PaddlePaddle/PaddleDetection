@@ -34,7 +34,9 @@ __all__ = ['SOLOv2Head']
 @register
 class SOLOv2MaskHead(nn.Layer):
     """
-    MaskHead of SOLOv2
+    MaskHead of SOLOv2.
+    The code of this function is based on:
+        https://github.com/WXinlong/SOLO/blob/master/mmdet/models/mask_heads/mask_feat_head.py
 
     Args:
         in_channels (int): The channel number of input Tensor.
@@ -452,6 +454,10 @@ class SOLOv2Head(nn.Layer):
 
     def get_seg_single(self, cate_preds, seg_preds, kernel_preds, featmap_size,
                        im_shape, scale_factor):
+        """
+        The code of this function is based on:
+            https://github.com/WXinlong/SOLO/blob/master/mmdet/models/anchor_heads/solov2_head.py#L385
+        """
         h = paddle.cast(im_shape[0], 'int32')[0]
         w = paddle.cast(im_shape[1], 'int32')[0]
         upsampled_size_out = [featmap_size[0] * 4, featmap_size[1] * 4]

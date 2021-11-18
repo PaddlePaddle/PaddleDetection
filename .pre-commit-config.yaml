@@ -25,3 +25,20 @@
         files: \.(md|yml)$
     -   id: remove-tabs
         files: \.(md|yml)$
+-   repo: local
+    hooks:
+    -   id: clang-format-with-version-check
+        name: clang-format
+        description: Format files with ClangFormat.
+        entry: bash ./.travis/codestyle/clang_format.hook -i
+        language: system
+        files: \.(c|cc|cxx|cpp|cu|h|hpp|hxx|proto)$
+
+-   repo: local
+    hooks:
+    -   id: cpplint-cpp-source
+        name: cpplint
+        description: Check C++ code style using cpplint.py.
+        entry: bash ./.travis/codestyle/cpplint_pre_commit.hook
+        language: system
+        files: \.(c|cc|cxx|cpp|cu|h|hpp|hxx)$

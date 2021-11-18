@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
+# The code is based on:
+# https://github.com/open-mmlab/mmdetection/blob/master/mmdet/models/necks/yolox_pafpn.py
+
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F

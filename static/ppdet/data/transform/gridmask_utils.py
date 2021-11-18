@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# The code is based on:
+# https://github.com/dvlab-research/GridMask/blob/master/detection_grid/maskrcnn_benchmark/data/transforms/grid.py
+
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division

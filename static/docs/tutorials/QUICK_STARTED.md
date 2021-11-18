@@ -1,7 +1,7 @@
 English | [简体中文](QUICK_STARTED_cn.md)
 
 # Quick Start
-In order to enable users to quickly produce models in a short time and master the use of PaddleDetection, this tutorial uses a pre-trained detection model to finetune small data sets. A good model can be produced in a short period of time. In actual business, it is recommended that users select a suitable model configuration file for adaptation according to their needs.
+In order to enable users to quickly produce models in a short time and master the use of PaddleDetection, this tutorial uses a pre-trained detection model to finetune small datasets. A good model can be produced in a short period of time. In actual business, it is recommended that users select a suitable model configuration file for adaptation according to their needs.
 - **Set GPU**
 ```bash
 export CUDA_VISIBLE_DEVICES=0

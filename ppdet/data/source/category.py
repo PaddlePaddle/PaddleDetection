@@ -39,7 +39,7 @@ def get_categories(metric_type, anno_file=None, arch=None):
     if arch == 'keypoint_arch':
         return (None, {'id': 'keypoint'})
 
-    if metric_type.lower() == 'coco' or metric_type.lower() == 'rbox':
+    if metric_type.lower() == 'coco' or metric_type.lower() == 'rbox' or metric_type.lower() == 'snipercoco':
         if anno_file and os.path.isfile(anno_file):
             # lazy import pycocotools here
             from pycocotools.coco import COCO
@@ -90,8 +90,11 @@ def get_categories(metric_type, anno_file=None, arch=None):
     elif metric_type.lower() in ['mot', 'motdet', 'reid']:
         return _mot_category()
 
-    elif metric_type.lower() in ['kitti', 'bdd100k']:
+    elif metric_type.lower() in ['kitti', 'bdd100kmot']:
         return _mot_category(category='car')
+
+    elif metric_type.lower() in ['mcmot']:
+        return _visdrone_category()
 
     else:
         raise ValueError("unknown metric type {}".format(metric_type))
@@ -824,4 +827,22 @@ def _oid19_category():
         500: "Toilet",
     }
 
+    return clsid2catid, catid2name
+
+
+def _visdrone_category():
+    clsid2catid = {i: i for i in range(10)}
+
+    catid2name = {
+        0: 'pedestrian',
+        1: 'people',
+        2: 'bicycle',
+        3: 'car',
+        4: 'van',
+        5: 'truck',
+        6: 'tricycle',
+        7: 'awning-tricycle',
+        8: 'bus',
+        9: 'motor'
+    }
     return clsid2catid, catid2name

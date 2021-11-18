@@ -240,6 +240,7 @@ def draw_pose(imgfile,
         raise e
 
     skeletons, scores = results['keypoint']
+    skeletons = np.array(skeletons)
     kpt_nums = 17
     if len(skeletons) > 0:
         kpt_nums = skeletons.shape[1]

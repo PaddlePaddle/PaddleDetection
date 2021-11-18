@@ -556,6 +556,11 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
             index_mask = np.zeros((self.max_objs, ), dtype=np.int32)
             reid = np.zeros((self.max_objs, ), dtype=np.int64)
             bbox_xys = np.zeros((self.max_objs, 4), dtype=np.float32)
+            if self.num_classes > 1:
+                # each category corresponds to a set of track ids
+                cls_tr_ids = np.zeros(
+                    (self.num_classes, output_h, output_w), dtype=np.int64)
+                cls_id_map = np.full((output_h, output_w), -1, dtype=np.int64)
 
             gt_bbox = sample['gt_bbox']
             gt_class = sample['gt_class']
@@ -598,6 +603,10 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
                     index_mask[k] = 1
                     reid[k] = ide
                     bbox_xys[k] = bbox_xy
+                    if self.num_classes > 1:
+                        cls_id_map[ct_int[1], ct_int[0]] = cls_id
+                        cls_tr_ids[cls_id][ct_int[1]][ct_int[0]] = ide - 1
+                        # track id start from 0
 
             sample['heatmap'] = heatmap
             sample['index'] = index
@@ -605,6 +614,9 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
             sample['size'] = bbox_size
             sample['index_mask'] = index_mask
             sample['reid'] = reid
+            if self.num_classes > 1:
+                sample['cls_id_map'] = cls_id_map
+                sample['cls_tr_ids'] = cls_tr_ids
             sample['bbox_xys'] = bbox_xys
             sample.pop('is_crowd', None)
             sample.pop('difficult', None)

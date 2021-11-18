@@ -124,12 +124,13 @@ void dark_parse(std::vector<float>& heatmap,
   5) hassian = Mat([[dxx, dxy], [dxy, dyy]])
   */
   std::vector<float>::const_iterator first1 = heatmap.begin() + index;
-  std::vector<float>::const_iterator last1  = heatmap.begin() + index + dim[2]*dim[3];
+  std::vector<float>::const_iterator last1 = heatmap.begin() + index + dim[2] * dim[3];
   std::vector<float> heatmap_ch(first1, last1);
-  cv::Mat heatmap_mat{heatmap_ch};
-  heatmap_mat.resize(dim[2],dim[3]);
-  cv::GaussianBlur(heatmap_mat, heatmap_mat, cv::Size(3,3), 0, 0);
-  heatmap_ch.assign(heatmap_mat.datastart, heatmap_mat.dataend);
+  cv::Mat heatmap_mat = cv::Mat(heatmap_ch).reshape(0,dim[2]);
+  heatmap_mat.convertTo(heatmap_mat, CV_32FC1);
+  cv::GaussianBlur(heatmap_mat, heatmap_mat, cv::Size(3, 3), 0, 0);
+  heatmap_mat = heatmap_mat.reshape(1,1);
+  heatmap_ch = std::vector<float>(heatmap_mat.reshape(1,1));
 
   float epsilon = 1e-10;
   //sample heatmap to get values in around target location

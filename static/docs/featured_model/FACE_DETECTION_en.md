@@ -197,7 +197,7 @@ matlab -nodesktop -nosplash -nojvm -r "run wider_eval.m;quit;"
 ```
 
 #### Evaluate on the FDDB
-We provide a FDDB data set evaluation process (currently only supports Linux systems),
+We provide a FDDB dataset evaluation process (currently only supports Linux systems),
 please refer to [FDDB official website](http://vis-www.cs.umass.edu/fddb/) for other specific details.
 
 - 1)Download and install OpenCV：  
