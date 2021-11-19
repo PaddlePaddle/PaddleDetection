@@ -1,5 +1,4 @@
-# coding: utf-8
-# copyright (c) 2020 PaddlePaddle Authors. All Rights Reserve.
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +18,6 @@ import os
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
-import math
 from collections import deque
 
 
@@ -135,13 +133,10 @@ def plot_tracking(image,
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
 
-    top_view = np.zeros([im_w, im_w, 3], dtype=np.uint8) + 255
-
     text_scale = max(1, image.shape[1] / 1600.)
     text_thickness = 2
     line_thickness = max(1, int(image.shape[1] / 500.))
 
-    radius = max(5, int(im_w / 140.))
     cv2.putText(
         im,
         'frame: %d fps: %.2f num: %d' % (frame_id, fps, len(tlwhs)),
@@ -205,13 +200,9 @@ def plot_tracking_dict(image,
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
 
-    top_view = np.zeros([im_w, im_w, 3], dtype=np.uint8) + 255
-
     text_scale = max(1, image.shape[1] / 1600.)
     text_thickness = 2
     line_thickness = max(1, int(image.shape[1] / 500.))
-
-    radius = max(5, int(im_w / 140.))
 
     if num_classes == 1:
         start = records[-1].find('Total')

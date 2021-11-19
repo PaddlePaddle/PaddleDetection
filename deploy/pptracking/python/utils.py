@@ -14,6 +14,7 @@
 
 import time
 import os
+import sys
 import ast
 import argparse
 
@@ -135,6 +136,13 @@ def argsparser():
         "--draw_center_traj",
         action='store_true',
         help="Whether drawing the trajectory of center")
+    parser.add_argument(
+        "--mtmct_dir",
+        type=str,
+        default=None,
+        help="The MTMCT scene video folder.")
+    parser.add_argument(
+        "--mtmct_cfg", type=str, default=None, help="The MTMCT config.")
     return parser
 
 
@@ -243,3 +251,38 @@ def get_current_memory_mb():
         meminfo = pynvml.nvmlDeviceGetMemoryInfo(handle)
         gpu_mem = meminfo.used / 1024. / 1024.
     return round(cpu_mem, 4), round(gpu_mem, 4), round(gpu_percent, 4)
+
+
+def video2frames(video_path, outpath, frame_rate=25, **kargs):
+    def _dict2str(kargs):
+        cmd_str = ''
+        for k, v in kargs.items():
+            cmd_str += (' ' + str(k) + ' ' + str(v))
+        return cmd_str
+
+    ffmpeg = ['ffmpeg ', ' -y -loglevel ', ' error ']
+    vid_name = os.path.basename(video_path).split('.')[0]
+    out_full_path = os.path.join(outpath, vid_name)
+
+    if not os.path.exists(out_full_path):
+        os.makedirs(out_full_path)
+
+    # video file name
+    outformat = os.path.join(out_full_path, '%05d.jpg')
+
+    cmd = ffmpeg
+    cmd = ffmpeg + [
+        ' -i ', video_path, ' -r ', str(frame_rate), ' -f image2 ', outformat
+    ]
+    cmd = ''.join(cmd) + _dict2str(kargs)
+
+    if os.system(cmd) != 0:
+        raise RuntimeError('ffmpeg process video: {} error'.format(video_path))
+        sys.exit(-1)
+
+    sys.stdout.flush()
+    return out_full_path
+
+
+def _is_valid_video(f, extensions=('.mp4', '.avi', '.mov', '.rmvb', '.flv')):
+    return f.lower().endswith(extensions)

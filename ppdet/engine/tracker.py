@@ -19,8 +19,10 @@ from __future__ import print_function
 import os
 import cv2
 import glob
+import re
 import paddle
 import numpy as np
+import os.path as osp
 from collections import defaultdict
 
 from ppdet.core.workspace import create
@@ -176,6 +178,7 @@ class Tracker(object):
                       save_dir=None,
                       show_image=False,
                       frame_rate=30,
+                      seq_name='',
                       scaled=False,
                       det_file='',
                       draw_threshold=0):
@@ -200,23 +203,31 @@ class Tracker(object):
                 logger.info('Processing frame {} ({:.2f} fps)'.format(
                     frame_id, 1. / max(1e-5, timer.average_time)))
 
-            ori_image = data['ori_image']
+            ori_image = data['ori_image']  # [bs, H, W, 3]
+            ori_image_shape = data['ori_image'].shape[1:3]
+            # ori_image_shape: [H, W]
+
             input_shape = data['image'].shape[2:]
-            im_shape = data['im_shape']
-            scale_factor = data['scale_factor']
+            # input_shape: [h, w], before data transforms, set in model config
+
+            im_shape = data['im_shape'][0].numpy()
+            # im_shape: [new_h, new_w], after data transforms
+            scale_factor = data['scale_factor'][0].numpy()
+
+            empty_detections = False
+            # when it has no detected bboxes, will not inference reid model 
+            # and if visualize, use original image instead
 
             # forward
             timer.tic()
             if not use_detector:
                 dets = dets_list[frame_id]
-                bbox_tlwh = paddle.to_tensor(dets['bbox'], dtype='float32')
+                bbox_tlwh = np.array(dets['bbox'], dtype='float32')
                 if bbox_tlwh.shape[0] > 0:
                     # detector outputs: pred_cls_ids, pred_scores, pred_bboxes
-                    pred_cls_ids = paddle.to_tensor(
-                        dets['cls_id'], dtype='float32').unsqueeze(1)
-                    pred_scores = paddle.to_tensor(
-                        dets['score'], dtype='float32').unsqueeze(1)
-                    pred_bboxes = paddle.concat(
+                    pred_cls_ids = np.array(dets['cls_id'], dtype='float32')
+                    pred_scores = np.array(dets['score'], dtype='float32')
+                    pred_bboxes = np.concatenate(
                         (bbox_tlwh[:, 0:2],
                          bbox_tlwh[:, 2:4] + bbox_tlwh[:, 0:2]),
                         axis=1)
@@ -224,16 +235,21 @@ class Tracker(object):
                     logger.warning(
                         'Frame {} has not object, try to modify score threshold.'.
                         format(frame_id))
-                    frame_id += 1
-                    continue
+                    empty_detections = True
             else:
                 outs = self.model.detector(data)
-                if outs['bbox_num'] > 0:
+                outs['bbox'] = outs['bbox'].numpy()
+                outs['bbox_num'] = outs['bbox_num'].numpy()
+
+                if outs['bbox_num'] > 0 and empty_detections == False:
                     # detector outputs: pred_cls_ids, pred_scores, pred_bboxes
                     pred_cls_ids = outs['bbox'][:, 0:1]
                     pred_scores = outs['bbox'][:, 1:2]
                     if not scaled:
-                        # scaled means whether the coords after detector outputs
+                        # Note: scaled=False only in JDE YOLOv3 or other detectors
+                        # with LetterBoxResize and JDEBBoxPostProcess.
+                        #
+                        # 'scaled' means whether the coords after detector outputs
                         # have been scaled back to the original image, set True 
                         # in general detector, set False in JDE YOLOv3.
                         pred_bboxes = scale_coords(outs['bbox'][:, 2:],
@@ -243,20 +259,36 @@ class Tracker(object):
                         pred_bboxes = outs['bbox'][:, 2:]
                 else:
                     logger.warning(
-                        'Frame {} has not object, try to modify score threshold.'.
+                        'Frame {} has not detected object, try to modify score threshold.'.
                         format(frame_id))
-                    frame_id += 1
-                    continue
+                    empty_detections = True
 
-            pred_xyxys, keep_idx = clip_box(pred_bboxes, input_shape, im_shape,
-                                            scale_factor)
-            pred_scores = paddle.gather_nd(pred_scores, keep_idx).unsqueeze(1)
-            pred_cls_ids = paddle.gather_nd(pred_cls_ids, keep_idx).unsqueeze(1)
-            pred_tlwhs = paddle.concat(
+            if not empty_detections:
+                pred_xyxys, keep_idx = clip_box(pred_bboxes, ori_image_shape)
+                if len(keep_idx[0]) == 0:
+                    logger.warning(
+                        'Frame {} has not detected object left after clip_box.'.
+                        format(frame_id))
+                    empty_detections = True
+
+            if empty_detections:
+                timer.toc()
+                # if visualize, use original image instead
+                online_ids, online_tlwhs, online_scores = None, None, None
+                save_vis_results(data, frame_id, online_ids, online_tlwhs,
+                                 online_scores, timer.average_time, show_image,
+                                 save_dir, self.cfg.num_classes)
+                frame_id += 1
+                # thus will not inference reid model
+                continue
+
+            pred_scores = pred_scores[keep_idx[0]]
+            pred_cls_ids = pred_cls_ids[keep_idx[0]]
+            pred_tlwhs = np.concatenate(
                 (pred_xyxys[:, 0:2],
                  pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
                 axis=1)
-            pred_dets = paddle.concat(
+            pred_dets = np.concatenate(
                 (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
 
             tracker = self.model.tracker
@@ -268,8 +300,7 @@ class Tracker(object):
             crops = paddle.to_tensor(crops)
 
             data.update({'crops': crops})
-            pred_embs = self.model(data)
-            pred_dets, pred_embs = pred_dets.numpy(), pred_embs.numpy()
+            pred_embs = self.model(data).numpy()
 
             tracker.predict()
             online_targets = tracker.update(pred_dets, pred_embs)
@@ -361,6 +392,7 @@ class Tracker(object):
                         save_dir=save_dir,
                         show_image=show_image,
                         frame_rate=frame_rate,
+                        seq_name=seq,
                         scaled=scaled,
                         det_file=os.path.join(det_results_dir,
                                               '{}.txt'.format(seq)))
@@ -417,19 +449,19 @@ class Tracker(object):
         logger.info("Found {} inference images in total.".format(len(images)))
         return images
 
-    def mot_predict(self,
-                    video_file,
-                    frame_rate,
-                    image_dir,
-                    output_dir,
-                    data_type='mot',
-                    model_type='JDE',
-                    save_images=False,
-                    save_videos=True,
-                    show_image=False,
-                    scaled=False,
-                    det_results_dir='',
-                    draw_threshold=0.5):
+    def mot_predict_seq(self,
+                        video_file,
+                        frame_rate,
+                        image_dir,
+                        output_dir,
+                        data_type='mot',
+                        model_type='JDE',
+                        save_images=False,
+                        save_videos=True,
+                        show_image=False,
+                        scaled=False,
+                        det_results_dir='',
+                        draw_threshold=0.5):
         assert video_file is not None or image_dir is not None, \
             "--video_file or --image_dir should be set."
         assert video_file is None or os.path.isfile(video_file), \
@@ -452,6 +484,8 @@ class Tracker(object):
             logger.info('Starting tracking video {}'.format(video_file))
         elif image_dir:
             seq = image_dir.split('/')[-1].split('.')[0]
+            if os.path.exists(os.path.join(image_dir, 'img1')):
+                image_dir = os.path.join(image_dir, 'img1')
             images = [
                 '{}/{}'.format(image_dir, x) for x in os.listdir(image_dir)
             ]
@@ -484,15 +518,13 @@ class Tracker(object):
                     save_dir=save_dir,
                     show_image=show_image,
                     frame_rate=frame_rate,
+                    seq_name=seq,
                     scaled=scaled,
                     det_file=os.path.join(det_results_dir,
                                           '{}.txt'.format(seq)),
                     draw_threshold=draw_threshold)
             else:
                 raise ValueError(model_type)
-
-        write_mot_results(result_filename, results, data_type,
-                          self.cfg.num_classes)
 
         if save_videos:
             output_video_path = os.path.join(save_dir, '..',
@@ -501,3 +533,6 @@ class Tracker(object):
                 save_dir, output_video_path)
             os.system(cmd_str)
             logger.info('Save video in {}'.format(output_video_path))
+
+        write_mot_results(result_filename, results, data_type,
+                          self.cfg.num_classes)

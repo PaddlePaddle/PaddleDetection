@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import matching
-from . import tracker
-from . import motion
 from . import utils
-from . import mtmct
-
-from .matching import *
-from .tracker import *
-from .motion import *
+from . import postprocess
 from .utils import *
-from .mtmct import *
+from .postprocess import *
+
+# The following codes are strongly related to zone and camera parameters
+from . import camera_utils
+from . import zone
+from .camera_utils import *
+from .zone import *
