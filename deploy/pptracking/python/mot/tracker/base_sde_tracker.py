@@ -84,6 +84,7 @@ class Track(object):
 
         self.state = TrackState.Tentative
         self.features = []
+        self.feat = feature
         if feature is not None:
             self.features.append(feature)
 
@@ -122,6 +123,7 @@ class Track(object):
                                                           self.covariance,
                                                           detection.to_xyah())
         self.features.append(detection.feature)
+        self.feat = detection.feature
         self.cls_id = detection.cls_id
         self.score = detection.score
 

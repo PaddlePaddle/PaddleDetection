@@ -68,6 +68,30 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/pp
  - `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
 
 
+## 3. 跨境跟踪模型的导出和预测
+### 3.1 导出预测模型
+Step 1：下载导出的检测模型
+```bash
+wget https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_l_640_aic21mtmct_vehicle.tar
+tar -xvf picodet_l_640_aic21mtmct_vehicle.tar
+```
+Step 2：下载导出的ReID模型
+```bash
+wget https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet_vehicle.tar
+tar -xvf deepsort_pplcnet_vehicle.tar
+```
+
+### 3.2 用导出的模型基于Python去预测
+```bash
+# 用导出PicoDet车辆检测模型和PPLCNet车辆ReID模型
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir={your mtmct scene video folder} --mtmct_cfg=mtmct_cfg --device=GPU --scaled=True --save_mot_txts --save_images
+```
+**注意:**
+  跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)，或`--save_images`表示保存跟踪结果可视化图片。
+  `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
+  `--mtmct_dir`是MTMCT预测的某个场景的文件夹名字，里面包含该场景不同摄像头拍摄视频的图片文件夹，其数量至少为两个。
+
+
 ## 参数说明:
 
 | 参数 | 是否必须|含义 |
@@ -88,6 +112,8 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/pp
 | --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
 | --do_entrance_counting | Option | 是否统计出入口流量，默认为False |
 | --draw_center_traj | Option | 是否绘制跟踪轨迹，默认为False |
+| --mtmct_dir | Option | 需要进行MTMCT跨境头跟踪预测的图片文件夹路径，默认为None |
+| --mtmct_cfg | Option | 需要进行MTMCT跨境头跟踪预测的配置文件路径，默认为None |
 
 说明：
 
