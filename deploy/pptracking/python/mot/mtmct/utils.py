@@ -341,6 +341,7 @@ def visual_rerank(prb_feats,
         prb_feats, gal_feats = run_fac(prb_feats, gal_feats, prb_labels,
                                        gal_labels, 0.08, 20, 0.5, 1, 1)
     if use_rerank:
+        paddle.enable_static()
         print('current use rerank finetuned parameters....')
         # Step2: k-reciprocal. finetuned parameters: [k1,k2,lambda_value]
         sims = ReRank2(
