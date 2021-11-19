@@ -19,6 +19,8 @@ import cv2
 import random
 import numpy as np
 import argparse
+import tqdm
+import json
 
 
 def mkdir_if_missing(d):
@@ -62,7 +64,7 @@ def bdd2mot_tracking(img_dir, label_dir, save_img_dir, save_label_dir):
                 os.system('cp {} {}'.format(source_img, target_img))
 
 
-def transBBOx(bbox):
+def transBbox(bbox):
     # bbox --> cx cy w h
     bbox = list(map(lambda x: float(x), bbox))
     bbox[0] = (bbox[0] - bbox[2] / 2) * 1280
@@ -106,10 +108,9 @@ def genSingleImageMot(inputPath, classes=[]):
             mot_line = []
             mot_line.append(id_line[-1])
             mot_line.append(str(id_idx))
-            id_line_temp = transBBOx(id_line[2:6])
+            id_line_temp = transBbox(id_line[2:6])
             mot_line.extend(id_line_temp)
-            mot_line.append('1')
-            # mot_line.append(id_line[0]) # origin class 
+            mot_line.append('1') # origin class: id_line[0]
             mot_line.append('1')  # permanent class  => 1
             mot_line.append('1')
             mot_gt.append(mot_line)
@@ -211,7 +212,7 @@ def VisualGt(dataPath, phase='train'):
     img_list_path = sorted(glob.glob(osp.join(seqPath, 'img1', '*.jpg')))
     imgIndex = random.randint(0, len(img_list_path))
     img_Path = img_list_path[imgIndex]
-    #
+
     frame_value = img_Path.split('/')[-1].replace('.jpg', '')
     frame_value = frame_value.split('-')[-1]
     frame_value = int(frame_value)
@@ -290,18 +291,17 @@ def copyImg(fromRootPath, toRootPath, phase):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='BDD100K to MOT format')
-    parser.add_argument("--data_path", default='/path/to/bdd100k')
+    parser.add_argument("--data_path", default='bdd100k')
     parser.add_argument("--phase", default='train')
     parser.add_argument("--classes", default='2,3,4,9,10')
 
-    parser.add_argument("--img_dir", default="/path/to/bdd/image/")
-    parser.add_argument("--label_dir", default="/path/to/bdd/label/")
-    parser.add_argument("--save_path", default="/save/path")
+    parser.add_argument("--img_dir", default="bdd100k/images/track/")
+    parser.add_argument("--label_dir", default="bdd100k/labels/box_track_20/")
+    parser.add_argument("--save_path", default="bdd100kmot_vehicle")
     parser.add_argument("--height", default=720)
     parser.add_argument("--width", default=1280)
     args = parser.parse_args()
 
-    ### for bdd tracking dataset
     attr_dict = dict()
     attr_dict["categories"] = [{
         "supercategory": "none",
@@ -350,7 +350,7 @@ if __name__ == "__main__":
     }]
     attr_id_dict = {i['name']: i['id'] for i in attr_dict['categories']}
 
-    # create BDD training set tracking in MOT format
+    # create bdd100kmot_vehicle training set in MOT format
     print('Loading and converting training set...')
     train_img_dir = os.path.join(args.img_dir, 'train')
     train_label_dir = os.path.join(args.label_dir, 'train')
@@ -361,7 +361,7 @@ if __name__ == "__main__":
     bdd2mot_tracking(train_img_dir, train_label_dir, save_img_dir,
                      save_label_dir)
 
-    # create BDD validation set tracking in MOT format
+    # create bdd100kmot_vehicle validation set in MOT format
     print('Loading and converting validation set...')
     val_img_dir = os.path.join(args.img_dir, 'val')
     val_label_dir = os.path.join(args.label_dir, 'val')

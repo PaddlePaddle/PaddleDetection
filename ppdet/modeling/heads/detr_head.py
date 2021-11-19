@@ -28,6 +28,10 @@ __all__ = ['DETRHead', 'DeformableDETRHead']
 
 
 class MLP(nn.Layer):
+    """This code is based on
+        https://github.com/facebookresearch/detr/blob/main/models/detr.py
+    """
+
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
         super().__init__()
         self.num_layers = num_layers
@@ -48,7 +52,11 @@ class MLP(nn.Layer):
 
 
 class MultiHeadAttentionMap(nn.Layer):
-    """This is a 2D attention module, which only returns the attention softmax (no multiplication by value)"""
+    """This code is based on
+        https://github.com/facebookresearch/detr/blob/main/models/segmentation.py
+
+        This is a 2D attention module, which only returns the attention softmax (no multiplication by value)
+    """
 
     def __init__(self, query_dim, hidden_dim, num_heads, dropout=0.0,
                  bias=True):
@@ -94,9 +102,11 @@ class MultiHeadAttentionMap(nn.Layer):
 
 
 class MaskHeadFPNConv(nn.Layer):
-    """
-    Simple convolutional head, using group norm.
-    Upsampling is done using a FPN approach
+    """This code is based on
+        https://github.com/facebookresearch/detr/blob/main/models/segmentation.py
+
+        Simple convolutional head, using group norm.
+        Upsampling is done using a FPN approach
     """
 
     def __init__(self, input_dim, fpn_dims, context_dim, num_groups=8):
@@ -307,7 +317,7 @@ class DeformableDETRHead(nn.Layer):
         linear_init_(self.score_head)
         constant_(self.score_head.bias, -4.595)
         constant_(self.bbox_head.layers[-1].weight)
-        
+
         with paddle.no_grad():
             bias = paddle.zeros_like(self.bbox_head.layers[-1].bias)
             bias[2:] = -2.0

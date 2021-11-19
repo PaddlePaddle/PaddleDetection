@@ -1,0 +1,43 @@
+_BASE_: [
+  '../../datasets/mot.yml',
+  '../../runtime.yml',
+  '_base_/optimizer_30e_momentum.yml',
+  '_base_/fairmot_hrnetv2_w18_dlafpn.yml',
+  '_base_/fairmot_reader_576x320.yml',
+]
+
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+
+# add crowdhuman
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['mot17.train', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train', 'crowdhuman.train', 'crowdhuman.val']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+worker_num: 4
+TrainReader:
+  inputs_def:
+    image_shape: [3, 320, 576]
+  sample_transforms:
+    - Decode: {}
+    - RGBReverse: {}
+    - AugmentHSV: {}
+    - LetterBoxResize: {target_size: [320, 576]}
+    - MOTRandomAffine: {reject_outside: False}
+    - RandomFlip: {}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - RGBReverse: {}
+    - Permute: {}
+  batch_transforms:
+    - Gt2FairMOTTarget: {}
+  batch_size: 4
+  shuffle: True
+  drop_last: True
+  use_shared_memory: True
+
+weights: output/fairmot_hrnetv2_w18_dlafpn_30e_576x320/model_final

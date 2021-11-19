@@ -1,0 +1,33 @@
+_BASE_: [
+  '../datasets/sniper_visdrone_detection.yml',
+  '../runtime.yml',
+  '../ppyolo/_base_/ppyolo_r50vd_dcn.yml',
+  '../ppyolo/_base_/optimizer_1x.yml',
+  './_base_/ppyolo_reader.yml',
+]
+
+snapshot_epoch: 8
+use_ema: true
+weights: output/ppyolo_r50vd_dcn_1x_sniper_visdrone/model_final
+
+
+
+LearningRate:
+  base_lr: 0.005
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.
+    milestones:
+    - 153
+    - 173
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 4000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2

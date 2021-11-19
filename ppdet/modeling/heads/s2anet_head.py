@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# The code is based on https://github.com/csuhan/s2anet/blob/master/mmdet/models/anchor_heads_rotated/s2anet_head.py
+
 import paddle
 from paddle import ParamAttr
 import paddle.nn as nn
@@ -625,7 +628,8 @@ class S2ANetHead(nn.Layer):
                     fam_bbox_total = self.gwd_loss(fam_bbox_decode,
                                                    bbox_gt_bboxes_level)
                     fam_bbox_total = fam_bbox_total * feat_bbox_weights
-                    fam_bbox_total = paddle.sum(fam_bbox_total) / num_total_samples
+                    fam_bbox_total = paddle.sum(
+                        fam_bbox_total) / num_total_samples
 
             fam_bbox_losses.append(fam_bbox_total)
             st_idx += feat_anchor_num
@@ -739,7 +743,8 @@ class S2ANetHead(nn.Layer):
                     odm_bbox_total = self.gwd_loss(odm_bbox_decode,
                                                    bbox_gt_bboxes_level)
                     odm_bbox_total = odm_bbox_total * feat_bbox_weights
-                    odm_bbox_total = paddle.sum(odm_bbox_total) / num_total_samples
+                    odm_bbox_total = paddle.sum(
+                        odm_bbox_total) / num_total_samples
 
             odm_bbox_losses.append(odm_bbox_total)
             st_idx += feat_anchor_num

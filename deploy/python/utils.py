@@ -190,8 +190,11 @@ class Timer(Times):
                                4) if average else self.inference_time_s.value()
 
         average_latency = total_time / max(1, self.img_num)
+        qps = 0
+        if total_time > 0:
+            qps = 1 / average_latency
         print("average latency time(ms): {:.2f}, QPS: {:2f}".format(
-            average_latency * 1000, 1 / average_latency))
+            average_latency * 1000, qps))
         print(
             "preprocess_time(ms): {:.2f}, inference_time(ms): {:.2f}, postprocess_time(ms): {:.2f}".
             format(preprocess_time * 1000, inference_time * 1000,

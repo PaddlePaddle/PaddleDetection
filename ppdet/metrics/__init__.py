@@ -22,4 +22,8 @@ __all__ = metrics.__all__ + keypoint_metrics.__all__
 
 from . import mot_metrics
 from .mot_metrics import *
-__all__ = __all__ + mot_metrics.__all__
+__all__ = metrics.__all__ + mot_metrics.__all__
+
+from . import mcmot_metrics
+from .mcmot_metrics import *
+__all__ = metrics.__all__ + mcmot_metrics.__all__

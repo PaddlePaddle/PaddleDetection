@@ -141,6 +141,13 @@ class BBoxPostProcess(nn.Layer):
 
 @register
 class MaskPostProcess(object):
+    """
+    refer to:
+    https://github.com/facebookresearch/detectron2/layers/mask_ops.py
+
+    Get Mask output according to the output from model
+    """
+
     def __init__(self, binary_thresh=0.5):
         super(MaskPostProcess, self).__init__()
         self.binary_thresh = binary_thresh
@@ -415,7 +422,6 @@ class CenterNetPostProcess(TTFBox):
         regress_ltrb (bool): whether to regress left/top/right/bottom or
             width/height for a box, true by default.
         for_mot (bool): whether return other features used in tracking model.
-
     """
 
     __shared__ = ['down_ratio', 'for_mot']
@@ -433,14 +439,14 @@ class CenterNetPostProcess(TTFBox):
 
     def __call__(self, hm, wh, reg, im_shape, scale_factor):
         heat = self._simple_nms(hm)
-        scores, inds, clses, ys, xs = self._topk(heat)
-        scores = paddle.tensor.unsqueeze(scores, [1])
-        clses = paddle.tensor.unsqueeze(clses, [1])
+        scores, inds, topk_clses, ys, xs = self._topk(heat)
+        scores = scores.unsqueeze(1)
+        clses = topk_clses.unsqueeze(1)
 
         reg_t = paddle.transpose(reg, [0, 2, 3, 1])
         # Like TTFBox, batch size is 1.
         # TODO: support batch size > 1
-        reg = paddle.reshape(reg_t, [-1, paddle.shape(reg_t)[-1]])
+        reg = paddle.reshape(reg_t, [-1, reg_t.shape[-1]])
         reg = paddle.gather(reg, inds)
         xs = paddle.cast(xs, 'float32')
         ys = paddle.cast(ys, 'float32')
@@ -448,7 +454,7 @@ class CenterNetPostProcess(TTFBox):
         ys = ys + reg[:, 1:2]
 
         wh_t = paddle.transpose(wh, [0, 2, 3, 1])
-        wh = paddle.reshape(wh_t, [-1, paddle.shape(wh_t)[-1]])
+        wh = paddle.reshape(wh_t, [-1, wh_t.shape[-1]])
         wh = paddle.gather(wh, inds)
 
         if self.regress_ltrb:
@@ -480,16 +486,15 @@ class CenterNetPostProcess(TTFBox):
         scale_x = scale_factor[:, 1:2]
         scale_expand = paddle.concat(
             [scale_x, scale_y, scale_x, scale_y], axis=1)
-        boxes_shape = paddle.shape(bboxes)
-        boxes_shape.stop_gradient = True
+        boxes_shape = bboxes.shape[:]
         scale_expand = paddle.expand(scale_expand, shape=boxes_shape)
         bboxes = paddle.divide(bboxes, scale_expand)
         if self.for_mot:
             results = paddle.concat([bboxes, scores, clses], axis=1)
-            return results, inds
+            return results, inds, topk_clses
         else:
             results = paddle.concat([clses, scores, bboxes], axis=1)
-            return results, paddle.shape(results)[0:1]
+            return results, paddle.shape(results)[0:1], topk_clses
 
 
 @register

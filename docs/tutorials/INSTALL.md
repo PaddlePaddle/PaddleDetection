@@ -10,7 +10,7 @@ For general information about PaddleDetection, please see [README.md](https://gi
 
 ## Requirements:
 
-- PaddlePaddle 2.1
+- PaddlePaddle 2.2
 - OS 64 bit
 - Python 3(3.5.1+/3.6/3.7/3.8/3.9)，64 bit
 - pip/pip3(9.0.1+), 64 bit
@@ -22,6 +22,8 @@ Dependency of PaddleDetection and PaddlePaddle:
 
 | PaddleDetection version | PaddlePaddle version  |    tips    |
 | :----------------: | :---------------: | :-------: |
+|    develop           |       >= 2.2.0rc |     Dygraph mode is set as default    |
+|    release/2.3       |       >= 2.2.0rc |     Dygraph mode is set as default    |
 |    release/2.2       |       >= 2.1.2   |     Dygraph mode is set as default    |
 |    release/2.1       |       >= 2.1.0   |     Dygraph mode is set as default    |
 |    release/2.0       |       >= 2.0.1    |     Dygraph mode is set as default    |
@@ -38,7 +40,7 @@ Dependency of PaddleDetection and PaddlePaddle:
 ```
 
 # CUDA10.1
-python -m pip install paddlepaddle-gpu==2.1.0.post101 -f https://paddlepaddle.org.cn/whl/mkl/stable.html
+python -m pip install paddlepaddle-gpu==2.2.0.post101 -f https://www.paddlepaddle.org.cn/whl/linux/mkl/avx/stable.html
 
 # CPU
 python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
@@ -75,12 +77,12 @@ python -c "import paddle; print(paddle.__version__)"
 cd <path/to/clone/PaddleDetection>
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
 
-# Compile and install paddledet
-cd PaddleDetection
-python setup.py install
-
 # Install other dependencies
+cd PaddleDetection
 pip install -r requirements.txt
+
+# Compile and install paddledet
+python setup.py install
 
 ```
 
@@ -101,9 +103,9 @@ python ppdet/modeling/tests/test_architectures.py
 If the tests are passed, the following information will be prompted:
 
 ```
-.....
+.......
 ----------------------------------------------------------------------
-Ran 5 tests in 4.280s
+Ran 7 tests in 12.816s
 OK
 ```
 

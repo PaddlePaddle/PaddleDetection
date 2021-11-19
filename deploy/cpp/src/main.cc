@@ -128,27 +128,36 @@ static void MkDirs(const std::string& path) {
 }
 
 void PredictVideo(const std::string& video_path,
-                  PaddleDetection::ObjectDetector* det) {
+                  PaddleDetection::ObjectDetector* det,
+                  const std::string& output_dir = "output") {
   // Open video
   cv::VideoCapture capture;
+  std::string video_out_name = "output.mp4";
   if (FLAGS_camera_id != -1){
     capture.open(FLAGS_camera_id);
   }else{
     capture.open(video_path.c_str());
+    video_out_name = video_path.substr(video_path.find_last_of(OS_PATH_SEP) + 1);
   }
   if (!capture.isOpened()) {
     printf("can not open video : %s\n", video_path.c_str());
     return;
   }
 
-  // Get Video info : resolution, fps
+  // Get Video info : resolution, fps, frame count
   int video_width = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_WIDTH));
   int video_height = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_HEIGHT));
   int video_fps = static_cast<int>(capture.get(CV_CAP_PROP_FPS));
+  int video_frame_count = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_COUNT));
+  printf("fps: %d, frame_count: %d\n", video_fps, video_frame_count);
 
   // Create VideoWriter for output
   cv::VideoWriter video_out;
-  std::string video_out_path = "output.mp4";
+  std::string video_out_path(output_dir);
+  if (output_dir.rfind(OS_PATH_SEP) != output_dir.size() - 1) {
+    video_out_path += OS_PATH_SEP;
+  }
+  video_out_path += video_out_name;
   video_out.open(video_out_path.c_str(),
                  0x00000021,
                  video_fps,
@@ -166,7 +175,7 @@ void PredictVideo(const std::string& video_path,
   auto colormap = PaddleDetection::GenerateColorMap(labels.size());
   // Capture all frames and do inference
   cv::Mat frame;
-  int frame_id = 0;
+  int frame_id = 1;
   bool is_rbox = false;
   while (capture.read(frame)) {
     if (frame.empty()) {
@@ -174,8 +183,14 @@ void PredictVideo(const std::string& video_path,
     }
     std::vector<cv::Mat> imgs;
     imgs.push_back(frame);
-    det->Predict(imgs, 0.5, 0, 1, &result, &bbox_num, &det_times);
+    printf("detect frame: %d\n", frame_id);
+    det->Predict(imgs, FLAGS_threshold, 0, 1, &result, &bbox_num, &det_times);
+    std::vector<PaddleDetection::ObjectResult> out_result;
     for (const auto& item : result) {
+      if (item.confidence < FLAGS_threshold || item.class_id == -1) {
+            continue;
+      }
+      out_result.push_back(item);
       if (item.rect.size() > 6){
       is_rbox = true;
       printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
@@ -202,7 +217,7 @@ void PredictVideo(const std::string& video_path,
    }
 
    cv::Mat out_im = PaddleDetection::VisualizeResult(
-        frame, result, labels, colormap, is_rbox);
+        frame, out_result, labels, colormap, is_rbox);
 
     video_out.write(out_im);
     frame_id += 1;
@@ -337,12 +352,12 @@ int main(int argc, char** argv) {
                         FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape,
 			FLAGS_trt_calib_mode);
   // Do inference on input video or image
-  if (!FLAGS_video_file.empty() || FLAGS_camera_id != -1) {
-    PredictVideo(FLAGS_video_file, &det);
-  } else if (!FLAGS_image_file.empty() || !FLAGS_image_dir.empty()) {
-    if (!PathExists(FLAGS_output_dir)) {
+  if (!PathExists(FLAGS_output_dir)) {
       MkDirs(FLAGS_output_dir);
-    }
+  }
+  if (!FLAGS_video_file.empty() || FLAGS_camera_id != -1) {
+    PredictVideo(FLAGS_video_file, &det, FLAGS_output_dir);
+  } else if (!FLAGS_image_file.empty() || !FLAGS_image_dir.empty()) {
     std::vector<std::string> all_img_paths;
     std::vector<cv::String> cv_all_img_paths;
     if (!FLAGS_image_file.empty()) {

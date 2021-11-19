@@ -79,17 +79,32 @@ void PrintBenchmarkLog(std::vector<double> det_time, int img_num){
   LOG(INFO) << "cpu_math_library_num_threads: " << FLAGS_cpu_threads;
   LOG(INFO) << "----------------------- Data info -----------------------";
   LOG(INFO) << "batch_size: " << FLAGS_batch_size;
-  LOG(INFO) << "batch_size_keypoint: " << FLAGS_batch_size_keypoint;
   LOG(INFO) << "input_shape: " << "dynamic shape";
   LOG(INFO) << "----------------------- Model info -----------------------";
   FLAGS_model_dir.erase(FLAGS_model_dir.find_last_not_of("/") + 1);
-  LOG(INFO) << "model_name: " << FLAGS_model_dir.substr(FLAGS_model_dir.find_last_of('/') + 1);
-  FLAGS_model_dir_keypoint.erase(FLAGS_model_dir_keypoint.find_last_not_of("/") + 1);
-  LOG(INFO) << "model_name: " << FLAGS_model_dir_keypoint.substr(FLAGS_model_dir_keypoint.find_last_of('/') + 1);
+  LOG(INFO) << "model_name: " << FLAGS_model_dir;
   LOG(INFO) << "----------------------- Perf info ------------------------";
   LOG(INFO) << "Total number of predicted data: " << img_num
             << " and total time spent(ms): "
-            << std::accumulate(det_time.begin(), det_time.end(), 0);
+            << std::accumulate(det_time.begin(), det_time.end(), 0.);
+  img_num = std::max(1, img_num);
+  LOG(INFO) << "preproce_time(ms): " << det_time[0] / img_num
+            << ", inference_time(ms): " << det_time[1] / img_num
+            << ", postprocess_time(ms): " << det_time[2] / img_num;
+}
+
+void PrintKptsBenchmarkLog(std::vector<double> det_time, int img_num){
+  LOG(INFO) << "----------------------- Data info -----------------------";
+  LOG(INFO) << "batch_size_keypoint: " << FLAGS_batch_size_keypoint;
+  LOG(INFO) << "----------------------- Model info -----------------------";
+  FLAGS_model_dir_keypoint.erase(FLAGS_model_dir_keypoint.find_last_not_of("/") + 1);
+  LOG(INFO) << "keypoint_model_name: " << FLAGS_model_dir_keypoint;
+  LOG(INFO) << "----------------------- Perf info ------------------------";
+  LOG(INFO) << "Total number of predicted data: " << img_num
+            << " and total time spent(ms): "
+            << std::accumulate(det_time.begin(), det_time.end(), 0.);
+  img_num = std::max(1, img_num);
+  LOG(INFO) << "Average time cost per person:";
   LOG(INFO) << "preproce_time(ms): " << det_time[0] / img_num
             << ", inference_time(ms): " << det_time[1] / img_num
             << ", postprocess_time(ms): " << det_time[2] / img_num;
@@ -138,27 +153,36 @@ static void MkDirs(const std::string& path) {
 
 void PredictVideo(const std::string& video_path,
                   PaddleDetection::ObjectDetector* det,
-                  PaddleDetection::KeyPointDetector* keypoint) {
+                  PaddleDetection::KeyPointDetector* keypoint,
+                  const std::string& output_dir = "output") {
   // Open video
   cv::VideoCapture capture;
+  std::string video_out_name = "output.mp4";
   if (FLAGS_camera_id != -1){
     capture.open(FLAGS_camera_id);
   }else{
     capture.open(video_path.c_str());
+    video_out_name = video_path.substr(video_path.find_last_of(OS_PATH_SEP) + 1);
   }
   if (!capture.isOpened()) {
     printf("can not open video : %s\n", video_path.c_str());
     return;
   }
 
-  // Get Video info : resolution, fps
+  // Get Video info : resolution, fps, frame count
   int video_width = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_WIDTH));
   int video_height = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_HEIGHT));
   int video_fps = static_cast<int>(capture.get(CV_CAP_PROP_FPS));
+  int video_frame_count = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_COUNT));
+  printf("fps: %d, frame_count: %d\n", video_fps, video_frame_count);
 
   // Create VideoWriter for output
   cv::VideoWriter video_out;
-  std::string video_out_path = "output.mp4";
+  std::string video_out_path(output_dir);
+  if (output_dir.rfind(OS_PATH_SEP) != output_dir.size() - 1) {
+    video_out_path += OS_PATH_SEP;
+  }
+  video_out_path += video_out_name;
   video_out.open(video_out_path.c_str(),
                  0x00000021,
                  video_fps,
@@ -184,7 +208,7 @@ void PredictVideo(const std::string& video_path,
   std::vector<int> colormap_kpts = PaddleDetection::GenerateColorMap(20);
   // Capture all frames and do inference
   cv::Mat frame;
-  int frame_id = 0;
+  int frame_id = 1;
   bool is_rbox = false;
   while (capture.read(frame)) {
     if (frame.empty()) {
@@ -192,8 +216,14 @@ void PredictVideo(const std::string& video_path,
     }
     std::vector<cv::Mat> imgs;
     imgs.push_back(frame);
-    det->Predict(imgs, 0.5, 0, 1, &result, &bbox_num, &det_times);
+    printf("detect frame: %d\n", frame_id);
+    det->Predict(imgs, FLAGS_threshold, 0, 1, &result, &bbox_num, &det_times);
+    std::vector<PaddleDetection::ObjectResult> out_result;
     for (const auto& item : result) {
+      if (item.confidence < FLAGS_threshold || item.class_id == -1) {
+          continue;
+      }
+      out_result.push_back(item);
       if (item.rect.size() > 6){
       is_rbox = true;
       printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
@@ -221,9 +251,9 @@ void PredictVideo(const std::string& video_path,
 
     if(keypoint)
     {
-      int imsize = result.size();
+      int imsize = out_result.size();
       for (int i=0; i<imsize; i++){
-        auto item = result[i];
+        auto item = out_result[i];
         cv::Mat crop_img;
         std::vector<double> keypoint_times;
         std::vector<int> rect = {item.rect[0], item.rect[1], item.rect[2], item.rect[3]};
@@ -239,7 +269,7 @@ void PredictVideo(const std::string& video_path,
 
         if (imgs_kpts.size()==FLAGS_batch_size_keypoint || ((i==imsize-1)&&!imgs_kpts.empty()))
         {
-          keypoint->Predict(imgs_kpts, center_bs, scale_bs, 0.5, 0, 1, &result_kpts, &keypoint_times);
+          keypoint->Predict(imgs_kpts, center_bs, scale_bs, FLAGS_threshold, 0, 1, &result_kpts, &keypoint_times);
           imgs_kpts.clear();
           center_bs.clear();
           scale_bs.clear();
@@ -251,7 +281,7 @@ void PredictVideo(const std::string& video_path,
     else{
       // Visualization result
       cv::Mat out_im = PaddleDetection::VisualizeResult(
-          frame, result, labels, colormap, is_rbox);
+          frame, out_result, labels, colormap, is_rbox);
       video_out.write(out_im);
     }
 
@@ -409,7 +439,9 @@ void PredictImage(const std::vector<std::string> all_img_paths,
     det_t[2] += det_times[2];
   }
   PrintBenchmarkLog(det_t, all_img_paths.size());
-  PrintBenchmarkLog(keypoint_t, kpts_imgs);
+  if (keypoint) {
+    PrintKptsBenchmarkLog(keypoint_t, kpts_imgs);
+  }
 }
 
 int main(int argc, char** argv) {
@@ -450,12 +482,12 @@ int main(int argc, char** argv) {
 			FLAGS_trt_calib_mode, FLAGS_use_dark);
   }
   // Do inference on input video or image
-  if (!FLAGS_video_file.empty() || FLAGS_camera_id != -1) {
-    PredictVideo(FLAGS_video_file, &det, keypoint);
-  } else if (!FLAGS_image_file.empty() || !FLAGS_image_dir.empty()) {
-    if (!PathExists(FLAGS_output_dir)) {
+  if (!PathExists(FLAGS_output_dir)) {
       MkDirs(FLAGS_output_dir);
-    }
+  }
+  if (!FLAGS_video_file.empty() || FLAGS_camera_id != -1) {
+    PredictVideo(FLAGS_video_file, &det, keypoint, FLAGS_output_dir);
+  } else if (!FLAGS_image_file.empty() || !FLAGS_image_dir.empty()) {
     std::vector<std::string> all_img_paths;
     std::vector<cv::String> cv_all_img_paths;
     if (!FLAGS_image_file.empty()) {

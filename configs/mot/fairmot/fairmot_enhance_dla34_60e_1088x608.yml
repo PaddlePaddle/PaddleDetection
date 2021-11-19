@@ -1,0 +1,56 @@
+_BASE_: [
+  '../../datasets/mot.yml',
+  '../../runtime.yml',
+  '_base_/optimizer_30e.yml',
+  '_base_/fairmot_dla34.yml',
+  '_base_/fairmot_reader_1088x608.yml',
+]
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+
+# add crowdhuman
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['mot17.train', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train', 'crowdhuman.train', 'crowdhuman.val']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+worker_num: 4
+TrainReader:
+  inputs_def:
+    image_shape: [3, 608, 1088]
+  sample_transforms:
+    - Decode: {}
+    - RGBReverse: {}
+    - AugmentHSV: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - MOTRandomAffine: {reject_outside: False}
+    - RandomFlip: {}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - RGBReverse: {}
+    - Permute: {}
+  batch_transforms:
+    - Gt2FairMOTTarget: {}
+  batch_size: 16
+  shuffle: True
+  drop_last: True
+  use_shared_memory: True
+
+epoch: 60
+LearningRate:
+  base_lr: 0.0005
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [40,]
+    use_warmup: False
+
+OptimizerBuilder:
+  optimizer:
+    type: Adam
+  regularizer: NULL
+
+weights: output/fairmot_enhance_dla34_60e_1088x608/model_final

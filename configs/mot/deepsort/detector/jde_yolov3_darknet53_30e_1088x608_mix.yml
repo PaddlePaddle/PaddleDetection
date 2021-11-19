@@ -1,0 +1,83 @@
+_BASE_: [
+  '../../../datasets/mot.yml',
+  '../../../runtime.yml',
+  '../../jde/_base_/optimizer_30e.yml',
+  '../../jde/_base_/jde_reader_1088x608.yml',
+]
+weights: output/jde_yolov3_darknet53_30e_1088x608_mix/model_final
+
+metric: MOTDet
+num_classes: 1
+EvalReader:
+  inputs_def:
+    num_max_boxes: 50
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 608, 1088]
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+EvalDataset:
+  !MOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['mot17.half']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+TestDataset:
+  !ImageFolder
+    anno_path: None
+
+
+# detector configuration
+architecture: YOLOv3
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
+
+# JDE version for MOT dataset
+YOLOv3:
+  backbone: DarkNet
+  neck: YOLOv3FPN
+  yolo_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
+
+DarkNet:
+  depth: 53
+  return_idx: [2, 3, 4]
+  freeze_norm: True
+
+YOLOv3FPN:
+  freeze_norm: True
+
+YOLOv3Head:
+  anchors: [[128,384], [180,540], [256,640], [512,640],
+            [32,96], [45,135], [64,192], [90,271],
+            [8,24], [11,34], [16,48], [23,68]]
+  anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
+  loss: JDEDetectionLoss
+
+JDEDetectionLoss:
+  for_mot: False
+
+JDEBBoxPostProcess:
+  decode:
+    name: JDEBox
+    conf_thresh: 0.3
+    downsample_ratio: 32
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 500
+    score_threshold: 0.01
+    nms_threshold: 0.5
+    nms_top_k: 2000
+    normalized: true
+  return_idx: false

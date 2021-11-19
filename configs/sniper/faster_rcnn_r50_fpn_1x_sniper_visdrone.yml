@@ -1,0 +1,9 @@
+_BASE_: [
+  '../datasets/sniper_visdrone_detection.yml',
+  '../runtime.yml',
+  '../faster_rcnn/_base_/faster_rcnn_r50_fpn.yml',
+  '../faster_rcnn/_base_/optimizer_1x.yml',
+  '_base_/faster_fpn_reader.yml',
+]
+weights: output/faster_rcnn_r50_fpn_1x_sniper_visdrone/model_final
+find_unused_parameters: true

@@ -88,6 +88,17 @@ def parse_args():
         help="The option of profiler, which should be in "
         "format \"key1=value1;key2=value2;key3=value3\"."
         "please see ppdet/utils/profiler.py for detail.")
+    parser.add_argument(
+        '--save_proposals',
+        action='store_true',
+        default=False,
+        help='Whether to save the train proposals')
+    parser.add_argument(
+        '--proposals_path',
+        type=str,
+        default="sniper/proposals.json",
+        help='Train proposals directory')
+
     args = parser.parse_args()
     return args
 
@@ -125,6 +136,8 @@ def main():
     cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
     cfg['save_prediction_only'] = FLAGS.save_prediction_only
     cfg['profiler_options'] = FLAGS.profiler_options
+    cfg['save_proposals'] = FLAGS.save_proposals
+    cfg['proposals_path'] = FLAGS.proposals_path
     merge_config(FLAGS.opt)
 
     # disable npu in config by default
