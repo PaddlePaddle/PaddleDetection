@@ -6,9 +6,7 @@ English | [简体中文](README_cn.md)
 - [Introduction](#Introduction)
 - [Installation](#Installation)
 - [Model Zoo](#Model_Zoo)
-- [Feature Tracking Model](#Feature_Tracking_Model)
 - [Dataset Preparation](#Dataset_Preparation)
-- [Getting Start](#Getting_Start)
 - [Citations](#Citations)
 
 ## Introduction
@@ -26,10 +24,15 @@ Paddledetection implements three MOT algorithms of these two series.
 
 - [FairMOT](https://arxiv.org/abs/2004.01888) is based on an Anchor Free detector Centernet, which overcomes the problem of anchor and feature misalignment in anchor based detection framework. The fusion of deep and shallow features enables the detection and ReID tasks to obtain the required features respectively. It also uses low dimensional ReID features. FairMOT is a simple baseline composed of two homogeneous branches propose to predict the pixel level target score and ReID features. It achieves the fairness between the two tasks and  obtains a higher level of real-time MOT performance.
 
-<div align="center">
-  <img src="../../docs/images/mot16_jde.gif" width=500 />
+[PP-Tracking](../../deploy/pptracking/README.md) is the first open source real-time tracking system based on PaddlePaddle deep learning framework. Aiming at the difficulties and pain points of the actual business, PP-Tracking has built-in capabilities and industrial applications such as pedestrian and vehicle tracking, cross-camera tracking, multi-class tracking, small target tracking and traffic counting, and provides a visual development interface. The model integrates multi-object tracking, object detection and ReID lightweight algorithm to further improve the deployment performance of PP-Tracking on the server. It also supports Python and C + + deployment and adapts to Linux, NVIDIA and Jetson multi platform environment.。
+<div width="1000" align="center">
+  <img src="../../docs/images/pptracking.png"/>
+</div>
+
+<div width="1000" align="center">
+  <img src="../../docs/images/pptracking-demo.gif"/>
   <br>
-  demo resource: MOT17 dataset</div>
+  video source：VisDrone2021, BDD100K dataset</div>
 </div>
 
 
@@ -48,161 +51,19 @@ pip install -r requirements.txt
 
 ## Model Zoo
 
-### DeepSORT Results on MOT-16 Training Set
+- base models
+    - [DeepSORT](deepsort/README.md)
+    - [JDE](jde/README.md)
+    - [FairMOT](fairmot/README.md)
+- feature models
+    - [Pedestrian](pedestrian/README.md)
+    - [Head](headtracking21/README.md)
+    - [Vehicle](vehicle/README.md)
+- Multi-Class Tracking
+    - [MCFairMOT](mcfairmot/README.md)
+- Multi-Target Multi-Camera Tracking
+    - [MTMCT](mtmct/README.md)
 
-| backbone  | input shape | MOTA | IDF1 |  IDS  |   FP  |   FN  |   FPS  | det result/model |ReID model| config |
-| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :---: | :---: | :---: |
-| ResNet-101 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  - | [det result](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[config](./deepsort/reid/deepsort_pcb_pyramid_r101.yml) |
-| ResNet-101 | 1088x608 |  68.3  |  56.5  | 1722 |  17337 | 15890 |  - | [det model](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[config](./deepsort/deepsort_jde_yolov3_pcb_pyramid.yml) |
-| PPLCNet    | 1088x608 |  72.2  |  59.5  | 1087  |  8034  | 21481 |  - | [det result](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[config](./deepsort/reid/deepsort_pplcnet.yml) |
-| PPLCNet    | 1088x608 |  68.1  |  53.6  | 1979 |  17446 | 15766 |  - | [det model](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[config](./deepsort/deepsort_jde_yolov3_pplcnet.yml) |
-
-### DeepSORT Results on MOT-16 Test Set
-
-| backbone  | input shape | MOTA | IDF1 |  IDS  |   FP  |   FN  |   FPS  | det result/model |ReID model| config |
-| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :---: | :---: | :---: |
-| ResNet-101 | 1088x608 |  64.1  |  53.0  | 1024  |  12457  | 51919 |  - | [det result](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) | [ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[config](./deepsort/reid/deepsort_pcb_pyramid_r101.yml) |
-| ResNet-101 | 1088x608 |  61.2  |  48.5  | 1799  |  25796  | 43232 |  - | [det model](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams)  |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[config](./deepsort/deepsort_jde_yolov3_pcb_pyramid.yml) |
-| PPLCNet    | 1088x608 |  64.0  |  51.3  | 1208  |  12697  | 51784 |  - | [det result](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[config](./deepsort/reid/deepsort_pplcnet.yml) |
-| PPLCNet    | 1088x608 |  61.1  |  48.8  | 2010 |  25401 | 43432 |  - | [det model](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[config](./deepsort/deepsort_jde_yolov3_pplcnet.yml) |
-
-**Notes:**
-DeepSORT does not need to train on MOT dataset, only used for evaluation. Now it supports two evaluation methods.
-- 1.Load the result file and the ReID model. Before DeepSORT evaluation, you should get detection results by a detection model first, and then prepare them like this:
-```
-det_results_dir
-   |——————MOT16-02.txt
-   |——————MOT16-04.txt
-   |——————MOT16-05.txt
-   |——————MOT16-09.txt
-   |——————MOT16-10.txt
-   |——————MOT16-11.txt
-   |——————MOT16-13.txt
-```
-For MOT16 dataset, you can download a detection result after matching called det_results_dir.zip provided by PaddleDetection：
-```
-wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
-```
-If you use a stronger detection model, you can get better results. Each txt is the detection result of all the pictures extracted from each video, and each line describes a bounding box with the following format:
-```
-[frame_id],[x0],[y0],[w],[h],[score],[class_id]
-```
-- `frame_id` is the frame number of the image.
-- `x0,y0` is the X and Y coordinates of the left bound of the object box.
-- `w,h` is the pixel width and height of the object box.
-- `score` is the confidence score of the object box.
-- `class_id` is the category of the object box, set `0` if only has one category.
-
-- 2.Load the detection model and the ReID model at the same time. Here, the JDE version of YOLOv3 is selected. For more detail of configuration, see `configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid.yml` and `configs/mot/deepsort/deepsort_ppyolov2_pplcnet.yml` for other general detectors.
-
-
-### JDE Results on MOT-16 Training Set
-
-| backbone           | input shape | MOTA | IDF1  |  IDS  |   FP  |  FN  |  FPS  | download | config |
-| :----------------- | :------- | :----: | :----: | :---: | :----: | :---: | :---: | :---: | :---: |
-| DarkNet53          | 1088x608 |  72.0  |  66.9  | 1397  |  7274  | 22209 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams) | [config](./jde/jde_darknet53_30e_1088x608.yml) |
-| DarkNet53          | 864x480 |  69.1  |  64.7  | 1539  |  7544  | 25046 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_864x480.pdparams) | [config](./jde/jde_darknet53_30e_864x480.yml) |
-| DarkNet53          | 576x320 |  63.7  |  64.4  | 1310  |  6782  | 31964 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_576x320.pdparams) | [config](./jde/jde_darknet53_30e_576x320.yml) |
-
-### JDE Results on MOT-16 Test Set
-
-| backbone           | input shape | MOTA | IDF1  |  IDS  |   FP  |  FN  |  FPS  | download | config |
-| :----------------- | :------- | :----: | :----: | :---: | :----: | :---: | :---: | :---: | :---: |
-| DarkNet53(paper)   | 1088x608 |  64.4  |  55.8  | 1544  |    -    |   -   |   -   |   -  |   -   |
-| DarkNet53          | 1088x608 |  64.6  |  58.5  | 1864  |  10550 | 52088 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams) | [config](./jde/jde_darknet53_30e_1088x608.yml) |
-| DarkNet53(paper)   | 864x480 |   62.1  |  56.9  | 1608  |    -    |   -   |   -   |   -  |   -   |
-| DarkNet53          | 864x480 |   63.2  |  57.7  | 1966  |  10070  | 55081 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_864x480.pdparams) | [config](./jde/jde_darknet53_30e_864x480.yml) |
-| DarkNet53          | 576x320 |   59.1  |  56.4  | 1911  |  10923  | 61789  |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_576x320.pdparams) | [config](./jde/jde_darknet53_30e_576x320.yml) |
-
-**Notes:**
- JDE used 8 GPUs for training and mini-batch size as 4 on each GPU, and trained for 30 epoches.
-
-
-### FairMOT Results on MOT-16 Training Set
-
-| backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| DLA-34(paper)  | 1088x608 |  83.3  |  81.9  |   544  |  3822  |  14095  |     -   |    -   |   -    |
-| DLA-34         | 1088x608 |  83.2  |  83.1  |   499  |  3861  |  14223  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](./fairmot/fairmot_dla34_30e_1088x608.yml) |
-| DLA-34         | 864x480 |  80.8  |  81.1  |  561  |  3643  | 16967 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_864x480.pdparams) | [config](./fairmot/fairmot_dla34_30e_864x480.yml) |
-| DLA-34         | 576x320 |  74.0  |  76.1  |  640  |  4989  | 23034 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_576x320.pdparams) | [config](./fairmot/fairmot_dla34_30e_576x320.yml) |
-
-
-### FairMOT Results on MOT-16 Test Set
-
-| backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| DLA-34(paper)  | 1088x608 |  74.9  |  72.8  |  1074  |    -   |    -   |   25.9   |    -   |   -    |
-| DLA-34         | 1088x608 |  75.0  |  74.7  |  919   |  7934  |  36747 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](./fairmot/fairmot_dla34_30e_1088x608.yml) |
-| DLA-34         | 864x480 |  73.0  |  72.6  |  977   |  7578  |  40601 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_864x480.pdparams) | [config](./fairmot/fairmot_dla34_30e_864x480.yml) |
-| DLA-34         | 576x320 |  69.9  |  70.2  |  1044   |  8869  |  44898 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_576x320.pdparams) | [config](./fairmot/fairmot_dla34_30e_576x320.yml) |
-
-**Notes:**
- FairMOT DLA-34 used 2 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
-
-
-### FairMOT enhance model
-### Results on MOT-16 Test Set
-| backbone       | input shape |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  download | config |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| DLA-34         | 1088x608 |  75.9  |  74.7  |  1021   |  11425  |  31475 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_dla34_30e_1088x608.pdparams) | [config](./fairmot_enhance_dla34_30e_1088x608.yml) |
-
-### Results on MOT-17 Test Set
-| backbone       | input shape |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  download  | config |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| DLA-34         | 1088x608 |  75.3  |  74.2  |  3270  |  29112  | 106749 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_dla34_30e_1088x608.pdparams) | [config](./fairmot_enhance_dla34_30e_1088x608.yml) |
-
-**Notes:**
- FairMOT enhance DLA-34 used 8 GPUs for training and mini-batch size as 16 on each GPU，and trained for 60 epoches. The crowdhuman dataset is added to the train-set during training.
-
-
-### FairMOT light model
-### Results on MOT-16 Test Set
-| backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| HRNetV2-W18   | 1088x608 |  71.7  |  66.6  |  1340  |  8642  | 41592 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.pdparams) | [config](./fairmot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.yml) |
-
-### Results on MOT-17 Test Set
-| backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| HRNetV2-W18   | 1088x608 |  70.7  |  65.7  |  4281  |  22485  | 138468 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.pdparams) | [config](./fairmot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.yml) |
-| HRNetV2-W18   | 864x480  |  70.3  |  65.8  |  4056  |  18927  | 144486 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_864x480.pdparams) | [config](./fairmot/fairmot_hrnetv2_w18_dlafpn_30e_864x480.yml) |
-| HRNetV2-W18   | 576x320  |  65.3  |  64.8  |  4137  |  28860  | 163017 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.pdparams) | [config](./fairmot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.yml) |
-
-**Notes:**
- FairMOT HRNetV2-W18 used 8 GPUs for training and mini-batch size as 4 on each GPU, and trained for 30 epoches. Only ImageNet pre-train model is used, and the optimizer adopts Momentum. The crowdhuman dataset is added to the train-set during training.
-
-
-## Feature Tracking Model
-
-### [Head Tracking](./headtracking21/README.md)
-
-### FairMOT Results on HT-21 Training Set
-|    backbone      |  input shape |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  download | config |
-| :--------------| :------- | :----: | :----: | :---: | :----: | :---: | :------: | :----: |:----: |
-| DLA-34         | 1088x608 |  64.7 |  69.0  |   8533  |  148817  |  234970  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [config](./headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
-
-### FairMOT Results on HT-21 Test Set
-|    backbone      |  input shape |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  download | config |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: | :----: |
-| DLA-34         | 1088x608 |  60.8  |  62.8  |  12781   |  118109  |  198896 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [config](./headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
-
-
-### [Pedestrian Tracking](./pedestrian/README.md)
-### FairMOT Results on each val-set of Pedestrian category
-|    Dataset      |  input shape |  MOTA  |  IDF1  |  FPS   |  download | config |
-| :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
-|  PathTrack    | 1088x608 |  44.9 |    59.3   |    -   |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_pathtrack.pdparams) | [config](./pedestrian/fairmot_dla34_30e_1088x608_pathtrack.yml) |
-|  VisDrone     | 1088x608 |  49.2 |   63.1 |    -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_pedestrian.pdparams) | [config](./pedestrian/fairmot_dla34_30e_1088x608_visdrone_pedestrian.yml) |
-
-
-### [Vehicle Tracking](./vehicle/README.md)
-### FairMOT Results on each val-set of Vehicle category
-|    Dataset      |  input shape |  MOTA  |  IDF1  |  FPS   |  download | config |
-| :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
-|  BDD100K      | 1088x608 |  43.5 |  50.0  |    -    | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100k_vehicle.pdparams) | [config](./vehicle/fairmot_dla34_30e_1088x608_bdd100k_vehicle.yml) |
-|  KITTI        | 1088x608 |  82.7 |    -   |    -   |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [config](./vehicle/fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
-|  VisDrone     | 1088x608 |  52.1 |   63.3 |    -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [config](./vehicle/fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
 
 ## Dataset Preparation
 
@@ -275,78 +136,6 @@ dataset/mot
   |——————PRW
 ```
 
-## Getting Start
-
-### 1. Training
-
-Training FairMOT on 2 GPUs with following command
-
-```bash
-python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml
-```
-
-### 2. Evaluation
-
-Evaluating the track performance of FairMOT on val dataset in single GPU with following commands:
-
-```bash
-# use weights released in PaddleDetection model zoo
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams
-
-# use saved checkpoint in training
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=output/fairmot_dla34_30e_1088x608/model_final.pdparams
-```
-**Notes:**
- The default evaluation dataset is MOT-16 Train Set. If you want to change the evaluation dataset, please refer to the following code and modify `configs/datasets/mot.yml`, modify `data_root`：
-```
-EvalMOTDataset:
-  !MOTImageFolder
-    dataset_dir: dataset/mot
-    data_root: MOT17/images/train
-    keep_ori_im: False # set True if save visualization images or video
-```
-
-### 3. Inference
-
-Inference a vidoe on single GPU with following command:
-
-```bash
-# inference on video and save a video
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams --video_file={your video name}.mp4 --frame_rate=20 --save_videos
-```
-
-Inference a image folder on single GPU with following command:
-
-```bash
-# inference image folder and save a video
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams --image_dir={your infer images folder} --save_videos
-```
-
-**Notes:**
- Please make sure that [ffmpeg](https://ffmpeg.org/ffmpeg.html) is installed first, on Linux(Ubuntu) platform you can directly install it by the following command:`apt-get update && apt-get install -y ffmpeg`. `--frame_rate` means the frame rate of the video and the frames extracted per second. It can be set by yourself, default value is -1 indicating the video frame rate read by OpenCV.
-
-
-### 4. Export model
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams
-```
-
-### 5. Using exported model for python inference
-
-```bash
-python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608 --video_file={your video name}.mp4 --device=GPU --save_mot_txts
-```
-**Notes:**
-The tracking model is used to predict the video, and does not support the prediction of a single image. The visualization video of the tracking results is saved by default. You can add `--save_mot_txts` to save the txt result file, or `--save_images` to save the visualization images.
-
-### 6. Using exported MOT and keypoint model for unite python inference
-
-```bash
-python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inference/fairmot_dla34_30e_1088x608/ --keypoint_model_dir=output_inference/higherhrnet_hrnet_w32_512/ --video_file={your video name}.mp4 --device=GPU
-```
-**Notes:**
- Keypoint model export tutorial: `configs/keypoint/README.md`.
 
 ## Citations
 ```

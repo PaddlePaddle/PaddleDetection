@@ -6,9 +6,7 @@
 - [简介](#简介)
 - [安装依赖](#安装依赖)
 - [模型库](#模型库)
-- [特色垂类跟踪模型](#特色垂类跟踪模型)
 - [数据集准备](#数据集准备)
-- [快速开始](#快速开始)
 - [引用](#引用)
 
 ## 简介
@@ -26,10 +24,15 @@ PaddleDetection实现了这两个系列的3种多目标跟踪算法。
 
 - [FairMOT](https://arxiv.org/abs/2004.01888)以Anchor Free的CenterNet检测器为基础，克服了Anchor-Based的检测框架中anchor和特征不对齐问题，深浅层特征融合使得检测和ReID任务各自获得所需要的特征，并且使用低维度ReID特征，提出了一种由两个同质分支组成的简单baseline来预测像素级目标得分和ReID特征，实现了两个任务之间的公平性，并获得了更高水平的实时多目标跟踪精度。
 
-<div align="center">
-  <img src="../../docs/images/mot16_jde.gif" width=500 />
+[PP-Tracking](../../deploy/pptracking/README.md)是基于PaddlePaddle深度学习框架的业界首个开源实时跟踪系统。针对实际业务的难点痛点，PP-Tracking内置行人车辆跟踪、跨镜头跟踪、多类别跟踪、小目标跟踪及流量计数等能力与产业应用，同时提供可视化开发界面。模型集成多目标跟踪，目标检测，ReID轻量级算法，进一步提升PP-Tracking在服务器端部署性能。同时支持python，C++部署，适配Linux，Nvidia Jetson多平台环境。
+<div width="1000" align="center">
+  <img src="../../docs/images/pptracking.png"/>
+</div>
+
+<div width="1000" align="center">
+  <img src="../../docs/images/pptracking-demo.gif"/>
   <br>
-  视频来源：MOT17开源数据集</div>
+  视频来源：VisDrone2021, BDD100K开源数据集</div>
 </div>
 
 
@@ -47,163 +50,18 @@ pip install -r requirements.txt
 
 ## 模型库
 
-### DeepSORT在MOT-16 Training Set上结果
-
-|  骨干网络  |  输入尺寸  |  MOTA  |  IDF1  |  IDS |   FP   |   FN  |  FPS | 检测结果或模型 | ReID模型 |配置文件 |
-| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :-----:| :-----: | :-----: |
-| ResNet-101 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./deepsort/reid/deepsort_pcb_pyramid_r101.yml) |
-| ResNet-101 | 1088x608 |  68.3  |  56.5  | 1722 |  17337 | 15890 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./deepsort/deepsort_jde_yolov3_pcb_pyramid.yml) |
-| PPLCNet    | 1088x608 |  72.2  |  59.5  | 1087  |  8034  | 21481 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./deepsort/reid/deepsort_pplcnet.yml) |
-| PPLCNet    | 1088x608 |  68.1  |  53.6  | 1979 |  17446 | 15766 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./deepsort/deepsort_jde_yolov3_pplcnet.yml) |
-
-### DeepSORT在MOT-16 Test Set上结果
-
-|  骨干网络  |  输入尺寸  |  MOTA  |  IDF1  |  IDS |   FP   |   FN  |  FPS | 检测结果或模型 | ReID模型 |配置文件 |
-| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :-----: | :-----: |:-----: |
-| ResNet-101 | 1088x608 |  64.1  |  53.0  | 1024  |  12457  | 51919 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) | [ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./deepsort/reid/deepsort_pcb_pyramid_r101.yml) |
-| ResNet-101 | 1088x608 |  61.2  |  48.5  | 1799  |  25796  | 43232 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams)  |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./deepsort/deepsort_jde_yolov3_pcb_pyramid.yml) |
-| PPLCNet    | 1088x608 |  64.0  |  51.3  | 1208  |  12697  | 51784 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./deepsort/reid/deepsort_pplcnet.yml) |
-| PPLCNet    | 1088x608 |  61.1  |  48.8  | 2010 |  25401 | 43432 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./deepsort/deepsort_jde_yolov3_pplcnet.yml) |
-
-**注意:**
-DeepSORT不需要训练MOT数据集，只用于评估，现在支持两种评估的方式。
-- **方式1**：加载检测结果文件和ReID模型，在使用DeepSORT模型评估之前，应该首先通过一个检测模型得到检测结果，然后像这样准备好结果文件:
-```
-det_results_dir
-   |——————MOT16-02.txt
-   |——————MOT16-04.txt
-   |——————MOT16-05.txt
-   |——————MOT16-09.txt
-   |——————MOT16-10.txt
-   |——————MOT16-11.txt
-   |——————MOT16-13.txt
-```
-对于MOT16数据集，可以下载PaddleDetection提供的一个经过匹配之后的检测框结果det_results_dir.zip并解压：
-```
-wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
-```
-如果使用更强的检测模型，可以取得更好的结果。其中每个txt是每个视频中所有图片的检测结果，每行都描述一个边界框，格式如下：
-```
-[frame_id],[x0],[y0],[w],[h],[score],[class_id]
-```
-- `frame_id`是图片帧的序号
-- `x0,y0`是目标框的左上角x和y坐标
-- `w,h`是目标框的像素宽高
-- `score`是目标框的得分
-- `class_id`是目标框的类别，如果只有1类则是`0`
-
-- **方式2**：同时加载检测模型和ReID模型，此处选用JDE版本的YOLOv3，具体配置见`configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid.yml`。加载其他通用检测模型可参照`configs/mot/deepsort/deepsort_ppyolov2_pplcnet.yml`进行修改。
-
-
-### JDE在MOT-16 Training Set上结果
-
-| 骨干网络            |  输入尺寸  |  MOTA  |  IDF1 |  IDS  |  FP  |  FN  |  FPS  |  下载链接  | 配置文件 |
-| :----------------- | :------- | :----: | :----: | :---: | :----: | :---: | :---: | :---: | :---: |
-| DarkNet53          | 1088x608 |  72.0  |  66.9  | 1397  |  7274  | 22209 |   -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams) | [配置文件](./jde/jde_darknet53_30e_1088x608.yml) |
-| DarkNet53          | 864x480 |  69.1  |  64.7  | 1539  |  7544  | 25046 |   -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_864x480.pdparams) | [配置文件](./jde/jde_darknet53_30e_864x480.yml) |
-| DarkNet53          | 576x320 |  63.7  |  64.4  | 1310  |  6782  | 31964 |   -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_576x320.pdparams) | [配置文件](./jde/jde_darknet53_30e_576x320.yml) |
-
-
-### JDE在MOT-16 Test Set上结果
-
-| 骨干网络            |  输入尺寸  |  MOTA  |  IDF1 |  IDS  |  FP  |  FN  |  FPS  |  下载链接  | 配置文件 |
-| :----------------- | :------- | :----: | :----: | :---: | :----: | :---: | :---: | :---: | :---: |
-| DarkNet53(paper)   | 1088x608 |  64.4  |  55.8  | 1544  |    -   |   -   |   -   |   -   |   -   |
-| DarkNet53          | 1088x608 |  64.6  |  58.5  | 1864  |  10550 | 52088 |   -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams) | [配置文件](./jde/jde_darknet53_30e_1088x608.yml) |
-| DarkNet53(paper)   | 864x480 |   62.1  |  56.9  | 1608  |    -   |   -   |   -   |   -   |   -   |
-| DarkNet53          | 864x480 |   63.2  |  57.7  | 1966  |  10070 | 55081 |   -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_864x480.pdparams) | [配置文件](./jde/jde_darknet53_30e_864x480.yml) |
-| DarkNet53          | 576x320 |   59.1  |  56.4  | 1911  |  10923 | 61789 |   -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_576x320.pdparams) | [配置文件](./jde/jde_darknet53_30e_576x320.yml) |
-
-**注意:**
- JDE使用8个GPU进行训练，每个GPU上batch size为4，训练了30个epoch。
-
-
-### FairMOT在MOT-16 Training Set上结果
-
-|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
-| :--------------| :------- | :----: | :----: | :---: | :----: | :---: | :------: | :----: |:----: |
-| DLA-34(paper)  | 1088x608 |  83.3  |  81.9  |  544  |  3822  | 14095 |    -     |   -   |   -   |
-| DLA-34         | 1088x608 |  83.2  |  83.1  |  499  |  3861  | 14223 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](./fairmot/fairmot_dla34_30e_1088x608.yml) |
-| DLA-34         | 864x480 |  80.8  |  81.1  |  561  |  3643  | 16967 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_864x480.pdparams) | [配置文件](./fairmot/fairmot_dla34_30e_864x480.yml) |
-| DLA-34         | 576x320 |  74.0  |  76.1  |  640  |  4989  | 23034 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_576x320.pdparams) | [配置文件](./fairmot/fairmot_dla34_30e_576x320.yml) |
-
-### FairMOT在MOT-16 Test Set上结果
-
-|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: | :----: |
-| DLA-34(paper)  | 1088x608 |  74.9  |  72.8  |  1074  |    -   |    -   |   25.9   |    -   |   -    |
-| DLA-34         | 1088x608 |  75.0  |  74.7  |  919   |  7934  |  36747 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](./fairmot/fairmot_dla34_30e_1088x608.yml) |
-| DLA-34         | 864x480 |  73.0  |  72.6  |  977   |  7578  |  40601 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_864x480.pdparams) | [配置文件](./fairmot/fairmot_dla34_30e_864x480.yml) |
-| DLA-34         | 576x320 |  69.9  |  70.2  |  1044   |  8869  |  44898 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_576x320.pdparams) | [配置文件](./fairmot/fairmot_dla34_30e_576x320.yml) |
-
-**注意:**
- FairMOT DLA-34均使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
-
-
-### FairMOT enhance模型
-### 在MOT-16 Test Set上结果
-|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| DLA-34         | 1088x608 |  75.9  |  74.7  |  1021   |  11425  |  31475 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_dla34_60e_1088x608.pdparams) | [配置文件](./fairmot_enhance_dla34_60e_1088x608.yml) |
-
-### 在MOT-17 Test Set上结果
-|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| DLA-34         | 1088x608 |  75.3  |  74.2  |  3270  |  29112  | 106749 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_dla34_60e_1088x608.pdparams) | [配置文件](./fairmot_enhance_dla34_60e_1088x608.yml) |
-
-**注意:**
- FairMOT enhance DLA-34使用8个GPU进行训练，每个GPU上batch size为16，训练60个epoch，并且训练集中加入了crowdhuman数据集一起参与训练。
-
-
-### FairMOT轻量级模型
-### 在MOT-16 Test Set上结果
-|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| HRNetV2-W18   | 1088x608 |  71.7  |  66.6  |  1340  |  8642  | 41592 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.pdparams) | [配置文件](./fairmot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.yml) |
-
-### 在MOT-17 Test Set上结果
-|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| HRNetV2-W18   | 1088x608 |  70.7  |  65.7  |  4281  |  22485  | 138468 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.pdparams) | [配置文件](./fairmot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608.yml) |
-| HRNetV2-W18   | 864x480  |  70.3  |  65.8  |  4056  |  18927  | 144486 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_864x480.pdparams) | [配置文件](./fairmot/fairmot_hrnetv2_w18_dlafpn_30e_864x480.yml) |
-| HRNetV2-W18   | 576x320  |  65.3  |  64.8  |  4137  |  28860  | 163017 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.pdparams) | [配置文件](./fairmot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.yml) |
-
-**注意:**
- FairMOT HRNetV2-W18均使用8个GPU进行训练，每个GPU上batch size为4，训练30个epoch，使用的ImageNet预训练，优化器策略采用的是Momentum，并且训练集中加入了crowdhuman数据集一起参与训练。
-
-
-## 特色垂类跟踪模型
-
-### [人头跟踪（Head Tracking)](./headtracking21/README.md)
-### FairMOT在HT-21 Training Set上结果
-|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
-| :--------------| :------- | :----: | :----: | :---: | :----: | :---: | :------: | :----: |:----: |
-| DLA-34         | 1088x608 |  64.7 |  69.0  |   8533  |  148817  |  234970  |     -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [配置文件](./headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
-
-### FairMOT在HT-21 Test Set上结果
-|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: | :----: |
-| DLA-34         | 1088x608 |  60.8  |  62.8  |  12781   |  118109  |  198896 |    -     | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [配置文件](./headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml) |
-
-
-### [行人跟踪 (Pedestrian Tracking)](./pedestrian/README.md)
-### FairMOT在各个数据集val-set上Pedestrian类别的结果
-|    数据集      |  输入尺寸 |  MOTA  |  IDF1  |  FPS   |  下载链接 | 配置文件 |
-| :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
-|  PathTrack    | 1088x608 |  44.9 |    59.3   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_pathtrack.pdparams) | [配置文件](./pedestrian/fairmot_dla34_30e_1088x608_pathtrack.yml) |
-|  VisDrone     | 1088x608 |  49.2 |   63.1 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_pedestrian.pdparams) | [配置文件](./pedestrian/fairmot_dla34_30e_1088x608_visdrone_pedestrian.yml) |
-
-
-### [车辆跟踪 (Vehicle Tracking)](./vehicle/README.md)
-### FairMOT在各个数据集val-set上Vehicle类别的结果
-
-|    数据集      |  输入尺寸 |  MOTA  |  IDF1  |  FPS   |  下载链接 | 配置文件 |
-| :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
-|  BDD100K      | 1088x608 |  43.5 |  50.0  |    -    | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.pdparams) | [配置文件](./vehicle/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml) |
-|  KITTI        | 1088x608 |  82.7 |    -   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [配置文件](./vehicle/fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
-|  VisDrone     | 1088x608 |  52.1 |   63.3 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [配置文件](./vehicle/fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
-
-
+- 基础模型
+    - [DeepSORT](deepsort/README_cn.md)
+    - [JDE](jde/README_cn.md)
+    - [FairMOT](fairmot/README_cn.md)
+- 特色垂类模型
+    - [行人跟踪](pedestrian/README_cn.md)
+    - [人头跟踪](headtracking21/README_cn.md)
+    - [车辆跟踪](vehicle/README_cn.md)
+- 多类别跟踪
+    - [多类别跟踪](mcfairmot/README_cn.md)
+- 跨境头跟踪
+    - [跨境头跟踪](mtmct/README_cn.md)
 
 ## 数据集准备
 
@@ -274,77 +132,6 @@ dataset/mot
   |——————PRW
 ```
 
-## 快速开始
-
-### 1. 训练
-
-FairMOT使用2个GPU通过如下命令一键式启动训练
-
-```bash
-python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml
-```
-
-### 2. 评估
-
-FairMOT使用单张GPU通过如下命令一键式启动评估
-
-```bash
-# 使用PaddleDetection发布的权重
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams
-
-# 使用训练保存的checkpoint
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=output/fairmot_dla34_30e_1088x608/model_final.pdparams
-```
-**注意:**
- 默认评估的是MOT-16 Train Set数据集，如需换评估数据集可参照以下代码修改`configs/datasets/mot.yml`，修改`data_root`：
-```
-EvalMOTDataset:
-  !MOTImageFolder
-    dataset_dir: dataset/mot
-    data_root: MOT17/images/train
-    keep_ori_im: False # set True if save visualization images or video
-```
-
-### 3. 预测
-
-使用单个GPU通过如下命令预测一个视频，并保存为视频
-
-```bash
-# 预测一个视频
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams --video_file={your video name}.mp4 --frame_rate=20 --save_videos
-```
-
-使用单个GPU通过如下命令预测一个图片文件夹，并保存为视频
-
-```bash
-# 预测一个图片文件夹
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams --image_dir={your infer images folder} --save_videos
-```
-
-**注意:**
- 请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。`--frame_rate`表示视频的帧率，表示每秒抽取多少帧，可以自行设置，默认为-1表示会使用OpenCV读取的视频帧率。
-
-### 4. 导出预测模型
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams
-```
-
-### 5. 用导出的模型基于Python去预测
-
-```bash
-python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608 --video_file={your video name}.mp4 --device=GPU --save_mot_txts
-```
-**注意:**
- 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
-
-### 6. 用导出的跟踪和关键点模型Python联合预测
-
-```bash
-python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inference/fairmot_dla34_30e_1088x608/ --keypoint_model_dir=output_inference/higherhrnet_hrnet_w32_512/ --video_file={your video name}.mp4 --device=GPU
-```
-**注意:**
- 关键点模型导出教程请参考`configs/keypoint/README.md`。
 
 ## 引用
 ```
