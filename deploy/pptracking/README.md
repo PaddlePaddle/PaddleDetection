@@ -26,14 +26,17 @@ PP-Tracking中提供的多场景预训练模型及导出模型列表如下：
 
 | 场景  | 数据集 | 精度（MOTA） | NX模型预测速度（FPS） | 配置文件 | 模型权重 | 预测部署模型 |
 | :---------:|:--------------- | :-------:  | :------: | :------: |:---: | :---: |
-| 行人跟踪 | MOT17 | 65.3 | - | [配置文件](../../configs/mot/fairmot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.yml) | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.tar) |
-| 行人小目标跟踪 | VisDrone-pedestrian |  40.5 | -| [配置文件](../../configs/mot/pedestrian/fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_pedestrian.yml) | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_pedestrian.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_pedestrian.tar) |
-| 车辆跟踪 | BDD100k-vehicle | 32.6 | - | [配置文件](../../configs/mot/vehicle/fairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100kmot_vehicle.yml) | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100kmot_vehicle.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100kmot_vehicle.tar) |
-| 车辆小目标跟踪 | VisDrone-vehicle | 39.8 | - | [配置文件](../../configs/mot/vehicle/fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_vehicle.yml) | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_vehicle.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_vehicle.tar)
-| 多类别跟踪 | BDD100k |  - | - | [配置文件]() | [下载链接]() | [下载链接](https://bj.bcebos.com/v1/paddledet/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100k_mcmot.tar) |
-| 多类别小目标跟踪 | VisDrone |  20.4 | - | [配置文件](../../configs/mot/mcfairmot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.yml) | [下载链接](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.tar) |
+| 行人跟踪 | MOT17 | 65.3 | 23.9 | [配置文件](../../configs/mot/fairmot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.yml) | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.tar) |
+| 行人小目标跟踪 | VisDrone-pedestrian |  40.5 | 8.35 | [配置文件](../../configs/mot/pedestrian/fairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_pedestrian.yml) | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_pedestrian.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_pedestrian.tar) |
+| 车辆跟踪 | BDD100k-vehicle | 32.6 | 24.3 | [配置文件](../../configs/mot/vehicle/fairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100kmot_vehicle.yml) | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100kmot_vehicle.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100kmot_vehicle.tar) |
+| 车辆小目标跟踪 | VisDrone-vehicle | 39.8 | 22.8 | [配置文件](../../configs/mot/vehicle/fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_vehicle.yml) | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_vehicle.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_vehicle.tar)
+| 多类别跟踪 | BDD100k |  - | 12.5 | [配置文件]() | [下载链接]() | [下载链接](https://bj.bcebos.com/v1/paddledet/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100k_mcmot.tar) |
+| 多类别小目标跟踪 | VisDrone |  20.4 | 6.74 | [配置文件](../../configs/mot/mcfairmot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.yml) | [下载链接](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone.tar) |
 
-更多跟踪模型请参考[多目标跟踪模型库](../../configs/mot/README_cn.md#模型库)
+**注：**
+
+1. 模型预测速度为TensorRT FP16速度，测试环境为CUDA 10.2，JETPACK 4.5.1，TensorRT 7.1
+2. 更多跟踪模型请参考[多目标跟踪模型库](../../configs/mot/README_cn.md#模型库)
 
 检测模型使用轻量级特色模型PP-PicoDet，具体请参考[PP-PicoDet文档](../../configs/picodet)
 
