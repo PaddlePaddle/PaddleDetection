@@ -20,7 +20,11 @@
 | DLA-34(paper)  | 512x512 |  37.4  |     -   |    -   |   -    |
 | DLA-34         | 512x512 |  37.6  |     -   | [下载链接](https://bj.bcebos.com/v1/paddledet/models/centernet_dla34_140e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/centernet_dla34_140e_coco.yml) |
 | ResNet50 + DLAUp  | 512x512 |  38.9  |     -   | [下载链接](https://bj.bcebos.com/v1/paddledet/models/centernet_r50_140e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/centernet_r50_140e_coco.yml) |
-
+| GhostNet_x1_3 + DLAUp  | 512x512 | 28.9  |     -   | [下载链接](https://paddledet.bj.bcebos.com/models/centernet_ghostnet_1_3x_140e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/centernet_ghostnet_1_3x_140e_coco.yml) |
+| PP-LCNet_x1_0 + DLAUp  | 512x512 | 26.9  |     -   | [下载链接](https://paddledet.bj.bcebos.com/models/centernet_lcnet_1x_140e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/centernet_lcnet_1x_140e_coco.yml) |
+| MobileNetV1_1x + DLAUp  | 512x512 |  28.2  |     -   | [下载链接](https://paddledet.bj.bcebos.com/models/centernet_mbv1_1x_140e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/centernet_mbv1_1x_140e_coco.yml) |
+| MobileNetV3_large_x1_0 + DLAUp  | 512x512 |  27.1  |     -   | [下载链接](https://paddledet.bj.bcebos.com/models/centernet_mbv3_large_1x_140e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/centernet_mbv3_large_1x_140e_coco.yml) |
+| ShuffleNetV2_x1_0 + DLAUp  | 512x512 | 23.8  |     -   | [下载链接](https://paddledet.bj.bcebos.com/models/centernet_shufflenetv2_1x_140e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/centernet_shufflenetv2_1x_140e_coco.yml) |
 
 ## 引用
 ```

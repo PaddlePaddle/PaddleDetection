@@ -77,10 +77,10 @@ def get_affine_transform(center,
         np.ndarray: The transform matrix.
     """
     assert len(center) == 2
-    assert len(input_size) == 2
     assert len(output_size) == 2
     assert len(shift) == 2
-
+    if not isinstance(input_size, (np.ndarray, list)):
+        input_size = np.array([input_size, input_size], dtype=np.float32)
     scale_tmp = input_size
 
     shift = np.array(shift)
