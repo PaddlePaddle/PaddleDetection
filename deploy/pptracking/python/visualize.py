@@ -1,5 +1,4 @@
-# coding: utf-8
-# copyright (c) 2020 PaddlePaddle Authors. All Rights Reserve.
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +18,7 @@ import os
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
-import math
+from collections import deque
 
 
 def visualize_box_mask(im, results, labels, threshold=0.5):
@@ -128,17 +127,16 @@ def plot_tracking(image,
                   scores=None,
                   frame_id=0,
                   fps=0.,
-                  ids2names=[]):
+                  ids2names=[],
+                  do_entrance_counting=False,
+                  entrance=None):
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
-
-    top_view = np.zeros([im_w, im_w, 3], dtype=np.uint8) + 255
 
     text_scale = max(1, image.shape[1] / 1600.)
     text_thickness = 2
     line_thickness = max(1, int(image.shape[1] / 500.))
 
-    radius = max(5, int(im_w / 140.))
     cv2.putText(
         im,
         'frame: %d fps: %.2f num: %d' % (frame_id, fps, len(tlwhs)),
@@ -153,7 +151,8 @@ def plot_tracking(image,
         obj_id = int(obj_ids[i])
         id_text = '{}'.format(int(obj_id))
         if ids2names != []:
-            assert len(ids2names) == 1, "plot_tracking only supports single classes."
+            assert len(
+                ids2names) == 1, "plot_tracking only supports single classes."
             id_text = '{}_'.format(ids2names[0]) + id_text
         _line_thickness = 1 if obj_id <= 0 else line_thickness
         color = get_color(abs(obj_id))
@@ -174,6 +173,15 @@ def plot_tracking(image,
                 cv2.FONT_HERSHEY_PLAIN,
                 text_scale, (0, 255, 255),
                 thickness=text_thickness)
+
+    if do_entrance_counting:
+        entrance_line = tuple(map(int, entrance))
+        cv2.rectangle(
+            im,
+            entrance_line[0:2],
+            entrance_line[2:4],
+            color=(0, 255, 255),
+            thickness=line_thickness)
     return im
 
 
@@ -184,17 +192,44 @@ def plot_tracking_dict(image,
                        scores_dict,
                        frame_id=0,
                        fps=0.,
-                       ids2names=[]):
+                       ids2names=[],
+                       do_entrance_counting=False,
+                       entrance=None,
+                       records=None,
+                       center_traj=None):
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
-
-    top_view = np.zeros([im_w, im_w, 3], dtype=np.uint8) + 255
 
     text_scale = max(1, image.shape[1] / 1600.)
     text_thickness = 2
     line_thickness = max(1, int(image.shape[1] / 500.))
 
-    radius = max(5, int(im_w / 140.))
+    if num_classes == 1:
+        start = records[-1].find('Total')
+        end = records[-1].find('In')
+        cv2.putText(
+            im,
+            records[-1][start:end], (0, int(40 * text_scale)),
+            cv2.FONT_HERSHEY_PLAIN,
+            text_scale, (0, 0, 255),
+            thickness=2)
+
+    if num_classes == 1 and do_entrance_counting:
+        entrance_line = tuple(map(int, entrance))
+        cv2.rectangle(
+            im,
+            entrance_line[0:2],
+            entrance_line[2:4],
+            color=(0, 255, 255),
+            thickness=line_thickness)
+        # find start location for entrance counting data
+        start = records[-1].find('In')
+        cv2.putText(
+            im,
+            records[-1][start:-1], (0, int(60 * text_scale)),
+            cv2.FONT_HERSHEY_PLAIN,
+            text_scale, (0, 0, 255),
+            thickness=2)
 
     for cls_id in range(num_classes):
         tlwhs = tlwhs_dict[cls_id]
@@ -208,10 +243,17 @@ def plot_tracking_dict(image,
             text_scale, (0, 0, 255),
             thickness=2)
 
+        record_id = set()
         for i, tlwh in enumerate(tlwhs):
             x1, y1, w, h = tlwh
             intbox = tuple(map(int, (x1, y1, x1 + w, y1 + h)))
+            center = tuple(map(int, (x1 + w / 2., y1 + h / 2.)))
             obj_id = int(obj_ids[i])
+            if center_traj is not None:
+                record_id.add(obj_id)
+                if obj_id not in center_traj[cls_id]:
+                    center_traj[cls_id][obj_id] = deque(maxlen=30)
+                center_traj[cls_id][obj_id].append(center)
 
             id_text = '{}'.format(int(obj_id))
             if ids2names != []:
@@ -242,4 +284,11 @@ def plot_tracking_dict(image,
                     cv2.FONT_HERSHEY_PLAIN,
                     text_scale, (0, 255, 255),
                     thickness=text_thickness)
+        if center_traj is not None:
+            for traj in center_traj:
+                for i in traj.keys():
+                    if i not in record_id:
+                        continue
+                    for point in traj[i]:
+                        cv2.circle(im, point, 3, (0, 0, 255), -1)
     return im

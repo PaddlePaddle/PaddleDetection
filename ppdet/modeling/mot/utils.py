@@ -15,9 +15,8 @@
 import os
 import cv2
 import time
-import paddle
 import numpy as np
-from .visualization import plot_tracking_dict
+from .visualization import plot_tracking_dict, plot_tracking
 
 __all__ = [
     'MOTTimer',
@@ -157,14 +156,26 @@ def save_vis_results(data,
     if show_image or save_dir is not None:
         assert 'ori_image' in data
         img0 = data['ori_image'].numpy()[0]
-        online_im = plot_tracking_dict(
-            img0,
-            num_classes,
-            online_tlwhs,
-            online_ids,
-            online_scores,
-            frame_id=frame_id,
-            fps=1. / average_time)
+        if online_ids is None:
+            online_im = img0
+        else:
+            if isinstance(online_tlwhs, dict):
+                online_im = plot_tracking_dict(
+                    img0,
+                    num_classes,
+                    online_tlwhs,
+                    online_ids,
+                    online_scores,
+                    frame_id=frame_id,
+                    fps=1. / average_time)
+            else:
+                online_im = plot_tracking(
+                    img0,
+                    online_tlwhs,
+                    online_ids,
+                    online_scores,
+                    frame_id=frame_id,
+                    fps=1. / average_time)
     if show_image:
         cv2.imshow('online_im', online_im)
     if save_dir is not None:
@@ -186,45 +197,45 @@ def load_det_results(det_file, num_frames):
         # [frame_id],[x0],[y0],[w],[h],[score],[class_id]
         for l in lables_with_frame:
             results['bbox'].append(l[1:5])
-            results['score'].append(l[5])
-            results['cls_id'].append(l[6])
+            results['score'].append(l[5:6])
+            results['cls_id'].append(l[6:7])
         results_list.append(results)
     return results_list
 
 
 def scale_coords(coords, input_shape, im_shape, scale_factor):
-    im_shape = im_shape.numpy()[0]
-    ratio = scale_factor[0][0]
+    # Note: ratio has only one value, scale_factor[0] == scale_factor[1]
+    # 
+    # This function only used for JDE YOLOv3 or other detectors with 
+    # LetterBoxResize and JDEBBoxPostProcess, coords output from detector had
+    # not scaled back to the origin image.
+
+    ratio = scale_factor[0]
     pad_w = (input_shape[1] - int(im_shape[1])) / 2
     pad_h = (input_shape[0] - int(im_shape[0])) / 2
-    coords = paddle.cast(coords, 'float32')
     coords[:, 0::2] -= pad_w
     coords[:, 1::2] -= pad_h
     coords[:, 0:4] /= ratio
-    coords[:, :4] = paddle.clip(coords[:, :4], min=0, max=coords[:, :4].max())
+    coords[:, :4] = np.clip(coords[:, :4], a_min=0, a_max=coords[:, :4].max())
     return coords.round()
 
 
-def clip_box(xyxy, input_shape, im_shape, scale_factor):
-    im_shape = im_shape.numpy()[0]
-    ratio = scale_factor.numpy()[0][0]
-    img0_shape = [int(im_shape[0] / ratio), int(im_shape[1] / ratio)]
-
-    xyxy[:, 0::2] = paddle.clip(xyxy[:, 0::2], min=0, max=img0_shape[1])
-    xyxy[:, 1::2] = paddle.clip(xyxy[:, 1::2], min=0, max=img0_shape[0])
+def clip_box(xyxy, ori_image_shape):
+    H, W = ori_image_shape
+    xyxy[:, 0::2] = np.clip(xyxy[:, 0::2], a_min=0, a_max=W)
+    xyxy[:, 1::2] = np.clip(xyxy[:, 1::2], a_min=0, a_max=H)
     w = xyxy[:, 2:3] - xyxy[:, 0:1]
     h = xyxy[:, 3:4] - xyxy[:, 1:2]
-    mask = paddle.logical_and(h > 0, w > 0)
-    keep_idx = paddle.nonzero(mask)
-    xyxy = paddle.gather_nd(xyxy, keep_idx[:, :1])
-    return xyxy, keep_idx
+    mask = np.logical_and(h > 0, w > 0)
+    keep_idx = np.nonzero(mask)
+    return xyxy[keep_idx[0]], keep_idx
 
 
 def get_crops(xyxy, ori_img, w, h):
     crops = []
-    xyxy = xyxy.numpy().astype(np.int64)
+    xyxy = xyxy.astype(np.int64)
     ori_img = ori_img.numpy()
-    ori_img = np.squeeze(ori_img, axis=0).transpose(1, 0, 2)
+    ori_img = np.squeeze(ori_img, axis=0).transpose(1, 0, 2)  # [h,w,3]->[w,h,3]
     for i, bbox in enumerate(xyxy):
         crop = ori_img[bbox[0]:bbox[2], bbox[1]:bbox[3], :]
         crops.append(crop)

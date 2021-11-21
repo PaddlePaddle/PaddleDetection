@@ -10,7 +10,7 @@ norm_type: sync_bn
 use_ema: true
 ema_decay: 0.9998
 
-# for MOT training
+# add crowdhuman
 TrainDataset:
   !MOTDataSet
     dataset_dir: dataset/mot

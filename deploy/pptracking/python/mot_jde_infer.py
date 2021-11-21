@@ -220,6 +220,11 @@ def predict_video(detector, camera_id):
     num_classes = detector.num_classes
     data_type = 'mcmot' if num_classes > 1 else 'mot'
     ids2names = detector.pred_config.labels
+    center_traj = None
+    entrance = None
+    records = None
+    if FLAGS.draw_center_traj:
+        center_traj = [{} for i in range(num_classes)]
 
     if num_classes == 1:
         id_set = set()
@@ -231,6 +236,7 @@ def predict_video(detector, camera_id):
         entrance = [0, height / 2., width, height / 2.]
 
     video_fps = fps
+
     while (1):
         ret, frame = capture.read()
         if not ret:
@@ -260,10 +266,9 @@ def predict_video(detector, camera_id):
             prev_center = statistic['prev_center']
             records = statistic['records']
 
-        elif num_classes > 1 and do_entrance_counting:
+        elif num_classes > 1 and FLAGS.do_entrance_counting:
             raise NotImplementedError(
                 'Multi-class flow counting is not implemented now!')
-
         im = plot_tracking_dict(
             frame,
             num_classes,
@@ -272,7 +277,12 @@ def predict_video(detector, camera_id):
             online_scores,
             frame_id=frame_id,
             fps=fps,
-            ids2names=ids2names)
+            ids2names=ids2names,
+            do_entrance_counting=FLAGS.do_entrance_counting,
+            entrance=entrance,
+            records=records,
+            center_traj=center_traj)
+
         if FLAGS.save_images:
             save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
             if not os.path.exists(save_dir):

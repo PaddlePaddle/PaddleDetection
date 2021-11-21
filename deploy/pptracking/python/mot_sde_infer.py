@@ -16,6 +16,7 @@ import os
 import time
 import yaml
 import cv2
+import re
 import numpy as np
 from collections import defaultdict
 
@@ -24,14 +25,18 @@ from paddle.inference import Config
 from paddle.inference import create_predictor
 
 from picodet_postprocess import PicoDetPostProcess
-from utils import argsparser, Timer, get_current_memory_mb
+from utils import argsparser, Timer, get_current_memory_mb, _is_valid_video, video2frames
 from det_infer import Detector, DetectorPicoDet, get_test_images, print_arguments, PredictConfig
 from det_infer import load_predictor
 from benchmark_utils import PaddleInferBenchmark
 from visualize import plot_tracking
 
 from mot.tracker import DeepSORTTracker
-from mot.utils import MOTTimer, write_mot_results, flow_statistic
+from mot.utils import MOTTimer, write_mot_results, flow_statistic, scale_coords, clip_box, preprocess_reid
+
+from mot.mtmct.utils import parse_bias
+from mot.mtmct.postprocess import trajectory_fusion, sub_cluster, gen_res, print_mtmct_result
+from mot.mtmct.postprocess import get_mtmct_matching_results, save_mtmct_crops, save_mtmct_vis_results
 
 # Global dictionary
 MOT_SUPPORT_MODELS = {'DeepSORT'}
@@ -52,50 +57,6 @@ def bench_log(detector, img_list, model_info, batch_size=1, name=None):
     log = PaddleInferBenchmark(detector.config, model_info, data_info,
                                perf_info, mems)
     log(name)
-
-
-def scale_coords(coords, input_shape, im_shape, scale_factor):
-    im_shape = im_shape[0]
-    ratio = scale_factor[0][0]
-    pad_w = (input_shape[1] - int(im_shape[1])) / 2
-    pad_h = (input_shape[0] - int(im_shape[0])) / 2
-    coords[:, 0::2] -= pad_w
-    coords[:, 1::2] -= pad_h
-    coords[:, 0:4] /= ratio
-    coords[:, :4] = np.clip(coords[:, :4], a_min=0, a_max=coords[:, :4].max())
-    return coords.round()
-
-
-def clip_box(xyxy, input_shape, im_shape, scale_factor):
-    im_shape = im_shape[0]
-    ratio = scale_factor[0][0]
-    img0_shape = [int(im_shape[0] / ratio), int(im_shape[1] / ratio)]
-    xyxy[:, 0::2] = np.clip(xyxy[:, 0::2], a_min=0, a_max=img0_shape[1])
-    xyxy[:, 1::2] = np.clip(xyxy[:, 1::2], a_min=0, a_max=img0_shape[0])
-    w = xyxy[:, 2:3] - xyxy[:, 0:1]
-    h = xyxy[:, 3:4] - xyxy[:, 1:2]
-    mask = np.logical_and(h > 0, w > 0)
-    keep_idx = np.nonzero(mask)
-    return xyxy[keep_idx[0]], keep_idx
-
-
-def preprocess_reid(imgs,
-                    w=64,
-                    h=192,
-                    mean=[0.485, 0.456, 0.406],
-                    std=[0.229, 0.224, 0.225]):
-    im_batch = []
-    for img in imgs:
-        img = cv2.resize(img, (w, h))
-        img = img[:, :, ::-1].astype('float32').transpose((2, 0, 1)) / 255
-        img_mean = np.array(mean).reshape((3, 1, 1))
-        img_std = np.array(std).reshape((3, 1, 1))
-        img -= img_mean
-        img /= img_std
-        img = np.expand_dims(img, axis=0)
-        im_batch.append(img)
-    im_batch = np.concatenate(im_batch, 0)
-    return im_batch
 
 
 class SDE_Detector(Detector):
@@ -141,8 +102,7 @@ class SDE_Detector(Detector):
         assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
         self.pred_config = pred_config
 
-    def postprocess(self, boxes, input_shape, im_shape, scale_factor, threshold,
-                    scaled):
+    def postprocess(self, boxes, ori_image_shape, threshold, scaled):
         over_thres_idx = np.nonzero(boxes[:, 1:2] >= threshold)[0]
         if len(over_thres_idx) == 0:
             pred_dets = np.zeros((1, 6), dtype=np.float32)
@@ -160,8 +120,8 @@ class SDE_Detector(Detector):
         else:
             pred_bboxes = boxes[:, 2:]
 
-        pred_xyxys, keep_idx = clip_box(pred_bboxes, input_shape, im_shape,
-                                        scale_factor)
+        pred_xyxys, keep_idx = clip_box(pred_bboxes, ori_image_shape)
+
         if len(keep_idx[0]) == 0:
             pred_dets = np.zeros((1, 6), dtype=np.float32)
             pred_xyxys = np.zeros((1, 4), dtype=np.float32)
@@ -178,10 +138,12 @@ class SDE_Detector(Detector):
 
         return pred_dets, pred_xyxys
 
-    def predict(self, image, scaled, threshold=0.5, warmup=0, repeats=1):
+    def predict(self, image_path, ori_image_shape, scaled, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
-            image (np.ndarray): image numpy data
+            image_path (list[str]): path of images, only support one image path
+                (batch_size=1) in tracking model
+            ori_image_shape (list[int]: original image shape
             threshold (float): threshold of predicted box' score
             scaled (bool): whether the coords after detector outputs are scaled,
                 default False in jde yolov3, set True in general detector.
@@ -189,7 +151,7 @@ class SDE_Detector(Detector):
             pred_dets (np.ndarray, [N, 6])
         '''
         self.det_times.preprocess_time_s.start()
-        inputs = self.preprocess(image)
+        inputs = self.preprocess(image_path)
         self.det_times.preprocess_time_s.end()
 
         input_names = self.predictor.get_input_names()
@@ -216,12 +178,8 @@ class SDE_Detector(Detector):
             pred_dets = np.zeros((1, 6), dtype=np.float32)
             pred_xyxys = np.zeros((1, 4), dtype=np.float32)
         else:
-            input_shape = inputs['image'].shape[2:]
-            im_shape = inputs['im_shape']
-            scale_factor = inputs['scale_factor']
-
             pred_dets, pred_xyxys = self.postprocess(
-                boxes, input_shape, im_shape, scale_factor, threshold, scaled)
+                boxes, ori_image_shape, threshold, scaled)
 
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
@@ -444,9 +402,62 @@ class SDE_ReID(object):
             online_scores.append(tscore)
             online_ids.append(tid)
 
-        return online_tlwhs, online_scores, online_ids
+        tracking_outs = {
+            'online_tlwhs': online_tlwhs,
+            'online_scores': online_scores,
+            'online_ids': online_ids,
+        }
+        return tracking_outs
 
-    def predict(self, crops, pred_dets, warmup=0, repeats=1):
+    def postprocess_mtmct(self, pred_dets, pred_embs, frame_id, seq_name):
+        tracker = self.tracker
+        tracker.predict()
+        online_targets = tracker.update(pred_dets, pred_embs)
+
+        online_tlwhs, online_scores, online_ids = [], [], []
+        online_tlbrs, online_feats = [], []
+        for t in online_targets:
+            if not t.is_confirmed() or t.time_since_update > 1:
+                continue
+            tlwh = t.to_tlwh()
+            tscore = t.score
+            tid = t.track_id
+            if tlwh[2] * tlwh[3] <= tracker.min_box_area: continue
+            if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                    3] > tracker.vertical_ratio:
+                continue
+            online_tlwhs.append(tlwh)
+            online_scores.append(tscore)
+            online_ids.append(tid)
+
+            online_tlbrs.append(t.to_tlbr())
+            online_feats.append(t.feat)
+
+        tracking_outs = {
+            'online_tlwhs': online_tlwhs,
+            'online_scores': online_scores,
+            'online_ids': online_ids,
+            'feat_data': {},
+        }
+        for _tlbr, _id, _feat in zip(online_tlbrs, online_ids, online_feats):
+            feat_data = {}
+            feat_data['bbox'] = _tlbr
+            feat_data['frame'] = f"{frame_id:06d}"
+            feat_data['id'] = _id
+            _imgname = f'{seq_name}_{_id}_{frame_id}.jpg'
+            feat_data['imgname'] = _imgname
+            feat_data['feat'] = _feat
+            tracking_outs['feat_data'].update({_imgname: feat_data})
+        return tracking_outs
+
+    def predict(self,
+                crops,
+                pred_dets,
+                warmup=0,
+                repeats=1,
+                MTMCT=False,
+                frame_id=0,
+                seq_name=''):
         self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(crops)
         self.det_times.preprocess_time_s.end()
@@ -471,12 +482,15 @@ class SDE_ReID(object):
         self.det_times.inference_time_s.end(repeats=repeats)
 
         self.det_times.postprocess_time_s.start()
-        online_tlwhs, online_scores, online_ids = self.postprocess(pred_dets,
-                                                                   pred_embs)
+        if MTMCT == False:
+            tracking_outs = self.postprocess(pred_dets, pred_embs)
+        else:
+            tracking_outs = self.postprocess_mtmct(pred_dets, pred_embs,
+                                                   frame_id, seq_name)
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
 
-        return online_tlwhs, online_scores, online_ids
+        return tracking_outs
 
 
 def predict_image(detector, reid_model, image_list):
@@ -504,11 +518,15 @@ def predict_image(detector, reid_model, image_list):
             crops = reid_model.get_crops(pred_xyxys, frame)
 
             if FLAGS.run_benchmark:
-                online_tlwhs, online_scores, online_ids = reid_model.predict(
+                tracking_outs = reid_model.predict(
                     crops, pred_dets, warmup=10, repeats=10)
             else:
-                online_tlwhs, online_scores, online_ids = reid_model.predict(
-                    crops, pred_dets)
+                tracking_outs = reid_model.predict(crops, pred_dets)
+
+                online_tlwhs = tracking_outs['online_tlwhs']
+                online_scores = tracking_outs['online_scores']
+                online_ids = tracking_outs['online_ids']
+
                 online_im = plot_tracking(
                     frame, online_tlwhs, online_ids, online_scores, frame_id=i)
 
@@ -570,8 +588,12 @@ def predict_video(detector, reid_model, camera_id):
         else:
             # reid process
             crops = reid_model.get_crops(pred_xyxys, frame)
-            online_tlwhs, online_scores, online_ids = reid_model.predict(
-                crops, pred_dets)
+            tracking_outs = reid_model.predict(crops, pred_dets)
+
+            online_tlwhs = tracking_outs['online_tlwhs']
+            online_scores = tracking_outs['online_scores']
+            online_ids = tracking_outs['online_ids']
+
             results[0].append(
                 (frame_id + 1, online_tlwhs, online_scores, online_ids))
             # NOTE: just implement flow statistic for one class
@@ -596,7 +618,9 @@ def predict_video(detector, reid_model, camera_id):
                 online_ids,
                 online_scores,
                 frame_id=frame_id,
-                fps=fps)
+                fps=fps,
+                do_entrance_counting=FLAGS.do_entrance_counting,
+                entrance=entrance)
 
         if FLAGS.save_images:
             save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
@@ -638,6 +662,175 @@ def predict_video(detector, reid_model, camera_id):
         writer.release()
 
 
+def predict_mtmct_seq(detector, reid_model, seq_name, output_dir):
+    fpath = os.path.join(FLAGS.mtmct_dir, seq_name)
+    if os.path.exists(os.path.join(fpath, 'img1')):
+        fpath = os.path.join(fpath, 'img1')
+
+    assert os.path.isdir(fpath), '{} should be a directory'.format(fpath)
+    image_list = os.listdir(fpath)
+    image_list.sort()
+    assert len(image_list) > 0, '{} has no images.'.format(fpath)
+
+    results = defaultdict(list)
+    mot_features_dict = {}  # cid_tid_fid feats
+    print('Totally {} frames found in seq {}.'.format(len(image_list), seq_name))
+
+    for frame_id, img_file in enumerate(image_list):
+        if frame_id % 40 == 0:
+            print('Processing frame {} of seq {}.'.format(frame_id, seq_name))
+        frame = cv2.imread(os.path.join(fpath, img_file))
+        ori_image_shape = list(frame.shape[:2])
+        frame_path = os.path.join(fpath, img_file)
+        pred_dets, pred_xyxys = detector.predict([frame_path], ori_image_shape, FLAGS.scaled,
+                                                 FLAGS.threshold)
+
+        if len(pred_dets) == 1 and np.sum(pred_dets) == 0:
+            print('Frame {} has no object, try to modify score threshold.'.
+                  format(frame_id))
+            online_im = frame
+        else:
+            # reid process
+            crops = reid_model.get_crops(pred_xyxys, frame)
+
+            tracking_outs = reid_model.predict(
+                crops,
+                pred_dets,
+                MTMCT=True,
+                frame_id=frame_id,
+                seq_name=seq_name)
+
+            feat_data_dict = tracking_outs['feat_data']
+            mot_features_dict = dict(mot_features_dict, **feat_data_dict)
+
+            online_tlwhs = tracking_outs['online_tlwhs']
+            online_scores = tracking_outs['online_scores']
+            online_ids = tracking_outs['online_ids']
+
+            online_im = plot_tracking(frame, online_tlwhs, online_ids,
+                                      online_scores, frame_id)
+            results[0].append(
+                (frame_id + 1, online_tlwhs, online_scores, online_ids))
+
+        if FLAGS.save_images:
+            save_dir = os.path.join(output_dir, seq_name)
+            if not os.path.exists(save_dir): os.makedirs(save_dir)
+            img_name = os.path.split(img_file)[-1]
+            out_path = os.path.join(save_dir, img_name)
+            cv2.imwrite(out_path, online_im)
+
+    if FLAGS.save_mot_txts:
+        result_filename = os.path.join(output_dir, seq_name + '.txt')
+        write_mot_results(result_filename, results)
+
+    return mot_features_dict
+
+
+def predict_mtmct(detector, reid_model, mtmct_dir, mtmct_cfg):
+    MTMCT = mtmct_cfg['MTMCT']
+    assert MTMCT == True, 'predict_mtmct should be used for MTMCT.'
+
+    cameras_bias = mtmct_cfg['cameras_bias']
+    cid_bias = parse_bias(cameras_bias)
+    scene_cluster = list(cid_bias.keys())
+
+    # 1.zone releated parameters
+    use_zone = mtmct_cfg['use_zone']
+    zone_path = mtmct_cfg['zone_path']
+
+    # 2.tricks parameters, can be used for other mtmct dataset
+    use_ff = mtmct_cfg['use_ff']
+    use_rerank = mtmct_cfg['use_rerank']
+
+    # 3.camera releated parameters
+    use_camera = mtmct_cfg['use_camera']
+    use_st_filter = mtmct_cfg['use_st_filter']
+
+    # 4.zone releated parameters
+    use_roi = mtmct_cfg['use_roi']
+    roi_dir = mtmct_cfg['roi_dir']
+
+    mot_list_breaks = []
+    cid_tid_dict = dict()
+
+    output_dir = FLAGS.output_dir
+    if not os.path.exists(output_dir): os.makedirs(output_dir)
+
+    seqs = os.listdir(mtmct_dir)
+    seqs.sort()
+
+    for seq in seqs:
+        fpath = os.path.join(mtmct_dir, seq)
+        if os.path.isfile(fpath) and _is_valid_video(fpath):
+            ext = seq.split('.')[-1]
+            seq = seq.split('.')[-2]
+            print('ffmpeg processing of video {}'.format(fpath))
+            frames_path = video2frames(video_path=fpath, outpath=mtmct_dir, frame_rate=25)
+            fpath = os.path.join(mtmct_dir, seq)
+
+        if os.path.isdir(fpath) == False:
+            print('{} is not a image folder.'.format(fpath))
+            continue
+
+        mot_features_dict = predict_mtmct_seq(detector, reid_model,
+                                              seq, output_dir)
+
+        cid = int(re.sub('[a-z,A-Z]', "", seq))
+        tid_data, mot_list_break = trajectory_fusion(
+            mot_features_dict,
+            cid,
+            cid_bias,
+            use_zone=use_zone,
+            zone_path=zone_path)
+        mot_list_breaks.append(mot_list_break)
+        # single seq process
+        for line in tid_data:
+            tracklet = tid_data[line]
+            tid = tracklet['tid']
+            if (cid, tid) not in cid_tid_dict:
+                cid_tid_dict[(cid, tid)] = tracklet
+
+    map_tid = sub_cluster(
+        cid_tid_dict,
+        scene_cluster,
+        use_ff=use_ff,
+        use_rerank=use_rerank,
+        use_camera=use_camera,
+        use_st_filter=use_st_filter)
+
+    pred_mtmct_file = os.path.join(output_dir, 'mtmct_result.txt')
+    if use_camera:
+        gen_res(pred_mtmct_file, scene_cluster, map_tid, mot_list_breaks)
+    else:
+        gen_res(
+            pred_mtmct_file,
+            scene_cluster,
+            map_tid,
+            mot_list_breaks,
+            use_roi=use_roi,
+            roi_dir=roi_dir)
+
+    if FLAGS.save_images:
+        carame_results, cid_tid_fid_res = get_mtmct_matching_results(
+            pred_mtmct_file)
+
+        crops_dir = os.path.join(output_dir, 'mtmct_crops')
+        save_mtmct_crops(
+            cid_tid_fid_res, images_dir=mtmct_dir, crops_dir=crops_dir)
+
+        save_dir = os.path.join(output_dir, 'mtmct_vis')
+        save_mtmct_vis_results(
+            carame_results,
+            images_dir=mtmct_dir,
+            save_dir=save_dir,
+            save_videos=FLAGS.save_images)
+
+    # evalution metrics
+    data_root_gt = os.path.join(mtmct_dir, '..', 'gt', 'gt.txt')
+    if os.path.exists(data_root_gt):
+        print_mtmct_result(data_root_gt, pred_mtmct_file)
+
+
 def main():
     pred_config = PredictConfig(FLAGS.model_dir)
     detector_func = 'SDE_Detector'
@@ -673,6 +866,13 @@ def main():
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
         predict_video(detector, reid_model, FLAGS.camera_id)
+
+    elif FLAGS.mtmct_dir is not None:
+        mtmct_cfg_file = FLAGS.mtmct_cfg
+        with open(mtmct_cfg_file) as f:
+            mtmct_cfg = yaml.safe_load(f)
+        predict_mtmct(detector, reid_model, FLAGS.mtmct_dir, mtmct_cfg)
+
     else:
         # predict from image
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)

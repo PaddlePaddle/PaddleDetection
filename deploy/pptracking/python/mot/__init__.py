@@ -16,8 +16,10 @@ from . import matching
 from . import tracker
 from . import motion
 from . import utils
+from . import mtmct
 
 from .matching import *
 from .tracker import *
 from .motion import *
 from .utils import *
+from .mtmct import *

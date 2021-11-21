@@ -23,6 +23,8 @@ import numpy as np
 def colormap(rgb=False):
     """
     Get colormap
+
+    The code of this function is copied from https://github.com/facebookresearch/Detectron/blob/main/detectron/utils/colormap.py
     """
     color_list = np.array([
         0.000, 0.447, 0.741, 0.850, 0.325, 0.098, 0.929, 0.694, 0.125, 0.494,
