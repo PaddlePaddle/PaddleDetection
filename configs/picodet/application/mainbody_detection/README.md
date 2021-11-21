@@ -27,4 +27,4 @@ PP-ShiTu图像识别任务中，训练主体检测模型时主要用到了以下
 
 | 模型     | 图像输入尺寸 | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 |  下载地址  | config |
 | :-------- | :--------: | :---------------------: | :----------------: | :----------------: | :---------------: |
-| PicoDet-LCNet_x2_5 |  640*640   |          41.5   |    62.0     | [model](https://paddledet.bj.bcebos.com/models/picodet_lcnet_x2_5_640_mainbody.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_lcnet_x2_5_640_mainbody.log) | [config](./picodet_lcnet_2_5x_640_mainbody.yml) |
+| PicoDet-LCNet_x2_5 |  640*640   |          41.5   |    62.0     | [trained model](https://paddledet.bj.bcebos.com/models/picodet_lcnet_x2_5_640_mainbody.pdparams) &#124; [inference model](https://paddledet.bj.bcebos.com/models/picodet_lcnet_x2_5_640_mainbody_infer.tar) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_lcnet_x2_5_640_mainbody.log) | [config](./picodet_lcnet_2_5x_640_mainbody.yml) |
