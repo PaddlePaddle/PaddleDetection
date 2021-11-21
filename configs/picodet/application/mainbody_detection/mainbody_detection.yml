@@ -16,5 +16,4 @@ EvalDataset:
 
 TestDataset:
   !ImageFolder
-    anno_path: mainbody_val.json
-    dataset_dir: dataset/mainbody_val/
+    anno_path: ./dataset/mainbody_val/mainbody_val.json
