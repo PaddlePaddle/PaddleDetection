@@ -8,7 +8,7 @@ _BASE_: [
 
 use_gpu: true
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x2_5_ssld_pretrained.pdparams
-weights: output/picodet_lcnet_2_5x_640_mainbody/model_final
+weights: output/picodet_lcnet_x2_5_640_mainbody/model_final
 find_unused_parameters: True
 use_ema: true
 cycle_epoch: 20
