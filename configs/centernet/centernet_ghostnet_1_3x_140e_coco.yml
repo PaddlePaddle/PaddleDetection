@@ -3,7 +3,7 @@ _BASE_: [
 ]
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/GhostNet_x1_3_ssld_pretrained.pdparams
-weights: output/centernet_ghostnet_1_3x_140e_coco/model_finalp
+weights: output/centernet_ghostnet_1_3x_140e_coco/model_final
 
 CenterNet:
   backbone: GhostNet

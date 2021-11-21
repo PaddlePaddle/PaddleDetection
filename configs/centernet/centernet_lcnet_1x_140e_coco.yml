@@ -2,7 +2,7 @@ _BASE_: [
   'centernet_r50_140e_coco.yml'
 ]
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x1_0_pretrained.pdparams
-weights: output/centernet_lcnet_1x_140e_coco/model_finalp
+weights: output/centernet_lcnet_1x_140e_coco/model_final
 
 CenterNet:
   backbone: LCNet
