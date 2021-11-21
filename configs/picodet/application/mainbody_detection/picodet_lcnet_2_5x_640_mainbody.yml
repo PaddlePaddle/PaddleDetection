@@ -1,9 +1,9 @@
 _BASE_: [
   './mainbody_detection.yml',
-  '../../runtime.yml',
-  '../_base_/picodet_esnet.yml',
-  '../_base_/optimizer_100e.yml',
-  '../_base_/picodet_640_reader.yml',
+  '../../../runtime.yml',
+  '../../_base_/picodet_esnet.yml',
+  '../../_base_/optimizer_100e.yml',
+  '../../_base_/picodet_640_reader.yml',
 ]
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x2_5_ssld_pretrained.pdparams
