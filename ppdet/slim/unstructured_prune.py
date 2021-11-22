@@ -1,0 +1,59 @@
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from paddle.utils import try_import
+
+from ppdet.core.workspace import register, serializable
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
+
+
+@register
+@serializable
+class UnstructuredPruner(object):
+    def __init__(self, prune_config):
+        self.stable_epochs = prune_config.stable_epochs
+        self.pruning_epochs = prune_config.pruning_epochs
+        self.tunning_epochs = prune_config.tunning_epochs
+        self.ratio = prune_config.ratio
+        self.prune_params_type = prune_config.prune_params_type
+        self.initial_ratio = prune_config.initial_ratio
+        self.pruning_steps = prune_config.pruning_steps
+
+    def __call__(self, model, steps_per_epoch, skip_params_func=None):
+        from paddleslim import GMPUnstructuredPruner
+        configs = {
+            'pruning_strategy': 'gmp',
+            'stable_iterations': self.stable_epochs * steps_per_epoch,
+            'pruning_iterations': self.pruning_epochs * steps_per_epoch,
+            'tunning_iterations': self.tunning_epochs * steps_per_epoch,
+            'resume_iteration': 0,
+            'pruning_steps': self.pruning_steps,
+            'initial_ratio': self.initial_ratio,
+        }
+
+        paddleslim = try_import('paddleslim')
+        pruner = GMPUnstructuredPruner(
+            model,
+            ratio=self.ratio,
+            skip_params_func=skip_params_func,
+            prune_params_type=self.prune_params_type,
+            local_sparsity=True,
+            configs=configs)
+
+        return pruner

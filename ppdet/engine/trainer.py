@@ -39,7 +39,6 @@ from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
-from paddleslim import GMPUnstructuredPruner
 from ppdet.utils import profiler
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator
@@ -122,22 +121,8 @@ class Trainer(object):
             self.optimizer = create('OptimizerBuilder')(self.lr, self.model)
 
         if self.cfg.unstructured_prune:
-            configs = {
-                'pruning_strategy': 'gmp',
-                'stable_iterations': self.cfg.stable_epochs * steps_per_epoch,
-                'pruning_iterations': self.cfg.pruning_epochs * steps_per_epoch,
-                'tunning_iterations': self.cfg.tunning_epochs * steps_per_epoch,
-                'resume_iteration': 0,
-                'pruning_steps': self.cfg.pruning_steps,
-                'initial_ratio': self.cfg.initial_ratio,
-            }
-
-            self.pruner = GMPUnstructuredPruner(
-                self.model,
-                ratio=self.cfg.ratio,
-                prune_params_type=self.cfg.prune_params_type,
-                local_sparsity=True,
-                configs=configs)
+            self.pruner = create('UnstructuredPruner')(self.model,
+                                                       steps_per_epoch)
 
         self._nranks = dist.get_world_size()
         self._local_rank = dist.get_rank()
