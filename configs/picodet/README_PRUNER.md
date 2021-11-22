@@ -1,21 +1,22 @@
-# 非结构化稀疏在 Picodet 上的应用教程
+# 非结构化稀疏在 PicoDet 上的应用教程
 
 ## 1. 介绍
-在模型压缩中，常见的稀疏方式为结构化稀疏和非结构化稀疏，前者在某个特定维度（特征通道、卷积核等等）上对卷积、矩阵乘法进行剪枝操作，然后生成一个更小的模型结构，这样可以复用已有的卷积、矩阵乘计算，无需特殊实现推理算子；后者以每一个参数为单元进行稀疏化，然而并不会改变参数矩阵的形状，所以更依赖于推理库、硬件对于稀疏后矩阵运算的加速能力。我们在 picodet 模型上运用了非结构化稀疏技术，在精度损失较小时，获得了在 ARM CPU 端推理的显著性能提升。本文档会介绍如何非结构化稀疏训练 picodet，关于非结构化稀疏的更多介绍请参照[这里](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/dygraph/unstructured_pruning)。
+在模型压缩中，常见的稀疏方式为结构化稀疏和非结构化稀疏，前者在某个特定维度（特征通道、卷积核等等）上对卷积、矩阵乘法进行剪枝操作，然后生成一个更小的模型结构，这样可以复用已有的卷积、矩阵乘计算，无需特殊实现推理算子；后者以每一个参数为单元进行稀疏化，然而并不会改变参数矩阵的形状，所以更依赖于推理库、硬件对于稀疏后矩阵运算的加速能力。我们在 PP-PicoDet （以下简称PicoDet） 模型上运用了非结构化稀疏技术，在精度损失较小时，获得了在 ARM CPU 端推理的显著性能提升。本文档会介绍如何非结构化稀疏训练 PicoDet，关于非结构化稀疏的更多介绍请参照[这里](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/dygraph/unstructured_pruning)。
 
 ## 2. 版本要求
 ```bash
 PaddlePaddle >= 2.1.2
+PaddleSlim develop分支 （pip install paddleslim -i https://pypi.tuna.tsinghua.edu.cn/simple）
 ```
 
 ## 3. 数据准备
-同 picodet
+同 PicoDet
 
 ## 4. 预训练模型
 在非结构化稀疏训练中，我们规定预训练模型是已经收敛完成的模型参数，所以需要额外在相关配置文件中声明。
 
 声明预训练模型地址的配置文件：./configs/picodet/picodet_m_320_coco_pruner.yml
-预训练模型地址请参照 picodet 文档：./configs/picodet/README.md
+预训练模型地址请参照 PicoDet 文档：./configs/picodet/README.md
 
 ## 5. 自定义稀疏化的作用范围
 为达到最佳推理加速效果，我们建议只对 1x1 卷积层进行稀疏化，其他层参数保持稠密。另外，有些层对于精度影响较大（例如head的最后几层，se-block的若干层），我们同样不建议对他们进行稀疏化，我们支持开发者通过传入自定义函数的形式，方便的指定哪些层不参与稀疏。例如，基于picodet_m_320这个模型，我们稀疏时跳过了后4层卷积以及6层se-block中的卷积，自定义函数如下：
@@ -96,10 +97,27 @@ for epoch_id in range(self.start_epoch, self.cfg.epoch):
 ```
 
 ## 7. 模型评估与推理部署
-这部分与 picodet 文档中基本一致，只是在转换到 PaddleLite 模型时，需要添加一个输入参数（sparse_model）：
+这部分与 PicoDet 文档中基本一致，只是在转换到 PaddleLite 模型时，需要添加一个输入参数（sparse_model）：
 
 ```bash
 paddle_lite_opt --model_dir=inference_model/picodet_m_320_coco --valid_targets=arm --optimize_out=picodet_m_320_coco_fp32_sparse --sparse_model=True
 ```
 
 **注意：** 目前稀疏化推理适用于 PaddleLite的 FP32 和 INT8 模型，所以执行上述命令时，请不要打开 FP16 开关。
+
+## 8. 稀疏化结果
+我们在75%和85%稀疏度下，训练得到了 FP32 PicoDet-m模型，并在 SnapDragon-835设备上实测推理速度，效果如下表。其中：
+- 对于 m 模型，mAP损失1.5，获得了34%-58%的加速性能
+- 同样对于 m 模型，除4线程推理速度基本持平外，单线程推理速度、mAP、模型体积均优于 s 模型。
+
+
+| Model     | Input size | Sparsity | mAP<sup>val<br>0.5:0.95 | Size<br><sup>(MB) | Latency single-thread<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  speed-up single-thread |  Latency 4-thread<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  speed-up 4-thread |  Download  | Config |
+| :-------- | :--------: |:--------: | :---------------------: | :----------------: | :----------------: |:----------------: | :---------------: | :-----------------------------: | :-----------------------------: | :----------------------------------------: |
+| PicoDet-m-1.0 |  320*320   |   0      |          30.9         | 8.9 |  127 | 0    |  43 |    0       | [model]&#124; [log]  | [config]|
+| PicoDet-m-1.0 |  320*320   |   75%    |          29.4         | 5.6 |  **80**  | 58%  | **32**  |   34%      | [model]&#124; [log]  | [config]|
+| PicoDet-s-1.0 |  320*320   |   0      |          27.1         | 4.6 |    68    | 96%  |    26   |   59%      | [model] &#124; [log] | [config]|
+| PicoDet-m-1.0 |  320*320   |   85%    |          27.5         | 4.1 |  **65**  | 96%  |  **27** |   59%      | [model] &#124; [log] | [config]|
+
+**注意：** 
+- 上述模型体积是**部署模型体积**，即 PaddleLite 转换得到的 *.nb 文件的体积。
+- 加速一栏我们按照 FPS 增加百分比计算，即：$(dense\_latency - sparse\_latency) / sparse\_latency 
