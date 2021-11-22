@@ -33,7 +33,7 @@ for model_item in ${model_name_list[@]}; do
             log_name=detection_${model_item}_bs${bs_item}_${fp_item}   # 如:clas_MobileNetv1_mp_bs32_fp32_8
             echo "index is speed, 1gpus, begin, ${log_name}"
             CUDA_VISIBLE_DEVICES=0 bash benchmark/run_benchmark.sh ${run_mode} ${bs_item} \
-             ${fp_item} ${max_epoch} ${model_item} | tee ${log_path}/${log_name}_speed_8gpus8p 2>&1
+             ${fp_item} ${max_epoch} ${model_item} | tee ${log_path}/${log_name}_speed_1gpus 2>&1
             sleep 60
 
             run_mode=mp
