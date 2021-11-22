@@ -6,6 +6,7 @@ _BASE_: [
   '_base_/s2anet_reader.yml',
 ]
 weights: output/s2anet_conv_1x_dota/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
 
 ResNet:
   depth: 50

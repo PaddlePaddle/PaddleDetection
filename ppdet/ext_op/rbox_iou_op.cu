@@ -94,8 +94,7 @@ std::vector<paddle::Tensor> RboxIouCUDAForward(const paddle::Tensor& rbox1, cons
     auto rbox1_num = rbox1.shape()[0];
     auto rbox2_num = rbox2.shape()[0];
 
-    auto output = paddle::Tensor(paddle::PlaceType::kGPU);
-    output.reshape({rbox1_num, rbox2_num});
+    auto output = paddle::Tensor(paddle::PlaceType::kGPU, {rbox1_num, rbox2_num});
 
     const int blocks_x = CeilDiv(rbox1_num, BLOCK_DIM_X);
     const int blocks_y = CeilDiv(rbox2_num, BLOCK_DIM_Y);
