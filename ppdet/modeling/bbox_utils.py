@@ -529,18 +529,18 @@ def poly2rbox(polys):
         rbox_angle = 0
         if edge1 > edge2:
             rbox_angle = np.arctan2(
-                np.float(pt2[1] - pt1[1]), np.float(pt2[0] - pt1[0]))
+                float(pt2[1] - pt1[1]), float(pt2[0] - pt1[0]))
         elif edge2 >= edge1:
             rbox_angle = np.arctan2(
-                np.float(pt4[1] - pt1[1]), np.float(pt4[0] - pt1[0]))
+                float(pt4[1] - pt1[1]), float(pt4[0] - pt1[0]))
 
         def norm_angle(angle, range=[-np.pi / 4, np.pi]):
             return (angle - range[0]) % range[1] + range[0]
 
         rbox_angle = norm_angle(rbox_angle)
 
-        x_ctr = np.float(pt1[0] + pt3[0]) / 2
-        y_ctr = np.float(pt1[1] + pt3[1]) / 2
+        x_ctr = float(pt1[0] + pt3[0]) / 2
+        y_ctr = float(pt1[1] + pt3[1]) / 2
         rotated_box = np.array([x_ctr, y_ctr, width, height, rbox_angle])
         rotated_boxes.append(rotated_box)
     ret_rotated_boxes = np.array(rotated_boxes)

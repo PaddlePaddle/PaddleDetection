@@ -45,8 +45,7 @@ std::vector<paddle::Tensor> RboxIouCPUForward(const paddle::Tensor& rbox1, const
     auto rbox1_num = rbox1.shape()[0];
     auto rbox2_num = rbox2.shape()[0];
 
-    auto output = paddle::Tensor(paddle::PlaceType::kCPU);
-    output.reshape({rbox1_num, rbox2_num});
+    auto output = paddle::Tensor(paddle::PlaceType::kCPU, {rbox1_num, rbox2_num});
 
     PD_DISPATCH_FLOATING_TYPES(
         rbox1.type(),
