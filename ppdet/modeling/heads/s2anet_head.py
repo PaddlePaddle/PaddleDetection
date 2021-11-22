@@ -233,8 +233,7 @@ class S2ANetHead(nn.Layer):
                  anchor_assign=RBoxAssigner().__dict__,
                  reg_loss_weight=[1.0, 1.0, 1.0, 1.0, 1.1],
                  cls_loss_weight=[1.1, 1.05],
-                 reg_loss_type='l1',
-                 is_training=True):
+                 reg_loss_type='l1'):
         super(S2ANetHead, self).__init__()
         self.stacked_convs = stacked_convs
         self.feat_in = feat_in
@@ -260,8 +259,6 @@ class S2ANetHead(nn.Layer):
         self.alpha = 1.0
         self.beta = 1.0
         self.reg_loss_type = reg_loss_type
-        self.is_training = is_training
-
         self.s2anet_head_out = None
 
         # anchor
@@ -451,12 +448,10 @@ class S2ANetHead(nn.Layer):
             init_anchors = self.rect2rbox(init_anchors)
             self.base_anchors_list.append(init_anchors)
 
-            if self.is_training:
+            if self.training:
                 refine_anchor = self.bbox_decode(fam_reg.detach(), init_anchors)
             else:
-                fam_reg1 = fam_reg.clone()
-                fam_reg1.stop_gradient = True
-                refine_anchor = self.bbox_decode(fam_reg1, init_anchors)
+                refine_anchor = self.bbox_decode(fam_reg, init_anchors)
 
             self.refine_anchor_list.append(refine_anchor)
 
