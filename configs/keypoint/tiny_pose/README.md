@@ -25,7 +25,7 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测�
   <img src="../../../docs/images/fitness_demo.gif" width='636'/>
 </div>
 
-欢迎扫码快速体验
+- 欢迎扫码快速体验
 <div align="center">
   <img src="../../../docs/images/tinypose_app.png" width='220'/>
 </div>
