@@ -33,4 +33,4 @@ English | [简体中文](README_cn.md)
   journal={arXiv preprint arXiv:1904.07850},
   year={2019}
 }
-```**
+```
