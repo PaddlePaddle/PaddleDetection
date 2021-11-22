@@ -110,13 +110,13 @@ paddle_lite_opt --model_dir=inference_model/picodet_m_320_coco --valid_targets=a
 - 同样对于 m 模型，除4线程推理速度基本持平外，单线程推理速度、mAP、模型体积均优于 s 模型。
 
 
-| Model     | Input size | Sparsity | mAP<sup>val<br>0.5:0.95 | Size<br><sup>(MB) | Latency single-thread<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  speed-up single-thread |  Latency 4-thread<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  speed-up 4-thread |  Download  | Config |
+| Model     | Input size | Sparsity | mAP<sup>val<br>0.5:0.95 | Size<br><sup>(MB) | Latency single-thread<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  speed-up single-thread |  Latency 4-thread<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  speed-up 4-thread |  Download  | SlimConfig |
 | :-------- | :--------: |:--------: | :---------------------: | :----------------: | :----------------: |:----------------: | :---------------: | :-----------------------------: | :-----------------------------: | :----------------------------------------: |
-| PicoDet-m-1.0 |  320*320   |   0      |          30.9         | 8.9 |  127 | 0    |  43 |    0       | [model]&#124; [log]  | [config]|
-| PicoDet-m-1.0 |  320*320   |   75%    |          29.4         | 5.6 |  **80**  | 58%  | **32**  |   34%      | [model]&#124; [log]  | [config]|
-| PicoDet-s-1.0 |  320*320   |   0      |          27.1         | 4.6 |    68    | 96%  |    26   |   59%      | [model] &#124; [log] | [config]|
-| PicoDet-m-1.0 |  320*320   |   85%    |          27.5         | 4.1 |  **65**  | 96%  |  **27** |   59%      | [model] &#124; [log] | [config]|
+| PicoDet-m-1.0 |  320*320   |   0      |          30.9         | 8.9 |  127     | 0    |  43     |    0       | [model]()&#124; [log]() | [config]()|
+| PicoDet-m-1.0 |  320*320   |   75%    |          29.4         | 5.6 |  **80**  | 58%  | **32**  |   34%      | [model]()&#124; [log]() | [config]()|
+| PicoDet-s-1.0 |  320*320   |   0      |          27.1         | 4.6 |    68    | 96%  |    26   |   59%      | [model]() &#124; [log]() | [config]()|
+| PicoDet-m-1.0 |  320*320   |   85%    |          27.5         | 4.1 |  **65**  | 96%  |  **27** |   59%      | [model]() &#124; [log]() | [config]()|
 
 **注意：**
 - 上述模型体积是**部署模型体积**，即 PaddleLite 转换得到的 *.nb 文件的体积。
-- 加速一栏我们按照 FPS 增加百分比计算，即：$(dense\_latency - sparse\_latency) / sparse\_latency
+- 加速一栏我们按照 FPS 增加百分比计算，即：$(dense\_latency - sparse\_latency) / sparse\_latency$
