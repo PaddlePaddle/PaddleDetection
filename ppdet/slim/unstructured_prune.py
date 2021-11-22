@@ -26,14 +26,21 @@ logger = setup_logger(__name__)
 @register
 @serializable
 class UnstructuredPruner(object):
-    def __init__(self, prune_config):
-        self.stable_epochs = prune_config.stable_epochs
-        self.pruning_epochs = prune_config.pruning_epochs
-        self.tunning_epochs = prune_config.tunning_epochs
-        self.ratio = prune_config.ratio
-        self.prune_params_type = prune_config.prune_params_type
-        self.initial_ratio = prune_config.initial_ratio
-        self.pruning_steps = prune_config.pruning_steps
+    def __init__(self,
+                 stable_epochs,
+                 pruning_epochs,
+                 tunning_epochs,
+                 pruning_steps,
+                 ratio,
+                 initial_ratio,
+                 prune_params_type=None):
+        self.stable_epochs = stable_epochs
+        self.pruning_epochs = pruning_epochs
+        self.tunning_epochs = tunning_epochs
+        self.ratio = ratio
+        self.prune_params_type = prune_params_type
+        self.initial_ratio = initial_ratio
+        self.pruning_steps = pruning_steps
 
     def __call__(self, model, steps_per_epoch, skip_params_func=None):
         from paddleslim import GMPUnstructuredPruner

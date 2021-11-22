@@ -15,10 +15,12 @@
 from . import prune
 from . import quant
 from . import distill
+from . import unstructured_prune
 
 from .prune import *
 from .quant import *
 from .distill import *
+from .unstructured_prune import *
 
 import yaml
 from ppdet.core.workspace import load_config
@@ -56,10 +58,11 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
         cfg['slim_type'] = cfg.slim
         cfg['model'] = slim(model)
         cfg['slim'] = slim
+        cfg['unstructured_prune'] = True
     elif slim_load_cfg['slim'] == 'UnstructuredPruner':
         load_config(slim_cfg)
-        model = create(cfg.architecture)
-        load_pretrain_weight(model, cfg.pretrain_weights)
+        # model = create(cfg.architecture)
+        # load_pretrain_weight(model, cfg.pretrain_weights)
         slim = create(cfg.slim)
         cfg['slim_type'] = cfg.slim
         cfg['slim'] = slim

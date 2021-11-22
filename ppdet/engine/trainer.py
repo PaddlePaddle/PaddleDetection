@@ -120,7 +120,7 @@ class Trainer(object):
             self.lr = create('LearningRate')(steps_per_epoch)
             self.optimizer = create('OptimizerBuilder')(self.lr, self.model)
 
-        if self.cfg.unstructured_prune:
+        if self.cfg.get('unstructured_prune'):
             self.pruner = create('UnstructuredPruner')(self.model,
                                                        steps_per_epoch)
 
@@ -402,7 +402,7 @@ class Trainer(object):
                     self.optimizer.step()
                 curr_lr = self.optimizer.get_lr()
                 self.lr.step()
-                if self.cfg.unstructured_prune:
+                if self.cfg.get('unstructured_prune'):
                     self.pruner.step()
                 self.optimizer.clear_grad()
                 self.status['learning_rate'] = curr_lr

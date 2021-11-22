@@ -15,7 +15,7 @@ PaddleSlim develop分支 （pip install paddleslim -i https://pypi.tuna.tsinghua
 ## 4. 预训练模型
 在非结构化稀疏训练中，我们规定预训练模型是已经收敛完成的模型参数，所以需要额外在相关配置文件中声明。
 
-声明预训练模型地址的配置文件：./configs/picodet/picodet_m_320_coco_pruner.yml
+声明预训练模型地址的配置文件：./configs/picodet/pruner/picodet_m_320_coco_pruner.yml
 预训练模型地址请参照 PicoDet 文档：./configs/picodet/README.md
 
 ## 5. 自定义稀疏化的作用范围
@@ -46,7 +46,7 @@ def skip_params_self(model):
 ### 6.1 直接使用
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3
-python -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/picodet/picodet_m_320_coco_pruner.yml --eval
+python3.7 -m paddle.distributed.launch --log_dir=log_test --gpus 0,1,2,3 tools/train.py -c configs/picodet/pruner/picodet_m_320_coco_pruner.yml --slim_config configs/slim/prune/picodet_m_unstructured_prune.yml --eval
 ```
 
 ### 6.2 详细介绍
@@ -59,18 +59,17 @@ python -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/pic
 # Pruner Step1: configs
 configs = {
     'pruning_strategy': 'gmp',
-    'stable_iterations': self.cfg.stable_epochs * steps_per_epoch,
-    'pruning_iterations': self.cfg.pruning_epochs * steps_per_epoch,
-    'tunning_iterations': self.cfg.tunning_epochs * steps_per_epoch,
+    'stable_iterations': self.stable_epochs * steps_per_epoch,
+    'pruning_iterations': self.pruning_epochs * steps_per_epoch,
+    'tunning_iterations': self.tunning_epochs * steps_per_epoch,
     'resume_iteration': 0,
-    'pruning_steps': self.cfg.pruning_steps,
-    'initial_ratio': self.cfg.initial_ratio,
+    'pruning_steps': self.pruning_steps,
+    'initial_ratio': self.initial_ratio,
 }
 
 # Pruner Step2: construct a pruner object
 self.pruner = GMPUnstructuredPruner(
-    self.model,
-    mode='ratio',
+    model,
     ratio=self.cfg.ratio,
     skip_params_func=skip_params_self, # Only pass in this value when you design your own skip_params function. And the following argument (skip_params_type) will be ignored.
     skip_params_type=self.cfg.skip_params_type,
@@ -107,7 +106,7 @@ paddle_lite_opt --model_dir=inference_model/picodet_m_320_coco --valid_targets=a
 
 ## 8. 稀疏化结果
 我们在75%和85%稀疏度下，训练得到了 FP32 PicoDet-m模型，并在 SnapDragon-835设备上实测推理速度，效果如下表。其中：
-- 对于 m 模型，mAP损失1.5，获得了34%-58%的加速性能
+- 对于 m 模型，mAP损失1.5，获得了 34\%-58\% 的加速性能
 - 同样对于 m 模型，除4线程推理速度基本持平外，单线程推理速度、mAP、模型体积均优于 s 模型。
 
 
@@ -118,6 +117,6 @@ paddle_lite_opt --model_dir=inference_model/picodet_m_320_coco --valid_targets=a
 | PicoDet-s-1.0 |  320*320   |   0      |          27.1         | 4.6 |    68    | 96%  |    26   |   59%      | [model] &#124; [log] | [config]|
 | PicoDet-m-1.0 |  320*320   |   85%    |          27.5         | 4.1 |  **65**  | 96%  |  **27** |   59%      | [model] &#124; [log] | [config]|
 
-**注意：** 
+**注意：**
 - 上述模型体积是**部署模型体积**，即 PaddleLite 转换得到的 *.nb 文件的体积。
-- 加速一栏我们按照 FPS 增加百分比计算，即：$(dense\_latency - sparse\_latency) / sparse\_latency 
+- 加速一栏我们按照 FPS 增加百分比计算，即：$(dense\_latency - sparse\_latency) / sparse\_latency
