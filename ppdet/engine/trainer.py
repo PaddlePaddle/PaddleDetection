@@ -420,7 +420,7 @@ class Trainer(object):
             if self.use_ema:
                 weight = copy.deepcopy(self.model.state_dict())
                 self.model.set_dict(self.ema.apply())
-            if self.cfg.unstructured_prune:
+            if self.cfg.get('unstructured_prune'):
                 self.pruner.update_params()
 
             self._compose_callback.on_epoch_end(self.status)
