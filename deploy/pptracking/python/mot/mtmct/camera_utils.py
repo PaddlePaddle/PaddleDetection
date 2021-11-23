@@ -13,6 +13,9 @@
 # limitations under the License.
 """
 This code is based on https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
+
+Note: The following codes are strongly related to carame parameters of the AIC21 test-set S06,
+    so they can only be used in S06, and can not be used for other MTMCT datasets.
 """
 
 import numpy as np
