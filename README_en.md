@@ -3,7 +3,7 @@ English | [简体中文](README_cn.md)
 
 # Product news
 
-- 2021.11.03: Release [release/2.3](https://github.com/PaddlePaddle/Paddleetection/tree/release/2.3) version. Release mobile object detection model ⚡[PP-PicoDet](configs/picodet), mobile keypoint detection model ⚡[PP-TinyPose](configs/keypoint/tiny_pose). Release object detection models, including [Swin-Transformer](configs/faster_rcnn), [TOOD](configs/tood), [GFL](configs/gfl), release [Sniper](configs/sniper) tiny object detection models and optimized [PP-YOLO-EB](configs/ppyolo) model for EdgeBoard. Release mobile keypoint detection model [Lite HRNet](configs/keypoint).
+- 2021.11.03: Release [release/2.3](https://github.com/PaddlePaddle/Paddleetection/tree/release/2.3) version. Release mobile object detection model ⚡[PP-PicoDet](configs/picodet), mobile keypoint detection model ⚡[PP-TinyPose](configs/keypoint/tiny_pose)，Real-time tracking system [PP-Tracking](deploy/pptracking). Release object detection models, including [Swin-Transformer](configs/faster_rcnn), [TOOD](configs/tood), [GFL](configs/gfl), release [Sniper](configs/sniper) tiny object detection models and optimized [PP-YOLO-EB](configs/ppyolo) model for EdgeBoard. Release mobile keypoint detection model [Lite HRNet](configs/keypoint).
 - 2021.08.10: Release [release/2.2](https://github.com/PaddlePaddle/Paddleetection/tree/release/2.2) version. Release Transformer object detection models, including [DETR](configs/detr), [Deformable DETR](configs/deformable_detr), [Sparse RCNN](configs/sparse_rcnn). Release [keypoint detection](configs/keypoint) models, including DarkHRNet and model trained on MPII dataset. Release [head-tracking](configs/mot/headtracking21) and [vehicle-tracking](configs/mot/vehicle) multi-object tracking models.
 - 2021.05.20: Release [release/2.1]((https://github.com/PaddlePaddle/Paddleetection/tree/release/2.1) version. Release [Keypoint Detection](configs/keypoint), including HigherHRNet and HRNet, [Multi-Object Tracking](configs/mot), including DeepSORT，JDE and FairMOT. Release model compression for PPYOLO series models.Update documents such as [EXPORT ONNX MODEL](deploy/EXPORT_ONNX_MODEL.md).
 
@@ -256,6 +256,7 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
 - Universal object detection
   - [Model library and baselines](docs/MODEL_ZOO_cn.md)
   - [PP-YOLO](configs/ppyolo/README.md)
+  - [PP-PicoDet](configs/picodet/README.md)
   - [Enhanced Anchor Free model--TTFNet](configs/ttfnet/README_en.md)
   - [Mobile models](static/configs/mobile/README_en.md)
   - [676 classes of object detection](static/docs/featured_model/LARGE_SCALE_DET_MODEL_en.md)
@@ -266,10 +267,12 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
 - Rotation object detection
   - [S2ANet](configs/dota/README_en.md)
 - [Keypoint detection](configs/keypoint)
+  - [PP-TinyPose](configs/keypoint/tiny_pose)
   - HigherHRNet
   - HRNet
   - LiteHRNet
 - [Multi-Object Tracking](configs/mot/README.md)
+  - [PP-Tracking](deploy/pptracking/README.md)
   - [DeepSORT](configs/mot/deepsort/README.md)
   - [JDE](configs/mot/jde/README.md)
   - [FairMOT](configs/mot/fairmot/README.md)
@@ -284,6 +287,7 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
 ## Applications
 
 - [Christmas portrait automatic generation tool](static/application/christmas)
+- [Android Fitness Demo](https://github.com/zhiboniu/pose_demo_android)
 
 ## Updates
 

@@ -14,7 +14,7 @@ PP-Tracking是基于飞桨深度学习框架的业界首个开源实时跟踪系
 
 ### 一、快速开始
 
-PP-Tracking提供了简洁的可视化界面，无需开发即可实现多种跟踪功能，可以参考[PP-Tracking可视化界面使用文档]()快速上手体验
+PP-Tracking提供了简洁的可视化界面，无需开发即可实现多种跟踪功能，可以参考[PP-Tracking可视化界面使用文档](https://github.com/yangyudong2020/PP-Tracking_GUi)快速上手体验
 
 ### 二、算法介绍
 
