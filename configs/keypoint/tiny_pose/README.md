@@ -6,7 +6,7 @@
 </div>
 
 ## 简介
-PP-TinyPose是PaddleDetecion针对移动端设备优化的实时姿态检测模型，可流畅地在移动端设备上执行多人姿态估计任务。借助PaddleDetecion自研的优秀轻量级检测模型[PicoDet](../../picodet/README.md)，我们同时提供了特色的轻量级垂类行人检测模型。TinyPose的运行环境有以下依赖要求：
+PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测模型，可流畅地在移动端设备上执行多人姿态估计任务。借助PaddleDetecion自研的优秀轻量级检测模型[PicoDet](../../picodet/README.md)，我们同时提供了特色的轻量级垂类行人检测模型。TinyPose的运行环境有以下依赖要求：
 - [PaddlePaddle](https://github.com/PaddlePaddle/Paddle)>=2.2
 
 如希望在移动端部署，则还需要：
@@ -17,8 +17,22 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时姿态检测模�
   <img src="../../../docs/images/tinypose_pipeline.png" width='800'/>
 </div>
 
+## 部署案例
+
+- [Android Fitness Demo](https://github.com/zhiboniu/pose_demo_android)  基于PP-TinyPose, 高效实现健身校准与计数功能。
+
+<div align="center">
+  <img src="../../../docs/images/fitness_demo.gif" width='636'/>
+</div>
+
+- 欢迎扫码快速体验
+<div align="center">
+  <img src="../../../docs/images/tinypose_app.png" width='220'/>
+</div>
+
+
 ## 模型库
-### 姿态检测模型
+### 关键点检测模型
 | 模型  | 输入尺寸 | AP (COCO Val) | 单人推理耗时 (FP32)| 单人推理耗时（FP16) | 配置文件 | 模型权重 | 预测部署模型 | Paddle-Lite部署模型（FP32) | Paddle-Lite部署模型（FP16)|
 | :------------------------ | :-------:  | :------: | :------: |:---: | :---: | :---: | :---: | :---: | :---: |
 | PP-TinyPose | 128*96 | 58.1 | 4.57ms | 3.27ms | [Config](./tinypose_128x96.yml) |[Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
@@ -32,26 +46,26 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时姿态检测模�
 
 
 **说明**
-- 姿态检测模型与行人检测模型均使用`COCO train2017`和`AI Challenger trainset`作为训练集。姿态检测模型使用`COCO person keypoints val2017`作为测试集，行人检测模型采用`COCO instances val2017`作为测试集。
-- 姿态检测模型的精度指标所依赖的检测框为ground truth标注得到。
-- 姿态检测模型与行人检测模型均在4卡环境下训练，若实际训练环境需要改变GPU数量或batch size， 须参考[FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/FAQ.md)对应调整学习率。
+- 关键点检测模型与行人检测模型均使用`COCO train2017`和`AI Challenger trainset`作为训练集。关键点检测模型使用`COCO person keypoints val2017`作为测试集，行人检测模型采用`COCO instances val2017`作为测试集。
+- 关键点检测模型的精度指标所依赖的检测框为ground truth标注得到。
+- 关键点检测模型与行人检测模型均在4卡环境下训练，若实际训练环境需要改变GPU数量或batch size， 须参考[FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/FAQ.md)对应调整学习率。
 - 推理速度测试环境为 Qualcomm Snapdragon 865，采用arm8下4线程推理得到。
 
 ### Pipeline性能
-| 行人检测模型  | 姿态检测模型 | mAP (COCO Val) | 单人耗时 (FP32) |  单人耗时 (FP16) | 6人耗时 (FP32) | 6人耗时 (FP16)|
+| 行人检测模型  | 关键点检测模型 | mAP (COCO Val) | 单人耗时 (FP32) |  单人耗时 (FP16) | 6人耗时 (FP32) | 6人耗时 (FP16)|
 | :------------------------ | :-------:  | :------: | :---: | :---: | :---: | :---: |
 | PicoDet-S-Pedestrian-192*192 | PP-TinyPose-128*96 | 36.7 | 11.72 ms| 8.18 ms | 36.22 ms| 26.33 ms |
 | PicoDet-S-Pedestrian-320*320 | PP-TinyPose-128*96 | 44.2 | 19.45 ms| 14.41 ms | 44.0 ms| 32.57 ms |
 
 **说明**
-- 姿态检测模型的精度指标是基于对应行人检测模型检测得到的检测框。
+- 关键点检测模型的精度指标是基于对应行人检测模型检测得到的检测框。
 - 精度测试中去除了flip操作，且检测置信度阈值要求0.5。
 - 速度测试环境为qualcomm snapdragon 865，采用arm8下4线程、FP32推理得到。
 - Pipeline速度包含模型的预处理、推理及后处理部分。
 
 
 ## 模型训练
-姿态检测模型与行人检测模型的训练集在`COCO`以外还扩充了[AI Challenger](https://arxiv.org/abs/1711.06475)数据集，各数据集关键点定义如下：
+关键点检测模型与行人检测模型的训练集在`COCO`以外还扩充了[AI Challenger](https://arxiv.org/abs/1711.06475)数据集，各数据集关键点定义如下：
 ```
 COCO keypoint Description:
     0: "Nose",
@@ -95,7 +109,7 @@ AI Challenger Description:
 - 重新排列了`image_id`与`annotation id`；
 利用转换为`COCO`形式的合并数据标注，执行模型训练：
 ```bash
-# 姿态检测模型
+# 关键点检测模型
 python3 -m paddle.distributed.launch tools/train.py -c configs/keypoint/tiny_pose/tinypose_128x96.yml
 
 # 行人检测模型
@@ -118,7 +132,7 @@ picodet_s_192_pedestrian
 ├── model.pdiparams.info
 └── model.pdmodel
 ```
-您也可以直接下载模型库中提供的对应`预测部署模型`，分别获取得到行人检测模型和姿态检测模型的预测部署模型，解压即可。
+您也可以直接下载模型库中提供的对应`预测部署模型`，分别获取得到行人检测模型和关键点检测模型的预测部署模型，解压即可。
 
 2. 执行Python联合部署预测
 ```bash
@@ -149,7 +163,7 @@ python3 deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inferen
 
 ### 实现移动端部署
 #### 直接使用我们提供的模型进行部署
-1. 下载模型库中提供的`Paddle-Lite部署模型`，分别获取得到行人检测模型和姿态检测模型的`.nb`格式文件。
+1. 下载模型库中提供的`Paddle-Lite部署模型`，分别获取得到行人检测模型和关键点检测模型的`.nb`格式文件。
 2. 准备Paddle-Lite运行环境, 可直接通过[PaddleLite预编译库下载](https://paddle-lite.readthedocs.io/zh/latest/quick_start/release_lib.html)获取预编译库，无需自行编译。如需要采用FP16推理，则需要下载[FP16的预编译库](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.10-rc/inference_lite_lib.android.armv8_clang_c++_static_with_extra_with_cv_with_fp16.tiny_publish_427e46.zip)
 3. 编译模型运行代码，详细步骤见[Paddle-Lite端侧部署](../../../deploy/lite/README.md)。
 
@@ -175,7 +189,7 @@ paddle_lite_opt --model_dir=inference_model/picodet_s_192_pedestrian --valid_tar
 # FP16
 paddle_lite_opt --model_dir=inference_model/picodet_s_192_pedestrian --valid_targets=arm --optimize_out=picodet_s_192_pedestrian_fp16 --enable_fp16=true
 
-# 2. 转换姿态检测模型
+# 2. 转换关键点检测模型
 # FP32
 paddle_lite_opt --model_dir=inference_model/tinypose_128x96 --valid_targets=arm --optimize_out=tinypose_128x96_fp32
 # FP16
