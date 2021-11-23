@@ -93,8 +93,10 @@ class MOTDataSet(DetDataset):
         if self.image_lists == []:
             return
         # only used to get categories and metric
-        return os.path.join(self.dataset_dir, 'image_lists',
-                            self.image_lists[0])
+        # only check first data, but the label_list of all data should be same.
+        first_mot_data = self.image_lists[0].split('.')[0]
+        anno_file = os.path.join(self.dataset_dir, first_mot_data, 'label_list.txt')
+        return anno_file
 
     def parse_dataset(self):
         self.img_files = OrderedDict()
@@ -272,8 +274,10 @@ class MCMOTDataSet(DetDataset):
         if self.image_lists == []:
             return
         # only used to get categories and metric
-        return os.path.join(self.dataset_dir, 'image_lists',
-                            self.image_lists[0])
+        # only check first data, but the label_list of all data should be same.
+        first_mot_data = self.image_lists[0].split('.')[0]
+        anno_file = os.path.join(self.dataset_dir, first_mot_data, 'label_list.txt')
+        return anno_file
 
     def parse_dataset(self):
         self.img_files = OrderedDict()

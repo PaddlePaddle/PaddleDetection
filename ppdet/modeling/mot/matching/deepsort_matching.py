@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This code is borrow from https://github.com/nwojke/deep_sort/tree/master/deep_sort
+This code is based on https://github.com/nwojke/deep_sort/tree/master/deep_sort
 """
 
 import numpy as np

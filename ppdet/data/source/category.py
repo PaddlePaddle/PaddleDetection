@@ -92,19 +92,43 @@ def get_categories(metric_type, anno_file=None, arch=None):
         return (None, {'id': 'keypoint'})
 
     elif metric_type.lower() in ['mot', 'motdet', 'reid']:
-        return _mot_category()
+        if anno_file and os.path.isfile(anno_file):
+            cats = []
+            with open(anno_file) as f:
+                for line in f.readlines():
+                    cats.append(line.strip())
+            if cats[0] == 'background':
+                cats = cats[1:]
+            clsid2catid = {i: i for i in range(len(cats))}
+            catid2name = {i: name for i, name in enumerate(cats)}
+            return clsid2catid, catid2name
+        # anno file not exist, load default category 'pedestrian'.
+        else:
+            return _mot_category(category='pedestrian')
 
     elif metric_type.lower() in ['kitti', 'bdd100kmot']:
-        return _mot_category(category='car')
+        return _mot_category(category='vehicle')
 
     elif metric_type.lower() in ['mcmot']:
-        return _visdrone_category()
+        if anno_file and os.path.isfile(anno_file):
+            cats = []
+            with open(anno_file) as f:
+                for line in f.readlines():
+                    cats.append(line.strip())
+            if cats[0] == 'background':
+                cats = cats[1:]
+            clsid2catid = {i: i for i in range(len(cats))}
+            catid2name = {i: name for i, name in enumerate(cats)}
+            return clsid2catid, catid2name
+        # anno file not exist, load default categories of visdrone all 10 categories
+        else:
+            return _visdrone_category()
 
     else:
         raise ValueError("unknown metric type {}".format(metric_type))
 
 
-def _mot_category(category='person'):
+def _mot_category(category='pedestrian'):
     """
     Get class id to category id map and category id
     to category name map of mot dataset

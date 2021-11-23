@@ -17,7 +17,6 @@ This code is based on https://github.com/Zhongdao/Towards-Realtime-MOT/blob/mast
 
 import numpy as np
 from collections import defaultdict
-import paddle
 
 from ..matching import jde_matching as matching
 from ..motion import KalmanFilter
