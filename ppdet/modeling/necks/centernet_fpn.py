@@ -283,11 +283,10 @@ class TransitionUp(nn.Layer):
     def __init__(self, in_channels, out_channels):
         super().__init__()
 
-    def forward(self, x, skip, concat=True):
+    def forward(self, x, skip):
         w, h = skip.shape[2], skip.shape[3]
         out = F.interpolate(x, size=(w, h), mode="bilinear", align_corners=True)
-        if concat:
-            out = paddle.concat([out, skip], 1)
+        out = paddle.concat([out, skip], 1)
         return out
 
 
@@ -391,16 +390,17 @@ class CenterNetHarDNetFPN(nn.Layer):
 
         for i in range(3):
             skip_x = body_feats[3 - i]
-            x = self.transUpBlocks[i](x, skip_x, (i < self.skip_lv))
-            x = self.conv1x1_up[i](x)
+            x_up = self.transUpBlocks[i](x, skip_x)
+            x_ch = self.conv1x1_up[i](x_up)
             if self.SC[i] > 0:
-                end = x.shape[1]
-                x_sc.append(x[:, end - self.SC[i]:, :, :])
-                x = x[:, :end - self.SC[i], :, :]
-            x2 = self.avg9x9(x)
-            x3 = x / (x.sum((2, 3), keepdim=True) + 0.1)
-            x = paddle.concat([x, x2, x3], 1)
-            x = self.denseBlocksUp[i](x)
+                end = x_ch.shape[1]
+                new_st = end - self.SC[i]
+                x_sc.append(x_ch[:, new_st:, :, :])
+                x_ch = x_ch[:, :new_st, :, :]
+            x2 = self.avg9x9(x_ch)
+            x3 = x_ch / (x_ch.sum((2, 3), keepdim=True) + 0.1)
+            x_new = paddle.concat([x_ch, x2, x3], 1)
+            x = self.denseBlocksUp[i](x_new)
 
         scs = [x]
         for i in range(3):
