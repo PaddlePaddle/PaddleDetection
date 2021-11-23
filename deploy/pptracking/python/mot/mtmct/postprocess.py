@@ -12,16 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
+This code is based on https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
 """
 
 import re
 import cv2
 from tqdm import tqdm
-import pickle
 import os
-import os.path as osp
-from os.path import join as opj
+
 import numpy as np
 import motmetrics as mm
 from functools import reduce
