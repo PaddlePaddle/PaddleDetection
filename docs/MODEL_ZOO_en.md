@@ -92,3 +92,31 @@ Please refer to[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/de
 ### S2ANet
 
 Please refer to[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/)
+
+## KeyPoint Detection
+
+### PP-TinyPose
+
+Please refer to [PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/tiny_pose)
+
+## HRNet
+
+Please refer to [HRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/hrnet)
+
+## HigherHRNet
+
+Please refer to [HigherHRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/higherhrnet)
+
+## Multi-Object Tracking
+
+### DeepSort
+
+Please refer to [DeepSort](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort)
+
+### JDE
+
+Please refer to [JDE](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde)
+
+### fairmot 
+
+Please refer to [FairMot](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot)
