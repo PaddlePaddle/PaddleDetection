@@ -270,6 +270,8 @@ class CenterNetDLAFPN(nn.Layer):
         feat = ida_up_feats[-1]
         if self.with_sge:
             feat = self.sge_attention(feat)
+        if self.down_ratio != 4:
+            feat = F.interpolate(feat, scale_factor=self.down_ratio // 4, mode="bilinear", align_corners=True)
         return feat
 
     @property

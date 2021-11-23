@@ -103,7 +103,7 @@ def run(FLAGS, cfg):
         tracker.load_weights_jde(cfg.weights)
 
     # inference
-    tracker.mot_predict(
+    tracker.mot_predict_seq(
         video_file=FLAGS.video_file,
         frame_rate=FLAGS.frame_rate,
         image_dir=FLAGS.image_dir,

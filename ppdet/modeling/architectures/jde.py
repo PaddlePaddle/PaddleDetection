@@ -16,8 +16,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import paddle
-from ppdet.modeling.mot.utils import scale_coords
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
@@ -73,8 +71,11 @@ class JDE(BaseArch):
             emb_feats = det_outs['emb_feats']
             loss_confs = det_outs['det_losses']['loss_confs']
             loss_boxes = det_outs['det_losses']['loss_boxes']
-            jde_losses = self.reid(emb_feats, self.inputs, loss_confs,
-                                   loss_boxes)
+            jde_losses = self.reid(
+                emb_feats,
+                self.inputs,
+                loss_confs=loss_confs,
+                loss_boxes=loss_boxes)
             return jde_losses
         else:
             if self.metric == 'MOTDet':
@@ -84,32 +85,18 @@ class JDE(BaseArch):
                 }
                 return det_results
 
-            elif self.metric == 'ReID':
-                emb_feats = det_outs['emb_feats']
-                embs_and_gts = self.reid(emb_feats, self.inputs, test_emb=True)
-                return embs_and_gts
-
             elif self.metric == 'MOT':
                 emb_feats = det_outs['emb_feats']
-                emb_outs = self.reid(emb_feats, self.inputs)
-
+                bboxes = det_outs['bbox']
                 boxes_idx = det_outs['boxes_idx']
-                bbox = det_outs['bbox']
-
-                input_shape = self.inputs['image'].shape[2:]
-                im_shape = self.inputs['im_shape']
-                scale_factor = self.inputs['scale_factor']
-
-                bbox[:, 2:] = scale_coords(bbox[:, 2:], input_shape, im_shape,
-                                           scale_factor)
-
                 nms_keep_idx = det_outs['nms_keep_idx']
 
-                pred_dets = paddle.concat((bbox[:, 2:], bbox[:, 1:2], bbox[:, 0:1]), axis=1)
-
-                emb_valid = paddle.gather_nd(emb_outs, boxes_idx)
-                pred_embs = paddle.gather_nd(emb_valid, nms_keep_idx)
-
+                pred_dets, pred_embs = self.reid(
+                    emb_feats,
+                    self.inputs,
+                    bboxes=bboxes,
+                    boxes_idx=boxes_idx,
+                    nms_keep_idx=nms_keep_idx)
                 return pred_dets, pred_embs
 
             else:
