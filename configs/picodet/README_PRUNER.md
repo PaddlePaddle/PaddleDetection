@@ -46,7 +46,7 @@ def skip_params_self(model):
 ### 6.1 直接使用
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3
-python3.7 -m paddle.distributed.launch --log_dir=log_test --gpus 0,1,2,3 tools/train.py -c configs/picodet/pruner/picodet_m_320_coco_pruner.yml --slim_config configs/slim/prune/picodet_m_unstructured_prune.yml --eval
+python3.7 -m paddle.distributed.launch --log_dir=log_test --gpus 0,1,2,3 tools/train.py -c configs/picodet/pruner/picodet_m_320_coco_pruner.yml --slim_config configs/slim/prune/picodet_m_unstructured_prune_75.yml --eval
 ```
 
 ### 6.2 详细介绍
