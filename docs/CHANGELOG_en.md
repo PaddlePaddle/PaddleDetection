@@ -18,6 +18,7 @@ English | [简体中文](./CHANGELOG.md)
         - Publish Sniper optimization method for tiny object detection, supporting Faster RCNN and PP-YOLO series models
         - Publish PP-YOLO optimized model PP-YOLO-EB for EdgeBoard
     - Multi-object tracking:
+        - Publish Real-time tracking system PP-Tracking
         - Publish high-precision, small-scale and lightweight model based on FairMot
         - Publish real-time tracking model zoo for pedestrian, head and vehicle tracking, including scenarios such as aerial surveillance, autonomous driving, dense crowds, and tiny object tracking
         - DeepSort support PP-YOLO, PP-PicoDet as object detector
