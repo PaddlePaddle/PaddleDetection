@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
+This code is based on https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
 """
 
 import os
 import re
 import cv2
+import gc
 import paddle
+
 import numpy as np
 from sklearn import preprocessing
 from sklearn.cluster import AgglomerativeClustering
-import gc
 import motmetrics as mm
 import pandas as pd
 from tqdm import tqdm
@@ -341,7 +342,7 @@ def visual_rerank(prb_feats,
         prb_feats, gal_feats = run_fac(prb_feats, gal_feats, prb_labels,
                                        gal_labels, 0.08, 20, 0.5, 1, 1)
     if use_rerank:
-        paddle.enable_static()
+        paddle.disable_static()
         print('current use rerank finetuned parameters....')
         # Step2: k-reciprocal. finetuned parameters: [k1,k2,lambda_value]
         sims = ReRank2(

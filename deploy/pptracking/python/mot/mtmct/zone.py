@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
+This code is based on https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
 """
 
 import os
