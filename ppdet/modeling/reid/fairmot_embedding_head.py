@@ -59,15 +59,11 @@ class FairMOTEmbeddingHead(nn.Layer):
         self.reid_loss = nn.CrossEntropyLoss(ignore_index=-1, reduction='sum')
 
         if num_classes == 1:
-            nID = self.num_identities_dict[0] # single class
+            nID = self.num_identities_dict[0]  # single class
             self.classifier = nn.Linear(
-                ch_emb,
-                nID,
-                weight_attr=param_attr,
-                bias_attr=bias_attr)
+                ch_emb, nID, weight_attr=param_attr, bias_attr=bias_attr)
             # When num_identities(nID) is 1, emb_scale is set as 1
-            self.emb_scale = math.sqrt(2) * math.log(
-                nID - 1) if nID > 1 else 1
+            self.emb_scale = math.sqrt(2) * math.log(nID - 1) if nID > 1 else 1
         else:
             self.classifiers = dict()
             self.emb_scale_dict = dict()
@@ -84,7 +80,7 @@ class FairMOTEmbeddingHead(nn.Layer):
             input_shape = input_shape[0]
         return {'in_channels': input_shape.channels}
 
-    def process_by_class(self, det_outs, embedding, bbox_inds, topk_clses):
+    def process_by_class(self, bboxes, embedding, bbox_inds, topk_clses):
         pred_dets, pred_embs = [], []
         for cls_id in range(self.num_classes):
             inds_masks = topk_clses == cls_id
@@ -97,8 +93,8 @@ class FairMOTEmbeddingHead(nn.Layer):
             cls_inds_mask = inds_masks > 0
 
             bbox_mask = paddle.nonzero(cls_inds_mask)
-            cls_det_outs = paddle.gather_nd(det_outs, bbox_mask)
-            pred_dets.append(cls_det_outs)
+            cls_bboxes = paddle.gather_nd(bboxes, bbox_mask)
+            pred_dets.append(cls_bboxes)
 
             cls_inds = paddle.masked_select(bbox_inds, cls_inds_mask)
             cls_inds = cls_inds.unsqueeze(-1)
@@ -108,12 +104,12 @@ class FairMOTEmbeddingHead(nn.Layer):
         return paddle.concat(pred_dets), paddle.concat(pred_embs)
 
     def forward(self,
-                feat,
+                neck_feat,
                 inputs,
-                det_outs=None,
+                bboxes=None,
                 bbox_inds=None,
                 topk_clses=None):
-        reid_feat = self.reid(feat)
+        reid_feat = self.reid(neck_feat)
         if self.training:
             if self.num_classes == 1:
                 loss = self.get_loss(reid_feat, inputs)
@@ -121,18 +117,18 @@ class FairMOTEmbeddingHead(nn.Layer):
                 loss = self.get_mc_loss(reid_feat, inputs)
             return loss
         else:
-            assert det_outs is not None and bbox_inds is not None
+            assert bboxes is not None and bbox_inds is not None
             reid_feat = F.normalize(reid_feat)
             embedding = paddle.transpose(reid_feat, [0, 2, 3, 1])
             embedding = paddle.reshape(embedding, [-1, self.ch_emb])
             # embedding shape: [bs * h * w, ch_emb]
 
             if self.num_classes == 1:
-                pred_dets = det_outs
+                pred_dets = bboxes
                 pred_embs = paddle.gather(embedding, bbox_inds)
             else:
                 pred_dets, pred_embs = self.process_by_class(
-                    det_outs, embedding, bbox_inds, topk_clses)
+                    bboxes, embedding, bbox_inds, topk_clses)
             return pred_dets, pred_embs
 
     def get_loss(self, feat, inputs):
