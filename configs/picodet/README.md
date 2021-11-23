@@ -266,6 +266,15 @@ python tools/post_quant.py -c configs/picodet/picodet_s_320_coco.yml \
 
 </details>
 
+## Unstructured Pruning
+
+<details open>
+<summary>Toturial:</summary>
+
+Please refer this [documentation](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/README_PRUNER.md) for details such as requirements, training and deployment.
+
+</details>
+
 ## Application
 
 - **Pedestrian detection:** model zoo of `PicoDet-S-Pedestrian` please refer to [PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/tiny_pose#%E8%A1%8C%E4%BA%BA%E6%A3%80%E6%B5%8B%E6%A8%A1%E5%9E%8B)

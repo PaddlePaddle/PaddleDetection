@@ -81,7 +81,8 @@ class Trainer(object):
             # JDE only support single class MOT now.
 
         if cfg.architecture == 'FairMOT' and self.mode == 'train':
-            cfg['FairMOTEmbeddingHead']['num_identities_dict'] = self.dataset.num_identities_dict
+            cfg['FairMOTEmbeddingHead'][
+                'num_identities_dict'] = self.dataset.num_identities_dict
             # FairMOT support single class and multi-class MOT now.
 
         # build model
@@ -118,6 +119,10 @@ class Trainer(object):
             steps_per_epoch = len(self.loader)
             self.lr = create('LearningRate')(steps_per_epoch)
             self.optimizer = create('OptimizerBuilder')(self.lr, self.model)
+
+        if self.cfg.get('unstructured_prune'):
+            self.pruner = create('UnstructuredPruner')(self.model,
+                                                       steps_per_epoch)
 
         self._nranks = dist.get_world_size()
         self._local_rank = dist.get_rank()
@@ -395,9 +400,10 @@ class Trainer(object):
                     # model backward
                     loss.backward()
                     self.optimizer.step()
-
                 curr_lr = self.optimizer.get_lr()
                 self.lr.step()
+                if self.cfg.get('unstructured_prune'):
+                    self.pruner.step()
                 self.optimizer.clear_grad()
                 self.status['learning_rate'] = curr_lr
 
@@ -414,6 +420,8 @@ class Trainer(object):
             if self.use_ema:
                 weight = copy.deepcopy(self.model.state_dict())
                 self.model.set_dict(self.ema.apply())
+            if self.cfg.get('unstructured_prune'):
+                self.pruner.update_params()
 
             self._compose_callback.on_epoch_end(self.status)
 
