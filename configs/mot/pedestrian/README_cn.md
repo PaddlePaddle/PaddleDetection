@@ -14,10 +14,13 @@
 
 ### FairMOT在各个数据集val-set上Pedestrian类别的结果
 
-|    数据集      |  输入尺寸 |  MOTA  |  IDF1  |  FPS   |  下载链接 | 配置文件 |
-| :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
-|  PathTrack    | 1088x608 |  44.9 |    59.3   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_pathtrack.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_pathtrack.yml) |
-|  VisDrone     | 1088x608 |  49.2 |   63.1 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_pedestrian.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_visdrone_pedestrian.yml) |
+|    数据集      |  骨干网络   |  输入尺寸 |  MOTA  |  IDF1  |  FPS   |  下载链接 | 配置文件 |
+| :-------------| :-------- | :------- | :----: | :----: | :----: | :-----: |:------: |
+|  PathTrack    |   DLA-34  | 1088x608 |  44.9 |    59.3   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_pathtrack.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_pathtrack.yml) |
+|  VisDrone     |   DLA-34  | 1088x608 |  49.2 |   63.1 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_pedestrian.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_visdrone_pedestrian.yml) |
+|  VisDrone     | HRNetv2-W18| 1088x608 |  40.5 |   54.7 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_pedestrian.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_pedestrian.yml) |
+|  VisDrone     | HRNetv2-W18| 864x480 |  38.6 |   50.9 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_pedestrian.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_pedestrian.yml) |
+|  VisDrone     | HRNetv2-W18| 576x320 |  30.6 |   47.2 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_pedestrian.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_pedestrian.yml) |
 
 **注意:**
  FairMOT均使用DLA-34为骨干网络，4个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
