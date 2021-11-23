@@ -45,14 +45,14 @@ class JDE_Detector(Detector):
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
-        batch_size (int): size of pre batch in inference
+        batch_size (int): size of per batch in inference, default is 1 in tracking models
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
-        enable_mkldnn (bool): whether to open MKLDNN 
+        enable_mkldnn (bool): whether to open MKLDNN
     """
 
     def __init__(self,
@@ -111,7 +111,8 @@ class JDE_Detector(Detector):
                 tid = t.track_id
                 tscore = t.score
                 if tscore < threshold: continue
-                if tlwh[2] * tlwh[3] <= self.tracker.min_box_area: continue
+                if tlwh[2] * tlwh[3] <= self.tracker.min_box_area:
+                    continue
                 if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
                         3] > self.tracker.vertical_ratio:
                     continue
@@ -123,7 +124,8 @@ class JDE_Detector(Detector):
     def predict(self, image_list, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
-            image_list (list): list of image
+            image_list (list[str]): path of images, only support one image path
+                (batch_size=1) in tracking model
             threshold (float): threshold of predicted box' score
         Returns:
             online_tlwhs, online_scores, online_ids (dict[np.array])
@@ -159,6 +161,7 @@ class JDE_Detector(Detector):
             pred_dets, pred_embs, threshold)
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
+
         return online_tlwhs, online_scores, online_ids
 
 
@@ -172,7 +175,7 @@ def predict_image(detector, image_list):
     for frame_id, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
         if FLAGS.run_benchmark:
-            detector.predict([frame], FLAGS.threshold, warmup=10, repeats=10)
+            detector.predict([img_file], FLAGS.threshold, warmup=10, repeats=10)
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
             detector.gpu_mem += gm
@@ -180,10 +183,15 @@ def predict_image(detector, image_list):
             print('Test iter {}, file name:{}'.format(frame_id, img_file))
         else:
             online_tlwhs, online_scores, online_ids = detector.predict(
-                [frame], FLAGS.threshold)
-            online_im = plot_tracking_dict(frame, num_classes, online_tlwhs,
-                                           online_ids, online_scores, frame_id,
-                                           ids2names)
+                [img_file], FLAGS.threshold)
+            online_im = plot_tracking_dict(
+                frame,
+                num_classes,
+                online_tlwhs,
+                online_ids,
+                online_scores,
+                frame_id=frame_id,
+                ids2names=ids2names)
             if FLAGS.save_images:
                 if not os.path.exists(FLAGS.output_dir):
                     os.makedirs(FLAGS.output_dir)
