@@ -117,6 +117,6 @@ Please refer to [DeepSort](https://github.com/PaddlePaddle/PaddleDetection/tree/
 
 Please refer to [JDE](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde)
 
-### fairmot 
+### FairMOT
 
-Please refer to [FairMot](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot)
+Please refer to [FairMOT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot)
