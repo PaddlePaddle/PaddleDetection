@@ -43,6 +43,7 @@ class UnstructuredPruner(object):
         self.pruning_steps = pruning_steps
 
     def __call__(self, model, steps_per_epoch, skip_params_func=None):
+        paddleslim = try_import('paddleslim')
         from paddleslim import GMPUnstructuredPruner
         configs = {
             'pruning_strategy': 'gmp',
@@ -54,7 +55,6 @@ class UnstructuredPruner(object):
             'initial_ratio': self.initial_ratio,
         }
 
-        paddleslim = try_import('paddleslim')
         pruner = GMPUnstructuredPruner(
             model,
             ratio=self.ratio,

@@ -3,7 +3,7 @@ _BASE_: [
   '../../runtime.yml',
   '../_base_/picodet_esnet.yml',
   './optimizer_300e_pruner.yml',
-  './picodet_320_reader_pruner.yml',
+  '../_base_/picodet_320_reader.yml',
 ]
 
 weights: output/picodet_m_320_coco/model_final

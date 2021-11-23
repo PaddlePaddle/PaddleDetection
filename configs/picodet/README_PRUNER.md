@@ -120,3 +120,16 @@ paddle_lite_opt --model_dir=inference_model/picodet_m_320_coco --valid_targets=a
 **注意：**
 - 上述模型体积是**部署模型体积**，即 PaddleLite 转换得到的 *.nb 文件的体积。
 - 加速一栏我们按照 FPS 增加百分比计算，即：$(dense\_latency - sparse\_latency) / sparse\_latency$
+- 上述稀疏化训练时，我们额外添加了一种数据增强方式到 _base_/picodet_320_reader.yml，代码如下。但是不添加的话，预期mAP也不会有明显下降（<0.1），且对速度和模型体积没有影响。
+```yaml
+worker_num: 6
+TrainReader:
+  sample_transforms:
+  - Decode: {}
+  - RandomCrop: {}
+  - RandomFlip: {prob: 0.5}
+  - RandomExpand: {fill_value: [123.675, 116.28, 103.53]}
+  - RandomDistort: {}
+  batch_transforms:
+etc.
+```
