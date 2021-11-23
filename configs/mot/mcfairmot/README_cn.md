@@ -43,14 +43,15 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/mcfairmot/mcfairm
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/mcfairmot/mcfairmot_dla34_30e_1088x608_visdrone.yml -o weights=output/mcfairmot_dla34_30e_1088x608_visdrone/model_final.pdparams
 ```
 **注意:**
- 默认评估的是VisDrone2019 MOT val-set数据集, 如需换评估数据集可参照以下代码修改`configs/datasets/mcmot.yml`：
-```
-EvalMOTDataset:
-  !MOTImageFolder
-    dataset_dir: dataset/mot
-    data_root: your_dataset/images/val
-    keep_ori_im: False # set True if save visualization images or video
-```
+  默认评估的是VisDrone2019 MOT val-set数据集, 如需换评估数据集可参照以下代码修改`configs/datasets/mcmot.yml`：
+  ```
+  EvalMOTDataset:
+    !MOTImageFolder
+      dataset_dir: dataset/mot
+      data_root: your_dataset/images/val
+      keep_ori_im: False # set True if save visualization images or video
+  ```
+  多类别跟踪结果会存于`{output_dir}/mot_results/`中，里面每个视频序列对应一个txt，每个txt文件每行信息是`frame,id,x1,y1,w,h,score,cls_id,-1,-1`, 此外`{output_dir}`可通过`--output_dir`设置。
 
 ### 3. 预测
 使用单个GPU通过如下命令预测一个视频，并保存为视频
@@ -72,6 +73,7 @@ python deploy/python/mot_jde_infer.py --model_dir=output_inference/mcfairmot_dla
 ```
 **注意:**
  跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ 多类别跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,cls_id,-1,-1`。
 
 
 ## 引用

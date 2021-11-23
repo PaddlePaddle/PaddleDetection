@@ -43,14 +43,15 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/mcfairmot/mcfairm
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/mcfairmot/mcfairmot_dla34_30e_1088x608_visdrone.yml -o weights=output/mcfairmot_dla34_30e_1088x608_visdrone/model_final.pdparams
 ```
 **Notes:**
- The default evaluation dataset is VisDrone2019 MOT val-set. If you want to change the evaluation dataset, please refer to the following code and modify `configs/datasets/mcmot.yml`：
-```
-EvalMOTDataset:
-  !MOTImageFolder
-    dataset_dir: dataset/mot
-    data_root: your_dataset/images/val
-    keep_ori_im: False # set True if save visualization images or video
-```
+  The default evaluation dataset is VisDrone2019 MOT val-set. If you want to change the evaluation dataset, please refer to the following code and modify `configs/datasets/mcmot.yml`：
+  ```
+  EvalMOTDataset:
+    !MOTImageFolder
+      dataset_dir: dataset/mot
+      data_root: your_dataset/images/val
+      keep_ori_im: False # set True if save visualization images or video
+  ```
+  Tracking results will be saved in `{output_dir}/mot_results/`, and every sequence has one txt file, each line of the txt file is `frame,id,x1,y1,w,h,score,cls_id,-1,-1`, and you can set `{output_dir}` by `--output_dir`.
 
 ### 3. Inference
 Inference a vidoe on single GPU with following command:
@@ -73,6 +74,7 @@ python deploy/python/mot_jde_infer.py --model_dir=output_inference/mcfairmot_dla
 ```
 **Notes:**
 The tracking model is used to predict the video, and does not support the prediction of a single image. The visualization video of the tracking results is saved by default. You can add `--save_mot_txts` to save the txt result file, or `--save_images` to save the visualization images.
+Each line of the tracking results txt file is `frame,id,x1,y1,w,h,score,cls_id,-1,-1`.
 
 
 ## Citations

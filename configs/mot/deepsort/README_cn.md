@@ -94,6 +94,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort
  - JDE YOLOv3行人检测模型是和JDE和FairMOT使用同样的MOT数据集训练的，因此MOTA较高。而其他通用检测模型如PPYOLOv2只使用了MOT17 half数据集训练。
  - JDE YOLOv3模型与通用检测模型如YOLOv3和PPYOLOv2最大的区别是使用了JDEBBoxPostProcess后处理，结果输出坐标没有缩放回原图，而通用检测模型输出坐标是缩放回原图的。
  - `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE YOLOv3则为False，如果使用通用检测模型则为True, 默认值是False。
+ - 跟踪结果会存于`{output_dir}/mot_results/`中，里面每个视频序列对应一个txt，每个txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`, 此外`{output_dir}`可通过`--output_dir`设置。
 
 ### 2. 预测
 
@@ -142,6 +143,7 @@ python deploy/python/mot_sde_infer.py --model_dir=output_inference/ppyolov2_r50v
 ```
 **注意:**
  跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_mot_txt_per_img`(对每张图片保存一个txt)表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
  `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
 
 
