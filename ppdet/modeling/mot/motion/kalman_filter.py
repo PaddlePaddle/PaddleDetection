@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This code is borrow from https://github.com/nwojke/deep_sort/blob/master/deep_sort/kalman_filter.py
+This code is based on https://github.com/nwojke/deep_sort/blob/master/deep_sort/kalman_filter.py
 """
 
 import numpy as np

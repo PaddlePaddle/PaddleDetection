@@ -11,12 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+This code is based on https://github.com/Zhongdao/Towards-Realtime-MOT/blob/master/tracker/multitracker.py
+"""
 
 import numpy as np
 from collections import defaultdict
 from collections import deque, OrderedDict
 from ..matching import jde_matching as matching
 from ppdet.core.workspace import register, serializable
+import warnings
+warnings.filterwarnings("ignore")
 
 __all__ = [
     'TrackState',

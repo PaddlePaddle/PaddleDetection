@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
+This code is based on https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
+
+Note: The following codes are strongly related to zone of the AIC21 test-set S06,
+    so they can only be used in S06, and can not be used for other MTMCT datasets.
 """
 
 import os
