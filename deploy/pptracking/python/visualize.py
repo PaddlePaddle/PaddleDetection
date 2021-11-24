@@ -205,14 +205,15 @@ def plot_tracking_dict(image,
     line_thickness = max(1, int(image.shape[1] / 500.))
 
     if num_classes == 1:
-        start = records[-1].find('Total')
-        end = records[-1].find('In')
-        cv2.putText(
-            im,
-            records[-1][start:end], (0, int(40 * text_scale)),
-            cv2.FONT_HERSHEY_PLAIN,
-            text_scale, (0, 0, 255),
-            thickness=2)
+        if records is not None:
+            start = records[-1].find('Total')
+            end = records[-1].find('In')
+            cv2.putText(
+                im,
+                records[-1][start:end], (0, int(40 * text_scale)),
+                cv2.FONT_HERSHEY_PLAIN,
+                text_scale, (0, 0, 255),
+                thickness=2)
 
     if num_classes == 1 and do_entrance_counting:
         entrance_line = tuple(map(int, entrance))
