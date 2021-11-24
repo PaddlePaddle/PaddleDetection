@@ -23,6 +23,7 @@ python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fa
 ```
 **注意:**
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
  - 对于多类别或车辆的FairMOT模型的导出和Python预测只需更改相应的config和模型权重即可。如：
  ```
  job_name=mcfairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone
@@ -32,6 +33,7 @@ python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fa
  CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c ${config} -o weights=https://paddledet.bj.bcebos.com/models/mot/${job_name}.pdparams
  python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/${job_name} --video_file={your video name}.mp4 --device=GPU --save_mot_txts
  ```
+ - 多类别跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,cls_id,-1,-1`。
 
 
 ## 2. 对DeepSORT模型的导出和预测
@@ -65,6 +67,7 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/pp
 ```
 **注意:**
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_images`表示保存跟踪结果可视化图片。
+ - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
  - `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
 
 
@@ -88,8 +91,10 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21
 ```
 **注意:**
   跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)，或`--save_images`表示保存跟踪结果可视化图片。
+  跨镜头跟踪结果txt文件每行信息是`carame_id,frame,id,x1,y1,w,h,-1,-1`。
   `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
   `--mtmct_dir`是MTMCT预测的某个场景的文件夹名字，里面包含该场景不同摄像头拍摄视频的图片文件夹，其数量至少为两个。
+  `--mtmct_cfg`是MTMCT预测的某个场景的配置文件，里面包含该一些trick操作的开关和该场景摄像头相关设置的文件路径，用户可以自行更改相关路径以及设置某些操作是否启用。
 
 
 ## 参数说明:

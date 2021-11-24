@@ -62,14 +62,15 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=output/jde_darknet53_30e_1088x608/model_final.pdparams
 ```
 **注意:**
- 默认评估的是MOT-16 Train Set数据集, 如需换评估数据集可参照以下代码修改`configs/datasets/mot.yml`：
+  默认评估的是MOT-16 Train Set数据集, 如需换评估数据集可参照以下代码修改`configs/datasets/mot.yml`：
+  ```
+  EvalMOTDataset:
+    !MOTImageFolder
+      dataset_dir: dataset/mot
+      data_root: MOT17/images/train
+      keep_ori_im: False # set True if save visualization images or video
 ```
-EvalMOTDataset:
-  !MOTImageFolder
-    dataset_dir: dataset/mot
-    data_root: MOT17/images/train
-    keep_ori_im: False # set True if save visualization images or video
-```
+  跟踪结果会存于`{output_dir}/mot_results/`中，里面每个视频序列对应一个txt，每个txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`, 此外`{output_dir}`可通过`--output_dir`设置。
 
 ### 3. 预测
 
@@ -95,7 +96,9 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/jde/jde_darkn
 python deploy/python/mot_jde_infer.py --model_dir=output_inference/jde_darknet53_30e_1088x608 --video_file={your video name}.mp4 --device=GPU --save_mot_txts
 ```
 **注意:**
- 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。。
+ 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
+
 
 ## 引用
 ```
