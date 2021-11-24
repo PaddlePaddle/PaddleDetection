@@ -308,6 +308,21 @@ Please use `PicoDet-LCNet` model, which has fewer `transpose` operators.
 </details>
 
 
+<details>
+<summary>How to count model parameters.</summary>
+
+You can insert below code at [here](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/ppdet/engine/trainer.py#L141) to count learnable parameters.
+
+```python
+params = sum([
+    p.numel() for n, p in self.model. named_parameters()
+    if all([x not in n for x in ['_mean', '_variance']])
+]) # exclude BatchNorm running status
+print('params: ', params)
+```
+
+</details>
+
 ## Cite PP-PicoDet
 If you use PicoDet in your research, please cite our work by using the following BibTeX entry:
 ```
