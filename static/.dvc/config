@@ -1,0 +1,4 @@
+[core]
+    no_scm = True
+['remote "mylocal"']
+    url = /mnt/data-first-1124

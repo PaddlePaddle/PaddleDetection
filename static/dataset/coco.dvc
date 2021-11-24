@@ -1,0 +1,5 @@
+outs:
+- md5: e4c5654935d4ff66db2f2a2736150649.dir
+  size: 3062461
+  nfiles: 22
+  path: coco
