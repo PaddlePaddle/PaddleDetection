@@ -13,7 +13,7 @@ English | [简体中文](README_cn.md)
 MCFairMOT is the Multi-class extended version of [FairMOT](https://arxiv.org/abs/2004.01888).
 
 ## Model Zoo
-### MCFairMOT DLA-34 Results on VisDrone2019 Val Set
+### MCFairMOT Results on VisDrone2019 Val Set
 | backbone       | input shape | MOTA | IDF1 |  IDS    |   FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :---:  | :------: | :----: |:----: |
 | DLA-34         | 1088x608 |  24.3  |  41.6  |  2314  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_dla34_30e_1088x608_visdrone.pdparams) | [config](./mcfairmot_dla34_30e_1088x608_visdrone.yml) |
@@ -23,14 +23,15 @@ MCFairMOT is the Multi-class extended version of [FairMOT](https://arxiv.org/abs
 
 **Notes:**
  MOTA is the average MOTA of 10 catecories in the VisDrone2019 MOT dataset, and its value is also equal to the average MOTA of all the evaluated video sequences.
+ MCFairMOT used 4 GPUs for training 30 epoches. The batch size is 6 on each GPU for MCFairMOT DLA-34, and 4 for MCFairMOT HRNetV2-W18.
 
 
 ## Getting Start
 
 ### 1. Training
-Training MCFairMOT on 8 GPUs with following command
+Training MCFairMOT on 4 GPUs with following command
 ```bash
-python -m paddle.distributed.launch --log_dir=./mcfairmot_dla34_30e_1088x608_visdrone/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/mcfairmot/mcfairmot_dla34_30e_1088x608_visdrone.yml
+python -m paddle.distributed.launch --log_dir=./mcfairmot_dla34_30e_1088x608_visdrone/ --gpus 0,1,2,3 tools/train.py -c configs/mot/mcfairmot/mcfairmot_dla34_30e_1088x608_visdrone.yml
 ```
 
 ### 2. Evaluation
