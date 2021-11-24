@@ -48,4 +48,4 @@ inference:./deploy/python/infer.py
 --image_dir:./dataset/coco/test2017/
 --save_log_path:null
 --run_benchmark:True
-null:null
+--trt_max_shape:1600
