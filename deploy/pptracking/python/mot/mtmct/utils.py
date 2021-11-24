@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
+This code is based on https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
 """
 
 import os
 import re
 import cv2
-import paddle
+import gc
 import numpy as np
 from sklearn import preprocessing
 from sklearn.cluster import AgglomerativeClustering
-import gc
 import motmetrics as mm
 import pandas as pd
 from tqdm import tqdm
@@ -183,14 +182,40 @@ def run_fac(prb_feats,
 def euclidean_distance(qf, gf):
     m = qf.shape[0]
     n = gf.shape[0]
-    dist_mat = 2 - 2 * paddle.matmul(qf, gf.t())
+    dist_mat = 2 - 2 * np.matmul(qf, gf.T)
     return dist_mat
 
 
-def batch_paddle_topk(qf, gf, k1, N=6000):
+def find_topk(a, k, axis=-1, largest=True, sorted=True):
+    if axis is None:
+        axis_size = a.size
+    else:
+        axis_size = a.shape[axis]
+    assert 1 <= k <= axis_size
+
+    a = np.asanyarray(a)
+    if largest:
+        index_array = np.argpartition(a, axis_size-k, axis=axis)
+        topk_indices = np.take(index_array, -np.arange(k)-1, axis=axis)
+    else:
+        index_array = np.argpartition(a, k-1, axis=axis)
+        topk_indices = np.take(index_array, np.arange(k), axis=axis)
+    topk_values = np.take_along_axis(a, topk_indices, axis=axis)
+    if sorted:
+        sorted_indices_in_topk = np.argsort(topk_values, axis=axis)
+        if largest:
+            sorted_indices_in_topk = np.flip(sorted_indices_in_topk, axis=axis)
+        sorted_topk_values = np.take_along_axis(
+            topk_values, sorted_indices_in_topk, axis=axis)
+        sorted_topk_indices = np.take_along_axis(
+            topk_indices, sorted_indices_in_topk, axis=axis)
+        return sorted_topk_values, sorted_topk_indices
+    return topk_values, topk_indices
+
+
+def batch_numpy_topk(qf, gf, k1, N=6000):
     m = qf.shape[0]
     n = gf.shape[0]
-    dist_mat = []
     initial_rank = []
     for j in range(n // N + 1):
         temp_gf = gf[j * N:j * N + N]
@@ -199,17 +224,16 @@ def batch_paddle_topk(qf, gf, k1, N=6000):
             temp_qf = qf[i * N:i * N + N]
             temp_d = euclidean_distance(temp_qf, temp_gf)
             temp_qd.append(temp_d)
-        temp_qd = paddle.concat(temp_qd, axis=0)
-        temp_qd = temp_qd / (paddle.max(temp_qd, axis=0)[0])
-        temp_qd = temp_qd.t()
+        temp_qd = np.concatenate(temp_qd, axis=0)
+        temp_qd = temp_qd / (np.max(temp_qd, axis=0)[0])
+        temp_qd = temp_qd.T
         initial_rank.append(
-            paddle.topk(
-                temp_qd, k=k1, axis=1, largest=False, sorted=True)[1])
+            find_topk(temp_qd, k=k1, axis=1, largest=False, sorted=True)[1])
     del temp_qd
     del temp_gf
     del temp_qf
     del temp_d
-    initial_rank = paddle.concat(initial_rank, axis=0).cpu().numpy()
+    initial_rank = np.concatenate(initial_rank, axis=0)
     return initial_rank
 
 
@@ -224,14 +248,14 @@ def batch_euclidean_distance(qf, gf, N=6000):
             temp_qf = qf[i * N:i * N + N]
             temp_d = euclidean_distance(temp_qf, temp_gf)
             temp_qd.append(temp_d)
-        temp_qd = paddle.concat(temp_qd, axis=0)
-        temp_qd = temp_qd / (paddle.max(temp_qd, axis=0)[0])
-        dist_mat.append(temp_qd.t())  # transpose
+        temp_qd = np.concatenate(temp_qd, axis=0)
+        temp_qd = temp_qd / (np.max(temp_qd, axis=0)[0])
+        dist_mat.append(temp_qd.T)
     del temp_qd
     del temp_gf
     del temp_qf
     del temp_d
-    dist_mat = paddle.concat(dist_mat, axis=0)
+    dist_mat = np.concatenate(dist_mat, axis=0)
     return dist_mat
 
 
@@ -239,14 +263,13 @@ def batch_v(feat, R, all_num):
     V = np.zeros((all_num, all_num), dtype=np.float32)
     m = feat.shape[0]
     for i in tqdm(range(m)):
-        temp_gf = feat[i].unsqueeze(0)
+        temp_gf = feat[i].reshape(1, -1)
         temp_qd = euclidean_distance(temp_gf, feat)
-        temp_qd = temp_qd / (paddle.max(temp_qd))
-        temp_qd = temp_qd.squeeze()
-        temp_qd = temp_qd.numpy()[R[i].tolist()]
-        temp_qd = paddle.to_tensor(temp_qd)
-        weight = paddle.exp(-temp_qd)
-        weight = (weight / paddle.sum(weight)).numpy()
+        temp_qd = temp_qd / (np.max(temp_qd))
+        temp_qd = temp_qd.reshape(-1)
+        temp_qd = temp_qd[R[i].tolist()]
+        weight = np.exp(-temp_qd)
+        weight = weight / np.sum(weight)
         V[i, R[i]] = weight.astype(np.float32)
     return V
 
@@ -259,13 +282,11 @@ def k_reciprocal_neigh(initial_rank, i, k1):
 
 
 def ReRank2(probFea, galFea, k1=20, k2=6, lambda_value=0.3):
-    # The following naming, e.g. gallery_num, is different from outer scope.
-    # Don't care about it.
     query_num = probFea.shape[0]
     all_num = query_num + galFea.shape[0]
-    feat = paddle.concat([probFea, galFea], axis=0)
-    initial_rank = batch_paddle_topk(feat, feat, k1 + 1, N=6000)
-    # del feat
+    feat = np.concatenate((probFea, galFea), axis=0)
+
+    initial_rank = batch_numpy_topk(feat, feat, k1 + 1, N=6000)
     del probFea
     del galFea
     gc.collect()  # empty memory
@@ -292,7 +313,8 @@ def ReRank2(probFea, galFea, k1=20, k2=6, lambda_value=0.3):
     del R
     gc.collect()  # empty memory
     initial_rank = initial_rank[:, :k2]
-    ### Faster version
+
+    # Faster version
     if k2 != 1:
         V_qe = np.zeros_like(V, dtype=np.float16)
         for i in range(all_num):
@@ -315,7 +337,7 @@ def ReRank2(probFea, galFea, k1=20, k2=6, lambda_value=0.3):
         jaccard_dist[i] = 1 - temp_min / (2. - temp_min)
     del V
     gc.collect()  # empty memory
-    original_dist = batch_euclidean_distance(feat, feat[:query_num, :]).numpy()
+    original_dist = batch_euclidean_distance(feat, feat[:query_num, :])
     final_dist = jaccard_dist * (1 - lambda_value
                                  ) + original_dist * lambda_value
     del original_dist
@@ -341,21 +363,16 @@ def visual_rerank(prb_feats,
         prb_feats, gal_feats = run_fac(prb_feats, gal_feats, prb_labels,
                                        gal_labels, 0.08, 20, 0.5, 1, 1)
     if use_rerank:
-        paddle.enable_static()
         print('current use rerank finetuned parameters....')
         # Step2: k-reciprocal. finetuned parameters: [k1,k2,lambda_value]
-        sims = ReRank2(
-            paddle.to_tensor(prb_feats),
-            paddle.to_tensor(gal_feats), 20, 3, 0.3)
+        sims = ReRank2(prb_feats, gal_feats, 20, 3, 0.3)
     else:
-        # sims = ComputeEuclid(prb_feats, gal_feats, 1)
         sims = 1.0 - np.dot(prb_feats, gal_feats.T)
 
     # NOTE: sims here is actually dist, the smaller the more similar
     return 1.0 - sims
 
 
-# sub_cluster
 def normalize(nparray, axis=0):
     nparray = preprocessing.normalize(nparray, norm='l2', axis=axis)
     return nparray
@@ -512,10 +529,6 @@ def get_labels(cid_tid_dict,
                use_rerank=True,
                use_st_filter=False):
     # 1st cluster
-    sub_cid_tids = list(cid_tid_dict.keys())
-    sub_labels = dict()
-    dis_thrs = [0.7, 0.5, 0.5, 0.5, 0.5, 0.7, 0.5, 0.5, 0.5, 0.5]
-
     sim_matrix = get_sim_matrix(
         cid_tid_dict,
         cid_tids,
@@ -532,7 +545,6 @@ def get_labels(cid_tid_dict,
 
     # 2nd cluster
     cid_tid_dict_new = combin_feature(cid_tid_dict, sub_cluster)
-    sub_labels = dict()
     sim_matrix = get_sim_matrix(
         cid_tid_dict_new,
         cid_tids,
