@@ -2,4 +2,5 @@ outs:
 - md5: 1b4a76d59138c8f987b8bfd10df938d5.dir
   size: 19970417
   nfiles: 11
+origin/dvc-detection-test-1124
   path: coco
