@@ -62,11 +62,14 @@
 | [FCOS](https://arxiv.org/abs/1904.01355) | [fcos_r50_fpn_1x_coco](../configs/fcos/fcos_r50_fpn_1x_coco.yml) | 目标检测 | 支持 | 混合精度 |  | Paddle Inference: C++  |
 | FCOS | [fcos_dcn_r50_fpn_1x_coco](../configs/fcos/fcos_dcn_r50_fpn_1x_coco.yml) | 目标检测 | 支持 | 混合精度 |  | Paddle Inference: C++  |
 | [TTFNet](https://arxiv.org/abs/1909.00700) | [ttfnet_darknet53_1x_coco](../configs/ttfnet/ttfnet_darknet53_1x_coco.yml) | 目标检测 | 支持 | 混合精度 |  | Paddle Inference: C++  |
-| [S2ANet](https://arxiv.org/abs/2008.09397) | [s2anet_conv_2x_dota](../configs/dota/s2anet_conv_2x_dota.yml) | 目标检测 | 使用DOTA数据集，且需要编译自定义OP，接入存在风险，待接入 |
+| [S2ANet](https://arxiv.org/abs/2008.09397) | [s2anet_conv_2x_dota](../configs/dota/s2anet_conv_2x_dota.yml) | 目标检测 | 支持 | 混合精度 |  | Paddle Inference: C++  |
+| S2ANet | [s2anet_1x_spine](../configs/dota/s2anet_1x_spine.yml) | 目标检测 | 支持 | 混合精度 |  | Paddle Inference: C++  |
+| S2ANet | [s2anet_alignconv_2x_dota](../configs/dota/s2anet_alignconv_2x_dota.yml) | 目标检测 | 支持 | 混合精度 |  | Paddle Inference: C++  |
 | [DETR](https://arxiv.org/abs/2005.12872) | [detr_r50_1x_coco](../configs/detr/detr_r50_1x_coco.yml) | 目标检测 | 不支持预测部署 |
 | [Deformable DETR](https://arxiv.org/abs/2010.04159) | [deformable_detr_r50_1x_coco](../configs/deformable_detr/deformable_detr_r50_1x_coco.yml) | 目标检测 | 不支持预测部署 |
 | [Sparse R-CNN](https://arxiv.org/abs/2011.12450) | [sparse_rcnn_r50_fpn_3x_pro100_coco](../configs/sparse_rcnn/sparse_rcnn_r50_fpn_3x_pro100_coco.yml) | 目标检测 | 不支持预测部署 |
-| [BlazeFace](https://arxiv.org/abs/1907.05047) | [blazeface_1000e](../configs/face_detection/blazeface_1000e.yml) | 目标检测 | 使用WIDER-FACE数据集，接入存在风险，待接入 |
+| [BlazeFace](https://arxiv.org/abs/1907.05047) | [blazeface_1000e](../configs/face_detection/blazeface_1000e.yml) | 目标检测 | 支持 | 混合精度 |  | Paddle Inference: C++  |
+| BlazeFace | [blazeface_fpn_ssh_1000e](../configs/face_detection/blazeface_fpn_ssh_1000e.yml) | 目标检测 | 支持 | 混合精度 |  | Paddle Inference: C++  |
 | [Faceboxes](https://arxiv.org/abs/1708.05234) |  | 目标检测 | 静态图实现，暂不支持 |
 | [PyramidBox](https://arxiv.org/abs/1803.07737) | 模型实现在[models](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/face_detection) repo | 目标检测 | 静态图实现，暂不支持 |
 | [Libra R-CNN](https://arxiv.org/abs/1904.02701) |  | 目标检测 | 静态图实现，暂不支持 |
@@ -89,8 +92,9 @@
 | HRNet | [dark_hrnet_w32_256x192](../configs/keypoint/hrnet/dark_hrnet_w32_256x192.yml) | 关键点检测 | 支持 | 混合精度 |  | Paddle Inference: C++  |
 | HRNet | [dark_hrnet_w48_256x192](../configs/keypoint/hrnet/dark_hrnet_w48_256x192.yml) | 关键点检测 | 支持 | 混合精度 |  | Paddle Inference: C++  |
 | [HigherHRNet](https://arxiv.org/abs/1908.10357) | [higherhrnet_hrnet_w32_512](../configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml) | 关键点检测 | 支持 | 混合精度 |  | Paddle Inference: C++  |
-| [FairMot](https://arxiv.org/abs/2004.01888) | [fairmot_dla34_30e_576x320](../configs/mot/fairmot/fairmot_dla34_30e_576x320.yml) | 目标跟踪 | 支持，待接入 |
-| [JDE](https://arxiv.org/abs/1909.12605) | [jde_darknet53_30e_576x320](../configs/mot/jde/jde_darknet53_30e_576x320.yml) | 目标跟踪 | 支持，待接入 |
+| [FairMot](https://arxiv.org/abs/2004.01888) | [fairmot_dla34_30e_576x320](../configs/mot/fairmot/fairmot_dla34_30e_576x320.yml) | 目标跟踪 | 支持 | 混合精度 |  | Paddle Inference: C++  |
+| FairMot | [fairmot_hrnetv2_w18_dlafpn_30e_576x320](../configs/mot/fairmot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.yml) | 目标跟踪 | 支持 | 混合精度 |  | Paddle Inference: C++  |
+| [JDE](https://arxiv.org/abs/1909.12605) | [jde_darknet53_30e_576x320](../configs/mot/jde/jde_darknet53_30e_576x320.yml) | 目标跟踪 | 支持 | 混合精度 |  | Paddle Inference: C++  |
 
 
 ## 3. 测试工具简介
