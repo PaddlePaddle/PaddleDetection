@@ -1,13 +1,13 @@
 architecture: YOLOv3
 use_gpu: true
-max_iters: 250000
+max_iters: 2000
 log_iter: 100
 save_dir: output
-snapshot_iter: 10000
+snapshot_iter: 1000
 metric: COCO
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_ssld_pretrained.tar
 weights: output/ppyolo/model_final
-num_classes: 80
+num_classes: 4
 use_fine_grained_loss: true
 use_ema: true
 ema_decay: 0.9998
