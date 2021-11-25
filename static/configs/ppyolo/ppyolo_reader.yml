@@ -28,7 +28,7 @@ TrainReader:
     - !BboxXYXY2XYWH {}
   batch_transforms:
   - !RandomShape
-    sizes: [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
+    sizes: [384, 416, 448, 480, 512, 544, 576, 608]
     random_inter: True
   - !NormalizeImage
     mean: [0.485, 0.456, 0.406]
