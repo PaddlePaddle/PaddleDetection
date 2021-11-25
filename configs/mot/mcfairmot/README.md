@@ -13,7 +13,7 @@ English | [简体中文](README_cn.md)
 MCFairMOT is the Multi-class extended version of [FairMOT](https://arxiv.org/abs/2004.01888).
 
 ## Model Zoo
-### MCFairMOT DLA-34 Results on VisDrone2019 Val Set
+### MCFairMOT Results on VisDrone2019 Val Set
 | backbone       | input shape | MOTA | IDF1 |  IDS    |   FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :---:  | :------: | :----: |:----: |
 | DLA-34         | 1088x608 |  24.3  |  41.6  |  2314  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_dla34_30e_1088x608_visdrone.pdparams) | [config](./mcfairmot_dla34_30e_1088x608_visdrone.yml) |
@@ -23,14 +23,15 @@ MCFairMOT is the Multi-class extended version of [FairMOT](https://arxiv.org/abs
 
 **Notes:**
  MOTA is the average MOTA of 10 catecories in the VisDrone2019 MOT dataset, and its value is also equal to the average MOTA of all the evaluated video sequences.
+ MCFairMOT used 4 GPUs for training 30 epoches. The batch size is 6 on each GPU for MCFairMOT DLA-34, and 4 for MCFairMOT HRNetV2-W18.
 
 
 ## Getting Start
 
 ### 1. Training
-Training MCFairMOT on 8 GPUs with following command
+Training MCFairMOT on 4 GPUs with following command
 ```bash
-python -m paddle.distributed.launch --log_dir=./mcfairmot_dla34_30e_1088x608_visdrone/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/mcfairmot/mcfairmot_dla34_30e_1088x608_visdrone.yml
+python -m paddle.distributed.launch --log_dir=./mcfairmot_dla34_30e_1088x608_visdrone/ --gpus 0,1,2,3 tools/train.py -c configs/mot/mcfairmot/mcfairmot_dla34_30e_1088x608_visdrone.yml
 ```
 
 ### 2. Evaluation
@@ -43,14 +44,15 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/mcfairmot/mcfairm
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/mcfairmot/mcfairmot_dla34_30e_1088x608_visdrone.yml -o weights=output/mcfairmot_dla34_30e_1088x608_visdrone/model_final.pdparams
 ```
 **Notes:**
- The default evaluation dataset is VisDrone2019 MOT val-set. If you want to change the evaluation dataset, please refer to the following code and modify `configs/datasets/mcmot.yml`：
-```
-EvalMOTDataset:
-  !MOTImageFolder
-    dataset_dir: dataset/mot
-    data_root: your_dataset/images/val
-    keep_ori_im: False # set True if save visualization images or video
-```
+  The default evaluation dataset is VisDrone2019 MOT val-set. If you want to change the evaluation dataset, please refer to the following code and modify `configs/datasets/mcmot.yml`：
+  ```
+  EvalMOTDataset:
+    !MOTImageFolder
+      dataset_dir: dataset/mot
+      data_root: your_dataset/images/val
+      keep_ori_im: False # set True if save visualization images or video
+  ```
+  Tracking results will be saved in `{output_dir}/mot_results/`, and every sequence has one txt file, each line of the txt file is `frame,id,x1,y1,w,h,score,cls_id,-1,-1`, and you can set `{output_dir}` by `--output_dir`.
 
 ### 3. Inference
 Inference a vidoe on single GPU with following command:
@@ -73,6 +75,7 @@ python deploy/python/mot_jde_infer.py --model_dir=output_inference/mcfairmot_dla
 ```
 **Notes:**
 The tracking model is used to predict the video, and does not support the prediction of a single image. The visualization video of the tracking results is saved by default. You can add `--save_mot_txts` to save the txt result file, or `--save_images` to save the visualization images.
+Each line of the tracking results txt file is `frame,id,x1,y1,w,h,score,cls_id,-1,-1`.
 
 
 ## Citations

@@ -14,14 +14,18 @@
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
 | :--------------| :------- | :----: | :----: | :---: | :----: | :---: | :------: | :----: |:----: |
 | DLA-34         | 1088x608 |  64.7 |  69.0  |   8533  |  148817  |  234970  |     -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_headtracking21.yml) |
+| HRNetv2-W18    | 1088x608 |  57.2 |  58.4  |   30950 |  188260  |  256580  |     -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608_headtracking21.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_1088x608_headtracking21.yml) |
+
 
 ### FairMOT在HT-21 Test Set上结果
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: | :----: |
 | DLA-34         | 1088x608 |  60.8  |  62.8  |  12781   |  118109  |  198896 |    -     | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_headtracking21.yml) |
+| HRNetv2-W18    | 1088x608 |  41.2  |  47.1  |  48809   |  241683  |  204346 |    -     | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_headtracking21.yml) |
 
 **注意:**
  FairMOT DLA-34使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。目前MOTA精度位于MOT官网[Head Tracking 21](https://motchallenge.net/results/Head_Tracking_21)榜单榜首。
+ FairMOT HRNetv2-W18使用4个GPU进行训练，每个GPU上batch size为8，训练30个epoch。
 
 ## 快速开始
 
@@ -61,6 +65,7 @@ python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34
 ```
 **注意:**
  跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
 
 ## 引用
 ```

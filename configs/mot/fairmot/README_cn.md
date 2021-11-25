@@ -41,14 +41,16 @@
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
 | DLA-34         | 1088x608 |  75.9  |  74.7  |  1021   |  11425  |  31475 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_dla34_60e_1088x608.pdparams) | [配置文件](./fairmot_enhance_dla34_60e_1088x608.yml) |
+| HarDNet-85     | 1088x608 |  75.0  |  70.0  |  1050   |  11837  |  32774 | -        |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_hardnet85_30e_1088x608.pdparams) | [配置文件](./fairmot_enhance_hardnet85_30e_1088x608.yml) |
 
 ### 在MOT-17 Test Set上结果
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
 | DLA-34         | 1088x608 |  75.3  |  74.2  |  3270  |  29112  | 106749 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_dla34_60e_1088x608.pdparams) | [配置文件](./fairmot_enhance_dla34_60e_1088x608.yml) |
+| HarDNet-85     | 1088x608 |  74.7  |  70.7  |  3210  |  29790  | 109914 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_hardnet85_30e_1088x608.pdparams) | [配置文件](./fairmot_enhance_hardnet85_30e_1088x608.yml) |
 
 **注意:**
- FairMOT enhance DLA-34使用8个GPU进行训练，每个GPU上batch size为16，训练60个epoch，并且训练集中加入了crowdhuman数据集一起参与训练。
+ FairMOT enhance模型均使用8个GPU进行训练，训练集中加入了crowdhuman数据集一起参与训练。DLA-34骨干网络的每个GPU上batch size为16，训练60个epoch。HarDNet-85骨干网络的每个GPU上batch size为10，训练30个epoch。
 
 
 ### FairMOT轻量级模型
@@ -91,13 +93,14 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_d
 ```
 **注意:**
  默认评估的是MOT-16 Train Set数据集, 如需换评估数据集可参照以下代码修改`configs/datasets/mot.yml`：
-```
-EvalMOTDataset:
-  !MOTImageFolder
-    dataset_dir: dataset/mot
-    data_root: MOT17/images/train
-    keep_ori_im: False # set True if save visualization images or video
-```
+  ```
+  EvalMOTDataset:
+    !MOTImageFolder
+      dataset_dir: dataset/mot
+      data_root: MOT17/images/train
+      keep_ori_im: False # set True if save visualization images or video
+  ```
+  跟踪结果会存于`{output_dir}/mot_results/`中，里面每个视频序列对应一个txt，每个txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`, 此外`{output_dir}`可通过`--output_dir`设置。
 
 ### 3. 预测
 
@@ -124,6 +127,7 @@ python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34
 ```
 **注意:**
  跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
 
 ### 6. 用导出的跟踪和关键点模型Python联合预测
 

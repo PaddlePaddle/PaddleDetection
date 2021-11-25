@@ -12,16 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
+This code is based on https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
 """
 
+import os
 import re
 import cv2
 from tqdm import tqdm
-import pickle
-import os
-import os.path as osp
-from os.path import join as opj
 import numpy as np
 import motmetrics as mm
 from functools import reduce
@@ -216,9 +213,6 @@ def get_mtmct_matching_results(pred_mtmct_file, secs_interval=0.5,
     res = np.loadtxt(pred_mtmct_file)  # 'cid, tid, fid, x1, y1, w, h, -1, -1'
     carame_ids = list(map(int, np.unique(res[:, 0])))
 
-    num_track_ids = int(np.max(res[:, 1]))
-    num_frames = int(np.max(res[:, 2]))
-
     res = res[:, :7]
     # each line in res: 'cid, tid, fid, x1, y1, w, h'
 
@@ -236,7 +230,7 @@ def get_mtmct_matching_results(pred_mtmct_file, secs_interval=0.5,
         print(
             'No common tracked ids in these videos, please check your MOT result or select new videos.'
         )
-        return None
+        return None, None
 
     # get mtmct matching results by cid_tid_fid_results[c_id][t_id][f_id]
     cid_tid_fid_results = dict()
@@ -301,9 +295,10 @@ def save_mtmct_crops(cid_tid_fid_res,
                 im_path = os.path.join(infer_dir, all_images[frame_idx])
                 
                 im = cv2.imread(im_path)  # (H, W, 3)
+                
+                # only select one track
+                track = cid_tid_fid_res[c_id][t_id][f_id][0]
 
-                track = cid_tid_fid_res[c_id][t_id][f_id][
-                    0]  # only select one track
                 cid, tid, fid, x1, y1, w, h = [int(v) for v in track]
                 clip = im[y1:(y1 + h), x1:(x1 + w)]
                 clip = cv2.resize(clip, (width, height))
