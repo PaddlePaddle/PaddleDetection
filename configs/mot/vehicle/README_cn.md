@@ -127,7 +127,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/vehicle/fairm
 
 ### 5. 用导出的模型基于Python去预测
 ```bash
-python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle --video_file={your video name}.mp4 --device=GPU --save_mot_txts
 ```
 **注意:**
  跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
