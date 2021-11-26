@@ -20,7 +20,7 @@ inference:./deploy/cpp/build/main
 --device:gpu|cpu
 --use_mkldnn:True|False
 --cpu_threads:1|6
---batch_size:1|8
+--batch_size:1
 --use_tensorrt:null
 --run_mode:fluid|trt_fp32|trt_fp16
 --model_dir:

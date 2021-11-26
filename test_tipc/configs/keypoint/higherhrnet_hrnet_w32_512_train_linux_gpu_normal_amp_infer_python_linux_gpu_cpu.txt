@@ -37,7 +37,7 @@ kl_quant_export:tools/post_quant.py -c configs/keypoint/higherhrnet/higherhrnet_
 ##
 infer_mode:norm
 infer_quant:False
-inference:./deploy/python/infer.py
+inference:./deploy/python/keypoint_infer.py
 --device:gpu|cpu
 --enable_mkldnn:True|False
 --cpu_threads:1|6
@@ -48,4 +48,4 @@ inference:./deploy/python/infer.py
 --image_dir:./dataset/coco/test2017/
 --save_log_path:null
 --run_benchmark:True
-null:null
+--trt_max_shape:1600

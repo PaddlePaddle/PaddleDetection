@@ -26,4 +26,4 @@ inference:./deploy/cpp/build/main
 --model_dir:
 --image_dir:./dataset/coco/test2017/
 --run_benchmark:True
-null:null
+--trt_max_shape:1600

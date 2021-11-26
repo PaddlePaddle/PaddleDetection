@@ -4,7 +4,7 @@ python:python3.7
 filename:faster_rcnn_r101_fpn_1x_coco
 ##
 --output_dir:./output_inference
-weights:https://paddledet.bj.bcebos.com/models/faster_rcnn_r101_fpn_1x_coco.pdparams
+weights:https://paddledet.bj.bcebos.com/models/faster_rcnn_r101_fpn_2x_coco.pdparams
 norm_export:tools/export_model.py -c configs/faster_rcnn/faster_rcnn_r101_fpn_1x_coco.yml -o
 quant_export:tools/export_model.py -c configs/faster_rcnn/faster_rcnn_r101_fpn_1x_coco.yml --slim_config _template_pact -o
 fpgm_export:tools/export_model.py -c configs/faster_rcnn/faster_rcnn_r101_fpn_1x_coco.yml --slim_config _template_fpgm -o
@@ -26,4 +26,4 @@ inference:./deploy/cpp/build/main
 --model_dir:
 --image_dir:./dataset/coco/test2017/
 --run_benchmark:True
-null:null
+--trt_max_shape:1600
