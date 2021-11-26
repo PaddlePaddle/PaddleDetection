@@ -257,7 +257,7 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
     - HigherHRNet
     - HRNet
     - LiteHRNet
-- [多目标跟踪](configs/mot/README_cn.md)
+- [多目标跟踪](configs/mot/README.md)
     - [PP-Tracking](deploy/pptracking/README.md)
     - [DeepSORT](configs/mot/deepsort/README_cn.md)
     - [JDE](configs/mot/jde/README_cn.md)

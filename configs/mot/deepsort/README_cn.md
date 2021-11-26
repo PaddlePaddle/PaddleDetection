@@ -136,10 +136,10 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid
 
 ```bash
 # 用导出JDE YOLOv3行人检测模型和PCB Pyramid ReID模型
-python deploy/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608_mix/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608_mix/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --save_mot_txts
 
 # 或用导出的PPYOLOv2行人检测模型和PPLCNet ReID模型
-python deploy/python/mot_sde_infer.py --model_dir=output_inference/ppyolov2_r50vd_dcn_365e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyolov2_r50vd_dcn_365e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
 ```
 **注意:**
  跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_mot_txt_per_img`(对每张图片保存一个txt)表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
@@ -181,7 +181,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid
 ```
 #### 4.使用导出的检测模型和ReID模型去部署:
 ```
-python deploy/python/mot_sde_infer.py --model_dir=output_inference/xxx./ --reid_model_dir=output_inference/deepsort_yyy/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/xxx./ --reid_model_dir=output_inference/deepsort_yyy/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
 ```
 **注意:**
  `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
