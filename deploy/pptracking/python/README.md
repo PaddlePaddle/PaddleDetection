@@ -1,4 +1,4 @@
-# Python端预测部署
+# PP-Tracking Python端预测部署
 
 在PaddlePaddle中预测引擎和训练引擎底层有着不同的优化方法, 预测引擎使用了AnalysisPredictor，专门针对推理进行了优化，是基于[C++预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/native_infer.html)的Python接口，该引擎可以对模型进行多项图优化，减少不必要的内存拷贝。如果用户在部署已训练模型的过程中对性能有较高的要求，我们提供了独立于PaddleDetection的预测脚本，方便用户直接集成部署。
 
@@ -10,30 +10,49 @@
 PaddleDetection在训练过程包括网络的前向和优化器相关参数，而在部署过程中，我们只需要前向参数，具体参考:[导出模型](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/EXPORT_MODEL.md)
 导出后目录下，包括`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`四个文件。
 
+PP-Tracking也提供了AI Studio公开项目案例，可以参考[PP-Tracking之手把手玩转多目标跟踪](https://aistudio.baidu.com/aistudio/projectdetail/3022582)快速上手体验。
+
 ## 1. 对FairMOT模型的导出和预测
 
 ### 1.1 导出预测模型
 ```bash
+# 命令行导出PaddleDetection发布的权重
 CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/fairmot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.pdparams
+
+# 命令行导出训完保存的checkpoint权重
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/fairmot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.yml -o weights=output/fairmot_hrnetv2_w18_dlafpn_30e_576x320/model_final.pdparams
+
+# 或下载PaddleDetection发布的已导出的模型
+wget https://bj.bcebos.com/v1/paddledet/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.tar
+tar -xvf fairmot_hrnetv2_w18_dlafpn_30e_576x320.tar
 ```
+**注意:**
+  导出的模型默认会保存在`output_inference`目录下，如新下载请存放于对应目录下。
 
 ### 1.2 用导出的模型基于Python去预测
 ```bash
-python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fairmot_hrnetv2_w18_dlafpn_30e_576x320 --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+# 下载行人跟踪demo视频：
+wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/mot17_demo.mp4
+
+# Python预测视频
+python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fairmot_hrnetv2_w18_dlafpn_30e_576x320 --video_file=mot17_demo.mp4 --device=GPU --save_mot_txts --save_images
 ```
 **注意:**
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
  - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
  - 对于多类别或车辆的FairMOT模型的导出和Python预测只需更改相应的config和模型权重即可。如：
- ```
+ ```bash
  job_name=mcfairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone
  model_type=mot/mcfairmot
  config=configs/${model_type}/${job_name}.yml
-
+ # 命令行导出模型
  CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c ${config} -o weights=https://paddledet.bj.bcebos.com/models/mot/${job_name}.pdparams
- python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/${job_name} --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+ # Python预测视频
+ python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/${job_name} --video_file={your video name}.mp4 --device=GPU --save_mot_txts --save_images
  ```
  - 多类别跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,cls_id,-1,-1`。
+ - visdrone多类别跟踪demo视频可从此链接下载：`wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/visdrone_demo.mp4`
+ - bdd100k车辆跟踪和多类别demo视频可从此链接下载：`wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/bdd100k_demo.mp4`
 
 
 ## 2. 对DeepSORT模型的导出和预测
@@ -59,11 +78,14 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid
 ### 2.2 用导出的模型基于Python去预测
 
 ```bash
+# 下载行人跟踪demo视频：
+wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/mot17_demo.mp4
+
 # 用导出JDE YOLOv3行人检测模型和PCB Pyramid ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608_mix/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608_mix/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file=mot17_demo.mp4 --device=GPU --save_mot_txts --save_images
 
 # 或用导出的PPYOLOv2行人检测模型和PPLCNet ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyolov2_r50vd_dcn_365e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyolov2_r50vd_dcn_365e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --video_file=mot17_demo.mp4 --device=GPU --scaled=True --save_mot_txts --save_images
 ```
 **注意:**
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_images`表示保存跟踪结果可视化图片。
