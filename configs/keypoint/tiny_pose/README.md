@@ -48,7 +48,7 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测�
 **说明**
 - 关键点检测模型与行人检测模型均使用`COCO train2017`和`AI Challenger trainset`作为训练集。关键点检测模型使用`COCO person keypoints val2017`作为测试集，行人检测模型采用`COCO instances val2017`作为测试集。
 - 关键点检测模型的精度指标所依赖的检测框为ground truth标注得到。
-- 关键点检测模型与行人检测模型均在4卡环境下训练，若实际训练环境需要改变GPU数量或batch size， 须参考[FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/FAQ.md)对应调整学习率。
+- 关键点检测模型与行人检测模型均在4卡环境下训练，若实际训练环境需要改变GPU数量或batch size， 须参考[FAQ](../../../docs/tutorials/FAQ/README.md)对应调整学习率。
 - 推理速度测试环境为 Qualcomm Snapdragon 865，采用arm8下4线程推理得到。
 
 ### Pipeline性能
