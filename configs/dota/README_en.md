@@ -164,7 +164,6 @@ The inputs of the `multiclass_nms` operator in Paddle support quadrilateral inpu
 
 Please refer to the deployment tutorial[Predict deployment](../../deploy/README_en.md)
 
-**Attention:** The `is_training` parameter was added to the configuration file because the `paddle.Detach` function would cause the size error of the exported model when it went quiet, and the exported model would need to be set to `False` to predict deployment
 
 ## Citations
 ```
