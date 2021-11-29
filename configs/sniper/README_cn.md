@@ -10,7 +10,8 @@
 
 
 ### 注意
-> 我们使用的是`VisDrone`数据集, 并且检查其中的9类，包括 `person, bicycles, car, van, truck, tricyle, awning-tricyle, bus, motor`.
+- 我们使用的是`VisDrone`数据集, 并且检查其中的9类，包括 `person, bicycles, car, van, truck, tricyle, awning-tricyle, bus, motor`.
+- 暂时不支持和导出预测部署（deploy).
 
 
 ## 使用说明
