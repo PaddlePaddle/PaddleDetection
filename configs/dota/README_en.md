@@ -124,7 +124,7 @@ python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2
 # Use a trained model to evaluate
 python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=https://paddledet.bj.bcebos.com/models/s2anet_1x_spine.pdparams
 ```
-**Attention:** 
+**Attention:**
 (1) The DOTA dataset is trained together with train and val data as a training set, and the evaluation dataset configuration needs to be customized when evaluating the DOTA dataset.
 
 (2) Bone dataset is transformed from segmented data. As there is little difference between different types of discs for detection tasks, and the score obtained by S2ANET algorithm is low, the default threshold for evaluation is 0.5, a low mAP is normal. You are advised to view the detection result visually.
@@ -164,7 +164,6 @@ The inputs of the `multiclass_nms` operator in Paddle support quadrilateral inpu
 
 Please refer to the deployment tutorial[Predict deployment](../../deploy/README_en.md)
 
-**Attention:** The `is_training` parameter was added to the configuration file because the `paddle.Detach` function would cause the size error of the exported model when it went quiet, and the exported model would need to be set to `False` to predict deployment
 
 ## Citations
 ```
