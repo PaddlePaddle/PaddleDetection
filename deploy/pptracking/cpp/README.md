@@ -17,7 +17,7 @@
 - CMake 3.0+
 - TensorRT 6/7
 
-NVIDIA Jetson用户请参考[Jetson平台编译指南](../../cpp/Jetson_build.md#jetson环境搭建)完成JetPack安装
+NVIDIA Jetson用户请参考[Jetson平台编译指南](../../cpp/docs/Jetson_build.md#jetson环境搭建)完成JetPack安装
 
 ### 1. 下载代码
 
