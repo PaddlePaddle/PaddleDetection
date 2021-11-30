@@ -213,7 +213,8 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco/ \
 - [NCNN C++/Python demo](../../deploy/third_engine/demo_ncnn)
 - [MNN C++/Python demo](../../deploy/third_engine/demo_mnn)
 - [OpenVINO C++ demo](../../deploy/third_engine/demo_openvino)
-- [Android demo](https://github.com/JiweiMaster/PP-PicoDet-Android-Demo)
+- [Android demo(NCNN)](https://github.com/JiweiMaster/PP-PicoDet-Android-Demo)
+- [Android demo(Paddle Lite)](https://github.com/marsplus-wjh/Picodet-PaddleLite-AndroidDemo)
 
 
 Android demo visualization:
@@ -271,7 +272,7 @@ python tools/post_quant.py -c configs/picodet/picodet_s_320_coco.yml \
 <details open>
 <summary>Toturial:</summary>
 
-Please refer this [documentation](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/README_PRUNER.md) for details such as requirements, training and deployment.
+Please refer this [documentation](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/pruner/README.md) for details such as requirements, training and deployment.
 
 </details>
 
