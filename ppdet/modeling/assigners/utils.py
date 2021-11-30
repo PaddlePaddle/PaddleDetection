@@ -19,6 +19,12 @@ from __future__ import print_function
 import paddle
 import paddle.nn.functional as F
 
+__all__ = [
+    'pad_gt', 'gather_topk_anchors', 'check_points_inside_bboxes',
+    'compute_max_iou_anchor', 'compute_max_iou_gt',
+    'generate_anchors_for_grid_cell'
+]
+
 
 def pad_gt(gt_labels, gt_bboxes, gt_scores=None):
     r""" Pad 0 in gt_labels and gt_bboxes.
@@ -147,3 +153,42 @@ def compute_max_iou_gt(ious):
     max_iou_index = ious.argmax(axis=-1)
     is_max_iou = F.one_hot(max_iou_index, num_anchors)
     return is_max_iou.astype(ious.dtype)
+
+
+def generate_anchors_for_grid_cell(feats,
+                                   fpn_strides,
+                                   grid_cell_size=5.0,
+                                   grid_cell_offset=0.5):
+    r"""
+    Like ATSS, generate anchors based on grid size.
+    Args:
+        feats (List[Tensor]): shape[s, (b, c, h, w)]
+        fpn_strides (tuple|list): shape[s], stride for each scale feature
+        grid_cell_size (float): anchor size
+        grid_cell_offset (float): The range is between 0 and 1.
+    Returns:
+        anchors (List[Tensor]): shape[s, (l, 4)]
+        num_anchors_list (List[int]): shape[s]
+        stride_tensor_list (List[Tensor]): shape[s, (l, 1)]
+    """
+    assert len(feats) == len(fpn_strides)
+    anchors = []
+    num_anchors_list = []
+    stride_tensor_list = []
+    for feat, stride in zip(feats, fpn_strides):
+        _, _, h, w = feat.shape
+        cell_half_size = grid_cell_size * stride * 0.5
+        shift_x = (paddle.arange(end=w) + grid_cell_offset) * stride
+        shift_y = (paddle.arange(end=h) + grid_cell_offset) * stride
+        shift_y, shift_x = paddle.meshgrid(shift_y, shift_x)
+        anchor = paddle.stack(
+            [
+                shift_x - cell_half_size, shift_y - cell_half_size,
+                shift_x + cell_half_size, shift_y + cell_half_size
+            ],
+            axis=-1).astype(feat.dtype)
+        anchors.append(anchor.reshape([-1, 4]))
+        num_anchors_list.append(len(anchors[-1]))
+        stride_tensor_list.append(
+            paddle.full([num_anchors_list[-1], 1], stride))
+    return anchors, num_anchors_list, stride_tensor_list

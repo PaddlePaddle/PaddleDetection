@@ -1600,3 +1600,9 @@ def channel_shuffle(x, groups):
     x = paddle.transpose(x=x, perm=[0, 2, 1, 3, 4])
     x = paddle.reshape(x=x, shape=[batch_size, num_channels, height, width])
     return x
+
+
+def get_static_shape(tensor):
+    shape = paddle.shape(tensor)
+    shape.stop_gradient = True
+    return shape
