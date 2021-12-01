@@ -1,0 +1,43 @@
+_BASE_: [
+  '../fairmot/fairmot_dla34_30e_1088x608.yml',
+  '../../datasets/mcmot.yml'
+]
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/fairmot_dla34_crowdhuman_pretrained.pdparams
+
+FairMOT:
+  detector: CenterNet
+  reid: FairMOTEmbeddingHead
+  loss: FairMOTLoss
+  tracker: JDETracker # multi-class tracker
+
+CenterNetHead:
+  regress_ltrb: False
+
+CenterNetPostProcess:
+  for_mot: True
+  regress_ltrb: False
+  max_per_img: 200
+
+JDETracker:
+  min_box_area: 0
+  vertical_ratio: 0 # no need to filter bboxes according to w/h
+  conf_thres: 0.4
+  tracked_thresh: 0.4
+  metric_type: cosine
+
+weights: output/mcfairmot_dla34_30e_1088x608_visdrone/model_final
+
+epoch: 30
+LearningRate:
+  base_lr: 0.0005
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [10, 20]
+    use_warmup: False
+
+OptimizerBuilder:
+  optimizer:
+    type: Adam
+  regularizer: NULL

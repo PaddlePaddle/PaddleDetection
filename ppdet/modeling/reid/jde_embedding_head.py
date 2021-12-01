@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import math
+import numpy as np
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -49,7 +50,7 @@ class JDEEmbeddingHead(nn.Layer):
     JDEEmbeddingHead
     Args:
         num_classes(int): Number of classes. Only support one class tracking.
-        num_identifiers(int): Number of identifiers.
+        num_identities(int): Number of identities.
         anchor_levels(int): Number of anchor levels, same as FPN levels.
         anchor_scales(int): Number of anchor scales on each FPN level.
         embedding_dim(int): Embedding dimension. Default: 512.
@@ -60,7 +61,7 @@ class JDEEmbeddingHead(nn.Layer):
     def __init__(
             self,
             num_classes=1,
-            num_identifiers=14455,  # defined by dataset.total_identities when training
+            num_identities=14455,  # dataset.num_identities_dict[0]
             anchor_levels=3,
             anchor_scales=4,
             embedding_dim=512,
@@ -68,7 +69,7 @@ class JDEEmbeddingHead(nn.Layer):
             jde_loss='JDELoss'):
         super(JDEEmbeddingHead, self).__init__()
         self.num_classes = num_classes
-        self.num_identifiers = num_identifiers
+        self.num_identities = num_identities
         self.anchor_levels = anchor_levels
         self.anchor_scales = anchor_scales
         self.embedding_dim = embedding_dim
@@ -76,7 +77,7 @@ class JDEEmbeddingHead(nn.Layer):
         self.jde_loss = jde_loss
 
         self.emb_scale = math.sqrt(2) * math.log(
-            self.num_identifiers - 1) if self.num_identifiers > 1 else 1
+            self.num_identities - 1) if self.num_identities > 1 else 1
 
         self.identify_outputs = []
         self.loss_params_cls = []
@@ -106,7 +107,7 @@ class JDEEmbeddingHead(nn.Layer):
             'classifier',
             nn.Linear(
                 self.embedding_dim,
-                self.num_identifiers,
+                self.num_identities,
                 weight_attr=ParamAttr(
                     learning_rate=1., initializer=Normal(
                         mean=0.0, std=0.01)),
@@ -115,31 +116,58 @@ class JDEEmbeddingHead(nn.Layer):
 
     def forward(self,
                 identify_feats,
-                targets=None,
+                targets,
                 loss_confs=None,
                 loss_boxes=None,
-                test_emb=False):
+                bboxes=None,
+                boxes_idx=None,
+                nms_keep_idx=None):
+        assert self.num_classes == 1, 'JDE only support sindle class MOT.'
         assert len(identify_feats) == self.anchor_levels
         ide_outs = []
         for feat, ide_head in zip(identify_feats, self.identify_outputs):
             ide_outs.append(ide_head(feat))
 
         if self.training:
-            assert targets != None
             assert len(loss_confs) == len(loss_boxes) == self.anchor_levels
             loss_ides = self.emb_loss(ide_outs, targets, self.emb_scale,
                                       self.classifier)
-            return self.jde_loss(loss_confs, loss_boxes, loss_ides,
-                                 self.loss_params_cls, self.loss_params_reg,
-                                 self.loss_params_ide, targets)
+            jde_losses = self.jde_loss(
+                loss_confs, loss_boxes, loss_ides, self.loss_params_cls,
+                self.loss_params_reg, self.loss_params_ide, targets)
+            return jde_losses
         else:
-            if test_emb:
-                assert targets != None
-                embs_and_gts = self.get_emb_and_gt_outs(ide_outs, targets)
-                return embs_and_gts
-            else:
-                emb_outs = self.get_emb_outs(ide_outs)
-                return emb_outs
+            assert bboxes is not None
+            assert boxes_idx is not None
+            assert nms_keep_idx is not None
+
+            emb_outs = self.get_emb_outs(ide_outs)
+            emb_valid = paddle.gather_nd(emb_outs, boxes_idx)
+            pred_embs = paddle.gather_nd(emb_valid, nms_keep_idx)
+
+            input_shape = targets['image'].shape[2:]
+            # input_shape: [h, w], before data transforms, set in model config
+            im_shape = targets['im_shape'][0].numpy()
+            # im_shape: [new_h, new_w], after data transforms
+            scale_factor = targets['scale_factor'][0].numpy()
+            bboxes[:, 2:] = self.scale_coords(bboxes[:, 2:], input_shape,
+                                              im_shape, scale_factor)
+            # tlwhs, scores, cls_ids
+            pred_dets = paddle.concat(
+                (bboxes[:, 2:], bboxes[:, 1:2], bboxes[:, 0:1]), axis=1)
+            return pred_dets, pred_embs
+
+    def scale_coords(self, coords, input_shape, im_shape, scale_factor):
+        ratio = scale_factor[0]
+        pad_w = (input_shape[1] - int(im_shape[1])) / 2
+        pad_h = (input_shape[0] - int(im_shape[0])) / 2
+        coords = paddle.cast(coords, 'float32')
+        coords[:, 0::2] -= pad_w
+        coords[:, 1::2] -= pad_h
+        coords[:, 0:4] /= ratio
+        coords[:, :4] = paddle.clip(
+            coords[:, :4], min=0, max=coords[:, :4].max())
+        return coords.round()
 
     def get_emb_and_gt_outs(self, ide_outs, targets):
         emb_and_gts = []

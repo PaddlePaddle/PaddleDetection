@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# The code is based on https://github.com/csuhan/s2anet/blob/master/mmdet/models/anchor_heads_rotated/s2anet_head.py
+
 import paddle
 from paddle import ParamAttr
 import paddle.nn as nn
@@ -230,8 +233,7 @@ class S2ANetHead(nn.Layer):
                  anchor_assign=RBoxAssigner().__dict__,
                  reg_loss_weight=[1.0, 1.0, 1.0, 1.0, 1.1],
                  cls_loss_weight=[1.1, 1.05],
-                 reg_loss_type='l1',
-                 is_training=True):
+                 reg_loss_type='l1'):
         super(S2ANetHead, self).__init__()
         self.stacked_convs = stacked_convs
         self.feat_in = feat_in
@@ -257,8 +259,6 @@ class S2ANetHead(nn.Layer):
         self.alpha = 1.0
         self.beta = 1.0
         self.reg_loss_type = reg_loss_type
-        self.is_training = is_training
-
         self.s2anet_head_out = None
 
         # anchor
@@ -448,12 +448,10 @@ class S2ANetHead(nn.Layer):
             init_anchors = self.rect2rbox(init_anchors)
             self.base_anchors_list.append(init_anchors)
 
-            if self.is_training:
+            if self.training:
                 refine_anchor = self.bbox_decode(fam_reg.detach(), init_anchors)
             else:
-                fam_reg1 = fam_reg.clone()
-                fam_reg1.stop_gradient = True
-                refine_anchor = self.bbox_decode(fam_reg1, init_anchors)
+                refine_anchor = self.bbox_decode(fam_reg, init_anchors)
 
             self.refine_anchor_list.append(refine_anchor)
 
@@ -625,7 +623,8 @@ class S2ANetHead(nn.Layer):
                     fam_bbox_total = self.gwd_loss(fam_bbox_decode,
                                                    bbox_gt_bboxes_level)
                     fam_bbox_total = fam_bbox_total * feat_bbox_weights
-                    fam_bbox_total = paddle.sum(fam_bbox_total) / num_total_samples
+                    fam_bbox_total = paddle.sum(
+                        fam_bbox_total) / num_total_samples
 
             fam_bbox_losses.append(fam_bbox_total)
             st_idx += feat_anchor_num
@@ -739,7 +738,8 @@ class S2ANetHead(nn.Layer):
                     odm_bbox_total = self.gwd_loss(odm_bbox_decode,
                                                    bbox_gt_bboxes_level)
                     odm_bbox_total = odm_bbox_total * feat_bbox_weights
-                    odm_bbox_total = paddle.sum(odm_bbox_total) / num_total_samples
+                    odm_bbox_total = paddle.sum(
+                        odm_bbox_total) / num_total_samples
 
             odm_bbox_losses.append(odm_bbox_total)
             st_idx += feat_anchor_num

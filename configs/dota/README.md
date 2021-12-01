@@ -113,7 +113,7 @@ python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2
 # 使用提供训练好的模型评估
 python3.7 tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=https://paddledet.bj.bcebos.com/models/s2anet_1x_spine.pdparams
 ```
-** 注意：** 
+** 注意：**
 (1) dota数据集中是train和val数据作为训练集一起训练的，对dota数据集进行评估时需要自定义设置评估数据集配置。
 
 (2) 骨骼数据集是由分割数据转换而来，由于椎间盘不同类别对于检测任务而言区别很小，且s2anet算法最后得出的分数较低，评估时默认阈值为0.5，mAP较低是正常的。建议通过可视化查看检测结果。
@@ -154,7 +154,6 @@ Paddle中`multiclass_nms`算子的输入支持四边形输入，因此部署时�
 
 部署教程请参考[预测部署](../../deploy/README.md)
 
-**注意：** 由于paddle.detach函数动转静时会导致导出模型尺寸错误，因此在配置文件中增加了`is_training`参数，导出模型预测部署时需要将改参数设置为`False`
 
 ## Citations
 ```

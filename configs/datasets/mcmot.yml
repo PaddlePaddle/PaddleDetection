@@ -1,0 +1,25 @@
+metric: MCMOT
+num_classes: 10
+# using VisDrone2019 MOT dataset with 10 classes as default, you can modify it for your needs.
+
+# for MCMOT training
+TrainDataset:
+  !MCMOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['visdrone_mcmot.train']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+    label_list: label_list.txt
+
+# for MCMOT evaluation
+# If you want to change the MCMOT evaluation dataset, please modify 'data_root'
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: visdrone_mcmot/images/val
+    keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
+
+# for MCMOT video inference
+TestMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    keep_ori_im: True # set True if save visualization images or video

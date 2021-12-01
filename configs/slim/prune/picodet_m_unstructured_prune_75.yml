@@ -1,0 +1,11 @@
+pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_m_320_coco.pdparams
+slim: UnstructuredPruner
+
+UnstructuredPruner:
+    stable_epochs: 0
+    pruning_epochs: 150
+    tunning_epochs: 150
+    pruning_steps: 300
+    ratio: 0.75
+    initial_ratio: 0.15
+    prune_params_type: conv1x1_only

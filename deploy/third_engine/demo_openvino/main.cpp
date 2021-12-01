@@ -1,4 +1,4 @@
-// Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+// Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
+#define image_size 416
 
 struct object_rect {
     int x;
@@ -213,12 +214,10 @@ void draw_bboxes(const cv::Mat& bgr, const std::vector<BoxInfo>& bboxes, object_
 
         cv::rectangle(image, cv::Rect(cv::Point(x, y), cv::Size(label_size.width, label_size.height + baseLine)),
             color, -1);
-
         cv::putText(image, text, cv::Point(x, y + label_size.height),
             cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 255, 255));
+        cv::imwrite("../predict.jpg",image);
     }
-
-    cv::imshow("image", image);
 }
 
 
@@ -236,7 +235,7 @@ int image_demo(PicoDet& detector, const char* imagepath)
         }
         object_rect effect_roi;
         cv::Mat resized_img;
-        resize_uniform(image, resized_img, cv::Size(320, 320), effect_roi);
+        resize_uniform(image, resized_img, cv::Size(image_size, image_size), effect_roi);
         auto results = detector.detect(resized_img, 0.4, 0.5);
         draw_bboxes(image, results, effect_roi);
     }
@@ -247,13 +246,12 @@ int webcam_demo(PicoDet& detector, int cam_id)
 {
     cv::Mat image;
     cv::VideoCapture cap(cam_id);
-
     while (true)
     {
         cap >> image;
         object_rect effect_roi;
         cv::Mat resized_img;
-        resize_uniform(image, resized_img, cv::Size(320, 320), effect_roi);
+        resize_uniform(image, resized_img, cv::Size(image_size, image_size), effect_roi);
         auto results = detector.detect(resized_img, 0.4, 0.5);
         draw_bboxes(image, results, effect_roi);
         cv::waitKey(1);
@@ -271,7 +269,7 @@ int video_demo(PicoDet& detector, const char* path)
         cap >> image;
         object_rect effect_roi;
         cv::Mat resized_img;
-        resize_uniform(image, resized_img, cv::Size(320, 320), effect_roi);
+        resize_uniform(image, resized_img, cv::Size(image_size, image_size), effect_roi);
         auto results = detector.detect(resized_img, 0.4, 0.5);
         draw_bboxes(image, results, effect_roi);
         cv::waitKey(1);
@@ -287,7 +285,7 @@ int benchmark(PicoDet& detector)
     double time_min = DBL_MAX;
     double time_max = -DBL_MAX;
     double time_avg = 0;
-    cv::Mat image(320, 320, CV_8UC3, cv::Scalar(1, 1, 1));
+    cv::Mat image(image_size, image_size, CV_8UC3, cv::Scalar(1, 1, 1));
 
     for (int i = 0; i < warm_up + loop_num; i++)
     {

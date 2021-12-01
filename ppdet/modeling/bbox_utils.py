@@ -529,18 +529,18 @@ def poly2rbox(polys):
         rbox_angle = 0
         if edge1 > edge2:
             rbox_angle = np.arctan2(
-                np.float(pt2[1] - pt1[1]), np.float(pt2[0] - pt1[0]))
+                float(pt2[1] - pt1[1]), float(pt2[0] - pt1[0]))
         elif edge2 >= edge1:
             rbox_angle = np.arctan2(
-                np.float(pt4[1] - pt1[1]), np.float(pt4[0] - pt1[0]))
+                float(pt4[1] - pt1[1]), float(pt4[0] - pt1[0]))
 
         def norm_angle(angle, range=[-np.pi / 4, np.pi]):
             return (angle - range[0]) % range[1] + range[0]
 
         rbox_angle = norm_angle(rbox_angle)
 
-        x_ctr = np.float(pt1[0] + pt3[0]) / 2
-        y_ctr = np.float(pt1[1] + pt3[1]) / 2
+        x_ctr = float(pt1[0] + pt3[0]) / 2
+        y_ctr = float(pt1[1] + pt3[1]) / 2
         rotated_box = np.array([x_ctr, y_ctr, width, height, rbox_angle])
         rotated_boxes.append(rotated_box)
     ret_rotated_boxes = np.array(rotated_boxes)
@@ -748,6 +748,28 @@ def bbox_center(boxes):
     Returns:
         Tensor: boxes centers with shape (N, 2), "cx, cy" format.
     """
-    boxes_cx = (boxes[:, 0] + boxes[:, 2]) / 2
-    boxes_cy = (boxes[:, 1] + boxes[:, 3]) / 2
+    boxes_cx = (boxes[..., 0] + boxes[..., 2]) / 2
+    boxes_cy = (boxes[..., 1] + boxes[..., 3]) / 2
     return paddle.stack([boxes_cx, boxes_cy], axis=-1)
+
+
+def batch_distance2bbox(points, distance, max_shapes=None):
+    """Decode distance prediction to bounding box for batch.
+    Args:
+        points (Tensor): [B, ..., 2]
+        distance (Tensor): [B, ..., 4]
+        max_shapes (tuple): [B, 2], "h,w" format, Shape of the image.
+    Returns:
+        Tensor: Decoded bboxes.
+    """
+    x1 = points[..., 0] - distance[..., 0]
+    y1 = points[..., 1] - distance[..., 1]
+    x2 = points[..., 0] + distance[..., 2]
+    y2 = points[..., 1] + distance[..., 3]
+    if max_shapes is not None:
+        for i, max_shape in enumerate(max_shapes):
+            x1[i] = x1[i].clip(min=0, max=max_shape[1])
+            y1[i] = y1[i].clip(min=0, max=max_shape[0])
+            x2[i] = x2[i].clip(min=0, max=max_shape[1])
+            y2[i] = y2[i].clip(min=0, max=max_shape[0])
+    return paddle.stack([x1, y1, x2, y2], -1)

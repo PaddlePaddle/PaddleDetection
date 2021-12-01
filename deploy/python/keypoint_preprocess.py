@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+this code is based on https://github.com/open-mmlab/mmpose/mmpose/core/post_processing/post_transforms.py
+"""
 import cv2
 import numpy as np
 
@@ -75,10 +77,10 @@ def get_affine_transform(center,
         np.ndarray: The transform matrix.
     """
     assert len(center) == 2
-    assert len(input_size) == 2
     assert len(output_size) == 2
     assert len(shift) == 2
-
+    if not isinstance(input_size, (np.ndarray, list)):
+        input_size = np.array([input_size, input_size], dtype=np.float32)
     scale_tmp = input_size
 
     shift = np.array(shift)
@@ -109,7 +111,10 @@ def get_affine_transform(center,
 
 
 def get_warp_matrix(theta, size_input, size_dst, size_target):
-    """Calculate the transformation matrix under the constraint of unbiased.
+    """This code is based on 
+        https://github.com/open-mmlab/mmpose/blob/master/mmpose/core/post_processing/post_transforms.py
+
+        Calculate the transformation matrix under the constraint of unbiased.
     Paper ref: Huang et al. The Devil is in the Details: Delving into Unbiased
     Data Processing for Human Pose Estimation (CVPR 2020).
 

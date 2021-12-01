@@ -22,7 +22,8 @@ import copy
 import time
 
 import numpy as np
-from PIL import Image
+import typing
+from PIL import Image, ImageOps
 
 import paddle
 import paddle.distributed as dist
@@ -41,7 +42,7 @@ from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 from ppdet.utils import profiler
 
-from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter,SniperProposalsGenerator
+from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator
 from .export_utils import _dump_infer_config, _prune_input_spec
 
 from ppdet.utils.logger import setup_logger
@@ -77,11 +78,13 @@ class Trainer(object):
 
         if cfg.architecture == 'JDE' and self.mode == 'train':
             cfg['JDEEmbeddingHead'][
-                'num_identifiers'] = self.dataset.total_identities
+                'num_identities'] = self.dataset.num_identities_dict[0]
+            # JDE only support single class MOT now.
 
         if cfg.architecture == 'FairMOT' and self.mode == 'train':
             cfg['FairMOTEmbeddingHead'][
-                'num_identifiers'] = self.dataset.total_identities
+                'num_identities_dict'] = self.dataset.num_identities_dict
+            # FairMOT support single class and multi-class MOT now.
 
         # build model
         if 'model' not in self.cfg:
@@ -117,6 +120,10 @@ class Trainer(object):
             steps_per_epoch = len(self.loader)
             self.lr = create('LearningRate')(steps_per_epoch)
             self.optimizer = create('OptimizerBuilder')(self.lr, self.model)
+
+        if self.cfg.get('unstructured_prune'):
+            self.pruner = create('UnstructuredPruner')(self.model,
+                                                       steps_per_epoch)
 
         self._nranks = dist.get_world_size()
         self._local_rank = dist.get_rank()
@@ -192,7 +199,7 @@ class Trainer(object):
                         IouType=IouType,
                         save_prediction_only=save_prediction_only)
                 ]
-            elif self.cfg.metric == "SNIPERCOCO": # sniper
+            elif self.cfg.metric == "SNIPERCOCO":  # sniper
                 self._metrics = [
                     SNIPERCOCOMetric(
                         anno_file=anno_file,
@@ -202,8 +209,7 @@ class Trainer(object):
                         output_eval=output_eval,
                         bias=bias,
                         IouType=IouType,
-                        save_prediction_only=save_prediction_only
-                    )
+                        save_prediction_only=save_prediction_only)
                 ]
         elif self.cfg.metric == 'RBOX':
             # TODO: bias should be unified
@@ -395,9 +401,10 @@ class Trainer(object):
                     # model backward
                     loss.backward()
                     self.optimizer.step()
-
                 curr_lr = self.optimizer.get_lr()
                 self.lr.step()
+                if self.cfg.get('unstructured_prune'):
+                    self.pruner.step()
                 self.optimizer.clear_grad()
                 self.status['learning_rate'] = curr_lr
 
@@ -414,6 +421,8 @@ class Trainer(object):
             if self.use_ema:
                 weight = copy.deepcopy(self.model.state_dict())
                 self.model.set_dict(self.ema.apply())
+            if self.cfg.get('unstructured_prune'):
+                self.pruner.update_params()
 
             self._compose_callback.on_epoch_end(self.status)
 
@@ -465,7 +474,11 @@ class Trainer(object):
             for metric in self._metrics:
                 metric.update(data, outs)
 
-            sample_num += data['im_id'].numpy().shape[0]
+            # multi-scale inputs: all inputs have same im_id
+            if isinstance(data, typing.Sequence):
+                sample_num += data[0]['im_id'].numpy().shape[0]
+            else:
+                sample_num += data['im_id'].numpy().shape[0]
             self._compose_callback.on_step_end(self.status)
 
         self.status['sample_num'] = sample_num
@@ -509,14 +522,18 @@ class Trainer(object):
             outs = self.model(data)
 
             for key in ['im_shape', 'scale_factor', 'im_id']:
-                outs[key] = data[key]
+                if isinstance(data, typing.Sequence):
+                    outs[key] = data[0][key]
+                else:
+                    outs[key] = data[key]
             for key, value in outs.items():
                 if hasattr(value, 'numpy'):
                     outs[key] = value.numpy()
             results.append(outs)
         # sniper
         if type(self.dataset) == SniperCOCODataSet:
-            results = self.dataset.anno_cropper.aggregate_chips_detections(results)
+            results = self.dataset.anno_cropper.aggregate_chips_detections(
+                results)
 
         for outs in results:
             batch_res = get_infer_results(outs, clsid2catid)
@@ -526,6 +543,7 @@ class Trainer(object):
             for i, im_id in enumerate(outs['im_id']):
                 image_path = imid2path[int(im_id)]
                 image = Image.open(image_path).convert('RGB')
+                image = ImageOps.exif_transpose(image)
                 self.status['original_image'] = np.array(image.copy())
 
                 end = start + bbox_num[i]

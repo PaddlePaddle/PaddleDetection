@@ -682,6 +682,10 @@ class ToHeatmapsTopDown(object):
         self.sigma = sigma
 
     def __call__(self, records):
+        """refer to
+            https://github.com/leoxiaobin/deep-high-resolution-net.pytorch
+            Copyright (c) Microsoft, under the MIT License.
+        """
         joints = records['joints']
         joints_vis = records['joints_vis']
         num_joints = joints.shape[0]
@@ -790,7 +794,10 @@ class ToHeatmapsTopDown_DARK(object):
 
 @register_keypointop
 class ToHeatmapsTopDown_UDP(object):
-    """to generate the gaussian heatmaps of keypoint for heatmap loss.
+    """This code is based on:
+        https://github.com/HuangJunJie2017/UDP-Pose/blob/master/deep-high-resolution-net.pytorch/lib/dataset/JointsDataset.py
+       
+        to generate the gaussian heatmaps of keypoint for heatmap loss.
         ref: Huang et al. The Devil is in the Details: Delving into Unbiased Data Processing
         for Human Pose Estimation (CVPR 2020).
 

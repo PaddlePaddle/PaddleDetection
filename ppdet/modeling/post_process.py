@@ -17,7 +17,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
-from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly
+from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly, delta2bbox
 from ppdet.modeling.layers import TTFBox
 from .transformers import bbox_cxcywh_to_xyxy
 try:
@@ -141,6 +141,13 @@ class BBoxPostProcess(nn.Layer):
 
 @register
 class MaskPostProcess(object):
+    """
+    refer to:
+    https://github.com/facebookresearch/detectron2/layers/mask_ops.py
+
+    Get Mask output according to the output from model
+    """
+
     def __init__(self, binary_thresh=0.5):
         super(MaskPostProcess, self).__init__()
         self.binary_thresh = binary_thresh
@@ -415,7 +422,6 @@ class CenterNetPostProcess(TTFBox):
         regress_ltrb (bool): whether to regress left/top/right/bottom or
             width/height for a box, true by default.
         for_mot (bool): whether return other features used in tracking model.
-
     """
 
     __shared__ = ['down_ratio', 'for_mot']
@@ -433,14 +439,14 @@ class CenterNetPostProcess(TTFBox):
 
     def __call__(self, hm, wh, reg, im_shape, scale_factor):
         heat = self._simple_nms(hm)
-        scores, inds, clses, ys, xs = self._topk(heat)
-        scores = paddle.tensor.unsqueeze(scores, [1])
-        clses = paddle.tensor.unsqueeze(clses, [1])
+        scores, inds, topk_clses, ys, xs = self._topk(heat)
+        scores = scores.unsqueeze(1)
+        clses = topk_clses.unsqueeze(1)
 
         reg_t = paddle.transpose(reg, [0, 2, 3, 1])
         # Like TTFBox, batch size is 1.
         # TODO: support batch size > 1
-        reg = paddle.reshape(reg_t, [-1, paddle.shape(reg_t)[-1]])
+        reg = paddle.reshape(reg_t, [-1, reg_t.shape[-1]])
         reg = paddle.gather(reg, inds)
         xs = paddle.cast(xs, 'float32')
         ys = paddle.cast(ys, 'float32')
@@ -448,7 +454,7 @@ class CenterNetPostProcess(TTFBox):
         ys = ys + reg[:, 1:2]
 
         wh_t = paddle.transpose(wh, [0, 2, 3, 1])
-        wh = paddle.reshape(wh_t, [-1, paddle.shape(wh_t)[-1]])
+        wh = paddle.reshape(wh_t, [-1, wh_t.shape[-1]])
         wh = paddle.gather(wh, inds)
 
         if self.regress_ltrb:
@@ -480,16 +486,15 @@ class CenterNetPostProcess(TTFBox):
         scale_x = scale_factor[:, 1:2]
         scale_expand = paddle.concat(
             [scale_x, scale_y, scale_x, scale_y], axis=1)
-        boxes_shape = paddle.shape(bboxes)
-        boxes_shape.stop_gradient = True
+        boxes_shape = bboxes.shape[:]
         scale_expand = paddle.expand(scale_expand, shape=boxes_shape)
         bboxes = paddle.divide(bboxes, scale_expand)
         if self.for_mot:
             results = paddle.concat([bboxes, scores, clses], axis=1)
-            return results, inds
+            return results, inds, topk_clses
         else:
             results = paddle.concat([clses, scores, bboxes], axis=1)
-            return results, paddle.shape(results)[0:1]
+            return results, paddle.shape(results)[0:1], topk_clses
 
 
 @register
@@ -658,7 +663,6 @@ class RetinaNetPostProcess(object):
     def __init__(self, 
                  nms,
                  bbox_reg_weights=[1.0, 1.0, 1.0, 1.0]):
-
         super(RetinaNetPostProcess, self).__init__()
         self.nms = nms
         self.bbox_reg_weights = bbox_reg_weights
@@ -739,5 +743,61 @@ class RetinaNetPostProcess(object):
                                   paddle.ones_like(pred_label) * -1)
                                   
         pred_result = paddle.concat([pred_label, pred_score, pred_bbox], axis=1)
-        
+
         return pred_result, bbox_num
+
+
+def nms(dets, thresh):
+    """Apply classic DPM-style greedy NMS."""
+    if dets.shape[0] == 0:
+        return dets[[], :]
+    scores = dets[:, 0]
+    x1 = dets[:, 1]
+    y1 = dets[:, 2]
+    x2 = dets[:, 3]
+    y2 = dets[:, 4]
+
+    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+    order = scores.argsort()[::-1]
+
+    ndets = dets.shape[0]
+    suppressed = np.zeros((ndets), dtype=np.int)
+
+    # nominal indices
+    # _i, _j
+    # sorted indices
+    # i, j
+    # temp variables for box i's (the box currently under consideration)
+    # ix1, iy1, ix2, iy2, iarea
+
+    # variables for computing overlap with box j (lower scoring box)
+    # xx1, yy1, xx2, yy2
+    # w, h
+    # inter, ovr
+
+    for _i in range(ndets):
+        i = order[_i]
+        if suppressed[i] == 1:
+            continue
+        ix1 = x1[i]
+        iy1 = y1[i]
+        ix2 = x2[i]
+        iy2 = y2[i]
+        iarea = areas[i]
+        for _j in range(_i + 1, ndets):
+            j = order[_j]
+            if suppressed[j] == 1:
+                continue
+            xx1 = max(ix1, x1[j])
+            yy1 = max(iy1, y1[j])
+            xx2 = min(ix2, x2[j])
+            yy2 = min(iy2, y2[j])
+            w = max(0.0, xx2 - xx1 + 1)
+            h = max(0.0, yy2 - yy1 + 1)
+            inter = w * h
+            ovr = inter / (iarea + areas[j] - inter)
+            if ovr >= thresh:
+                suppressed[j] = 1
+    keep = np.where(suppressed == 0)[0]
+    dets = dets[keep, :]
+    return dets

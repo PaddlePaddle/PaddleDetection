@@ -46,6 +46,7 @@ SUPPORT_MODELS = {
     'GFL',
     'PicoDet',
     'CenterNet',
+    'TOOD',
 }
 
 
@@ -537,7 +538,7 @@ def load_predictor(model_dir,
     }
     if run_mode in precision_map.keys():
         config.enable_tensorrt_engine(
-            workspace_size=1 << 10,
+            workspace_size=1 << 25,
             max_batch_size=batch_size,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[run_mode],
