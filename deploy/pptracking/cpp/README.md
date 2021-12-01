@@ -3,7 +3,6 @@
 在PaddlePaddle中预测引擎和训练引擎底层有着不同的优化方法, 预测引擎使用了AnalysisPredictor，专门针对推理进行了优化，该引擎可以对模型进行多项图优化，减少不必要的内存拷贝。如果用户在部署已训练模型的过程中对性能有较高的要求，我们提供了独立于PaddleDetection的预测脚本，方便用户直接集成部署。当前C++部署支持基于Fairmot的单镜头类别预测部署，并支持人流量统计、出入口计数功能。
 
 主要包含三个步骤：
-
 - 准备环境
 - 导出预测模型
 - C++预测
@@ -17,7 +16,7 @@
 - CMake 3.0+
 - TensorRT 6/7
 
-NVIDIA Jetson用户请参考[Jetson平台编译指南](../../cpp/Jetson_build.md#jetson环境搭建)完成JetPack安装
+NVIDIA Jetson用户请参考[Jetson平台编译指南](../../cpp/docs/Jetson_build.md#jetson环境搭建)完成JetPack安装
 
 ### 1. 下载代码
 
