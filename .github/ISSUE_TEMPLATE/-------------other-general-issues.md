@@ -12,7 +12,7 @@ assignees: ''
 ## Checklist:
 
 1. 查找历史相关issue寻求解答/I have searched related issues but cannot get the expected help.
-2. 翻阅[FAQ](https://paddledetection.readthedocs.io/FAQ.html) /I have read the [FAQ documentation](https://paddledetection.readthedocs.io/FAQ.html) but cannot get the expected help.
+2. 翻阅[FAQ](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/docs/tutorials/FAQ) /I have read the [FAQ documentation](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/docs/tutorials/FAQ) but cannot get the expected help.
 
 ## 描述问题/Describe the bug
 A clear and concise description of what the bug is.
