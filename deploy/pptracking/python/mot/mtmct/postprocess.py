@@ -211,21 +211,21 @@ def print_mtmct_result(gt_file, pred_file):
 def get_mtmct_matching_results(pred_mtmct_file, secs_interval=0.5,
                                video_fps=20):
     res = np.loadtxt(pred_mtmct_file)  # 'cid, tid, fid, x1, y1, w, h, -1, -1'
-    carame_ids = list(map(int, np.unique(res[:, 0])))
+    camera_ids = list(map(int, np.unique(res[:, 0])))
 
     res = res[:, :7]
     # each line in res: 'cid, tid, fid, x1, y1, w, h'
 
-    carame_tids = []
-    carame_results = dict()
-    for c_id in carame_ids:
-        carame_results[c_id] = res[res[:, 0] == c_id]
-        tids = np.unique(carame_results[c_id][:, 1])
+    camera_tids = []
+    camera_results = dict()
+    for c_id in camera_ids:
+        camera_results[c_id] = res[res[:, 0] == c_id]
+        tids = np.unique(camera_results[c_id][:, 1])
         tids = list(map(int, tids))
-        carame_tids.append(tids)
+        camera_tids.append(tids)
 
     # select common tids throughout each video
-    common_tids = reduce(np.intersect1d, carame_tids)
+    common_tids = reduce(np.intersect1d, camera_tids)
     if len(common_tids) == 0:
         print(
             'No common tracked ids in these videos, please check your MOT result or select new videos.'
@@ -236,15 +236,15 @@ def get_mtmct_matching_results(pred_mtmct_file, secs_interval=0.5,
     cid_tid_fid_results = dict()
     cid_tid_to_fids = dict()
     interval = int(secs_interval * video_fps)  # preferably less than 10
-    for c_id in carame_ids:
+    for c_id in camera_ids:
         cid_tid_fid_results[c_id] = dict()
         cid_tid_to_fids[c_id] = dict()
         for t_id in common_tids:
-            tid_mask = carame_results[c_id][:, 1] == t_id
+            tid_mask = camera_results[c_id][:, 1] == t_id
             cid_tid_fid_results[c_id][t_id] = dict()
 
-            carame_trackid_results = carame_results[c_id][tid_mask]
-            fids = np.unique(carame_trackid_results[:, 2])
+            camera_trackid_results = camera_results[c_id][tid_mask]
+            fids = np.unique(camera_trackid_results[:, 2])
             fids = fids[fids % interval == 0]
             fids = list(map(int, fids))
             cid_tid_to_fids[c_id][t_id] = fids
@@ -253,13 +253,13 @@ def get_mtmct_matching_results(pred_mtmct_file, secs_interval=0.5,
                 st_frame = f_id
                 ed_frame = f_id + interval
 
-                st_mask = carame_trackid_results[:, 2] >= st_frame
-                ed_mask = carame_trackid_results[:, 2] < ed_frame
+                st_mask = camera_trackid_results[:, 2] >= st_frame
+                ed_mask = camera_trackid_results[:, 2] < ed_frame
                 frame_mask = np.logical_and(st_mask, ed_mask)
-                cid_tid_fid_results[c_id][t_id][f_id] = carame_trackid_results[
+                cid_tid_fid_results[c_id][t_id][f_id] = camera_trackid_results[
                     frame_mask]
 
-    return carame_results, cid_tid_fid_results
+    return camera_results, cid_tid_fid_results
 
 
 def save_mtmct_crops(cid_tid_fid_res,
@@ -267,23 +267,23 @@ def save_mtmct_crops(cid_tid_fid_res,
                      crops_dir,
                      width=300,
                      height=200):
-    carame_ids = cid_tid_fid_res.keys()
+    camera_ids = cid_tid_fid_res.keys()
     seqs_folder = os.listdir(images_dir)
     seqs = []
     for x in seqs_folder:
         if os.path.isdir(os.path.join(images_dir, x)):
             seqs.append(x)
-    assert len(seqs) == len(carame_ids)
+    assert len(seqs) == len(camera_ids)
     seqs.sort()
 
     if not os.path.exists(crops_dir):
         os.makedirs(crops_dir)
 
-    common_tids = list(cid_tid_fid_res[list(carame_ids)[0]].keys())
+    common_tids = list(cid_tid_fid_res[list(camera_ids)[0]].keys())
 
     # get crops by name 'tid_cid_fid.jpg
     for t_id in common_tids:
-        for i, c_id in enumerate(carame_ids):
+        for i, c_id in enumerate(camera_ids):
             infer_dir = os.path.join(images_dir, seqs[i])
             if os.path.exists(os.path.join(infer_dir, 'img1')):
                 infer_dir = os.path.join(infer_dir, 'img1')
@@ -312,24 +312,24 @@ def save_mtmct_crops(cid_tid_fid_res,
                 t_id, c_id))
 
 
-def save_mtmct_vis_results(carame_results,
+def save_mtmct_vis_results(camera_results,
                            images_dir,
                            save_dir,
                            save_videos=False):
-    # carame_results: 'cid, tid, fid, x1, y1, w, h'
-    carame_ids = carame_results.keys()
+    # camera_results: 'cid, tid, fid, x1, y1, w, h'
+    camera_ids = camera_results.keys()
     seqs_folder = os.listdir(images_dir)
     seqs = []
     for x in seqs_folder:
         if os.path.isdir(os.path.join(images_dir, x)):
             seqs.append(x)
-    assert len(seqs) == len(carame_ids)
+    assert len(seqs) == len(camera_ids)
     seqs.sort()
 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    for i, c_id in enumerate(carame_ids):
+    for i, c_id in enumerate(camera_ids):
         print("Start visualization for camera {} of sequence {}.".format(
             c_id, seqs[i]))
         cid_save_dir = os.path.join(save_dir, '{}'.format(seqs[i]))
@@ -344,7 +344,7 @@ def save_mtmct_vis_results(carame_results,
 
         for f_id, im_path in enumerate(all_images):
             img = cv2.imread(os.path.join(infer_dir, im_path))
-            tracks = carame_results[c_id][carame_results[c_id][:, 2] == f_id]
+            tracks = camera_results[c_id][camera_results[c_id][:, 2] == f_id]
             if tracks.shape[0] > 0:
                 tracked_ids = tracks[:, 1]
                 xywhs = tracks[:, 3:]
