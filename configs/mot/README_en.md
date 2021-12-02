@@ -20,7 +20,7 @@ Paddledetection implements three MOT algorithms of these two series, they are [D
 In addition, PaddleDetection also provides [PP-Tracking](../../deploy/pptracking/README.md) real-time multi-object tracking system.
 PP-Tracking is the first open source real-time Multi-Object Tracking system, and it is based on PaddlePaddle deep learning framework. It has rich models, wide application and high efficiency deployment.
 
-PP-Tracking supports two paradigms: single carame tracking (MOT) and multi-carame tracking (MTMCT). Aiming at the difficulties and pain points of actual business, PP-Tracking provides various MOT functions and applications such as pedestrian tracking, vehicle tracking, multi-class tracking, small object tracking, traffic statistics and multi-carame tracking. The deployment method supports API and GUI visual interface, and the deployment language supports Python and C++, The deployment platform environment supports Linux, NVIDIA Jetson, etc.
+PP-Tracking supports two paradigms: single camera tracking (MOT) and multi-camera tracking (MTMCT). Aiming at the difficulties and pain points of actual business, PP-Tracking provides various MOT functions and applications such as pedestrian tracking, vehicle tracking, multi-class tracking, small object tracking, traffic statistics and multi-camera tracking. The deployment method supports API and GUI visual interface, and the deployment language supports Python and C++, The deployment platform environment supports Linux, NVIDIA Jetson, etc.
 
 ### AI studio public project case
 PP-tracking provides AI studio public project cases. Please refer to this [tutorial](https://aistudio.baidu.com/aistudio/projectdetail/3022582).

@@ -138,7 +138,7 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_
 ```
 **注意:**
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)，或`--save_images`表示保存跟踪结果可视化图片。
- - 跨镜头跟踪结果txt文件每行信息是`carame_id,frame,id,x1,y1,w,h,-1,-1`。
+ - 跨镜头跟踪结果txt文件每行信息是`camera_id,frame,id,x1,y1,w,h,-1,-1`。
  - `--threshold`表示结果可视化的置信度阈值，默认为0.5，低于该阈值的结果会被过滤掉，为了可视化效果更佳，可根据实际情况自行修改。
  - `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
  - DeepSORT算法不支持多类别跟踪，只支持单类别跟踪，且ReID模型最好是与检测模型同一类别的物体训练过的，比如行人跟踪最好使用行人ReID模型，车辆跟踪最好使用车辆ReID模型。
