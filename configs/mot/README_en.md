@@ -4,8 +4,8 @@ English | [简体中文](README.md)
 
 ## Table of Contents
 - [Introduction](#Introduction)
-- [Model Zoo](#Model_Zoo)
 - [Installation](#Installation)
+- [Model Zoo](#Model_Zoo)
 - [Dataset Preparation](#Dataset_Preparation)
 - [Citations](#Citations)
 
@@ -17,13 +17,14 @@ The current mainstream of 'Tracking By Detecting' multi-object tracking (MOT) al
 
 Paddledetection implements three MOT algorithms of these two series, they are [DeepSORT](https://arxiv.org/abs/1812.00442) of SDE algorithm, and [JDE](https://arxiv.org/abs/1909.12605),[FairMOT](https://arxiv.org/abs/2004.01888) of JDE algorithm.
 
+### PP-Tracking real-time MOT system
 In addition, PaddleDetection also provides [PP-Tracking](../../deploy/pptracking/README.md) real-time multi-object tracking system.
 PP-Tracking is the first open source real-time Multi-Object Tracking system, and it is based on PaddlePaddle deep learning framework. It has rich models, wide application and high efficiency deployment.
 
 PP-Tracking supports two paradigms: single camera tracking (MOT) and multi-camera tracking (MTMCT). Aiming at the difficulties and pain points of actual business, PP-Tracking provides various MOT functions and applications such as pedestrian tracking, vehicle tracking, multi-class tracking, small object tracking, traffic statistics and multi-camera tracking. The deployment method supports API and GUI visual interface, and the deployment language supports Python and C++, The deployment platform environment supports Linux, NVIDIA Jetson, etc.
 
-### AI studio public project case
-PP-tracking provides AI studio public project cases. Please refer to this [tutorial](https://aistudio.baidu.com/aistudio/projectdetail/3022582).
+### AI studio public project tutorial
+PP-tracking provides an AI studio public project tutorial. Please refer to this [tutorial](https://aistudio.baidu.com/aistudio/projectdetail/3022582).
 
 ### Python predict and deployment
 PP-Tracking supports Python predict and deployment. Please refer to this [doc](../../deploy/pptracking/python/README.md).
@@ -45,23 +46,7 @@ PP-Tracking supports GUI predict and deployment. Please refer to this [doc](http
 </div>
 
 
-## Model Zoo
-- base models
-    - [DeepSORT](deepsort/README.md)
-    - [JDE](jde/README.md)
-    - [FairMOT](fairmot/README.md)
-- feature models
-    - [Pedestrian](pedestrian/README.md)
-    - [Head](headtracking21/README.md)
-    - [Vehicle](vehicle/README.md)
-- Multi-Class Tracking
-    - [MCFairMOT](mcfairmot/README.md)
-- Multi-Target Multi-Camera Tracking
-    - [MTMCT](mtmct/README.md)
-
-
 ## Installation
-
 Install all the related dependencies for MOT:
 ```
 pip install lap sklearn motmetrics openpyxl cython_bbox
@@ -71,6 +56,21 @@ pip install -r requirements.txt
 **Notes:**
 - Install `cython_bbox` for Windows: `pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`. You can refer to this [tutorial](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows).
 - Please make sure that [ffmpeg](https://ffmpeg.org/ffmpeg.html) is installed first, on Linux(Ubuntu) platform you can directly install it by the following command:`apt-get update && apt-get install -y ffmpeg`.
+
+
+## Model Zoo
+- Base models
+    - [DeepSORT](deepsort/README.md)
+    - [JDE](jde/README.md)
+    - [FairMOT](fairmot/README.md)
+- Feature models
+    - [Pedestrian](pedestrian/README.md)
+    - [Head](headtracking21/README.md)
+    - [Vehicle](vehicle/README.md)
+- Multi-Class Tracking
+    - [MCFairMOT](mcfairmot/README.md)
+- Multi-Target Multi-Camera Tracking
+    - [MTMCT](mtmct/README.md)
 
 
 ## Dataset Preparation
@@ -139,7 +139,7 @@ In the annotation text, each line is describing a bounding box and has the follo
 [class] [identity] [x_center] [y_center] [width] [height]
 ```
 **Notes:**
-- `class` is the class id.
+- `class` is the class id, start from 0, and support single class and multi-class.
 - `identity` is an integer from `1` to `num_identities`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
 - `[x_center] [y_center] [width] [height]` are the center coordinates, width and height, note that they are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
 

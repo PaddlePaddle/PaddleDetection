@@ -13,6 +13,8 @@ MTMCT (Multi-Target Multi-Camera Tracking) 跨镜头多目标跟踪是某一场�
 
 MTMCT是[PP-Tracking](../../../deploy/pptracking)项目中一个非常重要的方向，[PP-Tracking](../../../deploy/pptracking/README.md)是基于PaddlePaddle深度学习框架的业界首个开源实时跟踪系统。针对实际业务的难点痛点，PP-Tracking内置行人车辆跟踪、跨镜头跟踪、多类别跟踪、小目标跟踪及流量计数等能力与产业应用，同时提供可视化开发界面。模型集成目标检测、轻量级ReID、多目标跟踪等算法，进一步提升PP-Tracking在服务器端部署性能。同时支持Python、C++部署，适配Linux、NVIDIA Jetson等多个平台环境。具体可前往该目录使用。
 
+### AI Studio公开项目案例
+PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking之手把手玩转多目标跟踪](https://aistudio.baidu.com/aistudio/projectdetail/3022582)。
 
 ## 模型库
 ### DeepSORT在 AIC21 MTMCT(CityFlow) 车辆跨境跟踪数据集Test集上的结果
@@ -28,9 +30,7 @@ MTMCT是[PP-Tracking](../../../deploy/pptracking)项目中一个非常重要的�
 
 
 ## 数据集准备
-此处提供了车辆和行人的两种模型方案，对于车辆是选用的[AIC21 MTMCT](https://www.aicitychallenge.org) (CityFlow)车辆跨境跟踪数据集，对于行人是选用的[WILDTRACK](https://www.epfl.ch/labs/cvlab/data/data-wildtrack)行人跨境跟踪数据集。
-
-此处提供PaddleDetection团队整理过后的数据集的下载链接：`wget https://paddledet.bj.bcebos.com/data/mot/aic21mtmct_vehicle.zip`
+对于车辆跨镜头跟踪是选用的[AIC21 MTMCT](https://www.aicitychallenge.org) (CityFlow)车辆跨境跟踪数据集，此处提供PaddleDetection团队整理过后的数据集的下载链接：`wget https://paddledet.bj.bcebos.com/data/mot/aic21mtmct_vehicle.zip`，测试使用的是其中的S06文件夹目录，此外还提供AIC21 MTMCT数据集中S01场景抽出来的极小的一个demo测试数据集：`wget https://paddledet.bj.bcebos.com/data/mot/demo/mtmct-demo.tar`
 
 数据集的处理如下所示：
 ```
@@ -108,13 +108,17 @@ tar -xvf deepsort_pplcnet_vehicle.tar
 
 ### 2. 用导出的模型基于Python去预测
 ```bash
-# 用导出PicoDet车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir={your mtmct scene video folder} --mtmct_cfg=mtmct_cfg --device=GPU --scaled=True --save_mot_txts --save_images
+# 下载demo测试视频
+wget https://paddledet.bj.bcebos.com/data/mot/demo/mtmct-demo.tar
+tar -xvf mtmct-demo.tar
+
+# 用导出的PicoDet车辆检测模型和PPLCNet车辆ReID模型去基于Python预测
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir=mtmct-demo --mtmct_cfg=mtmct_cfg --device=GPU --scaled=True --save_mot_txts --save_images
 ```
 **注意:**
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)，或`--save_images`表示保存跟踪结果可视化图片。
  - `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
- - `--mtmct_dir`是MTMCT预测的某个场景的文件夹名字，里面包含该场景不同摄像头拍摄视频的图片文件夹，其数量至少为两个。
+ - `--mtmct_dir`是MTMCT预测的某个场景的文件夹名字，里面包含该场景不同摄像头拍摄视频的图片文件夹视频，其数量至少为两个。
  - `--mtmct_cfg`是MTMCT预测的某个场景的配置文件，里面包含该一些trick操作的开关和该场景摄像头相关设置的文件路径，用户可以自行更改相关路径以及设置某些操作是否启用。
  - MTMCT跨镜头跟踪输出结果为视频和txt形式。每个图片文件夹各生成一个可视化的跨镜头跟踪结果，与单镜头跟踪的结果是不同的，单镜头跟踪的结果在几个视频文件夹间是独立无关的。MTMCT的结果txt只有一个，比单镜头跟踪结果txt多了第一列镜头id号，跨镜头跟踪结果txt文件每行信息是`camera_id,frame,id,x1,y1,w,h,-1,-1`。
  - MTMCT是[PP-Tracking](../../../deploy/pptracking)项目中的一个非常重要的方向，具体可前往该目录使用。
