@@ -4,8 +4,8 @@
 
 ## 内容
 - [简介](#简介)
-- [模型库](#模型库)
 - [安装依赖](#安装依赖)
+- [模型库](#模型库)
 - [数据集准备](#数据集准备)
 - [引用](#引用)
 
@@ -17,6 +17,7 @@
 
 PaddleDetection实现了这两个系列的3种多目标跟踪算法，分别是SDE系列的[DeepSORT](https://arxiv.org/abs/1812.00442)和JDE系列的[JDE](https://arxiv.org/abs/1909.12605)与[FairMOT](https://arxiv.org/abs/2004.01888)。
 
+### PP-Tracking 实时多目标跟踪系统
 此外，PaddleDetection还提供了[PP-Tracking](../../deploy/pptracking/README.md)实时多目标跟踪系统。PP-Tracking是基于PaddlePaddle深度学习框架的业界首个开源的实时多目标跟踪系统，具有模型丰富、应用广泛和部署高效三大优势。
 PP-Tracking支持单镜头跟踪(MOT)和跨镜头跟踪(MTMCT)两种模式，针对实际业务的难点和痛点，提供了行人跟踪、车辆跟踪、多类别跟踪、小目标跟踪、流量统计以及跨镜头跟踪等各种多目标跟踪功能和应用，部署方式支持API调用和GUI可视化界面，部署语言支持Python和C++，部署平台环境支持Linux、NVIDIA Jetson等。
 
@@ -43,6 +44,18 @@ PP-Tracking 提供了简洁的GUI可视化界面，教程请参考[PP-Tracking�
 </div>
 
 
+## 安装依赖
+一键安装MOT相关的依赖：
+```
+pip install lap sklearn motmetrics openpyxl cython_bbox
+或者
+pip install -r requirements.txt
+```
+**注意：**
+- `cython_bbox`在windows上安装：`pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`。可参考这个[教程](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)。
+- 预测需确保已安装[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
+
+
 ## 模型库
 - 基础模型
     - [DeepSORT](deepsort/README_cn.md)
@@ -56,18 +69,6 @@ PP-Tracking 提供了简洁的GUI可视化界面，教程请参考[PP-Tracking�
     - [多类别跟踪](mcfairmot/README_cn.md)
 - 跨境头跟踪
     - [跨境头跟踪](mtmct/README_cn.md)
-
-
-## 安装依赖
-一键安装MOT相关的依赖：
-```
-pip install lap sklearn motmetrics openpyxl cython_bbox
-或者
-pip install -r requirements.txt
-```
-**注意：**
-- `cython_bbox`在windows上安装：`pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`。可参考这个[教程](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)。
-- 预测需确保已安装[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
 
 
 ## 数据集准备
@@ -133,7 +134,7 @@ MOT17
 [class] [identity] [x_center] [y_center] [width] [height]
 ```
 **注意**:
-- `class`为类别id。
+- `class`为类别id，从0开始计，支持单类别和多类别。
 - `identity`是从`1`到`num_identifies`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
 - `[x_center] [y_center] [width] [height]`是中心点坐标和宽高，注意他们的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
 
