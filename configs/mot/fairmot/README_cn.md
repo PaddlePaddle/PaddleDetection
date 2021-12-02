@@ -13,7 +13,7 @@
 [FairMOT](https://arxiv.org/abs/2004.01888)以Anchor Free的CenterNet检测器为基础，克服了Anchor-Based的检测框架中anchor和特征不对齐问题，深浅层特征融合使得检测和ReID任务各自获得所需要的特征，并且使用低维度ReID特征，提出了一种由两个同质分支组成的简单baseline来预测像素级目标得分和ReID特征，实现了两个任务之间的公平性，并获得了更高水平的实时多目标跟踪精度。
 
 ### PP-Tracking 实时多目标跟踪系统
-此外，PaddleDetection还提供了[PP-Tracking](../../deploy/pptracking/README.md)实时多目标跟踪系统。PP-Tracking是基于PaddlePaddle深度学习框架的业界首个开源的实时多目标跟踪系统，具有模型丰富、应用广泛和部署高效三大优势。
+此外，PaddleDetection还提供了[PP-Tracking](../../../deploy/pptracking/README.md)实时多目标跟踪系统。PP-Tracking是基于PaddlePaddle深度学习框架的业界首个开源的实时多目标跟踪系统，具有模型丰富、应用广泛和部署高效三大优势。
 PP-Tracking支持单镜头跟踪(MOT)和跨镜头跟踪(MTMCT)两种模式，针对实际业务的难点和痛点，提供了行人跟踪、车辆跟踪、多类别跟踪、小目标跟踪、流量统计以及跨镜头跟踪等各种多目标跟踪功能和应用，部署方式支持API调用和GUI可视化界面，部署语言支持Python和C++，部署平台环境支持Linux、NVIDIA Jetson等。
 
 ### AI Studio公开项目案例
@@ -40,7 +40,7 @@ PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking�
 | DLA-34         | 576x320 |  69.9  |  70.2  |  1044   |  8869  |  44898 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_576x320.pdparams) | [配置文件](./fairmot_dla34_30e_576x320.yml) |
 
 **注意:**
- FairMOT DLA-34均使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
+ - FairMOT DLA-34均使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
 
 
 ### FairMOT enhance模型
@@ -57,8 +57,9 @@ PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking�
 | HarDNet-85     | 1088x608 |  74.7  |  70.7  |  3210  |  29790  | 109914 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_hardnet85_30e_1088x608.pdparams) | [配置文件](./fairmot_enhance_hardnet85_30e_1088x608.yml) |
 
 **注意:**
- FairMOT enhance模型均使用8个GPU进行训练，训练集中加入了crowdhuman数据集一起参与训练。DLA-34骨干网络的每个GPU上batch size为16，训练60个epoch。HarDNet-85骨干网络的每个GPU上batch size为10，训练30个epoch。
-
+ - FairMOT enhance模型均使用8个GPU进行训练，训练集中加入了crowdhuman数据集一起参与训练。
+ - FairMOT enhance DLA-34 每个GPU上batch size为16，训练60个epoch。
+ - FairMOT enhance HarDNet-85 每个GPU上batch size为10，训练30个epoch。
 
 ### FairMOT轻量级模型
 ### 在MOT-16 Test Set上结果
@@ -74,7 +75,7 @@ PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking�
 | HRNetV2-W18   | 576x320  |  65.3  |  64.8  |  4137  |  28860  | 163017 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_576x320.yml) |
 
 **注意:**
- FairMOT HRNetV2-W18均使用8个GPU进行训练，每个GPU上batch size为4，训练30个epoch，使用的ImageNet预训练，优化器策略采用的是Momentum，并且训练集中加入了crowdhuman数据集一起参与训练。
+ - FairMOT HRNetV2-W18均使用8个GPU进行训练，每个GPU上batch size为4，训练30个epoch，使用的ImageNet预训练，优化器策略采用的是Momentum，并且训练集中加入了crowdhuman数据集一起参与训练。
 
 
 ## 快速开始
@@ -99,7 +100,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_d
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=output/fairmot_dla34_30e_1088x608/model_final.pdparams
 ```
 **注意:**
- 默认评估的是MOT-16 Train Set数据集, 如需换评估数据集可参照以下代码修改`configs/datasets/mot.yml`：
+ - 默认评估的是MOT-16 Train Set数据集, 如需换评估数据集可参照以下代码修改`configs/datasets/mot.yml`：
   ```
   EvalMOTDataset:
     !MOTImageFolder
@@ -107,7 +108,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_d
       data_root: MOT17/images/train
       keep_ori_im: False # set True if save visualization images or video
   ```
-  跟踪结果会存于`{output_dir}/mot_results/`中，里面每个视频序列对应一个txt，每个txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`, 此外`{output_dir}`可通过`--output_dir`设置。
+ - 跟踪结果会存于`{output_dir}/mot_results/`中，里面每个视频序列对应一个txt，每个txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`, 此外`{output_dir}`可通过`--output_dir`设置。
 
 ### 3. 预测
 
@@ -119,7 +120,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_
 ```
 
 **注意:**
- 请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
+ - 请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
 
 ### 4. 导出预测模型
 
@@ -133,8 +134,8 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/fairmot/fairm
 python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608 --video_file={your video name}.mp4 --device=GPU --save_mot_txts
 ```
 **注意:**
- 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
- 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
+ - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
 
 ### 6. 用导出的跟踪和关键点模型Python联合预测
 
@@ -142,7 +143,7 @@ python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fa
 python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inference/fairmot_dla34_30e_1088x608/ --keypoint_model_dir=output_inference/higherhrnet_hrnet_w32_512/ --video_file={your video name}.mp4 --device=GPU
 ```
 **注意:**
- 关键点模型导出教程请参考`configs/keypoint/README.md`。
+ - 关键点模型导出教程请参考`configs/keypoint/README.md`。
 
 
 ## 引用
@@ -152,5 +153,11 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
   author={Zhang, Yifu and Wang, Chunyu and Wang, Xinggang and Zeng, Wenjun and Liu, Wenyu},
   journal={arXiv preprint arXiv:2004.01888},
   year={2020}
+}
+@article{shao2018crowdhuman,
+  title={CrowdHuman: A Benchmark for Detecting Human in a Crowd},
+  author={Shao, Shuai and Zhao, Zijian and Li, Boxun and Xiao, Tete and Yu, Gang and Zhang, Xiangyu and Sun, Jian},
+  journal={arXiv preprint arXiv:1805.00123},
+  year={2018}
 }
 ```
