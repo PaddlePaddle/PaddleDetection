@@ -870,7 +870,7 @@ def predict_mtmct(detector, reid_model, mtmct_dir, mtmct_cfg):
             roi_dir=roi_dir)
 
     if FLAGS.save_images:
-        carame_results, cid_tid_fid_res = get_mtmct_matching_results(
+        camera_results, cid_tid_fid_res = get_mtmct_matching_results(
             pred_mtmct_file)
 
         crops_dir = os.path.join(output_dir, 'mtmct_crops')
@@ -879,7 +879,7 @@ def predict_mtmct(detector, reid_model, mtmct_dir, mtmct_cfg):
 
         save_dir = os.path.join(output_dir, 'mtmct_vis')
         save_mtmct_vis_results(
-            carame_results,
+            camera_results,
             images_dir=mtmct_dir,
             save_dir=save_dir,
             save_videos=FLAGS.save_images)

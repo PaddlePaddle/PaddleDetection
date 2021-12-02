@@ -14,7 +14,7 @@
 """
 This code is based on https://github.com/LCFractal/AIC21-MTMC/tree/main/reid/reid-matching/tools
 
-Note: The following codes are strongly related to carame parameters of the AIC21 test-set S06,
+Note: The following codes are strongly related to camera parameters of the AIC21 test-set S06,
     so they can only be used in S06, and can not be used for other MTMCT datasets.
 """
 
@@ -202,7 +202,7 @@ def get_sim_matrix(cid_tid_dict,
                    use_ff=True,
                    use_rerank=True,
                    use_st_filter=False):
-    # Note: carame releated get_sim_matrix function,
+    # Note: camera releated get_sim_matrix function,
     # which is different from the one in utils.py.
     count = len(cid_tids)
 
