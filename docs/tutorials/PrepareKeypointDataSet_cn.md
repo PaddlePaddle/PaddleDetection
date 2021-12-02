@@ -1,3 +1,5 @@
+简体中文 | [English](PrepareKeypointDataSet_en.md)
+
 # 如何准备关键点数据集
 ## 目录
 - [COCO数据集](#COCO数据集)
@@ -11,7 +13,7 @@
 ### COCO数据集（KeyPoint）说明
 在COCO中，关键点序号与部位的对应关系为：
 ```
-COCO keypoint indexes::
+COCO keypoint indexes:
         0: 'nose',
         1: 'left_eye',
         2: 'right_eye',
@@ -56,7 +58,7 @@ mpii
 ### MPII数据集的说明
 在MPII中，关键点序号与部位的对应关系为：
 ```
-MPII keypoint indexes::
+MPII keypoint indexes:
         0: 'right_ankle',
         1: 'right_knee',
         2: 'right_hip',
