@@ -68,8 +68,12 @@ def predict_with_given_det(image, det_res, keypoint_detector,
         batch_images = rec_images[start_index:end_index]
         batch_records = np.array(records[start_index:end_index])
         if run_benchmark:
+            # warmup
             keypoint_result = keypoint_detector.predict(
-                batch_images, keypoint_threshold, warmup=10, repeats=10)
+                batch_images, keypoint_threshold, repeats=10, add_timer=False)
+            # run benchmark
+            keypoint_result = keypoint_detector.predict(
+                batch_images, keypoint_threshold, repeats=10, add_timer=True)
         else:
             keypoint_result = keypoint_detector.predict(batch_images,
                                                         keypoint_threshold)
@@ -100,8 +104,12 @@ def topdown_unite_predict(detector,
         det_timer.preprocess_time_s.end()
 
         if FLAGS.run_benchmark:
+            # warmup
             results = detector.predict(
-                [image], FLAGS.det_threshold, warmup=10, repeats=10)
+                [image], FLAGS.det_threshold, repeats=10, add_timer=False)
+            # run benchmark
+            results = detector.predict(
+                [image], FLAGS.det_threshold, repeats=10, add_timer=True)
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
             detector.gpu_mem += gm
