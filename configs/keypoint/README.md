@@ -52,6 +52,8 @@ MPII数据集
 
 ​    目前KeyPoint模型支持[COCO](https://cocodataset.org/#keypoints-2017)数据集和[MPII](http://human-pose.mpi-inf.mpg.de/#overview)数据集，数据集的准备方式请参考[关键点数据准备](../../docs/tutorials/PrepareKeypointDataSet_cn.md)。
 
+​    关于config配置文件内容说明请参考[关键点配置文件说明](../../docs/tutorials/KeyPointConfigGuide_cn.md)。
+
 
   - 请注意，Top-Down方案使用检测框测试时，需要通过检测模型生成bbox.json文件。COCO val2017的检测结果可以参考[Detector having human AP of 56.4 on COCO val2017 dataset](https://paddledet.bj.bcebos.com/data/bbox.json)，下载后放在根目录（PaddleDetection）下，然后修改config配置文件中`use_gt_bbox: False`后生效。然后正常执行测试命令即可。
 
