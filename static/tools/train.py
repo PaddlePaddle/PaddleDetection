@@ -112,7 +112,7 @@ def main():
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
-    if cfg.use_npu:
+    elif cfg.use_npu:
         devices_num = fluid.core.get_npu_device_count()
     elif use_xpu:
         # ToDo(qingshu): XPU only support single card now
