@@ -54,6 +54,28 @@ python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fa
  - bdd100k车辆跟踪和多类别demo视频可从此链接下载：`wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/bdd100k_demo.mp4`
 
 
+### 1.3 API调用方式：
+```
+from mot_jde_infer import mot_jde_predict
+
+# 1.model config and weights
+model_dir = 'fairmot_hrnetv2_w18_dlafpn_30e_576x320/'
+
+# 2.inference data
+video_file = 'test_demo.mp4'
+image_dir = None
+image_file = None
+
+# 3.other settings
+device = 'CPU'
+threshold = 0.3
+output_dir = 'output'
+
+# mot predict
+mot_jde_predict(model_dir, video_file, image_dir, image_file, device, threshold, output_dir)
+```
+
+
 ## 2. 对DeepSORT模型的导出和预测
 ### 2.1 导出预测模型
 Step 1：导出检测模型
