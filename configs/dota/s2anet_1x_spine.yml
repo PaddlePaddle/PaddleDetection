@@ -27,4 +27,3 @@ S2ANetHead:
   reg_loss_weight: [1.0, 1.0, 1.0, 1.0, 1.05]
   cls_loss_weight: [1.05, 1.0]
   reg_loss_type: 'l1'
-  is_training: True

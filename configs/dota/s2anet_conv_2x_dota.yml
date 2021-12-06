@@ -6,6 +6,7 @@ _BASE_: [
   '_base_/s2anet_reader.yml',
 ]
 weights: output/s2anet_conv_1x_dota/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
 
 ResNet:
   depth: 50
@@ -28,4 +29,3 @@ S2ANetHead:
   use_sigmoid_cls: True
   reg_loss_weight: [1.0, 1.0, 1.0, 1.0, 1.1]
   cls_loss_weight: [1.1, 1.05]
-  is_training: True

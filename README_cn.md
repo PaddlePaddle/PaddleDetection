@@ -3,9 +3,30 @@
 # PaddleDetection
 
 # 产品动态
-- 2021.11.03: 发布[release/2.3版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3)，发布**轻量级检测特色模型**⚡[PP-PicoDet](configs/picodet)，发布**轻量级关键点特色模型**⚡[PP-TinyPose](configs/keypoint/tiny_pose)。新增[Swin Transformer](configs/faster_rcnn)，[TOOD](configs/tood)，[GFL](configs/gfl)目标检测模型。发布[Sniper](configs/sniper)小目标检测优化模型，发布针对EdgeBoard优化[PP-YOLO-EB](configs/ppyolo)模型。新增轻量化关键点模型[Lite HRNet](configs/keypoint)关键点模型并支持Paddle Lite部署。
+- 2021.11.03: 发布[release/2.3版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3)，发布**轻量级检测特色模型**⚡[PP-PicoDet](configs/picodet)，发布**轻量级关键点特色模型**⚡[PP-TinyPose](configs/keypoint/tiny_pose)，发布**实时跟踪系统**[PP-Tracking](deploy/pptracking)。新增[Swin Transformer](configs/faster_rcnn)，[TOOD](configs/tood)，[GFL](configs/gfl)目标检测模型。发布[Sniper](configs/sniper)小目标检测优化模型，发布针对EdgeBoard优化[PP-YOLO-EB](configs/ppyolo)模型。新增轻量化关键点模型[Lite HRNet](configs/keypoint)关键点模型并支持Paddle Lite部署。
 - 2021.08.10: 发布[release/2.2版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2)，发布Transformer检测系列模型，包括[DETR](configs/detr), [Deformable DETR](configs/deformable_detr), [Sparse RCNN](configs/sparse_rcnn)。新增Dark HRNet关键点模型和MPII数据集[关键点模型](configs/keypoint)，新增[人头](configs/mot/headtracking21)、[车辆](configs/mot/vehicle)跟踪垂类模型。
 - 2021.05.20: 发布[release/2.1版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1)，新增[关键点检测](configs/keypoint)，模型包括HigherHRNet，HRNet。新增[多目标跟踪](configs/mot)能力，模型包括DeepSORT，JDE，FairMOT。发布PPYOLO系列模型压缩模型，新增[ONNX模型导出教程](deploy/EXPORT_ONNX_MODEL.md)。
+
+# 近期活动
+
+🌟  **11月23日~26日《智能视觉检测系列方案详解》** 🌟
+
+- 【11月23日 19:00-20:00】“闪电版”目标检测算法
+- 【11月24日 19:00-20:00】轻量级关键点算法的产业应用
+- 【11月25日 19:00-20:00】超强目标跟踪系统剖析
+- 【11月26日 19:00-20:00】跨镜跟踪技术详解与实战
+
+👀 **直播链接** ：http://live.bilibili.com/21863531
+
+📣 **直播回放及PPT课件链接：** https://aistudio.baidu.com/aistudio/education/group/info/23670
+
+​																	  💖 **欢迎大家扫码入群讨论** 💖
+
+<div align="center">
+  <img src="https://user-images.githubusercontent.com/80816848/143001007-f6d2ffb9-65c4-47bb-b2d4-b4e1da8db837.jpeg" width=250/>
+</div>
+
+
 
 # 简介
 
@@ -46,7 +67,8 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
     </tr>
     <tr valign="top">
       <td>
-        <ul><li><b>Two-Stage Detection</b></li>
+        <ul>
+          <li><b>Object Detection</b></li>
           <ul>
             <li>Faster RCNN</li>
             <li>FPN</li>
@@ -54,63 +76,44 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
             <li>Libra RCNN</li>
             <li>Hybrid Task RCNN</li>
             <li>PSS-Det</li>
-          </ul>
-        </ul>
-        <ul><li><b>One-Stage Detection</b></li>
-          <ul>
             <li>RetinaNet</li>
             <li>YOLOv3</li>
             <li>YOLOv4</li>  
-            <li>PP-YOLOv1/v2/Tiny</li>
+            <li>PP-YOLOv1/v2</li>
+            <li>PP-YOLO-Tiny</li>
             <li>SSD</li>
-          </ul>
-        </ul>
-        <ul><li><b>Anchor Free</b></li>
-          <ul>
             <li>CornerNet-Squeeze</li>
             <li>FCOS</li>  
             <li>TTFNet</li>
-            <li>PicoDet</li>
-          </ul>
+            <li>PP-PicoDet</li>
+            <li>DETR</li>
+            <li>Deformable DETR</li>
+            <li>Swin Transformer</li>
+            <li>Sparse RCNN</li>
         </ul>
+        <li><b>Instance Segmentation</b></li>
         <ul>
-          <li><b>Instance Segmentation</b></li>
-            <ul>
-             <li>Mask RCNN</li>
-             <li>SOLOv2</li>
-            </ul>
+            <li>Mask RCNN</li>
+            <li>SOLOv2</li>
         </ul>
+        <li><b>Face Detection</b></li>
         <ul>
-          <li><b>Face-Detction</b></li>
-            <ul>
-             <li>FaceBoxes</li>
-             <li>BlazeFace</li>
-             <li>BlazeFace-NAS</li>
-            </ul>
+            <li>FaceBoxes</li>
+            <li>BlazeFace</li>
+            <li>BlazeFace-NAS</li>
         </ul>
+        <li><b>Multi-Object-Tracking</b></li>
         <ul>
-          <li><b>Transformer</b></li>
-            <ul>
-             <li>DETR/Deformable DETR</li>
-             <li>Sparse RCNN</li>
-             <li>Swin Transformer</li>
-            </ul>
+            <li>JDE</li>
+            <li>FairMOT</li>
+            <li>DeepSort</li>
         </ul>
+        <li><b>KeyPoint-Detection</b></li>
         <ul>
-          <li><b>Multi-Object-Tracking</b></li>
-            <ul>
-             <li>JDE</li>
-             <li>FairMOT</li>
-             <li>DeepSort</li>
-            </ul>
+            <li>HRNet</li>
+            <li>HigherHRNet</li>
         </ul>
-        <ul>
-          <li><b>KeyPoint-Detection</b></li>
-            <ul>
-             <li>HRNet</li>
-             <li>HigherHRNet</li>
-            </ul>
-        </ul>
+      </ul>
       </td>
       <td>
         <ul>
@@ -260,6 +263,7 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
 - 通用目标检测:
     - [模型库](docs/MODEL_ZOO_cn.md)
     - [PP-YOLO模型](configs/ppyolo/README_cn.md)
+    - [PP-PicoDet模型](configs/picodet/README.md)
     - [增强版Anchor Free模型TTFNet](configs/ttfnet/README.md)
     - [移动端模型](static/configs/mobile/README.md)
     - [676类目标检测](static/docs/featured_model/LARGE_SCALE_DET_MODEL.md)
@@ -270,10 +274,12 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
 - 旋转框检测
     - [S2ANet](configs/dota/README.md)
 - [关键点检测](configs/keypoint)
+    - [PP-TinyPose](configs/keypoint/tiny_pose)
     - HigherHRNet
     - HRNet
     - LiteHRNet
-- [多目标跟踪](configs/mot/README_cn.md)
+- [多目标跟踪](configs/mot/README.md)
+    - [PP-Tracking](deploy/pptracking/README.md)
     - [DeepSORT](configs/mot/deepsort/README_cn.md)
     - [JDE](configs/mot/jde/README_cn.md)
     - [FairMOT](configs/mot/fairmot/README_cn.md)
@@ -288,6 +294,7 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
 ## 应用案例
 
 - [人像圣诞特效自动生成工具](static/application/christmas)
+- [安卓健身APP](https://github.com/zhiboniu/pose_demo_android)
 
 ## 第三方教程推荐
 

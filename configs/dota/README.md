@@ -154,7 +154,6 @@ Paddle中`multiclass_nms`算子的输入支持四边形输入，因此部署时�
 
 部署教程请参考[预测部署](../../deploy/README.md)
 
-**注意：** 由于paddle.detach函数动转静时会导致导出模型尺寸错误，因此在配置文件中增加了`is_training`参数，导出模型预测部署时需要将改参数设置为`False`
 
 ## Citations
 ```

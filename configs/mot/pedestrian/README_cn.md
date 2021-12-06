@@ -14,13 +14,16 @@
 
 ### FairMOT在各个数据集val-set上Pedestrian类别的结果
 
-|    数据集      |  输入尺寸 |  MOTA  |  IDF1  |  FPS   |  下载链接 | 配置文件 |
-| :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
-|  PathTrack    | 1088x608 |  44.9 |    59.3   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_pathtrack.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_pathtrack.yml) |
-|  VisDrone     | 1088x608 |  49.2 |   63.1 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_pedestrian.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_visdrone_pedestrian.yml) |
+|    数据集      |  骨干网络   |  输入尺寸 |  MOTA  |  IDF1  |  FPS   |  下载链接 | 配置文件 |
+| :-------------| :-------- | :------- | :----: | :----: | :----: | :-----: |:------: |
+|  PathTrack    |   DLA-34  | 1088x608 |  44.9 |    59.3   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_pathtrack.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_pathtrack.yml) |
+|  VisDrone     |   DLA-34  | 1088x608 |  49.2 |   63.1 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_pedestrian.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_visdrone_pedestrian.yml) |
+|  VisDrone     | HRNetv2-W18| 1088x608 |  40.5 |   54.7 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_pedestrian.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_pedestrian.yml) |
+|  VisDrone     | HRNetv2-W18| 864x480 |  38.6 |   50.9 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_pedestrian.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_pedestrian.yml) |
+|  VisDrone     | HRNetv2-W18| 576x320 |  30.6 |   47.2 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_pedestrian.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_pedestrian.yml) |
 
 **注意:**
- FairMOT均使用DLA-34为骨干网络，4个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
+ - FairMOT均使用DLA-34为骨干网络，4个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
 
 
 ## 数据集准备和处理
@@ -83,7 +86,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/pedestrian/fairmo
 CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/pedestrian/fairmot_dla34_30e_1088x608_visdrone_pedestrian.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_pedestrian.pdparams --video_file={your video name}.mp4  --save_videos
 ```
 **注意:**
- 请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
+ - 请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
 
 ### 4. 导出预测模型
 ```bash
@@ -92,10 +95,11 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/pedestrian/fa
 
 ### 5. 用导出的模型基于Python去预测
 ```bash
-python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608_visdrone_pedestrian --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608_visdrone_pedestrian --video_file={your video name}.mp4 --device=GPU --save_mot_txts
 ```
 **注意:**
- 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
 
 ## 引用
 ```

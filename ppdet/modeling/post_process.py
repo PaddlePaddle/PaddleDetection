@@ -91,9 +91,23 @@ class BBoxPostProcess(nn.Layer):
                 including labels, scores and bboxes.
         """
 
-        if bboxes.shape[0] == 0:
-            bboxes = self.fake_bboxes
-            bbox_num = self.fake_bbox_num
+        bboxes_list = []
+        bbox_num_list = []
+        id_start = 0
+        # add fake bbox when output is empty for each batch
+        for i in range(bbox_num.shape[0]):
+            if bbox_num[i] == 0:
+                bboxes_i = self.fake_bboxes
+                bbox_num_i = self.fake_bbox_num
+                id_start += 1
+            else:
+                bboxes_i = bboxes[id_start:id_start + bbox_num[i], :]
+                bbox_num_i = bbox_num[i]
+                id_start += bbox_num[i]
+            bboxes_list.append(bboxes_i)
+            bbox_num_list.append(bbox_num_i)
+        bboxes = paddle.concat(bboxes_list)
+        bbox_num = paddle.concat(bbox_num_list)
 
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
@@ -156,6 +170,7 @@ class MaskPostProcess(object):
         """
         Paste the mask prediction to the original image.
         """
+
         x0, y0, x1, y1 = paddle.split(boxes, 4, axis=1)
         masks = paddle.unsqueeze(masks, [0, 1])
         img_y = paddle.arange(0, im_h, dtype='float32') + 0.5
@@ -440,13 +455,13 @@ class CenterNetPostProcess(TTFBox):
     def __call__(self, hm, wh, reg, im_shape, scale_factor):
         heat = self._simple_nms(hm)
         scores, inds, topk_clses, ys, xs = self._topk(heat)
-        scores = paddle.tensor.unsqueeze(scores, [1])
-        clses = paddle.tensor.unsqueeze(topk_clses, [1])
+        scores = scores.unsqueeze(1)
+        clses = topk_clses.unsqueeze(1)
 
         reg_t = paddle.transpose(reg, [0, 2, 3, 1])
         # Like TTFBox, batch size is 1.
         # TODO: support batch size > 1
-        reg = paddle.reshape(reg_t, [-1, paddle.shape(reg_t)[-1]])
+        reg = paddle.reshape(reg_t, [-1, reg_t.shape[-1]])
         reg = paddle.gather(reg, inds)
         xs = paddle.cast(xs, 'float32')
         ys = paddle.cast(ys, 'float32')
@@ -454,7 +469,7 @@ class CenterNetPostProcess(TTFBox):
         ys = ys + reg[:, 1:2]
 
         wh_t = paddle.transpose(wh, [0, 2, 3, 1])
-        wh = paddle.reshape(wh_t, [-1, paddle.shape(wh_t)[-1]])
+        wh = paddle.reshape(wh_t, [-1, wh_t.shape[-1]])
         wh = paddle.gather(wh, inds)
 
         if self.regress_ltrb:
@@ -486,8 +501,7 @@ class CenterNetPostProcess(TTFBox):
         scale_x = scale_factor[:, 1:2]
         scale_expand = paddle.concat(
             [scale_x, scale_y, scale_x, scale_y], axis=1)
-        boxes_shape = paddle.shape(bboxes)
-        boxes_shape.stop_gradient = True
+        boxes_shape = bboxes.shape[:]
         scale_expand = paddle.expand(scale_expand, shape=boxes_shape)
         bboxes = paddle.divide(bboxes, scale_expand)
         if self.for_mot:

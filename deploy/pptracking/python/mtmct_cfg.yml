@@ -1,0 +1,17 @@
+# config for MTMCT
+MTMCT: True
+cameras_bias: # default for scene S01. For S06, should modify as 'c041: 0  c042: 0'
+  c003: 0
+  c004: 0
+# 1.zone releated parameters
+use_zone: False
+zone_path: dataset/mot/aic21mtmct_vehicle/S06/zone
+# 2.tricks parameters, can be used for other mtmct dataset
+use_ff: True
+use_rerank: True
+# 3.camera releated parameters
+use_camera: False
+use_st_filter: False
+# 4.zone releated parameters
+use_roi: False
+roi_dir: dataset/mot/aic21mtmct_vehicle/S06

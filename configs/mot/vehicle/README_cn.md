@@ -17,14 +17,18 @@
 
 ### FairMOT在各个数据集val-set上Vehicle类别的结果
 
-|    数据集      |  输入尺寸 |  MOTA  |  IDF1  |  FPS   |  下载链接 | 配置文件 |
-| :-------------| :------- | :----: | :----: | :----: | :-----: |:------: |
-|  BDD100K      | 1088x608 |  43.5 |  50.0  |    -    | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml) |
-|  KITTI        | 1088x608 |  82.7 |    -   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
-|  VisDrone     | 1088x608 |  52.1 |   63.3 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
+|    数据集      |  骨干网络   |  输入尺寸 |  MOTA  |  IDF1  |  FPS   |  下载链接 | 配置文件 |
+| :-------------| :-------- | :------- | :----: | :----: | :----: | :-----: |:------: |
+|  BDD100K      |   DLA-34  | 1088x608 |  43.5 |  50.0  |    -    | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml) |
+|  BDD100K      | HRNetv2-W18| 576x320 |  32.6 |  38.7  |    -    | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100kmot_vehicle.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100kmot_vehicle.yml) |
+|  KITTI        |   DLA-34  | 1088x608 |  82.7 |    -   |    -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_kitti_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_kitti_vehicle.yml) |
+|  VisDrone     |   DLA-34  | 1088x608 |  52.1 |   63.3 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_visdrone_vehicle.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_visdrone_vehicle.yml) |
+|  VisDrone     | HRNetv2-W18| 1088x608 |  46.0 |   56.8 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle.yml) |
+|  VisDrone     | HRNetv2-W18| 864x480 |  43.7 |   56.1 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_vehicle.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_864x480_visdrone_vehicle.yml) |
+|  VisDrone     | HRNetv2-W18| 576x320 |  39.8 |   52.4 |    -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_vehicle.pdparams) | [配置文件](./fairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone_vehicle.yml) |
 
 **注意:**
- FairMOT均使用DLA-34为骨干网络，4个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
+ - FairMOT均使用DLA-34为骨干网络，4个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
 
 
 ## 数据集准备和处理
@@ -114,7 +118,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/vehicle/fairmot_d
 CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/vehicle/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle.pdparams --video_file={your video name}.mp4  --save_videos
 ```
 **注意:**
- 请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
+ - 请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
 
 ### 4. 导出预测模型
 ```bash
@@ -123,10 +127,11 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/vehicle/fairm
 
 ### 5. 用导出的模型基于Python去预测
 ```bash
-python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608_bdd100kmot_vehicle --video_file={your video name}.mp4 --device=GPU --save_mot_txts
 ```
 **注意:**
- 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
 
 ## 引用
 ```

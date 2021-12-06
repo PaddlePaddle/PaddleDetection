@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This code is borrow from https://github.com/Zhongdao/Towards-Realtime-MOT/blob/master/tracker/matching.py
+This code is based on https://github.com/Zhongdao/Towards-Realtime-MOT/blob/master/tracker/matching.py
 """
 
 import lap
@@ -20,9 +20,8 @@ import scipy
 import numpy as np
 from scipy.spatial.distance import cdist
 from ..motion import kalman_filter
-
-from ppdet.utils.logger import setup_logger
-logger = setup_logger(__name__)
+import warnings
+warnings.filterwarnings("ignore")
 
 __all__ = [
     'merge_matches',
@@ -76,7 +75,7 @@ def cython_bbox_ious(atlbrs, btlbrs):
     try:
         import cython_bbox
     except Exception as e:
-        logger.error('cython_bbox not found, please install cython_bbox.'
+        print('cython_bbox not found, please install cython_bbox.'
                      'for example: `pip install cython_bbox`.')
         raise e
 

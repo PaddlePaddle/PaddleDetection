@@ -93,8 +93,10 @@ class MOTDataSet(DetDataset):
         if self.image_lists == []:
             return
         # only used to get categories and metric
-        return os.path.join(self.dataset_dir, 'image_lists',
-                            self.image_lists[0])
+        # only check first data, but the label_list of all data should be same.
+        first_mot_data = self.image_lists[0].split('.')[0]
+        anno_file = os.path.join(self.dataset_dir, first_mot_data, 'label_list.txt')
+        return anno_file
 
     def parse_dataset(self):
         self.img_files = OrderedDict()
@@ -154,7 +156,7 @@ class MOTDataSet(DetDataset):
             last_index += v
 
         self.num_identities_dict = defaultdict(int)
-        self.num_identities_dict[0] = int(last_index + 1) # single class
+        self.num_identities_dict[0] = int(last_index + 1)  # single class
         self.num_imgs_each_data = [len(x) for x in self.img_files.values()]
         self.total_imgs = sum(self.num_imgs_each_data)
 
@@ -249,6 +251,7 @@ class MCMOTDataSet(DetDataset):
             └——————labels_with_ids
                         └——————train
     """
+
     def __init__(self,
                  dataset_dir=None,
                  image_lists=[],
@@ -271,8 +274,10 @@ class MCMOTDataSet(DetDataset):
         if self.image_lists == []:
             return
         # only used to get categories and metric
-        return os.path.join(self.dataset_dir, 'image_lists',
-                            self.image_lists[0])
+        # only check first data, but the label_list of all data should be same.
+        first_mot_data = self.image_lists[0].split('.')[0]
+        anno_file = os.path.join(self.dataset_dir, first_mot_data, 'label_list.txt')
+        return anno_file
 
     def parse_dataset(self):
         self.img_files = OrderedDict()
@@ -343,22 +348,26 @@ class MCMOTDataSet(DetDataset):
 
         # cname2cid and cid2cname 
         cname2cid = {}
-        if self.label_list:
+        if self.label_list is not None:
             # if use label_list for multi source mix dataset, 
             # please make sure label_list in the first sub_dataset at least.
             sub_dataset = self.image_lists[0].split('.')[0]
             label_path = os.path.join(self.dataset_dir, sub_dataset,
                                       self.label_list)
             if not os.path.exists(label_path):
-                raise ValueError("label_list {} does not exists".format(
-                    label_path))
-            with open(label_path, 'r') as fr:
-                label_id = 0
-                for line in fr.readlines():
-                    cname2cid[line.strip()] = label_id
-                    label_id += 1
+                logger.info(
+                    "Note: label_list {} does not exists, use VisDrone 10 classes labels as default.".
+                    format(label_path))
+                cname2cid = visdrone_mcmot_label()
+            else:
+                with open(label_path, 'r') as fr:
+                    label_id = 0
+                    for line in fr.readlines():
+                        cname2cid[line.strip()] = label_id
+                        label_id += 1
         else:
             cname2cid = visdrone_mcmot_label()
+
         cid2cname = dict([(v, k) for (k, v) in cname2cid.items()])
 
         logger.info('MCMOT dataset summary: ')
@@ -367,10 +376,10 @@ class MCMOTDataSet(DetDataset):
         logger.info('Image start index: {}'.format(self.img_start_index))
 
         logger.info('Total identities of each category: ')
-        self.num_identities_dict = sorted(
+        num_identities_dict = sorted(
             self.num_identities_dict.items(), key=lambda x: x[0])
         total_IDs_all_cats = 0
-        for (k, v) in self.num_identities_dict:
+        for (k, v) in num_identities_dict:
             logger.info('Category {} [{}] has {} IDs.'.format(k, cid2cname[k],
                                                               v))
             total_IDs_all_cats += v
