@@ -128,6 +128,8 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 **注意:**
  跟踪模型导出教程请参考`configs/mot/README.md`。
 
+## Benchmark
+我们给出了不同运行环境下的测试结果，供您在选用模型时参考。详细数据请见[Keypoint Inference Benchmark](./KeypointBenchmark.md)。
 
 ## 引用
 ```

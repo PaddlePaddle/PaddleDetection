@@ -71,6 +71,7 @@ If you want to deploy it on the mobile devives, you also need:
 - The inference time is tested on a Qualcomm Snapdragon 865, with 4 threads at arm8, FP32.
 - Pipeline time includes time for preprocess, inferece and postprocess.
 - About the deployment and testing for other opensource model, please refer to [Here](https://github.com/zhiboniu/MoveNet-PaddleLite).
+- For more performance data in other runtime environment, please refer to [Keypoint Inference Benchmark](../KeypointBenchmark.md).
 
 ## Model Training
 In addition to `COCO`, the trainset for keypoint detection model and pedestrian detection model also includes [AI Challenger](https://arxiv.org/abs/1711.06475). Keypoints of each dataset are defined as follows:
