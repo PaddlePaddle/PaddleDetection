@@ -121,32 +121,32 @@ class JDE_Detector(Detector):
                 online_scores[cls_id].append(tscore)
         return online_tlwhs, online_scores, online_ids
 
-    def predict(self, image_list, threshold=0.5, warmup=0, repeats=1):
+    def predict(self, image_list, threshold=0.5, repeats=1, add_timer=True):
         '''
         Args:
             image_list (list[str]): path of images, only support one image path
                 (batch_size=1) in tracking model
             threshold (float): threshold of predicted box' score
+            repeats (int): repeat number for prediction
+            add_timer (bool): whether add timer during prediction
         Returns:
             online_tlwhs, online_scores, online_ids (dict[np.array])
         '''
-        self.det_times.preprocess_time_s.start()
+        # preprocess
+        if add_timer:
+            self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image_list)
-        self.det_times.preprocess_time_s.end()
 
         pred_dets, pred_embs = None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
+        if add_timer:
+            self.det_times.preprocess_time_s.end()
+            self.det_times.inference_time_s.start()
 
-        for i in range(warmup):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            boxes_tensor = self.predictor.get_output_handle(output_names[0])
-            pred_dets = boxes_tensor.copy_to_cpu()
-
-        self.det_times.inference_time_s.start()
+        # model prediction
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -154,14 +154,16 @@ class JDE_Detector(Detector):
             pred_dets = boxes_tensor.copy_to_cpu()
             embs_tensor = self.predictor.get_output_handle(output_names[1])
             pred_embs = embs_tensor.copy_to_cpu()
-        self.det_times.inference_time_s.end(repeats=repeats)
+        if add_timer:
+            self.det_times.inference_time_s.end(repeats=repeats)
+            self.det_times.postprocess_time_s.start()
 
-        self.det_times.postprocess_time_s.start()
+        # postprocess
         online_tlwhs, online_scores, online_ids = self.postprocess(
             pred_dets, pred_embs, threshold)
-        self.det_times.postprocess_time_s.end()
-        self.det_times.img_num += 1
-
+        if add_timer:
+            self.det_times.postprocess_time_s.end()
+            self.det_times.img_num += 1
         return online_tlwhs, online_scores, online_ids
 
 
@@ -175,7 +177,12 @@ def predict_image(detector, image_list):
     for frame_id, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
         if FLAGS.run_benchmark:
-            detector.predict([img_file], FLAGS.threshold, warmup=10, repeats=10)
+            # warmup
+            detector.predict(
+                [img_file], FLAGS.threshold, repeats=10, add_timer=False)
+            # run benchmark
+            detector.predict(
+                [img_file], FLAGS.threshold, repeats=10, add_timer=True)
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
             detector.gpu_mem += gm
