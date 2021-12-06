@@ -339,7 +339,9 @@ def get_widerface_image_info(img_root, img_relative_path, img_id):
     save_path = os.path.join(img_root, img_relative_path)
     if os.path.exists(save_path):
         img = cv2.imread(save_path)
-        image_info["file_name"] = os.path.join(os.path.basename(os.path.dirname(img_root)), img_relative_path)
+        image_info["file_name"] = os.path.join(os.path.basename(
+            os.path.dirname(img_root)), os.path.basename(img_root),
+            img_relative_path)
         image_info["height"] = img.shape[0]
         image_info["width"] = img.shape[1]
         image_info["id"] = img_id
