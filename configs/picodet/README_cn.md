@@ -1,30 +1,33 @@
-English | [简体中文](README_cn.md)
+简体中文 | [English](README.md)
 
 # PP-PicoDet
 
 ![](../../docs/images/picedet_demo.jpeg)
-## Introduction
 
-We developed a series of lightweight models, named `PP-PicoDet`. Because of the excellent performance, our models are very suitable for deployment on mobile or CPU. For more details, please refer to our [report on arXiv](https://arxiv.org/abs/2111.00902).
+## 简介
 
-- 🌟 Higher mAP: the **first** object detectors that surpass mAP(0.5:0.95) **30+** within 1M parameters when the input size is 416.
-- 🚀 Faster latency: 150FPS on mobile ARM CPU.
-- 😊 Deploy friendly: support PaddleLite/MNN/NCNN/OpenVINO and provide C++/Python/Android implementation.
-- 😍 Advanced algorithm: use the most advanced algorithms and offer innovation, such as ESNet, CSP-PAN, SimOTA with VFL, etc.
+PaddleDetection中提出了全新的轻量级系列模型`PP-PicoDet`，在移动端具有卓越的性能，成为全新SOTA轻量级模型。详细的技术细节可以参考我们的[arXiv技术报告](https://arxiv.org/abs/2111.00902)。
+
+PP-PicoDet模型有如下特点：
+
+- 🌟 更高的mAP: 第一个在1M参数量之内`mAP(0.5:0.95)`超越**30+**(输入416像素时)。
+- 🚀 更快的预测速度: 网络预测在ARM CPU下可达150FPS。
+- 😊 部署友好: 支持PaddleLite/MNN/NCNN/OpenVINO等预测库，支持转出ONNX，提供了C++/Python/Android的demo。
+- 😍 先进的算法: 我们在现有SOTA算法中进行了创新, 包括：ESNet, CSP-PAN, SimOTA等等。
 
 
 <div align="center">
   <img src="../../docs/images/picodet_map.png" width='600'/>
 </div>
 
-### Comming Soon
-- [ ] More series of model, such as smaller or larger model.
-- [ ] Pretrained models for more scenarios.
-- [ ] More features in need.
+### 即将更新
+- [ ] 更多系列模型, 包括更大或更小，或者适配更多硬件模型。
+- [ ] 更多场景的预训练模型。
+- [ ] 更多功能。
 
-## Benchmark
+## 基线
 
-| Model     | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params<br><sup>(M) | FLOPS<br><sup>(G) | Latency<sup><small>[NCNN](#latency)</small><sup><br><sup>(ms) | Latency<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  Download  | Config |
+| 模型     | 输入尺寸 | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | 参数量<br><sup>(M) | FLOPS<br><sup>(G) | 预测时延<sup><small>[NCNN](#latency)</small><sup><br><sup>(ms) | 预测时延<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  下载  | 配置文件 |
 | :-------- | :--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :-----------------------------: | :-----------------------------: | :----------------------------------------: | :--------------------------------------- |
 | PicoDet-S |  320*320   |          27.1           |        41.4        |        0.99        |       0.73        |              8.13               |            **6.65**             | [model](https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_320_coco.yml) |
 | PicoDet-S |  416*416   |          30.6           |        45.5        |        0.99        |       1.24        |              12.37              |            **9.82**             | [model](https://paddledet.bj.bcebos.com/models/picodet_s_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_416_coco.yml) |
@@ -34,26 +37,26 @@ We developed a series of lightweight models, named `PP-PicoDet`. Because of the 
 | PicoDet-L |  416*416   |          36.6           |        52.5        |        3.30        |       3.76        |              23.36              |            **21.85**            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_416_coco.yml) |
 | PicoDet-L |  640*640   |          40.9           |        57.6        |        3.30        |       8.91        |              54.11              |            **50.55**            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_640_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_640_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_640_coco.yml) |
 
-#### More Configs
+#### 更多的配置
 
-| Model     | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params<br><sup>(M) | FLOPS<br><sup>(G) | Latency<sup><small>[NCNN](#latency)</small><sup><br><sup>(ms) | Latency<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  Download  | Config |
+| 模型     | 输入尺寸 | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | 参数量<br><sup>(M) | FLOPS<br><sup>(G) | 预测时延<sup><small>[NCNN](#latency)</small><sup><br><sup>(ms) | 预测时延<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  下载  | 配置文件 |
 | :--------------------------- | :--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :-----------------------------: | :-----------------------------: | :----------------------------------------: | :--------------------------------------- |
 | PicoDet-Shufflenetv2 1x      |  416*416   |          30.0           |        44.6        |        1.17        |       1.53        |              15.06              |            **10.63**            |      [model](https://paddledet.bj.bcebos.com/models/picodet_shufflenetv2_1x_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_shufflenetv2_1x_416_coco.log)      | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/more_config/picodet_shufflenetv2_1x_416_coco.yml)      |
 | PicoDet-MobileNetv3-large 1x |  416*416   |          35.6           |        52.0        |        3.55        |       2.80        |              20.71              |            **17.88**            | [model](https://paddledet.bj.bcebos.com/models/picodet_mobilenetv3_large_1x_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_mobilenetv3_large_1x_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/more_config/picodet_mobilenetv3_large_1x_416_coco.yml) |
 | PicoDet-LCNet 1.5x           |  416*416   |          36.3           |        52.2        |        3.10        |       3.85        |              21.29              |            **20.8**             |           [model](https://paddledet.bj.bcebos.com/models/picodet_lcnet_1_5x_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_lcnet_1_5x_416_coco.log)           | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/more_config/picodet_lcnet_1_5x_416_coco.yml)           |
 
 <details open>
-<summary><b>Table Notes:</b></summary>
+<summary><b>注意事项:</b></summary>
 
-- <a name="latency">Latency:</a> All our models test on `Qualcomm Snapdragon 865(4xA77+4xA55)` with 4 threads by arm8 and with FP16. In the above table, test latency on [NCNN](https://github.com/Tencent/ncnn) and `Lite`->[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite).  And testing latency with code: [MobileDetBenchmark](https://github.com/JiweiMaster/MobileDetBenchmark).
-- PicoDet is trained on COCO train2017 dataset and evaluated on COCO val2017.
-- PicoDet used 4 or 8 GPUs for training and all checkpoints are trained with default settings and hyperparameters.
+- <a name="latency">时延测试：</a> 我们所有的模型都在`骁龙865(4xA77+4xA55)` 上测试(4线程，FP16预测)。上面表格中标有`NCNN`的是使用[NCNN](https://github.com/Tencent/ncnn)库测试，标有`Lite`的是使用[Paddle Lite](https://github.com/PaddlePaddle/Paddle-Lite)进行测试。 测试的benchmark脚本来自: [MobileDetBenchmark](https://github.com/JiweiMaster/MobileDetBenchmark)。
+- PicoDet在COCO train2017上训练，并且在COCO val2017上进行验证。
+- PicoDet使用4卡GPU训练(PicoDet-L-640使用8卡训练)，并且所有的模型都是通过发布的默认配置训练得到。
 
 </details>
 
-#### Benchmark of Other Models
+#### 其他模型的基线
 
-| Model     | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params<br><sup>(M) | FLOPS<br><sup>(G) | Latency<sup><small>[NCNN](#latency)</small><sup><br><sup>(ms) |
+| 模型     | 输入尺寸 | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | 参数量<br><sup>(M) | FLOPS<br><sup>(G) | 预测时延<sup><small>[NCNN](#latency)</small><sup><br><sup>(ms) |
 | :-------- | :--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :-----------------------------: |
 | YOLOv3-Tiny |  416*416   |          16.6           |        33.1      |        8.86        |       5.62        |             25.42               |
 | YOLOv4-Tiny |  416*416   |          21.7           |        40.2        |        6.06           |       6.96           |             23.69               |
@@ -68,27 +71,27 @@ We developed a series of lightweight models, named `PP-PicoDet`. Because of the 
 | YOLOv5s |  640*640       |          37.2             |    56.0            |    7.2                |    16.5             |    78.05                          |
 
 
-## Quick Start
+## 快速开始
 
 <details open>
-<summary>Requirements:</summary>
+<summary>依赖包:</summary>
 
 - PaddlePaddle >= 2.1.2
 
 </details>
 
 <details>
-<summary>Installation</summary>
+<summary>安装</summary>
 
-- [Installation guide](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/INSTALL.md)
-- [Prepare dataset](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/PrepareDataSet_en.md)
+- [安装指导文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/INSTALL.md)
+- [准备数据文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/PrepareDataSet_en.md)
 
 </details>
 
 <details>
-<summary>Training and Evaluation</summary>
+<summary>训练&评估</summary>
 
-- Training model on single-GPU:
+- 单卡GPU上训练:
 
 ```shell
 # training on single-GPU
@@ -96,7 +99,7 @@ export CUDA_VISIBLE_DEVICES=0
 python tools/train.py -c configs/picodet/picodet_s_320_coco.yml --eval
 ```
 
-- Training model on multi-GPU:
+- 多卡GPU上训练:
 
 
 ```shell
@@ -105,31 +108,31 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/picodet/picodet_s_320_coco.yml --eval
 ```
 
-- Evaluation:
+- 评估:
 
 ```shell
 python tools/eval.py -c configs/picodet/picodet_s_320_coco.yml \
               -o weights=https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams
 ```
 
-- Infer:
+- 测试:
 
 ```shell
 python tools/infer.py -c configs/picodet/picodet_s_320_coco.yml \
               -o weights=https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams
 ```
 
-Detail also can refer to [Quick start guide](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/GETTING_STARTED.md).
+详情请参考[快速开始文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/GETTING_STARTED.md).
 
 </details>
 
 
-## Deployment
+## 部署
 
-### Export and Convert Model
+### 导出及转换模型
 
 <details>
-<summary>1. Export model (click to expand)</summary>
+<summary>1. 导出模型 (点击展开)</summary>
 
 ```shell
 cd PaddleDetection
@@ -140,15 +143,15 @@ python tools/export_model.py -c configs/picodet/picodet_s_320_coco.yml \
 </details>
 
 <details>
-<summary>2. Convert to PaddleLite (click to expand)</summary>
+<summary>2. 转换模型至Paddle Lite (点击展开)</summary>
 
-- Install Paddlelite>=2.10.rc:
+- 安装Paddlelite>=2.10.rc:
 
 ```shell
 pip install paddlelite
 ```
 
-- Convert model:
+- 转换模型至Paddle Lite格式：
 
 ```shell
 # FP32
@@ -160,16 +163,16 @@ paddle_lite_opt --model_dir=inference_model/picodet_s_320_coco --valid_targets=a
 </details>
 
 <details>
-<summary>3. Convert to ONNX (click to expand)</summary>
+<summary>3. 转换模型至ONNX (点击展开)</summary>
 
-- Install [Paddle2ONNX](https://github.com/PaddlePaddle/Paddle2ONNX) >= 0.7 and ONNX > 1.10.1, for details, please refer to [Tutorials of Export ONNX Model](../../deploy/EXPORT_ONNX_MODEL.md)
+- 安装[Paddle2ONNX](https://github.com/PaddlePaddle/Paddle2ONNX) >= 0.7 并且 ONNX > 1.10.1, 细节请参考[导出ONNX模型教程](../../deploy/EXPORT_ONNX_MODEL.md)
 
 ```shell
 pip install onnx
 pip install paddle2onnx
 ```
 
-- Convert model:
+- 转换模型:
 
 ```shell
 paddle2onnx --model_dir output_inference/picodet_s_320_coco/ \
@@ -179,22 +182,22 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco/ \
             --save_file picodet_s_320_coco.onnx
 ```
 
-- Simplify ONNX model: use onnx-simplifier to simplify onnx model.
+- 简化ONNX模型: 使用`onnx-simplifier`库来简化ONNX模型。
 
-  - Install onnx-simplifier >= 0.3.6:
+  - 安装 onnx-simplifier >= 0.3.6:
   ```shell
   pip install onnx-simplifier
   ```
-  - simplify onnx model:
+  - 简化ONNX模型:
   ```shell
   python -m onnxsim picodet_s_320_coco.onnx picodet_s_processed.onnx
   ```
 
 </details>
 
-- Deploy models
+- 部署用的模型
 
-| Model     | Input size | ONNX  | Paddle Lite(fp32) | Paddle Lite(fp16) |
+| 模型     | 输入尺寸 | ONNX  | Paddle Lite(fp32) | Paddle Lite(fp16) |
 | :-------- | :--------: | :---------------------: | :----------------: | :----------------: |
 | PicoDet-S |  320*320   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_s_320_coco.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_320.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_320_fp16.tar) |
 | PicoDet-S |  416*416   |  [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_s_416_coco.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_416.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_416_fp16.tar) |
@@ -208,7 +211,7 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco/ \
 | PicoDet-LCNet 1.5x           |  416*416   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_lcnet_1_5x_416_coco.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_lcnet_1_5x.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_lcnet_1_5x_fp16.tar) |
 
 
-### Deploy
+### 部署
 
 - PaddleInference demo [Python](../../deploy/python) & [C++](../../deploy/cpp)
 - [PaddleLite C++ demo](../../deploy/lite)
@@ -219,21 +222,21 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco/ \
 - [Android demo(Paddle Lite)](https://github.com/marsplus-wjh/Picodet-PaddleLite-AndroidDemo)
 
 
-Android demo visualization:
+Android demo可视化：
 <div align="center">
   <img src="../../docs/images/picodet_android_demo1.jpg" height="500px" ><img src="../../docs/images/picodet_android_demo2.jpg" height="500px" ><img src="../../docs/images/picodet_android_demo3.jpg" height="500px" ><img src="../../docs/images/picodet_android_demo4.jpg" height="500px" >
 </div>
 
 
-## Quantization
+## 量化
 
 <details open>
-<summary>Requirements:</summary>
+<summary>依赖包:</summary>
 
 - PaddlePaddle >= 2.2.0rc0
 - PaddleSlim >= 2.2.0rc0
 
-**Install:**
+**安装:**
 
 ```shell
 pip install paddleslim==2.2.0rc0
@@ -242,61 +245,61 @@ pip install paddleslim==2.2.0rc0
 </details>
 
 <details>
-<summary>Quant aware (click to expand)</summary>
+<summary>量化训练 (点击展开)</summary>
 
-Configure the quant config and start training:
+开始量化训练:
 
 ```shell
 python tools/train.py -c configs/picodet/picodet_s_320_coco.yml \
           --slim_config configs/slim/quant/picodet_s_quant.yml --eval
 ```
 
-- More detail can refer to [slim document](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim)
+- 更多细节请参考[slim文档](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim)
 
 </details>
 
 <details>
-<summary>Post quant (click to expand)</summary>
+<summary>离线量化 (点击展开)</summary>
 
-Configure the post quant config and start calibrate model:
+校准及导出量化模型:
 
 ```shell
 python tools/post_quant.py -c configs/picodet/picodet_s_320_coco.yml \
           --slim_config configs/slim/post_quant/picodet_s_ptq.yml
 ```
 
-- Notes: Now the accuracy of post quant is abnormal and this problem is being solved.
+- 注意: 离线量化模型精度问题正在解决中.
 
 </details>
 
-## Unstructured Pruning
+## 非结构化剪枝
 
 <details open>
-<summary>Toturial:</summary>
+<summary>教程:</summary>
 
-Please refer this [documentation](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/pruner/README.md) for details such as requirements, training and deployment.
+训练及部署细节请参考[非结构化剪枝文档](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/pruner/README.md)。
 
 </details>
 
-## Application
+## 应用
 
-- **Pedestrian detection:** model zoo of `PicoDet-S-Pedestrian` please refer to [PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/tiny_pose#%E8%A1%8C%E4%BA%BA%E6%A3%80%E6%B5%8B%E6%A8%A1%E5%9E%8B)
+- **行人检测：** `PicoDet-S-Pedestrian`行人检测模型请参考[PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/tiny_pose#%E8%A1%8C%E4%BA%BA%E6%A3%80%E6%B5%8B%E6%A8%A1%E5%9E%8B)
 
-- **Mainbody detection:** model zoo of `PicoDet-L-Mainbody` please refer to [mainbody detection](./application/mainbody_detection/README.md)
+- **主体检测：** `PicoDet-L-Mainbody`主体检测模型请参考[主体检测文档](./application/mainbody_detection/README.md)
 
 ## FAQ
 
 <details>
-<summary>Out of memory error.</summary>
+<summary>显存爆炸(Out of memory error)</summary>
 
-Please reduce the `batch_size` of `TrainReader` in config.
+请减小配置文件中`TrainReader`的`batch_size`。
 
 </details>
 
 <details>
-<summary>How to transfer learning.</summary>
+<summary>如何迁移学习</summary>
 
-Please reset `pretrain_weights` in config, which trained on coco. Such as:
+请重新设置配置文件中的`pretrain_weights`字段，比如利用COCO上训好的模型在自己的数据上继续训练：
 ```yaml
 pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_l_640_coco.pdparams
 ```
@@ -304,17 +307,17 @@ pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_l_640_coco.pdpa
 </details>
 
 <details>
-<summary>The transpose operator is time-consuming on some hardware.</summary>
+<summary>`transpose`算子在某些硬件上耗时验证</summary>
 
-Please use `PicoDet-LCNet` model, which has fewer `transpose` operators.
+请使用`PicoDet-LCNet`模型，`transpose`较少。
 
 </details>
 
 
 <details>
-<summary>How to count model parameters.</summary>
+<summary>如何计算模型参数量。</summary>
 
-You can insert below code at [here](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/ppdet/engine/trainer.py#L141) to count learnable parameters.
+可以将以下代码插入：[trainer.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/ppdet/engine/trainer.py#L141) 来计算参数量。
 
 ```python
 params = sum([
@@ -326,8 +329,8 @@ print('params: ', params)
 
 </details>
 
-## Cite PP-PicoDet
-If you use PicoDet in your research, please cite our work by using the following BibTeX entry:
+## 引用PP-PicoDet
+如果需要在你的研究中使用PP-PicoDet，请通过一下方式引用我们的技术报告：
 ```
 @misc{yu2021pppicodet,
       title={PP-PicoDet: A Better Real-Time Object Detector on Mobile Devices},
