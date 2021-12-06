@@ -303,7 +303,7 @@ def widerface_convert(gt_txt, img_dir, save_path):
         "images": [],
         "type": "instances",
         "annotations": [],
-        "categories": [{'supercategory': 'none', 'id': 1, 'name': "human_face"}]
+        "categories": [{'supercategory': 'none', 'id': 0, 'name': "human_face"}]
     }
     bnd_id = 1  # bounding box start id
     im_id = 0
@@ -352,7 +352,7 @@ def get_widerface_ann_info(info):
         'area': info[2] * info[3],
         'iscrowd': 0,
         'bbox': [info[0], info[1], info[2], info[3]],
-        'category_id': 1,
+        'category_id': 0,
         'ignore': 0,
         'blur': info[4],
         'expression': info[5],
