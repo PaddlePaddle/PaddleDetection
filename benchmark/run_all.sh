@@ -17,14 +17,14 @@ for model_item in ${model_name_list[@]}; do
       for fp_item in ${fp_item_list[@]}; do
           case ${model_item} in
               faster_rcnn) bs_list=(1 8) ;;
-              fcos) bs_list=(2 8) ;;
+              fcos) bs_list=(2) ;;
               deformable_detr) bs_list=(2) ;;
-              gfl) bs_list=(2 8) ;;
-              hrnet) bs_list=(64 160) ;;
-              higherhrnet) bs_list=(20 24) ;;
-              solov2) bs_list=(2 4) ;;
-              jde) bs_list=(4 14) ;;
-              fairmot) bs_list=(6 22) ;;
+              gfl) bs_list=(2) ;;
+              hrnet) bs_list=(64) ;;
+              higherhrnet) bs_list=(20) ;;
+              solov2) bs_list=(2) ;;
+              jde) bs_list=(4) ;;
+              fairmot) bs_list=(6) ;;
               *) echo "wrong model_name"; exit 1;
           esac
           for bs_item in ${bs_list[@]}
