@@ -1,3 +1,5 @@
+English | [简体中文](README_cn.md)
+
 # PP-PicoDet
 
 ![](../../docs/images/picedet_demo.jpeg)
