@@ -197,8 +197,7 @@ if [ ${MODE} = "whole_infer" ] || [ ${MODE} = "klquant_whole_infer" ]; then
         export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
         echo  $export_cmd
         eval $export_cmd
-        status_export=$?
-        status_check $status_export "${export_cmd}" "${status_log}"
+        status_check $? "${export_cmd}" "${status_log}"
 
         #run inference
         save_export_model_dir="${save_export_value}/${model_name}"
@@ -283,7 +282,6 @@ else
                     cmd="${python} -m paddle.distributed.launch --ips=${ips} --gpus=${gpu} ${set_use_gpu} ${run_train} ${set_save_model} ${set_pretrain} ${set_epoch} ${set_batchsize} ${set_filename} ${set_autocast}"
                 fi
                 # run train
-                eval "unset CUDA_VISIBLE_DEVICES"
                 eval $cmd
                 status_check $? "${cmd}" "${status_log}"
 
