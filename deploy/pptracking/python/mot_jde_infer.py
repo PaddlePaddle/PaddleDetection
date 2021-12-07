@@ -167,8 +167,12 @@ class JDE_Detector(Detector):
         return online_tlwhs, online_scores, online_ids
 
 
-def predict_image(detector, image_list, threshold, output_dir,
-                  save_images=True):
+def predict_image(detector,
+                  image_list,
+                  threshold,
+                  output_dir,
+                  save_images=True,
+                  run_benchmark=False):
     results = []
     num_classes = detector.num_classes
     data_type = 'mcmot' if num_classes > 1 else 'mot'
@@ -177,13 +181,11 @@ def predict_image(detector, image_list, threshold, output_dir,
     image_list.sort()
     for frame_id, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
-        if FLAGS.run_benchmark:
+        if run_benchmark:
             # warmup
-            detector.predict(
-                [img_file], FLAGS.threshold, repeats=10, add_timer=False)
+            detector.predict([img_file], threshold, repeats=10, add_timer=False)
             # run benchmark
-            detector.predict(
-                [img_file], FLAGS.threshold, repeats=10, add_timer=True)
+            detector.predict([img_file], threshold, repeats=10, add_timer=True)
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
             detector.gpu_mem += gm
@@ -352,7 +354,6 @@ def predict_video(detector,
 def predict_naive(model_dir,
                   video_file,
                   image_dir,
-                  image_file,
                   device='gpu',
                   threshold=0.5,
                   output_dir='output'):
@@ -371,7 +372,7 @@ def predict_naive(model_dir,
             secs_interval=10,
             do_entrance_counting=False)
     else:
-        img_list = get_test_images(image_dir, image_file)
+        img_list = get_test_images(image_dir, infer_img=None)
         predict_image(
             detector,
             img_list,
@@ -415,7 +416,8 @@ def main():
             img_list,
             threshold=FLAGS.threshold,
             output_dir=FLAGS.output_dir,
-            save_images=FLAGS.save_images)
+            save_images=FLAGS.save_images,
+            run_benchmark=FLAGS.run_benchmark)
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)
         else:
