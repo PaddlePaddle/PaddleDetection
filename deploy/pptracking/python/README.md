@@ -54,26 +54,29 @@ python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fa
  - bdd100k车辆跟踪和多类别demo视频可从此链接下载：`wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/bdd100k_demo.mp4`
 
 
-### 1.3 API调用方式：
+### 1.3 API调用方式:
 ```
-from mot_jde_infer import mot_jde_predict
+import mot_jde_infer
 
 # 1.model config and weights
 model_dir = 'fairmot_hrnetv2_w18_dlafpn_30e_576x320/'
 
 # 2.inference data
-video_file = 'test_demo.mp4'
+video_file = 'test.mp4'
 image_dir = None
 image_file = None
 
 # 3.other settings
-device = 'CPU'
+device = 'CPU' # device should be CPU, GPU or XPU
 threshold = 0.3
 output_dir = 'output'
 
 # mot predict
-mot_jde_predict(model_dir, video_file, image_dir, image_file, device, threshold, output_dir)
+mot_jde_infer.predict_naive(model_dir, video_file, image_dir, image_file, device, threshold, output_dir)
 ```
+**注意:**
+ - 以上代码必须进入目录`PaddleDetection/deploy/pptracking/python`下执行。
+ - 支持对视频和图片文件夹进行预测，`video_file`或`image_dir`不能同时为None，且不支持单张图的预测，默认会保存跟踪结果可视化的图片和视频，以及跟踪结果txt文件，默认不会进行轨迹可视化和流量统计。
 
 
 ## 2. 对DeepSORT模型的导出和预测

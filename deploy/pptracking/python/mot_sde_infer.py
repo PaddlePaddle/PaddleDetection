@@ -154,8 +154,8 @@ class SDE_Detector(Detector):
                 ori_image_shape,
                 threshold=0.5,
                 scaled=False,
-                warmup=0,
-                repeats=1):
+                repeats=1,
+                add_timer=True):
         '''
         Args:
             image_path (list[str]): path of images, only support one image path
@@ -164,43 +164,46 @@ class SDE_Detector(Detector):
             threshold (float): threshold of predicted box' score
             scaled (bool): whether the coords after detector outputs are scaled,
                 default False in jde yolov3, set True in general detector.
+            repeats (int): repeat number for prediction
+            add_timer (bool): whether add timer during prediction
+           
         Returns:
             pred_dets (np.ndarray, [N, 6]): 'x,y,w,h,score,cls_id'
             pred_xyxys (np.ndarray, [N, 4]): 'x1,y1,x2,y2'
         '''
-        self.det_times.preprocess_time_s.start()
+        # preprocess
+        if add_timer:
+            self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image_path)
-        self.det_times.preprocess_time_s.end()
 
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
+        if add_timer:
+            self.det_times.preprocess_time_s.end()
+            self.det_times.inference_time_s.start()
 
-        for i in range(warmup):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            boxes_tensor = self.predictor.get_output_handle(output_names[0])
-            boxes = boxes_tensor.copy_to_cpu()
-
-        self.det_times.inference_time_s.start()
+        # model prediction
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
             boxes_tensor = self.predictor.get_output_handle(output_names[0])
             boxes = boxes_tensor.copy_to_cpu()
-        self.det_times.inference_time_s.end(repeats=repeats)
+        if add_timer:
+            self.det_times.inference_time_s.end(repeats=repeats)
+            self.det_times.postprocess_time_s.start()
 
-        self.det_times.postprocess_time_s.start()
+        # postprocess
         if len(boxes) == 0:
             pred_dets = np.zeros((1, 6), dtype=np.float32)
             pred_xyxys = np.zeros((1, 4), dtype=np.float32)
         else:
             pred_dets, pred_xyxys = self.postprocess(
                 boxes, ori_image_shape, threshold, inputs, scaled=scaled)
-        self.det_times.postprocess_time_s.end()
-        self.det_times.img_num += 1
-
+        if add_timer:
+            self.det_times.postprocess_time_s.end()
+            self.det_times.img_num += 1
         return pred_dets, pred_xyxys
 
 
@@ -284,8 +287,8 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
                 ori_image_shape,
                 threshold=0.5,
                 scaled=False,
-                warmup=0,
-                repeats=1):
+                repeats=1,
+                add_timer=True):
         '''
         Args:
             image_path (list[str]): path of images, only support one image path
@@ -294,27 +297,26 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
             threshold (float): threshold of predicted box' score
             scaled (bool): whether the coords after detector outputs are scaled,
                 default False in jde yolov3, set True in general detector.
+            repeats (int): repeat number for prediction
+            add_timer (bool): whether add timer during prediction
         Returns:
             pred_dets (np.ndarray, [N, 6]): 'x,y,w,h,score,cls_id'
             pred_xyxys (np.ndarray, [N, 4]): 'x1,y1,x2,y2'
         '''
-        self.det_times.preprocess_time_s.start()
+        # preprocess
+        if add_timer:
+            self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image_path)
-        self.det_times.preprocess_time_s.end()
 
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
+        if add_timer:
+            self.det_times.preprocess_time_s.end()
+            self.det_times.inference_time_s.start()
 
-        np_score_list, np_boxes_list = [], []
-        for i in range(warmup):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            boxes_tensor = self.predictor.get_output_handle(output_names[0])
-            boxes = boxes_tensor.copy_to_cpu()
-
-        self.det_times.inference_time_s.start()
+        # model prediction
         for i in range(repeats):
             self.predictor.run()
             np_score_list.clear()
@@ -328,9 +330,11 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
                 np_boxes_list.append(
                     self.predictor.get_output_handle(output_names[
                         out_idx + num_outs]).copy_to_cpu())
-        self.det_times.inference_time_s.end(repeats=repeats)
+        if add_timer:
+            self.det_times.inference_time_s.end(repeats=repeats)
+            self.det_times.postprocess_time_s.start()
 
-        self.det_times.postprocess_time_s.start()
+        # postprocess
         self.picodet_postprocess = PicoDetPostProcess(
             inputs['image'].shape[2:],
             inputs['im_shape'],
@@ -346,8 +350,9 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
         else:
             pred_dets, pred_xyxys = self.postprocess(boxes, ori_image_shape,
                                                      threshold)
-        self.det_times.postprocess_time_s.end()
-        self.det_times.img_num += 1
+        if add_timer:
+            self.det_times.postprocess_time_s.end()
+            self.det_times.img_num += 1
 
         return pred_dets, pred_xyxys
 
@@ -503,42 +508,43 @@ class SDE_ReID(object):
     def predict(self,
                 crops,
                 pred_dets,
-                warmup=0,
                 repeats=1,
+                add_timer=True,
                 MTMCT=False,
                 frame_id=0,
                 seq_name=''):
-        self.det_times.preprocess_time_s.start()
+        # preprocess
+        if add_timer:
+            self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(crops)
-        self.det_times.preprocess_time_s.end()
-
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
 
-        for i in range(warmup):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            feature_tensor = self.predictor.get_output_handle(output_names[0])
-            pred_embs = feature_tensor.copy_to_cpu()
+        if add_timer:
+            self.det_times.preprocess_time_s.end()
+            self.det_times.inference_time_s.start()
 
-        self.det_times.inference_time_s.start()
+        # model prediction
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
             feature_tensor = self.predictor.get_output_handle(output_names[0])
             pred_embs = feature_tensor.copy_to_cpu()
-        self.det_times.inference_time_s.end(repeats=repeats)
+        if add_timer:
+            self.det_times.inference_time_s.end(repeats=repeats)
+            self.det_times.postprocess_time_s.start()
 
-        self.det_times.postprocess_time_s.start()
+        # postprocess
         if MTMCT == False:
             tracking_outs = self.postprocess(pred_dets, pred_embs)
         else:
             tracking_outs = self.postprocess_mtmct(pred_dets, pred_embs,
                                                    frame_id, seq_name)
-        self.det_times.postprocess_time_s.end()
-        self.det_times.img_num += 1
+        if add_timer:
+            self.det_times.postprocess_time_s.end()
+            self.det_times.img_num += 1
 
         return tracking_outs
 
@@ -549,13 +555,23 @@ def predict_image(detector, reid_model, image_list):
         frame = cv2.imread(img_file)
         ori_image_shape = list(frame.shape[:2])
         if FLAGS.run_benchmark:
+            # warmup
             pred_dets, pred_xyxys = detector.predict(
                 [img_file],
                 ori_image_shape,
                 FLAGS.threshold,
                 FLAGS.scaled,
-                warmup=10,
-                repeats=10)
+                repeats=10,
+                add_timer=False)
+            # run benchmark
+            pred_dets, pred_xyxys = detector.predict(
+                [img_file],
+                ori_image_shape,
+                FLAGS.threshold,
+                FLAGS.scaled,
+                repeats=10,
+                add_timer=True)
+
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
             detector.gpu_mem += gm
@@ -574,8 +590,13 @@ def predict_image(detector, reid_model, image_list):
             crops = reid_model.get_crops(pred_xyxys, frame)
 
             if FLAGS.run_benchmark:
+                # warmup
                 tracking_outs = reid_model.predict(
-                    crops, pred_dets, warmup=10, repeats=10)
+                    crops, pred_dets, repeats=10, add_timer=False)
+                # run benchmark 
+                tracking_outs = reid_model.predict(
+                    crops, pred_dets, repeats=10, add_timer=True)
+
             else:
                 tracking_outs = reid_model.predict(crops, pred_dets)
 
