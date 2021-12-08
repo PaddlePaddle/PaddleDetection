@@ -42,9 +42,10 @@ class CosineDecay(object):
             the max_iters is much larger than the warmup iter
     """
 
-    def __init__(self, max_epochs=1000, use_warmup=True):
+    def __init__(self, max_epochs=1000, use_warmup=True, eta_min=0):
         self.max_epochs = max_epochs
         self.use_warmup = use_warmup
+        self.eta_min = eta_min
 
     def __call__(self,
                  base_lr=None,
@@ -66,7 +67,8 @@ class CosineDecay(object):
                 value.append(decayed_lr)
             return optimizer.lr.PiecewiseDecay(boundary, value)
 
-        return optimizer.lr.CosineAnnealingDecay(base_lr, T_max=max_iters)
+        return optimizer.lr.CosineAnnealingDecay(
+            base_lr, T_max=max_iters, eta_min=self.eta_min)
 
 
 @serializable
