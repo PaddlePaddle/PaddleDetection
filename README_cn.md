@@ -299,6 +299,8 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
 - 感谢[Mandroide](https://github.com/Mandroide)清理代码并且统一部分函数接口。
 - 感谢[FL77N](https://github.com/FL77N/)贡献`Sparse-RCNN`模型。
 - 感谢[Chen-Song](https://github.com/Chen-Song)贡献`Swin Faster-RCNN`模型。
+- 感谢[yangyudong](https://github.com/yangyudong2020), [hchhtc123](https://github.com/hchhtc123) 开发PP-Tracking GUI界面
+- 感谢[Shigure19](https://github.com/Shigure19) 开发PP-TinyPose健身APP
 
 ## 引用
 
