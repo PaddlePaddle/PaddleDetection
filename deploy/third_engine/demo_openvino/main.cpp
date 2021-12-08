@@ -217,8 +217,9 @@ void draw_bboxes(const cv::Mat& bgr, const std::vector<BoxInfo>& bboxes, object_
 
         cv::putText(image, text, cv::Point(x, y + label_size.height),
             cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 255, 255));
-        cv::imwrite("../predict.jpg",image);
     }
+    
+    cv::imwrite("../predict.jpg",image);
 }
 
 
