@@ -263,7 +263,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   }
 
   // Pad Batch if batch size > 1
-  if (batch_size > 1) {
+  if (batch_size > 1 && CheckDynamicInput(in_net_img_all)) {
     in_data_all.clear();
     std::vector<cv::Mat> pad_img_all = PadBatch(in_net_img_all);
     int rh = pad_img_all[0].rows;

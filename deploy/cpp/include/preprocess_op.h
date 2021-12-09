@@ -150,6 +150,10 @@ void CropImg(cv::Mat& img,
              std::vector<float>& scale,
              float expandratio = 0.15);
 
+// check whether the input size is dynamic
+bool CheckDynamicInput(const std::vector<cv::Mat>& imgs);
+
+// Pad images in batch
 std::vector<cv::Mat> PadBatch(const std::vector<cv::Mat>& imgs);
 
 class Preprocessor {

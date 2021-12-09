@@ -236,6 +236,19 @@ void CropImg(cv::Mat& img,
   scale.emplace_back((crop_y2 - crop_y1));
 }
 
+bool CheckDynamicInput(const std::vector<cv::Mat>& imgs) {
+  if (imgs.size() == 1) return false;
+
+  int h = imgs.at(0).rows;
+  int w = imgs.at(0).cols;
+  for (int i = 1; i < imgs.size(); ++i) {
+    if (imgs.at(i).rows != h || imgs.at(i).cols != w) {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::vector<cv::Mat> PadBatch(const std::vector<cv::Mat>& imgs) {
   std::vector<cv::Mat> out_imgs;
   int max_h = 0;
