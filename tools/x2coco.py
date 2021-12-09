@@ -21,10 +21,11 @@ import os
 import os.path as osp
 import shutil
 import xml.etree.ElementTree as ET
-from tqdm import tqdm
 
 import numpy as np
 import PIL.ImageDraw
+from tqdm import tqdm
+import cv2
 
 label_to_num = {}
 categories_list = []
@@ -280,12 +281,97 @@ def voc_xmls_to_cocojson(annotation_paths, label2id, output_dir, output_file):
         f.write(output_json)
 
 
+def widerface_to_cocojson(root_path):
+    train_gt_txt = os.path.join(root_path, "wider_face_split", "wider_face_train_bbx_gt.txt")
+    val_gt_txt = os.path.join(root_path, "wider_face_split", "wider_face_val_bbx_gt.txt")
+    train_img_dir = os.path.join(root_path, "WIDER_train", "images")
+    val_img_dir = os.path.join(root_path, "WIDER_val", "images")
+    assert train_gt_txt
+    assert val_gt_txt
+    assert train_img_dir
+    assert val_img_dir
+    save_path = os.path.join(root_path, "widerface_train.json")
+    widerface_convert(train_gt_txt, train_img_dir, save_path)
+    print("Wider Face train dataset converts sucess, the json path: {}".format(save_path))
+    save_path = os.path.join(root_path, "widerface_val.json")
+    widerface_convert(val_gt_txt, val_img_dir, save_path)
+    print("Wider Face val dataset converts sucess, the json path: {}".format(save_path))
+
+
+def widerface_convert(gt_txt, img_dir, save_path):
+    output_json_dict = {
+        "images": [],
+        "type": "instances",
+        "annotations": [],
+        "categories": [{'supercategory': 'none', 'id': 0, 'name': "human_face"}]
+    }
+    bnd_id = 1  # bounding box start id
+    im_id = 0
+    print('Start converting !')
+    with open(gt_txt) as fd:
+        lines = fd.readlines()
+
+    i = 0
+    while i < len(lines):
+        image_name = lines[i].strip()
+        bbox_num = int(lines[i + 1].strip())
+        i += 2
+        img_info = get_widerface_image_info(img_dir, image_name, im_id)
+        if img_info:
+            output_json_dict["images"].append(img_info)
+            for j in range(i, i + bbox_num):
+                anno = get_widerface_ann_info(lines[j])
+                anno.update({'image_id': im_id, 'id': bnd_id})
+                output_json_dict['annotations'].append(anno)
+                bnd_id += 1
+        else:
+            print("The image dose not exist: {}".format(os.path.join(img_dir, image_name)))
+        bbox_num = 1 if bbox_num == 0 else bbox_num
+        i += bbox_num
+        im_id += 1
+    with open(save_path, 'w') as f:
+        output_json = json.dumps(output_json_dict)
+        f.write(output_json)
+
+
+def get_widerface_image_info(img_root, img_relative_path, img_id):
+    image_info = {}
+    save_path = os.path.join(img_root, img_relative_path)
+    if os.path.exists(save_path):
+        img = cv2.imread(save_path)
+        image_info["file_name"] = os.path.join(os.path.basename(
+            os.path.dirname(img_root)), os.path.basename(img_root),
+            img_relative_path)
+        image_info["height"] = img.shape[0]
+        image_info["width"] = img.shape[1]
+        image_info["id"] = img_id
+    return image_info
+
+
+def get_widerface_ann_info(info):
+    info = [int(x) for x in info.strip().split()]
+    anno = {
+        'area': info[2] * info[3],
+        'iscrowd': 0,
+        'bbox': [info[0], info[1], info[2], info[3]],
+        'category_id': 0,
+        'ignore': 0,
+        'blur': info[4],
+        'expression': info[5],
+        'illumination': info[6],
+        'invalid': info[7],
+        'occlusion': info[8],
+        'pose': info[9]
+    }
+    return anno
+
+
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         '--dataset_type',
-        help='the type of dataset, can be `voc`, `labelme` or `cityscape`')
+        help='the type of dataset, can be `voc`, `widerface`, `labelme` or `cityscape`')
     parser.add_argument('--json_input_dir', help='input annotated directory')
     parser.add_argument('--image_input_dir', help='image directory')
     parser.add_argument(
@@ -325,9 +411,14 @@ def main():
         type=str,
         default='voc.json',
         help='In Voc format dataset, path to output json file')
+    parser.add_argument(
+        '--widerface_root_dir',
+        help='The root_path for wider face dataset, which contains `wider_face_split`, `WIDER_train` and `WIDER_val`.And the json file will save in this path',
+        type=str,
+        default=None)
     args = parser.parse_args()
     try:
-        assert args.dataset_type in ['voc', 'labelme', 'cityscape']
+        assert args.dataset_type in ['voc', 'labelme', 'cityscape', 'widerface']
     except AssertionError as e:
         print(
             'Now only support the voc, cityscape dataset and labelme dataset!!')
@@ -342,6 +433,9 @@ def main():
             label2id=label2id,
             output_dir=args.output_dir,
             output_file=args.voc_out_name)
+    elif args.dataset_type == "widerface":
+        assert args.widerface_root_dir
+        widerface_to_cocojson(args.widerface_root_dir)
     else:
         try:
             assert os.path.exists(args.json_input_dir)
