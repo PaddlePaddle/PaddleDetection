@@ -64,8 +64,12 @@ def mot_keypoint_unite_predict_image(mot_model,
         frame = cv2.imread(img_file)
 
         if FLAGS.run_benchmark:
+            # warmup
             online_tlwhs, online_scores, online_ids = mot_model.predict(
-                [frame], FLAGS.mot_threshold, warmup=10, repeats=10)
+                [frame], FLAGS.mot_threshold, repeats=10, add_timer=False)
+            # run benchmark
+            online_tlwhs, online_scores, online_ids = mot_model.predict(
+                [frame], FLAGS.mot_threshold, repeats=10, add_timer=True)
             cm, gm, gu = get_current_memory_mb()
             mot_model.cpu_mem += cm
             mot_model.gpu_mem += gm
@@ -84,13 +88,16 @@ def mot_keypoint_unite_predict_image(mot_model,
                 FLAGS.run_benchmark)
 
         else:
-            warmup = 10 if FLAGS.run_benchmark else 0
+            if FLAGS.run_benchmark:
+                keypoint_results = keypoint_model.predict(
+                    [frame],
+                    FLAGS.keypoint_threshold,
+                    repeats=10,
+                    add_timer=False)
+
             repeats = 10 if FLAGS.run_benchmark else 1
             keypoint_results = keypoint_model.predict(
-                [frame],
-                FLAGS.keypoint_threshold,
-                warmup=warmup,
-                repeats=repeats)
+                [frame], FLAGS.keypoint_threshold, repeats=repeats)
 
         if FLAGS.run_benchmark:
             cm, gm, gu = get_current_memory_mb()
@@ -103,7 +110,7 @@ def mot_keypoint_unite_predict_image(mot_model,
                 keypoint_results,
                 visual_thread=FLAGS.keypoint_threshold,
                 returnimg=True,
-                ids=online_ids
+                ids=online_ids[0]
                 if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown'
                 else None)
 
@@ -144,7 +151,7 @@ def mot_keypoint_unite_predict_video(mot_model,
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
     if not FLAGS.save_images:
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     frame_id = 0
     timer_mot = FPSTimer()
@@ -193,7 +200,7 @@ def mot_keypoint_unite_predict_video(mot_model,
             keypoint_results,
             visual_thread=FLAGS.keypoint_threshold,
             returnimg=True,
-            ids=online_ids
+            ids=online_ids[0]
             if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown' else
             None)
 
