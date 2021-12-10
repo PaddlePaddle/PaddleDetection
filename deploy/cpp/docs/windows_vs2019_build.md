@@ -107,7 +107,7 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1（表示不使用摄像头预测）|
 | --device  | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
 | --gpu_id  |  指定进行推理的GPU device id(默认值为0)|
-| --run_mode | 使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
+| --run_mode | 使用GPU时，默认为paddle, 可选（paddle/trt_fp32/trt_fp16/trt_int8）|
 | --batch_size  | 检测模型预测时的batch size，在指定`image_dir`时有效 |
 | --batch_size_keypoint  | 关键点模型预测时的batch size，默认为8 |
 | --run_benchmark | 是否重复预测来进行benchmark测速 ｜
