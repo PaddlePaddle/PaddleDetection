@@ -107,7 +107,7 @@ void PrintBenchmarkLog(std::vector<double> det_time, int img_num) {
             << std::accumulate(det_time.begin(), det_time.end(), 0);
   LOG(INFO) << "preproce_time(ms): " << det_time[0] / img_num
             << ", inference_time(ms): " << det_time[1] / img_num
-            << ", postprocess_time(ms): " << det_time[2];
+            << ", postprocess_time(ms): " << det_time[2] / img_num;
 }
 
 static std::string DirName(const std::string& filepath) {
@@ -348,6 +348,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
     det_t[0] += det_times[0];
     det_t[1] += det_times[1];
     det_t[2] += det_times[2];
+    det_times.clear();
   }
   PrintBenchmarkLog(det_t, all_img_paths.size());
 }
