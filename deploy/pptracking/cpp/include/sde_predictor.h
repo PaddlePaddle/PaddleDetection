@@ -40,7 +40,7 @@ class SDEPredictor {
                         const std::string& det_model_dir = "",
                         const std::string& reid_model_dir = "",
                         const double threshold = -1.,
-                        const std::string& run_mode = "fluid",
+                        const std::string& run_mode = "paddle",
                         const int gpu_id = 0,
                         const bool use_mkldnn = false,
                         const int cpu_threads = 1,
@@ -67,7 +67,7 @@ class SDEPredictor {
   // Load Paddle inference model
   void LoadModel(const std::string& det_model_dir,
                  const std::string& reid_model_dir,
-                 const std::string& run_mode = "fluid");
+                 const std::string& run_mode = "paddle");
 
   // Run predictor
   void Predict(const std::vector<cv::Mat> imgs,
