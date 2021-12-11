@@ -14,23 +14,23 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <utility>
 #include <ctime>
+#include <memory>
 #include <numeric>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
-#include "paddle_inference_api.h" // NOLINT
+#include "paddle_inference_api.h"  // NOLINT
 
-#include "include/preprocess_op.h"
 #include "include/config_parser.h"
-#include "include/utils.h"
 #include "include/picodet_postprocess.h"
+#include "include/preprocess_op.h"
+#include "include/utils.h"
 
 using namespace paddle_infer;
 
@@ -39,28 +39,27 @@ namespace PaddleDetection {
 // Generate visualization colormap for each class
 std::vector<int> GenerateColorMap(int num_class);
 
-
 // Visualiztion Detection Result
-cv::Mat VisualizeResult(const cv::Mat& img,
-                     const std::vector<PaddleDetection::ObjectResult>& results,
-                     const std::vector<std::string>& lables,
-                     const std::vector<int>& colormap,
-                     const bool is_rbox);
-
+cv::Mat VisualizeResult(
+    const cv::Mat& img,
+    const std::vector<PaddleDetection::ObjectResult>& results,
+    const std::vector<std::string>& lables,
+    const std::vector<int>& colormap,
+    const bool is_rbox);
 
 class ObjectDetector {
  public:
-  explicit ObjectDetector(const std::string& model_dir, 
-                          const std::string& device="CPU",
-                          bool use_mkldnn=false,
-                          int cpu_threads=1,
-                          const std::string& run_mode="fluid",
-                          const int batch_size=1,
-                          const int gpu_id=0,
-                          const int trt_min_shape=1,
-                          const int trt_max_shape=1280,
-                          const int trt_opt_shape=640,
-                          bool trt_calib_mode=false) {
+  explicit ObjectDetector(const std::string& model_dir,
+                          const std::string& device = "CPU",
+                          bool use_mkldnn = false,
+                          int cpu_threads = 1,
+                          const std::string& run_mode = "paddle",
+                          const int batch_size = 1,
+                          const int gpu_id = 0,
+                          const int trt_min_shape = 1,
+                          const int trt_max_shape = 1280,
+                          const int trt_opt_shape = 640,
+                          bool trt_calib_mode = false) {
     this->device_ = device;
     this->gpu_id_ = gpu_id;
     this->cpu_math_library_num_threads_ = cpu_threads;
@@ -79,19 +78,18 @@ class ObjectDetector {
   }
 
   // Load Paddle inference model
-  void LoadModel(
-    const std::string& model_dir,
-    const int batch_size = 1,
-    const std::string& run_mode = "fluid");
+  void LoadModel(const std::string& model_dir,
+                 const int batch_size = 1,
+                 const std::string& run_mode = "paddle");
 
   // Run predictor
   void Predict(const std::vector<cv::Mat> imgs,
-      const double threshold = 0.5,
-      const int warmup = 0,
-      const int repeats = 1,
-      std::vector<PaddleDetection::ObjectResult>* result = nullptr,
-      std::vector<int>* bbox_num = nullptr,
-      std::vector<double>* times = nullptr);
+               const double threshold = 0.5,
+               const int warmup = 0,
+               const int repeats = 1,
+               std::vector<PaddleDetection::ObjectResult>* result = nullptr,
+               std::vector<int>* bbox_num = nullptr,
+               std::vector<double>* times = nullptr);
 
   // Get Model Label list
   const std::vector<std::string>& GetLabelList() const {
@@ -112,19 +110,17 @@ class ObjectDetector {
   // Preprocess image and copy data to input buffer
   void Preprocess(const cv::Mat& image_mat);
   // Postprocess result
-  void Postprocess(
-      const std::vector<cv::Mat> mats,
-      std::vector<PaddleDetection::ObjectResult>* result,
-      std::vector<int> bbox_num,
-      std::vector<float> output_data_,
-      bool is_rbox);
+  void Postprocess(const std::vector<cv::Mat> mats,
+                   std::vector<PaddleDetection::ObjectResult>* result,
+                   std::vector<int> bbox_num,
+                   std::vector<float> output_data_,
+                   bool is_rbox);
 
   std::shared_ptr<Predictor> predictor_;
   Preprocessor preprocessor_;
   ImageBlob inputs_;
   float threshold_;
   ConfigPaser config_;
-
 };
 
 }  // namespace PaddleDetection
