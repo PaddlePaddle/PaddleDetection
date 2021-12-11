@@ -14,14 +14,14 @@
 
 #include <glog/logging.h>
 
+#include <math.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <algorithm>
 #include <iostream>
+#include <numeric>
 #include <string>
 #include <vector>
-#include <numeric>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <math.h>
-#include <algorithm>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -31,62 +31,86 @@
 #include <sys/stat.h>
 #endif
 
-#include "include/object_detector.h"
 #include <gflags/gflags.h>
-
+#include "include/object_detector.h"
 
 DEFINE_string(model_dir, "", "Path of inference model");
 DEFINE_string(image_file, "", "Path of input image");
-DEFINE_string(image_dir, "", "Dir of input image, `image_file` has a higher priority.");
+DEFINE_string(image_dir,
+              "",
+              "Dir of input image, `image_file` has a higher priority.");
 DEFINE_int32(batch_size, 1, "batch_size");
-DEFINE_string(video_file, "", "Path of input video, `video_file` or `camera_id` has a highest priority.");
+DEFINE_string(
+    video_file,
+    "",
+    "Path of input video, `video_file` or `camera_id` has a highest priority.");
 DEFINE_int32(camera_id, -1, "Device id of camera to predict");
-DEFINE_bool(use_gpu, false, "Deprecated, please use `--device` to set the device you want to run.");
-DEFINE_string(device, "CPU", "Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU.");
+DEFINE_bool(
+    use_gpu,
+    false,
+    "Deprecated, please use `--device` to set the device you want to run.");
+DEFINE_string(device,
+              "CPU",
+              "Choose the device you want to run, it can be: CPU/GPU/XPU, "
+              "default is CPU.");
 DEFINE_double(threshold, 0.5, "Threshold of score.");
 DEFINE_string(output_dir, "output", "Directory of output visualization files.");
-DEFINE_string(run_mode, "fluid", "Mode of running(fluid/trt_fp32/trt_fp16/trt_int8)");
+DEFINE_string(run_mode,
+              "paddle",
+              "Mode of running(paddle/trt_fp32/trt_fp16/trt_int8)");
 DEFINE_int32(gpu_id, 0, "Device id of GPU to execute");
-DEFINE_bool(run_benchmark, false, "Whether to predict a image_file repeatedly for benchmark");
+DEFINE_bool(run_benchmark,
+            false,
+            "Whether to predict a image_file repeatedly for benchmark");
 DEFINE_bool(use_mkldnn, false, "Whether use mkldnn with CPU");
 DEFINE_int32(cpu_threads, 1, "Num of threads with CPU");
 DEFINE_int32(trt_min_shape, 1, "Min shape of TRT DynamicShapeI");
 DEFINE_int32(trt_max_shape, 1280, "Max shape of TRT DynamicShapeI");
 DEFINE_int32(trt_opt_shape, 640, "Opt shape of TRT DynamicShapeI");
-DEFINE_bool(trt_calib_mode, false, "If the model is produced by TRT offline quantitative calibration, trt_calib_mode need to set True");
+DEFINE_bool(trt_calib_mode,
+            false,
+            "If the model is produced by TRT offline quantitative calibration, "
+            "trt_calib_mode need to set True");
 
-void PrintBenchmarkLog(std::vector<double> det_time, int img_num){
+void PrintBenchmarkLog(std::vector<double> det_time, int img_num) {
   LOG(INFO) << "----------------------- Config info -----------------------";
   LOG(INFO) << "runtime_device: " << FLAGS_device;
-  LOG(INFO) << "ir_optim: " << "True";
-  LOG(INFO) << "enable_memory_optim: " << "True";
+  LOG(INFO) << "ir_optim: "
+            << "True";
+  LOG(INFO) << "enable_memory_optim: "
+            << "True";
   int has_trt = FLAGS_run_mode.find("trt");
   if (has_trt >= 0) {
-    LOG(INFO) << "enable_tensorrt: " << "True";
+    LOG(INFO) << "enable_tensorrt: "
+              << "True";
     std::string precision = FLAGS_run_mode.substr(4, 8);
     LOG(INFO) << "precision: " << precision;
   } else {
-    LOG(INFO) << "enable_tensorrt: " << "False";
-    LOG(INFO) << "precision: " << "fp32";
+    LOG(INFO) << "enable_tensorrt: "
+              << "False";
+    LOG(INFO) << "precision: "
+              << "fp32";
   }
   LOG(INFO) << "enable_mkldnn: " << (FLAGS_use_mkldnn ? "True" : "False");
   LOG(INFO) << "cpu_math_library_num_threads: " << FLAGS_cpu_threads;
   LOG(INFO) << "----------------------- Data info -----------------------";
   LOG(INFO) << "batch_size: " << FLAGS_batch_size;
-  LOG(INFO) << "input_shape: " << "dynamic shape";
+  LOG(INFO) << "input_shape: "
+            << "dynamic shape";
   LOG(INFO) << "----------------------- Model info -----------------------";
   FLAGS_model_dir.erase(FLAGS_model_dir.find_last_not_of("/") + 1);
-  LOG(INFO) << "model_name: " << FLAGS_model_dir.substr(FLAGS_model_dir.find_last_of('/') + 1);
+  LOG(INFO) << "model_name: "
+            << FLAGS_model_dir.substr(FLAGS_model_dir.find_last_of('/') + 1);
   LOG(INFO) << "----------------------- Perf info ------------------------";
   LOG(INFO) << "Total number of predicted data: " << img_num
             << " and total time spent(ms): "
             << std::accumulate(det_time.begin(), det_time.end(), 0);
   LOG(INFO) << "preproce_time(ms): " << det_time[0] / img_num
             << ", inference_time(ms): " << det_time[1] / img_num
-            << ", postprocess_time(ms): " << det_time[2];
+            << ", postprocess_time(ms): " << det_time[2] / img_num;
 }
 
-static std::string DirName(const std::string &filepath) {
+static std::string DirName(const std::string& filepath) {
   auto pos = filepath.rfind(OS_PATH_SEP);
   if (pos == std::string::npos) {
     return "";
@@ -94,7 +118,7 @@ static std::string DirName(const std::string &filepath) {
   return filepath.substr(0, pos);
 }
 
-static bool PathExists(const std::string& path){
+static bool PathExists(const std::string& path) {
 #ifdef _WIN32
   struct _stat buffer;
   return (_stat(path.c_str(), &buffer) == 0);
@@ -133,11 +157,12 @@ void PredictVideo(const std::string& video_path,
   // Open video
   cv::VideoCapture capture;
   std::string video_out_name = "output.mp4";
-  if (FLAGS_camera_id != -1){
+  if (FLAGS_camera_id != -1) {
     capture.open(FLAGS_camera_id);
-  }else{
+  } else {
     capture.open(video_path.c_str());
-    video_out_name = video_path.substr(video_path.find_last_of(OS_PATH_SEP) + 1);
+    video_out_name =
+        video_path.substr(video_path.find_last_of(OS_PATH_SEP) + 1);
   }
   if (!capture.isOpened()) {
     printf("can not open video : %s\n", video_path.c_str());
@@ -148,7 +173,8 @@ void PredictVideo(const std::string& video_path,
   int video_width = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_WIDTH));
   int video_height = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_HEIGHT));
   int video_fps = static_cast<int>(capture.get(CV_CAP_PROP_FPS));
-  int video_frame_count = static_cast<int>(capture.get(CV_CAP_PROP_FRAME_COUNT));
+  int video_frame_count =
+      static_cast<int>(capture.get(CV_CAP_PROP_FRAME_COUNT));
   printf("fps: %d, frame_count: %d\n", video_fps, video_frame_count);
 
   // Create VideoWriter for output
@@ -188,35 +214,34 @@ void PredictVideo(const std::string& video_path,
     std::vector<PaddleDetection::ObjectResult> out_result;
     for (const auto& item : result) {
       if (item.confidence < FLAGS_threshold || item.class_id == -1) {
-            continue;
+        continue;
       }
       out_result.push_back(item);
-      if (item.rect.size() > 6){
-      is_rbox = true;
-      printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
-          item.class_id,
-          item.confidence,
-          item.rect[0],
-          item.rect[1],
-          item.rect[2],
-          item.rect[3],
-          item.rect[4],
-          item.rect[5],
-          item.rect[6],
-          item.rect[7]);
-      }
-      else{
+      if (item.rect.size() > 6) {
+        is_rbox = true;
+        printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
+               item.class_id,
+               item.confidence,
+               item.rect[0],
+               item.rect[1],
+               item.rect[2],
+               item.rect[3],
+               item.rect[4],
+               item.rect[5],
+               item.rect[6],
+               item.rect[7]);
+      } else {
         printf("class=%d confidence=%.4f rect=[%d %d %d %d]\n",
-          item.class_id,
-          item.confidence,
-          item.rect[0],
-          item.rect[1],
-          item.rect[2],
-          item.rect[3]);
+               item.class_id,
+               item.confidence,
+               item.rect[0],
+               item.rect[1],
+               item.rect[2],
+               item.rect[3]);
       }
-   }
+    }
 
-   cv::Mat out_im = PaddleDetection::VisualizeResult(
+    cv::Mat out_im = PaddleDetection::VisualizeResult(
         frame, out_result, labels, colormap, is_rbox);
 
     video_out.write(out_im);
@@ -235,7 +260,9 @@ void PredictImage(const std::vector<std::string> all_img_paths,
   std::vector<double> det_t = {0, 0, 0};
   int steps = ceil(float(all_img_paths.size()) / batch_size);
   printf("total images = %d, batch_size = %d, total steps = %d\n",
-                all_img_paths.size(), batch_size, steps);
+         all_img_paths.size(),
+         batch_size,
+         steps);
   for (int idx = 0; idx < steps; idx++) {
     std::vector<cv::Mat> batch_imgs;
     int left_image_cnt = all_img_paths.size() - idx * batch_size;
@@ -243,18 +270,19 @@ void PredictImage(const std::vector<std::string> all_img_paths,
       left_image_cnt = batch_size;
     }
     for (int bs = 0; bs < left_image_cnt; bs++) {
-      std::string image_file_path = all_img_paths.at(idx * batch_size+bs);
+      std::string image_file_path = all_img_paths.at(idx * batch_size + bs);
       cv::Mat im = cv::imread(image_file_path, 1);
       batch_imgs.insert(batch_imgs.end(), im);
     }
-    
+
     // Store all detected result
     std::vector<PaddleDetection::ObjectResult> result;
     std::vector<int> bbox_num;
     std::vector<double> det_times;
     bool is_rbox = false;
     if (run_benchmark) {
-      det->Predict(batch_imgs, threshold, 10, 10, &result, &bbox_num,  &det_times);
+      det->Predict(
+          batch_imgs, threshold, 10, 10, &result, &bbox_num, &det_times);
     } else {
       det->Predict(batch_imgs, threshold, 0, 1, &result, &bbox_num, &det_times);
       // get labels and colormap
@@ -274,31 +302,31 @@ void PredictImage(const std::vector<std::string> all_img_paths,
           }
           detect_num += 1;
           im_result.push_back(item);
-          if (item.rect.size() > 6){
+          if (item.rect.size() > 6) {
             is_rbox = true;
             printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
-              item.class_id,
-              item.confidence,
-              item.rect[0],
-              item.rect[1],
-              item.rect[2],
-              item.rect[3],
-              item.rect[4],
-              item.rect[5],
-              item.rect[6],
-              item.rect[7]);
-          }
-          else{
+                   item.class_id,
+                   item.confidence,
+                   item.rect[0],
+                   item.rect[1],
+                   item.rect[2],
+                   item.rect[3],
+                   item.rect[4],
+                   item.rect[5],
+                   item.rect[6],
+                   item.rect[7]);
+          } else {
             printf("class=%d confidence=%.4f rect=[%d %d %d %d]\n",
-              item.class_id,
-              item.confidence,
-              item.rect[0],
-              item.rect[1],
-              item.rect[2],
-              item.rect[3]);
+                   item.class_id,
+                   item.confidence,
+                   item.rect[0],
+                   item.rect[1],
+                   item.rect[2],
+                   item.rect[3]);
           }
         }
-        std::cout << all_img_paths.at(idx * batch_size + i) << " The number of detected box: " << detect_num << std::endl;
+        std::cout << all_img_paths.at(idx * batch_size + i)
+                  << " The number of detected box: " << detect_num << std::endl;
         item_start_idx = item_start_idx + bbox_num[i];
         // Visualization result
         cv::Mat vis_img = PaddleDetection::VisualizeResult(
@@ -311,14 +339,16 @@ void PredictImage(const std::vector<std::string> all_img_paths,
           output_path += OS_PATH_SEP;
         }
         std::string image_file_path = all_img_paths.at(idx * batch_size + i);
-        output_path += image_file_path.substr(image_file_path.find_last_of('/') + 1);
+        output_path +=
+            image_file_path.substr(image_file_path.find_last_of('/') + 1);
         cv::imwrite(output_path, vis_img, compression_params);
-        printf("Visualized output saved as %s\n", output_path.c_str());       
+        printf("Visualized output saved as %s\n", output_path.c_str());
       }
     }
     det_t[0] += det_times[0];
     det_t[1] += det_times[1];
     det_t[2] += det_times[2];
+    det_times.clear();
   }
   PrintBenchmarkLog(det_t, all_img_paths.size());
 }
@@ -326,34 +356,48 @@ void PredictImage(const std::vector<std::string> all_img_paths,
 int main(int argc, char** argv) {
   // Parsing command-line
   google::ParseCommandLineFlags(&argc, &argv, true);
-  if (FLAGS_model_dir.empty()
-      || (FLAGS_image_file.empty() && FLAGS_image_dir.empty() && FLAGS_video_file.empty())) {
+  if (FLAGS_model_dir.empty() ||
+      (FLAGS_image_file.empty() && FLAGS_image_dir.empty() &&
+       FLAGS_video_file.empty())) {
     std::cout << "Usage: ./main --model_dir=/PATH/TO/INFERENCE_MODEL/ "
-                << "--image_file=/PATH/TO/INPUT/IMAGE/" << std::endl;
+              << "--image_file=/PATH/TO/INPUT/IMAGE/" << std::endl;
     return -1;
   }
-  if (!(FLAGS_run_mode == "fluid" || FLAGS_run_mode == "trt_fp32"
-      || FLAGS_run_mode == "trt_fp16" || FLAGS_run_mode == "trt_int8")) {
-    std::cout << "run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'.";
+  if (!(FLAGS_run_mode == "paddle" || FLAGS_run_mode == "trt_fp32" ||
+        FLAGS_run_mode == "trt_fp16" || FLAGS_run_mode == "trt_int8")) {
+    std::cout
+        << "run_mode should be 'paddle', 'trt_fp32', 'trt_fp16' or 'trt_int8'.";
     return -1;
   }
-  transform(FLAGS_device.begin(),FLAGS_device.end(),FLAGS_device.begin(),::toupper);
-  if (!(FLAGS_device == "CPU" || FLAGS_device == "GPU" || FLAGS_device == "XPU")) {
+  transform(FLAGS_device.begin(),
+            FLAGS_device.end(),
+            FLAGS_device.begin(),
+            ::toupper);
+  if (!(FLAGS_device == "CPU" || FLAGS_device == "GPU" ||
+        FLAGS_device == "XPU")) {
     std::cout << "device should be 'CPU', 'GPU' or 'XPU'.";
     return -1;
   }
   if (FLAGS_use_gpu) {
-    std::cout << "Deprecated, please use `--device` to set the device you want to run.";
+    std::cout << "Deprecated, please use `--device` to set the device you want "
+                 "to run.";
     return -1;
   }
   // Load model and create a object detector
-  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_device, FLAGS_use_mkldnn,
-                        FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_batch_size,FLAGS_gpu_id,
-                        FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape,
-			FLAGS_trt_calib_mode);
+  PaddleDetection::ObjectDetector det(FLAGS_model_dir,
+                                      FLAGS_device,
+                                      FLAGS_use_mkldnn,
+                                      FLAGS_cpu_threads,
+                                      FLAGS_run_mode,
+                                      FLAGS_batch_size,
+                                      FLAGS_gpu_id,
+                                      FLAGS_trt_min_shape,
+                                      FLAGS_trt_max_shape,
+                                      FLAGS_trt_opt_shape,
+                                      FLAGS_trt_calib_mode);
   // Do inference on input video or image
   if (!PathExists(FLAGS_output_dir)) {
-      MkDirs(FLAGS_output_dir);
+    MkDirs(FLAGS_output_dir);
   }
   if (!FLAGS_video_file.empty() || FLAGS_camera_id != -1) {
     PredictVideo(FLAGS_video_file, &det, FLAGS_output_dir);
@@ -363,17 +407,22 @@ int main(int argc, char** argv) {
     if (!FLAGS_image_file.empty()) {
       all_img_paths.push_back(FLAGS_image_file);
       if (FLAGS_batch_size > 1) {
-        std::cout << "batch_size should be 1, when set `image_file`." << std::endl;
-	return -1;
+        std::cout << "batch_size should be 1, when set `image_file`."
+                  << std::endl;
+        return -1;
       }
     } else {
-        cv::glob(FLAGS_image_dir, cv_all_img_paths);
-        for (const auto & img_path : cv_all_img_paths) {
-          all_img_paths.push_back(img_path);
-        }
+      cv::glob(FLAGS_image_dir, cv_all_img_paths);
+      for (const auto& img_path : cv_all_img_paths) {
+        all_img_paths.push_back(img_path);
+      }
     }
-    PredictImage(all_img_paths, FLAGS_batch_size, FLAGS_threshold,
-		 FLAGS_run_benchmark, &det, FLAGS_output_dir);
+    PredictImage(all_img_paths,
+                 FLAGS_batch_size,
+                 FLAGS_threshold,
+                 FLAGS_run_benchmark,
+                 &det,
+                 FLAGS_output_dir);
   }
   return 0;
 }

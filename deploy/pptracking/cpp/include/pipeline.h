@@ -43,7 +43,7 @@ class Pipeline {
   explicit Pipeline(const std::string& device,
                     const double threshold,
                     const std::string& output_dir,
-                    const std::string& run_mode = "fluid",
+                    const std::string& run_mode = "paddle",
                     const int gpu_id = 0,
                     const bool use_mkldnn = false,
                     const int cpu_threads = 1,
@@ -127,7 +127,7 @@ class Pipeline {
   std::string track_model_dir_;
   std::string det_model_dir_;
   std::string reid_model_dir_;
-  std::string run_mode_ = "fluid";
+  std::string run_mode_ = "paddle";
   int gpu_id_ = 0;
   bool use_mkldnn_ = false;
   int cpu_threads_ = 1;
