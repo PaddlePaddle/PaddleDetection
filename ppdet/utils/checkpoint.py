@@ -124,7 +124,7 @@ def match_state_dict(model_state_dict, weight_state_dict):
     weight_keys = sorted(weight_state_dict.keys())
 
     def match(a, b):
-        if a.startswith('backbone.res5'):
+        if b.startswith('backbone.res5'):
             # In Faster RCNN, res5 pretrained weights have prefix of backbone, 
             # however, the corresponding model weights have difficult prefix,
             # bbox_head.
