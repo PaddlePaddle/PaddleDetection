@@ -141,7 +141,7 @@ def match_state_dict(model_state_dict, weight_state_dict):
     max_id[max_len == 0] = -1
 
     load_id = set(max_id)
-    load_id.remove(-1)
+    load_id.discard(-1)
     not_load_weight_name = []
     for idx in range(len(weight_keys)):
         if idx not in load_id:
