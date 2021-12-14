@@ -1,9 +1,7 @@
 _BASE_: [
-  #'../datasets/roadsign_voc.yml',
-  '../datasets/roadsign_voc_new.yml',
+  '../datasets/roadsign_voc.yml',
   '../runtime.yml',
-  #'_base_/optimizer_40e.yml',
-  '_base_/optimizer_40e_new.yml',
+  '_base_/optimizer_40e.yml',
   '_base_/yolov3_mobilenet_v1.yml',
   '_base_/yolov3_reader.yml',
 ]
