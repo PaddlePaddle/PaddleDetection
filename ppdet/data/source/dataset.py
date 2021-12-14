@@ -205,6 +205,7 @@ class ImageFolder(DetDataset):
 class TrainDataset(object):
     def __init__(self, **dataset_args):
         super(TrainDataset, self).__init__()
+        dataset_args = copy.deepcopy(dataset_args)
         type = dataset_args.pop("type")
         self.dataset = getattr(source, type)(**dataset_args)
 
@@ -216,6 +217,7 @@ class TrainDataset(object):
 class EvalDataset(object):
     def __init__(self, **dataset_args):
         super(EvalDataset, self).__init__()
+        dataset_args = copy.deepcopy(dataset_args)
         type = dataset_args.pop("type")
         self.dataset = getattr(source, type)(**dataset_args)
 
@@ -227,11 +229,9 @@ class EvalDataset(object):
 class TestDataset(object):
     def __init__(self, **dataset_args):
         super(TestDataset, self).__init__()
+        dataset_args = copy.deepcopy(dataset_args)
         type = dataset_args.pop("type")
         self.dataset = getattr(source, type)(**dataset_args)
-        import pdb
-        pdb.set_trace()
-        pass
 
     def __call__(self):
         return self.dataset
