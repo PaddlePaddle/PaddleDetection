@@ -69,6 +69,9 @@ class Trainer(object):
         else:
             self.dataset = create('{}Dataset'.format(self.mode.capitalize()))()
 
+        if self.mode in ["train"]:
+            # make sure EvalDataset instantiate before train
+            self.cfg.EvalDataset = create("EvalDataset")()
         if cfg.architecture == 'DeepSORT' and self.mode == 'train':
             logger.error('DeepSORT has no need of training on mot dataset.')
             sys.exit(1)
