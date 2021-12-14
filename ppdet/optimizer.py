@@ -15,11 +15,12 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
+import sys
 import math
 import paddle
 import paddle.nn as nn
 
+import copy
 import paddle.optimizer as optimizer
 import paddle.regularizer as regularizer
 
@@ -192,7 +193,18 @@ class LearningRate(object):
                  schedulers=[PiecewiseDecay(), LinearWarmup()]):
         super(LearningRate, self).__init__()
         self.base_lr = base_lr
-        self.schedulers = schedulers
+        self.schedulers = []
+
+        schedulers = copy.deepcopy(schedulers)
+        for sched in schedulers:
+            if isinstance(sched, dict):
+                # support dict sched instantiate
+                module = sys.modules[__name__]
+                type = sched.pop("type")
+                scheduler = getattr(module, type)(**sched)
+                self.schedulers.append(scheduler)
+            else:
+                self.schedulers.append(sched)
 
     def __call__(self, step_per_epoch):
         assert len(self.schedulers) >= 1

@@ -139,6 +139,7 @@ def main():
     cfg['save_proposals'] = FLAGS.save_proposals
     cfg['proposals_path'] = FLAGS.proposals_path
     merge_config(FLAGS.opt)
+    print("cfg:{}".format(cfg))
 
     # disable npu in config by default
     if 'use_npu' not in cfg:
