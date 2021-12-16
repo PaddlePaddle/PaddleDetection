@@ -1,0 +1,21 @@
+_BASE_: [
+  '../../datasets/mot.yml',
+  '../../runtime.yml',
+  '_base_/optimizer_30e.yml',
+  '_base_/fairmot_dla34.yml',
+  '_base_/fairmot_reader_1088x608.yml',
+]
+weights: output/fairmot_dla34_30e_1088x608_bytetracker/model_final
+
+# for ablation study, MIX + MOT17-half
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['mot17.half', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+JDETracker:
+  use_byte: True
+  match_thres: 0.8
+  conf_thres: 0.4
+  low_conf_thres: 0.2

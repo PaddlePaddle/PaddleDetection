@@ -81,6 +81,24 @@ PP-tracking provides an AI studio public project tutorial. Please refer to this 
 **Notes:**
  - FairMOT HRNetV2-W18 used 8 GPUs for training and mini-batch size as 4 on each GPU, and trained for 30 epoches. Only ImageNet pre-train model is used, and the optimizer adopts Momentum. The crowdhuman dataset is added to the train-set during training.
 
+### FairMOT + BYTETracker
+
+### Results on MOT-17 Half Set
+| backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| DLA-34         | 1088x608 |  69.1  |  72.8  |  299  |  1957  | 14412 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bytetracker.pdparams) | [config](./fairmot_dla34_30e_1088x608.yml) |
+| DLA-34 + BYTETracker| 1088x608 |  70.3 |  73.2  |  234  |  2176  | 13598 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bytetracker.pdparams) | [config](./fairmot_dla34_30e_1088x608_bytetracker.yml) |
+
+**Notes:**
+ - FairMOT here is for ablation study, the training dataset is the 5 datasets of MIX(Caltech,CUHKSYSU,PRW,Cityscapes,ETHZ) and the first half of MOT17 Train, and the pretrain weights is CenterNet COCO model, the evaluation is on the second half of MOT17 Train.
+ - BYTETracker adapt to other FairMOT models of PaddleDetection, you can modify the tracker of the config like this:
+ ```
+ JDETracker:
+  use_byte: True
+  match_thres: 0.8
+  conf_thres: 0.4
+  low_conf_thres: 0.2
+ ```
 
 ## Getting Start
 
