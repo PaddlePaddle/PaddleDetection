@@ -23,7 +23,8 @@ import time
 
 import numpy as np
 import typing
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 import paddle
 import paddle.distributed as dist
