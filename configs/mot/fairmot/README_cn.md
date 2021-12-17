@@ -77,6 +77,25 @@ PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking�
 **注意:**
  - FairMOT HRNetV2-W18均使用8个GPU进行训练，每个GPU上batch size为4，训练30个epoch，使用的ImageNet预训练，优化器策略采用的是Momentum，并且训练集中加入了crowdhuman数据集一起参与训练。
 
+### FairMOT + BYTETracker
+
+### 在MOT-17 Half上结果
+|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| DLA-34         | 1088x608 |  69.1  |  72.8  |  299  |  1957  | 14412 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bytetracker.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608.yml) |
+| DLA-34 + BYTETracker| 1088x608 |  70.3 |  73.2  |  234  |  2176  | 13598 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bytetracker.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_bytetracker.yml) |
+
+
+**注意:**
+ - FairMOT模型此处是ablation study的配置，使用的训练集是原先MIX的5个数据集(Caltech,CUHKSYSU,PRW,Cityscapes,ETHZ)加上MOT17 Train的前一半，且使用是预训练权重是CenterNet的COCO预训练权重，验证是在MOT17 Train的后一半上测的。
+ - BYTETracker应用到PaddleDetection的其他FairMOT模型，只需要更改对应的config文件里的tracker部分为如下所示：
+ ```
+ JDETracker:
+  use_byte: True
+  match_thres: 0.8
+  conf_thres: 0.4
+  low_conf_thres: 0.2
+ ```
 
 ## 快速开始
 

@@ -98,28 +98,28 @@ class STrack(BaseTrack):
     def __init__(self,
                  tlwh,
                  score,
-                 temp_feat,
-                 num_classes,
                  cls_id,
-                 buff_size=30):
-        # object class id
-        self.cls_id = cls_id
+                 buff_size=30,
+                 temp_feat=None):
         # wait activate
         self._tlwh = np.asarray(tlwh, dtype=np.float)
+        self.score = score
+        self.cls_id = cls_id
+        self.track_len = 0
+
         self.kalman_filter = None
         self.mean, self.covariance = None, None
         self.is_activated = False
 
-        self.score = score
-        self.track_len = 0
-
-        self.smooth_feat = None
-        self.update_features(temp_feat)
-        self.features = deque([], maxlen=buff_size)
-        self.alpha = 0.9
+        self.use_reid = True if temp_feat is not None else False
+        if self.use_reid:
+            self.smooth_feat = None
+            self.update_features(temp_feat)
+            self.features = deque([], maxlen=buff_size)
+            self.alpha = 0.9
 
     def update_features(self, feat):
-        # L2 normalizing
+        # L2 normalizing, this function has no use for BYTETracker
         feat /= np.linalg.norm(feat)
         self.curr_feat = feat
         if self.smooth_feat is None:
@@ -175,7 +175,8 @@ class STrack(BaseTrack):
     def re_activate(self, new_track, frame_id, new_id=False):
         self.mean, self.covariance = self.kalman_filter.update(
             self.mean, self.covariance, self.tlwh_to_xyah(new_track.tlwh))
-        self.update_features(new_track.curr_feat)
+        if self.use_reid:
+            self.update_features(new_track.curr_feat)
         self.track_len = 0
         self.state = TrackState.Tracked
         self.is_activated = True
@@ -194,7 +195,7 @@ class STrack(BaseTrack):
         self.is_activated = True  # set flag 'activated'
 
         self.score = new_track.score
-        if update_feature:
+        if update_feature and self.use_reid:
             self.update_features(new_track.curr_feat)
 
     @property
