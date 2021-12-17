@@ -38,9 +38,13 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
         model = DistillModel(cfg, slim_cfg)
         cfg['model'] = model
     elif slim_load_cfg['slim'] == 'OFA':
-        model = OFAModel(cfg, slim_cfg)
-        cfg['model'] = model
+        load_config(slim_cfg)
+        model = create(cfg.architecture)
+        load_pretrain_weight(model, cfg.weights)
+        slim = create(cfg.slim)
         cfg['slim_type'] = cfg.slim
+        cfg['model'] = slim(model, model.state_dict())
+        cfg['slim'] = slim
     elif slim_load_cfg['slim'] == 'DistillPrune':
         if mode == 'train':
             model = DistillModel(cfg, slim_cfg)
