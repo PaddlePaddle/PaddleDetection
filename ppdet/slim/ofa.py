@@ -77,9 +77,9 @@ class OFA(object):
         ofa_model._clear_search_space(input_spec=input_spec)
         ofa_model._build_ss = True
         check_ss = ofa_model._sample_config('expand_ratio', phase=None)
-        ### tokenize the search space
+        # tokenize the search space
         ofa_model.tokenize()
-        ### check token map, search cands and search space
+        # check token map, search cands and search space
         logger.info('Token map is {}'.format(ofa_model.token_map))
         logger.info('Search candidates is {}'.format(ofa_model.search_cands))
         logger.info('The length of search_space is {}, search_space is {}'.
