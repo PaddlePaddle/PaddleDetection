@@ -51,15 +51,17 @@ class ConvBNLayer(nn.Layer):
             weight_attr=ParamAttr(initializer=KaimingNormal()),
             bias_attr=False)
 
-        self._batch_norm = BatchNorm(
+        self._batch_norm = BatchNorm2D(
             out_channels,
-            param_attr=ParamAttr(regularizer=L2Decay(0.0)),
-            bias_attr=ParamAttr(regularizer=L2Decay(0.0)),
-            act=act)
+            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
+            bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
+        self.act = act
 
     def forward(self, inputs):
         y = self._conv(inputs)
         y = self._batch_norm(y)
+        if self.act:
+            y = getattr(F, self.act)(y)
         return y
 
 
