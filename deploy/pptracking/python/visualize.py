@@ -17,7 +17,8 @@ from __future__ import division
 import os
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 from collections import deque
 
 

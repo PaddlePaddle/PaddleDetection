@@ -22,7 +22,8 @@ import copy
 import time
 
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 import paddle
 import paddle.distributed as dist
