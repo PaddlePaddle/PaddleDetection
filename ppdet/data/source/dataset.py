@@ -202,9 +202,9 @@ class ImageFolder(DetDataset):
 
 
 @register
-class TrainDataset(object):
+class CommonDataset(object):
     def __init__(self, **dataset_args):
-        super(TrainDataset, self).__init__()
+        super(CommonDataset, self).__init__()
         dataset_args = copy.deepcopy(dataset_args)
         type = dataset_args.pop("type")
         self.dataset = getattr(source, type)(**dataset_args)
@@ -214,24 +214,25 @@ class TrainDataset(object):
 
 
 @register
-class EvalDataset(object):
-    def __init__(self, **dataset_args):
-        super(EvalDataset, self).__init__()
-        dataset_args = copy.deepcopy(dataset_args)
-        type = dataset_args.pop("type")
-        self.dataset = getattr(source, type)(**dataset_args)
-
-    def __call__(self):
-        return self.dataset
+class TrainDataset(CommonDataset):
+    pass
 
 
 @register
-class TestDataset(object):
-    def __init__(self, **dataset_args):
-        super(TestDataset, self).__init__()
-        dataset_args = copy.deepcopy(dataset_args)
-        type = dataset_args.pop("type")
-        self.dataset = getattr(source, type)(**dataset_args)
+class EvalMOTDataset(CommonDataset):
+    pass
 
-    def __call__(self):
-        return self.dataset
+
+@register
+class TestMOTDataset(CommonDataset):
+    pass
+
+
+@register
+class EvalDataset(CommonDataset):
+    pass
+
+
+@register
+class TestDataset(CommonDataset):
+    pass
