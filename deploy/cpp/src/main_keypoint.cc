@@ -62,8 +62,8 @@ DEFINE_double(threshold, 0.5, "Threshold of score.");
 DEFINE_double(threshold_keypoint, 0.5, "Threshold of score.");
 DEFINE_string(output_dir, "output", "Directory of output visualization files.");
 DEFINE_string(run_mode,
-              "fluid",
-              "Mode of running(fluid/trt_fp32/trt_fp16/trt_int8)");
+              "paddle",
+              "Mode of running(paddle/trt_fp32/trt_fp16/trt_int8)");
 DEFINE_int32(gpu_id, 0, "Device id of GPU to execute");
 DEFINE_bool(run_benchmark,
             false,
@@ -505,10 +505,10 @@ int main(int argc, char** argv) {
               << "--image_file=/PATH/TO/INPUT/IMAGE/" << std::endl;
     return -1;
   }
-  if (!(FLAGS_run_mode == "fluid" || FLAGS_run_mode == "trt_fp32" ||
+  if (!(FLAGS_run_mode == "paddle" || FLAGS_run_mode == "trt_fp32" ||
         FLAGS_run_mode == "trt_fp16" || FLAGS_run_mode == "trt_int8")) {
     std::cout
-        << "run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'.";
+        << "run_mode should be 'paddle', 'trt_fp32', 'trt_fp16' or 'trt_int8'.";
     return -1;
   }
   transform(FLAGS_device.begin(),
