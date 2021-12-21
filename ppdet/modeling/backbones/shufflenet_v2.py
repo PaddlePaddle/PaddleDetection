@@ -19,7 +19,8 @@ from __future__ import print_function
 import paddle
 import paddle.nn as nn
 from paddle import ParamAttr
-from paddle.nn import Conv2D, MaxPool2D, AdaptiveAvgPool2D, BatchNorm
+import paddle.nn.functional as F
+from paddle.nn import Conv2D, MaxPool2D, AdaptiveAvgPool2D, BatchNorm2D
 from paddle.nn.initializer import KaimingNormal
 from paddle.regularizer import L2Decay
 
