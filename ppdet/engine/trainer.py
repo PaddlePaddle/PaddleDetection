@@ -33,6 +33,7 @@ from paddle.static import InputSpec
 from ppdet.optimizer import ModelEMA
 
 from ppdet.core.workspace import create
+from ppdet.modeling.architectures.meta_arch import BaseArch
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval
@@ -340,11 +341,10 @@ class Trainer(object):
         assert self.mode == 'train', "Model not in 'train' mode"
         Init_mark = False
 
-        sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
+        sync_bn = (getattr(self.cfg, 'norm_type', None) in [None, 'sync_bn'] and
                    self.cfg.use_gpu and self._nranks > 1)
         if sync_bn:
-            self.model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(
-                self.model)
+            self.model = BaseArch.convert_sync_batchnorm(self.model)
 
         model = self.model
         if self.cfg.get('fleet', False):
