@@ -111,8 +111,12 @@ class Trainer(object):
         if self.mode == 'eval':
             self._eval_batch_sampler = paddle.io.BatchSampler(
                 self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
-            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
-                self.dataset, cfg.worker_num, self._eval_batch_sampler)
+            reader_name = '{}Reader'.format(self.mode.capitalize())
+            # If metric is VOC, need to be set collate_batch=False.
+            if cfg.metric == 'VOC':
+                cfg[reader_name]['collate_batch'] = False
+            self.loader = create(reader_name)(self.dataset, cfg.worker_num,
+                                              self._eval_batch_sampler)
         # TestDataset build after user set images, skip loader creation here
 
         # build optimizer in train mode
@@ -444,6 +448,9 @@ class Trainer(object):
                         paddle.io.BatchSampler(
                             self._eval_dataset,
                             batch_size=self.cfg.EvalReader['batch_size'])
+                    # If metric is VOC, need to be set collate_batch=False.
+                    if self.cfg.metric == 'VOC':
+                        self.cfg['EvalReader']['collate_batch'] = False
                     self._eval_loader = create('EvalReader')(
                         self._eval_dataset,
                         self.cfg.worker_num,
