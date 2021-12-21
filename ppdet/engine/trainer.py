@@ -95,7 +95,8 @@ class Trainer(object):
 
         #normalize params for deploy
         if 'slim' in cfg and cfg['slim_type'] == 'OFA':
-            self.model.model.load_meanstd(cfg['TestReader']['sample_transforms'])
+            self.model.model.load_meanstd(cfg['TestReader'][
+                'sample_transforms'])
         else:
             self.model.load_meanstd(cfg['TestReader']['sample_transforms'])
 
