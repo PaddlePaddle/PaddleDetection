@@ -70,7 +70,7 @@ class BaseArch(nn.Layer):
                 outs.append(self.get_pred())
 
             # multi-scale test
-            if len(outs)>1:
+            if len(outs) > 1:
                 out = self.merge_multi_scale_predictions(outs)
             else:
                 out = outs[0]
@@ -87,7 +87,9 @@ class BaseArch(nn.Layer):
             keep_top_k = self.bbox_post_process.nms.keep_top_k
             nms_threshold = self.bbox_post_process.nms.nms_threshold
         else:
-            raise Exception("Multi scale test only supports CascadeRCNN, FasterRCNN and MaskRCNN for now")
+            raise Exception(
+                "Multi scale test only supports CascadeRCNN, FasterRCNN and MaskRCNN for now"
+            )
 
         final_boxes = []
         all_scale_outs = paddle.concat([o['bbox'] for o in outs]).numpy()
@@ -96,9 +98,11 @@ class BaseArch(nn.Layer):
             if np.count_nonzero(idxs) == 0:
                 continue
             r = nms(all_scale_outs[idxs, 1:], nms_threshold)
-            final_boxes.append(np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+            final_boxes.append(
+                np.concatenate([np.full((r.shape[0], 1), c), r], 1))
         out = np.concatenate(final_boxes)
-        out = np.concatenate(sorted(out, key=lambda e: e[1])[-keep_top_k:]).reshape((-1, 6))
+        out = np.concatenate(sorted(
+            out, key=lambda e: e[1])[-keep_top_k:]).reshape((-1, 6))
         out = {
             'bbox': paddle.to_tensor(out),
             'bbox_num': paddle.to_tensor(np.array([out.shape[0], ]))
@@ -120,3 +124,16 @@ class BaseArch(nn.Layer):
 
     def get_pred(self, ):
         raise NotImplementedError("Should implement get_pred method!")
+
+    @classmethod
+    def convert_sync_batchnorm(cls, layer):
+        layer_output = layer
+        if getattr(layer, 'norm_type', None) == 'sync_bn':
+            layer_output = nn.SyncBatchNorm.convert_sync_batchnorm(layer)
+        else:
+            for name, sublayer in layer.named_children():
+                layer_output.add_sublayer(name,
+                                          cls.convert_sync_batchnorm(sublayer))
+
+        del layer
+        return layer_output
