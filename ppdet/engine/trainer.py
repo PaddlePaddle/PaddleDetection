@@ -95,7 +95,11 @@ class Trainer(object):
             self.is_loaded_weights = True
 
         #normalize params for deploy
-        self.model.load_meanstd(cfg['TestReader']['sample_transforms'])
+        if 'slim' in cfg and cfg['slim_type'] == 'OFA':
+            self.model.model.load_meanstd(cfg['TestReader'][
+                'sample_transforms'])
+        else:
+            self.model.load_meanstd(cfg['TestReader']['sample_transforms'])
 
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         if self.use_ema:
