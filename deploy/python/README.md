@@ -34,7 +34,7 @@ python deploy/python/infer.py --model_dir=./output_inference/yolov3_mobilenet_v1
 | --video_file | Option | 需要预测的视频 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4|
 | --device | Option | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
-| --run_mode | Option |使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
+| --run_mode | Option |使用GPU时，默认为paddle, 可选（paddle/trt_fp32/trt_fp16/trt_int8）|
 | --batch_size | Option |预测时的batch size，在指定`image_dir`时有效，默认为1 |
 | --threshold | Option|预测得分的阈值，默认为0.5|
 | --output_dir | Option|可视化结果保存的根目录，默认为output/|
@@ -46,6 +46,6 @@ python deploy/python/infer.py --model_dir=./output_inference/yolov3_mobilenet_v1
 说明：
 
 - 参数优先级顺序：`camera_id` > `video_file` > `image_dir` > `image_file`。
-- run_mode：fluid代表使用AnalysisPredictor，精度float32来推理，其他参数指用AnalysisPredictor，TensorRT不同精度来推理。
+- run_mode：paddle代表使用AnalysisPredictor，精度float32来推理，其他参数指用AnalysisPredictor，TensorRT不同精度来推理。
 - 如果安装的PaddlePaddle不支持基于TensorRT进行预测，需要自行编译，详细可参考[预测库编译教程](https://paddleinference.paddlepaddle.org.cn/user_guides/source_compile.html)。
 - --run_benchmark如果设置为True，则需要安装依赖`pip install pynvml psutil GPUtil`。

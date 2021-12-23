@@ -50,10 +50,6 @@ def batch_norm(ch,
                freeze_norm=False,
                initializer=None,
                data_format='NCHW'):
-    if norm_type == 'sync_bn':
-        batch_norm = nn.SyncBatchNorm
-    else:
-        batch_norm = nn.BatchNorm2D
 
     norm_lr = 0. if freeze_norm else 1.
     weight_attr = ParamAttr(
@@ -66,11 +62,12 @@ def batch_norm(ch,
         regularizer=L2Decay(norm_decay),
         trainable=False if freeze_norm else True)
 
-    norm_layer = batch_norm(
-        ch,
-        weight_attr=weight_attr,
-        bias_attr=bias_attr,
-        data_format=data_format)
+    if norm_type in ['sync_bn', 'bn']:
+        norm_layer = nn.BatchNorm2D(
+            ch,
+            weight_attr=weight_attr,
+            bias_attr=bias_attr,
+            data_format=data_format)
 
     norm_params = norm_layer.parameters()
     if freeze_norm:
@@ -473,7 +470,7 @@ def distribute_fpn_proposals(fpn_rois,
                              pixel_offset=False,
                              rois_num=None,
                              name=None):
-    """
+    r"""
     
     **This op only takes LoDTensor as input.** In Feature Pyramid Networks 
     (FPN) models, it is needed to distribute all proposals into different FPN 
@@ -1274,7 +1271,7 @@ def box_coder(prior_box,
               box_normalized=True,
               axis=0,
               name=None):
-    """
+    r"""
     **Box Coder Layer**
     Encode/Decode the target bounding box with the priorbox information.
     

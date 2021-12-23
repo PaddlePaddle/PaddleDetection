@@ -206,7 +206,7 @@ void Pipeline::PredictMOT(const std::string& video_path) {
     times = total_time / frame_id;
 
     LOG(INFO) << "frame_id: " << frame_id
-              << " predict time(s): " << total_time / 1000;
+              << " predict time(s): " << times / 1000;
 
     cv::Mat out_img = PaddleDetection::VisualizeTrackResult(
         frame, result, 1000. / times, frame_id);
@@ -301,8 +301,7 @@ void Pipeline::RunMOTStream(const cv::Mat img,
   total_time = std::accumulate(det_times.begin(), det_times.end(), 0.);
   times = total_time / frame_id;
 
-  LOG(INFO) << "frame_id: " << frame_id
-            << " predict time(s): " << total_time / 1000;
+  LOG(INFO) << "frame_id: " << frame_id << " predict time(s): " << times / 1000;
 
   out_img = PaddleDetection::VisualizeTrackResult(
       img, result, 1000. / times, frame_id);

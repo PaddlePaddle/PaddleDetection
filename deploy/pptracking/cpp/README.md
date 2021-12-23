@@ -100,7 +100,7 @@ python tools/export_model.py -c configs/mot/fairmot/fairmot_hrnetv2_w18_dlafpn_3
 
 预测模型会默认导出到```output_inference/fairmot_hrnetv2_w18_dlafpn_30e_576x320```目录下，包括```infer_cfg.yml```, ```model.pdiparams```, ```model.pdiparams.info```, ```model.pdmodel```
 
-导出模型也可以通过[预测模型列表]()直接下载使用
+导出模型也可以通过[预测模型列表](../README.md)中'算法介绍部分'直接下载使用
 
 ## 三、C++预测
 
@@ -112,7 +112,7 @@ python tools/export_model.py -c configs/mot/fairmot/fairmot_hrnetv2_w18_dlafpn_3
 | --video_file  | 要预测的视频文件路径 |
 | --device  | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
 | --gpu_id  |  指定进行推理的GPU device id(默认值为0)|
-| --run_mode | 使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
+| --run_mode | 使用GPU时，默认为paddle, 可选（paddle/trt_fp32/trt_fp16/trt_int8）|
 | --output_dir | 输出图片所在的文件夹, 默认为output ｜
 | --use_mkldnn | CPU预测中是否开启MKLDNN加速 |
 | --cpu_threads | 设置cpu线程数，默认为1 |

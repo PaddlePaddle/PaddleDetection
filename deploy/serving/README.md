@@ -10,7 +10,7 @@ python tools/infer.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --infer_i
 ```
 
 ## 2. 安装 paddle serving
-请参考[PaddleServing](https://github.com/PaddlePaddle/Serving/tree/v0.6.0) 中安装教程安装（版本>=0.6.0）。
+请参考[PaddleServing](https://github.com/PaddlePaddle/Serving/tree/v0.7.0) 中安装教程安装（版本>=0.7.0）。
 
 ## 3. 导出模型
 PaddleDetection在训练过程包括网络的前向和优化器相关参数，而在部署过程中，我们只需要前向参数，具体参考:[导出模型](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/EXPORT_MODEL.md)
@@ -41,7 +41,6 @@ output_inference
 `serving_client`文件夹下`serving_client_conf.prototxt`详细说明了模型输入输出信息
 `serving_client_conf.prototxt`文件内容为：
 ```
-lient_conf.prototxt
 feed_var {
   name: "im_shape"
   alias_name: "im_shape"
@@ -66,19 +65,17 @@ feed_var {
   shape: 2
 }
 fetch_var {
-  name: "save_infer_model/scale_0.tmp_1"
-  alias_name: "save_infer_model/scale_0.tmp_1"
+  name: "multiclass_nms3_0.tmp_0"
+  alias_name: "multiclass_nms3_0.tmp_0"
   is_lod_tensor: true
   fetch_type: 1
   shape: -1
 }
 fetch_var {
-  name: "save_infer_model/scale_1.tmp_1"
-  alias_name: "save_infer_model/scale_1.tmp_1"
-  is_lod_tensor: true
+  name: "multiclass_nms3_0.tmp_2"
+  alias_name: "multiclass_nms3_0.tmp_2"
+  is_lod_tensor: false
   fetch_type: 2
-  shape: -1
-}
 ```
 
 ## 4. 启动PaddleServing服务
@@ -94,16 +91,92 @@ python -m paddle_serving_server.serve --model serving_server --port 9393
 ```
 
 ## 5. 测试部署的服务
-准备`label_list.txt`文件
+准备`label_list.txt`文件，示例`label_list.txt`文件内容为
 ```
-# 进入到导出模型文件夹
-cd output_inference/yolov3_darknet53_270e_coco/
-
-# 将数据集对应的label_list.txt文件放到当前文件夹下
+person
+bicycle
+car
+motorcycle
+airplane
+bus
+train
+truck
+boat
+traffic light
+fire hydrant
+stop sign
+parking meter
+bench
+bird
+cat
+dog
+horse
+sheep
+cow
+elephant
+bear
+zebra
+giraffe
+backpack
+umbrella
+handbag
+tie
+suitcase
+frisbee
+skis
+snowboard
+sports ball
+kite
+baseball bat
+baseball glove
+skateboard
+surfboard
+tennis racket
+bottle
+wine glass
+cup
+fork
+knife
+spoon
+bowl
+banana
+apple
+sandwich
+orange
+broccoli
+carrot
+hot dog
+pizza
+donut
+cake
+chair
+couch
+potted plant
+bed
+dining table
+toilet
+tv
+laptop
+mouse
+remote
+keyboard
+cell phone
+microwave
+oven
+toaster
+sink
+refrigerator
+book
+clock
+vase
+scissors
+teddy bear
+hair drier
+toothbrush
 ```
 
-设置`prototxt`文件路径为`serving_client/serving_client_conf.prototxt` 。  
-设置`fetch`为`fetch=["save_infer_model/scale_0.tmp_1"])`
+设置`prototxt`文件路径为`serving_client/serving_client_conf.prototxt`
+设置`fetch`为`fetch=["multiclass_nms3_0.tmp_0"])`
 
 测试
 ```
@@ -111,5 +184,5 @@ cd output_inference/yolov3_darknet53_270e_coco/
 cd output_inference/yolov3_darknet53_270e_coco/
 
 # 测试代码 test_client.py 会自动创建output文件夹，并在output下生成`bbox.json`和`000000014439.jpg`两个文件
-python ../../deploy/serving/test_client.py ../../demo/000000014439.jpg
+python ../../deploy/serving/test_client.py ../../deploy/serving/label_list.txt ../../demo/000000014439.jpg
 ```

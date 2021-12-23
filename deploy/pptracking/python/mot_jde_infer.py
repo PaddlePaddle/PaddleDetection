@@ -44,7 +44,7 @@ class JDE_Detector(Detector):
         pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
-        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
         batch_size (int): size of per batch in inference, default is 1 in tracking models
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
@@ -59,7 +59,7 @@ class JDE_Detector(Detector):
                  pred_config,
                  model_dir,
                  device='CPU',
-                 run_mode='fluid',
+                 run_mode='paddle',
                  batch_size=1,
                  trt_min_shape=1,
                  trt_max_shape=1088,
@@ -121,32 +121,32 @@ class JDE_Detector(Detector):
                 online_scores[cls_id].append(tscore)
         return online_tlwhs, online_scores, online_ids
 
-    def predict(self, image_list, threshold=0.5, warmup=0, repeats=1):
+    def predict(self, image_list, threshold=0.5, repeats=1, add_timer=True):
         '''
         Args:
             image_list (list[str]): path of images, only support one image path
                 (batch_size=1) in tracking model
             threshold (float): threshold of predicted box' score
+            repeats (int): repeat number for prediction
+            add_timer (bool): whether add timer during prediction
         Returns:
             online_tlwhs, online_scores, online_ids (dict[np.array])
         '''
-        self.det_times.preprocess_time_s.start()
+        # preprocess
+        if add_timer:
+            self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image_list)
-        self.det_times.preprocess_time_s.end()
 
         pred_dets, pred_embs = None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
+        if add_timer:
+            self.det_times.preprocess_time_s.end()
+            self.det_times.inference_time_s.start()
 
-        for i in range(warmup):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            boxes_tensor = self.predictor.get_output_handle(output_names[0])
-            pred_dets = boxes_tensor.copy_to_cpu()
-
-        self.det_times.inference_time_s.start()
+        # model prediction
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -154,18 +154,25 @@ class JDE_Detector(Detector):
             pred_dets = boxes_tensor.copy_to_cpu()
             embs_tensor = self.predictor.get_output_handle(output_names[1])
             pred_embs = embs_tensor.copy_to_cpu()
-        self.det_times.inference_time_s.end(repeats=repeats)
+        if add_timer:
+            self.det_times.inference_time_s.end(repeats=repeats)
+            self.det_times.postprocess_time_s.start()
 
-        self.det_times.postprocess_time_s.start()
+        # postprocess
         online_tlwhs, online_scores, online_ids = self.postprocess(
             pred_dets, pred_embs, threshold)
-        self.det_times.postprocess_time_s.end()
-        self.det_times.img_num += 1
-
+        if add_timer:
+            self.det_times.postprocess_time_s.end()
+            self.det_times.img_num += 1
         return online_tlwhs, online_scores, online_ids
 
 
-def predict_image(detector, image_list):
+def predict_image(detector,
+                  image_list,
+                  threshold,
+                  output_dir,
+                  save_images=True,
+                  run_benchmark=False):
     results = []
     num_classes = detector.num_classes
     data_type = 'mcmot' if num_classes > 1 else 'mot'
@@ -174,8 +181,11 @@ def predict_image(detector, image_list):
     image_list.sort()
     for frame_id, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
-        if FLAGS.run_benchmark:
-            detector.predict([img_file], FLAGS.threshold, warmup=10, repeats=10)
+        if run_benchmark:
+            # warmup
+            detector.predict([img_file], threshold, repeats=10, add_timer=False)
+            # run benchmark
+            detector.predict([img_file], threshold, repeats=10, add_timer=True)
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
             detector.gpu_mem += gm
@@ -183,7 +193,7 @@ def predict_image(detector, image_list):
             print('Test iter {}, file name:{}'.format(frame_id, img_file))
         else:
             online_tlwhs, online_scores, online_ids = detector.predict(
-                [img_file], FLAGS.threshold)
+                [img_file], threshold)
             online_im = plot_tracking_dict(
                 frame,
                 num_classes,
@@ -192,22 +202,32 @@ def predict_image(detector, image_list):
                 online_scores,
                 frame_id=frame_id,
                 ids2names=ids2names)
-            if FLAGS.save_images:
-                if not os.path.exists(FLAGS.output_dir):
-                    os.makedirs(FLAGS.output_dir)
+            if save_images:
+                if not os.path.exists(output_dir):
+                    os.makedirs(output_dir)
                 img_name = os.path.split(img_file)[-1]
-                out_path = os.path.join(FLAGS.output_dir, img_name)
+                out_path = os.path.join(output_dir, img_name)
                 cv2.imwrite(out_path, online_im)
                 print("save result to: " + out_path)
 
 
-def predict_video(detector, camera_id):
+def predict_video(detector,
+                  video_file,
+                  threshold,
+                  output_dir,
+                  save_images=True,
+                  save_mot_txts=True,
+                  draw_center_traj=False,
+                  secs_interval=10,
+                  do_entrance_counting=False,
+                  camera_id=-1):
     video_name = 'mot_output.mp4'
     if camera_id != -1:
         capture = cv2.VideoCapture(camera_id)
     else:
-        capture = cv2.VideoCapture(FLAGS.video_file)
-        video_name = os.path.split(FLAGS.video_file)[-1]
+        capture = cv2.VideoCapture(video_file)
+        video_name = os.path.split(video_file)[-1]
+
     # Get Video info : resolution, fps, frame count
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -215,10 +235,10 @@ def predict_video(detector, camera_id):
     frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
     print("fps: %d, frame_count: %d" % (fps, frame_count))
 
-    if not os.path.exists(FLAGS.output_dir):
-        os.makedirs(FLAGS.output_dir)
-    out_path = os.path.join(FLAGS.output_dir, video_name)
-    if not FLAGS.save_images:
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    out_path = os.path.join(output_dir, video_name)
+    if not save_images:
         video_format = 'mp4v'
         fourcc = cv2.VideoWriter_fourcc(*video_format)
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
@@ -231,7 +251,7 @@ def predict_video(detector, camera_id):
     center_traj = None
     entrance = None
     records = None
-    if FLAGS.draw_center_traj:
+    if draw_center_traj:
         center_traj = [{} for i in range(num_classes)]
 
     if num_classes == 1:
@@ -250,8 +270,8 @@ def predict_video(detector, camera_id):
         if not ret:
             break
         timer.tic()
-        online_tlwhs, online_scores, online_ids = detector.predict(
-            [frame], FLAGS.threshold)
+        online_tlwhs, online_scores, online_ids = detector.predict([frame],
+                                                                   threshold)
         timer.toc()
 
         for cls_id in range(num_classes):
@@ -264,9 +284,9 @@ def predict_video(detector, camera_id):
             result = (frame_id + 1, online_tlwhs[0], online_scores[0],
                       online_ids[0])
             statistic = flow_statistic(
-                result, FLAGS.secs_interval, FLAGS.do_entrance_counting,
-                video_fps, entrance, id_set, interval_id_set, in_id_list,
-                out_id_list, prev_center, records, data_type, num_classes)
+                result, secs_interval, do_entrance_counting, video_fps,
+                entrance, id_set, interval_id_set, in_id_list, out_id_list,
+                prev_center, records, data_type, num_classes)
             id_set = statistic['id_set']
             interval_id_set = statistic['interval_id_set']
             in_id_list = statistic['in_id_list']
@@ -274,7 +294,7 @@ def predict_video(detector, camera_id):
             prev_center = statistic['prev_center']
             records = statistic['records']
 
-        elif num_classes > 1 and FLAGS.do_entrance_counting:
+        elif num_classes > 1 and do_entrance_counting:
             raise NotImplementedError(
                 'Multi-class flow counting is not implemented now!')
         im = plot_tracking_dict(
@@ -286,13 +306,13 @@ def predict_video(detector, camera_id):
             frame_id=frame_id,
             fps=fps,
             ids2names=ids2names,
-            do_entrance_counting=FLAGS.do_entrance_counting,
+            do_entrance_counting=do_entrance_counting,
             entrance=entrance,
             records=records,
             center_traj=center_traj)
 
-        if FLAGS.save_images:
-            save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
+        if save_images:
+            save_dir = os.path.join(output_dir, video_name.split('.')[-2])
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
             cv2.imwrite(
@@ -306,30 +326,59 @@ def predict_video(detector, camera_id):
             cv2.imshow('Tracking Detection', im)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-    if FLAGS.save_mot_txts:
-        result_filename = os.path.join(FLAGS.output_dir,
+    if save_mot_txts:
+        result_filename = os.path.join(output_dir,
                                        video_name.split('.')[-2] + '.txt')
 
         write_mot_results(result_filename, results, data_type, num_classes)
 
         if num_classes == 1:
             result_filename = os.path.join(
-                FLAGS.output_dir,
-                video_name.split('.')[-2] + '_flow_statistic.txt')
+                output_dir, video_name.split('.')[-2] + '_flow_statistic.txt')
             f = open(result_filename, 'w')
             for line in records:
                 f.write(line)
             print('Flow statistic save in {}'.format(result_filename))
             f.close()
 
-    if FLAGS.save_images:
-        save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
+    if save_images:
+        save_dir = os.path.join(output_dir, video_name.split('.')[-2])
         cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(save_dir,
                                                               out_path)
         os.system(cmd_str)
         print('Save video in {}.'.format(out_path))
     else:
         writer.release()
+
+
+def predict_naive(model_dir,
+                  video_file,
+                  image_dir,
+                  device='gpu',
+                  threshold=0.5,
+                  output_dir='output'):
+    pred_config = PredictConfig(model_dir)
+    detector = JDE_Detector(pred_config, model_dir, device=device.upper())
+
+    if video_file is not None:
+        predict_video(
+            detector,
+            video_file,
+            threshold=threshold,
+            output_dir=output_dir,
+            save_images=True,
+            save_mot_txts=True,
+            draw_center_traj=False,
+            secs_interval=10,
+            do_entrance_counting=False)
+    else:
+        img_list = get_test_images(image_dir, infer_img=None)
+        predict_image(
+            detector,
+            img_list,
+            threshold=threshold,
+            output_dir=output_dir,
+            save_images=True)
 
 
 def main():
@@ -348,11 +397,27 @@ def main():
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
-        predict_video(detector, FLAGS.camera_id)
+        predict_video(
+            detector,
+            FLAGS.video_file,
+            threshold=FLAGS.threshold,
+            output_dir=FLAGS.output_dir,
+            save_images=FLAGS.save_images,
+            save_mot_txts=FLAGS.save_mot_txts,
+            draw_center_traj=FLAGS.draw_center_traj,
+            secs_interval=FLAGS.secs_interval,
+            do_entrance_counting=FLAGS.do_entrance_counting,
+            camera_id=FLAGS.camera_id)
     else:
         # predict from image
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        predict_image(detector, img_list)
+        predict_image(
+            detector,
+            img_list,
+            threshold=FLAGS.threshold,
+            output_dir=FLAGS.output_dir,
+            save_images=FLAGS.save_images,
+            run_benchmark=FLAGS.run_benchmark)
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)
         else:

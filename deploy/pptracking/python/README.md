@@ -111,6 +111,7 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_
  - DeepSORT算法不支持多类别跟踪，只支持单类别跟踪，且ReID模型最好是与检测模型同一类别的物体训练过的，比如行人跟踪最好使用行人ReID模型，车辆跟踪最好使用车辆ReID模型。
 
 
+
 ## 3. 跨境跟踪模型的导出和预测
 ### 3.1 导出预测模型
 Step 1：下载导出的检测模型
@@ -129,11 +130,15 @@ tar -xvf deepsort_pplcnet_vehicle.tar
 
 ### 3.2 用导出的模型基于Python去做跨镜头跟踪
 ```bash
+# 下载demo测试视频
+wget https://paddledet.bj.bcebos.com/data/mot/demo/mtmct-demo.tar
+tar -xvf mtmct-demo.tar
+
 # 用导出的PicoDet车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir={your mtmct scene video folder} --mtmct_cfg=mtmct_cfg --device=GPU --scaled=True --threshold=0.5 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir=mtmct-demo --mtmct_cfg=mtmct_cfg --device=GPU --scaled=True --threshold=0.5 --save_mot_txts --save_images
 
 # 用导出的PP-YOLOv2车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir={your mtmct scene video folder} --mtmct_cfg=mtmct_cfg --device=GPU --scaled=True --threshold=0.5 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir=mtmct-demo --mtmct_cfg=mtmct_cfg --device=GPU --scaled=True --threshold=0.5 --save_mot_txts --save_images
 
 ```
 **注意:**
@@ -146,7 +151,78 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_
  - `--mtmct_cfg`是MTMCT预测的某个场景的配置文件，里面包含该一些trick操作的开关和该场景摄像头相关设置的文件路径，用户可以自行更改相关路径以及设置某些操作是否启用。
 
 
-## 参数说明:
+## 4. API调用方式:
+
+### 4.1 FairMOT模型API调用
+```
+import mot_jde_infer
+
+# 1.model config and weights
+model_dir = 'fairmot_hrnetv2_w18_dlafpn_30e_576x320/'
+
+# 2.inference data
+video_file = 'test.mp4'
+image_dir = None
+
+# 3.other settings
+device = 'CPU' # device should be CPU, GPU or XPU
+threshold = 0.3
+output_dir = 'output'
+
+# mot predict
+mot_jde_infer.predict_naive(model_dir, video_file, image_dir, device, threshold, output_dir)
+```
+**注意:**
+ - 以上代码必须进入目录`PaddleDetection/deploy/pptracking/python`下执行。
+ - 支持对视频和图片文件夹进行预测，不支持单张图的预测，`video_file`或`image_dir`不能同时为None，推荐使用`video_file`，而`image_dir`需直接存放命名顺序规范的图片。
+ - 默认会保存跟踪结果可视化后的图片和视频，以及跟踪结果txt文件，默认不会进行轨迹可视化和流量统计。
+
+
+### 4.2 DeepSORT模型API调用
+```
+import mot_sde_infer
+
+# 1.model config and weights
+model_dir = 'ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/'
+reid_model_dir = 'deepsort_pplcnet_vehicle/'
+
+# 2.inference data
+video_file = 'test.mp4'
+image_dir = None
+
+# 3.other settings
+scaled = True # set False only when use JDE YOLOv3
+device = 'CPU' # device should be CPU, GPU or XPU
+threshold = 0.3
+output_dir = 'output'
+
+# 4. MTMCT settings, default None
+mtmct_dir = None
+mtmct_cfg = None
+
+# mot predict
+mot_sde_infer.predict_naive(model_dir,
+                            reid_model_dir,
+                            video_file,
+                            image_dir,
+                            mtmct_dir,
+                            mtmct_cfg,
+                            scaled,
+                            device,
+                            threshold,
+                            output_dir)
+```
+**注意:**
+ - 以上代码必须进入目录`PaddleDetection/deploy/pptracking/python`下执行。
+ - 支持对视频和图片文件夹进行预测，不支持单张图的预测，`video_file`或`image_dir`或`--mtmct_dir`不能同时为None，推荐使用`video_file`，而`image_dir`需直接存放命名顺序规范的图片，`--mtmct_dir`不为None表示是进行的MTMCT跨镜头跟踪任务。
+ - 默认会保存跟踪结果可视化后的图片和视频，以及跟踪结果txt文件，默认不会进行轨迹可视化和流量统计。
+ - `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
+ - `--mtmct_dir`是MTMCT预测的某个场景的文件夹名字，里面包含该场景不同摄像头拍摄视频的图片文件夹，其数量至少为两个。
+ - `--mtmct_cfg`是MTMCT预测的某个场景的配置文件，里面包含该一些trick操作的开关和该场景摄像头相关设置的文件路径，用户可以自行更改相关路径以及设置某些操作是否启用。
+ - 开启MTMCT预测必须将`video_file`和`image_dir`同时设置为None，且`--mtmct_dir`和`--mtmct_cfg`都必须不为None。
+
+
+## 5. 参数说明:
 
 | 参数 | 是否必须|含义 |
 |-------|-------|----------|
@@ -156,7 +232,7 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_
 | --video_file | Option | 需要预测的视频 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4|
 | --device | Option | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
-| --run_mode | Option |使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
+| --run_mode | Option |使用GPU时，默认为paddle, 可选（paddle/trt_fp32/trt_fp16/trt_int8）|
 | --batch_size | Option |预测时的batch size，在指定`image_dir`时有效，默认为1 |
 | --threshold | Option|预测得分的阈值，默认为0.5|
 | --output_dir | Option|可视化结果保存的根目录，默认为output/|
@@ -172,6 +248,6 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_
 说明：
 
 - 参数优先级顺序：`camera_id` > `video_file` > `image_dir` > `image_file`。
-- run_mode：fluid代表使用AnalysisPredictor，精度float32来推理，其他参数指用AnalysisPredictor，TensorRT不同精度来推理。
+- run_mode：paddle代表使用AnalysisPredictor，精度float32来推理，其他参数指用AnalysisPredictor，TensorRT不同精度来推理。
 - 如果安装的PaddlePaddle不支持基于TensorRT进行预测，需要自行编译，详细可参考[预测库编译教程](https://paddleinference.paddlepaddle.org.cn/user_guides/source_compile.html)。
 - --run_benchmark如果设置为True，则需要安装依赖`pip install pynvml psutil GPUtil`。
