@@ -1,7 +1,6 @@
 metric: COCO
 num_classes: 80
 
-
 TrainDataset:
   !COCODataSet
     image_dir: train2017
