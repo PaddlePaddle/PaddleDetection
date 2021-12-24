@@ -100,7 +100,6 @@ class BBoxPostProcess(nn.Layer):
             if bbox_num[i] == 0:
                 bboxes_i = fake_bboxes
                 bbox_num_i = fake_bbox_num
-                id_start += 1
             else:
                 bboxes_i = bboxes[id_start:id_start + bbox_num[i], :]
                 bbox_num_i = bbox_num[i]
