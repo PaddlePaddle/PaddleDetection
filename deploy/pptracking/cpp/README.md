@@ -45,6 +45,9 @@ paddle_inference
 
 ### 3. 编译
 
+<details>
+<summary>Linux编译:</summary>
+
 编译`cmake`的命令在`scripts/build.sh`中，请根据实际情况修改主要参数，其主要内容说明如下：
 
 ```
@@ -85,10 +88,39 @@ OPENCV_DIR=/path/to/opencv
 sh ./scripts/build.sh
 ```
 
+
+</details>
+<details>
+<summary>Windows编译:</summary>
+
+- 安装配置OpenCV
+ 1. 在OpenCV官网下载适用于Windows平台的3.4.6版本，[下载地址](https://sourceforge.net/projects/opencvlibrary/files/3.4.6/opencv-3.4.6-vc14_vc15.exe/download)  
+ 2. 运行下载的可执行文件，将OpenCV解压至指定目录，如`D:\projects\opencv`
+ 3. 配置环境变量，如下流程所示（如果使用全局绝对路径，可以不用设置环境变量）  
+
+    - 我的电脑->属性->高级系统设置->环境变量
+    - 在系统变量中找到Path（如没有，自行创建），并双击编辑
+    - 新建，将opencv路径填入并保存，如`D:\projects\opencv\build\x64\vc14\bin`
+
+- 使用CMake生成项目文件
+
+	执行如下命令项目文件：
+```
+cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=ON -DCMAKE_BUILD_TYPE=Release -DCUDA_LIB=path_to_cuda_lib -DCUDNN_LIB=path_to_cudnn_lib -DPADDLE_DIR=path_to_paddle_lib -DPADDLE_LIB_NAME=paddle_inference -DOPENCV_DIR=path_to_opencv -DWITH_KEYPOINT=ON
+```
+
+- 编译
+用`Visual Studio 2019`打开`cpp`文件夹下的`PaddleObjectDetector.sln`，将编译模式设置为`Release`，点击`生成`->`全部生成
+
+编译产出的可执行文件在`Release`目录下
+
+</details>
+
 **注意：**
 
 1. `TX2`平台的`CUDA`、`CUDNN`需要通过`JetPack`安装。
 2. 已提供linux和tx2平台的opencv下载方式，其他环境请自行安装[opencv](https://opencv.org/)
+3. Windows用户推荐使用Visual Studio 2019编译
 
 ## 二、导出预测模型
 
@@ -104,7 +136,7 @@ python tools/export_model.py -c configs/mot/fairmot/fairmot_hrnetv2_w18_dlafpn_3
 
 ## 三、C++预测
 
-完成以上步骤后，可以通过```build/main```进行预测，参数列表如下:
+完成以上步骤后，可以通过```build/main```(Linux)或```main.exe```(Windows)进行预测，参数列表如下:
 
 |  参数   | 说明  |
 |  ----  | ----  |
