@@ -73,6 +73,19 @@ def categories(label, labels_list):
     return category
 
 
+def keypoint_categories(anno_data):
+    point_categories_list = []
+    count = 0  # count for twice rectangle
+    for anno in anno_data:
+        if anno['shape_type'] == 'rectangle':
+            count += 1
+        else:
+            point_categories_list.append(anno['label'])
+        if count == 2:
+            break
+    return point_categories_list
+
+
 def annotations_rectangle(points, label, image_num, object_num, label_to_num):
     annotation = {}
     seg_points = np.asarray(points).copy()
@@ -105,6 +118,24 @@ def annotations_polygon(height, width, points, label, image_num, object_num,
     return annotation
 
 
+def annotations_keypoint(keypoints, points, label, image_num, object_num,
+                         label_to_num):
+    annotation = {}
+    annotation['iscrowd'] = 0
+    annotation['image_id'] = image_num + 1
+    annotation['bbox'] = list(
+        map(float, [
+            points[0][0], points[0][1], points[1][0] - points[0][0], points[1][
+                1] - points[0][1]
+        ]))
+    annotation['area'] = annotation['bbox'][2] * annotation['bbox'][3]
+    annotation['category_id'] = label_to_num[label]
+    annotation['id'] = object_num + 1
+    annotation['num_keypoints'] = int(len(keypoints) / 3)
+    annotation['keypoints'] = keypoints
+    return annotation
+
+
 def get_bbox(height, width, points):
     polygons = points
     mask = np.zeros([height, width], dtype=np.uint8)
@@ -123,6 +154,13 @@ def get_bbox(height, width, points):
         left_top_c, left_top_r, right_bottom_c - left_top_c,
         right_bottom_r - left_top_r
     ]
+
+
+def keypoints(anno_data):
+    for anno in anno_data:
+        if anno['shape_type'] == "point":
+            return True
+    return False
 
 
 def deal_json(ds_type, img_path, json_path):
@@ -146,11 +184,21 @@ def deal_json(ds_type, img_path, json_path):
             elif ds_type == 'cityscape':
                 images_list.append(images_cityscape(data, image_num, img_file))
             if ds_type == 'labelme':
-                for shapes in data['shapes']:
-                    object_num = object_num + 1
-                    label = shapes['label']
+                has_keypoint = keypoints(data['shapes'])
+                if has_keypoint:
+                    point_categories_list = keypoint_categories(data['shapes'])
+                    point_list = []
+                for i, shapes in enumerate(data['shapes']):
+                    if not has_keypoint or (has_keypoint and
+                                            shapes['shape_type'] != 'point'):
+                        object_num = object_num + 1
+
+                        label = shapes['label']
                     if label not in labels_list:
-                        categories_list.append(categories(label, labels_list))
+                        cat = categories(label, labels_list)
+                        if has_keypoint:
+                            cat['keypoints'] = point_categories_list
+                        categories_list.append(cat)
                         labels_list.append(label)
                         label_to_num[label] = len(labels_list)
                     p_type = shapes['shape_type']
@@ -166,9 +214,28 @@ def deal_json(ds_type, img_path, json_path):
                         x1, x2 = sorted([x1, x2])
                         y1, y2 = sorted([y1, y2])
                         points = [[x1, y1], [x2, y2], [x1, y2], [x2, y1]]
-                        annotations_list.append(
-                            annotations_rectangle(points, label, image_num,
-                                                  object_num, label_to_num))
+                        if not has_keypoint:
+                            annotations_list.append(
+                                annotations_rectangle(points, label, image_num,
+                                                      object_num, label_to_num))
+                        else:
+                            rec_label = label
+
+                    if p_type == 'point':
+                        x1, y1 = shapes['points'][0]
+                        vis = shapes.get('joint_vis',
+                                         2)  # 2 means the point is visible
+                        point_list.extend([x1, y1, vis])
+                        if i < len(data['shapes']) - 1:
+                            next_p_type = data['shapes'][i + 1]['shape_type']
+                        else:
+                            next_p_type = 'rectangle'
+                        if next_p_type == 'rectangle':
+                            annotations_list.append(
+                                annotations_keypoint(point_list, points,
+                                                     rec_label, image_num,
+                                                     object_num, label_to_num))
+
             elif ds_type == 'cityscape':
                 for shapes in data['objects']:
                     object_num = object_num + 1
@@ -182,6 +249,7 @@ def deal_json(ds_type, img_path, json_path):
                         annotations_polygon(data['imgHeight'], data[
                             'imgWidth'], points, label, image_num, object_num,
                                             label_to_num))
+
     data_coco['images'] = images_list
     data_coco['categories'] = categories_list
     data_coco['annotations'] = annotations_list
@@ -282,8 +350,10 @@ def voc_xmls_to_cocojson(annotation_paths, label2id, output_dir, output_file):
 
 
 def widerface_to_cocojson(root_path):
-    train_gt_txt = os.path.join(root_path, "wider_face_split", "wider_face_train_bbx_gt.txt")
-    val_gt_txt = os.path.join(root_path, "wider_face_split", "wider_face_val_bbx_gt.txt")
+    train_gt_txt = os.path.join(root_path, "wider_face_split",
+                                "wider_face_train_bbx_gt.txt")
+    val_gt_txt = os.path.join(root_path, "wider_face_split",
+                              "wider_face_val_bbx_gt.txt")
     train_img_dir = os.path.join(root_path, "WIDER_train", "images")
     val_img_dir = os.path.join(root_path, "WIDER_val", "images")
     assert train_gt_txt
@@ -292,10 +362,12 @@ def widerface_to_cocojson(root_path):
     assert val_img_dir
     save_path = os.path.join(root_path, "widerface_train.json")
     widerface_convert(train_gt_txt, train_img_dir, save_path)
-    print("Wider Face train dataset converts sucess, the json path: {}".format(save_path))
+    print("Wider Face train dataset converts sucess, the json path: {}".format(
+        save_path))
     save_path = os.path.join(root_path, "widerface_val.json")
     widerface_convert(val_gt_txt, val_img_dir, save_path)
-    print("Wider Face val dataset converts sucess, the json path: {}".format(save_path))
+    print("Wider Face val dataset converts sucess, the json path: {}".format(
+        save_path))
 
 
 def widerface_convert(gt_txt, img_dir, save_path):
@@ -303,7 +375,11 @@ def widerface_convert(gt_txt, img_dir, save_path):
         "images": [],
         "type": "instances",
         "annotations": [],
-        "categories": [{'supercategory': 'none', 'id': 0, 'name': "human_face"}]
+        "categories": [{
+            'supercategory': 'none',
+            'id': 0,
+            'name': "human_face"
+        }]
     }
     bnd_id = 1  # bounding box start id
     im_id = 0
@@ -325,7 +401,8 @@ def widerface_convert(gt_txt, img_dir, save_path):
                 output_json_dict['annotations'].append(anno)
                 bnd_id += 1
         else:
-            print("The image dose not exist: {}".format(os.path.join(img_dir, image_name)))
+            print("The image dose not exist: {}".format(
+                os.path.join(img_dir, image_name)))
         bbox_num = 1 if bbox_num == 0 else bbox_num
         i += bbox_num
         im_id += 1
@@ -339,9 +416,9 @@ def get_widerface_image_info(img_root, img_relative_path, img_id):
     save_path = os.path.join(img_root, img_relative_path)
     if os.path.exists(save_path):
         img = cv2.imread(save_path)
-        image_info["file_name"] = os.path.join(os.path.basename(
-            os.path.dirname(img_root)), os.path.basename(img_root),
-            img_relative_path)
+        image_info["file_name"] = os.path.join(
+            os.path.basename(os.path.dirname(img_root)),
+            os.path.basename(img_root), img_relative_path)
         image_info["height"] = img.shape[0]
         image_info["width"] = img.shape[1]
         image_info["id"] = img_id
@@ -371,7 +448,8 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         '--dataset_type',
-        help='the type of dataset, can be `voc`, `widerface`, `labelme` or `cityscape`')
+        help='the type of dataset, can be `voc`, `widerface`, `labelme` or `cityscape`'
+    )
     parser.add_argument('--json_input_dir', help='input annotated directory')
     parser.add_argument('--image_input_dir', help='image directory')
     parser.add_argument(
