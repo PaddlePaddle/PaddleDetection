@@ -32,7 +32,7 @@ void JDEPredictor::LoadModel(const std::string& model_dir,
     config.EnableUseGpu(200, this->gpu_id_);
     config.SwitchIrOptim(true);
     // use tensorrt
-    if (run_mode != "fluid") {
+    if (run_mode != "paddle") {
       auto precision = paddle_infer::Config::Precision::kFloat32;
       if (run_mode == "trt_fp32") {
         precision = paddle_infer::Config::Precision::kFloat32;
@@ -42,7 +42,8 @@ void JDEPredictor::LoadModel(const std::string& model_dir,
         precision = paddle_infer::Config::Precision::kInt8;
       } else {
         printf(
-            "run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
+            "run_mode should be 'paddle', 'trt_fp32', 'trt_fp16' or "
+            "'trt_int8'");
       }
       // set tensorrt
       config.EnableTensorRtEngine(1 << 30,
