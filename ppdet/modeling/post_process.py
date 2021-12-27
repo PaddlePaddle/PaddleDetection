@@ -251,7 +251,7 @@ class S2ANetBBoxPostProcess(nn.Layer):
     def __init__(self, num_classes=15, nms_pre=2000, min_bbox_size=0, nms=None):
         super(S2ANetBBoxPostProcess, self).__init__()
         self.num_classes = num_classes
-        self.nms_pre = paddle.to_tensor(nms_pre)
+        self.nms_pre = nms_pre
         self.min_bbox_size = min_bbox_size
         self.nms = nms
         self.origin_shape_list = []
