@@ -149,12 +149,14 @@ class BasicBlock(nn.Layer):
 
         super(BasicBlock, self).__init__()
 
-        assert ch_in == ch_out and (ch_in % 2) == 0, f"ch_in and ch_out should be the same even int, \
-        but the input \'ch_in is {ch_in}, \'ch_out is {ch_out}"
-
+        assert ch_in == ch_out and (ch_in % 2) == 0, \
+            f"ch_in and ch_out should be the same even int, but the input \'ch_in is {ch_in}, \'ch_out is {ch_out}"
+        # example:
+        # --------------{conv1} --> {conv2}
+        # channel route: 10-->5 --> 5-->10
         self.conv1 = ConvBNLayer(
             ch_in=ch_in,
-            ch_out=ch_out/2,
+            ch_out=int(ch_out/2),
             filter_size=1,
             stride=1,
             padding=0,
@@ -163,7 +165,7 @@ class BasicBlock(nn.Layer):
             freeze_norm=freeze_norm,
             data_format=data_format)
         self.conv2 = ConvBNLayer(
-            ch_in=ch_out/2,
+            ch_in=int(ch_out/2),
             ch_out=ch_out ,
             filter_size=3,
             stride=1,
