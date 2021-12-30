@@ -73,19 +73,6 @@ def categories(label, labels_list):
     return category
 
 
-def keypoint_categories(anno_data):
-    point_categories_list = []
-    count = 0  # count for twice rectangle
-    for anno in anno_data:
-        if anno['shape_type'] == 'rectangle':
-            count += 1
-        else:
-            point_categories_list.append(anno['label'])
-        if count == 2:
-            break
-    return point_categories_list
-
-
 def annotations_rectangle(points, label, image_num, object_num, label_to_num):
     annotation = {}
     seg_points = np.asarray(points).copy()
@@ -156,19 +143,14 @@ def get_bbox(height, width, points):
     ]
 
 
-def keypoints(anno_data):
-    for anno in anno_data:
-        if anno['shape_type'] == "point":
-            return True
-    return False
-
-
-def deal_json(ds_type, img_path, json_path):
+def deal_json(ds_type, img_path, json_path, keypoint_num=0):
     data_coco = {}
     images_list = []
     annotations_list = []
     image_num = -1
     object_num = -1
+    if keypoint_num > 0:
+        keypoint_label2id = dict()
     for img_file in os.listdir(img_path):
         img_label = os.path.splitext(img_file)[0]
         if img_file.split('.')[
@@ -184,20 +166,14 @@ def deal_json(ds_type, img_path, json_path):
             elif ds_type == 'cityscape':
                 images_list.append(images_cityscape(data, image_num, img_file))
             if ds_type == 'labelme':
-                has_keypoint = keypoints(data['shapes'])
-                if has_keypoint:
-                    point_categories_list = keypoint_categories(data['shapes'])
-                    point_list = []
                 for i, shapes in enumerate(data['shapes']):
-                    if not has_keypoint or (has_keypoint and
-                                            shapes['shape_type'] != 'point'):
+                    if keypoint_num == 0 or (keypoint_num > 0 and
+                                             shapes['shape_type'] != 'point'):
                         object_num = object_num + 1
 
                         label = shapes['label']
                     if label not in labels_list:
                         cat = categories(label, labels_list)
-                        if has_keypoint:
-                            cat['keypoints'] = point_categories_list
                         categories_list.append(cat)
                         labels_list.append(label)
                         label_to_num[label] = len(labels_list)
@@ -214,18 +190,31 @@ def deal_json(ds_type, img_path, json_path):
                         x1, x2 = sorted([x1, x2])
                         y1, y2 = sorted([y1, y2])
                         points = [[x1, y1], [x2, y2], [x1, y2], [x2, y1]]
-                        if not has_keypoint:
+                        if keypoint_num == 0:
                             annotations_list.append(
                                 annotations_rectangle(points, label, image_num,
                                                       object_num, label_to_num))
                         else:
                             rec_label = label
+                            point_list = [0 for k in range(keypoint_num * 3)]
 
-                    if p_type == 'point':
+                    if keypoint_num > 0 and p_type == 'point':
                         x1, y1 = shapes['points'][0]
                         vis = shapes.get('joint_vis',
                                          2)  # 2 means the point is visible
-                        point_list.extend([x1, y1, vis])
+                        point_label = shapes['label']
+                        if point_label not in keypoint_label2id:
+                            keypoint_label2id[point_label] = len(
+                                keypoint_label2id)
+                        assert len(
+                            keypoint_label2id
+                        ) <= keypoint_num, '{} has illegal keypoint num. Expect keypoint num is {}, but received {}'.format(
+                            label_file, keypoint_num, len(keypoint_label2id))
+
+                        p_label_id = keypoint_label2id[point_label]
+                        point_list[p_label_id * 3] = x1
+                        point_list[p_label_id * 3 + 1] = y1
+                        point_list[p_label_id * 3 + 2] = vis
                         if i < len(data['shapes']) - 1:
                             next_p_type = data['shapes'][i + 1]['shape_type']
                         else:
@@ -251,6 +240,9 @@ def deal_json(ds_type, img_path, json_path):
                                             label_to_num))
 
     data_coco['images'] = images_list
+    if keypoint_num > 0:
+        for cat in categories_list:
+            cat['keypoints'] = list(keypoint_label2id.keys())
     data_coco['categories'] = categories_list
     data_coco['annotations'] = annotations_list
     return data_coco
@@ -494,6 +486,8 @@ def main():
         help='The root_path for wider face dataset, which contains `wider_face_split`, `WIDER_train` and `WIDER_val`.And the json file will save in this path',
         type=str,
         default=None)
+    parser.add_argument(
+        '--keypoint_num', type=int, default=0, help='The number of keypoint')
     args = parser.parse_args()
     try:
         assert args.dataset_type in ['voc', 'labelme', 'cityscape', 'widerface']
@@ -560,6 +554,7 @@ def main():
                 os.makedirs(test_out_dir)
         count = 1
         for img_name in os.listdir(args.image_input_dir):
+            if img_name.endswith('.json'): continue
             if count <= train_num:
                 if osp.exists(args.output_dir + '/train/'):
                     shutil.copyfile(
@@ -584,18 +579,14 @@ def main():
         if args.train_proportion != 0:
             train_data_coco = deal_json(args.dataset_type,
                                         args.output_dir + '/train',
-                                        args.json_input_dir)
+                                        args.json_input_dir, args.keypoint_num)
             train_json_path = osp.join(args.output_dir + '/annotations',
                                        'instance_train.json')
-            json.dump(
-                train_data_coco,
-                open(train_json_path, 'w'),
-                indent=4,
-                cls=MyEncoder)
+            json.dump(dict(train_data_coco), open(train_json_path, 'w'))
         if args.val_proportion != 0:
             val_data_coco = deal_json(args.dataset_type,
                                       args.output_dir + '/val',
-                                      args.json_input_dir)
+                                      args.json_input_dir, args.keypoint_num)
             val_json_path = osp.join(args.output_dir + '/annotations',
                                      'instance_val.json')
             json.dump(
@@ -606,7 +597,7 @@ def main():
         if args.test_proportion != 0:
             test_data_coco = deal_json(args.dataset_type,
                                        args.output_dir + '/test',
-                                       args.json_input_dir)
+                                       args.json_input_dir, args.keypoint_num)
             test_json_path = osp.join(args.output_dir + '/annotations',
                                       'instance_test.json')
             json.dump(
