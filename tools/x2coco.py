@@ -151,6 +151,15 @@ def deal_json(ds_type, img_path, json_path, keypoint_num=0):
     object_num = -1
     if keypoint_num > 0:
         keypoint_label2id = dict()
+        # support coco keypoint format now
+        keypoint_label = [
+            "nose", "left_eye", "right_eye", "left_ear", "right_ear",
+            "left_shoulder", "right_shoulder", "left_elbow", "right_elbow",
+            "left_wrist", "right_wrist", "left_hip", "right_hip", "left_knee",
+            "right_knee", "left_ankle", "right_ankle"
+        ]
+        for i, label in enumerate(keypoint_label):
+            keypoint_label2id[label] = i
     for img_file in os.listdir(img_path):
         img_label = os.path.splitext(img_file)[0]
         if img_file.split('.')[
@@ -203,13 +212,6 @@ def deal_json(ds_type, img_path, json_path, keypoint_num=0):
                         vis = shapes.get('joint_vis',
                                          2)  # 2 means the point is visible
                         point_label = shapes['label']
-                        if point_label not in keypoint_label2id:
-                            keypoint_label2id[point_label] = len(
-                                keypoint_label2id)
-                        assert len(
-                            keypoint_label2id
-                        ) <= keypoint_num, '{} has illegal keypoint num. Expect keypoint num is {}, but received {}'.format(
-                            label_file, keypoint_num, len(keypoint_label2id))
 
                         p_label_id = keypoint_label2id[point_label]
                         point_list[p_label_id * 3] = x1
