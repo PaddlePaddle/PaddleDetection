@@ -165,6 +165,8 @@ def _dump_infer_config(config, path, image_shape, model):
         reader_cfg, dataset_cfg, config['metric'], label_arch, image_shape[1:])
 
     if infer_arch == 'PicoDet':
+        if config.get('export_post_process', False):
+            infer_cfg['arch'] = 'GFL'
         infer_cfg['NMS'] = config['PicoHead']['nms']
         # In order to speed up the prediction, the threshold of nms 
         # is adjusted here, which can be changed in infer_cfg.yml
