@@ -631,7 +631,8 @@ class Trainer(object):
             im_shape = [image_shape[0], 2]
             scale_factor = [image_shape[0], 2]
 
-        if hasattr(self.model, 'deploy'):
+        export_post_process = self.cfg.get('export_post_process', False)
+        if hasattr(self.model, 'deploy') and not export_post_process:
             self.model.deploy = True
         if hasattr(self.model, 'fuse_norm'):
             self.model.fuse_norm = self.cfg['TestReader'].get('fuse_normalize',
@@ -668,7 +669,7 @@ class Trainer(object):
             pruned_input_spec = input_spec
 
         # TODO: Hard code, delete it when support prune input_spec.
-        if self.cfg.architecture == 'PicoDet':
+        if self.cfg.architecture == 'PicoDet' and not export_post_process:
             pruned_input_spec = [{
                 "image": InputSpec(
                     shape=image_shape, name='image')
