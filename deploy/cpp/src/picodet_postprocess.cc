@@ -88,8 +88,8 @@ void PicoDetPostProcess(std::vector<PaddleDetection::ObjectResult> *results,
   bbox_results.resize(num_class);
   int in_h = im_shape[0], in_w = im_shape[1];
   for (int i = 0; i < fpn_stride.size(); ++i) {
-    int feature_h = ceil((float)in_h / fpn_stride[i]);
-    int feature_w = ceil((float)in_w / fpn_stride[i]);
+    int feature_h = std::ceil((float)in_h / fpn_stride[i]);
+    int feature_w = std::ceil((float)in_w / fpn_stride[i]);
     for (int idx = 0; idx < feature_h * feature_w; idx++) {
       const float *scores = outs[i] + (idx * num_class);
 
