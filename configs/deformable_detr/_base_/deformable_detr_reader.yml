@@ -1,4 +1,4 @@
-worker_num: 0
+worker_num: 2
 TrainReader:
   sample_transforms:
   - Decode: {}
