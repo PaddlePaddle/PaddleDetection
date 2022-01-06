@@ -51,7 +51,16 @@ For details on model export, please refer to the documentation [Tutorial on Padd
 - For details, please refer to [Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo) deployment. For more information, please refer to [Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite)
 
 
-## 4. Benchmark Test
+## 4.Third-Engine deploy(MNN、NCNN、Openvino)
+- The Third-Engine deploy take example of PicoDet、TinyPose，the others model is the same
+
+| Third_Engine | MNN                                                    | NCNN                                               | OPENVINO                                                     |
+| ------------ | ------------------------------------------------------ | -------------------------------------------------- | ------------------------------------------------------------ |
+| PicoDet      | [PicoDet_MNN](./third_engine/demo_mnn/README.md)       | [PicoDet_NCNN](./third_engine/demo_ncnn/README.md) | [PicoDet_OPENVINO](./third_engine/demo_openvino/README.md)   |
+| TinyPose     | [TinyPose_MNN](./third_engine/demo_mnn_kpts/README.md) | -                                                  | [TinyPose_OPENVINO](./third_engine/demo_openvino_kpts/README.md) |
+
+
+## 5. Benchmark Test
 - Using the exported model, run the Benchmark batch test script:
 ```shell
 sh deploy/benchmark/benchmark.sh {model_dir} {model_name}
@@ -62,7 +71,7 @@ sh deploy/benchmark/benchmark.sh {model_dir} {model_name}
 python deploy/benchmark/log_parser_excel.py --log_path=./output_pipeline --output_name=benchmark_excel.xlsx
 ```
 
-## 5. FAQ
+## 6. FAQ
 - 1、Can `Paddle 1.8.4` trained models be deployed with `Paddle2.0`?
   Paddle 2.0 is compatible with Paddle 1.8.4, so it is ok. However, some models (such as SOLOv2) use the new OP in Paddle 2.0, which is not allowed.
 
