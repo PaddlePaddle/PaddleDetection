@@ -1,0 +1,47 @@
+cmake_minimum_required(VERSION 3.9)
+
+project(tinypose-mnn)
+
+set(CMAKE_CXX_STANDARD 17)
+set(MNN_DIR {YOUR_MNN_DIR})
+set(NDK_ROOT {YOUR_ANDROID_NDK_PATH})
+set(LDFLAGS -latomic -pthread -ldl -llog -lz -static-libstdc++)
+
+set(OpenCV_DIR ${CMAKE_SOURCE_DIR}/third/opencv4.1.0/arm64-v8a)
+
+set(OpenCV_DEPS ${OpenCV_DIR}/libs/libopencv_imgcodecs.a 
+              ${OpenCV_DIR}/libs/libopencv_imgproc.a 
+              ${OpenCV_DIR}/libs/libopencv_core.a 
+              ${OpenCV_DIR}/3rdparty/libs/libtegra_hal.a 
+              ${OpenCV_DIR}/3rdparty/libs/liblibjpeg-turbo.a 
+              ${OpenCV_DIR}/3rdparty/libs/liblibwebp.a 
+              ${OpenCV_DIR}/3rdparty/libs/liblibpng.a 
+              ${OpenCV_DIR}/3rdparty/libs/liblibjasper.a 
+              ${OpenCV_DIR}/3rdparty/libs/liblibtiff.a 
+              ${OpenCV_DIR}/3rdparty/libs/libIlmImf.a 
+              ${OpenCV_DIR}/3rdparty/libs/libtbb.a 
+              ${OpenCV_DIR}/3rdparty/libs/libcpufeatures.a)
+
+set(FLAGS "-pie -Wl,--gc-sections -funwind-tables -no-canonical-prefixes -D__ANDROID_API__=21 -fexceptions -frtti -std=c++11 -O3 -DNDEBUG -fPIE -fopenmp")
+set(CMAKE_CXX_FLAGS "--sysroot=${NDK_ROOT}/sysroot ${FLAGS}")
+
+set(STDCXX ${NDK_ROOT}/sources/cxx-stl/llvm-libc++/libs/arm64-v8a/libc++_static.a 
+              ${NDK_ROOT}/sources/cxx-stl/llvm-libc++/libs/arm64-v8a/libc++abi.a 
+              ${NDK_ROOT}/platforms/android-21/arch-arm64/usr/lib/libstdc++.a)
+set(SYS_INCS ${NDK_ROOT}/sysroot/usr/include/aarch64-linux-android/ ${NDK_ROOT}/sources/cxx-stl/llvm-libc++/include/  ${NDK_ROOT}/sources/cxx-stl/llvm-libc++abi/include/ ${NDK_ROOT}/sources/android/support/include/ ${NDK_ROOT}/sysroot/usr/include/)
+
+include_directories(
+        ${SYS_INCS} 
+        ${OpenCV_DIR}/include
+        ${MNN_DIR}/include
+        ${MNN_DIR}/include/MNN
+        ${CMAKE_SOURCE_DIR}
+)
+
+link_directories(${NDK_ROOT}/platforms/android-21/arch-arm64)
+link_directories(${MNN_DIR}/project/android/build_64)
+
+add_executable(tinypose-mnn picodet_mnn.cpp keypoint_postprocess.cpp keypoint_detector.cpp main.cpp)
+
+target_link_libraries(tinypose-mnn -lMNN ${OpenCV_DEPS} ${STDCXX} ${LDFLAGS})
+
