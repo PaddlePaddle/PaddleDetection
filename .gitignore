@@ -66,7 +66,6 @@ coverage.xml
 
 .idea/
 
-# dataset
 dataset/coco/annotations
 dataset/coco/train2017
 dataset/coco/val2017
@@ -78,18 +77,6 @@ dataset/wider_face/WIDER_test
 dataset/wider_face/WIDER_train
 dataset/wider_face/WIDER_val
 dataset/wider_face/wider_face_split
-dataset/mot/image_lists
-dataset/mot/MOT16
-dataset/mot/MOT16.zip
-dataset/roadsign_voc/annotations
-dataset/roadsign_voc/images
-dataset/roadsign_voc/train.txt
-dataset/roadsign_voc/valid.txt
-
-# workerlog
-*/workerlog.*
-
-# deploy
 
 ppdet/version.py
 
