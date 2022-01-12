@@ -25,10 +25,10 @@ PP-Tracking支持单镜头跟踪(MOT)和跨镜头跟踪(MTMCT)两种模式，针
 PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking之手把手玩转多目标跟踪](https://aistudio.baidu.com/aistudio/projectdetail/3022582)。
 
 ### Python端预测部署
-PP-Tracking 支持Python预测部署，教程请参考[PP-Tracking Python部署文档](python/README.md)。
+PP-Tracking 支持Python预测部署，教程请参考[PP-Tracking Python部署文档](../../deploy/pptracking/python/README.md)。
 
 ### C++端预测部署
-PP-Tracking 支持C++预测部署，教程请参考[PP-Tracking C++部署文档](cpp/README.md)。
+PP-Tracking 支持C++预测部署，教程请参考[PP-Tracking C++部署文档](../../deploy/pptracking/cpp/README.md)。
 
 ### GUI可视化界面预测部署
 PP-Tracking 提供了简洁的GUI可视化界面，教程请参考[PP-Tracking可视化界面试用版使用文档](https://github.com/yangyudong2020/PP-Tracking_GUi)。
