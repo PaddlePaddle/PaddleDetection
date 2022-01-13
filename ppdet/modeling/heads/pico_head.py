@@ -26,6 +26,7 @@ from paddle.nn.initializer import Normal, Constant
 
 from ppdet.core.workspace import register
 from ppdet.modeling.layers import ConvNormLayer
+from ppdet.modeling.bbox_utils import batch_distance2bbox
 from .simota_head import OTAVFLHead
 
 
@@ -238,7 +239,7 @@ class PicoHead(OTAVFLHead):
                         bias_attr=ParamAttr(initializer=Constant(value=0))))
                 self.head_reg_list.append(head_reg)
 
-    def forward(self, fpn_feats, deploy=False):
+    def forward(self, fpn_feats, export_post_process=True):
         assert len(fpn_feats) == len(
             self.fpn_stride
         ), "The size of fpn_feats is not equal to size of fpn_stride"
@@ -260,7 +261,7 @@ class PicoHead(OTAVFLHead):
                 quality_score = self.dgqp_module(bbox_pred)
                 cls_score = F.sigmoid(cls_score) * quality_score
 
-            if deploy:
+            if not export_post_process:
                 # Now only supports batch size = 1 in deploy
                 # TODO(ygh): support batch size > 1
                 cls_score = F.sigmoid(cls_score).reshape(
@@ -270,6 +271,21 @@ class PicoHead(OTAVFLHead):
             elif not self.training:
                 cls_score = F.sigmoid(cls_score.transpose([0, 2, 3, 1]))
                 bbox_pred = bbox_pred.transpose([0, 2, 3, 1])
+                stride = self.fpn_stride[i]
+                b, cell_h, cell_w, _ = paddle.shape(cls_score)
+                y, x = self.get_single_level_center_point(
+                    [cell_h, cell_w], stride, cell_offset=self.cell_offset)
+                center_points = paddle.stack([x, y], axis=-1)
+                cls_score = cls_score.reshape([b, -1, self.cls_out_channels])
+                bbox_pred = self.distribution_project(bbox_pred) * stride
+                bbox_pred = bbox_pred.reshape([b, cell_h * cell_w, 4])
+
+                # NOTE: If keep_ratio=False and image shape value that 
+                # multiples of 32, distance2bbox not set max_shapes parameter
+                # to speed up model prediction. If need to set max_shapes,
+                # please use inputs['im_shape']. 
+                bbox_pred = batch_distance2bbox(
+                    center_points, bbox_pred, max_shapes=None)
 
             cls_logits_list.append(cls_score)
             bboxes_reg_list.append(bbox_pred)

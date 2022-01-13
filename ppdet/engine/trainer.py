@@ -631,9 +631,12 @@ class Trainer(object):
             im_shape = [image_shape[0], 2]
             scale_factor = [image_shape[0], 2]
 
-        export_post_process = self.cfg.get('export_post_process', False)
-        if hasattr(self.model, 'deploy') and not export_post_process:
+        if hasattr(self.model, 'deploy'):
             self.model.deploy = True
+        export_post_process = self.cfg.get('export_post_process', False)
+        if hasattr(self.model, 'export_post_process'):
+            self.model.export_post_process = export_post_process
+            image_shape = [None] + image_shape[1:]
         if hasattr(self.model, 'fuse_norm'):
             self.model.fuse_norm = self.cfg['TestReader'].get('fuse_normalize',
                                                               False)
