@@ -44,17 +44,10 @@ class BaseArch(nn.Layer):
             image = inputs['image']
             inputs['image'] = paddle.transpose(image, [0, 2, 3, 1])
 
-        if self.fuse_norm:
-            image = inputs['image']
-            self.inputs['image'] = (image * self.scale - self.mean) / self.std
-            self.inputs['im_shape'] = inputs['im_shape']
-            self.inputs['scale_factor'] = inputs['scale_factor']
-        else:
-            self.inputs = inputs
-
         self.model_arch()
 
         if self.training:
+            self.inputs = inputs
             out = self.get_loss()
         else:
             inputs_list = []
@@ -63,10 +56,15 @@ class BaseArch(nn.Layer):
                 inputs_list.append(inputs)
             else:
                 inputs_list.extend(inputs)
-
             outs = []
             for inp in inputs_list:
-                self.inputs = inp
+                if self.fuse_norm:
+                    self.inputs['image'] = (
+                        inp['image'] * self.scale - self.mean) / self.std
+                    self.inputs['im_shape'] = inp['im_shape']
+                    self.inputs['scale_factor'] = inp['scale_factor']
+                else:
+                    self.inputs = inp
                 outs.append(self.get_pred())
 
             # multi-scale test
