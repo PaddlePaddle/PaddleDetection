@@ -756,20 +756,22 @@ def bbox_center(boxes):
 def batch_distance2bbox(points, distance, max_shapes=None):
     """Decode distance prediction to bounding box for batch.
     Args:
-        points (Tensor): [B, ..., 2]
-        distance (Tensor): [B, ..., 4]
-        max_shapes (tuple): [B, 2], "h,w" format, Shape of the image.
+        points (Tensor): [B, ..., 2], "xy" format
+        distance (Tensor): [B, ..., 4], "ltrb" format
+        max_shapes (Tensor): [B, 2], "h,w" format, Shape of the image.
     Returns:
-        Tensor: Decoded bboxes.
+        Tensor: Decoded bboxes, "x1y1x2y2" format.
     """
-    x1 = points[..., 0] - distance[..., 0]
-    y1 = points[..., 1] - distance[..., 1]
-    x2 = points[..., 0] + distance[..., 2]
-    y2 = points[..., 1] + distance[..., 3]
+    lt, rb = paddle.split(distance, 2, -1)
+    x1y1 = points - lt
+    x2y2 = points + rb
+    out_bbox = paddle.concat([x1y1, x2y2], -1)
     if max_shapes is not None:
-        for i, max_shape in enumerate(max_shapes):
-            x1[i] = x1[i].clip(min=0, max=max_shape[1])
-            y1[i] = y1[i].clip(min=0, max=max_shape[0])
-            x2[i] = x2[i].clip(min=0, max=max_shape[1])
-            y2[i] = y2[i].clip(min=0, max=max_shape[0])
-    return paddle.stack([x1, y1, x2, y2], -1)
+        max_shapes = max_shapes.flip(-1).tile([1, 2])
+        delta_dim = out_bbox.ndim - max_shapes.ndim
+        for _ in range(delta_dim):
+            max_shapes.unsqueeze_(1)
+        out_bbox = paddle.where(out_bbox < max_shapes, out_bbox, max_shapes)
+        out_bbox = paddle.where(out_bbox > 0, out_bbox,
+                                paddle.zeros_like(out_bbox))
+    return out_bbox
