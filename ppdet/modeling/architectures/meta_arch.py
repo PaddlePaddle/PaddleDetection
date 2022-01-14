@@ -44,10 +44,17 @@ class BaseArch(nn.Layer):
             image = inputs['image']
             inputs['image'] = paddle.transpose(image, [0, 2, 3, 1])
 
+        if self.fuse_norm:
+            image = inputs['image']
+            self.inputs['image'] = (image * self.scale - self.mean) / self.std
+            self.inputs['im_shape'] = inputs['im_shape']
+            self.inputs['scale_factor'] = inputs['scale_factor']
+        else:
+            self.inputs = inputs
+
         self.model_arch()
 
         if self.training:
-            self.inputs = inputs
             out = self.get_loss()
         else:
             inputs_list = []
