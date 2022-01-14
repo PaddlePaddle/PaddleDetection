@@ -63,10 +63,15 @@ class BaseArch(nn.Layer):
                 inputs_list.append(inputs)
             else:
                 inputs_list.extend(inputs)
-
             outs = []
             for inp in inputs_list:
-                self.inputs = inp
+                if self.fuse_norm:
+                    self.inputs['image'] = (
+                        inp['image'] * self.scale - self.mean) / self.std
+                    self.inputs['im_shape'] = inp['im_shape']
+                    self.inputs['scale_factor'] = inp['scale_factor']
+                else:
+                    self.inputs = inp
                 outs.append(self.get_pred())
 
             # multi-scale test
