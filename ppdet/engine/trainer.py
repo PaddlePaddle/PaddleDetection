@@ -130,9 +130,10 @@ class Trainer(object):
             self.lr = create('LearningRate')(steps_per_epoch)
             self.optimizer = create('OptimizerBuilder')(self.lr, self.model)
 
-        if self.cfg.get('unstructured_prune'):
-            self.pruner = create('UnstructuredPruner')(self.model,
-                                                       steps_per_epoch)
+            # Unstructured pruner is only enabled in the train mode.
+            if self.cfg.get('unstructured_prune'):
+                self.pruner = create('UnstructuredPruner')(self.model,
+                                                           steps_per_epoch)
 
         self._nranks = dist.get_world_size()
         self._local_rank = dist.get_rank()
