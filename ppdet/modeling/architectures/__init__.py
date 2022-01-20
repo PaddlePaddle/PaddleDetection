@@ -26,6 +26,7 @@ from . import picodet
 from . import detr
 from . import sparse_rcnn
 from . import tood
+from . import retinanet
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -49,3 +50,4 @@ from .picodet import *
 from .detr import *
 from .sparse_rcnn import *
 from .tood import *
+from .retinanet import *
