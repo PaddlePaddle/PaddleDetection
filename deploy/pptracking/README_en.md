@@ -1,6 +1,6 @@
 English | [简体中文](README_cn.md)
 
-# Real time Multi-Object Tracking system PP-Tracking
+# Real-time Multi-Object Tracking system PP-Tracking
 
 PP-Tracking is the first open source real-time Multi-Object Tracking system, and it is based on PaddlePaddle deep learning framework. It has rich models, wide application and high efficiency deployment.
 
