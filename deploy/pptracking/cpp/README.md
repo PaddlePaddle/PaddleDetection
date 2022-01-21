@@ -3,7 +3,6 @@
 在PaddlePaddle中预测引擎和训练引擎底层有着不同的优化方法, 预测引擎使用了AnalysisPredictor，专门针对推理进行了优化，该引擎可以对模型进行多项图优化，减少不必要的内存拷贝。如果用户在部署已训练模型的过程中对性能有较高的要求，我们提供了独立于PaddleDetection的预测脚本，方便用户直接集成部署。当前C++部署支持基于Fairmot的单镜头类别预测部署，并支持人流量统计、出入口计数功能。
 
 主要包含三个步骤：
-
 - 准备环境
 - 导出预测模型
 - C++预测
@@ -17,7 +16,7 @@
 - CMake 3.0+
 - TensorRT 6/7
 
-NVIDIA Jetson用户请参考[Jetson平台编译指南](../../cpp/Jetson_build.md#jetson环境搭建)完成JetPack安装
+NVIDIA Jetson用户请参考[Jetson平台编译指南](../../cpp/docs/Jetson_build.md#jetson环境搭建)完成JetPack安装
 
 ### 1. 下载代码
 
@@ -113,7 +112,7 @@ python tools/export_model.py -c configs/mot/fairmot/fairmot_hrnetv2_w18_dlafpn_3
 | --video_file  | 要预测的视频文件路径 |
 | --device  | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
 | --gpu_id  |  指定进行推理的GPU device id(默认值为0)|
-| --run_mode | 使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
+| --run_mode | 使用GPU时，默认为paddle, 可选（paddle/trt_fp32/trt_fp16/trt_int8）|
 | --output_dir | 输出图片所在的文件夹, 默认为output ｜
 | --use_mkldnn | CPU预测中是否开启MKLDNN加速 |
 | --cpu_threads | 设置cpu线程数，默认为1 |
