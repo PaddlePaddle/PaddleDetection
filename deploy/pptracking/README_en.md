@@ -31,6 +31,7 @@ PP-Tracking supports C++ predict and deployment. Please refer to this [doc](cpp/
 ### GUI predict and deployment
 PP-Tracking supports GUI predict and deployment. Please refer to this [doc](https://github.com/yangyudong2020/PP-Tracking_GUi).
 
+（thanks@[yangyudong2020](https://github.com/yangyudong2020)、@[hchhtc123](https://github.com/hchhtc123) for the contribution to PaddleDetetcion.）
 
 ## 二、Model Zoo
 
