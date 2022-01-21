@@ -28,6 +28,8 @@ PP-Tracking 支持C++预测部署，教程请参考[PP-Tracking C++部署文档]
 ### GUI可视化界面预测部署
 PP-Tracking 提供了简洁的GUI可视化界面，教程请参考[PP-Tracking可视化界面试用版使用文档](https://github.com/yangyudong2020/PP-Tracking_GUi)。
 
+（感谢@[yangyudong2020](https://github.com/yangyudong2020)、@[hchhtc123](https://github.com/hchhtc123)对飞桨开源的贡献）
+
 
 ## 二、算法介绍
 
