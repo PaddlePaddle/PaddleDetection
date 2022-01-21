@@ -306,7 +306,7 @@ Contributions are highly welcomed and we would really appreciate your feedback!!
 - Thanks [FL77N](https://github.com/FL77N/) for contributing the code of `Sparse-RCNN` model.
 - Thanks [Chen-Song](https://github.com/Chen-Song) for contributing the code of `Swin Faster-RCNN` model.
 - Thanks [yangyudong](https://github.com/yangyudong2020), [hchhtc123](https://github.com/hchhtc123) for contributing PP-Tracking GUI interface.
-- 感谢[Shigure19](https://github.com/Shigure19) for contributing PP-TinyPose fitness APP.
+- Thanks [Shigure19](https://github.com/Shigure19) for contributing PP-TinyPose fitness APP.
 
 ## Citation
 
