@@ -27,7 +27,7 @@ RetinaHead:
   nms_pre: 1000
   decode_reg_out: false
   conv_feat:
-    name: FCOSFeat
+    name: RetinaFeat
     feat_in: 256
     feat_out: 256
     num_convs: 4

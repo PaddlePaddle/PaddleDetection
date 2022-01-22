@@ -25,7 +25,7 @@ __all__ = ['SmoothL1Loss']
 
 @register
 class SmoothL1Loss(nn.Layer):
-    """A wrapper around paddle.nn.functional.smooth_l1_loss.
+    """Smooth L1 Loss.
     Args:
         beta (float): controls smooth region, it becomes L1 Loss when beta=0.0
         loss_weight (float): the final loss will be multiplied by this 

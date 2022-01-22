@@ -23,9 +23,16 @@ from paddle import ParamAttr
 from paddle.nn.initializer import Normal, Constant
 from ppdet.modeling.proposal_generator import AnchorGenerator
 from ppdet.core.workspace import register
-
+from ppdet.modeling.heads.fcos_head import FCOSFeat
 
 __all__ = ['RetinaHead']
+
+@register
+class RetinaFeat(FCOSFeat):
+    """We use FCOSFeat to construct conv layers in RetinaNet.
+    We rename FCOSFeat to RetinaFeat to avoid confusion.
+    """
+    pass
 
 @register
 class RetinaAnchorGenerator(AnchorGenerator):
