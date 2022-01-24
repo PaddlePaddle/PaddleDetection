@@ -6,9 +6,9 @@ We reproduce RetinaNet proposed in paper Focal Loss for Dense Object Detection.
 
 ## Model Zoo
 
-| Backbone     | Model     | mstrain | imgs/GPU | lr schedule | FPS | Box AP | download                                                                                                                           | config |
-| ------------ | --------- | ------- | -------- | ----------- | --- | ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| ResNet50-FPN | RetinaNet | Yes     | 4        | 1x          | --- | 37.5   | [model](https://aistudio.baidu.com/aistudio/datasetdetail/126354)\|[log](https://aistudio.baidu.com/aistudio/datasetdetail/126354) | config |
+| Backbone     | Model     | mstrain | imgs/GPU | lr schedule | FPS | Box AP | download                                                                                                                                                                            | config                                |
+| ------------ | --------- | ------- | -------- | ----------- | --- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| ResNet50-FPN | RetinaNet | Yes     | 4        | 1x          | --- | 37.5   | [model](https://bj.bcebos.com/v1/paddledet/models/retinanet_r50_fpn_mstrain_1x_coco.pdparams)\|[log](https://bj.bcebos.com/v1/paddledet/logs/retinanet_r50_fpn_mstrain_1x_coco.log) | retinanet_r50_fpn_mstrain_1x_coco.yml |
 
 **Notes:**
 
