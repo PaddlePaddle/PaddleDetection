@@ -387,7 +387,7 @@ def _download(url, path, md5sum=None):
                     if chunk:
                         f.write(chunk)
         shutil.move(tmp_fullname, fullname)
-        return fullname
+    return fullname
 
 
 def _download_dist(url, path, md5sum=None):
