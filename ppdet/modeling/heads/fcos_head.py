@@ -64,6 +64,8 @@ class FCOSFeat(nn.Layer):
                  norm_type='bn',
                  use_dcn=False):
         super(FCOSFeat, self).__init__()
+        self.feat_in = feat_in
+        self.feat_out = feat_out
         self.num_convs = num_convs
         self.norm_type = norm_type
         self.cls_subnet_convs = []
