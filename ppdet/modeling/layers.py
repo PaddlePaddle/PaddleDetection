@@ -128,7 +128,7 @@ class ConvNormLayer(nn.Layer):
                  dcn_lr_scale=2.,
                  dcn_regularizer=L2Decay(0.)):
         super(ConvNormLayer, self).__init__()
-        assert norm_type in ['bn', 'sync_bn', 'gn']
+        assert norm_type in ['bn', 'sync_bn', 'gn', None]
 
         if bias_on:
             bias_attr = ParamAttr(
@@ -183,10 +183,13 @@ class ConvNormLayer(nn.Layer):
                 num_channels=ch_out,
                 weight_attr=param_attr,
                 bias_attr=bias_attr)
+        else:
+            self.norm = None
 
     def forward(self, inputs):
         out = self.conv(inputs)
-        out = self.norm(out)
+        if self.norm is not None:
+            out = self.norm(out)
         return out
 
 
