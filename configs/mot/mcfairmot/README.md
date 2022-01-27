@@ -37,8 +37,8 @@ PP-tracking provides an AI studio public project tutorial. Please refer to this 
 ### MCFairMOT Results on VisDrone Vehicle Val Set
 | backbone       | input shape | MOTA | IDF1 |  IDS    |   FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :---:  | :------: | :----: |:----: |
-| DLA-34         | 1088x608 |  37.7  |  -  |  -  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.pdparams) | [config](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml) |
-| HRNetV2-W18    | 1088x608 |  35.6  |  -  |  -  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle_bytetracker.pdparams) | [config](./mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle_bytetracker.yml) |
+| DLA-34         | 1088x608 |  37.7  |  56.8  |  199  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.pdparams) | [config](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml) |
+| HRNetV2-W18    | 1088x608 |  35.6  |  56.3  |  190  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle_bytetracker.pdparams) | [config](./mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle_bytetracker.yml) |
 
 **Notes:**
  - MOTA is the average MOTA of 4 catecories in the VisDrone Vehicle dataset, and this dataset is extracted from the VisDrone2019 MOT dataset, here we provide the download [link](https://bj.bcebos.com/v1/paddledet/data/mot/visdrone_mcmot_vehicle.zip).

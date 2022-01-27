@@ -36,8 +36,8 @@ PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking�
 ### MCFairMOT 在VisDrone Vehicle val-set上结果
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS   |   FPS   |  下载链接 | 配置文件 |
 | :--------------| :------- | :----: | :----: | :---:  | :------: | :----: |:----: |
-| DLA-34         | 1088x608 |  37.7  |  -  |  -  |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.pdparams) | [配置文件](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml) |
-| HRNetV2-W18    | 1088x608 |  35.6  |  -  |  -  |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle_bytetracker.pdparams) | [配置文件](./mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle_bytetracker.yml) |
+| DLA-34         | 1088x608 |  37.7  |  56.8  |  199  |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.pdparams) | [配置文件](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml) |
+| HRNetV2-W18    | 1088x608 |  35.6  |  56.3  |  190  |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle_bytetracker.pdparams) | [配置文件](./mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle_bytetracker.yml) |
 
 **注意:**
  - MOTA是VisDrone Vehicle数据集4类车辆目标的平均MOTA, 该数据集是VisDrone数据集中抽出4类车辆类别组成的，此处提供数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/mot/visdrone_mcmot_vehicle.zip)。
