@@ -472,6 +472,7 @@ class MOTImageFolder(DetDataset):
                  image_dir=None,
                  sample_num=-1,
                  keep_ori_im=False,
+                 anno_path=None,  
                  **kwargs):
         super(MOTImageFolder, self).__init__(
             dataset_dir, image_dir, sample_num=sample_num)
@@ -481,6 +482,7 @@ class MOTImageFolder(DetDataset):
         self._imid2path = {}
         self.roidbs = None
         self.frame_rate = frame_rate
+        self.anno_path = anno_path
 
     def check_or_download_dataset(self):
         return
@@ -571,6 +573,8 @@ class MOTImageFolder(DetDataset):
                 "wrong or unsupported file format: {}".format(self.video_file)
         self.roidbs = self._load_video_images()
 
+    def get_anno(self):
+        return self.anno_path
 
 def _is_valid_video(f, extensions=('.mp4', '.avi', '.mov', '.rmvb', 'flv')):
     return f.lower().endswith(extensions)
