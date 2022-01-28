@@ -1,0 +1,69 @@
+_BASE_: [
+  '../fairmot/fairmot_dla34_30e_1088x608.yml',
+  '../../datasets/mcmot.yml'
+]
+metric: MCMOT
+num_classes: 4
+
+# for MCMOT training
+TrainDataset:
+  !MCMOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['visdrone_mcmot_vehicle.train']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+    label_list: label_list.txt
+
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: visdrone_mcmot_vehicle/images/val
+    keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
+    anno_path: dataset/mot/visdrone_mcmot_vehicle/label_list.txt
+
+# for MCMOT video inference
+TestMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    keep_ori_im: True # set True if save visualization images or video
+    anno_path: dataset/mot/visdrone_mcmot_vehicle/label_list.txt
+
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/centernet_dla34_140e_coco.pdparams
+
+FairMOT:
+  detector: CenterNet
+  reid: FairMOTEmbeddingHead
+  loss: FairMOTLoss
+  tracker: JDETracker # multi-class tracker
+
+CenterNetHead:
+  regress_ltrb: False
+
+CenterNetPostProcess:
+  for_mot: True
+  regress_ltrb: False
+  max_per_img: 200
+
+JDETracker:
+  min_box_area: 0
+  vertical_ratio: 0 # no need to filter bboxes according to w/h
+  use_byte: True
+  match_thres: 0.8
+  conf_thres: 0.4
+  low_conf_thres: 0.2
+
+weights: output/mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker/model_final
+
+epoch: 30
+LearningRate:
+  base_lr: 0.0005
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [10, 20]
+    use_warmup: False
+
+OptimizerBuilder:
+  optimizer:
+    type: Adam
+  regularizer: NULL

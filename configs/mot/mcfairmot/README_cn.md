@@ -30,8 +30,18 @@ PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking�
 | HRNetV2-W18    | 576x320 |  12.0  |  33.8  |  2178  |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone.pdparams) | [配置文件](./mcfairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone.yml) |
 
 **注意:**
- - MOTA是VisDrone2019 MOT数据集10类目标的平均MOTA, 其值也等于所有评估的视频序列的平均MOTA。
+ - MOTA是VisDrone2019 MOT数据集10类目标的平均MOTA, 其值也等于所有评估的视频序列的平均MOTA，此处提供数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/mot/visdrone_mcmot.zip)。
  - MCFairMOT模型均使用4个GPU进行训练，训练30个epoch。DLA-34骨干网络的每个GPU上batch size为6，HRNetV2-W18骨干网络的每个GPU上batch size为8。
+
+### MCFairMOT 在VisDrone Vehicle val-set上结果
+|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS   |   FPS   |  下载链接 | 配置文件 |
+| :--------------| :------- | :----: | :----: | :---:  | :------: | :----: |:----: |
+| DLA-34         | 1088x608 |  37.7  |  56.8  |  199  |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.pdparams) | [配置文件](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml) |
+| HRNetV2-W18    | 1088x608 |  35.6  |  56.3  |  190  |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle_bytetracker.pdparams) | [配置文件](./mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle_bytetracker.yml) |
+
+**注意:**
+ - MOTA是VisDrone Vehicle数据集4类车辆目标的平均MOTA, 该数据集是VisDrone数据集中抽出4类车辆类别组成的，此处提供数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/mot/visdrone_mcmot_vehicle.zip)。
+ - MCFairMOT模型此处使用的跟踪器是使用的ByteTracker。
 
 ## 快速开始
 
@@ -102,5 +112,12 @@ python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/mc
   number={},
   pages={1-1},
   doi={10.1109/TPAMI.2021.3119563}
+}
+
+@article{zhang2021bytetrack,
+  title={ByteTrack: Multi-Object Tracking by Associating Every Detection Box},
+  author={Zhang, Yifu and Sun, Peize and Jiang, Yi and Yu, Dongdong and Yuan, Zehuan and Luo, Ping and Liu, Wenyu and Wang, Xinggang},
+  journal={arXiv preprint arXiv:2110.06864},
+  year={2021}
 }
 ```
