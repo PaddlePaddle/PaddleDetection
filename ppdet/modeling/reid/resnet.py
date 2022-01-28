@@ -55,7 +55,7 @@ class ConvBNLayer(nn.Layer):
             bias_attr=False,
             data_format=data_format)
 
-        self._batch_norm = nn.BatchNorm2D(num_filters, data_layout=data_format)
+        self._batch_norm = nn.BatchNorm2D(num_filters)
         self.act = act
 
     def forward(self, inputs):
