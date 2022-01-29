@@ -286,9 +286,11 @@ class TOODHead(nn.Layer):
         return loss
 
     def get_loss(self, head_outs, gt_meta):
-        pred_scores, pred_bboxes, anchors, num_anchors_list, stride_tensor_list = head_outs
+        pred_scores, pred_bboxes, anchors, \
+        num_anchors_list, stride_tensor_list = head_outs
         gt_labels = gt_meta['gt_class']
         gt_bboxes = gt_meta['gt_bbox']
+        pad_gt_mask = gt_meta['pad_gt_mask']
         # label assignment
         if gt_meta['epoch_id'] < self.static_assigner_epoch:
             assigned_labels, assigned_bboxes, assigned_scores = self.static_assigner(
@@ -296,6 +298,7 @@ class TOODHead(nn.Layer):
                 num_anchors_list,
                 gt_labels,
                 gt_bboxes,
+                pad_gt_mask,
                 bg_index=self.num_classes)
             alpha_l = 0.25
         else:
@@ -303,8 +306,10 @@ class TOODHead(nn.Layer):
                 pred_scores.detach(),
                 pred_bboxes.detach() * stride_tensor_list,
                 bbox_center(anchors),
+                num_anchors_list,
                 gt_labels,
                 gt_bboxes,
+                pad_gt_mask,
                 bg_index=self.num_classes)
             alpha_l = -1
 
