@@ -19,7 +19,6 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
-from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 from ..shape_spec import ShapeSpec
 
@@ -36,8 +35,6 @@ class ConvBNLayer(nn.Layer):
                  act='leaky_relu'):
         super(ConvBNLayer, self).__init__()
         initializer = nn.initializer.KaimingUniform()
-        self.act = act
-        assert self.act in ['leaky_relu', "hard_swish"]
         self.conv = nn.Conv2D(
             in_channels=in_channel,
             out_channels=out_channel,
@@ -48,13 +45,14 @@ class ConvBNLayer(nn.Layer):
             weight_attr=ParamAttr(initializer=initializer),
             bias_attr=False)
         self.bn = nn.BatchNorm2D(out_channel)
+        if act == "hard_swish":
+            act = 'hardswish'
+        self.act = act
 
     def forward(self, x):
         x = self.bn(self.conv(x))
-        if self.act == "leaky_relu":
-            x = F.leaky_relu(x)
-        elif self.act == "hard_swish":
-            x = F.hardswish(x)
+        if self.act:
+            x = getattr(F, self.act)(x)
         return x
 
 
@@ -75,10 +73,11 @@ class DPModule(nn.Layer):
                  out_channel=96,
                  kernel_size=3,
                  stride=1,
-                 act='leaky_relu'):
+                 act='leaky_relu',
+                 use_act_in_out=True):
         super(DPModule, self).__init__()
         initializer = nn.initializer.KaimingUniform()
-        self.act = act
+        self.use_act_in_out = use_act_in_out
         self.dwconv = nn.Conv2D(
             in_channels=in_channel,
             out_channels=out_channel,
@@ -98,17 +97,17 @@ class DPModule(nn.Layer):
             weight_attr=ParamAttr(initializer=initializer),
             bias_attr=False)
         self.bn2 = nn.BatchNorm2D(out_channel)
-
-    def act_func(self, x):
-        if self.act == "leaky_relu":
-            x = F.leaky_relu(x)
-        elif self.act == "hard_swish":
-            x = F.hardswish(x)
-        return x
+        if act == "hard_swish":
+            act = 'hardswish'
+        self.act = act
 
     def forward(self, x):
-        x = self.act_func(self.bn1(self.dwconv(x)))
-        x = self.act_func(self.bn2(self.pwconv(x)))
+        x = self.bn1(self.dwconv(x))
+        if self.act:
+            x = getattr(F, self.act)(x)
+        x = self.bn2(self.pwconv(x))
+        if self.use_act_in_out and self.act:
+            x = getattr(F, self.act)(x)
         return x
 
 
