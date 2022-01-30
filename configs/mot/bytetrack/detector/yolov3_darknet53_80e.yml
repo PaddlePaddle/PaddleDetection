@@ -1,0 +1,25 @@
+# This config is the same as '../../../pedestrian/pedestrian_yolov3_darknet.yml'.
+_BASE_: [
+  '../../../runtime.yml',
+  '../../../yolov3/yolov3_darknet53_270e_coco.yml',
+  '../_base_/mix_mot_ch.yml',
+  '../_base_/optimizer_80e.yml',
+]
+weights: output/yolov3_darknet53_80e/model_final
+
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/yolov3_darknet53_270e_coco.pdparams
+num_classes: 1
+
+# Tracking requires higher quality boxes, so decode.conf_thresh will be higher
+BBoxPostProcess:
+  decode:
+    name: YOLOBox
+    conf_thresh: 0.1 # 0.005 in original detector
+    downsample_ratio: 32
+    clip_bbox: true
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    score_threshold: 0.01
+    nms_threshold: 0.45
+    nms_top_k: 1000

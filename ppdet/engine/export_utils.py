@@ -29,6 +29,7 @@ logger = setup_logger('ppdet.engine')
 # Global dictionary
 TRT_MIN_SUBGRAPH = {
     'YOLO': 3,
+    'YOLOX':10,
     'SSD': 60,
     'RCNN': 40,
     'RetinaNet': 40,
@@ -41,6 +42,7 @@ TRT_MIN_SUBGRAPH = {
     'HigherHRNet': 3,
     'HRNet': 3,
     'DeepSORT': 3,
+    'ByteTrack':10,
     'JDE': 10,
     'FairMOT': 5,
     'GFL': 16,
@@ -50,7 +52,7 @@ TRT_MIN_SUBGRAPH = {
 }
 
 KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
-MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT']
+MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT', 'ByteTrack']
 
 
 def _prune_input_spec(input_spec, program, targets):
