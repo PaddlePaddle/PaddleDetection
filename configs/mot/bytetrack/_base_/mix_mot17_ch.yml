@@ -24,7 +24,7 @@ TestDataset:
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
-    data_root: MOT17/images/demo
+    data_root: MOT17/images/half
     keep_ori_im: True # set as True in DeepSORT and ByteTrack
 
 TestMOTDataset:

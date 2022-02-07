@@ -1,5 +1,5 @@
-# This config is used for fintuning, use YOLOv3 schedule as default 
-epoch: 40
+# This config is used for finetuning, use YOLOv3 schedule as default 
+epoch: 80
 
 LearningRate:
   base_lr: 0.0001
@@ -7,8 +7,8 @@ LearningRate:
   - !PiecewiseDecay
     gamma: 0.1
     milestones:
-    - 32
-    - 36
+    - 64
+    - 72
   - !LinearWarmup
     start_factor: 0.3333333333333333
     steps: 100

@@ -1,15 +1,16 @@
+# This config is an assembled config for ByteTrack MOT, used as eval/infer mode for MOT.
 _BASE_: [
   '../../runtime.yml',
   '../../yolov3/yolov3_darknet53_270e_coco.yml',
-  '_base_/mot17.yml',
+  '_base_/mix_mot17_ch.yml',
   '_base_/optimizer_80e.yml',
   '_base_/yolov3_mot_reader_608x608.yml'
 ]
 pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/yolov3_darknet53_270e_coco.pdparams
 snapshot_epoch: 5
 
-# metric: COCO # train/eval/test mode
-metric: MOT # eval/test mode, and infer/export
+# metric: COCO # detection train/eval/infer/export mode
+metric: MOT # eval/infer mode
 num_classes: 1
 
 architecture: ByteTrack
@@ -26,6 +27,13 @@ YOLOv3:
   yolo_head: YOLOv3Head
   post_process: BBoxPostProcess
 
+TrainReader:
+  batch_size: 8
+  mixup_epoch: 70
+
+EvalMOTReader:
+  batch_size: 1 # Note batch_size should be 1 in MOT
+
 # Tracking requires higher quality boxes, so decode.conf_thresh will be higher
 BBoxPostProcess:
   decode:
@@ -36,10 +44,11 @@ BBoxPostProcess:
   nms:
     name: MultiClassNMS
     keep_top_k: 100
-    score_threshold: 0.01
+    score_threshold: 0.1
     nms_threshold: 0.45
     nms_top_k: 1000
 
+# BYTETracker
 JDETracker:
   use_byte: True
   min_box_area: 0
