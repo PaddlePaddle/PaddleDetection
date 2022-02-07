@@ -10,7 +10,6 @@ pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x1_5_p
 weights: output/picodet_lcnet_1_5x_416_coco/model_final
 find_unused_parameters: True
 use_ema: true
-cycle_epoch: 40
 snapshot_epoch: 10
 
 PicoDet:

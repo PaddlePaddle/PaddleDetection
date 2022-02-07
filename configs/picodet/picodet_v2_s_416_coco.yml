@@ -10,7 +10,6 @@ pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ESNet_x0_75_
 weights: output/picodet_s_416_coco/model_final
 find_unused_parameters: True
 use_ema: true
-cycle_epoch: 40
 snapshot_epoch: 10
 
 ESNet:
