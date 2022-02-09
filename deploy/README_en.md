@@ -53,6 +53,7 @@ For details on model export, please refer to the documentation [Tutorial on Padd
 
 ## 4.Third-Engine deploy(MNN、NCNN、Openvino)
 - The Third-Engine deploy take example of PicoDet、TinyPose，the others model is the same
+- Suggestion for TinyPose: For Intel CPU Openvino is recommended，for Nvidia GPU PaddleInference is recommended，and for ARM/ANDROID PaddleLite or MNN is recommended.
 
 | Third_Engine | MNN                                                    | NCNN                                               | OPENVINO                                                     |
 | ------------ | ------------------------------------------------------ | -------------------------------------------------- | ------------------------------------------------------------ |
