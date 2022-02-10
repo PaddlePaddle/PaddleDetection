@@ -20,3 +20,15 @@ PicoDet:
 LCNet:
   scale: 1.5
   feature_maps: [3, 4, 5]
+
+TrainReader:
+  batch_size: 32
+
+LearningRate:
+  base_lr: 0.2
+  schedulers:
+  - !CosineDecay
+    max_epochs: 300
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 300
