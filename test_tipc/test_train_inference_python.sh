@@ -29,7 +29,8 @@ pretrain_model_key=$(func_parser_key "${lines[9]}")
 pretrain_model_value=$(func_parser_value "${lines[9]}")
 train_model_name=$(func_parser_value "${lines[10]}")
 train_infer_img_dir=$(func_parser_value "${lines[11]}")
-filename_key=$(func_parser_key "${lines[12]}")
+train_param_key1=$(func_parser_key "${lines[12]}")
+train_param_value1=$(func_parser_value "${lines[12]}")
 
 trainer_list=$(func_parser_value "${lines[14]}")
 norm_key=$(func_parser_key "${lines[15]}")
@@ -173,6 +174,9 @@ if [ ${MODE} = "whole_infer" ] || [ ${MODE} = "klquant_whole_infer" ]; then
     IFS="|"
     infer_quant_flag=(${infer_is_quant_list})
     for infer_mode in ${infer_mode_list[*]}; do
+        if [ ${infer_mode} = "null" ]; then
+            continue
+        fi
         if [ ${MODE} = "klquant_whole_infer" ] && [ ${infer_mode} != "kl_quant" ]; then
             continue
         fi
@@ -188,12 +192,9 @@ if [ ${MODE} = "whole_infer" ] || [ ${MODE} = "klquant_whole_infer" ]; then
             kl_quant) run_export=${kl_quant_export} ;;
             *) echo "Undefined infer_mode!"; exit 1;
         esac
-        if [ ${run_export} = "null" ]; then
-            continue
-        fi
         set_export_weight=$(func_set_params "${export_weight_key}" "${export_weight_value}")
         set_save_export_dir=$(func_set_params "${save_export_key}" "${save_export_value}")
-        set_filename=$(func_set_params "${filename_key}" "${model_name}")
+        set_filename=$(func_set_params "filename" "${model_name}")
         export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
         echo  $export_cmd
         eval $export_cmd
@@ -269,17 +270,18 @@ else
                 set_epoch=$(func_set_params "${epoch_key}" "${epoch_num}")
                 set_pretrain=$(func_set_params "${pretrain_model_key}" "${pretrain_model_value}")
                 set_batchsize=$(func_set_params "${train_batch_key}" "${train_batch_value}")
-                set_filename=$(func_set_params "${filename_key}" "${model_name}")
+                set_filename=$(func_set_params "filename" "${model_name}")
                 set_use_gpu=$(func_set_params "${train_use_gpu_key}" "${use_gpu}")
+                set_train_params1=$(func_set_params "${train_param_key1}" "${train_param_value1}")
                 save_log="${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}"
 
                 set_save_model=$(func_set_params "${save_model_key}" "${save_log}")
                 if [ ${#gpu} -le 2 ];then  # train with cpu or single gpu
-                    cmd="${python} ${run_train} ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_autocast}"
+                    cmd="${python} ${run_train} LearningRate.base_lr=0.0001 log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_train_params1} ${set_autocast}"
                 elif [ ${#ips} -le 26 ];then  # train with multi-gpu
-                    cmd="${python} -m paddle.distributed.launch --gpus=${gpu} ${run_train} ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_autocast}"
+                    cmd="${python} -m paddle.distributed.launch --gpus=${gpu} ${run_train} log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_train_params1} ${set_autocast}"
                 else     # train with multi-machine
-                    cmd="${python} -m paddle.distributed.launch --ips=${ips} --gpus=${gpu} ${set_use_gpu} ${run_train} ${set_save_model} ${set_pretrain} ${set_epoch} ${set_batchsize} ${set_filename} ${set_autocast}"
+                    cmd="${python} -m paddle.distributed.launch --ips=${ips} --gpus=${gpu} ${set_use_gpu} ${run_train} log_iter=1 ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_train_params1} ${set_autocast}"
                 fi
                 # run train
                 eval $cmd
