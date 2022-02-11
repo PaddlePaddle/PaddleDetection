@@ -20,6 +20,7 @@ from . import centernet_fpn
 from . import bifpn
 from . import csp_pan
 from . import es_pan
+from . import custom_pan
 
 from .fpn import *
 from .yolo_fpn import *
@@ -30,3 +31,4 @@ from .blazeface_fpn import *
 from .bifpn import *
 from .csp_pan import *
 from .es_pan import *
+from .custom_pan import *

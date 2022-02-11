@@ -62,7 +62,7 @@ def _strip_postfix(path):
     return path
 
 
-def load_weight(model, weight, optimizer=None):
+def load_weight(model, weight, optimizer=None, ema=None):
     if is_url(weight):
         weight = get_weights_path(weight)
 
@@ -102,6 +102,10 @@ def load_weight(model, weight, optimizer=None):
             last_epoch = optim_state_dict.pop('last_epoch')
         optimizer.set_state_dict(optim_state_dict)
 
+        if ema is not None and os.path.exists(path + '_ema.pdparams'):
+            ema_state_dict = paddle.load(path + '_ema.pdparams')
+            ema.resume(ema_state_dict,
+                       optim_state_dict['LR_Scheduler']['last_epoch'])
     return last_epoch
 
 
@@ -112,9 +116,9 @@ def match_state_dict(model_state_dict, weight_state_dict):
 
     The method supposes that all the names in pretrained weight state dict are
     subclass of the names in models`, if the prefix 'backbone.' in pretrained weight
-    keys is stripped. And we could get the candidates for each model key. Then we 
+    keys is stripped. And we could get the candidates for each model key. Then we
     select the name with the longest matched size as the final match result. For
-    example, the model state dict has the name of 
+    example, the model state dict has the name of
     'backbone.res2.res2a.branch2a.conv.weight' and the pretrained weight as
     name of 'res2.res2a.branch2a.conv.weight' and 'branch2a.conv.weight'. We
     match the 'res2.res2a.branch2a.conv.weight' to the model key.
@@ -125,7 +129,7 @@ def match_state_dict(model_state_dict, weight_state_dict):
 
     def match(a, b):
         if b.startswith('backbone.res5'):
-            # In Faster RCNN, res5 pretrained weights have prefix of backbone, 
+            # In Faster RCNN, res5 pretrained weights have prefix of backbone,
             # however, the corresponding model weights have difficult prefix,
             # bbox_head.
             b = b[9:]

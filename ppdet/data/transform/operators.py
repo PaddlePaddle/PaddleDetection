@@ -1747,7 +1747,7 @@ class Mixup(BaseOperator):
             gt_score2 = np.ones_like(sample[1]['gt_class'])
             gt_score = np.concatenate(
                 (gt_score1 * factor, gt_score2 * (1. - factor)), axis=0)
-            result['gt_score'] = gt_score
+            result['gt_score'] = gt_score.astype('float32')
         if 'is_crowd' in sample[0]:
             is_crowd1 = sample[0]['is_crowd']
             is_crowd2 = sample[1]['is_crowd']

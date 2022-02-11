@@ -107,11 +107,15 @@ def gather_topk_anchors(metrics, topk, largest=True, topk_mask=None, eps=1e-9):
     return is_in_topk.astype(metrics.dtype)
 
 
-def check_points_inside_bboxes(points, bboxes, eps=1e-9):
+def check_points_inside_bboxes(points,
+                               bboxes,
+                               center_radius_tensor=None,
+                               eps=1e-9):
     r"""
     Args:
         points (Tensor, float32): shape[L, 2], "xy" format, L: num_anchors
         bboxes (Tensor, float32): shape[B, n, 4], "xmin, ymin, xmax, ymax" format
+        center_radius_tensor (Tensor, float32): shape [L, 1] Default: None.
         eps (float): Default: 1e-9
     Returns:
         is_in_bboxes (Tensor, float32): shape[B, n, L], value=1. means selected
@@ -119,6 +123,19 @@ def check_points_inside_bboxes(points, bboxes, eps=1e-9):
     points = points.unsqueeze([0, 1])
     x, y = points.chunk(2, axis=-1)
     xmin, ymin, xmax, ymax = bboxes.unsqueeze(2).chunk(4, axis=-1)
+    if center_radius_tensor is not None:
+        center_radius_tensor = center_radius_tensor.unsqueeze([0, 1])
+        bboxes_cx = (xmin + xmax) / 2.
+        bboxes_cy = (ymin + ymax) / 2.
+        xmin_sampling = bboxes_cx - center_radius_tensor
+        ymin_sampling = bboxes_cy - center_radius_tensor
+        xmax_sampling = bboxes_cx + center_radius_tensor
+        ymax_sampling = bboxes_cy + center_radius_tensor
+
+        xmin = paddle.maximum(xmin, xmin_sampling)
+        ymin = paddle.maximum(ymin, ymin_sampling)
+        xmax = paddle.minimum(xmax, xmax_sampling)
+        ymax = paddle.minimum(ymax, ymax_sampling)
     l = x - xmin
     t = y - ymin
     r = xmax - x
@@ -167,14 +184,16 @@ def generate_anchors_for_grid_cell(feats,
         grid_cell_size (float): anchor size
         grid_cell_offset (float): The range is between 0 and 1.
     Returns:
-        anchors (List[Tensor]): shape[s, (l, 4)]
-        num_anchors_list (List[int]): shape[s]
-        stride_tensor_list (List[Tensor]): shape[s, (l, 1)]
+        anchors (Tensor): shape[l, 4], "xmin, ymin, xmax, ymax" format.
+        anchor_points (Tensor): shape[l, 2], "x, y" format.
+        num_anchors_list (List[int]): shape[s], contains [s_1, s_2, ...].
+        stride_tensor (Tensor): shape[l, 1], contains the stride for each scale.
     """
     assert len(feats) == len(fpn_strides)
     anchors = []
+    anchor_points = []
     num_anchors_list = []
-    stride_tensor_list = []
+    stride_tensor = []
     for feat, stride in zip(feats, fpn_strides):
         _, _, h, w = feat.shape
         cell_half_size = grid_cell_size * stride * 0.5
@@ -187,8 +206,19 @@ def generate_anchors_for_grid_cell(feats,
                 shift_x + cell_half_size, shift_y + cell_half_size
             ],
             axis=-1).astype(feat.dtype)
+        anchor_point = paddle.stack(
+            [shift_x, shift_y], axis=-1).astype(feat.dtype)
+
         anchors.append(anchor.reshape([-1, 4]))
+        anchor_points.append(anchor_point.reshape([-1, 2]))
         num_anchors_list.append(len(anchors[-1]))
-        stride_tensor_list.append(
-            paddle.full([num_anchors_list[-1], 1], stride))
-    return anchors, num_anchors_list, stride_tensor_list
+        stride_tensor.append(
+            paddle.full(
+                [num_anchors_list[-1], 1], stride, dtype=feat.dtype))
+    anchors = paddle.concat(anchors)
+    anchors.stop_gradient = True
+    anchor_points = paddle.concat(anchor_points)
+    anchor_points.stop_gradient = True
+    stride_tensor = paddle.concat(stride_tensor)
+    stride_tensor.stop_gradient = True
+    return anchors, anchor_points, num_anchors_list, stride_tensor
