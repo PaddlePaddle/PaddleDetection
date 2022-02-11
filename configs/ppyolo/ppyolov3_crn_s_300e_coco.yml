@@ -1,0 +1,9 @@
+_BASE_: [
+  './ppyolov3_crn_l_300e_coco.yml',
+]
+
+weights: output/ppyolov3_crn_s_300e_coco/model_final
+pretrain_weights: http://10.21.226.169:8090/2d/pretrain/cspresnetb_s_710.pdparams
+
+depth_mult: 0.33
+width_mult: 0.50

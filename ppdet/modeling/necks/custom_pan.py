@@ -72,7 +72,7 @@ class CSPStage(nn.Layer):
 @register
 @serializable
 class CustomCSPPAN(nn.Layer):
-    __shared__ = ['norm_type', 'data_format']
+    __shared__ = ['norm_type', 'data_format', 'width_mult', 'depth_mult']
 
     def __init__(self,
                  in_channels=[256, 512, 1024],
@@ -87,9 +87,13 @@ class CustomCSPPAN(nn.Layer):
                  block_size=3,
                  keep_prob=0.9,
                  spp=False,
-                 data_format='NCHW'):
+                 data_format='NCHW',
+                 width_mult=1.0,
+                 depth_mult=1.0):
 
         super(CustomCSPPAN, self).__init__()
+        out_channels = [max(round(c * width_mult), 1) for c in out_channels]
+        block_num = max(round(block_num * depth_mult), 1)
         self.num_blocks = len(in_channels)
         self.data_format = data_format
         self._out_channels = out_channels

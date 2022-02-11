@@ -6,16 +6,18 @@ _BASE_: [
 ]
 
 log_iter: 100
-snapshot_epoch: 8
-weights: output/ppyolov3_crn_300e_coco/model_final
+snapshot_epoch: 10
+weights: output/ppyolov3_crn_l_300e_coco/model_final
 find_unused_parameters: True
 
 
 architecture: YOLOv3
-pretrain_weights: http://10.255.134.13:8091/weights/cspresnetb50_silu_797.pdparams
+pretrain_weights: http://10.21.226.186:8091/cspresnetb_silu_large_stem_last_conv_mixup.pdparams
 norm_type: sync_bn
 use_ema: true
 ema_decay: 0.9998
+depth_mult: 1.0
+width_mult: 1.0
 
 YOLOv3:
   backbone: CSPResNet
@@ -27,6 +29,7 @@ CSPResNet:
   layers: [3, 6, 6, 3]
   channels: [64, 128, 256, 512, 1024]
   return_idx: [1, 2, 3]
+  use_large_stem: True
 
 CustomCSPPAN:
   out_channels: [768, 384, 192]

@@ -219,14 +219,20 @@ class CSPResStage(nn.Layer):
 @register
 @serializable
 class CSPResNet(nn.Layer):
+    __shared__ = ['width_mult', 'depth_mult']
+
     def __init__(self,
                  layers=[3, 6, 6, 3],
                  channels=[64, 128, 256, 512, 1024],
                  act='swish',
                  return_idx=[0, 1, 2, 3, 4],
                  depth_wise=False,
-                 use_large_stem=False):
+                 use_large_stem=False,
+                 width_mult=1.0,
+                 depth_mult=1.0):
         super(CSPResNet, self).__init__()
+        channels = [max(round(c * width_mult), 1) for c in channels]
+        layers = [max(round(l * depth_mult), 1) for l in layers]
 
         if use_large_stem:
             self.stem = nn.Sequential(
