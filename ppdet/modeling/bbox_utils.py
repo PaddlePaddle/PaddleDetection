@@ -744,9 +744,9 @@ def distance2bbox(points, distance, max_shape=None):
 def bbox_center(boxes):
     """Get bbox centers from boxes.
     Args:
-        boxes (Tensor): boxes with shape (N, 4), "xmin, ymin, xmax, ymax" format.
+        boxes (Tensor): boxes with shape (..., 4), "xmin, ymin, xmax, ymax" format.
     Returns:
-        Tensor: boxes centers with shape (N, 2), "cx, cy" format.
+        Tensor: boxes centers with shape (..., 2), "cx, cy" format.
     """
     boxes_cx = (boxes[..., 0] + boxes[..., 2]) / 2
     boxes_cy = (boxes[..., 1] + boxes[..., 3]) / 2

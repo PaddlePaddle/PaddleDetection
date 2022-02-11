@@ -109,10 +109,14 @@ class YOLOv3(BaseArch):
                 if self.return_idx:
                     _, bbox, bbox_num, _ = self.post_process(
                         yolo_head_outs, self.yolo_head.mask_anchors)
-                else:
+                elif self.post_process is not None:
                     bbox, bbox_num = self.post_process(
                         yolo_head_outs, self.yolo_head.mask_anchors,
                         self.inputs['im_shape'], self.inputs['scale_factor'])
+                else:
+                    bbox, bbox_num = self.yolo_head.post_process(
+                        yolo_head_outs, self.inputs['im_shape'],
+                        self.inputs['scale_factor'])
                 output = {'bbox': bbox, 'bbox_num': bbox_num}
 
             return output

@@ -41,7 +41,7 @@ __all__ = [
 
 
 def mish(x):
-    return x * paddle.tanh(F.softplus(x))
+    return F.mish(x)
 
 
 def batch_norm(ch,

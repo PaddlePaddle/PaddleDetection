@@ -339,7 +339,8 @@ class Trainer(object):
             self.start_epoch = load_weight(self.model.student_model, weights,
                                            self.optimizer)
         else:
-            self.start_epoch = load_weight(self.model, weights, self.optimizer)
+            self.start_epoch = load_weight(self.model, weights, self.optimizer,
+                                           self.ema if self.use_ema else None)
         logger.debug("Resume weights of epoch {}".format(self.start_epoch))
 
     def train(self, validate=False):
@@ -432,13 +433,9 @@ class Trainer(object):
                 self.status['batch_time'].update(time.time() - iter_tic)
                 self._compose_callback.on_step_end(self.status)
                 if self.use_ema:
-                    self.ema.update(self.model)
+                    self.ema.update()
                 iter_tic = time.time()
 
-            # apply ema weight on model
-            if self.use_ema:
-                weight = copy.deepcopy(self.model.state_dict())
-                self.model.set_dict(self.ema.apply())
             if self.cfg.get('unstructured_prune'):
                 self.pruner.update_params()
 
@@ -471,9 +468,14 @@ class Trainer(object):
                     self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
 
-            # restore origin weight on model
-            if self.use_ema:
-                self.model.set_dict(weight)
+                if self.use_ema:
+                    # apply ema weight on model
+                    weight = copy.deepcopy(self.model.state_dict())
+                    self.model.set_dict(self.ema.apply())
+                    with paddle.no_grad():
+                        self.status['ema_eval'] = True
+                        self._eval_with_loader(self._eval_loader)
+                    self.model.set_dict(weight)
 
         self._compose_callback.on_train_end(self.status)
 
