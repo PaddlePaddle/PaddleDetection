@@ -74,7 +74,9 @@ pip install -r requirements.txt
 ## 数据集准备
 ### MOT数据集
 PaddleDetection复现[JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) 和[FairMOT](https://github.com/ifzhang/FairMOT)，是使用的和他们相同的MIX数据集，包括**Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17和MOT16**。使用前6者作为联合数据集参与训练，MOT16作为评测数据集。如果您想使用这些数据集，请**遵循他们的License**。
-为了训练更多场景的垂类模型，垂类数据集也是处理成与MIX数据集相同格式，请参照[数据准备文档](../../docs/tutorials/PrepareMOTDataSet_cn.md)去准备数据集。
+
+**注意：**
+- 为了训练更多场景的垂类模型，垂类数据集也是处理成与MIX数据集相同格式，请参照[数据准备文档](../../docs/tutorials/PrepareMOTDataSet_cn.md)去准备数据集。
 
 ### 数据集目录
 首先按照以下命令下载image_lists.zip并解压放在`PaddleDetection/dataset/mot`目录下：
@@ -134,8 +136,8 @@ MOT17
 [class] [identity] [x_center] [y_center] [width] [height]
 ```
 **注意**:
-- `class`为类别id，从0开始计，支持单类别和多类别。
-- `identity`是从`1`到`num_identifies`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
+- `class`为类别id，支持单类别和多类别，从`0`开始计，单类别即为`0`。
+- `identity`是从`1`到`num_identities`的整数(`num_identities`是数据集中所有视频或图片序列的不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
 - `[x_center] [y_center] [width] [height]`是中心点坐标和宽高，注意他们的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
 
 

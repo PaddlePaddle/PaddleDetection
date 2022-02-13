@@ -77,7 +77,8 @@ pip install -r requirements.txt
 ### MOT Dataset
 PaddleDetection implement [JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) and [FairMOT](https://github.com/ifzhang/FairMOT), and use the same training data named 'MIX' as them, including **Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17 and MOT16**. The former six are used as the mixed dataset for training, and MOT16 are used as the evaluation dataset. If you want to use these datasets, please **follow their licenses**.
 
-In order to train the feature models of more scenes, more datasets are also processed into the same format as the MIX dataset. Please refer to MOT data preparation [doc](../../docs/tutorials/PrepareMOTDataSet.md) to prepare the dataset.
+**Notes:**
+- In order to train the feature models of more scenes, more datasets are also processed into the same format as the MIX dataset. Please refer to MOT data preparation [doc](../../docs/tutorials/PrepareMOTDataSet.md) to prepare the dataset.
 
 ### Dataset Directory
 First, download the image_lists.zip using the following command, and unzip them into `PaddleDetection/dataset/mot`:
@@ -139,8 +140,8 @@ In the annotation text, each line is describing a bounding box and has the follo
 [class] [identity] [x_center] [y_center] [width] [height]
 ```
 **Notes:**
-- `class` is the class id, start from 0, and support single class and multi-class.
-- `identity` is an integer from `1` to `num_identities`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
+- `class` is the class id, support single class and multi-class, start from `0`, and for single class is `0`.
+- `identity` is an integer from `1` to `num_identities`(`num_identities` is the total number of instances of objects in the dataset of all videos or image squences), or `-1` if this box has no identity annotation.
 - `[x_center] [y_center] [width] [height]` are the center coordinates, width and height, note that they are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
 
 
