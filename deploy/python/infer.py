@@ -65,6 +65,7 @@ class Detector(object):
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
         enable_mkldnn (bool): whether to open MKLDNN
+        enable_mkldnn_bfloat16 (bool): whether to open MKLDNN_BFLOAT16
     """
 
     def __init__(self,
@@ -78,7 +79,8 @@ class Detector(object):
                  trt_opt_shape=640,
                  trt_calib_mode=False,
                  cpu_threads=1,
-                 enable_mkldnn=False):
+                 enable_mkldnn=False,
+                 enable_mkldnn_bfloat16=False):
         self.pred_config = pred_config
         self.predictor, self.config = load_predictor(
             model_dir,
@@ -92,7 +94,8 @@ class Detector(object):
             trt_opt_shape=trt_opt_shape,
             trt_calib_mode=trt_calib_mode,
             cpu_threads=cpu_threads,
-            enable_mkldnn=enable_mkldnn)
+            enable_mkldnn=enable_mkldnn,
+            enable_mkldnn_bfloat16=enable_mkldnn_bfloat16)
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
 
@@ -200,6 +203,7 @@ class DetectorSOLOv2(Detector):
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
         enable_mkldnn (bool): whether to open MKLDNN 
+        enable_mkldnn_bfloat16 (bool): Whether to open MKLDNN_BFLOAT16
     """
 
     def __init__(self,
@@ -213,7 +217,8 @@ class DetectorSOLOv2(Detector):
                  trt_opt_shape=640,
                  trt_calib_mode=False,
                  cpu_threads=1,
-                 enable_mkldnn=False):
+                 enable_mkldnn=False,
+                 enable_mkldnn_bfloat16=False):
         self.pred_config = pred_config
         self.predictor, self.config = load_predictor(
             model_dir,
@@ -227,7 +232,8 @@ class DetectorSOLOv2(Detector):
             trt_opt_shape=trt_opt_shape,
             trt_calib_mode=trt_calib_mode,
             cpu_threads=cpu_threads,
-            enable_mkldnn=enable_mkldnn)
+            enable_mkldnn=enable_mkldnn,
+            enable_mkldnn_bfloat16=enable_mkldnn_bfloat16)
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
 
@@ -291,7 +297,8 @@ class DetectorPicoDet(Detector):
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
-        enable_mkldnn (bool): whether to open MKLDNN 
+        enable_mkldnn (bool): whether to open MKLDNN
+        enable_mkldnn_bfloat16 (bool): whether to open MKLDNN_BFLOAT16
     """
 
     def __init__(self,
@@ -305,7 +312,8 @@ class DetectorPicoDet(Detector):
                  trt_opt_shape=640,
                  trt_calib_mode=False,
                  cpu_threads=1,
-                 enable_mkldnn=False):
+                 enable_mkldnn=False,
+                 enable_mkldnn_bfloat16=False):
         self.pred_config = pred_config
         self.predictor, self.config = load_predictor(
             model_dir,
@@ -319,7 +327,8 @@ class DetectorPicoDet(Detector):
             trt_opt_shape=trt_opt_shape,
             trt_calib_mode=trt_calib_mode,
             cpu_threads=cpu_threads,
-            enable_mkldnn=enable_mkldnn)
+            enable_mkldnn=enable_mkldnn,
+            enable_mkldnn_bfloat16=enable_mkldnn_bfloat16)
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
 
@@ -481,7 +490,8 @@ def load_predictor(model_dir,
                    trt_opt_shape=640,
                    trt_calib_mode=False,
                    cpu_threads=1,
-                   enable_mkldnn=False):
+                   enable_mkldnn=False,
+                   enable_mkldnn_bfloat16=False):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
@@ -521,6 +531,8 @@ def load_predictor(model_dir,
                 # cache 10 different shapes for mkldnn to avoid memory leak
                 config.set_mkldnn_cache_capacity(10)
                 config.enable_mkldnn()
+                if enable_mkldnn_bfloat16:
+                    config.enable_mkldnn_bfloat16()
             except Exception as e:
                 print(
                     "The current environment does not support `mkldnn`, so disable mkldnn."
@@ -645,10 +657,10 @@ def predict_image(detector, image_list, batch_size=1):
         if FLAGS.run_benchmark:
             # warmup
             detector.predict(
-                batch_image_list, FLAGS.threshold, repeats=10, add_timer=False)
+                batch_image_list, FLAGS.threshold, repeats=100, add_timer=False)
             # run benchmark
             detector.predict(
-                batch_image_list, FLAGS.threshold, repeats=10, add_timer=True)
+                batch_image_list, FLAGS.threshold, repeats=100, add_timer=True)
 
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
@@ -724,7 +736,8 @@ def main():
                                    trt_opt_shape=FLAGS.trt_opt_shape,
                                    trt_calib_mode=FLAGS.trt_calib_mode,
                                    cpu_threads=FLAGS.cpu_threads,
-                                   enable_mkldnn=FLAGS.enable_mkldnn)
+                                   enable_mkldnn=FLAGS.enable_mkldnn,
+                                   enable_mkldnn_bfloat16=FLAGS.enable_mkldnn_bfloat16)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
@@ -770,5 +783,7 @@ if __name__ == '__main__':
     assert FLAGS.device in ['CPU', 'GPU', 'XPU'
                             ], "device should be CPU, GPU or XPU"
     assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
+
+    assert not (FLAGS.enable_mkldnn==False and FLAGS.enable_mkldnn_bfloat16==True), 'To enable mkldnn bfloat, please turn on botht enable_mkldnn and enable_mkldnn_bfloat16'
 
     main()
