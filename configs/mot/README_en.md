@@ -78,7 +78,10 @@ pip install -r requirements.txt
 PaddleDetection implement [JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) and [FairMOT](https://github.com/ifzhang/FairMOT), and use the same training data named 'MIX' as them, including **Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17 and MOT16**. The former six are used as the mixed dataset for training, and MOT16 are used as the evaluation dataset. If you want to use these datasets, please **follow their licenses**.
 
 **Notes:**
-- In order to train the feature models of more scenes, more datasets are also processed into the same format as the MIX dataset. Please refer to MOT data preparation [doc](../../docs/tutorials/PrepareMOTDataSet.md) to prepare the dataset.
+- Multi-Object Tracking(MOT) datasets are always used for single category tracking. DeepSORT, JDE and FairMOT are single category MOT models. 'MIX' dataset and it's sub datasets are also single category pedestrian tracking datasets. It can be considered that there are additional IDs ground truth for detection datasets.
+- In order to train the feature models of more scenes, more datasets are also processed into the same format as the MIX dataset. PaddleDetection Team also provides feature datasets and models of [vehicle tracking](vehicle/readme.md), [head tracking](headtracking21/readme.md) and more general [pedestrian tracking](pedestrian/readme.md). User defined datasets can also be prepared by referring to data preparation [doc](../../docs/tutorials/PrepareMOTDataSet.md).
+- The multipe category MOT model is [MCFairMOT] (mcfairmot/readme_cn.md), and the multi category dataset is the integrated version of VisDrone dataset. Please refer to the doc of [MCFairMOT](mcfairmot/README.md).
+- The Multi-Target Multi-Camera Tracking (MTMCT) model is [AIC21 MTMCT](https://www.aicitychallenge.org)(CityFlow) Multi-Camera Vehicle Tracking dataset. The dataset and model can refer to the doc of [MTMCT](mtmct/README.md)
 
 ### Dataset Directory
 First, download the image_lists.zip using the following command, and unzip them into `PaddleDetection/dataset/mot`:
