@@ -76,7 +76,10 @@ pip install -r requirements.txt
 PaddleDetection复现[JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) 和[FairMOT](https://github.com/ifzhang/FairMOT)，是使用的和他们相同的MIX数据集，包括**Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17和MOT16**。使用前6者作为联合数据集参与训练，MOT16作为评测数据集。如果您想使用这些数据集，请**遵循他们的License**。
 
 **注意：**
-- 为了训练更多场景的垂类模型，垂类数据集也是处理成与MIX数据集相同格式，请参照[数据准备文档](../../docs/tutorials/PrepareMOTDataSet_cn.md)去准备数据集。
+- 多目标跟踪数据集一般是用于单类别的多目标跟踪，DeepSORT、JDE和FairMOT均为单类别跟踪模型，MIX数据集以及其子数据集也都是单类别的行人跟踪数据集，可认为相比于行人检测数据集多了id号的标注。
+- 为了训练更多场景的垂类模型例如车辆等，垂类数据集也需要处理成与MIX数据集相同的格式，PaddleDetection也提供了[车辆跟踪](vehicle/README_cn.md)、[人头跟踪](headtracking21/README_cn.md)以及更通用的[行人跟踪](pedestrian/README_cn.md)的垂类数据集和模型。用户自定义数据集也可参照[数据准备文档](../../docs/tutorials/PrepareMOTDataSet_cn.md)去准备。
+- 多类别跟踪模型是[MCFairMOT](mcfairmot/README_cn.md)，多类别数据集是VisDrone数据集的整合版，可参照[MCFairMOT](mcfairmot/README_cn.md)的文档说明。
+- 跨镜头跟踪模型，是选用的[AIC21 MTMCT](https://www.aicitychallenge.org) (CityFlow)车辆跨镜头跟踪数据集，数据集和模型可参照[跨境头跟踪](mtmct/README_cn.md)的文档说明。
 
 ### 数据集目录
 首先按照以下命令下载image_lists.zip并解压放在`PaddleDetection/dataset/mot`目录下：
