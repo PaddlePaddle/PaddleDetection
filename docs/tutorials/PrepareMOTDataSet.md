@@ -3,27 +3,66 @@ English | [简体中文](PrepareMOTDataSet_cn.md)
 # Contents
 ## Multi-Object Tracking Dataset Preparation
 - [MOT Dataset](#MOT_Dataset)
-- [Data Format](#Data_Format)
 - [Dataset Directory](#Dataset_Directory)
-- [Download Links](#Download_Links)
+- [Data Format](#Data_Format)
 - [Custom Dataset Preparation](#Custom_Dataset_Preparation)
 - [Citations](#Citations)
 
 ### MOT Dataset
-PaddleDetection uses the same training data as [JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) and [FairMOT](https://github.com/ifzhang/FairMOT). Please download and prepare all the training data including **Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17 and MOT16**. **MOT15 and MOT20** can also be downloaded from the official webpage of MOT challenge. If you want to use these datasets, please **follow their licenses**.
+PaddleDetection implement [JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) and [FairMOT](https://github.com/ifzhang/FairMOT), and use the same training data named 'MIX' as them, including **Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17 and MOT16**. The former six are used as the mixed dataset for training, and MOT16 are used as the evaluation dataset. If you want to use these datasets, please **follow their licenses**.
+
+**Notes:**
+- Multi-Object Tracking(MOT) datasets are always used for single category tracking. DeepSORT, JDE and FairMOT are single category MOT models. 'MIX' dataset and it's sub datasets are also single category pedestrian tracking datasets. It can be considered that there are additional IDs ground truth for detection datasets.
+- In order to train the feature models of more scenes, more datasets are also processed into the same format as the MIX dataset. PaddleDetection Team also provides feature datasets and models of [vehicle tracking](../../configs/mot/vehicle/readme.md), [head tracking](../../configs/mot/headtracking21/readme.md) and more general [pedestrian tracking](../../configs/mot/pedestrian/readme.md). User defined datasets can also be prepared by referring to this data preparation doc.
+- The multipe category MOT model is [MCFairMOT] (../../configs/mot/mcfairmot/readme_cn.md), and the multi category dataset is the integrated version of VisDrone dataset. Please refer to the doc of [MCFairMOT](../../configs/mot/mcfairmot/README.md).
+- The Multi-Target Multi-Camera Tracking (MTMCT) model is [AIC21 MTMCT](https://www.aicitychallenge.org)(CityFlow) Multi-Camera Vehicle Tracking dataset. The dataset and model can refer to the doc of [MTMCT](../../configs/mot/mtmct/README.md).
+
+### Dataset Directory
+First, download the image_lists.zip using the following command, and unzip them into `PaddleDetection/dataset/mot`:
+```
+wget https://dataset.bj.bcebos.com/mot/image_lists.zip
+```
+
+Then, download the MIX dataset using the following command, and unzip them into `PaddleDetection/dataset/mot`:
+```
+wget https://dataset.bj.bcebos.com/mot/MOT17.zip
+wget https://dataset.bj.bcebos.com/mot/Caltech.zip
+wget https://dataset.bj.bcebos.com/mot/CUHKSYSU.zip
+wget https://dataset.bj.bcebos.com/mot/PRW.zip
+wget https://dataset.bj.bcebos.com/mot/Cityscapes.zip
+wget https://dataset.bj.bcebos.com/mot/ETHZ.zip
+wget https://dataset.bj.bcebos.com/mot/MOT16.zip
+```
+
+The final directory is:
+```
+dataset/mot
+  |——————image_lists
+            |——————caltech.10k.val  
+            |——————caltech.all  
+            |——————caltech.train  
+            |——————caltech.val  
+            |——————citypersons.train  
+            |——————citypersons.val  
+            |——————cuhksysu.train  
+            |——————cuhksysu.val  
+            |——————eth.train  
+            |——————mot16.train  
+            |——————mot17.train  
+            |——————prw.train  
+            |——————prw.val
+  |——————Caltech
+  |——————Cityscapes
+  |——————CUHKSYSU
+  |——————ETHZ
+  |——————MOT16
+  |——————MOT17
+  |——————PRW
+```
 
 ### Data Format
 These several relevant datasets have the following structure:
 ```
-Caltech
-   |——————images
-   |        └——————00001.jpg
-   |        |—————— ...
-   |        └——————0000N.jpg
-   └——————labels_with_ids
-            └——————00001.txt
-            |—————— ...
-            └——————0000N.txt
 MOT17
    |——————images
    |        └——————train
@@ -38,46 +77,10 @@ In the annotation text, each line is describing a bounding box and has the follo
 [class] [identity] [x_center] [y_center] [width] [height]
 ```
 **Notes:**
-- `class` should be `0`. Only single-class multi-object tracking is supported now.
+- `class` is the class id, support single class and multi-class, start from `0`, and for single class is `0`.
 - `identity` is an integer from `1` to `num_identities`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
 - `[x_center] [y_center] [width] [height]` are the center coordinates, width and height, note that they are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
 
-
-### Dataset Directory
-
-First, follow the command below to download the `image_list.zip` and unzip it in the `dataset/mot` directory:
-```
-wget https://dataset.bj.bcebos.com/mot/image_lists.zip
-```
-Then download and unzip each dataset, and the final directory is as follows:
-```
-dataset/mot
-  |——————image_lists
-            |——————caltech.10k.val  
-            |——————caltech.all  
-            |——————caltech.train  
-            |——————caltech.val  
-            |——————citypersons.train  
-            |——————citypersons.val  
-            |——————cuhksysu.train  
-            |——————cuhksysu.val  
-            |——————eth.train  
-            |——————mot15.train  
-            |——————mot16.train  
-            |——————mot17.train  
-            |——————mot20.train  
-            |——————prw.train  
-            |——————prw.val
-  |——————Caltech
-  |——————Cityscapes
-  |——————CUHKSYSU
-  |——————ETHZ
-  |——————MOT15
-  |——————MOT16
-  |——————MOT17
-  |——————MOT20
-  |——————PRW
-```
 
 ### Custom Dataset Preparation
 
@@ -128,7 +131,7 @@ Each line in `gt.txt`  describes a bounding box, with the format as follows:
 ```
 **Notes:**:
 - `frame_id` is the current frame id.
-- `identity` is an integer from `1` to `num_identities`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
+- `identity` is an integer from `1` to `num_identities`(`num_identities` is the total number of instances of objects in **this video or image sequence**), or `-1` if this box has no identity annotation.
 - `bb_left` is the x coordinate of the left boundary of the target box
 - `bb_top` is the Y coordinate of the upper boundary of the target box
 - `width, height` are the pixel width and height
@@ -145,8 +148,8 @@ In the annotation text, each line is describing a bounding box and has the follo
 [class] [identity] [x_center] [y_center] [width] [height]
 ```
 **Notes:**
-- `class` should be `0`. Only single-class multi-object tracking is supported now.
-- `identity` is an integer from `1` to `num_identities`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
+- `class` is the class id, support single class and multi-class, start from `0`, and for single class is `0`.
+- `identity` is an integer from `1` to `num_identities`(`num_identities` is the total number of instances of objects in the dataset of all videos or image squences), or `-1` if this box has no identity annotation.
 - `[x_center] [y_center] [width] [height]` are the center coordinates, width and height, note that they are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
 
 Generate the corresponding `labels_with_ids` with following command:
@@ -154,94 +157,6 @@ Generate the corresponding `labels_with_ids` with following command:
 cd dataset/mot
 python gen_labels_MOT.py
 ```
-
-
-### Download Links
-
-#### Caltech Pedestrian
-Baidu NetDisk:
-[[0]](https://pan.baidu.com/s/1sYBXXvQaXZ8TuNwQxMcAgg)
-[[1]](https://pan.baidu.com/s/1lVO7YBzagex1xlzqPksaPw)
-[[2]](https://pan.baidu.com/s/1PZXxxy_lrswaqTVg0GuHWg)
-[[3]](https://pan.baidu.com/s/1M93NCo_E6naeYPpykmaNgA)
-[[4]](https://pan.baidu.com/s/1ZXCdPNXfwbxQ4xCbVu5Dtw)
-[[5]](https://pan.baidu.com/s/1kcZkh1tcEiBEJqnDtYuejg)
-[[6]](https://pan.baidu.com/s/1sDjhtgdFrzR60KKxSjNb2A)
-[[7]](https://pan.baidu.com/s/18Zvp_d33qj1pmutFDUbJyw)
-
-Google Drive: [[annotations]](https://drive.google.com/file/d/1h8vxl_6tgi9QVYoer9XcY9YwNB32TE5k/view?usp=sharing) ,
-please download all the images `.tar` files from [this page](http://www.vision.caltech.edu/Image_Datasets/CaltechPedestrians/datasets/USA/) and unzip the images under `Caltech/images`
-
-You may need [this tool](https://github.com/mitmul/caltech-pedestrian-dataset-converter) to convert the original data format to jpeg images.
-Original dataset webpage: [CaltechPedestrians](http://www.vision.caltech.edu/Image_Datasets/CaltechPedestrians/)
-
-#### CityPersons
-Baidu NetDisk:
-[[0]](https://pan.baidu.com/s/1g24doGOdkKqmbgbJf03vsw)
-[[1]](https://pan.baidu.com/s/1mqDF9M5MdD3MGxSfe0ENsA)
-[[2]](https://pan.baidu.com/s/1Qrbh9lQUaEORCIlfI25wdA)
-[[3]](https://pan.baidu.com/s/1lw7shaffBgARDuk8mkkHhw)
-
-Google Drive:
-[[0]](https://drive.google.com/file/d/1DgLHqEkQUOj63mCrS_0UGFEM9BG8sIZs/view?usp=sharing)
-[[1]](https://drive.google.com/file/d/1BH9Xz59UImIGUdYwUR-cnP1g7Ton_LcZ/view?usp=sharing)
-[[2]](https://drive.google.com/file/d/1q_OltirP68YFvRWgYkBHLEFSUayjkKYE/view?usp=sharing)
-[[3]](https://drive.google.com/file/d/1VSL0SFoQxPXnIdBamOZJzHrHJ1N2gsTW/view?usp=sharing)
-
-Original dataset webpage: [Citypersons pedestrian detection dataset](https://github.com/cvgroup-njust/CityPersons)
-
-#### CUHK-SYSU
-Baidu NetDisk:
-[[0]](https://pan.baidu.com/s/1YFrlyB1WjcQmFW3Vt_sEaQ)
-
-Google Drive:
-[[0]](https://drive.google.com/file/d/1D7VL43kIV9uJrdSCYl53j89RE2K-IoQA/view?usp=sharing)
-
-Original dataset webpage: [CUHK-SYSU Person Search Dataset](http://www.ee.cuhk.edu.hk/~xgwang/PS/dataset.html)
-
-#### PRW
-Baidu NetDisk:
-[[0]](https://pan.baidu.com/s/1iqOVKO57dL53OI1KOmWeGQ)
-
-Google Drive:
-[[0]](https://drive.google.com/file/d/116_mIdjgB-WJXGe8RYJDWxlFnc_4sqS8/view?usp=sharing)
-
-
-#### ETHZ (overlapping videos with MOT-16 removed):
-Baidu NetDisk:
-[[0]](https://pan.baidu.com/s/14EauGb2nLrcB3GRSlQ4K9Q)
-
-Google Drive:
-[[0]](https://drive.google.com/file/d/19QyGOCqn8K_rc9TXJ8UwLSxCx17e0GoY/view?usp=sharing)
-
-Original dataset webpage: [ETHZ pedestrian datset](https://data.vision.ee.ethz.ch/cvl/aess/dataset/)
-
-#### MOT-17
-Baidu NetDisk:
-[[0]](https://pan.baidu.com/s/1lHa6UagcosRBz-_Y308GvQ)
-
-Google Drive:
-[[0]](https://drive.google.com/file/d/1ET-6w12yHNo8DKevOVgK1dBlYs739e_3/view?usp=sharing)
-
-Original dataset webpage: [MOT-17](https://motchallenge.net/data/MOT17/)
-
-#### MOT-16
-Baidu NetDisk:
-[[0]](https://pan.baidu.com/s/10pUuB32Hro-h-KUZv8duiw)
-
-Google Drive:
-[[0]](https://drive.google.com/file/d/1254q3ruzBzgn4LUejDVsCtT05SIEieQg/view?usp=sharing)
-
-Original dataset webpage: [MOT-16](https://motchallenge.net/data/MOT16/)
-
-#### MOT-15
-Original dataset webpage: [MOT-15](https://motchallenge.net/data/MOT15/)
-
-#### MOT-20
-Original dataset webpage: [MOT-20](https://motchallenge.net/data/MOT20/)
-
-
-
 
 
 ### Citation
