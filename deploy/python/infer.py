@@ -64,8 +64,8 @@ class Detector(object):
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
-        enable_mkldnn (bool): whether to open MKLDNN
-        enable_mkldnn_bfloat16 (bool): whether to open MKLDNN_BFLOAT16
+        enable_mkldnn (bool): whether to turn on MKLDNN
+        enable_mkldnn_bfloat16 (bool): whether to turn on mkldnn bfloat16
     """
 
     def __init__(self,
@@ -202,8 +202,8 @@ class DetectorSOLOv2(Detector):
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
-        enable_mkldnn (bool): whether to open MKLDNN 
-        enable_mkldnn_bfloat16 (bool): Whether to open MKLDNN_BFLOAT16
+        enable_mkldnn (bool): whether to turn on MKLDNN 
+        enable_mkldnn_bfloat16 (bool): Whether to turn on mkldnn bfloat16
     """
 
     def __init__(self,
@@ -297,8 +297,8 @@ class DetectorPicoDet(Detector):
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
-        enable_mkldnn (bool): whether to open MKLDNN
-        enable_mkldnn_bfloat16 (bool): whether to open MKLDNN_BFLOAT16
+        enable_mkldnn (bool): whether to turn on MKLDNN
+        enable_mkldnn_bfloat16 (bool): whether to turn on MKLDNN_BFLOAT16
     """
 
     def __init__(self,
@@ -657,10 +657,10 @@ def predict_image(detector, image_list, batch_size=1):
         if FLAGS.run_benchmark:
             # warmup
             detector.predict(
-                batch_image_list, FLAGS.threshold, repeats=100, add_timer=False)
+                batch_image_list, FLAGS.threshold, repeats=10, add_timer=False)
             # run benchmark
             detector.predict(
-                batch_image_list, FLAGS.threshold, repeats=100, add_timer=True)
+                batch_image_list, FLAGS.threshold, repeats=10, add_timer=True)
 
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
@@ -784,6 +784,6 @@ if __name__ == '__main__':
                             ], "device should be CPU, GPU or XPU"
     assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
 
-    assert not (FLAGS.enable_mkldnn==False and FLAGS.enable_mkldnn_bfloat16==True), 'To enable mkldnn bfloat, please turn on botht enable_mkldnn and enable_mkldnn_bfloat16'
+    assert not (FLAGS.enable_mkldnn==False and FLAGS.enable_mkldnn_bfloat16==True), 'To enable mkldnn bfloat, please turn on both enable_mkldnn and enable_mkldnn_bfloat16'
 
     main()
