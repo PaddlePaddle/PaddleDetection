@@ -47,8 +47,8 @@ class SSD(BaseArch):
             assert isinstance(self.backbone, ResNet) and \
                    self.backbone.depth == 34, \
                 "If you set r34_backbone=True, please use ResNet-34 as backbone."
-            self.backbone.res_layers[2].blocks[0].branch2a.conv._stride = [1, 1]
-            self.backbone.res_layers[2].blocks[0].short.conv._stride = [1, 1]
+            self.backbone.res_layers[2].blocks[0].ssd_resnet_block._stride1 = 1
+            self.backbone.res_layers[2].blocks[0].ssd_resnet_block._stride3 = 1
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):

@@ -79,9 +79,8 @@ class SSDExtraHead(nn.Layer):
 
     def _make_layers(self, c_in, c_hidden, c_out, stride_3x3, padding_3x3):
         return nn.Sequential(
-            nn.Conv2D(c_in, c_hidden, 1),
-            nn.ReLU(),
-            nn.Conv2D(c_hidden, c_out, 3, stride_3x3, padding_3x3), nn.ReLU())
+            paddle.incubate.xpu.conv.Conv2DWithBiasAct(c_in, c_hidden, 1, act_type='relu'),
+            paddle.incubate.xpu.conv.Conv2DWithBiasAct(c_hidden, c_out, 3, stride_3x3, padding_3x3, act_type= 'relu'))
 
     def forward(self, x):
         out = [x]
@@ -143,11 +142,12 @@ class SSDHead(nn.Layer):
             if not use_sepconv:
                 box_conv = self.add_sublayer(
                     box_conv_name,
-                    nn.Conv2D(
+                    paddle.incubate.xpu.conv.Conv2DWithBiasAct(
                         in_channels=self.in_channels[i],
                         out_channels=num_prior * 4,
                         kernel_size=kernel_size,
-                        padding=padding))
+                        padding=padding,
+                        act_type="linear"))
             else:
                 box_conv = self.add_sublayer(
                     box_conv_name,
@@ -163,11 +163,12 @@ class SSDHead(nn.Layer):
             if not use_sepconv:
                 score_conv = self.add_sublayer(
                     score_conv_name,
-                    nn.Conv2D(
+                    paddle.incubate.xpu.conv.Conv2DWithBiasAct(
                         in_channels=self.in_channels[i],
                         out_channels=num_prior * self.num_classes,
                         kernel_size=kernel_size,
-                        padding=padding))
+                        padding=padding,
+                        act_type="linear"))
             else:
                 score_conv = self.add_sublayer(
                     score_conv_name,
