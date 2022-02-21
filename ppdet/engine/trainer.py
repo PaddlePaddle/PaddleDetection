@@ -386,7 +386,10 @@ class Trainer(object):
                 data['epoch_id'] = epoch_id
 
                 if self.cfg.get('fp16', False):
-                    with amp.auto_cast(enable=self.cfg.use_gpu):
+                    custom_black_list = []
+                    custom_white_list = ['resnet_basic_block', 'fused_conv2d_bias_act']
+                    with amp.auto_cast(enable=self.cfg.use_xpu, custom_black_list=custom_black_list,
+                            custom_white_list=custom_white_list):
                         # model forward
                         outputs = model(data)
                         loss = outputs['loss']

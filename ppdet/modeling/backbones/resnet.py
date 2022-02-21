@@ -39,71 +39,6 @@ ResNet_cfg = {
     152: [3, 8, 36, 3],
 }
 
-class XPUFuseBasicBlock(nn.Layer):
-    expansion = 1
-
-    def __init__(self,
-                 ch_in,
-                 ch_out,
-                 stride,
-                 shortcut,
-                 variant='b',
-                 groups=1,
-                 base_width=64,
-                 lr=1.0,
-                 norm_type='bn',
-                 norm_decay=0.,
-                 freeze_norm=True,
-                 dcn_v2=False,
-                 std_senet=False):
-        super(XPUFuseBasicBlock, self).__init__()
-        assert groups == 1 and base_width == 64, 'BasicBlock only supports groups=1 and base_width=64'
-
-        self.shortcut = shortcut
-        if not shortcut:
-            self.ssd_resnet_block = ResNetBasicBlock(num_channels1=ch_in,
-                                                   num_filter1=ch_out,
-                                                   filter1_size=3,
-                                                   num_channels2=ch_out,
-                                                   num_filter2=ch_out,
-                                                   filter2_size=3,
-                                                   num_channels3=ch_in,
-                                                   num_filter3=ch_out,
-                                                   filter3_size=1,
-                                                   stride1=stride,
-                                                   #stride1=1,
-                                                   stride2=1,
-                                                   stride3=1,
-                                                   act='relu',
-                                                   padding1=1,
-                                                   padding2=1,
-                                                   padding3=0,
-                                                   has_shortcut=True)
-        else:
-            self.ssd_resnet_block = ResNetBasicBlock(num_channels1=ch_in,
-                                                   num_filter1=ch_out,
-                                                   filter1_size=3,
-                                                   num_channels2=ch_out,
-                                                   num_filter2=ch_out,
-                                                   filter2_size=3,
-                                                   num_channels3=ch_in,
-                                                   num_filter3=ch_out,
-                                                   filter3_size=1,
-                                                   stride1=stride,
-                                                   #stride1=1,
-                                                   stride2=1,
-                                                   stride3=1,
-                                                   act='relu',
-                                                   padding1=1,
-                                                   padding2=1,
-                                                   padding3=1,
-                                                   has_shortcut=False)
-
-    def forward(self, inputs):
-        out = self.ssd_resnet_block.forward(inputs, inputs)
-        return out
-
-
 class ConvNormLayer(nn.Layer):
     def __init__(self,
                  ch_in,
@@ -116,7 +51,8 @@ class ConvNormLayer(nn.Layer):
                  norm_decay=0.,
                  freeze_norm=True,
                  lr=1.0,
-                 dcn_v2=False):
+                 dcn_v2=False,
+                 xpu_fuse_bn_add_act=False):
         super(ConvNormLayer, self).__init__()
         assert norm_type in ['bn', 'sync_bn']
         self.norm_type = norm_type
@@ -167,23 +103,30 @@ class ConvNormLayer(nn.Layer):
             trainable=False if freeze_norm else True)
 
         global_stats = True if freeze_norm else False
-        if norm_type == 'sync_bn':
-            self.norm = nn.SyncBatchNorm(
-                ch_out, weight_attr=param_attr, bias_attr=bias_attr)
+        self.xpu_fuse_bn_add_act = xpu_fuse_bn_add_act
+        if xpu_fuse_bn_add_act:
+            self.xpu_fuse_bn_add_act = FusedBNAddAct([ch_out],
+              param_attr=param_attr,
+              bias_attr=bias_attr,
+              act="relu",
+              use_global_stats=global_stats,
+            )
+            norm_params = self.xpu_fuse_bn_add_act.parameters()
         else:
-            self.norm = nn.BatchNorm(
-                ch_out,
-                act=None,
-                param_attr=param_attr,
-                bias_attr=bias_attr,
-                use_global_stats=global_stats)
-        norm_params = self.norm.parameters()
+            self.xpu_fuse_norm = FusedBNAct(
+              [ch_out],
+              param_attr=param_attr,
+              bias_attr=bias_attr,
+              act=self.act,
+              use_global_stats=global_stats,
+            )
+            norm_params = self.xpu_fuse_norm.parameters()
 
         if freeze_norm:
             for param in norm_params:
                 param.stop_gradient = True
 
-    def forward(self, inputs):
+    def forward(self, inputs, z=None):
         if not self.dcn_v2:
             out = self.conv(inputs)
         else:
@@ -195,10 +138,10 @@ class ConvNormLayer(nn.Layer):
             mask = F.sigmoid(mask)
             out = self.conv(inputs, offset, mask=mask)
 
-        if self.norm_type in ['bn', 'sync_bn']:
-            out = self.norm(out)
-        if self.act:
-            out = getattr(F, self.act)(out)
+        if self.xpu_fuse_bn_add_act:
+            out = self.xpu_fuse_bn_add_act(out, z)
+        else:
+            out = self.xpu_fuse_norm(out)
         return out
 
 
@@ -305,25 +248,21 @@ class BasicBlock(nn.Layer):
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             lr=lr,
-            dcn_v2=dcn_v2)
+            dcn_v2=dcn_v2,
+            xpu_fuse_bn_add_act=True)
 
         self.std_senet = std_senet
         if self.std_senet:
             self.se = SELayer(ch_out)
 
     def forward(self, inputs):
-        out = self.branch2a(inputs)
-        out = self.branch2b(out)
-        if self.std_senet:
-            out = self.se(out)
-
         if self.shortcut:
             short = inputs
         else:
             short = self.short(inputs)
 
-        out = paddle.add(x=out, y=short)
-        out = F.relu(out)
+        out = self.branch2a(inputs)
+        out = self.branch2b(out, short)
 
         return out
 
@@ -595,7 +534,7 @@ class ResNet(nn.Layer):
 
         self.ch_in = ch_in
         ch_out_list = [64, 128, 256, 512]
-        block = BottleNeck if depth >= 50 else XPUFuseBasicBlock
+        block = BottleNeck if depth >= 50 else BasicBlock
 
 
         self._out_channels = [block.expansion * v for v in ch_out_list]
