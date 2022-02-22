@@ -242,7 +242,7 @@ class DetectorSOLOv2(Detector):
             threshold=threshold,
             trt_calib_mode=trt_calib_mode,
             enable_mkldn=enable_mkldnn,
-            enable_mkldnn_bfloat16=FLAGS.enable_mkldnn_bfloat16)
+            enable_mkldnn_bfloat16=enable_mkldnn_bfloat16)
 
     def predict(self,
                 image,
@@ -575,6 +575,7 @@ def main():
             device=FLAGS.device,
             run_mode=FLAGS.run_mode,
             trt_calib_mode=FLAGS.trt_calib_mode,
+            enable_mkldnn=FLAGS.enable_mkldnn,
             enable_mkldnn_bfloat16=FLAGS.enable_mkldnn_bfloat16)
     # predict from image
     if FLAGS.image_file != '':
@@ -659,6 +660,6 @@ if __name__ == '__main__':
     assert FLAGS.device in ['CPU', 'GPU', 'XPU'
                             ], "device should be CPU, GPU or XPU"
     assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
-    assert not (FLAGS.enable_mkldnn==False and FLAGS.enable_mkldnn_bfloat16==True),"To turn on mkldnn_bfloat, pleaseset both enable_mkldnn and enable_mkldnn_bfloat16 True" 
+    assert not (FLAGS.enable_mkldnn==False and FLAGS.enable_mkldnn_bfloat16==True),"To turn on mkldnn_bfloat, please set both enable_mkldnn and enable_mkldnn_bfloat16 True" 
 
     main()
