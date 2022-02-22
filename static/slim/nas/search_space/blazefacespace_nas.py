@@ -34,7 +34,7 @@ class BlazeFaceNasSpace(SearchSpaceBase):
         self.double_filter_num = np.array(
             [8, 12, 16, 24, 32, 40, 48, 64, 72, 80, 88, 96])
         self.use_5x5kernel = np.array(
-            [0, ]
+            [0]
         )  ### if constraint is latency, use 3x3 kernel, otherwise self.use_5x5kernel = np.array([0, 1])
 
     def init_tokens(self):
@@ -76,7 +76,8 @@ class BlazeFaceNasSpace(SearchSpaceBase):
             self.double_filter_num[tokens[3]]
         ]]
 
-        is_5x5kernel = True if self.use_5x5kernel[tokens[8]] else False
+        ### if constraint is latency, use 3x3 kernel, otherwise is_5x5kernel = True if self.use_5x5kernel[tokens[8]] else False
+        is_5x5kernel = False  ###True if self.use_5x5kernel[tokens[8]] else False
         return blaze_filters, double_blaze_filters, is_5x5kernel
 
     def token2arch(self, tokens=None):
