@@ -23,10 +23,16 @@ import cv2
 import math
 import numpy as np
 import paddle
+
+import sys
+# add deploy path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'])))
+sys.path.insert(0, parent_path)
+
 from preprocess import preprocess, NormalizeImage, Permute
 from keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
 from keypoint_postprocess import HrHRNetPostProcess, HRNetPostProcess
-from visualize import draw_pose
+from visualize import visualize_pose
 from paddle.inference import Config
 from paddle.inference import create_predictor
 from utils import argsparser, Timer, get_current_memory_mb
@@ -43,10 +49,10 @@ KEYPOINT_SUPPORT_MODELS = {
 class KeyPoint_Detector(Detector):
     """
     Args:
-        config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
@@ -58,7 +64,6 @@ class KeyPoint_Detector(Detector):
     """
 
     def __init__(self,
-                 pred_config,
                  model_dir,
                  device='CPU',
                  run_mode='paddle',
@@ -69,9 +74,10 @@ class KeyPoint_Detector(Detector):
                  trt_calib_mode=False,
                  cpu_threads=1,
                  enable_mkldnn=False,
+                 output_dir='output',
+                 threshold=0.5,
                  use_dark=True):
         super(KeyPoint_Detector, self).__init__(
-            pred_config=pred_config,
             model_dir=model_dir,
             device=device,
             run_mode=run_mode,
@@ -81,8 +87,13 @@ class KeyPoint_Detector(Detector):
             trt_opt_shape=trt_opt_shape,
             trt_calib_mode=trt_calib_mode,
             cpu_threads=cpu_threads,
-            enable_mkldnn=enable_mkldnn)
+            enable_mkldnn=enable_mkldnn,
+            output_dir=output_dir,
+            threshold=threshold, )
         self.use_dark = use_dark
+
+    def set_config(self, model_dir):
+        return PredictConfig_KeyPoint(model_dir)
 
     def get_person_from_rect(self, image, results, det_threshold=0.5):
         # crop the person result from image
@@ -103,29 +114,15 @@ class KeyPoint_Detector(Detector):
         self.det_times.preprocess_time_s.end()
         return rect_images, new_rects, org_rects
 
-    def preprocess(self, image_list):
-        preprocess_ops = []
-        for op_info in self.pred_config.preprocess_infos:
-            new_op_info = op_info.copy()
-            op_type = new_op_info.pop('type')
-            preprocess_ops.append(eval(op_type)(**new_op_info))
-
-        input_im_lst = []
-        input_im_info_lst = []
-        for im in image_list:
-            im, im_info = preprocess(im, preprocess_ops)
-            input_im_lst.append(im)
-            input_im_info_lst.append(im_info)
-        inputs = create_inputs(input_im_lst, input_im_info_lst)
-        return inputs
-
-    def postprocess(self, np_boxes, np_masks, inputs, threshold=0.5):
+    def postprocess(self, inputs, result):
+        np_heatmap = result['heatmap']
+        np_masks = result['masks']
         # postprocess output of predictor
         if KEYPOINT_SUPPORT_MODELS[
                 self.pred_config.arch] == 'keypoint_bottomup':
             results = {}
             h, w = inputs['im_shape'][0]
-            preds = [np_boxes]
+            preds = [np_heatmap]
             if np_masks is not None:
                 preds += np_masks
             preds += [h, w]
@@ -139,44 +136,30 @@ class KeyPoint_Detector(Detector):
             center = np.round(imshape / 2.)
             scale = imshape / 200.
             keypoint_postprocess = HRNetPostProcess(use_dark=self.use_dark)
-            results['keypoint'] = keypoint_postprocess(np_boxes, center, scale)
+            results['keypoint'] = keypoint_postprocess(np_heatmap, center,
+                                                       scale)
             return results
         else:
             raise ValueError("Unsupported arch: {}, expect {}".format(
                 self.pred_config.arch, KEYPOINT_SUPPORT_MODELS))
 
-    def predict(self, image_list, threshold=0.5, repeats=1, add_timer=True):
+    def predict(self, repeats=1):
         '''
         Args:
-            image_list (list): list of image 
-            threshold (float): threshold of predicted box' score
             repeats (int): repeat number for prediction
-            add_timer (bool): whether add timer during prediction
         Returns:
             results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
                             matix element:[class, score, x_min, y_min, x_max, y_max]
                             MaskRCNN's results include 'masks': np.ndarray:
                             shape: [N, im_h, im_w]
         '''
-        # preprocess
-        if add_timer:
-            self.det_times.preprocess_time_s.start()
-        inputs = self.preprocess(image_list)
-        np_boxes, np_masks = None, None
-        input_names = self.predictor.get_input_names()
-        for i in range(len(input_names)):
-            input_tensor = self.predictor.get_input_handle(input_names[i])
-            input_tensor.copy_from_cpu(inputs[input_names[i]])
-        if add_timer:
-            self.det_times.preprocess_time_s.end()
-            self.det_times.inference_time_s.start()
-
         # model prediction
+        np_heatmap, np_masks = None, None
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
-            boxes_tensor = self.predictor.get_output_handle(output_names[0])
-            np_boxes = boxes_tensor.copy_to_cpu()
+            heatmap_tensor = self.predictor.get_output_handle(output_names[0])
+            np_heatmap = heatmap_tensor.copy_to_cpu()
             if self.pred_config.tagmap:
                 masks_tensor = self.predictor.get_output_handle(output_names[1])
                 heat_k = self.predictor.get_output_handle(output_names[2])
@@ -185,17 +168,112 @@ class KeyPoint_Detector(Detector):
                     masks_tensor.copy_to_cpu(), heat_k.copy_to_cpu(),
                     inds_k.copy_to_cpu()
                 ]
-        if add_timer:
-            self.det_times.inference_time_s.end(repeats=repeats)
-            self.det_times.postprocess_time_s.start()
+        result = dict(heatmap=np_heatmap, masks=np_masks)
+        return result
 
-        # postprocess
-        results = self.postprocess(
-            np_boxes, np_masks, inputs, threshold=threshold)
-        if add_timer:
-            self.det_times.postprocess_time_s.end()
-            self.det_times.img_num += len(image_list)
+    def predict_image(self,
+                      image_list,
+                      run_benchmark=False,
+                      repeats=1,
+                      visual=True):
+        results = []
+        batch_loop_cnt = math.ceil(float(len(image_list)) / self.batch_size)
+        for i in range(batch_loop_cnt):
+            start_index = i * self.batch_size
+            end_index = min((i + 1) * self.batch_size, len(image_list))
+            batch_image_list = image_list[start_index:end_index]
+            if run_benchmark:
+                # preprocess
+                inputs = self.preprocess(batch_image_list)  # warmup
+                self.det_times.preprocess_time_s.start()
+                inputs = self.preprocess(batch_image_list)
+                self.det_times.preprocess_time_s.end()
+
+                # model prediction
+                result_warmup = self.predict(repeats=repeats)  # warmup
+                self.det_times.inference_time_s.start()
+                result = self.predict(repeats=repeats)
+                self.det_times.inference_time_s.end(repeats=repeats)
+
+                # postprocess
+                result_warmup = self.postprocess(inputs, result)  # warmup
+                self.det_times.postprocess_time_s.start()
+                result = self.postprocess(inputs, result)
+                self.det_times.postprocess_time_s.end()
+                self.det_times.img_num += len(batch_image_list)
+
+                cm, gm, gu = get_current_memory_mb()
+                self.cpu_mem += cm
+                self.gpu_mem += gm
+                self.gpu_util += gu
+
+            else:
+                # preprocess
+                self.det_times.preprocess_time_s.start()
+                inputs = self.preprocess(batch_image_list)
+                self.det_times.preprocess_time_s.end()
+
+                # model prediction
+                self.det_times.inference_time_s.start()
+                result = self.predict()
+                self.det_times.inference_time_s.end()
+
+                # postprocess
+                self.det_times.postprocess_time_s.start()
+                result = self.postprocess(inputs, result)
+                self.det_times.postprocess_time_s.end()
+                self.det_times.img_num += len(batch_image_list)
+
+                if visual:
+                    if not os.path.exists(self.output_dir):
+                        os.makedirs(self.output_dir)
+                    visualize(
+                        batch_image_list,
+                        result,
+                        visual_thresh=self.threshold,
+                        save_dir=self.output_dir)
+
+            results.append(result)
+            if visual:
+                print('Test iter {}'.format(i))
+        results = self.merge_batch_result(results)
         return results
+
+    def predict_video(self, video_file, camera_id):
+        video_name = 'output.mp4'
+        if camera_id != -1:
+            capture = cv2.VideoCapture(camera_id)
+        else:
+            capture = cv2.VideoCapture(video_file)
+            video_name = os.path.split(video_file)[-1]
+        # Get Video info : resolution, fps, frame count
+        width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = int(capture.get(cv2.CAP_PROP_FPS))
+        frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        print("fps: %d, frame_count: %d" % (fps, frame_count))
+
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+        out_path = os.path.join(self.output_dir, video_name)
+        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+        writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+        index = 1
+        while (1):
+            ret, frame = capture.read()
+            if not ret:
+                break
+            print('detect frame: %d' % (index))
+            index += 1
+            results = self.predict_image([frame], visual=False)
+            im = visualize_pose(
+                frame, results, visual_thresh=self.threshold, returnimg=True)
+            writer.write(im)
+            if camera_id != -1:
+                cv2.imshow('Mask Detection', im)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+        writer.release()
 
 
 def create_inputs(imgs, im_info):
@@ -258,90 +336,43 @@ class PredictConfig_KeyPoint():
         print('--------------------------------------------')
 
 
-def predict_image(detector, image_list):
-    for i, img_file in enumerate(image_list):
-        if FLAGS.run_benchmark:
-            # warmup 
-            detector.predict(
-                [img_file], FLAGS.threshold, repeats=10, add_timer=False)
-            # run benchmark
-            detector.predict(
-                [img_file], FLAGS.threshold, repeats=10, add_timer=True)
-            cm, gm, gu = get_current_memory_mb()
-            detector.cpu_mem += cm
-            detector.gpu_mem += gm
-            detector.gpu_util += gu
-            print('Test iter {}, file name:{}'.format(i, img_file))
-        else:
-            results = detector.predict([img_file], FLAGS.threshold)
-            if not os.path.exists(FLAGS.output_dir):
-                os.makedirs(FLAGS.output_dir)
-            draw_pose(
-                img_file,
-                results,
-                visual_thread=FLAGS.threshold,
-                save_dir=FLAGS.output_dir)
-
-
-def predict_video(detector, camera_id):
-    video_name = 'output.mp4'
-    if camera_id != -1:
-        capture = cv2.VideoCapture(camera_id)
-    else:
-        capture = cv2.VideoCapture(FLAGS.video_file)
-        video_name = os.path.split(FLAGS.video_file)[-1]
-    # Get Video info : resolution, fps, frame count
-    width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(capture.get(cv2.CAP_PROP_FPS))
-    frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-    print("fps: %d, frame_count: %d" % (fps, frame_count))
-
-    if not os.path.exists(FLAGS.output_dir):
-        os.makedirs(FLAGS.output_dir)
-    out_path = os.path.join(FLAGS.output_dir, video_name + '.mp4')
-    fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
-    writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
-    index = 1
-    while (1):
-        ret, frame = capture.read()
-        if not ret:
-            break
-        print('detect frame: %d' % (index))
-        index += 1
-        results = detector.predict([frame], FLAGS.threshold)
-        im = draw_pose(
-            frame, results, visual_thread=FLAGS.threshold, returnimg=True)
-        writer.write(im)
-        if camera_id != -1:
-            cv2.imshow('Mask Detection', im)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-    writer.release()
+def visualize(image_list, results, visual_thresh=0.6, save_dir='output'):
+    im_results = {}
+    for i, image_file in enumerate(image_list):
+        skeletons, scores = results['keypoint']
+        skeleton = skeletons[i:i + 1]
+        score = scores[i:i + 1]
+        im_results['keypoint'] = [skeleton, score]
+        visualize_pose(
+            image_file,
+            im_results,
+            visual_thresh=visual_thresh,
+            save_dir=save_dir)
 
 
 def main():
-    pred_config = PredictConfig_KeyPoint(FLAGS.model_dir)
     detector = KeyPoint_Detector(
-        pred_config,
         FLAGS.model_dir,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
+        batch_size=FLAGS.batch_size,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
         trt_opt_shape=FLAGS.trt_opt_shape,
         trt_calib_mode=FLAGS.trt_calib_mode,
         cpu_threads=FLAGS.cpu_threads,
         enable_mkldnn=FLAGS.enable_mkldnn,
+        threshold=FLAGS.threshold,
+        output_dir=FLAGS.output_dir,
         use_dark=FLAGS.use_dark)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
-        predict_video(detector, FLAGS.camera_id)
+        detector.predict_video(FLAGS.video_file, FLAGS.camera_id)
     else:
         # predict from image
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        predict_image(detector, img_list)
+        detector.predict_image(img_list, FLAGS.run_benchmark, repeats=10)
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)
         else:

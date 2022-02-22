@@ -18,12 +18,13 @@ import cv2
 import math
 import numpy as np
 import paddle
+import yaml
 
 from det_keypoint_unite_utils import argsparser
 from preprocess import decode_image
 from infer import Detector, DetectorPicoDet, PredictConfig, print_arguments, get_test_images
 from keypoint_infer import KeyPoint_Detector, PredictConfig_KeyPoint
-from visualize import draw_pose
+from visualize import visualize_pose
 from benchmark_utils import PaddleInferBenchmark
 from utils import get_current_memory_mb
 from keypoint_postprocess import translate_to_ori_images
@@ -59,32 +60,15 @@ def predict_with_given_det(image, det_res, keypoint_detector,
         image, det_res, det_threshold)
     keypoint_vector = []
     score_vector = []
+
     rect_vector = det_rects
-    batch_loop_cnt = math.ceil(float(len(rec_images)) / keypoint_batch_size)
-
-    for i in range(batch_loop_cnt):
-        start_index = i * keypoint_batch_size
-        end_index = min((i + 1) * keypoint_batch_size, len(rec_images))
-        batch_images = rec_images[start_index:end_index]
-        batch_records = np.array(records[start_index:end_index])
-        if run_benchmark:
-            # warmup
-            keypoint_result = keypoint_detector.predict(
-                batch_images, keypoint_threshold, repeats=10, add_timer=False)
-            # run benchmark
-            keypoint_result = keypoint_detector.predict(
-                batch_images, keypoint_threshold, repeats=10, add_timer=True)
-        else:
-            keypoint_result = keypoint_detector.predict(batch_images,
-                                                        keypoint_threshold)
-        orgkeypoints, scores = translate_to_ori_images(keypoint_result,
-                                                       batch_records)
-        keypoint_vector.append(orgkeypoints)
-        score_vector.append(scores)
-
+    keypoint_results = keypoint_detector.predict_image(
+        rec_images, run_benchmark, repeats=10, visual=False)
+    keypoint_vector, score_vector = translate_to_ori_images(keypoint_results,
+                                                            np.array(records))
     keypoint_res = {}
     keypoint_res['keypoint'] = [
-        np.vstack(keypoint_vector).tolist(), np.vstack(score_vector).tolist()
+        keypoint_vector.tolist(), score_vector.tolist()
     ] if len(keypoint_vector) > 0 else [[], []]
     keypoint_res['bbox'] = rect_vector
     return keypoint_res
@@ -104,18 +88,15 @@ def topdown_unite_predict(detector,
         det_timer.preprocess_time_s.end()
 
         if FLAGS.run_benchmark:
-            # warmup
-            results = detector.predict(
-                [image], FLAGS.det_threshold, repeats=10, add_timer=False)
-            # run benchmark
-            results = detector.predict(
-                [image], FLAGS.det_threshold, repeats=10, add_timer=True)
+            results = detector.predict_image(
+                [image], run_benchmark=True, repeats=10)
+
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
             detector.gpu_mem += gm
             detector.gpu_util += gu
         else:
-            results = detector.predict([image], FLAGS.det_threshold)
+            results = detector.predict_image([image], visual=False)
 
         if results['boxes_num'] == 0:
             continue
@@ -137,10 +118,10 @@ def topdown_unite_predict(detector,
         else:
             if not os.path.exists(FLAGS.output_dir):
                 os.makedirs(FLAGS.output_dir)
-            draw_pose(
+            visualize_pose(
                 img_file,
                 keypoint_res,
-                visual_thread=FLAGS.keypoint_threshold,
+                visual_thresh=FLAGS.keypoint_threshold,
                 save_dir=FLAGS.output_dir)
     if save_res:
         """
@@ -188,16 +169,17 @@ def topdown_unite_predict_video(detector,
         print('detect frame: %d' % (index))
 
         frame2 = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = detector.predict([frame2], FLAGS.det_threshold)
+
+        results = detector.predict_image([frame2], visual=False)
 
         keypoint_res = predict_with_given_det(
             frame2, results, topdown_keypoint_detector, keypoint_batch_size,
             FLAGS.det_threshold, FLAGS.keypoint_threshold, FLAGS.run_benchmark)
 
-        im = draw_pose(
+        im = visualize_pose(
             frame,
             keypoint_res,
-            visual_thread=FLAGS.keypoint_threshold,
+            visual_thresh=FLAGS.keypoint_threshold,
             returnimg=True)
         if save_res:
             store_res.append([
@@ -211,6 +193,7 @@ def topdown_unite_predict_video(detector,
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
     writer.release()
+    print('output_video saved to: {}'.format(out_path))
     if save_res:
         """
         1) store_res: a list of frame_data
@@ -224,13 +207,15 @@ def topdown_unite_predict_video(detector,
 
 
 def main():
-    pred_config = PredictConfig(FLAGS.det_model_dir)
+    deploy_file = os.path.join(FLAGS.det_model_dir, 'infer_cfg.yml')
+    with open(deploy_file) as f:
+        yml_conf = yaml.safe_load(f)
+    arch = yml_conf['arch']
     detector_func = 'Detector'
-    if pred_config.arch == 'PicoDet':
+    if arch == 'PicoDet':
         detector_func = 'DetectorPicoDet'
 
-    detector = eval(detector_func)(pred_config,
-                                   FLAGS.det_model_dir,
+    detector = eval(detector_func)(FLAGS.det_model_dir,
                                    device=FLAGS.device,
                                    run_mode=FLAGS.run_mode,
                                    trt_min_shape=FLAGS.trt_min_shape,
@@ -238,14 +223,10 @@ def main():
                                    trt_opt_shape=FLAGS.trt_opt_shape,
                                    trt_calib_mode=FLAGS.trt_calib_mode,
                                    cpu_threads=FLAGS.cpu_threads,
-                                   enable_mkldnn=FLAGS.enable_mkldnn)
+                                   enable_mkldnn=FLAGS.enable_mkldnn,
+                                   threshold=FLAGS.det_threshold)
 
-    pred_config = PredictConfig_KeyPoint(FLAGS.keypoint_model_dir)
-    assert KEYPOINT_SUPPORT_MODELS[
-        pred_config.
-        arch] == 'keypoint_topdown', 'Detection-Keypoint unite inference only supports topdown models.'
     topdown_keypoint_detector = KeyPoint_Detector(
-        pred_config,
         FLAGS.keypoint_model_dir,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
@@ -257,6 +238,9 @@ def main():
         cpu_threads=FLAGS.cpu_threads,
         enable_mkldnn=FLAGS.enable_mkldnn,
         use_dark=FLAGS.use_dark)
+    keypoint_arch = topdown_keypoint_detector.pred_config.arch
+    assert KEYPOINT_SUPPORT_MODELS[
+        keypoint_arch] == 'keypoint_topdown', 'Detection-Keypoint unite inference only supports topdown models.'
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:

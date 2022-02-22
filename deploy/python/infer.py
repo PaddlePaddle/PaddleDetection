@@ -32,6 +32,7 @@ sys.path.insert(0, parent_path)
 from benchmark_utils import PaddleInferBenchmark
 from picodet_postprocess import PicoDetPostProcess
 from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine
+from keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
 from visualize import visualize_box_mask
 from utils import argsparser, Timer, get_current_memory_mb
 
@@ -71,7 +72,6 @@ class Detector(object):
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
         enable_mkldnn (bool): whether to open MKLDNN
-        visual (bool): Whether visualize the output
         output_dir (str): The path of output
         threshold (float): The threshold of score for visualization
     """
@@ -88,7 +88,7 @@ class Detector(object):
             trt_calib_mode=False,
             cpu_threads=1,
             enable_mkldnn=False,
-            output_dir='./',
+            output_dir='output',
             threshold=0.5, ):
         self.pred_config = self.set_config(model_dir)
         self.predictor, self.config = load_predictor(
@@ -169,6 +169,16 @@ class Detector(object):
         result = dict(boxes=np_boxes, masks=np_masks, boxes_num=np_boxes_num)
         return result
 
+    def merge_batch_result(self, batch_result):
+        if len(batch_result) == 1:
+            return batch_result[0]
+        res_key = batch_result[0].keys()
+        results = {k: [] for k in res_key}
+        for res in batch_result:
+            for k, v in res.items():
+                results[k].append(v)
+        return results
+
     def get_timer(self):
         return self.det_times
 
@@ -178,6 +188,7 @@ class Detector(object):
                       repeats=1,
                       visual=True):
         batch_loop_cnt = math.ceil(float(len(image_list)) / self.batch_size)
+        results = []
         for i in range(batch_loop_cnt):
             start_index = i * self.batch_size
             end_index = min((i + 1) * self.batch_size, len(image_list))
@@ -231,10 +242,12 @@ class Detector(object):
                         output_dir=self.output_dir,
                         threshold=self.threshold)
 
+            results.append(result)
             if visual:
                 print('Test iter {}'.format(i))
 
-        return result
+        results = self.merge_batch_result(results)
+        return results
 
     def predict_video(self, video_file, camera_id):
         video_out_name = 'output.mp4'
@@ -262,11 +275,11 @@ class Detector(object):
                 break
             print('detect frame: %d' % (index))
             index += 1
-            result = self.predict_image([frame], visual=False)
+            results = self.predict_image([frame], visual=False)
 
             im = visualize_box_mask(
                 frame,
-                result,
+                results,
                 self.pred_config.labels,
                 threshold=self.threshold)
             im = np.array(im)
