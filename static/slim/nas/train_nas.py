@@ -62,6 +62,8 @@ except ImportError as e:
 
 from paddleslim.analysis import flops, TableLatencyEvaluator
 from paddleslim.nas import SANAS
+### register search space to paddleslim
+import search_space
 
 
 @register
