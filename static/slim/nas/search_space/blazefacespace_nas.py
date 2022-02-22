@@ -33,7 +33,9 @@ class BlazeFaceNasSpace(SearchSpaceBase):
         self.mid_filter_num = np.array([8, 12, 16, 20, 24, 32])
         self.double_filter_num = np.array(
             [8, 12, 16, 24, 32, 40, 48, 64, 72, 80, 88, 96])
-        self.use_5x5kernel = np.array([0, 1])
+        self.use_5x5kernel = np.array(
+            [0, ]
+        )  ### if constraint is latency, use 3x3 kernel, otherwise self.use_5x5kernel = np.array([0, 1])
 
     def init_tokens(self):
         return [2, 1, 3, 8, 2, 1, 2, 1, 1]
