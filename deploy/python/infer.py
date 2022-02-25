@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
 import yaml
 import glob
@@ -622,11 +623,70 @@ def visualize(image_list, results, labels, output_dir='output/', threshold=0.5):
         im = visualize_box_mask(
             image_file, im_results, labels, threshold=threshold)
         img_name = os.path.split(image_file)[-1]
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
         out_path = os.path.join(output_dir, img_name)
         im.save(out_path, quality=95)
         print("save result to: " + out_path)
+
+
+def format_results(
+        image_list,
+        results,
+        labels, ):
+    '''save_results
+    '''
+    start_idx = 0
+    coco_results = []
+    for idx, image_file in enumerate(image_list):
+        im_bboxes_num = results['boxes_num'][idx]
+
+        idx_slice = slice(start_idx, start_idx + im_bboxes_num)
+        start_idx += im_bboxes_num
+
+        if 'boxes' in results:
+            boxes = results['boxes'][idx_slice, :]
+            per_results = [
+                {
+                    'image_file': image_file,
+                    'bbox': [box[2], box[3], box[4] - box[2],
+                             box[5] - box[3]],  # xyxy -> xywh
+                    'score': box[1],
+                    'category_id': box[0],
+                    # 'label': labels[int(box[0])]
+                } for k, box in enumerate(boxes.tolist())
+            ]
+
+        elif 'segm' in results:
+            import pycocotools.mask as mask_util
+
+            scores = results['score'][idx_slice].tolist()
+            category_ids = results['label'][idx_slice].tolist()
+            segms = results['segm'][idx_slice, :]
+            rles = [
+                mask_util.encode(
+                    np.array(
+                        mask[:, :, np.newaxis], dtype=np.uint8, order='F'))[0]
+                for mask in segms
+            ]
+            for rle in rles:
+                rle['counts'] = rle['counts'].decode('utf-8')
+
+            per_results = [
+                {
+                    'image_file': image_file,
+                    'segmentation': rle,
+                    'score': scores[k],
+                    'category_id': category_ids[k],
+                    # 'label': labels[int(category_ids[k])]
+                } for k, rle in enumerate(rles)
+            ]
+
+        else:
+            raise RuntimeError('')
+
+        # per_results = [item for item in per_results if item['score'] > threshold]
+        coco_results.extend(per_results)
+
+    return coco_results
 
 
 def print_arguments(args):
@@ -638,6 +698,7 @@ def print_arguments(args):
 
 def predict_image(detector, image_list, batch_size=1):
     batch_loop_cnt = math.ceil(float(len(image_list)) / batch_size)
+    coco_results = []
     for i in range(batch_loop_cnt):
         start_index = i * batch_size
         end_index = min((i + 1) * batch_size, len(image_list))
@@ -655,14 +716,30 @@ def predict_image(detector, image_list, batch_size=1):
             detector.gpu_mem += gm
             detector.gpu_util += gu
             print('Test iter {}'.format(i))
+
         else:
             results = detector.predict(batch_image_list, FLAGS.threshold)
+
+            if not os.path.exists(FLAGS.output_dir):
+                os.makedirs(FLAGS.output_dir)
+
             visualize(
                 batch_image_list,
                 results,
                 detector.pred_config.labels,
                 output_dir=FLAGS.output_dir,
                 threshold=FLAGS.threshold)
+
+            if FLAGS.save_dets:
+                coco_results.extend(
+                    format_results(
+                        batch_image_list,
+                        results,
+                        detector.pred_config.labels, ))
+
+    if FLAGS.save_dets:
+        with open(os.path.join(FLAGS.output_dir, 'results.json'), 'w') as f:
+            json.dump(coco_results, f)
 
 
 def predict_video(detector, camera_id):
@@ -682,7 +759,7 @@ def predict_video(detector, camera_id):
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_out_name)
-    fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     index = 1
     while (1):

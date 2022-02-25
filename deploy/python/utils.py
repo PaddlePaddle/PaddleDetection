@@ -134,6 +134,12 @@ def argsparser():
         type=bool,
         default=True,
         help='whether to use darkpose to get better keypoint position predict ')
+    parser.add_argument(
+        '--save_dets',
+        type=bool,
+        default=True,
+        help='Save detection results (json) for each image')
+
     return parser
 
 
