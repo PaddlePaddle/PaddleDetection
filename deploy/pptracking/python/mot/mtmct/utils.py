@@ -498,7 +498,7 @@ def get_sim_matrix(cid_tid_dict,
                    use_ff=True,
                    use_rerank=True,
                    use_st_filter=False):
-    # Note: carame independent get_sim_matrix function,
+    # Note: camera independent get_sim_matrix function,
     # which is different from the one in camera_utils.py.
     count = len(cid_tids)
 

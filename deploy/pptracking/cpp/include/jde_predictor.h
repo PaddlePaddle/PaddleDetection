@@ -39,7 +39,7 @@ class JDEPredictor {
   explicit JDEPredictor(const std::string& device = "CPU",
                         const std::string& model_dir = "",
                         const double threshold = -1.,
-                        const std::string& run_mode = "fluid",
+                        const std::string& run_mode = "paddle",
                         const int gpu_id = 0,
                         const bool use_mkldnn = false,
                         const int cpu_threads = 1,
@@ -61,7 +61,7 @@ class JDEPredictor {
 
   // Load Paddle inference model
   void LoadModel(const std::string& model_dir,
-                 const std::string& run_mode = "fluid");
+                 const std::string& run_mode = "paddle");
 
   // Run predictor
   void Predict(const std::vector<cv::Mat> imgs,

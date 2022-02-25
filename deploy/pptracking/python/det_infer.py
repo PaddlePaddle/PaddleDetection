@@ -47,7 +47,7 @@ class Detector(object):
         pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
-        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
         batch_size (int): size of pre batch in inference
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
@@ -62,7 +62,7 @@ class Detector(object):
                  pred_config,
                  model_dir,
                  device='CPU',
-                 run_mode='fluid',
+                 run_mode='paddle',
                  batch_size=1,
                  trt_min_shape=1,
                  trt_max_shape=1280,
@@ -180,7 +180,7 @@ class DetectorPicoDet(Detector):
         config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
-        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
         batch_size (int): size of pre batch in inference
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
@@ -195,7 +195,7 @@ class DetectorPicoDet(Detector):
                  pred_config,
                  model_dir,
                  device='CPU',
-                 run_mode='fluid',
+                 run_mode='paddle',
                  batch_size=1,
                  trt_min_shape=1,
                  trt_max_shape=1280,
@@ -370,7 +370,7 @@ class PredictConfig():
 
 
 def load_predictor(model_dir,
-                   run_mode='fluid',
+                   run_mode='paddle',
                    batch_size=1,
                    device='CPU',
                    min_subgraph_size=3,
@@ -385,7 +385,7 @@ def load_predictor(model_dir,
     Args:
         model_dir (str): root path of __model__ and __params__
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
-        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16/trt_int8)
+        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16/trt_int8)
         use_dynamic_shape (bool): use dynamic shape or not
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
@@ -397,7 +397,7 @@ def load_predictor(model_dir,
     Raises:
         ValueError: predict by TensorRT need device == 'GPU'.
     """
-    if device != 'GPU' and run_mode != 'fluid':
+    if device != 'GPU' and run_mode != 'paddle':
         raise ValueError(
             "Predict by TensorRT mode: {}, expect device=='GPU', but device == {}"
             .format(run_mode, device))
@@ -410,6 +410,7 @@ def load_predictor(model_dir,
         # optimize graph and fuse op
         config.switch_ir_optim(True)
     elif device == 'XPU':
+        config.enable_lite_engine()
         config.enable_xpu(10 * 1024 * 1024)
     else:
         config.disable_gpu()
@@ -569,7 +570,7 @@ def predict_video(detector, camera_id):
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_out_name)
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     index = 1
     while (1):

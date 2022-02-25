@@ -94,6 +94,10 @@ python setup.py install
 
 2. If you are using Python <= 3.6, `pycocotools` installing may failed with error like `distutils.errors.DistutilsError: Could not find suitable distribution for Requirement.parse('cython>=0.27.3')`, please install `cython` firstly, for example `pip install cython`
 
+3. If you are working on Windows OS, 'cython_bbox' installing may failed because of the author has not published to pypi as of yet. So you can pip install directly from the github repo:
+
+    ```pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox```
+
 After installation, make sure the tests pass:
 
 ```shell

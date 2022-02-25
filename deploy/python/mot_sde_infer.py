@@ -104,7 +104,7 @@ class SDE_Detector(Detector):
         pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
-        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
@@ -118,7 +118,7 @@ class SDE_Detector(Detector):
                  pred_config,
                  model_dir,
                  device='CPU',
-                 run_mode='fluid',
+                 run_mode='paddle',
                  batch_size=1,
                  trt_min_shape=1,
                  trt_max_shape=1088,
@@ -178,40 +178,43 @@ class SDE_Detector(Detector):
 
         return pred_dets, pred_xyxys
 
-    def predict(self, image, scaled, threshold=0.5, warmup=0, repeats=1):
+    def predict(self, image, scaled, threshold=0.5, repeats=1, add_timer=True):
         '''
         Args:
             image (np.ndarray): image numpy data
-            threshold (float): threshold of predicted box' score
             scaled (bool): whether the coords after detector outputs are scaled,
                 default False in jde yolov3, set True in general detector.
+            threshold (float): threshold of predicted box' score
+            repeats (int): repeat number for prediction
+            add_timer (bool): whether add timer during prediction
         Returns:
             pred_dets (np.ndarray, [N, 6])
         '''
-        self.det_times.preprocess_time_s.start()
+        # preprocess
+        if add_timer:
+            self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image)
-        self.det_times.preprocess_time_s.end()
 
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
 
-        for i in range(warmup):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            boxes_tensor = self.predictor.get_output_handle(output_names[0])
-            boxes = boxes_tensor.copy_to_cpu()
-
-        self.det_times.inference_time_s.start()
+        if add_timer:
+            self.det_times.preprocess_time_s.end()
+            self.det_times.inference_time_s.start()
+        # model prediction
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
             boxes_tensor = self.predictor.get_output_handle(output_names[0])
             boxes = boxes_tensor.copy_to_cpu()
-        self.det_times.inference_time_s.end(repeats=repeats)
 
-        self.det_times.postprocess_time_s.start()
+        if add_timer:
+            self.det_times.inference_time_s.end(repeats=repeats)
+            self.det_times.postprocess_time_s.start()
+
+        # postprocess
         if len(boxes) == 0:
             pred_dets = np.zeros((1, 6), dtype=np.float32)
             pred_xyxys = np.zeros((1, 4), dtype=np.float32)
@@ -223,8 +226,9 @@ class SDE_Detector(Detector):
             pred_dets, pred_xyxys = self.postprocess(
                 boxes, input_shape, im_shape, scale_factor, threshold, scaled)
 
-        self.det_times.postprocess_time_s.end()
-        self.det_times.img_num += 1
+        if add_timer:
+            self.det_times.postprocess_time_s.end()
+            self.det_times.img_num += 1
         return pred_dets, pred_xyxys
 
 
@@ -234,7 +238,7 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
         pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
-        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
@@ -248,7 +252,7 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
                  pred_config,
                  model_dir,
                  device='CPU',
-                 run_mode='fluid',
+                 run_mode='paddle',
                  batch_size=1,
                  trt_min_shape=1,
                  trt_max_shape=1088,
@@ -271,7 +275,8 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
         assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
         self.pred_config = pred_config
 
-    def postprocess_bboxes(self, boxes, input_shape, im_shape, scale_factor, threshold):
+    def postprocess_bboxes(self, boxes, input_shape, im_shape, scale_factor,
+                           threshold):
         over_thres_idx = np.nonzero(boxes[:, 1:2] >= threshold)[0]
         if len(over_thres_idx) == 0:
             pred_dets = np.zeros((1, 6), dtype=np.float32)
@@ -299,33 +304,35 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
             (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
         return pred_dets, pred_xyxys
 
-    def predict(self, image, scaled, threshold=0.5, warmup=0, repeats=1):
+    def predict(self, image, scaled, threshold=0.5, repeats=1, add_timer=True):
         '''
         Args:
             image (np.ndarray): image numpy data
-            threshold (float): threshold of predicted box' score
             scaled (bool): whether the coords after detector outputs are scaled,
                 default False in jde yolov3, set True in general detector.
+            threshold (float): threshold of predicted box' score
+            repeats (int): repeat number for prediction
+            add_timer (bool): whether add timer during prediction
+           
         Returns:
             pred_dets (np.ndarray, [N, 6])
         '''
-        self.det_times.preprocess_time_s.start()
+        # preprocess
+        if add_timer:
+            self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image)
-        self.det_times.preprocess_time_s.end()
 
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
 
-        np_score_list, np_boxes_list = [], []
-        for i in range(warmup):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            boxes_tensor = self.predictor.get_output_handle(output_names[0])
-            boxes = boxes_tensor.copy_to_cpu()
+        if add_timer:
+            self.det_times.preprocess_time_s.end()
+            self.det_times.inference_time_s.start()
 
-        self.det_times.inference_time_s.start()
+        # model prediction
+        np_score_list, np_boxes_list = [], []
         for i in range(repeats):
             self.predictor.run()
             np_score_list.clear()
@@ -340,9 +347,12 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
                     self.predictor.get_output_handle(output_names[
                         out_idx + num_outs]).copy_to_cpu())
 
-        self.det_times.inference_time_s.end(repeats=repeats)
-        self.det_times.img_num += 1
-        self.det_times.postprocess_time_s.start()
+        if add_timer:
+            self.det_times.inference_time_s.end(repeats=repeats)
+            self.det_times.img_num += 1
+            self.det_times.postprocess_time_s.start()
+
+        # postprocess
         self.postprocess = PicoDetPostProcess(
             inputs['image'].shape[2:],
             inputs['im_shape'],
@@ -360,16 +370,17 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
             scale_factor = inputs['scale_factor']
             pred_dets, pred_xyxys = self.postprocess_bboxes(
                 boxes, input_shape, im_shape, scale_factor, threshold)
-
+        if add_timer:
+            self.det_times.postprocess_time_s.end()
         return pred_dets, pred_xyxys
-        
+
 
 class SDE_ReID(object):
     def __init__(self,
                  pred_config,
                  model_dir,
                  device='CPU',
-                 run_mode='fluid',
+                 run_mode='paddle',
                  batch_size=50,
                  trt_min_shape=1,
                  trt_max_shape=1088,
@@ -445,35 +456,36 @@ class SDE_ReID(object):
 
         return online_tlwhs, online_scores, online_ids
 
-    def predict(self, crops, pred_dets, warmup=0, repeats=1):
-        self.det_times.preprocess_time_s.start()
+    def predict(self, crops, pred_dets, repeats=1, add_timer=True):
+        # preprocess
+        if add_timer:
+            self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(crops)
-        self.det_times.preprocess_time_s.end()
 
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
+        if add_timer:
+            self.det_times.preprocess_time_s.end()
+            self.det_times.inference_time_s.start()
 
-        for i in range(warmup):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            feature_tensor = self.predictor.get_output_handle(output_names[0])
-            pred_embs = feature_tensor.copy_to_cpu()
-
-        self.det_times.inference_time_s.start()
+        # model prediction
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
             feature_tensor = self.predictor.get_output_handle(output_names[0])
             pred_embs = feature_tensor.copy_to_cpu()
-        self.det_times.inference_time_s.end(repeats=repeats)
+        if add_timer:
+            self.det_times.inference_time_s.end(repeats=repeats)
+            self.det_times.postprocess_time_s.start()
 
-        self.det_times.postprocess_time_s.start()
+        # postprocess
         online_tlwhs, online_scores, online_ids = self.postprocess(pred_dets,
                                                                    pred_embs)
-        self.det_times.postprocess_time_s.end()
-        self.det_times.img_num += 1
+        if add_timer:
+            self.det_times.postprocess_time_s.end()
+            self.det_times.img_num += 1
 
         return online_tlwhs, online_scores, online_ids
 
@@ -483,8 +495,20 @@ def predict_image(detector, reid_model, image_list):
     for i, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
         if FLAGS.run_benchmark:
+            # warmup
             pred_dets, pred_xyxys = detector.predict(
-                [frame], FLAGS.scaled, FLAGS.threshold, warmup=10, repeats=10)
+                [frame],
+                FLAGS.scaled,
+                FLAGS.threshold,
+                repeats=10,
+                add_timer=True)
+            # run benchmark
+            pred_dets, pred_xyxys = detector.predict(
+                [frame],
+                FLAGS.scaled,
+                FLAGS.threshold,
+                repeats=10,
+                add_timer=True)
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
             detector.gpu_mem += gm
@@ -503,8 +527,12 @@ def predict_image(detector, reid_model, image_list):
             crops = reid_model.get_crops(pred_xyxys, frame)
 
             if FLAGS.run_benchmark:
+                # warmup
                 online_tlwhs, online_scores, online_ids = reid_model.predict(
-                    crops, pred_dets, warmup=10, repeats=10)
+                    crops, pred_dets, repeats=10, add_timer=False)
+                # run benchmark
+                online_tlwhs, online_scores, online_ids = reid_model.predict(
+                    crops, pred_dets, repeats=10, add_timer=False)
             else:
                 online_tlwhs, online_scores, online_ids = reid_model.predict(
                     crops, pred_dets)
@@ -538,7 +566,7 @@ def predict_video(detector, reid_model, camera_id):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
     if not FLAGS.save_images:
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     frame_id = 0
     timer = MOTTimer()

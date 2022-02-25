@@ -57,8 +57,8 @@ def argsparser():
     parser.add_argument(
         "--run_mode",
         type=str,
-        default='fluid',
-        help="mode of running(fluid/trt_fp32/trt_fp16/trt_int8)")
+        default='paddle',
+        help="mode of running(paddle/trt_fp32/trt_fp16/trt_int8)")
     parser.add_argument(
         "--device",
         type=str,

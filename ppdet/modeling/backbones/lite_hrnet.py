@@ -44,10 +44,8 @@ class ConvNormLayer(nn.Layer):
         self.act = act
         norm_lr = 0. if freeze_norm else 1.
         if norm_type is not None:
-            assert (
-                norm_type in ['bn', 'sync_bn', 'gn'],
-                "norm_type should be one of ['bn', 'sync_bn', 'gn'], but got {}".
-                format(norm_type))
+            assert norm_type in ['bn', 'sync_bn', 'gn'],\
+                "norm_type should be one of ['bn', 'sync_bn', 'gn'], but got {}".format(norm_type)
             param_attr = ParamAttr(
                 initializer=Constant(1.0),
                 learning_rate=norm_lr,
@@ -273,10 +271,8 @@ class ShuffleUnit(nn.Layer):
         branch_channel = out_channel // 2
         self.stride = stride
         if self.stride == 1:
-            assert (
-                in_channel == branch_channel * 2,
-                "when stride=1, in_channel {} should equal to branch_channel*2 {}"
-                .format(in_channel, branch_channel * 2))
+            assert in_channel == branch_channel * 2,\
+                "when stride=1, in_channel {} should equal to branch_channel*2 {}".format(in_channel, branch_channel * 2)
         if stride > 1:
             self.branch1 = nn.Sequential(
                 ConvNormLayer(
@@ -496,11 +492,10 @@ class LiteHRNetModule(nn.Layer):
                  freeze_norm=False,
                  norm_decay=0.):
         super(LiteHRNetModule, self).__init__()
-        assert (num_branches == len(in_channels),
-                "num_branches {} should equal to num_in_channels {}"
-                .format(num_branches, len(in_channels)))
-        assert (module_type in ['LITE', 'NAIVE'],
-                "module_type should be one of ['LITE', 'NAIVE']")
+        assert num_branches == len(in_channels),\
+            "num_branches {} should equal to num_in_channels {}".format(num_branches, len(in_channels))
+        assert module_type in ['LITE', 'NAIVE'],\
+            "module_type should be one of ['LITE', 'NAIVE']"
         self.num_branches = num_branches
         self.in_channels = in_channels
         self.multiscale_output = multiscale_output
@@ -695,10 +690,8 @@ class LiteHRNet(nn.Layer):
         super(LiteHRNet, self).__init__()
         if isinstance(return_idx, Integral):
             return_idx = [return_idx]
-        assert (
-            network_type in ["lite_18", "lite_30", "naive", "wider_naive"],
+        assert network_type in ["lite_18", "lite_30", "naive", "wider_naive"],\
             "the network_type should be one of [lite_18, lite_30, naive, wider_naive]"
-        )
         assert len(return_idx) > 0, "need one or more return index"
         self.freeze_at = freeze_at
         self.freeze_norm = freeze_norm

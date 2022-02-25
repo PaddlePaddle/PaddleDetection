@@ -24,8 +24,8 @@
 | HRNetv2-W18    | 1088x608 |  41.2  |  47.1  |  48809   |  241683  |  204346 |    -     | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_headtracking21.yml) |
 
 **注意:**
- FairMOT DLA-34使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。目前MOTA精度位于MOT官网[Head Tracking 21](https://motchallenge.net/results/Head_Tracking_21)榜单榜首。
- FairMOT HRNetv2-W18使用4个GPU进行训练，每个GPU上batch size为8，训练30个epoch。
+ - FairMOT DLA-34使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。目前MOTA精度位于MOT官网[Head Tracking 21](https://motchallenge.net/results/Head_Tracking_21)榜单榜首。
+ - FairMOT HRNetv2-W18使用4个GPU进行训练，每个GPU上batch size为8，训练30个epoch。
 
 ## 快速开始
 
@@ -52,7 +52,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/headtracking21/fa
 CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/headtracking21/fairmot_dla34_30e_1088x608_headtracking21.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams --video_file={your video name}.mp4  --save_videos
 ```
 **注意:**
- 请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
+ - 请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
 
 ### 4. 导出预测模型
 ```bash
@@ -61,11 +61,11 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/headtracking2
 
 ### 5. 用导出的模型基于Python去预测
 ```bash
-python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608_headtracking21 --video_file={your video name}.mp4 --device=GPU --save_mot_txts
+python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608_headtracking21 --video_file={your video name}.mp4 --device=GPU --save_mot_txts
 ```
 **注意:**
- 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
- 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
+ - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
 
 ## 引用
 ```

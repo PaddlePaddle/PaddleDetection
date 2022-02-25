@@ -473,7 +473,7 @@ def distribute_fpn_proposals(fpn_rois,
                              pixel_offset=False,
                              rois_num=None,
                              name=None):
-    """
+    r"""
     
     **This op only takes LoDTensor as input.** In Feature Pyramid Networks 
     (FPN) models, it is needed to distribute all proposals into different FPN 
@@ -1274,7 +1274,7 @@ def box_coder(prior_box,
               box_normalized=True,
               axis=0,
               name=None):
-    """
+    r"""
     **Box Coder Layer**
     Encode/Decode the target bounding box with the priorbox information.
     
@@ -1592,8 +1592,7 @@ def smooth_l1(input, label, inside_weight=None, outside_weight=None,
 
 def channel_shuffle(x, groups):
     batch_size, num_channels, height, width = x.shape[0:4]
-    assert (num_channels % groups == 0,
-            'num_channels should be divisible by groups')
+    assert num_channels % groups == 0, 'num_channels should be divisible by groups'
     channels_per_group = num_channels // groups
     x = paddle.reshape(
         x=x, shape=[batch_size, groups, channels_per_group, height, width])

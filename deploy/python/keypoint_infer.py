@@ -46,7 +46,7 @@ class KeyPoint_Detector(Detector):
         config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
-        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
@@ -61,7 +61,7 @@ class KeyPoint_Detector(Detector):
                  pred_config,
                  model_dir,
                  device='CPU',
-                 run_mode='fluid',
+                 run_mode='paddle',
                  batch_size=1,
                  trt_min_shape=1,
                  trt_max_shape=1280,
@@ -145,41 +145,33 @@ class KeyPoint_Detector(Detector):
             raise ValueError("Unsupported arch: {}, expect {}".format(
                 self.pred_config.arch, KEYPOINT_SUPPORT_MODELS))
 
-    def predict(self, image_list, threshold=0.5, warmup=0, repeats=1):
+    def predict(self, image_list, threshold=0.5, repeats=1, add_timer=True):
         '''
         Args:
             image_list (list): list of image 
             threshold (float): threshold of predicted box' score
+            repeats (int): repeat number for prediction
+            add_timer (bool): whether add timer during prediction
         Returns:
             results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
                             matix element:[class, score, x_min, y_min, x_max, y_max]
                             MaskRCNN's results include 'masks': np.ndarray:
                             shape: [N, im_h, im_w]
         '''
-        self.det_times.preprocess_time_s.start()
+        # preprocess
+        if add_timer:
+            self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image_list)
         np_boxes, np_masks = None, None
         input_names = self.predictor.get_input_names()
-
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
-        self.det_times.preprocess_time_s.end()
-        for i in range(warmup):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            boxes_tensor = self.predictor.get_output_handle(output_names[0])
-            np_boxes = boxes_tensor.copy_to_cpu()
-            if self.pred_config.tagmap:
-                masks_tensor = self.predictor.get_output_handle(output_names[1])
-                heat_k = self.predictor.get_output_handle(output_names[2])
-                inds_k = self.predictor.get_output_handle(output_names[3])
-                np_masks = [
-                    masks_tensor.copy_to_cpu(), heat_k.copy_to_cpu(),
-                    inds_k.copy_to_cpu()
-                ]
+        if add_timer:
+            self.det_times.preprocess_time_s.end()
+            self.det_times.inference_time_s.start()
 
-        self.det_times.inference_time_s.start()
+        # model prediction
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -193,13 +185,16 @@ class KeyPoint_Detector(Detector):
                     masks_tensor.copy_to_cpu(), heat_k.copy_to_cpu(),
                     inds_k.copy_to_cpu()
                 ]
-        self.det_times.inference_time_s.end(repeats=repeats)
+        if add_timer:
+            self.det_times.inference_time_s.end(repeats=repeats)
+            self.det_times.postprocess_time_s.start()
 
-        self.det_times.postprocess_time_s.start()
+        # postprocess
         results = self.postprocess(
             np_boxes, np_masks, inputs, threshold=threshold)
-        self.det_times.postprocess_time_s.end()
-        self.det_times.img_num += len(image_list)
+        if add_timer:
+            self.det_times.postprocess_time_s.end()
+            self.det_times.img_num += len(image_list)
         return results
 
 
@@ -266,7 +261,12 @@ class PredictConfig_KeyPoint():
 def predict_image(detector, image_list):
     for i, img_file in enumerate(image_list):
         if FLAGS.run_benchmark:
-            detector.predict([img_file], FLAGS.threshold, warmup=10, repeats=10)
+            # warmup 
+            detector.predict(
+                [img_file], FLAGS.threshold, repeats=10, add_timer=False)
+            # run benchmark
+            detector.predict(
+                [img_file], FLAGS.threshold, repeats=10, add_timer=True)
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
             detector.gpu_mem += gm
@@ -300,7 +300,7 @@ def predict_video(detector, camera_id):
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name + '.mp4')
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     index = 1
     while (1):

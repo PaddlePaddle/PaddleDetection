@@ -1,0 +1,64 @@
+_BASE_: [
+  '../fairmot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.yml',
+  '../../datasets/mcmot.yml'
+]
+
+metric: MCMOT
+num_classes: 11
+weights: output/mcfairmot_hrnetv2_w18_dlafpn_30e_576x320_bdd100k_mcmot/model_final
+
+# for MCMOT training
+TrainDataset:
+  !MCMOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['bdd100k_mcmot.train']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+    label_list: label_list.txt
+
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: bdd100k_mcmot/images/val
+    keep_ori_im: False
+
+# model config
+architecture: FairMOT
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/HRNet_W18_C_pretrained.pdparams
+for_mot: True
+
+FairMOT:
+  detector: CenterNet
+  reid: FairMOTEmbeddingHead
+  loss: FairMOTLoss
+  tracker: JDETracker # multi-class tracker
+
+CenterNetHead:
+  regress_ltrb: False
+
+CenterNetPostProcess:
+  regress_ltrb: False
+  max_per_img: 200
+
+JDETracker:
+  min_box_area: 0
+  vertical_ratio: 0 # no need to filter bboxes according to w/h
+  conf_thres: 0.4
+  tracked_thresh: 0.4
+  metric_type: cosine
+
+epoch: 30
+LearningRate:
+  base_lr: 0.0005
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [10, 20]
+    use_warmup: False
+
+OptimizerBuilder:
+  optimizer:
+    type: Adam
+  regularizer: NULL
+
+TrainReader:
+  batch_size: 8

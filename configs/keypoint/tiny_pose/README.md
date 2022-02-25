@@ -1,3 +1,5 @@
+简体中文 | [English](README_en.md)
+
 # PP-TinyPose
 
 <div align="center">
@@ -48,7 +50,7 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测�
 **说明**
 - 关键点检测模型与行人检测模型均使用`COCO train2017`和`AI Challenger trainset`作为训练集。关键点检测模型使用`COCO person keypoints val2017`作为测试集，行人检测模型采用`COCO instances val2017`作为测试集。
 - 关键点检测模型的精度指标所依赖的检测框为ground truth标注得到。
-- 关键点检测模型与行人检测模型均在4卡环境下训练，若实际训练环境需要改变GPU数量或batch size， 须参考[FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/FAQ.md)对应调整学习率。
+- 关键点检测模型与行人检测模型均在4卡环境下训练，若实际训练环境需要改变GPU数量或batch size， 须参考[FAQ](../../../docs/tutorials/FAQ/README.md)对应调整学习率。
 - 推理速度测试环境为 Qualcomm Snapdragon 865，采用arm8下4线程推理得到。
 
 ### Pipeline性能
@@ -60,11 +62,12 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测�
 | 多人模型配置 | AP (COCO Val 多人) | 6人耗时 (FP32) | 6人耗时 (FP16)|
 | :------------------------ | :-------: | :---: | :---: |
 | PicoDet-S-Pedestrian-320\*320 + PP-TinyPose-128\*96 | 50.3 | 44.0 ms| 32.57 ms |
-| 其他优秀开源模型-256\*256 | 39.4 | 12.0 ms| - |
+| 其他优秀开源模型-256\*256 | 39.4 | 51.0 ms| - |
 
 **说明**
 - 关键点检测模型的精度指标是基于对应行人检测模型检测得到的检测框。
 - 精度测试中去除了flip操作，且检测置信度阈值要求0.5。
+- 精度测试中，为了公平比较，多人数据去除了6人以上（不含6人）的图像。
 - 速度测试环境为qualcomm snapdragon 865，采用arm8下4线程、FP32推理得到。
 - Pipeline速度包含模型的预处理、推理及后处理部分。
 - 其他优秀开源模型的测试及部署方案，请参考[这里](https://github.com/zhiboniu/MoveNet-PaddleLite)。
@@ -108,7 +111,7 @@ AI Challenger Description:
     13: "Neck"
 ```
 
-由于两个数据集的关键点标注形式不同，我们将两个数据集的标注进行了对齐，仍然沿用COCO的标注形式，[训练的参考列表](https://bj.bcebos.com/v1/paddledet/data/keypoint/aic_coco_train_cocoformat.json),其主要处理如下：
+由于两个数据集的关键点标注形式不同，我们将两个数据集的标注进行了对齐，仍然沿用COCO的标注形式，您可以下载[训练的参考列表](https://bj.bcebos.com/v1/paddledet/data/keypoint/aic_coco_train_cocoformat.json)并放在`dataset/`下使用。对齐两个数据集标注文件的主要处理如下：
 - `AI Challenger`关键点标注顺序调整至与COCO一致，统一是否标注/可见的标志位；
 - 舍弃了`AI Challenger`中特有的点位；将`AI Challenger`数据中`COCO`特有点位标记为未标注；
 - 重新排列了`image_id`与`annotation id`；

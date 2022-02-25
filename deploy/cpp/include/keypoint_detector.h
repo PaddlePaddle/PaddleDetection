@@ -51,7 +51,7 @@ class KeyPointDetector {
                             const std::string& device = "CPU",
                             bool use_mkldnn = false,
                             int cpu_threads = 1,
-                            const std::string& run_mode = "fluid",
+                            const std::string& run_mode = "paddle",
                             const int batch_size = 1,
                             const int gpu_id = 0,
                             const int trt_min_shape = 1,
@@ -80,7 +80,7 @@ class KeyPointDetector {
   // Load Paddle inference model
   void LoadModel(const std::string& model_dir,
                  const int batch_size = 1,
-                 const std::string& run_mode = "fluid");
+                 const std::string& run_mode = "paddle");
 
   // Run predictor
   void Predict(const std::vector<cv::Mat> imgs,

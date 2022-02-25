@@ -23,8 +23,8 @@
 ​																	  💖 **欢迎大家扫码入群讨论** 💖
 
 <div align="center">
-  <img src="https://user-images.githubusercontent.com/80816848/143001007-f6d2ffb9-65c4-47bb-b2d4-b4e1da8db837.jpeg" width=250/>
-</div>
+  <img src="https://user-images.githubusercontent.com/17582080/154191958-03c7fb24-1f28-4608-8523-c55b351930cf.jpg" width=250/></div>
+
 
 
 
@@ -278,8 +278,8 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
     - HigherHRNet
     - HRNet
     - LiteHRNet
-- [多目标跟踪](configs/mot/README_cn.md)
-    - [PP-Tracking](deploy/pptracking/README.md)
+- [多目标跟踪](configs/mot/README.md)
+    - [PP-Tracking](deploy/pptracking/README_cn.md)
     - [DeepSORT](configs/mot/deepsort/README_cn.md)
     - [JDE](configs/mot/jde/README_cn.md)
     - [FairMOT](configs/mot/fairmot/README_cn.md)
@@ -320,6 +320,8 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
 - 感谢[Mandroide](https://github.com/Mandroide)清理代码并且统一部分函数接口。
 - 感谢[FL77N](https://github.com/FL77N/)贡献`Sparse-RCNN`模型。
 - 感谢[Chen-Song](https://github.com/Chen-Song)贡献`Swin Faster-RCNN`模型。
+- 感谢[yangyudong](https://github.com/yangyudong2020), [hchhtc123](https://github.com/hchhtc123) 开发PP-Tracking GUI界面
+- 感谢[Shigure19](https://github.com/Shigure19) 开发PP-TinyPose健身APP
 
 ## 引用
 

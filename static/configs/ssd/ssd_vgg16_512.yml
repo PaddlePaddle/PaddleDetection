@@ -64,8 +64,8 @@ TrainReader:
     fields: ['image', 'gt_bbox', 'gt_class']
   dataset:
     !COCODataSet
-    image_dir: val2017
-    anno_path: annotations/instances_val2017.json
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
     dataset_dir: dataset/coco
   sample_transforms:
   - !DecodeImage

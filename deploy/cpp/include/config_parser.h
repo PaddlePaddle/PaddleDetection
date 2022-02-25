@@ -15,9 +15,9 @@
 #pragma once
 
 #include <iostream>
-#include <vector>
-#include <string>
 #include <map>
+#include <string>
+#include <vector>
 
 #include "yaml-cpp/yaml.h"
 
@@ -42,13 +42,12 @@ class ConfigPaser {
     YAML::Node config;
     config = YAML::LoadFile(model_dir + OS_PATH_SEP + cfg);
 
-    // Get runtime mode : fluid, trt_fp16, trt_fp32
+    // Get runtime mode : paddle, trt_fp16, trt_fp32
     if (config["mode"].IsDefined()) {
       mode_ = config["mode"].as<std::string>();
     } else {
       std::cerr << "Please set mode, "
-                << "support value : fluid/trt_fp16/trt_fp32."
-                << std::endl;
+                << "support value : paddle/trt_fp16/trt_fp32." << std::endl;
       return false;
     }
 
@@ -136,4 +135,3 @@ class ConfigPaser {
 };
 
 }  // namespace PaddleDetection
-

@@ -23,21 +23,21 @@ preprocess = Sequential([
             (2, 0, 1))
 ])
 
-postprocess = RCNNPostprocess("label_list.txt", "output", [608, 608])
+postprocess = RCNNPostprocess(sys.argv[1], "output", [608, 608])
 client = Client()
 
 client.load_client_config("serving_client/serving_client_conf.prototxt")
 client.connect(['127.0.0.1:9393'])
 
-im = preprocess(sys.argv[1])
+im = preprocess(sys.argv[2])
 fetch_map = client.predict(
     feed={
         "image": im,
         "im_shape": np.array(list(im.shape[1:])).reshape(-1),
         "scale_factor": np.array([1.0, 1.0]).reshape(-1),
     },
-    fetch=["save_infer_model/scale_0.tmp_1"],
+    fetch=["multiclass_nms3_0.tmp_0"],
     batch=False)
 print(fetch_map)
-fetch_map["image"] = sys.argv[1]
+fetch_map["image"] = sys.argv[2]
 postprocess(fetch_map)

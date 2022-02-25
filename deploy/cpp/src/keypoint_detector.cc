@@ -33,7 +33,7 @@ void KeyPointDetector::LoadModel(const std::string& model_dir,
     config.EnableUseGpu(200, this->gpu_id_);
     config.SwitchIrOptim(true);
     // use tensorrt
-    if (run_mode != "fluid") {
+    if (run_mode != "paddle") {
       auto precision = paddle_infer::Config::Precision::kFloat32;
       if (run_mode == "trt_fp32") {
         precision = paddle_infer::Config::Precision::kFloat32;
@@ -43,7 +43,8 @@ void KeyPointDetector::LoadModel(const std::string& model_dir,
         precision = paddle_infer::Config::Precision::kInt8;
       } else {
         printf(
-            "run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
+            "run_mode should be 'paddle', 'trt_fp32', 'trt_fp16' or "
+            "'trt_int8'");
       }
       // set tensorrt
       config.EnableTensorRtEngine(1 << 30,
@@ -99,22 +100,22 @@ cv::Mat VisualizeKptsResult(const cv::Mat& img,
                             const std::vector<KeyPointResult>& results,
                             const std::vector<int>& colormap) {
   const int edge[][2] = {{0, 1},
-                       {0, 2},
-                       {1, 3},
-                       {2, 4},
-                       {3, 5},
-                       {4, 6},
-                       {5, 7},
-                       {6, 8},
-                       {7, 9},
-                       {8, 10},
-                       {5, 11},
-                       {6, 12},
-                       {11, 13},
-                       {12, 14},
-                       {13, 15},
-                       {14, 16},
-                       {11, 12}};
+                         {0, 2},
+                         {1, 3},
+                         {2, 4},
+                         {3, 5},
+                         {4, 6},
+                         {5, 7},
+                         {6, 8},
+                         {7, 9},
+                         {8, 10},
+                         {5, 11},
+                         {6, 12},
+                         {11, 13},
+                         {12, 14},
+                         {13, 15},
+                         {14, 16},
+                         {11, 12}};
   cv::Mat vis_img = img.clone();
   for (int batchid = 0; batchid < results.size(); batchid++) {
     for (int i = 0; i < results[batchid].num_joints; i++) {

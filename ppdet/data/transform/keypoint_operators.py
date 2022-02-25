@@ -694,8 +694,8 @@ class ToHeatmapsTopDown(object):
         tmp_size = self.sigma * 3
         feat_stride = image_size / self.hmsize
         for joint_id in range(num_joints):
-            mu_x = int(joints[joint_id][0] + 0.5) / feat_stride[0]
-            mu_y = int(joints[joint_id][1] + 0.5) / feat_stride[1]
+            mu_x = int(joints[joint_id][0] / feat_stride[0] + 0.5)
+            mu_y = int(joints[joint_id][1] / feat_stride[1] + 0.5)
             # Check that any part of the gaussian is in-bounds
             ul = [int(mu_x - tmp_size), int(mu_y - tmp_size)]
             br = [int(mu_x + tmp_size + 1), int(mu_y + tmp_size + 1)]
