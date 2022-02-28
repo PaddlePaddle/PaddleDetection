@@ -183,7 +183,8 @@ class PPYOLOHead(nn.Layer):
             cls_logit = self.pred_cls[i](self.stem_cls[i](feat, avg_feat) +
                                          feat)
             reg_dist = self.pred_reg[i](self.stem_reg[i](feat, avg_feat))
-            reg_dist = reg_dist.reshape([-1, self.reg_max + 1, h, w])
+            reg_dist = reg_dist.reshape([-1, 4, self.reg_max + 1, l]).transpose(
+                [0, 2, 1, 3])
             reg_dist = self.proj_conv(F.softmax(reg_dist, axis=1))
             # cls and reg
             cls_score = F.sigmoid(cls_logit)
@@ -358,7 +359,9 @@ class PPYOLOHead(nn.Layer):
                                           pred_dist.transpose([0, 2, 1]))
         pred_bboxes *= self.stride_tensor
         # scale bbox to origin
-        scale_factor = scale_factor.flip(-1).tile([1, 2]).unsqueeze(1)
+        scale_y, scale_x = paddle.split(scale_factor, 2, axis=-1)
+        scale_factor = paddle.concat(
+            [scale_x, scale_y, scale_x, scale_y], axis=-1).reshape([-1, 1, 4])
         pred_bboxes /= scale_factor
         bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
         return bbox_pred, bbox_num
