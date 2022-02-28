@@ -3,7 +3,19 @@ _BASE_: [
 ]
 
 weights: output/ppyolov3_crn_s_300e_coco/model_final
-pretrain_weights: http://10.21.226.169:8090/2d/pretrain/cspresnetb_s_710.pdparams
+pretrain_weights: http://10.21.226.186:8091/cspresnetb50_s_silu_large_stem_last_conv.pdparams
 
 depth_mult: 0.33
 width_mult: 0.50
+
+TrainReader:
+  batch_size: 32
+
+LearningRate:
+  base_lr: 0.04
+  schedulers:
+    - !CosineDecay
+      max_epochs: 360
+    - !LinearWarmup
+      start_factor: 0.001
+      steps: 2300
