@@ -205,7 +205,7 @@ def load_pretrain_weight(model, pretrain_weight):
     logger.info('Finish loading model weights: {}'.format(weights_path))
 
 
-def save_model(model, optimizer, save_dir, save_name, last_epoch):
+def save_model(model, save_dir, save_name, last_epoch, optimizer=None):
     """
     save model into disk.
 
@@ -228,7 +228,8 @@ def save_model(model, optimizer, save_dir, save_name, last_epoch):
         assert isinstance(model,
                           dict), 'model is not a instance of nn.layer or dict'
         paddle.save(model, save_path + ".pdparams")
-    state_dict = optimizer.state_dict()
-    state_dict['last_epoch'] = last_epoch
-    paddle.save(state_dict, save_path + ".pdopt")
+    if optimizer is not None:
+        state_dict = optimizer.state_dict()
+        state_dict['last_epoch'] = last_epoch
+        paddle.save(state_dict, save_path + ".pdopt")
     logger.info("Save checkpoint: {}".format(save_dir))

@@ -439,11 +439,17 @@ class Trainer(object):
             if self.cfg.get('unstructured_prune'):
                 self.pruner.update_params()
 
+            is_snapshot = (self._nranks < 2 or self._local_rank == 0) \
+                       and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 or epoch_id == self.end_epoch - 1)
+            if is_snapshot and self.use_ema:
+                # apply ema weight on model
+                weight = copy.deepcopy(self.model.state_dict())
+                self.model.set_dict(self.ema.apply())
+                self.status['weight'] = weight
+
             self._compose_callback.on_epoch_end(self.status)
 
-            if validate and (self._nranks < 2 or self._local_rank == 0) \
-                    and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 \
-                             or epoch_id == self.end_epoch - 1):
+            if validate and is_snapshot:
                 if not hasattr(self, '_eval_loader'):
                     # build evaluation dataset and loader
                     self._eval_dataset = self.cfg.EvalDataset
@@ -464,18 +470,15 @@ class Trainer(object):
                     Init_mark = True
                     self._init_metrics(validate=validate)
                     self._reset_metrics()
+
                 with paddle.no_grad():
                     self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
 
-                if self.use_ema:
-                    # apply ema weight on model
-                    weight = copy.deepcopy(self.model.state_dict())
-                    self.model.set_dict(self.ema.apply())
-                    with paddle.no_grad():
-                        self.status['ema_eval'] = True
-                        self._eval_with_loader(self._eval_loader)
-                    self.model.set_dict(weight)
+            if is_snapshot and self.use_ema:
+                # reset original weight
+                self.model.set_dict(weight)
+                self.status.pop('weight')
 
         self._compose_callback.on_train_end(self.status)
 

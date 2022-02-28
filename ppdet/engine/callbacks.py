@@ -204,15 +204,15 @@ class Checkpointer(Callback):
                             weight = self.weight
                         logger.info("Best test {} ap is {:0.3f}.".format(
                             key, self.best_ap))
-                if 'ema_eval' in status and status['ema_eval']:
-                    end_epoch = self.model.cfg.epoch
-                    weight = self.weight
-                    save_name = '{}_ema'.format(
-                        str(epoch_id)
-                        if epoch_id != end_epoch - 1 else "model_final")
             if weight:
-                save_model(weight, self.model.optimizer, self.save_dir,
-                           save_name, epoch_id + 1)
+                if self.model.use_ema:
+                    save_model(status['weight'], self.save_dir, save_name,
+                               epoch_id + 1, self.model.optimizer)
+                    save_model(weight, self.save_dir,
+                               '{}_ema'.format(save_name), epoch_id + 1)
+                else:
+                    save_model(weight, self.save_dir, save_name, epoch_id + 1,
+                               self.model.optimizer)
 
 
 class WiferFaceEval(Callback):
