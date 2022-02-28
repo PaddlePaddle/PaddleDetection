@@ -328,3 +328,177 @@ def visualize_pose(imgfile,
     plt.imsave(save_name, canvas[:, :, ::-1])
     print("keypoint visualize image saved to: " + save_name)
     plt.close()
+
+
+def plot_tracking(image,
+                  tlwhs,
+                  obj_ids,
+                  scores=None,
+                  frame_id=0,
+                  fps=0.,
+                  ids2names=[],
+                  do_entrance_counting=False,
+                  entrance=None):
+    im = np.ascontiguousarray(np.copy(image))
+    im_h, im_w = im.shape[:2]
+
+    text_scale = max(1, image.shape[1] / 1600.)
+    text_thickness = 2
+    line_thickness = max(1, int(image.shape[1] / 500.))
+
+    cv2.putText(
+        im,
+        'frame: %d fps: %.2f num: %d' % (frame_id, fps, len(tlwhs)),
+        (0, int(15 * text_scale)),
+        cv2.FONT_HERSHEY_PLAIN,
+        text_scale, (0, 0, 255),
+        thickness=2)
+
+    for i, tlwh in enumerate(tlwhs):
+        x1, y1, w, h = tlwh
+        intbox = tuple(map(int, (x1, y1, x1 + w, y1 + h)))
+        obj_id = int(obj_ids[i])
+        id_text = '{}'.format(int(obj_id))
+        if ids2names != []:
+            assert len(
+                ids2names) == 1, "plot_tracking only supports single classes."
+            id_text = '{}_'.format(ids2names[0]) + id_text
+        _line_thickness = 1 if obj_id <= 0 else line_thickness
+        color = get_color(abs(obj_id))
+        cv2.rectangle(
+            im, intbox[0:2], intbox[2:4], color=color, thickness=line_thickness)
+        cv2.putText(
+            im,
+            id_text, (intbox[0], intbox[1] - 10),
+            cv2.FONT_HERSHEY_PLAIN,
+            text_scale, (0, 0, 255),
+            thickness=text_thickness)
+
+        if scores is not None:
+            text = '{:.2f}'.format(float(scores[i]))
+            cv2.putText(
+                im,
+                text, (intbox[0], intbox[1] + 10),
+                cv2.FONT_HERSHEY_PLAIN,
+                text_scale, (0, 255, 255),
+                thickness=text_thickness)
+
+    if do_entrance_counting:
+        entrance_line = tuple(map(int, entrance))
+        cv2.rectangle(
+            im,
+            entrance_line[0:2],
+            entrance_line[2:4],
+            color=(0, 255, 255),
+            thickness=line_thickness)
+    return im
+
+
+def plot_tracking_dict(image,
+                       num_classes,
+                       tlwhs_dict,
+                       obj_ids_dict,
+                       scores_dict,
+                       frame_id=0,
+                       fps=0.,
+                       ids2names=[],
+                       do_entrance_counting=False,
+                       entrance=None,
+                       records=None,
+                       center_traj=None):
+    im = np.ascontiguousarray(np.copy(image))
+    im_h, im_w = im.shape[:2]
+
+    text_scale = max(1, image.shape[1] / 1600.)
+    text_thickness = 2
+    line_thickness = max(1, int(image.shape[1] / 500.))
+
+    if num_classes == 1:
+        if records is not None:
+            start = records[-1].find('Total')
+            end = records[-1].find('In')
+            cv2.putText(
+                im,
+                records[-1][start:end], (0, int(40 * text_scale)),
+                cv2.FONT_HERSHEY_PLAIN,
+                text_scale, (0, 0, 255),
+                thickness=2)
+
+    if num_classes == 1 and do_entrance_counting:
+        entrance_line = tuple(map(int, entrance))
+        cv2.rectangle(
+            im,
+            entrance_line[0:2],
+            entrance_line[2:4],
+            color=(0, 255, 255),
+            thickness=line_thickness)
+        # find start location for entrance counting data
+        start = records[-1].find('In')
+        cv2.putText(
+            im,
+            records[-1][start:-1], (0, int(60 * text_scale)),
+            cv2.FONT_HERSHEY_PLAIN,
+            text_scale, (0, 0, 255),
+            thickness=2)
+
+    for cls_id in range(num_classes):
+        tlwhs = tlwhs_dict[cls_id]
+        obj_ids = obj_ids_dict[cls_id]
+        scores = scores_dict[cls_id]
+        cv2.putText(
+            im,
+            'frame: %d fps: %.2f num: %d' % (frame_id, fps, len(tlwhs)),
+            (0, int(15 * text_scale)),
+            cv2.FONT_HERSHEY_PLAIN,
+            text_scale, (0, 0, 255),
+            thickness=2)
+
+        record_id = set()
+        for i, tlwh in enumerate(tlwhs):
+            x1, y1, w, h = tlwh
+            intbox = tuple(map(int, (x1, y1, x1 + w, y1 + h)))
+            center = tuple(map(int, (x1 + w / 2., y1 + h / 2.)))
+            obj_id = int(obj_ids[i])
+            if center_traj is not None:
+                record_id.add(obj_id)
+                if obj_id not in center_traj[cls_id]:
+                    center_traj[cls_id][obj_id] = deque(maxlen=30)
+                center_traj[cls_id][obj_id].append(center)
+
+            id_text = '{}'.format(int(obj_id))
+            if ids2names != []:
+                id_text = '{}_{}'.format(ids2names[cls_id], id_text)
+            else:
+                id_text = 'class{}_{}'.format(cls_id, id_text)
+
+            _line_thickness = 1 if obj_id <= 0 else line_thickness
+            color = get_color(abs(obj_id))
+            cv2.rectangle(
+                im,
+                intbox[0:2],
+                intbox[2:4],
+                color=color,
+                thickness=line_thickness)
+            cv2.putText(
+                im,
+                id_text, (intbox[0], intbox[1] - 10),
+                cv2.FONT_HERSHEY_PLAIN,
+                text_scale, (0, 0, 255),
+                thickness=text_thickness)
+
+            if scores is not None:
+                text = '{:.2f}'.format(float(scores[i]))
+                cv2.putText(
+                    im,
+                    text, (intbox[0], intbox[1] + 10),
+                    cv2.FONT_HERSHEY_PLAIN,
+                    text_scale, (0, 255, 255),
+                    thickness=text_thickness)
+        if center_traj is not None:
+            for traj in center_traj:
+                for i in traj.keys():
+                    if i not in record_id:
+                        continue
+                    for point in traj[i]:
+                        cv2.circle(im, point, 3, (0, 0, 255), -1)
+    return im
