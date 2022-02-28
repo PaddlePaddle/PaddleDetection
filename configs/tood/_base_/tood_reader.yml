@@ -1,17 +1,18 @@
 worker_num: 4
 TrainReader:
   sample_transforms:
-  - Decode: {}
-  - RandomFlip: {prob: 0.5}
-  - Resize: {target_size: [800, 1333], keep_ratio: true}
-  - NormalizeImage: {is_scale: true, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
-  - Permute: {}
+    - Decode: {}
+    - RandomFlip: {prob: 0.5}
+    - Resize: {target_size: [800, 1333], keep_ratio: true}
+    - NormalizeImage: {is_scale: true, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+    - Permute: {}
   batch_transforms:
-  - PadBatch: {pad_to_stride: 32}
+    - PadBatch: {pad_to_stride: 32}
+    - PadGT: {}
   batch_size: 4
   shuffle: true
   drop_last: true
-  collate_batch: false
+  collate_batch: true
   use_shared_memory: true
 
 

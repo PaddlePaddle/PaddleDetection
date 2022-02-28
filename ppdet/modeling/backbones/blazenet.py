@@ -58,11 +58,8 @@ class ConvBNLayer(nn.Layer):
                 learning_rate=conv_lr, initializer=KaimingNormal()),
             bias_attr=False)
 
-        if norm_type == 'sync_bn':
-            self._batch_norm = nn.SyncBatchNorm(out_channels)
-        else:
-            self._batch_norm = nn.BatchNorm(
-                out_channels, act=None, use_global_stats=False)
+        if norm_type in ['bn', 'sync_bn']:
+            self._batch_norm = nn.BatchNorm2D(out_channels)
 
     def forward(self, x):
         x = self._conv(x)

@@ -71,6 +71,7 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测�
 - 速度测试环境为qualcomm snapdragon 865，采用arm8下4线程、FP32推理得到。
 - Pipeline速度包含模型的预处理、推理及后处理部分。
 - 其他优秀开源模型的测试及部署方案，请参考[这里](https://github.com/zhiboniu/MoveNet-PaddleLite)。
+- 更多环境下的性能测试结果，请参考[Keypoint Inference Benchmark](../KeypointBenchmark.md)。
 
 ## 模型训练
 关键点检测模型与行人检测模型的训练集在`COCO`以外还扩充了[AI Challenger](https://arxiv.org/abs/1711.06475)数据集，各数据集关键点定义如下：

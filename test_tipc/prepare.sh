@@ -56,6 +56,17 @@ elif [ ${MODE} = "cpp_infer" ];then
         fi
     fi
     cd ../../
+elif [ ${MODE} = "benchmark_train" ];then
+    pip install -U pip Cython
+    pip install -r requirements.txt
+    # prepare lite benchmark coco data
+    wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/coco_benchmark.tar
+    cd ./dataset/coco/ && tar -xvf coco_benchmark.tar && mv -u coco_benchmark/* .
+    rm -rf coco_benchmark/ && cd ../../
+    # prepare lite benchmark mot data
+    wget -nc -P ./dataset/mot/ https://paddledet.bj.bcebos.com/data/mot_benchmark.tar
+    cd ./dataset/mot/ && tar -xvf mot_benchmark.tar && mv -u mot_benchmark/* .
+    rm -rf mot_benchmark/ && cd ../../
 else
     # download coco lite data
     wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/tipc/coco_tipc.tar

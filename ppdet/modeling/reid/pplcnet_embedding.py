@@ -21,7 +21,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant
 from paddle import ParamAttr
-from paddle.nn import AdaptiveAvgPool2D, BatchNorm, Conv2D, Linear
+from paddle.nn import AdaptiveAvgPool2D, BatchNorm2D, Conv2D, Linear
 from paddle.regularizer import L2Decay
 from paddle.nn.initializer import KaimingNormal, XavierNormal
 from ppdet.core.workspace import register
@@ -77,9 +77,9 @@ class ConvBNLayer(nn.Layer):
             weight_attr=ParamAttr(initializer=KaimingNormal()),
             bias_attr=False)
 
-        self.bn = BatchNorm(
+        self.bn = BatchNorm2D(
             num_filters,
-            param_attr=ParamAttr(regularizer=L2Decay(0.0)),
+            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
             bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
         self.hardswish = nn.Hardswish()
 

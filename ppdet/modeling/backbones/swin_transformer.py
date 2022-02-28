@@ -493,8 +493,13 @@ class BasicLayer(nn.Layer):
         cnt = 0
         for h in h_slices:
             for w in w_slices:
-                img_mask[:, h, w, :] = cnt
+                try:
+                    img_mask[:, h, w, :] = cnt
+                except:
+                    pass
+
                 cnt += 1
+
         mask_windows = window_partition(
             img_mask, self.window_size)  # nW, window_size, window_size, 1
         mask_windows = mask_windows.reshape(

@@ -19,7 +19,8 @@ from __future__ import print_function
 import paddle
 import paddle.nn as nn
 from paddle import ParamAttr
-from paddle.nn import Conv2D, MaxPool2D, AdaptiveAvgPool2D, BatchNorm
+import paddle.nn.functional as F
+from paddle.nn import Conv2D, MaxPool2D, AdaptiveAvgPool2D, BatchNorm2D
 from paddle.nn.initializer import KaimingNormal
 from paddle.regularizer import L2Decay
 
@@ -51,15 +52,19 @@ class ConvBNLayer(nn.Layer):
             weight_attr=ParamAttr(initializer=KaimingNormal()),
             bias_attr=False)
 
-        self._batch_norm = BatchNorm(
+        self._batch_norm = BatchNorm2D(
             out_channels,
-            param_attr=ParamAttr(regularizer=L2Decay(0.0)),
-            bias_attr=ParamAttr(regularizer=L2Decay(0.0)),
-            act=act)
+            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
+            bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
+        if act == "hard_swish":
+            act = 'hardswish'
+        self.act = act
 
     def forward(self, inputs):
         y = self._conv(inputs)
         y = self._batch_norm(y)
+        if self.act:
+            y = getattr(F, self.act)(y)
         return y
 
 

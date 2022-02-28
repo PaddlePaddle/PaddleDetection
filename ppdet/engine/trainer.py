@@ -23,7 +23,8 @@ import time
 
 import numpy as np
 import typing
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 import paddle
 import paddle.distributed as dist
@@ -94,7 +95,11 @@ class Trainer(object):
             self.is_loaded_weights = True
 
         #normalize params for deploy
-        self.model.load_meanstd(cfg['TestReader']['sample_transforms'])
+        if 'slim' in cfg and cfg['slim_type'] == 'OFA':
+            self.model.model.load_meanstd(cfg['TestReader'][
+                'sample_transforms'])
+        else:
+            self.model.load_meanstd(cfg['TestReader']['sample_transforms'])
 
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         if self.use_ema:
@@ -111,8 +116,12 @@ class Trainer(object):
         if self.mode == 'eval':
             self._eval_batch_sampler = paddle.io.BatchSampler(
                 self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
-            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
-                self.dataset, cfg.worker_num, self._eval_batch_sampler)
+            reader_name = '{}Reader'.format(self.mode.capitalize())
+            # If metric is VOC, need to be set collate_batch=False.
+            if cfg.metric == 'VOC':
+                cfg[reader_name]['collate_batch'] = False
+            self.loader = create(reader_name)(self.dataset, cfg.worker_num,
+                                              self._eval_batch_sampler)
         # TestDataset build after user set images, skip loader creation here
 
         # build optimizer in train mode
@@ -121,9 +130,10 @@ class Trainer(object):
             self.lr = create('LearningRate')(steps_per_epoch)
             self.optimizer = create('OptimizerBuilder')(self.lr, self.model)
 
-        if self.cfg.get('unstructured_prune'):
-            self.pruner = create('UnstructuredPruner')(self.model,
-                                                       steps_per_epoch)
+            # Unstructured pruner is only enabled in the train mode.
+            if self.cfg.get('unstructured_prune'):
+                self.pruner = create('UnstructuredPruner')(self.model,
+                                                           steps_per_epoch)
 
         self._nranks = dist.get_world_size()
         self._local_rank = dist.get_rank()
@@ -336,6 +346,12 @@ class Trainer(object):
         assert self.mode == 'train', "Model not in 'train' mode"
         Init_mark = False
 
+        sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
+                   self.cfg.use_gpu and self._nranks > 1)
+        if sync_bn:
+            self.model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(
+                self.model)
+
         model = self.model
         if self.cfg.get('fleet', False):
             model = fleet.distributed_model(model)
@@ -364,7 +380,9 @@ class Trainer(object):
         self.status['training_staus'] = stats.TrainingStats(self.cfg.log_iter)
 
         if self.cfg.get('print_flops', False):
-            self._flops(self.loader)
+            flops_loader = create('{}Reader'.format(self.mode.capitalize()))(
+                self.dataset, self.cfg.worker_num)
+            self._flops(flops_loader)
         profiler_options = self.cfg.get('profiler_options', None)
 
         self._compose_callback.on_train_begin(self.status)
@@ -436,6 +454,9 @@ class Trainer(object):
                         paddle.io.BatchSampler(
                             self._eval_dataset,
                             batch_size=self.cfg.EvalReader['batch_size'])
+                    # If metric is VOC, need to be set collate_batch=False.
+                    if self.cfg.metric == 'VOC':
+                        self.cfg['EvalReader']['collate_batch'] = False
                     self._eval_loader = create('EvalReader')(
                         self._eval_dataset,
                         self.cfg.worker_num,
@@ -463,7 +484,9 @@ class Trainer(object):
         self.status['mode'] = 'eval'
         self.model.eval()
         if self.cfg.get('print_flops', False):
-            self._flops(loader)
+            flops_loader = create('{}Reader'.format(self.mode.capitalize()))(
+                self.dataset, self.cfg.worker_num, self._eval_batch_sampler)
+            self._flops(flops_loader)
         for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
             self._compose_callback.on_step_begin(self.status)
@@ -514,7 +537,8 @@ class Trainer(object):
         self.status['mode'] = 'test'
         self.model.eval()
         if self.cfg.get('print_flops', False):
-            self._flops(loader)
+            flops_loader = create('TestReader')(self.dataset, 0)
+            self._flops(flops_loader)
         results = []
         for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
@@ -610,6 +634,10 @@ class Trainer(object):
 
         if hasattr(self.model, 'deploy'):
             self.model.deploy = True
+        export_post_process = self.cfg.get('export_post_process', False)
+        if hasattr(self.model, 'export_post_process'):
+            self.model.export_post_process = export_post_process
+            image_shape = [None] + image_shape[1:]
         if hasattr(self.model, 'fuse_norm'):
             self.model.fuse_norm = self.cfg['TestReader'].get('fuse_normalize',
                                                               False)
@@ -645,7 +673,7 @@ class Trainer(object):
             pruned_input_spec = input_spec
 
         # TODO: Hard code, delete it when support prune input_spec.
-        if self.cfg.architecture == 'PicoDet':
+        if self.cfg.architecture == 'PicoDet' and not export_post_process:
             pruned_input_spec = [{
                 "image": InputSpec(
                     shape=image_shape, name='image')

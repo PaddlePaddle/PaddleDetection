@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import math
+import weakref
 import paddle
 import paddle.nn as nn
 
@@ -249,21 +250,37 @@ class OptimizerBuilder():
             optim_args['weight_decay'] = regularization
         op = getattr(optimizer, optim_type)
 
-        if 'without_weight_decay_params' in optim_args:
-            keys = optim_args['without_weight_decay_params']
-            params = [{
-                'params': [
-                    p for n, p in model.named_parameters()
-                    if any([k in n for k in keys])
-                ],
-                'weight_decay': 0.
-            }, {
-                'params': [
-                    p for n, p in model.named_parameters()
-                    if all([k not in n for k in keys])
-                ]
-            }]
-            del optim_args['without_weight_decay_params']
+        if 'param_groups' in optim_args:
+            assert isinstance(optim_args['param_groups'], list), ''
+
+            param_groups = optim_args.pop('param_groups')
+
+            params, visited = [], []
+            for group in param_groups:
+                assert isinstance(group,
+                                  dict) and 'params' in group and isinstance(
+                                      group['params'], list), ''
+                _params = {
+                    n: p
+                    for n, p in model.named_parameters()
+                    if any([k in n for k in group['params']])
+                }
+                _group = group.copy()
+                _group.update({'params': list(_params.values())})
+
+                params.append(_group)
+                visited.extend(list(_params.keys()))
+
+            ext_params = [
+                p for n, p in model.named_parameters() if n not in visited
+            ]
+
+            if len(ext_params) < len(model.parameters()):
+                params.append({'params': ext_params})
+
+            elif len(ext_params) > len(model.parameters()):
+                raise RuntimeError
+
         else:
             params = model.parameters()
 
@@ -303,19 +320,31 @@ class ModelEMA(object):
         self.use_thres_step = use_thres_step
         self.cycle_epoch = cycle_epoch
 
+        self._model_state = {
+            k: weakref.ref(p)
+            for k, p in model.state_dict().items()
+        }
+
     def reset(self):
         self.step = 0
         self.epoch = 0
         for k, v in self.state_dict.items():
             self.state_dict[k] = paddle.zeros_like(v)
 
-    def update(self, model):
+    def update(self, model=None):
         if self.use_thres_step:
             decay = min(self.decay, (1 + self.step) / (10 + self.step))
         else:
             decay = self.decay
         self._decay = decay
-        model_dict = model.state_dict()
+
+        if model is not None:
+            model_dict = model.state_dict()
+        else:
+            model_dict = {k: p() for k, p in self._model_state.items()}
+            assert all(
+                [v is not None for _, v in model_dict.items()]), 'python gc.'
+
         for k, v in self.state_dict.items():
             v = decay * v + (1 - decay) * model_dict[k]
             v.stop_gradient = True

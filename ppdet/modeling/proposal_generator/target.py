@@ -50,8 +50,8 @@ def rpn_anchor_target(anchors,
             labels = paddle.scatter(labels, fg_inds, paddle.ones_like(fg_inds))
         # Step3: make output  
         if gt_bbox.shape[0] == 0:
-            matched_gt_boxes = paddle.zeros([0, 4])
-            tgt_delta = paddle.zeros([0, 4])
+            matched_gt_boxes = paddle.zeros([matches.shape[0], 4])
+            tgt_delta = paddle.zeros([matches.shape[0], 4])
         else:
             matched_gt_boxes = paddle.gather(gt_bbox, matches)
             tgt_delta = bbox2delta(anchors, matched_gt_boxes, weights)

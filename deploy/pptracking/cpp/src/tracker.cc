@@ -191,9 +191,9 @@ bool JDETracker::update(const cv::Mat &dets,
   tracks->clear();
   for (size_t i = 0; i < this->tracked_trajectories.size(); ++i) {
     if (this->tracked_trajectories[i].is_activated) {
-      Track track = {.id = this->tracked_trajectories[i].id,
-                     .score = this->tracked_trajectories[i].score,
-                     .ltrb = this->tracked_trajectories[i].ltrb};
+      Track track = {this->tracked_trajectories[i].id,
+                     this->tracked_trajectories[i].score,
+                     this->tracked_trajectories[i].ltrb};
       tracks->push_back(track);
     }
   }

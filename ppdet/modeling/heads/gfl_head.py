@@ -29,7 +29,7 @@ from paddle.nn.initializer import Normal, Constant
 
 from ppdet.core.workspace import register
 from ppdet.modeling.layers import ConvNormLayer
-from ppdet.modeling.bbox_utils import distance2bbox, bbox2distance
+from ppdet.modeling.bbox_utils import distance2bbox, bbox2distance, batch_distance2bbox
 from ppdet.data.transform.atss_assigner import bbox_overlaps
 
 
@@ -241,18 +241,34 @@ class GFLHead(nn.Layer):
         ), "The size of fpn_feats is not equal to size of fpn_stride"
         cls_logits_list = []
         bboxes_reg_list = []
-        for scale_reg, fpn_feat in zip(self.scales_regs, fpn_feats):
+        for stride, scale_reg, fpn_feat in zip(self.fpn_stride,
+                                               self.scales_regs, fpn_feats):
             conv_cls_feat, conv_reg_feat = self.conv_feat(fpn_feat)
-            cls_logits = self.gfl_head_cls(conv_cls_feat)
-            bbox_reg = scale_reg(self.gfl_head_reg(conv_reg_feat))
+            cls_score = self.gfl_head_cls(conv_cls_feat)
+            bbox_pred = scale_reg(self.gfl_head_reg(conv_reg_feat))
             if self.dgqp_module:
-                quality_score = self.dgqp_module(bbox_reg)
-                cls_logits = F.sigmoid(cls_logits) * quality_score
+                quality_score = self.dgqp_module(bbox_pred)
+                cls_score = F.sigmoid(cls_score) * quality_score
             if not self.training:
-                cls_logits = F.sigmoid(cls_logits.transpose([0, 2, 3, 1]))
-                bbox_reg = bbox_reg.transpose([0, 2, 3, 1])
-            cls_logits_list.append(cls_logits)
-            bboxes_reg_list.append(bbox_reg)
+                cls_score = F.sigmoid(cls_score.transpose([0, 2, 3, 1]))
+                bbox_pred = bbox_pred.transpose([0, 2, 3, 1])
+                b, cell_h, cell_w, _ = paddle.shape(cls_score)
+                y, x = self.get_single_level_center_point(
+                    [cell_h, cell_w], stride, cell_offset=self.cell_offset)
+                center_points = paddle.stack([x, y], axis=-1)
+                cls_score = cls_score.reshape([b, -1, self.cls_out_channels])
+                bbox_pred = self.distribution_project(bbox_pred) * stride
+                bbox_pred = bbox_pred.reshape([b, cell_h * cell_w, 4])
+
+                # NOTE: If keep_ratio=False and image shape value that
+                # multiples of 32, distance2bbox not set max_shapes parameter
+                # to speed up model prediction. If need to set max_shapes,
+                # please use inputs['im_shape'].
+                bbox_pred = batch_distance2bbox(
+                    center_points, bbox_pred, max_shapes=None)
+
+            cls_logits_list.append(cls_score)
+            bboxes_reg_list.append(bbox_pred)
 
         return (cls_logits_list, bboxes_reg_list)
 
@@ -410,71 +426,15 @@ class GFLHead(nn.Layer):
         x = x.flatten()
         return y, x
 
-    def get_bboxes_single(self,
-                          cls_scores,
-                          bbox_preds,
-                          img_shape,
-                          scale_factor,
-                          rescale=True,
-                          cell_offset=0):
-        assert len(cls_scores) == len(bbox_preds)
-        mlvl_bboxes = []
-        mlvl_scores = []
-        for stride, cls_score, bbox_pred in zip(self.fpn_stride, cls_scores,
-                                                bbox_preds):
-            featmap_size = [
-                paddle.shape(cls_score)[0], paddle.shape(cls_score)[1]
-            ]
-            y, x = self.get_single_level_center_point(
-                featmap_size, stride, cell_offset=cell_offset)
-            center_points = paddle.stack([x, y], axis=-1)
-            scores = cls_score.reshape([-1, self.cls_out_channels])
-            bbox_pred = self.distribution_project(bbox_pred) * stride
-
-            if scores.shape[0] > self.nms_pre:
-                max_scores = scores.max(axis=1)
-                _, topk_inds = max_scores.topk(self.nms_pre)
-                center_points = center_points.gather(topk_inds)
-                bbox_pred = bbox_pred.gather(topk_inds)
-                scores = scores.gather(topk_inds)
-
-            bboxes = distance2bbox(
-                center_points, bbox_pred, max_shape=img_shape)
-            mlvl_bboxes.append(bboxes)
-            mlvl_scores.append(scores)
-        mlvl_bboxes = paddle.concat(mlvl_bboxes)
-        if rescale:
-            # [h_scale, w_scale] to [w_scale, h_scale, w_scale, h_scale]
-            im_scale = paddle.concat([scale_factor[::-1], scale_factor[::-1]])
-            mlvl_bboxes /= im_scale
-        mlvl_scores = paddle.concat(mlvl_scores)
-        mlvl_scores = mlvl_scores.transpose([1, 0])
-        return mlvl_bboxes, mlvl_scores
-
-    def decode(self, cls_scores, bbox_preds, im_shape, scale_factor,
-               cell_offset):
-        batch_bboxes = []
-        batch_scores = []
-        for img_id in range(cls_scores[0].shape[0]):
-            num_levels = len(cls_scores)
-            cls_score_list = [cls_scores[i][img_id] for i in range(num_levels)]
-            bbox_pred_list = [bbox_preds[i][img_id] for i in range(num_levels)]
-            bboxes, scores = self.get_bboxes_single(
-                cls_score_list,
-                bbox_pred_list,
-                im_shape[img_id],
-                scale_factor[img_id],
-                cell_offset=cell_offset)
-            batch_bboxes.append(bboxes)
-            batch_scores.append(scores)
-        batch_bboxes = paddle.stack(batch_bboxes, axis=0)
-        batch_scores = paddle.stack(batch_scores, axis=0)
-
-        return batch_bboxes, batch_scores
-
     def post_process(self, gfl_head_outs, im_shape, scale_factor):
         cls_scores, bboxes_reg = gfl_head_outs
-        bboxes, score = self.decode(cls_scores, bboxes_reg, im_shape,
-                                    scale_factor, self.cell_offset)
-        bbox_pred, bbox_num, _ = self.nms(bboxes, score)
+        bboxes = paddle.concat(bboxes_reg, axis=1)
+        # rescale: [h_scale, w_scale] -> [w_scale, h_scale, w_scale, h_scale]
+        im_scale = paddle.concat(
+            [scale_factor[:, ::-1], scale_factor[:, ::-1]],
+            axis=-1).unsqueeze(1)
+        bboxes /= im_scale
+        mlvl_scores = paddle.concat(cls_scores, axis=1)
+        mlvl_scores = mlvl_scores.transpose([0, 2, 1])
+        bbox_pred, bbox_num, _ = self.nms(bboxes, mlvl_scores)
         return bbox_pred, bbox_num
