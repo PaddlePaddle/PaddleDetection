@@ -65,7 +65,7 @@ class PPYOLOHead(nn.Layer):
                  static_assigner='ATSSAssigner',
                  assigner='TaskAlignedAssigner',
                  nms='MultiClassNMS',
-                 eval_input_size=[640, 640],
+                 eval_input_size=[],
                  loss_weight={
                      'class': 1.0,
                      'iou': 2.5,
@@ -125,9 +125,10 @@ class PPYOLOHead(nn.Layer):
             self.proj.reshape([1, self.reg_max + 1, 1, 1]))
         self.proj_conv.weight.stop_gradient = True
 
-        anchor_points, stride_tensor = self._generate_anchors()
-        self.register_buffer('anchor_points', anchor_points)
-        self.register_buffer('stride_tensor', stride_tensor)
+        if self.eval_input_size:
+            anchor_points, stride_tensor = self._generate_anchors()
+            self.register_buffer('anchor_points', anchor_points)
+            self.register_buffer('stride_tensor', stride_tensor)
 
     def forward_train(self, feats, targets):
         anchors, anchor_points, num_anchors_list, stride_tensor = \
@@ -153,13 +154,16 @@ class PPYOLOHead(nn.Layer):
             num_anchors_list, stride_tensor
         ], targets)
 
-    def _generate_anchors(self):
+    def _generate_anchors(self, feats=None):
         # just use in eval time
         anchor_points = []
         stride_tensor = []
-        for stride in self.fpn_strides:
-            h = int(self.eval_input_size[0] / stride)
-            w = int(self.eval_input_size[1] / stride)
+        for i, stride in enumerate(self.fpn_strides):
+            if feats is not None:
+                _, _, h, w = feats[i].shape
+            else:
+                h = int(self.eval_input_size[0] / stride)
+                w = int(self.eval_input_size[1] / stride)
             shift_x = paddle.arange(end=w) + self.grid_cell_offset
             shift_y = paddle.arange(end=h) + self.grid_cell_offset
             shift_y, shift_x = paddle.meshgrid(shift_y, shift_x)
@@ -175,6 +179,10 @@ class PPYOLOHead(nn.Layer):
         return anchor_points, stride_tensor
 
     def forward_eval(self, feats):
+        if self.eval_input_size:
+            anchor_points, stride_tensor = self.anchor_points, self.stride_tensor
+        else:
+            anchor_points, stride_tensor = self._generate_anchors(feats)
         cls_score_list, reg_dist_list = [], []
         for i, feat in enumerate(feats):
             b, _, h, w = feat.shape
@@ -194,7 +202,7 @@ class PPYOLOHead(nn.Layer):
         cls_score_list = paddle.concat(cls_score_list, axis=-1)
         reg_dist_list = paddle.concat(reg_dist_list, axis=-1)
 
-        return cls_score_list, reg_dist_list
+        return cls_score_list, reg_dist_list, anchor_points, stride_tensor
 
     def forward(self, feats, targets=None):
         assert len(feats) == len(self.fpn_strides), \
@@ -354,10 +362,10 @@ class PPYOLOHead(nn.Layer):
         return out_dict
 
     def post_process(self, head_outs, img_shape, scale_factor):
-        pred_scores, pred_dist = head_outs
-        pred_bboxes = batch_distance2bbox(self.anchor_points,
+        pred_scores, pred_dist, anchor_points, stride_tensor = head_outs
+        pred_bboxes = batch_distance2bbox(anchor_points,
                                           pred_dist.transpose([0, 2, 1]))
-        pred_bboxes *= self.stride_tensor
+        pred_bboxes *= stride_tensor
         # scale bbox to origin
         scale_y, scale_x = paddle.split(scale_factor, 2, axis=-1)
         scale_factor = paddle.concat(

@@ -44,6 +44,7 @@ PPYOLOHead:
   grid_cell_offset: 0.5
   static_assigner_epoch: 100
   use_varifocal_loss: True
+  eval_input_size: [640, 640]
   loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
   static_assigner:
     name: ATSSAssigner
