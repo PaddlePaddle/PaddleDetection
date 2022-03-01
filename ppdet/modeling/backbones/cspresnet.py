@@ -22,15 +22,11 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 
-from ppdet.modeling.ops import mish
+from ppdet.modeling.ops import get_act_fn
 from ppdet.core.workspace import register, serializable
 from ..shape_spec import ShapeSpec
 
 __all__ = ['CSPResNet', 'BasicBlock', 'EffectiveSELayer', 'ConvBNLayer']
-
-
-def swish(x):
-    return x * F.sigmoid(x)
 
 
 class ConvBNLayer(nn.Layer):
@@ -57,18 +53,13 @@ class ConvBNLayer(nn.Layer):
             ch_out,
             weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
             bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
-        self.act = act
+        self.act = get_act_fn(act) if act is None or isinstance(act, (
+            str, dict)) else act
 
     def forward(self, x):
         x = self.conv(x)
         x = self.bn(x)
-        if self.act is not None:
-            if self.act == 'leaky_relu':
-                x = F.leaky_relu(x, 0.01)
-            elif self.act == 'mish':
-                x = mish(x)
-            else:
-                x = getattr(F, self.act)(x)
+        x = self.act(x)
 
         return x
 
@@ -82,19 +73,15 @@ class RepVggBlock(nn.Layer):
             ch_in, ch_out, 3, stride=1, padding=1, act=None)
         self.conv2 = ConvBNLayer(
             ch_in, ch_out, 1, stride=1, padding=0, act=None)
-        self.act = act
+        self.act = get_act_fn(act) if act is None or isinstance(act, (
+            str, dict)) else act
 
     def forward(self, x):
         if hasattr(self, 'conv'):
             y = self.conv(x)
         else:
             y = self.conv1(x) + self.conv2(x)
-        if self.act == 'leaky_relu':
-            y = F.leaky_relu(y, 0.1)
-        elif self.act == 'mish':
-            y = mish(y)
-        else:
-            y = getattr(F, self.act)(y)
+        y = self.act(y)
         return y
 
     def convert_to_deploy(self):
@@ -161,12 +148,13 @@ class EffectiveSELayer(nn.Layer):
     def __init__(self, channels, act='hardsigmoid'):
         super(EffectiveSELayer, self).__init__()
         self.fc = nn.Conv2D(channels, channels, kernel_size=1, padding=0)
-        self.act = act
+        self.act = get_act_fn(act) if act is None or isinstance(act, (
+            str, dict)) else act
 
     def forward(self, x):
         x_se = x.mean((2, 3), keepdim=True)
         x_se = self.fc(x_se)
-        return x * getattr(F, self.act)(x_se)
+        return x * self.act(x_se)
 
 
 class CSPResStage(nn.Layer):
@@ -215,7 +203,7 @@ class CSPResStage(nn.Layer):
 @register
 @serializable
 class CSPResNet(nn.Layer):
-    __shared__ = ['width_mult', 'depth_mult']
+    __shared__ = ['width_mult', 'depth_mult', 'trt']
 
     def __init__(self,
                  layers=[3, 6, 6, 3],
@@ -225,10 +213,14 @@ class CSPResNet(nn.Layer):
                  depth_wise=False,
                  use_large_stem=False,
                  width_mult=1.0,
-                 depth_mult=1.0):
+                 depth_mult=1.0,
+                 trt=False):
         super(CSPResNet, self).__init__()
         channels = [max(round(c * width_mult), 1) for c in channels]
         layers = [max(round(l * depth_mult), 1) for l in layers]
+        act = get_act_fn(
+            act, trt=trt) if act is None or isinstance(act,
+                                                       (str, dict)) else act
 
         if use_large_stem:
             self.stem = nn.Sequential(

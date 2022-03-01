@@ -22,7 +22,7 @@ from ..losses import GIoULoss
 from ..initializer import bias_init_with_prob, constant_, normal_
 from ..assigners.utils import generate_anchors_for_grid_cell
 from ppdet.modeling.backbones.cspresnet import ConvBNLayer
-from ppdet.modeling.ops import get_static_shape, paddle_distributed_is_initialized
+from ppdet.modeling.ops import get_static_shape, paddle_distributed_is_initialized, get_act_fn
 
 __all__ = ['PPYOLOHead']
 
@@ -45,12 +45,13 @@ class ESEAttn(nn.Layer):
 
 @register
 class PPYOLOHead(nn.Layer):
-    __shared__ = ['num_classes']
+    __shared__ = ['num_classes', 'trt']
     __inject__ = ['static_assigner', 'assigner', 'nms']
 
     def __init__(self,
                  in_channels=[1024, 512, 256],
                  num_classes=80,
+                 act='swish',
                  fpn_strides=(32, 16, 8),
                  grid_cell_scale=5.0,
                  grid_cell_offset=0.5,
@@ -65,7 +66,8 @@ class PPYOLOHead(nn.Layer):
                      'class': 1.0,
                      'iou': 2.5,
                      'dfl': 0.5,
-                 }):
+                 },
+                 trt=False):
         super(PPYOLOHead, self).__init__()
         assert len(in_channels) > 0, "len(in_channels) should > 0"
         self.in_channels = in_channels
@@ -86,9 +88,12 @@ class PPYOLOHead(nn.Layer):
         # stem
         self.stem_cls = nn.LayerList()
         self.stem_reg = nn.LayerList()
+        act = get_act_fn(
+            act, trt=trt) if act is None or isinstance(act,
+                                                       (str, dict)) else act
         for in_c in self.in_channels:
-            self.stem_cls.append(ESEAttn(in_c))
-            self.stem_reg.append(ESEAttn(in_c))
+            self.stem_cls.append(ESEAttn(in_c, act=act))
+            self.stem_reg.append(ESEAttn(in_c, act=act))
         # pred head
         self.pred_cls = nn.LayerList()
         self.pred_reg = nn.LayerList()

@@ -17,32 +17,51 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling.layers import DropBlock
-from ..backbones.cspresnet import RepVggBlock, ConvBNLayer
-from ..necks.yolo_fpn import SPP
+from ppdet.modeling.ops import get_act_fn
+from ..backbones.cspresnet import ConvBNLayer, BasicBlock
 from ..shape_spec import ShapeSpec
 
 __all__ = ['CustomCSPPAN']
 
 
-class BasicBlock(nn.Layer):
-    def __init__(self, ch_in, ch_out, act='relu', shortcut=True):
-        super(BasicBlock, self).__init__()
-        assert ch_in == ch_out
-        self.conv1 = ConvBNLayer(ch_in, ch_out, 3, padding=1, act=act)
-        self.conv2 = RepVggBlock(ch_out, ch_out, act=act)
-        self.shortcut = shortcut
+class SPP(nn.Layer):
+    def __init__(self,
+                 ch_in,
+                 ch_out,
+                 k,
+                 pool_size,
+                 act='swish',
+                 data_format='NCHW'):
+        super(SPP, self).__init__()
+        self.pool = []
+        self.data_format = data_format
+        for i, size in enumerate(pool_size):
+            pool = self.add_sublayer(
+                'pool{}'.format(i),
+                nn.MaxPool2D(
+                    kernel_size=size,
+                    stride=1,
+                    padding=size // 2,
+                    data_format=data_format,
+                    ceil_mode=False))
+            self.pool.append(pool)
+        self.conv = ConvBNLayer(ch_in, ch_out, k, padding=k // 2, act=act)
 
     def forward(self, x):
-        y = self.conv1(x)
-        y = self.conv2(y)
-        if self.shortcut:
-            return paddle.add(x, y)
+        outs = [x]
+        for pool in self.pool:
+            outs.append(pool(x))
+        if self.data_format == 'NCHW':
+            y = paddle.concat(outs, axis=1)
         else:
-            return y
+            y = paddle.concat(outs, axis=-1)
+
+        y = self.conv(y)
+        return y
 
 
 class CSPStage(nn.Layer):
-    def __init__(self, block_fn, ch_in, ch_out, n, act='leaky', spp=False):
+    def __init__(self, block_fn, ch_in, ch_out, n, act='swish', spp=False):
         super(CSPStage, self).__init__()
 
         ch_mid = int(ch_out // 2)
@@ -72,7 +91,7 @@ class CSPStage(nn.Layer):
 @register
 @serializable
 class CustomCSPPAN(nn.Layer):
-    __shared__ = ['norm_type', 'data_format', 'width_mult', 'depth_mult']
+    __shared__ = ['norm_type', 'data_format', 'width_mult', 'depth_mult', 'trt']
 
     def __init__(self,
                  in_channels=[256, 512, 1024],
@@ -89,11 +108,15 @@ class CustomCSPPAN(nn.Layer):
                  spp=False,
                  data_format='NCHW',
                  width_mult=1.0,
-                 depth_mult=1.0):
+                 depth_mult=1.0,
+                 trt=False):
 
         super(CustomCSPPAN, self).__init__()
         out_channels = [max(round(c * width_mult), 1) for c in out_channels]
         block_num = max(round(block_num * depth_mult), 1)
+        act = get_act_fn(
+            act, trt=trt) if act is None or isinstance(act,
+                                                       (str, dict)) else act
         self.num_blocks = len(in_channels)
         self.data_format = data_format
         self._out_channels = out_channels
