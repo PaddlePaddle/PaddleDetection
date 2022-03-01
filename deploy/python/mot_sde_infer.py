@@ -18,17 +18,22 @@ import yaml
 import cv2
 import numpy as np
 from collections import defaultdict
-
 import paddle
-from benchmark_utils import PaddleInferBenchmark
 
+from benchmark_utils import PaddleInferBenchmark
 from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride
 from utils import argsparser, Timer, get_current_memory_mb
 from infer import get_test_images, print_arguments, PredictConfig
-from infer import load_predictor, create_inputs
-from mot.tracker import JDETracker
-from mot.utils import MOTTimer, write_mot_results
+from infer import Detector, load_predictor, create_inputs
 from visualize import plot_tracking, plot_tracking_dict
+
+# add python path
+import sys
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+sys.path.insert(0, parent_path)
+
+from pptracking.python.mot import JDETracker
+from pptracking.python.mot.utils import MOTTimer, write_mot_results
 
 
 def bench_log(detector, img_list, model_info, batch_size=1, name=None):
@@ -37,7 +42,7 @@ def bench_log(detector, img_list, model_info, batch_size=1, name=None):
         'gpu_rss_mb': detector.gpu_mem / len(img_list),
         'gpu_util': detector.gpu_util * 100 / len(img_list)
     }
-    perf_info = detector.mot_times.report(average=True) # mot_times
+    perf_info = detector.mot_times.report(average=True)
     data_info = {
         'batch_size': batch_size,
         'shape': "dynamic_shape",
@@ -48,46 +53,58 @@ def bench_log(detector, img_list, model_info, batch_size=1, name=None):
     log(name)
 
 
-class MOTDetector(object):
-    def __init__(
-            self,
-            model_dir,
-            tracker_config,
-            device='CPU',
-            run_mode='paddle',
-            batch_size=1,
-            trt_min_shape=1,
-            trt_max_shape=1280,
-            trt_opt_shape=640,
-            trt_calib_mode=False,
-            cpu_threads=1,
-            enable_mkldnn=False,
-            output_dir='output',
-            threshold=0.5, ):
-        self.pred_config = self.set_config(model_dir)
-        self.predictor, self.config = load_predictor(
-            model_dir,
+class MOT_Detector(Detector):
+    """
+    Args:
+        model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
+        tracker_config (str): tracker config path
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
+        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN
+        use_dark(bool): whether to use postprocess in DarkPose
+    """
+
+    def __init__(self,
+                 model_dir,
+                 tracker_config,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 output_dir='output',
+                 threshold=0.5):
+        super(MOT_Detector, self).__init__(
+            model_dir=model_dir,
+            device=device,
             run_mode=run_mode,
             batch_size=batch_size,
-            min_subgraph_size=self.pred_config.min_subgraph_size,
-            device=device,
-            use_dynamic_shape=self.pred_config.use_dynamic_shape,
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
             trt_opt_shape=trt_opt_shape,
             trt_calib_mode=trt_calib_mode,
             cpu_threads=cpu_threads,
-            enable_mkldnn=enable_mkldnn)
-        self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
-        self.batch_size = batch_size
-        self.output_dir = output_dir
-        self.threshold = threshold
+            enable_mkldnn=enable_mkldnn,
+            output_dir=output_dir,
+            threshold=threshold, )
 
+        self.tracker_config = tracker_config
         self.mot_times = Timer(with_tracker=True)
         self.num_classes = len(self.pred_config.labels)
 
         # tracker config
-        cfg = yaml.safe_load(open(tracker_config))['tracker']
+        cfg = yaml.safe_load(open(self.tracker_config))['tracker']
         min_box_area = cfg.get('min_box_area', 200)
         vertical_ratio = cfg.get('vertical_ratio', 1.6)
         use_byte = cfg.get('use_byte', True)
@@ -103,67 +120,6 @@ class MOTDetector(object):
             match_thres=match_thres,
             conf_thres=conf_thres,
             low_conf_thres=low_conf_thres)
-
-    def set_config(self, model_dir):
-        return PredictConfig(model_dir)
-
-    def get_timer(self):
-        return self.mot_times
-
-    def preprocess(self, image_list):
-        preprocess_ops = []
-        for op_info in self.pred_config.preprocess_infos:
-            new_op_info = op_info.copy()
-            op_type = new_op_info.pop('type')
-            preprocess_ops.append(eval(op_type)(**new_op_info))
-        input_im_lst = []
-        input_im_info_lst = []
-        for im_path in image_list:
-            im, im_info = preprocess(im_path, preprocess_ops)
-            input_im_lst.append(im)
-            input_im_info_lst.append(im_info)
-        inputs = create_inputs(input_im_lst, input_im_info_lst)
-        input_names = self.predictor.get_input_names()
-        for i in range(len(input_names)):
-            input_tensor = self.predictor.get_input_handle(input_names[i])
-            input_tensor.copy_from_cpu(inputs[input_names[i]])
-
-        return inputs
-
-    def postprocess(self, inputs, result):
-        # postprocess output of predictor
-        np_boxes_num = result['boxes_num']
-        if np_boxes_num[0] <= 0:
-            print('[WARNNING] No object detected.')
-            result = {'boxes': np.zeros([0, 6]), 'boxes_num': [0]}
-        result = {k: v for k, v in result.items() if v is not None}
-        return result
-
-    def predict(self, repeats=1):
-        '''
-        Args:
-            repeats (int): repeats number for prediction
-        Returns:
-            result (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
-                            matix element:[class, score, x_min, y_min, x_max, y_max]
-                            MaskRCNN's result include 'masks': np.ndarray:
-                            shape: [N, im_h, im_w]
-        '''
-        # model prediction
-        np_boxes, np_masks = None, None
-        for i in range(repeats):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            boxes_tensor = self.predictor.get_output_handle(output_names[0])
-            np_boxes = boxes_tensor.copy_to_cpu()
-            boxes_num = self.predictor.get_output_handle(output_names[1])
-            np_boxes_num = boxes_num.copy_to_cpu()
-            if self.pred_config.mask:
-                masks_tensor = self.predictor.get_output_handle(output_names[2])
-                np_masks = masks_tensor.copy_to_cpu()
-        result = dict(boxes=np_boxes, masks=np_masks, boxes_num=np_boxes_num)
-
-        return result
 
     def tracking(self, det_results, emb_results=None):
         pred_dets = det_results['boxes']
@@ -197,13 +153,12 @@ class MOTDetector(object):
                       run_benchmark=False,
                       repeats=1,
                       visual=True):
+        mot_results = []
         num_classes = self.num_classes
         image_list.sort()
         ids2names = self.pred_config.labels
-        mot_results = []
         for frame_id, img_file in enumerate(image_list):
-            batch_image_list = [img_file]
-            print('Test iter {}'.format(frame_id))
+            batch_image_list = [img_file] # bs=1 in MOT model
             if run_benchmark:
                 # preprocess
                 inputs = self.preprocess(batch_image_list)  # warmup
@@ -212,19 +167,19 @@ class MOTDetector(object):
                 self.mot_times.preprocess_time_s.end()
 
                 # model prediction
-                result = self.predict(repeats=repeats)  # warmup
+                result_warmup = self.predict(repeats=repeats)  # warmup
                 self.mot_times.inference_time_s.start()
                 result = self.predict(repeats=repeats)
                 self.mot_times.inference_time_s.end(repeats=repeats)
 
                 # postprocess
-                det_result = self.postprocess(inputs, result)  # warmup
+                result_warmup = self.postprocess(inputs, result)  # warmup
                 self.mot_times.postprocess_time_s.start()
                 det_result = self.postprocess(inputs, result)
                 self.mot_times.postprocess_time_s.end()
 
                 # tracking
-                tracking_result = self.tracking(det_result)
+                result_warmup = self.tracking(det_result)
                 self.mot_times.tracking_time_s.start()
                 online_tlwhs, online_scores, online_ids = self.tracking(det_result)
                 self.mot_times.tracking_time_s.end()
@@ -234,6 +189,7 @@ class MOTDetector(object):
                 self.cpu_mem += cm
                 self.gpu_mem += gm
                 self.gpu_util += gu
+
             else:
                 self.mot_times.preprocess_time_s.start()
                 inputs = self.preprocess(batch_image_list)
@@ -254,6 +210,7 @@ class MOTDetector(object):
                 self.mot_times.img_num += 1
 
             if visual:
+                print('Test iter {}'.format(frame_id))
                 frame = cv2.imread(img_file)
                 im = plot_tracking_dict(
                     frame,
@@ -269,7 +226,6 @@ class MOTDetector(object):
                     os.makedirs(save_dir)
                 cv2.imwrite(
                     os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
-
 
     def predict_video(self, video_file, camera_id):
         video_out_name = 'output.mp4'
@@ -290,6 +246,7 @@ class MOTDetector(object):
         out_path = os.path.join(self.output_dir, video_out_name)
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+
         frame_id = 1
         timer = MOTTimer()
         results = defaultdict(list)  # support single class and multi classes
@@ -299,7 +256,8 @@ class MOTDetector(object):
             if not ret:
                 break
             timer.tic()
-            print('Tracking frame: %d' % (frame_id))
+            if frame_id % 10 == 0:
+                print('Tracking frame: %d' % (frame_id))
             frame_id += 1
 
             batch_image_list = [frame]
@@ -337,7 +295,7 @@ class MOTDetector(object):
                 fps=fps,
                 ids2names=[])
 
-            im = np.array(im)
+            #im = np.array(im)
             writer.write(im)
             if camera_id != -1:
                 cv2.imshow('Mask Detection', im)
@@ -352,20 +310,21 @@ def main():
         yml_conf = yaml.safe_load(f)
     arch = yml_conf['arch']
     assert arch in ['YOLO'], 'Only support YOLO series model now.'
-    detector_func = 'MOTDetector'
-    detector = eval(detector_func)(FLAGS.model_dir,
-                                   FLAGS.tracker_config,
-                                   device=FLAGS.device,
-                                   run_mode=FLAGS.run_mode,
-                                   batch_size=FLAGS.batch_size,
-                                   trt_min_shape=FLAGS.trt_min_shape,
-                                   trt_max_shape=FLAGS.trt_max_shape,
-                                   trt_opt_shape=FLAGS.trt_opt_shape,
-                                   trt_calib_mode=FLAGS.trt_calib_mode,
-                                   cpu_threads=FLAGS.cpu_threads,
-                                   enable_mkldnn=FLAGS.enable_mkldnn,
-                                   threshold=FLAGS.threshold,
-                                   output_dir=FLAGS.output_dir)
+    detector_func = 'MOT_Detector'
+    detector = eval(detector_func)(
+        FLAGS.model_dir,
+        FLAGS.tracker_config,
+        device=FLAGS.device,
+        run_mode=FLAGS.run_mode,
+        batch_size=FLAGS.batch_size,
+        trt_min_shape=FLAGS.trt_min_shape,
+        trt_max_shape=FLAGS.trt_max_shape,
+        trt_opt_shape=FLAGS.trt_opt_shape,
+        trt_calib_mode=FLAGS.trt_calib_mode,
+        cpu_threads=FLAGS.cpu_threads,
+        enable_mkldnn=FLAGS.enable_mkldnn,
+        threshold=FLAGS.threshold,
+        output_dir=FLAGS.output_dir)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
@@ -373,7 +332,7 @@ def main():
     else:
         # predict from image
         if FLAGS.image_dir is None and FLAGS.image_file is not None:
-            assert FLAGS.batch_size == 1, "batch_size should be 1, when image_file is not None"
+            assert FLAGS.batch_size == 1, "batch_size should be 1 in MOT models."
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
         detector.predict_image(img_list, FLAGS.run_benchmark, repeats=10)
 

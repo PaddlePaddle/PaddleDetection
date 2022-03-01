@@ -26,10 +26,15 @@ from paddle.inference import create_predictor
 from utils import argsparser, Timer, get_current_memory_mb
 from infer import Detector, get_test_images, print_arguments, PredictConfig
 from benchmark_utils import PaddleInferBenchmark
+from visualize import plot_tracking, plot_tracking_dict
 
-from ppdet.modeling.mot.tracker import JDETracker
-from ppdet.modeling.mot.visualization import plot_tracking_dict
-from ppdet.modeling.mot.utils import MOTTimer, write_mot_results
+# add python path
+import sys
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+sys.path.insert(0, parent_path)
+
+from pptracking.python.mot import JDETracker
+from pptracking.python.mot.utils import MOTTimer, write_mot_results
 
 # Global dictionary
 MOT_SUPPORT_MODELS = {
