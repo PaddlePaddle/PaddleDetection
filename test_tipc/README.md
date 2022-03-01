@@ -106,6 +106,6 @@ bash test_tipc/test_train_inference_python.sh ./test_tipc/configs/yolov3/yolov3_
 各功能测试中涉及混合精度、裁剪、量化等训练相关，及mkldnn、Tensorrt等多种预测相关参数配置，请点击下方相应链接了解更多细节和使用教程：  
 - [test_train_inference_python 使用](docs/test_train_inference_python.md) ：测试基于Python的模型训练、评估、推理等基本功能，包括裁剪、量化、蒸馏。
 - [test_inference_cpp 使用](docs/test_inference_cpp.md)：测试基于C++的模型推理。
-- [test_serving 使用](docs/test_serving.md)：测试基于Paddle Serving的服务化部署功能。
-- [test_lite_arm_cpu_cpp 使用](docs/test_lite_arm_cpu_cpp.md)：测试基于Paddle-Lite的ARM CPU端c++预测部署功能。
-- [test_paddle2onnx 使用](docs/test_paddle2onnx.md)：测试Paddle2ONNX的模型转化功能，并验证正确性。
+- [test_serving 使用](./)：测试基于Paddle Serving的服务化部署功能。
+- [test_lite_arm_cpu_cpp 使用](./)：测试基于Paddle-Lite的ARM CPU端c++预测部署功能。
+- [test_paddle2onnx 使用](./)：测试Paddle2ONNX的模型转化功能，并验证正确性。
