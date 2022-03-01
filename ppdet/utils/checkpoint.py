@@ -140,9 +140,9 @@ def match_state_dict(model_state_dict, weight_state_dict):
     max_len = match_matrix.max(1)
     max_id[max_len == 0] = -1
     not_load_weight_name = []
-    for match_idx in range(len(max_id)):
-        if match_idx < len(weight_keys) and max_id[match_idx] == -1:
-            not_load_weight_name.append(weight_keys[match_idx])
+    for wk_idx in range(len(weight_keys)):
+        if wk_idx not in max_id:
+            not_load_weight_name.append(weight_keys[wk_idx])
     if len(not_load_weight_name) > 0:
         logger.info('{} in pretrained weight is not used in the model, '
                     'and its will not be loaded'.format(not_load_weight_name))
