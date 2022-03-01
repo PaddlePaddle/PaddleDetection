@@ -362,8 +362,8 @@ class Trainer(object):
             model = paddle.DataParallel(
                 self.model, find_unused_parameters=find_unused_parameters)
 
-        # initial fp16
-        if self.cfg.get('fp16', False):
+        # enabel auto mixed precision mode
+        if self.cfg.get('amp', False):
             scaler = amp.GradScaler(
                 enable=self.cfg.use_gpu, init_loss_scaling=1024)
 
@@ -401,7 +401,7 @@ class Trainer(object):
                 self._compose_callback.on_step_begin(self.status)
                 data['epoch_id'] = epoch_id
 
-                if self.cfg.get('fp16', False):
+                if self.cfg.get('amp', False):
                     with amp.auto_cast(enable=self.cfg.use_gpu):
                         # model forward
                         outputs = model(data)
