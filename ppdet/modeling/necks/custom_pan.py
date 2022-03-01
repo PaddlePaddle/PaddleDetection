@@ -193,12 +193,6 @@ class CustomCSPPAN(nn.Layer):
 
         return pan_feats[::-1]
 
-    def eval(self):
-        self.training = False
-        for layer in self.sublayers():
-            layer.training = False
-            layer.eval()
-
     @classmethod
     def from_config(cls, cfg, input_shape):
         return {'in_channels': [i.channels for i in input_shape], }

@@ -639,6 +639,11 @@ class Trainer(object):
 
         if hasattr(self.model, 'deploy'):
             self.model.deploy = True
+
+        for layer in self.model.sublayers():
+            if hasattr(layer, 'convert_to_deploy'):
+                layer.convert_to_deploy()
+
         export_post_process = self.cfg.get('export_post_process', False)
         if hasattr(self.model, 'export_post_process'):
             self.model.export_post_process = export_post_process

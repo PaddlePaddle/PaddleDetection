@@ -85,11 +85,10 @@ class RepVggBlock(nn.Layer):
         self.act = act
 
     def forward(self, x):
-        # if not self.training:
-        #     y = self.conv(x)
-        # else:
-        #     y = self.conv1(x) + self.conv2(x)
-        y = self.conv1(x) + self.conv2(x)
+        if hasattr(self, 'conv'):
+            y = self.conv(x)
+        else:
+            y = self.conv1(x) + self.conv2(x)
         if self.act == 'leaky_relu':
             y = F.leaky_relu(y, 0.1)
         elif self.act == 'mish':
@@ -98,46 +97,43 @@ class RepVggBlock(nn.Layer):
             y = getattr(F, self.act)(y)
         return y
 
-    # def eval(self):
-    #     if not hasattr(self, 'conv'):
-    #         self.conv = nn.Conv2D(
-    #             in_channels=self.ch_in,
-    #             out_channels=self.ch_out,
-    #             kernel_size=3,
-    #             stride=1,
-    #             padding=1,
-    #             groups=1)
-    #     self.training = False
-    #     kernel, bias = self.get_equivalent_kernel_bias()
-    #     self.conv.weight.set_value(kernel)
-    #     self.conv.bias.set_value(bias)
-    #     for layer in self.sublayers():
-    #         layer.eval()
+    def convert_to_deploy(self):
+        if not hasattr(self, 'conv'):
+            self.conv = nn.Conv2D(
+                in_channels=self.ch_in,
+                out_channels=self.ch_out,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                groups=1)
+        kernel, bias = self.get_equivalent_kernel_bias()
+        self.conv.weight.set_value(kernel)
+        self.conv.bias.set_value(bias)
 
-    # def get_equivalent_kernel_bias(self):
-    #     kernel3x3, bias3x3 = self._fuse_bn_tensor(self.conv1)
-    #     kernel1x1, bias1x1 = self._fuse_bn_tensor(self.conv2)
-    #     return kernel3x3 + self._pad_1x1_to_3x3_tensor(
-    #         kernel1x1), bias3x3 + bias1x1
+    def get_equivalent_kernel_bias(self):
+        kernel3x3, bias3x3 = self._fuse_bn_tensor(self.conv1)
+        kernel1x1, bias1x1 = self._fuse_bn_tensor(self.conv2)
+        return kernel3x3 + self._pad_1x1_to_3x3_tensor(
+            kernel1x1), bias3x3 + bias1x1
 
-    # def _pad_1x1_to_3x3_tensor(self, kernel1x1):
-    #     if kernel1x1 is None:
-    #         return 0
-    #     else:
-    #         return nn.functional.pad(kernel1x1, [1, 1, 1, 1])
+    def _pad_1x1_to_3x3_tensor(self, kernel1x1):
+        if kernel1x1 is None:
+            return 0
+        else:
+            return nn.functional.pad(kernel1x1, [1, 1, 1, 1])
 
-    # def _fuse_bn_tensor(self, branch):
-    #     if branch is None:
-    #         return 0, 0
-    #     kernel = branch.conv.weight
-    #     running_mean = branch.bn._mean
-    #     running_var = branch.bn._variance
-    #     gamma = branch.bn.weight
-    #     beta = branch.bn.bias
-    #     eps = branch.bn._epsilon
-    #     std = (running_var + eps).sqrt()
-    #     t = (gamma / std).reshape((-1, 1, 1, 1))
-    #     return kernel * t, beta - running_mean * gamma / std
+    def _fuse_bn_tensor(self, branch):
+        if branch is None:
+            return 0, 0
+        kernel = branch.conv.weight
+        running_mean = branch.bn._mean
+        running_var = branch.bn._variance
+        gamma = branch.bn.weight
+        beta = branch.bn.bias
+        eps = branch.bn._epsilon
+        std = (running_var + eps).sqrt()
+        t = (gamma / std).reshape((-1, 1, 1, 1))
+        return kernel * t, beta - running_mean * gamma / std
 
 
 class BasicBlock(nn.Layer):
@@ -192,7 +188,7 @@ class CSPResStage(nn.Layer):
             self.conv_down = None
         self.conv1 = ConvBNLayer(ch_mid, ch_mid // 2, 1, act=act)
         self.conv2 = ConvBNLayer(ch_mid, ch_mid // 2, 1, act=act)
-        self.blocks = nn.Sequential(*[
+        self.blocks = nn.Sequential(* [
             block_fn(
                 ch_mid // 2, ch_mid // 2, act=act, shortcut=True)
             for i in range(n)
@@ -264,9 +260,9 @@ class CSPResNet(nn.Layer):
                     act=act)))
 
         n = len(channels) - 1
-        self.stages = nn.Sequential(*[(str(i), CSPResStage(
+        self.stages = nn.Sequential(* [(str(i), CSPResStage(
             BasicBlock, channels[i], channels[i + 1], layers[i], 2, act=act))
-                                      for i in range(n)])
+                                       for i in range(n)])
 
         self._out_channels = channels[1:]
         self._out_strides = [4, 8, 16, 32]
@@ -282,12 +278,6 @@ class CSPResNet(nn.Layer):
                 outs.append(x)
 
         return outs
-
-    def eval(self):
-        self.training = False
-        for layer in self.sublayers():
-            layer.training = False
-            layer.eval()
 
     @property
     def out_shape(self):
