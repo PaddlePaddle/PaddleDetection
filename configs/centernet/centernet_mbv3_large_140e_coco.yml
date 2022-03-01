@@ -3,7 +3,7 @@ _BASE_: [
 ]
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV3_large_x1_0_ssld_pretrained.pdparams
-weights: output/centernet_mbv3_large_1x_140e_coco/model_final
+weights: output/centernet_mbv3_large_140e_coco/model_final
 
 CenterNet:
   backbone: MobileNetV3
