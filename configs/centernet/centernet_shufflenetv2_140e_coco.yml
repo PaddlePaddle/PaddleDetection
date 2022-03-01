@@ -3,7 +3,7 @@ _BASE_: [
 ]
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ShuffleNetV2_x1_0_pretrained.pdparams
-weights: output/centernet_shufflenetv2_1x_140e_coco/model_final
+weights: output/centernet_shufflenetv2_140e_coco/model_final
 
 CenterNet:
   backbone: ShuffleNetV2
