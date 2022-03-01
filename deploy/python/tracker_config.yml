@@ -1,4 +1,6 @@
-# config of tracker, use JDETracker as default
+# config of tracker for MOT SDE Detector, use ByteTracker as default.
+# The tracker of MOT JDE Detector is exported together with the model.
+# Here 'min_box_area' and 'vertical_ratio' are set for pedestrian, you can modify for other objects tracking.
 tracker:
   use_byte: true
   conf_thres: 0.6

@@ -57,6 +57,23 @@ SUPPORT_MODELS = {
 }
 
 
+def bench_log(detector, img_list, model_info, batch_size=1, name=None):
+    mems = {
+        'cpu_rss_mb': detector.cpu_mem / len(img_list),
+        'gpu_rss_mb': detector.gpu_mem / len(img_list),
+        'gpu_util': detector.gpu_util * 100 / len(img_list)
+    }
+    perf_info = detector.det_times.report(average=True)
+    data_info = {
+        'batch_size': batch_size,
+        'shape': "dynamic_shape",
+        'data_num': perf_info['img_num']
+    }
+    log = PaddleInferBenchmark(detector.config, model_info, data_info,
+                               perf_info, mems)
+    log(name)
+
+
 class Detector(object):
     """
     Args:
@@ -743,27 +760,13 @@ def main():
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)
         else:
-            mems = {
-                'cpu_rss_mb': detector.cpu_mem / len(img_list),
-                'gpu_rss_mb': detector.gpu_mem / len(img_list),
-                'gpu_util': detector.gpu_util * 100 / len(img_list)
-            }
-
-            perf_info = detector.det_times.report(average=True)
-            model_dir = FLAGS.model_dir
             mode = FLAGS.run_mode
+            model_dir = FLAGS.model_dir
             model_info = {
                 'model_name': model_dir.strip('/').split('/')[-1],
                 'precision': mode.split('_')[-1]
             }
-            data_info = {
-                'batch_size': FLAGS.batch_size,
-                'shape': "dynamic_shape",
-                'data_num': perf_info['img_num']
-            }
-            det_log = PaddleInferBenchmark(detector.config, model_info,
-                                           data_info, perf_info, mems)
-            det_log('Det')
+            bench_log(detector, img_list, model_info, name='DET')
 
 
 if __name__ == '__main__':
