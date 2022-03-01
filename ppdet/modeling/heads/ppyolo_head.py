@@ -17,15 +17,12 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 
-import math
-from paddle.fluid import core
-from paddle.fluid.dygraph import parallel_helper
 from ..bbox_utils import batch_distance2bbox
 from ..losses import GIoULoss
 from ..initializer import bias_init_with_prob, constant_, normal_
 from ..assigners.utils import generate_anchors_for_grid_cell
-from ppdet.modeling.layers import ConvNormLayer
-from ppdet.modeling.ops import get_static_shape
+from ppdet.modeling.backbones.cspresnet import ConvBNLayer
+from ppdet.modeling.ops import get_static_shape, paddle_distributed_is_initialized
 
 __all__ = ['PPYOLOHead']
 
@@ -33,9 +30,8 @@ __all__ = ['PPYOLOHead']
 class ESEAttn(nn.Layer):
     def __init__(self, feat_channels, act='swish'):
         super(ESEAttn, self).__init__()
-        self.act = act
         self.fc = nn.Conv2D(feat_channels, feat_channels, 1)
-        self.conv = ConvNormLayer(feat_channels, feat_channels, 1, 1)
+        self.conv = ConvBNLayer(feat_channels, feat_channels, 1, act=act)
 
         self._init_weights()
 
@@ -44,8 +40,7 @@ class ESEAttn(nn.Layer):
 
     def forward(self, feat, avg_feat):
         weight = F.sigmoid(self.fc(avg_feat))
-        out = self.conv(feat * weight)
-        return getattr(F, self.act)(out)
+        return self.conv(feat * weight)
 
 
 @register
@@ -337,8 +332,7 @@ class PPYOLOHead(nn.Layer):
                 pred_scores, assigned_scores, alpha=alpha_l)
 
         assigned_scores_sum = assigned_scores.sum()
-        if core.is_compiled_with_dist(
-        ) and parallel_helper._is_parallel_ctx_initialized():
+        if paddle_distributed_is_initialized():
             paddle.distributed.all_reduce(assigned_scores_sum)
             assigned_scores_sum = paddle.clip(
                 assigned_scores_sum / paddle.distributed.get_world_size(),
