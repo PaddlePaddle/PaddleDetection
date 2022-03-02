@@ -123,5 +123,20 @@ def argsparser():
         type=bool,
         default=True,
         help='whether to use darkpose to get better keypoint position predict ')
-
+    parser.add_argument(
+        '--save_res',
+        type=bool,
+        default=False,
+        help=(
+            "whether to save predict results to json file"
+            "1) store_res: a list of image_data"
+            "2) image_data: [imageid, rects, [keypoints, scores]]"
+            "3) rects: list of rect [xmin, ymin, xmax, ymax]"
+            "4) keypoints: 17(joint numbers)*[x, y, conf], total 51 data in list"
+            "5) scores: mean of all joint conf"))
+    parser.add_argument(
+        "--tracker_config",
+        type=str,
+        default=None,
+        help=("tracker donfig"))
     return parser

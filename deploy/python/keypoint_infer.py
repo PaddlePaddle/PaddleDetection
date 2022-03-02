@@ -127,7 +127,9 @@ class KeyPoint_Detector(Detector):
                 preds += np_masks
             preds += [h, w]
             keypoint_postprocess = HrHRNetPostProcess()
-            results['keypoint'] = keypoint_postprocess(*preds)
+            kpts, scores = keypoint_postprocess(*preds)
+            results['keypoint'] = kpts
+            results['score'] = scores
             return results
         elif KEYPOINT_SUPPORT_MODELS[
                 self.pred_config.arch] == 'keypoint_topdown':
@@ -136,8 +138,9 @@ class KeyPoint_Detector(Detector):
             center = np.round(imshape / 2.)
             scale = imshape / 200.
             keypoint_postprocess = HRNetPostProcess(use_dark=self.use_dark)
-            results['keypoint'] = keypoint_postprocess(np_heatmap, center,
-                                                       scale)
+            kpts, scores = keypoint_postprocess(np_heatmap, center, scale)
+            results['keypoint'] = kpts
+            results['score'] = scores
             return results
         else:
             raise ValueError("Unsupported arch: {}, expect {}".format(

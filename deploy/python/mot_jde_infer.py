@@ -21,6 +21,7 @@ from collections import defaultdict
 import paddle
 
 from benchmark_utils import PaddleInferBenchmark
+from preprocess import decode_image
 from utils import argsparser, Timer, get_current_memory_mb
 from infer import Detector, get_test_images, print_arguments, bench_log, PredictConfig
 
@@ -35,7 +36,7 @@ from pptracking.python.visualize import plot_tracking, plot_tracking_dict
 
 
 # Global dictionary
-MOT_SUPPORT_MODELS = {
+MOT_JDE_SUPPORT_MODELS = {
     'JDE',
     'FairMOT',
 }
@@ -59,6 +60,7 @@ class JDE_Detector(Detector):
 
     def __init__(self,
                  model_dir,
+                 tracker_config=None,
                  device='CPU',
                  run_mode='paddle',
                  batch_size=1,
@@ -88,7 +90,7 @@ class JDE_Detector(Detector):
         self.num_classes = len(self.pred_config.labels)
 
         # tracker config
-        assert self.pred_config.tracker, "JDE Detector should have tracker"
+        assert self.pred_config.tracker, "The exported JDE Detector model should have tracker."
         cfg = self.pred_config.tracker
         min_box_area = cfg.get('min_box_area', 200) #tp['min_box_area'] if 'min_box_area' in tp else 200
         vertical_ratio = cfg.get('vertical_ratio', 1.6) #tp['vertical_ratio'] if 'vertical_ratio' in tp else 1.6
@@ -224,10 +226,7 @@ class JDE_Detector(Detector):
             if visual:
                 if frame_id % 10 == 0:
                     print('Tracking frame {}'.format(frame_id))
-                with open(img_file, 'rb') as f:
-                    im_read = f.read()
-                data = np.frombuffer(im_read, dtype='uint8')
-                frame = cv2.imdecode(data, 1)
+                frame, _ = decode_image(img_file, {})
 
                 im = plot_tracking_dict(
                     frame,

@@ -21,6 +21,7 @@ from collections import defaultdict
 import paddle
 
 from benchmark_utils import PaddleInferBenchmark
+from preprocess import decode_image
 from utils import argsparser, Timer, get_current_memory_mb
 from infer import Detector, get_test_images, print_arguments, bench_log, PredictConfig
 
@@ -35,9 +36,10 @@ from pptracking.python.visualize import plot_tracking, plot_tracking_dict
 
 
 # Global dictionary
-MOT_SUPPORT_MODELS = {
+MOT_SDE_SUPPORT_MODELS = {
     'DeepSORT',
     'ByteTrack',
+    'YOLO',
 }
 
 
@@ -200,10 +202,7 @@ class SDE_Detector(Detector):
             if visual:
                 if frame_id % 10 == 0:
                     print('Tracking frame {}'.format(frame_id))
-                with open(img_file, 'rb') as f:
-                    im_read = f.read()
-                data = np.frombuffer(im_read, dtype='uint8')
-                frame = cv2.imdecode(data, 1)
+                frame, _ = decode_image(img_file, {})
 
                 im = plot_tracking_dict(
                     frame,
@@ -289,8 +288,7 @@ def main():
         yml_conf = yaml.safe_load(f)
     arch = yml_conf['arch']
     assert arch in ['YOLO'], 'For faster speed, only support YOLO series model as Detector now.'
-    detector_func = 'SDE_Detector'
-    detector = eval(detector_func)(
+    detector = SDE_Detector(
         FLAGS.model_dir,
         FLAGS.tracker_config,
         device=FLAGS.device,

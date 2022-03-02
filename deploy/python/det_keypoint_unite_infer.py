@@ -22,35 +22,18 @@ import yaml
 
 from det_keypoint_unite_utils import argsparser
 from preprocess import decode_image
-from infer import Detector, DetectorPicoDet, PredictConfig, print_arguments, get_test_images
+from infer import Detector, DetectorPicoDet, PredictConfig, print_arguments, get_test_images, bench_log
 from keypoint_infer import KeyPoint_Detector, PredictConfig_KeyPoint
 from visualize import visualize_pose
 from benchmark_utils import PaddleInferBenchmark
 from utils import get_current_memory_mb
 from keypoint_postprocess import translate_to_ori_images
 
+
 KEYPOINT_SUPPORT_MODELS = {
     'HigherHRNet': 'keypoint_bottomup',
     'HRNet': 'keypoint_topdown'
 }
-
-
-def bench_log(detector, img_list, model_info, batch_size=1, name=None):
-    mems = {
-        'cpu_rss_mb': detector.cpu_mem / len(img_list),
-        'gpu_rss_mb': detector.gpu_mem / len(img_list),
-        'gpu_util': detector.gpu_util * 100 / len(img_list)
-    }
-    perf_info = detector.det_times.report(average=True)
-    data_info = {
-        'batch_size': batch_size,
-        'shape': "dynamic_shape",
-        'data_num': perf_info['img_num']
-    }
-
-    log = PaddleInferBenchmark(detector.config, model_info, data_info,
-                               perf_info, mems)
-    log(name)
 
 
 def predict_with_given_det(image, det_res, keypoint_detector,
@@ -145,8 +128,7 @@ def topdown_unite_predict_video(detector,
         capture = cv2.VideoCapture(camera_id)
     else:
         capture = cv2.VideoCapture(FLAGS.video_file)
-        video_name = os.path.splitext(os.path.basename(FLAGS.video_file))[
-            0] + '.mp4'
+        video_name = os.path.split(FLAGS.video_file)[-1]
     # Get Video info : resolution, fps, frame count
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -157,7 +139,7 @@ def topdown_unite_predict_video(detector,
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
-    fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     index = 0
     store_res = []
