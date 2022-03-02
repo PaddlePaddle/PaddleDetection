@@ -1,7 +1,0 @@
-_BASE_: [
-  './ppyolov3_crn_x_300e_coco.yml',
-  './_base_/optimizer_36e.yml',
-]
-
-snapshot_epoch: 2
-weights: output/ppyolov3_crn_x_36e_coco/model_final
