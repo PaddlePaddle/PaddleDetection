@@ -27,7 +27,7 @@ from preprocess import decode_image
 from infer import print_arguments, get_test_images
 from mot_sde_infer import SDE_Detector, MOT_SDE_SUPPORT_MODELS
 from mot_jde_infer import JDE_Detector, MOT_JDE_SUPPORT_MODELS
-from keypoint_infer import KeyPoint_Detector, KEYPOINT_SUPPORT_MODELS
+from keypoint_infer import KeyPointDetector, KEYPOINT_SUPPORT_MODELS
 from det_keypoint_unite_infer import predict_with_given_det
 from visualize import visualize_pose
 from benchmark_utils import PaddleInferBenchmark
@@ -146,7 +146,7 @@ def mot_topdown_unite_predict_video(mot_detector,
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     frame_id = 0
     timer_mot, timer_kp, timer_mot_kp = FPSTimer(), FPSTimer(), FPSTimer()
@@ -235,7 +235,7 @@ def main():
                                            threshold=FLAGS.mot_threshold,
                                            output_dir=FLAGS.output_dir)
 
-    topdown_keypoint_detector = KeyPoint_Detector(
+    topdown_keypoint_detector = KeyPointDetector(
         FLAGS.keypoint_model_dir,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,

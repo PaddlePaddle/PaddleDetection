@@ -46,7 +46,7 @@ KEYPOINT_SUPPORT_MODELS = {
 }
 
 
-class KeyPoint_Detector(Detector):
+class KeyPointDetector(Detector):
     """
     Args:
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
@@ -77,7 +77,7 @@ class KeyPoint_Detector(Detector):
                  output_dir='output',
                  threshold=0.5,
                  use_dark=True):
-        super(KeyPoint_Detector, self).__init__(
+        super(KeyPointDetector, self).__init__(
             model_dir=model_dir,
             device=device,
             run_mode=run_mode,
@@ -259,7 +259,7 @@ class KeyPoint_Detector(Detector):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_name)
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         index = 1
         while (1):
@@ -354,7 +354,7 @@ def visualize(image_list, results, visual_thresh=0.6, save_dir='output'):
 
 
 def main():
-    detector = KeyPoint_Detector(
+    detector = KeyPointDetector(
         FLAGS.model_dir,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,

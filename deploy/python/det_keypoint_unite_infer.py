@@ -23,7 +23,7 @@ import yaml
 from det_keypoint_unite_utils import argsparser
 from preprocess import decode_image
 from infer import Detector, DetectorPicoDet, PredictConfig, print_arguments, get_test_images, bench_log
-from keypoint_infer import KeyPoint_Detector, PredictConfig_KeyPoint
+from keypoint_infer import KeyPointDetector, PredictConfig_KeyPoint
 from visualize import visualize_pose
 from benchmark_utils import PaddleInferBenchmark
 from utils import get_current_memory_mb
@@ -138,7 +138,7 @@ def topdown_unite_predict_video(detector,
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     index = 0
     store_res = []
@@ -207,7 +207,7 @@ def main():
                                    enable_mkldnn=FLAGS.enable_mkldnn,
                                    threshold=FLAGS.det_threshold)
 
-    topdown_keypoint_detector = KeyPoint_Detector(
+    topdown_keypoint_detector = KeyPointDetector(
         FLAGS.keypoint_model_dir,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
