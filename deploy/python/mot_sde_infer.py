@@ -290,9 +290,7 @@ def main():
     with open(deploy_file) as f:
         yml_conf = yaml.safe_load(f)
     arch = yml_conf['arch']
-    assert arch in [
-        'YOLO'
-    ], 'For faster speed, only support YOLO series model as Detector now.'
+    assert arch in MOT_SDE_SUPPORT_MODELS, '{} is not supported.'.format(arch)
     detector = SDE_Detector(
         FLAGS.model_dir,
         FLAGS.tracker_config,

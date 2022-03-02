@@ -91,20 +91,11 @@ class JDE_Detector(Detector):
         # tracker config
         assert self.pred_config.tracker, "The exported JDE Detector model should have tracker."
         cfg = self.pred_config.tracker
-        min_box_area = cfg.get(
-            'min_box_area',
-            200)  #tp['min_box_area'] if 'min_box_area' in tp else 200
-        vertical_ratio = cfg.get(
-            'vertical_ratio',
-            1.6)  #tp['vertical_ratio'] if 'vertical_ratio' in tp else 1.6
-        conf_thres = cfg.get(
-            'conf_thres', 0.)  #tp['conf_thres'] if 'conf_thres' in tp else 0.
-        tracked_thresh = cfg.get(
-            'tracked_thresh',
-            0.7)  #tp['tracked_thresh'] if 'tracked_thresh' in tp else 0.7
-        metric_type = cfg.get(
-            'metric_type', 'euclidean'
-        )  #tp['metric_type'] if 'metric_type' in tp else 'euclidean'
+        min_box_area = cfg.get('min_box_area', 200)
+        vertical_ratio = cfg.get('vertical_ratio', 1.6)
+        conf_thres = cfg.get('conf_thres', 0.0)
+        tracked_thresh = cfg.get('tracked_thresh', 0.7)
+        metric_type = cfg.get('metric_type', 'euclidean')
 
         self.tracker = JDETracker(
             num_classes=self.num_classes,
@@ -151,10 +142,10 @@ class JDE_Detector(Detector):
         Args:
             repeats (int): repeats number for prediction
         Returns:
-            result (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
-                            matix element:[class, score, x_min, y_min, x_max, y_max]
-                            MaskRCNN's result include 'masks': np.ndarray:
-                            shape: [N, im_h, im_w]
+            result (dict): include 'pred_dets': np.ndarray: shape:[N,6], N: number of box,
+                            matix element:[x_min, y_min, x_max, y_max, score, class]
+                            FairMOT(JDE)'s result include 'pred_embs': np.ndarray:
+                            shape: [N, 128]
         '''
         # model prediction
         np_pred_dets, np_pred_embs = None, None
