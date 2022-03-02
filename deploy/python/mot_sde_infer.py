@@ -34,7 +34,6 @@ from pptracking.python.mot import JDETracker
 from pptracking.python.mot.utils import MOTTimer, write_mot_results
 from pptracking.python.visualize import plot_tracking, plot_tracking_dict
 
-
 # Global dictionary
 MOT_SDE_SUPPORT_MODELS = {
     'DeepSORT',
@@ -103,7 +102,7 @@ class SDE_Detector(Detector):
         low_conf_thres = cfg.get('low_conf_thres', 0.1)
 
         self.tracker = JDETracker(
-            use_byte = use_byte,
+            use_byte=use_byte,
             num_classes=self.num_classes,
             min_box_area=min_box_area,
             vertical_ratio=vertical_ratio,
@@ -114,7 +113,8 @@ class SDE_Detector(Detector):
     def tracking(self, det_results):
         pred_dets = det_results['boxes']
         pred_embs = None
-        pred_dets = np.concatenate((pred_dets[:, 2:], pred_dets[:, 1:2], pred_dets[:, 0:1]), 1)
+        pred_dets = np.concatenate(
+            (pred_dets[:, 2:], pred_dets[:, 1:2], pred_dets[:, 0:1]), 1)
         # pred_dets should be 'x0, y0, x1, y1, score, cls_id'
 
         online_targets_dict = self.tracker.update(pred_dets, pred_embs)
@@ -148,7 +148,7 @@ class SDE_Detector(Detector):
         image_list.sort()
         ids2names = self.pred_config.labels
         for frame_id, img_file in enumerate(image_list):
-            batch_image_list = [img_file] # bs=1 in MOT model
+            batch_image_list = [img_file]  # bs=1 in MOT model
             if run_benchmark:
                 # preprocess
                 inputs = self.preprocess(batch_image_list)  # warmup
@@ -171,7 +171,8 @@ class SDE_Detector(Detector):
                 # tracking
                 result_warmup = self.tracking(det_result)
                 self.det_times.tracking_time_s.start()
-                online_tlwhs, online_scores, online_ids = self.tracking(det_result)
+                online_tlwhs, online_scores, online_ids = self.tracking(
+                    det_result)
                 self.det_times.tracking_time_s.end()
                 self.det_times.img_num += 1
 
@@ -195,7 +196,8 @@ class SDE_Detector(Detector):
 
                 # tracking process
                 self.det_times.tracking_time_s.start()
-                online_tlwhs, online_scores, online_ids = self.tracking(det_result)
+                online_tlwhs, online_scores, online_ids = self.tracking(
+                    det_result)
                 self.det_times.tracking_time_s.end()
                 self.det_times.img_num += 1
 
@@ -218,7 +220,7 @@ class SDE_Detector(Detector):
                     os.makedirs(save_dir)
                 cv2.imwrite(
                     os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
-            
+
             mot_results.append([online_tlwhs, online_scores, online_ids])
         return mot_results
 
@@ -260,8 +262,9 @@ class SDE_Detector(Detector):
 
             online_tlwhs, online_scores, online_ids = mot_results[0]
             for cls_id in range(num_classes):
-                results[cls_id].append((frame_id + 1, online_tlwhs[cls_id],
-                                        online_scores[cls_id], online_ids[cls_id]))
+                results[cls_id].append(
+                    (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id],
+                     online_ids[cls_id]))
 
             fps = 1. / timer.duration
             im = plot_tracking_dict(
@@ -287,7 +290,9 @@ def main():
     with open(deploy_file) as f:
         yml_conf = yaml.safe_load(f)
     arch = yml_conf['arch']
-    assert arch in ['YOLO'], 'For faster speed, only support YOLO series model as Detector now.'
+    assert arch in [
+        'YOLO'
+    ], 'For faster speed, only support YOLO series model as Detector now.'
     detector = SDE_Detector(
         FLAGS.model_dir,
         FLAGS.tracker_config,

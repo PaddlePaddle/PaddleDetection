@@ -135,8 +135,5 @@ def argsparser():
             "4) keypoints: 17(joint numbers)*[x, y, conf], total 51 data in list"
             "5) scores: mean of all joint conf"))
     parser.add_argument(
-        "--tracker_config",
-        type=str,
-        default=None,
-        help=("tracker donfig"))
+        "--tracker_config", type=str, default=None, help=("tracker donfig"))
     return parser

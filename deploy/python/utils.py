@@ -119,10 +119,7 @@ def argsparser():
         help="Whether coords after detector outputs are scaled, False in JDE YOLOv3 "
         "True in general detector.")
     parser.add_argument(
-        "--tracker_config",
-        type=str,
-        default=None,
-        help=("tracker donfig"))
+        "--tracker_config", type=str, default=None, help=("tracker donfig"))
     parser.add_argument(
         "--reid_model_dir",
         type=str,
@@ -192,18 +189,14 @@ class Timer(Times):
         print("------------------ Inference Time Info ----------------------")
         print("total_time(ms): {}, img_num: {}".format(total_time * 1000,
                                                        self.img_num))
-        preprocess_time = round(
-            pre_time / max(1, self.img_num),
-            4) if average else pre_time
-        postprocess_time = round(
-            post_time / max(1, self.img_num),
-            4) if average else post_time
-        inference_time = round(
-            infer_time / max(1, self.img_num),
-            4) if average else infer_time
-        tracking_time = round(
-            track_time / max(1, self.img_num),
-            4) if average else track_time
+        preprocess_time = round(pre_time / max(1, self.img_num),
+                                4) if average else pre_time
+        postprocess_time = round(post_time / max(1, self.img_num),
+                                 4) if average else post_time
+        inference_time = round(infer_time / max(1, self.img_num),
+                               4) if average else infer_time
+        tracking_time = round(track_time / max(1, self.img_num),
+                              4) if average else track_time
 
         average_latency = total_time / max(1, self.img_num)
         qps = 0
@@ -215,12 +208,12 @@ class Timer(Times):
             print(
                 "preprocess_time(ms): {:.2f}, inference_time(ms): {:.2f}, postprocess_time(ms): {:.2f}, tracking_time(ms): {:.2f}".
                 format(preprocess_time * 1000, inference_time * 1000,
-                    postprocess_time * 1000, tracking_time * 1000))
+                       postprocess_time * 1000, tracking_time * 1000))
         else:
             print(
                 "preprocess_time(ms): {:.2f}, inference_time(ms): {:.2f}, postprocess_time(ms): {:.2f}".
                 format(preprocess_time * 1000, inference_time * 1000,
-                    postprocess_time * 1000))
+                       postprocess_time * 1000))
 
     def report(self, average=False):
         dic = {}
@@ -229,18 +222,14 @@ class Timer(Times):
         post_time = self.postprocess_time_s.value()
         track_time = self.tracking_time_s.value()
 
-        dic['preprocess_time_s'] = round(
-            pre_time / max(1, self.img_num),
-            4) if average else pre_time
-        dic['inference_time_s'] = round(
-            infer_time / max(1, self.img_num),
-            4) if average else infer_time
-        dic['postprocess_time_s'] = round(
-            post_time / max(1, self.img_num),
-            4) if average else post_time
-        dic['tracking_time_s'] = round(
-            post_time / max(1, self.img_num),
-            4) if average else track_time
+        dic['preprocess_time_s'] = round(pre_time / max(1, self.img_num),
+                                         4) if average else pre_time
+        dic['inference_time_s'] = round(infer_time / max(1, self.img_num),
+                                        4) if average else infer_time
+        dic['postprocess_time_s'] = round(post_time / max(1, self.img_num),
+                                          4) if average else post_time
+        dic['tracking_time_s'] = round(post_time / max(1, self.img_num),
+                                       4) if average else track_time
         dic['img_num'] = self.img_num
         total_time = pre_time + infer_time + post_time
         if self.with_tracker:

@@ -29,7 +29,6 @@ from benchmark_utils import PaddleInferBenchmark
 from utils import get_current_memory_mb
 from keypoint_postprocess import translate_to_ori_images
 
-
 KEYPOINT_SUPPORT_MODELS = {
     'HigherHRNet': 'keypoint_bottomup',
     'HRNet': 'keypoint_topdown'

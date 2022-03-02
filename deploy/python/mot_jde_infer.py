@@ -34,7 +34,6 @@ from pptracking.python.mot import JDETracker
 from pptracking.python.mot.utils import MOTTimer, write_mot_results
 from pptracking.python.visualize import plot_tracking, plot_tracking_dict
 
-
 # Global dictionary
 MOT_JDE_SUPPORT_MODELS = {
     'JDE',
@@ -92,11 +91,20 @@ class JDE_Detector(Detector):
         # tracker config
         assert self.pred_config.tracker, "The exported JDE Detector model should have tracker."
         cfg = self.pred_config.tracker
-        min_box_area = cfg.get('min_box_area', 200) #tp['min_box_area'] if 'min_box_area' in tp else 200
-        vertical_ratio = cfg.get('vertical_ratio', 1.6) #tp['vertical_ratio'] if 'vertical_ratio' in tp else 1.6
-        conf_thres = cfg.get('conf_thres', 0.) #tp['conf_thres'] if 'conf_thres' in tp else 0.
-        tracked_thresh = cfg.get('tracked_thresh', 0.7) #tp['tracked_thresh'] if 'tracked_thresh' in tp else 0.7
-        metric_type = cfg.get('metric_type', 'euclidean') #tp['metric_type'] if 'metric_type' in tp else 'euclidean'
+        min_box_area = cfg.get(
+            'min_box_area',
+            200)  #tp['min_box_area'] if 'min_box_area' in tp else 200
+        vertical_ratio = cfg.get(
+            'vertical_ratio',
+            1.6)  #tp['vertical_ratio'] if 'vertical_ratio' in tp else 1.6
+        conf_thres = cfg.get(
+            'conf_thres', 0.)  #tp['conf_thres'] if 'conf_thres' in tp else 0.
+        tracked_thresh = cfg.get(
+            'tracked_thresh',
+            0.7)  #tp['tracked_thresh'] if 'tracked_thresh' in tp else 0.7
+        metric_type = cfg.get(
+            'metric_type', 'euclidean'
+        )  #tp['metric_type'] if 'metric_type' in tp else 'euclidean'
 
         self.tracker = JDETracker(
             num_classes=self.num_classes,
@@ -157,7 +165,7 @@ class JDE_Detector(Detector):
             np_pred_dets = boxes_tensor.copy_to_cpu()
             embs_tensor = self.predictor.get_output_handle(output_names[1])
             np_pred_embs = embs_tensor.copy_to_cpu()
-        
+
         result = dict(pred_dets=np_pred_dets, pred_embs=np_pred_embs)
         return result
 
@@ -172,7 +180,7 @@ class JDE_Detector(Detector):
         ids2names = self.pred_config.labels
         data_type = 'mcmot' if num_classes > 1 else 'mot'
         for frame_id, img_file in enumerate(image_list):
-            batch_image_list = [img_file] # bs=1 in MOT model
+            batch_image_list = [img_file]  # bs=1 in MOT model
             if run_benchmark:
                 # preprocess
                 inputs = self.preprocess(batch_image_list)  # warmup
@@ -195,7 +203,8 @@ class JDE_Detector(Detector):
                 # tracking
                 result_warmup = self.tracking(det_result)
                 self.det_times.tracking_time_s.start()
-                online_tlwhs, online_scores, online_ids = self.tracking(det_result)
+                online_tlwhs, online_scores, online_ids = self.tracking(
+                    det_result)
                 self.det_times.tracking_time_s.end()
                 self.det_times.img_num += 1
 
@@ -219,7 +228,8 @@ class JDE_Detector(Detector):
 
                 # tracking process
                 self.det_times.tracking_time_s.start()
-                online_tlwhs, online_scores, online_ids = self.tracking(det_result)
+                online_tlwhs, online_scores, online_ids = self.tracking(
+                    det_result)
                 self.det_times.tracking_time_s.end()
                 self.det_times.img_num += 1
 
@@ -242,7 +252,7 @@ class JDE_Detector(Detector):
                     os.makedirs(save_dir)
                 cv2.imwrite(
                     os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
-            
+
             mot_results.append([online_tlwhs, online_scores, online_ids])
         return mot_results
 
@@ -265,7 +275,7 @@ class JDE_Detector(Detector):
         out_path = os.path.join(self.output_dir, video_out_name)
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
-        
+
         frame_id = 1
         timer = MOTTimer()
         results = defaultdict(list)  # support single class and multi classes
@@ -283,11 +293,12 @@ class JDE_Detector(Detector):
             timer.tic()
             mot_results = self.predict_image([frame], visual=False)
             timer.toc()
-            
+
             online_tlwhs, online_scores, online_ids = mot_results[0]
             for cls_id in range(num_classes):
-                results[cls_id].append((frame_id + 1, online_tlwhs[cls_id],
-                                        online_scores[cls_id], online_ids[cls_id]))
+                results[cls_id].append(
+                    (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id],
+                     online_ids[cls_id]))
 
             fps = 1. / timer.duration
             im = plot_tracking_dict(

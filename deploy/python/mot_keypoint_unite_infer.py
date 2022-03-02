@@ -82,11 +82,14 @@ def mot_topdown_unite_predict(mot_detector,
         else:
             mot_results = mot_detector.predict_image([image], visual=False)
 
-        online_tlwhs, online_scores, online_ids = mot_results[0] # only support bs=1 in MOT model
-        results = convert_mot_to_det(online_tlwhs[0], online_scores[0]) # only support single class for mot + pose
+        online_tlwhs, online_scores, online_ids = mot_results[
+            0]  # only support bs=1 in MOT model
+        results = convert_mot_to_det(
+            online_tlwhs[0],
+            online_scores[0])  # only support single class for mot + pose
         if results['boxes_num'] == 0:
             continue
-        
+
         keypoint_res = predict_with_given_det(
             image, results, topdown_keypoint_detector, keypoint_batch_size,
             FLAGS.mot_threshold, FLAGS.keypoint_threshold, FLAGS.run_benchmark)
@@ -166,7 +169,9 @@ def mot_topdown_unite_predict_video(mot_detector,
         mot_results = mot_detector.predict_image([frame], visual=False)
         timer_mot.toc()
         online_tlwhs, online_scores, online_ids = mot_results[0]
-        results = convert_mot_to_det(online_tlwhs[0], online_scores[0]) # only support single class for mot + pose
+        results = convert_mot_to_det(
+            online_tlwhs[0],
+            online_scores[0])  # only support single class for mot + pose
         if results['boxes_num'] == 0:
             continue
 
@@ -215,21 +220,20 @@ def main():
     mot_detector_func = 'SDE_Detector'
     if arch in MOT_JDE_SUPPORT_MODELS:
         mot_detector_func = 'JDE_Detector'
-    
-    mot_detector = eval(mot_detector_func)(
-        FLAGS.mot_model_dir,
-        FLAGS.tracker_config,
-        device=FLAGS.device,
-        run_mode=FLAGS.run_mode,
-        batch_size=1,
-        trt_min_shape=FLAGS.trt_min_shape,
-        trt_max_shape=FLAGS.trt_max_shape,
-        trt_opt_shape=FLAGS.trt_opt_shape,
-        trt_calib_mode=FLAGS.trt_calib_mode,
-        cpu_threads=FLAGS.cpu_threads,
-        enable_mkldnn=FLAGS.enable_mkldnn,
-        threshold=FLAGS.mot_threshold,
-        output_dir=FLAGS.output_dir)
+
+    mot_detector = eval(mot_detector_func)(FLAGS.mot_model_dir,
+                                           FLAGS.tracker_config,
+                                           device=FLAGS.device,
+                                           run_mode=FLAGS.run_mode,
+                                           batch_size=1,
+                                           trt_min_shape=FLAGS.trt_min_shape,
+                                           trt_max_shape=FLAGS.trt_max_shape,
+                                           trt_opt_shape=FLAGS.trt_opt_shape,
+                                           trt_calib_mode=FLAGS.trt_calib_mode,
+                                           cpu_threads=FLAGS.cpu_threads,
+                                           enable_mkldnn=FLAGS.enable_mkldnn,
+                                           threshold=FLAGS.mot_threshold,
+                                           output_dir=FLAGS.output_dir)
 
     topdown_keypoint_detector = KeyPoint_Detector(
         FLAGS.keypoint_model_dir,
@@ -251,14 +255,15 @@ def main():
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
-        mot_topdown_unite_predict_video(mot_detector, topdown_keypoint_detector,
-                                        FLAGS.camera_id, FLAGS.keypoint_batch_size,
-                                        FLAGS.save_res)
+        mot_topdown_unite_predict_video(
+            mot_detector, topdown_keypoint_detector, FLAGS.camera_id,
+            FLAGS.keypoint_batch_size, FLAGS.save_res)
     else:
         # predict from image
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        mot_topdown_unite_predict(mot_detector, topdown_keypoint_detector, img_list,
-                                  FLAGS.keypoint_batch_size, FLAGS.save_res)
+        mot_topdown_unite_predict(mot_detector, topdown_keypoint_detector,
+                                  img_list, FLAGS.keypoint_batch_size,
+                                  FLAGS.save_res)
         if not FLAGS.run_benchmark:
             mot_detector.det_times.info(average=True)
             topdown_keypoint_detector.det_times.info(average=True)
@@ -276,7 +281,7 @@ def main():
                 'model_name': keypoint_model_dir.strip('/').split('/')[-1],
                 'precision': mode.split('_')[-1]
             }
-            bench_log(topdown_keypoint_detector, img_list, keypoint_model_info, 
+            bench_log(topdown_keypoint_detector, img_list, keypoint_model_info,
                       FLAGS.keypoint_batch_size, 'KeyPoint')
 
 
