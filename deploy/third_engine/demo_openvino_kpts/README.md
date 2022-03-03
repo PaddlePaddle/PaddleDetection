@@ -1,6 +1,6 @@
-# PicoDet OpenVINO Demo
+# TinyPose OpenVINO Demo
 
-This fold provides PicoDet inference code using
+This fold provides TinyPose inference code using
 [Intel's OpenVINO Toolkit](https://software.intel.com/content/www/us/en/develop/tools/openvino-toolkit.html). Most of the implements in this fold are same as *demo_ncnn*.  
 **Recommand** to use the xxx.tar.gz file to install instead of github method, [link](https://registrationcenter-download.intel.com/akdlm/irc_nas/18096/l_openvino_toolkit_p_2021.4.689.tgz).
 
@@ -87,7 +87,7 @@ source /opt/intel/openvino_2021/bin/setupvars.sh
 mkdir -p build
 cd build
 cmake ..
-msbuild picodet_demo.vcxproj /p:configuration=release /p:platform=x64
+msbuild tinypose_demo.vcxproj /p:configuration=release /p:platform=x64
 ```
 
 ### Linux
@@ -102,8 +102,9 @@ make
 
 ## Run demo
 Download PicoDet openvino model [PicoDet openvino model download link](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_m_416_openvino.zip).
+Download TinyPose openvino model [TinyPose openvino model download link](https://paddledet.bj.bcebos.com/deploy/third_engine/tinypose_256_openvino.zip).
 
-move picodet openvino model files to the demo's weight folder.
+move picodet and tinypose openvino model files to the demo's weight folder. 
 
 ### Edit file
 ```
@@ -111,33 +112,57 @@ step1:
 main.cpp
 #define image_size 416
 ...
-auto detector = PicoDet("../weight/picodet_m_416.xml");
+  cv::Mat image(256, 192, CV_8UC3, cv::Scalar(1, 1, 1));
+  std::vector<float> center = {128, 96};
+  std::vector<float> scale = {256, 192};
+...
+  auto detector = PicoDet("../weight/picodet_m_416.xml");
+  auto kpts_detector = new KeyPointDetector("../weight/tinypose256.xml", -1, 256, 192);
 ...
 step2:
 picodet_openvino.h
 #define image_size 416
 ```
 
-### Webcam
+### Run
+
+Run command:
+``` shell
+./tinypose_demo [mode] [image_file]
+```
+|  param   | detail  |
+|  ----  | ----  |
+| --mode  | input mode，0:camera；1:image；2:video；3:benchmark |
+| --image_file  | input image path |
+
+#### Webcam
 
 ```shell
-picodet_demo 0 0
+tinypose_demo 0 0
 ```
 
-### Inference images
+#### Inference images
 
 ```shell
-picodet_demo 1 IMAGE_FOLDER/*.jpg
+tinypose_demo 1 IMAGE_FOLDER/*.jpg
 ```
 
-### Inference video
+#### Inference video
 
 ```shell
-picodet_demo 2 VIDEO_PATH
+tinypose_demo 2 VIDEO_PATH
 ```
 
 ### Benchmark
 
 ```shell
-picodet_demo 3 0
+tinypose_demo 3 0
 ```
+
+Plateform: Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz x 24(核)
+Model: [Tinypose256_Openvino](https://paddledet.bj.bcebos.com/deploy/third_engine/tinypose_256_openvino.zip)
+
+| param         | Min   | Max   | Avg   |
+| ------------- | ----- | ----- | ----- |
+| infer time(s) | 0.018 | 0.062 | 0.028 |
+

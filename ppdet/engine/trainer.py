@@ -339,7 +339,8 @@ class Trainer(object):
             self.start_epoch = load_weight(self.model.student_model, weights,
                                            self.optimizer)
         else:
-            self.start_epoch = load_weight(self.model, weights, self.optimizer)
+            self.start_epoch = load_weight(self.model, weights, self.optimizer,
+                                           self.ema if self.use_ema else None)
         logger.debug("Resume weights of epoch {}".format(self.start_epoch))
 
     def train(self, validate=False):
@@ -362,8 +363,8 @@ class Trainer(object):
             model = paddle.DataParallel(
                 self.model, find_unused_parameters=find_unused_parameters)
 
-        # initial fp16
-        if self.cfg.get('fp16', False):
+        # enabel auto mixed precision mode
+        if self.cfg.get('amp', False):
             scaler = amp.GradScaler(
                 enable=self.cfg.use_gpu, init_loss_scaling=1024)
 
@@ -401,7 +402,7 @@ class Trainer(object):
                 self._compose_callback.on_step_begin(self.status)
                 data['epoch_id'] = epoch_id
 
-                if self.cfg.get('fp16', False):
+                if self.cfg.get('amp', False):
                     with amp.auto_cast(enable=self.cfg.use_gpu):
                         # model forward
                         outputs = model(data)
@@ -432,21 +433,23 @@ class Trainer(object):
                 self.status['batch_time'].update(time.time() - iter_tic)
                 self._compose_callback.on_step_end(self.status)
                 if self.use_ema:
-                    self.ema.update(self.model)
+                    self.ema.update()
                 iter_tic = time.time()
 
-            # apply ema weight on model
-            if self.use_ema:
-                weight = copy.deepcopy(self.model.state_dict())
-                self.model.set_dict(self.ema.apply())
             if self.cfg.get('unstructured_prune'):
                 self.pruner.update_params()
 
+            is_snapshot = (self._nranks < 2 or self._local_rank == 0) \
+                       and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 or epoch_id == self.end_epoch - 1)
+            if is_snapshot and self.use_ema:
+                # apply ema weight on model
+                weight = copy.deepcopy(self.model.state_dict())
+                self.model.set_dict(self.ema.apply())
+                self.status['weight'] = weight
+
             self._compose_callback.on_epoch_end(self.status)
 
-            if validate and (self._nranks < 2 or self._local_rank == 0) \
-                    and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 \
-                             or epoch_id == self.end_epoch - 1):
+            if validate and is_snapshot:
                 if not hasattr(self, '_eval_loader'):
                     # build evaluation dataset and loader
                     self._eval_dataset = self.cfg.EvalDataset
@@ -467,13 +470,15 @@ class Trainer(object):
                     Init_mark = True
                     self._init_metrics(validate=validate)
                     self._reset_metrics()
+
                 with paddle.no_grad():
                     self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
 
-            # restore origin weight on model
-            if self.use_ema:
+            if is_snapshot and self.use_ema:
+                # reset original weight
                 self.model.set_dict(weight)
+                self.status.pop('weight')
 
         self._compose_callback.on_train_end(self.status)
 
@@ -634,6 +639,11 @@ class Trainer(object):
 
         if hasattr(self.model, 'deploy'):
             self.model.deploy = True
+
+        for layer in self.model.sublayers():
+            if hasattr(layer, 'convert_to_deploy'):
+                layer.convert_to_deploy()
+
         export_post_process = self.cfg.get('export_post_process', False)
         if hasattr(self.model, 'export_post_process'):
             self.model.export_post_process = export_post_process
