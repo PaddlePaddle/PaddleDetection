@@ -269,8 +269,8 @@ class SCRFDHead(nn.Layer):
             anchor_center = bbox_center(anchors[
                 i]) / self.anchor_generator.strides[i]
             anchor_center = paddle.broadcast_to(anchor_center, [
-                bbox_reg.shape[0], anchor_center.shape[0], anchor_center.shape[
-                    1]
+                bbox_reg.shape[0], anchor_center.shape[0],
+                anchor_center.shape[1]
             ])
             anchor_center.stop_gradient = True
             bbox_reg = bbox_reg.transpose([0, 2, 3, 1]).reshape([0, -1, 4])
