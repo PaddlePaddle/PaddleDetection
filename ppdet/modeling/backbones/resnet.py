@@ -391,19 +391,24 @@ class Blocks(nn.Layer):
                  norm_decay=0.,
                  freeze_norm=True,
                  dcn_v2=False,
+                 stage2_no_short_conv=False,
                  std_senet=False):
         super(Blocks, self).__init__()
 
         self.blocks = []
         for i in range(count):
             conv_name = name_adapter.fix_layer_warp_name(stage_num, count, i)
+            if stage2_no_short_conv:
+                shortcut = False if i == 0 and stage_num != 2 else True
+            else:
+                shortcut = False if i == 0 else True
             layer = self.add_sublayer(
                 conv_name,
                 block(
                     ch_in=ch_in,
                     ch_out=ch_out,
                     stride=2 if i == 0 and stage_num != 2 else 1,
-                    shortcut=False if i == 0 else True,
+                    shortcut=shortcut,
                     variant=variant,
                     groups=groups,
                     base_width=base_width,
@@ -443,7 +448,12 @@ class ResNet(nn.Layer):
                  return_idx=[0, 1, 2, 3],
                  dcn_v2_stages=[-1],
                  num_stages=4,
-                 std_senet=False):
+                 std_senet=False,
+                 stem_max_pool_ks=3,
+                 block_nums=[],
+                 block_ch_out=[],
+                 block_name="BasicBlock",
+                 stage2_no_short_conv=False):
         """
         Residual Network, see https://arxiv.org/abs/1512.03385
         
@@ -468,6 +478,7 @@ class ResNet(nn.Layer):
         super(ResNet, self).__init__()
         self._model_type = 'ResNet' if groups == 1 else 'ResNeXt'
         assert num_stages >= 1 and num_stages <= 4
+        self.stem_max_pool_ks = stem_max_pool_ks
         self.depth = depth
         self.variant = variant
         self.groups = groups
@@ -495,7 +506,10 @@ class ResNet(nn.Layer):
         assert max(dcn_v2_stages) < num_stages
         self.dcn_v2_stages = dcn_v2_stages
 
-        block_nums = ResNet_cfg[depth]
+        if self.depth > 0:
+            block_nums = ResNet_cfg[depth]
+        else:
+            block_nums = block_nums
         na = NameAdapter(self)
 
         conv1_name = na.fix_c1_stage_name()
@@ -505,6 +519,7 @@ class ResNet(nn.Layer):
                 [ch_in // 2, ch_in // 2, 3, 1, "conv1_2"],
                 [ch_in // 2, ch_in, 3, 1, "conv1_3"],
             ]
+
         else:
             conv_def = [[3, ch_in, 7, 2, conv1_name]]
         self.conv1 = nn.Sequential()
@@ -524,8 +539,13 @@ class ResNet(nn.Layer):
                     lr=1.0))
 
         self.ch_in = ch_in
-        ch_out_list = [64, 128, 256, 512]
+        if self.depth > 0:
+            ch_out_list = [64, 128, 256, 512]
+        else:
+            ch_out_list = block_ch_out
         block = BottleNeck if depth >= 50 else BasicBlock
+        if self.depth == 0:
+            block = BasicBlock if block_name == "BasicBlock" else BottleNeck
 
         self._out_channels = [block.expansion * v for v in ch_out_list]
         self._out_strides = [4, 8, 16, 32]
@@ -552,7 +572,8 @@ class ResNet(nn.Layer):
                     norm_decay=norm_decay,
                     freeze_norm=freeze_norm,
                     dcn_v2=(i in self.dcn_v2_stages),
-                    std_senet=std_senet))
+                    std_senet=std_senet,
+                    stage2_no_short_conv=stage2_no_short_conv))
             self.res_layers.append(res_layer)
             self.ch_in = self._out_channels[i]
 
@@ -576,7 +597,10 @@ class ResNet(nn.Layer):
     def forward(self, inputs):
         x = inputs['image']
         conv1 = self.conv1(x)
-        x = F.max_pool2d(conv1, kernel_size=3, stride=2, padding=1)
+        if self.stem_max_pool_ks == 2:
+            x = F.max_pool2d(conv1, kernel_size=2, stride=2, padding=0)
+        else:
+            x = F.max_pool2d(conv1, kernel_size=3, stride=2, padding=1)
         outs = []
         for idx, stage in enumerate(self.res_layers):
             x = stage(x)

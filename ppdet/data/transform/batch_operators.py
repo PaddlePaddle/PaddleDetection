@@ -1098,7 +1098,11 @@ class PadGT(BaseOperator):
             pad_gt_class = np.zeros((num_max_boxes, 1), dtype=np.int32)
             pad_gt_bbox = np.zeros((num_max_boxes, 4), dtype=np.float32)
             if num_gt > 0:
-                pad_gt_class[:num_gt] = sample['gt_class']
+                if not len(sample['gt_class'].shape) == 1:
+                    pad_gt_class[:num_gt] = sample['gt_class']
+                else:
+                    pad_gt_class[:num_gt] = np.expand_dims(
+                        sample['gt_class'], axis=1)
                 pad_gt_bbox[:num_gt] = sample['gt_bbox']
             sample['gt_class'] = pad_gt_class
             sample['gt_bbox'] = pad_gt_bbox

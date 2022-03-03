@@ -47,6 +47,7 @@ TRT_MIN_SUBGRAPH = {
     'PicoDet': 3,
     'CenterNet': 5,
     'TOOD': 5,
+    'SCRFD': 3
 }
 
 KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']

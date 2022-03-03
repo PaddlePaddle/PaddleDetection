@@ -1,0 +1,40 @@
+worker_num: 0
+TrainReader:
+  inputs_def:
+    image_shape: [1, 3, 640, 640]
+  sample_transforms:
+    - Decode: {}
+    - RandomSquareCrop: {crop_choice: [0.3, 0.45, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]}
+    - Resize: {target_size: [640, 640], keep_ratio: False, interp: 1}
+    - RandomFlip: {}
+    - PhotoMetricDistortion: {
+        brightness_delta: 32,
+        contrast_range: [0.5, 1.5],
+        saturation_range: [0.5, 1,5],
+        hue_delta: 18
+      }
+  batch_transforms:
+    - NormalizeImage: {mean:  [127.5, 127.5, 127.5], std: [128.0, 128.0, 128.0], is_scale: false}
+    - Permute: {}
+    - PadGT: {}
+  batch_size: 8
+  shuffle: false
+  drop_last: true
+
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - NormalizeImage: {mean:  [127.5, 127.5, 127.5], std: [128.0, 128.0, 128.0], is_scale: false}
+    - Permute: {}
+  batch_size: 1
+
+
+TestReader:
+  inputs_def:
+    image_shape: [1, 3, 640, 640]
+  sample_transforms:
+    - Decode: {}
+    - NormalizeImage: {mean:  [127.5, 127.5, 127.5], std: [128.0, 128.0, 128.0], is_scale: false}
+    - Permute: {}
+  batch_size: 1

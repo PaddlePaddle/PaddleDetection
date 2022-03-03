@@ -51,3 +51,4 @@ from .detr import *
 from .sparse_rcnn import *
 from .tood import *
 from .retinanet import *
+from .scrfd import *

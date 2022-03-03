@@ -53,3 +53,4 @@ from .detr_head import *
 from .sparsercnn_head import *
 from .tood_head import *
 from .retina_head import *
+from .scrfd_head import *

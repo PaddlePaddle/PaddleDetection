@@ -99,8 +99,10 @@ class AnchorGenerator(nn.Layer):
         shift_y = paddle.reshape(shift_y, [-1])
         return shift_x, shift_y
 
-    def _grid_anchors(self, grid_sizes):
+    def _grid_anchors(self, grid_sizes, return_extra_info=False):
         anchors = []
+        num_anchors_list = []
+        stride_tensor_list = []
         for size, stride, base_anchors in zip(grid_sizes, self.strides,
                                               self.cell_anchors):
             shift_x, shift_y = self._create_grid_offsets(size, stride,
@@ -110,13 +112,17 @@ class AnchorGenerator(nn.Layer):
             base_anchors = paddle.reshape(base_anchors, [1, -1, 4])
 
             anchors.append(paddle.reshape(shifts + base_anchors, [-1, 4]))
+            num_anchors_list.append(anchors[-1].shape[0])
+            stride_tensor_list.append(
+                paddle.full([num_anchors_list[-1], 1], stride))
+        if not return_extra_info:
+            return anchors
+        else:
+            return anchors, num_anchors_list, stride_tensor_list
 
-        return anchors
-
-    def forward(self, input):
+    def forward(self, input, return_extra_info=False):
         grid_sizes = [paddle.shape(feature_map)[-2:] for feature_map in input]
-        anchors_over_all_feature_maps = self._grid_anchors(grid_sizes)
-        return anchors_over_all_feature_maps
+        return self._grid_anchors(grid_sizes, return_extra_info)
 
     @property
     def num_anchors(self):

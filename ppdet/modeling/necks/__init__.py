@@ -30,3 +30,4 @@ from .blazeface_fpn import *
 from .bifpn import *
 from .csp_pan import *
 from .es_pan import *
+from .pafpn import *
