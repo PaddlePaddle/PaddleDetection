@@ -259,7 +259,7 @@ class KeyPointDetector(Detector):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_name)
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         index = 1
         while (1):
@@ -342,7 +342,8 @@ class PredictConfig_KeyPoint():
 def visualize(image_list, results, visual_thresh=0.6, save_dir='output'):
     im_results = {}
     for i, image_file in enumerate(image_list):
-        skeletons, scores = results['keypoint']
+        skeletons = results['keypoint']
+        scores = results['score']
         skeleton = skeletons[i:i + 1]
         score = scores[i:i + 1]
         im_results['keypoint'] = [skeleton, score]
