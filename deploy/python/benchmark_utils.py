@@ -240,11 +240,15 @@ class PaddleInferBenchmark(object):
 
         if self.with_tracker:
             self.logger.info(
-                f"{identifier} preprocess_time(ms): {round(self.preprocess_time_s*1000, 1)}, inference_time(ms): {round(self.inference_time_s*1000, 1)}, postprocess_time(ms): {round(self.postprocess_time_s*1000, 1)}, tracking_time(ms): {round(self.tracking_time_s*1000, 1)}"
-            )
+                f"{identifier} preprocess_time(ms): {round(self.preprocess_time_s*1000, 1)}, "
+                f"inference_time(ms): {round(self.inference_time_s*1000, 1)}, "
+                f"postprocess_time(ms): {round(self.postprocess_time_s*1000, 1)}, "
+                f"tracking_time(ms): {round(self.tracking_time_s*1000, 1)}")
         else:
             self.logger.info(
-                f"{identifier} preprocess_time(ms): {round(self.preprocess_time_s*1000, 1)}, inference_time(ms): {round(self.inference_time_s*1000, 1)}, postprocess_time(ms): {round(self.postprocess_time_s*1000, 1)}"
+                f"{identifier} preprocess_time(ms): {round(self.preprocess_time_s*1000, 1)}, "
+                f"inference_time(ms): {round(self.inference_time_s*1000, 1)}, "
+                f"postprocess_time(ms): {round(self.postprocess_time_s*1000, 1)}"
             )
         if self.inference_time_s_90:
             self.looger.info(
