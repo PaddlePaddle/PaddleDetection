@@ -32,7 +32,10 @@ from ppdet.metrics import get_infer_results
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('ppdet.engine')
 
-__all__ = ['Callback', 'ComposeCallback', 'LogPrinter', 'Checkpointer', 'VisualDLWriter', 'SniperProposalsGenerator']
+__all__ = [
+    'Callback', 'ComposeCallback', 'LogPrinter', 'Checkpointer',
+    'VisualDLWriter', 'SniperProposalsGenerator'
+]
 
 
 class Callback(object):
@@ -202,8 +205,14 @@ class Checkpointer(Callback):
                         logger.info("Best test {} ap is {:0.3f}.".format(
                             key, self.best_ap))
             if weight:
-                save_model(weight, self.model.optimizer, self.save_dir,
-                           save_name, epoch_id + 1)
+                if self.model.use_ema:
+                    save_model(status['weight'], self.save_dir, save_name,
+                               epoch_id + 1, self.model.optimizer)
+                    save_model(weight, self.save_dir,
+                               '{}_ema'.format(save_name), epoch_id + 1)
+                else:
+                    save_model(weight, self.save_dir, save_name, epoch_id + 1,
+                               self.model.optimizer)
 
 
 class WiferFaceEval(Callback):

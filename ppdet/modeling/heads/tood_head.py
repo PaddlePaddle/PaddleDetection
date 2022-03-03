@@ -218,13 +218,17 @@ class TOODHead(nn.Layer):
         assert len(feats) == len(self.fpn_strides), \
             "The size of feats is not equal to size of fpn_strides"
 
-        anchors, num_anchors_list, stride_tensor_list = generate_anchors_for_grid_cell(
+        anchors, anchor_points, num_anchors_list, stride_tensor =\
+            generate_anchors_for_grid_cell(
             feats, self.fpn_strides, self.grid_cell_scale,
             self.grid_cell_offset)
+        anchor_centers_split = paddle.split(anchor_points / stride_tensor,
+                                            num_anchors_list)
 
         cls_score_list, bbox_pred_list = [], []
-        for feat, scale_reg, anchor, stride in zip(feats, self.scales_regs,
-                                                   anchors, self.fpn_strides):
+        for feat, scale_reg, anchor_centers, stride in zip(
+                feats, self.scales_regs, anchor_centers_split,
+                self.fpn_strides):
             b, _, h, w = get_static_shape(feat)
             inter_feats = []
             for inter_conv in self.inter_convs:
@@ -250,8 +254,8 @@ class TOODHead(nn.Layer):
             # reg prediction and alignment
             reg_dist = scale_reg(self.tood_reg(reg_feat).exp())
             reg_dist = reg_dist.flatten(2).transpose([0, 2, 1])
-            anchor_centers = bbox_center(anchor).unsqueeze(0) / stride
-            reg_bbox = batch_distance2bbox(anchor_centers, reg_dist)
+            reg_bbox = batch_distance2bbox(
+                anchor_centers.unsqueeze(0), reg_dist)
             if self.use_align_head:
                 reg_offset = F.relu(self.reg_offset_conv1(feat))
                 reg_offset = self.reg_offset_conv2(reg_offset)
@@ -268,12 +272,8 @@ class TOODHead(nn.Layer):
             bbox_pred_list.append(bbox_pred)
         cls_score_list = paddle.concat(cls_score_list, axis=1)
         bbox_pred_list = paddle.concat(bbox_pred_list, axis=1)
-        anchors = paddle.concat(anchors)
-        anchors.stop_gradient = True
-        stride_tensor_list = paddle.concat(stride_tensor_list).unsqueeze(0)
-        stride_tensor_list.stop_gradient = True
 
-        return cls_score_list, bbox_pred_list, anchors, num_anchors_list, stride_tensor_list
+        return cls_score_list, bbox_pred_list, anchors, num_anchors_list, stride_tensor
 
     @staticmethod
     def _focal_loss(score, label, alpha=0.25, gamma=2.0):
@@ -287,7 +287,7 @@ class TOODHead(nn.Layer):
 
     def get_loss(self, head_outs, gt_meta):
         pred_scores, pred_bboxes, anchors, \
-        num_anchors_list, stride_tensor_list = head_outs
+        num_anchors_list, stride_tensor = head_outs
         gt_labels = gt_meta['gt_class']
         gt_bboxes = gt_meta['gt_bbox']
         pad_gt_mask = gt_meta['pad_gt_mask']
@@ -304,7 +304,7 @@ class TOODHead(nn.Layer):
         else:
             assigned_labels, assigned_bboxes, assigned_scores = self.assigner(
                 pred_scores.detach(),
-                pred_bboxes.detach() * stride_tensor_list,
+                pred_bboxes.detach() * stride_tensor,
                 bbox_center(anchors),
                 num_anchors_list,
                 gt_labels,
@@ -314,7 +314,7 @@ class TOODHead(nn.Layer):
             alpha_l = -1
 
         # rescale bbox
-        assigned_bboxes /= stride_tensor_list
+        assigned_bboxes /= stride_tensor
         # classification loss
         loss_cls = self._focal_loss(pred_scores, assigned_scores, alpha=alpha_l)
         # select positive samples mask
