@@ -6,3 +6,4 @@ _BASE_: [
   '_base_/detr_reader.yml',
 ]
 weights: output/detr_r50_1x_coco/model_final
+find_unused_parameters: True
