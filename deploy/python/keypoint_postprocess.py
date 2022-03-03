@@ -362,7 +362,8 @@ def affine_transform(pt, t):
 
 
 def translate_to_ori_images(keypoint_result, batch_records):
-    kpts, scores = keypoint_result['keypoint']
+    kpts = keypoint_result['keypoint']
+    scores = keypoint_result['score']
     kpts[..., 0] += batch_records[:, 0:1]
     kpts[..., 1] += batch_records[:, 1:2]
     return kpts, scores
