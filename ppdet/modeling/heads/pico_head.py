@@ -464,12 +464,13 @@ class PicoHeadV2(GFLHead):
         assert len(fpn_feats) == len(
             self.fpn_stride
         ), "The size of fpn_feats is not equal to size of fpn_stride"
-        anchors, num_anchors_list, stride_tensor_list = generate_anchors_for_grid_cell(
+        anchors, _, num_anchors_list, stride_tensor_list = generate_anchors_for_grid_cell(
             fpn_feats, self.fpn_stride, self.grid_cell_scale, self.cell_offset)
+        anchors_split = paddle.split(anchors, num_anchors_list)
 
         cls_score_list, reg_list, box_list = [], [], []
         for i, fpn_feat, anchor, stride, align_cls in zip(
-                range(len(self.fpn_stride)), fpn_feats, anchors,
+                range(len(self.fpn_stride)), fpn_feats, anchors_split,
                 self.fpn_stride, self.cls_align):
             b, _, h, w = get_static_shape(fpn_feat)
             # task decomposition
@@ -507,10 +508,6 @@ class PicoHeadV2(GFLHead):
             cls_score_list = paddle.concat(cls_score_list, axis=1)
             box_list = paddle.concat(box_list, axis=1)
             reg_list = paddle.concat(reg_list, axis=1)
-            anchors = paddle.concat(anchors)
-            anchors.stop_gradient = True
-            stride_tensor_list = paddle.concat(stride_tensor_list)
-            stride_tensor_list.stop_gradient = True
             return cls_score_list, reg_list, box_list, anchors, num_anchors_list, stride_tensor_list
 
     def get_loss(self, head_outs, gt_meta):

@@ -3,7 +3,7 @@ _BASE_: [
 ]
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV3_small_x1_0_ssld_pretrained.pdparams
-weights: output/centernet_mbv3_small_1x_140e_coco/model_final
+weights: output/centernet_mbv3_small_140e_coco/model_final
 
 CenterNet:
   backbone: MobileNetV3
@@ -23,7 +23,6 @@ CenterNetDLAFPN:
   last_level: 3
   down_ratio: 8
   dcn_v2: False
-
 
 TrainReader:
   batch_size: 32

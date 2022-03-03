@@ -20,28 +20,57 @@ from paddle.regularizer import L2Decay
 
 from paddle.fluid.framework import Variable, in_dygraph_mode
 from paddle.fluid import core
+from paddle.fluid.dygraph import parallel_helper
 from paddle.fluid.layer_helper import LayerHelper
 from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype
 
 __all__ = [
-    'roi_pool',
-    'roi_align',
-    'prior_box',
-    'generate_proposals',
-    'iou_similarity',
-    'box_coder',
-    'yolo_box',
-    'multiclass_nms',
-    'distribute_fpn_proposals',
-    'collect_fpn_proposals',
-    'matrix_nms',
-    'batch_norm',
-    'mish',
+    'roi_pool', 'roi_align', 'prior_box', 'generate_proposals',
+    'iou_similarity', 'box_coder', 'yolo_box', 'multiclass_nms',
+    'distribute_fpn_proposals', 'collect_fpn_proposals', 'matrix_nms',
+    'batch_norm', 'mish', 'swish', 'identity'
 ]
 
 
+def identity(x):
+    return x
+
+
 def mish(x):
-    return x * paddle.tanh(F.softplus(x))
+    return F.mish(x) if hasattr(F, mish) else x * F.tanh(F.softplus(x))
+
+
+def swish(x):
+    return x * F.sigmoid(x)
+
+
+TRT_ACT_SPEC = {'swish': swish}
+
+ACT_SPEC = {'mish': mish}
+
+
+def get_act_fn(act=None, trt=False):
+    assert act is None or isinstance(act, (
+        str, dict)), 'name of activation should be str, dict or None'
+    if not act:
+        return identity
+
+    if isinstance(act, dict):
+        name = act['name']
+        act.pop('name')
+        kwargs = act
+    else:
+        name = act
+        kwargs = dict()
+
+    if trt and name in TRT_ACT_SPEC:
+        fn = TRT_ACT_SPEC[name]
+    elif name in ACT_SPEC:
+        fn = ACT_SPEC[name]
+    else:
+        fn = getattr(F, name)
+
+    return lambda x: fn(x, **kwargs)
 
 
 def batch_norm(ch,
@@ -1602,3 +1631,8 @@ def get_static_shape(tensor):
     shape = paddle.shape(tensor)
     shape.stop_gradient = True
     return shape
+
+
+def paddle_distributed_is_initialized():
+    return core.is_compiled_with_dist(
+    ) and parallel_helper._is_parallel_ctx_initialized()

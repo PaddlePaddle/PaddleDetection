@@ -53,6 +53,7 @@ python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml 
 
 ## 4.第三方部署（MNN、NCNN、Openvino） 
 - 第三方部署提供PicoDet、TinyPose案例，其他模型请参考修改
+- TinyPose部署推荐工具：Intel CPU端推荐使用Openvino，GPU端推荐使用PaddleInference，ARM/ANDROID端推荐使用PaddleLite或者MNN
 
 | Third_Engine | MNN  | NCNN  | OPENVINO   |
 | ------------ | ---- | ----- | ---------- |
