@@ -782,7 +782,7 @@ def delta2bbox_v2(rois,
                   means=(0.0, 0.0, 0.0, 0.0),
                   stds=(1.0, 1.0, 1.0, 1.0),
                   max_shape=None,
-                  wh_ratio_clip=16.0/1000.0,
+                  wh_ratio_clip=16.0 / 1000.0,
                   ctr_clip=None):
     """Transform network output(delta) to bboxes.
     Based on https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/
@@ -860,7 +860,7 @@ def bbox2delta_v2(src_boxes,
     dw = paddle.log(tgt_w / src_w)
     dh = paddle.log(tgt_h / src_h)
 
-    deltas = paddle.stack((dx, dy, dw, dh), axis=1) # [n, 4]
+    deltas = paddle.stack((dx, dy, dw, dh), axis=1)  # [n, 4]
     means = paddle.to_tensor(means, place=src_boxes.place)
     stds = paddle.to_tensor(stds, place=src_boxes.place)
     deltas = (deltas - means) / stds
