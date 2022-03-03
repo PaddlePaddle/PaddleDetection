@@ -29,6 +29,7 @@ from . import swin_transformer
 from . import lcnet
 from . import hardnet
 from . import esnet
+from . import cspresnet
 
 from .vgg import *
 from .resnet import *
@@ -47,3 +48,4 @@ from .swin_transformer import *
 from .lcnet import *
 from .hardnet import *
 from .esnet import *
+from .cspresnet import *

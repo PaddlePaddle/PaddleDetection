@@ -251,7 +251,7 @@ class LiteConv(nn.Layer):
 
 
 class DropBlock(nn.Layer):
-    def __init__(self, block_size, keep_prob, name, data_format='NCHW'):
+    def __init__(self, block_size, keep_prob, name=None, data_format='NCHW'):
         """
         DropBlock layer, see https://arxiv.org/abs/1810.12890
 
