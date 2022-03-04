@@ -263,7 +263,7 @@ else
                 fi
 
                 if [ ${autocast} = "amp" ]; then
-                    set_autocast="--fp16"
+                    set_autocast="--amp"
                 else
                     set_autocast=" "
                 fi
@@ -299,7 +299,7 @@ else
                 if [ ${run_export} != "null" ]; then
                     # run export model
                     set_export_weight=$(func_set_params "${export_weight_key}" "${save_log}/${model_name}/${train_model_name}")
-                    set_save_export_dir=$(func_set_params "${save_export_key}" "${save_export_value}")
+                    set_save_export_dir=$(func_set_params "${save_export_key}" "${save_log}")
                     export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
                     eval $export_cmd
                     status_check $? "${export_cmd}" "${status_log}"
