@@ -4,7 +4,7 @@ fp_item=fp32
 run_process_type=MultiP
 run_mode=DP
 device_num=N1C8
-max_iter=500
+max_iter=100
 num_workers=8
 
 # get data
