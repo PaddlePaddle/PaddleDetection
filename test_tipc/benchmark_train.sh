@@ -91,13 +91,15 @@ profile_option="${profile_option_key}:${profile_option_params}"
 
 line_num=`expr $line_num + 1`
 flags_value=$(func_parser_value "${lines[line_num]}")
-# set flags
-IFS=";"
-flags_list=(${flags_value})
-for _flag in ${flags_list[*]}; do
-    cmd="export ${_flag}"
-    eval $cmd
-done
+if [ ${flags_value} != "null" ];then
+    # set flags
+    IFS=";"
+    flags_list=(${flags_value})
+    for _flag in ${flags_list[*]}; do
+        cmd="export ${_flag}"
+        eval $cmd
+    done
+fi
 
 # set log_name
 repo_name=$(get_repo_name )

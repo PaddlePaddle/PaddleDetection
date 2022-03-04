@@ -197,7 +197,7 @@ void SaveMOTResult(const MOTResult& results,
       continue;
     }
     std::ostringstream os;
-    os << frame_id << " " << ids << "" << x1 << " " << y1 << " " << w << " "
+    os << frame_id << " " << ids << " " << x1 << " " << y1 << " " << w << " "
        << h << "\n";
     record = os.str();
     records->push_back(record);

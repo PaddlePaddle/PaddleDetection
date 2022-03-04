@@ -126,6 +126,10 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 **Note:**
  To export MOT model, please refer to [Here](../../configs/mot/README_en.md).
 
+### 4、Deploy standalone
+
+​    We provide standalone deploy of PaddleInference(Server-GPU)、PaddleLite(mobile、ARM)、Third-Engine(MNN、OpenVino), which is independent of training codes。For detail, please click [Deploy-docs](../../deploy/README_en.md)。
+
 ## Benchmark
 We provide benchmarks in different runtime environments for your reference when choosing models. See [Keypoint Inference Benchmark](./KeypointBenchmark.md) for details.
 

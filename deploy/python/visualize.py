@@ -224,13 +224,13 @@ def get_color(idx):
     return color
 
 
-def draw_pose(imgfile,
-              results,
-              visual_thread=0.6,
-              save_name='pose.jpg',
-              save_dir='output',
-              returnimg=False,
-              ids=None):
+def visualize_pose(imgfile,
+                   results,
+                   visual_thresh=0.6,
+                   save_name='pose.jpg',
+                   save_dir='output',
+                   returnimg=False,
+                   ids=None):
     try:
         import matplotlib.pyplot as plt
         import matplotlib
@@ -239,7 +239,6 @@ def draw_pose(imgfile,
         logger.error('Matplotlib not found, please install matplotlib.'
                      'for example: `pip install matplotlib`.')
         raise e
-
     skeletons, scores = results['keypoint']
     skeletons = np.array(skeletons)
     kpt_nums = 17
@@ -276,7 +275,7 @@ def draw_pose(imgfile,
     canvas = img.copy()
     for i in range(kpt_nums):
         for j in range(len(skeletons)):
-            if skeletons[j][i, 2] < visual_thread:
+            if skeletons[j][i, 2] < visual_thresh:
                 continue
             if ids is None:
                 color = colors[i] if color_set is None else colors[color_set[j]
@@ -300,8 +299,8 @@ def draw_pose(imgfile,
     for i in range(NUM_EDGES):
         for j in range(len(skeletons)):
             edge = EDGES[i]
-            if skeletons[j][edge[0], 2] < visual_thread or skeletons[j][edge[
-                    1], 2] < visual_thread:
+            if skeletons[j][edge[0], 2] < visual_thresh or skeletons[j][edge[
+                    1], 2] < visual_thresh:
                 continue
 
             cur_canvas = canvas.copy()
