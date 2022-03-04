@@ -430,9 +430,7 @@ class GFLHead(nn.Layer):
         cls_scores, bboxes_reg = gfl_head_outs
         bboxes = paddle.concat(bboxes_reg, axis=1)
         # rescale: [h_scale, w_scale] -> [w_scale, h_scale, w_scale, h_scale]
-        im_scale = paddle.concat(
-            [scale_factor[:, ::-1], scale_factor[:, ::-1]],
-            axis=-1).unsqueeze(1)
+        im_scale = scale_factor.flip([1]).tile([1, 2]).unsqueeze(1)
         bboxes /= im_scale
         mlvl_scores = paddle.concat(cls_scores, axis=1)
         mlvl_scores = mlvl_scores.transpose([0, 2, 1])
