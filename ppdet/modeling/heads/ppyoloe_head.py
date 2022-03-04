@@ -24,7 +24,7 @@ from ..assigners.utils import generate_anchors_for_grid_cell
 from ppdet.modeling.backbones.cspresnet import ConvBNLayer
 from ppdet.modeling.ops import get_static_shape, paddle_distributed_is_initialized, get_act_fn
 
-__all__ = ['PPYOLOHead']
+__all__ = ['PPYOLOEHead']
 
 
 class ESEAttn(nn.Layer):
@@ -44,7 +44,7 @@ class ESEAttn(nn.Layer):
 
 
 @register
-class PPYOLOHead(nn.Layer):
+class PPYOLOEHead(nn.Layer):
     __shared__ = ['num_classes', 'trt']
     __inject__ = ['static_assigner', 'assigner', 'nms']
 
@@ -68,7 +68,7 @@ class PPYOLOHead(nn.Layer):
                      'dfl': 0.5,
                  },
                  trt=False):
-        super(PPYOLOHead, self).__init__()
+        super(PPYOLOEHead, self).__init__()
         assert len(in_channels) > 0, "len(in_channels) should > 0"
         self.in_channels = in_channels
         self.num_classes = num_classes

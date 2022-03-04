@@ -6,7 +6,7 @@ ema_decay: 0.9998
 YOLOv3:
   backbone: CSPResNet
   neck: CustomCSPPAN
-  yolo_head: PPYOLOHead
+  yolo_head: PPYOLOEHead
   post_process: ~
 
 CSPResNet:
@@ -22,7 +22,7 @@ CustomCSPPAN:
   act: 'swish'
   spp: true
 
-PPYOLOHead:
+PPYOLOEHead:
   fpn_strides: [32, 16, 8]
   grid_cell_scale: 5.0
   grid_cell_offset: 0.5
