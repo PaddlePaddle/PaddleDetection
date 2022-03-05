@@ -133,7 +133,7 @@ def argsparser():
         help="max batch_size for reid model inference.")
     parser.add_argument(
         '--use_dark',
-        type=bool,
+        type=ast.literal_eval,
         default=True,
         help='whether to use darkpose to get better keypoint position predict ')
     return parser
