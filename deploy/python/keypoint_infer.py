@@ -288,7 +288,7 @@ def create_inputs(imgs, im_info):
         inputs (dict): input of model
     """
     inputs = {}
-    inputs['image'] = np.stack(imgs, axis=0)
+    inputs['image'] = np.stack(imgs, axis=0).astype('float32')
     im_shape = []
     for e in im_info:
         im_shape.append(np.array((e['im_shape'])).astype('float32'))
