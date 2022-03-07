@@ -24,7 +24,7 @@ from ..assigners.utils import generate_anchors_for_grid_cell
 from ppdet.modeling.backbones.cspresnet import ConvBNLayer
 from ppdet.modeling.ops import get_static_shape, paddle_distributed_is_initialized, get_act_fn
 
-__all__ = ['PPYOLOHead']
+__all__ = ['PPYOLOEHead']
 
 
 class ESEAttn(nn.Layer):
@@ -44,8 +44,8 @@ class ESEAttn(nn.Layer):
 
 
 @register
-class PPYOLOHead(nn.Layer):
-    __shared__ = ['num_classes', 'trt']
+class PPYOLOEHead(nn.Layer):
+    __shared__ = ['num_classes', 'trt', 'exclude_nms']
     __inject__ = ['static_assigner', 'assigner', 'nms']
 
     def __init__(self,
@@ -67,8 +67,9 @@ class PPYOLOHead(nn.Layer):
                      'iou': 2.5,
                      'dfl': 0.5,
                  },
-                 trt=False):
-        super(PPYOLOHead, self).__init__()
+                 trt=False,
+                 exclude_nms=False):
+        super(PPYOLOEHead, self).__init__()
         assert len(in_channels) > 0, "len(in_channels) should > 0"
         self.in_channels = in_channels
         self.num_classes = num_classes
@@ -85,6 +86,7 @@ class PPYOLOHead(nn.Layer):
         self.static_assigner = static_assigner
         self.assigner = assigner
         self.nms = nms
+        self.exclude_nms = exclude_nms
         # stem
         self.stem_cls = nn.LayerList()
         self.stem_reg = nn.LayerList()
@@ -333,8 +335,7 @@ class PPYOLOHead(nn.Layer):
             loss_cls = self._varifocal_loss(pred_scores, assigned_scores,
                                             one_hot_label)
         else:
-            loss_cls = self._focal_loss(
-                pred_scores, assigned_scores, alpha=alpha_l)
+            loss_cls = self._focal_loss(pred_scores, assigned_scores, alpha_l)
 
         assigned_scores_sum = assigned_scores.sum()
         if paddle_distributed_is_initialized():
@@ -370,5 +371,9 @@ class PPYOLOHead(nn.Layer):
         scale_factor = paddle.concat(
             [scale_x, scale_y, scale_x, scale_y], axis=-1).reshape([-1, 1, 4])
         pred_bboxes /= scale_factor
-        bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
-        return bbox_pred, bbox_num
+        if self.exclude_nms:
+            # `exclude_nms=True` just use in benchmark
+            return pred_bboxes.sum(), pred_scores.sum()
+        else:
+            bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
+            return bbox_pred, bbox_num
