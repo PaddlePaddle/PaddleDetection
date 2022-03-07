@@ -121,57 +121,60 @@ class Times(object):
         return round(self.time, 4)
 
 
-class Timer(Times):
+class PipeTimer(Times):
     def __init__(self):
-        super(Timer, self).__init__()
-        self.preprocess_time_s = Times()
-        self.inference_time_s = Times()
-        self.postprocess_time_s = Times()
+        super(PipeTimer, self).__init__()
+        self.total_time = Times()
+        self.module_time = {
+            'det': Times(),
+            'mot': Times(),
+            'attr': Times(),
+            'kpt': Times(),
+            'action': Times(),
+        }
         self.img_num = 0
 
     def info(self, average=False):
-        total_time = self.preprocess_time_s.value(
-        ) + self.inference_time_s.value() + self.postprocess_time_s.value()
+        total_time = self.total_time.value()
         total_time = round(total_time, 4)
         print("------------------ Inference Time Info ----------------------")
         print("total_time(ms): {}, img_num: {}".format(total_time * 1000,
                                                        self.img_num))
-        preprocess_time = round(
-            self.preprocess_time_s.value() / max(1, self.img_num),
-            4) if average else self.preprocess_time_s.value()
-        postprocess_time = round(
-            self.postprocess_time_s.value() / max(1, self.img_num),
-            4) if average else self.postprocess_time_s.value()
-        inference_time = round(self.inference_time_s.value() /
-                               max(1, self.img_num),
-                               4) if average else self.inference_time_s.value()
+
+        for k, v in self.module_time.items():
+            v_time = round(v.value(), 4)
+            if v_time > 0:
+                print("{} time(ms): {}".format(k, v_time * 1000))
 
         average_latency = total_time / max(1, self.img_num)
         qps = 0
         if total_time > 0:
             qps = 1 / average_latency
+
         print("average latency time(ms): {:.2f}, QPS: {:2f}".format(
             average_latency * 1000, qps))
-        print(
-            "preprocess_time(ms): {:.2f}, inference_time(ms): {:.2f}, postprocess_time(ms): {:.2f}".
-            format(preprocess_time * 1000, inference_time * 1000,
-                   postprocess_time * 1000))
 
     def report(self, average=False):
         dic = {}
-        dic['preprocess_time_s'] = round(
-            self.preprocess_time_s.value() / max(1, self.img_num),
-            4) if average else self.preprocess_time_s.value()
-        dic['postprocess_time_s'] = round(
-            self.postprocess_time_s.value() / max(1, self.img_num),
-            4) if average else self.postprocess_time_s.value()
-        dic['inference_time_s'] = round(
-            self.inference_time_s.value() / max(1, self.img_num),
-            4) if average else self.inference_time_s.value()
+        dic['total'] = round(self.total_time.value() / max(1, self.img_num),
+                             4) if average else self.total_time.value()
+        dic['det'] = round(self.module_time['det'].value() /
+                           max(1, self.img_num),
+                           4) if average else self.module_time['det'].value()
+        dic['mot'] = round(self.module_time['mot'].value() /
+                           max(1, self.img_num),
+                           4) if average else self.module_time['mot'].value()
+        dic['attr'] = round(self.module_time['attr'].value() /
+                            max(1, self.img_num),
+                            4) if average else self.module_time['attr'].value()
+        dic['kpt'] = round(self.module_time['kpt'].value() /
+                           max(1, self.img_num),
+                           4) if average else self.module_time['kpt'].value()
+        dic['action'] = round(
+            self.module_time['action'].value() / max(1, self.img_num),
+            4) if average else self.module_time['action'].value()
+
         dic['img_num'] = self.img_num
-        total_time = self.preprocess_time_s.value(
-        ) + self.inference_time_s.value() + self.postprocess_time_s.value()
-        dic['total_time_s'] = round(total_time, 4)
         return dic
 
 

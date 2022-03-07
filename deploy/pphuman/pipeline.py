@@ -30,7 +30,8 @@ sys.path.insert(0, parent_path)
 from python.infer import Detector, DetectorPicoDet
 from python.mot_sde_infer import SDE_Detector
 from python.attr_infer import AttrDetector
-from pipe_utils import argsparser, print_arguments, get_test_images, merge_cfg, crop_image_with_det, crop_image_with_mot, parse_mot_res
+from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
+from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res
 from python.preprocess import decode_image
 from python.visualize import visualize_box_mask, visualize_attr
 from pptracking.python.visualize import plot_tracking
@@ -228,8 +229,11 @@ class PipePredictor(object):
         self.is_video = is_video
         self.multi_camera = multi_camera
         self.cfg = cfg
-        self.pipeline_res = Result()
         self.output_dir = output_dir
+
+        self.warmup_frame = 1
+        self.pipeline_res = Result()
+        self.pipe_timer = PipeTimer()
 
         if not is_video:
             det_cfg = self.cfg['DET']
@@ -278,6 +282,7 @@ class PipePredictor(object):
             self.predict_video(input)
         else:
             self.predict_image(input)
+        self.pipe_timer.info(True)
 
     def predict_image(self, input):
         # det
@@ -290,20 +295,37 @@ class PipePredictor(object):
             batch_file = input[start_index:end_index]
             batch_input = [decode_image(f, {})[0] for f in batch_file]
 
+            if i > self.warmup_frame:
+                self.pipe_timer.total_time.start()
+                self.pipe_timer.module_time['det'].start()
             # det output format: class, score, xmin, ymin, xmax, ymax
             det_res = self.det_predictor.predict_image(
                 batch_input, visual=False)
+            if i > self.warmup_frame:
+                self.pipe_timer.module_time['det'].end()
             self.pipeline_res.update(det_res, 'det')
 
             if self.with_attr:
                 crop_inputs = crop_image_with_det(batch_input, det_res)
                 attr_res_list = []
+
+                if i > self.warmup_frame:
+                    self.pipe_timer.module_time['attr'].start()
+
                 for crop_input in crop_inputs:
                     attr_res = self.attr_predictor.predict_image(
                         crop_input, visual=False)
                     attr_res_list.extend(attr_res['output'])
+
+                if i > self.warmup_frame:
+                    self.pipe_timer.module_time['attr'].end()
+
                 attr_res = {'output': attr_res_list}
                 self.pipeline_res.update(attr_res, 'attr')
+
+            self.pipe_timer.img_num += len(batch_input)
+            if i > self.warmup_frame:
+                self.pipe_timer.total_time.end()
 
             if self.cfg['visual']:
                 self.visualize_image(batch_file, batch_input, self.pipeline_res)
@@ -332,7 +354,14 @@ class PipePredictor(object):
             ret, frame = capture.read()
             if not ret:
                 break
+
+            if frame_id > self.warmup_frame:
+                self.pipe_timer.total_time.start()
+                self.pipe_timer.module_time['mot'].start()
             res = self.mot_predictor.predict_image([frame], visual=False)
+
+            if frame_id > self.warmup_frame:
+                self.pipe_timer.module_time['mot'].end()
 
             # mot output format: id, class, score, xmin, ymin, xmax, ymax
             mot_res = parse_mot_res(res)
@@ -342,8 +371,12 @@ class PipePredictor(object):
                 crop_input = crop_image_with_mot(frame, mot_res)
 
             if self.with_attr:
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.module_time['attr'].start()
                 attr_res = self.attr_predictor.predict_image(
                     crop_input, visual=False)
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.module_time['attr'].end()
                 self.pipeline_res.update(attr_res, 'attr')
 
             if self.with_action:
@@ -359,6 +392,11 @@ class PipePredictor(object):
                     action_res = self.action_predictor.predict_kpt(action_input)
                     self.pipeline_res.update(action, 'action')
 
+            if frame_id > self.warmup_frame:
+                self.pipe_timer.img_num += 1
+                self.pipe_timer.total_time.end()
+            frame_id += 1
+
             if self.multi_camera:
                 self.get_valid_instance(
                     frame,
@@ -368,7 +406,7 @@ class PipePredictor(object):
                 im = self.visualize_video(frame, self.pipeline_res,
                                           frame_id)  # visualize
                 writer.write(im)
-            frame_id += 1
+
         writer.release()
         print('save result to {}'.format(out_path))
 
