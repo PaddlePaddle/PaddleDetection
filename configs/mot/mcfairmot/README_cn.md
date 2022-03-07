@@ -98,7 +98,7 @@ python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/mc
 **注意:**
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
  - 多类别跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,cls_id,-1,-1`。
-````
+
 ### 6. 离线量化
 
 使用 VisDrone Vehicle val-set 对离线量化模型进行校准，运行方式：
