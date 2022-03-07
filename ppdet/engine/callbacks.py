@@ -182,7 +182,7 @@ class Checkpointer(Callback):
                 ) % self.model.cfg.snapshot_epoch == 0 or epoch_id == end_epoch - 1:
                     save_name = str(
                         epoch_id) if epoch_id != end_epoch - 1 else "model_final"
-                    weight = self.weight
+                    weight = self.weight.state_dict()
             elif mode == 'eval':
                 if 'save_best_model' in status and status['save_best_model']:
                     for metric in self.model._metrics:
@@ -201,18 +201,22 @@ class Checkpointer(Callback):
                         if map_res[key][0] > self.best_ap:
                             self.best_ap = map_res[key][0]
                             save_name = 'best_model'
-                            weight = self.weight
+                            weight = self.weight.state_dict()
                         logger.info("Best test {} ap is {:0.3f}.".format(
                             key, self.best_ap))
             if weight:
                 if self.model.use_ema:
-                    save_model(status['weight'], self.save_dir, save_name,
-                               epoch_id + 1, self.model.optimizer)
-                    save_model(weight, self.save_dir,
-                               '{}_ema'.format(save_name), epoch_id + 1)
+                    # save model and ema_model
+                    save_model(
+                        status['weight'],
+                        self.model.optimizer,
+                        self.save_dir,
+                        save_name,
+                        epoch_id + 1,
+                        ema_model=weight)
                 else:
-                    save_model(weight, self.save_dir, save_name, epoch_id + 1,
-                               self.model.optimizer)
+                    save_model(weight, self.model.optimizer, self.save_dir,
+                               save_name, epoch_id + 1)
 
 
 class WiferFaceEval(Callback):
