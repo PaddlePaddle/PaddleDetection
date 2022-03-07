@@ -106,7 +106,7 @@ class JDETracker(object):
 
         Args:
             pred_dets (np.array): Detection results of the image, the shape is
-                [N, 6], means 'x0, y0, x1, y1, score, cls_id'.
+                [N, 6], means 'cls_id, score, x0, y0, x1, y1'.
             pred_embs (np.array): Embedding results of the image, the shape is
                 [N, 128] or [N, 512].
 
@@ -128,7 +128,7 @@ class JDETracker(object):
 
         # unify single and multi classes detection and embedding results
         for cls_id in range(self.num_classes):
-            cls_idx = (pred_dets[:, 5:] == cls_id).squeeze(-1)
+            cls_idx = (pred_dets[:, 0:1] == cls_id).squeeze(-1)
             pred_dets_dict[cls_id] = pred_dets[cls_idx]
             if pred_embs is not None:
                 pred_embs_dict[cls_id] = pred_embs[cls_idx]
@@ -139,21 +139,26 @@ class JDETracker(object):
             """ Step 1: Get detections by class"""
             pred_dets_cls = pred_dets_dict[cls_id]
             pred_embs_cls = pred_embs_dict[cls_id]
-            remain_inds = (pred_dets_cls[:, 4:5] > self.conf_thres).squeeze(-1)
+            remain_inds = (pred_dets_cls[:, 1:2] > self.conf_thres).squeeze(-1)
             if remain_inds.sum() > 0:
                 pred_dets_cls = pred_dets_cls[remain_inds]
                 if self.use_byte:
                     detections = [
                         STrack(
-                            STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], cls_id, 30, temp_feat=None)
-                        for tlbrs in pred_dets_cls
+                            STrack.tlbr_to_tlwh(tlbrs[2:6]),
+                            tlbrs[1],
+                            cls_id,
+                            30,
+                            temp_feat=None) for tlbrs in pred_dets_cls
                     ]
                 else:
                     pred_embs_cls = pred_embs_cls[remain_inds]
                     detections = [
                         STrack(
-                            STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], cls_id, 30, temp_feat)
-                        for (tlbrs, temp_feat) in zip(pred_dets_cls, pred_embs_cls)
+                            STrack.tlbr_to_tlwh(tlbrs[2:6]), tlbrs[1], cls_id,
+                            30, temp_feat)
+                        for (tlbrs, temp_feat
+                             ) in zip(pred_dets_cls, pred_embs_cls)
                     ]
             else:
                 detections = []
@@ -177,14 +182,17 @@ class JDETracker(object):
             STrack.multi_predict(track_pool_dict[cls_id], self.motion)
 
             if self.use_byte:
-                dists = matching.iou_distance(track_pool_dict[cls_id], detections)
+                dists = matching.iou_distance(track_pool_dict[cls_id],
+                                              detections)
                 matches, u_track, u_detection = matching.linear_assignment(
-                    dists, thresh=self.match_thres) # 
+                    dists, thresh=self.match_thres)  # not self.tracked_thresh
             else:
                 dists = matching.embedding_distance(
-                    track_pool_dict[cls_id], detections, metric=self.metric_type)
-                dists = matching.fuse_motion(self.motion, dists,
-                                            track_pool_dict[cls_id], detections)
+                    track_pool_dict[cls_id],
+                    detections,
+                    metric=self.metric_type)
+                dists = matching.fuse_motion(
+                    self.motion, dists, track_pool_dict[cls_id], detections)
                 matches, u_track, u_detection = matching.linear_assignment(
                     dists, thresh=self.tracked_thresh)
 
@@ -205,15 +213,20 @@ class JDETracker(object):
             # None of the steps below happen if there are no undetected tracks.
             """ Step 3: Second association, with IOU"""
             if self.use_byte:
-                inds_low = pred_dets_dict[cls_id][:, 4:5] > self.low_conf_thres
-                inds_high = pred_dets_dict[cls_id][:, 4:5] < self.conf_thres
+                inds_low = pred_dets_dict[cls_id][:, 1:2] > self.low_conf_thres
+                inds_high = pred_dets_dict[cls_id][:, 1:2] < self.conf_thres
                 inds_second = np.logical_and(inds_low, inds_high).squeeze(-1)
                 pred_dets_cls_second = pred_dets_dict[cls_id][inds_second]
 
                 # association the untrack to the low score detections
                 if len(pred_dets_cls_second) > 0:
                     detections_second = [
-                        STrack(STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], cls_id, 30, temp_feat=None)
+                        STrack(
+                            STrack.tlbr_to_tlwh(tlbrs[:4]),
+                            tlbrs[4],
+                            cls_id,
+                            30,
+                            temp_feat=None)
                         for tlbrs in pred_dets_cls_second[:, :5]
                     ]
                 else:
@@ -222,9 +235,10 @@ class JDETracker(object):
                     track_pool_dict[cls_id][i] for i in u_track
                     if track_pool_dict[cls_id][i].state == TrackState.Tracked
                 ]
-                dists = matching.iou_distance(r_tracked_stracks, detections_second)
+                dists = matching.iou_distance(r_tracked_stracks,
+                                              detections_second)
                 matches, u_track, u_detection_second = matching.linear_assignment(
-                    dists, thresh=0.4) # not r_tracked_thresh
+                    dists, thresh=0.4)  # not r_tracked_thresh
             else:
                 detections = [detections[i] for i in u_detection]
                 r_tracked_stracks = []
@@ -238,7 +252,8 @@ class JDETracker(object):
 
             for i_tracked, idet in matches:
                 track = r_tracked_stracks[i_tracked]
-                det = detections[idet] if not self.use_byte else detections_second[idet]
+                det = detections[
+                    idet] if not self.use_byte else detections_second[idet]
                 if track.state == TrackState.Tracked:
                     track.update(det, self.frame_id)
                     activated_tracks_dict[cls_id].append(track)

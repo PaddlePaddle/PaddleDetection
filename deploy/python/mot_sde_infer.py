@@ -111,11 +111,8 @@ class SDE_Detector(Detector):
             low_conf_thres=low_conf_thres)
 
     def tracking(self, det_results):
-        pred_dets = det_results['boxes']
+        pred_dets = det_results['boxes']  # 'cls_id, score, x0, y0, x1, y1'
         pred_embs = None
-        pred_dets = np.concatenate(
-            (pred_dets[:, 2:], pred_dets[:, 1:2], pred_dets[:, 0:1]), 1)
-        # pred_dets should be 'x0, y0, x1, y1, score, cls_id'
 
         online_targets_dict = self.tracker.update(pred_dets, pred_embs)
         online_tlwhs = defaultdict(list)

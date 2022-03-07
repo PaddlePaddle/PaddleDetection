@@ -90,13 +90,13 @@ class DeepSORTTracker(object):
         Perform measurement update and track management.
         Args:
             pred_dets (np.array): Detection results of the image, the shape is
-                [N, 6], means 'x0, y0, x1, y1, score, cls_id'.
+                [N, 6], means 'cls_id, score, x0, y0, x1, y1'.
             pred_embs (np.array): Embedding results of the image, the shape is
                 [N, 128], usually pred_embs.shape[1] is a multiple of 128.
         """
-        pred_tlwhs = pred_dets[:, :4]
-        pred_scores = pred_dets[:, 4:5]
-        pred_cls_ids = pred_dets[:, 5:]
+        pred_cls_ids = pred_dets[:, 0:1]
+        pred_scores = pred_dets[:, 1:2]
+        pred_tlwhs = pred_dets[:, 2:6]
 
         detections = [
             Detection(tlwh, score, feat, cls_id)

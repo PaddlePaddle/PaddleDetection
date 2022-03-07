@@ -115,7 +115,7 @@ class JDE_Detector(Detector):
         return result
 
     def tracking(self, det_results):
-        pred_dets = det_results['pred_dets']
+        pred_dets = det_results['pred_dets']  # 'cls_id, score, x0, y0, x1, y1'
         pred_embs = det_results['pred_embs']
         online_targets_dict = self.tracker.update(pred_dets, pred_embs)
 
@@ -143,7 +143,7 @@ class JDE_Detector(Detector):
             repeats (int): repeats number for prediction
         Returns:
             result (dict): include 'pred_dets': np.ndarray: shape:[N,6], N: number of box,
-                            matix element:[x_min, y_min, x_max, y_max, score, class]
+                            matix element:[class, score, x_min, y_min, x_max, y_max]
                             FairMOT(JDE)'s result include 'pred_embs': np.ndarray:
                             shape: [N, 128]
         '''
