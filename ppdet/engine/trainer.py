@@ -73,6 +73,10 @@ class Trainer(object):
             logger.error('DeepSORT has no need of training on mot dataset.')
             sys.exit(1)
 
+        if cfg.architecture == 'FairMOT' and self.mode == 'eval':
+            images = self.parse_mot_images(cfg)
+            self.dataset.set_images(images)
+
         if self.mode == 'train':
             self.loader = create('{}Reader'.format(self.mode.capitalize()))(
                 self.dataset, cfg.worker_num)
@@ -114,14 +118,17 @@ class Trainer(object):
         # EvalDataset build with BatchSampler to evaluate in single device
         # TODO: multi-device evaluate
         if self.mode == 'eval':
-            self._eval_batch_sampler = paddle.io.BatchSampler(
-                self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
-            reader_name = '{}Reader'.format(self.mode.capitalize())
-            # If metric is VOC, need to be set collate_batch=False.
-            if cfg.metric == 'VOC':
-                cfg[reader_name]['collate_batch'] = False
-            self.loader = create(reader_name)(self.dataset, cfg.worker_num,
-                                              self._eval_batch_sampler)
+            if cfg.architecture == 'FairMOT':
+                self.loader = create('EvalMOTReader')(self.dataset, 0)
+            else:
+                self._eval_batch_sampler = paddle.io.BatchSampler(
+                    self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
+                reader_name = '{}Reader'.format(self.mode.capitalize())
+                # If metric is VOC, need to be set collate_batch=False.
+                if cfg.metric == 'VOC':
+                    cfg[reader_name]['collate_batch'] = False
+                self.loader = create(reader_name)(self.dataset, cfg.worker_num,
+                                                  self._eval_batch_sampler)
         # TestDataset build after user set images, skip loader creation here
 
         # build optimizer in train mode
@@ -759,3 +766,28 @@ class Trainer(object):
         flops = flops(self.model, input_spec) / (1000**3)
         logger.info(" Model FLOPs : {:.6f}G. (image shape is {})".format(
             flops, input_data['image'][0].unsqueeze(0).shape))
+
+    def parse_mot_images(self, cfg):
+        import glob
+        # for quant
+        dataset_dir = cfg['EvalMOTDataset'].dataset_dir
+        data_root = cfg['EvalMOTDataset'].data_root
+        data_root = '{}/{}'.format(dataset_dir, data_root)
+        seqs = os.listdir(data_root)
+        seqs.sort()
+        all_images = []
+        for seq in seqs:
+            infer_dir = os.path.join(data_root, seq)
+            assert infer_dir is None or os.path.isdir(infer_dir), \
+                "{} is not a directory".format(infer_dir)
+            images = set()
+            exts = ['jpg', 'jpeg', 'png', 'bmp']
+            exts += [ext.upper() for ext in exts]
+            for ext in exts:
+                images.update(glob.glob('{}/*.{}'.format(infer_dir, ext)))
+            images = list(images)
+            images.sort()
+            assert len(images) > 0, "no image found in {}".format(infer_dir)
+            all_images.extend(images)
+            logger.info("Found {} inference images in total.".format(len(images)))
+        return all_images
