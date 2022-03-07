@@ -143,8 +143,11 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/keypoint/higherhrnet/hi
 #### 模型部署
 ##### Top-Down模型联合部署
 ```shell
-#导出模型
-python tools/export_model.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml -o weights=output/higherhrnet_hrnet_w32_512/model_final.pdparams
+#导出检测模型
+python tools/export_model.py -c configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams 
+
+#导出关键点模型
+python tools/export_model.py -c configs/keypoint/hrnet/hrnet_w32_256x192.yml-o weights=https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams
 
 #detector 检测 + keypoint top-down模型联合部署（联合推理只支持top-down方式）
 python deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inference/ppyolo_r50vd_dcn_2x_coco/ --keypoint_model_dir=output_inference/hrnet_w32_384x288/ --video_file=../video/xxx.mp4  --device=gpu
@@ -155,9 +158,7 @@ python deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inferenc
 python tools/export_model.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml -o weights=output/higherhrnet_hrnet_w32_512/model_final.pdparams
 
 #部署推理
-#keypoint top-down/bottom-up 单独推理，该模式下top-down模型只支持单人截图预测。
 python deploy/python/keypoint_infer.py --model_dir=output_inference/higherhrnet_hrnet_w32_512/ --image_file=./demo/000000014439_640x640.jpg --device=gpu --threshold=0.5
-python deploy/python/keypoint_infer.py --model_dir=output_inference/hrnet_w32_384x288/ --image_file=./demo/hrnet_demo.jpg --device=gpu --threshold=0.5
 
 ```
 ##### 与多目标跟踪模型FairMOT联合部署预测
