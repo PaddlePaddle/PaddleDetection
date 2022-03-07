@@ -1,0 +1,21 @@
+_BASE_: [
+  'centernet_r50_140e_coco.yml'
+]
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV1_pretrained.pdparams
+weights: output/centernet_mbv1_140e_coco/model_final
+
+CenterNet:
+  backbone: MobileNet
+  neck: CenterNetDLAFPN
+  head: CenterNetHead
+  post_process: CenterNetPostProcess
+
+MobileNet:
+  scale: 1.
+  with_extra_blocks: false
+  extra_block_filters: []
+  feature_maps: [3, 5, 11, 13]
+
+TrainReader:
+  batch_size: 32
