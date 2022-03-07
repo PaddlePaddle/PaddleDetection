@@ -266,7 +266,7 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
   - [SOLOv2](configs/solov2/README.md)
 - Rotation object detection
   - [S2ANet](configs/dota/README_en.md)
-- [Keypoint detection](configs/keypoint)
+- [Keypoint detection](configs/keypoint/README_en.md)
   - [PP-TinyPose](configs/keypoint/tiny_pose)
   - HigherHRNet
   - HRNet
