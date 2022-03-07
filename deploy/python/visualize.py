@@ -38,7 +38,7 @@ def visualize_box_mask(im, results, labels, threshold=0.5):
     """
     if isinstance(im, str):
         im = Image.open(im).convert('RGB')
-    else:
+    elif isinstance(im, np.ndarray):
         im = Image.fromarray(im)
     if 'masks' in results and 'boxes' in results and len(results['boxes']) > 0:
         im = draw_mask(
@@ -328,3 +328,26 @@ def visualize_pose(imgfile,
     plt.imsave(save_name, canvas[:, :, ::-1])
     print("keypoint visualize image saved to: " + save_name)
     plt.close()
+
+
+def visualize_attr(im, results, boxes=None):
+
+    if isinstance(im, str):
+        im = Image.open(im).convert('RGB')
+    elif isinstance(im, np.ndarray):
+        im = Image.fromarray(im)
+
+    draw = ImageDraw.Draw(im)
+    for i, res in enumerate(results):
+        text = ""
+        for k, v in res.items():
+            if len(v) == 0: continue
+            test_line = "{}: {}\n".format(k, *v)
+            text += test_line
+        if boxes is None:
+            text_loc = (1, 1)
+        else:
+            box = boxes[i]
+            text_loc = (box[2], box[3])
+        draw.text(text_loc, text, fill=(0, 0, 255))
+    return im
