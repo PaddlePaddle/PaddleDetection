@@ -11,7 +11,7 @@ snapshot_epoch: 10
 weights: output/ppyoloe_crn_m_300e_coco/model_final
 find_unused_parameters: True
 
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb50_m_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_m_pretrained.pdparams
 depth_mult: 0.67
 width_mult: 0.75
 
