@@ -171,7 +171,7 @@ python tools/export_model.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.y
 python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inference/fairmot_dla34_30e_1088x608/ --keypoint_model_dir=output_inference/higherhrnet_hrnet_w32_512/ --video_file={your video name}.mp4 --device=GPU
 ```
 **注意:**
- 跟踪模型导出教程请参考`configs/mot/README.md`。
+ 跟踪模型导出教程请参考[文档](../mot/README.md)。
 
 
 ## 引用

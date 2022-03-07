@@ -9,8 +9,8 @@
   - [Environmental Installation](#1environmental-installation)
   - [Dataset Preparation](#2dataset-preparation)
   - [Training and Testing](#3training-and-testing)
-    - [Training on single gpu](#training-on-single-gpu)
-    - [Training on multiple gpu](#training-on-multiple-gpu)
+    - [Training on single GPU](#training-on-single-gpu)
+    - [Training on multiple GPU](#training-on-multiple-gpu)
     - [Evaluation](#evaluation)
     - [Inference](#inference)
     - [Deploy Inference](#deploy-inference)
@@ -93,7 +93,7 @@ We also release [PP-TinyPose](./tiny_pose/README_en.md), a real-time keypoint de
 
 ### 3.Training and Testing
 
-#### Training on single gpu
+#### Training on single GPU
 
 ```shell
 #COCO DataSet
@@ -103,7 +103,7 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/train.py -c configs/keypoint/higherhrnet/hi
 CUDA_VISIBLE_DEVICES=0 python3 tools/train.py -c configs/keypoint/hrnet/hrnet_w32_256x256_mpii.yml
 ```
 
-#### Training on multiple gpu
+#### Training on multiple GPU
 
 ```shell
 #COCO DataSet
