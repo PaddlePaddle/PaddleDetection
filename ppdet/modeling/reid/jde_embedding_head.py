@@ -152,9 +152,8 @@ class JDEEmbeddingHead(nn.Layer):
             scale_factor = targets['scale_factor'][0].numpy()
             bboxes[:, 2:] = self.scale_coords(bboxes[:, 2:], input_shape,
                                               im_shape, scale_factor)
-            # tlwhs, scores, cls_ids
-            pred_dets = paddle.concat(
-                (bboxes[:, 2:], bboxes[:, 1:2], bboxes[:, 0:1]), axis=1)
+            # cls_ids, scores, tlwhs 
+            pred_dets = bboxes
             return pred_dets, pred_embs
 
     def scale_coords(self, coords, input_shape, im_shape, scale_factor):
