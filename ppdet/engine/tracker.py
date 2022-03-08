@@ -282,14 +282,14 @@ class Tracker(object):
                 # thus will not inference reid model
                 continue
 
-            pred_scores = pred_scores[keep_idx[0]]
             pred_cls_ids = pred_cls_ids[keep_idx[0]]
+            pred_scores = pred_scores[keep_idx[0]]
             pred_tlwhs = np.concatenate(
                 (pred_xyxys[:, 0:2],
                  pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
                 axis=1)
             pred_dets = np.concatenate(
-                (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
+                (pred_cls_ids, pred_scores, pred_tlwhs), axis=1)
 
             tracker = self.model.tracker
             crops = get_crops(
