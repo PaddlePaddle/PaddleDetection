@@ -77,7 +77,7 @@ function _train(){
         echo -e "${model_name}, SUCCESS"
     fi
     # kill -9 `ps -ef|grep 'python'|awk '{print $2}'`
-    if [ ${device_num} = "MultiP" -a -d mylog ]; then
+    if [ ${device_num} != "N1C1" -a -d mylog ]; then
         rm ${log_file}
         cp mylog/workerlog.0 ${log_file}
     fi
