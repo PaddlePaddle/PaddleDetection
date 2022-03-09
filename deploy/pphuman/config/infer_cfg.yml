@@ -1,0 +1,16 @@
+crop_thresh: 0.5
+attr_thresh: 0.5
+visual: True
+
+DET:
+  model_dir: output_inference/pedestrian_yolov3_darknet/
+  batch_size: 1
+
+ATTR:
+  model_dir: output_inference/strongbaseline_r50_30e_pa100k/
+  batch_size: 8
+
+MOT:
+  model_dir: output_inference/pedestrian_yolov3_darknet/
+  tracker_config: deploy/pphuman/tracker_config.yml
+  batch_size: 1
