@@ -256,11 +256,15 @@ def crop_image_with_det(batch_input, det_res):
 def crop_image_with_mot(input, mot_res):
     res = mot_res['boxes']
     crop_res = []
+    new_bboxes = []
+    ori_bboxes = []
     for box in res:
-        crop_image, new_box, ori_box = expand_crop(input, box[1:])
+        crop_image, new_bbox, ori_bbox = expand_crop(input, box[1:])
         if crop_image is not None:
             crop_res.append(crop_image)
-    return crop_res
+            new_bboxes.append(new_bbox)
+            ori_bboxes.append(ori_bbox)
+    return crop_res, new_bboxes, ori_bboxes
 
 
 def parse_mot_res(input):

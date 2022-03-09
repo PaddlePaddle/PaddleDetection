@@ -6,11 +6,20 @@ DET:
   model_dir: output_inference/pedestrian_yolov3_darknet/
   batch_size: 1
 
-ATTR:
-  model_dir: output_inference/strongbaseline_r50_30e_pa100k/
-  batch_size: 8
+#ATTR:
+#  model_dir: output_inference/strongbaseline_r50_30e_pa100k/
+#  batch_size: 8
 
 MOT:
   model_dir: output_inference/pedestrian_yolov3_darknet/
   tracker_config: deploy/pphuman/tracker_config.yml
+  batch_size: 1
+
+KPT:
+  model_dir: output_inference/hrnet_w32_256x192/
+  batch_size: 8
+  use_dark: False
+
+ACTION:
+  model_dir: /paddle/shared_files/PaddleVideo/output_inference/STGCN/
   batch_size: 1
