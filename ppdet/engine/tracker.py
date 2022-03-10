@@ -210,9 +210,6 @@ class Tracker(object):
                 det_file))
 
         tracker = self.model.tracker
-        # trick hyperparams only used for MOTChallenge (MOT17, MOT20) Test-set
-        tracker.track_buffer, tracker.conf_thres = get_trick_hyperparams(
-            seq_name, tracker.track_buffer, tracker.conf_thres)
         for step_id, data in enumerate(dataloader):
             self.status['step_id'] = step_id
             if frame_id % 40 == 0:
@@ -301,6 +298,7 @@ class Tracker(object):
                 continue
 
             pred_cls_ids = pred_cls_ids[keep_idx[0]]
+            pred_scores = pred_scores[keep_idx[0]]
             pred_dets = np.concatenate(
                 (pred_cls_ids, pred_scores, pred_xyxys), axis=1)
 
@@ -320,6 +318,7 @@ class Tracker(object):
             if isinstance(tracker, DeepSORTTracker):
                 online_tlwhs, online_scores, online_ids = [], [], []
                 tracker.predict()
+                online_targets = tracker.update(pred_dets, pred_embs)
                 for t in online_targets:
                     if not t.is_confirmed() or t.time_since_update > 1:
                         continue
@@ -344,6 +343,10 @@ class Tracker(object):
                                 save_dir, self.cfg.num_classes)
 
             elif isinstance(tracker, JDETracker):
+                # trick hyperparams only used for MOTChallenge (MOT17, MOT20) Test-set
+                tracker.track_buffer, tracker.conf_thres = get_trick_hyperparams(
+                    seq_name, tracker.track_buffer, tracker.conf_thres)
+
                 online_targets_dict = tracker.update(pred_dets_old, pred_embs)
                 online_tlwhs = defaultdict(list)
                 online_scores = defaultdict(list)

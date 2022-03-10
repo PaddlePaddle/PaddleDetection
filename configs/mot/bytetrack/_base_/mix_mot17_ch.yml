@@ -21,10 +21,27 @@ TestDataset:
     anno_path: annotations/val_half.json
 
 # MOTDataset for MOT evaluation and inference
-EvalMOTDataset:
+EvalMOTDataset0:
   !MOTImageFolder
     dataset_dir: dataset/mot
     data_root: MOT17/images/half
+    keep_ori_im: True # set as True in DeepSORT and ByteTrack
+
+TestMOTDataset0:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    keep_ori_im: True # set True if save visualization images or video
+
+
+# MOTDataset for MOT evaluation and inference
+EvalMOTDataset:
+  !MOTImageFolder
+    #dataset_dir: dataset/pipeline/hievemot
+    #dataset_dir: dataset/pipeline/cvatmot
+    #dataset_dir: dataset/pipeline/tianfumot # fall_zhu
+    data_root: images
+    #dataset_dir: dataset/mot
+    #data_root: MOT17/images/half
     keep_ori_im: True # set as True in DeepSORT and ByteTrack
 
 TestMOTDataset:

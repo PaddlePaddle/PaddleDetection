@@ -114,8 +114,7 @@ class SDE_Detector(Detector):
         over_thres_idx = np.nonzero(boxes[:, 1:2] >= threshold)[0]
         if len(over_thres_idx) == 0:
             pred_dets = np.zeros((1, 6), dtype=np.float32)
-            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
-            return pred_dets, pred_xyxys
+            return pred_dets
         else:
             boxes = boxes[over_thres_idx]
 
@@ -135,19 +134,14 @@ class SDE_Detector(Detector):
 
         if len(keep_idx[0]) == 0:
             pred_dets = np.zeros((1, 6), dtype=np.float32)
-            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
-            return pred_dets, pred_xyxys
+            return pred_dets
 
-        pred_scores = boxes[:, 1:2][keep_idx[0]]
         pred_cls_ids = boxes[:, 0:1][keep_idx[0]]
-        pred_tlwhs = np.concatenate(
-            (pred_xyxys[:, 0:2], pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
-            axis=1)
-
+        pred_scores = boxes[:, 1:2][keep_idx[0]]
         pred_dets = np.concatenate(
-            (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
+            (pred_cls_ids, pred_scores, pred_xyxys), axis=1)
 
-        return pred_dets, pred_xyxys
+        return pred_dets
 
     def predict(self,
                 image_path,
@@ -168,8 +162,7 @@ class SDE_Detector(Detector):
             add_timer (bool): whether add timer during prediction
            
         Returns:
-            pred_dets (np.ndarray, [N, 6]): 'x,y,w,h,score,cls_id'
-            pred_xyxys (np.ndarray, [N, 4]): 'x1,y1,x2,y2'
+            pred_dets (np.ndarray, [N, 6]): 'cls_id,score,x1,y1,x2,y2'
         '''
         # preprocess
         if add_timer:
@@ -197,14 +190,13 @@ class SDE_Detector(Detector):
         # postprocess
         if len(boxes) == 0:
             pred_dets = np.zeros((1, 6), dtype=np.float32)
-            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
         else:
-            pred_dets, pred_xyxys = self.postprocess(
+            pred_dets = self.postprocess(
                 boxes, ori_image_shape, threshold, inputs, scaled=scaled)
         if add_timer:
             self.det_times.postprocess_time_s.end()
             self.det_times.img_num += 1
-        return pred_dets, pred_xyxys
+        return pred_dets
 
 
 class SDE_DetectorPicoDet(DetectorPicoDet):
@@ -258,8 +250,7 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
         over_thres_idx = np.nonzero(boxes[:, 1:2] >= threshold)[0]
         if len(over_thres_idx) == 0:
             pred_dets = np.zeros((1, 6), dtype=np.float32)
-            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
-            return pred_dets, pred_xyxys
+            return pred_dets
         else:
             boxes = boxes[over_thres_idx]
 
@@ -268,19 +259,15 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
         pred_xyxys, keep_idx = clip_box(pred_bboxes, ori_image_shape)
         if len(keep_idx[0]) == 0:
             pred_dets = np.zeros((1, 6), dtype=np.float32)
-            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
-            return pred_dets, pred_xyxys
+            return pred_dets
 
         pred_scores = boxes[:, 1:2][keep_idx[0]]
         pred_cls_ids = boxes[:, 0:1][keep_idx[0]]
-        pred_tlwhs = np.concatenate(
-            (pred_xyxys[:, 0:2], pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
-            axis=1)
 
         pred_dets = np.concatenate(
-            (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
+            (pred_cls_ids, pred_scores, pred_xyxys), axis=1)
 
-        return pred_dets, pred_xyxys
+        return pred_dets
 
     def predict(self,
                 image_path,
@@ -300,8 +287,7 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
             repeats (int): repeat number for prediction
             add_timer (bool): whether add timer during prediction
         Returns:
-            pred_dets (np.ndarray, [N, 6]): 'x,y,w,h,score,cls_id'
-            pred_xyxys (np.ndarray, [N, 4]): 'x1,y1,x2,y2'
+            pred_dets (np.ndarray, [N, 6]): 'cls_id,score,x1,y1,x2,y2'
         '''
         # preprocess
         if add_timer:
@@ -348,15 +334,14 @@ class SDE_DetectorPicoDet(DetectorPicoDet):
 
         if len(boxes) == 0:
             pred_dets = np.zeros((1, 6), dtype=np.float32)
-            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
         else:
-            pred_dets, pred_xyxys = self.postprocess(boxes, ori_image_shape,
+            pred_dets = self.postprocess(boxes, ori_image_shape,
                                                      threshold)
         if add_timer:
             self.det_times.postprocess_time_s.end()
             self.det_times.img_num += 1
 
-        return pred_dets, pred_xyxys
+        return pred_dets
 
 
 class SDE_ReID(object):
@@ -565,7 +550,7 @@ def predict_image(detector,
         ori_image_shape = list(frame.shape[:2])
         if run_benchmark:
             # warmup
-            pred_dets, pred_xyxys = detector.predict(
+            pred_dets = detector.predict(
                 [img_file],
                 ori_image_shape,
                 threshold,
@@ -573,7 +558,7 @@ def predict_image(detector,
                 repeats=10,
                 add_timer=False)
             # run benchmark
-            pred_dets, pred_xyxys = detector.predict(
+            pred_dets = detector.predict(
                 [img_file],
                 ori_image_shape,
                 threshold,
@@ -587,7 +572,7 @@ def predict_image(detector,
             detector.gpu_util += gu
             print('Test iter {}, file name:{}'.format(i, img_file))
         else:
-            pred_dets, pred_xyxys = detector.predict(
+            pred_dets = detector.predict(
                 [img_file], ori_image_shape, threshold, scaled)
 
         if len(pred_dets) == 1 and np.sum(pred_dets) == 0:
@@ -596,6 +581,7 @@ def predict_image(detector,
             online_im = frame
         else:
             # reid process
+            pred_xyxys = pred_dets[:, 2:6]
             crops = reid_model.get_crops(pred_xyxys, frame)
 
             if run_benchmark:
@@ -676,8 +662,7 @@ def predict_video(detector,
             break
         timer.tic()
         ori_image_shape = list(frame.shape[:2])
-        pred_dets, pred_xyxys = detector.predict([frame], ori_image_shape,
-                                                 threshold, scaled)
+        pred_dets = detector.predict([frame], ori_image_shape, threshold, scaled)
 
         if len(pred_dets) == 1 and np.sum(pred_dets) == 0:
             print('Frame {} has no object, try to modify score threshold.'.
@@ -686,6 +671,7 @@ def predict_video(detector,
             im = frame
         else:
             # reid process
+            pred_xyxys = pred_dets[:, 2:6]
             crops = reid_model.get_crops(pred_xyxys, frame)
             tracking_outs = reid_model.predict(crops, pred_dets)
 
@@ -790,7 +776,7 @@ def predict_mtmct_seq(detector,
         frame = cv2.imread(os.path.join(fpath, img_file))
         ori_image_shape = list(frame.shape[:2])
         frame_path = os.path.join(fpath, img_file)
-        pred_dets, pred_xyxys = detector.predict([frame_path], ori_image_shape,
+        pred_dets = detector.predict([frame_path], ori_image_shape,
                                                  threshold, scaled)
 
         if len(pred_dets) == 1 and np.sum(pred_dets) == 0:
@@ -799,6 +785,7 @@ def predict_mtmct_seq(detector,
             online_im = frame
         else:
             # reid process
+            pred_xyxys = pred_dets[:, 2:6]
             crops = reid_model.get_crops(pred_xyxys, frame)
 
             tracking_outs = reid_model.predict(

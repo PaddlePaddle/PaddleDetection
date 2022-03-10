@@ -26,6 +26,7 @@ from . import picodet
 from . import detr
 from . import sparse_rcnn
 from . import tood
+from . import retinanet
 from . import bytetrack
 
 from .meta_arch import *
@@ -50,4 +51,5 @@ from .picodet import *
 from .detr import *
 from .sparse_rcnn import *
 from .tood import *
+from .retinanet import *
 from .bytetrack import *
