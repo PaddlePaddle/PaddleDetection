@@ -14,9 +14,10 @@
 | ResNet50-FPN    | Faster R-CNN    |   1333x800  |   1x        |      ----     |  44.2   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/faster_rcnn_r50_fpn_2x_1333x800_mot17half.pdparams)  | [配置文件](./faster_rcnn_r50_fpn_2x_1333x800_mot17half.yml) |
 | DarkNet-53      | YOLOv3          |   608X608   |   270e      |      ----     |  45.4   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/yolov3_darknet53_270e_608x608_pedestrian.pdparams)  | [配置文件](./yolov3_darknet53_270e_608x608_pedestrian.yml) |
 | ESNet           | PicoDet         |   896x896   |   300e      |      ----     |  40.9   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_l_esnet_300e_896x896_mot17half.pdparams)     | [配置文件](./picodet_l_esnet_300e_896x896_mot17half.yml)    |
+| CSPResNet       | PPYOLOe-L       |   640x640   |   36e      |      ----     |  51.6   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams)     | [配置文件](./ppyoloe_crn_l_36e_640x640_mot17half.yml)    |
 
 **注意:**
-  - 以上模型除了YOLOv3以外均采用**MOT17-half train**数据集训练。
+  - 以上模型均可采用**MOT17-half train**数据集训练，数据集可以从[此链接](https://dataset.bj.bcebos.com/mot/MOT17.zip)下载。
   - **MOT17-half train**是MOT17的train序列(共7个)每个视频的前一半帧的图片和标注组成的数据集，而为了验证精度可以都用**MOT17-half val**数据集去评估，它是每个视频的后一半帧组成的，数据集可以从[此链接](https://paddledet.bj.bcebos.com/data/mot/mot17half/annotations.zip)下载，并解压放在`dataset/mot/MOT17/images/`文件夹下。
   - YOLOv3和`configs/pedestrian/pedestrian_yolov3_darknet.yml`是相同的pedestrian数据集训练的，此数据集暂未开放。
   - 行人跟踪请使用行人检测器结合行人ReID模型。车辆跟踪请使用车辆检测器结合车辆ReID模型。
@@ -31,7 +32,7 @@ job_name=ppyolov2_r50vd_dcn_365e_640x640_mot17half
 config=configs/mot/deepsort/detector/${job_name}.yml
 log_dir=log_dir/${job_name}
 # 1. training
-python -m paddle.distributed.launch --log_dir=${log_dir} --gpus 0,1,2,3,4,5,6,7 tools/train.py -c ${config}
+python -m paddle.distributed.launch --log_dir=${log_dir} --gpus 0,1,2,3,4,5,6,7 tools/train.py -c ${config} --eval --amp --fleet
 # 2. evaluation
 CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c ${config} -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/${job_name}.pdparams
 ```

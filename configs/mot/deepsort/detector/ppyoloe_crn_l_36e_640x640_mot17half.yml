@@ -1,8 +1,11 @@
 _BASE_: [
   '../../../ppyoloe/ppyoloe_crn_l_300e_coco.yml',
 ]
-weights: output/ppyoloe_crn_l_300e_640x640_mot17half/model_final
+weights: output/ppyoloe_crn_l_36e_640x640_mot17half/model_final
+log_iter: 20
+snapshot_epoch: 2
 
+# data configuration
 num_classes: 1
 TrainDataset:
   !COCODataSet
@@ -18,12 +21,34 @@ EvalDataset:
     image_dir: images/train
 
 
+# schedule configuration for fine-tuning
+epoch: 36
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+    - !CosineDecay
+      max_epochs: 43
+    - !LinearWarmup
+      start_factor: 0.001
+      steps: 100
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+TrainReader:
+  batch_size: 8
+
 # detector configuration
 architecture: YOLOv3
 norm_type: sync_bn
 use_ema: true
 ema_decay: 0.9998
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_l_pretrained.pdparams
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_300e_coco.pdparams
 depth_mult: 1.0
 width_mult: 1.0
 
