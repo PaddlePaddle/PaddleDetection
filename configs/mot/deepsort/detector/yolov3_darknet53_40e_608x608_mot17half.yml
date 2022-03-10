@@ -3,6 +3,8 @@ _BASE_: [
 ]
 weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/pedestrian_yolov3_darknet.pdparams
 
+
+# data configuration
 num_classes: 1
 TrainDataset:
   !COCODataSet
@@ -18,9 +20,32 @@ EvalDataset:
     image_dir: images/train
 
 
+# schedule configuration for fine-tuning
+epoch: 40
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 32
+    - 36
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 100
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+
 # detector configuration
 architecture: YOLOv3
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/yolov3_darknet53_270e_coco.pdparams
 norm_type: sync_bn
 
 YOLOv3:
