@@ -10,7 +10,7 @@ pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/yolov3_darknet53_270
 snapshot_epoch: 5
 
 # metric: COCO # detection train/eval/infer/export mode
-metric: MOT # eval/infer mode
+metric: MCMOT # MOT eval/infer mode
 num_classes: 1
 
 architecture: ByteTrack
@@ -51,7 +51,8 @@ BBoxPostProcess:
 # BYTETracker
 JDETracker:
   use_byte: True
-  min_box_area: 0
   match_thres: 0.9
   conf_thres: 0.2
   low_conf_thres: 0.1
+  min_box_area: 0
+  vertical_ratio: 1.6 # for pedestrian

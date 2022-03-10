@@ -34,9 +34,6 @@ from ppdet.engine import Tracker
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 
-from ppdet.utils.logger import setup_logger
-logger = setup_logger('train')
-
 
 def parse_args():
     parser = ArgsParser()
@@ -94,11 +91,8 @@ def run(FLAGS, cfg):
     tracker = Tracker(cfg, mode='test')
 
     # load weights
-    if cfg.architecture in ['DeepSORT']:
-        if cfg.det_weights != 'None':
-            tracker.load_weights_sde(cfg.det_weights, cfg.reid_weights)
-        else:
-            tracker.load_weights_sde(None, cfg.reid_weights)
+    if cfg.architecture in ['DeepSORT', 'ByteTrack']:
+        tracker.load_weights_sde(cfg.det_weights, cfg.reid_weights)
     else:
         tracker.load_weights_jde(cfg.weights)
 
