@@ -60,10 +60,10 @@ def parse_args():
         help="If set True, enable continuous evaluation job."
         "This flag is only used for internal test.")
     parser.add_argument(
-        "--fp16",
+        "--amp",
         action='store_true',
         default=False,
-        help="Enable mixed precision training.")
+        help="Enable auto mixed precision training.")
     parser.add_argument(
         "--fleet", action='store_true', default=False, help="Use fleet or not")
     parser.add_argument(
@@ -130,7 +130,7 @@ def run(FLAGS, cfg):
 def main():
     FLAGS = parse_args()
     cfg = load_config(FLAGS.config)
-    cfg['fp16'] = FLAGS.fp16
+    cfg['amp'] = FLAGS.amp
     cfg['fleet'] = FLAGS.fleet
     cfg['use_vdl'] = FLAGS.use_vdl
     cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
@@ -144,10 +144,16 @@ def main():
     if 'use_npu' not in cfg:
         cfg.use_npu = False
 
+    # disable xpu in config by default
+    if 'use_xpu' not in cfg:
+        cfg.use_xpu = False
+
     if cfg.use_gpu:
         place = paddle.set_device('gpu')
     elif cfg.use_npu:
         place = paddle.set_device('npu')
+    elif cfg.use_xpu:
+        place = paddle.set_device('xpu')
     else:
         place = paddle.set_device('cpu')
 

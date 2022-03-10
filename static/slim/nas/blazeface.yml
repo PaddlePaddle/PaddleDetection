@@ -93,3 +93,20 @@ EvalReader:
     mean: [104, 117, 123]
     std: [127.502231, 127.502231, 127.502231]
   batch_size: 1
+
+TestReader:
+  inputs_def:
+    fields: ['image', 'im_id', 'im_shape']
+  dataset:
+    !ImageFolder
+    use_default_label: true
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: false
+    mean: [123, 117, 104]
+    std: [127.502231, 127.502231, 127.502231]
+  - !Permute {}
+  batch_size: 1

@@ -23,9 +23,12 @@ import paddle.nn.functional as F
 
 from ppdet.core.workspace import register
 from ..ops import iou_similarity
+from ..bbox_utils import iou_similarity as batch_iou_similarity
 from ..bbox_utils import bbox_center
-from .utils import (pad_gt, check_points_inside_bboxes, compute_max_iou_anchor,
+from .utils import (check_points_inside_bboxes, compute_max_iou_anchor,
                     compute_max_iou_gt)
+
+__all__ = ['ATSSAssigner']
 
 
 @register
@@ -77,8 +80,10 @@ class ATSSAssigner(nn.Layer):
                 num_anchors_list,
                 gt_labels,
                 gt_bboxes,
+                pad_gt_mask,
                 bg_index,
-                gt_scores=None):
+                gt_scores=None,
+                pred_bboxes=None):
         r"""This code is based on
             https://github.com/fcjian/TOOD/blob/master/mmdet/core/bbox/assigners/atss_assigner.py
 
@@ -99,18 +104,18 @@ class ATSSAssigner(nn.Layer):
             anchor_bboxes (Tensor, float32): pre-defined anchors, shape(L, 4),
                     "xmin, xmax, ymin, ymax" format
             num_anchors_list (List): num of anchors in each level
-            gt_labels (Tensor|List[Tensor], int64): Label of gt_bboxes, shape(B, n, 1)
-            gt_bboxes (Tensor|List[Tensor], float32): Ground truth bboxes, shape(B, n, 4)
+            gt_labels (Tensor, int64|int32): Label of gt_bboxes, shape(B, n, 1)
+            gt_bboxes (Tensor, float32): Ground truth bboxes, shape(B, n, 4)
+            pad_gt_mask (Tensor, float32): 1 means bbox, 0 means no bbox, shape(B, n, 1)
             bg_index (int): background index
-            gt_scores (Tensor|List[Tensor]|None, float32) Score of gt_bboxes,
+            gt_scores (Tensor|None, float32) Score of gt_bboxes,
                     shape(B, n, 1), if None, then it will initialize with one_hot label
+            pred_bboxes (Tensor, float32, optional): predicted bounding boxes, shape(B, L, 4)
         Returns:
             assigned_labels (Tensor): (B, L)
             assigned_bboxes (Tensor): (B, L, 4)
-            assigned_scores (Tensor): (B, L, C)
+            assigned_scores (Tensor): (B, L, C), if pred_bboxes is not None, then output ious
         """
-        gt_labels, gt_bboxes, pad_gt_scores, pad_gt_mask = pad_gt(
-            gt_labels, gt_bboxes, gt_scores)
         assert gt_labels.ndim == gt_bboxes.ndim and \
                gt_bboxes.ndim == 3
 
@@ -198,9 +203,14 @@ class ATSSAssigner(nn.Layer):
         assigned_bboxes = assigned_bboxes.reshape([batch_size, num_anchors, 4])
 
         assigned_scores = F.one_hot(assigned_labels, self.num_classes)
-        if gt_scores is not None:
+        if pred_bboxes is not None:
+            # assigned iou
+            ious = batch_iou_similarity(gt_bboxes, pred_bboxes) * mask_positive
+            ious = ious.max(axis=-2).unsqueeze(-1)
+            assigned_scores *= ious
+        elif gt_scores is not None:
             gather_scores = paddle.gather(
-                pad_gt_scores.flatten(), assigned_gt_index.flatten(), axis=0)
+                gt_scores.flatten(), assigned_gt_index.flatten(), axis=0)
             gather_scores = gather_scores.reshape([batch_size, num_anchors])
             gather_scores = paddle.where(mask_positive_sum > 0, gather_scores,
                                          paddle.zeros_like(gather_scores))

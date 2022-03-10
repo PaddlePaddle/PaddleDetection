@@ -1,0 +1,59 @@
+===========================train_params===========================
+model_name:fairmot_dla34_30e_1088x608
+python:python3.7
+gpu_list:0|0,1
+use_gpu:True
+auto_cast:null
+epoch:lite_train_lite_infer=1|lite_train_whole_infer=1|whole_train_whole_infer=30
+save_dir:null
+TrainReader.batch_size:lite_train_lite_infer=2|lite_train_whole_infer=2|whole_train_whole_infer=6
+pretrain_weights:https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams
+trained_model_name:model_final.pdparams
+train_infer_img_dir:./dataset/coco/test2017/
+filename:null
+##
+trainer:norm_train
+norm_train:tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o
+pact_train:tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml --slim_config _template_pact -o
+fpgm_train:tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml --slim_config _template_fpgm -o
+distill_train:null
+null:null
+null:null
+##
+===========================eval_params===========================
+eval:tools/eval.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o
+null:null
+##
+===========================infer_params===========================
+--output_dir:./output_inference
+weights:https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams
+norm_export:tools/export_model.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o
+pact_export:tools/export_model.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml --slim_config _template_pact -o
+fpgm_export:tools/export_model.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml --slim_config _template_fpgm -o
+distill_export:null
+export1:null
+export2:null
+kl_quant_export:tools/post_quant.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml --slim_config _template_kl_quant -o
+##
+infer_mode:norm
+infer_quant:False
+inference:./deploy/python/infer.py
+--device:gpu|cpu
+--enable_mkldnn:True|False
+--cpu_threads:1|6
+--batch_size:1|2
+--use_tensorrt:null
+--run_mode:paddle|trt_fp32|trt_fp16
+--model_dir:
+--image_dir:./dataset/coco/test2017/
+--save_log_path:null
+--run_benchmark:False
+--trt_max_shape:1600
+===========================train_benchmark_params==========================
+batch_size:6|22
+fp_items:fp32|fp16
+epoch:1
+--profiler_options:batch_range=[10,20];state=GPU;tracer_option=Default;profile_path=model.profile
+flags:null
+===========================infer_benchmark_params===========================
+random_infer_input:[{float32,[3,608,1088]},{float32,[2]},{float32,[2]}]

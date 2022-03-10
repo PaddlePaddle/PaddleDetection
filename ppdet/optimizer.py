@@ -43,7 +43,7 @@ class CosineDecay(object):
             the max_iters is much larger than the warmup iter
     """
 
-    def __init__(self, max_epochs=1000, use_warmup=True, eta_min=0):
+    def __init__(self, max_epochs=1000, use_warmup=True, eta_min=0.):
         self.max_epochs = max_epochs
         self.use_warmup = use_warmup
         self.eta_min = eta_min
@@ -65,6 +65,7 @@ class CosineDecay(object):
                 decayed_lr = base_lr * 0.5 * (math.cos(
                     (i - warmup_iters) * math.pi /
                     (max_iters - warmup_iters)) + 1)
+                decayed_lr = decayed_lr if decayed_lr > self.eta_min else self.eta_min
                 value.append(decayed_lr)
             return optimizer.lr.PiecewiseDecay(boundary, value)
 
@@ -110,7 +111,7 @@ class PiecewiseDecay(object):
             boundary = [int(step_per_epoch) * i for i in self.milestones]
             value = [base_lr]  # during step[0, boundary[0]] is base_lr
 
-        # self.values is setted directly in config 
+        # self.values is setted directly in config
         if self.values is not None:
             assert len(self.milestones) + 1 == len(self.values)
             return optimizer.lr.PiecewiseDecay(boundary, self.values)
@@ -201,7 +202,7 @@ class LearningRate(object):
             return self.schedulers[0](base_lr=self.base_lr,
                                       step_per_epoch=step_per_epoch)
 
-        # TODO: split warmup & decay 
+        # TODO: split warmup & decay
         # warmup
         boundary, value = self.schedulers[1](self.base_lr, step_per_epoch)
         # decay
@@ -299,10 +300,10 @@ class ModelEMA(object):
             Ema's parameter are updated with the formula:
            `ema_param = decay * ema_param + (1 - decay) * cur_param`.
             Defaults is 0.9998.
-        use_thres_step (bool): Whether set decay by thres_step or not 
-        cycle_epoch (int): The epoch of interval to reset ema_param and 
+        use_thres_step (bool): Whether set decay by thres_step or not
+        cycle_epoch (int): The epoch of interval to reset ema_param and
             step. Defaults is -1, which means not reset. Its function is to
-            add a regular effect to ema, which is set according to experience 
+            add a regular effect to ema, which is set according to experience
             and is effective when the total training epoch is large.
     """
 
@@ -330,6 +331,11 @@ class ModelEMA(object):
         self.epoch = 0
         for k, v in self.state_dict.items():
             self.state_dict[k] = paddle.zeros_like(v)
+
+    def resume(self, state_dict, step=0):
+        for k, v in state_dict.items():
+            self.state_dict[k] = v
+        self.step = step
 
     def update(self, model=None):
         if self.use_thres_step:

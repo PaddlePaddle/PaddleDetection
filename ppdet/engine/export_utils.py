@@ -169,12 +169,13 @@ def _dump_infer_config(config, path, image_shape, model):
     if infer_arch == 'PicoDet':
         if config.get('export_post_process', False):
             infer_cfg['arch'] = 'GFL'
-        infer_cfg['NMS'] = config['PicoHead']['nms']
+        head_name = 'PicoHeadV2' if config['PicoHeadV2'] else 'PicoHead'
+        infer_cfg['NMS'] = config[head_name]['nms']
         # In order to speed up the prediction, the threshold of nms 
         # is adjusted here, which can be changed in infer_cfg.yml
-        config['PicoHead']['nms']["score_threshold"] = 0.3
-        config['PicoHead']['nms']["nms_threshold"] = 0.5
-        infer_cfg['fpn_stride'] = config['PicoHead']['fpn_stride']
+        config[head_name]['nms']["score_threshold"] = 0.3
+        config[head_name]['nms']["nms_threshold"] = 0.5
+        infer_cfg['fpn_stride'] = config[head_name]['fpn_stride']
 
     yaml.dump(infer_cfg, open(path, 'w'))
     logger.info("Export inference config file to {}".format(os.path.join(path)))

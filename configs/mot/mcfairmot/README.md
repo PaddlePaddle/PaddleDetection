@@ -44,6 +44,13 @@ PP-tracking provides an AI studio public project tutorial. Please refer to this 
  - MOTA is the average MOTA of 4 catecories in the VisDrone Vehicle dataset, and this dataset is extracted from the VisDrone2019 MOT dataset, here we provide the download [link](https://bj.bcebos.com/v1/paddledet/data/mot/visdrone_mcmot_vehicle.zip).
  - The tracker used in MCFairMOT model here is ByteTracker.
 
+### MCFairMOT off-line quantization results on VisDrone Vehicle val-set
+|    Model      |  Compression Strategy | Prediction Delay（T4） |Prediction Delay（V100）| Model Configuration File |Compression Algorithm Configuration File |
+| :--------------| :------- | :------: | :----: | :----: | :----: |
+| DLA-34         | baseline |    41.3  |    21.9 |[Configuration File](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|    -     |
+| DLA-34         | off-line quantization   |  37.8    |  21.2  |[Configuration File](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|[Configuration File](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.3/configs/slim/post_quant/mcfairmot_ptq.yml)|
+
+
 ## Getting Start
 
 ### 1. Training
@@ -95,6 +102,14 @@ python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/mc
  - The tracking model is used to predict the video, and does not support the prediction of a single image. The visualization video of the tracking results is saved by default. You can add `--save_mot_txts` to save the txt result file, or `--save_images` to save the visualization images.
  - Each line of the tracking results txt file is `frame,id,x1,y1,w,h,score,cls_id,-1,-1`.
 
+### 6. Off-line quantization
+
+The offline quantization model is calibrated using the VisDrone Vehicle val-set, running as:
+```bash
+CUDA_VISIBLE_DEVICES=0 python3.7 tools/post_quant.py -c configs/mot/mcfairmot/mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml --slim_config=configs/slim/post_quant/mcfairmot_ptq.yml
+```
+**Notes:**
+ - Offline quantization uses the VisDrone Vehicle val-set dataset and a 4-class vehicle tracking model by default.
 
 ## Citations
 ```

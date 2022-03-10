@@ -251,7 +251,7 @@ class LiteConv(nn.Layer):
 
 
 class DropBlock(nn.Layer):
-    def __init__(self, block_size, keep_prob, name, data_format='NCHW'):
+    def __init__(self, block_size, keep_prob, name=None, data_format='NCHW'):
         """
         DropBlock layer, see https://arxiv.org/abs/1810.12890
 
@@ -553,9 +553,14 @@ class YOLOBox(object):
 @register
 @serializable
 class SSDBox(object):
-    def __init__(self, is_normalized=True):
+    def __init__(self,
+                 is_normalized=True,
+                 prior_box_var=[0.1, 0.1, 0.2, 0.2],
+                 use_fuse_decode=False):
         self.is_normalized = is_normalized
         self.norm_delta = float(not self.is_normalized)
+        self.prior_box_var = prior_box_var
+        self.use_fuse_decode = use_fuse_decode
 
     def __call__(self,
                  preds,
@@ -564,40 +569,42 @@ class SSDBox(object):
                  scale_factor,
                  var_weight=None):
         boxes, scores = preds
-        outputs = []
-        for box, score, prior_box in zip(boxes, scores, prior_boxes):
-            pb_w = prior_box[:, 2] - prior_box[:, 0] + self.norm_delta
-            pb_h = prior_box[:, 3] - prior_box[:, 1] + self.norm_delta
-            pb_x = prior_box[:, 0] + pb_w * 0.5
-            pb_y = prior_box[:, 1] + pb_h * 0.5
-            out_x = pb_x + box[:, :, 0] * pb_w * 0.1
-            out_y = pb_y + box[:, :, 1] * pb_h * 0.1
-            out_w = paddle.exp(box[:, :, 2] * 0.2) * pb_w
-            out_h = paddle.exp(box[:, :, 3] * 0.2) * pb_h
+        boxes = paddle.concat(boxes, axis=1)
+        prior_boxes = paddle.concat(prior_boxes)
+        if self.use_fuse_decode:
+            output_boxes = ops.box_coder(
+                prior_boxes,
+                self.prior_box_var,
+                boxes,
+                code_type="decode_center_size",
+                box_normalized=self.is_normalized)
+        else:
+            pb_w = prior_boxes[:, 2] - prior_boxes[:, 0] + self.norm_delta
+            pb_h = prior_boxes[:, 3] - prior_boxes[:, 1] + self.norm_delta
+            pb_x = prior_boxes[:, 0] + pb_w * 0.5
+            pb_y = prior_boxes[:, 1] + pb_h * 0.5
+            out_x = pb_x + boxes[:, :, 0] * pb_w * self.prior_box_var[0]
+            out_y = pb_y + boxes[:, :, 1] * pb_h * self.prior_box_var[1]
+            out_w = paddle.exp(boxes[:, :, 2] * self.prior_box_var[2]) * pb_w
+            out_h = paddle.exp(boxes[:, :, 3] * self.prior_box_var[3]) * pb_h
+            output_boxes = paddle.stack(
+                [
+                    out_x - out_w / 2., out_y - out_h / 2., out_x + out_w / 2.,
+                    out_y + out_h / 2.
+                ],
+                axis=-1)
 
-            if self.is_normalized:
-                h = paddle.unsqueeze(
-                    im_shape[:, 0] / scale_factor[:, 0], axis=-1)
-                w = paddle.unsqueeze(
-                    im_shape[:, 1] / scale_factor[:, 1], axis=-1)
-                output = paddle.stack(
-                    [(out_x - out_w / 2.) * w, (out_y - out_h / 2.) * h,
-                     (out_x + out_w / 2.) * w, (out_y + out_h / 2.) * h],
-                    axis=-1)
-            else:
-                output = paddle.stack(
-                    [
-                        out_x - out_w / 2., out_y - out_h / 2.,
-                        out_x + out_w / 2. - 1., out_y + out_h / 2. - 1.
-                    ],
-                    axis=-1)
-            outputs.append(output)
-        boxes = paddle.concat(outputs, axis=1)
+        if self.is_normalized:
+            h = (im_shape[:, 0] / scale_factor[:, 0]).unsqueeze(-1)
+            w = (im_shape[:, 1] / scale_factor[:, 1]).unsqueeze(-1)
+            im_shape = paddle.stack([w, h, w, h], axis=-1)
+            output_boxes *= im_shape
+        else:
+            output_boxes[..., -2:] -= 1.0
+        output_scores = F.softmax(paddle.concat(
+            scores, axis=1)).transpose([0, 2, 1])
 
-        scores = F.softmax(paddle.concat(scores, axis=1))
-        scores = paddle.transpose(scores, [0, 2, 1])
-
-        return boxes, scores
+        return output_boxes, output_scores
 
 
 @register

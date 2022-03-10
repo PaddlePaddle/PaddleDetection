@@ -274,7 +274,7 @@ class Tracker(object):
                     else:
                         pred_bboxes = outs['bbox'][:, 2:]
                     pred_dets_old = np.concatenate(
-                        (pred_bboxes, pred_scores, pred_cls_ids), axis=1)
+                        (pred_cls_ids, pred_scores, pred_bboxes), axis=1)
                 else:
                     logger.warning(
                         'Frame {} has not detected object, try to modify score threshold.'.
@@ -300,10 +300,9 @@ class Tracker(object):
                 # thus will not inference reid model
                 continue
 
-            pred_scores = pred_scores[keep_idx[0]]
             pred_cls_ids = pred_cls_ids[keep_idx[0]]
             pred_dets = np.concatenate(
-                (pred_xyxys, pred_scores, pred_cls_ids), axis=1)
+                (pred_cls_ids, pred_scores, pred_xyxys), axis=1)
 
             if use_reid:
                 crops = get_crops(

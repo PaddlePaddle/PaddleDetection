@@ -32,7 +32,10 @@ from ppdet.metrics import get_infer_results
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('ppdet.engine')
 
-__all__ = ['Callback', 'ComposeCallback', 'LogPrinter', 'Checkpointer', 'VisualDLWriter', 'SniperProposalsGenerator']
+__all__ = [
+    'Callback', 'ComposeCallback', 'LogPrinter', 'Checkpointer',
+    'VisualDLWriter', 'SniperProposalsGenerator'
+]
 
 
 class Callback(object):
@@ -179,7 +182,7 @@ class Checkpointer(Callback):
                 ) % self.model.cfg.snapshot_epoch == 0 or epoch_id == end_epoch - 1:
                     save_name = str(
                         epoch_id) if epoch_id != end_epoch - 1 else "model_final"
-                    weight = self.weight
+                    weight = self.weight.state_dict()
             elif mode == 'eval':
                 if 'save_best_model' in status and status['save_best_model']:
                     for metric in self.model._metrics:
@@ -198,12 +201,22 @@ class Checkpointer(Callback):
                         if map_res[key][0] > self.best_ap:
                             self.best_ap = map_res[key][0]
                             save_name = 'best_model'
-                            weight = self.weight
+                            weight = self.weight.state_dict()
                         logger.info("Best test {} ap is {:0.3f}.".format(
                             key, self.best_ap))
             if weight:
-                save_model(weight, self.model.optimizer, self.save_dir,
-                           save_name, epoch_id + 1)
+                if self.model.use_ema:
+                    # save model and ema_model
+                    save_model(
+                        status['weight'],
+                        self.model.optimizer,
+                        self.save_dir,
+                        save_name,
+                        epoch_id + 1,
+                        ema_model=weight)
+                else:
+                    save_model(weight, self.model.optimizer, self.save_dir,
+                               save_name, epoch_id + 1)
 
 
 class WiferFaceEval(Callback):

@@ -38,7 +38,7 @@ def visualize_box_mask(im, results, labels, threshold=0.5):
     """
     if isinstance(im, str):
         im = Image.open(im).convert('RGB')
-    else:
+    elif isinstance(im, np.ndarray):
         im = Image.fromarray(im)
     if 'masks' in results and 'boxes' in results and len(results['boxes']) > 0:
         im = draw_mask(
@@ -224,13 +224,13 @@ def get_color(idx):
     return color
 
 
-def draw_pose(imgfile,
-              results,
-              visual_thread=0.6,
-              save_name='pose.jpg',
-              save_dir='output',
-              returnimg=False,
-              ids=None):
+def visualize_pose(imgfile,
+                   results,
+                   visual_thresh=0.6,
+                   save_name='pose.jpg',
+                   save_dir='output',
+                   returnimg=False,
+                   ids=None):
     try:
         import matplotlib.pyplot as plt
         import matplotlib
@@ -239,7 +239,6 @@ def draw_pose(imgfile,
         logger.error('Matplotlib not found, please install matplotlib.'
                      'for example: `pip install matplotlib`.')
         raise e
-
     skeletons, scores = results['keypoint']
     skeletons = np.array(skeletons)
     kpt_nums = 17
@@ -276,7 +275,7 @@ def draw_pose(imgfile,
     canvas = img.copy()
     for i in range(kpt_nums):
         for j in range(len(skeletons)):
-            if skeletons[j][i, 2] < visual_thread:
+            if skeletons[j][i, 2] < visual_thresh:
                 continue
             if ids is None:
                 color = colors[i] if color_set is None else colors[color_set[j]
@@ -300,8 +299,8 @@ def draw_pose(imgfile,
     for i in range(NUM_EDGES):
         for j in range(len(skeletons)):
             edge = EDGES[i]
-            if skeletons[j][edge[0], 2] < visual_thread or skeletons[j][edge[
-                    1], 2] < visual_thread:
+            if skeletons[j][edge[0], 2] < visual_thresh or skeletons[j][edge[
+                    1], 2] < visual_thresh:
                 continue
 
             cur_canvas = canvas.copy()
@@ -329,3 +328,26 @@ def draw_pose(imgfile,
     plt.imsave(save_name, canvas[:, :, ::-1])
     print("keypoint visualize image saved to: " + save_name)
     plt.close()
+
+
+def visualize_attr(im, results, boxes=None):
+
+    if isinstance(im, str):
+        im = Image.open(im).convert('RGB')
+    elif isinstance(im, np.ndarray):
+        im = Image.fromarray(im)
+
+    draw = ImageDraw.Draw(im)
+    for i, res in enumerate(results):
+        text = ""
+        for k, v in res.items():
+            if len(v) == 0: continue
+            test_line = "{}: {}\n".format(k, *v)
+            text += test_line
+        if boxes is None:
+            text_loc = (1, 1)
+        else:
+            box = boxes[i]
+            text_loc = (box[2], box[3])
+        draw.text(text_loc, text, fill=(0, 0, 255))
+    return im
