@@ -1,7 +1,7 @@
 _BASE_: [
-  '../../../ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml',
+  '../../../yolov3/yolov3_darknet53_270e_coco.yml',
 ]
-weights: output/ppyolov2_r50vd_dcn_365e_640x640_mot17half/model_final
+weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/pedestrian_yolov3_darknet.pdparams
 
 num_classes: 1
 TrainDataset:
@@ -20,31 +20,21 @@ EvalDataset:
 
 # detector configuration
 architecture: YOLOv3
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
 norm_type: sync_bn
-use_ema: true
-ema_decay: 0.9998
 
 YOLOv3:
-  backbone: ResNet
-  neck: PPYOLOPAN
+  backbone: DarkNet
+  neck: YOLOv3FPN
   yolo_head: YOLOv3Head
   post_process: BBoxPostProcess
 
-ResNet:
-  depth: 50
-  variant: d
-  return_idx: [1, 2, 3]
-  dcn_v2_stages: [3]
-  freeze_at: -1
-  freeze_norm: false
-  norm_decay: 0.
+DarkNet:
+  depth: 53
+  return_idx: [2, 3, 4]
 
-PPYOLOPAN:
-  drop_block: true
-  block_size: 3
-  keep_prob: 0.9
-  spp: true
+# use default config
+# YOLOv3FPN:
 
 YOLOv3Head:
   anchors: [[10, 13], [16, 30], [33, 23],
@@ -52,35 +42,21 @@ YOLOv3Head:
             [116, 90], [156, 198], [373, 326]]
   anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
   loss: YOLOv3Loss
-  iou_aware: true
-  iou_aware_factor: 0.5
 
 YOLOv3Loss:
   ignore_thresh: 0.7
   downsample: [32, 16, 8]
   label_smooth: false
-  scale_x_y: 1.05
-  iou_loss: IouLoss
-  iou_aware_loss: IouAwareLoss
-
-IouLoss:
-  loss_weight: 2.5
-  loss_square: true
-
-IouAwareLoss:
-  loss_weight: 1.0
 
 BBoxPostProcess:
   decode:
     name: YOLOBox
-    conf_thresh: 0.01
+    conf_thresh: 0.005
     downsample_ratio: 32
     clip_bbox: true
-    scale_x_y: 1.05
   nms:
-    name: MatrixNMS
+    name: MultiClassNMS
     keep_top_k: 100
     score_threshold: 0.01
-    post_threshold: 0.01
-    nms_top_k: -1
-    background_label: -1
+    nms_threshold: 0.45
+    nms_top_k: 1000

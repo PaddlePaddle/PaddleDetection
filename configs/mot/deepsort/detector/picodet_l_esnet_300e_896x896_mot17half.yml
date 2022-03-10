@@ -6,16 +6,16 @@ weights: output/picodet_l_esnet_300e_896x896_mot17half/model_final
 num_classes: 1
 TrainDataset:
   !COCODataSet
-    dataset_dir: dataset/mot/MOT17/images
+    dataset_dir: dataset/mot/MOT17
     anno_path: annotations/train_half.json
-    image_dir: train
+    image_dir: images/train
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
-    dataset_dir: dataset/mot/MOT17/images
+    dataset_dir: dataset/mot/MOT17
     anno_path: annotations/val_half.json
-    image_dir: train
+    image_dir: images/train
 
 worker_num: 6
 TrainReader:
