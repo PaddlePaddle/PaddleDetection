@@ -32,6 +32,8 @@ from python.mot_sde_infer import SDE_Detector
 #from python.attr_infer import AttrDetector
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
+from python.action_infer import KeyPointCollector
+
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res
 from python.preprocess import decode_image
@@ -279,6 +281,7 @@ class PipePredictor(object):
                 action_cfg = self.cfg['ACTION']
                 action_model_dir = action_cfg['model_dir']
                 action_batch_size = action_cfg['batch_size']
+                action_frames = action_cfg['max_frames']
 
                 self.kpt_predictor = KeyPointDetector(
                     kpt_model_dir,
@@ -292,7 +295,7 @@ class PipePredictor(object):
                     cpu_threads,
                     enable_mkldnn,
                     use_dark=use_dark)
-                #self.kpt_collector = KeyPointCollector()
+                self.kpt_collector = KeyPointCollector(action_frames)
                 #self.action_predictor = ActionDetector()
 
     def get_result(self):
@@ -401,8 +404,6 @@ class PipePredictor(object):
                 self.pipeline_res.update(attr_res, 'attr')
 
             if self.with_action:
-                #kpt_result = predict_with_given_det(
-                #    frame, mot_res, self.kpt_predictor, 1, 0.5, 0.5, False)
                 kpt_pred = self.kpt_predictor.predict_image(
                     crop_input, visual=False)
                 keypoint_vector, score_vector = translate_to_ori_images(
@@ -413,16 +414,20 @@ class PipePredictor(object):
                 ] if len(keypoint_vector) > 0 else [[], []]
                 kpt_res['bbox'] = ori_bboxes
                 self.pipeline_res.update(kpt_res, 'kpt')
-                """
-                self.kpt_collector.update(kpt_result)  # collect kpt output
-                state = self.kpt_collector.state()  # whether frame num is enough
+
+                self.kpt_collector.update(kpt_res,
+                                          mot_res)  # collect kpt output
+                state = self.kpt_collector.get_state(
+                )  # whether frame num is enough or lost tracker
 
                 if state:
-                    action_input = self.kpt_collector.collate(
+                    action_input = self.kpt_collector.get_collected_keypoint(
                     )  # reorgnize kpt output in ID
+                    """
                     action_res = self.action_predictor.predict_kpt(action_input)
                     self.pipeline_res.update(action, 'action')
-                """
+                    """
+
             if frame_id > self.warmup_frame:
                 self.pipe_timer.img_num += 1
                 self.pipe_timer.total_time.end()
@@ -458,7 +463,11 @@ class PipePredictor(object):
 
         kpt_res = result.get('kpt')
         if kpt_res is not None:
-            image = visualize_pose(image, kpt_res, returnimg=True)
+            image = visualize_pose(
+                image,
+                kpt_res,
+                visual_thresh=self.cfg['kpt_thresh'],
+                returnimg=True)
         return image
 
     def visualize_image(self, im_files, images, result):

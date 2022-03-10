@@ -136,6 +136,21 @@ def argsparser():
         type=ast.literal_eval,
         default=True,
         help='whether to use darkpose to get better keypoint position predict ')
+    parser.add_argument(
+        "--action_file",
+        type=str,
+        default=None,
+        help="Path of input file for action recognition.")
+    parser.add_argument(
+        "--window_size",
+        type=int,
+        default=100,
+        help="Temporal size of skeleton feature for action recognition.")
+    parser.add_argument(
+        "--random_pad",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether do random padding for action recognition.")
     return parser
 
 

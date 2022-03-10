@@ -1,5 +1,6 @@
 crop_thresh: 0.5
 attr_thresh: 0.5
+kpt_thresh: 0.5
 visual: True
 
 DET:
@@ -23,3 +24,4 @@ KPT:
 ACTION:
   model_dir: /paddle/shared_files/PaddleVideo/output_inference/STGCN/
   batch_size: 1
+  max_frames: 100

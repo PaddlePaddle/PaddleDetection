@@ -274,4 +274,5 @@ def parse_mot_res(input):
         xmin, ymin, w, h = box
         res = [i, 0, score, xmin, ymin, xmin + w, ymin + h]
         mot_res.append(res)
+    #print(np.array(mot_res)[:,0])
     return {'boxes': np.array(mot_res)}
