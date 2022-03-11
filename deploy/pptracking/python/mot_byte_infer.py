@@ -1,4 +1,4 @@
-# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2022 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,33 +18,43 @@ import yaml
 import cv2
 import numpy as np
 from collections import defaultdict
-
 import paddle
-from paddle.inference import Config
-from paddle.inference import create_predictor
 
-from utils import argsparser, Timer, get_current_memory_mb
-from det_infer import Detector, get_test_images, print_arguments, PredictConfig
 from benchmark_utils import PaddleInferBenchmark
+from preprocess import decode_image
+from utils import argsparser, Timer, get_current_memory_mb
+from det_infer import Detector, get_test_images, print_arguments, bench_log, PredictConfig
+
+# add python path
+import sys
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+sys.path.insert(0, parent_path)
+
+from mot.tracker import JDETracker, DeepSORTTracker
+from mot.utils import MOTTimer, write_mot_results, flow_statistic
 from visualize import plot_tracking, plot_tracking_dict
 
-from mot.tracker import JDETracker
-from mot.utils import MOTTimer, write_mot_results, flow_statistic
+from mot.mtmct.utils import parse_bias
+from mot.mtmct.postprocess import trajectory_fusion, sub_cluster, gen_res, print_mtmct_result
+from mot.mtmct.postprocess import get_mtmct_matching_results, save_mtmct_crops, save_mtmct_vis_results
+
 
 # Global dictionary
-MOT_SUPPORT_MODELS = {'ByteTrack'}
+MOT_SDE_SUPPORT_MODELS = {
+    'DeepSORT',
+    'ByteTrack',
+    'YOLO',
+}
 
 
-class ByteTrack_Detector(Detector):
+class SDE_Detector(Detector):
     """
-    Detector of SDE methods
-
     Args:
-        pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
+        tracker_config (str): tracker config path
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
-        batch_size (int): size of per batch in inference, default is 1 in tracking models
+        batch_size (int): size of pre batch in inference
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
@@ -52,22 +62,24 @@ class ByteTrack_Detector(Detector):
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
         enable_mkldnn (bool): whether to open MKLDNN
+        use_dark(bool): whether to use postprocess in DarkPose
     """
 
     def __init__(self,
-                 pred_config,
                  model_dir,
+                 tracker_config,
                  device='CPU',
                  run_mode='paddle',
                  batch_size=1,
                  trt_min_shape=1,
-                 trt_max_shape=1440,
-                 trt_opt_shape=800,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
                  trt_calib_mode=False,
                  cpu_threads=1,
-                 enable_mkldnn=False):
-        super(ByteTrack_Detector, self).__init__(
-            pred_config=pred_config,
+                 enable_mkldnn=False,
+                 output_dir='output',
+                 threshold=0.5):
+        super(SDE_Detector, self).__init__(
             model_dir=model_dir,
             device=device,
             run_mode=run_mode,
@@ -77,22 +89,25 @@ class ByteTrack_Detector(Detector):
             trt_opt_shape=trt_opt_shape,
             trt_calib_mode=trt_calib_mode,
             cpu_threads=cpu_threads,
-            enable_mkldnn=enable_mkldnn)
-        assert batch_size == 1, "The detector of tracking models only supports batch_size=1 now"
-        assert pred_config.tracker, "Tracking model should have tracker"
-        self.num_classes = len(pred_config.labels)
+            enable_mkldnn=enable_mkldnn,
+            output_dir=output_dir,
+            threshold=threshold, )
+        assert batch_size == 1, "MOT model only supports batch_size=1."
+        self.det_times = Timer(with_tracker=True)
+        self.num_classes = len(self.pred_config.labels)
 
-        tp = pred_config.tracker
-        min_box_area = tp['min_box_area'] if 'min_box_area' in tp else 200
-        vertical_ratio = tp['vertical_ratio'] if 'vertical_ratio' in tp else 1.6
-        
-        use_byte = tp['use_byte'] if 'use_byte' in tp else False
-        match_thres = tp['match_thres'] if 'match_thres' in tp else 0.9
-        conf_thres = tp['conf_thres'] if 'conf_thres' in tp else 0.6
-        low_conf_thres = tp['low_conf_thres'] if 'low_conf_thres' in tp else 0.1
+        # tracker config
+        self.tracker_config = tracker_config
+        cfg = yaml.safe_load(open(self.tracker_config))['tracker']
+        min_box_area = cfg.get('min_box_area', 200)
+        vertical_ratio = cfg.get('vertical_ratio', 1.6)
+        use_byte = cfg.get('use_byte', True)
+        match_thres = cfg.get('match_thres', 0.9)
+        conf_thres = cfg.get('conf_thres', 0.6)
+        low_conf_thres = cfg.get('low_conf_thres', 0.1)
 
         self.tracker = JDETracker(
-            use_byte = use_byte,
+            use_byte=use_byte,
             num_classes=self.num_classes,
             min_box_area=min_box_area,
             vertical_ratio=vertical_ratio,
@@ -100,9 +115,11 @@ class ByteTrack_Detector(Detector):
             conf_thres=conf_thres,
             low_conf_thres=low_conf_thres)
 
-    def track_postprocess(self, pred_dets, pred_embs, threshold):
-        online_targets_dict = self.tracker.update(pred_dets, pred_embs)
+    def tracking(self, det_results):
+        pred_dets = det_results['boxes']
+        pred_embs = None
 
+        online_targets_dict = self.tracker.update(pred_dets, pred_embs)
         online_tlwhs = defaultdict(list)
         online_scores = defaultdict(list)
         online_ids = defaultdict(list)
@@ -112,7 +129,6 @@ class ByteTrack_Detector(Detector):
                 tlwh = t.tlwh
                 tid = t.track_id
                 tscore = t.score
-                if tscore < threshold: continue
                 if tlwh[2] * tlwh[3] <= self.tracker.min_box_area:
                     continue
                 if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
@@ -121,336 +137,197 @@ class ByteTrack_Detector(Detector):
                 online_tlwhs[cls_id].append(tlwh)
                 online_ids[cls_id].append(tid)
                 online_scores[cls_id].append(tscore)
+
         return online_tlwhs, online_scores, online_ids
 
-    def predict(self,
-                image_path,
-                threshold=0.5,
-                scaled=False,
-                repeats=1,
-                add_timer=True):
-        '''
-        Args:
-            image_path (list[str]): path of images, only support one image path
-                (batch_size=1) in tracking model
-            threshold (float): threshold of predicted box' score
-            scaled (bool): whether the coords after detector outputs are scaled,
-                default False in jde yolov3, set True in general detector.
-            repeats (int): repeat number for prediction
-            add_timer (bool): whether add timer during prediction
-           
-        Returns:
-            pred_dets (np.ndarray, [N, 6]): 'x,y,w,h,score,cls_id'
-            pred_xyxys (np.ndarray, [N, 4]): 'x1,y1,x2,y2'
-        '''
-        # preprocess
-        if add_timer:
-            self.det_times.preprocess_time_s.start()
-        inputs = self.preprocess(image_path)
+    def predict_image(self,
+                      image_list,
+                      run_benchmark=False,
+                      repeats=1,
+                      visual=True):
+        mot_results = []
+        num_classes = self.num_classes
+        image_list.sort()
+        ids2names = self.pred_config.labels
+        for frame_id, img_file in enumerate(image_list):
+            batch_image_list = [img_file]  # bs=1 in MOT model
+            if run_benchmark:
+                # preprocess
+                inputs = self.preprocess(batch_image_list)  # warmup
+                self.det_times.preprocess_time_s.start()
+                inputs = self.preprocess(batch_image_list)
+                self.det_times.preprocess_time_s.end()
 
-        input_names = self.predictor.get_input_names()
-        for i in range(len(input_names)):
-            input_tensor = self.predictor.get_input_handle(input_names[i])
-            input_tensor.copy_from_cpu(inputs[input_names[i]])
-        if add_timer:
-            self.det_times.preprocess_time_s.end()
-            self.det_times.inference_time_s.start()
+                # model prediction
+                result_warmup = self.predict(repeats=repeats)  # warmup
+                self.det_times.inference_time_s.start()
+                result = self.predict(repeats=repeats)
+                self.det_times.inference_time_s.end(repeats=repeats)
 
-        # model prediction
-        for i in range(repeats):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            boxes_tensor = self.predictor.get_output_handle(output_names[0])
-            boxes = boxes_tensor.copy_to_cpu()
-        if add_timer:
-            self.det_times.inference_time_s.end(repeats=repeats)
-            self.det_times.postprocess_time_s.start()
+                # postprocess
+                result_warmup = self.postprocess(inputs, result)  # warmup
+                self.det_times.postprocess_time_s.start()
+                det_result = self.postprocess(inputs, result)
+                self.det_times.postprocess_time_s.end()
 
-        pred_cls_ids = boxes[:, 0:1]
-        pred_scores = boxes[:, 1:2]
-        pred_bboxes = boxes[:, 2:]
-        pred_dets = np.concatenate(
-            (pred_bboxes, pred_scores, pred_cls_ids), axis=1)
+                # tracking
+                result_warmup = self.tracking(det_result)
+                self.det_times.tracking_time_s.start()
+                online_tlwhs, online_scores, online_ids = self.tracking(
+                    det_result)
+                self.det_times.tracking_time_s.end()
+                self.det_times.img_num += 1
 
-        # postprocess
-        online_tlwhs, online_scores, online_ids = self.track_postprocess(
-            pred_dets, pred_embs=None, threshold=threshold)
-        if add_timer:
-            self.det_times.postprocess_time_s.end()
-            self.det_times.img_num += 1
-        return online_tlwhs, online_scores, online_ids
+                cm, gm, gu = get_current_memory_mb()
+                self.cpu_mem += cm
+                self.gpu_mem += gm
+                self.gpu_util += gu
 
-def predict_image(detector,
-                  image_list,
-                  threshold,
-                  output_dir,
-                  save_images=True,
-                  run_benchmark=False):
-    results = []
-    num_classes = detector.num_classes
-    data_type = 'mcmot' if num_classes > 1 else 'mot'
-    ids2names = detector.pred_config.labels
+            else:
+                self.det_times.preprocess_time_s.start()
+                inputs = self.preprocess(batch_image_list)
+                self.det_times.preprocess_time_s.end()
 
-    image_list.sort()
-    for frame_id, img_file in enumerate(image_list):
-        frame = cv2.imread(img_file)
-        if run_benchmark:
-            # warmup
-            detector.predict([img_file], threshold, repeats=10, add_timer=False)
-            # run benchmark
-            detector.predict([img_file], threshold, repeats=10, add_timer=True)
-            cm, gm, gu = get_current_memory_mb()
-            detector.cpu_mem += cm
-            detector.gpu_mem += gm
-            detector.gpu_util += gu
-            print('Test iter {}, file name:{}'.format(frame_id, img_file))
+                self.det_times.inference_time_s.start()
+                result = self.predict()
+                self.det_times.inference_time_s.end()
+
+                self.det_times.postprocess_time_s.start()
+                det_result = self.postprocess(inputs, result)
+                self.det_times.postprocess_time_s.end()
+
+                # tracking process
+                self.det_times.tracking_time_s.start()
+                online_tlwhs, online_scores, online_ids = self.tracking(
+                    det_result)
+                self.det_times.tracking_time_s.end()
+                self.det_times.img_num += 1
+
+            if visual:
+                if frame_id % 10 == 0:
+                    print('Tracking frame {}'.format(frame_id))
+                frame, _ = decode_image(img_file, {})
+
+                im = plot_tracking_dict(
+                    frame,
+                    num_classes,
+                    online_tlwhs,
+                    online_ids,
+                    online_scores,
+                    frame_id=frame_id,
+                    ids2names=[])
+                seq_name = image_list[0].split('/')[-2]
+                save_dir = os.path.join(self.output_dir, seq_name)
+                if not os.path.exists(save_dir):
+                    os.makedirs(save_dir)
+                cv2.imwrite(
+                    os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
+
+            mot_results.append([online_tlwhs, online_scores, online_ids])
+        return mot_results
+
+    def predict_video(self, video_file, camera_id):
+        video_out_name = 'output.mp4'
+        if camera_id != -1:
+            capture = cv2.VideoCapture(camera_id)
         else:
-            online_tlwhs, online_scores, online_ids = detector.predict(
-                [img_file], threshold)
-            online_im = plot_tracking_dict(
+            capture = cv2.VideoCapture(video_file)
+            video_out_name = os.path.split(video_file)[-1]
+        # Get Video info : resolution, fps, frame count
+        width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = int(capture.get(cv2.CAP_PROP_FPS))
+        frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        print("fps: %d, frame_count: %d" % (fps, frame_count))
+
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+        out_path = os.path.join(self.output_dir, video_out_name)
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+
+        frame_id = 1
+        timer = MOTTimer()
+        results = defaultdict(list)  # support single class and multi classes
+        num_classes = self.num_classes
+        while (1):
+            ret, frame = capture.read()
+            if not ret:
+                break
+            if frame_id % 10 == 0:
+                print('Tracking frame: %d' % (frame_id))
+            frame_id += 1
+
+            timer.tic()
+            mot_results = self.predict_image([frame], visual=False)
+            timer.toc()
+
+            online_tlwhs, online_scores, online_ids = mot_results[0]
+            for cls_id in range(num_classes):
+                results[cls_id].append(
+                    (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id],
+                     online_ids[cls_id]))
+
+            fps = 1. / timer.duration
+            im = plot_tracking_dict(
                 frame,
                 num_classes,
                 online_tlwhs,
                 online_ids,
                 online_scores,
                 frame_id=frame_id,
-                ids2names=ids2names)
-            if save_images:
-                if not os.path.exists(output_dir):
-                    os.makedirs(output_dir)
-                img_name = os.path.split(img_file)[-1]
-                out_path = os.path.join(output_dir, img_name)
-                cv2.imwrite(out_path, online_im)
-                print("save result to: " + out_path)
+                fps=fps,
+                ids2names=[])
 
-def predict_video(detector,
-                  video_file,
-                  threshold,
-                  output_dir,
-                  save_images=True,
-                  save_mot_txts=True,
-                  draw_center_traj=False,
-                  secs_interval=10,
-                  do_entrance_counting=False,
-                  camera_id=-1):
-    video_name = 'mot_output.mp4'
-    if camera_id != -1:
-        capture = cv2.VideoCapture(camera_id)
-    else:
-        capture = cv2.VideoCapture(video_file)
-        video_name = os.path.split(video_file)[-1]
-
-    # Get Video info : resolution, fps, frame count
-    width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(capture.get(cv2.CAP_PROP_FPS))
-    frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-    print("fps: %d, frame_count: %d" % (fps, frame_count))
-
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    out_path = os.path.join(output_dir, video_name)
-    if not save_images:
-        video_format = 'mp4v'
-        fourcc = cv2.VideoWriter_fourcc(*video_format)
-        writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
-    frame_id = 0
-    timer = MOTTimer()
-    results = defaultdict(list)  # support single class and multi classes
-    num_classes = detector.num_classes
-    data_type = 'mcmot' if num_classes > 1 else 'mot'
-    ids2names = detector.pred_config.labels
-    center_traj = None
-    entrance = None
-    records = None
-    if draw_center_traj:
-        center_traj = [{} for i in range(num_classes)]
-
-    if num_classes == 1:
-        id_set = set()
-        interval_id_set = set()
-        in_id_list = list()
-        out_id_list = list()
-        prev_center = dict()
-        records = list()
-        entrance = [0, height / 2., width, height / 2.]
-
-    video_fps = fps
-
-    while (1):
-        ret, frame = capture.read()
-        if not ret:
-            break
-        timer.tic()
-        online_tlwhs, online_scores, online_ids = detector.predict([frame],
-                                                                   threshold)
-        timer.toc()
-
-        for cls_id in range(num_classes):
-            results[cls_id].append((frame_id + 1, online_tlwhs[cls_id],
-                                    online_scores[cls_id], online_ids[cls_id]))
-
-        fps = 1. / timer.duration
-        # NOTE: just implement flow statistic for one class
-        if num_classes == 1:
-            result = (frame_id + 1, online_tlwhs[0], online_scores[0],
-                      online_ids[0])
-            statistic = flow_statistic(
-                result, secs_interval, do_entrance_counting, video_fps,
-                entrance, id_set, interval_id_set, in_id_list, out_id_list,
-                prev_center, records, data_type, num_classes)
-            id_set = statistic['id_set']
-            interval_id_set = statistic['interval_id_set']
-            in_id_list = statistic['in_id_list']
-            out_id_list = statistic['out_id_list']
-            prev_center = statistic['prev_center']
-            records = statistic['records']
-
-        elif num_classes > 1 and do_entrance_counting:
-            raise NotImplementedError(
-                'Multi-class flow counting is not implemented now!')
-        im = plot_tracking_dict(
-            frame,
-            num_classes,
-            online_tlwhs,
-            online_ids,
-            online_scores,
-            frame_id=frame_id,
-            fps=fps,
-            ids2names=ids2names,
-            do_entrance_counting=do_entrance_counting,
-            entrance=entrance,
-            records=records,
-            center_traj=center_traj)
-
-        if save_images:
-            save_dir = os.path.join(output_dir, video_name.split('.')[-2])
-            if not os.path.exists(save_dir):
-                os.makedirs(save_dir)
-            cv2.imwrite(
-                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
-        else:
             writer.write(im)
-
-        frame_id += 1
-        print('detect frame: %d, fps: %f' % (frame_id, fps))
-        if camera_id != -1:
-            cv2.imshow('Tracking Detection', im)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-    if save_mot_txts:
-        result_filename = os.path.join(output_dir,
-                                       video_name.split('.')[-2] + '.txt')
-
-        write_mot_results(result_filename, results, data_type, num_classes)
-
-        if num_classes == 1:
-            result_filename = os.path.join(
-                output_dir, video_name.split('.')[-2] + '_flow_statistic.txt')
-            f = open(result_filename, 'w')
-            for line in records:
-                f.write(line)
-            print('Flow statistic save in {}'.format(result_filename))
-            f.close()
-
-    if save_images:
-        save_dir = os.path.join(output_dir, video_name.split('.')[-2])
-        cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(save_dir,
-                                                              out_path)
-        os.system(cmd_str)
-        print('Save video in {}.'.format(out_path))
-    else:
+            if camera_id != -1:
+                cv2.imshow('Mask Detection', im)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
         writer.release()
 
-def predict_naive(model_dir,
-                  video_file,
-                  image_dir,
-                  device='gpu',
-                  threshold=0.5,
-                  output_dir='output'):
-    pred_config = PredictConfig(model_dir)
-    detector = ByteTrack_Detector(pred_config, model_dir, device=device.upper())
-
-    if video_file is not None:
-        predict_video(
-            detector,
-            video_file,
-            threshold=threshold,
-            output_dir=output_dir,
-            save_images=True,
-            save_mot_txts=True,
-            draw_center_traj=False,
-            secs_interval=10,
-            do_entrance_counting=False)
-    else:
-        img_list = get_test_images(image_dir, infer_img=None)
-        predict_image(
-            detector,
-            img_list,
-            threshold=threshold,
-            output_dir=output_dir,
-            save_images=True)
 
 def main():
-    pred_config = PredictConfig(FLAGS.model_dir)
-    detector = ByteTrack_Detector(
-        pred_config,
+    deploy_file = os.path.join(FLAGS.model_dir, 'infer_cfg.yml')
+    with open(deploy_file) as f:
+        yml_conf = yaml.safe_load(f)
+    arch = yml_conf['arch']
+    assert arch in MOT_SDE_SUPPORT_MODELS, '{} is not supported.'.format(arch)
+    detector = SDE_Detector(
         FLAGS.model_dir,
+        FLAGS.tracker_config,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
+        batch_size=FLAGS.batch_size,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
         trt_opt_shape=FLAGS.trt_opt_shape,
         trt_calib_mode=FLAGS.trt_calib_mode,
         cpu_threads=FLAGS.cpu_threads,
-        enable_mkldnn=FLAGS.enable_mkldnn)
+        enable_mkldnn=FLAGS.enable_mkldnn,
+        threshold=FLAGS.threshold,
+        output_dir=FLAGS.output_dir)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
-        predict_video(
-            detector,
-            FLAGS.video_file,
-            threshold=FLAGS.threshold,
-            output_dir=FLAGS.output_dir,
-            save_images=FLAGS.save_images,
-            save_mot_txts=FLAGS.save_mot_txts,
-            draw_center_traj=FLAGS.draw_center_traj,
-            secs_interval=FLAGS.secs_interval,
-            do_entrance_counting=FLAGS.do_entrance_counting,
-            camera_id=FLAGS.camera_id)
+        detector.predict_video(FLAGS.video_file, FLAGS.camera_id)
     else:
         # predict from image
+        if FLAGS.image_dir is None and FLAGS.image_file is not None:
+            assert FLAGS.batch_size == 1, "--batch_size should be 1 in MOT models."
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        predict_image(
-            detector,
-            img_list,
-            threshold=FLAGS.threshold,
-            output_dir=FLAGS.output_dir,
-            save_images=FLAGS.save_images,
-            run_benchmark=FLAGS.run_benchmark)
+        detector.predict_image(img_list, FLAGS.run_benchmark, repeats=10)
+
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)
         else:
-            mems = {
-                'cpu_rss_mb': detector.cpu_mem / len(img_list),
-                'gpu_rss_mb': detector.gpu_mem / len(img_list),
-                'gpu_util': detector.gpu_util * 100 / len(img_list)
-            }
-            perf_info = detector.det_times.report(average=True)
-            model_dir = FLAGS.model_dir
             mode = FLAGS.run_mode
+            model_dir = FLAGS.model_dir
             model_info = {
                 'model_name': model_dir.strip('/').split('/')[-1],
                 'precision': mode.split('_')[-1]
             }
-            data_info = {
-                'batch_size': 1,
-                'shape': "dynamic_shape",
-                'data_num': perf_info['img_num']
-            }
-            det_log = PaddleInferBenchmark(detector.config, model_info,
-                                           data_info, perf_info, mems)
-            det_log('MOT')
+            bench_log(detector, img_list, model_info, name='MOT')
 
 
 if __name__ == '__main__':
