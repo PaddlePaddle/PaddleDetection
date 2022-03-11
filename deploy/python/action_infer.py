@@ -156,13 +156,30 @@ class ActionRecognizer(Detector):
             if visual:
                 print('Test iter {}'.format(i))
 
-        results = self.merge_batch_result(results)
+        #results = self.merge_batch_result(results)
+        return results
+
+    def predict_skeleton_with_mot(self,
+                                  skeleton_with_mot,
+                                  run_benchmark=False,
+                                  visual=True):
+        """
+            skeleton_with_mot (dict): includes individual skeleton sequences, which shape is [C, T, K, 1]
+                                      and its corresponding track id.
+        """
+
+        skeleton_list = skeleton_with_mot["skeleton"]
+        mot_id = skeleton_with_mot["mot_id"]
+        act_res = self.predict_skeleton(
+            skeleton_list, run_benchmark, repeats=1, visual=False)
+        if visual:
+            pass
+        results = list(zip(mot_id, act_res))
         return results
 
     def preprocess(self, data):
         preprocess_ops = []
         for op_info in self.pred_config.preprocess_infos:
-            print(op_info)
             new_op_info = op_info.copy()
             op_type = new_op_info.pop('type')
             preprocess_ops.append(eval(op_type)(**new_op_info))
@@ -182,7 +199,6 @@ class ActionRecognizer(Detector):
 
     def postprocess(self, inputs, result):
         # postprocess output of predictor
-        print(result)
         output_logit = result['output'][0]
         classes = np.argpartition(output_logit, -1)[-1:]
         classes = classes[np.argsort(-output_logit[classes])]

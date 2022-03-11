@@ -32,10 +32,10 @@ from python.mot_sde_infer import SDE_Detector
 #from python.attr_infer import AttrDetector
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
-from python.action_infer import KeyPointCollector
+from python.action_infer import KeyPointCollector, ActionRecognizer
 
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
-from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res
+from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
 from python.preprocess import decode_image
 from python.visualize import visualize_box_mask, visualize_attr, visualize_pose
 from pptracking.python.visualize import plot_tracking
@@ -296,7 +296,18 @@ class PipePredictor(object):
                     enable_mkldnn,
                     use_dark=use_dark)
                 self.kpt_collector = KeyPointCollector(action_frames)
-                #self.action_predictor = ActionDetector()
+                self.action_predictor = ActionRecognizer(
+                    action_model_dir,
+                    device,
+                    run_mode,
+                    action_batch_size,
+                    trt_min_shape,
+                    trt_max_shape,
+                    trt_opt_shape,
+                    trt_calib_mode,
+                    cpu_threads,
+                    enable_mkldnn,
+                    window_size=action_frames)
 
     def get_result(self):
         return self.pipeline_res
@@ -421,12 +432,13 @@ class PipePredictor(object):
                 )  # whether frame num is enough or lost tracker
 
                 if state:
-                    action_input = self.kpt_collector.get_collected_keypoint(
+                    collected_keypoint = self.kpt_collector.get_collected_keypoint(
                     )  # reorgnize kpt output in ID
-                    """
-                    action_res = self.action_predictor.predict_kpt(action_input)
-                    self.pipeline_res.update(action, 'action')
-                    """
+                    action_input = parse_mot_keypoint(collected_keypoint)
+                    action_res = self.action_predictor.predict_skeleton_with_mot(
+                        action_input)
+                    print(action_res)
+                    self.pipeline_res.update(action_res, 'action')
 
             if frame_id > self.warmup_frame:
                 self.pipe_timer.img_num += 1
@@ -468,6 +480,15 @@ class PipePredictor(object):
                 kpt_res,
                 visual_thresh=self.cfg['kpt_thresh'],
                 returnimg=True)
+
+        action_res = result.get('action')
+        if action_res is not None:
+            pass
+            #image = visualize_action_with_pose(
+            #    image,
+            #    kpt_res,
+            #    visual_thresh=0.5,
+            #    returnimg=True)
         return image
 
     def visualize_image(self, im_files, images, result):
