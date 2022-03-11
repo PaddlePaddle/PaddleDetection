@@ -91,48 +91,82 @@ class AttrDetector(Detector):
     def postprocess(self, inputs, result):
         # postprocess output of predictor
         im_results = result['output']
-        im_results = np.where(im_results < self.threshold, 0, im_results)
-        label_list = [['Head', ['Hat', 'Glasses']], [
-            'Upper', [
-                'ShortSleeve', 'LongSleeve', 'UpperStride', 'UpperLogo',
-                'UpperPlaid', 'UpperSplice'
-            ]
-        ], [
-            'Lower', [
-                'LowerStripe', 'LowerPattern', 'LongCoat', 'Trousers', 'Shorts',
-                'Skirt&Dress'
-            ]
-        ], ['Shoes', ['boots']], [
-            'Accessory',
-            ['HandBag', 'ShoulderBag', 'Backpack', 'HoldObjectsInFront']
-        ], ['Age', ['AgeOver60', 'Age18-60', 'AgeLess18']],
-                      ['Gender', ['Female']],
-                      ['Direction', ['Front', 'Side', 'Back']]]
 
-        attr_type = [name[0] for name in label_list]
         labels = self.pred_config.labels
+        age_list = ['AgeLess18', 'Age18-60', 'AgeOver60']
+        direct_list = ['Front', 'Side', 'Back']
+        bag_list = ['HandBag', 'ShoulderBag', 'Backpack']
+        upper_list = [
+            'UpperStride', 'UpperLogo', 'UpperPlaid', 'UpperSplice', 'LongCoat'
+        ]
+        lower_list = [
+            'LowerStripe', 'LowerPattern', 'Trousers', 'Shorts', 'Skirt&Dress'
+        ]
 
         batch_res = []
         for res in im_results:
-            label_res = {}
-            label_res = {t: [] for t in attr_type}
-            num = 0
-            for i in range(len(label_list)):
-                type_name_i = attr_type[i]
-                attr_name_list = label_list[i][1]
-                for attr_name in attr_name_list:
-                    attr_name = labels[num]
-                    output_prob = res[num]
-                    if output_prob != 0:
-                        label_res[type_name_i].append(attr_name)
-                    num += 1
+            res = res.tolist()
+            label_res = []
+            # gender 
+            gender = 'Male' if res[22] > self.threshold else 'Female'
+            label_res.append(gender)
+            # age
+            age = age_list[np.argmax(res[19:22])]
+            label_res.append(age)
+            # direction 
+            direction = direct_list[np.argmax(res[23:])]
+            label_res.append(direction)
+            # glasses
+            glasses = 'Glasses: '
+            if res[1] > self.threshold:
+                glasses += 'True'
+            else:
+                glasses += 'False'
+            label_res.append(glasses)
+            # hat
+            hat = 'Hat: '
+            if res[0] > self.threshold:
+                hat += 'True'
+            else:
+                hat += 'False'
+            label_res.append(hat)
+            # hold obj
+            hold_obj = 'HoldObjectsInFront: '
+            if res[18] > self.threshold:
+                hold_obj += 'True'
+            else:
+                hold_obj += 'False'
+            label_res.append(hold_obj)
+            # bag
+            bag = bag_list[np.argmax(res[15:18])]
+            bag_score = res[15 + np.argmax(res[15:18])]
+            bag_label = bag if bag_score > self.threshold else 'No bag'
+            label_res.append(bag_label)
+            # upper
+            upper_res = res[4:8] + res[10:11]
+            upper_label = 'Upper:'
+            sleeve = 'LongSleeve' if res[3] > res[2] else 'ShortSleeve'
+            upper_label += ' {}'.format(sleeve)
+            for i, r in enumerate(upper_res):
+                if r > self.threshold:
+                    upper_label += ' {}'.format(upper_list[i])
+            label_res.append(upper_label)
+            # lower
+            lower_res = res[8:10] + res[11:14]
+            lower_label = 'Lower: '
+            has_lower = False
+            for i, l in enumerate(lower_res):
+                if l > self.threshold:
+                    lower_label += ' {}'.format(lower_list[i])
+                    has_lower = True
+            if not has_lower:
+                lower_label += ' {}'.format(lower_list[np.argmax(lower_res)])
 
-            if len(label_res['Shoes']) == 0:
-                label_res['Shoes'] = ['no boots']
-            if len(label_res['Gender']) == 0:
-                label_res['Gender'] = ['Male']
-            label_res['Age'] = [labels[19 + np.argmax(res[19:22])]]
-            label_res['Direction'] = [labels[23 + np.argmax(res[23:])]]
+            label_res.append(lower_label)
+            # shoe
+            shoe = 'Boots' if res[14] > self.threshold else 'No boots'
+            label_res.append(shoe)
+
             batch_res.append(label_res)
         result = {'output': batch_res}
         return result
@@ -240,7 +274,7 @@ def visualize(image_list, batch_res, output_dir='output'):
             os.makedirs(output_dir)
         img_name = os.path.split(image_file)[-1]
         out_path = os.path.join(output_dir, img_name)
-        im.save(out_path, quality=95)
+        cv2.imwrite(out_path, im)
         print("save result to: " + out_path)
 
 

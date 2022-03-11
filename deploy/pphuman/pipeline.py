@@ -109,6 +109,8 @@ class Pipeline(object):
                 cpu_threads=cpu_threads,
                 enable_mkldnn=enable_mkldnn,
                 output_dir=output_dir)
+            if self.is_video:
+                self.predictor.set_file_name(video_file)
 
     def _parse_input(self, image_file, image_dir, video_file, camera_id):
 
@@ -234,6 +236,7 @@ class PipePredictor(object):
         self.warmup_frame = 1
         self.pipeline_res = Result()
         self.pipe_timer = PipeTimer()
+        self.file_name = None
 
         if not is_video:
             det_cfg = self.cfg['DET']
@@ -273,6 +276,9 @@ class PipePredictor(object):
                 self.kpt_predictor = KeyPointDetector()
                 self.kpt_collector = KeyPointCollector()
                 self.action_predictor = ActionDetector()
+
+    def set_file_name(self, path):
+        self.file_name = os.path.split(path)[-1]
 
     def get_result(self):
         return self.pipeline_res
@@ -334,7 +340,7 @@ class PipePredictor(object):
         # mot
         # mot -> attr
         # mot -> pose -> action
-        video_out_name = 'output.mp4'
+        video_out_name = 'output.mp4' if self.file_name is None else self.file_name
 
         # Get Video info : resolution, fps, frame count
         width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -359,6 +365,13 @@ class PipePredictor(object):
                 self.pipe_timer.total_time.start()
                 self.pipe_timer.module_time['mot'].start()
             res = self.mot_predictor.predict_image([frame], visual=False)
+
+            # nothing detected
+            if len(res[0][0]) == 0:
+                frame_id += 1
+                self.pipe_timer.img_num += 1
+                self.pipe_timer.total_time.end()
+                continue
 
             if frame_id > self.warmup_frame:
                 self.pipe_timer.module_time['mot'].end()
