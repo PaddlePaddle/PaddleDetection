@@ -14,7 +14,7 @@ EvalMOTDataset:
     keep_ori_im: True # set as True in DeepSORT
 
 det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
-reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_resnet.pdparams
 
 
 # DeepSORT configuration
@@ -23,15 +23,13 @@ pretrain_weights: None
 
 DeepSORT:
   detector: YOLOv3 # PPYOLOe version
-  reid: PPLCNetEmbedding
+  reid: ResNetEmbedding
   tracker: DeepSORTTracker
 
 
 # reid and tracker configuration
-# see 'configs/mot/deepsort/reid/deepsort_pplcnet.yml'
-PPLCNetEmbedding:
-  input_ch: 1280
-  output_ch: 512
+# see 'configs/mot/deepsort/reid/deepsort_resnet.yml'
+# ResNetEmbedding
 
 DeepSORTTracker:
   input_size: [64, 192]

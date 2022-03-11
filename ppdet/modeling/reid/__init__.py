@@ -17,9 +17,11 @@ from . import fairmot_embedding_head
 from . import resnet
 from . import pyramidal_embedding
 from . import pplcnet_embedding
+from . import resnet_embedding
 
 from .fairmot_embedding_head import *
 from .jde_embedding_head import *
 from .resnet import *
 from .pyramidal_embedding import *
 from .pplcnet_embedding import *
+from .resnet_embedding import *
