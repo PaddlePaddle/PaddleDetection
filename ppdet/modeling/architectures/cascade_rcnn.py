@@ -115,7 +115,8 @@ class CascadeRCNN(BaseArch):
                                                         im_shape, scale_factor)
             if not self.with_mask:
                 return bbox_pred, bbox_num, None
-            mask_out = self.mask_head(body_feats, bbox, bbox_num, self.inputs)
+            bbox, mask_out, bbox_num = self.mask_head(body_feats, bbox,
+                                                      bbox_num, self.inputs)
             origin_shape = self.bbox_post_process.get_origin_shape()
             mask_pred = self.mask_post_process(mask_out[:, 0, :, :], bbox_pred,
                                                bbox_num, origin_shape)

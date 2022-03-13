@@ -62,9 +62,19 @@ class BBoxPostProcess(nn.Layer):
         if self.nms is not None:
             bboxes, score = self.decode(head_out, rois, im_shape, scale_factor)
             bbox_pred, bbox_num, _ = self.nms(bboxes, score, self.num_classes)
+
         else:
             bbox_pred, bbox_num = self.decode(head_out, rois, im_shape,
                                               scale_factor)
+
+        if True:
+            fake_bboxes = paddle.to_tensor(
+                np.array(
+                    [[0., 0.0, 0.0, 0.0, 1.0, 1.0]], dtype='float32'))
+
+            bbox_pred = paddle.concat([bbox_pred, fake_bboxes])
+            bbox_num = bbox_num + 1
+
         return bbox_pred, bbox_num
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
@@ -86,13 +96,13 @@ class BBoxPostProcess(nn.Layer):
             pred_result (Tensor): The final prediction results with shape [N, 6]
                 including labels, scores and bboxes.
         """
-
+        """
         bboxes_list = []
         bbox_num_list = []
         id_start = 0
         fake_bboxes = paddle.to_tensor(
             np.array(
-                [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
+                [[0., 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
         fake_bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
 
         # add fake bbox when output is empty for each batch
@@ -108,9 +118,10 @@ class BBoxPostProcess(nn.Layer):
             bbox_num_list.append(bbox_num_i)
         bboxes = paddle.concat(bboxes_list)
         bbox_num = paddle.concat(bbox_num_list)
+        """
 
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
-
+        """
         origin_shape_list = []
         scale_factor_list = []
         # scale_factor: scale_y, scale_x
@@ -122,9 +133,16 @@ class BBoxPostProcess(nn.Layer):
             expand_scale = paddle.expand(scale, [bbox_num[i], 4])
             origin_shape_list.append(expand_shape)
             scale_factor_list.append(expand_scale)
+        
 
         self.origin_shape_list = paddle.concat(origin_shape_list)
         scale_factor_list = paddle.concat(scale_factor_list)
+        """
+        scale_y, scale_x = scale_factor[0][0], scale_factor[0][1]
+        scale = paddle.concat([scale_x, scale_y, scale_x, scale_y]).unsqueeze(0)
+        scale_factor_list = paddle.expand(scale, [bbox_num[0], 4])
+
+        self.origin_shape_list = paddle.expand(origin_shape, [bbox_num[0], 2])
 
         # bboxes: [N, 6], label, score, bbox
         pred_label = bboxes[:, 0:1]
@@ -165,6 +183,25 @@ class MaskPostProcess(object):
     def __init__(self, binary_thresh=0.5):
         super(MaskPostProcess, self).__init__()
         self.binary_thresh = binary_thresh
+
+    def paste_mask_new(self, masks, boxes, im_h, im_w):
+        x0_int, y0_int = 0, 0
+        x1_int, y1_int = im_w, im_h
+        x0, y0, x1, y1 = paddle.split(boxes, 4, axis=1)
+        N = masks.shape[0]
+        img_y = paddle.arange(y0_int, y1_int) + 0.5
+        img_x = paddle.arange(x0_int, x1_int) + 0.5
+        img_y = (img_y - y0) / (y1 - y0) * 2 - 1
+        img_x = (img_x - x0) / (x1 - x0) * 2 - 1
+        # img_x, img_y have shapes (N, w), (N, h)
+
+        gx = img_x[:, None, :].expand(
+            [N, paddle.shape(img_y)[1], paddle.shape(img_x)[1]])
+        gy = img_y[:, :, None].expand(
+            [N, paddle.shape(img_y)[1], paddle.shape(img_x)[1]])
+        grid = paddle.stack([gx, gy], axis=3)
+        img_masks = F.grid_sample(masks, grid, align_corners=False)
+        return img_masks[:, 0]
 
     def paste_mask(self, masks, boxes, im_h, im_w):
         """
@@ -208,6 +245,7 @@ class MaskPostProcess(object):
         # TODO: support bs > 1 and mask output dtype is bool
         pred_result = paddle.zeros(
             [num_mask, origin_shape[0][0], origin_shape[0][1]], dtype='int32')
+        """
         if bbox_num == 1 and bboxes[0][0] == -1:
             return pred_result
 
@@ -221,6 +259,14 @@ class MaskPostProcess(object):
             pred_mask = paddle.cast(pred_mask, 'int32')
             pred_result.append(pred_mask)
         pred_result = paddle.concat(pred_result)
+        """
+
+        im_h, im_w = origin_shape[0][0], origin_shape[0][1]
+        pred_mask = self.paste_mask_new(mask_out[:, None, :, :], bboxes[:, 2:],
+                                        im_h, im_w)
+        pred_mask = pred_mask >= self.binary_thresh
+        pred_result = paddle.cast(pred_mask, 'int32')
+
         return pred_result
 
 

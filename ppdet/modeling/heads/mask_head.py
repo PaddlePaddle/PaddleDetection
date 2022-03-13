@@ -206,7 +206,7 @@ class MaskHead(nn.Layer):
         rois_num (Tensor): The number of prediction for each batch
         scale_factor (Tensor): The scale factor from origin size to input size
         """
-        if rois.shape[0] == 0:
+        if False:  #rois.shape[0] == 0:
             mask_out = paddle.full([1, 1, 1, 1], -1)
         else:
             bbox = [rois[:, 2:]]
@@ -218,19 +218,13 @@ class MaskHead(nn.Layer):
 
             mask_feat = self.head(rois_feat)
             mask_logit = self.mask_fcn_logits(mask_feat)
-            mask_num_class = mask_logit.shape[1]
-            if mask_num_class == 1:
+            if self.num_classes == 1:
                 mask_out = F.sigmoid(mask_logit)
             else:
-                num_masks = mask_logit.shape[0]
-                mask_out = []
-                # TODO: need to optimize gather
-                for i in range(mask_logit.shape[0]):
-                    pred_masks = paddle.unsqueeze(
-                        mask_logit[i, :, :, :], axis=0)
-                    mask = paddle.gather(pred_masks, labels[i], axis=1)
-                    mask_out.append(mask)
-                mask_out = F.sigmoid(paddle.concat(mask_out))
+                num_masks = paddle.shape(mask_logit)[0]
+                index = paddle.arange(num_masks).cast('int32')
+                mask_out = mask_logit[index, labels]
+                mask_out = F.sigmoid(mask_out)
         return mask_out
 
     def forward(self,

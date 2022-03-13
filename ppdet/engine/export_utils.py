@@ -120,7 +120,7 @@ def _dump_infer_config(config, path, image_shape, model):
     setup_orderdict()
     use_dynamic_shape = True if image_shape[2] == -1 else False
     infer_cfg = OrderedDict({
-        'mode': 'fluid',
+        'mode': 'paddle',
         'draw_threshold': 0.5,
         'metric': config['metric'],
         'use_dynamic_shape': use_dynamic_shape

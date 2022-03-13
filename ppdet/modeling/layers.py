@@ -392,8 +392,7 @@ class RCNNBox(object):
         else:
             batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
         # bbox_pred.shape: [N, C*4]
-        for idx in range(batch_size):
-            roi_per_im = roi[idx]
+        for idx in range(1):
             rois_num_per_im = rois_num[idx]
             expand_im_shape = paddle.expand(im_shape[idx, :],
                                             [rois_num_per_im, 2])
@@ -404,17 +403,14 @@ class RCNNBox(object):
         # bbox_pred.shape: [N, C*4]
         # C=num_classes in faster/mask rcnn(bbox_head), C=1 in cascade rcnn(cascade_head)
         bbox = paddle.concat(roi)
-        if bbox.shape[0] == 0:
-            bbox = paddle.zeros([0, bbox_pred.shape[1]], dtype='float32')
-        else:
-            bbox = delta2bbox(bbox_pred, bbox, self.prior_box_var)
+        bbox = delta2bbox(bbox_pred, bbox, self.prior_box_var)
         scores = cls_prob[:, :-1]
 
         # bbox.shape: [N, C, 4]
         # bbox.shape[1] must be equal to scores.shape[1]
-        bbox_num_class = bbox.shape[1]
-        if bbox_num_class == 1:
-            bbox = paddle.tile(bbox, [1, self.num_classes, 1])
+        total_num = bbox.shape[0]
+        bbox_dim = bbox.shape[-1]
+        bbox = paddle.expand(bbox, [total_num, self.num_classes, bbox_dim])
 
         origin_h = paddle.unsqueeze(origin_shape[:, 0], axis=1)
         origin_w = paddle.unsqueeze(origin_shape[:, 1], axis=1)
@@ -1415,7 +1411,7 @@ class ConvMixer(nn.Layer):
         Seq, ActBn = nn.Sequential, lambda x: Seq(x, nn.GELU(), nn.BatchNorm2D(dim))
         Residual = type('Residual', (Seq, ),
                         {'forward': lambda self, x: self[0](x) + x})
-        return Seq(*[
+        return Seq(* [
             Seq(Residual(
                 ActBn(
                     nn.Conv2D(

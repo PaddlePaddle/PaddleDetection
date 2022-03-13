@@ -155,7 +155,7 @@ class RPNHead(nn.Layer):
 
         # Generate proposals for each level and each batch.
         # Discard batch-computing to avoid sorting bbox cross different batches.
-        for i in range(batch_size):
+        for i in range(1):
             rpn_rois_list = []
             rpn_prob_list = []
             rpn_rois_num_list = []
@@ -167,17 +167,19 @@ class RPNHead(nn.Layer):
                     bbox_deltas=rpn_delta[i:i + 1],
                     anchors=anchor,
                     im_shape=im_shape[i:i + 1])
-                if rpn_rois.shape[0] > 0:
-                    rpn_rois_list.append(rpn_rois)
-                    rpn_prob_list.append(rpn_rois_prob)
-                    rpn_rois_num_list.append(rpn_rois_num)
+                rpn_rois_list.append(rpn_rois)
+                rpn_prob_list.append(rpn_rois_prob)
+                rpn_rois_num_list.append(rpn_rois_num)
 
-            if len(scores) > 1:
+            if True or len(scores) > 1:
                 rpn_rois = paddle.concat(rpn_rois_list)
                 rpn_prob = paddle.concat(rpn_prob_list).flatten()
 
-                if rpn_prob.shape[0] > post_nms_top_n:
-                    topk_prob, topk_inds = paddle.topk(rpn_prob, post_nms_top_n)
+                top_n = paddle.to_tensor(post_nms_top_n).cast('int32')
+                num_rois = paddle.shape(rpn_prob)[0].cast('int32')
+                k = paddle.minimum(top_n, num_rois)
+                if True or k < post_nms_top_n:
+                    topk_prob, topk_inds = paddle.topk(rpn_prob, k)
                     topk_rois = paddle.gather(rpn_rois, topk_inds)
                 else:
                     topk_rois = rpn_rois
