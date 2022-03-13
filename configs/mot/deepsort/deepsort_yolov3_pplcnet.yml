@@ -1,5 +1,5 @@
 _BASE_: [
-  'detector/yolov3_darknet53_270e_608x608_pedestrian.yml',
+  'detector/yolov3_darknet53_40e_608x608_mot17half.yml',
   '../../datasets/mot.yml',
   '../../runtime.yml',
   '_base_/deepsort_reader_1088x608.yml',
@@ -13,8 +13,27 @@ EvalMOTDataset:
     data_root: MOT17/images/half
     keep_ori_im: True # set as True in DeepSORT
 
-det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/yolov3_darknet53_270e_608x608_pedestrian.pdparams
+det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/yolov3_darknet53_40e_608x608_mot17half.pdparams
 reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams
+
+# reader
+EvalMOTReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [608, 608], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+TestMOTReader:
+  inputs_def:
+    image_shape: [3, 608, 608]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [608, 608], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+  batch_size: 1
 
 
 # DeepSORT configuration
@@ -47,23 +66,23 @@ DeepSORTTracker:
 
 
 # detector configuration: General YOLOv3 version
-# see 'configs/mot/deepsort/detector/yolov3_darknet53_270e_608x608_pedestrian.yml'
+# see 'configs/mot/deepsort/detector/yolov3_darknet53_40e_608x608_mot17half.yml'
 YOLOv3:
   backbone: DarkNet
   neck: YOLOv3FPN
   yolo_head: YOLOv3Head
   post_process: BBoxPostProcess
 
-# Tracking requires higher quality boxes, so decode.conf_thresh will be higher
+# Tracking requires higher quality boxes, so NMS score_threshold will be higher
 BBoxPostProcess:
   decode:
     name: YOLOBox
-    conf_thresh: 0.1 # 0.005 in original detector
+    conf_thresh: 0.005
     downsample_ratio: 32
     clip_bbox: true
   nms:
     name: MultiClassNMS
     keep_top_k: 100
-    score_threshold: 0.01
+    score_threshold: 0.3 # 0.01 in original detector
     nms_threshold: 0.45
     nms_top_k: 1000

@@ -1,7 +1,7 @@
 _BASE_: [
   '../../../yolov3/yolov3_darknet53_270e_coco.yml',
 ]
-weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/pedestrian_yolov3_darknet.pdparams
+weights: output/yolov3_darknet53_40e_608x608_mot17half/model_final
 log_iter: 20
 snapshot_epoch: 2
 

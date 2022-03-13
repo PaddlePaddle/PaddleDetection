@@ -9,11 +9,9 @@ English | [简体中文](README_cn.md)
 ### Results on MOT17-half dataset
 | Backbone        | Model           | input size  | lr schedule |  FPS          | Box AP  |  download    | config  |
 | :-------------- | :-------------  | :--------:  | :---------: | :-----------: | :-----: | :----------: | :-----: |
+| DarkNet-53      | YOLOv3          |   608X608   |   40e      |      ----     |  42.7   | [download](https://paddledet.bj.bcebos.com/models/mot/deepsort/yolov3_darknet53_40e_608x608_mot17half.pdparams)  | [config](./yolov3_darknet53_40e_608x608_mot17half.yml) |
 | ResNet50-vd     | PPYOLOv2        |   640x640   |   365e      |      ----     |  46.8   | [download](https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_640x640_mot17half.pdparams)  | [config](./ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml) |
-| ResNet50-FPN    | Faster R-CNN    |   1333x800  |   1x        |      ----     |  44.2   | [download](https://paddledet.bj.bcebos.com/models/mot/deepsort/faster_rcnn_r50_fpn_2x_1333x800_mot17half.pdparams)  | [config](./faster_rcnn_r50_fpn_2x_1333x800_mot17half.yml) |
-| DarkNet-53      | YOLOv3          |   608X608   |   270e      |      ----     |  45.4   | [download](https://paddledet.bj.bcebos.com/models/mot/deepsort/yolov3_darknet53_270e_608x608_pedestrian.pdparams)  | [config](./yolov3_darknet53_270e_608x608_pedestrian.yml) |
-| ESNet           | PicoDet         |    896x896  |   300e      |      ----     |  40.9   | [download](https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_l_esnet_300e_896x896_mot17half.pdparams)     | [config](./picodet_l_esnet_300e_896x896_mot17half.yml)    |
-| CSPResNet       | PPYOLOe         |   640x640   |   36e      |      ----     |  49.3   | [download](https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams)     | [config](./ppyoloe_crn_l_36e_640x640_mot17half.yml)    |
+| CSPResNet       | PPYOLOe         |   640x640   |   36e       |      ----     |  52.9   | [download](https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams)     | [config](./ppyoloe_crn_l_36e_640x640_mot17half.yml)    |
 
 **Notes:**
   - The above models are trained with **MOT17-half train** set, it can be downloaded from this [link](https://dataset.bj.bcebos.com/mot/MOT17.zip).
@@ -26,7 +24,7 @@ English | [简体中文](README_cn.md)
 
 Start the training and evaluation with the following command
 ```bash
-job_name=ppyolov2_r50vd_dcn_365e_640x640_mot17half
+job_name=ppyoloe_crn_l_36e_640x640_mot17half
 config=configs/mot/deepsort/detector/${job_name}.yml
 log_dir=log_dir/${job_name}
 # 1. training

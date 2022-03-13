@@ -10,11 +10,9 @@
 ### 在MOT17-half val数据集上的检测结果
 | 骨架网络         | 网络类型          |   输入尺度   | 学习率策略    |推理时间(fps)   |  Box AP |   下载    | 配置文件 |
 | :-------------- | :-------------  | :--------:  | :---------: | :-----------: | :-----: | :------: | :-----: |
+| DarkNet-53      | YOLOv3          |   608X608   |   40e      |      ----     |  42.7   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/yolov3_darknet53_40e_608x608_mot17half.pdparams)  | [配置文件](./yolov3_darknet53_40e_608x608_mot17half.yml) |
 | ResNet50-vd     | PPYOLOv2        |   640x640   |   365e      |      ----     |  46.8   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_640x640_mot17half.pdparams)  | [配置文件](./ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml) |
-| ResNet50-FPN    | Faster R-CNN    |   1333x800  |   1x        |      ----     |  44.2   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/faster_rcnn_r50_fpn_2x_1333x800_mot17half.pdparams)  | [配置文件](./faster_rcnn_r50_fpn_2x_1333x800_mot17half.yml) |
-| DarkNet-53      | YOLOv3          |   608X608   |   270e      |      ----     |  45.4   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/yolov3_darknet53_270e_608x608_pedestrian.pdparams)  | [配置文件](./yolov3_darknet53_270e_608x608_pedestrian.yml) |
-| ESNet           | PicoDet         |   896x896   |   300e      |      ----     |  40.9   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_l_esnet_300e_896x896_mot17half.pdparams)     | [配置文件](./picodet_l_esnet_300e_896x896_mot17half.yml)    |
-| CSPResNet       | PPYOLOe-L       |   640x640   |   36e      |      ----     |  51.6   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams)     | [配置文件](./ppyoloe_crn_l_36e_640x640_mot17half.yml)    |
+| CSPResNet       | PPYOLOe-L       |   640x640   |   36e       |      ----     |  52.9   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams)     | [配置文件](./ppyoloe_crn_l_36e_640x640_mot17half.yml)    |
 
 **注意:**
   - 以上模型均可采用**MOT17-half train**数据集训练，数据集可以从[此链接](https://dataset.bj.bcebos.com/mot/MOT17.zip)下载。

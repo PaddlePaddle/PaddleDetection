@@ -16,6 +16,25 @@ EvalMOTDataset:
 det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
 reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_resnet.pdparams
 
+# reader
+EvalMOTReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+TestMOTReader:
+  inputs_def:
+    image_shape: [3, 640, 640]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
 
 # DeepSORT configuration
 architecture: DeepSORT
@@ -29,7 +48,8 @@ DeepSORT:
 
 # reid and tracker configuration
 # see 'configs/mot/deepsort/reid/deepsort_resnet.yml'
-# ResNetEmbedding
+ResNetEmbedding:
+  model_name: "ResNet50"
 
 DeepSORTTracker:
   input_size: [64, 192]
@@ -65,7 +85,7 @@ CustomCSPPAN:
   act: 'swish'
   spp: true
 
-# Tracking requires higher quality boxes, so nms conf_thresh will be higher
+# Tracking requires higher quality boxes, so NMS score_threshold will be higher
 PPYOLOEHead:
   fpn_strides: [32, 16, 8]
   grid_cell_scale: 5.0
@@ -86,5 +106,5 @@ PPYOLOEHead:
     name: MultiClassNMS
     nms_top_k: 1000
     keep_top_k: 100
-    score_threshold: 0.1 # 0.01 in original detector
+    score_threshold: 0.4 # 0.01 in original detector
     nms_threshold: 0.6

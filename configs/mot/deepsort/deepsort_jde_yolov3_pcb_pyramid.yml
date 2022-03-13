@@ -30,6 +30,7 @@ DeepSORT:
 # reid and tracker configuration
 # see 'configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml'
 PCBPyramid:
+  model_name: "ResNet101"
   num_conv_out_channels: 128
   num_classes: 751
 

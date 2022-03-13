@@ -15,7 +15,7 @@ EvalMOTDataset:
     keep_ori_im: True # set as True in DeepSORT
 
 det_weights: None
-reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort_resnet.pdparams
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_resnet.pdparams
 
 
 # A ReID only configuration of DeepSORT, detector should be None.
@@ -27,7 +27,8 @@ DeepSORT:
   reid: ResNetEmbedding
   tracker: DeepSORTTracker
 
-#ResNetEmbedding:
+ResNetEmbedding:
+  model_name: "ResNet50"
 
 DeepSORTTracker:
   input_size: [64, 192]
