@@ -288,7 +288,7 @@ class PipePredictor(object):
             self.predict_video(input)
         else:
             self.predict_image(input)
-        self.pipe_timer.info(True)
+        self.pipe_timer.info()
 
     def predict_image(self, input):
         # det
@@ -416,20 +416,21 @@ class PipePredictor(object):
                     self.pipeline_res)  # parse output result for multi-camera
 
             if self.cfg['visual']:
-                im = self.visualize_video(frame, self.pipeline_res,
-                                          frame_id)  # visualize
+                _, _, fps = self.pipe_timer.get_total_time()
+                im = self.visualize_video(frame, self.pipeline_res, frame_id,
+                                          fps)  # visualize
                 writer.write(im)
 
         writer.release()
         print('save result to {}'.format(out_path))
 
-    def visualize_video(self, image, result, frame_id):
+    def visualize_video(self, image, result, frame_id, fps):
         mot_res = result.get('mot')
         ids = mot_res['boxes'][:, 0]
         boxes = mot_res['boxes'][:, 3:]
         boxes[:, 2] = boxes[:, 2] - boxes[:, 0]
         boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
-        image = plot_tracking(image, boxes, ids, frame_id=frame_id)
+        image = plot_tracking(image, boxes, ids, frame_id=frame_id, fps=fps)
 
         attr_res = result.get('attr')
         if attr_res is not None:

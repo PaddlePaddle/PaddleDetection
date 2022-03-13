@@ -108,7 +108,7 @@ class AttrDetector(Detector):
             res = res.tolist()
             label_res = []
             # gender 
-            gender = 'Male' if res[22] > self.threshold else 'Female'
+            gender = 'Female' if res[22] > self.threshold else 'Male'
             label_res.append(gender)
             # age
             age = age_list[np.argmax(res[19:22])]

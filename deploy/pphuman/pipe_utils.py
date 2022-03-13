@@ -134,9 +134,17 @@ class PipeTimer(Times):
         }
         self.img_num = 0
 
-    def info(self, average=False):
+    def get_total_time(self):
         total_time = self.total_time.value()
         total_time = round(total_time, 4)
+        average_latency = total_time / max(1, self.img_num)
+        qps = 0
+        if total_time > 0:
+            qps = 1 / average_latency
+        return total_time, average_latency, qps
+
+    def info(self):
+        total_time, average_latency, qps = self.get_total_time()
         print("------------------ Inference Time Info ----------------------")
         print("total_time(ms): {}, img_num: {}".format(total_time * 1000,
                                                        self.img_num))
@@ -146,13 +154,9 @@ class PipeTimer(Times):
             if v_time > 0:
                 print("{} time(ms): {}".format(k, v_time * 1000))
 
-        average_latency = total_time / max(1, self.img_num)
-        qps = 0
-        if total_time > 0:
-            qps = 1 / average_latency
-
         print("average latency time(ms): {:.2f}, QPS: {:2f}".format(
             average_latency * 1000, qps))
+        return qps
 
     def report(self, average=False):
         dic = {}
