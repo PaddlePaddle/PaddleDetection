@@ -1,24 +1,10 @@
 _BASE_: [
   '../../../ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml',
+  '../_base_/mot17.yml',
 ]
 weights: output/ppyolov2_r50vd_dcn_365e_640x640_mot17half/model_final
 log_iter: 20
 snapshot_epoch: 2
-
-# data configuration
-num_classes: 1
-TrainDataset:
-  !COCODataSet
-    dataset_dir: dataset/mot/MOT17
-    anno_path: annotations/train_half.json
-    image_dir: images/train
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
-
-EvalDataset:
-  !COCODataSet
-    dataset_dir: dataset/mot/MOT17
-    anno_path: annotations/val_half.json
-    image_dir: images/train
 
 
 # detector configuration

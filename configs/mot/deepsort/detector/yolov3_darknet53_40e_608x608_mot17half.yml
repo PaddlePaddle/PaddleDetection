@@ -1,6 +1,6 @@
 _BASE_: [
   '../../../yolov3/yolov3_darknet53_270e_coco.yml',
-  '../base/mot17.yml',
+  '../_base_/mot17.yml',
 ]
 weights: output/yolov3_darknet53_40e_608x608_mot17half/model_final
 log_iter: 20
