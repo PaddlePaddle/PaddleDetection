@@ -81,7 +81,7 @@ class Tracker(object):
             self._metrics = []
             return
 
-        if self.cfg.metric in ['MOT', 'COCO']:
+        if self.cfg.metric == 'MOT':
             self._metrics = [MOTMetric(), ]
         elif self.cfg.metric == 'MCMOT':
             self._metrics = [MCMOTMetric(self.cfg.num_classes), ]
