@@ -9,7 +9,11 @@ English | [简体中文](README_cn.md)
 - [Appendix](#Appendix)
 
 ## Introduction
-PP-YOLOE is an excellent single-stage anchor-free model based on PP-YOLOv2, surpassing a variety of popular yolo model. PP-YOLOE has a series of models, named s/m/l/x, which are configured through width multiplier and depth multiplier. PP-YOLOE avoids using special operators, such as DCN or matrix nms, to be deployed friendly on various hardware. For more details, please refer to our report.
+PP-YOLOE is an excellent single-stage anchor-free model based on PP-YOLOv2, surpassing a variety of popular yolo models. PP-YOLOE has a series of models, named s/m/l/x, which are configured through width multiplier and depth multiplier. PP-YOLOE avoids using special operators, such as deformable convolution or matrix nms, to be deployed friendly on various hardware. For more details, please refer to our report.
+
+<div align="center">
+  <img src="../../docs/images/ppyoloe_map_fps.png" width=500 />
+</div>
 
 PP-YOLOE-l achieves 51.4 mAP on COCO test-dev2017 dataset with 78.1 FPS on Tesla V100. While using TensorRT FP16, PP-YOLOE-l can be further accelerated to 149.2 FPS. PP-YOLOE-s/m/x also have excellent accuracy and speed performance, which can be found in [Model Zoo](#Model Zoo)
 
@@ -44,6 +48,8 @@ Training PP-YOLOE with mixed precision on 8 GPUs with following command
 ```bash
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --amp
 ```
+
+** Notes: ** use `--amp` to train with default config to avoid out of memeory.
 
 ### 2. Evaluation
 
