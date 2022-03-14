@@ -143,9 +143,6 @@ class SDE_Detector(Detector):
             print('[WARNNING] No object detected.')
             result = {'boxes': np.zeros([0, 6]), 'boxes_num': [0]}
         result = {k: v for k, v in result.items() if v is not None}
-        #if self.use_reid:
-        #    embed()
-        #    result.update({'ori_img': inputs['image']}) # (1, 3, 640, 640)
         return result
 
     def reidprocess(self, det_results, repeats=1):
@@ -163,15 +160,14 @@ class SDE_Detector(Detector):
 
         pred_dets = pred_dets[keep_idx[0]]
         pred_xyxys = pred_dets[:, 2:6]
-        #pred_cls_ids = det_results['boxes'][:, 0:1][keep_idx[0]]
 
         w, h = self.tracker.input_size
         crops = get_crops(pred_xyxys, ori_image, w, h)
 
         # to keep fast speed, only use topk crops
         crops = crops[:50] # reid_batch_size
-        crops = np.array(crops).astype('float32')
-        det_results.update({'crops': crops})
+        det_results['crops'] = np.array(crops).astype('float32')
+        det_results['boxes'] = pred_dets[:50]
 
         input_names = self.reid_predictor.get_input_names()
         for i in range(len(input_names)):
@@ -180,26 +176,25 @@ class SDE_Detector(Detector):
 
         # model prediction
         for i in range(repeats):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            feature_tensor = self.predictor.get_output_handle(output_names[0])
+            self.reid_predictor.run()
+            output_names = self.reid_predictor.get_output_names()
+            feature_tensor = self.reid_predictor.get_output_handle(output_names[0])
             pred_embs = feature_tensor.copy_to_cpu()
 
         det_results['embeddings'] = pred_embs
         return det_results
 
-    def tracking(self, det_results):
+    def tracking(self, det_results, do_mtmct=False):
         pred_dets = det_results['boxes']
         pred_embs = det_results.get('embeddings', None)
-
-        online_tlwhs = defaultdict(list)
-        online_scores = defaultdict(list)
-        online_ids = defaultdict(list)
 
         if self.use_reid:
             # use DeepSORTTracker, only support singe class
             self.tracker.predict()
             online_targets = self.tracker.update(pred_dets, pred_embs)
+            online_tlwhs, online_scores, online_ids = [], [], []
+            if do_mtmct:
+                online_tlbrs, online_feats = [], []
             for t in online_targets:
                 if not t.is_confirmed() or t.time_since_update > 1:
                     continue
@@ -209,11 +204,38 @@ class SDE_Detector(Detector):
                 if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
                         3] > self.tracker.vertical_ratio:
                     continue
-                online_tlwhs[0].append(tlwh)
-                online_scores[0].append(tscore)
-                online_ids[0].append(tid)
+                online_tlwhs.append(tlwh)
+                online_scores.append(tscore)
+                online_ids.append(tid)
+                if do_mtmct:
+                    online_tlbrs.append(t.to_tlbr())
+                    online_feats.append(t.feat)
+
+            tracking_outs = {
+                'online_tlwhs': online_tlwhs,
+                'online_scores': online_scores,
+                'online_ids': online_ids,
+            }
+            if do_mtmct:
+                seq_name = det_results['seq_name']
+                frame_id = det_results['frame_id']
+
+                tracking_outs['feat_data'] = {}
+                for _tlbr, _id, _feat in zip(online_tlbrs, online_ids, online_feats):
+                    feat_data = {}
+                    feat_data['bbox'] = _tlbr
+                    feat_data['frame'] = f"{frame_id:06d}"
+                    feat_data['id'] = _id
+                    _imgname = f'{seq_name}_{_id}_{frame_id}.jpg'
+                    feat_data['imgname'] = _imgname
+                    feat_data['feat'] = _feat
+                    tracking_outs['feat_data'].update({_imgname: feat_data})
+
         else:
             # use ByteTracker, support multiple class
+            online_tlwhs = defaultdict(list)
+            online_scores = defaultdict(list)
+            online_ids = defaultdict(list)
             online_targets_dict = self.tracker.update(pred_dets, pred_embs)
             for cls_id in range(self.num_classes):
                 online_targets = online_targets_dict[cls_id]
@@ -229,14 +251,19 @@ class SDE_Detector(Detector):
                     online_tlwhs[cls_id].append(tlwh)
                     online_ids[cls_id].append(tid)
                     online_scores[cls_id].append(tscore)
-
-        return online_tlwhs, online_scores, online_ids
+            tracking_outs = {
+                'online_tlwhs': online_tlwhs,
+                'online_scores': online_scores,
+                'online_ids': online_ids,
+            }
+        return tracking_outs
 
     def predict_image(self,
                       image_list,
                       run_benchmark=False,
                       repeats=1,
-                      visual=True):
+                      visual=True,
+                      seq_name=None):
         mot_results = []
         num_classes = self.num_classes
         image_list.sort()
@@ -271,8 +298,7 @@ class SDE_Detector(Detector):
                 self.det_times.tracking_time_s.start()
                 if self.use_reid:
                     det_result = self.reidprocess(det_result)
-                online_tlwhs, online_scores, online_ids = self.tracking(
-                    det_result)
+                tracking_outs = self.tracking(det_result)
                 self.det_times.tracking_time_s.end()
                 self.det_times.img_num += 1
 
@@ -297,27 +323,38 @@ class SDE_Detector(Detector):
                 # tracking process
                 self.det_times.tracking_time_s.start()
                 if self.use_reid:
+                    det_result['frame_id'] = frame_id
+                    det_result['seq_name'] = seq_name
                     det_result['ori_image'] = frame
                     det_result = self.reidprocess(det_result)
-                online_tlwhs, online_scores, online_ids = self.tracking(
-                    det_result)
+                tracking_outs = self.tracking(det_result)
                 self.det_times.tracking_time_s.end()
                 self.det_times.img_num += 1
+
+            online_tlwhs = tracking_outs['online_tlwhs']
+            online_scores = tracking_outs['online_scores']
+            online_ids = tracking_outs['online_ids']
 
             if visual:
                 if frame_id % 10 == 0:
                     print('Tracking frame {}'.format(frame_id))
                 frame, _ = decode_image(img_file, {})
-
-                im = plot_tracking_dict(
-                    frame,
-                    num_classes,
-                    online_tlwhs,
-                    online_ids,
-                    online_scores,
-                    frame_id=frame_id,
-                    ids2names=[])
-                seq_name = image_list[0].split('/')[-2]
+                if num_classes == 1:
+                    im = plot_tracking(
+                        frame,
+                        online_tlwhs,
+                        online_ids,
+                        online_scores,
+                        frame_id=frame_id)
+                else:
+                    im = plot_tracking_dict(
+                        frame,
+                        num_classes,
+                        online_tlwhs,
+                        online_ids,
+                        online_scores,
+                        frame_id=frame_id,
+                        ids2names=[])
                 save_dir = os.path.join(self.output_dir, seq_name)
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
@@ -360,25 +397,35 @@ class SDE_Detector(Detector):
             frame_id += 1
 
             timer.tic()
-            mot_results = self.predict_image([frame], visual=False)
+            seq_name = video_out_name.split('.')[0]
+            mot_results = self.predict_image([frame], visual=False, seq_name=seq_name)
             timer.toc()
 
-            online_tlwhs, online_scores, online_ids = mot_results[0]
-            for cls_id in range(num_classes):
-                results[cls_id].append(
-                    (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id],
-                     online_ids[cls_id]))
-
+            online_tlwhs, online_scores, online_ids = mot_results[0] # MOT bs=1
             fps = 1. / timer.duration
-            im = plot_tracking_dict(
-                frame,
-                num_classes,
-                online_tlwhs,
-                online_ids,
-                online_scores,
-                frame_id=frame_id,
-                fps=fps,
-                ids2names=[])
+            if num_classes == 1:
+                results[0].append((frame_id + 1, online_tlwhs, online_scores, online_ids))
+                im = plot_tracking(
+                    frame,
+                    online_tlwhs,
+                    online_ids,
+                    online_scores,
+                    frame_id=frame_id,
+                    fps=fps)
+            else:
+                for cls_id in range(num_classes):
+                    results[cls_id].append(
+                        (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id],
+                        online_ids[cls_id]))
+                im = plot_tracking_dict(
+                    frame,
+                    num_classes,
+                    online_tlwhs,
+                    online_ids,
+                    online_scores,
+                    frame_id=frame_id,
+                    fps=fps,
+                    ids2names=[])
 
             writer.write(im)
             if camera_id != -1:
@@ -417,7 +464,8 @@ def main():
         if FLAGS.image_dir is None and FLAGS.image_file is not None:
             assert FLAGS.batch_size == 1, "--batch_size should be 1 in MOT models."
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        detector.predict_image(img_list, FLAGS.run_benchmark, repeats=10)
+        seq_name = FLAGS.image_dir.split('/')[-1]
+        detector.predict_image(img_list, FLAGS.run_benchmark, repeats=10, seq_name=seq_name)
 
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)

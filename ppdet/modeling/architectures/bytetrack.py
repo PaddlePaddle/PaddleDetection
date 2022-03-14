@@ -16,7 +16,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from IPython import embed
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
@@ -73,8 +72,8 @@ class ByteTrack(BaseArch):
                 pred_embs = self.reid(crops)
             else:
                 pred_embs = None
-            
-            return det_outs #, pred_embs
+            det_outs['embeddings'] = pred_embs
+            return det_outs
 
     def get_loss(self):
         return self._forward()

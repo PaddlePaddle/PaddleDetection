@@ -178,13 +178,11 @@ def clip_box(xyxy, ori_image_shape):
     keep_idx = np.nonzero(mask)
     return xyxy[keep_idx[0]], keep_idx
 
-from IPython import embed
+
 def get_crops(xyxy, ori_img, w, h):
     crops = []
     xyxy = xyxy.astype(np.int64)
-    #ori_img = ori_img.numpy()
-    #ori_img = np.squeeze(ori_img, axis=0).transpose(1, 0, 2)  # [h,w,3]->[w,h,3]
-    ori_img = ori_img.transpose(1, 0, 2) 
+    ori_img = ori_img.transpose(1, 0, 2) # [h,w,3]->[w,h,3]
     for i, bbox in enumerate(xyxy):
         crop = ori_img[bbox[0]:bbox[2], bbox[1]:bbox[3], :]
         crops.append(crop)
