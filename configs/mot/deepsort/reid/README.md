@@ -9,7 +9,7 @@ English | [简体中文](README_cn.md)
 
 ### Results on Market1501 pedestrian ReID dataset
 
-| Backbone        | Model                   |   Params   |   FPS     |    mAP    |   Top1    |   Top5    | download  |  config   |
+| Backbone        | Model                   |   Params  |   FPS     |    mAP    |   Top1    |   Top5    | download  |  config   |
 | :-------------: |  :-----------------:    | :-------: |  :------: | :-------: | :-------: | :-------: | :-------: | :-------: |
 | ResNet-101      |  PCB Pyramid Embedding  |  289M     |   ---     |   86.31   |   94.95   |   98.28   | [download](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)   |   [config](./deepsort_pcb_pyramid_r101.yml)     |
 | PPLCNet-2.5x    |  PPLCNet Embedding      |  36M      |   ---     |   71.59   |   87.38   |   95.49   | [download](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)   |   [config](./deepsort_pplcnet.yml)     |
