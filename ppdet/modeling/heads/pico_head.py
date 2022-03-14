@@ -466,9 +466,7 @@ class PicoHeadV2(GFLHead):
         ), "The size of fpn_feats is not equal to size of fpn_stride"
 
         cls_score_list, reg_list, box_list = [], [], []
-        for i, fpn_feat, stride, align_cls in zip(
-                range(len(self.fpn_stride)), fpn_feats, self.fpn_stride,
-                self.cls_align):
+        for i, (fpn_feat, stride) in enumerate(zip(fpn_feats, self.fpn_stride)):
             b, _, h, w = get_static_shape(fpn_feat)
             # task decomposition
             conv_cls_feat, se_feat = self.conv_feat(fpn_feat, i)
@@ -477,7 +475,7 @@ class PicoHeadV2(GFLHead):
 
             # cls prediction and alignment
             if self.use_align_head:
-                cls_prob = F.sigmoid(align_cls(conv_cls_feat))
+                cls_prob = F.sigmoid(self.cls_align[i](conv_cls_feat))
                 cls_score = (F.sigmoid(cls_logit) * cls_prob + eps).sqrt()
             else:
                 cls_score = F.sigmoid(cls_logit)

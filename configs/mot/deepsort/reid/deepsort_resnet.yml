@@ -15,7 +15,7 @@ EvalMOTDataset:
     keep_ori_im: True # set as True in DeepSORT
 
 det_weights: None
-reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_resnet.pdparams
 
 
 # A ReID only configuration of DeepSORT, detector should be None.
@@ -24,18 +24,16 @@ pretrain_weights: None
 
 DeepSORT:
   detector: None
-  reid: PCBPyramid
+  reid: ResNetEmbedding
   tracker: DeepSORTTracker
 
-PCBPyramid:
-  model_name: "ResNet101"
-  num_conv_out_channels: 128
-  num_classes: 751 # default 751 classes in Market-1501 dataset.
+ResNetEmbedding:
+  model_name: "ResNet50"
 
 DeepSORTTracker:
   input_size: [64, 192]
-  min_box_area: 0     # 0 means no need to filter out too small boxes
-  vertical_ratio: -1  # -1 means no need to filter out bboxes, usuallly set 1.6 for pedestrian
+  min_box_area: 0 # filter out too small boxes
+  vertical_ratio: -1 # filter out bboxes, usuallly set 1.6 for pedestrian
   budget: 100
   max_age: 70
   n_init: 3

@@ -254,7 +254,7 @@ class Tracker(object):
                 outs['bbox'] = outs['bbox'].numpy()
                 outs['bbox_num'] = outs['bbox_num'].numpy()
 
-                if (outs['bbox'].shape[0] > 0) and (empty_detections == False):
+                if len(outs['bbox']) > 0 and empty_detections == False:
                     # detector outputs: pred_cls_ids, pred_scores, pred_bboxes
                     pred_cls_ids = outs['bbox'][:, 0:1]
                     pred_scores = outs['bbox'][:, 1:2]
