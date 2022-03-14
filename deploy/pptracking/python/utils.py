@@ -137,7 +137,15 @@ def argsparser():
         type=ast.literal_eval,
         default=True,
         help='whether to use darkpose to get better keypoint position predict ')
+    parser.add_argument(
+        "--mtmct_dir",
+        type=str,
+        default=None,
+        help="The MTMCT scene video folder.")
+    parser.add_argument(
+        "--mtmct_cfg", type=str, default=None, help="The MTMCT config.")
     return parser
+
 
 
 class Times(object):

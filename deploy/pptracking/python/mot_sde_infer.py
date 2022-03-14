@@ -16,13 +16,15 @@ import os
 import time
 import yaml
 import cv2
+import re
+import glob
 import numpy as np
 from collections import defaultdict
 import paddle
 
 from benchmark_utils import PaddleInferBenchmark
 from preprocess import decode_image
-from utils import argsparser, Timer, get_current_memory_mb
+from utils import argsparser, Timer, get_current_memory_mb, _is_valid_video, video2frames
 from det_infer import Detector, get_test_images, print_arguments, bench_log, PredictConfig, load_predictor
 
 # add python path
@@ -54,6 +56,8 @@ class SDE_Detector(Detector):
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
         enable_mkldnn (bool): whether to open MKLDNN
+        reid_model_dir (str): reid model dir, default None for ByteTrack, but set for DeepSORT
+        mtmct_dir (str): MTMCT dir, default None, set for doing MTMCT
     """
 
     def __init__(self,
@@ -70,7 +74,8 @@ class SDE_Detector(Detector):
                  enable_mkldnn=False,
                  output_dir='output',
                  threshold=0.5,
-                 reid_model_dir=None):
+                 reid_model_dir=None,
+                 mtmct_dir=None):
         super(SDE_Detector, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -135,6 +140,9 @@ class SDE_Detector(Detector):
                 conf_thres=conf_thres,
                 low_conf_thres=low_conf_thres,
             )
+        
+        self.do_mtmct = False if mtmct_dir is None else True
+        self.mtmct_dir = mtmct_dir
 
     def postprocess(self, inputs, result):
         # postprocess output of predictor
@@ -184,7 +192,7 @@ class SDE_Detector(Detector):
         det_results['embeddings'] = pred_embs
         return det_results
 
-    def tracking(self, det_results, do_mtmct=False):
+    def tracking(self, det_results):
         pred_dets = det_results['boxes']
         pred_embs = det_results.get('embeddings', None)
 
@@ -193,7 +201,7 @@ class SDE_Detector(Detector):
             self.tracker.predict()
             online_targets = self.tracker.update(pred_dets, pred_embs)
             online_tlwhs, online_scores, online_ids = [], [], []
-            if do_mtmct:
+            if self.do_mtmct:
                 online_tlbrs, online_feats = [], []
             for t in online_targets:
                 if not t.is_confirmed() or t.time_since_update > 1:
@@ -207,7 +215,7 @@ class SDE_Detector(Detector):
                 online_tlwhs.append(tlwh)
                 online_scores.append(tscore)
                 online_ids.append(tid)
-                if do_mtmct:
+                if self.do_mtmct:
                     online_tlbrs.append(t.to_tlbr())
                     online_feats.append(t.feat)
 
@@ -216,7 +224,7 @@ class SDE_Detector(Detector):
                 'online_scores': online_scores,
                 'online_ids': online_ids,
             }
-            if do_mtmct:
+            if self.do_mtmct:
                 seq_name = det_results['seq_name']
                 frame_id = det_results['frame_id']
 
@@ -264,11 +272,17 @@ class SDE_Detector(Detector):
                       repeats=1,
                       visual=True,
                       seq_name=None):
-        mot_results = []
         num_classes = self.num_classes
         image_list.sort()
         ids2names = self.pred_config.labels
+        if self.do_mtmct:
+            mot_features_dict = {} # cid_tid_fid feats
+        else:
+            mot_results = []
         for frame_id, img_file in enumerate(image_list):
+            if self.do_mtmct:
+                if frame_id % 10 == 0:
+                    print('Tracking frame: %d' % (frame_id))
             batch_image_list = [img_file]  # bs=1 in MOT model
             frame, _ = decode_image(img_file, {})
             if run_benchmark:
@@ -292,6 +306,8 @@ class SDE_Detector(Detector):
 
                 # tracking
                 if self.use_reid:
+                    det_result['frame_id'] = frame_id
+                    det_result['seq_name'] = seq_name
                     det_result['ori_image'] = frame
                     det_result = self.reidprocess(det_result)
                 result_warmup = self.tracking(det_result)
@@ -334,6 +350,12 @@ class SDE_Detector(Detector):
             online_tlwhs = tracking_outs['online_tlwhs']
             online_scores = tracking_outs['online_scores']
             online_ids = tracking_outs['online_ids']
+            
+            if self.do_mtmct:
+                feat_data_dict = tracking_outs['feat_data']
+                mot_features_dict = dict(mot_features_dict, **feat_data_dict)
+            else:
+                mot_results.append([online_tlwhs, online_scores, online_ids])
 
             if visual:
                 if frame_id % 10 == 0:
@@ -360,9 +382,11 @@ class SDE_Detector(Detector):
                     os.makedirs(save_dir)
                 cv2.imwrite(
                     os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
-
-            mot_results.append([online_tlwhs, online_scores, online_ids])
-        return mot_results
+        
+        if self.do_mtmct:
+            return mot_features_dict
+        else:
+            return mot_results
 
     def predict_video(self, video_file, camera_id):
         video_out_name = 'output.mp4'
@@ -401,9 +425,10 @@ class SDE_Detector(Detector):
             mot_results = self.predict_image([frame], visual=False, seq_name=seq_name)
             timer.toc()
 
-            online_tlwhs, online_scores, online_ids = mot_results[0] # MOT bs=1
+            online_tlwhs, online_scores, online_ids = mot_results[0] # bs=1 in MOT model
             fps = 1. / timer.duration
-            if num_classes == 1:
+            if num_classes == 1 and self.use_reid:
+                # use DeepSORTTracker, only support singe class
                 results[0].append((frame_id + 1, online_tlwhs, online_scores, online_ids))
                 im = plot_tracking(
                     frame,
@@ -413,6 +438,7 @@ class SDE_Detector(Detector):
                     frame_id=frame_id,
                     fps=fps)
             else:
+                # use ByteTracker, support multiple class
                 for cls_id in range(num_classes):
                     results[cls_id].append(
                         (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id],
@@ -434,6 +460,105 @@ class SDE_Detector(Detector):
                     break
         writer.release()
 
+    def predict_mtmct(self, mtmct_dir, mtmct_cfg):
+        cameras_bias = mtmct_cfg['cameras_bias']
+        cid_bias = parse_bias(cameras_bias)
+        scene_cluster = list(cid_bias.keys())
+        # 1.zone releated parameters
+        use_zone = mtmct_cfg.get('use_zone', False)
+        zone_path = mtmct_cfg.get('zone_path', None)
+
+        # 2.tricks parameters, can be used for other mtmct dataset
+        use_ff = mtmct_cfg.get('use_ff', False)
+        use_rerank = mtmct_cfg.get('use_rerank', False)
+
+        # 3.camera releated parameters
+        use_camera = mtmct_cfg.get('use_camera', False)
+        use_st_filter = mtmct_cfg.get('use_st_filter', False)
+
+        # 4.zone releated parameters
+        use_roi = mtmct_cfg.get('use_roi', False)
+        roi_dir = mtmct_cfg.get('roi_dir', False)
+
+        mot_list_breaks = []
+        cid_tid_dict = dict()
+
+        output_dir = self.output_dir
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        seqs = os.listdir(mtmct_dir)
+        for seq in sorted(seqs):
+            fpath = os.path.join(mtmct_dir, seq)
+            if os.path.isfile(fpath) and _is_valid_video(fpath):
+                seq = seq.split('.')[-2]
+                print('ffmpeg processing of video {}'.format(fpath))
+                frames_path = video2frames(
+                    video_path=fpath, outpath=mtmct_dir, frame_rate=25)
+                fpath = os.path.join(mtmct_dir, seq)
+
+            if os.path.isdir(fpath) == False:
+                print('{} is not a image folder.'.format(fpath))
+                continue
+            if os.path.exists(os.path.join(fpath, 'img1')):
+                fpath = os.path.join(fpath, 'img1')
+            assert os.path.isdir(fpath), '{} should be a directory'.format(fpath)
+            image_list = glob.glob(os.path.join(fpath, '*.jpg'))
+            image_list.sort()
+            assert len(image_list) > 0, '{} has no images.'.format(fpath)
+            print('start tracking seq: {}'.format(seq))
+
+            mot_features_dict = self.predict_image(image_list, visual=False, seq_name=seq)
+
+            cid = int(re.sub('[a-z,A-Z]', "", seq))
+            tid_data, mot_list_break = trajectory_fusion(
+                mot_features_dict,
+                cid,
+                cid_bias,
+                use_zone=use_zone,
+                zone_path=zone_path)
+            mot_list_breaks.append(mot_list_break)
+            # single seq process
+            for line in tid_data:
+                tracklet = tid_data[line]
+                tid = tracklet['tid']
+                if (cid, tid) not in cid_tid_dict:
+                    cid_tid_dict[(cid, tid)] = tracklet
+
+        map_tid = sub_cluster(
+            cid_tid_dict,
+            scene_cluster,
+            use_ff=use_ff,
+            use_rerank=use_rerank,
+            use_camera=use_camera,
+            use_st_filter=use_st_filter)
+
+        pred_mtmct_file = os.path.join(output_dir, 'mtmct_result.txt')
+        if use_camera:
+            gen_res(pred_mtmct_file, scene_cluster, map_tid, mot_list_breaks)
+        else:
+            gen_res(
+                pred_mtmct_file,
+                scene_cluster,
+                map_tid,
+                mot_list_breaks,
+                use_roi=use_roi,
+                roi_dir=roi_dir)
+
+        camera_results, cid_tid_fid_res = get_mtmct_matching_results(
+            pred_mtmct_file)
+
+        crops_dir = os.path.join(output_dir, 'mtmct_crops')
+        save_mtmct_crops(
+            cid_tid_fid_res, images_dir=mtmct_dir, crops_dir=crops_dir)
+
+        save_dir = os.path.join(output_dir, 'mtmct_vis')
+        save_mtmct_vis_results(
+            camera_results,
+            images_dir=mtmct_dir,
+            save_dir=save_dir,
+            save_videos=FLAGS.save_images)
+
 
 def main():
     deploy_file = os.path.join(FLAGS.model_dir, 'infer_cfg.yml')
@@ -454,11 +579,17 @@ def main():
         enable_mkldnn=FLAGS.enable_mkldnn,
         threshold=FLAGS.threshold,
         output_dir=FLAGS.output_dir,
-        reid_model_dir=FLAGS.reid_model_dir)
+        reid_model_dir=FLAGS.reid_model_dir,
+        mtmct_dir=FLAGS.mtmct_dir,
+    )
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
         detector.predict_video(FLAGS.video_file, FLAGS.camera_id)
+    elif FLAGS.mtmct_dir is not None:
+        with open(FLAGS.mtmct_cfg) as f:
+            mtmct_cfg = yaml.safe_load(f)
+        detector.predict_mtmct(FLAGS.mtmct_dir, mtmct_cfg)
     else:
         # predict from image
         if FLAGS.image_dir is None and FLAGS.image_file is not None:
