@@ -3,7 +3,7 @@ attr_thresh: 0.5
 visual: True
 
 DET:
-  model_dir: output_inference/pedestrian_yolov3_darknet/
+  model_dir: output_inference/mot_ppyolov3//
   batch_size: 1
 
 ATTR:
