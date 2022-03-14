@@ -32,12 +32,12 @@ from python.mot_sde_infer import SDE_Detector
 #from python.attr_infer import AttrDetector
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
-from python.action_infer import KeyPointCollector, ActionRecognizer
+from python.action_infer import KeyPointCollector, ActionRecognizer, ActionVisualCollector
 
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
 from python.preprocess import decode_image
-from python.visualize import visualize_box_mask, visualize_attr, visualize_pose
+from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
 from pptracking.python.visualize import plot_tracking
 
 
@@ -296,6 +296,8 @@ class PipePredictor(object):
                     enable_mkldnn,
                     use_dark=use_dark)
                 self.kpt_collector = KeyPointCollector(action_frames)
+                #self.kpt_collector = KeyPointCollector(50)
+
                 self.action_predictor = ActionRecognizer(
                     action_model_dir,
                     device,
@@ -308,6 +310,8 @@ class PipePredictor(object):
                     cpu_threads,
                     enable_mkldnn,
                     window_size=action_frames)
+
+                self.action_visual_collector = ActionVisualCollector(80)
 
     def get_result(self):
         return self.pipeline_res
@@ -405,6 +409,10 @@ class PipePredictor(object):
                 crop_input, new_bboxes, ori_bboxes = crop_image_with_mot(
                     frame, mot_res)
 
+            if len(crop_input) == 0:
+                if self.cfg['visual']:
+                    writer.write(frame)
+                continue
             if self.with_attr:
                 if frame_id > self.warmup_frame:
                     self.pipe_timer.module_time['attr'].start()
@@ -431,6 +439,7 @@ class PipePredictor(object):
                 state = self.kpt_collector.get_state(
                 )  # whether frame num is enough or lost tracker
 
+                action_res = {}
                 if state:
                     collected_keypoint = self.kpt_collector.get_collected_keypoint(
                     )  # reorgnize kpt output in ID
@@ -439,6 +448,9 @@ class PipePredictor(object):
                         action_input)
                     print(action_res)
                     self.pipeline_res.update(action_res, 'action')
+
+                if self.cfg['visual']:
+                    self.action_visual_collector.update(action_res)
 
             if frame_id > self.warmup_frame:
                 self.pipe_timer.img_num += 1
@@ -472,7 +484,7 @@ class PipePredictor(object):
             attr_res = attr_res['output']
             image = visualize_attr(image, attr_res, boxes)
             image = np.array(image)
-
+        """
         kpt_res = result.get('kpt')
         if kpt_res is not None:
             image = visualize_pose(
@@ -480,15 +492,11 @@ class PipePredictor(object):
                 kpt_res,
                 visual_thresh=self.cfg['kpt_thresh'],
                 returnimg=True)
-
+        """
         action_res = result.get('action')
         if action_res is not None:
-            pass
-            #image = visualize_action_with_pose(
-            #    image,
-            #    kpt_res,
-            #    visual_thresh=0.5,
-            #    returnimg=True)
+            image = visualize_action(image, self.action_visual_collector)
+
         return image
 
     def visualize_image(self, im_files, images, result):

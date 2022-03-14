@@ -375,6 +375,37 @@ class KeyPointCollector(object):
         return output
 
 
+class ActionVisualCollector(object):
+    def __init__(self, frame_life=20):
+        self.frame_life = frame_life
+        self.action_history = {}
+        self.flag_detected = False
+
+    def get_flag(self):
+        self.check_detected()
+        return self.flag_detected
+
+    def check_detected(self):
+        tmp_flag = False
+        deperate_id = []
+        for mot_id in self.action_history:
+            self.action_history[mot_id]["life_remain"] -= 1
+            tmp_flag |= (int(self.action_history[mot_id]["class"]) == 0)
+            if self.action_history[mot_id]["life_remain"] == 0:
+                deperate_id.append(mot_id)
+        for mot_id in deperate_id:
+            del (self.action_history[mot_id])
+        self.flag_detected = tmp_flag
+
+    def update(self, action_res_list):
+        for mot_id, action_res in action_res_list:
+            print(mot_id)
+            action_info = self.action_history.get(mot_id, {})
+            action_info["class"] = action_res["class"]
+            action_info["life_remain"] = self.frame_life
+            self.action_history[mot_id] = action_info
+
+
 def get_test_skeletons(input_file):
     assert input_file is not None, "--action_file can not be None"
     input_data = np.load(input_file)

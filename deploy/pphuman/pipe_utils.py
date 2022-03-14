@@ -278,11 +278,21 @@ def parse_mot_res(input):
     return {'boxes': np.array(mot_res)}
 
 
-def refine_keypoint_coordinary(kpts):
+def refine_keypoint_coordinary(kpts, bbox):
     """
         This function is used to adjust coordinate values to fit a specific dataset and will be deprecated soon.
     """
-    return kpts
+    """
+    tl = bbox[:, 0:2]
+    wh  = bbox[:, 2:] - tl
+    tl = np.expand_dims(np.transpose(tl, (1,0)), (2,3))
+    wh = np.expand_dims(np.transpose(wh, (1,0)), (2,3))
+    res = (kpts-tl) / wh
+    """
+    mean = np.mean(kpts, axis=2, keepdims=True)
+    res = kpts - mean
+    #res = kpts
+    return res
 
 
 def parse_mot_keypoint(input):
@@ -295,7 +305,7 @@ def parse_mot_keypoint(input):
         kpts = np.expand_dims(np.transpose(kpts, [2, 0, 1]),
                               -1)  #T, K, C -> C, T, K, 1
         bbox = np.array(kpt_seq.bboxes, dtype=np.float32)
-        skeleton.append(refine_keypoint_coordinary(kpts))
+        skeleton.append(refine_keypoint_coordinary(kpts, bbox))
     parsed_skeleton_with_mot["mot_id"] = ids
     parsed_skeleton_with_mot["skeleton"] = skeleton
     return parsed_skeleton_with_mot

@@ -351,3 +351,20 @@ def visualize_attr(im, results, boxes=None):
             text_loc = (box[2], box[3])
         draw.text(text_loc, text, fill=(0, 0, 255))
     return im
+
+
+def visualize_action(im,
+                     action_visual_collector,
+                     action_text="Falling Detected"):
+    im = cv2.imread(im) if type(im) == str else im
+    text_position = (im.shape[1] // 2 - 100, 50)
+    if action_visual_collector.get_flag():
+        cv2.putText(
+            im,
+            action_text,
+            text_position,
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.2, (0, 0, 255),
+            2,
+            lineType=cv2.LINE_AA)
+    return im

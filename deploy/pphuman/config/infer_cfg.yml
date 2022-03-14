@@ -1,10 +1,11 @@
 crop_thresh: 0.5
 attr_thresh: 0.5
-kpt_thresh: 0.5
+kpt_thresh: 0.2
 visual: True
 
 DET:
-  model_dir: output_inference/pedestrian_yolov3_darknet/
+  model_dir: output_inference/mot_ppyolov3/
+  #model_dir: output_inference/pedestrian_yolov3_darknet
   batch_size: 1
 
 #ATTR:
@@ -12,16 +13,19 @@ DET:
 #  batch_size: 8
 
 MOT:
-  model_dir: output_inference/pedestrian_yolov3_darknet/
+  model_dir: output_inference/mot_ppyolov3/
+  #model_dir: output_inference/pedestrian_yolov3_darknet
   tracker_config: deploy/pphuman/tracker_config.yml
   batch_size: 1
 
 KPT:
-  model_dir: output_inference/hrnet_w32_256x192/
+  #model_dir: output_inference/hrnet_w32_256x192/
+  model_dir: output_inference/dark_hrnet_w32_256x192_uav_coco_ent1
   batch_size: 8
   use_dark: False
 
 ACTION:
-  model_dir: /paddle/shared_files/PaddleVideo/output_inference/STGCN/
+  model_dir: /paddle/shared_files/PaddleVideo/output_inference/AGCN_50
+  #model_dir: /paddle/shared_files/PaddleVideo/output_inference/STGCN_50_merge
   batch_size: 1
-  max_frames: 100
+  max_frames: 50
