@@ -588,30 +588,27 @@ def get_trick_hyperparams(video_name, ori_buffer, ori_thresh):
         return ori_buffer, ori_thresh
 
     video_name = video_name[:8]
-    if video_name == 'MOT17-05':
+    if 'MOT17-05' in video_name:
         track_buffer = 14
-    elif video_name == 'MOT17-13':
+    elif 'MOT17-13' in video_name:
         track_buffer = 25
     else:
         track_buffer = ori_buffer
-        print('track_buffer no modify')
 
-    if video_name == 'MOT17-01':
+    if 'MOT17-01' in video_name:
         track_thresh = 0.65
-    elif video_name == 'MOT17-06':
+    elif 'MOT17-06' in video_name:
         track_thresh = 0.65
-    elif video_name == 'MOT17-12':
+    elif 'MOT17-12' in video_name:
         track_thresh = 0.7
-    elif video_name == 'MOT17-14':
+    elif 'MOT17-14' in video_name:
         track_thresh = 0.67
     else:
         track_thresh = ori_thresh
-        print('track_thresh no modify')
 
-    if video_name == 'MOT20-06' or video_name == 'MOT20-08':
+    if 'MOT20-06' in video_name or 'MOT20-08' in video_name:
         track_thresh = 0.3
     else:
         track_thresh = ori_thresh
-        print('None modify')
     
     return track_buffer, ori_thresh

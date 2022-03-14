@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from IPython import embed
 import os
 import time
 import yaml
@@ -31,20 +31,12 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
 from mot.tracker import JDETracker, DeepSORTTracker
-from mot.utils import MOTTimer, write_mot_results, flow_statistic, get_crops
+from mot.utils import MOTTimer, write_mot_results, flow_statistic, get_crops, clip_box
 from visualize import plot_tracking, plot_tracking_dict
 
 from mot.mtmct.utils import parse_bias
 from mot.mtmct.postprocess import trajectory_fusion, sub_cluster, gen_res, print_mtmct_result
 from mot.mtmct.postprocess import get_mtmct_matching_results, save_mtmct_crops, save_mtmct_vis_results
-
-
-# Global dictionary
-MOT_SDE_SUPPORT_MODELS = {
-    'DeepSORT',
-    'ByteTrack',
-    'YOLO',
-}
 
 
 class SDE_Detector(Detector):
@@ -66,7 +58,7 @@ class SDE_Detector(Detector):
 
     def __init__(self,
                  model_dir,
-                 tracker_config,
+                 tracker_config=None,
                  device='CPU',
                  run_mode='paddle',
                  batch_size=1,
@@ -151,17 +143,30 @@ class SDE_Detector(Detector):
             print('[WARNNING] No object detected.')
             result = {'boxes': np.zeros([0, 6]), 'boxes_num': [0]}
         result = {k: v for k, v in result.items() if v is not None}
-        if self.use_reid:
-            result.update({'ori_img': inputs['image']})
+        #if self.use_reid:
+        #    embed()
+        #    result.update({'ori_img': inputs['image']}) # (1, 3, 640, 640)
         return result
 
     def reidprocess(self, det_results, repeats=1):
         pred_dets = det_results['boxes']
         pred_xyxys = pred_dets[:, 2:6]
 
-        ori_img = det_results['ori_img']
+        ori_image = det_results['ori_image']
+        ori_image_shape = ori_image.shape[:2]
+        pred_xyxys, keep_idx = clip_box(pred_xyxys, ori_image_shape)
+
+        if len(keep_idx[0]) == 0:
+            det_results['boxes'] = np.zeros((1, 6), dtype=np.float32)
+            det_results['embeddings'] = None
+            return det_results
+
+        pred_dets = pred_dets[keep_idx[0]]
+        pred_xyxys = pred_dets[:, 2:6]
+        #pred_cls_ids = det_results['boxes'][:, 0:1][keep_idx[0]]
+
         w, h = self.tracker.input_size
-        crops = get_crops(pred_xyxys, ori_img, w, h)
+        crops = get_crops(pred_xyxys, ori_image, w, h)
 
         # to keep fast speed, only use topk crops
         crops = crops[:50] # reid_batch_size
@@ -238,6 +243,7 @@ class SDE_Detector(Detector):
         ids2names = self.pred_config.labels
         for frame_id, img_file in enumerate(image_list):
             batch_image_list = [img_file]  # bs=1 in MOT model
+            frame, _ = decode_image(img_file, {})
             if run_benchmark:
                 # preprocess
                 inputs = self.preprocess(batch_image_list)  # warmup
@@ -259,6 +265,7 @@ class SDE_Detector(Detector):
 
                 # tracking
                 if self.use_reid:
+                    det_result['ori_image'] = frame
                     det_result = self.reidprocess(det_result)
                 result_warmup = self.tracking(det_result)
                 self.det_times.tracking_time_s.start()
@@ -290,6 +297,7 @@ class SDE_Detector(Detector):
                 # tracking process
                 self.det_times.tracking_time_s.start()
                 if self.use_reid:
+                    det_result['ori_image'] = frame
                     det_result = self.reidprocess(det_result)
                 online_tlwhs, online_scores, online_ids = self.tracking(
                     det_result)
@@ -385,7 +393,6 @@ def main():
     with open(deploy_file) as f:
         yml_conf = yaml.safe_load(f)
     arch = yml_conf['arch']
-    assert arch in MOT_SDE_SUPPORT_MODELS, '{} is not supported.'.format(arch)
     detector = SDE_Detector(
         FLAGS.model_dir,
         FLAGS.tracker_config,
@@ -399,7 +406,8 @@ def main():
         cpu_threads=FLAGS.cpu_threads,
         enable_mkldnn=FLAGS.enable_mkldnn,
         threshold=FLAGS.threshold,
-        output_dir=FLAGS.output_dir)
+        output_dir=FLAGS.output_dir,
+        reid_model_dir=FLAGS.reid_model_dir)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:

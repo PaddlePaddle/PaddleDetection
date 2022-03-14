@@ -43,6 +43,7 @@ TestReader:
     - Permute: {}
   batch_size: 1
 
+
 # add MOTReader for MOT evaluation and inference, note batch_size should be 1 in MOT
 EvalMOTReader:
   inputs_def:

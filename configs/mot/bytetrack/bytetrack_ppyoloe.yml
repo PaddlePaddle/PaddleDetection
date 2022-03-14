@@ -1,24 +1,23 @@
 # This config is an assembled config for ByteTrack MOT, used as eval/infer mode for MOT.
 _BASE_: [
-  '../../runtime.yml',
-  '../../ppyoloe/ppyoloe_crn_l_300e_coco.yml',
-  '_base_/mix_mot17_ch.yml',
-  '_base_/optimizer_80e.yml',
+  'detector/ppyoloe_crn_l_36e_640x640_mot17half.yml',
+  '_base_/mot17.yml',
   '_base_/ppyoloe_mot_reader_640x640.yml'
 ]
-pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_300e_coco.pdparams
-snapshot_epoch: 5
+weights: output/bytetrack_ppyoloe_l_36e/model_final
+log_iter: 20
+snapshot_epoch: 2
 
-# metric: COCO # detection train/eval/infer/export mode
-metric: MCMOT # MOT eval/infer mode
+metric: MOT # eval/infer mode
 num_classes: 1
 
 architecture: ByteTrack
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_300e_coco.pdparams
 ByteTrack:
-  detector: YOLOv3 # General YOLOv3 version
+  detector: YOLOv3 # PPYOLOe version
   reid: None
   tracker: JDETracker
-weights: output/bytetrack_yolov3_darknet53_80e/model_final
+det_weights: https://bj.bcebos.com/v1/paddledet/models/mot/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
 reid_weights: None
 
 YOLOv3:
@@ -27,18 +26,12 @@ YOLOv3:
   yolo_head: PPYOLOEHead
   post_process: ~
 
-TrainReader:
-  batch_size: 8
-
-EvalMOTReader:
-  batch_size: 1 # Note batch_size should be 1 in MOT
-
-# Tracking requires higher quality boxes, so decode.conf_thresh will be higher
+# Tracking requires higher quality boxes, so NMS score_threshold will be higher
 PPYOLOEHead:
   fpn_strides: [32, 16, 8]
   grid_cell_scale: 5.0
   grid_cell_offset: 0.5
-  static_assigner_epoch: -1 #100
+  static_assigner_epoch: -1 # 100
   use_varifocal_loss: True
   eval_input_size: [640, 640]
   loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
@@ -54,8 +47,8 @@ PPYOLOEHead:
     name: MultiClassNMS
     nms_top_k: 1000
     keep_top_k: 100
-    score_threshold: 0.1 # 0.01 in original detector
-    nms_threshold: 0.6
+    score_threshold: 0.01
+    nms_threshold: 0.4
 
 # BYTETracker
 JDETracker:
@@ -63,5 +56,5 @@ JDETracker:
   match_thres: 0.9
   conf_thres: 0.2
   low_conf_thres: 0.1
-  min_box_area: 0
-  vertical_ratio: 0 #1.6 # for pedestrian
+  min_box_area: 100
+  vertical_ratio: 1.6 # for pedestrian
