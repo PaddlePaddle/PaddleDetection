@@ -1,7 +1,6 @@
 _BASE_: [
   'detector/ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml',
-  '../../datasets/mot.yml',
-  '../../runtime.yml',
+  '_base_/mot17.yml',
   '_base_/deepsort_reader_1088x608.yml',
 ]
 metric: MOT

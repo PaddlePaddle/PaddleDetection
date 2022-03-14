@@ -1,7 +1,6 @@
 _BASE_: [
   'detector/jde_yolov3_darknet53_30e_1088x608_mix.yml',
-  '../../datasets/mot.yml',
-  '../../runtime.yml',
+  '_base_/mot17.yml',
   '_base_/deepsort_reader_1088x608.yml',
 ]
 metric: MOT
