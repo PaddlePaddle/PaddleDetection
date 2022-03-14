@@ -15,7 +15,7 @@ PP-YOLOE is an excellent single-stage anchor-free model based on PP-YOLOv2, surp
   <img src="../../docs/images/ppyoloe_map_fps.png" width=500 />
 </div>
 
-PP-YOLOE-l achieves 51.4 mAP on COCO test-dev2017 dataset with 78.1 FPS on Tesla V100. While using TensorRT FP16, PP-YOLOE-l can be further accelerated to 149.2 FPS. PP-YOLOE-s/m/x also have excellent accuracy and speed performance, which can be found in [Model Zoo](#Model Zoo)
+PP-YOLOE-l achieves 51.4 mAP on COCO test-dev2017 dataset with 78.1 FPS on Tesla V100. While using TensorRT FP16, PP-YOLOE-l can be further accelerated to 149.2 FPS. PP-YOLOE-s/m/x also have excellent accuracy and speed performance, which can be found in [Model Zoo](#Model-Zoo)
 
 PP-YOLOE is composed of following methods:
 - Scalable backbone and neck
