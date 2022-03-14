@@ -12,7 +12,7 @@
 | :-------------- | :-------------  | :--------:  | :---------: | :-----------: | :-----: | :------: | :-----: |
 | DarkNet-53      | YOLOv3          |   608X608   |   40e      |      ----     |  42.7   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/yolov3_darknet53_40e_608x608_mot17half.pdparams)  | [配置文件](./yolov3_darknet53_40e_608x608_mot17half.yml) |
 | ResNet50-vd     | PPYOLOv2        |   640x640   |   365e      |      ----     |  46.8   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_640x640_mot17half.pdparams)  | [配置文件](./ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml) |
-| CSPResNet       | PPYOLOe-L       |   640x640   |   36e       |      ----     |  52.9   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams)     | [配置文件](./ppyoloe_crn_l_36e_640x640_mot17half.yml)    |
+| CSPResNet       | PPYOLOe         |   640x640   |   36e       |      ----     |  52.9   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams)     | [配置文件](./ppyoloe_crn_l_36e_640x640_mot17half.yml)    |
 
 **注意:**
   - 以上模型均可采用**MOT17-half train**数据集训练，数据集可以从[此链接](https://dataset.bj.bcebos.com/mot/MOT17.zip)下载。
