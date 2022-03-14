@@ -366,18 +366,23 @@ class PipePredictor(object):
                 self.pipe_timer.module_time['mot'].start()
             res = self.mot_predictor.predict_image([frame], visual=False)
 
-            # nothing detected
-            if len(res[0][0]) == 0:
-                frame_id += 1
-                self.pipe_timer.img_num += 1
-                self.pipe_timer.total_time.end()
-                continue
-
             if frame_id > self.warmup_frame:
                 self.pipe_timer.module_time['mot'].end()
 
             # mot output format: id, class, score, xmin, ymin, xmax, ymax
             mot_res = parse_mot_res(res)
+
+            # nothing detected
+            if len(mot_res['boxes']) == 0:
+                frame_id += 1
+                self.pipe_timer.img_num += 1
+                self.pipe_timer.total_time.end()
+                if self.cfg['visual']:
+                    _, _, fps = self.pipe_timer.get_total_time()
+                    im = self.visualize_video(frame, mot_res, frame_id,
+                                              fps)  # visualize
+                    writer.write(im)
+                continue
 
             self.pipeline_res.update(mot_res, 'mot')
             if self.with_attr or self.with_action:
@@ -426,10 +431,14 @@ class PipePredictor(object):
 
     def visualize_video(self, image, result, frame_id, fps):
         mot_res = result.get('mot')
-        ids = mot_res['boxes'][:, 0]
-        boxes = mot_res['boxes'][:, 3:]
-        boxes[:, 2] = boxes[:, 2] - boxes[:, 0]
-        boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
+        if mot_res is not None:
+            ids = mot_res['boxes'][:, 0]
+            boxes = mot_res['boxes'][:, 3:]
+            boxes[:, 2] = boxes[:, 2] - boxes[:, 0]
+            boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
+        else:
+            boxes = np.zeros([0, 4])
+            ids = np.zeros([0])
         image = plot_tracking(image, boxes, ids, frame_id=frame_id, fps=fps)
 
         attr_res = result.get('attr')
