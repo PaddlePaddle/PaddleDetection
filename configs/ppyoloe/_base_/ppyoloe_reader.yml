@@ -1,4 +1,4 @@
-worker_num: 8
+worker_num: 4
 TrainReader:
   sample_transforms:
     - Decode: {}
@@ -11,7 +11,7 @@ TrainReader:
     - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
     - Permute: {}
     - PadGT: {}
-  batch_size: 24
+  batch_size: 20
   shuffle: true
   drop_last: true
   use_shared_memory: true
@@ -23,7 +23,7 @@ EvalReader:
     - Resize: {target_size: [640, 640], keep_ratio: False, interp: 2}
     - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
     - Permute: {}
-  batch_size: 4
+  batch_size: 2
 
 TestReader:
   inputs_def:
