@@ -9,7 +9,6 @@ _BASE_: [
 log_iter: 100
 snapshot_epoch: 10
 weights: output/ppyoloe_crn_l_300e_coco/model_final
-find_unused_parameters: True
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_l_pretrained.pdparams
 depth_mult: 1.0
