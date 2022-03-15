@@ -25,7 +25,7 @@ from collections import defaultdict
 from mot_keypoint_unite_utils import argsparser
 from preprocess import decode_image
 from infer import print_arguments, get_test_images
-from mot_sde_infer import SDE_Detector, MOT_SDE_SUPPORT_MODELS
+from mot_sde_infer import SDE_Detector
 from mot_jde_infer import JDE_Detector, MOT_JDE_SUPPORT_MODELS
 from keypoint_infer import KeyPointDetector, KEYPOINT_SUPPORT_MODELS
 from det_keypoint_unite_infer import predict_with_given_det

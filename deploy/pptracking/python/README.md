@@ -58,11 +58,12 @@ python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fa
 ### 2.1 导出预测模型
 Step 1：导出检测模型
 ```bash
-# 导出JDE YOLOv3行人检测模型
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/jde_yolov3_darknet53_30e_1088x608_mix.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams
-# 或导出PPYOLOv2行人检测模型
+# 导出PPYOLOv2行人检测模型
 CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_640x640_mot17half.pdparams
+# 或导出PPYOLOe行人检测模型
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/ppyoloe_crn_l_36e_640x640_mot17half.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
 ```
+
 Step 2：导出行人ReID模型
 ```bash
 # 导出PCB Pyramid ReID模型
@@ -76,11 +77,10 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid
 # 下载行人跟踪demo视频：
 wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/mot17_demo.mp4
 
-# 用导出的JDE YOLOv3行人检测模型和PCB Pyramid ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608_mix/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
-
-# 或用导出的PPYOLOv2行人检测模型和PPLCNet ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyolov2_r50vd_dcn_365e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --scaled=True --save_mot_txts --save_images
+# 用导出的PPYOLOv2行人检测模型和PPLCNet ReID模型
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyolov2_r50vd_dcn_365e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
+# 或用导出的PPYOLOe行人检测模型和PPLCNet ReID模型
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
 ```
 
 ### 2.3 用导出的模型基于Python去预测车辆跟踪
@@ -97,17 +97,16 @@ wget https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet_vehicl
 tar -xvf deepsort_pplcnet_vehicle.tar
 
 # 用导出的PicoDet车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --device=GPU --scaled=True --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --device=GPU --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
 
 # 用导出的PP-YOLOv2车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --device=GPU --scaled=True --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --device=GPU --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
 ```
 
 **注意:**
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_images`表示保存跟踪结果可视化图片。
  - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
  - `--threshold`表示结果可视化的置信度阈值，默认为0.5，低于该阈值的结果会被过滤掉，为了可视化效果更佳，可根据实际情况自行修改。
- - `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
  - DeepSORT算法不支持多类别跟踪，只支持单类别跟踪，且ReID模型最好是与检测模型同一类别的物体训练过的，比如行人跟踪最好使用行人ReID模型，车辆跟踪最好使用车辆ReID模型。
 
 
@@ -135,94 +134,22 @@ wget https://paddledet.bj.bcebos.com/data/mot/demo/mtmct-demo.tar
 tar -xvf mtmct-demo.tar
 
 # 用导出的PicoDet车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir=mtmct-demo --mtmct_cfg=mtmct_cfg --device=GPU --scaled=True --threshold=0.5 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir=mtmct-demo --mtmct_cfg=mtmct_cfg.yml --device=GPU --threshold=0.5 --save_mot_txts --save_images
 
 # 用导出的PP-YOLOv2车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir=mtmct-demo --mtmct_cfg=mtmct_cfg --device=GPU --scaled=True --threshold=0.5 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir=mtmct-demo --mtmct_cfg=mtmct_cfg.yml --device=GPU --threshold=0.5 --save_mot_txts --save_images
 
 ```
 **注意:**
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)，或`--save_images`表示保存跟踪结果可视化图片。
  - 跨镜头跟踪结果txt文件每行信息是`camera_id,frame,id,x1,y1,w,h,-1,-1`。
  - `--threshold`表示结果可视化的置信度阈值，默认为0.5，低于该阈值的结果会被过滤掉，为了可视化效果更佳，可根据实际情况自行修改。
- - `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
  - DeepSORT算法不支持多类别跟踪，只支持单类别跟踪，且ReID模型最好是与检测模型同一类别的物体训练过的，比如行人跟踪最好使用行人ReID模型，车辆跟踪最好使用车辆ReID模型。
  - `--mtmct_dir`是MTMCT预测的某个场景的文件夹名字，里面包含该场景不同摄像头拍摄视频的图片文件夹，其数量至少为两个。
  - `--mtmct_cfg`是MTMCT预测的某个场景的配置文件，里面包含该一些trick操作的开关和该场景摄像头相关设置的文件路径，用户可以自行更改相关路径以及设置某些操作是否启用。
 
 
-## 4. API调用方式:
-
-### 4.1 FairMOT模型API调用
-```
-import mot_jde_infer
-
-# 1.model config and weights
-model_dir = 'fairmot_hrnetv2_w18_dlafpn_30e_576x320/'
-
-# 2.inference data
-video_file = 'test.mp4'
-image_dir = None
-
-# 3.other settings
-device = 'CPU' # device should be CPU, GPU or XPU
-threshold = 0.3
-output_dir = 'output'
-
-# mot predict
-mot_jde_infer.predict_naive(model_dir, video_file, image_dir, device, threshold, output_dir)
-```
-**注意:**
- - 以上代码必须进入目录`PaddleDetection/deploy/pptracking/python`下执行。
- - 支持对视频和图片文件夹进行预测，不支持单张图的预测，`video_file`或`image_dir`不能同时为None，推荐使用`video_file`，而`image_dir`需直接存放命名顺序规范的图片。
- - 默认会保存跟踪结果可视化后的图片和视频，以及跟踪结果txt文件，默认不会进行轨迹可视化和流量统计。
-
-
-### 4.2 DeepSORT模型API调用
-```
-import mot_sde_infer
-
-# 1.model config and weights
-model_dir = 'ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/'
-reid_model_dir = 'deepsort_pplcnet_vehicle/'
-
-# 2.inference data
-video_file = 'test.mp4'
-image_dir = None
-
-# 3.other settings
-scaled = True # set False only when use JDE YOLOv3
-device = 'CPU' # device should be CPU, GPU or XPU
-threshold = 0.3
-output_dir = 'output'
-
-# 4. MTMCT settings, default None
-mtmct_dir = None
-mtmct_cfg = None
-
-# mot predict
-mot_sde_infer.predict_naive(model_dir,
-                            reid_model_dir,
-                            video_file,
-                            image_dir,
-                            mtmct_dir,
-                            mtmct_cfg,
-                            scaled,
-                            device,
-                            threshold,
-                            output_dir)
-```
-**注意:**
- - 以上代码必须进入目录`PaddleDetection/deploy/pptracking/python`下执行。
- - 支持对视频和图片文件夹进行预测，不支持单张图的预测，`video_file`或`image_dir`或`--mtmct_dir`不能同时为None，推荐使用`video_file`，而`image_dir`需直接存放命名顺序规范的图片，`--mtmct_dir`不为None表示是进行的MTMCT跨镜头跟踪任务。
- - 默认会保存跟踪结果可视化后的图片和视频，以及跟踪结果txt文件，默认不会进行轨迹可视化和流量统计。
- - `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
- - `--mtmct_dir`是MTMCT预测的某个场景的文件夹名字，里面包含该场景不同摄像头拍摄视频的图片文件夹，其数量至少为两个。
- - `--mtmct_cfg`是MTMCT预测的某个场景的配置文件，里面包含该一些trick操作的开关和该场景摄像头相关设置的文件路径，用户可以自行更改相关路径以及设置某些操作是否启用。
- - 开启MTMCT预测必须将`video_file`和`image_dir`同时设置为None，且`--mtmct_dir`和`--mtmct_cfg`都必须不为None。
-
-
-## 5. 参数说明:
+## 4. 参数说明:
 
 | 参数 | 是否必须|含义 |
 |-------|-------|----------|
