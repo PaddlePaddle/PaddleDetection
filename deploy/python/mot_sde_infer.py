@@ -34,13 +34,6 @@ from pptracking.python.mot import JDETracker
 from pptracking.python.mot.utils import MOTTimer, write_mot_results
 from pptracking.python.visualize import plot_tracking, plot_tracking_dict
 
-# Global dictionary
-MOT_SDE_SUPPORT_MODELS = {
-    'DeepSORT',
-    'ByteTrack',
-    'YOLO',
-}
-
 
 class SDE_Detector(Detector):
     """
@@ -287,7 +280,6 @@ def main():
     with open(deploy_file) as f:
         yml_conf = yaml.safe_load(f)
     arch = yml_conf['arch']
-    assert arch in MOT_SDE_SUPPORT_MODELS, '{} is not supported.'.format(arch)
     detector = SDE_Detector(
         FLAGS.model_dir,
         FLAGS.tracker_config,

@@ -228,11 +228,11 @@ class Timer(Times):
                                         4) if average else infer_time
         dic['postprocess_time_s'] = round(post_time / max(1, self.img_num),
                                           4) if average else post_time
-        dic['tracking_time_s'] = round(post_time / max(1, self.img_num),
-                                       4) if average else track_time
         dic['img_num'] = self.img_num
         total_time = pre_time + infer_time + post_time
         if self.with_tracker:
+            dic['tracking_time_s'] = round(track_time / max(1, self.img_num),
+                                        4) if average else track_time
             total_time = total_time + track_time
         dic['total_time_s'] = round(total_time, 4)
         return dic

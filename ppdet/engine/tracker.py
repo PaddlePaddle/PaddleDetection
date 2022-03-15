@@ -29,6 +29,7 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_box
 from ppdet.modeling.mot.utils import MOTTimer, load_det_results, write_mot_results, save_vis_results
+from ppdet.modeling.mot.tracker import JDETracker, DeepSORTTracker
 
 from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric
 from ppdet.metrics import MCMOTMetric
@@ -38,6 +39,11 @@ from .callbacks import Callback, ComposeCallback
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
+
+MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT', 'ByteTrack']
+MOT_ARCH_JDE = ['JDE', 'FairMOT']
+MOT_ARCH_SDE = ['DeepSORT', 'ByteTrack']
+MOT_DATA_TYPE = ['mot', 'mcmot', 'kitti']
 
 __all__ = ['Tracker']
 
@@ -109,11 +115,15 @@ class Tracker(object):
         load_weight(self.model, weights, self.optimizer)
 
     def load_weights_sde(self, det_weights, reid_weights):
-        if self.model.detector:
-            load_weight(self.model.detector, det_weights)
-            load_weight(self.model.reid, reid_weights)
+        with_detector = self.model.detector is not None
+        with_reid = self.model.reid is not None
+
+        if with_detector:
+            load_weight(self.model.detector, det_weights, self.optimizer)
+            if with_reid:
+                load_weight(self.model.reid, reid_weights)
         else:
-            load_weight(self.model.reid, reid_weights, self.optimizer)
+            load_weight(self.model.reid, reid_weights)
 
     def _eval_seq_jde(self,
                       dataloader,
@@ -185,18 +195,21 @@ class Tracker(object):
         if save_dir:
             if not os.path.exists(save_dir): os.makedirs(save_dir)
         use_detector = False if not self.model.detector else True
+        use_reid = False if not self.model.reid else True
 
         timer = MOTTimer()
         results = defaultdict(list)
         frame_id = 0
         self.status['mode'] = 'track'
         self.model.eval()
-        self.model.reid.eval()
+        if use_reid:
+            self.model.reid.eval()
         if not use_detector:
             dets_list = load_det_results(det_file, len(dataloader))
             logger.info('Finish loading detection results file {}.'.format(
                 det_file))
 
+        tracker = self.model.tracker
         for step_id, data in enumerate(dataloader):
             self.status['step_id'] = step_id
             if frame_id % 40 == 0:
@@ -257,6 +270,8 @@ class Tracker(object):
                                                    scale_factor)
                     else:
                         pred_bboxes = outs['bbox'][:, 2:]
+                    pred_dets_old = np.concatenate(
+                        (pred_cls_ids, pred_scores, pred_bboxes), axis=1)
                 else:
                     logger.warning(
                         'Frame {} has not detected object, try to modify score threshold.'.
@@ -284,50 +299,80 @@ class Tracker(object):
 
             pred_cls_ids = pred_cls_ids[keep_idx[0]]
             pred_scores = pred_scores[keep_idx[0]]
-            pred_tlwhs = np.concatenate(
-                (pred_xyxys[:, 0:2],
-                 pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
-                axis=1)
             pred_dets = np.concatenate(
-                (pred_cls_ids, pred_scores, pred_tlwhs), axis=1)
+                (pred_cls_ids, pred_scores, pred_xyxys), axis=1)
 
-            tracker = self.model.tracker
-            crops = get_crops(
-                pred_xyxys,
-                ori_image,
-                w=tracker.input_size[0],
-                h=tracker.input_size[1])
-            crops = paddle.to_tensor(crops)
+            if use_reid:
+                crops = get_crops(
+                    pred_xyxys,
+                    ori_image,
+                    w=tracker.input_size[0],
+                    h=tracker.input_size[1])
+                crops = paddle.to_tensor(crops)
 
-            data.update({'crops': crops})
-            pred_embs = self.model(data).numpy()
+                data.update({'crops': crops})
+                pred_embs = self.model(data).numpy()
+            else:
+                pred_embs = None
 
-            tracker.predict()
-            online_targets = tracker.update(pred_dets, pred_embs)
+            if isinstance(tracker, DeepSORTTracker):
+                online_tlwhs, online_scores, online_ids = [], [], []
+                tracker.predict()
+                online_targets = tracker.update(pred_dets, pred_embs)
+                for t in online_targets:
+                    if not t.is_confirmed() or t.time_since_update > 1:
+                        continue
+                    tlwh = t.to_tlwh()
+                    tscore = t.score
+                    tid = t.track_id
+                    if tscore < draw_threshold: continue
+                    if tlwh[2] * tlwh[3] <= tracker.min_box_area: continue
+                    if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                            3] > tracker.vertical_ratio:
+                        continue
+                    online_tlwhs.append(tlwh)
+                    online_scores.append(tscore)
+                    online_ids.append(tid)
+                timer.toc()
 
-            online_tlwhs, online_scores, online_ids = [], [], []
-            for t in online_targets:
-                if not t.is_confirmed() or t.time_since_update > 1:
-                    continue
-                tlwh = t.to_tlwh()
-                tscore = t.score
-                tid = t.track_id
-                if tscore < draw_threshold: continue
-                if tlwh[2] * tlwh[3] <= tracker.min_box_area: continue
-                if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
-                        3] > tracker.vertical_ratio:
-                    continue
-                online_tlwhs.append(tlwh)
-                online_scores.append(tscore)
-                online_ids.append(tid)
-            timer.toc()
+                # save results
+                results[0].append(
+                    (frame_id + 1, online_tlwhs, online_scores, online_ids))
+                save_vis_results(data, frame_id, online_ids, online_tlwhs,
+                                online_scores, timer.average_time, show_image,
+                                save_dir, self.cfg.num_classes)
 
-            # save results
-            results[0].append(
-                (frame_id + 1, online_tlwhs, online_scores, online_ids))
-            save_vis_results(data, frame_id, online_ids, online_tlwhs,
-                             online_scores, timer.average_time, show_image,
-                             save_dir, self.cfg.num_classes)
+            elif isinstance(tracker, JDETracker):
+                # trick hyperparams only used for MOTChallenge (MOT17, MOT20) Test-set
+                tracker.track_buffer, tracker.conf_thres = get_trick_hyperparams(
+                    seq_name, tracker.track_buffer, tracker.conf_thres)
+
+                online_targets_dict = tracker.update(pred_dets_old, pred_embs)
+                online_tlwhs = defaultdict(list)
+                online_scores = defaultdict(list)
+                online_ids = defaultdict(list)
+                for cls_id in range(self.cfg.num_classes):
+                    online_targets = online_targets_dict[cls_id]
+                    for t in online_targets:
+                        tlwh = t.tlwh
+                        tid = t.track_id
+                        tscore = t.score
+                        if tlwh[2] * tlwh[3] <= tracker.min_box_area: continue
+                        if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                                3] > tracker.vertical_ratio:
+                            continue
+                        online_tlwhs[cls_id].append(tlwh)
+                        online_ids[cls_id].append(tid)
+                        online_scores[cls_id].append(tscore)
+                    # save results
+                    results[cls_id].append(
+                        (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id],
+                        online_ids[cls_id]))
+                timer.toc()
+                save_vis_results(data, frame_id, online_ids, online_tlwhs,
+                                online_scores, timer.average_time, show_image,
+                                save_dir, self.cfg.num_classes)
+
             frame_id += 1
 
         return results, frame_id, timer.average_time, timer.calls
@@ -346,10 +391,10 @@ class Tracker(object):
         if not os.path.exists(output_dir): os.makedirs(output_dir)
         result_root = os.path.join(output_dir, 'mot_results')
         if not os.path.exists(result_root): os.makedirs(result_root)
-        assert data_type in ['mot', 'mcmot', 'kitti'], \
+        assert data_type in MOT_DATA_TYPE, \
             "data_type should be 'mot', 'mcmot' or 'kitti'"
-        assert model_type in ['JDE', 'DeepSORT', 'FairMOT'], \
-            "model_type should be 'JDE', 'DeepSORT' or 'FairMOT'"
+        assert model_type in MOT_ARCH, \
+            "model_type should be 'JDE', 'DeepSORT', 'FairMOT' or 'ByteTrack'"
 
         # run tracking
         n_frame = 0
@@ -380,13 +425,13 @@ class Tracker(object):
             result_filename = os.path.join(result_root, '{}.txt'.format(seq))
 
             with paddle.no_grad():
-                if model_type in ['JDE', 'FairMOT']:
+                if model_type in MOT_ARCH_JDE:
                     results, nf, ta, tc = self._eval_seq_jde(
                         dataloader,
                         save_dir=save_dir,
                         show_image=show_image,
                         frame_rate=frame_rate)
-                elif model_type in ['DeepSORT']:
+                elif model_type in MOT_ARCH_SDE:
                     results, nf, ta, tc = self._eval_seq_sde(
                         dataloader,
                         save_dir=save_dir,
@@ -472,10 +517,10 @@ class Tracker(object):
         if not os.path.exists(output_dir): os.makedirs(output_dir)
         result_root = os.path.join(output_dir, 'mot_results')
         if not os.path.exists(result_root): os.makedirs(result_root)
-        assert data_type in ['mot', 'mcmot', 'kitti'], \
+        assert data_type in MOT_DATA_TYPE, \
             "data_type should be 'mot', 'mcmot' or 'kitti'"
-        assert model_type in ['JDE', 'DeepSORT', 'FairMOT'], \
-            "model_type should be 'JDE', 'DeepSORT' or 'FairMOT'"
+        assert model_type in MOT_ARCH, \
+            "model_type should be 'JDE', 'DeepSORT', 'FairMOT' or 'ByteTrack'"
 
         # run tracking        
         if video_file:
@@ -505,14 +550,14 @@ class Tracker(object):
             frame_rate = self.dataset.frame_rate
 
         with paddle.no_grad():
-            if model_type in ['JDE', 'FairMOT']:
+            if model_type in MOT_ARCH_JDE:
                 results, nf, ta, tc = self._eval_seq_jde(
                     dataloader,
                     save_dir=save_dir,
                     show_image=show_image,
                     frame_rate=frame_rate,
                     draw_threshold=draw_threshold)
-            elif model_type in ['DeepSORT']:
+            elif model_type in MOT_ARCH_SDE:
                 results, nf, ta, tc = self._eval_seq_sde(
                     dataloader,
                     save_dir=save_dir,
@@ -536,3 +581,34 @@ class Tracker(object):
 
         write_mot_results(result_filename, results, data_type,
                           self.cfg.num_classes)
+
+def get_trick_hyperparams(video_name, ori_buffer, ori_thresh):
+    if video_name[:3] != 'MOT':
+        # only used for MOTChallenge (MOT17, MOT20) Test-set
+        return ori_buffer, ori_thresh
+
+    video_name = video_name[:8]
+    if 'MOT17-05' in video_name:
+        track_buffer = 14
+    elif 'MOT17-13' in video_name:
+        track_buffer = 25
+    else:
+        track_buffer = ori_buffer
+
+    if 'MOT17-01' in video_name:
+        track_thresh = 0.65
+    elif 'MOT17-06' in video_name:
+        track_thresh = 0.65
+    elif 'MOT17-12' in video_name:
+        track_thresh = 0.7
+    elif 'MOT17-14' in video_name:
+        track_thresh = 0.67
+    else:
+        track_thresh = ori_thresh
+
+    if 'MOT20-06' in video_name or 'MOT20-08' in video_name:
+        track_thresh = 0.3
+    else:
+        track_thresh = ori_thresh
+    
+    return track_buffer, ori_thresh
