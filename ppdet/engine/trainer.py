@@ -651,13 +651,21 @@ class Trainer(object):
             if hasattr(layer, 'convert_to_deploy'):
                 layer.convert_to_deploy()
 
-        export_post_process = self.cfg.get('export_post_process', False)
-        if hasattr(self.model, 'export_post_process'):
-            self.model.export_post_process = export_post_process
-            image_shape = [None] + image_shape[1:]
+        export_post_process = self.cfg['export'].get(
+            'post_process', False) if hasattr(config, 'export') else True
+        export_nms = self.cfg['export'].get('nms', False) if hasattr(
+            config, 'export') else True
+        export_benchmark = self.cfg['export'].get(
+            'benchmark', False) if hasattr(config, 'export') else False
         if hasattr(self.model, 'fuse_norm'):
             self.model.fuse_norm = self.cfg['TestReader'].get('fuse_normalize',
                                                               False)
+        if hasattr(self.model, 'export_post_process'):
+            self.model.export_post_process = export_post_process if not export_benchmark else False
+        if hasattr(self.model, 'export_nms'):
+            self.model.export_nms = export_nms if not export_benchmark else False
+        if export_post_process and not export_benchmark:
+            image_shape = [None] + image_shape[1:]
 
         # Save infer cfg
         _dump_infer_config(self.cfg,
@@ -789,5 +797,6 @@ class Trainer(object):
             images.sort()
             assert len(images) > 0, "no image found in {}".format(infer_dir)
             all_images.extend(images)
-            logger.info("Found {} inference images in total.".format(len(images)))
+            logger.info("Found {} inference images in total.".format(
+                len(images)))
         return all_images
