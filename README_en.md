@@ -245,6 +245,7 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
   - [Paddle Serving](deploy/serving)
   - [Export ONNX model](deploy/EXPORT_ONNX_MODEL_en.md)
   - [Inference benchmark](deploy/BENCHMARK_INFER_en.md)
+  - [Exporting FairMOT to ONNX and using OpenVINO for inference](docs/advanced_tutorials/fairmot/OPENVINO_INFERENCE.md)
 
 - Advanced development
   - [New data augmentations](docs/advanced_tutorials/READER_en.md)
