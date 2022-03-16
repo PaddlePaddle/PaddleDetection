@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from IPython import embed
+
 import os
 import time
 import yaml
@@ -93,7 +93,7 @@ class SDE_Detector(Detector):
         self.det_times = Timer(with_tracker=True)
         self.num_classes = len(self.pred_config.labels)
 
-        # reid and tracker config
+        # reid config
         self.use_reid = False if reid_model_dir is None else True
         if self.use_reid:
             # use DeepSORTTracker
@@ -111,7 +111,11 @@ class SDE_Detector(Detector):
                 trt_calib_mode=trt_calib_mode,
                 cpu_threads=cpu_threads,
                 enable_mkldnn=enable_mkldnn)
-
+        
+        # tracker config
+        self.use_deepsort_tracker = True if tracker_config is None else False
+        if self.use_deepsort_tracker:
+            # use DeepSORTTracker, in reid exported models infer_cfg.yml
             cfg = self.reid_pred_config.tracker
             max_age = cfg.get('max_age', 30)
             max_iou_distance = cfg.get('max_iou_distance', 0.7)
@@ -196,7 +200,7 @@ class SDE_Detector(Detector):
         pred_dets = det_results['boxes']
         pred_embs = det_results.get('embeddings', None)
 
-        if self.use_reid:
+        if self.use_deepsort_tracker:
             # use DeepSORTTracker, only support singe class
             self.tracker.predict()
             online_targets = self.tracker.update(pred_dets, pred_embs)
@@ -350,7 +354,7 @@ class SDE_Detector(Detector):
             online_tlwhs = tracking_outs['online_tlwhs']
             online_scores = tracking_outs['online_scores']
             online_ids = tracking_outs['online_ids']
-            
+
             if self.do_mtmct:
                 feat_data_dict = tracking_outs['feat_data']
                 mot_features_dict = dict(mot_features_dict, **feat_data_dict)
@@ -361,14 +365,7 @@ class SDE_Detector(Detector):
                 if frame_id % 10 == 0:
                     print('Tracking frame {}'.format(frame_id))
                 frame, _ = decode_image(img_file, {})
-                if num_classes == 1:
-                    im = plot_tracking(
-                        frame,
-                        online_tlwhs,
-                        online_ids,
-                        online_scores,
-                        frame_id=frame_id)
-                else:
+                if isinstance(online_tlwhs, defaultdict):
                     im = plot_tracking_dict(
                         frame,
                         num_classes,
@@ -377,6 +374,13 @@ class SDE_Detector(Detector):
                         online_scores,
                         frame_id=frame_id,
                         ids2names=[])
+                else:
+                    im = plot_tracking(
+                        frame,
+                        online_tlwhs,
+                        online_ids,
+                        online_scores,
+                        frame_id=frame_id)
                 save_dir = os.path.join(self.output_dir, seq_name)
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)

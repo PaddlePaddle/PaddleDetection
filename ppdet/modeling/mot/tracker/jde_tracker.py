@@ -38,6 +38,7 @@ class JDETracker(object):
     JDE tracker, support single class and multi classes
 
     Args:
+        use_byte (bool): Whether use ByteTracker, default False
         num_classes (int): the number of classes
         det_thresh (float): threshold of detection score
         track_buffer (int): buffer for tracker
@@ -51,8 +52,15 @@ class JDETracker(object):
             tracked stracks and unmatched detections
         unconfirmed_thresh (float): linear assignment threshold of 
             unconfirmed stracks and unmatched detections
+        conf_thres (float): confidence threshold for tracking, also used in
+            ByteTracker as higher confidence threshold
+        match_thres (float): linear assignment threshold of tracked 
+            stracks and detections in ByteTracker
+        low_conf_thres (float): lower confidence threshold for tracking in
+            ByteTracker
+        input_size (list): input feature map size to reid model, [h, w] format,
+            [64, 192] as default.
         motion (str): motion model, KalmanFilter as default
-        conf_thres (float): confidence threshold for tracking
         metric_type (str): either "euclidean" or "cosine", the distance metric 
             used for measurement to track association.
     """
@@ -70,8 +78,8 @@ class JDETracker(object):
                  conf_thres=0,
                  match_thres=0.8,
                  low_conf_thres=0.2,
-                 motion='KalmanFilter',
                  input_size=[64, 192],
+                 motion='KalmanFilter',
                  metric_type='euclidean'):
         self.use_byte = use_byte
         self.num_classes = num_classes
@@ -87,9 +95,9 @@ class JDETracker(object):
         self.match_thres = match_thres
         self.low_conf_thres = low_conf_thres
 
+        self.input_size = input_size
         if motion == 'KalmanFilter':
             self.motion = KalmanFilter()
-        self.input_size = input_size
         self.metric_type = metric_type
 
         self.frame_id = 0
