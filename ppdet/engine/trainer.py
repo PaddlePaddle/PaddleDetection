@@ -652,11 +652,11 @@ class Trainer(object):
                 layer.convert_to_deploy()
 
         export_post_process = self.cfg['export'].get(
-            'post_process', False) if hasattr(config, 'export') else True
+            'post_process', False) if hasattr(self.cfg, 'export') else True
         export_nms = self.cfg['export'].get('nms', False) if hasattr(
-            config, 'export') else True
+            self.cfg, 'export') else True
         export_benchmark = self.cfg['export'].get(
-            'benchmark', False) if hasattr(config, 'export') else False
+            'benchmark', False) if hasattr(self.cfg, 'export') else False
         if hasattr(self.model, 'fuse_norm'):
             self.model.fuse_norm = self.cfg['TestReader'].get('fuse_normalize',
                                                               False)
