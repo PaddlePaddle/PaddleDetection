@@ -66,18 +66,21 @@ class RPNHead(nn.Layer):
         in_channel (int): channel of input feature maps which can be
             derived by from_config
     """
+    __shared__ = ['export_onnx']
 
     def __init__(self,
                  anchor_generator=AnchorGenerator().__dict__,
                  rpn_target_assign=RPNTargetAssign().__dict__,
                  train_proposal=ProposalGenerator(12000, 2000).__dict__,
                  test_proposal=ProposalGenerator().__dict__,
-                 in_channel=1024):
+                 in_channel=1024,
+                 export_onnx=False):
         super(RPNHead, self).__init__()
         self.anchor_generator = anchor_generator
         self.rpn_target_assign = rpn_target_assign
         self.train_proposal = train_proposal
         self.test_proposal = test_proposal
+        self.export_onnx = export_onnx
         if isinstance(anchor_generator, dict):
             self.anchor_generator = AnchorGenerator(**anchor_generator)
         if isinstance(rpn_target_assign, dict):
@@ -149,51 +152,88 @@ class RPNHead(nn.Layer):
 
         # Collect multi-level proposals for each batch
         # Get 'topk' of them as final output
-        bs_rois_collect = []
-        bs_rois_num_collect = []
-        batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
 
-        # Generate proposals for each level and each batch.
-        # Discard batch-computing to avoid sorting bbox cross different batches.
-        for i in range(1):
-            rpn_rois_list = []
-            rpn_prob_list = []
-            rpn_rois_num_list = []
+        if self.export_onnx:
+            # bs = 1 when exporting onnx
+            onnx_rpn_rois_list = []
+            onnx_rpn_prob_list = []
+            onnx_rpn_rois_num_list = []
 
             for rpn_score, rpn_delta, anchor in zip(scores, bbox_deltas,
                                                     anchors):
-                rpn_rois, rpn_rois_prob, rpn_rois_num, post_nms_top_n = prop_gen(
-                    scores=rpn_score[i:i + 1],
-                    bbox_deltas=rpn_delta[i:i + 1],
+                onnx_rpn_rois, onnx_rpn_rois_prob, onnx_rpn_rois_num, onnx_post_nms_top_n = prop_gen(
+                    scores=rpn_score[0:1],
+                    bbox_deltas=rpn_delta[0:1],
                     anchors=anchor,
-                    im_shape=im_shape[i:i + 1])
-                rpn_rois_list.append(rpn_rois)
-                rpn_prob_list.append(rpn_rois_prob)
-                rpn_rois_num_list.append(rpn_rois_num)
+                    im_shape=im_shape[0:1])
+                onnx_rpn_rois_list.append(onnx_rpn_rois)
+                onnx_rpn_prob_list.append(onnx_rpn_rois_prob)
+                onnx_rpn_rois_num_list.append(onnx_rpn_rois_num)
 
-            if True or len(scores) > 1:
-                rpn_rois = paddle.concat(rpn_rois_list)
-                rpn_prob = paddle.concat(rpn_prob_list).flatten()
+            onnx_rpn_rois = paddle.concat(onnx_rpn_rois_list)
+            onnx_rpn_prob = paddle.concat(onnx_rpn_prob_list).flatten()
 
-                top_n = paddle.to_tensor(post_nms_top_n).cast('int32')
-                num_rois = paddle.shape(rpn_prob)[0].cast('int32')
-                k = paddle.minimum(top_n, num_rois)
-                if True or k < post_nms_top_n:
-                    topk_prob, topk_inds = paddle.topk(rpn_prob, k)
-                    topk_rois = paddle.gather(rpn_rois, topk_inds)
+            onnx_top_n = paddle.to_tensor(onnx_post_nms_top_n).cast('int32')
+            onnx_num_rois = paddle.shape(onnx_rpn_prob)[0].cast('int32')
+            k = paddle.minimum(onnx_top_n, onnx_num_rois)
+            onnx_topk_prob, onnx_topk_inds = paddle.topk(onnx_rpn_prob, k)
+            onnx_topk_rois = paddle.gather(onnx_rpn_rois, onnx_topk_inds)
+            #bs_rois_collect = [onnx_topk_rois]
+            #bs_rois_num_collect = paddle.shape(onnx_topk_rois)[0]
+
+        else:
+            bs_rois_collect = []
+            bs_rois_num_collect = []
+
+            batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
+
+            # Generate proposals for each level and each batch.
+            # Discard batch-computing to avoid sorting bbox cross different batches.
+            for i in range(batch_size):
+                rpn_rois_list = []
+                rpn_prob_list = []
+                rpn_rois_num_list = []
+
+                for rpn_score, rpn_delta, anchor in zip(scores, bbox_deltas,
+                                                        anchors):
+                    rpn_rois, rpn_rois_prob, rpn_rois_num, post_nms_top_n = prop_gen(
+                        scores=rpn_score[i:i + 1],
+                        bbox_deltas=rpn_delta[i:i + 1],
+                        anchors=anchor,
+                        im_shape=im_shape[i:i + 1])
+                    rpn_rois_list.append(rpn_rois)
+                    rpn_prob_list.append(rpn_rois_prob)
+                    rpn_rois_num_list.append(rpn_rois_num)
+
+                if len(scores) > 1:
+                    rpn_rois = paddle.concat(rpn_rois_list)
+                    rpn_prob = paddle.concat(rpn_prob_list).flatten()
+
+                    num_rois = paddle.shape(rpn_prob)[0].cast('int32')
+                    if num_rois > post_nms_top_n:
+                        topk_prob, topk_inds = paddle.topk(rpn_prob,
+                                                           post_nms_top_n)
+                        topk_rois = paddle.gather(rpn_rois, topk_inds)
+                    else:
+                        topk_rois = rpn_rois
+                        topk_prob = rpn_prob
                 else:
-                    topk_rois = rpn_rois
-                    topk_prob = rpn_prob
-            else:
-                topk_rois = rpn_rois_list[0]
-                topk_prob = rpn_prob_list[0].flatten()
+                    topk_rois = rpn_rois_list[0]
+                    topk_prob = rpn_prob_list[0].flatten()
 
-            bs_rois_collect.append(topk_rois)
-            bs_rois_num_collect.append(paddle.shape(topk_rois)[0])
+                bs_rois_collect.append(topk_rois)
+                bs_rois_num_collect.append(paddle.shape(topk_rois)[0])
 
-        bs_rois_num_collect = paddle.concat(bs_rois_num_collect)
+            bs_rois_num_collect = paddle.concat(bs_rois_num_collect)
 
-        return bs_rois_collect, bs_rois_num_collect
+        if self.export_onnx:
+            output_rois = [onnx_topk_rois]
+            output_rois_num = paddle.shape(onnx_topk_rois)[0]
+        else:
+            output_rois = bs_rois_collect
+            output_rois_num = bs_rois_num_collect
+
+        return output_rois, output_rois_num
 
     def get_loss(self, pred_scores, pred_deltas, anchors, inputs):
         """

@@ -103,7 +103,7 @@ class MaskFeat(nn.Layer):
 
 @register
 class MaskHead(nn.Layer):
-    __shared__ = ['num_classes']
+    __shared__ = ['num_classes', 'export_onnx']
     __inject__ = ['mask_assigner']
     """
     RCNN mask head
@@ -123,9 +123,11 @@ class MaskHead(nn.Layer):
                  roi_extractor=RoIAlign().__dict__,
                  mask_assigner='MaskAssigner',
                  num_classes=80,
-                 share_bbox_feat=False):
+                 share_bbox_feat=False,
+                 export_onnx=False):
         super(MaskHead, self).__init__()
         self.num_classes = num_classes
+        self.export_onnx = export_onnx
 
         self.roi_extractor = roi_extractor
         if isinstance(roi_extractor, dict):
@@ -206,7 +208,7 @@ class MaskHead(nn.Layer):
         rois_num (Tensor): The number of prediction for each batch
         scale_factor (Tensor): The scale factor from origin size to input size
         """
-        if False:  #rois.shape[0] == 0:
+        if not self.export_onnx and rois.shape[0] == 0:
             mask_out = paddle.full([1, 1, 1, 1], -1)
         else:
             bbox = [rois[:, 2:]]

@@ -145,15 +145,6 @@ class Detector(object):
         inputs = self.preprocess(image_list)
         np_boxes, np_masks = None, None
         input_names = self.predictor.get_input_names()
-        import pickle
-        input_save_data = {}
-        for name in input_names:
-            input_save_data[name] = inputs[name]
-        with open('mask_rcnn_input_data.pkl', 'wb+') as f:
-            pickle.dump(input_save_data, f)
-        print('inputs: ', inputs)
-        print('input_names: ', input_names)
-
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
@@ -172,14 +163,6 @@ class Detector(object):
             if self.pred_config.mask:
                 masks_tensor = self.predictor.get_output_handle(output_names[2])
                 np_masks = masks_tensor.copy_to_cpu()
-        output_save_data = {}
-        output_save_data[output_names[0]] = np_boxes
-        output_save_data[output_names[1]] = np_boxes_num
-        with open('mask_rcnn_output_data.pkl', 'wb+') as f:
-            pickle.dump(output_save_data, f)
-        print('output_names: ', output_names)
-        print('np_boxes: ', np_boxes)
-        print('np_boxes_num: ', np_boxes_num)
         if add_timer:
             self.det_times.inference_time_s.end(repeats=repeats)
             self.det_times.postprocess_time_s.start()
