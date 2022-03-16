@@ -71,6 +71,7 @@ class JDETracker(object):
                  match_thres=0.8,
                  low_conf_thres=0.2,
                  motion='KalmanFilter',
+                 input_size=[64, 192],
                  metric_type='euclidean'):
         self.use_byte = use_byte
         self.num_classes = num_classes
@@ -88,6 +89,7 @@ class JDETracker(object):
 
         if motion == 'KalmanFilter':
             self.motion = KalmanFilter()
+        self.input_size = input_size
         self.metric_type = metric_type
 
         self.frame_id = 0

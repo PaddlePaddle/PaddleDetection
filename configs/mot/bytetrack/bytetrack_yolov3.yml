@@ -4,7 +4,7 @@ _BASE_: [
   '_base_/mot17.yml',
   '_base_/yolov3_mot_reader_608x608.yml'
 ]
-weights: output/bytetrack_yolov3_darknet53_80e/model_final
+weights: output/bytetrack_yolov3/model_final
 log_iter: 20
 snapshot_epoch: 2
 
@@ -46,5 +46,5 @@ JDETracker:
   match_thres: 0.9
   conf_thres: 0.2
   low_conf_thres: 0.1
-  min_box_area: 0
-  vertical_ratio: 0 # 1.6 # for pedestrian
+  min_box_area: 100
+  vertical_ratio: 1.6 # for pedestrian

@@ -4,7 +4,7 @@ _BASE_: [
   '_base_/mot17.yml',
   '_base_/ppyoloe_mot_reader_640x640.yml'
 ]
-weights: output/bytetrack_ppyoloe/model_final
+weights: output/bytetrack_ppyoloe_reid/model_final
 log_iter: 20
 snapshot_epoch: 2
 
@@ -15,10 +15,10 @@ architecture: ByteTrack
 pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_300e_coco.pdparams
 ByteTrack:
   detector: YOLOv3 # PPYOLOe version
-  reid: None
+  reid: PPLCNetEmbedding # use reid
   tracker: JDETracker
 det_weights: https://bj.bcebos.com/v1/paddledet/models/mot/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
-reid_weights: None
+reid_weights: https://bj.bcebos.com/v1/paddledet/models/mot/deepsort_pplcnet.pdparams
 
 YOLOv3:
   backbone: CSPResNet
