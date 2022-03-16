@@ -335,6 +335,24 @@ class PicoHead(OTAVFLHead):
 
         return (cls_logits_list, bboxes_reg_list)
 
+    def post_process(self,
+                     gfl_head_outs,
+                     im_shape,
+                     scale_factor,
+                     export_nms=True):
+        cls_scores, bboxes_reg = gfl_head_outs
+        bboxes = paddle.concat(bboxes_reg, axis=1)
+        mlvl_scores = paddle.concat(cls_scores, axis=1)
+        mlvl_scores = mlvl_scores.transpose([0, 2, 1])
+        if not export_nms:
+            return bboxes, mlvl_scores
+        else:
+            # rescale: [h_scale, w_scale] -> [w_scale, h_scale, w_scale, h_scale]
+            im_scale = scale_factor.flip([1]).tile([1, 2]).unsqueeze(1)
+            bboxes /= im_scale
+            bbox_pred, bbox_num, _ = self.nms(bboxes, mlvl_scores)
+            return bbox_pred, bbox_num
+
 
 @register
 class PicoHeadV2(GFLHead):
@@ -625,3 +643,21 @@ class PicoHeadV2(GFLHead):
             loss_vfl=loss_vfl, loss_bbox=loss_bbox, loss_dfl=loss_dfl)
 
         return loss_states
+
+    def post_process(self,
+                     gfl_head_outs,
+                     im_shape,
+                     scale_factor,
+                     export_nms=True):
+        cls_scores, bboxes_reg = gfl_head_outs
+        bboxes = paddle.concat(bboxes_reg, axis=1)
+        mlvl_scores = paddle.concat(cls_scores, axis=1)
+        mlvl_scores = mlvl_scores.transpose([0, 2, 1])
+        if not export_nms:
+            return bboxes, mlvl_scores
+        else:
+            # rescale: [h_scale, w_scale] -> [w_scale, h_scale, w_scale, h_scale]
+            im_scale = scale_factor.flip([1]).tile([1, 2]).unsqueeze(1)
+            bboxes /= im_scale
+            bbox_pred, bbox_num, _ = self.nms(bboxes, mlvl_scores)
+            return bbox_pred, bbox_num
