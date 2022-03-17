@@ -97,7 +97,7 @@ def predict(exec_net, input):
 
 4. ### 后处理
 
-相较于大多数其他类型的AI推理, MOT（Multi-Object Tracking）显然是特殊的. FairMOT 需要一个称为跟踪器的特殊对象来处理预测结果。 这个预测结果则包括预测检测和预测的embeddings。
+相较于大多数其他类型的AI推理, MOT（Multi-Object Tracking）显然是特殊的. FairMOT 需要一个称为跟踪器的特殊对象来处理预测结果。 这个预测结果则包括预测检测和预测的行人特征向量。
 
 幸运的是，PaddleDetection 为我们简化了这个过程，我们可以从`ppdet`导出JDETracker，然后用这个tracker挑选出来符合条件的检测框,而且我们不需要编写太多代码来处理它。
 

@@ -33,7 +33,6 @@ def prepare_input():
 
     img_file = root_path / "street.jpeg"
     img = cv2.imread(str(img_file))
-    # img = cv2.cvtColor(screen, cv2.COLOR_RGB2BGR)
     normalized_img = T.Compose(transforms)(img)
     normalized_img = normalized_img.astype(np.float32, copy=False) / 255.0
 
