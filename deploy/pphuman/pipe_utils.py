@@ -274,24 +274,20 @@ def parse_mot_res(input):
         xmin, ymin, w, h = box
         res = [i, 0, score, xmin, ymin, xmin + w, ymin + h]
         mot_res.append(res)
-    #print(np.array(mot_res)[:,0])
     return {'boxes': np.array(mot_res)}
 
 
 def refine_keypoint_coordinary(kpts, bbox):
     """
-        This function is used to adjust coordinate values to fit a specific dataset and will be deprecated soon.
+        This function is used to adjust coordinate values to a fixed scale.
     """
-    """
+
     tl = bbox[:, 0:2]
-    wh  = bbox[:, 2:] - tl
-    tl = np.expand_dims(np.transpose(tl, (1,0)), (2,3))
-    wh = np.expand_dims(np.transpose(wh, (1,0)), (2,3))
-    res = (kpts-tl) / wh
-    """
-    mean = np.mean(kpts, axis=2, keepdims=True)
-    res = kpts - mean
-    #res = kpts
+    wh = bbox[:, 2:] - tl
+    tl = np.expand_dims(np.transpose(tl, (1, 0)), (2, 3))
+    wh = np.expand_dims(np.transpose(wh, (1, 0)), (2, 3))
+    res = (kpts - tl) / wh * np.expand_dims(np.array([[384.], [512.]]), (2, 3))
+
     return res
 
 

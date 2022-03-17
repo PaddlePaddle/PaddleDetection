@@ -484,7 +484,7 @@ class PipePredictor(object):
             attr_res = attr_res['output']
             image = visualize_attr(image, attr_res, boxes)
             image = np.array(image)
-        """
+
         kpt_res = result.get('kpt')
         if kpt_res is not None:
             image = visualize_pose(
@@ -492,7 +492,7 @@ class PipePredictor(object):
                 kpt_res,
                 visual_thresh=self.cfg['kpt_thresh'],
                 returnimg=True)
-        """
+
         action_res = result.get('action')
         if action_res is not None:
             image = visualize_action(image, self.action_visual_collector)

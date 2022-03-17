@@ -240,7 +240,6 @@ class KeyPointDetector(Detector):
             if visual:
                 print('Test iter {}'.format(i))
         results = self.merge_batch_result(results)
-        print(results)
         return results
 
     def predict_video(self, video_file, camera_id):
