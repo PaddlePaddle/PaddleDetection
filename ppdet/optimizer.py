@@ -61,12 +61,11 @@ class CosineDecay(object):
             warmup_iters = len(boundary)
             for i in range(int(boundary[-1]), max_iters):
                 boundary.append(i)
-
-                decayed_lr = base_lr * 0.5 * (math.cos(
-                    (i - warmup_iters) * math.pi /
-                    (max_iters - warmup_iters)) + 1)
-                decayed_lr = decayed_lr if decayed_lr > self.eta_min else self.eta_min
+                decayed_lr = self.eta_min + (base_lr - self.eta_min) * 0.5 * (
+                    math.cos((i - warmup_iters) * math.pi /
+                             (max_iters - warmup_iters)) + 1)
                 value.append(decayed_lr)
+
             return optimizer.lr.PiecewiseDecay(boundary, value)
 
         return optimizer.lr.CosineAnnealingDecay(
