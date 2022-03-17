@@ -32,6 +32,7 @@ function _train(){
     export FLAGS_eager_delete_tensor_gb=0.0
     export FLAGS_fraction_of_gpu_memory_to_use=0.98
     export FLAGS_memory_fraction_of_eager_deletion=1.0
+    export FLAGS_conv_workspace_size_limit=500
     cd ./static
     batch_size=${base_batch_size}  # 如果模型跑多卡单进程时,请在_train函数中计算出多卡需要的bs
     echo "current CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES}, model_name=${model_name}, device_num=${device_num}, is profiling=${profiling}"
@@ -49,8 +50,8 @@ function _train(){
         use_fp16_cmd=""
     fi
 
-    train_cmd="-c configs/mask_rcnn_r50_1x.yml -o LearningRate.base_lr=0.001 snapshot_iter=100000 \
-         TrainReader.batch_size=${batch_size} \
+    train_cmd="-c configs/mask_rcnn_r50_1x.yml  \
+         -o TrainReader.batch_size=${batch_size} \
          max_iters=${max_iter} log_iter=1 \
          TrainReader.worker_num=${num_workers} ${use_fp16_cmd} \
          --is_profiler=${is_profiler} "
