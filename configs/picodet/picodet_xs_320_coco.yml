@@ -6,15 +6,15 @@ _BASE_: [
   '_base_/picodet_320_reader.yml',
 ]
 
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPLCNet_x0_75_pretrained.pdparams  #https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x1_5_pretrained.pdparams
-weights: output/picodet_s_320_coco/best_model
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x0_35_pretrained.pdparams
+weights: output/picodet_xs_320_coco/best_model
 find_unused_parameters: True
 use_ema: true
 epoch: 300
 snapshot_epoch: 10
 
 LCNet:
-  scale: 0.75
+  scale: 0.35
   feature_maps: [3, 4, 5]
 
 LCPAN:

@@ -1,6 +1,6 @@
 _BASE_: [
-  '../../datasets/coco_detection.yml',
-  '../../runtime.yml',
+  '../../../datasets/coco_detection.yml',
+  '../../../runtime.yml',
   '../_base_/picodet_esnet.yml',
   '../_base_/optimizer_300e.yml',
   '../_base_/picodet_640_reader.yml',
