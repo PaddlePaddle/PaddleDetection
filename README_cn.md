@@ -233,6 +233,7 @@ PaddleDetection为基于飞桨PaddlePaddle的端到端目标检测套件，提�
     - [Paddle Serving部署](deploy/serving)
     - [ONNX模型导出](deploy/EXPORT_ONNX_MODEL.md)
     - [推理benchmark](deploy/BENCHMARK_INFER.md)
+    - [ONNX模型导出,并用OpenVINO进行推理](docs/advanced_tutorials/openvino_inference/README.md)
 - 进阶开发
     - [数据处理模块](docs/advanced_tutorials/READER.md)
     - [新增检测模型](docs/advanced_tutorials/MODEL_TECHNICAL.md)
