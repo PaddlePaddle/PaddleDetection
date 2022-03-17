@@ -308,10 +308,10 @@ class MCMOTEvaluator(object):
 
     def load_annotations(self):
         assert self.data_type == 'mcmot'
-        self.gt_filename = os.path.join(self.data_root, '../', '../',
+        self.gt_filename = os.path.join(self.data_root, '../',
                                         'sequences',
                                         '{}.txt'.format(self.seq_name))
-
+        
     def reset_accumulator(self):
         import motmetrics as mm
         mm.lap.default_solver = 'lap'

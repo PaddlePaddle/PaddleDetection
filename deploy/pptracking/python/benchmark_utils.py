@@ -89,6 +89,8 @@ class PaddleInferBenchmark(object):
 
         self.preprocess_time_s = perf_info.get('preprocess_time_s', 0)
         self.postprocess_time_s = perf_info.get('postprocess_time_s', 0)
+        self.with_tracker = True if 'tracking_time_s' in perf_info else False
+        self.tracking_time_s = perf_info.get('tracking_time_s', 0)
         self.total_time_s = perf_info.get('total_time_s', 0)
 
         self.inference_time_s_90 = perf_info.get("inference_time_s_90", "")
@@ -235,9 +237,19 @@ class PaddleInferBenchmark(object):
         )
         self.logger.info(
             f"{identifier} total time spent(s): {self.total_time_s}")
-        self.logger.info(
-            f"{identifier} preprocess_time(ms): {round(self.preprocess_time_s*1000, 1)}, inference_time(ms): {round(self.inference_time_s*1000, 1)}, postprocess_time(ms): {round(self.postprocess_time_s*1000, 1)}"
-        )
+
+        if self.with_tracker:
+            self.logger.info(
+                f"{identifier} preprocess_time(ms): {round(self.preprocess_time_s*1000, 1)}, "
+                f"inference_time(ms): {round(self.inference_time_s*1000, 1)}, "
+                f"postprocess_time(ms): {round(self.postprocess_time_s*1000, 1)}, "
+                f"tracking_time(ms): {round(self.tracking_time_s*1000, 1)}")
+        else:
+            self.logger.info(
+                f"{identifier} preprocess_time(ms): {round(self.preprocess_time_s*1000, 1)}, "
+                f"inference_time(ms): {round(self.inference_time_s*1000, 1)}, "
+                f"postprocess_time(ms): {round(self.postprocess_time_s*1000, 1)}"
+            )
         if self.inference_time_s_90:
             self.looger.info(
                 f"{identifier} 90%_cost: {self.inference_time_s_90}, 99%_cost: {self.inference_time_s_99}, succ_rate: {self.succ_rate}"

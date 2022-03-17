@@ -132,19 +132,24 @@ class LinearWarmup(object):
     Args:
         steps (int): warm up steps
         start_factor (float): initial learning rate factor
+        epochs (int|None): use epochs as warm up steps, the priority
+            of `epochs` is higher than `steps`. Default: None.
     """
 
-    def __init__(self, steps=500, start_factor=1. / 3):
+    def __init__(self, steps=500, start_factor=1. / 3, epochs=None):
         super(LinearWarmup, self).__init__()
         self.steps = steps
         self.start_factor = start_factor
+        self.epochs = epochs
 
     def __call__(self, base_lr, step_per_epoch):
         boundary = []
         value = []
-        for i in range(self.steps + 1):
-            if self.steps > 0:
-                alpha = i / self.steps
+        warmup_steps = self.epochs * step_per_epoch \
+            if self.epochs is not None else self.steps
+        for i in range(warmup_steps + 1):
+            if warmup_steps > 0:
+                alpha = i / warmup_steps
                 factor = self.start_factor * (1 - alpha) + alpha
                 lr = base_lr * factor
                 value.append(lr)

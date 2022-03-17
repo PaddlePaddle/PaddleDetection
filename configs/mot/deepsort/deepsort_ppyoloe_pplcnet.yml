@@ -1,5 +1,5 @@
 _BASE_: [
-  'detector/ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml',
+  'detector/ppyoloe_crn_l_36e_640x640_mot17half.yml',
   '_base_/mot17.yml',
   '_base_/deepsort_reader_1088x608.yml',
 ]
@@ -12,7 +12,7 @@ EvalMOTDataset:
     data_root: MOT17/images/half
     keep_ori_im: True # set as True in DeepSORT
 
-det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_640x640_mot17half.pdparams
+det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
 reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams
 
 # reader
@@ -40,7 +40,7 @@ architecture: DeepSORT
 pretrain_weights: None
 
 DeepSORT:
-  detector: YOLOv3 # PPYOLOv2 version
+  detector: YOLOv3 # PPYOLOe version
   reid: PPLCNetEmbedding
   tracker: DeepSORTTracker
 
@@ -64,35 +64,47 @@ DeepSORTTracker:
   motion: KalmanFilter
 
 
-# detector configuration: PPYOLOv2 version
-# see 'configs/mot/deepsort/detector/ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml'
+# detector configuration: PPYOLOe version
+# see 'configs/mot/deepsort/detector/ppyoloe_crn_l_300e_640x640_mot17half.yml'
 YOLOv3:
-  backbone: ResNet
-  neck: PPYOLOPAN
-  yolo_head: YOLOv3Head
-  post_process: BBoxPostProcess
+  backbone: CSPResNet
+  neck: CustomCSPPAN
+  yolo_head: PPYOLOEHead
+  post_process: ~
 
-ResNet:
-  depth: 50
-  variant: d
+CSPResNet:
+  layers: [3, 6, 6, 3]
+  channels: [64, 128, 256, 512, 1024]
   return_idx: [1, 2, 3]
-  dcn_v2_stages: [3]
-  freeze_at: -1
-  freeze_norm: false
-  norm_decay: 0.
+  use_large_stem: True
+
+CustomCSPPAN:
+  out_channels: [768, 384, 192]
+  stage_num: 1
+  block_num: 3
+  act: 'swish'
+  spp: true
 
 # Tracking requires higher quality boxes, so NMS score_threshold will be higher
-BBoxPostProcess:
-  decode:
-    name: YOLOBox
-    conf_thresh: 0.25 # 0.01 in original detector
-    downsample_ratio: 32
-    clip_bbox: true
-    scale_x_y: 1.05
+PPYOLOEHead:
+  fpn_strides: [32, 16, 8]
+  grid_cell_scale: 5.0
+  grid_cell_offset: 0.5
+  static_assigner_epoch: -1 # 100
+  use_varifocal_loss: True
+  eval_input_size: [640, 640]
+  loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
+  static_assigner:
+    name: ATSSAssigner
+    topk: 9
+  assigner:
+    name: TaskAlignedAssigner
+    topk: 13
+    alpha: 1.0
+    beta: 6.0
   nms:
-    name: MatrixNMS
+    name: MultiClassNMS
+    nms_top_k: 1000
     keep_top_k: 100
     score_threshold: 0.4 # 0.01 in original detector
-    post_threshold: 0.4 # 0.01 in original detector
-    nms_top_k: -1
-    background_label: -1
+    nms_threshold: 0.6

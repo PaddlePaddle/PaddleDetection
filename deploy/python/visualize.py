@@ -1,5 +1,4 @@
-# coding: utf-8
-# copyright (c) 2020 PaddlePaddle Authors. All Rights Reserve.
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,7 +37,7 @@ def visualize_box_mask(im, results, labels, threshold=0.5):
     """
     if isinstance(im, str):
         im = Image.open(im).convert('RGB')
-    else:
+    elif isinstance(im, np.ndarray):
         im = Image.fromarray(im)
     if 'masks' in results and 'boxes' in results and len(results['boxes']) > 0:
         im = draw_mask(
@@ -328,3 +327,37 @@ def visualize_pose(imgfile,
     plt.imsave(save_name, canvas[:, :, ::-1])
     print("keypoint visualize image saved to: " + save_name)
     plt.close()
+
+
+def visualize_attr(im, results, boxes=None):
+    if isinstance(im, str):
+        im = Image.open(im)
+        im = np.ascontiguousarray(np.copy(im))
+        im = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
+    else:
+        im = np.ascontiguousarray(np.copy(im))
+
+    im_h, im_w = im.shape[:2]
+    text_scale = max(1, int(im.shape[0] / 1600.))
+    text_thickness = 2
+
+    line_inter = im.shape[0] / 50.
+    for i, res in enumerate(results):
+        if boxes is None:
+            text_w = 1
+            text_h = 1
+        else:
+            box = boxes[i]
+            text_w = int(box[2])
+            text_h = int(box[3])
+        for text in res:
+            text_h += int(line_inter)
+            text_loc = (text_w, text_h)
+            cv2.putText(
+                im,
+                text,
+                text_loc,
+                cv2.FONT_HERSHEY_PLAIN,
+                text_scale, (0, 0, 255),
+                thickness=text_thickness)
+    return im

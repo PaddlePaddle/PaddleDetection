@@ -67,6 +67,11 @@ def argsparser():
         help="Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU."
     )
     parser.add_argument(
+        "--use_gpu",
+        type=ast.literal_eval,
+        default=False,
+        help="Deprecated, please use `--device`.")
+    parser.add_argument(
         "--run_benchmark",
         type=ast.literal_eval,
         default=False,
@@ -105,11 +110,17 @@ def argsparser():
         action='store_true',
         help='Save tracking results (txt).')
     parser.add_argument(
+        '--save_mot_txt_per_img',
+        action='store_true',
+        help='Save tracking results (txt) for each image.')
+    parser.add_argument(
         '--scaled',
         type=bool,
         default=False,
         help="Whether coords after detector outputs are scaled, False in JDE YOLOv3 "
         "True in general detector.")
+    parser.add_argument(
+        "--tracker_config", type=str, default=None, help=("tracker donfig"))
     parser.add_argument(
         "--reid_model_dir",
         type=str,
@@ -122,20 +133,10 @@ def argsparser():
         default=50,
         help="max batch_size for reid model inference.")
     parser.add_argument(
-        "--do_entrance_counting",
-        action='store_true',
-        help="Whether counting the numbers of identifiers entering "
-        "or getting out from the entrance. Note that only support one-class"
-        "counting, multi-class counting is coming soon.")
-    parser.add_argument(
-        "--secs_interval",
-        type=int,
-        default=2,
-        help="The seconds interval to count after tracking")
-    parser.add_argument(
-        "--draw_center_traj",
-        action='store_true',
-        help="Whether drawing the trajectory of center")
+        '--use_dark',
+        type=ast.literal_eval,
+        default=True,
+        help='whether to use darkpose to get better keypoint position predict ')
     parser.add_argument(
         "--mtmct_dir",
         type=str,
@@ -144,6 +145,7 @@ def argsparser():
     parser.add_argument(
         "--mtmct_cfg", type=str, default=None, help="The MTMCT config.")
     return parser
+
 
 
 class Times(object):
@@ -174,29 +176,36 @@ class Times(object):
 
 
 class Timer(Times):
-    def __init__(self):
+    def __init__(self, with_tracker=False):
         super(Timer, self).__init__()
+        self.with_tracker = with_tracker
         self.preprocess_time_s = Times()
         self.inference_time_s = Times()
         self.postprocess_time_s = Times()
+        self.tracking_time_s = Times()
         self.img_num = 0
 
     def info(self, average=False):
-        total_time = self.preprocess_time_s.value(
-        ) + self.inference_time_s.value() + self.postprocess_time_s.value()
+        pre_time = self.preprocess_time_s.value()
+        infer_time = self.inference_time_s.value()
+        post_time = self.postprocess_time_s.value()
+        track_time = self.tracking_time_s.value()
+
+        total_time = pre_time + infer_time + post_time
+        if self.with_tracker:
+            total_time = total_time + track_time
         total_time = round(total_time, 4)
         print("------------------ Inference Time Info ----------------------")
         print("total_time(ms): {}, img_num: {}".format(total_time * 1000,
                                                        self.img_num))
-        preprocess_time = round(
-            self.preprocess_time_s.value() / max(1, self.img_num),
-            4) if average else self.preprocess_time_s.value()
-        postprocess_time = round(
-            self.postprocess_time_s.value() / max(1, self.img_num),
-            4) if average else self.postprocess_time_s.value()
-        inference_time = round(self.inference_time_s.value() /
-                               max(1, self.img_num),
-                               4) if average else self.inference_time_s.value()
+        preprocess_time = round(pre_time / max(1, self.img_num),
+                                4) if average else pre_time
+        postprocess_time = round(post_time / max(1, self.img_num),
+                                 4) if average else post_time
+        inference_time = round(infer_time / max(1, self.img_num),
+                               4) if average else infer_time
+        tracking_time = round(track_time / max(1, self.img_num),
+                              4) if average else track_time
 
         average_latency = total_time / max(1, self.img_num)
         qps = 0
@@ -204,25 +213,36 @@ class Timer(Times):
             qps = 1 / average_latency
         print("average latency time(ms): {:.2f}, QPS: {:2f}".format(
             average_latency * 1000, qps))
-        print(
-            "preprocess_time(ms): {:.2f}, inference_time(ms): {:.2f}, postprocess_time(ms): {:.2f}".
-            format(preprocess_time * 1000, inference_time * 1000,
-                   postprocess_time * 1000))
+        if self.with_tracker:
+            print(
+                "preprocess_time(ms): {:.2f}, inference_time(ms): {:.2f}, postprocess_time(ms): {:.2f}, tracking_time(ms): {:.2f}".
+                format(preprocess_time * 1000, inference_time * 1000,
+                       postprocess_time * 1000, tracking_time * 1000))
+        else:
+            print(
+                "preprocess_time(ms): {:.2f}, inference_time(ms): {:.2f}, postprocess_time(ms): {:.2f}".
+                format(preprocess_time * 1000, inference_time * 1000,
+                       postprocess_time * 1000))
 
     def report(self, average=False):
         dic = {}
-        dic['preprocess_time_s'] = round(
-            self.preprocess_time_s.value() / max(1, self.img_num),
-            4) if average else self.preprocess_time_s.value()
-        dic['postprocess_time_s'] = round(
-            self.postprocess_time_s.value() / max(1, self.img_num),
-            4) if average else self.postprocess_time_s.value()
-        dic['inference_time_s'] = round(
-            self.inference_time_s.value() / max(1, self.img_num),
-            4) if average else self.inference_time_s.value()
+        pre_time = self.preprocess_time_s.value()
+        infer_time = self.inference_time_s.value()
+        post_time = self.postprocess_time_s.value()
+        track_time = self.tracking_time_s.value()
+
+        dic['preprocess_time_s'] = round(pre_time / max(1, self.img_num),
+                                         4) if average else pre_time
+        dic['inference_time_s'] = round(infer_time / max(1, self.img_num),
+                                        4) if average else infer_time
+        dic['postprocess_time_s'] = round(post_time / max(1, self.img_num),
+                                          4) if average else post_time
         dic['img_num'] = self.img_num
-        total_time = self.preprocess_time_s.value(
-        ) + self.inference_time_s.value() + self.postprocess_time_s.value()
+        total_time = pre_time + infer_time + post_time
+        if self.with_tracker:
+            dic['tracking_time_s'] = round(track_time / max(1, self.img_num),
+                                        4) if average else track_time
+            total_time = total_time + track_time
         dic['total_time_s'] = round(total_time, 4)
         return dic
 
