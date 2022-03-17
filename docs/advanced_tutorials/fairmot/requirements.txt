@@ -1,5 +1,0 @@
-numpy
-opencv-python
-paddleseg==2.2.0
-openvino == 2021.4.0
-paddledet==2.3.0
