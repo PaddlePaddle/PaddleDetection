@@ -49,3 +49,5 @@ inference:./deploy/pptracking/python/mot_jde_infer.py
 --save_log_path:null
 --run_benchmark:False
 null:null
+===========================infer_benchmark_params===========================
+random_infer_input:[{float32,[3,320,576]},{float32,[2]},{float32,[2]}]

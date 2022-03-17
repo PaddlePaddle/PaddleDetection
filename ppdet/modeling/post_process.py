@@ -523,11 +523,10 @@ class CenterNetPostProcess(TTFBox):
         boxes_shape = bboxes.shape[:]
         scale_expand = paddle.expand(scale_expand, shape=boxes_shape)
         bboxes = paddle.divide(bboxes, scale_expand)
+        results = paddle.concat([clses, scores, bboxes], axis=1)
         if self.for_mot:
-            results = paddle.concat([bboxes, scores, clses], axis=1)
             return results, inds, topk_clses
         else:
-            results = paddle.concat([clses, scores, bboxes], axis=1)
             return results, paddle.shape(results)[0:1], topk_clses
 
 

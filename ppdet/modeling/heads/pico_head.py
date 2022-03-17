@@ -335,6 +335,24 @@ class PicoHead(OTAVFLHead):
 
         return (cls_logits_list, bboxes_reg_list)
 
+    def post_process(self,
+                     gfl_head_outs,
+                     im_shape,
+                     scale_factor,
+                     export_nms=True):
+        cls_scores, bboxes_reg = gfl_head_outs
+        bboxes = paddle.concat(bboxes_reg, axis=1)
+        mlvl_scores = paddle.concat(cls_scores, axis=1)
+        mlvl_scores = mlvl_scores.transpose([0, 2, 1])
+        if not export_nms:
+            return bboxes, mlvl_scores
+        else:
+            # rescale: [h_scale, w_scale] -> [w_scale, h_scale, w_scale, h_scale]
+            im_scale = scale_factor.flip([1]).tile([1, 2]).unsqueeze(1)
+            bboxes /= im_scale
+            bbox_pred, bbox_num, _ = self.nms(bboxes, mlvl_scores)
+            return bbox_pred, bbox_num
+
 
 @register
 class PicoHeadV2(GFLHead):
@@ -460,17 +478,13 @@ class PicoHeadV2(GFLHead):
                         act=self.act,
                         use_act_in_out=False))
 
-    def forward(self, fpn_feats, deploy=False):
+    def forward(self, fpn_feats, export_post_process=True):
         assert len(fpn_feats) == len(
             self.fpn_stride
         ), "The size of fpn_feats is not equal to size of fpn_stride"
-        anchors, num_anchors_list, stride_tensor_list = generate_anchors_for_grid_cell(
-            fpn_feats, self.fpn_stride, self.grid_cell_scale, self.cell_offset)
 
         cls_score_list, reg_list, box_list = [], [], []
-        for i, fpn_feat, anchor, stride, align_cls in zip(
-                range(len(self.fpn_stride)), fpn_feats, anchors,
-                self.fpn_stride, self.cls_align):
+        for i, (fpn_feat, stride) in enumerate(zip(fpn_feats, self.fpn_stride)):
             b, _, h, w = get_static_shape(fpn_feat)
             # task decomposition
             conv_cls_feat, se_feat = self.conv_feat(fpn_feat, i)
@@ -479,27 +493,40 @@ class PicoHeadV2(GFLHead):
 
             # cls prediction and alignment
             if self.use_align_head:
-                cls_prob = F.sigmoid(align_cls(conv_cls_feat))
+                cls_prob = F.sigmoid(self.cls_align[i](conv_cls_feat))
                 cls_score = (F.sigmoid(cls_logit) * cls_prob + eps).sqrt()
             else:
                 cls_score = F.sigmoid(cls_logit)
 
-            anchor_centers = bbox_center(anchor).unsqueeze(0) / stride
-            anchor_centers = anchor_centers.reshape([1, h, w, 2])
-
-            pred_distances = self.distribution_project(
-                reg_pred.transpose([0, 2, 3, 1])).reshape([b, h, w, 4])
-            reg_bbox = batch_distance2bbox(
-                anchor_centers, pred_distances, max_shapes=None)
-            if not self.training:
+            if not export_post_process and not self.training:
+                # Now only supports batch size = 1 in deploy
                 cls_score_list.append(
-                    cls_score.transpose([0, 2, 3, 1]).reshape(
-                        [b, -1, self.cls_out_channels]))
-                box_list.append(reg_bbox.reshape([b, -1, 4]) * stride)
+                    cls_score.reshape([1, self.cls_out_channels, -1]).transpose(
+                        [0, 2, 1]))
+                box_list.append(
+                    reg_pred.reshape([1, (self.reg_max + 1) * 4, -1]).transpose(
+                        [0, 2, 1]))
             else:
-                cls_score_list.append(cls_score.flatten(2).transpose([0, 2, 1]))
-                reg_list.append(reg_pred.flatten(2).transpose([0, 2, 1]))
-                box_list.append(reg_bbox.reshape([b, -1, 4]))
+                cls_score_out = cls_score.transpose([0, 2, 3, 1])
+                bbox_pred = reg_pred.transpose([0, 2, 3, 1])
+                b, cell_h, cell_w, _ = paddle.shape(cls_score_out)
+                y, x = self.get_single_level_center_point(
+                    [cell_h, cell_w], stride, cell_offset=self.cell_offset)
+                center_points = paddle.stack([x, y], axis=-1)
+                cls_score_out = cls_score_out.reshape(
+                    [b, -1, self.cls_out_channels])
+                bbox_pred = self.distribution_project(bbox_pred) * stride
+                bbox_pred = bbox_pred.reshape([b, cell_h * cell_w, 4])
+                bbox_pred = batch_distance2bbox(
+                    center_points, bbox_pred, max_shapes=None)
+                if not self.training:
+                    cls_score_list.append(cls_score_out)
+                    box_list.append(bbox_pred)
+                else:
+                    cls_score_list.append(
+                        cls_score.flatten(2).transpose([0, 2, 1]))
+                    reg_list.append(reg_pred.flatten(2).transpose([0, 2, 1]))
+                    box_list.append(bbox_pred / stride)
 
         if not self.training:
             return cls_score_list, box_list
@@ -507,19 +534,18 @@ class PicoHeadV2(GFLHead):
             cls_score_list = paddle.concat(cls_score_list, axis=1)
             box_list = paddle.concat(box_list, axis=1)
             reg_list = paddle.concat(reg_list, axis=1)
-            anchors = paddle.concat(anchors)
-            anchors.stop_gradient = True
-            stride_tensor_list = paddle.concat(stride_tensor_list)
-            stride_tensor_list.stop_gradient = True
-            return cls_score_list, reg_list, box_list, anchors, num_anchors_list, stride_tensor_list
+            return cls_score_list, reg_list, box_list, fpn_feats
 
     def get_loss(self, head_outs, gt_meta):
-        pred_scores, pred_regs, pred_bboxes, anchors, num_anchors_list, stride_tensor_list = head_outs
+        pred_scores, pred_regs, pred_bboxes, fpn_feats = head_outs
         gt_labels = gt_meta['gt_class']
         gt_bboxes = gt_meta['gt_bbox']
         gt_scores = gt_meta['gt_score'] if 'gt_score' in gt_meta else None
         num_imgs = gt_meta['im_id'].shape[0]
         pad_gt_mask = gt_meta['pad_gt_mask']
+
+        anchors, _, num_anchors_list, stride_tensor_list = generate_anchors_for_grid_cell(
+            fpn_feats, self.fpn_stride, self.grid_cell_scale, self.cell_offset)
 
         centers = bbox_center(anchors)
 
@@ -617,3 +643,21 @@ class PicoHeadV2(GFLHead):
             loss_vfl=loss_vfl, loss_bbox=loss_bbox, loss_dfl=loss_dfl)
 
         return loss_states
+
+    def post_process(self,
+                     gfl_head_outs,
+                     im_shape,
+                     scale_factor,
+                     export_nms=True):
+        cls_scores, bboxes_reg = gfl_head_outs
+        bboxes = paddle.concat(bboxes_reg, axis=1)
+        mlvl_scores = paddle.concat(cls_scores, axis=1)
+        mlvl_scores = mlvl_scores.transpose([0, 2, 1])
+        if not export_nms:
+            return bboxes, mlvl_scores
+        else:
+            # rescale: [h_scale, w_scale] -> [w_scale, h_scale, w_scale, h_scale]
+            im_scale = scale_factor.flip([1]).tile([1, 2]).unsqueeze(1)
+            bboxes /= im_scale
+            bbox_pred, bbox_num, _ = self.nms(bboxes, mlvl_scores)
+            return bbox_pred, bbox_num

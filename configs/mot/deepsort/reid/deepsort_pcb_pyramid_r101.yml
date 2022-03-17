@@ -15,7 +15,7 @@ EvalMOTDataset:
     keep_ori_im: True # set as True in DeepSORT
 
 det_weights: None
-reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams
 
 
 # A ReID only configuration of DeepSORT, detector should be None.
@@ -28,6 +28,7 @@ DeepSORT:
   tracker: DeepSORTTracker
 
 PCBPyramid:
+  model_name: "ResNet101"
   num_conv_out_channels: 128
   num_classes: 751 # default 751 classes in Market-1501 dataset.
 

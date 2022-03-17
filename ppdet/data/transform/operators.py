@@ -1747,7 +1747,7 @@ class Mixup(BaseOperator):
             gt_score2 = np.ones_like(sample[1]['gt_class'])
             gt_score = np.concatenate(
                 (gt_score1 * factor, gt_score2 * (1. - factor)), axis=0)
-            result['gt_score'] = gt_score
+            result['gt_score'] = gt_score.astype('float32')
         if 'is_crowd' in sample[0]:
             is_crowd1 = sample[0]['is_crowd']
             is_crowd2 = sample[1]['is_crowd']
@@ -2032,8 +2032,8 @@ class Pad(BaseOperator):
                 im_h < h and im_w < w
             ), '(h, w) of target size should be greater than (im_h, im_w)'
         else:
-            h = np.ceil(im_h / self.size_divisor) * self.size_divisor
-            w = np.ceil(im_w / self.size_divisor) * self.size_divisor
+            h = int(np.ceil(im_h / self.size_divisor) * self.size_divisor)
+            w = int(np.ceil(im_w / self.size_divisor) * self.size_divisor)
 
         if h == im_h and w == im_w:
             return sample

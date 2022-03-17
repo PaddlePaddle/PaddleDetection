@@ -114,7 +114,7 @@ class SPP(nn.Layer):
                  ch_out,
                  k,
                  pool_size,
-                 norm_type,
+                 norm_type='bn',
                  freeze_norm=False,
                  name='',
                  act='leaky',

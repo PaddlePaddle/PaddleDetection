@@ -1,7 +1,6 @@
 _BASE_: [
   'detector/ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml',
-  '../../datasets/mot.yml',
-  '../../runtime.yml',
+  '_base_/mot17.yml',
   '_base_/deepsort_reader_1088x608.yml',
 ]
 metric: MOT
@@ -15,6 +14,25 @@ EvalMOTDataset:
 
 det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_640x640_mot17half.pdparams
 reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams
+
+# reader
+EvalMOTReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+TestMOTReader:
+  inputs_def:
+    image_shape: [3, 640, 640]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+  batch_size: 1
 
 
 # DeepSORT configuration
@@ -63,7 +81,7 @@ ResNet:
   freeze_norm: false
   norm_decay: 0.
 
-# Tracking requires higher quality boxes, so decode.conf_thresh will be higher
+# Tracking requires higher quality boxes, so NMS score_threshold will be higher
 BBoxPostProcess:
   decode:
     name: YOLOBox
@@ -74,7 +92,7 @@ BBoxPostProcess:
   nms:
     name: MatrixNMS
     keep_top_k: 100
-    score_threshold: 0.25 # 0.01 in original detector
-    post_threshold: 0.25 # 0.01 in original detector
+    score_threshold: 0.4 # 0.01 in original detector
+    post_threshold: 0.4 # 0.01 in original detector
     nms_top_k: -1
     background_label: -1

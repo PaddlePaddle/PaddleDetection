@@ -51,7 +51,7 @@ logger = setup_logger('ppdet.engine')
 
 __all__ = ['Trainer']
 
-MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT']
+MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT', 'ByteTrack']
 
 
 class Trainer(object):
@@ -72,6 +72,10 @@ class Trainer(object):
         if cfg.architecture == 'DeepSORT' and self.mode == 'train':
             logger.error('DeepSORT has no need of training on mot dataset.')
             sys.exit(1)
+
+        if cfg.architecture == 'FairMOT' and self.mode == 'eval':
+            images = self.parse_mot_images(cfg)
+            self.dataset.set_images(images)
 
         if self.mode == 'train':
             self.loader = create('{}Reader'.format(self.mode.capitalize()))(
@@ -114,14 +118,17 @@ class Trainer(object):
         # EvalDataset build with BatchSampler to evaluate in single device
         # TODO: multi-device evaluate
         if self.mode == 'eval':
-            self._eval_batch_sampler = paddle.io.BatchSampler(
-                self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
-            reader_name = '{}Reader'.format(self.mode.capitalize())
-            # If metric is VOC, need to be set collate_batch=False.
-            if cfg.metric == 'VOC':
-                cfg[reader_name]['collate_batch'] = False
-            self.loader = create(reader_name)(self.dataset, cfg.worker_num,
-                                              self._eval_batch_sampler)
+            if cfg.architecture == 'FairMOT':
+                self.loader = create('EvalMOTReader')(self.dataset, 0)
+            else:
+                self._eval_batch_sampler = paddle.io.BatchSampler(
+                    self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
+                reader_name = '{}Reader'.format(self.mode.capitalize())
+                # If metric is VOC, need to be set collate_batch=False.
+                if cfg.metric == 'VOC':
+                    cfg[reader_name]['collate_batch'] = False
+                self.loader = create(reader_name)(self.dataset, cfg.worker_num,
+                                                  self._eval_batch_sampler)
         # TestDataset build after user set images, skip loader creation here
 
         # build optimizer in train mode
@@ -339,7 +346,8 @@ class Trainer(object):
             self.start_epoch = load_weight(self.model.student_model, weights,
                                            self.optimizer)
         else:
-            self.start_epoch = load_weight(self.model, weights, self.optimizer)
+            self.start_epoch = load_weight(self.model, weights, self.optimizer,
+                                           self.ema if self.use_ema else None)
         logger.debug("Resume weights of epoch {}".format(self.start_epoch))
 
     def train(self, validate=False):
@@ -432,21 +440,23 @@ class Trainer(object):
                 self.status['batch_time'].update(time.time() - iter_tic)
                 self._compose_callback.on_step_end(self.status)
                 if self.use_ema:
-                    self.ema.update(self.model)
+                    self.ema.update()
                 iter_tic = time.time()
 
-            # apply ema weight on model
-            if self.use_ema:
-                weight = copy.deepcopy(self.model.state_dict())
-                self.model.set_dict(self.ema.apply())
             if self.cfg.get('unstructured_prune'):
                 self.pruner.update_params()
 
+            is_snapshot = (self._nranks < 2 or self._local_rank == 0) \
+                       and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 or epoch_id == self.end_epoch - 1)
+            if is_snapshot and self.use_ema:
+                # apply ema weight on model
+                weight = copy.deepcopy(self.model.state_dict())
+                self.model.set_dict(self.ema.apply())
+                self.status['weight'] = weight
+
             self._compose_callback.on_epoch_end(self.status)
 
-            if validate and (self._nranks < 2 or self._local_rank == 0) \
-                    and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 \
-                             or epoch_id == self.end_epoch - 1):
+            if validate and is_snapshot:
                 if not hasattr(self, '_eval_loader'):
                     # build evaluation dataset and loader
                     self._eval_dataset = self.cfg.EvalDataset
@@ -467,13 +477,15 @@ class Trainer(object):
                     Init_mark = True
                     self._init_metrics(validate=validate)
                     self._reset_metrics()
+
                 with paddle.no_grad():
                     self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
 
-            # restore origin weight on model
-            if self.use_ema:
+            if is_snapshot and self.use_ema:
+                # reset original weight
                 self.model.set_dict(weight)
+                self.status.pop('weight')
 
         self._compose_callback.on_train_end(self.status)
 
@@ -634,13 +646,26 @@ class Trainer(object):
 
         if hasattr(self.model, 'deploy'):
             self.model.deploy = True
-        export_post_process = self.cfg.get('export_post_process', False)
-        if hasattr(self.model, 'export_post_process'):
-            self.model.export_post_process = export_post_process
-            image_shape = [None] + image_shape[1:]
+
+        for layer in self.model.sublayers():
+            if hasattr(layer, 'convert_to_deploy'):
+                layer.convert_to_deploy()
+
+        export_post_process = self.cfg['export'].get(
+            'post_process', False) if hasattr(self.cfg, 'export') else True
+        export_nms = self.cfg['export'].get('nms', False) if hasattr(
+            self.cfg, 'export') else True
+        export_benchmark = self.cfg['export'].get(
+            'benchmark', False) if hasattr(self.cfg, 'export') else False
         if hasattr(self.model, 'fuse_norm'):
             self.model.fuse_norm = self.cfg['TestReader'].get('fuse_normalize',
                                                               False)
+        if hasattr(self.model, 'export_post_process'):
+            self.model.export_post_process = export_post_process if not export_benchmark else False
+        if hasattr(self.model, 'export_nms'):
+            self.model.export_nms = export_nms if not export_benchmark else False
+        if export_post_process and not export_benchmark:
+            image_shape = [None] + image_shape[1:]
 
         # Save infer cfg
         _dump_infer_config(self.cfg,
@@ -749,3 +774,29 @@ class Trainer(object):
         flops = flops(self.model, input_spec) / (1000**3)
         logger.info(" Model FLOPs : {:.6f}G. (image shape is {})".format(
             flops, input_data['image'][0].unsqueeze(0).shape))
+
+    def parse_mot_images(self, cfg):
+        import glob
+        # for quant
+        dataset_dir = cfg['EvalMOTDataset'].dataset_dir
+        data_root = cfg['EvalMOTDataset'].data_root
+        data_root = '{}/{}'.format(dataset_dir, data_root)
+        seqs = os.listdir(data_root)
+        seqs.sort()
+        all_images = []
+        for seq in seqs:
+            infer_dir = os.path.join(data_root, seq)
+            assert infer_dir is None or os.path.isdir(infer_dir), \
+                "{} is not a directory".format(infer_dir)
+            images = set()
+            exts = ['jpg', 'jpeg', 'png', 'bmp']
+            exts += [ext.upper() for ext in exts]
+            for ext in exts:
+                images.update(glob.glob('{}/*.{}'.format(infer_dir, ext)))
+            images = list(images)
+            images.sort()
+            assert len(images) > 0, "no image found in {}".format(infer_dir)
+            all_images.extend(images)
+            logger.info("Found {} inference images in total.".format(
+                len(images)))
+        return all_images

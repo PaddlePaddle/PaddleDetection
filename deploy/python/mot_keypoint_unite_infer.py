@@ -13,31 +13,34 @@
 # limitations under the License.
 
 import os
+import json
 import cv2
 import math
-import copy
 import numpy as np
-from collections import defaultdict
 import paddle
-
-from utils import get_current_memory_mb
-from infer import Detector, PredictConfig, print_arguments, get_test_images
-from visualize import draw_pose
+import yaml
+import copy
+from collections import defaultdict
 
 from mot_keypoint_unite_utils import argsparser
-from keypoint_infer import KeyPoint_Detector, PredictConfig_KeyPoint
-from det_keypoint_unite_infer import predict_with_given_det, bench_log
-from mot_jde_infer import JDE_Detector
+from preprocess import decode_image
+from infer import print_arguments, get_test_images
+from mot_sde_infer import SDE_Detector
+from mot_jde_infer import JDE_Detector, MOT_JDE_SUPPORT_MODELS
+from keypoint_infer import KeyPointDetector, KEYPOINT_SUPPORT_MODELS
+from det_keypoint_unite_infer import predict_with_given_det
+from visualize import visualize_pose
+from benchmark_utils import PaddleInferBenchmark
+from utils import get_current_memory_mb
+from keypoint_postprocess import translate_to_ori_images
 
-from ppdet.modeling.mot.visualization import plot_tracking_dict
-from ppdet.modeling.mot.utils import MOTTimer as FPSTimer
-from ppdet.modeling.mot.utils import write_mot_results
+# add python path
+import sys
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+sys.path.insert(0, parent_path)
 
-# Global dictionary
-KEYPOINT_SUPPORT_MODELS = {
-    'HigherHRNet': 'keypoint_bottomup',
-    'HRNet': 'keypoint_topdown'
-}
+from pptracking.python.visualize import plot_tracking, plot_tracking_dict
+from pptracking.python.mot.utils import MOTTimer as FPSTimer
 
 
 def convert_mot_to_det(tlwhs, scores):
@@ -49,94 +52,87 @@ def convert_mot_to_det(tlwhs, scores):
     # support single class now
     results['boxes'] = np.vstack(
         [np.hstack([0, scores[i], xyxys[i]]) for i in range(num_mot)])
+    results['boxes_num'] = np.array([num_mot])
     return results
 
 
-def mot_keypoint_unite_predict_image(mot_model,
-                                     keypoint_model,
-                                     image_list,
-                                     keypoint_batch_size=1):
-    num_classes = mot_model.num_classes
-    assert num_classes == 1, 'Only one category mot model supported for uniting keypoint deploy.'
-    data_type = 'mot'
+def mot_topdown_unite_predict(mot_detector,
+                              topdown_keypoint_detector,
+                              image_list,
+                              keypoint_batch_size=1,
+                              save_res=False):
+    det_timer = mot_detector.get_timer()
+    store_res = []
     image_list.sort()
+    num_classes = mot_detector.num_classes
     for i, img_file in enumerate(image_list):
-        frame = cv2.imread(img_file)
+        # Decode image in advance in mot + pose prediction
+        det_timer.preprocess_time_s.start()
+        image, _ = decode_image(img_file, {})
+        det_timer.preprocess_time_s.end()
 
         if FLAGS.run_benchmark:
-            # warmup
-            online_tlwhs, online_scores, online_ids = mot_model.predict(
-                [frame], FLAGS.mot_threshold, repeats=10, add_timer=False)
-            # run benchmark
-            online_tlwhs, online_scores, online_ids = mot_model.predict(
-                [frame], FLAGS.mot_threshold, repeats=10, add_timer=True)
+            mot_results = mot_detector.predict_image(
+                [image], run_benchmark=True, repeats=10)
+
             cm, gm, gu = get_current_memory_mb()
-            mot_model.cpu_mem += cm
-            mot_model.gpu_mem += gm
-            mot_model.gpu_util += gu
-
+            mot_detector.cpu_mem += cm
+            mot_detector.gpu_mem += gm
+            mot_detector.gpu_util += gu
         else:
-            online_tlwhs, online_scores, online_ids = mot_model.predict(
-                [frame], FLAGS.mot_threshold)
+            mot_results = mot_detector.predict_image([image], visual=False)
 
-        keypoint_arch = keypoint_model.pred_config.arch
-        if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown':
-            results = convert_mot_to_det(online_tlwhs, online_scores)
-            keypoint_results = predict_with_given_det(
-                frame, results, keypoint_model, keypoint_batch_size,
-                FLAGS.mot_threshold, FLAGS.keypoint_threshold,
-                FLAGS.run_benchmark)
+        online_tlwhs, online_scores, online_ids = mot_results[
+            0]  # only support bs=1 in MOT model
+        results = convert_mot_to_det(
+            online_tlwhs[0],
+            online_scores[0])  # only support single class for mot + pose
+        if results['boxes_num'] == 0:
+            continue
 
-        else:
-            if FLAGS.run_benchmark:
-                keypoint_results = keypoint_model.predict(
-                    [frame],
-                    FLAGS.keypoint_threshold,
-                    repeats=10,
-                    add_timer=False)
+        keypoint_res = predict_with_given_det(
+            image, results, topdown_keypoint_detector, keypoint_batch_size,
+            FLAGS.mot_threshold, FLAGS.keypoint_threshold, FLAGS.run_benchmark)
 
-            repeats = 10 if FLAGS.run_benchmark else 1
-            keypoint_results = keypoint_model.predict(
-                [frame], FLAGS.keypoint_threshold, repeats=repeats)
-
+        if save_res:
+            store_res.append([
+                i, keypoint_res['bbox'],
+                [keypoint_res['keypoint'][0], keypoint_res['keypoint'][1]]
+            ])
         if FLAGS.run_benchmark:
             cm, gm, gu = get_current_memory_mb()
-            keypoint_model.cpu_mem += cm
-            keypoint_model.gpu_mem += gm
-            keypoint_model.gpu_util += gu
+            topdown_keypoint_detector.cpu_mem += cm
+            topdown_keypoint_detector.gpu_mem += gm
+            topdown_keypoint_detector.gpu_util += gu
         else:
-            im = draw_pose(
-                frame,
-                keypoint_results,
-                visual_thread=FLAGS.keypoint_threshold,
-                returnimg=True,
-                ids=online_ids[0]
-                if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown'
-                else None)
+            if not os.path.exists(FLAGS.output_dir):
+                os.makedirs(FLAGS.output_dir)
+            visualize_pose(
+                img_file,
+                keypoint_res,
+                visual_thresh=FLAGS.keypoint_threshold,
+                save_dir=FLAGS.output_dir)
 
-            online_im = plot_tracking_dict(
-                im,
-                num_classes,
-                online_tlwhs,
-                online_ids,
-                online_scores,
-                frame_id=i)
-            if FLAGS.save_images:
-                if not os.path.exists(FLAGS.output_dir):
-                    os.makedirs(FLAGS.output_dir)
-                img_name = os.path.split(img_file)[-1]
-                out_path = os.path.join(FLAGS.output_dir, img_name)
-                cv2.imwrite(out_path, online_im)
-                print("save result to: " + out_path)
+    if save_res:
+        """
+        1) store_res: a list of image_data
+        2) image_data: [imageid, rects, [keypoints, scores]]
+        3) rects: list of rect [xmin, ymin, xmax, ymax]
+        4) keypoints: 17(joint numbers)*[x, y, conf], total 51 data in list
+        5) scores: mean of all joint conf
+        """
+        with open("det_keypoint_unite_image_results.json", 'w') as wf:
+            json.dump(store_res, wf, indent=4)
 
 
-def mot_keypoint_unite_predict_video(mot_model,
-                                     keypoint_model,
-                                     camera_id,
-                                     keypoint_batch_size=1):
+def mot_topdown_unite_predict_video(mot_detector,
+                                    topdown_keypoint_detector,
+                                    camera_id,
+                                    keypoint_batch_size=1,
+                                    save_res=False):
+    video_name = 'output.mp4'
     if camera_id != -1:
         capture = cv2.VideoCapture(camera_id)
-        video_name = 'output.mp4'
     else:
         capture = cv2.VideoCapture(FLAGS.video_file)
         video_name = os.path.split(FLAGS.video_file)[-1]
@@ -150,17 +146,12 @@ def mot_keypoint_unite_predict_video(mot_model,
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
-    if not FLAGS.save_images:
-        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
-        writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     frame_id = 0
-    timer_mot = FPSTimer()
-    timer_kp = FPSTimer()
-    timer_mot_kp = FPSTimer()
+    timer_mot, timer_kp, timer_mot_kp = FPSTimer(), FPSTimer(), FPSTimer()
 
-    # support single class and multi classes, but should be single class here
-    mot_results = defaultdict(list)
-    num_classes = mot_model.num_classes
+    num_classes = mot_detector.num_classes
     assert num_classes == 1, 'Only one category mot model supported for uniting keypoint deploy.'
     data_type = 'mot'
 
@@ -168,43 +159,41 @@ def mot_keypoint_unite_predict_video(mot_model,
         ret, frame = capture.read()
         if not ret:
             break
+        if frame_id % 10 == 0:
+            print('Tracking frame: %d' % (frame_id))
+        frame_id += 1
         timer_mot_kp.tic()
+
+        # mot model
         timer_mot.tic()
-        online_tlwhs, online_scores, online_ids = mot_model.predict(
-            [frame], FLAGS.mot_threshold)
+        mot_results = mot_detector.predict_image([frame], visual=False)
         timer_mot.toc()
-        mot_results[0].append(
-            (frame_id + 1, online_tlwhs[0], online_scores[0], online_ids[0]))
-        mot_fps = 1. / timer_mot.average_time
+        online_tlwhs, online_scores, online_ids = mot_results[0]
+        results = convert_mot_to_det(
+            online_tlwhs[0],
+            online_scores[0])  # only support single class for mot + pose
+        if results['boxes_num'] == 0:
+            continue
 
+        # keypoint model
         timer_kp.tic()
-
-        keypoint_arch = keypoint_model.pred_config.arch
-        if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown':
-            results = convert_mot_to_det(online_tlwhs[0], online_scores[0])
-            keypoint_results = predict_with_given_det(
-                frame, results, keypoint_model, keypoint_batch_size,
-                FLAGS.mot_threshold, FLAGS.keypoint_threshold,
-                FLAGS.run_benchmark)
-
-        else:
-            keypoint_results = keypoint_model.predict([frame],
-                                                      FLAGS.keypoint_threshold)
+        keypoint_res = predict_with_given_det(
+            frame, results, topdown_keypoint_detector, keypoint_batch_size,
+            FLAGS.mot_threshold, FLAGS.keypoint_threshold, FLAGS.run_benchmark)
         timer_kp.toc()
         timer_mot_kp.toc()
-        kp_fps = 1. / timer_kp.average_time
-        mot_kp_fps = 1. / timer_mot_kp.average_time
 
-        im = draw_pose(
+        kp_fps = 1. / timer_kp.duration
+        mot_kp_fps = 1. / timer_mot_kp.duration
+
+        im = visualize_pose(
             frame,
-            keypoint_results,
-            visual_thread=FLAGS.keypoint_threshold,
+            keypoint_res,
+            visual_thresh=FLAGS.keypoint_threshold,
             returnimg=True,
-            ids=online_ids[0]
-            if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown' else
-            None)
+            ids=online_ids[0])
 
-        online_im = plot_tracking_dict(
+        im = plot_tracking_dict(
             im,
             num_classes,
             online_tlwhs,
@@ -213,55 +202,40 @@ def mot_keypoint_unite_predict_video(mot_model,
             frame_id=frame_id,
             fps=mot_kp_fps)
 
-        im = np.array(online_im)
-
-        frame_id += 1
-        print('detect frame: %d' % (frame_id))
-
-        if FLAGS.save_images:
-            save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
-            if not os.path.exists(save_dir):
-                os.makedirs(save_dir)
-            cv2.imwrite(
-                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
-        else:
-            writer.write(im)
+        writer.write(im)
         if camera_id != -1:
             cv2.imshow('Tracking and keypoint results', im)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-    if FLAGS.save_mot_txts:
-        result_filename = os.path.join(FLAGS.output_dir,
-                                       video_name.split('.')[-2] + '.txt')
-        write_mot_results(result_filename, mot_results, data_type, num_classes)
 
-    if FLAGS.save_images:
-        save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
-        cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(save_dir,
-                                                              out_path)
-        os.system(cmd_str)
-        print('Save video in {}.'.format(out_path))
-    else:
-        writer.release()
+    writer.release()
+    print('output_video saved to: {}'.format(out_path))
 
 
 def main():
-    pred_config = PredictConfig(FLAGS.mot_model_dir)
-    mot_model = JDE_Detector(
-        pred_config,
-        FLAGS.mot_model_dir,
-        device=FLAGS.device,
-        run_mode=FLAGS.run_mode,
-        trt_min_shape=FLAGS.trt_min_shape,
-        trt_max_shape=FLAGS.trt_max_shape,
-        trt_opt_shape=FLAGS.trt_opt_shape,
-        trt_calib_mode=FLAGS.trt_calib_mode,
-        cpu_threads=FLAGS.cpu_threads,
-        enable_mkldnn=FLAGS.enable_mkldnn)
+    deploy_file = os.path.join(FLAGS.mot_model_dir, 'infer_cfg.yml')
+    with open(deploy_file) as f:
+        yml_conf = yaml.safe_load(f)
+    arch = yml_conf['arch']
+    mot_detector_func = 'SDE_Detector'
+    if arch in MOT_JDE_SUPPORT_MODELS:
+        mot_detector_func = 'JDE_Detector'
 
-    pred_config = PredictConfig_KeyPoint(FLAGS.keypoint_model_dir)
-    keypoint_model = KeyPoint_Detector(
-        pred_config,
+    mot_detector = eval(mot_detector_func)(FLAGS.mot_model_dir,
+                                           FLAGS.tracker_config,
+                                           device=FLAGS.device,
+                                           run_mode=FLAGS.run_mode,
+                                           batch_size=1,
+                                           trt_min_shape=FLAGS.trt_min_shape,
+                                           trt_max_shape=FLAGS.trt_max_shape,
+                                           trt_opt_shape=FLAGS.trt_opt_shape,
+                                           trt_calib_mode=FLAGS.trt_calib_mode,
+                                           cpu_threads=FLAGS.cpu_threads,
+                                           enable_mkldnn=FLAGS.enable_mkldnn,
+                                           threshold=FLAGS.mot_threshold,
+                                           output_dir=FLAGS.output_dir)
+
+    topdown_keypoint_detector = KeyPointDetector(
         FLAGS.keypoint_model_dir,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
@@ -272,22 +246,27 @@ def main():
         trt_calib_mode=FLAGS.trt_calib_mode,
         cpu_threads=FLAGS.cpu_threads,
         enable_mkldnn=FLAGS.enable_mkldnn,
+        threshold=FLAGS.keypoint_threshold,
+        output_dir=FLAGS.output_dir,
         use_dark=FLAGS.use_dark)
+    keypoint_arch = topdown_keypoint_detector.pred_config.arch
+    assert KEYPOINT_SUPPORT_MODELS[
+        keypoint_arch] == 'keypoint_topdown', 'MOT-Keypoint unite inference only supports topdown models.'
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
-        mot_keypoint_unite_predict_video(mot_model, keypoint_model,
-                                         FLAGS.camera_id,
-                                         FLAGS.keypoint_batch_size)
+        mot_topdown_unite_predict_video(
+            mot_detector, topdown_keypoint_detector, FLAGS.camera_id,
+            FLAGS.keypoint_batch_size, FLAGS.save_res)
     else:
         # predict from image
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        mot_keypoint_unite_predict_image(mot_model, keypoint_model, img_list,
-                                         FLAGS.keypoint_batch_size)
-
+        mot_topdown_unite_predict(mot_detector, topdown_keypoint_detector,
+                                  img_list, FLAGS.keypoint_batch_size,
+                                  FLAGS.save_res)
         if not FLAGS.run_benchmark:
-            mot_model.det_times.info(average=True)
-            keypoint_model.det_times.info(average=True)
+            mot_detector.det_times.info(average=True)
+            topdown_keypoint_detector.det_times.info(average=True)
         else:
             mode = FLAGS.run_mode
             mot_model_dir = FLAGS.mot_model_dir
@@ -295,14 +274,15 @@ def main():
                 'model_name': mot_model_dir.strip('/').split('/')[-1],
                 'precision': mode.split('_')[-1]
             }
-            bench_log(mot_model, img_list, mot_model_info, name='MOT')
+            bench_log(mot_detector, img_list, mot_model_info, name='MOT')
 
             keypoint_model_dir = FLAGS.keypoint_model_dir
             keypoint_model_info = {
                 'model_name': keypoint_model_dir.strip('/').split('/')[-1],
                 'precision': mode.split('_')[-1]
             }
-            bench_log(keypoint_model, img_list, keypoint_model_info, 'KeyPoint')
+            bench_log(topdown_keypoint_detector, img_list, keypoint_model_info,
+                      FLAGS.keypoint_batch_size, 'KeyPoint')
 
 
 if __name__ == '__main__':
