@@ -338,8 +338,8 @@ def visualize_attr(im, results, boxes=None):
         im = np.ascontiguousarray(np.copy(im))
 
     im_h, im_w = im.shape[:2]
-    text_scale = max(1, int(im.shape[0] / 1200.))
-    text_thickness = 3
+    text_scale = max(1, int(im.shape[0] / 1600.))
+    text_thickness = 2
 
     line_inter = im.shape[0] / 50.
     for i, res in enumerate(results):

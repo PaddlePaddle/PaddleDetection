@@ -10,7 +10,7 @@ PP-Human是基于飞桨深度学习框架的业界首个开源的实时行人分
 
 * [环境准备](#环境准备)
 * [快速开始](#快速开始)
-  * [1. 模型下载](##模型下载)
+  * [1 模型下载](##模型下载)
   * [2. 配置文件准备](##配置文件准备)
   * [3. 预测部署](##预测部署)
      * [3.1 参数说明](###参数说明)
@@ -104,10 +104,13 @@ ATTR:
 # 指定配置文件路径和测试图片
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu
 
-# 指定配置文件路径和测试视频
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu
+# 指定配置文件路径和测试视频，完成属性识别
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True
 
-# 指定配置文件路径，模型路径和测试视频
+# 指定配置文件路径和测试视频，完成行为识别
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True
+
+# 指定配置文件路径，模型路径和测试视频，完成多目标跟踪
 # 命令行中指定的模型路径优先级高于配置文件
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/
 ```
@@ -122,6 +125,8 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml -
 | --image_dir  | Option |  要预测的图片文件夹路径   |
 | --video_file | Option | 需要预测的视频 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4|
+| --enable_attr| Option | 是否进行属性识别 |
+| --enable_attr| Option | 是否进行行为识别 |
 | --device | Option | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
 | --output_dir | Option|可视化结果保存的根目录，默认为output/|
 | --run_mode | Option |使用GPU时，默认为paddle, 可选（paddle/trt_fp32/trt_fp16/trt_int8）|
@@ -130,7 +135,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml -
 | --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
 
 
-## 方案介绍
+## 三、方案介绍
 
 ### 1. 目标检测
 - 采用PP-YOLOE L 作为目标检测模型

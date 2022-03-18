@@ -48,6 +48,8 @@ class Pipeline(object):
             then all the images in directory will be predicted, default as None
         video_file (string|None): the path of video file, default as None
         camera_id (int): the device id of camera to predict, default as -1
+        enable_attr (bool): whether use attribute recognition, default as false
+        enable_action (bool): whether use action recognition, default as false
         device (string): the device to predict, options are: CPU/GPU/XPU, 
             default as CPU
         run_mode (string): the mode of prediction, options are: 
@@ -68,6 +70,8 @@ class Pipeline(object):
                  image_dir=None,
                  video_file=None,
                  camera_id=-1,
+                 enable_attr=False,
+                 enable_action=True,
                  device='CPU',
                  run_mode='paddle',
                  trt_min_shape=1,
@@ -87,6 +91,8 @@ class Pipeline(object):
                     cfg,
                     is_video=True,
                     multi_camera=True,
+                    enable_attr=enable_attr,
+                    enable_action=enable_action,
                     device=device,
                     run_mode=run_mode,
                     trt_min_shape=trt_min_shape,
@@ -100,6 +106,8 @@ class Pipeline(object):
             self.predictor = PipePredictor(
                 cfg,
                 self.is_video,
+                enable_attr=enable_attr,
+                enable_action=enable_action,
                 device=device,
                 run_mode=run_mode,
                 trt_min_shape=trt_min_shape,
@@ -172,7 +180,7 @@ class Result(object):
         self.res_dict[name].update(res)
 
     def get(self, name):
-        if name in self.res_dict:
+        if name in self.res_dict and len(self.res_dict[name]) > 0:
             return self.res_dict[name]
         return None
 
@@ -198,6 +206,8 @@ class PipePredictor(object):
         multi_camera (bool): whether to use multi camera in pipeline, 
             default as False
         camera_id (int): the device id of camera to predict, default as -1
+        enable_attr (bool): whether use attribute recognition, default as false
+        enable_action (bool): whether use action recognition, default as false
         device (string): the device to predict, options are: CPU/GPU/XPU, 
             default as CPU
         run_mode (string): the mode of prediction, options are: 
@@ -216,6 +226,8 @@ class PipePredictor(object):
                  cfg,
                  is_video=True,
                  multi_camera=False,
+                 enable_attr=False,
+                 enable_action=False,
                  device='CPU',
                  run_mode='paddle',
                  trt_min_shape=1,
@@ -226,8 +238,22 @@ class PipePredictor(object):
                  enable_mkldnn=False,
                  output_dir='output'):
 
-        self.with_attr = cfg.get('ATTR', False)
-        self.with_action = cfg.get('ACTION', False)
+        if enable_attr and not cfg.get('ATTR', False):
+            ValueError(
+                'enable_attr is set to True, please set ATTR in config file')
+        if enable_action and (not cfg.get('ACTION', False) or
+                              not cfg.get('KPT', False)):
+            ValueError(
+                'enable_action is set to True, please set KPT and ACTION in config file'
+            )
+
+        self.with_attr = cfg.get('ATTR', False) and enable_attr
+        self.with_action = cfg.get('ACTION', False) and enable_action
+        if self.with_attr:
+            print('Attribute Recognition enabled')
+        if self.with_action:
+            print('Action Recognition enabled')
+
         self.is_video = is_video
         self.multi_camera = multi_camera
         self.cfg = cfg
@@ -483,9 +509,10 @@ def main():
     print_arguments(cfg)
     pipeline = Pipeline(
         cfg, FLAGS.image_file, FLAGS.image_dir, FLAGS.video_file,
-        FLAGS.camera_id, FLAGS.device, FLAGS.run_mode, FLAGS.trt_min_shape,
-        FLAGS.trt_max_shape, FLAGS.trt_opt_shape, FLAGS.trt_calib_mode,
-        FLAGS.cpu_threads, FLAGS.enable_mkldnn, FLAGS.output_dir)
+        FLAGS.camera_id, FLAGS.enable_attr, FLAGS.enable_action, FLAGS.device,
+        FLAGS.run_mode, FLAGS.trt_min_shape, FLAGS.trt_max_shape,
+        FLAGS.trt_opt_shape, FLAGS.trt_calib_mode, FLAGS.cpu_threads,
+        FLAGS.enable_mkldnn, FLAGS.output_dir)
 
     pipeline.run()
 
