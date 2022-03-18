@@ -146,7 +146,8 @@ class JDETracker(object):
             remain_inds = (pred_dets_cls[:, 1:2] > self.conf_thres).squeeze(-1)
             if remain_inds.sum() > 0:
                 pred_dets_cls = pred_dets_cls[remain_inds]
-                if self.use_byte:
+                if pred_embs_cls is None:
+                    # in original ByteTrack
                     detections = [
                         STrack(
                             STrack.tlbr_to_tlwh(tlbrs[2:6]),
@@ -185,7 +186,8 @@ class JDETracker(object):
             # Predict the current location with KalmanFilter
             STrack.multi_predict(track_pool_dict[cls_id], self.motion)
 
-            if self.use_byte:
+            if pred_embs_cls is None:
+                # in original ByteTrack
                 dists = matching.iou_distance(track_pool_dict[cls_id],
                                               detections)
                 matches, u_track, u_detection = matching.linear_assignment(
@@ -224,15 +226,28 @@ class JDETracker(object):
 
                 # association the untrack to the low score detections
                 if len(pred_dets_cls_second) > 0:
-                    detections_second = [
-                        STrack(
-                            STrack.tlbr_to_tlwh(tlbrs[:4]),
-                            tlbrs[4],
-                            cls_id,
-                            30,
-                            temp_feat=None)
-                        for tlbrs in pred_dets_cls_second[:, :5]
-                    ]
+                    if pred_embs_dict[cls_id] is None:
+                        # in original ByteTrack
+                        detections_second = [
+                            STrack(
+                                STrack.tlbr_to_tlwh(tlbrs[2:6]),
+                                tlbrs[1],
+                                cls_id,
+                                30,
+                                temp_feat=None)
+                            for tlbrs in pred_dets_cls_second
+                        ]
+                    else:
+                        pred_embs_cls_second = pred_embs_dict[cls_id][inds_second]
+                        detections_second = [
+                            STrack(
+                                STrack.tlbr_to_tlwh(tlbrs[2:6]),
+                                tlbrs[1],
+                                cls_id,
+                                30,
+                                temp_feat)
+                            for (tlbrs, temp_feat) in zip(pred_dets_cls_second, pred_embs_cls_second)
+                        ]
                 else:
                     detections_second = []
                 r_tracked_stracks = [

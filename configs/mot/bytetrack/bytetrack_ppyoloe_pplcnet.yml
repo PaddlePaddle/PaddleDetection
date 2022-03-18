@@ -50,8 +50,11 @@ PPYOLOEHead:
     score_threshold: 0.1 # 0.01 in original detector
     nms_threshold: 0.4 # 0.6 in original detector
 
+# BYTETracker
 JDETracker:
-  det_thresh: 0.5
-  track_buffer: 30
-  min_box_area: 200
+  use_byte: True
+  match_thres: 0.9
+  conf_thres: 0.2
+  low_conf_thres: 0.1
+  min_box_area: 100
   vertical_ratio: 1.6 # for pedestrian

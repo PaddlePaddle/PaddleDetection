@@ -18,8 +18,8 @@
 |  检测训练数据集      |  检测器     | 输入尺度  |  ReID  |  检测mAP  |  MOTA  |  IDF1  |  FPS | 配置文件 |
 | :--------         | :-----      | :----:  | :----:|:------:  | :----: |:-----: |:----:|:----:   |
 | MOT-17 half train | YOLOv3      | 608x608 | -     |  42.7    |  49.5  |  54.8  |   -    |[配置文件](./bytetrack_yolov3.yml) |
-| MOT-17 half train | PPYOLOe     | 640x640 | -     |  52.9    |  52.1  |  59.4  |   -    |[配置文件](./bytetrack_ppyoloe.yml) |
-| MOT-17 half train | PPYOLOe     | 640x640 | PPLCNet|  52.9   |  55.8  |  62.6  |   -    |[配置文件](./bytetrack_ppyoloe_pplcnet.yml) |
+| MOT-17 half train | PPYOLOe     | 640x640 | -     |  52.9    |  50.4  |  59.7  |   -    |[配置文件](./bytetrack_ppyoloe.yml) |
+| MOT-17 half train | PPYOLOe     | 640x640 |PPLCNet|  52.9    |  51.7  |  58.8  |   -    |[配置文件](./bytetrack_ppyoloe_pplcnet.yml) |
 
 **注意:**
 - 模型权重下载链接在配置文件中的```det_weights```和```reid_weights```，运行验证的命令即可自动下载。
