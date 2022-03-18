@@ -96,7 +96,6 @@ class SDE_Detector(Detector):
         # reid config
         self.use_reid = False if reid_model_dir is None else True
         if self.use_reid:
-            # use DeepSORTTracker
             self.reid_pred_config = self.set_config(reid_model_dir)
             self.reid_predictor, self.config = load_predictor(
                 reid_model_dir,
@@ -111,32 +110,48 @@ class SDE_Detector(Detector):
                 trt_calib_mode=trt_calib_mode,
                 cpu_threads=cpu_threads,
                 enable_mkldnn=enable_mkldnn)
+        else:
+            self.reid_pred_config = None
+            self.reid_predictor = None
         
+        self.tracker_config = tracker_config
+        tracker_cfg = yaml.safe_load(open(self.tracker_config))
+        cfg = tracker_cfg[tracker_cfg['type']]
+
         # tracker config
-        self.use_deepsort_tracker = True if tracker_config is None else False
+        self.use_deepsort_tracker = True if tracker_cfg['type'] == 'DeepSORTTracker' else False
         if self.use_deepsort_tracker:
-            # use DeepSORTTracker, in reid exported models infer_cfg.yml
-            cfg = self.reid_pred_config.tracker
+            # use DeepSORTTracker
+            if self.reid_pred_config is not None and 'tracker' in self.reid_pred_config:
+                cfg = self.reid_pred_config.tracker
+            budget = cfg.get('budget', 100)
             max_age = cfg.get('max_age', 30)
             max_iou_distance = cfg.get('max_iou_distance', 0.7)
+            matching_threshold = cfg.get('matching_threshold', 0.2)
+            min_box_area = cfg.get('min_box_area', 0)
+            vertical_ratio = cfg.get('vertical_ratio', 0)
 
             self.tracker = DeepSORTTracker(
+                budget=budget,
                 max_age=max_age,
                 max_iou_distance=max_iou_distance,
+                matching_threshold=matching_threshold,
+                min_box_area=min_box_area,
+                vertical_ratio=vertical_ratio,
             )
         else:
             # use ByteTracker
-            self.tracker_config = tracker_config
-            cfg = yaml.safe_load(open(self.tracker_config))['tracker']
+            use_byte = cfg.get('use_byte', False)
+            det_thresh = cfg.get('det_thresh', 0.3)
             min_box_area = cfg.get('min_box_area', 200)
             vertical_ratio = cfg.get('vertical_ratio', 1.6)
-            use_byte = cfg.get('use_byte', True)
             match_thres = cfg.get('match_thres', 0.9)
             conf_thres = cfg.get('conf_thres', 0.6)
             low_conf_thres = cfg.get('low_conf_thres', 0.1)
 
             self.tracker = JDETracker(
                 use_byte=use_byte,
+                det_thresh=det_thresh,
                 num_classes=self.num_classes,
                 min_box_area=min_box_area,
                 vertical_ratio=vertical_ratio,
@@ -248,6 +263,8 @@ class SDE_Detector(Detector):
             online_tlwhs = defaultdict(list)
             online_scores = defaultdict(list)
             online_ids = defaultdict(list)
+            if self.do_mtmct:
+                online_tlbrs, online_feats = defaultdict(list), defaultdict(list)
             online_targets_dict = self.tracker.update(pred_dets, pred_embs)
             for cls_id in range(self.num_classes):
                 online_targets = online_targets_dict[cls_id]
@@ -263,12 +280,37 @@ class SDE_Detector(Detector):
                     online_tlwhs[cls_id].append(tlwh)
                     online_ids[cls_id].append(tid)
                     online_scores[cls_id].append(tscore)
-            tracking_outs = {
-                'online_tlwhs': online_tlwhs,
-                'online_scores': online_scores,
-                'online_ids': online_ids,
-            }
-        return tracking_outs
+                    if self.do_mtmct:
+                        online_tlbrs[cls_id].append(t.tlbr)
+                        online_feats[cls_id].append(t.curr_feat)
+
+            if self.do_mtmct:
+                assert self.num_classes == 1, 'MTMCT only support single class.'
+                tracking_outs = {
+                    'online_tlwhs': online_tlwhs[0],
+                    'online_scores': online_scores[0],
+                    'online_ids': online_ids[0],
+                }
+                seq_name = det_results['seq_name']
+                frame_id = det_results['frame_id']
+                tracking_outs['feat_data'] = {}
+                for _tlbr, _id, _feat in zip(online_tlbrs[0], online_ids[0], online_feats[0]):
+                    feat_data = {}
+                    feat_data['bbox'] = _tlbr
+                    feat_data['frame'] = f"{frame_id:06d}"
+                    feat_data['id'] = _id
+                    _imgname = f'{seq_name}_{_id}_{frame_id}.jpg'
+                    feat_data['imgname'] = _imgname
+                    feat_data['feat'] = _feat
+                    tracking_outs['feat_data'].update({_imgname: feat_data})
+                return tracking_outs
+            else:
+                tracking_outs = {
+                    'online_tlwhs': online_tlwhs,
+                    'online_scores': online_scores,
+                    'online_ids': online_ids,
+                }
+                return tracking_outs
 
     def predict_image(self,
                       image_list,

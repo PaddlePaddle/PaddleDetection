@@ -1,10 +1,31 @@
-# config of tracker for MOT SDE Detector, use ByteTracker as default.
-# The tracker of MOT JDE Detector is exported together with the model.
+# config of tracker for MOT SDE Detector, use 'JDETracker' as default.
+# The tracker of MOT JDE Detector (such as FairMOT) is exported together with the model.
 # Here 'min_box_area' and 'vertical_ratio' are set for pedestrian, you can modify for other objects tracking.
-tracker:
-  use_byte: true
+
+type: JDETracker # 'JDETracker' or 'DeepSORTTracker'
+
+JDETracker0:
+  use_byte: True
+  det_thresh: 0.3
   conf_thres: 0.6
   low_conf_thres: 0.1
   match_thres: 0.9
   min_box_area: 100
   vertical_ratio: 1.6
+
+JDETracker:
+  det_thresh: 0.5
+  track_buffer: 30
+  min_box_area: 200
+  vertical_ratio: 1.6 # for pedestrian
+
+DeepSORTTracker:
+  input_size: [64, 192]
+  min_box_area: 0
+  vertical_ratio: -1
+  budget: 100
+  max_age: 70
+  n_init: 3
+  metric_type: cosine
+  matching_threshold: 0.2
+  max_iou_distance: 0.9
