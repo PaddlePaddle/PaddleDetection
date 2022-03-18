@@ -78,9 +78,9 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid
 wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/mot17_demo.mp4
 
 # 用导出的PPYOLOv2行人检测模型和PPLCNet ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyolov2_r50vd_dcn_365e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyolov2_r50vd_dcn_365e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
 # 或用导出的PPYOLOe行人检测模型和PPLCNet ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
 ```
 
 ### 2.3 用导出的模型基于Python去预测车辆跟踪
@@ -97,10 +97,10 @@ wget https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet_vehicl
 tar -xvf deepsort_pplcnet_vehicle.tar
 
 # 用导出的PicoDet车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --device=GPU --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --tracker_config=tracker_config.yml --device=GPU --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
 
 # 用导出的PP-YOLOv2车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --device=GPU --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --tracker_config=tracker_config.yml --device=GPU --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
 ```
 
 **注意:**
@@ -108,6 +108,7 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_
  - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
  - `--threshold`表示结果可视化的置信度阈值，默认为0.5，低于该阈值的结果会被过滤掉，为了可视化效果更佳，可根据实际情况自行修改。
  - DeepSORT算法不支持多类别跟踪，只支持单类别跟踪，且ReID模型最好是与检测模型同一类别的物体训练过的，比如行人跟踪最好使用行人ReID模型，车辆跟踪最好使用车辆ReID模型。
+ - 需要手动修改`tracker_config.yml`的跟踪器类型为`type: DeepSORTTracker`。
 
 
 ## 3. 对ByteTrack模型的导出和预测

@@ -62,7 +62,7 @@ class SDE_Detector(Detector):
 
     def __init__(self,
                  model_dir,
-                 tracker_config=None,
+                 tracker_config,
                  device='CPU',
                  run_mode='paddle',
                  batch_size=1,
@@ -114,6 +114,7 @@ class SDE_Detector(Detector):
             self.reid_pred_config = None
             self.reid_predictor = None
         
+        assert tracker_config is not None, 'Note that tracker_config should be set.'
         self.tracker_config = tracker_config
         tracker_cfg = yaml.safe_load(open(self.tracker_config))
         cfg = tracker_cfg[tracker_cfg['type']]
@@ -122,7 +123,7 @@ class SDE_Detector(Detector):
         self.use_deepsort_tracker = True if tracker_cfg['type'] == 'DeepSORTTracker' else False
         if self.use_deepsort_tracker:
             # use DeepSORTTracker
-            if self.reid_pred_config is not None and 'tracker' in self.reid_pred_config:
+            if self.reid_pred_config is not None and hasattr(self.reid_pred_config, 'tracker'):
                 cfg = self.reid_pred_config.tracker
             budget = cfg.get('budget', 100)
             max_age = cfg.get('max_age', 30)
@@ -257,7 +258,7 @@ class SDE_Detector(Detector):
                     feat_data['imgname'] = _imgname
                     feat_data['feat'] = _feat
                     tracking_outs['feat_data'].update({_imgname: feat_data})
-
+            return tracking_outs
         else:
             # use ByteTracker, support multiple class
             online_tlwhs = defaultdict(list)
