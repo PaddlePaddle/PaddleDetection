@@ -34,14 +34,16 @@ __all__ = [
 
 @register
 class BBoxPostProcess(nn.Layer):
-    __shared__ = ['num_classes']
+    __shared__ = ['num_classes', 'export_onnx']
     __inject__ = ['decode', 'nms']
 
-    def __init__(self, num_classes=80, decode=None, nms=None):
+    def __init__(self, num_classes=80, decode=None, nms=None,
+                 export_onnx=False):
         super(BBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.decode = decode
         self.nms = nms
+        self.export_onnx = export_onnx
 
     def forward(self, head_out, rois, im_shape, scale_factor):
         """
@@ -52,6 +54,7 @@ class BBoxPostProcess(nn.Layer):
             rois (tuple): roi and rois_num of rpn_head output.
             im_shape (Tensor): The shape of the input image.
             scale_factor (Tensor): The scale factor of the input image.
+            export_onnx (bool): whether export model to onnx
         Returns:
             bbox_pred (Tensor): The output prediction with shape [N, 6], including
                 labels, scores and bboxes. The size of bboxes are corresponding
@@ -62,9 +65,20 @@ class BBoxPostProcess(nn.Layer):
         if self.nms is not None:
             bboxes, score = self.decode(head_out, rois, im_shape, scale_factor)
             bbox_pred, bbox_num, _ = self.nms(bboxes, score, self.num_classes)
+
         else:
             bbox_pred, bbox_num = self.decode(head_out, rois, im_shape,
                                               scale_factor)
+
+        if self.export_onnx:
+            # add fake box after postprocess when exporting onnx 
+            fake_bboxes = paddle.to_tensor(
+                np.array(
+                    [[0., 0.0, 0.0, 0.0, 1.0, 1.0]], dtype='float32'))
+
+            bbox_pred = paddle.concat([bbox_pred, fake_bboxes])
+            bbox_num = bbox_num + 1
+
         return bbox_pred, bbox_num
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
@@ -86,45 +100,55 @@ class BBoxPostProcess(nn.Layer):
             pred_result (Tensor): The final prediction results with shape [N, 6]
                 including labels, scores and bboxes.
         """
+        if not self.export_onnx:
+            bboxes_list = []
+            bbox_num_list = []
+            id_start = 0
+            fake_bboxes = paddle.to_tensor(
+                np.array(
+                    [[0., 0.0, 0.0, 0.0, 1.0, 1.0]], dtype='float32'))
+            fake_bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
 
-        bboxes_list = []
-        bbox_num_list = []
-        id_start = 0
-        fake_bboxes = paddle.to_tensor(
-            np.array(
-                [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
-        fake_bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
-
-        # add fake bbox when output is empty for each batch
-        for i in range(bbox_num.shape[0]):
-            if bbox_num[i] == 0:
-                bboxes_i = fake_bboxes
-                bbox_num_i = fake_bbox_num
-            else:
-                bboxes_i = bboxes[id_start:id_start + bbox_num[i], :]
-                bbox_num_i = bbox_num[i]
-                id_start += bbox_num[i]
-            bboxes_list.append(bboxes_i)
-            bbox_num_list.append(bbox_num_i)
-        bboxes = paddle.concat(bboxes_list)
-        bbox_num = paddle.concat(bbox_num_list)
+            # add fake bbox when output is empty for each batch
+            for i in range(bbox_num.shape[0]):
+                if bbox_num[i] == 0:
+                    bboxes_i = fake_bboxes
+                    bbox_num_i = fake_bbox_num
+                else:
+                    bboxes_i = bboxes[id_start:id_start + bbox_num[i], :]
+                    bbox_num_i = bbox_num[i]
+                    id_start += bbox_num[i]
+                bboxes_list.append(bboxes_i)
+                bbox_num_list.append(bbox_num_i)
+            bboxes = paddle.concat(bboxes_list)
+            bbox_num = paddle.concat(bbox_num_list)
 
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
-        origin_shape_list = []
-        scale_factor_list = []
-        # scale_factor: scale_y, scale_x
-        for i in range(bbox_num.shape[0]):
-            expand_shape = paddle.expand(origin_shape[i:i + 1, :],
-                                         [bbox_num[i], 2])
-            scale_y, scale_x = scale_factor[i][0], scale_factor[i][1]
-            scale = paddle.concat([scale_x, scale_y, scale_x, scale_y])
-            expand_scale = paddle.expand(scale, [bbox_num[i], 4])
-            origin_shape_list.append(expand_shape)
-            scale_factor_list.append(expand_scale)
+        if not self.export_onnx:
+            origin_shape_list = []
+            scale_factor_list = []
+            # scale_factor: scale_y, scale_x
+            for i in range(bbox_num.shape[0]):
+                expand_shape = paddle.expand(origin_shape[i:i + 1, :],
+                                             [bbox_num[i], 2])
+                scale_y, scale_x = scale_factor[i][0], scale_factor[i][1]
+                scale = paddle.concat([scale_x, scale_y, scale_x, scale_y])
+                expand_scale = paddle.expand(scale, [bbox_num[i], 4])
+                origin_shape_list.append(expand_shape)
+                scale_factor_list.append(expand_scale)
 
-        self.origin_shape_list = paddle.concat(origin_shape_list)
-        scale_factor_list = paddle.concat(scale_factor_list)
+            self.origin_shape_list = paddle.concat(origin_shape_list)
+            scale_factor_list = paddle.concat(scale_factor_list)
+
+        else:
+            # simplify the computation for bs=1 when exporting onnx
+            scale_y, scale_x = scale_factor[0][0], scale_factor[0][1]
+            scale = paddle.concat(
+                [scale_x, scale_y, scale_x, scale_y]).unsqueeze(0)
+            self.origin_shape_list = paddle.expand(origin_shape,
+                                                   [bbox_num[0], 2])
+            scale_factor_list = paddle.expand(scale, [bbox_num[0], 4])
 
         # bboxes: [N, 6], label, score, bbox
         pred_label = bboxes[:, 0:1]
@@ -170,19 +194,20 @@ class MaskPostProcess(object):
         """
         Paste the mask prediction to the original image.
         """
-
+        x0_int, y0_int = 0, 0
+        x1_int, y1_int = im_w, im_h
         x0, y0, x1, y1 = paddle.split(boxes, 4, axis=1)
-        masks = paddle.unsqueeze(masks, [0, 1])
-        img_y = paddle.arange(0, im_h, dtype='float32') + 0.5
-        img_x = paddle.arange(0, im_w, dtype='float32') + 0.5
+        N = masks.shape[0]
+        img_y = paddle.arange(y0_int, y1_int) + 0.5
+        img_x = paddle.arange(x0_int, x1_int) + 0.5
         img_y = (img_y - y0) / (y1 - y0) * 2 - 1
         img_x = (img_x - x0) / (x1 - x0) * 2 - 1
-        img_x = paddle.unsqueeze(img_x, [1])
-        img_y = paddle.unsqueeze(img_y, [2])
-        N = boxes.shape[0]
+        # img_x, img_y have shapes (N, w), (N, h)
 
-        gx = paddle.expand(img_x, [N, img_y.shape[1], img_x.shape[2]])
-        gy = paddle.expand(img_y, [N, img_y.shape[1], img_x.shape[2]])
+        gx = img_x[:, None, :].expand(
+            [N, paddle.shape(img_y)[1], paddle.shape(img_x)[1]])
+        gy = img_y[:, :, None].expand(
+            [N, paddle.shape(img_y)[1], paddle.shape(img_x)[1]])
         grid = paddle.stack([gx, gy], axis=3)
         img_masks = F.grid_sample(masks, grid, align_corners=False)
         return img_masks[:, 0]
@@ -208,19 +233,13 @@ class MaskPostProcess(object):
         # TODO: support bs > 1 and mask output dtype is bool
         pred_result = paddle.zeros(
             [num_mask, origin_shape[0][0], origin_shape[0][1]], dtype='int32')
-        if bbox_num == 1 and bboxes[0][0] == -1:
-            return pred_result
 
-        # TODO: optimize chunk paste
-        pred_result = []
-        for i in range(bboxes.shape[0]):
-            im_h, im_w = origin_shape[i][0], origin_shape[i][1]
-            pred_mask = self.paste_mask(mask_out[i], bboxes[i:i + 1, 2:], im_h,
-                                        im_w)
-            pred_mask = pred_mask >= self.binary_thresh
-            pred_mask = paddle.cast(pred_mask, 'int32')
-            pred_result.append(pred_mask)
-        pred_result = paddle.concat(pred_result)
+        im_h, im_w = origin_shape[0][0], origin_shape[0][1]
+        pred_mask = self.paste_mask(mask_out[:, None, :, :], bboxes[:, 2:],
+                                    im_h, im_w)
+        pred_mask = pred_mask >= self.binary_thresh
+        pred_result = paddle.cast(pred_mask, 'int32')
+
         return pred_result
 
 

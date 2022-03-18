@@ -81,6 +81,11 @@ def argsparser():
         default=False,
         help="Whether use mkldnn with CPU.")
     parser.add_argument(
+        "--enable_mkldnn_bfloat16",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether use mkldnn bfloat16 inference with CPU.")
+    parser.add_argument(
         "--cpu_threads", type=int, default=1, help="Num of threads with CPU.")
     parser.add_argument(
         "--trt_min_shape", type=int, default=1, help="min_shape for TensorRT.")

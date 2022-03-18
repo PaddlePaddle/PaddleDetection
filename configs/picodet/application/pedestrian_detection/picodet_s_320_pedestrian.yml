@@ -12,6 +12,11 @@ snapshot_epoch: 10
 epoch: 300
 metric: COCO
 num_classes: 1
+# Exporting the model
+export:
+  post_process: False  # Whether post-processing is included in the network when export model.
+  nms: False           # Whether NMS is included in the network when export model.
+  benchmark: False    # It is used to testing model performance, if set `True`, post-process and NMS will not be exported.
 
 architecture: PicoDet
 
