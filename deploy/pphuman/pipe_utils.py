@@ -46,6 +46,8 @@ def argsparser():
         help="Path of video file, `video_file` or `camera_id` has a highest priority."
     )
     parser.add_argument(
+        "--model_dir", nargs='*', help="set model dir in pipeline")
+    parser.add_argument(
         "--camera_id",
         type=int,
         default=-1,
@@ -134,9 +136,17 @@ class PipeTimer(Times):
         }
         self.img_num = 0
 
-    def info(self, average=False):
+    def get_total_time(self):
         total_time = self.total_time.value()
         total_time = round(total_time, 4)
+        average_latency = total_time / max(1, self.img_num)
+        qps = 0
+        if total_time > 0:
+            qps = 1 / average_latency
+        return total_time, average_latency, qps
+
+    def info(self):
+        total_time, average_latency, qps = self.get_total_time()
         print("------------------ Inference Time Info ----------------------")
         print("total_time(ms): {}, img_num: {}".format(total_time * 1000,
                                                        self.img_num))
@@ -146,13 +156,9 @@ class PipeTimer(Times):
             if v_time > 0:
                 print("{} time(ms): {}".format(k, v_time * 1000))
 
-        average_latency = total_time / max(1, self.img_num)
-        qps = 0
-        if total_time > 0:
-            qps = 1 / average_latency
-
         print("average latency time(ms): {:.2f}, QPS: {:2f}".format(
             average_latency * 1000, qps))
+        return qps
 
     def report(self, average=False):
         dic = {}
@@ -178,6 +184,21 @@ class PipeTimer(Times):
         return dic
 
 
+def merge_model_dir(args, model_dir):
+    # set --model_dir DET=ppyoloe/ to overwrite the model_dir in config file
+    task_set = ['DET', 'ATTR', 'MOT', 'KPT', 'ACTION']
+    if not model_dir:
+        return args
+    for md in model_dir:
+        md = md.strip()
+        k, v = md.split('=', 1)
+        k_upper = k.upper()
+        assert k_upper in task_set, 'Illegal type of task, expect task are: {}, but received {}'.format(
+            task_set, k)
+        args[k_upper].update({'model_dir': v})
+    return args
+
+
 def merge_cfg(args):
     with open(args.config) as f:
         pred_config = yaml.safe_load(f)
@@ -192,14 +213,17 @@ def merge_cfg(args):
                     merge_cfg[k] = merge(v, arg)
         return merge_cfg
 
-    pred_config = merge(pred_config, vars(args))
+    args_dict = vars(args)
+    model_dir = args_dict.pop('model_dir')
+    pred_config = merge_model_dir(pred_config, model_dir)
+    pred_config = merge(pred_config, args_dict)
     return pred_config
 
 
 def print_arguments(cfg):
     print('-----------  Running Arguments -----------')
-    for arg, value in sorted(cfg.items()):
-        print('%s: %s' % (arg, value))
+    buffer = yaml.dump(cfg)
+    print(buffer)
     print('------------------------------------------')
 
 

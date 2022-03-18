@@ -51,6 +51,7 @@ class ActionRecognizer(Detector):
         enable_mkldnn (bool): whether to open MKLDNN
         threshold (float): The threshold of score for visualization
         window_size(int): Temporal size of skeleton feature.
+        random_pad (bool): Whether do random padding when frame length < window_size.
     """
 
     def __init__(self,
@@ -211,14 +212,13 @@ def action_preprocess(input, preprocess_ops):
     """
     input (str | numpy.array): if input is str, it should be a legal file path with numpy array saved.
                                Otherwise it should be numpy.array as direct input.
-    return (numpy.array)
+    return (numpy.array) 
     """
     if isinstance(input, str):
         assert os.path.isfile(input) is not None, "{0} not exists".format(input)
         data = np.load(input)
     else:
         data = input
-    #data = self.pad_op(data)
     for operator in preprocess_ops:
         data = operator(data)
     return data
@@ -228,8 +228,8 @@ class AutoPadding(object):
     """
     Sample or Padding frame skeleton feature.
     Args:
-        window_size: int, temporal size of skeleton feature.
-        random_pad: bool, whether do random padding when frame length < window size. Default: False.
+        window_size (int): Temporal size of skeleton feature.
+        random_pad (bool): Whether do random padding when frame length < window size. Default: False.
     """
 
     def __init__(self, window_size=100, random_pad=False):

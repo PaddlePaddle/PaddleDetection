@@ -335,6 +335,24 @@ class PicoHead(OTAVFLHead):
 
         return (cls_logits_list, bboxes_reg_list)
 
+    def post_process(self,
+                     gfl_head_outs,
+                     im_shape,
+                     scale_factor,
+                     export_nms=True):
+        cls_scores, bboxes_reg = gfl_head_outs
+        bboxes = paddle.concat(bboxes_reg, axis=1)
+        mlvl_scores = paddle.concat(cls_scores, axis=1)
+        mlvl_scores = mlvl_scores.transpose([0, 2, 1])
+        if not export_nms:
+            return bboxes, mlvl_scores
+        else:
+            # rescale: [h_scale, w_scale] -> [w_scale, h_scale, w_scale, h_scale]
+            im_scale = scale_factor.flip([1]).tile([1, 2]).unsqueeze(1)
+            bboxes /= im_scale
+            bbox_pred, bbox_num, _ = self.nms(bboxes, mlvl_scores)
+            return bbox_pred, bbox_num
+
 
 @register
 class PicoHeadV2(GFLHead):
@@ -466,9 +484,7 @@ class PicoHeadV2(GFLHead):
         ), "The size of fpn_feats is not equal to size of fpn_stride"
 
         cls_score_list, reg_list, box_list = [], [], []
-        for i, fpn_feat, stride, align_cls in zip(
-                range(len(self.fpn_stride)), fpn_feats, self.fpn_stride,
-                self.cls_align):
+        for i, (fpn_feat, stride) in enumerate(zip(fpn_feats, self.fpn_stride)):
             b, _, h, w = get_static_shape(fpn_feat)
             # task decomposition
             conv_cls_feat, se_feat = self.conv_feat(fpn_feat, i)
@@ -477,7 +493,7 @@ class PicoHeadV2(GFLHead):
 
             # cls prediction and alignment
             if self.use_align_head:
-                cls_prob = F.sigmoid(align_cls(conv_cls_feat))
+                cls_prob = F.sigmoid(self.cls_align[i](conv_cls_feat))
                 cls_score = (F.sigmoid(cls_logit) * cls_prob + eps).sqrt()
             else:
                 cls_score = F.sigmoid(cls_logit)
@@ -627,3 +643,21 @@ class PicoHeadV2(GFLHead):
             loss_vfl=loss_vfl, loss_bbox=loss_bbox, loss_dfl=loss_dfl)
 
         return loss_states
+
+    def post_process(self,
+                     gfl_head_outs,
+                     im_shape,
+                     scale_factor,
+                     export_nms=True):
+        cls_scores, bboxes_reg = gfl_head_outs
+        bboxes = paddle.concat(bboxes_reg, axis=1)
+        mlvl_scores = paddle.concat(cls_scores, axis=1)
+        mlvl_scores = mlvl_scores.transpose([0, 2, 1])
+        if not export_nms:
+            return bboxes, mlvl_scores
+        else:
+            # rescale: [h_scale, w_scale] -> [w_scale, h_scale, w_scale, h_scale]
+            im_scale = scale_factor.flip([1]).tile([1, 2]).unsqueeze(1)
+            bboxes /= im_scale
+            bbox_pred, bbox_num, _ = self.nms(bboxes, mlvl_scores)
+            return bbox_pred, bbox_num

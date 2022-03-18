@@ -1,6 +1,5 @@
 architecture: PicoDet
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ESNet_x1_0_pretrained.pdparams
-export_post_process: False    # Whether post-processing is included in the network when export model.
 
 PicoDet:
   backbone: ESNet

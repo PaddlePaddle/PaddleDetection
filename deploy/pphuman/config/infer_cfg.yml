@@ -5,17 +5,15 @@ visual: True
 
 DET:
   model_dir: output_inference/mot_ppyolov3/
-  #model_dir: output_inference/pedestrian_yolov3_darknet
   batch_size: 1
 
-#ATTR:
-#  model_dir: output_inference/strongbaseline_r50_30e_pa100k/
-#  batch_size: 8
+ATTR:
+  model_dir: output_inference/strongbaseline_r50_30e_pa100k/
+  batch_size: 8
 
 MOT:
   model_dir: output_inference/mot_ppyolov3/
-  #model_dir: output_inference/pedestrian_yolov3_darknet
-  tracker_config: deploy/pphuman/tracker_config.yml
+  tracker_config: deploy/pphuman/config/tracker_config.yml
   batch_size: 1
 
 KPT:
@@ -24,7 +22,6 @@ KPT:
   use_dark: False
 
 ACTION:
-  #model_dir: /paddle/shared_files/PaddleVideo/output_inference/STGCN
   model_dir: output_inference/STGCN
   batch_size: 1
   max_frames: 50

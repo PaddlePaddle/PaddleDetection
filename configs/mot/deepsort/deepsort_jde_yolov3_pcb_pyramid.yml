@@ -1,7 +1,6 @@
 _BASE_: [
   'detector/jde_yolov3_darknet53_30e_1088x608_mix.yml',
-  '../../datasets/mot.yml',
-  '../../runtime.yml',
+  '_base_/mot17.yml',
   '_base_/deepsort_reader_1088x608.yml',
 ]
 metric: MOT
@@ -30,6 +29,7 @@ DeepSORT:
 # reid and tracker configuration
 # see 'configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml'
 PCBPyramid:
+  model_name: "ResNet101"
   num_conv_out_channels: 128
   num_classes: 751
 

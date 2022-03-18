@@ -20,6 +20,7 @@
 #include <utility>
 #include <ctime>
 #include <numeric>
+#include <math.h>
 
 #include "include/utils.h"
 

@@ -1,0 +1,109 @@
+_BASE_: [
+  'detector/ppyoloe_crn_l_36e_640x640_mot17half.yml',
+  '_base_/mot17.yml',
+  '_base_/deepsort_reader_1088x608.yml',
+]
+metric: MOT
+num_classes: 1
+
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: MOT17/images/half
+    keep_ori_im: True # set as True in DeepSORT
+
+det_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_resnet.pdparams
+
+# reader
+EvalMOTReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+TestMOTReader:
+  inputs_def:
+    image_shape: [3, 640, 640]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+
+# DeepSORT configuration
+architecture: DeepSORT
+pretrain_weights: None
+
+DeepSORT:
+  detector: YOLOv3 # PPYOLOe version
+  reid: ResNetEmbedding
+  tracker: DeepSORTTracker
+
+
+# reid and tracker configuration
+# see 'configs/mot/deepsort/reid/deepsort_resnet.yml'
+ResNetEmbedding:
+  model_name: "ResNet50"
+
+DeepSORTTracker:
+  input_size: [64, 192]
+  min_box_area: 0
+  vertical_ratio: -1
+  budget: 100
+  max_age: 70
+  n_init: 3
+  metric_type: cosine
+  matching_threshold: 0.2
+  max_iou_distance: 0.9
+  motion: KalmanFilter
+
+
+# detector configuration: PPYOLOe version
+# see 'configs/mot/deepsort/detector/ppyoloe_crn_l_300e_640x640_mot17half.yml'
+YOLOv3:
+  backbone: CSPResNet
+  neck: CustomCSPPAN
+  yolo_head: PPYOLOEHead
+  post_process: ~
+
+CSPResNet:
+  layers: [3, 6, 6, 3]
+  channels: [64, 128, 256, 512, 1024]
+  return_idx: [1, 2, 3]
+  use_large_stem: True
+
+CustomCSPPAN:
+  out_channels: [768, 384, 192]
+  stage_num: 1
+  block_num: 3
+  act: 'swish'
+  spp: true
+
+# Tracking requires higher quality boxes, so NMS score_threshold will be higher
+PPYOLOEHead:
+  fpn_strides: [32, 16, 8]
+  grid_cell_scale: 5.0
+  grid_cell_offset: 0.5
+  static_assigner_epoch: -1 # 100
+  use_varifocal_loss: True
+  eval_input_size: [640, 640]
+  loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
+  static_assigner:
+    name: ATSSAssigner
+    topk: 9
+  assigner:
+    name: TaskAlignedAssigner
+    topk: 13
+    alpha: 1.0
+    beta: 6.0
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.4 # 0.01 in original detector
+    nms_threshold: 0.6

@@ -1,29 +1,40 @@
-# This config is the same as '../../../pedestrian/pedestrian_yolov3_darknet.yml'.
 _BASE_: [
   '../../../yolov3/yolov3_darknet53_270e_coco.yml',
+  '../_base_/mot17.yml',
 ]
-weights: https://paddledet.bj.bcebos.com/models/mot/deepsort/pedestrian_yolov3_darknet.pdparams
-num_classes: 1
+weights: output/yolov3_darknet53_40e_608x608_mot17half/model_final
+log_iter: 20
+snapshot_epoch: 2
 
-# This pedestrian training dataset used is not open temporarily.
-# Only the trained yolov3 model is provided, but you can eval on MOT17 half val dataset.
-TrainDataset:
-  !COCODataSet
-    dataset_dir: dataset/pedestrian
-    anno_path: annotations/instances_train2017.json
-    image_dir: train2017
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+# schedule configuration for fine-tuning
+epoch: 40
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 32
+    - 36
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 100
 
-EvalDataset:
-  !COCODataSet
-    dataset_dir: dataset/mot/MOT17/images
-    anno_path: annotations/val_half.json
-    image_dir: train
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
 
+TrainReader:
+  batch_size: 8
+  mixup_epoch: 35
 
 # detector configuration
 architecture: YOLOv3
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/yolov3_darknet53_270e_coco.pdparams
 norm_type: sync_bn
 
 YOLOv3:

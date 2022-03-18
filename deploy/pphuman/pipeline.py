@@ -29,7 +29,7 @@ sys.path.insert(0, parent_path)
 
 from python.infer import Detector, DetectorPicoDet
 from python.mot_sde_infer import SDE_Detector
-#from python.attr_infer import AttrDetector
+from python.attr_infer import AttrDetector
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
 from python.action_infer import ActionRecognizer
@@ -114,6 +114,8 @@ class Pipeline(object):
                 cpu_threads=cpu_threads,
                 enable_mkldnn=enable_mkldnn,
                 output_dir=output_dir)
+            if self.is_video:
+                self.predictor.set_file_name(video_file)
 
     def _parse_input(self, image_file, image_dir, video_file, camera_id):
 
@@ -239,6 +241,7 @@ class PipePredictor(object):
         self.warmup_frame = 1
         self.pipeline_res = Result()
         self.pipe_timer = PipeTimer()
+        self.file_name = None
 
         if not is_video:
             det_cfg = self.cfg['DET']
@@ -313,6 +316,9 @@ class PipePredictor(object):
 
                 self.action_visual_collector = ActionVisualCollector(80)
 
+    def set_file_name(self, path):
+        self.file_name = os.path.split(path)[-1]
+
     def get_result(self):
         return self.pipeline_res
 
@@ -321,7 +327,7 @@ class PipePredictor(object):
             self.predict_video(input)
         else:
             self.predict_image(input)
-        self.pipe_timer.info(True)
+        self.pipe_timer.info()
 
     def predict_image(self, input):
         # det
@@ -373,7 +379,7 @@ class PipePredictor(object):
         # mot
         # mot -> attr
         # mot -> pose -> action
-        video_out_name = 'output.mp4'
+        video_out_name = 'output.mp4' if self.file_name is None else self.file_name
 
         # Get Video info : resolution, fps, frame count
         width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -404,15 +410,24 @@ class PipePredictor(object):
 
             # mot output format: id, class, score, xmin, ymin, xmax, ymax
             mot_res = parse_mot_res(res)
+
+            # nothing detected
+            if len(mot_res['boxes']) == 0:
+                frame_id += 1
+                self.pipe_timer.img_num += 1
+                self.pipe_timer.total_time.end()
+                if self.cfg['visual']:
+                    _, _, fps = self.pipe_timer.get_total_time()
+                    im = self.visualize_video(frame, mot_res, frame_id,
+                                              fps)  # visualize
+                    writer.write(im)
+                continue
+
             self.pipeline_res.update(mot_res, 'mot')
             if self.with_attr or self.with_action:
                 crop_input, new_bboxes, ori_bboxes = crop_image_with_mot(
                     frame, mot_res)
 
-            if len(crop_input) == 0:
-                if self.cfg['visual']:
-                    writer.write(frame)
-                continue
             if self.with_attr:
                 if frame_id > self.warmup_frame:
                     self.pipe_timer.module_time['attr'].start()
@@ -442,7 +457,7 @@ class PipePredictor(object):
                 action_res = {}
                 if state:
                     collected_keypoint = self.kpt_collector.get_collected_keypoint(
-                    )  # reorgnize kpt output in ID
+                    )  # reoragnize kpt output with ID
                     action_input = parse_mot_keypoint(collected_keypoint)
                     action_res = self.action_predictor.predict_skeleton_with_mot(
                         action_input)
@@ -462,20 +477,25 @@ class PipePredictor(object):
                     self.pipeline_res)  # parse output result for multi-camera
 
             if self.cfg['visual']:
-                im = self.visualize_video(frame, self.pipeline_res,
-                                          frame_id)  # visualize
+                _, _, fps = self.pipe_timer.get_total_time()
+                im = self.visualize_video(frame, self.pipeline_res, frame_id,
+                                          fps)  # visualize
                 writer.write(im)
 
         writer.release()
         print('save result to {}'.format(out_path))
 
-    def visualize_video(self, image, result, frame_id):
+    def visualize_video(self, image, result, frame_id, fps):
         mot_res = result.get('mot')
-        ids = mot_res['boxes'][:, 0]
-        boxes = mot_res['boxes'][:, 3:]
-        boxes[:, 2] = boxes[:, 2] - boxes[:, 0]
-        boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
-        image = plot_tracking(image, boxes, ids, frame_id=frame_id)
+        if mot_res is not None:
+            ids = mot_res['boxes'][:, 0]
+            boxes = mot_res['boxes'][:, 3:]
+            boxes[:, 2] = boxes[:, 2] - boxes[:, 0]
+            boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
+        else:
+            boxes = np.zeros([0, 4])
+            ids = np.zeros([0])
+        image = plot_tracking(image, boxes, ids, frame_id=frame_id, fps=fps)
 
         attr_res = result.get('attr')
         if attr_res is not None:

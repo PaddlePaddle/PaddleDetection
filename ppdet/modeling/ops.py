@@ -1536,6 +1536,8 @@ def generate_proposals(scores,
                  'pixel_offset', pixel_offset)
         rpn_rois, rpn_roi_probs, rpn_rois_num = core.ops.generate_proposals_v2(
             scores, bbox_deltas, im_shape, anchors, variances, *attrs)
+        if not return_rois_num:
+            rpn_rois_num = None
         return rpn_rois, rpn_roi_probs, rpn_rois_num
 
     else:
@@ -1586,6 +1588,8 @@ def generate_proposals(scores,
             outputs=outputs)
         rpn_rois.stop_gradient = True
         rpn_roi_probs.stop_gradient = True
+        if not return_rois_num:
+            rpn_rois_num = None
 
         return rpn_rois, rpn_roi_probs, rpn_rois_num
 
