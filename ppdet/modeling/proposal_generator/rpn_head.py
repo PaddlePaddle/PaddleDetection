@@ -178,8 +178,10 @@ class RPNHead(nn.Layer):
             k = paddle.minimum(onnx_top_n, onnx_num_rois)
             onnx_topk_prob, onnx_topk_inds = paddle.topk(onnx_rpn_prob, k)
             onnx_topk_rois = paddle.gather(onnx_rpn_rois, onnx_topk_inds)
-            #bs_rois_collect = [onnx_topk_rois]
-            #bs_rois_num_collect = paddle.shape(onnx_topk_rois)[0]
+            # TODO(wangguanzhong): Now bs_rois_collect in export_onnx is moved outside conditional branch
+            # due to problems in dy2static of paddle. Will fix it when updating paddle framework.
+            # bs_rois_collect = [onnx_topk_rois]
+            # bs_rois_num_collect = paddle.shape(onnx_topk_rois)[0]
 
         else:
             bs_rois_collect = []
