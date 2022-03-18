@@ -102,11 +102,7 @@ class ActionRecognizer(Detector):
         result = dict(output=np_output)
         return result
 
-    def predict_skeleton(self,
-                         skeleton_list,
-                         run_benchmark=False,
-                         repeats=1,
-                         visual=True):
+    def predict_skeleton(self, skeleton_list, run_benchmark=False, repeats=1):
         results = []
         for i, skeleton in enumerate(skeleton_list):
             if run_benchmark:
@@ -150,20 +146,10 @@ class ActionRecognizer(Detector):
                 self.det_times.postprocess_time_s.end()
                 self.det_times.img_num += len(skeleton)
 
-                if visual:
-                    pass
-                    #visualize_action(skeleton, result, output_dir=self.output_dir)
             results.append(result)
-            if visual:
-                print('Test iter {}'.format(i))
-
-        #results = self.merge_batch_result(results)
         return results
 
-    def predict_skeleton_with_mot(self,
-                                  skeleton_with_mot,
-                                  run_benchmark=False,
-                                  visual=True):
+    def predict_skeleton_with_mot(self, skeleton_with_mot, run_benchmark=False):
         """
             skeleton_with_mot (dict): includes individual skeleton sequences, which shape is [C, T, K, 1]
                                       and its corresponding track id.
@@ -171,10 +157,7 @@ class ActionRecognizer(Detector):
 
         skeleton_list = skeleton_with_mot["skeleton"]
         mot_id = skeleton_with_mot["mot_id"]
-        act_res = self.predict_skeleton(
-            skeleton_list, run_benchmark, repeats=1, visual=False)
-        if visual:
-            pass
+        act_res = self.predict_skeleton(skeleton_list, run_benchmark, repeats=1)
         results = list(zip(mot_id, act_res))
         return results
 
