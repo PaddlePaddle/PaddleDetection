@@ -19,13 +19,12 @@ MOT:
   batch_size: 1
 
 KPT:
-  #model_dir: output_inference/hrnet_w32_256x192/
-  model_dir: output_inference/dark_hrnet_w32_256x192_uav_ent1+2_coco
+  model_dir: output_inference/dark_hrnet_w32_256x192/
   batch_size: 8
   use_dark: False
 
 ACTION:
   #model_dir: /paddle/shared_files/PaddleVideo/output_inference/STGCN
-  model_dir: /paddle/shared_files/PaddleVideo/output_inference/STGCN_50_merge
+  model_dir: output_inference/STGCN
   batch_size: 1
   max_frames: 50

@@ -32,7 +32,8 @@ from python.mot_sde_infer import SDE_Detector
 #from python.attr_infer import AttrDetector
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
-from python.action_infer import KeyPointCollector, ActionRecognizer, ActionVisualCollector
+from python.action_infer import ActionRecognizer
+from python.action_utils import KeyPointCollector, ActionVisualCollector
 
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
@@ -296,7 +297,6 @@ class PipePredictor(object):
                     enable_mkldnn,
                     use_dark=use_dark)
                 self.kpt_collector = KeyPointCollector(action_frames)
-                #self.kpt_collector = KeyPointCollector(50)
 
                 self.action_predictor = ActionRecognizer(
                     action_model_dir,
@@ -446,7 +446,6 @@ class PipePredictor(object):
                     action_input = parse_mot_keypoint(collected_keypoint)
                     action_res = self.action_predictor.predict_skeleton_with_mot(
                         action_input)
-                    print(action_res)
                     self.pipeline_res.update(action_res, 'action')
 
                 if self.cfg['visual']:
@@ -495,7 +494,8 @@ class PipePredictor(object):
 
         action_res = result.get('action')
         if action_res is not None:
-            image = visualize_action(image, self.action_visual_collector)
+            image = visualize_action(image, mot_res['boxes'],
+                                     self.action_visual_collector, "Falling")
 
         return image
 
