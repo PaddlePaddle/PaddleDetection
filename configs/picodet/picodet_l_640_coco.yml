@@ -10,7 +10,7 @@ pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/lege
 weights: output/picodet_l_320_coco/best_model
 find_unused_parameters: True
 use_ema: true
-epoch: 250
+epoch: 200
 snapshot_epoch: 10
 
 LCNet:

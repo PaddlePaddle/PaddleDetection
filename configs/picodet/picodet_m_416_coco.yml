@@ -9,7 +9,7 @@ _BASE_: [
 weights: output/picodet_m_416_coco/best_model
 find_unused_parameters: True
 use_ema: true
-epoch: 300
+epoch: 250
 snapshot_epoch: 10
 
 TrainReader:
