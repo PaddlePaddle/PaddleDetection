@@ -46,6 +46,8 @@ def argsparser():
         help="Path of video file, `video_file` or `camera_id` has a highest priority."
     )
     parser.add_argument(
+        "--model_dir", nargs='*', help="set model dir in pipeline")
+    parser.add_argument(
         "--camera_id",
         type=int,
         default=-1,
@@ -182,6 +184,21 @@ class PipeTimer(Times):
         return dic
 
 
+def merge_model_dir(args, model_dir):
+    # set --model_dir DET=ppyoloe/ to overwrite the model_dir in config file
+    task_set = ['DET', 'ATTR', 'MOT', 'KPT', 'ACTION']
+    if not model_dir:
+        return args
+    for md in model_dir:
+        md = md.strip()
+        k, v = md.split('=', 1)
+        k_upper = k.upper()
+        assert k_upper in task_set, 'Illegal type of task, expect task are: {}, but received {}'.format(
+            task_set, k)
+        args[k_upper].update({'model_dir': v})
+    return args
+
+
 def merge_cfg(args):
     with open(args.config) as f:
         pred_config = yaml.safe_load(f)
@@ -196,14 +213,17 @@ def merge_cfg(args):
                     merge_cfg[k] = merge(v, arg)
         return merge_cfg
 
-    pred_config = merge(pred_config, vars(args))
+    args_dict = vars(args)
+    model_dir = args_dict.pop('model_dir')
+    pred_config = merge_model_dir(pred_config, model_dir)
+    pred_config = merge(pred_config, args_dict)
     return pred_config
 
 
 def print_arguments(cfg):
     print('-----------  Running Arguments -----------')
-    for arg, value in sorted(cfg.items()):
-        print('%s: %s' % (arg, value))
+    buffer = yaml.dump(cfg)
+    print(buffer)
     print('------------------------------------------')
 
 
