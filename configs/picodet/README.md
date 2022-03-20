@@ -3,6 +3,10 @@ English | [简体中文](README_cn.md)
 # PP-PicoDet
 
 ![](../../docs/images/picedet_demo.jpeg)
+
+## News
+
+- Released a new series of PP-PicoDet models, with greatly improved accuracy and optimized CPU prediction speed. **(2022.03.20)**
 ## Introduction
 
 We developed a series of lightweight models, named `PP-PicoDet`. Because of the excellent performance, our models are very suitable for deployment on mobile or CPU. For more details, please refer to our [report on arXiv](https://arxiv.org/abs/2111.00902).
@@ -16,11 +20,6 @@ We developed a series of lightweight models, named `PP-PicoDet`. Because of the 
 <div align="center">
   <img src="../../docs/images/picodet_map.png" width='600'/>
 </div>
-
-### Comming Soon
-- [ ] More series of model, such as smaller or larger model.
-- [ ] Pretrained models for more scenarios.
-- [ ] More features in need.
 
 ## Benchmark
 
