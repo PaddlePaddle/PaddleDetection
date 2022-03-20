@@ -143,7 +143,7 @@ class VOCDataSet(DetDataset):
                     # user dataset may not contain difficult field
                     _difficult = obj.find('difficult')
                     _difficult = int(
-                        _difficult.text) if _difficult is not None else 0
+                        _difficult.text) if _difficult is not None and _difficult.text is not None else 0
 
                     x1 = float(obj.find('bndbox').find('xmin').text)
                     y1 = float(obj.find('bndbox').find('ymin').text)
