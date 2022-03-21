@@ -58,6 +58,7 @@ pip install -r requirements.txt
 
 ## 模型库
 - 基础模型
+    - [ByteTrack](bytetrack/README_cn.md)
     - [DeepSORT](deepsort/README_cn.md)
     - [JDE](jde/README_cn.md)
     - [FairMOT](fairmot/README_cn.md)

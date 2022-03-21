@@ -763,8 +763,9 @@ def batch_distance2bbox(points, distance, max_shapes=None):
         Tensor: Decoded bboxes, "x1y1x2y2" format.
     """
     lt, rb = paddle.split(distance, 2, -1)
-    x1y1 = points - lt
-    x2y2 = points + rb
+    # while tensor add parameters, parameters should be better placed on the second place
+    x1y1 = -lt + points
+    x2y2 = rb + points
     out_bbox = paddle.concat([x1y1, x2y2], -1)
     if max_shapes is not None:
         max_shapes = max_shapes.flip(-1).tile([1, 2])

@@ -60,6 +60,7 @@ class Detector(object):
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
         threshold (float): threshold to reserve the result for output.
         enable_mkldnn (bool): whether use mkldnn with CPU.
+        enable_mkldnn_bfloat16 (bool): whether use mkldnn bfloat16 with CPU.
     """
 
     def __init__(self,
@@ -69,7 +70,8 @@ class Detector(object):
                  run_mode='fluid',
                  threshold=0.5,
                  trt_calib_mode=False,
-                 enable_mkldnn=False):
+                 enable_mkldnn=False,
+                 enable_mkldnn_bfloat16=False):
         self.config = config
         if self.config.use_python_inference:
             self.executor, self.program, self.fecth_targets = load_executor(
@@ -81,7 +83,8 @@ class Detector(object):
                 min_subgraph_size=self.config.min_subgraph_size,
                 device=device,
                 trt_calib_mode=trt_calib_mode,
-                enable_mkldnn=enable_mkldnn)
+                enable_mkldnn=enable_mkldnn,
+                enable_mkldnn_bfloat16=enable_mkldnn_bfloat16)
 
     def preprocess(self, im):
         preprocess_ops = []
@@ -229,7 +232,8 @@ class DetectorSOLOv2(Detector):
                  run_mode='fluid',
                  threshold=0.5,
                  trt_calib_mode=False,
-                 enable_mkldnn=False):
+                 enable_mkldnn=False,
+                 enable_mkldnn_bfloat16=False):
         super(DetectorSOLOv2, self).__init__(
             config=config,
             model_dir=model_dir,
@@ -237,7 +241,8 @@ class DetectorSOLOv2(Detector):
             run_mode=run_mode,
             threshold=threshold,
             trt_calib_mode=trt_calib_mode,
-            enable_mkldn=enable_mkldnn)
+            enable_mkldn=enable_mkldnn,
+            enable_mkldnn_bfloat16=enable_mkldnn_bfloat16)
 
     def predict(self,
                 image,
@@ -391,7 +396,8 @@ def load_predictor(model_dir,
                    device='CPU',
                    min_subgraph_size=3,
                    trt_calib_mode=False,
-                   enable_mkldnn=False):
+                   enable_mkldnn=False,
+                   enable_mkldnn_bfloat16=False):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
@@ -399,6 +405,7 @@ def load_predictor(model_dir,
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
         enable_mkldnn (bool): Whether use mkldnn with CPU, default is False
+        enable_mkldnn_bfloat16 (bool): Whether use mkldnn bfloat16 with CPU, default is False
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     Raises:
@@ -430,6 +437,8 @@ def load_predictor(model_dir,
             config.set_mkldnn_cache_capacity(0)
             config.enable_mkldnn()
             config.pass_builder().append_pass("interpolate_mkldnn_pass")
+            if enable_mkldnn_bfloat16:
+                config.enable_mkldnn_bfloat16()
     if run_mode in precision_map.keys():
         config.enable_tensorrt_engine(
             workspace_size=1 << 10,
@@ -557,7 +566,8 @@ def main():
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
         trt_calib_mode=FLAGS.trt_calib_mode,
-        enable_mkldnn=FLAGS.enable_mkldnn)
+        enable_mkldnn=FLAGS.enable_mkldnn,
+        enable_mkldnn_bfloat16=FLAGS.enable_mkldnn_bfloat16)
     if config.arch == 'SOLOv2':
         detector = DetectorSOLOv2(
             config,
@@ -565,7 +575,8 @@ def main():
             device=FLAGS.device,
             run_mode=FLAGS.run_mode,
             trt_calib_mode=FLAGS.trt_calib_mode,
-            enable_mkldnn=FLAGS.enable_mkldnn)
+            enable_mkldnn=FLAGS.enable_mkldnn,
+            enable_mkldnn_bfloat16=FLAGS.enable_mkldnn_bfloat16)
     # predict from image
     if FLAGS.image_file != '':
         predict_image(detector)
@@ -636,6 +647,11 @@ if __name__ == '__main__':
         type=ast.literal_eval,
         default=False,
         help="Whether use mkldnn with CPU.")
+    parser.add_argument(
+        "--enable_mkldnn_bfloat16",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether use mkldnn bfloat16 with CPU.")
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)
     if FLAGS.image_file != '' and FLAGS.video_file != '':
@@ -644,5 +660,6 @@ if __name__ == '__main__':
     assert FLAGS.device in ['CPU', 'GPU', 'XPU'
                             ], "device should be CPU, GPU or XPU"
     assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
+    assert not (FLAGS.enable_mkldnn==False and FLAGS.enable_mkldnn_bfloat16==True),"To turn on mkldnn_bfloat, please set both enable_mkldnn and enable_mkldnn_bfloat16 True" 
 
     main()

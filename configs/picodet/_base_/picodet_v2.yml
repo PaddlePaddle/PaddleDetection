@@ -1,18 +1,16 @@
 architecture: PicoDet
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ESNet_x1_0_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x1_5_pretrained.pdparams
 
 PicoDet:
-  backbone: ESNet
-  neck: ESPAN
+  backbone: LCNet
+  neck: LCPAN
   head: PicoHeadV2
 
-ESNet:
-  scale: 1.0
-  feature_maps: [4, 11, 14]
-  act: hard_swish
-  channel_ratio: [0.875, 0.5, 1.0, 0.625, 0.5, 0.75, 0.625, 0.625, 0.5, 0.625, 1.0, 0.625, 0.75]
+LCNet:
+  scale: 1.5
+  feature_maps: [3, 4, 5]
 
-ESPAN:
+LCPAN:
   out_channels: 128
   use_depthwise: True
   num_features: 4

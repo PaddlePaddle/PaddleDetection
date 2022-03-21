@@ -1,0 +1,13 @@
+_BASE_: [
+  '../../datasets/coco_detection.yml',
+  '../../runtime.yml',
+  '_base_/picodet_esnet.yml',
+  '_base_/optimizer_300e.yml',
+  '_base_/picodet_416_reader.yml',
+]
+
+weights: output/picodet_m_416_coco/model_final
+find_unused_parameters: True
+use_ema: true
+cycle_epoch: 40
+snapshot_epoch: 10
