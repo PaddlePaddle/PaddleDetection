@@ -1,0 +1,77 @@
+# This config is an assembled config for ByteTrack MOT, used as eval/infer mode for MOT.
+_BASE_: [
+  '../../../yolov3/yolov3_darknet53_270e_coco.yml',
+  '../_base_/mot17.yml',
+]
+weights: output/yolov3_darknet53_40e_608x608_mot17half/model_final
+log_iter: 20
+snapshot_epoch: 2
+
+# schedule configuration for fine-tuning
+epoch: 40
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 32
+    - 36
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 100
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+TrainReader:
+  batch_size: 8
+  mixup_epoch: 35
+
+# detector configuration
+architecture: YOLOv3
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/yolov3_darknet53_270e_coco.pdparams
+norm_type: sync_bn
+
+YOLOv3:
+  backbone: DarkNet
+  neck: YOLOv3FPN
+  yolo_head: YOLOv3Head
+  post_process: BBoxPostProcess
+
+DarkNet:
+  depth: 53
+  return_idx: [2, 3, 4]
+
+# use default config
+# YOLOv3FPN:
+
+YOLOv3Head:
+  anchors: [[10, 13], [16, 30], [33, 23],
+            [30, 61], [62, 45], [59, 119],
+            [116, 90], [156, 198], [373, 326]]
+  anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+  loss: YOLOv3Loss
+
+YOLOv3Loss:
+  ignore_thresh: 0.7
+  downsample: [32, 16, 8]
+  label_smooth: false
+
+BBoxPostProcess:
+  decode:
+    name: YOLOBox
+    conf_thresh: 0.005
+    downsample_ratio: 32
+    clip_bbox: true
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    score_threshold: 0.01
+    nms_threshold: 0.45
+    nms_top_k: 1000

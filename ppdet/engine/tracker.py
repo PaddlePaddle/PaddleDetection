@@ -119,7 +119,7 @@ class Tracker(object):
         with_reid = self.model.reid is not None
 
         if with_detector:
-            load_weight(self.model.detector, det_weights, self.optimizer)
+            load_weight(self.model.detector, det_weights)
             if with_reid:
                 load_weight(self.model.reid, reid_weights)
         else:
@@ -311,7 +311,7 @@ class Tracker(object):
                 crops = paddle.to_tensor(crops)
 
                 data.update({'crops': crops})
-                pred_embs = self.model(data).numpy()
+                pred_embs = self.model(data)['embeddings'].numpy()
             else:
                 pred_embs = None
 

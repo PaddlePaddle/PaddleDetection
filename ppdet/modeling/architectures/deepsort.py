@@ -62,8 +62,9 @@ class DeepSORT(BaseArch):
 
     def _forward(self):
         crops = self.inputs['crops']
-        features = self.reid(crops)
-        return features
+        outs = {}
+        outs['embeddings'] = self.reid(crops)
+        return outs
 
     def get_pred(self):
         return self._forward()
