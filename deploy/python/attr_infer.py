@@ -41,7 +41,6 @@ from PIL import Image, ImageDraw, ImageFont
 class AttrDetector(Detector):
     """
     Args:
-        pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)

@@ -30,10 +30,15 @@ sys.path.insert(0, parent_path)
 from python.infer import Detector, DetectorPicoDet
 from python.mot_sde_infer import SDE_Detector
 from python.attr_infer import AttrDetector
+from python.keypoint_infer import KeyPointDetector
+from python.keypoint_postprocess import translate_to_ori_images
+from python.action_infer import ActionRecognizer
+from python.action_utils import KeyPointCollector, ActionVisualCollector
+
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
-from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res
+from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
 from python.preprocess import decode_image
-from python.visualize import visualize_box_mask, visualize_attr
+from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
 from pptracking.python.visualize import plot_tracking
 
 
@@ -299,9 +304,45 @@ class PipePredictor(object):
                     trt_max_shape, trt_opt_shape, trt_calib_mode, cpu_threads,
                     enable_mkldnn)
             if self.with_action:
-                self.kpt_predictor = KeyPointDetector()
-                self.kpt_collector = KeyPointCollector()
-                self.action_predictor = ActionDetector()
+                kpt_cfg = self.cfg['KPT']
+                kpt_model_dir = kpt_cfg['model_dir']
+                kpt_batch_size = kpt_cfg['batch_size']
+                action_cfg = self.cfg['ACTION']
+                action_model_dir = action_cfg['model_dir']
+                action_batch_size = action_cfg['batch_size']
+                action_frames = action_cfg['max_frames']
+                display_frames = action_cfg['display_frames']
+                self.coord_size = action_cfg['coord_size']
+
+                self.kpt_predictor = KeyPointDetector(
+                    kpt_model_dir,
+                    device,
+                    run_mode,
+                    kpt_batch_size,
+                    trt_min_shape,
+                    trt_max_shape,
+                    trt_opt_shape,
+                    trt_calib_mode,
+                    cpu_threads,
+                    enable_mkldnn,
+                    use_dark=False)
+                self.kpt_collector = KeyPointCollector(action_frames)
+
+                self.action_predictor = ActionRecognizer(
+                    action_model_dir,
+                    device,
+                    run_mode,
+                    action_batch_size,
+                    trt_min_shape,
+                    trt_max_shape,
+                    trt_opt_shape,
+                    trt_calib_mode,
+                    cpu_threads,
+                    enable_mkldnn,
+                    window_size=action_frames)
+
+                self.action_visual_collector = ActionVisualCollector(
+                    display_frames)
 
     def set_file_name(self, path):
         self.file_name = os.path.split(path)[-1]
@@ -412,7 +453,8 @@ class PipePredictor(object):
 
             self.pipeline_res.update(mot_res, 'mot')
             if self.with_attr or self.with_action:
-                crop_input = crop_image_with_mot(frame, mot_res)
+                crop_input, new_bboxes, ori_bboxes = crop_image_with_mot(
+                    frame, mot_res)
 
             if self.with_attr:
                 if frame_id > self.warmup_frame:
@@ -424,17 +466,34 @@ class PipePredictor(object):
                 self.pipeline_res.update(attr_res, 'attr')
 
             if self.with_action:
-                kpt_result = self.kpt_predictor.predict_image(crop_input)
-                self.pipeline_res.update(kpt_result, 'kpt')
+                kpt_pred = self.kpt_predictor.predict_image(
+                    crop_input, visual=False)
+                keypoint_vector, score_vector = translate_to_ori_images(
+                    kpt_pred, np.array(new_bboxes))
+                kpt_res = {}
+                kpt_res['keypoint'] = [
+                    keypoint_vector.tolist(), score_vector.tolist()
+                ] if len(keypoint_vector) > 0 else [[], []]
+                kpt_res['bbox'] = ori_bboxes
+                self.pipeline_res.update(kpt_res, 'kpt')
 
-                self.kpt_collector.update(kpt_result)  # collect kpt output
-                state = self.kpt_collector.state()  # whether frame num is enough
+                self.kpt_collector.update(kpt_res,
+                                          mot_res)  # collect kpt output
+                state = self.kpt_collector.get_state(
+                )  # whether frame num is enough or lost tracker
 
+                action_res = {}
                 if state:
-                    action_input = self.kpt_collector.collate(
-                    )  # reorgnize kpt output in ID
-                    action_res = self.action_predictor.predict_kpt(action_input)
-                    self.pipeline_res.update(action, 'action')
+                    collected_keypoint = self.kpt_collector.get_collected_keypoint(
+                    )  # reoragnize kpt output with ID
+                    action_input = parse_mot_keypoint(collected_keypoint,
+                                                      self.coord_size)
+                    action_res = self.action_predictor.predict_skeleton_with_mot(
+                        action_input)
+                    self.pipeline_res.update(action_res, 'action')
+
+                if self.cfg['visual']:
+                    self.action_visual_collector.update(action_res)
 
             if frame_id > self.warmup_frame:
                 self.pipe_timer.img_num += 1
@@ -473,6 +532,19 @@ class PipePredictor(object):
             attr_res = attr_res['output']
             image = visualize_attr(image, attr_res, boxes)
             image = np.array(image)
+
+        kpt_res = result.get('kpt')
+        if kpt_res is not None:
+            image = visualize_pose(
+                image,
+                kpt_res,
+                visual_thresh=self.cfg['kpt_thresh'],
+                returnimg=True)
+
+        action_res = result.get('action')
+        if action_res is not None:
+            image = visualize_action(image, mot_res['boxes'],
+                                     self.action_visual_collector, "Falling")
 
         return image
 

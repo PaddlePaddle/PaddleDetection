@@ -141,6 +141,21 @@ def argsparser():
         type=ast.literal_eval,
         default=True,
         help='whether to use darkpose to get better keypoint position predict ')
+    parser.add_argument(
+        "--action_file",
+        type=str,
+        default=None,
+        help="Path of input file for action recognition.")
+    parser.add_argument(
+        "--window_size",
+        type=int,
+        default=50,
+        help="Temporal size of skeleton feature for action recognition.")
+    parser.add_argument(
+        "--random_pad",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether do random padding for action recognition.")
     return parser
 
 
@@ -237,7 +252,7 @@ class Timer(Times):
         total_time = pre_time + infer_time + post_time
         if self.with_tracker:
             dic['tracking_time_s'] = round(track_time / max(1, self.img_num),
-                                        4) if average else track_time
+                                           4) if average else track_time
             total_time = total_time + track_time
         dic['total_time_s'] = round(total_time, 4)
         return dic
