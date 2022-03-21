@@ -28,3 +28,16 @@
 - PicoDet used 4 or 8 GPUs for training and all checkpoints are trained with default settings and hyperparameters.
 
 </details>
+
+## Cite PP-PicoDet
+```
+@misc{yu2021pppicodet,
+      title={PP-PicoDet: A Better Real-Time Object Detector on Mobile Devices},
+      author={Guanghua Yu and Qinyao Chang and Wenyu Lv and Chang Xu and Cheng Cui and Wei Ji and Qingqing Dang and Kaipeng Deng and Guanzhong Wang and Yuning Du and Baohua Lai and Qiwen Liu and Xiaoguang Hu and Dianhai Yu and Yanjun Ma},
+      year={2021},
+      eprint={2111.00902},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
+
+```
