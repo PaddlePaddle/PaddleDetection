@@ -1,0 +1,60 @@
+# This config is an assembled config for ByteTrack MOT, used as eval/infer mode for MOT.
+_BASE_: [
+  'detector/ppyoloe_crn_l_36e_640x640_mot17half.yml',
+  '_base_/mot17.yml',
+  '_base_/ppyoloe_mot_reader_640x640.yml'
+]
+weights: output/bytetrack_ppyoloe_pplcnet/model_final
+log_iter: 20
+snapshot_epoch: 2
+
+metric: MOT # eval/infer mode
+num_classes: 1
+
+architecture: ByteTrack
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_300e_coco.pdparams
+ByteTrack:
+  detector: YOLOv3 # PPYOLOe version
+  reid: PPLCNetEmbedding # use reid
+  tracker: JDETracker
+det_weights: https://bj.bcebos.com/v1/paddledet/models/mot/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
+reid_weights: https://bj.bcebos.com/v1/paddledet/models/mot/deepsort_pplcnet.pdparams
+
+YOLOv3:
+  backbone: CSPResNet
+  neck: CustomCSPPAN
+  yolo_head: PPYOLOEHead
+  post_process: ~
+
+# Tracking requires higher quality boxes, so NMS score_threshold will be higher
+PPYOLOEHead:
+  fpn_strides: [32, 16, 8]
+  grid_cell_scale: 5.0
+  grid_cell_offset: 0.5
+  static_assigner_epoch: -1 # 100
+  use_varifocal_loss: True
+  eval_input_size: [640, 640]
+  loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
+  static_assigner:
+    name: ATSSAssigner
+    topk: 9
+  assigner:
+    name: TaskAlignedAssigner
+    topk: 13
+    alpha: 1.0
+    beta: 6.0
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.1 # 0.01 in original detector
+    nms_threshold: 0.4 # 0.6 in original detector
+
+# BYTETracker
+JDETracker:
+  use_byte: True
+  match_thres: 0.9
+  conf_thres: 0.2
+  low_conf_thres: 0.1
+  min_box_area: 100
+  vertical_ratio: 1.6 # for pedestrian
