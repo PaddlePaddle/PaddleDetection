@@ -28,7 +28,6 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
 from python.infer import Detector, DetectorPicoDet
-from python.mot_sde_infer import SDE_Detector
 from python.attr_infer import AttrDetector
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
@@ -39,6 +38,8 @@ from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
 from python.preprocess import decode_image
 from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
+
+from pptracking.python.mot_sde_infer import SDE_Detector
 from pptracking.python.visualize import plot_tracking
 
 
@@ -374,6 +375,8 @@ class PipePredictor(object):
             # det output format: class, score, xmin, ymin, xmax, ymax
             det_res = self.det_predictor.predict_image(
                 batch_input, visual=False)
+            det_res = self.det_predictor.filter_box(det_res,
+                                                    self.cfg['crop_thresh'])
             if i > self.warmup_frame:
                 self.pipe_timer.module_time['det'].end()
             self.pipeline_res.update(det_res, 'det')
@@ -563,6 +566,8 @@ class PipePredictor(object):
                     det_res_i,
                     labels=['person'],
                     threshold=self.cfg['crop_thresh'])
+                im = np.ascontiguousarray(np.copy(im))
+                im = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
             if attr_res is not None:
                 attr_res_i = attr_res['output'][start_idx:start_idx +
                                                 boxes_num_i]
@@ -571,7 +576,7 @@ class PipePredictor(object):
             if not os.path.exists(self.output_dir):
                 os.makedirs(self.output_dir)
             out_path = os.path.join(self.output_dir, img_name)
-            im.save(out_path, quality=95)
+            cv2.imwrite(out_path, im)
             print("save result to: " + out_path)
             start_idx += boxes_num_i
 

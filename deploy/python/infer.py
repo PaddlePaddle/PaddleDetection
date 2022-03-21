@@ -150,6 +150,25 @@ class Detector(object):
         result = {k: v for k, v in result.items() if v is not None}
         return result
 
+    def filter_box(self, result, threshold):
+        np_boxes_num = result['boxes_num']
+        boxes = result['boxes']
+        start_idx = 0
+        filter_boxes = []
+        filter_num = []
+        for i in range(len(np_boxes_num)):
+            boxes_num = np_boxes_num[i]
+            boxes_i = boxes[start_idx:start_idx + boxes_num, :]
+            idx = boxes_i[:, 1] > threshold
+            filter_boxes_i = boxes_i[idx, :]
+            filter_boxes.append(filter_boxes_i)
+            filter_num.append(filter_boxes_i.shape[0])
+            start_idx += boxes_num
+        boxes = np.concatenate(filter_boxes)
+        filter_num = np.array(filter_num)
+        filter_res = {'boxes': boxes, 'boxes_num': filter_num}
+        return filter_res
+
     def predict(self, repeats=1):
         '''
         Args:
@@ -736,19 +755,20 @@ def main():
     elif arch == 'PicoDet':
         detector_func = 'DetectorPicoDet'
 
-    detector = eval(detector_func)(FLAGS.model_dir,
-                                   device=FLAGS.device,
-                                   run_mode=FLAGS.run_mode,
-                                   batch_size=FLAGS.batch_size,
-                                   trt_min_shape=FLAGS.trt_min_shape,
-                                   trt_max_shape=FLAGS.trt_max_shape,
-                                   trt_opt_shape=FLAGS.trt_opt_shape,
-                                   trt_calib_mode=FLAGS.trt_calib_mode,
-                                   cpu_threads=FLAGS.cpu_threads,
-                                   enable_mkldnn=FLAGS.enable_mkldnn,
-                                   enable_mkldnn_bfloat16=FLAGS.enable_mkldnn_bfloat16,
-                                   threshold=FLAGS.threshold,
-                                   output_dir=FLAGS.output_dir)
+    detector = eval(detector_func)(
+        FLAGS.model_dir,
+        device=FLAGS.device,
+        run_mode=FLAGS.run_mode,
+        batch_size=FLAGS.batch_size,
+        trt_min_shape=FLAGS.trt_min_shape,
+        trt_max_shape=FLAGS.trt_max_shape,
+        trt_opt_shape=FLAGS.trt_opt_shape,
+        trt_calib_mode=FLAGS.trt_calib_mode,
+        cpu_threads=FLAGS.cpu_threads,
+        enable_mkldnn=FLAGS.enable_mkldnn,
+        enable_mkldnn_bfloat16=FLAGS.enable_mkldnn_bfloat16,
+        threshold=FLAGS.threshold,
+        output_dir=FLAGS.output_dir)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
@@ -781,6 +801,8 @@ if __name__ == '__main__':
                             ], "device should be CPU, GPU or XPU"
     assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
 
-    assert not (FLAGS.enable_mkldnn==False and FLAGS.enable_mkldnn_bfloat16==True), 'To enable mkldnn bfloat, please turn on both enable_mkldnn and enable_mkldnn_bfloat16'
+    assert not (
+        FLAGS.enable_mkldnn == False and FLAGS.enable_mkldnn_bfloat16 == True
+    ), 'To enable mkldnn bfloat, please turn on both enable_mkldnn and enable_mkldnn_bfloat16'
 
     main()
