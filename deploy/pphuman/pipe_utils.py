@@ -290,11 +290,15 @@ def crop_image_with_det(batch_input, det_res):
 def crop_image_with_mot(input, mot_res):
     res = mot_res['boxes']
     crop_res = []
+    new_bboxes = []
+    ori_bboxes = []
     for box in res:
-        crop_image, new_box, ori_box = expand_crop(input, box[1:])
+        crop_image, new_bbox, ori_bbox = expand_crop(input, box[1:])
         if crop_image is not None:
             crop_res.append(crop_image)
-    return crop_res
+            new_bboxes.append(new_bbox)
+            ori_bboxes.append(ori_bbox)
+    return crop_res, new_bboxes, ori_bboxes
 
 
 def parse_mot_res(input):
@@ -305,3 +309,33 @@ def parse_mot_res(input):
         res = [i, 0, score, xmin, ymin, xmin + w, ymin + h]
         mot_res.append(res)
     return {'boxes': np.array(mot_res)}
+
+
+def refine_keypoint_coordinary(kpts, bbox, coord_size):
+    """
+        This function is used to adjust coordinate values to a fixed scale.
+    """
+    tl = bbox[:, 0:2]
+    wh = bbox[:, 2:] - tl
+    tl = np.expand_dims(np.transpose(tl, (1, 0)), (2, 3))
+    wh = np.expand_dims(np.transpose(wh, (1, 0)), (2, 3))
+    target_w, target_h = coord_size
+    res = (kpts - tl) / wh * np.expand_dims(
+        np.array([[target_w], [target_h]]), (2, 3))
+    return res
+
+
+def parse_mot_keypoint(input, coord_size):
+    parsed_skeleton_with_mot = {}
+    ids = []
+    skeleton = []
+    for tracker_id, kpt_seq in input:
+        ids.append(tracker_id)
+        kpts = np.array(kpt_seq.kpts, dtype=np.float32)[:, :, :2]
+        kpts = np.expand_dims(np.transpose(kpts, [2, 0, 1]),
+                              -1)  #T, K, C -> C, T, K, 1
+        bbox = np.array(kpt_seq.bboxes, dtype=np.float32)
+        skeleton.append(refine_keypoint_coordinary(kpts, bbox, coord_size))
+    parsed_skeleton_with_mot["mot_id"] = ids
+    parsed_skeleton_with_mot["skeleton"] = skeleton
+    return parsed_skeleton_with_mot

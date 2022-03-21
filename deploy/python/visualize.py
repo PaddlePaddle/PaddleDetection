@@ -361,3 +361,17 @@ def visualize_attr(im, results, boxes=None):
                 text_scale, (0, 0, 255),
                 thickness=text_thickness)
     return im
+
+
+def visualize_action(im, mot_boxes, action_visual_collector, action_text=""):
+    im = cv2.imread(im) if isinstance(im, str) else im
+    id_detected = action_visual_collector.get_visualize_ids()
+    text_scale = max(1, im.shape[1] / 1600.)
+    for mot_box in mot_boxes:
+        # mot_box is a format with [mot_id, class, score, xmin, ymin, w, h] 
+        if mot_box[0] in id_detected:
+            text_position = (int(mot_box[3] + mot_box[5] * 0.75),
+                             int(mot_box[4] - 10))
+            cv2.putText(im, action_text, text_position, cv2.FONT_HERSHEY_PLAIN,
+                        text_scale, (0, 0, 255), 2)
+    return im
