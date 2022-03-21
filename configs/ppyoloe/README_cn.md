@@ -36,7 +36,7 @@ PP-YOLOE由以下方法组成
 - PP-YOLOE模型使用COCO数据集中train2017作为训练集，使用val2017和test-dev2017作为测试集，Box AP<sup>test</sup>为`mAP(IoU=0.5:0.95)`评估结果。
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果训练GPU数和batch size不使用上述配置，须参考[FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/FAQ)调整学习率和迭代次数。
 - PP-YOLOE模型推理速度测试采用单卡V100，batch size=1进行测试，使用CUDA 10.2, CUDNN 7.6.5，TensorRT推理速度测试使用TensorRT 6.0.1.8。
-- PP-YOLOE推理速度测试使用`tools/export_model.py`脚本导出的模型，并用`deploy/python/infer.py`设置`--run_benchnark`参数得到。测试结果均为不包含数据预处理和模型输出后处理(NMS)的数据(与[YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet)测试方法一致)。
+- PP-YOLOE推理速度测试使用`tools/export_model.py`并设置`-o exclude_nms=True`脚本导出的模型，并用`deploy/python/infer.py`设置`--run_benchnark`参数得到。测试结果均为不包含数据预处理和模型输出后处理(NMS)的数据(与[YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet)测试方法一致)。
 - 如果你设置了`--run_benchnark=True`, 你首先需要安装以下依赖`pip install pynvml psutil GPUtil`。
 
 ## 使用教程
@@ -125,8 +125,8 @@ PP-YOLOE消融实验
 
 | 序号 |        模型                  | Box AP<sup>val</sup> | 参数量(M) | FLOPs(G) | V100 FP32 FPS |
 | :--: | :---------------------------: | :-------------------: | :-------: | :------: | :-----------: |
-|  A   | PP-YOLOv2          |         49.1         |   -   |  -   |      -     |
-|  B   | A + Anchor-free    |         48.8         |   -   |  -   |      -     |
-|  C   | B + CSP-ResNet     |         49.5         |   -   |  -   |      -     |
-|  D   | C + TAL            |         50.4         |   -   |  -   |      -     |
-|  E   | D + ET-Head        |         50.9         |   -   |  -   |      -     |
+|  A   | PP-YOLOv2          |         49.1         |   54.58   |  115.77   |     68.9     |
+|  B   | A + Anchor-free    |         48.8         |   54.27   |  114.78   |     69.8     |
+|  C   | B + CSPRepResNet   |         49.5         |   47.42   |  101.87   |     85.5     |
+|  D   | C + TAL            |         50.4         |   48.32   |  104.75   |     84.0     |
+|  E   | D + ET-Head        |         50.9         |   52.20   |  110.07   |     78.1     |

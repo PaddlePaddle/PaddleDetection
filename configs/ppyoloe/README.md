@@ -36,7 +36,7 @@ PP-YOLOE is composed of following methods:
 - PP-YOLOE is trained on COCO train2017 dataset and evaluated on val2017 & test-dev2017 dataset，Box AP<sup>test</sup> is evaluation results of `mAP(IoU=0.5:0.95)`.
 - PP-YOLOE used 8 GPUs for mixed precision training, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/FAQ).
 - PP-YOLOE inference speed is tesed on single Tesla V100 with batch size as 1, CUDA 10.2, CUDNN 7.6.5, TensorRT 6.0.1.8 in TensorRT mode.
-- PP-YOLOE inference speed testing uses inference model exported by `tools/export_model.py` and benchmarked by running `depoly/python/infer.py` with `--run_benchmark`. All testing results do not contains the time cost of data reading and post-processing(NMS), which is same as [YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet) in testing method.
+- PP-YOLOE inference speed testing uses inference model exported by `tools/export_model.py` with `-o exclude_nms=True` and benchmarked by running `depoly/python/infer.py` with `--run_benchmark`. All testing results do not contains the time cost of data reading and post-processing(NMS), which is same as [YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet) in testing method.
 - If you set `--run_benchmark=True`，you should install these dependencies at first, `pip install pynvml psutil GPUtil`.
 
 ## Getting Start
@@ -122,8 +122,8 @@ Ablation experiments of PP-YOLOE.
 
 | NO.  |        Model                 | Box AP<sup>val</sup> | Params(M) | FLOPs(G) | V100 FP32 FPS |
 | :--: | :---------------------------: | :------------------: | :-------: | :------: | :-----------: |
-|  A   | PP-YOLOv2          |         49.1         |   -   |  -   |      -     |
-|  B   | A + Anchor-free    |         48.8         |   -   |  -   |      -     |
-|  C   | B + CSP-ResNet     |         49.5         |   -   |  -   |      -     |
-|  D   | C + TAL            |         50.4         |   -   |  -   |      -     |
-|  E   | D + ET-Head        |         50.9         |   -   |  -   |      -     |
+|  A   | PP-YOLOv2          |         49.1         |   54.58   |  115.77   |     68.9     |
+|  B   | A + Anchor-free    |         48.8         |   54.27   |  114.78   |     69.8     |
+|  C   | B + CSPRepResNet   |         49.5         |   47.42   |  101.87   |     85.5     |
+|  D   | C + TAL            |         50.4         |   48.32   |  104.75   |     84.0     |
+|  E   | D + ET-Head        |         50.9         |   52.20   |  110.07   |     78.1     |
