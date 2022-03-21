@@ -3,6 +3,10 @@ English | [简体中文](README_cn.md)
 # PP-PicoDet
 
 ![](../../docs/images/picedet_demo.jpeg)
+
+## News
+
+- Released a new series of PP-PicoDet models, with greatly improved accuracy and optimized CPU prediction speed. **(2022.03.20)**
 ## Introduction
 
 We developed a series of lightweight models, named `PP-PicoDet`. Because of the excellent performance, our models are very suitable for deployment on mobile or CPU. For more details, please refer to our [report on arXiv](https://arxiv.org/abs/2111.00902).
@@ -17,32 +21,19 @@ We developed a series of lightweight models, named `PP-PicoDet`. Because of the 
   <img src="../../docs/images/picodet_map.png" width='600'/>
 </div>
 
-### Comming Soon
-- [ ] More series of model, such as smaller or larger model.
-- [ ] Pretrained models for more scenarios.
-- [ ] More features in need.
-
 ## Benchmark
 
 | Model     | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params<br><sup>(M) | FLOPS<br><sup>(G) | Latency<sup><small>[NCNN](#latency)</small><sup><br><sup>(ms) | Latency<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  Download  | Config |
 | :-------- | :--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :-----------------------------: | :-----------------------------: | :----------------------------------------: | :--------------------------------------- |
-| PicoDet-S |  320*320   |          27.1           |        41.4        |        0.99        |       0.73        |              8.13               |            **6.65**             | [model](https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_320_coco.yml) |
-| PicoDet-S |  416*416   |          30.7           |        45.8        |        0.99        |       1.24        |              12.37              |            **9.82**             | [model](https://paddledet.bj.bcebos.com/models/picodet_s_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_416_coco.yml) |
-| PicoDet-M |  320*320   |          30.9           |        45.7        |        2.15        |       1.48        |              11.27              |            **9.61**             | [model](https://paddledet.bj.bcebos.com/models/picodet_m_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_320_coco.yml) |
-| PicoDet-M |  416*416   |          34.8           |        50.5        |        2.15        |       2.50        |              17.39              |            **15.88**            | [model](https://paddledet.bj.bcebos.com/models/picodet_m_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_416_coco.yml) |
-| PicoDet-L |  320*320   |          32.9           |        48.2        |        3.30        |       2.23        |              15.26              |            **13.42**            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_320_coco.yml) |
-| PicoDet-L |  416*416   |          36.6           |        52.5        |        3.30        |       3.76        |              23.36              |            **21.85**            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_416_coco.yml) |
-| PicoDet-L |  640*640   |          40.9           |        57.6        |        3.30        |       8.91        |              54.11              |            **50.55**            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_640_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_640_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_640_coco.yml) |
-
-#### More Configs
-
-| Model     | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params<br><sup>(M) | FLOPS<br><sup>(G) | Latency<sup><small>[NCNN](#latency)</small><sup><br><sup>(ms) | Latency<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  Download  | Config |
-| :--------------------------- | :--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :-----------------------------: | :-----------------------------: | :----------------------------------------: | :--------------------------------------- |
-| PicoDet-Shufflenetv2 1x      |  416*416   |          30.0           |        44.6        |        1.17        |       1.53        |              15.06              |            **10.63**            |      [model](https://paddledet.bj.bcebos.com/models/picodet_shufflenetv2_1x_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_shufflenetv2_1x_416_coco.log)      | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/more_config/picodet_shufflenetv2_1x_416_coco.yml)      |
-| PicoDet-MobileNetv3-large 1x |  416*416   |          35.6           |        52.0        |        3.55        |       2.80        |              20.71              |            **17.88**            | [model](https://paddledet.bj.bcebos.com/models/picodet_mobilenetv3_large_1x_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_mobilenetv3_large_1x_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/more_config/picodet_mobilenetv3_large_1x_416_coco.yml) |
-| PicoDet-LCNet 1.5x           |  416*416   |          36.3           |        52.2        |        3.10        |       3.85        |              21.29              |            **20.8**             |           [model](https://paddledet.bj.bcebos.com/models/picodet_lcnet_1_5x_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_lcnet_1_5x_416_coco.log)           | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/more_config/picodet_lcnet_1_5x_416_coco.yml)           |
-| PicoDet-LCNet 1.5x           |  640*640   |          40.6           |        57.4        |        3.10        |       -        |              -              |            -             |           [model](https://paddledet.bj.bcebos.com/models/picodet_lcnet_1_5x_640_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_lcnet_1_5x_640_coco.log)           | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/more_config/picodet_lcnet_1_5x_640_coco.yml)           |
-| PicoDet-R18           |  640*640   |          40.7           |        57.2        |        11.10        |       -        |              -              |            -             |           [model](https://paddledet.bj.bcebos.com/models/picodet_r18_640_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_r18_640_coco.log)           | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/more_config/picodet_r18_640_coco.yml)           |
+| PicoDet-XS |  320*320   |          23.5           |        36.1       |        -        |       -        |              -              |            -             | [model](https://paddledet.bj.bcebos.com/models/picodetv2/picodet_xs_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/picodetv2/train_picodet_xs_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_xs_320_coco.yml) |
+| PicoDet-XS |  416*416   |          26.2           |        39.3        |        -        |       -        |              -              |            -             | [model](https://paddledet.bj.bcebos.com/models/picodetv2/picodet_xs_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/picodetv2/train_picodet_xs_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_xs_416_coco.yml) |
+| PicoDet-S |  320*320   |          29.1           |        43.4        |        -       |       -       |             -              |            -             | [model](https://paddledet.bj.bcebos.com/models/picodetv2/picodet_s_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/picodetv2/train_picodet_s_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_320_coco.yml) |
+| PicoDet-S |  416*416   |          32.5           |        47.6        |        -        |       -       |              -              |            -             | [model](https://paddledet.bj.bcebos.com/models/picodetv2/picodet_s_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/picodetv2/train_picodet_s_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_416_coco.yml) |
+| PicoDet-M |  320*320   |          34.4           |        50.0        |        -        |       -       |              -              |            -             | [model](https://paddledet.bj.bcebos.com/models/picodetv2/picodet_m_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/picodetv2/train_picodet_m_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_320_coco.yml) |
+| PicoDet-M |  416*416   |          37.5           |        53.4       |        -        |       -        |              -              |            -            | [model](https://paddledet.bj.bcebos.com/models/picodetv2/picodet_m_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/picodetv2/train_picodet_m_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_416_coco.yml) |
+| PicoDet-L |  320*320   |          36.1           |        52.0        |        -       |       -        |              -             |            -           | [model](https://paddledet.bj.bcebos.com/models/picodetv2/picodet_l_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/picodetv2/train_picodet_l_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_320_coco.yml) |
+| PicoDet-L |  416*416   |          39.4           |        55.7        |        -        |       -       |              -              |            -            | [model](https://paddledet.bj.bcebos.com/models/picodetv2/picodet_l_416_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/picodetv2/train_picodet_l_416_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_416_coco.yml) |
+| PicoDet-L |  640*640   |          42.3           |        59.2        |        -        |       -        |              -              |            -           | [model](https://paddledet.bj.bcebos.com/models/picodetv2/picodet_l_640_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/picodetv2/train_picodet_l_640_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_640_coco.yml) |
 
 <details open>
 <summary><b>Table Notes:</b></summary>
@@ -52,6 +43,10 @@ We developed a series of lightweight models, named `PP-PicoDet`. Because of the 
 - PicoDet used 4 or 8 GPUs for training and all checkpoints are trained with default settings and hyperparameters.
 
 </details>
+
+### Legacy Model
+
+- Please refer to: [PicoDet 2021.10版本](./legacy_model/)
 
 #### Benchmark of Other Models
 
@@ -75,7 +70,7 @@ We developed a series of lightweight models, named `PP-PicoDet`. Because of the 
 <details open>
 <summary>Requirements:</summary>
 
-- PaddlePaddle >= 2.1.2
+- PaddlePaddle >= 2.2.1
 
 </details>
 
@@ -111,14 +106,14 @@ python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c con
 
 ```shell
 python tools/eval.py -c configs/picodet/picodet_s_320_coco.yml \
-              -o weights=https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams
+              -o weights=https://paddledet.bj.bcebos.com/models/picodetv2/picodet_s_320_coco.pdparams
 ```
 
 - Infer:
 
 ```shell
 python tools/infer.py -c configs/picodet/picodet_s_320_coco.yml \
-              -o weights=https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams
+              -o weights=https://paddledet.bj.bcebos.com/models/picodetv2/picodet_s_320_coco.pdparams
 ```
 
 Detail also can refer to [Quick start guide](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/GETTING_STARTED.md).
@@ -136,7 +131,8 @@ Detail also can refer to [Quick start guide](https://github.com/PaddlePaddle/Pad
 ```shell
 cd PaddleDetection
 python tools/export_model.py -c configs/picodet/picodet_s_320_coco.yml \
-              -o weights=https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams --output_dir=inference_model
+              -o weights=https://paddledet.bj.bcebos.com/models/picodetv2/picodet_s_320_coco.pdparams \
+              --output_dir=inference_model
 ```
 
 </details>
@@ -144,7 +140,7 @@ python tools/export_model.py -c configs/picodet/picodet_s_320_coco.yml \
 <details>
 <summary>2. Convert to PaddleLite (click to expand)</summary>
 
-- Install Paddlelite>=2.10.rc:
+- Install Paddlelite>=2.10:
 
 ```shell
 pip install paddlelite
@@ -232,13 +228,13 @@ Android demo visualization:
 <details open>
 <summary>Requirements:</summary>
 
-- PaddlePaddle >= 2.2.0rc0
-- PaddleSlim >= 2.2.0rc0
+- PaddlePaddle >= 2.2.2
+- PaddleSlim >= 2.2.1
 
 **Install:**
 
 ```shell
-pip install paddleslim==2.2.0rc0
+pip install paddleslim==2.2.1
 ```
 
 </details>
@@ -300,7 +296,7 @@ Please reduce the `batch_size` of `TrainReader` in config.
 
 Please reset `pretrain_weights` in config, which trained on coco. Such as:
 ```yaml
-pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_l_640_coco.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/picodetv2/picodet_l_640_coco.pdparams
 ```
 
 </details>

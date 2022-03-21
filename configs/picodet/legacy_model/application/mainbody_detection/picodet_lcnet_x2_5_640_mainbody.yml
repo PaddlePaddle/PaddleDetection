@@ -1,5 +1,5 @@
 _BASE_: [
-  '../../../runtime.yml',
+  '../../../../runtime.yml',
   '../../_base_/picodet_esnet.yml',
   '../../_base_/optimizer_100e.yml',
   '../../_base_/picodet_640_reader.yml',
