@@ -261,7 +261,7 @@ class VisualDLWriter(Callback):
                 for loss_name, loss_value in training_staus.get().items():
                     self.vdl_writer.add_scalar(loss_name, loss_value,
                                                self.vdl_loss_step)
-                    self.vdl_loss_step += 1
+                self.vdl_loss_step += 1
             elif mode == 'test':
                 ori_image = status['original_image']
                 result_image = status['result_image']
