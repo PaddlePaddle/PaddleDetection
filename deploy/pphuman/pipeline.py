@@ -281,11 +281,12 @@ class PipePredictor(object):
                 kpt_cfg = self.cfg['KPT']
                 kpt_model_dir = kpt_cfg['model_dir']
                 kpt_batch_size = kpt_cfg['batch_size']
-                use_dark = kpt_cfg['use_dark']
                 action_cfg = self.cfg['ACTION']
                 action_model_dir = action_cfg['model_dir']
                 action_batch_size = action_cfg['batch_size']
                 action_frames = action_cfg['max_frames']
+                display_frames = action_cfg['display_frames']
+                self.coord_size = action_cfg['coord_size']
 
                 self.kpt_predictor = KeyPointDetector(
                     kpt_model_dir,
@@ -298,7 +299,7 @@ class PipePredictor(object):
                     trt_calib_mode,
                     cpu_threads,
                     enable_mkldnn,
-                    use_dark=use_dark)
+                    use_dark=False)
                 self.kpt_collector = KeyPointCollector(action_frames)
 
                 self.action_predictor = ActionRecognizer(
@@ -314,7 +315,8 @@ class PipePredictor(object):
                     enable_mkldnn,
                     window_size=action_frames)
 
-                self.action_visual_collector = ActionVisualCollector(80)
+                self.action_visual_collector = ActionVisualCollector(
+                    display_frames)
 
     def set_file_name(self, path):
         self.file_name = os.path.split(path)[-1]
@@ -458,7 +460,8 @@ class PipePredictor(object):
                 if state:
                     collected_keypoint = self.kpt_collector.get_collected_keypoint(
                     )  # reoragnize kpt output with ID
-                    action_input = parse_mot_keypoint(collected_keypoint)
+                    action_input = parse_mot_keypoint(collected_keypoint,
+                                                      self.coord_size)
                     action_res = self.action_predictor.predict_skeleton_with_mot(
                         action_input)
                     self.pipeline_res.update(action_res, 'action')

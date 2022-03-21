@@ -301,21 +301,21 @@ def parse_mot_res(input):
     return {'boxes': np.array(mot_res)}
 
 
-def refine_keypoint_coordinary(kpts, bbox):
+def refine_keypoint_coordinary(kpts, bbox, coord_size):
     """
         This function is used to adjust coordinate values to a fixed scale.
     """
-
     tl = bbox[:, 0:2]
     wh = bbox[:, 2:] - tl
     tl = np.expand_dims(np.transpose(tl, (1, 0)), (2, 3))
     wh = np.expand_dims(np.transpose(wh, (1, 0)), (2, 3))
-    res = (kpts - tl) / wh * np.expand_dims(np.array([[384.], [512.]]), (2, 3))
-
+    target_w, target_h = coord_size
+    res = (kpts - tl) / wh * np.expand_dims(
+        np.array([[target_w], [target_h]]), (2, 3))
     return res
 
 
-def parse_mot_keypoint(input):
+def parse_mot_keypoint(input, coord_size):
     parsed_skeleton_with_mot = {}
     ids = []
     skeleton = []
@@ -325,7 +325,7 @@ def parse_mot_keypoint(input):
         kpts = np.expand_dims(np.transpose(kpts, [2, 0, 1]),
                               -1)  #T, K, C -> C, T, K, 1
         bbox = np.array(kpt_seq.bboxes, dtype=np.float32)
-        skeleton.append(refine_keypoint_coordinary(kpts, bbox))
+        skeleton.append(refine_keypoint_coordinary(kpts, bbox, coord_size))
     parsed_skeleton_with_mot["mot_id"] = ids
     parsed_skeleton_with_mot["skeleton"] = skeleton
     return parsed_skeleton_with_mot

@@ -32,8 +32,6 @@ from utils import argsparser, Timer, get_current_memory_mb
 from benchmark_utils import PaddleInferBenchmark
 from infer import Detector, print_arguments
 
-SUPPORT_MODELS = ['STGCN', 'AGCN']
-
 
 class ActionRecognizer(Detector):
     """
@@ -69,6 +67,7 @@ class ActionRecognizer(Detector):
                  threshold=0.5,
                  window_size=100,
                  random_pad=False):
+        assert batch_size == 1, "ActionRecognizer only support batch_size=1 now."
         super(ActionRecognizer, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -82,9 +81,6 @@ class ActionRecognizer(Detector):
             enable_mkldnn=enable_mkldnn,
             output_dir=output_dir,
             threshold=threshold)
-
-    def set_config(self, model_dir):
-        return PredictConfig_Action(model_dir)
 
     def predict(self, repeats=1):
         '''
@@ -249,45 +245,6 @@ class AutoPadding(object):
             data_pad = data[:, index, :, :]
 
         return data_pad
-
-
-class PredictConfig_Action(object):
-    """set config of preprocess, postprocess and visualize
-    Args:
-        model_dir (str): root path of model.yml
-    """
-
-    def __init__(self, model_dir):
-        # parsing Yaml config for Preprocess
-        deploy_file = os.path.join(model_dir, 'infer_cfg.yml')
-        with open(deploy_file) as f:
-            yml_conf = yaml.safe_load(f)
-        self.check_model(yml_conf)
-        self.arch = yml_conf['arch']
-        self.preprocess_infos = yml_conf['Preprocess']
-        self.min_subgraph_size = yml_conf['min_subgraph_size']
-        self.labels = yml_conf['label_list']
-        self.use_dynamic_shape = yml_conf['use_dynamic_shape']
-        self.print_config()
-
-    def check_model(self, yml_conf):
-        """
-        Raises:
-            ValueError: loaded model not in supported model type 
-        """
-        for support_model in SUPPORT_MODELS:
-            if support_model in yml_conf['arch']:
-                return True
-        raise ValueError("Unsupported arch: {}, expect {}".format(yml_conf[
-            'arch'], KEYPOINT_SUPPORT_MODELS))
-
-    def print_config(self):
-        print('-----------  Model Configuration -----------')
-        print('%s: %s' % ('Model Arch', self.arch))
-        print('%s: ' % ('Transform Order'))
-        for op_info in self.preprocess_infos:
-            print('--%s: %s' % ('transform op', op_info['type']))
-        print('--------------------------------------------')
 
 
 def get_test_skeletons(input_file):
