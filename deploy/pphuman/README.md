@@ -130,7 +130,7 @@ PP-Human整体方案如下图所示
 
 ### 1. 目标检测
 - 采用PP-YOLOE L 作为目标检测模型
-- 详细文档参考[PP-YOLOE](configs/ppyoloe/)
+- 详细文档参考[PP-YOLOE](../../configs/ppyoloe/)
 
 ### 2. 多目标跟踪
 - 采用SDE方案完成多目标跟踪
