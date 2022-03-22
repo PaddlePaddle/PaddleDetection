@@ -1504,6 +1504,11 @@ class RandomCrop(BaseOperator):
                 if 'is_crowd' in sample:
                     sample['is_crowd'] = np.take(
                         sample['is_crowd'], valid_ids, axis=0)
+
+                if 'difficult' in sample:
+                    sample['difficult'] = np.take(
+                        sample['difficult'], valid_ids, axis=0)
+
                 return sample
 
         return sample
