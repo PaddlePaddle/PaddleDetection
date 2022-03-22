@@ -521,13 +521,16 @@ class PipePredictor(object):
         mot_res = result.get('mot')
         if mot_res is not None:
             ids = mot_res['boxes'][:, 0]
+            scores = mot_res['boxes'][:, 2]
             boxes = mot_res['boxes'][:, 3:]
             boxes[:, 2] = boxes[:, 2] - boxes[:, 0]
             boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
         else:
             boxes = np.zeros([0, 4])
             ids = np.zeros([0])
-        image = plot_tracking(image, boxes, ids, frame_id=frame_id, fps=fps)
+            scores = np.zeros([0])
+        image = plot_tracking(
+            image, boxes, ids, scores, frame_id=frame_id, fps=fps)
 
         attr_res = result.get('attr')
         if attr_res is not None:
