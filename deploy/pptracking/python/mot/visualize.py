@@ -134,47 +134,45 @@ def plot_tracking(image,
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
 
-    text_scale = max(1, image.shape[1] / 1600.)
+    text_scale = max(0.5, image.shape[1] / 3000.)
     text_thickness = 2
     line_thickness = max(1, int(image.shape[1] / 500.))
 
     cv2.putText(
         im,
         'frame: %d fps: %.2f num: %d' % (frame_id, fps, len(tlwhs)),
-        (0, int(15 * text_scale)),
-        cv2.FONT_HERSHEY_PLAIN,
+        (0, int(15 * text_scale) + 5),
+        cv2.FONT_ITALIC,
         text_scale, (0, 0, 255),
-        thickness=2)
-
+        thickness=text_thickness)
     for i, tlwh in enumerate(tlwhs):
         x1, y1, w, h = tlwh
         intbox = tuple(map(int, (x1, y1, x1 + w, y1 + h)))
         obj_id = int(obj_ids[i])
-        id_text = '{}'.format(int(obj_id))
+        id_text = 'ID: {}'.format(int(obj_id))
         if ids2names != []:
             assert len(
                 ids2names) == 1, "plot_tracking only supports single classes."
-            id_text = '{}_'.format(ids2names[0]) + id_text
+            id_text = 'ID: {}_'.format(ids2names[0]) + id_text
         _line_thickness = 1 if obj_id <= 0 else line_thickness
         color = get_color(abs(obj_id))
         cv2.rectangle(
             im, intbox[0:2], intbox[2:4], color=color, thickness=line_thickness)
         cv2.putText(
             im,
-            id_text, (intbox[0], intbox[1] - 10),
-            cv2.FONT_HERSHEY_PLAIN,
-            text_scale, (0, 0, 255),
+            id_text, (intbox[0], intbox[1] - 25),
+            cv2.FONT_ITALIC,
+            text_scale, (0, 255, 255),
             thickness=text_thickness)
 
         if scores is not None:
-            text = '{:.2f}'.format(float(scores[i]))
+            text = 'score: {:.2f}'.format(float(scores[i]))
             cv2.putText(
                 im,
-                text, (intbox[0], intbox[1] + 10),
-                cv2.FONT_HERSHEY_PLAIN,
-                text_scale, (0, 255, 255),
+                text, (intbox[0], intbox[1] - 6),
+                cv2.FONT_ITALIC,
+                text_scale, (0, 255, 0),
                 thickness=text_thickness)
-
     if do_entrance_counting:
         entrance_line = tuple(map(int, entrance))
         cv2.rectangle(
@@ -201,7 +199,7 @@ def plot_tracking_dict(image,
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
 
-    text_scale = max(1, image.shape[1] / 1600.)
+    text_scale = max(0.5, image.shape[1] / 3000.)
     text_thickness = 2
     line_thickness = max(1, int(image.shape[1] / 500.))
 
@@ -212,9 +210,9 @@ def plot_tracking_dict(image,
             cv2.putText(
                 im,
                 records[-1][start:end], (0, int(40 * text_scale)),
-                cv2.FONT_HERSHEY_PLAIN,
+                cv2.FONT_ITALIC,
                 text_scale, (0, 0, 255),
-                thickness=2)
+                thickness=text_thickness)
 
     if num_classes == 1 and do_entrance_counting:
         entrance_line = tuple(map(int, entrance))
@@ -229,9 +227,9 @@ def plot_tracking_dict(image,
         cv2.putText(
             im,
             records[-1][start:-1], (0, int(60 * text_scale)),
-            cv2.FONT_HERSHEY_PLAIN,
+            cv2.FONT_ITALIC,
             text_scale, (0, 0, 255),
-            thickness=2)
+            thickness=text_thickness)
 
     for cls_id in range(num_classes):
         tlwhs = tlwhs_dict[cls_id]
@@ -240,10 +238,10 @@ def plot_tracking_dict(image,
         cv2.putText(
             im,
             'frame: %d fps: %.2f num: %d' % (frame_id, fps, len(tlwhs)),
-            (0, int(15 * text_scale)),
-            cv2.FONT_HERSHEY_PLAIN,
+            (0, int(15 * text_scale) + 5),
+            cv2.FONT_ITALIC,
             text_scale, (0, 0, 255),
-            thickness=2)
+            thickness=text_thickness)
 
         record_id = set()
         for i, tlwh in enumerate(tlwhs):
@@ -273,18 +271,18 @@ def plot_tracking_dict(image,
                 thickness=line_thickness)
             cv2.putText(
                 im,
-                id_text, (intbox[0], intbox[1] - 10),
-                cv2.FONT_HERSHEY_PLAIN,
-                text_scale, (0, 0, 255),
+                id_text, (intbox[0], intbox[1] - 25),
+                cv2.FONT_ITALIC,
+                text_scale, (0, 255, 255),
                 thickness=text_thickness)
 
             if scores is not None:
-                text = '{:.2f}'.format(float(scores[i]))
+                text = 'score: {:.2f}'.format(float(scores[i]))
                 cv2.putText(
                     im,
-                    text, (intbox[0], intbox[1] + 10),
-                    cv2.FONT_HERSHEY_PLAIN,
-                    text_scale, (0, 255, 255),
+                    text, (intbox[0], intbox[1] - 6),
+                    cv2.FONT_ITALIC,
+                    text_scale, (0, 255, 0),
                     thickness=text_thickness)
         if center_traj is not None:
             for traj in center_traj:
