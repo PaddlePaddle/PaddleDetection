@@ -22,7 +22,7 @@ import paddle
 
 from benchmark_utils import PaddleInferBenchmark
 from preprocess import decode_image
-from utils import argsparser, Timer, get_current_memory_mb
+from mot_utils import argsparser, Timer, get_current_memory_mb
 from det_infer import Detector, get_test_images, print_arguments, bench_log, PredictConfig
 
 # add python path
@@ -31,8 +31,8 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
 from mot import JDETracker
-from utils import MOTTimer, write_mot_results
-from visualize import plot_tracking, plot_tracking_dict
+from mot.utils import MOTTimer, write_mot_results
+from mot.visualize import plot_tracking, plot_tracking_dict
 
 # Global dictionary
 MOT_JDE_SUPPORT_MODELS = {
@@ -264,7 +264,7 @@ class JDE_Detector(Detector):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
 
         frame_id = 1

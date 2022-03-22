@@ -147,7 +147,6 @@ def argsparser():
     return parser
 
 
-
 class Times(object):
     def __init__(self):
         self.time = 0.
@@ -241,7 +240,7 @@ class Timer(Times):
         total_time = pre_time + infer_time + post_time
         if self.with_tracker:
             dic['tracking_time_s'] = round(track_time / max(1, self.img_num),
-                                        4) if average else track_time
+                                           4) if average else track_time
             total_time = total_time + track_time
         dic['total_time_s'] = round(total_time, 4)
         return dic
