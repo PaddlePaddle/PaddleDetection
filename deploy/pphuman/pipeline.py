@@ -28,7 +28,6 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
 from python.infer import Detector, DetectorPicoDet
-from python.mot_sde_infer import SDE_Detector
 from python.attr_infer import AttrDetector
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
@@ -39,7 +38,8 @@ from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
 from python.preprocess import decode_image
 from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
-from pptracking.python.visualize import plot_tracking
+from pptracking.python.mot_sde_infer import SDE_Detector
+from pptracking.python.mot.visualize import plot_tracking
 
 
 class Pipeline(object):
