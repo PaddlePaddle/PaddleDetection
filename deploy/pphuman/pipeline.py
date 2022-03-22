@@ -40,7 +40,7 @@ from python.preprocess import decode_image
 from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
 
 from pptracking.python.mot_sde_infer import SDE_Detector
-from pptracking.python.visualize import plot_tracking
+from pptracking.python.mot.visualize import plot_tracking
 
 
 class Pipeline(object):
