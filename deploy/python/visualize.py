@@ -338,17 +338,17 @@ def visualize_attr(im, results, boxes=None):
         im = np.ascontiguousarray(np.copy(im))
 
     im_h, im_w = im.shape[:2]
-    text_scale = max(1, int(im.shape[0] / 1600.))
-    text_thickness = 2
+    text_scale = max(0.5, im.shape[0] / 3000.)
+    text_thickness = 1
 
-    line_inter = im.shape[0] / 50.
+    line_inter = im.shape[0] / 40.
     for i, res in enumerate(results):
         if boxes is None:
-            text_w = 1
+            text_w = 3
             text_h = 1
         else:
             box = boxes[i]
-            text_w = int(box[2])
+            text_w = int(box[2]) + 3
             text_h = int(box[3])
         for text in res:
             text_h += int(line_inter)
@@ -357,8 +357,8 @@ def visualize_attr(im, results, boxes=None):
                 im,
                 text,
                 text_loc,
-                cv2.FONT_HERSHEY_PLAIN,
-                text_scale, (0, 0, 255),
+                cv2.FONT_ITALIC,
+                text_scale, (0, 255, 255),
                 thickness=text_thickness)
     return im
 
