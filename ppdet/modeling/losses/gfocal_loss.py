@@ -69,8 +69,7 @@ def quality_focal_loss(pred, target, beta=2.0, use_sigmoid=True):
     pos_mask = np.zeros(pred.shape, dtype=np.int32)
     pos_mask[pos.numpy(), pos_label.numpy()] = 1
     pos_mask = paddle.to_tensor(pos_mask, dtype='bool')
-    if (len(pred.shape) != len(score.shape)):
-        score = score.unsqueeze(-1).expand([-1, pred.shape[1]]).cast('float32')
+    score = score.unsqueeze(-1).expand([-1, pred.shape[1]]).cast('float32')
     # positives are supervised by bbox quality (IoU) score
     scale_factor_new = score - pred_sigmoid
 

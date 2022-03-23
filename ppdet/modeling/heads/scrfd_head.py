@@ -28,6 +28,7 @@ from ppdet.modeling.layers import ConvNormLayer
 from .fcos_head import ScaleReg
 from ppdet.modeling.bbox_utils import distance2bbox, bbox2distance, batch_distance2bbox, bbox_center
 from paddle.fluid.dygraph import parallel_helper
+from ppdet.data.transform.atss_assigner import bbox_overlaps
 
 __all__ = ['SCRFDHead']
 
@@ -53,6 +54,7 @@ class SCRFDFeat(nn.Layer):
                  num_fpn_stride=3,
                  num_convs=2,
                  norm_type='gn',
+                 norm_decay=0,
                  share_cls_reg=True,
                  fpn_stride_share=True,
                  act='relu',
@@ -117,6 +119,7 @@ class SCRFDFeat(nn.Layer):
                             stride=1,
                             groups=self.groups,
                             norm_type=norm_type,
+                            norm_decay=norm_decay,
                             norm_groups=self.norm_group,
                             bias_on=False))
                     cls_subnet_convs.append(cls_conv)
@@ -242,7 +245,7 @@ class SCRFDHead(nn.Layer):
                 mean=0.0, std=0.01)),
             bias_attr=ParamAttr(initializer=Constant(value=0)))
 
-        self.reg_scale = []
+        self.reg_scale = nn.LayerList()
         for i in range(len(self.anchor_generator.strides)):
             if self.use_reg_scale:
                 self.reg_scale.append(ScaleReg())
@@ -272,7 +275,7 @@ class SCRFDHead(nn.Layer):
                 bbox_reg.shape[0], anchor_center.shape[0],
                 anchor_center.shape[1]
             ])
-            anchor_center.stop_gradient = True
+            #  anchor_center.stop_gradient = True
             bbox_reg = bbox_reg.transpose([0, 2, 3, 1]).reshape([0, -1, 4])
             bbox_pred = batch_distance2bbox(anchor_center, bbox_reg)
             if not self.training:
@@ -296,13 +299,39 @@ class SCRFDHead(nn.Layer):
         gt_labels = gt_meta['gt_class']
         gt_bboxes = gt_meta['gt_bbox']
         pad_gt_mask = gt_meta['pad_gt_mask']
-        num_imgs = gt_meta['im_id'].shape[0]
+        #  num_imgs = gt_meta['im_id'].shape[0]
+        #          import pickle
+        #  with open('./cls_logits.pkl', 'rb')as fd:
+        #      cls_logits = paddle.to_tensor(pickle.load(fd))
+        #  with open('./bbox_all.pkl', 'rb')as fd:
+        #              bboxes_pred = paddle.to_tensor(pickle.load(fd))
+        #          import pickle
+        #  with open('../insightface//detection/scrfd/cls_score_torch.pkl', 'rb')as fd:
+        #      cls_logits_new = pickle.load(fd)
+        #      cls_logits_new = paddle.concat([paddle.to_tensor(x).transpose([0, 2, 3, 1]).reshape([0, -1, self.cls_out_channels]) for x in cls_logits_new], axis=1)
+        #  with open('../insightface/detection/scrfd/bbox_pred_torch.pkl', 'rb')as fd:
+        #      bboxes_pred_pickle = pickle.load(fd)
+        #      bboxes_pred_new = []
+        #      for i in range(len(bboxes_pred_pickle)):
+        #          anchor_center = bbox_center(anchors[
+        #              i]) / self.anchor_generator.strides[i]
+        #          bbox_reg = paddle.to_tensor(bboxes_pred_pickle[i])
+        #          anchor_center = paddle.broadcast_to(anchor_center, [
+        #              bbox_reg.shape[0], anchor_center.shape[0],
+        #              anchor_center.shape[1]
+        #          ])
+        #          bbox_reg = bbox_reg.transpose([0, 2, 3, 1]).reshape([0, -1, 4])
+        #          bbox_pred = batch_distance2bbox(anchor_center, bbox_reg)
+        #          bboxes_pred_new.append(bbox_pred)
+        #      bboxes_pred_new = paddle.concat(bboxes_pred_new, axis=1)
+        #  cls_logits = cls_logits_new
+        #          bboxes_pred = bboxes_pred_new
 
         anchors = paddle.concat(anchors, axis=0)
-        anchors.stop_gradient = True
+        #  anchors.stop_gradient = True
         stride_tensor_list = paddle.concat(stride_tensor_list, axis=0)
         stride_tensor_list = paddle.unsqueeze(stride_tensor_list, axis=0)
-        stride_tensor_list.stop_gradient = True
+        #  stride_tensor_list.stop_gradient = True
         assigned_labels, assigned_bboxes, assigned_scores = self.bbox_assigner(
             anchors,
             num_anchors_list,
@@ -310,7 +339,7 @@ class SCRFDHead(nn.Layer):
             gt_bboxes,
             pad_gt_mask,
             bg_index=self.num_classes,
-            pred_bboxes=bboxes_pred * stride_tensor_list)
+            pred_bboxes=bboxes_pred.detach() * stride_tensor_list)
         #  # rescale bbox
         assigned_bboxes /= stride_tensor_list
 
@@ -326,28 +355,69 @@ class SCRFDHead(nn.Layer):
             as_tuple=False).squeeze(1)
         num_total_pos = len(pos_inds)
 
-        # classification loss
-        loss_cls = self.loss_class(
-            flatten_cls_preds, (flatten_labels, flatten_assigned_scores),
-            avg_factor=num_total_pos)
+        #  scores = paddle.zeros([flatten_assigned_scores.shape[0]]).detach()
 
         if num_total_pos > 0:
             pos_bbox_targets = paddle.gather(
                 flatten_bbox_targets, pos_inds, axis=0)
+            pos_cls_pred = paddle.gather(flatten_cls_preds, pos_inds, axis=0)
             pos_decode_bbox_pred = paddle.gather(
                 flatten_bboxes, pos_inds, axis=0)
 
-            weight_targets = flatten_cls_preds.detach()
+            weight_targets = pos_cls_pred.detach()
             weight_targets = F.sigmoid(weight_targets)
-            weight_targets = paddle.gather(
-                weight_targets.max(axis=1, keepdim=True), pos_inds, axis=0)
+            #  weight_targets = paddle.gather(
+            #      weight_targets.max(axis=1, keepdim=True), pos_inds, axis=0)
 
             # regression loss
             loss_iou = paddle.sum(
-                self.loss_bbox(pos_decode_bbox_pred,
-                               pos_bbox_targets) * weight_targets)
-        else:
+                self.loss_bbox(pos_decode_bbox_pred, pos_bbox_targets,
+                               weight_targets))
+            # cal avg_factor
+            avg_factor = weight_targets.sum()
+            if paddle.fluid.core.is_compiled_with_dist(
+            ) and parallel_helper._is_parallel_ctx_initialized():
+                paddle.distributed.all_reduce(avg_factor)
+                avg_factor = paddle.clip(
+                    avg_factor / paddle.distributed.get_world_size(), min=1)
+            loss_iou /= avg_factor
+
+            # for cls_gth
+            #  scores[pos_inds] = bbox_overlaps(
+        #  pos_decode_bbox_pred.detach().numpy(),
+        #  pos_bbox_targets.detach().numpy(),
+        #      is_aligned=True)
+        :
+        else
             loss_iou = paddle.zeros([1])
+
+        # classification loss
+        num_total_pos = paddle.to_tensor(num_total_pos)
+        if paddle.fluid.core.is_compiled_with_dist(
+        ) and parallel_helper._is_parallel_ctx_initialized():
+            paddle.distributed.all_reduce(num_total_pos)
+            num_total_pos = paddle.clip(
+                num_total_pos / paddle.distributed.get_world_size(), min=1)
+        loss_cls = self.loss_class(
+            flatten_cls_preds,
+            (flatten_labels, paddle.flatten(assigned_scores).detach()),
+            avg_factor=num_total_pos.detach())
+
+        #       pred1=paddle.concat((flatten_cls_preds[:12800],flatten_cls_preds[16800:16800+12800]),axis=0)
+        #  lable1=paddle.concat((flatten_labels[:12800],flatten_labels[16800:16800+12800]), axis=0)
+        #  score1=paddle.concat((paddle.flatten(assigned_scores)[:12800],paddle.flatten(assigned_scores)[16800:16800+12800]), axis=0)
+        #
+        #  pred2=paddle.concat((flatten_cls_preds[12800:12800+3200],flatten_cls_preds[16800+12800:16800+12800+3200]),axis=0)
+        #  lable2=paddle.concat((flatten_labels[12800:12800+3200],flatten_labels[16800+12800:16800+12800+3200]), axis=0)
+        #  score2=paddle.concat((paddle.flatten(assigned_scores)[12800:12800+3200],paddle.flatten(assigned_scores)[16800+12800:16800+12800+3200]), axis=0)
+        #
+        #  pred3=paddle.concat((flatten_cls_preds[16000:16800],flatten_cls_preds[-800:]),axis=0)
+        #  lable3=paddle.concat((flatten_labels[16000:16800],flatten_labels[-800:]), axis=0)
+        #  score3=paddle.concat((paddle.flatten(assigned_scores)[16000:16800],paddle.flatten(assigned_scores)[-800:]), axis=0)
+        #
+        #  loss1 = self.loss_class(pred1, (lable1, score1), avg_factor=num_total_pos.detach())
+        #  loss2 = self.loss_class(pred2, (lable2, score2), avg_factor=num_total_pos.detach())
+        #       loss3 = self.loss_class(pred3, (lable3, score3), avg_factor=num_total_pos.detach())
 
         return {
             'loss_class': loss_cls,

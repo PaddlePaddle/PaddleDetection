@@ -19,6 +19,7 @@ from __future__ import print_function
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 import paddle
+import numpy as np
 
 __all__ = ['SCRFD']
 
@@ -42,6 +43,9 @@ class SCRFD(BaseArch):
         return {'backbone': backbone, 'neck': neck, 'head': head}
 
     def _forward(self):
+        #          print('*' * 50)
+        #  for k, v in self.state_dict().items():
+        #              print("%s: %.16f, %.16f" % (k, np.mean(v.numpy()), np.var(v.numpy())))
         body_feats = self.backbone(self.inputs)
         neck_feats = self.neck(body_feats)
         head_outs = self.head(neck_feats)

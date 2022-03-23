@@ -395,6 +395,26 @@ class Trainer(object):
             model.train()
             iter_tic = time.time()
             for step_id, data in enumerate(self.loader):
+                ## insert code
+                ## save_data
+                #  import pickle
+                #  #                  with open('data.pkl', 'wb')as fd:
+                #                      #  data_np = {}
+                #                      #  for k, v in data.items():
+                #                      #      data_np[k] = v.numpy()
+                #                      #  pickle.dump(data_np, fd)
+                #  #                  sys.exit(0)
+                import pickle
+                with open('data_paddle.pkl', 'rb') as fd:
+                    data = pickle.load(fd)
+                for k, v in data.items():
+                    data[k] = paddle.to_tensor(v)
+                data['gt_bbox'] = paddle.cast(data['gt_bbox'], 'float32')
+                data['gt_class'] = paddle.cast(data['gt_class'], 'int32')
+                data['pad_gt_mask'] = paddle.cast(data['pad_gt_mask'],
+                                                  'float32')
+
+                ##
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
                 profiler.add_profiler_step(profiler_options)
@@ -418,11 +438,22 @@ class Trainer(object):
                     loss = outputs['loss']
                     # model backward
                     loss.backward()
+                    # print('*' * 50)
+                    # for k, v in model.named_parameters():
+                    #     try:
+                    #         # print("%s: %.16f, %.16f" % (k, np.mean(v.gradient()),np.var(v.gradient())))
+                    #         print("%s: %.16f, %.16f" % (k, np.mean(v.numpy()), np.var(v.numpy())))
+                    #     except Exception as e:
+                    #         if v.stop_gradient:
+                    #             print("%s: stop_gradient=1" % (k))
+                    #         else:
+                    #             print("%s: stop_gradient=0" % (k))
                     self.optimizer.step()
                 curr_lr = self.optimizer.get_lr()
                 self.lr.step()
                 if self.cfg.get('unstructured_prune'):
                     self.pruner.step()
+
                 self.optimizer.clear_grad()
                 self.status['learning_rate'] = curr_lr
 

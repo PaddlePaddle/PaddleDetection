@@ -153,6 +153,34 @@ class LinearWarmup(object):
 
 
 @serializable
+class LinearWarmupV2(object):
+    """
+    Warm up learning rate linearly
+
+    Args:
+        steps (int): warm up steps
+        start_factor (float): initial learning rate factor
+    """
+
+    def __init__(self, steps=1500, start_factor=1e-5):
+        super(LinearWarmupV2, self).__init__()
+        self.steps = steps
+        self.start_factor = start_factor
+
+    def __call__(self, base_lr, step_per_epoch):
+        boundary = []
+        value = []
+        interval = (base_lr - self.start_factor) / self.steps
+        for i in range(self.steps + 1):
+            if self.steps > 0:
+                lr = self.start_factor + interval * i
+                value.append(lr)
+            if i > 0:
+                boundary.append(i)
+        return boundary, value
+
+
+@serializable
 class BurninWarmup(object):
     """
     Warm up learning rate in burnin mode

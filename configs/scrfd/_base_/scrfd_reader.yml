@@ -1,10 +1,10 @@
-worker_num: 0
+worker_num: 4
 TrainReader:
   inputs_def:
     image_shape: [1, 3, 640, 640]
   sample_transforms:
     - Decode: {}
-    - RandomSquareCrop: {crop_choice: [0.3, 0.45, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]}
+    - RandomSquareCrop: {crop_choice: [0.3, 0.45, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0], bbox_clip_border: False}
     - Resize: {target_size: [640, 640], keep_ratio: False, interp: 1}
     - RandomFlip: {}
     - PhotoMetricDistortion: {
@@ -18,14 +18,16 @@ TrainReader:
     - Permute: {}
     - PadGT: {}
   batch_size: 8
-  shuffle: false
+  shuffle: False
   drop_last: true
 
 
 EvalReader:
   sample_transforms:
     - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: True, interp: 1}
     - NormalizeImage: {mean:  [127.5, 127.5, 127.5], std: [128.0, 128.0, 128.0], is_scale: false}
+    - Pad: {size: [640, 640]}
     - Permute: {}
   batch_size: 1
 
@@ -35,6 +37,8 @@ TestReader:
     image_shape: [1, 3, 640, 640]
   sample_transforms:
     - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: True, interp: 1}
     - NormalizeImage: {mean:  [127.5, 127.5, 127.5], std: [128.0, 128.0, 128.0], is_scale: false}
+    - Pad: {size: [640, 640]}
     - Permute: {}
   batch_size: 1

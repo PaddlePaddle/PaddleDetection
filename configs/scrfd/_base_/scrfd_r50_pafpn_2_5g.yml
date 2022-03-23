@@ -1,5 +1,4 @@
 architecture: SCRFD
-
 SCRFD:
   backbone: ResNet
   neck: PAFPN
@@ -9,10 +8,11 @@ ResNet:
   depth: 0
   variant: d
   norm_type: bn
-  freeze_at: 0
+  freeze_at: -1
   freeze_norm: False
   return_idx: [0,1,2,3]
   num_stages: 4
+  norm_decay: 0
   ch_in: 24
   stem_max_pool_ks: 2
   block_name: BasicBlock
@@ -27,6 +27,7 @@ PAFPN:
   has_extra_convs: on_output
   spatial_scales: [0.125, 0.0625, 0.03125]
   num_outs: 3
+  norm_decay: 0
 
 SCRFDHead:
   num_classes: 1
@@ -43,6 +44,7 @@ SCRFDHead:
     act: relu
     norm_group: 16
     use_dw_conv: false
+    norm_decay: 0
   anchor_generator:
     name: AnchorGenerator
     anchor_sizes: [[16, 32], [64, 128], [256, 512]]
@@ -62,9 +64,11 @@ SCRFDHead:
   loss_bbox:
     name: DIouLoss
     loss_weight: 2.0
+    use_complete_iou_loss: False
+    reduction: sum
   nms:
     name: MultiClassNMS
     nms_top_k: 1000
     keep_top_k: 100
-    score_threshold: 0.05
+    score_threshold: 0.02
     nms_threshold: 0.45

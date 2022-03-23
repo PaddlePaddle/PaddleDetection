@@ -6,8 +6,8 @@ LearningRate:
   - !PiecewiseDecay
     gamma: 0.1
     milestones: [440, 544]
-  - !LinearWarmup
-    start_factor: 0.001
+  - !LinearWarmupV2
+    start_factor: 0.00001
     steps: 1500
 
 OptimizerBuilder:

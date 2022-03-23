@@ -67,7 +67,8 @@ class PAFPN(nn.Layer):
                  extra_convs_on_inputs=True,
                  relu_before_extra_convs=False,
                  no_norm_on_lateral=False,
-                 norm_type=None):
+                 norm_type=None,
+                 norm_decay=0):
         super(PAFPN, self).__init__()
 
         assert isinstance(in_channels, list)
@@ -109,9 +110,21 @@ class PAFPN(nn.Layer):
 
         for i in range(self.start_level, self.backbone_end_level):
             l_conv = ConvNormLayer(
-                in_channels[i], out_channels, 1, stride=1, norm_type=norm_type)
+                in_channels[i],
+                out_channels,
+                1,
+                stride=1,
+                norm_decay=norm_decay,
+                norm_type=norm_type,
+                bias_on=True)
             fpn_conv = ConvNormLayer(
-                out_channels, out_channels, 3, stride=1, norm_type=norm_type)
+                out_channels,
+                out_channels,
+                3,
+                stride=1,
+                norm_decay=norm_decay,
+                norm_type=norm_type,
+                bias_on=True)
 
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
@@ -125,7 +138,13 @@ class PAFPN(nn.Layer):
                 else:
                     in_channels = out_channels
                 extra_fpn_conv = ConvNormLayer(
-                    in_channels, out_channels, 3, stride=2, norm_type=norm_type)
+                    in_channels,
+                    out_channels,
+                    3,
+                    stride=2,
+                    norm_decay=norm_decay,
+                    norm_type=norm_type,
+                    bias_on=True)
                 self.fpn_convs.append(extra_fpn_conv)
 
         # add extra bottom up pathway
@@ -133,9 +152,21 @@ class PAFPN(nn.Layer):
         self.pafpn_convs = nn.LayerList()
         for i in range(self.start_level + 1, self.backbone_end_level):
             d_conv = ConvNormLayer(
-                out_channels, out_channels, 3, stride=2, norm_type=None)
+                out_channels,
+                out_channels,
+                3,
+                stride=2,
+                norm_decay=norm_decay,
+                norm_type=None,
+                bias_on=True)
             pafpn_conv = ConvNormLayer(
-                out_channels, out_channels, 3, stride=1, norm_type=None)
+                out_channels,
+                out_channels,
+                3,
+                stride=1,
+                norm_decay=norm_decay,
+                norm_type=None,
+                bias_on=True)
             self.downsample_convs.append(d_conv)
             self.pafpn_convs.append(pafpn_conv)
 

@@ -27,3 +27,4 @@ from .category import *
 from .keypoint_coco import *
 from .mot import *
 from .sniper_coco import SniperCOCODataSet
+from .widerface_v2 import WIDERFaceDataSetV2

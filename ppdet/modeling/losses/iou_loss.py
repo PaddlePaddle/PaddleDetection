@@ -150,9 +150,14 @@ class DIouLoss(GIoULoss):
         use_complete_iou_loss (bool): whether to use complete iou loss
     """
 
-    def __init__(self, loss_weight=1., eps=1e-10, use_complete_iou_loss=True):
+    def __init__(self,
+                 loss_weight=1.,
+                 eps=1e-7,
+                 use_complete_iou_loss=True,
+                 reduction='mean'):
         super(DIouLoss, self).__init__(loss_weight=loss_weight, eps=eps)
         self.use_complete_iou_loss = use_complete_iou_loss
+        self.reduction = reduction
 
     def __call__(self, pbox, gbox, iou_weight=1.):
         x1, y1, x2, y2 = paddle.split(pbox, num_or_sections=4, axis=-1)
@@ -204,7 +209,9 @@ class DIouLoss(GIoULoss):
             alpha = ar_loss / (1 - iouk + ar_loss + self.eps)
             alpha.stop_gradient = True
             ciou_term = alpha * ar_loss
-
-        diou = paddle.mean((1 - iouk + ciou_term + diou_term) * iou_weight)
+        if self.reduction == "mean":
+            diou = paddle.mean((1 - iouk + ciou_term + diou_term) * iou_weight)
+        else:
+            diou = paddle.sum((1 - iouk + ciou_term + diou_term) * iou_weight)
 
         return diou * self.loss_weight

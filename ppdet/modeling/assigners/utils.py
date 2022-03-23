@@ -124,6 +124,13 @@ def check_points_inside_bboxes(points, bboxes, eps=1e-9):
     r = xmax - x
     b = ymax - y
     bbox_ltrb = paddle.concat([l, t, r, b], axis=-1)
+    bboxes_ares = (bboxes[..., 3] - bboxes[..., 1]) * (
+        bboxes[..., 2] - bboxes[..., 0])
+    bboxes_ares = paddle.clip(paddle.sqrt(bboxes_ares), min=1e-4)
+    bbox_ltrb_min = bbox_ltrb.min(axis=-1).transpose([0, 2, 1])
+    bbox_ltrb_min = (bbox_ltrb_min / bboxes_ares.unsqueeze(1)).transpose(
+        [0, 2, 1])
+    return (bbox_ltrb_min > 0.001).astype(bboxes.dtype)
     return (bbox_ltrb.min(axis=-1) > eps).astype(bboxes.dtype)
 
 
