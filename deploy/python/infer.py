@@ -79,6 +79,8 @@ class Detector(object):
         enable_mkldnn_bfloat16 (bool): whether to turn on mkldnn bfloat16
         output_dir (str): The path of output
         threshold (float): The threshold of score for visualization
+        delete_shuffle_pass (bool): whether to remove shuffle_channel_detect_pass in TensorRT. 
+                                    Used by action model.
     """
 
     def __init__(self,
@@ -601,6 +603,8 @@ def load_predictor(model_dir,
         trt_opt_shape (int): opt shape for dynamic shape in trt
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
+        delete_shuffle_pass (bool): whether to remove shuffle_channel_detect_pass in TensorRT. 
+                                    Used by action model.
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     Raises:
