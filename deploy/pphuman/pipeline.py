@@ -469,6 +469,8 @@ class PipePredictor(object):
                 self.pipeline_res.update(attr_res, 'attr')
 
             if self.with_action:
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.module_time['kpt'].start()
                 kpt_pred = self.kpt_predictor.predict_image(
                     crop_input, visual=False)
                 keypoint_vector, score_vector = translate_to_ori_images(
@@ -478,6 +480,9 @@ class PipePredictor(object):
                     keypoint_vector.tolist(), score_vector.tolist()
                 ] if len(keypoint_vector) > 0 else [[], []]
                 kpt_res['bbox'] = ori_bboxes
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.module_time['kpt'].end()
+
                 self.pipeline_res.update(kpt_res, 'kpt')
 
                 self.kpt_collector.update(kpt_res,
@@ -487,12 +492,14 @@ class PipePredictor(object):
 
                 action_res = {}
                 if state:
+                    self.pipe_timer.module_time['action'].start()
                     collected_keypoint = self.kpt_collector.get_collected_keypoint(
                     )  # reoragnize kpt output with ID
                     action_input = parse_mot_keypoint(collected_keypoint,
                                                       self.coord_size)
                     action_res = self.action_predictor.predict_skeleton_with_mot(
                         action_input)
+                    self.pipe_timer.module_time['action'].end()
                     self.pipeline_res.update(action_res, 'action')
 
                 if self.cfg['visual']:

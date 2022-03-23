@@ -81,21 +81,21 @@ class Detector(object):
         threshold (float): The threshold of score for visualization
     """
 
-    def __init__(
-            self,
-            model_dir,
-            device='CPU',
-            run_mode='paddle',
-            batch_size=1,
-            trt_min_shape=1,
-            trt_max_shape=1280,
-            trt_opt_shape=640,
-            trt_calib_mode=False,
-            cpu_threads=1,
-            enable_mkldnn=False,
-            enable_mkldnn_bfloat16=False,
-            output_dir='output',
-            threshold=0.5, ):
+    def __init__(self,
+                 model_dir,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 enable_mkldnn_bfloat16=False,
+                 output_dir='output',
+                 threshold=0.5,
+                 delete_shuffle_pass=False):
         self.pred_config = self.set_config(model_dir)
         self.predictor, self.config = load_predictor(
             model_dir,
@@ -110,7 +110,8 @@ class Detector(object):
             trt_calib_mode=trt_calib_mode,
             cpu_threads=cpu_threads,
             enable_mkldnn=enable_mkldnn,
-            enable_mkldnn_bfloat16=enable_mkldnn_bfloat16)
+            enable_mkldnn_bfloat16=enable_mkldnn_bfloat16,
+            delete_shuffle_pass=delete_shuffle_pass)
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
         self.batch_size = batch_size
@@ -587,7 +588,8 @@ def load_predictor(model_dir,
                    trt_calib_mode=False,
                    cpu_threads=1,
                    enable_mkldnn=False,
-                   enable_mkldnn_bfloat16=False):
+                   enable_mkldnn_bfloat16=False,
+                   delete_shuffle_pass=False):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
@@ -669,6 +671,8 @@ def load_predictor(model_dir,
     config.enable_memory_optim()
     # disable feed, fetch OP, needed by zero_copy_run
     config.switch_use_feed_fetch_ops(False)
+    if delete_shuffle_pass:
+        config.delete_pass("shuffle_channel_detect_pass")
     predictor = create_predictor(config)
     return predictor, config
 
