@@ -138,6 +138,21 @@ def argsparser():
         default=True,
         help='whether to use darkpose to get better keypoint position predict ')
     parser.add_argument(
+        "--do_entrance_counting",
+        action='store_true',
+        help="Whether counting the numbers of identifiers entering "
+        "or getting out from the entrance. Note that only support one-class"
+        "counting, multi-class counting is coming soon.")
+    parser.add_argument(
+        "--secs_interval",
+        type=int,
+        default=2,
+        help="The seconds interval to count after tracking")
+    parser.add_argument(
+        "--draw_center_traj",
+        action='store_true',
+        help="Whether drawing the trajectory of center")
+    parser.add_argument(
         "--mtmct_dir",
         type=str,
         default=None,

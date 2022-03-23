@@ -74,6 +74,11 @@ class SDE_Detector(Detector):
                  enable_mkldnn=False,
                  output_dir='output',
                  threshold=0.5,
+                 save_images=False,
+                 save_mot_txts=False,
+                 draw_center_traj=False,
+                 secs_interval=10,
+                 do_entrance_counting=False,
                  reid_model_dir=None,
                  mtmct_dir=None):
         super(SDE_Detector, self).__init__(
@@ -89,6 +94,12 @@ class SDE_Detector(Detector):
             enable_mkldnn=enable_mkldnn,
             output_dir=output_dir,
             threshold=threshold, )
+        self.save_images = save_images
+        self.save_mot_txts = save_mot_txts
+        self.draw_center_traj = draw_center_traj
+        self.secs_interval = secs_interval
+        self.do_entrance_counting = do_entrance_counting
+
         assert batch_size == 1, "MOT model only supports batch_size=1."
         self.det_times = Timer(with_tracker=True)
         self.num_classes = len(self.pred_config.labels)
@@ -409,7 +420,7 @@ class SDE_Detector(Detector):
                 mot_results.append([online_tlwhs, online_scores, online_ids])
 
             if visual:
-                if frame_id % 10 == 0:
+                if len(image_list) > 1 and frame_id % 10 == 0:
                     print('Tracking frame {}'.format(frame_id))
                 frame, _ = decode_image(img_file, {})
                 if isinstance(online_tlwhs, defaultdict):
@@ -456,13 +467,32 @@ class SDE_Detector(Detector):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+        video_format = 'mp4v'
+        fourcc = cv2.VideoWriter_fourcc(*video_format)
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
 
         frame_id = 1
         timer = MOTTimer()
-        results = defaultdict(list)  # support single class and multi classes
+        results = defaultdict(list)
         num_classes = self.num_classes
+        data_type = 'mcmot' if num_classes > 1 else 'mot'
+        ids2names = self.pred_config.labels
+        center_traj = None
+        entrance = None
+        records = None
+        if self.draw_center_traj:
+            center_traj = [{} for i in range(num_classes)]
+
+        if num_classes == 1:
+            id_set = set()
+            interval_id_set = set()
+            in_id_list = list()
+            out_id_list = list()
+            prev_center = dict()
+            records = list()
+            entrance = [0, height / 2., width, height / 2.]
+        video_fps = fps
+
         while (1):
             ret, frame = capture.read()
             if not ret:
@@ -477,8 +507,27 @@ class SDE_Detector(Detector):
                 [frame], visual=False, seq_name=seq_name)
             timer.toc()
 
-            online_tlwhs, online_scores, online_ids = mot_results[
-                0]  # bs=1 in MOT model
+            # bs=1 in MOT model
+            online_tlwhs, online_scores, online_ids = mot_results[0]
+
+            # NOTE: just implement flow statistic for one class
+            if num_classes == 1:
+                result = (frame_id + 1, online_tlwhs[0], online_scores[0],
+                          online_ids[0])
+                statistic = flow_statistic(
+                    result, self.secs_interval, self.do_entrance_counting,
+                    video_fps, entrance, id_set, interval_id_set, in_id_list,
+                    out_id_list, prev_center, records, data_type, num_classes)
+                id_set = statistic['id_set']
+                interval_id_set = statistic['interval_id_set']
+                in_id_list = statistic['in_id_list']
+                out_id_list = statistic['out_id_list']
+                prev_center = statistic['prev_center']
+                records = statistic['records']
+            elif num_classes > 1 and self.do_entrance_counting:
+                raise NotImplementedError(
+                    'Multi-class flow counting is not implemented now!')
+
             fps = 1. / timer.duration
             if num_classes == 1 and self.use_reid:
                 # use DeepSORTTracker, only support singe class
@@ -490,7 +539,9 @@ class SDE_Detector(Detector):
                     online_ids,
                     online_scores,
                     frame_id=frame_id,
-                    fps=fps)
+                    fps=fps,
+                    do_entrance_counting=self.do_entrance_counting,
+                    entrance=entrance)
             else:
                 # use ByteTracker, support multiple class
                 for cls_id in range(num_classes):
@@ -505,13 +556,32 @@ class SDE_Detector(Detector):
                     online_scores,
                     frame_id=frame_id,
                     fps=fps,
-                    ids2names=[])
+                    ids2names=ids2names,
+                    do_entrance_counting=self.do_entrance_counting,
+                    entrance=entrance,
+                    records=records,
+                    center_traj=center_traj)
 
             writer.write(im)
             if camera_id != -1:
                 cv2.imshow('Mask Detection', im)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
+
+        if self.save_mot_txts:
+            result_filename = os.path.join(
+                self.output_dir, video_out_name.split('.')[-2] + '.txt')
+            write_mot_results(result_filename, results)
+
+            result_filename = os.path.join(
+                self.output_dir,
+                video_out_name.split('.')[-2] + '_flow_statistic.txt')
+            f = open(result_filename, 'w')
+            for line in records:
+                f.write(line)
+            print('Flow statistic save in {}'.format(result_filename))
+            f.close()
+
         writer.release()
 
     def predict_mtmct(self, mtmct_dir, mtmct_cfg):
@@ -623,18 +693,23 @@ def main():
     arch = yml_conf['arch']
     detector = SDE_Detector(
         FLAGS.model_dir,
-        FLAGS.tracker_config,
+        tracker_config=FLAGS.tracker_config,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
-        batch_size=FLAGS.batch_size,
+        batch_size=1,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
         trt_opt_shape=FLAGS.trt_opt_shape,
         trt_calib_mode=FLAGS.trt_calib_mode,
         cpu_threads=FLAGS.cpu_threads,
         enable_mkldnn=FLAGS.enable_mkldnn,
-        threshold=FLAGS.threshold,
         output_dir=FLAGS.output_dir,
+        threshold=FLAGS.threshold,
+        save_images=FLAGS.save_images,
+        save_mot_txts=FLAGS.save_mot_txts,
+        draw_center_traj=FLAGS.draw_center_traj,
+        secs_interval=FLAGS.secs_interval,
+        do_entrance_counting=FLAGS.do_entrance_counting,
         reid_model_dir=FLAGS.reid_model_dir,
         mtmct_dir=FLAGS.mtmct_dir, )
 
