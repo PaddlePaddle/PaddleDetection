@@ -142,15 +142,15 @@ PP-Human整体方案如下图所示
 - 使用PP-YOLOE + Bytetrack得到单镜头多目标跟踪轨迹
 - 使用ReID（centroid网络）对每一帧的检测结果提取特征
 - 多镜头轨迹特征进行匹配，得到跨镜头跟踪结果
-- 详细文档参考[跨镜跟踪](doc/mtmct.md)
+- 详细文档参考[跨镜跟踪](docs/mtmct.md)
 
 ### 4. 属性识别
 - 使用PP-YOLOE + Bytetrack跟踪人体
 - 使用StrongBaseline（多分类模型）完成识别属性，主要属性包括年龄、性别、帽子、眼睛、上衣下衣款式、背包等
-- 详细文档参考[属性识别](doc/attribute.md)
+- 详细文档参考[属性识别](docs/attribute.md)
 
 ### 5. 行为识别：
 - 使用PP-YOLOE + Bytetrack跟踪人体
 - 使用HRNet进行关键点检测得到人体17个骨骼点
 - 结合100帧内同一个人骨骼点的变化，通过ST-GCN判断100帧内发生的动作是否为摔倒
-- 详细文档参考[行为识别](doc/action.md)
+- 详细文档参考[行为识别](docs/action.md)

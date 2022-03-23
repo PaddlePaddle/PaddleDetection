@@ -54,15 +54,23 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
 2. 通过行人检测框的坐标在输入图像中截取每个行人
 3. 使用属性识别分析每个行人对应属性，属性类型与PA100k数据集相同，具体属性列表如下：
 ```
-AgeOver60, Age18-60, AgeLess18
-Female
-Hat, Glasses
-ShortSleeve, LongSleeve, UpperStride, UpperLogo, UpperPlaid, UpperSplice
-LowerStripe, LowerPattern, LongCoat, Trousers, Shorts, Skirt&Dress
-boots
-HandBag, ShoulderBag, Backpack, HoldObjectsInFront
-Front, Side, Back
+- 性别：男、女
+- 年龄：小于18、18-60、大于60
+- 朝向：朝前、朝后、侧面
+- 配饰：眼镜、帽子、无
+- 正面持物：是、否
+- 包：双肩包、单肩包、手提包
+- 上衣风格：带条纹、带logo、带格子、拼接风格
+- 下装风格：带条纹、带图案
+- 短袖上衣：是、否
+- 长袖上衣：是、否
+- 长外套：是、否
+- 长裤：是、否
+- 短裤：是、否
+- 短裙&裙子：是、否
+- 穿靴：是、否
 ```
+
 4. 属性识别模型方案为[StrongBaseline](https://arxiv.org/pdf/2107.03576.pdf)，模型结构为基于ResNet50的多分类网络结构，引入Weighted BCE loss和EMA提升模型效果。
 
 ## 参考文献
