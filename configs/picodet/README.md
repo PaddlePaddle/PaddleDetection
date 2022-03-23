@@ -214,8 +214,7 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco_lcnet/ \
 - [NCNN C++/Python demo](../../deploy/third_engine/demo_ncnn)
 - [MNN C++/Python demo](../../deploy/third_engine/demo_mnn)
 - [OpenVINO C++ demo](../../deploy/third_engine/demo_openvino)
-- [Android demo(NCNN)](https://github.com/JiweiMaster/PP-PicoDet-Android-Demo)（Thank @[Jewel](https://github.com/JiweiMaster) for his contribution to PaddleDetection）
-- [Android demo(Paddle Lite)](https://github.com/marsplus-wjh/Picodet-PaddleLite-AndroidDemo)（Thank @[JiaHui-Wang](https://github.com/marsplus-wjh) for his contribution to PaddleDetection）
+- [Android demo(Paddle Lite)](https://github.com/PaddlePaddle/Paddle-Lite-Demo/tree/develop/object_detection/android/app/cxx/picodet_detection_demo)
 
 
 Android demo visualization:
