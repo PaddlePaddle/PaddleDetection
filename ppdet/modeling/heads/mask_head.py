@@ -209,7 +209,7 @@ class MaskHead(nn.Layer):
         scale_factor (Tensor): The scale factor from origin size to input size
         """
         if not self.export_onnx and rois.shape[0] == 0:
-            mask_out = paddle.full([1, 1, 1, 1], -1)
+            mask_out = paddle.full([1, 1, 1], -1)
         else:
             bbox = [rois[:, 2:]]
             labels = rois[:, 0].cast('int32')
