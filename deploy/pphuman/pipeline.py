@@ -21,7 +21,11 @@ import numpy as np
 import math
 import paddle
 import sys
+import copy
 from collections import Sequence
+from reid import ReID
+from datacollector import DataCollector, Result
+from mtmct import mtmct_process
 
 # add deploy path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
@@ -32,7 +36,7 @@ from python.attr_infer import AttrDetector
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
 from python.action_infer import ActionRecognizer
-from python.action_utils import KeyPointCollector, ActionVisualCollector
+from python.action_utils import KeyPointBuff, ActionVisualHelper
 
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
@@ -75,6 +79,7 @@ class Pipeline(object):
                  image_file=None,
                  image_dir=None,
                  video_file=None,
+                 video_dir=None,
                  camera_id=-1,
                  enable_attr=False,
                  enable_action=True,
@@ -89,8 +94,10 @@ class Pipeline(object):
                  output_dir='output'):
         self.multi_camera = False
         self.is_video = False
+        self.output_dir = output_dir
+        self.vis_result = cfg['visual']
         self.input = self._parse_input(image_file, image_dir, video_file,
-                                       camera_id)
+                                       video_dir, camera_id)
         if self.multi_camera:
             self.predictor = [
                 PipePredictor(
@@ -126,7 +133,8 @@ class Pipeline(object):
             if self.is_video:
                 self.predictor.set_file_name(video_file)
 
-    def _parse_input(self, image_file, image_dir, video_file, camera_id):
+    def _parse_input(self, image_file, image_dir, video_file, video_dir,
+                     camera_id):
 
         # parse input as is_video and multi_camera
 
@@ -136,19 +144,23 @@ class Pipeline(object):
             self.multi_camera = False
 
         elif video_file is not None:
-            if isinstance(video_file, list):
+            self.multi_camera = False
+            input = video_file
+            self.is_video = True
+
+        elif video_dir is not None:
+            videof = [os.path.join(video_dir, x) for x in os.listdir(video_dir)]
+            if len(videof) > 1:
                 self.multi_camera = True
-                input = [cv2.VideoCapture(v) for v in video_file]
+                videof.sort()
+                input = videof
             else:
-                input = cv2.VideoCapture(video_file)
+                input = videof[0]
             self.is_video = True
 
         elif camera_id != -1:
-            if isinstance(camera_id, Sequence):
-                self.multi_camera = True
-                input = [cv2.VideoCapture(i) for i in camera_id]
-            else:
-                input = cv2.VideoCapture(camera_id)
+            self.multi_camera = False
+            input = camera_id
             self.is_video = True
 
         else:
@@ -163,32 +175,16 @@ class Pipeline(object):
             multi_res = []
             for predictor, input in zip(self.predictor, self.input):
                 predictor.run(input)
-                res = predictor.get_result()
-                multi_res.append(res)
-
-            mtmct_process(multi_res)
+                collector_data = predictor.get_result()
+                multi_res.append(collector_data)
+            mtmct_process(
+                multi_res,
+                self.input,
+                mtmct_vis=self.vis_result,
+                output_dir=self.output_dir)
 
         else:
             self.predictor.run(self.input)
-
-
-class Result(object):
-    def __init__(self):
-        self.res_dict = {
-            'det': dict(),
-            'mot': dict(),
-            'attr': dict(),
-            'kpt': dict(),
-            'action': dict()
-        }
-
-    def update(self, res, name):
-        self.res_dict[name].update(res)
-
-    def get(self, name):
-        if name in self.res_dict and len(self.res_dict[name]) > 0:
-            return self.res_dict[name]
-        return None
 
 
 class PipePredictor(object):
@@ -255,10 +251,18 @@ class PipePredictor(object):
 
         self.with_attr = cfg.get('ATTR', False) and enable_attr
         self.with_action = cfg.get('ACTION', False) and enable_action
+        self.with_mtmct = cfg.get('REID', False) and multi_camera
         if self.with_attr:
             print('Attribute Recognition enabled')
         if self.with_action:
             print('Action Recognition enabled')
+        if multi_camera:
+            if not self.with_mtmct:
+                print(
+                    'Warning!!! MTMCT enabled, but cannot find REID config in [infer_cfg.yml], please check!'
+                )
+            else:
+                print("MTMCT enabled")
 
         self.is_video = is_video
         self.multi_camera = multi_camera
@@ -269,6 +273,7 @@ class PipePredictor(object):
         self.pipeline_res = Result()
         self.pipe_timer = PipeTimer()
         self.file_name = None
+        self.collector = DataCollector()
 
         if not is_video:
             det_cfg = self.cfg['DET']
@@ -327,7 +332,7 @@ class PipePredictor(object):
                     cpu_threads,
                     enable_mkldnn,
                     use_dark=False)
-                self.kpt_collector = KeyPointCollector(action_frames)
+                self.kpt_buff = KeyPointBuff(action_frames)
 
                 self.action_predictor = ActionRecognizer(
                     action_model_dir,
@@ -342,14 +347,22 @@ class PipePredictor(object):
                     enable_mkldnn,
                     window_size=action_frames)
 
-                self.action_visual_collector = ActionVisualCollector(
-                    display_frames)
+                self.action_visual_helper = ActionVisualHelper(display_frames)
+
+        if self.with_mtmct:
+            reid_cfg = self.cfg['REID']
+            model_dir = reid_cfg['model_dir']
+            batch_size = reid_cfg['batch_size']
+            self.reid_predictor = ReID(model_dir, device, run_mode, batch_size,
+                                       trt_min_shape, trt_max_shape,
+                                       trt_opt_shape, trt_calib_mode,
+                                       cpu_threads, enable_mkldnn)
 
     def set_file_name(self, path):
         self.file_name = os.path.split(path)[-1]
 
     def get_result(self):
-        return self.pipeline_res
+        return self.collector.get_res()
 
     def run(self, input):
         if self.is_video:
@@ -406,10 +419,11 @@ class PipePredictor(object):
             if self.cfg['visual']:
                 self.visualize_image(batch_file, batch_input, self.pipeline_res)
 
-    def predict_video(self, capture):
+    def predict_video(self, video_file):
         # mot
         # mot -> attr
         # mot -> pose -> action
+        capture = cv2.VideoCapture(video_file)
         video_out_name = 'output.mp4' if self.file_name is None else self.file_name
 
         # Get Video info : resolution, fps, frame count
@@ -434,7 +448,8 @@ class PipePredictor(object):
             if frame_id > self.warmup_frame:
                 self.pipe_timer.total_time.start()
                 self.pipe_timer.module_time['mot'].start()
-            res = self.mot_predictor.predict_image([frame], visual=False)
+            res = self.mot_predictor.predict_image(
+                [copy.deepcopy(frame)], visual=False)
 
             if frame_id > self.warmup_frame:
                 self.pipe_timer.module_time['mot'].end()
@@ -485,16 +500,15 @@ class PipePredictor(object):
 
                 self.pipeline_res.update(kpt_res, 'kpt')
 
-                self.kpt_collector.update(kpt_res,
-                                          mot_res)  # collect kpt output
-                state = self.kpt_collector.get_state(
+                self.kpt_buff.update(kpt_res, mot_res)  # collect kpt output
+                state = self.kpt_buff.get_state(
                 )  # whether frame num is enough or lost tracker
 
                 action_res = {}
                 if state:
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['action'].start()
-                    collected_keypoint = self.kpt_collector.get_collected_keypoint(
+                    collected_keypoint = self.kpt_buff.get_collected_keypoint(
                     )  # reoragnize kpt output with ID
                     action_input = parse_mot_keypoint(collected_keypoint,
                                                       self.coord_size)
@@ -505,17 +519,31 @@ class PipePredictor(object):
                     self.pipeline_res.update(action_res, 'action')
 
                 if self.cfg['visual']:
-                    self.action_visual_collector.update(action_res)
+                    self.action_visual_helper.update(action_res)
+
+            if self.with_mtmct:
+                crop_input, img_qualities, rects = self.reid_predictor.crop_image_with_mot(
+                    frame, mot_res)
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.module_time['reid'].start()
+                reid_res = self.reid_predictor.predict_batch(crop_input)
+
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.module_time['reid'].end()
+
+                reid_res_dict = {
+                    'features': reid_res,
+                    "qualities": img_qualities,
+                    "rects": rects
+                }
+                self.pipeline_res.update(reid_res_dict, 'reid')
+
+            self.collector.append(frame_id, self.pipeline_res)
 
             if frame_id > self.warmup_frame:
                 self.pipe_timer.img_num += 1
                 self.pipe_timer.total_time.end()
             frame_id += 1
-
-            if self.multi_camera:
-                self.get_valid_instance(
-                    frame,
-                    self.pipeline_res)  # parse output result for multi-camera
 
             if self.cfg['visual']:
                 _, _, fps = self.pipe_timer.get_total_time()
@@ -527,7 +555,7 @@ class PipePredictor(object):
         print('save result to {}'.format(out_path))
 
     def visualize_video(self, image, result, frame_id, fps):
-        mot_res = result.get('mot')
+        mot_res = copy.deepcopy(result.get('mot'))
         if mot_res is not None:
             ids = mot_res['boxes'][:, 0]
             scores = mot_res['boxes'][:, 2]
@@ -559,7 +587,7 @@ class PipePredictor(object):
         action_res = result.get('action')
         if action_res is not None:
             image = visualize_action(image, mot_res['boxes'],
-                                     self.action_visual_collector, "Falling")
+                                     self.action_visual_helper, "Falling")
 
         return image
 
@@ -598,10 +626,10 @@ def main():
     print_arguments(cfg)
     pipeline = Pipeline(
         cfg, FLAGS.image_file, FLAGS.image_dir, FLAGS.video_file,
-        FLAGS.camera_id, FLAGS.enable_attr, FLAGS.enable_action, FLAGS.device,
-        FLAGS.run_mode, FLAGS.trt_min_shape, FLAGS.trt_max_shape,
-        FLAGS.trt_opt_shape, FLAGS.trt_calib_mode, FLAGS.cpu_threads,
-        FLAGS.enable_mkldnn, FLAGS.output_dir)
+        FLAGS.video_dir, FLAGS.camera_id, FLAGS.enable_attr,
+        FLAGS.enable_action, FLAGS.device, FLAGS.run_mode, FLAGS.trt_min_shape,
+        FLAGS.trt_max_shape, FLAGS.trt_opt_shape, FLAGS.trt_calib_mode,
+        FLAGS.cpu_threads, FLAGS.enable_mkldnn, FLAGS.output_dir)
 
     pipeline.run()
 
