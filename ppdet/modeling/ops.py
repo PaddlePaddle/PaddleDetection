@@ -482,6 +482,8 @@ def collect_fpn_proposals(multi_rois,
             rois_num = helper.create_variable_for_type_inference(dtype='int32')
             rois_num.stop_gradient = True
             outputs['RoisNum'] = rois_num
+        else:
+            rois_num = None
         helper.append_op(
             type='collect_fpn_proposals',
             inputs=inputs,
@@ -602,6 +604,8 @@ def distribute_fpn_proposals(fpn_rois,
                 for i in range(num_lvl)
             ]
             outputs['MultiLevelRoIsNum'] = rois_num_per_level
+        else:
+            rois_num_per_level = None
 
         helper.append_op(
             type='distribute_fpn_proposals',

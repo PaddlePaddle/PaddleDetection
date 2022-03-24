@@ -2,6 +2,7 @@ crop_thresh: 0.5
 attr_thresh: 0.5
 kpt_thresh: 0.2
 visual: True
+warmup_frame: 50
 
 DET:
   model_dir: output_inference/mot_ppyolov3/
