@@ -20,8 +20,8 @@ import collections
 
 __all__ = [
     'MOTTimer', 'Detection', 'write_mot_results', 'load_det_results',
-    'preprocess_reid', 'get_crops', 'clip_box', 'scale_coords', 'flow_statistic',
-    'plot_tracking'
+    'preprocess_reid', 'get_crops', 'clip_box', 'scale_coords',
+    'flow_statistic', 'plot_tracking'
 ]
 
 
@@ -182,7 +182,7 @@ def clip_box(xyxy, ori_image_shape):
 def get_crops(xyxy, ori_img, w, h):
     crops = []
     xyxy = xyxy.astype(np.int64)
-    ori_img = ori_img.transpose(1, 0, 2) # [h,w,3]->[w,h,3]
+    ori_img = ori_img.transpose(1, 0, 2)  # [h,w,3]->[w,h,3]
     for i, bbox in enumerate(xyxy):
         crop = ori_img[bbox[0]:bbox[2], bbox[1]:bbox[3], :]
         crops.append(crop)
@@ -197,10 +197,7 @@ def preprocess_reid(imgs,
                     std=[0.229, 0.224, 0.225]):
     im_batch = []
     for img in imgs:
-        try:
-            img = cv2.resize(img, (w, h))
-        except:
-            embed()
+        img = cv2.resize(img, (w, h))
         img = img[:, :, ::-1].astype('float32').transpose((2, 0, 1)) / 255
         img_mean = np.array(mean).reshape((3, 1, 1))
         img_std = np.array(std).reshape((3, 1, 1))
@@ -318,8 +315,7 @@ def plot_tracking(image,
         _line = 'frame: %d num: %d' % (frame_id, len(tlwhs))
     cv2.putText(
         im,
-        _line,
-        (0, int(15 * text_scale)),
+        _line, (0, int(15 * text_scale)),
         cv2.FONT_HERSHEY_PLAIN,
         text_scale, (0, 0, 255),
         thickness=2)

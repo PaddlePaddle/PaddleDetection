@@ -15,6 +15,7 @@
 import os
 import yaml
 import glob
+from collections import defaultdict
 
 import cv2
 import numpy as np
@@ -40,7 +41,8 @@ from python.preprocess import decode_image
 from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
 
 from pptracking.python.mot_sde_infer import SDE_Detector
-from pptracking.python.mot.visualize import plot_tracking
+from pptracking.python.mot.visualize import plot_tracking, plot_tracking_dict
+from pptracking.python.mot.utils import flow_statistic
 
 
 class Pipeline(object):
@@ -68,6 +70,11 @@ class Pipeline(object):
         cpu_threads (int): cpu threads, default as 1
         enable_mkldnn (bool): whether to open MKLDNN, default as False
         output_dir (string): The path of output, default as 'output'
+        draw_center_traj (bool): Whether drawing the trajectory of center, default as False
+        secs_interval (int): The seconds interval to count after tracking, default as 10
+        do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
+            or getting out from the entrance, default as False，only support single class
+            counting in MOT.
     """
 
     def __init__(self,
@@ -86,7 +93,10 @@ class Pipeline(object):
                  trt_calib_mode=False,
                  cpu_threads=1,
                  enable_mkldnn=False,
-                 output_dir='output'):
+                 output_dir='output',
+                 draw_center_traj=False,
+                 secs_interval=10,
+                 do_entrance_counting=False):
         self.multi_camera = False
         self.is_video = False
         self.input = self._parse_input(image_file, image_dir, video_file,
@@ -122,9 +132,17 @@ class Pipeline(object):
                 trt_calib_mode=trt_calib_mode,
                 cpu_threads=cpu_threads,
                 enable_mkldnn=enable_mkldnn,
-                output_dir=output_dir)
+                output_dir=output_dir,
+                draw_center_traj=draw_center_traj,
+                secs_interval=secs_interval,
+                do_entrance_counting=do_entrance_counting)
             if self.is_video:
                 self.predictor.set_file_name(video_file)
+
+        self.output_dir = output_dir
+        self.draw_center_traj = draw_center_traj
+        self.secs_interval = secs_interval
+        self.do_entrance_counting = do_entrance_counting
 
     def _parse_input(self, image_file, image_dir, video_file, camera_id):
 
@@ -226,6 +244,11 @@ class PipePredictor(object):
         cpu_threads (int): cpu threads, default as 1
         enable_mkldnn (bool): whether to open MKLDNN, default as False
         output_dir (string): The path of output, default as 'output'
+        draw_center_traj (bool): Whether drawing the trajectory of center, default as False
+        secs_interval (int): The seconds interval to count after tracking, default as 10
+        do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
+            or getting out from the entrance, default as False，only support single class
+            counting in MOT.
     """
 
     def __init__(self,
@@ -242,7 +265,10 @@ class PipePredictor(object):
                  trt_calib_mode=False,
                  cpu_threads=1,
                  enable_mkldnn=False,
-                 output_dir='output'):
+                 output_dir='output',
+                 draw_center_traj=False,
+                 secs_interval=10,
+                 do_entrance_counting=False):
 
         if enable_attr and not cfg.get('ATTR', False):
             ValueError(
@@ -264,6 +290,9 @@ class PipePredictor(object):
         self.multi_camera = multi_camera
         self.cfg = cfg
         self.output_dir = output_dir
+        self.draw_center_traj = draw_center_traj
+        self.secs_interval = secs_interval
+        self.do_entrance_counting = do_entrance_counting
 
         self.warmup_frame = 1
         self.pipeline_res = Result()
@@ -293,9 +322,20 @@ class PipePredictor(object):
             tracker_config = mot_cfg['tracker_config']
             batch_size = mot_cfg['batch_size']
             self.mot_predictor = SDE_Detector(
-                model_dir, tracker_config, device, run_mode, batch_size,
-                trt_min_shape, trt_max_shape, trt_opt_shape, trt_calib_mode,
-                cpu_threads, enable_mkldnn)
+                model_dir,
+                tracker_config,
+                device,
+                run_mode,
+                batch_size,
+                trt_min_shape,
+                trt_max_shape,
+                trt_opt_shape,
+                trt_calib_mode,
+                cpu_threads,
+                enable_mkldnn,
+                draw_center_traj=draw_center_traj,
+                secs_interval=secs_interval,
+                do_entrance_counting=do_entrance_counting)
             if self.with_attr:
                 attr_cfg = self.cfg['ATTR']
                 model_dir = attr_cfg['model_dir']
@@ -529,8 +569,55 @@ class PipePredictor(object):
             boxes = np.zeros([0, 4])
             ids = np.zeros([0])
             scores = np.zeros([0])
-        image = plot_tracking(
-            image, boxes, ids, scores, frame_id=frame_id, fps=fps)
+
+        # Note: flow statistic only support for single class MOT
+        num_classes = 1
+        data_type = 'mot'
+        id_set = set()
+        interval_id_set = set()
+        in_id_list = list()
+        out_id_list = list()
+        prev_center = dict()
+        records = list()
+        height, width = image.shape[:2]
+        entrance = [0, height / 2., width, height / 2.]
+        center_traj = None
+        if self.draw_center_traj:
+            center_traj = [{} for i in range(num_classes)]
+
+        video_fps = max(fps, 20)  # avoid fps 0
+
+        # single class, still need to be defaultdict type for ploting
+        online_tlwhs = defaultdict(list)
+        online_scores = defaultdict(list)
+        online_ids = defaultdict(list)
+        online_tlwhs[0] = boxes
+        online_scores[0] = scores
+        online_ids[0] = ids
+        mot_result = (frame_id + 1, boxes, scores, ids)
+        statistic = flow_statistic(
+            mot_result, self.secs_interval, self.do_entrance_counting,
+            video_fps, entrance, id_set, interval_id_set, in_id_list,
+            out_id_list, prev_center, records, data_type, num_classes)
+        id_set = statistic['id_set']
+        interval_id_set = statistic['interval_id_set']
+        in_id_list = statistic['in_id_list']
+        out_id_list = statistic['out_id_list']
+        prev_center = statistic['prev_center']
+        records = statistic['records']
+        num_classes = 1
+        image = plot_tracking_dict(
+            image,
+            num_classes,
+            online_tlwhs,
+            online_ids,
+            online_scores,
+            frame_id=frame_id,
+            fps=fps,
+            do_entrance_counting=self.do_entrance_counting,
+            entrance=entrance,
+            records=records,
+            center_traj=center_traj)
 
         attr_res = result.get('attr')
         if attr_res is not None:
@@ -592,7 +679,8 @@ def main():
         FLAGS.camera_id, FLAGS.enable_attr, FLAGS.enable_action, FLAGS.device,
         FLAGS.run_mode, FLAGS.trt_min_shape, FLAGS.trt_max_shape,
         FLAGS.trt_opt_shape, FLAGS.trt_calib_mode, FLAGS.cpu_threads,
-        FLAGS.enable_mkldnn, FLAGS.output_dir)
+        FLAGS.enable_mkldnn, FLAGS.output_dir, FLAGS.draw_center_traj,
+        FLAGS.secs_interval, FLAGS.do_entrance_counting)
 
     pipeline.run()
 

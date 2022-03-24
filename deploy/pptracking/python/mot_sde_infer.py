@@ -56,6 +56,15 @@ class SDE_Detector(Detector):
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
         enable_mkldnn (bool): whether to open MKLDNN
+        output_dir (string): The path of output, default as 'output'
+        threshold (float): Score threshold of the detected bbox, default as 0.5
+        save_images (bool): Whether to save visualization image results, default as False
+        save_mot_txts (bool): Whether to save tracking results (txt), default as False
+        draw_center_traj (bool): Whether drawing the trajectory of center, default as False
+        secs_interval (int): The seconds interval to count after tracking, default as 10
+        do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
+            or getting out from the entrance, default as False，only support single class
+            counting in MOT.
         reid_model_dir (str): reid model dir, default None for ByteTrack, but set for DeepSORT
         mtmct_dir (str): MTMCT dir, default None, set for doing MTMCT
     """
@@ -320,6 +329,7 @@ class SDE_Detector(Detector):
                     feat_data['feat'] = _feat
                     tracking_outs['feat_data'].update({_imgname: feat_data})
                 return tracking_outs
+
             else:
                 tracking_outs = {
                     'online_tlwhs': online_tlwhs,
@@ -529,7 +539,7 @@ class SDE_Detector(Detector):
                     'Multi-class flow counting is not implemented now!')
 
             fps = 1. / timer.duration
-            if num_classes == 1 and self.use_reid:
+            if self.use_deepsort_tracker:
                 # use DeepSORTTracker, only support singe class
                 results[0].append(
                     (frame_id + 1, online_tlwhs, online_scores, online_ids))

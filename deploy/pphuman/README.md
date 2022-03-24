@@ -117,7 +117,8 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml -
 | --enable_mkldnn | Option | CPU预测中是否开启MKLDNN加速，默认为False |
 | --cpu_threads | Option| 设置cpu线程数，默认为1 |
 | --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
-
+| --do_entrance_counting | Option | 是否统计出入口流量，默认为False |
+| --draw_center_traj | Option | 是否绘制跟踪轨迹，默认为False |
 
 ## 三、方案介绍
 
