@@ -24,17 +24,17 @@ import paddle
 
 from benchmark_utils import PaddleInferBenchmark
 from preprocess import decode_image
-from .utils import argsparser, Timer, get_current_memory_mb, _is_valid_video, video2frames
-from .det_infer import Detector, get_test_images, print_arguments, bench_log, PredictConfig, load_predictor
 
 # add python path
 import sys
-parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'])))
 sys.path.insert(0, parent_path)
 
+from det_infer import Detector, get_test_images, print_arguments, bench_log, PredictConfig, load_predictor
+from mot_utils import argsparser, Timer, get_current_memory_mb, video2frames, _is_valid_video
 from mot.tracker import JDETracker, DeepSORTTracker
 from mot.utils import MOTTimer, write_mot_results, flow_statistic, get_crops, clip_box
-from .visualize import plot_tracking, plot_tracking_dict
+from mot.visualize import plot_tracking, plot_tracking_dict
 
 from mot.mtmct.utils import parse_bias
 from mot.mtmct.postprocess import trajectory_fusion, sub_cluster, gen_res, print_mtmct_result

@@ -32,7 +32,7 @@ sys.path.insert(0, parent_path)
 
 from pptracking.python.mot import JDETracker
 from pptracking.python.mot.utils import MOTTimer, write_mot_results
-from pptracking.python.visualize import plot_tracking, plot_tracking_dict
+from pptracking.python.mot.visualize import plot_tracking, plot_tracking_dict
 
 
 class SDE_Detector(Detector):

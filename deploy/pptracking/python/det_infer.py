@@ -33,8 +33,8 @@ sys.path.insert(0, parent_path)
 from benchmark_utils import PaddleInferBenchmark
 from picodet_postprocess import PicoDetPostProcess
 from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, decode_image
-from visualize import visualize_box_mask
-from utils import argsparser, Timer, get_current_memory_mb
+from mot.visualize import visualize_box_mask
+from mot_utils import argsparser, Timer, get_current_memory_mb
 
 # Global dictionary
 SUPPORT_MODELS = {
@@ -269,7 +269,7 @@ class Detector(object):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         index = 1
         while (1):

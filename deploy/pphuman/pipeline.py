@@ -40,7 +40,7 @@ from python.preprocess import decode_image
 from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
 
 from pptracking.python.mot_sde_infer import SDE_Detector
-from pptracking.python.visualize import plot_tracking
+from pptracking.python.mot.visualize import plot_tracking
 
 
 class Pipeline(object):
@@ -265,7 +265,7 @@ class PipePredictor(object):
         self.cfg = cfg
         self.output_dir = output_dir
 
-        self.warmup_frame = 1
+        self.warmup_frame = self.cfg['warmup_frame']
         self.pipeline_res = Result()
         self.pipe_timer = PipeTimer()
         self.file_name = None
@@ -469,6 +469,8 @@ class PipePredictor(object):
                 self.pipeline_res.update(attr_res, 'attr')
 
             if self.with_action:
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.module_time['kpt'].start()
                 kpt_pred = self.kpt_predictor.predict_image(
                     crop_input, visual=False)
                 keypoint_vector, score_vector = translate_to_ori_images(
@@ -478,6 +480,9 @@ class PipePredictor(object):
                     keypoint_vector.tolist(), score_vector.tolist()
                 ] if len(keypoint_vector) > 0 else [[], []]
                 kpt_res['bbox'] = ori_bboxes
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.module_time['kpt'].end()
+
                 self.pipeline_res.update(kpt_res, 'kpt')
 
                 self.kpt_collector.update(kpt_res,
@@ -487,12 +492,16 @@ class PipePredictor(object):
 
                 action_res = {}
                 if state:
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['action'].start()
                     collected_keypoint = self.kpt_collector.get_collected_keypoint(
                     )  # reoragnize kpt output with ID
                     action_input = parse_mot_keypoint(collected_keypoint,
                                                       self.coord_size)
                     action_res = self.action_predictor.predict_skeleton_with_mot(
                         action_input)
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['action'].end()
                     self.pipeline_res.update(action_res, 'action')
 
                 if self.cfg['visual']:
@@ -521,13 +530,16 @@ class PipePredictor(object):
         mot_res = result.get('mot')
         if mot_res is not None:
             ids = mot_res['boxes'][:, 0]
+            scores = mot_res['boxes'][:, 2]
             boxes = mot_res['boxes'][:, 3:]
             boxes[:, 2] = boxes[:, 2] - boxes[:, 0]
             boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
         else:
             boxes = np.zeros([0, 4])
             ids = np.zeros([0])
-        image = plot_tracking(image, boxes, ids, frame_id=frame_id, fps=fps)
+            scores = np.zeros([0])
+        image = plot_tracking(
+            image, boxes, ids, scores, frame_id=frame_id, fps=fps)
 
         attr_res = result.get('attr')
         if attr_res is not None:

@@ -6,7 +6,10 @@
 
 ## 最新动态
 
-- 发布全新系列PP-PicoDet模型，引入TAL及Task-aligned Head，优化PAN等结构，精度大幅提升，优化CPU端预测速度，同时训练速度大幅提升。**（2022.03.20）**
+- **[2022.03.20] **发布全新系列PP-PicoDet模型：
+  - (1)引入TAL及Task-aligned Head，优化PAN等结构，精度大幅提升；
+  - (2)优化CPU端预测速度，同时训练速度大幅提升；
+  - (3)导出模型将后处理包含在网络中，预测直接输出box结果，无需二次开发，迁移成本更低。
 
 ## 历史版本模型
 
@@ -32,23 +35,23 @@ PP-PicoDet模型有如下特点：
 
 | 模型     | 输入尺寸 | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | 参数量<br><sup>(M) | FLOPS<br><sup>(G) | 预测时延<sup><small>[NCNN](#latency)</small><sup><br><sup>(ms) | 预测时延<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  下载  | 配置文件 |
 | :-------- | :--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :-----------------------------: | :-----------------------------: | :----------------------------------------: | :--------------------------------------- |
-| PicoDet-XS |  320*320   |          23.5           |        36.1       |        -        |       -        |              -              |            -             | [model](https://paddledet.bj.bcebos.com/models/picodet_xs_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_xs_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_xs_320_coco_lcnet.yml) |
-| PicoDet-XS |  416*416   |          26.2           |        39.3        |        -        |       -        |              -              |            -             | [model](https://paddledet.bj.bcebos.com/models/picodet_xs_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_xs_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_xs_416_coco_lcnet.yml) |
-| PicoDet-S |  320*320   |          29.1           |        43.4        |        -       |       -       |             -              |            -             | [model](https://paddledet.bj.bcebos.com/models/picodet_s_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_320_coco_lcnet.yml) |
-| PicoDet-S |  416*416   |          32.5           |        47.6        |        -        |       -       |              -              |            -             | [model](https://paddledet.bj.bcebos.com/models/picodet_s_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_416_coco_lcnet.yml) |
-| PicoDet-M |  320*320   |          34.4           |        50.0        |        -        |       -       |              -              |            -             | [model](https://paddledet.bj.bcebos.com/models/picodet_m_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_320_coco_lcnet.yml) |
-| PicoDet-M |  416*416   |          37.5           |        53.4       |        -        |       -        |              -              |            -            | [model](https://paddledet.bj.bcebos.com/models/picodet_m_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_416_coco_lcnet.yml) |
-| PicoDet-L |  320*320   |          36.1           |        52.0        |        -       |       -        |              -             |            -           | [model](https://paddledet.bj.bcebos.com/models/picodet_l_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_320_coco_lcnet.yml) |
-| PicoDet-L |  416*416   |          39.4           |        55.7        |        -        |       -       |              -              |            -            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_416_coco_lcnet.yml) |
-| PicoDet-L |  640*640   |          42.3           |        59.2        |        -        |       -        |              -              |            -           | [model](https://paddledet.bj.bcebos.com/models/picodet_l_640_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_640_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_640_coco_lcnet.yml) |
+| PicoDet-XS |  320*320   |          23.5           |        36.1       |        0.70        |       0.67        |              10.9ms              |            7.81ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_xs_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_xs_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_xs_320_coco_lcnet.yml) |
+| PicoDet-XS |  416*416   |          26.2           |        39.3        |        0.70        |       1.13        |              15.4ms             |            12.38ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_xs_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_xs_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_xs_416_coco_lcnet.yml) |
+| PicoDet-S |  320*320   |          29.1           |        43.4        |        1.18       |       0.97       |             12.6ms              |            9.56ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_s_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_320_coco_lcnet.yml) |
+| PicoDet-S |  416*416   |          32.5           |        47.6        |        1.18        |       1.65       |              17.2ms              |            15.20             | [model](https://paddledet.bj.bcebos.com/models/picodet_s_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_416_coco_lcnet.yml) |
+| PicoDet-M |  320*320   |          34.4           |        50.0        |        3.46        |       2.57       |              14.5ms              |            17.68ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_m_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_320_coco_lcnet.yml) |
+| PicoDet-M |  416*416   |          37.5           |        53.4       |        3.46        |       4.34        |              19.5ms              |            28.39ms            | [model](https://paddledet.bj.bcebos.com/models/picodet_m_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_416_coco_lcnet.yml) |
+| PicoDet-L |  320*320   |          36.1           |        52.0        |        5.80       |       4.20        |              18.3ms             |            25.21ms           | [model](https://paddledet.bj.bcebos.com/models/picodet_l_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_320_coco_lcnet.yml) |
+| PicoDet-L |  416*416   |          39.4           |        55.7        |        5.80        |       7.10       |              22.1ms              |            42.23ms            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_416_coco_lcnet.yml) |
+| PicoDet-L |  640*640   |          42.3           |        59.2        |        5.80        |       16.81        |              43.1ms              |            108.1ms          | [model](https://paddledet.bj.bcebos.com/models/picodet_l_640_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_640_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_640_coco_lcnet.yml) |
 
 
 <details open>
 <summary><b>注意事项:</b></summary>
 
-- <a name="latency">时延测试：</a> 我们所有的模型都在`骁龙865(4xA77+4xA55)` 上测试(4线程，FP16预测)。上面表格中标有`NCNN`的是使用[NCNN](https://github.com/Tencent/ncnn)库测试，标有`Lite`的是使用[Paddle Lite](https://github.com/PaddlePaddle/Paddle-Lite)进行测试。 测试的benchmark脚本来自: [MobileDetBenchmark](https://github.com/JiweiMaster/MobileDetBenchmark)。
-- PicoDet在COCO train2017上训练，并且在COCO val2017上进行验证。
-- PicoDet使用4卡GPU训练(PicoDet-L-640使用8卡训练)，并且所有的模型都是通过发布的默认配置训练得到。
+- <a name="latency">时延测试：</a> 我们所有的模型都在英特尔至强6148的CPU（MKLDNN 10线程）和`骁龙865(4xA77+4xA55)`的ARM CPU上测试(4线程，FP16预测)。上面表格中标有`CPU`的是使用Paddle Inference库测试，标有`Lite`的是使用[Paddle Lite](https://github.com/PaddlePaddle/Paddle-Lite)进行测试。
+- PicoDet在COCO train2017上训练，并且在COCO val2017上进行验证。使用4卡GPU训练，并且上表所有的预训练模型都是通过发布的默认配置训练得到。
+- Benchmark测试：测试速度benchmark性能时，导出模型后处理不包含在网络中，需要设置`-o export.benchmark=True` 或手动修改[runtime.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/runtime.yml#L12)。
 
 </details>
 
@@ -68,13 +71,14 @@ PP-PicoDet模型有如下特点：
 | YOLOv5n |  640*640       |          28.4             |    46.0            |    1.9                |    4.5              |    40.35                          |
 | YOLOv5s |  640*640       |          37.2             |    56.0            |    7.2                |    16.5             |    78.05                          |
 
+- ARM测试的benchmark脚本来自: [MobileDetBenchmark](https://github.com/JiweiMaster/MobileDetBenchmark)。
 
 ## 快速开始
 
 <details open>
 <summary>依赖包:</summary>
 
-- PaddlePaddle >= 2.2.1
+- PaddlePaddle == 2.2.2
 
 </details>
 
@@ -97,11 +101,13 @@ export CUDA_VISIBLE_DEVICES=0
 python tools/train.py -c configs/picodet/picodet_s_320_coco_lcnet.yml --eval
 ```
 
+如果训练时显存out memory，将TrainReader中batch_size调小，同时LearningRate中base_lr等比例减小。
+
 - 多卡GPU上训练:
 
 
 ```shell
-# training on single-GPU
+# training on multi-GPU
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/picodet/picodet_s_320_coco_lcnet.yml --eval
 ```
@@ -217,8 +223,7 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco_lcnet/ \
 - [NCNN C++/Python demo](../../deploy/third_engine/demo_ncnn)
 - [MNN C++/Python demo](../../deploy/third_engine/demo_mnn)
 - [OpenVINO C++ demo](../../deploy/third_engine/demo_openvino)
-- [Android demo(NCNN)](https://github.com/JiweiMaster/PP-PicoDet-Android-Demo) （感谢@[Jewel](https://github.com/JiweiMaster)对飞桨开源的贡献）
-- [Android demo(Paddle Lite)](https://github.com/marsplus-wjh/Picodet-PaddleLite-AndroidDemo)（感谢@[JiaHui-Wang](https://github.com/marsplus-wjh)对飞桨的开源贡献）
+- [Android demo(Paddle Lite)](https://github.com/PaddlePaddle/Paddle-Lite-Demo/tree/develop/object_detection/android/app/cxx/picodet_detection_demo)
 
 
 Android demo可视化：
