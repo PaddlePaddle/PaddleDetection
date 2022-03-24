@@ -553,6 +553,10 @@ class PredictConfig():
             self.nms = yml_conf['NMS']
         if 'fpn_stride' in yml_conf:
             self.fpn_stride = yml_conf['fpn_stride']
+        if self.arch == 'RCNN' and yml_conf.get('export_onnx', False):
+            print(
+                'The RCNN export model is used for ONNX and it only supports batch_size = 1'
+            )
         self.print_config()
 
     def check_model(self, yml_conf):
