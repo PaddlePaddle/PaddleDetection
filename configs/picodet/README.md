@@ -6,10 +6,10 @@ English | [简体中文](README_cn.md)
 
 ## News
 
-- **[2022.03.20] ** Released a new series of PP-PicoDet models:
-  - (1)It was used TAL/Task-aligned-Head and optimized PAN, which greatly improved the accuracy;
-  - (2)Moreover optimized CPU prediction speed, and the training speed is greatly improved;
-  - (3)The export model includes post-processing, and the prediction directly outputs the result, without secondary development, and the migration cost is lower.
+- Released a new series of PP-PicoDet models: **(2022.03.20)**
+  - (1) It was used TAL/Task-aligned-Head and optimized PAN, which greatly improved the accuracy;
+  - (2) Moreover optimized CPU prediction speed, and the training speed is greatly improved;
+  - (3) The export model includes post-processing, and the prediction directly outputs the result, without secondary development, and the migration cost is lower.
 
 ### Legacy Model
 
@@ -48,7 +48,7 @@ We developed a series of lightweight models, named `PP-PicoDet`. Because of the 
 
 - <a name="latency">Latency:</a> All our models test on `Intel-Xeon-Gold-6148` CPU with MKLDNN by 10 threads and `Qualcomm Snapdragon 865(4xA77+4xA55)` with 4 threads by arm8 and with FP16. In the above table, test CPU latency on Paddle-Inference and testing Mobile latency with `Lite`->[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite).
 - PicoDet is trained on COCO train2017 dataset and evaluated on COCO val2017. And PicoDet used 4 GPUs for training and all checkpoints are trained with default settings and hyperparameters.
-- Benchmark test: When testing the speed benchmark, the post-processing is not included in the exported model, you need to set `-o export.benchmark=True` or manually modify [runtime.yml](https://github.com/PaddlePaddle/PaddleDetection /blob/develop/configs/runtime.yml#L12).
+- Benchmark test: When testing the speed benchmark, the post-processing is not included in the exported model, you need to set `-o export.benchmark=True` or manually modify [runtime.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/runtime.yml#L12).
 
 </details>
 
