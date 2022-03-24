@@ -265,7 +265,7 @@ class PipePredictor(object):
         self.cfg = cfg
         self.output_dir = output_dir
 
-        self.warmup_frame = 1
+        self.warmup_frame = self.cfg['warmup_frame']
         self.pipeline_res = Result()
         self.pipe_timer = PipeTimer()
         self.file_name = None
@@ -492,14 +492,16 @@ class PipePredictor(object):
 
                 action_res = {}
                 if state:
-                    self.pipe_timer.module_time['action'].start()
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['action'].start()
                     collected_keypoint = self.kpt_collector.get_collected_keypoint(
                     )  # reoragnize kpt output with ID
                     action_input = parse_mot_keypoint(collected_keypoint,
                                                       self.coord_size)
                     action_res = self.action_predictor.predict_skeleton_with_mot(
                         action_input)
-                    self.pipe_timer.module_time['action'].end()
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['action'].end()
                     self.pipeline_res.update(action_res, 'action')
 
                 if self.cfg['visual']:
