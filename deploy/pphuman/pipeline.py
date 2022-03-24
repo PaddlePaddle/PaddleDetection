@@ -162,6 +162,7 @@ class Pipeline(object):
             self.multi_camera = False
 
         elif video_file is not None:
+            assert os.path.exists(video_file), "video_file not exists."
             self.multi_camera = False
             input = video_file
             self.is_video = True
@@ -471,6 +472,7 @@ class PipePredictor(object):
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = int(capture.get(cv2.CAP_PROP_FPS))
         frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        print("fps: %d, frame_count: %d" % (fps, frame_count))
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -578,7 +580,7 @@ class PipePredictor(object):
                 }
                 self.pipeline_res.update(reid_res_dict, 'reid')
 
-            self.collector.append(frame_id, self.pipeline_res)
+                self.collector.append(frame_id, self.pipeline_res)
 
             if frame_id > self.warmup_frame:
                 self.pipe_timer.img_num += 1
@@ -642,7 +644,7 @@ class PipePredictor(object):
         out_id_list = statistic['out_id_list']
         prev_center = statistic['prev_center']
         records = statistic['records']
-        num_classes = 1
+
         image = plot_tracking_dict(
             image,
             num_classes,
