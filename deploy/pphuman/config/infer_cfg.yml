@@ -2,6 +2,7 @@ crop_thresh: 0.5
 attr_thresh: 0.5
 kpt_thresh: 0.2
 visual: True
+warmup_frame: 50
 
 DET:
   model_dir: output_inference/mot_ppyolov3/
@@ -26,3 +27,7 @@ ACTION:
   max_frames: 50
   display_frames: 80
   coord_size: [384, 512]
+
+REID:
+  model_dir: output_inference/reid_model/
+  batch_size: 16

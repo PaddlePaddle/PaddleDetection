@@ -1,13 +1,13 @@
 epoch: 300
 
 LearningRate:
-  base_lr: 0.03
+  base_lr: 0.025
   schedulers:
     - !CosineDecay
       max_epochs: 360
     - !LinearWarmup
-      start_factor: 0.001
-      steps: 3000
+      start_factor: 0.
+      epochs: 5
 
 OptimizerBuilder:
   optimizer:

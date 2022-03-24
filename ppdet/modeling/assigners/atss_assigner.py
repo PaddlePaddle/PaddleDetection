@@ -183,9 +183,6 @@ class ATSSAssigner(nn.Layer):
                                          mask_positive)
             mask_positive_sum = mask_positive.sum(axis=-2)
         assigned_gt_index = mask_positive.argmax(axis=-2)
-        assert mask_positive_sum.max() == 1, \
-            ("one anchor just assign one gt, but received not equals 1. "
-             "Received: %f" % mask_positive_sum.max().item())
 
         # assigned target
         batch_ind = paddle.arange(

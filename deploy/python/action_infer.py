@@ -80,7 +80,8 @@ class ActionRecognizer(Detector):
             cpu_threads=cpu_threads,
             enable_mkldnn=enable_mkldnn,
             output_dir=output_dir,
-            threshold=threshold)
+            threshold=threshold,
+            delete_shuffle_pass=True)
 
     def predict(self, repeats=1):
         '''
