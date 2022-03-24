@@ -52,12 +52,12 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
                                                    --enable_action=True \
-                                                   --model_dir det=ppyoloe/
+                                                   --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
 ```
 
 ## 方案说明
 1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../configs/ppyoloe)。
-2. 通过行人检测框的坐标在输入视频的对应帧中截取每个行人，并使用关键点识别模型得到对应的17个骨骼特征点。
+2. 通过行人检测框的坐标在输入视频的对应帧中截取每个行人，并使用[关键点识别模型](../../../configs/keypoint/hrnet/dark_hrnet_w32_256x192.yml)得到对应的17个骨骼特征点。骨骼特征点的顺序及类型与COCO一致，详见[如何准备关键点数据集](../../../docs/tutorials/PrepareKeypointDataSet_cn.md)中的`COCO数据集`部分。
 3. 每个跟踪ID对应的目标行人各自累计骨骼特征点结果，组成该人物的时序关键点序列。当累计到预定帧数或跟踪丢失后，使用行为识别模型判断时序关键点序列的动作类型。当前版本模型支持摔倒行为的识别，预测得到的`class id`对应关系为：
 ```
 0: 摔倒，
