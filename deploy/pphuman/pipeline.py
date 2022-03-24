@@ -162,6 +162,7 @@ class Pipeline(object):
             self.multi_camera = False
 
         elif video_file is not None:
+            assert os.path.exists(video_file), "video_file not exists."
             self.multi_camera = False
             input = video_file
             self.is_video = True
@@ -471,6 +472,7 @@ class PipePredictor(object):
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = int(capture.get(cv2.CAP_PROP_FPS))
         frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        print("fps: %d, frame_count: %d" % (fps, frame_count))
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -594,19 +596,8 @@ class PipePredictor(object):
         writer.release()
         print('save result to {}'.format(out_path))
 
-    def visualize_video(self, image, result, frame_id, fps):
-        mot_res = copy.deepcopy(result.get('mot'))
-        if mot_res is not None:
-            ids = mot_res['boxes'][:, 0]
-            scores = mot_res['boxes'][:, 2]
-            boxes = mot_res['boxes'][:, 3:]
-            boxes[:, 2] = boxes[:, 2] - boxes[:, 0]
-            boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
-        else:
-            boxes = np.zeros([0, 4])
-            ids = np.zeros([0])
-            scores = np.zeros([0])
-
+    def mot_entrance_traj(self, image, frame_id, online_tlwhs, online_scores,
+                          online_ids, fps):
         # Note: flow statistic only support for single class MOT
         num_classes = 1
         data_type = 'mot'
@@ -624,14 +615,8 @@ class PipePredictor(object):
 
         video_fps = max(fps, 20)  # avoid fps 0
 
-        # single class, still need to be defaultdict type for ploting
-        online_tlwhs = defaultdict(list)
-        online_scores = defaultdict(list)
-        online_ids = defaultdict(list)
-        online_tlwhs[0] = boxes
-        online_scores[0] = scores
-        online_ids[0] = ids
-        mot_result = (frame_id + 1, boxes, scores, ids)
+        mot_result = (frame_id + 1, online_tlwhs[0], online_scores[0],
+                      online_ids[0])
         statistic = flow_statistic(
             mot_result, self.secs_interval, self.do_entrance_counting,
             video_fps, entrance, id_set, interval_id_set, in_id_list,
@@ -642,7 +627,34 @@ class PipePredictor(object):
         out_id_list = statistic['out_id_list']
         prev_center = statistic['prev_center']
         records = statistic['records']
+        return entrance, records, center_traj
+
+    def visualize_video(self, image, result, frame_id, fps):
+        mot_res = copy.deepcopy(result.get('mot'))
+        if mot_res is not None:
+            ids = mot_res['boxes'][:, 0]
+            scores = mot_res['boxes'][:, 2]
+            boxes = mot_res['boxes'][:, 3:]
+            boxes[:, 2] = boxes[:, 2] - boxes[:, 0]
+            boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
+        else:
+            boxes = np.zeros([0, 4])
+            ids = np.zeros([0])
+            scores = np.zeros([0])
+
+        # single class, still need to be defaultdict type for ploting
         num_classes = 1
+        online_tlwhs = defaultdict(list)
+        online_scores = defaultdict(list)
+        online_ids = defaultdict(list)
+        online_tlwhs[0] = boxes
+        online_scores[0] = scores
+        online_ids[0] = ids
+        entrance, records, center_traj = None, None, None
+        if self.do_entrance_counting or self.draw_center_traj:
+            entrance, records, center_traj = self.mot_entrance_traj(
+                image, frame_id, online_tlwhs, online_scores, online_ids, fps)
+
         image = plot_tracking_dict(
             image,
             num_classes,
@@ -712,12 +724,12 @@ def main():
     cfg = merge_cfg(FLAGS)
     print_arguments(cfg)
     pipeline = Pipeline(
-        cfg, FLAGS.image_file, FLAGS.image_dir, FLAGS.video_file, FLAGS.video_dir,
-        FLAGS.camera_id, FLAGS.enable_attr, FLAGS.enable_action, FLAGS.device,
-        FLAGS.run_mode, FLAGS.trt_min_shape, FLAGS.trt_max_shape,
-        FLAGS.trt_opt_shape, FLAGS.trt_calib_mode, FLAGS.cpu_threads,
-        FLAGS.enable_mkldnn, FLAGS.output_dir, FLAGS.draw_center_traj,
-        FLAGS.secs_interval, FLAGS.do_entrance_counting)
+        cfg, FLAGS.image_file, FLAGS.image_dir, FLAGS.video_file,
+        FLAGS.video_dir, FLAGS.camera_id, FLAGS.enable_attr,
+        FLAGS.enable_action, FLAGS.device, FLAGS.run_mode, FLAGS.trt_min_shape,
+        FLAGS.trt_max_shape, FLAGS.trt_opt_shape, FLAGS.trt_calib_mode,
+        FLAGS.cpu_threads, FLAGS.enable_mkldnn, FLAGS.output_dir,
+        FLAGS.draw_center_traj, FLAGS.secs_interval, FLAGS.do_entrance_counting)
 
     pipeline.run()
 

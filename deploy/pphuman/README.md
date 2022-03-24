@@ -131,13 +131,13 @@ PP-Human整体方案如下图所示
 
 ### 1. 目标检测
 - 采用PP-YOLOE L 作为目标检测模型
-- 详细文档参考[PP-YOLOE](../../configs/ppyoloe/)
+- 详细文档参考[PP-YOLOE](../../configs/ppyoloe/)和[检测跟踪文档](docs/mot.md)
 
 ### 2. 多目标跟踪
 - 采用SDE方案完成多目标跟踪
 - 检测模型使用PP-YOLOE L
 - 跟踪模块采用Bytetrack方案
-- 详细文档参考[Bytetrack](configs/mot/bytetrack)
+- 详细文档参考[Bytetrack](../../configs/mot/bytetrack)和[检测跟踪文档](docs/mot.md)
 
 ### 3. 跨镜跟踪
 - 使用PP-YOLOE + Bytetrack得到单镜头多目标跟踪轨迹
