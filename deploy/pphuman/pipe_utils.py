@@ -46,6 +46,11 @@ def argsparser():
         help="Path of video file, `video_file` or `camera_id` has a highest priority."
     )
     parser.add_argument(
+        "--video_dir",
+        type=str,
+        default=None,
+        help="Dir of video file, `video_file` has a higher priority.")
+    parser.add_argument(
         "--model_dir", nargs='*', help="set model dir in pipeline")
     parser.add_argument(
         "--camera_id",
@@ -158,6 +163,7 @@ class PipeTimer(Times):
             'attr': Times(),
             'kpt': Times(),
             'action': Times(),
+            'reid': Times()
         }
         self.img_num = 0
 
@@ -283,7 +289,7 @@ def get_test_images(infer_dir, infer_img):
     return images
 
 
-def crop_image_with_det(batch_input, det_res):
+def crop_image_with_det(batch_input, det_res, thresh=0.3):
     boxes = det_res['boxes']
     score = det_res['boxes'][:, 1]
     boxes_num = det_res['boxes_num']
@@ -294,21 +300,38 @@ def crop_image_with_det(batch_input, det_res):
         boxes_i = boxes[start_idx:start_idx + boxes_num_i, :]
         score_i = score[start_idx:start_idx + boxes_num_i]
         res = []
-        for box in boxes_i:
-            crop_image, new_box, ori_box = expand_crop(input, box)
-            if crop_image is not None:
-                res.append(crop_image)
+        for box, s in zip(boxes_i, score_i):
+            if s > thresh:
+                crop_image, new_box, ori_box = expand_crop(input, box)
+                if crop_image is not None:
+                    res.append(crop_image)
         crop_res.append(res)
     return crop_res
 
 
-def crop_image_with_mot(input, mot_res):
+def normal_crop(image, rect):
+    imgh, imgw, c = image.shape
+    label, conf, xmin, ymin, xmax, ymax = [int(x) for x in rect.tolist()]
+    org_rect = [xmin, ymin, xmax, ymax]
+    if label != 0:
+        return None, None, None
+    xmin = max(0, xmin)
+    ymin = max(0, ymin)
+    xmax = min(imgw, xmax)
+    ymax = min(imgh, ymax)
+    return image[ymin:ymax, xmin:xmax, :], [xmin, ymin, xmax, ymax], org_rect
+
+
+def crop_image_with_mot(input, mot_res, expand=True):
     res = mot_res['boxes']
     crop_res = []
     new_bboxes = []
     ori_bboxes = []
     for box in res:
-        crop_image, new_bbox, ori_bbox = expand_crop(input, box[1:])
+        if expand:
+            crop_image, new_bbox, ori_bbox = expand_crop(input, box[1:])
+        else:
+            crop_image, new_bbox, ori_bbox = normal_crop(input, box[1:])
         if crop_image is not None:
             crop_res.append(crop_image)
             new_bboxes.append(new_bbox)
