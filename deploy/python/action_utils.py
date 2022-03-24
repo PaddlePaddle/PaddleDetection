@@ -29,7 +29,7 @@ class KeyPointSequence(object):
         return False
 
 
-class KeyPointCollector(object):
+class KeyPointBuff(object):
     def __init__(self, max_size=100):
         self.flag_track_interrupt = False
         self.keypoint_saver = dict()
@@ -80,7 +80,7 @@ class KeyPointCollector(object):
         return output
 
 
-class ActionVisualCollector(object):
+class ActionVisualHelper(object):
     def __init__(self, frame_life=20):
         self.frame_life = frame_life
         self.action_history = {}
