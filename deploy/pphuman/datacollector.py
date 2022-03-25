@@ -75,7 +75,8 @@ class DataCollector(object):
         action_res = Result.get('action')
         reid_res = Result.get('reid')
 
-        for idx, mot_item in enumerate(reid_res['rects']):
+        rects = reid_res['rects'] if reid_res is not None else mot_res['boxes']
+        for idx, mot_item in enumerate(rects):
             ids = int(mot_item[0])
             if ids not in self.collector:
                 self.collector[ids] = copy.deepcopy(self.mots)

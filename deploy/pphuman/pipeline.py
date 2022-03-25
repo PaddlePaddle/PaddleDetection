@@ -460,8 +460,9 @@ class PipePredictor(object):
             # nothing detected
             if len(mot_res['boxes']) == 0:
                 frame_id += 1
-                self.pipe_timer.img_num += 1
-                self.pipe_timer.total_time.end()
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.img_num += 1
+                    self.pipe_timer.total_time.end()
                 if self.cfg['visual']:
                     _, _, fps = self.pipe_timer.get_total_time()
                     im = self.visualize_video(frame, mot_res, frame_id,
