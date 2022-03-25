@@ -3,7 +3,7 @@ English | [简体中文](README.md)
 # PP-Human— a Real-Time Pedestrian Analysis Tool
 
 PP-Human serves as the first open-source tool of real-time pedestrian anaylsis relying on the PaddlePaddle deep learning framework. Versatile and efficient in deployment, it has been used in various senarios. PP-Human
-offers many input options, including image/single-camera video/multi-camera video, and covers multi-object tracking, attribute recognition, and behavior analysis. PP-Human can be applied to intelligent traffic, the intelligent community, industiral patrol, and so on. It supports server-side deployment and TensorRT acceleration，and even can achieve real-time analysis on the T4 server.
+offers many input options, including image/single-camera video/multi-camera video, and covers multi-object tracking, attribute recognition, and action recognition. PP-Human can be applied to intelligent traffic, the intelligent community, industiral patrol, and so on. It supports server-side deployment and TensorRT acceleration，and even can achieve real-time analysis on the T4 server.
 
 ## I. Environment Preparation
 
@@ -40,9 +40,9 @@ To make users have access to models of different scenarios, PP-Human provides pr
 | :---------:     |:---------:     |:---------------     | :-------:  | :------:      |
 | Object Detection        | Image/Video Input | -  | -           | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
 | Attribute Recognition    | Image/Video Input  Attribute Recognition | - |  -       | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.tar) |
-| Keypoint Detection    | Video Input  Behavior Recognition | - | -        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
+| Keypoint Detection    | Video Input  Action Recognition | - | -        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
 | Behavior Recognition   |  Video Input  Bheavior Recognition  | - |  -          | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
-| ReID         | Video Input Cross Cross-camera Tracking   | - | -         | [Link]() |
+| ReID         | Multi-Target Multi-Camera Tracking   | - | -         | [Link]() |
 
 Then, unzip the downloaded model to the folder `./output_inference`.
 
@@ -61,7 +61,7 @@ Their correspondence is as follows:
 |-------|-------|----------|-----|
 | Image | Attribute Recognition | Object Detection  Attribute Recognition | DET ATTR |
 | Single-Camera Video | Attribute Recognition | Multi-Object Tracking  Attribute Recognition | MOT ATTR |
-| Single-Camera Video | Behavior Recognition | Multi-Object Tracking  Keypoint Detection  Behavior Recognition | MOT KPT ACTION |
+| Single-Camera Video | Behavior Recognition | Multi-Object Tracking  Keypoint Detection  Action Recognition | MOT KPT ACTION |
 
 For example, for the attribute recognition with the video input, its task types contain multi-object tracking and attribute recognition, and the config is:
 
@@ -91,7 +91,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml -
 # Specify the config file path and test videos，and finish the attribute recognition
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True
 
-# Specify the config file path and test videos，and finish the behavior recognition
+# Specify the config file path and test videos，and finish the Action Recognition
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True
 
 # Specify the config file path, the model path and test videos，and finish the multi-object tracking
@@ -110,7 +110,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml -
 | --video_file | Option | Videos to-be-predicted |
 | --camera_id | Option | ID of the inference camera is -1 by default (means inference without cameras，and it can be set to 0 - (number of cameras-1)), and during the inference, click `q` on the visual interface to exit and output the inference result to output/output.mp4|
 | --enable_attr| Option | Enable attribute recognition or not |
-| --enable_action| Option | Enable behavior recognition or not |
+| --enable_action| Option | Enable action recognition or not |
 | --device | Option | During the operation，available devices are `CPU/GPU/XPU`，and the default is `CPU`|
 | --output_dir | Option| The default root directory which stores the visualization result is output/|
 | --run_mode | Option | When using GPU，the default one is paddle, and all these are available（paddle/trt_fp32/trt_fp16/trt_int8）.|
@@ -144,13 +144,13 @@ The overall solution of PP-Human is as follows:
 - Match the features of multi-camera tracks to get the cross-camera tracking result
 - For details, please refer to [Cross-Camera Tracking](docs/mtmct_en.md)
 
-### 4. Attribute Recognition
+### 4. Multi-Target Multi-Camera Tracking
 - Use PP-YOLOE + Bytetrack to track humans
 - Use StrongBaseline（a multi-class model）to conduct attribute recognition, and the main attributes include age, gender, hats, eyes, clothing, and backpacks.
 - For details, please refer to [Attribute Recognition](docs/attribute_en.md)
 
-### 5. Behavior Recognition
+### 5. Action Recognition
 - Use PP-YOLOE + Bytetrack to track humans
 - Use HRNet for keypoint detection and get the information of the 17 key points in the human body
 - According to the changes of the key points of the same person within 50 frames, judge whether the action made by the person within 50 frames is a fall with the help of ST-GCN
-- For details, please refer to [Behavior Recognition](docs/action_en.md)
+- For details, please refer to [Action Recognition](docs/action_en.md)
