@@ -172,8 +172,9 @@ def _dump_infer_config(config, path, image_shape, model):
         reader_cfg, dataset_cfg, config['metric'], label_arch, image_shape[1:])
 
     if infer_arch == 'PicoDet':
-        if hasattr(config, 'export') and config['export'].get('post_process',
-                                                              False):
+        if hasattr(config, 'export') and config['export'].get(
+                'post_process',
+                False) and not config['export'].get('benchmark', False):
             infer_cfg['arch'] = 'GFL'
         head_name = 'PicoHeadV2' if config['PicoHeadV2'] else 'PicoHead'
         infer_cfg['NMS'] = config[head_name]['nms']

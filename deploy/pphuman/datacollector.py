@@ -75,7 +75,8 @@ class DataCollector(object):
         action_res = Result.get('action')
         reid_res = Result.get('reid')
 
-        for idx, mot_item in enumerate(reid_res['rects']):
+        rects = reid_res['rects'] if reid_res is not None else mot_res['boxes']
+        for idx, mot_item in enumerate(rects):
             ids = int(mot_item[0])
             if ids not in self.collector:
                 self.collector[ids] = copy.deepcopy(self.mots)
@@ -85,7 +86,7 @@ class DataCollector(object):
             if attr_res:
                 self.collector[ids]["attrs"].append(attr_res['output'][idx])
             if kpt_res:
-                self.collector[ids]["kpts"].append(kpt_res['output'][idx])
+                self.collector[ids]["kpts"].append(kpt_res['keypoint'][idx])
             if action_res:
                 self.collector[ids]["actions"].append(action_res['output'][idx])
             else:
