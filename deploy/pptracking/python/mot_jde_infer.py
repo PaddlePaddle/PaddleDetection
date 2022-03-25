@@ -297,12 +297,12 @@ class JDE_Detector(Detector):
         num_classes = self.num_classes
         data_type = 'mcmot' if num_classes > 1 else 'mot'
         ids2names = self.pred_config.labels
+
         center_traj = None
         entrance = None
         records = None
         if self.draw_center_traj:
             center_traj = [{} for i in range(num_classes)]
-
         if num_classes == 1:
             id_set = set()
             interval_id_set = set()
@@ -342,16 +342,7 @@ class JDE_Detector(Detector):
                     result, self.secs_interval, self.do_entrance_counting,
                     video_fps, entrance, id_set, interval_id_set, in_id_list,
                     out_id_list, prev_center, records, data_type, num_classes)
-                id_set = statistic['id_set']
-                interval_id_set = statistic['interval_id_set']
-                in_id_list = statistic['in_id_list']
-                out_id_list = statistic['out_id_list']
-                prev_center = statistic['prev_center']
                 records = statistic['records']
-
-            elif num_classes > 1 and self.do_entrance_counting:
-                raise NotImplementedError(
-                    'Multi-class flow counting is not implemented now!')
 
             fps = 1. / timer.duration
             im = plot_tracking_dict(

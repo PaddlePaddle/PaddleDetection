@@ -33,7 +33,7 @@ sys.path.insert(0, parent_path)
 from det_infer import Detector, get_test_images, print_arguments, bench_log, PredictConfig, load_predictor
 from mot_utils import argsparser, Timer, get_current_memory_mb, video2frames, _is_valid_video
 from mot.tracker import JDETracker, DeepSORTTracker
-from mot.utils import MOTTimer, write_mot_results, flow_statistic, get_crops, clip_box
+from mot.utils import MOTTimer, write_mot_results, get_crops, clip_box, flow_statistic
 from mot.visualize import plot_tracking, plot_tracking_dict
 
 from mot.mtmct.utils import parse_bias
@@ -487,12 +487,12 @@ class SDE_Detector(Detector):
         num_classes = self.num_classes
         data_type = 'mcmot' if num_classes > 1 else 'mot'
         ids2names = self.pred_config.labels
+
         center_traj = None
         entrance = None
         records = None
         if self.draw_center_traj:
             center_traj = [{} for i in range(num_classes)]
-
         if num_classes == 1:
             id_set = set()
             interval_id_set = set()
@@ -528,15 +528,7 @@ class SDE_Detector(Detector):
                     result, self.secs_interval, self.do_entrance_counting,
                     video_fps, entrance, id_set, interval_id_set, in_id_list,
                     out_id_list, prev_center, records, data_type, num_classes)
-                id_set = statistic['id_set']
-                interval_id_set = statistic['interval_id_set']
-                in_id_list = statistic['in_id_list']
-                out_id_list = statistic['out_id_list']
-                prev_center = statistic['prev_center']
                 records = statistic['records']
-            elif num_classes > 1 and self.do_entrance_counting:
-                raise NotImplementedError(
-                    'Multi-class flow counting is not implemented now!')
 
             fps = 1. / timer.duration
             if self.use_deepsort_tracker:

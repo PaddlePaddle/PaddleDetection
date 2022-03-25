@@ -45,7 +45,7 @@ from python.preprocess import decode_image
 from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
 
 from pptracking.python.mot_sde_infer import SDE_Detector
-from pptracking.python.mot.visualize import plot_tracking, plot_tracking_dict
+from pptracking.python.mot.visualize import plot_tracking_dict
 from pptracking.python.mot.utils import flow_statistic
 
 
@@ -472,7 +472,7 @@ class PipePredictor(object):
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = int(capture.get(cv2.CAP_PROP_FPS))
         frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-        print("fps: %d, frame_count: %d" % (fps, frame_count))
+        print("video fps: %d, frame_count: %d" % (fps, frame_count))
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -580,7 +580,7 @@ class PipePredictor(object):
                 }
                 self.pipeline_res.update(reid_res_dict, 'reid')
 
-            self.collector.append(frame_id, self.pipeline_res)
+                self.collector.append(frame_id, self.pipeline_res)
 
             if frame_id > self.warmup_frame:
                 self.pipe_timer.img_num += 1
