@@ -480,6 +480,19 @@ class PipePredictor(object):
         fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         frame_id = 0
+
+        entrance, records, center_traj = None, None, None
+        if self.draw_center_traj:
+            center_traj = [{}]
+        id_set = set()
+        interval_id_set = set()
+        in_id_list = list()
+        out_id_list = list()
+        prev_center = dict()
+        records = list()
+        entrance = [0, height / 2., width, height / 2.]
+        video_fps = fps
+
         while (1):
             if frame_id % 10 == 0:
                 print('frame id: ', frame_id)
@@ -498,6 +511,15 @@ class PipePredictor(object):
 
             # mot output format: id, class, score, xmin, ymin, xmax, ymax
             mot_res = parse_mot_res(res)
+
+            # flow_statistic only support single class MOT
+            boxes, scores, ids = res[0] # batch size = 1 in MOT
+            mot_result = (frame_id + 1, boxes[0], scores[0], ids[0]) # single class
+            statistic = flow_statistic(
+                mot_result, self.secs_interval, self.do_entrance_counting, video_fps,
+                entrance, id_set, interval_id_set, in_id_list, out_id_list,
+                prev_center, records)
+            records = statistic['records']
 
             # nothing detected
             if len(mot_res['boxes']) == 0:
@@ -591,46 +613,13 @@ class PipePredictor(object):
             if self.cfg['visual']:
                 _, _, fps = self.pipe_timer.get_total_time()
                 im = self.visualize_video(frame, self.pipeline_res, frame_id,
-                                          fps)  # visualize
+                                          fps, entrance, records, center_traj)  # visualize
                 writer.write(im)
 
         writer.release()
         print('save result to {}'.format(out_path))
 
-    def mot_entrance_traj(self, image, frame_id, online_tlwhs, online_scores,
-                          online_ids, fps):
-        # Note: flow statistic only support for single class MOT
-        num_classes = 1
-        data_type = 'mot'
-        id_set = set()
-        interval_id_set = set()
-        in_id_list = list()
-        out_id_list = list()
-        prev_center = dict()
-        records = list()
-        height, width = image.shape[:2]
-        entrance = [0, height / 2., width, height / 2.]
-        center_traj = None
-        if self.draw_center_traj:
-            center_traj = [{} for i in range(num_classes)]
-
-        video_fps = max(fps, 20)  # avoid fps 0
-
-        mot_result = (frame_id + 1, online_tlwhs[0], online_scores[0],
-                      online_ids[0])
-        statistic = flow_statistic(
-            mot_result, self.secs_interval, self.do_entrance_counting,
-            video_fps, entrance, id_set, interval_id_set, in_id_list,
-            out_id_list, prev_center, records, data_type, num_classes)
-        id_set = statistic['id_set']
-        interval_id_set = statistic['interval_id_set']
-        in_id_list = statistic['in_id_list']
-        out_id_list = statistic['out_id_list']
-        prev_center = statistic['prev_center']
-        records = statistic['records']
-        return entrance, records, center_traj
-
-    def visualize_video(self, image, result, frame_id, fps):
+    def visualize_video(self, image, result, frame_id, fps, entrance=None, records=None, center_traj=None):
         mot_res = copy.deepcopy(result.get('mot'))
         if mot_res is not None:
             ids = mot_res['boxes'][:, 0]
@@ -651,10 +640,6 @@ class PipePredictor(object):
         online_tlwhs[0] = boxes
         online_scores[0] = scores
         online_ids[0] = ids
-        entrance, records, center_traj = None, None, None
-        if self.do_entrance_counting or self.draw_center_traj:
-            entrance, records, center_traj = self.mot_entrance_traj(
-                image, frame_id, online_tlwhs, online_scores, online_ids, fps)
 
         image = plot_tracking_dict(
             image,
