@@ -85,7 +85,7 @@ class DataCollector(object):
             if attr_res:
                 self.collector[ids]["attrs"].append(attr_res['output'][idx])
             if kpt_res:
-                self.collector[ids]["kpts"].append(kpt_res['output'][idx])
+                self.collector[ids]["kpts"].append(kpt_res['keypoint'][idx])
             if action_res:
                 self.collector[ids]["actions"].append(action_res['output'][idx])
             else:
