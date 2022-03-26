@@ -39,7 +39,7 @@ PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模�
 | 任务            | 适用场景 | 精度 | 预测速度（FPS） | 预测部署模型 |
 | :---------:     |:---------:     |:---------------     | :-------:  | :------:      |
 | 目标检测        | 图片/视频输入 | -  | -           | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 属性识别    | 图片/视频输入 属性识别  | - |  -       | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.tar) |
+| 属性识别    | 图片/视频输入 属性识别  | - |  -       | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
 | 关键点检测    | 视频输入 行为识别 | - | -        | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
 | 行为识别   |  视频输入 行为识别  | - |  -          | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
 | ReID         | 视频输入 跨镜跟踪   | - | -         | [下载链接]() |
@@ -117,7 +117,8 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml -
 | --enable_mkldnn | Option | CPU预测中是否开启MKLDNN加速，默认为False |
 | --cpu_threads | Option| 设置cpu线程数，默认为1 |
 | --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
-
+| --do_entrance_counting | Option | 是否统计出入口流量，默认为False |
+| --draw_center_traj | Option | 是否绘制跟踪轨迹，默认为False |
 
 ## 三、方案介绍
 
@@ -130,13 +131,13 @@ PP-Human整体方案如下图所示
 
 ### 1. 目标检测
 - 采用PP-YOLOE L 作为目标检测模型
-- 详细文档参考[PP-YOLOE](../../configs/ppyoloe/)
+- 详细文档参考[PP-YOLOE](../../configs/ppyoloe/)和[检测跟踪文档](docs/mot.md)
 
 ### 2. 多目标跟踪
 - 采用SDE方案完成多目标跟踪
 - 检测模型使用PP-YOLOE L
 - 跟踪模块采用Bytetrack方案
-- 详细文档参考[Bytetrack](configs/mot/bytetrack)
+- 详细文档参考[Bytetrack](../../configs/mot/bytetrack)和[检测跟踪文档](docs/mot.md)
 
 ### 3. 跨镜跟踪
 - 使用PP-YOLOE + Bytetrack得到单镜头多目标跟踪轨迹

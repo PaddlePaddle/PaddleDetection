@@ -27,7 +27,7 @@ from .utils import parse_pt_gt, parse_pt, compare_dataframes_mtmc
 from .utils import get_labels, getData, gen_new_mot
 from .camera_utils import get_labels_with_camera
 from .zone import Zone
-from ..utils import plot_tracking
+from ..visualize import plot_tracking
 
 __all__ = [
     'trajectory_fusion',
@@ -68,8 +68,8 @@ def trajectory_fusion(mot_feature, cid, cid_bias, use_zone=False, zone_path=''):
         zone_list = [tracklet[f]['zone'] for f in frame_list]
         feature_list = [
             tracklet[f]['feat'] for f in frame_list
-            if (tracklet[f]['bbox'][3] - tracklet[f]['bbox'][1]
-                ) * (tracklet[f]['bbox'][2] - tracklet[f]['bbox'][0]) > 2000
+            if (tracklet[f]['bbox'][3] - tracklet[f]['bbox'][1]) *
+            (tracklet[f]['bbox'][2] - tracklet[f]['bbox'][0]) > 2000
         ]
         if len(feature_list) < 2:
             feature_list = [tracklet[f]['feat'] for f in frame_list]
@@ -293,9 +293,9 @@ def save_mtmct_crops(cid_tid_fid_res,
             for f_id in cid_tid_fid_res[c_id][t_id].keys():
                 frame_idx = f_id - 1 if f_id > 0 else 0
                 im_path = os.path.join(infer_dir, all_images[frame_idx])
-                
+
                 im = cv2.imread(im_path)  # (H, W, 3)
-                
+
                 # only select one track
                 track = cid_tid_fid_res[c_id][t_id][f_id][0]
 
