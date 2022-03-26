@@ -513,12 +513,13 @@ class PipePredictor(object):
             mot_res = parse_mot_res(res)
 
             # flow_statistic only support single class MOT
-            boxes, scores, ids = res[0] # batch size = 1 in MOT
-            mot_result = (frame_id + 1, boxes[0], scores[0], ids[0]) # single class
+            boxes, scores, ids = res[0]  # batch size = 1 in MOT
+            mot_result = (frame_id + 1, boxes[0], scores[0],
+                          ids[0])  # single class
             statistic = flow_statistic(
-                mot_result, self.secs_interval, self.do_entrance_counting, video_fps,
-                entrance, id_set, interval_id_set, in_id_list, out_id_list,
-                prev_center, records)
+                mot_result, self.secs_interval, self.do_entrance_counting,
+                video_fps, entrance, id_set, interval_id_set, in_id_list,
+                out_id_list, prev_center, records)
             records = statistic['records']
 
             # nothing detected
@@ -603,7 +604,7 @@ class PipePredictor(object):
                 }
                 self.pipeline_res.update(reid_res_dict, 'reid')
 
-                self.collector.append(frame_id, self.pipeline_res)
+            self.collector.append(frame_id, self.pipeline_res)
 
             if frame_id > self.warmup_frame:
                 self.pipe_timer.img_num += 1
@@ -613,13 +614,21 @@ class PipePredictor(object):
             if self.cfg['visual']:
                 _, _, fps = self.pipe_timer.get_total_time()
                 im = self.visualize_video(frame, self.pipeline_res, frame_id,
-                                          fps, entrance, records, center_traj)  # visualize
+                                          fps, entrance, records,
+                                          center_traj)  # visualize
                 writer.write(im)
 
         writer.release()
         print('save result to {}'.format(out_path))
 
-    def visualize_video(self, image, result, frame_id, fps, entrance=None, records=None, center_traj=None):
+    def visualize_video(self,
+                        image,
+                        result,
+                        frame_id,
+                        fps,
+                        entrance=None,
+                        records=None,
+                        center_traj=None):
         mot_res = copy.deepcopy(result.get('mot'))
         if mot_res is not None:
             ids = mot_res['boxes'][:, 0]
