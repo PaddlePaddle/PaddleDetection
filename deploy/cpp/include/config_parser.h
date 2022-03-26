@@ -120,6 +120,10 @@ class ConfigPaser {
       }
     }
 
+    if (config["mask"].IsDefined()) {
+      mask_ = config["mask"].as<bool>();
+    }
+
     return true;
   }
   std::string mode_;
@@ -132,6 +136,7 @@ class ConfigPaser {
   std::vector<int> fpn_stride_;
   bool use_dynamic_shape_;
   float conf_thresh_;
+  bool mask_ = false;
 };
 
 }  // namespace PaddleDetection
