@@ -179,6 +179,7 @@ class BBoxPostProcess(nn.Layer):
 
 @register
 class MaskPostProcess(object):
+    __shared__ = ['export_onnx']
     """
     refer to:
     https://github.com/facebookresearch/detectron2/layers/mask_ops.py
@@ -186,9 +187,10 @@ class MaskPostProcess(object):
     Get Mask output according to the output from model
     """
 
-    def __init__(self, binary_thresh=0.5):
+    def __init__(self, binary_thresh=0.5, export_onnx=False):
         super(MaskPostProcess, self).__init__()
         self.binary_thresh = binary_thresh
+        self.export_onnx = export_onnx
 
     def paste_mask(self, masks, boxes, im_h, im_w):
         """
@@ -230,15 +232,34 @@ class MaskPostProcess(object):
         """
         num_mask = mask_out.shape[0]
         origin_shape = paddle.cast(origin_shape, 'int32')
-        # TODO: support bs > 1 and mask output dtype is bool
-        pred_result = paddle.zeros(
-            [num_mask, origin_shape[0][0], origin_shape[0][1]], dtype='int32')
 
-        im_h, im_w = origin_shape[0][0], origin_shape[0][1]
-        pred_mask = self.paste_mask(mask_out[:, None, :, :], bboxes[:, 2:],
-                                    im_h, im_w)
-        pred_mask = pred_mask >= self.binary_thresh
-        pred_result = paddle.cast(pred_mask, 'int32')
+        if self.export_onnx:
+            h, w = origin_shape[0][0], origin_shape[0][1]
+            mask_onnx = self.paste_mask(mask_out[:, None, :, :], bboxes[:, 2:],
+                                        h, w)
+            mask_onnx = mask_onnx >= self.binary_thresh
+            pred_result = paddle.cast(mask_onnx, 'int32')
+
+        else:
+            max_h = paddle.max(origin_shape[:, 0])
+            max_w = paddle.max(origin_shape[:, 1])
+            pred_result = paddle.zeros(
+                [num_mask, max_h, max_w], dtype='int32') - 1
+
+            id_start = 0
+            for i in range(bbox_num.shape[0]):
+                bboxes_i = bboxes[id_start:id_start + bbox_num[i], :]
+                mask_out_i = mask_out[id_start:id_start + bbox_num[i], :, :]
+                im_h = origin_shape[i, 0]
+                im_w = origin_shape[i, 1]
+                bbox_num_i = bbox_num[id_start]
+                pred_mask = self.paste_mask(mask_out_i[:, None, :, :],
+                                            bboxes_i[:, 2:], im_h, im_w)
+                pred_mask = paddle.cast(pred_mask >= self.binary_thresh,
+                                        'int32')
+                pred_result[id_start:id_start + bbox_num[i], :im_h, :
+                            im_w] = pred_mask
+                id_start += bbox_num[i]
 
         return pred_result
 
