@@ -35,10 +35,21 @@ wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/mot17_demo.mp4
 # Python预测视频
 python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fairmot_hrnetv2_w18_dlafpn_30e_576x320 --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
 ```
+
+### 1.3 用导出的模型基于Python去预测，以及进行流量计数、出入口统计和绘制跟踪轨迹等
+```bash
+# 下载出入口统计demo视频：
+wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/entrance_count_demo.mp4
+
+# Python预测视频
+python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fairmot_hrnetv2_w18_dlafpn_30e_576x320 --video_file=entrance_count_demo.mp4 --device=GPU  --do_entrance_counting --draw_center_traj
+```
+
 **注意:**
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
  - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
  - `--threshold`表示结果可视化的置信度阈值，默认为0.5，低于该阈值的结果会被过滤掉，为了可视化效果更佳，可根据实际情况自行修改。
+ - `--do_entrance_counting`表示是否统计出入口流量，默认为False，`--draw_center_traj`表示是否绘制跟踪轨迹，默认为False。注意绘制跟踪轨迹的测试视频最好是静止摄像头拍摄的。
  - 对于多类别或车辆的FairMOT模型的导出和Python预测只需更改相应的config和模型权重即可。如：
  ```bash
  job_name=mcfairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone

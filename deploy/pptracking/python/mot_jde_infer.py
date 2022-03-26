@@ -31,7 +31,7 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
 from mot import JDETracker
-from mot.utils import MOTTimer, write_mot_results
+from mot.utils import MOTTimer, write_mot_results, flow_statistic
 from mot.visualize import plot_tracking, plot_tracking_dict
 
 # Global dictionary
@@ -54,23 +54,38 @@ class JDE_Detector(Detector):
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
-        enable_mkldnn (bool): whether to open MKLDNN 
+        enable_mkldnn (bool): whether to open MKLDNN
+        output_dir (string): The path of output, default as 'output'
+        threshold (float): Score threshold of the detected bbox, default as 0.5
+        save_images (bool): Whether to save visualization image results, default as False
+        save_mot_txts (bool): Whether to save tracking results (txt), default as False
+        draw_center_traj (bool): Whether drawing the trajectory of center, default as False
+        secs_interval (int): The seconds interval to count after tracking, default as 10
+        do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
+            or getting out from the entrance, default as False，only support single class
+            counting in MOT.
     """
 
-    def __init__(self,
-                 model_dir,
-                 tracker_config=None,
-                 device='CPU',
-                 run_mode='paddle',
-                 batch_size=1,
-                 trt_min_shape=1,
-                 trt_max_shape=1088,
-                 trt_opt_shape=608,
-                 trt_calib_mode=False,
-                 cpu_threads=1,
-                 enable_mkldnn=False,
-                 output_dir='output',
-                 threshold=0.5):
+    def __init__(
+            self,
+            model_dir,
+            tracker_config=None,
+            device='CPU',
+            run_mode='paddle',
+            batch_size=1,
+            trt_min_shape=1,
+            trt_max_shape=1088,
+            trt_opt_shape=608,
+            trt_calib_mode=False,
+            cpu_threads=1,
+            enable_mkldnn=False,
+            output_dir='output',
+            threshold=0.5,
+            save_images=False,
+            save_mot_txts=False,
+            draw_center_traj=False,
+            secs_interval=10,
+            do_entrance_counting=False, ):
         super(JDE_Detector, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -84,6 +99,12 @@ class JDE_Detector(Detector):
             enable_mkldnn=enable_mkldnn,
             output_dir=output_dir,
             threshold=threshold, )
+        self.save_images = save_images
+        self.save_mot_txts = save_mot_txts
+        self.draw_center_traj = draw_center_traj
+        self.secs_interval = secs_interval
+        self.do_entrance_counting = do_entrance_counting
+
         assert batch_size == 1, "MOT model only supports batch_size=1."
         self.det_times = Timer(with_tracker=True)
         self.num_classes = len(self.pred_config.labels)
@@ -115,7 +136,7 @@ class JDE_Detector(Detector):
         return result
 
     def tracking(self, det_results):
-        pred_dets = det_results['pred_dets']
+        pred_dets = det_results['pred_dets']  # cls_id, score, x0, y0, x1, y1
         pred_embs = det_results['pred_embs']
         online_targets_dict = self.tracker.update(pred_dets, pred_embs)
 
@@ -164,7 +185,8 @@ class JDE_Detector(Detector):
                       image_list,
                       run_benchmark=False,
                       repeats=1,
-                      visual=True):
+                      visual=True,
+                      seq_name=None):
         mot_results = []
         num_classes = self.num_classes
         image_list.sort()
@@ -225,7 +247,7 @@ class JDE_Detector(Detector):
                 self.det_times.img_num += 1
 
             if visual:
-                if frame_id % 10 == 0:
+                if len(image_list) > 1 and frame_id % 10 == 0:
                     print('Tracking frame {}'.format(frame_id))
                 frame, _ = decode_image(img_file, {})
 
@@ -237,7 +259,8 @@ class JDE_Detector(Detector):
                     online_scores,
                     frame_id=frame_id,
                     ids2names=ids2names)
-                seq_name = image_list[0].split('/')[-2]
+                if seq_name is None:
+                    seq_name = image_list[0].split('/')[-2]
                 save_dir = os.path.join(self.output_dir, seq_name)
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
@@ -264,7 +287,8 @@ class JDE_Detector(Detector):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+        video_format = 'mp4v'
+        fourcc = cv2.VideoWriter_fourcc(*video_format)
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
 
         frame_id = 1
@@ -273,6 +297,23 @@ class JDE_Detector(Detector):
         num_classes = self.num_classes
         data_type = 'mcmot' if num_classes > 1 else 'mot'
         ids2names = self.pred_config.labels
+
+        center_traj = None
+        entrance = None
+        records = None
+        if self.draw_center_traj:
+            center_traj = [{} for i in range(num_classes)]
+        if num_classes == 1:
+            id_set = set()
+            interval_id_set = set()
+            in_id_list = list()
+            out_id_list = list()
+            prev_center = dict()
+            records = list()
+            entrance = [0, height / 2., width, height / 2.]
+
+        video_fps = fps
+
         while (1):
             ret, frame = capture.read()
             if not ret:
@@ -282,7 +323,9 @@ class JDE_Detector(Detector):
             frame_id += 1
 
             timer.tic()
-            mot_results = self.predict_image([frame], visual=False)
+            seq_name = video_out_name.split('.')[0]
+            mot_results = self.predict_image(
+                [frame], visual=False, seq_name=seq_name)
             timer.toc()
 
             online_tlwhs, online_scores, online_ids = mot_results[0]
@@ -290,6 +333,16 @@ class JDE_Detector(Detector):
                 results[cls_id].append(
                     (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id],
                      online_ids[cls_id]))
+
+            # NOTE: just implement flow statistic for single class
+            if num_classes == 1:
+                result = (frame_id + 1, online_tlwhs[0], online_scores[0],
+                          online_ids[0])
+                statistic = flow_statistic(
+                    result, self.secs_interval, self.do_entrance_counting,
+                    video_fps, entrance, id_set, interval_id_set, in_id_list,
+                    out_id_list, prev_center, records, data_type, num_classes)
+                records = statistic['records']
 
             fps = 1. / timer.duration
             im = plot_tracking_dict(
@@ -300,27 +353,57 @@ class JDE_Detector(Detector):
                 online_scores,
                 frame_id=frame_id,
                 fps=fps,
-                ids2names=ids2names)
+                ids2names=ids2names,
+                do_entrance_counting=self.do_entrance_counting,
+                entrance=entrance,
+                records=records,
+                center_traj=center_traj)
 
             writer.write(im)
             if camera_id != -1:
                 cv2.imshow('Mask Detection', im)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
+
+        if self.save_mot_txts:
+            result_filename = os.path.join(
+                self.output_dir, video_out_name.split('.')[-2] + '.txt')
+
+            write_mot_results(result_filename, results, data_type, num_classes)
+
+            if num_classes == 1:
+                result_filename = os.path.join(
+                    self.output_dir,
+                    video_out_name.split('.')[-2] + '_flow_statistic.txt')
+                f = open(result_filename, 'w')
+                for line in records:
+                    f.write(line)
+                print('Flow statistic save in {}'.format(result_filename))
+                f.close()
+
         writer.release()
 
 
 def main():
     detector = JDE_Detector(
         FLAGS.model_dir,
+        tracker_config=None,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
+        batch_size=1,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
         trt_opt_shape=FLAGS.trt_opt_shape,
         trt_calib_mode=FLAGS.trt_calib_mode,
         cpu_threads=FLAGS.cpu_threads,
-        enable_mkldnn=FLAGS.enable_mkldnn)
+        enable_mkldnn=FLAGS.enable_mkldnn,
+        output_dir=FLAGS.output_dir,
+        threshold=FLAGS.threshold,
+        save_images=FLAGS.save_images,
+        save_mot_txts=FLAGS.save_mot_txts,
+        draw_center_traj=FLAGS.draw_center_traj,
+        secs_interval=FLAGS.secs_interval,
+        do_entrance_counting=FLAGS.do_entrance_counting, )
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
