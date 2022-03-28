@@ -12,7 +12,12 @@ Paddle Lite是飞桨轻量化推理引擎，为手机、IOT端提供高效推理
 
 ### 1.1 准备交叉编译环境
 交叉编译环境用于编译 Paddle Lite 和 PaddleDetection 的C++ demo。
-支持多种开发环境，不同开发环境的编译流程请参考对应文档，请确保安装完成Java jdk、Android NDK(R17以上)。
+支持多种开发环境，不同开发环境的编译流程请参考对应文档，请确保安装完成Java jdk、Android NDK(R17 < version < R21，其他版本以上未做测试)。
+设置NDK_ROOT命令：
+```shell
+export NDK_ROOT=[YOUR_NDK_PATH]/android-ndk-r17c
+```
+
 
 1. [Docker](https://paddle-lite.readthedocs.io/zh/latest/source_compile/compile_env.html#docker)
 2. [Linux](https://paddle-lite.readthedocs.io/zh/latest/source_compile/compile_env.html#linux)
@@ -21,7 +26,7 @@ Paddle Lite是飞桨轻量化推理引擎，为手机、IOT端提供高效推理
 ### 1.2 准备预测库
 
 预测库有两种获取方式：
-1. [**建议**]直接下载，预测库下载链接如下：
+1. [**建议**]直接下载，预测库下载链接如下：(请注意使用模型FP32/16版本需要与库相对应)
       |平台| 架构 | 预测库下载链接|
       |-|-|-|
       |Android| arm7 | [inference_lite_lib](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.10-rc/inference_lite_lib.android.armv7.clang.c++_static.with_extra.with_cv.tar.gz) |
@@ -31,7 +36,7 @@ Paddle Lite是飞桨轻量化推理引擎，为手机、IOT端提供高效推理
 **注意**：1. 如果是从 Paddle-Lite [官方文档](https://paddle-lite.readthedocs.io/zh/latest/quick_start/release_lib.html#android-toolchain-gcc)下载的预测库，注意选择`with_extra=ON，with_cv=ON`的下载链接。2. 目前只提供Android端demo，IOS端demo可以参考[Paddle-Lite IOS demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo/tree/master/PaddleLite-ios-demo)
 
 
-2. 编译Paddle-Lite得到预测库，Paddle-Lite的编译方式如下：
+2. 编译Paddle-Lite得到预测库，Paddle-Lite的编译方式如下(Lite库在不断更新，如若下列命令无效，请以Lite官方repo为主)：
 ```shell
 git clone https://github.com/PaddlePaddle/Paddle-Lite.git
 cd Paddle-Lite
