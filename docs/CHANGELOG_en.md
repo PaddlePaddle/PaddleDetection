@@ -4,7 +4,7 @@ English | [简体中文](./CHANGELOG.md)
 
 ## Last Version Information
 
-### 2.4(03.28/2022)
+### 2.4(03.24/2022)
 
 - PP-YOLOE：
   - Release PP-YOLOE object detection models, achieve mAP as 51.4% on COCO test dataset and 78.1 FPS on Nvidia V100, reach SOTA performance for object detection on GPU``
