@@ -339,7 +339,8 @@ class ModelEMA(object):
 
     def resume(self, state_dict, step=0):
         for k, v in state_dict.items():
-            self.state_dict[k] = v
+            if k in self.state_dict:
+                self.state_dict[k] = v
         self.step = step
 
     def update(self, model=None):
