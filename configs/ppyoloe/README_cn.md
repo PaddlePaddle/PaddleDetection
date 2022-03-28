@@ -76,6 +76,12 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/ppyoloe/ppyoloe_crn_l_30
 
 ### 4. 部署
 
+- PaddleInference [Python](../../deploy/python) & [C++](../../deploy/cpp)
+- [Paddle-TensorRT](../../deploy/TENSOR_RT.md)
+- [Paddle2ONNX](https://github.com/PaddlePaddle/Paddle2ONNX)
+- [PaddleServing](https://github.com/PaddlePaddle/Serving)
+
+
 PP-YOLOE在GPU上部署或者推理benchmark需要通过`tools/export_model.py`导出模型。
 
 当你使用PaddleInferenced但不使用TensorRT时，运行以下的命令进行导出
@@ -118,6 +124,20 @@ pip install paddle2onnx
 paddle2onnx --model_dir output_inference/ppyoloe_crn_l_300e_coco --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 11 --save_file ppyoloe_crn_l_300e_coco.onnx
 
 ```
+
+
+### 5. 泛化性验证
+
+模型 | AP | AP<sub>50</sub>
+---|---|---
+[YOLOX](https://github.com/Megvii-BaseDetection/YOLOX) | 22.6 | 37.5
+[YOLOv5](https://github.com/ultralytics/yolov5) | 26.0 | 42.7
+**PP-YOLOE** | **30.5** | **46.4**
+
+**注意**
+- 试验使用[VisDrone](https://github.com/VisDrone/VisDrone-Dataset)数据集, 并且检测其中的9类，包括 `person, bicycles, car, van, truck, tricyle, awning-tricyle, bus, motor`.
+- 以上模型训练均采用官方提供的默认参数，并且加载COCO预训练参数
+- *由于人力/时间有限，后续将会持续补充更多验证结果，也欢迎各位开源用户贡献，共同优化PP-YOLOE*
 
 ## 附录
 
