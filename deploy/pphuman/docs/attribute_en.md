@@ -9,8 +9,8 @@ Pedestrian attribute recognition has been widely used in the intelligent communi
 | Pedestrian Detection/ Tracking    |  PP-YOLOE | mAP: 56.3 <br> MOTA: 72.0 | Detection: 28ms <br> Tracking：33.1ms | [Download Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
 | Pedestrian Attribute Analysis   |  StrongBaseline  |  ma: 94.86  | Per Person 2ms | [Download Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.tar) |
 
-1. The precision of detection/ tracking models is MOT17, obtained by conducting the integration training and testing of CrowdHuman, HIEVE, and some business data.
-2. The precision of pedestiran attribute analysis is PA100k, obtained by conducting the integration training and testing of RAPv2, PETA, and some business data.
+1. The precision of detection and tracking models is obtained by training and testing on the integration of MOT17, CrowdHuman, HIEVE, and some business data.
+2. The precision of pedestiran attribute analysis is obtained by training and testing on the integration of PA100k, RAPv2, PETA, and some business data.
 3. The inference speed is T4, the speed of using TensorRT FP16.
 
 ## Instruction
@@ -54,7 +54,7 @@ Data Source and Copyright：Skyinfor Technology. Thanks for the provision of act
 
 1. The PP-YOLOE model is used to handle detection boxs of input images/videos from object detection/ multi-object tracking. For details, please refer to the document [PP-YOLOE](../../../configs/ppyoloe).
 2. Capture every pedestrian in the input images with the help of coordiantes of detection boxes.
-3. Analyze the listed labels of pedestirans through attribute recognition. They are the same as those in the PA200k dataset. The label list is as follows:
+3. Analyze the listed labels of pedestirans through attribute recognition. They are the same as those in the PA100k dataset. The label list is as follows:
 ```
 - Gender
 - Age: Less than 18; 18-60; Over 60
