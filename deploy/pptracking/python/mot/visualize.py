@@ -209,7 +209,7 @@ def plot_tracking_dict(image,
             end = records[-1].find('In')
             cv2.putText(
                 im,
-                records[-1][start:end], (0, int(40 * text_scale)),
+                records[-1][start:end], (0, int(40 * text_scale) + 10),
                 cv2.FONT_ITALIC,
                 text_scale, (0, 0, 255),
                 thickness=text_thickness)
@@ -226,7 +226,7 @@ def plot_tracking_dict(image,
         start = records[-1].find('In')
         cv2.putText(
             im,
-            records[-1][start:-1], (0, int(60 * text_scale)),
+            records[-1][start:-1], (0, int(60 * text_scale) + 10),
             cv2.FONT_ITALIC,
             text_scale, (0, 0, 255),
             thickness=text_thickness)

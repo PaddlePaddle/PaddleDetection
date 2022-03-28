@@ -21,7 +21,7 @@
 1. 检测/跟踪模型精度为MOT17，CrowdHuman,HIEVE和部分业务数据融合训练测试得到。
 2. 关键点模型使用COCO，UAVHuman和部分业务数据融合训练, 精度在业务数据测试集上得到。
 3. 行为识别模型使用NTU-RGB+D，UR Fall Detection Dataset和部分业务数据融合训练，精度在业务数据测试集上得到。
-4. 预测速度为NVIDIA T4 机器上使用TensorRT FP16时的速度。
+4. 预测速度为NVIDIA T4 机器上使用TensorRT FP16时的速度, 速度包含数据预处理、模型预测、后处理全流程。
 
 ## 配置说明
 [配置文件](../config/infer_cfg.yml)中与行为识别相关的参数如下：

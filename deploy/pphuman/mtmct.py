@@ -111,7 +111,8 @@ def save_mtmct_vis_results(camera_results, captures, output_dir):
     for idx, video_file in enumerate(captures):
         capture = cv2.VideoCapture(video_file)
         cid = camera_ids[idx]
-        video_out_name = "mtmct_vis_c" + str(cid) + ".mp4"
+        basename = os.path.basename(video_file)
+        video_out_name = "vis_" + basename
         print("Start visualizing output video: {}".format(video_out_name))
         out_path = os.path.join(save_dir, video_out_name)
 
@@ -182,7 +183,7 @@ def get_dist_mat(x, y, func_name="euclidean"):
         dist_mat = get_cosine(x, y)
     elif func_name == "euclidean":
         dist_mat = get_euclidean(x, y)
-    print("Using {func_name} as distance function during evaluation")
+    print("Using {} as distance function during evaluation".format(func_name))
     return dist_mat
 
 
