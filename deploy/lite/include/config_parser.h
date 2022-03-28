@@ -29,7 +29,7 @@
 
 namespace PaddleDetection {
 
-void load_jsonf(std::string jsonfile, Json::Value& jsondata);
+void load_jsonf(std::string jsonfile, const Json::Value& jsondata);
 
 // Inference model configuration parser
 class ConfigPaser {
@@ -43,13 +43,14 @@ class ConfigPaser {
     Json::Value config;
     load_jsonf(model_dir + OS_PATH_SEP + cfg + ".json", config);
 
-    // Get model arch : YOLO, SSD, RetinaNet, RCNN, Face
+    // Get model arch : YOLO, SSD, RetinaNet, RCNN, Face, PicoDet, HRNet
     if (config.isMember("arch")) {
       arch_ = config["arch"].as<std::string>();
     } else {
-      std::cerr << "Please set model arch,"
-                << "support value : YOLO, SSD, RetinaNet, RCNN, Face."
-                << std::endl;
+      std::cerr
+          << "Please set model arch,"
+          << "support value : YOLO, SSD, RetinaNet, RCNN, Face, PicoDet, HRNet."
+          << std::endl;
       return false;
     }
 
