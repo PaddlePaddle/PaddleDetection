@@ -39,3 +39,5 @@ JDETracker:
   conf_thres: 0.4
   tracked_thresh: 0.4
   metric_type: cosine
+  min_box_area: 200
+  vertical_ratio: 1.6 # for pedestrian
