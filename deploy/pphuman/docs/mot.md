@@ -7,7 +7,7 @@
 | 行人检测/跟踪    |  PP-YOLOE | mAP: 56.3 <br> MOTA: 72.0 | 检测: 28ms <br> 跟踪：33.1ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
 
 1. 检测/跟踪模型精度为MOT17，CrowdHuman，HIEVE和部分业务数据融合训练测试得到
-2. 预测速度为T4 机器上使用TensorRT FP16时的速度
+2. 预测速度为T4 机器上使用TensorRT FP16时的速度, 速度包含数据预处理、模型预测、后处理全流程
 
 ## 使用方法
 
@@ -38,7 +38,8 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
 
 ```
 **注意:**
- - `--do_entrance_counting`表示是否统计出入口流量，不设置即默认为False，`--draw_center_traj`表示是否绘制跟踪轨迹，不设置即默认为False。注意绘制跟踪轨迹的测试视频最好是静止摄像头拍摄的。
+ - `--do_entrance_counting`表示是否统计出入口流量，不设置即默认为False
+ - `--draw_center_traj`表示是否绘制跟踪轨迹，不设置即默认为False。注意绘制跟踪轨迹的测试视频最好是静止摄像头拍摄的。
 
 测试效果如下：
 
