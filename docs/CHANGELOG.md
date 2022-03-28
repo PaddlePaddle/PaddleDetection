@@ -19,7 +19,7 @@
 - 行人分析Pipeline：
   - 发布PP-Human行人分析Pipeline，覆盖行人检测、属性识别、行人跟踪、跨镜跟踪、人流量统计、动作识别多种功能，打通TensorRT部署
   - 属性识别支持StrongBaseline模型
-  - ReiD支持Centroid模型
+  - ReID支持Centroid模型
   - 动作识别支持ST-GCN摔倒检测
 
 - 框架功能优化：
