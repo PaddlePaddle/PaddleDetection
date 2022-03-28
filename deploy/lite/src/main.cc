@@ -43,10 +43,8 @@ void PrintBenchmarkLog(std::vector<double> det_time, int img_num) {
             << std::endl;
   RT_Config["model_dir_det"].as<std::string>().erase(
       RT_Config["model_dir_det"].as<std::string>().find_last_not_of("/") + 1);
-  std::cout
-      << "detection model_name: "
-      << RT_Config["model_dir_det"].as<std::string>()
-      << std::endl;
+  std::cout << "detection model_name: "
+            << RT_Config["model_dir_det"].as<std::string>() << std::endl;
   std::cout << "----------------------- Perf info ------------------------"
             << std::endl;
   std::cout << "Total number of predicted data: " << img_num
@@ -59,7 +57,7 @@ void PrintBenchmarkLog(std::vector<double> det_time, int img_num) {
             << ", postprocess_time(ms): " << det_time[2] / img_num << std::endl;
 }
 
-void PrintKptsBenchmarkLog(std::vector<double> det_time, int img_num){
+void PrintKptsBenchmarkLog(std::vector<double> det_time, int img_num) {
   std::cout << "----------------------- Data info -----------------------"
             << std::endl;
   std::cout << "batch_size_keypoint: "
@@ -69,16 +67,16 @@ void PrintKptsBenchmarkLog(std::vector<double> det_time, int img_num){
   RT_Config["model_dir_keypoint"].as<std::string>().erase(
       RT_Config["model_dir_keypoint"].as<std::string>().find_last_not_of("/") +
       1);
-  std::cout
-      << "keypoint model_name: "
-      << RT_Config["model_dir_keypoint"].as<std::string>() << std::endl;
+  std::cout << "keypoint model_name: "
+            << RT_Config["model_dir_keypoint"].as<std::string>() << std::endl;
   std::cout << "----------------------- Perf info ------------------------"
             << std::endl;
   std::cout << "Total number of predicted data: " << img_num
             << " and total time spent(ms): "
-            << std::accumulate(det_time.begin(), det_time.end(), 0.) << std::endl;
+            << std::accumulate(det_time.begin(), det_time.end(), 0.)
+            << std::endl;
   img_num = std::max(1, img_num);
-  std::cout << "Average time cost per person:" << std::endl 
+  std::cout << "Average time cost per person:" << std::endl
             << "preproce_time(ms): " << det_time[0] / img_num
             << ", inference_time(ms): " << det_time[1] / img_num
             << ", postprocess_time(ms): " << det_time[2] / img_num << std::endl;
@@ -136,7 +134,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
                   PaddleDetection::KeyPointDetector* keypoint,
                   const std::string& output_dir = "output") {
   std::vector<double> det_t = {0, 0, 0};
-  int steps = ceil(float(all_img_paths.size()) / batch_size_det);
+  int steps = ceil(static_cast<float>(all_img_paths.size()) / batch_size_det);
   int kpts_imgs = 0;
   std::vector<double> keypoint_t = {0, 0, 0};
   double midtimecost = 0;
@@ -243,7 +241,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
 
           std::chrono::duration<float> midtimediff =
               keypoint_crop_time - keypoint_start_time;
-          midtimecost += double(midtimediff.count() * 1000);
+          midtimecost += static_cast<double>(midtimediff.count() * 1000);
 
           if (imgs_kpts.size() == RT_Config["batch_size_keypoint"].as<int>() ||
               ((i == imsize - 1) && !imgs_kpts.empty())) {
@@ -275,8 +273,8 @@ void PredictImage(const std::vector<std::string> all_img_paths,
         std::string kpts_savepath =
             output_path + "keypoint_" +
             image_file_path.substr(image_file_path.find_last_of('/') + 1);
-        cv::Mat kpts_vis_img =
-            VisualizeKptsResult(im, result_kpts, colormap_kpts, keypoint->get_threshold());
+        cv::Mat kpts_vis_img = VisualizeKptsResult(
+            im, result_kpts, colormap_kpts, keypoint->get_threshold());
         cv::imwrite(kpts_savepath, kpts_vis_img, compression_params);
         printf("Visualized output saved as %s\n", kpts_savepath.c_str());
       } else {
@@ -298,23 +296,22 @@ void PredictImage(const std::vector<std::string> all_img_paths,
   PrintBenchmarkLog(det_t, all_img_paths.size());
   if (keypoint) {
     PrintKptsBenchmarkLog(keypoint_t, kpts_imgs);
-    PrintTotalIimeLog((det_t[0] + det_t[1] + det_t[2]) / all_img_paths.size(),
-                    (keypoint_t[0] + keypoint_t[1] + keypoint_t[2]) / all_img_paths.size(),
-                    midtimecost / all_img_paths.size());
+    PrintTotalIimeLog(
+        (det_t[0] + det_t[1] + det_t[2]) / all_img_paths.size(),
+        (keypoint_t[0] + keypoint_t[1] + keypoint_t[2]) / all_img_paths.size(),
+        midtimecost / all_img_paths.size());
   }
-
 }
 
 int main(int argc, char** argv) {
-  std::cout << "Usage: " << argv[0]
-            << " [config_path](option) [image_dir](option)\n";
+  std::cout << "Usage: " << argv[0] << " [config_path] [image_dir](option)\n";
   if (argc < 2) {
     std::cout << "Usage: ./main det_runtime_config.json" << std::endl;
     return -1;
   }
   std::string config_path = argv[1];
   std::string img_path = "";
-    
+
   if (argc >= 3) {
     img_path = argv[2];
   }
