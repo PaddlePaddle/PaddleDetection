@@ -93,7 +93,7 @@ python tools/export_model.py configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weig
 当你使用PaddleInference的TensorRT时，需要指定`-o trt=True`进行导出
 
 ```bash
-python tools/export_model.py configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams -o trt=True
+python tools/export_model.py configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams trt=True
 ```
 
 `deploy/python/infer.py`使用上述导出后的PaddleInference模型用于推理和benchnark.

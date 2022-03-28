@@ -92,7 +92,7 @@ python tools/export_model.py configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weig
 Exporting PP-YOLOE for Paddle Inference **with TensorRT** for better performance, use following command with extra `-o trt=True` setting.
 
 ```bash
-python tools/export_model.py configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams -o trt=True
+python tools/export_model.py configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams trt=True
 ```
 
 `deploy/python/infer.py` is used to load exported paddle inference model above for inference and benchmark through PaddleInference.
