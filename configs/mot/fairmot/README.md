@@ -61,9 +61,9 @@ PP-tracking provides an AI studio public project tutorial. Please refer to this 
 | HarDNet-85     | 1088x608 |  74.7  |  70.7  |  3210  |  29790  | 109914 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_enhance_hardnet85_30e_1088x608.pdparams) | [config](./fairmot_enhance_hardnet85_30e_1088x608.yml) |
 
 **Notes:**
- - FairMOT enhance used 8 GPUs for training, and the crowdhuman dataset is added to the train-set during training. 
- - For FairMOT enhance DLA-34 the batch size is 16 on each GPU，and trained for 60 epoches. 
- - For FairMOT enhance HarDNet-85 the batch size is 10 on each GPU，and trained for 30 epoches. 
+ - FairMOT enhance used 8 GPUs for training, and the crowdhuman dataset is added to the train-set during training.
+ - For FairMOT enhance DLA-34 the batch size is 16 on each GPU，and trained for 60 epoches.
+ - For FairMOT enhance HarDNet-85 the batch size is 10 on each GPU，and trained for 30 epoches.
 
 ### FairMOT light model
 ### Results on MOT-16 Test Set
@@ -99,6 +99,27 @@ PP-tracking provides an AI studio public project tutorial. Please refer to this 
   conf_thres: 0.4
   low_conf_thres: 0.2
  ```
+
+### Fairmot transfer learning model
+
+### Results on GMOT-40 airplane subset
+| backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| DLA-34         | 1088x608 |  96.6  |  94.7  |   19   |  300   | 466    |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_airplane.pdparams) | [config](./fairmot_dla34_30e_1088x608_airplane.yml) |
+
+**Note:**
+ - The dataset of this model is a subset of airport category extracted from GMOT-40 dataset. The download link provided by the PaddleDetection team is```wget https://bj.bcebos.com/v1/paddledet/data/mot/airplane.zip```, unzip and store it in the ```dataset/mot```, and then copy the ```airplane.train``` to ```dataset/mot/image_lists```.
+ - FairMOT model here uses the pedestrian FairMOT trained model for pre- training weights. The train-set used is the complete set of airplane, with a total of 4 video sequences, and it also used for evaluation.
+- When applied to the tracking other objects, you should modify ```min_box_area``` and ```vertical_ratio``` of the tracker in the corresponding config file,  like this：
+ ```
+JDETracker:
+  conf_thres: 0.4
+  tracked_thresh: 0.4
+  metric_type: cosine
+  min_box_area: 0 # 200 for pedestrian
+  vertical_ratio: 0 # 1.6 for pedestrian
+ ```
+
 
 ## Getting Start
 
