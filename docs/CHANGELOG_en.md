@@ -4,6 +4,34 @@ English | [简体中文](./CHANGELOG.md)
 
 ## Last Version Information
 
+### 2.4(03.28/2022)
+
+- PP-YOLOE：
+  - Release PP-YOLOE object detection models, achieve mAP as 51.4% on COCO test dataset and 78.1 FPS on Nvidia V100, reach SOTA performance for object detection on GPU``
+  - Release series models: s/m/l/x, and support deployment base on TensorRT & ONNX
+  - Spport AMP training and training speed is 33% faster than PP-YOLOv2
+
+- PP-PicoDet:
+  - Release enhanced models of PP-PicoDet, mAP promoted ~2% on COCO and inference speed accelerated 63% on CPU
+  - Release PP-PicoDet-XS model with 0.7M parameters
+  - Post-processing integrated into the network to optimize deployment pipeline 
+
+- PP-Human：
+  - Release PP-Human human analysis pipeline，including pedestrian detection, attribute recognition, human tracking, multi-camera tracking, human statistics, action recognition. Supporting deployment with TensorRT
+  - Release StrongBaseline model for attribute recognition
+  - Release Centroid model for ReID
+  - Release ST-GCN model for falldown action recognition
+
+- Function Optimize：
+  - Support AMP training, enable with `--amp`
+  - Optimize 20% training speed when training with EMA, improve saving method of EMA weights
+  - Support saving inference results in COCO format
+
+- Deployment Optimize：
+  - Support export ONNX model by Paddle2ONNX for all RCNN models
+  - Supoort export model with fused decode OP for SSD models to enhance inference speed in edge side
+  - Support export NMS to TensorRT model, optmize inference speed on TensorRT
+
 ### 2.3(11.03/2021)
 
 - Feature models:

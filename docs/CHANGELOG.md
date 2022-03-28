@@ -4,6 +4,34 @@
 
 ## 最新版本信息
 
+### 2.4(03.28/2022)
+
+- PP-YOLOE：
+  - 发布PP-YOLOE特色模型，COCO数据集精度51.4%，V100预测速度78.1 FPS，精度速度服务器端SOTA
+  - 发布s/m/l/x系列模型，打通TensorRT、ONNX部署能力
+  - 支持混合精度训练，训练较PP-YOLOv2加速33%
+
+- PP-PicoDet:
+  - 发布PP-PicoDet优化模型，精度提升2%左右，CPU预测速度提升63%。
+  - 新增参数量0.7M的PicoDet-XS模型
+  - 后处理集成到网络中，优化端到端部署成本
+
+- 行人分析Pipeline：
+  - 发布PP-Human行人分析Pipeline，覆盖行人检测、属性识别、行人跟踪、跨镜跟踪、人流量统计、动作识别多种功能，打通TensorRT部署
+  - 属性识别支持StrongBaseline模型
+  - ReiD支持Centroid模型
+  - 动作识别支持ST-GCN摔倒检测
+
+- 框架功能优化：
+  - 支持混合精度训练，通过`–amp`开启
+  - EMA训练速度优化20%，优化EMA训练模型保存方式
+  - 支持infer预测结果保存为COCO格式
+
+- 部署优化：
+  - RCNN全系列模型支持Paddle2ONNX导出ONNX模型
+  - SSD模型支持导出时融合解码OP，优化边缘端部署速度
+  - 支持NMS导出TensorRT，TensorRT部署端到端速度提升
+
 ### 2.3(11.03/2021)
 
 - 特色模型:
