@@ -75,6 +75,12 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/ppyoloe/ppyoloe_crn_l_30
 
 ### 4. Deployment
 
+- PaddleInference [Python](../../deploy/python) & [C++](../../deploy/cpp)
+- [Paddle-TensorRT](../../deploy/TENSOR_RT.md)
+- [Paddle2ONNX](https://github.com/PaddlePaddle/Paddle2ONNX)
+- [PaddleServing](https://github.com/PaddlePaddle/Serving)
+<!-- - [Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite) -->
+
 For deployment on GPU or benchmarked, model should be first exported to inference model using `tools/export_model.py`.
 
 Exporting PP-YOLOE for Paddle Inference **without TensorRT**, use following command.
@@ -115,6 +121,20 @@ pip install paddle2onnx
 paddle2onnx --model_dir output_inference/ppyoloe_crn_l_300e_coco --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 11 --save_file ppyoloe_crn_l_300e_coco.onnx
 
 ```
+
+### 5. Other Datasets
+
+Model | AP | AP<sub>50</sub>
+---|---|---
+[YOLOX](https://github.com/Megvii-BaseDetection/YOLOX) | 22.6 | 37.5
+[YOLOv5](https://github.com/ultralytics/yolov5) | 26.0 | 42.7
+**PP-YOLOE** | **30.5** | **46.4**
+
+**Note**
+- Here, we use [VisDrone](https://github.com/VisDrone/VisDrone-Dataset) dataset, and to detect 9 objects including `person, bicycles, car, van, truck, tricyle, awning-tricyle, bus, motor`.
+- Above models trained using official default config, and load pretrained parameters on COCO dataset.
+- *Due to the limited time, more verification results will be supplemented in the future. You are also welcome to contribute to PP-YOLOE*
+
 
 ## Appendix
 
