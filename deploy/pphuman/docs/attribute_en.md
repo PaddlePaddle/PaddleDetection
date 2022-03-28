@@ -9,8 +9,8 @@ Pedestrian attribute recognition has been widely used in the intelligent communi
 | Pedestrian Detection/ Tracking    |  PP-YOLOE | mAP: 56.3 <br> MOTA: 72.0 | Detection: 28ms <br> Tracking：33.1ms | [Download Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
 | Pedestrian Attribute Analysis   |  StrongBaseline  |  ma: 94.86  | Per Person 2ms | [Download Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.tar) |
 
-1. The precision of detection and tracking models is obtained by training and testing on the integration of MOT17, CrowdHuman, HIEVE, and some business data.
-2. The precision of pedestiran attribute analysis is obtained by training and testing on the integration of PA100k, RAPv2, PETA, and some business data.
+1. The precision of detection/ tracking models is obtained by training and testing on the dataset consist of MOT17, CrowdHuman, HIEVE, and some business data.
+2. The precision of pedestiran attribute analysis is obtained by training and testing on the dataset consist of PA100k, RAPv2, PETA, and some business data.
 3. The inference speed is T4, the speed of using TensorRT FP16.
 
 ## Instruction
