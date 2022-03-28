@@ -20,8 +20,7 @@ import collections
 
 __all__ = [
     'MOTTimer', 'Detection', 'write_mot_results', 'load_det_results',
-    'preprocess_reid', 'get_crops', 'clip_box', 'scale_coords', 'flow_statistic',
-    'plot_tracking'
+    'preprocess_reid', 'get_crops', 'clip_box', 'scale_coords', 'flow_statistic'
 ]
 
 
@@ -182,7 +181,7 @@ def clip_box(xyxy, ori_image_shape):
 def get_crops(xyxy, ori_img, w, h):
     crops = []
     xyxy = xyxy.astype(np.int64)
-    ori_img = ori_img.transpose(1, 0, 2) # [h,w,3]->[w,h,3]
+    ori_img = ori_img.transpose(1, 0, 2)  # [h,w,3]->[w,h,3]
     for i, bbox in enumerate(xyxy):
         crop = ori_img[bbox[0]:bbox[2], bbox[1]:bbox[3], :]
         crops.append(crop)
@@ -197,10 +196,7 @@ def preprocess_reid(imgs,
                     std=[0.229, 0.224, 0.225]):
     im_batch = []
     for img in imgs:
-        try:
-            img = cv2.resize(img, (w, h))
-        except:
-            embed()
+        img = cv2.resize(img, (w, h))
         img = img[:, :, ::-1].astype('float32').transpose((2, 0, 1)) / 255
         img_mean = np.array(mean).reshape((3, 1, 1))
         img_std = np.array(std).reshape((3, 1, 1))
@@ -288,77 +284,3 @@ def flow_statistic(result,
         "prev_center": prev_center,
         "records": records
     }
-
-
-def get_color(idx):
-    idx = idx * 3
-    color = ((37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255)
-    return color
-
-
-def plot_tracking(image,
-                  tlwhs,
-                  obj_ids,
-                  scores=None,
-                  frame_id=0,
-                  fps=0.,
-                  ids2names=[],
-                  do_entrance_counting=False,
-                  entrance=None):
-    im = np.ascontiguousarray(np.copy(image))
-    im_h, im_w = im.shape[:2]
-
-    text_scale = max(1, image.shape[1] / 1600.)
-    text_thickness = 2
-    line_thickness = max(1, int(image.shape[1] / 500.))
-
-    if fps > 0:
-        _line = 'frame: %d fps: %.2f num: %d' % (frame_id, fps, len(tlwhs))
-    else:
-        _line = 'frame: %d num: %d' % (frame_id, len(tlwhs))
-    cv2.putText(
-        im,
-        _line,
-        (0, int(15 * text_scale)),
-        cv2.FONT_HERSHEY_PLAIN,
-        text_scale, (0, 0, 255),
-        thickness=2)
-
-    for i, tlwh in enumerate(tlwhs):
-        x1, y1, w, h = tlwh
-        intbox = tuple(map(int, (x1, y1, x1 + w, y1 + h)))
-        obj_id = int(obj_ids[i])
-        id_text = '{}'.format(int(obj_id))
-        if ids2names != []:
-            assert len(
-                ids2names) == 1, "plot_tracking only supports single classes."
-            id_text = '{}_'.format(ids2names[0]) + id_text
-        _line_thickness = 1 if obj_id <= 0 else line_thickness
-        color = get_color(abs(obj_id))
-        cv2.rectangle(
-            im, intbox[0:2], intbox[2:4], color=color, thickness=line_thickness)
-        cv2.putText(
-            im,
-            id_text, (intbox[0], intbox[1] - 10),
-            cv2.FONT_HERSHEY_PLAIN,
-            text_scale, (0, 0, 255),
-            thickness=text_thickness)
-
-        if scores is not None:
-            text = '{:.2f}'.format(float(scores[i]))
-            cv2.putText(
-                im,
-                text, (intbox[0], intbox[1] + 10),
-                cv2.FONT_HERSHEY_PLAIN,
-                text_scale, (0, 255, 255),
-                thickness=text_thickness)
-
-    if do_entrance_counting:
-        entrance_line = tuple(map(int, entrance))
-        cv2.rectangle(
-            im,
-            entrance_line[0:2],
-            entrance_line[2:4],
-            color=(0, 255, 255),
-            thickness=line_thickness)
-    return im

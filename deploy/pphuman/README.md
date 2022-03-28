@@ -5,10 +5,11 @@
 PP-Human是基于飞桨深度学习框架的业界首个开源的实时行人分析工具，具有功能丰富，应用广泛和部署高效三大优势。PP-Human
 支持图片/单镜头视频/多镜头视频多种输入方式，功能覆盖多目标跟踪、属性识别和行为分析。能够广泛应用于智慧交通、智慧社区、工业巡检等领域。支持服务器端部署及TensorRT加速，T4服务器上可达到实时。
 
+PP-Human赋能社区智能精细化管理, AIStudio快速上手教程[链接](https://aistudio.baidu.com/aistudio/projectdetail/3679564)
 
 ## 一、环境准备
 
-环境要求： PaddleDetection版本 >= release/2.4
+环境要求： PaddleDetection版本 >= release/2.4 或 develop版本
 
 PaddlePaddle和PaddleDetection安装
 
@@ -36,22 +37,24 @@ pip install -r requirements.txt
 
 PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模型，以实现不同使用场景，用户可以直接下载使用
 
-| 任务            | 适用场景 | 精度 | 预测速度（FPS） | 预测部署模型 |
+| 任务            | 适用场景 | 精度 | 预测速度（ms） | 预测部署模型 |
 | :---------:     |:---------:     |:---------------     | :-------:  | :------:      |
-| 目标检测        | 图片/视频输入 | -  | -           | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 属性识别    | 图片/视频输入 属性识别  | - |  -       | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.tar) |
-| 关键点检测    | 视频输入 行为识别 | - | -        | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
-| 行为识别   |  视频输入 行为识别  | - |  -          | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
-| ReID         | 视频输入 跨镜跟踪   | - | -         | [下载链接]() |
+| 目标检测        | 图片输入 | mAP: 56.3  | 28.0ms          | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 目标跟踪        | 视频输入 | MOTA: 72.0  | 33.1ms           | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 属性识别    | 图片/视频输入 属性识别  | mA: 94.86 |  单人2ms     | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
+| 关键点检测    | 视频输入 行为识别 | AP: 87.1 | 单人2.9ms        | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
+| 行为识别   |  视频输入 行为识别  | 准确率: 96.43 |  单人2.7ms      | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
+| ReID         | 视频输入 跨镜跟踪   | mAP: 99.7 | -        | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
 
 下载模型后，解压至`./output_inference`文件夹
 
 **注意：**
 
 - 模型精度为融合数据集结果，数据集包含开源数据集和企业数据集
-- 预测速度为T4下，开启TensorRT FP16的效果
+- ReID模型精度为Market1501数据集测试结果
+- 预测速度为T4下，开启TensorRT FP16的效果, 模型预测速度包含数据预处理、模型预测、后处理全流程
 
-### 2. 配置文件准备
+### 2. 配置文件说明
 
 PP-Human相关配置位于```deploy/pphuman/config/infer_cfg.yml```中，存放模型路径，完成不同功能需要设置不同的任务类型
 
@@ -80,6 +83,10 @@ ATTR:
   batch_size: 8
 ```
 
+**注意：**
+
+- 如果用户仅需要实现不同任务，可以在命令行中加入 `--enable_attr=True` 或 `--enable_action=True`即可，无需修改配置文件
+- 如果用户仅需要修改模型文件路径，可以在命令行中加入 `--model_dir det=ppyoloe/` 即可，无需修改配置文件，详细说明参考下方参数说明文档
 
 
 ### 3. 预测部署
@@ -104,20 +111,21 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml -
 | 参数 | 是否必须|含义 |
 |-------|-------|----------|
 | --config | Yes | 配置文件路径 |
-| --model_dir | Option | PP-Human中各任务模型路径，优先级高于配置文件 |
+| --model_dir | Option | PP-Human中各任务模型路径，优先级高于配置文件, 例如`--model_dir det=better_det/ attr=better_attr/`|
 | --image_file | Option | 需要预测的图片 |
 | --image_dir  | Option |  要预测的图片文件夹路径   |
 | --video_file | Option | 需要预测的视频 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4|
-| --enable_attr| Option | 是否进行属性识别 |
-| --enable_action| Option | 是否进行行为识别 |
+| --enable_attr| Option | 是否进行属性识别, 默认为False，即不开启属性识别 |
+| --enable_action| Option | 是否进行行为识别，默认为False，即不开启行为识别 |
 | --device | Option | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
 | --output_dir | Option|可视化结果保存的根目录，默认为output/|
 | --run_mode | Option |使用GPU时，默认为paddle, 可选（paddle/trt_fp32/trt_fp16/trt_int8）|
 | --enable_mkldnn | Option | CPU预测中是否开启MKLDNN加速，默认为False |
 | --cpu_threads | Option| 设置cpu线程数，默认为1 |
 | --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
-
+| --do_entrance_counting | Option | 是否统计出入口流量，默认为False |
+| --draw_center_traj | Option | 是否绘制跟踪轨迹，默认为False |
 
 ## 三、方案介绍
 
@@ -130,13 +138,13 @@ PP-Human整体方案如下图所示
 
 ### 1. 目标检测
 - 采用PP-YOLOE L 作为目标检测模型
-- 详细文档参考[PP-YOLOE](../../configs/ppyoloe/)
+- 详细文档参考[PP-YOLOE](../../configs/ppyoloe/)和[检测跟踪文档](docs/mot.md)
 
 ### 2. 多目标跟踪
 - 采用SDE方案完成多目标跟踪
 - 检测模型使用PP-YOLOE L
 - 跟踪模块采用Bytetrack方案
-- 详细文档参考[Bytetrack](configs/mot/bytetrack)
+- 详细文档参考[Bytetrack](../../configs/mot/bytetrack)和[检测跟踪文档](docs/mot.md)
 
 ### 3. 跨镜跟踪
 - 使用PP-YOLOE + Bytetrack得到单镜头多目标跟踪轨迹
