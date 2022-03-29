@@ -82,3 +82,6 @@ ppdet/version.py
 
 # NPU meta folder
 kernel_meta/
+configs/.DS_Store
+.DS_Store
+deploy/.DS_Store
