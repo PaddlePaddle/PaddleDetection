@@ -75,7 +75,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/ppyoloe/ppyoloe_crn_l_30
 
 ### 4. Deployment
 
-- PaddleInference [Python](../../deploy/python) & [C++](../../deploy/cpp)
+- Paddle Inference [Python](../../deploy/python) & [C++](../../deploy/cpp)
 - [Paddle-TensorRT](../../deploy/TENSOR_RT.md)
 - [Paddle2ONNX](https://github.com/PaddlePaddle/Paddle2ONNX)
 - [PaddleServing](https://github.com/PaddlePaddle/Serving)
@@ -86,16 +86,16 @@ For deployment on GPU or benchmarked, model should be first exported to inferenc
 Exporting PP-YOLOE for Paddle Inference **without TensorRT**, use following command.
 
 ```bash
-python tools/export_model.py configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 ```
 
 Exporting PP-YOLOE for Paddle Inference **with TensorRT** for better performance, use following command with extra `-o trt=True` setting.
 
 ```bash
-python tools/export_model.py configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams trt=True
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams trt=True
 ```
 
-`deploy/python/infer.py` is used to load exported paddle inference model above for inference and benchmark through PaddleInference.
+`deploy/python/infer.py` is used to load exported paddle inference model above for inference and benchmark through Paddle Inference.
 
 ```bash
 # inference single image
