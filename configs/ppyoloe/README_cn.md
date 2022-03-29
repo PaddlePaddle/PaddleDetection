@@ -76,7 +76,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/ppyoloe/ppyoloe_crn_l_30
 
 ### 4. 部署
 
-- PaddleInference [Python](../../deploy/python) & [C++](../../deploy/cpp)
+- Paddle Inference [Python](../../deploy/python) & [C++](../../deploy/cpp)
 - [Paddle-TensorRT](../../deploy/TENSOR_RT.md)
 - [Paddle2ONNX](https://github.com/PaddlePaddle/Paddle2ONNX)
 - [PaddleServing](https://github.com/PaddlePaddle/Serving)
@@ -84,19 +84,19 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/ppyoloe/ppyoloe_crn_l_30
 
 PP-YOLOE在GPU上部署或者推理benchmark需要通过`tools/export_model.py`导出模型。
 
-当你使用PaddleInferenced但不使用TensorRT时，运行以下的命令进行导出
+当你使用Paddle Inference但不使用TensorRT时，运行以下的命令进行导出
 
 ```bash
-python tools/export_model.py configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 ```
 
-当你使用PaddleInference的TensorRT时，需要指定`-o trt=True`进行导出
+当你使用Paddle Inference的TensorRT时，需要指定`-o trt=True`进行导出
 
 ```bash
-python tools/export_model.py configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams trt=True
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams trt=True
 ```
 
-`deploy/python/infer.py`使用上述导出后的PaddleInference模型用于推理和benchnark.
+`deploy/python/infer.py`使用上述导出后的Paddle Inference模型用于推理和benchnark.
 
 ```bash
 # 推理单张图片
