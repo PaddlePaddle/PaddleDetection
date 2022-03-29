@@ -90,19 +90,28 @@ ATTR:
 ### 3. Inference and Deployment
 
 ```
-# Specify the config file path and test images
+# Pedestrian detection. Specify the config file path and test images
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu
 
-# Specify the config file path and test videos，and finish the attribute recognition
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True
+# Pedestrian tracking. Specify the config file path and test videos
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu
 
-# Specify the config file path and test videos，and finish the Action Recognition
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True
-
-# Specify the config file path, the model path and test videos，and finish the multi-object tracking
+# Pedestrian tracking. Specify the config file path, the model path and test videos
 # The model path specified on the command line prioritizes over the config file
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/
+
+# Attribute recognition. Specify the config file path and test videos
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True
+
+# Action Recognition. Specify the config file path and test videos
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True
+
+# Multi-Camera pedestrian tracking. Specify the config file path and test videos
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=test_video_dir/ --device=gpu
+
 ```
+
+Other usage please refer to [sub-task docs](./docs)
 
 ### 3.1 Description of Parameters
 
@@ -143,13 +152,13 @@ The overall solution of PP-Human is as follows:
 - Use the Bytetrack solution to track modules
 - For details, refer to [Bytetrack](configs/mot/bytetrack) and [Detection and Tracking](docs/mot_en.md)
 
-### 3. Cross-Camera Tracking
+### 3. Multi-Camera Tracking
 - Use PP-YOLOE + Bytetrack to obtain the tracks of single-camera multi-object tracking
 - Use ReID（centroid network）to extract features of the detection result of each frame
 - Match the features of multi-camera tracks to get the cross-camera tracking result
 - For details, please refer to [Multi-Camera Tracking](docs/mtmct_en.md)
 
-### 4. Multi-Target Multi-Camera Tracking
+### 4. Attribute Recognition
 - Use PP-YOLOE + Bytetrack to track humans
 - Use StrongBaseline（a multi-class model）to conduct attribute recognition, and the main attributes include age, gender, hats, eyes, clothing, and backpacks.
 - For details, please refer to [Attribute Recognition](docs/attribute_en.md)
