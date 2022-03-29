@@ -398,7 +398,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
       int out_num = std::accumulate(
           output_shape.begin(), output_shape.end(), 1, std::multiplies<int>());
       output_shape_list.push_back(output_shape);
-      if (config_.mask_ && j == 2) {
+      if (config_.mask_ && (j == 2)) {
         out_mask_data_.resize(out_num);
         output_tensor->CopyToCpu(out_mask_data_.data());
       } else if (output_tensor->type() == paddle_infer::DataType::INT32) {
