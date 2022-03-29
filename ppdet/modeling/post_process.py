@@ -247,7 +247,7 @@ class MaskPostProcess(object):
                 [num_mask, max_h, max_w], dtype='int32') - 1
 
             id_start = 0
-            for i in range(bbox_num.shape[0]):
+            for i in range(paddle.shape(bbox_num)[0]):
                 bboxes_i = bboxes[id_start:id_start + bbox_num[i], :]
                 mask_out_i = mask_out[id_start:id_start + bbox_num[i], :, :]
                 im_h = origin_shape[i, 0]

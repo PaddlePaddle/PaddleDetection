@@ -60,12 +60,11 @@ void Permute::Run(cv::Mat* im, ImageBlob* data) {
 
 void Resize::Run(cv::Mat* im, ImageBlob* data) {
   auto resize_scale = GenerateScale(*im);
-  data->im_shape_ = {static_cast<float>(im->cols * resize_scale.first),
-                     static_cast<float>(im->rows * resize_scale.second)};
-  data->in_net_shape_ = {static_cast<float>(im->cols * resize_scale.first),
-                         static_cast<float>(im->rows * resize_scale.second)};
   cv::resize(
       *im, *im, cv::Size(), resize_scale.first, resize_scale.second, interp_);
+
+  data->in_net_shape_ = {static_cast<float>(im->rows),
+                         static_cast<float>(im->cols)};
   data->im_shape_ = {
       static_cast<float>(im->rows), static_cast<float>(im->cols),
   };
