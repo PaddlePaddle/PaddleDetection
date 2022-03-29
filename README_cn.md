@@ -2,7 +2,7 @@
 
 <div align="center">
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/48054808/157664876-5162fa5e-bde1-40e4-9f4a-104438d11e7b.png" align="middle" width = "1000" />
+  <img src="https://user-images.githubusercontent.com/48054808/157664876-5162fa5e-bde1-40e4-9f4a-104438d11e7b.png" align="middle" width = "800" />
 </p>
 
 **飞桨目标检测开发套件，端到端地完成从训练到部署的全流程目标检测应用。**
@@ -19,30 +19,20 @@
 
 - 🔥 **2022.3.24：PaddleDetection发布[release/2.4版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)**
   
-  - 发布高精度云边一体SOTA目标检测模型[PP-YOLOE](config/ppyoloe)，全系列多尺度模型，满足不同硬件算力需求，可适配服务器、边缘端GPU及其他服务器端AI加速卡。
-  - 发布边缘端和CPU端超轻量SOTA目标检测模型[PP-PicoDet增强版](configs/picodet)，提供模型稀疏化和量化功能，便于模型加速，各类硬件无需单独开发后处理模块，降低部署门槛。
+  - 发布高精度云边一体SOTA目标检测模型[PP-YOLOE](config/ppyoloe)，COCO数据集精度51.4%，V100预测速度78.1 FPS，支持混合精度训练，训练较PP-YOLOv2加速33%，全系列多尺度模型，满足不同硬件算力需求，可适配服务器、边缘端GPU及其他服务器端AI加速卡。
+  - 发布边缘端和CPU端超轻量SOTA目标检测模型[PP-PicoDet增强版](configs/picodet)，精度提升2%左右，CPU预测速度提升63%，新增参数量0.7M的PicoDet-XS模型，提供模型稀疏化和量化功能，便于模型加速，各类硬件无需单独开发后处理模块，降低部署门槛。
   - 发布实时行人分析工具[PP-Human](deploy/pphuman)，支持行人跟踪、人流量统计、人体属性识别与摔倒检测四大能力，基于真实场景数据特殊优化，精准识别各类摔倒姿势，适应不同环境背景、光线及摄像角度。
-
 - 2021.11.03: PaddleDetection发布[release/2.3版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3)
-  
   - 发布轻量级检测特色模型⚡[PP-PicoDet](configs/picodet)，0.99m的参数量可实现精度30+mAP、速度150FPS。
-  
   - 发布轻量级关键点特色模型⚡[PP-TinyPose](configs/keypoint/tiny_pose)，单人场景FP16推理可达122FPS、51.8AP，具有精度高速度快、检测人数无限制、微小目标效果好的优势。
-  
   - 发布实时跟踪系统[PP-Tracking](deploy/pptracking)，覆盖单、多镜头下行人、车辆、多类别跟踪，对小目标、密集型特殊优化，提供人、车流量技术解决方案。
-  
   - 新增[Swin Transformer](configs/faster_rcnn)，[TOOD](configs/tood)，[GFL](configs/gfl)目标检测模型。
-  
   - 发布[Sniper](configs/sniper)小目标检测优化模型，发布针对EdgeBoard优化[PP-YOLO-EB](configs/ppyolo)模型。
-  
   - 新增轻量化关键点模型[Lite HRNet](configs/keypoint)关键点模型并支持Paddle Lite部署。
-
 - 2021.08.10: PaddleDetection发布[release/2.2版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2)
-  
   - 发布Transformer检测系列模型，包括[DETR](configs/detr), [Deformable DETR](configs/deformable_detr), [Sparse RCNN](configs/sparse_rcnn)。
   - 新增Dark HRNet关键点模型和MPII数据集[关键点模型](configs/keypoint)
   - 新增[人头](configs/mot/headtracking21)、[车辆](configs/mot/vehicle)跟踪垂类模型。
-
 - 2021.05.20: PaddleDetection发布[release/2.1版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1)
   - 新增[关键点检测](configs/keypoint)，模型包括HigherHRNet，HRNet。
   - 新增[多目标跟踪](configs/mot)能力，模型包括DeepSORT，JDE，FairMOT。
@@ -54,11 +44,15 @@
 
 #### 提供目标检测、实例分割、多目标跟踪、关键点检测等多种能力
 
-<div width="1000" align="center">
-  <img src="docs/images/ppdet.gif"/>
+<div  align="center">
+  <img src="docs/images/ppdet.gif" width="800"/>
 </div>
 
 #### 应用场景覆盖工业、智慧城市、安防、交通、零售、医疗等十余种行业
+
+<div  align="center">
+  <img src="https://user-images.githubusercontent.com/48054808/157826886-2e101a71-25a2-42f5-bf5e-30a97be28f46.gif" width="800"/>
+</div>
 
 ## 特性 <img src="https://user-images.githubusercontent.com/48054808/157799599-e6a66855-bac6-4e75-b9c0-96e13cb9612f.png" width="30"/>
 
