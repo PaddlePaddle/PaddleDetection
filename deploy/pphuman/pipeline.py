@@ -587,7 +587,7 @@ class PipePredictor(object):
                 if self.cfg['visual']:
                     self.action_visual_helper.update(action_res)
 
-            if self.with_mtmct:
+            if self.with_mtmct and frame_id % 10 == 0:
                 crop_input, img_qualities, rects = self.reid_predictor.crop_image_with_mot(
                     frame, mot_res)
                 if frame_id > self.warmup_frame:
@@ -603,6 +603,8 @@ class PipePredictor(object):
                     "rects": rects
                 }
                 self.pipeline_res.update(reid_res_dict, 'reid')
+            else:
+                self.pipeline_res.clear('reid')
 
             self.collector.append(frame_id, self.pipeline_res)
 
