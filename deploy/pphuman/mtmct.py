@@ -297,10 +297,9 @@ def distill_idfeat(mot_res):
         feature_new = feature_list
 
     #if available frames number is more than 200, take one frame data per 20 frames
-    if len(qualities_new) > 200:
-        skipf = 20
-    else:
-        skipf = max(10, len(qualities_new) // 10)
+    skipf = 1
+    if len(qualities_new) > 20:
+        skipf = 2
     quality_skip = np.array(qualities_new[::skipf])
     feature_skip = np.array(feature_new[::skipf])
 
