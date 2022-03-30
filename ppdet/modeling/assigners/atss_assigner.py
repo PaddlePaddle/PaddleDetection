@@ -199,7 +199,11 @@ class ATSSAssigner(nn.Layer):
             gt_bboxes.reshape([-1, 4]), assigned_gt_index.flatten(), axis=0)
         assigned_bboxes = assigned_bboxes.reshape([batch_size, num_anchors, 4])
 
-        assigned_scores = F.one_hot(assigned_labels, self.num_classes)
+        assigned_scores = F.one_hot(assigned_labels, self.num_classes + 1)
+        ind = list(range(self.num_classes + 1))
+        ind.remove(bg_index)
+        assigned_scores = paddle.index_select(
+            assigned_scores, paddle.to_tensor(ind), axis=-1)
         if pred_bboxes is not None:
             # assigned iou
             ious = batch_iou_similarity(gt_bboxes, pred_bboxes) * mask_positive
