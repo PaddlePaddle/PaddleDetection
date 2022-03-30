@@ -86,7 +86,7 @@ PP-tracking provides an AI studio public project tutorial. Please refer to this 
 ### Results on MOT-17 Half Set
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| DLA-34         | 1088x608 |  69.1  |  72.8  |  299  |  1957  | 14412 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bytetracker.pdparams) | [config](./fairmot_dla34_30e_1088x608.yml) |
+| DLA-34         | 1088x608 |  69.1  |  72.8  |  299  |  1957  | 14412 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](./fairmot_dla34_30e_1088x608.yml) |
 | DLA-34 + BYTETracker| 1088x608 |  70.3 |  73.2  |  234  |  2176  | 13598 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bytetracker.pdparams) | [config](./fairmot_dla34_30e_1088x608_bytetracker.yml) |
 
 **Notes:**
