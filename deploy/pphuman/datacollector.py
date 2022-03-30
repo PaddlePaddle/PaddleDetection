@@ -90,7 +90,7 @@ class DataCollector(object):
             if kpt_res:
                 self.collector[ids]["kpts"].append(
                     [kpt_res['keypoint'][0][idx], kpt_res['keypoint'][1][idx]])
-            if action_res:
+            if action_res and (idx + 1) in action_res:
                 self.collector[ids]["actions"].append(action_res[idx + 1])
             else:
                 # action model generate result per X frames, Not available every frames
