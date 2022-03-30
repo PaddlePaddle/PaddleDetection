@@ -17,6 +17,7 @@ EvalDataset:
 
 TestDataset:
   !ImageFolder
+    dataset_dir: dataset/mot/MOT17
     anno_path: annotations/val_half.json
 
 
