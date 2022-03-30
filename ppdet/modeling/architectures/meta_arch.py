@@ -22,22 +22,23 @@ class BaseArch(nn.Layer):
         self.fuse_norm = False
 
     def load_meanstd(self, cfg_transform):
-        self.scale = 1.
-        self.mean = paddle.to_tensor([0.485, 0.456, 0.406]).reshape(
-            (1, 3, 1, 1))
-        self.std = paddle.to_tensor([0.229, 0.224, 0.225]).reshape((1, 3, 1, 1))
+        scale = 1.
+        mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+        std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
         for item in cfg_transform:
             if 'NormalizeImage' in item:
-                self.mean = paddle.to_tensor(item['NormalizeImage'][
-                    'mean']).reshape((1, 3, 1, 1))
-                self.std = paddle.to_tensor(item['NormalizeImage'][
-                    'std']).reshape((1, 3, 1, 1))
+                mean = np.array(
+                    item['NormalizeImage']['mean'], dtype=np.float32)
+                std = np.array(item['NormalizeImage']['std'], dtype=np.float32)
                 if item['NormalizeImage'].get('is_scale', True):
-                    self.scale = 1. / 255.
+                    scale = 1. / 255.
                 break
         if self.data_format == 'NHWC':
-            self.mean = self.mean.reshape(1, 1, 1, 3)
-            self.std = self.std.reshape(1, 1, 1, 3)
+            self.scale = paddle.to_tensor(scale / std).reshape((1, 1, 1, 3))
+            self.bias = paddle.to_tensor(-mean / std).reshape((1, 1, 1, 3))
+        else:
+            self.scale = paddle.to_tensor(scale / std).reshape((1, 3, 1, 1))
+            self.bias = paddle.to_tensor(-mean / std).reshape((1, 3, 1, 1))
 
     def forward(self, inputs):
         if self.data_format == 'NHWC':
@@ -46,7 +47,7 @@ class BaseArch(nn.Layer):
 
         if self.fuse_norm:
             image = inputs['image']
-            self.inputs['image'] = (image * self.scale - self.mean) / self.std
+            self.inputs['image'] = image * self.scale + self.bias
             self.inputs['im_shape'] = inputs['im_shape']
             self.inputs['scale_factor'] = inputs['scale_factor']
         else:
@@ -66,8 +67,7 @@ class BaseArch(nn.Layer):
             outs = []
             for inp in inputs_list:
                 if self.fuse_norm:
-                    self.inputs['image'] = (
-                        inp['image'] * self.scale - self.mean) / self.std
+                    self.inputs['image'] = inp['image'] * self.scale + self.bias
                     self.inputs['im_shape'] = inp['im_shape']
                     self.inputs['scale_factor'] = inp['scale_factor']
                 else:
@@ -75,7 +75,7 @@ class BaseArch(nn.Layer):
                 outs.append(self.get_pred())
 
             # multi-scale test
-            if len(outs)>1:
+            if len(outs) > 1:
                 out = self.merge_multi_scale_predictions(outs)
             else:
                 out = outs[0]
@@ -92,7 +92,9 @@ class BaseArch(nn.Layer):
             keep_top_k = self.bbox_post_process.nms.keep_top_k
             nms_threshold = self.bbox_post_process.nms.nms_threshold
         else:
-            raise Exception("Multi scale test only supports CascadeRCNN, FasterRCNN and MaskRCNN for now")
+            raise Exception(
+                "Multi scale test only supports CascadeRCNN, FasterRCNN and MaskRCNN for now"
+            )
 
         final_boxes = []
         all_scale_outs = paddle.concat([o['bbox'] for o in outs]).numpy()
@@ -101,9 +103,11 @@ class BaseArch(nn.Layer):
             if np.count_nonzero(idxs) == 0:
                 continue
             r = nms(all_scale_outs[idxs, 1:], nms_threshold)
-            final_boxes.append(np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+            final_boxes.append(
+                np.concatenate([np.full((r.shape[0], 1), c), r], 1))
         out = np.concatenate(final_boxes)
-        out = np.concatenate(sorted(out, key=lambda e: e[1])[-keep_top_k:]).reshape((-1, 6))
+        out = np.concatenate(sorted(
+            out, key=lambda e: e[1])[-keep_top_k:]).reshape((-1, 6))
         out = {
             'bbox': paddle.to_tensor(out),
             'bbox_num': paddle.to_tensor(np.array([out.shape[0], ]))
