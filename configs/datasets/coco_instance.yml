@@ -17,3 +17,4 @@ EvalDataset:
 TestDataset:
   !ImageFolder
     anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
