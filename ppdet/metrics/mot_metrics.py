@@ -37,8 +37,11 @@ __all__ = ['MOTEvaluator', 'MOTMetric', 'JDEDetMetric', 'KITTIMOTMetric']
 def read_mot_results(filename, is_gt=False, is_ignore=False):
     valid_label = [1]
     ignore_labels = [2, 7, 8, 12]  # only in motchallenge datasets like 'MOT16'
-    logger.info("In MOT16/17 dataset the valid_label of ground truth is '{}', "
-        "in other dataset it should be '0' for single classs MOT.".format(valid_label[0]))
+    if is_gt:
+        logger.info(
+            "In MOT16/17 dataset the valid_label of ground truth is '{}', "
+            "in other dataset it should be '0' for single classs MOT.".format(
+                valid_label[0]))
     results_dict = dict()
     if os.path.isfile(filename):
         with open(filename, 'r') as f:
@@ -118,7 +121,9 @@ class MOTEvaluator(object):
         gt_filename = os.path.join(self.data_root, self.seq_name, 'gt',
                                    'gt.txt')
         if not os.path.exists(gt_filename):
-            logger.warning("gt_filename '{}' of MOTEvaluator is not exist, so the MOTA will be -inf.")
+            logger.warning(
+                "gt_filename '{}' of MOTEvaluator is not exist, so the MOTA will be -inf."
+            )
         self.gt_frame_dict = read_mot_results(gt_filename, is_gt=True)
         self.gt_ignore_frame_dict = read_mot_results(
             gt_filename, is_ignore=True)
