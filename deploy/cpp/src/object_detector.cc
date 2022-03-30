@@ -15,16 +15,15 @@
 // for setprecision
 #include <chrono>
 #include <iomanip>
-#include "include/object_detector.h"
 
-using namespace paddle_infer;
+#include "include/object_detector.h"
 
 namespace PaddleDetection {
 
 // Load Model and create model predictor
-void ObjectDetector::LoadModel(const std::string& model_dir,
+void ObjectDetector::LoadModel(const std::string &model_dir,
                                const int batch_size,
-                               const std::string& run_mode) {
+                               const std::string &run_mode) {
   paddle_infer::Config config;
   std::string prog_file = model_dir + OS_PATH_SEP + "model.pdmodel";
   std::string params_file = model_dir + OS_PATH_SEP + "model.pdiparams";
@@ -42,27 +41,22 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
       } else if (run_mode == "trt_int8") {
         precision = paddle_infer::Config::Precision::kInt8;
       } else {
-        printf(
-            "run_mode should be 'paddle', 'trt_fp32', 'trt_fp16' or "
-            "'trt_int8'");
+        printf("run_mode should be 'paddle', 'trt_fp32', 'trt_fp16' or "
+               "'trt_int8'");
       }
       // set tensorrt
-      config.EnableTensorRtEngine(1 << 30,
-                                  batch_size,
-                                  this->min_subgraph_size_,
-                                  precision,
-                                  false,
-                                  this->trt_calib_mode_);
+      config.EnableTensorRtEngine(1 << 30, batch_size, this->min_subgraph_size_,
+                                  precision, false, this->trt_calib_mode_);
 
       // set use dynamic shape
       if (this->use_dynamic_shape_) {
-        // set DynamicShsape for image tensor
+        // set DynamicShape for image tensor
         const std::vector<int> min_input_shape = {
-            1, 3, this->trt_min_shape_, this->trt_min_shape_};
+            batch_size, 3, this->trt_min_shape_, this->trt_min_shape_};
         const std::vector<int> max_input_shape = {
-            1, 3, this->trt_max_shape_, this->trt_max_shape_};
+            batch_size, 3, this->trt_max_shape_, this->trt_max_shape_};
         const std::vector<int> opt_input_shape = {
-            1, 3, this->trt_opt_shape_, this->trt_opt_shape_};
+            batch_size, 3, this->trt_opt_shape_, this->trt_opt_shape_};
         const std::map<std::string, std::vector<int>> map_min_input_shape = {
             {"image", min_input_shape}};
         const std::map<std::string, std::vector<int>> map_max_input_shape = {
@@ -70,8 +64,8 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
         const std::map<std::string, std::vector<int>> map_opt_input_shape = {
             {"image", opt_input_shape}};
 
-        config.SetTRTDynamicShapeInfo(
-            map_min_input_shape, map_max_input_shape, map_opt_input_shape);
+        config.SetTRTDynamicShapeInfo(map_min_input_shape, map_max_input_shape,
+                                      map_opt_input_shape);
         std::cout << "TensorRT dynamic shape enabled" << std::endl;
       }
     }
@@ -96,12 +90,11 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
 }
 
 // Visualiztion MaskDetector results
-cv::Mat VisualizeResult(
-    const cv::Mat& img,
-    const std::vector<PaddleDetection::ObjectResult>& results,
-    const std::vector<std::string>& lables,
-    const std::vector<int>& colormap,
-    const bool is_rbox = false) {
+cv::Mat
+VisualizeResult(const cv::Mat &img,
+                const std::vector<PaddleDetection::ObjectResult> &results,
+                const std::vector<std::string> &lables,
+                const std::vector<int> &colormap, const bool is_rbox = false) {
   cv::Mat vis_img = img.clone();
   for (int i = 0; i < results.size(); ++i) {
     // Configure color and text size
@@ -142,24 +135,18 @@ cv::Mat VisualizeResult(
     origin.y = results[i].rect[1];
 
     // Configure text background
-    cv::Rect text_back = cv::Rect(results[i].rect[0],
-                                  results[i].rect[1] - text_size.height,
-                                  text_size.width,
-                                  text_size.height);
+    cv::Rect text_back =
+        cv::Rect(results[i].rect[0], results[i].rect[1] - text_size.height,
+                 text_size.width, text_size.height);
     // Draw text, and background
     cv::rectangle(vis_img, text_back, roi_color, -1);
-    cv::putText(vis_img,
-                text,
-                origin,
-                font_face,
-                font_scale,
-                cv::Scalar(255, 255, 255),
-                thickness);
+    cv::putText(vis_img, text, origin, font_face, font_scale,
+                cv::Scalar(255, 255, 255), thickness);
   }
   return vis_img;
 }
 
-void ObjectDetector::Preprocess(const cv::Mat& ori_im) {
+void ObjectDetector::Preprocess(const cv::Mat &ori_im) {
   // Clone the image : keep the original mat for postprocess
   cv::Mat im = ori_im.clone();
   cv::cvtColor(im, im, cv::COLOR_BGR2RGB);
@@ -168,9 +155,8 @@ void ObjectDetector::Preprocess(const cv::Mat& ori_im) {
 
 void ObjectDetector::Postprocess(
     const std::vector<cv::Mat> mats,
-    std::vector<PaddleDetection::ObjectResult>* result,
-    std::vector<int> bbox_num,
-    std::vector<float> output_data_,
+    std::vector<PaddleDetection::ObjectResult> *result,
+    std::vector<int> bbox_num, std::vector<float> output_data_,
     bool is_rbox = false) {
   result->clear();
   int start_idx = 0;
@@ -226,12 +212,11 @@ void ObjectDetector::Postprocess(
 }
 
 void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
-                             const double threshold,
-                             const int warmup,
+                             const double threshold, const int warmup,
                              const int repeats,
-                             std::vector<PaddleDetection::ObjectResult>* result,
-                             std::vector<int>* bbox_num,
-                             std::vector<double>* times) {
+                             std::vector<PaddleDetection::ObjectResult> *result,
+                             std::vector<int> *bbox_num,
+                             std::vector<double> *times) {
   auto preprocess_start = std::chrono::steady_clock::now();
   int batch_size = imgs.size();
 
@@ -239,7 +224,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   std::vector<float> in_data_all;
   std::vector<float> im_shape_all(batch_size * 2);
   std::vector<float> scale_factor_all(batch_size * 2);
-  std::vector<const float*> output_data_list_;
+  std::vector<const float *> output_data_list_;
   std::vector<int> out_bbox_num_data_;
 
   // in_net img for each batch
@@ -255,9 +240,8 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
     scale_factor_all[bs_idx * 2] = inputs_.scale_factor_[0];
     scale_factor_all[bs_idx * 2 + 1] = inputs_.scale_factor_[1];
 
-    // TODO: reduce cost time
-    in_data_all.insert(
-        in_data_all.end(), inputs_.im_data_.begin(), inputs_.im_data_.end());
+    in_data_all.insert(in_data_all.end(), inputs_.im_data_.begin(),
+                       inputs_.im_data_.end());
 
     // collect in_net img
     in_net_img_all[bs_idx] = inputs_.in_net_im_;
@@ -276,10 +260,10 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
       pad_img.convertTo(pad_img, CV_32FC3);
       std::vector<float> pad_data;
       pad_data.resize(rc * rh * rw);
-      float* base = pad_data.data();
+      float *base = pad_data.data();
       for (int i = 0; i < rc; ++i) {
-        cv::extractChannel(
-            pad_img, cv::Mat(rh, rw, CV_32FC1, base + i * rh * rw), i);
+        cv::extractChannel(pad_img,
+                           cv::Mat(rh, rw, CV_32FC1, base + i * rh * rw), i);
       }
       in_data_all.insert(in_data_all.end(), pad_data.begin(), pad_data.end());
     }
@@ -290,7 +274,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   auto preprocess_end = std::chrono::steady_clock::now();
   // Prepare input tensor
   auto input_names = predictor_->GetInputNames();
-  for (const auto& tensor_name : input_names) {
+  for (const auto &tensor_name : input_names) {
     auto in_tensor = predictor_->GetInputHandle(tensor_name);
     if (tensor_name == "image") {
       int rh = inputs_.in_net_shape_[0];
@@ -320,8 +304,8 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
     for (int j = 0; j < output_names.size(); j++) {
       auto output_tensor = predictor_->GetOutputHandle(output_names[j]);
       std::vector<int> output_shape = output_tensor->shape();
-      int out_num = std::accumulate(
-          output_shape.begin(), output_shape.end(), 1, std::multiplies<int>());
+      int out_num = std::accumulate(output_shape.begin(), output_shape.end(), 1,
+                                    std::multiplies<int>());
       if (output_tensor->type() == paddle_infer::DataType::INT32) {
         out_bbox_num_data_.resize(out_num);
         output_tensor->CopyToCpu(out_bbox_num_data_.data());
@@ -344,8 +328,8 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
     for (int j = 0; j < output_names.size(); j++) {
       auto output_tensor = predictor_->GetOutputHandle(output_names[j]);
       std::vector<int> output_shape = output_tensor->shape();
-      int out_num = std::accumulate(
-          output_shape.begin(), output_shape.end(), 1, std::multiplies<int>());
+      int out_num = std::accumulate(output_shape.begin(), output_shape.end(), 1,
+                                    std::multiplies<int>());
       output_shape_list.push_back(output_shape);
       if (output_tensor->type() == paddle_infer::DataType::INT32) {
         out_bbox_num_data_.resize(out_num);
@@ -371,22 +355,15 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
       if (i == config_.fpn_stride_.size()) {
         reg_max = output_shape_list[i][2] / 4 - 1;
       }
-      float* buffer = new float[out_tensor_list[i].size()];
-      memcpy(buffer,
-             &out_tensor_list[i][0],
+      float *buffer = new float[out_tensor_list[i].size()];
+      memcpy(buffer, &out_tensor_list[i][0],
              out_tensor_list[i].size() * sizeof(float));
       output_data_list_.push_back(buffer);
     }
     PaddleDetection::PicoDetPostProcess(
-        result,
-        output_data_list_,
-        config_.fpn_stride_,
-        inputs_.im_shape_,
-        inputs_.scale_factor_,
-        config_.nms_info_["score_threshold"].as<float>(),
-        config_.nms_info_["nms_threshold"].as<float>(),
-        num_class,
-        reg_max);
+        result, output_data_list_, config_.fpn_stride_, inputs_.im_shape_,
+        inputs_.scale_factor_, config_.nms_info_["score_threshold"].as<float>(),
+        config_.nms_info_["nms_threshold"].as<float>(), num_class, reg_max);
     bbox_num->push_back(result->size());
   } else {
     is_rbox = output_shape_list[0][output_shape_list[0].size() - 1] % 10 == 0;
