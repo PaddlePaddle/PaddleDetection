@@ -121,9 +121,13 @@ class MOTEvaluator(object):
         gt_filename = os.path.join(self.data_root, self.seq_name, 'gt',
                                    'gt.txt')
         if not os.path.exists(gt_filename):
+<<<<<<< HEAD
             logger.warning(
                 "gt_filename '{}' of MOTEvaluator is not exist, so the MOTA will be -inf."
             )
+=======
+            logger.warning("gt_filename '{}' of MOTEvaluator is not exist, so the MOTA will be -inf.")
+>>>>>>> upstream/develop
         self.gt_frame_dict = read_mot_results(gt_filename, is_gt=True)
         self.gt_ignore_frame_dict = read_mot_results(
             gt_filename, is_ignore=True)
