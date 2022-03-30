@@ -3,11 +3,11 @@ English | [简体中文](README.md)
 # PP-Human— a Real-Time Pedestrian Analysis Tool
 
 PP-Human serves as the first open-source tool of real-time pedestrian anaylsis relying on the PaddlePaddle deep learning framework. Versatile and efficient in deployment, it has been used in various senarios. PP-Human
-offers many input options, including image/single-camera video/multi-camera video, and covers multi-object tracking, attribute recognition, and action recognition. PP-Human can be applied to intelligent traffic, the intelligent community, industiral patrol, and so on. It supports server-side deployment and TensorRT acceleration，and even can achieve real-time analysis on the T4 server.
+offers many input options, including image/single-camera video/multi-camera video, and covers multi-object tracking, attribute recognition, and action recognition. PP-Human can be applied to intelligent traffic, the intelligent community, industiral patrol, and so on. It supports server-side deployment and TensorRT acceleration，and achieves real-time analysis on the T4 server.
 
 ## I. Environment Preparation
 
-Requirement: PaddleDetection version >= release/2.4
+Requirement: PaddleDetection version >= release/2.4 or develop
 
 
 The installation of PaddlePaddle and PaddleDetection
@@ -38,18 +38,19 @@ To make users have access to models of different scenarios, PP-Human provides pr
 
 | Task            | Scenario | Precision | Inference Speed（FPS） | Model Inference and Deployment |
 | :---------:     |:---------:     |:---------------     | :-------:  | :------:      |
-| Object Detection        | Image/Video Input | -  | -           | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| Attribute Recognition    | Image/Video Input  Attribute Recognition | - |  -       | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.tar) |
-| Keypoint Detection    | Video Input  Action Recognition | - | -        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
-| Behavior Recognition   |  Video Input  Bheavior Recognition  | - |  -          | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
-| ReID         | Multi-Target Multi-Camera Tracking   | - | -         | [Link]() |
+| Object Detection        | Image/Video Input | mAP: 56.3  | 28.0ms           | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| Attribute Recognition    | Image/Video Input  Attribute Recognition | MOTA: 72.0 |  33.1ms       | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
+| Keypoint Detection    | Video Input  Action Recognition | mA: 94.86 | 2ms per person        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
+| Behavior Recognition   |  Video Input  Bheavior Recognition  | Precision 96.43 |  2.7ms per person          | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
+| ReID         | Multi-Target Multi-Camera Tracking   | mAP: 99.7 | -        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
 
 Then, unzip the downloaded model to the folder `./output_inference`.
 
 **Note: **
 
 - The model precision is decided by the fusion of datasets which include open-source datasets and enterprise ones.
-- When the inference speed is T4, use TensorRT FP16.
+- The precision on ReID model is evaluated on Market1501.
+- The inference speed is tested on T4, using TensorRT FP16. The pipeline of preprocess, prediction and postprocess is included.
 
 ### 2. Preparation of Configuration Files
 
@@ -80,31 +81,44 @@ ATTR:
   batch_size: 8
 ```
 
+**Note: **
+
+- For different tasks, users could add `--enable_attr=True` or `--enable_action=True` in command line and do not need to set config file.
+- if only need to change the model path, users could add `--model_dir det=ppyoloe/` in command line and do not need to set config file. For details info please refer to doc below.
 
 
 ### 3. Inference and Deployment
 
 ```
-# Specify the config file path and test images
+# Pedestrian detection. Specify the config file path and test images
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu
 
-# Specify the config file path and test videos，and finish the attribute recognition
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True
+# Pedestrian tracking. Specify the config file path and test videos
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu
 
-# Specify the config file path and test videos，and finish the Action Recognition
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True
-
-# Specify the config file path, the model path and test videos，and finish the multi-object tracking
+# Pedestrian tracking. Specify the config file path, the model path and test videos
 # The model path specified on the command line prioritizes over the config file
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/
+
+# Attribute recognition. Specify the config file path and test videos
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True
+
+# Action Recognition. Specify the config file path and test videos
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True
+
+# Multi-Camera pedestrian tracking. Specify the config file path and test videos
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=test_video_dir/ --device=gpu
+
 ```
+
+Other usage please refer to [sub-task docs](./docs)
 
 ### 3.1 Description of Parameters
 
 | Parameter | Optional or not| Meaning |
 |-------|-------|----------|
 | --config | Yes | Config file path |
-| --model_dir | Option | the model paths of different tasks in PP-Human, with a priority higher than config files |
+| --model_dir | Option | the model paths of different tasks in PP-Human, with a priority higher than config files. For example, `--model_dir det=better_det/ attr=better_attr/` |
 | --image_file | Option | Images to-be-predicted  |
 | --image_dir  | Option |  The path of folders of to-be-predicted images  |
 | --video_file | Option | Videos to-be-predicted |
@@ -130,21 +144,21 @@ The overall solution of PP-Human is as follows:
 
 ### 1. Object Detection
 - Use PP-YOLOE L as the model of object detection
-- For details, please refer to [PP-YOLOE](../../configs/ppyoloe/)
+- For details, please refer to [PP-YOLOE](../../configs/ppyoloe/) and [Detection and Tracking](docs/mot_en.md)
 
 ### 2. Multi-Object Tracking
 - Conduct multi-object tracking with the SDE solution
 - Use PP-YOLOE L as the detection model
 - Use the Bytetrack solution to track modules
-- For details, refer to [Bytetrack](configs/mot/bytetrack)
+- For details, refer to [Bytetrack](configs/mot/bytetrack) and [Detection and Tracking](docs/mot_en.md)
 
-### 3. Cross-Camera Tracking
+### 3. Multi-Camera Tracking
 - Use PP-YOLOE + Bytetrack to obtain the tracks of single-camera multi-object tracking
 - Use ReID（centroid network）to extract features of the detection result of each frame
 - Match the features of multi-camera tracks to get the cross-camera tracking result
-- For details, please refer to [Cross-Camera Tracking](docs/mtmct_en.md)
+- For details, please refer to [Multi-Camera Tracking](docs/mtmct_en.md)
 
-### 4. Multi-Target Multi-Camera Tracking
+### 4. Attribute Recognition
 - Use PP-YOLOE + Bytetrack to track humans
 - Use StrongBaseline（a multi-class model）to conduct attribute recognition, and the main attributes include age, gender, hats, eyes, clothing, and backpacks.
 - For details, please refer to [Attribute Recognition](docs/attribute_en.md)
