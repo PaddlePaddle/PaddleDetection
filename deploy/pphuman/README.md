@@ -92,19 +92,25 @@ ATTR:
 ### 3. 预测部署
 
 ```
-# 指定配置文件路径和测试图片
+# 行人检测，指定配置文件路径和测试图片
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu
 
-# 指定配置文件路径和测试视频，完成属性识别
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True
+# 行人跟踪，指定配置文件路径和测试视频
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu
 
-# 指定配置文件路径和测试视频，完成行为识别
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True
-
-# 指定配置文件路径，模型路径和测试视频，完成多目标跟踪
+# 行人跟踪，指定配置文件路径，模型路径和测试视频
 # 命令行中指定的模型路径优先级高于配置文件
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/
+
+# 行人属性识别，指定配置文件路径和测试视频
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True
+
+# 行为识别，指定配置文件路径和测试视频
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True
+
 ```
+
+其他用法请参考[子任务文档](./docs)
 
 #### 3.1 参数说明
 
@@ -136,17 +142,17 @@ PP-Human整体方案如下图所示
 </div>
 
 
-### 1. 目标检测
+### 1. 行人检测
 - 采用PP-YOLOE L 作为目标检测模型
 - 详细文档参考[PP-YOLOE](../../configs/ppyoloe/)和[检测跟踪文档](docs/mot.md)
 
-### 2. 多目标跟踪
-- 采用SDE方案完成多目标跟踪
+### 2. 行人跟踪
+- 采用SDE方案完成行人跟踪
 - 检测模型使用PP-YOLOE L
 - 跟踪模块采用Bytetrack方案
 - 详细文档参考[Bytetrack](../../configs/mot/bytetrack)和[检测跟踪文档](docs/mot.md)
 
-### 3. 跨镜跟踪
+### 3. 跨镜行人跟踪
 - 使用PP-YOLOE + Bytetrack得到单镜头多目标跟踪轨迹
 - 使用ReID（centroid网络）对每一帧的检测结果提取特征
 - 多镜头轨迹特征进行匹配，得到跨镜头跟踪结果
