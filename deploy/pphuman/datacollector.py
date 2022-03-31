@@ -35,6 +35,9 @@ class Result(object):
             return self.res_dict[name]
         return None
 
+    def clear(self, name):
+        self.res_dict[name].clear()
+
 
 class DataCollector(object):
     """
@@ -80,15 +83,15 @@ class DataCollector(object):
             ids = int(mot_item[0])
             if ids not in self.collector:
                 self.collector[ids] = copy.deepcopy(self.mots)
-
             self.collector[ids]["frames"].append(frameid)
             self.collector[ids]["rects"].append([mot_item[2:]])
             if attr_res:
                 self.collector[ids]["attrs"].append(attr_res['output'][idx])
             if kpt_res:
-                self.collector[ids]["kpts"].append(kpt_res['keypoint'][idx])
-            if action_res:
-                self.collector[ids]["actions"].append(action_res['output'][idx])
+                self.collector[ids]["kpts"].append(
+                    [kpt_res['keypoint'][0][idx], kpt_res['keypoint'][1][idx]])
+            if action_res and (idx + 1) in action_res:
+                self.collector[ids]["actions"].append(action_res[idx + 1])
             else:
                 # action model generate result per X frames, Not available every frames
                 self.collector[ids]["actions"].append(None)

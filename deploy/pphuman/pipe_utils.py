@@ -108,6 +108,21 @@ def argsparser():
         default=False,
         help="If the model is produced by TRT offline quantitative "
         "calibration, trt_calib_mode need to set True.")
+    parser.add_argument(
+        "--do_entrance_counting",
+        action='store_true',
+        help="Whether counting the numbers of identifiers entering "
+        "or getting out from the entrance. Note that only support one-class"
+        "counting, multi-class counting is coming soon.")
+    parser.add_argument(
+        "--secs_interval",
+        type=int,
+        default=2,
+        help="The seconds interval to count after tracking")
+    parser.add_argument(
+        "--draw_center_traj",
+        action='store_true',
+        help="Whether drawing the trajectory of center")
     return parser
 
 
@@ -202,7 +217,7 @@ class PipeTimer(Times):
 
 def merge_model_dir(args, model_dir):
     # set --model_dir DET=ppyoloe/ to overwrite the model_dir in config file
-    task_set = ['DET', 'ATTR', 'MOT', 'KPT', 'ACTION']
+    task_set = ['DET', 'ATTR', 'MOT', 'KPT', 'ACTION', 'REID']
     if not model_dir:
         return args
     for md in model_dir:

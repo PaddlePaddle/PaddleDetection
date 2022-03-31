@@ -41,12 +41,21 @@ class CosineDecay(object):
         max_epochs (int): max epochs for the training process.
             if you commbine cosine decay with warmup, it is recommended that
             the max_iters is much larger than the warmup iter
+        use_warmup (bool): whether to use warmup. Default: True.
+        min_lr_ratio (float): minimum learning rate ratio. Default: 0.
+        last_plateau_epochs (int): use minimum learning rate in
+            the last few epochs. Default: 0.
     """
 
-    def __init__(self, max_epochs=1000, use_warmup=True, eta_min=0.):
+    def __init__(self,
+                 max_epochs=1000,
+                 use_warmup=True,
+                 min_lr_ratio=0.,
+                 last_plateau_epochs=0):
         self.max_epochs = max_epochs
         self.use_warmup = use_warmup
-        self.eta_min = eta_min
+        self.min_lr_ratio = min_lr_ratio
+        self.last_plateau_epochs = last_plateau_epochs
 
     def __call__(self,
                  base_lr=None,
@@ -56,21 +65,38 @@ class CosineDecay(object):
         assert base_lr is not None, "either base LR or values should be provided"
 
         max_iters = self.max_epochs * int(step_per_epoch)
-
+        last_plateau_iters = self.last_plateau_epochs * int(step_per_epoch)
+        min_lr = base_lr * self.min_lr_ratio
         if boundary is not None and value is not None and self.use_warmup:
+            # use warmup
             warmup_iters = len(boundary)
             for i in range(int(boundary[-1]), max_iters):
                 boundary.append(i)
-
-                decayed_lr = base_lr * 0.5 * (math.cos(
-                    (i - warmup_iters) * math.pi /
-                    (max_iters - warmup_iters)) + 1)
-                decayed_lr = decayed_lr if decayed_lr > self.eta_min else self.eta_min
-                value.append(decayed_lr)
+                if i < max_iters - last_plateau_iters:
+                    decayed_lr = min_lr + (base_lr - min_lr) * 0.5 * (math.cos(
+                        (i - warmup_iters) * math.pi /
+                        (max_iters - warmup_iters - last_plateau_iters)) + 1)
+                    value.append(decayed_lr)
+                else:
+                    value.append(min_lr)
+            return optimizer.lr.PiecewiseDecay(boundary, value)
+        elif last_plateau_iters > 0:
+            # not use warmup, but set `last_plateau_epochs` > 0
+            boundary = []
+            value = []
+            for i in range(max_iters):
+                if i < max_iters - last_plateau_iters:
+                    decayed_lr = min_lr + (base_lr - min_lr) * 0.5 * (math.cos(
+                        i * math.pi / (max_iters - last_plateau_iters)) + 1)
+                    value.append(decayed_lr)
+                else:
+                    value.append(min_lr)
+                if i > 0:
+                    boundary.append(i)
             return optimizer.lr.PiecewiseDecay(boundary, value)
 
         return optimizer.lr.CosineAnnealingDecay(
-            base_lr, T_max=max_iters, eta_min=self.eta_min)
+            base_lr, T_max=max_iters, eta_min=min_lr)
 
 
 @serializable
@@ -339,7 +365,8 @@ class ModelEMA(object):
 
     def resume(self, state_dict, step=0):
         for k, v in state_dict.items():
-            self.state_dict[k] = v
+            if k in self.state_dict:
+                self.state_dict[k] = v
         self.step = step
 
     def update(self, model=None):

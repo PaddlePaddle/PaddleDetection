@@ -5,7 +5,7 @@ visual: True
 warmup_frame: 50
 
 DET:
-  model_dir: output_inference/mot_ppyolov3/
+  model_dir: output_inference/mot_ppyoloe_l_36e_pipeline/
   batch_size: 1
 
 ATTR:
@@ -13,7 +13,7 @@ ATTR:
   batch_size: 8
 
 MOT:
-  model_dir: output_inference/mot_ppyolov3/
+  model_dir: output_inference/mot_ppyoloe_l_36e_pipeline/
   tracker_config: deploy/pphuman/config/tracker_config.yml
   batch_size: 1
 

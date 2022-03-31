@@ -73,7 +73,7 @@ class ReID(object):
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
         self.batch_size = batch_size
-        self.input_wh = [128, 256]
+        self.input_wh = (128, 256)
 
     def set_config(self, model_dir):
         return PredictConfig(model_dir)

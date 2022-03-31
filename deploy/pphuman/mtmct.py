@@ -111,7 +111,8 @@ def save_mtmct_vis_results(camera_results, captures, output_dir):
     for idx, video_file in enumerate(captures):
         capture = cv2.VideoCapture(video_file)
         cid = camera_ids[idx]
-        video_out_name = "mtmct_vis_c" + str(cid) + ".mp4"
+        basename = os.path.basename(video_file)
+        video_out_name = "vis_" + basename
         print("Start visualizing output video: {}".format(video_out_name))
         out_path = os.path.join(save_dir, video_out_name)
 
@@ -182,7 +183,7 @@ def get_dist_mat(x, y, func_name="euclidean"):
         dist_mat = get_cosine(x, y)
     elif func_name == "euclidean":
         dist_mat = get_euclidean(x, y)
-    print("Using {func_name} as distance function during evaluation")
+    print("Using {} as distance function during evaluation".format(func_name))
     return dist_mat
 
 
@@ -296,10 +297,9 @@ def distill_idfeat(mot_res):
         feature_new = feature_list
 
     #if available frames number is more than 200, take one frame data per 20 frames
-    if len(qualities_new) > 200:
-        skipf = 20
-    else:
-        skipf = max(10, len(qualities_new) // 10)
+    skipf = 1
+    if len(qualities_new) > 20:
+        skipf = 2
     quality_skip = np.array(qualities_new[::skipf])
     feature_skip = np.array(feature_new[::skipf])
 

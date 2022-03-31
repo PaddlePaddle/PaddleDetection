@@ -143,7 +143,11 @@ class TaskAlignedAssigner(nn.Layer):
             gt_bboxes.reshape([-1, 4]), assigned_gt_index.flatten(), axis=0)
         assigned_bboxes = assigned_bboxes.reshape([batch_size, num_anchors, 4])
 
-        assigned_scores = F.one_hot(assigned_labels, num_classes)
+        assigned_scores = F.one_hot(assigned_labels, num_classes + 1)
+        ind = list(range(num_classes + 1))
+        ind.remove(bg_index)
+        assigned_scores = paddle.index_select(
+            assigned_scores, paddle.to_tensor(ind), axis=-1)
         # rescale alignment metrics
         alignment_metrics *= mask_positive
         max_metrics_per_instance = alignment_metrics.max(axis=-1, keepdim=True)

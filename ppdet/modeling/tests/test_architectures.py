@@ -62,7 +62,7 @@ class TestGFL(TestFasterRCNN):
 
 class TestPicoDet(TestFasterRCNN):
     def set_config(self):
-        self.cfg_file = 'configs/picodet/picodet_s_320_coco.yml'
+        self.cfg_file = 'configs/picodet/picodet_s_320_coco_lcnet.yml'
 
 
 if __name__ == '__main__':

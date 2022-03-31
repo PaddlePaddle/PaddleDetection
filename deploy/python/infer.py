@@ -231,7 +231,7 @@ class Detector(object):
                 self.det_times.preprocess_time_s.end()
 
                 # model prediction
-                result = self.predict(repeats=repeats)  # warmup
+                result = self.predict(repeats=50)  # warmup
                 self.det_times.inference_time_s.start()
                 result = self.predict(repeats=repeats)
                 self.det_times.inference_time_s.end(repeats=repeats)
@@ -296,7 +296,7 @@ class Detector(object):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         index = 1
         while (1):
@@ -790,7 +790,7 @@ def main():
         if FLAGS.image_dir is None and FLAGS.image_file is not None:
             assert FLAGS.batch_size == 1, "batch_size should be 1, when image_file is not None"
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        detector.predict_image(img_list, FLAGS.run_benchmark, repeats=10)
+        detector.predict_image(img_list, FLAGS.run_benchmark, repeats=100)
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)
         else:
