@@ -217,7 +217,7 @@ class PipeTimer(Times):
 
 def merge_model_dir(args, model_dir):
     # set --model_dir DET=ppyoloe/ to overwrite the model_dir in config file
-    task_set = ['DET', 'ATTR', 'MOT', 'KPT', 'ACTION']
+    task_set = ['DET', 'ATTR', 'MOT', 'KPT', 'ACTION', 'REID']
     if not model_dir:
         return args
     for md in model_dir:
