@@ -47,12 +47,11 @@ PP-Tracking 提供了简洁的GUI可视化界面，教程请参考[PP-Tracking�
 ## 安装依赖
 一键安装MOT相关的依赖：
 ```
-pip install lap sklearn motmetrics openpyxl cython_bbox
+pip install lap sklearn motmetrics openpyxl
 或者
 pip install -r requirements.txt
 ```
 **注意：**
-- `cython_bbox`在windows上安装：`pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`。可参考这个[教程](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)。
 - 预测需确保已安装[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
 
 
