@@ -41,25 +41,14 @@ We release/2.4ed a series of lightweight models, named `PP-PicoDet`. Because of 
 | PicoDet-M |  416*416   |          37.5           |        53.4       |        3.46        |       4.34        |              19.5ms              |            28.39ms            | [model](https://paddledet.bj.bcebos.com/models/picodet_m_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/picodet/picodet_m_416_coco_lcnet.yml) |
 | PicoDet-L |  320*320   |          36.1           |        52.0        |        5.80       |       4.20        |              18.3ms             |            25.21ms           | [model](https://paddledet.bj.bcebos.com/models/picodet_l_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/picodet/picodet_l_320_coco_lcnet.yml) |
 | PicoDet-L |  416*416   |          39.4           |        55.7        |        5.80        |       7.10       |              22.1ms              |            42.23ms            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/picodet/picodet_l_416_coco_lcnet.yml) |
-<<<<<<< HEAD:configs/picodet/README_cn.md
-| PicoDet-L |  640*640   |          42.3           |        59.2        |        5.80        |       16.81        |              43.1ms              |            108.1ms          | [model](https://paddledet.bj.bcebos.com/models/picodet_l_640_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_640_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/picodet/picodet_l_640_coco_lcnet.yml) |
-
-=======
 | PicoDet-L |  640*640   |          42.6           |        59.2        |        5.80        |       16.81        |              43.1ms              |            108.1ms          | [model](https://paddledet.bj.bcebos.com/models/picodet_l_640_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_640_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/picodet/picodet_l_640_coco_lcnet.yml) |
->>>>>>> 1bc50816f9d106162788127698e27aef8db3eca5:configs/picodet/README_en.md
 
 <details open>
 <summary><b>Table Notes:</b></summary>
 
-<<<<<<< HEAD:configs/picodet/README_cn.md
-- <a name="latency">时延测试：</a> 我们所有的模型都在英特尔至强6148的CPU（MKLDNN 10线程）和`骁龙865(4xA77+4xA55)`的ARM CPU上测试(4线程，FP16预测)。上面表格中标有`CPU`的是使用Paddle Inference库测试，标有`Lite`的是使用[Paddle Lite](https://github.com/PaddlePaddle/Paddle-Lite)进行测试。
-- PicoDet在COCO train2017上训练，并且在COCO val2017上进行验证。使用4卡GPU训练，并且上表所有的预训练模型都是通过发布的默认配置训练得到。
-- Benchmark测试：测试速度benchmark性能时，导出模型后处理不包含在网络中，需要设置`-o export.benchmark=True` 或手动修改[runtime.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/configs/runtime.yml#L12)。
-=======
 - <a name="latency">Latency:</a> All our models test on `Intel-Xeon-Gold-6148` CPU with MKLDNN by 10 threads and `Qualcomm Snapdragon 865(4xA77+4xA55)` with 4 threads by arm8 and with FP16. In the above table, test CPU latency on Paddle-Inference and testing Mobile latency with `Lite`->[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite).
 - PicoDet is trained on COCO train2017 dataset and evaluated on COCO val2017. And PicoDet used 4 GPUs for training and all checkpoints are trained with default settings and hyperparameters.
 - Benchmark test: When testing the speed benchmark, the post-processing is not included in the exported model, you need to set `-o export.benchmark=True` or manually modify [runtime.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/configs/runtime.yml#L12).
->>>>>>> 1bc50816f9d106162788127698e27aef8db3eca5:configs/picodet/README_en.md
 
 </details>
 
@@ -93,13 +82,8 @@ We release/2.4ed a series of lightweight models, named `PP-PicoDet`. Because of 
 <details>
 <summary>Installation</summary>
 
-<<<<<<< HEAD:configs/picodet/README_cn.md
-- [安装指导文档](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/INSTALL.md)
-- [准备数据文档](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/PrepareDataSet_en.md)
-=======
 - [Installation guide](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/INSTALL.md)
 - [Prepare dataset](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/PrepareDataSet_en.md)
->>>>>>> 1bc50816f9d106162788127698e27aef8db3eca5:configs/picodet/README_en.md
 
 </details>
 
@@ -138,11 +122,7 @@ python tools/infer.py -c configs/picodet/picodet_s_320_coco_lcnet.yml \
               -o weights=https://paddledet.bj.bcebos.com/models/picodet_s_320_coco_lcnet.pdparams
 ```
 
-<<<<<<< HEAD:configs/picodet/README_cn.md
-详情请参考[快速开始文档](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/GETTING_STARTED.md).
-=======
 Detail also can refer to [Quick start guide](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/GETTING_STARTED.md).
->>>>>>> 1bc50816f9d106162788127698e27aef8db3eca5:configs/picodet/README_en.md
 
 </details>
 
@@ -240,12 +220,6 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco_lcnet/ \
 
 - PaddleInference demo [Python](../../deploy/python) & [C++](../../deploy/cpp)
 - [PaddleLite C++ demo](../../deploy/lite)
-<<<<<<< HEAD:configs/picodet/README_cn.md
-- [NCNN C++/Python demo](../../deploy/third_engine/demo_ncnn)
-- [MNN C++/Python demo](../../deploy/third_engine/demo_mnn)
-- [OpenVINO C++ demo](../../deploy/third_engine/demo_openvino)
-=======
->>>>>>> 1bc50816f9d106162788127698e27aef8db3eca5:configs/picodet/README_en.md
 - [Android demo(Paddle Lite)](https://github.com/PaddlePaddle/Paddle-Lite-Demo/tree/release/2.4/object_detection/android/app/cxx/picodet_detection_demo)
 
 
@@ -281,11 +255,7 @@ python tools/train.py -c configs/picodet/picodet_s_320_coco_lcnet.yml \
           --slim_config configs/slim/quant/picodet_s_quant.yml --eval
 ```
 
-<<<<<<< HEAD:configs/picodet/README_cn.md
-- 更多细节请参考[slim文档](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/slim)
-=======
 - More detail can refer to [slim document](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/slim)
->>>>>>> 1bc50816f9d106162788127698e27aef8db3eca5:configs/picodet/README_en.md
 
 </details>
 
@@ -308,21 +278,13 @@ python tools/post_quant.py -c configs/picodet/picodet_s_320_coco_lcnet.yml \
 <details open>
 <summary>Toturial:</summary>
 
-<<<<<<< HEAD:configs/picodet/README_cn.md
-训练及部署细节请参考[非结构化剪枝文档](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/picodet/pruner/README.md)。
-=======
 Please refer this [documentation](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/picodet/pruner/README.md) for details such as requirements, training and deployment.
->>>>>>> 1bc50816f9d106162788127698e27aef8db3eca5:configs/picodet/README_en.md
 
 </details>
 
 ## Application
 
-<<<<<<< HEAD:configs/picodet/README_cn.md
-- **行人检测：** `PicoDet-S-Pedestrian`行人检测模型请参考[PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/keypoint/tiny_pose#%E8%A1%8C%E4%BA%BA%E6%A3%80%E6%B5%8B%E6%A8%A1%E5%9E%8B)
-=======
 - **Pedestrian detection:** model zoo of `PicoDet-S-Pedestrian` please refer to [PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/keypoint/tiny_pose#%E8%A1%8C%E4%BA%BA%E6%A3%80%E6%B5%8B%E6%A8%A1%E5%9E%8B)
->>>>>>> 1bc50816f9d106162788127698e27aef8db3eca5:configs/picodet/README_en.md
 
 - **Mainbody detection:** model zoo of `PicoDet-L-Mainbody` please refer to [mainbody detection](./application/mainbody_detection/README.md)
 
@@ -356,11 +318,7 @@ Please use `PicoDet-LCNet` model, which has fewer `transpose` operators.
 <details>
 <summary>How to count model parameters.</summary>
 
-<<<<<<< HEAD:configs/picodet/README_cn.md
-可以将以下代码插入：[trainer.py](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/ppdet/engine/trainer.py#L141) 来计算参数量。
-=======
 You can insert below code at [here](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/ppdet/engine/trainer.py#L141) to count learnable parameters.
->>>>>>> 1bc50816f9d106162788127698e27aef8db3eca5:configs/picodet/README_en.md
 
 ```python
 params = sum([
