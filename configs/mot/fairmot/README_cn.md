@@ -82,7 +82,7 @@ PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking�
 ### 在MOT-17 Half上结果
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| DLA-34         | 1088x608 |  69.1  |  72.8  |  299  |  1957  | 14412 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bytetracker.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608.yml) |
+| DLA-34         | 1088x608 |  69.1  |  72.8  |  299  |  1957  | 14412 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608.yml) |
 | DLA-34 + BYTETracker| 1088x608 |  70.3 |  73.2  |  234  |  2176  | 13598 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bytetracker.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_bytetracker.yml) |
 
 

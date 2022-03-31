@@ -35,6 +35,9 @@ class Result(object):
             return self.res_dict[name]
         return None
 
+    def clear(self, name):
+        self.res_dict[name].clear()
+
 
 class DataCollector(object):
     """
@@ -80,7 +83,6 @@ class DataCollector(object):
             ids = int(mot_item[0])
             if ids not in self.collector:
                 self.collector[ids] = copy.deepcopy(self.mots)
-
             self.collector[ids]["frames"].append(frameid)
             self.collector[ids]["rects"].append([mot_item[2:]])
             if attr_res:
