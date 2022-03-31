@@ -400,7 +400,11 @@ class PipePredictor(object):
                                        cpu_threads, enable_mkldnn)
 
     def set_file_name(self, path):
-        self.file_name = os.path.split(path)[-1]
+        if path is not None:
+            self.file_name = os.path.split(path)[-1]
+        else:
+            # use camera id
+            self.file_name = None
 
     def get_result(self):
         return self.collector.get_res()
@@ -533,6 +537,11 @@ class PipePredictor(object):
                     im = self.visualize_video(frame, mot_res, frame_id,
                                               fps)  # visualize
                     writer.write(im)
+                    if self.file_name is None:  # use camera_id
+                        cv2.imshow('PPHuman', im)
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                            break
+
                 continue
 
             self.pipeline_res.update(mot_res, 'mot')
@@ -587,7 +596,7 @@ class PipePredictor(object):
                 if self.cfg['visual']:
                     self.action_visual_helper.update(action_res)
 
-            if self.with_mtmct:
+            if self.with_mtmct and frame_id % 10 == 0:
                 crop_input, img_qualities, rects = self.reid_predictor.crop_image_with_mot(
                     frame, mot_res)
                 if frame_id > self.warmup_frame:
@@ -603,6 +612,8 @@ class PipePredictor(object):
                     "rects": rects
                 }
                 self.pipeline_res.update(reid_res_dict, 'reid')
+            else:
+                self.pipeline_res.clear('reid')
 
             self.collector.append(frame_id, self.pipeline_res)
 
@@ -617,6 +628,10 @@ class PipePredictor(object):
                                           fps, entrance, records,
                                           center_traj)  # visualize
                 writer.write(im)
+                if self.file_name is None:  # use camera_id
+                    cv2.imshow('PPHuman', im)
+                    if cv2.waitKey(1) & 0xFF == ord('q'):
+                        break
 
         writer.release()
         print('save result to {}'.format(out_path))

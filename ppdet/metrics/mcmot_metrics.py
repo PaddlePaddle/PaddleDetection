@@ -26,8 +26,6 @@ from motmetrics.math_util import quiet_divide
 import numpy as np
 import pandas as pd
 
-import paddle
-import paddle.nn.functional as F
 from .metrics import Metric
 import motmetrics as mm
 import openpyxl
@@ -308,10 +306,13 @@ class MCMOTEvaluator(object):
 
     def load_annotations(self):
         assert self.data_type == 'mcmot'
-        self.gt_filename = os.path.join(self.data_root, '../',
-                                        'sequences',
+        self.gt_filename = os.path.join(self.data_root, '../', 'sequences',
                                         '{}.txt'.format(self.seq_name))
-        
+        if not os.path.exists(self.gt_filename):
+            logger.warning(
+                "gt_filename '{}' of MCMOTEvaluator is not exist, so the MOTA will be -INF."
+            )
+
     def reset_accumulator(self):
         import motmetrics as mm
         mm.lap.default_solver = 'lap'

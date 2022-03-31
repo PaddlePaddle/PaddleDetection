@@ -14,4 +14,3 @@ lap
 sklearn
 motmetrics
 openpyxl
-cython_bbox
