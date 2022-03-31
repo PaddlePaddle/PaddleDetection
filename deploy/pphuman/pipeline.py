@@ -400,7 +400,11 @@ class PipePredictor(object):
                                        cpu_threads, enable_mkldnn)
 
     def set_file_name(self, path):
-        self.file_name = os.path.split(path)[-1]
+        if path is not None:
+            self.file_name = os.path.split(path)[-1]
+        else:
+            # use camera id
+            self.file_name = None
 
     def get_result(self):
         return self.collector.get_res()
@@ -533,6 +537,11 @@ class PipePredictor(object):
                     im = self.visualize_video(frame, mot_res, frame_id,
                                               fps)  # visualize
                     writer.write(im)
+                    if self.file_name is None:  # use camera_id
+                        cv2.imshow('PPHuman', im)
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                            break
+
                 continue
 
             self.pipeline_res.update(mot_res, 'mot')
@@ -619,6 +628,10 @@ class PipePredictor(object):
                                           fps, entrance, records,
                                           center_traj)  # visualize
                 writer.write(im)
+                if self.file_name is None:  # use camera_id
+                    cv2.imshow('PPHuman', im)
+                    if cv2.waitKey(1) & 0xFF == ord('q'):
+                        break
 
         writer.release()
         print('save result to {}'.format(out_path))
