@@ -171,7 +171,7 @@ class BBoxPostProcess(nn.Layer):
         pred_label = paddle.where(keep_mask, pred_label,
                                   paddle.ones_like(pred_label) * -1)
         pred_result = paddle.concat([pred_label, pred_score, pred_bbox], axis=1)
-        return pred_result
+        return bboxes, pred_result, bbox_num
 
     def get_origin_shape(self, ):
         return self.origin_shape_list
@@ -202,6 +202,7 @@ class MaskPostProcess(object):
         N = masks.shape[0]
         img_y = paddle.arange(y0_int, y1_int) + 0.5
         img_x = paddle.arange(x0_int, x1_int) + 0.5
+
         img_y = (img_y - y0) / (y1 - y0) * 2 - 1
         img_x = (img_x - x0) / (x1 - x0) * 2 - 1
         # img_x, img_y have shapes (N, w), (N, h)
