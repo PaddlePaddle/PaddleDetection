@@ -153,6 +153,7 @@ float LetterBoxResize::GenerateScale(const cv::Mat& im) {
 
 void PadStride::Run(cv::Mat* im, ImageBlob* data) {
   if (stride_ <= 0) {
+    data->in_net_im_ = im->clone();
     return;
   }
   int rc = im->channels();
@@ -241,7 +242,9 @@ bool CheckDynamicInput(const std::vector<cv::Mat>& imgs) {
   int h = imgs.at(0).rows;
   int w = imgs.at(0).cols;
   for (int i = 1; i < imgs.size(); ++i) {
-    if (imgs.at(i).rows != h || imgs.at(i).cols != w) {
+    int hi = imgs.at(i).rows;
+    int wi = imgs.at(i).cols;
+    if (hi != h || wi != w) {
       return true;
     }
   }
