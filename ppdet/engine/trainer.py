@@ -373,7 +373,8 @@ class Trainer(object):
         # enabel auto mixed precision mode
         if self.cfg.get('amp', False):
             scaler = amp.GradScaler(
-                enable=self.cfg.use_gpu or self.cfg.use_npu, init_loss_scaling=1024)
+                enable=self.cfg.use_gpu or self.cfg.use_npu,
+                init_loss_scaling=1024)
 
         self.status.update({
             'epoch_id': self.start_epoch,
