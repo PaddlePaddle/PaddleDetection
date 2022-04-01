@@ -87,10 +87,9 @@ def _load_config_with_base(file_path):
                 base_yml = os.path.expanduser(base_yml)
             if not base_yml.startswith('/'):
                 base_yml = os.path.join(os.path.dirname(file_path), base_yml)
-
-            with open(base_yml) as f:
-                base_cfg = _load_config_with_base(base_yml)
-                all_base_cfg = merge_config(base_cfg, all_base_cfg)
+            
+            base_cfg = _load_config_with_base(base_yml)
+            all_base_cfg = merge_config(base_cfg, all_base_cfg)
 
         del file_cfg[BASE_KEY]
         return merge_config(file_cfg, all_base_cfg)
