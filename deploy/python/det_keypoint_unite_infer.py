@@ -36,10 +36,9 @@ KEYPOINT_SUPPORT_MODELS = {
 
 
 def predict_with_given_det(image, det_res, keypoint_detector,
-                           keypoint_batch_size, det_threshold,
-                           keypoint_threshold, run_benchmark):
+                           keypoint_batch_size, run_benchmark):
     rec_images, records, det_rects = keypoint_detector.get_person_from_rect(
-        image, det_res, det_threshold)
+        image, det_res)
     keypoint_vector = []
     score_vector = []
 
@@ -83,7 +82,6 @@ def topdown_unite_predict(detector,
         if results['boxes_num'] > 0:
             keypoint_res = predict_with_given_det(
                 image, results, topdown_keypoint_detector, keypoint_batch_size,
-                FLAGS.det_threshold, FLAGS.keypoint_threshold,
                 FLAGS.run_benchmark)
 
             if save_res:
@@ -161,7 +159,7 @@ def topdown_unite_predict_video(detector,
 
         keypoint_res = predict_with_given_det(
             frame2, results, topdown_keypoint_detector, keypoint_batch_size,
-            FLAGS.det_threshold, FLAGS.keypoint_threshold, FLAGS.run_benchmark)
+            FLAGS.run_benchmark)
 
         im = visualize_pose(
             frame,
