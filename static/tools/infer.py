@@ -132,7 +132,7 @@ def main():
         device_id = int(env['FLAGS_selected_gpus'])
     elif cfg.use_npu and 'FLAGS_selected_npus' in env:
         device_id = int(env['FLAGS_selected_npus'])
-    elif use_xpu and 'FLAGS_selected_xpus' in env:
+    elif cfg.use_xpu and 'FLAGS_selected_xpus' in env:
         device_id = int(env['FLAGS_selected_xpus'])
     else:
         device_id = 0
@@ -142,7 +142,7 @@ def main():
         place = fluid.CUDAPlace(device_id)
     elif cfg.use_npu:
         place = fluid.NPUPlace(device_id)
-    elif use_xpu:
+    elif cfg.use_xpu:
         place = fluid.XPUPlace(device_id)
     else:
         place = fluid.CPUPlace()
