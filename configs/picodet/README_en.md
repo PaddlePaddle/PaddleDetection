@@ -9,7 +9,7 @@ English | [简体中文](README.md)
 - Released a new series of PP-PicoDet models: **(2022.03.20)**
   - (1) It was used TAL/Task-aligned-Head and optimized PAN, which greatly improved the accuracy;
   - (2) Moreover optimized CPU prediction speed, and the training speed is greatly improved;
-  - (3) The export model includes post-processing, and the prediction directly outputs the result, without secondary release/2.4ment, and the migration cost is lower.
+  - (3) The export model includes post-processing, and the prediction directly outputs the result, without secondary development, and the migration cost is lower.
 
 ### Legacy Model
 
@@ -17,7 +17,7 @@ English | [简体中文](README.md)
 
 ## Introduction
 
-We release/2.4ed a series of lightweight models, named `PP-PicoDet`. Because of the excellent performance, our models are very suitable for deployment on mobile or CPU. For more details, please refer to our [report on arXiv](https://arxiv.org/abs/2111.00902).
+We developed a series of lightweight models, named `PP-PicoDet`. Because of the excellent performance, our models are very suitable for deployment on mobile or CPU. For more details, please refer to our [report on arXiv](https://arxiv.org/abs/2111.00902).
 
 - 🌟 Higher mAP: the **first** object detectors that surpass mAP(0.5:0.95) **30+** within 1M parameters when the input size is 416.
 - 🚀 Faster latency: 150FPS on mobile ARM CPU.
