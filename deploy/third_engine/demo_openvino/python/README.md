@@ -1,12 +1,12 @@
 # PicoDet OpenVINO Benchmark Demo
 
-本文件夹提供windows系统下利用[Intel's OpenVINO Toolkit](https://software.intel.com/content/www/us/en/develop/tools/openvino-toolkit.html)进行Picodet测速的Benchmark Demo
+本文件夹提供利用[Intel's OpenVINO Toolkit](https://software.intel.com/content/www/us/en/develop/tools/openvino-toolkit.html)进行PicoDet测速的Benchmark Demo
 
 ## 安装 OpenVINO Toolkit
 
 前往 [OpenVINO HomePage](https://software.intel.com/content/www/us/en/develop/tools/openvino-toolkit.html)，下载对应版本并安装。
 
-本demo安装的是win openvino 2022.1.0，可直接运行如下指令安装：
+本demo安装的是 OpenVINO 2022.1.0，可直接运行如下指令安装：
 ```shell
 pip install openvino==2022.1.0
 ```
@@ -15,7 +15,7 @@ pip install openvino==2022.1.0
 
 ## 测试
 
-准备测试模型，根据[picodet官网](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/picodet)中模型导出与转换步骤，采用不包含后处理的方式导出模型（`-o export.benchmark=True` ），并生成待测试模型简化后的onnx（可在下文链接中直接下载）
+准备测试模型，根据[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/picodet)中模型导出与转换步骤，采用不包含后处理的方式导出模型（`-o export.benchmark=True` ），并生成待测试模型简化后的onnx（可在下文链接中直接下载）
 在本目录下新建```out_onnxsim```文件夹：
 ```shell
 mkdir out_onnxsim
@@ -27,7 +27,10 @@ mkdir out_onnxsim
 在本目录下直接运行：
 
 ```shell
-python '.\openvino_ppdet2 copy.py' --img_path ..\..\..\..\demo\000000570688.jpg --onnx_path out_onnxsim/picodet_xs_320_coco_lcnet.onnx --in_shape 320
+#Windows
+python '.\openvino_ppdet2 copy.py' --img_path ..\..\..\..\demo\000000570688.jpg --onnx_path out_onnxsim\picodet_xs_320_coco_lcnet.onnx --in_shape 320
+#Linux
+python './openvino_ppdet2 copy.py' --img_path ../../../../demo/000000570688.jpg --onnx_path out_onnxsim/picodet_xs_320_coco_lcnet.onnx --in_shape 320
 ```
 注意：```--in_shape```为对应模型输入size，默认为320
 
@@ -39,7 +42,7 @@ python '.\openvino_ppdet2 copy.py' --img_path ..\..\..\..\demo\000000570688.jpg 
 | 模型     | 输入尺寸 | ONNX  | 预测时延<sup><small>[ms](#latency)|
 | :-------- | :--------: | :---------------------: | :----------------: |
 | PicoDet-XS |  320*320   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_xs_320_coco_lcnet.onnx) | 3.9ms |
-| PicoDet-XS |  416*416   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_xs_416_coco_lcnet.onnx) | 3.9ms |
+| PicoDet-XS |  416*416   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_xs_416_coco_lcnet.onnx) | 6.1ms |
 | PicoDet-S |  320*320   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_s_320_coco_lcnet.onnx) |     4.8ms |
 | PicoDet-S |  416*416   |  [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_s_416_coco_lcnet.onnx) |     6.6ms |
 | PicoDet-M |  320*320   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_m_320_coco_lcnet.onnx) | 8.2ms  |
