@@ -46,7 +46,7 @@ We also release [PP-TinyPose](./tiny_pose/README_en.md), a real-time keypoint de
 
 ### 1. Environmental Installation
 
-​    Please refer to [PaddleDetection Installation Guild](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/INSTALL.md) to install PaddlePaddle and PaddleDetection correctly.
+​    Please refer to [PaddleDetection Installation Guild](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/INSTALL.md) to install PaddlePaddle and PaddleDetection correctly.
 
 ### 2. Dataset Preparation
 

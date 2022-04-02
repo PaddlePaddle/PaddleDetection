@@ -13,7 +13,7 @@ TTFNet是一种用于实时目标检测且对训练时间友好的网络，对Ce
 
 | 骨架网络        | 网络类型       | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP |                           下载                          | 配置文件 |
 | :-------------- | :------------- | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
-| DarkNet53    | TTFNet           |    12    |   1x      |     ----     |  33.5  | [下载链接](https://paddledet.bj.bcebos.com/models/ttfnet_darknet53_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/ttfnet_darknet53_1x_coco.yml) |
+| DarkNet53    | TTFNet           |    12    |   1x      |     ----     |  33.5  | [下载链接](https://paddledet.bj.bcebos.com/models/ttfnet_darknet53_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/ttfnet/ttfnet_darknet53_1x_coco.yml) |
 
 
 
@@ -40,7 +40,7 @@ PAFNet系列模型从如下方面优化TTFNet模型：
 
 | 骨架网络        | 网络类型       | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP |                           下载                          | 配置文件 |
 | :-------------- | :------------- | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
-| ResNet50vd   | PAFNet           |    18    |   10x      |     ----     |  39.8  | [下载链接](https://paddledet.bj.bcebos.com/models/pafnet_10x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/pafnet_10x_coco.yml) |
+| ResNet50vd   | PAFNet           |    18    |   10x      |     ----     |  39.8  | [下载链接](https://paddledet.bj.bcebos.com/models/pafnet_10x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/ttfnet/pafnet_10x_coco.yml) |
 
 
 
@@ -48,7 +48,7 @@ PAFNet系列模型从如下方面优化TTFNet模型：
 
 | 骨架网络        | 网络类型       | 每张GPU图片个数 | 学习率策略 | Box AP | 麒麟990延时（ms） | 体积（M）                          | 下载                          | 配置文件 |
 | :-------------- | :------------- | :-----: | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
-| MobileNetv3   |  PAFNet-Lite          |    12    |   20x     |     23.9    |  26.00   | 14 | [下载链接](https://paddledet.bj.bcebos.com/models/pafnet_lite_mobilenet_v3_20x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/pafnet_lite_mobilenet_v3_20x_coco.yml) |
+| MobileNetv3   |  PAFNet-Lite          |    12    |   20x     |     23.9    |  26.00   | 14 | [下载链接](https://paddledet.bj.bcebos.com/models/pafnet_lite_mobilenet_v3_20x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/ttfnet/pafnet_lite_mobilenet_v3_20x_coco.yml) |
 
 **注意：** 由于动态图框架整体升级，PAFNet的PaddleDetection发布的权重模型评估时需要添加--bias字段, 例如
 

@@ -5,7 +5,7 @@ We provide some models implemented by PaddlePaddle to detect objects in specific
 
 | Task                 | Algorithm | Box AP | Download                                                                                | Configs |
 |:---------------------|:---------:|:------:| :-------------------------------------------------------------------------------------: |:------:|
-| Vehicle Detection    |  YOLOv3  |  54.5  | [model](https://paddledet.bj.bcebos.com/models/vehicle_yolov3_darknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/vehicle/vehicle_yolov3_darknet.yml) |
+| Vehicle Detection    |  YOLOv3  |  54.5  | [model](https://paddledet.bj.bcebos.com/models/vehicle_yolov3_darknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/vehicle/vehicle_yolov3_darknet.yml) |
 
 ## Vehicle Detection
 
@@ -17,7 +17,7 @@ The network for detecting vehicles is YOLOv3, the backbone of which is Dacknet53
 
 ### 2. Configuration for training
 
-PaddleDetection provides users with a configuration file [yolov3_darknet53_270e_coco.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) to train YOLOv3 on the COCO dataset, compared with this file, we modify some parameters as followed to conduct the training for vehicle detection:
+PaddleDetection provides users with a configuration file [yolov3_darknet53_270e_coco.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/configs/yolov3/yolov3_darknet53_270e_coco.yml) to train YOLOv3 on the COCO dataset, compared with this file, we modify some parameters as followed to conduct the training for vehicle detection:
 
 * num_classes: 6
 * anchors: [[8, 9], [10, 23], [19, 15], [23, 33], [40, 25], [54, 50], [101, 80], [139, 145], [253, 224]]

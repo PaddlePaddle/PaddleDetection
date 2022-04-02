@@ -1,7 +1,7 @@
 # 非结构化稀疏在 PicoDet 上的应用教程
 
 ## 1. 介绍
-在模型压缩中，常见的稀疏方式为结构化稀疏和非结构化稀疏，前者在某个特定维度（特征通道、卷积核等等）上对卷积、矩阵乘法进行剪枝操作，然后生成一个更小的模型结构，这样可以复用已有的卷积、矩阵乘计算，无需特殊实现推理算子；后者以每一个参数为单元进行稀疏化，然而并不会改变参数矩阵的形状，所以更依赖于推理库、硬件对于稀疏后矩阵运算的加速能力。我们在 PP-PicoDet （以下简称PicoDet） 模型上运用了非结构化稀疏技术，在精度损失较小时，获得了在 ARM CPU 端推理的显著性能提升。本文档会介绍如何非结构化稀疏训练 PicoDet，关于非结构化稀疏的更多介绍请参照[这里](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/dygraph/unstructured_pruning)。
+在模型压缩中，常见的稀疏方式为结构化稀疏和非结构化稀疏，前者在某个特定维度（特征通道、卷积核等等）上对卷积、矩阵乘法进行剪枝操作，然后生成一个更小的模型结构，这样可以复用已有的卷积、矩阵乘计算，无需特殊实现推理算子；后者以每一个参数为单元进行稀疏化，然而并不会改变参数矩阵的形状，所以更依赖于推理库、硬件对于稀疏后矩阵运算的加速能力。我们在 PP-PicoDet （以下简称PicoDet） 模型上运用了非结构化稀疏技术，在精度损失较小时，获得了在 ARM CPU 端推理的显著性能提升。本文档会介绍如何非结构化稀疏训练 PicoDet，关于非结构化稀疏的更多介绍请参照[这里](https://github.com/PaddlePaddle/PaddleSlim/tree/release/2.4/demo/dygraph/unstructured_pruning)。
 
 ## 2. 版本要求
 ```bash
@@ -113,9 +113,9 @@ paddle_lite_opt --model_dir=inference_model/picodet_m_320_coco --valid_targets=a
 | Model     | Input size | Sparsity | mAP<sup>val<br>0.5:0.95 | Size<br><sup>(MB) | Latency single-thread<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  speed-up single-thread |  Latency 4-thread<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  speed-up 4-thread |  Download  | SlimConfig |
 | :-------- | :--------: |:--------: | :---------------------: | :----------------: | :----------------: |:----------------: | :---------------: | :-----------------------------: | :-----------------------------: | :----------------------------------------: |
 | PicoDet-m-1.0 |  320*320   |   0      |          30.9         | 8.9 |  127     | 0    |  43     |    0       | [model](https://paddledet.bj.bcebos.com/models/picodet_m_320_coco.pdparams)&#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/picodet/picodet_m_320_coco.yml)|
-| PicoDet-m-1.0 |  320*320   |   75%    |          29.4         | 5.6 |  **80**  | 58%  | **32**  |   34%      | [model](https://paddledet.bj.bcebos.com/models/slim/picodet_m_320__coco_sparse_75.pdparams)&#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_320__coco_sparse_75.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/slim/prune/picodet_m_unstructured_prune_75.yml)|
+| PicoDet-m-1.0 |  320*320   |   75%    |          29.4         | 5.6 |  **80**  | 58%  | **32**  |   34%      | [model](https://paddledet.bj.bcebos.com/models/slim/picodet_m_320__coco_sparse_75.pdparams)&#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_320__coco_sparse_75.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/configs/slim/prune/picodet_m_unstructured_prune_75.yml)|
 | PicoDet-s-1.0 |  320*320   |   0      |          27.1         | 4.6 |    68    |  0   |    26   |    0       | [model](https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_320_coco.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/picodet/picodet_s_320_coco.yml)|
-| PicoDet-m-1.0 |  320*320   |   85%    |          27.6         | 4.1 |  **65**  | 96%  |  **27** |   59%      | [model](https://paddledet.bj.bcebos.com/models/slim/picodet_m_320__coco_sparse_85.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_320__coco_sparse_85.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/slim/prune/picodet_m_unstructured_prune_85.yml)|
+| PicoDet-m-1.0 |  320*320   |   85%    |          27.6         | 4.1 |  **65**  | 96%  |  **27** |   59%      | [model](https://paddledet.bj.bcebos.com/models/slim/picodet_m_320__coco_sparse_85.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_320__coco_sparse_85.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/configs/slim/prune/picodet_m_unstructured_prune_85.yml)|
 
 **注意：**
 - 上述模型体积是**部署模型体积**，即 PaddleLite 转换得到的 *.nb 文件的体积。
