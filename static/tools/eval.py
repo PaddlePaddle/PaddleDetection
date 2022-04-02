@@ -58,6 +58,7 @@ def main():
     """
     Main evaluate function
     """
+    env = os.environ
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
     check_config(cfg)
@@ -84,13 +85,22 @@ def main():
 
     multi_scale_test = getattr(cfg, 'MultiScaleTEST', None)
 
+    if cfg.use_gpu and 'FLAGS_selected_gpus' in env:
+        device_id = int(env['FLAGS_selected_gpus'])
+    elif cfg.use_npu and 'FLAGS_selected_npus' in env:
+        device_id = int(env['FLAGS_selected_npus'])
+    elif use_xpu and 'FLAGS_selected_xpus' in env:
+        device_id = int(env['FLAGS_selected_xpus'])
+    else:
+        device_id = 0
+
     # define executor
     if cfg.use_gpu:
-        place = fluid.CUDAPlace(0)
+        place = fluid.CUDAPlace(device_id)
     elif cfg.use_npu:
-        place = fluid.NPUPlace(0)
+        place = fluid.NPUPlace(device_id)
     elif use_xpu:
-        place = fluid.XPUPlace(0)
+        place = fluid.XPUPlace(device_id)
     else:
         place = fluid.CPUPlace()
     exe = fluid.Executor(place)
