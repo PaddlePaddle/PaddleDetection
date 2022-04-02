@@ -23,7 +23,6 @@ English | [简体中文](./CHANGELOG.md)
   - Release ST-GCN model for falldown action recognition
 
 - Function Optimize：
-  - Support AMP training, enable with `--amp`
   - Optimize 20% training speed when training with EMA, improve saving method of EMA weights
   - Support saving inference results in COCO format
 
