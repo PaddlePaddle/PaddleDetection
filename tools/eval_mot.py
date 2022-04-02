@@ -108,8 +108,17 @@ def main():
     check_gpu(cfg.use_gpu)
     check_version()
 
-    place = 'gpu:{}'.format(ParallelEnv().dev_id) if cfg.use_gpu else 'cpu'
-    place = paddle.set_device(place)
+    # disable xpu in config by default
+    if 'use_xpu' not in cfg:
+        cfg.use_xpu = False
+
+    if cfg.use_gpu:
+        place = paddle.set_device('gpu')
+    elif cfg.use_xpu:
+        place = paddle.set_device('xpu')
+    else:
+        place = paddle.set_device('cpu')
+
     run(FLAGS, cfg)
 
 
