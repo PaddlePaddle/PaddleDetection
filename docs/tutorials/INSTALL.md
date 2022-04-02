@@ -22,7 +22,8 @@ Dependency of PaddleDetection and PaddlePaddle:
 
 | PaddleDetection version | PaddlePaddle version  |    tips    |
 | :----------------: | :---------------: | :-------: |
-|    develop           |       >= 2.2.0rc |     Dygraph mode is set as default    |
+|    develop           |       >= 2.2.2   |     Dygraph mode is set as default    |
+|    release/2.4       |       >= 2.2.2   |     Dygraph mode is set as default    |
 |    release/2.3       |       >= 2.2.0rc |     Dygraph mode is set as default    |
 |    release/2.2       |       >= 2.1.2   |     Dygraph mode is set as default    |
 |    release/2.1       |       >= 2.1.0   |     Dygraph mode is set as default    |
