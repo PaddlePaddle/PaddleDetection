@@ -16,7 +16,7 @@
 
 namespace PaddleDetection {
 
-void load_jsonf(std::string jsonfile, const Json::Value &jsondata) {
+void load_jsonf(std::string jsonfile, Json::Value &jsondata) {
   std::ifstream ifs;
   ifs.open(jsonfile);
 
