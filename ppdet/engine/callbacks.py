@@ -141,10 +141,6 @@ class LogPrinter(Callback):
                         dtime=str(data_time),
                         ips=ips)
                     logger.info(fmt)
-            if mode == 'eval':
-                step_id = status['step_id']
-                if step_id % 100 == 0:
-                    logger.info("Eval iter: {}".format(step_id))
 
     def on_epoch_end(self, status):
         if dist.get_world_size() < 2 or dist.get_rank() == 0:
