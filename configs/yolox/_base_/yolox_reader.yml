@@ -1,0 +1,42 @@
+worker_num: 4
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - YOLOXMosaic:
+        prob: 1.0
+        degrees: 10.0
+        translate: 0.1
+        scale: [0.1, 2.0]
+        shear: 2.0
+        input_dim: [640, 640]
+        enable_mixup: True
+        mixup_prob: 1.0
+        mixup_scale: [0.5, 1.5]
+    - AugImage: {target_size: 640, hsv_prob: 1.0, flip_prob: 0.5}
+  batch_transforms:
+    - Permute: {}
+  batch_size: 8
+  shuffle: True
+  drop_last: True
+  collate_batch: False
+  mosaic_epoch: 285
+
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: 640, keep_ratio: True}
+    - Pad: {size: 640, fill_value: [114., 114., 114.]}
+    - Permute: {}
+  batch_size: 8
+
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 640, 640]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: 640, keep_ratio: True}
+    - Pad: {size: 640, fill_value: [114., 114., 114.]}
+    - Permute: {}
+  batch_size: 1

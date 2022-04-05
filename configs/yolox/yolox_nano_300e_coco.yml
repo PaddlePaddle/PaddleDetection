@@ -1,0 +1,55 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  './_base_/optimizer_300e.yml',
+  './_base_/yolox_cspdarknet.yml',
+  './_base_/yolox_tiny_reader.yml'
+]
+depth_mult: 0.33
+width_mult: 0.25
+
+log_iter: 100
+snapshot_epoch: 5
+weights: output/yolox_nano_300e_coco/model_final
+
+
+# YOLOX-nano use depthwise conv in backbone, neck and head
+YOLOX:
+  backbone: CSPDarkNet
+  neck: YOLOCSPPAN
+  head: YOLOXHead
+  size_range: [10, 20] # multi-scale [320*320 ~ 640*640]
+
+CSPDarkNet:
+  arch: "X"
+  return_idx: [2, 3, 4]
+  depthwise: True
+
+YOLOCSPPAN:
+  depthwise: True
+
+YOLOXHead:
+  l1_epoch: 285
+  depthwise: True
+
+
+worker_num: 4
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - YOLOXMosaic:
+        prob: 0.5 # 1.0 in YOLOX-tiny/S/M/L/X
+        degrees: 10.0
+        translate: 0.1
+        scale: [0.5, 1.5] # [0.1, 2.0] in YOLOX-S/M/L/X
+        shear: 2.0
+        input_dim: [416, 416]
+        enable_mixup: False # True in YOLOX-S/M/L/X
+    - AugImage: {target_size: 416, hsv_prob: 1.0, flip_prob: 0.5}
+  batch_transforms:
+    - Permute: {}
+  batch_size: 8
+  shuffle: True
+  drop_last: True
+  collate_batch: False
+  mosaic_epoch: 285

@@ -1,0 +1,20 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  './_base_/optimizer_300e.yml',
+  './_base_/yolox_cspdarknet.yml',
+  './_base_/yolox_tiny_reader.yml'
+]
+depth_mult: 0.33
+width_mult: 0.375
+
+log_iter: 100
+snapshot_epoch: 5
+weights: output/yolox_tiny_300e_coco/model_final
+
+
+YOLOX:
+  backbone: CSPDarkNet
+  neck: YOLOCSPPAN
+  head: YOLOXHead
+  size_range: [10, 20] # multi-scale [320*320 ~ 640*640]

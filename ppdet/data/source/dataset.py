@@ -75,7 +75,7 @@ class DetDataset(Dataset):
             n = len(self.roidbs)
             roidb = [roidb, ] + [
                 copy.deepcopy(self.roidbs[np.random.randint(n)])
-                for _ in range(3)
+                for _ in range(4)
             ]
         if isinstance(roidb, Sequence):
             for r in roidb:

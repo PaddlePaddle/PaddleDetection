@@ -54,6 +54,7 @@ class SimOTAAssigner(object):
         self.cls_weight = cls_weight
         self.num_classes = num_classes
         self.use_vfl = use_vfl
+        self._dtype = paddle.framework.get_default_dtype()
 
     def get_in_gt_and_in_center_info(self, flatten_center_and_stride,
                                      gt_bboxes):
@@ -203,14 +204,14 @@ class SimOTAAssigner(object):
                 valid_flatten_bboxes, gt_bboxes, mode='giou')
             cost_matrix = (
                 losses_vfl * self.cls_weight + losses_giou * self.iou_weight +
-                paddle.logical_not(is_in_boxes_and_center).cast('float32') *
+                paddle.logical_not(is_in_boxes_and_center).cast(self._dtype) *
                 100000000)
         else:
             iou_cost = -paddle.log(pairwise_ious + eps)
             gt_onehot_label = (F.one_hot(
                 gt_labels.squeeze(-1).cast(paddle.int64),
-                flatten_cls_pred_scores.shape[-1]).cast('float32').unsqueeze(0)
-                               .tile([num_valid_bboxes, 1, 1]))
+                flatten_cls_pred_scores.shape[-1]).cast(self._dtype).unsqueeze(
+                    0).tile([num_valid_bboxes, 1, 1]))
 
             valid_pred_scores = valid_cls_pred_scores.unsqueeze(1).tile(
                 [1, num_gt, 1])
@@ -219,8 +220,8 @@ class SimOTAAssigner(object):
 
             cost_matrix = (
                 cls_cost * self.cls_weight + iou_cost * self.iou_weight +
-                paddle.logical_not(is_in_boxes_and_center).cast('float32') *
-                100000000)
+                paddle.logical_not(is_in_boxes_and_center).cast(self._dtype) *
+                100000.0)
 
         match_gt_inds_to_fg, match_fg_mask_inmatrix = \
             self.dynamic_k_matching(
