@@ -19,7 +19,7 @@ import argparse
 from openvino.runtime import Core
 
 
-def image_preprocess_mobilenetv3(img_path, re_shape):
+def image_preprocess(img_path, re_shape):
     img = cv2.imread(img_path)
     img = cv2.resize(
         img, (re_shape, re_shape), interpolation=cv2.INTER_LANCZOS4)
@@ -38,7 +38,7 @@ def benchmark(img_file, onnx_file, re_shape):
     ie = Core()
     net = ie.read_model(onnx_file)
 
-    test_image = image_preprocess_mobilenetv3(img_file, re_shape)
+    test_image = image_preprocess(img_file, re_shape)
 
     compiled_model = ie.compile_model(net, 'CPU')
 
@@ -64,9 +64,9 @@ def benchmark(img_file, onnx_file, re_shape):
 
     time_avg = timeall / loop_num
 
-    print(
-        f'inference_time(ms): min={round(time_min*1000, 2)}, max = {round(time_max*1000, 1)}, avg = {round(time_avg*1000, 1)}'
-    )
+    print('inference_time(ms): min={}, max={}, avg={}'.format(
+        round(time_min * 1000, 2),
+        round(time_max * 1000, 1), round(time_avg * 1000, 1)))
 
 
 if __name__ == '__main__':
