@@ -11,7 +11,7 @@ TrainDataset:
 EvalDataset:
   !WIDERFaceDataSet
     dataset_dir: dataset/wider_face
-    anno_path: WIDER_val/labelv2.txt
+    anno_path: wider_face_split/wider_face_val_bbx_gt.txt
     image_dir: WIDER_val/images
     data_fields: ['image']
 

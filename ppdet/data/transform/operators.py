@@ -2029,7 +2029,7 @@ class Pad(BaseOperator):
         if self.size:
             h, w = self.size
             assert (
-                im_h < h and im_w < w
+                im_h <= h and im_w <= w
             ), '(h, w) of target size should be greater than (im_h, im_w)'
         else:
             h = np.ceil(im_h / self.size_divisor) * self.size_divisor

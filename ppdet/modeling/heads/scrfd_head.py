@@ -360,12 +360,13 @@ class SCRFDHead(nn.Layer):
         if num_total_pos > 0:
             pos_bbox_targets = paddle.gather(
                 flatten_bbox_targets, pos_inds, axis=0)
-            pos_cls_pred = paddle.gather(flatten_cls_preds, pos_inds, axis=0)
             pos_decode_bbox_pred = paddle.gather(
                 flatten_bboxes, pos_inds, axis=0)
 
+            pos_cls_pred = paddle.gather(
+                flatten_assigned_scores, pos_inds, axis=0)
             weight_targets = pos_cls_pred.detach()
-            weight_targets = F.sigmoid(weight_targets)
+            weight_targets = F.sigmoid(1 - weight_targets)
             #  weight_targets = paddle.gather(
             #      weight_targets.max(axis=1, keepdim=True), pos_inds, axis=0)
 
@@ -387,8 +388,7 @@ class SCRFDHead(nn.Layer):
         #  pos_decode_bbox_pred.detach().numpy(),
         #  pos_bbox_targets.detach().numpy(),
         #      is_aligned=True)
-        :
-        else
+        else:
             loss_iou = paddle.zeros([1])
 
         # classification loss
@@ -424,69 +424,9 @@ class SCRFDHead(nn.Layer):
             'loss_reg': loss_iou,
         }
 
-    def get_bboxes_single(self,
-                          anchors,
-                          cls_scores,
-                          bbox_preds,
-                          im_shape,
-                          scale_factor,
-                          rescale=True):
-        assert len(cls_scores) == len(bbox_preds)
-        mlvl_bboxes = []
-        mlvl_scores = []
-        for anchor, cls_score, bbox_pred in zip(anchors, cls_scores,
-                                                bbox_preds):
-            cls_score = cls_score.reshape([-1, self.num_classes])
-            bbox_pred = bbox_pred.reshape([-1, 4])
-            if self.nms_pre is not None and cls_score.shape[0] > self.nms_pre:
-                max_score = cls_score.max(axis=1)
-                _, topk_inds = max_score.topk(self.nms_pre)
-                bbox_pred = bbox_pred.gather(topk_inds)
-                anchor = anchor.gather(topk_inds)
-                cls_score = cls_score.gather(topk_inds)
-            bbox_pred = self.bbox_coder.decode(
-                anchor, bbox_pred, max_shape=im_shape)
-            bbox_pred = bbox_pred.squeeze()
-            mlvl_bboxes.append(bbox_pred)
-            mlvl_scores.append(F.sigmoid(cls_score))
-        mlvl_bboxes = paddle.concat(mlvl_bboxes)
-        mlvl_bboxes = paddle.squeeze(mlvl_bboxes)
-        if rescale:
-            mlvl_bboxes = mlvl_bboxes / paddle.concat(
-                [scale_factor[::-1], scale_factor[::-1]])
-        mlvl_scores = paddle.concat(mlvl_scores)
-        mlvl_scores = mlvl_scores.transpose([1, 0])
-        return mlvl_bboxes, mlvl_scores
-
-    def decode(self, anchors, cls_scores, bbox_preds, im_shape, scale_factor):
-        batch_bboxes = []
-        batch_scores = []
-        for img_id in range(cls_scores[0].shape[0]):
-            num_lvls = len(cls_scores)
-            cls_score_list = [cls_scores[i][img_id] for i in range(num_lvls)]
-            bbox_pred_list = [bbox_preds[i][img_id] for i in range(num_lvls)]
-            bboxes, scores = self.get_bboxes_single(
-                anchors, cls_score_list, bbox_pred_list, im_shape[img_id],
-                scale_factor[img_id])
-            batch_bboxes.append(bboxes)
-            batch_scores.append(scores)
-        batch_bboxes = paddle.stack(batch_bboxes, axis=0)
-        batch_scores = paddle.stack(batch_scores, axis=0)
-        return batch_bboxes, batch_scores
-
-    def post_process_bak(self, head_outputs, im_shape, scale_factor):
-        cls_scores, bbox_preds, _, _, _ = head_outputs
-        anchors = self.anchor_generator(cls_scores)
-        cls_scores = [_.transpose([0, 2, 3, 1]) for _ in cls_scores]
-        bbox_preds = [_.transpose([0, 2, 3, 1]) for _ in bbox_preds]
-        bboxes, scores = self.decode(anchors, cls_scores, bbox_preds, im_shape,
-                                     scale_factor)
-        bbox_pred, bbox_num, _ = self.nms(bboxes, scores)
-        return bbox_pred, bbox_num
-
     def post_process(self, head_outs, img_shape, scale_factor):
         pred_scores, pred_bboxes, _, _, _ = head_outs
-        pred_scores = pred_scores.transpose([0, 2, 1])
+        pred_scores = F.sigmoid(pred_scores.transpose([0, 2, 1]))
 
         for i in range(len(pred_bboxes)):
             pred_bboxes[i, :, 0] = pred_bboxes[i, :, 0].clip(

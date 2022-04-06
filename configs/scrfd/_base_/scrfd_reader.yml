@@ -27,7 +27,7 @@ EvalReader:
     - Decode: {}
     - Resize: {target_size: [640, 640], keep_ratio: True, interp: 1}
     - NormalizeImage: {mean:  [127.5, 127.5, 127.5], std: [128.0, 128.0, 128.0], is_scale: false}
-    - Pad: {size: [640, 640]}
+    - Pad: {size: [640, 640], fill_value: [0, 0, 0]}
     - Permute: {}
   batch_size: 1
 
@@ -39,6 +39,6 @@ TestReader:
     - Decode: {}
     - Resize: {target_size: [640, 640], keep_ratio: True, interp: 1}
     - NormalizeImage: {mean:  [127.5, 127.5, 127.5], std: [128.0, 128.0, 128.0], is_scale: false}
-    - Pad: {size: [640, 640]}
+    - Pad: {size: [640, 640], fill_value: [0, 0, 0]}
     - Permute: {}
   batch_size: 1

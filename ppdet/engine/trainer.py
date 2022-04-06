@@ -404,15 +404,15 @@ class Trainer(object):
                 #                      #      data_np[k] = v.numpy()
                 #                      #  pickle.dump(data_np, fd)
                 #  #                  sys.exit(0)
-                import pickle
-                with open('data_paddle.pkl', 'rb') as fd:
-                    data = pickle.load(fd)
-                for k, v in data.items():
-                    data[k] = paddle.to_tensor(v)
-                data['gt_bbox'] = paddle.cast(data['gt_bbox'], 'float32')
-                data['gt_class'] = paddle.cast(data['gt_class'], 'int32')
-                data['pad_gt_mask'] = paddle.cast(data['pad_gt_mask'],
-                                                  'float32')
+                #  import pickle
+                #  with open('output/test_data/data_paddle.pkl', 'rb') as fd:
+                #      data = pickle.load(fd)
+                #  for k, v in data.items():
+                #      data[k] = paddle.to_tensor(v)
+                #  data['gt_bbox'] = paddle.cast(data['gt_bbox'], 'float32')
+                #  data['gt_class'] = paddle.cast(data['gt_class'], 'int32')
+                #  data['pad_gt_mask'] = paddle.cast(data['pad_gt_mask'],
+                #  'float32')
 
                 ##
                 self.status['data_time'].update(time.time() - iter_tic)

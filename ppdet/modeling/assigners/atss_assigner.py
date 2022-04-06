@@ -67,8 +67,8 @@ class ATSSAssigner(nn.Layer):
             #  topk_idxs = paddle.to_tensor(topk_idxs.cpu().numpy()).astype('int64')
             topk_metrics, topk_idxs = paddle.topk(
                 distances, self.topk, axis=-1, largest=False)
-            # if self.topk % 2 != 0:
-            #      topk_idxs[..., -1] = topk_idxs[..., -1] // 2 * 2
+            #              if self.topk % 2 != 0:
+            #                  topk_idxs[..., -1] = topk_idxs[..., -1] // 2 * 2
             topk_idxs_list.append(topk_idxs + anchors_index)
             topk_idxs = paddle.where(pad_gt_mask, topk_idxs,
                                      paddle.zeros_like(topk_idxs))

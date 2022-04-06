@@ -1,4 +1,5 @@
 architecture: SCRFD
+use_ema: true
 SCRFD:
   backbone: ResNet
   neck: PAFPN
@@ -44,7 +45,7 @@ SCRFDHead:
     act: relu
     norm_group: 16
     use_dw_conv: false
-    norm_decay: 0
+    norm_decay: 0.
   anchor_generator:
     name: AnchorGenerator
     anchor_sizes: [[16, 32], [64, 128], [256, 512]]
