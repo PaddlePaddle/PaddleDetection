@@ -653,7 +653,7 @@ def load_predictor(model_dir,
     }
     if run_mode in precision_map.keys():
         config.enable_tensorrt_engine(
-            workspace_size=1 << 25,
+            workspace_size=(1 << 25) * batch_size,
             max_batch_size=batch_size,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[run_mode],
