@@ -24,16 +24,16 @@ pip install openvino==2022.1.0
 
 ```shell
 # Linux
-python openvino_benchmark.py --img_path ../../../../demo/000000014439.jpg --onnx_path out_onnxsim/picodet_xs_320_coco_lcnet.onnx --in_shape 320
+python openvino_benchmark.py --img_path ../../../../demo/000000014439.jpg --onnx_path out_onnxsim/picodet_s_320_coco_lcnet.onnx --in_shape 320
 # Windows
-python openvino_benchmark.py --img_path ..\..\..\..\demo\000000014439.jpg --onnx_path out_onnxsim\picodet_xs_320_coco_lcnet.onnx --in_shape 320
+python openvino_benchmark.py --img_path ..\..\..\..\demo\000000014439.jpg --onnx_path out_onnxsim\picodet_s_320_coco_lcnet.onnx --in_shape 320
 ```
 - 注意：```--in_shape```为对应模型输入size，默认为320
 
 ### Inference images
 
 ```shell
-python '.\openvino_benchmark.py' --mod 1 --img_path ..\..\..\..\demo\000000014439.jpg --onnx_path out_onnxsim\picodet_s_320_coco_lcnet.onnx --in_shape 320
+python '.\openvino_benchmark.py' --benchmark 0 --img_path ..\..\..\..\demo\000000014439.jpg --onnx_path out_onnxsim\picodet_s_320_coco_lcnet.onnx --in_shape 320
 ```
 
 ## 结果

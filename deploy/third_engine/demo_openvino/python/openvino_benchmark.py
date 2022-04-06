@@ -414,7 +414,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--mod', type=int, default=0, help="0:benchmark; 1:detect")
+        '--benchmark', type=int, default=1, help="0:detect; 1:benchmark")
     parser.add_argument(
         '--img_path',
         type=str,
@@ -433,7 +433,7 @@ if __name__ == '__main__':
     test_image = image_preprocess(args.img_path, args.in_shape)
     compiled_model = ie.compile_model(net, 'CPU')
 
-    if args.mod == 0:
-        benchmark(test_image, compiled_model)
-    if args.mod == 1:
+    if args.benchmark == 0:
         detect(args.img_path, compiled_model, args.in_shape)
+    if args.benchmark == 1:
+        benchmark(test_image, compiled_model)
