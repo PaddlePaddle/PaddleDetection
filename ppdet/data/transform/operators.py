@@ -3024,7 +3024,7 @@ class CenterRandColor(BaseOperator):
 @register_op
 class YOLOXMosaic(BaseOperator):
     def __init__(self,
-                 prob=0.5,
+                 prob=1.0,
                  degrees=10.0,
                  translate=0.1,
                  scale=[0.1, 2],
@@ -3036,8 +3036,14 @@ class YOLOXMosaic(BaseOperator):
                  remove_outside_box=False):
         """ YOLOXMosaic image and gt_bbbox/gt_score
         Args:
-            alpha (float): alpha parameter of beta distribute
-            beta (float): beta parameter of beta distribute
+            prob (float): probability of using YOLOXMosaic, 1.0 as default,
+                set 0.5 in YOLOX-nano.
+            input_dim (list[int]): input shape
+            enable_mixup (bool): whether to enable mixup or not
+            mixup_prob (float): probability of using mixup
+            mixup_scale (list[int]): scale range of mixup
+            remove_outside_box (bool): whether remove outside boxes, False as
+                default in COCO dataset, True in MOT dataset
         """
         super(YOLOXMosaic, self).__init__()
         self.prob = prob
@@ -3053,7 +3059,6 @@ class YOLOXMosaic(BaseOperator):
 
     def get_mosaic_coordinate(self, mosaic_index, xc, yc, w, h, input_h,
                               input_w):
-        # TODO update doc
         # index0 to top left part of image
         if mosaic_index == 0:
             x1, y1, x2, y2 = max(xc - w, 0), max(yc - h, 0), xc, yc
@@ -3077,8 +3082,9 @@ class YOLOXMosaic(BaseOperator):
         if not isinstance(sample, Sequence):
             return sample
 
-        assert len(sample) == 5, "YOLOXMosaic needs 5 samples, " 
-            "4 for mosaic and 1 for mixup."
+        assert len(
+            sample
+        ) == 5, "YOLOXMosaic needs 5 samples, 4 for mosaic and 1 for mixup."
         if np.random.uniform(0., 1.) > self.prob:
             return sample[0]
 

@@ -18,6 +18,7 @@ YOLOX:
   backbone: CSPDarkNet
   neck: YOLOCSPPAN
   head: YOLOXHead
+  input_size: (416, 416)
   size_range: [10, 20] # multi-scale [320*320 ~ 640*640]
 
 CSPDarkNet:

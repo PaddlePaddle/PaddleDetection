@@ -92,9 +92,7 @@ class YOLOX(BaseArch):
         neck_feats = self.neck(body_feats, self.for_mot)
 
         if self.training:
-            yolo_losses = self.head(neck_feats, self.inputs)
-            #yolo_losses.update({'size': target_size_tensor})
-            return yolo_losses
+            return self.head(neck_feats, self.inputs)
         else:
             head_outs = self.head(neck_feats)
             bbox, bbox_num = self.head.post_process(
@@ -118,8 +116,10 @@ class YOLOX(BaseArch):
                 mode='bilinear',
                 align_corners=False)
             gt_bboxes = self.inputs['gt_bbox']
-            gt_bboxes[:, :, 0::2] = gt_bboxes[:, :, 0::2] * scale_x
-            gt_bboxes[:, :, 1::2] = gt_bboxes[:, :, 1::2] * scale_y
+            for i in range(len(gt_bboxes)):
+                if len(gt_bboxes[i]) > 0:
+                    gt_bboxes[i][:, 0::2] = gt_bboxes[i][:, 0::2] * scale_x
+                    gt_bboxes[i][:, 1::2] = gt_bboxes[i][:, 1::2] * scale_y
             self.inputs['gt_bbox'] = gt_bboxes
 
     def _get_size(self):
@@ -128,7 +128,7 @@ class YOLOX(BaseArch):
             size_range = random.randint(*self.size_range)
             size = [
                 self.size_stride * size_range,
-                self.size_stride * size_range * image_ratio
+                self.size_stride * int(size_range * image_ratio)
             ]
             size = paddle.to_tensor(size)
             if dist.get_world_size() > 1 and paddle_distributed_is_initialized(
