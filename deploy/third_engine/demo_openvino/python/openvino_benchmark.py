@@ -34,9 +34,10 @@ def image_preprocess(img_path, re_shape):
     return img.astype(np.float32)
 
 
-def draw_box(img, results, scale_x, scale_y):
+def draw_box(img, results, class_label, scale_x, scale_y):
+
     label_list = list(
-        map(lambda x: x.strip(), open('coco.names', 'r').readlines()))
+        map(lambda x: x.strip(), open(class_label, 'r').readlines()))
 
     for i in range(len(results)):
         print(label_list[int(results[i][0])], ':', results[i][1])
@@ -271,7 +272,7 @@ class PicoDetPostProcess(object):
         return out_boxes_list, out_boxes_num
 
 
-def detect(img_file, compiled_model, re_shape):
+def detect(img_file, compiled_model, re_shape, class_label):
     output = compiled_model.infer_new_request({0: test_image})
     result_ie = list(output.values())  #[0]
 
@@ -294,7 +295,7 @@ def detect(img_file, compiled_model, re_shape):
     image = cv2.imread(img_file, 1)
     scale_x = image.shape[1] / test_image.shape[3]
     scale_y = image.shape[0] / test_image.shape[2]
-    res_image = draw_box(image, np_boxes, scale_x, scale_y)
+    res_image = draw_box(image, np_boxes, class_label, scale_x, scale_y)
 
     cv2.imwrite('res.jpg', res_image)
     cv2.imshow("res", res_image)
@@ -346,6 +347,11 @@ if __name__ == '__main__':
         default='out_onnxsim/picodet_s_320_processed.onnx',
         help="onnx filepath")
     parser.add_argument('--in_shape', type=int, default=320, help="input_size")
+    parser.add_argument(
+        '--class_label',
+        type=str,
+        default='coco_label.txt',
+        help="class label file")
     args = parser.parse_args()
 
     ie = Core()
@@ -354,6 +360,6 @@ if __name__ == '__main__':
     compiled_model = ie.compile_model(net, 'CPU')
 
     if args.benchmark == 0:
-        detect(args.img_path, compiled_model, args.in_shape)
+        detect(args.img_path, compiled_model, args.in_shape, args.class_label)
     if args.benchmark == 1:
         benchmark(test_image, compiled_model)
