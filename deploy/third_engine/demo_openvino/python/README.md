@@ -28,9 +28,9 @@ mkdir out_onnxsim
 
 ```shell
 #Windows
-python '.\openvino_ppdet2 copy.py' --img_path ..\..\..\..\demo\000000570688.jpg --onnx_path out_onnxsim\picodet_xs_320_coco_lcnet.onnx --in_shape 320
+python '.\openvino_benchmark.py' --img_path ..\..\..\..\demo\000000570688.jpg --onnx_path out_onnxsim\picodet_xs_320_coco_lcnet.onnx --in_shape 320
 #Linux
-python './openvino_ppdet2 copy.py' --img_path ../../../../demo/000000570688.jpg --onnx_path out_onnxsim/picodet_xs_320_coco_lcnet.onnx --in_shape 320
+python './openvino_benchmark.py' --img_path ../../../../demo/000000570688.jpg --onnx_path out_onnxsim/picodet_xs_320_coco_lcnet.onnx --in_shape 320
 ```
 注意：```--in_shape```为对应模型输入size，默认为320
 
