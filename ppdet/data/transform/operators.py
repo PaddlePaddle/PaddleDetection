@@ -3032,7 +3032,8 @@ class YOLOXMosaic(BaseOperator):
                  input_dim=[640, 640],
                  enable_mixup=True,
                  mixup_prob=1.0,
-                 mixup_scale=[0.5, 1.5]):
+                 mixup_scale=[0.5, 1.5],
+                 remove_outside_box=False):
         """ YOLOXMosaic image and gt_bbbox/gt_score
         Args:
             alpha (float): alpha parameter of beta distribute
@@ -3048,6 +3049,7 @@ class YOLOXMosaic(BaseOperator):
         self.enable_mixup = enable_mixup
         self.mixup_prob = mixup_prob
         self.mixup_scale = mixup_scale
+        self.remove_outside_box = remove_outside_box
 
     def get_mosaic_coordinate(self, mosaic_index, xc, yc, w, h, input_h,
                               input_w):
@@ -3075,7 +3077,8 @@ class YOLOXMosaic(BaseOperator):
         if not isinstance(sample, Sequence):
             return sample
 
-        assert len(sample) == 5, 'YOLOXMosaic need five samples'
+        assert len(sample) == 5, "YOLOXMosaic needs 5 samples, " 
+            "4 for mosaic and 1 for mixup."
         if np.random.uniform(0., 1.) > self.prob:
             return sample[0]
 
@@ -3083,7 +3086,6 @@ class YOLOXMosaic(BaseOperator):
         mosaic_gt_class = []
         mosaic_gt_bbox = []
         input_h, input_w = self.input_dim
-        # yc, xc = s, s  # mosaic center x, y
         yc = int(random.uniform(0.5 * input_h, 1.5 * input_h))
         xc = int(random.uniform(0.5 * input_w, 1.5 * input_w))
         mosaic_img = np.full((input_h * 2, input_w * 2, 3), 114, dtype=np.uint8)
@@ -3093,12 +3095,11 @@ class YOLOXMosaic(BaseOperator):
             is_crowd = sp['is_crowd']
             gt_class = sp['gt_class']
             gt_bbox = sp['gt_bbox']
-            h0, w0 = img.shape[:2]  # orig hw
+            h0, w0 = img.shape[:2]
             scale = min(1. * input_h / h0, 1. * input_w / w0)
             img = cv2.resize(
                 img, (int(w0 * scale), int(h0 * scale)),
                 interpolation=cv2.INTER_LINEAR)
-            # generate output mosaic image
             (h, w, c) = img.shape[:3]
             # suffix l means large image, while s means small image in mosaic aug.
             (l_x1, l_y1, l_x2, l_y2), (
@@ -3124,18 +3125,52 @@ class YOLOXMosaic(BaseOperator):
             mosaic_gt_bbox = np.concatenate(mosaic_gt_bbox, 0)
             mosaic_gt_class = np.concatenate(mosaic_gt_class, 0)
             mosaic_is_crowd = np.concatenate(mosaic_is_crowd, 0)
-            np.clip(
-                mosaic_gt_bbox[:, 0], 0, 2 * input_w, out=mosaic_gt_bbox[:, 0])
-            np.clip(
-                mosaic_gt_bbox[:, 1], 0, 2 * input_h, out=mosaic_gt_bbox[:, 1])
-            np.clip(
-                mosaic_gt_bbox[:, 2], 0, 2 * input_w, out=mosaic_gt_bbox[:, 2])
-            np.clip(
-                mosaic_gt_bbox[:, 3], 0, 2 * input_h, out=mosaic_gt_bbox[:, 3])
-            mosaic_labels = np.concatenate([
-                mosaic_gt_bbox, mosaic_gt_class.astype(mosaic_gt_bbox.dtype),
-                mosaic_is_crowd.astype(mosaic_gt_bbox.dtype)
-            ], 1)
+            if self.remove_outside_box:
+                # for MOT dataset
+                mosaic_labels = np.concatenate([
+                    mosaic_gt_bbox,
+                    mosaic_gt_class.astype(mosaic_gt_bbox.dtype),
+                    mosaic_is_crowd.astype(mosaic_gt_bbox.dtype)
+                ], 1)
+
+                mosaic_labels = np.concatenate([
+                    mosaic_gt_bbox,
+                    mosaic_gt_class.astype(mosaic_gt_bbox.dtype),
+                    mosaic_is_crowd.astype(mosaic_gt_bbox.dtype)
+                ], 1)
+                flag1 = mosaic_gt_bbox[:, 0] < 2 * input_w
+                flag2 = mosaic_gt_bbox[:, 2] > 0
+                flag3 = mosaic_gt_bbox[:, 1] < 2 * input_h
+                flag4 = mosaic_gt_bbox[:, 3] > 0
+                flag_all = flag1 * flag2 * flag3 * flag4
+                mosaic_labels = mosaic_labels[flag_all]
+
+            else:
+                np.clip(
+                    mosaic_gt_bbox[:, 0],
+                    0,
+                    2 * input_w,
+                    out=mosaic_gt_bbox[:, 0])
+                np.clip(
+                    mosaic_gt_bbox[:, 1],
+                    0,
+                    2 * input_h,
+                    out=mosaic_gt_bbox[:, 1])
+                np.clip(
+                    mosaic_gt_bbox[:, 2],
+                    0,
+                    2 * input_w,
+                    out=mosaic_gt_bbox[:, 2])
+                np.clip(
+                    mosaic_gt_bbox[:, 3],
+                    0,
+                    2 * input_h,
+                    out=mosaic_gt_bbox[:, 3])
+                mosaic_labels = np.concatenate([
+                    mosaic_gt_bbox,
+                    mosaic_gt_class.astype(mosaic_gt_bbox.dtype),
+                    mosaic_is_crowd.astype(mosaic_gt_bbox.dtype)
+                ], 1)
         else:
             mosaic_labels = np.zeros((1, 6))
 
@@ -3147,6 +3182,7 @@ class YOLOXMosaic(BaseOperator):
             translate=self.translate,
             scales=self.scale,
             shear=self.shear, )
+
         # -----------------------------------------------------------------
         # CopyPaste: https://arxiv.org/abs/2012.07177
         # -----------------------------------------------------------------
@@ -3161,14 +3197,15 @@ class YOLOXMosaic(BaseOperator):
             ], 1)
             mosaic_img, mosaic_labels = self.mixup(
                 mosaic_img, mosaic_labels, self.input_dim, cp_labels, img_mixup)
+
         sample0 = sample[0]
-        sample0['image'] = mosaic_img.astype(np.uint8)
+        sample0['image'] = mosaic_img.astype(np.uint8)  # can not be float32
         sample0['h'] = float(mosaic_img.shape[0])
         sample0['w'] = float(mosaic_img.shape[1])
         sample0['im_shape'][0] = sample0['h']
         sample0['im_shape'][1] = sample0['w']
         sample0['gt_bbox'] = mosaic_labels[:, :4].astype(np.float32)
-        sample0['gt_class'] = mosaic_labels[:, 4:5].astype(np.int32)
+        sample0['gt_class'] = mosaic_labels[:, 4:5].astype(np.float32)
         sample0['is_crowd'] = mosaic_labels[:, 5:6].astype(np.float32)
         return sample0
 
@@ -3232,6 +3269,15 @@ class YOLOXMosaic(BaseOperator):
         cp_bboxes_transformed_np[:, 1::2] = np.clip(
             cp_bboxes_transformed_np[:, 1::2] - y_offset, 0, target_h)
 
+        if self.remove_outside_box:
+            # for MOT dataset
+            cp_bboxes_transformed_np[:, 0::
+                                     2] = cp_bboxes_transformed_np[:, 0::
+                                                                   2] - x_offset
+            cp_bboxes_transformed_np[:, 1::
+                                     2] = cp_bboxes_transformed_np[:, 1::
+                                                                   2] - y_offset
+
         cls_labels = cp_labels[:, 4:5].copy()
         crd_labels = cp_labels[:, 5:6].copy()
         box_labels = cp_bboxes_transformed_np
@@ -3265,7 +3311,7 @@ class AugImage(BaseOperator):
                     self.target_size[1] / img.shape[1])
         w, h = int(img.shape[1] * ratio), int(img.shape[0] * ratio)
         resized_img = cv2.resize(img, (w, h), interpolation=cv2.INTER_LINEAR)
-        # apply to bbox
+
         if len(bboxes) > 0:
             bboxes *= ratio
             mask = np.minimum(bboxes[:, 2] - bboxes[:, 0],
