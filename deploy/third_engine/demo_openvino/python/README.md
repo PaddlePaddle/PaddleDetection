@@ -1,10 +1,10 @@
 # PicoDet OpenVINO Benchmark Demo
 
-本文件夹提供利用[Intel's OpenVINO Toolkit](https://software.intel.com/content/www/us/en/release/2.4/tools/openvino-toolkit.html)进行PicoDet测速的Benchmark Demo
+本文件夹提供利用[Intel's OpenVINO Toolkit](https://software.intel.com/content/www/us/en/develop/tools/openvino-toolkit.html)进行PicoDet测速的Benchmark Demo
 
 ## 安装 OpenVINO Toolkit
 
-前往 [OpenVINO HomePage](https://software.intel.com/content/www/us/en/release/2.4/tools/openvino-toolkit.html)，下载对应版本并安装。
+前往 [OpenVINO HomePage](https://software.intel.com/content/www/us/endevelop/tools/openvino-toolkit.html)，下载对应版本并安装。
 
 本demo安装的是 OpenVINO 2022.1.0，可直接运行如下指令安装：
 ```shell
