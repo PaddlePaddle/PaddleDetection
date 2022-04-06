@@ -326,21 +326,17 @@ class YOLOXHead(nn.Layer):
             mask_positive.astype(pred_obj.dtype).unsqueeze(-1),
             reduction='sum')
 
-        # select positive samples mask
-        num_pos = paddle.to_tensor(
-            sum(pos_num_list), dtype=self._dtype).clip(min=1)
-
-        if paddle_distributed_is_initialized():
-            paddle.distributed.all_reduce(num_pos)
-            num_pos = paddle.clip(
-                num_pos / paddle.distributed.get_world_size(), min=1)
+        num_pos = sum(pos_num_list)
 
         # pos/neg loss
         if num_pos > 0:
+            # select positive samples mask
+            num_pos = paddle.to_tensor(num_pos, dtype=self._dtype).clip(min=1)
             # l1 + iou
             bbox_mask = mask_positive.unsqueeze(-1).tile([1, 1, 4])
-            pred_bboxes_pos = paddle.masked_select(pred_bboxes,
-                                                   bbox_mask).reshape([-1, 4])
+            pred_bboxes_pos = paddle.masked_select(pred_bboxes, bbox_mask)
+            pred_bboxes_pos = pred_bboxes_pos.reshape([-1, 4])
+
             assigned_bboxes_pos = paddle.masked_select(
                 bbox_targets, bbox_mask).reshape([-1, 4])
             bbox_iou = bbox_overlaps(pred_bboxes_pos, assigned_bboxes_pos)
@@ -372,6 +368,9 @@ class YOLOXHead(nn.Layer):
             loss_cls = paddle.zeros([1])
             loss_iou = paddle.zeros([1])
             loss_l1 = paddle.zeros([1])
+            loss_cls.stop_gradient = False
+            loss_iou.stop_gradient = False
+            loss_l1.stop_gradient = False
 
         loss_obj /= num_pos
         loss = self.loss_weight['obj'] * loss_obj + \
@@ -381,6 +380,8 @@ class YOLOXHead(nn.Layer):
             loss += (self.loss_weight['l1'] * loss_l1)
         else:
             loss_l1 = paddle.zeros([1])
+            loss_l1.stop_gradient = False
+
         out_dict = {
             'loss': loss,
             'loss_obj': loss_obj,

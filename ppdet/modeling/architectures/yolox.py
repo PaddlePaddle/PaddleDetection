@@ -18,6 +18,7 @@ from __future__ import print_function
 
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
+
 import random
 import paddle
 import paddle.distributed as dist
@@ -36,9 +37,9 @@ class YOLOX(BaseArch):
                  neck='YOLOCSPPAN',
                  head='YOLOXHead',
                  for_mot=False,
-                 input_size=(640, 640),
+                 input_size=[640, 640],
                  size_stride=32,
-                 size_range=(15, 25),
+                 size_range=[15, 25],
                  random_interval=10):
         """
         YOLOX network, see https://arxiv.org/abs/2107.08430
@@ -48,9 +49,9 @@ class YOLOX(BaseArch):
             neck (nn.Layer): neck instance
             head (nn.Layer): head instance
             for_mot (bool): whether used for MOT or not
-            input_size (tuple[int]): initial scale, will be reset by self._preprocess()
+            input_size (list[int]): initial scale, will be reset by self._preprocess()
             size_stride (int): stride of the size range
-            size_range (tuple[int]): multi-scale range for training
+            size_range (list[int]): multi-scale range for training
             random_interval (int): interval of iter to change self._input_size
         """
         super(YOLOX, self).__init__()
@@ -59,7 +60,7 @@ class YOLOX(BaseArch):
         self.head = head
         self.for_mot = for_mot
 
-        self.init_input_size = input_size
+        self.input_size = input_size
         self._input_size = paddle.to_tensor(input_size)
         self.size_stride = size_stride
         self.size_range = size_range
@@ -92,7 +93,9 @@ class YOLOX(BaseArch):
         neck_feats = self.neck(body_feats, self.for_mot)
 
         if self.training:
-            return self.head(neck_feats, self.inputs)
+            yolo_losses = self.head(neck_feats, self.inputs)
+            yolo_losses.update({'size': self._input_size[0]})
+            return yolo_losses
         else:
             head_outs = self.head(neck_feats)
             bbox, bbox_num = self.head.post_process(
@@ -107,8 +110,8 @@ class YOLOX(BaseArch):
 
     def _preprocess(self):
         self._get_size()
-        scale_y = self._input_size[0] / self.init_input_size[0]
-        scale_x = self._input_size[1] / self.init_input_size[1]
+        scale_y = self._input_size[0] / self.input_size[0]
+        scale_x = self._input_size[1] / self.input_size[1]
         if scale_x != 1 or scale_y != 1:
             self.inputs['image'] = F.interpolate(
                 self.inputs['image'],
@@ -123,12 +126,12 @@ class YOLOX(BaseArch):
             self.inputs['gt_bbox'] = gt_bboxes
 
     def _get_size(self):
-        image_ratio = self._input_size[1] * 1.0 / self._input_size[0]
+        image_ratio = self.input_size[1] * 1.0 / self.input_size[0]
         if self._step % self.random_interval == 0:
-            size_range = random.randint(*self.size_range)
+            size_factor = random.randint(*self.size_range)
             size = [
-                self.size_stride * size_range,
-                self.size_stride * int(size_range * image_ratio)
+                self.size_stride * size_factor,
+                self.size_stride * int(size_factor * image_ratio)
             ]
             size = paddle.to_tensor(size)
             if dist.get_world_size() > 1 and paddle_distributed_is_initialized(
