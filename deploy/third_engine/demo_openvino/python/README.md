@@ -11,7 +11,7 @@
 pip install openvino==2022.1.0
 ```
 
-详细安装步骤，可参考官网: https://docs.openvinotoolkit.org/latest/get_started_guides.html
+详细安装步骤，可参考[OpenVINO官网](https://docs.openvinotoolkit.org/latest/get_started_guides.html)
 
 ## 测试
 
@@ -47,9 +47,9 @@ python '.\openvino_benchmark.py' --mod 1 --img_path ..\..\..\..\demo\00000001443
 
 ## 结果
 
-在英特尔酷睿i7 10750H 的CPU上测试结果如下：
+测试结果如下：
 
-| 模型     | 输入尺寸 | ONNX  | 预测时延<sup><small>[ms](#latency)|
+| 模型     | 输入尺寸 | ONNX  | 预测时延<sup><small>[CPU](#latency)|
 | :-------- | :--------: | :---------------------: | :----------------: |
 | PicoDet-XS |  320*320   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_xs_320_coco_lcnet.onnx) | 3.9ms |
 | PicoDet-XS |  416*416   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_xs_416_coco_lcnet.onnx) | 6.1ms |
@@ -60,3 +60,5 @@ python '.\openvino_benchmark.py' --mod 1 --img_path ..\..\..\..\demo\00000001443
 | PicoDet-L |  320*320   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_l_320_coco_lcnet.onnx) | 11.5ms |
 | PicoDet-L |  416*416   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_l_416_coco_lcnet.onnx) |     20.7ms |
 | PicoDet-L |  640*640   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_l_640_coco.onnx) |     62.5ms |
+
+- <a name="latency">测试环境：</a> 英特尔酷睿i7 10750H CPU。
