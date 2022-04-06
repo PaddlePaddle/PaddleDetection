@@ -15,32 +15,23 @@ pip install openvino==2022.1.0
 
 ## 测试
 
-准备测试模型，根据[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet)中模型导出与转换步骤，采用不包含后处理的方式导出模型（`-o export.benchmark=True` ），并生成待测试模型简化后的onnx（可在下文链接中直接下载）
-在本目录下新建```out_onnxsim```文件夹：
-```shell
-mkdir out_onnxsim
-```
-将导出的onnx模型放在该目录下
+- 准备测试模型：根据[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet)中【导出及转换模型】步骤，采用不包含后处理的方式导出模型（`-o export.benchmark=True` ），并生成待测试模型简化后的onnx模型（可在下文链接中可直接下载）。同时在本目录下新建```out_onnxsim```文件夹，将导出的onnx模型放在该目录下。
 
-准备测试所用图片，本demo默认利用PaddleDetection/demo/[000000014439.jpg](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/demo/000000014439.jpg)
+- 准备测试所用图片：本demo默认利用PaddleDetection/demo/[000000014439.jpg](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/demo/000000014439.jpg)
 
 ### Benchmark
-在本目录下直接运行：
+- 在本目录下直接运行：
 
 ```shell
-#Windows
-python '.\openvino_benchmark.py' --mod 0 --img_path ..\..\..\..\demo\000000014439.jpg --onnx_path out_onnxsim\picodet_s_320_coco_lcnet.onnx --in_shape 320
-#Linux
-python './openvino_benchmark.py' --mod 0 --img_path ../../../../demo/000000014439.jpg --onnx_path out_onnxsim/picodet_s_320_coco_lcnet.onnx --in_shape 320
+# Linux
+python openvino_benchmark.py --img_path ../../../../demo/000000014439.jpg --onnx_path out_onnxsim/picodet_xs_320_coco_lcnet.onnx --in_shape 320
+# Windows
+python openvino_benchmark.py --img_path ..\..\..\..\demo\000000014439.jpg --onnx_path out_onnxsim\picodet_xs_320_coco_lcnet.onnx --in_shape 320
 ```
-注意：```--in_shape```为对应模型输入size，默认为320
-
-输出：
-```shell
-inference_time(ms): min=3.9, max = 10.0, avg = 4.8
-```
+- 注意：```--in_shape```为对应模型输入size，默认为320
 
 ### Inference images
+
 ```shell
 python '.\openvino_benchmark.py' --mod 1 --img_path ..\..\..\..\demo\000000014439.jpg --onnx_path out_onnxsim\picodet_s_320_coco_lcnet.onnx --in_shape 320
 ```

@@ -20,7 +20,7 @@ from scipy.special import softmax
 from openvino.runtime import Core
 
 
-def image_preprocess_mobilenetv3(img_path, re_shape):
+def image_preprocess(img_path, re_shape):
     img = cv2.imread(img_path)
     img = cv2.resize(
         img, (re_shape, re_shape), interpolation=cv2.INTER_LANCZOS4)
@@ -405,9 +405,9 @@ def benchmark(test_image, compiled_model):
 
     time_avg = timeall / loop_num
 
-    print(
-        f'inference_time(ms): min={round(time_min*1000, 1)}, max = {round(time_max*1000, 1)}, avg = {round(time_avg*1000, 1)}'
-    )
+    print('inference_time(ms): min={}, max={}, avg={}'.format(
+        round(time_min * 1000, 2),
+        round(time_max * 1000, 1), round(time_avg * 1000, 1)))
 
 
 if __name__ == '__main__':
@@ -430,7 +430,7 @@ if __name__ == '__main__':
 
     ie = Core()
     net = ie.read_model(args.onnx_path)
-    test_image = image_preprocess_mobilenetv3(args.img_path, args.in_shape)
+    test_image = image_preprocess(args.img_path, args.in_shape)
     compiled_model = ie.compile_model(net, 'CPU')
 
     if args.mod == 0:
