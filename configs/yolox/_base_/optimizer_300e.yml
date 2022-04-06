@@ -8,8 +8,7 @@ LearningRate:
     min_lr_ratio: 0.05
     last_plateau_epochs: 15
   - !ExpWarmup
-    steps: 5
-    use_epoch: True
+    epochs: 5
 
 OptimizerBuilder:
   optimizer:

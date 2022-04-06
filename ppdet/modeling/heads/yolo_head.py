@@ -192,7 +192,7 @@ class YOLOXHead(nn.Layer):
             self.stem_conv.append(BaseConv(in_c, feat_channels, 1, 1, act=act))
 
             self.conv_cls.append(
-                nn.Sequential(* [
+                nn.Sequential(*[
                     ConvBlock(
                         feat_channels, feat_channels, 3, 1, act=act), ConvBlock(
                             feat_channels, feat_channels, 3, 1, act=act),
@@ -203,7 +203,7 @@ class YOLOXHead(nn.Layer):
                         bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
                 ]))
             self.conv_reg.append(
-                nn.Sequential(* [
+                nn.Sequential(*[
                     ConvBlock(
                         feat_channels, feat_channels, 3, 1, act=act),
                     ConvBlock(
@@ -394,13 +394,6 @@ class YOLOXHead(nn.Layer):
         pred_scores, pred_bboxes, stride_tensor = head_outs
         pred_scores = pred_scores.transpose([0, 2, 1])
         pred_bboxes *= stride_tensor
-        # clip bbox to image shape
-        # img_shape = img_shape.flip(-1).tile([1, 2]).unsqueeze(1)
-        # pred_bboxes = paddle.where(pred_bboxes < img_shape, pred_bboxes,
-        #                            img_shape)
-        # pred_bboxes = paddle.where(pred_bboxes > 0, pred_bboxes,
-        #                            paddle.zeros_like(pred_bboxes))
-
         # scale bbox to origin
         scale_factor = scale_factor.flip(-1).tile([1, 2]).unsqueeze(1)
         pred_bboxes /= scale_factor

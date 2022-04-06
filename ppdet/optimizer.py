@@ -214,18 +214,20 @@ class ExpWarmup(object):
     """
     Warm up learning rate in exp mode
     Args:
-        steps (int): warm up steps
+        steps (int): warm up steps.
+        epochs (int|None): use epochs as warm up steps, the priority
+            of `epochs` is higher than `steps`. Default: None.
     """
 
-    def __init__(self, steps=5, use_epoch=True):
+    def __init__(self, steps=5, epochs=None):
         super(ExpWarmup, self).__init__()
         self.steps = steps
-        self.use_epoch = use_epoch
+        self.epochs = epochs
 
     def __call__(self, base_lr, step_per_epoch):
         boundary = []
         value = []
-        warmup_steps = self.steps * step_per_epoch if self.use_epoch else self.steps
+        warmup_steps = self.epochs * step_per_epoch if self.epochs is not None else self.steps
         for i in range(warmup_steps + 1):
             factor = (i / float(warmup_steps))**2
             value.append(base_lr * factor)
