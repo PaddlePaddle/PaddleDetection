@@ -191,9 +191,7 @@ def match_state_dict(model_state_dict, weight_state_dict):
     return result_state_dict
 
 
-def load_pretrain_weight(model,
-                         pretrain_weight,
-                         dtype=paddle.framework.get_default_dtype()):
+def load_pretrain_weight(model, pretrain_weight):
     if is_url(pretrain_weight):
         pretrain_weight = get_weights_path(pretrain_weight)
 
@@ -210,9 +208,6 @@ def load_pretrain_weight(model,
     weights_path = path + '.pdparams'
     param_state_dict = paddle.load(weights_path)
     param_state_dict = match_state_dict(model_dict, param_state_dict)
-
-    for k, v in param_state_dict.items():
-        param_state_dict[k] = v.astype(dtype)
 
     model.set_dict(param_state_dict)
     logger.info('Finish loading model weights: {}'.format(weights_path))
