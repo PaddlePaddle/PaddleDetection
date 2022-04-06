@@ -440,7 +440,8 @@ class MultiClassNMS(object):
                  normalized=True,
                  nms_eta=1.0,
                  return_index=False,
-                 return_rois_num=True):
+                 return_rois_num=True,
+                 trt=False):
         super(MultiClassNMS, self).__init__()
         self.score_threshold = score_threshold
         self.nms_top_k = nms_top_k
@@ -450,6 +451,7 @@ class MultiClassNMS(object):
         self.nms_eta = nms_eta
         self.return_index = return_index
         self.return_rois_num = return_rois_num
+        self.trt = trt
 
     def __call__(self, bboxes, score, background_label=-1):
         """
@@ -471,7 +473,15 @@ class MultiClassNMS(object):
             kwargs.update({'rois_num': bbox_num})
         if background_label > -1:
             kwargs.update({'background_label': background_label})
-        return ops.multiclass_nms(bboxes, score, **kwargs)
+        if self.trt:
+            kwargs.pop('trt')
+            kwargs.update({'nms_eta': 1.1})
+            bbox, bbox_num, _ = ops.multiclass_nms(bboxes, score, **kwargs)
+            mask = bbox[..., 0:1] != -1
+            bbox = paddle.masked_select(bbox, mask)
+            return bbox, bbox_num, None
+        else:
+            return ops.multiclass_nms(bboxes, score, **kwargs)
 
 
 @register
