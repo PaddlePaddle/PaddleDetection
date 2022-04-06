@@ -22,22 +22,32 @@ mkdir out_onnxsim
 ```
 将导出的onnx模型放在该目录下
 
-准备测试所用图片，本demo默认利用PaddleDetection/demo/[000000570688.jpg](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/demo/000000570688.jpg)
+准备测试所用图片，本demo默认利用PaddleDetection/demo/[000000014439.jpg](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/demo/000000014439.jpg)
 
+### Benchmark
 在本目录下直接运行：
 
 ```shell
 #Windows
-python '.\openvino_benchmark.py' --img_path ..\..\..\..\demo\000000570688.jpg --onnx_path out_onnxsim\picodet_xs_320_coco_lcnet.onnx --in_shape 320
+python '.\openvino_benchmark.py' --mod 0 --img_path ..\..\..\..\demo\000000014439.jpg --onnx_path out_onnxsim\picodet_s_320_coco_lcnet.onnx --in_shape 320
 #Linux
-python './openvino_benchmark.py' --img_path ../../../../demo/000000570688.jpg --onnx_path out_onnxsim/picodet_xs_320_coco_lcnet.onnx --in_shape 320
+python './openvino_benchmark.py' --mod 0 --img_path ../../../../demo/000000014439.jpg --onnx_path out_onnxsim/picodet_s_320_coco_lcnet.onnx --in_shape 320
 ```
 注意：```--in_shape```为对应模型输入size，默认为320
 
+输出：
+```shell
+inference_time(ms): min=3.9, max = 10.0, avg = 4.8
+```
+
+### Inference images
+```shell
+python '.\openvino_benchmark.py' --mod 1 --img_path ..\..\..\..\demo\000000014439.jpg --onnx_path out_onnxsim\picodet_s_320_coco_lcnet.onnx --in_shape 320
+```
 
 ## 结果
 
-在英特尔酷睿i7 10750H 的CPU（MKLDNN 12线程）上测试结果如下：
+在英特尔酷睿i7 10750H 的CPU上测试结果如下：
 
 | 模型     | 输入尺寸 | ONNX  | 预测时延<sup><small>[ms](#latency)|
 | :-------- | :--------: | :---------------------: | :----------------: |
