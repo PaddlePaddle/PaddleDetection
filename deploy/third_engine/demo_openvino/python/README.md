@@ -33,9 +33,11 @@ python openvino_benchmark.py --img_path ..\..\..\..\demo\000000014439.jpg --onnx
 ### Inference images
 
 ```shell
-python '.\openvino_benchmark.py' --benchmark 0 --img_path ..\..\..\..\demo\000000014439.jpg --onnx_path out_onnxsim\picodet_s_320_coco_lcnet.onnx --in_shape 320
+# Linux
+python openvino_benchmark.py --benchmark 0 --img_path ../../../../demo/000000014439.jpg --onnx_path out_onnxsim/picodet_s_320_coco_lcnet.onnx --in_shape 320
+# Windows
+python openvino_benchmark.py --benchmark 0 --img_path ..\..\..\..\demo\000000014439.jpg --onnx_path out_onnxsim\picodet_s_320_coco_lcnet.onnx --in_shape 320
 ```
-
 ## 结果
 
 测试结果如下：
