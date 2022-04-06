@@ -482,7 +482,7 @@ class MultiClassNMS(object):
             kwargs.update({'nms_eta': 1.1})
             bbox, bbox_num, _ = ops.multiclass_nms(bboxes, score, **kwargs)
             mask = paddle.slice(bbox, [-1], [0], [1]) != -1
-            bbox = paddle.masked_select(bbox, mask)
+            bbox = paddle.masked_select(bbox, mask).reshape((-1, 6))
             return bbox, bbox_num, None
         else:
             return ops.multiclass_nms(bboxes, score, **kwargs)
