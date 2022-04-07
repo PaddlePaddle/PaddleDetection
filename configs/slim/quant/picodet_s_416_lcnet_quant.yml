@@ -1,4 +1,4 @@
-pretrain_weights: pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_s_416_coco_lcnet.pdparams
 slim: QAT
 
 QAT:
