@@ -23,6 +23,11 @@ pip install onnxruntime
     ```
     将会对```./imgs```文件夹下所有图片进行识别，并将识别结果保存在```./results```文件夹下。
 
+- 结果：
+    <div align="center">
+      <img src="../../../docs/images/bus.jpg" height="300px" ><img src="../../../docs/images/dog.jpg" height="300px" >
+    </div>
+
 ## 模型下载
 
 | 模型     | 输入尺寸 | ONNX |
