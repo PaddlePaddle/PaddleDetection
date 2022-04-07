@@ -7,6 +7,7 @@
 </div>
 
 ## 目录
+
 - [简介](#简介)
 - [模型推荐](#模型推荐)
 - [模型库](#模型库)
@@ -22,8 +23,7 @@
       - [Top-Down模型联合部署](#top-down模型联合部署)
       - [Bottom-Up模型独立部署](#bottom-up模型独立部署)
       - [与多目标跟踪联合部署](#与多目标跟踪模型fairmot联合部署预测)
-
-
+- [BenchMark](#benchmark)
 
 ## 简介
 
@@ -32,24 +32,25 @@ PaddleDetection 关键点检测能力紧跟业内最新最优算法方案，包�
 同时，PaddleDetection提供针对移动端设备优化的自研实时关键点检测模型[PP-TinyPose](./tiny_pose/README.md)，以满足用户的不同需求。
 
 ## 模型推荐
+
 ### 移动端模型推荐
 
-
-|检测模型| 关键点模型  | 输入尺寸 | COCO数据集精度| 平均推理耗时 (FP16)  | 模型权重 | Paddle-Lite部署模型（FP16)|
-| :----| :------------------------ | :-------:  | :------: | :------: | :---: | :---: | 
-| [PicoDet-S-Pedestrian](../../picodet/application/pedestrian_detection/picodet_s_192_pedestrian.yml) |[PP-TinyPose](./tinypose_128x96.yml)  | 检测：192x192<br>关键点：128x96 | 检测mAP：29.0<br>关键点AP：58.1 | 检测耗时：2.37ms<br>关键点耗时：3.27ms | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
-| [PicoDet-S-Pedestrian](../../picodet/application/pedestrian_detection/picodet_s_320_pedestrian.yml) |[PP-TinyPose](./tinypose_256x192.yml)| 检测：320x320<br>关键点：256x192 | 检测mAP：38.5<br>关键点AP：68.8 | 检测耗时：6.30ms<br>关键点耗时：8.33ms  |  [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams)| [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
+| 检测模型                                                                                                | 关键点模型                                 | 输入尺寸                      | COCO数据集精度                | 平均推理耗时 (FP16)               | 模型权重                                                                                                                                                                             | Paddle-Lite部署模型（FP16)                                                                                                                                                           |
+|:--------------------------------------------------------------------------------------------------- |:------------------------------------- |:-------------------------:|:------------------------:|:---------------------------:|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| [PicoDet-S-Pedestrian](../../picodet/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [PP-TinyPose](./tinypose_128x96.yml)  | 检测：192x192<br>关键点：128x96  | 检测mAP：29.0<br>关键点AP：58.1 | 检测耗时：2.37ms<br>关键点耗时：3.27ms | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb)  |
+| [PicoDet-S-Pedestrian](../../picodet/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [PP-TinyPose](./tinypose_256x192.yml) | 检测：320x320<br>关键点：256x192 | 检测mAP：38.5<br>关键点AP：68.8 | 检测耗时：6.30ms<br>关键点耗时：8.33ms | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
 
 *详细关于PP-TinyPose的使用请参考[文档]((./tiny_pose/README.md))。
 
 ### 服务端模型推荐
-|检测模型| 关键点模型  | 输入尺寸 | COCO数据集精度| 模型权重 | 
-| :----| :------------------------ | :-------:  | :------: | :------: |
-| [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) |[HRNet-w32](./hrnet/hrnet_w32_384x288.yml)| 检测：640x640<br>关键点：384x288 | 检测mAP：49.5<br>关键点AP：77.8 | [检测](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[关键点](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams)  |
-| [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) |[HRNet-w32](./hrnet/hrnet_w32_256x192.yml) | 检测：640x640<br>关键点：256x192 | 检测mAP：49.5<br>关键点AP：76.9 | [检测](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[关键点](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams)  |
 
+| 检测模型                                                                                                                          | 关键点模型                                      | 输入尺寸                      | COCO数据集精度                | 模型权重                                                                                                                                                                    |
+|:----------------------------------------------------------------------------------------------------------------------------- |:------------------------------------------ |:-------------------------:|:------------------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [HRNet-w32](./hrnet/hrnet_w32_384x288.yml) | 检测：640x640<br>关键点：384x288 | 检测mAP：49.5<br>关键点AP：77.8 | [检测](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[关键点](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams) |
+| [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [HRNet-w32](./hrnet/hrnet_w32_256x192.yml) | 检测：640x640<br>关键点：256x192 | 检测mAP：49.5<br>关键点AP：76.9 | [检测](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[关键点](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams) |
 
-##  模型库
+## 模型库
+
 COCO数据集
 | 模型              |  方案              |输入尺寸 | AP(coco val) |                           模型下载                           | 配置文件 |                                                   
 | :---------------- | -------- | :----------: | :----------------------------------------------------------: | ----------------------------------------------------| ------- |
@@ -66,14 +67,12 @@ COCO数据集
 | LiteHRNet-30                   | Top-Down|256x192  |     69.4     | [lite_hrnet_30_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_256x192_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_256x192_coco.yml)     |
 | LiteHRNet-30                   |Top-Down| 384x288  |     72.5     | [lite_hrnet_30_384x288_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_384x288_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_384x288_coco.yml)     |
 
-
 备注： Top-Down模型测试AP结果基于GroundTruth标注框
 
 MPII数据集
 | 模型  | 方案| 输入尺寸 | PCKh(Mean) | PCKh(Mean@0.1) |                           模型下载                           | 配置文件                                     |
 | :---- | ---|----- | :--------: | :------------: | :----------------------------------------------------------: | -------------------------------------------- |
 | HRNet-w32 | Top-Down|256x256  |    90.6    |      38.5      | [hrnet_w32_256x256_mpii.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x256_mpii.pdparams) | [config](./hrnet/hrnet_w32_256x256_mpii.yml) |
-
 
 我们同时推出了基于LiteHRNet（Top-Down）针对移动端设备优化的实时关键点检测模型[PP-TinyPose](./tiny_pose/README.md), 欢迎体验。
 | 模型  | 输入尺寸 | AP (COCO Val) | 单人推理耗时 (FP32)| 单人推理耗时（FP16) | 配置文件 | 模型权重 | 预测部署模型 | Paddle-Lite部署模型（FP32) | Paddle-Lite部署模型（FP16)|
@@ -85,7 +84,7 @@ MPII数据集
 
 ### 1、环境安装
 
-​    请参考PaddleDetection [安装文档](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.3/docs/tutorials/INSTALL_cn.md)正确安装PaddlePaddle和PaddleDetection即可。
+​    请参考PaddleDetection [安装文档](../../docs/tutorials/INSTALL_cn.md)正确安装PaddlePaddle和PaddleDetection即可。
 
 ### 2、数据准备
 
@@ -93,9 +92,7 @@ MPII数据集
 
 ​    关于config配置文件内容说明请参考[关键点配置文件说明](../../docs/tutorials/KeyPointConfigGuide_cn.md)。
 
-
-  - 请注意，Top-Down方案使用检测框测试时，需要通过检测模型生成bbox.json文件。COCO val2017的检测结果可以参考[Detector having human AP of 56.4 on COCO val2017 dataset](https://paddledet.bj.bcebos.com/data/bbox.json)，下载后放在根目录（PaddleDetection）下，然后修改config配置文件中`use_gt_bbox: False`后生效。然后正常执行测试命令即可。
-
+- 请注意，Top-Down方案使用检测框测试时，需要通过检测模型生成bbox.json文件。COCO val2017的检测结果可以参考[Detector having human AP of 56.4 on COCO val2017 dataset](https://paddledet.bj.bcebos.com/data/bbox.json)，下载后放在根目录（PaddleDetection）下，然后修改config配置文件中`use_gt_bbox: False`后生效。然后正常执行测试命令即可。
 
 ### 3、训练与测试
 
@@ -141,7 +138,9 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/keypoint/higherhrnet/hi
 ```
 
 #### 模型部署
+
 ##### Top-Down模型联合部署
+
 ```shell
 #导出检测模型
 python tools/export_model.py -c configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams 
@@ -152,15 +151,17 @@ python tools/export_model.py -c configs/keypoint/hrnet/hrnet_w32_256x192.yml -o 
 #detector 检测 + keypoint top-down模型联合部署（联合推理只支持top-down方式）
 python deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inference/ppyolo_r50vd_dcn_2x_coco/ --keypoint_model_dir=output_inference/hrnet_w32_384x288/ --video_file=../video/xxx.mp4  --device=gpu
 ```
+
 ##### Bottom-Up模型独立部署
+
 ```shell
 #导出模型
 python tools/export_model.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml -o weights=output/higherhrnet_hrnet_w32_512/model_final.pdparams
 
 #部署推理
 python deploy/python/keypoint_infer.py --model_dir=output_inference/higherhrnet_hrnet_w32_512/ --image_file=./demo/000000014439_640x640.jpg --device=gpu --threshold=0.5
-
 ```
+
 ##### 与多目标跟踪模型FairMOT联合部署预测
 
 ```shell
@@ -170,11 +171,16 @@ python tools/export_model.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.y
 #用导出的跟踪和关键点模型Python联合预测
 python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inference/fairmot_dla34_30e_1088x608/ --keypoint_model_dir=output_inference/higherhrnet_hrnet_w32_512/ --video_file={your video name}.mp4 --device=GPU
 ```
+
 **注意:**
  跟踪模型导出教程请参考[文档](../mot/README.md)。
 
+## BenchMark
+
+我们给出了不同运行环境下的测试结果，供您在选用模型时参考。详细数据请见[Keypoint Inference Benchmark](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/keypoint/KeypointBenchmark.md)。
 
 ## 引用
+
 ```
 @inproceedings{cheng2020bottom,
   title={HigherHRNet: Scale-Aware Representation Learning for Bottom-Up Human Pose Estimation},

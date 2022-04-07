@@ -1,7 +1,9 @@
 [简体中文](README.md) | English
 
 # KeyPoint Detection Models
+
 ## Content
+
 - [Introduction](#introduction)
 - [Model Recommendation](#model-recommendation)
 - [Model Zoo](#model-zoo)
@@ -16,8 +18,8 @@
     - [Deploy Inference](#deploy-inference)
       - [Deployment for Top-Down models](#deployment-for-top-down-models)
       - [Deployment for Bottom-Up models](#deployment-for-bottom-up-models)
-      - [joint inference with Multi-Object Tracking model FairMOT](#joint-inference-with-multi-object-tracking-model-fairmot)
-
+      - [Joint Inference with Multi-Object Tracking Model FairMOT](#joint-inference-with-multi-object-tracking-model-fairmot)
+- [BenchMark](#benchmark)
 
 ## Introduction
 
@@ -27,29 +29,32 @@ Top-Down detects the object first and then detect the specific keypoint. The acc
 
 Differently, Bottom-Up detects the point first and then group or connect those points to form several instances of human pose. The speed of Bottom-Up is fixed and will not increase by the number of objects, but the accuracy will be lower.
 
-At the same time, PaddleDetection provides [PP-TinyPose](./tiny_pose/README.md) specially for mobile devices.
+At the same time, PaddleDetection provides [PP-TinyPose](./tiny_pose/README_en.md) specially for mobile devices.
 
 <div align="center">
   <img src="./football_keypoint.gif" width='800'/>
 </div>
 
 ## Model Recommendation
+
 ### Mobile Terminal
-|Detection Model| Keypoint Model  | Input Size | Accuracy of COCO| Average Inference Time (FP16)  | Model Weight | Paddle-Lite Inference Model（FP16)|
-| :----| :------------------------ | :-------:  | :------: | :------: | :---: | :---: | 
-| [PicoDet-S-Pedestrian](../../picodet/application/pedestrian_detection/picodet_s_192_pedestrian.yml) |[PP-TinyPose](./tinypose_128x96.yml)  | Detection：192x192<br>Keypoint：128x96 | Detection mAP：29.0<br>Keypoint AP：58.1 | Detection：2.37ms<br>Keypoint：3.27ms | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
-| [PicoDet-S-Pedestrian](../../picodet/application/pedestrian_detection/picodet_s_320_pedestrian.yml) |[PP-TinyPose](./tinypose_256x192.yml)| Detection：320x320<br>Keypoint：256x192 | Detection mAP：38.5<br>Keypoint AP：68.8 | Detection：6.30ms<br>Keypoint：8.33ms  |  [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams)| [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
+
+| Detection Model                                                                                     | Keypoint Model                        | Input Size                            | Accuracy of COCO                       | Average Inference Time (FP16)       | Model Weight                                                                                                                                                                                 | Paddle-Lite Inference Model（FP16)                                                                                                                                                           |
+|:--------------------------------------------------------------------------------------------------- |:------------------------------------- |:-------------------------------------:|:--------------------------------------:|:-----------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| [PicoDet-S-Pedestrian](../../picodet/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [PP-TinyPose](./tinypose_128x96.yml)  | Detection：192x192<br>Keypoint：128x96  | Detection mAP：29.0<br>Keypoint AP：58.1 | Detection：2.37ms<br>Keypoint：3.27ms | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb)  |
+| [PicoDet-S-Pedestrian](../../picodet/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [PP-TinyPose](./tinypose_256x192.yml) | Detection：320x320<br>Keypoint：256x192 | Detection mAP：38.5<br>Keypoint AP：68.8 | Detection：6.30ms<br>Keypoint：8.33ms | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
 
 *Specific documents of PP-TinyPose, please refer to [Document]((./tiny_pose/README.md))。
 
-### Teminal Server
+### Terminal Server
 
-|Detection Model| Keypoint Model  | Input Size | Accuracy of COCO| Model Weight | 
-| :----| :------------------------ | :-------:  | :------: | :------: |
-| [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) |[HRNet-w32](./hrnet/hrnet_w32_384x288.yml)| Detection：640x640<br>Keypoint：384x288 | Detection mAP：49.5<br>Keypoint AP：77.8 | [Detection](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[Keypoint](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams)  |
-| [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) |[HRNet-w32](./hrnet/hrnet_w32_256x192.yml) | Detection：640x640<br>Keypoint：256x192 | Detection mAP：49.5<br>Keypoint AP：76.9 | [Detection](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[Keypoint](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams)  |
+| Detection Model                                                                                                               | Keypoint Model                             | Input Size                            | Accuracy of COCO                       | Model Weight                                                                                                                                                                        |
+|:----------------------------------------------------------------------------------------------------------------------------- |:------------------------------------------ |:-------------------------------------:|:--------------------------------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [HRNet-w32](./hrnet/hrnet_w32_384x288.yml) | Detection：640x640<br>Keypoint：384x288 | Detection mAP：49.5<br>Keypoint AP：77.8 | [Detection](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[Keypoint](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams) |
+| [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [HRNet-w32](./hrnet/hrnet_w32_256x192.yml) | Detection：640x640<br>Keypoint：256x192 | Detection mAP：49.5<br>Keypoint AP：76.9 | [Detection](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[Keypoint](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams) |
 
-##   Model Zoo
+## Model Zoo
+
 COCO Dataset
 | Model              | Input Size | AP(coco val) |                           Model Download                           | Config File                                                    |
 | :---------------- | -------- | :----------: | :----------------------------------------------------------: | ----------------------------------------------------------- |
@@ -66,7 +71,6 @@ COCO Dataset
 | LiteHRNet-30                   | 256x192  |     69.4     | [lite_hrnet_30_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_256x192_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_256x192_coco.yml)     |
 | LiteHRNet-30                   | 384x288  |     72.5     | [lite_hrnet_30_384x288_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_384x288_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_384x288_coco.yml)     |
 
-
 Note：The AP results of Top-Down models are based on bounding boxes in GroundTruth.
 
 MPII Dataset
@@ -74,14 +78,13 @@ MPII Dataset
 | :---- | -------- | :--------: | :------------: | :----------------------------------------------------------: | -------------------------------------------- |
 | HRNet-w32 | 256x256  |    90.6    |      38.5      | [hrnet_w32_256x256_mpii.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x256_mpii.pdparams) | [config](./hrnet/hrnet_w32_256x256_mpii.yml) |
 
-
 We also release [PP-TinyPose](./tiny_pose/README_en.md), a real-time keypoint detection model optimized for mobile devices. Welcome to experience.
 
 ## Getting Start
 
 ### 1.Environmental Installation
 
-​    Please refer to [PaddleDetection Installation Guild](../../docs/tutorials/INSTALL.md) to install PaddlePaddle and PaddleDetection correctly.
+​    Please refer to [PaddleDetection Installation Guide](../../docs/tutorials/INSTALL.md) to install PaddlePaddle and PaddleDetection correctly.
 
 ### 2.Dataset Preparation
 
@@ -89,7 +92,7 @@ We also release [PP-TinyPose](./tiny_pose/README_en.md), a real-time keypoint de
 
 ​   About the description for config files, please refer to [Keypoint Config Guild](../../docs/tutorials/KeyPointConfigGuide_en.md).
 
-  - Note that, when testing by detected bounding boxes in Top-Down method, We should get `bbox.json` by a detection model. You can download the detected results for COCO val2017 [(Detector having human AP of 56.4 on COCO val2017 dataset)](https://paddledet.bj.bcebos.com/data/bbox.json) directly, put it at the root path (`PaddleDetection/`), and set `use_gt_bbox: False` in config file.
+- Note that, when testing by detected bounding boxes in Top-Down method, We should get `bbox.json` by a detection model. You can download the detected results for COCO val2017 [(Detector having human AP of 56.4 on COCO val2017 dataset)](https://paddledet.bj.bcebos.com/data/bbox.json) directly, put it at the root path (`PaddleDetection/`), and set `use_gt_bbox: False` in config file.
 
 ### 3.Training and Testing
 
@@ -133,11 +136,12 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/eval.py -c configs/keypoint/higherhrnet/hig
 ```shell
 CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml -o weights=./output/higherhrnet_hrnet_w32_512/model_final.pdparams --infer_dir=../images/ --draw_threshold=0.5 --save_txt=True
 ```
+
 #### Deploy Inference
 
 ##### Deployment for Top-Down models
-```shell
 
+```shell
 #Export Detection Model
 python tools/export_model.py -c configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams 
 
@@ -147,7 +151,9 @@ python tools/export_model.py -c configs/keypoint/hrnet/hrnet_w32_256x192.yml -o 
 #Deployment for detector and keypoint, which is only for Top-Down models
 python deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inference/ppyolo_r50vd_dcn_2x_coco/ --keypoint_model_dir=output_inference/hrnet_w32_384x288/ --video_file=../video/xxx.mp4  --device=gpu
 ```
+
 ##### Deployment for Bottom-Up models
+
 ```shell
 #Export model
 python tools/export_model.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml -o weights=output/higherhrnet_hrnet_w32_512/model_final.pdparams
@@ -157,7 +163,7 @@ python tools/export_model.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w
 python deploy/python/keypoint_infer.py --model_dir=output_inference/higherhrnet_hrnet_w32_512/ --image_file=./demo/000000014439_640x640.jpg --device=gpu --threshold=0.5
 ```
 
-##### joint inference with Multi-Object Tracking model FairMOT
+##### Joint Inference with Multi-Object Tracking Model FairMOT
 
 ```shell
 #export FairMOT model
@@ -166,11 +172,16 @@ python tools/export_model.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.y
 #joint inference with Multi-Object Tracking model FairMOT
 python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inference/fairmot_dla34_30e_1088x608/ --keypoint_model_dir=output_inference/higherhrnet_hrnet_w32_512/ --video_file={your video name}.mp4 --device=GPU
 ```
+
 **Note:**
  To export MOT model, please refer to [Here](../../configs/mot/README_en.md).
 
+## BenchMark
+
+We provide benchmarks in different runtime environments for your reference when choosing models. See [Keypoint Inference Benchmark](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/keypoint/KeypointBenchmark.md) for details.
 
 ## Reference
+
 ```
 @inproceedings{cheng2020bottom,
   title={HigherHRNet: Scale-Aware Representation Learning for Bottom-Up Human Pose Estimation},
