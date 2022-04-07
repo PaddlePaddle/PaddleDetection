@@ -177,11 +177,64 @@ void TopDownEvalAffine::Run(cv::Mat* im, ImageBlob* data) {
   };
 }
 
+void GetAffineTrans(const cv::Point2f center,
+                    const cv::Point2f input_size,
+                    const cv::Point2f output_size,
+                    cv::Mat* trans) {
+  cv::Point2f srcTri[3];
+  cv::Point2f dstTri[3];
+  float src_w = input_size.x;
+  float dst_w = output_size.x;
+  float dst_h = output_size.y;
+
+  cv::Point2f src_dir(0, -0.5 * src_w);
+  cv::Point2f dst_dir(0, -0.5 * dst_w);
+
+  srcTri[0] = center;
+  srcTri[1] = center + src_dir;
+  cv::Point2f src_d = srcTri[0] - srcTri[1];
+  srcTri[2] = srcTri[1] + cv::Point2f(-src_d.y, src_d.x);
+
+  dstTri[0] = cv::Point2f(dst_w * 0.5, dst_h * 0.5);
+  dstTri[1] = cv::Point2f(dst_w * 0.5, dst_h * 0.5) + dst_dir;
+  cv::Point2f dst_d = dstTri[0] - dstTri[1];
+  dstTri[2] = dstTri[1] + cv::Point2f(-dst_d.y, dst_d.x);
+
+  *trans = cv::getAffineTransform(srcTri, dstTri);
+}
+
+void WarpAffine::Run(cv::Mat* im, ImageBlob* data) {
+  cv::cvtColor(*im, *im, cv::COLOR_RGB2BGR);
+  cv::Mat trans(2, 3, CV_32FC1);
+  cv::Point2f center;
+  cv::Point2f input_size;
+  int h = im->rows;
+  int w = im->cols;
+  if (keep_res_) {
+    input_h_ = (h | pad_) + 1;
+    input_w_ = (w + pad_) + 1;
+    input_size = cv::Point2f(input_w_, input_h_);
+    center = cv::Point2f(w / 2, h / 2);
+  } else {
+    float s = std::max(h, w) * 1.0;
+    input_size = cv::Point2f(s, s);
+    center = cv::Point2f(w / 2., h / 2.);
+  }
+  cv::Point2f output_size(input_w_, input_h_);
+
+  GetAffineTrans(center, input_size, output_size, &trans);
+  cv::warpAffine(*im, *im, trans, cv::Size(input_w_, input_h_));
+  data->in_net_shape_ = {
+      static_cast<float>(input_h_), static_cast<float>(input_w_),
+  };
+}
+
 // Preprocessor op running order
 const std::vector<std::string> Preprocessor::RUN_ORDER = {"InitInfo",
                                                           "TopDownEvalAffine",
                                                           "Resize",
                                                           "LetterBoxResize",
+                                                          "WarpAffine",
                                                           "NormalizeImage",
                                                           "PadStride",
                                                           "Permute"};
