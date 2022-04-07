@@ -152,8 +152,8 @@ Please refer to [DOTA_devkit](https://github.com/CAPTAIN-WHU/DOTA_devkit) genera
 
 |     Model     |  Conv Type  |   mAP    |   Model Download   |   Configuration File   |
 |:-----------:|:----------:|:--------:| :----------:| :---------: |
-|   S2ANet    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_conv_2x_dota.yml)                   |
-|   S2ANet    |  AlignConv |   74.0   |  [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_alignconv_2x_dota.yml)                   |
+|   S2ANet    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/dota/s2anet_conv_2x_dota.yml)                   |
+|   S2ANet    |  AlignConv |   74.0   |  [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/dota/s2anet_alignconv_2x_dota.yml)                   |
 
 **Attention:** `multiclass_nms` is used here, which is slightly different from the original author's use of NMS.
 

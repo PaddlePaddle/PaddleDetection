@@ -85,7 +85,8 @@ MPII数据集
 
 ### 1、环境安装
 
-​    请参考PaddleDetection [安装文档](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.3/docs/tutorials/INSTALL_cn.md)正确安装PaddlePaddle和PaddleDetection即可。
+​    请参考PaddleDetection [安装文档](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/INSTALL_cn.md)正确安装PaddlePaddle和PaddleDetection即可。
+
 
 ### 2、数据准备
 

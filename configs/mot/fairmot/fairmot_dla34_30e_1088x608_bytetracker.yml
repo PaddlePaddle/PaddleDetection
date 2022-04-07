@@ -14,8 +14,18 @@ TrainDataset:
     image_lists: ['mot17.half', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
 
+# for MOT evaluation
+# If you want to change the MOT evaluation dataset, please modify 'data_root'
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: MOT17/images/half
+    keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
+
 JDETracker:
   use_byte: True
   match_thres: 0.8
   conf_thres: 0.4
   low_conf_thres: 0.2
+  min_box_area: 200
+  vertical_ratio: 1.6 # for pedestrian
