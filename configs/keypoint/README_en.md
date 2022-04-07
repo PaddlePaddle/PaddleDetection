@@ -1,20 +1,55 @@
 [简体中文](README.md) | English
 
 # KeyPoint Detection Models
-
+## Content
+- [Introduction](#introduction)
+- [Model Recommendation](#model-recommendation)
+- [Model Zoo](#model-zoo)
+- [Getting Start](#getting-start)
+  - [Environmental Installation](#1environmental-installation)
+  - [Dataset Preparation](#2dataset-preparation)
+  - [Training and Testing](#3training-and-testing)
+    - [Training on single GPU](#training-on-single-gpu)
+    - [Training on multiple GPU](#training-on-multiple-gpu)
+    - [Evaluation](#evaluation)
+    - [Inference](#inference)
+    - [Deploy Inference](#deploy-inference)
+      - [Deployment for Top-Down models](#deployment-for-top-down-models)
+      - [Deployment for Bottom-Up models](#deployment-for-bottom-up-models)
+      - [joint inference with Multi-Object Tracking model FairMOT](#joint-inference-with-multi-object-tracking-model-fairmot)
 
 
 ## Introduction
 
--    The keypoint detection part in PaddleDetection follows the state-of-the-art algorithm closely, including Top-Down and BottomUp methods, which can meet the different needs of users.
+The keypoint detection part in PaddleDetection follows the state-of-the-art algorithm closely, including Top-Down and Bottom-Up methods, which can satisfy the different needs of users. 
+
+Top-Down detects the object first and then detect the specific keypoint. The accuracy of Top-Down models will be higher, but the time required will increase by the number of objects. 
+
+Differently, Bottom-Up detects the point first and then group or connect those points to form several instances of human pose. The speed of Bottom-Up is fixed and will not increase by the number of objects, but the accuracy will be lower.
+
+At the same time, PaddleDetection provides [PP-TinyPose](./tiny_pose/README.md) specially for mobile devices.
 
 <div align="center">
   <img src="./football_keypoint.gif" width='800'/>
 </div>
 
+## Model Recommendation
+### Mobile Terminal
+|Detection Model| Keypoint Model  | Input Size | Accuracy of COCO| Average Inference Time (FP16)  | Model Weight | Paddle-Lite Inference Model（FP16)|
+| :----| :------------------------ | :-------:  | :------: | :------: | :---: | :---: | 
+| [PicoDet-S-Pedestrian](../../picodet/application/pedestrian_detection/picodet_s_192_pedestrian.yml) |[PP-TinyPose](./tinypose_128x96.yml)  | Detection：192x192<br>Keypoint：128x96 | Detection mAP：29.0<br>Keypoint AP：58.1 | Detection：2.37ms<br>Keypoint：3.27ms | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
+| [PicoDet-S-Pedestrian](../../picodet/application/pedestrian_detection/picodet_s_320_pedestrian.yml) |[PP-TinyPose](./tinypose_256x192.yml)| Detection：320x320<br>Keypoint：256x192 | Detection mAP：38.5<br>Keypoint AP：68.8 | Detection：6.30ms<br>Keypoint：8.33ms  |  [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams)| [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
 
+*Specific documents of PP-TinyPose, please refer to [Document]((./tiny_pose/README.md))。
 
-####   Model Zoo
+### Teminal Server
+
+|Detection Model| Keypoint Model  | Input Size | Accuracy of COCO| Model Weight | 
+| :----| :------------------------ | :-------:  | :------: | :------: |
+| [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) |[HRNet-w32](./hrnet/hrnet_w32_384x288.yml)| Detection：640x640<br>Keypoint：384x288 | Detection mAP：49.5<br>Keypoint AP：77.8 | [Detection](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[Keypoint](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams)  |
+| [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) |[HRNet-w32](./hrnet/hrnet_w32_256x192.yml) | Detection：640x640<br>Keypoint：256x192 | Detection mAP：49.5<br>Keypoint AP：76.9 | [Detection](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[Keypoint](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams)  |
+
+##   Model Zoo
 COCO Dataset
 | Model              | Input Size | AP(coco val) |                           Model Download                           | Config File                                                    |
 | :---------------- | -------- | :----------: | :----------------------------------------------------------: | ----------------------------------------------------------- |
@@ -44,11 +79,12 @@ We also release [PP-TinyPose](./tiny_pose/README_en.md), a real-time keypoint de
 
 ## Getting Start
 
-### 1. Environmental Installation
+### 1.Environmental Installation
 
 ​    Please refer to [PaddleDetection Installation Guild](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/INSTALL.md) to install PaddlePaddle and PaddleDetection correctly.
 
-### 2. Dataset Preparation
+
+### 2.Dataset Preparation
 
 ​    Currently, KeyPoint Detection Models support [COCO](https://cocodataset.org/#keypoints-2017) and [MPII](http://human-pose.mpi-inf.mpg.de/#overview). Please refer to [Keypoint Dataset Preparation](../../docs/tutorials/PrepareKeypointDataSet_en.md) to prepare dataset.
 
@@ -56,9 +92,9 @@ We also release [PP-TinyPose](./tiny_pose/README_en.md), a real-time keypoint de
 
   - Note that, when testing by detected bounding boxes in Top-Down method, We should get `bbox.json` by a detection model. You can download the detected results for COCO val2017 [(Detector having human AP of 56.4 on COCO val2017 dataset)](https://paddledet.bj.bcebos.com/data/bbox.json) directly, put it at the root path (`PaddleDetection/`), and set `use_gt_bbox: False` in config file.
 
-### 3、Training and Testing
+### 3.Training and Testing
 
-​    **Training on single gpu:**
+#### Training on single GPU
 
 ```shell
 #COCO DataSet
@@ -68,7 +104,7 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/train.py -c configs/keypoint/higherhrnet/hi
 CUDA_VISIBLE_DEVICES=0 python3 tools/train.py -c configs/keypoint/hrnet/hrnet_w32_256x256_mpii.yml
 ```
 
-​    **Training on multiple gpu:**
+#### Training on multiple GPU
 
 ```shell
 #COCO DataSet
@@ -78,7 +114,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 python3 -m paddle.distributed.launch tools/train.py
 CUDA_VISIBLE_DEVICES=0,1,2,3 python3 -m paddle.distributed.launch tools/train.py -c configs/keypoint/hrnet/hrnet_w32_256x256_mpii.yml
 ```
 
-​    **Evaluation**
+#### Evaluation
 
 ```shell
 #COCO DataSet
@@ -91,30 +127,38 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/eval.py -c configs/keypoint/hrnet/hrnet_w32
 CUDA_VISIBLE_DEVICES=0 python3 tools/eval.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml --save_prediction_only
 ```
 
-​    **Inference**
+#### Inference
 
 ​    Note：Top-down models only support inference for a cropped image with single person. If you want to do inference on image with several people, please see "joint inference by detection and keypoint". Or you can choose a Bottom-up model.
 
 ```shell
 CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml -o weights=./output/higherhrnet_hrnet_w32_512/model_final.pdparams --infer_dir=../images/ --draw_threshold=0.5 --save_txt=True
 ```
+#### Deploy Inference
 
-​    **Deploy Inference**
-
+##### Deployment for Top-Down models
 ```shell
-#export models
-python tools/export_model.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml -o weights=output/higherhrnet_hrnet_w32_512/model_final.pdparams
 
-#deploy inference
-#keypoint inference for a single model of top-down/bottom-up method. In this mode, top-down model only support inference for a cropped image with single person.
-python deploy/python/keypoint_infer.py --model_dir=output_inference/higherhrnet_hrnet_w32_512/ --image_file=./demo/000000014439_640x640.jpg --device=gpu --threshold=0.5
-python deploy/python/keypoint_infer.py --model_dir=output_inference/hrnet_w32_384x288/ --image_file=./demo/hrnet_demo.jpg --device=gpu --threshold=0.5
+#Export Detection Model
+python tools/export_model.py -c configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams 
 
-#joint inference by detection and keypoint for top-down models.
+#Export Keypoint Model
+python tools/export_model.py -c configs/keypoint/hrnet/hrnet_w32_256x192.yml -o weights=https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams
+
+#Deployment for detector and keypoint, which is only for Top-Down models
 python deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inference/ppyolo_r50vd_dcn_2x_coco/ --keypoint_model_dir=output_inference/hrnet_w32_384x288/ --video_file=../video/xxx.mp4  --device=gpu
 ```
+##### Deployment for Bottom-Up models
+```shell
+#Export model
+python tools/export_model.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml -o weights=output/higherhrnet_hrnet_w32_512/model_final.pdparams
 
-​    **joint inference with Multi-Object Tracking model FairMOT**
+
+#Keypoint independent deployment, which is only for bottom-up models
+python deploy/python/keypoint_infer.py --model_dir=output_inference/higherhrnet_hrnet_w32_512/ --image_file=./demo/000000014439_640x640.jpg --device=gpu --threshold=0.5
+```
+
+##### joint inference with Multi-Object Tracking model FairMOT
 
 ```shell
 #export FairMOT model
@@ -126,12 +170,6 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 **Note:**
  To export MOT model, please refer to [Here](../../configs/mot/README_en.md).
 
-### 4、Deploy standalone
-
-​    We provide standalone deploy of PaddleInference(Server-GPU)、PaddleLite(mobile、ARM)、Third-Engine(MNN、OpenVino), which is independent of training codes。For detail, please click [Deploy-docs](../../deploy/README_en.md)。
-
-## Benchmark
-We provide benchmarks in different runtime environments for your reference when choosing models. See [Keypoint Inference Benchmark](./KeypointBenchmark.md) for details.
 
 ## Reference
 ```
