@@ -103,6 +103,13 @@ class Trainer(object):
         if 'slim' in cfg and cfg['slim_type'] == 'OFA':
             self.model.model.load_meanstd(cfg['TestReader'][
                 'sample_transforms'])
+        elif 'slim' in cfg and cfg['slim_type'] == 'Distill':
+            self.model.student_model.load_meanstd(cfg['TestReader'][
+                'sample_transforms'])
+        elif 'slim' in cfg and cfg[
+                'slim_type'] == 'DistillPrune' and self.mode == 'train':
+            self.model.student_model.load_meanstd(cfg['TestReader'][
+                'sample_transforms'])
         else:
             self.model.load_meanstd(cfg['TestReader']['sample_transforms'])
 
