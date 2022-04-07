@@ -50,4 +50,4 @@ inference:./deploy/python/keypoint_infer.py
 --run_benchmark:True
 null:null
 ===========================infer_benchmark_params===========================
-random_infer_input:[{float32,[3,128,96]},{float32,[2]},{float32,[2]}]
+numpy_infer_input:3x128x96.npy
