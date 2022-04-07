@@ -19,7 +19,7 @@
       - [Deployment for Top-Down models](#deployment-for-top-down-models)
       - [Deployment for Bottom-Up models](#deployment-for-bottom-up-models)
       - [Joint Inference with Multi-Object Tracking Model FairMOT](#joint-inference-with-multi-object-tracking-model-fairmot)
-  - [Complete Deploy Instruction and Demo](#4Complete Deploy Instruction and Demo)
+  - [Complete Deploy Instruction and Demo](#4Complete-Deploy-Instruction-an-Demo)
 - [BenchMark](#benchmark)
 
 ## Introduction
@@ -177,7 +177,7 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 **Note:**
  To export MOT model, please refer to [Here](../../configs/mot/README_en.md).
 
-### 4. Complete Deploy Instruction and Demo
+### 4.Complete Deploy Instruction and Demo
 
 ​ We provide standalone deploy of PaddleInference(Server-GPU)、PaddleLite(mobile、ARM)、Third-Engine(MNN、OpenVino), which is independent of training codes。For detail, please click [Deploy-docs](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/README_en.md)。
 
