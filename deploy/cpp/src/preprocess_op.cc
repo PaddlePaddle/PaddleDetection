@@ -60,12 +60,11 @@ void Permute::Run(cv::Mat* im, ImageBlob* data) {
 
 void Resize::Run(cv::Mat* im, ImageBlob* data) {
   auto resize_scale = GenerateScale(*im);
-  data->im_shape_ = {static_cast<float>(im->cols * resize_scale.first),
-                     static_cast<float>(im->rows * resize_scale.second)};
-  data->in_net_shape_ = {static_cast<float>(im->cols * resize_scale.first),
-                         static_cast<float>(im->rows * resize_scale.second)};
   cv::resize(
       *im, *im, cv::Size(), resize_scale.first, resize_scale.second, interp_);
+
+  data->in_net_shape_ = {static_cast<float>(im->rows),
+                         static_cast<float>(im->cols)};
   data->im_shape_ = {
       static_cast<float>(im->rows), static_cast<float>(im->cols),
   };
@@ -154,6 +153,7 @@ float LetterBoxResize::GenerateScale(const cv::Mat& im) {
 
 void PadStride::Run(cv::Mat* im, ImageBlob* data) {
   if (stride_ <= 0) {
+    data->in_net_im_ = im->clone();
     return;
   }
   int rc = im->channels();
@@ -242,7 +242,9 @@ bool CheckDynamicInput(const std::vector<cv::Mat>& imgs) {
   int h = imgs.at(0).rows;
   int w = imgs.at(0).cols;
   for (int i = 1; i < imgs.size(); ++i) {
-    if (imgs.at(i).rows != h || imgs.at(i).cols != w) {
+    int hi = imgs.at(i).rows;
+    int wi = imgs.at(i).cols;
+    if (hi != h || wi != w) {
       return true;
     }
   }
