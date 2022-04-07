@@ -21,7 +21,6 @@ import glob
 import re
 import paddle
 import numpy as np
-from tqdm import tqdm
 from collections import defaultdict
 
 from ppdet.core.workspace import create
@@ -140,7 +139,7 @@ class Tracker(object):
         self.model.eval()
         results = defaultdict(list)  # support single class and multi classes
 
-        for step_id, data in enumerate(tqdm(dataloader)):
+        for step_id, data in enumerate(dataloader):
             self.status['step_id'] = step_id
             # forward
             timer.tic()
@@ -205,7 +204,7 @@ class Tracker(object):
                 det_file))
 
         tracker = self.model.tracker
-        for step_id, data in enumerate(tqdm(dataloader)):
+        for step_id, data in enumerate(dataloader):
             self.status['step_id'] = step_id
             ori_image = data['ori_image']  # [bs, H, W, 3]
             ori_image_shape = data['ori_image'].shape[1:3]
