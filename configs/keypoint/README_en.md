@@ -19,7 +19,7 @@
       - [Deployment for Top-Down models](#deployment-for-top-down-models)
       - [Deployment for Bottom-Up models](#deployment-for-bottom-up-models)
       - [Joint Inference with Multi-Object Tracking Model FairMOT](#joint-inference-with-multi-object-tracking-model-fairmot)
-  - [Complete Deploy Instruction and Demo](#4Complete-Deploy-Instruction-an-Demo)
+  - [Complete Deploy Instruction and Demo](#4Complete-Deploy-Instruction-and-Demo)
 - [BenchMark](#benchmark)
 
 ## Introduction
