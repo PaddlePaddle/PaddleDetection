@@ -22,7 +22,8 @@
     - [模型部署](#模型部署)
       - [Top-Down模型联合部署](#top-down模型联合部署)
       - [Bottom-Up模型独立部署](#bottom-up模型独立部署)
-      - [与多目标跟踪联合部署](#与多目标跟踪模型fairmot联合部署预测)
+      - [与多目标跟踪联合部署](#与多目标跟踪模型fairmot联合部署)
+    - [完整部署教程及Demo](#4完整部署教程及Demo)
 - [BenchMark](#benchmark)
 
 ## 简介
@@ -75,7 +76,6 @@ MPII数据集
 | HRNet-w32 | Top-Down|256x256  |    90.6    |      38.5      | [hrnet_w32_256x256_mpii.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x256_mpii.pdparams) | [config](./hrnet/hrnet_w32_256x256_mpii.yml) |
 
 我们同时推出了基于LiteHRNet（Top-Down）针对移动端设备优化的实时关键点检测模型[PP-TinyPose](./tiny_pose/README.md), 欢迎体验。
-
 
 ## 快速开始
 
@@ -159,7 +159,7 @@ python tools/export_model.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w
 python deploy/python/keypoint_infer.py --model_dir=output_inference/higherhrnet_hrnet_w32_512/ --image_file=./demo/000000014439_640x640.jpg --device=gpu --threshold=0.5
 ```
 
-##### 与多目标跟踪模型FairMOT联合部署预测
+##### 与多目标跟踪模型FairMOT联合部署
 
 ```shell
 #导出FairMOT跟踪模型
@@ -171,6 +171,10 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 
 **注意:**
  跟踪模型导出教程请参考[文档](../mot/README.md)。
+
+### 4、完整部署教程及Demo
+
+​ 我们提供了PaddleInference(服务器端)、PaddleLite(移动端)、第三方部署(MNN、OpenVino)支持。无需依赖训练代码，deploy文件夹下相应文件夹提供独立完整部署代码。 详见 [部署文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/README.md)介绍。
 
 ## BenchMark
 
