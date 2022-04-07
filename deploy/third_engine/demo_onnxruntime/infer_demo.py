@@ -103,7 +103,6 @@ class PicoDet():
         outs = np.array(outs[0])
         expect_boxes = (outs[:, 1] > 0.5) & (outs[:, 0] > -1)
         np_boxes = outs[expect_boxes, :]
-        #         [class, score, x_min, y_min, x_max, y_max] box:origin 
 
         color_list = self.get_color_map_list(self.num_classes)
         clsid2color = {}
