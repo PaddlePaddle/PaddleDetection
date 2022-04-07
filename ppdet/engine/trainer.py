@@ -501,7 +501,7 @@ class Trainer(object):
             flops_loader = create('{}Reader'.format(self.mode.capitalize()))(
                 self.dataset, self.cfg.worker_num, self._eval_batch_sampler)
             self._flops(flops_loader)
-        for step_id, data in enumerate(tqdm(loader)):
+        for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
             self._compose_callback.on_step_begin(self.status)
             # forward
