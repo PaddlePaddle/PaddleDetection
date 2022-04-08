@@ -23,6 +23,7 @@ from ..initializer import bias_init_with_prob, constant_, normal_
 from ..assigners.utils import generate_anchors_for_grid_cell
 from ppdet.modeling.backbones.cspresnet import ConvBNLayer
 from ppdet.modeling.ops import get_static_shape, paddle_distributed_is_initialized, get_act_fn
+from ppdet.modeling.layers import MultiClassNMS
 
 __all__ = ['PPYOLOEHead']
 
@@ -86,6 +87,8 @@ class PPYOLOEHead(nn.Layer):
         self.static_assigner = static_assigner
         self.assigner = assigner
         self.nms = nms
+        if isinstance(self.nms, MultiClassNMS) and trt:
+            self.nms.trt = trt
         self.exclude_nms = exclude_nms
         # stem
         self.stem_cls = nn.LayerList()
