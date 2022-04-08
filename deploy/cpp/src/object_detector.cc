@@ -103,6 +103,8 @@ cv::Mat VisualizeResult(
     const std::vector<int>& colormap,
     const bool is_rbox = false) {
   cv::Mat vis_img = img.clone();
+  int img_h = vis_img.rows;
+  int img_w = vis_img.cols;
   for (int i = 0; i < results.size(); ++i) {
     // Configure color and text size
     std::ostringstream oss;
@@ -136,6 +138,33 @@ cv::Mat VisualizeResult(
       cv::Rect roi = cv::Rect(results[i].rect[0], results[i].rect[1], w, h);
       // Draw roi object, text, and background
       cv::rectangle(vis_img, roi, roi_color, 2);
+
+      // Draw mask
+      std::vector<int> mask_v = results[i].mask;
+      if (mask_v.size() > 0) {
+        cv::Mat mask = cv::Mat(img_h, img_w, CV_32S);
+        std::memcpy(mask.data, mask_v.data(), mask_v.size() * sizeof(int));
+
+        cv::Mat colored_img = vis_img.clone();
+
+        std::vector<cv::Mat> contours;
+        cv::Mat hierarchy;
+        mask.convertTo(mask, CV_8U);
+        cv::findContours(
+            mask, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+        cv::drawContours(colored_img,
+                         contours,
+                         -1,
+                         roi_color,
+                         -1,
+                         cv::LINE_8,
+                         hierarchy,
+                         100);
+
+        cv::Mat debug_roi = vis_img;
+        colored_img = 0.4 * colored_img + 0.6 * vis_img;
+        colored_img.copyTo(vis_img, mask);
+      }
     }
 
     origin.x = results[i].rect[0];
@@ -171,9 +200,16 @@ void ObjectDetector::Postprocess(
     std::vector<PaddleDetection::ObjectResult>* result,
     std::vector<int> bbox_num,
     std::vector<float> output_data_,
+    std::vector<int> output_mask_data_,
     bool is_rbox = false) {
   result->clear();
   int start_idx = 0;
+  int total_num = std::accumulate(bbox_num.begin(), bbox_num.end(), 0);
+  int out_mask_dim = -1;
+  if (config_.mask_) {
+    out_mask_dim = output_mask_data_.size() / total_num;
+  }
+
   for (int im_id = 0; im_id < mats.size(); im_id++) {
     cv::Mat raw_mat = mats[im_id];
     int rh = 1;
@@ -218,6 +254,17 @@ void ObjectDetector::Postprocess(
         result_item.rect = {xmin, ymin, xmax, ymax};
         result_item.class_id = class_id;
         result_item.confidence = score;
+
+        if (config_.mask_) {
+          std::vector<int> mask;
+          for (int k = 0; k < out_mask_dim; ++k) {
+            if (output_mask_data_[k + j * out_mask_dim] > -1) {
+              mask.push_back(output_mask_data_[k + j * out_mask_dim]);
+            }
+          }
+          result_item.mask = mask;
+        }
+
         result->push_back(result_item);
       }
     }
@@ -241,6 +288,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   std::vector<float> scale_factor_all(batch_size * 2);
   std::vector<const float*> output_data_list_;
   std::vector<int> out_bbox_num_data_;
+  std::vector<int> out_mask_data_;
 
   // in_net img for each batch
   std::vector<cv::Mat> in_net_img_all(batch_size);
@@ -322,7 +370,10 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
       std::vector<int> output_shape = output_tensor->shape();
       int out_num = std::accumulate(
           output_shape.begin(), output_shape.end(), 1, std::multiplies<int>());
-      if (output_tensor->type() == paddle_infer::DataType::INT32) {
+      if (config_.mask_ && (j == 2)) {
+        out_mask_data_.resize(out_num);
+        output_tensor->CopyToCpu(out_mask_data_.data());
+      } else if (output_tensor->type() == paddle_infer::DataType::INT32) {
         out_bbox_num_data_.resize(out_num);
         output_tensor->CopyToCpu(out_bbox_num_data_.data());
       } else {
@@ -347,7 +398,10 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
       int out_num = std::accumulate(
           output_shape.begin(), output_shape.end(), 1, std::multiplies<int>());
       output_shape_list.push_back(output_shape);
-      if (output_tensor->type() == paddle_infer::DataType::INT32) {
+      if (config_.mask_ && (j == 2)) {
+        out_mask_data_.resize(out_num);
+        output_tensor->CopyToCpu(out_mask_data_.data());
+      } else if (output_tensor->type() == paddle_infer::DataType::INT32) {
         out_bbox_num_data_.resize(out_num);
         output_tensor->CopyToCpu(out_bbox_num_data_.data());
       } else {
@@ -390,7 +444,12 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
     bbox_num->push_back(result->size());
   } else {
     is_rbox = output_shape_list[0][output_shape_list[0].size() - 1] % 10 == 0;
-    Postprocess(imgs, result, out_bbox_num_data_, out_tensor_list[0], is_rbox);
+    Postprocess(imgs,
+                result,
+                out_bbox_num_data_,
+                out_tensor_list[0],
+                out_mask_data_,
+                is_rbox);
     for (int k = 0; k < out_bbox_num_data_.size(); k++) {
       int tmp = out_bbox_num_data_[k];
       bbox_num->push_back(tmp);
