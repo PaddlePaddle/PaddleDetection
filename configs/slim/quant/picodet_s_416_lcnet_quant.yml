@@ -1,0 +1,22 @@
+pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_s_416_coco_lcnet.pdparams
+slim: QAT
+
+QAT:
+  quant_config: {
+    'activation_preprocess_type': 'PACT',
+    'weight_quantize_type': 'channel_wise_abs_max', 'activation_quantize_type': 'moving_average_abs_max',
+    'weight_bits': 8, 'activation_bits': 8, 'dtype': 'int8', 'window_size': 10000, 'moving_rate': 0.9,
+    'quantizable_layer_type': ['Conv2D', 'Linear']}
+  print_model: False
+
+TrainReader:
+  batch_size: 48
+
+LearningRate:
+  base_lr: 0.024
+  schedulers:
+  - !CosineDecay
+    max_epochs: 300
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 300
