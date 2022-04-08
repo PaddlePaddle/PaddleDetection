@@ -32,7 +32,7 @@ sys.path.insert(0, parent_path)
 
 from pptracking.python.mot import JDETracker
 from pptracking.python.mot.utils import MOTTimer, write_mot_results
-from pptracking.python.visualize import plot_tracking, plot_tracking_dict
+from pptracking.python.mot.visualize import plot_tracking_dict
 
 # Global dictionary
 MOT_JDE_SUPPORT_MODELS = {
@@ -54,23 +54,30 @@ class JDE_Detector(Detector):
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
-        enable_mkldnn (bool): whether to open MKLDNN 
+        enable_mkldnn (bool): whether to open MKLDNN
+        output_dir (string): The path of output, default as 'output'
+        threshold (float): Score threshold of the detected bbox, default as 0.5
+        save_images (bool): Whether to save visualization image results, default as False
+        save_mot_txts (bool): Whether to save tracking results (txt), default as False
     """
 
-    def __init__(self,
-                 model_dir,
-                 tracker_config=None,
-                 device='CPU',
-                 run_mode='paddle',
-                 batch_size=1,
-                 trt_min_shape=1,
-                 trt_max_shape=1088,
-                 trt_opt_shape=608,
-                 trt_calib_mode=False,
-                 cpu_threads=1,
-                 enable_mkldnn=False,
-                 output_dir='output',
-                 threshold=0.5):
+    def __init__(
+            self,
+            model_dir,
+            tracker_config=None,
+            device='CPU',
+            run_mode='paddle',
+            batch_size=1,
+            trt_min_shape=1,
+            trt_max_shape=1088,
+            trt_opt_shape=608,
+            trt_calib_mode=False,
+            cpu_threads=1,
+            enable_mkldnn=False,
+            output_dir='output',
+            threshold=0.5,
+            save_images=False,
+            save_mot_txts=False, ):
         super(JDE_Detector, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -84,6 +91,8 @@ class JDE_Detector(Detector):
             enable_mkldnn=enable_mkldnn,
             output_dir=output_dir,
             threshold=threshold, )
+        self.save_images = save_images
+        self.save_mot_txts = save_mot_txts
         assert batch_size == 1, "MOT model only supports batch_size=1."
         self.det_times = Timer(with_tracker=True)
         self.num_classes = len(self.pred_config.labels)
@@ -91,8 +100,8 @@ class JDE_Detector(Detector):
         # tracker config
         assert self.pred_config.tracker, "The exported JDE Detector model should have tracker."
         cfg = self.pred_config.tracker
-        min_box_area = cfg.get('min_box_area', 200)
-        vertical_ratio = cfg.get('vertical_ratio', 1.6)
+        min_box_area = cfg.get('min_box_area', 0.0)
+        vertical_ratio = cfg.get('vertical_ratio', 0.0)
         conf_thres = cfg.get('conf_thres', 0.0)
         tracked_thresh = cfg.get('tracked_thresh', 0.7)
         metric_type = cfg.get('metric_type', 'euclidean')
@@ -115,7 +124,7 @@ class JDE_Detector(Detector):
         return result
 
     def tracking(self, det_results):
-        pred_dets = det_results['pred_dets']  # 'cls_id, score, x0, y0, x1, y1'
+        pred_dets = det_results['pred_dets']  # cls_id, score, x0, y0, x1, y1
         pred_embs = det_results['pred_embs']
         online_targets_dict = self.tracker.update(pred_dets, pred_embs)
 
@@ -164,7 +173,8 @@ class JDE_Detector(Detector):
                       image_list,
                       run_benchmark=False,
                       repeats=1,
-                      visual=True):
+                      visual=True,
+                      seq_name=None):
         mot_results = []
         num_classes = self.num_classes
         image_list.sort()
@@ -225,7 +235,7 @@ class JDE_Detector(Detector):
                 self.det_times.img_num += 1
 
             if visual:
-                if frame_id % 10 == 0:
+                if len(image_list) > 1 and frame_id % 10 == 0:
                     print('Tracking frame {}'.format(frame_id))
                 frame, _ = decode_image(img_file, {})
 
@@ -237,7 +247,8 @@ class JDE_Detector(Detector):
                     online_scores,
                     frame_id=frame_id,
                     ids2names=ids2names)
-                seq_name = image_list[0].split('/')[-2]
+                if seq_name is None:
+                    seq_name = image_list[0].split('/')[-2]
                 save_dir = os.path.join(self.output_dir, seq_name)
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
@@ -264,7 +275,8 @@ class JDE_Detector(Detector):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        video_format = 'mp4v'
+        fourcc = cv2.VideoWriter_fourcc(*video_format)
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
 
         frame_id = 1
@@ -282,7 +294,9 @@ class JDE_Detector(Detector):
             frame_id += 1
 
             timer.tic()
-            mot_results = self.predict_image([frame], visual=False)
+            seq_name = video_out_name.split('.')[0]
+            mot_results = self.predict_image(
+                [frame], visual=False, seq_name=seq_name)
             timer.toc()
 
             online_tlwhs, online_scores, online_ids = mot_results[0]
@@ -307,20 +321,33 @@ class JDE_Detector(Detector):
                 cv2.imshow('Mask Detection', im)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
+
+        if self.save_mot_txts:
+            result_filename = os.path.join(
+                self.output_dir, video_out_name.split('.')[-2] + '.txt')
+
+            write_mot_results(result_filename, results, data_type, num_classes)
+
         writer.release()
 
 
 def main():
     detector = JDE_Detector(
         FLAGS.model_dir,
+        tracker_config=None,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
+        batch_size=1,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
         trt_opt_shape=FLAGS.trt_opt_shape,
         trt_calib_mode=FLAGS.trt_calib_mode,
         cpu_threads=FLAGS.cpu_threads,
-        enable_mkldnn=FLAGS.enable_mkldnn)
+        enable_mkldnn=FLAGS.enable_mkldnn,
+        output_dir=FLAGS.output_dir,
+        threshold=FLAGS.threshold,
+        save_images=FLAGS.save_images,
+        save_mot_txts=FLAGS.save_mot_txts)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:

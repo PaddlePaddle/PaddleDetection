@@ -165,8 +165,8 @@ class SDE_Detector(Detector):
             # use ByteTracker
             use_byte = cfg.get('use_byte', False)
             det_thresh = cfg.get('det_thresh', 0.3)
-            min_box_area = cfg.get('min_box_area', 200)
-            vertical_ratio = cfg.get('vertical_ratio', 1.6)
+            min_box_area = cfg.get('min_box_area', 0)
+            vertical_ratio = cfg.get('vertical_ratio', 0)
             match_thres = cfg.get('match_thres', 0.9)
             conf_thres = cfg.get('conf_thres', 0.6)
             low_conf_thres = cfg.get('low_conf_thres', 0.1)
@@ -194,7 +194,7 @@ class SDE_Detector(Detector):
         return result
 
     def reidprocess(self, det_results, repeats=1):
-        pred_dets = det_results['boxes']
+        pred_dets = det_results['boxes']  # cls_id, score, x0, y0, x1, y1
         pred_xyxys = pred_dets[:, 2:6]
 
         ori_image = det_results['ori_image']
@@ -234,7 +234,7 @@ class SDE_Detector(Detector):
         return det_results
 
     def tracking(self, det_results):
-        pred_dets = det_results['boxes']
+        pred_dets = det_results['boxes']  # cls_id, score, x0, y0, x1, y1
         pred_embs = det_results.get('embeddings', None)
 
         if self.use_deepsort_tracker:
