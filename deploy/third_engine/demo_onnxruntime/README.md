@@ -30,7 +30,7 @@ pip install onnxruntime
 
 ## 模型下载
 
-| 模型     | 输入尺寸 | ONNX |
+| 模型     | 输入尺寸 | ONNX( w/ 后处理)  |
 | :-------- | :--------: | :---------------------: |
 | PicoDet-XS |  320*320   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_xs_320_lcnet_postprocessed.onnx) |
 | PicoDet-XS |  416*416   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_xs_416_lcnet_postprocessed.onnx) |
