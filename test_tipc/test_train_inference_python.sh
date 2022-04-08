@@ -92,7 +92,7 @@ benchmark_value=$(func_parser_value "${lines[49]}")
 infer_key1=$(func_parser_key "${lines[50]}")
 infer_value1=$(func_parser_value "${lines[50]}")
 
-LOG_PATH="./test_tipc/output"
+LOG_PATH="./test_tipc/output/${model_name}"
 mkdir -p ${LOG_PATH}
 status_log="${LOG_PATH}/results_python.log"
 
@@ -305,7 +305,7 @@ else
                     status_check $? "${export_cmd}" "${status_log}"
 
                     #run inference
-                    save_export_model_dir="${save_export_value}/${model_name}"
+                    save_export_model_dir="${save_log}/${model_name}"
                     eval $env
                     func_inference "${python}" "${inference_py}" "${save_export_model_dir}" "${LOG_PATH}" "${train_infer_img_dir}" "${flag_quant}"
 
