@@ -112,8 +112,8 @@ class JDE_Detector(Detector):
         # tracker config
         assert self.pred_config.tracker, "The exported JDE Detector model should have tracker."
         cfg = self.pred_config.tracker
-        min_box_area = cfg.get('min_box_area', 200)
-        vertical_ratio = cfg.get('vertical_ratio', 1.6)
+        min_box_area = cfg.get('min_box_area', 0.0)
+        vertical_ratio = cfg.get('vertical_ratio', 0.0)
         conf_thres = cfg.get('conf_thres', 0.0)
         tracked_thresh = cfg.get('tracked_thresh', 0.7)
         metric_type = cfg.get('metric_type', 'euclidean')
@@ -164,7 +164,7 @@ class JDE_Detector(Detector):
             repeats (int): repeats number for prediction
         Returns:
             result (dict): include 'pred_dets': np.ndarray: shape:[N,6], N: number of box,
-                            matix element:[x_min, y_min, x_max, y_max, score, class]
+                            matix element:[class, score, x_min, y_min, x_max, y_max]
                             FairMOT(JDE)'s result include 'pred_embs': np.ndarray:
                             shape: [N, 128]
         '''
