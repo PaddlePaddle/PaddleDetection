@@ -70,7 +70,7 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 
 **注意:**
  - 多目标跟踪模型导出和预测具体可参照[mot]](../../configs/mot/README.md)，可分别在各个模型的文档中查找具体用法；
- - 此目录下的跟踪部署为基础前向功能以及联合关键点部署，更多跟踪功能可使用PP-Human项目，参照[pphuman](../pphuman/README.md)，或PP-Tracking项目(绘制轨迹、出入口流量计数)，参照[pptracking](../pphuman/README.md)；
+ - 此目录下的跟踪部署为基础前向功能以及联合关键点部署，更多跟踪功能可使用PP-Human项目，参照[pphuman](../pphuman/README.md)，或PP-Tracking项目(绘制轨迹、出入口流量计数)，参照[pptracking](../pptracking/README.md)；
 
 
 参数说明如下:
