@@ -38,7 +38,7 @@ class JDETracker(object):
         track_buffer (int): buffer for tracker
         min_box_area (int): min box area to filter out low quality boxes
         vertical_ratio (float): w/h, the vertical ratio of the bbox to filter
-            bad results. If set <0 means no need to filter bboxes，usually set
+            bad results. If set <= 0 means no need to filter bboxes，usually set
             1.6 for pedestrian tracking.
         tracked_thresh (float): linear assignment threshold of tracked 
             stracks and detections
@@ -64,8 +64,8 @@ class JDETracker(object):
                  num_classes=1,
                  det_thresh=0.3,
                  track_buffer=30,
-                 min_box_area=200,
-                 vertical_ratio=1.6,
+                 min_box_area=0,
+                 vertical_ratio=0,
                  tracked_thresh=0.7,
                  r_tracked_thresh=0.5,
                  unconfirmed_thresh=0.7,
@@ -161,9 +161,8 @@ class JDETracker(object):
                     detections = [
                         STrack(
                             STrack.tlbr_to_tlwh(tlbrs[2:6]), tlbrs[1], cls_id,
-                            30, temp_feat)
-                        for (tlbrs, temp_feat
-                             ) in zip(pred_dets_cls, pred_embs_cls)
+                            30, temp_feat) for (tlbrs, temp_feat) in
+                        zip(pred_dets_cls, pred_embs_cls)
                     ]
             else:
                 detections = []
@@ -238,15 +237,13 @@ class JDETracker(object):
                             for tlbrs in pred_dets_cls_second
                         ]
                     else:
-                        pred_embs_cls_second = pred_embs_dict[cls_id][inds_second]
+                        pred_embs_cls_second = pred_embs_dict[cls_id][
+                            inds_second]
                         detections_second = [
                             STrack(
-                                STrack.tlbr_to_tlwh(tlbrs[2:6]),
-                                tlbrs[1],
-                                cls_id,
-                                30,
-                                temp_feat)
-                            for (tlbrs, temp_feat) in zip(pred_dets_cls_second, pred_embs_cls_second)
+                                STrack.tlbr_to_tlwh(tlbrs[2:6]), tlbrs[1],
+                                cls_id, 30, temp_feat) for (tlbrs, temp_feat) in
+                            zip(pred_dets_cls_second, pred_embs_cls_second)
                         ]
                 else:
                     detections_second = []
