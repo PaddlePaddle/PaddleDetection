@@ -236,7 +236,7 @@ class MaskPostProcess(object):
 
         if self.export_onnx:
             h, w = origin_shape[0][0], origin_shape[0][1]
-            mask_onnx = self.paste_mask(mask_out[:, None, :, :], bboxes[:, 2:],
+            mask_onnx = self.paste_mask(mask_out, bboxes[:, 2:],
                                         h, w)
             mask_onnx = mask_onnx >= self.binary_thresh
             pred_result = paddle.cast(mask_onnx, 'int32')
@@ -254,8 +254,8 @@ class MaskPostProcess(object):
                 im_h = origin_shape[i, 0]
                 im_w = origin_shape[i, 1]
                 bbox_num_i = bbox_num[id_start]
-                pred_mask = self.paste_mask(mask_out_i[:, None, :, :],
-                                            bboxes_i[:, 2:], im_h, im_w)
+                pred_mask = self.paste_mask(mask_out_i, bboxes_i[:, 2:],
+                                            im_h, im_w)
                 pred_mask = paddle.cast(pred_mask >= self.binary_thresh,
                                         'int32')
                 pred_result[id_start:id_start + bbox_num[i], :im_h, :
