@@ -36,12 +36,12 @@ PP-YOLOE is composed of following methods:
 - PP-YOLOE is trained on COCO train2017 dataset and evaluated on val2017 & test-dev2017 dataset，Box AP<sup>test</sup> is evaluation results of `mAP(IoU=0.5:0.95)`.
 - PP-YOLOE used 8 GPUs for mixed precision training, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/FAQ).
 - PP-YOLOE inference speed is tesed on single Tesla V100 with batch size as 1, **CUDA 10.2**, **CUDNN 7.6.5**, **TensorRT 6.0.1.8** in TensorRT mode.
-- Refer to [Speed testing](#5.-Speed-testing) to reproduce the speed testing results of PP-YOLOE.
+- Refer to [Speed testing](#Speed-testing) to reproduce the speed testing results of PP-YOLOE.
 - If you set `--run_benchmark=True`，you should install these dependencies at first, `pip install pynvml psutil GPUtil`.
 
 ## Getting Start
 
-### 1. Training
+### Training
 
 Training PP-YOLOE with mixed precision on 8 GPUs with following command
 
@@ -51,7 +51,7 @@ python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c con
 
 ** Notes: ** use `--amp` to train with default config to avoid out of memeory.
 
-### 2. Evaluation
+### Evaluation
 
 Evaluating PP-YOLOE on COCO val2017 dataset in single GPU with following commands:
 
@@ -61,7 +61,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/ppyoloe/ppyoloe_crn_l_300
 
 For evaluation on COCO test-dev2017 dataset, please download COCO test-dev2017 dataset from [COCO dataset download](https://cocodataset.org/#download) and decompress to COCO dataset directory and configure `EvalDataset` like `configs/ppyolo/ppyolo_test.yml`.
 
-### 3. Inference
+### Inference
 
 Inference images in single GPU with following commands, use `--infer_img` to inference a single image and `--infer_dir` to inference all images in the directory.
 
@@ -73,7 +73,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/ppyoloe/ppyoloe_crn_l_30
 CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams --infer_dir=demo
 ```
 
-### 4. Exporting models
+### Exporting models
 
 For deployment on GPU or speed testing, model should be first exported to inference model using `tools/export_model.py`.
 
@@ -93,7 +93,7 @@ If you want to export PP-YOLOE model to **ONNX format**, use following command r
 
 ```bash
 # export inference model
-python tools/export_model.py configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 
 # install paddle2onnx
 pip install paddle2onnx
@@ -105,7 +105,7 @@ paddle2onnx --model_dir output_inference/ppyoloe_crn_l_300e_coco --model_filenam
 
 **Notes:** ONNX model only supports batch_size=1 now
 
-### 5. Speed testing
+### Speed testing
 
 For fair comparison, the speed in [Model Zoo](#Model-Zoo) do not contains the time cost of data reading and post-processing(NMS), which is same as [YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet) in testing method. Thus, you should export model with extra `-o exclude_nms=True` setting.
 
@@ -119,7 +119,7 @@ python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o w
 CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_300e_coco --image_file=demo/000000014439_640x640.jpg --run_mode=paddle --device=gpu --run_benchmark=True
 ```
 
-**Using Paddle Inference with TensorRT** to do speed testing, run following command
+**Using Paddle Inference with TensorRT** to test speed, run following command
 
 ```bash
 # export inference model with trt=True
@@ -130,7 +130,7 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inferenc
 
 ```
 
-### 4. Deployment
+### Deployment
 
 PP-YOLOE can be deployed by following approches:
   - Paddle Inference [Python](../../deploy/python) & [C++](../../deploy/cpp)
@@ -162,7 +162,7 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inferenc
 - TensorRT will perform optimization for the current hardware platform according to the definition of the network, generate an inference engine and serialize it into a file. This inference engine is only applicable to the current hardware hardware platform. If your hardware and software platform has not changed, you can set `use_static=True` in [enable_tensorrt_engine](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/deploy/python/infer.py#L660). In this way, the serialized file generated will be saved in the `output_inference` folder, and the saved serialized file will be loaded the next time when TensorRT is executed.
 - PaddleDetection release/2.4 and later versions will support NMS calling TensorRT, which requires PaddlePaddle release/2.3 and later versions.
 
-### 5. Other Datasets
+### Other Datasets
 
 Model | AP | AP<sub>50</sub>
 ---|---|---
