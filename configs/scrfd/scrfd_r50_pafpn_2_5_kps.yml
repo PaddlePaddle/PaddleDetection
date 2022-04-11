@@ -1,0 +1,10 @@
+_BASE_: [
+  # '../datasets/wider_face.yml',
+  '_base_/wider_face.yml',
+  '../runtime.yml',
+  '_base_/scrfd_r50_pafpn_2_5g_kps.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/scrfd_reader.yml'
+]
+
+# find_unused_parameters: true

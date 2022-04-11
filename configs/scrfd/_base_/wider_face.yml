@@ -6,7 +6,8 @@ TrainDataset:
     dataset_dir: dataset/wider_face
     anno_path: WIDER_train/labelv2.txt
     image_dir: WIDER_train/images
-    data_fields: ['image', 'gt_bbox', 'gt_class']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_keypoint']
+    # data_fields: ['image', 'gt_bbox', 'gt_class']
 
 EvalDataset:
   !WIDERFaceDataSet

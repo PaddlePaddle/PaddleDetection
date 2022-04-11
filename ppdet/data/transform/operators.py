@@ -641,10 +641,14 @@ class RandomFlip(BaseOperator):
         return flipped_segms
 
     def apply_keypoint(self, gt_keypoint, width):
-        for i in range(gt_keypoint.shape[1]):
-            if i % 2 == 0:
-                old_x = gt_keypoint[:, i].copy()
-                gt_keypoint[:, i] = width - old_x
+        if gt_keypoint.shape[-1] == 3:
+            old_x = gt_keypoint[:, :, 0]
+            gt_keypoint[:, :, 0] = width - old_x
+        else:
+            for i in range(gt_keypoint.shape[1]):
+                if i % 2 == 0:
+                    old_x = gt_keypoint[:, i].copy()
+                    gt_keypoint[:, i] = width - old_x
         return gt_keypoint
 
     def apply_image(self, image):
@@ -752,6 +756,15 @@ class Resize(BaseOperator):
         bbox[:, 1::2] = np.clip(bbox[:, 1::2], 0, resize_h)
         return bbox
 
+    def apply_kps(self, kps, scale, size):
+        im_scale_x, im_scale_y = scale
+        resize_w, resize_h = size
+        kps[:, :, 0] *= im_scale_x
+        kps[:, :, 1] *= im_scale_y
+        kps[:, :, 0] = np.clip(kps[:, :, 0], 0, resize_w)
+        kps[:, :, 1] = np.clip(kps[:, :, 1], 0, resize_h)
+        return kps
+
     def apply_segm(self, segms, im_size, scale):
         def _resize_poly(poly, im_scale_x, im_scale_y):
             resized_poly = np.array(poly).astype('float32')
@@ -840,6 +853,10 @@ class Resize(BaseOperator):
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'],
                                                 [im_scale_x, im_scale_y],
                                                 [resize_w, resize_h])
+        if 'gt_keypoint' in sample and len(sample['gt_keypoint']) > 0:
+            sample['gt_keypoint'] = self.apply_kps(sample['gt_keypoint'],
+                                                   [im_scale_x, im_scale_y],
+                                                   [resize_w, resize_h])
 
         # apply rbox
         if 'gt_rbox2poly' in sample:
@@ -1915,19 +1932,34 @@ class DebugVisibleImage(BaseOperator):
 
         if 'gt_keypoint' in sample.keys():
             gt_keypoint = sample['gt_keypoint']
-            if self.is_normalized:
-                for i in range(gt_keypoint.shape[1]):
-                    if i % 2:
-                        gt_keypoint[:, i] = gt_keypoint[:, i] * height
-                    else:
-                        gt_keypoint[:, i] = gt_keypoint[:, i] * width
-            for i in range(gt_keypoint.shape[0]):
-                keypoint = gt_keypoint[i]
-                for j in range(int(keypoint.shape[0] / 2)):
-                    x1 = round(keypoint[2 * j]).astype(np.int32)
-                    y1 = round(keypoint[2 * j + 1]).astype(np.int32)
-                    draw.ellipse(
-                        (x1, y1, x1 + 5, y1 + 5), fill='green', outline='green')
+            if len(gt_keypoint.shape) == 3:
+                for kps in gt_keypoint:
+                    for x in kps:
+                        x1 = round(x[0])
+                        y1 = round(x[1])
+                        if x[2] > 0:
+                            draw.ellipse(
+                                (x1, y1, x1 + 5, y1 + 5),
+                                fill='green',
+                                outline='green')
+                            draw.text((x1, y1 - 5), str(x[2]), fill='red')
+            else:
+                if self.is_normalized:
+                    for i in range(gt_keypoint.shape[1]):
+                        if i % 2:
+                            gt_keypoint[:, i] = gt_keypoint[:, i] * height
+                        else:
+                            gt_keypoint[:, i] = gt_keypoint[:, i] * width
+                for i in range(gt_keypoint.shape[0]):
+                    keypoint = gt_keypoint[i]
+                    for j in range(int(keypoint.shape[0] / 2)):
+                        #  print(keypoint)
+                        x1 = round(keypoint[2 * j]).astype(np.int32)
+                        y1 = round(keypoint[2 * j + 1]).astype(np.int32)
+                        draw.ellipse(
+                            (x1, y1, x1 + 5, y1 + 5),
+                            fill='green',
+                            outline='green')
         save_path = os.path.join(self.output_dir, out_file_name)
         image.save(save_path, quality=95)
         return sample
@@ -3252,16 +3284,21 @@ class RandomSquareCrop(BaseOperator):
                     # keypoints field
                     #  if key=='gt_bboxes':
                 #  for kps_key in results.get('keypoints_fields', []):
-                #      keypointss = results[kps_key].copy()
-                #      #print('AAAA', kps_key, keypointss.shape, mask.shape)
-                #      keypointss = keypointss[mask,:,:]
-                #      if self.bbox_clip_border:
-                #          keypointss[:,:,:2] = keypointss[:,:,:2].clip(max=patch[2:])
-                #          keypointss[:,:,:2] = keypointss[:,:,:2].clip(min=patch[:2])
-                #      #keypointss[:,:,:2] -= np.tile(patch[:2], 2)
-                #      keypointss[:,:,0] -= patch[0]
-                #      keypointss[:,:,1] -= patch[1]
-                #          results[kps_key] = keypointss
+                if 'gt_keypoint' in sample.keys():
+                    keypointss = sample['gt_keypoint'].copy()
+                    #  print(keypointss)
+                    #print('AAAA', kps_key, keypointss.shape, mask.shape)
+                    keypointss = keypointss[mask, :, :]
+                    if self.bbox_clip_border:
+                        keypointss[:, :, :2] = keypointss[:, :, :2].clip(
+                            max=patch[2:])
+                        keypointss[:, :, :2] = keypointss[:, :, :2].clip(
+                            min=patch[:2])
+                    #keypointss[:,:,:2] -= np.tile(patch[:2], 2)
+                    keypointss[:, :, 0] -= patch[0]
+                    keypointss[:, :, 1] -= patch[1]
+                    sample['gt_keypoint'] = keypointss
+                    #  print(keypointss)
 
                 # mask fields
                 #  mask_key = self.bbox2mask.get(key)

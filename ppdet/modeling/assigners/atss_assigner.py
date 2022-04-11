@@ -89,7 +89,8 @@ class ATSSAssigner(nn.Layer):
                 pad_gt_mask,
                 bg_index,
                 gt_scores=None,
-                pred_bboxes=None):
+                pred_bboxes=None,
+                gt_kps=None):
         r"""This code is based on
             https://github.com/fcjian/TOOD/blob/master/mmdet/core/bbox/assigners/atss_assigner.py
 
@@ -210,6 +211,14 @@ class ATSSAssigner(nn.Layer):
             gt_bboxes.reshape([-1, 4]), assigned_gt_index.flatten(), axis=0)
         assigned_bboxes = assigned_bboxes.reshape([batch_size, num_anchors, 4])
 
+        if gt_kps is not None:
+            assigned_kps = paddle.gather(
+                gt_kps.reshape([-1, gt_kps.shape[-1]]),
+                assigned_gt_index.flatten(),
+                axis=0)
+            assigned_kps = assigned_kps.reshape(
+                [batch_size, num_anchors, gt_kps.shape[-1]])
+
         assigned_scores = F.one_hot(assigned_labels, self.num_classes)
         if pred_bboxes is not None:
             # assigned iou
@@ -223,5 +232,7 @@ class ATSSAssigner(nn.Layer):
             gather_scores = paddle.where(mask_positive_sum > 0, gather_scores,
                                          paddle.zeros_like(gather_scores))
             assigned_scores *= gather_scores.unsqueeze(-1)
-
-        return assigned_labels, assigned_bboxes, assigned_scores
+        if gt_kps is None:
+            return assigned_labels, assigned_bboxes, assigned_scores
+        else:
+            return assigned_labels, assigned_bboxes, assigned_scores, assigned_kps

@@ -47,7 +47,7 @@ class WIDERFaceDataSetV2(DetDataset):
                  min_size=None,
                  test_mode=False,
                  nk=5,
-                 with_lmk=False):
+                 with_lmk=True):
         super(WIDERFaceDataSetV2, self).__init__(
             dataset_dir=dataset_dir,
             image_dir=image_dir,
@@ -137,13 +137,16 @@ class WIDERFaceDataSetV2(DetDataset):
             vals = item['objs']
             objs = []
             bbox = np.zeros((len(vals), 4), dtype=np.float32)
-            lm = []
+            lms = np.zeros((len(vals), self.NK, 3), dtype=np.float32)
             for i, line in enumerate(vals):
                 data = self._parse_ann_line(line)
                 if data is None:
                     continue
                 objs.append(data)  #data is (bbox, kps, cat)
                 bbox[i] = data[0]
+                #  lms[i] = data[1][..., :2].reshape(-1)
+                lms[i] = data[1]
+
             if len(bbox) == 0 and not self.test_mode:
                 continue
             gt_class = np.zeros((len(objs), 1), dtype=np.int32)
@@ -153,7 +156,8 @@ class WIDERFaceDataSetV2(DetDataset):
                     im_file=im_fname,
                     im_id=np.array([ct]),
                     gt_class=gt_class,
-                    gt_bbox=bbox))
+                    gt_bbox=bbox,
+                    gt_keypoint=lms))
             ct += 1
         assert len(data_infos)
         self.roidbs, self.cname2cid = data_infos, widerface_label()

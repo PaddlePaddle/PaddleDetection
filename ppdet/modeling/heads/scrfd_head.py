@@ -33,6 +33,52 @@ from ppdet.data.transform.atss_assigner import bbox_overlaps
 __all__ = ['SCRFDHead']
 
 
+def batch_kps2distance(points, kps, max_dis=None, eps=0.1):
+    """Decode bounding box based on distances.
+
+    Args:
+        points: (Tensor): boxes center with shape (N, 2), "x, y" format.
+        kps (Tensor): Shape (n, K), "xyxy" format
+        max_dis (float): Upper bound of the distance.
+        eps (float): a small value to ensure target < max_dis, instead <=
+
+    Returns:
+        Tensor: Decoded distances.
+    """
+
+    preds = []
+    points = paddle.tile(
+        points, repeat_times=[kps.shape[0] // points.shape[0], 1])
+    for i in range(0, kps.shape[1], 2):
+        px = kps[:, i] - points[:, i % 2]
+        py = kps[:, i + 1] - points[:, i % 2 + 1]
+        if max_dis is not None:
+            px = paddle.clip(px, min=0, max=max_dis - eps)
+            py = paddle.clip(py, min=0, max=max_dis - eps)
+        preds.append(px)
+        preds.append(py)
+    return paddle.stack(preds, -1)
+    # kps[..., 0::2] -= points[..., 0].unsqueeze(axis=-1)
+    # kps[..., 1::2] -= points[..., 1].unsqueeze(axis=-1)
+    # if max_dis is not None:
+    #     kps = paddle.clip(kps, min=0, max=max_dis - eps)
+    # return kps
+
+
+def batch_distance2kps(points, kps, max_shape=None):
+    preds = []
+    points = paddle.tile(points, repeat_times=[kps.shape[0], 1])
+    for i in range(0, kps.shape[2], 2):
+        px = points[..., 0] + kps[..., i]
+        py = points[..., 1] + kps[..., i + 1]
+        if max_shape is not None:
+            px = paddle.clip(px, min=0, max=max_shape[1])
+            py = paddle.clip(py, min=0, max=max_shape[0])
+        preds.append(px)
+        preds.append(py)
+    return paddle.stack(preds, -1)
+
+
 @register
 class SCRFDFeat(nn.Layer):
     """
@@ -182,12 +228,14 @@ class SCRFDFeat(nn.Layer):
 
         cls_feat = fpn_feat
         reg_feat = fpn_feat
+        kps_feat = fpn_feat
         for i in range(len(self.cls_convs[stage_idx])):
             cls_feat = self.act_func(self.cls_convs[stage_idx][i](cls_feat))
             reg_feat = cls_feat
+            kps_feat = cls_feat
             if not self.share_cls_reg:
                 reg_feat = self.act_func(self.reg_convs[stage_idx][i](reg_feat))
-        return cls_feat, reg_feat
+        return cls_feat, reg_feat, kps_feat
 
 
 @register
@@ -196,7 +244,7 @@ class SCRFDHead(nn.Layer):
     """
     __inject__ = [
         'conv_feat', 'anchor_generator', 'bbox_assigner', 'loss_class',
-        'loss_bbox', 'nms'
+        'loss_bbox', 'nms', 'loss_kps'
     ]
 
     def __init__(self,
@@ -208,6 +256,9 @@ class SCRFDHead(nn.Layer):
                  loss_bbox=None,
                  nms_pre=1000,
                  nms=None,
+                 use_kps=False,
+                 num_kps=5,
+                 loss_kps=None,
                  use_reg_scale=True):
         super(SCRFDHead, self).__init__()
         self.num_classes = num_classes
@@ -221,11 +272,15 @@ class SCRFDHead(nn.Layer):
         self.nms = nms
         self.cls_out_channels = num_classes
         self.use_reg_scale = use_reg_scale
+        self.use_kps = use_kps
+        self.NK = num_kps
+        self.loss_kps = loss_kps
         self.init_layers()
 
     def init_layers(self):
         bias_init_value = -4.595
         num_anchors = self.anchor_generator.num_anchors
+        self.num_anchors = num_anchors
         self.scrfd_cls = nn.Conv2D(
             in_channels=self.conv_feat.feat_out,
             out_channels=self.cls_out_channels * num_anchors,
@@ -251,6 +306,16 @@ class SCRFDHead(nn.Layer):
                 self.reg_scale.append(ScaleReg())
             else:
                 self.reg_scale.append(None)
+        if self.use_kps:
+            self.scrfd_kps = nn.Conv2D(
+                in_channels=self.conv_feat.feat_out,
+                out_channels=self.NK * 2 * num_anchors,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                weight_attr=ParamAttr(initializer=Normal(
+                    mean=0.0, std=0.01)),
+                bias_attr=ParamAttr(initializer=Constant(value=0)))
 
     def forward(self, neck_feats):
         # we use the same anchor for all images
@@ -258,10 +323,19 @@ class SCRFDHead(nn.Layer):
             neck_feats, return_extra_info=True)
         cls_logits_list = []
         bboxes_pred_list = []
+        kps_pred_list = []
         for i, neck_feat in enumerate(neck_feats):
-            conv_cls_feat, conv_reg_feat = self.conv_feat(neck_feat, i)
+            conv_cls_feat, conv_reg_feat, conv_kps_feat = self.conv_feat(
+                neck_feat, i)
             cls_logits = self.scrfd_cls(conv_cls_feat)
             bbox_reg = self.scrfd_reg(conv_reg_feat)
+            if self.use_kps:
+                kps_pred = self.scrfd_kps(conv_kps_feat)
+            else:
+                kps_pred = paddle.zeros([
+                    bbox_reg.shape[0], self.NK * 2 * self.num_anchors,
+                    bbox_reg.shape[2], bbox_reg.shape[3]
+                ])
             if self.reg_scale[i] is not None:
                 bbox_reg = self.reg_scale[i](bbox_reg)
             #  if not self.training:
@@ -281,13 +355,27 @@ class SCRFDHead(nn.Layer):
             if not self.training:
                 bbox_pred *= self.anchor_generator.strides[i]
             bboxes_pred_list.append(bbox_pred)
+            if self.use_kps:
+                kps_pred = kps_pred.transpose([0, 2, 3, 1]).reshape(
+                    [0, -1, self.NK * 2])
+                if not self.training:
+                    kps_pred = batch_distance2kps(anchor_center, kps_pred)
+                    kps_pred *= self.anchor_generator.strides[i]
+            # kps_pred = batch_kps2distance(anchor_center,  kps_pred)
+                kps_pred_list.append(kps_pred)
 
             # reshape network outputs
         cls_logits = paddle.concat(cls_logits_list, axis=1)
         bboxes_pred = paddle.concat(bboxes_pred_list, axis=1)
-
+        if self.use_kps:
+            kpses_pred = paddle.concat(kps_pred_list, axis=1)
+        else:
+            kpses_pred = None
+        anchors = paddle.concat(anchors, axis=0)
+        stride_tensor_list = paddle.concat(stride_tensor_list, axis=0)
+        stride_tensor_list = paddle.unsqueeze(stride_tensor_list, axis=0)
         return (cls_logits, bboxes_pred, anchors, num_anchors_list,
-                stride_tensor_list)
+                stride_tensor_list, kpses_pred)
 
     def get_loss(self, head_outputs, gt_meta):
         """Here we calculate loss for a batch of images.
@@ -295,11 +383,17 @@ class SCRFDHead(nn.Layer):
         postive and negative samples. Then loss is calculated on the gathered
         samples.
         """
-        cls_logits, bboxes_pred, anchors, num_anchors_list, stride_tensor_list = head_outputs
+        cls_logits, bboxes_pred, anchors, num_anchors_list, stride_tensor_list, kpses_pred = head_outputs
         gt_labels = gt_meta['gt_class']
         gt_bboxes = gt_meta['gt_bbox']
         pad_gt_mask = gt_meta['pad_gt_mask']
-        #  num_imgs = gt_meta['im_id'].shape[0]
+        gt_kps_all = gt_meta['gt_keypoint']
+        bs, num, num_kps, len_kps = gt_kps_all.shape
+        gt_kps = gt_kps_all[..., :2].reshape([bs, num, -1])
+        gt_kps_mask = gt_kps_all[..., 2].reshape(
+            [bs, num, -1])[:, :, 0].unsqueeze(-1)
+        gt_kps = gt_kps * (gt_kps_mask * pad_gt_mask)
+        #  num_imgs = gt_meta['im_id'].shape[0]ß
         #          import pickle
         #  with open('./cls_logits.pkl', 'rb')as fd:
         #      cls_logits = paddle.to_tensor(pickle.load(fd))
@@ -327,22 +421,20 @@ class SCRFDHead(nn.Layer):
         #  cls_logits = cls_logits_new
         #          bboxes_pred = bboxes_pred_new
 
-        anchors = paddle.concat(anchors, axis=0)
         #  anchors.stop_gradient = True
-        stride_tensor_list = paddle.concat(stride_tensor_list, axis=0)
-        stride_tensor_list = paddle.unsqueeze(stride_tensor_list, axis=0)
         #  stride_tensor_list.stop_gradient = True
-        assigned_labels, assigned_bboxes, assigned_scores = self.bbox_assigner(
+        assigned_labels, assigned_bboxes, assigned_scores, assigned_kps = self.bbox_assigner(
             anchors,
             num_anchors_list,
             gt_labels,
             gt_bboxes,
             pad_gt_mask,
             bg_index=self.num_classes,
-            pred_bboxes=bboxes_pred.detach() * stride_tensor_list)
+            pred_bboxes=bboxes_pred.detach() * stride_tensor_list,
+            gt_kps=gt_kps)
         #  # rescale bbox
         assigned_bboxes /= stride_tensor_list
-
+        assigned_kps /= stride_tensor_list
         flatten_cls_preds = cls_logits.reshape([-1, self.num_classes])
         flatten_bboxes = bboxes_pred.reshape([-1, 4])
         flatten_bbox_targets = assigned_bboxes.reshape([-1, 4])
@@ -367,6 +459,7 @@ class SCRFDHead(nn.Layer):
                 flatten_assigned_scores, pos_inds, axis=0)
             weight_targets = pos_cls_pred.detach()
             weight_targets = F.sigmoid(1 - weight_targets)
+            # weight_targets = F.sigmoid(weight_targets)
             #  weight_targets = paddle.gather(
             #      weight_targets.max(axis=1, keepdim=True), pos_inds, axis=0)
 
@@ -383,13 +476,34 @@ class SCRFDHead(nn.Layer):
                     avg_factor / paddle.distributed.get_world_size(), min=1)
             loss_iou /= avg_factor
 
-            # for cls_gth
-            #  scores[pos_inds] = bbox_overlaps(
-        #  pos_decode_bbox_pred.detach().numpy(),
-        #  pos_bbox_targets.detach().numpy(),
-        #      is_aligned=True)
+            if self.use_kps:
+                flatten_kpses_pred = kpses_pred.reshape([-1, self.NK * 2])
+                flatten_assigned_kps = assigned_kps.reshape([-1, self.NK * 2])
+                pos_kps_pred_mask = paddle.gather(
+                    flatten_assigned_kps, pos_inds,
+                    axis=0).sum(axis=-1).unsqueeze(axis=-1)
+                kpses_weight = paddle.where(pos_kps_pred_mask > 0,
+                                            weight_targets,
+                                            paddle.zeros_like(weight_targets))
+                anchors_center = (bbox_center(anchors) /
+                                  stride_tensor_list).squeeze(axis=0)
+                pos_kps_targets = batch_kps2distance(anchors_center,
+                                                     flatten_assigned_kps)
+                pos_kps_targets = paddle.gather(
+                    pos_kps_targets, pos_inds, axis=0)
+                pos_kps_pred = paddle.gather(
+                    flatten_kpses_pred, pos_inds, axis=0)
+
+                loss_kps = self.loss_kps(pos_kps_pred,
+                                         pos_kps_targets) * kpses_weight
+                loss_kps = paddle.sum(loss_kps)
+                if self.use_kps:
+                    loss_kps /= avg_factor
+            else:
+                loss_kps = paddle.zeros([1])
         else:
             loss_iou = paddle.zeros([1])
+            loss_kps = paddle.zeros([1])
 
         # classification loss
         num_total_pos = paddle.to_tensor(num_total_pos)
@@ -422,10 +536,12 @@ class SCRFDHead(nn.Layer):
         return {
             'loss_class': loss_cls,
             'loss_reg': loss_iou,
+            'loss_kps': loss_kps
         }
 
     def post_process(self, head_outs, img_shape, scale_factor):
-        pred_scores, pred_bboxes, _, _, _ = head_outs
+        pred_scores, pred_bboxes, anchors, num_anchors_list, \
+            stride_tensor_list, kps_pred = head_outs
         pred_scores = F.sigmoid(pred_scores.transpose([0, 2, 1]))
 
         for i in range(len(pred_bboxes)):

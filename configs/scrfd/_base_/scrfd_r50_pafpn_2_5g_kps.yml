@@ -1,0 +1,81 @@
+architecture: SCRFD
+use_ema: true
+SCRFD:
+  backbone: ResNet
+  neck: PAFPN
+  head: SCRFDHead
+
+ResNet:
+  depth: 0
+  variant: d
+  norm_type: bn
+  freeze_at: -1
+  freeze_norm: False
+  return_idx: [0,1,2,3]
+  num_stages: 4
+  norm_decay: 0
+  ch_in: 24
+  stem_max_pool_ks: 2
+  block_name: BasicBlock
+  block_nums: [3, 5, 3, 2]
+  block_ch_out: [24, 48, 48, 80]
+  stage2_no_short_conv: True
+
+PAFPN:
+  in_channels: [24, 48, 48, 80]
+  out_channels: 24
+  start_level: 1
+  has_extra_convs: on_output
+  spatial_scales: [0.125, 0.0625, 0.03125]
+  num_outs: 3
+  norm_decay: 0
+
+SCRFDHead:
+  num_classes: 1
+  nms_pre: 1000
+  use_kps: True
+  num_kps: 5
+  conv_feat:
+    name: SCRFDFeat
+    feat_in: 24
+    feat_out: 64
+    num_fpn_stride: 3
+    num_convs: 2
+    norm_type: gn
+    share_cls_reg: True
+    fpn_stride_share: True
+    act: relu
+    norm_group: 16
+    use_dw_conv: false
+    norm_decay: 0.
+  anchor_generator:
+    name: AnchorGenerator
+    anchor_sizes: [[16, 32], [64, 128], [256, 512]]
+    aspect_ratios: [1.0,]
+    strides: [8.0, 16.0, 32.0]
+  bbox_assigner:
+    name: ATSSAssigner
+    topk: 9
+    num_classes: 1
+    force_gt_matching: False
+    eps: 1e-9
+  loss_class:
+    name: QualityFocalLoss
+    use_sigmoid: True
+    beta: 2.0
+    loss_weight: 1.0
+  loss_bbox:
+    name: DIouLoss
+    loss_weight: 2.0
+    use_complete_iou_loss: False
+    reduction: sum
+  loss_kps:
+    name: SmoothL1Loss
+    beta: 0.1111111111111111
+    loss_weight: 0.1
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.02
+    nms_threshold: 0.45

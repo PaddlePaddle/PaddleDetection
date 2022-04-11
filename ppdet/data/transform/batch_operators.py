@@ -1081,9 +1081,10 @@ class PadGT(BaseOperator):
                                 1 means bbox, 0 means no bbox.
     """
 
-    def __init__(self, return_gt_mask=True):
+    def __init__(self, return_gt_mask=True, kps_size=[5, 3]):
         super(PadGT, self).__init__()
         self.return_gt_mask = return_gt_mask
+        self.kps_size = kps_size
 
     def __call__(self, samples, context=None):
         num_max_boxes = max([len(s['gt_bbox']) for s in samples])
@@ -1097,6 +1098,9 @@ class PadGT(BaseOperator):
             num_gt = len(sample['gt_bbox'])
             pad_gt_class = np.zeros((num_max_boxes, 1), dtype=np.int32)
             pad_gt_bbox = np.zeros((num_max_boxes, 4), dtype=np.float32)
+            pad_gt_keypoint = np.zeros(
+                (num_max_boxes, self.kps_size[0], self.kps_size[1]),
+                dtype=np.float32)
             if num_gt > 0:
                 if not len(sample['gt_class'].shape) == 1:
                     pad_gt_class[:num_gt] = sample['gt_class']
@@ -1104,8 +1108,12 @@ class PadGT(BaseOperator):
                     pad_gt_class[:num_gt] = np.expand_dims(
                         sample['gt_class'], axis=1)
                 pad_gt_bbox[:num_gt] = sample['gt_bbox']
+                if 'gt_keypoint' in sample.keys():
+                    pad_gt_keypoint[:num_gt] = sample['gt_keypoint']
             sample['gt_class'] = pad_gt_class
             sample['gt_bbox'] = pad_gt_bbox
+            if 'gt_keypoint' in sample.keys():
+                sample['gt_keypoint'] = pad_gt_keypoint
             # pad_gt_mask
             if 'pad_gt_mask' in sample:
                 sample['pad_gt_mask'][:num_gt] = 1
