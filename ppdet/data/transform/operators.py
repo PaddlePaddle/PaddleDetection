@@ -3219,12 +3219,7 @@ class RandomSquareCrop(BaseOperator):
                 elif self.crop_choice is not None:
                     scale = np.random.choice(self.crop_choice)
             else:
-                #scale = min(scale*1.2, max_scale)
                 scale = scale * 1.2
-
-            # print(scale, img.shape[:2], boxes)
-            # import cv2
-            # cv2.imwrite('aaa.png', img)
 
             for i in range(250):
                 short_side = min(w, h)
@@ -3281,33 +3276,18 @@ class RandomSquareCrop(BaseOperator):
                 if label_key in sample:
                     sample[label_key] = sample[label_key][mask]
 
-                    # keypoints field
-                    #  if key=='gt_bboxes':
-                #  for kps_key in results.get('keypoints_fields', []):
                 if 'gt_keypoint' in sample.keys():
                     keypointss = sample['gt_keypoint'].copy()
-                    #  print(keypointss)
-                    #print('AAAA', kps_key, keypointss.shape, mask.shape)
                     keypointss = keypointss[mask, :, :]
                     if self.bbox_clip_border:
                         keypointss[:, :, :2] = keypointss[:, :, :2].clip(
                             max=patch[2:])
                         keypointss[:, :, :2] = keypointss[:, :, :2].clip(
                             min=patch[:2])
-                    #keypointss[:,:,:2] -= np.tile(patch[:2], 2)
                     keypointss[:, :, 0] -= patch[0]
                     keypointss[:, :, 1] -= patch[1]
                     sample['gt_keypoint'] = keypointss
-                    #  print(keypointss)
 
-                # mask fields
-                #  mask_key = self.bbox2mask.get(key)
-                #  if mask_key in results:
-                #      results[mask_key] = results[mask_key][mask.nonzero()
-                #                                            [0]].crop(patch)
-
-                # adjust the img no matter whether the gt is empty before crop
-                #img = img[patch[1]:patch[3], patch[0]:patch[2]]
                 rimg = np.ones((ch, cw, 3), dtype=img.dtype) * 128
                 patch_from = patch.copy()
                 patch_from[0] = max(0, patch_from[0])
@@ -3321,13 +3301,8 @@ class RandomSquareCrop(BaseOperator):
                 patch_to[3] = patch_to[1] + (patch_from[3] - patch_from[1])
                 rimg[patch_to[1]:patch_to[3], patch_to[0]:patch_to[2], :] = img[
                     patch_from[1]:patch_from[3], patch_from[0]:patch_from[2], :]
-                #print(img.shape, scale, patch, patch_from, patch_to, rimg.shape)
                 img = rimg
                 sample['image'] = img
                 sample['im_shape'] = img.shape
 
-                # seg fields
-                #for key in results.get('seg_fields', []):
-                #    results[key] = results[key][patch[1]:patch[3],
-                #                                patch[0]:patch[2]]
                 return sample

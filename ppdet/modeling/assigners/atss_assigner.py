@@ -27,7 +27,7 @@ from ..bbox_utils import iou_similarity as batch_iou_similarity
 from ..bbox_utils import bbox_center
 from .utils import (check_points_inside_bboxes, compute_max_iou_anchor,
                     compute_max_iou_gt)
-# import torch
+
 __all__ = ['ATSSAssigner']
 
 
@@ -61,14 +61,8 @@ class ATSSAssigner(nn.Layer):
         for distances, anchors_index in zip(gt2anchor_distances_list,
                                             num_anchors_index):
             num_anchors = distances.shape[-1]
-            #  topk_metrics, topk_idxs = torch.topk(
-            #      torch.Tensor(distances.numpy()), self.topk, dim=-1, largest=False)
-            #  topk_metrics = paddle.to_tensor(topk_metrics.cpu().numpy()).astype('float32')
-            #  topk_idxs = paddle.to_tensor(topk_idxs.cpu().numpy()).astype('int64')
             topk_metrics, topk_idxs = paddle.topk(
                 distances, self.topk, axis=-1, largest=False)
-            #              if self.topk % 2 != 0:
-            #                  topk_idxs[..., -1] = topk_idxs[..., -1] // 2 * 2
             topk_idxs_list.append(topk_idxs + anchors_index)
             topk_idxs = paddle.where(pad_gt_mask, topk_idxs,
                                      paddle.zeros_like(topk_idxs))

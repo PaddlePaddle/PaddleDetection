@@ -338,8 +338,7 @@ class SCRFDHead(nn.Layer):
                 ])
             if self.reg_scale[i] is not None:
                 bbox_reg = self.reg_scale[i](bbox_reg)
-            #  if not self.training:
-            #      bbox_reg *= self.anchor_generator.strides[i]
+
             cls_logits_list.append(
                 cls_logits.transpose([0, 2, 3, 1]).reshape(
                     [0, -1, self.cls_out_channels]))
@@ -349,7 +348,6 @@ class SCRFDHead(nn.Layer):
                 bbox_reg.shape[0], anchor_center.shape[0],
                 anchor_center.shape[1]
             ])
-            #  anchor_center.stop_gradient = True
             bbox_reg = bbox_reg.transpose([0, 2, 3, 1]).reshape([0, -1, 4])
             bbox_pred = batch_distance2bbox(anchor_center, bbox_reg)
             if not self.training:
@@ -361,10 +359,8 @@ class SCRFDHead(nn.Layer):
                 if not self.training:
                     kps_pred = batch_distance2kps(anchor_center, kps_pred)
                     kps_pred *= self.anchor_generator.strides[i]
-            # kps_pred = batch_kps2distance(anchor_center,  kps_pred)
                 kps_pred_list.append(kps_pred)
 
-            # reshape network outputs
         cls_logits = paddle.concat(cls_logits_list, axis=1)
         bboxes_pred = paddle.concat(bboxes_pred_list, axis=1)
         if self.use_kps:
@@ -393,36 +389,7 @@ class SCRFDHead(nn.Layer):
         gt_kps_mask = gt_kps_all[..., 2].reshape(
             [bs, num, -1])[:, :, 0].unsqueeze(-1)
         gt_kps = gt_kps * (gt_kps_mask * pad_gt_mask)
-        #  num_imgs = gt_meta['im_id'].shape[0]ß
-        #          import pickle
-        #  with open('./cls_logits.pkl', 'rb')as fd:
-        #      cls_logits = paddle.to_tensor(pickle.load(fd))
-        #  with open('./bbox_all.pkl', 'rb')as fd:
-        #              bboxes_pred = paddle.to_tensor(pickle.load(fd))
-        #          import pickle
-        #  with open('../insightface//detection/scrfd/cls_score_torch.pkl', 'rb')as fd:
-        #      cls_logits_new = pickle.load(fd)
-        #      cls_logits_new = paddle.concat([paddle.to_tensor(x).transpose([0, 2, 3, 1]).reshape([0, -1, self.cls_out_channels]) for x in cls_logits_new], axis=1)
-        #  with open('../insightface/detection/scrfd/bbox_pred_torch.pkl', 'rb')as fd:
-        #      bboxes_pred_pickle = pickle.load(fd)
-        #      bboxes_pred_new = []
-        #      for i in range(len(bboxes_pred_pickle)):
-        #          anchor_center = bbox_center(anchors[
-        #              i]) / self.anchor_generator.strides[i]
-        #          bbox_reg = paddle.to_tensor(bboxes_pred_pickle[i])
-        #          anchor_center = paddle.broadcast_to(anchor_center, [
-        #              bbox_reg.shape[0], anchor_center.shape[0],
-        #              anchor_center.shape[1]
-        #          ])
-        #          bbox_reg = bbox_reg.transpose([0, 2, 3, 1]).reshape([0, -1, 4])
-        #          bbox_pred = batch_distance2bbox(anchor_center, bbox_reg)
-        #          bboxes_pred_new.append(bbox_pred)
-        #      bboxes_pred_new = paddle.concat(bboxes_pred_new, axis=1)
-        #  cls_logits = cls_logits_new
-        #          bboxes_pred = bboxes_pred_new
 
-        #  anchors.stop_gradient = True
-        #  stride_tensor_list.stop_gradient = True
         assigned_labels, assigned_bboxes, assigned_scores, assigned_kps = self.bbox_assigner(
             anchors,
             num_anchors_list,
@@ -446,8 +413,6 @@ class SCRFDHead(nn.Layer):
                                (flatten_labels < self.num_classes)),
             as_tuple=False).squeeze(1)
         num_total_pos = len(pos_inds)
-
-        #  scores = paddle.zeros([flatten_assigned_scores.shape[0]]).detach()
 
         if num_total_pos > 0:
             pos_bbox_targets = paddle.gather(
@@ -516,22 +481,6 @@ class SCRFDHead(nn.Layer):
             flatten_cls_preds,
             (flatten_labels, paddle.flatten(assigned_scores).detach()),
             avg_factor=num_total_pos.detach())
-
-        #       pred1=paddle.concat((flatten_cls_preds[:12800],flatten_cls_preds[16800:16800+12800]),axis=0)
-        #  lable1=paddle.concat((flatten_labels[:12800],flatten_labels[16800:16800+12800]), axis=0)
-        #  score1=paddle.concat((paddle.flatten(assigned_scores)[:12800],paddle.flatten(assigned_scores)[16800:16800+12800]), axis=0)
-        #
-        #  pred2=paddle.concat((flatten_cls_preds[12800:12800+3200],flatten_cls_preds[16800+12800:16800+12800+3200]),axis=0)
-        #  lable2=paddle.concat((flatten_labels[12800:12800+3200],flatten_labels[16800+12800:16800+12800+3200]), axis=0)
-        #  score2=paddle.concat((paddle.flatten(assigned_scores)[12800:12800+3200],paddle.flatten(assigned_scores)[16800+12800:16800+12800+3200]), axis=0)
-        #
-        #  pred3=paddle.concat((flatten_cls_preds[16000:16800],flatten_cls_preds[-800:]),axis=0)
-        #  lable3=paddle.concat((flatten_labels[16000:16800],flatten_labels[-800:]), axis=0)
-        #  score3=paddle.concat((paddle.flatten(assigned_scores)[16000:16800],paddle.flatten(assigned_scores)[-800:]), axis=0)
-        #
-        #  loss1 = self.loss_class(pred1, (lable1, score1), avg_factor=num_total_pos.detach())
-        #  loss2 = self.loss_class(pred2, (lable2, score2), avg_factor=num_total_pos.detach())
-        #       loss3 = self.loss_class(pred3, (lable3, score3), avg_factor=num_total_pos.detach())
 
         return {
             'loss_class': loss_cls,
