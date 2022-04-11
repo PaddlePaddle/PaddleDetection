@@ -380,8 +380,8 @@ class PicoHead(OTAVFLHead):
             if feats is not None:
                 _, _, h, w = feats[i].shape
             else:
-                h = int(self.eval_size[0] / stride)
-                w = int(self.eval_size[1] / stride)
+                h = math.ceil(self.eval_size[0] / stride)
+                w = math.ceil(self.eval_size[1] / stride)
             shift_x = paddle.arange(end=w) + self.cell_offset
             shift_y = paddle.arange(end=h) + self.cell_offset
             shift_y, shift_x = paddle.meshgrid(shift_y, shift_x)
@@ -750,8 +750,8 @@ class PicoHeadV2(GFLHead):
             if feats is not None:
                 _, _, h, w = feats[i].shape
             else:
-                h = int(self.eval_size[0] / stride)
-                w = int(self.eval_size[1] / stride)
+                h = math.ceil(self.eval_size[0] / stride)
+                w = math.ceil(self.eval_size[1] / stride)
             shift_x = paddle.arange(end=w) + self.cell_offset
             shift_y = paddle.arange(end=h) + self.cell_offset
             shift_y, shift_x = paddle.meshgrid(shift_y, shift_x)

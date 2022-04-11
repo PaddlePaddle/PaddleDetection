@@ -80,6 +80,8 @@ class Integral(nn.Layer):
         """
         x = F.softmax(x.reshape([-1, self.reg_max + 1]), axis=1)
         x = F.linear(x, self.project)
+        if self.training:
+            x = x.reshape([-1, 4])
         return x
 
 
