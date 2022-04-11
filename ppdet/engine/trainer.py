@@ -20,6 +20,7 @@ import os
 import sys
 import copy
 import time
+from tqdm import tqdm
 
 import numpy as np
 import typing
@@ -553,7 +554,7 @@ class Trainer(object):
             flops_loader = create('TestReader')(self.dataset, 0)
             self._flops(flops_loader)
         results = []
-        for step_id, data in enumerate(loader):
+        for step_id, data in enumerate(tqdm(loader)):
             self.status['step_id'] = step_id
             # forward
             outs = self.model(data)

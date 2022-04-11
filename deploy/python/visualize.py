@@ -96,6 +96,8 @@ def draw_mask(im, np_boxes, np_masks, labels, threshold=0.5):
     expect_boxes = (np_boxes[:, 1] > threshold) & (np_boxes[:, 0] > -1)
     np_boxes = np_boxes[expect_boxes, :]
     np_masks = np_masks[expect_boxes, :, :]
+    im_h, im_w = im.shape[:2]
+    np_masks = np_masks[:, :im_h, :im_w]
     for i in range(len(np_masks)):
         clsid, score = int(np_boxes[i][0]), np_boxes[i][1]
         mask = np_masks[i]
