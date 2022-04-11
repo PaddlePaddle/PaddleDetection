@@ -16,14 +16,15 @@
     - [Deploy Inference](#deploy-inference)
       - [Deployment for Top-Down models](#deployment-for-top-down-models)
       - [Deployment for Bottom-Up models](#deployment-for-bottom-up-models)
-      - [joint inference with Multi-Object Tracking model FairMOT](#joint-inference-with-multi-object-tracking-model-fairmot)
-
+      - [Joint Inference with Multi-Object Tracking Model FairMOT](#joint-inference-with-multi-object-tracking-model-fairmot)
+- [Train with custom data](#Train-with-custom-data)
+- [BenchMark](#benchmark)
 
 ## Introduction
 
-The keypoint detection part in PaddleDetection follows the state-of-the-art algorithm closely, including Top-Down and Bottom-Up methods, which can satisfy the different needs of users. 
+The keypoint detection part in PaddleDetection follows the state-of-the-art algorithm closely, including Top-Down and Bottom-Up methods, which can satisfy the different needs of users.
 
-Top-Down detects the object first and then detect the specific keypoint. The accuracy of Top-Down models will be higher, but the time required will increase by the number of objects. 
+Top-Down detects the object first and then detect the specific keypoint. The accuracy of Top-Down models will be higher, but the time required will increase by the number of objects.
 
 Differently, Bottom-Up detects the point first and then group or connect those points to form several instances of human pose. The speed of Bottom-Up is fixed and will not increase by the number of objects, but the accuracy will be lower.
 
@@ -36,7 +37,7 @@ At the same time, PaddleDetection provides [PP-TinyPose](./tiny_pose/README.md) 
 ## Model Recommendation
 ### Mobile Terminal
 |Detection Model| Keypoint Model  | Input Size | Accuracy of COCO| Average Inference Time (FP16)  | Model Weight | Paddle-Lite Inference Model（FP16)|
-| :----| :------------------------ | :-------:  | :------: | :------: | :---: | :---: | 
+| :----| :------------------------ | :-------:  | :------: | :------: | :---: | :---: |
 | [PicoDet-S-Pedestrian](../../picodet/application/pedestrian_detection/picodet_s_192_pedestrian.yml) |[PP-TinyPose](./tinypose_128x96.yml)  | Detection：192x192<br>Keypoint：128x96 | Detection mAP：29.0<br>Keypoint AP：58.1 | Detection：2.37ms<br>Keypoint：3.27ms | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
 | [PicoDet-S-Pedestrian](../../picodet/application/pedestrian_detection/picodet_s_320_pedestrian.yml) |[PP-TinyPose](./tinypose_256x192.yml)| Detection：320x320<br>Keypoint：256x192 | Detection mAP：38.5<br>Keypoint AP：68.8 | Detection：6.30ms<br>Keypoint：8.33ms  |  [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams)| [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
 
@@ -44,7 +45,7 @@ At the same time, PaddleDetection provides [PP-TinyPose](./tiny_pose/README.md) 
 
 ### Teminal Server
 
-|Detection Model| Keypoint Model  | Input Size | Accuracy of COCO| Model Weight | 
+|Detection Model| Keypoint Model  | Input Size | Accuracy of COCO| Model Weight |
 | :----| :------------------------ | :-------:  | :------: | :------: |
 | [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) |[HRNet-w32](./hrnet/hrnet_w32_384x288.yml)| Detection：640x640<br>Keypoint：384x288 | Detection mAP：49.5<br>Keypoint AP：77.8 | [Detection](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[Keypoint](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams)  |
 | [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) |[HRNet-w32](./hrnet/hrnet_w32_256x192.yml) | Detection：640x640<br>Keypoint：256x192 | Detection mAP：49.5<br>Keypoint AP：76.9 | [Detection](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[Keypoint](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams)  |
@@ -140,7 +141,7 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/keypoint/higherhrnet/hi
 ```shell
 
 #Export Detection Model
-python tools/export_model.py -c configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams 
+python tools/export_model.py -c configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams
 
 #Export Keypoint Model
 python tools/export_model.py -c configs/keypoint/hrnet/hrnet_w32_256x192.yml -o weights=https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams
@@ -170,6 +171,44 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 **Note:**
  To export MOT model, please refer to [Here](../../configs/mot/README_en.md).
 
+### 4.Complete Deploy Instruction and Demo
+
+​ We provide standalone deploy of PaddleInference(Server-GPU)、PaddleLite(mobile、ARM)、Third-Engine(MNN、OpenVino), which is independent of training codes。For detail, please click [Deploy-docs](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/README_en.md)。
+
+## Train with custom data
+
+We take an example of [tinypose_256x192](.tiny_pose/README_en.md) to show how to train with custom data.
+
+#### 1、For configs [tinypose_256x192.yml](../../configs/keypoint/tiny_pose/tinypose_256x192.yml)
+
+you may need to modity these for your job：
+
+```
+num_joints: &num_joints 17    #the number of joints in your job
+train_height: &train_height 256   #the height of model input
+train_width: &train_width 192   #the width of model input
+hmsize: &hmsize [48, 64]  #the shape of model output，usually 1/4 of [w,h]
+flip_perm: &flip_perm [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16]] #the correspondence between left and right keypoint id，used for flip transform。You can add an line(by "flip: False") behind of flip_pairs in RandomFlipHalfBodyTransform of TrainReader if you don't need it
+num_joints_half_body: 8   #The joint numbers of half body, used for half_body transform
+prob_half_body: 0.3   #The probility of half_body transform, set to 0 if you don't need it
+upper_body_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]    #The joint ids of half(upper) body, used to get the upper joints in half_body transform
+```
+
+For more configs, please refer to [KeyPointConfigGuide](../../docs/tutorials/KeyPointConfigGuide_en.md)。
+
+#### 2、Others(used for test and visualization)
+- In keypoint_utils.py, please set: "sigmas = np.array([.26, .25, .25, .35, .35, .79, .79, .72, .72, .62, .62, 1.07, 1.07,.87, .87, .89, .89]) / 10.0", the value indicate the variance of a joint locations，normally 0.25-0.5 means the location is highly accuracy，for example: eyes。0.5-1.0 means the location is not sure so much，for example: shoulder。0.75 is recommand if you not sure。
+- In visualizer.py, please set "EDGES" in draw_pose function，this indicate the line to show between joints for visualization。
+- In pycocotools you installed, please set "sigmas"，it is the same as that in keypoint_utils.py, but used for coco evaluation。
+
+#### 3、Note for data preparation
+- The data should has the same format as Coco data, and the keypoints(Nx3) and bbox(N) should be annotated.
+- please set "area">0 in annotations files otherwise it will be skiped while training.
+
+
+## BenchMark
+
+We provide benchmarks in different runtime environments for your reference when choosing models. See [Keypoint Inference Benchmark](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/keypoint/KeypointBenchmark.md) for details.
 
 ## Reference
 ```
