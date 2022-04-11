@@ -24,6 +24,7 @@
       - [Bottom-Up模型独立部署](#bottom-up模型独立部署)
       - [与多目标跟踪联合部署](#与多目标跟踪模型fairmot联合部署)
     - [完整部署教程及Demo](#4完整部署教程及Demo)
+- [自定义数据训练](#自定义数据训练)
 - [BenchMark](#benchmark)
 
 ## 简介
@@ -53,7 +54,7 @@ PaddleDetection 关键点检测能力紧跟业内最新最优算法方案，包�
 ## 模型库
 
 COCO数据集
-| 模型              |  方案              |输入尺寸 | AP(coco val) |                           模型下载                           | 配置文件 |                                                   
+| 模型              |  方案              |输入尺寸 | AP(coco val) |                           模型下载                           | 配置文件 |  
 | :---------------- | -------- | :----------: | :----------------------------------------------------------: | ----------------------------------------------------| ------- |
 | HigherHRNet-w32       |Bottom-Up| 512      |     67.1     | [higherhrnet_hrnet_w32_512.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_512.yml)       |
 | HigherHRNet-w32       | Bottom-Up| 640      |     68.3     | [higherhrnet_hrnet_w32_640.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_640.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_640.yml)       |
@@ -140,7 +141,7 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/keypoint/higherhrnet/hi
 
 ```shell
 #导出检测模型
-python tools/export_model.py -c configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams 
+python tools/export_model.py -c configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams
 
 #导出关键点模型
 python tools/export_model.py -c configs/keypoint/hrnet/hrnet_w32_256x192.yml -o weights=https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams
@@ -175,6 +176,38 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 ### 4、完整部署教程及Demo
 
 ​ 我们提供了PaddleInference(服务器端)、PaddleLite(移动端)、第三方部署(MNN、OpenVino)支持。无需依赖训练代码，deploy文件夹下相应文件夹提供独立完整部署代码。 详见 [部署文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/README.md)介绍。
+
+## 自定义数据训练
+
+我们以[tinypose_256x192](.tiny_pose/README.md)为例来说明对于自定义数据如何修改：
+
+#### 1、配置文件[tinypose_256x192.yml](../../configs/keypoint/tiny_pose/tinypose_256x192.yml)
+
+基本的修改内容及其含义如下：
+
+```
+num_joints: &num_joints 17    #自定义数据的关键点数量
+train_height: &train_height 256   #训练图片尺寸-高度h
+train_width: &train_width 192   #训练图片尺寸-宽度w
+hmsize: &hmsize [48, 64]  #对应训练尺寸的输出尺寸，这里是输入[w,h]的1/4
+flip_perm: &flip_perm [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16]] #关键点定义中左右对称的关键点，用于flip增强。若没有对称结构在 TrainReader 的 RandomFlipHalfBodyTransform 一栏中 flip_pairs 后面加一行 "flip: False"（注意缩紧对齐）
+num_joints_half_body: 8   #半身关键点数量，用于半身增强
+prob_half_body: 0.3   #半身增强实现概率，若不需要则修改为0
+upper_body_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]    #上半身对应关键点id，用于半身增强中获取上半身对应的关键点。
+```
+
+上述是自定义数据时所需要的修改部分，完整的配置及含义说明可参考文件：[关键点配置文件说明](../../docs/tutorials/KeyPointConfigGuide_cn.md)。
+
+#### 2、其他代码修改（影响测试、可视化）
+- keypoint_utils.py中的sigmas = np.array([.26, .25, .25, .35, .35, .79, .79, .72, .72, .62, .62, 1.07, 1.07,.87, .87, .89, .89]) / 10.0，表示每个关键点的确定范围方差，根据实际关键点可信区域设置，区域精确的一般0.25-0.5，例如眼睛。区域范围大的一般0.5-1.0，例如肩膀。若不确定建议0.75。
+- visualizer.py中的draw_pose函数中的EDGES，表示可视化时关键点之间的连接线关系。
+- pycocotools工具中的sigmas，同第一个keypoint_utils.py中的设置。用于coco指标评估时计算。
+
+#### 3、数据准备注意
+- 训练数据请按coco数据格式处理。需要包括关键点[Nx3]、检测框[N]标注。
+- 请注意area>0，area=0时数据会被过滤掉。
+
+如有遗漏，欢迎反馈
 
 ## BenchMark
 
