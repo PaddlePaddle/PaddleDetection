@@ -36,7 +36,7 @@ PP-YOLOE由以下方法组成
 - PP-YOLOE模型使用COCO数据集中train2017作为训练集，使用val2017和test-dev2017作为测试集，Box AP<sup>test</sup>为`mAP(IoU=0.5:0.95)`评估结果。
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果训练GPU数和batch size不使用上述配置，须参考[FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/FAQ)调整学习率和迭代次数。
 - PP-YOLOE模型推理速度测试采用单卡V100，batch size=1进行测试，使用**CUDA 10.2**, **CUDNN 7.6.5**，TensorRT推理速度测试使用**TensorRT 6.0.1.8**。
-- 参考[速度测试](##速度测试)以复现PP-YOLOE推理速度测试结果。
+- 参考[速度测试](#速度测试)以复现PP-YOLOE推理速度测试结果。
 - 如果你设置了`--run_benchnark=True`, 你首先需要安装以下依赖`pip install pynvml psutil GPUtil`。
 
 ## 使用教程
