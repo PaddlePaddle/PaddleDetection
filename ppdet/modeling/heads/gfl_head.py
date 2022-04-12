@@ -79,7 +79,9 @@ class Integral(nn.Layer):
                 offsets from the box center in four directions, shape (N, 4).
         """
         x = F.softmax(x.reshape([-1, self.reg_max + 1]), axis=1)
-        x = F.linear(x, self.project).reshape([-1, 4])
+        x = F.linear(x, self.project)
+        if self.training:
+            x = x.reshape([-1, 4])
         return x
 
 
