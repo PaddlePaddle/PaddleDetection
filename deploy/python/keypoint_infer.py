@@ -269,8 +269,10 @@ class KeyPointDetector(Detector):
             print('detect frame: %d' % (index))
             index += 1
             results = self.predict_image([frame], visual=False)
+            im_results = {}
+            im_results['keypoint'] = [results['keypoint'], results['score']]
             im = visualize_pose(
-                frame, results, visual_thresh=self.threshold, returnimg=True)
+                frame, im_results, visual_thresh=self.threshold, returnimg=True)
             writer.write(im)
             if camera_id != -1:
                 cv2.imshow('Mask Detection', im)
