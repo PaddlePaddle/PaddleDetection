@@ -194,7 +194,8 @@ class MaskPostProcess(object):
         super(MaskPostProcess, self).__init__()
         self.binary_thresh = binary_thresh
         self.export_onnx = export_onnx
-        self.assign_on_cpu = assign_on_cpu
+        self.assign_on_cpu = assign_on_cpu and paddle.device.is_compiled_with_cuda(
+        )
 
     def paste_mask(self, masks, boxes, im_h, im_w):
         """
