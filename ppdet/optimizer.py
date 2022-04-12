@@ -358,7 +358,8 @@ class ModelEMA(object):
             Ema's parameter are updated with the formula:
            `ema_param = decay * ema_param + (1 - decay) * cur_param`.
             Defaults is 0.9998.
-        ema_decay_type (str): type in ['threshold', 'normal', 'exponential']
+        ema_decay_type (str): type in ['threshold', 'normal', 'exponential'],
+            'threshold' as default.
         cycle_epoch (int): The epoch of interval to reset ema_param and
             step. Defaults is -1, which means not reset. Its function is to
             add a regular effect to ema, which is set according to experience

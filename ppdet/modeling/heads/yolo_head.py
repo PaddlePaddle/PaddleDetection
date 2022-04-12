@@ -192,7 +192,7 @@ class YOLOXHead(nn.Layer):
             self.stem_conv.append(BaseConv(in_c, feat_channels, 1, 1, act=act))
 
             self.conv_cls.append(
-                nn.Sequential(*[
+                nn.Sequential(* [
                     ConvBlock(
                         feat_channels, feat_channels, 3, 1, act=act), ConvBlock(
                             feat_channels, feat_channels, 3, 1, act=act),
@@ -203,7 +203,7 @@ class YOLOXHead(nn.Layer):
                         bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
                 ]))
             self.conv_reg.append(
-                nn.Sequential(*[
+                nn.Sequential(* [
                     ConvBlock(
                         feat_channels, feat_channels, 3, 1, act=act),
                     ConvBlock(
@@ -364,6 +364,7 @@ class YOLOXHead(nn.Layer):
             loss_cls = F.binary_cross_entropy(
                 pred_cls_pos, assigned_cls_pos, reduction='sum')
             loss_cls /= num_pos
+            loss_obj /= num_pos
         else:
             loss_cls = paddle.zeros([1])
             loss_iou = paddle.zeros([1])
@@ -372,7 +373,6 @@ class YOLOXHead(nn.Layer):
             loss_iou.stop_gradient = False
             loss_l1.stop_gradient = False
 
-        loss_obj /= num_pos
         loss = self.loss_weight['obj'] * loss_obj + \
                self.loss_weight['cls'] * loss_cls + \
                self.loss_weight['iou'] * loss_iou

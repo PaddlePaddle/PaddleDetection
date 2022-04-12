@@ -29,7 +29,7 @@ worker_num: 4
 TrainReader:
   sample_transforms:
     - Decode: {}
-    - YOLOXMosaic:
+    - Mosaic:
         prob: 1.0
         degrees: 10.0
         translate: 0.1
@@ -37,7 +37,9 @@ TrainReader:
         shear: 2.0
         input_dim: [640, 640]
         enable_mixup: False # True in YOLOX-s/m/l/x
-    - AugImage: {target_size: 640, hsv_prob: 1.0, flip_prob: 0.5}
+    - PadResize: {target_size: 640}
+    - AugmentHSV: {hgain: 5, sgain: 30, vgain: 30}
+    - RandomFlip: {}
   batch_transforms:
     - Permute: {}
   batch_size: 8

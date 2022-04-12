@@ -30,6 +30,19 @@ __all__ = ['YOLOX']
 
 @register
 class YOLOX(BaseArch):
+    """
+    YOLOX network, see https://arxiv.org/abs/2107.08430
+
+    Args:
+        backbone (nn.Layer): backbone instance
+        neck (nn.Layer): neck instance
+        head (nn.Layer): head instance
+        for_mot (bool): whether used for MOT or not
+        input_size (list[int]): initial scale, will be reset by self._preprocess()
+        size_stride (int): stride of the size range
+        size_range (list[int]): multi-scale range for training
+        random_interval (int): interval of iter to change self._input_size
+    """
     __category__ = 'architecture'
 
     def __init__(self,
@@ -41,19 +54,6 @@ class YOLOX(BaseArch):
                  size_stride=32,
                  size_range=[15, 25],
                  random_interval=10):
-        """
-        YOLOX network, see https://arxiv.org/abs/2107.08430
-
-        Args:
-            backbone (nn.Layer): backbone instance
-            neck (nn.Layer): neck instance
-            head (nn.Layer): head instance
-            for_mot (bool): whether used for MOT or not
-            input_size (list[int]): initial scale, will be reset by self._preprocess()
-            size_stride (int): stride of the size range
-            size_range (list[int]): multi-scale range for training
-            random_interval (int): interval of iter to change self._input_size
-        """
         super(YOLOX, self).__init__()
         self.backbone = backbone
         self.neck = neck
@@ -109,6 +109,7 @@ class YOLOX(BaseArch):
         return self._forward()
 
     def _preprocess(self):
+        # YOLOX multi-scale training, interpolate resize before inputs of the network.
         self._get_size()
         scale_y = self._input_size[0] / self.input_size[0]
         scale_x = self._input_size[1] / self.input_size[1]
@@ -126,6 +127,7 @@ class YOLOX(BaseArch):
             self.inputs['gt_bbox'] = gt_bboxes
 
     def _get_size(self):
+        # random_interval = 10 as default, every 10 iters to change self._input_size
         image_ratio = self.input_size[1] * 1.0 / self.input_size[0]
         if self._step % self.random_interval == 0:
             size_factor = random.randint(*self.size_range)

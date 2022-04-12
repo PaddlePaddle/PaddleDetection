@@ -220,7 +220,7 @@ class SimOTAAssigner(object):
             cost_matrix = (
                 cls_cost * self.cls_weight + iou_cost * self.iou_weight +
                 paddle.logical_not(is_in_boxes_and_center).cast('float32') *
-                100000.0)
+                100000000)
 
         match_gt_inds_to_fg, match_fg_mask_inmatrix = \
             self.dynamic_k_matching(

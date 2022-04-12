@@ -2140,7 +2140,12 @@ class Rbox2Poly(BaseOperator):
 
 @register_op
 class AugmentHSV(BaseOperator):
-    def __init__(self, fraction=0.50, is_bgr=True):
+    def __init__(self,
+                 fraction=0.50,
+                 is_bgr=True,
+                 hgain=None,
+                 sgain=None,
+                 vgain=None):
         """ 
         Augment the SV channel of image data.
         Args:
@@ -2150,6 +2155,10 @@ class AugmentHSV(BaseOperator):
         super(AugmentHSV, self).__init__()
         self.fraction = fraction
         self.is_bgr = is_bgr
+        self.hgain = hgain
+        self.sgain = sgain
+        self.vgain = vgain
+        self.use_hsvgain = False if hgain is None else True
 
     def apply(self, sample, context=None):
         img = sample['image']
@@ -2157,21 +2166,33 @@ class AugmentHSV(BaseOperator):
             img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         else:
             img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-        S = img_hsv[:, :, 1].astype(np.float32)
-        V = img_hsv[:, :, 2].astype(np.float32)
+        if self.use_hsvgain:
+            hsv_augs = np.random.uniform(
+                -1, 1, 3) * [self.hgain, self.sgain, self.vgain]
+            # random selection of h, s, v
+            hsv_augs *= np.random.randint(0, 2, 3)
+            hsv_augs = hsv_augs.astype(np.int16)
 
-        a = (random.random() * 2 - 1) * self.fraction + 1
-        S *= a
-        if a > 1:
-            np.clip(S, a_min=0, a_max=255, out=S)
+            img_hsv[..., 0] = (img_hsv[..., 0] + hsv_augs[0]) % 180
+            img_hsv[..., 1] = np.clip(img_hsv[..., 1] + hsv_augs[1], 0, 255)
+            img_hsv[..., 2] = np.clip(img_hsv[..., 2] + hsv_augs[2], 0, 255)
+        else:
+            S = img_hsv[:, :, 1].astype(np.float32)
+            V = img_hsv[:, :, 2].astype(np.float32)
 
-        a = (random.random() * 2 - 1) * self.fraction + 1
-        V *= a
-        if a > 1:
-            np.clip(V, a_min=0, a_max=255, out=V)
+            a = (random.random() * 2 - 1) * self.fraction + 1
+            S *= a
+            if a > 1:
+                np.clip(S, a_min=0, a_max=255, out=S)
 
-        img_hsv[:, :, 1] = S.astype(np.uint8)
-        img_hsv[:, :, 2] = V.astype(np.uint8)
+            a = (random.random() * 2 - 1) * self.fraction + 1
+            V *= a
+            if a > 1:
+                np.clip(V, a_min=0, a_max=255, out=V)
+
+            img_hsv[:, :, 1] = S.astype(np.uint8)
+            img_hsv[:, :, 2] = V.astype(np.uint8)
+
         if self.is_bgr:
             cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)
         else:
@@ -3022,7 +3043,20 @@ class CenterRandColor(BaseOperator):
 
 
 @register_op
-class YOLOXMosaic(BaseOperator):
+class Mosaic(BaseOperator):
+    """ Mosaic operator for image and gt_bboxes
+    The code is based on https://github.com/Megvii-BaseDetection/YOLOX/blob/main/yolox/data/datasets/mosaicdetection.py
+
+    Args:
+        prob (float): probability of using Mosaic, 1.0 as default
+        input_dim (list[int]): input shape
+        enable_mixup (bool): whether to enable mixup or not
+        mixup_prob (float): probability of using mixup
+        mixup_scale (list[int]): scale range of mixup
+        remove_outside_box (bool): whether remove outside boxes, False as
+            default in COCO dataset, True in MOT dataset
+    """
+
     def __init__(self,
                  prob=1.0,
                  degrees=10.0,
@@ -3034,18 +3068,7 @@ class YOLOXMosaic(BaseOperator):
                  mixup_prob=1.0,
                  mixup_scale=[0.5, 1.5],
                  remove_outside_box=False):
-        """ YOLOXMosaic image and gt_bbbox/gt_score
-        Args:
-            prob (float): probability of using YOLOXMosaic, 1.0 as default,
-                set 0.5 in YOLOX-nano.
-            input_dim (list[int]): input shape
-            enable_mixup (bool): whether to enable mixup or not
-            mixup_prob (float): probability of using mixup
-            mixup_scale (list[int]): scale range of mixup
-            remove_outside_box (bool): whether remove outside boxes, False as
-                default in COCO dataset, True in MOT dataset
-        """
-        super(YOLOXMosaic, self).__init__()
+        super(Mosaic, self).__init__()
         self.prob = prob
         self.degrees = degrees
         self.translate = translate
@@ -3073,8 +3096,8 @@ class YOLOXMosaic(BaseOperator):
             small_coord = w - (x2 - x1), 0, w, min(y2 - y1, h)
         # index2 to bottom right part of image
         elif mosaic_index == 3:
-            x1, y1, x2, y2 = xc, yc, min(xc + w, input_w * 2), min(
-                input_h * 2, yc + h)  # noqa
+            x1, y1, x2, y2 = xc, yc, min(xc + w, input_w * 2), min(input_h * 2,
+                                                                   yc + h)
             small_coord = 0, 0, min(w, x2 - x1), min(y2 - y1, h)
         return (x1, y1, x2, y2), small_coord
 
@@ -3083,8 +3106,7 @@ class YOLOXMosaic(BaseOperator):
             return sample
 
         assert len(
-            sample
-        ) == 5, "YOLOXMosaic needs 5 samples, 4 for mosaic and 1 for mixup."
+            sample) == 5, "Mosaic needs 5 samples, 4 for mosaic and 1 for mixup."
         if np.random.uniform(0., 1.) > self.prob:
             return sample[0]
 
@@ -3189,9 +3211,7 @@ class YOLOXMosaic(BaseOperator):
             scales=self.scale,
             shear=self.shear, )
 
-        # -----------------------------------------------------------------
-        # CopyPaste: https://arxiv.org/abs/2012.07177
-        # -----------------------------------------------------------------
+        # Mixup as copypaste, https://arxiv.org/abs/2012.07177
         if (self.enable_mixup and not len(mosaic_labels) == 0 and
                 random.random() < self.mixup_prob):
             sample_mixup = sample[4]
@@ -3298,13 +3318,16 @@ class YOLOXMosaic(BaseOperator):
 
 
 @register_op
-class AugImage(BaseOperator):
-    def __init__(self,
-                 target_size,
-                 hsv_prob=1.0,
-                 flip_prob=0.5,
-                 fill_value=114.):
-        super(AugImage, self).__init__()
+class PadResize(BaseOperator):
+    """ PadResize for image and gt_bbbox
+
+    Args:
+        target_size (list[int]): input shape
+        fill_value (float): pixel value of padded image
+    """
+
+    def __init__(self, target_size, fill_value=114):
+        super(PadResize, self).__init__()
         if isinstance(target_size, Integral):
             target_size = [target_size, target_size]
         self.target_size = target_size
@@ -3337,40 +3360,11 @@ class AugImage(BaseOperator):
         padded_img[:h, :w] = img
         return padded_img
 
-    def augment_hsv(self, img, hgain=5, sgain=30, vgain=30):
-        hsv_augs = np.random.uniform(-1, 1, 3) * [hgain, sgain,
-                                                  vgain]  # random gains
-        hsv_augs *= np.random.randint(0, 2, 3)  # random selection of h, s, v
-        hsv_augs = hsv_augs.astype(np.int16)
-        img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV).astype(np.int16)
-
-        img_hsv[..., 0] = (img_hsv[..., 0] + hsv_augs[0]) % 180
-        img_hsv[..., 1] = np.clip(img_hsv[..., 1] + hsv_augs[1], 0, 255)
-        img_hsv[..., 2] = np.clip(img_hsv[..., 2] + hsv_augs[2], 0, 255)
-        cv2.cvtColor(img_hsv.astype(img.dtype), cv2.COLOR_HSV2RGB, dst=img)
-
-    def _mirror(self, image, boxes):
-        width = image.shape[1]
-        if random.random() < self.flip_prob:
-            image = image[:, ::-1]
-            boxes[:, 0::2] = width - boxes[:, 2::-2]
-        return image, boxes
-
     def apply(self, sample, context=None):
         image = sample['image']
         bboxes = sample['gt_bbox']
         labels = sample['gt_class']
         image, bboxes, labels = self._resize(image, bboxes, labels)
-        if len(bboxes) == 0:
-            sample['image'] = self._pad(image).astype(np.float32)
-            sample['gt_bbox'] = bboxes
-            sample['gt_class'] = labels
-            return sample
-
-        if random.random() < self.hsv_prob:
-            self.augment_hsv(image)
-        image, bboxes = self._mirror(image, bboxes)
-
         sample['image'] = self._pad(image).astype(np.float32)
         sample['gt_bbox'] = bboxes
         sample['gt_class'] = labels
