@@ -67,10 +67,9 @@ class PicoDet(BaseArch):
         if self.training or not self.export_post_process:
             return head_outs, None
         else:
-            im_shape = self.inputs['im_shape']
             scale_factor = self.inputs['scale_factor']
             bboxes, bbox_num = self.head.post_process(
-                head_outs, im_shape, scale_factor, export_nms=self.export_nms)
+                head_outs, scale_factor, export_nms=self.export_nms)
             return bboxes, bbox_num
 
     def get_loss(self, ):
