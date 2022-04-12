@@ -306,6 +306,8 @@ else
 
                     #run inference
                     save_export_model_dir="${save_log}/${model_name}"
+                    # for inference benchmark copy model
+                    eval "cp ${save_export_model_dir}/* ${save_log}/"
                     eval $env
                     func_inference "${python}" "${inference_py}" "${save_export_model_dir}" "${LOG_PATH}" "${train_infer_img_dir}" "${flag_quant}"
 
