@@ -28,7 +28,7 @@ logger = setup_logger('ppdet.engine')
 
 # Global dictionary
 TRT_MIN_SUBGRAPH = {
-    'YOLO': 3,
+    'YOLO': 8,
     'SSD': 60,
     'RCNN': 40,
     'RetinaNet': 40,

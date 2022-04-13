@@ -31,7 +31,6 @@ YOLOCSPPAN:
   depthwise: True
 
 YOLOXHead:
-  l1_epoch: 285
   depthwise: True
 
 

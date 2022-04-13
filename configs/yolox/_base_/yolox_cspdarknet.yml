@@ -19,6 +19,7 @@ YOLOX:
 CSPDarkNet:
   arch: "X"
   return_idx: [2, 3, 4]
+  depthwise: False
 
 YOLOCSPPAN:
   depthwise: False
@@ -33,7 +34,7 @@ YOLOXHead:
     use_vfl: False
   nms:
     name: MultiClassNMS
-    nms_top_k: 1000
-    keep_top_k: 100
+    nms_top_k: 30000
+    keep_top_k: 1000
     score_threshold: 0.001
     nms_threshold: 0.65

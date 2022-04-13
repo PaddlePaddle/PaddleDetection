@@ -3331,8 +3331,6 @@ class PadResize(BaseOperator):
         if isinstance(target_size, Integral):
             target_size = [target_size, target_size]
         self.target_size = target_size
-        self.hsv_prob = hsv_prob
-        self.flip_prob = flip_prob
         self.fill_value = fill_value
 
     def _resize(self, img, bboxes, labels):
