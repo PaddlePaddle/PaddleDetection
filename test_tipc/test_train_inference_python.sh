@@ -62,7 +62,7 @@ fpgm_export=$(func_parser_value "${lines[31]}")
 distill_export=$(func_parser_value "${lines[32]}")
 export_key1=$(func_parser_key "${lines[33]}")
 export_value1=$(func_parser_value "${lines[33]}")
-export_key2=$(func_parser_key "${lines[34]}")
+export_onnx_key=$(func_parser_key "${lines[34]}")
 export_value2=$(func_parser_value "${lines[34]}")
 kl_quant_export=$(func_parser_value "${lines[35]}")
 
@@ -297,15 +297,27 @@ else
                 fi
                 # run export model
                 if [ ${run_export} != "null" ]; then
-                    # run export model
+                    save_export_model_dir="${save_log}/${model_name}"
                     set_export_weight=$(func_set_params "${export_weight_key}" "${save_log}/${model_name}/${train_model_name}")
                     set_save_export_dir=$(func_set_params "${save_export_key}" "${save_log}")
+                    if [ ${export_onnx_key} = "export_onnx" ]; then
+                        # run export onnx model for rcnn
+                        export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} export_onnx=True ${set_save_export_dir} "
+                        eval $export_cmd
+                        status_check $? "${export_cmd}" "${status_log}"
+                        # copy model for inference benchmark
+                        eval "cp ${save_export_model_dir}/* ${save_log}/"
+                    fi
+                    # run export model
                     export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
                     eval $export_cmd
                     status_check $? "${export_cmd}" "${status_log}"
 
                     #run inference
-                    save_export_model_dir="${save_log}/${model_name}"
+                    if [ ${export_onnx_key} != "export_onnx" ]; then
+                        # copy model for inference benchmark
+                        eval "cp ${save_export_model_dir}/* ${save_log}/"
+                    fi
                     eval $env
                     func_inference "${python}" "${inference_py}" "${save_export_model_dir}" "${LOG_PATH}" "${train_infer_img_dir}" "${flag_quant}"
 
