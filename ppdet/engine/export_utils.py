@@ -28,7 +28,7 @@ logger = setup_logger('ppdet.engine')
 
 # Global dictionary
 TRT_MIN_SUBGRAPH = {
-    'YOLO': 8,
+    'YOLO': 3,
     'SSD': 60,
     'RCNN': 40,
     'RetinaNet': 40,
@@ -48,6 +48,7 @@ TRT_MIN_SUBGRAPH = {
     'PicoDet': 3,
     'CenterNet': 5,
     'TOOD': 5,
+    'YOLOX': 8,
 }
 
 KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
@@ -142,7 +143,7 @@ def _dump_infer_config(config, path, image_shape, model):
         infer_cfg['tracker'] = _parse_tracker(tracker_cfg)
 
     for arch, min_subgraph_size in TRT_MIN_SUBGRAPH.items():
-        if arch in infer_arch:
+        if infer_arch == arch:
             infer_cfg['arch'] = arch
             infer_cfg['min_subgraph_size'] = min_subgraph_size
             arch_state = True
