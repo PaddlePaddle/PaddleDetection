@@ -22,11 +22,11 @@ from ..shape_spec import ShapeSpec
 from ppdet.modeling.initializer import conv_init_
 
 __all__ = [
-    'CSPDarkNet', 'BaseConv', 'DWConv', 'Bottleneck', 'SPPLayer', 'SPPFLayer'
+    'CSPDarkNet', 'BaseConv', 'DWConv', 'BottleNeck', 'SPPLayer', 'SPPFLayer'
 ]
 
 
-def get_activation(name="silu", inplace=True):
+def get_activation(name="silu"):
     if name == "silu":
         module = nn.Silu()
     elif name == "relu":
@@ -39,8 +39,6 @@ def get_activation(name="silu", inplace=True):
 
 
 class BaseConv(nn.Layer):
-    """A Conv2D -> Batchnorm -> silu/leaky relu block"""
-
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -49,15 +47,13 @@ class BaseConv(nn.Layer):
                  groups=1,
                  bias=False,
                  act="silu"):
-        super().__init__()
-        # same padding
-        pad = (ksize - 1) // 2
+        super(BaseConv, self).__init__()
         self.conv = nn.Conv2D(
             in_channels,
             out_channels,
             kernel_size=ksize,
             stride=stride,
-            padding=pad,
+            padding=(ksize - 1) // 2,
             groups=groups,
             bias_attr=bias)
         self.bn = nn.BatchNorm2D(
@@ -75,9 +71,6 @@ class BaseConv(nn.Layer):
 
     def forward(self, x):
         return self.act(self.bn(self.conv(x)))
-
-    def fuseforward(self, x):
-        return self.act(self.conv(x))
 
 
 class DWConv(nn.Layer):
@@ -132,23 +125,17 @@ class Focus(nn.Layer):
             act=act)
 
     def forward(self, inputs):
-        patch_top_left = inputs[:, :, 0::2, 0::2]
-        patch_top_right = inputs[:, :, 0::2, 1::2]
-        patch_bot_left = inputs[:, :, 1::2, 0::2]
-        patch_bot_right = inputs[:, :, 1::2, 1::2]
-        x = paddle.concat(
-            [
-                patch_top_left,
-                patch_bot_left,
-                patch_top_right,
-                patch_bot_right,
-            ],
-            axis=1, )
-        x = self.conv(x)
-        return x
+        # inputs [bs, C, H, W] -> outputs [bs, 4C, W/2, H/2]
+        top_left = inputs[:, :, 0::2, 0::2]
+        top_right = inputs[:, :, 0::2, 1::2]
+        bottom_left = inputs[:, :, 1::2, 0::2]
+        bottom_right = inputs[:, :, 1::2, 1::2]
+        outputs = paddle.concat(
+            [top_left, bottom_left, top_right, bottom_right], 1)
+        return self.conv(outputs)
 
 
-class Bottleneck(nn.Layer):
+class BottleNeck(nn.Layer):
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -157,7 +144,7 @@ class Bottleneck(nn.Layer):
                  depthwise=False,
                  bias=False,
                  act="silu"):
-        super(Bottleneck, self).__init__()
+        super(BottleNeck, self).__init__()
         hidden_channels = int(out_channels * expansion)
         Conv = DWConv if depthwise else BaseConv
         self.conv1 = BaseConv(
@@ -257,7 +244,7 @@ class CSPLayer(nn.Layer):
         self.conv2 = BaseConv(
             in_channels, hidden_channels, ksize=1, stride=1, bias=bias, act=act)
         self.bottlenecks = nn.Sequential(* [
-            Bottleneck(
+            BottleNeck(
                 hidden_channels,
                 hidden_channels,
                 shortcut=shortcut,
@@ -286,6 +273,20 @@ class CSPLayer(nn.Layer):
 @register
 @serializable
 class CSPDarkNet(nn.Layer):
+    """
+    CSPDarkNet backbone.
+    Args:
+        arch (str): Architecture of CSPDarkNet, from {P5, P6, X}, default as X,
+            and 'X' means used in YOLOX, 'P5/P6' means used in YOLOv5.
+        depth_mult (float): Depth multiplier, multiply number of channels in
+            each layer, default as 1.0.
+        width_mult (float): Width multiplier, multiply number of blocks in
+            CSPLayer, default as 1.0.
+        depthwise (bool): Whether to use depth-wise conv layer.
+        act (str): Activation function type, default as 'silu'.
+        return_idx (list): Index of stages whose feature maps are returned.
+    """
+
     __shared__ = ['depth_mult', 'width_mult', 'act']
 
     # in_channels, out_channels, num_blocks, add_shortcut, use_spp(use_sppf)
@@ -298,20 +299,6 @@ class CSPDarkNet(nn.Layer):
         'X': [[64, 128, 3, True, False], [128, 256, 9, True, False],
               [256, 512, 9, True, False], [512, 1024, 3, False, True]],
     }
-    r"""
-    CSPDarkNet backbone.
-    Args:
-        arch (str): Architecture of CSPDarkNet, from {P5, P6, X}, default as P5,
-            and 'X' means used in YOLOX.
-        depth_mult (float): Depth multiplier, multiply number of channels in
-            each layer, default as 1.0.
-        width_mult (float): Width multiplier, multiply number of blocks in
-            CSPLayer, default as 1.0.
-        depthwise (bool): Whether to use depth-wise conv layer.
-        act (str): Activation function type, default as 'silu'.
-        return_idx (list): Index of stages whose feature maps are returned.
-        freeze_at (int): Freeze the backbone at which stage.
-    """
 
     def __init__(self,
                  arch='X',
@@ -328,14 +315,12 @@ class CSPDarkNet(nn.Layer):
         arch_setting = self.arch_settings[arch]
         base_channels = int(arch_setting[0][0] * width_mult)
         bias = False
-        # only for fuse_conv_bn debug. the bn'bias will be computed and convert to conv'bias
 
-        # Note: different between the latest YOLOv5 and the original YOLOX
+        # Note: differences between the latest YOLOv5 and the original YOLOX
         # 1. self.stem
         # 2. use SPPF(in YOLOv5) or SPP(in YOLOX)
         # 3. put SPPF before(YOLOv5) or SPP after(YOLOX) the last cspdark block's CSPLayer
         # 4. whether SPPF(SPP)'CSPLayer add shortcut, True in YOLOv5, False in YOLOX
-
         if arch in ['P5', 'P6']:
             # in the latest YOLOv5, use Conv stem, and SPPF (fast, only single spp kernal size)
             self.stem = Conv(

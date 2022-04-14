@@ -143,11 +143,17 @@ def _dump_infer_config(config, path, image_shape, model):
         infer_cfg['tracker'] = _parse_tracker(tracker_cfg)
 
     for arch, min_subgraph_size in TRT_MIN_SUBGRAPH.items():
-        if infer_arch == arch:
+        if arch in infer_arch:
             infer_cfg['arch'] = arch
             infer_cfg['min_subgraph_size'] = min_subgraph_size
             arch_state = True
             break
+
+    if infer_arch == 'YOLOX':
+        infer_cfg['arch'] = infer_arch
+        infer_cfg['min_subgraph_size'] = TRT_MIN_SUBGRAPH[infer_arch]
+        arch_state = True
+
     if not arch_state:
         logger.error(
             'Architecture: {} is not supported for exporting model now.\n'.
