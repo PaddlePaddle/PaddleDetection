@@ -68,6 +68,9 @@ def get_categories(metric_type, anno_file=None, arch=None):
                 clsid2catid = {i: i for i in range(len(cats))}
                 catid2name = {i: name for i, name in enumerate(cats)}
 
+            else:
+                raise ValueError("anno_file {} should be json or txt.".format(
+                    anno_file))
             return clsid2catid, catid2name
 
         # anno file not exist, load default categories of COCO17

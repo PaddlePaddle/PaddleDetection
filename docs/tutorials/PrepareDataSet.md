@@ -328,9 +328,36 @@ dataset/xxx/
 ...
 ```
 
-##### 用户数据自定义reader  
-如果数据集有新的数据需要添加进PaddleDetection中，您可参考数据处理文档中的[添加新数据源](../advanced_tutorials/READER.md#2.3自定义数据集)文档部分，开发相应代码完成新的数据源支持，同时数据处理具体代码解析等可阅读[数据处理文档](../advanced_tutorials/READER.md)
+##### 用户数据自定义reader
+如果数据集有新的数据需要添加进PaddleDetection中，您可参考数据处理文档中的[添加新数据源](../advanced_tutorials/READER.md#2.3自定义数据集)文档部分，开发相应代码完成新的数据源支持，同时数据处理具体代码解析等可阅读[数据处理文档](../advanced_tutorials/READER.md)。
 
+关于Dataset的配置文件存在于`configs/datasets`文件夹。比如COCO数据集的配置文件如下：
+```
+metric: COCO # 目前支持COCO, VOC, OID， WiderFace等评估标准
+num_classes: 80 # num_classes数据集的类别数，不包含背景类
+
+TrainDataset:
+  !COCODataSet
+    image_dir: train2017 # 训练集的图片所在文件相对于dataset_dir的路径
+    anno_path: annotations/instances_train2017.json # 训练集的标注文件相对于dataset_dir的路径
+    dataset_dir: dataset/coco #数据集所在路径，相对于PaddleDetection路径
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd'] # 控制dataset输出的sample所包含的字段，注意此为训练集Reader独有的且必须配置的字段
+
+EvalDataset:
+  !COCODataSet
+    image_dir: val2017 # 验证集的图片所在文件夹相对于dataset_dir的路径
+    anno_path: annotations/instances_val2017.json # 验证集的标注文件相对于dataset_dir的路径
+    dataset_dir: dataset/coco # 数据集所在路径，相对于PaddleDetection路径
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/instances_val2017.json # 标注文件所在路径，仅用于读取数据集的类别信息，支持json和txt格式
+    dataset_dir: dataset/coco # 数据集所在路径，若添加了此行，则`anno_path`路径为`dataset_dir/anno_path`，若此行不设置或去掉此行，则`anno_path`路径即为`anno_path`
+```
+在PaddleDetection的yml配置文件中，使用`!`直接序列化模块实例(可以是函数，实例等)，上述的配置文件均使用Dataset进行了序列化。
+
+**注意：**
+请运行前自行仔细检查数据集的配置路径，在训练或验证时如果TrainDataset和EvalDataset的路径配置有误，会提示自动下载数据集。若使用自定义数据集，在推理时如果TestDataset路径配置有误，会提示使用默认COCO数据集的类别信息。
 
 #### 用户数据数据转换示例  
 
