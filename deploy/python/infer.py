@@ -691,7 +691,7 @@ def get_test_images(infer_dir, infer_img):
     Get image path list in TEST mode
     """
     assert infer_img is not None or infer_dir is not None, \
-        "--infer_img or --infer_dir should be set"
+        "--image_file or --image_dir should be set"
     assert infer_img is None or os.path.isfile(infer_img), \
             "{} is not a file".format(infer_img)
     assert infer_dir is None or os.path.isdir(infer_dir), \
