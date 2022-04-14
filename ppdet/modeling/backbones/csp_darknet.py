@@ -18,24 +18,14 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
-from ..shape_spec import ShapeSpec
+from ppdet.modeling.ops import get_activation
 from ppdet.modeling.initializer import conv_init_
+from ..shape_spec import ShapeSpec
+
 
 __all__ = [
     'CSPDarkNet', 'BaseConv', 'DWConv', 'BottleNeck', 'SPPLayer', 'SPPFLayer'
 ]
-
-
-def get_activation(name="silu"):
-    if name == "silu":
-        module = nn.Silu()
-    elif name == "relu":
-        module = nn.ReLU()
-    elif name == "leakyrelu":
-        module = nn.LeakyReLU(0.1)
-    else:
-        raise AttributeError("Unsupported act type: {}".format(name))
-    return module
 
 
 class BaseConv(nn.Layer):

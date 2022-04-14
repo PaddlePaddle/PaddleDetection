@@ -29,7 +29,7 @@ __all__ = [
     'roi_pool', 'roi_align', 'prior_box', 'generate_proposals',
     'iou_similarity', 'box_coder', 'yolo_box', 'multiclass_nms',
     'distribute_fpn_proposals', 'collect_fpn_proposals', 'matrix_nms',
-    'batch_norm', 'mish', 'swish', 'identity'
+    'batch_norm', 'get_activation', 'mish', 'swish', 'identity'
 ]
 
 
@@ -105,6 +105,18 @@ def batch_norm(ch,
             param.stop_gradient = True
 
     return norm_layer
+
+
+def get_activation(name="silu"):
+    if name == "silu":
+        module = nn.Silu()
+    elif name == "relu":
+        module = nn.ReLU()
+    elif name == "leakyrelu":
+        module = nn.LeakyReLU(0.1)
+    else:
+        raise AttributeError("Unsupported act type: {}".format(name))
+    return module
 
 
 @paddle.jit.not_to_static

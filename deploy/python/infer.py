@@ -53,6 +53,7 @@ SUPPORT_MODELS = {
     'PicoDet',
     'CenterNet',
     'TOOD',
+    'RetinaNet',
     'StrongBaseline',
     'STGCN',
     'YOLOX',
