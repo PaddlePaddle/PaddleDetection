@@ -33,7 +33,7 @@ __all__ = [
 
 
 @register
-class BBoxPostProcess(nn.Layer):
+class BBoxPostProcess(object):
     __shared__ = ['num_classes', 'export_onnx']
     __inject__ = ['decode', 'nms']
 
@@ -45,9 +45,9 @@ class BBoxPostProcess(nn.Layer):
         self.nms = nms
         self.export_onnx = export_onnx
 
-    def forward(self, head_out, rois, im_shape, scale_factor):
+    def __call__(self, head_out, rois, im_shape, scale_factor):
         """
-        Decode the bbox and do NMS if needed. 
+        Decode the bbox and do NMS if needed.
 
         Args:
             head_out (tuple): bbox_pred and cls_prob of bbox_head output.
@@ -85,7 +85,7 @@ class BBoxPostProcess(nn.Layer):
         """
         Rescale, clip and filter the bbox from the output of NMS to 
         get final prediction. 
-        
+
         Notes:
         Currently only support bs = 1.
 
