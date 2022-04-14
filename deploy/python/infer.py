@@ -39,7 +39,7 @@ from utils import argsparser, Timer, get_current_memory_mb
 # Global dictionary
 SUPPORT_MODELS = {
     'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
-    'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD',
+    'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD', 'RetinaNet',
     'StrongBaseline', 'STGCN'
 }
 
