@@ -47,9 +47,9 @@ python openvino_benchmark.py --benchmark 0 --img_path ..\..\..\..\demo\000000014
 
 ```shell
 # Linux
-python openvino_infer.py --img_path ../../demo_onnxruntime/imgs/bus.jpg --onnx_path out_onnxsim/picodet_s_320_postproccesed_woNMS.onnx --in_shape 320
+python openvino_infer.py --img_path ../../demo_onnxruntime/imgs/bus.jpg --onnx_path out_onnxsim_infer/picodet_s_320_postproccesed_woNMS.onnx --in_shape 320
 # Windows
-python openvino_infer.py --img_path ..\..\demo_onnxruntime\imgs\bus.jpg --onnx_path out_onnxsim\picodet_s_320_postproccesed_woNMS.onnx --in_shape 320
+python openvino_infer.py --img_path ..\..\demo_onnxruntime\imgs\bus.jpg --onnx_path out_onnxsim_infer\picodet_s_320_postproccesed_woNMS.onnx --in_shape 320
 ```
 - 结果：
     <div align="center">

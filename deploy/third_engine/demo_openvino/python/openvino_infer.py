@@ -249,7 +249,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--onnx_path',
         type=str,
-        default='out_onnxsim/picodet_s_320_processed.onnx',
+        default='out_onnxsim_infer/picodet_s_320_postproccesed_woNMS.onnx',
         help="onnx filepath")
     parser.add_argument('--in_shape', type=int, default=320, help="input_size")
     parser.add_argument(
