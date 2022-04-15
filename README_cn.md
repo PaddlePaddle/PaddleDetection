@@ -14,6 +14,30 @@
 
 </div>
 
+
+## 热门活动
+
+- 🔥 **2022.4.19-21每晚8：30【产业级目标检测技术与应用】三日直播课** 🔥
+    - **19日：超强目标检测算法矩阵**
+        - 超越YOLOv5的高精度服务端算法PP-YOLOE
+        - 0.7M超超轻量级端侧算法PP-PicoDet增强版
+        - 行人/车辆/人脸检测等预训练模型开箱即用
+    - **20日：实时行人分析系统PP-Human**
+        - 行人相关重点行业场景剖析及技术拆解
+        - 实时多目标跟踪算法深度解析
+        - 毫秒级属性分析/异常行为识别应用落地
+    - **21日：目标检测产业应用全流程拆解与实践**
+        - 智能检测行业经典场景分析
+        - 应用落地难点剖析与解决方案
+        - 行人分析实战与Docker云上训练部署
+
+    赶紧扫码报名上车吧！!
+
+    <div align="left">
+  <img src="https://user-images.githubusercontent.com/22989727/163531601-d33d2284-952f-4d8d-b59b-21ebf2c4e845.jpg" width=200/>
+</div>
+
+
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> 产品动态
 
 - 🔥 **2022.3.24：PaddleDetection发布[release/2.4版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)**
