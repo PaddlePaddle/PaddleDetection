@@ -33,7 +33,7 @@
 
     赶紧扫码报名上车吧！!
 
-    <div align="center">
+    <div align="left">
   <img src="https://user-images.githubusercontent.com/22989727/163531601-d33d2284-952f-4d8d-b59b-21ebf2c4e845.jpg" width=200/>
 </div>
 
