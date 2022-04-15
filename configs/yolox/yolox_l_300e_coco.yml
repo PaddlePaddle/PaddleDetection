@@ -9,5 +9,5 @@ depth_mult: 1.0
 width_mult: 1.0
 
 log_iter: 100
-snapshot_epoch: 5
+snapshot_epoch: 10
 weights: output/yolox_l_300e_coco/model_final

@@ -2140,18 +2140,21 @@ class Rbox2Poly(BaseOperator):
 
 @register_op
 class AugmentHSV(BaseOperator):
+    """ 
+    Augment the SV channel of image data.
+    Args:
+        fraction (float): the fraction for augment. Default: 0.5.
+        is_bgr (bool): whether the image is BGR mode. Default: True.
+        hgain (float): H channel gains
+        sgain (float): S channel gains
+        vgain (float): V channel gains
+    """
     def __init__(self,
                  fraction=0.50,
                  is_bgr=True,
                  hgain=None,
                  sgain=None,
                  vgain=None):
-        """ 
-        Augment the SV channel of image data.
-        Args:
-            fraction (float): the fraction for augment. Default: 0.5.
-            is_bgr (bool): whether the image is BGR mode. Default: True.
-        """
         super(AugmentHSV, self).__init__()
         self.fraction = fraction
         self.is_bgr = is_bgr
@@ -2166,16 +2169,16 @@ class AugmentHSV(BaseOperator):
             img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         else:
             img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+
         if self.use_hsvgain:
             hsv_augs = np.random.uniform(
                 -1, 1, 3) * [self.hgain, self.sgain, self.vgain]
             # random selection of h, s, v
             hsv_augs *= np.random.randint(0, 2, 3)
-            hsv_augs = hsv_augs.astype(np.int16)
-
             img_hsv[..., 0] = (img_hsv[..., 0] + hsv_augs[0]) % 180
             img_hsv[..., 1] = np.clip(img_hsv[..., 1] + hsv_augs[1], 0, 255)
             img_hsv[..., 2] = np.clip(img_hsv[..., 2] + hsv_augs[2], 0, 255)
+
         else:
             S = img_hsv[:, :, 1].astype(np.float32)
             V = img_hsv[:, :, 2].astype(np.float32)
