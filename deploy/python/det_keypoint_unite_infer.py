@@ -85,8 +85,9 @@ def topdown_unite_predict(detector,
                 FLAGS.run_benchmark)
 
             if save_res:
+                save_name = img_file if isinstance(img_file, str) else i
                 store_res.append([
-                    i, keypoint_res['bbox'],
+                    save_name, keypoint_res['bbox'],
                     [keypoint_res['keypoint'][0], keypoint_res['keypoint'][1]]
                 ])
         else:
