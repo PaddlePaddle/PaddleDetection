@@ -226,10 +226,12 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco_lcnet/ \
 
 ### 部署
 
-- OpenVINO demo [Python](../../deploy/third_engine/demo_openvino/python)
-- [PaddleLite C++ demo](../../deploy/lite)
-- [Android demo(Paddle Lite)](https://github.com/PaddlePaddle/Paddle-Lite-Demo/tree/develop/object_detection/android/app/cxx/picodet_detection_demo)
+- OpenVINO Demo [Python](../../deploy/third_engine/demo_openvino/python) (C++ Demo comming soon.)
+- Paddle Lite Demo [C++](../../deploy/lite)
+- Android Demo [Paddle Lite](https://github.com/PaddlePaddle/Paddle-Lite-Demo/tree/develop/object_detection/android/app/cxx/picodet_detection_demo)
 - ONNXRuntime demo [Python](../../deploy/third_engine/demo_onnxruntime)
+- NCNN Demo [C++](../../deploy/third_engine/demo_ncnn)
+- MNN Demo [C++](../../deploy/third_engine/demo_mnn)
 - PaddleInference demo [Python](../../deploy/python) & [C++](../../deploy/cpp)
 
 
