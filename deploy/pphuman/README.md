@@ -29,7 +29,7 @@ cd PaddleDetection
 pip install -r requirements.txt
 ```
 
-详细安装文档参考[文档](docs/tutorials/INSTALL_cn.md)
+详细安装文档参考[文档](../../docs/tutorials/INSTALL_cn.md)
 
 ## 二、快速开始
 
