@@ -1,0 +1,20 @@
+epoch: 300
+
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !CosineDecay
+    max_epochs: 300
+    min_lr_ratio: 0.05
+    last_plateau_epochs: 15
+  - !ExpWarmup
+    epochs: 5
+
+OptimizerBuilder:
+  optimizer:
+    type: Momentum
+    momentum: 0.9
+    use_nesterov: True
+  regularizer:
+    factor: 0.0005
+    type: L2
