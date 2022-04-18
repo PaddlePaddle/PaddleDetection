@@ -99,6 +99,12 @@ class Trainer(object):
             self.model = self.cfg.model
             self.is_loaded_weights = True
 
+        if cfg.architecture == 'YOLOX':
+            for k, m in self.model.named_sublayers():
+                if isinstance(m, nn.BatchNorm2D):
+                    m._epsilon = 1e-3  # for amp(fp16)
+                    m._momentum = 0.97  # 0.03 in pytorch
+
         #normalize params for deploy
         if 'slim' in cfg and cfg['slim_type'] == 'OFA':
             self.model.model.load_meanstd(cfg['TestReader'][
