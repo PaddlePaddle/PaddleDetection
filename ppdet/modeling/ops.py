@@ -1,15 +1,15 @@
-#   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+#   
+# Licensed under the Apache License, Version 2.0 (the "License");   
+# you may not use this file except in compliance with the License.  
+# You may obtain a copy of the License at   
+#   
+#     http://www.apache.org/licenses/LICENSE-2.0    
+# 
+# Unless required by applicable law or agreed to in writing, software   
+# distributed under the License is distributed on an "AS IS" BASIS, 
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
+# See the License for the specific language governing permissions and   
 # limitations under the License.
 
 import paddle
@@ -29,7 +29,7 @@ __all__ = [
     'roi_pool', 'roi_align', 'prior_box', 'generate_proposals',
     'iou_similarity', 'box_coder', 'yolo_box', 'multiclass_nms',
     'distribute_fpn_proposals', 'collect_fpn_proposals', 'matrix_nms',
-    'batch_norm', 'mish', 'swish', 'identity'
+    'batch_norm', 'get_activation', 'mish', 'swish', 'identity'
 ]
 
 
@@ -105,6 +105,18 @@ def batch_norm(ch,
             param.stop_gradient = True
 
     return norm_layer
+
+
+def get_activation(name="silu"):
+    if name == "silu":
+        module = nn.Silu()
+    elif name == "relu":
+        module = nn.ReLU()
+    elif name == "leakyrelu":
+        module = nn.LeakyReLU(0.1)
+    else:
+        raise AttributeError("Unsupported act type: {}".format(name))
+    return module
 
 
 @paddle.jit.not_to_static
@@ -1012,7 +1024,7 @@ def multiclass_nms(bboxes,
                  nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
                  'normalized', normalized)
         output, index, nms_rois_num = _C_ops.multiclass_nms3(bboxes, scores,
-                                                               rois_num, *attrs)
+                                                             rois_num, *attrs)
         if not return_index:
             index = None
         return output, nms_rois_num, index
