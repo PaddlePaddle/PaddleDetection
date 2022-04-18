@@ -3083,6 +3083,8 @@ class Mosaic(BaseOperator):
                  remove_outside_box=False):
         super(Mosaic, self).__init__()
         self.prob = prob
+        if isinstance(input_dim, Integral):
+            input_dim = [input_dim, input_dim]
         self.input_dim = input_dim
         self.degrees = degrees
         self.translate = translate
