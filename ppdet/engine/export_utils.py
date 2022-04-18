@@ -48,6 +48,7 @@ TRT_MIN_SUBGRAPH = {
     'PicoDet': 3,
     'CenterNet': 5,
     'TOOD': 5,
+    'YOLOX': 8,
 }
 
 KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
@@ -147,6 +148,12 @@ def _dump_infer_config(config, path, image_shape, model):
             infer_cfg['min_subgraph_size'] = min_subgraph_size
             arch_state = True
             break
+
+    if infer_arch == 'YOLOX':
+        infer_cfg['arch'] = infer_arch
+        infer_cfg['min_subgraph_size'] = TRT_MIN_SUBGRAPH[infer_arch]
+        arch_state = True
+
     if not arch_state:
         logger.error(
             'Architecture: {} is not supported for exporting model now.\n'.
