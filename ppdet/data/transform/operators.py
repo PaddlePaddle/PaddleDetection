@@ -2034,13 +2034,14 @@ class Pad(BaseOperator):
         if self.size:
             h, w = self.size
             assert (
-                im_h < h and im_w < w
+                im_h <= h and im_w <= w
             ), '(h, w) of target size should be greater than (im_h, im_w)'
         else:
             h = int(np.ceil(im_h / self.size_divisor) * self.size_divisor)
             w = int(np.ceil(im_w / self.size_divisor) * self.size_divisor)
 
         if h == im_h and w == im_w:
+            sample['image'] = im.astype(np.float32)
             return sample
 
         if self.pad_mode == -1:
@@ -2139,16 +2140,29 @@ class Rbox2Poly(BaseOperator):
 
 @register_op
 class AugmentHSV(BaseOperator):
-    def __init__(self, fraction=0.50, is_bgr=True):
-        """ 
-        Augment the SV channel of image data.
-        Args:
-            fraction (float): the fraction for augment. Default: 0.5.
-            is_bgr (bool): whether the image is BGR mode. Default: True.
-        """
+    """ 
+    Augment the SV channel of image data.
+    Args:
+        fraction (float): the fraction for augment. Default: 0.5.
+        is_bgr (bool): whether the image is BGR mode. Default: True.
+        hgain (float): H channel gains
+        sgain (float): S channel gains
+        vgain (float): V channel gains
+    """
+
+    def __init__(self,
+                 fraction=0.50,
+                 is_bgr=True,
+                 hgain=None,
+                 sgain=None,
+                 vgain=None):
         super(AugmentHSV, self).__init__()
         self.fraction = fraction
         self.is_bgr = is_bgr
+        self.hgain = hgain
+        self.sgain = sgain
+        self.vgain = vgain
+        self.use_hsvgain = False if hgain is None else True
 
     def apply(self, sample, context=None):
         img = sample['image']
@@ -2156,21 +2170,33 @@ class AugmentHSV(BaseOperator):
             img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         else:
             img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-        S = img_hsv[:, :, 1].astype(np.float32)
-        V = img_hsv[:, :, 2].astype(np.float32)
 
-        a = (random.random() * 2 - 1) * self.fraction + 1
-        S *= a
-        if a > 1:
-            np.clip(S, a_min=0, a_max=255, out=S)
+        if self.use_hsvgain:
+            hsv_augs = np.random.uniform(
+                -1, 1, 3) * [self.hgain, self.sgain, self.vgain]
+            # random selection of h, s, v
+            hsv_augs *= np.random.randint(0, 2, 3)
+            img_hsv[..., 0] = (img_hsv[..., 0] + hsv_augs[0]) % 180
+            img_hsv[..., 1] = np.clip(img_hsv[..., 1] + hsv_augs[1], 0, 255)
+            img_hsv[..., 2] = np.clip(img_hsv[..., 2] + hsv_augs[2], 0, 255)
 
-        a = (random.random() * 2 - 1) * self.fraction + 1
-        V *= a
-        if a > 1:
-            np.clip(V, a_min=0, a_max=255, out=V)
+        else:
+            S = img_hsv[:, :, 1].astype(np.float32)
+            V = img_hsv[:, :, 2].astype(np.float32)
 
-        img_hsv[:, :, 1] = S.astype(np.uint8)
-        img_hsv[:, :, 2] = V.astype(np.uint8)
+            a = (random.random() * 2 - 1) * self.fraction + 1
+            S *= a
+            if a > 1:
+                np.clip(S, a_min=0, a_max=255, out=S)
+
+            a = (random.random() * 2 - 1) * self.fraction + 1
+            V *= a
+            if a > 1:
+                np.clip(V, a_min=0, a_max=255, out=V)
+
+            img_hsv[:, :, 1] = S.astype(np.uint8)
+            img_hsv[:, :, 2] = V.astype(np.uint8)
+
         if self.is_bgr:
             cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)
         else:

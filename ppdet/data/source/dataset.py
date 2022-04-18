@@ -5,7 +5,7 @@
 # You may obtain a copy of the License at   
 #   
 #     http://www.apache.org/licenses/LICENSE-2.0    
-#   
+# 
 # Unless required by applicable law or agreed to in writing, software   
 # distributed under the License is distributed on an "AS IS" BASIS, 
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
@@ -75,7 +75,7 @@ class DetDataset(Dataset):
             n = len(self.roidbs)
             roidb = [roidb, ] + [
                 copy.deepcopy(self.roidbs[np.random.randint(n)])
-                for _ in range(3)
+                for _ in range(4)
             ]
         if isinstance(roidb, Sequence):
             for r in roidb:

@@ -28,6 +28,7 @@ from PIL import Image, ImageOps, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 import paddle
+import paddle.nn as nn
 import paddle.distributed as dist
 from paddle.distributed import fleet
 from paddle import amp
@@ -123,10 +124,11 @@ class Trainer(object):
         if self.use_ema:
             ema_decay = self.cfg.get('ema_decay', 0.9998)
             cycle_epoch = self.cfg.get('cycle_epoch', -1)
+            ema_decay_type = self.cfg.get('ema_decay_type', 'threshold')
             self.ema = ModelEMA(
                 self.model,
                 decay=ema_decay,
-                use_thres_step=True,
+                ema_decay_type=ema_decay_type,
                 cycle_epoch=cycle_epoch)
 
         # EvalDataset build with BatchSampler to evaluate in single device
