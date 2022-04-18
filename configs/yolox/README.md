@@ -5,12 +5,17 @@
 
 | 网络网络        | 输入尺寸   | 图片数/GPU | 学习率策略 |推理时间(fps) | Box AP |    下载链接       | 配置文件 |
 | :------------- | :------- | :-------: | :------: | :---------: | :-----: | :-------------: | :-----: |
-| YOLOX-nano     |  416     |    8      |   300e    |     ----    |  25.8  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_nano_300e_coco.pdparams) | [配置文件](./yolox_nano_300e_coco.yml) |
+| YOLOX-nano     |  416     |    8      |   300e    |     ----    |  26.1  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_nano_300e_coco.pdparams) | [配置文件](./yolox_nano_300e_coco.yml) |
 | YOLOX-tiny     |  416     |    8      |   300e    |     ----    |  32.9  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_tiny_300e_coco.pdparams) | [配置文件](./yolox_tiny_300e_coco.yml) |
 | YOLOX-s        |  640     |    8      |   300e    |     ----    |  40.4  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_s_300e_coco.pdparams) | [配置文件](./yolox_s_300e_coco.yml) |
 | YOLOX-m        |  640     |    8      |   300e    |     ----    |  46.9  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_m_300e_coco.pdparams) | [配置文件](./yolox_m_300e_coco.yml) |
 | YOLOX-l        |  640     |    8      |   300e    |     ----    |  50.1  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_l_300e_coco.pdparams) | [配置文件](./yolox_l_300e_coco.yml) |
-| YOLOX-x        |  640     |    8      |   300e    |     ----    |  51.1  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_x_300e_coco.pdparams) | [配置文件](./yolox_x_300e_coco.yml) |
+| YOLOX-x        |  640     |    8      |   300e    |     ----    |  51.4  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_x_300e_coco.pdparams) | [配置文件](./yolox_x_300e_coco.yml) |
+
+**注意:**
+  - 以上模型默认采用8 GPUs训练，总batch_size为64，均训练300 epochs；
+  - 为保持高mAP的同时提高推理速度，可以将[yolox_cspdarknet.yml](_base_/yolox_cspdarknet.yml)中的`nms_top_k`修改为`1000`，将`keep_top_k`修改为`100`，mAP会下降约0.1~0.2%；
+  - 为快速的demo演示效果，可以将[yolox_cspdarknet.yml](_base_/yolox_cspdarknet.yml)中的`score_threshold`修改为`0.25`，将`nms_threshold`修改为`0.45`，但mAP会下降较多；
 
 
 ## 使用教程
@@ -38,11 +43,6 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/yolox/yolox_s_300e_coco.
 # 推理文件中的所有图片
 CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/yolox/yolox_s_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/yolox_s_300e_coco.pdparams --infer_dir=demo
 ```
-
-**注意:**
-- 为保持高mAP的同时提高推理速度，可以将`configs/yolox/_base_/yolox_cspdarknet.yml`中的`nms_top_k`修改为`1000`，将`keep_top_k`修改为`100`，mAP将会下降约0.1%。
-- 对于高速demo演示，可以将`configs/yolox/_base_/yolox_cspdarknet.yml`中的`score_threshold`修改为`0.25`，将`nms_threshold`修改为`0.45`，但mAP会下降很多。
-
 
 ### 4. 部署
 YOLOX在GPU上推理部署或benchmark测速等需要通过`tools/export_model.py`导出模型。
