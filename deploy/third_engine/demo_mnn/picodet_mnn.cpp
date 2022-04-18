@@ -44,7 +44,8 @@ PicoDet::~PicoDet() {
   PicoDet_interpreter->releaseSession(PicoDet_session);
 }
 
-int PicoDet::detect(cv::Mat &raw_image, std::vector<BoxInfo> &result_list) {
+int PicoDet::detect(cv::Mat &raw_image, std::vector<BoxInfo> &result_list,
+                    bool has_postprocess) {
   if (raw_image.empty()) {
     std::cout << "image is empty ,please check!" << std::endl;
     return -1;
@@ -70,22 +71,57 @@ int PicoDet::detect(cv::Mat &raw_image, std::vector<BoxInfo> &result_list) {
   std::vector<std::vector<BoxInfo>> results;
   results.resize(num_class);
 
-  for (const auto &head_info : heads_info) {
-    MNN::Tensor *tensor_scores = PicoDet_interpreter->getSessionOutput(
-        PicoDet_session, head_info.cls_layer.c_str());
-    MNN::Tensor *tensor_boxes = PicoDet_interpreter->getSessionOutput(
-        PicoDet_session, head_info.dis_layer.c_str());
+  if (has_postprocess) {
+    auto bbox_out_tensor = PicoDet_interpreter->getSessionOutput(
+        PicoDet_session, nms_heads_info[0].c_str());
+    auto class_out_tensor = PicoDet_interpreter->getSessionOutput(
+        PicoDet_session, nms_heads_info[1].c_str());
+    // bbox branch
+    auto tensor_bbox_host =
+        new MNN::Tensor(bbox_out_tensor, MNN::Tensor::CAFFE);
+    bbox_out_tensor->copyToHostTensor(tensor_bbox_host);
+    auto bbox_output_shape = tensor_bbox_host->shape();
+    int output_size = 1;
+    for (int j = 0; j < bbox_output_shape.size(); ++j) {
+      output_size *= bbox_output_shape[j];
+    }
+    std::cout << "output_size:" << output_size << std::endl;
+    bbox_output_data_.resize(output_size);
+    std::copy_n(tensor_bbox_host->host<float>(), output_size,
+                bbox_output_data_.data());
+    delete tensor_bbox_host;
+    // class branch
+    auto tensor_class_host =
+        new MNN::Tensor(class_out_tensor, MNN::Tensor::CAFFE);
+    class_out_tensor->copyToHostTensor(tensor_class_host);
+    auto class_output_shape = tensor_class_host->shape();
+    output_size = 1;
+    for (int j = 0; j < class_output_shape.size(); ++j) {
+      output_size *= class_output_shape[j];
+    }
+    std::cout << "output_size:" << output_size << std::endl;
+    class_output_data_.resize(output_size);
+    std::copy_n(tensor_class_host->host<float>(), output_size,
+                class_output_data_.data());
+    delete tensor_class_host;
+  } else {
+    for (const auto &head_info : non_postprocess_heads_info) {
+      MNN::Tensor *tensor_scores = PicoDet_interpreter->getSessionOutput(
+          PicoDet_session, head_info.cls_layer.c_str());
+      MNN::Tensor *tensor_boxes = PicoDet_interpreter->getSessionOutput(
+          PicoDet_session, head_info.dis_layer.c_str());
 
-    MNN::Tensor tensor_scores_host(tensor_scores,
-                                   tensor_scores->getDimensionType());
-    tensor_scores->copyToHostTensor(&tensor_scores_host);
+      MNN::Tensor tensor_scores_host(tensor_scores,
+                                     tensor_scores->getDimensionType());
+      tensor_scores->copyToHostTensor(&tensor_scores_host);
 
-    MNN::Tensor tensor_boxes_host(tensor_boxes,
-                                  tensor_boxes->getDimensionType());
-    tensor_boxes->copyToHostTensor(&tensor_boxes_host);
+      MNN::Tensor tensor_boxes_host(tensor_boxes,
+                                    tensor_boxes->getDimensionType());
+      tensor_boxes->copyToHostTensor(&tensor_boxes_host);
 
-    decode_infer(&tensor_scores_host, &tensor_boxes_host, head_info.stride,
-                 score_threshold, results);
+      decode_infer(&tensor_scores_host, &tensor_boxes_host, head_info.stride,
+                   score_threshold, results);
+    }
   }
 
   auto end = chrono::steady_clock::now();
@@ -187,8 +223,6 @@ void PicoDet::nms(std::vector<BoxInfo> &input_boxes, float NMS_THRESH) {
     }
   }
 }
-
-string PicoDet::get_label_str(int label) { return labels[label]; }
 
 inline float fast_exp(float x) {
   union {
