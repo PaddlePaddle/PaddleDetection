@@ -103,8 +103,8 @@ class Trainer(object):
         if cfg.architecture == 'YOLOX':
             for k, m in self.model.named_sublayers():
                 if isinstance(m, nn.BatchNorm2D):
-                    m.epsilon = 1e-3  # for amp(fp16)
-                    m.momentum = 0.97  # 0.03 in pytorch
+                    m._epsilon = 1e-3  # for amp(fp16)
+                    m._momentum = 0.97  # 0.03 in pytorch
 
         #normalize params for deploy
         if 'slim' in cfg and cfg['slim_type'] == 'OFA':
