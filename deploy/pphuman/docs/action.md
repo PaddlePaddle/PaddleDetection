@@ -65,6 +65,14 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
 ```
 4. 行为识别模型使用了[ST-GCN](https://arxiv.org/abs/1801.07455)，并基于[PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/stgcn.md)套件完成模型训练。
 
+## 自定义模型训练
+我们已经提供了检测/跟踪、关键点识别以及识别摔倒动作的预训练模型，可直接下载使用。如果希望使用自定义场景数据训练，或是对模型进行优化，根据具体模型，分别参考下面的链接：
+| 任务 | 算法 | 模型训练及导出文档 |
+| ---- | ---- | -------- |
+| 行人检测/跟踪 | PP-YOLOE | [使用教程](../../../configs/ppyoloe/README_cn.md#使用教程) |
+| 关键点识别 | HRNet | [使用教程](../../../configs/keypoint#3训练与测试) |
+| 行为识别 |  ST-GCN  | [使用教程](https://github.com/PaddlePaddle/PaddleVideo/tree/develop/applications/PPHuman) |
+
 ## 参考文献
 ```
 @inproceedings{stgcn2018aaai,
