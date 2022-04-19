@@ -356,7 +356,7 @@ def generate_mask_target(gt_segms, rois, labels_int32, sampled_gt_inds,
         fg_inds_new = fg_inds.reshape([-1]).numpy()
         results = []
         if len(gt_segms_per_im) > 0:
-            for j in range(len(gt_segms_per_im)):
+            for j in range(len(fg_inds_new)):
                 results.append(
                     rasterize_polygons_within_box(new_segm[j], boxes[j],
                                                   resolution))
