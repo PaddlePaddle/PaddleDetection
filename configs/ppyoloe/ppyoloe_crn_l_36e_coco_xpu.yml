@@ -5,8 +5,11 @@ _BASE_: [
   './_base_/ppyoloe_reader.yml',
 ]
 
+use_gpu: false
+use_xpu: true
+
 log_iter: 100
-snapshot_epoch: 2
+snapshot_epoch: 1
 weights: output/ppyoloe_crn_l_36e_coco/model_final
 find_unused_parameters: True
 
