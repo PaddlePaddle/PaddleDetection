@@ -31,16 +31,32 @@ sys.path.insert(0, parent_path)
 
 from benchmark_utils import PaddleInferBenchmark
 from picodet_postprocess import PicoDetPostProcess
-from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, decode_image
+from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, Pad, decode_image
 from keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
 from visualize import visualize_box_mask
 from utils import argsparser, Timer, get_current_memory_mb
 
 # Global dictionary
 SUPPORT_MODELS = {
-    'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
-    'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD', 'RetinaNet',
-    'StrongBaseline', 'STGCN'
+    'YOLO',
+    'RCNN',
+    'SSD',
+    'Face',
+    'FCOS',
+    'SOLOv2',
+    'TTFNet',
+    'S2ANet',
+    'JDE',
+    'FairMOT',
+    'DeepSORT',
+    'GFL',
+    'PicoDet',
+    'CenterNet',
+    'TOOD',
+    'RetinaNet',
+    'StrongBaseline',
+    'STGCN',
+    'YOLOX',
 }
 
 
