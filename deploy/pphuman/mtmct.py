@@ -113,8 +113,8 @@ def save_mtmct_vis_results(camera_results, captures, output_dir):
         cid = camera_ids[idx]
         basename = os.path.basename(video_file)
         video_out_name = "vis_" + basename
-        print("Start visualizing output video: {}".format(video_out_name))
         out_path = os.path.join(save_dir, video_out_name)
+        print("Start visualizing output video: {}".format(out_path))
 
         # Get Video info : resolution, fps, frame count
         width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
