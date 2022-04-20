@@ -91,9 +91,8 @@ function unittest() {
   if [ $? != 0  ]; then
     exit 1
   fi
-  find "../ppdet" -name 'tests' -type d -print0 | \
-      xargs -0 -I{} -n1 bash -c \
-      'python -m unittest discover -v -s {}'
+  find "../ppdet" -wholename '*tests/test_*' -type f -print0 | \
+      xargs -0 -I{} -n1 -t bash -c  'python -u -s {}'
 
   # clean TEST_DIR
   cd ..
