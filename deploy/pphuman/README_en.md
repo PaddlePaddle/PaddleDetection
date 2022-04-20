@@ -28,7 +28,8 @@ cd PaddleDetection
 pip install -r requirements.txt
 ```
 
-For details of the installation, please refer to this [document](../../docs/tutorials/INSTALL.md)
+1. For details of the installation, please refer to this [document](../../docs/tutorials/INSTALL.md)
+2. Please install `Paddle-TensorRT` if your want speedup inference by TensorRT. You can download the whl package from [Paddle-whl-list](https://paddleinference.paddlepaddle.org.cn/v2.2/user_guides/download_lib.html#python), or prepare the envs by yourself follows the [Install-Guide](https://www.paddlepaddle.org.cn/inference/master/optimize/paddle_trt.html).
 
 ## II. Quick Start
 
@@ -91,23 +92,23 @@ ATTR:
 
 ```
 # Pedestrian detection. Specify the config file path and test images
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
 
 # Pedestrian tracking. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
 # Pedestrian tracking. Specify the config file path, the model path and test videos
 # The model path specified on the command line prioritizes over the config file
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
 
 # Attribute recognition. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True [--run_mode trt_fp16]
 
 # Action Recognition. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True [--run_mode trt_fp16]
 
-# Multi-Camera pedestrian tracking. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=test_video_dir/ --device=gpu
+# Pedestrian Multi-Target Multi-Camera tracking. Specify the config file path and the directory of test videos
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
 
 ```
 
