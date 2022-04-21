@@ -7,6 +7,8 @@ PP-Human是基于飞桨深度学习框架的业界首个开源的实时行人分
 
 PP-Human赋能社区智能精细化管理, AIStudio快速上手教程[链接](https://aistudio.baidu.com/aistudio/projectdetail/3679564)
 
+实时行人分析全流程实战, 覆盖训练、部署、动作类型扩展等内容，AIStudio项目请见[链接](https://aistudio.baidu.com/aistudio/projectdetail/3842982)
+
 ## 一、环境准备
 
 环境要求： PaddleDetection版本 >= release/2.4 或 develop版本
