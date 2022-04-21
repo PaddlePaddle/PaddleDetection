@@ -9,8 +9,8 @@ Pedestrian attribute recognition has been widely used in the intelligent communi
 | Pedestrian Detection/ Tracking    |  PP-YOLOE | mAP: 56.3 <br> MOTA: 72.0 | Detection: 28ms <br> Tracking：33.1ms | [Download Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
 | Pedestrian Attribute Analysis   |  StrongBaseline  |  ma: 94.86  | Per Person 2ms | [Download Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.tar) |
 
-1. The precision of detection/ tracking models is obtained by training and testing on the dataset consist of MOT17, CrowdHuman, HIEVE, and some business data.
-2. The precision of pedestiran attribute analysis is obtained by training and testing on the dataset consist of PA100k, RAPv2, PETA, and some business data.
+1. The precision of detection/ tracking models is obtained by training and testing on the dataset consist of [MOT17](https://motchallenge.net/)，[CrowdHuman](http://www.crowdhuman.org/)，[HIEVE](http://humaninevents.org/) and some business data.
+2. The precision of pedestiran attribute analysis is obtained by training and testing on the dataset consist of [PA100k](https://github.com/xh-liu/HydraPlus-Net#pa-100k-dataset)，[RAPv2](http://www.rapdataset.com/rapv2.html)，[PETA](http://mmlab.ie.cuhk.edu.hk/projects/PETA.html) and some business data.
 3. The inference speed is T4, the speed of using TensorRT FP16.
 
 ## Instruction
@@ -50,7 +50,7 @@ The test result is：
 
 Data Source and Copyright：Skyinfor Technology. Thanks for the provision of actual scenario data, which are only used for academic research here.
 
-## Introduction to the Solution 
+## Introduction to the Solution
 
 1. The PP-YOLOE model is used to handle detection boxs of input images/videos from object detection/ multi-object tracking. For details, please refer to the document [PP-YOLOE](../../../configs/ppyoloe).
 2. Capture every pedestrian in the input images with the help of coordiantes of detection boxes.
@@ -62,7 +62,7 @@ Data Source and Copyright：Skyinfor Technology. Thanks for the provision of act
 - Accessories: Glasses; Hat; None
 - HoldObjectsInFront: Yes; No
 - Bag: BackPack; ShoulderBag; HandBag
-- TopStyle: UpperStride; UpperLogo; UpperPlaid; UpperSplice 
+- TopStyle: UpperStride; UpperLogo; UpperPlaid; UpperSplice
 - BottomStyle: LowerStripe; LowerPattern
 - ShortSleeve: Yes; No
 - LongSleeve: Yes; No
