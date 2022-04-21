@@ -29,7 +29,6 @@ from . import reid
 from . import mot
 from . import transformers
 from . import assigners
-from . import coders
 
 from .ops import *
 from .backbones import *
@@ -44,4 +43,3 @@ from .reid import *
 from .mot import *
 from .transformers import *
 from .assigners import *
-from .coders import *
