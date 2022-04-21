@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4.1)
+cmake_minimum_required(VERSION 3.9)
 set(CMAKE_CXX_STANDARD 17)
 
 project(picodet_demo)
@@ -11,9 +11,11 @@ if(OPENMP_FOUND)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-find_package(OpenCV REQUIRED)
+# find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED PATHS "/path/to/opencv-3.4.16_gcc8.2_ffmpeg")
 
-find_package(ncnn REQUIRED)
+# find_package(ncnn REQUIRED)
+find_package(ncnn REQUIRED PATHS "/path/to/ncnn/build/install/lib/cmake/ncnn")
 if(NOT TARGET ncnn)
     message(WARNING "ncnn NOT FOUND!  Please set ncnn_DIR environment variable")
 else()

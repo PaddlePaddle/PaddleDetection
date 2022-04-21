@@ -31,16 +31,32 @@ sys.path.insert(0, parent_path)
 
 from benchmark_utils import PaddleInferBenchmark
 from picodet_postprocess import PicoDetPostProcess
-from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, decode_image
+from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, Pad, decode_image
 from keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
 from visualize import visualize_box_mask
 from utils import argsparser, Timer, get_current_memory_mb
 
 # Global dictionary
 SUPPORT_MODELS = {
-    'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
-    'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD',
-    'StrongBaseline', 'STGCN'
+    'YOLO',
+    'RCNN',
+    'SSD',
+    'Face',
+    'FCOS',
+    'SOLOv2',
+    'TTFNet',
+    'S2ANet',
+    'JDE',
+    'FairMOT',
+    'DeepSORT',
+    'GFL',
+    'PicoDet',
+    'CenterNet',
+    'TOOD',
+    'RetinaNet',
+    'StrongBaseline',
+    'STGCN',
+    'YOLOX',
 }
 
 
@@ -691,7 +707,7 @@ def get_test_images(infer_dir, infer_img):
     Get image path list in TEST mode
     """
     assert infer_img is not None or infer_dir is not None, \
-        "--infer_img or --infer_dir should be set"
+        "--image_file or --image_dir should be set"
     assert infer_img is None or os.path.isfile(infer_img), \
             "{} is not a file".format(infer_img)
     assert infer_dir is None or os.path.isdir(infer_dir), \

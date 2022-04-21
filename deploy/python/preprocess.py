@@ -246,6 +246,81 @@ class LetterBoxResize(object):
         return im, im_info
 
 
+class Pad(object):
+    def __init__(self,
+                 size=None,
+                 size_divisor=32,
+                 pad_mode=0,
+                 offsets=None,
+                 fill_value=(127.5, 127.5, 127.5)):
+        """
+        Pad image to a specified size or multiple of size_divisor.
+        Args:
+            size (int, Sequence): image target size, if None, pad to multiple of size_divisor, default None
+            size_divisor (int): size divisor, default 32
+            pad_mode (int): pad mode, currently only supports four modes [-1, 0, 1, 2]. if -1, use specified offsets
+                if 0, only pad to right and bottom. if 1, pad according to center. if 2, only pad left and top
+            offsets (list): [offset_x, offset_y], specify offset while padding, only supported pad_mode=-1
+            fill_value (bool): rgb value of pad area, default (127.5, 127.5, 127.5)
+        """
+        super(Pad, self).__init__()
+        if isinstance(size, int):
+            size = [size, size]
+
+        assert pad_mode in [
+            -1, 0, 1, 2
+        ], 'currently only supports four modes [-1, 0, 1, 2]'
+        if pad_mode == -1:
+            assert offsets, 'if pad_mode is -1, offsets should not be None'
+
+        self.size = size
+        self.size_divisor = size_divisor
+        self.pad_mode = pad_mode
+        self.fill_value = fill_value
+        self.offsets = offsets
+
+    def apply_image(self, image, offsets, im_size, size):
+        x, y = offsets
+        im_h, im_w = im_size
+        h, w = size
+        canvas = np.ones((h, w, 3), dtype=np.float32)
+        canvas *= np.array(self.fill_value, dtype=np.float32)
+        canvas[y:y + im_h, x:x + im_w, :] = image.astype(np.float32)
+        return canvas
+
+    def __call__(self, im, im_info):
+        im_h, im_w = im.shape[:2]
+        if self.size:
+            h, w = self.size
+            assert (
+                im_h <= h and im_w <= w
+            ), '(h, w) of target size should be greater than (im_h, im_w)'
+        else:
+            h = int(np.ceil(im_h / self.size_divisor) * self.size_divisor)
+            w = int(np.ceil(im_w / self.size_divisor) * self.size_divisor)
+
+        if h == im_h and w == im_w:
+            im = im.astype(np.float32)
+            return im, im_info
+
+        if self.pad_mode == -1:
+            offset_x, offset_y = self.offsets
+        elif self.pad_mode == 0:
+            offset_y, offset_x = 0, 0
+        elif self.pad_mode == 1:
+            offset_y, offset_x = (h - im_h) // 2, (w - im_w) // 2
+        else:
+            offset_y, offset_x = h - im_h, w - im_w
+
+        offsets, im_size, size = [offset_x, offset_y], [im_h, im_w], [h, w]
+        im = self.apply_image(im, offsets, im_size, size)
+
+        if self.pad_mode == 0:
+            return im, im_info
+
+        return im, im_info
+
+
 class WarpAffine(object):
     """Warp affine the image
     """

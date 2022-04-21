@@ -18,9 +18,9 @@
 
 
 注：
-1. 检测/跟踪模型精度为MOT17，CrowdHuman,HIEVE和部分业务数据融合训练测试得到。
-2. 关键点模型使用COCO，UAVHuman和部分业务数据融合训练, 精度在业务数据测试集上得到。
-3. 行为识别模型使用NTU-RGB+D，UR Fall Detection Dataset和部分业务数据融合训练，精度在业务数据测试集上得到。
+1. 检测/跟踪模型精度为[MOT17](https://motchallenge.net/)，[CrowdHuman](http://www.crowdhuman.org/)，[HIEVE](http://humaninevents.org/)和部分业务数据融合训练测试得到。
+2. 关键点模型使用[COCO](https://cocodataset.org/)，[UAV-Human](https://github.com/SUTDCV/UAV-Human)和部分业务数据融合训练, 精度在业务数据测试集上得到。
+3. 行为识别模型使用[NTU-RGB+D](https://rose1.ntu.edu.sg/dataset/actionRecognition/)，[UR Fall Detection Dataset](http://fenix.univ.rzeszow.pl/~mkepski/ds/uf.html)和部分业务数据融合训练，精度在业务数据测试集上得到。
 4. 预测速度为NVIDIA T4 机器上使用TensorRT FP16时的速度, 速度包含数据预处理、模型预测、后处理全流程。
 
 ## 配置说明
@@ -64,6 +64,14 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
 1: 其他
 ```
 4. 行为识别模型使用了[ST-GCN](https://arxiv.org/abs/1801.07455)，并基于[PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/stgcn.md)套件完成模型训练。
+
+## 自定义模型训练
+我们已经提供了检测/跟踪、关键点识别以及识别摔倒动作的预训练模型，可直接下载使用。如果希望使用自定义场景数据训练，或是对模型进行优化，根据具体模型，分别参考下面的链接：
+| 任务 | 算法 | 模型训练及导出文档 |
+| ---- | ---- | -------- |
+| 行人检测/跟踪 | PP-YOLOE | [使用教程](../../../configs/ppyoloe/README_cn.md#使用教程) |
+| 关键点识别 | HRNet | [使用教程](../../../configs/keypoint#3训练与测试) |
+| 行为识别 |  ST-GCN  | [使用教程](https://github.com/PaddlePaddle/PaddleVideo/tree/develop/applications/PPHuman) |
 
 ## 参考文献
 ```
