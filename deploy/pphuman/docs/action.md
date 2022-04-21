@@ -18,9 +18,9 @@
 
 
 注：
-1. 检测/跟踪模型精度为MOT17，CrowdHuman,HIEVE和部分业务数据融合训练测试得到。
-2. 关键点模型使用COCO，UAVHuman和部分业务数据融合训练, 精度在业务数据测试集上得到。
-3. 行为识别模型使用NTU-RGB+D，UR Fall Detection Dataset和部分业务数据融合训练，精度在业务数据测试集上得到。
+1. 检测/跟踪模型精度为[MOT17](https://motchallenge.net/)，[CrowdHuman](http://www.crowdhuman.org/)，[HIEVE](http://humaninevents.org/)和部分业务数据融合训练测试得到。
+2. 关键点模型使用[COCO](https://cocodataset.org/)，[UAV-Human](https://github.com/SUTDCV/UAV-Human)和部分业务数据融合训练, 精度在业务数据测试集上得到。
+3. 行为识别模型使用[NTU-RGB+D](https://rose1.ntu.edu.sg/dataset/actionRecognition/)，[UR Fall Detection Dataset](http://fenix.univ.rzeszow.pl/~mkepski/ds/uf.html)和部分业务数据融合训练，精度在业务数据测试集上得到。
 4. 预测速度为NVIDIA T4 机器上使用TensorRT FP16时的速度, 速度包含数据预处理、模型预测、后处理全流程。
 
 ## 配置说明
@@ -56,7 +56,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
 ```
 
 ## 方案说明
-1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../configs/ppyoloe)。
+1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../configs/ppyoloe/README_cn.md)。
 2. 通过行人检测框的坐标在输入视频的对应帧中截取每个行人，并使用[关键点识别模型](../../../configs/keypoint/hrnet/dark_hrnet_w32_256x192.yml)得到对应的17个骨骼特征点。骨骼特征点的顺序及类型与COCO一致，详见[如何准备关键点数据集](../../../docs/tutorials/PrepareKeypointDataSet_cn.md)中的`COCO数据集`部分。
 3. 每个跟踪ID对应的目标行人各自累计骨骼特征点结果，组成该人物的时序关键点序列。当累计到预定帧数或跟踪丢失后，使用行为识别模型判断时序关键点序列的动作类型。当前版本模型支持摔倒行为的识别，预测得到的`class id`对应关系为：
 ```

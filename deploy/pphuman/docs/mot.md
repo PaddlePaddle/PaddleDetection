@@ -51,7 +51,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
 
 ## 方案说明
 
-1. 目标检测/多目标跟踪获取图片/视频输入中的行人检测框，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../configs/ppyoloe)
+1. 目标检测/多目标跟踪获取图片/视频输入中的行人检测框，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../configs/ppyoloe/README_cn.md)
 2. 多目标跟踪模型方案基于[ByteTrack](https://arxiv.org/pdf/2110.06864.pdf)，采用PP-YOLOE替换原文的YOLOX作为检测器，采用BYTETracker作为跟踪器。
 
 ## 参考文献
