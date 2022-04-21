@@ -5,6 +5,10 @@ English | [简体中文](README.md)
 PP-Human serves as the first open-source tool of real-time pedestrian anaylsis relying on the PaddlePaddle deep learning framework. Versatile and efficient in deployment, it has been used in various senarios. PP-Human
 offers many input options, including image/single-camera video/multi-camera video, and covers multi-object tracking, attribute recognition, and action recognition. PP-Human can be applied to intelligent traffic, the intelligent community, industiral patrol, and so on. It supports server-side deployment and TensorRT acceleration，and achieves real-time analysis on the T4 server.
 
+Community intelligent management supportted by PP-Human, please refer to this [AI Studio project](https://aistudio.baidu.com/aistudio/projectdetail/3679564) for quick start tutorial.
+
+Full-process operation tutorial of PP-Human, covering training, deployment, action expansion, please refer to this [AI Studio project](https://aistudio.baidu.com/aistudio/projectdetail/3842982).
+
 ## I. Environment Preparation
 
 Requirement: PaddleDetection version >= release/2.4 or develop
