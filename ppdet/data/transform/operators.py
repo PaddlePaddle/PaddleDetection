@@ -3149,7 +3149,7 @@ class Mosaic(BaseOperator):
 
         # warpAffine
         img = cv2.warpAffine(
-            img, M, dsize=input_dim, borderValue=(114, 114, 114))
+            img, M, dsize=tuple(input_dim), borderValue=(114, 114, 114))
 
         num_gts = len(labels)
         if num_gts > 0:
