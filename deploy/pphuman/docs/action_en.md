@@ -78,7 +78,7 @@ ACTION:
 2. Capture every pedestrian in frames of the input video accordingly by using the coordinate of the detection box, and employ the [keypoint detection model](../../../configs/keypoint/hrnet/dark_hrnet_w32_256x192.yml)
    to obtain 17 skeleton keypoints. Their sequences and types are identical to
    those of COCO. For details, please refer to the `COCO dataset` part of [how to
-   prepare keypoint datasets](../../../docs/tutorials/PrepareKeypointDataSet_cn.md).
+   prepare keypoint datasets](../../../docs/tutorials/PrepareKeypointDataSet_en.md).
 
 3. Each target pedestrian with a tracking ID has their own accumulation of skeleton keypoints, which is used to form a keypoint sequence in time order. When the number of accumulated frames reach a preset threshold or the tracking is lost, the action recognition model will be applied to judging the action type of the time-ordered keypoint sequence. The current model only supports the recognition of the act of falling down, and the relationship between the action type and `class id` is：
 
@@ -90,20 +90,25 @@ ACTION:
 
 4. The action recognition model uses [ST-GCN](https://arxiv.org/abs/1801.07455), and employ the [PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/stgcn.md) toolkit to complete model training.
 
+
+## Custom Action Training
+
+The pretrained models are provided and can be used directly, including pedestrian detection/ tracking, keypoint detection and fall recognition. If users need to train custom action or optimize the model performance, please refer the link below.
+
+| Task | Model | Training and Export doc |
+| ---- | ---- | -------- |
+| pedestrian detection/tracking | PP-YOLOE | [doc](../../../configs/ppyoloe/README.md#getting-start) |
+| keypoint detection | HRNet | [doc](../../../configs/keypoint/README_en.md#3training-and-testing) |
+| action recognition |  ST-GCN  | [doc](https://github.com/PaddlePaddle/PaddleVideo/tree/develop/applications/PPHuman) |
+
+
 ## Reference
 
 ```
 @inproceedings{stgcn2018aaai,
-
-  title     = {Spatial Temporal
-Graph Convolutional Networks for Skeleton-Based Action Recognition},
-
-  author    = {Sijie Yan and Yuanjun
-Xiong and Dahua Lin},
-
-  booktitle = {AAAI},
-
-  year      = {2018},
-
+  title     = {Spatial Temporal Graph Convolutional Networks for Skeleton-Based Action Recognition},
+  author    = {Sijie Yan and Yuanjun Xiong and Dahua Lin},
+  booktitle = {AAAI},
+  year      = {2018},
 }
 ```

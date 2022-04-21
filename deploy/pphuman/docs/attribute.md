@@ -52,7 +52,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
 
 ## 方案说明
 
-1. 目标检测/多目标跟踪获取图片/视频输入中的行人检测框，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../configs/ppyoloe)
+1. 目标检测/多目标跟踪获取图片/视频输入中的行人检测框，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../configs/ppyoloe/README_cn.md)
 2. 通过行人检测框的坐标在输入图像中截取每个行人
 3. 使用属性识别分析每个行人对应属性，属性类型与PA100k数据集相同，具体属性列表如下：
 ```
