@@ -53,4 +53,4 @@ JDETracker:
   det_thresh: 0.3
   track_buffer: 30
   min_box_area: 200
-  motion: KalmanFilter
+  vertical_ratio: 1.6 # for pedestrian

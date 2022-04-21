@@ -37,14 +37,15 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
     if slim_load_cfg['slim'] == 'Distill':
         model = DistillModel(cfg, slim_cfg)
         cfg['model'] = model
+        cfg['slim_type'] = cfg.slim
     elif slim_load_cfg['slim'] == 'OFA':
         load_config(slim_cfg)
         model = create(cfg.architecture)
         load_pretrain_weight(model, cfg.weights)
         slim = create(cfg.slim)
-        cfg['slim_type'] = cfg.slim
-        cfg['model'] = slim(model, model.state_dict())
         cfg['slim'] = slim
+        cfg['model'] = slim(model, model.state_dict())
+        cfg['slim_type'] = cfg.slim
     elif slim_load_cfg['slim'] == 'DistillPrune':
         if mode == 'train':
             model = DistillModel(cfg, slim_cfg)
@@ -64,9 +65,9 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
         load_config(slim_cfg)
         load_pretrain_weight(model, cfg.weights)
         slim = create(cfg.slim)
-        cfg['slim_type'] = cfg.slim
-        cfg['model'] = slim(model)
         cfg['slim'] = slim
+        cfg['model'] = slim(model)
+        cfg['slim_type'] = cfg.slim
     elif slim_load_cfg['slim'] == 'UnstructuredPruner':
         load_config(slim_cfg)
         slim = create(cfg.slim)

@@ -31,16 +31,32 @@ sys.path.insert(0, parent_path)
 
 from benchmark_utils import PaddleInferBenchmark
 from picodet_postprocess import PicoDetPostProcess
-from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, decode_image
+from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, Pad, decode_image
 from keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
 from visualize import visualize_box_mask
 from utils import argsparser, Timer, get_current_memory_mb
 
 # Global dictionary
 SUPPORT_MODELS = {
-    'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
-    'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD',
-    'StrongBaseline', 'STGCN'
+    'YOLO',
+    'RCNN',
+    'SSD',
+    'Face',
+    'FCOS',
+    'SOLOv2',
+    'TTFNet',
+    'S2ANet',
+    'JDE',
+    'FairMOT',
+    'DeepSORT',
+    'GFL',
+    'PicoDet',
+    'CenterNet',
+    'TOOD',
+    'RetinaNet',
+    'StrongBaseline',
+    'STGCN',
+    'YOLOX',
 }
 
 
@@ -206,7 +222,8 @@ class Detector(object):
             for k, v in res.items():
                 results[k].append(v)
         for k, v in results.items():
-            results[k] = np.concatenate(v)
+            if k != 'masks':
+                results[k] = np.concatenate(v)
         return results
 
     def get_timer(self):
@@ -296,7 +313,7 @@ class Detector(object):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         index = 1
         while (1):
@@ -652,7 +669,7 @@ def load_predictor(model_dir,
     }
     if run_mode in precision_map.keys():
         config.enable_tensorrt_engine(
-            workspace_size=1 << 25,
+            workspace_size=(1 << 25) * batch_size,
             max_batch_size=batch_size,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[run_mode],
@@ -690,7 +707,7 @@ def get_test_images(infer_dir, infer_img):
     Get image path list in TEST mode
     """
     assert infer_img is not None or infer_dir is not None, \
-        "--infer_img or --infer_dir should be set"
+        "--image_file or --image_dir should be set"
     assert infer_img is None or os.path.isfile(infer_img), \
             "{} is not a file".format(infer_img)
     assert infer_dir is None or os.path.isdir(infer_dir), \

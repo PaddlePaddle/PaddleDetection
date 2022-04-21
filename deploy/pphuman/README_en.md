@@ -5,6 +5,10 @@ English | [简体中文](README.md)
 PP-Human serves as the first open-source tool of real-time pedestrian anaylsis relying on the PaddlePaddle deep learning framework. Versatile and efficient in deployment, it has been used in various senarios. PP-Human
 offers many input options, including image/single-camera video/multi-camera video, and covers multi-object tracking, attribute recognition, and action recognition. PP-Human can be applied to intelligent traffic, the intelligent community, industiral patrol, and so on. It supports server-side deployment and TensorRT acceleration，and achieves real-time analysis on the T4 server.
 
+Community intelligent management supportted by PP-Human, please refer to this [AI Studio project](https://aistudio.baidu.com/aistudio/projectdetail/3679564) for quick start tutorial.
+
+Full-process operation tutorial of PP-Human, covering training, deployment, action expansion, please refer to this [AI Studio project](https://aistudio.baidu.com/aistudio/projectdetail/3842982).
+
 ## I. Environment Preparation
 
 Requirement: PaddleDetection version >= release/2.4 or develop
@@ -28,7 +32,8 @@ cd PaddleDetection
 pip install -r requirements.txt
 ```
 
-For details of the installation, please refer to this [document](docs/tutorials/INSTALL_cn.md)
+1. For details of the installation, please refer to this [document](../../docs/tutorials/INSTALL.md)
+2. Please install `Paddle-TensorRT` if your want speedup inference by TensorRT. You can download the whl package from [Paddle-whl-list](https://paddleinference.paddlepaddle.org.cn/v2.2/user_guides/download_lib.html#python), or prepare the envs by yourself follows the [Install-Guide](https://www.paddlepaddle.org.cn/inference/master/optimize/paddle_trt.html).
 
 ## II. Quick Start
 
@@ -42,7 +47,7 @@ To make users have access to models of different scenarios, PP-Human provides pr
 | Attribute Recognition    | Image/Video Input  Attribute Recognition | MOTA: 72.0 |  33.1ms       | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
 | Keypoint Detection    | Video Input  Action Recognition | mA: 94.86 | 2ms per person        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
 | Behavior Recognition   |  Video Input  Bheavior Recognition  | Precision 96.43 |  2.7ms per person          | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
-| ReID         | Multi-Target Multi-Camera Tracking   | mAP: 99.7 | -        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
+| ReID         | Multi-Target Multi-Camera Tracking   | mAP: 98.8 | 1.5ms per person    | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
 
 Then, unzip the downloaded model to the folder `./output_inference`.
 
@@ -91,23 +96,23 @@ ATTR:
 
 ```
 # Pedestrian detection. Specify the config file path and test images
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
 
 # Pedestrian tracking. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
 # Pedestrian tracking. Specify the config file path, the model path and test videos
 # The model path specified on the command line prioritizes over the config file
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
 
 # Attribute recognition. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True [--run_mode trt_fp16]
 
 # Action Recognition. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True [--run_mode trt_fp16]
 
-# Multi-Camera pedestrian tracking. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=test_video_dir/ --device=gpu
+# Pedestrian Multi-Target Multi-Camera tracking. Specify the config file path and the directory of test videos
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
 
 ```
 
@@ -144,19 +149,19 @@ The overall solution of PP-Human is as follows:
 
 ### 1. Object Detection
 - Use PP-YOLOE L as the model of object detection
-- For details, please refer to [PP-YOLOE](../../configs/ppyoloe/) and [Detection and Tracking](docs/mot_en.md)
+- For details, please refer to [PP-YOLOE](../../configs/ppyoloe/) and [Detection and Tracking](docs/mot.md)
 
 ### 2. Multi-Object Tracking
 - Conduct multi-object tracking with the SDE solution
 - Use PP-YOLOE L as the detection model
 - Use the Bytetrack solution to track modules
-- For details, refer to [Bytetrack](configs/mot/bytetrack) and [Detection and Tracking](docs/mot_en.md)
+- For details, refer to [Bytetrack](configs/mot/bytetrack) and [Detection and Tracking](docs/mot.md)
 
 ### 3. Multi-Camera Tracking
 - Use PP-YOLOE + Bytetrack to obtain the tracks of single-camera multi-object tracking
 - Use ReID（centroid network）to extract features of the detection result of each frame
 - Match the features of multi-camera tracks to get the cross-camera tracking result
-- For details, please refer to [Multi-Camera Tracking](docs/mtmct_en.md)
+- For details, please refer to [Multi-Camera Tracking](docs/mtmct.md)
 
 ### 4. Attribute Recognition
 - Use PP-YOLOE + Bytetrack to track humans
@@ -167,4 +172,4 @@ The overall solution of PP-Human is as follows:
 - Use PP-YOLOE + Bytetrack to track humans
 - Use HRNet for keypoint detection and get the information of the 17 key points in the human body
 - According to the changes of the key points of the same person within 50 frames, judge whether the action made by the person within 50 frames is a fall with the help of ST-GCN
-- For details, please refer to [Action Recognition](docs/action_en.md)
+- For details, please refer to [Action Recognition](docs/action.md)

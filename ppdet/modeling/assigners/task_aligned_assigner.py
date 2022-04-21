@@ -85,7 +85,8 @@ class TaskAlignedAssigner(nn.Layer):
 
         # negative batch
         if num_max_boxes == 0:
-            assigned_labels = paddle.full([batch_size, num_anchors], bg_index)
+            assigned_labels = paddle.full(
+                [batch_size, num_anchors], bg_index, dtype=gt_labels.dtype)
             assigned_bboxes = paddle.zeros([batch_size, num_anchors, 4])
             assigned_scores = paddle.zeros(
                 [batch_size, num_anchors, num_classes])

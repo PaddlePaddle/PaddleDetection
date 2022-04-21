@@ -115,7 +115,7 @@ def check_points_inside_bboxes(points,
     Args:
         points (Tensor, float32): shape[L, 2], "xy" format, L: num_anchors
         bboxes (Tensor, float32): shape[B, n, 4], "xmin, ymin, xmax, ymax" format
-        center_radius_tensor (Tensor, float32): shape [L, 1] Default: None.
+        center_radius_tensor (Tensor, float32): shape [L, 1]. Default: None.
         eps (float): Default: 1e-9
     Returns:
         is_in_bboxes (Tensor, float32): shape[B, n, L], value=1. means selected
@@ -123,25 +123,28 @@ def check_points_inside_bboxes(points,
     points = points.unsqueeze([0, 1])
     x, y = points.chunk(2, axis=-1)
     xmin, ymin, xmax, ymax = bboxes.unsqueeze(2).chunk(4, axis=-1)
-    if center_radius_tensor is not None:
-        center_radius_tensor = center_radius_tensor.unsqueeze([0, 1])
-        bboxes_cx = (xmin + xmax) / 2.
-        bboxes_cy = (ymin + ymax) / 2.
-        xmin_sampling = bboxes_cx - center_radius_tensor
-        ymin_sampling = bboxes_cy - center_radius_tensor
-        xmax_sampling = bboxes_cx + center_radius_tensor
-        ymax_sampling = bboxes_cy + center_radius_tensor
-
-        xmin = paddle.maximum(xmin, xmin_sampling)
-        ymin = paddle.maximum(ymin, ymin_sampling)
-        xmax = paddle.minimum(xmax, xmax_sampling)
-        ymax = paddle.minimum(ymax, ymax_sampling)
+    # check whether `points` is in `bboxes`
     l = x - xmin
     t = y - ymin
     r = xmax - x
     b = ymax - y
-    bbox_ltrb = paddle.concat([l, t, r, b], axis=-1)
-    return (bbox_ltrb.min(axis=-1) > eps).astype(bboxes.dtype)
+    delta_ltrb = paddle.concat([l, t, r, b], axis=-1)
+    is_in_bboxes = (delta_ltrb.min(axis=-1) > eps)
+    if center_radius_tensor is not None:
+        # check whether `points` is in `center_radius`
+        center_radius_tensor = center_radius_tensor.unsqueeze([0, 1])
+        cx = (xmin + xmax) * 0.5
+        cy = (ymin + ymax) * 0.5
+        l = x - (cx - center_radius_tensor)
+        t = y - (cy - center_radius_tensor)
+        r = (cx + center_radius_tensor) - x
+        b = (cy + center_radius_tensor) - y
+        delta_ltrb_c = paddle.concat([l, t, r, b], axis=-1)
+        is_in_center = (delta_ltrb_c.min(axis=-1) > eps)
+        return (paddle.logical_and(is_in_bboxes, is_in_center),
+                paddle.logical_or(is_in_bboxes, is_in_center))
+
+    return is_in_bboxes.astype(bboxes.dtype)
 
 
 def compute_max_iou_anchor(ious):

@@ -7,7 +7,7 @@ English | [简体中文](README.md)
 ## News
 
 - Released a new series of PP-PicoDet models: **(2022.03.20)**
-  - (1) It was used TAL/Task-aligned-Head and optimized PAN, which greatly improved the accuracy;
+  - (1) It was used TAL/ETA Head and optimized PAN, which greatly improved the accuracy;
   - (2) Moreover optimized CPU prediction speed, and the training speed is greatly improved;
   - (3) The export model includes post-processing, and the prediction directly outputs the result, without secondary development, and the migration cost is lower.
 
@@ -31,22 +31,22 @@ We developed a series of lightweight models, named `PP-PicoDet`. Because of the 
 
 ## Benchmark
 
-| Model     | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params<br><sup>(M) | FLOPS<br><sup>(G) | Latency<sup><small>[CPU](#latency)</small><sup><br><sup>(ms) | Latency<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  Download  | Config |
-| :-------- | :--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :-----------------------------: | :-----------------------------: | :----------------------------------------: | :--------------------------------------- |
-| PicoDet-XS |  320*320   |          23.5           |        36.1       |        0.70        |       0.67        |              10.9ms              |            7.81ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_xs_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_xs_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_xs_320_coco_lcnet.yml) |
-| PicoDet-XS |  416*416   |          26.2           |        39.3        |        0.70        |       1.13        |              15.4ms             |            12.38ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_xs_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_xs_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_xs_416_coco_lcnet.yml) |
-| PicoDet-S |  320*320   |          29.1           |        43.4        |        1.18       |       0.97       |             12.6ms              |            9.56ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_s_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_320_coco_lcnet.yml) |
-| PicoDet-S |  416*416   |          32.5           |        47.6        |        1.18        |       1.65       |              17.2ms              |            15.20ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_s_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_416_coco_lcnet.yml) |
-| PicoDet-M |  320*320   |          34.4           |        50.0        |        3.46        |       2.57       |              14.5ms              |            17.68ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_m_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_320_coco_lcnet.yml) |
-| PicoDet-M |  416*416   |          37.5           |        53.4       |        3.46        |       4.34        |              19.5ms              |            28.39ms            | [model](https://paddledet.bj.bcebos.com/models/picodet_m_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_416_coco_lcnet.yml) |
-| PicoDet-L |  320*320   |          36.1           |        52.0        |        5.80       |       4.20        |              18.3ms             |            25.21ms           | [model](https://paddledet.bj.bcebos.com/models/picodet_l_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_320_coco_lcnet.yml) |
-| PicoDet-L |  416*416   |          39.4           |        55.7        |        5.80        |       7.10       |              22.1ms              |            42.23ms            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_416_coco_lcnet.yml) |
-| PicoDet-L |  640*640   |          42.6           |        59.2        |        5.80        |       16.81        |              43.1ms              |            108.1ms          | [model](https://paddledet.bj.bcebos.com/models/picodet_l_640_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_640_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_640_coco_lcnet.yml) |
+| Model     | Input size | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params<br><sup>(M) | FLOPS<br><sup>(G) | Latency<sup><small>[CPU](#latency)</small><sup><br><sup>(ms) | Latency<sup><small>[Lite](#latency)</small><sup><br><sup>(ms) |  Weight  | Config | Inference Model |
+| :-------- | :--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :-----------------------------: | :-----------------------------: | :----------------------------------------: | :--------------------------------------- | :--------------------------------------- |
+| PicoDet-XS |  320*320   |          23.5           |        36.1       |        0.70        |       0.67        |              3.9ms              |            7.81ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_xs_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_xs_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_xs_320_coco_lcnet.yml) | [w/ postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_xs_320_coco_lcnet.tar) &#124; [w/o postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_xs_320_coco_lcnet_non_postprocess.tar) |
+| PicoDet-XS |  416*416   |          26.2           |        39.3        |        0.70        |       1.13        |              6.1ms             |            12.38ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_xs_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_xs_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_xs_416_coco_lcnet.yml) | [w/ postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_xs_416_coco_lcnet.tar) &#124; [w/o postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_xs_416_coco_lcnet_non_postprocess.tar) |
+| PicoDet-S |  320*320   |          29.1           |        43.4        |        1.18       |       0.97       |             4.8ms              |            9.56ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_s_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_320_coco_lcnet.yml) | [w/ postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_s_320_coco_lcnet.tar) &#124; [w/o postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_s_320_coco_lcnet_non_postprocess.tar) |
+| PicoDet-S |  416*416   |          32.5           |        47.6        |        1.18        |       1.65       |              6.6ms              |            15.20ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_s_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_s_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_416_coco_lcnet.yml) | [w/ postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_s_416_coco_lcnet.tar) &#124; [w/o postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_s_416_coco_lcnet_non_postprocess.tar) |
+| PicoDet-M |  320*320   |          34.4           |        50.0        |        3.46        |       2.57       |             8.2ms              |            17.68ms             | [model](https://paddledet.bj.bcebos.com/models/picodet_m_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_320_coco_lcnet.yml) | [w/ postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_m_320_coco_lcnet.tar) &#124; [w/o postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_m_320_coco_lcnet_non_postprocess.tar) |
+| PicoDet-M |  416*416   |          37.5           |        53.4       |        3.46        |       4.34        |              12.7ms              |            28.39ms            | [model](https://paddledet.bj.bcebos.com/models/picodet_m_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_m_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_m_416_coco_lcnet.yml) | [w/ postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_m_416_coco_lcnet.tar) &#124; [w/o postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_m_416_coco_lcnet_non_postprocess.tar) |
+| PicoDet-L |  320*320   |          36.1           |        52.0        |        5.80       |       4.20        |              11.5ms             |            25.21ms           | [model](https://paddledet.bj.bcebos.com/models/picodet_l_320_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_320_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_320_coco_lcnet.yml) | [w/ postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_l_320_coco_lcnet.tar) &#124; [w/o postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_l_320_coco_lcnet_non_postprocess.tar) |
+| PicoDet-L |  416*416   |          39.4           |        55.7        |        5.80        |       7.10       |              20.7ms              |            42.23ms            | [model](https://paddledet.bj.bcebos.com/models/picodet_l_416_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_416_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_416_coco_lcnet.yml) | [w/ postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_l_416_coco_lcnet.tar) &#124; [w/o postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_l_416_coco_lcnet_non_postprocess.tar) |
+| PicoDet-L |  640*640   |          42.6           |        59.2        |        5.80        |       16.81        |              62.5ms              |            108.1ms          | [model](https://paddledet.bj.bcebos.com/models/picodet_l_640_coco_lcnet.pdparams) &#124; [log](https://paddledet.bj.bcebos.com/logs/train_picodet_l_640_coco_lcnet.log) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_l_640_coco_lcnet.yml) | [w/ postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_l_640_coco_lcnet.tar) &#124; [w/o postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_l_640_coco_lcnet_non_postprocess.tar) |
 
 <details open>
 <summary><b>Table Notes:</b></summary>
 
-- <a name="latency">Latency:</a> All our models test on `Intel-Xeon-Gold-6148` CPU with MKLDNN by 10 threads and `Qualcomm Snapdragon 865(4xA77+4xA55)` with 4 threads by arm8 and with FP16. In the above table, test CPU latency on Paddle-Inference and testing Mobile latency with `Lite`->[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite).
+- <a name="latency">Latency:</a> All our models test on `Intel core i7 10750H` CPU with MKLDNN by 12 threads and `Qualcomm Snapdragon 865(4xA77+4xA55)` with 4 threads by arm8 and with FP16. In the above table, test CPU latency on Paddle-Inference and testing Mobile latency with `Lite`->[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite).
 - PicoDet is trained on COCO train2017 dataset and evaluated on COCO val2017. And PicoDet used 4 GPUs for training and all checkpoints are trained with default settings and hyperparameters.
 - Benchmark test: When testing the speed benchmark, the post-processing is not included in the exported model, you need to set `-o export.benchmark=True` or manually modify [runtime.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/runtime.yml#L12).
 
@@ -131,18 +131,18 @@ Detail also can refer to [Quick start guide](https://github.com/PaddlePaddle/Pad
 
 ### Export and Convert Model
 
-<details>
-<summary>1. Export model (click to expand)</summary>
+<details open>
+<summary>1. Export model</summary>
 
 ```shell
 cd PaddleDetection
 python tools/export_model.py -c configs/picodet/picodet_s_320_coco_lcnet.yml \
               -o weights=https://paddledet.bj.bcebos.com/models/picodet_s_320_coco_lcnet.pdparams \
-              --output_dir=inference_model
+              --output_dir=output_inference
 ```
 
 - If no post processing is required, please specify: `-o export.benchmark=True` (if -o has already appeared, delete -o here) or manually modify corresponding fields in [runtime.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/runtime.yml).
-- If no NMS is required, please specify: `-o export.nms=True` or manually modify corresponding fields in [runtime.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/runtime.yml).
+- If no NMS is required, please specify: `-o export.nms=True` or manually modify corresponding fields in [runtime.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/runtime.yml). Many scenes exported to ONNX only support single input and fixed shape output, so if exporting to ONNX, it is recommended not to export NMS.
 
 
 </details>
@@ -160,9 +160,9 @@ pip install paddlelite
 
 ```shell
 # FP32
-paddle_lite_opt --model_dir=inference_model/picodet_s_320_coco_lcnet --valid_targets=arm --optimize_out=picodet_s_320_coco_fp32
+paddle_lite_opt --model_dir=output_inference/picodet_s_320_coco_lcnet --valid_targets=arm --optimize_out=picodet_s_320_coco_fp32
 # FP16
-paddle_lite_opt --model_dir=inference_model/picodet_s_320_coco_lcnet --valid_targets=arm --optimize_out=picodet_s_320_coco_fp16 --enable_fp16=true
+paddle_lite_opt --model_dir=output_inference/picodet_s_320_coco_lcnet --valid_targets=arm --optimize_out=picodet_s_320_coco_fp16 --enable_fp16=true
 ```
 
 </details>
@@ -198,29 +198,39 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco_lcnet/ \
   python -m onnxsim picodet_s_320_coco.onnx picodet_s_processed.onnx
   ```
 
+  If the model includes postprocessing, specify `dynamic-input-shape` when simplifying the model:
+  ```shell
+  python -m onnxsim picodet_s_320_coco.onnx picodet_s_processed.onnx --dynamic-input-shape --input-shape image:1,3,320,320
+  ```
+
 </details>
 
 - Deploy models
 
-| Model     | Input size | ONNX  | Paddle Lite(fp32) | Paddle Lite(fp16) |
+| Model     | Input size | ONNX(w/o postprocess)  | Paddle Lite(fp32) | Paddle Lite(fp16) |
 | :-------- | :--------: | :---------------------: | :----------------: | :----------------: |
-| PicoDet-S |  320*320   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_s_320_coco.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_320.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_320_fp16.tar) |
-| PicoDet-S |  416*416   |  [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_s_416_coco.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_416.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_416_fp16.tar) |
-| PicoDet-M |  320*320   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_m_320_coco.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_m_320.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_m_320_fp16.tar) |
-| PicoDet-M |  416*416   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_m_416_coco.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_m_416.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_m_416_fp16.tar) |
-| PicoDet-L |  320*320   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_l_320_coco.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_l_320.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_l_320_fp16.tar) |
-| PicoDet-L |  416*416   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_l_416_coco.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_l_416.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_l_416_fp16.tar) |
-| PicoDet-L |  640*640   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_l_640_coco.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_l_640.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_l_640_fp16.tar) |
-| PicoDet-Shufflenetv2 1x      |  416*416   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_shufflenetv2_1x_416_coco.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_shufflenetv2_1x.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_shufflenetv2_1x_fp16.tar) |
-| PicoDet-MobileNetv3-large 1x |  416*416   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_mobilenetv3_large_1x_416_coco.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_mobilenetv3_large_1x.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_mobilenetv3_large_1x_fp16.tar) |
-| PicoDet-LCNet 1.5x           |  416*416   | [model](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_lcnet_1_5x_416_coco.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_lcnet_1_5x.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_lcnet_1_5x_fp16.tar) |
+| PicoDet-XS |  320*320   | [( w/ postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_xs_320_lcnet_postprocessed.onnx) &#124; [( w/o postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_xs_320_coco_lcnet.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_xs_320_coco_lcnet.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_xs_320_coco_lcnet_fp16.tar) |
+| PicoDet-XS |  416*416   | [( w/ postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_xs_416_lcnet_postprocessed.onnx) &#124; [( w/o postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_xs_416_coco_lcnet.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_xs_416_coco_lcnet.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_xs_416_coco_lcnet_fp16.tar) |
+| PicoDet-S |  320*320   | [( w/ postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_s_320_lcnet_postprocessed.onnx) &#124; [( w/o postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_s_320_coco_lcnet.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_320_coco_lcnet.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_320_coco_lcnet_fp16.tar) |
+| PicoDet-S |  416*416   |  [( w/ postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_s_416_lcnet_postprocessed.onnx) &#124; [( w/o postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_s_416_coco_lcnet.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_416_coco_lcnet.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_416_coco_lcnet_fp16.tar) |
+| PicoDet-M |  320*320   | [( w/ postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_m_320_lcnet_postprocessed.onnx) &#124; [( w/o postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_m_320_coco_lcnet.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_m_320_coco_lcnet.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_m_320_coco_lcnet_fp16.tar) |
+| PicoDet-M |  416*416   | [( w/ postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_m_416_lcnet_postprocessed.onnx) &#124; [( w/o postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_m_416_coco_lcnet.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_m_416_coco_lcnet.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_m_416_coco_lcnet_fp16.tar) |
+| PicoDet-L |  320*320   | [( w/ postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_l_320_lcnet_postprocessed.onnx) &#124; [( w/o postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_l_320_coco_lcnet.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_l_320_coco_lcnet.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_l_320_coco_lcnet_fp16.tar) |
+| PicoDet-L |  416*416   | [( w/ postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_l_416_lcnet_postprocessed.onnx) &#124; [( w/o postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_l_416_coco_lcnet.onnx) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_l_416_coco_lcnet.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_l_416_coco_lcnet_fp16.tar) |
+| PicoDet-L |  640*640   | [( w/ postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_l_640_lcnet_postprocessed.onnx) &#124; [( w/o postprocess)](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_l_640_coco_lcnet.onnx)  [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_l_640_coco_lcnet.tar) | [model](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_l_640_coco_lcnet_fp16.tar) |
 
 
 ### Deploy
 
-- PaddleInference demo [Python](../../deploy/python) & [C++](../../deploy/cpp)
-- [PaddleLite C++ demo](../../deploy/lite)
-- [Android demo(Paddle Lite)](https://github.com/PaddlePaddle/Paddle-Lite-Demo/tree/develop/object_detection/android/app/cxx/picodet_detection_demo)
+| Infer Engine     | Python | C++  | Predict With Postprocess |
+| :-------- | :--------: | :---------------------: | :----------------: |
+| OpenVINO | [Python](../../deploy/third_engine/demo_openvino/python) | [C++](../../deploy/third_engine/demo_openvino)（postprocess comming soon） |  ✔︎ |
+| Paddle Lite |  -    |  [C++](../../deploy/lite) | ✔︎ |
+| Android Demo |  -  |  [Paddle Lite](https://github.com/PaddlePaddle/Paddle-Lite-Demo/tree/develop/object_detection/android/app/cxx/picodet_detection_demo) | ✔︎ |
+| PaddleInference | [Python](../../deploy/python) |  [C++](../../deploy/cpp) | ✔︎ |
+| ONNXRuntime  | [Python](../../deploy/third_engine/demo_onnxruntime) | Comming soon | ✔︎ |
+| NCNN |  Comming soon  | [C++](../../deploy/third_engine/demo_ncnn) | ✘ |
+| MNN  | Comming soon | [C++](../../deploy/third_engine/demo_mnn) |  ✘ |
 
 
 Android demo visualization:
@@ -235,50 +245,42 @@ Android demo visualization:
 <summary>Requirements:</summary>
 
 - PaddlePaddle >= 2.2.2
-- PaddleSlim >= 2.2.1
+- PaddleSlim >= 2.2.2
 
 **Install:**
 
 ```shell
-pip install paddleslim==2.2.1
+pip install paddleslim==2.2.2
 ```
 
 </details>
 
-<details>
-<summary>Quant aware (click to expand)</summary>
+<details open>
+<summary>Quant aware</summary>
 
 Configure the quant config and start training:
 
 ```shell
-python tools/train.py -c configs/picodet/picodet_s_320_coco_lcnet.yml \
-          --slim_config configs/slim/quant/picodet_s_quant.yml --eval
+python tools/train.py -c configs/picodet/picodet_s_416_coco_lcnet.yml \
+          --slim_config configs/slim/quant/picodet_s_416_lcnet_quant.yml --eval
 ```
 
 - More detail can refer to [slim document](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim)
 
 </details>
 
-<details>
-<summary>Post quant (click to expand)</summary>
+- Quant Aware Model ZOO：
 
-Configure the post quant config and start calibrate model:
-
-```shell
-python tools/post_quant.py -c configs/picodet/picodet_s_320_coco_lcnet.yml \
-          --slim_config configs/slim/post_quant/picodet_s_ptq.yml
-```
-
-- Notes: Now the accuracy of post quant is abnormal and this problem is being solved.
-
-</details>
+| Quant Model     | Input size | mAP<sup>val<br>0.5:0.95  | Configs | Weight | Inference Model | Paddle Lite(INT8) |
+| :-------- | :--------: | :--------------------: | :-------: | :----------------: | :----------------: | :----------------: |
+| PicoDet-S |  416*416   |  31.5  | [config](./picodet_s_416_coco_lcnet.yml) &#124; [slim config](../slim/quant/picodet_s_416_lcnet_quant.yml)  | [model](https://paddledet.bj.bcebos.com/models/picodet_s_416_coco_lcnet_quant.pdparams)  | [w/ postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_s_416_coco_lcnet_quant.tar) &#124; [w/o postprocess](https://paddledet.bj.bcebos.com/deploy/Inference/picodet_s_416_coco_lcnet_quant_non_postprocess.tar) |  [w/ postprocess](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_416_coco_lcnet_quant.nb) &#124; [w/o postprocess](https://paddledet.bj.bcebos.com/deploy/paddlelite/picodet_s_416_coco_lcnet_quant_non_postprocess.nb) |
 
 ## Unstructured Pruning
 
 <details open>
 <summary>Toturial:</summary>
 
-Please refer this [documentation](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/pruner/README.md) for details such as requirements, training and deployment.
+Please refer this [documentation](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/legacy_model/pruner/README.md) for details such as requirements, training and deployment.
 
 </details>
 
@@ -286,7 +288,7 @@ Please refer this [documentation](https://github.com/PaddlePaddle/PaddleDetectio
 
 - **Pedestrian detection:** model zoo of `PicoDet-S-Pedestrian` please refer to [PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/tiny_pose#%E8%A1%8C%E4%BA%BA%E6%A3%80%E6%B5%8B%E6%A8%A1%E5%9E%8B)
 
-- **Mainbody detection:** model zoo of `PicoDet-L-Mainbody` please refer to [mainbody detection](./application/mainbody_detection/README.md)
+- **Mainbody detection:** model zoo of `PicoDet-L-Mainbody` please refer to [mainbody detection](./legacy_model/application/mainbody_detection/README.md)
 
 ## FAQ
 

@@ -29,7 +29,7 @@
 
 namespace PaddleDetection {
 
-void load_jsonf(std::string jsonfile, const Json::Value& jsondata);
+void load_jsonf(std::string jsonfile, Json::Value& jsondata);
 
 // Inference model configuration parser
 class ConfigPaser {

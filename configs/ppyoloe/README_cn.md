@@ -9,7 +9,7 @@
 - [附录](#附录)
 
 ## 简介
-PP-YOLOE是基于PP-YOLOv2的卓越的单阶段Anchor-free模型，超越了多种流行的yolo模型。PP-YOLOE有一系列的模型，即s/m/l/x，可以通过width multiplier和depth multiplier配置。PP-YOLOE避免使用诸如deformable convolution或者matrix nms之类的特殊算子，以使其能轻松地部署在多种多样的硬件上。更多细节可以参考我们的report。
+PP-YOLOE是基于PP-YOLOv2的卓越的单阶段Anchor-free模型，超越了多种流行的yolo模型。PP-YOLOE有一系列的模型，即s/m/l/x，可以通过width multiplier和depth multiplier配置。PP-YOLOE避免使用诸如deformable convolution或者matrix nms之类的特殊算子，以使其能轻松地部署在多种多样的硬件上。更多细节可以参考我们的[report](https://arxiv.org/abs/2203.16250)。
 
 <div align="center">
   <img src="../../docs/images/ppyoloe_map_fps.png" width=500 />
@@ -24,24 +24,24 @@ PP-YOLOE由以下方法组成
 - [SiLU激活函数](https://arxiv.org/abs/1710.05941)
 
 ## 模型库
-|          模型           | GPU个数 | 每GPU图片个数 |  骨干网络  | 输入尺寸 | Box AP<sup>val</sup> | Box AP<sup>test</sup> | V100 FP32(FPS) | V100 TensorRT FP16(FPS) | 模型下载 | 配置文件  |
-|:------------------------:|:-------:|:-------------:|:----------:| :-------:| :------------------: | :-------------------: | :------------: | :---------------------: | :------: | :------: |
-| PP-YOLOE-s                  |     8      |     32     | cspresnet-s |     640     |       42.7        |        43.1         |      208.3      |          333.3          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml)                   |
-| PP-YOLOE-m                  |     8      |     32     | cspresnet-m |     640     |       48.6        |        48.9         |      123.4      |          208.3          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_m_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_m_300e_coco.yml)                   |
-| PP-YOLOE-l                  |     8      |     24     | cspresnet-l |     640     |       50.9        |        51.4         |      78.1      |          149.2          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml)                   |
-| PP-YOLOE-x                  |     8      |     16     | cspresnet-x |     640     |       51.9        |        52.2         |      45.0      |          95.2          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_x_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_x_300e_coco.yml)                   |
+|          模型           | GPU个数 | 每GPU图片个数 |  骨干网络  | 输入尺寸 | Box AP<sup>val</sup> | Box AP<sup>test</sup> | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) | 模型下载 | 配置文件  |
+|:------------------------:|:-------:|:--------:|:----------:| :-------:| :------------------: | :-------------------: |:---------:|:--------:|:---------------:| :---------------------: | :------: | :------: |
+| PP-YOLOE-s                  |     8      |    32    | cspresnet-s |     640     |       42.7        |        43.1         |   7.93    |  17.36   |       208.3 |          333.3          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml)                   |
+| PP-YOLOE-m                  |     8      |    28    | cspresnet-m |     640     |       48.6        |        48.9         |   23.43   |  49.91   |   123.4   |  208.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_m_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_m_300e_coco.yml)                   |
+| PP-YOLOE-l                  |     8      |    20    | cspresnet-l |     640     |       50.9        |        51.4         |   52.20   |  110.07  |   78.1    |  149.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml)                   |
+| PP-YOLOE-x                  |     8      |    16    | cspresnet-x |     640     |       51.9        |        52.2         |   98.42   |  206.59  |   45.0    |   95.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_x_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_x_300e_coco.yml)                   |
 
 **注意:**
 
 - PP-YOLOE模型使用COCO数据集中train2017作为训练集，使用val2017和test-dev2017作为测试集，Box AP<sup>test</sup>为`mAP(IoU=0.5:0.95)`评估结果。
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果训练GPU数和batch size不使用上述配置，须参考[FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/FAQ)调整学习率和迭代次数。
-- PP-YOLOE模型推理速度测试采用单卡V100，batch size=1进行测试，使用CUDA 10.2, CUDNN 7.6.5，TensorRT推理速度测试使用TensorRT 6.0.1.8。
-- PP-YOLOE推理速度测试使用`tools/export_model.py`并设置`-o exclude_nms=True`脚本导出的模型，并用`deploy/python/infer.py`设置`--run_benchnark`参数得到。测试结果均为不包含数据预处理和模型输出后处理(NMS)的数据(与[YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet)测试方法一致)。
+- PP-YOLOE模型推理速度测试采用单卡V100，batch size=1进行测试，使用**CUDA 10.2**, **CUDNN 7.6.5**，TensorRT推理速度测试使用**TensorRT 6.0.1.8**。
+- 参考[速度测试](#速度测试)以复现PP-YOLOE推理速度测试结果。
 - 如果你设置了`--run_benchnark=True`, 你首先需要安装以下依赖`pip install pynvml psutil GPUtil`。
 
 ## 使用教程
 
-### 1. 训练
+### 训练
 
 执行以下指令使用混合精度训练PP-YOLOE
 
@@ -51,7 +51,7 @@ python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c con
 
 ** 注意: ** 使用默认配置训练需要设置`--amp`以避免显存溢出.
 
-### 2. 评估
+### 评估
 
 执行以下命令在单个GPU上评估COCO val2017数据集
 
@@ -61,7 +61,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/ppyoloe/ppyoloe_crn_l_300
 
 在coco test-dev2017上评估，请先从[COCO数据集下载](https://cocodataset.org/#download)下载COCO test-dev2017数据集，然后解压到COCO数据集文件夹并像`configs/ppyolo/ppyolo_test.yml`一样配置`EvalDataset`。
 
-### 3. 推理
+### 推理
 
 使用以下命令在单张GPU上预测图片，使用`--infer_img`推理单张图片以及使用`--infer_dir`推理文件中的所有图片。
 
@@ -74,59 +74,97 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/ppyoloe/ppyoloe_crn_l_30
 CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams --infer_dir=demo
 ```
 
-### 4. 部署
+### 模型导出
 
-- Paddle Inference [Python](../../deploy/python) & [C++](../../deploy/cpp)
-- [Paddle-TensorRT](../../deploy/TENSOR_RT.md)
-- [Paddle2ONNX](https://github.com/PaddlePaddle/Paddle2ONNX)
-- [PaddleServing](https://github.com/PaddlePaddle/Serving)
+PP-YOLOE在GPU上部署或者速度测试需要通过`tools/export_model.py`导出模型。
 
-
-PP-YOLOE在GPU上部署或者推理benchmark需要通过`tools/export_model.py`导出模型。
-
-当你使用Paddle Inference但不使用TensorRT时，运行以下的命令进行导出
+当你**使用Paddle Inference但不使用TensorRT**时，运行以下的命令导出模型
 
 ```bash
 python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 ```
 
-当你使用Paddle Inference的TensorRT时，需要指定`-o trt=True`进行导出
+当你**使用Paddle Inference且使用TensorRT**时，需要指定`-o trt=True`来导出模型。
 
 ```bash
 python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams trt=True
 ```
 
-`deploy/python/infer.py`使用上述导出后的Paddle Inference模型用于推理和benchnark.
-
-```bash
-# 推理单张图片
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyolo_r50vd_dcn_1x_coco --image_file=demo/000000014439_640x640.jpg --device=gpu
-
-# 推理文件夹下的所有图片
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyolo_r50vd_dcn_1x_coco --image_dir=demo/ --device=gpu
-
-# benchmark
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyolo_r50vd_dcn_1x_coco --image_file=demo/000000014439_640x640.jpg --device=gpu --run_benchmark=True
-```
-
 如果你想将PP-YOLOE模型导出为**ONNX格式**，参考
-[PaddleDetection模型导出为ONNX格式教程](../../deploy/EXPORT_ONNX_MODEL.md)
-
+[PaddleDetection模型导出为ONNX格式教程](../../deploy/EXPORT_ONNX_MODEL.md)，运行以下命令：
 
 ```bash
+
 # 导出推理模型
-python tools/export_model.py configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 
 # 安装paddle2onnx
 pip install paddle2onnx
 
 # 转换成onnx格式
 paddle2onnx --model_dir output_inference/ppyoloe_crn_l_300e_coco --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 11 --save_file ppyoloe_crn_l_300e_coco.onnx
+```
+
+**注意：** ONNX模型目前只支持batch_size=1
+
+### 速度测试
+
+为了公平起见，在[模型库](#模型库)中的速度测试结果均为不包含数据预处理和模型输出后处理(NMS)的数据(与[YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet)测试方法一致)，需要在导出模型时指定`-o exclude_nms=True`.
+
+**使用Paddle Inference但不使用TensorRT**进行测速，执行以下命令：
+
+```bash
+# 导出模型
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams exclude_nms=True
+
+# 速度测试，使用run_benchmark=True
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_300e_coco --image_file=demo/000000014439_640x640.jpg --run_mode=paddle --device=gpu --run_benchmark=True
+```
+
+**使用Paddle Inference且使用TensorRT**进行测速，执行以下命令：
+
+```bash
+# 导出模型，使用trt=True
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams exclude_nms=True trt=True
+
+# 速度测试，使用run_benchmark=True, run_mode=trt_fp32/trt_fp16
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_300e_coco --image_file=demo/000000014439_640x640.jpg --run_mode=trt_fp16 --device=gpu --run_benchmark=True
 
 ```
 
+### 部署
 
-### 5. 泛化性验证
+PP-YOLOE可以使用以下方式进行部署：
+  - Paddle Inference [Python](../../deploy/python) & [C++](../../deploy/cpp)
+  - [Paddle-TensorRT](../../deploy/TENSOR_RT.md)
+  - [PaddleServing](https://github.com/PaddlePaddle/Serving)
+
+接下来，我们将介绍PP-YOLOE如何使用Paddle Inference在TensorRT FP16模式下部署
+
+首先，参考[Paddle Inference文档](https://www.paddlepaddle.org.cn/inference/master/user_guides/download_lib.html#python)，下载并安装与你的CUDA, CUDNN和TensorRT相应的wheel包。
+
+然后，运行以下命令导出模型
+
+```bash
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams trt=True
+```
+
+最后，使用TensorRT FP16进行推理
+
+```bash
+# 推理单张图片
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_300e_coco --image_file=demo/000000014439_640x640.jpg --device=gpu --run_mode=trt_fp16
+
+# 推理文件夹下的所有图片
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_300e_coco --image_dir=demo/ --device=gpu  --run_mode=trt_fp16
+
+```
+
+**注意：**
+- TensorRT会根据网络的定义，执行针对当前硬件平台的优化，生成推理引擎并序列化为文件。该推理引擎只适用于当前软硬件平台。如果你的软硬件平台没有发生变化，你可以设置[enable_tensorrt_engine](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/deploy/python/infer.py#L660)的参数`use_static=True`，这样生成的序列化文件将会保存在`output_inference`文件夹下，下次执行TensorRT时将加载保存的序列化文件。
+- PaddleDetection release/2.4及其之后的版本将支持NMS调用TensorRT，需要依赖PaddlePaddle release/2.3及其之后的版本
+
+### 泛化性验证
 
 模型 | AP | AP<sub>50</sub>
 ---|---|---

@@ -23,6 +23,7 @@ from ..initializer import bias_init_with_prob, constant_, normal_
 from ..assigners.utils import generate_anchors_for_grid_cell
 from ppdet.modeling.backbones.cspresnet import ConvBNLayer
 from ppdet.modeling.ops import get_static_shape, paddle_distributed_is_initialized, get_act_fn
+from ppdet.modeling.layers import MultiClassNMS
 
 __all__ = ['PPYOLOEHead']
 
@@ -45,7 +46,7 @@ class ESEAttn(nn.Layer):
 
 @register
 class PPYOLOEHead(nn.Layer):
-    __shared__ = ['num_classes', 'trt', 'exclude_nms']
+    __shared__ = ['num_classes', 'eval_size', 'trt', 'exclude_nms']
     __inject__ = ['static_assigner', 'assigner', 'nms']
 
     def __init__(self,
@@ -61,7 +62,7 @@ class PPYOLOEHead(nn.Layer):
                  static_assigner='ATSSAssigner',
                  assigner='TaskAlignedAssigner',
                  nms='MultiClassNMS',
-                 eval_input_size=[],
+                 eval_size=None,
                  loss_weight={
                      'class': 1.0,
                      'iou': 2.5,
@@ -80,12 +81,14 @@ class PPYOLOEHead(nn.Layer):
         self.iou_loss = GIoULoss()
         self.loss_weight = loss_weight
         self.use_varifocal_loss = use_varifocal_loss
-        self.eval_input_size = eval_input_size
+        self.eval_size = eval_size
 
         self.static_assigner_epoch = static_assigner_epoch
         self.static_assigner = static_assigner
         self.assigner = assigner
         self.nms = nms
+        if isinstance(self.nms, MultiClassNMS) and trt:
+            self.nms.trt = trt
         self.exclude_nms = exclude_nms
         # stem
         self.stem_cls = nn.LayerList()
@@ -127,10 +130,10 @@ class PPYOLOEHead(nn.Layer):
             self.proj.reshape([1, self.reg_max + 1, 1, 1]))
         self.proj_conv.weight.stop_gradient = True
 
-        if self.eval_input_size:
+        if self.eval_size:
             anchor_points, stride_tensor = self._generate_anchors()
-            self.register_buffer('anchor_points', anchor_points)
-            self.register_buffer('stride_tensor', stride_tensor)
+            self.anchor_points = anchor_points
+            self.stride_tensor = stride_tensor
 
     def forward_train(self, feats, targets):
         anchors, anchor_points, num_anchors_list, stride_tensor = \
@@ -164,8 +167,8 @@ class PPYOLOEHead(nn.Layer):
             if feats is not None:
                 _, _, h, w = feats[i].shape
             else:
-                h = int(self.eval_input_size[0] / stride)
-                w = int(self.eval_input_size[1] / stride)
+                h = int(self.eval_size[0] / stride)
+                w = int(self.eval_size[1] / stride)
             shift_x = paddle.arange(end=w) + self.grid_cell_offset
             shift_y = paddle.arange(end=h) + self.grid_cell_offset
             shift_y, shift_x = paddle.meshgrid(shift_y, shift_x)
@@ -181,7 +184,7 @@ class PPYOLOEHead(nn.Layer):
         return anchor_points, stride_tensor
 
     def forward_eval(self, feats):
-        if self.eval_input_size:
+        if self.eval_size:
             anchor_points, stride_tensor = self.anchor_points, self.stride_tensor
         else:
             anchor_points, stride_tensor = self._generate_anchors(feats)
@@ -290,7 +293,7 @@ class PPYOLOEHead(nn.Layer):
         else:
             loss_l1 = paddle.zeros([1])
             loss_iou = paddle.zeros([1])
-            loss_dfl = paddle.zeros([1])
+            loss_dfl = pred_dist.sum() * 0.
         return loss_l1, loss_iou, loss_dfl
 
     def get_loss(self, head_outs, gt_meta):

@@ -20,6 +20,7 @@ import os
 import sys
 import copy
 import time
+from tqdm import tqdm
 
 import numpy as np
 import typing
@@ -27,6 +28,7 @@ from PIL import Image, ImageOps, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 import paddle
+import paddle.nn as nn
 import paddle.distributed as dist
 from paddle.distributed import fleet
 from paddle import amp
@@ -98,9 +100,22 @@ class Trainer(object):
             self.model = self.cfg.model
             self.is_loaded_weights = True
 
+        if cfg.architecture == 'YOLOX':
+            for k, m in self.model.named_sublayers():
+                if isinstance(m, nn.BatchNorm2D):
+                    m._epsilon = 1e-3  # for amp(fp16)
+                    m._momentum = 0.97  # 0.03 in pytorch
+
         #normalize params for deploy
         if 'slim' in cfg and cfg['slim_type'] == 'OFA':
             self.model.model.load_meanstd(cfg['TestReader'][
+                'sample_transforms'])
+        elif 'slim' in cfg and cfg['slim_type'] == 'Distill':
+            self.model.student_model.load_meanstd(cfg['TestReader'][
+                'sample_transforms'])
+        elif 'slim' in cfg and cfg[
+                'slim_type'] == 'DistillPrune' and self.mode == 'train':
+            self.model.student_model.load_meanstd(cfg['TestReader'][
                 'sample_transforms'])
         else:
             self.model.load_meanstd(cfg['TestReader']['sample_transforms'])
@@ -109,10 +124,11 @@ class Trainer(object):
         if self.use_ema:
             ema_decay = self.cfg.get('ema_decay', 0.9998)
             cycle_epoch = self.cfg.get('cycle_epoch', -1)
+            ema_decay_type = self.cfg.get('ema_decay_type', 'threshold')
             self.ema = ModelEMA(
                 self.model,
                 decay=ema_decay,
-                use_thres_step=True,
+                ema_decay_type=ema_decay_type,
                 cycle_epoch=cycle_epoch)
 
         # EvalDataset build with BatchSampler to evaluate in single device
@@ -373,7 +389,8 @@ class Trainer(object):
         # enabel auto mixed precision mode
         if self.cfg.get('amp', False):
             scaler = amp.GradScaler(
-                enable=self.cfg.use_gpu or self.cfg.use_npu, init_loss_scaling=1024)
+                enable=self.cfg.use_gpu or self.cfg.use_npu,
+                init_loss_scaling=1024)
 
         self.status.update({
             'epoch_id': self.start_epoch,
@@ -552,7 +569,7 @@ class Trainer(object):
             flops_loader = create('TestReader')(self.dataset, 0)
             self._flops(flops_loader)
         results = []
-        for step_id, data in enumerate(loader):
+        for step_id, data in enumerate(tqdm(loader)):
             self.status['step_id'] = step_id
             # forward
             outs = self.model(data)
