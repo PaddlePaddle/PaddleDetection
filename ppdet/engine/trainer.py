@@ -557,15 +557,16 @@ class Trainer(object):
         self.dataset.set_images(images)
         loader = create('TestReader')(self.dataset, 0)
 
-        def setup_metrics_for_test():
-            # save
+        def setup_metrics_for_loader():
+            # mem
+            metrics = copy.deepcopy(self._metrics)
             mode = self.mode
             save_prediction_only = self.cfg[
                 'save_prediction_only'] if 'save_prediction_only' in self.cfg else None
             output_eval = self.cfg[
                 'output_eval'] if 'output_eval' in self.cfg else None
 
-            # modified
+            # modify
             self.mode = '_test'
             self.cfg['save_prediction_only'] = True
             self.cfg['output_eval'] = output_dir
@@ -581,10 +582,13 @@ class Trainer(object):
             if output_eval is not None:
                 self.cfg['output_eval'] = output_eval
 
-            return self._metrics
+            _metrics = copy.deepcopy(self._metrics)
+            self._metrics = metrics
+
+            return _metrics
 
         if save_results:
-            metrics = setup_metrics_for_test()
+            metrics = setup_metrics_for_loader()
         else:
             metrics = []
 
@@ -659,16 +663,6 @@ class Trainer(object):
                 logger.info("Detection bbox results save in {}".format(
                     save_name))
                 image.save(save_name, quality=95)
-
-                if save_result:
-                    save_path = os.path.splitext(save_name)[0] + '.txt'
-                    results = {}
-                    results["im_id"] = im_id
-                    if bbox_res:
-                        results["bbox_res"] = bbox_res
-                    if keypoint_res:
-                        results["keypoint_res"] = keypoint_res
-                    save_result(save_path, results, catid2name, draw_threshold)
 
                 start = end
 

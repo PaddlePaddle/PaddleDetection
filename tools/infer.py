@@ -80,7 +80,7 @@ def parse_args():
         "--save_results",
         type=bool,
         default=False,
-        help="Whether to save inference result in json.")
+        help="Whether to save inference results to output_dir.")
     args = parser.parse_args()
     return args
 
