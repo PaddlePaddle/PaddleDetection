@@ -149,19 +149,19 @@ The overall solution of PP-Human is as follows:
 
 ### 1. Object Detection
 - Use PP-YOLOE L as the model of object detection
-- For details, please refer to [PP-YOLOE](../../configs/ppyoloe/) and [Detection and Tracking](docs/mot.md)
+- For details, please refer to [PP-YOLOE](../../configs/ppyoloe/) and [Detection and Tracking](docs/mot_en.md)
 
 ### 2. Multi-Object Tracking
 - Conduct multi-object tracking with the SDE solution
 - Use PP-YOLOE L as the detection model
 - Use the Bytetrack solution to track modules
-- For details, refer to [Bytetrack](configs/mot/bytetrack) and [Detection and Tracking](docs/mot.md)
+- For details, refer to [Bytetrack](configs/mot/bytetrack) and [Detection and Tracking](docs/mot_en.md)
 
 ### 3. Multi-Camera Tracking
 - Use PP-YOLOE + Bytetrack to obtain the tracks of single-camera multi-object tracking
 - Use ReID（centroid network）to extract features of the detection result of each frame
 - Match the features of multi-camera tracks to get the cross-camera tracking result
-- For details, please refer to [Multi-Camera Tracking](docs/mtmct.md)
+- For details, please refer to [Multi-Camera Tracking](docs/mtmct_en.md)
 
 ### 4. Attribute Recognition
 - Use PP-YOLOE + Bytetrack to track humans
@@ -172,4 +172,4 @@ The overall solution of PP-Human is as follows:
 - Use PP-YOLOE + Bytetrack to track humans
 - Use HRNet for keypoint detection and get the information of the 17 key points in the human body
 - According to the changes of the key points of the same person within 50 frames, judge whether the action made by the person within 50 frames is a fall with the help of ST-GCN
-- For details, please refer to [Action Recognition](docs/action.md)
+- For details, please refer to [Action Recognition](docs/action_en.md)
