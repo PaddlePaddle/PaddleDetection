@@ -91,6 +91,8 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 | --enable_mkldnn | Option | CPU预测中是否开启MKLDNN加速，默认为False |
 | --cpu_threads | Option| 设置cpu线程数，默认为1 |
 | --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
+| --save_results | Option| 是否在文件夹下将图片的预测结果以JSON的形式保存 |
+
 
 说明：
 

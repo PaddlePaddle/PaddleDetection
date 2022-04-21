@@ -53,7 +53,8 @@ list below can be viewed by `--help`
 |    --draw_threshold      |      infer     |  Threshold to reserve the result for visualization  |  0.5  |   such as `--draw_threshold 0.7`  |
 |      --infer_dir         |       infer     |  Directory for images to perform inference on  |  None  | One of `infer_dir` and `infer_img` is requied  |
 |      --infer_img         |       infer     |  Image path  |  None  | One of `infer_dir` and `infer_img` is requied, `infer_img` has higher priority over `infer_dir`  |
-
+|      --save_txt          |       infer     |  Whether to save detect results using txt format        |  False  |  Optional  |
+|      --save_results          |       infer     |  Whether to save detect results using json format        |  False  |  Optional  |
 
 
 
