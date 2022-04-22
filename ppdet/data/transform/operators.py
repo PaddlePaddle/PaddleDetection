@@ -824,7 +824,7 @@ class Resize(BaseOperator):
             im_scale_x = resize_w / im_shape[1]
 
         im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
-        sample['image'] = im
+        sample['image'] = im.astype(np.float32)
         sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
         if 'scale_factor' in sample:
             scale_factor = sample['scale_factor']
