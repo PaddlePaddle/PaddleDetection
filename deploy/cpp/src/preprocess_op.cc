@@ -229,6 +229,23 @@ void WarpAffine::Run(cv::Mat* im, ImageBlob* data) {
   };
 }
 
+void Pad::Run(cv::Mat* im, ImageBlob* data) {
+  int h = size_[0];
+  int w = size_[1];
+  int rh = im->rows;
+  int rw = im->cols;
+  if (h == rh && w == rw){
+    data->in_net_im_ = im->clone();
+    return;
+  }
+  cv::copyMakeBorder(
+      *im, *im, 0, h - rh, 0, w - rw, cv::BORDER_CONSTANT, cv::Scalar(114));
+  data->in_net_im_ = im->clone();
+  data->in_net_shape_ = {
+      static_cast<float>(im->rows), static_cast<float>(im->cols),
+  };
+}
+
 // Preprocessor op running order
 const std::vector<std::string> Preprocessor::RUN_ORDER = {"InitInfo",
                                                           "TopDownEvalAffine",
@@ -237,7 +254,8 @@ const std::vector<std::string> Preprocessor::RUN_ORDER = {"InitInfo",
                                                           "WarpAffine",
                                                           "NormalizeImage",
                                                           "PadStride",
-                                                          "Permute"};
+                                                          "Permute",
+                                                          "Pad",};
 
 void Preprocessor::Run(cv::Mat* im, ImageBlob* data) {
   for (const auto& name : RUN_ORDER) {

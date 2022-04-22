@@ -161,6 +161,20 @@ class WarpAffine : public PreprocessOp {
   int pad_ = 31;
 };
 
+class Pad : public PreprocessOp {
+ public:
+  virtual void Init(const YAML::Node& item) {
+    size_ = item["size"].as<std::vector<int>>();
+    fill_value_ = item["fill_value"].as<std::vector<float>>();
+  }
+
+  virtual void Run(cv::Mat* im, ImageBlob* data);
+
+ private:
+  std::vector<int> size_;
+  std::vector<float> fill_value_;
+};
+
 void CropImg(cv::Mat& img,
              cv::Mat& crop_img,
              std::vector<int>& area,
@@ -203,6 +217,8 @@ class Preprocessor {
       return std::make_shared<TopDownEvalAffine>();
     } else if (name == "WarpAffine") {
       return std::make_shared<WarpAffine>();
+    }else if (name == "Pad") {
+      return std::make_shared<Pad>();
     }
     std::cerr << "can not find function of OP: " << name
               << " and return: nullptr" << std::endl;
