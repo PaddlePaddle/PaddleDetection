@@ -156,6 +156,12 @@ def argsparser():
         type=ast.literal_eval,
         default=False,
         help="Whether do random padding for action recognition.")
+    parser.add_argument(
+        "--save_results",
+        type=bool,
+        default=False,
+        help="Whether save detection result to file using coco format")
+
     return parser
 
 
