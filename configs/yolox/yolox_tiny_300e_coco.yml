@@ -52,8 +52,8 @@ TrainReader:
 EvalReader:
   sample_transforms:
     - Decode: {}
-    - Resize: {target_size: 416, keep_ratio: True}
-    - Pad: {size: 416, fill_value: [114., 114., 114.]}
+    - Resize: {target_size: [416, 416], keep_ratio: True, interp: 1}
+    - Pad: {size: [416, 416], fill_value: [114., 114., 114.]}
     - Permute: {}
   batch_size: 8
 
@@ -63,7 +63,7 @@ TestReader:
     image_shape: [3, 416, 416]
   sample_transforms:
     - Decode: {}
-    - Resize: {target_size: 416, keep_ratio: True}
-    - Pad: {size: 416, fill_value: [114., 114., 114.]}
+    - Resize: {target_size: [416, 416], keep_ratio: True, interp: 1}
+    - Pad: {size: [416, 416], fill_value: [114., 114., 114.]}
     - Permute: {}
   batch_size: 1
