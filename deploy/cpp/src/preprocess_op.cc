@@ -254,8 +254,8 @@ const std::vector<std::string> Preprocessor::RUN_ORDER = {"InitInfo",
                                                           "WarpAffine",
                                                           "NormalizeImage",
                                                           "PadStride",
-                                                          "Permute",
-                                                          "Pad",};
+                                                          "Pad",
+                                                          "Permute"};
 
 void Preprocessor::Run(cv::Mat* im, ImageBlob* data) {
   for (const auto& name : RUN_ORDER) {
