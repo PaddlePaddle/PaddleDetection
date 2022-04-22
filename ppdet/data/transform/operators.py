@@ -2202,7 +2202,7 @@ class AugmentHSV(BaseOperator):
         else:
             cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB, dst=img)
 
-        sample['image'] = img
+        sample['image'] = img.astype(np.float32)
         return sample
 
 
