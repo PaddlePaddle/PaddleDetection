@@ -193,7 +193,7 @@ void get_final_preds(std::vector<float>& heatmap,
     int px = int(coords[j * 2] + 0.5);
     int py = int(coords[j * 2 + 1] + 0.5);
 
-    if(DARK && px > 1 && px < heatmap_width - 2){
+    if(DARK && px > 1 && px < heatmap_width - 2 && py > 1 && py < heatmap_height - 2){
       dark_parse(heatmap, dim, coords, px, py, index, j);
     }
     else{
