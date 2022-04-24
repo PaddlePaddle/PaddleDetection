@@ -215,7 +215,7 @@ visualdl --logdir vdl_dir/scalar/
 |    --draw_threshold      |      infer     |  可视化时分数阈值  |  0.5  |  例如`--draw_threshold=0.7`  |
 |      --infer_dir         |       infer     |  用于预测的图片文件夹路径  |  None  |    `--infer_img`和`--infer_dir`必须至少设置一个 |
 |      --infer_img         |       infer     |  用于预测的图片路径  |  None  |  `--infer_img`和`--infer_dir`必须至少设置一个，`infer_img`具有更高优先级  |
-|      --save_txt          |       infer     |  是否在文件夹下将图片的预测结果保存到文本文件中        |  False  |  可选  |
+|      --save_results         |       infer     |  是否在文件夹下将图片的预测结果保存到文件中        |  False  |  可选  |
 
 
 ## 8 模型导出

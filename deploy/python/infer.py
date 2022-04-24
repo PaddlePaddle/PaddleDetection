@@ -15,6 +15,8 @@
 import os
 import yaml
 import glob
+import json
+from pathlib import Path
 from functools import reduce
 
 import cv2
@@ -31,16 +33,32 @@ sys.path.insert(0, parent_path)
 
 from benchmark_utils import PaddleInferBenchmark
 from picodet_postprocess import PicoDetPostProcess
-from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, decode_image
+from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, Pad, decode_image
 from keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
 from visualize import visualize_box_mask
 from utils import argsparser, Timer, get_current_memory_mb
 
 # Global dictionary
 SUPPORT_MODELS = {
-    'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
-    'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD',
-    'StrongBaseline', 'STGCN'
+    'YOLO',
+    'RCNN',
+    'SSD',
+    'Face',
+    'FCOS',
+    'SOLOv2',
+    'TTFNet',
+    'S2ANet',
+    'JDE',
+    'FairMOT',
+    'DeepSORT',
+    'GFL',
+    'PicoDet',
+    'CenterNet',
+    'TOOD',
+    'RetinaNet',
+    'StrongBaseline',
+    'STGCN',
+    'YOLOX',
 }
 
 
@@ -206,7 +224,8 @@ class Detector(object):
             for k, v in res.items():
                 results[k].append(v)
         for k, v in results.items():
-            results[k] = np.concatenate(v)
+            if k != 'masks':
+                results[k] = np.concatenate(v)
         return results
 
     def get_timer(self):
@@ -216,7 +235,8 @@ class Detector(object):
                       image_list,
                       run_benchmark=False,
                       repeats=1,
-                      visual=True):
+                      visual=True,
+                      save_file=None):
         batch_loop_cnt = math.ceil(float(len(image_list)) / self.batch_size)
         results = []
         for i in range(batch_loop_cnt):
@@ -276,6 +296,10 @@ class Detector(object):
             if visual:
                 print('Test iter {}'.format(i))
 
+        if save_file is not None:
+            Path(self.output_dir).mkdir(exist_ok=True)
+            self.format_coco_results(image_list, results, save_file=save_file)
+
         results = self.merge_batch_result(results)
         return results
 
@@ -319,6 +343,68 @@ class Detector(object):
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
         writer.release()
+
+    @staticmethod
+    def format_coco_results(image_list, results, save_file=None):
+        coco_results = []
+        image_id = 0
+
+        for result in results:
+            start_idx = 0
+            for box_num in result['boxes_num']:
+                idx_slice = slice(start_idx, start_idx + box_num)
+                start_idx += box_num
+
+                image_file = image_list[image_id]
+                image_id += 1
+
+                if 'boxes' in result:
+                    boxes = result['boxes'][idx_slice, :]
+                    per_result = [
+                        {
+                            'image_file': image_file,
+                            'bbox':
+                            [box[2], box[3], box[4] - box[2],
+                             box[5] - box[3]],  # xyxy -> xywh
+                            'score': box[1],
+                            'category_id': int(box[0]),
+                        } for k, box in enumerate(boxes.tolist())
+                    ]
+
+                elif 'segm' in result:
+                    import pycocotools.mask as mask_util
+
+                    scores = result['score'][idx_slice].tolist()
+                    category_ids = result['label'][idx_slice].tolist()
+                    segms = result['segm'][idx_slice, :]
+                    rles = [
+                        mask_util.encode(
+                            np.array(
+                                mask[:, :, np.newaxis],
+                                dtype=np.uint8,
+                                order='F'))[0] for mask in segms
+                    ]
+                    for rle in rles:
+                        rle['counts'] = rle['counts'].decode('utf-8')
+
+                    per_result = [{
+                        'image_file': image_file,
+                        'segmentation': rle,
+                        'score': scores[k],
+                        'category_id': category_ids[k],
+                    } for k, rle in enumerate(rles)]
+
+                else:
+                    raise RuntimeError('')
+
+                # per_result = [item for item in per_result if item['score'] > threshold]
+                coco_results.extend(per_result)
+
+        if save_file:
+            with open(os.path.join(save_file), 'w') as f:
+                json.dump(coco_results, f)
+
+        return coco_results
 
 
 class DetectorSOLOv2(Detector):
@@ -652,7 +738,7 @@ def load_predictor(model_dir,
     }
     if run_mode in precision_map.keys():
         config.enable_tensorrt_engine(
-            workspace_size=1 << 25,
+            workspace_size=(1 << 25) * batch_size,
             max_batch_size=batch_size,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[run_mode],
@@ -690,7 +776,7 @@ def get_test_images(infer_dir, infer_img):
     Get image path list in TEST mode
     """
     assert infer_img is not None or infer_dir is not None, \
-        "--infer_img or --infer_dir should be set"
+        "--image_file or --image_dir should be set"
     assert infer_img is None or os.path.isfile(infer_img), \
             "{} is not a file".format(infer_img)
     assert infer_dir is None or os.path.isdir(infer_dir), \
@@ -790,7 +876,10 @@ def main():
         if FLAGS.image_dir is None and FLAGS.image_file is not None:
             assert FLAGS.batch_size == 1, "batch_size should be 1, when image_file is not None"
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        detector.predict_image(img_list, FLAGS.run_benchmark, repeats=100)
+        save_file = os.path.join(FLAGS.output_dir,
+                                 'results.json') if FLAGS.save_results else None
+        detector.predict_image(
+            img_list, FLAGS.run_benchmark, repeats=100, save_file=save_file)
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)
         else:

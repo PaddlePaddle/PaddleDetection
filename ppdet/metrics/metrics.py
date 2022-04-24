@@ -22,6 +22,7 @@ import json
 import paddle
 import numpy as np
 import typing
+from pathlib import Path
 
 from .map_utils import prune_zero_padding, DetectionMAP
 from .coco_utils import get_infer_results, cocoapi_eval
@@ -32,13 +33,8 @@ from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'Metric',
-    'COCOMetric',
-    'VOCMetric',
-    'WiderFaceMetric',
-    'get_infer_results',
-    'RBoxMetric',
-    'SNIPERCOCOMetric'
+    'Metric', 'COCOMetric', 'VOCMetric', 'WiderFaceMetric', 'get_infer_results',
+    'RBoxMetric', 'SNIPERCOCOMetric'
 ]
 
 COCO_SIGMAS = np.array([
@@ -74,8 +70,6 @@ class Metric(paddle.metric.Metric):
 
 class COCOMetric(Metric):
     def __init__(self, anno_file, **kwargs):
-        assert os.path.isfile(anno_file), \
-                "anno_file {} not a file".format(anno_file)
         self.anno_file = anno_file
         self.clsid2catid = kwargs.get('clsid2catid', None)
         if self.clsid2catid is None:
@@ -86,6 +80,14 @@ class COCOMetric(Metric):
         self.bias = kwargs.get('bias', 0)
         self.save_prediction_only = kwargs.get('save_prediction_only', False)
         self.iou_type = kwargs.get('IouType', 'bbox')
+
+        if not self.save_prediction_only:
+            assert os.path.isfile(anno_file), \
+                    "anno_file {} not a file".format(anno_file)
+
+        if self.output_eval is not None:
+            Path(self.output_eval).mkdir(exist_ok=True)
+
         self.reset()
 
     def reset(self):
@@ -427,11 +429,13 @@ class SNIPERCOCOMetric(COCOMetric):
 
         self.chip_results.append(outs)
 
-
     def accumulate(self):
-        results = self.dataset.anno_cropper.aggregate_chips_detections(self.chip_results)
+        results = self.dataset.anno_cropper.aggregate_chips_detections(
+            self.chip_results)
         for outs in results:
-            infer_results = get_infer_results(outs, self.clsid2catid, bias=self.bias)
-            self.results['bbox'] += infer_results['bbox'] if 'bbox' in infer_results else []
+            infer_results = get_infer_results(
+                outs, self.clsid2catid, bias=self.bias)
+            self.results['bbox'] += infer_results[
+                'bbox'] if 'bbox' in infer_results else []
 
         super(SNIPERCOCOMetric, self).accumulate()

@@ -339,7 +339,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--img_path',
         type=str,
-        default='demo/000000014439.jpg',
+        default='../../../../demo/000000014439.jpg',
         help="image path")
     parser.add_argument(
         '--onnx_path',

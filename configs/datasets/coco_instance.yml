@@ -16,5 +16,5 @@ EvalDataset:
 
 TestDataset:
   !ImageFolder
-    anno_path: annotations/instances_val2017.json
-    dataset_dir: dataset/coco
+    anno_path: annotations/instances_val2017.json # also support txt (like VOC's label_list.txt)
+    dataset_dir: dataset/coco # if set, anno_path will be 'dataset_dir/anno_path'

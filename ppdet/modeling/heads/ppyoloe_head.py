@@ -23,6 +23,7 @@ from ..initializer import bias_init_with_prob, constant_, normal_
 from ..assigners.utils import generate_anchors_for_grid_cell
 from ppdet.modeling.backbones.cspresnet import ConvBNLayer
 from ppdet.modeling.ops import get_static_shape, paddle_distributed_is_initialized, get_act_fn
+from ppdet.modeling.layers import MultiClassNMS
 
 __all__ = ['PPYOLOEHead']
 
@@ -86,6 +87,8 @@ class PPYOLOEHead(nn.Layer):
         self.static_assigner = static_assigner
         self.assigner = assigner
         self.nms = nms
+        if isinstance(self.nms, MultiClassNMS) and trt:
+            self.nms.trt = trt
         self.exclude_nms = exclude_nms
         # stem
         self.stem_cls = nn.LayerList()
@@ -129,8 +132,8 @@ class PPYOLOEHead(nn.Layer):
 
         if self.eval_size:
             anchor_points, stride_tensor = self._generate_anchors()
-            self.register_buffer('anchor_points', anchor_points)
-            self.register_buffer('stride_tensor', stride_tensor)
+            self.anchor_points = anchor_points
+            self.stride_tensor = stride_tensor
 
     def forward_train(self, feats, targets):
         anchors, anchor_points, num_anchors_list, stride_tensor = \
@@ -290,7 +293,7 @@ class PPYOLOEHead(nn.Layer):
         else:
             loss_l1 = paddle.zeros([1])
             loss_iou = paddle.zeros([1])
-            loss_dfl = paddle.zeros([1])
+            loss_dfl = pred_dist.sum() * 0.
         return loss_l1, loss_iou, loss_dfl
 
     def get_loss(self, head_outs, gt_meta):

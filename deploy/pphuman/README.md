@@ -7,6 +7,8 @@ PP-Human是基于飞桨深度学习框架的业界首个开源的实时行人分
 
 PP-Human赋能社区智能精细化管理, AIStudio快速上手教程[链接](https://aistudio.baidu.com/aistudio/projectdetail/3679564)
 
+实时行人分析全流程实战, 覆盖训练、部署、动作类型扩展等内容，AIStudio项目请见[链接](https://aistudio.baidu.com/aistudio/projectdetail/3842982)
+
 ## 一、环境准备
 
 环境要求： PaddleDetection版本 >= release/2.4 或 develop版本
@@ -29,7 +31,8 @@ cd PaddleDetection
 pip install -r requirements.txt
 ```
 
-详细安装文档参考[文档](docs/tutorials/INSTALL_cn.md)
+1. 详细安装文档参考[文档](../../docs/tutorials/INSTALL_cn.md)
+2. 如果需要TensorRT推理加速（测速方式），请安装带`TensorRT版本Paddle`。您可以从[Paddle安装包](https://paddleinference.paddlepaddle.org.cn/v2.2/user_guides/download_lib.html#python)下载安装，或者按照[指导文档](https://www.paddlepaddle.org.cn/inference/master/optimize/paddle_trt.html)使用docker或自编译方式准备Paddle环境。
 
 ## 二、快速开始
 
@@ -44,7 +47,7 @@ PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模�
 | 属性识别    | 图片/视频输入 属性识别  | mA: 94.86 |  单人2ms     | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
 | 关键点检测    | 视频输入 行为识别 | AP: 87.1 | 单人2.9ms        | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
 | 行为识别   |  视频输入 行为识别  | 准确率: 96.43 |  单人2.7ms      | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
-| ReID         | 视频输入 跨镜跟踪   | mAP: 99.7 | -        | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
+| ReID         | 视频输入 跨镜跟踪   | mAP: 98.8 | 单人1.5ms        | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
 
 下载模型后，解压至`./output_inference`文件夹
 
@@ -93,21 +96,23 @@ ATTR:
 
 ```
 # 行人检测，指定配置文件路径和测试图片
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
 
 # 行人跟踪，指定配置文件路径和测试视频
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
 # 行人跟踪，指定配置文件路径，模型路径和测试视频
 # 命令行中指定的模型路径优先级高于配置文件
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
 
 # 行人属性识别，指定配置文件路径和测试视频
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True [--run_mode trt_fp16]
 
 # 行为识别，指定配置文件路径和测试视频
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True [--run_mode trt_fp16]
 
+# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
 ```
 
 其他用法请参考[子任务文档](./docs)

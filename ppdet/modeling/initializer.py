@@ -273,7 +273,8 @@ def linear_init_(module):
 def conv_init_(module):
     bound = 1 / np.sqrt(np.prod(module.weight.shape[1:]))
     uniform_(module.weight, -bound, bound)
-    uniform_(module.bias, -bound, bound)
+    if module.bias is not None:
+        uniform_(module.bias, -bound, bound)
 
 
 def bias_init_with_prob(prior_prob=0.01):
