@@ -86,12 +86,21 @@ Please refer to[GFL](https://github.com/PaddlePaddle/PaddleDetection/tree/develo
 
 Please refer to[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet)
 
+### PP-YOLOE
+
+Please refer to[PP-YOLOE](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe)
+
+### YOLOX
+
+Please refer to[YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolox)
+
 
 ## Rotating frame detection
 
 ### S2ANet
 
 Please refer to[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/)
+
 
 ## KeyPoint Detection
 
@@ -107,16 +116,21 @@ Please refer to [HRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/dev
 
 Please refer to [HigherHRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/higherhrnet)
 
+
 ## Multi-Object Tracking
 
-### DeepSort
+### DeepSORT
 
-Please refer to [DeepSort](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort)
+Please refer to [DeepSORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort)
 
 ### JDE
 
 Please refer to [JDE](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde)
 
-### fairmot 
+### FairMOT
 
-Please refer to [FairMot](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot)
+Please refer to [FairMOT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot)
+
+### ByteTrack
+
+Please refer to [ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/bytetrack)
