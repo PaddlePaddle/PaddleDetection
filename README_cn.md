@@ -138,6 +138,8 @@
             <li>YOLOv4</li>  
             <li>PP-YOLOv1/v2</li>
             <li>PP-YOLO-Tiny</li>
+            <li>PP-YOLOE</li>
+            <li>YOLOX</li>
             <li>SSD</li>
             <li>CornerNet-Squeeze</li>
             <li>FCOS</li>  
@@ -163,7 +165,7 @@
         <ul>
             <li>JDE</li>
             <li>FairMOT</li>
-            <li>DeepSort</li>
+            <li>DeepSORT</li>
         </ul>
         <li><b>KeyPoint-Detection</b></li>
         <ul>
@@ -243,6 +245,7 @@
           <li>Color Distort</li>  
           <li>Random Erasing</li>  
           <li>Mixup </li>
+          <li>AugmentHSV</li>
           <li>Mosaic</li>
           <li>Cutmix </li>
           <li>Grid Mask</li>
@@ -347,6 +350,7 @@
   - [DeepSORT](configs/mot/deepsort/README_cn.md)
   - [JDE](configs/mot/jde/README_cn.md)
   - [FairMOT](configs/mot/fairmot/README_cn.md)
+  - [ByteTrack](configs/mot/bytetrack/README.md)
 - 垂类领域
   - [行人检测](configs/pedestrian/README.md)
   - [车辆检测](configs/vehicle/README.md)
