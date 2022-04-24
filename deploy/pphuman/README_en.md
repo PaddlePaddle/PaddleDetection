@@ -5,6 +5,10 @@ English | [简体中文](README.md)
 PP-Human serves as the first open-source tool of real-time pedestrian anaylsis relying on the PaddlePaddle deep learning framework. Versatile and efficient in deployment, it has been used in various senarios. PP-Human
 offers many input options, including image/single-camera video/multi-camera video, and covers multi-object tracking, attribute recognition, and action recognition. PP-Human can be applied to intelligent traffic, the intelligent community, industiral patrol, and so on. It supports server-side deployment and TensorRT acceleration，and achieves real-time analysis on the T4 server.
 
+Community intelligent management supportted by PP-Human, please refer to this [AI Studio project](https://aistudio.baidu.com/aistudio/projectdetail/3679564) for quick start tutorial.
+
+Full-process operation tutorial of PP-Human, covering training, deployment, action expansion, please refer to this [AI Studio project](https://aistudio.baidu.com/aistudio/projectdetail/3842982).
+
 ## I. Environment Preparation
 
 Requirement: PaddleDetection version >= release/2.4 or develop
@@ -28,7 +32,8 @@ cd PaddleDetection
 pip install -r requirements.txt
 ```
 
-For details of the installation, please refer to this [document](docs/tutorials/INSTALL_cn.md)
+1. For details of the installation, please refer to this [document](../../docs/tutorials/INSTALL.md)
+2. Please install `Paddle-TensorRT` if your want speedup inference by TensorRT. You can download the whl package from [Paddle-whl-list](https://paddleinference.paddlepaddle.org.cn/v2.2/user_guides/download_lib.html#python), or prepare the envs by yourself follows the [Install-Guide](https://www.paddlepaddle.org.cn/inference/master/optimize/paddle_trt.html).
 
 ## II. Quick Start
 
@@ -91,23 +96,23 @@ ATTR:
 
 ```
 # Pedestrian detection. Specify the config file path and test images
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
 
 # Pedestrian tracking. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
 # Pedestrian tracking. Specify the config file path, the model path and test videos
 # The model path specified on the command line prioritizes over the config file
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
 
 # Attribute recognition. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True [--run_mode trt_fp16]
 
 # Action Recognition. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True [--run_mode trt_fp16]
 
-# Multi-Camera pedestrian tracking. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=test_video_dir/ --device=gpu
+# Pedestrian Multi-Target Multi-Camera tracking. Specify the config file path and the directory of test videos
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
 
 ```
 

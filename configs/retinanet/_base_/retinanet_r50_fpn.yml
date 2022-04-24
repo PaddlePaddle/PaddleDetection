@@ -22,10 +22,6 @@ FPN:
   use_c5: false
 
 RetinaHead:
-  num_classes: 80
-  prior_prob: 0.01
-  nms_pre: 1000
-  decode_reg_out: false
   conv_feat:
     name: RetinaFeat
     feat_in: 256
@@ -44,10 +40,6 @@ RetinaHead:
     positive_overlap: 0.5
     negative_overlap: 0.4
     allow_low_quality: true
-  bbox_coder:
-    name: DeltaBBoxCoder
-    norm_mean: [0.0, 0.0, 0.0, 0.0]
-    norm_std: [1.0, 1.0, 1.0, 1.0]
   loss_class:
     name: FocalLoss
     gamma: 2.0

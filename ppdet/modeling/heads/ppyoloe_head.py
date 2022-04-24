@@ -293,7 +293,7 @@ class PPYOLOEHead(nn.Layer):
         else:
             loss_l1 = paddle.zeros([1])
             loss_iou = paddle.zeros([1])
-            loss_dfl = paddle.zeros([1])
+            loss_dfl = pred_dist.sum() * 0.
         return loss_l1, loss_iou, loss_dfl
 
     def get_loss(self, head_outs, gt_meta):
