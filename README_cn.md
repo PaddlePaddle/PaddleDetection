@@ -31,6 +31,8 @@
         - 应用落地难点剖析与解决方案
         - 行人分析实战与Docker云上训练部署
 
+  🔥 **[课程回放链接](https://aistudio.baidu.com/aistudio/education/group/info/23670)**🔥
+
     赶紧扫码报名上车吧！!
 
     <div align="left">
@@ -42,9 +44,10 @@
 
 - 🔥 **2022.3.24：PaddleDetection发布[release/2.4版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)**
 
-  - 发布高精度云边一体SOTA目标检测模型[PP-YOLOE](configs/ppyoloe)，COCO数据集精度51.4%，V100预测速度78.1 FPS，支持混合精度训练，训练较PP-YOLOv2加速33%，全系列多尺度模型，满足不同硬件算力需求，可适配服务器、边缘端GPU及其他服务器端AI加速卡。
+  - 发布高精度云边一体SOTA目标检测模型[PP-YOLOE](configs/ppyoloe)，发布s/m/l/x版本，l版本COCO test2017数据集精度51.4%，V100预测速度78.1 FPS，支持混合精度训练，训练较PP-YOLOv2加速33%，全系列多尺度模型，满足不同硬件算力需求，可适配服务器、边缘端GPU及其他服务器端AI加速卡。
   - 发布边缘端和CPU端超轻量SOTA目标检测模型[PP-PicoDet增强版](configs/picodet)，精度提升2%左右，CPU预测速度提升63%，新增参数量0.7M的PicoDet-XS模型，提供模型稀疏化和量化功能，便于模型加速，各类硬件无需单独开发后处理模块，降低部署门槛。
   - 发布实时行人分析工具[PP-Human](deploy/pphuman)，支持行人跟踪、人流量统计、人体属性识别与摔倒检测四大能力，基于真实场景数据特殊优化，精准识别各类摔倒姿势，适应不同环境背景、光线及摄像角度。
+  - 新增[YOLOX](configs/yolox)目标检测模型，支持nano/tiny/s/m/l/x版本，x版本COCO val2017数据集精度51.8%。
 
 - 2021.11.03: PaddleDetection发布[release/2.3版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3)
 
@@ -135,6 +138,8 @@
             <li>YOLOv4</li>  
             <li>PP-YOLOv1/v2</li>
             <li>PP-YOLO-Tiny</li>
+            <li>PP-YOLOE</li>
+            <li>YOLOX</li>
             <li>SSD</li>
             <li>CornerNet-Squeeze</li>
             <li>FCOS</li>  
@@ -160,7 +165,7 @@
         <ul>
             <li>JDE</li>
             <li>FairMOT</li>
-            <li>DeepSort</li>
+            <li>DeepSORT</li>
         </ul>
         <li><b>KeyPoint-Detection</b></li>
         <ul>
@@ -240,6 +245,7 @@
           <li>Color Distort</li>  
           <li>Random Erasing</li>  
           <li>Mixup </li>
+          <li>AugmentHSV</li>
           <li>Mosaic</li>
           <li>Cutmix </li>
           <li>Grid Mask</li>
@@ -344,6 +350,7 @@
   - [DeepSORT](configs/mot/deepsort/README_cn.md)
   - [JDE](configs/mot/jde/README_cn.md)
   - [FairMOT](configs/mot/fairmot/README_cn.md)
+  - [ByteTrack](configs/mot/bytetrack/README.md)
 - 垂类领域
   - [行人检测](configs/pedestrian/README.md)
   - [车辆检测](configs/vehicle/README.md)
