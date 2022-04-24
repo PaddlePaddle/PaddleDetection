@@ -824,7 +824,7 @@ class Resize(BaseOperator):
             im_scale_x = resize_w / im_shape[1]
 
         im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
-        sample['image'] = im
+        sample['image'] = im.astype(np.float32)
         sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
         if 'scale_factor' in sample:
             scale_factor = sample['scale_factor']
@@ -2202,7 +2202,7 @@ class AugmentHSV(BaseOperator):
         else:
             cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB, dst=img)
 
-        sample['image'] = img
+        sample['image'] = img.astype(np.float32)
         return sample
 
 
@@ -3149,7 +3149,7 @@ class Mosaic(BaseOperator):
 
         # warpAffine
         img = cv2.warpAffine(
-            img, M, dsize=input_dim, borderValue=(114, 114, 114))
+            img, M, dsize=tuple(input_dim), borderValue=(114, 114, 114))
 
         num_gts = len(labels)
         if num_gts > 0:

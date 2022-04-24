@@ -77,10 +77,10 @@ def parse_args():
         default="vdl_log_dir/image",
         help='VisualDL logging directory for image.')
     parser.add_argument(
-        "--save_txt",
+        "--save_results",
         type=bool,
         default=False,
-        help="Whether to save inference result in txt.")
+        help="Whether to save inference results to output_dir.")
     args = parser.parse_args()
     return args
 
@@ -131,7 +131,7 @@ def run(FLAGS, cfg):
         images,
         draw_threshold=FLAGS.draw_threshold,
         output_dir=FLAGS.output_dir,
-        save_txt=FLAGS.save_txt)
+        save_results=FLAGS.save_results)
 
 
 def main():

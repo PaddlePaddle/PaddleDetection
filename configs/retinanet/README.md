@@ -1,20 +1,14 @@
-# Focal Loss for Dense Object Detection
-
-## Introduction
-
-We reproduce RetinaNet proposed in paper Focal Loss for Dense Object Detection.
+# RetinaNet (Focal Loss for Dense Object Detection)
 
 ## Model Zoo
 
-| Backbone     | Model     | mstrain | imgs/GPU | lr schedule | FPS | Box AP | download                                                                                                                                                                            | config                                |
-| ------------ | --------- | ------- | -------- | ----------- | --- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| ResNet50-FPN | RetinaNet | Yes     | 4        | 1x          | --- | 37.5   | [model](https://bj.bcebos.com/v1/paddledet/models/retinanet_r50_fpn_mstrain_1x_coco.pdparams)\|[log](https://bj.bcebos.com/v1/paddledet/logs/retinanet_r50_fpn_mstrain_1x_coco.log) | retinanet_r50_fpn_mstrain_1x_coco.yml |
-
+| Backbone     | Model     | imgs/GPU | lr schedule | FPS | Box AP | download   | config      |
+| ------------ | --------- | -------- | ----------- | --- | ------ | ---------- | ----------- |
+| ResNet50-FPN | RetinaNet | 2        | 1x          | --- | 37.5   | [model](https://bj.bcebos.com/v1/paddledet/models/retinanet_r50_fpn_1x_coco.pdparams) | [config](./retinanet_r50_fpn_1x_coco.yml) |
 **Notes:**
 
-- All above models are trained on COCO train2017 with 4 GPUs and evaludated on val2017. Box AP=`mAP(IoU=0.5:0.95)`.
+- All above models are trained on COCO train2017 with 8 GPUs and evaludated on val2017. Box AP=`mAP(IoU=0.5:0.95)`.
 
-- Config `configs/retinanet/retinanet_r50_fpn_1x_coco.yml` is for 8 GPUs and `configs/retinanet/retinanet_r50_fpn_mstrain_1x_coco.yml` is for 4 GPUs (mind the difference of train batch size).
 
 ## Citation
 
