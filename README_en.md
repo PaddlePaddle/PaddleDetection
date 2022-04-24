@@ -18,9 +18,10 @@ English | [简体中文](README_cn.md)
 
 - 🔥 **2022.3.24：PaddleDetection [release 2.4 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)**
 
-  - Release GPU SOTA object detection series models (s/m/l/x) [PP-YOLOE](configs/ppyoloe), achieving mAP as 51.4% on COCO test dataset and 78.1 FPS on Nvidia V100, supporting AMP training and its training speed is 33% faster than PP-YOLOv2.
+  - Release GPU SOTA object detection series models (s/m/l/x) [PP-YOLOE](configs/ppyoloe), supporting s/m/l/x version, achieving mAP as 51.4% on COCO test dataset and 78.1 FPS on Nvidia V100 by PP-YOLOE-l, supporting AMP training and its training speed is 33% faster than PP-YOLOv2.
   - Release enhanced models of [PP-PicoDet](configs/picodet), including PP-PicoDet-XS model with 0.7M parameters, its mAP promoted ~2% on COCO, inference speed accelerated 63% on CPU, and post-processing integrated into the network to optimize deployment pipeline.
   - Release real-time human analysis tool [PP-Human](deploy/pphuman), which is based on data from real-life situations, supporting pedestrian detection, attribute recognition, human tracking, multi-camera tracking, human statistics and action recognition.
+  - Release [YOLOX](configs/yolox), supporting nano/tiny/s/m/l/x version, achieving mAP as 51.8% on COCO val dataset by YOLOX-x.
 
 - 2021.11.03: Release [release/2.3](https://github.com/PaddlePaddle/Paddleetection/tree/release/2.3) version. Release mobile object detection model ⚡[PP-PicoDet](configs/picodet), mobile keypoint detection model ⚡[PP-TinyPose](configs/keypoint/tiny_pose)，Real-time tracking system [PP-Tracking](deploy/pptracking). Release object detection models, including [Swin-Transformer](configs/faster_rcnn), [TOOD](configs/tood), [GFL](configs/gfl), release [Sniper](configs/sniper) tiny object detection models and optimized [PP-YOLO-EB](configs/ppyolo) model for EdgeBoard. Release mobile keypoint detection model [Lite HRNet](configs/keypoint).
 
