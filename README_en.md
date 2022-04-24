@@ -108,6 +108,8 @@ PaddleDetection is an end-to-end object detection development kit based on Paddl
             <li>YOLOv4</li>  
             <li>PP-YOLOv1/v2</li>
             <li>PP-YOLO-Tiny</li>
+            <li>PP-YOLOE</li>
+            <li>YOLOX</li>
             <li>SSD</li>
             <li>CornerNet-Squeeze</li>
             <li>FCOS</li>  
@@ -133,7 +135,7 @@ PaddleDetection is an end-to-end object detection development kit based on Paddl
         <ul>
             <li>JDE</li>
             <li>FairMOT</li>
-            <li>DeepSort</li>
+            <li>DeepSORT</li>
         </ul>
         <li><b>KeyPoint-Detection</b></li>
         <ul>
@@ -214,6 +216,7 @@ PaddleDetection is an end-to-end object detection development kit based on Paddl
           <li>Random Erasing</li>  
           <li>Mixup </li>
           <li>Mosaic</li>
+          <li>AugmentHSV</li>
           <li>Cutmix </li>
           <li>Grid Mask</li>
           <li>Auto Augment</li>  
@@ -320,6 +323,7 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
   - [DeepSORT](configs/mot/deepsort/README.md)
   - [JDE](configs/mot/jde/README.md)
   - [FairMOT](configs/mot/fairmot/README.md)
+  - [ByteTrack](configs/mot/bytetrack/README.md)
 - Vertical field
   - [Face detection](configs/face_detection/README_en.md)
   - [Pedestrian detection](configs/pedestrian/README.md)
