@@ -321,6 +321,8 @@ def res2dict(multi_res):
         for tid, res in c_res.items():
             key = "c" + str(cid) + "_t" + str(tid)
             if key not in cid_tid_dict:
+                if len(res["rects"]) < 10:
+                    continue
                 cid_tid_dict[key] = res
                 cid_tid_dict[key]['mean_feat'] = distill_idfeat(res)
     return cid_tid_dict
