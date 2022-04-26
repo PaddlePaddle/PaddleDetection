@@ -3,7 +3,7 @@ model_name:fairmot_dla34_30e_1088x608
 python:python3.7
 gpu_list:0|0,1
 use_gpu:True
-auto_cast:null
+auto_cast:amp
 epoch:lite_train_lite_infer=1|lite_train_whole_infer=1|whole_train_whole_infer=30
 save_dir:null
 TrainReader.batch_size:lite_train_lite_infer=2|lite_train_whole_infer=2|whole_train_whole_infer=6
@@ -49,11 +49,3 @@ inference:./deploy/pptracking/python/mot_jde_infer.py
 --save_log_path:null
 --run_benchmark:False
 --trt_max_shape:1600
-===========================train_benchmark_params==========================
-batch_size:6|22
-fp_items:fp32|fp16
-epoch:1
---profiler_options:batch_range=[10,20];state=GPU;tracer_option=Default;profile_path=model.profile
-flags:null
-===========================infer_benchmark_params===========================
-numpy_infer_input:3x608x1088.npy

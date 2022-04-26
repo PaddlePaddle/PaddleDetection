@@ -191,7 +191,7 @@ for infer_mode in ${cpp_infer_mode_list[*]}; do
     fi
     set_export_weight=$(func_set_params "${export_weight_key}" "${export_weight_value}")
     set_save_export_dir=$(func_set_params "${save_export_key}" "${save_export_value}")
-    set_filename=$(func_set_params "${filename_key}" "${filename_value}")
+    set_filename=$(func_set_params "${filename_key}" "${model_name}")
     export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
     echo  $export_cmd
     eval $export_cmd
@@ -199,7 +199,7 @@ for infer_mode in ${cpp_infer_mode_list[*]}; do
     status_check $status_export "${export_cmd}" "${status_log}"
 
     #run inference
-    save_export_model_dir="${save_export_value}/${filename_value}"
+    save_export_model_dir="${save_export_value}/${model_name}"
     is_quant=${infer_quant_flag[Count]}
     func_cpp_inference "${inference_cmd}" "${save_export_model_dir}" "${LOG_PATH}" "${cpp_infer_img_dir}" ${is_quant}
     Count=$(($Count + 1))
