@@ -7,17 +7,19 @@ English | [简体中文](README_cn.md)
 
 ****A High-Efficient Development Toolkit for Object Detection based on [PaddlePaddle](https://github.com/paddlepaddle/paddle).****
 
-[![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/github/release/PaddlePaddle/PaddleDetection.svg)](https://github.com/PaddlePaddle/PaddleDetection/releases)
-![python version](https://img.shields.io/badge/python-3.6+-orange.svg)
-![support os](https://img.shields.io/badge/os-linux%2C%20win%2C%20mac-yellow.svg)
+<p align="center">
+    <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202-dfd.svg"></a>
+    <a href="https://github.com/PaddlePaddle/PaddleDetection/releases"><img src="https://img.shields.io/github/v/release/PaddlePaddle/PaddleDetection?color=ffa"></a>
+    <a href=""><img src="https://img.shields.io/badge/python-3.7+-aff.svg"></a>
+    <a href=""><img src="https://img.shields.io/badge/os-linux%2C%20win%2C%20mac-pink.svg"></a>
+    <a href="https://github.com/PaddlePaddle/PaddleDetection/stargazers"><img src="https://img.shields.io/github/stars/PaddlePaddle/PaddleDetection?color=ccf"></a>
 
 </div>
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> Latest News
 
 - 🔥 **2022.3.24：PaddleDetection [release 2.4 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)**
-
+  
   - Release GPU SOTA object detection series models (s/m/l/x) [PP-YOLOE](configs/ppyoloe), supporting s/m/l/x version, achieving mAP as 51.4% on COCO test dataset and 78.1 FPS on Nvidia V100 by PP-YOLOE-l, supporting AMP training and its training speed is 33% faster than PP-YOLOv2.
   - Release enhanced models of [PP-PicoDet](configs/picodet), including PP-PicoDet-XS model with 0.7M parameters, its mAP promoted ~2% on COCO, inference speed accelerated 63% on CPU, and post-processing integrated into the network to optimize deployment pipeline.
   - Release real-time human analysis tool [PP-Human](deploy/pphuman), which is based on data from real-life situations, supporting pedestrian detection, attribute recognition, human tracking, multi-camera tracking, human statistics and action recognition.
@@ -31,7 +33,7 @@ English | [简体中文](README_cn.md)
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157795569-9fc77c85-732f-4870-9be0-99a7fe2cff27.png" alt="" width="20"> Introduction
 
-PaddleDetection is an end-to-end object detection development kit based on PaddlePaddle, which implements varied mainstream object detection, instance segmentation, tracking and keypoint detection algorithms in modular designwhich with configurable modules such as network components, data augmentations and losses, and release many kinds SOTA industry practice models, integrates abilities of model compression and cross-platform high-performance deployment, aims to help developers in the whole end-to-end development in a faster and better way.
+PaddleDetection is an end-to-end object detection development kit based on PaddlePaddle, which implements varied mainstream object detection, instance segmentation, tracking and keypoint detection algorithms in modular design with configurable modules such as network components, data augmentations and losses. It releases many kinds SOTA industry practice models and integrates abilities of model compression and cross-platform high-performance deployment to help developers in the whole process with a faster and better way.
 
 #### PaddleDetection provides image processing capabilities such as object detection, instance segmentation, multi-object tracking, keypoint detection and etc.
 
@@ -48,19 +50,19 @@ PaddleDetection is an end-to-end object detection development kit based on Paddl
 ## <img src="https://user-images.githubusercontent.com/48054808/157799599-e6a66855-bac6-4e75-b9c0-96e13cb9612f.png" width="20"/> Features
 
 - **Rich Models**
-
+  
   PaddleDetection provides rich of models, including **250+ pre-trained models** such as **object detection**, **instance segmentation**, **face detection**, **keypoint detection**, **multi-object tracking** and etc, covering a variety of **global competition champion** schemes.
 
 - **Highly Flexible**
-
+  
   Components are designed to be modular. Model architectures, as well as data preprocess pipelines and optimization strategies, can be easily customized with simple configuration changes.
 
 - **Production Ready**
-
+  
   From data augmentation, constructing models, training, compression, depolyment, get through end to end, and complete support for multi-architecture, multi-device deployment for **cloud and edge device**.
 
 - **High Performance**
-
+  
   Based on the high performance core of PaddlePaddle, advantages of training speed and memory occupation are obvious. FP16 training and multi-machine training are supported as well.
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157800467-2a9946ad-30d1-49a9-b9db-ba33413d9c90.png" alt="" width="20"> Community
@@ -68,7 +70,7 @@ PaddleDetection is an end-to-end object detection development kit based on Paddl
 - If you have any problem or suggestion on PaddleDetection, please send us issues through [GitHub Issues](https://github.com/PaddlePaddle/PaddleDetection/issues).
 
 - Welcome to Join PaddleDetection QQ Group and Wechat Group (reply "Det").
-
+  
   <div align="center">
   <img src="https://user-images.githubusercontent.com/48054808/157800129-2f9a0b72-6bb8-4b10-8310-93ab1639253f.jpg"  width = "200" />  
   <img src="https://user-images.githubusercontent.com/48054808/160531099-9811bbe6-cfbb-47d5-8bdb-c2b40684d7dd.png"  width = "200" />  
@@ -247,7 +249,9 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 - `PP-YOLO` achieves mAP of 45.9% on COCO and 72.9FPS on Tesla V100. Both precision and speed surpass [YOLOv4](https://arxiv.org/abs/2004.10934)
 
 - `PP-YOLO v2` is optimized version of `PP-YOLO` which has mAP of 49.5% and 68.9FPS on Tesla V100
+
 - `PP-YOLOE` is optimized version of `PP-YOLO v2` which has mAP of 51.4% and 78.1FPS on Tesla V100
+
 - All these models can be get in [Model Zoo](#ModelZoo)
 
 The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of representative mobile side models.
@@ -265,23 +269,23 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
 
 ### Get Started
 
-- [Installation guide](docs/tutorials/INSTALL.md)
-- [Prepare dataset](docs/tutorials/PrepareDataSet_en.md)
-- [Quick start on PaddleDetection](docs/tutorials/GETTING_STARTED.md)
+- [Installation Guide](docs/tutorials/INSTALL.md)
+- [Prepare Dataset](docs/tutorials/PrepareDataSet_en.md)
+- [Quick Start on PaddleDetection](docs/tutorials/GETTING_STARTED.md)
 
 ### Advanced Tutorials
 
-- Parameter configuration
-
+- Parameter Configuration
+  
   - [Parameter configuration for RCNN model](docs/tutorials/config_annotation/faster_rcnn_r50_fpn_1x_coco_annotation_en.md)
   - [Parameter configuration for PP-YOLO model](docs/tutorials/config_annotation/ppyolo_r50vd_dcn_1x_coco_annotation_en.md)
 
 - Model Compression(Based on [PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim))
-
+  
   - [Prune/Quant/Distill](configs/slim)
 
-- Inference and deployment
-
+- Inference and Deployment
+  
   - [Export model for inference](deploy/EXPORT_MODEL_en.md)
   - [Paddle Inference](deploy/README_en.md)
     - [Python inference](deploy/python)
@@ -292,14 +296,14 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
   - [Inference benchmark](deploy/BENCHMARK_INFER_en.md)
   - [Exporting to ONNX and using OpenVINO for inference](docs/advanced_tutorials/openvino_inference/README.md)
 
-- Advanced development
-
+- Advanced Development
+  
   - [New data augmentations](docs/advanced_tutorials/READER_en.md)
   - [New detection algorithms](docs/advanced_tutorials/MODEL_TECHNICAL.md)
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157829890-a535b8a6-631c-4c87-b861-64d4b32b2d6a.png" width="20"/> Model Zoo
 
-- Universal object detection
+- General Object Detection
   - [Model library and baselines](docs/MODEL_ZOO_cn.md)
   - [PP-YOLOE](configs/ppyoloe/README_cn.md)
   - [PP-YOLO](configs/ppyolo/README.md)
@@ -309,27 +313,28 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
   - [676 classes of object detection](static/docs/featured_model/LARGE_SCALE_DET_MODEL_en.md)
   - [Two-stage practical PSS-Det](configs/rcnn_enhance/README_en.md)
   - [SSLD pretrained models](docs/feature_models/SSLD_PRETRAINED_MODEL_en.md)
-- Universal instance segmentation
+- General Instance Segmentation
   - [SOLOv2](configs/solov2/README.md)
-- Rotation object detection
+- Rotated Object Detection
   - [S2ANet](configs/dota/README_en.md)
-- [Keypoint detection](configs/keypoint)
+- [Keypoint Detection](configs/keypoint)
   - [PP-TinyPose](configs/keypoint/tiny_pose)
   - HigherHRNet
   - HRNet
   - LiteHRNet
 - [Multi-Object Tracking](configs/mot/README.md)
-  - [PP-Tracking](deploy/pptracking/README.md)
+  - [PP-Tracking](deploy/pptracking/README_en.md)
   - [DeepSORT](configs/mot/deepsort/README.md)
   - [JDE](configs/mot/jde/README.md)
   - [FairMOT](configs/mot/fairmot/README.md)
   - [ByteTrack](configs/mot/bytetrack/README.md)
-- Vertical field
+- Practical Specific Models
   - [Face detection](configs/face_detection/README_en.md)
   - [Pedestrian detection](configs/pedestrian/README.md)
   - [Vehicle detection](configs/vehicle/README.md)
+- Scienario Solution
   - [Real-Time Human Analysis Tool PP-Human](deploy/pphuman)
-- Competition Plan
+- Competition Solution
   - [Objects365 2019 Challenge champion model](static/docs/featured_model/champion_model/CACascadeRCNN_en.md)
   - [Best single model of Open Images 2019-Object Detection](static/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL_en.md)
 
