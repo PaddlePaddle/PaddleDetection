@@ -7,50 +7,26 @@
 
 **飞桨目标检测开发套件，端到端地完成从训练到部署的全流程目标检测应用。**
 
-[![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/github/release/PaddlePaddle/PaddleDetection.svg)](https://github.com/PaddlePaddle/PaddleDetection/releases)
-![python version](https://img.shields.io/badge/python-3.6+-orange.svg)
-![support os](https://img.shields.io/badge/os-linux%2C%20win%2C%20mac-yellow.svg)
-
+<p align="center">
+    <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202-dfd.svg"></a>
+    <a href="https://github.com/PaddlePaddle/PaddleDetection/releases"><img src="https://img.shields.io/github/v/release/PaddlePaddle/PaddleDetection?color=ffa"></a>
+    <a href=""><img src="https://img.shields.io/badge/python-3.7+-aff.svg"></a>
+    <a href=""><img src="https://img.shields.io/badge/os-linux%2C%20win%2C%20mac-pink.svg"></a>
+    <a href="https://github.com/PaddlePaddle/PaddleDetection/stargazers"><img src="https://img.shields.io/github/stars/PaddlePaddle/PaddleDetection?color=ccf"></a>
+</p>
 </div>
-
-
-## 热门活动
-
-- 🔥 **2022.4.19-21每晚8：30【产业级目标检测技术与应用】三日直播课** 🔥
-    - **19日：超强目标检测算法矩阵**
-        - 超越YOLOv5的高精度服务端算法PP-YOLOE
-        - 0.7M超超轻量级端侧算法PP-PicoDet增强版
-        - 行人/车辆/人脸检测等预训练模型开箱即用
-    - **20日：实时行人分析系统PP-Human**
-        - 行人相关重点行业场景剖析及技术拆解
-        - 实时多目标跟踪算法深度解析
-        - 毫秒级属性分析/异常行为识别应用落地
-    - **21日：目标检测产业应用全流程拆解与实践**
-        - 智能检测行业经典场景分析
-        - 应用落地难点剖析与解决方案
-        - 行人分析实战与Docker云上训练部署
-
-  🔥 **[课程回放链接](https://aistudio.baidu.com/aistudio/education/group/info/23670)**🔥
-
-    赶紧扫码报名上车吧！!
-
-    <div align="left">
-  <img src="https://user-images.githubusercontent.com/22989727/163531601-d33d2284-952f-4d8d-b59b-21ebf2c4e845.jpg" width=200/>
-</div>
-
-
+  
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> 产品动态
 
 - 🔥 **2022.3.24：PaddleDetection发布[release/2.4版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)**
-
+  
   - 发布高精度云边一体SOTA目标检测模型[PP-YOLOE](configs/ppyoloe)，发布s/m/l/x版本，l版本COCO test2017数据集精度51.4%，V100预测速度78.1 FPS，支持混合精度训练，训练较PP-YOLOv2加速33%，全系列多尺度模型，满足不同硬件算力需求，可适配服务器、边缘端GPU及其他服务器端AI加速卡。
   - 发布边缘端和CPU端超轻量SOTA目标检测模型[PP-PicoDet增强版](configs/picodet)，精度提升2%左右，CPU预测速度提升63%，新增参数量0.7M的PicoDet-XS模型，提供模型稀疏化和量化功能，便于模型加速，各类硬件无需单独开发后处理模块，降低部署门槛。
   - 发布实时行人分析工具[PP-Human](deploy/pphuman)，支持行人跟踪、人流量统计、人体属性识别与摔倒检测四大能力，基于真实场景数据特殊优化，精准识别各类摔倒姿势，适应不同环境背景、光线及摄像角度。
   - 新增[YOLOX](configs/yolox)目标检测模型，支持nano/tiny/s/m/l/x版本，x版本COCO val2017数据集精度51.8%。
 
 - 2021.11.03: PaddleDetection发布[release/2.3版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3)
-
+  
   - 发布轻量级检测特色模型⚡[PP-PicoDet](configs/picodet)，0.99m的参数量可实现精度30+mAP、速度150FPS。
   - 发布轻量级关键点特色模型⚡[PP-TinyPose](configs/keypoint/tiny_pose)，单人场景FP16推理可达122FPS、51.8AP，具有精度高速度快、检测人数无限制、微小目标效果好的优势。
   - 发布实时跟踪系统[PP-Tracking](deploy/pptracking)，覆盖单、多镜头下行人、车辆、多类别跟踪，对小目标、密集型特殊优化，提供人、车流量技术解决方案。
@@ -59,13 +35,13 @@
   - 新增轻量化关键点模型[Lite HRNet](configs/keypoint)关键点模型并支持Paddle Lite部署。
 
 - 2021.08.10: PaddleDetection发布[release/2.2版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2)
-
+  
   - 发布Transformer检测系列模型，包括[DETR](configs/detr), [Deformable DETR](configs/deformable_detr), [Sparse RCNN](configs/sparse_rcnn)。
   - 新增Dark HRNet关键点模型和MPII数据集[关键点模型](configs/keypoint)
   - 新增[人头](configs/mot/headtracking21)、[车辆](configs/mot/vehicle)跟踪垂类模型。
 
 - 2021.05.20: PaddleDetection发布[release/2.1版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1)
-
+  
   - 新增[关键点检测](configs/keypoint)，模型包括HigherHRNet，HRNet。
   - 新增[多目标跟踪](configs/mot)能力，模型包括DeepSORT，JDE，FairMOT。
   - 发布PPYOLO系列模型压缩模型，新增[ONNX模型导出教程](deploy/EXPORT_ONNX_MODEL.md)。
@@ -97,8 +73,8 @@
 
 - 如果你发现任何PaddleDetection存在的问题或者是建议, 欢迎通过[GitHub Issues](https://github.com/PaddlePaddle/PaddleDetection/issues)给我们提issues。
 
-- 欢迎加入PaddleDetection QQ、微信（添加并回复小助手“检测”）用户群
-
+- 欢迎加入PaddleDetection QQ、微信用户群（添加并回复小助手“检测”）
+  
   <div align="center">
   <img src="https://user-images.githubusercontent.com/48054808/157800129-2f9a0b72-6bb8-4b10-8310-93ab1639253f.jpg"  width = "200" />  
   <img src="https://user-images.githubusercontent.com/48054808/160531099-9811bbe6-cfbb-47d5-8bdb-c2b40684d7dd.png"  width = "200" />  
@@ -300,16 +276,16 @@
 ### 进阶教程
 
 - 参数配置
-
+  
   - [RCNN参数说明](docs/tutorials/config_annotation/faster_rcnn_r50_fpn_1x_coco_annotation.md)
   - [PP-YOLO参数说明](docs/tutorials/config_annotation/ppyolo_r50vd_dcn_1x_coco_annotation.md)
 
 - 模型压缩(基于[PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim))
-
+  
   - [剪裁/量化/蒸馏教程](configs/slim)
 
 - [推理部署](deploy/README.md)
-
+  
   - [模型导出教程](deploy/EXPORT_MODEL.md)
   - [Paddle Inference部署](deploy/README.md)
     - [Python端推理部署](deploy/python)
@@ -320,9 +296,27 @@
   - [推理benchmark](deploy/BENCHMARK_INFER.md)
 
 - 进阶开发
-
+  
   - [数据处理模块](docs/advanced_tutorials/READER.md)
   - [新增检测模型](docs/advanced_tutorials/MODEL_TECHNICAL.md)
+
+### 课程专栏
+
+- **2022.4.19 [产业级目标检测技术与应用](https://aistudio.baidu.com/aistudio/education/group/info/23670)三日课：** 超强目标检测算法矩阵、实时行人分析系统PP-Human、目标检测产业应用全流程拆解与实践
+
+- **2022.3.26 [智慧城市行业](https://aistudio.baidu.com/aistudio/education/group/info/25620)七日课：** 城市规划、城市治理、智慧政务、交通管理、社区治理
+
+### 产业实践范例教程
+
+- [基于PP-PicoDet的通信塔识别及Android端部署](https://aistudio.baidu.com/aistudio/projectdetail/3561097)
+
+- [基于Faster-RCNN的瓷砖表面瑕疵检测](https://aistudio.baidu.com/aistudio/projectdetail/2571419)
+
+- [基于PaddleDetection的PCB瑕疵检测](https://aistudio.baidu.com/aistudio/projectdetail/2367089)
+
+- [基于FairMOT实现人流量统计](https://aistudio.baidu.com/aistudio/projectdetail/2421822)
+
+- [基于YOLOv3实现跌倒检测 ](https://aistudio.baidu.com/aistudio/projectdetail/2500639)
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157829890-a535b8a6-631c-4c87-b861-64d4b32b2d6a.png" width="20"/> 模型库
 
@@ -346,7 +340,7 @@
   - HRNet
   - LiteHRNet
 - [多目标跟踪](configs/mot/README.md)
-  - [PP-Tracking](deploy/pptracking/README.md)
+  - [PP-Tracking](deploy/pptracking/README_cn.md)
   - [DeepSORT](configs/mot/deepsort/README_cn.md)
   - [JDE](configs/mot/jde/README_cn.md)
   - [FairMOT](configs/mot/fairmot/README_cn.md)
@@ -355,7 +349,8 @@
   - [行人检测](configs/pedestrian/README.md)
   - [车辆检测](configs/vehicle/README.md)
   - [人脸检测](configs/face_detection/README.md)
-  - [实时行人分析](deploy/pphuman/README.md)
+- 场景化工具
+  - [实时行人分析工具PP-Human](deploy/pphuman/README.md)
 - 比赛冠军方案
   - [Objects365 2019 Challenge夺冠模型](static/docs/featured_model/champion_model/CACascadeRCNN.md)
   - [Open Images 2019-Object Detction比赛最佳单模型](static/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
