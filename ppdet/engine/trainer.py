@@ -64,9 +64,10 @@ class Trainer(object):
 
         # build data loader
         if cfg.architecture in MOT_ARCH and self.mode in ['eval', 'test']:
-            self.dataset = cfg['{}MOTDataset'.format(self.mode.capitalize())]
+            self.dataset = create('{}MOTDataset'.format(self.mode.capitalize(
+            )))()
         else:
-            self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
+            self.dataset = create('{}Dataset'.format(self.mode.capitalize()))()
 
         if cfg.architecture == 'DeepSORT' and self.mode == 'train':
             logger.error('DeepSORT has no need of training on mot dataset.')
