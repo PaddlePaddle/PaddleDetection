@@ -4,14 +4,14 @@ num_classes: 1
 # Detection Dataset for training
 TrainDataset:
   !COCODataSet
-    image_dir: ""
+    image_dir: images/train
     anno_path: annotations/train.json
     dataset_dir: dataset/mot/HT21
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
-    image_dir: ""
+    image_dir: images/train
     anno_path: annotations/val_half.json
     dataset_dir: dataset/mot/HT21
 

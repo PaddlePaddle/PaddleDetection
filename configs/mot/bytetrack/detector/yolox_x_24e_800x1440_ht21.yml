@@ -1,6 +1,6 @@
 # This config is an assembled config for ByteTrack MOT, used as eval/infer mode for MOT.
 _BASE_: [
-  '../../../yolox/yolox_x_coco_300e.yml',
+  '../../../yolox/yolox_x_300e_coco.yml',
   '../_base_/ht21.yml',
 ]
 weights: output/yolox_x_24e_800x1440_ht21/model_final
@@ -31,7 +31,7 @@ OptimizerBuilder:
 
 TrainReader:
   batch_size: 4
-  mixup_epoch: 20
+  mosaic_epoch: 20
 
 # detector configuration
 architecture: YOLOX

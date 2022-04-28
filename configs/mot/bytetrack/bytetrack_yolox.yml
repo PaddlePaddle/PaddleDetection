@@ -1,7 +1,7 @@
 # This config is an assembled config for ByteTrack MOT, used as eval/infer mode for MOT.
 _BASE_: [
-  'detector/yolox_x_24e_800x1440_mix_mot_ch.yml',
-  '_base_/mix_mot_ch.yml',
+  'detector/yolox_x_24e_800x1440_mix_det.yml',
+  '_base_/mix_det.yml',
   '_base_/yolox_mot_reader_800x1440.yml'
 ]
 weights: output/bytetrack_yolox/model_final
@@ -17,7 +17,7 @@ ByteTrack:
   detector: YOLOX
   reid: None
   tracker: JDETracker
-det_weights: https://bj.bcebos.com/v1/paddledet/models/mot/yolox_x_24e_800x1440_mix_mot_ch.pdparams
+det_weights: https://bj.bcebos.com/v1/paddledet/models/mot/yolox_x_24e_800x1440_mix_det.pdparams
 reid_weights: None
 
 depth_mult: 1.33

@@ -25,7 +25,7 @@
 **注意:**
  - FairMOT DLA-34使用2个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
  - ByteTrack使用YOLOX-x做检测器，使用8个GPU进行训练，每个GPU上batch size为8，训练30个epoch，具体细节参照[bytetrack](../bytetrack/)。
- - 此处提供PaddleDetection团队整理后的[下载链接](https://bj.bcebos.com/v1/paddledet/data/mot/HT21.zip)，HT-21 Test集的结果需要交到[官网](https://motchallenge.net)评测。
+ - 此处提供PaddleDetection团队整理后的[下载链接](https://bj.bcebos.com/v1/paddledet/data/mot/HT21.zip)，下载后需解压放到`dataset/mot/`目录下，HT-21 Test集的结果需要交到[官网](https://motchallenge.net)评测。
 
 
 ## 快速开始
