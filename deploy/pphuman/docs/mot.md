@@ -32,9 +32,9 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
-                                                   --model_dir det=ppyoloe/
                                                    --do_entrance_counting \
-                                                   --draw_center_traj
+                                                   --draw_center_traj \
+                                                   --model_dir det=ppyoloe/
 
 ```
 **注意:**
