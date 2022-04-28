@@ -16,7 +16,7 @@ TrainDataset:
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
-    data_root: HT21/images/test
+    data_root: HT21/images/train
     keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
 
 # for MOT video inference

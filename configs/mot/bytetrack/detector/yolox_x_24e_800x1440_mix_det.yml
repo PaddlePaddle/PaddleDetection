@@ -1,9 +1,9 @@
 # This config is an assembled config for ByteTrack MOT, used as eval/infer mode for MOT.
 _BASE_: [
   '../../../yolox/yolox_x_coco_300e.yml',
-  '../_base_/mix_mot_ch.yml',
+  '../_base_/mix_det.yml',
 ]
-weights: output/yolox_x_24e_800x1440_mix_mot_ch/model_final
+weights: output/yolox_x_24e_800x1440_mix_det/model_final
 log_iter: 20
 snapshot_epoch: 2
 

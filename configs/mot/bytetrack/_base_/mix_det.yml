@@ -6,7 +6,7 @@ TrainDataset:
   !COCODataSet
     image_dir: ""
     anno_path: annotations/train.json
-    dataset_dir: dataset/mot/mix_mot_ch
+    dataset_dir: dataset/mot/mix_det
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
