@@ -50,7 +50,8 @@ PaddleDetection 关键点检测能力紧跟业内最新最优算法方案，包�
 | [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [HRNet-w32](./hrnet/hrnet_w32_256x192.yml) | 检测：640x640<br>关键点：256x192 | 检测mAP：49.5<br>关键点AP：76.9 | 检测：54.6<br/>关键点：28.6 | 检测：115.8<br/>关键点：7.68 | [检测](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[关键点](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams) |
 
 
-##  模型库
+## 模型库
+
 COCO数据集
 | 模型              |  方案              |输入尺寸 | AP(coco val) |                           模型下载                           | 配置文件 |  
 | :---------------- | -------- | :----------: | :----------------------------------------------------------: | ----------------------------------------------------| ------- |
@@ -75,12 +76,12 @@ MPII数据集
 | :---- | ---|----- | :--------: | :------------: | :----------------------------------------------------------: | -------------------------------------------- |
 | HRNet-w32 | Top-Down|256x256  |    90.6    |      38.5      | [hrnet_w32_256x256_mpii.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x256_mpii.pdparams) | [config](./hrnet/hrnet_w32_256x256_mpii.yml) |
 
+场景模型
+| 模型 | 方案 | 输入尺寸 | 精度 | 预测速度 |模型权重 | 部署模型 | 说明|
+| :---- | ---|----- | :--------: | :--------: | :------------: |:------------: |:-------------------: |
+| HRNet-w32 + DarkPose | Top-Down|256x192  |  AP: 87.1 (业务数据集)| 单人2.9ms |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) | 针对摔倒场景特别优化，该模型应用于[PP-Human](../../deploy/pphuman/README.md) |
 
 我们同时推出了基于LiteHRNet（Top-Down）针对移动端设备优化的实时关键点检测模型[PP-TinyPose](./tiny_pose/README.md), 欢迎体验。
-| 模型  | 输入尺寸 | AP (COCO Val) | 单人推理耗时 (FP32)| 单人推理耗时（FP16) | 配置文件 | 模型权重 | 预测部署模型 | Paddle-Lite部署模型（FP32) | Paddle-Lite部署模型（FP16)|
-| :------------------------ | :-------:  | :------: | :------: |:---: | :---: | :---: | :---: | :---: | :---: |
-| PP-TinyPose | 128*96 | 58.1 | 4.57ms | 3.27ms | [Config](./tinypose_128x96.yml) |[Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
-| PP-TinyPose | 256*192 | 68.8 | 14.07ms | 8.33ms | [Config](./tinypose_256x192.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
 
 ## 快速开始
 

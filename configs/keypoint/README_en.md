@@ -82,6 +82,12 @@ MPII Dataset
 | HRNet-w32 | 256x256  |    90.6    |      38.5      | [hrnet_w32_256x256_mpii.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x256_mpii.pdparams) | [config](./hrnet/hrnet_w32_256x256_mpii.yml) |
 
 
+Model for Scenes
+| Model | Strategy | Input Size | Precision | Inference Speed |Model Weights | Model Inference and Deployment | description|
+| :---- | ---|----- | :--------: | :-------: |:------------: |:------------: |:-------------------: |
+| HRNet-w32 + DarkPose | Top-Down|256x192  |  AP: 87.1 (on internal dataset)| 2.9ms per person |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) | Especially optimized for fall scenarios, the model is applied to [PP-Human](../../deploy/pphuman/README_en.md) |
+
+
 We also release [PP-TinyPose](./tiny_pose/README_en.md), a real-time keypoint detection model optimized for mobile devices. Welcome to experience.
 
 ## Getting Start
