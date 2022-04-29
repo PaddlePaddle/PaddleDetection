@@ -27,9 +27,9 @@
 
 ## Introduction
 
-The keypoint detection part in PaddleDetection follows the state-of-the-art algorithm closely, including Top-Down and Bottom-Up methods, which can satisfy the different needs of users. 
+The keypoint detection part in PaddleDetection follows the state-of-the-art algorithm closely, including Top-Down and Bottom-Up methods, which can satisfy the different needs of users.
 
-Top-Down detects the object first and then detect the specific keypoint. The accuracy of Top-Down models will be higher, but the time required will increase by the number of objects. 
+Top-Down detects the object first and then detect the specific keypoint. The accuracy of Top-Down models will be higher, but the time required will increase by the number of objects.
 
 
 Differently, Bottom-Up detects the point first and then group or connect those points to form several instances of human pose. The speed of Bottom-Up is fixed and will not increase by the number of objects, but the accuracy will be lower.
@@ -88,6 +88,13 @@ MPII Dataset
 | Model  | Input Size | PCKh(Mean) | PCKh(Mean@0.1) |                           Model Download                           | Config File                                     |
 | :---- | -------- | :--------: | :------------: | :----------------------------------------------------------: | -------------------------------------------- |
 | HRNet-w32 | 256x256  |    90.6    |      38.5      | [hrnet_w32_256x256_mpii.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x256_mpii.pdparams) | [config](./hrnet/hrnet_w32_256x256_mpii.yml) |
+
+
+Model for Scenes
+| Model | Strategy | Input Size | Precision | Inference Speed |Model Weights | Model Inference and Deployment | description|
+| :---- | ---|----- | :--------: | :-------: |:------------: |:------------: |:-------------------: |
+| HRNet-w32 + DarkPose | Top-Down|256x192  |  AP: 87.1 (on internal dataset)| 2.9ms per person |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) | Especially optimized for fall scenarios, the model is applied to [PP-Human](../../deploy/pphuman/README_en.md) |
+
 
 We also release [PP-TinyPose](./tiny_pose/README_en.md), a real-time keypoint detection model optimized for mobile devices. Welcome to experience.
 
@@ -154,8 +161,7 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/keypoint/higherhrnet/hi
 
 ```shell
 #Export Detection Model
-
-python tools/export_model.py -c configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams 
+python tools/export_model.py -c configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams
 
 
 #Export Keypoint Model

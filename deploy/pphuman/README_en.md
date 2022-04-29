@@ -41,13 +41,14 @@ pip install -r requirements.txt
 
 To make users have access to models of different scenarios, PP-Human provides pre-trained models of object detection, attribute recognition， behavior recognition, and ReID.
 
-| Task            | Scenario | Precision | Inference Speed（FPS） | Model Inference and Deployment |
-| :---------:     |:---------:     |:---------------     | :-------:  | :------:      |
-| Object Detection        | Image/Video Input | mAP: 56.3  | 28.0ms           | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| Attribute Recognition    | Image/Video Input  Attribute Recognition | MOTA: 72.0 |  33.1ms       | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
-| Keypoint Detection    | Video Input  Action Recognition | mA: 94.86 | 2ms per person        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
-| Behavior Recognition   |  Video Input  Bheavior Recognition  | Precision 96.43 |  2.7ms per person          | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
-| ReID         | Multi-Target Multi-Camera Tracking   | mAP: 98.8 | 1.5ms per person    | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
+| Task            | Scenario | Precision | Inference Speed（FPS） | Model Weights |Model Inference and Deployment |
+| :---------:     |:---------:     |:---------------     | :-------:  | :------:      | :------:      |
+| Object Detection        | Image/Video Input | mAP: 56.3  | 28.0ms           |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| Object Tracking       | Image/Video Input | MOTA: 72.0  | 33.1ms           |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| Attribute Recognition    | Image/Video Input  Attribute Recognition | mA: 94.86 |  2ms per person       | - |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
+| Keypoint Detection    | Video Input  Action Recognition | AP: 87.1 | 2.9ms per person        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
+| Action Recognition   |  Video Input  Action Recognition  | Precision 96.43 |  2.7ms per person          | - |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
+| ReID         | Multi-Target Multi-Camera Tracking   | mAP: 98.8 | 1.5ms per person    | - |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
 
 Then, unzip the downloaded model to the folder `./output_inference`.
 
