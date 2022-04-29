@@ -53,33 +53,6 @@ PaddleDetection 关键点检测能力紧跟业内最新最优算法方案，包�
 | [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [HRNet-w32](./hrnet/hrnet_w32_384x288.yml) | 检测：640x640<br>关键点：384x288 | 检测mAP：49.5<br>关键点AP：77.8 | 检测：54.6<br/>关键点：28.6 | 检测：115.8<br/>关键点：17.3 | [检测](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[关键点](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams) |
 | [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [HRNet-w32](./hrnet/hrnet_w32_256x192.yml) | 检测：640x640<br>关键点：256x192 | 检测mAP：49.5<br>关键点AP：76.9 | 检测：54.6<br/>关键点：28.6 | 检测：115.8<br/>关键点：7.68 | [检测](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[关键点](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams) |
 
-*详细关于PP-TinyPose的使用请参考[文档]((./tiny_pose/README.md))。
-
-
-### 服务端模型推荐
-
-| 检测模型                                                                                                                          | 关键点模型                                      | 输入尺寸                      | COCO数据集精度                | 模型权重                                                                                                                                                                    |
-|:----------------------------------------------------------------------------------------------------------------------------- |:------------------------------------------ |:-------------------------:|:------------------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
-| [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [HRNet-w32](./hrnet/hrnet_w32_384x288.yml) | 检测：640x640<br>关键点：384x288 | 检测mAP：49.5<br>关键点AP：77.8 | [检测](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[关键点](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams) |
-| [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [HRNet-w32](./hrnet/hrnet_w32_256x192.yml) | 检测：640x640<br>关键点：256x192 | 检测mAP：49.5<br>关键点AP：76.9 | [检测](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[关键点](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams) |
-
-## 模型库
-
-COCO数据集
-| 模型              |  方案              |输入尺寸 | AP(coco val) |                           模型下载                           | 配置文件 |  
-| :---------------- | -------- | :----------: | :----------------------------------------------------------: | ----------------------------------------------------| ------- |
-| HigherHRNet-w32       |Bottom-Up| 512      |     67.1     | [higherhrnet_hrnet_w32_512.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_512.yml)       |
-| HigherHRNet-w32       | Bottom-Up| 640      |     68.3     | [higherhrnet_hrnet_w32_640.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_640.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_640.yml)       |
-| HigherHRNet-w32+SWAHR |Bottom-Up|  512      |     68.9     | [higherhrnet_hrnet_w32_512_swahr.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512_swahr.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_512_swahr.yml) |
-| HRNet-w32             | Top-Down| 256x192  |     76.9     | [hrnet_w32_256x192.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams) | [config](./hrnet/hrnet_w32_256x192.yml)                     |
-| HRNet-w32             |Top-Down| 384x288  |     77.8     | [hrnet_w32_384x288.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams) | [config](./hrnet/hrnet_w32_384x288.yml)                     |
-| HRNet-w32+DarkPose             |Top-Down| 256x192  |     78.0     | [dark_hrnet_w32_256x192.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/dark_hrnet_w32_256x192.pdparams) | [config](./hrnet/dark_hrnet_w32_256x192.yml)                     |
-| HRNet-w32+DarkPose             |Top-Down| 384x288  |     78.3     | [dark_hrnet_w32_384x288.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/dark_hrnet_w32_384x288.pdparams) | [config](./hrnet/dark_hrnet_w32_384x288.yml)                     |
-| WiderNaiveHRNet-18         | Top-Down|256x192  |     67.6(+DARK 68.4)     | [wider_naive_hrnet_18_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/wider_naive_hrnet_18_256x192_coco.pdparams) | [config](./lite_hrnet/wider_naive_hrnet_18_256x192_coco.yml)     |
-| LiteHRNet-18                   |Top-Down| 256x192  |     66.5     | [lite_hrnet_18_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_18_256x192_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_18_256x192_coco.yml)     |
-| LiteHRNet-18                   |Top-Down| 384x288  |     69.7     | [lite_hrnet_18_384x288_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_18_384x288_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_18_384x288_coco.yml)     |
-| LiteHRNet-30                   | Top-Down|256x192  |     69.4     | [lite_hrnet_30_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_256x192_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_256x192_coco.yml)     |
-| LiteHRNet-30                   |Top-Down| 384x288  |     72.5     | [lite_hrnet_30_384x288_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_384x288_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_384x288_coco.yml)     |
 
 ## 模型库
 
@@ -179,7 +152,6 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/keypoint/higherhrnet/hi
 
 ```shell
 #导出检测模型
-
 python tools/export_model.py -c configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams
 
 #导出关键点模型
