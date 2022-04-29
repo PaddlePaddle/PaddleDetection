@@ -46,7 +46,7 @@ from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 from ppdet.utils import profiler
 
-from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator
+from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback
 from .export_utils import _dump_infer_config, _prune_input_spec
 
 from ppdet.utils.logger import setup_logger
@@ -182,6 +182,8 @@ class Trainer(object):
                 self._callbacks.append(VisualDLWriter(self))
             if self.cfg.get('save_proposals', False):
                 self._callbacks.append(SniperProposalsGenerator(self))
+            if self.cfg.get('use_wandb', True) or 'wandb' in self.cfg:
+                self._callbacks.append(WandbCallback(self))
             self._compose_callback = ComposeCallback(self._callbacks)
         elif self.mode == 'eval':
             self._callbacks = [LogPrinter(self)]
