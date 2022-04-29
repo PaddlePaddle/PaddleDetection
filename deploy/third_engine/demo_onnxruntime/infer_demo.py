@@ -38,8 +38,12 @@ class PicoDet():
         so = ort.SessionOptions()
         so.log_severity_level = 3
         self.net = ort.InferenceSession(model_pb_path, so)
-        self.input_shape = (self.net.get_inputs()[0].shape[2],
-                            self.net.get_inputs()[0].shape[3])
+        inputs_name = [a.name for a in self.net.get_inputs()]
+        inputs_shape = {
+            k: v.shape
+            for k, v in zip(inputs_name, self.net.get_inputs())
+        }
+        self.input_shape = inputs_shape['image'][2:]
 
     def _normalize(self, img):
         img = img.astype(np.float32)
@@ -51,6 +55,8 @@ class PicoDet():
         origin_shape = srcimg.shape[:2]
         im_scale_y = newh / float(origin_shape[0])
         im_scale_x = neww / float(origin_shape[1])
+        img_shape = np.array([[float(origin_shape[0]), float(origin_shape[1])]
+                              ]).astype('float32')
         scale_factor = np.array([[im_scale_y, im_scale_x]]).astype('float32')
 
         if keep_ratio and srcimg.shape[0] != srcimg.shape[1]:
@@ -87,7 +93,7 @@ class PicoDet():
             img = cv2.resize(
                 srcimg, self.input_shape, interpolation=cv2.INTER_AREA)
 
-        return img, scale_factor
+        return img, img_shape, scale_factor
 
     def get_color_map_list(self, num_classes):
         color_map = num_classes * [0, 0, 0]
@@ -104,15 +110,20 @@ class PicoDet():
         return color_map
 
     def detect(self, srcimg):
-        img, scale_factor = self.resize_image(srcimg)
+        img, im_shape, scale_factor = self.resize_image(srcimg)
         img = self._normalize(img)
 
         blob = np.expand_dims(np.transpose(img, (2, 0, 1)), axis=0)
 
-        outs = self.net.run(None, {
-            self.net.get_inputs()[0].name: blob,
-            self.net.get_inputs()[1].name: scale_factor
-        })
+        inputs_dict = {
+            'im_shape': im_shape,
+            'image': blob,
+            'scale_factor': scale_factor
+        }
+        inputs_name = [a.name for a in self.net.get_inputs()]
+        net_inputs = {k: inputs_dict[k] for k in inputs_name}
+
+        outs = self.net.run(None, net_inputs)
 
         outs = np.array(outs[0])
         expect_boxes = (outs[:, 1] > 0.5) & (outs[:, 0] > -1)
@@ -181,7 +192,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "--img_fold", dest="img_fold", type=str, default="./imgs")
     parser.add_argument(
-        "--result_fold", dest="result_fold", type=str, default="./results")
+        "--result_fold", dest="result_fold", type=str, default="results")
     args = parser.parse_args()
 
     net = PicoDet(
@@ -191,3 +202,6 @@ if __name__ == '__main__':
         iou_threshold=args.nmsThreshold)
 
     net.detect_folder(args.img_fold, args.result_fold)
+    print(
+        f'infer results in ./deploy/third_engine/demo_onnxruntime/{args.result_fold}'
+    )
