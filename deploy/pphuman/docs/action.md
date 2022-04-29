@@ -1,3 +1,5 @@
+[English](action_en.md) | 简体中文
+
 # PP-Human行为识别模块
 
 行为识别在智慧社区，安防监控等方向具有广泛应用，PP-Human中集成了基于骨骼点的行为识别模块。
@@ -10,11 +12,11 @@
 ## 模型库
 在这里，我们提供了检测/跟踪、关键点识别以及识别摔倒动作的预训练模型，用户可以直接下载使用。
 
-| 任务 | 算法 | 精度 | 预测速度(ms) | 下载链接 |
-|:---------------------|:---------:|:------:|:------:| :---------------------------------------------------------------------------------: |
-| 行人检测/跟踪 |  PP-YOLOE | mAP: 56.3 <br> MOTA: 72.0 | 检测: 28ms <br> 跟踪：33.1ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 关键点识别 | HRNet | AP: 87.1 | 单人 2.9ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)|
-| 行为识别 |  ST-GCN  | 准确率: 96.43 | 单人 2.7ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
+| 任务 | 算法 | 精度 | 预测速度(ms) | 模型权重 | 预测部署模型 |
+|:---------------------|:---------:|:------:|:------:| :------: |:---------------------------------------------------------------------------------: |
+| 行人检测/跟踪 |  PP-YOLOE | mAP: 56.3 <br> MOTA: 72.0 | 检测: 28ms <br> 跟踪：33.1ms |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 关键点识别 | HRNet | AP: 87.1 | 单人 2.9ms |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)|
+| 行为识别 |  ST-GCN  | 准确率: 96.43 | 单人 2.7ms | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
 
 
 注：
