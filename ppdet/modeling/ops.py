@@ -280,7 +280,7 @@ def roi_align(input,
             rois_num = paddle.static.data(name='rois_num', shape=[None], dtype='int32')
             align_out = ops.roi_align(input=x,
                                                rois=rois,
-                                               ouput_size=(7, 7),
+                                               output_size=(7, 7),
                                                spatial_scale=0.5,
                                                sampling_ratio=-1,
                                                rois_num=rois_num)
