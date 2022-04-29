@@ -4,7 +4,7 @@ source test_tipc/utils_func.sh
 FILENAME=$1
 # MODE be one of ['lite_train_lite_infer' 'lite_train_whole_infer'
 #                 'whole_train_whole_infer', 'whole_infer', 'klquant_whole_infer',
-#                 'cpp_infer', 'serving_infer',  'lite_infer']
+#                 'cpp_infer', 'serving_infer',  'lite_infer', 'paddle2onnx_infer']
 MODE=$2
 
 # parse params
@@ -67,6 +67,10 @@ elif [ ${MODE} = "benchmark_train" ];then
     wget -nc -P ./dataset/mot/ https://paddledet.bj.bcebos.com/data/mot_benchmark.tar
     cd ./dataset/mot/ && tar -xvf mot_benchmark.tar && mv -u mot_benchmark/* .
     rm -rf mot_benchmark/ && cd ../../
+elif [ ${MODE} = "paddle2onnx_infer" ];then
+    # set paddle2onnx_infer enve
+    ${python} -m pip install install paddle2onnx
+    ${python} -m pip install onnxruntime==1.10.0
 else
     # download coco lite data
     wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/tipc/coco_tipc.tar
