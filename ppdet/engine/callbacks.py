@@ -15,7 +15,6 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from ast import alias
 
 import os
 import sys
@@ -432,6 +431,9 @@ class WandbCallback(Callback):
                                 ap=self.best_ap,
                                 tags=tags
                             )
+    
+    def on_train_end(self, status):
+        self.run.finish()
 
 
 class SniperProposalsGenerator(Callback):
