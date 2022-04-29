@@ -232,9 +232,9 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco_lcnet/ \
 | Paddle Lite |  -    |  [C++](../../deploy/lite) | ✔︎ |
 | Android Demo |  -  |  [Paddle Lite](https://github.com/PaddlePaddle/Paddle-Lite-Demo/tree/develop/object_detection/android/app/cxx/picodet_detection_demo) | ✔︎ |
 | PaddleInference | [Python](../../deploy/python) |  [C++](../../deploy/cpp) | ✔︎ |
-| ONNXRuntime  | [Python](../../deploy/third_engine/demo_onnxruntime) | Comming soon | ✔︎ |
-| NCNN |  Comming soon  | [C++](../../deploy/third_engine/demo_ncnn) | ✘ |
-| MNN  | Comming soon | [C++](../../deploy/third_engine/demo_mnn) |  ✘ |
+| ONNXRuntime  | [Python](../../deploy/third_engine/demo_onnxruntime) | Coming soon | ✔︎ |
+| NCNN |  Coming soon  | [C++](../../deploy/third_engine/demo_ncnn) | ✘ |
+| MNN  | Coming soon | [C++](../../deploy/third_engine/demo_mnn) |  ✘ |
 
 
 

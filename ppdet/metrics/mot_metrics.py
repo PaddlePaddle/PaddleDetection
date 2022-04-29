@@ -557,7 +557,7 @@ class KITTIEvaluation(object):
                             "track ids are not unique for sequence %d: frame %d"
                             % (seq, t_data.frame))
                         logger.info(
-                            "track id %d occured at least twice for this frame"
+                            "track id %d occurred at least twice for this frame"
                             % t_data.track_id)
                         logger.info("Exiting...")
                         #continue # this allows to evaluate non-unique result files
