@@ -81,7 +81,6 @@ def parse_args():
         type=bool,
         default=False,
         help="whether to record the data to wandb.")
-    )
     parser.add_argument(
         '--save_prediction_only',
         action='store_true',
