@@ -1,3 +1,5 @@
+English | [简体中文](mot.md)
+
 # Detection and Tracking Module of PP-Human
 
 Pedestrian detection and tracking is widely used in the intelligent community, industrial inspection, transportation monitoring and so on. PP-Human has the detection and tracking module, which is fundamental to keypoint detection, attribute action recognition, etc. Users enjoy easy access to pretrained models here.
