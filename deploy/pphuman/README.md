@@ -40,14 +40,14 @@ pip install -r requirements.txt
 
 PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模型，以实现不同使用场景，用户可以直接下载使用
 
-| 任务            | 适用场景 | 精度 | 预测速度（ms） | 预测部署模型 |
-| :---------:     |:---------:     |:---------------     | :-------:  | :------:      |
-| 目标检测        | 图片输入 | mAP: 56.3  | 28.0ms          | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 目标跟踪        | 视频输入 | MOTA: 72.0  | 33.1ms           | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 属性识别    | 图片/视频输入 属性识别  | mA: 94.86 |  单人2ms     | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
-| 关键点检测    | 视频输入 行为识别 | AP: 87.1 | 单人2.9ms        | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
-| 行为识别   |  视频输入 行为识别  | 准确率: 96.43 |  单人2.7ms      | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
-| ReID         | 视频输入 跨镜跟踪   | mAP: 98.8 | 单人1.5ms        | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
+| 任务            | 适用场景 | 精度 | 预测速度（ms） | 模型权重 | 预测部署模型 |
+| :---------:     |:---------:     |:---------------     | :-------:  |  :------:      | :------:      |
+| 目标检测        | 图片输入 | mAP: 56.3  | 28.0ms          |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 目标跟踪        | 视频输入 | MOTA: 72.0  | 33.1ms           |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 属性识别    | 图片/视频输入 属性识别  | mA: 94.86 |  单人2ms     | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
+| 关键点检测    | 视频输入 行为识别 | AP: 87.1 | 单人2.9ms        |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
+| 行为识别   |  视频输入 行为识别  | 准确率: 96.43 |  单人2.7ms      | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
+| ReID         | 视频输入 跨镜跟踪   | mAP: 98.8 | 单人1.5ms        | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
 
 下载模型后，解压至`./output_inference`文件夹
 
