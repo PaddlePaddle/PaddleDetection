@@ -50,8 +50,6 @@ PaddleDetection 关键点检测能力紧跟业内最新最优算法方案，包�
 | [PP-YOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [HRNet-w32](./hrnet/hrnet_w32_256x192.yml) | 检测：640x640<br>关键点：256x192 | 检测mAP：49.5<br>关键点AP：76.9 | 检测：54.6<br/>关键点：28.6 | 检测：115.8<br/>关键点：7.68 | [检测](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams)<br>[关键点](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams) |
 
 
-## 模型库
-
 ##  模型库
 COCO数据集
 | 模型              |  方案              |输入尺寸 | AP(coco val) |                           模型下载                           | 配置文件 |  
