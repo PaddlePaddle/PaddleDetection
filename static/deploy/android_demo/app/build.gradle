@@ -65,7 +65,7 @@ def archives = [
                 'src' : 'https://paddlelite-demo.bj.bcebos.com/models/yolov3_mobilenet_v3_prune86_FPGM_320_fp32_for_hybrid_cpu_npu_v2_6_1.tar.gz',
                 'dest' : 'src/main/assets/models/yolov3_mobilenet_v3_for_hybrid_cpu_npu'
         ],
-        // pp-yolo tiny comming soon
+        // pp-yolo tiny coming soon
         // ssd_mobilenet_v1 voc
         [
                 'src' : 'https://paddlelite-demo.bj.bcebos.com/models/ssdlite_mobilenet_v3_large_for_cpu_nb.tar.gz',
