@@ -529,7 +529,7 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
     Generate FairMOT targets by ground truth data.
     Difference between Gt2FairMOTTarget and Gt2TTFTarget are:
         1. the gaussian kernal radius to generate a heatmap.
-        2. the targets needed during traing.
+        2. the targets needed during training.
     
     Args:
         num_classes(int): the number of classes.
