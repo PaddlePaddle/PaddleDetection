@@ -372,8 +372,6 @@ class WandbCallback(Callback):
                     "train/" + k: v for k,v in training_status.items()
                 }
                 self.run.log(metrics)
-            elif mode == 'test':
-                pass
     
     def on_epoch_end(self, status):
         mode = status['mode']
