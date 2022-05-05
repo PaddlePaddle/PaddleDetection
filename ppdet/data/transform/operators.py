@@ -1054,7 +1054,7 @@ class CropWithSampling(BaseOperator):
            [max sample, max trial, min scale, max scale,
             min aspect ratio, max aspect ratio,
             min overlap, max overlap]
-            avoid_no_bbox (bool): whether to to avoid the
+            avoid_no_bbox (bool): whether to avoid the
                                   situation where the box does not appear.
         """
         super(CropWithSampling, self).__init__()
@@ -1145,7 +1145,7 @@ class CropWithDataAchorSampling(BaseOperator):
             das_anchor_scales (list[float]): a list of anchor scales in data
                 anchor smapling.
             min_size (float): minimum size of sampled bbox.
-            avoid_no_bbox (bool): whether to to avoid the
+            avoid_no_bbox (bool): whether to avoid the
                                   situation where the box does not appear.
         """
         super(CropWithDataAchorSampling, self).__init__()

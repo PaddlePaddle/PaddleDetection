@@ -537,8 +537,9 @@ class PipePredictor(object):
                     self.pipe_timer.total_time.end()
                 if self.cfg['visual']:
                     _, _, fps = self.pipe_timer.get_total_time()
-                    im = self.visualize_video(frame, mot_res, frame_id,
-                                              fps)  # visualize
+                    im = self.visualize_video(frame, mot_res, frame_id, fps,
+                                              entrance, records,
+                                              center_traj)  # visualize
                     writer.write(im)
                     if self.file_name is None:  # use camera_id
                         cv2.imshow('PPHuman', im)
