@@ -1,3 +1,5 @@
+English | [简体中文](action.md)
+
 # Action Recognition Module of PP-Human
 
 Action Recognition is widely used in the intelligent community/smart city, and security monitoring. PP-Human provides the module of skeleton-based action recognition.
@@ -12,11 +14,11 @@ used for academic research here. </center>
 
 There are multiple available pretrained models including pedestrian detection/tracking, keypoint detection, and fall detection models. Users can download and use them directly.
 
-| Task                          | Algorithm | Precision                 | Inference Speed(ms)                 | Download Link                                                                             |
-|:----------------------------- |:---------:|:-------------------------:|:-----------------------------------:|:-----------------------------------------------------------------------------------------:|
-| Pedestrian Detection/Tracking | PP-YOLOE  | mAP: 56.3 <br> MOTA: 72.0 | Detection: 28ms <br>Tracking：33.1ms | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| Keypoint Detection            | HRNet     | AP: 87.1                  | Single Person 2.9ms                 | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)     |
-| Action Recognition            | ST-GCN    | Precision Rate: 96.43     | Single Person 2.7ms                 | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip)                      |
+| Task                          | Algorithm | Precision                 | Inference Speed(ms)                 | Model Weights |Model Inference and Deployment                                                                             |
+|:----------------------------- |:---------:|:-------------------------:|:-----------------------------------:| :-----------------:  |:-----------------------------------------------------------------------------------------:|
+| Pedestrian Detection/Tracking | PP-YOLOE  | mAP: 56.3 <br> MOTA: 72.0 | Detection: 28ms <br>Tracking：33.1ms |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| Keypoint Detection            | HRNet     | AP: 87.1                  | Single Person 2.9ms                 |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)     |
+| Action Recognition            | ST-GCN    | Precision Rate: 96.43     | Single Person 2.7ms                 | - |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip)                      |
 
 Note:
 

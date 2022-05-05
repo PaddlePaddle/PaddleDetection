@@ -116,7 +116,7 @@ class JDETracker(object):
 
         Return:
             output_stracks_dict (dict(list)): The list contains information
-                regarding the online_tracklets for the recieved image tensor.
+                regarding the online_tracklets for the received image tensor.
         """
         self.frame_id += 1
         if self.frame_id == 1:

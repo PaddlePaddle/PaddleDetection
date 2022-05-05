@@ -198,7 +198,7 @@ class SparseRCNNLoss(nn.Layer):
         # Retrieve the matching between the outputs of the last layer and the targets
         indices = self.matcher(outputs_without_aux, targets)
 
-        # Compute the average number of target boxes accross all nodes, for normalization purposes
+        # Compute the average number of target boxes across all nodes, for normalization purposes
         num_boxes = sum(len(t["labels"]) for t in targets)
         num_boxes = paddle.to_tensor(
             [num_boxes],

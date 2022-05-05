@@ -89,9 +89,9 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid
 wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/mot17_demo.mp4
 
 # 用导出的PPYOLOv2行人检测模型和PPLCNet ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyolov2_r50vd_dcn_365e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyolov2_r50vd_dcn_365e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
 # 或用导出的PPYOLOe行人检测模型和PPLCNet ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
 ```
 
 ### 2.3 用导出的模型基于Python去预测车辆跟踪
@@ -108,10 +108,10 @@ wget https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet_vehicl
 tar -xvf deepsort_pplcnet_vehicle.tar
 
 # 用导出的PicoDet车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --tracker_config=tracker_config.yml --device=GPU --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --tracker_config=deploy/pptracking/python/tracker_config.yml --device=GPU --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
 
 # 用导出的PP-YOLOv2车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --tracker_config=tracker_config.yml --device=GPU --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --tracker_config=deploy/pptracking/python/tracker_config.yml --device=GPU --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
 ```
 
 **注意:**
@@ -135,10 +135,10 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/dete
 wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/mot17_demo.mp4
 
 # 用导出的PPYOLOe行人检测模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --tracker_config=tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
 
 # 用导出的PPYOLOe行人检测模型和PPLCNet ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
 ```
 **注意:**
  - ByteTrack模型是加载导出的检测器和单独配置的`--tracker_config`文件运行的，为了实时跟踪所以不需要reid模型，`--reid_model_dir`表示reid导出模型的路径，默认为空，加不加具体视效果而定；

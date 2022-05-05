@@ -89,7 +89,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid
 ### 4. 用导出的模型基于Python去预测
 
 ```bash
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --tracker_config=tracker_config.yml --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
 ```
 **注意:**
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_mot_txt_per_img`(对每张图片保存一个txt)表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
