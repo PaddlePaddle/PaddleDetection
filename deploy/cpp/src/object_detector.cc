@@ -213,10 +213,6 @@ void ObjectDetector::Postprocess(
     cv::Mat raw_mat = mats[im_id];
     int rh = 1;
     int rw = 1;
-    if (config_.arch_ == "Face") {
-      rh = raw_mat.rows;
-      rw = raw_mat.cols;
-    }
     for (int j = start_idx; j < start_idx + bbox_num[im_id]; j++) {
       if (is_rbox) {
         // Class id
