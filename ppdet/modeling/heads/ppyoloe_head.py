@@ -111,6 +111,7 @@ class PPYOLOEHead(nn.Layer):
                     in_c, 4 * (self.reg_max + 1), 3, padding=1))
         # projection conv
         self.proj_conv = nn.Conv2D(self.reg_max + 1, 1, 1, bias_attr=False)
+        self.proj_conv.skip_quant = True
         self._init_weights()
 
     @classmethod
