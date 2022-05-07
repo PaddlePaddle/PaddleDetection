@@ -126,8 +126,8 @@ python tools/export_model.py -c configs/{MODEL.yml} --slim_config configs/slim/{
 
 | 模型               | 压缩策略     | 输入尺寸 |  模型体积(MB) | 预测时延(V100) | 预测时延(SD855) |  Box AP    |                  下载         |   Inference模型下载    |            模型配置文件                  |                     压缩算法配置文件                   |
 | ------------------ | ------------ | -------- | :---------: | :---------: |:---------: | :---------: | :----------------------------------------------: | :----------------------------------------------: |:------------------------------------------: | :------------------------------------: |
-| PP-YOLOE-l | baseline     | 640      | - |   7.9ms  | -- | 50.9     | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams) | -  | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml) | -  |
-| PP-YOLOE-l | 普通在线量化     | 640      | - |   6.9ms  | -- | 48.8     | [下载链接](https://paddledet.bj.bcebos.com/models/slim/ppyoloe_l_coco_qat.pdparams) | -  | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/quant/ppyoloe_l_qat.yml) |
+| PP-YOLOE-l | baseline     | 640      | - |   11.2ms(trt_fp32) &#124; 7.7ms(trt_fp16)  | -- | 50.9     | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams) | -  | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml) | -  |
+| PP-YOLOE-l | 普通在线量化     | 640      | - |   6.7ms(trt_int8)  | -- | 48.8     | [下载链接](https://paddledet.bj.bcebos.com/models/slim/ppyoloe_l_coco_qat.pdparams) | -  | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/quant/ppyoloe_l_qat.yml) |
 | PP-YOLOv2_R50vd | baseline     | 640      | 208.6  |   19.1ms  | -- | 49.1     | [下载链接](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/ppyolov2_r50vd_dcn_365e_coco.tar)  | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml) |                            -                               |
 | PP-YOLOv2_R50vd | PACT在线量化     | 640      | --  |   17.3ms  | -- | 48.1     | [下载链接](https://paddledet.bj.bcebos.com/models/slim/ppyolov2_r50vd_dcn_qat.pdparams) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/ppyolov2_r50vd_dcn_qat.tar)  | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml) |         [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/quant/ppyolov2_r50vd_dcn_qat.yml)   |
 | PP-YOLO_R50vd | baseline     | 608      | 183.3  |  17.4ms  | -- | 44.8     | [下载链接](https://paddledet.bj.bcebos.com/models/ppyolo_r50vd_dcn_1x_coco.pdparams) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/ppyolo_r50vd_dcn_1x_coco.tar)  | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml) |                  -         |
@@ -148,6 +148,7 @@ python tools/export_model.py -c configs/{MODEL.yml} --slim_config configs/slim/{
 说明：
 - 上述V100预测时延非量化模型均是使用TensorRT-FP32测试，量化模型均使用TensorRT-INT8测试，并且都包含NMS耗时。
 - SD855预测时延为使用PaddleLite部署，使用arm8架构并使用4线程(4 Threads)推理时延。
+- 上述PP-YOLOE模型均在V100，开启TensorRT环境中测速，不包含NMS。（导出模型时指定：-o trt=True exclude_nms=True）
 
 ### 离线量化
 需要准备val集，用来对离线量化模型进行校准，运行方式：
