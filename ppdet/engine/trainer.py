@@ -701,9 +701,10 @@ class Trainer(object):
         if hasattr(self.model, 'deploy'):
             self.model.deploy = True
 
-        for layer in self.model.sublayers():
-            if hasattr(layer, 'convert_to_deploy'):
-                layer.convert_to_deploy()
+        if 'slim' not in self.cfg:
+            for layer in self.model.sublayers():
+                if hasattr(layer, 'convert_to_deploy'):
+                    layer.convert_to_deploy()
 
         export_post_process = self.cfg['export'].get(
             'post_process', False) if hasattr(self.cfg, 'export') else True
