@@ -20,7 +20,7 @@ python tools/train -c config.yml --use_vdl --vdl_log_dir ./logs
 Another possible way to do this is to add the aforementioned flags to the `config.yml` file.
 
 ## Weights & Biases
-W&B is a MLOps tool that can be used for experiment tracking, dataset/model versioning, visualizing results and collaborating with colleagues. A W&B logger is integrated directly into PaddleOCR and to use it, first you need to install the wandb sdk and login to your wandb account.
+W&B is a MLOps tool that can be used for experiment tracking, dataset/model versioning, visualizing results and collaborating with colleagues. A W&B logger is integrated directly into PaddleDetection and to use it, first you need to install the wandb sdk and login to your wandb account.
 
 ```
 pip install wandb
