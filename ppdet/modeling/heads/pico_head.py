@@ -91,7 +91,7 @@ class PicoFeat(nn.Layer):
         self.reg_convs = []
         if use_se:
             assert share_cls_reg == True, \
-                'In the case of using se, share_cls_reg is not supported'
+                'In the case of using se, share_cls_reg must be set to True'
             self.se = nn.LayerList()
         for stage_idx in range(num_fpn_stride):
             cls_subnet_convs = []
