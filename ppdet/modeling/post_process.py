@@ -194,8 +194,7 @@ class MaskPostProcess(object):
         super(MaskPostProcess, self).__init__()
         self.binary_thresh = binary_thresh
         self.export_onnx = export_onnx
-        self.assign_on_cpu = assign_on_cpu and paddle.device.is_compiled_with_cuda(
-        )
+        self.assign_on_cpu = assign_on_cpu
 
     def paste_mask(self, masks, boxes, im_h, im_w):
         """
@@ -240,6 +239,7 @@ class MaskPostProcess(object):
         """
         num_mask = mask_out.shape[0]
         origin_shape = paddle.cast(origin_shape, 'int32')
+        device = paddle.device.get_device()
 
         if self.export_onnx:
             h, w = origin_shape[0][0], origin_shape[0][1]
@@ -269,7 +269,7 @@ class MaskPostProcess(object):
                             im_w] = pred_mask
                 id_start += bbox_num[i]
         if self.assign_on_cpu:
-            paddle.set_device('gpu')
+            paddle.set_device(device)
 
         return pred_result
 
