@@ -68,8 +68,7 @@ class RPNTargetAssign(object):
         self.negative_overlap = negative_overlap
         self.ignore_thresh = ignore_thresh
         self.use_random = use_random
-        self.assign_on_cpu = assign_on_cpu and paddle.device.is_compiled_with_cuda(
-        )
+        self.assign_on_cpu = assign_on_cpu
 
     def __call__(self, inputs, anchors):
         """
@@ -150,8 +149,7 @@ class BBoxAssigner(object):
         self.use_random = use_random
         self.cascade_iou = cascade_iou
         self.num_classes = num_classes
-        self.assign_on_cpu = assign_on_cpu and paddle.device.is_compiled_with_cuda(
-        )
+        self.assign_on_cpu = assign_on_cpu
 
     def __call__(self,
                  rpn_rois,
