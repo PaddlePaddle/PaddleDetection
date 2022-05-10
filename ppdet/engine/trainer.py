@@ -63,17 +63,20 @@ class Trainer(object):
         self.is_loaded_weights = False
 
         # build data loader
+        capital_mode = self.mode.capitalize()
         if cfg.architecture in MOT_ARCH and self.mode in ['eval', 'test']:
-            self.dataset = cfg['{}MOTDataset'.format(self.mode.capitalize())]
+            self.dataset = self.cfg['{}MOTDataset'.format(
+                capital_mode)] = create('{}MOTDataset'.format(capital_mode))()
         else:
-            self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
+            self.dataset = self.cfg['{}Dataset'.format(capital_mode)] = create(
+                '{}Dataset'.format(capital_mode))()
 
         if cfg.architecture == 'DeepSORT' and self.mode == 'train':
             logger.error('DeepSORT has no need of training on mot dataset.')
             sys.exit(1)
 
         if self.mode == 'train':
-            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
+            self.loader = create('{}Reader'.format(capital_mode))(
                 self.dataset, cfg.worker_num)
 
         if cfg.architecture == 'JDE' and self.mode == 'train':
@@ -335,6 +338,8 @@ class Trainer(object):
     def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
         Init_mark = False
+        if validate:
+            self.cfg.EvalDataset = create("EvalDataset")()
 
         model = self.model
         if self.cfg.get('fleet', False):
