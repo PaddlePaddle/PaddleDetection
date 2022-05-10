@@ -320,13 +320,14 @@ class Detector(object):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         index = 1
         while (1):
             ret, frame = capture.read()
             if not ret:
                 break
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             print('detect frame: %d' % (index))
             index += 1
             results = self.predict_image([frame], visual=False)
@@ -337,7 +338,7 @@ class Detector(object):
                 self.pred_config.labels,
                 threshold=self.threshold)
             im = np.array(im)
-            writer.write(im)
+            writer.write(cv2.cvtColor(im, cv2.COLOR_RGB2BGR))
             if camera_id != -1:
                 cv2.imshow('Mask Detection', im)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
