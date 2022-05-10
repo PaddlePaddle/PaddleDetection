@@ -67,11 +67,13 @@ class Trainer(object):
         self.is_loaded_weights = False
 
         # build data loader
+        cpaital_mode = self.mode.capitalize()
         if cfg.architecture in MOT_ARCH and self.mode in ['eval', 'test']:
-            self.dataset = create('{}MOTDataset'.format(self.mode.capitalize(
-            )))()
+            self.dataset = self.cfg['{}MOTDataset'.format(
+                cpaital_mode)] = create('{}MOTDataset'.format(cpaital_mode))()
         else:
-            self.dataset = create('{}Dataset'.format(self.mode.capitalize()))()
+            self.dataset = self.cfg['{}Dataset'.format(cpaital_mode)] = create(
+                '{}Dataset'.format(cpaital_mode))()
 
         if cfg.architecture == 'DeepSORT' and self.mode == 'train':
             logger.error('DeepSORT has no need of training on mot dataset.')
@@ -82,7 +84,7 @@ class Trainer(object):
             self.dataset.set_images(images)
 
         if self.mode == 'train':
-            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
+            self.loader = create('{}Reader'.format(cpaital_mode))(
                 self.dataset, cfg.worker_num)
 
         if cfg.architecture == 'JDE' and self.mode == 'train':
@@ -371,6 +373,8 @@ class Trainer(object):
     def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
         Init_mark = False
+        if validate:
+            self.cfg.EvalDataset = create("EvalDataset")()
 
         sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
                    self.cfg.use_gpu and self._nranks > 1)
