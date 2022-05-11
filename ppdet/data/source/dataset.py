@@ -23,6 +23,7 @@ from paddle.io import Dataset
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.download import get_dataset_path
 import copy
+import ppdet.data.source as source
 
 
 @serializable
@@ -59,6 +60,9 @@ class DetDataset(Dataset):
 
     def __len__(self, ):
         return len(self.roidbs)
+
+    def __call__(self, *args, **kwargs):
+        return self
 
     def __getitem__(self, idx):
         # data batch
@@ -198,3 +202,40 @@ class ImageFolder(DetDataset):
     def set_images(self, images):
         self.image_dir = images
         self.roidbs = self._load_images()
+
+
+@register
+class CommonDataset(object):
+    def __init__(self, **dataset_args):
+        super(CommonDataset, self).__init__()
+        dataset_args = copy.deepcopy(dataset_args)
+        type = dataset_args.pop("name")
+        self.dataset = getattr(source, type)(**dataset_args)
+
+    def __call__(self):
+        return self.dataset
+
+
+@register
+class TrainDataset(CommonDataset):
+    pass
+
+
+@register
+class EvalMOTDataset(CommonDataset):
+    pass
+
+
+@register
+class TestMOTDataset(CommonDataset):
+    pass
+
+
+@register
+class EvalDataset(CommonDataset):
+    pass
+
+
+@register
+class TestDataset(CommonDataset):
+    pass
