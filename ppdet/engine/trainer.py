@@ -395,7 +395,7 @@ class Trainer(object):
         # enabel auto mixed precision mode
         if self.cfg.get('amp', False):
             scaler = amp.GradScaler(
-                enable=self.cfg.use_gpu or self.cfg.use_npu,
+                enable=self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_xpu,
                 init_loss_scaling=1024)
 
         self.status.update({
@@ -433,7 +433,9 @@ class Trainer(object):
                 data['epoch_id'] = epoch_id
 
                 if self.cfg.get('amp', False):
-                    with amp.auto_cast(enable=self.cfg.use_gpu):
+                    custom_black_list = ['conv2d', 'reshape2', 'transpose2']
+                    custom_white_list = ['resnet_basic_block', 'fused_conv2d_bias_act']
+                    with amp.auto_cast(enable=self.cfg.use_gpu or self.cfg.use_xpu, custom_black_list=custom_black_list, custom_white_list=custom_white_list):
                         # model forward
                         outputs = model(data)
                         loss = outputs['loss']
@@ -603,7 +605,7 @@ class Trainer(object):
         clsid2catid, catid2name = get_categories(
             self.cfg.metric, anno_file=anno_file)
 
-        # Run Infer 
+        # Run Infer
         self.status['mode'] = 'test'
         self.model.eval()
         if self.cfg.get('print_flops', False):

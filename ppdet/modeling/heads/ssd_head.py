@@ -1,15 +1,15 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
-#   
-# Licensed under the Apache License, Version 2.0 (the "License");   
-# you may not use this file except in compliance with the License.  
-# You may obtain a copy of the License at   
-#   
-#     http://www.apache.org/licenses/LICENSE-2.0    
-#   
-# Unless required by applicable law or agreed to in writing, software   
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
-# See the License for the specific language governing permissions and   
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
 # limitations under the License.
 
 import paddle
@@ -21,6 +21,7 @@ from paddle import ParamAttr
 
 from ..layers import AnchorGeneratorSSD
 
+import os
 
 class SepConvLayer(nn.Layer):
     def __init__(self,
@@ -78,10 +79,18 @@ class SSDExtraHead(nn.Layer):
             in_channels = out_channel[-1]
 
     def _make_layers(self, c_in, c_hidden, c_out, stride_3x3, padding_3x3):
-        return nn.Sequential(
-            nn.Conv2D(c_in, c_hidden, 1),
-            nn.ReLU(),
-            nn.Conv2D(c_hidden, c_out, 3, stride_3x3, padding_3x3), nn.ReLU())
+        if os.getenv('SSD_No_Fused'):
+            ## origin
+            return nn.Sequential(
+                nn.Conv2D(c_in, c_hidden, 1),
+                nn.ReLU(),
+                nn.Conv2D(c_hidden, c_out, 3, stride_3x3, padding_3x3), nn.ReLU())
+        else:
+            ## ssd_fusion
+            return nn.Sequential(
+                paddle.incubate.xpu.conv.Conv2DWithBiasAct(c_in, c_hidden, 1, act_type='relu'),
+                paddle.incubate.xpu.conv.Conv2DWithBiasAct(c_hidden, c_out, 3, stride_3x3,
+                padding_3x3, act_type= 'relu'))
 
     def forward(self, x):
         out = [x]
@@ -141,13 +150,25 @@ class SSDHead(nn.Layer):
         for i, num_prior in enumerate(self.num_priors):
             box_conv_name = "boxes{}".format(i)
             if not use_sepconv:
-                box_conv = self.add_sublayer(
-                    box_conv_name,
-                    nn.Conv2D(
-                        in_channels=self.in_channels[i],
-                        out_channels=num_prior * 4,
-                        kernel_size=kernel_size,
-                        padding=padding))
+                if os.getenv('SSD_No_Fused'):
+                    ## origin
+                    box_conv = self.add_sublayer(
+                        box_conv_name,
+                        nn.Conv2D(
+                            in_channels=self.in_channels[i],
+                            out_channels=num_prior * 4,
+                            kernel_size=kernel_size,
+                            padding=padding))
+                else:
+                    ## ssd_fusion
+                    box_conv = self.add_sublayer(
+                        box_conv_name,
+                        paddle.incubate.xpu.conv.Conv2DWithBiasAct(
+                            in_channels=self.in_channels[i],
+                            out_channels=num_prior * 4,
+                            kernel_size=kernel_size,
+                            padding=padding,
+                            act_type="linear"))
             else:
                 box_conv = self.add_sublayer(
                     box_conv_name,
@@ -161,13 +182,25 @@ class SSDHead(nn.Layer):
 
             score_conv_name = "scores{}".format(i)
             if not use_sepconv:
-                score_conv = self.add_sublayer(
-                    score_conv_name,
-                    nn.Conv2D(
-                        in_channels=self.in_channels[i],
-                        out_channels=num_prior * self.num_classes,
-                        kernel_size=kernel_size,
-                        padding=padding))
+                if os.getenv('SSD_No_Fused'):
+                    ## origin
+                    score_conv = self.add_sublayer(
+                        score_conv_name,
+                        nn.Conv2D(
+                            in_channels=self.in_channels[i],
+                            out_channels=num_prior * self.num_classes,
+                            kernel_size=kernel_size,
+                            padding=padding))
+                else:
+                    ## ssd_fusion
+                    score_conv = self.add_sublayer(
+                        score_conv_name,
+                        paddle.incubate.xpu.conv.Conv2DWithBiasAct(
+                            in_channels=self.in_channels[i],
+                            out_channels=num_prior * self.num_classes,
+                            kernel_size=kernel_size,
+                            padding=padding,
+                            act_type="linear"))
             else:
                 score_conv = self.add_sublayer(
                     score_conv_name,

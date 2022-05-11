@@ -1,5 +1,5 @@
 architecture: SSD
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet34_pretrained.pdparams
+pretrain_weights: ssd_resnet_block_fusion_pretrain.pdparams
 
 SSD:
   backbone: ResNet

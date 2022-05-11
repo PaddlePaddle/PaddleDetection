@@ -1,15 +1,15 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
-#   
-# Licensed under the Apache License, Version 2.0 (the "License");   
-# you may not use this file except in compliance with the License.  
-# You may obtain a copy of the License at   
-#   
-#     http://www.apache.org/licenses/LICENSE-2.0    
-#   
-# Unless required by applicable law or agreed to in writing, software   
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
-# See the License for the specific language governing permissions and   
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
 # limitations under the License.
 
 import math
@@ -27,6 +27,10 @@ from paddle.vision.ops import DeformConv2D
 from .name_adapter import NameAdapter
 from ..shape_spec import ShapeSpec
 
+import os
+
+from paddle.incubate.xpu.resnet_block import ResNetBasicBlock
+
 __all__ = ['ResNet', 'Res5Head', 'Blocks', 'BasicBlock', 'BottleNeck']
 
 ResNet_cfg = {
@@ -36,6 +40,69 @@ ResNet_cfg = {
     101: [3, 4, 23, 3],
     152: [3, 8, 36, 3],
 }
+
+
+class XPUFuseBasicBlock(nn.Layer):
+    expansion = 1
+
+    def __init__(self,
+                 ch_in,
+                 ch_out,
+                 stride,
+                 shortcut,
+                 variant='b',
+                 groups=1,
+                 base_width=64,
+                 lr=1.0,
+                 norm_type='bn',
+                 norm_decay=0.,
+                 freeze_norm=True,
+                 dcn_v2=False,
+                 std_senet=False):
+        super(XPUFuseBasicBlock, self).__init__()
+        assert groups == 1 and base_width == 64, 'BasicBlock only supports groups=1 and base_width=64'
+
+        self.shortcut = shortcut
+        if not shortcut:
+            self.ssd_resnet_block = ResNetBasicBlock(num_channels1=ch_in,
+                                                   num_filter1=ch_out,
+                                                   filter1_size=3,
+                                                   num_channels2=ch_out,
+                                                   num_filter2=ch_out,
+                                                   filter2_size=3,
+                                                   num_channels3=ch_in,
+                                                   num_filter3=ch_out,
+                                                   filter3_size=1,
+                                                   stride1=stride,
+                                                   stride2=1,
+                                                   stride3=stride,
+                                                   act='relu',
+                                                   padding1=1,
+                                                   padding2=1,
+                                                   padding3=0,
+                                                   has_shortcut=True)
+        else:
+            self.ssd_resnet_block = ResNetBasicBlock(num_channels1=ch_in,
+                                                   num_filter1=ch_out,
+                                                   filter1_size=3,
+                                                   num_channels2=ch_out,
+                                                   num_filter2=ch_out,
+                                                   filter2_size=3,
+                                                   num_channels3=ch_in,
+                                                   num_filter3=ch_out,
+                                                   filter3_size=1,
+                                                   stride1=stride,
+                                                   stride2=1,
+                                                   stride3=stride,
+                                                   act='relu',
+                                                   padding1=1,
+                                                   padding2=1,
+                                                   padding3=1,
+                                                   has_shortcut=False)
+
+    def forward(self, inputs):
+        out = self.ssd_resnet_block.forward(inputs)
+        return out
 
 
 class ConvNormLayer(nn.Layer):
@@ -446,13 +513,13 @@ class ResNet(nn.Layer):
                  std_senet=False):
         """
         Residual Network, see https://arxiv.org/abs/1512.03385
-        
+
         Args:
             depth (int): ResNet depth, should be 18, 34, 50, 101, 152.
             ch_in (int): output channel of first stage, default 64
             variant (str): ResNet variant, supports 'a', 'b', 'c', 'd' currently
             lr_mult_list (list): learning rate ratio of different resnet stages(2,3,4,5),
-                                 lower learning rate ratio is need for pretrained model 
+                                 lower learning rate ratio is need for pretrained model
                                  got using distillation(default as [1.0, 1.0, 1.0, 1.0]).
             groups (int): group convolution cardinality
             base_width (int): base width of each group convolution
@@ -525,7 +592,12 @@ class ResNet(nn.Layer):
 
         self.ch_in = ch_in
         ch_out_list = [64, 128, 256, 512]
-        block = BottleNeck if depth >= 50 else BasicBlock
+        if os.getenv('SSD_No_Fused'):
+            ## origin
+            block = BottleNeck if depth >= 50 else BasicBlock
+        else:
+            ## ssd_fusion
+            block = BottleNeck if depth >= 50 else XPUFuseBasicBlock
 
         self._out_channels = [block.expansion * v for v in ch_out_list]
         self._out_strides = [4, 8, 16, 32]
