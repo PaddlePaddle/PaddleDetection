@@ -48,7 +48,7 @@ ppdet_root=$(pwd)
 #### VOC Data
 
 VOC data is used in [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) competition. Pascal VOC competition not only contains image classification task, but also contains object detection and object segmentation et al., the annotation file contains the ground truth of multiple tasks.
-VOC dataset denotes the data of PAscal VOC competition. when customizeing VOC data, For non mandatory fields in the XML file, please select whether to label or use the default value according to the actual situation.
+VOC dataset denotes the data of Pascal VOC competition. when customizeing VOC data, For non mandatory fields in the XML file, please select whether to label or use the default value according to the actual situation.
 
 ##### VOC Dataset Download  
 
@@ -108,13 +108,6 @@ VOC dataset denotes the data of PAscal VOC competition. when customizeing VOC da
     >>cat test.txt
     VOCdevkit/VOC2007/JPEGImages/000001.jpg VOCdevkit/VOC2007/Annotations/000001.xml
     ...
-
-    # label_list.txt voc list of classes name
-    >>cat label_list.txt
-
-    aeroplane
-    bicycle
-    ...
     ```
 - If the VOC dataset has been downloaded
     You can organize files according to the above data file organization structure.
@@ -136,7 +129,7 @@ The XML file contains the following fields：
         <depth>3</depth>
     </size>
     ```
-- object field, indict each object, including:
+- object field, indicating each object, including:
 
     |      Label       |                                                        Explanation                                                         |
     | :--------------: | :------------------------------------------------------------------------------------------------------------------------: |
@@ -144,7 +137,7 @@ The XML file contains the following fields：
     |       pose       |                               attitude description of the target object (non required field)                               |
     |    truncated     | If the occlusion of the object exceeds 15-20% and is outside the bounding box，mark it as `truncated` (non required field) |
     |    difficult     |                   objects that are difficult to recognize are marked as`difficult` (non required field)                    |
-    | bndbox son laebl |                            (xmin,ymin) top left coordinate, (xmax,ymax) bottom right coordinate                            |
+    | bndbox sub-label |                            (xmin,ymin) top left coordinate, (xmax,ymax) bottom right coordinate                            |
 
 
 #### COCO Data
