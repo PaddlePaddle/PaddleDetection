@@ -33,14 +33,14 @@ from ppdet.core.workspace import load_config, merge_config
 from ppdet.engine import Trainer, init_parallel_env, set_random_seed, init_fleet_env
 from ppdet.slim import build_slim_model
 
-import ppdet.utils.cli as cli, merge_args
+from ppdet.utils.cli import ArgsParser, merge_args
 import ppdet.utils.check as check
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('train')
 
 
 def parse_args():
-    parser = cli.ArgsParser()
+    parser = ArgsParser()
     parser.add_argument(
         "--eval",
         action='store_true',
