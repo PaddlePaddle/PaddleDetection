@@ -1,0 +1,73 @@
+name: 🐛 报BUG Bug Report
+description: 报告一个可复现的BUG帮助我们修复PaddleDetection。 Report a bug to help us reproduce and fix it.
+labels: [type/bug-report, status/new-issue]
+
+body:
+- type: markdown
+  attributes:
+    value: |
+        Thank you for submitting a PaddleDetection Bug Report!
+
+- type: checkboxes
+  attributes:
+    label: 问题确认 Search before asking
+    description: >
+      在向PaddleDetection报bug之前，请先查询[历史issue](https://github.com/PaddlePaddle/PaddleDetection/issues)是否报过同样的bug。
+
+      Before submitting a bug, please make sure the issue hasn't been already addressed by searching through [the existing and past issues](https://github.com/PaddlePaddle/PaddleDetection/issues).
+
+    options:
+      - label: >
+          我已经查询[历史issue](https://github.com/PaddlePaddle/PaddleDetection/issues)，没有报过同样bug。I have searched the [issues](https://github.com/PaddlePaddle/PaddleDetection/issues) and found no similar bug report.
+        required: true
+
+- type: textarea
+  id: code
+  attributes:
+    label: bug描述 Describe the Bug
+    description:  |
+      请清晰简洁的描述这个bug，最好附上bug复现步骤及最小代码集，以便我们可以通过运行代码来重现错误。代码片段需要尽可能简洁，请花些时间去掉不相关的代码以帮助我们有效地调试。我们希望通过复制代码并运行得到与你相同的结果，请避免任何外部数据或包含相关的导入等。如果代码太长，请将可执行代码放到[AIStudio](https://aistudio.baidu.com/aistudio/index)中并将项目设置为公开（或者放到github gist上），请在项目中描述清楚bug复现步骤，在issue中描述期望结果与实际结果。
+
+      如果你报告的是一个报错信息，请将完整回溯的报错贴在这里，并使用 ` ```三引号块``` `展示错误信息。
+
+
+    placeholder: |
+      请清晰简洁的描述这个bug。A clear and concise description of what the bug is.
+
+      ```python
+      # 最小可复现代码。 Sample code to reproduce the problem.
+      ```
+
+      ```shell
+      带有完整回溯的报错信息。 The error message you got, with the full traceback.
+      ```
+  validations:
+    required: true
+
+- type: textarea
+  attributes:
+    label: 复现环境 Environment
+    description: 请具体说明复现bug的环境信息，Please specify the software and hardware you used to produce the bug.
+    placeholder: |
+      - PaddlePaddle: 2.2.2
+      - PaddleDetection: release/2.4
+      - Python: 3.8.0
+      - CUDA: 10.2
+      - CUDNN: 7.6
+  validations:
+    required: false
+
+- type: checkboxes
+  attributes:
+    label: 是否愿意提交PR Are you willing to submit a PR?
+    description: >
+      (可选)如果你对修复bug有自己的想法，十分鼓励提交[Pull Request](https://github.com/PaddlePaddle/PaddleDetection/pulls)，共同提升PaddleDetection
+
+      (Optional) We encourage you to submit a [Pull Request](https://github.com/PaddlePaddle/PaddleDetection/pulls) (PR) to help improve PaddleDetection for everyone, especially if you have a good understanding of how to implement a fix or feature.
+    options:
+      - label: Yes I'd like to help by submitting a PR!
+
+- type: markdown
+  attributes:
+    value: >
+      感谢你的贡献 🎉！Thanks for your contribution 🎉!
