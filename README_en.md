@@ -284,6 +284,8 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
   
   - [Prune/Quant/Distill](configs/slim)
 
+- [Metric Logging during Model Training](docs/tutorials/logging_en.md)
+
 - Inference and Deployment
   
   - [Export model for inference](deploy/EXPORT_MODEL_en.md)

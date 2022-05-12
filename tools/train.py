@@ -77,6 +77,11 @@ def parse_args():
         default="vdl_log_dir/scalar",
         help='VisualDL logging directory for scalar.')
     parser.add_argument(
+        "--use_wandb",
+        type=bool,
+        default=False,
+        help="whether to record the data to wandb.")
+    parser.add_argument(
         '--save_prediction_only',
         action='store_true',
         default=False,
