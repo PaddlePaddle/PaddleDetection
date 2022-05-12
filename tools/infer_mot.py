@@ -133,9 +133,6 @@ def main():
     else:
         place = paddle.set_device('cpu')
 
-    if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn' and not cfg.use_gpu:
-        cfg['norm_type'] = 'bn'
-
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_npu(cfg.use_npu)

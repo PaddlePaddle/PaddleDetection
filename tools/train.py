@@ -33,14 +33,14 @@ from ppdet.core.workspace import load_config, merge_config
 from ppdet.engine import Trainer, init_parallel_env, set_random_seed, init_fleet_env
 from ppdet.slim import build_slim_model
 
-import ppdet.utils.cli as cli
+from ppdet.utils.cli import ArgsParser, merge_args
 import ppdet.utils.check as check
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('train')
 
 
 def parse_args():
-    parser = cli.ArgsParser()
+    parser = ArgsParser()
     parser.add_argument(
         "--eval",
         action='store_true',
@@ -130,14 +130,7 @@ def run(FLAGS, cfg):
 def main():
     FLAGS = parse_args()
     cfg = load_config(FLAGS.config)
-    cfg['amp'] = FLAGS.amp
-    cfg['fleet'] = FLAGS.fleet
-    cfg['use_vdl'] = FLAGS.use_vdl
-    cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
-    cfg['save_prediction_only'] = FLAGS.save_prediction_only
-    cfg['profiler_options'] = FLAGS.profiler_options
-    cfg['save_proposals'] = FLAGS.save_proposals
-    cfg['proposals_path'] = FLAGS.proposals_path
+    merge_args(cfg, FLAGS)
     merge_config(FLAGS.opt)
 
     # disable npu in config by default
@@ -156,9 +149,6 @@ def main():
         place = paddle.set_device('xpu')
     else:
         place = paddle.set_device('cpu')
-
-    if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn' and not cfg.use_gpu:
-        cfg['norm_type'] = 'bn'
 
     if FLAGS.slim_config:
         cfg = build_slim_model(cfg, FLAGS.slim_config)
