@@ -1,0 +1,80 @@
+# This config is an assembled config for ByteTrack MOT, used as eval/infer mode for MOT.
+_BASE_: [
+  '../../../yolox/yolox_x_300e_coco.yml',
+  '../_base_/mix_det.yml',
+]
+weights: output/yolox_x_24e_800x1440_mix_det/model_final
+log_iter: 20
+snapshot_epoch: 2
+
+# schedule configuration for fine-tuning
+epoch: 24
+LearningRate:
+  base_lr: 0.00075 # fintune
+  schedulers:
+  - !CosineDecay
+    max_epochs: 24
+    min_lr_ratio: 0.05
+    last_plateau_epochs: 4
+  - !ExpWarmup
+    epochs: 1
+
+OptimizerBuilder:
+  optimizer:
+    type: Momentum
+    momentum: 0.9
+    use_nesterov: True
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+
+TrainReader:
+  batch_size: 6
+  mosaic_epoch: 20
+
+# detector configuration
+architecture: YOLOX
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/yolox_x_300e_coco.pdparams
+norm_type: sync_bn
+use_ema: True
+ema_decay: 0.9999
+ema_decay_type: "exponential"
+act: silu
+find_unused_parameters: True
+depth_mult: 1.33
+width_mult: 1.25
+
+YOLOX:
+  backbone: CSPDarkNet
+  neck: YOLOCSPPAN
+  head: YOLOXHead
+  input_size: [800, 1440]
+  size_stride: 32
+  size_range: [18, 30] # multi-scale range [576*1024 ~ 800*1440], w/h ratio=1.8
+
+CSPDarkNet:
+  arch: "X"
+  return_idx: [2, 3, 4]
+  depthwise: False
+
+YOLOCSPPAN:
+  depthwise: False
+
+# Tracking requires higher quality boxes, so NMS score_threshold will be higher
+YOLOXHead:
+  l1_epoch: 20
+  depthwise: False
+  loss_weight: {cls: 1.0, obj: 1.0, iou: 5.0, l1: 1.0}
+  assigner:
+    name: SimOTAAssigner
+    candidate_topk: 10
+    use_vfl: False
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.01
+    nms_threshold: 0.7
+    # For speed while keep high mAP, you can modify 'nms_top_k' to 1000 and 'keep_top_k' to 100, the mAP will drop about 0.1%.
+    # For high speed demo, you can modify 'score_threshold' to 0.25 and 'nms_threshold' to 0.45, but the mAP will drop a lot.
