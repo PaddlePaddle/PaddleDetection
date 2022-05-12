@@ -3,9 +3,10 @@ description: 提出一个使用/咨询问题。 Ask a usage or consultation ques
 labels: [type/question, status/new-issue]
 
 body:
-- type: markdown
+- type: checkboxes
   attributes:
-    value: >
+    label: Search before asking
+    description: >
       #### 你可以在这里提出一个使用/咨询问题，提问之前请确保：
 
       - 1）已经百度/谷歌搜索过你的问题，但是没有找到解答；
@@ -23,7 +24,10 @@ body:
 
       - 3) You have searched [the existing and past issues](https://github.com/PaddlePaddle/PaddleDetection/issues), but found no similar issue or the issue has not been answered.
 
-
+    options:
+      - label: >
+          我已经搜索过问题，但是没有找到解答。I have searched the question and found no related answer.
+        required: true
 
 - type: textarea
   id: question
