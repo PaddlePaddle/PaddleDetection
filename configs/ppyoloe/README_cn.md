@@ -138,7 +138,7 @@ PP-YOLOE可以使用以下方式进行部署：
   - Paddle Inference [Python](../../deploy/python) & [C++](../../deploy/cpp)
   - [Paddle-TensorRT](../../deploy/TENSOR_RT.md)
   - [PaddleServing](https://github.com/PaddlePaddle/Serving)
-  - [PaddleSlim 模型量化](../configs/slim)
+  - [PaddleSlim模型量化](../slim)
 
 接下来，我们将介绍PP-YOLOE如何使用Paddle Inference在TensorRT FP16模式下部署
 
