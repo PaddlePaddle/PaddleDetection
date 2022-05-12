@@ -10,6 +10,19 @@ body:
 
       #### You could submit a request for a new feature here, including but not limited to: new features or models, incomplete or unusable features, accuracy/performance not as expected, etc.
 
+- type: checkboxes
+  attributes:
+    label: Search before asking
+    description: >
+      在向PaddleDetection提新需求之前，请先查询[历史issue](https://github.com/PaddlePaddle/PaddleDetection/issues)是否报过同样的需求。
+
+      Before submitting a feature request, please make sure the issue hasn't been already addressed by searching through [the existing and past issues](https://github.com/PaddlePaddle/PaddleDetection/issues).
+
+    options:
+      - label: >
+          我已经查询[历史issue](https://github.com/PaddlePaddle/PaddleDetection/issues)，没有类似需求。I have searched the [issues](https://github.com/PaddlePaddle/PaddleDetection/issues) and found no similar feature requests.
+        required: true
+
 - type: textarea
   id: description
   attributes:
@@ -21,15 +34,15 @@ body:
   validations:
     required: true
 
-- type: textarea
-  id: alternatives
+- type: checkboxes
   attributes:
-    label: 替代实现 Alternatives
-    description: |
-      如果你考虑过的任何替代解决方案或功能，请简要描述下，我们会综合评估。
-      A description of any alternative solutions or features you've considered, if any.
-  validations:
-    required: false
+    label: Are you willing to submit a PR?
+    description: >
+      (可选)如果你对新feature有自己的想法，十分鼓励提交[Pull Request](https://github.com/PaddlePaddle/PaddleDetection/pulls)，共同提升PaddleDetection
+
+      (Optional) We encourage you to submit a [Pull Request](https://github.com/PaddlePaddle/PaddleDetection/pulls) (PR) to help improve PaddleDetection for everyone, especially if you have a good understanding of how to implement a fix or feature.
+    options:
+      - label: Yes I'd like to help by submitting a PR!
 
 - type: markdown
   attributes:
