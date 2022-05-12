@@ -204,7 +204,7 @@ class Trainer(object):
         classwise = self.cfg['classwise'] if 'classwise' in self.cfg else False
         if self.cfg.metric == 'COCO' or self.cfg.metric == "SNIPERCOCO":
             # TODO: bias should be unified
-            bias = self.cfg['bias'] if 'bias' in self.cfg else 0
+            bias = 1 if self.cfg.get('bias', False) else 0
             output_eval = self.cfg['output_eval'] \
                 if 'output_eval' in self.cfg else None
             save_prediction_only = self.cfg.get('save_prediction_only', False)
