@@ -5,7 +5,7 @@ labels: [type/question, status/new-issue]
 body:
 - type: checkboxes
   attributes:
-    label: Search before asking
+    label: 问题确认 Search before asking
     description: >
       #### 你可以在这里提出一个使用/咨询问题，提问之前请确保：
 
