@@ -158,7 +158,10 @@ class Detector(object):
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
-            input_tensor.copy_from_cpu(inputs[input_names[i]])
+            if input_names[i] == 'x':
+                input_tensor.copy_from_cpu(inputs['image'])
+            else:
+                input_tensor.copy_from_cpu(inputs[input_names[i]])
 
         return inputs
 
@@ -320,7 +323,7 @@ class Detector(object):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         index = 1
         while (1):
@@ -704,9 +707,15 @@ def load_predictor(model_dir,
         raise ValueError(
             "Predict by TensorRT mode: {}, expect device=='GPU', but device == {}"
             .format(run_mode, device))
-    config = Config(
-        os.path.join(model_dir, 'model.pdmodel'),
-        os.path.join(model_dir, 'model.pdiparams'))
+    infer_model = os.path.join(model_dir, 'model.pdmodel')
+    infer_params = os.path.join(model_dir, 'model.pdiparams')
+    if not os.path.exists(infer_model):
+        infer_model = os.path.join(model_dir, 'inference.pdmodel')
+        infer_params = os.path.join(model_dir, 'inference.pdiparams')
+        if not os.path.exists(infer_model):
+            raise ValueError(
+                "Cannot find any inference model in dir: {},".format(model_dir))
+    config = Config(infer_model, infer_params)
     if device == 'GPU':
         # initial GPU memory(M), device ID
         config.enable_use_gpu(200, 0)
