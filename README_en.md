@@ -19,7 +19,7 @@ English | [简体中文](README_cn.md)
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> Latest News
 
 - 🔥 **2022.3.24：PaddleDetection [release 2.4 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)**
-  
+
   - Release GPU SOTA object detection series models (s/m/l/x) [PP-YOLOE](configs/ppyoloe), supporting s/m/l/x version, achieving mAP as 51.4% on COCO test dataset and 78.1 FPS on Nvidia V100 by PP-YOLOE-l, supporting AMP training and its training speed is 33% faster than PP-YOLOv2.
   - Release enhanced models of [PP-PicoDet](configs/picodet), including PP-PicoDet-XS model with 0.7M parameters, its mAP promoted ~2% on COCO, inference speed accelerated 63% on CPU, and post-processing integrated into the network to optimize deployment pipeline.
   - Release real-time human analysis tool [PP-Human](deploy/pphuman), which is based on data from real-life situations, supporting pedestrian detection, attribute recognition, human tracking, multi-camera tracking, human statistics and action recognition.
@@ -50,19 +50,19 @@ PaddleDetection is an end-to-end object detection development kit based on Paddl
 ## <img src="https://user-images.githubusercontent.com/48054808/157799599-e6a66855-bac6-4e75-b9c0-96e13cb9612f.png" width="20"/> Features
 
 - **Rich Models**
-  
+
   PaddleDetection provides rich of models, including **250+ pre-trained models** such as **object detection**, **instance segmentation**, **face detection**, **keypoint detection**, **multi-object tracking** and etc, covering a variety of **global competition champion** schemes.
 
 - **Highly Flexible**
-  
+
   Components are designed to be modular. Model architectures, as well as data preprocess pipelines and optimization strategies, can be easily customized with simple configuration changes.
 
 - **Production Ready**
-  
+
   From data augmentation, constructing models, training, compression, depolyment, get through end to end, and complete support for multi-architecture, multi-device deployment for **cloud and edge device**.
 
 - **High Performance**
-  
+
   Based on the high performance core of PaddlePaddle, advantages of training speed and memory occupation are obvious. FP16 training and multi-machine training are supported as well.
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157800467-2a9946ad-30d1-49a9-b9db-ba33413d9c90.png" alt="" width="20"> Community
@@ -70,7 +70,7 @@ PaddleDetection is an end-to-end object detection development kit based on Paddl
 - If you have any problem or suggestion on PaddleDetection, please send us issues through [GitHub Issues](https://github.com/PaddlePaddle/PaddleDetection/issues).
 
 - Welcome to Join PaddleDetection QQ Group and Wechat Group (reply "Det").
-  
+
   <div align="center">
   <img src="https://user-images.githubusercontent.com/48054808/157800129-2f9a0b72-6bb8-4b10-8310-93ab1639253f.jpg"  width = "200" />  
   <img src="https://user-images.githubusercontent.com/48054808/160531099-9811bbe6-cfbb-47d5-8bdb-c2b40684d7dd.png"  width = "200" />  
@@ -276,16 +276,16 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
 ### Advanced Tutorials
 
 - Parameter Configuration
-  
+
   - [Parameter configuration for RCNN model](docs/tutorials/config_annotation/faster_rcnn_r50_fpn_1x_coco_annotation_en.md)
   - [Parameter configuration for PP-YOLO model](docs/tutorials/config_annotation/ppyolo_r50vd_dcn_1x_coco_annotation_en.md)
 
 - Model Compression(Based on [PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim))
-  
+
   - [Prune/Quant/Distill](configs/slim)
 
 - Inference and Deployment
-  
+
   - [Export model for inference](deploy/EXPORT_MODEL_en.md)
   - [Paddle Inference](deploy/README_en.md)
     - [Python inference](deploy/python)
@@ -297,7 +297,7 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
   - [Exporting to ONNX and using OpenVINO for inference](docs/advanced_tutorials/openvino_inference/README.md)
 
 - Advanced Development
-  
+
   - [New data augmentations](docs/advanced_tutorials/READER_en.md)
   - [New detection algorithms](docs/advanced_tutorials/MODEL_TECHNICAL.md)
 
@@ -360,6 +360,7 @@ Contributions are highly welcomed and we would really appreciate your feedback!!
 - Thanks [Chen-Song](https://github.com/Chen-Song) for contributing the code of `Swin Faster-RCNN` model.
 - Thanks [yangyudong](https://github.com/yangyudong2020), [hchhtc123](https://github.com/hchhtc123) for contributing PP-Tracking GUI interface.
 - Thanks [Shigure19](https://github.com/Shigure19) for contributing PP-TinyPose fitness APP.
+- Thanks [manangoel99](https://github.com/manangoel99) for contributing Wandblogger for visualization of the training and evaluation metrics  
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157835276-9aab9d1c-1c46-446b-bdd4-5ab75c5cfa48.png" width="20"/> Citation
 
