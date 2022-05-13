@@ -339,7 +339,8 @@ class Trainer(object):
         assert self.mode == 'train', "Model not in 'train' mode"
         Init_mark = False
         if validate:
-            self.cfg.EvalDataset = create("EvalDataset")()
+            self.cfg['EvalDataset'] = self.cfg.EvalDataset = create(
+                "EvalDataset")()
 
         model = self.model
         if self.cfg.get('fleet', False):
