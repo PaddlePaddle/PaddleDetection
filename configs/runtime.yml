@@ -10,3 +10,4 @@ export:
   post_process: True  # Whether post-processing is included in the network when export model.
   nms: True           # Whether NMS is included in the network when export model.
   benchmark: False    # It is used to testing model performance, if set `True`, post-process and NMS will not be exported.
+  fuse_conv_bn: False
