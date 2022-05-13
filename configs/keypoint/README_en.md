@@ -227,7 +227,7 @@ For more configs, please refer to [KeyPointConfigGuide](../../docs/tutorials/Key
 
 #### 3、Note for data preparation
 - The data should has the same format as Coco data, and the keypoints(Nx3) and bbox(N) should be annotated.
-- please set "area">0 in annotations files otherwise it will be skiped while training.
+- please set "area">0 in annotations files otherwise it will be skiped while training. Moreover, due to the evaluation mechanism of COCO, the data with small area may also be filtered out during evaluation. We recommend to set `area = bbox_w * bbox_h` when customizing your dataset.
 
 
 ## BenchMark
