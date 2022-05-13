@@ -376,7 +376,8 @@ class Trainer(object):
         assert self.mode == 'train', "Model not in 'train' mode"
         Init_mark = False
         if validate:
-            self.cfg.EvalDataset = create("EvalDataset")()
+            self.cfg['EvalDataset'] = self.cfg.EvalDataset = create(
+                "EvalDataset")()
 
         sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
                    self.cfg.use_gpu and self._nranks > 1)
