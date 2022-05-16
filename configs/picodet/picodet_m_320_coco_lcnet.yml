@@ -1,0 +1,25 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/picodet_v2.yml',
+  '_base_/optimizer_300e.yml',
+  '_base_/picodet_320_reader.yml',
+]
+
+weights: output/picodet_m_320_coco/best_model
+find_unused_parameters: True
+use_ema: true
+epoch: 300
+snapshot_epoch: 10
+
+TrainReader:
+  batch_size: 48
+
+LearningRate:
+  base_lr: 0.24
+  schedulers:
+  - !CosineDecay
+    max_epochs: 300
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 300

@@ -81,6 +81,11 @@ def argsparser():
         default=False,
         help="Whether use mkldnn with CPU.")
     parser.add_argument(
+        "--enable_mkldnn_bfloat16",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether use mkldnn bfloat16 inference with CPU.")
+    parser.add_argument(
         "--cpu_threads", type=int, default=1, help="Num of threads with CPU.")
     parser.add_argument(
         "--trt_min_shape", type=int, default=1, help="min_shape for TensorRT.")
@@ -136,6 +141,27 @@ def argsparser():
         type=ast.literal_eval,
         default=True,
         help='whether to use darkpose to get better keypoint position predict ')
+    parser.add_argument(
+        "--action_file",
+        type=str,
+        default=None,
+        help="Path of input file for action recognition.")
+    parser.add_argument(
+        "--window_size",
+        type=int,
+        default=50,
+        help="Temporal size of skeleton feature for action recognition.")
+    parser.add_argument(
+        "--random_pad",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether do random padding for action recognition.")
+    parser.add_argument(
+        "--save_results",
+        type=bool,
+        default=False,
+        help="Whether save detection result to file using coco format")
+
     return parser
 
 
@@ -232,7 +258,7 @@ class Timer(Times):
         total_time = pre_time + infer_time + post_time
         if self.with_tracker:
             dic['tracking_time_s'] = round(track_time / max(1, self.img_num),
-                                        4) if average else track_time
+                                           4) if average else track_time
             total_time = total_time + track_time
         dic['total_time_s'] = round(total_time, 4)
         return dic

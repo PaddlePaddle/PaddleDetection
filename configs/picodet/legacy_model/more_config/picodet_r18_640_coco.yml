@@ -1,0 +1,39 @@
+_BASE_: [
+  '../../../datasets/coco_detection.yml',
+  '../../../runtime.yml',
+  '../_base_/picodet_esnet.yml',
+  '../_base_/optimizer_300e.yml',
+  '../_base_/picodet_640_reader.yml',
+]
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet18_vd_pretrained.pdparams
+weights: output/picodet_r18_640_coco/model_final
+find_unused_parameters: True
+use_ema: true
+cycle_epoch: 40
+snapshot_epoch: 10
+
+PicoDet:
+  backbone: ResNet
+  neck: CSPPAN
+  head: PicoHead
+
+ResNet:
+  depth: 18
+  variant: d
+  return_idx: [1, 2, 3]
+  freeze_at: -1
+  freeze_norm: false
+  norm_decay: 0.
+
+TrainReader:
+  batch_size: 56
+
+LearningRate:
+  base_lr: 0.3
+  schedulers:
+  - !CosineDecay
+    max_epochs: 300
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 300

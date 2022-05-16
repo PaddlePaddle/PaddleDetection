@@ -95,12 +95,10 @@ class KeyPointDetector(Detector):
     def set_config(self, model_dir):
         return PredictConfig_KeyPoint(model_dir)
 
-    def get_person_from_rect(self, image, results, det_threshold=0.5):
+    def get_person_from_rect(self, image, results):
         # crop the person result from image
         self.det_times.preprocess_time_s.start()
-        det_results = results['boxes']
-        mask = det_results[:, 1] > det_threshold
-        valid_rects = det_results[mask]
+        valid_rects = results['boxes']
         rect_images = []
         new_rects = []
         org_rects = []
@@ -269,8 +267,10 @@ class KeyPointDetector(Detector):
             print('detect frame: %d' % (index))
             index += 1
             results = self.predict_image([frame], visual=False)
+            im_results = {}
+            im_results['keypoint'] = [results['keypoint'], results['score']]
             im = visualize_pose(
-                frame, results, visual_thresh=self.threshold, returnimg=True)
+                frame, im_results, visual_thresh=self.threshold, returnimg=True)
             writer.write(im)
             if camera_id != -1:
                 cv2.imshow('Mask Detection', im)

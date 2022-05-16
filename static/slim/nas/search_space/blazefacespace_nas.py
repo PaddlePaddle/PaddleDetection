@@ -28,8 +28,8 @@ class BlazeFaceNasSpace(SearchSpaceBase):
     def __init__(self, input_size, output_size, block_num, block_mask):
         super(BlazeFaceNasSpace, self).__init__(input_size, output_size,
                                                 block_num, block_mask)
-        self.blaze_filter_num1 = np.array([4, 8, 12, 16, 20, 24, 32])
-        self.blaze_filter_num2 = np.array([8, 12, 16, 20, 24, 32, 40, 48, 64])
+        self.blaze_filter_num1 = np.array([4, 8, 12, 16, 24, 32])
+        self.blaze_filter_num2 = np.array([8, 12, 16, 24, 32, 40, 48, 64])
         self.mid_filter_num = np.array([8, 12, 16, 20, 24, 32])
         self.double_filter_num = np.array(
             [8, 12, 16, 24, 32, 40, 48, 64, 72, 80, 88, 96])

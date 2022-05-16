@@ -22,8 +22,7 @@ import sys
 import math
 from collections import defaultdict
 import numpy as np
-import paddle
-import paddle.nn.functional as F
+
 from ppdet.modeling.bbox_utils import bbox_iou_np_expand
 from .map_utils import ap_per_class
 from .metrics import Metric
@@ -36,8 +35,13 @@ __all__ = ['MOTEvaluator', 'MOTMetric', 'JDEDetMetric', 'KITTIMOTMetric']
 
 
 def read_mot_results(filename, is_gt=False, is_ignore=False):
-    valid_labels = {1}
-    ignore_labels = {2, 7, 8, 12}  # only in motchallenge datasets like 'MOT16'
+    valid_label = [1]
+    ignore_labels = [2, 7, 8, 12]  # only in motchallenge datasets like 'MOT16'
+    if is_gt:
+        logger.info(
+            "In MOT16/17 dataset the valid_label of ground truth is '{}', "
+            "in other dataset it should be '0' for single classs MOT.".format(
+                valid_label[0]))
     results_dict = dict()
     if os.path.isfile(filename):
         with open(filename, 'r') as f:
@@ -50,12 +54,10 @@ def read_mot_results(filename, is_gt=False, is_ignore=False):
                     continue
                 results_dict.setdefault(fid, list())
 
-                box_size = float(linelist[4]) * float(linelist[5])
-
                 if is_gt:
                     label = int(float(linelist[7]))
                     mark = int(float(linelist[6]))
-                    if mark == 0 or label not in valid_labels:
+                    if mark == 0 or label not in valid_label:
                         continue
                     score = 1
                 elif is_ignore:
@@ -118,6 +120,10 @@ class MOTEvaluator(object):
         assert self.data_type == 'mot'
         gt_filename = os.path.join(self.data_root, self.seq_name, 'gt',
                                    'gt.txt')
+        if not os.path.exists(gt_filename):
+            logger.warning(
+                "gt_filename '{}' of MOTEvaluator is not exist, so the MOTA will be -INF."
+            )
         self.gt_frame_dict = read_mot_results(gt_filename, is_gt=True)
         self.gt_ignore_frame_dict = read_mot_results(
             gt_filename, is_ignore=True)
@@ -551,7 +557,7 @@ class KITTIEvaluation(object):
                             "track ids are not unique for sequence %d: frame %d"
                             % (seq, t_data.frame))
                         logger.info(
-                            "track id %d occured at least twice for this frame"
+                            "track id %d occurred at least twice for this frame"
                             % t_data.track_id)
                         logger.info("Exiting...")
                         #continue # this allows to evaluate non-unique result files

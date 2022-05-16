@@ -82,7 +82,7 @@ PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking�
 ### 在MOT-17 Half上结果
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
-| DLA-34         | 1088x608 |  69.1  |  72.8  |  299  |  1957  | 14412 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bytetracker.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608.yml) |
+| DLA-34         | 1088x608 |  69.1  |  72.8  |  299  |  1957  | 14412 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608.yml) |
 | DLA-34 + BYTETracker| 1088x608 |  70.3 |  73.2  |  234  |  2176  | 13598 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_bytetracker.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_bytetracker.yml) |
 
 
@@ -95,6 +95,26 @@ PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking�
   match_thres: 0.8
   conf_thres: 0.4
   low_conf_thres: 0.2
+ ```
+
+### FairMOT迁移学习模型
+
+### 在GMOT-40的airplane子集上的结果
+|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| DLA-34         | 1088x608 |  96.6  |  94.7  |   19   |  300   | 466    |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_airplane.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_airplane.yml) |
+
+**注意:**
+ - 此模型数据集是GMOT-40的airplane类别抽离出来的子集，PaddleDetection团队整理后的下载链接为: ```wget https://bj.bcebos.com/v1/paddledet/data/mot/airplane.zip```，下载解压存放于 ```dataset/mot```目录下，并将其中的```airplane.train```复制存放于```dataset/mot/image_lists```。
+ - FairMOT模型此处训练是采用行人FairMOT训好的模型作为预训练权重，使用的训练集是airplane全集共4个视频序列，验证也是在全集上测的。
+ - 应用到其他物体的跟踪，需要更改对应的config文件里的tracker部分的```min_box_area```和```vertical_ratio```，如下所示：
+ ```
+JDETracker:
+  conf_thres: 0.4
+  tracked_thresh: 0.4
+  metric_type: cosine
+  min_box_area: 0 # 200 for pedestrian
+  vertical_ratio: 0 # 1.6 for pedestrian
  ```
 
 ## 快速开始

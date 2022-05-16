@@ -15,6 +15,8 @@
 import os
 import yaml
 import glob
+import json
+from pathlib import Path
 from functools import reduce
 
 import cv2
@@ -31,7 +33,7 @@ sys.path.insert(0, parent_path)
 
 from benchmark_utils import PaddleInferBenchmark
 from picodet_postprocess import PicoDetPostProcess
-from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, decode_image
+from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, Pad, decode_image
 from keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
 from visualize import visualize_box_mask
 from utils import argsparser, Timer, get_current_memory_mb
@@ -53,7 +55,10 @@ SUPPORT_MODELS = {
     'PicoDet',
     'CenterNet',
     'TOOD',
+    'RetinaNet',
     'StrongBaseline',
+    'STGCN',
+    'YOLOX',
 }
 
 
@@ -89,24 +94,28 @@ class Detector(object):
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
         enable_mkldnn (bool): whether to open MKLDNN
+        enable_mkldnn_bfloat16 (bool): whether to turn on mkldnn bfloat16
         output_dir (str): The path of output
         threshold (float): The threshold of score for visualization
+        delete_shuffle_pass (bool): whether to remove shuffle_channel_detect_pass in TensorRT. 
+                                    Used by action model.
     """
 
-    def __init__(
-            self,
-            model_dir,
-            device='CPU',
-            run_mode='paddle',
-            batch_size=1,
-            trt_min_shape=1,
-            trt_max_shape=1280,
-            trt_opt_shape=640,
-            trt_calib_mode=False,
-            cpu_threads=1,
-            enable_mkldnn=False,
-            output_dir='output',
-            threshold=0.5, ):
+    def __init__(self,
+                 model_dir,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 enable_mkldnn_bfloat16=False,
+                 output_dir='output',
+                 threshold=0.5,
+                 delete_shuffle_pass=False):
         self.pred_config = self.set_config(model_dir)
         self.predictor, self.config = load_predictor(
             model_dir,
@@ -120,7 +129,9 @@ class Detector(object):
             trt_opt_shape=trt_opt_shape,
             trt_calib_mode=trt_calib_mode,
             cpu_threads=cpu_threads,
-            enable_mkldnn=enable_mkldnn)
+            enable_mkldnn=enable_mkldnn,
+            enable_mkldnn_bfloat16=enable_mkldnn_bfloat16,
+            delete_shuffle_pass=delete_shuffle_pass)
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
         self.batch_size = batch_size
@@ -160,6 +171,25 @@ class Detector(object):
         result = {k: v for k, v in result.items() if v is not None}
         return result
 
+    def filter_box(self, result, threshold):
+        np_boxes_num = result['boxes_num']
+        boxes = result['boxes']
+        start_idx = 0
+        filter_boxes = []
+        filter_num = []
+        for i in range(len(np_boxes_num)):
+            boxes_num = np_boxes_num[i]
+            boxes_i = boxes[start_idx:start_idx + boxes_num, :]
+            idx = boxes_i[:, 1] > threshold
+            filter_boxes_i = boxes_i[idx, :]
+            filter_boxes.append(filter_boxes_i)
+            filter_num.append(filter_boxes_i.shape[0])
+            start_idx += boxes_num
+        boxes = np.concatenate(filter_boxes)
+        filter_num = np.array(filter_num)
+        filter_res = {'boxes': boxes, 'boxes_num': filter_num}
+        return filter_res
+
     def predict(self, repeats=1):
         '''
         Args:
@@ -194,7 +224,8 @@ class Detector(object):
             for k, v in res.items():
                 results[k].append(v)
         for k, v in results.items():
-            results[k] = np.concatenate(v)
+            if k != 'masks':
+                results[k] = np.concatenate(v)
         return results
 
     def get_timer(self):
@@ -204,7 +235,8 @@ class Detector(object):
                       image_list,
                       run_benchmark=False,
                       repeats=1,
-                      visual=True):
+                      visual=True,
+                      save_file=None):
         batch_loop_cnt = math.ceil(float(len(image_list)) / self.batch_size)
         results = []
         for i in range(batch_loop_cnt):
@@ -219,7 +251,7 @@ class Detector(object):
                 self.det_times.preprocess_time_s.end()
 
                 # model prediction
-                result = self.predict(repeats=repeats)  # warmup
+                result = self.predict(repeats=50)  # warmup
                 self.det_times.inference_time_s.start()
                 result = self.predict(repeats=repeats)
                 self.det_times.inference_time_s.end(repeats=repeats)
@@ -263,6 +295,10 @@ class Detector(object):
             results.append(result)
             if visual:
                 print('Test iter {}'.format(i))
+
+        if save_file is not None:
+            Path(self.output_dir).mkdir(exist_ok=True)
+            self.format_coco_results(image_list, results, save_file=save_file)
 
         results = self.merge_batch_result(results)
         return results
@@ -308,6 +344,68 @@ class Detector(object):
                     break
         writer.release()
 
+    @staticmethod
+    def format_coco_results(image_list, results, save_file=None):
+        coco_results = []
+        image_id = 0
+
+        for result in results:
+            start_idx = 0
+            for box_num in result['boxes_num']:
+                idx_slice = slice(start_idx, start_idx + box_num)
+                start_idx += box_num
+
+                image_file = image_list[image_id]
+                image_id += 1
+
+                if 'boxes' in result:
+                    boxes = result['boxes'][idx_slice, :]
+                    per_result = [
+                        {
+                            'image_file': image_file,
+                            'bbox':
+                            [box[2], box[3], box[4] - box[2],
+                             box[5] - box[3]],  # xyxy -> xywh
+                            'score': box[1],
+                            'category_id': int(box[0]),
+                        } for k, box in enumerate(boxes.tolist())
+                    ]
+
+                elif 'segm' in result:
+                    import pycocotools.mask as mask_util
+
+                    scores = result['score'][idx_slice].tolist()
+                    category_ids = result['label'][idx_slice].tolist()
+                    segms = result['segm'][idx_slice, :]
+                    rles = [
+                        mask_util.encode(
+                            np.array(
+                                mask[:, :, np.newaxis],
+                                dtype=np.uint8,
+                                order='F'))[0] for mask in segms
+                    ]
+                    for rle in rles:
+                        rle['counts'] = rle['counts'].decode('utf-8')
+
+                    per_result = [{
+                        'image_file': image_file,
+                        'segmentation': rle,
+                        'score': scores[k],
+                        'category_id': category_ids[k],
+                    } for k, rle in enumerate(rles)]
+
+                else:
+                    raise RuntimeError('')
+
+                # per_result = [item for item in per_result if item['score'] > threshold]
+                coco_results.extend(per_result)
+
+        if save_file:
+            with open(os.path.join(save_file), 'w') as f:
+                json.dump(coco_results, f)
+
+        return coco_results
+
 
 class DetectorSOLOv2(Detector):
     """
@@ -323,6 +421,7 @@ class DetectorSOLOv2(Detector):
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
         enable_mkldnn (bool): whether to open MKLDNN 
+        enable_mkldnn_bfloat16 (bool): Whether to turn on mkldnn bfloat16
         output_dir (str): The path of output
         threshold (float): The threshold of score for visualization
        
@@ -340,6 +439,7 @@ class DetectorSOLOv2(Detector):
             trt_calib_mode=False,
             cpu_threads=1,
             enable_mkldnn=False,
+            enable_mkldnn_bfloat16=False,
             output_dir='./',
             threshold=0.5, ):
         super(DetectorSOLOv2, self).__init__(
@@ -353,6 +453,7 @@ class DetectorSOLOv2(Detector):
             trt_calib_mode=trt_calib_mode,
             cpu_threads=cpu_threads,
             enable_mkldnn=enable_mkldnn,
+            enable_mkldnn_bfloat16=enable_mkldnn_bfloat16,
             output_dir=output_dir,
             threshold=threshold, )
 
@@ -399,7 +500,8 @@ class DetectorPicoDet(Detector):
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
-        enable_mkldnn (bool): whether to open MKLDNN 
+        enable_mkldnn (bool): whether to turn on MKLDNN
+        enable_mkldnn_bfloat16 (bool): whether to turn on MKLDNN_BFLOAT16
     """
 
     def __init__(
@@ -414,6 +516,7 @@ class DetectorPicoDet(Detector):
             trt_calib_mode=False,
             cpu_threads=1,
             enable_mkldnn=False,
+            enable_mkldnn_bfloat16=False,
             output_dir='./',
             threshold=0.5, ):
         super(DetectorPicoDet, self).__init__(
@@ -427,6 +530,7 @@ class DetectorPicoDet(Detector):
             trt_calib_mode=trt_calib_mode,
             cpu_threads=cpu_threads,
             enable_mkldnn=enable_mkldnn,
+            enable_mkldnn_bfloat16=enable_mkldnn_bfloat16,
             output_dir=output_dir,
             threshold=threshold, )
 
@@ -538,6 +642,10 @@ class PredictConfig():
             self.nms = yml_conf['NMS']
         if 'fpn_stride' in yml_conf:
             self.fpn_stride = yml_conf['fpn_stride']
+        if self.arch == 'RCNN' and yml_conf.get('export_onnx', False):
+            print(
+                'The RCNN export model is used for ONNX and it only supports batch_size = 1'
+            )
         self.print_config()
 
     def check_model(self, yml_conf):
@@ -571,7 +679,9 @@ def load_predictor(model_dir,
                    trt_opt_shape=640,
                    trt_calib_mode=False,
                    cpu_threads=1,
-                   enable_mkldnn=False):
+                   enable_mkldnn=False,
+                   enable_mkldnn_bfloat16=False,
+                   delete_shuffle_pass=False):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
@@ -583,6 +693,8 @@ def load_predictor(model_dir,
         trt_opt_shape (int): opt shape for dynamic shape in trt
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
+        delete_shuffle_pass (bool): whether to remove shuffle_channel_detect_pass in TensorRT. 
+                                    Used by action model.
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     Raises:
@@ -611,6 +723,8 @@ def load_predictor(model_dir,
                 # cache 10 different shapes for mkldnn to avoid memory leak
                 config.set_mkldnn_cache_capacity(10)
                 config.enable_mkldnn()
+                if enable_mkldnn_bfloat16:
+                    config.enable_mkldnn_bfloat16()
             except Exception as e:
                 print(
                     "The current environment does not support `mkldnn`, so disable mkldnn."
@@ -624,7 +738,7 @@ def load_predictor(model_dir,
     }
     if run_mode in precision_map.keys():
         config.enable_tensorrt_engine(
-            workspace_size=1 << 25,
+            workspace_size=(1 << 25) * batch_size,
             max_batch_size=batch_size,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[run_mode],
@@ -651,6 +765,8 @@ def load_predictor(model_dir,
     config.enable_memory_optim()
     # disable feed, fetch OP, needed by zero_copy_run
     config.switch_use_feed_fetch_ops(False)
+    if delete_shuffle_pass:
+        config.delete_pass("shuffle_channel_detect_pass")
     predictor = create_predictor(config)
     return predictor, config
 
@@ -660,7 +776,7 @@ def get_test_images(infer_dir, infer_img):
     Get image path list in TEST mode
     """
     assert infer_img is not None or infer_dir is not None, \
-        "--infer_img or --infer_dir should be set"
+        "--image_file or --image_dir should be set"
     assert infer_img is None or os.path.isfile(infer_img), \
             "{} is not a file".format(infer_img)
     assert infer_dir is None or os.path.isdir(infer_dir), \
@@ -737,18 +853,20 @@ def main():
     elif arch == 'PicoDet':
         detector_func = 'DetectorPicoDet'
 
-    detector = eval(detector_func)(FLAGS.model_dir,
-                                   device=FLAGS.device,
-                                   run_mode=FLAGS.run_mode,
-                                   batch_size=FLAGS.batch_size,
-                                   trt_min_shape=FLAGS.trt_min_shape,
-                                   trt_max_shape=FLAGS.trt_max_shape,
-                                   trt_opt_shape=FLAGS.trt_opt_shape,
-                                   trt_calib_mode=FLAGS.trt_calib_mode,
-                                   cpu_threads=FLAGS.cpu_threads,
-                                   enable_mkldnn=FLAGS.enable_mkldnn,
-                                   threshold=FLAGS.threshold,
-                                   output_dir=FLAGS.output_dir)
+    detector = eval(detector_func)(
+        FLAGS.model_dir,
+        device=FLAGS.device,
+        run_mode=FLAGS.run_mode,
+        batch_size=FLAGS.batch_size,
+        trt_min_shape=FLAGS.trt_min_shape,
+        trt_max_shape=FLAGS.trt_max_shape,
+        trt_opt_shape=FLAGS.trt_opt_shape,
+        trt_calib_mode=FLAGS.trt_calib_mode,
+        cpu_threads=FLAGS.cpu_threads,
+        enable_mkldnn=FLAGS.enable_mkldnn,
+        enable_mkldnn_bfloat16=FLAGS.enable_mkldnn_bfloat16,
+        threshold=FLAGS.threshold,
+        output_dir=FLAGS.output_dir)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
@@ -758,7 +876,10 @@ def main():
         if FLAGS.image_dir is None and FLAGS.image_file is not None:
             assert FLAGS.batch_size == 1, "batch_size should be 1, when image_file is not None"
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        detector.predict_image(img_list, FLAGS.run_benchmark, repeats=10)
+        save_file = os.path.join(FLAGS.output_dir,
+                                 'results.json') if FLAGS.save_results else None
+        detector.predict_image(
+            img_list, FLAGS.run_benchmark, repeats=100, save_file=save_file)
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)
         else:
@@ -780,5 +901,9 @@ if __name__ == '__main__':
     assert FLAGS.device in ['CPU', 'GPU', 'XPU'
                             ], "device should be CPU, GPU or XPU"
     assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
+
+    assert not (
+        FLAGS.enable_mkldnn == False and FLAGS.enable_mkldnn_bfloat16 == True
+    ), 'To enable mkldnn bfloat, please turn on both enable_mkldnn and enable_mkldnn_bfloat16'
 
     main()

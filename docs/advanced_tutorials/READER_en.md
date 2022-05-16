@@ -260,9 +260,11 @@ The Reader class is defined in `reader.py`, where the `BaseDataLoader` class is 
 
 ### 5.Configuration and Operation
 
-#### 5.1Configuration
+#### 5.1 Configuration
+The configuration files for modules related to data preprocessing contain the configuration files for Datasets common to all models and the configuration files for readers specific to different models.
 
-The configuration files for modules related to data preprocessing contain the configuration files for Datas sets common to all models and the configuration files for readers specific to different models. The configuration file for the Dataset exists in the `configs/datasets` folder. For example, the COCO dataset configuration file is as follows:
+##### 5.1.1 Dataset Configuration
+The configuration file for the Dataset exists in the `configs/datasets` folder. For example, the COCO dataset configuration file is as follows:
 ```
 metric: COCO # Currently supports COCO, VOC, OID, Wider Face and other evaluation standards
 num_classes: 80 # num_classes: The number of classes in the dataset, excluding background classes
@@ -272,7 +274,7 @@ TrainDataset:
     image_dir: train2017 # The path where the training set image resides relative to the dataset_dir
     anno_path: annotations/instances_train2017.json # Path to the annotation file of the training set relative to the dataset_dir
     dataset_dir: dataset/coco #The path where the dataset is located relative to the PaddleDetection path
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd'] # Controls the fields contained in the sample output of the dataset
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd'] # Controls the fields contained in the sample output of the dataset, note data_fields are unique to the TrainDataset and must be configured
 
 EvalDataset:
   !COCODataSet
@@ -281,9 +283,16 @@ EvalDataset:
     dataset_dir: dataset/coco # The path where the dataset is located relative to the PaddleDetection path
 TestDataset:
   !ImageFolder
-    anno_path: dataset/coco/annotations/instances_val2017.json # The path of the annotation file of the verification set, relative to the path of PaddleDetection
+    anno_path: dataset/coco/annotations/instances_val2017.json # The path of the annotation file,  it is only used to read the category information of the dataset. JSON and TXT formats are supported
+    dataset_dir: dataset/coco # The path of the dataset, note if this row is added, `anno_path` will be 'dataset_dir/anno_path`, if not set or removed, `anno_path` is `anno_path`
 ```
 In the YML profile for Paddle Detection, use `!`directly serializes module instances (functions, instances, etc.). The above configuration files are serialized using Dataset.
+
+**Note:**
+Please carefully check the configuration path of the dataset before running. During training or verification, if the path of TrainDataset or EvalDataset is wrong, it will download the dataset automatically. When using a user-defined dataset, if the TestDataset path is incorrectly configured during inference, the category of the default COCO dataset will be used.
+
+
+##### 5.1.2 Reader configuration
 The Reader configuration files for yolov3 are defined in `configs/yolov3/_base_/yolov3_reader.yml`. An example Reader configuration is as follows:
 ```
 worker_num: 2

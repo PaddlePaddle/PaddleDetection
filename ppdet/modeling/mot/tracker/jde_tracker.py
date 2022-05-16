@@ -38,12 +38,13 @@ class JDETracker(object):
     JDE tracker, support single class and multi classes
 
     Args:
+        use_byte (bool): Whether use ByteTracker, default False
         num_classes (int): the number of classes
         det_thresh (float): threshold of detection score
         track_buffer (int): buffer for tracker
         min_box_area (int): min box area to filter out low quality boxes
         vertical_ratio (float): w/h, the vertical ratio of the bbox to filter
-            bad results. If set <0 means no need to filter bboxes，usually set
+            bad results. If set <= 0 means no need to filter bboxes，usually set
             1.6 for pedestrian tracking.
         tracked_thresh (float): linear assignment threshold of tracked 
             stracks and detections
@@ -51,8 +52,15 @@ class JDETracker(object):
             tracked stracks and unmatched detections
         unconfirmed_thresh (float): linear assignment threshold of 
             unconfirmed stracks and unmatched detections
+        conf_thres (float): confidence threshold for tracking, also used in
+            ByteTracker as higher confidence threshold
+        match_thres (float): linear assignment threshold of tracked 
+            stracks and detections in ByteTracker
+        low_conf_thres (float): lower confidence threshold for tracking in
+            ByteTracker
+        input_size (list): input feature map size to reid model, [h, w] format,
+            [64, 192] as default.
         motion (str): motion model, KalmanFilter as default
-        conf_thres (float): confidence threshold for tracking
         metric_type (str): either "euclidean" or "cosine", the distance metric 
             used for measurement to track association.
     """
@@ -62,14 +70,15 @@ class JDETracker(object):
                  num_classes=1,
                  det_thresh=0.3,
                  track_buffer=30,
-                 min_box_area=200,
-                 vertical_ratio=1.6,
+                 min_box_area=0,
+                 vertical_ratio=0,
                  tracked_thresh=0.7,
                  r_tracked_thresh=0.5,
                  unconfirmed_thresh=0.7,
                  conf_thres=0,
                  match_thres=0.8,
                  low_conf_thres=0.2,
+                 input_size=[64, 192],
                  motion='KalmanFilter',
                  metric_type='euclidean'):
         self.use_byte = use_byte
@@ -86,6 +95,7 @@ class JDETracker(object):
         self.match_thres = match_thres
         self.low_conf_thres = low_conf_thres
 
+        self.input_size = input_size
         if motion == 'KalmanFilter':
             self.motion = KalmanFilter()
         self.metric_type = metric_type
@@ -112,7 +122,7 @@ class JDETracker(object):
 
         Return:
             output_stracks_dict (dict(list)): The list contains information
-                regarding the online_tracklets for the recieved image tensor.
+                regarding the online_tracklets for the received image tensor.
         """
         self.frame_id += 1
         if self.frame_id == 1:
@@ -142,7 +152,8 @@ class JDETracker(object):
             remain_inds = (pred_dets_cls[:, 1:2] > self.conf_thres).squeeze(-1)
             if remain_inds.sum() > 0:
                 pred_dets_cls = pred_dets_cls[remain_inds]
-                if self.use_byte:
+                if pred_embs_cls is None:
+                    # in original ByteTrack
                     detections = [
                         STrack(
                             STrack.tlbr_to_tlwh(tlbrs[2:6]),
@@ -156,9 +167,8 @@ class JDETracker(object):
                     detections = [
                         STrack(
                             STrack.tlbr_to_tlwh(tlbrs[2:6]), tlbrs[1], cls_id,
-                            30, temp_feat)
-                        for (tlbrs, temp_feat
-                             ) in zip(pred_dets_cls, pred_embs_cls)
+                            30, temp_feat) for (tlbrs, temp_feat) in
+                        zip(pred_dets_cls, pred_embs_cls)
                     ]
             else:
                 detections = []
@@ -181,7 +191,8 @@ class JDETracker(object):
             # Predict the current location with KalmanFilter
             STrack.multi_predict(track_pool_dict[cls_id], self.motion)
 
-            if self.use_byte:
+            if pred_embs_cls is None:
+                # in original ByteTrack
                 dists = matching.iou_distance(track_pool_dict[cls_id],
                                               detections)
                 matches, u_track, u_detection = matching.linear_assignment(
@@ -220,15 +231,26 @@ class JDETracker(object):
 
                 # association the untrack to the low score detections
                 if len(pred_dets_cls_second) > 0:
-                    detections_second = [
-                        STrack(
-                            STrack.tlbr_to_tlwh(tlbrs[:4]),
-                            tlbrs[4],
-                            cls_id,
-                            30,
-                            temp_feat=None)
-                        for tlbrs in pred_dets_cls_second[:, :5]
-                    ]
+                    if pred_embs_dict[cls_id] is None:
+                        # in original ByteTrack
+                        detections_second = [
+                            STrack(
+                                STrack.tlbr_to_tlwh(tlbrs[2:6]),
+                                tlbrs[1],
+                                cls_id,
+                                30,
+                                temp_feat=None)
+                            for tlbrs in pred_dets_cls_second
+                        ]
+                    else:
+                        pred_embs_cls_second = pred_embs_dict[cls_id][
+                            inds_second]
+                        detections_second = [
+                            STrack(
+                                STrack.tlbr_to_tlwh(tlbrs[2:6]), tlbrs[1],
+                                cls_id, 30, temp_feat) for (tlbrs, temp_feat) in
+                            zip(pred_dets_cls_second, pred_embs_cls_second)
+                        ]
                 else:
                     detections_second = []
                 r_tracked_stracks = [

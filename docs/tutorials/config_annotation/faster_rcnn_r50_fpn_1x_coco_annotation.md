@@ -90,7 +90,7 @@ TrainReader:
   - PadBatch: {pad_to_stride: 32}
   # 训练时batch_size
   batch_size: 1
-  # 读取数据是是否乱序
+  # 读取数据是否乱序
   shuffle: true
   # 是否丢弃最后不能完整组成batch的数据
   drop_last: true
@@ -110,7 +110,7 @@ EvalReader:
   - PadBatch: {pad_to_stride: 32}
   # 评估时batch_size
   batch_size: 1
-  # 读取数据是是否乱序
+  # 读取数据是否乱序
   shuffle: false
   # 是否丢弃最后不能完整组成batch的数据
   drop_last: false
@@ -130,7 +130,7 @@ TestReader:
   - PadBatch: {pad_to_stride: 32}
   # 测试时batch_size
   batch_size: 1
-  # 读取数据是是否乱序
+  # 读取数据是否乱序
   shuffle: false
   # 是否丢弃最后不能完整组成batch的数据
   drop_last: false

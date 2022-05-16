@@ -102,7 +102,7 @@ TrainReader:
     - Gt2YoloTarget: {anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]], anchors: [[10, 13], [16, 30], [33, 23], [30, 61], [62, 45], [59, 119], [116, 90], [156, 198], [373, 326]], downsample_ratios: [32, 16, 8]}
   # 训练时batch_size
   batch_size: 24
-  # 读取数据是是否乱序
+  # 读取数据是否乱序
   shuffle: true
   # 是否丢弃最后不能完整组成batch的数据
   drop_last: true

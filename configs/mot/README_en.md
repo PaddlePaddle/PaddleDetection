@@ -49,17 +49,17 @@ PP-Tracking supports GUI predict and deployment. Please refer to this [doc](http
 ## Installation
 Install all the related dependencies for MOT:
 ```
-pip install lap sklearn motmetrics openpyxl cython_bbox
+pip install lap sklearn motmetrics openpyxl
 or
 pip install -r requirements.txt
 ```
 **Notes:**
-- Install `cython_bbox` for Windows: `pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`. You can refer to this [tutorial](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows).
 - Please make sure that [ffmpeg](https://ffmpeg.org/ffmpeg.html) is installed first, on Linux(Ubuntu) platform you can directly install it by the following command:`apt-get update && apt-get install -y ffmpeg`.
 
 
 ## Model Zoo
 - Base models
+    - [ByteTrack](bytetrack/README.md)
     - [DeepSORT](deepsort/README.md)
     - [JDE](jde/README.md)
     - [FairMOT](fairmot/README.md)

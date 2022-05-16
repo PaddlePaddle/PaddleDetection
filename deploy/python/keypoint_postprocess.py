@@ -35,7 +35,7 @@ class HrHRNetPostProcess(object):
         heat_thresh (float): value of topk below this threshhold will be ignored
         tag_thresh (float): coord's value sampled in tagmap below this threshold belong to same people for init
 
-        inputs(list[heatmap]): the output list of modle, [heatmap, heatmap_maxpool, tagmap], heatmap_maxpool used to get topk
+        inputs(list[heatmap]): the output list of model, [heatmap, heatmap_maxpool, tagmap], heatmap_maxpool used to get topk
         original_height, original_width (float): the original image size
     """
 

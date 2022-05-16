@@ -41,7 +41,6 @@ from PIL import Image, ImageDraw, ImageFont
 class AttrDetector(Detector):
     """
     Args:
-        pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
@@ -96,13 +95,13 @@ class AttrDetector(Detector):
         age_list = ['AgeLess18', 'Age18-60', 'AgeOver60']
         direct_list = ['Front', 'Side', 'Back']
         bag_list = ['HandBag', 'ShoulderBag', 'Backpack']
-        upper_list = [
-            'UpperStride', 'UpperLogo', 'UpperPlaid', 'UpperSplice', 'LongCoat'
-        ]
+        upper_list = ['UpperStride', 'UpperLogo', 'UpperPlaid', 'UpperSplice']
         lower_list = [
-            'LowerStripe', 'LowerPattern', 'Trousers', 'Shorts', 'Skirt&Dress'
+            'LowerStripe', 'LowerPattern', 'LongCoat', 'Trousers', 'Shorts',
+            'Skirt&Dress'
         ]
-
+        glasses_threshold = 0.3
+        hold_threshold = 0.6
         batch_res = []
         for res in im_results:
             res = res.tolist()
@@ -118,7 +117,7 @@ class AttrDetector(Detector):
             label_res.append(direction)
             # glasses
             glasses = 'Glasses: '
-            if res[1] > self.threshold:
+            if res[1] > glasses_threshold:
                 glasses += 'True'
             else:
                 glasses += 'False'
@@ -132,7 +131,7 @@ class AttrDetector(Detector):
             label_res.append(hat)
             # hold obj
             hold_obj = 'HoldObjectsInFront: '
-            if res[18] > self.threshold:
+            if res[18] > hold_threshold:
                 hold_obj += 'True'
             else:
                 hold_obj += 'False'
@@ -143,7 +142,7 @@ class AttrDetector(Detector):
             bag_label = bag if bag_score > self.threshold else 'No bag'
             label_res.append(bag_label)
             # upper
-            upper_res = res[4:8] + res[10:11]
+            upper_res = res[4:8]
             upper_label = 'Upper:'
             sleeve = 'LongSleeve' if res[3] > res[2] else 'ShortSleeve'
             upper_label += ' {}'.format(sleeve)
@@ -152,7 +151,7 @@ class AttrDetector(Detector):
                     upper_label += ' {}'.format(upper_list[i])
             label_res.append(upper_label)
             # lower
-            lower_res = res[8:10] + res[11:14]
+            lower_res = res[8:14]
             lower_label = 'Lower: '
             has_lower = False
             for i, l in enumerate(lower_res):

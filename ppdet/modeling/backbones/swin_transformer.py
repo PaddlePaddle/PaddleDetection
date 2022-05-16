@@ -688,10 +688,10 @@ class SwinTransformer(nn.Layer):
         if self.frozen_stages >= 0:
             self.patch_embed.eval()
             for param in self.patch_embed.parameters():
-                param.requires_grad = False
+                param.stop_gradient = True
 
         if self.frozen_stages >= 1 and self.ape:
-            self.absolute_pos_embed.requires_grad = False
+            self.absolute_pos_embed.stop_gradient = True
 
         if self.frozen_stages >= 2:
             self.pos_drop.eval()
@@ -699,7 +699,7 @@ class SwinTransformer(nn.Layer):
                 m = self.layers[i]
                 m.eval()
                 for param in m.parameters():
-                    param.requires_grad = False
+                    param.stop_gradient = True
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):

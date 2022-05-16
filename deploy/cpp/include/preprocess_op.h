@@ -74,7 +74,7 @@ class NormalizeImage : public PreprocessOp {
   // CHW or HWC
   std::vector<float> mean_;
   std::vector<float> scale_;
-  bool is_scale_;
+  bool is_scale_ = true;
 };
 
 class Permute : public PreprocessOp {
@@ -143,6 +143,38 @@ class TopDownEvalAffine : public PreprocessOp {
   std::vector<int> trainsize_;
 };
 
+class WarpAffine : public PreprocessOp {
+ public:
+  virtual void Init(const YAML::Node& item) {
+    input_h_ = item["input_h"].as<int>();
+    input_w_ = item["input_w"].as<int>();
+    keep_res_ = item["keep_res"].as<bool>();
+  }
+
+  virtual void Run(cv::Mat* im, ImageBlob* data);
+
+ private:
+  int input_h_;
+  int input_w_;
+  int interp_ = 1;
+  bool keep_res_ = true;
+  int pad_ = 31;
+};
+
+class Pad : public PreprocessOp {
+ public:
+  virtual void Init(const YAML::Node& item) {
+    size_ = item["size"].as<std::vector<int>>();
+    fill_value_ = item["fill_value"].as<std::vector<float>>();
+  }
+
+  virtual void Run(cv::Mat* im, ImageBlob* data);
+
+ private:
+  std::vector<int> size_;
+  std::vector<float> fill_value_;
+};
+
 void CropImg(cv::Mat& img,
              cv::Mat& crop_img,
              std::vector<int>& area,
@@ -183,6 +215,10 @@ class Preprocessor {
       return std::make_shared<PadStride>();
     } else if (name == "TopDownEvalAffine") {
       return std::make_shared<TopDownEvalAffine>();
+    } else if (name == "WarpAffine") {
+      return std::make_shared<WarpAffine>();
+    }else if (name == "Pad") {
+      return std::make_shared<Pad>();
     }
     std::cerr << "can not find function of OP: " << name
               << " and return: nullptr" << std::endl;

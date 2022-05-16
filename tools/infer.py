@@ -32,7 +32,7 @@ import paddle
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.engine import Trainer
 from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_version, check_config
-from ppdet.utils.cli import ArgsParser
+from ppdet.utils.cli import ArgsParser, merge_args
 from ppdet.slim import build_slim_model
 
 from ppdet.utils.logger import setup_logger
@@ -77,10 +77,10 @@ def parse_args():
         default="vdl_log_dir/image",
         help='VisualDL logging directory for image.')
     parser.add_argument(
-        "--save_txt",
+        "--save_results",
         type=bool,
         default=False,
-        help="Whether to save inference result in txt.")
+        help="Whether to save inference results to output_dir.")
     args = parser.parse_args()
     return args
 
@@ -131,14 +131,13 @@ def run(FLAGS, cfg):
         images,
         draw_threshold=FLAGS.draw_threshold,
         output_dir=FLAGS.output_dir,
-        save_txt=FLAGS.save_txt)
+        save_results=FLAGS.save_results)
 
 
 def main():
     FLAGS = parse_args()
     cfg = load_config(FLAGS.config)
-    cfg['use_vdl'] = FLAGS.use_vdl
-    cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
+    merge_args(cfg, FLAGS)
     merge_config(FLAGS.opt)
 
     # disable npu in config by default
@@ -157,9 +156,6 @@ def main():
         place = paddle.set_device('xpu')
     else:
         place = paddle.set_device('cpu')
-
-    if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn' and not cfg.use_gpu:
-        cfg['norm_type'] = 'bn'
 
     if FLAGS.slim_config:
         cfg = build_slim_model(cfg, FLAGS.slim_config, mode='test')

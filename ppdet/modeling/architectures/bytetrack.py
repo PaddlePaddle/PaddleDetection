@@ -25,11 +25,11 @@ __all__ = ['ByteTrack']
 @register
 class ByteTrack(BaseArch):
     """
-    ByteTrack network, see https://arxiv.org/abs/
+    ByteTrack network, see https://arxiv.org/abs/2110.06864
 
     Args:
         detector (object): detector model instance
-        reid (object): reid model instance
+        reid (object): reid model instance, default None
         tracker (object): tracker instance
     """
     __category__ = 'architecture'

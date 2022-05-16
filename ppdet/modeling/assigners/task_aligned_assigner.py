@@ -85,7 +85,8 @@ class TaskAlignedAssigner(nn.Layer):
 
         # negative batch
         if num_max_boxes == 0:
-            assigned_labels = paddle.full([batch_size, num_anchors], bg_index)
+            assigned_labels = paddle.full(
+                [batch_size, num_anchors], bg_index, dtype=gt_labels.dtype)
             assigned_bboxes = paddle.zeros([batch_size, num_anchors, 4])
             assigned_scores = paddle.zeros(
                 [batch_size, num_anchors, num_classes])
@@ -129,9 +130,6 @@ class TaskAlignedAssigner(nn.Layer):
                                          mask_positive)
             mask_positive_sum = mask_positive.sum(axis=-2)
         assigned_gt_index = mask_positive.argmax(axis=-2)
-        assert mask_positive_sum.max() == 1, \
-            ("one anchor just assign one gt, but received not equals 1. "
-             "Received: %f" % mask_positive_sum.max().item())
 
         # assigned target
         assigned_gt_index = assigned_gt_index + batch_ind * num_max_boxes
@@ -146,7 +144,11 @@ class TaskAlignedAssigner(nn.Layer):
             gt_bboxes.reshape([-1, 4]), assigned_gt_index.flatten(), axis=0)
         assigned_bboxes = assigned_bboxes.reshape([batch_size, num_anchors, 4])
 
-        assigned_scores = F.one_hot(assigned_labels, num_classes)
+        assigned_scores = F.one_hot(assigned_labels, num_classes + 1)
+        ind = list(range(num_classes + 1))
+        ind.remove(bg_index)
+        assigned_scores = paddle.index_select(
+            assigned_scores, paddle.to_tensor(ind), axis=-1)
         # rescale alignment metrics
         alignment_metrics *= mask_positive
         max_metrics_per_instance = alignment_metrics.max(axis=-1, keepdim=True)

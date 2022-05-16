@@ -1,105 +1,89 @@
 # PicoDet MNN Demo
 
-This fold provides PicoDet inference code using
-[Alibaba's MNN framework](https://github.com/alibaba/MNN). Most of the implements in
-this fold are same as *demo_ncnn*.
+本Demo提供的预测代码是根据[Alibaba's MNN framework](https://github.com/alibaba/MNN) 推理库预测的。
 
-## Install MNN
+## C++ Demo
 
-### Python library
-
-Just run:
-
-``` shell
-pip install MNN
+- 第一步：根据[MNN官方编译文档](https://www.yuque.com/mnn/en/build_linux) 编译生成预测库.
+- 第二步：编译或下载得到OpenCV库，可参考OpenCV官网，为了方便如果环境是gcc8.2 x86环境，可直接下载以下库：
+```shell
+wget https://paddledet.bj.bcebos.com/data/opencv-3.4.16_gcc8.2_ffmpeg.tar.gz
+tar -xf opencv-3.4.16_gcc8.2_ffmpeg.tar.gz
 ```
 
-### C++ library
-
-Please follow the [official document](https://www.yuque.com/mnn/en/build_linux) to build MNN engine.
-- Create picodet_m_416_coco.onnx
+- 第三步：准备模型
     ```shell
-    modelName=picodet_m_416_coco
-    # export model
+    modelName=picodet_s_320_coco_lcnet
+    # 导出Inference model
     python tools/export_model.py \
             -c configs/picodet/${modelName}.yml \
             -o weights=${modelName}.pdparams \
             --output_dir=inference_model
-    # convert to onnx
+    # 转换到ONNX
     paddle2onnx --model_dir inference_model/${modelName} \
             --model_filename model.pdmodel  \
             --params_filename model.pdiparams \
             --opset_version 11 \
             --save_file ${modelName}.onnx
-    # onnxsim
+    # 简化模型
     python -m onnxsim ${modelName}.onnx ${modelName}_processed.onnx
+    # 将模型转换至MNN格式
+    python -m MNN.tools.mnnconvert -f ONNX --modelFile picodet_s_320_lcnet_processed.onnx --MNNModel picodet_s_320_lcnet.mnn
     ```
+为了快速测试，可直接下载：[picodet_s_320_lcnet.mnn](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_s_320_lcnet.mnn)（不带后处理）。
 
-- Convert model
-   ``` shell
-   python -m MNN.tools.mnnconvert -f ONNX --modelFile picodet-416.onnx --MNNModel picodet-416.mnn
-   ```
-Here are converted model [download link](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_m_416.mnn).
+**注意：**由于MNN里，Matmul算子的输入shape如果不一致计算有问题，带后处理的Demo正在升级中，很快发布。
 
-## Build
+## 编译可执行程序
 
-The python code *demo_mnn.py* can run directly and independently without main PicoDet repo.
-`PicoDetONNX` and `PicoDetTorch` are two classes used to check the similarity of MNN inference results
-with ONNX model and Pytorch model. They can be remove with no side effects.
-
-For C++ code, replace `libMNN.so` under *./mnn/lib* with the one you just compiled, modify OpenCV path and MNN path at CMake file,
-and run
-
+- 第一步：导入lib包
+```
+mkdir mnn && cd mnn && mkdir lib
+cp /path/to/MNN/build/libMNN.so .
+cd ..
+cp -r /path/to/MNN/include .
+```
+- 第二步：修改CMakeLists.txt中OpenCV和MNN的路径
+- 第三步：开始编译
 ``` shell
 mkdir build && cd build
 cmake ..
 make
 ```
+如果在build目录下生成`picodet-mnn`可执行文件，就证明成功了。
 
-Note that a flag at `main.cpp` is used to control whether to show the detection result or save it into a fold.
+## 开始运行
 
-``` c++
-#define __SAVE_RESULT__ // if defined save drawed results to ../results, else show it in windows
-```
-
-## Run
-
-### Python
-
-`demo_mnn.py` provide an inference class `PicoDetMNN` that combines preprocess, post process, visualization.
-Besides it can be used in command line with the form:
-
+首先新建预测结果存放目录：
 ```shell
-demo_mnn.py [-h] [--model_path MODEL_PATH] [--cfg_path CFG_PATH]
-    [--img_fold IMG_FOLD] [--result_fold RESULT_FOLD]
-    [--input_shape INPUT_SHAPE INPUT_SHAPE]
-    [--backend {MNN,ONNX,torch}]
+cp -r ../demo_onnxruntime/imgs .
+cd build
+mkdir ../results
 ```
 
-For example:
+- 预测一张图片
+``` shell
+./picodet-mnn 0 ../picodet_s_320_lcnet_3.mnn 320 320 ../imgs/dog.jpg
+```
+
+-测试速度Benchmark
 
 ``` shell
-# run MNN 416 model
-python ./demo_mnn.py --model_path ../model/picodet-416.mnn --img_fold ../imgs --result_fold ../results
-# run MNN 320 model
-python ./demo_mnn.py --model_path ../model/picodet-320.mnn --input_shape 320 320 --backend MNN
-# run onnx model
-python ./demo_mnn.py --model_path ../model/sim.onnx --backend ONNX
+./picodet-mnn 1 ../picodet_s_320_lcnet.mnn 320 320
 ```
 
-### C++
+## FAQ
 
-C++ inference interface is same with NCNN code, to detect images in a fold, run:
-
-``` shell
-./picodet-mnn "1" "../imgs/test.jpg"
+- 预测结果精度不对：
+请先确认模型输入shape是否对齐，并且模型输出name是否对齐，不带后处理的PicoDet增强版模型输出name如下：
+```shell
+# 分类分支  |  检测分支
+{"transpose_0.tmp_0", "transpose_1.tmp_0"},
+{"transpose_2.tmp_0", "transpose_3.tmp_0"},
+{"transpose_4.tmp_0", "transpose_5.tmp_0"},
+{"transpose_6.tmp_0", "transpose_7.tmp_0"},
 ```
-
-For speed benchmark
-
-``` shell
-./picodet-mnn "3" "0"
-```
+可使用[netron](https://netron.app)查看具体name，并修改`picodet_mnn.hpp`中相应`non_postprocess_heads_info`数组。
 
 ## Reference
 [MNN](https://github.com/alibaba/MNN)

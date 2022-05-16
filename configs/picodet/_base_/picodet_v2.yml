@@ -1,0 +1,61 @@
+architecture: PicoDet
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x1_5_pretrained.pdparams
+
+PicoDet:
+  backbone: LCNet
+  neck: LCPAN
+  head: PicoHeadV2
+
+LCNet:
+  scale: 1.5
+  feature_maps: [3, 4, 5]
+
+LCPAN:
+  out_channels: 128
+  use_depthwise: True
+  num_features: 4
+
+PicoHeadV2:
+  conv_feat:
+    name: PicoFeat
+    feat_in: 128
+    feat_out: 128
+    num_convs: 4
+    num_fpn_stride: 4
+    norm_type: bn
+    share_cls_reg: True
+    use_se: True
+  fpn_stride: [8, 16, 32, 64]
+  feat_in_chan: 128
+  prior_prob: 0.01
+  reg_max: 7
+  cell_offset: 0.5
+  grid_cell_scale: 5.0
+  static_assigner_epoch: 100
+  use_align_head: True
+  static_assigner:
+    name: ATSSAssigner
+    topk: 9
+    force_gt_matching: False
+  assigner:
+    name: TaskAlignedAssigner
+    topk: 13
+    alpha: 1.0
+    beta: 6.0
+  loss_class:
+    name: VarifocalLoss
+    use_sigmoid: False
+    iou_weighted: True
+    loss_weight: 1.0
+  loss_dfl:
+    name: DistributionFocalLoss
+    loss_weight: 0.5
+  loss_bbox:
+    name: GIoULoss
+    loss_weight: 2.5
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.025
+    nms_threshold: 0.6

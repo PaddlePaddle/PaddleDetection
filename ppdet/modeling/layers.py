@@ -363,18 +363,20 @@ class AnchorGeneratorSSD(object):
 @register
 @serializable
 class RCNNBox(object):
-    __shared__ = ['num_classes']
+    __shared__ = ['num_classes', 'export_onnx']
 
     def __init__(self,
                  prior_box_var=[10., 10., 5., 5.],
                  code_type="decode_center_size",
                  box_normalized=False,
-                 num_classes=80):
+                 num_classes=80,
+                 export_onnx=False):
         super(RCNNBox, self).__init__()
         self.prior_box_var = prior_box_var
         self.code_type = code_type
         self.box_normalized = box_normalized
         self.num_classes = num_classes
+        self.export_onnx = export_onnx
 
     def __call__(self, bbox_head_out, rois, im_shape, scale_factor):
         bbox_pred = bbox_head_out[0]
@@ -382,39 +384,38 @@ class RCNNBox(object):
         roi = rois[0]
         rois_num = rois[1]
 
-        origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
-        scale_list = []
-        origin_shape_list = []
+        if self.export_onnx:
+            onnx_rois_num_per_im = rois_num[0]
+            origin_shape = paddle.expand(im_shape[0, :],
+                                         [onnx_rois_num_per_im, 2])
 
-        batch_size = 1
-        if isinstance(roi, list):
-            batch_size = len(roi)
         else:
-            batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
-        # bbox_pred.shape: [N, C*4]
-        for idx in range(batch_size):
-            roi_per_im = roi[idx]
-            rois_num_per_im = rois_num[idx]
-            expand_im_shape = paddle.expand(im_shape[idx, :],
-                                            [rois_num_per_im, 2])
-            origin_shape_list.append(expand_im_shape)
+            origin_shape_list = []
+            if isinstance(roi, list):
+                batch_size = len(roi)
+            else:
+                batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
 
-        origin_shape = paddle.concat(origin_shape_list)
+            # bbox_pred.shape: [N, C*4]
+            for idx in range(batch_size):
+                rois_num_per_im = rois_num[idx]
+                expand_im_shape = paddle.expand(im_shape[idx, :],
+                                                [rois_num_per_im, 2])
+                origin_shape_list.append(expand_im_shape)
+
+            origin_shape = paddle.concat(origin_shape_list)
 
         # bbox_pred.shape: [N, C*4]
         # C=num_classes in faster/mask rcnn(bbox_head), C=1 in cascade rcnn(cascade_head)
         bbox = paddle.concat(roi)
-        if bbox.shape[0] == 0:
-            bbox = paddle.zeros([0, bbox_pred.shape[1]], dtype='float32')
-        else:
-            bbox = delta2bbox(bbox_pred, bbox, self.prior_box_var)
+        bbox = delta2bbox(bbox_pred, bbox, self.prior_box_var)
         scores = cls_prob[:, :-1]
 
         # bbox.shape: [N, C, 4]
         # bbox.shape[1] must be equal to scores.shape[1]
-        bbox_num_class = bbox.shape[1]
-        if bbox_num_class == 1:
-            bbox = paddle.tile(bbox, [1, self.num_classes, 1])
+        total_num = bbox.shape[0]
+        bbox_dim = bbox.shape[-1]
+        bbox = paddle.expand(bbox, [total_num, self.num_classes, bbox_dim])
 
         origin_h = paddle.unsqueeze(origin_shape[:, 0], axis=1)
         origin_w = paddle.unsqueeze(origin_shape[:, 1], axis=1)
@@ -439,7 +440,8 @@ class MultiClassNMS(object):
                  normalized=True,
                  nms_eta=1.0,
                  return_index=False,
-                 return_rois_num=True):
+                 return_rois_num=True,
+                 trt=False):
         super(MultiClassNMS, self).__init__()
         self.score_threshold = score_threshold
         self.nms_top_k = nms_top_k
@@ -449,6 +451,7 @@ class MultiClassNMS(object):
         self.nms_eta = nms_eta
         self.return_index = return_index
         self.return_rois_num = return_rois_num
+        self.trt = trt
 
     def __call__(self, bboxes, score, background_label=-1):
         """
@@ -470,7 +473,19 @@ class MultiClassNMS(object):
             kwargs.update({'rois_num': bbox_num})
         if background_label > -1:
             kwargs.update({'background_label': background_label})
-        return ops.multiclass_nms(bboxes, score, **kwargs)
+        kwargs.pop('trt')
+        # TODO(wangxinxin08): paddle version should be develop or 2.3 and above to run nms on tensorrt
+        if self.trt and (int(paddle.version.major) == 0 or
+                         (int(paddle.version.major) >= 2 and
+                          int(paddle.version.minor) >= 3)):
+            # TODO(wangxinxin08): tricky switch to run nms on tensorrt
+            kwargs.update({'nms_eta': 1.1})
+            bbox, bbox_num, _ = ops.multiclass_nms(bboxes, score, **kwargs)
+            mask = paddle.slice(bbox, [-1], [0], [1]) != -1
+            bbox = paddle.masked_select(bbox, mask).reshape((-1, 6))
+            return bbox, bbox_num, None
+        else:
+            return ops.multiclass_nms(bboxes, score, **kwargs)
 
 
 @register
@@ -1422,7 +1437,7 @@ class ConvMixer(nn.Layer):
         Seq, ActBn = nn.Sequential, lambda x: Seq(x, nn.GELU(), nn.BatchNorm2D(dim))
         Residual = type('Residual', (Seq, ),
                         {'forward': lambda self, x: self[0](x) + x})
-        return Seq(*[
+        return Seq(* [
             Seq(Residual(
                 ActBn(
                     nn.Conv2D(

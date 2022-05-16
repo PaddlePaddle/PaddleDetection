@@ -96,6 +96,8 @@ def draw_mask(im, np_boxes, np_masks, labels, threshold=0.5):
     expect_boxes = (np_boxes[:, 1] > threshold) & (np_boxes[:, 0] > -1)
     np_boxes = np_boxes[expect_boxes, :]
     np_masks = np_masks[expect_boxes, :, :]
+    im_h, im_w = im.shape[:2]
+    np_masks = np_masks[:, :im_h, :im_w]
     for i in range(len(np_masks)):
         clsid, score = int(np_boxes[i][0]), np_boxes[i][1]
         mask = np_masks[i]
@@ -338,17 +340,17 @@ def visualize_attr(im, results, boxes=None):
         im = np.ascontiguousarray(np.copy(im))
 
     im_h, im_w = im.shape[:2]
-    text_scale = max(1, int(im.shape[0] / 1600.))
-    text_thickness = 2
+    text_scale = max(0.5, im.shape[0] / 3000.)
+    text_thickness = 1
 
-    line_inter = im.shape[0] / 50.
+    line_inter = im.shape[0] / 40.
     for i, res in enumerate(results):
         if boxes is None:
-            text_w = 1
+            text_w = 3
             text_h = 1
         else:
             box = boxes[i]
-            text_w = int(box[2])
+            text_w = int(box[2]) + 3
             text_h = int(box[3])
         for text in res:
             text_h += int(line_inter)
@@ -357,7 +359,21 @@ def visualize_attr(im, results, boxes=None):
                 im,
                 text,
                 text_loc,
-                cv2.FONT_HERSHEY_PLAIN,
-                text_scale, (0, 0, 255),
+                cv2.FONT_ITALIC,
+                text_scale, (0, 255, 255),
                 thickness=text_thickness)
+    return im
+
+
+def visualize_action(im, mot_boxes, action_visual_collector, action_text=""):
+    im = cv2.imread(im) if isinstance(im, str) else im
+    id_detected = action_visual_collector.get_visualize_ids()
+    text_scale = max(1, im.shape[1] / 1600.)
+    for mot_box in mot_boxes:
+        # mot_box is a format with [mot_id, class, score, xmin, ymin, w, h] 
+        if mot_box[0] in id_detected:
+            text_position = (int(mot_box[3] + mot_box[5] * 0.75),
+                             int(mot_box[4] - 10))
+            cv2.putText(im, action_text, text_position, cv2.FONT_HERSHEY_PLAIN,
+                        text_scale, (0, 0, 255), 2)
     return im

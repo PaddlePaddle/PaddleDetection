@@ -1,0 +1,148 @@
+use_gpu: true
+log_iter: 20
+save_dir: output
+snapshot_epoch: 1
+print_flops: false
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ESNet_x0_75_pretrained.pdparams
+weights: output/picodet_s_320_pedestrian/model_final
+find_unused_parameters: True
+use_ema: true
+cycle_epoch: 40
+snapshot_epoch: 10
+epoch: 300
+metric: COCO
+num_classes: 1
+# Exporting the model
+export:
+  post_process: False  # Whether post-processing is included in the network when export model.
+  nms: False           # Whether NMS is included in the network when export model.
+  benchmark: False    # It is used to testing model performance, if set `True`, post-process and NMS will not be exported.
+
+architecture: PicoDet
+
+PicoDet:
+  backbone: ESNet
+  neck: CSPPAN
+  head: PicoHead
+
+ESNet:
+  scale: 0.75
+  feature_maps: [4, 11, 14]
+  act: hard_swish
+  channel_ratio: [0.875, 0.5, 0.5, 0.5, 0.625, 0.5, 0.625, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+
+CSPPAN:
+  out_channels: 96
+  use_depthwise: True
+  num_csp_blocks: 1
+  num_features: 4
+
+PicoHead:
+  conv_feat:
+    name: PicoFeat
+    feat_in: 96
+    feat_out: 96
+    num_convs: 2
+    num_fpn_stride: 4
+    norm_type: bn
+    share_cls_reg: True
+  fpn_stride: [8, 16, 32, 64]
+  feat_in_chan: 96
+  prior_prob: 0.01
+  reg_max: 7
+  cell_offset: 0.5
+  loss_class:
+    name: VarifocalLoss
+    use_sigmoid: True
+    iou_weighted: True
+    loss_weight: 1.0
+  loss_dfl:
+    name: DistributionFocalLoss
+    loss_weight: 0.25
+  loss_bbox:
+    name: GIoULoss
+    loss_weight: 2.0
+  assigner:
+    name: SimOTAAssigner
+    candidate_topk: 10
+    iou_weight: 6
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.025
+    nms_threshold: 0.6
+
+LearningRate:
+  base_lr: 0.4
+  schedulers:
+  - !CosineDecay
+    max_epochs: 300
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 300
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.00004
+    type: L2
+
+TrainDataset:
+  !COCODataSet
+    image_dir: ""
+    anno_path: aic_coco_train_cocoformat.json
+    dataset_dir: dataset
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/instances_val2017.json
+
+worker_num: 8
+TrainReader:
+  sample_transforms:
+  - Decode: {}
+  - RandomCrop: {}
+  - RandomFlip: {prob: 0.5}
+  - RandomDistort: {}
+  batch_transforms:
+  - BatchRandomResize: {target_size: [256, 288, 320, 352, 384], random_size: True, random_interp: True, keep_ratio: False}
+  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - Permute: {}
+  batch_size: 128
+  shuffle: true
+  drop_last: true
+  collate_batch: false
+
+EvalReader:
+  sample_transforms:
+  - Decode: {}
+  - Resize: {interp: 2, target_size: [320, 320], keep_ratio: False}
+  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - Permute: {}
+  batch_transforms:
+  - PadBatch: {pad_to_stride: 32}
+  batch_size: 8
+  shuffle: false
+
+TestReader:
+  inputs_def:
+    image_shape: [1, 3, 320, 320]
+  sample_transforms:
+  - Decode: {}
+  - Resize: {interp: 2, target_size: [320, 320], keep_ratio: False}
+  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - Permute: {}
+  batch_transforms:
+  - PadBatch: {pad_to_stride: 32}
+  batch_size: 1
+  shuffle: false

@@ -1,0 +1,69 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  './_base_/optimizer_300e.yml',
+  './_base_/yolox_cspdarknet.yml',
+  './_base_/yolox_reader.yml'
+]
+depth_mult: 0.33
+width_mult: 0.375
+
+log_iter: 100
+snapshot_epoch: 10
+weights: output/yolox_tiny_300e_coco/model_final
+
+
+### model config:
+YOLOX:
+  backbone: CSPDarkNet
+  neck: YOLOCSPPAN
+  head: YOLOXHead
+  size_stride: 32
+  size_range: [10, 20] # multi-scale ragne [320*320 ~ 640*640]
+
+
+### reader config:
+# Note: YOLOX-tiny/nano uses 416*416 for evaluation and inference.
+#       And multi-scale training setting is in model config, TrainReader's operators use 640*640 as default.
+worker_num: 4
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - Mosaic:
+        prob: 1.0
+        input_dim: [640, 640]
+        degrees: [-10, 10]
+        scale: [0.5, 1.5] # [0.1, 2.0] in YOLOX-s/m/l/x
+        shear: [-2, 2]
+        translate: [-0.1, 0.1]
+        enable_mixup: False # True in YOLOX-s/m/l/x
+    - AugmentHSV: {is_bgr: False, hgain: 5, sgain: 30, vgain: 30}
+    - PadResize: {target_size: 640}
+    - RandomFlip: {}
+  batch_transforms:
+    - Permute: {}
+  batch_size: 8
+  shuffle: True
+  drop_last: True
+  collate_batch: False
+  mosaic_epoch: 285
+
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [416, 416], keep_ratio: True, interp: 1}
+    - Pad: {size: [416, 416], fill_value: [114., 114., 114.]}
+    - Permute: {}
+  batch_size: 8
+
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 416, 416]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [416, 416], keep_ratio: True, interp: 1}
+    - Pad: {size: [416, 416], fill_value: [114., 114., 114.]}
+    - Permute: {}
+  batch_size: 1

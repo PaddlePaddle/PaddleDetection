@@ -80,7 +80,7 @@ class DETRLoss(nn.Layer):
             target_label = target_label.reshape([bs, num_query_objects])
         if self.use_focal_loss:
             target_label = F.one_hot(target_label,
-                                     self.num_classes + 1)[:, :, :-1]
+                                     self.num_classes + 1)[..., :-1]
         return {
             'loss_class': self.loss_coeff['class'] * sigmoid_focal_loss(
                 logits, target_label, num_gts / num_query_objects)

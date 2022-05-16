@@ -46,10 +46,27 @@ def argsparser():
         help="Path of video file, `video_file` or `camera_id` has a highest priority."
     )
     parser.add_argument(
+        "--video_dir",
+        type=str,
+        default=None,
+        help="Dir of video file, `video_file` has a higher priority.")
+    parser.add_argument(
+        "--model_dir", nargs='*', help="set model dir in pipeline")
+    parser.add_argument(
         "--camera_id",
         type=int,
         default=-1,
         help="device id of camera to predict.")
+    parser.add_argument(
+        "--enable_attr",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether use attribute recognition.")
+    parser.add_argument(
+        "--enable_action",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether use action recognition.")
     parser.add_argument(
         "--output_dir",
         type=str,
@@ -91,6 +108,21 @@ def argsparser():
         default=False,
         help="If the model is produced by TRT offline quantitative "
         "calibration, trt_calib_mode need to set True.")
+    parser.add_argument(
+        "--do_entrance_counting",
+        action='store_true',
+        help="Whether counting the numbers of identifiers entering "
+        "or getting out from the entrance. Note that only support one-class"
+        "counting, multi-class counting is coming soon.")
+    parser.add_argument(
+        "--secs_interval",
+        type=int,
+        default=2,
+        help="The seconds interval to count after tracking")
+    parser.add_argument(
+        "--draw_center_traj",
+        action='store_true',
+        help="Whether drawing the trajectory of center")
     return parser
 
 
@@ -131,6 +163,7 @@ class PipeTimer(Times):
             'attr': Times(),
             'kpt': Times(),
             'action': Times(),
+            'reid': Times()
         }
         self.img_num = 0
 
@@ -182,6 +215,21 @@ class PipeTimer(Times):
         return dic
 
 
+def merge_model_dir(args, model_dir):
+    # set --model_dir DET=ppyoloe/ to overwrite the model_dir in config file
+    task_set = ['DET', 'ATTR', 'MOT', 'KPT', 'ACTION', 'REID']
+    if not model_dir:
+        return args
+    for md in model_dir:
+        md = md.strip()
+        k, v = md.split('=', 1)
+        k_upper = k.upper()
+        assert k_upper in task_set, 'Illegal type of task, expect task are: {}, but received {}'.format(
+            task_set, k)
+        args[k_upper].update({'model_dir': v})
+    return args
+
+
 def merge_cfg(args):
     with open(args.config) as f:
         pred_config = yaml.safe_load(f)
@@ -196,14 +244,17 @@ def merge_cfg(args):
                     merge_cfg[k] = merge(v, arg)
         return merge_cfg
 
-    pred_config = merge(pred_config, vars(args))
+    args_dict = vars(args)
+    model_dir = args_dict.pop('model_dir')
+    pred_config = merge_model_dir(pred_config, model_dir)
+    pred_config = merge(pred_config, args_dict)
     return pred_config
 
 
 def print_arguments(cfg):
     print('-----------  Running Arguments -----------')
-    for arg, value in sorted(cfg.items()):
-        print('%s: %s' % (arg, value))
+    buffer = yaml.dump(cfg)
+    print(buffer)
     print('------------------------------------------')
 
 
@@ -238,7 +289,7 @@ def get_test_images(infer_dir, infer_img):
     return images
 
 
-def crop_image_with_det(batch_input, det_res):
+def crop_image_with_det(batch_input, det_res, thresh=0.3):
     boxes = det_res['boxes']
     score = det_res['boxes'][:, 1]
     boxes_num = det_res['boxes_num']
@@ -249,22 +300,43 @@ def crop_image_with_det(batch_input, det_res):
         boxes_i = boxes[start_idx:start_idx + boxes_num_i, :]
         score_i = score[start_idx:start_idx + boxes_num_i]
         res = []
-        for box in boxes_i:
-            crop_image, new_box, ori_box = expand_crop(input, box)
-            if crop_image is not None:
-                res.append(crop_image)
+        for box, s in zip(boxes_i, score_i):
+            if s > thresh:
+                crop_image, new_box, ori_box = expand_crop(input, box)
+                if crop_image is not None:
+                    res.append(crop_image)
         crop_res.append(res)
     return crop_res
 
 
-def crop_image_with_mot(input, mot_res):
+def normal_crop(image, rect):
+    imgh, imgw, c = image.shape
+    label, conf, xmin, ymin, xmax, ymax = [int(x) for x in rect.tolist()]
+    org_rect = [xmin, ymin, xmax, ymax]
+    if label != 0:
+        return None, None, None
+    xmin = max(0, xmin)
+    ymin = max(0, ymin)
+    xmax = min(imgw, xmax)
+    ymax = min(imgh, ymax)
+    return image[ymin:ymax, xmin:xmax, :], [xmin, ymin, xmax, ymax], org_rect
+
+
+def crop_image_with_mot(input, mot_res, expand=True):
     res = mot_res['boxes']
     crop_res = []
+    new_bboxes = []
+    ori_bboxes = []
     for box in res:
-        crop_image, new_box, ori_box = expand_crop(input, box[1:])
+        if expand:
+            crop_image, new_bbox, ori_bbox = expand_crop(input, box[1:])
+        else:
+            crop_image, new_bbox, ori_bbox = normal_crop(input, box[1:])
         if crop_image is not None:
             crop_res.append(crop_image)
-    return crop_res
+            new_bboxes.append(new_bbox)
+            ori_bboxes.append(ori_bbox)
+    return crop_res, new_bboxes, ori_bboxes
 
 
 def parse_mot_res(input):
@@ -275,3 +347,33 @@ def parse_mot_res(input):
         res = [i, 0, score, xmin, ymin, xmin + w, ymin + h]
         mot_res.append(res)
     return {'boxes': np.array(mot_res)}
+
+
+def refine_keypoint_coordinary(kpts, bbox, coord_size):
+    """
+        This function is used to adjust coordinate values to a fixed scale.
+    """
+    tl = bbox[:, 0:2]
+    wh = bbox[:, 2:] - tl
+    tl = np.expand_dims(np.transpose(tl, (1, 0)), (2, 3))
+    wh = np.expand_dims(np.transpose(wh, (1, 0)), (2, 3))
+    target_w, target_h = coord_size
+    res = (kpts - tl) / wh * np.expand_dims(
+        np.array([[target_w], [target_h]]), (2, 3))
+    return res
+
+
+def parse_mot_keypoint(input, coord_size):
+    parsed_skeleton_with_mot = {}
+    ids = []
+    skeleton = []
+    for tracker_id, kpt_seq in input:
+        ids.append(tracker_id)
+        kpts = np.array(kpt_seq.kpts, dtype=np.float32)[:, :, :2]
+        kpts = np.expand_dims(np.transpose(kpts, [2, 0, 1]),
+                              -1)  #T, K, C -> C, T, K, 1
+        bbox = np.array(kpt_seq.bboxes, dtype=np.float32)
+        skeleton.append(refine_keypoint_coordinary(kpts, bbox, coord_size))
+    parsed_skeleton_with_mot["mot_id"] = ids
+    parsed_skeleton_with_mot["skeleton"] = skeleton
+    return parsed_skeleton_with_mot

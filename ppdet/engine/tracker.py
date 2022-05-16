@@ -17,12 +17,11 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-import cv2
 import glob
 import re
 import paddle
 import numpy as np
-import os.path as osp
+from tqdm import tqdm
 from collections import defaultdict
 
 from ppdet.core.workspace import create
@@ -31,8 +30,7 @@ from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_bo
 from ppdet.modeling.mot.utils import MOTTimer, load_det_results, write_mot_results, save_vis_results
 from ppdet.modeling.mot.tracker import JDETracker, DeepSORTTracker
 
-from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric
-from ppdet.metrics import MCMOTMetric
+from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric, MCMOTMetric
 import ppdet.utils.stats as stats
 
 from .callbacks import Callback, ComposeCallback
@@ -119,7 +117,7 @@ class Tracker(object):
         with_reid = self.model.reid is not None
 
         if with_detector:
-            load_weight(self.model.detector, det_weights, self.optimizer)
+            load_weight(self.model.detector, det_weights)
             if with_reid:
                 load_weight(self.model.reid, reid_weights)
         else:
@@ -142,11 +140,8 @@ class Tracker(object):
         self.model.eval()
         results = defaultdict(list)  # support single class and multi classes
 
-        for step_id, data in enumerate(dataloader):
+        for step_id, data in enumerate(tqdm(dataloader)):
             self.status['step_id'] = step_id
-            if frame_id % 40 == 0:
-                logger.info('Processing frame {} ({:.2f} fps)'.format(
-                    frame_id, 1. / max(1e-5, timer.average_time)))
             # forward
             timer.tic()
             pred_dets, pred_embs = self.model(data)
@@ -210,12 +205,8 @@ class Tracker(object):
                 det_file))
 
         tracker = self.model.tracker
-        for step_id, data in enumerate(dataloader):
+        for step_id, data in enumerate(tqdm(dataloader)):
             self.status['step_id'] = step_id
-            if frame_id % 40 == 0:
-                logger.info('Processing frame {} ({:.2f} fps)'.format(
-                    frame_id, 1. / max(1e-5, timer.average_time)))
-
             ori_image = data['ori_image']  # [bs, H, W, 3]
             ori_image_shape = data['ori_image'].shape[1:3]
             # ori_image_shape: [H, W]
@@ -311,7 +302,7 @@ class Tracker(object):
                 crops = paddle.to_tensor(crops)
 
                 data.update({'crops': crops})
-                pred_embs = self.model(data).numpy()
+                pred_embs = self.model(data)['embeddings'].numpy()
             else:
                 pred_embs = None
 
@@ -339,8 +330,8 @@ class Tracker(object):
                 results[0].append(
                     (frame_id + 1, online_tlwhs, online_scores, online_ids))
                 save_vis_results(data, frame_id, online_ids, online_tlwhs,
-                                online_scores, timer.average_time, show_image,
-                                save_dir, self.cfg.num_classes)
+                                 online_scores, timer.average_time, show_image,
+                                 save_dir, self.cfg.num_classes)
 
             elif isinstance(tracker, JDETracker):
                 # trick hyperparams only used for MOTChallenge (MOT17, MOT20) Test-set
@@ -366,12 +357,12 @@ class Tracker(object):
                         online_scores[cls_id].append(tscore)
                     # save results
                     results[cls_id].append(
-                        (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id],
-                        online_ids[cls_id]))
+                        (frame_id + 1, online_tlwhs[cls_id],
+                         online_scores[cls_id], online_ids[cls_id]))
                 timer.toc()
                 save_vis_results(data, frame_id, online_ids, online_tlwhs,
-                                online_scores, timer.average_time, show_image,
-                                save_dir, self.cfg.num_classes)
+                                 online_scores, timer.average_time, show_image,
+                                 save_dir, self.cfg.num_classes)
 
             frame_id += 1
 
@@ -417,7 +408,7 @@ class Tracker(object):
 
             save_dir = os.path.join(output_dir, 'mot_outputs',
                                     seq) if save_images or save_videos else None
-            logger.info('start seq: {}'.format(seq))
+            logger.info('Evaluate seq: {}'.format(seq))
 
             self.dataset.set_images(self.get_infer_images(infer_dir))
             dataloader = create('EvalMOTReader')(self.dataset, 0)
@@ -458,7 +449,6 @@ class Tracker(object):
                 os.system(cmd_str)
                 logger.info('Save video in {}.'.format(output_video_path))
 
-            logger.info('Evaluate seq: {}'.format(seq))
             # update metrics
             for metric in self._metrics:
                 metric.update(data_root, seq, data_type, result_root,
@@ -582,6 +572,7 @@ class Tracker(object):
         write_mot_results(result_filename, results, data_type,
                           self.cfg.num_classes)
 
+
 def get_trick_hyperparams(video_name, ori_buffer, ori_thresh):
     if video_name[:3] != 'MOT':
         # only used for MOTChallenge (MOT17, MOT20) Test-set
@@ -610,5 +601,5 @@ def get_trick_hyperparams(video_name, ori_buffer, ori_thresh):
         track_thresh = 0.3
     else:
         track_thresh = ori_thresh
-    
+
     return track_buffer, ori_thresh

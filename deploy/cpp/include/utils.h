@@ -14,13 +14,13 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <utility>
-#include <ctime>
-#include <numeric>
 #include <algorithm>
+#include <ctime>
+#include <memory>
+#include <numeric>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace PaddleDetection {
 
@@ -32,6 +32,8 @@ struct ObjectResult {
   int class_id;
   // Confidence of detected object
   float confidence;
+  // Mask of detected object
+  std::vector<int> mask;
 };
 
 void nms(std::vector<ObjectResult> &input_boxes, float nms_threshold);

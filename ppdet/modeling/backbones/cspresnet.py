@@ -96,6 +96,8 @@ class RepVggBlock(nn.Layer):
         kernel, bias = self.get_equivalent_kernel_bias()
         self.conv.weight.set_value(kernel)
         self.conv.bias.set_value(bias)
+        self.__delattr__('conv1')
+        self.__delattr__('conv2')
 
     def get_equivalent_kernel_bias(self):
         kernel3x3, bias3x3 = self._fuse_bn_tensor(self.conv1)
@@ -176,7 +178,7 @@ class CSPResStage(nn.Layer):
             self.conv_down = None
         self.conv1 = ConvBNLayer(ch_mid, ch_mid // 2, 1, act=act)
         self.conv2 = ConvBNLayer(ch_mid, ch_mid // 2, 1, act=act)
-        self.blocks = nn.Sequential(* [
+        self.blocks = nn.Sequential(*[
             block_fn(
                 ch_mid // 2, ch_mid // 2, act=act, shortcut=True)
             for i in range(n)
@@ -252,9 +254,9 @@ class CSPResNet(nn.Layer):
                     act=act)))
 
         n = len(channels) - 1
-        self.stages = nn.Sequential(* [(str(i), CSPResStage(
+        self.stages = nn.Sequential(*[(str(i), CSPResStage(
             BasicBlock, channels[i], channels[i + 1], layers[i], 2, act=act))
-                                       for i in range(n)])
+                                      for i in range(n)])
 
         self._out_channels = channels[1:]
         self._out_strides = [4, 8, 16, 32]
