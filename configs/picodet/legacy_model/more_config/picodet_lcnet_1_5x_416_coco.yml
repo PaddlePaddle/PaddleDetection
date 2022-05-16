@@ -1,0 +1,23 @@
+_BASE_: [
+  '../../../datasets/coco_detection.yml',
+  '../../../runtime.yml',
+  '../_base_/picodet_esnet.yml',
+  '../_base_/optimizer_300e.yml',
+  '../_base_/picodet_416_reader.yml',
+]
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x1_5_pretrained.pdparams
+weights: output/picodet_lcnet_1_5x_416_coco/model_final
+find_unused_parameters: True
+use_ema: true
+cycle_epoch: 40
+snapshot_epoch: 10
+
+PicoDet:
+  backbone: LCNet
+  neck: CSPPAN
+  head: PicoHead
+
+LCNet:
+  scale: 1.5
+  feature_maps: [3, 4, 5]

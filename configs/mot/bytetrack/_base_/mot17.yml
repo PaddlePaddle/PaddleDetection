@@ -1,0 +1,34 @@
+metric: COCO
+num_classes: 1
+
+# Detection Dataset for training
+TrainDataset:
+  !COCODataSet
+    dataset_dir: dataset/mot/MOT17
+    anno_path: annotations/train_half.json
+    image_dir: images/train
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    dataset_dir: dataset/mot/MOT17
+    anno_path: annotations/val_half.json
+    image_dir: images/train
+
+TestDataset:
+  !ImageFolder
+    dataset_dir: dataset/mot/MOT17
+    anno_path: annotations/val_half.json
+
+
+# MOTDataset for MOT evaluation and inference
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: MOT17/images/half
+    keep_ori_im: True # set as True in DeepSORT and ByteTrack
+
+TestMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    keep_ori_im: True # set True if save visualization images or video

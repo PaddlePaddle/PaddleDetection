@@ -47,17 +47,17 @@ PP-Tracking 提供了简洁的GUI可视化界面，教程请参考[PP-Tracking�
 ## 安装依赖
 一键安装MOT相关的依赖：
 ```
-pip install lap sklearn motmetrics openpyxl cython_bbox
+pip install lap sklearn motmetrics openpyxl
 或者
 pip install -r requirements.txt
 ```
 **注意：**
-- `cython_bbox`在windows上安装：`pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`。可参考这个[教程](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)。
 - 预测需确保已安装[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
 
 
 ## 模型库
 - 基础模型
+    - [ByteTrack](bytetrack/README_cn.md)
     - [DeepSORT](deepsort/README_cn.md)
     - [JDE](jde/README_cn.md)
     - [FairMOT](fairmot/README_cn.md)
@@ -74,7 +74,12 @@ pip install -r requirements.txt
 ## 数据集准备
 ### MOT数据集
 PaddleDetection复现[JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) 和[FairMOT](https://github.com/ifzhang/FairMOT)，是使用的和他们相同的MIX数据集，包括**Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17和MOT16**。使用前6者作为联合数据集参与训练，MOT16作为评测数据集。如果您想使用这些数据集，请**遵循他们的License**。
-为了训练更多场景的垂类模型，垂类数据集也是处理成与MIX数据集相同格式，请参照[数据准备文档](../../docs/tutorials/PrepareMOTDataSet_cn.md)去准备数据集。
+
+**注意：**
+- 多目标跟踪数据集一般是用于单类别的多目标跟踪，DeepSORT、JDE和FairMOT均为单类别跟踪模型，MIX数据集以及其子数据集也都是单类别的行人跟踪数据集，可认为相比于行人检测数据集多了id号的标注。
+- 为了训练更多场景的垂类模型例如车辆等，垂类数据集也需要处理成与MIX数据集相同的格式，PaddleDetection也提供了[车辆跟踪](vehicle/README_cn.md)、[人头跟踪](headtracking21/README_cn.md)以及更通用的[行人跟踪](pedestrian/README_cn.md)的垂类数据集和模型。用户自定义数据集也可参照[数据准备文档](../../docs/tutorials/PrepareMOTDataSet_cn.md)去准备。
+- 多类别跟踪模型是[MCFairMOT](mcfairmot/README_cn.md)，多类别数据集是VisDrone数据集的整合版，可参照[MCFairMOT](mcfairmot/README_cn.md)的文档说明。
+- 跨镜头跟踪模型，是选用的[AIC21 MTMCT](https://www.aicitychallenge.org) (CityFlow)车辆跨镜头跟踪数据集，数据集和模型可参照[跨境头跟踪](mtmct/README_cn.md)的文档说明。
 
 ### 数据集目录
 首先按照以下命令下载image_lists.zip并解压放在`PaddleDetection/dataset/mot`目录下：
@@ -134,8 +139,8 @@ MOT17
 [class] [identity] [x_center] [y_center] [width] [height]
 ```
 **注意**:
-- `class`为类别id，从0开始计，支持单类别和多类别。
-- `identity`是从`1`到`num_identifies`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
+- `class`为类别id，支持单类别和多类别，从`0`开始计，单类别即为`0`。
+- `identity`是从`1`到`num_identities`的整数(`num_identities`是数据集中所有视频或图片序列的不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
 - `[x_center] [y_center] [width] [height]`是中心点坐标和宽高，注意他们的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
 
 

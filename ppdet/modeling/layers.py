@@ -251,7 +251,7 @@ class LiteConv(nn.Layer):
 
 
 class DropBlock(nn.Layer):
-    def __init__(self, block_size, keep_prob, name, data_format='NCHW'):
+    def __init__(self, block_size, keep_prob, name=None, data_format='NCHW'):
         """
         DropBlock layer, see https://arxiv.org/abs/1810.12890
 
@@ -363,18 +363,20 @@ class AnchorGeneratorSSD(object):
 @register
 @serializable
 class RCNNBox(object):
-    __shared__ = ['num_classes']
+    __shared__ = ['num_classes', 'export_onnx']
 
     def __init__(self,
                  prior_box_var=[10., 10., 5., 5.],
                  code_type="decode_center_size",
                  box_normalized=False,
-                 num_classes=80):
+                 num_classes=80,
+                 export_onnx=False):
         super(RCNNBox, self).__init__()
         self.prior_box_var = prior_box_var
         self.code_type = code_type
         self.box_normalized = box_normalized
         self.num_classes = num_classes
+        self.export_onnx = export_onnx
 
     def __call__(self, bbox_head_out, rois, im_shape, scale_factor):
         bbox_pred = bbox_head_out[0]
@@ -382,39 +384,38 @@ class RCNNBox(object):
         roi = rois[0]
         rois_num = rois[1]
 
-        origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
-        scale_list = []
-        origin_shape_list = []
+        if self.export_onnx:
+            onnx_rois_num_per_im = rois_num[0]
+            origin_shape = paddle.expand(im_shape[0, :],
+                                         [onnx_rois_num_per_im, 2])
 
-        batch_size = 1
-        if isinstance(roi, list):
-            batch_size = len(roi)
         else:
-            batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
-        # bbox_pred.shape: [N, C*4]
-        for idx in range(batch_size):
-            roi_per_im = roi[idx]
-            rois_num_per_im = rois_num[idx]
-            expand_im_shape = paddle.expand(im_shape[idx, :],
-                                            [rois_num_per_im, 2])
-            origin_shape_list.append(expand_im_shape)
+            origin_shape_list = []
+            if isinstance(roi, list):
+                batch_size = len(roi)
+            else:
+                batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
 
-        origin_shape = paddle.concat(origin_shape_list)
+            # bbox_pred.shape: [N, C*4]
+            for idx in range(batch_size):
+                rois_num_per_im = rois_num[idx]
+                expand_im_shape = paddle.expand(im_shape[idx, :],
+                                                [rois_num_per_im, 2])
+                origin_shape_list.append(expand_im_shape)
+
+            origin_shape = paddle.concat(origin_shape_list)
 
         # bbox_pred.shape: [N, C*4]
         # C=num_classes in faster/mask rcnn(bbox_head), C=1 in cascade rcnn(cascade_head)
         bbox = paddle.concat(roi)
-        if bbox.shape[0] == 0:
-            bbox = paddle.zeros([0, bbox_pred.shape[1]], dtype='float32')
-        else:
-            bbox = delta2bbox(bbox_pred, bbox, self.prior_box_var)
+        bbox = delta2bbox(bbox_pred, bbox, self.prior_box_var)
         scores = cls_prob[:, :-1]
 
         # bbox.shape: [N, C, 4]
         # bbox.shape[1] must be equal to scores.shape[1]
-        bbox_num_class = bbox.shape[1]
-        if bbox_num_class == 1:
-            bbox = paddle.tile(bbox, [1, self.num_classes, 1])
+        total_num = bbox.shape[0]
+        bbox_dim = bbox.shape[-1]
+        bbox = paddle.expand(bbox, [total_num, self.num_classes, bbox_dim])
 
         origin_h = paddle.unsqueeze(origin_shape[:, 0], axis=1)
         origin_w = paddle.unsqueeze(origin_shape[:, 1], axis=1)
@@ -439,7 +440,8 @@ class MultiClassNMS(object):
                  normalized=True,
                  nms_eta=1.0,
                  return_index=False,
-                 return_rois_num=True):
+                 return_rois_num=True,
+                 trt=False):
         super(MultiClassNMS, self).__init__()
         self.score_threshold = score_threshold
         self.nms_top_k = nms_top_k
@@ -449,6 +451,7 @@ class MultiClassNMS(object):
         self.nms_eta = nms_eta
         self.return_index = return_index
         self.return_rois_num = return_rois_num
+        self.trt = trt
 
     def __call__(self, bboxes, score, background_label=-1):
         """
@@ -470,7 +473,19 @@ class MultiClassNMS(object):
             kwargs.update({'rois_num': bbox_num})
         if background_label > -1:
             kwargs.update({'background_label': background_label})
-        return ops.multiclass_nms(bboxes, score, **kwargs)
+        kwargs.pop('trt')
+        # TODO(wangxinxin08): paddle version should be develop or 2.3 and above to run nms on tensorrt
+        if self.trt and (int(paddle.version.major) == 0 or
+                         (int(paddle.version.major) >= 2 and
+                          int(paddle.version.minor) >= 3)):
+            # TODO(wangxinxin08): tricky switch to run nms on tensorrt
+            kwargs.update({'nms_eta': 1.1})
+            bbox, bbox_num, _ = ops.multiclass_nms(bboxes, score, **kwargs)
+            mask = paddle.slice(bbox, [-1], [0], [1]) != -1
+            bbox = paddle.masked_select(bbox, mask).reshape((-1, 6))
+            return bbox, bbox_num, None
+        else:
+            return ops.multiclass_nms(bboxes, score, **kwargs)
 
 
 @register
@@ -553,9 +568,14 @@ class YOLOBox(object):
 @register
 @serializable
 class SSDBox(object):
-    def __init__(self, is_normalized=True):
+    def __init__(self,
+                 is_normalized=True,
+                 prior_box_var=[0.1, 0.1, 0.2, 0.2],
+                 use_fuse_decode=False):
         self.is_normalized = is_normalized
         self.norm_delta = float(not self.is_normalized)
+        self.prior_box_var = prior_box_var
+        self.use_fuse_decode = use_fuse_decode
 
     def __call__(self,
                  preds,
@@ -564,40 +584,42 @@ class SSDBox(object):
                  scale_factor,
                  var_weight=None):
         boxes, scores = preds
-        outputs = []
-        for box, score, prior_box in zip(boxes, scores, prior_boxes):
-            pb_w = prior_box[:, 2] - prior_box[:, 0] + self.norm_delta
-            pb_h = prior_box[:, 3] - prior_box[:, 1] + self.norm_delta
-            pb_x = prior_box[:, 0] + pb_w * 0.5
-            pb_y = prior_box[:, 1] + pb_h * 0.5
-            out_x = pb_x + box[:, :, 0] * pb_w * 0.1
-            out_y = pb_y + box[:, :, 1] * pb_h * 0.1
-            out_w = paddle.exp(box[:, :, 2] * 0.2) * pb_w
-            out_h = paddle.exp(box[:, :, 3] * 0.2) * pb_h
+        boxes = paddle.concat(boxes, axis=1)
+        prior_boxes = paddle.concat(prior_boxes)
+        if self.use_fuse_decode:
+            output_boxes = ops.box_coder(
+                prior_boxes,
+                self.prior_box_var,
+                boxes,
+                code_type="decode_center_size",
+                box_normalized=self.is_normalized)
+        else:
+            pb_w = prior_boxes[:, 2] - prior_boxes[:, 0] + self.norm_delta
+            pb_h = prior_boxes[:, 3] - prior_boxes[:, 1] + self.norm_delta
+            pb_x = prior_boxes[:, 0] + pb_w * 0.5
+            pb_y = prior_boxes[:, 1] + pb_h * 0.5
+            out_x = pb_x + boxes[:, :, 0] * pb_w * self.prior_box_var[0]
+            out_y = pb_y + boxes[:, :, 1] * pb_h * self.prior_box_var[1]
+            out_w = paddle.exp(boxes[:, :, 2] * self.prior_box_var[2]) * pb_w
+            out_h = paddle.exp(boxes[:, :, 3] * self.prior_box_var[3]) * pb_h
+            output_boxes = paddle.stack(
+                [
+                    out_x - out_w / 2., out_y - out_h / 2., out_x + out_w / 2.,
+                    out_y + out_h / 2.
+                ],
+                axis=-1)
 
-            if self.is_normalized:
-                h = paddle.unsqueeze(
-                    im_shape[:, 0] / scale_factor[:, 0], axis=-1)
-                w = paddle.unsqueeze(
-                    im_shape[:, 1] / scale_factor[:, 1], axis=-1)
-                output = paddle.stack(
-                    [(out_x - out_w / 2.) * w, (out_y - out_h / 2.) * h,
-                     (out_x + out_w / 2.) * w, (out_y + out_h / 2.) * h],
-                    axis=-1)
-            else:
-                output = paddle.stack(
-                    [
-                        out_x - out_w / 2., out_y - out_h / 2.,
-                        out_x + out_w / 2. - 1., out_y + out_h / 2. - 1.
-                    ],
-                    axis=-1)
-            outputs.append(output)
-        boxes = paddle.concat(outputs, axis=1)
+        if self.is_normalized:
+            h = (im_shape[:, 0] / scale_factor[:, 0]).unsqueeze(-1)
+            w = (im_shape[:, 1] / scale_factor[:, 1]).unsqueeze(-1)
+            im_shape = paddle.stack([w, h, w, h], axis=-1)
+            output_boxes *= im_shape
+        else:
+            output_boxes[..., -2:] -= 1.0
+        output_scores = F.softmax(paddle.concat(
+            scores, axis=1)).transpose([0, 2, 1])
 
-        scores = F.softmax(paddle.concat(scores, axis=1))
-        scores = paddle.transpose(scores, [0, 2, 1])
-
-        return boxes, scores
+        return output_boxes, output_scores
 
 
 @register
@@ -1415,7 +1437,7 @@ class ConvMixer(nn.Layer):
         Seq, ActBn = nn.Sequential, lambda x: Seq(x, nn.GELU(), nn.BatchNorm2D(dim))
         Residual = type('Residual', (Seq, ),
                         {'forward': lambda self, x: self[0](x) + x})
-        return Seq(*[
+        return Seq(* [
             Seq(Residual(
                 ActBn(
                     nn.Conv2D(

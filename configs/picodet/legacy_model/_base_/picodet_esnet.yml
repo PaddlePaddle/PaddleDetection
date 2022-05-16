@@ -1,0 +1,55 @@
+architecture: PicoDet
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ESNet_x1_0_pretrained.pdparams
+
+PicoDet:
+  backbone: ESNet
+  neck: CSPPAN
+  head: PicoHead
+
+ESNet:
+  scale: 1.0
+  feature_maps: [4, 11, 14]
+  act: hard_swish
+  channel_ratio: [0.875, 0.5, 1.0, 0.625, 0.5, 0.75, 0.625, 0.625, 0.5, 0.625, 1.0, 0.625, 0.75]
+
+CSPPAN:
+  out_channels: 128
+  use_depthwise: True
+  num_csp_blocks: 1
+  num_features: 4
+
+PicoHead:
+  conv_feat:
+    name: PicoFeat
+    feat_in: 128
+    feat_out: 128
+    num_convs: 4
+    num_fpn_stride: 4
+    norm_type: bn
+    share_cls_reg: True
+  fpn_stride: [8, 16, 32, 64]
+  feat_in_chan: 128
+  prior_prob: 0.01
+  reg_max: 7
+  cell_offset: 0.5
+  loss_class:
+    name: VarifocalLoss
+    use_sigmoid: True
+    iou_weighted: True
+    loss_weight: 1.0
+  loss_dfl:
+    name: DistributionFocalLoss
+    loss_weight: 0.25
+  loss_bbox:
+    name: GIoULoss
+    loss_weight: 2.0
+  assigner:
+    name: SimOTAAssigner
+    candidate_topk: 10
+    iou_weight: 6
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.025
+    nms_threshold: 0.6

@@ -1,0 +1,67 @@
+
+input_height: &input_height 800
+input_width: &input_width 1440
+input_size: &input_size [*input_height, *input_width]
+
+worker_num: 4
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - Mosaic:
+        prob: 1.0
+        input_dim: *input_size
+        degrees: [-10, 10]
+        scale: [0.1, 2.0]
+        shear: [-2, 2]
+        translate: [-0.1, 0.1]
+        enable_mixup: True
+        mixup_prob: 1.0
+        mixup_scale: [0.5, 1.5]
+    - AugmentHSV: {is_bgr: False, hgain: 5, sgain: 30, vgain: 30}
+    - PadResize: {target_size: *input_size}
+    - RandomFlip: {}
+  batch_transforms:
+    - Permute: {}
+  batch_size: 6
+  shuffle: True
+  drop_last: True
+  collate_batch: False
+  mosaic_epoch: 20
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: *input_size, keep_ratio: True}
+    - Pad: {size: *input_size, fill_value: [114., 114., 114.]}
+    - Permute: {}
+  batch_size: 8
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 800, 1440]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: *input_size, keep_ratio: True}
+    - Pad: {size: *input_size, fill_value: [114., 114., 114.]}
+    - Permute: {}
+  batch_size: 1
+
+
+# add MOTReader for MOT evaluation and inference, note batch_size should be 1 in MOT
+EvalMOTReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: *input_size, keep_ratio: True}
+    - Pad: {size: *input_size, fill_value: [114., 114., 114.]}
+    - Permute: {}
+  batch_size: 1
+
+TestMOTReader:
+  inputs_def:
+    image_shape: [3, 800, 1440]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: *input_size, keep_ratio: True}
+    - Pad: {size: *input_size, fill_value: [114., 114., 114.]}
+    - Permute: {}
+  batch_size: 1

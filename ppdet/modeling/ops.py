@@ -1,15 +1,15 @@
-#   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+#   
+# Licensed under the Apache License, Version 2.0 (the "License");   
+# you may not use this file except in compliance with the License.  
+# You may obtain a copy of the License at   
+#   
+#     http://www.apache.org/licenses/LICENSE-2.0    
+# 
+# Unless required by applicable law or agreed to in writing, software   
+# distributed under the License is distributed on an "AS IS" BASIS, 
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
+# See the License for the specific language governing permissions and   
 # limitations under the License.
 
 import paddle
@@ -17,31 +17,61 @@ import paddle.nn.functional as F
 import paddle.nn as nn
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
+from paddle import _C_ops
 
 from paddle.fluid.framework import Variable, in_dygraph_mode
 from paddle.fluid import core
+from paddle.fluid.dygraph import parallel_helper
 from paddle.fluid.layer_helper import LayerHelper
 from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype
 
 __all__ = [
-    'roi_pool',
-    'roi_align',
-    'prior_box',
-    'generate_proposals',
-    'iou_similarity',
-    'box_coder',
-    'yolo_box',
-    'multiclass_nms',
-    'distribute_fpn_proposals',
-    'collect_fpn_proposals',
-    'matrix_nms',
-    'batch_norm',
-    'mish',
+    'roi_pool', 'roi_align', 'prior_box', 'generate_proposals',
+    'iou_similarity', 'box_coder', 'yolo_box', 'multiclass_nms',
+    'distribute_fpn_proposals', 'collect_fpn_proposals', 'matrix_nms',
+    'batch_norm', 'get_activation', 'mish', 'swish', 'identity'
 ]
 
 
+def identity(x):
+    return x
+
+
 def mish(x):
-    return x * paddle.tanh(F.softplus(x))
+    return F.mish(x) if hasattr(F, mish) else x * F.tanh(F.softplus(x))
+
+
+def swish(x):
+    return x * F.sigmoid(x)
+
+
+TRT_ACT_SPEC = {'swish': swish}
+
+ACT_SPEC = {'mish': mish}
+
+
+def get_act_fn(act=None, trt=False):
+    assert act is None or isinstance(act, (
+        str, dict)), 'name of activation should be str, dict or None'
+    if not act:
+        return identity
+
+    if isinstance(act, dict):
+        name = act['name']
+        act.pop('name')
+        kwargs = act
+    else:
+        name = act
+        kwargs = dict()
+
+    if trt and name in TRT_ACT_SPEC:
+        fn = TRT_ACT_SPEC[name]
+    elif name in ACT_SPEC:
+        fn = ACT_SPEC[name]
+    else:
+        fn = getattr(F, name)
+
+    return lambda x: fn(x, **kwargs)
 
 
 def batch_norm(ch,
@@ -75,6 +105,18 @@ def batch_norm(ch,
             param.stop_gradient = True
 
     return norm_layer
+
+
+def get_activation(name="silu"):
+    if name == "silu":
+        module = nn.Silu()
+    elif name == "relu":
+        module = nn.ReLU()
+    elif name == "leakyrelu":
+        module = nn.LeakyReLU(0.1)
+    else:
+        raise AttributeError("Unsupported act type: {}".format(name))
+    return module
 
 
 @paddle.jit.not_to_static
@@ -145,7 +187,7 @@ def roi_pool(input,
     pooled_height, pooled_width = output_size
     if in_dygraph_mode():
         assert rois_num is not None, "rois_num should not be None in dygraph mode."
-        pool_out, argmaxes = core.ops.roi_pool(
+        pool_out, argmaxes = _C_ops.roi_pool(
             input, rois, rois_num, "pooled_height", pooled_height,
             "pooled_width", pooled_width, "spatial_scale", spatial_scale)
         return pool_out, argmaxes
@@ -239,7 +281,7 @@ def roi_align(input,
             rois_num = paddle.static.data(name='rois_num', shape=[None], dtype='int32')
             align_out = ops.roi_align(input=x,
                                                rois=rois,
-                                               ouput_size=(7, 7),
+                                               output_size=(7, 7),
                                                spatial_scale=0.5,
                                                sampling_ratio=-1,
                                                rois_num=rois_num)
@@ -252,7 +294,7 @@ def roi_align(input,
 
     if in_dygraph_mode():
         assert rois_num is not None, "rois_num should not be None in dygraph mode."
-        align_out = core.ops.roi_align(
+        align_out = _C_ops.roi_align(
             input, rois, rois_num, "pooled_height", pooled_height,
             "pooled_width", pooled_width, "spatial_scale", spatial_scale,
             "sampling_ratio", sampling_ratio, "aligned", aligned)
@@ -335,7 +377,7 @@ def iou_similarity(x, y, box_normalized=True, name=None):
     """
 
     if in_dygraph_mode():
-        out = core.ops.iou_similarity(x, y, 'box_normalized', box_normalized)
+        out = _C_ops.iou_similarity(x, y, 'box_normalized', box_normalized)
         return out
     else:
         helper = LayerHelper("iou_similarity", **locals())
@@ -431,7 +473,7 @@ def collect_fpn_proposals(multi_rois,
     if in_dygraph_mode():
         assert rois_num_per_level is not None, "rois_num_per_level should not be None in dygraph mode."
         attrs = ('post_nms_topN', post_nms_top_n)
-        output_rois, rois_num = core.ops.collect_fpn_proposals(
+        output_rois, rois_num = _C_ops.collect_fpn_proposals(
             input_rois, input_scores, rois_num_per_level, *attrs)
         return output_rois, rois_num
 
@@ -453,6 +495,8 @@ def collect_fpn_proposals(multi_rois,
             rois_num = helper.create_variable_for_type_inference(dtype='int32')
             rois_num.stop_gradient = True
             outputs['RoisNum'] = rois_num
+        else:
+            rois_num = None
         helper.append_op(
             type='collect_fpn_proposals',
             inputs=inputs,
@@ -544,7 +588,7 @@ def distribute_fpn_proposals(fpn_rois,
         attrs = ('min_level', min_level, 'max_level', max_level, 'refer_level',
                  refer_level, 'refer_scale', refer_scale, 'pixel_offset',
                  pixel_offset)
-        multi_rois, restore_ind, rois_num_per_level = core.ops.distribute_fpn_proposals(
+        multi_rois, restore_ind, rois_num_per_level = _C_ops.distribute_fpn_proposals(
             fpn_rois, rois_num, num_lvl, num_lvl, *attrs)
         return multi_rois, restore_ind, rois_num_per_level
 
@@ -573,6 +617,8 @@ def distribute_fpn_proposals(fpn_rois,
                 for i in range(num_lvl)
             ]
             outputs['MultiLevelRoIsNum'] = rois_num_per_level
+        else:
+            rois_num_per_level = None
 
         helper.append_op(
             type='distribute_fpn_proposals',
@@ -696,7 +742,7 @@ def yolo_box(
         attrs = ('anchors', anchors, 'class_num', class_num, 'conf_thresh',
                  conf_thresh, 'downsample_ratio', downsample_ratio, 'clip_bbox',
                  clip_bbox, 'scale_x_y', scale_x_y)
-        boxes, scores = core.ops.yolo_box(x, origin_shape, *attrs)
+        boxes, scores = _C_ops.yolo_box(x, origin_shape, *attrs)
         return boxes, scores
     else:
         boxes = helper.create_variable_for_type_inference(dtype=x.dtype)
@@ -834,7 +880,7 @@ def prior_box(input,
                  'min_max_aspect_ratios_order', min_max_aspect_ratios_order)
         if cur_max_sizes is not None:
             attrs += ('max_sizes', cur_max_sizes)
-        box, var = core.ops.prior_box(input, image, *attrs)
+        box, var = _C_ops.prior_box(input, image, *attrs)
         return box, var
     else:
         attrs = {
@@ -977,8 +1023,8 @@ def multiclass_nms(bboxes,
                  score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
                  nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
                  'normalized', normalized)
-        output, index, nms_rois_num = core.ops.multiclass_nms3(bboxes, scores,
-                                                               rois_num, *attrs)
+        output, index, nms_rois_num = _C_ops.multiclass_nms3(bboxes, scores,
+                                                             rois_num, *attrs)
         if not return_index:
             index = None
         return output, nms_rois_num, index
@@ -1119,7 +1165,7 @@ def matrix_nms(bboxes,
                  nms_top_k, 'gaussian_sigma', gaussian_sigma, 'use_gaussian',
                  use_gaussian, 'keep_top_k', keep_top_k, 'normalized',
                  normalized)
-        out, index, rois_num = core.ops.matrix_nms(bboxes, scores, *attrs)
+        out, index, rois_num = _C_ops.matrix_nms(bboxes, scores, *attrs)
         if not return_index:
             index = None
         if not return_rois_num:
@@ -1240,7 +1286,7 @@ def bipartite_match(dist_matrix,
                              ['float32', 'float64'], 'bipartite_match')
 
     if in_dygraph_mode():
-        match_indices, match_distance = core.ops.bipartite_match(
+        match_indices, match_distance = _C_ops.bipartite_match(
             dist_matrix, "match_type", match_type, "dist_threshold",
             dist_threshold)
         return match_indices, match_distance
@@ -1377,12 +1423,12 @@ def box_coder(prior_box,
 
     if in_dygraph_mode():
         if isinstance(prior_box_var, Variable):
-            output_box = core.ops.box_coder(
+            output_box = _C_ops.box_coder(
                 prior_box, prior_box_var, target_box, "code_type", code_type,
                 "box_normalized", box_normalized, "axis", axis)
 
         elif isinstance(prior_box_var, list):
-            output_box = core.ops.box_coder(
+            output_box = _C_ops.box_coder(
                 prior_box, None, target_box, "code_type", code_type,
                 "box_normalized", box_normalized, "axis", axis, "variance",
                 prior_box_var)
@@ -1505,8 +1551,10 @@ def generate_proposals(scores,
         attrs = ('pre_nms_topN', pre_nms_top_n, 'post_nms_topN', post_nms_top_n,
                  'nms_thresh', nms_thresh, 'min_size', min_size, 'eta', eta,
                  'pixel_offset', pixel_offset)
-        rpn_rois, rpn_roi_probs, rpn_rois_num = core.ops.generate_proposals_v2(
+        rpn_rois, rpn_roi_probs, rpn_rois_num = _C_ops.generate_proposals_v2(
             scores, bbox_deltas, im_shape, anchors, variances, *attrs)
+        if not return_rois_num:
+            rpn_rois_num = None
         return rpn_rois, rpn_roi_probs, rpn_rois_num
 
     else:
@@ -1557,6 +1605,8 @@ def generate_proposals(scores,
             outputs=outputs)
         rpn_rois.stop_gradient = True
         rpn_roi_probs.stop_gradient = True
+        if not return_rois_num:
+            rpn_rois_num = None
 
         return rpn_rois, rpn_roi_probs, rpn_rois_num
 
@@ -1602,3 +1652,8 @@ def get_static_shape(tensor):
     shape = paddle.shape(tensor)
     shape.stop_gradient = True
     return shape
+
+
+def paddle_distributed_is_initialized():
+    return core.is_compiled_with_dist(
+    ) and parallel_helper._is_parallel_ctx_initialized()

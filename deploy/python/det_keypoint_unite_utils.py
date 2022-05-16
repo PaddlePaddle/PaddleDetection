@@ -112,7 +112,7 @@ def argsparser():
         "calibration, trt_calib_mode need to set True.")
     parser.add_argument(
         '--use_dark',
-        type=bool,
+        type=ast.literal_eval,
         default=True,
         help='whether to use darkpose to get better keypoint position predict ')
     parser.add_argument(

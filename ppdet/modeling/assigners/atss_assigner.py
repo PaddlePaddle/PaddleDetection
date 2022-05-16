@@ -127,7 +127,8 @@ class ATSSAssigner(nn.Layer):
 
         # negative batch
         if num_max_boxes == 0:
-            assigned_labels = paddle.full([batch_size, num_anchors], bg_index)
+            assigned_labels = paddle.full(
+                [batch_size, num_anchors], bg_index, dtype=gt_labels.dtype)
             assigned_bboxes = paddle.zeros([batch_size, num_anchors, 4])
             assigned_scores = paddle.zeros(
                 [batch_size, num_anchors, self.num_classes])
@@ -189,9 +190,6 @@ class ATSSAssigner(nn.Layer):
                                          mask_positive)
             mask_positive_sum = mask_positive.sum(axis=-2)
         assigned_gt_index = mask_positive.argmax(axis=-2)
-        assert mask_positive_sum.max() == 1, \
-            ("one anchor just assign one gt, but received not equals 1. "
-             "Received: %f" % mask_positive_sum.max().item())
 
         # assigned target
         batch_ind = paddle.arange(
@@ -216,7 +214,11 @@ class ATSSAssigner(nn.Layer):
             assigned_kps = assigned_kps.reshape(
                 [batch_size, num_anchors, gt_kps.shape[-1]])
 
-        assigned_scores = F.one_hot(assigned_labels, self.num_classes)
+        assigned_scores = F.one_hot(assigned_labels, self.num_classes + 1)
+        ind = list(range(self.num_classes + 1))
+        ind.remove(bg_index)
+        assigned_scores = paddle.index_select(
+            assigned_scores, paddle.to_tensor(ind), axis=-1)
         if pred_bboxes is not None:
             # assigned iou
             ious = batch_iou_similarity(gt_bboxes, pred_bboxes) * mask_positive

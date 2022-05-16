@@ -18,93 +18,31 @@ import yaml
 import cv2
 import numpy as np
 from collections import defaultdict
-
 import paddle
-from paddle.inference import Config
-from paddle.inference import create_predictor
 
-from picodet_postprocess import PicoDetPostProcess
-from utils import argsparser, Timer, get_current_memory_mb
-from infer import Detector, DetectorPicoDet, get_test_images, print_arguments, PredictConfig
-from infer import load_predictor
 from benchmark_utils import PaddleInferBenchmark
+from preprocess import decode_image
+from utils import argsparser, Timer, get_current_memory_mb
+from infer import Detector, get_test_images, print_arguments, bench_log, PredictConfig, load_predictor
 
-from ppdet.modeling.mot.tracker import DeepSORTTracker
-from ppdet.modeling.mot.visualization import plot_tracking
-from ppdet.modeling.mot.utils import MOTTimer, write_mot_results
+# add python path
+import sys
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+sys.path.insert(0, parent_path)
 
-# Global dictionary
-MOT_SUPPORT_MODELS = {'DeepSORT'}
-
-
-def bench_log(detector, img_list, model_info, batch_size=1, name=None):
-    mems = {
-        'cpu_rss_mb': detector.cpu_mem / len(img_list),
-        'gpu_rss_mb': detector.gpu_mem / len(img_list),
-        'gpu_util': detector.gpu_util * 100 / len(img_list)
-    }
-    perf_info = detector.det_times.report(average=True)
-    data_info = {
-        'batch_size': batch_size,
-        'shape': "dynamic_shape",
-        'data_num': perf_info['img_num']
-    }
-    log = PaddleInferBenchmark(detector.config, model_info, data_info,
-                               perf_info, mems)
-    log(name)
-
-
-def scale_coords(coords, input_shape, im_shape, scale_factor):
-    im_shape = im_shape[0]
-    ratio = scale_factor[0][0]
-    pad_w = (input_shape[1] - int(im_shape[1])) / 2
-    pad_h = (input_shape[0] - int(im_shape[0])) / 2
-    coords[:, 0::2] -= pad_w
-    coords[:, 1::2] -= pad_h
-    coords[:, 0:4] /= ratio
-    coords[:, :4] = np.clip(coords[:, :4], a_min=0, a_max=coords[:, :4].max())
-    return coords.round()
-
-
-def clip_box(xyxy, input_shape, im_shape, scale_factor):
-    im_shape = im_shape[0]
-    ratio = scale_factor[0][0]
-    img0_shape = [int(im_shape[0] / ratio), int(im_shape[1] / ratio)]
-    xyxy[:, 0::2] = np.clip(xyxy[:, 0::2], a_min=0, a_max=img0_shape[1])
-    xyxy[:, 1::2] = np.clip(xyxy[:, 1::2], a_min=0, a_max=img0_shape[0])
-    w = xyxy[:, 2:3] - xyxy[:, 0:1]
-    h = xyxy[:, 3:4] - xyxy[:, 1:2]
-    mask = np.logical_and(h > 0, w > 0)
-    keep_idx = np.nonzero(mask)
-    return xyxy[keep_idx[0]], keep_idx
-
-
-def preprocess_reid(imgs,
-                    w=64,
-                    h=192,
-                    mean=[0.485, 0.456, 0.406],
-                    std=[0.229, 0.224, 0.225]):
-    im_batch = []
-    for img in imgs:
-        img = cv2.resize(img, (w, h))
-        img = img[:, :, ::-1].astype('float32').transpose((2, 0, 1)) / 255
-        img_mean = np.array(mean).reshape((3, 1, 1))
-        img_std = np.array(std).reshape((3, 1, 1))
-        img -= img_mean
-        img /= img_std
-        img = np.expand_dims(img, axis=0)
-        im_batch.append(img)
-    im_batch = np.concatenate(im_batch, 0)
-    return im_batch
+from pptracking.python.mot import JDETracker, DeepSORTTracker
+from pptracking.python.mot.utils import MOTTimer, write_mot_results, get_crops, clip_box
+from pptracking.python.mot.visualize import plot_tracking, plot_tracking_dict
 
 
 class SDE_Detector(Detector):
     """
     Args:
-        pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
+        tracker_config (str): tracker config path
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
@@ -112,22 +50,31 @@ class SDE_Detector(Detector):
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
         enable_mkldnn (bool): whether to open MKLDNN
+        output_dir (string): The path of output, default as 'output'
+        threshold (float): Score threshold of the detected bbox, default as 0.5
+        save_images (bool): Whether to save visualization image results, default as False
+        save_mot_txts (bool): Whether to save tracking results (txt), default as False
+        reid_model_dir (str): reid model dir, default None for ByteTrack, but set for DeepSORT
     """
 
     def __init__(self,
-                 pred_config,
                  model_dir,
+                 tracker_config,
                  device='CPU',
                  run_mode='paddle',
                  batch_size=1,
                  trt_min_shape=1,
-                 trt_max_shape=1088,
-                 trt_opt_shape=608,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
                  trt_calib_mode=False,
                  cpu_threads=1,
-                 enable_mkldnn=False):
+                 enable_mkldnn=False,
+                 output_dir='output',
+                 threshold=0.5,
+                 save_images=False,
+                 save_mot_txts=False,
+                 reid_model_dir=None):
         super(SDE_Detector, self).__init__(
-            pred_config=pred_config,
             model_dir=model_dir,
             device=device,
             run_mode=run_mode,
@@ -137,561 +84,428 @@ class SDE_Detector(Detector):
             trt_opt_shape=trt_opt_shape,
             trt_calib_mode=trt_calib_mode,
             cpu_threads=cpu_threads,
-            enable_mkldnn=enable_mkldnn)
-        assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
-        self.pred_config = pred_config
+            enable_mkldnn=enable_mkldnn,
+            output_dir=output_dir,
+            threshold=threshold, )
+        self.save_images = save_images
+        self.save_mot_txts = save_mot_txts
+        assert batch_size == 1, "MOT model only supports batch_size=1."
+        self.det_times = Timer(with_tracker=True)
+        self.num_classes = len(self.pred_config.labels)
 
-    def postprocess(self, boxes, input_shape, im_shape, scale_factor, threshold,
-                    scaled):
-        over_thres_idx = np.nonzero(boxes[:, 1:2] >= threshold)[0]
-        if len(over_thres_idx) == 0:
-            pred_dets = np.zeros((1, 6), dtype=np.float32)
-            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
-            return pred_dets, pred_xyxys
+        # reid config
+        self.use_reid = False if reid_model_dir is None else True
+        if self.use_reid:
+            self.reid_pred_config = self.set_config(reid_model_dir)
+            self.reid_predictor, self.config = load_predictor(
+                reid_model_dir,
+                run_mode=run_mode,
+                batch_size=50,  # reid_batch_size
+                min_subgraph_size=self.reid_pred_config.min_subgraph_size,
+                device=device,
+                use_dynamic_shape=self.reid_pred_config.use_dynamic_shape,
+                trt_min_shape=trt_min_shape,
+                trt_max_shape=trt_max_shape,
+                trt_opt_shape=trt_opt_shape,
+                trt_calib_mode=trt_calib_mode,
+                cpu_threads=cpu_threads,
+                enable_mkldnn=enable_mkldnn)
         else:
-            boxes = boxes[over_thres_idx]
+            self.reid_pred_config = None
+            self.reid_predictor = None
 
-        if not scaled:
-            # scaled means whether the coords after detector outputs
-            # have been scaled back to the original image, set True 
-            # in general detector, set False in JDE YOLOv3.
-            pred_bboxes = scale_coords(boxes[:, 2:], input_shape, im_shape,
-                                       scale_factor)
+        assert tracker_config is not None, 'Note that tracker_config should be set.'
+        self.tracker_config = tracker_config
+        tracker_cfg = yaml.safe_load(open(self.tracker_config))
+        cfg = tracker_cfg[tracker_cfg['type']]
+
+        # tracker config
+        self.use_deepsort_tracker = True if tracker_cfg[
+            'type'] == 'DeepSORTTracker' else False
+        if self.use_deepsort_tracker:
+            # use DeepSORTTracker
+            if self.reid_pred_config is not None and hasattr(
+                    self.reid_pred_config, 'tracker'):
+                cfg = self.reid_pred_config.tracker
+            budget = cfg.get('budget', 100)
+            max_age = cfg.get('max_age', 30)
+            max_iou_distance = cfg.get('max_iou_distance', 0.7)
+            matching_threshold = cfg.get('matching_threshold', 0.2)
+            min_box_area = cfg.get('min_box_area', 0)
+            vertical_ratio = cfg.get('vertical_ratio', 0)
+
+            self.tracker = DeepSORTTracker(
+                budget=budget,
+                max_age=max_age,
+                max_iou_distance=max_iou_distance,
+                matching_threshold=matching_threshold,
+                min_box_area=min_box_area,
+                vertical_ratio=vertical_ratio, )
         else:
-            pred_bboxes = boxes[:, 2:]
+            # use ByteTracker
+            use_byte = cfg.get('use_byte', False)
+            det_thresh = cfg.get('det_thresh', 0.3)
+            min_box_area = cfg.get('min_box_area', 0)
+            vertical_ratio = cfg.get('vertical_ratio', 0)
+            match_thres = cfg.get('match_thres', 0.9)
+            conf_thres = cfg.get('conf_thres', 0.6)
+            low_conf_thres = cfg.get('low_conf_thres', 0.1)
 
-        pred_xyxys, keep_idx = clip_box(pred_bboxes, input_shape, im_shape,
-                                        scale_factor)
+            self.tracker = JDETracker(
+                use_byte=use_byte,
+                det_thresh=det_thresh,
+                num_classes=self.num_classes,
+                min_box_area=min_box_area,
+                vertical_ratio=vertical_ratio,
+                match_thres=match_thres,
+                conf_thres=conf_thres,
+                low_conf_thres=low_conf_thres, )
+
+    def postprocess(self, inputs, result):
+        # postprocess output of predictor
+        np_boxes_num = result['boxes_num']
+        if np_boxes_num[0] <= 0:
+            print('[WARNNING] No object detected.')
+            result = {'boxes': np.zeros([0, 6]), 'boxes_num': [0]}
+        result = {k: v for k, v in result.items() if v is not None}
+        return result
+
+    def reidprocess(self, det_results, repeats=1):
+        pred_dets = det_results['boxes']
+        pred_xyxys = pred_dets[:, 2:6]
+
+        ori_image = det_results['ori_image']
+        ori_image_shape = ori_image.shape[:2]
+        pred_xyxys, keep_idx = clip_box(pred_xyxys, ori_image_shape)
+
         if len(keep_idx[0]) == 0:
-            pred_dets = np.zeros((1, 6), dtype=np.float32)
-            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
-            return pred_dets, pred_xyxys
+            det_results['boxes'] = np.zeros((1, 6), dtype=np.float32)
+            det_results['embeddings'] = None
+            return det_results
 
-        pred_scores = boxes[:, 1:2][keep_idx[0]]
-        pred_cls_ids = boxes[:, 0:1][keep_idx[0]]
-        pred_tlwhs = np.concatenate(
-            (pred_xyxys[:, 0:2], pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
-            axis=1)
+        pred_dets = pred_dets[keep_idx[0]]
+        pred_xyxys = pred_dets[:, 2:6]
 
-        pred_dets = np.concatenate(
-            (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
-
-        return pred_dets, pred_xyxys
-
-    def predict(self, image, scaled, threshold=0.5, repeats=1, add_timer=True):
-        '''
-        Args:
-            image (np.ndarray): image numpy data
-            scaled (bool): whether the coords after detector outputs are scaled,
-                default False in jde yolov3, set True in general detector.
-            threshold (float): threshold of predicted box' score
-            repeats (int): repeat number for prediction
-            add_timer (bool): whether add timer during prediction
-        Returns:
-            pred_dets (np.ndarray, [N, 6])
-        '''
-        # preprocess
-        if add_timer:
-            self.det_times.preprocess_time_s.start()
-        inputs = self.preprocess(image)
-
-        input_names = self.predictor.get_input_names()
-        for i in range(len(input_names)):
-            input_tensor = self.predictor.get_input_handle(input_names[i])
-            input_tensor.copy_from_cpu(inputs[input_names[i]])
-
-        if add_timer:
-            self.det_times.preprocess_time_s.end()
-            self.det_times.inference_time_s.start()
-        # model prediction
-        for i in range(repeats):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            boxes_tensor = self.predictor.get_output_handle(output_names[0])
-            boxes = boxes_tensor.copy_to_cpu()
-
-        if add_timer:
-            self.det_times.inference_time_s.end(repeats=repeats)
-            self.det_times.postprocess_time_s.start()
-
-        # postprocess
-        if len(boxes) == 0:
-            pred_dets = np.zeros((1, 6), dtype=np.float32)
-            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
-        else:
-            input_shape = inputs['image'].shape[2:]
-            im_shape = inputs['im_shape']
-            scale_factor = inputs['scale_factor']
-
-            pred_dets, pred_xyxys = self.postprocess(
-                boxes, input_shape, im_shape, scale_factor, threshold, scaled)
-
-        if add_timer:
-            self.det_times.postprocess_time_s.end()
-            self.det_times.img_num += 1
-        return pred_dets, pred_xyxys
-
-
-class SDE_DetectorPicoDet(DetectorPicoDet):
-    """
-    Args:
-        pred_config (object): config of model, defined by `Config(model_dir)`
-        model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
-        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
-        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
-        trt_min_shape (int): min shape for dynamic shape in trt
-        trt_max_shape (int): max shape for dynamic shape in trt
-        trt_opt_shape (int): opt shape for dynamic shape in trt
-        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
-            calibration, trt_calib_mode need to set True
-        cpu_threads (int): cpu threads
-        enable_mkldnn (bool): whether to open MKLDNN
-    """
-
-    def __init__(self,
-                 pred_config,
-                 model_dir,
-                 device='CPU',
-                 run_mode='paddle',
-                 batch_size=1,
-                 trt_min_shape=1,
-                 trt_max_shape=1088,
-                 trt_opt_shape=608,
-                 trt_calib_mode=False,
-                 cpu_threads=1,
-                 enable_mkldnn=False):
-        super(SDE_DetectorPicoDet, self).__init__(
-            pred_config=pred_config,
-            model_dir=model_dir,
-            device=device,
-            run_mode=run_mode,
-            batch_size=batch_size,
-            trt_min_shape=trt_min_shape,
-            trt_max_shape=trt_max_shape,
-            trt_opt_shape=trt_opt_shape,
-            trt_calib_mode=trt_calib_mode,
-            cpu_threads=cpu_threads,
-            enable_mkldnn=enable_mkldnn)
-        assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
-        self.pred_config = pred_config
-
-    def postprocess_bboxes(self, boxes, input_shape, im_shape, scale_factor,
-                           threshold):
-        over_thres_idx = np.nonzero(boxes[:, 1:2] >= threshold)[0]
-        if len(over_thres_idx) == 0:
-            pred_dets = np.zeros((1, 6), dtype=np.float32)
-            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
-            return pred_dets, pred_xyxys
-        else:
-            boxes = boxes[over_thres_idx]
-
-        pred_bboxes = boxes[:, 2:]
-
-        pred_xyxys, keep_idx = clip_box(pred_bboxes, input_shape, im_shape,
-                                        scale_factor)
-        if len(keep_idx[0]) == 0:
-            pred_dets = np.zeros((1, 6), dtype=np.float32)
-            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
-            return pred_dets, pred_xyxys
-
-        pred_scores = boxes[:, 1:2][keep_idx[0]]
-        pred_cls_ids = boxes[:, 0:1][keep_idx[0]]
-        pred_tlwhs = np.concatenate(
-            (pred_xyxys[:, 0:2], pred_xyxys[:, 2:4] - pred_xyxys[:, 0:2] + 1),
-            axis=1)
-
-        pred_dets = np.concatenate(
-            (pred_tlwhs, pred_scores, pred_cls_ids), axis=1)
-        return pred_dets, pred_xyxys
-
-    def predict(self, image, scaled, threshold=0.5, repeats=1, add_timer=True):
-        '''
-        Args:
-            image (np.ndarray): image numpy data
-            scaled (bool): whether the coords after detector outputs are scaled,
-                default False in jde yolov3, set True in general detector.
-            threshold (float): threshold of predicted box' score
-            repeats (int): repeat number for prediction
-            add_timer (bool): whether add timer during prediction
-           
-        Returns:
-            pred_dets (np.ndarray, [N, 6])
-        '''
-        # preprocess
-        if add_timer:
-            self.det_times.preprocess_time_s.start()
-        inputs = self.preprocess(image)
-
-        input_names = self.predictor.get_input_names()
-        for i in range(len(input_names)):
-            input_tensor = self.predictor.get_input_handle(input_names[i])
-            input_tensor.copy_from_cpu(inputs[input_names[i]])
-
-        if add_timer:
-            self.det_times.preprocess_time_s.end()
-            self.det_times.inference_time_s.start()
-
-        # model prediction
-        np_score_list, np_boxes_list = [], []
-        for i in range(repeats):
-            self.predictor.run()
-            np_score_list.clear()
-            np_boxes_list.clear()
-            output_names = self.predictor.get_output_names()
-            num_outs = int(len(output_names) / 2)
-            for out_idx in range(num_outs):
-                np_score_list.append(
-                    self.predictor.get_output_handle(output_names[out_idx])
-                    .copy_to_cpu())
-                np_boxes_list.append(
-                    self.predictor.get_output_handle(output_names[
-                        out_idx + num_outs]).copy_to_cpu())
-
-        if add_timer:
-            self.det_times.inference_time_s.end(repeats=repeats)
-            self.det_times.img_num += 1
-            self.det_times.postprocess_time_s.start()
-
-        # postprocess
-        self.postprocess = PicoDetPostProcess(
-            inputs['image'].shape[2:],
-            inputs['im_shape'],
-            inputs['scale_factor'],
-            strides=self.pred_config.fpn_stride,
-            nms_threshold=self.pred_config.nms['nms_threshold'])
-        boxes, boxes_num = self.postprocess(np_score_list, np_boxes_list)
-
-        if len(boxes) == 0:
-            pred_dets = np.zeros((1, 6), dtype=np.float32)
-            pred_xyxys = np.zeros((1, 4), dtype=np.float32)
-        else:
-            input_shape = inputs['image'].shape[2:]
-            im_shape = inputs['im_shape']
-            scale_factor = inputs['scale_factor']
-            pred_dets, pred_xyxys = self.postprocess_bboxes(
-                boxes, input_shape, im_shape, scale_factor, threshold)
-        if add_timer:
-            self.det_times.postprocess_time_s.end()
-        return pred_dets, pred_xyxys
-
-
-class SDE_ReID(object):
-    def __init__(self,
-                 pred_config,
-                 model_dir,
-                 device='CPU',
-                 run_mode='paddle',
-                 batch_size=50,
-                 trt_min_shape=1,
-                 trt_max_shape=1088,
-                 trt_opt_shape=608,
-                 trt_calib_mode=False,
-                 cpu_threads=1,
-                 enable_mkldnn=False):
-        self.pred_config = pred_config
-        self.predictor, self.config = load_predictor(
-            model_dir,
-            run_mode=run_mode,
-            batch_size=batch_size,
-            min_subgraph_size=self.pred_config.min_subgraph_size,
-            device=device,
-            use_dynamic_shape=self.pred_config.use_dynamic_shape,
-            trt_min_shape=trt_min_shape,
-            trt_max_shape=trt_max_shape,
-            trt_opt_shape=trt_opt_shape,
-            trt_calib_mode=trt_calib_mode,
-            cpu_threads=cpu_threads,
-            enable_mkldnn=enable_mkldnn)
-        self.det_times = Timer()
-        self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
-        self.batch_size = batch_size
-        assert pred_config.tracker, "Tracking model should have tracker"
-        pt = pred_config.tracker
-        max_age = pt['max_age'] if 'max_age' in pt else 30
-        max_iou_distance = pt[
-            'max_iou_distance'] if 'max_iou_distance' in pt else 0.7
-        self.tracker = DeepSORTTracker(
-            max_age=max_age, max_iou_distance=max_iou_distance)
-
-    def get_crops(self, xyxy, ori_img):
         w, h = self.tracker.input_size
-        self.det_times.preprocess_time_s.start()
-        crops = []
-        xyxy = xyxy.astype(np.int64)
-        ori_img = ori_img.transpose(1, 0, 2)  # [h,w,3]->[w,h,3]
-        for i, bbox in enumerate(xyxy):
-            crop = ori_img[bbox[0]:bbox[2], bbox[1]:bbox[3], :]
-            crops.append(crop)
-        crops = preprocess_reid(crops, w, h)
-        self.det_times.preprocess_time_s.end()
+        crops = get_crops(pred_xyxys, ori_image, w, h)
 
-        return crops
-
-    def preprocess(self, crops):
         # to keep fast speed, only use topk crops
-        crops = crops[:self.batch_size]
-        inputs = {}
-        inputs['crops'] = np.array(crops).astype('float32')
-        return inputs
+        crops = crops[:50]  # reid_batch_size
+        det_results['crops'] = np.array(crops).astype('float32')
+        det_results['boxes'] = pred_dets[:50]
 
-    def postprocess(self, pred_dets, pred_embs):
-        tracker = self.tracker
-        tracker.predict()
-        online_targets = tracker.update(pred_dets, pred_embs)
-
-        online_tlwhs, online_scores, online_ids = [], [], []
-        for t in online_targets:
-            if not t.is_confirmed() or t.time_since_update > 1:
-                continue
-            tlwh = t.to_tlwh()
-            tscore = t.score
-            tid = t.track_id
-            if tlwh[2] * tlwh[3] <= tracker.min_box_area: continue
-            if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
-                    3] > tracker.vertical_ratio:
-                continue
-            online_tlwhs.append(tlwh)
-            online_scores.append(tscore)
-            online_ids.append(tid)
-
-        return online_tlwhs, online_scores, online_ids
-
-    def predict(self, crops, pred_dets, repeats=1, add_timer=True):
-        # preprocess
-        if add_timer:
-            self.det_times.preprocess_time_s.start()
-        inputs = self.preprocess(crops)
-
-        input_names = self.predictor.get_input_names()
+        input_names = self.reid_predictor.get_input_names()
         for i in range(len(input_names)):
-            input_tensor = self.predictor.get_input_handle(input_names[i])
-            input_tensor.copy_from_cpu(inputs[input_names[i]])
-        if add_timer:
-            self.det_times.preprocess_time_s.end()
-            self.det_times.inference_time_s.start()
+            input_tensor = self.reid_predictor.get_input_handle(input_names[i])
+            input_tensor.copy_from_cpu(det_results[input_names[i]])
 
         # model prediction
         for i in range(repeats):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            feature_tensor = self.predictor.get_output_handle(output_names[0])
+            self.reid_predictor.run()
+            output_names = self.reid_predictor.get_output_names()
+            feature_tensor = self.reid_predictor.get_output_handle(output_names[
+                0])
             pred_embs = feature_tensor.copy_to_cpu()
-        if add_timer:
-            self.det_times.inference_time_s.end(repeats=repeats)
-            self.det_times.postprocess_time_s.start()
 
-        # postprocess
-        online_tlwhs, online_scores, online_ids = self.postprocess(pred_dets,
-                                                                   pred_embs)
-        if add_timer:
-            self.det_times.postprocess_time_s.end()
-            self.det_times.img_num += 1
+        det_results['embeddings'] = pred_embs
+        return det_results
 
-        return online_tlwhs, online_scores, online_ids
+    def tracking(self, det_results):
+        pred_dets = det_results['boxes']  # 'cls_id, score, x0, y0, x1, y1'
+        pred_embs = det_results.get('embeddings', None)
 
+        if self.use_deepsort_tracker:
+            # use DeepSORTTracker, only support singe class
+            self.tracker.predict()
+            online_targets = self.tracker.update(pred_dets, pred_embs)
+            online_tlwhs, online_scores, online_ids = [], [], []
+            for t in online_targets:
+                if not t.is_confirmed() or t.time_since_update > 1:
+                    continue
+                tlwh = t.to_tlwh()
+                tscore = t.score
+                tid = t.track_id
+                if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                        3] > self.tracker.vertical_ratio:
+                    continue
+                online_tlwhs.append(tlwh)
+                online_scores.append(tscore)
+                online_ids.append(tid)
 
-def predict_image(detector, reid_model, image_list):
-    image_list.sort()
-    for i, img_file in enumerate(image_list):
-        frame = cv2.imread(img_file)
-        if FLAGS.run_benchmark:
-            # warmup
-            pred_dets, pred_xyxys = detector.predict(
-                [frame],
-                FLAGS.scaled,
-                FLAGS.threshold,
-                repeats=10,
-                add_timer=True)
-            # run benchmark
-            pred_dets, pred_xyxys = detector.predict(
-                [frame],
-                FLAGS.scaled,
-                FLAGS.threshold,
-                repeats=10,
-                add_timer=True)
-            cm, gm, gu = get_current_memory_mb()
-            detector.cpu_mem += cm
-            detector.gpu_mem += gm
-            detector.gpu_util += gu
-            print('Test iter {}, file name:{}'.format(i, img_file))
+            tracking_outs = {
+                'online_tlwhs': online_tlwhs,
+                'online_scores': online_scores,
+                'online_ids': online_ids,
+            }
+            return tracking_outs
         else:
-            pred_dets, pred_xyxys = detector.predict([frame], FLAGS.scaled,
-                                                     FLAGS.threshold)
+            # use ByteTracker, support multiple class
+            online_tlwhs = defaultdict(list)
+            online_scores = defaultdict(list)
+            online_ids = defaultdict(list)
+            online_targets_dict = self.tracker.update(pred_dets, pred_embs)
+            for cls_id in range(self.num_classes):
+                online_targets = online_targets_dict[cls_id]
+                for t in online_targets:
+                    tlwh = t.tlwh
+                    tid = t.track_id
+                    tscore = t.score
+                    if tlwh[2] * tlwh[3] <= self.tracker.min_box_area:
+                        continue
+                    if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                            3] > self.tracker.vertical_ratio:
+                        continue
+                    online_tlwhs[cls_id].append(tlwh)
+                    online_ids[cls_id].append(tid)
+                    online_scores[cls_id].append(tscore)
 
-        if len(pred_dets) == 1 and np.sum(pred_dets) == 0:
-            print('Frame {} has no object, try to modify score threshold.'.
-                  format(i))
-            online_im = frame
-        else:
-            # reid process
-            crops = reid_model.get_crops(pred_xyxys, frame)
+            tracking_outs = {
+                'online_tlwhs': online_tlwhs,
+                'online_scores': online_scores,
+                'online_ids': online_ids,
+            }
+            return tracking_outs
 
-            if FLAGS.run_benchmark:
-                # warmup
-                online_tlwhs, online_scores, online_ids = reid_model.predict(
-                    crops, pred_dets, repeats=10, add_timer=False)
-                # run benchmark
-                online_tlwhs, online_scores, online_ids = reid_model.predict(
-                    crops, pred_dets, repeats=10, add_timer=False)
+    def predict_image(self,
+                      image_list,
+                      run_benchmark=False,
+                      repeats=1,
+                      visual=True,
+                      seq_name=None):
+        num_classes = self.num_classes
+        image_list.sort()
+        ids2names = self.pred_config.labels
+        mot_results = []
+        for frame_id, img_file in enumerate(image_list):
+            batch_image_list = [img_file]  # bs=1 in MOT model
+            frame, _ = decode_image(img_file, {})
+            if run_benchmark:
+                # preprocess
+                inputs = self.preprocess(batch_image_list)  # warmup
+                self.det_times.preprocess_time_s.start()
+                inputs = self.preprocess(batch_image_list)
+                self.det_times.preprocess_time_s.end()
+
+                # model prediction
+                result_warmup = self.predict(repeats=repeats)  # warmup
+                self.det_times.inference_time_s.start()
+                result = self.predict(repeats=repeats)
+                self.det_times.inference_time_s.end(repeats=repeats)
+
+                # postprocess
+                result_warmup = self.postprocess(inputs, result)  # warmup
+                self.det_times.postprocess_time_s.start()
+                det_result = self.postprocess(inputs, result)
+                self.det_times.postprocess_time_s.end()
+
+                # tracking
+                if self.use_reid:
+                    det_result['frame_id'] = frame_id
+                    det_result['seq_name'] = seq_name
+                    det_result['ori_image'] = frame
+                    det_result = self.reidprocess(det_result)
+                result_warmup = self.tracking(det_result)
+                self.det_times.tracking_time_s.start()
+                if self.use_reid:
+                    det_result = self.reidprocess(det_result)
+                tracking_outs = self.tracking(det_result)
+                self.det_times.tracking_time_s.end()
+                self.det_times.img_num += 1
+
+                cm, gm, gu = get_current_memory_mb()
+                self.cpu_mem += cm
+                self.gpu_mem += gm
+                self.gpu_util += gu
+
             else:
-                online_tlwhs, online_scores, online_ids = reid_model.predict(
-                    crops, pred_dets)
-                online_im = plot_tracking(
-                    frame, online_tlwhs, online_ids, online_scores, frame_id=i)
+                self.det_times.preprocess_time_s.start()
+                inputs = self.preprocess(batch_image_list)
+                self.det_times.preprocess_time_s.end()
 
-        if FLAGS.save_images:
-            if not os.path.exists(FLAGS.output_dir):
-                os.makedirs(FLAGS.output_dir)
-            img_name = os.path.split(img_file)[-1]
-            out_path = os.path.join(FLAGS.output_dir, img_name)
-            cv2.imwrite(out_path, online_im)
-            print("save result to: " + out_path)
+                self.det_times.inference_time_s.start()
+                result = self.predict()
+                self.det_times.inference_time_s.end()
 
+                self.det_times.postprocess_time_s.start()
+                det_result = self.postprocess(inputs, result)
+                self.det_times.postprocess_time_s.end()
 
-def predict_video(detector, reid_model, camera_id):
-    if camera_id != -1:
-        capture = cv2.VideoCapture(camera_id)
-        video_name = 'mot_output.mp4'
-    else:
-        capture = cv2.VideoCapture(FLAGS.video_file)
-        video_name = os.path.split(FLAGS.video_file)[-1]
-    # Get Video info : resolution, fps, frame count
-    width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(capture.get(cv2.CAP_PROP_FPS))
-    frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-    print("fps: %d, frame_count: %d" % (fps, frame_count))
+                # tracking process
+                self.det_times.tracking_time_s.start()
+                if self.use_reid:
+                    det_result['frame_id'] = frame_id
+                    det_result['seq_name'] = seq_name
+                    det_result['ori_image'] = frame
+                    det_result = self.reidprocess(det_result)
+                tracking_outs = self.tracking(det_result)
+                self.det_times.tracking_time_s.end()
+                self.det_times.img_num += 1
 
-    if not os.path.exists(FLAGS.output_dir):
-        os.makedirs(FLAGS.output_dir)
-    out_path = os.path.join(FLAGS.output_dir, video_name)
-    if not FLAGS.save_images:
-        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
-        writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
-    frame_id = 0
-    timer = MOTTimer()
-    results = defaultdict(list)
-    while (1):
-        ret, frame = capture.read()
-        if not ret:
-            break
-        timer.tic()
-        pred_dets, pred_xyxys = detector.predict([frame], FLAGS.scaled,
-                                                 FLAGS.threshold)
+            online_tlwhs = tracking_outs['online_tlwhs']
+            online_scores = tracking_outs['online_scores']
+            online_ids = tracking_outs['online_ids']
 
-        if len(pred_dets) == 1 and np.sum(pred_dets) == 0:
-            print('Frame {} has no object, try to modify score threshold.'.
-                  format(frame_id))
-            timer.toc()
-            im = frame
-        else:
-            # reid process
-            crops = reid_model.get_crops(pred_xyxys, frame)
-            online_tlwhs, online_scores, online_ids = reid_model.predict(
-                crops, pred_dets)
-            results[0].append(
-                (frame_id + 1, online_tlwhs, online_scores, online_ids))
-            timer.toc()
+            mot_results.append([online_tlwhs, online_scores, online_ids])
 
-            fps = 1. / timer.average_time
-            im = plot_tracking(
-                frame,
-                online_tlwhs,
-                online_ids,
-                online_scores,
-                frame_id=frame_id,
-                fps=fps)
+            if visual:
+                if len(image_list) > 1 and frame_id % 10 == 0:
+                    print('Tracking frame {}'.format(frame_id))
+                frame, _ = decode_image(img_file, {})
+                if isinstance(online_tlwhs, defaultdict):
+                    im = plot_tracking_dict(
+                        frame,
+                        num_classes,
+                        online_tlwhs,
+                        online_ids,
+                        online_scores,
+                        frame_id=frame_id,
+                        ids2names=[])
+                else:
+                    im = plot_tracking(
+                        frame,
+                        online_tlwhs,
+                        online_ids,
+                        online_scores,
+                        frame_id=frame_id)
+                save_dir = os.path.join(self.output_dir, seq_name)
+                if not os.path.exists(save_dir):
+                    os.makedirs(save_dir)
+                cv2.imwrite(
+                    os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
 
-        if FLAGS.save_images:
-            save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
-            if not os.path.exists(save_dir):
-                os.makedirs(save_dir)
-            cv2.imwrite(
-                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
-        else:
-            writer.write(im)
+        return mot_results
 
-        frame_id += 1
-        print('detect frame:%d' % (frame_id))
-
+    def predict_video(self, video_file, camera_id):
+        video_out_name = 'output.mp4'
         if camera_id != -1:
-            cv2.imshow('Tracking Detection', im)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            capture = cv2.VideoCapture(camera_id)
+        else:
+            capture = cv2.VideoCapture(video_file)
+            video_out_name = os.path.split(video_file)[-1]
+        # Get Video info : resolution, fps, frame count
+        width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = int(capture.get(cv2.CAP_PROP_FPS))
+        frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+        print("fps: %d, frame_count: %d" % (fps, frame_count))
+
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+        out_path = os.path.join(self.output_dir, video_out_name)
+        video_format = 'mp4v'
+        fourcc = cv2.VideoWriter_fourcc(*video_format)
+        writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+
+        frame_id = 1
+        timer = MOTTimer()
+        results = defaultdict(list)
+        num_classes = self.num_classes
+        data_type = 'mcmot' if num_classes > 1 else 'mot'
+        ids2names = self.pred_config.labels
+
+        while (1):
+            ret, frame = capture.read()
+            if not ret:
                 break
+            if frame_id % 10 == 0:
+                print('Tracking frame: %d' % (frame_id))
+            frame_id += 1
 
-    if FLAGS.save_mot_txts:
-        result_filename = os.path.join(FLAGS.output_dir,
-                                       video_name.split('.')[-2] + '.txt')
-        write_mot_results(result_filename, results)
+            timer.tic()
+            seq_name = video_out_name.split('.')[0]
+            mot_results = self.predict_image(
+                [frame], visual=False, seq_name=seq_name)
+            timer.toc()
 
-    if FLAGS.save_images:
-        save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
-        cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(save_dir,
-                                                              out_path)
-        os.system(cmd_str)
-        print('Save video in {}.'.format(out_path))
-    else:
+            # bs=1 in MOT model
+            online_tlwhs, online_scores, online_ids = mot_results[0]
+
+            fps = 1. / timer.duration
+            if self.use_deepsort_tracker:
+                # use DeepSORTTracker, only support singe class
+                results[0].append(
+                    (frame_id + 1, online_tlwhs, online_scores, online_ids))
+                im = plot_tracking(
+                    frame,
+                    online_tlwhs,
+                    online_ids,
+                    online_scores,
+                    frame_id=frame_id,
+                    fps=fps)
+            else:
+                # use ByteTracker, support multiple class
+                for cls_id in range(num_classes):
+                    results[cls_id].append(
+                        (frame_id + 1, online_tlwhs[cls_id],
+                         online_scores[cls_id], online_ids[cls_id]))
+                im = plot_tracking_dict(
+                    frame,
+                    num_classes,
+                    online_tlwhs,
+                    online_ids,
+                    online_scores,
+                    frame_id=frame_id,
+                    fps=fps,
+                    ids2names=ids2names)
+
+            writer.write(im)
+            if camera_id != -1:
+                cv2.imshow('Mask Detection', im)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+
+        if self.save_mot_txts:
+            result_filename = os.path.join(
+                self.output_dir, video_out_name.split('.')[-2] + '.txt')
+            write_mot_results(result_filename, results)
+
         writer.release()
 
 
 def main():
-    pred_config = PredictConfig(FLAGS.model_dir)
-    detector_func = 'SDE_Detector'
-    if pred_config.arch == 'PicoDet':
-        detector_func = 'SDE_DetectorPicoDet'
-
-    detector = eval(detector_func)(pred_config,
-                                   FLAGS.model_dir,
-                                   device=FLAGS.device,
-                                   run_mode=FLAGS.run_mode,
-                                   batch_size=FLAGS.batch_size,
-                                   trt_min_shape=FLAGS.trt_min_shape,
-                                   trt_max_shape=FLAGS.trt_max_shape,
-                                   trt_opt_shape=FLAGS.trt_opt_shape,
-                                   trt_calib_mode=FLAGS.trt_calib_mode,
-                                   cpu_threads=FLAGS.cpu_threads,
-                                   enable_mkldnn=FLAGS.enable_mkldnn)
-
-    pred_config = PredictConfig(FLAGS.reid_model_dir)
-    reid_model = SDE_ReID(
-        pred_config,
-        FLAGS.reid_model_dir,
+    deploy_file = os.path.join(FLAGS.model_dir, 'infer_cfg.yml')
+    with open(deploy_file) as f:
+        yml_conf = yaml.safe_load(f)
+    arch = yml_conf['arch']
+    detector = SDE_Detector(
+        FLAGS.model_dir,
+        tracker_config=FLAGS.tracker_config,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
-        batch_size=FLAGS.reid_batch_size,
+        batch_size=1,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
         trt_opt_shape=FLAGS.trt_opt_shape,
         trt_calib_mode=FLAGS.trt_calib_mode,
         cpu_threads=FLAGS.cpu_threads,
-        enable_mkldnn=FLAGS.enable_mkldnn)
+        enable_mkldnn=FLAGS.enable_mkldnn,
+        output_dir=FLAGS.output_dir,
+        threshold=FLAGS.threshold,
+        save_images=FLAGS.save_images,
+        save_mot_txts=FLAGS.save_mot_txts, )
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
-        predict_video(detector, reid_model, FLAGS.camera_id)
+        detector.predict_video(FLAGS.video_file, FLAGS.camera_id)
     else:
         # predict from image
+        if FLAGS.image_dir is None and FLAGS.image_file is not None:
+            assert FLAGS.batch_size == 1, "--batch_size should be 1 in MOT models."
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        predict_image(detector, reid_model, img_list)
+        seq_name = FLAGS.image_dir.split('/')[-1]
+        detector.predict_image(
+            img_list, FLAGS.run_benchmark, repeats=10, seq_name=seq_name)
 
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)
-            reid_model.det_times.info(average=True)
         else:
             mode = FLAGS.run_mode
-            det_model_dir = FLAGS.model_dir
-            det_model_info = {
-                'model_name': det_model_dir.strip('/').split('/')[-1],
+            model_dir = FLAGS.model_dir
+            model_info = {
+                'model_name': model_dir.strip('/').split('/')[-1],
                 'precision': mode.split('_')[-1]
             }
-            bench_log(detector, img_list, det_model_info, name='Det')
-
-            reid_model_dir = FLAGS.reid_model_dir
-            reid_model_info = {
-                'model_name': reid_model_dir.strip('/').split('/')[-1],
-                'precision': mode.split('_')[-1]
-            }
-            bench_log(reid_model, img_list, reid_model_info, name='ReID')
+            bench_log(detector, img_list, model_info, name='MOT')
 
 
 if __name__ == '__main__':

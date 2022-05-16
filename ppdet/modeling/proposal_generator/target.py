@@ -74,9 +74,11 @@ def label_box(anchors,
               is_crowd=None,
               assign_on_cpu=False):
     if assign_on_cpu:
+        device = paddle.device.get_device()
         paddle.set_device("cpu")
         iou = bbox_overlaps(gt_boxes, anchors)
-        paddle.set_device("gpu")
+        paddle.set_device(device)
+
     else:
         iou = bbox_overlaps(gt_boxes, anchors)
     n_gt = gt_boxes.shape[0]
@@ -356,7 +358,7 @@ def generate_mask_target(gt_segms, rois, labels_int32, sampled_gt_inds,
         fg_inds_new = fg_inds.reshape([-1]).numpy()
         results = []
         if len(gt_segms_per_im) > 0:
-            for j in fg_inds_new:
+            for j in range(fg_inds_new.shape[0]):
                 results.append(
                     rasterize_polygons_within_box(new_segm[j], boxes[j],
                                                   resolution))

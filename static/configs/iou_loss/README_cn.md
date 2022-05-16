@@ -28,7 +28,7 @@ PaddleDetection也开源了基于faster rcnn的GIOU loss实现。使用GIOU loss
 
 GIOU loss解决了IOU loss中预测边框A与真值B的交并比为0时，模型无法给出优化方向的问题，但是仍然有2种情况难以解决，
 1. 当边框A和边框B处于包含关系的时候，GIOU loss退化为IOU loss，此时模型收敛较慢。
-2. 当A与B相交，若A和B的的x1与x2均相等或者y1与y2均相等，GIOU loss仍然会退化为IOU loss，收敛很慢。
+2. 当A与B相交，若A和B的x1与x2均相等或者y1与y2均相等，GIOU loss仍然会退化为IOU loss，收敛很慢。
 
 基于此，论文提出了DIOU loss与CIOU loss，解决收敛速度慢以及部分条件下无法收敛的问题。
 为加速收敛，论文在改进的loss中引入距离的概念，具体地，边框loss可以定义为如下形式：

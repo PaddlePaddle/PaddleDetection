@@ -1,0 +1,33 @@
+_BASE_: [
+  'fairmot_dla34_30e_1088x608.yml',
+]
+pretrain_weights: https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams
+weights: output/fairmot_dla34_30e_1088x608_airplane/model_final
+
+JDETracker:
+  conf_thres: 0.4
+  tracked_thresh: 0.4
+  metric_type: cosine
+  min_box_area: 0
+  vertical_ratio: 0
+
+# for MOT training
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['airplane.train']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+# for MOT evaluation
+# If you want to change the MOT evaluation dataset, please modify 'data_root'
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: airplane/images/train
+    keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
+
+# for MOT video inference
+TestMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    keep_ori_im: True # set True if save visualization images or video

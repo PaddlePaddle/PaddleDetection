@@ -9,7 +9,7 @@ save_dir:null
 TrainReader.batch_size:lite_train_lite_infer=2|lite_train_whole_infer=2|whole_train_whole_infer=6
 pretrain_weights:https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams
 trained_model_name:model_final.pdparams
-train_infer_img_dir:./dataset/coco/test2017/
+train_infer_img_dir:./dataset/mot/test.mp4
 filename:null
 ##
 trainer:norm_train
@@ -21,7 +21,7 @@ null:null
 null:null
 ##
 ===========================eval_params===========================
-eval:tools/eval.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o
+eval:tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o
 null:null
 ##
 ===========================infer_params===========================
@@ -37,7 +37,7 @@ kl_quant_export:tools/post_quant.py -c configs/mot/fairmot/fairmot_dla34_30e_108
 ##
 infer_mode:norm
 infer_quant:False
-inference:./deploy/python/infer.py
+inference:./deploy/pptracking/python/mot_jde_infer.py
 --device:gpu|cpu
 --enable_mkldnn:True|False
 --cpu_threads:1|6
@@ -45,7 +45,7 @@ inference:./deploy/python/infer.py
 --use_tensorrt:null
 --run_mode:paddle|trt_fp32|trt_fp16
 --model_dir:
---image_dir:./dataset/coco/test2017/
+--video_file:./dataset/mot/test.mp4
 --save_log_path:null
 --run_benchmark:False
 --trt_max_shape:1600
@@ -54,4 +54,6 @@ batch_size:6|22
 fp_items:fp32|fp16
 epoch:1
 --profiler_options:batch_range=[10,20];state=GPU;tracer_option=Default;profile_path=model.profile
-flags:FLAGS_eager_delete_tensor_gb=0.0;FLAGS_fraction_of_gpu_memory_to_use=0.98;FLAGS_conv_workspace_size_limit=4096
+flags:null
+===========================infer_benchmark_params===========================
+numpy_infer_input:3x608x1088.npy

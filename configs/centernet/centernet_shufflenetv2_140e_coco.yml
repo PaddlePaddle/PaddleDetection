@@ -1,0 +1,33 @@
+_BASE_: [
+  'centernet_r50_140e_coco.yml'
+]
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ShuffleNetV2_x1_0_pretrained.pdparams
+weights: output/centernet_shufflenetv2_140e_coco/model_final
+
+CenterNet:
+  backbone: ShuffleNetV2
+  neck: CenterNetDLAFPN
+  head: CenterNetHead
+  post_process: CenterNetPostProcess
+
+ShuffleNetV2:
+  scale: 1.0
+  feature_maps: [5, 13, 17]
+  act: leaky_relu
+
+CenterNetDLAFPN:
+  first_level: 0
+  last_level: 3
+  down_ratio: 8
+  dcn_v2: False
+
+TrainReader:
+  batch_size: 32
+
+TestReader:
+  sample_transforms:
+    - Decode: {}
+    - WarpAffine: {keep_res: False, input_h: 512, input_w: 512}
+    - NormalizeImage: {mean: [0.40789655, 0.44719303, 0.47026116], std: [0.2886383 , 0.27408165, 0.27809834]}
+    - Permute: {}

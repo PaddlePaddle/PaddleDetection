@@ -1,5 +1,4 @@
-# coding: utf-8
-# copyright (c) 2020 PaddlePaddle Authors. All Rights Reserve.
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,7 +37,7 @@ def visualize_box_mask(im, results, labels, threshold=0.5):
     """
     if isinstance(im, str):
         im = Image.open(im).convert('RGB')
-    else:
+    elif isinstance(im, np.ndarray):
         im = Image.fromarray(im)
     if 'masks' in results and 'boxes' in results and len(results['boxes']) > 0:
         im = draw_mask(
@@ -97,6 +96,8 @@ def draw_mask(im, np_boxes, np_masks, labels, threshold=0.5):
     expect_boxes = (np_boxes[:, 1] > threshold) & (np_boxes[:, 0] > -1)
     np_boxes = np_boxes[expect_boxes, :]
     np_masks = np_masks[expect_boxes, :, :]
+    im_h, im_w = im.shape[:2]
+    np_masks = np_masks[:, :im_h, :im_w]
     for i in range(len(np_masks)):
         clsid, score = int(np_boxes[i][0]), np_boxes[i][1]
         mask = np_masks[i]
@@ -224,13 +225,13 @@ def get_color(idx):
     return color
 
 
-def draw_pose(imgfile,
-              results,
-              visual_thread=0.6,
-              save_name='pose.jpg',
-              save_dir='output',
-              returnimg=False,
-              ids=None):
+def visualize_pose(imgfile,
+                   results,
+                   visual_thresh=0.6,
+                   save_name='pose.jpg',
+                   save_dir='output',
+                   returnimg=False,
+                   ids=None):
     try:
         import matplotlib.pyplot as plt
         import matplotlib
@@ -239,7 +240,6 @@ def draw_pose(imgfile,
         logger.error('Matplotlib not found, please install matplotlib.'
                      'for example: `pip install matplotlib`.')
         raise e
-
     skeletons, scores = results['keypoint']
     skeletons = np.array(skeletons)
     kpt_nums = 17
@@ -276,7 +276,7 @@ def draw_pose(imgfile,
     canvas = img.copy()
     for i in range(kpt_nums):
         for j in range(len(skeletons)):
-            if skeletons[j][i, 2] < visual_thread:
+            if skeletons[j][i, 2] < visual_thresh:
                 continue
             if ids is None:
                 color = colors[i] if color_set is None else colors[color_set[j]
@@ -300,8 +300,8 @@ def draw_pose(imgfile,
     for i in range(NUM_EDGES):
         for j in range(len(skeletons)):
             edge = EDGES[i]
-            if skeletons[j][edge[0], 2] < visual_thread or skeletons[j][edge[
-                    1], 2] < visual_thread:
+            if skeletons[j][edge[0], 2] < visual_thresh or skeletons[j][edge[
+                    1], 2] < visual_thresh:
                 continue
 
             cur_canvas = canvas.copy()
@@ -329,3 +329,51 @@ def draw_pose(imgfile,
     plt.imsave(save_name, canvas[:, :, ::-1])
     print("keypoint visualize image saved to: " + save_name)
     plt.close()
+
+
+def visualize_attr(im, results, boxes=None):
+    if isinstance(im, str):
+        im = Image.open(im)
+        im = np.ascontiguousarray(np.copy(im))
+        im = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
+    else:
+        im = np.ascontiguousarray(np.copy(im))
+
+    im_h, im_w = im.shape[:2]
+    text_scale = max(0.5, im.shape[0] / 3000.)
+    text_thickness = 1
+
+    line_inter = im.shape[0] / 40.
+    for i, res in enumerate(results):
+        if boxes is None:
+            text_w = 3
+            text_h = 1
+        else:
+            box = boxes[i]
+            text_w = int(box[2]) + 3
+            text_h = int(box[3])
+        for text in res:
+            text_h += int(line_inter)
+            text_loc = (text_w, text_h)
+            cv2.putText(
+                im,
+                text,
+                text_loc,
+                cv2.FONT_ITALIC,
+                text_scale, (0, 255, 255),
+                thickness=text_thickness)
+    return im
+
+
+def visualize_action(im, mot_boxes, action_visual_collector, action_text=""):
+    im = cv2.imread(im) if isinstance(im, str) else im
+    id_detected = action_visual_collector.get_visualize_ids()
+    text_scale = max(1, im.shape[1] / 1600.)
+    for mot_box in mot_boxes:
+        # mot_box is a format with [mot_id, class, score, xmin, ymin, w, h] 
+        if mot_box[0] in id_detected:
+            text_position = (int(mot_box[3] + mot_box[5] * 0.75),
+                             int(mot_box[4] - 10))
+            cv2.putText(im, action_text, text_position, cv2.FONT_HERSHEY_PLAIN,
+                        text_scale, (0, 0, 255), 2)
+    return im

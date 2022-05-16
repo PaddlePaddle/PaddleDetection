@@ -41,17 +41,19 @@ TRT_MIN_SUBGRAPH = {
     'HigherHRNet': 3,
     'HRNet': 3,
     'DeepSORT': 3,
+    'ByteTrack': 10,
     'JDE': 10,
     'FairMOT': 5,
     'GFL': 16,
     'PicoDet': 3,
     'CenterNet': 5,
     'TOOD': 5,
-    'SCRFD': 3
+    'SCRFD': 3,
+    'YOLOX': 8,
 }
 
 KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
-MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT']
+MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT', 'ByteTrack']
 
 
 def _prune_input_spec(input_spec, program, targets):
@@ -121,12 +123,18 @@ def _dump_infer_config(config, path, image_shape, model):
     setup_orderdict()
     use_dynamic_shape = True if image_shape[2] == -1 else False
     infer_cfg = OrderedDict({
-        'mode': 'fluid',
+        'mode': 'paddle',
         'draw_threshold': 0.5,
         'metric': config['metric'],
         'use_dynamic_shape': use_dynamic_shape
     })
+    export_onnx = config.get('export_onnx', False)
+
     infer_arch = config['architecture']
+    if 'RCNN' in infer_arch and export_onnx:
+        logger.warning(
+            "Exporting RCNN model to ONNX only support batch_size = 1")
+        infer_cfg['export_onnx'] = True
 
     if infer_arch in MOT_ARCH:
         if infer_arch == 'DeepSORT':
@@ -141,6 +149,12 @@ def _dump_infer_config(config, path, image_shape, model):
             infer_cfg['min_subgraph_size'] = min_subgraph_size
             arch_state = True
             break
+
+    if infer_arch == 'YOLOX':
+        infer_cfg['arch'] = infer_arch
+        infer_cfg['min_subgraph_size'] = TRT_MIN_SUBGRAPH[infer_arch]
+        arch_state = True
+
     if not arch_state:
         logger.error(
             'Architecture: {} is not supported for exporting model now.\n'.
@@ -166,7 +180,9 @@ def _dump_infer_config(config, path, image_shape, model):
         reader_cfg, dataset_cfg, config['metric'], label_arch, image_shape[1:])
 
     if infer_arch == 'PicoDet':
-        if config.get('export_post_process', False):
+        if hasattr(config, 'export') and config['export'].get(
+                'post_process',
+                False) and not config['export'].get('benchmark', False):
             infer_cfg['arch'] = 'GFL'
         head_name = 'PicoHeadV2' if config['PicoHeadV2'] else 'PicoHead'
         infer_cfg['NMS'] = config[head_name]['nms']

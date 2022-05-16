@@ -5,7 +5,7 @@
 # You may obtain a copy of the License at   
 #   
 #     http://www.apache.org/licenses/LICENSE-2.0    
-#   
+# 
 # Unless required by applicable law or agreed to in writing, software   
 # distributed under the License is distributed on an "AS IS" BASIS, 
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
@@ -23,6 +23,7 @@ from paddle.io import Dataset
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.download import get_dataset_path
 import copy
+import ppdet.data.source as source
 
 
 @serializable
@@ -60,6 +61,9 @@ class DetDataset(Dataset):
     def __len__(self, ):
         return len(self.roidbs)
 
+    def __call__(self, *args, **kwargs):
+        return self
+
     def __getitem__(self, idx):
         # data batch
         roidb = copy.deepcopy(self.roidbs[idx])
@@ -75,7 +79,7 @@ class DetDataset(Dataset):
             n = len(self.roidbs)
             roidb = [roidb, ] + [
                 copy.deepcopy(self.roidbs[np.random.randint(n)])
-                for _ in range(3)
+                for _ in range(4)
             ]
         if isinstance(roidb, Sequence):
             for r in roidb:
@@ -149,12 +153,15 @@ class ImageFolder(DetDataset):
         self.sample_num = sample_num
 
     def check_or_download_dataset(self):
+        return
+
+    def get_anno(self):
+        if self.anno_path is None:
+            return
         if self.dataset_dir:
-            # NOTE: ImageFolder is only used for prediction, in
-            #       infer mode, image_dir is set by set_images
-            #       so we only check anno_path here
-            self.dataset_dir = get_dataset_path(self.dataset_dir,
-                                                self.anno_path, None)
+            return os.path.join(self.dataset_dir, self.anno_path)
+        else:
+            return self.anno_path
 
     def parse_dataset(self, ):
         if not self.roidbs:
@@ -195,3 +202,40 @@ class ImageFolder(DetDataset):
     def set_images(self, images):
         self.image_dir = images
         self.roidbs = self._load_images()
+
+
+@register
+class CommonDataset(object):
+    def __init__(self, **dataset_args):
+        super(CommonDataset, self).__init__()
+        dataset_args = copy.deepcopy(dataset_args)
+        type = dataset_args.pop("name")
+        self.dataset = getattr(source, type)(**dataset_args)
+
+    def __call__(self):
+        return self.dataset
+
+
+@register
+class TrainDataset(CommonDataset):
+    pass
+
+
+@register
+class EvalMOTDataset(CommonDataset):
+    pass
+
+
+@register
+class TestMOTDataset(CommonDataset):
+    pass
+
+
+@register
+class EvalDataset(CommonDataset):
+    pass
+
+
+@register
+class TestDataset(CommonDataset):
+    pass

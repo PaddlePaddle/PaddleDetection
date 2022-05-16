@@ -1,0 +1,47 @@
+_BASE_: [
+  '../../datasets/coco_detection.yml',
+  '../../runtime.yml',
+  '_base_/picodet_esnet.yml',
+  '_base_/optimizer_300e.yml',
+  '_base_/picodet_416_reader.yml',
+]
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ESNet_x1_25_pretrained.pdparams
+weights: output/picodet_l_416_coco/model_final
+find_unused_parameters: True
+use_ema: true
+cycle_epoch: 40
+snapshot_epoch: 10
+epoch: 250
+
+ESNet:
+  scale: 1.25
+  feature_maps: [4, 11, 14]
+  act: hard_swish
+  channel_ratio: [0.875, 0.5, 1.0, 0.625, 0.5, 0.75, 0.625, 0.625, 0.5, 0.625, 1.0, 0.625, 0.75]
+
+CSPPAN:
+  out_channels: 160
+
+PicoHead:
+  conv_feat:
+    name: PicoFeat
+    feat_in: 160
+    feat_out: 160
+    num_convs: 4
+    num_fpn_stride: 4
+    norm_type: bn
+    share_cls_reg: True
+  feat_in_chan: 160
+
+TrainReader:
+  batch_size: 48
+
+LearningRate:
+  base_lr: 0.3
+  schedulers:
+  - !CosineDecay
+    max_epochs: 300
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 300

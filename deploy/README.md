@@ -51,7 +51,18 @@ python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml 
 - 详细案例请参考[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)部署。更多内容，请参考[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite)
 
 
-## 4.Benchmark测试
+## 4.第三方部署（MNN、NCNN、Openvino） 
+- 第三方部署提供PicoDet、TinyPose案例，其他模型请参考修改
+- TinyPose部署推荐工具：Intel CPU端推荐使用Openvino，GPU端推荐使用PaddleInference，ARM/ANDROID端推荐使用PaddleLite或者MNN
+
+| Third_Engine | MNN  | NCNN  | OPENVINO   |
+| ------------ | ---- | ----- | ---------- |
+| PicoDet      | [PicoDet_MNN](./third_engine/demo_mnn/README.md)       | [PicoDet_NCNN](./third_engine/demo_ncnn/README.md) | [PicoDet_OPENVINO](./third_engine/demo_openvino/README.md)   |
+| TinyPose     | [TinyPose_MNN](./third_engine/demo_mnn_kpts/README.md) | -                                                  | [TinyPose_OPENVINO](./third_engine/demo_openvino_kpts/README.md) |
+
+
+
+## 5.Benchmark测试
 - 使用导出的模型，运行Benchmark批量测试脚本：
 ```shell
 sh deploy/benchmark/benchmark.sh {model_dir} {model_name}
@@ -62,7 +73,7 @@ sh deploy/benchmark/benchmark.sh {model_dir} {model_name}
 python deploy/benchmark/log_parser_excel.py --log_path=./output_pipeline --output_name=benchmark_excel.xlsx
 ```
 
-## 5.常见问题QA
+## 6.常见问题QA
 - 1、`Paddle 1.8.4`训练的模型，可以用`Paddle2.0`部署吗？
   Paddle 2.0是兼容Paddle 1.8.4的，因此是可以的。但是部分模型(如SOLOv2)使用到了Paddle 2.0中新增OP，这类模型不可以。
 

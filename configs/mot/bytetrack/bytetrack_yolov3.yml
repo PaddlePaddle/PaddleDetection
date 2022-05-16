@@ -1,0 +1,50 @@
+# This config is an assembled config for ByteTrack MOT, used as eval/infer mode for MOT.
+_BASE_: [
+  'detector/yolov3_darknet53_40e_608x608_mot17half.yml',
+  '_base_/mot17.yml',
+  '_base_/yolov3_mot_reader_608x608.yml'
+]
+weights: output/bytetrack_yolov3/model_final
+log_iter: 20
+snapshot_epoch: 2
+
+metric: MOT # eval/infer mode
+num_classes: 1
+
+architecture: ByteTrack
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/yolov3_darknet53_270e_coco.pdparams
+ByteTrack:
+  detector: YOLOv3 # General YOLOv3 version
+  reid: None
+  tracker: JDETracker
+det_weights: https://bj.bcebos.com/v1/paddledet/models/mot/yolov3_darknet53_40e_608x608_mot17half.pdparams
+reid_weights: None
+
+YOLOv3:
+  backbone: DarkNet
+  neck: YOLOv3FPN
+  yolo_head: YOLOv3Head
+  post_process: BBoxPostProcess
+
+# Tracking requires higher quality boxes, so NMS score_threshold will be higher
+BBoxPostProcess:
+  decode:
+    name: YOLOBox
+    conf_thresh: 0.005
+    downsample_ratio: 32
+    clip_bbox: true
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    score_threshold: 0.01
+    nms_threshold: 0.45
+    nms_top_k: 1000
+
+# BYTETracker
+JDETracker:
+  use_byte: True
+  match_thres: 0.9
+  conf_thres: 0.2
+  low_conf_thres: 0.1
+  min_box_area: 100
+  vertical_ratio: 1.6 # for pedestrian

@@ -9,12 +9,12 @@
 | DarkNet53(paper)  | 608         |    8    |   270e    |     ----     |  33.0  |    -   |    -   |
 | DarkNet53(paper)  | 416         |    8    |   270e    |     ----     |  31.0  |    -   |    -   |
 | DarkNet53(paper)  | 320         |    8    |   270e    |     ----     |  28.2  |    -   |    -   |
-| DarkNet53         | 608         |    8    |   270e    |     ----     |  39.0  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) |
-| DarkNet53         | 416         |    8    |   270e    |     ----     |  37.5  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) |
-| DarkNet53         | 320         |    8    |   270e    |     ----     |  34.6  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) |
-|   ResNet50_vd        | 608        |    8    |   270e    |     ----     |  39.1  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_r50vd_dcn_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_r50vd_dcn_270e_coco.yml) |
-|   ResNet50_vd        | 416        |    8    |   270e    |     ----     |  36.6  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_r50vd_dcn_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_r50vd_dcn_270e_coco.yml) |
-|   ResNet50_vd        | 320        |    8    |   270e    |     ----     |  33.6  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_r50vd_dcn_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_r50vd_dcn_270e_coco.yml) |
+| DarkNet53         | 608         |    8    |   270e    |     ----     |  39.1  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) |
+| DarkNet53         | 416         |    8    |   270e    |     ----     |  37.7  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) |
+| DarkNet53         | 320         |    8    |   270e    |     ----     |  34.8  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) |
+|   ResNet50_vd        | 608        |    8    |   270e    |     ----     |  40.6  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_r50vd_dcn_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_r50vd_dcn_270e_coco.yml) |
+|   ResNet50_vd        | 416        |    8    |   270e    |     ----     |  38.2  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_r50vd_dcn_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_r50vd_dcn_270e_coco.yml) |
+|   ResNet50_vd        | 320        |    8    |   270e    |     ----     |  35.1  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_r50vd_dcn_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_r50vd_dcn_270e_coco.yml) |
 | ResNet34         | 608         |    8    |   270e    |     ----     |  36.2  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_r34_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_r34_270e_coco.yml) |
 | ResNet34         | 416         |    8    |   270e    |     ----     |  34.3  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_r34_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_r34_270e_coco.yml) |
 | ResNet34         | 320         |    8    |   270e    |     ----     |  31.2  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_r34_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_r34_270e_coco.yml) |
@@ -44,18 +44,6 @@
 | MobileNet-V3-SSLD | 608  |    8    |   270e  |      -        |  80.4  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v3_large_ssld_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v3_large_ssld_270e_voc.yml) |
 | MobileNet-V3-SSLD | 416  |    8    |   270e  |      -        |  79.2  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v3_large_ssld_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v3_large_ssld_270e_voc.yml) |
 | MobileNet-V3-SSLD | 320  |    8    |   270e  |      -        |  77.3  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v3_large_ssld_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v3_large_ssld_270e_voc.yml) |
-
-**注意：** YOLOv3均使用8GPU训练，训练270个epoch。由于动态图框架整体升级，以下几个PaddleDetection发布的权重模型评估时需要添加--bias字段, 例如
-
-```bash
-# 使用PaddleDetection发布的权重
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/ppyolo/yolov3_darknet53_270e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams --bias
-```
-主要有:
-
-1.yolov3_darknet53_270e_coco
-
-2.yolov3_r50vd_dcn_270e_coco
 
 ## Citations
 ```

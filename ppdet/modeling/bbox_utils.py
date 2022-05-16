@@ -744,9 +744,9 @@ def distance2bbox(points, distance, max_shape=None):
 def bbox_center(boxes):
     """Get bbox centers from boxes.
     Args:
-        boxes (Tensor): boxes with shape (N, 4), "xmin, ymin, xmax, ymax" format.
+        boxes (Tensor): boxes with shape (..., 4), "xmin, ymin, xmax, ymax" format.
     Returns:
-        Tensor: boxes centers with shape (N, 2), "cx, cy" format.
+        Tensor: boxes centers with shape (..., 2), "cx, cy" format.
     """
     boxes_cx = (boxes[..., 0] + boxes[..., 2]) / 2
     boxes_cy = (boxes[..., 1] + boxes[..., 3]) / 2
@@ -763,8 +763,9 @@ def batch_distance2bbox(points, distance, max_shapes=None):
         Tensor: Decoded bboxes, "x1y1x2y2" format.
     """
     lt, rb = paddle.split(distance, 2, -1)
-    x1y1 = points - lt
-    x2y2 = points + rb
+    # while tensor add parameters, parameters should be better placed on the second place
+    x1y1 = -lt + points
+    x2y2 = rb + points
     out_bbox = paddle.concat([x1y1, x2y2], -1)
     if max_shapes is not None:
         max_shapes = max_shapes.flip(-1).tile([1, 2])
@@ -782,7 +783,7 @@ def delta2bbox_v2(rois,
                   means=(0.0, 0.0, 0.0, 0.0),
                   stds=(1.0, 1.0, 1.0, 1.0),
                   max_shape=None,
-                  wh_ratio_clip=16.0/1000.0,
+                  wh_ratio_clip=16.0 / 1000.0,
                   ctr_clip=None):
     """Transform network output(delta) to bboxes.
     Based on https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/
@@ -860,7 +861,7 @@ def bbox2delta_v2(src_boxes,
     dw = paddle.log(tgt_w / src_w)
     dh = paddle.log(tgt_h / src_h)
 
-    deltas = paddle.stack((dx, dy, dw, dh), axis=1) # [n, 4]
+    deltas = paddle.stack((dx, dy, dw, dh), axis=1)  # [n, 4]
     means = paddle.to_tensor(means, place=src_boxes.place)
     stds = paddle.to_tensor(stds, place=src_boxes.place)
     deltas = (deltas - means) / stds

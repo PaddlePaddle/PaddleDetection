@@ -1,0 +1,42 @@
+_BASE_: [
+  '../../../../runtime.yml',
+  '../../_base_/picodet_esnet.yml',
+  '../../_base_/optimizer_100e.yml',
+  '../../_base_/picodet_640_reader.yml',
+]
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x2_5_ssld_pretrained.pdparams
+weights: output/picodet_lcnet_x2_5_640_mainbody/model_final
+find_unused_parameters: True
+use_ema: true
+cycle_epoch: 20
+snapshot_epoch: 2
+
+PicoDet:
+  backbone: LCNet
+  neck: CSPPAN
+  head: PicoHead
+
+LCNet:
+  scale: 2.5
+  feature_maps: [3, 4, 5]
+
+metric: COCO
+num_classes: 1
+
+TrainDataset:
+  !COCODataSet
+    image_dir: ./
+    anno_path: train.json
+    dataset_dir: dataset/mainbody/
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: ./
+    anno_path: val.json
+    dataset_dir: dataset/mainbody/
+
+TestDataset:
+  !ImageFolder
+    anno_path: ./dataset/mainbody/val.json

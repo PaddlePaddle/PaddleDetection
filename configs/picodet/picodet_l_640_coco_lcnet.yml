@@ -1,0 +1,45 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/picodet_v2.yml',
+  '_base_/optimizer_300e.yml',
+  '_base_/picodet_640_reader.yml',
+]
+
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPLCNet_x2_0_pretrained.pdparams
+weights: output/picodet_l_320_coco/best_model
+find_unused_parameters: True
+use_ema: true
+epoch: 200
+snapshot_epoch: 10
+
+LCNet:
+  scale: 2.0
+  feature_maps: [3, 4, 5]
+
+LCPAN:
+  out_channels: 160
+
+PicoHeadV2:
+  conv_feat:
+    name: PicoFeat
+    feat_in: 160
+    feat_out: 160
+    num_convs: 4
+    num_fpn_stride: 4
+    norm_type: bn
+    share_cls_reg: True
+    use_se: True
+  feat_in_chan: 160
+
+LearningRate:
+  base_lr: 0.06
+  schedulers:
+  - !CosineDecay
+    max_epochs: 300
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 300
+
+TrainReader:
+  batch_size: 12

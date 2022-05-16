@@ -114,6 +114,7 @@ class ObjectDetector {
                    std::vector<PaddleDetection::ObjectResult>* result,
                    std::vector<int> bbox_num,
                    std::vector<float> output_data_,
+                   std::vector<int> output_mask_data_,
                    bool is_rbox);
 
   std::shared_ptr<Predictor> predictor_;

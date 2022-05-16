@@ -42,6 +42,7 @@ class PicoDet(BaseArch):
         self.neck = neck
         self.head = head
         self.export_post_process = True
+        self.export_nms = True
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -66,10 +67,9 @@ class PicoDet(BaseArch):
         if self.training or not self.export_post_process:
             return head_outs, None
         else:
-            im_shape = self.inputs['im_shape']
             scale_factor = self.inputs['scale_factor']
-            bboxes, bbox_num = self.head.post_process(head_outs, im_shape,
-                                                      scale_factor)
+            bboxes, bbox_num = self.head.post_process(
+                head_outs, scale_factor, export_nms=self.export_nms)
             return bboxes, bbox_num
 
     def get_loss(self, ):
@@ -85,7 +85,11 @@ class PicoDet(BaseArch):
     def get_pred(self):
         if not self.export_post_process:
             return {'picodet': self._forward()[0]}
-        else:
+        elif self.export_nms:
             bbox_pred, bbox_num = self._forward()
             output = {'bbox': bbox_pred, 'bbox_num': bbox_num}
+            return output
+        else:
+            bboxes, mlvl_scores = self._forward()
+            output = {'bbox': bboxes, 'scores': mlvl_scores}
             return output

@@ -39,11 +39,14 @@
 | :--------         | :-----     | :----:      |:------:  | :----: |:-----: |:----:|:----:   |
 | MIX               | JDE YOLOv3 | PCB Pyramid |  -       |  66.9  |  62.7  |   -    |[配置文件](./deepsort_jde_yolov3_pcb_pyramid.yml) |
 | MIX               | JDE YOLOv3 | PPLCNet     |  -       |  66.3  |  62.1  |   -    |[配置文件](./deepsort_jde_yolov3_pplcnet.yml) |
-| pedestrian(未开放) | YOLOv3     | PPLCNet     |  45.4    |  45.8  |  54.3  |   -    |[配置文件](./deepsort_yolov3_pplcnet.yml) |
-| MOT-17 half train | PPYOLOv2   | PPLCNet     |  46.8    |  48.7  |  54.5  |   -    |[配置文件](./deepsort_ppyolov2_pplcnet.yml) |
+| MOT-17 half train | YOLOv3     | PPLCNet     |  42.7    |  50.2  |  52.4  |   -    |[配置文件](./deepsort_yolov3_pplcnet.yml) |
+| MOT-17 half train | PPYOLOv2   | PPLCNet     |  46.8    |  51.8  |  55.8  |   -    |[配置文件](./deepsort_ppyolov2_pplcnet.yml) |
+| MOT-17 half train | PPYOLOe    | PPLCNet     |  52.9    |  56.7  |  60.5  |   -    |[配置文件](./deepsort_ppyoloe_pplcnet.yml) |
+| MOT-17 half train | PPYOLOe    | ResNet-50   |  52.9    |  56.7  |  64.6  |   -    |[配置文件](./deepsort_ppyoloe_resnet.yml) |
 
 **注意:**
-DeepSORT不需要训练MOT数据集，只用于评估，现在支持两种评估的方式。
+模型权重下载链接在配置文件中的```det_weights```和```reid_weights```，运行验证的命令即可自动下载。
+DeepSORT是分离检测器和ReID模型的，其中检测器单独训练MOT数据集，而组装成DeepSORT后只用于评估，现在支持两种评估的方式。
 - **方式1**：加载检测结果文件和ReID模型，在使用DeepSORT模型评估之前，应该首先通过一个检测模型得到检测结果，然后像这样准备好结果文件:
 ```
 det_results_dir
@@ -75,6 +78,15 @@ wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
 
 ### 1. 评估
 
+#### 1.1 评估检测效果
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mot/deepsort/detector/ppyoloe_crn_l_36e_640x640_mot17half.yml
+```
+
+**注意:**
+ - 评估检测使用的是```tools/eval.py```, 评估跟踪使用的是```tools/eval_mot.py```。
+
+#### 1.2 评估跟踪效果
 **方式1**：加载检测结果文件和ReID模型，得到跟踪结果
 ```bash
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml --det_results_dir {your detection results}
@@ -89,6 +101,8 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pplcnet.yml
 # 或者
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_ppyolov2_pplcnet.yml --scaled=True
+# 或者
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_ppyoloe_resnet.yml --scaled=True
 ```
 **注意:**
  - JDE YOLOv3行人检测模型是和JDE和FairMOT使用同样的MOT数据集训练的，因此MOTA较高。而其他通用检测模型如PPYOLOv2只使用了MOT17 half数据集训练。

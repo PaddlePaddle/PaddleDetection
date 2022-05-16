@@ -7,4 +7,3 @@ _BASE_: [
 ]
 
 weights: output/retinanet_r50_fpn_1x_coco/model_final
-find_unused_parameters: true

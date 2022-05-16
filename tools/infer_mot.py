@@ -28,14 +28,10 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import paddle
-from paddle.distributed import ParallelEnv
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.engine import Tracker
-from ppdet.utils.check import check_gpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
-
-from ppdet.utils.logger import setup_logger
-logger = setup_logger('train')
 
 
 def parse_args():
@@ -94,11 +90,8 @@ def run(FLAGS, cfg):
     tracker = Tracker(cfg, mode='test')
 
     # load weights
-    if cfg.architecture in ['DeepSORT']:
-        if cfg.det_weights != 'None':
-            tracker.load_weights_sde(cfg.det_weights, cfg.reid_weights)
-        else:
-            tracker.load_weights_sde(None, cfg.reid_weights)
+    if cfg.architecture in ['DeepSORT', 'ByteTrack']:
+        tracker.load_weights_sde(cfg.det_weights, cfg.reid_weights)
     else:
         tracker.load_weights_jde(cfg.weights)
 
@@ -123,12 +116,29 @@ def main():
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
 
+    # disable npu in config by default
+    if 'use_npu' not in cfg:
+        cfg.use_npu = False
+
+    # disable xpu in config by default
+    if 'use_xpu' not in cfg:
+        cfg.use_xpu = False
+
+    if cfg.use_gpu:
+        place = paddle.set_device('gpu')
+    elif cfg.use_npu:
+        place = paddle.set_device('npu')
+    elif cfg.use_xpu:
+        place = paddle.set_device('xpu')
+    else:
+        place = paddle.set_device('cpu')
+
     check_config(cfg)
     check_gpu(cfg.use_gpu)
+    check_npu(cfg.use_npu)
+    check_xpu(cfg.use_xpu)
     check_version()
 
-    place = 'gpu:{}'.format(ParallelEnv().dev_id) if cfg.use_gpu else 'cpu'
-    place = paddle.set_device(place)
     run(FLAGS, cfg)
 
 

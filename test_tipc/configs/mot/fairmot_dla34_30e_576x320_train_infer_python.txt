@@ -49,3 +49,5 @@ inference:./deploy/pptracking/python/mot_jde_infer.py
 --save_log_path:null
 --run_benchmark:False
 null:null
+===========================infer_benchmark_params===========================
+numpy_infer_input:3x320x576.npy

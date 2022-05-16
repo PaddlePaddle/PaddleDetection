@@ -112,11 +112,11 @@ class MaskRCNN(BaseArch):
                 body_feats, bbox, bbox_num, self.inputs, feat_func=feat_func)
 
             # rescale the prediction back to origin image
-            bbox_pred = self.bbox_post_process.get_pred(bbox, bbox_num,
-                                                        im_shape, scale_factor)
+            bbox, bbox_pred, bbox_num = self.bbox_post_process.get_pred(
+                bbox, bbox_num, im_shape, scale_factor)
             origin_shape = self.bbox_post_process.get_origin_shape()
-            mask_pred = self.mask_post_process(mask_out[:, 0, :, :], bbox_pred,
-                                               bbox_num, origin_shape)
+            mask_pred = self.mask_post_process(mask_out, bbox_pred, bbox_num,
+                                               origin_shape)
             return bbox_pred, bbox_num, mask_pred
 
     def get_loss(self, ):

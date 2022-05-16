@@ -28,7 +28,6 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import paddle
-
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
@@ -65,11 +64,8 @@ def run(FLAGS, cfg):
     trainer = Trainer(cfg, mode='test')
 
     # load weights
-    if cfg.architecture in ['DeepSORT']:
-        if cfg.det_weights != 'None':
-            trainer.load_weights_sde(cfg.det_weights, cfg.reid_weights)
-        else:
-            trainer.load_weights_sde(None, cfg.reid_weights)
+    if cfg.architecture in ['DeepSORT', 'ByteTrack']:
+        trainer.load_weights_sde(cfg.det_weights, cfg.reid_weights)
     else:
         trainer.load_weights(cfg.weights)
 
@@ -94,9 +90,6 @@ def main():
     paddle.set_device("cpu")
     FLAGS = parse_args()
     cfg = load_config(FLAGS.config)
-    # TODO: to be refined in the future
-    if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn':
-        FLAGS.opt['norm_type'] = 'bn'
     merge_config(FLAGS.opt)
 
     if FLAGS.slim_config:

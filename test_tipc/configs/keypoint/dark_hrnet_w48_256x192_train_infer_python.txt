@@ -49,3 +49,5 @@ inference:./deploy/python/keypoint_infer.py
 --save_log_path:null
 --run_benchmark:True
 null:null
+===========================infer_benchmark_params===========================
+random_infer_input:[{float32,[3,256,192]}]

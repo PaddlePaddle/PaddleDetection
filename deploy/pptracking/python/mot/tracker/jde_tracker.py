@@ -32,12 +32,13 @@ class JDETracker(object):
     JDE tracker, support single class and multi classes
 
     Args:
+        use_byte (bool): Whether use ByteTracker, default False
         num_classes (int): the number of classes
         det_thresh (float): threshold of detection score
         track_buffer (int): buffer for tracker
         min_box_area (int): min box area to filter out low quality boxes
         vertical_ratio (float): w/h, the vertical ratio of the bbox to filter
-            bad results. If set <0 means no need to filter bboxes，usually set
+            bad results. If set <= 0 means no need to filter bboxes，usually set
             1.6 for pedestrian tracking.
         tracked_thresh (float): linear assignment threshold of tracked 
             stracks and detections
@@ -45,8 +46,15 @@ class JDETracker(object):
             tracked stracks and unmatched detections
         unconfirmed_thresh (float): linear assignment threshold of 
             unconfirmed stracks and unmatched detections
+        conf_thres (float): confidence threshold for tracking, also used in
+            ByteTracker as higher confidence threshold
+        match_thres (float): linear assignment threshold of tracked 
+            stracks and detections in ByteTracker
+        low_conf_thres (float): lower confidence threshold for tracking in
+            ByteTracker
+        input_size (list): input feature map size to reid model, [h, w] format,
+            [64, 192] as default.
         motion (str): motion model, KalmanFilter as default
-        conf_thres (float): confidence threshold for tracking
         metric_type (str): either "euclidean" or "cosine", the distance metric 
             used for measurement to track association.
     """
@@ -56,14 +64,15 @@ class JDETracker(object):
                  num_classes=1,
                  det_thresh=0.3,
                  track_buffer=30,
-                 min_box_area=200,
-                 vertical_ratio=1.6,
+                 min_box_area=0,
+                 vertical_ratio=0,
                  tracked_thresh=0.7,
                  r_tracked_thresh=0.5,
                  unconfirmed_thresh=0.7,
                  conf_thres=0,
                  match_thres=0.8,
                  low_conf_thres=0.2,
+                 input_size=[64, 192],
                  motion='KalmanFilter',
                  metric_type='euclidean'):
         self.use_byte = use_byte
@@ -80,6 +89,7 @@ class JDETracker(object):
         self.match_thres = match_thres
         self.low_conf_thres = low_conf_thres
 
+        self.input_size = input_size
         if motion == 'KalmanFilter':
             self.motion = KalmanFilter()
         self.metric_type = metric_type
@@ -100,13 +110,13 @@ class JDETracker(object):
 
         Args:
             pred_dets (np.array): Detection results of the image, the shape is
-                [N, 6], means 'x0, y0, x1, y1, score, cls_id'.
+                [N, 6], means 'cls_id, score, x0, y0, x1, y1'.
             pred_embs (np.array): Embedding results of the image, the shape is
                 [N, 128] or [N, 512].
 
         Return:
             output_stracks_dict (dict(list)): The list contains information
-                regarding the online_tracklets for the recieved image tensor.
+                regarding the online_tracklets for the received image tensor.
         """
         self.frame_id += 1
         if self.frame_id == 1:
@@ -122,7 +132,7 @@ class JDETracker(object):
 
         # unify single and multi classes detection and embedding results
         for cls_id in range(self.num_classes):
-            cls_idx = (pred_dets[:, 5:] == cls_id).squeeze(-1)
+            cls_idx = (pred_dets[:, 0:1] == cls_id).squeeze(-1)
             pred_dets_dict[cls_id] = pred_dets[cls_idx]
             if pred_embs is not None:
                 pred_embs_dict[cls_id] = pred_embs[cls_idx]
@@ -133,21 +143,26 @@ class JDETracker(object):
             """ Step 1: Get detections by class"""
             pred_dets_cls = pred_dets_dict[cls_id]
             pred_embs_cls = pred_embs_dict[cls_id]
-            remain_inds = (pred_dets_cls[:, 4:5] > self.conf_thres).squeeze(-1)
+            remain_inds = (pred_dets_cls[:, 1:2] > self.conf_thres).squeeze(-1)
             if remain_inds.sum() > 0:
                 pred_dets_cls = pred_dets_cls[remain_inds]
-                if self.use_byte:
+                if pred_embs_cls is None:
+                    # in original ByteTrack
                     detections = [
                         STrack(
-                            STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], cls_id, 30, temp_feat=None)
-                        for tlbrs in pred_dets_cls
+                            STrack.tlbr_to_tlwh(tlbrs[2:6]),
+                            tlbrs[1],
+                            cls_id,
+                            30,
+                            temp_feat=None) for tlbrs in pred_dets_cls
                     ]
                 else:
                     pred_embs_cls = pred_embs_cls[remain_inds]
                     detections = [
                         STrack(
-                            STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], cls_id, 30, temp_feat)
-                        for (tlbrs, temp_feat) in zip(pred_dets_cls, pred_embs_cls)
+                            STrack.tlbr_to_tlwh(tlbrs[2:6]), tlbrs[1], cls_id,
+                            30, temp_feat) for (tlbrs, temp_feat) in
+                        zip(pred_dets_cls, pred_embs_cls)
                     ]
             else:
                 detections = []
@@ -170,15 +185,19 @@ class JDETracker(object):
             # Predict the current location with KalmanFilter
             STrack.multi_predict(track_pool_dict[cls_id], self.motion)
 
-            if self.use_byte:
-                dists = matching.iou_distance(track_pool_dict[cls_id], detections)
+            if pred_embs_cls is None:
+                # in original ByteTrack
+                dists = matching.iou_distance(track_pool_dict[cls_id],
+                                              detections)
                 matches, u_track, u_detection = matching.linear_assignment(
-                    dists, thresh=self.match_thres) # not self.tracked_thresh
+                    dists, thresh=self.match_thres)  # not self.tracked_thresh
             else:
                 dists = matching.embedding_distance(
-                    track_pool_dict[cls_id], detections, metric=self.metric_type)
-                dists = matching.fuse_motion(self.motion, dists,
-                                            track_pool_dict[cls_id], detections)
+                    track_pool_dict[cls_id],
+                    detections,
+                    metric=self.metric_type)
+                dists = matching.fuse_motion(
+                    self.motion, dists, track_pool_dict[cls_id], detections)
                 matches, u_track, u_detection = matching.linear_assignment(
                     dists, thresh=self.tracked_thresh)
 
@@ -199,26 +218,43 @@ class JDETracker(object):
             # None of the steps below happen if there are no undetected tracks.
             """ Step 3: Second association, with IOU"""
             if self.use_byte:
-                inds_low = pred_dets_dict[cls_id][:, 4:5] > self.low_conf_thres
-                inds_high = pred_dets_dict[cls_id][:, 4:5] < self.conf_thres
+                inds_low = pred_dets_dict[cls_id][:, 1:2] > self.low_conf_thres
+                inds_high = pred_dets_dict[cls_id][:, 1:2] < self.conf_thres
                 inds_second = np.logical_and(inds_low, inds_high).squeeze(-1)
                 pred_dets_cls_second = pred_dets_dict[cls_id][inds_second]
 
                 # association the untrack to the low score detections
                 if len(pred_dets_cls_second) > 0:
-                    detections_second = [
-                        STrack(STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], cls_id, 30, temp_feat=None)
-                        for tlbrs in pred_dets_cls_second[:, :5]
-                    ]
+                    if pred_embs_dict[cls_id] is None:
+                        # in original ByteTrack
+                        detections_second = [
+                            STrack(
+                                STrack.tlbr_to_tlwh(tlbrs[2:6]),
+                                tlbrs[1],
+                                cls_id,
+                                30,
+                                temp_feat=None)
+                            for tlbrs in pred_dets_cls_second
+                        ]
+                    else:
+                        pred_embs_cls_second = pred_embs_dict[cls_id][
+                            inds_second]
+                        detections_second = [
+                            STrack(
+                                STrack.tlbr_to_tlwh(tlbrs[2:6]), tlbrs[1],
+                                cls_id, 30, temp_feat) for (tlbrs, temp_feat) in
+                            zip(pred_dets_cls_second, pred_embs_cls_second)
+                        ]
                 else:
                     detections_second = []
                 r_tracked_stracks = [
                     track_pool_dict[cls_id][i] for i in u_track
                     if track_pool_dict[cls_id][i].state == TrackState.Tracked
                 ]
-                dists = matching.iou_distance(r_tracked_stracks, detections_second)
+                dists = matching.iou_distance(r_tracked_stracks,
+                                              detections_second)
                 matches, u_track, u_detection_second = matching.linear_assignment(
-                    dists, thresh=0.4) # not r_tracked_thresh
+                    dists, thresh=0.4)  # not r_tracked_thresh
             else:
                 detections = [detections[i] for i in u_detection]
                 r_tracked_stracks = []
@@ -232,7 +268,8 @@ class JDETracker(object):
 
             for i_tracked, idet in matches:
                 track = r_tracked_stracks[i_tracked]
-                det = detections[idet] if not self.use_byte else detections_second[idet]
+                det = detections[
+                    idet] if not self.use_byte else detections_second[idet]
                 if track.state == TrackState.Tracked:
                     track.update(det, self.frame_id)
                     activated_tracks_dict[cls_id].append(track)

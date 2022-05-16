@@ -20,7 +20,7 @@ DETR is an object detection model based on transformer. We reproduced the model 
 GPU multi-card training
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/detr/detr_r50_1x_coco.yml --fleet -o find_unused_parameters=True
+python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/detr/detr_r50_1x_coco.yml --fleet
 ```
 
 ## Citations
