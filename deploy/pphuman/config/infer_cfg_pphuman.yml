@@ -1,3 +1,4 @@
+mode: pphuman
 crop_thresh: 0.5
 attr_thresh: 0.5
 kpt_thresh: 0.2

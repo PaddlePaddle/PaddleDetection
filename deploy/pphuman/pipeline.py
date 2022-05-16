@@ -735,7 +735,7 @@ class PipePredictor(object):
                                           center_traj)  # visualize
                 writer.write(im)
                 if self.file_name is None:  # use camera_id
-                    cv2.imshow('PPHuman', im)
+                    cv2.imshow(cfg['mode'], im)
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
 
@@ -848,10 +848,25 @@ class PipePredictor(object):
             start_idx += boxes_num_i
 
 
+def check_config(cfg):
+    mode = cfg.get('mode', "pphuman")
+    assert (
+        mode in ["pphuman", "ppvehicle"]
+    ), "mode should be [pphuman] or [ppvehicle], but got [{}]".format(mode)
+    if mode == "ppvehicle":
+        assert (
+            cfg.get('video_dir', None) == None
+        ), "Noting that [video_dir] is only supported by mtmct in mode: pphuman, but now is in mode: ppvehicle"
+    if mode == "pphuman":
+        assert (
+            not 'PLATE' in cfg
+        ), "Noting that the PLATE is only supported in mode: ppvehicle, but now is in mode: pphuman"
+
+
 def main():
     cfg = merge_cfg(FLAGS)
     print_arguments(cfg)
-
+    check_config(cfg)
     pipeline = Pipeline(
         cfg, FLAGS.image_file, FLAGS.image_dir, FLAGS.video_file,
         FLAGS.video_dir, FLAGS.camera_id, FLAGS.device, FLAGS.run_mode,
