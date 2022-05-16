@@ -39,7 +39,7 @@ PP-YOLOE由以下方法组成
 - 参考[速度测试](#速度测试)以复现PP-YOLOE推理速度测试结果。
 - 如果你设置了`--run_benchmark=True`, 你首先需要安装以下依赖`pip install pynvml psutil GPUtil`。
 
-## 使用教程
+## 使用说明
 
 ### 训练
 
