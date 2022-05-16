@@ -57,6 +57,7 @@ SCRFDHead:
     num_classes: 1
     force_gt_matching: False
     eps: 1e-9
+    area_check: True
   loss_class:
     name: QualityFocalLoss
     use_sigmoid: True

@@ -107,7 +107,7 @@ def gather_topk_anchors(metrics, topk, largest=True, topk_mask=None, eps=1e-9):
     return is_in_topk.astype(metrics.dtype)
 
 
-def check_points_inside_bboxes(points, bboxes, eps=1e-9):
+def check_points_inside_bboxes(points, bboxes, area_check=False, eps=1e-9):
     r"""
     Args:
         points (Tensor, float32): shape[L, 2], "xy" format, L: num_anchors
@@ -124,14 +124,16 @@ def check_points_inside_bboxes(points, bboxes, eps=1e-9):
     r = xmax - x
     b = ymax - y
     bbox_ltrb = paddle.concat([l, t, r, b], axis=-1)
-    bboxes_ares = (bboxes[..., 3] - bboxes[..., 1]) * (
-        bboxes[..., 2] - bboxes[..., 0])
-    bboxes_ares = paddle.clip(paddle.sqrt(bboxes_ares), min=1e-4)
-    bbox_ltrb_min = bbox_ltrb.min(axis=-1).transpose([0, 2, 1])
-    bbox_ltrb_min = (bbox_ltrb_min / bboxes_ares.unsqueeze(1)).transpose(
-        [0, 2, 1])
-    return (bbox_ltrb_min > 0.001).astype(bboxes.dtype)
-    return (bbox_ltrb.min(axis=-1) > eps).astype(bboxes.dtype)
+    if area_check:
+        bboxes_ares = (bboxes[..., 3] - bboxes[..., 1]) * (
+            bboxes[..., 2] - bboxes[..., 0])
+        bboxes_ares = paddle.clip(paddle.sqrt(bboxes_ares), min=1e-4)
+        bbox_ltrb_min = bbox_ltrb.min(axis=-1).transpose([0, 2, 1])
+        bbox_ltrb_min = (bbox_ltrb_min / bboxes_ares.unsqueeze(1)).transpose(
+            [0, 2, 1])
+        return (bbox_ltrb_min > 0.001).astype(bboxes.dtype)
+    else:
+        return (bbox_ltrb.min(axis=-1) > eps).astype(bboxes.dtype)
 
 
 def compute_max_iou_anchor(ious):

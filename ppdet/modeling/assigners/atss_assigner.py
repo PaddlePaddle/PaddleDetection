@@ -42,12 +42,14 @@ class ATSSAssigner(nn.Layer):
                  topk=9,
                  num_classes=80,
                  force_gt_matching=False,
-                 eps=1e-9):
+                 eps=1e-9,
+                 area_check=False):
         super(ATSSAssigner, self).__init__()
         self.topk = topk
         self.num_classes = num_classes
         self.force_gt_matching = force_gt_matching
         self.eps = eps
+        self.area_check = area_check
 
     def _gather_topk_pyramid(self, gt2anchor_distances, num_anchors_list,
                              pad_gt_mask):
@@ -162,7 +164,8 @@ class ATSSAssigner(nn.Layer):
             is_in_topk, paddle.zeros_like(is_in_topk))
 
         # 6. check the positive sample's center in gt, [B, n, L]
-        is_in_gts = check_points_inside_bboxes(anchor_centers, gt_bboxes)
+        is_in_gts = check_points_inside_bboxes(anchor_centers, gt_bboxes,\
+            area_check=self.area_check)
 
         # select positive sample, [B, n, L]
         mask_positive = is_in_topk * is_in_gts * pad_gt_mask
