@@ -36,8 +36,8 @@ PP-SMRT结合产业真实场景，通过比较检测算法效果，向用户推�
 铝件质检数据展示图:
 
 <div align="center">
-  <img src="images/lvjian1_0.png"  width = "200" />  
-  <img src="images/lvjian1_10.png"  width = "200" />  
+  <img src="images/lvjian1_0.jpg"  width = "200" />  
+  <img src="images/lvjian1_10.jpg"  width = "200" />  
 </div>
 
 
