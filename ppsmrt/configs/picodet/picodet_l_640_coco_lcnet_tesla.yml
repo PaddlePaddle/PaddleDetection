@@ -1,5 +1,5 @@
-weights: outputpicodet_l_640_coco_lcnet_tesla/best_final
-pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_l_640_coco.pdparams
+weights: output/picodet_l_640_coco_lcnet_tesla/best_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_l_640_coco_lcnet.pdparams
 
 worker_num: 2
 eval_height: &eval_height 640
