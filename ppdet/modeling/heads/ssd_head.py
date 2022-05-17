@@ -20,6 +20,7 @@ from paddle.regularizer import L2Decay
 from paddle import ParamAttr
 
 from ..layers import AnchorGeneratorSSD
+from ..cls_utils import _get_class_default_kwargs
 
 
 class SepConvLayer(nn.Layer):
@@ -113,7 +114,8 @@ class SSDHead(nn.Layer):
     def __init__(self,
                  num_classes=80,
                  in_channels=(512, 1024, 512, 256, 256, 256),
-                 anchor_generator=AnchorGeneratorSSD().__dict__,
+                 anchor_generator=_get_class_default_kwargs(
+                                        AnchorGeneratorSSD),
                  kernel_size=3,
                  padding=1,
                  use_sepconv=False,

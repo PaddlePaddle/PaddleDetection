@@ -24,6 +24,7 @@ from ppdet.core.workspace import register, create
 from .roi_extractor import RoIAlign
 from ..shape_spec import ShapeSpec
 from ..bbox_utils import bbox2delta
+from ..cls_utils import _get_class_default_kwargs
 from ppdet.modeling.layers import ConvNormLayer
 
 __all__ = ['TwoFCHead', 'XConvNormHead', 'BBoxHead']
@@ -178,7 +179,7 @@ class BBoxHead(nn.Layer):
     def __init__(self,
                  head,
                  in_channel,
-                 roi_extractor=RoIAlign().__dict__,
+                 roi_extractor=_get_class_default_kwargs(RoIAlign),
                  bbox_assigner='BboxAssigner',
                  with_pool=False,
                  num_classes=80,
