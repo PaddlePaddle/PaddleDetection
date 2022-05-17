@@ -72,8 +72,8 @@ class RPNHead(nn.Layer):
     def __init__(self,
                  anchor_generator=_get_class_default_kwargs(AnchorGenerator),
                  rpn_target_assign=_get_class_default_kwargs(RPNTargetAssign),
-                 train_proposal=_get_class_default_kwargs(
-                                        ProposalGenerator, 12000, 2000),
+                 train_proposal=_get_class_default_kwargs(ProposalGenerator,
+                                                          12000, 2000),
                  test_proposal=_get_class_default_kwargs(ProposalGenerator),
                  in_channel=1024,
                  export_onnx=False):

@@ -114,8 +114,7 @@ class SSDHead(nn.Layer):
     def __init__(self,
                  num_classes=80,
                  in_channels=(512, 1024, 512, 256, 256, 256),
-                 anchor_generator=_get_class_default_kwargs(
-                                        AnchorGeneratorSSD),
+                 anchor_generator=_get_class_default_kwargs(AnchorGeneratorSSD),
                  kernel_size=3,
                  padding=1,
                  use_sepconv=False,

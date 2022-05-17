@@ -40,8 +40,7 @@ class FaceHead(nn.Layer):
     def __init__(self,
                  num_classes=80,
                  in_channels=[96, 96],
-                 anchor_generator=_get_class_default_kwargs(
-                                                AnchorGeneratorSSD),
+                 anchor_generator=_get_class_default_kwargs(AnchorGeneratorSSD),
                  kernel_size=3,
                  padding=1,
                  conv_decay=0.,
