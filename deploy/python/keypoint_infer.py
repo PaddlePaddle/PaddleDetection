@@ -266,7 +266,7 @@ class KeyPointDetector(Detector):
                 break
             print('detect frame: %d' % (index))
             index += 1
-            results = self.predict_image([frame], visual=False)
+            results = self.predict_image([frame[:, :, ::-1]], visual=False)
             im_results = {}
             im_results['keypoint'] = [results['keypoint'], results['score']]
             im = visualize_pose(

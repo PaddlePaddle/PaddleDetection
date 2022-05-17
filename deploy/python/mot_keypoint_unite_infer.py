@@ -167,7 +167,10 @@ def mot_topdown_unite_predict_video(mot_detector,
 
         # mot model
         timer_mot.tic()
-        mot_results = mot_detector.predict_image([frame], visual=False)
+
+        frame2 = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        mot_results = mot_detector.predict_image([frame2], visual=False)
         timer_mot.toc()
         online_tlwhs, online_scores, online_ids = mot_results[0]
         results = convert_mot_to_det(
@@ -179,7 +182,7 @@ def mot_topdown_unite_predict_video(mot_detector,
         # keypoint model
         timer_kp.tic()
         keypoint_res = predict_with_given_det(
-            frame, results, topdown_keypoint_detector, keypoint_batch_size,
+            frame2, results, topdown_keypoint_detector, keypoint_batch_size,
             FLAGS.run_benchmark)
         timer_kp.toc()
         timer_mot_kp.toc()

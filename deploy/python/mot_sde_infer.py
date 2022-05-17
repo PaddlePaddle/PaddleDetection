@@ -414,7 +414,7 @@ class SDE_Detector(Detector):
             timer.tic()
             seq_name = video_out_name.split('.')[0]
             mot_results = self.predict_image(
-                [frame], visual=False, seq_name=seq_name)
+                [frame[:, :, ::-1]], visual=False, seq_name=seq_name)
             timer.toc()
 
             # bs=1 in MOT model
