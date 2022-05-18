@@ -1,26 +1,26 @@
-weights: output/cascade_rcnn_r50_fpn_1x_800_renche/best_final
+weights: output/cascade_rcnn_r50_vd_fpn_ssld_2x_1500_battery/best_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/cascade_rcnn_r50_vd_fpn_ssld_2x_coco.pdparams
 
 metric: COCO
-num_classes: 22
+num_classes: 45
 
 TrainDataset:
   !COCODataSet
-    image_dir: train_images
-    anno_path: train.json
-    dataset_dir: dataset/renche
+    image_dir: images
+    anno_path: annotations/train.json
+    dataset_dir: dataset/battery_mini
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
-    image_dir: train_images
-    anno_path: test.json
-    dataset_dir: dataset/renche
+    image_dir: images
+    anno_path: annotations/test.json
+    dataset_dir: dataset/battery_mini
 
 TestDataset:
   !ImageFolder
-    anno_path: test.json
-    dataset_dir: dataset/renche
+    anno_path: annotations/test.json
+    dataset_dir: dataset/battery_mini
 
 epoch: 24
 LearningRate:
