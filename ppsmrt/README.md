@@ -12,11 +12,11 @@ PP-SMRT用户图
 
 PP-SMRT结合产业真实场景，通过比较检测算法效果，向用户推荐最适合的模型。目前PP-SMRT覆盖工业质检、城市安防两大场景，下面介绍PP-SMRT进行算法对比所使用的数据集
 
-### 1. 特斯拉工业质检数据集
+### 1. 新能源电池质检数据集
 
-数据集为特斯拉电池组件质检数据集，包含15021张图片，包含22045个标注框，覆盖45种缺陷类型，例如掉胶，裂纹，划痕等。
+数据集为新能源电池电池组件质检数据集，包含15021张图片，包含22045个标注框，覆盖45种缺陷类型，例如掉胶，裂纹，划痕等。
 
-特斯拉数据展示图:
+新能源电池数据展示图:
 
 <div align="center">
   <img src="images/Board_diaojiao_1591.png"  width = "200" />  
@@ -87,7 +87,7 @@ PP-SMRT结合产业真实场景，通过比较检测算法效果，向用户推�
 
 ## 三、推荐模型使用全流程
 
-通过模型选型工具会得到对应场景和数据特点的检测模型配置，例如[PP-YOLOE](./configs/ppyoloe/ppyoloe_crn_m_300e_tesla_1024.yml)
+通过模型选型工具会得到对应场景和数据特点的检测模型配置，例如[PP-YOLOE](./configs/ppyoloe/ppyoloe_crn_m_300e_battery_1024.yml)
 
 该配置文件的使用方法如下
 
@@ -121,12 +121,12 @@ pip install -r requirements.txt
 
 用户需要准备训练数据集，建议标注文件使用COCO数据格式。如果使用lableme或者VOC数据格式，先使用[格式转换脚本](../tools/x2coco.py)将标注格式转化为COCO，详细数据准备文档请参考[文档](../docs/tutorials/PrepareDataSet.md)
 
-本文档以tesla工业质检子数据集为例展开，数据下载[链接](https://bj.bcebos.com/v1/paddle-smrt/data/tesla_mini.tar)
+本文档以新能源电池工业质检子数据集为例展开，数据下载[链接](https://bj.bcebos.com/v1/paddle-smrt/data/battery_mini.zip)
 
 数据储存格式如下：
 
 ```
-tesla_mini
+battery_mini
 ├── annotations
 │   ├── test.json
 │   └── train.json
@@ -144,37 +144,37 @@ tesla_mini
 使用经过模型选型工具推荐的模型进行训练，目前所推荐的模型均使用**单卡训练**，可以在训练的过程中进行评估，模型默认保存在`./output`下
 
 ```bash
-python tools/train.py -c configs/ppyoloe/ppyoloe_crn_m_300e_tesla_1024.yml  --eval
+python tools/train.py -c configs/ppyoloe/ppyoloe_crn_m_300e_battery_1024.yml  --eval
 ```
 
 如果训练过程出现中断，可以使用-r命令恢复训练
 
 ```bash
-python tools/train.py -c configs/ppyoloe/ppyoloe_crn_m_300e_tesla_1024.yml  --eval -r output/ppyoloe_crn_m_300e_tesla_1024/9.pdparams
+python tools/train.py -c configs/ppyoloe/ppyoloe_crn_m_300e_battery_1024.yml  --eval -r output/ppyoloe_crn_m_300e_battery_1024/9.pdparams
 ```
 
 如果期望单独评估模型训练精度，可以使用`tools/eval.py`
 
 ```bash
-python tools/eval.py -c configs/ppyoloe/ppyoloe_crn_m_300e_tesla_1024.yml -o weights=output/ppyoloe_crn_m_300e_tesla_1024/model_final.pdparams
+python tools/eval.py -c configs/ppyoloe/ppyoloe_crn_m_300e_battery_1024.yml -o weights=output/ppyoloe_crn_m_300e_battery_1024/model_final.pdparams
 ```
 
 完成训练后，可以使用`tools/infer.py`可视化训练效果
 
 ```bash
-python tools/infer.py -c configs/ppyoloe/ppyoloe_crn_m_300e_tesla_1024.yml -o weights=output/ppyoloe_crn_m_300e_tesla_1024/model_final.pdparams --infer_img=demo/tesla.png
+python tools/infer.py -c configs/ppyoloe/ppyoloe_crn_m_300e_battery_1024.yml -o weights=output/ppyoloe_crn_m_300e_battery_1024/model_final.pdparams --infer_img=images/Board_diaojiao_1591.png
 ```
 
 更多模型训练参数请参考[文档](../docs/tutorials/GETTING_STARTED_cn.md)
 
 ### 4. 模型导出部署
 
-完成模型训练后，需要将模型部署到1080TI，2080TI或其他服务器设备上，使用Paddle Inference完成C++部署
+完成模型训练后，需要将模型部署到1080Ti，2080Ti或其他服务器设备上，使用Paddle Inference完成C++部署
 
 首先需要将模型导出为部署时使用的模型和配置文件
 
 ```bash
-python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_m_300e_tesla_1024.yml -o weights=output/ppyoloe_crn_m_300e_tesla_1024/model_final.pdparams
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_m_300e_battery_1024.yml -o weights=output/ppyoloe_crn_m_300e_battery_1024/model_final.pdparams
 ```
 
 接下来可以使用PaddleDetection中的部署代码实现C++部署，详细步骤请参考[文档](../deploy/cpp/README.md)
