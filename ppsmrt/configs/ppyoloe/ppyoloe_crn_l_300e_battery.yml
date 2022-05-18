@@ -1,7 +1,7 @@
-weights: output/ppyoloe_crn_s_300e_tesla_1024/model_final
-pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams
-depth_mult: 0.33
-width_mult: 0.50
+weights: output/ppyoloe_crn_l_300e_battery_1024/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
+depth_mult: 1.0
+width_mult: 1.0
 
 worker_num: 4
 eval_height: &eval_height 640
@@ -15,19 +15,19 @@ TrainDataset:
   !COCODataSet
     image_dir: images
     anno_path: annotations/train.json
-    dataset_dir: dataset/tesla
+    dataset_dir: dataset/battery_mini
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
     image_dir: images
     anno_path: annotations/test.json
-    dataset_dir: dataset/tesla
+    dataset_dir: dataset/battery_mini
 
 TestDataset:
   !ImageFolder
     anno_path: annotations/test.json
-    dataset_dir: dataset/tesla
+    dataset_dir: dataset/battery_mini
 
 epoch: 30
 LearningRate:

@@ -1,4 +1,4 @@
-weights: output/picodet_l_1024_coco_lcnet_tesla/best_final
+weights: output/picodet_l_1024_coco_lcnet_battery/best_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_l_640_coco_lcnet.pdparams
 
 worker_num: 2
@@ -13,19 +13,19 @@ TrainDataset:
   !COCODataSet
     image_dir: images
     anno_path: annotations/train.json
-    dataset_dir: dataset/tesla
+    dataset_dir: dataset/battery_mini
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
     image_dir: images
     anno_path: annotations/test.json
-    dataset_dir: dataset/tesla
+    dataset_dir: dataset/battery_mini
 
 TestDataset:
   !ImageFolder
     anno_path: annotations/test.json
-    dataset_dir: dataset/tesla
+    dataset_dir: dataset/battery_mini
 
 epoch: 50
 LearningRate:

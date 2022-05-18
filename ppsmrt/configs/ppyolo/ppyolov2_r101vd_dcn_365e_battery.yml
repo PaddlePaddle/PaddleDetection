@@ -1,5 +1,5 @@
 architecture: YOLOv3
-pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyolov2_r101vd_dcn_365e_coco.pdparams
 norm_type: sync_bn
 use_ema: true
 ema_decay: 0.9998
@@ -15,19 +15,19 @@ TrainDataset:
   !COCODataSet
     image_dir: images
     anno_path: annotations/train.json
-    dataset_dir: dataset/tesla
+    dataset_dir: dataset/battery_mini
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
     image_dir: images
     anno_path: annotations/test.json
-    dataset_dir: dataset/tesla
+    dataset_dir: dataset/battery_mini
 
 TestDataset:
   !ImageFolder
     anno_path: annotations/test.json # also support txt (like VOC's label_list.txt)
-    dataset_dir: dataset/tesla # if set, anno_path will be 'dataset_dir/anno_path'
+    dataset_dir: dataset/battery_mini # if set, anno_path will be 'dataset_dir/anno_path'
 
 
 epoch: 40
@@ -100,7 +100,7 @@ YOLOv3:
   post_process: BBoxPostProcess
 
 ResNet:
-  depth: 50
+  depth: 101
   variant: d
   return_idx: [1, 2, 3]
   dcn_v2_stages: [3]
