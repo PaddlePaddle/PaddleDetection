@@ -1,26 +1,26 @@
-weights: output/faster_rcnn_r50_vd_fpn_ssld_2x_800_lvjian1/model_final
-pretrain_weights: https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_fpn_ssld_2x_coco.pdparams
+weights: output/faster_rcnn_r101_vd_fpn_ssld_2x_800_renche/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/faster_rcnn_r101_vd_fpn_ssld_2x_coco.pdparams
 
 metric: COCO
-num_classes: 5
+num_classes: 22
 
 TrainDataset:
   !COCODataSet
-    image_dir: images
+    image_dir: train_images
     anno_path: train.json
-    dataset_dir: dataset/slice_lvjian1_data/train/
+    dataset_dir: dataset/renche
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
-    image_dir: images
-    anno_path: val.json
-    dataset_dir: dataset/slice_lvjian1_data/eval
+    image_dir: train_images
+    anno_path: test.json
+    dataset_dir: dataset/renche
 
 TestDataset:
   !ImageFolder
-    anno_path: val.json
-    dataset_dir: dataset/slice_lvjian1_data/eval
+    anno_path: test.json
+    dataset_dir: dataset/renche
 
 epoch: 24
 LearningRate:
@@ -105,7 +105,7 @@ FasterRCNN:
 
 ResNet:
   # index 0 stands for res2
-  depth: 50
+  depth: 101
   variant: d
   norm_type: bn
   freeze_at: 0
