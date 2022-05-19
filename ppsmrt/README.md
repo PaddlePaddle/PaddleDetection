@@ -182,3 +182,30 @@ python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_m_300e_battery_1024.
 如果期望使用可视化界面的方式进行部署，可以参考下面部分的内容。
 
 ## 四、部署demo
+
+为了更方便大家部署，我们也提供了完备的可视化部署Demo，欢迎尝试使用
+
+* [Windows Demo下载地址](https://github.com/PaddlePaddle/PaddleX/tree/develop/deploy/cpp/docs/csharp_deploy)
+
+<div align="center">
+  <img src="https://user-images.githubusercontent.com/48433081/169064583-c931f4c0-dfd6-4bfa-85f1-be68eb351e4a.png"  width = "800" />  
+</div>
+
+* [Linux Demo下载地址](https://github.com/cjh3020889729/The-PaddleX-QT-Visualize-GUI)
+
+<div align="center">
+  <img src="https://user-images.githubusercontent.com/48433081/169065951-147f8d51-bf3e-4a28-9197-d717968de73f.png"  width = "800" />  
+</div>
+
+## 五、场景范例
+
+为了更方便大家更好的进行产业落地，PP-SMRT也提供了详细的应用范例，欢迎大家使用。
+
+* 工业视觉
+  * [工业缺陷检测](https://aistudio.baidu.com/aistudio/projectdetail/2598319)
+  * [表计读数](https://aistudio.baidu.com/aistudio/projectdetail/2598327)
+  * [钢筋计数](https://aistudio.baidu.com/aistudio/projectdetail/2404188)
+* 城市  
+  * [行人计数](https://aistudio.baidu.com/aistudio/projectdetail/2421822)
+  * [车辆计数](https://aistudio.baidu.com/aistudio/projectdetail/3391734?contributionType=1)
+  * [安全帽检测](https://aistudio.baidu.com/aistudio/projectdetail/3944737?contributionType=1)
