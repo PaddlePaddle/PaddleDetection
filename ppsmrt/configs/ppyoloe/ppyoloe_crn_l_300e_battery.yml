@@ -1,4 +1,4 @@
-weights: output/ppyoloe_crn_l_300e_battery_1024/model_final
+weights: output/ppyoloe_crn_l_300e_battery/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 depth_mult: 1.0
 width_mult: 1.0

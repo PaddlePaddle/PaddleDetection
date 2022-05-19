@@ -20,12 +20,14 @@ TrainDataset:
 
 EvalDataset:
   !COCODataSet
+    image_dir: images
     anno_path: val.json
     dataset_dir: dataset/slice_lvjian1_data/eval
 
 TestDataset:
   !ImageFolder
-    anno_path: annotations/instances_val2017.json
+    anno_path: val.json
+    dataset_dir: dataset/slice_lvjian1_data/eval
 
 
 epoch: 20

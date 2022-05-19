@@ -1,4 +1,4 @@
-weights: output/picodet_l_1024_coco_lcnet_lvjian1/best_final
+weights: output/picodet_l_1024_coco_lcnet_lvjian1/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_l_640_coco_lcnet.pdparams
 
 worker_num: 2
@@ -13,14 +13,14 @@ TrainDataset:
   !COCODataSet
     image_dir: images
     anno_path: train.json
-    dataset_dir: /paddle/dataset/model-select/gongye/lvjian1/slice_lvjian1_data/train/
+    dataset_dir: dataset/slice_lvjian1_data/train
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
     image_dir: images
     anno_path: val.json
-    dataset_dir: /paddle/dataset/model-select/gongye/lvjian1/slice_lvjian1_data/eval/
+    dataset_dir: dataset/slice_lvjian1_data/eval
 
 TestDataset:
   !ImageFolder

@@ -15,18 +15,18 @@ TrainDataset:
   !COCODataSet
     image_dir: train_images
     anno_path: train.json
-    dataset_dir: dataset/coco/renche
+    dataset_dir: dataset/renche
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
     image_dir: train_images
     anno_path: test.json
-    dataset_dir: dataset/coco/renche
+    dataset_dir: dataset/renche
 
 TestDataset:
   !ImageFolder
-    anno_path: dataset/coco/renche/test.json
+    anno_path: dataset/renche/test.json
 
 
 epoch: 100
