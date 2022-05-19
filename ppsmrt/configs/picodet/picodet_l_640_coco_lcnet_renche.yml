@@ -1,4 +1,4 @@
-weights: output/picodet_l_640_coco_lcnet_renche/best_final
+weights: output/picodet_l_640_coco_lcnet_renche/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_l_640_coco_lcnet.pdparams
 
 worker_num: 2

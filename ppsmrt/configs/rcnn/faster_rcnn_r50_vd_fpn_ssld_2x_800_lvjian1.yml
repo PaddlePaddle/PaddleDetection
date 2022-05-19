@@ -1,4 +1,4 @@
-weights: output/faster_rcnn_r50_vd_fpn_ssld_2x_800_lvjian1/best_final
+weights: output/faster_rcnn_r50_vd_fpn_ssld_2x_800_lvjian1/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_fpn_ssld_2x_coco.pdparams
 
 metric: COCO

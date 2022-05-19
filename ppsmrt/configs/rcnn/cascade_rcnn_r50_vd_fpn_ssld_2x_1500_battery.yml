@@ -1,4 +1,4 @@
-weights: output/cascade_rcnn_r50_vd_fpn_ssld_2x_1500_battery/best_final
+weights: output/cascade_rcnn_r50_vd_fpn_ssld_2x_1500_battery/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/cascade_rcnn_r50_vd_fpn_ssld_2x_coco.pdparams
 
 metric: COCO
