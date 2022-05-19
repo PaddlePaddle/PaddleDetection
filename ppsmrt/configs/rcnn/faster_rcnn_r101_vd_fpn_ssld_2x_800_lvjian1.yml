@@ -1,5 +1,5 @@
-weights: output/faster_rcnn_r50_vd_fpn_ssld_2x_800_lvjian1/model_final
-pretrain_weights: https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_fpn_ssld_2x_coco.pdparams
+weights: output/faster_rcnn_r101_vd_fpn_ssld_2x_800_lvjian1/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/faster_rcnn_r101_vd_fpn_ssld_2x_coco.pdparams
 
 metric: COCO
 num_classes: 5
@@ -105,7 +105,7 @@ FasterRCNN:
 
 ResNet:
   # index 0 stands for res2
-  depth: 50
+  depth: 101
   variant: d
   norm_type: bn
   freeze_at: 0
