@@ -1,0 +1,166 @@
+weights: output/faster_rcnn_r50_vd_fpn_ssld_2x_1500_lvjian1/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_fpn_ssld_2x_coco.pdparams
+
+metric: COCO
+num_classes: 5
+
+TrainDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: train.json
+    dataset_dir: dataset/slice_lvjian1_data/train/
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: val.json
+    dataset_dir: dataset/slice_lvjian1_data/eval
+
+TestDataset:
+  !ImageFolder
+    anno_path: val.json
+    dataset_dir: dataset/slice_lvjian1_data/eval
+
+epoch: 24
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [16, 22]
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 1000
+
+worker_num: 2
+TrainReader:
+  sample_transforms:
+  - Decode: {}
+  - RandomResize: {target_size: [[800, 800], [900, 900], [1000, 1000], [1200, 1200], [1400, 1400], [1500, 1500]], interp: 2, keep_ratio: True}
+  - RandomFlip: {prob: 0.5}
+  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - Permute: {}
+  batch_transforms:
+  - PadBatch: {pad_to_stride: -1}
+  batch_size: 4
+  shuffle: true
+  drop_last: true
+  collate_batch: false
+
+
+EvalReader:
+  sample_transforms:
+  - Decode: {}
+  - Resize: {interp: 2, target_size: [1500, 1500], keep_ratio: True}
+  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - Permute: {}
+  batch_transforms:
+  - PadBatch: {pad_to_stride: -1}
+  batch_size: 1
+  shuffle: false
+  drop_last: false
+
+
+TestReader:
+  sample_transforms:
+  - Decode: {}
+  - Resize: {interp: 2, target_size: [1500, 1500], keep_ratio: True}
+  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - Permute: {}
+  batch_transforms:
+  - PadBatch: {pad_to_stride: -1}
+  batch_size: 1
+  shuffle: false
+  drop_last: false
+
+use_gpu: true
+use_xpu: false
+log_iter: 100
+save_dir: output
+snapshot_epoch: 2
+print_flops: false
+
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2
+
+
+architecture: FasterRCNN
+
+FasterRCNN:
+  backbone: ResNet
+  neck: FPN
+  rpn_head: RPNHead
+  bbox_head: BBoxHead
+  # post process
+  bbox_post_process: BBoxPostProcess
+
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  variant: d
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4
+  lr_mult_list: [0.05, 0.05, 0.1, 0.15]
+
+FPN:
+  out_channel: 256
+
+RPNHead:
+  anchor_generator:
+    aspect_ratios: [0.5, 1.0, 2.0]
+    anchor_sizes: [[32], [64], [128], [256], [512]]
+    strides: [4, 8, 16, 32, 64]
+  rpn_target_assign:
+    batch_size_per_im: 256
+    fg_fraction: 0.5
+    negative_overlap: 0.3
+    positive_overlap: 0.7
+    use_random: True
+  train_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 2000
+    post_nms_top_n: 1000
+    topk_after_collect: True
+  test_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 1000
+    post_nms_top_n: 1000
+
+
+BBoxHead:
+  head: TwoFCHead
+  roi_extractor:
+    resolution: 7
+    sampling_ratio: 0
+    aligned: True
+  bbox_assigner: BBoxAssigner
+
+BBoxAssigner:
+  batch_size_per_im: 512
+  bg_thresh: 0.5
+  fg_thresh: 0.5
+  fg_fraction: 0.25
+  use_random: True
+
+TwoFCHead:
+  out_channel: 1024
+
+BBoxPostProcess:
+  decode: RCNNBox
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    score_threshold: 0.05
+    nms_threshold: 0.5

@@ -1,0 +1,156 @@
+architecture: YOLOv3
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyolov2_r101vd_dcn_365e_coco.pdparams
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+use_gpu: true
+use_xpu: false
+log_iter: 100
+save_dir: output
+
+metric: COCO
+num_classes: 22
+
+TrainDataset:
+  !COCODataSet
+    image_dir: train_images
+    anno_path: train.json
+    dataset_dir: dataset/renche
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: train_images
+    anno_path: test.json
+    dataset_dir: dataset/renche
+
+TestDataset:
+  !ImageFolder
+    anno_path: dataset/renche/test.json
+
+
+epoch: 100
+LearningRate:
+  base_lr: 0.0002
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 80
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 1000
+
+
+snapshot_epoch: 3
+worker_num: 8
+TrainReader:
+  inputs_def:
+    num_max_boxes: 100
+  sample_transforms:
+    - Decode: {}
+    - RandomDistort: {}
+    - RandomExpand: {fill_value: [123.675, 116.28, 103.53]}
+    - RandomCrop: {}
+    - RandomFlip: {}
+  batch_transforms:
+    - BatchRandomResize: {target_size: [960, 992, 1024, 1056, 1088], random_size: True, random_interp: True, keep_ratio: False}
+    - NormalizeBox: {}
+    - PadBox: {num_max_boxes: 100}
+    - BboxXYXY2XYWH: {}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+    - Gt2YoloTarget: {anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]], anchors: [[10, 13], [16, 30], [33, 23], [30, 61], [62, 45], [59, 119], [116, 90], [156, 198], [373, 326]], downsample_ratios: [32, 16, 8]}
+  batch_size: 2
+  shuffle: true
+  drop_last: true
+  use_shared_memory: true
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [1024, 1024], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+  batch_size: 8
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 1024, 1024]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [1024, 1024], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+
+OptimizerBuilder:
+  clip_grad_by_norm: 35.
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+
+YOLOv3:
+  backbone: ResNet
+  neck: PPYOLOPAN
+  yolo_head: YOLOv3Head
+  post_process: BBoxPostProcess
+
+ResNet:
+  depth: 101
+  variant: d
+  return_idx: [1, 2, 3]
+  dcn_v2_stages: [3]
+  freeze_at: -1
+  freeze_norm: false
+  norm_decay: 0.
+
+PPYOLOPAN:
+  drop_block: true
+  block_size: 3
+  keep_prob: 0.9
+  spp: true
+
+YOLOv3Head:
+  anchors: [[10, 13], [16, 30], [33, 23],
+            [30, 61], [62, 45], [59, 119],
+            [116, 90], [156, 198], [373, 326]]
+  anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+  loss: YOLOv3Loss
+  iou_aware: true
+  iou_aware_factor: 0.5
+
+YOLOv3Loss:
+  ignore_thresh: 0.7
+  downsample: [32, 16, 8]
+  label_smooth: false
+  scale_x_y: 1.05
+  iou_loss: IouLoss
+  iou_aware_loss: IouAwareLoss
+
+IouLoss:
+  loss_weight: 2.5
+  loss_square: true
+
+IouAwareLoss:
+  loss_weight: 1.0
+
+BBoxPostProcess:
+  decode:
+    name: YOLOBox
+    conf_thresh: 0.01
+    downsample_ratio: 32
+    clip_bbox: true
+    scale_x_y: 1.05
+  nms:
+    name: MatrixNMS
+    keep_top_k: 100
+    score_threshold: 0.01
+    post_threshold: 0.01
+    nms_top_k: -1
+    background_label: -1
