@@ -16,20 +16,6 @@
 </p>
 </div>
 
-## 🔥 热门活动
-🚀 **第一期PaddleDetection闭门直播答疑来啦** 🚀
-
-  ⏱**时间：晚上8-9点**
-
-  💡**参与方式：https://meeting.tencent.com/dm/N534LM53th13**
-- 讲师：百度飞桨一线研发工程师
-- 面向人群：PaddleDetection使用者
-- 内容：针对大家近期在答疑专栏中提出的问题进行详细解答
-  -  ① 产品使用：常见报错如何解决、如何使用特定功能等
-  -  ② 技术咨询：特定模型如何优化？实用的调参trick分享等
-  -  ③ 功能新需求：高频需求的开发进展以及目前可实现的方案等
-  -  ✨附加环节：在线提问现场答疑
-
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> 产品动态
 
 - 🔥 **2022.3.24：PaddleDetection发布[release/2.4版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)**
