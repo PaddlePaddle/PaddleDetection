@@ -17,6 +17,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling.layers import DropBlock
+from ppdet.modeling.ops import get_act_fn
 from ..backbones.darknet import ConvBNLayer
 from ..shape_spec import ShapeSpec
 from ..backbones.csp_darknet import BaseConv, DWConv, CSPLayer
@@ -995,18 +996,24 @@ class YOLOCSPPAN(nn.Layer):
     """
     YOLO CSP-PAN, used in YOLOv5 and YOLOX.
     """
-    __shared__ = ['depth_mult', 'act']
+    __shared__ = ['depth_mult', 'data_format', 'act', 'trt']
 
     def __init__(self,
                  depth_mult=1.0,
                  in_channels=[256, 512, 1024],
                  depthwise=False,
-                 act='silu'):
+                 data_format='NCHW',
+                 act='silu',
+                 trt=False):
         super(YOLOCSPPAN, self).__init__()
         self.in_channels = in_channels
         self._out_channels = in_channels
         Conv = DWConv if depthwise else BaseConv
 
+        self.data_format = data_format
+        act = get_act_fn(
+            act, trt=trt) if act is None or isinstance(act,
+                                                       (str, dict)) else act
         self.upsample = nn.Upsample(scale_factor=2, mode="nearest")
 
         # top-down fpn
@@ -1061,7 +1068,11 @@ class YOLOCSPPAN(nn.Layer):
                 feat_heigh)
             inner_outs[0] = feat_heigh
 
-            upsample_feat = self.upsample(feat_heigh)
+            upsample_feat = F.interpolate(
+                feat_heigh,
+                scale_factor=2.,
+                mode="nearest",
+                data_format=self.data_format)
             inner_out = self.fpn_blocks[len(self.in_channels) - 1 - idx](
                 paddle.concat(
                     [upsample_feat, feat_low], axis=1))
