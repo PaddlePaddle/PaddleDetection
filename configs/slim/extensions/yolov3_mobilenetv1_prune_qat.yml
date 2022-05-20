@@ -1,0 +1,19 @@
+# Weights of yolov3_mobilenet_v1_voc
+pretrain_weights: https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_270e_voc.pdparams
+slim: PrunerQAT
+
+PrunerQAT:
+  criterion: fpgm
+  pruned_params: ['conv2d_27.w_0', 'conv2d_28.w_0', 'conv2d_29.w_0',
+                  'conv2d_30.w_0', 'conv2d_31.w_0', 'conv2d_32.w_0',
+                  'conv2d_34.w_0', 'conv2d_35.w_0', 'conv2d_36.w_0',
+                  'conv2d_37.w_0', 'conv2d_38.w_0', 'conv2d_39.w_0',
+                  'conv2d_41.w_0', 'conv2d_42.w_0', 'conv2d_43.w_0',
+                  'conv2d_44.w_0', 'conv2d_45.w_0', 'conv2d_46.w_0']
+  pruned_ratios: [0.1,0.2,0.2,0.2,0.2,0.1,0.2,0.3,0.3,0.3,0.2,0.1,0.3,0.4,0.4,0.4,0.4,0.3]
+  print_prune_params: False
+  quant_config: {
+    'weight_quantize_type': 'channel_wise_abs_max', 'activation_quantize_type': 'moving_average_abs_max',
+    'weight_bits': 8, 'activation_bits': 8, 'dtype': 'int8', 'window_size': 10000, 'moving_rate': 0.9,
+    'quantizable_layer_type': ['Conv2D', 'Linear']}
+  print_qat_model: True

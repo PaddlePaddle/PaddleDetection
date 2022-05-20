@@ -82,7 +82,7 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
         slim = create(cfg.slim)
         cfg['slim_type'] = cfg.slim
         # TODO: fix quant export model in framework.
-        if mode == 'test' and slim_load_cfg['slim'] == 'QAT':
+        if mode == 'test' and 'QAT' in slim_load_cfg['slim']:
             slim.quant_config['activation_preprocess_type'] = None
         cfg['model'] = slim(model)
         cfg['slim'] = slim
