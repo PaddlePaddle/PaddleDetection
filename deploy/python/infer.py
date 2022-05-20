@@ -224,7 +224,7 @@ class Detector(object):
             for k, v in res.items():
                 results[k].append(v)
         for k, v in results.items():
-            if k != 'masks':
+            if k not in ['masks', 'segm']:
                 results[k] = np.concatenate(v)
         return results
 
