@@ -61,12 +61,16 @@ elif [ ${MODE} = "benchmark_train" ];then
     pip install -r requirements.txt
     # prepare lite benchmark coco data
     wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/coco_benchmark.tar
-    cd ./dataset/coco/ && tar -xvf coco_benchmark.tar && mv -u coco_benchmark/* .
-    rm -rf coco_benchmark/ && cd ../../
+    cd ./dataset/coco/ && tar -xvf coco_benchmark.tar 
+    mv coco_benchmark/* ./
+    ls ./
+    cd ../../
     # prepare lite benchmark mot data
     wget -nc -P ./dataset/mot/ https://paddledet.bj.bcebos.com/data/mot_benchmark.tar
-    cd ./dataset/mot/ && tar -xvf mot_benchmark.tar && mv -u mot_benchmark/* .
-    rm -rf mot_benchmark/ && cd ../../
+    cd ./dataset/mot/ && tar -xvf mot_benchmark.tar
+    mv mot_benchmark/* ./
+    ls ./
+    cd ../../
 elif [ ${MODE} = "paddle2onnx_infer" ];then
     # set paddle2onnx_infer enve
     ${python} -m pip install install paddle2onnx
