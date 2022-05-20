@@ -3217,9 +3217,10 @@ class Mosaic(BaseOperator):
                 _gt_bbox[:, 2] = scale * gt_bbox[:, 2] + padw
                 _gt_bbox[:, 3] = scale * gt_bbox[:, 3] + padh
 
+            is_crowd = sp['is_crowd'] if 'is_crowd' in sp else 0
             mosaic_gt_bbox.append(_gt_bbox)
             mosaic_gt_class.append(sp['gt_class'])
-            mosaic_is_crowd.append(sp['is_crowd'])
+            mosaic_is_crowd.append(is_crowd)
 
         # 2. clip bbox and get mosaic_labels([gt_bbox, gt_class, is_crowd])
         if len(mosaic_gt_bbox):
