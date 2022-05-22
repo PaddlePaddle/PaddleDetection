@@ -173,11 +173,16 @@ class ImageFolder(DetDataset):
             image_dir = [image_dir]
         images = []
         for im_dir in image_dir:
-            if os.path.isdir(im_dir):
+            if self.dataset_dir:
                 im_dir = os.path.join(self.dataset_dir, im_dir)
+            if os.path.isdir(im_dir):
                 images.extend(_make_dataset(im_dir))
             elif os.path.isfile(im_dir) and _is_valid_file(im_dir):
                 images.append(im_dir)
+            else:
+                raise ValueError(
+                    "im_dir: '{}' is not a directory or a valid file.".format(
+                        im_dir))
         return images
 
     def _load_images(self):
