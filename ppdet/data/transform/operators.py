@@ -3217,7 +3217,8 @@ class Mosaic(BaseOperator):
                 _gt_bbox[:, 2] = scale * gt_bbox[:, 2] + padw
                 _gt_bbox[:, 3] = scale * gt_bbox[:, 3] + padh
 
-            is_crowd = sp['is_crowd'] if 'is_crowd' in sp else 0
+            is_crowd = sp['is_crowd'] if 'is_crowd' in sp else np.zeros(
+                (len(_gt_bbox), 1), dtype=np.int32)
             mosaic_gt_bbox.append(_gt_bbox)
             mosaic_gt_class.append(sp['gt_class'])
             mosaic_is_crowd.append(is_crowd)
