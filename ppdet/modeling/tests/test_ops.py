@@ -23,8 +23,6 @@ import unittest
 import numpy as np
 
 import paddle
-import paddle.fluid as fluid
-from paddle.fluid.dygraph import base
 
 import ppdet.modeling.ops as ops
 from ppdet.modeling.tests.test_base import LayerTest
@@ -107,9 +105,9 @@ class TestCollectFpnProposals(LayerTest):
             multi_scores_dy = []
             rois_num_per_level_dy = []
             for i in range(4):
-                bboxes_dy = base.to_variable(multi_bboxes_np[i])
-                scores_dy = base.to_variable(multi_scores_np[i])
-                rois_num_dy = base.to_variable(rois_num_per_level_np[i])
+                bboxes_dy = paddle.to_tensor(multi_bboxes_np[i])
+                scores_dy = paddle.to_tensor(multi_scores_np[i])
+                rois_num_dy = paddle.to_tensor(rois_num_per_level_np[i])
                 multi_bboxes_dy.append(bboxes_dy)
                 multi_scores_dy.append(scores_dy)
                 rois_num_per_level_dy.append(rois_num_dy)
@@ -200,8 +198,8 @@ class TestDistributeFpnProposals(LayerTest):
                     output_stat_np.append(output_np)
 
         with self.dynamic_graph():
-            rois_dy = base.to_variable(rois_np)
-            rois_num_dy = base.to_variable(rois_num_np)
+            rois_dy = paddle.to_tensor(rois_np)
+            rois_num_dy = paddle.to_tensor(rois_num_np)
             multi_rois_dy, restore_ind_dy, rois_num_per_level_dy = ops.distribute_fpn_proposals(
                 fpn_rois=rois_dy,
                 min_level=2,
@@ -266,9 +264,9 @@ class TestROIAlign(LayerTest):
                 with_lod=False)
 
         with self.dynamic_graph():
-            inputs_dy = base.to_variable(inputs_np)
-            rois_dy = base.to_variable(rois_np)
-            rois_num_dy = base.to_variable(rois_num_np)
+            inputs_dy = paddle.to_tensor(inputs_np)
+            rois_dy = paddle.to_tensor(rois_np)
+            rois_num_dy = paddle.to_tensor(rois_num_np)
 
             output_dy = ops.roi_align(
                 input=inputs_dy,
@@ -326,9 +324,9 @@ class TestROIPool(LayerTest):
                 with_lod=False)
 
         with self.dynamic_graph():
-            inputs_dy = base.to_variable(inputs_np)
-            rois_dy = base.to_variable(rois_np)
-            rois_num_dy = base.to_variable(rois_num_np)
+            inputs_dy = paddle.to_tensor(inputs_np)
+            rois_dy = paddle.to_tensor(rois_np)
+            rois_num_dy = paddle.to_tensor(rois_num_np)
 
             output_dy, _ = ops.roi_pool(
                 input=inputs_dy,
@@ -374,8 +372,8 @@ class TestIoUSimilarity(LayerTest):
                 }, fetch_list=[iou], with_lod=False)
 
         with self.dynamic_graph():
-            x_dy = base.to_variable(x_np)
-            y_dy = base.to_variable(y_np)
+            x_dy = paddle.to_tensor(x_np)
+            y_dy = paddle.to_tensor(y_np)
 
             iou_dy = ops.iou_similarity(x=x_dy, y=y_dy)
             iou_dy_np = iou_dy.numpy()
@@ -397,7 +395,7 @@ class TestBipartiteMatch(LayerTest):
                 with_lod=False)
 
         with self.dynamic_graph():
-            x_dy = base.to_variable(distance)
+            x_dy = paddle.to_tensor(distance)
 
             match_indices_dy, match_dist_dy = ops.bipartite_match(
                 x_dy, match_type='per_prediction', dist_threshold=0.5)
@@ -445,8 +443,8 @@ class TestYoloBox(LayerTest):
 
         # dygraph
         with self.dynamic_graph():
-            x_dy = fluid.layers.assign(np_x)
-            origin_shape_dy = fluid.layers.assign(np_origin_shape)
+            x_dy = paddle.to_tensor(np_x)
+            origin_shape_dy = paddle.to_tensor(np_origin_shape)
 
             boxes_dy, scores_dy = ops.yolo_box(
                 x_dy,
@@ -509,8 +507,8 @@ class TestPriorBox(LayerTest):
                 with_lod=False)
 
         with self.dynamic_graph():
-            inputs_dy = base.to_variable(input_np)
-            image_dy = base.to_variable(image_np)
+            inputs_dy = paddle.to_tensor(input_np)
+            image_dy = paddle.to_tensor(image_np)
 
             box_dy, var_dy = ops.prior_box(
                 input=inputs_dy,
@@ -582,9 +580,9 @@ class TestMulticlassNms(LayerTest):
             nms_rois_num_np = np.array(nms_rois_num_np)
 
         with self.dynamic_graph():
-            boxes_dy = base.to_variable(boxes_np)
-            scores_dy = base.to_variable(scores_np)
-            rois_num_dy = base.to_variable(rois_num_np)
+            boxes_dy = paddle.to_tensor(boxes_np)
+            scores_dy = paddle.to_tensor(scores_np)
+            rois_num_dy = paddle.to_tensor(rois_num_np)
 
             out_dy, index_dy, nms_rois_num_dy = ops.multiclass_nms(
                 bboxes=boxes_dy,
@@ -666,8 +664,8 @@ class TestMatrixNMS(LayerTest):
                 with_lod=True)
 
         with self.dynamic_graph():
-            boxes_dy = base.to_variable(boxes_np)
-            scores_dy = base.to_variable(scores_np)
+            boxes_dy = paddle.to_tensor(boxes_np)
+            scores_dy = paddle.to_tensor(scores_np)
 
             out_dy, index_dy, _ = ops.matrix_nms(
                 bboxes=boxes_dy,
@@ -737,9 +735,9 @@ class TestBoxCoder(LayerTest):
 
         # dygraph
         with self.dynamic_graph():
-            prior_box_dy = base.to_variable(prior_box_np)
-            prior_box_var_dy = base.to_variable(prior_box_var_np)
-            target_box_dy = base.to_variable(target_box_np)
+            prior_box_dy = paddle.to_tensor(prior_box_np)
+            prior_box_var_dy = paddle.to_tensor(prior_box_var_np)
+            target_box_dy = paddle.to_tensor(target_box_np)
 
             boxes_dy = ops.box_coder(
                 prior_box=prior_box_dy,
@@ -808,11 +806,11 @@ class TestGenerateProposals(LayerTest):
                 with_lod=True)
 
         with self.dynamic_graph():
-            scores_dy = base.to_variable(scores_np)
-            bbox_deltas_dy = base.to_variable(bbox_deltas_np)
-            im_shape_dy = base.to_variable(im_shape_np)
-            anchors_dy = base.to_variable(anchors_np)
-            variances_dy = base.to_variable(variances_np)
+            scores_dy = paddle.to_tensor(scores_np)
+            bbox_deltas_dy = paddle.to_tensor(bbox_deltas_np)
+            im_shape_dy = paddle.to_tensor(im_shape_np)
+            anchors_dy = paddle.to_tensor(anchors_np)
+            variances_dy = paddle.to_tensor(variances_np)
             rois, roi_probs, rois_num = ops.generate_proposals(
                 scores_dy,
                 bbox_deltas_dy,
