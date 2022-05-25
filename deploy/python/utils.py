@@ -18,6 +18,10 @@ import ast
 import argparse
 
 
+def str2bool(v):
+    return v.lower() in ("true", "t", "1")
+
+
 def argsparser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -70,6 +74,12 @@ def argsparser():
         type=ast.literal_eval,
         default=False,
         help="Deprecated, please use `--device`.")
+    parser.add_argument(
+        "--gpu_mem", type=int, default=8000, help="gup mem size")
+    parser.add_argument("--use_tensorrt", type=str2bool, default=False)
+    parser.add_argument(
+        "--use_fp16", type=str2bool, default=False, help="Whether use fp16")
+    parser.add_argument("--ir_optim", type=str2bool, default=True)
     parser.add_argument(
         "--run_benchmark",
         type=ast.literal_eval,

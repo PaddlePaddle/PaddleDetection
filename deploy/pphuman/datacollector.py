@@ -24,6 +24,7 @@ class Result(object):
             'attr': dict(),
             'kpt': dict(),
             'action': dict(),
+            'fight': dict(),
             'reid': dict()
         }
 

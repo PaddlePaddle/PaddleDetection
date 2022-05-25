@@ -38,11 +38,12 @@ from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
 from python.action_infer import ActionRecognizer
 from python.action_utils import KeyPointBuff, ActionVisualHelper
+from python.fight_infer import FightRecognizer
 
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
 from python.preprocess import decode_image
-from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
+from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action, visualize_fight
 
 from pptracking.python.mot_sde_infer import SDE_Detector
 from pptracking.python.mot.visualize import plot_tracking_dict
@@ -62,6 +63,7 @@ class Pipeline(object):
         camera_id (int): the device id of camera to predict, default as -1
         enable_attr (bool): whether use attribute recognition, default as false
         enable_action (bool): whether use action recognition, default as false
+        enable_fight (bool): whether use fight recognition, default as false
         device (string): the device to predict, options are: CPU/GPU/XPU, 
             default as CPU
         run_mode (string): the mode of prediction, options are: 
@@ -89,7 +91,8 @@ class Pipeline(object):
                  video_dir=None,
                  camera_id=-1,
                  enable_attr=False,
-                 enable_action=True,
+                 enable_action=False,
+                 enable_fight=False,
                  device='CPU',
                  run_mode='paddle',
                  trt_min_shape=1,
@@ -117,6 +120,7 @@ class Pipeline(object):
                     multi_camera=True,
                     enable_attr=enable_attr,
                     enable_action=enable_action,
+                    enable_fight=enable_fight,
                     device=device,
                     run_mode=run_mode,
                     trt_min_shape=trt_min_shape,
@@ -134,6 +138,7 @@ class Pipeline(object):
                 self.is_video,
                 enable_attr=enable_attr,
                 enable_action=enable_action,
+                enable_fight=enable_fight,
                 device=device,
                 run_mode=run_mode,
                 trt_min_shape=trt_min_shape,
@@ -223,6 +228,7 @@ class PipePredictor(object):
         1. Tracking
         2. Tracking -> Attribute
         3. Tracking -> KeyPoint -> Action Recognition
+        4. Fight Recognition
 
     Args:
         cfg (dict): config of models in pipeline
@@ -232,6 +238,7 @@ class PipePredictor(object):
         camera_id (int): the device id of camera to predict, default as -1
         enable_attr (bool): whether use attribute recognition, default as false
         enable_action (bool): whether use action recognition, default as false
+        enable_fight (bool): whether use fight recognition, default as false
         device (string): the device to predict, options are: CPU/GPU/XPU, 
             default as CPU
         run_mode (string): the mode of prediction, options are: 
@@ -257,6 +264,7 @@ class PipePredictor(object):
                  multi_camera=False,
                  enable_attr=False,
                  enable_action=False,
+                 enable_fight=False,
                  device='CPU',
                  run_mode='paddle',
                  trt_min_shape=1,
@@ -278,14 +286,21 @@ class PipePredictor(object):
             ValueError(
                 'enable_action is set to True, please set KPT and ACTION in config file'
             )
+        if enable_fight and not cfg.get('FIGHT', False):
+            ValueError(
+                'enable_fight is set to True, please set FIGHT in config file')
 
         self.with_attr = cfg.get('ATTR', False) and enable_attr
         self.with_action = cfg.get('ACTION', False) and enable_action
+        self.with_fight = cfg.get('FIGHT', False) and enable_fight
         self.with_mtmct = cfg.get('REID', False) and multi_camera
+
         if self.with_attr:
             print('Attribute Recognition enabled')
         if self.with_action:
             print('Action Recognition enabled')
+        if self.with_fight:
+            print('Fight Recognition enabled')
         if multi_camera:
             if not self.with_mtmct:
                 print(
@@ -392,6 +407,23 @@ class PipePredictor(object):
                     window_size=action_frames)
 
                 self.action_visual_helper = ActionVisualHelper(display_frames)
+
+            if self.with_fight:
+                fight_cfg = self.cfg['FIGHT']
+                fight_model_dir = fight_cfg['model_dir']
+                fight_batch_size = fight_cfg['batch_size']
+
+                self.fight_predictor = FightRecognizer(
+                    model_dir=fight_model_dir,
+                    device=device,
+                    run_mode=run_mode,
+                    batch_size=fight_batch_size,
+                    trt_min_shape=trt_min_shape,
+                    trt_max_shape=trt_max_shape,
+                    trt_opt_shape=trt_opt_shape,
+                    trt_calib_mode=trt_calib_mode,
+                    cpu_threads=cpu_threads,
+                    enable_mkldnn=enable_mkldnn)
 
         if self.with_mtmct:
             reid_cfg = self.cfg['REID']
@@ -500,6 +532,16 @@ class PipePredictor(object):
         entrance = [0, height / 2., width, height / 2.]
         video_fps = fps
 
+        fight_score = None
+        if self.with_fight:
+            classes, scores = self.fight_predictor.predict(video_file)
+            print("Current video file: {}".format(video_file))
+            if classes[0] == 1:
+                fight_score = scores[0]
+                print("Fight!", " score:", scores[0])
+            else:
+                print("No Fight.", " score:", scores[0])
+
         while (1):
             if frame_id % 10 == 0:
                 print('frame id: ', frame_id)
@@ -518,6 +560,10 @@ class PipePredictor(object):
 
             # mot output format: id, class, score, xmin, ymin, xmax, ymax
             mot_res = parse_mot_res(res)
+
+            if fight_score:
+                mot_res["fight"] = fight_score
+                self.pipeline_res.update({"fight_score": fight_score}, "fight")
 
             # flow_statistic only support single class MOT
             boxes, scores, ids = res[0]  # batch size = 1 in MOT
@@ -698,9 +744,12 @@ class PipePredictor(object):
                 returnimg=True)
 
         action_res = result.get('action')
+        fight_res = result.get('fight')
         if action_res is not None:
             image = visualize_action(image, mot_res['boxes'],
                                      self.action_visual_helper, "Falling")
+        if fight_res is not None:
+            image = visualize_fight(image, fight_res["fight_score"])
 
         return image
 
@@ -740,10 +789,11 @@ def main():
     pipeline = Pipeline(
         cfg, FLAGS.image_file, FLAGS.image_dir, FLAGS.video_file,
         FLAGS.video_dir, FLAGS.camera_id, FLAGS.enable_attr,
-        FLAGS.enable_action, FLAGS.device, FLAGS.run_mode, FLAGS.trt_min_shape,
-        FLAGS.trt_max_shape, FLAGS.trt_opt_shape, FLAGS.trt_calib_mode,
-        FLAGS.cpu_threads, FLAGS.enable_mkldnn, FLAGS.output_dir,
-        FLAGS.draw_center_traj, FLAGS.secs_interval, FLAGS.do_entrance_counting)
+        FLAGS.enable_action, FLAGS.enable_fight, FLAGS.device, FLAGS.run_mode,
+        FLAGS.trt_min_shape, FLAGS.trt_max_shape, FLAGS.trt_opt_shape,
+        FLAGS.trt_calib_mode, FLAGS.cpu_threads, FLAGS.enable_mkldnn,
+        FLAGS.output_dir, FLAGS.draw_center_traj, FLAGS.secs_interval,
+        FLAGS.do_entrance_counting)
 
     pipeline.run()
 

@@ -377,3 +377,21 @@ def visualize_action(im, mot_boxes, action_visual_collector, action_text=""):
             cv2.putText(im, action_text, text_position, cv2.FONT_HERSHEY_PLAIN,
                         text_scale, (0, 0, 255), 2)
     return im
+
+
+def visualize_fight(im, score):
+    im = cv2.imread(im) if isinstance(im, str) else im
+
+    im_h, im_w = im.shape[:2]
+
+    text_scale = max(0.5, im.shape[1] / 3000.)  # 0.5
+    text_thickness = 2
+
+    cv2.putText(
+        im,
+        'fight: %.2f' % score, (int(im_w / 2), int(15 * text_scale) + 5),
+        cv2.FONT_ITALIC,
+        text_scale, (0, 0, 255),
+        thickness=text_thickness)
+
+    return im

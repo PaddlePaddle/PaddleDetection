@@ -28,6 +28,10 @@ ACTION:
   display_frames: 80
   coord_size: [384, 512]
 
+FIGHT:
+  model_dir: output_inference/ppTSM/
+  batch_size: 1
+
 REID:
   model_dir: output_inference/reid_model/
   batch_size: 16

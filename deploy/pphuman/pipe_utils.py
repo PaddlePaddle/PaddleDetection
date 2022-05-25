@@ -68,6 +68,11 @@ def argsparser():
         default=False,
         help="Whether use action recognition.")
     parser.add_argument(
+        "--enable_fight",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether use fight recognition.")
+    parser.add_argument(
         "--output_dir",
         type=str,
         default="output",
