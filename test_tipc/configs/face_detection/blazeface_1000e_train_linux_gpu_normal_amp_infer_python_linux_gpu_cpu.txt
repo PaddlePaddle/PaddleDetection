@@ -39,11 +39,11 @@ infer_mode:norm
 infer_quant:False
 inference:./deploy/python/infer.py
 --device:gpu|cpu
---enable_mkldnn:True|False
---cpu_threads:1|6
+--enable_mkldnn:False
+--cpu_threads:4
 --batch_size:1|2
 --use_tensorrt:null
---run_mode:paddle|trt_fp32|trt_fp16
+--run_mode:paddle
 --model_dir:
 --image_dir:./dataset/wider_face/WIDER_val/images/0--Parade/
 --save_log_path:null
