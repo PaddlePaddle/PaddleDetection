@@ -23,7 +23,7 @@ from paddle.io import Dataset
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.download import get_dataset_path
 import copy
-import ppdet.data.source as source
+from ppdet.data import source
 
 
 @serializable
