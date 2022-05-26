@@ -326,8 +326,8 @@
   - [PP-YOLO模型](configs/ppyolo/README_cn.md)
   - [PP-PicoDet模型](configs/picodet/README.md)
   - [增强版Anchor Free模型TTFNet](configs/ttfnet/README.md)
-  - [移动端模型](static/configs/mobile/README.md)
-  - [676类目标检测](static/docs/featured_model/LARGE_SCALE_DET_MODEL.md)
+  - [移动端模型](legacy/configs/mobile/README.md)
+  - [676类目标检测](legacy/docs/featured_model/LARGE_SCALE_DET_MODEL.md)
   - [两阶段实用模型PSS-Det](configs/rcnn_enhance/README.md)
   - [半监督知识蒸馏预训练检测模型](docs/feature_models/SSLD_PRETRAINED_MODEL.md)
 - 通用实例分割
@@ -352,12 +352,12 @@
 - 场景化工具
   - [实时行人分析工具PP-Human](deploy/pphuman/README.md)
 - 比赛冠军方案
-  - [Objects365 2019 Challenge夺冠模型](static/docs/featured_model/champion_model/CACascadeRCNN.md)
-  - [Open Images 2019-Object Detction比赛最佳单模型](static/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
+  - [Objects365 2019 Challenge夺冠模型](legacy/docs/featured_model/champion_model/CACascadeRCNN.md)
+  - [Open Images 2019-Object Detction比赛最佳单模型](legacy/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157836473-1cf451fa-f01f-4148-ba68-b6d06d5da2f9.png" alt="" width="20"> 应用案例
 
-- [人像圣诞特效自动生成工具](static/application/christmas)
+- [人像圣诞特效自动生成工具](legacy/application/christmas)
 - [安卓健身APP](https://github.com/zhiboniu/pose_demo_android)
 
 ## <img src="https://user-images.githubusercontent.com/48054808/160552806-496dc3ba-beb6-4623-8e26-44416b5848bf.png" width="25"/> 第三方教程推荐
