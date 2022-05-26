@@ -10,16 +10,18 @@
 
 ## 范例列表
 
-- [基于PP-PicoDet的通信塔识别及Android端部署](./communication_tower_detection/README_cn.md)
+- [基于PP-PicoDet的通信塔识别及Android端部署](https://aistudio.baidu.com/aistudio/projectdetail/3561097)
 
-- [基于Faster-RCNN的瓷砖表面瑕疵检测](./tile_blemish_detection/README_cn.md)
+- [基于Faster-RCNN的瓷砖表面瑕疵检测](https://aistudio.baidu.com/aistudio/projectdetail/2571419)
 
-- [基于PaddleDetection的PCB瑕疵检测](./PCB_blemish_detection/README_cn.md)
+- [基于PaddleDetection的PCB瑕疵检测](https://aistudio.baidu.com/aistudio/projectdetail/2367089)
 
-- [基于FairMOT实现人流量统计](./pedestrain_volume/README_cn.md)
+- [基于FairMOT实现人流量统计](https://aistudio.baidu.com/aistudio/projectdetail/2421822)
 
-- [基于YOLOv3实现跌倒检测](./falling_down_detection/README_cn.md)
+- [基于YOLOv3实现跌倒检测](https://aistudio.baidu.com/aistudio/projectdetail/2500639)
 
-- [基于PP-PicoDetv2 的路面垃圾检测](./)
+- [基于PP-PicoDetv2 的路面垃圾检测](https://aistudio.baidu.com/aistudio/projectdetail/3846170?channelType=0&channel=0)
 
-*范例将持续更新中
+- [基于人体关键点检测的合规检测](https://aistudio.baidu.com/aistudio/projectdetail/4061642?contributionType=1)
+  
+  *范例将持续更新中
