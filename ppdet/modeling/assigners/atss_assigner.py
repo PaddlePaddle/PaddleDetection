@@ -51,7 +51,6 @@ class ATSSAssigner(nn.Layer):
 
     def _gather_topk_pyramid(self, gt2anchor_distances, num_anchors_list,
                              pad_gt_mask):
-        pad_gt_mask = pad_gt_mask.tile([1, 1, self.topk]).astype(paddle.bool)
         gt2anchor_distances_list = paddle.split(
             gt2anchor_distances, num_anchors_list, axis=-1)
         num_anchors_index = np.cumsum(num_anchors_list).tolist()
@@ -61,15 +60,12 @@ class ATSSAssigner(nn.Layer):
         for distances, anchors_index in zip(gt2anchor_distances_list,
                                             num_anchors_index):
             num_anchors = distances.shape[-1]
-            topk_metrics, topk_idxs = paddle.topk(
+            _, topk_idxs = paddle.topk(
                 distances, self.topk, axis=-1, largest=False)
             topk_idxs_list.append(topk_idxs + anchors_index)
-            topk_idxs = paddle.where(pad_gt_mask, topk_idxs,
-                                     paddle.zeros_like(topk_idxs))
-            is_in_topk = F.one_hot(topk_idxs, num_anchors).sum(axis=-2)
-            is_in_topk = paddle.where(is_in_topk > 1,
-                                      paddle.zeros_like(is_in_topk), is_in_topk)
-            is_in_topk_list.append(is_in_topk.astype(gt2anchor_distances.dtype))
+            is_in_topk = F.one_hot(topk_idxs, num_anchors).sum(
+                axis=-2).astype(gt2anchor_distances.dtype)
+            is_in_topk_list.append(is_in_topk * pad_gt_mask)
         is_in_topk_list = paddle.concat(is_in_topk_list, axis=-1)
         topk_idxs_list = paddle.concat(topk_idxs_list, axis=-1)
         return is_in_topk_list, topk_idxs_list
@@ -155,9 +151,8 @@ class ATSSAssigner(nn.Layer):
         iou_threshold = iou_threshold.reshape([batch_size, num_max_boxes, -1])
         iou_threshold = iou_threshold.mean(axis=-1, keepdim=True) + \
                         iou_threshold.std(axis=-1, keepdim=True)
-        is_in_topk = paddle.where(
-            iou_candidates > iou_threshold.tile([1, 1, num_anchors]),
-            is_in_topk, paddle.zeros_like(is_in_topk))
+        is_in_topk = paddle.where(iou_candidates > iou_threshold, is_in_topk,
+                                  paddle.zeros_like(is_in_topk))
 
         # 6. check the positive sample's center in gt, [B, n, L]
         is_in_gts = check_points_inside_bboxes(anchor_centers, gt_bboxes)
