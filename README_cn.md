@@ -306,7 +306,7 @@
 
 - **2022.3.26 [智慧城市行业](https://aistudio.baidu.com/aistudio/education/group/info/25620)七日课：** 城市规划、城市治理、智慧政务、交通管理、社区治理
 
-### 产业实践范例教程
+### [产业实践范例教程](./industrial_tutorial/README_cn.md)
 
 - [基于PP-PicoDet增强版的路面垃圾检测](https://aistudio.baidu.com/aistudio/projectdetail/3846170?channelType=0&channel=0)
 
