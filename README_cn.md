@@ -320,7 +320,7 @@
 
 - [基于YOLOv3实现跌倒检测 ](https://aistudio.baidu.com/aistudio/projectdetail/2500639)
 
-- [基于PP-PicoDetv2 的路面垃圾检测]([基于PP-PicoDet v2 的路面垃圾检测 - 飞桨AI Studio](https://aistudio.baidu.com/aistudio/projectdetail/3846170?channelType=0&channel=0))
+- [基于PP-PicoDetv2 的路面垃圾检测](https://aistudio.baidu.com/aistudio/projectdetail/3846170?channelType=0&channel=0)
 
 - [基于人体关键点检测的合规检测](https://aistudio.baidu.com/aistudio/projectdetail/4061642?contributionType=1)
 
