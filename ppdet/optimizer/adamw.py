@@ -17,7 +17,6 @@ from __future__ import division
 from __future__ import print_function
 
 from paddle.optimizer import AdamW
-import paddle.fluid as fluid
 from functools import partial
 
 
@@ -160,8 +159,7 @@ class AdamWDL(AdamW):
                  set_param_lr_fun=None,
                  name_dict=None,
                  name=None):
-        if not isinstance(layerwise_decay, float) and \
-                not isinstance(layerwise_decay, fluid.framework.Variable):
+        if not isinstance(layerwise_decay, float):
             raise TypeError("coeff should be float or Tensor.")
         self.layerwise_decay = layerwise_decay
         self.n_layers = n_layers
