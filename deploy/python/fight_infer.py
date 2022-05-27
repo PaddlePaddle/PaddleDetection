@@ -264,6 +264,8 @@ def main():
 
     recognizer = FightRecognizer(
         FLAGS.model_dir,
+        short_size=FLAGS.short_size,
+        target_size=FLAGS.target_size,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
         batch_size=FLAGS.batch_size,

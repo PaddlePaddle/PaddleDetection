@@ -47,6 +47,16 @@ def argsparser():
         help="Path of video file, `video_file` or `camera_id` has a highest priority."
     )
     parser.add_argument(
+        "--short_size",
+        type=int,
+        default=256,
+        help="The size of image short side.")
+    parser.add_argument(
+        "--target_size",
+        type=int,
+        default=224,
+        help="The target size of input image.")
+    parser.add_argument(
         "--camera_id",
         type=int,
         default=-1,
