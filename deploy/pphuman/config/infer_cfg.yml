@@ -31,6 +31,8 @@ ACTION:
 FIGHT:
   model_dir: output_inference/ppTSM/
   batch_size: 1
+  short_size: 256
+  target_size: 224
 
 REID:
   model_dir: output_inference/reid_model/

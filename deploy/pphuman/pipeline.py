@@ -412,9 +412,13 @@ class PipePredictor(object):
                 fight_cfg = self.cfg['FIGHT']
                 fight_model_dir = fight_cfg['model_dir']
                 fight_batch_size = fight_cfg['batch_size']
+                short_size = fight_cfg["short_size"]
+                target_size = fight_cfg["target_size"]
 
                 self.fight_predictor = FightRecognizer(
                     model_dir=fight_model_dir,
+                    short_size=short_size,
+                    target_size=target_size,
                     device=device,
                     run_mode=run_mode,
                     batch_size=fight_batch_size,
