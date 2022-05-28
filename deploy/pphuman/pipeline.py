@@ -622,7 +622,6 @@ class PipePredictor(object):
 
                 self.kpt_buff.update(kpt_res, mot_res)  # collect kpt output
 
-                # TODO
                 state = self.kpt_buff.get_state(
                 )  # whether frame num is enough or lost tracker
 

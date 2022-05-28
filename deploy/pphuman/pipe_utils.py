@@ -303,6 +303,8 @@ def crop_image_with_det(batch_input, det_res, thresh=0.3):
     crop_res = []
     for b_id, input in enumerate(batch_input):
         boxes_num_i = boxes_num[b_id]
+        if boxes_num_i == 0:
+            continue
         boxes_i = boxes[start_idx:start_idx + boxes_num_i, :]
         score_i = score[start_idx:start_idx + boxes_num_i]
         res = []
