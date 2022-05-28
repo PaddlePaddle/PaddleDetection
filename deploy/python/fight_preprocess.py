@@ -27,7 +27,6 @@ class Sampler(object):
         num_seg(int): number of segments.
         seg_len(int): number of sampled frames in each segment.
         valid_mode(bool): True or False.
-        select_left: Whether to select the frame to the left in the middle when the sampling interval is even in the test mode.
     Returns:
         frames_idx: the index of sampled #frames.
     """
@@ -36,8 +35,7 @@ class Sampler(object):
                  num_seg,
                  seg_len,
                  frame_interval=None,
-                 valid_mode=False,
-                 select_left=False,
+                 valid_mode=True,
                  dense_sample=False,
                  linspace_sample=False,
                  use_pil=True):
@@ -45,7 +43,6 @@ class Sampler(object):
         self.seg_len = seg_len
         self.frame_interval = frame_interval
         self.valid_mode = valid_mode
-        self.select_left = select_left
         self.dense_sample = dense_sample
         self.linspace_sample = linspace_sample
         self.use_pil = use_pil
@@ -61,15 +58,6 @@ class Sampler(object):
                     os.path.join(frame_dir, results['suffix'].format(
                         idx))).convert('RGB')
                 imgs.append(img)
-
-        elif data_format == "MRI":
-            frame_dir = results['frame_dir']
-            imgs = []
-            MRI = sitk.GetArrayFromImage(sitk.ReadImage(frame_dir))
-            for idx in frames_idx:
-                item = MRI[idx]
-                item = cv2.resize(item, (224, 224))
-                imgs.append(item)
 
         elif data_format == "video":
             if results['backend'] == 'cv2':
@@ -108,7 +96,7 @@ class Sampler(object):
                 raise NotImplementedError
         else:
             raise NotImplementedError
-        results['imgs'] = imgs
+        results['imgs'] = imgs  # all image data
         return results
 
     def _get_train_clips(self, num_frames):
@@ -147,7 +135,8 @@ class Sampler(object):
         return:
             sampling id.
         """
-        frames_len = int(results['frames_len'])
+        frames_len = int(results['frames_len'])  # total number of frames
+
         frames_idx = []
         if self.frame_interval is not None:
             assert isinstance(self.frame_interval, int)
@@ -173,7 +162,9 @@ class Sampler(object):
 
             return self._get(frames_idx, results)
 
-        if self.linspace_sample:
+        print("self.frame_interval:", self.frame_interval)
+
+        if self.linspace_sample:  # default if False
             if 'start_idx' in results and 'end_idx' in results:
                 offsets = np.linspace(results['start_idx'], results['end_idx'],
                                       self.num_seg)
@@ -185,104 +176,64 @@ class Sampler(object):
                 frames_idx = [x % frames_len for x in frames_idx]
             elif results['format'] == 'frame':
                 frames_idx = list(offsets + 1)
-
-            elif results['format'] == 'MRI':
-                frames_idx = list(offsets)
-
             else:
                 raise NotImplementedError
             return self._get(frames_idx, results)
 
         average_dur = int(frames_len / self.num_seg)
-        if not self.select_left:
-            if self.dense_sample:  # For ppTSM
-                if not self.valid_mode:  # train
-                    sample_pos = max(1, 1 + frames_len - 64)
-                    t_stride = 64 // self.num_seg
-                    start_idx = 0 if sample_pos == 1 else np.random.randint(
-                        0, sample_pos - 1)
-                    offsets = [(idx * t_stride + start_idx) % frames_len + 1
-                               for idx in range(self.num_seg)]
-                    frames_idx = offsets
-                else:
-                    sample_pos = max(1, 1 + frames_len - 64)
-                    t_stride = 64 // self.num_seg
-                    start_list = np.linspace(
-                        0, sample_pos - 1, num=10, dtype=int)
-                    offsets = []
-                    for start_idx in start_list.tolist():
-                        offsets += [
-                            (idx * t_stride + start_idx) % frames_len + 1
-                            for idx in range(self.num_seg)
-                        ]
-                    frames_idx = offsets
+
+        print("results['format']:", results['format'])
+
+        if self.dense_sample:  # For ppTSM, default is False
+            if not self.valid_mode:  # train
+                sample_pos = max(1, 1 + frames_len - 64)
+                t_stride = 64 // self.num_seg
+                start_idx = 0 if sample_pos == 1 else np.random.randint(
+                    0, sample_pos - 1)
+                offsets = [(idx * t_stride + start_idx) % frames_len + 1
+                           for idx in range(self.num_seg)]
+                frames_idx = offsets
             else:
-                for i in range(self.num_seg):
-                    idx = 0
-                    if not self.valid_mode:
-                        if average_dur >= self.seg_len:
-                            idx = random.randint(0, average_dur - self.seg_len)
-                            idx += i * average_dur
-                        elif average_dur >= 1:
-                            idx += i * average_dur
-                        else:
-                            idx = i
+                sample_pos = max(1, 1 + frames_len - 64)
+                t_stride = 64 // self.num_seg
+                start_list = np.linspace(0, sample_pos - 1, num=10, dtype=int)
+                offsets = []
+                for start_idx in start_list.tolist():
+                    offsets += [(idx * t_stride + start_idx) % frames_len + 1
+                                for idx in range(self.num_seg)]
+                frames_idx = offsets
+        else:
+            for i in range(self.num_seg):
+                idx = 0
+                if not self.valid_mode:
+                    if average_dur >= self.seg_len:
+                        idx = random.randint(0, average_dur - self.seg_len)
+                        idx += i * average_dur
+                    elif average_dur >= 1:
+                        idx += i * average_dur
                     else:
-                        if average_dur >= self.seg_len:
-                            idx = (average_dur - 1) // 2
-                            idx += i * average_dur
-                        elif average_dur >= 1:
-                            idx += i * average_dur
-                        else:
-                            idx = i
-                    for jj in range(idx, idx + self.seg_len):
-                        if results['format'] == 'video':
-                            frames_idx.append(int(jj % frames_len))
-                        elif results['format'] == 'frame':
-                            frames_idx.append(jj + 1)
-
-                        elif results['format'] == 'MRI':
-                            frames_idx.append(jj)
-                        else:
-                            raise NotImplementedError
-            return self._get(frames_idx, results)
-
-        else:  # for TSM
-            if not self.valid_mode:
-                if average_dur > 0:
-                    offsets = np.multiply(
-                        list(range(self.num_seg)),
-                        average_dur) + np.random.randint(
-                            average_dur, size=self.num_seg)
-                elif frames_len > self.num_seg:
-                    offsets = np.sort(
-                        np.random.randint(
-                            frames_len, size=self.num_seg))
+                        idx = i
                 else:
-                    offsets = np.zeros(shape=(self.num_seg, ))
-            else:
-                if frames_len > self.num_seg:
-                    average_dur_float = frames_len / self.num_seg
-                    offsets = np.array([
-                        int(average_dur_float / 2.0 + average_dur_float * x)
-                        for x in range(self.num_seg)
-                    ])
-                else:
-                    offsets = np.zeros(shape=(self.num_seg, ))
+                    if average_dur >= self.seg_len:
+                        idx = (average_dur - 1) // 2
+                        idx += i * average_dur
+                    elif average_dur >= 1:
+                        idx += i * average_dur
+                    else:
+                        idx = i
 
-            if results['format'] == 'video':
-                frames_idx = list(offsets)
-                frames_idx = [x % frames_len for x in frames_idx]
-            elif results['format'] == 'frame':
-                frames_idx = list(offsets + 1)
+                for jj in range(idx, idx + self.seg_len):
+                    if results['format'] == 'video':
+                        frames_idx.append(int(jj % frames_len))
+                    elif results['format'] == 'frame':
+                        frames_idx.append(jj + 1)
 
-            elif results['format'] == 'MRI':
-                frames_idx = list(offsets)
+                    elif results['format'] == 'MRI':
+                        frames_idx.append(jj)
+                    else:
+                        raise NotImplementedError
 
-            else:
-                raise NotImplementedError
-
-            return self._get(frames_idx, results)
+        return self._get(frames_idx, results)
 
 
 class Scale(object):
@@ -312,6 +263,7 @@ class Scale(object):
         assert backend in [
             'pillow', 'cv2'
         ], "Scale's backend must be pillow or cv2, but get {backend}"
+
         self.backend = backend
 
     def __call__(self, results):
@@ -363,6 +315,9 @@ class Scale(object):
                              0.5) if self.do_round else int(w *
                                                             self.short_size / h)
 
+            if type(img) == np.ndarray:
+                img = Image.fromarray(img, mode='RGB')
+
             if self.backend == 'pillow':
                 resized_imgs.append(img.resize((ow, oh), Image.BILINEAR))
             elif self.backend == 'cv2' and (self.keep_ratio is not None):
@@ -381,7 +336,7 @@ class Scale(object):
 
 class CenterCrop(object):
     """
-    Center crop images.
+    Center crop images
     Args:
         target_size(int): Center crop a square with the target_size from an image.
         do_round(bool): Whether to round up the coordinates of the upper left corner of the cropping area. default: True
@@ -508,9 +463,10 @@ class VideoDecoder(object):
         results['format'] = 'video'
         results['backend'] = self.backend
 
-        if self.backend == 'cv2':
+        if self.backend == 'cv2':  # here
             cap = cv2.VideoCapture(file_path)
             videolen = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
             sampledFrames = []
             for i in range(videolen):
                 ret, frame = cap.read()
@@ -527,81 +483,6 @@ class VideoDecoder(object):
             frames_len = len(container)
             results['frames'] = container
             results['frames_len'] = frames_len
-
-        elif self.backend == 'pyav':  # for TimeSformer
-            if self.mode in ["train", "valid"]:
-                clip_idx = -1
-            elif self.mode in ["test"]:
-                clip_idx = 0
-            else:
-                raise NotImplementedError
-
-            container = av.open(file_path)
-
-            num_clips = 1  # always be 1
-
-            # decode process
-            fps = float(container.streams.video[0].average_rate)
-
-            frames_length = container.streams.video[0].frames
-            duration = container.streams.video[0].duration
-
-            if duration is None:
-                # If failed to fetch the decoding information, decode the entire video.
-                decode_all_video = True
-                video_start_pts, video_end_pts = 0, math.inf
-            else:
-                decode_all_video = False
-                start_idx, end_idx = get_start_end_idx(
-                    frames_length, self.sampling_rate * self.num_seg /
-                    self.target_fps * fps, clip_idx, num_clips)
-                timebase = duration / frames_length
-                video_start_pts = int(start_idx * timebase)
-                video_end_pts = int(end_idx * timebase)
-
-            frames = None
-            # If video stream was found, fetch video frames from the video.
-            if container.streams.video:
-                margin = 1024
-                seek_offset = max(video_start_pts - margin, 0)
-
-                container.seek(
-                    seek_offset,
-                    any_frame=False,
-                    backward=True,
-                    stream=container.streams.video[0])
-                tmp_frames = {}
-                buffer_count = 0
-                max_pts = 0
-                for frame in container.decode(**{"video": 0}):
-                    max_pts = max(max_pts, frame.pts)
-                    if frame.pts < video_start_pts:
-                        continue
-                    if frame.pts <= video_end_pts:
-                        tmp_frames[frame.pts] = frame
-                    else:
-                        buffer_count += 1
-                        tmp_frames[frame.pts] = frame
-                        if buffer_count >= 0:
-                            break
-                video_frames = [tmp_frames[pts] for pts in sorted(tmp_frames)]
-
-                container.close()
-
-                frames = [frame.to_rgb().to_ndarray() for frame in video_frames]
-                clip_sz = self.sampling_rate * self.num_seg / self.target_fps * fps
-
-                start_idx, end_idx = get_start_end_idx(
-                    len(frames),  # frame_len
-                    clip_sz,
-                    clip_idx if decode_all_video else
-                    0,  # If decode all video, -1 in train and valid, 0 in test;
-                    # else, always 0 in train, valid and test, as we has selected clip size frames when decode.
-                    1)
-                results['frames'] = frames
-                results['frames_len'] = len(frames)
-                results['start_idx'] = start_idx
-                results['end_idx'] = end_idx
         else:
             raise NotImplementedError
         return results

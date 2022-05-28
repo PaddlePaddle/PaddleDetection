@@ -31,6 +31,8 @@ ACTION:
 FIGHT:
   model_dir: output_inference/ppTSM/
   batch_size: 1
+  frame_len: 8
+  sample_freq: 7
   short_size: 256
   target_size: 224
 

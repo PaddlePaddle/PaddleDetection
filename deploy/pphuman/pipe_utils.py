@@ -168,6 +168,7 @@ class PipeTimer(Times):
             'attr': Times(),
             'kpt': Times(),
             'action': Times(),
+            'fight': Times(),
             'reid': Times()
         }
         self.img_num = 0
@@ -215,7 +216,7 @@ class PipeTimer(Times):
         dic['action'] = round(
             self.module_time['action'].value() / max(1, self.img_num),
             4) if average else self.module_time['action'].value()
-
+        dic['fight'] = self.module_time['fight'].value()
         dic['img_num'] = self.img_num
         return dic
 
@@ -302,8 +303,6 @@ def crop_image_with_det(batch_input, det_res, thresh=0.3):
     crop_res = []
     for b_id, input in enumerate(batch_input):
         boxes_num_i = boxes_num[b_id]
-        if boxes_num_i == 0:
-            continue
         boxes_i = boxes[start_idx:start_idx + boxes_num_i, :]
         score_i = score[start_idx:start_idx + boxes_num_i]
         res = []

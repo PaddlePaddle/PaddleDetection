@@ -35,64 +35,12 @@ from infer import Detector, print_arguments
 from fight_preprocess import VideoDecoder, Sampler, Scale, CenterCrop, Normalization, Image2Array
 
 
-class Base_Inference_helper():
-    def __init__(self,
-                 num_seg=8,
-                 seg_len=1,
-                 short_size=256,
-                 target_size=224,
-                 top_k=1):
-        self.num_seg = num_seg
-        self.seg_len = seg_len
-        self.short_size = short_size
-        self.target_size = target_size
-        self.top_k = top_k
-
-    def preprocess(self, input_file):
-        pass
-
-    def preprocess_batch(self, file_list):
-        batched_inputs = []
-        for file in file_list:
-            inputs = self.preprocess(file)
-            batched_inputs.append(inputs)
-        batched_inputs = [
-            np.concatenate([item[i] for item in batched_inputs])
-            for i in range(len(batched_inputs[0]))
-        ]
-        self.input_file = file_list
-        return batched_inputs
-
-    def postprocess(self, output, print_output=True):
-        """
-        output: list
-        """
-        if not isinstance(self.input_file, list):
-            self.input_file = [self.input_file, ]
-        output = output[0]  # [B, num_cls]
-        N = len(self.input_file)
-        if output.shape[0] != N:
-            output = output.reshape([N] + [output.shape[0] // N] +
-                                    list(output.shape[1:]))  # [N, T, C]
-            output = output.mean(axis=1)  # [N, C]
-        output = F.softmax(paddle.to_tensor(output), axis=-1).numpy()
-        for i in range(N):
-            classes = np.argpartition(output[i], -self.top_k)[-self.top_k:]
-            classes = classes[np.argsort(-output[i, classes])]
-            scores = output[i, classes]
-            if print_output:
-                print("Current video file: {0}".format(self.input_file[i]))
-                for j in range(self.top_k):
-                    print("\ttop-{0} class: {1}".format(j + 1, classes[j]))
-                    print("\ttop-{0} score: {1}".format(j + 1, scores[j]))
-
-
 def softmax(x):
     f_x = np.exp(x) / np.sum(np.exp(x))
     return f_x
 
 
-class FightRecognizer(Base_Inference_helper):
+class FightRecognizer(object):
     """
     Args:
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
@@ -178,13 +126,25 @@ class FightRecognizer(Base_Inference_helper):
 
         self.predictor = create_predictor(self.config)
 
+    def preprocess_batch(self, file_list):
+        batched_inputs = []
+        for file in file_list:
+            inputs = self.preprocess(file)
+            batched_inputs.append(inputs)
+        batched_inputs = [
+            np.concatenate([item[i] for item in batched_inputs])
+            for i in range(len(batched_inputs[0]))
+        ]
+        self.input_file = file_list
+        return batched_inputs
+
     def get_timer(self):
         return self.recognize_times
 
-    def predict(self, input_file):
+    def predict(self, input):
         '''
         Args:
-            input_file (str): video file path
+            input (str) or (list): video file path or image data list
         Returns:
             results (dict): 
         '''
@@ -197,7 +157,10 @@ class FightRecognizer(Base_Inference_helper):
 
         # preprocess
         self.recognize_times.preprocess_time_s.start()
-        inputs = self.preprocess(input_file)
+        if type(input) == str:
+            inputs = self.preprocess_video(input)
+        else:
+            inputs = self.preprocess_frames(input)
         self.recognize_times.preprocess_time_s.end()
 
         inputs = np.expand_dims(
@@ -220,7 +183,33 @@ class FightRecognizer(Base_Inference_helper):
 
         return classes, scores
 
-    def preprocess(self, input_file):
+    def preprocess_frames(self, frame_list):
+        """
+        frame_list: list, frame list
+        return: list
+        """
+
+        results = {}
+        results['frames_len'] = len(frame_list)
+        results["imgs"] = frame_list
+
+        img_mean = [0.485, 0.456, 0.406]
+        img_std = [0.229, 0.224, 0.225]
+        ops = [
+            #VideoDecoder(),
+            #Sampler(self.num_seg, self.seg_len, valid_mode=True),
+            Scale(self.short_size),
+            CenterCrop(self.target_size),
+            Image2Array(),
+            Normalization(img_mean, img_std)
+        ]
+        for op in ops:
+            results = op(results)
+
+        res = np.expand_dims(results['imgs'], axis=0).copy()
+        return [res]
+
+    def preprocess_video(self, input_file):
         """
         input_file: str, file path
         return: list

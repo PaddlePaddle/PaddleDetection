@@ -43,7 +43,7 @@ from python.fight_infer import FightRecognizer
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
 from python.preprocess import decode_image
-from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action, visualize_fight
+from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
 
 from pptracking.python.mot_sde_infer import SDE_Detector
 from pptracking.python.mot.visualize import plot_tracking_dict
@@ -536,19 +536,13 @@ class PipePredictor(object):
         entrance = [0, height / 2., width, height / 2.]
         video_fps = fps
 
-        fight_score = None
-        if self.with_fight:
-            classes, scores = self.fight_predictor.predict(video_file)
-            print("Current video file: {}".format(video_file))
-            if classes[0] == 1:
-                fight_score = scores[0]
-                print("Fight!", " score:", scores[0])
-            else:
-                print("No Fight.", " score:", scores[0])
+        # for fight
+        fight_imgs = []
 
         while (1):
             if frame_id % 10 == 0:
                 print('frame id: ', frame_id)
+
             ret, frame = capture.read()
             if not ret:
                 break
@@ -556,6 +550,7 @@ class PipePredictor(object):
             if frame_id > self.warmup_frame:
                 self.pipe_timer.total_time.start()
                 self.pipe_timer.module_time['mot'].start()
+
             res = self.mot_predictor.predict_image(
                 [copy.deepcopy(frame)], visual=False)
 
@@ -564,10 +559,6 @@ class PipePredictor(object):
 
             # mot output format: id, class, score, xmin, ymin, xmax, ymax
             mot_res = parse_mot_res(res)
-
-            if fight_score:
-                mot_res["fight"] = fight_score
-                self.pipeline_res.update({"fight_score": fight_score}, "fight")
 
             # flow_statistic only support single class MOT
             boxes, scores, ids = res[0]  # batch size = 1 in MOT
@@ -630,6 +621,8 @@ class PipePredictor(object):
                 self.pipeline_res.update(kpt_res, 'kpt')
 
                 self.kpt_buff.update(kpt_res, mot_res)  # collect kpt output
+
+                # TODO
                 state = self.kpt_buff.get_state(
                 )  # whether frame num is enough or lost tracker
 
@@ -649,6 +642,31 @@ class PipePredictor(object):
 
                 if self.cfg['visual']:
                     self.action_visual_helper.update(action_res)
+
+            if self.with_fight:
+                frame_len = self.cfg["FIGHT"]["frame_len"]
+                sample_freq = self.cfg["FIGHT"]["sample_freq"]
+
+                if sample_freq * frame_len > frame_count:  # video is too short
+                    sample_freq = int(frame_count / frame_len)
+
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.module_time['fight'].start()
+
+                if frame_id % sample_freq == 0:
+                    fight_imgs.append(frame)
+
+                if len(fight_imgs) == frame_len:
+                    classes, scores = self.fight_predictor.predict(fight_imgs)
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['fight'].end()
+
+                    fight_res = {"class": classes[0], "score": scores[0]}
+                    self.pipeline_res.update(fight_res, 'fight')
+
+                    print("fight_res:", fight_res)
+
+                    fight_imgs.clear()  # next clip
 
             if self.with_mtmct and frame_id % 10 == 0:
                 crop_input, img_qualities, rects = self.reid_predictor.crop_image_with_mot(
@@ -749,11 +767,19 @@ class PipePredictor(object):
 
         action_res = result.get('action')
         fight_res = result.get('fight')
-        if action_res is not None:
-            image = visualize_action(image, mot_res['boxes'],
-                                     self.action_visual_helper, "Falling")
-        if fight_res is not None:
-            image = visualize_fight(image, fight_res["fight_score"])
+        if action_res is not None or fight_res is not None:
+            fight_score = None
+            action_visual_helper = None
+            if fight_res:
+                fight_score = fight_res["score"]
+            if action_res:
+                action_visual_helper = self.action_visual_helper
+            image = visualize_action(
+                image,
+                mot_res['boxes'],
+                action_visual_collector=action_visual_helper,
+                action_text="Falling",
+                fight_score=fight_score)
 
         return image
 
