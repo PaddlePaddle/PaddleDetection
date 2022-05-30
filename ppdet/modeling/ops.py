@@ -19,16 +19,14 @@ from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from paddle import _C_ops
 
-from paddle.fluid.framework import Variable, in_dygraph_mode
-from paddle.fluid import core
-from paddle.fluid.layer_helper import LayerHelper
-from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype
+from paddle.fluid.framework import in_dygraph_mode
+from paddle.common_ops_import import Variable, LayerHelper, check_variable_and_dtype, check_type, check_dtype
 
 __all__ = [
     'roi_pool', 'roi_align', 'prior_box', 'generate_proposals',
-    'iou_similarity', 'box_coder', 'yolo_box', 'multiclass_nms',
-    'distribute_fpn_proposals', 'collect_fpn_proposals', 'matrix_nms',
-    'batch_norm', 'get_activation', 'mish', 'swish', 'identity'
+    'iou_similarity', 'box_coder', 'multiclass_nms', 'distribute_fpn_proposals',
+    'collect_fpn_proposals', 'matrix_nms', 'batch_norm', 'get_activation',
+    'mish', 'swish', 'identity'
 ]
 
 
@@ -631,143 +629,6 @@ def distribute_fpn_proposals(fpn_rois,
                 'pixel_offset': pixel_offset
             })
         return multi_rois, restore_ind, rois_num_per_level
-
-
-@paddle.jit.not_to_static
-def yolo_box(
-        x,
-        origin_shape,
-        anchors,
-        class_num,
-        conf_thresh,
-        downsample_ratio,
-        clip_bbox=True,
-        scale_x_y=1.,
-        name=None, ):
-    """
-
-    This operator generates YOLO detection boxes from output of YOLOv3 network.
-     
-     The output of previous network is in shape [N, C, H, W], while H and W
-     should be the same, H and W specify the grid size, each grid point predict
-     given number boxes, this given number, which following will be represented as S,
-     is specified by the number of anchors. In the second dimension(the channel
-     dimension), C should be equal to S * (5 + class_num), class_num is the object
-     category number of source dataset(such as 80 in coco dataset), so the
-     second(channel) dimension, apart from 4 box location coordinates x, y, w, h,
-     also includes confidence score of the box and class one-hot key of each anchor
-     box.
-     Assume the 4 location coordinates are :math:`t_x, t_y, t_w, t_h`, the box
-     predictions should be as follows:
-     $$
-     b_x = \\sigma(t_x) + c_x
-     $$
-     $$
-     b_y = \\sigma(t_y) + c_y
-     $$
-     $$
-     b_w = p_w e^{t_w}
-     $$
-     $$
-     b_h = p_h e^{t_h}
-     $$
-     in the equation above, :math:`c_x, c_y` is the left top corner of current grid
-     and :math:`p_w, p_h` is specified by anchors.
-     The logistic regression value of the 5th channel of each anchor prediction boxes
-     represents the confidence score of each prediction box, and the logistic
-     regression value of the last :attr:`class_num` channels of each anchor prediction
-     boxes represents the classifcation scores. Boxes with confidence scores less than
-     :attr:`conf_thresh` should be ignored, and box final scores is the product of
-     confidence scores and classification scores.
-     $$
-     score_{pred} = score_{conf} * score_{class}
-     $$
-
-    Args:
-        x (Tensor): The input tensor of YoloBox operator is a 4-D tensor with shape of [N, C, H, W].
-                    The second dimension(C) stores box locations, confidence score and
-                    classification one-hot keys of each anchor box. Generally, X should be the output of YOLOv3 network.
-                    The data type is float32 or float64.
-        origin_shape (Tensor): The image size tensor of YoloBox operator, This is a 2-D tensor with shape of [N, 2].
-                    This tensor holds height and width of each input image used for resizing output box in input image
-                    scale. The data type is int32.
-        anchors (list|tuple): The anchor width and height, it will be parsed pair by pair.
-        class_num (int): The number of classes to predict.
-        conf_thresh (float): The confidence scores threshold of detection boxes. Boxes with confidence scores
-                    under threshold should be ignored.
-        downsample_ratio (int): The downsample ratio from network input to YoloBox operator input,
-                    so 32, 16, 8 should be set for the first, second, and thrid YoloBox operators.
-        clip_bbox (bool): Whether clip output bonding box in Input(ImgSize) boundary. Default true.
-        scale_x_y (float): Scale the center point of decoded bounding box. Default 1.0.
-        name (string): The default value is None.  Normally there is no need
-                       for user to set this property.  For more information,
-                       please refer to :ref:`api_guide_Name`
-
-    Returns:
-        boxes Tensor: A 3-D tensor with shape [N, M, 4], the coordinates of boxes,  N is the batch num,
-                    M is output box number, and the 3rd dimension stores [xmin, ymin, xmax, ymax] coordinates of boxes.
-        scores Tensor: A 3-D tensor with shape [N, M, :attr:`class_num`], the coordinates of boxes,  N is the batch num,
-                    M is output box number.
-                    
-    Raises:
-        TypeError: Attr anchors of yolo box must be list or tuple
-        TypeError: Attr class_num of yolo box must be an integer
-        TypeError: Attr conf_thresh of yolo box must be a float number
-
-    Examples:
-
-    .. code-block:: python
-
-        import paddle
-        from ppdet.modeling import ops
-        
-        paddle.enable_static()
-        x = paddle.static.data(name='x', shape=[None, 255, 13, 13], dtype='float32')
-        img_size = paddle.static.data(name='img_size',shape=[None, 2],dtype='int64')
-        anchors = [10, 13, 16, 30, 33, 23]
-        boxes,scores = ops.yolo_box(x=x, img_size=img_size, class_num=80, anchors=anchors,
-                                        conf_thresh=0.01, downsample_ratio=32)
-    """
-    helper = LayerHelper('yolo_box', **locals())
-
-    if not isinstance(anchors, list) and not isinstance(anchors, tuple):
-        raise TypeError("Attr anchors of yolo_box must be list or tuple")
-    if not isinstance(class_num, int):
-        raise TypeError("Attr class_num of yolo_box must be an integer")
-    if not isinstance(conf_thresh, float):
-        raise TypeError("Attr ignore_thresh of yolo_box must be a float number")
-
-    if in_dygraph_mode():
-        attrs = ('anchors', anchors, 'class_num', class_num, 'conf_thresh',
-                 conf_thresh, 'downsample_ratio', downsample_ratio, 'clip_bbox',
-                 clip_bbox, 'scale_x_y', scale_x_y)
-        boxes, scores = _C_ops.yolo_box(x, origin_shape, *attrs)
-        return boxes, scores
-    else:
-        boxes = helper.create_variable_for_type_inference(dtype=x.dtype)
-        scores = helper.create_variable_for_type_inference(dtype=x.dtype)
-
-        attrs = {
-            "anchors": anchors,
-            "class_num": class_num,
-            "conf_thresh": conf_thresh,
-            "downsample_ratio": downsample_ratio,
-            "clip_bbox": clip_bbox,
-            "scale_x_y": scale_x_y,
-        }
-
-        helper.append_op(
-            type='yolo_box',
-            inputs={
-                "X": x,
-                "ImgSize": origin_shape,
-            },
-            outputs={
-                'Boxes': boxes,
-                'Scores': scores,
-            },
-            attrs=attrs)
-        return boxes, scores
 
 
 @paddle.jit.not_to_static

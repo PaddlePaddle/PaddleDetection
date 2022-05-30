@@ -554,10 +554,15 @@ class YOLOBox(object):
         origin_shape = im_shape / scale_factor
         origin_shape = paddle.cast(origin_shape, 'int32')
         for i, head_out in enumerate(yolo_head_out):
-            boxes, scores = ops.yolo_box(head_out, origin_shape, anchors[i],
-                                         self.num_classes, self.conf_thresh,
-                                         self.downsample_ratio // 2**i,
-                                         self.clip_bbox, self.scale_x_y)
+            boxes, scores = paddle.vision.ops.yolo_box(
+                head_out,
+                origin_shape,
+                anchors[i],
+                self.num_classes,
+                self.conf_thresh,
+                self.downsample_ratio // 2**i,
+                self.clip_bbox,
+                scale_x_y=self.scale_x_y)
             boxes_list.append(boxes)
             scores_list.append(paddle.transpose(scores, perm=[0, 2, 1]))
         yolo_boxes = paddle.concat(boxes_list, axis=1)
