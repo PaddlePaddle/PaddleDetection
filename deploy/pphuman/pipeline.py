@@ -769,7 +769,7 @@ class PipePredictor(object):
         if action_res is not None or fight_res is not None:
             fight_score = None
             action_visual_helper = None
-            if fight_res:
+            if fight_res and fight_res["class"]==1:
                 fight_score = fight_res["score"]
             if action_res:
                 action_visual_helper = self.action_visual_helper
