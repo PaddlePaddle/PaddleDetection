@@ -27,7 +27,7 @@ if parent_path not in sys.path:
 
 from ppdet.modeling.losses import YOLOv3Loss
 from ppdet.data.transform.op_helper import jaccard_overlap
-from ppdet.modeling.ops import iou_similarity
+from ppdet.modeling.bbox_utils import iou_similarity
 import numpy as np
 np.random.seed(0)
 
