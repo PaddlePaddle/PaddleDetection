@@ -24,6 +24,11 @@ ATTR:
   basemode: "idbased"
   enable: False
 
+VIDEO_ACTION:
+  model_dir: output_inference/pp-stm
+  batch_size: 1
+  enable: False
+
 SKELETON_ACTION:
   model_dir: output_inference/STGCN
   batch_size: 1
@@ -31,6 +36,16 @@ SKELETON_ACTION:
   display_frames: 80
   coord_size: [384, 512]
   basemode: "skeletonbased"
+  enable: False
+
+ID_BASED_DETACTION:
+  model_dir: output_inference/detector
+  batch_size: 1
+  enable: False
+
+ID_BASED_CLSACTION:
+  model_dir: output_inference/classification
+  batch_size: 1
   enable: False
 
 REID:
