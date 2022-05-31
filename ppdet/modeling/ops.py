@@ -19,7 +19,7 @@ from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from paddle import _C_ops
 
-from paddle.fluid.framework import in_dygraph_mode
+from paddle import in_dynamic_mode
 from paddle.common_ops_import import Variable, LayerHelper, check_variable_and_dtype, check_type, check_dtype
 
 __all__ = [
@@ -182,7 +182,7 @@ def roi_pool(input,
         output_size = (output_size, output_size)
 
     pooled_height, pooled_width = output_size
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         assert rois_num is not None, "rois_num should not be None in dygraph mode."
         pool_out, argmaxes = _C_ops.roi_pool(
             input, rois, rois_num, "pooled_height", pooled_height,
@@ -289,7 +289,7 @@ def roi_align(input,
 
     pooled_height, pooled_width = output_size
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         assert rois_num is not None, "rois_num should not be None in dygraph mode."
         align_out = _C_ops.roi_align(
             input, rois, rois_num, "pooled_height", pooled_height,
@@ -373,7 +373,7 @@ def iou_similarity(x, y, box_normalized=True, name=None):
             iou = ops.iou_similarity(x=x, y=y)
     """
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         out = _C_ops.iou_similarity(x, y, 'box_normalized', box_normalized)
         return out
     else:
@@ -467,7 +467,7 @@ def collect_fpn_proposals(multi_rois,
     input_rois = multi_rois[:num_lvl]
     input_scores = multi_scores[:num_lvl]
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         assert rois_num_per_level is not None, "rois_num_per_level should not be None in dygraph mode."
         attrs = ('post_nms_topN', post_nms_top_n)
         output_rois, rois_num = _C_ops.collect_fpn_proposals(
@@ -580,7 +580,7 @@ def distribute_fpn_proposals(fpn_rois,
     """
     num_lvl = max_level - min_level + 1
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         assert rois_num is not None, "rois_num should not be None in dygraph mode."
         attrs = ('min_level', min_level, 'max_level', max_level, 'refer_level',
                  refer_level, 'refer_scale', refer_scale, 'pixel_offset',
@@ -733,7 +733,7 @@ def prior_box(input,
             max_sizes = [max_sizes]
         cur_max_sizes = max_sizes
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         attrs = ('min_sizes', min_sizes, 'aspect_ratios', aspect_ratios,
                  'variances', variance, 'flip', flip, 'clip', clip, 'step_w',
                  steps[0], 'step_h', steps[1], 'offset', offset,
@@ -878,7 +878,7 @@ def multiclass_nms(bboxes,
     """
     helper = LayerHelper('multiclass_nms3', **locals())
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         attrs = ('background_label', background_label, 'score_threshold',
                  score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
                  nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
@@ -1019,7 +1019,7 @@ def matrix_nms(bboxes,
     check_type(gaussian_sigma, 'gaussian_sigma', float, 'matrix_nms')
     check_type(background_label, 'background_label', int, 'matrix_nms')
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         attrs = ('background_label', background_label, 'score_threshold',
                  score_threshold, 'post_threshold', post_threshold, 'nms_top_k',
                  nms_top_k, 'gaussian_sigma', gaussian_sigma, 'use_gaussian',
@@ -1145,7 +1145,7 @@ def bipartite_match(dist_matrix,
     check_variable_and_dtype(dist_matrix, 'dist_matrix',
                              ['float32', 'float64'], 'bipartite_match')
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         match_indices, match_distance = _C_ops.bipartite_match(
             dist_matrix, "match_type", match_type, "dist_threshold",
             dist_threshold)
@@ -1281,7 +1281,7 @@ def box_coder(prior_box,
     check_variable_and_dtype(target_box, 'target_box', ['float32', 'float64'],
                              'box_coder')
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         if isinstance(prior_box_var, Variable):
             output_box = _C_ops.box_coder(
                 prior_box, prior_box_var, target_box, "code_type", code_type,
@@ -1406,7 +1406,7 @@ def generate_proposals(scores,
             rois, roi_probs = ops.generate_proposals(scores, bbox_deltas,
                          im_shape, anchors, variances)
     """
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         assert return_rois_num, "return_rois_num should be True in dygraph mode."
         attrs = ('pre_nms_topN', pre_nms_top_n, 'post_nms_topN', post_nms_top_n,
                  'nms_thresh', nms_thresh, 'min_size', min_size, 'eta', eta,
