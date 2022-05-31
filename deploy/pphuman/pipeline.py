@@ -266,12 +266,27 @@ class PipePredictor(object):
         self.with_skeleton_action = cfg.get(
             'SKELETON_ACTION', False)['enable'] if cfg.get('SKELETON_ACTION',
                                                            False) else False
+        self.with_video_action = cfg.get(
+            'VIDEO_ACTION', False)['enable'] if cfg.get('VIDEO_ACTION',
+                                                        False) else False
+        self.with_idbased_detaction = cfg.get(
+            'ID_BASED_DETACTION', False)['enable'] if cfg.get(
+                'ID_BASED_DETACTION', False) else False
+        self.with_idbased_clsaction = cfg.get(
+            'ID_BASED_CLSACTION', False)['enable'] if cfg.get(
+                'ID_BASED_CLSACTION', False) else False
         self.with_mtmct = cfg.get('REID', False)['enable'] if cfg.get(
             'REID', False) else False
         if self.with_attr:
             print('Attribute Recognition enabled')
         if self.with_skeleton_action:
             print('SkeletonAction Recognition enabled')
+        if self.with_video_action:
+            print('VideoAction Recognition enabled')
+        if self.with_idbased_detaction:
+            print('IDBASED Detection Action Recognition enabled')
+        if self.with_idbased_clsaction:
+            print('IDBASED Classification Action Recognition enabled')
         if self.with_mtmct:
             print("MTMCT enabled")
 
@@ -547,6 +562,7 @@ class PipePredictor(object):
 
                 self.pipeline_res.update(mot_res, 'mot')
                 if self.with_attr or self.with_skeleton_action:
+                    #todo: move this code to each class's predeal function
                     crop_input, new_bboxes, ori_bboxes = crop_image_with_mot(
                         frame, mot_res)
 
@@ -558,6 +574,18 @@ class PipePredictor(object):
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['attr'].end()
                     self.pipeline_res.update(attr_res, 'attr')
+
+                if self.with_idbased_detaction:
+                    #predeal, get what your model need
+                    #predict, model preprocess\run\postprocess
+                    #postdeal, interact with pipeline
+                    pass
+
+                if self.with_idbased_clsaction:
+                    #predeal, get what your model need
+                    #predict, model preprocess\run\postprocess
+                    #postdeal, interact with pipeline
+                    pass
 
                 if self.with_skeleton_action:
                     if self.modebase["skeletonbased"]:
@@ -621,10 +649,10 @@ class PipePredictor(object):
                 else:
                     self.pipeline_res.clear('reid')
 
-            if self.modebase["videobased"]:
-                pass
-
-            if self.modebase["framebased"]:
+            if self.with_video_action:
+                #predeal, get what your model need
+                #predict, model preprocess\run\postprocess
+                #postdeal, interact with pipeline
                 pass
 
             self.collector.append(frame_id, self.pipeline_res)
