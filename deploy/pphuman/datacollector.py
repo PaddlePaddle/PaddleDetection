@@ -23,7 +23,7 @@ class Result(object):
             'mot': dict(),
             'attr': dict(),
             'kpt': dict(),
-            'action': dict(),
+            'falling': dict(),
             'reid': dict()
         }
 
@@ -53,13 +53,13 @@ class DataCollector(object):
       - qualities(list of float): Nx[float]
       - attrs(list of attr): refer to attrs for details
       - kpts(list of kpts): refer to kpts for details
-      - actions(list of actions): refer to actions for details
+      - falling(list of falling): refer to falling for details
     ...
     - [idN]
   """
 
     def __init__(self):
-        #id, frame, rect, score, label, attrs, kpts, actions
+        #id, frame, rect, score, label, attrs, kpts, falling
         self.mots = {
             "frames": [],
             "rects": [],
@@ -67,7 +67,7 @@ class DataCollector(object):
             "kpts": [],
             "features": [],
             "qualities": [],
-            "actions": []
+            "falling": []
         }
         self.collector = {}
 
@@ -75,10 +75,15 @@ class DataCollector(object):
         mot_res = Result.get('mot')
         attr_res = Result.get('attr')
         kpt_res = Result.get('kpt')
-        action_res = Result.get('action')
+        falling_res = Result.get('falling')
         reid_res = Result.get('reid')
 
-        rects = reid_res['rects'] if reid_res is not None else mot_res['boxes']
+        rects = []
+        if reid_res is not None:
+            rects = reid_res['rects']
+        elif mot_res is not None:
+            rects = mot_res['boxes']
+
         for idx, mot_item in enumerate(rects):
             ids = int(mot_item[0])
             if ids not in self.collector:
@@ -90,11 +95,11 @@ class DataCollector(object):
             if kpt_res:
                 self.collector[ids]["kpts"].append(
                     [kpt_res['keypoint'][0][idx], kpt_res['keypoint'][1][idx]])
-            if action_res and (idx + 1) in action_res:
-                self.collector[ids]["actions"].append(action_res[idx + 1])
+            if falling_res and (idx + 1) in falling_res:
+                self.collector[ids]["falling"].append(falling_res[idx + 1])
             else:
                 # action model generate result per X frames, Not available every frames
-                self.collector[ids]["actions"].append(None)
+                self.collector[ids]["falling"].append(None)
             if reid_res:
                 self.collector[ids]["features"].append(reid_res['features'][
                     idx])

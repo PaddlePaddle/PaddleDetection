@@ -46,8 +46,8 @@ To make users have access to models of different scenarios, PP-Human provides pr
 | Object Detection        | Image/Video Input | mAP: 56.3  | 28.0ms           |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
 | Object Tracking       | Image/Video Input | MOTA: 72.0  | 33.1ms           |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
 | Attribute Recognition    | Image/Video Input  Attribute Recognition | mA: 94.86 |  2ms per person       | - |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
-| Keypoint Detection    | Video Input  Action Recognition | AP: 87.1 | 2.9ms per person        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
-| Action Recognition   |  Video Input  Action Recognition  | Precision 96.43 |  2.7ms per person          | - |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
+| Keypoint Detection    | Video Input  Falling Recognition | AP: 87.1 | 2.9ms per person        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
+| Falling Recognition   |  Video Input  Falling Recognition  | Precision 96.43 |  2.7ms per person          | - |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
 | ReID         | Multi-Target Multi-Camera Tracking   | mAP: 98.8 | 1.5ms per person    | - |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
 
 Then, unzip the downloaded model to the folder `./output_inference`.
@@ -68,7 +68,7 @@ Their correspondence is as follows:
 |-------|-------|----------|-----|
 | Image | Attribute Recognition | Object Detection  Attribute Recognition | DET ATTR |
 | Single-Camera Video | Attribute Recognition | Multi-Object Tracking  Attribute Recognition | MOT ATTR |
-| Single-Camera Video | Behavior Recognition | Multi-Object Tracking  Keypoint Detection  Action Recognition | MOT KPT ACTION |
+| Single-Camera Video | Behavior Recognition | Multi-Object Tracking  Keypoint Detection  Falling Recognition | MOT KPT FALLING |
 
 For example, for the attribute recognition with the video input, its task types contain multi-object tracking and attribute recognition, and the config is:
 
@@ -89,7 +89,7 @@ ATTR:
 
 **Note: **
 
-- For different tasks, users could add `--enable_attr=True` or `--enable_action=True` in command line and do not need to set config file.
+- For different tasks, users could add `--enable_attr=True` or `--enable_falling=True` in command line and do not need to set config file.
 - if only need to change the model path, users could add `--model_dir det=ppyoloe/` in command line and do not need to set config file. For details info please refer to doc below.
 
 
@@ -109,11 +109,11 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml -
 # Attribute recognition. Specify the config file path and test videos
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True [--run_mode trt_fp16]
 
-# Action Recognition. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_action=True [--run_mode trt_fp16]
+# Falling Recognition. Specify the config file path and test videos
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_falling=True [--run_mode trt_fp16]
 
 # Pedestrian Multi-Target Multi-Camera tracking. Specify the config file path and the directory of test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=mtmct_dir/ --device=gpu --enable_mtmct=True [--run_mode trt_fp16]
 
 ```
 
@@ -130,7 +130,7 @@ Other usage please refer to [sub-task docs](./docs)
 | --video_file | Option | Videos to-be-predicted |
 | --camera_id | Option | ID of the inference camera is -1 by default (means inference without cameras，and it can be set to 0 - (number of cameras-1)), and during the inference, click `q` on the visual interface to exit and output the inference result to output/output.mp4|
 | --enable_attr| Option | Enable attribute recognition or not |
-| --enable_action| Option | Enable action recognition or not |
+| --enable_falling| Option | Enable action recognition or not |
 | --device | Option | During the operation，available devices are `CPU/GPU/XPU`，and the default is `CPU`|
 | --output_dir | Option| The default root directory which stores the visualization result is output/|
 | --run_mode | Option | When using GPU，the default one is paddle, and all these are available（paddle/trt_fp32/trt_fp16/trt_int8）.|
@@ -169,8 +169,8 @@ The overall solution of PP-Human is as follows:
 - Use StrongBaseline（a multi-class model）to conduct attribute recognition, and the main attributes include age, gender, hats, eyes, clothing, and backpacks.
 - For details, please refer to [Attribute Recognition](docs/attribute_en.md)
 
-### 5. Action Recognition
+### 5. Falling Recognition
 - Use PP-YOLOE + Bytetrack to track humans
 - Use HRNet for keypoint detection and get the information of the 17 key points in the human body
 - According to the changes of the key points of the same person within 50 frames, judge whether the action made by the person within 50 frames is a fall with the help of ST-GCN
-- For details, please refer to [Action Recognition](docs/action_en.md)
+- For details, please refer to [Falling Recognition](docs/action_en.md)

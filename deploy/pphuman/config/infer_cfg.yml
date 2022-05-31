@@ -11,23 +11,27 @@ DET:
 ATTR:
   model_dir: output_inference/strongbaseline_r50_30e_pa100k/
   batch_size: 8
+  basemode: "idbased"
 
 MOT:
   model_dir: output_inference/mot_ppyoloe_l_36e_pipeline/
   tracker_config: deploy/pphuman/config/tracker_config.yml
   batch_size: 1
+  basemode: "idbased"
 
 KPT:
   model_dir: output_inference/dark_hrnet_w32_256x192/
   batch_size: 8
 
-ACTION:
+FALLING:
   model_dir: output_inference/STGCN
   batch_size: 1
   max_frames: 50
   display_frames: 80
   coord_size: [384, 512]
+  basemode: "skeletonbased"
 
 REID:
   model_dir: output_inference/reid_model/
   batch_size: 16
+  basemode: "idbased"
