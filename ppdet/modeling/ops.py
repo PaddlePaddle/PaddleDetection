@@ -23,10 +23,21 @@ from paddle import in_dynamic_mode
 from paddle.common_ops_import import Variable, LayerHelper, check_variable_and_dtype, check_type, check_dtype
 
 __all__ = [
-    'roi_pool', 'roi_align', 'prior_box', 'generate_proposals',
-    'iou_similarity', 'box_coder', 'multiclass_nms', 'distribute_fpn_proposals',
-    'collect_fpn_proposals', 'matrix_nms', 'batch_norm', 'get_activation',
-    'mish', 'swish', 'identity'
+    'roi_pool',
+    'roi_align',
+    'prior_box',
+    'generate_proposals',
+    'iou_similarity',
+    'box_coder',
+    'multiclass_nms',
+    'distribute_fpn_proposals',
+    'collect_fpn_proposals',
+    'matrix_nms',
+    'batch_norm',
+    'mish',
+    'silu',
+    'swish',
+    'identity',
 ]
 
 
@@ -38,13 +49,17 @@ def mish(x):
     return F.mish(x) if hasattr(F, mish) else x * F.tanh(F.softplus(x))
 
 
+def silu(x):
+    return F.silu(x)
+
+
 def swish(x):
     return x * F.sigmoid(x)
 
 
-TRT_ACT_SPEC = {'swish': swish}
+TRT_ACT_SPEC = {'swish': swish, 'silu': swish}
 
-ACT_SPEC = {'mish': mish}
+ACT_SPEC = {'mish': mish, 'silu': silu}
 
 
 def get_act_fn(act=None, trt=False):
@@ -102,18 +117,6 @@ def batch_norm(ch,
             param.stop_gradient = True
 
     return norm_layer
-
-
-def get_activation(name="silu"):
-    if name == "silu":
-        module = nn.Silu()
-    elif name == "relu":
-        module = nn.ReLU()
-    elif name == "leakyrelu":
-        module = nn.LeakyReLU(0.1)
-    else:
-        raise AttributeError("Unsupported act type: {}".format(name))
-    return module
 
 
 @paddle.jit.not_to_static

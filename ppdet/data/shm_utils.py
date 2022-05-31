@@ -34,7 +34,10 @@ SHM_DEFAULT_MOUNT = '/dev/shm'
 
 
 def _parse_size_in_M(size_str):
-    num, unit = size_str[:-1], size_str[-1]
+    if size_str[-1] == 'B':
+        num, unit = size_str[:-2], size_str[-2]
+    else:
+        num, unit = size_str[:-1], size_str[-1]
     assert unit in SIZE_UNIT, \
             "unknown shm size unit {}".format(unit)
     return float(num) * \

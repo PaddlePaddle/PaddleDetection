@@ -20,6 +20,7 @@ from paddle.nn.initializer import KaimingNormal
 from ppdet.core.workspace import register, create
 from ppdet.modeling.layers import ConvNormLayer
 from .roi_extractor import RoIAlign
+from ..cls_utils import _get_class_default_kwargs
 
 
 @register
@@ -120,7 +121,7 @@ class MaskHead(nn.Layer):
 
     def __init__(self,
                  head,
-                 roi_extractor=RoIAlign().__dict__,
+                 roi_extractor=_get_class_default_kwargs(RoIAlign),
                  mask_assigner='MaskAssigner',
                  num_classes=80,
                  share_bbox_feat=False,

@@ -21,6 +21,7 @@ from ppdet.core.workspace import register
 from .anchor_generator import AnchorGenerator
 from .target_layer import RPNTargetAssign
 from .proposal_generator import ProposalGenerator
+from ..cls_utils import _get_class_default_kwargs
 
 
 class RPNFeat(nn.Layer):
@@ -69,10 +70,11 @@ class RPNHead(nn.Layer):
     __shared__ = ['export_onnx']
 
     def __init__(self,
-                 anchor_generator=AnchorGenerator().__dict__,
-                 rpn_target_assign=RPNTargetAssign().__dict__,
-                 train_proposal=ProposalGenerator(12000, 2000).__dict__,
-                 test_proposal=ProposalGenerator().__dict__,
+                 anchor_generator=_get_class_default_kwargs(AnchorGenerator),
+                 rpn_target_assign=_get_class_default_kwargs(RPNTargetAssign),
+                 train_proposal=_get_class_default_kwargs(ProposalGenerator,
+                                                          12000, 2000),
+                 test_proposal=_get_class_default_kwargs(ProposalGenerator),
                  in_channel=1024,
                  export_onnx=False):
         super(RPNHead, self).__init__()
