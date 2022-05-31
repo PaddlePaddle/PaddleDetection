@@ -311,8 +311,8 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
   - [PP-YOLO](configs/ppyolo/README.md)
   - [PP-PicoDet](configs/picodet/README.md)
   - [Enhanced Anchor Free model--TTFNet](configs/ttfnet/README_en.md)
-  - [Mobile models](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/static/configs/mobile/README_en.md)
-  - [676 classes of object detection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/static/docs/featured_model/LARGE_SCALE_DET_MODEL_en.md)
+  - [Mobile models](static/configs/mobile/README_en.md)
+  - [676 classes of object detection](static/docs/featured_model/LARGE_SCALE_DET_MODEL_en.md)
   - [Two-stage practical PSS-Det](configs/rcnn_enhance/README_en.md)
   - [SSLD pretrained models](docs/feature_models/SSLD_PRETRAINED_MODEL_en.md)
 - General Instance Segmentation
@@ -337,12 +337,12 @@ The relationship between COCO mAP and FPS on Qualcomm Snapdragon 865 of represen
 - Scienario Solution
   - [Real-Time Human Analysis Tool PP-Human](deploy/pphuman)
 - Competition Solution
-  - [Objects365 2019 Challenge champion model](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/static/docs/featured_model/champion_model/CACascadeRCNN_en.md)
-  - [Best single model of Open Images 2019-Object Detection](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/static/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL_en.md)
+  - [Objects365 2019 Challenge champion model](static/docs/featured_model/champion_model/CACascadeRCNN_en.md)
+  - [Best single model of Open Images 2019-Object Detection](static/docs/featured_model/champion_model/OIDV5_BASELINE_MODEL_en.md)
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157836473-1cf451fa-f01f-4148-ba68-b6d06d5da2f9.png" alt="" width="20"> Applications
 
-- [Christmas portrait automatic generation tool](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/static/application/christmas)
+- [Christmas portrait automatic generation tool](static/application/christmas)
 - [Android Fitness Demo](https://github.com/zhiboniu/pose_demo_android)
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157835981-ef6057b4-6347-4768-8fcc-cd07fcc3d8b0.png" width="20"/> Updates
