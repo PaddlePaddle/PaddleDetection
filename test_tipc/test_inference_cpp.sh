@@ -131,7 +131,9 @@ fi
 # build program
 # TODO: set PADDLE_DIR and TENSORRT_ROOT
 if [ -z $PADDLE_DIR ]; then
-    PADDLE_DIR=/paddle/Paddle/build/paddle_inference_install_dir/
+    wget -nc https://paddle-inference-lib.bj.bcebos.com/2.2.2/cxx_c/Linux/GPU/x86-64_gcc8.2_avx_mkl_cuda11.1_cudnn8.1.1_trt7.2.3.4/paddle_inference.tgz --no-check-certificate
+    tar zxf paddle_inference.tgz
+    PADDLE_DIR=$(pwd)/paddle_inference
 fi
 if [ -z $TENSORRT_ROOT ]; then
     TENSORRT_ROOT=/usr/local/TensorRT6-cuda10.1-cudnn7
@@ -146,8 +148,8 @@ mkdir -p build
 cd ./build
 cmake .. \
     -DWITH_GPU=ON \
-    -DWITH_MKL=ON \
-    -DWITH_TENSORRT=ON \
+    -DWITH_MKL=OFF \
+    -DWITH_TENSORRT=OFF \
     -DPADDLE_LIB_NAME=libpaddle_inference \
     -DPADDLE_DIR=${PADDLE_DIR} \
     -DCUDA_LIB=${CUDA_LIB} \

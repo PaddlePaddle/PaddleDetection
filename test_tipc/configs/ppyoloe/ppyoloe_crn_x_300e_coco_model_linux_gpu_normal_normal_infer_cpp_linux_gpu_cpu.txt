@@ -18,7 +18,7 @@ infer_mode:norm
 infer_quant:False
 inference:./deploy/cpp/build/main
 --device:gpu|cpu
---use_mkldnn:True|False
+--use_mkldnn:False
 --cpu_threads:4
 --batch_size:1|2
 --use_tensorrt:null
