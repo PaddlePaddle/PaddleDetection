@@ -22,6 +22,7 @@ from .bbox_head import BBoxHead, TwoFCHead, XConvNormHead
 from .roi_extractor import RoIAlign
 from ..shape_spec import ShapeSpec
 from ..bbox_utils import delta2bbox, clip_bbox, nonempty_bbox
+from ..cls_utils import _get_class_default_kwargs
 
 __all__ = ['CascadeTwoFCHead', 'CascadeXConvNormHead', 'CascadeHead']
 
@@ -153,7 +154,7 @@ class CascadeHead(BBoxHead):
     def __init__(self,
                  head,
                  in_channel,
-                 roi_extractor=RoIAlign().__dict__,
+                 roi_extractor=_get_class_default_kwargs(RoIAlign),
                  bbox_assigner='BboxAssigner',
                  num_classes=80,
                  bbox_weight=[[10., 10., 5., 5.], [20.0, 20.0, 10.0, 10.0],
