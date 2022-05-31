@@ -11,7 +11,7 @@ PP-Human跨镜头跟踪模块主要目的在于提供一套简洁、高效的跨
 
 2. 跨镜头跟踪模式下，要求输入的多个视频放在同一目录下，命令如下：
 ```python
-python3 deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=[your_video_file_directory] --device=gpu
+python3 deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=[your_video_file_directory] --device=gpu --enable_mtmct=True
 ```
 
 3. 相关配置在`./deploy/pphuman/config/infer_cfg.yml`文件中修改：

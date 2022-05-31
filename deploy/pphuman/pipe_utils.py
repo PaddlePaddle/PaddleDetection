@@ -63,10 +63,15 @@ def argsparser():
         default=False,
         help="Whether use attribute recognition.")
     parser.add_argument(
-        "--enable_action",
+        "--enable_falling",
         type=ast.literal_eval,
         default=False,
         help="Whether use action recognition.")
+    parser.add_argument(
+        "--enable_mtmct",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether to enable multi-camera reid track.")
     parser.add_argument(
         "--output_dir",
         type=str,
@@ -162,7 +167,7 @@ class PipeTimer(Times):
             'mot': Times(),
             'attr': Times(),
             'kpt': Times(),
-            'action': Times(),
+            'falling': Times(),
             'reid': Times()
         }
         self.img_num = 0
@@ -207,9 +212,9 @@ class PipeTimer(Times):
         dic['kpt'] = round(self.module_time['kpt'].value() /
                            max(1, self.img_num),
                            4) if average else self.module_time['kpt'].value()
-        dic['action'] = round(
-            self.module_time['action'].value() / max(1, self.img_num),
-            4) if average else self.module_time['action'].value()
+        dic['falling'] = round(
+            self.module_time['falling'].value() / max(1, self.img_num),
+            4) if average else self.module_time['falling'].value()
 
         dic['img_num'] = self.img_num
         return dic
@@ -217,7 +222,7 @@ class PipeTimer(Times):
 
 def merge_model_dir(args, model_dir):
     # set --model_dir DET=ppyoloe/ to overwrite the model_dir in config file
-    task_set = ['DET', 'ATTR', 'MOT', 'KPT', 'ACTION', 'REID']
+    task_set = ['DET', 'ATTR', 'MOT', 'KPT', 'FALLING', 'REID']
     if not model_dir:
         return args
     for md in model_dir:
