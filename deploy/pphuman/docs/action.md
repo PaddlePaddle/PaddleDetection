@@ -28,7 +28,7 @@
 ## 配置说明
 [配置文件](../config/infer_cfg.yml)中与行为识别相关的参数如下：
 ```
-ACTION:
+FALLING:
   model_dir: output_inference/STGCN  # 模型所在路径
   batch_size: 1 # 预测批大小。 当前仅支持为1进行推理
   max_frames: 50 # 动作片段对应的帧数。在行人ID对应时序骨骼点结果时达到该帧数后，会通过行为识别模型判断该段序列的动作类型。与训练设置一致时效果最佳。
@@ -43,17 +43,17 @@ ACTION:
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
-                                                   --enable_action=True
+                                                   --enable_falling=True
 ```
 3. 若修改模型路径，有以下两种方式：
 
-    - ```./deploy/pphuman/config/infer_cfg.yml```下可以配置不同模型路径，关键点模型和行为识别模型分别对应`KPT`和`ACTION`字段，修改对应字段下的路径为实际期望的路径即可。
+    - ```./deploy/pphuman/config/infer_cfg.yml```下可以配置不同模型路径，关键点模型和行为识别模型分别对应`KPT`和`FALLING`字段，修改对应字段下的路径为实际期望的路径即可。
     - 命令行中增加`--model_dir`修改模型路径：
 ```python
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
-                                                   --enable_action=True \
+                                                   --enable_falling=True \
                                                    --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
 ```
 
@@ -78,7 +78,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
 ## 参考文献
 ```
 @inproceedings{stgcn2018aaai,
-  title     = {Spatial Temporal Graph Convolutional Networks for Skeleton-Based Action Recognition},
+  title     = {Spatial Temporal Graph Convolutional Networks for Skeleton-Based Falling Recognition},
   author    = {Sijie Yan and Yuanjun Xiong and Dahua Lin},
   booktitle = {AAAI},
   year      = {2018},
