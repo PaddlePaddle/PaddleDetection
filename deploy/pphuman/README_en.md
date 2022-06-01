@@ -68,7 +68,7 @@ Their correspondence is as follows:
 |-------|-------|----------|-----|
 | Image | Attribute Recognition | Object Detection  Attribute Recognition | DET ATTR |
 | Single-Camera Video | Attribute Recognition | Multi-Object Tracking  Attribute Recognition | MOT ATTR |
-| Single-Camera Video | Behavior Recognition | Multi-Object Tracking  Keypoint Detection  Falling Recognition | MOT KPT FALLING |
+| Single-Camera Video | Behavior Recognition | Multi-Object Tracking  Keypoint Detection  Falling Recognition | MOT KPT SKELETON_ACTION |
 
 For example, for the attribute recognition with the video input, its task types contain multi-object tracking and attribute recognition, and the config is:
 
@@ -89,7 +89,7 @@ ATTR:
 
 **Note: **
 
-- For different tasks, users could add `--enable_attr=True` or `--enable_falling=True` in command line and do not need to set config file.
+- For different tasks, users should set the "enable" to "True" in coresponding configs in the infer_cfg.yml file.
 - if only need to change the model path, users could add `--model_dir det=ppyoloe/` in command line and do not need to set config file. For details info please refer to doc below.
 
 
@@ -106,14 +106,14 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml -
 # The model path specified on the command line prioritizes over the config file
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
 
-# Attribute recognition. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True [--run_mode trt_fp16]
+# Attribute recognition. Specify the config file path and test videos, and set the "enable" to "True" in ATTR of infer_cfg.yml
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# Falling Recognition. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_falling=True [--run_mode trt_fp16]
+# Action Recognition. Specify the config file path and test videos, and set the "enable" to "True" in corresponding action configs of infer_cfg.yml
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# Pedestrian Multi-Target Multi-Camera tracking. Specify the config file path and the directory of test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=mtmct_dir/ --device=gpu --enable_mtmct=True [--run_mode trt_fp16]
+# Pedestrian Multi-Target Multi-Camera tracking. Specify the config file path and the directory of test videos, and set the "enable" to "True" in REID in infer_cfg.yml
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
 
 ```
 
@@ -129,8 +129,6 @@ Other usage please refer to [sub-task docs](./docs)
 | --image_dir  | Option |  The path of folders of to-be-predicted images  |
 | --video_file | Option | Videos to-be-predicted |
 | --camera_id | Option | ID of the inference camera is -1 by default (means inference without cameras，and it can be set to 0 - (number of cameras-1)), and during the inference, click `q` on the visual interface to exit and output the inference result to output/output.mp4|
-| --enable_attr| Option | Enable attribute recognition or not |
-| --enable_falling| Option | Enable action recognition or not |
 | --device | Option | During the operation，available devices are `CPU/GPU/XPU`，and the default is `CPU`|
 | --output_dir | Option| The default root directory which stores the visualization result is output/|
 | --run_mode | Option | When using GPU，the default one is paddle, and all these are available（paddle/trt_fp32/trt_fp16/trt_int8）.|

@@ -361,6 +361,18 @@ class PipePredictor(object):
                     model_dir, device, run_mode, batch_size, trt_min_shape,
                     trt_max_shape, trt_opt_shape, trt_calib_mode, cpu_threads,
                     enable_mkldnn)
+            if self.with_idbased_detaction:
+                idbased_detaction_cfg = self.cfg['SKELETON_ACTION']
+                idbased_detaction_model_dir = idbased_detaction_cfg['model_dir']
+                idbased_detaction_batch_size = idbased_detaction_cfg[
+                    'batch_size']
+                # IDBasedDetActionRecognizer = IDBasedDetActionRecognizer()
+            if self.with_idbased_clsaction:
+                idbased_clsaction_cfg = self.cfg['SKELETON_ACTION']
+                idbased_clsaction_model_dir = idbased_clsaction_cfg['model_dir']
+                idbased_clsaction_batch_size = idbased_clsaction_cfg[
+                    'batch_size']
+                # IDBasedDetActionRecognizer = IDBasedClsActionRecognizer()
             if self.with_skeleton_action:
                 skeleton_action_cfg = self.cfg['SKELETON_ACTION']
                 skeleton_action_model_dir = skeleton_action_cfg['model_dir']
@@ -588,25 +600,23 @@ class PipePredictor(object):
                     pass
 
                 if self.with_skeleton_action:
-                    if self.modebase["skeletonbased"]:
-                        if frame_id > self.warmup_frame:
-                            self.pipe_timer.module_time['kpt'].start()
-                        kpt_pred = self.kpt_predictor.predict_image(
-                            crop_input, visual=False)
-                        keypoint_vector, score_vector = translate_to_ori_images(
-                            kpt_pred, np.array(new_bboxes))
-                        kpt_res = {}
-                        kpt_res['keypoint'] = [
-                            keypoint_vector.tolist(), score_vector.tolist()
-                        ] if len(keypoint_vector) > 0 else [[], []]
-                        kpt_res['bbox'] = ori_bboxes
-                        if frame_id > self.warmup_frame:
-                            self.pipe_timer.module_time['kpt'].end()
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['kpt'].start()
+                    kpt_pred = self.kpt_predictor.predict_image(
+                        crop_input, visual=False)
+                    keypoint_vector, score_vector = translate_to_ori_images(
+                        kpt_pred, np.array(new_bboxes))
+                    kpt_res = {}
+                    kpt_res['keypoint'] = [
+                        keypoint_vector.tolist(), score_vector.tolist()
+                    ] if len(keypoint_vector) > 0 else [[], []]
+                    kpt_res['bbox'] = ori_bboxes
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['kpt'].end()
 
-                        self.pipeline_res.update(kpt_res, 'kpt')
+                    self.pipeline_res.update(kpt_res, 'kpt')
 
-                        self.kpt_buff.update(kpt_res,
-                                             mot_res)  # collect kpt output
+                    self.kpt_buff.update(kpt_res, mot_res)  # collect kpt output
                     state = self.kpt_buff.get_state(
                     )  # whether frame num is enough or lost tracker
 

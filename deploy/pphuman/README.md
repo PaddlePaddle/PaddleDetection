@@ -67,7 +67,7 @@ PP-Human相关配置位于```deploy/pphuman/config/infer_cfg.yml```中，存放�
 |-------|-------|----------|-----|
 | 图片 | 属性识别 | 目标检测 属性识别 | DET ATTR |
 | 单镜头视频 | 属性识别 | 多目标跟踪 属性识别 | MOT ATTR |
-| 单镜头视频 | 行为识别 | 多目标跟踪 关键点检测 行为识别 | MOT KPT FALLING |
+| 单镜头视频 | 行为识别 | 多目标跟踪 关键点检测 摔倒识别 | MOT KPT SKELETON_ACTION |
 
 例如基于视频输入的属性识别，任务类型包含多目标跟踪和属性识别，具体配置如下：
 
@@ -80,15 +80,18 @@ MOT:
   model_dir: output_inference/mot_ppyoloe_l_36e_pipeline/
   tracker_config: deploy/pphuman/config/tracker_config.yml
   batch_size: 1
+  basemode: "idbased"
 
 ATTR:
   model_dir: output_inference/strongbaseline_r50_30e_pa100k/
   batch_size: 8
+  basemode: "idbased"
+  enable: False
 ```
 
 **注意：**
 
-- 如果用户仅需要实现不同任务，可以在命令行中加入 `--enable_attr=True` 或 `--enable_falling=True`即可，无需修改配置文件
+- 如果用户需要实现不同任务，可以在配置文件对应enable选项设置为True, 其basemode类型会在代码中开启依赖的基础能力模型，比如跟踪模型。
 - 如果用户仅需要修改模型文件路径，可以在命令行中加入 `--model_dir det=ppyoloe/` 即可，无需修改配置文件，详细说明参考下方参数说明文档
 
 
@@ -105,14 +108,14 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml -
 # 命令行中指定的模型路径优先级高于配置文件
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
 
-# 行人属性识别，指定配置文件路径和测试视频
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_attr=True [--run_mode trt_fp16]
+# 行人属性识别，指定配置文件路径和测试视频，在配置文件中ATTR部分开启enable选项。
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# 行为识别，指定配置文件路径和测试视频
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --enable_falling=True [--run_mode trt_fp16]
+# 行为识别，指定配置文件路径和测试视频，在配置文件中对应行为识别功能开启enable选项。
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=mtmct_dir/ --device=gpu --enable_mtmct=True [--run_mode trt_fp16]
+# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，在配置文件中REID部分开启enable选项。
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
 ```
 
 其他用法请参考[子任务文档](./docs)
@@ -127,9 +130,6 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml -
 | --image_dir  | Option |  要预测的图片文件夹路径   |
 | --video_file | Option | 需要预测的视频 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4|
-| --enable_attr| Option | 是否进行属性识别, 默认为False，即不开启属性识别 |
-| --enable_falling| Option | 是否进行行为识别，默认为False，即不开启行为识别 |
-| --enable_mtmct| Option | 是否进行跨境头跟踪，默认为False，即不开启跨境头跟踪 |
 | --device | Option | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
 | --output_dir | Option|可视化结果保存的根目录，默认为output/|
 | --run_mode | Option |使用GPU时，默认为paddle, 可选（paddle/trt_fp32/trt_fp16/trt_int8）|
