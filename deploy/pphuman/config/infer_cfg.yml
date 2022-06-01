@@ -41,11 +41,13 @@ SKELETON_ACTION:
 ID_BASED_DETACTION:
   model_dir: output_inference/detector
   batch_size: 1
+  basemode: "idbased"
   enable: False
 
 ID_BASED_CLSACTION:
   model_dir: output_inference/classification
   batch_size: 1
+  basemode: "idbased"
   enable: False
 
 REID:
