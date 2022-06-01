@@ -50,8 +50,8 @@ inline jstring cpp_string_to_jstring(JNIEnv *env, std::string str) {
       env->GetMethodID(strClass, "<init>", "([BLjava/lang/String;)V");
 
   jbyteArray bytes = env->NewByteArray(strlen(data));
-  env->SetByteArrayRegion(bytes, 0, strlen(data),
-                          reinterpret_cast<const jbyte *>(data));
+  env->SetByteArrayRegion(
+      bytes, 0, strlen(data), reinterpret_cast<const jbyte *>(data));
 
   jstring encoding = env->NewStringUTF("UTF-8");
   jstring res = (jstring)(
@@ -64,21 +64,24 @@ inline jstring cpp_string_to_jstring(JNIEnv *env, std::string str) {
   return res;
 }
 
-inline jfloatArray cpp_array_to_jfloatarray(JNIEnv *env, const float *buf,
+inline jfloatArray cpp_array_to_jfloatarray(JNIEnv *env,
+                                            const float *buf,
                                             int64_t len) {
   jfloatArray result = env->NewFloatArray(len);
   env->SetFloatArrayRegion(result, 0, len, buf);
   return result;
 }
 
-inline jintArray cpp_array_to_jintarray(JNIEnv *env, const int *buf,
+inline jintArray cpp_array_to_jintarray(JNIEnv *env,
+                                        const int *buf,
                                         int64_t len) {
   jintArray result = env->NewIntArray(len);
   env->SetIntArrayRegion(result, 0, len, buf);
   return result;
 }
 
-inline jbyteArray cpp_array_to_jbytearray(JNIEnv *env, const int8_t *buf,
+inline jbyteArray cpp_array_to_jbytearray(JNIEnv *env,
+                                          const int8_t *buf,
                                           int64_t len) {
   jbyteArray result = env->NewByteArray(len);
   env->SetByteArrayRegion(result, 0, len, buf);

@@ -12,28 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "include/preprocess_op.h"
 
 namespace PaddleDetection {
 
 void InitInfo::Run(cv::Mat* im, ImageBlob* data) {
-  data->ori_im_size_ = {
-      static_cast<int>(im->rows),
-      static_cast<int>(im->cols)
-  };
+  data->ori_im_size_ = {static_cast<int>(im->rows), static_cast<int>(im->cols)};
   data->ori_im_size_f_ = {
-      static_cast<float>(im->rows),
-      static_cast<float>(im->cols),
-      1.0
-  };
+      static_cast<float>(im->rows), static_cast<float>(im->cols), 1.0};
   data->eval_im_size_f_ = {
-    static_cast<float>(im->rows),
-    static_cast<float>(im->cols),
-    1.0
-  };
+      static_cast<float>(im->rows), static_cast<float>(im->cols), 1.0};
   data->scale_factor_f_ = {1., 1., 1., 1.};
 }
 
@@ -46,11 +37,11 @@ void Normalize::Run(cv::Mat* im, ImageBlob* data) {
   for (int h = 0; h < im->rows; h++) {
     for (int w = 0; w < im->cols; w++) {
       im->at<cv::Vec3f>(h, w)[0] =
-          (im->at<cv::Vec3f>(h, w)[0] - mean_[0] ) / scale_[0];
+          (im->at<cv::Vec3f>(h, w)[0] - mean_[0]) / scale_[0];
       im->at<cv::Vec3f>(h, w)[1] =
-          (im->at<cv::Vec3f>(h, w)[1] - mean_[1] ) / scale_[1];
+          (im->at<cv::Vec3f>(h, w)[1] - mean_[1]) / scale_[1];
       im->at<cv::Vec3f>(h, w)[2] =
-          (im->at<cv::Vec3f>(h, w)[2] - mean_[2] ) / scale_[2];
+          (im->at<cv::Vec3f>(h, w)[2] - mean_[2]) / scale_[2];
     }
   }
 }
@@ -63,7 +54,8 @@ void Permute::Run(cv::Mat* im, ImageBlob* data) {
   float* base = (data->im_data_).data();
   for (int i = 0; i < rc; ++i) {
     int cur_c = to_bgr_ ? rc - i - 1 : i;
-    cv::extractChannel(*im, cv::Mat(rh, rw, CV_32FC1, base + cur_c * rh * rw), i);
+    cv::extractChannel(
+        *im, cv::Mat(rh, rw, CV_32FC1, base + cur_c * rh * rw), i);
   }
 }
 
@@ -73,27 +65,22 @@ void Resize::Run(cv::Mat* im, ImageBlob* data) {
       *im, *im, cv::Size(), resize_scale.first, resize_scale.second, interp_);
   if (max_size_ != 0 && !image_shape_.empty()) {
     // Padding the image with 0 border
-    cv::copyMakeBorder(
-      *im,
-      *im,
-      0,
-      max_size_ - im->rows,
-      0,
-      max_size_ - im->cols,
-      cv::BORDER_CONSTANT,
-      cv::Scalar(0));
+    cv::copyMakeBorder(*im,
+                       *im,
+                       0,
+                       max_size_ - im->rows,
+                       0,
+                       max_size_ - im->cols,
+                       cv::BORDER_CONSTANT,
+                       cv::Scalar(0));
   }
-  data->eval_im_size_f_ = {
-    static_cast<float>(im->rows),
-    static_cast<float>(im->cols),
-    resize_scale.first
-  };
-  data->scale_factor_f_ = {
-    resize_scale.first,
-    resize_scale.second,
-    resize_scale.first,
-    resize_scale.second
-  };
+  data->eval_im_size_f_ = {static_cast<float>(im->rows),
+                           static_cast<float>(im->cols),
+                           resize_scale.first};
+  data->scale_factor_f_ = {resize_scale.first,
+                           resize_scale.second,
+                           resize_scale.first,
+                           resize_scale.second};
 }
 
 std::pair<float, float> Resize::GenerateScale(const cv::Mat& im) {
@@ -132,23 +119,14 @@ void PadStride::Run(cv::Mat* im, ImageBlob* data) {
   int nh = (rh / stride_) * stride_ + (rh % stride_ != 0) * stride_;
   int nw = (rw / stride_) * stride_ + (rw % stride_ != 0) * stride_;
   cv::copyMakeBorder(
-    *im,
-    *im,
-    0,
-    nh - rh,
-    0,
-    nw - rw,
-    cv::BORDER_CONSTANT,
-    cv::Scalar(0));
+      *im, *im, 0, nh - rh, 0, nw - rw, cv::BORDER_CONSTANT, cv::Scalar(0));
   (data->eval_im_size_f_)[0] = static_cast<float>(im->rows);
   (data->eval_im_size_f_)[1] = static_cast<float>(im->cols);
 }
 
-
 // Preprocessor op running order
 const std::vector<std::string> Preprocessor::RUN_ORDER = {
-  "InitInfo", "Resize", "Normalize", "PadStride", "Permute"
-};
+    "InitInfo", "Resize", "Normalize", "PadStride", "Permute"};
 
 void Preprocessor::Run(cv::Mat* im, ImageBlob* data) {
   for (const auto& name : RUN_ORDER) {
