@@ -218,13 +218,14 @@ class Trainer(object):
 
             # when do validation in train, annotation file should be get from
             # EvalReader instead of self.dataset(which is TrainReader)
-            anno_file = self.dataset.get_anno()
-            dataset = self.dataset
             if self.mode == 'train' and validate:
                 eval_dataset = self.cfg['EvalDataset']
                 eval_dataset.check_or_download_dataset()
                 anno_file = eval_dataset.get_anno()
                 dataset = eval_dataset
+            else:
+                dataset = self.dataset
+                anno_file = dataset.get_anno()
 
             IouType = self.cfg['IouType'] if 'IouType' in self.cfg else 'bbox'
             if self.cfg.metric == "COCO":
