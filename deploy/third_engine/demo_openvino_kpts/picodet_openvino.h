@@ -38,8 +38,8 @@ typedef struct BoxInfo {
 } BoxInfo;
 
 class PicoDet {
- public:
-  PicoDet(const char* param);
+public:
+  PicoDet(const char *param);
 
   ~PicoDet();
 
@@ -48,26 +48,23 @@ class PicoDet {
 
   std::vector<HeadInfo> heads_info_{
       // cls_pred|dis_pred|stride
-      {"save_infer_model/scale_0.tmp_1", "save_infer_model/scale_4.tmp_1", 8},
-      {"save_infer_model/scale_1.tmp_1", "save_infer_model/scale_5.tmp_1", 16},
-      {"save_infer_model/scale_2.tmp_1", "save_infer_model/scale_6.tmp_1", 32},
-      {"save_infer_model/scale_3.tmp_1", "save_infer_model/scale_7.tmp_1", 64},
+      {"transpose_0.tmp_0", "transpose_1.tmp_0", 8},
+      {"transpose_2.tmp_0", "transpose_3.tmp_0", 16},
+      {"transpose_4.tmp_0", "transpose_5.tmp_0", 32},
+      {"transpose_6.tmp_0", "transpose_7.tmp_0", 64},
   };
 
-  std::vector<BoxInfo> detect(cv::Mat image,
-                              float score_threshold,
+  std::vector<BoxInfo> detect(cv::Mat image, float score_threshold,
                               float nms_threshold);
 
- private:
-  void preprocess(cv::Mat& image, InferenceEngine::Blob::Ptr& blob);
-  void decode_infer(const float*& cls_pred,
-                    const float*& dis_pred,
-                    int stride,
+private:
+  void preprocess(cv::Mat &image, InferenceEngine::Blob::Ptr &blob);
+  void decode_infer(const float *&cls_pred, const float *&dis_pred, int stride,
                     float threshold,
-                    std::vector<std::vector<BoxInfo>>& results);
-  BoxInfo disPred2Bbox(
-      const float*& dfl_det, int label, float score, int x, int y, int stride);
-  static void nms(std::vector<BoxInfo>& result, float nms_threshold);
+                    std::vector<std::vector<BoxInfo>> &results);
+  BoxInfo disPred2Bbox(const float *&dfl_det, int label, float score, int x,
+                       int y, int stride);
+  static void nms(std::vector<BoxInfo> &result, float nms_threshold);
   std::string input_name_;
   int input_size_ = image_size;
   int num_class_ = 80;
