@@ -207,7 +207,7 @@ class DetectorOp(Op):
         result = []
         for line in bbox:
             if line[0] > -1 and line[1] > draw_threshold:
-                result.append(f"{label_list[int(line[0])]} {line[1]} "
+                result.append(f"{int(line[0])} {line[1]} "
                               f"{line[2]} {line[3]} {line[4]} {line[5]}")
         return result
 
@@ -222,10 +222,11 @@ def get_model_vars(model_dir, service_config):
     # rewrite model_config
     service_config['op']['ppdet']['local_service_conf'][
         'model_config'] = serving_server_dir
-    f = open(
-        os.path.join(serving_server_dir, "serving_server_conf.prototxt"), 'r')
-    model_var = google.protobuf.text_format.Merge(
-        str(f.read()), m_config.GeneralModelConfig())
+    serving_server_conf = os.path.join(serving_server_dir,
+                                       "serving_server_conf.prototxt")
+    with open(serving_server_conf, 'r') as f:
+        model_var = google.protobuf.text_format.Merge(
+            str(f.read()), m_config.GeneralModelConfig())
     feed_vars = [var.name for var in model_var.feed_var]
     fetch_vars = [var.name for var in model_var.fetch_var]
     return feed_vars, fetch_vars

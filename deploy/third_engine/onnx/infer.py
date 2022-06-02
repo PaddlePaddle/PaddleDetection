@@ -145,7 +145,7 @@ def predict_image(infer_config, predictor, img_list):
         bboxes = np.array(outputs[0])
         for bbox in bboxes:
             if bbox[0] > -1 and bbox[1] > infer_config.draw_threshold:
-                print(f"{infer_config.label_list[int(bbox[0])]} {bbox[1]} "
+                print(f"{int(bbox[0])} {bbox[1]} "
                       f"{bbox[2]} {bbox[3]} {bbox[4]} {bbox[5]}")
 
 
