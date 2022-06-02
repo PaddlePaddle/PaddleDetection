@@ -132,7 +132,7 @@ class PredictConfig(object):
         self.arch = yml_conf['arch']
         self.preprocess_infos = yml_conf['Preprocess']
         self.min_subgraph_size = yml_conf['min_subgraph_size']
-        self.labels = yml_conf['label_list']
+        self.label_list = yml_conf['label_list']
         self.use_dynamic_shape = yml_conf['use_dynamic_shape']
         self.draw_threshold = yml_conf.get("draw_threshold", 0.5)
         self.mask = yml_conf.get("mask", False)
@@ -189,8 +189,8 @@ class DetectorOp(Op):
         result = {}
         for k, num in zip(input_dict.keys(), bboxes_num):
             bbox = bboxes[idx:idx + num]
-            result[k] = self.parse_det_result(bbox, draw_threshold,
-                                              GLOBAL_VAR['model_config'].labels)
+            result[k] = self.parse_det_result(
+                bbox, draw_threshold, GLOBAL_VAR['model_config'].label_list)
         return result, None, ""
 
     def collate_inputs(self, inputs):
@@ -206,7 +206,7 @@ class DetectorOp(Op):
     def parse_det_result(self, bbox, draw_threshold, label_list):
         result = []
         for line in bbox:
-            if line[1] > draw_threshold:
+            if line[0] > -1 and line[1] > draw_threshold:
                 result.append(f"{label_list[int(line[0])]} {line[1]} "
                               f"{line[2]} {line[3]} {line[4]} {line[5]}")
         return result
