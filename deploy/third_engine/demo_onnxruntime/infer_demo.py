@@ -55,8 +55,9 @@ class PicoDet():
         origin_shape = srcimg.shape[:2]
         im_scale_y = newh / float(origin_shape[0])
         im_scale_x = neww / float(origin_shape[1])
-        img_shape = np.array([[float(origin_shape[0]), float(origin_shape[1])]
-                              ]).astype('float32')
+        img_shape = np.array([
+            [float(self.input_shape[0]), float(self.input_shape[1])]
+        ]).astype('float32')
         scale_factor = np.array([[im_scale_y, im_scale_x]]).astype('float32')
 
         if keep_ratio and srcimg.shape[0] != srcimg.shape[1]:

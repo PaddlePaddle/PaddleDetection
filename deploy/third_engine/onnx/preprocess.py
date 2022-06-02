@@ -3,8 +3,12 @@ import cv2
 import copy
 
 
-def decode_image(im):
-    im = np.array(im)
+def decode_image(img_path):
+    with open(img_path, 'rb') as f:
+        im_read = f.read()
+    data = np.frombuffer(im_read, dtype='uint8')
+    im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     img_info = {
         "im_shape": np.array(
             im.shape[:2], dtype=np.float32),
@@ -403,8 +407,8 @@ class Compose:
             op_type = new_op_info.pop('type')
             self.transforms.append(eval(op_type)(**new_op_info))
 
-    def __call__(self, img):
-        img, im_info = decode_image(img)
+    def __call__(self, img_path):
+        img, im_info = decode_image(img_path)
         for t in self.transforms:
             img, im_info = t(img, im_info)
         inputs = copy.deepcopy(im_info)
