@@ -10,7 +10,7 @@ TrainReader.batch_size:lite_train_lite_infer=2|lite_train_whole_infer=2|whole_tr
 pretrain_weights:https://paddledet.bj.bcebos.com/models/fcos_r50_fpn_1x_coco.pdparams
 trained_model_name:model_final.pdparams
 train_infer_img_dir:./dataset/coco/test2017/
-filename:null
+amp_level:O2
 ##
 trainer:norm_train
 norm_train:tools/train.py -c configs/fcos/fcos_r50_fpn_1x_coco.yml -o

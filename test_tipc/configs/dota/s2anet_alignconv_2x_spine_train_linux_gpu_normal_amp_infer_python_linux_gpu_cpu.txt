@@ -10,7 +10,7 @@ TrainReader.batch_size:lite_train_lite_infer=1|lite_train_whole_infer=1|whole_tr
 pretrain_weights:https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams
 trained_model_name:model_final.pdparams
 train_infer_img_dir:./dataset/spine_coco/test/
-filename:null
+amp_level:O2
 ##
 trainer:norm_train
 norm_train:tools/train.py -c test_tipc/configs/dota/s2anet_alignconv_2x_spine.yml -o
