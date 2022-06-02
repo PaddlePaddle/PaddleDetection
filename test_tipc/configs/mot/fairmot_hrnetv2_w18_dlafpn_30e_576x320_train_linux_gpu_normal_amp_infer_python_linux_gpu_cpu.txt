@@ -10,7 +10,7 @@ TrainReader.batch_size:lite_train_lite_infer=2|lite_train_whole_infer=2|whole_tr
 pretrain_weights:https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.pdparams
 trained_model_name:model_final.pdparams
 train_infer_img_dir:./dataset/mot/test.mp4
-filename:null
+amp_level:O2
 ##
 trainer:norm_train
 norm_train:tools/train.py -c test_tipc/configs/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.yml -o
