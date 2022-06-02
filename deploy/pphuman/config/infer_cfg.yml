@@ -39,10 +39,12 @@ SKELETON_ACTION:
   enable: False
 
 ID_BASED_DETACTION:
-  model_dir: output_inference/detector
+  model_dir: output_inference/ppyoloe_crn_s_300e_smoking/
   batch_size: 1
   basemode: "idbased"
-  enable: False
+  threshold: 0.5
+  display_frames: 20
+  enable: True
 
 ID_BASED_CLSACTION:
   model_dir: output_inference/classification

@@ -153,7 +153,9 @@ class PipeTimer(Times):
             'attr': Times(),
             'kpt': Times(),
             'skeleton_action': Times(),
-            'reid': Times()
+            'reid': Times(),
+            'det_action': Times(),
+            'cls_action': Times()
         }
         self.img_num = 0
 

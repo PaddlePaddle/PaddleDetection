@@ -36,7 +36,7 @@ from python.infer import Detector, DetectorPicoDet
 from python.attr_infer import AttrDetector
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
-from python.action_infer import SkeletonActionRecognizer
+from python.action_infer import SkeletonActionRecognizer, DetActionRecognizer
 from python.action_utils import KeyPointBuff, SkeletonActionVisualHelper
 
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
@@ -362,16 +362,34 @@ class PipePredictor(object):
                     trt_max_shape, trt_opt_shape, trt_calib_mode, cpu_threads,
                     enable_mkldnn)
             if self.with_idbased_detaction:
-                idbased_detaction_cfg = self.cfg['SKELETON_ACTION']
-                idbased_detaction_model_dir = idbased_detaction_cfg['model_dir']
-                idbased_detaction_batch_size = idbased_detaction_cfg[
-                    'batch_size']
-                # IDBasedDetActionRecognizer = IDBasedDetActionRecognizer()
+                idbased_detaction_cfg = self.cfg['ID_BASED_DETACTION']
+                model_dir = idbased_detaction_cfg['model_dir']
+                batch_size = idbased_detaction_cfg['batch_size']
+                basemode = idbased_detaction_cfg['basemode']
+                threshold = idbased_detaction_cfg['threshold']
+                self.modebase[basemode] = True
+                self.det_action_predictor = DetActionRecognizer(
+                    model_dir,
+                    device,
+                    run_mode,
+                    batch_size,
+                    trt_min_shape,
+                    trt_max_shape,
+                    trt_opt_shape,
+                    trt_calib_mode,
+                    cpu_threads,
+                    enable_mkldnn,
+                    threshold=threshold)
+                display_frames = idbased_detaction_cfg['display_frames']
+                self.det_action_visual_helper = SkeletonActionVisualHelper(
+                    display_frames)
+
             if self.with_idbased_clsaction:
                 idbased_clsaction_cfg = self.cfg['SKELETON_ACTION']
                 idbased_clsaction_model_dir = idbased_clsaction_cfg['model_dir']
                 idbased_clsaction_batch_size = idbased_clsaction_cfg[
                     'batch_size']
+
                 # IDBasedDetActionRecognizer = IDBasedClsActionRecognizer()
             if self.with_skeleton_action:
                 skeleton_action_cfg = self.cfg['SKELETON_ACTION']
@@ -573,10 +591,10 @@ class PipePredictor(object):
                     continue
 
                 self.pipeline_res.update(mot_res, 'mot')
-                if self.with_attr or self.with_skeleton_action:
-                    #todo: move this code to each class's predeal function
-                    crop_input, new_bboxes, ori_bboxes = crop_image_with_mot(
-                        frame, mot_res)
+
+                #todo: move this code to each class's predeal function
+                crop_input, new_bboxes, ori_bboxes = crop_image_with_mot(
+                    frame, mot_res)
 
                 if self.with_attr:
                     if frame_id > self.warmup_frame:
@@ -588,10 +606,14 @@ class PipePredictor(object):
                     self.pipeline_res.update(attr_res, 'attr')
 
                 if self.with_idbased_detaction:
-                    #predeal, get what your model need
-                    #predict, model preprocess\run\postprocess
-                    #postdeal, interact with pipeline
-                    pass
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['det_action'].start()
+                    det_action_res = self.det_action_predictor.predict_image(
+                        crop_input, visual=False)
+                    print(det_action_res)
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['det_action'].end()
+                    self.pipeline_res.update(det_action_res, 'det_action')
 
                 if self.with_idbased_clsaction:
                     #predeal, get what your model need
@@ -747,7 +769,12 @@ class PipePredictor(object):
         if skeleton_action_res is not None:
             image = visualize_action(image, mot_res['boxes'],
                                      self.skeleton_action_visual_helper,
-                                     "SkeletonAction")
+                                     "Falling")
+
+        det_action_res = result.get('det_action')
+        if det_action_res is not None:
+            image = visualize_action(image, mot_res['boxes'],
+                                     self.det_action_visual_helper, "Smoking")
 
         return image
 

@@ -308,6 +308,69 @@ def main():
         det_log('SkeletonAction')
 
 
+class DetActionRecognizer(Detector):
+    """
+    Args:
+        model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
+        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN
+        threshold (float): The threshold of score for action feature object detection.
+    """
+
+    def __init__(self,
+                 model_dir,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 output_dir='output',
+                 threshold=0.5):
+        super(DetActionRecognizer, self).__init__(
+            model_dir=model_dir,
+            device=device,
+            run_mode=run_mode,
+            batch_size=batch_size,
+            trt_min_shape=trt_min_shape,
+            trt_max_shape=trt_max_shape,
+            trt_opt_shape=trt_opt_shape,
+            trt_calib_mode=trt_calib_mode,
+            cpu_threads=cpu_threads,
+            enable_mkldnn=enable_mkldnn,
+            output_dir=output_dir,
+            threshold=threshold)
+
+    def postprocess(self, inputs, result):
+        # postprocess output of predictor
+        np_boxes_num = result['boxes_num']
+        if np_boxes_num[0] <= 0:
+            print('[WARNNING] No object detected.')
+            result = {'boxes': np.zeros([0, 6]), 'boxes_num': [0]}
+
+        # Current now,  class 0 is positive, class 1 is negative.
+        ret = {'class': 1.0, 'score': -1.0}
+        boxes = result['boxes']
+        isvalid = (boxes[:, 1] > self.threshold) & (boxes[:, 0] == 0)
+        valid_boxes = boxes[isvalid, :]
+
+        if valid_boxes.shape[0] >= 1:
+            ret['class'] = valid_boxes[0, 0]
+            ret['score'] = valid_boxes[0, 1]
+        return ret
+
+
 if __name__ == '__main__':
     paddle.enable_static()
     parser = argsparser()
