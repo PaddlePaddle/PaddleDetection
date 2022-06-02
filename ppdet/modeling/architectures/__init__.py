@@ -36,6 +36,7 @@ from . import tood
 from . import retinanet
 from . import bytetrack
 from . import yolox
+from . import sparseinst
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -62,3 +63,4 @@ from .tood import *
 from .retinanet import *
 from .bytetrack import *
 from .yolox import *
+from .sparseinst import *
