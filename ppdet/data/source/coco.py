@@ -16,6 +16,7 @@ import os
 import pickle
 import numpy as np
 import concurrent.futures as futures
+from functools import partial
 
 from ppdet.core.workspace import register, serializable
 from .dataset import DetDataset
@@ -53,7 +54,7 @@ class COCODataSet(DetDataset):
                  load_crowd=False,
                  allow_empty=False,
                  empty_ratio=1.,
-                 num_threads=32,
+                 num_threads=1,
                  cache_path='',
                  force_reload=True):
         super(COCODataSet, self).__init__(dataset_dir, image_dir, anno_path,
@@ -110,10 +111,11 @@ class COCODataSet(DetDataset):
                            'and load image information only.'.format(anno_path))
 
         with futures.ThreadPoolExecutor(self.num_threads) as executor:
-            _records = executor.map(self.parse_img, img_ids, coco)
-            _records = [data for data in _records if data is not None]
-            _records = _records[:self.
-                                sample_num] if self.sample_num > 0 else _records
+            _records = executor.map(partial(self.parse_img, coco=coco), img_ids)
+
+        _records = [data for data in _records if data is not None]
+        _records = _records[:self.
+                            sample_num] if self.sample_num > 0 else _records
 
         assert len(_records) > 0, 'not found any coco record in %s' % (
             anno_path)

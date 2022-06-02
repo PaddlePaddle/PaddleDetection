@@ -3,16 +3,18 @@ num_classes: 80
 
 TrainDataset:
   !COCODataSet
+    dataset_dir: dataset/coco
     image_dir: train2017
     anno_path: annotations/instances_train2017.json
-    dataset_dir: dataset/coco
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+    cache_path: 'cached_train.pkl'
+    force_reload: False
 
 EvalDataset:
   !COCODataSet
+    dataset_dir: dataset/coco
     image_dir: val2017
     anno_path: annotations/instances_val2017.json
-    dataset_dir: dataset/coco
 
 TestDataset:
   !ImageFolder
