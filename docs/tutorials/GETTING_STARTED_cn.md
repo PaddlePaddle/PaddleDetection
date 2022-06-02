@@ -245,7 +245,7 @@ PaddleDetection提供了PaddleInference、PaddleServing、PaddleLite多种部署
 ```bash
 python deploy/python/infer.py --model_dir=./output_inference/yolov3_mobilenet_v1_roadsign --image_file=demo/road554.png --device=GPU
 ```
-* 同时`infer.py`提供了丰富的接口，用户进行接入视频文件、摄像头进行预测，更多内容请参考[Python端预测部署](../../deploy/python.md)
+* 同时`infer.py`提供了丰富的接口，用户进行接入视频文件、摄像头进行预测，更多内容请参考[Python端预测部署](../../deploy/python)
 ### PaddleDetection支持的部署形式说明
 |形式|语言|教程|设备/平台|
 |-|-|-|-|

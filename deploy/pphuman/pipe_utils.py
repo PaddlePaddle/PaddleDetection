@@ -58,16 +58,6 @@ def argsparser():
         default=-1,
         help="device id of camera to predict.")
     parser.add_argument(
-        "--enable_attr",
-        type=ast.literal_eval,
-        default=False,
-        help="Whether use attribute recognition.")
-    parser.add_argument(
-        "--enable_action",
-        type=ast.literal_eval,
-        default=False,
-        help="Whether use action recognition.")
-    parser.add_argument(
         "--output_dir",
         type=str,
         default="output",
@@ -162,7 +152,7 @@ class PipeTimer(Times):
             'mot': Times(),
             'attr': Times(),
             'kpt': Times(),
-            'action': Times(),
+            'skeleton_action': Times(),
             'reid': Times()
         }
         self.img_num = 0
@@ -207,9 +197,9 @@ class PipeTimer(Times):
         dic['kpt'] = round(self.module_time['kpt'].value() /
                            max(1, self.img_num),
                            4) if average else self.module_time['kpt'].value()
-        dic['action'] = round(
-            self.module_time['action'].value() / max(1, self.img_num),
-            4) if average else self.module_time['action'].value()
+        dic['skeleton_action'] = round(
+            self.module_time['skeleton_action'].value() / max(1, self.img_num),
+            4) if average else self.module_time['skeleton_action'].value()
 
         dic['img_num'] = self.img_num
         return dic
@@ -217,7 +207,7 @@ class PipeTimer(Times):
 
 def merge_model_dir(args, model_dir):
     # set --model_dir DET=ppyoloe/ to overwrite the model_dir in config file
-    task_set = ['DET', 'ATTR', 'MOT', 'KPT', 'ACTION', 'REID']
+    task_set = ['DET', 'ATTR', 'MOT', 'KPT', 'SKELETON_ACTION', 'REID']
     if not model_dir:
         return args
     for md in model_dir:
@@ -297,6 +287,8 @@ def crop_image_with_det(batch_input, det_res, thresh=0.3):
     crop_res = []
     for b_id, input in enumerate(batch_input):
         boxes_num_i = boxes_num[b_id]
+        if boxes_num_i == 0:
+            continue
         boxes_i = boxes[start_idx:start_idx + boxes_num_i, :]
         score_i = score[start_idx:start_idx + boxes_num_i]
         res = []

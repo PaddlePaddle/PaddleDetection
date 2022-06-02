@@ -1,8 +1,8 @@
 English | [简体中文](action.md)
 
-# Action Recognition Module of PP-Human
+# Falling Recognition Module of PP-Human
 
-Action Recognition is widely used in the intelligent community/smart city, and security monitoring. PP-Human provides the module of skeleton-based action recognition.
+Falling Recognition is widely used in the intelligent community/smart city, and security monitoring. PP-Human provides the module of skeleton-based action recognition.
 
 <div align="center">  <img src="./images/action.gif" width='1000'/> <center>Data source and copyright owner：Skyinfor
 Technology. Thanks for the provision of actual scenario data, which are only
@@ -18,7 +18,7 @@ There are multiple available pretrained models including pedestrian detection/tr
 |:----------------------------- |:---------:|:-------------------------:|:-----------------------------------:| :-----------------:  |:-----------------------------------------------------------------------------------------:|
 | Pedestrian Detection/Tracking | PP-YOLOE  | mAP: 56.3 <br> MOTA: 72.0 | Detection: 28ms <br>Tracking：33.1ms |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
 | Keypoint Detection            | HRNet     | AP: 87.1                  | Single Person 2.9ms                 |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)     |
-| Action Recognition            | ST-GCN    | Precision Rate: 96.43     | Single Person 2.7ms                 | - |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip)                      |
+| Falling Recognition            | ST-GCN    | Precision Rate: 96.43     | Single Person 2.7ms                 | - |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip)                      |
 
 Note:
 
@@ -35,12 +35,14 @@ Note:
 Parameters related to action recognition in the [config file](../config/infer_cfg.yml) are as follow:
 
 ```
-ACTION:
+SKELETON_ACTION:
   model_dir: output_inference/STGCN  # Path of the model
   batch_size: 1 # The size of the inference batch. The only avilable size for inference is 1.
   max_frames: 50 # The number of frames of action segments. When frames of time-ordered skeleton keypoints of each pedestrian ID achieve the max value,the action type will be judged by the action recognition model. If the setting is the same as the training, there will be an ideal inference result.
   display_frames: 80 # The number of display frames. When the inferred action type is falling down, the time length of the act will be displayed in the ID.
   coord_size: [384, 512] # The unified size of the coordinate, which is the best when it is the same as the training setting.
+  basemode: "skeletonbased" #the models which is based on，whether we need the skeleton model.
+  enable: False #whether to enable this function
 ```
 
 
@@ -50,18 +52,17 @@ ACTION:
 
 - Download models from the links of the above table and unzip them to ```./output_inference```.
 
-- Now the only available input is the video input in the action recognition module. The start command is:
+- Now the only available input is the video input in the action recognition module. set the "enable: True" in SKELETON_ACTION of infer_cfg.yml. And then run the command:
 
   ```python
   python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
                                                      --video_file=test_video.mp4 \
-                                                     --device=gpu \
-                                                     --enable_action=True
+                                                     --device=gpu
   ```
 
 - There are two ways to modify the model path:
 
-  - In ```./deploy/pphuman/config/infer_cfg.yml```, you can configurate different model paths，which is proper only if you match keypoint models and action recognition models with the fields of `KPT` and `ACTION`respectively, and modify the corresponding path of each field into the expected path.
+  - In ```./deploy/pphuman/config/infer_cfg.yml```, you can configurate different model paths，which is proper only if you match keypoint models and action recognition models with the fields of `KPT` and `SKELETON_ACTION` respectively, and modify the corresponding path of each field into the expected path.
 
   - Add `--model_dir` in the command line to revise the model path：
 
@@ -69,7 +70,6 @@ ACTION:
     python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
                                                        --video_file=test_video.mp4 \
                                                        --device=gpu \
-                                                       --enable_action=True \
                                                        --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
     ```
 
@@ -93,7 +93,7 @@ ACTION:
 4. The action recognition model uses [ST-GCN](https://arxiv.org/abs/1801.07455), and employ the [PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/stgcn.md) toolkit to complete model training.
 
 
-## Custom Action Training
+## Custom Falling Training
 
 The pretrained models are provided and can be used directly, including pedestrian detection/ tracking, keypoint detection and fall recognition. If users need to train custom action or optimize the model performance, please refer the link below.
 

@@ -23,6 +23,7 @@ from ppdet.core.workspace import register
 from ppdet.modeling import ops
 from ppdet.modeling import bbox_utils
 from ppdet.modeling.proposal_generator.target_layer import RBoxAssigner
+from ..cls_utils import _get_class_default_kwargs
 import numpy as np
 
 
@@ -230,7 +231,7 @@ class S2ANetHead(nn.Layer):
                  align_conv_type='AlignConv',
                  align_conv_size=3,
                  use_sigmoid_cls=True,
-                 anchor_assign=RBoxAssigner().__dict__,
+                 anchor_assign=_get_class_default_kwargs(RBoxAssigner),
                  reg_loss_weight=[1.0, 1.0, 1.0, 1.0, 1.1],
                  cls_loss_weight=[1.1, 1.05],
                  reg_loss_type='l1'):

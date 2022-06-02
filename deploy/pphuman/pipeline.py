@@ -36,8 +36,8 @@ from python.infer import Detector, DetectorPicoDet
 from python.attr_infer import AttrDetector
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
-from python.action_infer import ActionRecognizer
-from python.action_utils import KeyPointBuff, ActionVisualHelper
+from python.action_infer import SkeletonActionRecognizer
+from python.action_utils import KeyPointBuff, SkeletonActionVisualHelper
 
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
@@ -60,8 +60,6 @@ class Pipeline(object):
             then all the images in directory will be predicted, default as None
         video_file (string|None): the path of video file, default as None
         camera_id (int): the device id of camera to predict, default as -1
-        enable_attr (bool): whether use attribute recognition, default as false
-        enable_action (bool): whether use action recognition, default as false
         device (string): the device to predict, options are: CPU/GPU/XPU, 
             default as CPU
         run_mode (string): the mode of prediction, options are: 
@@ -88,8 +86,6 @@ class Pipeline(object):
                  video_file=None,
                  video_dir=None,
                  camera_id=-1,
-                 enable_attr=False,
-                 enable_action=True,
                  device='CPU',
                  run_mode='paddle',
                  trt_min_shape=1,
@@ -103,6 +99,8 @@ class Pipeline(object):
                  secs_interval=10,
                  do_entrance_counting=False):
         self.multi_camera = False
+        reid_cfg = cfg.get('REID', False)
+        self.enable_mtmct = reid_cfg['enable'] if reid_cfg else False
         self.is_video = False
         self.output_dir = output_dir
         self.vis_result = cfg['visual']
@@ -115,8 +113,6 @@ class Pipeline(object):
                     cfg,
                     is_video=True,
                     multi_camera=True,
-                    enable_attr=enable_attr,
-                    enable_action=enable_action,
                     device=device,
                     run_mode=run_mode,
                     trt_min_shape=trt_min_shape,
@@ -132,8 +128,6 @@ class Pipeline(object):
             self.predictor = PipePredictor(
                 cfg,
                 self.is_video,
-                enable_attr=enable_attr,
-                enable_action=enable_action,
                 device=device,
                 run_mode=run_mode,
                 trt_min_shape=trt_min_shape,
@@ -199,11 +193,12 @@ class Pipeline(object):
                 predictor.run(input)
                 collector_data = predictor.get_result()
                 multi_res.append(collector_data)
-            mtmct_process(
-                multi_res,
-                self.input,
-                mtmct_vis=self.vis_result,
-                output_dir=self.output_dir)
+            if self.enable_mtmct:
+                mtmct_process(
+                    multi_res,
+                    self.input,
+                    mtmct_vis=self.vis_result,
+                    output_dir=self.output_dir)
 
         else:
             self.predictor.run(self.input)
@@ -222,7 +217,7 @@ class PipePredictor(object):
 
         1. Tracking
         2. Tracking -> Attribute
-        3. Tracking -> KeyPoint -> Action Recognition
+        3. Tracking -> KeyPoint -> SkeletonAction Recognition
 
     Args:
         cfg (dict): config of models in pipeline
@@ -230,8 +225,6 @@ class PipePredictor(object):
         multi_camera (bool): whether to use multi camera in pipeline, 
             default as False
         camera_id (int): the device id of camera to predict, default as -1
-        enable_attr (bool): whether use attribute recognition, default as false
-        enable_action (bool): whether use action recognition, default as false
         device (string): the device to predict, options are: CPU/GPU/XPU, 
             default as CPU
         run_mode (string): the mode of prediction, options are: 
@@ -255,8 +248,6 @@ class PipePredictor(object):
                  cfg,
                  is_video=True,
                  multi_camera=False,
-                 enable_attr=False,
-                 enable_action=False,
                  device='CPU',
                  run_mode='paddle',
                  trt_min_shape=1,
@@ -270,30 +261,41 @@ class PipePredictor(object):
                  secs_interval=10,
                  do_entrance_counting=False):
 
-        if enable_attr and not cfg.get('ATTR', False):
-            ValueError(
-                'enable_attr is set to True, please set ATTR in config file')
-        if enable_action and (not cfg.get('ACTION', False) or
-                              not cfg.get('KPT', False)):
-            ValueError(
-                'enable_action is set to True, please set KPT and ACTION in config file'
-            )
-
-        self.with_attr = cfg.get('ATTR', False) and enable_attr
-        self.with_action = cfg.get('ACTION', False) and enable_action
-        self.with_mtmct = cfg.get('REID', False) and multi_camera
+        self.with_attr = cfg.get('ATTR', False)['enable'] if cfg.get(
+            'ATTR', False) else False
+        self.with_skeleton_action = cfg.get(
+            'SKELETON_ACTION', False)['enable'] if cfg.get('SKELETON_ACTION',
+                                                           False) else False
+        self.with_video_action = cfg.get(
+            'VIDEO_ACTION', False)['enable'] if cfg.get('VIDEO_ACTION',
+                                                        False) else False
+        self.with_idbased_detaction = cfg.get(
+            'ID_BASED_DETACTION', False)['enable'] if cfg.get(
+                'ID_BASED_DETACTION', False) else False
+        self.with_idbased_clsaction = cfg.get(
+            'ID_BASED_CLSACTION', False)['enable'] if cfg.get(
+                'ID_BASED_CLSACTION', False) else False
+        self.with_mtmct = cfg.get('REID', False)['enable'] if cfg.get(
+            'REID', False) else False
         if self.with_attr:
             print('Attribute Recognition enabled')
-        if self.with_action:
-            print('Action Recognition enabled')
-        if multi_camera:
-            if not self.with_mtmct:
-                print(
-                    'Warning!!! MTMCT enabled, but cannot find REID config in [infer_cfg.yml], please check!'
-                )
-            else:
-                print("MTMCT enabled")
+        if self.with_skeleton_action:
+            print('SkeletonAction Recognition enabled')
+        if self.with_video_action:
+            print('VideoAction Recognition enabled')
+        if self.with_idbased_detaction:
+            print('IDBASED Detection Action Recognition enabled')
+        if self.with_idbased_clsaction:
+            print('IDBASED Classification Action Recognition enabled')
+        if self.with_mtmct:
+            print("MTMCT enabled")
 
+        self.modebase = {
+            "framebased": False,
+            "videobased": False,
+            "idbased": False,
+            "skeletonbased": False
+        }
         self.is_video = is_video
         self.multi_camera = multi_camera
         self.cfg = cfg
@@ -320,6 +322,8 @@ class PipePredictor(object):
                 attr_cfg = self.cfg['ATTR']
                 model_dir = attr_cfg['model_dir']
                 batch_size = attr_cfg['batch_size']
+                basemode = attr_cfg['basemode']
+                self.modebase[basemode] = True
                 self.attr_predictor = AttrDetector(
                     model_dir, device, run_mode, batch_size, trt_min_shape,
                     trt_max_shape, trt_opt_shape, trt_calib_mode, cpu_threads,
@@ -330,6 +334,8 @@ class PipePredictor(object):
             model_dir = mot_cfg['model_dir']
             tracker_config = mot_cfg['tracker_config']
             batch_size = mot_cfg['batch_size']
+            basemode = mot_cfg['basemode']
+            self.modebase[basemode] = True
             self.mot_predictor = SDE_Detector(
                 model_dir,
                 tracker_config,
@@ -349,49 +355,66 @@ class PipePredictor(object):
                 attr_cfg = self.cfg['ATTR']
                 model_dir = attr_cfg['model_dir']
                 batch_size = attr_cfg['batch_size']
+                basemode = attr_cfg['basemode']
+                self.modebase[basemode] = True
                 self.attr_predictor = AttrDetector(
                     model_dir, device, run_mode, batch_size, trt_min_shape,
                     trt_max_shape, trt_opt_shape, trt_calib_mode, cpu_threads,
                     enable_mkldnn)
-            if self.with_action:
-                kpt_cfg = self.cfg['KPT']
-                kpt_model_dir = kpt_cfg['model_dir']
-                kpt_batch_size = kpt_cfg['batch_size']
-                action_cfg = self.cfg['ACTION']
-                action_model_dir = action_cfg['model_dir']
-                action_batch_size = action_cfg['batch_size']
-                action_frames = action_cfg['max_frames']
-                display_frames = action_cfg['display_frames']
-                self.coord_size = action_cfg['coord_size']
+            if self.with_idbased_detaction:
+                idbased_detaction_cfg = self.cfg['SKELETON_ACTION']
+                idbased_detaction_model_dir = idbased_detaction_cfg['model_dir']
+                idbased_detaction_batch_size = idbased_detaction_cfg[
+                    'batch_size']
+                # IDBasedDetActionRecognizer = IDBasedDetActionRecognizer()
+            if self.with_idbased_clsaction:
+                idbased_clsaction_cfg = self.cfg['SKELETON_ACTION']
+                idbased_clsaction_model_dir = idbased_clsaction_cfg['model_dir']
+                idbased_clsaction_batch_size = idbased_clsaction_cfg[
+                    'batch_size']
+                # IDBasedDetActionRecognizer = IDBasedClsActionRecognizer()
+            if self.with_skeleton_action:
+                skeleton_action_cfg = self.cfg['SKELETON_ACTION']
+                skeleton_action_model_dir = skeleton_action_cfg['model_dir']
+                skeleton_action_batch_size = skeleton_action_cfg['batch_size']
+                skeleton_action_frames = skeleton_action_cfg['max_frames']
+                display_frames = skeleton_action_cfg['display_frames']
+                self.coord_size = skeleton_action_cfg['coord_size']
+                basemode = skeleton_action_cfg['basemode']
+                self.modebase[basemode] = True
 
-                self.kpt_predictor = KeyPointDetector(
-                    kpt_model_dir,
+                self.skeleton_action_predictor = SkeletonActionRecognizer(
+                    skeleton_action_model_dir,
                     device,
                     run_mode,
-                    kpt_batch_size,
+                    skeleton_action_batch_size,
                     trt_min_shape,
                     trt_max_shape,
                     trt_opt_shape,
                     trt_calib_mode,
                     cpu_threads,
                     enable_mkldnn,
-                    use_dark=False)
-                self.kpt_buff = KeyPointBuff(action_frames)
+                    window_size=skeleton_action_frames)
+                self.skeleton_action_visual_helper = SkeletonActionVisualHelper(
+                    display_frames)
 
-                self.action_predictor = ActionRecognizer(
-                    action_model_dir,
-                    device,
-                    run_mode,
-                    action_batch_size,
-                    trt_min_shape,
-                    trt_max_shape,
-                    trt_opt_shape,
-                    trt_calib_mode,
-                    cpu_threads,
-                    enable_mkldnn,
-                    window_size=action_frames)
-
-                self.action_visual_helper = ActionVisualHelper(display_frames)
+                if self.modebase["skeletonbased"]:
+                    kpt_cfg = self.cfg['KPT']
+                    kpt_model_dir = kpt_cfg['model_dir']
+                    kpt_batch_size = kpt_cfg['batch_size']
+                    self.kpt_predictor = KeyPointDetector(
+                        kpt_model_dir,
+                        device,
+                        run_mode,
+                        kpt_batch_size,
+                        trt_min_shape,
+                        trt_max_shape,
+                        trt_opt_shape,
+                        trt_calib_mode,
+                        cpu_threads,
+                        enable_mkldnn,
+                        use_dark=False)
+                    self.kpt_buff = KeyPointBuff(skeleton_action_frames)
 
         if self.with_mtmct:
             reid_cfg = self.cfg['REID']
@@ -507,117 +530,140 @@ class PipePredictor(object):
             if not ret:
                 break
 
-            if frame_id > self.warmup_frame:
-                self.pipe_timer.total_time.start()
-                self.pipe_timer.module_time['mot'].start()
-            res = self.mot_predictor.predict_image(
-                [copy.deepcopy(frame)], visual=False)
-
-            if frame_id > self.warmup_frame:
-                self.pipe_timer.module_time['mot'].end()
-
-            # mot output format: id, class, score, xmin, ymin, xmax, ymax
-            mot_res = parse_mot_res(res)
-
-            # flow_statistic only support single class MOT
-            boxes, scores, ids = res[0]  # batch size = 1 in MOT
-            mot_result = (frame_id + 1, boxes[0], scores[0],
-                          ids[0])  # single class
-            statistic = flow_statistic(
-                mot_result, self.secs_interval, self.do_entrance_counting,
-                video_fps, entrance, id_set, interval_id_set, in_id_list,
-                out_id_list, prev_center, records)
-            records = statistic['records']
-
-            # nothing detected
-            if len(mot_res['boxes']) == 0:
-                frame_id += 1
+            if self.modebase["idbased"] or self.modebase["skeletonbased"]:
                 if frame_id > self.warmup_frame:
-                    self.pipe_timer.img_num += 1
-                    self.pipe_timer.total_time.end()
-                if self.cfg['visual']:
-                    _, _, fps = self.pipe_timer.get_total_time()
-                    im = self.visualize_video(frame, mot_res, frame_id, fps,
-                                              entrance, records,
-                                              center_traj)  # visualize
-                    writer.write(im)
-                    if self.file_name is None:  # use camera_id
-                        cv2.imshow('PPHuman', im)
-                        if cv2.waitKey(1) & 0xFF == ord('q'):
-                            break
+                    self.pipe_timer.total_time.start()
+                    self.pipe_timer.module_time['mot'].start()
+                res = self.mot_predictor.predict_image(
+                    [copy.deepcopy(frame)], visual=False)
 
-                continue
-
-            self.pipeline_res.update(mot_res, 'mot')
-            if self.with_attr or self.with_action:
-                crop_input, new_bboxes, ori_bboxes = crop_image_with_mot(
-                    frame, mot_res)
-
-            if self.with_attr:
                 if frame_id > self.warmup_frame:
-                    self.pipe_timer.module_time['attr'].start()
-                attr_res = self.attr_predictor.predict_image(
-                    crop_input, visual=False)
-                if frame_id > self.warmup_frame:
-                    self.pipe_timer.module_time['attr'].end()
-                self.pipeline_res.update(attr_res, 'attr')
+                    self.pipe_timer.module_time['mot'].end()
 
-            if self.with_action:
-                if frame_id > self.warmup_frame:
-                    self.pipe_timer.module_time['kpt'].start()
-                kpt_pred = self.kpt_predictor.predict_image(
-                    crop_input, visual=False)
-                keypoint_vector, score_vector = translate_to_ori_images(
-                    kpt_pred, np.array(new_bboxes))
-                kpt_res = {}
-                kpt_res['keypoint'] = [
-                    keypoint_vector.tolist(), score_vector.tolist()
-                ] if len(keypoint_vector) > 0 else [[], []]
-                kpt_res['bbox'] = ori_bboxes
-                if frame_id > self.warmup_frame:
-                    self.pipe_timer.module_time['kpt'].end()
+                # mot output format: id, class, score, xmin, ymin, xmax, ymax
+                mot_res = parse_mot_res(res)
 
-                self.pipeline_res.update(kpt_res, 'kpt')
+                # flow_statistic only support single class MOT
+                boxes, scores, ids = res[0]  # batch size = 1 in MOT
+                mot_result = (frame_id + 1, boxes[0], scores[0],
+                              ids[0])  # single class
+                statistic = flow_statistic(
+                    mot_result, self.secs_interval, self.do_entrance_counting,
+                    video_fps, entrance, id_set, interval_id_set, in_id_list,
+                    out_id_list, prev_center, records)
+                records = statistic['records']
 
-                self.kpt_buff.update(kpt_res, mot_res)  # collect kpt output
-                state = self.kpt_buff.get_state(
-                )  # whether frame num is enough or lost tracker
-
-                action_res = {}
-                if state:
+                # nothing detected
+                if len(mot_res['boxes']) == 0:
+                    frame_id += 1
                     if frame_id > self.warmup_frame:
-                        self.pipe_timer.module_time['action'].start()
-                    collected_keypoint = self.kpt_buff.get_collected_keypoint(
-                    )  # reoragnize kpt output with ID
-                    action_input = parse_mot_keypoint(collected_keypoint,
-                                                      self.coord_size)
-                    action_res = self.action_predictor.predict_skeleton_with_mot(
-                        action_input)
+                        self.pipe_timer.img_num += 1
+                        self.pipe_timer.total_time.end()
+                    if self.cfg['visual']:
+                        _, _, fps = self.pipe_timer.get_total_time()
+                        im = self.visualize_video(frame, mot_res, frame_id, fps,
+                                                  entrance, records,
+                                                  center_traj)  # visualize
+                        writer.write(im)
+                        if self.file_name is None:  # use camera_id
+                            cv2.imshow('PPHuman', im)
+                            if cv2.waitKey(1) & 0xFF == ord('q'):
+                                break
+
+                    continue
+
+                self.pipeline_res.update(mot_res, 'mot')
+                if self.with_attr or self.with_skeleton_action:
+                    #todo: move this code to each class's predeal function
+                    crop_input, new_bboxes, ori_bboxes = crop_image_with_mot(
+                        frame, mot_res)
+
+                if self.with_attr:
                     if frame_id > self.warmup_frame:
-                        self.pipe_timer.module_time['action'].end()
-                    self.pipeline_res.update(action_res, 'action')
+                        self.pipe_timer.module_time['attr'].start()
+                    attr_res = self.attr_predictor.predict_image(
+                        crop_input, visual=False)
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['attr'].end()
+                    self.pipeline_res.update(attr_res, 'attr')
 
-                if self.cfg['visual']:
-                    self.action_visual_helper.update(action_res)
+                if self.with_idbased_detaction:
+                    #predeal, get what your model need
+                    #predict, model preprocess\run\postprocess
+                    #postdeal, interact with pipeline
+                    pass
 
-            if self.with_mtmct and frame_id % 10 == 0:
-                crop_input, img_qualities, rects = self.reid_predictor.crop_image_with_mot(
-                    frame, mot_res)
-                if frame_id > self.warmup_frame:
-                    self.pipe_timer.module_time['reid'].start()
-                reid_res = self.reid_predictor.predict_batch(crop_input)
+                if self.with_idbased_clsaction:
+                    #predeal, get what your model need
+                    #predict, model preprocess\run\postprocess
+                    #postdeal, interact with pipeline
+                    pass
 
-                if frame_id > self.warmup_frame:
-                    self.pipe_timer.module_time['reid'].end()
+                if self.with_skeleton_action:
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['kpt'].start()
+                    kpt_pred = self.kpt_predictor.predict_image(
+                        crop_input, visual=False)
+                    keypoint_vector, score_vector = translate_to_ori_images(
+                        kpt_pred, np.array(new_bboxes))
+                    kpt_res = {}
+                    kpt_res['keypoint'] = [
+                        keypoint_vector.tolist(), score_vector.tolist()
+                    ] if len(keypoint_vector) > 0 else [[], []]
+                    kpt_res['bbox'] = ori_bboxes
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['kpt'].end()
 
-                reid_res_dict = {
-                    'features': reid_res,
-                    "qualities": img_qualities,
-                    "rects": rects
-                }
-                self.pipeline_res.update(reid_res_dict, 'reid')
-            else:
-                self.pipeline_res.clear('reid')
+                    self.pipeline_res.update(kpt_res, 'kpt')
+
+                    self.kpt_buff.update(kpt_res, mot_res)  # collect kpt output
+                    state = self.kpt_buff.get_state(
+                    )  # whether frame num is enough or lost tracker
+
+                    skeleton_action_res = {}
+                    if state:
+                        if frame_id > self.warmup_frame:
+                            self.pipe_timer.module_time[
+                                'skeleton_action'].start()
+                        collected_keypoint = self.kpt_buff.get_collected_keypoint(
+                        )  # reoragnize kpt output with ID
+                        skeleton_action_input = parse_mot_keypoint(
+                            collected_keypoint, self.coord_size)
+                        skeleton_action_res = self.skeleton_action_predictor.predict_skeleton_with_mot(
+                            skeleton_action_input)
+                        if frame_id > self.warmup_frame:
+                            self.pipe_timer.module_time['skeleton_action'].end()
+                        self.pipeline_res.update(skeleton_action_res,
+                                                 'skeleton_action')
+
+                    if self.cfg['visual']:
+                        self.skeleton_action_visual_helper.update(
+                            skeleton_action_res)
+
+                if self.with_mtmct and frame_id % 10 == 0:
+                    crop_input, img_qualities, rects = self.reid_predictor.crop_image_with_mot(
+                        frame, mot_res)
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['reid'].start()
+                    reid_res = self.reid_predictor.predict_batch(crop_input)
+
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['reid'].end()
+
+                    reid_res_dict = {
+                        'features': reid_res,
+                        "qualities": img_qualities,
+                        "rects": rects
+                    }
+                    self.pipeline_res.update(reid_res_dict, 'reid')
+                else:
+                    self.pipeline_res.clear('reid')
+
+            if self.with_video_action:
+                #predeal, get what your model need
+                #predict, model preprocess\run\postprocess
+                #postdeal, interact with pipeline
+                pass
 
             self.collector.append(frame_id, self.pipeline_res)
 
@@ -697,10 +743,11 @@ class PipePredictor(object):
                 visual_thresh=self.cfg['kpt_thresh'],
                 returnimg=True)
 
-        action_res = result.get('action')
-        if action_res is not None:
+        skeleton_action_res = result.get('skeleton_action')
+        if skeleton_action_res is not None:
             image = visualize_action(image, mot_res['boxes'],
-                                     self.action_visual_helper, "Falling")
+                                     self.skeleton_action_visual_helper,
+                                     "SkeletonAction")
 
         return image
 
@@ -739,11 +786,11 @@ def main():
     print_arguments(cfg)
     pipeline = Pipeline(
         cfg, FLAGS.image_file, FLAGS.image_dir, FLAGS.video_file,
-        FLAGS.video_dir, FLAGS.camera_id, FLAGS.enable_attr,
-        FLAGS.enable_action, FLAGS.device, FLAGS.run_mode, FLAGS.trt_min_shape,
-        FLAGS.trt_max_shape, FLAGS.trt_opt_shape, FLAGS.trt_calib_mode,
-        FLAGS.cpu_threads, FLAGS.enable_mkldnn, FLAGS.output_dir,
-        FLAGS.draw_center_traj, FLAGS.secs_interval, FLAGS.do_entrance_counting)
+        FLAGS.video_dir, FLAGS.camera_id, FLAGS.device, FLAGS.run_mode,
+        FLAGS.trt_min_shape, FLAGS.trt_max_shape, FLAGS.trt_opt_shape,
+        FLAGS.trt_calib_mode, FLAGS.cpu_threads, FLAGS.enable_mkldnn,
+        FLAGS.output_dir, FLAGS.draw_center_traj, FLAGS.secs_interval,
+        FLAGS.do_entrance_counting)
 
     pipeline.run()
 

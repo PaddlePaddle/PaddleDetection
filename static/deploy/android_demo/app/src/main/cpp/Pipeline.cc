@@ -14,13 +14,20 @@
 
 #include "Pipeline.h"
 
-Detector::Detector(const std::string &modelDir, const std::string &labelPath,
-                   const int cpuThreadNum, const std::string &cpuPowerMode,
-                   int inputWidth, int inputHeight,
+Detector::Detector(const std::string &modelDir,
+                   const std::string &labelPath,
+                   const int cpuThreadNum,
+                   const std::string &cpuPowerMode,
+                   int inputWidth,
+                   int inputHeight,
                    const std::vector<float> &inputMean,
-                   const std::vector<float> &inputStd, float scoreThreshold)
-    : inputWidth_(inputWidth), inputHeight_(inputHeight), inputMean_(inputMean),
-      inputStd_(inputStd), scoreThreshold_(scoreThreshold) {
+                   const std::vector<float> &inputStd,
+                   float scoreThreshold)
+    : inputWidth_(inputWidth),
+      inputHeight_(inputHeight),
+      inputMean_(inputMean),
+      inputStd_(inputStd),
+      scoreThreshold_(scoreThreshold) {
   paddle::lite_api::MobileConfig config;
   config.set_model_from_file(modelDir + "/model.nb");
   config.set_threads(cpuThreadNum);
@@ -71,13 +78,16 @@ void Detector::Preprocess(const cv::Mat &rgbaImage) {
   inputTensor->Resize(inputShape);
   auto inputData = inputTensor->mutable_data<float>();
   cv::Mat resizedRGBAImage;
-  cv::resize(rgbaImage, resizedRGBAImage,
-          cv::Size(inputShape[3], inputShape[2]));
+  cv::resize(
+      rgbaImage, resizedRGBAImage, cv::Size(inputShape[3], inputShape[2]));
   cv::Mat resizedRGBImage;
   cv::cvtColor(resizedRGBAImage, resizedRGBImage, cv::COLOR_BGRA2RGB);
   resizedRGBImage.convertTo(resizedRGBImage, CV_32FC3, 1.0 / 255.0f);
-  NHWC3ToNC3HW(reinterpret_cast<const float *>(resizedRGBImage.data), inputData,
-               inputMean_.data(), inputStd_.data(), inputShape[3],
+  NHWC3ToNC3HW(reinterpret_cast<const float *>(resizedRGBImage.data),
+               inputData,
+               inputMean_.data(),
+               inputStd_.data(),
+               inputShape[3],
                inputShape[2]);
   // Set the size of input image
   auto sizeTensor = predictor_->GetInput(1);
@@ -97,8 +107,7 @@ void Detector::Postprocess(std::vector<RESULT> *results) {
     auto class_id = static_cast<int>(round(outputData[i]));
     // Confidence score
     auto score = outputData[i + 1];
-    if (score < scoreThreshold_)
-      continue;
+    if (score < scoreThreshold_) continue;
     RESULT object;
     object.class_name = class_id >= 0 && class_id < labelList_.size()
                             ? labelList_[class_id]
@@ -115,8 +124,10 @@ void Detector::Postprocess(std::vector<RESULT> *results) {
   }
 }
 
-void Detector::Predict(const cv::Mat &rgbaImage, std::vector<RESULT> *results,
-                       double *preprocessTime, double *predictTime,
+void Detector::Predict(const cv::Mat &rgbaImage,
+                       std::vector<RESULT> *results,
+                       double *preprocessTime,
+                       double *predictTime,
                        double *postprocessTime) {
   auto t = GetCurrentTime();
 
@@ -136,13 +147,23 @@ void Detector::Predict(const cv::Mat &rgbaImage, std::vector<RESULT> *results,
   LOGD("Detector postprocess costs %f ms", *postprocessTime);
 }
 
-Pipeline::Pipeline(const std::string &modelDir, const std::string &labelPath,
-                   const int cpuThreadNum, const std::string &cpuPowerMode,
-                   int inputWidth, int inputHeight,
+Pipeline::Pipeline(const std::string &modelDir,
+                   const std::string &labelPath,
+                   const int cpuThreadNum,
+                   const std::string &cpuPowerMode,
+                   int inputWidth,
+                   int inputHeight,
                    const std::vector<float> &inputMean,
-                   const std::vector<float> &inputStd, float scoreThreshold) {
-  detector_.reset(new Detector(modelDir, labelPath, cpuThreadNum, cpuPowerMode,
-                               inputWidth, inputHeight, inputMean, inputStd,
+                   const std::vector<float> &inputStd,
+                   float scoreThreshold) {
+  detector_.reset(new Detector(modelDir,
+                               labelPath,
+                               cpuThreadNum,
+                               cpuPowerMode,
+                               inputWidth,
+                               inputHeight,
+                               inputMean,
+                               inputStd,
                                scoreThreshold));
 }
 
@@ -169,15 +190,24 @@ void Pipeline::VisualizeResults(const std::vector<RESULT> &results,
                   cv::Point2d(boundingBox.x,
                               boundingBox.y - round(textSize.height * 1.25f)),
                   cv::Point2d(boundingBox.x + boundingBox.width, boundingBox.y),
-                  object.fill_color, -1);
-    cv::putText(*rgbaImage, text, cv::Point2d(boundingBox.x, boundingBox.y),
-                fontFace, fontScale, cv::Scalar(255, 255, 255), fontThickness);
+                  object.fill_color,
+                  -1);
+    cv::putText(*rgbaImage,
+                text,
+                cv::Point2d(boundingBox.x, boundingBox.y),
+                fontFace,
+                fontScale,
+                cv::Scalar(255, 255, 255),
+                fontThickness);
   }
 }
 
-void Pipeline::VisualizeStatus(double readGLFBOTime, double writeGLTextureTime,
-                               double preprocessTime, double predictTime,
-                               double postprocessTime, cv::Mat *rgbaImage) {
+void Pipeline::VisualizeStatus(double readGLFBOTime,
+                               double writeGLTextureTime,
+                               double preprocessTime,
+                               double predictTime,
+                               double postprocessTime,
+                               cv::Mat *rgbaImage) {
   char text[255];
   cv::Scalar fontColor = cv::Scalar(255, 255, 255);
   int fontFace = cv::FONT_HERSHEY_PLAIN;
@@ -188,47 +218,54 @@ void Pipeline::VisualizeStatus(double readGLFBOTime, double writeGLTextureTime,
       cv::getTextSize(text, fontFace, fontScale, fontThickness, nullptr);
   textSize.height *= 1.25f;
   cv::Point2d offset(10, textSize.height + 15);
-  cv::putText(*rgbaImage, text, offset, fontFace, fontScale, fontColor,
-              fontThickness);
+  cv::putText(
+      *rgbaImage, text, offset, fontFace, fontScale, fontColor, fontThickness);
   sprintf(text, "Write GLTexture time: %.1f ms", writeGLTextureTime);
   offset.y += textSize.height;
-  cv::putText(*rgbaImage, text, offset, fontFace, fontScale, fontColor,
-              fontThickness);
+  cv::putText(
+      *rgbaImage, text, offset, fontFace, fontScale, fontColor, fontThickness);
   sprintf(text, "Preprocess time: %.1f ms", preprocessTime);
   offset.y += textSize.height;
-  cv::putText(*rgbaImage, text, offset, fontFace, fontScale, fontColor,
-              fontThickness);
+  cv::putText(
+      *rgbaImage, text, offset, fontFace, fontScale, fontColor, fontThickness);
   sprintf(text, "Predict time: %.1f ms", predictTime);
   offset.y += textSize.height;
-  cv::putText(*rgbaImage, text, offset, fontFace, fontScale, fontColor,
-              fontThickness);
+  cv::putText(
+      *rgbaImage, text, offset, fontFace, fontScale, fontColor, fontThickness);
   sprintf(text, "Postprocess time: %.1f ms", postprocessTime);
   offset.y += textSize.height;
-  cv::putText(*rgbaImage, text, offset, fontFace, fontScale, fontColor,
-              fontThickness);
+  cv::putText(
+      *rgbaImage, text, offset, fontFace, fontScale, fontColor, fontThickness);
 }
 
-bool Pipeline::Process(int inTexureId, int outTextureId, int textureWidth,
-                       int textureHeight, std::string savedImagePath) {
+bool Pipeline::Process(int inTexureId,
+                       int outTextureId,
+                       int textureWidth,
+                       int textureHeight,
+                       std::string savedImagePath) {
   static double readGLFBOTime = 0, writeGLTextureTime = 0;
   double preprocessTime = 0, predictTime = 0, postprocessTime = 0;
 
   // Read pixels from FBO texture to CV image
   cv::Mat rgbaImage;
-  CreateRGBAImageFromGLFBOTexture(textureWidth, textureHeight, &rgbaImage,
-                                  &readGLFBOTime);
+  CreateRGBAImageFromGLFBOTexture(
+      textureWidth, textureHeight, &rgbaImage, &readGLFBOTime);
 
   // Feed the image, run inference and parse the results
   std::vector<RESULT> results;
-  detector_->Predict(rgbaImage, &results, &preprocessTime, &predictTime,
-                     &postprocessTime);
+  detector_->Predict(
+      rgbaImage, &results, &preprocessTime, &predictTime, &postprocessTime);
 
   // Visualize the objects to the origin image
   VisualizeResults(results, &rgbaImage);
 
   // Visualize the status(performance data) to the origin image
-  VisualizeStatus(readGLFBOTime, writeGLTextureTime, preprocessTime,
-                  predictTime, postprocessTime, &rgbaImage);
+  VisualizeStatus(readGLFBOTime,
+                  writeGLTextureTime,
+                  preprocessTime,
+                  predictTime,
+                  postprocessTime,
+                  &rgbaImage);
 
   // Dump modified image if savedImagePath is set
   if (!savedImagePath.empty()) {

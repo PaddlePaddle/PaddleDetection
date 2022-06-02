@@ -26,6 +26,7 @@ from ..backbones.csp_darknet import BaseConv, DWConv
 from ..losses import IouLoss
 from ppdet.modeling.assigners.simota_assigner import SimOTAAssigner
 from ppdet.modeling.bbox_utils import bbox_overlaps
+from ppdet.modeling.layers import MultiClassNMS
 
 __all__ = ['YOLOv3Head', 'YOLOXHead']
 
@@ -150,7 +151,7 @@ class YOLOv3Head(nn.Layer):
 
 @register
 class YOLOXHead(nn.Layer):
-    __shared__ = ['num_classes', 'width_mult', 'act']
+    __shared__ = ['num_classes', 'width_mult', 'act', 'trt', 'exclude_nms']
     __inject__ = ['assigner', 'nms']
 
     def __init__(self,
@@ -164,10 +165,14 @@ class YOLOXHead(nn.Layer):
                  act='silu',
                  assigner=SimOTAAssigner(use_vfl=False),
                  nms='MultiClassNMS',
-                 loss_weight={'cls': 1.0,
-                              'obj': 1.0,
-                              'iou': 5.0,
-                              'l1': 1.0}):
+                 loss_weight={
+                     'cls': 1.0,
+                     'obj': 1.0,
+                     'iou': 5.0,
+                     'l1': 1.0,
+                 },
+                 trt=False,
+                 exclude_nms=False):
         super(YOLOXHead, self).__init__()
         self._dtype = paddle.framework.get_default_dtype()
         self.num_classes = num_classes
@@ -178,6 +183,9 @@ class YOLOXHead(nn.Layer):
         self.l1_epoch = l1_epoch
         self.assigner = assigner
         self.nms = nms
+        if isinstance(self.nms, MultiClassNMS) and trt:
+            self.nms.trt = trt
+        self.exclude_nms = exclude_nms
         self.loss_weight = loss_weight
         self.iou_loss = IouLoss(loss_weight=1.0)  # default loss_weight 2.5
 
@@ -400,5 +408,9 @@ class YOLOXHead(nn.Layer):
         # scale bbox to origin image
         scale_factor = scale_factor.flip(-1).tile([1, 2]).unsqueeze(1)
         pred_bboxes /= scale_factor
-        bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
-        return bbox_pred, bbox_num
+        if self.exclude_nms:
+            # `exclude_nms=True` just use in benchmark
+            return pred_bboxes.sum(), pred_scores.sum()
+        else:
+            bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
+            return bbox_pred, bbox_num
