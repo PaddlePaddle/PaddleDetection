@@ -800,7 +800,7 @@ class PipePredictor(object):
         if skeleton_action_res is not None or video_action_res is not None:
             video_action_score = None
             action_visual_helper = None
-            if video_action_res:
+            if video_action_res and video_action_res["class"] == 1:
                 video_action_score = video_action_res["score"]
             if skeleton_action_res:
                 action_visual_helper = self.skeleton_action_visual_helper
