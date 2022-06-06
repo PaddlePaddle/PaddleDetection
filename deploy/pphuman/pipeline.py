@@ -608,12 +608,15 @@ class PipePredictor(object):
                 if self.with_idbased_detaction:
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['det_action'].start()
-                    det_action_res = self.det_action_predictor.predict_image(
-                        crop_input, visual=False)
+                    det_action_res = self.det_action_predictor.predict(
+                        crop_input, mot_res)
                     print(det_action_res)
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['det_action'].end()
                     self.pipeline_res.update(det_action_res, 'det_action')
+
+                    if self.cfg['visual']:
+                        self.det_action_visual_helper.update(det_action_res)
 
                 if self.with_idbased_clsaction:
                     #predeal, get what your model need

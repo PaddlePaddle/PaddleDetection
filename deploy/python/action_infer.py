@@ -308,7 +308,7 @@ def main():
         det_log('SkeletonAction')
 
 
-class DetActionRecognizer(Detector):
+class DetActionRecognizer(object):
     """
     Args:
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
@@ -338,7 +338,8 @@ class DetActionRecognizer(Detector):
                  enable_mkldnn=False,
                  output_dir='output',
                  threshold=0.5):
-        super(DetActionRecognizer, self).__init__(
+        super(DetActionRecognizer, self).__init__()
+        self.detector = Detector(
             model_dir=model_dir,
             device=device,
             run_mode=run_mode,
@@ -351,24 +352,43 @@ class DetActionRecognizer(Detector):
             enable_mkldnn=enable_mkldnn,
             output_dir=output_dir,
             threshold=threshold)
+        self.threshold = threshold
 
-    def postprocess(self, inputs, result):
-        # postprocess output of predictor
-        np_boxes_num = result['boxes_num']
+    def predict(self, images, mot_result):
+        det_result = self.detector.predict_image(images, visual=False)
+        result = self.postprocess(det_result, mot_result)
+        return result
+
+    def postprocess(self, det_result, mot_result):
+        np_boxes_num = det_result['boxes_num']
         if np_boxes_num[0] <= 0:
-            print('[WARNNING] No object detected.')
-            result = {'boxes': np.zeros([0, 6]), 'boxes_num': [0]}
+            return [[], []]
 
-        # Current now,  class 0 is positive, class 1 is negative.
-        ret = {'class': 1.0, 'score': -1.0}
-        boxes = result['boxes']
-        isvalid = (boxes[:, 1] > self.threshold) & (boxes[:, 0] == 0)
-        valid_boxes = boxes[isvalid, :]
+        mot_bboxes = mot_result.get('boxes')
 
-        if valid_boxes.shape[0] >= 1:
-            ret['class'] = valid_boxes[0, 0]
-            ret['score'] = valid_boxes[0, 1]
-        return ret
+        cur_box_idx = 0
+        mot_id = []
+        act_res = []
+        for idx in range(len(mot_result)):
+            tracker_id = mot_bboxes[idx, 0]
+
+            # Current now,  class 0 is positive, class 1 is negative.
+            action_ret = {'class': 1.0, 'score': -1.0}
+            box_num = np_boxes_num[idx]
+            boxes = det_result['boxes'][cur_box_idx:cur_box_idx + box_num]
+            cur_box_idx += box_num
+            isvalid = (boxes[:, 1] > self.threshold) & (boxes[:, 0] == 0)
+            valid_boxes = boxes[isvalid, :]
+
+            if valid_boxes.shape[0] >= 1:
+                action_ret['class'] = valid_boxes[0, 0]
+                action_ret['score'] = valid_boxes[0, 1]
+
+            mot_id.append(tracker_id)
+            act_res.append(action_ret)
+        result = list(zip(mot_id, act_res))
+
+        return result
 
 
 if __name__ == '__main__':

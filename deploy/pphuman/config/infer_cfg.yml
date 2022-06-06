@@ -42,8 +42,8 @@ ID_BASED_DETACTION:
   model_dir: output_inference/ppyoloe_crn_s_300e_smoking/
   batch_size: 1
   basemode: "idbased"
-  threshold: 0.5
-  display_frames: 20
+  threshold: 0.4
+  display_frames: 80
   enable: True
 
 ID_BASED_CLSACTION:
