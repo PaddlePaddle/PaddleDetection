@@ -7,7 +7,7 @@ LearningRate:
       max_epochs: 43
     - !LinearWarmup
       start_factor: 0.001
-      epochs: 1
+      steps: 2000
 
 OptimizerBuilder:
   optimizer:
