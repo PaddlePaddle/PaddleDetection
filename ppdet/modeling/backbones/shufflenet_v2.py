@@ -188,7 +188,7 @@ class ShuffleNetV2(nn.Layer):
         elif scale == 1.5:
             stage_out_channels = [-1, 24, 176, 352, 704, 1024]
         elif scale == 2.0:
-            stage_out_channels = [-1, 24, 224, 488, 976, 2048]
+            stage_out_channels = [-1, 24, 244, 488, 976, 2048]
         else:
             raise NotImplementedError("This scale size:[" + str(scale) +
                                       "] is not implemented!")
