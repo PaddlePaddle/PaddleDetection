@@ -23,7 +23,6 @@ import random
 import paddle
 import paddle.nn.functional as F
 import paddle.distributed as dist
-from ppdet.modeling.ops import paddle_distributed_is_initialized
 
 __all__ = ['YOLOX']
 
@@ -135,10 +134,5 @@ class YOLOX(BaseArch):
                 self.size_stride * size_factor,
                 self.size_stride * int(size_factor * image_ratio)
             ]
-            size = paddle.to_tensor(size)
-            if dist.get_world_size() > 1 and paddle_distributed_is_initialized(
-            ):
-                dist.barrier()
-                dist.broadcast(size, 0)
-            self._input_size = size
+            self._input_size = paddle.to_tensor(size)
         self._step += 1

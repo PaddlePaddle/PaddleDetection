@@ -21,7 +21,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 
-from ..bbox_utils import decode_yolo, xywh2xyxy, iou_similarity
+from ..bbox_utils import decode_yolo, xywh2xyxy, batch_iou_similarity
 
 __all__ = ['YOLOv3Loss']
 
@@ -80,7 +80,7 @@ class YOLOv3Loss(nn.Layer):
         gwh = gbox[:, :, 0:2] + gbox[:, :, 2:4] * 0.5
         gbox = paddle.concat([gxy, gwh], axis=-1)
 
-        iou = iou_similarity(pbox, gbox)
+        iou = batch_iou_similarity(pbox, gbox)
         iou.stop_gradient = True
         iou_max = iou.max(2)  # [N, M1]
         iou_mask = paddle.cast(iou_max <= self.ignore_thresh, dtype=pbox.dtype)

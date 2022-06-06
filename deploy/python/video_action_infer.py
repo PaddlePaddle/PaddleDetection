@@ -32,7 +32,7 @@ from paddle.inference import Config, create_predictor
 from utils import argsparser, Timer, get_current_memory_mb
 from benchmark_utils import PaddleInferBenchmark
 from infer import Detector, print_arguments
-from fight_preprocess import VideoDecoder, Sampler, Scale, CenterCrop, Normalization, Image2Array
+from video_action_preprocess import VideoDecoder, Sampler, Scale, CenterCrop, Normalization, Image2Array
 
 
 def softmax(x):
@@ -40,7 +40,7 @@ def softmax(x):
     return f_x
 
 
-class FightRecognizer(object):
+class VideoActionRecognizer(object):
     """
     Args:
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
@@ -82,7 +82,7 @@ class FightRecognizer(object):
         self.target_size = target_size
         self.top_k = top_k
 
-        assert batch_size == 1, "FightRecognizer only support batch_size=1 now."
+        assert batch_size == 1, "VideoActionRecognizer only support batch_size=1 now."
 
         self.model_dir = model_dir
         self.device = device
@@ -251,7 +251,7 @@ def main():
     if FLAGS.use_fp16 is True:
         assert FLAGS.use_tensorrt is True
 
-    recognizer = FightRecognizer(
+    recognizer = VideoActionRecognizer(
         FLAGS.model_dir,
         short_size=FLAGS.short_size,
         target_size=FLAGS.target_size,

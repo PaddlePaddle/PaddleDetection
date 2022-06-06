@@ -15,9 +15,9 @@
 #pragma once
 
 #include <iostream>
-#include <vector>
-#include <string>
 #include <map>
+#include <string>
+#include <vector>
 
 #include "yaml-cpp/yaml.h"
 
@@ -47,8 +47,7 @@ class ConfigPaser {
       mode_ = config["mode"].as<std::string>();
     } else {
       std::cerr << "Please set mode, "
-                << "support value : fluid/trt_fp16/trt_fp32."
-                << std::endl;
+                << "support value : fluid/trt_fp16/trt_fp32." << std::endl;
       return false;
     }
 
@@ -110,4 +109,3 @@ class ConfigPaser {
 };
 
 }  // namespace PaddleDetection
-

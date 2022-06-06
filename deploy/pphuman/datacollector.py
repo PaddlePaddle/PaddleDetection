@@ -23,8 +23,8 @@ class Result(object):
             'mot': dict(),
             'attr': dict(),
             'kpt': dict(),
-            'action': dict(),
-            'fight': dict(),
+            'video_action': dict(),
+            'skeleton_action': dict(),
             'reid': dict()
         }
 
@@ -54,13 +54,13 @@ class DataCollector(object):
       - qualities(list of float): Nx[float]
       - attrs(list of attr): refer to attrs for details
       - kpts(list of kpts): refer to kpts for details
-      - actions(list of actions): refer to actions for details
+      - skeleton_action(list of skeleton_action): refer to skeleton_action for details
     ...
     - [idN]
   """
 
     def __init__(self):
-        #id, frame, rect, score, label, attrs, kpts, actions
+        #id, frame, rect, score, label, attrs, kpts, skeleton_action
         self.mots = {
             "frames": [],
             "rects": [],
@@ -68,7 +68,7 @@ class DataCollector(object):
             "kpts": [],
             "features": [],
             "qualities": [],
-            "actions": []
+            "skeleton_action": []
         }
         self.collector = {}
 
@@ -76,10 +76,15 @@ class DataCollector(object):
         mot_res = Result.get('mot')
         attr_res = Result.get('attr')
         kpt_res = Result.get('kpt')
-        action_res = Result.get('action')
+        skeleton_action_res = Result.get('skeleton_action')
         reid_res = Result.get('reid')
 
-        rects = reid_res['rects'] if reid_res is not None else mot_res['boxes']
+        rects = []
+        if reid_res is not None:
+            rects = reid_res['rects']
+        elif mot_res is not None:
+            rects = mot_res['boxes']
+
         for idx, mot_item in enumerate(rects):
             ids = int(mot_item[0])
             if ids not in self.collector:
@@ -91,11 +96,12 @@ class DataCollector(object):
             if kpt_res:
                 self.collector[ids]["kpts"].append(
                     [kpt_res['keypoint'][0][idx], kpt_res['keypoint'][1][idx]])
-            if action_res and (idx + 1) in action_res:
-                self.collector[ids]["actions"].append(action_res[idx + 1])
+            if skeleton_action_res and (idx + 1) in skeleton_action_res:
+                self.collector[ids]["skeleton_action"].append(
+                    skeleton_action_res[idx + 1])
             else:
                 # action model generate result per X frames, Not available every frames
-                self.collector[ids]["actions"].append(None)
+                self.collector[ids]["skeleton_action"].append(None)
             if reid_res:
                 self.collector[ids]["features"].append(reid_res['features'][
                     idx])

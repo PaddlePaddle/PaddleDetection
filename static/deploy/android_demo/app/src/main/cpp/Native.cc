@@ -26,17 +26,31 @@ extern "C" {
  */
 JNIEXPORT jlong JNICALL
 Java_com_baidu_paddledetection_detection_Native_nativeInit(
-    JNIEnv *env, jclass thiz, jstring jModelDir, jstring jLabelPath,
-    jint cpuThreadNum, jstring jCPUPowerMode, jint inputWidth, jint inputHeight,
-    jfloatArray jInputMean, jfloatArray jInputStd, jfloat scoreThreshold) {
+    JNIEnv *env,
+    jclass thiz,
+    jstring jModelDir,
+    jstring jLabelPath,
+    jint cpuThreadNum,
+    jstring jCPUPowerMode,
+    jint inputWidth,
+    jint inputHeight,
+    jfloatArray jInputMean,
+    jfloatArray jInputStd,
+    jfloat scoreThreshold) {
   std::string modelDir = jstring_to_cpp_string(env, jModelDir);
   std::string labelPath = jstring_to_cpp_string(env, jLabelPath);
   std::string cpuPowerMode = jstring_to_cpp_string(env, jCPUPowerMode);
   std::vector<float> inputMean = jfloatarray_to_float_vector(env, jInputMean);
   std::vector<float> inputStd = jfloatarray_to_float_vector(env, jInputStd);
-  return reinterpret_cast<jlong>(
-      new Pipeline(modelDir, labelPath, cpuThreadNum, cpuPowerMode, inputWidth,
-                   inputHeight, inputMean, inputStd, scoreThreshold));
+  return reinterpret_cast<jlong>(new Pipeline(modelDir,
+                                              labelPath,
+                                              cpuThreadNum,
+                                              cpuPowerMode,
+                                              inputWidth,
+                                              inputHeight,
+                                              inputMean,
+                                              inputStd,
+                                              scoreThreshold));
 }
 
 /*
@@ -45,8 +59,9 @@ Java_com_baidu_paddledetection_detection_Native_nativeInit(
  * Signature: (J)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_com_baidu_paddledetection_detection_Native_nativeRelease(
-    JNIEnv *env, jclass thiz, jlong ctx) {
+Java_com_baidu_paddledetection_detection_Native_nativeRelease(JNIEnv *env,
+                                                              jclass thiz,
+                                                              jlong ctx) {
   if (ctx == 0) {
     return JNI_FALSE;
   }
@@ -62,15 +77,21 @@ Java_com_baidu_paddledetection_detection_Native_nativeRelease(
  */
 JNIEXPORT jboolean JNICALL
 Java_com_baidu_paddledetection_detection_Native_nativeProcess(
-    JNIEnv *env, jclass thiz, jlong ctx, jint inTextureId, jint outTextureId,
-    jint textureWidth, jint textureHeight, jstring jsavedImagePath) {
+    JNIEnv *env,
+    jclass thiz,
+    jlong ctx,
+    jint inTextureId,
+    jint outTextureId,
+    jint textureWidth,
+    jint textureHeight,
+    jstring jsavedImagePath) {
   if (ctx == 0) {
     return JNI_FALSE;
   }
   std::string savedImagePath = jstring_to_cpp_string(env, jsavedImagePath);
   Pipeline *pipeline = reinterpret_cast<Pipeline *>(ctx);
-  return pipeline->Process(inTextureId, outTextureId, textureWidth,
-                           textureHeight, savedImagePath);
+  return pipeline->Process(
+      inTextureId, outTextureId, textureWidth, textureHeight, savedImagePath);
 }
 
 #ifdef __cplusplus

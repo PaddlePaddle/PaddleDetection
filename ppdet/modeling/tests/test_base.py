@@ -18,9 +18,7 @@ import unittest
 import contextlib
 
 import paddle
-import paddle.fluid as fluid
-from paddle.fluid.framework import Program
-from paddle.fluid import core
+from paddle.static import Program
 
 
 class LayerTest(unittest.TestCase):
@@ -35,19 +33,17 @@ class LayerTest(unittest.TestCase):
     def _get_place(self, force_to_use_cpu=False):
         # this option for ops that only have cpu kernel
         if force_to_use_cpu:
-            return core.CPUPlace()
+            return 'cpu'
         else:
-            if core.is_compiled_with_cuda():
-                return core.CUDAPlace(0)
-            return core.CPUPlace()
+            return paddle.device.get_device()
 
     @contextlib.contextmanager
     def static_graph(self):
         paddle.enable_static()
-        scope = fluid.core.Scope()
+        scope = paddle.static.Scope()
         program = Program()
-        with fluid.scope_guard(scope):
-            with fluid.program_guard(program):
+        with paddle.static.scope_guard(scope):
+            with paddle.static.program_guard(program):
                 paddle.seed(self.seed)
                 paddle.framework.random._manual_program_seed(self.seed)
                 yield
@@ -57,9 +53,9 @@ class LayerTest(unittest.TestCase):
                                 fetch_list,
                                 with_lod=False,
                                 force_to_use_cpu=False):
-        exe = fluid.Executor(self._get_place(force_to_use_cpu))
-        exe.run(fluid.default_startup_program())
-        return exe.run(fluid.default_main_program(),
+        exe = paddle.static.Executor(self._get_place(force_to_use_cpu))
+        exe.run(paddle.static.default_startup_program())
+        return exe.run(paddle.static.default_main_program(),
                        feed=feed,
                        fetch_list=fetch_list,
                        return_numpy=(not with_lod))
@@ -67,8 +63,8 @@ class LayerTest(unittest.TestCase):
     @contextlib.contextmanager
     def dynamic_graph(self, force_to_use_cpu=False):
         paddle.disable_static()
-        with fluid.dygraph.guard(
-                self._get_place(force_to_use_cpu=force_to_use_cpu)):
-            paddle.seed(self.seed)
-            paddle.framework.random._manual_program_seed(self.seed)
-            yield
+        place = self._get_place(force_to_use_cpu=force_to_use_cpu)
+        paddle.device.set_device(place)
+        paddle.seed(self.seed)
+        paddle.framework.random._manual_program_seed(self.seed)
+        yield

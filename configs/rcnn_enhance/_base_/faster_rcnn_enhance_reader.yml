@@ -2,9 +2,9 @@ worker_num: 2
 TrainReader:
   sample_transforms:
   - Decode: {}
+  - AutoAugment: {autoaug_type: v1}
   - RandomResize: {target_size: [[384,1000], [416,1000], [448,1000], [480,1000], [512,1000], [544,1000], [576,1000], [608,1000], [640,1000], [672,1000]], interp: 2, keep_ratio: True}
   - RandomFlip: {prob: 0.5}
-  - AutoAugment: {autoaug_type: v1}
   - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
   - Permute: {}
   batch_transforms:

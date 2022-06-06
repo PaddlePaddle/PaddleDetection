@@ -18,7 +18,7 @@ namespace operators {
 using Tensor = framework::Tensor;
 
 class RightPoolOp : public framework::OperatorWithKernel {
-public:
+ public:
   using framework::OperatorWithKernel::OperatorWithKernel;
 
   void InferShape(framework::InferShapeContext* ctx) const override {
@@ -27,7 +27,7 @@ public:
     ctx->ShareDim("X", /*->*/ "Output");
   }
 
-protected:
+ protected:
   framework::OpKernelType GetExpectedKernelType(
       const framework::ExecutionContext& ctx) const override {
     return framework::OpKernelType(ctx.Input<Tensor>("X")->type(),
@@ -36,11 +36,10 @@ protected:
 };
 
 class RightPoolOpMaker : public framework::OpProtoAndCheckerMaker {
-public:
+ public:
   void Make() override {
-    AddInput("X",
-             "Input with shape (batch, C, H, W)");
-    AddOutput("MaxMap", "Max map with index of maximum value of input"); 
+    AddInput("X", "Input with shape (batch, C, H, W)");
+    AddOutput("MaxMap", "Max map with index of maximum value of input");
     AddOutput("Output", "output with same shape as input(X)");
     AddComment(
         R"Doc(
@@ -52,10 +51,10 @@ The output has the same shape with input.
 };
 
 class RightPoolOpGrad : public framework::OperatorWithKernel {
-public:
+ public:
   using framework::OperatorWithKernel::OperatorWithKernel;
 
-protected:
+ protected:
   void InferShape(framework::InferShapeContext* ctx) const override {
     PADDLE_ENFORCE(ctx->HasInput("X"), "Input(X) should not be null");
     PADDLE_ENFORCE(ctx->HasInput("MaxMap"), "Input(MaxMap) should not be null");
@@ -75,10 +74,10 @@ protected:
 
 template <typename T>
 class RightPoolGradDescMaker : public framework::SingleGradOpMaker<T> {
-public:
+ public:
   using framework::SingleGradOpMaker<T>::SingleGradOpMaker;
 
-protected:
+ protected:
   void Apply(GradOpPtr<T> op) const override {
     op->SetType("right_pool_grad");
     op->SetInput("X", this->Input("X"));

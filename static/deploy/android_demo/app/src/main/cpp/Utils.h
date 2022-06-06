@@ -14,11 +14,11 @@
 
 #pragma once
 
-#include "paddle_api.h"
 #include <android/log.h>
 #include <fstream>
 #include <string>
 #include <vector>
+#include "paddle_api.h"
 
 #define TAG "JNI"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
@@ -85,8 +85,16 @@ inline paddle::lite_api::PowerMode ParsePowerMode(std::string mode) {
   return paddle::lite_api::LITE_POWER_NO_BIND;
 }
 
-void NHWC3ToNC3HW(const float *src, float *dst, const float *mean,
-                  const float *std, int width, int height);
+void NHWC3ToNC3HW(const float *src,
+                  float *dst,
+                  const float *mean,
+                  const float *std,
+                  int width,
+                  int height);
 
-void NHWC1ToNC1HW(const float *src, float *dst, const float *mean,
-                  const float *std, int width, int height);
+void NHWC1ToNC1HW(const float *src,
+                  float *dst,
+                  const float *mean,
+                  const float *std,
+                  int width,
+                  int height);

@@ -33,7 +33,7 @@ from benchmark_utils import PaddleInferBenchmark
 from infer import Detector, print_arguments
 
 
-class ActionRecognizer(Detector):
+class SkeletonActionRecognizer(Detector):
     """
     Args:
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
@@ -67,8 +67,8 @@ class ActionRecognizer(Detector):
                  threshold=0.5,
                  window_size=100,
                  random_pad=False):
-        assert batch_size == 1, "ActionRecognizer only support batch_size=1 now."
-        super(ActionRecognizer, self).__init__(
+        assert batch_size == 1, "SkeletonActionRecognizer only support batch_size=1 now."
+        super(SkeletonActionRecognizer, self).__init__(
             model_dir=model_dir,
             device=device,
             run_mode=run_mode,
@@ -264,7 +264,7 @@ def get_test_skeletons(input_file):
 
 
 def main():
-    detector = ActionRecognizer(
+    detector = SkeletonActionRecognizer(
         FLAGS.model_dir,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
@@ -305,7 +305,7 @@ def main():
         }
         det_log = PaddleInferBenchmark(detector.config, model_info, data_info,
                                        perf_info, mems)
-        det_log('Action')
+        det_log('SkeletonAction')
 
 
 if __name__ == '__main__':
