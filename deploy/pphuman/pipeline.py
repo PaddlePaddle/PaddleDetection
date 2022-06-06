@@ -802,7 +802,7 @@ class PipePredictor(object):
             action_visual_helper = None
             if video_action_res:
                 video_action_score = video_action_res["score"]
-            if action_res:
+            if skeleton_action_res:
                 action_visual_helper = self.skeleton_action_visual_helper
             image = visualize_action(
                 image,
