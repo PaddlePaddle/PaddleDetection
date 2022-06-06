@@ -32,7 +32,7 @@ VIDEO_ACTION:
   short_size: 340
   target_size: 320
   basemode: "videobased"
-  enable: True
+  enable: False
 
 SKELETON_ACTION:
   model_dir: output_inference/STGCN
