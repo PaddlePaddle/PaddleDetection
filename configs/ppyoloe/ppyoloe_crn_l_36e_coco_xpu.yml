@@ -1,0 +1,26 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  './_base_/optimizer_36e_xpu.yml',
+  './_base_/ppyoloe_crn.yml',
+  './_base_/ppyoloe_reader.yml',
+]
+
+# note: these are default values (use_gpu = true and use_xpu = false) for CI.
+# set use_gpu = false and use_xpu = true for training.
+use_gpu: true
+use_xpu: false
+
+log_iter: 100
+snapshot_epoch: 1
+weights: output/ppyoloe_crn_l_36e_coco_xpu/model_final
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_l_pretrained.pdparams
+depth_mult: 1.0
+width_mult: 1.0
+
+TrainReader:
+  batch_size: 8
+
+PPYOLOEHead:
+  static_assigner_epoch: 4
