@@ -76,7 +76,7 @@ class Pipeline(object):
         draw_center_traj (bool): Whether drawing the trajectory of center, default as False
         secs_interval (int): The seconds interval to count after tracking, default as 10
         do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
-            or getting out from the entrance, default as False锛宱nly support single class
+            or getting out from the entrance, default as False, only support single class
             counting in MOT.
     """
 
@@ -182,7 +182,7 @@ class Pipeline(object):
 
         else:
             raise ValueError(
-                "Illegal Input, please set one of ['video_file'锛�'camera_id'锛�'image_file', 'image_dir']"
+                "Illegal Input, please set one of ['video_file', 'camera_id', 'image_file', 'image_dir']"
             )
 
         return input
@@ -242,7 +242,7 @@ class PipePredictor(object):
         draw_center_traj (bool): Whether drawing the trajectory of center, default as False
         secs_interval (int): The seconds interval to count after tracking, default as 10
         do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
-            or getting out from the entrance, default as False锛宱nly support single class
+            or getting out from the entrance, default as False, only support single class
             counting in MOT.
     """
 
