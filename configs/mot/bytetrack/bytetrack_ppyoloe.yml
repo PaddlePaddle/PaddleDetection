@@ -8,7 +8,7 @@ weights: output/bytetrack_ppyoloe/model_final
 log_iter: 20
 snapshot_epoch: 2
 
-metric: MOT # eval/infer mode
+metric: MOT # eval/infer mode, set 'COCO' can be training mode
 num_classes: 1
 
 architecture: ByteTrack
@@ -33,7 +33,6 @@ PPYOLOEHead:
   grid_cell_offset: 0.5
   static_assigner_epoch: -1 # 100
   use_varifocal_loss: True
-  eval_input_size: [640, 640]
   loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
   static_assigner:
     name: ATSSAssigner
