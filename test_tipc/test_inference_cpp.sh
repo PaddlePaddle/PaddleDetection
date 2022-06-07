@@ -85,7 +85,7 @@ function func_cpp_inference(){
                         eval $command
                         last_status=${PIPESTATUS[0]}
                         eval "cat ${_save_log_path}"
-                        status_check $last_status "${command}" "${status_log}"
+                        status_check $last_status "${command}" "${status_log}" "${model_name}"
                     done
                 done
             done
@@ -111,7 +111,7 @@ function func_cpp_inference(){
                     eval $command
                     last_status=${PIPESTATUS[0]}
                     eval "cat ${_save_log_path}"
-                    status_check $last_status "${command}" "${status_log}"
+                    status_check $last_status "${command}" "${status_log}" "${model_name}"
                 done
             done
         else
@@ -207,7 +207,7 @@ for infer_mode in ${cpp_infer_mode_list[*]}; do
     echo  $export_cmd
     eval $export_cmd
     status_export=$?
-    status_check $status_export "${export_cmd}" "${status_log}"
+    status_check $status_export "${export_cmd}" "${status_log}" "${model_name}"
 
     #run inference
     save_export_model_dir="${save_export_value}/${model_name}"
