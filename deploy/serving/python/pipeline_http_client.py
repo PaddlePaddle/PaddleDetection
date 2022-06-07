@@ -56,19 +56,6 @@ def get_test_images(infer_dir, infer_img):
     return images
 
 
-def cv2_to_base64(image):
-    """cv2_to_base64
-
-    Convert an numpy array to a base64 object.
-
-    Args:
-        image: Input array.
-
-    Returns: Base64 output of the input.
-    """
-    return base64.b64encode(image).decode('utf8')
-
-
 if __name__ == "__main__":
     url = "http://127.0.0.1:18093/ppdet/prediction"
     logid = 10000
@@ -76,9 +63,10 @@ if __name__ == "__main__":
 
     for img_file in img_list:
         with open(img_file, 'rb') as file:
-            image_data1 = file.read()
+            image_data = file.read()
 
-        image = cv2_to_base64(image_data1)
+        # base64 encode
+        image = base64.b64encode(image_data).decode('utf8')
 
         data = {"key": ["image_0"], "value": [image], "logid": logid}
         # send requests
