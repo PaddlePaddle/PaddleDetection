@@ -38,12 +38,14 @@ class SIoULoss(object):
                  loss_weight=1.0,
                  eps: float=1e-9,
                  box_fmt='xyxy',
+                 keep_dim=False,
                  reduction='none') -> None:
         self.theta = theta
         self.eps = eps
         self.loss_weight = loss_weight
         self.box_fmt = box_fmt
         self.reduction = reduction
+        self.keep_dim = keep_dim
 
     def __call__(self, boxa: Tensor, boxb: Tensor):
         loss = siou(
@@ -53,6 +55,10 @@ class SIoULoss(object):
             box_fmt=self.box_fmt,
             eps=self.eps,
             reduction=self.reduction)
+
+        if self.keep_dim:
+            loss = loss.unsqueeze(-1)
+
         return self.loss_weight * loss
 
 
@@ -75,7 +81,9 @@ def angle_cost(
 
     ch = paddle.maximum(cyb, cya) - paddle.minimum(cyb, cya)
     sigma = ((cxb - cxa).pow(2) + (cyb - cya).pow(2)).sqrt()
-    angle = paddle.asin(ch / (sigma + eps))
+    # angle = paddle.asin(ch / (sigma + eps))
+    angle = paddle.asin(paddle.clip(ch / (sigma + eps), min=-1, max=1))
+
     loss_angle = 1 - 2 * paddle.sin(angle - math.pi / 4).pow(2)
 
     return reduction_tensor(loss_angle, reduction=reduction)
@@ -98,13 +106,13 @@ def distance_cost(
     cxa, cya, _, _ = boxa.unbind(-1)
     cxb, cyb, _, _ = boxb.unbind(-1)
 
-    loss_angle = angle_cost(boxa, boxb, reduction='none')
+    loss_angle = angle_cost(boxa, boxb, eps=eps, reduction='none')
 
     ch = paddle.maximum(cyb, cya) - paddle.minimum(cyb, cya)
     cw = paddle.maximum(cxb, cxa) - paddle.minimum(cxb, cxa)
 
-    r_x = ((cxb - cxa) / cw + eps).pow(2)
-    r_y = ((cyb - cya) / ch + eps).pow(2)
+    r_x = ((cxb - cxa) / (cw + eps)).pow(2)
+    r_y = ((cyb - cya) / (ch + eps)).pow(2)
     gamma = 2 - loss_angle
 
     loss_distance_x = 1 - math.e**(-gamma * r_x)
