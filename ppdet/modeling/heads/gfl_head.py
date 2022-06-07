@@ -388,7 +388,9 @@ class GFLHead(nn.Layer):
 
         avg_factor = sum(avg_factor)
         try:
-            avg_factor = paddle.distributed.all_reduce(avg_factor.clone())
+            tmp_avg_factor = paddle.distributed.all_reduce(avg_factor.clone())
+            if tmp_avg_factor is not None:
+                avg_factor = tmp_avg_factor
             avg_factor = paddle.clip(
                 avg_factor / paddle.distributed.get_world_size(), min=1)
         except:
