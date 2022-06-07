@@ -17,7 +17,10 @@ C++预测功能测试的主程序为`test_inference_cpp.sh`，可以测试基于
 运行环境配置请参考[文档](./install.md)的内容配置TIPC的运行环境。
 ```
 # 请设置paddle_inference环境变量，如：
-export PADDLE_DIR=/path/paddle_inference
+export PADDLE_INFER_DIR=/path/to/paddle_inference
+# 若不设置paddle_inference环境变量，也可通过指定参数的方式使脚本自动下载paddle_inference.tgz，如：
+bash test_tipc/test_inference_cpp.sh test_tipc/configs/yolov3/yolov3_darknet53_270e_coco_model_linux_gpu_normal_normal_infer_cpp_linux_gpu_cpu.txt 'https://paddle-inference-lib.bj.bcebos.com/2.3.0/cxx_c/Linux/GPU/x86-64_gcc8.2_avx_mkl_cuda10.1_cudnn7.6.5_trt6.0.1.5/paddle_inference.tgz'
+
 # 若未使用docker镜像: paddlepaddle/paddle:latest-gpu-cuda10.1-cudnn7-gcc82-dev
 # 请设置TensorRT环境变量，如：
 export TENSORRT_ROOT=/usr/local/TensorRT6-cuda10.1-cudnn7
@@ -30,8 +33,10 @@ export TENSORRT_ROOT=/usr/local/TensorRT6-cuda10.1-cudnn7
 bash test_tipc/prepare.sh ./test_tipc/configs/yolov3/yolov3_darknet53_270e_coco_model_linux_gpu_normal_normal_infer_cpp_linux_gpu_cpu.txt "cpp_infer"
 # 用法1:
 bash test_tipc/test_inference_cpp.sh test_tipc/configs/yolov3/yolov3_darknet53_270e_coco_model_linux_gpu_normal_normal_infer_cpp_linux_gpu_cpu.txt
-# 用法2: 指定GPU卡预测，第三个传入参数为GPU卡号
-bash test_tipc/test_inference_cpp.sh test_tipc/configs/yolov3/yolov3_darknet53_270e_coco_model_linux_gpu_normal_normal_infer_cpp_linux_gpu_cpu.txt '1'
+# 用法2: 指定下载paddle_inference.tgz链接，第二个传入参数为下载链接
+bash test_tipc/test_inference_cpp.sh test_tipc/configs/yolov3/yolov3_darknet53_270e_coco_model_linux_gpu_normal_normal_infer_cpp_linux_gpu_cpu.txt 'https://paddle-inference-lib.bj.bcebos.com/2.3.0/cxx_c/Linux/GPU/x86-64_gcc8.2_avx_mkl_cuda10.1_cudnn7.6.5_trt6.0.1.5/paddle_inference.tgz'
+# 用法3: 同时指定下载paddle_inference.tgz链接和指定GPU卡预测，第三个传入参数为GPU卡号
+bash test_tipc/test_inference_cpp.sh test_tipc/configs/yolov3/yolov3_darknet53_270e_coco_model_linux_gpu_normal_normal_infer_cpp_linux_gpu_cpu.txt 'https://paddle-inference-lib.bj.bcebos.com/2.3.0/cxx_c/Linux/GPU/x86-64_gcc8.2_avx_mkl_cuda10.1_cudnn7.6.5_trt6.0.1.5/paddle_inference.tgz' '1'
 ```  
 
 运行预测指令后，在`test_tipc/output`文件夹下自动会保存运行日志，包括以下文件：
