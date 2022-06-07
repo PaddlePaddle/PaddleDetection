@@ -3386,7 +3386,6 @@ class Mosaic(BaseOperator):
             labels = np.hstack((box_labels, cls_labels, crd_labels))
         else:
             labels = np.hstack((box_labels, cls_labels))
-        labels = np.hstack((box_labels, cls_labels, crd_labels))
         if self.remove_outside_box:
             labels = labels[labels[:, 0] < target_w]
             labels = labels[labels[:, 2] > 0]
