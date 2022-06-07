@@ -148,7 +148,7 @@ mkdir -p build
 cd ./build
 cmake .. \
     -DWITH_GPU=ON \
-    -DWITH_MKL=OFF \
+    -DWITH_MKL=ON \
     -DWITH_TENSORRT=OFF \
     -DPADDLE_LIB_NAME=libpaddle_inference \
     -DPADDLE_DIR=${PADDLE_DIR} \
