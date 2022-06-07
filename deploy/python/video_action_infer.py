@@ -72,9 +72,7 @@ class VideoActionRecognizer(object):
                  trt_calib_mode=False,
                  cpu_threads=1,
                  enable_mkldnn=False,
-                 ir_optim=True,
-                 use_tensorrt=False,
-                 use_fp16=False):
+                 ir_optim=True):
 
         self.num_seg = num_seg
         self.seg_len = seg_len
@@ -95,8 +93,6 @@ class VideoActionRecognizer(object):
         self.cpu_threads = cpu_threads
         self.enable_mkldnn = enable_mkldnn
         self.ir_optim = ir_optim
-        self.use_tensorrt = use_tensorrt
-        self.use_fp16 = use_fp16
 
         self.recognize_times = Timer()
 
@@ -114,11 +110,16 @@ class VideoActionRecognizer(object):
             self.config.enable_mkldnn()
 
         self.config.switch_ir_optim(self.ir_optim)  # default true
-        if self.use_tensorrt:
+
+        precision_map = {
+            'trt_int8': Config.Precision.Int8,
+            'trt_fp32': Config.Precision.Float32,
+            'trt_fp16': Config.Precision.Half
+        }
+        if run_mode in precision_map.keys():
             self.config.enable_tensorrt_engine(
-                precision_mode=Config.Precision.Half
-                if self.use_fp16 else Config.Precision.Float32,
-                max_batch_size=self.batch_size)
+                max_batch_size=self.batch_size,
+                precision_mode=precision_map[run_mode])
 
         self.config.enable_memory_optim()
         # use zero copy
@@ -196,11 +197,7 @@ class VideoActionRecognizer(object):
         img_mean = [0.485, 0.456, 0.406]
         img_std = [0.229, 0.224, 0.225]
         ops = [
-            #VideoDecoder(),
-            #Sampler(self.num_seg, self.seg_len, valid_mode=True),
-            Scale(self.short_size),
-            CenterCrop(self.target_size),
-            Image2Array(),
+            Scale(self.short_size), CenterCrop(self.target_size), Image2Array(),
             Normalization(img_mean, img_std)
         ]
         for op in ops:
@@ -247,9 +244,6 @@ def main():
         assert FLAGS.use_fp16 is False
     else:
         assert FLAGS.use_gpu is True
-    # HALF precission predict only work when using tensorrt
-    if FLAGS.use_fp16 is True:
-        assert FLAGS.use_tensorrt is True
 
     recognizer = VideoActionRecognizer(
         FLAGS.model_dir,

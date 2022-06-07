@@ -47,16 +47,6 @@ def argsparser():
         help="Path of video file, `video_file` or `camera_id` has a highest priority."
     )
     parser.add_argument(
-        "--short_size",
-        type=int,
-        default=256,
-        help="The size of image short side.")
-    parser.add_argument(
-        "--target_size",
-        type=int,
-        default=224,
-        help="The target size of input image.")
-    parser.add_argument(
         "--camera_id",
         type=int,
         default=-1,
@@ -84,12 +74,6 @@ def argsparser():
         type=ast.literal_eval,
         default=False,
         help="Deprecated, please use `--device`.")
-    parser.add_argument(
-        "--gpu_mem", type=int, default=8000, help="gup mem size")
-    parser.add_argument("--use_tensorrt", type=str2bool, default=False)
-    parser.add_argument(
-        "--use_fp16", type=str2bool, default=False, help="Whether use fp16")
-    parser.add_argument("--ir_optim", type=str2bool, default=True)
     parser.add_argument(
         "--run_benchmark",
         type=ast.literal_eval,

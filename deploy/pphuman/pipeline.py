@@ -422,6 +422,10 @@ class PipePredictor(object):
 
             if self.with_video_action:
                 video_action_cfg = self.cfg['VIDEO_ACTION']
+
+                basemode = video_action_cfg['basemode']
+                self.modebase[basemode] = True
+
                 video_action_model_dir = video_action_cfg['model_dir']
                 video_action_batch_size = video_action_cfg['batch_size']
                 short_size = video_action_cfg["short_size"]
