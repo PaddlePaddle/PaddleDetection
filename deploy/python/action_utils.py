@@ -80,7 +80,7 @@ class KeyPointBuff(object):
         return output
 
 
-class SkeletonActionVisualHelper(object):
+class ActionVisualHelper(object):
     def __init__(self, frame_life=20):
         self.frame_life = frame_life
         self.action_history = {}
@@ -107,8 +107,6 @@ class SkeletonActionVisualHelper(object):
             if mot_id in self.action_history:
                 if int(action_res["class"]) != 0 and int(self.action_history[
                         mot_id]["class"]) == 0:
-                    print(mot_id, action_res["class"],
-                          self.action_history[mot_id]["class"])
                     continue
             action_info = self.action_history.get(mot_id, {})
             action_info["class"] = action_res["class"]

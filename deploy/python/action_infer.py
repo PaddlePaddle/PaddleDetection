@@ -31,6 +31,7 @@ from paddle.inference import Config, create_predictor
 from utils import argsparser, Timer, get_current_memory_mb
 from benchmark_utils import PaddleInferBenchmark
 from infer import Detector, print_arguments
+from attr_infer import AttrDetector
 
 
 class SkeletonActionRecognizer(Detector):
@@ -263,51 +264,6 @@ def get_test_skeletons(input_file):
             "Now only support input with shape: (N, C, T, K, M) or (C, T, K, M)")
 
 
-def main():
-    detector = SkeletonActionRecognizer(
-        FLAGS.model_dir,
-        device=FLAGS.device,
-        run_mode=FLAGS.run_mode,
-        batch_size=FLAGS.batch_size,
-        trt_min_shape=FLAGS.trt_min_shape,
-        trt_max_shape=FLAGS.trt_max_shape,
-        trt_opt_shape=FLAGS.trt_opt_shape,
-        trt_calib_mode=FLAGS.trt_calib_mode,
-        cpu_threads=FLAGS.cpu_threads,
-        enable_mkldnn=FLAGS.enable_mkldnn,
-        threshold=FLAGS.threshold,
-        output_dir=FLAGS.output_dir,
-        window_size=FLAGS.window_size,
-        random_pad=FLAGS.random_pad)
-    # predict from numpy array
-    input_list = get_test_skeletons(FLAGS.action_file)
-    detector.predict_skeleton(input_list, FLAGS.run_benchmark, repeats=10)
-    if not FLAGS.run_benchmark:
-        detector.det_times.info(average=True)
-    else:
-        mems = {
-            'cpu_rss_mb': detector.cpu_mem / len(input_list),
-            'gpu_rss_mb': detector.gpu_mem / len(input_list),
-            'gpu_util': detector.gpu_util * 100 / len(input_list)
-        }
-
-        perf_info = detector.det_times.report(average=True)
-        model_dir = FLAGS.model_dir
-        mode = FLAGS.run_mode
-        model_info = {
-            'model_name': model_dir.strip('/').split('/')[-1],
-            'precision': mode.split('_')[-1]
-        }
-        data_info = {
-            'batch_size': FLAGS.batch_size,
-            'shape': "dynamic_shape",
-            'data_num': perf_info['img_num']
-        }
-        det_log = PaddleInferBenchmark(detector.config, model_info, data_info,
-                                       perf_info, mems)
-        det_log('SkeletonAction')
-
-
 class DetActionRecognizer(object):
     """
     Args:
@@ -369,7 +325,7 @@ class DetActionRecognizer(object):
         cur_box_idx = 0
         mot_id = []
         act_res = []
-        for idx in range(len(mot_result)):
+        for idx in range(len(mot_bboxes)):
             tracker_id = mot_bboxes[idx, 0]
 
             # Current now,  class 0 is positive, class 1 is negative.
@@ -389,6 +345,189 @@ class DetActionRecognizer(object):
         result = list(zip(mot_id, act_res))
 
         return result
+
+
+class ClsActionInferer(AttrDetector):
+    """
+    Args:
+        model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
+        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN
+        threshold (float): The threshold of score for action feature object detection.
+    """
+
+    def __init__(self,
+                 model_dir,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 output_dir='output',
+                 threshold=0.5):
+        super(ClsActionInferer, self).__init__(
+            model_dir,
+            device='CPU',
+            run_mode='paddle',
+            batch_size=1,
+            trt_min_shape=1,
+            trt_max_shape=1280,
+            trt_opt_shape=640,
+            trt_calib_mode=False,
+            cpu_threads=1,
+            enable_mkldnn=False,
+            output_dir='output',
+            threshold=threshold)
+
+    def postprocess(self, inputs, result):
+        # postprocess output of predictor
+        im_results = result['output']
+        batch_res = []
+        for res in im_results:
+            action_res = res.tolist()
+            for cid, score in enumerate(action_res):
+                action_res[cid] = score
+            batch_res.append(action_res)
+        result = {'output': batch_res}
+        return result
+
+
+class ClsActionRecognizer(object):
+    """
+    Args:
+        model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
+        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN
+        threshold (float): The threshold of score for action feature object detection.
+    """
+
+    def __init__(self,
+                 model_dir,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 output_dir='output',
+                 threshold=0.5):
+        super(ClsActionRecognizer, self).__init__()
+        self.cls_detector = ClsActionInferer(
+            model_dir=model_dir,
+            device=device,
+            run_mode=run_mode,
+            batch_size=batch_size,
+            trt_min_shape=trt_min_shape,
+            trt_max_shape=trt_max_shape,
+            trt_opt_shape=trt_opt_shape,
+            trt_calib_mode=trt_calib_mode,
+            cpu_threads=cpu_threads,
+            enable_mkldnn=enable_mkldnn,
+            output_dir=output_dir,
+            threshold=threshold)
+        self.threshold = threshold
+
+    def predict(self, images, mot_result):
+        cls_result = self.cls_detector.predict_image(
+            images, visual=False)["output"]
+        result = self.postprocess(cls_result, mot_result)
+        return result
+
+    def postprocess(self, cls_result, mot_result):
+        mot_bboxes = mot_result.get('boxes')
+
+        mot_id = []
+        act_res = []
+
+        for idx in range(len(mot_bboxes)):
+            tracker_id = mot_bboxes[idx, 0]
+
+            cls_id_res = 1
+            cls_score_res = -1.0
+            for cls_id in range(len(cls_result[idx])):
+                score = cls_result[idx][cls_id]
+                if score > cls_score_res:
+                    cls_id_res = cls_id
+                    cls_score_res = score
+
+            # Current now,  class 0 is positive, class 1 is negative.
+            if cls_id_res == 0 and cls_score_res < self.threshold:
+                cls_id_res = 1
+                cls_score_res = 1 - cls_score_res
+            action_ret = {'class': cls_id_res, 'score': cls_score_res}
+            mot_id.append(tracker_id)
+            act_res.append(action_ret)
+        result = list(zip(mot_id, act_res))
+
+        return result
+
+
+def main():
+    detector = SkeletonActionRecognizer(
+        FLAGS.model_dir,
+        device=FLAGS.device,
+        run_mode=FLAGS.run_mode,
+        batch_size=FLAGS.batch_size,
+        trt_min_shape=FLAGS.trt_min_shape,
+        trt_max_shape=FLAGS.trt_max_shape,
+        trt_opt_shape=FLAGS.trt_opt_shape,
+        trt_calib_mode=FLAGS.trt_calib_mode,
+        cpu_threads=FLAGS.cpu_threads,
+        enable_mkldnn=FLAGS.enable_mkldnn,
+        threshold=FLAGS.threshold,
+        output_dir=FLAGS.output_dir,
+        window_size=FLAGS.window_size,
+        random_pad=FLAGS.random_pad)
+    # predict from numpy array
+    input_list = get_test_skeletons(FLAGS.action_file)
+    detector.predict_skeleton(input_list, FLAGS.run_benchmark, repeats=10)
+    if not FLAGS.run_benchmark:
+        detector.det_times.info(average=True)
+    else:
+        mems = {
+            'cpu_rss_mb': detector.cpu_mem / len(input_list),
+            'gpu_rss_mb': detector.gpu_mem / len(input_list),
+            'gpu_util': detector.gpu_util * 100 / len(input_list)
+        }
+
+        perf_info = detector.det_times.report(average=True)
+        model_dir = FLAGS.model_dir
+        mode = FLAGS.run_mode
+        model_info = {
+            'model_name': model_dir.strip('/').split('/')[-1],
+            'precision': mode.split('_')[-1]
+        }
+        data_info = {
+            'batch_size': FLAGS.batch_size,
+            'shape': "dynamic_shape",
+            'data_num': perf_info['img_num']
+        }
+        det_log = PaddleInferBenchmark(detector.config, model_info, data_info,
+                                       perf_info, mems)
+        det_log('SkeletonAction')
 
 
 if __name__ == '__main__':
