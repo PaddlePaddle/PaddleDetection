@@ -1,45 +1,31 @@
-# This config is an assembled config for ByteTrack MOT, used as eval/infer mode for MOT.
 _BASE_: [
-  '../../../ppyoloe/ppyoloe_crn_l_300e_coco.yml',
-  '../_base_/mot17.yml',
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  './_base_/optimizer_36e_xpu.yml',
+  './_base_/ppyoloe_reader.yml',
 ]
-weights: output/ppyoloe_crn_l_36e_640x640_mot17half/model_final
-log_iter: 20
-snapshot_epoch: 2
 
+# note: these are default values (use_gpu = true and use_xpu = false) for CI.
+# set use_gpu = false and use_xpu = true for training.
+use_gpu: true
+use_xpu: false
 
-# schedule configuration for fine-tuning
-epoch: 36
-LearningRate:
-  base_lr: 0.001
-  schedulers:
-    - !CosineDecay
-      max_epochs: 43
-    - !LinearWarmup
-      start_factor: 0.001
-      epochs: 1
+log_iter: 100
+snapshot_epoch: 1
+weights: output/ppyoloe_crn_l_36e_coco/model_final
+find_unused_parameters: True
 
-OptimizerBuilder:
-  optimizer:
-    momentum: 0.9
-    type: Momentum
-  regularizer:
-    factor: 0.0005
-    type: L2
-
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_l_pretrained.pdparams
+depth_mult: 1.0
+width_mult: 1.0
 
 TrainReader:
   batch_size: 8
 
-
-# detector configuration
 architecture: YOLOv3
 norm_type: sync_bn
 use_ema: true
 ema_decay: 0.9998
-pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_300e_coco.pdparams
-depth_mult: 1.0
-width_mult: 1.0
 
 YOLOv3:
   backbone: CSPResNet
@@ -64,7 +50,7 @@ PPYOLOEHead:
   fpn_strides: [32, 16, 8]
   grid_cell_scale: 5.0
   grid_cell_offset: 0.5
-  static_assigner_epoch: -1 # 100
+  static_assigner_epoch: 4
   use_varifocal_loss: True
   loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
   static_assigner:
