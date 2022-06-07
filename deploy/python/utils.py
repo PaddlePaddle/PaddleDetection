@@ -18,10 +18,6 @@ import ast
 import argparse
 
 
-def str2bool(v):
-    return v.lower() in ("true", "t", "1")
-
-
 def argsparser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
