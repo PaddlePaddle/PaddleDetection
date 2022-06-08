@@ -303,15 +303,10 @@ def distribute_fpn_proposals(fpn_rois,
     To compute FPN level for each roi, the formula is given as follows:
     
     .. math::
-
         roi\_scale &= \sqrt{BBoxArea(fpn\_roi)}
-
         level = floor(&\log(\\frac{roi\_scale}{refer\_scale}) + refer\_level)
-
     where BBoxArea is a function to compute the area of each roi.
-
     Args:
-
         fpn_rois(Variable): 2-D Tensor with shape [N, 4] and data type is 
             float32 or float64. The input fpn_rois.
         min_level(int32): The lowest level of FPN layer where the proposals come 
@@ -328,26 +323,19 @@ def distribute_fpn_proposals(fpn_rois,
         name(str, optional): For detailed information, please refer 
             to :ref:`api_guide_Name`. Usually name is no need to set and 
             None by default. 
-
     Returns:
         Tuple:
-
         multi_rois(List) : A list of 2-D LoDTensor with shape [M, 4] 
         and data type of float32 and float64. The length is 
         max_level-min_level+1. The proposals in each FPN level.
-
         restore_ind(Variable): A 2-D Tensor with shape [N, 1], N is 
         the number of total rois. The data type is int32. It is
         used to restore the order of fpn_rois.
-
         rois_num_per_level(List): A list of 1-D Tensor and each Tensor is 
         the RoIs' number in each image on the corresponding level. The shape 
         is [B] and data type of int32. B is the number of images
-
-
     Examples:
         .. code-block:: python
-
             import paddle
             from ppdet.modeling import ops
             paddle.enable_static()
@@ -425,7 +413,6 @@ def yolo_box(
         scale_x_y=1.,
         name=None, ):
     """
-
     This operator generates YOLO detection boxes from output of YOLOv3 network.
      
      The output of previous network is in shape [N, C, H, W], while H and W
@@ -462,7 +449,6 @@ def yolo_box(
      $$
      score_{pred} = score_{conf} * score_{class}
      $$
-
     Args:
         x (Tensor): The input tensor of YoloBox operator is a 4-D tensor with shape of [N, C, H, W].
                     The second dimension(C) stores box locations, confidence score and
@@ -482,7 +468,6 @@ def yolo_box(
         name (string): The default value is None.  Normally there is no need
                        for user to set this property.  For more information,
                        please refer to :ref:`api_guide_Name`
-
     Returns:
         boxes Tensor: A 3-D tensor with shape [N, M, 4], the coordinates of boxes,  N is the batch num,
                     M is output box number, and the 3rd dimension stores [xmin, ymin, xmax, ymax] coordinates of boxes.
@@ -493,11 +478,8 @@ def yolo_box(
         TypeError: Attr anchors of yolo box must be list or tuple
         TypeError: Attr class_num of yolo box must be an integer
         TypeError: Attr conf_thresh of yolo box must be a float number
-
     Examples:
-
     .. code-block:: python
-
         import paddle
         from ppdet.modeling import ops
         
@@ -564,13 +546,11 @@ def prior_box(input,
               min_max_aspect_ratios_order=False,
               name=None):
     """
-
     This op generates prior boxes for SSD(Single Shot MultiBox Detector) algorithm.
     Each position of the input produce N prior boxes, N is determined by
     the count of min_sizes, max_sizes and aspect_ratios, The size of the
     box is in range(min_size, max_size) interval, which is generated in
     sequence according to the aspect_ratios.
-
     Parameters:
        input(Tensor): 4-D tensor(NCHW), the data type should be float32 or float64.
        image(Tensor): 4-D tensor(NCHW), the input image data of PriorBoxOp,
@@ -596,26 +576,20 @@ def prior_box(input,
             detection results. Default: False.
        name(str, optional): The default value is None.  Normally there is no need for 
             user to set this property. For more information, please refer to :ref:`api_guide_Name`
-
     Returns:
         Tuple: A tuple with two Variable (boxes, variances)
-
         boxes(Tensor): the output prior boxes of PriorBox.
         4-D tensor, the layout is [H, W, num_priors, 4].
         H is the height of input, W is the width of input,
         num_priors is the total box count of each position of input.
-
         variances(Tensor): the expanded variances of PriorBox.
         4-D tensor, the layput is [H, W, num_priors, 4].
         H is the height of input, W is the width of input
         num_priors is the total box count of each position of input
-
     Examples:
         .. code-block:: python
-
         import paddle
         from ppdet.modeling import ops
-
         paddle.enable_static()
         input = paddle.static.data(name="input", shape=[None,3,6,9])
         image = paddle.static.data(name="image", shape=[None,3,9,12])
@@ -778,7 +752,6 @@ def multiclass_nms(bboxes,
         N is the batch size and M is the number of boxes.
     Examples:
         .. code-block:: python
-
             import paddle
             from ppdet.modeling import ops
             boxes = paddle.static.data(name='bboxes', shape=[81, 4],
@@ -988,7 +961,6 @@ def bipartite_match(dist_matrix,
                     dist_threshold=None,
                     name=None):
     """
-
     This operator implements a greedy bipartite matching algorithm, which is
     used to obtain the matching with the maximum distance based on the input
     distance matrix. For input 2D matrix, the bipartite matching algorithm can
@@ -997,20 +969,16 @@ def bipartite_match(dist_matrix,
     calculate matched indices from column to row. For each instance,
     the number of matched indices is the column number of the input distance
     matrix. **The OP only supports CPU**.
-
     There are two outputs, matched indices and distance.
     A simple description, this algorithm matched the best (maximum distance)
     row entity to the column entity and the matched indices are not duplicated
     in each row of ColToRowMatchIndices. If the column entity is not matched
     any row entity, set -1 in ColToRowMatchIndices.
-
     NOTE: the input DistMat can be LoDTensor (with LoD) or Tensor.
     If LoDTensor with LoD, the height of ColToRowMatchIndices is batch size.
     If Tensor, the height of ColToRowMatchIndices is 1.
-
     NOTE: This API is a very low level API. It is used by :code:`ssd_loss`
     layer. Please consider to use :code:`ssd_loss` instead.
-
     Args:
         dist_matrix(Tensor): This input is a 2-D LoDTensor with shape
             [K, M]. The data type is float32 or float64. It is pair-wise 
@@ -1032,30 +1000,24 @@ def bipartite_match(dist_matrix,
  
     Returns:
         Tuple:
-
         matched_indices(Tensor): A 2-D Tensor with shape [N, M]. The data
         type is int32. N is the batch size. If match_indices[i][j] is -1, it
         means B[j] does not match any entity in i-th instance.
         Otherwise, it means B[j] is matched to row
         match_indices[i][j] in i-th instance. The row number of
         i-th instance is saved in match_indices[i][j].
-
         matched_distance(Tensor): A 2-D Tensor with shape [N, M]. The data
         type is float32. N is batch size. If match_indices[i][j] is -1,
         match_distance[i][j] is also -1.0. Otherwise, assumed
         match_distance[i][j] = d, and the row offsets of each instance
         are called LoD. Then match_distance[i][j] =
         dist_matrix[d+LoD[i]][j].
-
     Examples:
-
         .. code-block:: python
             import paddle
             from ppdet.modeling import ops
             from ppdet.modeling.utils import iou_similarity
-
             paddle.enable_static()
-
             x = paddle.static.data(name='x', shape=[None, 4], dtype='float32')
             y = paddle.static.data(name='y', shape=[None, 4], dtype='float32')
             iou = iou_similarity(x=x, y=y)
@@ -1123,7 +1085,6 @@ def box_coder(prior_box,
     box has shape [N, M, 4], and the shape of prior box can be [N, 4] or 
     [M, 4]. Then prior box will broadcast to target box along the 
     assigned axis. 
-
     Args:
         prior_box(Tensor): Box list prior_box is a 2-D Tensor with shape 
             [M, 4] holds M boxes and data type is float32 or float64. Each box
@@ -1154,7 +1115,6 @@ def box_coder(prior_box,
         name(str, optional): For detailed information, please refer 
             to :ref:`api_guide_Name`. Usually name is no need to set and 
             None by default. 
-
     Returns:
         Tensor:
         output_box(Tensor): When code_type is 'encode_center_size', the 
@@ -1162,7 +1122,6 @@ def box_coder(prior_box,
         result of N target boxes encoded with M Prior boxes and variances. 
         When code_type is 'decode_center_size', N represents the batch size 
         and M represents the number of decoded boxes.
-
     Examples:
  
         .. code-block:: python
@@ -1304,13 +1263,11 @@ def generate_proposals(scores,
         name(str, optional): For detailed information, please refer 
             to :ref:`api_guide_Name`. Usually name is no need to set and 
             None by default. 
-
     Returns:
         tuple:
         A tuple with format ``(rpn_rois, rpn_roi_probs)``.
         - **rpn_rois**: The generated RoIs. 2-D Tensor with shape ``[N, 4]`` while ``N`` is the number of RoIs. The data type is the same as ``scores``.
         - **rpn_roi_probs**: The scores of generated RoIs. 2-D Tensor with shape ``[N, 1]`` while ``N`` is the number of RoIs. The data type is the same as ``scores``.
-
     Examples:
         .. code-block:: python
         
