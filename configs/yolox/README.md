@@ -10,22 +10,28 @@
 ## 模型库
 ### YOLOX on COCO
 
-| 网络网络        | 输入尺寸   | 图片数/GPU | 学习率策略 | 模型推理耗时(ms) | Box AP |    下载链接       | 配置文件 |
-| :------------- | :------- | :-------: | :------: | :---------: | :-----: | :-------------: | :-----: |
-| YOLOX-nano     |  416     |    8      |   300e    |     2.3    |  26.1  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_nano_300e_coco.pdparams) | [配置文件](./yolox_nano_300e_coco.yml) |
-| YOLOX-tiny     |  416     |    8      |   300e    |     2.8    |  32.9  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_tiny_300e_coco.pdparams) | [配置文件](./yolox_tiny_300e_coco.yml) |
-| YOLOX-s        |  640     |    8      |   300e    |     3.0    |  40.4  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_s_300e_coco.pdparams) | [配置文件](./yolox_s_300e_coco.yml) |
-| YOLOX-m        |  640     |    8      |   300e    |     5.8    |  46.9  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_m_300e_coco.pdparams) | [配置文件](./yolox_m_300e_coco.yml) |
-| YOLOX-l        |  640     |    8      |   300e    |     9.3    |  50.1  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_l_300e_coco.pdparams) | [配置文件](./yolox_l_300e_coco.yml) |
-| YOLOX-x        |  640     |    8      |   300e    |     16.6    |  51.8  | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_x_300e_coco.pdparams) | [配置文件](./yolox_x_300e_coco.yml) |
+| 网络网络        | 输入尺寸   | 图片数/GPU | 学习率策略 | 模型推理耗时(ms) | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 |    下载链接       | 配置文件 |
+| :------------- | :------- | :-------: | :------: | :---------: | :-----------: | :-----------: |:-------------: | :-----: |
+| YOLOX-nano     |  416     |    8      |   300e    |     2.3    |  26.1  |  42.0 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_nano_300e_coco.pdparams) | [配置文件](./yolox_nano_300e_coco.yml) |
+| YOLOX-tiny     |  416     |    8      |   300e    |     2.8    |  32.9  |  50.4 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_tiny_300e_coco.pdparams) | [配置文件](./yolox_tiny_300e_coco.yml) |
+| YOLOX-s        |  640     |    8      |   300e    |     3.0    |  40.4  |  59.6 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_s_300e_coco.pdparams) | [配置文件](./yolox_s_300e_coco.yml) |
+| YOLOX-m        |  640     |    8      |   300e    |     5.8    |  46.9  |  65.7| [下载链接](https://paddledet.bj.bcebos.com/models/yolox_m_300e_coco.pdparams) | [配置文件](./yolox_m_300e_coco.yml) |
+| YOLOX-l        |  640     |    8      |   300e    |     9.3    |  50.1  |  68.8 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_l_300e_coco.pdparams) | [配置文件](./yolox_l_300e_coco.yml) |
+| YOLOX-x        |  640     |    8      |   300e    |     16.6   |  51.8  |  70.6 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_x_300e_coco.pdparams) | [配置文件](./yolox_x_300e_coco.yml) |
+
+
+| 网络网络        | 输入尺寸   | 图片数/GPU | 学习率策略 | 模型推理耗时(ms) | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 |    下载链接       | 配置文件 |
+| :------------- | :------- | :-------: | :------: | :---------: | :-----------: | :-----------: |:-------------: | :-----: |
+| YOLOXv2-tiny     |  416     |    8      |   300e    |     1.9    |  32.4  |  50.2 | [下载链接](https://paddledet.bj.bcebos.com/models/yoloxv2_tiny_300e_coco.pdparams) | [配置文件](./yoloxv2_tiny_300e_coco.yml) |
+
 
 **注意:**
-  - YOLOX模型训练使用COCO train2017作为训练集，Box AP为在COCO val2017上的`mAP(IoU=0.5:0.95)`结果；
+  - YOLOX模型训练使用COCO train2017作为训练集，YOLOXv2表示使用与YOLOv5 releases v6.0之后版本相同的主干网络；
   - YOLOX模型训练过程中默认使用8 GPUs进行混合精度训练，默认每卡batch_size为8，默认lr为0.01为8卡总batch_size=64的设置，如果**GPU卡数**或者每卡**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率；
   - 为保持高mAP的同时提高推理速度，可以将[yolox_cspdarknet.yml](_base_/yolox_cspdarknet.yml)中的`nms_top_k`修改为`1000`，将`keep_top_k`修改为`100`，将`score_threshold`修改为`0.01`，mAP会下降约0.1~0.2%；
   - 为快速的demo演示效果，可以将[yolox_cspdarknet.yml](_base_/yolox_cspdarknet.yml)中的`score_threshold`修改为`0.25`，将`nms_threshold`修改为`0.45`，但mAP会下降较多；
   - YOLOX模型推理速度测试采用单卡V100，batch size=1进行测试，使用**CUDA 10.2**, **CUDNN 7.6.5**，TensorRT推理速度测试使用**TensorRT 6.0.1.8**。
-  - 参考[速度测试](#速度测试)以复现YOLOX推理速度测试结果，速度为tensorRT-FP16测速后的最快速度，不包含数据预处理和模型输出后处理(NMS)的耗时。
+  - 参考[速度测试](#速度测试)以复现YOLOX推理速度测试结果，速度为**tensorRT-FP16**测速后的最快速度，**不包含数据预处理和模型输出后处理(NMS)**的耗时。
   - 如果你设置了`--run_benchmark=True`, 你首先需要安装以下依赖`pip install pynvml psutil GPUtil`。
 
 ## 使用教程
@@ -154,7 +160,7 @@ python deploy/python/infer.py --model_dir=output_inference/yolox_s_300e_coco --i
 ```
 **注意:**
 - 导出模型时指定`-o exclude_nms=True`仅作为测速时用，这样导出的模型其推理部署预测的结果不是最终检出框的结果。
-- [模型库](#模型库)中的速度测试结果为tensorRT-FP16测速后的最快速度，为不包含数据预处理和模型输出后处理(NMS)的耗时。
+- [模型库](#模型库)中的速度测试结果为**tensorRT-FP16**测速后的最快速度，为**不包含数据预处理和模型输出后处理(NMS)**的耗时。
 
 
 ## Citations
