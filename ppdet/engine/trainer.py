@@ -813,7 +813,7 @@ class Trainer(object):
         # TODO: support prune input_spec
         _, pruned_input_spec = self._get_infer_cfg_and_input_spec(
             save_dir, prune_input=False)
-
+        print('self.model: ', self.model)
         self.cfg.slim.save_quantized_model(
             self.model,
             os.path.join(save_dir, 'model'),
