@@ -36,6 +36,7 @@ from python.infer import Detector, DetectorPicoDet
 from python.attr_infer import AttrDetector
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
+from python.video_action_infer import VideoActionRecognizer
 from python.action_infer import SkeletonActionRecognizer
 from python.action_utils import KeyPointBuff, SkeletonActionVisualHelper
 
@@ -75,7 +76,7 @@ class Pipeline(object):
         draw_center_traj (bool): Whether drawing the trajectory of center, default as False
         secs_interval (int): The seconds interval to count after tracking, default as 10
         do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
-            or getting out from the entrance, default as False，only support single class
+            or getting out from the entrance, default as False, only support single class
             counting in MOT.
     """
 
@@ -181,7 +182,7 @@ class Pipeline(object):
 
         else:
             raise ValueError(
-                "Illegal Input, please set one of ['video_file'，'camera_id'，'image_file', 'image_dir']"
+                "Illegal Input, please set one of ['video_file', 'camera_id', 'image_file', 'image_dir']"
             )
 
         return input
@@ -218,6 +219,7 @@ class PipePredictor(object):
         1. Tracking
         2. Tracking -> Attribute
         3. Tracking -> KeyPoint -> SkeletonAction Recognition
+        4. VideoAction Recognition
 
     Args:
         cfg (dict): config of models in pipeline
@@ -240,7 +242,7 @@ class PipePredictor(object):
         draw_center_traj (bool): Whether drawing the trajectory of center, default as False
         secs_interval (int): The seconds interval to count after tracking, default as 10
         do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
-            or getting out from the entrance, default as False，only support single class
+            or getting out from the entrance, default as False, only support single class
             counting in MOT.
     """
 
@@ -277,6 +279,7 @@ class PipePredictor(object):
                 'ID_BASED_CLSACTION', False) else False
         self.with_mtmct = cfg.get('REID', False)['enable'] if cfg.get(
             'REID', False) else False
+
         if self.with_attr:
             print('Attribute Recognition enabled')
         if self.with_skeleton_action:
@@ -296,6 +299,7 @@ class PipePredictor(object):
             "idbased": False,
             "skeletonbased": False
         }
+
         self.is_video = is_video
         self.multi_camera = multi_camera
         self.cfg = cfg
@@ -416,6 +420,31 @@ class PipePredictor(object):
                         use_dark=False)
                     self.kpt_buff = KeyPointBuff(skeleton_action_frames)
 
+            if self.with_video_action:
+                video_action_cfg = self.cfg['VIDEO_ACTION']
+
+                basemode = video_action_cfg['basemode']
+                self.modebase[basemode] = True
+
+                video_action_model_dir = video_action_cfg['model_dir']
+                video_action_batch_size = video_action_cfg['batch_size']
+                short_size = video_action_cfg["short_size"]
+                target_size = video_action_cfg["target_size"]
+
+                self.video_action_predictor = VideoActionRecognizer(
+                    model_dir=video_action_model_dir,
+                    short_size=short_size,
+                    target_size=target_size,
+                    device=device,
+                    run_mode=run_mode,
+                    batch_size=video_action_batch_size,
+                    trt_min_shape=trt_min_shape,
+                    trt_max_shape=trt_max_shape,
+                    trt_opt_shape=trt_opt_shape,
+                    trt_calib_mode=trt_calib_mode,
+                    cpu_threads=cpu_threads,
+                    enable_mkldnn=enable_mkldnn)
+
         if self.with_mtmct:
             reid_cfg = self.cfg['REID']
             model_dir = reid_cfg['model_dir']
@@ -523,9 +552,12 @@ class PipePredictor(object):
         entrance = [0, height / 2., width, height / 2.]
         video_fps = fps
 
+        video_action_imgs = []
+
         while (1):
             if frame_id % 10 == 0:
                 print('frame id: ', frame_id)
+
             ret, frame = capture.read()
             if not ret:
                 break
@@ -660,10 +692,34 @@ class PipePredictor(object):
                     self.pipeline_res.clear('reid')
 
             if self.with_video_action:
-                #predeal, get what your model need
-                #predict, model preprocess\run\postprocess
-                #postdeal, interact with pipeline
-                pass
+                # get the params
+                frame_len = self.cfg["VIDEO_ACTION"]["frame_len"]
+                sample_freq = self.cfg["VIDEO_ACTION"]["sample_freq"]
+
+                if sample_freq * frame_len > frame_count:  # video is too short
+                    sample_freq = int(frame_count / frame_len)
+
+                # filter the warmup frames
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.module_time['video_action'].start()
+
+                # collect frames
+                if frame_id % sample_freq == 0:
+                    video_action_imgs.append(frame)
+
+                # the number of collected frames is enough to predict video action
+                if len(video_action_imgs) == frame_len:
+                    classes, scores = self.video_action_predictor.predict(
+                        video_action_imgs)
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['video_action'].end()
+
+                    video_action_res = {"class": classes[0], "score": scores[0]}
+                    self.pipeline_res.update(video_action_res, 'video_action')
+
+                    print("video_action_res:", video_action_res)
+
+                    video_action_imgs.clear()  # next clip
 
             self.collector.append(frame_id, self.pipeline_res)
 
@@ -744,10 +800,21 @@ class PipePredictor(object):
                 returnimg=True)
 
         skeleton_action_res = result.get('skeleton_action')
-        if skeleton_action_res is not None:
-            image = visualize_action(image, mot_res['boxes'],
-                                     self.skeleton_action_visual_helper,
-                                     "SkeletonAction")
+        video_action_res = result.get('video_action')
+        if skeleton_action_res is not None or video_action_res is not None:
+            video_action_score = None
+            action_visual_helper = None
+            if video_action_res and video_action_res["class"] == 1:
+                video_action_score = video_action_res["score"]
+            if skeleton_action_res:
+                action_visual_helper = self.skeleton_action_visual_helper
+            image = visualize_action(
+                image,
+                mot_res['boxes'],
+                action_visual_collector=action_visual_helper,
+                action_text="SkeletonAction",
+                video_action_score=video_action_score,
+                video_action_text="Fight")
 
         return image
 
@@ -784,6 +851,7 @@ class PipePredictor(object):
 def main():
     cfg = merge_cfg(FLAGS)
     print_arguments(cfg)
+
     pipeline = Pipeline(
         cfg, FLAGS.image_file, FLAGS.image_dir, FLAGS.video_file,
         FLAGS.video_dir, FLAGS.camera_id, FLAGS.device, FLAGS.run_mode,
