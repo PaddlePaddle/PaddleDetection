@@ -554,6 +554,10 @@ class PipePredictor(object):
 
         video_action_imgs = []
 
+        if self.with_video_action:
+            short_size = self.cfg["VIDEO_ACTION"]["short_size"]
+            scale = Scale(short_size)
+
         while (1):
             if frame_id % 10 == 0:
                 print('frame id: ', frame_id)
@@ -706,8 +710,6 @@ class PipePredictor(object):
                 # collect frames
                 if frame_id % sample_freq == 0:
                     # Scale image
-                    short_size = self.cfg["VIDEO_ACTION"]["short_size"]
-                    scale = Scale(short_size)
                     scaled_img = scale(frame)
                     video_action_imgs.append(scaled_img)
 
