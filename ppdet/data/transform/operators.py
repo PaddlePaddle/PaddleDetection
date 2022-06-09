@@ -123,6 +123,11 @@ class Decode(BaseOperator):
                 sample['image'] = f.read()
             sample.pop('im_file')
 
+        if 'semantic' in sample and sample['semantic'] is not None:
+            semantic = cv2.imread(sample['semantic'])[:, :, :1]
+            semantic = np.asarray(semantic).astype(np.float32)
+            sample['semantic'] = semantic
+
         im = sample['image']
         data = np.frombuffer(im, dtype='uint8')
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
@@ -694,7 +699,7 @@ class RandomFlip(BaseOperator):
                 sample['gt_keypoint'] = self.apply_keypoint(
                     sample['gt_keypoint'], width)
 
-            if 'semantic' in sample and sample['semantic']:
+            if 'semantic' in sample and sample['semantic'] is not None:
                 sample['semantic'] = sample['semantic'][:, ::-1]
 
             if 'gt_segm' in sample and sample['gt_segm'].any():
@@ -857,7 +862,7 @@ class Resize(BaseOperator):
                                                 [im_scale_x, im_scale_y])
 
         # apply semantic
-        if 'semantic' in sample and sample['semantic']:
+        if 'semantic' in sample and sample['semantic'] is not None:
             semantic = sample['semantic']
             semantic = cv2.resize(
                 semantic.astype('float32'),
@@ -2472,7 +2477,7 @@ class RandomResizeCrop(BaseOperator):
                                                 [im_scale_x, im_scale_y])
 
         # apply semantic
-        if 'semantic' in sample and sample['semantic']:
+        if 'semantic' in sample and sample['semantic'] is not None:
             semantic = sample['semantic']
             semantic = cv2.resize(
                 semantic.astype('float32'),
@@ -2614,7 +2619,7 @@ class RandomShortSideResize(BaseOperator):
             sample['gt_poly'] = self.apply_segm(sample['gt_poly'], im.shape[:2],
                                                 [im_scale_x, im_scale_y])
         # apply semantic
-        if 'semantic' in sample and sample['semantic']:
+        if 'semantic' in sample and sample['semantic'] is not None:
             semantic = sample['semantic']
             semantic = cv2.resize(
                 semantic.astype('float32'),

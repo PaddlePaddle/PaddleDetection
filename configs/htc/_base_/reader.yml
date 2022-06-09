@@ -7,13 +7,6 @@ TrainDataset:
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_poly', 'is_crowd', 'semantic']
     load_semantic: True
 
-EvalDataset:
-  !COCODataSet
-    image_dir: val2017
-    anno_path: annotations/instances_val2017.json
-    dataset_dir: dataset/coco
-    load_semantic: True
-
 
 worker_num: 4
 TrainReader:
@@ -26,7 +19,7 @@ TrainReader:
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
   - SegRescale: {scale_factor: 0.125}
-  batch_size: 4
+  batch_size: 1
   shuffle: true
   drop_last: true
   collate_batch: false

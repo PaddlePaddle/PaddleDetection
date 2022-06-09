@@ -46,9 +46,9 @@ RPNHead:
     nms_thresh: 0.7
     pre_nms_top_n: 1000
     post_nms_top_n: 1000
-  smoothl1loss: True
-  smoothl1lossbetanume: 1.0
-  smoothl1lossbetadeno: 9.0
+  use_smooth_l1_loss: True
+  smooth_l1_loss_beta_nume: 1.0
+  smooth_l1_loss_beta_deno: 9.0
 
 
 HybridTaskCascadeHead:
@@ -63,9 +63,9 @@ HybridTaskCascadeHead:
     aligned: True
   bbox_assigner: BBoxAssigner
   mask_head: HybridTaskMaskHead
-  smoothl1loss: True
-  smoothl1lossbetanume: 1.0
-  smoothl1lossbetadeno: 1.0
+  use_smooth_l1_loss: True
+  smooth_l1_loss_beta_nume: 1.0
+  smooth_l1_loss_beta_deno: 9.0
 
 BBoxAssigner:
   batch_size_per_im: 512
@@ -114,3 +114,4 @@ MaskPostProcess:
 
 FusedSemanticHead:
   semantic_num_class: 183
+  loss_weight: 0.2

@@ -103,6 +103,10 @@ class HybridTaskCascade(BaseArch):
                 loss_seg = self.fused_semantic_head.loss(
                     semantic_pred, self.inputs['semantic'])
                 loss_seg = {'loss_semantic': loss_seg}
+            else:
+                semantic_feats = None
+                # loss_seg = {'loss_semantic': 0.}
+
             rois, rois_num, rpn_loss = self.rpn_head(body_feats, self.inputs)
             bbox_loss, bbox_feat = self.bbox_head(
                 body_feats,
@@ -126,6 +130,7 @@ class HybridTaskCascade(BaseArch):
                 _, semantic_feats = self.fused_semantic_head(body_feats)
             else:
                 semantic_feats = None
+
             rois, rois_num, _ = self.rpn_head(body_feats, self.inputs)
             preds, _ = self.bbox_head(
                 body_feats,

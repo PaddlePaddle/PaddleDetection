@@ -37,7 +37,6 @@ __all__ = [
 class HybridTaskMaskFeatSub(nn.Layer):
     """
     Feature extraction in Mask head
-
     Args:
         in_channel (int): Input channels
         out_channel (int): Output channels
@@ -159,7 +158,6 @@ class HybridTaskMaskFeatSub(nn.Layer):
 class HybridTaskMaskFeat(nn.Layer):
     """
     Feature extraction in Mask head
-
     Args:
         in_channel (int): Input channels
         out_channel (int): Output channels
@@ -233,7 +231,6 @@ class HybridTaskMaskHead(nn.Layer):
     __inject__ = ['mask_assigner']
     """
     RCNN mask head
-
     Args:
         head (nn.Layer): Extract feature in mask head
         roi_extractor (object): The module of RoI Extractor
@@ -325,12 +322,14 @@ class HybridTaskMaskHead(nn.Layer):
             rois_feat = paddle.gather(bbox_feat, mask_index)
         else:
             rois_feat = self.roi_extractor(body_feats, rois, rois_num)
-        semantic_rois_feat = self.semantic_roi_extractor([semantic_feats], rois,
-                                                         rois_num)
-        if semantic_rois_feat.shape[-2:] != rois_feat.shape[-2:]:
-            semantic_rois_feat = F.adaptive_avg_pool2d(semantic_rois_feat,
-                                                       rois_feat.shape[-2:])
-        rois_feat += semantic_rois_feat
+
+        if semantic_feats is not None:
+            semantic_rois_feat = self.semantic_roi_extractor([semantic_feats],
+                                                             rois, rois_num)
+            if semantic_rois_feat.shape[-2:] != rois_feat.shape[-2:]:
+                semantic_rois_feat = F.adaptive_avg_pool2d(semantic_rois_feat,
+                                                           rois_feat.shape[-2:])
+            rois_feat += semantic_rois_feat
         # mask_feat = self.head(rois_feat, stage)
         # mask_logits = self.mask_fcn_logits[stage](mask_feat)
 
@@ -361,12 +360,15 @@ class HybridTaskMaskHead(nn.Layer):
             bbox = [rois[:, 2:]]
             labels = rois[:, 0].cast('int32')
             rois_feat = self.roi_extractor(body_feats, bbox, rois_num)
-            semantic_rois_feat = self.semantic_roi_extractor([semantic_feats],
-                                                             bbox, rois_num)
-            if semantic_rois_feat.shape[-2:] != rois_feat.shape[-2:]:
-                semantic_rois_feat = F.adaptive_avg_pool2d(semantic_rois_feat,
-                                                           rois_feat.shape[-2:])
-            rois_feat += semantic_rois_feat
+
+            if semantic_feats is not None:
+                semantic_rois_feat = self.semantic_roi_extractor(
+                    [semantic_feats], bbox, rois_num)
+                if semantic_rois_feat.shape[-2:] != rois_feat.shape[-2:]:
+                    semantic_rois_feat = F.adaptive_avg_pool2d(
+                        semantic_rois_feat, rois_feat.shape[-2:])
+                rois_feat += semantic_rois_feat
+
             if self.share_bbox_feat:
                 assert feat_func is not None
                 rois_feat = feat_func(rois_feat)
@@ -428,10 +430,11 @@ class HybridTaskMaskHead(nn.Layer):
 
 @register
 class FusedSemanticHead(nn.Layer):
-    def __init__(self, semantic_num_class=183):
+    def __init__(self, semantic_num_class=183, loss_weight=0.2):
         super(FusedSemanticHead, self).__init__()
 
         self.semantic_num_class = semantic_num_class
+        self.loss_weight = loss_weight
 
         self.lateral_convs = []
         self.convs = []
@@ -477,6 +480,16 @@ class FusedSemanticHead(nn.Layer):
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=255)
 
+    # @classmethod
+    # def from_config(cls, cfg, input_shape):
+    #     s = input_shape
+    #     s = s[0] if isinstance(s, (list, tuple)) else s
+    #     return {'in_channel': s.channels}
+    #
+    # @property
+    # def out_shape(self):
+    #     return [ShapeSpec(channels=self.out_channel, )]
+
     def forward(self, body_feats):
         x = F.relu(self.lateral_convs[1](body_feats[1]))
         fused_size = tuple(x.shape[-2:])
@@ -498,5 +511,5 @@ class FusedSemanticHead(nn.Layer):
         labels = paddle.transpose(labels, perm=[0, 2, 3, 1]).astype('int64')
         mask_pred = paddle.transpose(mask_pred, perm=[0, 2, 3, 1])
         loss_semantic_seg = self.criterion(mask_pred, labels)
-        loss_semantic_seg *= 0.2  # self.loss_weight
+        loss_semantic_seg *= self.loss_weight
         return loss_semantic_seg

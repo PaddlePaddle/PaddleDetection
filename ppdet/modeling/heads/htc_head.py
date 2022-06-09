@@ -19,14 +19,16 @@ from __future__ import print_function
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn.initializer import Normal
+from paddle.nn.initializer import Normal, XavierUniform
+from paddle.regularizer import L2Decay
 
-from ppdet.core.workspace import register
+from ppdet.core.workspace import register, create
+from ppdet.modeling import ops
 
 from .bbox_head import BBoxHead, TwoFCHead, XConvNormHead
 from .roi_extractor import RoIAlign
 from ..shape_spec import ShapeSpec
-from ..bbox_utils import delta2bbox, clip_bbox, nonempty_bbox
+from ..bbox_utils import bbox2delta, delta2bbox, clip_bbox, nonempty_bbox
 
 __all__ = [
     'HybridTaskCascadeTwoFCHead', 'HybridTaskCascadeXConvNormHead',
@@ -253,12 +255,15 @@ class HybridTaskCascadeHead(BBoxHead):
                 # self.assigned_rois = (rois, rois_num)
                 # self.assigned_targets = targets
             rois_feat = self.roi_extractor(body_feats, rois, rois_num)
-            semantic_rois_feat = self.semantic_roi_extractor([semantic_feats],
-                                                             rois, rois_num)
-            if semantic_rois_feat.shape[-2:] != rois_feat.shape[-2:]:
-                semantic_rois_feat = F.adaptive_avg_pool2d(semantic_rois_feat,
-                                                           rois_feat.shape[-2:])
-            rois_feat += semantic_rois_feat
+
+            if semantic_feats is not None:
+                semantic_rois_feat = self.semantic_roi_extractor(
+                    [semantic_feats], rois, rois_num)
+                if semantic_rois_feat.shape[-2:] != rois_feat.shape[-2:]:
+                    semantic_rois_feat = F.adaptive_avg_pool2d(
+                        semantic_rois_feat, rois_feat.shape[-2:])
+                rois_feat += semantic_rois_feat
+
             bbox_feat = self.head(rois_feat, i)
             scores = self.bbox_score_list[i](bbox_feat)
             deltas = self.bbox_delta_list[i](bbox_feat)
