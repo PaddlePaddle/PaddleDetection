@@ -163,19 +163,20 @@ class HybridTaskCascadeHead(BBoxHead):
         num_cascade_stages (int): THe number of stage to refine the box
     """
 
-    def __init__(self,
-                 head,
-                 in_channel,
-                 roi_extractor=RoIAlign().__dict__,
-                 semantic_roi_extractor=RoIAlign().__dict__,
-                 bbox_assigner='BboxAssigner',
-                 mask_head=None,
-                 num_classes=80,
-                 bbox_weight=[[10., 10., 5., 5.], [20.0, 20.0, 10.0, 10.0],
-                              [30.0, 30.0, 15.0, 15.0]],
-                 num_cascade_stages=3,
-                 bbox_loss=None,
-                 stage_loss_weights=[1, 0.5, 0.25]):
+    def __init__(
+            self,
+            head,
+            #  in_channel,
+            roi_extractor=RoIAlign().__dict__,
+            semantic_roi_extractor=RoIAlign().__dict__,
+            bbox_assigner='BboxAssigner',
+            mask_head=None,
+            num_classes=80,
+            bbox_weight=[[10., 10., 5., 5.], [20.0, 20.0, 10.0, 10.0],
+                         [30.0, 30.0, 15.0, 15.0]],
+            num_cascade_stages=3,
+            bbox_loss=None,
+            stage_loss_weights=[1, 0.5, 0.25]):
         nn.Layer.__init__(self, )
         self.head = head
         self.mask_head = mask_head
@@ -195,6 +196,9 @@ class HybridTaskCascadeHead(BBoxHead):
 
         self.bbox_score_list = []
         self.bbox_delta_list = []
+
+        in_channel = head.out_channel
+
         for i in range(num_cascade_stages):
             score_name = 'bbox_score_stage{}'.format(i)
             delta_name = 'bbox_delta_stage{}'.format(i)
@@ -222,8 +226,9 @@ class HybridTaskCascadeHead(BBoxHead):
     def from_config(cls, cfg, input_shape):
         kwargs = {'input_shape': input_shape}
         mask_head = create(cfg['mask_head'], **kwargs)
-        in_channel = input_shape[0].channels if isinstance(
-            input_shape, list) else input_shape.channels
+
+        # in_channel = input_shape[0].channels if isinstance(
+        #     input_shape, list) else input_shape.channels
 
         roi_pooler = cfg['roi_extractor']
         kwargs = RoIAlign.from_config(cfg, input_shape)
@@ -239,7 +244,7 @@ class HybridTaskCascadeHead(BBoxHead):
         return {
             'head': head,
             'mask_head': mask_head,
-            'in_channel': in_channel,
+            # 'in_channel': in_channel,
             'roi_extractor': roi_pooler,
             'semantic_roi_extractor': semantic_roi_pooler
         }
