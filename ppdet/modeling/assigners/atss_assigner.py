@@ -136,10 +136,8 @@ class ATSSAssigner(nn.Layer):
         # 2. compute center distance between all anchors and gt, [B, n, L]
         gt_centers = bbox_center(gt_bboxes.reshape([-1, 4])).unsqueeze(1)
         anchor_centers = bbox_center(anchor_bboxes)
-        #  gt2anchor_distances = (gt_centers - anchor_centers.unsqueeze(0)) \
-        #      .norm(2, axis=-1).reshape([batch_size, -1, num_anchors])
         gt2anchor_distances = (gt_centers - anchor_centers.unsqueeze(0)) \
-            .pow(2).sum(-1).sqrt().reshape([batch_size, -1, num_anchors])
+            .norm(2, axis=-1).reshape([batch_size, -1, num_anchors])
 
         # 3. on each pyramid level, selecting topk closest candidates
         # based on the center distance, [B, n, L]
