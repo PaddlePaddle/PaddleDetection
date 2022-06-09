@@ -37,17 +37,9 @@ from ppdet.modeling.keypoint_utils import get_affine_transform, affine_transform
 logger = setup_logger(__name__)
 
 __all__ = [
-    'PadBatch',
-    'BatchRandomResize',
-    'Gt2YoloTarget',
-    'Gt2FCOSTarget',
-    'Gt2TTFTarget',
-    'Gt2Solov2Target',
-    'Gt2SparseRCNNTarget',
-    'PadMaskBatch',
-    'Gt2GFLTarget',
-    'Gt2CenterNetTarget',
-    'PadGT',
+    'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
+    'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseRCNNTarget', 'PadMaskBatch',
+    'Gt2GFLTarget', 'Gt2CenterNetTarget', 'PadGT', 'SegRescale'
 ]
 
 
@@ -1121,4 +1113,28 @@ class PadGT(BaseOperator):
                 if num_gt > 0:
                     pad_diff[:num_gt] = sample['difficult']
                 sample['difficult'] = pad_diff
+        return samples
+
+
+@register_op
+class SegRescale(BaseOperator):
+    def __init__(self, scale_factor=1, backend='cv2'):
+        """Transform the image data to numpy format following the rgb format
+        """
+        super(SegRescale, self).__init__()
+        self.scale_factor = scale_factor
+        self.backend = backend
+
+    def __call__(self, samples, context=None):
+        for sample in samples:
+            image = sample['semantic'][0, :, :]
+            image = cv2.resize(
+                image,
+                None,
+                None,
+                fx=self.scale_factor,
+                fy=self.scale_factor,
+                interpolation=cv2.INTER_NEAREST)
+            image = np.expand_dims(image, 0)
+            sample['semantic'] = image
         return samples

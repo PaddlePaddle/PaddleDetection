@@ -33,6 +33,8 @@ from . import sparsercnn_head
 from . import tood_head
 from . import retina_head
 from . import ppyoloe_head
+from . import htc_head
+from . import htc_mask_head
 
 from .bbox_head import *
 from .mask_head import *
@@ -55,3 +57,5 @@ from .sparsercnn_head import *
 from .tood_head import *
 from .retina_head import *
 from .ppyoloe_head import *
+from .htc_head import *
+from .htc_mask_head import *
