@@ -224,7 +224,21 @@ class HybridTaskCascadeHead(BBoxHead):
         mask_head = create(cfg['mask_head'], **kwargs)
         in_channel = input_shape[0].channels if isinstance(
             input_shape, list) else input_shape.channels
-        return {'mask_head': mask_head, 'in_channel': in_channel}
+
+        roi_pooler = cfg['roi_extractor']
+        kwargs = RoIAlign.from_config(cfg, input_shape)
+        roi_pooler.update(kwargs)
+
+        semantic_roi_pooler = cfg['semantic_roi_extractor']
+        kwargs = RoIAlign.from_config(cfg, input_shape)
+        semantic_roi_pooler.update(kwargs)
+
+        return {
+            'mask_head': mask_head,
+            'in_channel': in_channel,
+            'roi_extractor': roi_pooler,
+            'semantic_roi_extractor': semantic_roi_pooler
+        }
 
     def forward(self,
                 body_feats=None,

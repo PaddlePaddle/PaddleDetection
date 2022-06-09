@@ -71,15 +71,14 @@ class HybridTaskCascade(BaseArch):
         out_shape = neck and neck.out_shape or backbone.out_shape
         kwargs = {'input_shape': out_shape}
         rpn_head = create(cfg['rpn_head'], **kwargs)
-
-        kwargs = {'input_shape': out_shape}
         bbox_head = create(cfg['bbox_head'], **kwargs)
 
         out_shape = neck and out_shape or bbox_head.get_head().out_shape
         kwargs = {'input_shape': out_shape}
-        # mask_head = cfg['mask_head'] and create(cfg['mask_head'], **kwargs)
+
         fused_semantic_head = cfg['fused_semantic_head'] and create(
             cfg['fused_semantic_head'], **kwargs)
+
         return {
             'backbone': backbone,
             'neck': neck,
