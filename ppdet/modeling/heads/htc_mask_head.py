@@ -24,6 +24,7 @@ from paddle import ParamAttr
 
 from ppdet.core.workspace import register, create
 from ppdet.modeling.layers import ConvNormLayer
+from ..shape_spec import ShapeSpec
 
 from .roi_extractor import RoIAlign
 
@@ -122,11 +123,11 @@ class HybridTaskMaskFeatSub(nn.Layer):
             mask_conv.add_sublayer('conv' + 'act', nn.ReLU())
             self.conv_res = mask_conv
 
-    # @classmethod
-    # def from_config(cls, cfg, input_shape):
-    #     if isinstance(input_shape, (list, tuple)):
-    #         input_shape = input_shape[0]
-    #     return {'in_channel': input_shape.channels, }
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        if isinstance(input_shape, (list, tuple)):
+            input_shape = input_shape[0]
+        return {'in_channel': input_shape.channels, }
 
     def out_channels(self):
         # return self.out_channel
@@ -190,11 +191,11 @@ class HybridTaskMaskFeat(nn.Layer):
             self.upsample.append(head_per_stage)
         # a = 0
 
-        # @classmethod
-        # def from_config(cls, cfg, input_shape):
-        #     if isinstance(input_shape, (list, tuple)):
-        #         input_shape = input_shape[0]
-        #     return {'in_channel': input_shape.channels, }
+        @classmethod
+        def from_config(cls, cfg, input_shape):
+            if isinstance(input_shape, (list, tuple)):
+                input_shape = input_shape[0]
+            return {'in_channel': input_shape.channels, }
 
     def out_channels(self):
         return self.out_channel
@@ -480,15 +481,15 @@ class FusedSemanticHead(nn.Layer):
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=255)
 
-    # @classmethod
-    # def from_config(cls, cfg, input_shape):
-    #     s = input_shape
-    #     s = s[0] if isinstance(s, (list, tuple)) else s
-    #     return {'in_channel': s.channels}
-    #
-    # @property
-    # def out_shape(self):
-    #     return [ShapeSpec(channels=self.out_channel, )]
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        s = input_shape
+        s = s[0] if isinstance(s, (list, tuple)) else s
+        return {'in_channel': s.channels}
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=self.out_channel, )]
 
     def forward(self, body_feats):
         x = F.relu(self.lateral_convs[1](body_feats[1]))

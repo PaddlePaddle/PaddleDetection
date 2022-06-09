@@ -65,11 +65,11 @@ class HybridTaskCascadeTwoFCHead(nn.Layer):
                 str(stage), TwoFCHead(in_channel, out_channel, resolution))
             self.head_list.append(head_per_stage)
 
-    # @classmethod
-    # def from_config(cls, cfg, input_shape):
-    #     s = input_shape
-    #     s = s[0] if isinstance(s, (list, tuple)) else s
-    #     return {'in_channel': s.channels}
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        s = input_shape
+        s = s[0] if isinstance(s, (list, tuple)) else s
+        return {'in_channel': s.channels}
 
     @property
     def out_shape(self):
@@ -126,11 +126,11 @@ class HybridTaskCascadeXConvNormHead(nn.Layer):
                     stage_name='stage{}_'.format(stage)))
             self.head_list.append(head_per_stage)
 
-    # @classmethod
-    # def from_config(cls, cfg, input_shape):
-    #     s = input_shape
-    #     s = s[0] if isinstance(s, (list, tuple)) else s
-    #     return {'in_channel': s.channels}
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        s = input_shape
+        s = s[0] if isinstance(s, (list, tuple)) else s
+        return {'in_channel': s.channels}
 
     @property
     def out_shape(self):
@@ -217,6 +217,14 @@ class HybridTaskCascadeHead(BBoxHead):
             self.bbox_delta_list.append(bbox_delta)
         self.assigned_label = None
         self.assigned_rois = None
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        kwargs = {'input_shape': input_shape}
+        mask_head = create(cfg['mask_head'], **kwargs)
+        in_channel = input_shape[0].channels if isinstance(
+            input_shape, list) else input_shape.channels
+        return {'mask_head': mask_head, 'in_channel': in_channel}
 
     def forward(self,
                 body_feats=None,
