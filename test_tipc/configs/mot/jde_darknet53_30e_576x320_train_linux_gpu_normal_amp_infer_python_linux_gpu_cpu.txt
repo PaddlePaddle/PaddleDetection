@@ -10,7 +10,7 @@ TrainReader.batch_size:lite_train_lite_infer=2|lite_train_whole_infer=2|whole_tr
 pretrain_weights:https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_576x320.pdparams
 trained_model_name:model_final.pdparams
 train_infer_img_dir:./dataset/mot/test.mp4
-filename:null
+amp_level:O2
 ##
 trainer:norm_train
 norm_train:tools/train.py -c configs/mot/jde/jde_darknet53_30e_576x320.yml -o
@@ -39,11 +39,11 @@ infer_mode:norm
 infer_quant:False
 inference:./deploy/pptracking/python/mot_jde_infer.py
 --device:gpu|cpu
---enable_mkldnn:True|False
---cpu_threads:1|6
+--enable_mkldnn:False
+--cpu_threads:4
 --batch_size:1|2
 --use_tensorrt:null
---run_mode:paddle|trt_fp32|trt_fp16
+--run_mode:paddle
 --model_dir:
 --video_file:./dataset/mot/test.mp4
 --save_log_path:null

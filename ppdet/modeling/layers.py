@@ -554,10 +554,15 @@ class YOLOBox(object):
         origin_shape = im_shape / scale_factor
         origin_shape = paddle.cast(origin_shape, 'int32')
         for i, head_out in enumerate(yolo_head_out):
-            boxes, scores = ops.yolo_box(head_out, origin_shape, anchors[i],
-                                         self.num_classes, self.conf_thresh,
-                                         self.downsample_ratio // 2**i,
-                                         self.clip_bbox, self.scale_x_y)
+            boxes, scores = paddle.vision.ops.yolo_box(
+                head_out,
+                origin_shape,
+                anchors[i],
+                self.num_classes,
+                self.conf_thresh,
+                self.downsample_ratio // 2**i,
+                self.clip_bbox,
+                scale_x_y=self.scale_x_y)
             boxes_list.append(boxes)
             scores_list.append(paddle.transpose(scores, perm=[0, 2, 1]))
         yolo_boxes = paddle.concat(boxes_list, axis=1)
@@ -620,94 +625,6 @@ class SSDBox(object):
             scores, axis=1)).transpose([0, 2, 1])
 
         return output_boxes, output_scores
-
-
-@register
-@serializable
-class AnchorGrid(object):
-    """Generate anchor grid
-
-    Args:
-        image_size (int or list): input image size, may be a single integer or
-            list of [h, w]. Default: 512
-        min_level (int): min level of the feature pyramid. Default: 3
-        max_level (int): max level of the feature pyramid. Default: 7
-        anchor_base_scale: base anchor scale. Default: 4
-        num_scales: number of anchor scales. Default: 3
-        aspect_ratios: aspect ratios. default: [[1, 1], [1.4, 0.7], [0.7, 1.4]]
-    """
-
-    def __init__(self,
-                 image_size=512,
-                 min_level=3,
-                 max_level=7,
-                 anchor_base_scale=4,
-                 num_scales=3,
-                 aspect_ratios=[[1, 1], [1.4, 0.7], [0.7, 1.4]]):
-        super(AnchorGrid, self).__init__()
-        if isinstance(image_size, Integral):
-            self.image_size = [image_size, image_size]
-        else:
-            self.image_size = image_size
-        for dim in self.image_size:
-            assert dim % 2 ** max_level == 0, \
-                "image size should be multiple of the max level stride"
-        self.min_level = min_level
-        self.max_level = max_level
-        self.anchor_base_scale = anchor_base_scale
-        self.num_scales = num_scales
-        self.aspect_ratios = aspect_ratios
-
-    @property
-    def base_cell(self):
-        if not hasattr(self, '_base_cell'):
-            self._base_cell = self.make_cell()
-        return self._base_cell
-
-    def make_cell(self):
-        scales = [2**(i / self.num_scales) for i in range(self.num_scales)]
-        scales = np.array(scales)
-        ratios = np.array(self.aspect_ratios)
-        ws = np.outer(scales, ratios[:, 0]).reshape(-1, 1)
-        hs = np.outer(scales, ratios[:, 1]).reshape(-1, 1)
-        anchors = np.hstack((-0.5 * ws, -0.5 * hs, 0.5 * ws, 0.5 * hs))
-        return anchors
-
-    def make_grid(self, stride):
-        cell = self.base_cell * stride * self.anchor_base_scale
-        x_steps = np.arange(stride // 2, self.image_size[1], stride)
-        y_steps = np.arange(stride // 2, self.image_size[0], stride)
-        offset_x, offset_y = np.meshgrid(x_steps, y_steps)
-        offset_x = offset_x.flatten()
-        offset_y = offset_y.flatten()
-        offsets = np.stack((offset_x, offset_y, offset_x, offset_y), axis=-1)
-        offsets = offsets[:, np.newaxis, :]
-        return (cell + offsets).reshape(-1, 4)
-
-    def generate(self):
-        return [
-            self.make_grid(2**l)
-            for l in range(self.min_level, self.max_level + 1)
-        ]
-
-    def __call__(self):
-        if not hasattr(self, '_anchor_vars'):
-            anchor_vars = []
-            helper = LayerHelper('anchor_grid')
-            for idx, l in enumerate(range(self.min_level, self.max_level + 1)):
-                stride = 2**l
-                anchors = self.make_grid(stride)
-                var = helper.create_parameter(
-                    attr=ParamAttr(name='anchors_{}'.format(idx)),
-                    shape=anchors.shape,
-                    dtype='float32',
-                    stop_gradient=True,
-                    default_initializer=NumpyArrayInitializer(anchors))
-                anchor_vars.append(var)
-                var.persistable = True
-            self._anchor_vars = anchor_vars
-
-        return self._anchor_vars
 
 
 @register

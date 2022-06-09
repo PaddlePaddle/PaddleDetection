@@ -13,8 +13,8 @@
 // limitations under the License.
 #include <sstream>
 // for setprecision
-#include <iomanip>
 #include <chrono>
+#include <iomanip>
 #include "include/object_detector.h"
 
 namespace PaddleDetection {
@@ -41,18 +41,18 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
       } else if (run_mode == "trt_int8") {
         precision = paddle::AnalysisConfig::Precision::kInt8;
       } else {
-        printf("run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
+        printf(
+            "run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
       }
-      config.EnableTensorRtEngine(
-          1 << 10,
-          batch_size,
-          min_subgraph_size,
-          precision,
-          false,
-          trt_calib_mode);
-   }
-  } else if (device == "XPU"){
-    config.EnableXpu(10*1024*1024);
+      config.EnableTensorRtEngine(1 << 10,
+                                  batch_size,
+                                  min_subgraph_size,
+                                  precision,
+                                  false,
+                                  trt_calib_mode);
+    }
+  } else if (device == "XPU") {
+    config.EnableXpu(10 * 1024 * 1024);
   } else {
     config.DisableGpu();
   }
@@ -88,11 +88,8 @@ cv::Mat VisualizeResult(const cv::Mat& img,
     int font_face = cv::FONT_HERSHEY_COMPLEX_SMALL;
     double font_scale = 0.5f;
     float thickness = 0.5;
-    cv::Size text_size = cv::getTextSize(text,
-                                         font_face,
-                                         font_scale,
-                                         thickness,
-                                         nullptr);
+    cv::Size text_size =
+        cv::getTextSize(text, font_face, font_scale, thickness, nullptr);
     cv::Point origin;
     origin.x = roi.x;
     origin.y = roi.y;
@@ -124,9 +121,8 @@ void ObjectDetector::Preprocess(const cv::Mat& ori_im) {
   preprocessor_.Run(&im, &inputs_);
 }
 
-void ObjectDetector::Postprocess(
-    const cv::Mat& raw_mat,
-    std::vector<ObjectResult>* result) {
+void ObjectDetector::Postprocess(const cv::Mat& raw_mat,
+                                 std::vector<ObjectResult>* result) {
   result->clear();
   int rh = 1;
   int rw = 1;
@@ -158,11 +154,11 @@ void ObjectDetector::Postprocess(
 }
 
 void ObjectDetector::Predict(const cv::Mat& im,
-      const double threshold,
-      const int warmup,
-      const int repeats,
-      const bool run_benchmark,
-      std::vector<ObjectResult>* result) {
+                             const double threshold,
+                             const int warmup,
+                             const int repeats,
+                             const bool run_benchmark,
+                             std::vector<ObjectResult>* result) {
   // Preprocess image
   Preprocess(im);
   // Prepare input tensor
@@ -189,8 +185,7 @@ void ObjectDetector::Predict(const cv::Mat& im,
     }
   }
   // Run predictor
-  for (int i = 0; i < warmup; i++)
-  {
+  for (int i = 0; i < warmup; i++) {
     predictor_->ZeroCopyRun();
     // Get output tensor
     auto output_names = predictor_->GetOutputNames();
@@ -206,12 +201,11 @@ void ObjectDetector::Predict(const cv::Mat& im,
       std::cerr << "[WARNING] No object detected." << std::endl;
     }
     output_data_.resize(output_size);
-    out_tensor->copy_to_cpu(output_data_.data()); 
+    out_tensor->copy_to_cpu(output_data_.data());
   }
 
   auto start = std::chrono::steady_clock::now();
-  for (int i = 0; i < repeats; i++)
-  {
+  for (int i = 0; i < repeats; i++) {
     predictor_->ZeroCopyRun();
     // Get output tensor
     auto output_names = predictor_->GetOutputNames();
@@ -227,15 +221,15 @@ void ObjectDetector::Predict(const cv::Mat& im,
       std::cerr << "[WARNING] No object detected." << std::endl;
     }
     output_data_.resize(output_size);
-    out_tensor->copy_to_cpu(output_data_.data()); 
+    out_tensor->copy_to_cpu(output_data_.data());
   }
   auto end = std::chrono::steady_clock::now();
   std::chrono::duration<float> diff = end - start;
   float ms = diff.count() / repeats * 1000;
   printf("Inference: %f ms per batch image\n", ms);
   // Postprocessing result
-  if(!run_benchmark) {
-    Postprocess(im,  result);
+  if (!run_benchmark) {
+    Postprocess(im, result);
   }
 }
 

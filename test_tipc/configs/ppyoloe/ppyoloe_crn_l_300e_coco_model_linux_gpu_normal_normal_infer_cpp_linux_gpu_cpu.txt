@@ -18,11 +18,11 @@ infer_mode:norm
 infer_quant:False
 inference:./deploy/cpp/build/main
 --device:gpu|cpu
---use_mkldnn:True|False
---cpu_threads:1|6
+--use_mkldnn:False
+--cpu_threads:4
 --batch_size:1|2
 --use_tensorrt:null
---run_mode:paddle|trt_fp32|trt_fp16
+--run_mode:paddle
 --model_dir:
 --image_dir:./dataset/coco/test2017/
 --run_benchmark:False

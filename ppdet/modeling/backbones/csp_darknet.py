@@ -18,7 +18,6 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
-from ppdet.modeling.ops import get_activation
 from ppdet.modeling.initializer import conv_init_
 from ..shape_spec import ShapeSpec
 
@@ -49,7 +48,6 @@ class BaseConv(nn.Layer):
             out_channels,
             weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
             bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
-        self.act = get_activation(act)
 
         self._init_weights()
 
@@ -57,7 +55,10 @@ class BaseConv(nn.Layer):
         conv_init_(self.conv)
 
     def forward(self, x):
-        return self.act(self.bn(self.conv(x)))
+        # use 'x * F.sigmoid(x)' replace 'silu'
+        x = self.bn(self.conv(x))
+        y = x * F.sigmoid(x)
+        return y
 
 
 class DWConv(nn.Layer):
@@ -78,7 +79,7 @@ class DWConv(nn.Layer):
             stride=stride,
             groups=in_channels,
             bias=bias,
-            act=act, )
+            act=act)
         self.pw_conv = BaseConv(
             in_channels,
             out_channels,
@@ -274,7 +275,7 @@ class CSPDarkNet(nn.Layer):
         return_idx (list): Index of stages whose feature maps are returned.
     """
 
-    __shared__ = ['depth_mult', 'width_mult', 'act']
+    __shared__ = ['depth_mult', 'width_mult', 'act', 'trt']
 
     # in_channels, out_channels, num_blocks, add_shortcut, use_spp(use_sppf)
     # 'X' means setting used in YOLOX, 'P5/P6' means setting used in YOLOv5.
@@ -294,12 +295,12 @@ class CSPDarkNet(nn.Layer):
                  width_mult=1.0,
                  depthwise=False,
                  act='silu',
+                 trt=False,
                  return_idx=[2, 3, 4]):
         super(CSPDarkNet, self).__init__()
         self.arch = arch
         self.return_idx = return_idx
         Conv = DWConv if depthwise else BaseConv
-
         arch_setting = self.arch_settings[arch]
         base_channels = int(arch_setting[0][0] * width_mult)
 

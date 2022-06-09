@@ -28,32 +28,32 @@
 ## 配置说明
 [配置文件](../config/infer_cfg.yml)中与行为识别相关的参数如下：
 ```
-ACTION:
+SKELETON_ACTION:
   model_dir: output_inference/STGCN  # 模型所在路径
   batch_size: 1 # 预测批大小。 当前仅支持为1进行推理
   max_frames: 50 # 动作片段对应的帧数。在行人ID对应时序骨骼点结果时达到该帧数后，会通过行为识别模型判断该段序列的动作类型。与训练设置一致时效果最佳。
   display_frames: 80 # 显示帧数。当预测结果为摔倒时，在对应人物ID中显示状态的持续时间。
   coord_size: [384, 512] # 坐标统一缩放到的尺度大小。与训练设置一致时效果最佳。
+  basemode: "skeletonbased" #模型基于的路线分支，是否需要skeleton作为输入
+  enable: False #是否开启该功能
 ```
 
 ## 使用方法
 1. 从上表链接中下载模型并解压到```./output_inference```路径下。
-2. 目前行为识别模块仅支持视频输入，启动命令如下：
+2. 目前行为识别模块仅支持视频输入，设置infer_cfg.yml中`SKELETON_ACTION`的enable: True, 然后启动命令如下：
 ```python
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
-                                                   --enable_action=True
 ```
 3. 若修改模型路径，有以下两种方式：
 
-    - ```./deploy/pphuman/config/infer_cfg.yml```下可以配置不同模型路径，关键点模型和行为识别模型分别对应`KPT`和`ACTION`字段，修改对应字段下的路径为实际期望的路径即可。
+    - ```./deploy/pphuman/config/infer_cfg.yml```下可以配置不同模型路径，关键点模型和摔倒行为识别模型分别对应`KPT`和`SKELETON_ACTION`字段，修改对应字段下的路径为实际期望的路径即可。
     - 命令行中增加`--model_dir`修改模型路径：
 ```python
 python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
-                                                   --enable_action=True \
                                                    --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
 ```
 

@@ -23,7 +23,6 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.nn.initializer import Normal, Constant
-from paddle.fluid.dygraph import parallel_helper
 
 from ppdet.modeling.ops import get_static_shape
 from ..initializer import normal_
@@ -726,8 +725,7 @@ class PicoHeadV2(GFLHead):
             loss_dfl = paddle.zeros([1])
 
         avg_factor = flatten_assigned_scores.sum()
-        if paddle.fluid.core.is_compiled_with_dist(
-        ) and parallel_helper._is_parallel_ctx_initialized():
+        if paddle.distributed.get_world_size() > 1:
             paddle.distributed.all_reduce(avg_factor)
             avg_factor = paddle.clip(
                 avg_factor / paddle.distributed.get_world_size(), min=1)

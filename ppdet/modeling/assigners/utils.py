@@ -88,7 +88,7 @@ def gather_topk_anchors(metrics, topk, largest=True, topk_mask=None, eps=1e-9):
         largest (bool) : largest is a flag, if set to true,
             algorithm will sort by descending order, otherwise sort by
             ascending order. Default: True
-        topk_mask (Tensor, bool|None): shape[B, n, topk], ignore bbox mask,
+        topk_mask (Tensor, float32): shape[B, n, 1], ignore bbox mask,
             Default: None
         eps (float): Default: 1e-9
     Returns:
@@ -98,13 +98,11 @@ def gather_topk_anchors(metrics, topk, largest=True, topk_mask=None, eps=1e-9):
     topk_metrics, topk_idxs = paddle.topk(
         metrics, topk, axis=-1, largest=largest)
     if topk_mask is None:
-        topk_mask = (topk_metrics.max(axis=-1, keepdim=True) > eps).tile(
-            [1, 1, topk])
-    topk_idxs = paddle.where(topk_mask, topk_idxs, paddle.zeros_like(topk_idxs))
-    is_in_topk = F.one_hot(topk_idxs, num_anchors).sum(axis=-2)
-    is_in_topk = paddle.where(is_in_topk > 1,
-                              paddle.zeros_like(is_in_topk), is_in_topk)
-    return is_in_topk.astype(metrics.dtype)
+        topk_mask = (
+            topk_metrics.max(axis=-1, keepdim=True) > eps).astype(metrics.dtype)
+    is_in_topk = F.one_hot(topk_idxs, num_anchors).sum(
+        axis=-2).astype(metrics.dtype)
+    return is_in_topk * topk_mask
 
 
 

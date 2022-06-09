@@ -7,6 +7,7 @@ weights: output/ppyoloe_crn_l_36e_640x640_mot17half/model_final
 log_iter: 20
 snapshot_epoch: 2
 
+
 # schedule configuration for fine-tuning
 epoch: 36
 LearningRate:
@@ -16,7 +17,7 @@ LearningRate:
       max_epochs: 43
     - !LinearWarmup
       start_factor: 0.001
-      steps: 100
+      epochs: 1
 
 OptimizerBuilder:
   optimizer:
@@ -26,8 +27,10 @@ OptimizerBuilder:
     factor: 0.0005
     type: L2
 
+
 TrainReader:
   batch_size: 8
+
 
 # detector configuration
 architecture: YOLOv3
@@ -63,7 +66,6 @@ PPYOLOEHead:
   grid_cell_offset: 0.5
   static_assigner_epoch: -1 # 100
   use_varifocal_loss: True
-  eval_input_size: [640, 640]
   loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
   static_assigner:
     name: ATSSAssigner

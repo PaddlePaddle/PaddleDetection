@@ -68,7 +68,7 @@ class KeyPointBuff(object):
 
     def get_collected_keypoint(self):
         """
-            Output (List): List of keypoint results for Action Recognition task, where 
+            Output (List): List of keypoint results for Skeletonbased Recognition task, where 
                            the format of each element is [tracker_id, KeyPointSequence of tracker_id]
         """
         output = []
@@ -80,7 +80,7 @@ class KeyPointBuff(object):
         return output
 
 
-class ActionVisualHelper(object):
+class SkeletonActionVisualHelper(object):
     def __init__(self, frame_life=20):
         self.frame_life = frame_life
         self.action_history = {}

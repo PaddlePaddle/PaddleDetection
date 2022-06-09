@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
 #include <fstream>
 #include <iostream>
-#include <vector>
-#include <chrono>
 #include <numeric>
+#include <vector>
 #include "opencv2/core.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/imgproc.hpp"
 #include "paddle_api.h"  // NOLINT
-
 
 using namespace paddle::lite_api;  // NOLINT
 using namespace std;
@@ -57,13 +56,14 @@ void PrintBenchmarkLog(std::vector<double> det_time,
   std::cout << "---------------- Perf info ---------------------" << std::endl;
   std::cout << "Total number of predicted data: " << img_num
             << " and total time spent(s): "
-            << std::accumulate(det_time.begin(), det_time.end(), 0) << std::endl;
+            << std::accumulate(det_time.begin(), det_time.end(), 0)
+            << std::endl;
   std::cout << "preproce_time(ms): " << det_time[0] / img_num
             << ", inference_time(ms): " << det_time[1] / img_num
             << ", postprocess_time(ms): " << det_time[2] << std::endl;
 }
 
-std::vector<std::string> LoadLabels(const std::string &path) {
+std::vector<std::string> LoadLabels(const std::string& path) {
   std::ifstream file;
   std::vector<std::string> labels;
   file.open(path);
@@ -96,18 +96,17 @@ std::vector<std::string> ReadDict(std::string path) {
   return m_vec;
 }
 
-std::vector<std::string> split(const std::string &str,
-                               const std::string &delim) {
+std::vector<std::string> split(const std::string& str,
+                               const std::string& delim) {
   std::vector<std::string> res;
-  if ("" == str)
-    return res;
-  char *strs = new char[str.length() + 1];
+  if ("" == str) return res;
+  char* strs = new char[str.length() + 1];
   std::strcpy(strs, str.c_str());
 
-  char *d = new char[delim.length() + 1];
+  char* d = new char[delim.length() + 1];
   std::strcpy(d, delim.c_str());
 
-  char *p = std::strtok(strs, d);
+  char* p = std::strtok(strs, d);
   while (p) {
     string s = p;
     res.push_back(s);
@@ -128,14 +127,13 @@ std::map<std::string, std::string> LoadConfigTxt(std::string config_path) {
   return dict;
 }
 
-void PrintConfig(const std::map<std::string, std::string> &config) {
+void PrintConfig(const std::map<std::string, std::string>& config) {
   std::cout << "=======PaddleDetection lite demo config======" << std::endl;
   for (auto iter = config.begin(); iter != config.end(); iter++) {
     std::cout << iter->first << " : " << iter->second << std::endl;
   }
   std::cout << "===End of PaddleDetection lite demo config===" << std::endl;
 }
-
 
 // fill tensor with mean and scale and trans layout: nhwc -> nchw, neon speed up
 void neon_mean_scale(const float* din,
@@ -182,11 +180,11 @@ void neon_mean_scale(const float* din,
 }
 
 std::vector<Object> visualize_result(
-                        const float* data,
-                        int count,
-                        float thresh,
-                        cv::Mat& image,
-                        const std::vector<std::string> &class_names) {
+    const float* data,
+    int count,
+    float thresh,
+    cv::Mat& image,
+    const std::vector<std::string>& class_names) {
   if (data == nullptr) {
     std::cerr << "[ERROR] data can not be nullptr\n";
     exit(1);
@@ -258,54 +256,59 @@ std::shared_ptr<PaddlePredictor> LoadModel(std::string model_file,
 }
 
 ImageBlob prepare_imgdata(const cv::Mat& img,
-                          std::map<std::string,
-                          std::string> config) {
+                          std::map<std::string, std::string> config) {
   ImageBlob img_data;
   std::vector<int> target_size_;
   std::vector<std::string> size_str = split(config.at("Resize"), ",");
-  transform(size_str.begin(), size_str.end(), back_inserter(target_size_),
-            [](std::string const& s){return stoi(s);});
+  transform(size_str.begin(),
+            size_str.end(),
+            back_inserter(target_size_),
+            [](std::string const& s) { return stoi(s); });
   int width = target_size_[0];
   int height = target_size_[1];
-  img_data.im_shape_ = {
-      static_cast<int>(target_size_[0]),
-      static_cast<int>(target_size_[1])
-  };
+  img_data.im_shape_ = {static_cast<int>(target_size_[0]),
+                        static_cast<int>(target_size_[1])};
 
   std::vector<float> mean_;
   std::vector<float> scale_;
   std::vector<std::string> mean_str = split(config.at("mean"), ",");
   std::vector<std::string> std_str = split(config.at("std"), ",");
-  transform(mean_str.begin(), mean_str.end(), back_inserter(mean_),
-            [](std::string const& s){return stof(s);});
-  transform(std_str.begin(), std_str.end(), back_inserter(scale_),
-            [](std::string const& s){return stof(s);});
+  transform(mean_str.begin(),
+            mean_str.end(),
+            back_inserter(mean_),
+            [](std::string const& s) { return stof(s); });
+  transform(std_str.begin(),
+            std_str.end(),
+            back_inserter(scale_),
+            [](std::string const& s) { return stof(s); });
   img_data.mean_ = mean_;
   img_data.scale_ = scale_;
   return img_data;
 }
 
-
 void preprocess(const cv::Mat& img, const ImageBlob img_data, float* data) {
   cv::Mat rgb_img;
   cv::cvtColor(img, rgb_img, cv::COLOR_BGR2RGB);
-  cv::resize(
-      rgb_img, rgb_img, cv::Size(img_data.im_shape_[0],img_data.im_shape_[1]),
-      0.f, 0.f, cv::INTER_CUBIC);
+  cv::resize(rgb_img,
+             rgb_img,
+             cv::Size(img_data.im_shape_[0], img_data.im_shape_[1]),
+             0.f,
+             0.f,
+             cv::INTER_CUBIC);
   cv::Mat imgf;
   rgb_img.convertTo(imgf, CV_32FC3, 1 / 255.f);
   const float* dimg = reinterpret_cast<const float*>(imgf.data);
-  neon_mean_scale(
-    dimg, data, int(img_data.im_shape_[0] * img_data.im_shape_[1]),
-    img_data.mean_, img_data.scale_);
+  neon_mean_scale(dimg,
+                  data,
+                  int(img_data.im_shape_[0] * img_data.im_shape_[1]),
+                  img_data.mean_,
+                  img_data.scale_);
 }
-
 
 void RunModel(std::map<std::string, std::string> config,
               std::string img_path,
               const int repeats,
               std::vector<double>* times) {
-
   std::string model_file = config.at("model_file");
   std::string label_path = config.at("label_path");
   // Load Labels
@@ -334,14 +337,12 @@ void RunModel(std::map<std::string, std::string> config,
 
   // 2. Run predictor
   // warm up
-  for (int i = 0; i < repeats / 2; i++)
-  {
+  for (int i = 0; i < repeats / 2; i++) {
     predictor->Run();
   }
 
   auto inference_start = std::chrono::steady_clock::now();
-  for (int i = 0; i < repeats; i++)
-  {
+  for (int i = 0; i < repeats; i++) {
     predictor->Run();
   }
   auto inference_end = std::chrono::steady_clock::now();
