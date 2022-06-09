@@ -172,9 +172,6 @@ class HybridTaskCascadeHead(BBoxHead):
                               [30.0, 30.0, 15.0, 15.0]],
                  num_cascade_stages=3,
                  bbox_loss=None,
-                 smoothl1loss=False,
-                 smoothl1lossbetanume=0.0,
-                 smoothl1lossbetadeno=1.0,
                  stage_loss_weights=[1, 0.5, 0.25]):
         nn.Layer.__init__(self, )
         self.head = head
@@ -186,9 +183,6 @@ class HybridTaskCascadeHead(BBoxHead):
         if isinstance(semantic_roi_extractor, dict):
             self.semantic_roi_extractor = RoIAlign(**semantic_roi_extractor)
         self.bbox_assigner = bbox_assigner
-
-        self.smoothl1loss = smoothl1loss
-        self.smoothl1lossbeta = smoothl1lossbetanume / smoothl1lossbetadeno
         self.stage_loss_weights = stage_loss_weights
 
         self.num_classes = num_classes

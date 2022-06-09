@@ -173,26 +173,31 @@ def subsample_labels(labels,
     return fg_inds, bg_inds
 
 
-def generate_proposal_target(rpn_rois,
-                             gt_classes,
-                             gt_boxes,
-                             batch_size_per_im,
-                             fg_fraction,
-                             fg_thresh,
-                             bg_thresh,
-                             num_classes,
-                             ignore_thresh=-1.,
-                             is_crowd=None,
-                             use_random=True,
-                             is_cascade=False,
-                             cascade_iou=0.5,
-                             assign_on_cpu=False):
+def generate_proposal_target(
+        rpn_rois,
+        gt_classes,
+        gt_boxes,
+        batch_size_per_im,
+        fg_fraction,
+        fg_thresh,
+        bg_thresh,
+        num_classes,
+        ignore_thresh=-1.,
+        is_crowd=None,
+        use_random=True,
+        is_cascade=False,
+        cascade_iou=0.5,
+        concate_gt=True,
+        # delete_pos = False,
+        pos_is_gts=True,
+        assign_on_cpu=False):
 
     rois_with_gt = []
     tgt_labels = []
     tgt_bboxes = []
     tgt_gt_inds = []
     new_rois_num = []
+    pos_gts = []
 
     # In cascade rcnn, the threshold for foreground and background
     # is used from cascade_iou
@@ -204,15 +209,23 @@ def generate_proposal_target(rpn_rois,
         gt_class = paddle.squeeze(gt_classes[i], axis=-1)
 
         # Concat RoIs and gt boxes except cascade rcnn or none gt
-        if not is_cascade and gt_bbox.shape[0] > 0:
-            bbox = paddle.concat([rpn_roi, gt_bbox])
+        if (not is_cascade and gt_bbox.shape[0] > 0) and concate_gt:
+            bbox = paddle.concat([gt_bbox, rpn_roi])
+        # elif delete_pos:
+        #     bbox = rpn_roi[paddle.logical_not(pos_is_gts[:bbox.shape[0], :])]
         else:
             bbox = rpn_roi
 
         # Step1: label bbox
-        matches, match_labels = label_box(bbox, gt_bbox, fg_thresh, bg_thresh,
-                                          False, ignore_thresh, is_crowd_i,
-                                          assign_on_cpu)
+        matches, match_labels = label_box(
+            bbox,
+            gt_bbox,
+            fg_thresh,
+            bg_thresh,
+            False,
+            ignore_thresh,
+            is_crowd_i,
+            assign_on_cpu=assign_on_cpu)
         # Step2: sample bbox 
         sampled_inds, sampled_gt_classes = sample_bbox(
             matches, match_labels, gt_class, batch_size_per_im, fg_fraction,
@@ -226,8 +239,7 @@ def generate_proposal_target(rpn_rois,
         if gt_bbox.shape[0] > 0:
             sampled_bbox = paddle.gather(gt_bbox, sampled_gt_ind)
         else:
-            num = rois_per_image.shape[0]
-            sampled_bbox = paddle.zeros([num, 4], dtype='float32')
+            sampled_bbox = paddle.zeros([0, 4], dtype='float32')
 
         rois_per_image.stop_gradient = True
         sampled_gt_ind.stop_gradient = True
@@ -237,8 +249,102 @@ def generate_proposal_target(rpn_rois,
         rois_with_gt.append(rois_per_image)
         tgt_gt_inds.append(sampled_gt_ind)
         new_rois_num.append(paddle.shape(sampled_inds)[0])
+        if (not is_cascade and
+                gt_bbox.shape[0] > 0) and concate_gt and pos_is_gts:
+            if sampled_inds.shape[0]:
+                pos_gts.append(0)
+            else:
+                mask = sampled_inds < gt_bbox.shape[0]
+                pos = paddle.masked_select(paddle.ones_like(sampled_inds), mask)
+                pos_gts.append(pos.shape[0])
     new_rois_num = paddle.concat(new_rois_num)
+    # if delete_pos:
+    #     if  is_cascade:
+    #         pos_is_gts = paddle.zeros_like(bbox, dtype=bool)
+    #         pos_is_gts[:gt_bbox.shape[0], :] = True
+    #     else:
+    #         pos_is_gts = paddle.zeros_like(bbox, dtype=bool)
+    #     return rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num, pos_is_gts
+    # else:
+    #     return rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num
+
+    if (not is_cascade and gt_bbox.shape[0] > 0) and concate_gt and pos_is_gts:
+        # for i, roi in enumerate(rois_with_gt):
+        #     a = paddle.nonzero(sampled_inds[i] - gt_bbox[i])
+        #     a = (paddle.ones_like(sampled_inds)[sampled_inds<gt_bbox[i]]).sum()
+        #     pos_gt = gt_bbox[i].shape[0]
+        #     pos_gts.append(pos_gt)
+        return rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num, pos_gts
+
     return rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num
+
+
+# def generate_proposal_target(rpn_rois,
+#                              gt_classes,
+#                              gt_boxes,
+#                              batch_size_per_im,
+#                              fg_fraction,
+#                              fg_thresh,
+#                              bg_thresh,
+#                              num_classes,
+#                              ignore_thresh=-1.,
+#                              is_crowd=None,
+#                              use_random=True,
+#                              is_cascade=False,
+#                              cascade_iou=0.5,
+#                              assign_on_cpu=False):
+
+#     rois_with_gt = []
+#     tgt_labels = []
+#     tgt_bboxes = []
+#     tgt_gt_inds = []
+#     new_rois_num = []
+
+#     # In cascade rcnn, the threshold for foreground and background
+#     # is used from cascade_iou
+#     fg_thresh = cascade_iou if is_cascade else fg_thresh
+#     bg_thresh = cascade_iou if is_cascade else bg_thresh
+#     for i, rpn_roi in enumerate(rpn_rois):
+#         gt_bbox = gt_boxes[i]
+#         is_crowd_i = is_crowd[i] if is_crowd else None
+#         gt_class = paddle.squeeze(gt_classes[i], axis=-1)
+
+#         # Concat RoIs and gt boxes except cascade rcnn or none gt
+#         if not is_cascade and gt_bbox.shape[0] > 0:
+#             bbox = paddle.concat([rpn_roi, gt_bbox])
+#         else:
+#             bbox = rpn_roi
+
+#         # Step1: label bbox
+#         matches, match_labels = label_box(bbox, gt_bbox, fg_thresh, bg_thresh,
+#                                           False, ignore_thresh, is_crowd_i,
+#                                           assign_on_cpu)
+#         # Step2: sample bbox 
+#         sampled_inds, sampled_gt_classes = sample_bbox(
+#             matches, match_labels, gt_class, batch_size_per_im, fg_fraction,
+#             num_classes, use_random, is_cascade)
+
+#         # Step3: make output 
+#         rois_per_image = bbox if is_cascade else paddle.gather(bbox,
+#                                                                sampled_inds)
+#         sampled_gt_ind = matches if is_cascade else paddle.gather(matches,
+#                                                                   sampled_inds)
+#         if gt_bbox.shape[0] > 0:
+#             sampled_bbox = paddle.gather(gt_bbox, sampled_gt_ind)
+#         else:
+#             num = rois_per_image.shape[0]
+#             sampled_bbox = paddle.zeros([num, 4], dtype='float32')
+
+#         rois_per_image.stop_gradient = True
+#         sampled_gt_ind.stop_gradient = True
+#         sampled_bbox.stop_gradient = True
+#         tgt_labels.append(sampled_gt_classes)
+#         tgt_bboxes.append(sampled_bbox)
+#         rois_with_gt.append(rois_per_image)
+#         tgt_gt_inds.append(sampled_gt_ind)
+#         new_rois_num.append(paddle.shape(sampled_inds)[0])
+#     new_rois_num = paddle.concat(new_rois_num)
+#     return rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num
 
 
 def sample_bbox(matches,

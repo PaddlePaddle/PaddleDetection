@@ -34,7 +34,6 @@ class HybridTaskCascade(BaseArch):
         bbox_head (object): `BBoxHead` instance
         bbox_post_process (object): `BBoxPostProcess` instance
         neck (object): 'FPN' instance
-        mask_head (object): `MaskHead` instance
         mask_post_process (object): `MaskPostProcess` instance
     """
     __category__ = 'architecture'
@@ -43,16 +42,14 @@ class HybridTaskCascade(BaseArch):
         'mask_post_process',
     ]
 
-    def __init__(
-            self,
-            backbone,
-            rpn_head,
-            bbox_head,
-            bbox_post_process,
-            neck=None,
-            # mask_head=None,
-            fused_semantic_head=None,
-            mask_post_process=None):
+    def __init__(self,
+                 backbone,
+                 rpn_head,
+                 bbox_head,
+                 bbox_post_process,
+                 neck=None,
+                 fused_semantic_head=None,
+                 mask_post_process=None):
         super(HybridTaskCascade, self).__init__()
         self.backbone = backbone
         self.rpn_head = rpn_head
@@ -105,7 +102,6 @@ class HybridTaskCascade(BaseArch):
                 loss_seg = {'loss_semantic': loss_seg}
             else:
                 semantic_feats = None
-                # loss_seg = {'loss_semantic': 0.}
 
             rois, rois_num, rpn_loss = self.rpn_head(body_feats, self.inputs)
             bbox_loss, bbox_feat = self.bbox_head(
@@ -115,16 +111,7 @@ class HybridTaskCascade(BaseArch):
                 self.inputs,
                 semantic_feats=semantic_feats)
             return rpn_loss, bbox_loss, loss_seg
-            # rois, rois_num = self.bbox_head.get_assigned_rois()
-            # bbox_targets = self.bbox_head.get_assigned_targets()
 
-            # if self.with_mask:
-            #     mask_loss = self.mask_head(body_feats, rois, rois_num,
-            #                                self.inputs, bbox_targets, bbox_feat,
-            #                                semantic_feats=semantic_feats)
-            #     return loss_seg, rpn_loss, bbox_loss, mask_loss
-            # else:
-            #     return loss_seg, rpn_loss, bbox_loss, {}
         else:
             if self.with_semantic:
                 _, semantic_feats = self.fused_semantic_head(body_feats)
@@ -148,12 +135,7 @@ class HybridTaskCascade(BaseArch):
             # rescale the prediction back to origin image
             bbox_pred = self.bbox_post_process.get_pred(bbox, bbox_num,
                                                         im_shape, scale_factor)
-            # if not self.with_mask:
-            #     return bbox_pred, bbox_num, None
-            # mask_out = self.mask_head(body_feats, bbox, bbox_num, self.inputs)
-            # origin_shape = self.bbox_post_process.get_origin_shape()
-            # mask_pred = self.mask_post_process(mask_out[:, 0, :, :], bbox_pred,
-            #                                    bbox_num, origin_shape)
+
             mask_out = self.bbox_head.get_mask_result(
                 body_feats,
                 bbox,
@@ -173,10 +155,10 @@ class HybridTaskCascade(BaseArch):
         loss = {}
         loss.update(rpn_loss)
         loss.update(bbox_loss)
+
         if self.with_semantic:
             loss.update(loss_seg)
-        # if self.with_mask:
-        #     loss.update(mask_loss)
+
         total_loss = paddle.add_n(list(loss.values()))
         loss.update({'loss': total_loss})
         return loss
@@ -187,6 +169,6 @@ class HybridTaskCascade(BaseArch):
             'bbox': bbox_pred,
             'bbox_num': bbox_num,
         }
-        # if self.with_mask:
+
         output.update({'mask': mask_pred})
         return output

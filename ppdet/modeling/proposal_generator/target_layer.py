@@ -156,22 +156,53 @@ class BBoxAssigner(object):
                  rpn_rois_num,
                  inputs,
                  stage=0,
-                 is_cascade=False):
+                 is_cascade=False,
+                 concate_gt=True,
+                 thresh=None,
+                 pos_is_gts=False):
+
         gt_classes = inputs['gt_class']
         gt_boxes = inputs['gt_bbox']
         is_crowd = inputs.get('is_crowd', None)
         # rois, tgt_labels, tgt_bboxes, tgt_gt_inds
         # new_rois_num
+
+        self.fg_thresh = thresh if thresh is not None else self.fg_thresh
+        self.bg_thresh = thresh if thresh is not None else self.bg_thresh
+
         outs = generate_proposal_target(
-            rpn_rois, gt_classes, gt_boxes, self.batch_size_per_im,
-            self.fg_fraction, self.fg_thresh, self.bg_thresh, self.num_classes,
-            self.ignore_thresh, is_crowd, self.use_random, is_cascade,
-            self.cascade_iou[stage], self.assign_on_cpu)
+            rpn_rois,
+            gt_classes,
+            gt_boxes,
+            self.batch_size_per_im,
+            self.fg_fraction,
+            self.fg_thresh,
+            self.bg_thresh,
+            self.num_classes,
+            self.ignore_thresh,
+            is_crowd,
+            self.use_random,
+            is_cascade,
+            self.cascade_iou[stage],
+            concate_gt=concate_gt,
+            pos_is_gts=True,
+            assign_on_cpu=self.assign_on_cpu)
+
         rois = outs[0]
-        rois_num = outs[-1]
+        rois_num = outs[4]
         # tgt_labels, tgt_bboxes, tgt_gt_inds
         targets = outs[1:4]
-        return rois, rois_num, targets
+
+        if pos_is_gts:
+            return rois, rois_num, targets, outs[5]
+        else:
+            return rois, rois_num, targets
+
+        # rois = outs[0]
+        # rois_num = outs[-1]
+        # # tgt_labels, tgt_bboxes, tgt_gt_inds
+        # targets = outs[1:4]
+        # return rois, rois_num, targets
 
 
 @register
