@@ -222,7 +222,7 @@ class MaskHead(nn.Layer):
             mask_feat = self.head(rois_feat)
             mask_logit = self.mask_fcn_logits(mask_feat)
             if self.num_classes == 1:
-                mask_out = F.sigmoid(mask_logit)
+                mask_out = F.sigmoid(mask_logit)[:, 0, :, :]
             else:
                 num_masks = paddle.shape(mask_logit)[0]
                 index = paddle.arange(num_masks).cast('int32')
