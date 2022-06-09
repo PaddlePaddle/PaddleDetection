@@ -233,7 +233,11 @@ class HybridTaskCascadeHead(BBoxHead):
         kwargs = RoIAlign.from_config(cfg, input_shape)
         semantic_roi_pooler.update(kwargs)
 
+        kwargs = {'input_shape': input_shape}
+        head = create(cfg['head'], **kwargs)
+
         return {
+            'head': head,
             'mask_head': mask_head,
             'in_channel': in_channel,
             'roi_extractor': roi_pooler,
