@@ -197,7 +197,7 @@ class VideoActionRecognizer(object):
         img_mean = [0.485, 0.456, 0.406]
         img_std = [0.229, 0.224, 0.225]
         ops = [
-            Scale(self.short_size), CenterCrop(self.target_size), Image2Array(),
+            CenterCrop(self.target_size), Image2Array(),
             Normalization(img_mean, img_std)
         ]
         for op in ops:

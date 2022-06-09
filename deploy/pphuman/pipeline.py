@@ -42,7 +42,7 @@ from python.action_utils import KeyPointBuff, SkeletonActionVisualHelper
 
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
-from python.preprocess import decode_image
+from python.preprocess import decode_image, Scale
 from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
 
 from pptracking.python.mot_sde_infer import SDE_Detector
@@ -705,7 +705,11 @@ class PipePredictor(object):
 
                 # collect frames
                 if frame_id % sample_freq == 0:
-                    video_action_imgs.append(frame)
+                    # Scale image
+                    short_size = self.cfg["VIDEO_ACTION"]["short_size"]
+                    scale = Scale(short_size)
+                    scaled_img = scale(frame)
+                    video_action_imgs.append(scaled_img)
 
                 # the number of collected frames is enough to predict video action
                 if len(video_action_imgs) == frame_len:
