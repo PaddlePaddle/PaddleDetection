@@ -9,9 +9,7 @@ HybridTaskCascade:
   neck: FPN
   rpn_head: RPNHead
   bbox_head: HybridTaskCascadeHead
-  # mask_head: HybridTaskMaskHead
   fused_semantic_head: FusedSemanticHead
-  # post process
   bbox_post_process: BBoxPostProcess
   mask_post_process: MaskPostProcess
 
