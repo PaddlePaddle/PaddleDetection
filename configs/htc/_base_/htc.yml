@@ -63,9 +63,9 @@ HybridTaskCascadeHead:
     aligned: True
   bbox_assigner: BBoxAssigner
   mask_head: HybridTaskMaskHead
-  use_smooth_l1_loss: True
-  smooth_l1_loss_beta_nume: 1.0
-  smooth_l1_loss_beta_deno: 9.0
+  # use_smooth_l1_loss: True
+  # smooth_l1_loss_beta_nume: 1.0
+  # smooth_l1_loss_beta_deno: 9.0
 
 BBoxAssigner:
   batch_size_per_im: 512

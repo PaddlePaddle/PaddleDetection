@@ -185,7 +185,7 @@ class BBoxAssigner(object):
             is_cascade,
             self.cascade_iou[stage],
             concate_gt=concate_gt,
-            pos_is_gts=True,
+            pos_is_gts=pos_is_gts,
             assign_on_cpu=self.assign_on_cpu)
 
         rois = outs[0]

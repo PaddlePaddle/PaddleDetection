@@ -65,11 +65,11 @@ class HybridTaskCascadeTwoFCHead(nn.Layer):
                 str(stage), TwoFCHead(in_channel, out_channel, resolution))
             self.head_list.append(head_per_stage)
 
-    @classmethod
-    def from_config(cls, cfg, input_shape):
-        s = input_shape
-        s = s[0] if isinstance(s, (list, tuple)) else s
-        return {'in_channel': s.channels}
+    # @classmethod
+    # def from_config(cls, cfg, input_shape):
+    #     s = input_shape
+    #     s = s[0] if isinstance(s, (list, tuple)) else s
+    #     return {'in_channel': s.channels}
 
     @property
     def out_shape(self):
@@ -126,11 +126,11 @@ class HybridTaskCascadeXConvNormHead(nn.Layer):
                     stage_name='stage{}_'.format(stage)))
             self.head_list.append(head_per_stage)
 
-    @classmethod
-    def from_config(cls, cfg, input_shape):
-        s = input_shape
-        s = s[0] if isinstance(s, (list, tuple)) else s
-        return {'in_channel': s.channels}
+    # @classmethod
+    # def from_config(cls, cfg, input_shape):
+    #     s = input_shape
+    #     s = s[0] if isinstance(s, (list, tuple)) else s
+    #     return {'in_channel': s.channels}
 
     @property
     def out_shape(self):
@@ -144,7 +144,10 @@ class HybridTaskCascadeXConvNormHead(nn.Layer):
 @register
 class HybridTaskCascadeHead(BBoxHead):
     __shared__ = ['num_classes', 'num_cascade_stages']
-    __inject__ = ['bbox_assigner', 'bbox_loss']
+    __inject__ = [
+        'bbox_assigner',
+        'bbox_loss',
+    ]
     """
     Cascade RCNN bbox head
 

@@ -122,11 +122,11 @@ class HybridTaskMaskFeatSub(nn.Layer):
             mask_conv.add_sublayer('conv' + 'act', nn.ReLU())
             self.conv_res = mask_conv
 
-    @classmethod
-    def from_config(cls, cfg, input_shape):
-        if isinstance(input_shape, (list, tuple)):
-            input_shape = input_shape[0]
-        return {'in_channel': input_shape.channels, }
+    # @classmethod
+    # def from_config(cls, cfg, input_shape):
+    #     if isinstance(input_shape, (list, tuple)):
+    #         input_shape = input_shape[0]
+    #     return {'in_channel': input_shape.channels, }
 
     def out_channels(self):
         # return self.out_channel
@@ -190,11 +190,11 @@ class HybridTaskMaskFeat(nn.Layer):
             self.upsample.append(head_per_stage)
         # a = 0
 
-    @classmethod
-    def from_config(cls, cfg, input_shape):
-        if isinstance(input_shape, (list, tuple)):
-            input_shape = input_shape[0]
-        return {'in_channel': input_shape.channels, }
+        # @classmethod
+        # def from_config(cls, cfg, input_shape):
+        #     if isinstance(input_shape, (list, tuple)):
+        #         input_shape = input_shape[0]
+        #     return {'in_channel': input_shape.channels, }
 
     def out_channels(self):
         return self.out_channel
