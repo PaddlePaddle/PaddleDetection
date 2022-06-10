@@ -85,7 +85,7 @@ function func_cpp_inference(){
                         eval $command
                         last_status=${PIPESTATUS[0]}
                         eval "cat ${_save_log_path}"
-                        status_check $last_status "${command}" "${status_log}"
+                        status_check $last_status "${command}" "${status_log}" "${model_name}"
                     done
                 done
             done
@@ -111,7 +111,7 @@ function func_cpp_inference(){
                     eval $command
                     last_status=${PIPESTATUS[0]}
                     eval "cat ${_save_log_path}"
-                    status_check $last_status "${command}" "${status_log}"
+                    status_check $last_status "${command}" "${status_log}" "${model_name}"
                 done
             done
         else
@@ -129,11 +129,21 @@ else
 fi
 
 # build program
-# TODO: set PADDLE_DIR and TENSORRT_ROOT
-if [ -z $PADDLE_DIR ]; then
-    wget -nc https://paddle-inference-lib.bj.bcebos.com/2.2.2/cxx_c/Linux/GPU/x86-64_gcc8.2_avx_mkl_cuda11.1_cudnn8.1.1_trt7.2.3.4/paddle_inference.tgz --no-check-certificate
-    tar zxf paddle_inference.tgz
-    PADDLE_DIR=$(pwd)/paddle_inference
+# TODO: set PADDLE_INFER_DIR and TENSORRT_ROOT
+if [ -z $PADDLE_INFER_DIR ]; then
+    Paddle_Infer_Link=$2
+    if [ "" = "$Paddle_Infer_Link" ];then
+        wget -nc https://paddle-inference-lib.bj.bcebos.com/2.2.2/cxx_c/Linux/GPU/x86-64_gcc8.2_avx_mkl_cuda10.1_cudnn7.6.5_trt6.0.1.5/paddle_inference.tgz --no-check-certificate
+        tar zxf paddle_inference.tgz
+        PADDLE_INFER_DIR=$(pwd)/paddle_inference
+    else
+        wget -nc $Paddle_Infer_Link --no-check-certificate
+        tar zxf paddle_inference.tgz
+        PADDLE_INFER_DIR=$(pwd)/paddle_inference
+        if [ ! -d "paddle_inference" ]; then
+          PADDLE_INFER_DIR=$(pwd)/paddle_inference_install_dir
+        fi
+    fi
 fi
 if [ -z $TENSORRT_ROOT ]; then
     TENSORRT_ROOT=/usr/local/TensorRT6-cuda10.1-cudnn7
@@ -148,10 +158,10 @@ mkdir -p build
 cd ./build
 cmake .. \
     -DWITH_GPU=ON \
-    -DWITH_MKL=OFF \
+    -DWITH_MKL=ON \
     -DWITH_TENSORRT=OFF \
     -DPADDLE_LIB_NAME=libpaddle_inference \
-    -DPADDLE_DIR=${PADDLE_DIR} \
+    -DPADDLE_DIR=${PADDLE_INFER_DIR} \
     -DCUDA_LIB=${CUDA_LIB} \
     -DCUDNN_LIB=${CUDNN_LIB} \
     -DTENSORRT_LIB_DIR=${TENSORRT_LIB_DIR} \
@@ -160,13 +170,13 @@ cmake .. \
     -DWITH_KEYPOINT=ON \
     -DWITH_MOT=ON
 
-make -j4
+make -j8
 cd ../../../
 echo "################### build finished! ###################"
 
 
 # set cuda device
-GPUID=$2
+GPUID=$3
 if [ ${#GPUID} -le 0 ];then
     env=" "
 else
@@ -178,7 +188,6 @@ Count=0
 IFS="|"
 infer_quant_flag=(${cpp_infer_is_quant_list})
 for infer_mode in ${cpp_infer_mode_list[*]}; do
-
     # run export
     case ${infer_mode} in
         norm) run_export=${norm_export} ;;
@@ -198,7 +207,7 @@ for infer_mode in ${cpp_infer_mode_list[*]}; do
     echo  $export_cmd
     eval $export_cmd
     status_export=$?
-    status_check $status_export "${export_cmd}" "${status_log}"
+    status_check $status_export "${export_cmd}" "${status_log}" "${model_name}"
 
     #run inference
     save_export_model_dir="${save_export_value}/${model_name}"

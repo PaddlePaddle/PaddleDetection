@@ -23,6 +23,7 @@ class Result(object):
             'mot': dict(),
             'attr': dict(),
             'kpt': dict(),
+            'video_action': dict(),
             'skeleton_action': dict(),
             'reid': dict(),
             'det_action': dict(),

@@ -152,6 +152,7 @@ class PipeTimer(Times):
             'mot': Times(),
             'attr': Times(),
             'kpt': Times(),
+            'video_action': Times(),
             'skeleton_action': Times(),
             'reid': Times(),
             'det_action': Times(),
@@ -199,6 +200,7 @@ class PipeTimer(Times):
         dic['kpt'] = round(self.module_time['kpt'].value() /
                            max(1, self.img_num),
                            4) if average else self.module_time['kpt'].value()
+        dic['video_action'] = self.module_time['video_action'].value()
         dic['skeleton_action'] = round(
             self.module_time['skeleton_action'].value() / max(1, self.img_num),
             4) if average else self.module_time['skeleton_action'].value()

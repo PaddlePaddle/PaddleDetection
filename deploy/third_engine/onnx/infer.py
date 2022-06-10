@@ -45,7 +45,7 @@ SUPPORT_MODELS = {
 }
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument("-c", "--config", type=str, help="infer_cfg.yml")
+parser.add_argument("--infer_cfg", type=str, help="infer_cfg.yml")
 parser.add_argument(
     '--onnx_file', type=str, default="model.onnx", help="onnx model file path")
 parser.add_argument("--image_dir", type=str)
@@ -86,7 +86,7 @@ def get_test_images(infer_dir, infer_img):
 class PredictConfig(object):
     """set config of preprocess, postprocess and visualize
     Args:
-        model_dir (str): root path of infer_cfg.yml
+        infer_config (str): path of infer_cfg.yml
     """
 
     def __init__(self, infer_config):
@@ -145,7 +145,7 @@ def predict_image(infer_config, predictor, img_list):
         bboxes = np.array(outputs[0])
         for bbox in bboxes:
             if bbox[0] > -1 and bbox[1] > infer_config.draw_threshold:
-                print(f"{infer_config.label_list[int(bbox[0])]} {bbox[1]} "
+                print(f"{int(bbox[0])} {bbox[1]} "
                       f"{bbox[2]} {bbox[3]} {bbox[4]} {bbox[5]}")
 
 
@@ -156,6 +156,6 @@ if __name__ == '__main__':
     # load predictor
     predictor = InferenceSession(FLAGS.onnx_file)
     # load infer config
-    infer_config = PredictConfig(FLAGS.config)
+    infer_config = PredictConfig(FLAGS.infer_cfg)
 
     predict_image(infer_config, predictor, img_list)

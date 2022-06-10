@@ -25,8 +25,13 @@ ATTR:
   enable: False
 
 VIDEO_ACTION:
-  model_dir: output_inference/pp-stm
+  model_dir: output_inference/ppTSM
   batch_size: 1
+  frame_len: 8
+  sample_freq: 7
+  short_size: 340
+  target_size: 320
+  basemode: "videobased"
   enable: False
 
 SKELETON_ACTION:
