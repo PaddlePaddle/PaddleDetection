@@ -23,7 +23,7 @@ inference:./deploy/cpp/build/main
 --batch_size:1|2
 --use_tensorrt:null
 --run_mode:paddle
---model_dir:
+--model_dir_keypoint:
 --image_dir:./dataset/coco/test2017/
 --run_benchmark:False
-null:null
+--model_dir:./output_inference/picodet_s_320_pedestrian

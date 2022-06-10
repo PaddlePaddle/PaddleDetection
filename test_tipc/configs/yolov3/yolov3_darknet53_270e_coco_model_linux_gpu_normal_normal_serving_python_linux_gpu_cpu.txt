@@ -1,20 +1,24 @@
-===========================cpp_infer_params===========================
+===========================serving_infer_python_params===========================
 model_name:yolov3_darknet53_270e_coco
-python:python
+python:python3.7
 filename:null
 ##
 --output_dir:./output_inference
 weights:https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams
-norm_export:tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
-quant_export:tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --slim_config configs/slim/quant/yolov3_darknet_qat.yml -o
-fpgm_export:tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --slim_config configs/slim/prune/yolov3_darknet_prune_fpgm.yml -o
+norm_export:tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --export_serving_model True -o
+quant_export:tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --slim_config configs/slim/quant/yolov3_darknet_qat.yml --export_serving_model True -o
+fpgm_export:tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --slim_config configs/slim/prune/yolov3_darknet_prune_fpgm.yml --export_serving_model True -o
 distill_export:null
 export1:null
 export2:null
-kl_quant_export:tools/post_quant.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --slim_config configs/slim/post_quant/yolov3_darknet53_ptq.yml -o
---export_serving_model:True
+kl_quant_export:tools/post_quant.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --slim_config configs/slim/post_quant/yolov3_darknet53_ptq.yml --export_serving_model True -o
 ##
-start_serving:-m paddle_serving_server.serve --model serving_server 
---port:9393 
---gpu_ids:0
-##
+infer_mode:norm
+infer_quant:False
+web_service:deploy/serving/python/web_service.py --config=deploy/serving/python/config.yml
+--model_dir:null
+--opt:cpu:op.ppdet.local_service_conf.device_type=0|gpu:op.ppdet.local_service_conf.device_type=1
+null:null
+http_client:deploy/serving/python/pipeline_http_client.py
+--image_file:./demo/000000014439.jpg
+null:null
