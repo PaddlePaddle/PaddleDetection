@@ -198,12 +198,6 @@ class BBoxAssigner(object):
         else:
             return rois, rois_num, targets
 
-        # rois = outs[0]
-        # rois_num = outs[-1]
-        # # tgt_labels, tgt_bboxes, tgt_gt_inds
-        # targets = outs[1:4]
-        # return rois, rois_num, targets
-
 
 @register
 class BBoxLibraAssigner(object):
