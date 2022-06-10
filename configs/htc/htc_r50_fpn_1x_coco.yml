@@ -1,0 +1,8 @@
+_BASE_: [
+    '../datasets/coco_instance.yml',
+    '../runtime.yml',
+    './_base_/optimizer_1x.yml',
+    './_base_/reader.yml',
+    './_base_/htc.yml',
+]
+weights: output/htc_r50_fpn_1x_coco/model_final

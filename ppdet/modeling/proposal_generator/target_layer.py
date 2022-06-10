@@ -70,7 +70,7 @@ class RPNTargetAssign(object):
         self.use_random = use_random
         self.assign_on_cpu = assign_on_cpu
 
-    def __call__(self, inputs, anchors):
+    def __call__(self, inputs, anchors, inside_flags=None):
         """
         inputs: ground-truth instances.
         anchor_box (Tensor): [num_anchors, 4], num_anchors are all anchors in all feature maps.
@@ -156,22 +156,47 @@ class BBoxAssigner(object):
                  rpn_rois_num,
                  inputs,
                  stage=0,
-                 is_cascade=False):
+                 is_cascade=False,
+                 concate_gt=True,
+                 threshold=None,
+                 pos_is_gts=False):
+
         gt_classes = inputs['gt_class']
         gt_boxes = inputs['gt_bbox']
         is_crowd = inputs.get('is_crowd', None)
+
+        fg_thresh = threshold if threshold is not None else self.fg_thresh
+        bg_thresh = threshold if threshold is not None else self.bg_thresh
+
         # rois, tgt_labels, tgt_bboxes, tgt_gt_inds
         # new_rois_num
         outs = generate_proposal_target(
-            rpn_rois, gt_classes, gt_boxes, self.batch_size_per_im,
-            self.fg_fraction, self.fg_thresh, self.bg_thresh, self.num_classes,
-            self.ignore_thresh, is_crowd, self.use_random, is_cascade,
-            self.cascade_iou[stage], self.assign_on_cpu)
+            rpn_rois,
+            gt_classes,
+            gt_boxes,
+            self.batch_size_per_im,
+            self.fg_fraction,
+            fg_thresh,
+            bg_thresh,
+            self.num_classes,
+            self.ignore_thresh,
+            is_crowd,
+            self.use_random,
+            is_cascade,
+            self.cascade_iou[stage],
+            self.assign_on_cpu,
+            concate_gt=concate_gt,
+            pos_is_gts=pos_is_gts, )
+
         rois = outs[0]
-        rois_num = outs[-1]
+        rois_num = outs[4]
         # tgt_labels, tgt_bboxes, tgt_gt_inds
         targets = outs[1:4]
-        return rois, rois_num, targets
+
+        if pos_is_gts:
+            return rois, rois_num, targets, outs[5]
+        else:
+            return rois, rois_num,
 
 
 @register

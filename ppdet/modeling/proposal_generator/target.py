@@ -28,7 +28,8 @@ def rpn_anchor_target(anchors,
                       ignore_thresh=-1,
                       is_crowd=None,
                       weights=[1., 1., 1., 1.],
-                      assign_on_cpu=False):
+                      assign_on_cpu=False,
+                      inside_flags=None):
     tgt_labels = []
     tgt_bboxes = []
     tgt_deltas = []
@@ -37,8 +38,15 @@ def rpn_anchor_target(anchors,
         is_crowd_i = is_crowd[i] if is_crowd else None
         # Step1: match anchor and gt_bbox
         matches, match_labels = label_box(
-            anchors, gt_bbox, rpn_positive_overlap, rpn_negative_overlap, True,
-            ignore_thresh, is_crowd_i, assign_on_cpu)
+            anchors,
+            gt_bbox,
+            rpn_positive_overlap,
+            rpn_negative_overlap,
+            True,
+            ignore_thresh,
+            is_crowd_i,
+            assign_on_cpu,
+            inside_flags=inside_flags)
         # Step2: sample anchor 
         fg_inds, bg_inds = subsample_labels(match_labels, rpn_batch_size_per_im,
                                             rpn_fg_fraction, 0, use_random)
@@ -72,7 +80,8 @@ def label_box(anchors,
               allow_low_quality,
               ignore_thresh,
               is_crowd=None,
-              assign_on_cpu=False):
+              assign_on_cpu=False,
+              inside_flags=None):
     if assign_on_cpu:
         device = paddle.device.get_device()
         paddle.set_device("cpu")
@@ -81,6 +90,10 @@ def label_box(anchors,
 
     else:
         iou = bbox_overlaps(gt_boxes, anchors)
+
+    if inside_flags is not None:
+        iou[:, paddle.logical_not(inside_flags)] = -1
+
     n_gt = gt_boxes.shape[0]
     if n_gt == 0 or is_crowd is None:
         n_gt_crowd = 0
@@ -186,13 +199,16 @@ def generate_proposal_target(rpn_rois,
                              use_random=True,
                              is_cascade=False,
                              cascade_iou=0.5,
-                             assign_on_cpu=False):
+                             assign_on_cpu=False,
+                             concate_gt=True,
+                             pos_is_gts=False):
 
     rois_with_gt = []
     tgt_labels = []
     tgt_bboxes = []
     tgt_gt_inds = []
     new_rois_num = []
+    pos_gts = []
 
     # In cascade rcnn, the threshold for foreground and background
     # is used from cascade_iou
@@ -204,8 +220,8 @@ def generate_proposal_target(rpn_rois,
         gt_class = paddle.squeeze(gt_classes[i], axis=-1)
 
         # Concat RoIs and gt boxes except cascade rcnn or none gt
-        if not is_cascade and gt_bbox.shape[0] > 0:
-            bbox = paddle.concat([rpn_roi, gt_bbox])
+        if (not is_cascade and gt_bbox.shape[0] > 0) and concate_gt:
+            bbox = paddle.concat([gt_bbox, rpn_roi])
         else:
             bbox = rpn_roi
 
@@ -237,7 +253,21 @@ def generate_proposal_target(rpn_rois,
         rois_with_gt.append(rois_per_image)
         tgt_gt_inds.append(sampled_gt_ind)
         new_rois_num.append(paddle.shape(sampled_inds)[0])
+
+        if (not is_cascade and
+                gt_bbox.shape[0] > 0) and concate_gt and pos_is_gts:
+            if sampled_inds.shape[0]:
+                pos_gts.append(0)
+            else:
+                mask = sampled_inds < gt_bbox.shape[0]
+                pos = paddle.masked_select(paddle.ones_like(sampled_inds), mask)
+                pos_gts.append(pos.shape[0])
+
     new_rois_num = paddle.concat(new_rois_num)
+
+    if (not is_cascade and gt_bbox.shape[0] > 0) and concate_gt and pos_is_gts:
+        return rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num, pos_gts
+
     return rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num
 
 

@@ -76,13 +76,22 @@ class RPNHead(nn.Layer):
                                                           12000, 2000),
                  test_proposal=_get_class_default_kwargs(ProposalGenerator),
                  in_channel=1024,
-                 export_onnx=False):
+                 export_onnx=False,
+                 use_smooth_l1_loss=False,
+                 smooth_l1_loss_beta_nume=0.0,
+                 smooth_l1_loss_beta_deno=1.0,
+                 check_inside_image=True):
+
         super(RPNHead, self).__init__()
         self.anchor_generator = anchor_generator
         self.rpn_target_assign = rpn_target_assign
         self.train_proposal = train_proposal
         self.test_proposal = test_proposal
         self.export_onnx = export_onnx
+        self.use_smooth_l1loss = use_smooth_l1_loss
+        self.smooth_l1_loss_beta = smooth_l1_loss_beta_nume / smooth_l1_loss_beta_deno
+        self.check_inside_image = check_inside_image
+
         if isinstance(anchor_generator, dict):
             self.anchor_generator = AnchorGenerator(**anchor_generator)
         if isinstance(rpn_target_assign, dict):
@@ -249,6 +258,15 @@ class RPNHead(nn.Layer):
         anchors = [paddle.reshape(a, shape=(-1, 4)) for a in anchors]
         anchors = paddle.concat(anchors)
 
+        if self.check_inside_image:
+            inside_flags = (anchors[:, 0] >= 0).logical_and(anchors[:, 1] >= 0)
+            inside_flags = inside_flags.logical_and(
+                anchors[:, 2] < inputs['im_shape'][0][1])
+            inside_flags = inside_flags.logical_and(
+                anchors[:, 3] < inputs['im_shape'][0][0])
+        else:
+            inside_flags = None
+
         scores = [
             paddle.reshape(
                 paddle.transpose(
@@ -265,8 +283,9 @@ class RPNHead(nn.Layer):
         ]
         deltas = paddle.concat(deltas, axis=1)
 
-        score_tgt, bbox_tgt, loc_tgt, norm = self.rpn_target_assign(inputs,
-                                                                    anchors)
+        score_tgt, bbox_tgt, loc_tgt, norm = self.rpn_target_assign(
+            inputs, anchors, inside_flags=inside_flags)
+        # score_tgt, bbox_tgt, loc_tgt, norm = self.rpn_target_assign(inputs, anchors)
 
         scores = paddle.reshape(x=scores, shape=(-1, ))
         deltas = paddle.reshape(x=deltas, shape=(-1, 4))
@@ -298,7 +317,16 @@ class RPNHead(nn.Layer):
             loc_tgt = paddle.concat(loc_tgt)
             loc_tgt = paddle.gather(loc_tgt, pos_ind)
             loc_tgt.stop_gradient = True
-            loss_rpn_reg = paddle.abs(loc_pred - loc_tgt).sum()
+
+            if self.use_smooth_l1loss:
+                beta = self.smooth_l1_loss_beta
+                diff = paddle.abs(loc_pred - loc_tgt)
+                loss_rpn_reg = paddle.where(diff < beta, 0.5 * diff * diff /
+                                            beta, diff - 0.5 * beta)
+                loss_rpn_reg = loss_rpn_reg.sum()
+            else:
+                loss_rpn_reg = paddle.abs(loc_pred - loc_tgt).sum()
+
         return {
             'loss_rpn_cls': loss_rpn_cls / norm,
             'loss_rpn_reg': loss_rpn_reg / norm
