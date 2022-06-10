@@ -1,0 +1,22 @@
+metric: COCO
+num_classes: 10
+
+TrainDataset:
+  !COCODataSet
+    image_dir: VisDrone2019-DET-train
+    anno_path: train.json
+    dataset_dir: dataset/visdrone
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: VisDrone2019-DET-val
+    anno_path: val.json
+    # image_dir: test_dev
+    # anno_path: test_dev.json
+    dataset_dir: dataset/visdrone
+
+TestDataset:
+  !ImageFolder
+    anno_path: val.json
+    dataset_dir: dataset/visdrone
