@@ -29,11 +29,22 @@ __all__ = ['SparseInstLoss']
 
 def _dice_score(inputs, targets):
     inputs = F.sigmoid(inputs)
-    numerator = 2 * paddle.matmul(inputs, targets.t())
+    numerator = 2 * paddle.matmul(inputs, targets.t().astype(inputs.dtype))
     denominator = (inputs * inputs).sum(-1)[:, None] + (targets * targets
                                                         ).sum(-1)
     score = numerator / (denominator + 1e-4)
     return score
+
+
+def _dice_loss(inputs, targets, reduction='sum'):
+    assert inputs.shape == targets.shape
+    inputs = F.sigmoid(inputs)
+    numerator = 2 * (inputs * targets).sum(1)
+    denominator = (inputs * inputs).sum(-1) + (targets * targets).sum(-1)
+    loss = 1 - (numerator) / (denominator + 1e-4)
+    if reduction == 'none':
+        return loss
+    return loss.sum()
 
 
 def _compute_mask_iou(inputs, targets):
@@ -44,6 +55,7 @@ def _compute_mask_iou(inputs, targets):
     intersection = (binarized_inputs * targets).sum(-1)
     union = targets.sum(-1) + binarized_inputs.sum(-1) - intersection
     score = intersection / (union + 1e-6)
+
     return score
 
 
@@ -58,16 +70,13 @@ class SparseInstMatcher(nn.Layer):
             B, N, H, W = outputs["pred_masks"].shape
             pred_masks = outputs['pred_masks']
             pred_logits = F.sigmoid(outputs['pred_logits'])
-
-            tgt_ids = paddle.concat([v["labels"] for v in targets])
-
+            tgt_ids = paddle.concat(targets["gt_class"]).flatten()
+            #tgt_ids = targets["gt_class"]
             if tgt_ids.shape[0] == 0:
                 return [(paddle.to_tensor(
                     [], dtype=pred_logits.dtype), paddle.to_tensor(
                         [], dtype=pred_logits.dtype))] * B
-            tgt_masks, _ = nested_masks_from_list(
-                [t["masks"].tensor for t in targets], input_shape).decompose()
-            tgt_masks = tgt_masks.astype(pred_masks.dtype)
+            tgt_masks = paddle.concat(targets["gt_segm"]).astype(paddle.float32)
 
             tgt_masks = F.interpolate(
                 tgt_masks[:, None],
@@ -80,11 +89,15 @@ class SparseInstMatcher(nn.Layer):
 
             mask_score = _dice_score(pred_masks, tgt_masks)
             # Nx(Number of gts)
-            matching_prob = pred_logits.reshape((B * N, -1))[:, tgt_ids]
+            matching_prob = paddle.gather(
+                pred_logits.reshape((B * N, -1)), tgt_ids, axis=1)
             C = (mask_score**self.alpha) * (matching_prob**self.beta)
             C = C.reshape((B, N, -1))
             # hungarian matching
-            sizes = [len(v["masks"]) for v in targets]
+            sizes = [
+                len(targets["gt_segm"][i])
+                for i in range(len(targets["gt_segm"]))
+            ]
             indices = [
                 linear_sum_assignment(
                     c[i], maximize=True)
@@ -113,12 +126,17 @@ class SparseInstLoss(object):
                  mask_dice_loss_weight=2.0,
                  objectness_loss_weight=1.0,
                  matcher_alpha=0.8,
-                 matcher_beta=0.2):
-        self.class_loss_weight = class_loss_weight
-        self.mask_pixel_loss_weight = mask_pixel_loss_weight
-        self.mask_dice_loss_weight = mask_dice_loss_weight
-        self.objectness_loss_weight = objectness_loss_weight
+                 matcher_beta=0.2,
+                 num_classes=80):
 
+        self.weight_dict = {
+            "loss_ce": class_loss_weight,
+            "loss_mask": mask_pixel_loss_weight,
+            "loss_dice": mask_dice_loss_weight,
+            "loss_objectness": objectness_loss_weight
+        }
+
+        self.num_classes = num_classes
         self.matcher = SparseInstMatcher(0.8, 0.2)
 
     def _get_src_permutation_idx(self, indices):
@@ -139,10 +157,14 @@ class SparseInstLoss(object):
         assert "pred_logits" in outputs
         src_logits = outputs['pred_logits']
         idx = self._get_src_permutation_idx(indices)
-        target_classes_o = paddle.concat(
-            [t["labels"][J] for t, (_, J) in zip(targets, indices)])
+        target_classes_o = paddle.concat([
+            paddle.flatten(t)[J]
+            for t, (_, J) in zip(targets["gt_class"], indices)
+        ])
         target_classes = paddle.full(
-            src_logits.shape[:2], self.num_classes, dtype=paddle.int64)
+            src_logits.shape[:2],
+            self.num_classes,
+            dtype=target_classes_o.dtype)
         target_classes[idx] = target_classes_o
 
         src_logits = src_logits.flatten(0, 1)
@@ -151,6 +173,7 @@ class SparseInstLoss(object):
         pos_inds = paddle.nonzero(
             target_classes != self.num_classes, as_tuple=True)[0]
         labels = paddle.zeros_like(src_logits)
+        labels.stop_gradient = True
         labels[pos_inds, target_classes[pos_inds]] = 1
         # comp focal loss.
         class_loss = F.sigmoid_focal_loss(
@@ -173,18 +196,23 @@ class SparseInstLoss(object):
         src_iou_scores = outputs["pred_scores"]
         src_masks = outputs["pred_masks"]
         with paddle.no_grad():
-            target_masks, _ = nested_masks_from_list(
-                [t["masks"].tensor for t in targets], input_shape).decompose()
-        num_masks = [len(t["masks"]) for t in targets]
+            #target_masks, _ = nested_masks_from_list(
+            #    [t["masks"].tensor for t in targets], input_shape).decompose()
+            target_masks = paddle.concat(targets["gt_segm"])
+        num_masks = [
+            len(targets["gt_segm"][i]) for i in range(len(targets["gt_segm"]))
+        ]
         target_masks = target_masks.astype(src_masks.dtype)
+
         if len(target_masks) == 0:
             losses = {
                 "loss_dice": src_masks.sum() * 0.0,
                 "loss_mask": src_masks.sum() * 0.0,
                 "loss_objectness": src_iou_scores.sum() * 0.0
             }
-            return losses
+            return lossesa
 
+        # Note: indexing will loss first dim when bs = 1
         src_masks = src_masks[src_idx]
         target_masks = F.interpolate(
             target_masks[:, None],
@@ -205,7 +233,6 @@ class SparseInstLoss(object):
 
         with paddle.no_grad():
             ious = _compute_mask_iou(src_masks, target_masks)
-
         tgt_iou_scores = ious
         src_iou_scores = src_iou_scores[src_idx]
         tgt_iou_scores = tgt_iou_scores.flatten(0)
@@ -214,7 +241,7 @@ class SparseInstLoss(object):
         losses = {
             "loss_objectness": F.binary_cross_entropy_with_logits(
                 src_iou_scores, tgt_iou_scores, reduction='mean'),
-            "loss_dice": dice_loss(src_masks, target_masks) / num_instances,
+            "loss_dice": _dice_loss(src_masks, target_masks) / num_instances,
             "loss_mask": F.binary_cross_entropy_with_logits(
                 src_masks, target_masks, reduction='mean')
         }
@@ -241,7 +268,11 @@ class SparseInstLoss(object):
         # Retrieve the matching between the outputs of the last layer and the targets
         indices = self.matcher(outputs_without_aux, targets, input_shape)
         # Compute the average number of target boxes accross all nodes, for normalization purposes
-        num_instances = sum(len(t["labels"]) for t in targets)
+        num_instances = sum([
+            len(targets["gt_class"][i])
+            for i in range(len(targets["gt_class"]))
+        ])
+
         num_instances = paddle.to_tensor([num_instances], dtype=paddle.float32)
 
         #if is_dist_avail_and_initialized():
@@ -251,16 +282,9 @@ class SparseInstLoss(object):
         # Compute all the requested losses
         losses = {}
         losses.update(
-            self.loss_labels(
-                loss,
-                outputs,
-                targets,
-                indices,
-                num_instances,
-                input_shape=input_shape))
+            self.loss_labels(outputs, targets, indices, num_instances))
         losses.update(
             self.loss_masks_with_iou_objectness(
-                loss,
                 outputs,
                 targets,
                 indices,

@@ -17,11 +17,18 @@ from __future__ import division
 from __future__ import print_function
 
 import paddle
+import paddle.nn.functional as F
 
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
 __all__ = ['SparseInst']
+
+
+def _rescoring_mask(scores, mask_pred, masks):
+    mask_pred_ = mask_pred.astype(paddle.float32)
+    return scores * (
+        (masks * mask_pred_).sum([1, 2]) / (mask_pred_.sum([1, 2]) + 1e-6))
 
 
 @register
@@ -73,29 +80,35 @@ class SparseInst(BaseArch):
 
     def _forward(self):
         input_shape = self.inputs["image"].shape[2:]
-
         body_feats = self.backbone(self.inputs)
         body_feats = self.encoder(body_feats)
         raw_pred_out = self.decoder(body_feats)
 
         if self.training:
-            return self.criterion(raw_pred_out, self.inputs["gt_segm"],
-                                  input_shape)
+            return self.criterion(raw_pred_out, self.inputs, input_shape)
         else:
             pred_masks = F.sigmoid(raw_pred_out["pred_masks"])
             pred_objectness = F.sigmoid(raw_pred_out["pred_scores"])
             pred_scores = F.sigmoid(raw_pred_out["pred_logits"])
             pred_scores = paddle.sqrt(pred_scores * pred_objectness)
+            result = {
+                "segm": [],
+                "cate_score": [],
+                "cate_label": [],
+                "shape": [],
+                "bbox_num": [],
+            }
+            for _, (scores_per_image, mask_pred_per_image, im_shape,
+                    scale_factor) in enumerate(
+                        zip(pred_scores, pred_masks, self.inputs['im_shape'],
+                            self.inputs['scale_factor'])):
+                origin_shape = (im_shape / scale_factor).astype(paddle.int32)
 
-            results = []
-            for _, (scores_per_image, mask_pred_per_image, batched_input
-                    ) in enumerate(zip(pred_scores, pred_masks, self.inputs)):
-
-                ori_shape = (batched_input["height"],
-                             batched_inputinput["width"])
-                result = {"shape": ori_shape}
+                result["shape"].append(origin_shape)
                 # max/argmax
-                scores, labels = scores_per_image.max(axis=-1)
+                scores = scores_per_image.max(axis=-1)
+                labels = scores_per_image.argmax(axis=-1)
+
                 # cls threshold
                 keep = scores > self.cls_threshold
                 scores = scores[keep]
@@ -110,7 +123,7 @@ class SparseInst(BaseArch):
 
                 h, w = input_shape
                 # rescoring mask using maskness
-                scores = rescoring_mask(
+                scores = _rescoring_mask(
                     scores, mask_pred_per_image > self.mask_threshold,
                     mask_pred_per_image)
 
@@ -124,18 +137,19 @@ class SparseInst(BaseArch):
                     align_corners=False)[:, :, :h, :w]
                 mask_pred_per_image = F.interpolate(
                     mask_pred_per_image,
-                    size=ori_shape,
+                    size=origin_shape,
                     mode='bilinear',
                     align_corners=False).squeeze(1)
 
                 mask_pred = mask_pred_per_image > self.mask_threshold
-
-                result["pred_masks"] = mask_pred
-                result["scores"] = scores
-                result["pred_classes"] = labels
-                results.append(result)
-
-            return results
+                result["bbox_num"].append(mask_pred.shape[0])
+                result["segm"].append(mask_pred)
+                result["cate_score"].append(scores)
+                result["cate_label"].append(labels)
+            result["segm"] = result["segm"][0]
+            result["cate_score"] = result["cate_score"][0]
+            result["cate_label"] = result["cate_label"][0]
+            return result
 
     def get_loss(self):
         loss = self._forward()

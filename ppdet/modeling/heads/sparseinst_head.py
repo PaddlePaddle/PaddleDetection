@@ -44,29 +44,33 @@ class InstanceBranch(nn.Layer):
     def __init__(self, dim, num_convs, num_masks, kernel_dim, num_classes,
                  in_channels):
         super().__init__()
+        prior_prob = 0.01
+        bias_value = -np.log((1 - prior_prob) / prior_prob)
+
         self.num_classes = num_classes
         self.inst_convs = _make_stack_3x3_convs(num_convs, in_channels, dim)
         # iam prediction, a simple conv
-        self.iam_conv = nn.Conv2D(dim, num_masks, 3, padding=1)
+        self.iam_conv = nn.Conv2D(
+            dim,
+            num_masks,
+            3,
+            padding=1,
+            weight_attr=ParamAttr(
+                initializer=Normal(std=0.01), learning_rate=1.),
+            bias_attr=ParamAttr(initializer=Constant(value=bias_value)))
 
         # outputs
-        self.cls_score = nn.Linear(dim, self.num_classes)
-        self.mask_kernel = nn.Linear(dim, kernel_dim)
+        self.cls_score = nn.Linear(
+            dim,
+            self.num_classes,
+            weight_attr=ParamAttr(
+                initializer=Normal(std=0.01), learning_rate=1.))
+        self.mask_kernel = nn.Linear(
+            dim,
+            kernel_dim,
+            weight_attr=ParamAttr(
+                initializer=Normal(std=0.01), learning_rate=1.))
         self.objectness = nn.Linear(dim, 1)
-
-        self.prior_prob = 0.01
-        self._init_weights()
-
-    def _init_weights(self):
-        return
-        bias_value = -np.log((1 - self.prior_prob) / self.prior_prob)
-        for module in [self.iam_conv, self.cls_score]:
-            init.constant_(module.bias, bias_value)
-        init.normal_(self.iam_conv.weight, std=0.01)
-        init.normal_(self.cls_score.weight, std=0.01)
-
-        init.normal_(self.mask_kernel.weight, std=0.01)
-        init.constant_(self.mask_kernel.bias, 0.0)
 
     def forward(self, features):
         # instance features (x4 convs)
@@ -229,7 +233,6 @@ class GroupInstanceBranch(nn.Layer):
         # predict instance activation maps
         iam = self.iam_conv(features)
         iam_prob = F.sigmoid(iam)
-
         B, N = iam_prob.shape[:2]
         C = features.shape[1]
         # BxNxHxW -> BxNx(HW)

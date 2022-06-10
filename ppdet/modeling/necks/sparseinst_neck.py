@@ -17,6 +17,8 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
+from paddle.nn.initializer import Normal, Constant, KaimingNormal
+
 from ppdet.core.workspace import register, serializable
 from ..shape_spec import ShapeSpec
 
@@ -67,9 +69,21 @@ class InstanceContextEncoder(nn.Layer):
         fpn_laterals = []
         fpn_outputs = []
         for in_channel in reversed(self.in_channels):
-            lateral_conv = nn.Conv2D(in_channel, self.num_channels, 1)
+            lateral_conv = nn.Conv2D(
+                in_channel,
+                self.num_channels,
+                1,
+                weight_attr=ParamAttr(
+                    initializer=KaimingNormal(), learning_rate=1.),
+                bias_attr=ParamAttr(initializer=Constant(value=0.)))
             output_conv = nn.Conv2D(
-                self.num_channels, self.num_channels, 3, padding=1)
+                self.num_channels,
+                self.num_channels,
+                3,
+                padding=1,
+                weight_attr=ParamAttr(
+                    initializer=KaimingNormal(), learning_rate=1.),
+                bias_attr=ParamAttr(initializer=Constant(value=0.)))
             fpn_laterals.append(lateral_conv)
             fpn_outputs.append(output_conv)
         self.fpn_laterals = nn.LayerList(fpn_laterals)
@@ -78,7 +92,13 @@ class InstanceContextEncoder(nn.Layer):
         self.ppm = PyramidPoolingModule(self.num_channels,
                                         self.num_channels // 4)
         # final fusion
-        self.fusion = nn.Conv2D(self.num_channels * 3, self.num_channels, 1)
+        self.fusion = nn.Conv2D(
+            self.num_channels * 3,
+            self.num_channels,
+            1,
+            weight_attr=ParamAttr(
+                initializer=KaimingNormal(), learning_rate=1.),
+            bias_attr=ParamAttr(initializer=Constant(value=0.)))
 
     def forward(self, in_features):
         features = [in_features[i] for i in range(len(in_features) - 1, -1, -1)]
