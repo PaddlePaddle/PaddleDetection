@@ -636,7 +636,7 @@ class PipePredictor(object):
                 if self.with_idbased_clsaction:
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['cls_action'].start()
-                    cls_action_res = self.cls_action_predictor.predict(
+                    cls_action_res = self.cls_action_predictor.predict_with_mot(
                         crop_input, mot_res)
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['cls_action'].end()

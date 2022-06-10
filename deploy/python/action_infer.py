@@ -347,7 +347,7 @@ class DetActionRecognizer(object):
         return result
 
 
-class ClsActionInferer(AttrDetector):
+class ClsActionRecognizer(AttrDetector):
     """
     Args:
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
@@ -377,65 +377,7 @@ class ClsActionInferer(AttrDetector):
                  enable_mkldnn=False,
                  output_dir='output',
                  threshold=0.5):
-        super(ClsActionInferer, self).__init__(
-            model_dir,
-            device='CPU',
-            run_mode='paddle',
-            batch_size=1,
-            trt_min_shape=1,
-            trt_max_shape=1280,
-            trt_opt_shape=640,
-            trt_calib_mode=False,
-            cpu_threads=1,
-            enable_mkldnn=False,
-            output_dir='output',
-            threshold=threshold)
-
-    def postprocess(self, inputs, result):
-        # postprocess output of predictor
-        im_results = result['output']
-        batch_res = []
-        for res in im_results:
-            action_res = res.tolist()
-            for cid, score in enumerate(action_res):
-                action_res[cid] = score
-            batch_res.append(action_res)
-        result = {'output': batch_res}
-        return result
-
-
-class ClsActionRecognizer(object):
-    """
-    Args:
-        model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
-        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
-        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
-        batch_size (int): size of pre batch in inference
-        trt_min_shape (int): min shape for dynamic shape in trt
-        trt_max_shape (int): max shape for dynamic shape in trt
-        trt_opt_shape (int): opt shape for dynamic shape in trt
-        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
-            calibration, trt_calib_mode need to set True
-        cpu_threads (int): cpu threads
-        enable_mkldnn (bool): whether to open MKLDNN
-        threshold (float): The threshold of score for action feature object detection.
-    """
-
-    def __init__(self,
-                 model_dir,
-                 device='CPU',
-                 run_mode='paddle',
-                 batch_size=1,
-                 trt_min_shape=1,
-                 trt_max_shape=1280,
-                 trt_opt_shape=640,
-                 trt_calib_mode=False,
-                 cpu_threads=1,
-                 enable_mkldnn=False,
-                 output_dir='output',
-                 threshold=0.5):
-        super(ClsActionRecognizer, self).__init__()
-        self.cls_detector = ClsActionInferer(
+        super(ClsActionRecognizer, self).__init__(
             model_dir=model_dir,
             device=device,
             run_mode=run_mode,
@@ -450,13 +392,24 @@ class ClsActionRecognizer(object):
             threshold=threshold)
         self.threshold = threshold
 
-    def predict(self, images, mot_result):
-        cls_result = self.cls_detector.predict_image(
-            images, visual=False)["output"]
-        result = self.postprocess(cls_result, mot_result)
+    def predict_with_mot(self, images, mot_result):
+        cls_result = self.predict_image(images, visual=False)["output"]
+        result = self.match_action_with_id(cls_result, mot_result)
         return result
 
-    def postprocess(self, cls_result, mot_result):
+    def postprocess(self, inputs, result):
+        # postprocess output of predictor
+        im_results = result['output']
+        batch_res = []
+        for res in im_results:
+            action_res = res.tolist()
+            for cid, score in enumerate(action_res):
+                action_res[cid] = score
+            batch_res.append(action_res)
+        result = {'output': batch_res}
+        return result
+
+    def match_action_with_id(self, cls_result, mot_result):
         mot_bboxes = mot_result.get('boxes')
 
         mot_id = []
