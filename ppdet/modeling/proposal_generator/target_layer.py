@@ -196,7 +196,7 @@ class BBoxAssigner(object):
         if pos_is_gts:
             return rois, rois_num, targets, outs[5]
         else:
-            return rois, rois_num,
+            return rois, rois_num, targets
 
 
 @register

@@ -84,6 +84,8 @@ class HybridTaskCascadeHead(BBoxHead):
         self.bbox_assigner = bbox_assigner
         self.stage_loss_weights = stage_loss_weights
         # self.thresholds = thresholds
+        self.thresholds = bbox_assigner.cascade_iou
+
         self.num_classes = num_classes
         self.bbox_weight = bbox_weight
         self.num_cascade_stages = num_cascade_stages
@@ -204,7 +206,7 @@ class HybridTaskCascadeHead(BBoxHead):
                     rois_num,
                     inputs,
                     concate_gt=True,
-                    thresh=self.thresholds[i])
+                    threshold=self.thresholds[i])
                 targets_mask_list.append(targets_mask)
 
                 mask_res.append(
