@@ -395,6 +395,81 @@ class WarpAffine(object):
         return inp, im_info
 
 
+# keypoint preprocess
+def get_warp_matrix(theta, size_input, size_dst, size_target):
+    """This code is based on
+        https://github.com/open-mmlab/mmpose/blob/master/mmpose/core/post_processing/post_transforms.py
+
+        Calculate the transformation matrix under the constraint of unbiased.
+    Paper ref: Huang et al. The Devil is in the Details: Delving into Unbiased
+    Data Processing for Human Pose Estimation (CVPR 2020).
+
+    Args:
+        theta (float): Rotation angle in degrees.
+        size_input (np.ndarray): Size of input image [w, h].
+        size_dst (np.ndarray): Size of output image [w, h].
+        size_target (np.ndarray): Size of ROI in input plane [w, h].
+
+    Returns:
+        matrix (np.ndarray): A matrix for transformation.
+    """
+    theta = np.deg2rad(theta)
+    matrix = np.zeros((2, 3), dtype=np.float32)
+    scale_x = size_dst[0] / size_target[0]
+    scale_y = size_dst[1] / size_target[1]
+    matrix[0, 0] = np.cos(theta) * scale_x
+    matrix[0, 1] = -np.sin(theta) * scale_x
+    matrix[0, 2] = scale_x * (
+        -0.5 * size_input[0] * np.cos(theta) + 0.5 * size_input[1] *
+        np.sin(theta) + 0.5 * size_target[0])
+    matrix[1, 0] = np.sin(theta) * scale_y
+    matrix[1, 1] = np.cos(theta) * scale_y
+    matrix[1, 2] = scale_y * (
+        -0.5 * size_input[0] * np.sin(theta) - 0.5 * size_input[1] *
+        np.cos(theta) + 0.5 * size_target[1])
+    return matrix
+
+
+class TopDownEvalAffine(object):
+    """apply affine transform to image and coords
+
+    Args:
+        trainsize (list): [w, h], the standard size used to train
+        use_udp (bool): whether to use Unbiased Data Processing.
+        records(dict): the dict contained the image and coords
+
+    Returns:
+        records (dict): contain the image and coords after tranformed
+
+    """
+
+    def __init__(self, trainsize, use_udp=False):
+        self.trainsize = trainsize
+        self.use_udp = use_udp
+
+    def __call__(self, image, im_info):
+        rot = 0
+        imshape = im_info['im_shape'][::-1]
+        center = im_info['center'] if 'center' in im_info else imshape / 2.
+        scale = im_info['scale'] if 'scale' in im_info else imshape
+        if self.use_udp:
+            trans = get_warp_matrix(
+                rot, center * 2.0,
+                [self.trainsize[0] - 1.0, self.trainsize[1] - 1.0], scale)
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
+        else:
+            trans = get_affine_transform(center, scale, rot, self.trainsize)
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
+
+        return image, im_info
+
+
 class Compose:
     def __init__(self, transforms):
         self.transforms = []
