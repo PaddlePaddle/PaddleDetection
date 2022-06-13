@@ -42,7 +42,7 @@ from python.action_utils import KeyPointBuff, SkeletonActionVisualHelper
 
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
-from python.preprocess import decode_image, Scale
+from python.preprocess import decode_image, ShortSizeScale
 from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
 
 from pptracking.python.mot_sde_infer import SDE_Detector
@@ -556,7 +556,7 @@ class PipePredictor(object):
 
         if self.with_video_action:
             short_size = self.cfg["VIDEO_ACTION"]["short_size"]
-            scale = Scale(short_size)
+            scale = ShortSizeScale(short_size)
 
         while (1):
             if frame_id % 10 == 0:

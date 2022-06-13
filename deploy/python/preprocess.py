@@ -107,9 +107,9 @@ class Resize(object):
         return im_scale_y, im_scale_x
 
 
-class Scale(object):
+class ShortSizeScale(object):
     """
-    Scale images.
+    Scale images by short size.
     Args:
         short_size(float | int): Short size of an image will be scaled to the short_size.
         fixed_ratio(bool): Set whether to zoom according to a fixed ratio. default: True
