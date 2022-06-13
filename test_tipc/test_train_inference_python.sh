@@ -125,7 +125,7 @@ function func_inference(){
                         eval $command
                         last_status=${PIPESTATUS[0]}
                         eval "cat ${_save_log_path}"
-                        status_check $last_status "${command}" "${status_log}"
+                        status_check $last_status "${command}" "${status_log}" "${model_name}"
                     done
                 done
             done
@@ -151,7 +151,7 @@ function func_inference(){
                     eval $command
                     last_status=${PIPESTATUS[0]}
                     eval "cat ${_save_log_path}"
-                    status_check $last_status "${command}" "${status_log}"
+                    status_check $last_status "${command}" "${status_log}" "${model_name}"
                 done
             done
         else
@@ -198,7 +198,7 @@ if [ ${MODE} = "whole_infer" ] || [ ${MODE} = "klquant_whole_infer" ]; then
         export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
         echo  $export_cmd
         eval $export_cmd
-        status_check $? "${export_cmd}" "${status_log}"
+        status_check $? "${export_cmd}" "${status_log}" "${model_name}"
 
         #run inference
         save_export_model_dir="${save_export_value}/${model_name}"
@@ -291,7 +291,7 @@ else
                 fi
                 # run train
                 eval $cmd
-                status_check $? "${cmd}" "${status_log}"
+                status_check $? "${cmd}" "${status_log}" "${model_name}"
 
                 set_eval_trained_weight=$(func_set_params "${export_weight_key}" "${save_log}/${model_name}/${train_model_name}")
                 # run eval
@@ -299,7 +299,7 @@ else
                     set_eval_params1=$(func_set_params "${eval_key1}" "${eval_value1}")
                     eval_cmd="${python} ${eval_py} ${set_eval_trained_weight} ${set_use_gpu} ${set_eval_params1}"
                     eval $eval_cmd
-                    status_check $? "${eval_cmd}" "${status_log}"
+                    status_check $? "${eval_cmd}" "${status_log}" "${model_name}"
                 fi
                 # run export model
                 if [ ${run_export} != "null" ]; then
@@ -310,14 +310,14 @@ else
                         # run export onnx model for rcnn
                         export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} export_onnx=True ${set_save_export_dir} "
                         eval $export_cmd
-                        status_check $? "${export_cmd}" "${status_log}"
+                        status_check $? "${export_cmd}" "${status_log}" "${model_name}"
                         # copy model for inference benchmark
                         eval "cp ${save_export_model_dir}/* ${save_log}/"
                     fi
                     # run export model
                     export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
                     eval $export_cmd
-                    status_check $? "${export_cmd}" "${status_log}"
+                    status_check $? "${export_cmd}" "${status_log}" "${model_name}"
 
                     #run inference
                     if [ ${export_onnx_key} != "export_onnx" ]; then
