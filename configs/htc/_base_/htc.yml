@@ -44,6 +44,7 @@ RPNHead:
     nms_thresh: 0.7
     pre_nms_top_n: 1000
     post_nms_top_n: 1000
+  check_inside_image: True
   use_smooth_l1_loss: True
   smooth_l1_loss_beta_nume: 1.0
   smooth_l1_loss_beta_deno: 9.0

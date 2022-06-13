@@ -8,7 +8,7 @@ TrainReader:
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
-  batch_size: 1
+  batch_size: 4
   shuffle: true
   drop_last: true
   collate_batch: false

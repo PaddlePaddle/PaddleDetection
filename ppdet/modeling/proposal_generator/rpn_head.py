@@ -80,7 +80,7 @@ class RPNHead(nn.Layer):
                  use_smooth_l1_loss=False,
                  smooth_l1_loss_beta_nume=0.0,
                  smooth_l1_loss_beta_deno=1.0,
-                 check_inside_image=True):
+                 check_inside_image=False):
 
         super(RPNHead, self).__init__()
         self.anchor_generator = anchor_generator
