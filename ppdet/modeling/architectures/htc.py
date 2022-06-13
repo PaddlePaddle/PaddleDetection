@@ -131,9 +131,14 @@ class HybridTaskCascade(BaseArch):
 
             bbox, bbox_num = self.bbox_post_process(
                 preds, (refined_rois, rois_num), im_shape, scale_factor)
+
             # rescale the prediction back to origin image
-            bbox_pred = self.bbox_post_process.get_pred(bbox, bbox_num,
-                                                        im_shape, scale_factor)
+            # bbox_pred = self.bbox_post_process.get_pred(bbox, bbox_num,
+            #                                             im_shape, scale_factor)
+
+            # rescale the prediction back to origin image
+            bbox, bbox_pred, bbox_num = self.bbox_post_process.get_pred(
+                bbox, bbox_num, im_shape, scale_factor)
 
             mask_out = self.bbox_head.get_mask_result(
                 body_feats,
@@ -164,10 +169,5 @@ class HybridTaskCascade(BaseArch):
 
     def get_pred(self):
         bbox_pred, bbox_num, mask_pred = self._forward()
-        output = {
-            'bbox': bbox_pred,
-            'bbox_num': bbox_num,
-        }
-
-        output.update({'mask': mask_pred})
+        output = {'bbox': bbox_pred, 'bbox_num': bbox_num, 'mask': mask_pred}
         return output

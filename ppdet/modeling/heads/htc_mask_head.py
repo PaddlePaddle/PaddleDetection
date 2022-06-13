@@ -189,13 +189,12 @@ class HybridTaskMaskFeat(nn.Layer):
                     norm_type,
                     with_conv_res=(stage != 0)))
             self.upsample.append(head_per_stage)
-        # a = 0
 
-        @classmethod
-        def from_config(cls, cfg, input_shape):
-            if isinstance(input_shape, (list, tuple)):
-                input_shape = input_shape[0]
-            return {'in_channel': input_shape.channels, }
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        if isinstance(input_shape, (list, tuple)):
+            input_shape = input_shape[0]
+        return {'in_channel': input_shape.channels, }
 
     def out_channels(self):
         return self.out_channel
