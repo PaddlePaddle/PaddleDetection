@@ -130,11 +130,11 @@ class TestROIAlign(LayerTest):
             rois_num = paddle.static.data(
                 name='rois_num', shape=[None], dtype='int32')
 
-            output = ops.roi_align(
-                input=inputs,
-                rois=rois,
-                output_size=output_size,
-                rois_num=rois_num)
+            output = paddle.vision.ops.roi_align(
+                x=inputs,
+                boxes=rois,
+                boxes_num=rois_num,
+                output_size=output_size)
             output_np, = self.get_static_graph_result(
                 feed={
                     'inputs': inputs_np,
@@ -149,11 +149,11 @@ class TestROIAlign(LayerTest):
             rois_dy = base.to_variable(rois_np)
             rois_num_dy = base.to_variable(rois_num_np)
 
-            output_dy = ops.roi_align(
-                input=inputs_dy,
-                rois=rois_dy,
-                output_size=output_size,
-                rois_num=rois_num_dy)
+            output_dy = paddle.vision.ops.roi_align(
+                x=inputs_dy,
+                boxes=rois_dy,
+                boxes_num=rois_num_dy,
+                output_size=output_size)
             output_dy_np = output_dy.numpy()
 
         self.assertTrue(np.array_equal(output_np, output_dy_np))
@@ -166,7 +166,7 @@ class TestROIAlign(LayerTest):
                 name='data_error', shape=[10, 4], dtype='int32', lod_level=1)
             self.assertRaises(
                 TypeError,
-                ops.roi_align,
+                paddle.vision.ops.roi_align,
                 input=inputs,
                 rois=rois,
                 output_size=(7, 7))
@@ -190,11 +190,11 @@ class TestROIPool(LayerTest):
             rois_num = paddle.static.data(
                 name='rois_num', shape=[None], dtype='int32')
 
-            output, _ = ops.roi_pool(
-                input=inputs,
-                rois=rois,
-                output_size=output_size,
-                rois_num=rois_num)
+            output = paddle.vision.ops.roi_pool(
+                x=inputs,
+                boxes=rois,
+                boxes_num=rois_num,
+                output_size=output_size)
             output_np, = self.get_static_graph_result(
                 feed={
                     'inputs': inputs_np,
@@ -209,11 +209,11 @@ class TestROIPool(LayerTest):
             rois_dy = base.to_variable(rois_np)
             rois_num_dy = base.to_variable(rois_num_np)
 
-            output_dy, _ = ops.roi_pool(
-                input=inputs_dy,
-                rois=rois_dy,
-                output_size=output_size,
-                rois_num=rois_num_dy)
+            output_dy = paddle.vision.ops.roi_pool(
+                x=inputs_dy,
+                boxes=rois_dy,
+                boxes_num=rois_num_dy,
+                output_size=output_size)
             output_dy_np = output_dy.numpy()
 
         self.assertTrue(np.array_equal(output_np, output_dy_np))
@@ -226,7 +226,7 @@ class TestROIPool(LayerTest):
                 name='data_error', shape=[10, 4], dtype='int32', lod_level=1)
             self.assertRaises(
                 TypeError,
-                ops.roi_pool,
+                paddle.vision.ops.roi_pool,
                 input=inputs,
                 rois=rois,
                 output_size=(7, 7))

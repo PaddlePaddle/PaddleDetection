@@ -29,7 +29,7 @@ class RoIAlign(object):
     RoI Align module
 
     For more details, please refer to the document of roi_align in
-    in ppdet/modeing/ops.py
+    in https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/vision/ops.py
 
     Args:
         resolution (int): The output size, default 14
@@ -76,12 +76,12 @@ class RoIAlign(object):
     def __call__(self, feats, roi, rois_num):
         roi = paddle.concat(roi) if len(roi) > 1 else roi[0]
         if len(feats) == 1:
-            rois_feat = ops.roi_align(
-                feats[self.start_level],
-                roi,
-                self.resolution,
-                self.spatial_scale[0],
-                rois_num=rois_num,
+            rois_feat = paddle.vision.ops.roi_align(
+                x=feats[self.start_level],
+                boxes=roi,
+                boxes_num=rois_num,
+                output_size=self.resolution,
+                spatial_scale=self.spatial_scale[0],
                 aligned=self.aligned)
         else:
             offset = 2
@@ -96,13 +96,13 @@ class RoIAlign(object):
                 rois_num=rois_num)
             rois_feat_list = []
             for lvl in range(self.start_level, self.end_level + 1):
-                roi_feat = ops.roi_align(
-                    feats[lvl],
-                    rois_dist[lvl],
-                    self.resolution,
-                    self.spatial_scale[lvl],
+                roi_feat = paddle.vision.ops.roi_align(
+                    x=feats[lvl],
+                    boxes=rois_dist[lvl],
+                    boxes_num=rois_num_dist[lvl],
+                    output_size=self.resolution,
+                    spatial_scale=self.spatial_scale[lvl],
                     sampling_ratio=self.sampling_ratio,
-                    rois_num=rois_num_dist[lvl],
                     aligned=self.aligned)
                 rois_feat_list.append(roi_feat)
             rois_feat_shuffle = paddle.concat(rois_feat_list)
