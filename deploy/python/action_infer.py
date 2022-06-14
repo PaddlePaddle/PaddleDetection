@@ -362,6 +362,7 @@ class ClsActionRecognizer(AttrDetector):
         cpu_threads (int): cpu threads
         enable_mkldnn (bool): whether to open MKLDNN
         threshold (float): The threshold of score for action feature object detection.
+        display_frames (int): The duration for corresponding detected action. 
     """
 
     def __init__(self,
@@ -376,7 +377,8 @@ class ClsActionRecognizer(AttrDetector):
                  cpu_threads=1,
                  enable_mkldnn=False,
                  output_dir='output',
-                 threshold=0.5):
+                 threshold=0.5,
+                 display_frames=80):
         super(ClsActionRecognizer, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -391,11 +393,21 @@ class ClsActionRecognizer(AttrDetector):
             output_dir=output_dir,
             threshold=threshold)
         self.threshold = threshold
+        self.frame_life = display_frames
+        self.result_history = {}
 
     def predict_with_mot(self, images, mot_result):
+        images = self.crop_half_body(images)
         cls_result = self.predict_image(images, visual=False)["output"]
         result = self.match_action_with_id(cls_result, mot_result)
         return result
+
+    def crop_half_body(self, images):
+        crop_images = []
+        for image in images:
+            h = image.shape[0]
+            crop_images.append(image[:h // 2 + 1, :, :])
+        return crop_images
 
     def postprocess(self, inputs, result):
         # postprocess output of predictor
@@ -408,6 +420,9 @@ class ClsActionRecognizer(AttrDetector):
             batch_res.append(action_res)
         result = {'output': batch_res}
         return result
+
+    def get_history_result(self, cls_result):
+        mot_id
 
     def match_action_with_id(self, cls_result, mot_result):
         mot_bboxes = mot_result.get('boxes')
@@ -427,9 +442,18 @@ class ClsActionRecognizer(AttrDetector):
                     cls_score_res = score
 
             # Current now,  class 0 is positive, class 1 is negative.
-            if cls_id_res == 0 and cls_score_res < self.threshold:
-                cls_id_res = 1
+            if cls_id_res == 1 or (cls_id_res == 0 and
+                                   cls_score_res < self.threshold):
+                history_cls, life_remain = self.result_history.get(tracker_id,
+                                                                   [1, 0])
+                cls_id_res = history_cls
                 cls_score_res = 1 - cls_score_res
+                life_remain -= 1
+                if life_remain <= 0 and tracker_id in self.result_history:
+                    del (self.result_history[tracker_id])
+            else:
+                self.result_history[tracker_id] = [cls_id_res, self.frame_life]
+
             action_ret = {'class': cls_id_res, 'score': cls_score_res}
             mot_id.append(tracker_id)
             act_res.append(action_ret)

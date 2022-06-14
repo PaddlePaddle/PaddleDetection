@@ -49,15 +49,15 @@ ID_BASED_DETACTION:
   basemode: "idbased"
   threshold: 0.4
   display_frames: 80
-  enable: False
+  enable: True
 
 ID_BASED_CLSACTION:
-  model_dir: output_inference/PPHGNet_tiny_calling/
+  model_dir: output_inference/PPHGNet_tiny_calling_halfbody
   batch_size: 1
   basemode: "idbased"
-  threshold: 0.65
-  display_frames: 20
-  enable: False
+  threshold: 0.45
+  display_frames: 80
+  enable: True
 
 REID:
   model_dir: output_inference/reid_model/

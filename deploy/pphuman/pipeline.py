@@ -396,6 +396,7 @@ class PipePredictor(object):
                 basemode = idbased_clsaction_cfg['basemode']
                 threshold = idbased_clsaction_cfg['threshold']
                 self.modebase[basemode] = True
+                display_frames = idbased_clsaction_cfg['display_frames']
                 self.cls_action_predictor = ClsActionRecognizer(
                     model_dir,
                     device,
@@ -407,10 +408,9 @@ class PipePredictor(object):
                     trt_calib_mode,
                     cpu_threads,
                     enable_mkldnn,
-                    threshold=threshold)
-                display_frames = idbased_clsaction_cfg['display_frames']
-                self.cls_action_visual_helper = ActionVisualHelper(
-                    display_frames)
+                    threshold=threshold,
+                    display_frames=display_frames)
+                self.cls_action_visual_helper = ActionVisualHelper(1)
 
             if self.with_skeleton_action:
                 skeleton_action_cfg = self.cfg['SKELETON_ACTION']
@@ -659,6 +659,7 @@ class PipePredictor(object):
                         self.pipe_timer.module_time['det_action'].start()
                     det_action_res = self.det_action_predictor.predict(
                         crop_input, mot_res)
+                    print(det_action_res)
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['det_action'].end()
                     self.pipeline_res.update(det_action_res, 'det_action')
@@ -846,32 +847,41 @@ class PipePredictor(object):
                 visual_thresh=self.cfg['kpt_thresh'],
                 returnimg=True)
 
-        skeleton_action_res = result.get('skeleton_action')
         video_action_res = result.get('video_action')
-        if skeleton_action_res is not None or video_action_res is not None:
+        if video_action_res is not None:
             video_action_score = None
-            action_visual_helper = None
             if video_action_res and video_action_res["class"] == 1:
                 video_action_score = video_action_res["score"]
-            if skeleton_action_res:
-                action_visual_helper = self.skeleton_action_visual_helper
             image = visualize_action(
                 image,
                 mot_res['boxes'],
-                action_visual_collector=action_visual_helper,
+                action_visual_collector=None,
                 action_text="SkeletonAction",
                 video_action_score=video_action_score,
                 video_action_text="Fight")
 
+        visual_helper_for_display = []
+        action_to_display = []
+
+        skeleton_action_res = result.get('skeleton_action')
+        if skeleton_action_res is not None:
+            visual_helper_for_display.append(self.skeleton_action_visual_helper)
+            action_to_display.append("Falling")
+
         det_action_res = result.get('det_action')
         if det_action_res is not None:
-            image = visualize_action(image, mot_res['boxes'],
-                                     self.det_action_visual_helper, "Smoking")
+            visual_helper_for_display.append(self.det_action_visual_helper)
+            action_to_display.append("Smoking")
 
         cls_action_res = result.get('cls_action')
         if cls_action_res is not None:
+            visual_helper_for_display.append(self.cls_action_visual_helper)
+            action_to_display.append("Calling")
+
+        if len(visual_helper_for_display) > 0:
             image = visualize_action(image, mot_res['boxes'],
-                                     self.cls_action_visual_helper, "Calling")
+                                     visual_helper_for_display,
+                                     action_to_display)
 
         return image
 
