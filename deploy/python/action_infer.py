@@ -279,6 +279,7 @@ class DetActionRecognizer(object):
         cpu_threads (int): cpu threads
         enable_mkldnn (bool): whether to open MKLDNN
         threshold (float): The threshold of score for action feature object detection.
+        display_frames (int): The duration for corresponding detected action. 
     """
 
     def __init__(self,
@@ -293,7 +294,8 @@ class DetActionRecognizer(object):
                  cpu_threads=1,
                  enable_mkldnn=False,
                  output_dir='output',
-                 threshold=0.5):
+                 threshold=0.5,
+                 display_frames=20):
         super(DetActionRecognizer, self).__init__()
         self.detector = Detector(
             model_dir=model_dir,
@@ -309,6 +311,8 @@ class DetActionRecognizer(object):
             output_dir=output_dir,
             threshold=threshold)
         self.threshold = threshold
+        self.frame_life = display_frames
+        self.result_history = {}
 
     def predict(self, images, mot_result):
         det_result = self.detector.predict_image(images, visual=False)
@@ -339,6 +343,17 @@ class DetActionRecognizer(object):
             if valid_boxes.shape[0] >= 1:
                 action_ret['class'] = valid_boxes[0, 0]
                 action_ret['score'] = valid_boxes[0, 1]
+                self.result_history[tracker_id] = [0, self.frame_life]
+            else:
+                history_det, life_remain = self.result_history.get(tracker_id,
+                                                                   [1, 0])
+                action_ret['class'] = history_det
+                action_ret['score'] = -1.0
+                life_remain -= 1
+                if life_remain <= 0 and tracker_id in self.result_history:
+                    del (self.result_history[tracker_id])
+                elif tracker_id in self.result_history:
+                    self.result_history[tracker_id][1] = life_remain
 
             mot_id.append(tracker_id)
             act_res.append(action_ret)
@@ -421,9 +436,6 @@ class ClsActionRecognizer(AttrDetector):
         result = {'output': batch_res}
         return result
 
-    def get_history_result(self, cls_result):
-        mot_id
-
     def match_action_with_id(self, cls_result, mot_result):
         mot_bboxes = mot_result.get('boxes')
 
@@ -451,6 +463,8 @@ class ClsActionRecognizer(AttrDetector):
                 life_remain -= 1
                 if life_remain <= 0 and tracker_id in self.result_history:
                     del (self.result_history[tracker_id])
+                elif tracker_id in self.result_history:
+                    self.result_history[tracker_id][1] = life_remain
             else:
                 self.result_history[tracker_id] = [cls_id_res, self.frame_life]
 

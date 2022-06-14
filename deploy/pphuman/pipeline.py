@@ -372,6 +372,7 @@ class PipePredictor(object):
                 batch_size = idbased_detaction_cfg['batch_size']
                 basemode = idbased_detaction_cfg['basemode']
                 threshold = idbased_detaction_cfg['threshold']
+                display_frames = idbased_detaction_cfg['display_frames']
                 self.modebase[basemode] = True
                 self.det_action_predictor = DetActionRecognizer(
                     model_dir,
@@ -384,10 +385,9 @@ class PipePredictor(object):
                     trt_calib_mode,
                     cpu_threads,
                     enable_mkldnn,
-                    threshold=threshold)
-                display_frames = idbased_detaction_cfg['display_frames']
-                self.det_action_visual_helper = ActionVisualHelper(
-                    display_frames)
+                    threshold=threshold,
+                    display_frames=display_frames)
+                self.det_action_visual_helper = ActionVisualHelper(1)
 
             if self.with_idbased_clsaction:
                 idbased_clsaction_cfg = self.cfg['ID_BASED_CLSACTION']
@@ -659,7 +659,6 @@ class PipePredictor(object):
                         self.pipe_timer.module_time['det_action'].start()
                     det_action_res = self.det_action_predictor.predict(
                         crop_input, mot_res)
-                    print(det_action_res)
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['det_action'].end()
                     self.pipeline_res.update(det_action_res, 'det_action')
