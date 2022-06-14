@@ -15,6 +15,7 @@
 import cv2
 import numpy as np
 from keypoint_preprocess import get_affine_transform
+from PIL import Image
 
 
 def decode_image(im_file, im_info):
@@ -104,6 +105,95 @@ class Resize(object):
             im_scale_y = resize_h / float(origin_shape[0])
             im_scale_x = resize_w / float(origin_shape[1])
         return im_scale_y, im_scale_x
+
+
+class ShortSizeScale(object):
+    """
+    Scale images by short size.
+    Args:
+        short_size(float | int): Short size of an image will be scaled to the short_size.
+        fixed_ratio(bool): Set whether to zoom according to a fixed ratio. default: True
+        do_round(bool): Whether to round up when calculating the zoom ratio. default: False
+        backend(str): Choose pillow or cv2 as the graphics processing backend. default: 'pillow'
+    """
+
+    def __init__(self,
+                 short_size,
+                 fixed_ratio=True,
+                 keep_ratio=None,
+                 do_round=False,
+                 backend='pillow'):
+        self.short_size = short_size
+        assert (fixed_ratio and not keep_ratio) or (
+            not fixed_ratio
+        ), "fixed_ratio and keep_ratio cannot be true at the same time"
+        self.fixed_ratio = fixed_ratio
+        self.keep_ratio = keep_ratio
+        self.do_round = do_round
+
+        assert backend in [
+            'pillow', 'cv2'
+        ], "Scale's backend must be pillow or cv2, but get {backend}"
+
+        self.backend = backend
+
+    def __call__(self, img):
+        """
+        Performs resize operations.
+        Args:
+            img (PIL.Image): a PIL.Image.
+        return:
+            resized_img: a PIL.Image after scaling.
+        """
+
+        result_img = None
+
+        if isinstance(img, np.ndarray):
+            h, w, _ = img.shape
+        elif isinstance(img, Image.Image):
+            w, h = img.size
+        else:
+            raise NotImplementedError
+
+        if w <= h:
+            ow = self.short_size
+            if self.fixed_ratio:  # default is True
+                oh = int(self.short_size * 4.0 / 3.0)
+            elif not self.keep_ratio:  # no
+                oh = self.short_size
+            else:
+                scale_factor = self.short_size / w
+                oh = int(h * float(scale_factor) +
+                         0.5) if self.do_round else int(h * self.short_size / w)
+                ow = int(w * float(scale_factor) +
+                         0.5) if self.do_round else int(w * self.short_size / h)
+        else:
+            oh = self.short_size
+            if self.fixed_ratio:
+                ow = int(self.short_size * 4.0 / 3.0)
+            elif not self.keep_ratio:  # no
+                ow = self.short_size
+            else:
+                scale_factor = self.short_size / h
+                oh = int(h * float(scale_factor) +
+                         0.5) if self.do_round else int(h * self.short_size / w)
+                ow = int(w * float(scale_factor) +
+                         0.5) if self.do_round else int(w * self.short_size / h)
+
+        if type(img) == np.ndarray:
+            img = Image.fromarray(img, mode='RGB')
+
+        if self.backend == 'pillow':
+            result_img = img.resize((ow, oh), Image.BILINEAR)
+        elif self.backend == 'cv2' and (self.keep_ratio is not None):
+            result_img = cv2.resize(
+                img, (ow, oh), interpolation=cv2.INTER_LINEAR)
+        else:
+            result_img = Image.fromarray(
+                cv2.resize(
+                    np.asarray(img), (ow, oh), interpolation=cv2.INTER_LINEAR))
+
+        return result_img
 
 
 class NormalizeImage(object):
