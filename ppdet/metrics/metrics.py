@@ -248,11 +248,13 @@ class VOCMetric(Metric):
         self.detection_map.reset()
 
     def update(self, inputs, outputs):
-        bbox_np = outputs['bbox'].numpy()
+        bbox_np = outputs['bbox'].numpy() if isinstance(
+            outputs['bbox'], paddle.Tensor) else outputs['bbox']
         bboxes = bbox_np[:, 2:]
         scores = bbox_np[:, 1]
         labels = bbox_np[:, 0]
-        bbox_lengths = outputs['bbox_num'].numpy()
+        bbox_lengths = outputs['bbox_num'].numpy() if isinstance(
+            outputs['bbox_num'], paddle.Tensor) else outputs['bbox_num']
 
         if bboxes.shape == (1, 1) or bboxes is None:
             return
@@ -261,18 +263,26 @@ class VOCMetric(Metric):
         difficults = inputs['difficult'] if not self.evaluate_difficult \
                             else None
 
-        scale_factor = inputs['scale_factor'].numpy(
-        ) if 'scale_factor' in inputs else np.ones(
-            (gt_boxes.shape[0], 2)).astype('float32')
+        if 'scale_factor' in inputs:
+            scale_factor = inputs['scale_factor'].numpy() if isinstance(
+                inputs['scale_factor'],
+                paddle.Tensor) else inputs['scale_factor']
+        else:
+            scale_factor = np.ones((gt_boxes.shape[0], 2)).astype('float32')
 
         bbox_idx = 0
         for i in range(len(gt_boxes)):
-            gt_box = gt_boxes[i].numpy()
+            gt_box = gt_boxes[i].numpy() if isinstance(
+                gt_boxes[i], paddle.Tensor) else gt_boxes[i]
             h, w = scale_factor[i]
             gt_box = gt_box / np.array([w, h, w, h])
-            gt_label = gt_labels[i].numpy()
-            difficult = None if difficults is None \
-                            else difficults[i].numpy()
+            gt_label = gt_labels[i].numpy() if isinstance(
+                gt_labels[i], paddle.Tensor) else gt_labels[i]
+            if difficults is not None:
+                difficult = difficults[i].numpy() if isinstance(
+                    difficults[i], paddle.Tensor) else difficults[i]
+            else:
+                difficult = None
             bbox_num = bbox_lengths[i]
             bbox = bboxes[bbox_idx:bbox_idx + bbox_num]
             score = scores[bbox_idx:bbox_idx + bbox_num]
