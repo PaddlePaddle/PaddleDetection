@@ -38,7 +38,7 @@ kl_quant_export:tools/post_quant.py -c configs/ppyoloe/ppyoloe_crn_s_300e_coco.y
 infer_mode:norm
 infer_quant:False
 inference:./deploy/python/infer.py
---device:gpu|cpu
+--device:cpu
 --enable_mkldnn:False
 --cpu_threads:4
 --batch_size:1|2
