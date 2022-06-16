@@ -15,7 +15,7 @@ PaddleDetection团队提供了针对VisDrone-DET小目标数航拍场景的基�
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
 - 具体使用教程请参考[ppyoloe](../ppyoloe#getting-start)。
 - PP-YOLOE-P2是指增加P2层(1/4下采样层)的特征，共输出4个PPYOLOEHead。
-- largesize是指使用超大输入尺度训练和预测，相应的训练batch_size也减小，以速度来换取高精度。
+- largesize是指使用以1600尺度为基础的多尺度训练和1920尺度预测，相应的训练batch_size也减小，以速度来换取高精度。
 - MatlabAPI测试是使用官网评测工具[VisDrone2018-DET-toolkit](https://github.com/VisDrone/VisDrone2018-DET-toolkit)。
 
 
