@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "core/general-server/op/ppyoloe_op.h"
+#include "core/general-server/op/yolov3_darknet53_270e_coco.h"
 #include "core/predictor/framework/infer.h"
 #include "core/predictor/framework/memory.h"
 #include "core/predictor/framework/resource.h"
@@ -34,7 +34,7 @@ using baidu::paddle_serving::predictor::general_model::Request;
 using baidu::paddle_serving::predictor::general_model::Response;
 using baidu::paddle_serving::predictor::general_model::Tensor;
 
-int PPYOLOEOp::inference() {
+int yolov3_darknet53_270e_coco::inference() {
   VLOG(2) << "Going to run inference";
   const std::vector<std::string> pre_node_names = pre_names();
   if (pre_node_names.size() != 1) {
@@ -101,6 +101,28 @@ int PPYOLOEOp::inference() {
   void *databuf_data = NULL;
   char *databuf_char = NULL;
 
+  // im_shape
+  std::vector<float> im_shape{static_cast<float>(im_shape_h),
+                              static_cast<float>(im_shape_w)};
+  databuf_size = 2 * sizeof(float);
+
+  databuf_data = MempoolWrapper::instance().malloc(databuf_size);
+  if (!databuf_data) {
+    LOG(ERROR) << "Malloc failed, size: " << databuf_size;
+    return -1;
+  }
+
+  memcpy(databuf_data, im_shape.data(), databuf_size);
+  databuf_char = reinterpret_cast<char *>(databuf_data);
+  paddle::PaddleBuf paddleBuf_0(databuf_char, databuf_size);
+  paddle::PaddleTensor tensor_in_0;
+  tensor_in_0.name = "im_shape";
+  tensor_in_0.dtype = paddle::PaddleDType::FLOAT32;
+  tensor_in_0.shape = {1, 2};
+  tensor_in_0.lod = in->at(0).lod;
+  tensor_in_0.data = paddleBuf_0;
+  real_in->push_back(tensor_in_0);
+
   // image
   in_num = 1 * 3 * im_shape_h * im_shape_w;
   databuf_size = in_num * sizeof(float);
@@ -113,14 +135,14 @@ int PPYOLOEOp::inference() {
 
   memcpy(databuf_data, input.data(), databuf_size);
   databuf_char = reinterpret_cast<char *>(databuf_data);
-  paddle::PaddleBuf paddleBuf(databuf_char, databuf_size);
-  paddle::PaddleTensor tensor_in;
-  tensor_in.name = "image";
-  tensor_in.dtype = paddle::PaddleDType::FLOAT32;
-  tensor_in.shape = {1, 3, im_shape_h, im_shape_w};
-  tensor_in.lod = in->at(0).lod;
-  tensor_in.data = paddleBuf;
-  real_in->push_back(tensor_in);
+  paddle::PaddleBuf paddleBuf_1(databuf_char, databuf_size);
+  paddle::PaddleTensor tensor_in_1;
+  tensor_in_1.name = "image";
+  tensor_in_1.dtype = paddle::PaddleDType::FLOAT32;
+  tensor_in_1.shape = {1, 3, im_shape_h, im_shape_w};
+  tensor_in_1.lod = in->at(0).lod;
+  tensor_in_1.data = paddleBuf_1;
+  real_in->push_back(tensor_in_1);
 
   // scale_factor
   std::vector<float> scale_factor{scale_factor_h, scale_factor_w};
@@ -157,12 +179,13 @@ int PPYOLOEOp::inference() {
   return 0;
 }
 
-void PPYOLOEOp::preprocess_det(const cv::Mat &img, float *data,
-                                   float &scale_factor_h, float &scale_factor_w,
-                                   int im_shape_h, int im_shape_w,
-                                   const std::vector<float> &mean,
-                                   const std::vector<float> &scale,
-                                   const bool is_scale) {
+void yolov3_darknet53_270e_coco::preprocess_det(const cv::Mat &img, float *data,
+                                                float &scale_factor_h,
+                                                float &scale_factor_w,
+                                                int im_shape_h, int im_shape_w,
+                                                const std::vector<float> &mean,
+                                                const std::vector<float> &scale,
+                                                const bool is_scale) {
   // scale_factor
   scale_factor_h =
       static_cast<float>(im_shape_h) / static_cast<float>(img.rows);
@@ -201,7 +224,7 @@ void PPYOLOEOp::preprocess_det(const cv::Mat &img, float *data,
   }
 }
 
-cv::Mat PPYOLOEOp::Base2Mat(std::string &base64_data) {
+cv::Mat yolov3_darknet53_270e_coco::Base2Mat(std::string &base64_data) {
   cv::Mat img;
   std::string s_mat;
   s_mat = base64Decode(base64_data.data(), base64_data.size());
@@ -210,7 +233,8 @@ cv::Mat PPYOLOEOp::Base2Mat(std::string &base64_data) {
   return img;
 }
 
-std::string PPYOLOEOp::base64Decode(const char *Data, int DataByte) {
+std::string yolov3_darknet53_270e_coco::base64Decode(const char *Data,
+                                                     int DataByte) {
   const char DecodeTable[] = {
       0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -251,7 +275,7 @@ std::string PPYOLOEOp::base64Decode(const char *Data, int DataByte) {
   return strDecode;
 }
 
-DEFINE_OP(PPYOLOEOp);
+DEFINE_OP(yolov3_darknet53_270e_coco);
 
 } // namespace serving
 } // namespace paddle_serving

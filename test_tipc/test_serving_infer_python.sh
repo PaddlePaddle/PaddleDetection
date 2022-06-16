@@ -94,26 +94,25 @@ Count=0
 IFS="|"
 infer_quant_flag=(${infer_is_quant_list})
 for infer_mode in ${infer_mode_list[*]}; do
-    # run export
-    case ${infer_mode} in
-        norm) run_export=${norm_export} ;;
-        quant) run_export=${pact_export} ;;
-        fpgm) run_export=${fpgm_export} ;;
-        distill) run_export=${distill_export} ;;
-        kl_quant) run_export=${kl_quant_export} ;;
-        *) echo "Undefined infer_mode!"; exit 1;
-    esac
-    if [ ${run_export} = "null" ]; then
-        continue
+    if [ ${infer_mode} != "null" ]; then
+        # run export
+        case ${infer_mode} in
+            norm) run_export=${norm_export} ;;
+            quant) run_export=${pact_export} ;;
+            fpgm) run_export=${fpgm_export} ;;
+            distill) run_export=${distill_export} ;;
+            kl_quant) run_export=${kl_quant_export} ;;
+            *) echo "Undefined infer_mode!"; exit 1;
+        esac
+        set_export_weight=$(func_set_params "${export_weight_key}" "${export_weight_value}")
+        set_save_export_dir=$(func_set_params "${save_export_key}" "${save_export_value}")
+        set_filename=$(func_set_params "${filename_key}" "${model_name}")
+        export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
+        echo  $export_cmd
+        eval $export_cmd
+        status_export=$?
+        status_check $status_export "${export_cmd}" "${status_log}" "${model_name}"
     fi
-    set_export_weight=$(func_set_params "${export_weight_key}" "${export_weight_value}")
-    set_save_export_dir=$(func_set_params "${save_export_key}" "${save_export_value}")
-    set_filename=$(func_set_params "${filename_key}" "${model_name}")
-    export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
-    echo  $export_cmd
-    eval $export_cmd
-    status_export=$?
-    status_check $status_export "${export_cmd}" "${status_log}" "${model_name}"
 
     #run inference
     set_export_model_dir=$(func_set_params "${model_dir_key}" "${save_export_value}/${model_name}")

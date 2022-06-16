@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "core/general-server/op/yolov3_op.h"
+#include "core/general-server/op/ppyolo_mbv3_large_coco.h"
 #include "core/predictor/framework/infer.h"
 #include "core/predictor/framework/memory.h"
 #include "core/predictor/framework/resource.h"
@@ -34,7 +34,7 @@ using baidu::paddle_serving::predictor::general_model::Request;
 using baidu::paddle_serving::predictor::general_model::Response;
 using baidu::paddle_serving::predictor::general_model::Tensor;
 
-int YOLOv3Op::inference() {
+int ppyolo_mbv3_large_coco::inference() {
   VLOG(2) << "Going to run inference";
   const std::vector<std::string> pre_node_names = pre_names();
   if (pre_node_names.size() != 1) {
@@ -179,12 +179,13 @@ int YOLOv3Op::inference() {
   return 0;
 }
 
-void YOLOv3Op::preprocess_det(const cv::Mat &img, float *data,
-                                   float &scale_factor_h, float &scale_factor_w,
-                                   int im_shape_h, int im_shape_w,
-                                   const std::vector<float> &mean,
-                                   const std::vector<float> &scale,
-                                   const bool is_scale) {
+void ppyolo_mbv3_large_coco::preprocess_det(const cv::Mat &img, float *data,
+                                            float &scale_factor_h,
+                                            float &scale_factor_w,
+                                            int im_shape_h, int im_shape_w,
+                                            const std::vector<float> &mean,
+                                            const std::vector<float> &scale,
+                                            const bool is_scale) {
   // scale_factor
   scale_factor_h =
       static_cast<float>(im_shape_h) / static_cast<float>(img.rows);
@@ -223,7 +224,7 @@ void YOLOv3Op::preprocess_det(const cv::Mat &img, float *data,
   }
 }
 
-cv::Mat YOLOv3Op::Base2Mat(std::string &base64_data) {
+cv::Mat ppyolo_mbv3_large_coco::Base2Mat(std::string &base64_data) {
   cv::Mat img;
   std::string s_mat;
   s_mat = base64Decode(base64_data.data(), base64_data.size());
@@ -232,7 +233,8 @@ cv::Mat YOLOv3Op::Base2Mat(std::string &base64_data) {
   return img;
 }
 
-std::string YOLOv3Op::base64Decode(const char *Data, int DataByte) {
+std::string ppyolo_mbv3_large_coco::base64Decode(const char *Data,
+                                                 int DataByte) {
   const char DecodeTable[] = {
       0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -273,7 +275,7 @@ std::string YOLOv3Op::base64Decode(const char *Data, int DataByte) {
   return strDecode;
 }
 
-DEFINE_OP(YOLOv3Op);
+DEFINE_OP(ppyolo_mbv3_large_coco);
 
 } // namespace serving
 } // namespace paddle_serving

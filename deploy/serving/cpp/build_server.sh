@@ -47,8 +47,8 @@ export CUDA_CUDART_LIBRARY='/usr/local/cuda/lib64/'
 export TENSORRT_LIBRARY_PATH='/usr/local/TensorRT6-cuda10.1-cudnn7/targets/x86_64-linux-gnu/'
 
 # cp 自定义OP代码
-\cp ../deploy/serving/cpp/preprocess/ppyoloe_op.* ${Serving_repo_path}/core/general-server/op
-\cp ../deploy/serving/cpp/preprocess/yolov3_op.* ${Serving_repo_path}/core/general-server/op
+\cp ../deploy/serving/cpp/preprocess/*.h ${Serving_repo_path}/core/general-server/op
+\cp ../deploy/serving/cpp/preprocess/*.cpp ${Serving_repo_path}/core/general-server/op
 
 # 编译Server, export SERVING_BIN
 mkdir server-build-gpu-opencv && cd server-build-gpu-opencv
