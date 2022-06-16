@@ -80,14 +80,6 @@ elif [ ${MODE} = "paddle2onnx_infer" ];then
     ${python} -m pip install install paddle2onnx
     ${python} -m pip install onnxruntime==1.10.0
 elif [ ${MODE} = "serving_infer" ];then
-    git clone https://github.com/PaddlePaddle/Serving
-    cd Serving
-    bash tools/paddle_env_install.sh
-    ${python} -m pip install -r python/requirements.txt
-    cd ..
-    ${python} -m pip install paddle-serving-client -i https://pypi.tuna.tsinghua.edu.cn/simple
-    ${python} -m pip install paddle-serving-app -i https://pypi.tuna.tsinghua.edu.cn/simple
-    ${python} -m pip install paddle-serving-server-gpu -i https://pypi.tuna.tsinghua.edu.cn/simple
     unset https_proxy http_proxy
 else
     # download coco lite data
