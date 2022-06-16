@@ -12,23 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import math
+
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
-from paddle.nn.initializer import Normal, Constant
-from ppdet.modeling.proposal_generator import AnchorGenerator
-from ppdet.core.workspace import register
-from ppdet.modeling.layers import ConvNormLayer
-from .fcos_head import ScaleReg
-from ppdet.modeling.bbox_utils import distance2bbox, bbox2distance, batch_distance2bbox, bbox_center
 from paddle.fluid.dygraph import parallel_helper
+from paddle.nn.initializer import Constant, Normal
+
+from ppdet.core.workspace import register
 from ppdet.data.transform.atss_assigner import bbox_overlaps
+from ppdet.modeling.bbox_utils import (batch_distance2bbox, bbox2distance,
+                                       bbox_center, distance2bbox)
+from ppdet.modeling.layers import ConvNormLayer
+from ppdet.modeling.proposal_generator import AnchorGenerator
+
+from .fcos_head import ScaleReg
 
 __all__ = ['SCRFDHead']
 
@@ -58,11 +60,6 @@ def batch_kps2distance(points, kps, max_dis=None, eps=0.1):
         preds.append(px)
         preds.append(py)
     return paddle.stack(preds, -1)
-    # kps[..., 0::2] -= points[..., 0].unsqueeze(axis=-1)
-    # kps[..., 1::2] -= points[..., 1].unsqueeze(axis=-1)
-    # if max_dis is not None:
-    #     kps = paddle.clip(kps, min=0, max=max_dis - eps)
-    # return kps
 
 
 def batch_distance2kps(points, kps, max_shape=None):
@@ -399,7 +396,7 @@ class SCRFDHead(nn.Layer):
             bg_index=self.num_classes,
             pred_bboxes=bboxes_pred.detach() * stride_tensor_list,
             gt_kps=gt_kps)
-        #  # rescale bbox
+        # rescale bbox
         assigned_bboxes /= stride_tensor_list
         assigned_kps /= stride_tensor_list
         flatten_cls_preds = cls_logits.reshape([-1, self.num_classes])
@@ -424,9 +421,6 @@ class SCRFDHead(nn.Layer):
                 flatten_assigned_scores, pos_inds, axis=0)
             weight_targets = pos_cls_pred.detach()
             weight_targets = F.sigmoid(1 - weight_targets)
-            # weight_targets = F.sigmoid(weight_targets)
-            #  weight_targets = paddle.gather(
-            #      weight_targets.max(axis=1, keepdim=True), pos_inds, axis=0)
 
             # regression loss
             loss_iou = paddle.sum(

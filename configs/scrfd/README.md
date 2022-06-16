@@ -16,7 +16,7 @@ We reproduce `Sample and Computation Redistribution for Efficient Face Detection
 
 - Evaluation on WIDERFace can be found [here](../face_detection/README.md).
 
-- Dataset: The retinaface version ofWIDERFace is used, which can be downloaded [here](https://drive.google.com/file/d/1UW3KoApOhusyqSHX96yEDRYiNkd3Iv3Z/view?usp=sharing).
+- Dataset: The retinaface version of WIDERFace is used, which can be downloaded [here](https://drive.google.com/file/d/1UW3KoApOhusyqSHX96yEDRYiNkd3Iv3Z/view?usp=sharing).
 
 ## Citation
 
