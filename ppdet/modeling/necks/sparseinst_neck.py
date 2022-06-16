@@ -17,7 +17,8 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
-from paddle.nn.initializer import Normal, Constant, KaimingNormal
+from paddle.nn.initializer import Normal, Constant
+from ..initializer import kaiming_uniform_, kaiming_normal_
 
 from ppdet.core.workspace import register, serializable
 from ..shape_spec import ShapeSpec
@@ -73,17 +74,17 @@ class InstanceContextEncoder(nn.Layer):
                 in_channel,
                 self.num_channels,
                 1,
-                weight_attr=ParamAttr(
-                    initializer=KaimingNormal(), learning_rate=1.),
                 bias_attr=ParamAttr(initializer=Constant(value=0.)))
             output_conv = nn.Conv2D(
                 self.num_channels,
                 self.num_channels,
                 3,
                 padding=1,
-                weight_attr=ParamAttr(
-                    initializer=KaimingNormal(), learning_rate=1.),
                 bias_attr=ParamAttr(initializer=Constant(value=0.)))
+
+            kaiming_uniform_(lateral_conv.weight, a=1)
+            kaiming_uniform_(output_conv.weight, a=1)
+
             fpn_laterals.append(lateral_conv)
             fpn_outputs.append(output_conv)
         self.fpn_laterals = nn.LayerList(fpn_laterals)
@@ -96,9 +97,8 @@ class InstanceContextEncoder(nn.Layer):
             self.num_channels * 3,
             self.num_channels,
             1,
-            weight_attr=ParamAttr(
-                initializer=KaimingNormal(), learning_rate=1.),
             bias_attr=ParamAttr(initializer=Constant(value=0.)))
+        kaiming_normal_(self.fusion.weight, mode="fan_out", nonlinearity="relu")
 
     def forward(self, in_features):
         features = [in_features[i] for i in range(len(in_features) - 1, -1, -1)]

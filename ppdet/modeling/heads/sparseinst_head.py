@@ -21,6 +21,7 @@ from paddle import ParamAttr
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant
+from ..initializer import kaiming_uniform_, bias_init_with_prob
 
 from ppdet.modeling.layers import ConvNormLayer, MaskMatrixNMS, DropBlock
 from ppdet.core.workspace import register
@@ -44,10 +45,9 @@ class InstanceBranch(nn.Layer):
     def __init__(self, dim, num_convs, num_masks, kernel_dim, num_classes,
                  in_channels):
         super().__init__()
-        prior_prob = 0.01
-        bias_value = -np.log((1 - prior_prob) / prior_prob)
 
-        self.num_classes = num_classes
+        bias_value = bias_init_with_prob(0.01)
+
         self.inst_convs = _make_stack_3x3_convs(num_convs, in_channels, dim)
         # iam prediction, a simple conv
         self.iam_conv = nn.Conv2D(
@@ -62,7 +62,7 @@ class InstanceBranch(nn.Layer):
         # outputs
         self.cls_score = nn.Linear(
             dim,
-            self.num_classes,
+            num_classes,
             weight_attr=ParamAttr(
                 initializer=Normal(std=0.01), learning_rate=1.))
         self.mask_kernel = nn.Linear(
@@ -71,6 +71,11 @@ class InstanceBranch(nn.Layer):
             weight_attr=ParamAttr(
                 initializer=Normal(std=0.01), learning_rate=1.))
         self.objectness = nn.Linear(dim, 1)
+
+        self._reset_parameters()
+
+    def _reset_parameters(self):
+        kaiming_uniform_(self.objectness.weight)
 
     def forward(self, features):
         # instance features (x4 convs)
@@ -125,7 +130,7 @@ class BaseIAMDecoder(nn.Layer):
                  kernel_dim,
                  scale_factor,
                  output_iam=False):
-        super().__init__()
+        super(BaseIAMDecoder, self).__init__()
 
         self.scale_factor = scale_factor
         self.output_iam = output_iam
@@ -192,40 +197,41 @@ class GroupInstanceBranch(nn.Layer):
                  num_classes,
                  in_channels,
                  groups=1):
-        super().__init__()
-        self.num_groups = groups
-        self.num_classes = num_classes
+        super(GroupInstanceBranch, self).__init__()
 
+        bias_value = bias_init_with_prob(0.01)
         self.inst_convs = _make_stack_3x3_convs(num_convs, in_channels, dim)
-        # iam prediction, a group conv
-        expand_dim = dim * self.num_groups
+
+        expand_dim = dim * groups
         self.iam_conv = nn.Conv2D(
             dim,
-            num_masks * self.num_groups,
+            num_masks * groups,
             3,
             padding=1,
-            groups=self.num_groups)
+            groups=groups,
+            weight_attr=ParamAttr(
+                initializer=Normal(std=0.01), learning_rate=1.),
+            bias_attr=ParamAttr(initializer=Constant(value=bias_value)))
+
         # outputs
         self.fc = nn.Linear(expand_dim, expand_dim)
-
-        self.cls_score = nn.Linear(expand_dim, self.num_classes)
-        self.mask_kernel = nn.Linear(expand_dim, kernel_dim)
+        self.cls_score = nn.Linear(
+            expand_dim,
+            num_classes,
+            weight_attr=ParamAttr(
+                initializer=Normal(std=0.01), learning_rate=1.))
+        self.mask_kernel = nn.Linear(
+            expand_dim,
+            kernel_dim,
+            weight_attr=ParamAttr(
+                initializer=Normal(std=0.01), learning_rate=1.))
         self.objectness = nn.Linear(expand_dim, 1)
 
-        self.prior_prob = 0.01
-        self._init_weights()
+        self._reset_parameters()
 
-    def _init_weights(self):
-        return
-        bias_value = -np.log((1 - self.prior_prob) / self.prior_prob)
-        for module in [self.iam_conv, self.cls_score]:
-            init.constant_(module.bias, bias_value)
-        init.normal_(self.iam_conv.weight, std=0.01)
-        init.normal_(self.cls_score.weight, std=0.01)
-
-        init.normal_(self.mask_kernel.weight, std=0.01)
-        init.constant_(self.mask_kernel.bias, 0.0)
-        c2_xavier_fill(self.fc)
+    def _reset_parameters(self):
+        kaiming_uniform_(self.fc.weight, a=1)
+        kaiming_uniform_(self.objectness.weight)
 
     def forward(self, features):
         # instance features (x4 convs)
@@ -241,34 +247,40 @@ class GroupInstanceBranch(nn.Layer):
         inst_features = paddle.bmm(iam_prob,
                                    features.reshape((B, C, -1)).transpose(
                                        (0, 2, 1)))
-        normalizer = iam_prob.sum(-1).clamp(min=1e-6)
+        normalizer = paddle.clip(iam_prob.sum(-1), min=1e-6)
         inst_features = inst_features / normalizer[:, :, None]
 
-        inst_features = inst_features.reshape((B, 4, N // 4, -1)).transpose(
-            (1, 2)).reshape((B, N // 4, -1))
+        inst_features = inst_features.reshape(
+            (B, 4, N // 4, -1)).moveaxis(1, 2).reshape((B, N // 4, -1))
 
         inst_features = F.relu_(self.fc(inst_features))
         # predict classification & segmentation kernel & objectness
         pred_logits = self.cls_score(inst_features)
         pred_kernel = self.mask_kernel(inst_features)
         pred_scores = self.objectness(inst_features)
+
         return pred_logits, pred_kernel, pred_scores, iam
 
 
 @register
 class GroupIAMDecoder(BaseIAMDecoder):
     def __init__(self,
-                 dim,
-                 num_convs,
                  num_masks,
-                 kernel_dim,
                  num_classes,
                  in_channels,
+                 inst_dim,
+                 mask_dim,
+                 inst_num_convs,
+                 mask_num_convs,
+                 kernel_dim,
                  scale_factor,
-                 output_iam=None,
+                 output_iam=False,
                  groups=1):
-        super().__init__(dim, num_convs, num_masks, kernel_dim, num_classes,
-                         in_channels, scale_factor, output_iam, groups)
-        self.inst_branch = GroupInstanceBranch(dim, num_convs, num_masks,
-                                               kernel_dim, num_classes,
-                                               in_channels + 2, groups)
+        super(GroupIAMDecoder, self).__init__(
+            num_masks, num_classes, in_channels, inst_dim, mask_dim,
+            inst_num_convs, mask_num_convs, kernel_dim, scale_factor,
+            output_iam)
+
+        self.inst_branch = GroupInstanceBranch(
+            inst_dim, mask_num_convs, num_masks, kernel_dim, num_classes,
+            in_channels + 2, groups)

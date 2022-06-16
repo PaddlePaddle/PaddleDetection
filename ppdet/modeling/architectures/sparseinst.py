@@ -98,12 +98,13 @@ class SparseInst(BaseArch):
                 "shape": [],
                 "bbox_num": [],
             }
+
             for _, (scores_per_image, mask_pred_per_image, im_shape,
                     scale_factor) in enumerate(
                         zip(pred_scores, pred_masks, self.inputs['im_shape'],
                             self.inputs['scale_factor'])):
-                origin_shape = (im_shape / scale_factor).astype(paddle.int32)
-
+                origin_shape = paddle.round(im_shape /
+                                            scale_factor).astype(paddle.int32)
                 result["shape"].append(origin_shape)
                 # max/argmax
                 scores = scores_per_image.max(axis=-1)
@@ -116,20 +117,16 @@ class SparseInst(BaseArch):
                 mask_pred_per_image = mask_pred_per_image[keep]
 
                 if scores.shape[0] == 0:
-                    result.scores = scores
-                    result.pred_classes = labels
-                    results.append(result)
                     continue
 
-                h, w = input_shape
+                h = paddle.cast(im_shape[0], 'int32')[0]
+                w = paddle.cast(im_shape[1], 'int32')[0]
+
                 # rescoring mask using maskness
                 scores = _rescoring_mask(
                     scores, mask_pred_per_image > self.mask_threshold,
                     mask_pred_per_image)
 
-                # upsample the masks to the original resolution:
-                # (1) upsampling the masks to the padded inputs, remove the padding area
-                # (2) upsampling/downsampling the masks to the original sizes
                 mask_pred_per_image = F.interpolate(
                     mask_pred_per_image.unsqueeze(1),
                     size=input_shape,
