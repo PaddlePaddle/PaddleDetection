@@ -36,29 +36,28 @@ namespace baidu {
 namespace paddle_serving {
 namespace serving {
 
-class PPYOLOEOp
+class mask_rcnn_r50_fpn_1x_coco
     : public baidu::paddle_serving::predictor::OpWithChannel<GeneralBlob> {
 public:
   typedef std::vector<paddle::PaddleTensor> TensorVector;
 
-  DECLARE_OP(PPYOLOEOp);
+  DECLARE_OP(mask_rcnn_r50_fpn_1x_coco);
 
   int inference();
 
 private:
-  // ppyoloe, picodet preprocess
+  // preprocess
   std::vector<float> mean_ = {0.485f, 0.456f, 0.406f};
   std::vector<float> scale_ = {0.229f, 0.224f, 0.225f};
   bool is_scale_ = true;
-  int im_shape_h = 640;
-  int im_shape_w = 640;
+  int im_shape_h = 1333;
+  int im_shape_w = 800;
   float scale_factor_h = 1.0f;
   float scale_factor_w = 1.0f;
   void preprocess_det(const cv::Mat &img, float *data, float &scale_factor_h,
-                      float &scale_factor_w, int im_shape_h,
-                      int im_shape_w, const std::vector<float> &mean,
-                      const std::vector<float> &scale,
-                      const bool is_scale);
+                      float &scale_factor_w, int &im_shape_h, int &im_shape_w,
+                      const std::vector<float> &mean,
+                      const std::vector<float> &scale, const bool is_scale);
 
   // read pics
   cv::Mat Base2Mat(std::string &base64_data);

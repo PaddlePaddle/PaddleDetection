@@ -36,22 +36,22 @@ namespace baidu {
 namespace paddle_serving {
 namespace serving {
 
-class YOLOv3Op
+class picodet_lcnet_1_5x_416_coco
     : public baidu::paddle_serving::predictor::OpWithChannel<GeneralBlob> {
 public:
   typedef std::vector<paddle::PaddleTensor> TensorVector;
 
-  DECLARE_OP(YOLOv3Op);
+  DECLARE_OP(picodet_lcnet_1_5x_416_coco);
 
   int inference();
 
 private:
-  // yolov3, ppyolo preprocess
+  // preprocess
   std::vector<float> mean_ = {0.485f, 0.456f, 0.406f};
   std::vector<float> scale_ = {0.229f, 0.224f, 0.225f};
   bool is_scale_ = true;
-  int im_shape_h = 608;
-  int im_shape_w = 608;
+  int im_shape_h = 416;
+  int im_shape_w = 416;
   float scale_factor_h = 1.0f;
   float scale_factor_w = 1.0f;
   void preprocess_det(const cv::Mat &img, float *data, float &scale_factor_h,
