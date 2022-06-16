@@ -89,10 +89,6 @@ function func_serving_inference(){
     done
 }
 
-# build paddle_serving_server
-bash deploy/serving/cpp/build_server.sh
-echo "################### build finished! ###################"
-
 # run serving infer
 Count=0
 IFS="|"
