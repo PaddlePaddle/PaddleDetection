@@ -85,9 +85,13 @@ int mask_rcnn_r50_fpn_1x_coco::inference() {
   cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
 
   // preprocess
-  std::vector<float> input(1 * 3 * im_shape_h * im_shape_w, 0.0f);
-  preprocess_det(img, input.data(), scale_factor_h, scale_factor_w, im_shape_h,
-                 im_shape_w, mean_, scale_, is_scale_);
+  Resize(&img, scale_factor_h, scale_factor_w, im_shape_h, im_shape_w);
+  Normalize(&img, mean_, scale_, is_scale_);
+  PadStride(&img, 32);
+  int input_shape_h = img.rows;
+  int input_shape_w = img.cols;
+  std::vector<float> input(1 * 3 * input_shape_h * input_shape_w, 0.0f);
+  Permute(img, input.data());
 
   // create real_in
   TensorVector *real_in = new TensorVector();
@@ -124,7 +128,7 @@ int mask_rcnn_r50_fpn_1x_coco::inference() {
   real_in->push_back(tensor_in_0);
 
   // image
-  in_num = 1 * 3 * im_shape_h * im_shape_w;
+  in_num = 1 * 3 * input_shape_h * input_shape_w;
   databuf_size = in_num * sizeof(float);
 
   databuf_data = MempoolWrapper::instance().malloc(databuf_size);
@@ -139,7 +143,7 @@ int mask_rcnn_r50_fpn_1x_coco::inference() {
   paddle::PaddleTensor tensor_in_1;
   tensor_in_1.name = "image";
   tensor_in_1.dtype = paddle::PaddleDType::FLOAT32;
-  tensor_in_1.shape = {1, 3, im_shape_h, im_shape_w};
+  tensor_in_1.shape = {1, 3, input_shape_h, input_shape_w};
   tensor_in_1.lod = in->at(0).lod;
   tensor_in_1.data = paddleBuf_1;
   real_in->push_back(tensor_in_1);
@@ -179,16 +183,12 @@ int mask_rcnn_r50_fpn_1x_coco::inference() {
   return 0;
 }
 
-void mask_rcnn_r50_fpn_1x_coco::preprocess_det(const cv::Mat &img, float *data,
-                                               float &scale_factor_h,
-                                               float &scale_factor_w,
-                                               int &im_shape_h, int &im_shape_w,
-                                               const std::vector<float> &mean,
-                                               const std::vector<float> &scale,
-                                               const bool is_scale) {
+void mask_rcnn_r50_fpn_1x_coco::Resize(cv::Mat *img, float &scale_factor_h,
+                                       float &scale_factor_w, int &im_shape_h,
+                                       int &im_shape_w) {
   // keep_ratio
-  int im_size_max = std::max(img.rows, img.cols);
-  int im_size_min = std::min(img.rows, img.cols);
+  int im_size_max = std::max(img->rows, img->cols);
+  int im_size_min = std::min(img->rows, img->cols);
   int target_size_max = std::max(im_shape_h, im_shape_w);
   int target_size_min = std::min(im_shape_h, im_shape_w);
   float scale_min =
@@ -202,46 +202,52 @@ void mask_rcnn_r50_fpn_1x_coco::preprocess_det(const cv::Mat &img, float *data,
   scale_factor_w = scale_ratio;
 
   // Resize
-  cv::Mat resize_img;
-  cv::resize(img, resize_img, cv::Size(), scale_ratio, scale_ratio, 2);
-  im_shape_h = resize_img.rows;
-  im_shape_w = resize_img.cols;
+  cv::resize(*img, *img, cv::Size(), scale_ratio, scale_ratio, 2);
+  im_shape_h = img->rows;
+  im_shape_w = img->cols;
+}
 
+void mask_rcnn_r50_fpn_1x_coco::Normalize(cv::Mat *img,
+                                          const std::vector<float> &mean,
+                                          const std::vector<float> &scale,
+                                          const bool is_scale) {
   // Normalize
   double e = 1.0;
   if (is_scale) {
     e /= 255.0;
   }
-  cv::Mat img_fp;
-  (resize_img).convertTo(img_fp, CV_32FC3, e);
-  for (int h = 0; h < im_shape_h; h++) {
-    for (int w = 0; w < im_shape_w; w++) {
-      img_fp.at<cv::Vec3f>(h, w)[0] =
-          (img_fp.at<cv::Vec3f>(h, w)[0] - mean[0]) / scale[0];
-      img_fp.at<cv::Vec3f>(h, w)[1] =
-          (img_fp.at<cv::Vec3f>(h, w)[1] - mean[1]) / scale[1];
-      img_fp.at<cv::Vec3f>(h, w)[2] =
-          (img_fp.at<cv::Vec3f>(h, w)[2] - mean[2]) / scale[2];
+  (*img).convertTo(*img, CV_32FC3, e);
+  for (int h = 0; h < img->rows; h++) {
+    for (int w = 0; w < img->cols; w++) {
+      img->at<cv::Vec3f>(h, w)[0] =
+          (img->at<cv::Vec3f>(h, w)[0] - mean[0]) / scale[0];
+      img->at<cv::Vec3f>(h, w)[1] =
+          (img->at<cv::Vec3f>(h, w)[1] - mean[1]) / scale[1];
+      img->at<cv::Vec3f>(h, w)[2] =
+          (img->at<cv::Vec3f>(h, w)[2] - mean[2]) / scale[2];
     }
   }
+}
 
+void mask_rcnn_r50_fpn_1x_coco::PadStride(cv::Mat *img, int stride_) {
   // PadStride
-  cv::Mat img_pad;
-  int stride_ = 32;
-  int nh =
-      (im_shape_h / stride_) * stride_ + (im_shape_h % stride_ != 0) * stride_;
-  int nw =
-      (im_shape_w / stride_) * stride_ + (im_shape_w % stride_ != 0) * stride_;
-  cv::copyMakeBorder(img_fp, img_pad, 0, nh - im_shape_h, 0, nw - im_shape_w,
-                     cv::BORDER_CONSTANT, cv::Scalar(0));
+  if (stride_ <= 0)
+    return;
+  int rh = img->rows;
+  int rw = img->cols;
+  int nh = (rh / stride_) * stride_ + (rh % stride_ != 0) * stride_;
+  int nw = (rw / stride_) * stride_ + (rw % stride_ != 0) * stride_;
+  cv::copyMakeBorder(*img, *img, 0, nh - rh, 0, nw - rw, cv::BORDER_CONSTANT,
+                     cv::Scalar(0));
+}
 
+void mask_rcnn_r50_fpn_1x_coco::Permute(const cv::Mat &img, float *data) {
   // Permute
-  int rh = img_pad.rows;
-  int rw = img_pad.cols;
-  int rc = img_pad.channels();
+  int rh = img.rows;
+  int rw = img.cols;
+  int rc = img.channels();
   for (int i = 0; i < rc; ++i) {
-    cv::extractChannel(img_pad, cv::Mat(rh, rw, CV_32FC1, data + i * rh * rw),
-                       i);
+    cv::extractChannel(img, cv::Mat(rh, rw, CV_32FC1, data + i * rh * rw), i);
   }
 }
 
