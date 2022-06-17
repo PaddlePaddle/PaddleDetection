@@ -70,15 +70,23 @@ class KeyPointTopDownCOCOEval(object):
         self.results['all_preds'][self.idx:self.idx + num_images, :, 0:
                                   3] = kpts[:, :, 0:3]
         self.results['all_boxes'][self.idx:self.idx + num_images, 0:2] = inputs[
-            'center'].numpy()[:, 0:2]
+            'center'].numpy()[:, 0:2] if isinstance(
+                inputs['center'], paddle.Tensor) else inputs['center']
         self.results['all_boxes'][self.idx:self.idx + num_images, 2:4] = inputs[
-            'scale'].numpy()[:, 0:2]
+            'scale'].numpy()[:, 0:2] if isinstance(
+                inputs['scale'], paddle.Tensor) else inputs['scale']
         self.results['all_boxes'][self.idx:self.idx + num_images, 4] = np.prod(
-            inputs['scale'].numpy() * 200, 1)
-        self.results['all_boxes'][self.idx:self.idx + num_images,
-                                  5] = np.squeeze(inputs['score'].numpy())
-        self.results['image_path'].extend(inputs['im_id'].numpy())
-
+            inputs['scale'].numpy() * 200,
+            1) if isinstance(inputs['scale'], paddle.Tensor) else np.prod(
+                inputs['scale'] * 200, 1)
+        self.results['all_boxes'][
+            self.idx:self.idx + num_images,
+            5] = np.squeeze(inputs['score'].numpy()) if isinstance(
+                inputs['score'], paddle.Tensor) else np.squeeze(inputs['score'])
+        if isinstance(inputs['im_id'], paddle.Tensor):
+            self.results['image_path'].extend(inputs['im_id'].numpy())
+        else:
+            self.results['image_path'].extend(inputs['im_id'])
         self.idx += num_images
 
     def _write_coco_keypoint_results(self, keypoints):
