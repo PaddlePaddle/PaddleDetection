@@ -6,9 +6,10 @@ Pedestrian detection and tracking is widely used in the intelligent community, i
 
 | Task                 | Algorithm | Precision | Inference Speed(ms) | Download Link                                                                               |
 |:---------------------|:---------:|:------:|:------:| :---------------------------------------------------------------------------------: |
-| Pedestrian Detection/ Tracking    |  PP-YOLOE | mAP: 56.3 <br> MOTA: 72.0 | Detection: 28ms <br> Tracking：33.1ms | [Download Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| Pedestrian Detection/ Tracking    |  PP-YOLOE-l | mAP: 56.6 <br> MOTA: 79.5 | Detection: 28.0ms <br> Tracking：33.1ms | [Download Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| Pedestrian Detection/ Tracking    |  PP-YOLOE-s | mAP: 53.2 <br> MOTA: 69.2 | Detection: 22.1ms <br> Tracking：27.2ms | [Download Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
 
-1. The precision of the pedestrian detection/ tracking model is obtained by trainning and testing on [MOT17](https://motchallenge.net/), [CrowdHuman](http://www.crowdhuman.org/), [HIEVE](http://humaninevents.org/) and some business data.
+1. The precision of the pedestrian detection/ tracking model is obtained by trainning and testing on [COCO-Person](http://cocodataset.org/), [CrowdHuman](http://www.crowdhuman.org/), [HIEVE](http://humaninevents.org/) and some business data.
 2. The inference speed is the speed of using TensorRT FP16 on T4, the total number of data pre-training, model inference, and post-processing.
 
 ## How to Use
@@ -57,7 +58,7 @@ Data source and copyright owner：Skyinfor Technology. Thanks for the provision 
 
 1. Get the pedestrian detection box of the image/ video input through object detection and multi-object tracking. The adopted model is PP-YOLOE, and for details, please refer to [PP-YOLOE](../../../configs/ppyoloe).
 
-2. The multi-object tracking model solution is based on [ByteTrack](https://arxiv.org/pdf/2110.06864.pdf), and replace the original YOLOX with P-YOLOE as the detector，and BYTETracker as the tracker.
+2. The multi-object tracking model solution is based on [ByteTrack](https://arxiv.org/pdf/2110.06864.pdf), and replace the original YOLOX with P-YOLOE as the detector，and BYTETracker as the tracker, please refer to [ByteTrack](../../../configs/mot/bytetrack).
 
 ## Reference
 ```
