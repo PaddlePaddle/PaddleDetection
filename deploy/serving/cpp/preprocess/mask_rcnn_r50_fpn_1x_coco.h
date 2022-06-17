@@ -54,10 +54,13 @@ private:
   int im_shape_w = 800;
   float scale_factor_h = 1.0f;
   float scale_factor_w = 1.0f;
-  void preprocess_det(const cv::Mat &img, float *data, float &scale_factor_h,
-                      float &scale_factor_w, int &im_shape_h, int &im_shape_w,
-                      const std::vector<float> &mean,
-                      const std::vector<float> &scale, const bool is_scale);
+
+  void Resize(cv::Mat *img, float &scale_factor_h, float &scale_factor_w,
+              int &im_shape_h, int &im_shape_w);
+  void Normalize(cv::Mat *img, const std::vector<float> &mean,
+                 const std::vector<float> &scale, const bool is_scale);
+  void PadStride(cv::Mat *img, int stride_ = -1);
+  void Permute(const cv::Mat &img, float *data);
 
   // read pics
   cv::Mat Base2Mat(std::string &base64_data);

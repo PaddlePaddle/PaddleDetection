@@ -50,8 +50,8 @@ private:
   std::vector<float> mean_ = {0.485f, 0.456f, 0.406f};
   std::vector<float> scale_ = {0.229f, 0.224f, 0.225f};
   bool is_scale_ = true;
-  int im_shape_h = 608;
-  int im_shape_w = 608;
+  int im_shape_h = 320;
+  int im_shape_w = 320;
   float scale_factor_h = 1.0f;
   float scale_factor_w = 1.0f;
   void preprocess_det(const cv::Mat &img, float *data, float &scale_factor_h,
