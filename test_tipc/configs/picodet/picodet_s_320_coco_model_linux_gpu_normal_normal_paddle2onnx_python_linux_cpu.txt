@@ -1,0 +1,30 @@
+===========================paddle2onnx_params===========================
+model_name:picodet_s_320_coco
+python:python3.7
+filename:null
+##
+--output_dir:./output_inference
+weights:https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams
+norm_export:tools/export_model.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml -o
+quant_export:tools/export_model.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml --slim_config _template_pact -o
+fpgm_export:tools/export_model.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml --slim_config _template_fpgm -o
+distill_export:null
+export1:null
+export_param:null
+kl_quant_export:tools/post_quant.py -c configs/picodet/legacy_model/yolov3_darknet53_270e_coco.yml --slim_config configs/slim/post_quant/picodet_s_ptq.yml -o
+##
+infer_mode:norm
+infer_quant:False
+cmd:paddle2onnx
+--model_dir:null
+--model_filename:model.pdmodel
+--params_filename:model.pdiparams
+--save_file:model.onnx
+--opset_version:11
+--enable_onnx_checker:True
+paddle2onnx_param1:null
+infer_py:./deploy/third_engine/onnx/infer.py
+--infer_cfg:null
+--onnx_file:null
+--image_file:./demo/000000014439.jpg
+infer_param1:null
