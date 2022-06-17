@@ -77,6 +77,7 @@ function func_serving_inference(){
         status_check $last_status "${http_client_cmd}" "${status_log}" "${model_name}"
         eval "cat ${_save_log_path}"
         ps ux | grep -E 'web_service' | awk '{print $2}' | xargs kill -s 9
+        sleep 2s
     done
 }
 

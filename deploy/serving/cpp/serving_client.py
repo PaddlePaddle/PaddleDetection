@@ -20,7 +20,6 @@ from paddle_serving_client import Client
 from paddle_serving_client.proto import general_model_config_pb2 as m_config
 import google.protobuf.text_format
 
-
 parser = argparse.ArgumentParser(description="args for paddleserving")
 parser.add_argument(
     "--serving_client", type=str, help="the directory of serving_client")
@@ -63,20 +62,20 @@ def get_test_images(infer_dir, infer_img):
     return images
 
 
-def postprocess(fetch_dict, draw_threshold=0.5):
+def postprocess(fetch_dict, fetch_vars, draw_threshold=0.5):
     result = []
     if "conv2d_441.tmp_1" in fetch_dict:
         heatmap = fetch_dict["conv2d_441.tmp_1"]
         print(heatmap)
         result.append(heatmap)
     else:
-        bboxes = fetch_dict["multiclass_nms3_0.tmp_0"]
+        bboxes = fetch_dict[fetch_vars[0]]
         for bbox in bboxes:
             if bbox[0] > -1 and bbox[1] > draw_threshold:
                 print(f"{int(bbox[0])} {bbox[1]} "
                       f"{bbox[2]} {bbox[3]} {bbox[4]} {bbox[5]}")
                 result.append(f"{int(bbox[0])} {bbox[1]} "
-                      f"{bbox[2]} {bbox[3]} {bbox[4]} {bbox[5]}")
+                              f"{bbox[2]} {bbox[3]} {bbox[4]} {bbox[5]}")
     return result
 
 
@@ -123,4 +122,4 @@ if __name__ == '__main__':
         image = base64.b64encode(image_data).decode('utf8')
         fetch_dict = client.predict(
             feed={feed_vars[0]: image}, fetch=fetch_vars)
-        result = postprocess(fetch_dict, args.threshold)
+        result = postprocess(fetch_dict, fetch_vars, args.threshold)
