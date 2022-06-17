@@ -71,10 +71,10 @@ class KeyPointTopDownCOCOEval(object):
                                   3] = kpts[:, :, 0:3]
         self.results['all_boxes'][self.idx:self.idx + num_images, 0:2] = inputs[
             'center'].numpy()[:, 0:2] if isinstance(
-                inputs['center'], paddle.Tensor) else inputs['center'][:, 0:2]
+                inputs['center'], paddle.Tensor) else inputs['center']
         self.results['all_boxes'][self.idx:self.idx + num_images, 2:4] = inputs[
             'scale'].numpy()[:, 0:2] if isinstance(
-                inputs['scale'], paddle.Tensor) else inputs['scale'][:, 0:2]
+                inputs['scale'], paddle.Tensor) else inputs['scale']
         self.results['all_boxes'][self.idx:self.idx + num_images, 4] = np.prod(
             inputs['scale'].numpy() * 200,
             1) if isinstance(inputs['scale'], paddle.Tensor) else np.prod(
