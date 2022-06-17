@@ -41,6 +41,10 @@ def argsparser():
     parser.add_argument("--rec_image_shape", type=str, default="3, 48, 320")
     parser.add_argument("--rec_batch_num", type=int, default=6)
     parser.add_argument(
+        "--word_dict_path",
+        type=str,
+        default="deploy/pphuman/rec_word_dict.txt")
+    parser.add_argument(
         "--image_file", type=str, default=None, help="Path of image file.")
     parser.add_argument(
         "--image_dir",
