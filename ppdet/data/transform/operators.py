@@ -995,7 +995,9 @@ class RandomResize(BaseOperator):
         """ Resize the image numpy.
         """
         if self.random_size:
-            target_size = random.choice(self.target_size)
+            target_list = [i for i in range(len(self.target_size))]
+            target_size_index = random.choice(target_list)
+            target_size = self.target_size[target_size_index]
         else:
             target_size = self.target_size
 
