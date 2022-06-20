@@ -5,7 +5,7 @@
 ## Content
 - [1 Quick Start](#quick-start)
 - [2 Data Preparation](#data-preparation)
-    - [2.1 Dataset Dowload](#dataset-dowload)
+    - [2.1 Dataset Download](#dataset-download)
     - [2.2 Frame Extraction](#frame-extraction)
     - [2.3 Train Set and Validation Set Partition](#trainset-and-validationset-partition)
     - [2.4 Video Segmentation](#video-segmentation)
@@ -29,7 +29,7 @@ Please refer to the [instruction manual](https://github.com/XYZ-916/PaddleVideo/
 
 Fight Recognition [Demo](https://videotag.bj.bcebos.com/PaddleVideo-release2.3/fight_demo.mp4).
 
-Firstly, dowload the inference model and unzip it to `inference` directory. Then execute the following command to recognize whether there is fight action in a given video:
+Firstly, download the inference model and unzip it to `inference` directory. Then execute the following command to recognize whether there is fight action in a given video:
 
 ```
 cd ${PaddleVideo_root}
@@ -47,8 +47,8 @@ python tools/predict.py --input_file fight.avi \
 
 PP-TSM is a video classification model based on video clips. The training datas are videos with the suffix `.mp4`、`.avi`  or frame sequence. The format of the label file is `.txt`.
 
-<a name="dataset-dowload"></a>
-### 2.1 Dataset Dowload
+<a name="dataset-download"></a>
+### 2.1 Dataset Download
 
 This project is based on the combined data of 6 public datasets related to fighting and violent behavior for model training. The specific information of the public dataset is as follows:
 
