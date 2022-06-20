@@ -41,7 +41,7 @@ def argsparser():
     parser.add_argument(
         "--word_dict_path",
         type=str,
-        default="deploy/pphuman/rec_word_dict.txt")
+        default="deploy/pphuman/ppvehicle/rec_word_dict.txt")
     parser.add_argument(
         "--image_file", type=str, default=None, help="Path of image file.")
     parser.add_argument(
@@ -126,17 +126,11 @@ def argsparser():
     return parser
 
 
-def create_predictor(args, mode):
+def create_predictor(args, cfg, mode):
     if mode == "det":
-        model_dir = args.det_model_dir
-    elif mode == 'cls':
-        model_dir = args.cls_model_dir
-    elif mode == 'rec':
-        model_dir = args.rec_model_dir
-    elif mode == 'table':
-        model_dir = args.table_model_dir
+        model_dir = cfg['det_model_dir']
     else:
-        model_dir = args.e2e_model_dir
+        model_dir = cfg['rec_model_dir']
 
     if model_dir is None:
         print("not find {} model file path {}".format(mode, model_dir))
@@ -243,7 +237,7 @@ def create_predictor(args, mode):
             max_input_shape.update(max_pact_shape)
             opt_input_shape.update(opt_pact_shape)
         elif mode == "rec":
-            imgH = int(args.rec_image_shape.split(',')[-2])
+            imgH = int(cfg['rec_image_shape'][-2])
             min_input_shape = {"x": [1, 3, imgH, 10]}
             max_input_shape = {"x": [batch_size, 3, imgH, 2304]}
             opt_input_shape = {"x": [batch_size, 3, imgH, 320]}
@@ -285,14 +279,14 @@ def create_predictor(args, mode):
     input_names = predictor.get_input_names()
     for name in input_names:
         input_tensor = predictor.get_input_handle(name)
-    output_tensors = get_output_tensors(args, mode, predictor)
+    output_tensors = get_output_tensors(cfg, mode, predictor)
     return predictor, input_tensor, output_tensors, config
 
 
-def get_output_tensors(args, mode, predictor):
+def get_output_tensors(cfg, mode, predictor):
     output_names = predictor.get_output_names()
     output_tensors = []
-    if mode == "rec" and args.rec_algorithm in ["CRNN", "SVTR_LCNet"]:
+    if mode == "rec" and cfg['rec_algorithm'] in ["CRNN", "SVTR_LCNet"]:
         output_name = 'softmax_0.tmp_0'
         if output_name in output_names:
             return [predictor.get_output_handle(output_name)]
