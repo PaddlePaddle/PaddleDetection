@@ -162,16 +162,16 @@ class AdamWDL(AdamW):
                  multi_precision=False,
                  layerwise_decay=1.0,
                  n_layers=12,
-                 set_param_lr_fun=None,
+                 set_param_lr_func=None,
                  name_dict=None,
                  name=None):
         if not isinstance(layerwise_decay, float):
             raise TypeError("coeff should be float or Tensor.")
         self.layerwise_decay = layerwise_decay
         self.n_layers = n_layers
-        self.set_param_lr_fun = partial(
-            set_param_lr_fun, layerwise_decay, name_dict,
-            n_layers) if set_param_lr_fun is not None else set_param_lr_fun
+        self.set_param_lr_func = partial(
+            set_param_lr_func, layerwise_decay, name_dict,
+            n_layers) if set_param_lr_func is not None else set_param_lr_func
         super(AdamWDL, self).__init__(
             learning_rate=learning_rate,
             parameters=parameters,
@@ -186,13 +186,13 @@ class AdamWDL(AdamW):
             multi_precision=multi_precision)
 
     def _append_optimize_op(self, block, param_and_grad):
-        if self.set_param_lr_fun is None:
+        if self.set_param_lr_func is None:
             return super(AdamWDL, self)._append_optimize_op(block,
                                                             param_and_grad)
 
         self._append_decoupled_weight_decay(block, param_and_grad)
         prev_lr = param_and_grad[0].optimize_attr["learning_rate"]
-        self.set_param_lr_fun(param_and_grad[0])
+        self.set_param_lr_func(param_and_grad[0])
         # excute Adam op
         res = super(AdamW, self)._append_optimize_op(block, param_and_grad)
         param_and_grad[0].optimize_attr["learning_rate"] = prev_lr
@@ -207,7 +207,7 @@ def build_adamwdl(model,
                   num_layers=None,
                   filter_bias_and_bn=True,
                   skip_decay_names=None,
-                  set_param_lr_fun='layerwise_lr_decay'):
+                  set_param_lr_func='layerwise_lr_decay'):
 
     if skip_decay_names and filter_bias_and_bn:
         decay_dict = {
@@ -226,9 +226,9 @@ def build_adamwdl(model,
     if decay_dict is not None:
         opt_args['apply_decay_param_fun'] = lambda n: decay_dict[n]
 
-    if isinstance(set_param_lr_fun, str):
-        set_param_lr_fun = eval(set_param_lr_fun)
-        opt_args['set_param_lr_fun'] = set_param_lr_fun
+    if isinstance(set_param_lr_func, str):
+        set_param_lr_func = eval(set_param_lr_func)
+        opt_args['set_param_lr_func'] = set_param_lr_func
 
     opt_args['beta1'] = betas[0]
     opt_args['beta2'] = betas[1]
