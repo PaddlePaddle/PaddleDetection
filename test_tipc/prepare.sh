@@ -81,6 +81,10 @@ elif [ ${MODE} = "paddle2onnx_infer" ];then
     ${python} -m pip install onnx onnxruntime
 elif [ ${MODE} = "serving_infer" ];then
     unset https_proxy http_proxy
+    # download coco lite data
+    wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/tipc/coco_tipc.tar --no-check-certificate
+    cd ./dataset/coco/ && tar -xvf coco_tipc.tar && mv -n coco_tipc/* .
+    rm -rf coco_tipc/ && cd ../../
 else
     # download coco lite data
     wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/tipc/coco_tipc.tar --no-check-certificate
