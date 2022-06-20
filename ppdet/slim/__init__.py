@@ -35,7 +35,8 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
         return cfg
 
     if slim_load_cfg['slim'] == 'Distill':
-        if "slim_method" in slim_load_cfg and slim_load_cfg['slim_method'] == "FGD":
+        if "slim_method" in slim_load_cfg and slim_load_cfg[
+                'slim_method'] == "FGD":
             model = FGDDistillModel(cfg, slim_cfg)
         else:
             model = DistillModel(cfg, slim_cfg)
