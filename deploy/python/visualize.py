@@ -378,13 +378,19 @@ def visualize_action(im,
     text_thickness = 2
 
     if action_visual_collector:
-        id_detected = action_visual_collector.get_visualize_ids()
+        id_action_dict = {}
+        for collector, action_type in zip(action_visual_collector, action_text):
+            id_detected = collector.get_visualize_ids()
+            for pid in id_detected:
+                id_action_dict[pid] = id_action_dict.get(pid, [])
+                id_action_dict[pid].append(action_type)
         for mot_box in mot_boxes:
             # mot_box is a format with [mot_id, class, score, xmin, ymin, w, h] 
-            if mot_box[0] in id_detected:
+            if mot_box[0] in id_action_dict:
                 text_position = (int(mot_box[3] + mot_box[5] * 0.75),
                                  int(mot_box[4] - 10))
-                cv2.putText(im, action_text, text_position,
+                display_text = ', '.join(id_action_dict[mot_box[0]])
+                cv2.putText(im, display_text, text_position,
                             cv2.FONT_HERSHEY_PLAIN, text_scale, (0, 0, 255), 2)
 
     if video_action_score:

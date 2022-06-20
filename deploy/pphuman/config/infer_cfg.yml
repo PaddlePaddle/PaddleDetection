@@ -44,15 +44,19 @@ SKELETON_ACTION:
   enable: False
 
 ID_BASED_DETACTION:
-  model_dir: output_inference/detector
-  batch_size: 1
+  model_dir: output_inference/ppyoloe_crn_s_300e_smoking/
+  batch_size: 8
   basemode: "idbased"
+  threshold: 0.4
+  display_frames: 80
   enable: False
 
 ID_BASED_CLSACTION:
-  model_dir: output_inference/classification
-  batch_size: 1
+  model_dir: output_inference/PPHGNet_tiny_calling_halfbody
+  batch_size: 8
   basemode: "idbased"
+  threshold: 0.45
+  display_frames: 80
   enable: False
 
 REID:
