@@ -403,3 +403,38 @@ def visualize_action(im,
             thickness=text_thickness)
 
     return im
+
+
+def visualize_vehicleplate(im, results, boxes=None):
+    if isinstance(im, str):
+        im = Image.open(im)
+        im = np.ascontiguousarray(np.copy(im))
+        im = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
+    else:
+        im = np.ascontiguousarray(np.copy(im))
+
+    im_h, im_w = im.shape[:2]
+    text_scale = max(0.5, im.shape[0] / 3000.)
+    text_thickness = 1
+
+    line_inter = im.shape[0] / 40.
+    for i, res in enumerate(results):
+        if boxes is None:
+            text_w = 3
+            text_h = 1
+        else:
+            box = boxes[i]
+            text = res
+            if text == "":
+                continue
+            text_w = int(box[2])
+            text_h = int(box[5])
+            text_loc = (text_w, text_h)
+            cv2.putText(
+                im,
+                text,
+                text_loc,
+                cv2.FONT_ITALIC,
+                text_scale, (0, 255, 255),
+                thickness=text_thickness)
+    return im
