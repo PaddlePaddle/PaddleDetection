@@ -30,20 +30,19 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
 sys.path.insert(0, parent_path)
 
 from python.infer import get_test_images, print_arguments
-from vechile_plateutils import create_predictor, get_infer_gpuid, get_rotate_crop_image, draw_boxes
-from vecplatepostprocess import build_post_process
+from pphuman.ppvehicle.vehicle_plateutils import create_predictor, get_infer_gpuid, get_rotate_crop_image, draw_boxes, argsparser
+from pphuman.ppvehicle.vecplatepostprocess import build_post_process
 from python.preprocess import preprocess, NormalizeImage, Permute, Resize_Mult32
-from vechile_plateutils import argsparser
 
 
 class PlateDetector(object):
-    def __init__(self, args):
+    def __init__(self, args, cfg):
         self.args = args
-        self.det_algorithm = args.det_algorithm
+        self.det_algorithm = cfg['det_algorithm']
         self.pre_process_list = {
             'Resize_Mult32': {
-                'limit_side_len': args.det_limit_side_len,
-                'limit_type': args.det_limit_type,
+                'limit_side_len': cfg['det_limit_side_len'],
+                'limit_type': cfg['det_limit_type'],
             },
             'NormalizeImage': {
                 'mean': [0.485, 0.456, 0.406],
@@ -63,7 +62,7 @@ class PlateDetector(object):
 
         self.postprocess_op = build_post_process(postprocess_params)
         self.predictor, self.input_tensor, self.output_tensors, self.config = create_predictor(
-            args, 'det')
+            args, cfg, 'det')
 
     def preprocess(self, image_list):
         preprocess_ops = []
@@ -151,13 +150,11 @@ class PlateDetector(object):
 
 
 class TextRecognizer(object):
-    def __init__(self, FLAGS, use_gpu=True):
-        self.rec_image_shape = [
-            int(v) for v in FLAGS.rec_image_shape.split(",")
-        ]
-        self.rec_batch_num = FLAGS.rec_batch_num
-        self.rec_algorithm = FLAGS.rec_algorithm
-        word_dict_path = FLAGS.word_dict_path
+    def __init__(self, args, cfg, use_gpu=True):
+        self.rec_image_shape = cfg['rec_image_shape']
+        self.rec_batch_num = cfg['rec_batch_num']
+        self.rec_algorithm = cfg['rec_algorithm']
+        word_dict_path = cfg['word_dict_path']
         isuse_space_char = True
 
         postprocess_params = {
@@ -191,7 +188,7 @@ class TextRecognizer(object):
             }
         self.postprocess_op = build_post_process(postprocess_params)
         self.predictor, self.input_tensor, self.output_tensors, self.config = \
-            create_predictor(FLAGS, 'rec')
+            create_predictor(args, cfg, 'rec')
         self.use_onnx = False
 
     def resize_norm_img(self, img, max_wh_ratio):
@@ -488,22 +485,24 @@ class TextRecognizer(object):
 
 
 class PlateRecognizer(object):
-    def __init__(self):
-        use_gpu = FLAGS.device.lower() == "gpu"
-        self.platedetector = PlateDetector(FLAGS)
-        self.textrecognizer = TextRecognizer(FLAGS, use_gpu=use_gpu)
+    def __init__(self, args, cfg):
+        use_gpu = args.device.lower() == "gpu"
+        self.platedetector = PlateDetector(args, cfg)
+        self.textrecognizer = TextRecognizer(args, cfg, use_gpu=use_gpu)
 
     def get_platelicense(self, image_list):
         plate_text_list = []
         plateboxes, det_time = self.platedetector.predict_image(image_list)
         for idx, boxes_pcar in enumerate(plateboxes):
+            plate_pcar_list = []
             for box in boxes_pcar:
                 plate_images = get_rotate_crop_image(image_list[idx], box)
                 plate_texts = self.textrecognizer.predict_text([plate_images])
-                plate_text_list.append(plate_texts)
-                print("plate text:{}".format(plate_texts))
-            newimg = draw_boxes(image_list[idx], boxes_pcar)
-            cv2.imwrite("vechile_plate.jpg", newimg)
+                plate_pcar_list.append(plate_texts)
+                # print("plate text:{}".format(plate_texts))
+            plate_text_list.append(plate_pcar_list)
+            # newimg = draw_boxes(image_list[idx], boxes_pcar)
+            # cv2.imwrite("vehicle_plate.jpg", newimg)
         return self.check_plate(plate_text_list)
 
     def check_plate(self, text_list):
@@ -512,16 +511,20 @@ class PlateRecognizer(object):
             '赣', '鲁', '豫', '鄂', '湘', '桂', '琼', '渝', '川', '贵', '云', '藏', '陕',
             '甘', '青', '宁'
         ]
-        for text_info in text_list:
-            # import pdb;pdb.set_trace()
-            text = text_info[0][0][0]
-            if len(text) > 2 and text[0] in simcode and len(text) < 10:
-                print("text:{} length:{}".format(text, len(text)))
-                return text
+        plate_all = {"plate": []}
+        for text_pcar in text_list:
+            platelicense = None
+            for text_info in text_pcar:
+                text = text_info[0][0][0]
+                if len(text) > 2 and text[0] in simcode and len(text) < 10:
+                    # print("text:{} length:{}".format(text, len(text)))
+                    platelicense = text
+            plate_all["plate"].append(platelicense)
+        return plate_all
 
 
 def main():
-    detector = PlateRecognizer()
+    detector = PlateRecognizer(FLAGS)
     # predict from image
     img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
     for img in img_list:
