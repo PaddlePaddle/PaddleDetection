@@ -76,9 +76,9 @@ elif [ ${MODE} = "benchmark_train" ];then
     ls ./
     cd ../../
 elif [ ${MODE} = "paddle2onnx_infer" ];then
-    # set paddle2onnx_infer enve
-    ${python} -m pip install install paddle2onnx
-    ${python} -m pip install onnxruntime==1.10.0
+    # install paddle2onnx
+    ${python} -m pip install paddle2onnx
+    ${python} -m pip install onnx onnxruntime
 elif [ ${MODE} = "serving_infer" ];then
     unset https_proxy http_proxy
 else
