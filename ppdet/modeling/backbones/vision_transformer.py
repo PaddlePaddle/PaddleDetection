@@ -340,12 +340,15 @@ class VisionTransformer(nn.Layer):
                  use_abs_pos_emb=False,
                  use_sincos_pos_emb=True,
                  with_fpn=True,
+                 use_checkpoint=False,
                  **args):
         super().__init__()
         self.img_size = img_size
         self.embed_dim = embed_dim
         self.with_fpn = with_fpn
-
+        self.use_checkpoint = use_checkpoint
+        if use_checkpoint:
+            print('please set: FLAGS_allocator_strategy=naive_best_fit')
         self.patch_embed = PatchEmbed(
             img_size=img_size,
             patch_size=patch_size,
@@ -575,7 +578,7 @@ class VisionTransformer(nn.Layer):
 
     def forward(self, x):
         x = x['image'] if isinstance(x, dict) else x
-        _, _, w, h = x.shape
+        _, _, h, w = x.shape
 
         x = self.patch_embed(x)
 
@@ -586,7 +589,8 @@ class VisionTransformer(nn.Layer):
         x = paddle.concat([cls_tokens, x], axis=1)
 
         if self.pos_embed is not None:
-            x = x + self.interpolate_pos_encoding(x, w, h)
+            # x = x + self.interpolate_pos_encoding(x, w, h)
+            x = x + self.interpolate_pos_encoding(x, h, w)
 
         x = self.pos_drop(x)
 
@@ -597,7 +601,12 @@ class VisionTransformer(nn.Layer):
 
         feats = []
         for idx, blk in enumerate(self.blocks):
-            x = blk(x, rel_pos_bias)
+            if self.use_checkpoint:
+                x = paddle.distributed.fleet.utils.recompute(
+                    blk, x, rel_pos_bias, **{"preserve_rng_state": True})
+            else:
+                x = blk(x, rel_pos_bias)
+
             if idx in self.out_indices:
                 xp = paddle.reshape(
                     paddle.transpose(
