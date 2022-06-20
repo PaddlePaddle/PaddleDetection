@@ -8,7 +8,7 @@
 
 ## COCO数据集
 ### COCO数据集的准备
-我们提供了一键脚本来自动完成COCO2017数据集的下载及准备工作，请参考[COCO数据集下载](https://github.com/PaddlePaddle/PaddleDetection/blob/f0a30f3ba6095ebfdc8fffb6d02766406afc438a/docs/tutorials/PrepareDataSet.md#COCO%E6%95%B0%E6%8D%AE)。
+我们提供了一键脚本来自动完成COCO2017数据集的下载及准备工作，请参考[COCO数据集下载](https://github.com/PaddlePaddle/PaddleDetection/blob/f0a30f3ba6095ebfdc8fffb6d02766406afc438a/docs/tutorials/PrepareDetDataSet.md#COCO%E6%95%B0%E6%8D%AE)。
 
 ### COCO数据集（KeyPoint）说明
 在COCO中，关键点序号与部位的对应关系为：
