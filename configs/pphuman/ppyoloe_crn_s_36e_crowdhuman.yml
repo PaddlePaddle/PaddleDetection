@@ -7,11 +7,11 @@ _BASE_: [
 ]
 log_iter: 100
 snapshot_epoch: 4
-weights: output/ppyoloe_crn_l_36e_crowdhuman/model_final
+weights: output/ppyoloe_crn_s_36e_crowdhuman/model_final
 
-pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
-depth_mult: 1.0
-width_mult: 1.0
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams
+depth_mult: 0.33
+width_mult: 0.50
 
 num_classes: 1
 TrainDataset:
