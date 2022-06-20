@@ -231,6 +231,18 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inferenc
 - 以上模型训练均采用官方提供的默认参数，并且加载COCO预训练参数
 - *由于人力/时间有限，后续将会持续补充更多验证结果，也欢迎各位开源用户贡献，共同优化PP-YOLOE*
 
+
+### 垂类模型应用
+
+PaddleDetection团队提供了基于PP-YOLOE的各种垂类检测模型的配置文件和权重，用户可以下载进行使用：
+
+|     场景    |    相关数据集    |    链接   |
+| :--------: | :---------: | :------: |
+|  行人检测   | CrowdHuman   |   [pphuman](../pphuman)  |
+|  车辆检测   | BDD100K，UA-DETRAC  |  [ppvehicle](../ppvehicle)   |
+|  小目标检测 | VisDrone     |  [visdrone](../visdrone)   |
+
+
 ## 附录
 
 PP-YOLOE消融实验

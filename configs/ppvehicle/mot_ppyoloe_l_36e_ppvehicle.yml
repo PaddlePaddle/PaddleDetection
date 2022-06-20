@@ -13,7 +13,7 @@ pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco
 depth_mult: 1.0
 width_mult: 1.0
 
-num_classes: 9
+num_classes: 1
 
 TrainDataset:
   !COCODataSet
@@ -21,6 +21,7 @@ TrainDataset:
     anno_path: annotations/train_all.json
     dataset_dir: dataset/ppvehicle
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+    allow_empty: true
 
 EvalDataset:
   !COCODataSet

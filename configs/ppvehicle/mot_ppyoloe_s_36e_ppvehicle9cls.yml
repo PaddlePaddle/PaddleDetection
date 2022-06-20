@@ -7,30 +7,31 @@ _BASE_: [
 ]
 log_iter: 100
 snapshot_epoch: 4
-weights: output/ppyoloe_crn_l_36e_crowdhuman/model_final
+weights: output/mot_ppyoloe_s_36e_ppvehicle9cls/model_final
 
-pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
-depth_mult: 1.0
-width_mult: 1.0
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams
+depth_mult: 0.33
+width_mult: 0.50
 
-num_classes: 1
+num_classes: 9
+
 TrainDataset:
   !COCODataSet
     image_dir: ""
-    anno_path: annotations/train.json
-    dataset_dir: dataset/crowdhuman
+    anno_path: annotations/train_all_9cls.json
+    dataset_dir: dataset/ppvehicle
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
     image_dir: ""
-    anno_path: annotations/val.json
-    dataset_dir: dataset/crowdhuman
+    anno_path: annotations/val_all_9cls.json
+    dataset_dir: dataset/ppvehicle
 
 TestDataset:
   !ImageFolder
-    anno_path: annotations/val.json
-    dataset_dir: dataset/crowdhuman
+    anno_path: annotations/val_all_9cls.json
+    dataset_dir: dataset/ppvehicle
 
 TrainReader:
   batch_size: 8
