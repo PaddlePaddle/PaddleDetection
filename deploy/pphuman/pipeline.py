@@ -45,7 +45,7 @@ from python.action_utils import KeyPointBuff, ActionVisualHelper
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
 from python.preprocess import decode_image, ShortSizeScale
-from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
+from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action, visualize_vehicleplate
 
 from pptracking.python.mot_sde_infer import SDE_Detector
 from pptracking.python.mot.visualize import plot_tracking_dict
@@ -618,7 +618,7 @@ class PipePredictor(object):
                                                   center_traj)  # visualize
                         writer.write(im)
                         if self.file_name is None:  # use camera_id
-                            cv2.imshow('PPHuman', im)
+                            cv2.imshow('PPHuman&&PPVehicle', im)
                             if cv2.waitKey(1) & 0xFF == ord('q'):
                                 break
                     continue
@@ -630,7 +630,6 @@ class PipePredictor(object):
                 if self.with_vehicleplate:
                     platelicense = self.vehicleplate_detector.get_platelicense(
                         crop_input)
-                    print("find plate license:{}".format(platelicense))
                     self.pipeline_res.update(platelicense, 'vehicleplate')
 
                 if self.with_attr:
@@ -826,6 +825,13 @@ class PipePredictor(object):
             boxes = mot_res['boxes'][:, 1:]
             attr_res = attr_res['output']
             image = visualize_attr(image, attr_res, boxes)
+            image = np.array(image)
+
+        vehicleplate_res = result.get('vehicleplate')
+        if vehicleplate_res:
+            boxes = mot_res['boxes'][:, 1:]
+            image = visualize_vehicleplate(image, vehicleplate_res['plate'],
+                                           boxes)
             image = np.array(image)
 
         kpt_res = result.get('kpt')

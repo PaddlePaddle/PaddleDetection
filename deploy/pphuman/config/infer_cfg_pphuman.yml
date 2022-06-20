@@ -9,7 +9,7 @@ DET:
   batch_size: 1
 
 MOT:
-  model_dir: pipeline_model//mot_ppyoloe_s_36e_ppvehicle/
+  model_dir: output_inference/mot_ppyoloe_l_36e_pipeline/
   tracker_config: deploy/pphuman/config/tracker_config.yml
   batch_size: 1
   basemode: "idbased"

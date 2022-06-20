@@ -499,10 +499,7 @@ class PlateRecognizer(object):
                 plate_images = get_rotate_crop_image(image_list[idx], box)
                 plate_texts = self.textrecognizer.predict_text([plate_images])
                 plate_pcar_list.append(plate_texts)
-                # print("plate text:{}".format(plate_texts))
             plate_text_list.append(plate_pcar_list)
-            # newimg = draw_boxes(image_list[idx], boxes_pcar)
-            # cv2.imwrite("vehicle_plate.jpg", newimg)
         return self.check_plate(plate_text_list)
 
     def check_plate(self, text_list):
@@ -513,11 +510,10 @@ class PlateRecognizer(object):
         ]
         plate_all = {"plate": []}
         for text_pcar in text_list:
-            platelicense = None
+            platelicense = ""
             for text_info in text_pcar:
                 text = text_info[0][0][0]
                 if len(text) > 2 and text[0] in simcode and len(text) < 10:
-                    # print("text:{} length:{}".format(text, len(text)))
                     platelicense = text
             plate_all["plate"].append(platelicense)
         return plate_all
@@ -529,7 +525,6 @@ def main():
     img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
     for img in img_list:
         image = cv2.imread(img)
-        # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = detector.get_platelicense([image])
 
 
