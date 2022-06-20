@@ -21,6 +21,7 @@ from pycocotools.cocoeval import COCOeval
 from ..modeling.keypoint_utils import oks_nms
 from scipy.io import loadmat, savemat
 from ppdet.utils.logger import setup_logger
+import paddle
 logger = setup_logger(__name__)
 
 __all__ = ['KeyPointTopDownCOCOEval', 'KeyPointTopDownMPIIEval']
