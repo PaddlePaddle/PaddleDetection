@@ -355,9 +355,13 @@ class OptimizerBuilder():
 
         else:
             params = model.parameters()
+        
+        train_params = [
+            param for param in params if param.trainable is True
+        ]
 
         return op(learning_rate=learning_rate,
-                  parameters=params,
+                  parameters=train_params,
                   grad_clip=grad_clip,
                   **optim_args)
 
