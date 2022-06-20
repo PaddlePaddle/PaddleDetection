@@ -88,17 +88,20 @@ class FGDDistillModel(nn.Layer):
 
         for param in self.teacher_model.parameters():
             param.trainable = False
-        
+
         if 'pretrain_weights' in self.student_cfg and self.student_cfg.pretrain_weights:
             if self.is_inherit and 'pretrain_weights' in self.teacher_cfg and self.teacher_cfg.pretrain_weights:
-                self._load_pretrain_weights(self.student_model, self.teacher_cfg.pretrain_weights)
+                self._load_pretrain_weights(self.student_model,
+                                            self.teacher_cfg.pretrain_weights)
                 print("loading teacher weights to student model!")
-            
-            self._load_pretrain_weights(self.student_model, self.student_cfg.pretrain_weights)
+
+            self._load_pretrain_weights(self.student_model,
+                                        self.student_cfg.pretrain_weights)
             print("loading student model Done")
 
         if 'pretrain_weights' in self.teacher_cfg and self.teacher_cfg.pretrain_weights:
-            self._load_pretrain_weights(self.teacher_model, self.teacher_cfg.pretrain_weights)
+            self._load_pretrain_weights(self.teacher_model,
+                                        self.teacher_cfg.pretrain_weights)
             print("loading teacher model Done")
 
         self.fgd_loss_dic = self.build_loss(self.loss_cfg.distill_loss)
@@ -109,27 +112,32 @@ class FGDDistillModel(nn.Layer):
         self.start_epoch = 0
         load_pretrain_weight(model, weights)
         logger.debug("Load weights {} to start training".format(weights))
-    
-    def build_loss(self, cfg, name_list=['neck_f_4', 'neck_f_3', 'neck_f_2', 'neck_f_1', 'neck_f_0']):
+
+    def build_loss(self,
+                   cfg,
+                   name_list=[
+                       'neck_f_4', 'neck_f_3', 'neck_f_2', 'neck_f_1',
+                       'neck_f_0'
+                   ]):
         loss_func = dict()
         for idx, k in enumerate(name_list):
             loss_func[k] = create(cfg)
         return loss_func
 
-
     def forward(self, inputs):
         if self.training:
             s_body_feats = self.student_model.backbone(inputs)
             s_neck_feats = self.student_model.neck(s_body_feats)
-            
+
             with paddle.no_grad():
                 t_body_feats = self.teacher_model.backbone(inputs)
                 t_neck_feats = self.teacher_model.neck(t_body_feats)
 
             loss_dict = {}
             for idx, k in enumerate(self.fgd_loss_dic):
-                loss_dict[k] = self.fgd_loss_dic[k](s_neck_feats[idx], t_neck_feats[idx], inputs)
-            
+                loss_dict[k] = self.fgd_loss_dic[k](s_neck_feats[idx],
+                                                    t_neck_feats[idx], inputs)
+
             loss = self.student_model.head(s_neck_feats, inputs)
             for k in loss_dict:
                 loss['loss'] += loss_dict[k]
@@ -143,7 +151,6 @@ class FGDDistillModel(nn.Layer):
             bbox, bbox_num = self.student_model.head.post_process(
                 head_outs, inputs['im_shape'], inputs['scale_factor'])
             return {'bbox': bbox, 'bbox_num': bbox_num}
-
 
 
 @register
@@ -192,8 +199,6 @@ class DistillYOLOv3Loss(nn.Layer):
         return loss
 
 
-
-
 def parameter_init(mode="kaiming", value=0.):
     if mode == "kaiming":
         weight_attr = paddle.nn.initializer.KaimingUniform()
@@ -221,6 +226,7 @@ class FGDFeatureLoss(nn.Layer):
         gamma_fgd (float, optional): The weight of mask_loss. Defaults to 0.001
         lambda_fgd (float, optional): The weight of relation_loss. Defaults to 0.000005
     """
+
     def __init__(self,
                  student_channels=256,
                  teacher_channels=256,
@@ -240,38 +246,65 @@ class FGDFeatureLoss(nn.Layer):
         zeros_init = parameter_init("constant", 0.0)
 
         if student_channels != teacher_channels:
-            self.align = nn.Conv2d(student_channels, teacher_channels, kernel_size=1, stride=1, padding=0, weight_attr=kaiming_init)
+            self.align = nn.Conv2d(
+                student_channels,
+                teacher_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                weight_attr=kaiming_init)
             student_channels = teacher_channels
         else:
             self.align = None
-        
-        self.conv_mask_s = nn.Conv2D(student_channels, 1, kernel_size=1, weight_attr=kaiming_init)
-        self.conv_mask_t = nn.Conv2D(teacher_channels, 1, kernel_size=1, weight_attr=kaiming_init)
-        
+
+        self.conv_mask_s = nn.Conv2D(
+            student_channels, 1, kernel_size=1, weight_attr=kaiming_init)
+        self.conv_mask_t = nn.Conv2D(
+            teacher_channels, 1, kernel_size=1, weight_attr=kaiming_init)
+
         self.stu_conv_block = nn.Sequential(
-            nn.Conv2D(student_channels, student_channels//2, kernel_size=1, weight_attr=zeros_init),
-            nn.LayerNorm([student_channels//2, 1, 1]),
-            nn.ReLU(),  
-            nn.Conv2D(student_channels//2, student_channels, kernel_size=1, weight_attr=zeros_init))
+            nn.Conv2D(
+                student_channels,
+                student_channels // 2,
+                kernel_size=1,
+                weight_attr=zeros_init),
+            nn.LayerNorm([student_channels // 2, 1, 1]),
+            nn.ReLU(),
+            nn.Conv2D(
+                student_channels // 2,
+                student_channels,
+                kernel_size=1,
+                weight_attr=zeros_init))
         self.tea_conv_block = nn.Sequential(
-            nn.Conv2D(teacher_channels, teacher_channels//2, kernel_size=1, weight_attr=zeros_init),
-            nn.LayerNorm([teacher_channels//2, 1, 1]),
-            nn.ReLU(), 
-            nn.Conv2D(teacher_channels//2, teacher_channels, kernel_size=1, weight_attr=zeros_init))
+            nn.Conv2D(
+                teacher_channels,
+                teacher_channels // 2,
+                kernel_size=1,
+                weight_attr=zeros_init),
+            nn.LayerNorm([teacher_channels // 2, 1, 1]),
+            nn.ReLU(),
+            nn.Conv2D(
+                teacher_channels // 2,
+                teacher_channels,
+                kernel_size=1,
+                weight_attr=zeros_init))
 
     def spatial_channel_attention(self, x, t=0.5):
         shape = paddle.shape(x)
         N, C, H, W = shape
 
         _f = paddle.abs(x)
-        spatial_map = paddle.reshape(paddle.mean(_f, axis=1, keepdim=True)/t, [N, -1])
+        spatial_map = paddle.reshape(
+            paddle.mean(
+                _f, axis=1, keepdim=True) / t, [N, -1])
         spatial_map = F.softmax(spatial_map, axis=1, dtype="float32") * H * W
         spatial_att = paddle.reshape(spatial_map, [N, H, W])
 
-        channel_map = paddle.mean(paddle.mean(_f, axis=2, keepdim=False), axis=2, keepdim=False)
-        channel_att = F.softmax(channel_map/t, axis=1, dtype="float32")  * C
+        channel_map = paddle.mean(
+            paddle.mean(
+                _f, axis=2, keepdim=False), axis=2, keepdim=False)
+        channel_att = F.softmax(channel_map / t, axis=1, dtype="float32") * C
         return [spatial_att, channel_att]
-
 
     def spatial_pool(self, x, mode="teacher"):
         batch, channel, width, height = x.shape
@@ -291,18 +324,19 @@ class FGDFeatureLoss(nn.Layer):
 
         return context
 
-    def mask_loss(self, stu_channel_att, tea_channel_att, stu_spatial_att, tea_spatial_att):
-        
+    def mask_loss(self, stu_channel_att, tea_channel_att, stu_spatial_att,
+                  tea_spatial_att):
         def _func(a, b):
-            return paddle.sum(paddle.abs(a - b))/len(a)
-            
-        mask_loss = _func(stu_channel_att, tea_channel_att) + _func(stu_spatial_att, tea_spatial_att)
+            return paddle.sum(paddle.abs(a - b)) / len(a)
+
+        mask_loss = _func(stu_channel_att, tea_channel_att) + _func(
+            stu_spatial_att, tea_spatial_att)
 
         return mask_loss
 
-    def feature_loss(self, stu_feature, tea_feature, Mask_fg, Mask_bg, 
-                           tea_channel_att, tea_spatial_att):
-        
+    def feature_loss(self, stu_feature, tea_feature, Mask_fg, Mask_bg,
+                     tea_channel_att, tea_spatial_att):
+
         Mask_fg = Mask_fg.unsqueeze(axis=1)
         Mask_bg = Mask_bg.unsqueeze(axis=1)
 
@@ -311,7 +345,7 @@ class FGDFeatureLoss(nn.Layer):
 
         tea_spatial_att = tea_spatial_att.unsqueeze(axis=1)
 
-        fea_t= paddle.multiply(tea_feature, paddle.sqrt(tea_spatial_att))
+        fea_t = paddle.multiply(tea_feature, paddle.sqrt(tea_spatial_att))
         fea_t = paddle.multiply(fea_t, paddle.sqrt(tea_channel_att))
         fg_fea_t = paddle.multiply(fea_t, paddle.sqrt(Mask_fg))
         bg_fea_t = paddle.multiply(fea_t, paddle.sqrt(Mask_bg))
@@ -321,8 +355,8 @@ class FGDFeatureLoss(nn.Layer):
         fg_fea_s = paddle.multiply(fea_s, paddle.sqrt(Mask_fg))
         bg_fea_s = paddle.multiply(fea_s, paddle.sqrt(Mask_bg))
 
-        fg_loss = F.mse_loss(fg_fea_s, fg_fea_t, reduction="sum")/len(Mask_fg)
-        bg_loss = F.mse_loss(bg_fea_s, bg_fea_t, reduction="sum")/len(Mask_bg)
+        fg_loss = F.mse_loss(fg_fea_s, fg_fea_t, reduction="sum") / len(Mask_fg)
+        bg_loss = F.mse_loss(bg_fea_s, bg_fea_t, reduction="sum") / len(Mask_bg)
 
         return fg_loss, bg_loss
 
@@ -333,19 +367,15 @@ class FGDFeatureLoss(nn.Layer):
         out_s = stu_feature + self.stu_conv_block(context_s)
         out_t = tea_feature + self.tea_conv_block(context_t)
 
-        rela_loss = F.mse_loss(out_s, out_t, reduction="sum")/len(out_s)
-        
+        rela_loss = F.mse_loss(out_s, out_t, reduction="sum") / len(out_s)
+
         return rela_loss
-    
+
     def mask_value(self, mask, xl, xr, yl, yr, value):
         mask[xl:xr, yl:yr] = paddle.maximum(mask[xl:xr, yl:yr], value)
         return mask
 
-
-    def forward(self, 
-                stu_feature,
-                tea_feature,
-                inputs):
+    def forward(self, stu_feature, tea_feature, inputs):
         """Forward function.
         Args:
             stu_feature(Tensor): Bs*C*H*W, student's feature map
@@ -354,50 +384,64 @@ class FGDFeatureLoss(nn.Layer):
         """
         assert stu_feature.shape[-2:] == stu_feature.shape[-2:], \
             f'The shape of Student feature {stu_feature.shape} and Teacher feature {tea_feature.shape} should be the same.'
-        assert "gt_bbox" in inputs.keys() and "im_shape" in inputs.keys(), "ERROR! FGDFeatureLoss need gt_bbox and im_shape as inputs."
+        assert "gt_bbox" in inputs.keys() and "im_shape" in inputs.keys(
+        ), "ERROR! FGDFeatureLoss need gt_bbox and im_shape as inputs."
         gt_bboxes = inputs['gt_bbox']
-        ins_shape = [inputs['im_shape'][i] for i in range(inputs['im_shape'].shape[0])]
-        
+        ins_shape = [
+            inputs['im_shape'][i] for i in range(inputs['im_shape'].shape[0])
+        ]
+
         if self.align is not None:
             stu_feature = self.align(stu_feature)
-        
-        N,C,H,W = stu_feature.shape
 
-        tea_spatial_att, tea_channel_att = self.spatial_channel_attention(tea_feature, self.temp)
-        stu_spatial_att, stu_channel_att = self.spatial_channel_attention(stu_feature, self.temp)
+        N, C, H, W = stu_feature.shape
+
+        tea_spatial_att, tea_channel_att = self.spatial_channel_attention(
+            tea_feature, self.temp)
+        stu_spatial_att, stu_channel_att = self.spatial_channel_attention(
+            stu_feature, self.temp)
 
         Mask_fg = paddle.zeros(tea_spatial_att.shape)
         Mask_bg = paddle.ones_like(tea_spatial_att)
         one_tmp = paddle.ones([*tea_spatial_att.shape[1:]])
         zero_tmp = paddle.zeros([*tea_spatial_att.shape[1:]])
-        wmin, wmax, hmin, hmax, area = [],[],[],[], []
+        wmin, wmax, hmin, hmax, area = [], [], [], [], []
 
         for i in range(N):
             tmp_box = paddle.ones_like(gt_bboxes[i])
-            tmp_box[:, 0] = gt_bboxes[i][:, 0]/ins_shape[i][1]*W
-            tmp_box[:, 2] = gt_bboxes[i][:, 2]/ins_shape[i][1]*W
-            tmp_box[:, 1] = gt_bboxes[i][:, 1]/ins_shape[i][0]*H
-            tmp_box[:, 3] = gt_bboxes[i][:, 3]/ins_shape[i][0]*H
+            tmp_box[:, 0] = gt_bboxes[i][:, 0] / ins_shape[i][1] * W
+            tmp_box[:, 2] = gt_bboxes[i][:, 2] / ins_shape[i][1] * W
+            tmp_box[:, 1] = gt_bboxes[i][:, 1] / ins_shape[i][0] * H
+            tmp_box[:, 3] = gt_bboxes[i][:, 3] / ins_shape[i][0] * H
 
             zero = paddle.zeros_like(tmp_box[:, 0], dtype="int32")
             ones = paddle.ones_like(tmp_box[:, 2], dtype="int32")
-            wmin.append(paddle.cast(paddle.floor(tmp_box[:, 0]), "int32").maximum(zero))
+            wmin.append(
+                paddle.cast(paddle.floor(tmp_box[:, 0]), "int32").maximum(zero))
             wmax.append(paddle.cast(paddle.ceil(tmp_box[:, 2]), "int32"))
-            hmin.append(paddle.cast(paddle.floor(tmp_box[:, 1]), "int32").maximum(zero))
+            hmin.append(
+                paddle.cast(paddle.floor(tmp_box[:, 1]), "int32").maximum(zero))
             hmax.append(paddle.cast(paddle.ceil(tmp_box[:, 3]), "int32"))
-            
-            area_recip = 1.0/(hmax[i].reshape([1,-1]) + 1 - hmin[i].reshape([1,-1])) /(wmax[i].reshape([1,-1])+1-wmin[i].reshape([1,-1]))
+
+            area_recip = 1.0 / (
+                hmax[i].reshape([1, -1]) + 1 - hmin[i].reshape([1, -1])) / (
+                    wmax[i].reshape([1, -1]) + 1 - wmin[i].reshape([1, -1]))
 
             for j in range(len(gt_bboxes[i])):
-                Mask_fg[i] = self.mask_value(Mask_fg[i], hmin[i][j], hmax[i][j]+1, wmin[i][j], wmax[i][j]+1, area_recip[0][j])
-            
+                Mask_fg[i] = self.mask_value(Mask_fg[i], hmin[i][j],
+                                             hmax[i][j] + 1, wmin[i][j],
+                                             wmax[i][j] + 1, area_recip[0][j])
+
             Mask_bg[i] = paddle.where(Mask_fg[i] > zero_tmp, zero_tmp, one_tmp)
 
             if paddle.sum(Mask_bg[i]):
                 Mask_bg[i] /= paddle.sum(Mask_bg[i])
-        
-        fg_loss, bg_loss = self.feature_loss(stu_feature, tea_feature, Mask_fg, Mask_bg, tea_channel_att, tea_spatial_att)
-        mask_loss = self.mask_loss(stu_channel_att, tea_channel_att, stu_spatial_att, tea_spatial_att)
+
+        fg_loss, bg_loss = self.feature_loss(stu_feature, tea_feature, Mask_fg,
+                                             Mask_bg, tea_channel_att,
+                                             tea_spatial_att)
+        mask_loss = self.mask_loss(stu_channel_att, tea_channel_att,
+                                   stu_spatial_att, tea_spatial_att)
         rela_loss = self.relation_loss(stu_feature, tea_feature)
 
         loss = self.alpha_fgd * fg_loss + self.beta_fgd * bg_loss \

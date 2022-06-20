@@ -1,5 +1,5 @@
 architecture: RetinaNet
-pretrain_weights:  ../teacher_retinanet_r101_fpn_2x_coco/best_model.pdparams
+pretrain_weights:  https://paddledet.bj.bcebos.com/models/pretrained/ResNet101_pretrained.pdparams
 
 RetinaNet:
   backbone: ResNet
