@@ -65,6 +65,8 @@ class Trainer(object):
         self.mode = mode.lower()
         self.optimizer = None
         self.is_loaded_weights = False
+        self.use_amp = self.cfg.get('amp', False)
+        self.amp_level = self.cfg.get('amp_level', 'O1')
 
         # build data loader
         capital_mode = self.mode.capitalize()
@@ -149,6 +151,9 @@ class Trainer(object):
                     cfg[reader_name]['collate_batch'] = False
                 self.loader = create(reader_name)(self.dataset, cfg.worker_num,
                                                   self._eval_batch_sampler)
+            if self.amp_level == 'O2':
+                self.model = paddle.amp.decorate(
+                    models=self.model, level=self.amp_level)
         # TestDataset build after user set images, skip loader creation here
 
         # build optimizer in train mode
@@ -387,13 +392,13 @@ class Trainer(object):
             model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
         # enabel auto mixed precision mode
-        use_amp = self.cfg.get('amp', False)
-        amp_level = self.cfg.get('amp_level', 'O1')
-        if use_amp:
+        if self.use_amp:
             scaler = paddle.amp.GradScaler(
                 enable=self.cfg.use_gpu or self.cfg.use_npu,
                 init_loss_scaling=self.cfg.get('init_loss_scaling', 1024))
-            model = paddle.amp.decorate(models=model, level=amp_level)
+            if self.amp_level == 'O2':
+                self.model = paddle.amp.decorate(
+                    models=self.model, level=self.amp_level)
         # get distributed model
         if self.cfg.get('fleet', False):
             model = fleet.distributed_model(model)
@@ -438,9 +443,9 @@ class Trainer(object):
                 self._compose_callback.on_step_begin(self.status)
                 data['epoch_id'] = epoch_id
 
-                if use_amp:
+                if self.use_amp:
                     with paddle.amp.auto_cast(
-                            enable=self.cfg.use_gpu, level=amp_level):
+                            enable=self.cfg.use_gpu, level=self.amp_level):
                         # model forward
                         outputs = model(data)
                         loss = outputs['loss']
@@ -532,7 +537,12 @@ class Trainer(object):
             self.status['step_id'] = step_id
             self._compose_callback.on_step_begin(self.status)
             # forward
-            outs = self.model(data)
+            if self.use_amp:
+                with paddle.amp.auto_cast(
+                        enable=self.cfg.use_gpu, level=self.amp_level):
+                    outs = self.model(data)
+            else:
+                outs = self.model(data)
 
             # update metrics
             for metric in self._metrics:
