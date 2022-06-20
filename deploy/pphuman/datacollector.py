@@ -25,7 +25,9 @@ class Result(object):
             'kpt': dict(),
             'video_action': dict(),
             'skeleton_action': dict(),
-            'reid': dict()
+            'reid': dict(),
+            'det_action': dict(),
+            'cls_action': dict(),
         }
 
     def update(self, res, name):

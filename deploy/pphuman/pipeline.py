@@ -36,9 +36,10 @@ from python.infer import Detector, DetectorPicoDet
 from python.attr_infer import AttrDetector
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
+
 from python.video_action_infer import VideoActionRecognizer
-from python.action_infer import SkeletonActionRecognizer
-from python.action_utils import KeyPointBuff, SkeletonActionVisualHelper
+from python.action_infer import SkeletonActionRecognizer, DetActionRecognizer, ClsActionRecognizer
+from python.action_utils import KeyPointBuff, ActionVisualHelper
 
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
@@ -366,17 +367,51 @@ class PipePredictor(object):
                     trt_max_shape, trt_opt_shape, trt_calib_mode, cpu_threads,
                     enable_mkldnn)
             if self.with_idbased_detaction:
-                idbased_detaction_cfg = self.cfg['SKELETON_ACTION']
-                idbased_detaction_model_dir = idbased_detaction_cfg['model_dir']
-                idbased_detaction_batch_size = idbased_detaction_cfg[
-                    'batch_size']
-                # IDBasedDetActionRecognizer = IDBasedDetActionRecognizer()
+                idbased_detaction_cfg = self.cfg['ID_BASED_DETACTION']
+                model_dir = idbased_detaction_cfg['model_dir']
+                batch_size = idbased_detaction_cfg['batch_size']
+                basemode = idbased_detaction_cfg['basemode']
+                threshold = idbased_detaction_cfg['threshold']
+                display_frames = idbased_detaction_cfg['display_frames']
+                self.modebase[basemode] = True
+                self.det_action_predictor = DetActionRecognizer(
+                    model_dir,
+                    device,
+                    run_mode,
+                    batch_size,
+                    trt_min_shape,
+                    trt_max_shape,
+                    trt_opt_shape,
+                    trt_calib_mode,
+                    cpu_threads,
+                    enable_mkldnn,
+                    threshold=threshold,
+                    display_frames=display_frames)
+                self.det_action_visual_helper = ActionVisualHelper(1)
+
             if self.with_idbased_clsaction:
-                idbased_clsaction_cfg = self.cfg['SKELETON_ACTION']
-                idbased_clsaction_model_dir = idbased_clsaction_cfg['model_dir']
-                idbased_clsaction_batch_size = idbased_clsaction_cfg[
-                    'batch_size']
-                # IDBasedDetActionRecognizer = IDBasedClsActionRecognizer()
+                idbased_clsaction_cfg = self.cfg['ID_BASED_CLSACTION']
+                model_dir = idbased_clsaction_cfg['model_dir']
+                batch_size = idbased_clsaction_cfg['batch_size']
+                basemode = idbased_clsaction_cfg['basemode']
+                threshold = idbased_clsaction_cfg['threshold']
+                self.modebase[basemode] = True
+                display_frames = idbased_clsaction_cfg['display_frames']
+                self.cls_action_predictor = ClsActionRecognizer(
+                    model_dir,
+                    device,
+                    run_mode,
+                    batch_size,
+                    trt_min_shape,
+                    trt_max_shape,
+                    trt_opt_shape,
+                    trt_calib_mode,
+                    cpu_threads,
+                    enable_mkldnn,
+                    threshold=threshold,
+                    display_frames=display_frames)
+                self.cls_action_visual_helper = ActionVisualHelper(1)
+
             if self.with_skeleton_action:
                 skeleton_action_cfg = self.cfg['SKELETON_ACTION']
                 skeleton_action_model_dir = skeleton_action_cfg['model_dir']
@@ -399,7 +434,7 @@ class PipePredictor(object):
                     cpu_threads,
                     enable_mkldnn,
                     window_size=skeleton_action_frames)
-                self.skeleton_action_visual_helper = SkeletonActionVisualHelper(
+                self.skeleton_action_visual_helper = ActionVisualHelper(
                     display_frames)
 
                 if self.modebase["skeletonbased"]:
@@ -609,10 +644,10 @@ class PipePredictor(object):
                     continue
 
                 self.pipeline_res.update(mot_res, 'mot')
-                if self.with_attr or self.with_skeleton_action:
-                    #todo: move this code to each class's predeal function
-                    crop_input, new_bboxes, ori_bboxes = crop_image_with_mot(
-                        frame, mot_res)
+
+                #todo: move this code to each class's predeal function
+                crop_input, new_bboxes, ori_bboxes = crop_image_with_mot(
+                    frame, mot_res)
 
                 if self.with_attr:
                     if frame_id > self.warmup_frame:
@@ -624,16 +659,28 @@ class PipePredictor(object):
                     self.pipeline_res.update(attr_res, 'attr')
 
                 if self.with_idbased_detaction:
-                    #predeal, get what your model need
-                    #predict, model preprocess\run\postprocess
-                    #postdeal, interact with pipeline
-                    pass
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['det_action'].start()
+                    det_action_res = self.det_action_predictor.predict(
+                        crop_input, mot_res)
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['det_action'].end()
+                    self.pipeline_res.update(det_action_res, 'det_action')
+
+                    if self.cfg['visual']:
+                        self.det_action_visual_helper.update(det_action_res)
 
                 if self.with_idbased_clsaction:
-                    #predeal, get what your model need
-                    #predict, model preprocess\run\postprocess
-                    #postdeal, interact with pipeline
-                    pass
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['cls_action'].start()
+                    cls_action_res = self.cls_action_predictor.predict_with_mot(
+                        crop_input, mot_res)
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['cls_action'].end()
+                    self.pipeline_res.update(cls_action_res, 'cls_action')
+
+                    if self.cfg['visual']:
+                        self.cls_action_visual_helper.update(cls_action_res)
 
                 if self.with_skeleton_action:
                     if frame_id > self.warmup_frame:
@@ -805,22 +852,41 @@ class PipePredictor(object):
                 visual_thresh=self.cfg['kpt_thresh'],
                 returnimg=True)
 
-        skeleton_action_res = result.get('skeleton_action')
         video_action_res = result.get('video_action')
-        if skeleton_action_res is not None or video_action_res is not None:
+        if video_action_res is not None:
             video_action_score = None
-            action_visual_helper = None
             if video_action_res and video_action_res["class"] == 1:
                 video_action_score = video_action_res["score"]
-            if skeleton_action_res:
-                action_visual_helper = self.skeleton_action_visual_helper
             image = visualize_action(
                 image,
                 mot_res['boxes'],
-                action_visual_collector=action_visual_helper,
+                action_visual_collector=None,
                 action_text="SkeletonAction",
                 video_action_score=video_action_score,
                 video_action_text="Fight")
+
+        visual_helper_for_display = []
+        action_to_display = []
+
+        skeleton_action_res = result.get('skeleton_action')
+        if skeleton_action_res is not None:
+            visual_helper_for_display.append(self.skeleton_action_visual_helper)
+            action_to_display.append("Falling")
+
+        det_action_res = result.get('det_action')
+        if det_action_res is not None:
+            visual_helper_for_display.append(self.det_action_visual_helper)
+            action_to_display.append("Smoking")
+
+        cls_action_res = result.get('cls_action')
+        if cls_action_res is not None:
+            visual_helper_for_display.append(self.cls_action_visual_helper)
+            action_to_display.append("Calling")
+
+        if len(visual_helper_for_display) > 0:
+            image = visualize_action(image, mot_res['boxes'],
+                                     visual_helper_for_display,
+                                     action_to_display)
 
         return image
 
