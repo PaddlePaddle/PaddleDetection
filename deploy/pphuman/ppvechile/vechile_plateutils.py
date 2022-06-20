@@ -26,12 +26,10 @@ import time
 import ast
 
 
-def str2bool(v):
-    return v.lower() in ("true", "t", "1")
-
-
 def argsparser():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--config", type=str, default=None, help=("Path of configure"))
     parser.add_argument("--det_algorithm", type=str, default='DB')
     parser.add_argument("--det_model_dir", type=str)
     parser.add_argument("--det_limit_side_len", type=float, default=960)
@@ -52,20 +50,23 @@ def argsparser():
         default=None,
         help="Dir of image file, `image_file` has a higher priority.")
     parser.add_argument(
-        "--batch_size", type=int, default=1, help="batch_size for inference.")
-    parser.add_argument(
         "--video_file",
         type=str,
         default=None,
         help="Path of video file, `video_file` or `camera_id` has a highest priority."
     )
     parser.add_argument(
+        "--video_dir",
+        type=str,
+        default=None,
+        help="Dir of video file, `video_file` has a higher priority.")
+    parser.add_argument(
+        "--model_dir", nargs='*', help="set model dir in pipeline")
+    parser.add_argument(
         "--camera_id",
         type=int,
         default=-1,
         help="device id of camera to predict.")
-    parser.add_argument(
-        "--threshold", type=float, default=0.5, help="Threshold of score.")
     parser.add_argument(
         "--output_dir",
         type=str,
@@ -83,25 +84,10 @@ def argsparser():
         help="Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU."
     )
     parser.add_argument(
-        "--use_gpu",
-        type=ast.literal_eval,
-        default=False,
-        help="Deprecated, please use `--device`.")
-    parser.add_argument(
-        "--run_benchmark",
-        type=ast.literal_eval,
-        default=False,
-        help="Whether to predict a image_file repeatedly for benchmark")
-    parser.add_argument(
         "--enable_mkldnn",
         type=ast.literal_eval,
         default=False,
         help="Whether use mkldnn with CPU.")
-    parser.add_argument(
-        "--enable_mkldnn_bfloat16",
-        type=ast.literal_eval,
-        default=False,
-        help="Whether use mkldnn bfloat16 inference with CPU.")
     parser.add_argument(
         "--cpu_threads", type=int, default=1, help="Num of threads with CPU.")
     parser.add_argument(
@@ -123,62 +109,20 @@ def argsparser():
         help="If the model is produced by TRT offline quantitative "
         "calibration, trt_calib_mode need to set True.")
     parser.add_argument(
-        '--save_images',
+        "--do_entrance_counting",
         action='store_true',
-        help='Save visualization image results.')
+        help="Whether counting the numbers of identifiers entering "
+        "or getting out from the entrance. Note that only support one-class"
+        "counting, multi-class counting is coming soon.")
     parser.add_argument(
-        '--save_mot_txts',
-        action='store_true',
-        help='Save tracking results (txt).')
-    parser.add_argument(
-        '--save_mot_txt_per_img',
-        action='store_true',
-        help='Save tracking results (txt) for each image.')
-    parser.add_argument(
-        '--scaled',
-        type=bool,
-        default=False,
-        help="Whether coords after detector outputs are scaled, False in JDE YOLOv3 "
-        "True in general detector.")
-    parser.add_argument(
-        "--tracker_config", type=str, default=None, help=("tracker donfig"))
-    parser.add_argument(
-        "--reid_model_dir",
-        type=str,
-        default=None,
-        help=("Directory include:'model.pdiparams', 'model.pdmodel', "
-              "'infer_cfg.yml', created by tools/export_model.py."))
-    parser.add_argument(
-        "--reid_batch_size",
+        "--secs_interval",
         type=int,
-        default=50,
-        help="max batch_size for reid model inference.")
+        default=2,
+        help="The seconds interval to count after tracking")
     parser.add_argument(
-        '--use_dark',
-        type=ast.literal_eval,
-        default=True,
-        help='whether to use darkpose to get better keypoint position predict ')
-    parser.add_argument(
-        "--action_file",
-        type=str,
-        default=None,
-        help="Path of input file for action recognition.")
-    parser.add_argument(
-        "--window_size",
-        type=int,
-        default=50,
-        help="Temporal size of skeleton feature for action recognition.")
-    parser.add_argument(
-        "--random_pad",
-        type=ast.literal_eval,
-        default=False,
-        help="Whether do random padding for action recognition.")
-    parser.add_argument(
-        "--save_results",
-        type=bool,
-        default=False,
-        help="Whether save detection result to file using coco format")
-
+        "--draw_center_traj",
+        action='store_true',
+        help="Whether drawing the trajectory of center")
     return parser
 
 
@@ -207,6 +151,8 @@ def create_predictor(args, mode):
             params_file_path))
 
     config = inference.Config(model_file_path, params_file_path)
+
+    batch_size = 1
 
     if args.device == "GPU":
         gpu_id = get_infer_gpuid()
@@ -299,12 +245,12 @@ def create_predictor(args, mode):
         elif mode == "rec":
             imgH = int(args.rec_image_shape.split(',')[-2])
             min_input_shape = {"x": [1, 3, imgH, 10]}
-            max_input_shape = {"x": [args.batch_size, 3, imgH, 2304]}
-            opt_input_shape = {"x": [args.batch_size, 3, imgH, 320]}
+            max_input_shape = {"x": [batch_size, 3, imgH, 2304]}
+            opt_input_shape = {"x": [batch_size, 3, imgH, 320]}
         elif mode == "cls":
             min_input_shape = {"x": [1, 3, 48, 10]}
-            max_input_shape = {"x": [args.batch_size, 3, 48, 1024]}
-            opt_input_shape = {"x": [args.batch_size, 3, 48, 320]}
+            max_input_shape = {"x": [batch_size, 3, 48, 1024]}
+            opt_input_shape = {"x": [batch_size, 3, 48, 320]}
         else:
             use_dynamic_shape = False
         if use_dynamic_shape:

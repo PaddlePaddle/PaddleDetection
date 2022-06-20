@@ -32,6 +32,18 @@ def argsparser():
         default=None,
         help=("Path of configure"),
         required=True)
+    parser.add_argument("--det_algorithm", type=str, default='DB')
+    parser.add_argument("--det_model_dir", type=str)
+    parser.add_argument("--det_limit_side_len", type=float, default=960)
+    parser.add_argument("--det_limit_type", type=str, default='max')
+    parser.add_argument("--rec_algorithm", type=str, default='SVTR_LCNet')
+    parser.add_argument("--rec_model_dir", type=str)
+    parser.add_argument("--rec_image_shape", type=str, default="3, 48, 320")
+    parser.add_argument("--rec_batch_num", type=int, default=6)
+    parser.add_argument(
+        "--word_dict_path",
+        type=str,
+        default="deploy/pphuman/rec_word_dict.txt")
     parser.add_argument(
         "--image_file", type=str, default=None, help="Path of image file.")
     parser.add_argument(

@@ -25,13 +25,15 @@ import paddle
 
 import sys
 # add deploy path of PadleDetection to sys.path
-parent_path = os.path.abspath(os.path.join(__file__, *(['..'])))
+# add deploy path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
 sys.path.insert(0, parent_path)
 
-from infer import get_test_images, print_arguments
-from vechile_plateutils import create_predictor, get_infer_gpuid, argsparser, get_rotate_crop_image, draw_boxes
+from python.infer import get_test_images, print_arguments
+from vechile_plateutils import create_predictor, get_infer_gpuid, get_rotate_crop_image, draw_boxes
 from vecplatepostprocess import build_post_process
-from preprocess import preprocess, NormalizeImage, Permute, Resize_Mult32
+from python.preprocess import preprocess, NormalizeImage, Permute, Resize_Mult32
+from vechile_plateutils import argsparser
 
 
 class PlateDetector(object):
@@ -62,25 +64,6 @@ class PlateDetector(object):
         self.postprocess_op = build_post_process(postprocess_params)
         self.predictor, self.input_tensor, self.output_tensors, self.config = create_predictor(
             args, 'det')
-
-        if args.run_benchmark:
-            import auto_log
-            pid = os.getpid()
-            gpu_id = get_infer_gpuid()
-            self.autolog = auto_log.AutoLogger(
-                model_name="det",
-                model_precision="fp32",
-                batch_size=1,
-                data_shape="dynamic",
-                save_path=None,
-                inference_config=self.config,
-                pids=pid,
-                process_name=None,
-                gpu_ids=gpu_id if args.device == "GPU" else None,
-                time_keys=[
-                    'preprocess_time', 'inference_time', 'postprocess_time'
-                ],
-                warmup=2, )
 
     def preprocess(self, image_list):
         preprocess_ops = []
@@ -139,15 +122,9 @@ class PlateDetector(object):
     def predict_image(self, img_list):
         st = time.time()
 
-        if self.args.run_benchmark:
-            self.autolog.times.start()
-
         img, shape_list = self.preprocess(img_list)
         if img is None:
             return None, 0
-
-        if self.args.run_benchmark:
-            self.autolog.times.stamp()
 
         self.input_tensor.copy_from_cpu(img)
         self.predictor.run()
@@ -155,8 +132,6 @@ class PlateDetector(object):
         for output_tensor in self.output_tensors:
             output = output_tensor.copy_to_cpu()
             outputs.append(output)
-        if self.args.run_benchmark:
-            self.autolog.times.stamp()
 
         preds = {}
         preds['maps'] = outputs[0]
@@ -171,14 +146,12 @@ class PlateDetector(object):
             dt_boxes = self.filter_tag_det_res(dt_boxes, org_shape)
             dt_batch_boxes.append(dt_boxes)
 
-        if self.args.run_benchmark:
-            self.autolog.times.end(stamp=True)
         et = time.time()
         return dt_batch_boxes, et - st
 
 
 class TextRecognizer(object):
-    def __init__(self, FLAGS, use_gpu=True, benchmark=False):
+    def __init__(self, FLAGS, use_gpu=True):
         self.rec_image_shape = [
             int(v) for v in FLAGS.rec_image_shape.split(",")
         ]
@@ -219,26 +192,7 @@ class TextRecognizer(object):
         self.postprocess_op = build_post_process(postprocess_params)
         self.predictor, self.input_tensor, self.output_tensors, self.config = \
             create_predictor(FLAGS, 'rec')
-        self.benchmark = benchmark
         self.use_onnx = False
-        if benchmark:
-            import auto_log
-            pid = os.getpid()
-            gpu_id = get_infer_gpuid()
-            self.autolog = auto_log.AutoLogger(
-                model_name="rec",
-                model_precision='fp32',
-                batch_size=batch_size,
-                data_shape="dynamic",
-                save_path=None,  #save_log_path,
-                inference_config=self.config,
-                pids=pid,
-                process_name=None,
-                gpu_ids=gpu_id if use_gpu else None,
-                time_keys=[
-                    'preprocess_time', 'inference_time', 'postprocess_time'
-                ],
-                warmup=0)
 
     def resize_norm_img(self, img, max_wh_ratio):
         imgC, imgH, imgW = self.rec_image_shape
@@ -407,8 +361,6 @@ class TextRecognizer(object):
         rec_res = [['', 0.0]] * img_num
         batch_num = self.rec_batch_num
         st = time.time()
-        if self.benchmark:
-            self.autolog.times.start()
         for beg_img_no in range(0, img_num, batch_num):
             end_img_no = min(img_num, beg_img_no + batch_num)
             norm_img_batch = []
@@ -453,8 +405,6 @@ class TextRecognizer(object):
                     norm_img_batch.append(norm_img)
             norm_img_batch = np.concatenate(norm_img_batch)
             norm_img_batch = norm_img_batch.copy()
-            if self.benchmark:
-                self.autolog.times.stamp()
 
             if self.rec_algorithm == "SRN":
                 encoder_word_pos_list = np.concatenate(encoder_word_pos_list)
@@ -488,8 +438,6 @@ class TextRecognizer(object):
                     for output_tensor in self.output_tensors:
                         output = output_tensor.copy_to_cpu()
                         outputs.append(output)
-                    if self.benchmark:
-                        self.autolog.times.stamp()
                     preds = {"predict": outputs[2]}
             elif self.rec_algorithm == "SAR":
                 valid_ratios = np.concatenate(valid_ratios)
@@ -514,8 +462,6 @@ class TextRecognizer(object):
                     for output_tensor in self.output_tensors:
                         output = output_tensor.copy_to_cpu()
                         outputs.append(output)
-                    if self.benchmark:
-                        self.autolog.times.stamp()
                     preds = outputs[0]
             else:
                 if self.use_onnx:
@@ -531,8 +477,6 @@ class TextRecognizer(object):
                     for output_tensor in self.output_tensors:
                         output = output_tensor.copy_to_cpu()
                         outputs.append(output)
-                    if self.benchmark:
-                        self.autolog.times.stamp()
                     if len(outputs) != 1:
                         preds = outputs
                     else:
@@ -540,8 +484,6 @@ class TextRecognizer(object):
             rec_result = self.postprocess_op(preds)
             for rno in range(len(rec_result)):
                 rec_res[indices[beg_img_no + rno]] = rec_result[rno]
-            if self.benchmark:
-                self.autolog.times.end(stamp=True)
         return rec_res, time.time() - st
 
 
@@ -549,8 +491,7 @@ class PlateRecognizer(object):
     def __init__(self):
         use_gpu = FLAGS.device.lower() == "gpu"
         self.platedetector = PlateDetector(FLAGS)
-        self.textrecognizer = TextRecognizer(
-            FLAGS, use_gpu=use_gpu, benchmark=FLAGS.run_benchmark)
+        self.textrecognizer = TextRecognizer(FLAGS, use_gpu=use_gpu)
 
     def get_platelicense(self, image_list):
         plate_text_list = []
@@ -582,35 +523,11 @@ class PlateRecognizer(object):
 def main():
     detector = PlateRecognizer()
     # predict from image
-    if FLAGS.image_dir is None and FLAGS.image_file is not None:
-        assert FLAGS.batch_size == 1, "batch_size should be 1, when image_file is not None"
     img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
     for img in img_list:
         image = cv2.imread(img)
         # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = detector.get_platelicense([image])
-    if FLAGS.run_benchmark:
-        mems = {
-            'cpu_rss_mb': detector.cpu_mem / len(img_list),
-            'gpu_rss_mb': detector.gpu_mem / len(img_list),
-            'gpu_util': detector.gpu_util * 100 / len(img_list)
-        }
-
-        perf_info = detector.self.autolog.times.report(average=True)
-        model_dir = FLAGS.model_dir
-        mode = FLAGS.run_mode
-        model_info = {
-            'model_name': model_dir.strip('/').split('/')[-1],
-            'precision': mode.split('_')[-1]
-        }
-        data_info = {
-            'batch_size': FLAGS.batch_size,
-            'shape': "dynamic_shape",
-            'data_num': perf_info['img_num']
-        }
-        det_log = PaddleInferBenchmark(detector.config, model_info, data_info,
-                                       perf_info, mems)
-        det_log('Attr')
 
 
 if __name__ == '__main__':
@@ -621,6 +538,6 @@ if __name__ == '__main__':
     FLAGS.device = FLAGS.device.upper()
     assert FLAGS.device in ['CPU', 'GPU', 'XPU'
                             ], "device should be CPU, GPU or XPU"
-    assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
+    # assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
 
     main()
