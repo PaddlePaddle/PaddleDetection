@@ -6,4 +6,4 @@ _BASE_: [
   '_base_/retinanet_reader.yml'
 ]
 
-weights: output/retinanet_r101_fpn_2x_coco/model_final
+weights: https://paddledet.bj.bcebos.com/models/retinanet_r101_fpn_2x_coco.pdparams
