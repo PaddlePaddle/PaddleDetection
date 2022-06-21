@@ -82,7 +82,7 @@ class DataCollector(object):
         kpt_res = Result.get('kpt')
         skeleton_action_res = Result.get('skeleton_action')
         reid_res = Result.get('reid')
-        vehicplate_res = Result.get('vehicleplate')
+        vehicleplate_res = Result.get('vehicleplate')
 
         rects = []
         if reid_res is not None:
@@ -112,8 +112,8 @@ class DataCollector(object):
                     idx])
                 self.collector[ids]["qualities"].append(reid_res['qualities'][
                     idx])
-            if vehicplate_res:
-                self.collector[ids]["vehicleplate"].append(vehicplate_res[
+            if vehicleplate_res:
+                self.collector[ids]["vehicleplate"].append(vehicleplate_res[
                     'plate'][idx])
 
     def get_res(self):

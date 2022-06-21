@@ -37,7 +37,6 @@ from pphuman.pipe_utils import merge_cfg, print_arguments, argsparser
 class PlateDetector(object):
     def __init__(self, args, cfg):
         self.args = args
-        self.det_algorithm = cfg['det_algorithm']
         self.pre_process_list = {
             'Resize_Mult32': {
                 'limit_side_len': cfg['det_limit_side_len'],
