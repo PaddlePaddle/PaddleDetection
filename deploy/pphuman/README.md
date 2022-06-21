@@ -21,7 +21,7 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
 | **跨镜跟踪（ReID）** | 超强性能：针对目标遮挡、完整度、模糊度等难点特殊优化，实现mAP 98.8、1.5ms/人                                                                                                     | <img src="https://user-images.githubusercontent.com/48054808/173037607-0a5deadc-076e-4dcc-bd96-d54eea205f1f.png" title="" alt="" width="191"> |
 | **属性分析**       | 兼容多种数据格式：支持图片、视频输入<br/><br/>高性能：融合开源数据集与企业真实数据进行训练，实现mAP 94.86、2ms/人<br/><br/>支持26种属性：性别、年龄、眼镜、上衣、鞋子、帽子、背包等26种高频属性                                | <img src="https://user-images.githubusercontent.com/48054808/173036043-68b90df7-e95e-4ada-96ae-20f52bc98d7c.png" title="" alt="" width="207"> |
 | **行为识别**       | 功能丰富：支持摔倒、打架、抽烟、打电话、人员闯入五种高频异常行为识别<br/><br/>鲁棒性强：对光照、视角、背景环境无限制<br/><br/>性能高：与视频识别技术相比，模型计算量大幅降低，支持本地化与服务化快速部署<br/><br/>训练速度快：仅需15分钟即可产出高精度行为识别模型 | <img src="https://user-images.githubusercontent.com/48054808/173034825-623e4f78-22a5-4f14-9b83-dc47aa868478.gif" title="" alt="" width="209"> |
-| **人流量计数与轨迹记录** | 简洁易用：单个参数即可开启人流量计数与轨迹记录功能                                                                                                                         | <img src="https://user-images.githubusercontent.com/48054808/173036400-f3d1f07a-1184-4c54-ad30-3315aa15210f.gif" title="" alt="" width="135"> |
+| **人流量计数与轨迹记录** | 简洁易用：单个参数即可开启人流量计数与轨迹记录功能                                                                                                                         | <img src="https://user-images.githubusercontent.com/22989727/174736440-87cd5169-c939-48f8-90a1-0495a1fcb2b1.gif" title="" alt="" width="200"> |
 
 ## 🗳 模型库
 
