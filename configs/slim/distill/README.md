@@ -10,11 +10,12 @@ COCO数据集作为目标检测任务的训练目标难度更大，意味着teac
 
 FGD全称为[Focal and Global Knowledge Distillation for Detectors](https://arxiv.org/abs/2111.11837v1)，是目标检测任务的一种蒸馏方法，FGD蒸馏分为两个部分`Focal`和`Global`。`Focal`蒸馏分离图像的前景和背景，让学生模型分别关注教师模型的前景和背景部分特征的关键像素；`Global`蒸馏部分重建不同像素之间的关系并将其从教师转移到学生，以补偿`Focal`蒸馏中丢失的全局信息。试验结果表明，FGD蒸馏算法在基于anchor和anchor free的方法上能有效提升模型精度。
 在PaddleDetection中，我们实现了FGD算法，并基于retinaNet算法进行验证，实验结果如下：
-| algorithm | model | AP |
-|:-:| :-: | :-: |
-|retinaNet | teacher | 40.6 |
-|retinaNet| student | 37.5 |
-|retinaNet + FGD| student | 40.8 |
+| algorithm | model | AP | download|
+|:-:| :-: | :-: | :-:|
+|retinaNet_r101_fpn_2x | teacher | 40.6 | [download](https://paddledet.bj.bcebos.com/models/retinanet_r101_fpn_2x_coco.pdparams) |
+|retinaNet_r50_fpn_1x| student | 37.5 |[download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_1x_coco.pdparams) |
+|retinaNet_r50_fpn_2x + FGD| student | 40.8 |[download](https://paddledet.bj.bcebos.com/models/retinanet_r101_distill_r50_2x_coco.pdparams) |
+
 
 
 ## Citations
