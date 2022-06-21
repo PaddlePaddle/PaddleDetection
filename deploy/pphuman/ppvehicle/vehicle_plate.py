@@ -24,15 +24,14 @@ import math
 import paddle
 
 import sys
-# add deploy path of PadleDetection to sys.path
-# add deploy path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
 sys.path.insert(0, parent_path)
 
-from python.infer import get_test_images, print_arguments
-from pphuman.ppvehicle.vehicle_plateutils import create_predictor, get_infer_gpuid, get_rotate_crop_image, draw_boxes, argsparser
-from pphuman.ppvehicle.vecplatepostprocess import build_post_process
+from python.infer import get_test_images
 from python.preprocess import preprocess, NormalizeImage, Permute, Resize_Mult32
+from pphuman.ppvehicle.vehicle_plateutils import create_predictor, get_infer_gpuid, get_rotate_crop_image, draw_boxes
+from pphuman.ppvehicle.vehicleplate_postprocess import build_post_process
+from pphuman.pipe_utils import merge_cfg, print_arguments, argsparser
 
 
 class PlateDetector(object):
@@ -155,36 +154,36 @@ class TextRecognizer(object):
         self.rec_batch_num = cfg['rec_batch_num']
         self.rec_algorithm = cfg['rec_algorithm']
         word_dict_path = cfg['word_dict_path']
-        isuse_space_char = True
+        use_space_char = True
 
         postprocess_params = {
             'name': 'CTCLabelDecode',
             "character_dict_path": word_dict_path,
-            "use_space_char": isuse_space_char
+            "use_space_char": use_space_char
         }
         if self.rec_algorithm == "SRN":
             postprocess_params = {
                 'name': 'SRNLabelDecode',
                 "character_dict_path": word_dict_path,
-                "use_space_char": isuse_space_char
+                "use_space_char": use_space_char
             }
         elif self.rec_algorithm == "RARE":
             postprocess_params = {
                 'name': 'AttnLabelDecode',
                 "character_dict_path": word_dict_path,
-                "use_space_char": isuse_space_char
+                "use_space_char": use_space_char
             }
         elif self.rec_algorithm == 'NRTR':
             postprocess_params = {
                 'name': 'NRTRLabelDecode',
                 "character_dict_path": word_dict_path,
-                "use_space_char": isuse_space_char
+                "use_space_char": use_space_char
             }
         elif self.rec_algorithm == "SAR":
             postprocess_params = {
                 'name': 'SARLabelDecode',
                 "character_dict_path": word_dict_path,
-                "use_space_char": isuse_space_char
+                "use_space_char": use_space_char
             }
         self.postprocess_op = build_post_process(postprocess_params)
         self.predictor, self.input_tensor, self.output_tensors, self.config = \
@@ -520,22 +519,24 @@ class PlateRecognizer(object):
 
 
 def main():
-    detector = PlateRecognizer(FLAGS)
+    cfg = merge_cfg(FLAGS)
+    print_arguments(cfg)
+    vehicleplate_cfg = cfg['VEHICLE_PLATE']
+    detector = PlateRecognizer(FLAGS, vehicleplate_cfg)
     # predict from image
     img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
     for img in img_list:
         image = cv2.imread(img)
         results = detector.get_platelicense([image])
+        print(results)
 
 
 if __name__ == '__main__':
     paddle.enable_static()
     parser = argsparser()
     FLAGS = parser.parse_args()
-    print_arguments(FLAGS)
     FLAGS.device = FLAGS.device.upper()
     assert FLAGS.device in ['CPU', 'GPU', 'XPU'
                             ], "device should be CPU, GPU or XPU"
-    # assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
 
     main()
