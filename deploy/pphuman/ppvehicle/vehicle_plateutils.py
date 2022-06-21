@@ -185,14 +185,9 @@ def create_predictor(args, cfg, mode):
 def get_output_tensors(cfg, mode, predictor):
     output_names = predictor.get_output_names()
     output_tensors = []
-    if mode == "rec" and cfg['rec_algorithm'] in ["CRNN", "SVTR_LCNet"]:
-        output_name = 'softmax_0.tmp_0'
-        if output_name in output_names:
-            return [predictor.get_output_handle(output_name)]
-        else:
-            for output_name in output_names:
-                output_tensor = predictor.get_output_handle(output_name)
-                output_tensors.append(output_tensor)
+    output_name = 'softmax_0.tmp_0'
+    if output_name in output_names:
+        return [predictor.get_output_handle(output_name)]
     else:
         for output_name in output_names:
             output_tensor = predictor.get_output_handle(output_name)
