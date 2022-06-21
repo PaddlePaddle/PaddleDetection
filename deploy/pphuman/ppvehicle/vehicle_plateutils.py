@@ -1,4 +1,4 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2022 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,106 +24,6 @@ import math
 from paddle import inference
 import time
 import ast
-
-
-def argsparser():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--config", type=str, default=None, help=("Path of configure"))
-    parser.add_argument("--det_algorithm", type=str, default='DB')
-    parser.add_argument("--det_model_dir", type=str)
-    parser.add_argument("--det_limit_side_len", type=float, default=960)
-    parser.add_argument("--det_limit_type", type=str, default='max')
-    parser.add_argument("--rec_algorithm", type=str, default='SVTR_LCNet')
-    parser.add_argument("--rec_model_dir", type=str)
-    parser.add_argument("--rec_image_shape", type=str, default="3, 48, 320")
-    parser.add_argument("--rec_batch_num", type=int, default=6)
-    parser.add_argument(
-        "--word_dict_path",
-        type=str,
-        default="deploy/pphuman/ppvehicle/rec_word_dict.txt")
-    parser.add_argument(
-        "--image_file", type=str, default=None, help="Path of image file.")
-    parser.add_argument(
-        "--image_dir",
-        type=str,
-        default=None,
-        help="Dir of image file, `image_file` has a higher priority.")
-    parser.add_argument(
-        "--video_file",
-        type=str,
-        default=None,
-        help="Path of video file, `video_file` or `camera_id` has a highest priority."
-    )
-    parser.add_argument(
-        "--video_dir",
-        type=str,
-        default=None,
-        help="Dir of video file, `video_file` has a higher priority.")
-    parser.add_argument(
-        "--model_dir", nargs='*', help="set model dir in pipeline")
-    parser.add_argument(
-        "--camera_id",
-        type=int,
-        default=-1,
-        help="device id of camera to predict.")
-    parser.add_argument(
-        "--output_dir",
-        type=str,
-        default="output",
-        help="Directory of output visualization files.")
-    parser.add_argument(
-        "--run_mode",
-        type=str,
-        default='paddle',
-        help="mode of running(paddle/trt_fp32/trt_fp16/trt_int8)")
-    parser.add_argument(
-        "--device",
-        type=str,
-        default='cpu',
-        help="Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU."
-    )
-    parser.add_argument(
-        "--enable_mkldnn",
-        type=ast.literal_eval,
-        default=False,
-        help="Whether use mkldnn with CPU.")
-    parser.add_argument(
-        "--cpu_threads", type=int, default=1, help="Num of threads with CPU.")
-    parser.add_argument(
-        "--trt_min_shape", type=int, default=1, help="min_shape for TensorRT.")
-    parser.add_argument(
-        "--trt_max_shape",
-        type=int,
-        default=1280,
-        help="max_shape for TensorRT.")
-    parser.add_argument(
-        "--trt_opt_shape",
-        type=int,
-        default=640,
-        help="opt_shape for TensorRT.")
-    parser.add_argument(
-        "--trt_calib_mode",
-        type=bool,
-        default=False,
-        help="If the model is produced by TRT offline quantitative "
-        "calibration, trt_calib_mode need to set True.")
-    parser.add_argument(
-        "--do_entrance_counting",
-        action='store_true',
-        help="Whether counting the numbers of identifiers entering "
-        "or getting out from the entrance. Note that only support one-class"
-        "counting, multi-class counting is coming soon.")
-    parser.add_argument(
-        "--secs_interval",
-        type=int,
-        default=2,
-        help="The seconds interval to count after tracking")
-    parser.add_argument(
-        "--draw_center_traj",
-        action='store_true',
-        help="Whether drawing the trajectory of center")
-    return parser
 
 
 def create_predictor(args, cfg, mode):
@@ -169,87 +69,86 @@ def create_predictor(args, cfg, mode):
                 precision_mode=precision_map[args.run_mode],
                 use_static=False,
                 use_calib_mode=trt_calib_mode)
+            use_dynamic_shape = True
 
-            # skip the minmum trt subgraph
-        use_dynamic_shape = True
-        if mode == "det":
-            min_input_shape = {
-                "x": [1, 3, 50, 50],
-                "conv2d_92.tmp_0": [1, 120, 20, 20],
-                "conv2d_91.tmp_0": [1, 24, 10, 10],
-                "conv2d_59.tmp_0": [1, 96, 20, 20],
-                "nearest_interp_v2_1.tmp_0": [1, 256, 10, 10],
-                "nearest_interp_v2_2.tmp_0": [1, 256, 20, 20],
-                "conv2d_124.tmp_0": [1, 256, 20, 20],
-                "nearest_interp_v2_3.tmp_0": [1, 64, 20, 20],
-                "nearest_interp_v2_4.tmp_0": [1, 64, 20, 20],
-                "nearest_interp_v2_5.tmp_0": [1, 64, 20, 20],
-                "elementwise_add_7": [1, 56, 2, 2],
-                "nearest_interp_v2_0.tmp_0": [1, 256, 2, 2]
-            }
-            max_input_shape = {
-                "x": [1, 3, 1536, 1536],
-                "conv2d_92.tmp_0": [1, 120, 400, 400],
-                "conv2d_91.tmp_0": [1, 24, 200, 200],
-                "conv2d_59.tmp_0": [1, 96, 400, 400],
-                "nearest_interp_v2_1.tmp_0": [1, 256, 200, 200],
-                "conv2d_124.tmp_0": [1, 256, 400, 400],
-                "nearest_interp_v2_2.tmp_0": [1, 256, 400, 400],
-                "nearest_interp_v2_3.tmp_0": [1, 64, 400, 400],
-                "nearest_interp_v2_4.tmp_0": [1, 64, 400, 400],
-                "nearest_interp_v2_5.tmp_0": [1, 64, 400, 400],
-                "elementwise_add_7": [1, 56, 400, 400],
-                "nearest_interp_v2_0.tmp_0": [1, 256, 400, 400]
-            }
-            opt_input_shape = {
-                "x": [1, 3, 640, 640],
-                "conv2d_92.tmp_0": [1, 120, 160, 160],
-                "conv2d_91.tmp_0": [1, 24, 80, 80],
-                "conv2d_59.tmp_0": [1, 96, 160, 160],
-                "nearest_interp_v2_1.tmp_0": [1, 256, 80, 80],
-                "nearest_interp_v2_2.tmp_0": [1, 256, 160, 160],
-                "conv2d_124.tmp_0": [1, 256, 160, 160],
-                "nearest_interp_v2_3.tmp_0": [1, 64, 160, 160],
-                "nearest_interp_v2_4.tmp_0": [1, 64, 160, 160],
-                "nearest_interp_v2_5.tmp_0": [1, 64, 160, 160],
-                "elementwise_add_7": [1, 56, 40, 40],
-                "nearest_interp_v2_0.tmp_0": [1, 256, 40, 40]
-            }
-            min_pact_shape = {
-                "nearest_interp_v2_26.tmp_0": [1, 256, 20, 20],
-                "nearest_interp_v2_27.tmp_0": [1, 64, 20, 20],
-                "nearest_interp_v2_28.tmp_0": [1, 64, 20, 20],
-                "nearest_interp_v2_29.tmp_0": [1, 64, 20, 20]
-            }
-            max_pact_shape = {
-                "nearest_interp_v2_26.tmp_0": [1, 256, 400, 400],
-                "nearest_interp_v2_27.tmp_0": [1, 64, 400, 400],
-                "nearest_interp_v2_28.tmp_0": [1, 64, 400, 400],
-                "nearest_interp_v2_29.tmp_0": [1, 64, 400, 400]
-            }
-            opt_pact_shape = {
-                "nearest_interp_v2_26.tmp_0": [1, 256, 160, 160],
-                "nearest_interp_v2_27.tmp_0": [1, 64, 160, 160],
-                "nearest_interp_v2_28.tmp_0": [1, 64, 160, 160],
-                "nearest_interp_v2_29.tmp_0": [1, 64, 160, 160]
-            }
-            min_input_shape.update(min_pact_shape)
-            max_input_shape.update(max_pact_shape)
-            opt_input_shape.update(opt_pact_shape)
-        elif mode == "rec":
-            imgH = int(cfg['rec_image_shape'][-2])
-            min_input_shape = {"x": [1, 3, imgH, 10]}
-            max_input_shape = {"x": [batch_size, 3, imgH, 2304]}
-            opt_input_shape = {"x": [batch_size, 3, imgH, 320]}
-        elif mode == "cls":
-            min_input_shape = {"x": [1, 3, 48, 10]}
-            max_input_shape = {"x": [batch_size, 3, 48, 1024]}
-            opt_input_shape = {"x": [batch_size, 3, 48, 320]}
-        else:
-            use_dynamic_shape = False
-        if use_dynamic_shape:
-            config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
-                                              opt_input_shape)
+            if mode == "det":
+                min_input_shape = {
+                    "x": [1, 3, 50, 50],
+                    "conv2d_92.tmp_0": [1, 120, 20, 20],
+                    "conv2d_91.tmp_0": [1, 24, 10, 10],
+                    "conv2d_59.tmp_0": [1, 96, 20, 20],
+                    "nearest_interp_v2_1.tmp_0": [1, 256, 10, 10],
+                    "nearest_interp_v2_2.tmp_0": [1, 256, 20, 20],
+                    "conv2d_124.tmp_0": [1, 256, 20, 20],
+                    "nearest_interp_v2_3.tmp_0": [1, 64, 20, 20],
+                    "nearest_interp_v2_4.tmp_0": [1, 64, 20, 20],
+                    "nearest_interp_v2_5.tmp_0": [1, 64, 20, 20],
+                    "elementwise_add_7": [1, 56, 2, 2],
+                    "nearest_interp_v2_0.tmp_0": [1, 256, 2, 2]
+                }
+                max_input_shape = {
+                    "x": [1, 3, 1536, 1536],
+                    "conv2d_92.tmp_0": [1, 120, 400, 400],
+                    "conv2d_91.tmp_0": [1, 24, 200, 200],
+                    "conv2d_59.tmp_0": [1, 96, 400, 400],
+                    "nearest_interp_v2_1.tmp_0": [1, 256, 200, 200],
+                    "conv2d_124.tmp_0": [1, 256, 400, 400],
+                    "nearest_interp_v2_2.tmp_0": [1, 256, 400, 400],
+                    "nearest_interp_v2_3.tmp_0": [1, 64, 400, 400],
+                    "nearest_interp_v2_4.tmp_0": [1, 64, 400, 400],
+                    "nearest_interp_v2_5.tmp_0": [1, 64, 400, 400],
+                    "elementwise_add_7": [1, 56, 400, 400],
+                    "nearest_interp_v2_0.tmp_0": [1, 256, 400, 400]
+                }
+                opt_input_shape = {
+                    "x": [1, 3, 640, 640],
+                    "conv2d_92.tmp_0": [1, 120, 160, 160],
+                    "conv2d_91.tmp_0": [1, 24, 80, 80],
+                    "conv2d_59.tmp_0": [1, 96, 160, 160],
+                    "nearest_interp_v2_1.tmp_0": [1, 256, 80, 80],
+                    "nearest_interp_v2_2.tmp_0": [1, 256, 160, 160],
+                    "conv2d_124.tmp_0": [1, 256, 160, 160],
+                    "nearest_interp_v2_3.tmp_0": [1, 64, 160, 160],
+                    "nearest_interp_v2_4.tmp_0": [1, 64, 160, 160],
+                    "nearest_interp_v2_5.tmp_0": [1, 64, 160, 160],
+                    "elementwise_add_7": [1, 56, 40, 40],
+                    "nearest_interp_v2_0.tmp_0": [1, 256, 40, 40]
+                }
+                min_pact_shape = {
+                    "nearest_interp_v2_26.tmp_0": [1, 256, 20, 20],
+                    "nearest_interp_v2_27.tmp_0": [1, 64, 20, 20],
+                    "nearest_interp_v2_28.tmp_0": [1, 64, 20, 20],
+                    "nearest_interp_v2_29.tmp_0": [1, 64, 20, 20]
+                }
+                max_pact_shape = {
+                    "nearest_interp_v2_26.tmp_0": [1, 256, 400, 400],
+                    "nearest_interp_v2_27.tmp_0": [1, 64, 400, 400],
+                    "nearest_interp_v2_28.tmp_0": [1, 64, 400, 400],
+                    "nearest_interp_v2_29.tmp_0": [1, 64, 400, 400]
+                }
+                opt_pact_shape = {
+                    "nearest_interp_v2_26.tmp_0": [1, 256, 160, 160],
+                    "nearest_interp_v2_27.tmp_0": [1, 64, 160, 160],
+                    "nearest_interp_v2_28.tmp_0": [1, 64, 160, 160],
+                    "nearest_interp_v2_29.tmp_0": [1, 64, 160, 160]
+                }
+                min_input_shape.update(min_pact_shape)
+                max_input_shape.update(max_pact_shape)
+                opt_input_shape.update(opt_pact_shape)
+            elif mode == "rec":
+                imgH = int(cfg['rec_image_shape'][-2])
+                min_input_shape = {"x": [1, 3, imgH, 10]}
+                max_input_shape = {"x": [batch_size, 3, imgH, 2304]}
+                opt_input_shape = {"x": [batch_size, 3, imgH, 320]}
+            elif mode == "cls":
+                min_input_shape = {"x": [1, 3, 48, 10]}
+                max_input_shape = {"x": [batch_size, 3, 48, 1024]}
+                opt_input_shape = {"x": [batch_size, 3, 48, 320]}
+            else:
+                use_dynamic_shape = False
+            if use_dynamic_shape:
+                config.set_trt_dynamic_shape_info(
+                    min_input_shape, max_input_shape, opt_input_shape)
 
     else:
         config.disable_gpu()
