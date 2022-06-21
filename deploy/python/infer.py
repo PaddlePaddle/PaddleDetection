@@ -755,17 +755,28 @@ def load_predictor(model_dir,
             use_calib_mode=trt_calib_mode)
 
         if use_dynamic_shape:
-            min_input_shape = {
-                'image': [batch_size, 3, trt_min_shape, trt_min_shape]
-            }
-            max_input_shape = {
-                'image': [batch_size, 3, trt_max_shape, trt_max_shape]
-            }
-            opt_input_shape = {
-                'image': [batch_size, 3, trt_opt_shape, trt_opt_shape]
-            }
-            config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
-                                              opt_input_shape)
+            print('trt running with dynamic shape!')
+            infer_dynamic_shape = os.path.join(model_dir, 'dynamic_shape.pbtxt')
+            if os.path.exists(infer_dynamic_shape):
+                print('{} exists, enable tuned_tensorrt_dynamic_shape.'.format(
+                    infer_dynamic_shape))
+                config.enable_tuned_tensorrt_dynamic_shape(infer_dynamic_shape,
+                                                           True)
+            else:
+                print(
+                    '{} not exists, use FLAGS.trt_min_shape/trt_max_shape/trt_opt_shape.'.
+                    format(infer_dynamic_shape))
+                min_input_shape = {
+                    'image': [batch_size, 3, trt_min_shape, trt_min_shape]
+                }
+                max_input_shape = {
+                    'image': [batch_size, 3, trt_max_shape, trt_max_shape]
+                }
+                opt_input_shape = {
+                    'image': [batch_size, 3, trt_opt_shape, trt_opt_shape]
+                }
+                config.set_trt_dynamic_shape_info(
+                    min_input_shape, max_input_shape, opt_input_shape)
             print('trt set dynamic shape done!')
 
     # disable print log when predict

@@ -34,6 +34,7 @@ import paddle.distributed as dist
 from paddle.distributed import fleet
 from paddle.static import InputSpec
 from ppdet.optimizer import ModelEMA
+from paddle.inference import Config, create_predictor
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
@@ -798,6 +799,35 @@ class Trainer(object):
                 os.path.join(save_dir, 'model'),
                 input_spec=pruned_input_spec)
         logger.info("Export model and saved in {}".format(save_dir))
+
+        _, c, h, w = pruned_input_spec[0]['image'].shape
+        # exported with dynamic shape, TestReader has no inputs_def, such as Faster R-CNN, RetinaNet
+        if h == -1 and w == -1:
+            return
+
+        # fake data to get dynamic shape
+        inputs = {
+            'image': np.ones((1, c, h, w)).astype(np.float32),
+            'im_shape': np.ones((1, 2)).astype(np.float32),
+            'scale_factor': np.ones((1, 2)).astype(np.float32),
+        }
+
+        # get paddle.inference.Config
+        infer_model = os.path.join(save_dir, 'model.pdmodel')
+        infer_params = os.path.join(save_dir, 'model.pdiparams')
+        infer_dynamic_shape = os.path.join(save_dir, 'dynamic_shape.pbtxt')
+        config = Config(infer_model, infer_params)
+        config.collect_shape_range_info(infer_dynamic_shape)
+
+        predictor = create_predictor(config)
+        input_names = predictor.get_input_names()
+        for i in range(len(input_names)):
+            input_tensor = predictor.get_input_handle(input_names[i])
+            input_tensor.copy_from_cpu(inputs[input_names[i]])
+
+        predictor.run()
+        logger.info("Export dynamic_shape file in {}".format(
+            infer_dynamic_shape))
 
     def post_quant(self, output_dir='output_inference'):
         model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
