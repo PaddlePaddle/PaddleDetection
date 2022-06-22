@@ -33,6 +33,8 @@ To use wandb to log metrics while training add the `--use_wandb` flag to the tra
 python tools/train -c config.yml --use_wandb -o wandb-project=MyDetector wandb-entity=MyTeam wandb-save_dir=./logs
 ```
 
+Logging model checkpoints to the W&B dashboard can be done by providing the `log_checkpoint` as `true` or `false`.
+
 The arguments to the W&B logger must be proceeded by `-o` and each invidiual argument must contain the prefix "wandb-".
 
 If this is too tedious, an alternative way is to add the arguments to the `config.yml` file under the `wandb` header. For example
@@ -43,4 +45,5 @@ wandb:
     project: MyProject
     entity: MyTeam
     save_dir: ./logs
+    log_checkpoint: true
 ```
