@@ -79,13 +79,20 @@ def angle_cost(
     cxa, cya, _, _ = boxa.unbind(-1)
     cxb, cyb, _, _ = boxb.unbind(-1)
 
-    ch = paddle.maximum(cyb, cya) - paddle.minimum(cyb, cya)
-    cw = paddle.maximum(cxb, cxa) - paddle.minimum(cxb, cxa)
+    # ch = paddle.maximum(cyb, cya) - paddle.minimum(cyb, cya)
+    # cw = paddle.maximum(cxb, cxa) - paddle.minimum(cxb, cxa)
 
-    # sigma = ((cxb - cxa).pow(2) + (cyb - cya).pow(2)).sqrt()
+    sigma = ((cxb - cxa).pow(2) + (cyb - cya).pow(2)).sqrt()
+    alpha_w = paddle.abs(cxb - cxa) / sigma
+    alpha_h = paddle.abs(cyb - cya) / sigma
+    threshold = pow(2, 0.5) / 2
+    alpha = paddle.where(alpha_w > threshold, alpha_h, alpha_w)
+
+    angle = paddle.asin(alpha)
+
     # angle = paddle.asin(paddle.clip(ch / (sigma + eps), min=-1, max=1))
+    # angle = paddle.atan2(ch, cw)
 
-    angle = paddle.atan2(ch, cw)
     loss_angle = 1 - 2 * paddle.sin(angle - math.pi / 4).pow(2)
 
     return reduction_tensor(loss_angle, reduction=reduction)
@@ -185,7 +192,7 @@ def box_iou(
 def siou(boxa: Tensor,
          boxb: Tensor,
          box_fmt='cxcywh',
-         theta=2,
+         theta=4,
          eps: float=1e-7,
          reduction='none'):
     '''SIoU Loss: More Powerful Learning for Bounding Box Regression, https://arxiv.org/pdf/2205.12740.pdf
