@@ -2,6 +2,7 @@
 source test_tipc/utils_func.sh
 
 FILENAME=$1
+MODE="paddle2onnx_infer"
 
 # parser model_name
 dataline=$(cat ${FILENAME})
@@ -56,7 +57,7 @@ infer_image_value=$(func_parser_value "${lines[28]}")
 infer_param1_key=$(func_parser_key "${lines[29]}")
 infer_param1_value=$(func_parser_value "${lines[29]}")
 
-LOG_PATH="./test_tipc/output"
+LOG_PATH="./test_tipc/output/${model_name}/${MODE}"
 mkdir -p ${LOG_PATH}
 status_log="${LOG_PATH}/results_paddle2onnx.log"
 
@@ -68,7 +69,6 @@ function func_paddle2onnx_inference(){
 
     # paddle2onnx
     echo "################### run paddle2onnx ###################"
-    _save_log_path="${LOG_PATH}/paddle2onnx_infer_cpu.log"
     set_dirname=$(func_set_params "${model_dir_key}" "${_export_model_dir}")
     set_model_filename=$(func_set_params "${model_filename_key}" "${model_filename_value}")
     set_params_filename=$(func_set_params "${params_filename_key}" "${params_filename_value}")
@@ -76,8 +76,9 @@ function func_paddle2onnx_inference(){
     set_opset_version=$(func_set_params "${opset_version_key}" "${opset_version_value}")
     set_enable_onnx_checker=$(func_set_params "${enable_onnx_checker_key}" "${enable_onnx_checker_value}")
     set_paddle2onnx_params1=$(func_set_params "${paddle2onnx_params1_key}" "${paddle2onnx_params1_value}")
+    trans_log_path="${_log_path}/trans_model.log"
     trans_model_cmd="${padlle2onnx_cmd} ${set_dirname} ${set_model_filename} ${set_params_filename} ${set_save_model} ${set_opset_version} ${set_enable_onnx_checker} ${set_paddle2onnx_params1}"
-    eval $trans_model_cmd
+    eval "${trans_model_cmd} > ${trans_log_path} 2>&1"
     last_status=${PIPESTATUS[0]}
     status_check $last_status "${trans_model_cmd}" "${status_log}" "${model_name}"
 
@@ -87,8 +88,9 @@ function func_paddle2onnx_inference(){
     set_onnx_file=$(func_set_params "${onnx_file_key}" "${_export_model_dir}/${save_file_value}")
     set_infer_image_file=$(func_set_params "${infer_image_key}" "${infer_image_value}")
     set_infer_param1=$(func_set_params "${infer_param1_key}" "${infer_param1_value}")
-    infer_model_cmd="${python} ${inference_py} ${set_infer_cfg} ${set_onnx_file} ${set_infer_image_file} ${set_infer_param1} > ${_save_log_path} 2>&1 "
-    eval $infer_model_cmd
+    _save_log_path="${_log_path}/paddle2onnx_infer_cpu.log"
+    infer_model_cmd="${python} ${inference_py} ${set_infer_cfg} ${set_onnx_file} ${set_infer_image_file} ${set_infer_param1}"
+    eval "${infer_model_cmd} > ${_save_log_path} 2>&1"
     last_status=${PIPESTATUS[0]}
     status_check $last_status "${infer_model_cmd}" "${status_log}" "${model_name}"
 }
@@ -110,9 +112,10 @@ for infer_mode in ${infer_mode_list[*]}; do
         set_save_export_dir=$(func_set_params "${save_export_key}" "${save_export_value}")
         set_filename=$(func_set_params "${filename_key}" "${model_name}")
         set_export_param=$(func_set_params "${export_param_key}" "${export_param_value}")
+        export_log_path="${LOG_PATH}/export.log"
         export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_export_param} ${set_save_export_dir} "
         echo  $export_cmd
-        eval $export_cmd
+        eval "${export_cmd} > ${export_log_path} 2>&1"
         status_export=$?
         status_check $status_export "${export_cmd}" "${status_log}" "${model_name}"
     fi
