@@ -118,8 +118,8 @@ def distance_cost(
 
     loss_angle = angle_cost(boxa, boxb, eps=eps, reduction='none')
 
-    ch = paddle.maximum(cyb, cya) - paddle.minimum(cyb, cya) + (ha + hb) / 2
-    cw = paddle.maximum(cxb, cxa) - paddle.minimum(cxb, cxa) + (wa + wb) / 2
+    ch = paddle.maximum(cyb, cya) - paddle.minimum(cyb, cya)  # + (ha + hb) / 2
+    cw = paddle.maximum(cxb, cxa) - paddle.minimum(cxb, cxa)  # + (wa + wb) / 2
 
     r_x = ((cxb - cxa) / (cw + eps)).pow(2)
     r_y = ((cyb - cya) / (ch + eps)).pow(2)
