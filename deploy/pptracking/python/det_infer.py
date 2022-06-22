@@ -461,19 +461,30 @@ def load_predictor(model_dir,
             use_static=False,
             use_calib_mode=trt_calib_mode)
 
-        if use_dynamic_shape:
-            min_input_shape = {
-                'image': [batch_size, 3, trt_min_shape, trt_min_shape]
-            }
-            max_input_shape = {
-                'image': [batch_size, 3, trt_max_shape, trt_max_shape]
-            }
-            opt_input_shape = {
-                'image': [batch_size, 3, trt_opt_shape, trt_opt_shape]
-            }
-            config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
-                                              opt_input_shape)
-            print('trt set dynamic shape done!')
+        pv = paddle.version
+        if int(pv.major) == 0 or (int(pv.major) >= 2 and int(pv.minor) >= 2):
+            trt_dynamic_shape = os.path.join(model_dir, 'dynamic_shape.pbtxt')
+            config.collect_shape_range_info(trt_dynamic_shape)
+            config.enable_tuned_tensorrt_dynamic_shape(trt_dynamic_shape, True)
+            print(
+                'trt set dynamic shape done! Finish loading collected dynamic_shape info {}.'.
+                format(trt_dynamic_shape))
+        else:
+            if use_dynamic_shape:
+                min_input_shape = {
+                    'image': [batch_size, 3, trt_min_shape, trt_min_shape]
+                }
+                max_input_shape = {
+                    'image': [batch_size, 3, trt_max_shape, trt_max_shape]
+                }
+                opt_input_shape = {
+                    'image': [batch_size, 3, trt_opt_shape, trt_opt_shape]
+                }
+                config.set_trt_dynamic_shape_info(
+                    min_input_shape, max_input_shape, opt_input_shape)
+                print(
+                    'trt set dynamic shape done! Manual setting dynamic_shape will been deprecated since PaddlePaddle version 2.2.2.'
+                )
 
     # disable print log when predict
     config.disable_glog_info()
