@@ -89,11 +89,12 @@ def angle_cost(
     alpha = paddle.where(alpha_w > threshold, alpha_h, alpha_w)
 
     angle = paddle.asin(alpha)
+    loss_angle = paddle.cos(2 * angle - math.pi / 2)
 
     # angle = paddle.asin(paddle.clip(ch / (sigma + eps), min=-1, max=1))
     # angle = paddle.atan2(ch, cw)
 
-    loss_angle = 1 - 2 * paddle.sin(angle - math.pi / 4).pow(2)
+    # loss_angle = 1 - 2 * paddle.sin(angle - math.pi / 4).pow(2)
 
     return reduction_tensor(loss_angle, reduction=reduction)
 
