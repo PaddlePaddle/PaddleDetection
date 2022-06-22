@@ -29,7 +29,7 @@ import numpy as np
 
 from ppdet.core.workspace import register, serializable
 from ..shape_spec import ShapeSpec
-from .transformer_utils import DropPath, trunc_normal_
+from .transformer_utils import DropPath, trunc_normal_, zeros_
 
 __all__ = ['ConvNeXt']
 
@@ -129,7 +129,6 @@ class ConvNeXt(nn.Layer):
         dims (int): Feature dimension at each stage. Default: [96, 192, 384, 768]
         drop_path_rate (float): Stochastic depth rate. Default: 0.
         layer_scale_init_value (float): Init value for Layer Scale. Default: 1e-6.
-        head_init_scale (float): Init scaling value for classifier weights and biases. Default: 1.
     """
 
     def __init__(
@@ -139,7 +138,6 @@ class ConvNeXt(nn.Layer):
             dims=[96, 192, 384, 768],
             drop_path_rate=0.,
             layer_scale_init_value=1e-6,
-            head_init_scale=1.,
             return_idx=[1, 2, 3],
             norm_output=True,
             pretrained=None, ):
@@ -188,8 +186,6 @@ class ConvNeXt(nn.Layer):
             ])
 
         self.apply(self._init_weights)
-        # self.head.weight.set_value(self.head.weight.numpy() * head_init_scale) 
-        # self.head.bias.set_value(self.head.weight.numpy() * head_init_scale) 
 
         if pretrained is not None:
             if 'http' in pretrained:  #URL
@@ -201,8 +197,8 @@ class ConvNeXt(nn.Layer):
 
     def _init_weights(self, m):
         if isinstance(m, (nn.Conv2D, nn.Linear)):
-            trunc_normal_(m.weight, std=.02)
-            nn.init.constant_(m.bias, 0)
+            trunc_normal_(m.weight)
+            zeros_(m.bias)
 
     def forward_features(self, x):
         output = []
