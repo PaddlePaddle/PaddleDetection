@@ -2,13 +2,14 @@
 source test_tipc/utils_func.sh
 
 FILENAME=$1
+MODE="serving_infer"
 
 # parser model_name
 dataline=$(cat ${FILENAME})
 IFS=$'\n'
 lines=(${dataline})
 model_name=$(func_parser_value "${lines[1]}")
-echo "ppdet serving_infer: ${model_name}"
+echo "ppdet serving_cpp_infer: ${model_name}"
 python=$(func_parser_value "${lines[2]}")
 filename_key=$(func_parser_key "${lines[3]}")
 filename_value=$(func_parser_value "${lines[3]}")
@@ -48,7 +49,7 @@ infer_image_value=$(func_parser_value "${lines[24]}")
 http_client_key1=$(func_parser_key "${lines[25]}")
 http_client_value1=$(func_parser_value "${lines[25]}")
 
-LOG_PATH="./test_tipc/output"
+LOG_PATH="./test_tipc/output/${model_name}/${MODE}"
 mkdir -p ${LOG_PATH}
 status_log="${LOG_PATH}/results_serving_cpp.log"
 
@@ -67,23 +68,25 @@ function func_serving_inference(){
     # inference
     for gpu_ids in ${gpu_ids_value[*]}; do
         if [ ${gpu_ids} = "null" ];then
-            _save_log_path="${_log_path}/serving_infer_cpp_cpu_batchsize_1.log"
+            server_log_path="${_log_path}/cpp_server_cpu.log"
+            client_log_path="${_log_path}/cpp_client_cpu.log"
         else
-            _save_log_path="${_log_path}/serving_infer_cpp_gpu_batchsize_1.log"
+            server_log_path="${_log_path}/cpp_server_gpu.log"
+            client_log_path="${_log_path}/cpp_client_gpu.log"
         fi
         set_gpu_ids=$(func_set_params "${gpu_ids_key}" "${gpu_ids}")
         # run web service
-        web_service_cmd="${_python} -m paddle_serving_server.serve ${_set_server_model_dir} ${set_op} ${set_port} ${set_gpu_ids} ${set_web_service_params1} &"
+        web_service_cmd="${_python} -m paddle_serving_server.serve ${_set_server_model_dir} ${set_op} ${set_port} ${set_gpu_ids} ${set_web_service_params1} > ${server_log_path} 2>&1 &"
         eval $web_service_cmd
         last_status=${PIPESTATUS[0]}
         status_check $last_status "${web_service_cmd}" "${status_log}" "${model_name}"
         sleep 5s
         # run http client
-        http_client_cmd="${_python} ${http_client_py} ${_set_client_model_dir} ${_set_image_file} ${set_http_client_params1} > ${_save_log_path} 2>&1 "
+        http_client_cmd="${_python} ${http_client_py} ${_set_client_model_dir} ${_set_image_file} ${set_http_client_params1} > ${client_log_path} 2>&1"
         eval $http_client_cmd
         last_status=${PIPESTATUS[0]}
         status_check $last_status "${http_client_cmd}" "${status_log}" "${model_name}"
-        eval "cat ${_save_log_path}"
+        eval "cat ${client_log_path}"
         ps ux | grep -i ${port_value} | awk '{print $2}' | xargs kill -s 9
         sleep 2s
     done
@@ -107,9 +110,10 @@ for infer_mode in ${infer_mode_list[*]}; do
         set_export_weight=$(func_set_params "${export_weight_key}" "${export_weight_value}")
         set_save_export_dir=$(func_set_params "${save_export_key}" "${save_export_value}")
         set_filename=$(func_set_params "${filename_key}" "${model_name}")
+        export_log_path="${LOG_PATH}/export.log"
         export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
         echo  $export_cmd
-        eval $export_cmd
+        eval "${export_cmd} > ${export_log_path} 2>&1"
         status_export=$?
         status_check $status_export "${export_cmd}" "${status_log}" "${model_name}"
     fi

@@ -103,9 +103,9 @@ set_export_weight=$(func_set_params "${export_weight_key}" "${export_weight_valu
 set_save_export_dir=$(func_set_params "${save_export_key}" "${save_export_value}")
 set_filename=$(func_set_params "${filename_key}" "${model_name}")
 export_log_path="${LOG_PATH}/export.log"
-ptq_cmd="${python} ${kl_quant_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} > ${export_log_path} 2>&1 "
+ptq_cmd="${python} ${kl_quant_export} ${set_export_weight} ${set_filename} ${set_save_export_dir}"
 echo  $ptq_cmd
-eval $ptq_cmd
+eval "${ptq_cmd} > ${export_log_path} 2>&1"
 status_export=$?
 status_check $status_export "${ptq_cmd}" "${status_log}" "${model_name}"
 
