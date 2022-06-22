@@ -2,6 +2,7 @@
 source test_tipc/utils_func.sh
 
 FILENAME=$1
+MODE="cpp_infer"
 
 # parser model_name
 dataline=$(cat ${FILENAME})
@@ -54,7 +55,7 @@ cpp_benchmark_value=$(func_parser_value "${lines[27]}")
 cpp_infer_key1=$(func_parser_key "${lines[28]}")
 cpp_infer_value1=$(func_parser_value "${lines[28]}")
 
-LOG_PATH="./test_tipc/output"
+LOG_PATH="./test_tipc/output/${model_name}/${MODE}"
 mkdir -p ${LOG_PATH}
 status_log="${LOG_PATH}/results_cpp.log"
 
@@ -74,7 +75,7 @@ function func_cpp_inference(){
                 fi
                 for threads in ${cpp_cpu_threads_list[*]}; do
                     for batch_size in ${cpp_batch_size_list[*]}; do
-                        _save_log_path="${_log_path}/cpp_infer_cpu_usemkldnn_${use_mkldnn}_threads_${threads}_precision_fluid_batchsize_${batch_size}.log"
+                        _save_log_path="${_log_path}/cpp_infer_cpu_usemkldnn_${use_mkldnn}_threads_${threads}_mode_paddle_batchsize_${batch_size}.log"
                         set_infer_data=$(func_set_params "${cpp_image_dir_key}" "${_img_dir}")
                         set_benchmark=$(func_set_params "${cpp_benchmark_key}" "${cpp_benchmark_value}")
                         set_batchsize=$(func_set_params "${cpp_batch_size_key}" "${batch_size}")
@@ -91,7 +92,7 @@ function func_cpp_inference(){
             done
         elif [ ${use_gpu} = "True" ] || [ ${use_gpu} = "gpu" ]; then
             for precision in ${cpp_precision_list[*]}; do
-                if [[ ${precision} != "fluid" ]]; then
+                if [[ ${precision} != "paddle" ]]; then
                     if [[ ${_flag_quant} = "False" ]] && [[ ${precision} = "trt_int8" ]]; then
                         continue
                     fi
@@ -100,7 +101,7 @@ function func_cpp_inference(){
                     fi
                 fi
                 for batch_size in ${cpp_batch_size_list[*]}; do
-                    _save_log_path="${_log_path}/cpp_infer_gpu_precision_${precision}_batchsize_${batch_size}.log"
+                    _save_log_path="${_log_path}/cpp_infer_gpu_mode_${precision}_batchsize_${batch_size}.log"
                     set_infer_data=$(func_set_params "${cpp_image_dir_key}" "${_img_dir}")
                     set_benchmark=$(func_set_params "${cpp_benchmark_key}" "${cpp_benchmark_value}")
                     set_batchsize=$(func_set_params "${cpp_batch_size_key}" "${batch_size}")
@@ -183,6 +184,7 @@ else
     env="export CUDA_VISIBLE_DEVICES=${GPUID}"
 fi
 eval $env
+
 # run cpp infer
 Count=0
 IFS="|"
@@ -201,9 +203,10 @@ for infer_mode in ${cpp_infer_mode_list[*]}; do
         set_export_weight=$(func_set_params "${export_weight_key}" "${export_weight_value}")
         set_save_export_dir=$(func_set_params "${save_export_key}" "${save_export_value}")
         set_filename=$(func_set_params "${filename_key}" "${model_name}")
+        export_log_path="${LOG_PATH}/export.log"
         export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
         echo  $export_cmd
-        eval $export_cmd
+        eval "${export_cmd} > ${export_log_path} 2>&1"
         status_export=$?
         status_check $status_export "${export_cmd}" "${status_log}" "${model_name}"
     fi
