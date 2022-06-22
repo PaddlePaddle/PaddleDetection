@@ -311,6 +311,9 @@ class WandbCallback(Callback):
                     k.lstrip("wandb_"): v
                 })
         
+        self.log_checkpoint = self.wandb_params.get('log_checkpoint', False)
+        self.wandb_params.pop('log_checkpoint')
+
         self._run = None
         if dist.get_world_size() < 2 or dist.get_rank() == 0:
             _ = self.run
@@ -341,6 +344,8 @@ class WandbCallback(Callback):
                 ap=None, 
                 tags=None):
         if dist.get_world_size() < 2 or dist.get_rank() == 0:
+            if self.log_checkpoint == False:
+                return
             model_path = os.path.join(save_dir, save_name)
             metadata = {}
             metadata["last_epoch"] = last_epoch
