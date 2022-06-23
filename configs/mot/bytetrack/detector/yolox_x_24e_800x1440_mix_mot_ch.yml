@@ -1,25 +1,47 @@
 # This config is an assembled config for ByteTrack MOT, used as eval/infer mode for MOT.
 _BASE_: [
-  'detector/yolox_x_24e_800x1440_ht21.yml',
-  '_base_/ht21.yml',
-  '_base_/yolox_mot_reader_800x1440.yml'
+  '../../../yolox/yolox_x_300e_coco.yml',
+  '../_base_/mix_mot_ch.yml',
 ]
-weights: output/bytetrack_yolox_ht21/model_final
+weights: output/yolox_x_24e_800x1440_mix_mot_ch/model_final
 log_iter: 20
 snapshot_epoch: 2
 
-metric: MOT # eval/infer mode
-num_classes: 1
+# schedule configuration for fine-tuning
+epoch: 24
+LearningRate:
+  base_lr: 0.00075 # fintune
+  schedulers:
+  - !CosineDecay
+    max_epochs: 24
+    min_lr_ratio: 0.05
+    last_plateau_epochs: 4
+  - !ExpWarmup
+    epochs: 1
 
-architecture: ByteTrack
+OptimizerBuilder:
+  optimizer:
+    type: Momentum
+    momentum: 0.9
+    use_nesterov: True
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+
+TrainReader:
+  batch_size: 6
+  mosaic_epoch: 20
+
+# detector configuration
+architecture: YOLOX
 pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/yolox_x_300e_coco.pdparams
-ByteTrack:
-  detector: YOLOX
-  reid: None
-  tracker: JDETracker
-det_weights: https://bj.bcebos.com/v1/paddledet/models/mot/yolox_x_24e_800x1440_ht21.pdparams
-reid_weights: None
-
+norm_type: sync_bn
+use_ema: True
+ema_decay: 0.9999
+ema_decay_type: "exponential"
+act: silu
+find_unused_parameters: True
 depth_mult: 1.33
 width_mult: 1.25
 
@@ -29,7 +51,7 @@ YOLOX:
   head: YOLOXHead
   input_size: [800, 1440]
   size_stride: 32
-  size_range: [18, 22] # multi-scale range [576*1024 ~ 800*1440], w/h ratio=1.8
+  size_range: [18, 30] # multi-scale range [576*1024 ~ 800*1440], w/h ratio=1.8
 
 CSPDarkNet:
   arch: "X"
@@ -50,19 +72,9 @@ YOLOXHead:
     use_vfl: False
   nms:
     name: MultiClassNMS
-    nms_top_k: 30000
-    keep_top_k: 1000
+    nms_top_k: 1000
+    keep_top_k: 100
     score_threshold: 0.01
     nms_threshold: 0.7
     # For speed while keep high mAP, you can modify 'nms_top_k' to 1000 and 'keep_top_k' to 100, the mAP will drop about 0.1%.
     # For high speed demo, you can modify 'score_threshold' to 0.25 and 'nms_threshold' to 0.45, but the mAP will drop a lot.
-
-
-# BYTETracker
-JDETracker:
-  use_byte: True
-  match_thres: 0.9
-  conf_thres: 0.7
-  low_conf_thres: 0.1
-  min_box_area: 0
-  vertical_ratio: 0 # 1.6 for pedestrian
