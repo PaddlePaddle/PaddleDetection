@@ -69,7 +69,7 @@ PP-TSM是一个基于视频片段进行预测的模型。在PaddleVideo中，训
 <a name="视频抽帧"></a>
 ### 2.2 视频抽帧
 
-为了加快训练速度，将视频进行抽帧。
+为了加快训练速度，将视频进行抽帧。下面命令会根据视频的帧率FPS进行抽帧，如FPS=30，则每秒视频会抽取30帧图像。
 
 ```bash
 cd ${PaddleVideo_root}
@@ -82,7 +82,7 @@ python data/ucf101/extract_rawframes.py dataset/ rawframes/ --level 2 --ext mp4
 
 本项目验证集1500条，来自Surveillance Camera Fight Dataset、A Dataset for Automatic Violence Detection in Videos、UBI Abnormal Event Detection Dataset三个数据集。
 
-也可根据下面的代码将数据按照0.8:0.2的比例划分成训练集和测试集：
+也可根据下面的代码将数据按照8:2的比例划分成训练集和测试集：
 
 ```python
 import os
