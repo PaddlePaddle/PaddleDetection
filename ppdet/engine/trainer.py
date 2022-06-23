@@ -126,17 +126,6 @@ class Trainer(object):
         else:
             self.model.load_meanstd(cfg['TestReader']['sample_transforms'])
 
-        self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
-        if self.use_ema:
-            ema_decay = self.cfg.get('ema_decay', 0.9998)
-            cycle_epoch = self.cfg.get('cycle_epoch', -1)
-            ema_decay_type = self.cfg.get('ema_decay_type', 'threshold')
-            self.ema = ModelEMA(
-                self.model,
-                decay=ema_decay,
-                ema_decay_type=ema_decay_type,
-                cycle_epoch=cycle_epoch)
-
         # EvalDataset build with BatchSampler to evaluate in single device
         # TODO: multi-device evaluate
         if self.mode == 'eval':
@@ -151,9 +140,6 @@ class Trainer(object):
                     cfg[reader_name]['collate_batch'] = False
                 self.loader = create(reader_name)(self.dataset, cfg.worker_num,
                                                   self._eval_batch_sampler)
-            if self.amp_level == 'O2':
-                self.model = paddle.amp.decorate(
-                    models=self.model, level=self.amp_level)
         # TestDataset build after user set images, skip loader creation here
 
         # build optimizer in train mode
@@ -166,6 +152,20 @@ class Trainer(object):
             if self.cfg.get('unstructured_prune'):
                 self.pruner = create('UnstructuredPruner')(self.model,
                                                            steps_per_epoch)
+
+        if self.use_amp and self.amp_level == 'O2':
+            self.model = paddle.amp.decorate(
+                models=self.model, level=self.amp_level)
+        self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
+        if self.use_ema:
+            ema_decay = self.cfg.get('ema_decay', 0.9998)
+            cycle_epoch = self.cfg.get('cycle_epoch', -1)
+            ema_decay_type = self.cfg.get('ema_decay_type', 'threshold')
+            self.ema = ModelEMA(
+                self.model,
+                decay=ema_decay,
+                ema_decay_type=ema_decay_type,
+                cycle_epoch=cycle_epoch)
 
         self._nranks = dist.get_world_size()
         self._local_rank = dist.get_rank()
@@ -396,9 +396,6 @@ class Trainer(object):
             scaler = paddle.amp.GradScaler(
                 enable=self.cfg.use_gpu or self.cfg.use_npu,
                 init_loss_scaling=self.cfg.get('init_loss_scaling', 1024))
-            if self.amp_level == 'O2':
-                self.model = paddle.amp.decorate(
-                    models=self.model, level=self.amp_level)
         # get distributed model
         if self.cfg.get('fleet', False):
             model = fleet.distributed_model(model)

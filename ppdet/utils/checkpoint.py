@@ -209,6 +209,10 @@ def load_pretrain_weight(model, pretrain_weight):
     param_state_dict = paddle.load(weights_path)
     param_state_dict = match_state_dict(model_dict, param_state_dict)
 
+    for k, v in param_state_dict.items():
+        if model_dict[k].dtype.name != v.dtype.name:
+            # cast to tensor.dtype
+            param_state_dict[k] = paddle.cast(v, model_dict[k].dtype)
     model.set_dict(param_state_dict)
     logger.info('Finish loading model weights: {}'.format(weights_path))
 
