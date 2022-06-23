@@ -11,7 +11,7 @@ TrainDataset:
 
 EvalDataset:
   !COCODataSet
-    image_dir: train
+    image_dir: images/train
     anno_path: annotations/val_half.json
     dataset_dir: dataset/mot/MOT17
 

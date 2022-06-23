@@ -186,7 +186,9 @@ class SDE_Detector(Detector):
 
     def postprocess(self, inputs, result):
         # postprocess output of predictor
-        np_boxes_num = result['boxes_num']
+        keep_idx = result['boxes'][:, 1] > self.threshold
+        result['boxes'] = result['boxes'][keep_idx]
+        np_boxes_num = [len(result['boxes'])]
         if np_boxes_num[0] <= 0:
             print('[WARNNING] No object detected.')
             result = {'boxes': np.zeros([0, 6]), 'boxes_num': [0]}
@@ -520,8 +522,8 @@ class SDE_Detector(Detector):
             # bs=1 in MOT model
             online_tlwhs, online_scores, online_ids = mot_results[0]
 
-            # NOTE: just implement flow statistic for one class
-            if num_classes == 1:
+            # flow statistic for one class, and only for bytetracker
+            if num_classes == 1 and not self.use_deepsort_tracker:
                 result = (frame_id + 1, online_tlwhs[0], online_scores[0],
                           online_ids[0])
                 statistic = flow_statistic(
