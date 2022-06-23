@@ -16,9 +16,9 @@
 
 实时行人分析工具[PP-Human](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/deploy/pphuman)中集成了视频分类的打架识别模块。本文档介绍如何基于[PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/)，完成打架识别模型的训练流程。
 
-目前打架识别模型使用的是[PP-TSM](https://github.com/PaddlePaddle/PaddleVideo/blob/63c88a435e98c6fcaf353429d2df6cc24b8113ba/docs/zh-CN/model_zoo/recognition/pp-tsm.md)，并在PP-TSM视频分类模型训练流程的基础上修改适配，完成模型训练。
+目前打架识别模型使用的是[PP-TSM](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/pp-tsm.md)，并在PP-TSM视频分类模型训练流程的基础上修改适配，完成模型训练。
 
-请先参考[使用说明](https://github.com/XYZ-916/PaddleVideo/blob/develop/docs/zh-CN/usage.md)了解PaddleVideo模型库的使用。
+请先参考[使用说明](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/usage.md)了解PaddleVideo模型库的使用。
 
 
 | 任务 | 算法 | 精度 | 预测速度(ms) | 模型权重 | 预测部署模型 |
@@ -82,126 +82,19 @@ python data/ucf101/extract_rawframes.py dataset/ rawframes/ --level 2 --ext mp4
 
 本项目验证集1500条，来自Surveillance Camera Fight Dataset、A Dataset for Automatic Violence Detection in Videos、UBI Abnormal Event Detection Dataset三个数据集。
 
-也可根据下面的代码将数据按照8:2的比例划分成训练集和测试集：
+也可根据下面的命令将数据按照8:2的比例划分成训练集和测试集：
 
-```python
-import os
-import glob
-import random
-import fnmatch
-import re
-
-class_id = {
-    "nofight":0,
-    "fight":1
-}
-
-def get_list(path,key_func=lambda x: x[-11:], rgb_prefix='img_', level=1):
-    if level == 1:
-        frame_folders = glob.glob(os.path.join(path, '*'))
-    elif level == 2:
-        frame_folders = glob.glob(os.path.join(path, '*', '*'))
-    else:
-        raise ValueError('level can be only 1 or 2')
-
-    def count_files(directory):
-        lst = os.listdir(directory)
-        cnt = len(fnmatch.filter(lst, rgb_prefix + '*'))
-        return cnt
-
-    # check RGB
-    video_dict = {}
-    for f in frame_folders:
-        cnt = count_files(f)
-        k = key_func(f)
-        if level==2:
-            k = k.split("/")[0]
-
-        video_dict[f]=str(cnt)+" "+str(class_id[k])
-
-    return video_dict
-
-def fight_splits(video_dict, train_percent=0.8):
-    videos = list(video_dict.keys())
-
-    train_num = int(len(videos)*train_percent)
-
-    train_list = []
-    val_list = []
-
-    random.shuffle(videos)
-
-    for i in range(train_num):
-        train_list.append(videos[i]+" "+str(video_dict[videos[i]]))
-    for i in range(train_num,len(videos)):
-        val_list.append(videos[i]+" "+str(video_dict[videos[i]]))
-
-    print("train:",len(train_list),",val:",len(val_list))
-
-    with open("fight_train_list.txt","w") as f:
-        for item in train_list:
-            f.write(item+"\n")
-
-    with open("fight_val_list.txt","w") as f:
-        for item in val_list:
-            f.write(item+"\n")
-
-frame_dir = "rawframes"
-level = 2
-train_percent = 0.8
-
-if level == 2:
-    def key_func(x):
-        return '/'.join(x.split('/')[-2:])
-else:
-    def key_func(x):
-        return x.split('/')[-1]
-
-video_dict = get_list(frame_dir, key_func=key_func, level=level)  
-print("number:",len(video_dict))
-
-fight_splits(video_dict, train_percent)
+```bash
+python split_fight_train_test_dataset.py "rawframes" 2 0.8
 ```
+
+其中`split_fight_train_test_dataset.py`在`deploy/pphuman/tools`路径下。
 
 最终生成fight_train_list.txt和fight_val_list.txt两个文件。打架的标签为1，非打架的标签为0。
 
 <a name="视频裁剪"></a>
 ### 2.4 视频裁剪
-对于未裁剪的视频，需要先进行裁剪才能用于模型训练，这个给出视频裁剪的函数`cut_video`，输入为视频路径，裁剪的起始帧和结束帧以及裁剪后的视频保存路径。
-
-```python
-
-import cv2
-
-def cut_video(video_path, frameToStart, frametoStop, saved_video_path):
-    cap = cv2.VideoCapture(video_path)
-    FPS = cap.get(cv2.CAP_PROP_FPS)
-
-    TOTAL_FRAME = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))  # 获取视频总帧数
-
-    size = (cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-    videoWriter =cv2.VideoWriter(saved_video_path,apiPreference = 0,fourcc = cv2.VideoWriter_fourcc(*'mp4v'),fps=FPS,
-            frameSize=(int(size[0]),int(size[1])))
-
-    COUNT = 0
-    while True:
-            success, frame = cap.read()
-            if success:
-                COUNT += 1
-                if COUNT <= frametoStop and COUNT > frameToStart:  # 选取起始帧
-                    videoWriter.write(frame)
-            else:
-                print("cap.read failed!")
-                break
-            if COUNT > frametoStop:
-                break
-
-    cap.release()
-    videoWriter.release()
-
-    print(saved_video_path)
-```
+对于未裁剪的视频，需要先进行裁剪才能用于模型训练，`deploy/pphuman/tools/clip_video.py`中给出了视频裁剪的函数`cut_video`，输入为视频路径，裁剪的起始帧和结束帧以及裁剪后的视频保存路径。
 
 <a name="模型训练"></a>
 ## 3 模型训练

@@ -16,9 +16,9 @@
 
 The real-time humman analysis tool [PP-Human](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/deploy/pphuman) integrates the fight recognition module. This document describes how to complete the training process of the fight recognition model based on [PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/).
 
-The fight recognition model is based on [PP-TSM](https://github.com/PaddlePaddle/PaddleVideo/blob/63c88a435e98c6fcaf353429d2df6cc24b8113ba/docs/zh-CN/model_zoo/recognition/pp-tsm.md), and it is modified and adapted based on the training process of the PP-TSM video classification model to complete the model training.
+The fight recognition model is based on [PP-TSM](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/pp-tsm.md), and it is modified and adapted based on the training process of the PP-TSM video classification model to complete the model training.
 
-Please refer to the [instruction manual](https://github.com/XYZ-916/PaddleVideo/blob/develop/docs/zh-CN/usage.md) to learn how to use the PaddleVideo model library.
+Please refer to the [instruction manual](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/usage.md) to learn how to use the PaddleVideo model library.
 
 | Task | Algorithm | Precision | Inference Speed(ms) | Model Weights | Model Inference and Deployment |
 | ---- | ---- | ---------- | ---- | ---- | ---------- |
@@ -66,12 +66,14 @@ There are 3956 fight (violent) videos and 3501 non-fight (non-violent) videos. T
 <a name="frame-extraction"></a>
 ### 2.2 Frame Extraction
 
-To speed up the training process, extrac frames from video as follows:
+To speed up the training process, extract frames from video as follows:
 
 ```bash
 cd ${PaddleVideo_root}
 python data/ucf101/extract_rawframes.py dataset/ rawframes/ --level 2 --ext mp4
 ```
+
+Assuming that the fps of video is 30, we can get 30 frames per second in the video.
 
 Videos are stored in the `dataset` directory, fight (violent) videos are stored in `dataset/fight`; non-fight (non-violent) videos are stored in `dataset/nofight`. The `rawframes` directory holds the extracted video frames.
 
@@ -80,127 +82,20 @@ Videos are stored in the `dataset` directory, fight (violent) videos are stored 
 
 The number of validation dataset is 1500，from Surveillance Camera Fight Dataset、A Dataset for Automatic Violence Detection in Videos、UBI Abnormal Event Detection Dataset.
 
-The data can also be divided into training set and validation set according to the following code:
+The data can also be divided into training set and validation set according to the following command:
 
-```python
-import os
-import glob
-import random
-import fnmatch
-import re
-
-class_id = {
-    "nofight":0,
-    "fight":1
-}
-
-def get_list(path,key_func=lambda x: x[-11:], rgb_prefix='img_', level=1):
-    if level == 1:
-        frame_folders = glob.glob(os.path.join(path, '*'))
-    elif level == 2:
-        frame_folders = glob.glob(os.path.join(path, '*', '*'))
-    else:
-        raise ValueError('level can be only 1 or 2')
-
-    def count_files(directory):
-        lst = os.listdir(directory)
-        cnt = len(fnmatch.filter(lst, rgb_prefix + '*'))
-        return cnt
-
-    # check RGB
-    video_dict = {}
-    for f in frame_folders:
-        cnt = count_files(f)
-        k = key_func(f)
-        if level==2:
-            k = k.split("/")[0]
-
-        video_dict[f]=str(cnt)+" "+str(class_id[k])
-
-    return video_dict
-
-def fight_splits(video_dict, train_percent=0.8):
-    videos = list(video_dict.keys())
-
-    train_num = int(len(videos)*train_percent)
-
-    train_list = []
-    val_list = []
-
-    random.shuffle(videos)
-
-    for i in range(train_num):
-        train_list.append(videos[i]+" "+str(video_dict[videos[i]]))
-    for i in range(train_num,len(videos)):
-        val_list.append(videos[i]+" "+str(video_dict[videos[i]]))
-
-    print("train:",len(train_list),",val:",len(val_list))
-
-    with open("fight_train_list.txt","w") as f:
-        for item in train_list:
-            f.write(item+"\n")
-
-    with open("fight_val_list.txt","w") as f:
-        for item in val_list:
-            f.write(item+"\n")
-
-frame_dir = "rawframes"
-level = 2
-train_percent = 0.8
-
-if level == 2:
-    def key_func(x):
-        return '/'.join(x.split('/')[-2:])
-else:
-    def key_func(x):
-        return x.split('/')[-1]
-
-video_dict = get_list(frame_dir, key_func=key_func, level=level)  
-print("number:",len(video_dict))
-
-fight_splits(video_dict, train_percent)
+```bash
+python split_fight_train_test_dataset.py "rawframes" 2 0.8
 ```
+
+The file `split_fight_train_test_dataset.py` is in the directory of `deploy/pphuman/tools`.
 
 We can get fight_train_list.txt and fight_val_list.txt finally. The label of fighting is 1 and non-fighting label is 0.
 
 <a name="video-segmentation"></a>
 ### 2.4 Video Segmentation
 
-For unclipped video, clip it before used for model training. This function `cut_video` can clip a given video. The input inclues video path, the start frame and end frame of the clip, and the saved path of the clipped video.
-
-```python
-
-import cv2
-
-def cut_video(video_path, frameToStart, frametoStop, saved_video_path):
-    cap = cv2.VideoCapture(video_path)
-    FPS = cap.get(cv2.CAP_PROP_FPS)
-
-    TOTAL_FRAME = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))  
-
-    size = (cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-    videoWriter =cv2.VideoWriter(saved_video_path,apiPreference = 0,fourcc = cv2.VideoWriter_fourcc(*'mp4v'),fps=FPS,
-            frameSize=(int(size[0]),int(size[1])))
-
-    COUNT = 0
-    while True:
-            success, frame = cap.read()
-            if success:
-                COUNT += 1
-                if COUNT <= frametoStop and COUNT > frameToStart:
-                    videoWriter.write(frame)
-            else:
-                print("cap.read failed!")
-                break
-            if COUNT > frametoStop:
-                break
-
-    cap.release()
-    videoWriter.release()
-
-    print(saved_video_path)
-```
+For unclipped video, clip it before used for model training. This function `cut_video` in `deploy/pphuman/tools` can clip a given video. The input inclues video path, the start frame and end frame of the clip, and the saved path of the clipped video.
 
 <a name="model-training"></a>
 ## 3 Model Training
