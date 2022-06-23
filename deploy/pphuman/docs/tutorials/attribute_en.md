@@ -6,12 +6,12 @@ Pedestrian attribute recognition has been widely used in the intelligent communi
 
 | Task                 | Algorithm | Precision | Inference Speed(ms) | Download Link                                                                               |
 |:---------------------|:---------:|:------:|:------:| :---------------------------------------------------------------------------------: |
-| Pedestrian Detection/ Tracking    |  PP-YOLOE | mAP: 56.3 <br> MOTA: 72.0 | Detection: 28ms <br> Tracking：33.1ms | [Download Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| Pedestrian Attribute Analysis   |  StrongBaseline  |  ma: 94.86  | Per Person 2ms | [Download Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.tar) |
+| High-Precision Model    |  PP-HGNet_small  |  mA: 95.4  | per person 1.54ms | [Download](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.tar) |
+| Fast Model    |  PP-LCNet_x1_0  |  mA: 94.5  | per person 0.54ms | [Download](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.tar) |
+| Balanced Model    |  PP-HGNet_tiny  |  mA: 95.2  | per person 1.14ms | [Download](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_person_attribute_952_infer.tar) |
 
-1. The precision of detection/ tracking models is obtained by training and testing on the dataset consist of [MOT17](https://motchallenge.net/)，[CrowdHuman](http://www.crowdhuman.org/)，[HIEVE](http://humaninevents.org/) and some business data.
-2. The precision of pedestiran attribute analysis is obtained by training and testing on the dataset consist of [PA100k](https://github.com/xh-liu/HydraPlus-Net#pa-100k-dataset)，[RAPv2](http://www.rapdataset.com/rapv2.html)，[PETA](http://mmlab.ie.cuhk.edu.hk/projects/PETA.html) and some business data.
-3. The inference speed is T4, the speed of using TensorRT FP16.
+1. The precision of pedestiran attribute analysis is obtained by training and testing on the dataset consist of [PA100k](https://github.com/xh-liu/HydraPlus-Net#pa-100k-dataset)，[RAPv2](http://www.rapdataset.com/rapv2.html)，[PETA](http://mmlab.ie.cuhk.edu.hk/projects/PETA.html) and some business data.
+2. The inference speed is V100, the speed of using TensorRT FP16.
 
 ## Instruction
 
@@ -70,7 +70,7 @@ Data Source and Copyright：Skyinfor Technology. Thanks for the provision of act
 - Boots: Yes; No
 ```
 
-4. The model adopted in the attribute recognition is [StrongBaseline](https://arxiv.org/pdf/2107.03576.pdf), where the structure is the multi-class network structure based on ResNet50, and Weighted BCE loss and EMA are introduced for effect optimization.
+4. The model adopted in the attribute recognition is [StrongBaseline](https://arxiv.org/pdf/2107.03576.pdf), where the structure is the multi-class network structure based on PP-HGNet、PP-LCNet, and Weighted BCE loss is introduced for effect optimization.
 
 ## Reference
 ```
