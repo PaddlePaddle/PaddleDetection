@@ -143,6 +143,9 @@ def topdown_unite_predict_video(detector,
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     index = 0
     store_res = []
+    previous_keypoints = None
+    post_process = PostProcess(width, height, filter_type=FLAGS.filter_type, alpha=0.8, beta=1)
+
     while (1):
         ret, frame = capture.read()
         if not ret:
@@ -162,11 +165,19 @@ def topdown_unite_predict_video(detector,
             frame2, results, topdown_keypoint_detector, keypoint_batch_size,
             FLAGS.run_benchmark)
 
+        if FLAGS.smooth:
+            current_keypoints = np.array(keypoint_res['keypoint'][0][0])
+            smooth_keypoints = post_process.smooth_process(previous_keypoints, current_keypoints)
+            previous_keypoints = smooth_keypoints
+
+            keypoint_res['keypoint'][0][0] = smooth_keypoints.tolist()
+
         im = visualize_pose(
             frame,
             keypoint_res,
             visual_thresh=FLAGS.keypoint_threshold,
             returnimg=True)
+
         if save_res:
             store_res.append([
                 index, keypoint_res['bbox'],
@@ -190,6 +201,73 @@ def topdown_unite_predict_video(detector,
         """
         with open("det_keypoint_unite_video_results.json", 'w') as wf:
             json.dump(store_res, wf, indent=4)
+
+
+class PostProcess(object):
+    def __init__(self, width, height, filter_type, alpha=0.5, fc_d=1, fc_min=1, beta=0):
+        super(PostProcess, self).__init__()
+        self.image_width = width
+        self.image_height = height
+        self.threshold = [0.005, 0.005, 0.005, 0.005, 0.005, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
+        self.filter_type = filter_type
+        self.alpha = alpha
+        self.dx_prev_hat = None
+        self.x_prev_hat = None
+        self.fc_d = fc_d
+        self.fc_min = fc_min
+        self.beta = beta
+        
+
+    def smooth_process(self, previous_keypoints, current_keypoints):
+        if previous_keypoints is None:
+            previous_keypoints = current_keypoints
+            result = current_keypoints
+        else:
+            result = []
+            num_keypoints = len(current_keypoints)
+            for i in range(num_keypoints):
+                result.append(self.smooth(previous_keypoints[i], current_keypoints[i], self.threshold[i]))
+        return np.array(result)
+
+
+    def smooth(self, previous_keypoint, current_keypoint, threshold):
+        distance = np.sqrt(np.square((current_keypoint[0] - previous_keypoint[0]) / self.image_width) + np.square((current_keypoint[1] - previous_keypoint[1]) / self.image_height))
+        if distance < threshold:
+            result = previous_keypoint
+        else:
+            if self.filter_type == 'one_euro':
+                result = self.one_euro_filter(previous_keypoint, current_keypoint)
+            elif self.filter_type == 'ema':
+                result = self.alpha * current_keypoint + (1 - self.alpha) * previous_keypoint
+            else:
+                print('filter type must be one euro or ema')
+        return result
+
+
+    def one_euro_filter(self, x_prev, x_cur):
+        te = 1
+        alpha = self.smoothing_factor(te, self.fc_d)
+        if self.x_prev_hat is None:
+            self.x_prev_hat = x_prev
+        dx_cur = (x_cur - self.x_prev_hat) / te
+        if self.dx_prev_hat is None:
+            self.dx_prev_hat = 0
+        dx_cur_hat = self.exponential_smoothing(alpha, self.dx_prev_hat, dx_cur)
+        
+        fc = self.fc_min + self.beta * np.abs(dx_cur_hat)
+        alpha = self.smoothing_factor(te, fc)
+        x_cur_hat = self.exponential_smoothing(alpha, self.x_prev_hat, x_cur)
+        self.dx_prev_hat = dx_cur_hat
+        self.x_prev_hat = x_cur_hat
+        return x_cur_hat
+
+
+    def smoothing_factor(self, te, fc):
+        r = 2 * math.pi * fc * te
+        return r / (r + 1)
+    
+    def exponential_smoothing(self, alpha, x_prev, x_cur):
+        return alpha * x_cur + (1 - alpha) * x_prev
 
 
 def main():
