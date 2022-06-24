@@ -128,7 +128,7 @@ list below can be viewed by `--help`
                       --output_dir=infer_output/ \
                       --draw_threshold=0.5 \
                       -o weights=output/faster_rcnn_r50_fpn_1x_coco/model_final \
-                      --use_vdl=Ture
+                      --use_vdl=True
   ```
 
   `--draw_threshold` is an optional argument. Default is 0.5.

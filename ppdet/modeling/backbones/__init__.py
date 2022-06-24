@@ -31,6 +31,8 @@ from . import hardnet
 from . import esnet
 from . import cspresnet
 from . import csp_darknet
+from . import convnext
+from . import vision_transformer
 
 from .vgg import *
 from .resnet import *
@@ -51,3 +53,5 @@ from .hardnet import *
 from .esnet import *
 from .cspresnet import *
 from .csp_darknet import *
+from .convnext import *
+from .vision_transformer import *

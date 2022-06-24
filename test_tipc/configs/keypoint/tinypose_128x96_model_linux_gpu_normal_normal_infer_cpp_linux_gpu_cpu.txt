@@ -20,10 +20,10 @@ inference:./deploy/cpp/build/main
 --device:gpu|cpu
 --use_mkldnn:False
 --cpu_threads:4
---batch_size:1|2
+--batch_size:1
 --use_tensorrt:null
 --run_mode:paddle
---model_dir:
+--model_dir_keypoint:
 --image_dir:./dataset/coco/test2017/
 --run_benchmark:False
-null:null
+--model_dir:./output_inference/picodet_s_320_pedestrian

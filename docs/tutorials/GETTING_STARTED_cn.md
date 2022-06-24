@@ -161,7 +161,7 @@ python tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml \
                       --output_dir=infer_output/ \
                       --draw_threshold=0.5 \
                       -o weights=output/yolov3_mobilenet_v1_roadsign/model_final \
-                      --use_vdl=Ture
+                      --use_vdl=True
   ```
 
   `--draw_threshold` 是个可选参数. 根据 [NMS](https://ieeexplore.ieee.org/document/1699659) 的计算，不同阈值会产生不同的结果

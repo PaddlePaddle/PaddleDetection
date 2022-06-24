@@ -37,7 +37,7 @@ kl_quant_export:tools/post_quant.py -c configs/keypoint/tiny_pose/tinypose_128x9
 ##
 infer_mode:norm
 infer_quant:False
-inference:./deploy/python/infer.py
+inference:./deploy/python/keypoint_infer.py
 --device:gpu|cpu
 --enable_mkldnn:False
 --cpu_threads:4

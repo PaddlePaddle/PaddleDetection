@@ -1,0 +1,9 @@
+_BASE_: [
+  'yolox_tiny_300e_coco.yml'
+]
+weights: output/yoloxv2_tiny_300e_coco/model_final
+
+CSPDarkNet:
+  arch: "P5" # using the same backbone of YOLOv5 releases v6.0 and later version
+  return_idx: [2, 3, 4]
+  depthwise: False

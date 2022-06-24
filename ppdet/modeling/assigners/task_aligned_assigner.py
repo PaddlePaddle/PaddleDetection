@@ -93,7 +93,7 @@ class TaskAlignedAssigner(nn.Layer):
             return assigned_labels, assigned_bboxes, assigned_scores
 
         # compute iou between gt and pred bbox, [B, n, L]
-        ious = iou_similarity(gt_bboxes, pred_bboxes)
+        ious = batch_iou_similarity(gt_bboxes, pred_bboxes)
         # gather pred bboxes class score
         pred_scores = pred_scores.transpose([0, 2, 1])
         batch_ind = paddle.arange(

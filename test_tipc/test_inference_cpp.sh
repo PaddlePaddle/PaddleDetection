@@ -2,6 +2,7 @@
 source test_tipc/utils_func.sh
 
 FILENAME=$1
+MODE="cpp_infer"
 
 # parser model_name
 dataline=$(cat ${FILENAME})
@@ -54,7 +55,7 @@ cpp_benchmark_value=$(func_parser_value "${lines[27]}")
 cpp_infer_key1=$(func_parser_key "${lines[28]}")
 cpp_infer_value1=$(func_parser_value "${lines[28]}")
 
-LOG_PATH="./test_tipc/output"
+LOG_PATH="./test_tipc/output/${model_name}/${MODE}"
 mkdir -p ${LOG_PATH}
 status_log="${LOG_PATH}/results_cpp.log"
 
@@ -74,7 +75,7 @@ function func_cpp_inference(){
                 fi
                 for threads in ${cpp_cpu_threads_list[*]}; do
                     for batch_size in ${cpp_batch_size_list[*]}; do
-                        _save_log_path="${_log_path}/cpp_infer_cpu_usemkldnn_${use_mkldnn}_threads_${threads}_precision_fluid_batchsize_${batch_size}.log"
+                        _save_log_path="${_log_path}/cpp_infer_cpu_usemkldnn_${use_mkldnn}_threads_${threads}_mode_paddle_batchsize_${batch_size}.log"
                         set_infer_data=$(func_set_params "${cpp_image_dir_key}" "${_img_dir}")
                         set_benchmark=$(func_set_params "${cpp_benchmark_key}" "${cpp_benchmark_value}")
                         set_batchsize=$(func_set_params "${cpp_batch_size_key}" "${batch_size}")
@@ -85,13 +86,13 @@ function func_cpp_inference(){
                         eval $command
                         last_status=${PIPESTATUS[0]}
                         eval "cat ${_save_log_path}"
-                        status_check $last_status "${command}" "${status_log}"
+                        status_check $last_status "${command}" "${status_log}" "${model_name}"
                     done
                 done
             done
         elif [ ${use_gpu} = "True" ] || [ ${use_gpu} = "gpu" ]; then
             for precision in ${cpp_precision_list[*]}; do
-                if [[ ${precision} != "fluid" ]]; then
+                if [[ ${precision} != "paddle" ]]; then
                     if [[ ${_flag_quant} = "False" ]] && [[ ${precision} = "trt_int8" ]]; then
                         continue
                     fi
@@ -100,7 +101,7 @@ function func_cpp_inference(){
                     fi
                 fi
                 for batch_size in ${cpp_batch_size_list[*]}; do
-                    _save_log_path="${_log_path}/cpp_infer_gpu_precision_${precision}_batchsize_${batch_size}.log"
+                    _save_log_path="${_log_path}/cpp_infer_gpu_mode_${precision}_batchsize_${batch_size}.log"
                     set_infer_data=$(func_set_params "${cpp_image_dir_key}" "${_img_dir}")
                     set_benchmark=$(func_set_params "${cpp_benchmark_key}" "${cpp_benchmark_value}")
                     set_batchsize=$(func_set_params "${cpp_batch_size_key}" "${batch_size}")
@@ -111,7 +112,7 @@ function func_cpp_inference(){
                     eval $command
                     last_status=${PIPESTATUS[0]}
                     eval "cat ${_save_log_path}"
-                    status_check $last_status "${command}" "${status_log}"
+                    status_check $last_status "${command}" "${status_log}" "${model_name}"
                 done
             done
         else
@@ -129,11 +130,21 @@ else
 fi
 
 # build program
-# TODO: set PADDLE_DIR and TENSORRT_ROOT
-if [ -z $PADDLE_DIR ]; then
-    wget -nc https://paddle-inference-lib.bj.bcebos.com/2.2.2/cxx_c/Linux/GPU/x86-64_gcc8.2_avx_mkl_cuda11.1_cudnn8.1.1_trt7.2.3.4/paddle_inference.tgz --no-check-certificate
-    tar zxf paddle_inference.tgz
-    PADDLE_DIR=$(pwd)/paddle_inference
+# TODO: set PADDLE_INFER_DIR and TENSORRT_ROOT
+if [ -z $PADDLE_INFER_DIR ]; then
+    Paddle_Infer_Link=$2
+    if [ "" = "$Paddle_Infer_Link" ];then
+        wget -nc https://paddle-inference-lib.bj.bcebos.com/2.2.2/cxx_c/Linux/GPU/x86-64_gcc8.2_avx_mkl_cuda10.1_cudnn7.6.5_trt6.0.1.5/paddle_inference.tgz --no-check-certificate
+        tar zxf paddle_inference.tgz
+        PADDLE_INFER_DIR=$(pwd)/paddle_inference
+    else
+        wget -nc $Paddle_Infer_Link --no-check-certificate
+        tar zxf paddle_inference.tgz
+        PADDLE_INFER_DIR=$(pwd)/paddle_inference
+        if [ ! -d "paddle_inference" ]; then
+          PADDLE_INFER_DIR=$(pwd)/paddle_inference_install_dir
+        fi
+    fi
 fi
 if [ -z $TENSORRT_ROOT ]; then
     TENSORRT_ROOT=/usr/local/TensorRT6-cuda10.1-cudnn7
@@ -148,10 +159,10 @@ mkdir -p build
 cd ./build
 cmake .. \
     -DWITH_GPU=ON \
-    -DWITH_MKL=OFF \
+    -DWITH_MKL=ON \
     -DWITH_TENSORRT=OFF \
     -DPADDLE_LIB_NAME=libpaddle_inference \
-    -DPADDLE_DIR=${PADDLE_DIR} \
+    -DPADDLE_DIR=${PADDLE_INFER_DIR} \
     -DCUDA_LIB=${CUDA_LIB} \
     -DCUDNN_LIB=${CUDNN_LIB} \
     -DTENSORRT_LIB_DIR=${TENSORRT_LIB_DIR} \
@@ -160,45 +171,45 @@ cmake .. \
     -DWITH_KEYPOINT=ON \
     -DWITH_MOT=ON
 
-make -j4
+make -j8
 cd ../../../
 echo "################### build finished! ###################"
 
 
 # set cuda device
-GPUID=$2
+GPUID=$3
 if [ ${#GPUID} -le 0 ];then
     env=" "
 else
     env="export CUDA_VISIBLE_DEVICES=${GPUID}"
 fi
 eval $env
+
 # run cpp infer
 Count=0
 IFS="|"
 infer_quant_flag=(${cpp_infer_is_quant_list})
 for infer_mode in ${cpp_infer_mode_list[*]}; do
-
-    # run export
-    case ${infer_mode} in
-        norm) run_export=${norm_export} ;;
-        quant) run_export=${pact_export} ;;
-        fpgm) run_export=${fpgm_export} ;;
-        distill) run_export=${distill_export} ;;
-        kl_quant) run_export=${kl_quant_export} ;;
-        *) echo "Undefined infer_mode!"; exit 1;
-    esac
-    if [ ${run_export} = "null" ]; then
-        continue
+    if [ ${infer_mode} != "null" ]; then
+        # run export
+        case ${infer_mode} in
+            norm) run_export=${norm_export} ;;
+            quant) run_export=${pact_export} ;;
+            fpgm) run_export=${fpgm_export} ;;
+            distill) run_export=${distill_export} ;;
+            kl_quant) run_export=${kl_quant_export} ;;
+            *) echo "Undefined infer_mode!"; exit 1;
+        esac
+        set_export_weight=$(func_set_params "${export_weight_key}" "${export_weight_value}")
+        set_save_export_dir=$(func_set_params "${save_export_key}" "${save_export_value}")
+        set_filename=$(func_set_params "${filename_key}" "${model_name}")
+        export_log_path="${LOG_PATH}/export.log"
+        export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
+        echo  $export_cmd
+        eval "${export_cmd} > ${export_log_path} 2>&1"
+        status_export=$?
+        status_check $status_export "${export_cmd}" "${status_log}" "${model_name}"
     fi
-    set_export_weight=$(func_set_params "${export_weight_key}" "${export_weight_value}")
-    set_save_export_dir=$(func_set_params "${save_export_key}" "${save_export_value}")
-    set_filename=$(func_set_params "${filename_key}" "${model_name}")
-    export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
-    echo  $export_cmd
-    eval $export_cmd
-    status_export=$?
-    status_check $status_export "${export_cmd}" "${status_log}"
 
     #run inference
     save_export_model_dir="${save_export_value}/${model_name}"

@@ -1,0 +1,55 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '../ppyoloe/_base_/optimizer_300e.yml',
+  '../ppyoloe/_base_/ppyoloe_crn.yml',
+  '../ppyoloe/_base_/ppyoloe_reader.yml',
+]
+log_iter: 100
+snapshot_epoch: 4
+weights: output/ppyoloe_crn_l_36e_crowdhuman/model_final
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
+depth_mult: 1.0
+width_mult: 1.0
+
+num_classes: 1
+TrainDataset:
+  !COCODataSet
+    image_dir: ""
+    anno_path: annotations/train.json
+    dataset_dir: dataset/crowdhuman
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: ""
+    anno_path: annotations/val.json
+    dataset_dir: dataset/crowdhuman
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/val.json
+    dataset_dir: dataset/crowdhuman
+
+TrainReader:
+  batch_size: 8
+
+epoch: 36
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+    - !CosineDecay
+      max_epochs: 43
+    - !LinearWarmup
+      start_factor: 0.
+      epochs: 1
+
+PPYOLOEHead:
+  static_assigner_epoch: -1
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.01
+    nms_threshold: 0.6
