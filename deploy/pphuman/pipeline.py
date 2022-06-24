@@ -27,6 +27,7 @@ from collections import Sequence
 from reid import ReID
 from datacollector import DataCollector, Result
 from mtmct import mtmct_process
+from ppvehicle.vehicle_plate import PlateRecognizer
 
 # add deploy path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
@@ -44,7 +45,7 @@ from python.action_utils import KeyPointBuff, ActionVisualHelper
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
 from python.preprocess import decode_image, ShortSizeScale
-from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action
+from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action, visualize_vehicleplate
 
 from pptracking.python.mot_sde_infer import SDE_Detector
 from pptracking.python.mot.visualize import plot_tracking_dict
@@ -81,74 +82,33 @@ class Pipeline(object):
             counting in MOT.
     """
 
-    def __init__(self,
-                 cfg,
-                 image_file=None,
-                 image_dir=None,
-                 video_file=None,
-                 video_dir=None,
-                 camera_id=-1,
-                 device='CPU',
-                 run_mode='paddle',
-                 trt_min_shape=1,
-                 trt_max_shape=1280,
-                 trt_opt_shape=640,
-                 trt_calib_mode=False,
-                 cpu_threads=1,
-                 enable_mkldnn=False,
-                 output_dir='output',
-                 draw_center_traj=False,
-                 secs_interval=10,
-                 do_entrance_counting=False):
+    def __init__(self, args, cfg):
         self.multi_camera = False
         reid_cfg = cfg.get('REID', False)
         self.enable_mtmct = reid_cfg['enable'] if reid_cfg else False
         self.is_video = False
-        self.output_dir = output_dir
+        self.output_dir = args.output_dir
         self.vis_result = cfg['visual']
-        self.input = self._parse_input(image_file, image_dir, video_file,
-                                       video_dir, camera_id)
+        self.input = self._parse_input(args.image_file, args.image_dir,
+                                       args.video_file, args.video_dir,
+                                       args.camera_id)
         if self.multi_camera:
             self.predictor = []
             for name in self.input:
                 predictor_item = PipePredictor(
-                    cfg,
-                    is_video=True,
-                    multi_camera=True,
-                    device=device,
-                    run_mode=run_mode,
-                    trt_min_shape=trt_min_shape,
-                    trt_max_shape=trt_max_shape,
-                    trt_opt_shape=trt_opt_shape,
-                    cpu_threads=cpu_threads,
-                    enable_mkldnn=enable_mkldnn,
-                    output_dir=output_dir)
+                    args, cfg, is_video=True, multi_camera=True)
                 predictor_item.set_file_name(name)
                 self.predictor.append(predictor_item)
 
         else:
-            self.predictor = PipePredictor(
-                cfg,
-                self.is_video,
-                device=device,
-                run_mode=run_mode,
-                trt_min_shape=trt_min_shape,
-                trt_max_shape=trt_max_shape,
-                trt_opt_shape=trt_opt_shape,
-                trt_calib_mode=trt_calib_mode,
-                cpu_threads=cpu_threads,
-                enable_mkldnn=enable_mkldnn,
-                output_dir=output_dir,
-                draw_center_traj=draw_center_traj,
-                secs_interval=secs_interval,
-                do_entrance_counting=do_entrance_counting)
+            self.predictor = PipePredictor(args, cfg, self.is_video)
             if self.is_video:
-                self.predictor.set_file_name(video_file)
+                self.predictor.set_file_name(args.video_file)
 
-        self.output_dir = output_dir
-        self.draw_center_traj = draw_center_traj
-        self.secs_interval = secs_interval
-        self.do_entrance_counting = do_entrance_counting
+        self.output_dir = args.output_dir
+        self.draw_center_traj = args.draw_center_traj
+        self.secs_interval = args.secs_interval
+        self.do_entrance_counting = args.do_entrance_counting
 
     def _parse_input(self, image_file, image_dir, video_file, video_dir,
                      camera_id):
@@ -247,25 +207,31 @@ class PipePredictor(object):
             counting in MOT.
     """
 
-    def __init__(self,
-                 cfg,
-                 is_video=True,
-                 multi_camera=False,
-                 device='CPU',
-                 run_mode='paddle',
-                 trt_min_shape=1,
-                 trt_max_shape=1280,
-                 trt_opt_shape=640,
-                 trt_calib_mode=False,
-                 cpu_threads=1,
-                 enable_mkldnn=False,
-                 output_dir='output',
-                 draw_center_traj=False,
-                 secs_interval=10,
-                 do_entrance_counting=False):
+    def __init__(self, args, cfg, is_video=True, multi_camera=False):
+        device = args.device
+        run_mode = args.run_mode
+        trt_min_shape = args.trt_min_shape
+        trt_max_shape = args.trt_max_shape
+        trt_opt_shape = args.trt_opt_shape
+        trt_calib_mode = args.trt_calib_mode
+        cpu_threads = args.cpu_threads
+        enable_mkldnn = args.enable_mkldnn
+        output_dir = args.output_dir
+        draw_center_traj = args.draw_center_traj
+        secs_interval = args.secs_interval
+        do_entrance_counting = args.do_entrance_counting
 
+        # general module for pphuman and ppvehicle
+        self.with_mot = cfg.get('MOT', False)['enable'] if cfg.get(
+            'MOT', False) else False
         self.with_attr = cfg.get('ATTR', False)['enable'] if cfg.get(
             'ATTR', False) else False
+        if self.with_mot:
+            print('Multi-Object Tracking enabled')
+        if self.with_attr:
+            print('Attribute Recognition enabled')
+
+        # only for pphuman
         self.with_skeleton_action = cfg.get(
             'SKELETON_ACTION', False)['enable'] if cfg.get('SKELETON_ACTION',
                                                            False) else False
@@ -281,8 +247,6 @@ class PipePredictor(object):
         self.with_mtmct = cfg.get('REID', False)['enable'] if cfg.get(
             'REID', False) else False
 
-        if self.with_attr:
-            print('Attribute Recognition enabled')
         if self.with_skeleton_action:
             print('SkeletonAction Recognition enabled')
         if self.with_video_action:
@@ -293,6 +257,13 @@ class PipePredictor(object):
             print('IDBASED Classification Action Recognition enabled')
         if self.with_mtmct:
             print("MTMCT enabled")
+
+        # only for ppvehicle
+        self.with_vehicleplate = cfg.get(
+            'VEHICLE_PLATE', False)['enable'] if cfg.get('VEHICLE_PLATE',
+                                                         False) else False
+        if self.with_vehicleplate:
+            print('Vehicle Plate Recognition enabled')
 
         self.modebase = {
             "framebased": False,
@@ -335,27 +306,6 @@ class PipePredictor(object):
                     enable_mkldnn)
 
         else:
-            mot_cfg = self.cfg['MOT']
-            model_dir = mot_cfg['model_dir']
-            tracker_config = mot_cfg['tracker_config']
-            batch_size = mot_cfg['batch_size']
-            basemode = mot_cfg['basemode']
-            self.modebase[basemode] = True
-            self.mot_predictor = SDE_Detector(
-                model_dir,
-                tracker_config,
-                device,
-                run_mode,
-                batch_size,
-                trt_min_shape,
-                trt_max_shape,
-                trt_opt_shape,
-                trt_calib_mode,
-                cpu_threads,
-                enable_mkldnn,
-                draw_center_traj=draw_center_traj,
-                secs_interval=secs_interval,
-                do_entrance_counting=do_entrance_counting)
             if self.with_attr:
                 attr_cfg = self.cfg['ATTR']
                 model_dir = attr_cfg['model_dir']
@@ -455,6 +405,37 @@ class PipePredictor(object):
                         use_dark=False)
                     self.kpt_buff = KeyPointBuff(skeleton_action_frames)
 
+            if self.with_vehicleplate:
+                vehicleplate_cfg = self.cfg['VEHICLE_PLATE']
+                self.vehicleplate_detector = PlateRecognizer(args,
+                                                             vehicleplate_cfg)
+                basemode = vehicleplate_cfg['basemode']
+                self.modebase[basemode] = True
+
+            if self.with_mot or self.modebase["idbased"] or self.modebase[
+                    "skeletonbased"]:
+                mot_cfg = self.cfg['MOT']
+                model_dir = mot_cfg['model_dir']
+                tracker_config = mot_cfg['tracker_config']
+                batch_size = mot_cfg['batch_size']
+                basemode = mot_cfg['basemode']
+                self.modebase[basemode] = True
+                self.mot_predictor = SDE_Detector(
+                    model_dir,
+                    tracker_config,
+                    device,
+                    run_mode,
+                    batch_size,
+                    trt_min_shape,
+                    trt_max_shape,
+                    trt_opt_shape,
+                    trt_calib_mode,
+                    cpu_threads,
+                    enable_mkldnn,
+                    draw_center_traj=draw_center_traj,
+                    secs_interval=secs_interval,
+                    do_entrance_counting=do_entrance_counting)
+
             if self.with_video_action:
                 video_action_cfg = self.cfg['VIDEO_ACTION']
 
@@ -480,14 +461,14 @@ class PipePredictor(object):
                     cpu_threads=cpu_threads,
                     enable_mkldnn=enable_mkldnn)
 
-        if self.with_mtmct:
-            reid_cfg = self.cfg['REID']
-            model_dir = reid_cfg['model_dir']
-            batch_size = reid_cfg['batch_size']
-            self.reid_predictor = ReID(model_dir, device, run_mode, batch_size,
-                                       trt_min_shape, trt_max_shape,
-                                       trt_opt_shape, trt_calib_mode,
-                                       cpu_threads, enable_mkldnn)
+            if self.with_mtmct:
+                reid_cfg = self.cfg['REID']
+                model_dir = reid_cfg['model_dir']
+                batch_size = reid_cfg['batch_size']
+                self.reid_predictor = ReID(
+                    model_dir, device, run_mode, batch_size, trt_min_shape,
+                    trt_max_shape, trt_opt_shape, trt_calib_mode, cpu_threads,
+                    enable_mkldnn)
 
     def set_file_name(self, path):
         if path is not None:
@@ -637,17 +618,19 @@ class PipePredictor(object):
                                                   center_traj)  # visualize
                         writer.write(im)
                         if self.file_name is None:  # use camera_id
-                            cv2.imshow('PPHuman', im)
+                            cv2.imshow('PPHuman&&PPVehicle', im)
                             if cv2.waitKey(1) & 0xFF == ord('q'):
                                 break
-
                     continue
 
                 self.pipeline_res.update(mot_res, 'mot')
-
-                #todo: move this code to each class's predeal function
                 crop_input, new_bboxes, ori_bboxes = crop_image_with_mot(
                     frame, mot_res)
+
+                if self.with_vehicleplate:
+                    platelicense = self.vehicleplate_detector.get_platelicense(
+                        crop_input)
+                    self.pipeline_res.update(platelicense, 'vehicleplate')
 
                 if self.with_attr:
                     if frame_id > self.warmup_frame:
@@ -844,6 +827,13 @@ class PipePredictor(object):
             image = visualize_attr(image, attr_res, boxes)
             image = np.array(image)
 
+        vehicleplate_res = result.get('vehicleplate')
+        if vehicleplate_res:
+            boxes = mot_res['boxes'][:, 1:]
+            image = visualize_vehicleplate(image, vehicleplate_res['plate'],
+                                           boxes)
+            image = np.array(image)
+
         kpt_res = result.get('kpt')
         if kpt_res is not None:
             image = visualize_pose(
@@ -924,14 +914,7 @@ def main():
     cfg = merge_cfg(FLAGS)
     print_arguments(cfg)
 
-    pipeline = Pipeline(
-        cfg, FLAGS.image_file, FLAGS.image_dir, FLAGS.video_file,
-        FLAGS.video_dir, FLAGS.camera_id, FLAGS.device, FLAGS.run_mode,
-        FLAGS.trt_min_shape, FLAGS.trt_max_shape, FLAGS.trt_opt_shape,
-        FLAGS.trt_calib_mode, FLAGS.cpu_threads, FLAGS.enable_mkldnn,
-        FLAGS.output_dir, FLAGS.draw_center_traj, FLAGS.secs_interval,
-        FLAGS.do_entrance_counting)
-
+    pipeline = Pipeline(FLAGS, cfg)
     pipeline.run()
 
 
