@@ -12,19 +12,19 @@
 
 | 网络网络        | 输入尺寸   | 图片数/GPU | 学习率策略 | 模型推理耗时(ms) | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params(M) | FLOPs(G) |    下载链接       | 配置文件 |
 | :------------- | :------- | :-------: | :------: | :------------: | :---------------------: | :----------------: |:---------: | :------: |:---------------: |:-----: |
-| YOLOX-nano     |  416     |    8      |   300e    |     2.3    |  26.1  |  42.0 |  26.1  |  42.0 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_nano_300e_coco.pdparams) | [配置文件](./yolox_nano_300e_coco.yml) |
-| YOLOX-tiny     |  416     |    8      |   300e    |     2.8    |  32.9  |  50.4 |  26.1  |  42.0 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_tiny_300e_coco.pdparams) | [配置文件](./yolox_tiny_300e_coco.yml) |
-| YOLOX-s        |  640     |    8      |   300e    |     3.0    |  40.4  |  59.6 |  26.1  |  42.0 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_s_300e_coco.pdparams) | [配置文件](./yolox_s_300e_coco.yml) |
-| YOLOX-m        |  640     |    8      |   300e    |     5.8    |  46.9  |  65.7 |  26.1  |  42.0 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_m_300e_coco.pdparams) | [配置文件](./yolox_m_300e_coco.yml) |
-| YOLOX-l        |  640     |    8      |   300e    |     9.3    |  50.1  |  68.8 |  26.1  |  42.0 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_l_300e_coco.pdparams) | [配置文件](./yolox_l_300e_coco.yml) |
-| YOLOX-x        |  640     |    8      |   300e    |     16.6   |  51.8  |  70.6 |  26.1  |  42.0 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_x_300e_coco.pdparams) | [配置文件](./yolox_x_300e_coco.yml) |
+| YOLOX-nano     |  416     |    8      |   300e    |     2.3    |  26.1  |  42.0 |  -  |  1.08 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_nano_300e_coco.pdparams) | [配置文件](./yolox_nano_300e_coco.yml) |
+| YOLOX-tiny     |  416     |    8      |   300e    |     2.8    |  32.9  |  50.4 |  -  |  6.45 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_tiny_300e_coco.pdparams) | [配置文件](./yolox_tiny_300e_coco.yml) |
+| YOLOX-s        |  640     |    8      |   300e    |     3.0    |  40.4  |  59.6 |  -  |  26.8 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_s_300e_coco.pdparams) | [配置文件](./yolox_s_300e_coco.yml) |
+| YOLOX-m        |  640     |    8      |   300e    |     5.8    |  46.9  |  65.7 |  -  |  73.8 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_m_300e_coco.pdparams) | [配置文件](./yolox_m_300e_coco.yml) |
+| YOLOX-l        |  640     |    8      |   300e    |     9.3    |  50.1  |  68.8 |  -  |  155.6 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_l_300e_coco.pdparams) | [配置文件](./yolox_l_300e_coco.yml) |
+| YOLOX-x        |  640     |    8      |   300e    |     16.6   |  51.8  |  70.6 |  -  |  281.9 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_x_300e_coco.pdparams) | [配置文件](./yolox_x_300e_coco.yml) |
 
 
 | 网络网络        | 输入尺寸   | 图片数/GPU | 学习率策略 | 模型推理耗时(ms) | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params(M) | FLOPs(G) |    下载链接       | 配置文件 |
 | :------------- | :------- | :-------: | :------: | :------------: | :---------------------: | :----------------: |:---------: | :------: |:---------------: |:-----: |
-| YOLOXv2-tiny    |  416     |    8      |   300e    |     1.9    |  32.4  |  50.2 |  26.1  |  42.0 | [下载链接](https://paddledet.bj.bcebos.com/models/yoloxv2_tiny_300e_coco.pdparams) | [配置文件](./yoloxv2_tiny_300e_coco.yml) |
-| YOLOX-crn-s     |  640     |    8      |   300e    |     1.9    |  40.4  |  59.6 |  26.1  |  42.0 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_crn_s_300e_coco.pdparams) | [配置文件](./yolox_crn_s_300e_coco.yml) |
-| YOLOX-ConvNeXt-s|  640     |    8      |   36e     |     1.9    |  44.6  |  65.3 |  26.1  |  42.0 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_convnext_s_36e_coco.pdparams) | [配置文件](./yolox_convnext_s_36e_coco.yml) |
+| YOLOXv2-tiny    |  416     |    8      |   300e    |     1.9    |  32.4  |  50.2 |  -  |  - | [下载链接](https://paddledet.bj.bcebos.com/models/yoloxv2_tiny_300e_coco.pdparams) | [配置文件](./yoloxv2_tiny_300e_coco.yml) |
+| YOLOX-crn-s     |  640     |    8      |   300e    |     -    |  40.4  |  59.6 |  -  |  - | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_crn_s_300e_coco.pdparams) | [配置文件](./yolox_crn_s_300e_coco.yml) |
+| YOLOX-ConvNeXt-s|  640     |    8      |   36e     |     -    |  44.6  |  65.3 |  -  |  - | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_convnext_s_36e_coco.pdparams) | [配置文件](./yolox_convnext_s_36e_coco.yml) |
 
 
 **注意:**
