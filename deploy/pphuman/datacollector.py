@@ -25,7 +25,10 @@ class Result(object):
             'kpt': dict(),
             'video_action': dict(),
             'skeleton_action': dict(),
-            'reid': dict()
+            'reid': dict(),
+            'det_action': dict(),
+            'cls_action': dict(),
+            'vehicleplate': dict()
         }
 
     def update(self, res, name):
@@ -68,7 +71,8 @@ class DataCollector(object):
             "kpts": [],
             "features": [],
             "qualities": [],
-            "skeleton_action": []
+            "skeleton_action": [],
+            "vehicleplate": []
         }
         self.collector = {}
 
@@ -78,6 +82,7 @@ class DataCollector(object):
         kpt_res = Result.get('kpt')
         skeleton_action_res = Result.get('skeleton_action')
         reid_res = Result.get('reid')
+        vehicleplate_res = Result.get('vehicleplate')
 
         rects = []
         if reid_res is not None:
@@ -107,6 +112,9 @@ class DataCollector(object):
                     idx])
                 self.collector[ids]["qualities"].append(reid_res['qualities'][
                     idx])
+            if vehicleplate_res:
+                self.collector[ids]["vehicleplate"].append(vehicleplate_res[
+                    'plate'][idx])
 
     def get_res(self):
         return self.collector

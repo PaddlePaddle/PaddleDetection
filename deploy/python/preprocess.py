@@ -40,6 +40,85 @@ def decode_image(im_file, im_info):
     return im, im_info
 
 
+class Resize_Mult32(object):
+    """resize image by target_size and max_size
+    Args:
+        target_size (int): the target size of image
+        keep_ratio (bool): whether keep_ratio or not, default true
+        interp (int): method of resize
+    """
+
+    def __init__(self, limit_side_len, limit_type, interp=cv2.INTER_LINEAR):
+        self.limit_side_len = limit_side_len
+        self.limit_type = limit_type
+        self.interp = interp
+
+    def __call__(self, im, im_info):
+        """
+        Args:
+            im (np.ndarray): image (np.ndarray)
+            im_info (dict): info of image
+        Returns:
+            im (np.ndarray):  processed image (np.ndarray)
+            im_info (dict): info of processed image
+        """
+        im_channel = im.shape[2]
+        im_scale_y, im_scale_x = self.generate_scale(im)
+        im = cv2.resize(
+            im,
+            None,
+            None,
+            fx=im_scale_x,
+            fy=im_scale_y,
+            interpolation=self.interp)
+        im_info['im_shape'] = np.array(im.shape[:2]).astype('float32')
+        im_info['scale_factor'] = np.array(
+            [im_scale_y, im_scale_x]).astype('float32')
+        return im, im_info
+
+    def generate_scale(self, img):
+        """
+        Args:
+            img (np.ndarray): image (np.ndarray)
+        Returns:
+            im_scale_x: the resize ratio of X
+            im_scale_y: the resize ratio of Y
+        """
+        limit_side_len = self.limit_side_len
+        h, w, c = img.shape
+
+        # limit the max side
+        if self.limit_type == 'max':
+            if max(h, w) > limit_side_len:
+                if h > w:
+                    ratio = float(limit_side_len) / h
+                else:
+                    ratio = float(limit_side_len) / w
+            else:
+                ratio = 1.
+        elif self.limit_type == 'min':
+            if min(h, w) < limit_side_len:
+                if h < w:
+                    ratio = float(limit_side_len) / h
+                else:
+                    ratio = float(limit_side_len) / w
+            else:
+                ratio = 1.
+        elif self.limit_type == 'resize_long':
+            ratio = float(limit_side_len) / max(h, w)
+        else:
+            raise Exception('not support limit type, image ')
+        resize_h = int(h * ratio)
+        resize_w = int(w * ratio)
+
+        resize_h = max(int(round(resize_h / 32) * 32), 32)
+        resize_w = max(int(round(resize_w / 32) * 32), 32)
+
+        im_scale_y = resize_h / float(h)
+        im_scale_x = resize_w / float(w)
+        return im_scale_y, im_scale_x
+
+
 class Resize(object):
     """resize image by target_size and max_size
     Args:

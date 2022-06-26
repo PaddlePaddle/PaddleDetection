@@ -14,7 +14,7 @@
 |    模型      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
 | :--------------| :------- | :----: | :----: | :---: | :----: | :---: | :------: | :----: |:----: |
 | FairMOT DLA-34  | 1088x608 |  64.7 |  69.0  |   8533  |  148817  |  234970  |     -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_headtracking21.yml) |
-| ByteTrack-x     | 1440x800 |  62.2 |  59.9  |  5736   |  222583  |  191737 |    -     | [下载链接](https://paddledet.bj.bcebos.com/models/mot/bytetrack_yolox_ht21.pdparams) | [配置文件](../bytetrack/bytetrack_yolox_ht21.yml) |
+| ByteTrack-x     | 1440x800 |  64.1 |  63.4  |  4191   |  185162  |  210240 |    -     | [下载链接](https://paddledet.bj.bcebos.com/models/mot/bytetrack_yolox_ht21.pdparams) | [配置文件](../bytetrack/bytetrack_yolox_ht21.yml) |
 
 ### FairMOT在HT-21 Test Set上结果
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |

@@ -50,8 +50,8 @@ YOLOXHead:
     use_vfl: False
   nms:
     name: MultiClassNMS
-    nms_top_k: 1000
-    keep_top_k: 100
+    nms_top_k: 30000
+    keep_top_k: 1000
     score_threshold: 0.01
     nms_threshold: 0.7
     # For speed while keep high mAP, you can modify 'nms_top_k' to 1000 and 'keep_top_k' to 100, the mAP will drop about 0.1%.
@@ -62,7 +62,7 @@ YOLOXHead:
 JDETracker:
   use_byte: True
   match_thres: 0.9
-  conf_thres: 0.6
-  low_conf_thres: 0.2
+  conf_thres: 0.7
+  low_conf_thres: 0.1
   min_box_area: 0
   vertical_ratio: 0 # 1.6 for pedestrian

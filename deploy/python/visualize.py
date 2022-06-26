@@ -378,13 +378,19 @@ def visualize_action(im,
     text_thickness = 2
 
     if action_visual_collector:
-        id_detected = action_visual_collector.get_visualize_ids()
+        id_action_dict = {}
+        for collector, action_type in zip(action_visual_collector, action_text):
+            id_detected = collector.get_visualize_ids()
+            for pid in id_detected:
+                id_action_dict[pid] = id_action_dict.get(pid, [])
+                id_action_dict[pid].append(action_type)
         for mot_box in mot_boxes:
             # mot_box is a format with [mot_id, class, score, xmin, ymin, w, h] 
-            if mot_box[0] in id_detected:
+            if mot_box[0] in id_action_dict:
                 text_position = (int(mot_box[3] + mot_box[5] * 0.75),
                                  int(mot_box[4] - 10))
-                cv2.putText(im, action_text, text_position,
+                display_text = ', '.join(id_action_dict[mot_box[0]])
+                cv2.putText(im, display_text, text_position,
                             cv2.FONT_HERSHEY_PLAIN, text_scale, (0, 0, 255), 2)
 
     if video_action_score:
@@ -396,4 +402,39 @@ def visualize_action(im,
             text_scale, (0, 0, 255),
             thickness=text_thickness)
 
+    return im
+
+
+def visualize_vehicleplate(im, results, boxes=None):
+    if isinstance(im, str):
+        im = Image.open(im)
+        im = np.ascontiguousarray(np.copy(im))
+        im = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
+    else:
+        im = np.ascontiguousarray(np.copy(im))
+
+    im_h, im_w = im.shape[:2]
+    text_scale = max(0.5, im.shape[0] / 3000.)
+    text_thickness = 1
+
+    line_inter = im.shape[0] / 40.
+    for i, res in enumerate(results):
+        if boxes is None:
+            text_w = 3
+            text_h = 1
+        else:
+            box = boxes[i]
+            text = res
+            if text == "":
+                continue
+            text_w = int(box[2])
+            text_h = int(box[5])
+            text_loc = (text_w, text_h)
+            cv2.putText(
+                im,
+                text,
+                text_loc,
+                cv2.FONT_ITALIC,
+                text_scale, (0, 255, 255),
+                thickness=text_thickness)
     return im

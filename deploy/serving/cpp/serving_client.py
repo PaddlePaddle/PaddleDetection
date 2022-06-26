@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import base64
-import glob
 import os
+import glob
+import base64
+import argparse
 from paddle_serving_client import Client
 from paddle_serving_client.proto import general_model_config_pb2 as m_config
 import google.protobuf.text_format
-
-import argparse
 
 parser = argparse.ArgumentParser(description="args for paddleserving")
 parser.add_argument(
     "--serving_client", type=str, help="the directory of serving_client")
 parser.add_argument("--image_dir", type=str)
 parser.add_argument("--image_file", type=str)
+parser.add_argument("--http_port", type=int, default=9997)
 parser.add_argument(
     "--threshold", type=float, default=0.5, help="Threshold of score.")
 args = parser.parse_args()
@@ -62,14 +62,21 @@ def get_test_images(infer_dir, infer_img):
     return images
 
 
-def postprocess(fetch_dict, draw_threshold=0.5):
-    bboxes = fetch_dict["multiclass_nms3_0.tmp_0"]
-    bboxes_num = fetch_dict["multiclass_nms3_0.tmp_2"]
-    for bbox in bboxes:
-        if bbox[0] > -1 and bbox[1] > draw_threshold:
-            print(f"{int(bbox[0])} {bbox[1]} "
-                  f"{bbox[2]} {bbox[3]} {bbox[4]} {bbox[5]}")
-    return fetch_dict
+def postprocess(fetch_dict, fetch_vars, draw_threshold=0.5):
+    result = []
+    if "conv2d_441.tmp_1" in fetch_dict:
+        heatmap = fetch_dict["conv2d_441.tmp_1"]
+        print(heatmap)
+        result.append(heatmap)
+    else:
+        bboxes = fetch_dict[fetch_vars[0]]
+        for bbox in bboxes:
+            if bbox[0] > -1 and bbox[1] > draw_threshold:
+                print(f"{int(bbox[0])} {bbox[1]} "
+                      f"{bbox[2]} {bbox[3]} {bbox[4]} {bbox[5]}")
+                result.append(f"{int(bbox[0])} {bbox[1]} "
+                              f"{bbox[2]} {bbox[3]} {bbox[4]} {bbox[5]}")
+    return result
 
 
 def get_model_vars(client_config_dir):
@@ -99,7 +106,7 @@ def get_model_vars(client_config_dir):
 
 
 if __name__ == '__main__':
-    url = "127.0.0.1:9997"
+    url = f"127.0.0.1:{args.http_port}"
     logid = 10000
     img_list = get_test_images(args.image_dir, args.image_file)
     feed_vars, fetch_vars = get_model_vars(args.serving_client)
@@ -115,4 +122,4 @@ if __name__ == '__main__':
         image = base64.b64encode(image_data).decode('utf8')
         fetch_dict = client.predict(
             feed={feed_vars[0]: image}, fetch=fetch_vars)
-        result = postprocess(fetch_dict, args.threshold)
+        result = postprocess(fetch_dict, fetch_vars, args.threshold)
