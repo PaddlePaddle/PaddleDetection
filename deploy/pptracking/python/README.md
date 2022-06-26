@@ -137,6 +137,7 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/pp
 ```
 **注意:**
  - 运行前需要确认`tracker_config.yml`的跟踪器类型为`type: JDETracker`。
+ - 可切换`tracker_config.yml`的跟踪器类型为`type: OCSORTTracker`运行OC_SORT模型。
  - ByteTrack模型是加载导出的检测器和单独配置的`--tracker_config`文件运行的，为了实时跟踪所以不需要reid模型，`--reid_model_dir`表示reid导出模型的路径，默认为空，加不加具体视效果而定；
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_images`表示保存跟踪结果可视化图片。
  - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。

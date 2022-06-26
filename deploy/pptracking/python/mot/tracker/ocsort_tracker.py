@@ -14,7 +14,6 @@
 
 import numpy as np
 from ..matching.ocsort_matching import *
-from ppdet.core.workspace import register, serializable
 
 ASSO_FUNCS = {
     "iou": iou_batch,
@@ -183,8 +182,6 @@ class KalmanBoxTracker(object):
         return convert_x_to_bbox(self.kf.x)
 
 
-@register
-@serializable
 class OCSORTTracker(object):
     def __init__(self,
                  det_thresh=0.6,

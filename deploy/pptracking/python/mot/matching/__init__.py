@@ -14,6 +14,8 @@
 
 from . import jde_matching
 from . import deepsort_matching
+from . import ocsort_matching
 
 from .jde_matching import *
 from .deepsort_matching import *
+from .ocsort_matching import *

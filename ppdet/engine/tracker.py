@@ -370,7 +370,7 @@ class Tracker(object):
                 save_vis_results(data, frame_id, online_ids, online_tlwhs,
                                  online_scores, timer.average_time, show_image,
                                  save_dir, self.cfg.num_classes)
-            else:
+            elif isinstance(tracker, OCSORTTracker):
                 # OC_SORT Tracker
                 online_targets = tracker.update(pred_dets_old, pred_embs)
                 online_tlwhs = []
@@ -384,12 +384,15 @@ class Tracker(object):
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
                         online_scores.append(tscore)
+                timer.toc()
                 # save results
                 results[0].append(
                     (frame_id + 1, online_tlwhs, online_scores, online_ids))
                 save_vis_results(data, frame_id, online_ids, online_tlwhs,
                                  online_scores, timer.average_time, show_image,
                                  save_dir, self.cfg.num_classes)
+            else:
+                raise ValueError(tracker)
             frame_id += 1
 
         return results, frame_id, timer.average_time, timer.calls
