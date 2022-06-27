@@ -27,7 +27,7 @@ tools/train.py -c configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml \
 --eval &>logs.txt 2>&1 &
 ```
 
-**注：**
+**Note:**
 * The ip information of different machines needs to be separated by commas, which can be viewed through `ifconfig` or `ipconfig`.
 * Password-free settings are required between different machines, and they can be pinged directly, otherwise the communication cannot be completed.
 * The code, data, and running commands or scripts between different machines need to be consistent, and the set training commands or scripts need to be run on all machines. The first device of the first machine in the final `ip_list` is trainer0, and so on.
