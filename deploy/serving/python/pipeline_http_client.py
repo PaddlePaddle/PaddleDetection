@@ -22,6 +22,8 @@ import argparse
 parser = argparse.ArgumentParser(description="args for paddleserving")
 parser.add_argument("--image_dir", type=str)
 parser.add_argument("--image_file", type=str)
+parser.add_argument("--http_port", type=int, default=18093)
+parser.add_argument("--service_name", type=str, default="ppdet")
 args = parser.parse_args()
 
 
@@ -57,7 +59,7 @@ def get_test_images(infer_dir, infer_img):
 
 
 if __name__ == "__main__":
-    url = "http://127.0.0.1:18093/ppdet/prediction"
+    url = f"http://127.0.0.1:{args.http_port}/{args.service_name}/prediction"
     logid = 10000
     img_list = get_test_images(args.image_dir, args.image_file)
 

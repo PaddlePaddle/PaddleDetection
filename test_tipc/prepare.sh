@@ -36,6 +36,10 @@ elif [ ${MODE} = "cpp_infer" ];then
     if [[ ${model_name} =~ "s2anet" ]]; then
         cd ./ppdet/ext_op && eval "${python} setup.py install"
         cd ../../
+    elif [[ ${model_name} =~ "tinypose" ]]; then
+        wget -nc -P ./output_inference/ https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.tar --no-check-certificate
+        cd ./output_inference/ && tar -xvf picodet_s_320_pedestrian.tar
+        cd ../
     fi
     # download mot lite data
     wget -nc -P ./dataset/mot/ https://paddledet.bj.bcebos.com/data/tipc/mot_tipc.tar --no-check-certificate
@@ -72,19 +76,15 @@ elif [ ${MODE} = "benchmark_train" ];then
     ls ./
     cd ../../
 elif [ ${MODE} = "paddle2onnx_infer" ];then
-    # set paddle2onnx_infer enve
-    ${python} -m pip install install paddle2onnx
-    ${python} -m pip install onnxruntime==1.10.0
+    # install paddle2onnx
+    ${python} -m pip install paddle2onnx
+    ${python} -m pip install onnx onnxruntime
 elif [ ${MODE} = "serving_infer" ];then
-    git clone https://github.com/PaddlePaddle/Serving
-    bash Serving/tools/paddle_env_install.sh
-    cd Serving
-    pip install -r python/requirements.txt
-    cd ..
-    pip install paddle-serving-client==0.8.3 -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install paddle-serving-app==0.8.3 -i https://pypi.tuna.tsinghua.edu.cn/simple
-    pip install paddle-serving-server-gpu==0.8.3.post101 -i https://pypi.tuna.tsinghua.edu.cn/simple
-    python -m pip install paddlepaddle-gpu==2.2.2.post101 -f https://www.paddlepaddle.org.cn/whl/linux/mkl/avx/stable.html
+    unset https_proxy http_proxy
+    # download coco lite data
+    wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/tipc/coco_tipc.tar --no-check-certificate
+    cd ./dataset/coco/ && tar -xvf coco_tipc.tar && mv -n coco_tipc/* .
+    rm -rf coco_tipc/ && cd ../../
 else
     # download coco lite data
     wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/tipc/coco_tipc.tar --no-check-certificate

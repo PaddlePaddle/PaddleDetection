@@ -6,9 +6,10 @@
 
 | 任务                 | 算法 | 精度 | 预测速度(ms) |下载链接                                                                               |
 |:---------------------|:---------:|:------:|:------:| :---------------------------------------------------------------------------------: |
-| 行人检测/跟踪    |  PP-YOLOE | mAP: 56.3 <br> MOTA: 72.0 | 检测: 28ms <br> 跟踪：33.1ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 行人检测/跟踪    |  PP-YOLOE-l | mAP: 56.6 <br> MOTA: 79.5 | 检测: 28.0ms <br> 跟踪：33.1ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 行人检测/跟踪    |  PP-YOLOE-s | mAP: 53.2 <br> MOTA: 69.1 | 检测: 22.1ms <br> 跟踪：27.2ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
 
-1. 检测/跟踪模型精度为MOT17，CrowdHuman，HIEVE和部分业务数据融合训练测试得到
+1. 检测/跟踪模型精度为[COCO-Person](http://cocodataset.org/), [CrowdHuman](http://www.crowdhuman.org/), [HIEVE](http://humaninevents.org/) 和部分业务数据融合训练测试得到，验证集为业务数据
 2. 预测速度为T4 机器上使用TensorRT FP16时的速度, 速度包含数据预处理、模型预测、后处理全流程
 
 ## 使用方法
@@ -53,8 +54,8 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
 
 ## 方案说明
 
-1. 目标检测/多目标跟踪获取图片/视频输入中的行人检测框，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../configs/ppyoloe/README_cn.md)
-2. 多目标跟踪模型方案基于[ByteTrack](https://arxiv.org/pdf/2110.06864.pdf)，采用PP-YOLOE替换原文的YOLOX作为检测器，采用BYTETracker作为跟踪器。
+1. 目标检测/多目标跟踪获取图片/视频输入中的行人检测框，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../configs/ppyoloe)
+2. 多目标跟踪模型方案基于[ByteTrack](https://arxiv.org/pdf/2110.06864.pdf)，采用PP-YOLOE替换原文的YOLOX作为检测器，采用BYTETracker作为跟踪器，详细文档参考[ByteTrack](../../../configs/mot/bytetrack)
 
 ## 参考文献
 ```

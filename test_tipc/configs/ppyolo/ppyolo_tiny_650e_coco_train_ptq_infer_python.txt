@@ -1,0 +1,20 @@
+===========================ptq_params===========================
+model_name:ppyolo_tiny_650e_coco
+python:python3.7
+filename:
+##
+--output_dir:./output_inference
+weights:https://paddledet.bj.bcebos.com/models/ppyolo_tiny_650e_coco.pdparams
+kl_quant_export:tools/post_quant.py -c configs/ppyolo/ppyolo_tiny_650e_coco.yml --slim_config configs/slim/post_quant/yolov3_darknet53_ptq.yml -o
+export_param1:null
+##
+inference:./deploy/python/infer.py
+--device:gpu|cpu
+--enable_mkldnn:False
+--cpu_threads:4
+--batch_size:1|2
+--run_mode:paddle
+--model_dir:
+--image_dir:./dataset/coco/test2017/
+--run_benchmark:False
+null:null

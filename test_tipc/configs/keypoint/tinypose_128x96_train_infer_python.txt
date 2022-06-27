@@ -33,10 +33,10 @@ fpgm_export:tools/export_model.py -c test_tipc/configs/keypoint/tinypose_128x96.
 distill_export:null
 export1:null
 export2:null
-kl_quant_export:tools/post_quant.py -c test_tipc/configs/keypoint/tinypose_128x96.yml --slim_config _template_kl_quant -o
+kl_quant_export:tools/post_quant.py -c test_tipc/configs/keypoint/tinypose_128x96.yml --slim_config configs/slim/post_quant/tinypose_128x96_ptq.yml -o
 ##
-infer_mode:norm
-infer_quant:False
+infer_mode:norm|kl_quant
+infer_quant:False|True
 inference:./deploy/python/keypoint_infer.py
 --device:gpu|cpu
 --enable_mkldnn:False

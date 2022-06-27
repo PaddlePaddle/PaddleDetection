@@ -23,25 +23,9 @@ from preprocess import Compose
 
 # Global dictionary
 SUPPORT_MODELS = {
-    'YOLO',
-    'RCNN',
-    'SSD',
-    'Face',
-    'FCOS',
-    'SOLOv2',
-    'TTFNet',
-    'S2ANet',
-    'JDE',
-    'FairMOT',
-    'DeepSORT',
-    'GFL',
-    'PicoDet',
-    'CenterNet',
-    'TOOD',
-    'RetinaNet',
-    'StrongBaseline',
-    'STGCN',
-    'YOLOX',
+    'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
+    'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD', 'RetinaNet',
+    'StrongBaseline', 'STGCN', 'YOLOX', 'HRNet'
 }
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -142,11 +126,14 @@ def predict_image(infer_config, predictor, img_list):
         outputs = predictor.run(output_names=None, input_feed=inputs)
 
         print("ONNXRuntime predict: ")
-        bboxes = np.array(outputs[0])
-        for bbox in bboxes:
-            if bbox[0] > -1 and bbox[1] > infer_config.draw_threshold:
-                print(f"{int(bbox[0])} {bbox[1]} "
-                      f"{bbox[2]} {bbox[3]} {bbox[4]} {bbox[5]}")
+        if infer_config.arch in ["HRNet"]:
+            print(np.array(outputs[0]))
+        else:
+            bboxes = np.array(outputs[0])
+            for bbox in bboxes:
+                if bbox[0] > -1 and bbox[1] > infer_config.draw_threshold:
+                    print(f"{int(bbox[0])} {bbox[1]} "
+                          f"{bbox[2]} {bbox[3]} {bbox[4]} {bbox[5]}")
 
 
 if __name__ == '__main__':

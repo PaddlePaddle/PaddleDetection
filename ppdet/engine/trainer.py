@@ -687,7 +687,10 @@ class Trainer(object):
         name, ext = os.path.splitext(image_name)
         return os.path.join(output_dir, "{}".format(name)) + ext
 
-    def _get_infer_cfg_and_input_spec(self, save_dir, prune_input=True):
+    def _get_infer_cfg_and_input_spec(self,
+                                      save_dir,
+                                      prune_input=True,
+                                      kl_quant=False):
         image_shape = None
         im_shape = [None, 2]
         scale_factor = [None, 2]
@@ -768,6 +771,19 @@ class Trainer(object):
                 "image": InputSpec(
                     shape=image_shape, name='image')
             }]
+        if kl_quant:
+            if self.cfg.architecture == 'PicoDet' or 'ppyoloe' in self.cfg.weights:
+                pruned_input_spec = [{
+                    "image": InputSpec(
+                        shape=image_shape, name='image'),
+                    "scale_factor": InputSpec(
+                        shape=scale_factor, name='scale_factor')
+                }]
+            elif 'tinypose' in self.cfg.weights:
+                pruned_input_spec = [{
+                    "image": InputSpec(
+                        shape=image_shape, name='image')
+                }]
 
         return static_model, pruned_input_spec
 
@@ -811,9 +827,10 @@ class Trainer(object):
                 break
 
         # TODO: support prune input_spec
+        kl_quant = True if hasattr(self.cfg.slim, 'ptq') else False
         _, pruned_input_spec = self._get_infer_cfg_and_input_spec(
-            save_dir, prune_input=False)
-        print('self.model: ', self.model)
+            save_dir, prune_input=False, kl_quant=kl_quant)
+
         self.cfg.slim.save_quantized_model(
             self.model,
             os.path.join(save_dir, 'model'),

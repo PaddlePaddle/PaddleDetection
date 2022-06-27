@@ -51,6 +51,7 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
 * [快速开始](docs/tutorials/action.md)
   * 摔倒检测
 * [二次开发教程](../../docs/advanced_tutorials/customization/action.md)
+  * 方案选择
   * 数据准备
   * 模型优化
   * 新增行为

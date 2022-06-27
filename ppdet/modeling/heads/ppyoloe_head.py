@@ -366,7 +366,7 @@ class PPYOLOEHead(nn.Layer):
         }
         return out_dict
 
-    def post_process(self, head_outs, img_shape, scale_factor):
+    def post_process(self, head_outs, scale_factor):
         pred_scores, pred_dist, anchor_points, stride_tensor = head_outs
         pred_bboxes = batch_distance2bbox(anchor_points,
                                           pred_dist.transpose([0, 2, 1]))

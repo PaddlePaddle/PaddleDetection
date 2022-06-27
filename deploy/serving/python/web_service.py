@@ -23,31 +23,16 @@ import base64
 from PIL import Image
 import io
 from preprocess_ops import Compose
+from postprocess_ops import HRNetPostProcess
 
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import yaml
 
 # Global dictionary
 SUPPORT_MODELS = {
-    'YOLO',
-    'RCNN',
-    'SSD',
-    'Face',
-    'FCOS',
-    'SOLOv2',
-    'TTFNet',
-    'S2ANet',
-    'JDE',
-    'FairMOT',
-    'DeepSORT',
-    'GFL',
-    'PicoDet',
-    'CenterNet',
-    'TOOD',
-    'RetinaNet',
-    'StrongBaseline',
-    'STGCN',
-    'YOLOX',
+    'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
+    'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD', 'RetinaNet',
+    'StrongBaseline', 'STGCN', 'YOLOX', 'HRNet'
 }
 
 GLOBAL_VAR = {}
@@ -182,15 +167,10 @@ class DetectorOp(Op):
 
     def postprocess(self, input_dicts, fetch_dict, data_id, log_id):
         (_, input_dict), = input_dicts.items()
-        bboxes = fetch_dict["multiclass_nms3_0.tmp_0"]
-        bboxes_num = fetch_dict["multiclass_nms3_0.tmp_2"]
-        draw_threshold = GLOBAL_VAR['model_config'].draw_threshold
-        idx = 0
-        result = {}
-        for k, num in zip(input_dict.keys(), bboxes_num):
-            bbox = bboxes[idx:idx + num]
-            result[k] = self.parse_det_result(
-                bbox, draw_threshold, GLOBAL_VAR['model_config'].label_list)
+        if GLOBAL_VAR['model_config'].arch in ["HRNet"]:
+            result = self.parse_keypoint_result(input_dict, fetch_dict)
+        else:
+            result = self.parse_detection_result(input_dict, fetch_dict)
         return result, None, ""
 
     def collate_inputs(self, inputs):
@@ -203,13 +183,40 @@ class DetectorOp(Op):
             for k, v in collate_inputs.items() if k in GLOBAL_VAR['feed_vars']
         }
 
-    def parse_det_result(self, bbox, draw_threshold, label_list):
-        result = []
-        for line in bbox:
-            if line[0] > -1 and line[1] > draw_threshold:
-                result.append(f"{int(line[0])} {line[1]} "
-                              f"{line[2]} {line[3]} {line[4]} {line[5]}")
-        return result
+    def parse_detection_result(self, input_dict, fetch_dict):
+        bboxes = fetch_dict[GLOBAL_VAR['fetch_vars'][0]]
+        bboxes_num = fetch_dict[GLOBAL_VAR['fetch_vars'][1]]
+        if GLOBAL_VAR['model_config'].mask:
+            masks = fetch_dict[GLOBAL_VAR['fetch_vars'][2]]
+        idx = 0
+        results = {}
+        for img_name, num in zip(input_dict.keys(), bboxes_num):
+            result = []
+            bbox = bboxes[idx:idx + num]
+            for line in bbox:
+                if line[0] > -1 and line[1] > GLOBAL_VAR[
+                        'model_config'].draw_threshold:
+                    result.append(f"{int(line[0])} {line[1]} "
+                                  f"{line[2]} {line[3]} {line[4]} {line[5]}")
+            results[img_name] = result
+            idx += num
+        return results
+
+    def parse_keypoint_result(self, input_dict, fetch_dict):
+        heatmap = fetch_dict["conv2d_441.tmp_1"]
+        keypoint_postprocess = HRNetPostProcess()
+        im_shape = []
+        for key, data in input_dict.items():
+            data = base64.b64decode(data.encode('utf8'))
+            byte_stream = io.BytesIO(data)
+            img = Image.open(byte_stream).convert("RGB")
+            im_shape.append([img.width, img.height])
+        im_shape = np.array(im_shape)
+        center = np.round(im_shape / 2.)
+        scale = im_shape / 200.
+        kpts, scores = keypoint_postprocess(heatmap, center, scale)
+        results = {"keypoint": kpts, "scores": scores}
+        return results
 
 
 class DetectorService(WebService):
