@@ -570,7 +570,7 @@ class PipePredictor(object):
                     self.pipe_timer.module_time['vehicle_attr'].start()
 
                 for crop_input in crop_inputs:
-                    attr_res = self.attr_predictor.predict_image(
+                    attr_res = self.vehicle_attr_predictor.predict_image(
                         crop_input, visual=False)
                     vehicle_attr_res_list.extend(attr_res['output'])
 
@@ -633,13 +633,14 @@ class PipePredictor(object):
             ret, frame = capture.read()
             if not ret:
                 break
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             if self.modebase["idbased"] or self.modebase["skeletonbased"]:
                 if frame_id > self.warmup_frame:
                     self.pipe_timer.total_time.start()
                     self.pipe_timer.module_time['mot'].start()
                 res = self.mot_predictor.predict_image(
-                    [copy.deepcopy(frame)], visual=False)
+                    [copy.deepcopy(frame_rgb)], visual=False)
 
                 if frame_id > self.warmup_frame:
                     self.pipe_timer.module_time['mot'].end()
@@ -677,7 +678,7 @@ class PipePredictor(object):
 
                 self.pipeline_res.update(mot_res, 'mot')
                 crop_input, new_bboxes, ori_bboxes = crop_image_with_mot(
-                    frame, mot_res)
+                    frame_rgb, mot_res)
 
                 if self.with_vehicleplate:
                     platelicense = self.vehicleplate_detector.get_platelicense(
@@ -769,7 +770,7 @@ class PipePredictor(object):
 
                 if self.with_mtmct and frame_id % 10 == 0:
                     crop_input, img_qualities, rects = self.reid_predictor.crop_image_with_mot(
-                        frame, mot_res)
+                        frame_rgb, mot_res)
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['reid'].start()
                     reid_res = self.reid_predictor.predict_batch(crop_input)
@@ -801,7 +802,7 @@ class PipePredictor(object):
                 # collect frames
                 if frame_id % sample_freq == 0:
                     # Scale image
-                    scaled_img = scale(frame)
+                    scaled_img = scale(frame_rgb)
                     video_action_imgs.append(scaled_img)
 
                 # the number of collected frames is enough to predict video action
