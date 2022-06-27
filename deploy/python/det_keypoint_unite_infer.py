@@ -144,7 +144,7 @@ def topdown_unite_predict_video(detector,
     index = 0
     store_res = []
     previous_keypoints = None
-    post_process = PostProcess(width, height, filter_type=FLAGS.filter_type, alpha=0.8, beta=1)
+    keypoint_smoothing = KeypointSmoothing(width, height, filter_type=FLAGS.filter_type, alpha=0.8, beta=1)
 
     while (1):
         ret, frame = capture.read()
@@ -164,10 +164,10 @@ def topdown_unite_predict_video(detector,
         keypoint_res = predict_with_given_det(
             frame2, results, topdown_keypoint_detector, keypoint_batch_size,
             FLAGS.run_benchmark)
-
+        
         if FLAGS.smooth:
             current_keypoints = np.array(keypoint_res['keypoint'][0][0])
-            smooth_keypoints = post_process.smooth_process(previous_keypoints, current_keypoints)
+            smooth_keypoints = keypoint_smoothing.smooth_process(previous_keypoints, current_keypoints)
             previous_keypoints = smooth_keypoints
 
             keypoint_res['keypoint'][0][0] = smooth_keypoints.tolist()
@@ -203,9 +203,12 @@ def topdown_unite_predict_video(detector,
             json.dump(store_res, wf, indent=4)
 
 
-class PostProcess(object):
+class KeypointSmoothing(object):
+    # The following code are modified from:
+    # https://github.com/610265158/Peppa_Pig_Face_Engine/blob/7bb1066ad3fbb12697924ba7f9287bf198c15232/lib/core/LK/lk.py
+    
     def __init__(self, width, height, filter_type, alpha=0.5, fc_d=1, fc_min=1, beta=0):
-        super(PostProcess, self).__init__()
+        super(KeypointSmoothing, self).__init__()
         self.image_width = width
         self.image_height = height
         self.threshold = [0.005, 0.005, 0.005, 0.005, 0.005, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
@@ -217,6 +220,12 @@ class PostProcess(object):
         self.fc_min = fc_min
         self.beta = beta
         
+        if self.filter_type == 'one_euro':
+            self.smooth_func = self.one_euro_filter
+        elif self.filter_type == 'ema':
+            self.smooth_func = self.exponential_smoothing
+        else:
+            raise ValueError('filter type must be one_euro or ema')
 
     def smooth_process(self, previous_keypoints, current_keypoints):
         if previous_keypoints is None:
@@ -235,28 +244,23 @@ class PostProcess(object):
         if distance < threshold:
             result = previous_keypoint
         else:
-            if self.filter_type == 'one_euro':
-                result = self.one_euro_filter(previous_keypoint, current_keypoint)
-            elif self.filter_type == 'ema':
-                result = self.alpha * current_keypoint + (1 - self.alpha) * previous_keypoint
-            else:
-                print('filter type must be one euro or ema')
+            result = self.smooth_func(previous_keypoint, current_keypoint)
         return result
 
 
     def one_euro_filter(self, x_prev, x_cur):
         te = 1
-        alpha = self.smoothing_factor(te, self.fc_d)
+        self.alpha = self.smoothing_factor(te, self.fc_d)
         if self.x_prev_hat is None:
             self.x_prev_hat = x_prev
         dx_cur = (x_cur - self.x_prev_hat) / te
         if self.dx_prev_hat is None:
             self.dx_prev_hat = 0
-        dx_cur_hat = self.exponential_smoothing(alpha, self.dx_prev_hat, dx_cur)
+        dx_cur_hat = self.exponential_smoothing(self.dx_prev_hat, dx_cur)
         
         fc = self.fc_min + self.beta * np.abs(dx_cur_hat)
-        alpha = self.smoothing_factor(te, fc)
-        x_cur_hat = self.exponential_smoothing(alpha, self.x_prev_hat, x_cur)
+        self.alpha = self.smoothing_factor(te, fc)
+        x_cur_hat = self.exponential_smoothing(self.x_prev_hat, x_cur)
         self.dx_prev_hat = dx_cur_hat
         self.x_prev_hat = x_cur_hat
         return x_cur_hat
@@ -266,8 +270,8 @@ class PostProcess(object):
         r = 2 * math.pi * fc * te
         return r / (r + 1)
     
-    def exponential_smoothing(self, alpha, x_prev, x_cur):
-        return alpha * x_cur + (1 - alpha) * x_prev
+    def exponential_smoothing(self, x_prev, x_cur):
+        return self.alpha * x_cur + (1 - self.alpha) * x_prev
 
 
 def main():

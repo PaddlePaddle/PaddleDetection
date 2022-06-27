@@ -128,14 +128,14 @@ def argsparser():
             "5) scores: mean of all joint conf"))
     parser.add_argument(
         '--smooth',
-        type=bool,
+        type=ast.literal_eval,
         default=False,
-        help='simple smoothing for keypoints'
+        help='smoothing keypoints for each frame, new incoming keypoints will be more stable.'
     )
     parser.add_argument(
         '--filter_type',
         type=str,
         default='one_euro',
-        help='filter type must be one_euro or ema'
+        help='when set --smooth True, choose filter type you want to use, it can be one_euro or ema.'
     )
     return parser
