@@ -869,18 +869,19 @@ class PipePredictor(object):
         online_scores[0] = scores
         online_ids[0] = ids
 
-        image = plot_tracking_dict(
-            image,
-            num_classes,
-            online_tlwhs,
-            online_ids,
-            online_scores,
-            frame_id=frame_id,
-            fps=fps,
-            do_entrance_counting=self.do_entrance_counting,
-            entrance=entrance,
-            records=records,
-            center_traj=center_traj)
+        if mot_res is not None:
+            image = plot_tracking_dict(
+                image,
+                num_classes,
+                online_tlwhs,
+                online_ids,
+                online_scores,
+                frame_id=frame_id,
+                fps=fps,
+                do_entrance_counting=self.do_entrance_counting,
+                entrance=entrance,
+                records=records,
+                center_traj=center_traj)
 
         human_attr_res = result.get('attr')
         if human_attr_res is not None:

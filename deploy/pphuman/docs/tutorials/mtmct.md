@@ -9,16 +9,16 @@ PP-Human跨镜头跟踪模块主要目的在于提供一套简洁、高效的跨
 
 1. 下载模型 [REID模型](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) 并解压到```./output_inference```路径下, MOT模型请参考[mot说明](./mot.md)文件下载。
 
-2. 跨镜头跟踪模式下，要求输入的多个视频放在同一目录下，同时开启infer_cfg.yml 中的REID选择中的enable=True, 命令如下：
+2. 跨镜头跟踪模式下，要求输入的多个视频放在同一目录下，同时开启infer_cfg_pphuman.yml 中的REID选择中的enable=True, 命令如下：
 ```python
-python3 deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=[your_video_file_directory] --device=gpu
+python3 deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_dir=[your_video_file_directory] --device=gpu
 ```
 
-3. 相关配置在`./deploy/pphuman/config/infer_cfg.yml`文件中修改：
+3. 相关配置在`./deploy/pphuman/config/infer_cfg_pphuman.yml`文件中修改：
 
 ```python
 python3 deploy/pphuman/pipeline.py
-        --config deploy/pphuman/config/infer_cfg.yml
+        --config deploy/pphuman/config/infer_cfg_pphuman.yml
         --video_dir=[your_video_file_directory]
         --device=gpu
         --model_dir reid=reid_best/
