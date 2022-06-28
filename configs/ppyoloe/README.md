@@ -47,7 +47,7 @@ PP-YOLOE is composed of following methods:
 - PP-YOLOE inference speed is tesed on single Tesla V100 with batch size as 1, **CUDA 10.2**, **CUDNN 7.6.5**, **TensorRT 6.0.1.8** in TensorRT mode.
 - Refer to [Speed testing](#Speed-testing) to reproduce the speed testing results of PP-YOLOE.
 - If you set `--run_benchmark=True`，you should install these dependencies at first, `pip install pynvml psutil GPUtil`.
-- The model weights in the table of Comprehensive Metrics are **the same as** that in the original Model Zoo. To reproduce the comprehensive metrics, just modify the setting of `nms` in [ppyoloe_crn.yml](_base_/ppyoloe_crn.yml):
+- The model weights in the table of Comprehensive Metrics are **the same as** that in the original Model Zoo, and evaluated on **val2017**. To reproduce the comprehensive metrics, just modify the setting of `nms` in [ppyoloe_crn.yml](_base_/ppyoloe_crn.yml):
   ```
   nms:
     name: MultiClassNMS
