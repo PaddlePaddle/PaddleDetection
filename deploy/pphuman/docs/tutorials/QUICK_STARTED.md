@@ -31,8 +31,10 @@ PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模�
 
 | 任务            | 适用场景 | 精度 | 预测速度（ms） | 模型权重 | 预测部署模型 |
 | :---------:     |:---------:     |:---------------     | :-------:  |  :------:      | :------:      |
-| 目标检测        | 图片输入 | mAP: 56.3  | 28.0ms          |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 目标跟踪        | 视频输入 | MOTA: 72.0  | 33.1ms           |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 目标检测(高精度) | 图片输入 | mAP: 56.6  | 28.0ms          |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 目标检测(轻量级) | 图片输入 | mAP: 53.2  | 22.1ms          |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
+| 目标跟踪(高精度) | 视频输入 | MOTA: 79.5  | 33.1ms           |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 目标跟踪(轻量级) | 视频输入 | MOTA: 69.1  | 27.2ms           |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
 | 属性识别    | 图片/视频输入 属性识别  | mA: 94.86 |  单人2ms     | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
 | 关键点检测    | 视频输入 行为识别 | AP: 87.1 | 单人2.9ms        |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
 | 行为识别   |  视频输入 行为识别  | 准确率: 96.43 |  单人2.7ms      | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
@@ -48,7 +50,7 @@ PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模�
 
 ## 三、配置文件说明
 
-PP-Human相关配置位于```deploy/pphuman/config/infer_cfg.yml```中，存放模型路径，完成不同功能需要设置不同的任务类型
+PP-Human相关配置位于```deploy/pphuman/config/infer_cfg_pphuman.yml```中，存放模型路径，完成不同功能需要设置不同的任务类型
 
 功能及任务类型对应表单如下：
 
@@ -70,6 +72,7 @@ MOT:
   tracker_config: deploy/pphuman/config/tracker_config.yml
   batch_size: 1
   basemode: "idbased"
+  enable: False
 
 ATTR:
   model_dir: output_inference/strongbaseline_r50_30e_pa100k/
@@ -81,30 +84,30 @@ ATTR:
 **注意：**
 
 - 如果用户需要实现不同任务，可以在配置文件对应enable选项设置为True, 其basemode类型会在代码中开启依赖的基础能力模型，比如跟踪模型。
-- 如果用户仅需要修改模型文件路径，可以在命令行中加入 `--model_dir det=ppyoloe/` 即可，无需修改配置文件，详细说明参考下方参数说明文档
+- 如果用户仅需要修改模型文件路径，可以在命令行中加入 `--model_dir det=ppyoloe/` 即可，也可以手动修改配置文件中的相应模型路径，详细说明参考下方参数说明文档。
 
 
 ### 四、预测部署
 
 ```
 # 行人检测，指定配置文件路径和测试图片
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
 
-# 行人跟踪，指定配置文件路径和测试视频
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
+# 行人跟踪，指定配置文件路径和测试视频，在配置文件中```deploy/pphuman/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# 行人跟踪，指定配置文件路径，模型路径和测试视频
+# 行人跟踪，指定配置文件路径，模型路径和测试视频，在配置文件中```deploy/pphuman/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
 # 命令行中指定的模型路径优先级高于配置文件
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
 
-# 行人属性识别，指定配置文件路径和测试视频，在配置文件中ATTR部分开启enable选项。
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
+# 行人属性识别，指定配置文件路径和测试视频，在配置文件中```deploy/pphuman/config/infer_cfg_pphuman.yml```中的ATTR部分enable设置为```True```
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# 行为识别，指定配置文件路径和测试视频，在配置文件中对应行为识别功能开启enable选项。
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
+# 行为识别，指定配置文件路径和测试视频，在配置文件中```deploy/pphuman/config/infer_cfg_pphuman.yml```中的SKELETON_ACTION部分enable设置为```True```
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，在配置文件中REID部分开启enable选项。
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
+# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，在配置文件中```deploy/pphuman/config/infer_cfg_pphuman.yml```中的REID部分enable设置为```True```
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
 ```
 
 ### 4.1 参数说明

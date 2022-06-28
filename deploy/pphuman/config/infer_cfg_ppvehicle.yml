@@ -1,6 +1,4 @@
 crop_thresh: 0.5
-attr_thresh: 0.5
-kpt_thresh: 0.2
 visual: True
 warmup_frame: 50
 
@@ -24,12 +22,14 @@ VEHICLE_PLATE:
   rec_batch_num: 6
   word_dict_path: deploy/pphuman/ppvehicle/rec_word_dict.txt
   basemode: "idbased"
-  enable: True
+  enable: False
 
-ATTR:
-  model_dir: output_inference/strongbaseline_r50_30e/
+VEHICLE_ATTR:
+  model_dir: output_inference/vehicle_attribute_infer/
   batch_size: 8
   basemode: "idbased"
+  color_threshold: 0.5
+  type_threshold: 0.5
   enable: False
 
 REID:

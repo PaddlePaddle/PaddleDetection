@@ -28,7 +28,8 @@
 4. 预测速度为NVIDIA T4 机器上使用TensorRT FP16时的速度, 速度包含数据预处理、模型预测、后处理全流程。
 
 ### 配置说明
-[配置文件](../config/infer_cfg.yml)中与行为识别相关的参数如下：
+## 配置说明
+[配置文件](../../config/infer_cfg_pphuman.yml)中与行为识别相关的参数如下：
 ```
 SKELETON_ACTION:
   model_dir: output_inference/STGCN  # 模型所在路径
@@ -42,18 +43,18 @@ SKELETON_ACTION:
 
 ### 使用方法
 1. 从上表链接中下载模型并解压到```./output_inference```路径下。
-2. 目前行为识别模块仅支持视频输入，设置infer_cfg.yml中`SKELETON_ACTION`的enable: True, 然后启动命令如下：
+2. 目前行为识别模块仅支持视频输入，设置infer_cfg_pphuman.yml中`SKELETON_ACTION`的enable: True, 然后启动命令如下：
 ```python
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
 ```
 3. 若修改模型路径，有以下两种方式：
 
-    - ```./deploy/pphuman/config/infer_cfg.yml```下可以配置不同模型路径，关键点模型和摔倒行为识别模型分别对应`KPT`和`SKELETON_ACTION`字段，修改对应字段下的路径为实际期望的路径即可。
+    - ```./deploy/pphuman/config/infer_cfg_pphuman.yml```下可以配置不同模型路径，关键点模型和摔倒行为识别模型分别对应`KPT`和`SKELETON_ACTION`字段，修改对应字段下的路径为实际期望的路径即可。
     - 命令行中增加`--model_dir`修改模型路径：
 ```python
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
                                                    --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
@@ -93,7 +94,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
 3. 修改配置文件`deploy/pphuman/config/infer_cfg_pphuman.yml`中`VIDEO_ACTION`下的`enable`为`True`；
 4. 输入视频，启动命令如下：
 ```
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu
 ```
