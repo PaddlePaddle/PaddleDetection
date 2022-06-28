@@ -49,7 +49,10 @@ Training PP-YOLOE with mixed precision on 8 GPUs with following command
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --amp
 ```
 
-**Notes:** use `--amp` to train with default config to avoid out of memeory.
+**Notes:**
+- use `--amp` to train with default config to avoid out of memeory.
+- PaddleDetection supports multi-machine distribued training, you can refer to [DistributedTraining tutorial](../../docs/DistributedTraining_en.md).
+
 
 ### Evaluation
 
