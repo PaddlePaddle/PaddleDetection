@@ -28,7 +28,8 @@ class Result(object):
             'reid': dict(),
             'det_action': dict(),
             'cls_action': dict(),
-            'vehicleplate': dict()
+            'vehicleplate': dict(),
+            'vehicle_attr': dict()
         }
 
     def update(self, res, name):
