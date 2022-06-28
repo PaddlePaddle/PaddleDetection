@@ -618,7 +618,7 @@ class PipePredictor(object):
                                                   center_traj)  # visualize
                         writer.write(im)
                         if self.file_name is None:  # use camera_id
-                            cv2.imshow('PPHuman&&PPVehicle', im)
+                            cv2.imshow('Paddle-Pipeline', im)
                             if cv2.waitKey(1) & 0xFF == ord('q'):
                                 break
                     continue
@@ -771,7 +771,7 @@ class PipePredictor(object):
                                           center_traj)  # visualize
                 writer.write(im)
                 if self.file_name is None:  # use camera_id
-                    cv2.imshow('PPHuman', im)
+                    cv2.imshow('Paddle-Pipeline', im)
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
 
