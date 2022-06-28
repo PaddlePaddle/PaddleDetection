@@ -32,7 +32,7 @@ Note:
 
 ## Description of Configuration
 
-Parameters related to action recognition in the [config file](../config/infer_cfg.yml) are as follow:
+Parameters related to action recognition in the [config file](../config/infer_cfg_pphuman.yml) are as follow:
 
 ```
 SKELETON_ACTION:
@@ -52,22 +52,22 @@ SKELETON_ACTION:
 
 - Download models from the links of the above table and unzip them to ```./output_inference```.
 
-- Now the only available input is the video input in the action recognition module. set the "enable: True" in SKELETON_ACTION of infer_cfg.yml. And then run the command:
+- Now the only available input is the video input in the action recognition module. set the "enable: True" in SKELETON_ACTION of infer_cfg_pphuman.yml. And then run the command:
 
   ```python
-  python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
+  python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
   ```
 
 - There are two ways to modify the model path:
 
-  - In ```./deploy/pphuman/config/infer_cfg.yml```, you can configurate different model paths，which is proper only if you match keypoint models and action recognition models with the fields of `KPT` and `SKELETON_ACTION` respectively, and modify the corresponding path of each field into the expected path.
+  - In ```./deploy/pphuman/config/infer_cfg_pphuman.yml```, you can configurate different model paths，which is proper only if you match keypoint models and action recognition models with the fields of `KPT` and `SKELETON_ACTION` respectively, and modify the corresponding path of each field into the expected path.
 
   - Add `--model_dir` in the command line to revise the model path：
 
     ```python
-    python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
+    python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
                                                        --video_file=test_video.mp4 \
                                                        --device=gpu \
                                                        --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN

@@ -62,7 +62,7 @@ Then, unzip the downloaded model to the folder `./output_inference`.
 
 ### 2. Preparation of Configuration Files
 
-Configuration files of PP-Human are stored in ```deploy/pphuman/config/infer_cfg.yml```. Different tasks are for different functions, so you need to set the task type beforhand.
+Configuration files of PP-Human are stored in ```deploy/pphuman/config/infer_cfg_pphuman.yml```. Different tasks are for different functions, so you need to set the task type beforhand.
 
 Their correspondence is as follows:
 
@@ -83,6 +83,7 @@ MOT:
   model_dir: output_inference/mot_ppyoloe_l_36e_pipeline/
   tracker_config: deploy/pphuman/config/tracker_config.yml
   batch_size: 1
+  enable: False
 
 ATTR:
   model_dir: output_inference/strongbaseline_r50_30e_pa100k/
@@ -91,7 +92,7 @@ ATTR:
 
 **Note: **
 
-- For different tasks, users should set the "enable" to "True" in coresponding configs in the infer_cfg.yml file.
+- For different tasks, users should set the "enable" to "True" in coresponding configs in the infer_cfg_pphuman.yml file.
 - if only need to change the model path, users could add `--model_dir det=ppyoloe/` in command line and do not need to set config file. For details info please refer to doc below.
 
 
@@ -99,23 +100,23 @@ ATTR:
 
 ```
 # Pedestrian detection. Specify the config file path and test images
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
 
-# Pedestrian tracking. Specify the config file path and test videos
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
+# Pedestrian tracking. Specify the config file path and test videos, and set the "enable" to "True" in MOT of ```deploy/pphuman/config/infer_cfg_pphuman.yml```
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
 # Pedestrian tracking. Specify the config file path, the model path and test videos
-# The model path specified on the command line prioritizes over the config file
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
+# The model path specified on the command line prioritizes over the config file, and set the "enable" to "True" in MOT of ```deploy/pphuman/config/infer_cfg_pphuman.yml```
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
 
-# Attribute recognition. Specify the config file path and test videos, and set the "enable" to "True" in ATTR of infer_cfg.yml
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
+# Attribute recognition. Specify the config file path and test videos, and set the "enable" to "True" in ATTR of ```deploy/pphuman/config/infer_cfg_pphuman.yml```
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# Action Recognition. Specify the config file path and test videos, and set the "enable" to "True" in corresponding action configs of infer_cfg.yml
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
+# Action Recognition. Specify the config file path and test videos, and set the "enable" to "True" in SKELETON_ACTION of ```deploy/pphuman/config/infer_cfg_pphuman.yml```
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# Pedestrian Multi-Target Multi-Camera tracking. Specify the config file path and the directory of test videos, and set the "enable" to "True" in REID in infer_cfg.yml
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
+# Pedestrian Multi-Target Multi-Camera tracking. Specify the config file path and the directory of test videos, and set the "enable" to "True" in REID in ```deploy/pphuman/config/infer_cfg_pphuman.yml```
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
 
 ```
 

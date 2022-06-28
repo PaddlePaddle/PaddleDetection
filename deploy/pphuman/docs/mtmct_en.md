@@ -9,16 +9,16 @@ The MTMCT module of PP-Human aims to provide a multi-target multi-camera pipleli
 
 1. Download [REID model](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) and unzip it to ```./output_inference```. For the MOT model, please refer to [mot description](./mot.md).
 
-2. In the MTMCT mode, input videos are required to be put in the same directory. set the REID "enable: True" in the infer_cfg.yml. The command line is:
+2. In the MTMCT mode, input videos are required to be put in the same directory. set the REID "enable: True" in the infer_cfg_pphuman.yml. The command line is:
 ```python
-python3 deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml --video_dir=[your_video_file_directory] --device=gpu
+python3 deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_dir=[your_video_file_directory] --device=gpu
 ```
 
-3. Configuration can be modified in `./deploy/pphuman/config/infer_cfg.yml`.
+3. Configuration can be modified in `./deploy/pphuman/config/infer_cfg_pphuman.yml`.
 
 ```python
 python3 deploy/pphuman/pipeline.py
-        --config deploy/pphuman/config/infer_cfg.yml
+        --config deploy/pphuman/config/infer_cfg_pphuman.yml
         --video_dir=[your_video_file_directory]
         --device=gpu
         --model_dir reid=reid_best/
