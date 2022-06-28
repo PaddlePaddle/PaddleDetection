@@ -14,4 +14,3 @@ ConvNeXt:
   drop_path_rate: 0.4
   layer_scale_init_value: 1.0
   return_idx: [1, 2, 3]
-  pretrained: https://paddledet.bj.bcebos.com/models/pretrained/convnext_tiny_1k_224_ema.pdparams

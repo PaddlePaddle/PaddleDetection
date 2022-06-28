@@ -12,19 +12,19 @@
 
 | 网络网络        | 输入尺寸   | 图片数/GPU | 学习率策略 | 模型推理耗时(ms) | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params(M) | FLOPs(G) |    下载链接       | 配置文件 |
 | :------------- | :------- | :-------: | :------: | :------------: | :---------------------: | :----------------: |:---------: | :------: |:---------------: |:-----: |
-| YOLOX-nano     |  416     |    8      |   300e    |     2.3    |  26.1  |  42.0 |  -  |  1.08 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_nano_300e_coco.pdparams) | [配置文件](./yolox_nano_300e_coco.yml) |
-| YOLOX-tiny     |  416     |    8      |   300e    |     2.8    |  32.9  |  50.4 |  -  |  6.45 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_tiny_300e_coco.pdparams) | [配置文件](./yolox_tiny_300e_coco.yml) |
-| YOLOX-s        |  640     |    8      |   300e    |     3.0    |  40.4  |  59.6 |  -  |  26.8 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_s_300e_coco.pdparams) | [配置文件](./yolox_s_300e_coco.yml) |
-| YOLOX-m        |  640     |    8      |   300e    |     5.8    |  46.9  |  65.7 |  -  |  73.8 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_m_300e_coco.pdparams) | [配置文件](./yolox_m_300e_coco.yml) |
-| YOLOX-l        |  640     |    8      |   300e    |     9.3    |  50.1  |  68.8 |  -  |  155.6 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_l_300e_coco.pdparams) | [配置文件](./yolox_l_300e_coco.yml) |
-| YOLOX-x        |  640     |    8      |   300e    |     16.6   |  51.8  |  70.6 |  -  |  281.9 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_x_300e_coco.pdparams) | [配置文件](./yolox_x_300e_coco.yml) |
+| YOLOX-nano     |  416     |    8      |   300e    |     2.3    |  26.1  |  42.0 |  0.91  |  1.08 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_nano_300e_coco.pdparams) | [配置文件](./yolox_nano_300e_coco.yml) |
+| YOLOX-tiny     |  416     |    8      |   300e    |     2.8    |  32.9  |  50.4 |  5.06  |  6.45 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_tiny_300e_coco.pdparams) | [配置文件](./yolox_tiny_300e_coco.yml) |
+| YOLOX-s        |  640     |    8      |   300e    |     3.0    |  40.4  |  59.6 |  9.0  |  26.8 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_s_300e_coco.pdparams) | [配置文件](./yolox_s_300e_coco.yml) |
+| YOLOX-m        |  640     |    8      |   300e    |     5.8    |  46.9  |  65.7 |  25.3  |  73.8 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_m_300e_coco.pdparams) | [配置文件](./yolox_m_300e_coco.yml) |
+| YOLOX-l        |  640     |    8      |   300e    |     9.3    |  50.1  |  68.8 |  54.2  |  155.6 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_l_300e_coco.pdparams) | [配置文件](./yolox_l_300e_coco.yml) |
+| YOLOX-x        |  640     |    8      |   300e    |     16.6   |  **51.8**  |  **70.6** |  99.1  |  281.9 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_x_300e_coco.pdparams) | [配置文件](./yolox_x_300e_coco.yml) |
 
 
 | 网络网络        | 输入尺寸   | 图片数/GPU | 学习率策略 | 模型推理耗时(ms) | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params(M) | FLOPs(G) |    下载链接       | 配置文件 |
 | :------------- | :------- | :-------: | :------: | :------------: | :---------------------: | :----------------: |:---------: | :------: |:---------------: |:-----: |
-| YOLOXv2-tiny    |  416     |    8      |   300e    |     1.9    |  32.4  |  50.2 |  -  |  - | [下载链接](https://paddledet.bj.bcebos.com/models/yoloxv2_tiny_300e_coco.pdparams) | [配置文件](./yoloxv2_tiny_300e_coco.yml) |
-| YOLOX-crn-s     |  640     |    8      |   300e    |     -    |  40.4  |  59.6 |  -  |  - | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_crn_s_300e_coco.pdparams) | [配置文件](./yolox_crn_s_300e_coco.yml) |
-| YOLOX-ConvNeXt-s|  640     |    8      |   36e     |     -    |  44.6  |  65.3 |  -  |  - | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_convnext_s_36e_coco.pdparams) | [配置文件](./yolox_convnext_s_36e_coco.yml) |
+| YOLOXv2-tiny    |  416     |    8      |   300e    |     1.9    |  32.4  |  50.2 |  5.03 |  6.33  | [下载链接](https://paddledet.bj.bcebos.com/models/yoloxv2_tiny_300e_coco.pdparams) | [配置文件](./yoloxv2_tiny_300e_coco.yml) |
+| YOLOX-crn-s     |  640     |    8      |   300e    |     3.0    |  40.4  |  59.6 |  7.7  |  24.69 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_crn_s_300e_coco.pdparams) | [配置文件](./yolox_crn_s_300e_coco.yml) |
+| YOLOX-ConvNeXt-s|  640     |    8      |   36e     |     -      |  **44.6**  |  **65.3** |  36.2 |  27.52 | [下载链接](https://paddledet.bj.bcebos.com/models/yolox_convnext_s_36e_coco.pdparams) | [配置文件](./yolox_convnext_s_36e_coco.yml) |
 
 
 **注意:**
@@ -155,14 +155,28 @@ python tools/export_model.py -c configs/yolox/yolox_s_300e_coco.yml -o weights=h
 python deploy/python/infer.py --model_dir=output_inference/yolox_s_300e_coco --image_file=demo/000000014439_640x640.jpg --device=gpu --run_benchmark=True
 
 # tensorRT-FP32测速
-python deploy/python/infer.py --model_dir=output_inference/yolox_s_300e_coco --image_file=demo/000000014439_640x640.jpg --device=gpu --run_benchmark=True --trt_max_shape=640 --trt_min_shape=640 --trt_opt_shape=640 --run_mode=trt_fp32
+python deploy/python/infer.py --model_dir=output_inference/yolox_s_300e_coco --image_file=demo/000000014439_640x640.jpg --device=gpu --run_benchmark=True --run_mode=trt_fp32
 
 # tensorRT-FP16测速
-python deploy/python/infer.py --model_dir=output_inference/yolox_s_300e_coco --image_file=demo/000000014439_640x640.jpg --device=gpu --run_benchmark=True --trt_max_shape=640 --trt_min_shape=640 --trt_opt_shape=640 --run_mode=trt_fp16
+python deploy/python/infer.py --model_dir=output_inference/yolox_s_300e_coco --image_file=demo/000000014439_640x640.jpg --device=gpu --run_benchmark=True --run_mode=trt_fp16
 ```
 **注意:**
 - 导出模型时指定`-o exclude_nms=True`仅作为测速时用，这样导出的模型其推理部署预测的结果不是最终检出框的结果。
 - [模型库](#模型库)中的速度测试结果为**tensorRT-FP16**测速后的最快速度，为**不包含数据预处理和模型输出后处理(NMS)**的耗时。
+
+## FAQ
+
+<details>
+<summary>如何计算模型参数量</summary>
+可以将以下代码插入：[trainer.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/ppdet/engine/trainer.py#L154) 来计算参数量。
+```python
+params = sum([
+    p.numel() for n, p in self.model.named_parameters()
+    if all([x not in n for x in ['_mean', '_variance']])
+]) # exclude BatchNorm running status
+print('Params: ', params)
+```
+</details>
 
 
 ## Citations
