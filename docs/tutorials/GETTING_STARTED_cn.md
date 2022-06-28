@@ -12,7 +12,7 @@ PaddleDetection作为成熟的目标检测开发套件，提供了从数据准�
 
 ## 2 准备数据
 目前PaddleDetection支持：COCO VOC WiderFace, MOT四种数据格式。
-- 首先按照[准备数据文档](PrepareDataSet.md) 准备数据。  
+- 首先按照[准备数据文档](PrepareDetDataSet.md) 准备数据。  
 - 然后设置`configs/datasets`中相应的coco或voc等数据配置文件中的数据路径。
 - 在本项目中，我们使用路标识别数据集
  ```bash

@@ -1,14 +1,16 @@
 简体中文 | [English](PrepareKeypointDataSet_en.md)
 
-# 如何准备关键点数据集
+# 关键点数据准备
 ## 目录
 - [COCO数据集](#COCO数据集)
 - [MPII数据集](#MPII数据集)
-- [训练其他数据集](#训练其他数据集)
+- [用户数据准备](#用户数据准备)
+    - [数据格式转换](#数据格式转换)
+    - [自定义数据训练](#自定义数据训练)
 
 ## COCO数据集
 ### COCO数据集的准备
-我们提供了一键脚本来自动完成COCO2017数据集的下载及准备工作，请参考[COCO数据集下载](https://github.com/PaddlePaddle/PaddleDetection/blob/f0a30f3ba6095ebfdc8fffb6d02766406afc438a/docs/tutorials/PrepareDataSet.md#COCO%E6%95%B0%E6%8D%AE)。
+我们提供了一键脚本来自动完成COCO2017数据集的下载及准备工作，请参考[COCO数据集下载](https://github.com/PaddlePaddle/PaddleDetection/blob/f0a30f3ba6095ebfdc8fffb6d02766406afc438a/docs/tutorials/PrepareDetDataSet.md#COCO%E6%95%B0%E6%8D%AE)。
 
 ### COCO数据集（KeyPoint）说明
 在COCO中，关键点序号与部位的对应关系为：
@@ -110,7 +112,10 @@ MPII keypoint indexes:
 - `scale`：表示人物的比例，对应200px。
 
 
-## 训练其他数据集
+## 用户数据准备
+
+### 数据格式转换
+
 这里我们以`AIChallenger`数据集为例，展示如何将其他数据集对齐到COCO格式并加入关键点模型训练中。
 
 
@@ -139,3 +144,5 @@ AI Challenger Description:
 5. 整理图像路径`file_name`，使其能够被正确访问到。
 
 我们提供了整合`COCO`训练集和`AI Challenger`数据集的[标注文件](https://bj.bcebos.com/v1/paddledet/data/keypoint/aic_coco_train_cocoformat.json)，供您参考调整后的效果。
+
+### 自定义数据训练
