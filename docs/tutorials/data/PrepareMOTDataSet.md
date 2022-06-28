@@ -1,11 +1,13 @@
-简体中文 | [English](GETTING_STARTED.md)
+简体中文 | [English](PrepareMOTDataSet_en.md)
 
-# 目录
-## 多目标跟踪数据集准备
+# 多目标跟踪数据集准备
+## 目录
 - [MOT数据集](#MOT数据集)
-- [数据集目录](#数据集目录)
-- [数据格式](#数据格式)
+    - [数据集目录](#数据集目录)
+    - [数据格式](#数据格式)
 - [用户数据准备](#用户数据准备)
+    - [数据格式转换](#数据格式转换)
+    - [自定义数据训练](#自定义数据训练)
 - [引用](#引用)
 
 ### MOT数据集
@@ -17,7 +19,7 @@ PaddleDetection复现[JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) 和
 - 多类别跟踪模型是[MCFairMOT](../../configs/mot/mcfairmot/README_cn.md)，多类别数据集是VisDrone数据集的整合版，可参照[MCFairMOT](../../configs/mot/mcfairmot/README_cn.md)的文档说明。
 - 跨镜头跟踪模型，是选用的[AIC21 MTMCT](https://www.aicitychallenge.org) (CityFlow)车辆跨镜头跟踪数据集，数据集和模型可参照[跨境头跟踪](../../configs/mot/mtmct/README_cn.md)的文档说明。
 
-### 数据集目录
+#### 数据集目录
 首先按照以下命令下载image_lists.zip并解压放在`PaddleDetection/dataset/mot`目录下：
 ```
 wget https://dataset.bj.bcebos.com/mot/image_lists.zip
@@ -60,7 +62,7 @@ dataset/mot
   |——————PRW
 ```
 
-### 数据格式
+#### 数据格式
 这几个相关数据集都遵循以下结构：
 ```
 MOT17
@@ -82,6 +84,8 @@ MOT17
 
 
 ### 用户数据准备
+
+#### 数据格式转换
 
 为了规范地进行训练和评测，用户数据需要转成和MOT-16数据集相同的目录和格式：
 ```
@@ -109,7 +113,7 @@ custom_data
                     └—————— ...
 ```
 
-#### images文件夹
+##### images文件夹
 - `gt.txt`是原始标注文件，而训练所用标注是`labels_with_ids`文件夹。
 - `img1`文件夹里是按照一定帧率抽好的图片。
 - `seqinfo.ini`文件是视频信息描述文件，需要如下格式的信息：
@@ -139,7 +143,7 @@ imExt=.jpg
 - `vis_ratio`是当前目标被其他目标包含或覆挡后的可见率，是从0到1的浮点数，默认为`1`
 
 
-#### labels_with_ids文件夹
+##### labels_with_ids文件夹
 所有数据集的标注是以统一数据格式提供的。各个数据集中每张图片都有相应的标注文本。给定一个图像路径，可以通过将字符串`images`替换为`labels_with_ids`并将`.jpg`替换为`.txt`来生成标注文本路径。在标注文本中，每行都描述一个边界框，格式如下：
 ```
 [class] [identity] [x_center] [y_center] [width] [height]
@@ -154,6 +158,8 @@ imExt=.jpg
 cd dataset/mot
 python gen_labels_MOT.py
 ```
+
+#### 自定义数据训练
 
 ### 引用
 Caltech:

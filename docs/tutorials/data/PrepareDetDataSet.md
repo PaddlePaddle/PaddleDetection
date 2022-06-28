@@ -1,4 +1,4 @@
-# 如何准备训练数据
+# 目标检测数据准备
 ## 目录
 - [目标检测数据说明](#目标检测数据说明)
 - [准备训练数据](#准备训练数据)
@@ -8,11 +8,13 @@
     - [COCO数据数据](#COCO数据数据)
         - [COCO数据集下载](#COCO数据下载)
         - [COCO数据标注文件介绍](#COCO数据标注文件介绍)
-    - [用户数据](#用户数据)
+    - [用户数据准备](#用户数据准备)
         - [用户数据转成VOC数据](#用户数据转成VOC数据)
         - [用户数据转成COCO数据](#用户数据转成COCO数据)
         - [用户数据自定义reader](#用户数据自定义reader)
-    - [用户数据数据转换示例](#用户数据数据转换示例)
+    - [用户数据使用示例](#用户数据使用示例)
+        - [数据格式转换](#数据格式转换)
+        - [自定义数据训练](#自定义数据训练)
 - [(可选)生成Anchor](#(可选)生成Anchor)
 
 ### 目标检测数据说明  
@@ -236,15 +238,7 @@ json文件中包含以下key：
     print('\n查看一条目标物体标注信息：', coco_anno['annotations'][0])
     ```
 
-    COCO数据准备如下。  
-    `dataset/coco/`最初文件组织结构
-    ```
-    >>cd dataset/coco/
-    >>tree
-    ├── download_coco.py
-    ```
-
-#### 用户数据  
+#### 用户数据准备
 对于用户数据有3种处理方法：  
 (1) 将用户数据转成VOC数据(根据需要仅包含物体检测所必须的标签即可)  
 (2) 将用户数据转成COCO数据(根据需要仅包含物体检测所必须的标签即可)  
@@ -331,35 +325,8 @@ dataset/xxx/
 ##### 用户数据自定义reader
 如果数据集有新的数据需要添加进PaddleDetection中，您可参考数据处理文档中的[添加新数据源](../advanced_tutorials/READER.md#2.3自定义数据集)文档部分，开发相应代码完成新的数据源支持，同时数据处理具体代码解析等可阅读[数据处理文档](../advanced_tutorials/READER.md)。
 
-关于Dataset的配置文件存在于`configs/datasets`文件夹。比如COCO数据集的配置文件如下：
-```
-metric: COCO # 目前支持COCO, VOC, OID， WiderFace等评估标准
-num_classes: 80 # num_classes数据集的类别数，不包含背景类
 
-TrainDataset:
-  !COCODataSet
-    image_dir: train2017 # 训练集的图片所在文件相对于dataset_dir的路径
-    anno_path: annotations/instances_train2017.json # 训练集的标注文件相对于dataset_dir的路径
-    dataset_dir: dataset/coco #数据集所在路径，相对于PaddleDetection路径
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd'] # 控制dataset输出的sample所包含的字段，注意此为训练集Reader独有的且必须配置的字段
-
-EvalDataset:
-  !COCODataSet
-    image_dir: val2017 # 验证集的图片所在文件夹相对于dataset_dir的路径
-    anno_path: annotations/instances_val2017.json # 验证集的标注文件相对于dataset_dir的路径
-    dataset_dir: dataset/coco # 数据集所在路径，相对于PaddleDetection路径
-
-TestDataset:
-  !ImageFolder
-    anno_path: annotations/instances_val2017.json # 标注文件所在路径，仅用于读取数据集的类别信息，支持json和txt格式
-    dataset_dir: dataset/coco # 数据集所在路径，若添加了此行，则`anno_path`路径为`dataset_dir/anno_path`，若此行不设置或去掉此行，则`anno_path`路径即为`anno_path`
-```
-在PaddleDetection的yml配置文件中，使用`!`直接序列化模块实例(可以是函数，实例等)，上述的配置文件均使用Dataset进行了序列化。
-
-**注意：**
-请运行前自行仔细检查数据集的配置路径，在训练或验证时如果TrainDataset和EvalDataset的路径配置有误，会提示自动下载数据集。若使用自定义数据集，在推理时如果TestDataset路径配置有误，会提示使用默认COCO数据集的类别信息。
-
-#### 用户数据数据转换示例  
+#### 用户数据使用示例  
 
 以[Kaggle数据集](https://www.kaggle.com/andrewmvd/road-sign-detection) 比赛数据为例，说明如何准备自定义数据。
 Kaggle上的 [road-sign-detection](https://www.kaggle.com/andrewmvd/road-sign-detection) 比赛数据包含877张图像，数据类别4类：crosswalk，speedlimit，stop，trafficlight。
@@ -383,6 +350,8 @@ Kaggle上的 [road-sign-detection](https://www.kaggle.com/andrewmvd/road-sign-de
 │   ├── road2.jpg
 │   |   ...
 ```
+
+#### 数据格式转换
 
 将数据划分为训练集和测试集
 ```
@@ -449,6 +418,67 @@ roadsign数据集统计:
 **说明：**
 （1）用户数据，建议在训练前仔细检查数据，避免因数据标注格式错误或图像数据不完整造成训练过程中的crash
 （2）如果图像尺寸太大的话，在不限制读入数据尺寸情况下，占用内存较多，会造成内存/显存溢出，请合理设置batch_size，可从小到大尝试
+
+#### 自定义数据训练
+
+数据准备完成后，需要修改PaddleDetection中关于Dataset的配置文件，在`configs/datasets`文件夹下。比如roadsign数据集的配置文件如下：
+```
+metric: VOC # 目前支持COCO, VOC, WiderFace等评估标准
+num_classes: 4 # 数据集的类别数，不包含背景类，roadsign数据集为4类，其他数据需要修改为自己的数据类别
+
+TrainDataset:
+  !VOCDataSet
+    dataset_dir: dataset/roadsign_voc # 训练集的图片所在文件相对于dataset_dir的路径
+    anno_path: train.txt # 训练集的标注文件相对于dataset_dir的路径
+    label_list: label_list.txt # 数据集所在路径，相对于PaddleDetection路径
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'difficult'] # 控制dataset输出的sample所包含的字段，注意此为训练集Reader独有的且必须配置的字段
+
+EvalDataset:
+  !VOCDataSet
+    dataset_dir: dataset/roadsign_voc # 数据集所在路径，相对于PaddleDetection路径
+    anno_path: valid.txt # 验证集的标注文件相对于dataset_dir的路径
+    label_list: label_list.txt # 标签文件，相对于dataset_dir的路径
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'difficult']
+
+TestDataset:
+  !ImageFolder
+    anno_path: label_list.txt # 标注文件所在路径，仅用于读取数据集的类别信息，支持json和txt格式
+    dataset_dir: dataset/roadsign_voc # 数据集所在路径，若添加了此行，则`anno_path`路径为相对于`dataset_dir`路径，若此行不设置或去掉此行，则为相对于PaddleDetection路径
+```
+
+然后在对应模型配置文件中将自定义数据文件路径替换为新路径，以`configs/yolov3/yolov3_mobilenet_v1_roadsign.yml`为例
+
+```
+_BASE_: [
+  '../datasets/roadsign_voc.yml', # 指定为自定义数据集配置路径
+  '../runtime.yml',
+  '_base_/optimizer_40e.yml',
+  '_base_/yolov3_mobilenet_v1.yml',
+  '_base_/yolov3_reader.yml',
+]
+pretrain_weights: https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_270e_coco.pdparams
+weights: output/yolov3_mobilenet_v1_roadsign/model_final
+
+YOLOv3Loss:
+  ignore_thresh: 0.7
+  label_smooth: true
+```
+
+
+在PaddleDetection的yml配置文件中，使用`!`直接序列化模块实例(可以是函数，实例等)，上述的配置文件均使用Dataset进行了序列化。
+
+配置修改完成后，即可以启动训练评估，命令如下
+
+```
+export CUDA_VISIBLE_DEVICES=0
+python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml --eval
+```
+
+更详细的命令参考[30分钟快速上手PaddleDetection](../GETTING_STARTED_cn.md)
+
+**注意：**
+请运行前自行仔细检查数据集的配置路径，在训练或验证时如果TrainDataset和EvalDataset的路径配置有误，会提示自动下载数据集。若使用自定义数据集，在推理时如果TestDataset路径配置有误，会提示使用默认COCO数据集的类别信息。
+
 
 
 ### (可选)生成Anchor

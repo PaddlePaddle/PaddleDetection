@@ -5,7 +5,7 @@
 行为识别在智慧社区，安防监控等方向具有广泛应用，PP-Human中集成了基于骨骼点的行为识别模块。
 
 <div align="center">
-  <img src="./images/action.gif" width='1000'/>
+  <img src="../images/action.gif" width='1000'/>
   <center>数据来源及版权归属：天覆科技，感谢提供并开源实际场景数据，仅限学术研究使用</center>
 </div>
 

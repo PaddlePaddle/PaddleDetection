@@ -1,45 +1,32 @@
 English | [简体中文](README.md)
 
-# PP-Human— a Real-Time Pedestrian Analysis Tool
+# Real-Time Pedestrian Analysis Tool ———— PP-Human
 
-PP-Human serves as the first open-source tool of real-time pedestrian anaylsis relying on the PaddlePaddle deep learning framework. Versatile and efficient in deployment, it has been used in various senarios. PP-Human
-offers many input options, including image/single-camera video/multi-camera video, and covers multi-object tracking, attribute recognition, and action recognition. PP-Human can be applied to intelligent traffic, the intelligent community, industiral patrol, and so on. It supports server-side deployment and TensorRT acceleration，and achieves real-time analysis on the T4 server.
+PP-Human serves as the first open-source tool of real-time pedestrian anaylsis relying on the PaddlePaddle deep learning framework. It has three advantages: rich functions, wide application and efficient deployment.
 
-Community intelligent management supportted by PP-Human, please refer to this [AI Studio project](https://aistudio.baidu.com/aistudio/projectdetail/3679564) for quick start tutorial.
+![](https://user-images.githubusercontent.com/48054808/173030254-ecf282bd-2cfe-43d5-b598-8fed29e22020.gif)
 
-Full-process operation tutorial of PP-Human, covering training, deployment, action expansion, please refer to this [AI Studio project](https://aistudio.baidu.com/aistudio/projectdetail/3842982).
+PP-Human offers many input options, including image/single-camera video/multi-camera video, and covers multi-object tracking, attribute recognition, and action recognition. PP-Human can be applied to intelligent traffic, the intelligent community, industiral patrol, and so on. It supports server-side deployment and TensorRT acceleration，and achieves real-time analysis on the T4 server.
 
-## I. Environment Preparation
+## 📣 Recent updates
 
-Requirement: PaddleDetection version >= release/2.4 or develop
+- 2022.4.18：Full-process operation tutorial of PP-Human, covering training, deployment, action expansion, please refer to this [AI Studio project](https://aistudio.baidu.com/aistudio/projectdetail/3842982).
+
+- 2022.4.10：Community intelligent management supportted by PP-Human, please refer to this [AI Studio project](https://aistudio.baidu.com/aistudio/projectdetail/3679564) for quick start tutorial.
+- 2022.4.5：The real-time pedestrian analysis tool PP-Human is released, which supports four capabilities: pedestrian tracking, pedestrian flow statistics, human attribute recognition and fall detection. It is specially optimized based on real scene data to accurately identify various fall postures and adapt to different environmental backgrounds, light and camera angles.
 
 
-The installation of PaddlePaddle and PaddleDetection
+## 🔮 Function introduction and effect display
 
-```
-# PaddlePaddle CUDA10.1
-python -m pip install paddlepaddle-gpu==2.2.2.post101 -f https://www.paddlepaddle.org.cn/whl/linux/mkl/avx/stable.html
+| ⭐ 功能           | 💟 方案优势                                                                                                                                           | 💡示例图                                                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **跨镜跟踪（ReID）** | 超强性能：针对目标遮挡、完整度、模糊度等难点特殊优化，实现mAP 98.8、1.5ms/人                                                                                                     | <img src="https://user-images.githubusercontent.com/48054808/173037607-0a5deadc-076e-4dcc-bd96-d54eea205f1f.png" title="" alt="" width="191"> |
+| **属性分析**       | 兼容多种数据格式：支持图片、视频输入<br/><br/>高性能：融合开源数据集与企业真实数据进行训练，实现mAP 94.86、2ms/人<br/><br/>支持26种属性：性别、年龄、眼镜、上衣、鞋子、帽子、背包等26种高频属性                                | <img src="https://user-images.githubusercontent.com/48054808/173036043-68b90df7-e95e-4ada-96ae-20f52bc98d7c.png" title="" alt="" width="207"> |
+| **行为识别**       | 功能丰富：支持摔倒、打架、抽烟、打电话、人员闯入五种高频异常行为识别<br/><br/>鲁棒性强：对光照、视角、背景环境无限制<br/><br/>性能高：与视频识别技术相比，模型计算量大幅降低，支持本地化与服务化快速部署<br/><br/>训练速度快：仅需15分钟即可产出高精度行为识别模型 | <img src="https://user-images.githubusercontent.com/48054808/173034825-623e4f78-22a5-4f14-9b83-dc47aa868478.gif" title="" alt="" width="209"> |
+| **人流量计数与轨迹记录** | 简洁易用：单个参数即可开启人流量计数与轨迹记录功能                                                                                                                         | <img src="https://user-images.githubusercontent.com/22989727/174736440-87cd5169-c939-48f8-90a1-0495a1fcb2b1.gif" title="" alt="" width="200"> |
 
-# PaddlePaddle CPU
-python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
 
-# Clone the PaddleDetection repository
-cd <path/to/clone/PaddleDetection>
-git clone https://github.com/PaddlePaddle/PaddleDetection.git
-
-# Install other dependencies
-cd PaddleDetection
-pip install -r requirements.txt
-```
-
-1. For details of the installation, please refer to this [document](../../docs/tutorials/INSTALL.md)
-2. Please install `Paddle-TensorRT` if your want speedup inference by TensorRT. You can download the whl package from [Paddle-whl-list](https://paddleinference.paddlepaddle.org.cn/v2.2/user_guides/download_lib.html#python), or prepare the envs by yourself follows the [Install-Guide](https://www.paddlepaddle.org.cn/inference/master/optimize/paddle_trt.html).
-
-## II. Quick Start
-
-### 1. Model Download
-
-To make users have access to models of different scenarios, PP-Human provides pre-trained models of object detection, attribute recognition， behavior recognition, and ReID.
+## 🗳 Model ZOO
 
 | Task            | Scenario | Precision | Inference Speed（FPS） | Model Weights |Model Inference and Deployment |
 | :---------:     |:---------:     |:---------------     | :-------:  | :------:      | :------:      |
@@ -54,124 +41,45 @@ To make users have access to models of different scenarios, PP-Human provides pr
 
 Then, unzip the downloaded model to the folder `./output_inference`.
 
-**Note: **
 
-- The model precision is decided by the fusion of datasets which include open-source datasets and enterprise ones.
-- The precision on ReID model is evaluated on Market1501.
-- The inference speed is tested on T4, using TensorRT FP16. The pipeline of preprocess, prediction and postprocess is included.
-
-### 2. Preparation of Configuration Files
-
-Configuration files of PP-Human are stored in ```deploy/pphuman/config/infer_cfg_pphuman.yml```. Different tasks are for different functions, so you need to set the task type beforhand.
-
-Their correspondence is as follows:
-
-| Input | Function | Task Type | Config |
-|-------|-------|----------|-----|
-| Image | Attribute Recognition | Object Detection  Attribute Recognition | DET ATTR |
-| Single-Camera Video | Attribute Recognition | Multi-Object Tracking  Attribute Recognition | MOT ATTR |
-| Single-Camera Video | Behavior Recognition | Multi-Object Tracking  Keypoint Detection  Falling Recognition | MOT KPT SKELETON_ACTION |
-
-For example, for the attribute recognition with the video input, its task types contain multi-object tracking and attribute recognition, and the config is:
-
-```
-crop_thresh: 0.5
-attr_thresh: 0.5
-visual: True
-
-MOT:
-  model_dir: output_inference/mot_ppyoloe_l_36e_pipeline/
-  tracker_config: deploy/pphuman/config/tracker_config.yml
-  batch_size: 1
-  enable: False
-
-ATTR:
-  model_dir: output_inference/strongbaseline_r50_30e_pa100k/
-  batch_size: 8
-```
-
-**Note: **
-
-- For different tasks, users should set the "enable" to "True" in coresponding configs in the infer_cfg_pphuman.yml file.
-- if only need to change the model path, users could add `--model_dir det=ppyoloe/` in command line and do not need to set config file. For details info please refer to doc below.
+## 📚 Documentation tutorial
+### [QUICK START](docs/tutorials/QUICK_STARTED.md)
 
 
-### 3. Inference and Deployment
+### Pedestrian Attribute/Feature Recognition
 
-```
-# Pedestrian detection. Specify the config file path and test images
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
+* [QUICK START](docs/tutorials/attribute.md)
 
-# Pedestrian tracking. Specify the config file path and test videos, and set the "enable" to "True" in MOT of ```deploy/pphuman/config/infer_cfg_pphuman.yml```
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
+* [Development Tutorial](../../docs/advanced_tutorials/customization/attribute.md)
+  * Data preparation
+  * Model optimization
+  * Add new attribute
 
-# Pedestrian tracking. Specify the config file path, the model path and test videos
-# The model path specified on the command line prioritizes over the config file, and set the "enable" to "True" in MOT of ```deploy/pphuman/config/infer_cfg_pphuman.yml```
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
+### Action Recognition
 
-# Attribute recognition. Specify the config file path and test videos, and set the "enable" to "True" in ATTR of ```deploy/pphuman/config/infer_cfg_pphuman.yml```
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
+* [QUICK START](docs/tutorials/action.md)
+  * Fall detection
 
-# Action Recognition. Specify the config file path and test videos, and set the "enable" to "True" in SKELETON_ACTION of ```deploy/pphuman/config/infer_cfg_pphuman.yml```
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
-
-# Pedestrian Multi-Target Multi-Camera tracking. Specify the config file path and the directory of test videos, and set the "enable" to "True" in REID in ```deploy/pphuman/config/infer_cfg_pphuman.yml```
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
-
-```
-
-Other usage please refer to [sub-task docs](./docs)
-
-### 3.1 Description of Parameters
-
-| Parameter | Optional or not| Meaning |
-|-------|-------|----------|
-| --config | Yes | Config file path |
-| --model_dir | Option | the model paths of different tasks in PP-Human, with a priority higher than config files. For example, `--model_dir det=better_det/ attr=better_attr/` |
-| --image_file | Option | Images to-be-predicted  |
-| --image_dir  | Option |  The path of folders of to-be-predicted images  |
-| --video_file | Option | Videos to-be-predicted |
-| --camera_id | Option | ID of the inference camera is -1 by default (means inference without cameras，and it can be set to 0 - (number of cameras-1)), and during the inference, click `q` on the visual interface to exit and output the inference result to output/output.mp4|
-| --device | Option | During the operation，available devices are `CPU/GPU/XPU`，and the default is `CPU`|
-| --output_dir | Option| The default root directory which stores the visualization result is output/|
-| --run_mode | Option | When using GPU，the default one is paddle, and all these are available（paddle/trt_fp32/trt_fp16/trt_int8）.|
-| --enable_mkldnn | Option |Enable the MKLDNN acceleration or not in the CPU inference, and the default value is false |
-| --cpu_threads | Option| The default CPU thread is 1 |
-| --trt_calib_mode | Option| Enable calibration on TensorRT or not, and the default is False. When using the int8 of TensorRT，it should be set to True; When using the model quantized by PaddleSlim, it should be set to False. |
+* [Development Tutorial](../../docs/advanced_tutorials/customization/action.md)
+  * Scheme selection
+  * Data preparation
+  * Model optimization
+  * Add new action
 
 
-## III. Introduction to the Solution
+### Multi-Target Multi-Camera Tracking and ReID
 
-The overall solution of PP-Human is as follows:
+* [QUICK START](docs/tutorials/mtmct.md)
 
-<div width="1000" align="center">
-  <img src="https://user-images.githubusercontent.com/48054808/160078395-e7b8f2db-1d1c-439a-91f4-2692fac25511.png"/>
-</div>
+* [Development Tutorial]()
+  * Data preparation
+  * Model optimization
 
 
-### 1. Object Detection
-- Use PP-YOLOE L as the model of object detection
-- For details, please refer to [PP-YOLOE](../../configs/ppyoloe/) and [Detection and Tracking](docs/mot_en.md)
+### Passenger flow counting and track recording
 
-### 2. Multi-Object Tracking
-- Conduct multi-object tracking with the SDE solution
-- Use PP-YOLOE L as the detection model
-- Use the Bytetrack solution to track modules
-- For details, refer to [Bytetrack](configs/mot/bytetrack) and [Detection and Tracking](docs/mot_en.md)
+* [QUICK START](docs/tutorials/mot.md)
 
-### 3. Multi-Camera Tracking
-- Use PP-YOLOE + Bytetrack to obtain the tracks of single-camera multi-object tracking
-- Use ReID（centroid network）to extract features of the detection result of each frame
-- Match the features of multi-camera tracks to get the cross-camera tracking result
-- For details, please refer to [Multi-Camera Tracking](docs/mtmct_en.md)
-
-### 4. Attribute Recognition
-- Use PP-YOLOE + Bytetrack to track humans
-- Use StrongBaseline（a multi-class model）to conduct attribute recognition, and the main attributes include age, gender, hats, eyes, clothing, and backpacks.
-- For details, please refer to [Attribute Recognition](docs/attribute_en.md)
-
-### 5. Falling Recognition
-- Use PP-YOLOE + Bytetrack to track humans
-- Use HRNet for keypoint detection and get the information of the 17 key points in the human body
-- According to the changes of the key points of the same person within 50 frames, judge whether the action made by the person within 50 frames is a fall with the help of ST-GCN
-- For details, please refer to [Falling Recognition](docs/action_en.md)
+* [Development Tutorial](../../docs/advanced_tutorials/customization/mot.md)
+  * Data preparation
+  * Model optimization

@@ -1,4 +1,4 @@
-English | [简体中文](PrepareMOTDataSet_cn.md)
+English | [简体中文](PrepareMOTDataSet.md)
 
 # Contents
 ## Multi-Object Tracking Dataset Preparation

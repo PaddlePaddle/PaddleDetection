@@ -4,7 +4,7 @@ English | [简体中文](action.md)
 
 Falling Recognition is widely used in the intelligent community/smart city, and security monitoring. PP-Human provides the module of skeleton-based action recognition.
 
-<div align="center">  <img src="./images/action.gif" width='1000'/> <center>Data source and copyright owner：Skyinfor
+<div align="center">  <img src="../images/action.gif" width='1000'/> <center>Data source and copyright owner：Skyinfor
 Technology. Thanks for the provision of actual scenario data, which are only
 used for academic research here. </center>
 

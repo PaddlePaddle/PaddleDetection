@@ -60,12 +60,12 @@ python3 deploy/pphuman/pipeline.py
 
 - camera 1:
 <div width="1080" align="center">
-  <img src="./images/c1.gif"/>
+  <img src="../images/c1.gif"/>
 </div>
 
 - camera 2:
 <div width="1080" align="center">
-  <img src="./images/c2.gif"/>
+  <img src="../images/c2.gif"/>
 </div>
 
 

@@ -48,7 +48,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphum
 The test result is：
 
 <div width="1000" align="center">
-  <img src="./images/mot.gif"/>
+  <img src="../images/mot.gif"/>
 </div>
 
 Data source and copyright owner：Skyinfor Technology. Thanks for the provision of actual scenario data, which are only used for academic research here.
