@@ -101,7 +101,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
 测试效果如下：
 
 <div width="1000" align="center">
-  <img src="./images/fight_demo.gif"/>
+  <img src="../images/fight_demo.gif"/>
 </div>
 
 数据来源及版权归属：Surveillance Camera Fight Dataset。
