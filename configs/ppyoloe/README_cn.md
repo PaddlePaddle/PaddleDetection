@@ -47,7 +47,7 @@ PP-YOLOE由以下方法组成
 - PP-YOLOE模型推理速度测试采用单卡V100，batch size=1进行测试，使用**CUDA 10.2**, **CUDNN 7.6.5**，TensorRT推理速度测试使用**TensorRT 6.0.1.8**。
 - 参考[速度测试](#速度测试)以复现PP-YOLOE推理速度测试结果。
 - 如果你设置了`--run_benchmark=True`, 你首先需要安装以下依赖`pip install pynvml psutil GPUtil`。
-- 综合指标的表格与原始模型库的表格里的模型权重是**同一个权重**，如果要复现综合指标的测试结果，只要修改[ppyoloe_crn.yml](_base_/ppyoloe_crn.yml)中的`nms`部分的设置为:
+- 综合指标的表格与原始模型库的表格里的模型权重是**同一个权重**，使用**val2017**作为测试集，如果要复现综合指标的测试结果，只要修改[ppyoloe_crn.yml](_base_/ppyoloe_crn.yml)中的`nms`部分的设置为:
   ```
   nms:
     name: MultiClassNMS
