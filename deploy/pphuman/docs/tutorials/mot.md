@@ -47,7 +47,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg.yml \
 测试效果如下：
 
 <div width="1000" align="center">
-  <img src="./images/mot.gif"/>
+  <img src="../images/mot.gif"/>
 </div>
 
 数据来源及版权归属：天覆科技，感谢提供并开源实际场景数据，仅限学术研究使用

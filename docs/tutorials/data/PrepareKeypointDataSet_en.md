@@ -1,4 +1,4 @@
-[简体中文](PrepareKeypointDataSet_cn.md) | English
+[简体中文](PrepareKeypointDataSet.md) | English
 
 # How to prepare dataset?
 ## Table of Contents
@@ -8,7 +8,7 @@
 
 ## COCO
 ### Preperation for COCO dataset
-We provide a one-click script to automatically complete the download and preparation of the COCO2017 dataset. Please refer to [COCO Download](https://github.com/PaddlePaddle/PaddleDetection/blob/f0a30f3ba6095ebfdc8fffb6d02766406afc438a/docs/tutorials/PrepareDataSet.md#COCO%E6%95%B0%E6%8D%AE).
+We provide a one-click script to automatically complete the download and preparation of the COCO2017 dataset. Please refer to [COCO Download](https://github.com/PaddlePaddle/PaddleDetection/blob/f0a30f3ba6095ebfdc8fffb6d02766406afc438a/docs/tutorials/PrepareDetDataSet_en.md#COCO%E6%95%B0%E6%8D%AE).
 
 ### Description for COCO dataset（Keypoint):
 In COCO, the indexes and corresponding keypoint name are:
