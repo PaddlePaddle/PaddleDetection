@@ -107,6 +107,7 @@ ptq_cmd="${python} ${kl_quant_export} ${set_export_weight} ${set_filename} ${set
 echo  $ptq_cmd
 eval "${ptq_cmd} > ${export_log_path} 2>&1"
 status_export=$?
+cat ${export_log_path}
 status_check $status_export "${ptq_cmd}" "${status_log}" "${model_name}"
 
 #run inference

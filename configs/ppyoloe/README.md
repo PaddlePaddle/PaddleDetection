@@ -78,7 +78,10 @@ Training PP-YOLOE with mixed precision on 8 GPUs with following command
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --amp
 ```
 
-**Notes:** use `--amp` to train with default config to avoid out of memeory.
+**Notes:**
+- use `--amp` to train with default config to avoid out of memeory.
+- PaddleDetection supports multi-machine distribued training, you can refer to [DistributedTraining tutorial](../../docs/DistributedTraining_en.md).
+
 
 ### Evaluation
 
@@ -158,6 +161,29 @@ python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o w
 CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_300e_coco --image_file=demo/000000014439_640x640.jpg --run_mode=trt_fp16 --device=gpu --run_benchmark=True
 
 ```
+
+**Using TensorRT Inference with ONNX** to test speed, run following command
+
+```bash
+# export inference model with trt=True
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams exclude_nms=True trt=True
+
+# convert to onnx
+paddle2onnx --model_dir output_inference/ppyoloe_crn_s_300e_coco --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 12 --save_file ppyoloe_crn_s_300e_coco.onnx
+
+# trt inference using fp16 and batch_size=1
+trtexec --onnx=./ppyoloe_crn_s_300e_coco.onnx --saveEngine=./ppyoloe_s_bs1.engine --workspace=1024 --avgRuns=1000 --shapes=image:1x3x640x640,scale_factor:1x2 --fp16
+
+# trt inference using fp16 and batch_size=32
+trtexec --onnx=./ppyoloe_crn_s_300e_coco.onnx --saveEngine=./ppyoloe_s_bs32.engine --workspace=1024 --avgRuns=1000 --shapes=image:32x3x640x640,scale_factor:32x2 --fp16
+
+# Using the above script, T4 and tensorrt 7.2 machine, the speed of PPYOLOE-s model is as follows,
+
+# batch_size=1, 2.80ms, 357fps
+# batch_size=32, 67.69ms, 472fps
+
+```
+
 
 ### Deployment
 

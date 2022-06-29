@@ -77,8 +77,9 @@ PaddleDetection团队提供了基于PP-YOLOE的各种垂类检测模型的配置
 ```bash
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --amp
 ```
-
-**注意:** 使用默认配置训练需要设置`--amp`以避免显存溢出.
+**注意:**
+- 使用默认配置训练需要设置`--amp`以避免显存溢出.
+- PaddleDetection支持多机训练，可以参考[多机训练教程](../../docs/DistributedTraining_cn.md).
 
 ### 评估
 
@@ -160,6 +161,29 @@ python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml -o w
 CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_300e_coco --image_file=demo/000000014439_640x640.jpg --run_mode=trt_fp16 --device=gpu --run_benchmark=True
 
 ```
+
+
+**使用 ONNX 和 TensorRT** 进行测速，执行以下命令：
+
+```bash
+# 导出模型
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams exclude_nms=True trt=True
+
+# 转化成ONNX格式
+paddle2onnx --model_dir output_inference/ppyoloe_crn_s_300e_coco --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 12 --save_file ppyoloe_crn_s_300e_coco.onnx
+
+# 测试速度，半精度，batch_size=1
+trtexec --onnx=./ppyoloe_crn_s_300e_coco.onnx --saveEngine=./ppyoloe_s_bs1.engine --workspace=1024 --avgRuns=1000 --shapes=image:1x3x640x640,scale_factor:1x2 --fp16
+
+# 测试速度，半精度，batch_size=32
+trtexec --onnx=./ppyoloe_crn_s_300e_coco.onnx --saveEngine=./ppyoloe_s_bs32.engine --workspace=1024 --avgRuns=1000 --shapes=image:32x3x640x640,scale_factor:32x2 --fp16
+
+# 使用上边的脚本, 在T4 和 TensorRT 7.2的环境下，PPYOLOE-s模型速度如下
+# batch_size=1, 2.80ms, 357fps
+# batch_size=32, 67.69ms, 472fps
+```
+
+
 
 ### 部署
 
