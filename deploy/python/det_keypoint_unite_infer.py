@@ -19,6 +19,7 @@ import math
 import numpy as np
 import paddle
 import yaml
+import warnings
 
 from det_keypoint_unite_utils import argsparser
 from preprocess import decode_image
@@ -146,6 +147,9 @@ def topdown_unite_predict_video(detector,
     previous_keypoints = None
     keypoint_smoothing = KeypointSmoothing(width, height, filter_type=FLAGS.filter_type, alpha=0.8, beta=1)
 
+    if FLAGS.smooth:
+        warnings.warn('keypoint smoothing only works for one person case!', Warning)
+
     while (1):
         ret, frame = capture.read()
         if not ret:
@@ -165,15 +169,14 @@ def topdown_unite_predict_video(detector,
             frame2, results, topdown_keypoint_detector, keypoint_batch_size,
             FLAGS.run_benchmark)
 
-        if FLAGS.smooth:
-            num_person = np.array(keypoint_res['keypoint']).shape[1]
-            for i in range(num_person):
-                current_keypoints_scores = np.array(keypoint_res['keypoint'][0][i])
-                current_keypoints = current_keypoints_scores[:, 0:2]
-                smooth_keypoints = keypoint_smoothing.smooth_process(previous_keypoints, current_keypoints)
-                previous_keypoints = smooth_keypoints
-                current_keypoints_scores[:, 0:2] = smooth_keypoints
-                keypoint_res['keypoint'][0][i] = current_keypoints_scores.tolist()
+        num_person = np.array(keypoint_res['keypoint']).shape[1]
+        if FLAGS.smooth and num_person == 1:
+            current_keypoints_scores = np.array(keypoint_res['keypoint'][0][0])
+            current_keypoints = current_keypoints_scores[:, 0:2]
+            smooth_keypoints = keypoint_smoothing.smooth_process(previous_keypoints, current_keypoints)
+            previous_keypoints = smooth_keypoints
+            current_keypoints_scores[:, 0:2] = smooth_keypoints
+            keypoint_res['keypoint'][0][0] = current_keypoints_scores.tolist()
 
         im = visualize_pose(
             frame,
