@@ -208,6 +208,7 @@ for infer_mode in ${cpp_infer_mode_list[*]}; do
         echo  $export_cmd
         eval "${export_cmd} > ${export_log_path} 2>&1"
         status_export=$?
+        cat ${export_log_path}
         status_check $status_export "${export_cmd}" "${status_log}" "${model_name}"
     fi
 
