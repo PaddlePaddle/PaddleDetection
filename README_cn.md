@@ -255,6 +255,7 @@
 - `PP-YOLO`在COCO数据集精度45.9%，Tesla V100预测速度72.9FPS，精度速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)
 - `PP-YOLO v2`是对`PP-YOLO`模型的进一步优化，在COCO数据集精度49.5%，Tesla V100预测速度68.9FPS
 - `PP-YOLOE`是对`PP-YOLO v2`模型的进一步优化，在COCO数据集精度51.4%，Tesla V100预测速度78.1FPS
+- [`YOLOX`](configs/yolox)和[`YOLOv5`](https://github.com/nemonameless/PaddleDetection_YOLOv5/tree/main/configs/yolov5)均为基于PaddleDetection复现算法
 - 图中模型均可在[模型库](#模型库)中获取
 
 </details>
