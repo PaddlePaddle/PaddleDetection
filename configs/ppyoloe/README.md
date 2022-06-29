@@ -24,20 +24,50 @@ PP-YOLOE is composed of following methods:
 - [SiLU activation function](https://arxiv.org/abs/1710.05941)
 
 ## Model Zoo
-|          Model           | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>val</sup> | Box AP<sup>test</sup> | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) | download | config  |
+|          Model           | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>val<br>0.5:0.95 | Box AP<sup>test<br>0.5:0.95 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) | download | config  |
 |:------------------------:|:-------:|:----------:|:----------:| :-------:| :------------------: | :-------------------: |:---------:|:--------:| :------------: | :---------------------: | :------: | :------: |
-| PP-YOLOE-s                  |     8      |     32     | cspresnet-s |     640     |       42.7        |        43.1         |   7.93    |  17.36   |      208.3      |          333.3          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml)                   |
-| PP-YOLOE-m                  |     8      |     28     | cspresnet-m |     640     |       48.6        |        48.9         |   23.43   |  49.91   |      123.4      |          208.3          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_m_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_m_300e_coco.yml)                   |
-| PP-YOLOE-l                  |     8      |     20      | cspresnet-l |     640     |       50.9        |        51.4         |   52.20   |  110.07  |      78.1      |          149.2          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml)                   |
-| PP-YOLOE-x                  |     8      |     16     | cspresnet-x |     640     |       51.9        |        52.2         |   98.42   |  206.59  |      45.0      |          95.2          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_x_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_x_300e_coco.yml)                   |
+| PP-YOLOE-s                  |     8      |     32     | cspresnet-s |     640     |       43.0        |        43.2         |   7.93    |  17.36   |      208.3      |          333.3          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml)                   |
+| PP-YOLOE-m                  |     8      |     28     | cspresnet-m |     640     |       49.0        |        49.1         |   23.43   |  49.91   |      123.4      |          208.3          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_m_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_m_300e_coco.yml)                   |
+| PP-YOLOE-l                  |     8      |     20      | cspresnet-l |     640     |       51.4        |        51.6         |   52.20   |  110.07  |      78.1      |          149.2          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml)                   |
+| PP-YOLOE-x                  |     8      |     16     | cspresnet-x |     640     |       52.3        |        52.4         |   98.42   |  206.59  |      45.0      |          95.2          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_x_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_x_300e_coco.yml)                   |
+
+### Comprehensive Metrics
+|          Model           | AP<sup>0.5:0.95 | AP<sup>0.5 |  AP<sup>0.75  | AP<sup>small  | AP<sup>medium | AP<sup>large | AR<sup>small | AR<sup>medium | AR<sup>large | download | config  |
+|:----------------------:|:---------------:|:----------:|:-------------:| :------------:| :-----------: | :----------: |:------------:|:-------------:|:------------:| :-----: | :-----: |
+| PP-YOLOE-s             |      43.0      |     59.6    |     47.2      |     26.0      |      47.4     |     58.7     |     45.1     |      70.6     |   81.4         | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams) | [config](./ppyoloe_crn_s_300e_coco.yml)|
+| PP-YOLOE-m             |      49.0      |     65.9    |     53.8      |     30.9      |      53.5     |     65.3     |     50.9     |      74.4     |   84.7         | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_m_300e_coco.pdparams) | [config](./ppyoloe_crn_m_300e_coco.yml)|
+| PP-YOLOE-l             |      51.4      |     68.6    |     56.2      |     34.8      |      56.1     |     68.0     |     53.1     |      76.8     |   85.6         | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams) | [config](./ppyoloe_crn_l_300e_coco.yml)|
+| PP-YOLOE-x             |      52.3      |     69.5    |     56.8      |     35.1      |      57.0     |     68.6     |     55.5     |      76.9     |   85.7         | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_x_300e_coco.pdparams) | [config](./ppyoloe_crn_x_300e_coco.yml)|
+
 
 **Notes:**
 
-- PP-YOLOE is trained on COCO train2017 dataset and evaluated on val2017 & test-dev2017 dataset，Box AP<sup>test</sup> is evaluation results of `mAP(IoU=0.5:0.95)`.
+- PP-YOLOE is trained on COCO train2017 dataset and evaluated on val2017 & test-dev2017 dataset，all the model weights are trained for **300 epoches**.
+- The model weights in the table of Comprehensive Metrics are **the same as** that in the original Model Zoo, and evaluated on **val2017**. To reproduce the metrics, just modify the setting of `nms` in [ppyoloe_crn.yml](_base_/ppyoloe_crn.yml):
+  ```
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 10000
+    keep_top_k: 300
+    score_threshold: 0.01
+    nms_threshold: 0.7
+  ```
 - PP-YOLOE used 8 GPUs for mixed precision training, if **GPU number** or **mini-batch size** is changed, **learning rate** should be adjusted according to the formula **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)**.
 - PP-YOLOE inference speed is tesed on single Tesla V100 with batch size as 1, **CUDA 10.2**, **CUDNN 7.6.5**, **TensorRT 6.0.1.8** in TensorRT mode.
 - Refer to [Speed testing](#Speed-testing) to reproduce the speed testing results of PP-YOLOE.
 - If you set `--run_benchmark=True`，you should install these dependencies at first, `pip install pynvml psutil GPUtil`.
+
+
+### Feature Models
+
+The PaddleDetection team provides configs and weights of various feature detection models based on PP-YOLOE, which users can download for use:
+
+|Scenarios | Related Datasets | Links|
+| :--------: | :---------: | :------: |
+|Pedestrian Detection | CrowdHuman | [pphuman](../pphuman) |
+|Vehicle Detection | BDD100K, UA-DETRAC | [ppvehicle](../ppvehicle) |
+|Small Object Detection | VisDrone | [visdrone](../visdrone) |
+
 
 ## Getting Start
 
@@ -201,17 +231,6 @@ Model | AP | AP<sub>50</sub>
 - Here, we use [VisDrone](https://github.com/VisDrone/VisDrone-Dataset) dataset, and to detect 9 objects including `person, bicycles, car, van, truck, tricyle, awning-tricyle, bus, motor`.
 - Above models trained using official default config, and load pretrained parameters on COCO dataset.
 - *Due to the limited time, more verification results will be supplemented in the future. You are also welcome to contribute to PP-YOLOE*
-
-
-### Feature Models
-
-The PaddleDetection team provides configs and weights of various feature detection models based on PP-YOLOE, which users can download for use:
-
-|Scenarios | Related Datasets | Links|
-| :--------: | :---------: | :------: |
-|Pedestrian Detection | CrowdHuman | [pphuman](../pphuman) |
-|Vehicle Detection | BDD100K，UA-DETRAC | [ppvehicle](../ppvehicle) |
-|Small Object Detection | VisDrone | [visdrone](../visdrone) |
 
 
 ## Appendix
