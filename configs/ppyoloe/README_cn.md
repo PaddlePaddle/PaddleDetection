@@ -134,7 +134,7 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inferenc
 ```
 
 
-**使用 ONNX 和 TensorRT Inference** 进行测速，执行以下命令：
+**使用 ONNX 和 TensorRT** 进行测速，执行以下命令：
 
 ```bash
 # 导出模型
@@ -148,6 +148,10 @@ trtexec --onnx=./ppyoloe_crn_s_300e_coco.onnx --saveEngine=./ppyoloe_s_bs1.engin
 
 # 测试速度，半精度，batch_size=32
 trtexec --onnx=./ppyoloe_crn_s_300e_coco.onnx --saveEngine=./ppyoloe_s_bs32.engine --workspace=1024 --avgRuns=1000 --shapes=image:32x3x640x640,scale_factor:32x2 --fp16
+
+# 使用上边的脚本, 在T4 和 TensorRT 7.2的环境下，PPYOLOE-s模型速度如下
+# batch_size=1, 2.80ms, 357fps
+# batch_size=32, 67.69ms, 472fps
 ```
 
 
