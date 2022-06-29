@@ -143,8 +143,8 @@ def topdown_unite_predict_video(detector,
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     index = 0
     store_res = []
-    previous_keypoints = None
-    keypoint_smoothing = KeypointSmoothing(width, height, filter_type=FLAGS.filter_type, alpha=0.8, beta=1)
+    keypoint_smoothing = KeypointSmoothing(
+        width, height, filter_type=FLAGS.filter_type, beta=0.05)
 
     while (1):
         ret, frame = capture.read()
@@ -164,11 +164,11 @@ def topdown_unite_predict_video(detector,
         keypoint_res = predict_with_given_det(
             frame2, results, topdown_keypoint_detector, keypoint_batch_size,
             FLAGS.run_benchmark)
-        
+
         if FLAGS.smooth:
             current_keypoints = np.array(keypoint_res['keypoint'][0][0])
-            smooth_keypoints = keypoint_smoothing.smooth_process(previous_keypoints, current_keypoints)
-            previous_keypoints = smooth_keypoints
+            smooth_keypoints = keypoint_smoothing.smooth_process(
+                current_keypoints)
 
             keypoint_res['keypoint'][0][0] = smooth_keypoints.tolist()
 
@@ -205,13 +205,24 @@ def topdown_unite_predict_video(detector,
 
 class KeypointSmoothing(object):
     # The following code are modified from:
-    # https://github.com/610265158/Peppa_Pig_Face_Engine/blob/7bb1066ad3fbb12697924ba7f9287bf198c15232/lib/core/LK/lk.py
-    
-    def __init__(self, width, height, filter_type, alpha=0.5, fc_d=1, fc_min=1, beta=0):
+    # https://github.com/jaantollander/OneEuroFilter
+
+    def __init__(self,
+                 width,
+                 height,
+                 filter_type,
+                 alpha=0.5,
+                 fc_d=0.1,
+                 fc_min=0.1,
+                 beta=0.1,
+                 thres_mult=0.2):
         super(KeypointSmoothing, self).__init__()
         self.image_width = width
         self.image_height = height
-        self.threshold = [0.005, 0.005, 0.005, 0.005, 0.005, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
+        self.threshold = np.array([
+            0.005, 0.005, 0.005, 0.005, 0.005, 0.01, 0.01, 0.01, 0.01, 0.01,
+            0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01
+        ]) * thres_mult
         self.filter_type = filter_type
         self.alpha = alpha
         self.dx_prev_hat = None
@@ -219,7 +230,7 @@ class KeypointSmoothing(object):
         self.fc_d = fc_d
         self.fc_min = fc_min
         self.beta = beta
-        
+
         if self.filter_type == 'one_euro':
             self.smooth_func = self.one_euro_filter
         elif self.filter_type == 'ema':
@@ -227,51 +238,50 @@ class KeypointSmoothing(object):
         else:
             raise ValueError('filter type must be one_euro or ema')
 
-    def smooth_process(self, previous_keypoints, current_keypoints):
-        if previous_keypoints is None:
-            previous_keypoints = current_keypoints
-            result = current_keypoints
+    def smooth_process(self, current_keypoints):
+        if self.x_prev_hat is None:
+            self.x_prev_hat = current_keypoints[:, :2]
+            self.dx_prev_hat = np.zeros(current_keypoints[:, :2].shape)
+            return current_keypoints
         else:
-            result = []
+            result = current_keypoints
             num_keypoints = len(current_keypoints)
             for i in range(num_keypoints):
-                result.append(self.smooth(previous_keypoints[i], current_keypoints[i], self.threshold[i]))
-        return np.array(result)
+                result[i, :2] = self.smooth(current_keypoints[i, :2],
+                                            self.threshold[i], i)
+            return result
 
-
-    def smooth(self, previous_keypoint, current_keypoint, threshold):
-        distance = np.sqrt(np.square((current_keypoint[0] - previous_keypoint[0]) / self.image_width) + np.square((current_keypoint[1] - previous_keypoint[1]) / self.image_height))
+    def smooth(self, current_keypoint, threshold, index):
+        distance = np.sqrt(
+            np.square((current_keypoint[0] - self.x_prev_hat[index][0]) /
+                      self.image_width) + np.square((current_keypoint[
+                          1] - self.x_prev_hat[index][1]) / self.image_height))
         if distance < threshold:
-            result = previous_keypoint
+            result = self.x_prev_hat[index]
         else:
-            result = self.smooth_func(previous_keypoint, current_keypoint)
+            result = self.smooth_func(current_keypoint, self.x_prev_hat[index],
+                                      index)
         return result
 
-
-    def one_euro_filter(self, x_prev, x_cur):
+    def one_euro_filter(self, x_cur, x_pre, index):
         te = 1
         self.alpha = self.smoothing_factor(te, self.fc_d)
-        if self.x_prev_hat is None:
-            self.x_prev_hat = x_prev
-        dx_cur = (x_cur - self.x_prev_hat) / te
-        if self.dx_prev_hat is None:
-            self.dx_prev_hat = 0
-        dx_cur_hat = self.exponential_smoothing(self.dx_prev_hat, dx_cur)
-        
+        dx_cur = (x_cur - x_pre) / te
+        dx_cur_hat = self.exponential_smoothing(dx_cur, self.dx_prev_hat[index])
+
         fc = self.fc_min + self.beta * np.abs(dx_cur_hat)
         self.alpha = self.smoothing_factor(te, fc)
-        x_cur_hat = self.exponential_smoothing(self.x_prev_hat, x_cur)
-        self.dx_prev_hat = dx_cur_hat
-        self.x_prev_hat = x_cur_hat
+        x_cur_hat = self.exponential_smoothing(x_cur, x_pre)
+        self.dx_prev_hat[index] = dx_cur_hat
+        self.x_prev_hat[index] = x_cur_hat
         return x_cur_hat
-
 
     def smoothing_factor(self, te, fc):
         r = 2 * math.pi * fc * te
         return r / (r + 1)
-    
-    def exponential_smoothing(self, x_prev, x_cur):
-        return self.alpha * x_cur + (1 - self.alpha) * x_prev
+
+    def exponential_smoothing(self, x_cur, x_pre, index=0):
+        return self.alpha * x_cur + (1 - self.alpha) * x_pre
 
 
 def main():
