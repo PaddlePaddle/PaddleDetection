@@ -48,8 +48,9 @@ PP-YOLOE由以下方法组成
 ```bash
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --amp
 ```
-
-**注意:** 使用默认配置训练需要设置`--amp`以避免显存溢出.
+**注意:**
+- 使用默认配置训练需要设置`--amp`以避免显存溢出.
+- PaddleDetection支持多机训练，可以参考[多机训练教程](../../docs/DistributedTraining_cn.md).
 
 ### 评估
 
