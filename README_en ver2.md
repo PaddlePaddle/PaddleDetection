@@ -5,7 +5,7 @@
   <img src="https://user-images.githubusercontent.com/48054808/160532560-34cf7a1f-d950-435e-90d2-4b0a679e5119.png" align="middle" width = "800" />
 </p>
 
-**PaddleDetection, a full-process object detection application that provides end-to-end training and deployment**
+**A High-Efficient Development Toolkit for Object Detection based on PaddlePaddle.**
 
 <p align="center">
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-Apache%202-dfd.svg"></a>
@@ -374,8 +374,8 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 - [Quick start](docs/tutorials/QUICK_STARTED_cn.md)
 - [Data preparation](docs/tutorials/data/README.md)
 - [Geting Started on PaddleDetection](docs/tutorials/GETTING_STARTED_cn.md)
-- [Customize data training]((docs/tutorials/CustomizeDataTraining.md)
-- [FAQ]((docs/tutorials/FAQ)
+- [Customize data training](docs/tutorials/CustomizeDataTraining.md)
+- [FAQ](docs/tutorials/FAQ)
 
 ### Advanced tutorials
 
@@ -384,7 +384,7 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
   - [RCNN Configuration](docs/tutorials/config_annotation/faster_rcnn_r50_fpn_1x_coco_annotation.md)
   - [PP-YOLO Configuration](docs/tutorials/config_annotation/ppyolo_r50vd_dcn_1x_coco_annotation.md)
 
-- Compression based on [PaddleSlim]([GitHub - PaddlePaddle/PaddleSlim: PaddleSlim is an open-source library for deep model compression and architecture search.](https://github.com/PaddlePaddle/PaddleSlim))
+- Compression based on [PaddleSlim]([GitHub - PaddlePaddle/PaddleSlim: PaddleSlim is an open-source library for deep model compression and architecture search.](https://github.com/PaddlePaddle/PaddleSlim)
   
   - [Pruning/Quantization/Distillation Tutorial](configs/slim)
 
@@ -422,42 +422,42 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 
 - **[Industrial application] [AI Fast Track industrial object detection technology and application](https://aistudio.baidu.com/aistudio/education/group/info/23670):** Super object detection algorithms, real-time pedestrian analysis system PP-Human, breakdown and practice of object detection industrial application
 
-- **[Industrial features] 2022.3.26** [**Smart City Industry Seven-Day Class**]([飞桨AI Studio - 人工智能学习与实训社区](https://aistudio.baidu.com/aistudio/education/group/info/25620)): Urban Planning, Urban Governance, Smart Government Service, Traffic Management, Community Governance
+- **[Industrial features] 2022.3.26** [**Smart City Industry Seven-Day Class**]([飞桨AI Studio - 人工智能学习与实训社区](https://aistudio.baidu.com/aistudio/education/group/info/25620): Urban Planning, Urban Governance, Smart Government Service, Traffic Management, Community Governance
 
 ### [Industrial tutorial examples](./industrial_tutorial/README_cn.md)
 
 - [Road litter detection based on PP-PicoDet Plus](https://aistudio.baidu.com/aistudio/projectdetail/3561097)
 
-- [Communication tower detection based on PP-PicoDet and deployment on Android]([基于PP-PicoDet的通信塔识别及Android端部署 - 飞桨AI Studio](https://aistudio.baidu.com/aistudio/projectdetail/3561097)) 
+- [Communication tower detection based on PP-PicoDet and deployment on Android]([基于PP-PicoDet的通信塔识别及Android端部署 - 飞桨AI Studio](https://aistudio.baidu.com/aistudio/projectdetail/3561097))
 
 - (https://aistudio.baidu.com/aistudio/projectdetail/2571419)
 
-- [Tile surface defect detection based on Faster-RCNN]([基于Faster-RCNN的瓷砖表面瑕疵检测 - 飞桨AI Studio](https://aistudio.baidu.com/aistudio/projectdetail/2571419)) 
+- [Tile surface defect detection based on Faster-RCNN]([基于Faster-RCNN的瓷砖表面瑕疵检测 - 飞桨AI Studio](https://aistudio.baidu.com/aistudio/projectdetail/2571419) 
 
-- [PCB defect detection based on PaddleDetection]([基于PaddleDetection的PCB瑕疵检测 - 飞桨AI Studio](https://aistudio.baidu.com/aistudio/projectdetail/2367089)) 
+- [PCB defect detection based on PaddleDetection]([基于PaddleDetection的PCB瑕疵检测 - 飞桨AI Studio](https://aistudio.baidu.com/aistudio/projectdetail/2367089)
 
-- [Visitor flow statistics based on FairMOT]([基于FairMOT实现人流量统计 - 飞桨AI Studio](https://aistudio.baidu.com/aistudio/projectdetail/2421822)) 
+- [Visitor flow statistics based on FairMOT]([基于FairMOT实现人流量统计 - 飞桨AI Studio](https://aistudio.baidu.com/aistudio/projectdetail/2421822)
 
-- [Falling detection based on YOLOv3]([基于YOLOv3实现跌倒检测 - 飞桨AI Studio](https://aistudio.baidu.com/aistudio/projectdetail/2500639))
+- [Falling detection based on YOLOv3]([基于YOLOv3实现跌倒检测 - 飞桨AI Studio](https://aistudio.baidu.com/aistudio/projectdetail/2500639)
 
-- [Compliance detection based on human key  point detection]([基于人体关键点的合规检测 - 飞桨AI Studio](https://aistudio.baidu.com/aistudio/projectdetail/4061642?contributionType=1)) 
+- [Compliance detection based on human key  point detection]([基于人体关键点的合规检测 - 飞桨AI Studio](https://aistudio.baidu.com/aistudio/projectdetail/4061642?contributionType=1)
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157836473-1cf451fa-f01f-4148-ba68-b6d06d5da2f9.png" alt="" width="20"> Applications
 
-- [Fitness app on android mobile]([GitHub - zhiboniu/pose_demo_android: pose demo on android mobile based on PaddleDetection](https://github.com/zhiboniu/pose_demo_android))
-- [PP-Tracking GUI Visualization Interface]([GitHub - yangyudong2020/PP-Tracking_GUi: Object detection GUI based on PaddleDetection(基于PaddleDetection的目标检测GUI框架）](https://github.com/yangyudong2020/PP-Tracking_GUi))
+- [Fitness app on android mobile]([GitHub - zhiboniu/pose_demo_android: pose demo on android mobile based on PaddleDetection](https://github.com/zhiboniu/pose_demo_android)
+- [PP-Tracking GUI Visualization Interface]([GitHub - yangyudong2020/PP-Tracking_GUi: Object detection GUI based on PaddleDetection(基于PaddleDetection的目标检测GUI框架）](https://github.com/yangyudong2020/PP-Tracking_GUi)
 
 ## Recommended third-party tutorials
 
 - [Deployment of PaddleDetection for Windows I ](https://zhuanlan.zhihu.com/p/268657833)
 - [Deployment of PaddleDetection for Windows II](https://zhuanlan.zhihu.com/p/280206376)
 - [Deployment of PaddleDetection on Jestson Nano](https://zhuanlan.zhihu.com/p/319371293) 
-- [How to deploy YOLOv3 model on Raspberry Pi for Helmet detection]([PaddleDetection-FAQ/yolov3_for_raspi.md at main · PaddleCV-FAQ/PaddleDetection-FAQ · GitHub](https://github.com/PaddleCV-FAQ/PaddleDetection-FAQ/blob/main/Lite%E9%83%A8%E7%BD%B2/yolov3_for_raspi.md))
-- [Use SSD-MobileNetv1 for a project -- From dataset to deployment on Raspberry Pi]([PaddleDetection-FAQ/ssd_mobilenet_v1_for_raspi.md at main · PaddleCV-FAQ/PaddleDetection-FAQ · GitHub](https://github.com/PaddleCV-FAQ/PaddleDetection-FAQ/blob/main/Lite%E9%83%A8%E7%BD%B2/ssd_mobilenet_v1_for_raspi.md))
+- [How to deploy YOLOv3 model on Raspberry Pi for Helmet detection]([PaddleDetection-FAQ/yolov3_for_raspi.md at main · PaddleCV-FAQ/PaddleDetection-FAQ · GitHub](https://github.com/PaddleCV-FAQ/PaddleDetection-FAQ/blob/main/Lite%E9%83%A8%E7%BD%B2/yolov3_for_raspi.md)
+- [Use SSD-MobileNetv1 for a project -- From dataset to deployment on Raspberry Pi]([PaddleDetection-FAQ/ssd_mobilenet_v1_for_raspi.md at main · PaddleCV-FAQ/PaddleDetection-FAQ · GitHub](https://github.com/PaddleCV-FAQ/PaddleDetection-FAQ/blob/main/Lite%E9%83%A8%E7%BD%B2/ssd_mobilenet_v1_for_raspi.md)
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157835981-ef6057b4-6347-4768-8fcc-cd07fcc3d8b0.png" width="20"/> Version updates
 
-Please refer to the[ Release note ]([PaddlePaddle 2.3.0 Release Note EN · PaddlePaddle/Paddle Wiki · GitHub](https://github.com/PaddlePaddle/Paddle/wiki/PaddlePaddle-2.3.0-Release-Note-EN))for more details about the updates
+Please refer to the[ Release note ]([PaddlePaddle 2.3.0 Release Note EN · PaddlePaddle/Paddle Wiki · GitHub](https://github.com/PaddlePaddle/Paddle/wiki/PaddlePaddle-2.3.0-Release-Note-EN)for more details about the updates
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157835345-f5d24128-abaf-4813-b793-d2e5bdc70e5a.png" alt="" width="20">  License
 
