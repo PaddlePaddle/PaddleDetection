@@ -300,8 +300,6 @@ float PoseSmooth::OneEuroFilter(float x_cur, float x_pre, int loc) {
   float fc = this->fc_min + this->beta * abs(dx_cur_hat);
   this->alpha = this->smoothing_factor(te, fc);
   float x_cur_hat = this->ExpSmoothing(x_cur, x_pre);
-  // printf("alpha:%f, x_cur:%f, x_pre:%f, x_cur_hat:%f\n", this->alpha, x_cur,
-  // x_pre, x_cur_hat);
   this->x_prev_hat.keypoints[loc] = x_cur_hat;
   this->dx_prev_hat.keypoints[loc] = dx_cur_hat;
   return x_cur_hat;

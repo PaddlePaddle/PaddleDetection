@@ -165,7 +165,7 @@ def topdown_unite_predict_video(detector,
             frame2, results, topdown_keypoint_detector, keypoint_batch_size,
             FLAGS.run_benchmark)
 
-        if FLAGS.smooth:
+        if FLAGS.smooth and len(keypoint_res['keypoint'][0])==1:
             current_keypoints = np.array(keypoint_res['keypoint'][0][0])
             smooth_keypoints = keypoint_smoothing.smooth_process(
                 current_keypoints)
@@ -231,9 +231,9 @@ class KeypointSmoothing(object):
         self.fc_min = fc_min
         self.beta = beta
 
-        if self.filter_type == 'one_euro':
+        if self.filter_type == 'OneEuro':
             self.smooth_func = self.one_euro_filter
-        elif self.filter_type == 'ema':
+        elif self.filter_type == 'EMA':
             self.smooth_func = self.exponential_smoothing
         else:
             raise ValueError('filter type must be one_euro or ema')

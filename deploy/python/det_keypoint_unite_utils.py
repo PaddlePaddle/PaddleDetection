@@ -135,7 +135,7 @@ def argsparser():
     parser.add_argument(
         '--filter_type',
         type=str,
-        default='one_euro',
-        help='when set --smooth True, choose filter type you want to use, it can be one_euro or ema.'
+        default='OneEuro',
+        help='when set --smooth True, choose filter type you want to use, it can be [OneEuro] or [EMA].'
     )
     return parser
