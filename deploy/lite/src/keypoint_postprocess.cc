@@ -74,11 +74,26 @@ void transform_preds(std::vector<float>& coords,
                      std::vector<float>& scale,
                      std::vector<int>& output_size,
                      std::vector<int64_t>& dim,
-                     std::vector<float>& target_coords) {
-  cv::Mat trans(2, 3, CV_64FC1);
-  get_affine_transform(center, scale, 0, output_size, trans, 1);
-  for (int p = 0; p < dim[1]; ++p) {
-    affine_tranform(coords[p * 2], coords[p * 2 + 1], trans, target_coords, p);
+                     std::vector<float>& target_coords,
+                     bool affine=false) {
+  if (affine) {
+    cv::Mat trans(2, 3, CV_64FC1);
+    get_affine_transform(center, scale, 0, output_size, trans, 1);
+    for (int p = 0; p < dim[1]; ++p) {
+      affine_tranform(
+          coords[p * 2], coords[p * 2 + 1], trans, target_coords, p);
+    }
+  } else {
+    float heat_w = static_cast<float>(output_size[0]);
+    float heat_h = static_cast<float>(output_size[1]);
+    float x_scale = scale[0] / heat_w;
+    float y_scale = scale[1] / heat_h;
+    float offset_x = center[0] - scale[0] / 2.;
+    float offset_y = center[1] - scale[1] / 2.;
+    for (int i = 0; i < dim[1]; i++) {
+      target_coords[i * 3 + 1] = x_scale * coords[i * 2] + offset_x;
+      target_coords[i * 3 + 2] = y_scale * coords[i * 2 + 1] + offset_y;
+    }
   }
 }
 

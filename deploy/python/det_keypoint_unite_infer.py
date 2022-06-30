@@ -165,7 +165,7 @@ def topdown_unite_predict_video(detector,
             frame2, results, topdown_keypoint_detector, keypoint_batch_size,
             FLAGS.run_benchmark)
 
-        if FLAGS.smooth and len(keypoint_res['keypoint'][0])==1:
+        if FLAGS.smooth and len(keypoint_res['keypoint'][0]) == 1:
             current_keypoints = np.array(keypoint_res['keypoint'][0][0])
             smooth_keypoints = keypoint_smoothing.smooth_process(
                 current_keypoints)
@@ -215,7 +215,7 @@ class KeypointSmoothing(object):
                  fc_d=0.1,
                  fc_min=0.1,
                  beta=0.1,
-                 thres_mult=0.2):
+                 thres_mult=0.3):
         super(KeypointSmoothing, self).__init__()
         self.image_width = width
         self.image_height = height
@@ -234,7 +234,7 @@ class KeypointSmoothing(object):
         if self.filter_type == 'OneEuro':
             self.smooth_func = self.one_euro_filter
         elif self.filter_type == 'EMA':
-            self.smooth_func = self.exponential_smoothing
+            self.smooth_func = self.ema_filter
         else:
             raise ValueError('filter type must be one_euro or ema')
 
@@ -261,6 +261,7 @@ class KeypointSmoothing(object):
         else:
             result = self.smooth_func(current_keypoint, self.x_prev_hat[index],
                                       index)
+
         return result
 
     def one_euro_filter(self, x_cur, x_pre, index):
@@ -273,6 +274,11 @@ class KeypointSmoothing(object):
         self.alpha = self.smoothing_factor(te, fc)
         x_cur_hat = self.exponential_smoothing(x_cur, x_pre)
         self.dx_prev_hat[index] = dx_cur_hat
+        self.x_prev_hat[index] = x_cur_hat
+        return x_cur_hat
+
+    def ema_filter(self, x_cur, x_pre, index):
+        x_cur_hat = self.exponential_smoothing(x_cur, x_pre)
         self.x_prev_hat[index] = x_cur_hat
         return x_cur_hat
 
