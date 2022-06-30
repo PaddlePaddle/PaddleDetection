@@ -209,13 +209,20 @@ class DIouLoss(GIoULoss):
 
         return diou * self.loss_weight
 
+
 @register
 @serializable
 class SIoULoss(GIoULoss):
     """
     see https://arxiv.org/pdf/2205.12740.pdf 
+    Args:
+        loss_weight (float): siou loss weight, default as 1
+        eps (float): epsilon to avoid divide by zero, default as 1e-10
+        theta (float): default as 4
+        reduction (str): Options are "none", "mean" and "sum". default as none
     """
-    def __init__(self, loss_weight=1., eps=1e-10, theta=4, reduction='none'):
+
+    def __init__(self, loss_weight=1., eps=1e-10, theta=4., reduction='none'):
         super(SIoULoss, self).__init__(loss_weight=loss_weight, eps=eps)
         self.loss_weight = loss_weight
         self.eps = eps
@@ -256,25 +263,28 @@ class SIoULoss(GIoULoss):
         cw = paddle.maximum(cx, cxg) - paddle.minimum(cx, cxg)
 
         # angle cost
-        dist_intersection = paddle.sqrt((cx - cxg) ** 2 + (cy - cyg) ** 2)
+        dist_intersection = paddle.sqrt((cx - cxg)**2 + (cy - cyg)**2)
         sin_angle_alpha = ch / dist_intersection
         sin_angle_beta = cw / dist_intersection
         thred = paddle.pow(paddle.to_tensor(2), 0.5) / 2
         thred.stop_gradient = True
-        sin_alpha = paddle.where(sin_angle_alpha > thred, sin_angle_beta, sin_angle_alpha)
+        sin_alpha = paddle.where(sin_angle_alpha > thred, sin_angle_beta,
+                                 sin_angle_alpha)
         angle_cost = paddle.cos(paddle.asin(sin_alpha) * 2 - math.pi / 2)
 
         # distance cost
         gamma = 2 - angle_cost
         # gamma.stop_gradient = True
-        beta_x = ((cxg - cx) / cw_out) ** 2
-        beta_y = ((cyg - cy) / ch_out) ** 2
-        dist_cost = 1 - paddle.exp(-gamma * beta_x) + 1 - paddle.exp(-gamma * beta_y)
+        beta_x = ((cxg - cx) / cw_out)**2
+        beta_y = ((cyg - cy) / ch_out)**2
+        dist_cost = 1 - paddle.exp(-gamma * beta_x) + 1 - paddle.exp(-gamma *
+                                                                     beta_y)
 
         # shape cost
         omega_w = paddle.abs(w - wg) / paddle.maximum(w, wg)
         omega_h = paddle.abs(hg - h) / paddle.maximum(h, hg)
-        omega = (1 - paddle.exp(-omega_w)) ** self.theta + (1 - paddle.exp(-omega_h)) ** self.theta
+        omega = (1 - paddle.exp(-omega_w))**self.theta + (
+            1 - paddle.exp(-omega_h))**self.theta
         siou_loss = 1 - iou + (omega + dist_cost) / 2
 
         if self.reduction == 'mean':
