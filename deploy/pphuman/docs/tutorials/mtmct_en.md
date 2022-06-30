@@ -49,7 +49,7 @@ capture the target in the original image according to bbox——│
   make the IDs cluster together and rearrange them
 ```
 
-2. The model solution is [reid-centroids](https://github.com/mikwieczorek/centroids-reid), with ResNet50 as the backbone. It is worth noting that the solution employs different features of the same ID to enhance the similarity.
+2. The model solution is [reid-strong-baseline](https://github.com/michuanhaohao/reid-strong-baseline), with ResNet50 as the backbone.
 
 Under the above circumstances, the REID model used in MTMCT integrates open-source datasets and compresses model features to 128-dimensional features to optimize the generalization. In this way, the actual generalization result becomes much better.
 
@@ -74,11 +74,21 @@ Under the above circumstances, the REID model used in MTMCT integrates open-sour
 
 ## Reference
 ```
-@article{Wieczorek2021OnTU,
-  title={On the Unreasonable Effectiveness of Centroids in Image Retrieval},
-  author={Mikolaj Wieczorek and Barbara Rychalska and Jacek Dabrowski},
-  journal={ArXiv},
-  year={2021},
-  volume={abs/2104.13643}
+@InProceedings{Luo_2019_CVPR_Workshops,
+author = {Luo, Hao and Gu, Youzhi and Liao, Xingyu and Lai, Shenqi and Jiang, Wei},
+title = {Bag of Tricks and a Strong Baseline for Deep Person Re-Identification},
+booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR) Workshops},
+month = {June},
+year = {2019}
+}
+
+@ARTICLE{Luo_2019_Strong_TMM,
+author={H. {Luo} and W. {Jiang} and Y. {Gu} and F. {Liu} and X. {Liao} and S. {Lai} and J. {Gu}},
+journal={IEEE Transactions on Multimedia},
+title={A Strong Baseline and Batch Normalization Neck for Deep Person Re-identification},
+year={2019},
+pages={1-1},
+doi={10.1109/TMM.2019.2958756},
+ISSN={1941-0077},
 }
 ```
