@@ -88,6 +88,8 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphum
 
 打架识别模型基于6个公开数据集训练得到：Surveillance Camera Fight Dataset、A Dataset for Automatic Violence Detection in Videos、Hockey Fight Detection Dataset、Video Fight Detection Dataset、Real Life Violence Situations Dataset、UBI Abnormal Event Detection Dataset。
 
+本项目关注的场景为监控摄像头下的打架行为识别。打架行为涉及多人，基于骨骼点技术的方案更适用于单人的行为识别。此外，打架行为对时序信息依赖较强，基于检测和分类的方案也不太适用。由于监控场景背景复杂，人的密集程度、光线、拍摄角度等都会对识别造成影响，本方案采用基于视频分类的方式判断视频中是否存在打架行为。针对摄像头距离人较远的情况，通过增大输入图像分辨率优化。由于训练数据有限，采用数据增强的方式提升模型的泛化性能。
+
 ### 使用方法
 1. 从上表链接中下载预测部署模型并解压到`./output_inference`路径下；
 2. 修改解压后`ppTSM`文件夹中的文件名称为`model.pdiparams、model.pdiparams.info和model.pdmodel`；
