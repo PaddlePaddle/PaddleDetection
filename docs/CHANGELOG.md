@@ -7,7 +7,7 @@
 ### 2.4(03.24/2022)
 
 - PP-YOLOE：
-  - 发布PP-YOLOE特色模型，l版本COCO test2017数据集精度51.4%，V100预测速度78.1 FPS，精度速度服务器端SOTA
+  - 发布PP-YOLOE特色模型，l版本COCO test2017数据集精度51.6%，V100预测速度78.1 FPS，精度速度服务器端SOTA
   - 发布s/m/l/x系列模型，打通TensorRT、ONNX部署能力
   - 支持混合精度训练，训练较PP-YOLOv2加速33%
 

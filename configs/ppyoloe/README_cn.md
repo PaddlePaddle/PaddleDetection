@@ -15,7 +15,7 @@ PP-YOLOE是基于PP-YOLOv2的卓越的单阶段Anchor-free模型，超越了多�
   <img src="../../docs/images/ppyoloe_map_fps.png" width=500 />
 </div>
 
-PP-YOLOE-l在COCO test-dev2017达到了51.4的mAP, 同时其速度在Tesla V100上达到了78.1 FPS。PP-YOLOE-s/m/x同样具有卓越的精度速度性价比, 其精度速度可以在[模型库](#模型库)中找到。
+PP-YOLOE-l在COCO test-dev2017达到了51.6的mAP, 同时其速度在Tesla V100上达到了78.1 FPS。PP-YOLOE-s/m/x同样具有卓越的精度速度性价比, 其精度速度可以在[模型库](#模型库)中找到。
 
 PP-YOLOE由以下方法组成
 - 可扩展的backbone和neck
@@ -44,15 +44,7 @@ PP-YOLOE由以下方法组成
 **注意:**
 
 - PP-YOLOE模型使用COCO数据集中train2017作为训练集，使用val2017和test-dev2017作为测试集，模型权重均为训练**300 epoches**得到的。
-- 综合指标的表格与模型库的表格里的模型权重是**同一个权重**，综合指标是使用**val2017**作为验证精度的，如果要复现以上表格中的测试结果，只要修改[ppyoloe_crn.yml](_base_/ppyoloe_crn.yml)中的`nms`部分的设置为:
-  ```
-  nms:
-    name: MultiClassNMS
-    nms_top_k: 10000
-    keep_top_k: 300
-    score_threshold: 0.01
-    nms_threshold: 0.7
-  ```
+- 综合指标的表格与模型库的表格里的模型权重是**同一个权重**，综合指标是使用**val2017**作为验证精度的。
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
 - PP-YOLOE模型推理速度测试采用单卡V100，batch size=1进行测试，使用**CUDA 10.2**, **CUDNN 7.6.5**，TensorRT推理速度测试使用**TensorRT 6.0.1.8**。
 - 参考[速度测试](#速度测试)以复现PP-YOLOE推理速度测试结果。

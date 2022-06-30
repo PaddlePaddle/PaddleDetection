@@ -39,7 +39,7 @@ PPYOLOEHead:
     beta: 6.0
   nms:
     name: MultiClassNMS
-    nms_top_k: 1000
-    keep_top_k: 100
+    nms_top_k: 10000
+    keep_top_k: 300
     score_threshold: 0.01
-    nms_threshold: 0.6
+    nms_threshold: 0.7
