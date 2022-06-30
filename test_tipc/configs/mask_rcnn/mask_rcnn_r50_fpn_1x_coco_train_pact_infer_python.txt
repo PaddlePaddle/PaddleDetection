@@ -14,7 +14,7 @@ filename:null
 ##
 trainer:pact_train
 norm_train:tools/train.py -c configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.yml -o
-pact_train:tools/train.py -c configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.yml --slim_config configs/slim/quant/yolov3_mobilenet_v3_qat.yml -o
+pact_train:tools/train.py -c configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.yml --slim_config configs/slim/quant/mask_rcnn_r50_fpn_1x_qat.yml -o
 fpgm_train:tools/train.py -c configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.yml --slim_config _template_fpgm -o
 distill_train:null
 null:null
@@ -41,7 +41,7 @@ inference:./deploy/python/infer.py
 --device:gpu|cpu
 --enable_mkldnn:False
 --cpu_threads:4
---batch_size:1|2
+--batch_size:1
 --use_tensorrt:null
 --run_mode:paddle
 --model_dir:
