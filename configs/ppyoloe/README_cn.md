@@ -15,7 +15,7 @@ PP-YOLOE是基于PP-YOLOv2的卓越的单阶段Anchor-free模型，超越了多�
   <img src="../../docs/images/ppyoloe_map_fps.png" width=500 />
 </div>
 
-PP-YOLOE-l在COCO test-dev2017达到了51.4的mAP, 同时其速度在Tesla V100上达到了78.1 FPS。PP-YOLOE-s/m/x同样具有卓越的精度速度性价比, 其精度速度可以在[模型库](#模型库)中找到。
+PP-YOLOE-l在COCO test-dev2017达到了51.6的mAP, 同时其速度在Tesla V100上达到了78.1 FPS。PP-YOLOE-s/m/x同样具有卓越的精度速度性价比, 其精度速度可以在[模型库](#模型库)中找到。
 
 PP-YOLOE由以下方法组成
 - 可扩展的backbone和neck
@@ -26,10 +26,10 @@ PP-YOLOE由以下方法组成
 ## 模型库
 |          模型           | GPU个数 | 每GPU图片个数 |  骨干网络  | 输入尺寸 | Box AP<sup>val<br>0.5:0.95 | Box AP<sup>test<br>0.5:0.95 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) | 模型下载 | 配置文件  |
 |:------------------------:|:-------:|:--------:|:----------:| :-------:| :------------------: | :-------------------: |:---------:|:--------:|:---------------:| :---------------------: | :------: | :------: |
-| PP-YOLOE-s                  |     8      |    32    | cspresnet-s |     640     |       43.0        |        43.2         |   7.93    |  17.36   |       208.3 |          333.3          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml)                   |
-| PP-YOLOE-m                  |     8      |    28    | cspresnet-m |     640     |       49.0        |        49.1         |   23.43   |  49.91   |   123.4   |  208.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_m_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_m_300e_coco.yml)                   |
-| PP-YOLOE-l                  |     8      |    20    | cspresnet-l |     640     |       51.4        |        51.6         |   52.20   |  110.07  |   78.1    |  149.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml)                   |
-| PP-YOLOE-x                  |     8      |    16    | cspresnet-x |     640     |       52.3        |        52.4         |   98.42   |  206.59  |   45.0    |   95.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_x_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/ppyoloe_crn_x_300e_coco.yml)                   |
+| PP-YOLOE-s                  |     8      |    32    | cspresnet-s |     640     |       43.0        |        43.2         |   7.93    |  17.36   |       208.3 |          333.3          | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams) | [config](./ppyoloe_crn_s_300e_coco.yml)                   |
+| PP-YOLOE-m                  |     8      |    28    | cspresnet-m |     640     |       49.0        |        49.1         |   23.43   |  49.91   |   123.4   |  208.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_m_300e_coco.pdparams) | [config](./ppyoloe_crn_m_300e_coco.yml)                   |
+| PP-YOLOE-l                  |     8      |    20    | cspresnet-l |     640     |       51.4        |        51.6         |   52.20   |  110.07  |   78.1    |  149.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams) | [config](./ppyoloe_crn_l_300e_coco.yml)                   |
+| PP-YOLOE-x                  |     8      |    16    | cspresnet-x |     640     |       52.3        |        52.4         |   98.42   |  206.59  |   45.0    |   95.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_x_300e_coco.pdparams) | [config](./ppyoloe_crn_x_300e_coco.yml)                   |
 
 
 ### 综合指标
@@ -44,15 +44,7 @@ PP-YOLOE由以下方法组成
 **注意:**
 
 - PP-YOLOE模型使用COCO数据集中train2017作为训练集，使用val2017和test-dev2017作为测试集，模型权重均为训练**300 epoches**得到的。
-- 综合指标的表格与模型库的表格里的模型权重是**同一个权重**，综合指标是使用**val2017**作为验证精度的，如果要复现以上表格中的测试结果，只要修改[ppyoloe_crn.yml](_base_/ppyoloe_crn.yml)中的`nms`部分的设置为:
-  ```
-  nms:
-    name: MultiClassNMS
-    nms_top_k: 10000
-    keep_top_k: 300
-    score_threshold: 0.01
-    nms_threshold: 0.7
-  ```
+- 综合指标的表格与模型库的表格里的模型权重是**同一个权重**，综合指标是使用**val2017**作为验证精度的。
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
 - PP-YOLOE模型推理速度测试采用单卡V100，batch size=1进行测试，使用**CUDA 10.2**, **CUDNN 7.6.5**，TensorRT推理速度测试使用**TensorRT 6.0.1.8**。
 - 参考[速度测试](#速度测试)以复现PP-YOLOE推理速度测试结果。
