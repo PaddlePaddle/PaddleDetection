@@ -334,7 +334,8 @@ class OptimizerBuilder():
                 _params = {
                     n: p
                     for n, p in model.named_parameters()
-                    if any([k in n for k in group['params']])
+                    if any([k in n
+                            for k in group['params']] and p.trainable is True)
                 }
                 _group = group.copy()
                 _group.update({'params': list(_params.values())})
@@ -343,7 +344,8 @@ class OptimizerBuilder():
                 visited.extend(list(_params.keys()))
 
             ext_params = [
-                p for n, p in model.named_parameters() if n not in visited
+                p for n, p in model.named_parameters()
+                if n not in visited and p.trainable is True
             ]
 
             if len(ext_params) < len(model.parameters()):
@@ -353,9 +355,9 @@ class OptimizerBuilder():
                 raise RuntimeError
 
         else:
-            params = model.parameters()
+            _params = model.parameters()
+            params = [param for param in _params if param.trainable is True]
 
-        train_params = [param for param in params if param.trainable is True]
         return op(learning_rate=learning_rate,
                   parameters=train_params,
                   grad_clip=grad_clip,
