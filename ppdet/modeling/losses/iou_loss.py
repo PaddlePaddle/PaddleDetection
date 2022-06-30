@@ -213,11 +213,12 @@ class DIouLoss(GIoULoss):
 @register
 @serializable
 class SIoULoss(GIoULoss):
-    def __init__(self, loss_weight=1., eps=1e-10, theta=4):
+    def __init__(self, loss_weight=1., eps=1e-10, theta=4, reduction='none'):
         super(SIoULoss, self).__init__(loss_weight=loss_weight, eps=eps)
         self.loss_weight = loss_weight
         self.eps = eps
         self.theta = theta
+        self.reduction = reduction
 
     def __call__(self, pbox, gbox):
         x1, y1, x2, y2 = paddle.split(pbox, num_or_sections=4, axis=-1)
@@ -229,13 +230,13 @@ class SIoULoss(GIoULoss):
 
         cx = (x1 + x2) / 2
         cy = (y1 + y2) / 2
-        w = x2 - x1
-        h = y2 - y1
+        w = x2 - x1 + self.eps
+        h = y2 - y1 + self.eps
 
         cxg = (x1g + x2g) / 2
         cyg = (y1g + y2g) / 2
-        wg = x2g - x1g
-        hg = y2g - y1g
+        wg = x2g - x1g + self.eps
+        hg = y2g - y1g + self.eps
 
         x2 = paddle.maximum(x1, x2)
         y2 = paddle.maximum(y1, y2)
@@ -253,12 +254,17 @@ class SIoULoss(GIoULoss):
         cw = paddle.maximum(cx, cxg) - paddle.minimum(cx, cxg)
 
         # angle cost
-        tan_angle = ch / cw
-        angle_cost = 1 - 2 * paddle.sin(paddle.atan(tan_angle) - math.pi / 4) ** 2
+        dist_intersection = paddle.sqrt((cx - cxg) ** 2 + (cy - cyg) ** 2)
+        sin_angle_alpha = ch / dist_intersection
+        sin_angle_beta = cw / dist_intersection
+        thred = paddle.pow(paddle.to_tensor(2), 0.5) / 2
+        thred.stop_gradient = True
+        sin_alpha = paddle.where(sin_angle_alpha > thred, sin_angle_beta, sin_angle_alpha)
+        angle_cost = paddle.cos(paddle.asin(sin_alpha) * 2 - math.pi / 2)
 
         # distance cost
         gamma = 2 - angle_cost
-        gamma.stop_gradient = True
+        # gamma.stop_gradient = True
         beta_x = ((cxg - cx) / cw_out) ** 2
         beta_y = ((cyg - cy) / ch_out) ** 2
         dist_cost = 1 - paddle.exp(-gamma * beta_x) + 1 - paddle.exp(-gamma * beta_y)
@@ -267,6 +273,11 @@ class SIoULoss(GIoULoss):
         omega_w = paddle.abs(w - wg) / paddle.maximum(w, wg)
         omega_h = paddle.abs(hg - h) / paddle.maximum(h, hg)
         omega = (1 - paddle.exp(-omega_w)) ** self.theta + (1 - paddle.exp(-omega_h)) ** self.theta
-        ciou_loss = 1 - iou + (omega + dist_cost) / 2
+        siou_loss = 1 - iou + (omega + dist_cost) / 2
 
-        return ciou_loss * self.loss_weight
+        if self.reduction == 'mean':
+            siou_loss = paddle.mean(siou_loss)
+        elif self.reduction == 'sum':
+            siou_loss = paddle.sum(siou_loss)
+
+        return siou_loss * self.loss_weight
