@@ -18,6 +18,7 @@ from __future__ import print_function
 
 from paddle.optimizer import AdamW
 from functools import partial
+import re
 
 
 def layerwise_lr_decay(decay_rate, name_dict, n_layers, param):
@@ -34,15 +35,20 @@ def layerwise_lr_decay(decay_rate, name_dict, n_layers, param):
     """
     ratio = 1.0
     static_name = name_dict[param.name]
-    if "blocks" in static_name:
-        idx = static_name.find("blocks.")
-        layer = int(static_name[idx:].split(".")[1])
+    if 'blocks.' in static_name or 'layers.' in static_name:
+        idx_1 = static_name.find('blocks.')
+        idx_2 = static_name.find('layers.')
+        assert any([x >= 0 for x in [idx_1, idx_2]]), ''
+        idx = idx_1 if idx_1 >= 0 else idx_2
+        # idx = re.findall('[blocks|layers]\.(\d+)\.', static_name)[0]
+
+        layer = int(static_name[idx:].split('.')[1])
         ratio = decay_rate**(n_layers - layer)
 
-    elif "cls_token" in static_name or 'patch_embed' in static_name:
+    elif 'cls_token' in static_name or 'patch_embed' in static_name:
         ratio = decay_rate**(n_layers + 1)
 
-    param.optimize_attr["learning_rate"] *= ratio
+    param.optimize_attr['learning_rate'] *= ratio
 
 
 class AdamWDL(AdamW):
@@ -156,16 +162,16 @@ class AdamWDL(AdamW):
                  multi_precision=False,
                  layerwise_decay=1.0,
                  n_layers=12,
-                 set_param_lr_fun=None,
+                 set_param_lr_func=None,
                  name_dict=None,
                  name=None):
         if not isinstance(layerwise_decay, float):
             raise TypeError("coeff should be float or Tensor.")
         self.layerwise_decay = layerwise_decay
         self.n_layers = n_layers
-        self.set_param_lr_fun = partial(
-            set_param_lr_fun, layerwise_decay, name_dict,
-            n_layers) if set_param_lr_fun is not None else set_param_lr_fun
+        self.set_param_lr_func = partial(
+            set_param_lr_func, layerwise_decay, name_dict,
+            n_layers) if set_param_lr_func is not None else set_param_lr_func
         super(AdamWDL, self).__init__(
             learning_rate=learning_rate,
             parameters=parameters,
@@ -180,36 +186,35 @@ class AdamWDL(AdamW):
             multi_precision=multi_precision)
 
     def _append_optimize_op(self, block, param_and_grad):
-        if self.set_param_lr_fun is None:
+        if self.set_param_lr_func is None:
             return super(AdamWDL, self)._append_optimize_op(block,
                                                             param_and_grad)
 
         self._append_decoupled_weight_decay(block, param_and_grad)
         prev_lr = param_and_grad[0].optimize_attr["learning_rate"]
-        self.set_param_lr_fun(param_and_grad[0])
+        self.set_param_lr_func(param_and_grad[0])
         # excute Adam op
         res = super(AdamW, self)._append_optimize_op(block, param_and_grad)
         param_and_grad[0].optimize_attr["learning_rate"] = prev_lr
         return res
 
 
-def build_adamw(model,
-                lr=1e-4,
-                weight_decay=0.05,
-                betas=(0.9, 0.999),
-                layer_decay=0.65,
-                num_layers=None,
-                filter_bias_and_bn=True,
-                skip_decay_names=None,
-                set_param_lr_fun=None):
+def build_adamwdl(model,
+                  lr=1e-4,
+                  weight_decay=0.05,
+                  betas=(0.9, 0.999),
+                  layer_decay=0.65,
+                  num_layers=None,
+                  filter_bias_and_bn=True,
+                  skip_decay_names=None,
+                  set_param_lr_func='layerwise_lr_decay'):
 
     if skip_decay_names and filter_bias_and_bn:
         decay_dict = {
-            param.name: not (len(param.shape) == 1 or name.endswith(".bias") or
+            param.name: not (len(param.shape) == 1 or name.endswith('.bias') or
                              any([_n in name for _n in skip_decay_names]))
             for name, param in model.named_parameters()
         }
-
         parameters = [p for p in model.parameters()]
 
     else:
@@ -221,17 +226,15 @@ def build_adamw(model,
     if decay_dict is not None:
         opt_args['apply_decay_param_fun'] = lambda n: decay_dict[n]
 
-    if isinstance(set_param_lr_fun, str):
-        set_param_lr_fun = eval(set_param_lr_fun)
-        opt_args['set_param_lr_fun'] = set_param_lr_fun
+    if isinstance(set_param_lr_func, str):
+        set_param_lr_func = eval(set_param_lr_func)
+        opt_args['set_param_lr_func'] = set_param_lr_func
 
     opt_args['beta1'] = betas[0]
     opt_args['beta2'] = betas[1]
 
     opt_args['layerwise_decay'] = layer_decay
-    name_dict = dict()
-    for n, p in model.named_parameters():
-        name_dict[p.name] = n
+    name_dict = {p.name: n for n, p in model.named_parameters()}
 
     opt_args['name_dict'] = name_dict
     opt_args['n_layers'] = num_layers

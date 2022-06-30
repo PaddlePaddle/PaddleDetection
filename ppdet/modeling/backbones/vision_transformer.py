@@ -340,12 +340,19 @@ class VisionTransformer(nn.Layer):
                  use_abs_pos_emb=False,
                  use_sincos_pos_emb=True,
                  with_fpn=True,
+                 use_checkpoint=False,
                  **args):
         super().__init__()
         self.img_size = img_size
         self.embed_dim = embed_dim
         self.with_fpn = with_fpn
+        self.use_checkpoint = use_checkpoint
+        self.use_sincos_pos_emb = use_sincos_pos_emb
+        self.use_rel_pos_bias = use_rel_pos_bias
+        self.final_norm = final_norm
 
+        if use_checkpoint:
+            print('please set: FLAGS_allocator_strategy=naive_best_fit')
         self.patch_embed = PatchEmbed(
             img_size=img_size,
             patch_size=patch_size,
@@ -366,8 +373,8 @@ class VisionTransformer(nn.Layer):
                     std=.02))
         elif use_sincos_pos_emb:
             pos_embed = self.build_2d_sincos_position_embedding(embed_dim)
-            self.pos_embed = pos_embed
 
+            self.pos_embed = pos_embed
             self.pos_embed = self.create_parameter(shape=pos_embed.shape)
             self.pos_embed.set_value(pos_embed.numpy())
             self.pos_embed.stop_gradient = True
@@ -380,14 +387,8 @@ class VisionTransformer(nn.Layer):
         if use_shared_rel_pos_bias:
             self.rel_pos_bias = RelativePositionBias(
                 window_size=self.patch_embed.patch_shape, num_heads=num_heads)
-
-        elif self.use_sincos_pos_emb:
-            self.pos_embed = self.build_2d_sincos_position_embedding(embed_dim)
-
         else:
             self.rel_pos_bias = None
-
-        self.use_rel_pos_bias = use_rel_pos_bias
 
         dpr = np.linspace(0, drop_path_rate, depth)
 
@@ -408,17 +409,15 @@ class VisionTransformer(nn.Layer):
                 epsilon=epsilon) for i in range(depth)
         ])
 
-        self.final_norm = final_norm
-        ######### del by xy
-        #if self.final_norm:
-        #    self.norm = eval(norm_layer)(embed_dim, epsilon=epsilon)
         self.pretrained = pretrained
         self.init_weight()
 
         assert len(out_indices) <= 4, ''
         self.out_indices = out_indices
         self.out_channels = [embed_dim for _ in range(len(out_indices))]
-        self.out_strides = [4, 8, 16, 32][-len(out_indices):]
+        self.out_strides = [4, 8, 16, 32][-len(out_indices):] if with_fpn else [
+            8 for _ in range(len(out_indices))
+        ]
 
         self.norm = Identity()
 
@@ -575,7 +574,7 @@ class VisionTransformer(nn.Layer):
 
     def forward(self, x):
         x = x['image'] if isinstance(x, dict) else x
-        _, _, w, h = x.shape
+        _, _, h, w = x.shape
 
         x = self.patch_embed(x)
 
@@ -586,7 +585,8 @@ class VisionTransformer(nn.Layer):
         x = paddle.concat([cls_tokens, x], axis=1)
 
         if self.pos_embed is not None:
-            x = x + self.interpolate_pos_encoding(x, w, h)
+            # x = x + self.interpolate_pos_encoding(x, w, h)
+            x = x + self.interpolate_pos_encoding(x, h, w)
 
         x = self.pos_drop(x)
 
@@ -597,7 +597,12 @@ class VisionTransformer(nn.Layer):
 
         feats = []
         for idx, blk in enumerate(self.blocks):
-            x = blk(x, rel_pos_bias)
+            if self.use_checkpoint:
+                x = paddle.distributed.fleet.utils.recompute(
+                    blk, x, rel_pos_bias, **{"preserve_rng_state": True})
+            else:
+                x = blk(x, rel_pos_bias)
+
             if idx in self.out_indices:
                 xp = paddle.reshape(
                     paddle.transpose(

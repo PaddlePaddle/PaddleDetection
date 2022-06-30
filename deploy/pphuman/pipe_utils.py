@@ -154,7 +154,10 @@ class PipeTimer(Times):
             'kpt': Times(),
             'video_action': Times(),
             'skeleton_action': Times(),
-            'reid': Times()
+            'reid': Times(),
+            'det_action': Times(),
+            'cls_action': Times(),
+            'vehicle_attr': Times()
         }
         self.img_num = 0
 

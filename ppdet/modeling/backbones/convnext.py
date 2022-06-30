@@ -29,7 +29,7 @@ import numpy as np
 
 from ppdet.core.workspace import register, serializable
 from ..shape_spec import ShapeSpec
-from .transformer_utils import DropPath, trunc_normal_
+from .transformer_utils import DropPath, trunc_normal_, zeros_
 
 __all__ = ['ConvNeXt']
 
@@ -129,22 +129,43 @@ class ConvNeXt(nn.Layer):
         dims (int): Feature dimension at each stage. Default: [96, 192, 384, 768]
         drop_path_rate (float): Stochastic depth rate. Default: 0.
         layer_scale_init_value (float): Init value for Layer Scale. Default: 1e-6.
-        head_init_scale (float): Init scaling value for classifier weights and biases. Default: 1.
     """
+
+    arch_settings = {
+        'tiny': {
+            'depths': [3, 3, 9, 3],
+            'dims': [96, 192, 384, 768]
+        },
+        'small': {
+            'depths': [3, 3, 27, 3],
+            'dims': [96, 192, 384, 768]
+        },
+        'base': {
+            'depths': [3, 3, 27, 3],
+            'dims': [128, 256, 512, 1024]
+        },
+        'large': {
+            'depths': [3, 3, 27, 3],
+            'dims': [192, 384, 768, 1536]
+        },
+        'xlarge': {
+            'depths': [3, 3, 27, 3],
+            'dims': [256, 512, 1024, 2048]
+        },
+    }
 
     def __init__(
             self,
+            arch='tiny',
             in_chans=3,
-            depths=[3, 3, 9, 3],
-            dims=[96, 192, 384, 768],
             drop_path_rate=0.,
             layer_scale_init_value=1e-6,
-            head_init_scale=1.,
             return_idx=[1, 2, 3],
             norm_output=True,
             pretrained=None, ):
         super().__init__()
-
+        depths = self.arch_settings[arch]['depths']
+        dims = self.arch_settings[arch]['dims']
         self.downsample_layers = nn.LayerList(
         )  # stem and 3 intermediate downsampling conv layers
         stem = nn.Sequential(
@@ -166,7 +187,7 @@ class ConvNeXt(nn.Layer):
         dp_rates = [x for x in np.linspace(0, drop_path_rate, sum(depths))]
         cur = 0
         for i in range(4):
-            stage = nn.Sequential(*[
+            stage = nn.Sequential(* [
                 Block(
                     dim=dims[i],
                     drop_path=dp_rates[cur + j],
@@ -188,8 +209,6 @@ class ConvNeXt(nn.Layer):
             ])
 
         self.apply(self._init_weights)
-        # self.head.weight.set_value(self.head.weight.numpy() * head_init_scale) 
-        # self.head.bias.set_value(self.head.weight.numpy() * head_init_scale) 
 
         if pretrained is not None:
             if 'http' in pretrained:  #URL
@@ -201,8 +220,8 @@ class ConvNeXt(nn.Layer):
 
     def _init_weights(self, m):
         if isinstance(m, (nn.Conv2D, nn.Linear)):
-            trunc_normal_(m.weight, std=.02)
-            nn.init.constant_(m.bias, 0)
+            trunc_normal_(m.weight)
+            zeros_(m.bias)
 
     def forward_features(self, x):
         output = []

@@ -31,6 +31,7 @@ from paddle.inference import Config, create_predictor
 from utils import argsparser, Timer, get_current_memory_mb
 from benchmark_utils import PaddleInferBenchmark
 from infer import Detector, print_arguments
+from attr_infer import AttrDetector
 
 
 class SkeletonActionRecognizer(Detector):
@@ -261,6 +262,218 @@ def get_test_skeletons(input_file):
     else:
         raise ValueError(
             "Now only support input with shape: (N, C, T, K, M) or (C, T, K, M)")
+
+
+class DetActionRecognizer(object):
+    """
+    Args:
+        model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
+        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN
+        threshold (float): The threshold of score for action feature object detection.
+        display_frames (int): The duration for corresponding detected action. 
+    """
+
+    def __init__(self,
+                 model_dir,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 output_dir='output',
+                 threshold=0.5,
+                 display_frames=20):
+        super(DetActionRecognizer, self).__init__()
+        self.detector = Detector(
+            model_dir=model_dir,
+            device=device,
+            run_mode=run_mode,
+            batch_size=batch_size,
+            trt_min_shape=trt_min_shape,
+            trt_max_shape=trt_max_shape,
+            trt_opt_shape=trt_opt_shape,
+            trt_calib_mode=trt_calib_mode,
+            cpu_threads=cpu_threads,
+            enable_mkldnn=enable_mkldnn,
+            output_dir=output_dir,
+            threshold=threshold)
+        self.threshold = threshold
+        self.frame_life = display_frames
+        self.result_history = {}
+
+    def predict(self, images, mot_result):
+        det_result = self.detector.predict_image(images, visual=False)
+        result = self.postprocess(det_result, mot_result)
+        return result
+
+    def postprocess(self, det_result, mot_result):
+        np_boxes_num = det_result['boxes_num']
+        if np_boxes_num[0] <= 0:
+            return [[], []]
+
+        mot_bboxes = mot_result.get('boxes')
+
+        cur_box_idx = 0
+        mot_id = []
+        act_res = []
+        for idx in range(len(mot_bboxes)):
+            tracker_id = mot_bboxes[idx, 0]
+
+            # Current now,  class 0 is positive, class 1 is negative.
+            action_ret = {'class': 1.0, 'score': -1.0}
+            box_num = np_boxes_num[idx]
+            boxes = det_result['boxes'][cur_box_idx:cur_box_idx + box_num]
+            cur_box_idx += box_num
+            isvalid = (boxes[:, 1] > self.threshold) & (boxes[:, 0] == 0)
+            valid_boxes = boxes[isvalid, :]
+
+            if valid_boxes.shape[0] >= 1:
+                action_ret['class'] = valid_boxes[0, 0]
+                action_ret['score'] = valid_boxes[0, 1]
+                self.result_history[tracker_id] = [0, self.frame_life]
+            else:
+                history_det, life_remain = self.result_history.get(tracker_id,
+                                                                   [1, 0])
+                action_ret['class'] = history_det
+                action_ret['score'] = -1.0
+                life_remain -= 1
+                if life_remain <= 0 and tracker_id in self.result_history:
+                    del (self.result_history[tracker_id])
+                elif tracker_id in self.result_history:
+                    self.result_history[tracker_id][1] = life_remain
+
+            mot_id.append(tracker_id)
+            act_res.append(action_ret)
+        result = list(zip(mot_id, act_res))
+
+        return result
+
+
+class ClsActionRecognizer(AttrDetector):
+    """
+    Args:
+        model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
+        run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN
+        threshold (float): The threshold of score for action feature object detection.
+        display_frames (int): The duration for corresponding detected action. 
+    """
+
+    def __init__(self,
+                 model_dir,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 output_dir='output',
+                 threshold=0.5,
+                 display_frames=80):
+        super(ClsActionRecognizer, self).__init__(
+            model_dir=model_dir,
+            device=device,
+            run_mode=run_mode,
+            batch_size=batch_size,
+            trt_min_shape=trt_min_shape,
+            trt_max_shape=trt_max_shape,
+            trt_opt_shape=trt_opt_shape,
+            trt_calib_mode=trt_calib_mode,
+            cpu_threads=cpu_threads,
+            enable_mkldnn=enable_mkldnn,
+            output_dir=output_dir,
+            threshold=threshold)
+        self.threshold = threshold
+        self.frame_life = display_frames
+        self.result_history = {}
+
+    def predict_with_mot(self, images, mot_result):
+        images = self.crop_half_body(images)
+        cls_result = self.predict_image(images, visual=False)["output"]
+        result = self.match_action_with_id(cls_result, mot_result)
+        return result
+
+    def crop_half_body(self, images):
+        crop_images = []
+        for image in images:
+            h = image.shape[0]
+            crop_images.append(image[:h // 2 + 1, :, :])
+        return crop_images
+
+    def postprocess(self, inputs, result):
+        # postprocess output of predictor
+        im_results = result['output']
+        batch_res = []
+        for res in im_results:
+            action_res = res.tolist()
+            for cid, score in enumerate(action_res):
+                action_res[cid] = score
+            batch_res.append(action_res)
+        result = {'output': batch_res}
+        return result
+
+    def match_action_with_id(self, cls_result, mot_result):
+        mot_bboxes = mot_result.get('boxes')
+
+        mot_id = []
+        act_res = []
+
+        for idx in range(len(mot_bboxes)):
+            tracker_id = mot_bboxes[idx, 0]
+
+            cls_id_res = 1
+            cls_score_res = -1.0
+            for cls_id in range(len(cls_result[idx])):
+                score = cls_result[idx][cls_id]
+                if score > cls_score_res:
+                    cls_id_res = cls_id
+                    cls_score_res = score
+
+            # Current now,  class 0 is positive, class 1 is negative.
+            if cls_id_res == 1 or (cls_id_res == 0 and
+                                   cls_score_res < self.threshold):
+                history_cls, life_remain = self.result_history.get(tracker_id,
+                                                                   [1, 0])
+                cls_id_res = history_cls
+                cls_score_res = 1 - cls_score_res
+                life_remain -= 1
+                if life_remain <= 0 and tracker_id in self.result_history:
+                    del (self.result_history[tracker_id])
+                elif tracker_id in self.result_history:
+                    self.result_history[tracker_id][1] = life_remain
+            else:
+                self.result_history[tracker_id] = [cls_id_res, self.frame_life]
+
+            action_ret = {'class': cls_id_res, 'score': cls_score_res}
+            mot_id.append(tracker_id)
+            act_res.append(action_ret)
+        result = list(zip(mot_id, act_res))
+
+        return result
 
 
 def main():
