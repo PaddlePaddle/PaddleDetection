@@ -229,6 +229,17 @@ Model | AP | AP<sub>50</sub>
 - *Due to the limited time, more verification results will be supplemented in the future. You are also welcome to contribute to PP-YOLOE*
 
 
+### Feature Models
+
+The PaddleDetection team provides configs and weights of various feature detection models based on PP-YOLOE, which users can download for use:
+
+|Scenarios | Related Datasets | Links|
+| :--------: | :---------: | :------: |
+|Pedestrian Detection | CrowdHuman | [pphuman](../pphuman) |
+|Vehicle Detection | BDD100K，UA-DETRAC | [ppvehicle](../ppvehicle) |
+|Small Object Detection | VisDrone | [visdrone](../visdrone) |
+
+
 ## Appendix
 
 Ablation experiments of PP-YOLOE.
