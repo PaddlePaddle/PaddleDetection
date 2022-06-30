@@ -7,7 +7,7 @@ English | [简体中文](./CHANGELOG.md)
 ### 2.4(03.24/2022)
 
 - PP-YOLOE：
-  - Release PP-YOLOE object detection models, achieve mAP as 51.4% on COCO test dataset and 78.1 FPS on Nvidia V100 by PP-YOLOE-l, reach SOTA performance for object detection on GPU``
+  - Release PP-YOLOE object detection models, achieve mAP as 51.6% on COCO test dataset and 78.1 FPS on Nvidia V100 by PP-YOLOE-l, reach SOTA performance for object detection on GPU``
   - Release series models: s/m/l/x, and support deployment base on TensorRT & ONNX
   - Spport AMP training and training speed is 33% faster than PP-YOLOv2
 
