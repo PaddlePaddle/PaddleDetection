@@ -6,12 +6,12 @@
 
 | 任务                 | 算法 | 精度 | 预测速度(ms) |下载链接                                                                               |
 |:---------------------|:---------:|:------:|:------:| :---------------------------------------------------------------------------------: |
-| 行人检测/跟踪    |  PP-YOLOE | mAP: 56.3 <br> MOTA: 72.0 | 检测: 28ms <br> 跟踪：33.1ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 行人属性分析    |  StrongBaseline  |  mA: 94.86  | 单人 2ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
+| 行人属性高精度模型    |  PP-HGNet_small  |  mA: 95.4  | 单人 1.54ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.tar) |
+| 行人属性快速版模型    |  PP-LCNet_x1_0  |  mA: 94.5  | 单人 0.54ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.tar) |
+| 行人属性平衡模型    |  PP-HGNet_tiny  |  mA: 95.2  | 单人 1.14ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_person_attribute_952_infer.tar) |
 
-1. 检测/跟踪模型精度为[MOT17](https://motchallenge.net/)，[CrowdHuman](http://www.crowdhuman.org/)，[HIEVE](http://humaninevents.org/)和部分业务数据融合训练测试得到
-2. 行人属性分析精度为[PA100k](https://github.com/xh-liu/HydraPlus-Net#pa-100k-dataset)，[RAPv2](http://www.rapdataset.com/rapv2.html)，[PETA](http://mmlab.ie.cuhk.edu.hk/projects/PETA.html)和部分业务数据融合训练测试得到
-3. 预测速度为T4 机器上使用TensorRT FP16时的速度, 速度包含数据预处理、模型预测、后处理全流程
+1. 行人属性分析精度为[PA100k](https://github.com/xh-liu/HydraPlus-Net#pa-100k-dataset)，[RAPv2](http://www.rapdataset.com/rapv2.html)，[PETA](http://mmlab.ie.cuhk.edu.hk/projects/PETA.html)和部分业务数据融合训练测试得到
+2. 预测速度为V100 机器上使用TensorRT FP16时的速度, 速度包含数据预处理、模型预测、后处理全流程
 
 ## 使用方法
 
@@ -70,7 +70,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphum
 - 穿靴：是、否
 ```
 
-4. 属性识别模型方案为[StrongBaseline](https://arxiv.org/pdf/2107.03576.pdf)，模型结构为基于ResNet50的多分类网络结构，引入Weighted BCE loss和EMA提升模型效果。
+4. 属性识别模型方案为[StrongBaseline](https://arxiv.org/pdf/2107.03576.pdf)，模型结构为基于PP-HGNet、PP-LCNet的多分类网络结构，引入Weighted BCE loss提升模型效果。
 
 ## 参考文献
 ```
