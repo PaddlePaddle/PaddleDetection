@@ -34,7 +34,6 @@ class MobileOneBlock(nn.Layer):
                 ch_out, 
                 stride, 
                 kernel_size, 
-                dilation=1,
                 conv_num=1,
                 norm_type='bn',
                 norm_decay=0.,
@@ -54,19 +53,19 @@ class MobileOneBlock(nn.Layer):
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = (kernel_size - 1) // 2
-        self.dilation = dilation
         self.k = conv_num
 
         self.depth_conv = nn.LayerList()
         self.point_conv = nn.LayerList()
-        for _ in range(self.k):
+        for i in range(self.k):
+            if i > 0:
+                stride = 1
             self.depth_conv.append(
                 ConvNormLayer(
                                 ch_in, 
                                 ch_in, 
                                 kernel_size, 
                                 stride=stride,
-                                dilation=dilation,
                                 groups=ch_in, 
                                 norm_type=norm_type,
                                 norm_decay=norm_decay,
@@ -84,7 +83,6 @@ class MobileOneBlock(nn.Layer):
                                 ch_out, 
                                 1, 
                                 stride=1,
-                                dilation=dilation,
                                 groups=1, 
                                 norm_type=norm_type,
                                 norm_decay=norm_decay,
@@ -100,7 +98,7 @@ class MobileOneBlock(nn.Layer):
                                 ch_in, 
                                 ch_in, 
                                 1, 
-                                stride=stride,
+                                stride=self.stride,
                                 groups=ch_in, 
                                 norm_type=norm_type,
                                 norm_decay=norm_decay,
@@ -113,10 +111,10 @@ class MobileOneBlock(nn.Layer):
                             )
         self.rbr_identity_st1 = nn.BatchNorm2D(num_features=ch_in, 
                                         weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-                                        bias_attr=ParamAttr(regularizer=L2Decay(0.0))) if ch_in == ch_out and stride == 1 else None
+                                        bias_attr=ParamAttr(regularizer=L2Decay(0.0))) if ch_in == ch_out and self.stride == 1 else None
         self.rbr_identity_st2 = nn.BatchNorm2D(num_features=ch_out, 
                                         weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-                                        bias_attr=ParamAttr(regularizer=L2Decay(0.0))) if ch_in == ch_out and stride == 1 else None
+                                        bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
         self.act = get_act_fn(act) if act is None or isinstance(act, (
             str, dict)) else act
 
@@ -145,7 +143,7 @@ class MobileOneBlock(nn.Layer):
             for i in range(self.k):
                 x2_1 = self.point_conv[i](x2_1)
             y = self.act(x2_1 + id_out_st2)
-            
+
         return y
 
     def convert_to_deploy(self):
@@ -156,7 +154,6 @@ class MobileOneBlock(nn.Layer):
                 kernel_size=self.kernel_size,
                 stride=self.stride,
                 padding=self.padding,
-                dilation=self.dilation,
                 groups=self.ch_in)
         if not hasattr(self, 'conv2'):
             self.conv2 = nn.Conv2D(
@@ -165,7 +162,6 @@ class MobileOneBlock(nn.Layer):
                 kernel_size=1,
                 stride=1,
                 padding='SAME',
-                dilation=self.dilation,
                 groups=1)
 
         conv1_kernel, conv1_bias, conv2_kernel, conv2_bias = self.get_equivalent_kernel_bias()
