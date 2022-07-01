@@ -428,7 +428,7 @@ def visualize_vehicleplate(im, results, boxes=None):
             if text == "":
                 continue
             text_w = int(box[2])
-            text_h = int(box[5])
+            text_h = int(box[5] + box[3])
             text_loc = (text_w, text_h)
             cv2.putText(
                 im,

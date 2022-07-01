@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import motmetrics as mm
 from pptracking.python.mot.visualize import plot_tracking
 import os
 import re

@@ -45,16 +45,16 @@ SKELETON_ACTION:
 1. 从上表链接中下载模型并解压到```./output_inference```路径下。
 2. 目前行为识别模块仅支持视频输入，设置infer_cfg_pphuman.yml中`SKELETON_ACTION`的enable: True, 然后启动命令如下：
 ```python
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
 ```
 3. 若修改模型路径，有以下两种方式：
 
-    - ```./deploy/pphuman/config/infer_cfg_pphuman.yml```下可以配置不同模型路径，关键点模型和摔倒行为识别模型分别对应`KPT`和`SKELETON_ACTION`字段，修改对应字段下的路径为实际期望的路径即可。
+    - ```./deploy/pipeline/config/infer_cfg_pphuman.yml```下可以配置不同模型路径，关键点模型和摔倒行为识别模型分别对应`KPT`和`SKELETON_ACTION`字段，修改对应字段下的路径为实际期望的路径即可。
     - 命令行中增加`--model_dir`修改模型路径：
 ```python
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
                                                    --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
@@ -93,10 +93,10 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphum
 ### 使用方法
 1. 从上表链接中下载预测部署模型并解压到`./output_inference`路径下；
 2. 修改解压后`ppTSM`文件夹中的文件名称为`model.pdiparams、model.pdiparams.info和model.pdmodel`；
-3. 修改配置文件`deploy/pphuman/config/infer_cfg_pphuman.yml`中`VIDEO_ACTION`下的`enable`为`True`；
+3. 修改配置文件`deploy/pipeline/config/infer_cfg_pphuman.yml`中`VIDEO_ACTION`下的`enable`为`True`；
 4. 输入视频，启动命令如下：
 ```
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu
 ```
