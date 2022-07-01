@@ -2,7 +2,7 @@ English | [简体中文](action.md)
 
 # Falling Recognition Module of PP-Human
 
-Falling Recognition is widely used in the intelligent community/smart city, and security monitoring. PP-Human provides the module of video-based, detection-based, classification-based and skeleton-based action recognition.
+Falling Recognition is widely used in the intelligent community/smart city, and security monitoring. PP-Human provides the module of video-classification-based, detection-based, image-classification-based and skeleton-based action recognition.
 
 <div align="center">  <img src="../images/action.gif" width='1000'/> <center>Data source and copyright owner：Skyinfor
 Technology. Thanks for the provision of actual scenario data, which are only
@@ -17,8 +17,8 @@ There are multiple available pretrained models including pedestrian detection/tr
 | Task                          | Algorithm | Precision                 | Inference Speed(ms)                 | Model Weights |Model Inference and Deployment                                                                             |
 |:----------------------------- |:---------:|:-------------------------:|:-----------------------------------:| :-----------------:  |:-----------------------------------------------------------------------------------------:|
 | Pedestrian Detection/Tracking | PP-YOLOE  | mAP: 56.3 <br> MOTA: 72.0 | Detection: 28ms <br>Tracking：33.1ms |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| Calling Recognition | PP-HGNet | Precision Rate: 86.85 | - | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.pdparams) | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) |
-| Smoking Recognition | PP-YOLOE | mAP: 39.7 | - | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.pdparams) | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip) |
+| Calling Recognition | PP-HGNet | Precision Rate: 86.85 | Single Person 2.94ms | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.pdparams) | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) |
+| Smoking Recognition | PP-YOLOE | mAP: 39.7 | Single Person 2.0ms | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.pdparams) | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip) |
 | Keypoint Detection            | HRNet     | AP: 87.1                  | Single Person 2.9ms                 |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)     |
 | Falling Recognition            | ST-GCN    | Precision Rate: 96.43     | Single Person 2.7ms                 | - |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip)                      |
 
