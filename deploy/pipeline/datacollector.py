@@ -46,7 +46,7 @@ class Result(object):
 
 class DataCollector(object):
     """
-  DataCollector of pphuman Pipeline, collect results in every frames and assign it to each track ids.
+  DataCollector of Pipeline, collect results in every frames and assign it to each track ids.
   mainly used in mtmct.
   
   data struct:

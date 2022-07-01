@@ -29,11 +29,11 @@ import sys
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'])))
 sys.path.insert(0, parent_path)
 
-from benchmark_utils import PaddleInferBenchmark
-from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine
-from visualize import visualize_attr
-from utils import argsparser, Timer, get_current_memory_mb
-from infer import Detector, get_test_images, print_arguments, load_predictor
+from python.benchmark_utils import PaddleInferBenchmark
+from python.preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine
+from python.visualize import visualize_attr
+from python.utils import argsparser, Timer, get_current_memory_mb
+from python.infer import Detector, get_test_images, print_arguments, load_predictor
 
 from PIL import Image, ImageDraw, ImageFont
 
