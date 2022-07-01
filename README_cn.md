@@ -440,6 +440,8 @@
 
 - [基于人体关键点检测的合规检测](https://aistudio.baidu.com/aistudio/projectdetail/4061642?contributionType=1)
 
+- [打架识别](https://aistudio.baidu.com/aistudio/projectdetail/4086987?contributionType=1)
+
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157836473-1cf451fa-f01f-4148-ba68-b6d06d5da2f9.png" alt="" width="20"> 应用案例
 
 - [安卓健身APP](https://github.com/zhiboniu/pose_demo_android)
