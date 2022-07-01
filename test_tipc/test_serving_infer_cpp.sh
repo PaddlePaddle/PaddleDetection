@@ -79,14 +79,15 @@ function func_serving_inference(){
         web_service_cmd="${_python} -m paddle_serving_server.serve ${_set_server_model_dir} ${set_op} ${set_port} ${set_gpu_ids} ${set_web_service_params1} > ${server_log_path} 2>&1 &"
         eval $web_service_cmd
         last_status=${PIPESTATUS[0]}
+        cat ${server_log_path}
         status_check $last_status "${web_service_cmd}" "${status_log}" "${model_name}"
         sleep 5s
         # run http client
         http_client_cmd="${_python} ${http_client_py} ${_set_client_model_dir} ${_set_image_file} ${set_http_client_params1} > ${client_log_path} 2>&1"
         eval $http_client_cmd
         last_status=${PIPESTATUS[0]}
+        cat ${client_log_path}
         status_check $last_status "${http_client_cmd}" "${status_log}" "${model_name}"
-        eval "cat ${client_log_path}"
         ps ux | grep -i ${port_value} | awk '{print $2}' | xargs kill -s 9
         sleep 2s
     done
@@ -115,6 +116,7 @@ for infer_mode in ${infer_mode_list[*]}; do
         echo  $export_cmd
         eval "${export_cmd} > ${export_log_path} 2>&1"
         status_export=$?
+        cat ${export_log_path}
         status_check $status_export "${export_cmd}" "${status_log}" "${model_name}"
     fi
 

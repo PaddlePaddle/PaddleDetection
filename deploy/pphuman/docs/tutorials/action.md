@@ -2,7 +2,7 @@
 
 # PP-Human行为识别模块
 
-行为识别在智慧社区，安防监控等方向具有广泛应用，根据行为的不同，PP-Human中集成了基于视频、基于检测、基于分类以及基于骨骼点的行为识别模块，方便用户根据需求进行选择。
+行为识别在智慧社区，安防监控等方向具有广泛应用，根据行为的不同，PP-Human中集成了基于视频分类、基于检测、基于图片分类以及基于骨骼点的行为识别模块，方便用户根据需求进行选择。
 
 <div align="center">
   <img src="../images/action.gif" width='1000'/>
@@ -30,8 +30,9 @@
 6. 预测速度为NVIDIA T4 机器上使用TensorRT FP16时的速度, 速度包含数据预处理、模型预测、后处理全流程。
 
 
+### 配置说明
 ## 配置说明
-[配置文件](../config/infer_cfg_pphuman.yml)中与行为识别相关的参数如下：
+[配置文件](../../config/infer_cfg_pphuman.yml)中与行为识别相关的参数如下：
 ```
 SKELETON_ACTION: # 基于骨骼点的行为识别模型配置
   model_dir: output_inference/STGCN  # 模型所在路径
@@ -59,7 +60,7 @@ ID_BASED_CLSACTION: # 基于分类的行为识别模型配置
   enable: False # 是否开启该功能
 ```
 
-## 使用方法
+### 使用方法
 1. 从上表链接中下载模型并解压到```./output_inference```路径下。
 2. 目前行为识别模块仅支持视频输入，根据期望开启的行为识别方案类型，设置infer_cfg_pphuman.yml中`ID_BASED_DETACTION`、`ID_BASED_CLSACTION`或`SKELETON_ACTION`的enable: True, 然后启动命令如下：
 ```python
@@ -78,7 +79,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphum
                                                    --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
 ```
 
-## 方案说明
+### 方案说明
 1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../configs/ppyoloe/README_cn.md)。
 2. 通过行人检测框的坐标在输入视频的对应帧中截取每个行人，根据采用行为识别方案的不同进行不同方式的处理。
 
@@ -106,7 +107,7 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphum
 ```
 - 摔倒行为识别模型使用了[ST-GCN](https://arxiv.org/abs/1801.07455)，并基于[PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/stgcn.md)套件完成模型训练。
 
-## 自定义模型训练
+### 自定义模型训练
 我们已经提供了检测/跟踪、关键点识别以及识别摔倒动作的预训练模型，可直接下载使用。如果希望使用自定义场景数据训练，或是对模型进行优化，根据具体模型，分别参考下面的链接：
 | 任务 | 算法 | 模型训练及导出文档 |
 | ---- | ---- | -------- |
@@ -115,6 +116,42 @@ python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphum
 | 行为识别（摔倒）|  ST-GCN  | [使用教程](https://github.com/PaddlePaddle/PaddleVideo/tree/develop/applications/PPHuman) |
 | 行为识别（吸烟）|  PP-YOLOE  | [使用教程](../../../configs/ppyoloe/README_cn.md#使用教程) |
 | 行为识别（打电话）|  PP-HGNet  | [使用教程](https://github.com/PaddlePaddle/PaddleVideo/tree/develop/applications/PPHuman) |
+
+## 打架识别
+
+随着监控摄像头部署覆盖范围越来越广，人工查看是否存在打架等异常行为耗时费力、效率低，AI+安防助理智慧安防。PP-Human中集成了打架识别模块，识别视频中是否存在打架行为。我们提供了预训练模型，用户可直接下载使用。
+
+| 任务 | 算法 | 精度 | 预测速度(ms) | 模型权重 | 预测部署模型 |
+| ---- | ---- | ---------- | ---- | ---- | ---------- |
+|  打架识别 | PP-TSM | 准确率：89.06% | T4, 2s视频128ms | [下载链接](https://videotag.bj.bcebos.com/PaddleVideo-release2.3/ppTSM_fight.pdparams) | [下载链接](https://videotag.bj.bcebos.com/PaddleVideo-release2.3/ppTSM_fight.zip) |
+
+打架识别模型基于6个公开数据集训练得到：Surveillance Camera Fight Dataset、A Dataset for Automatic Violence Detection in Videos、Hockey Fight Detection Dataset、Video Fight Detection Dataset、Real Life Violence Situations Dataset、UBI Abnormal Event Detection Dataset。
+
+本项目关注的场景为监控摄像头下的打架行为识别。打架行为涉及多人，基于骨骼点技术的方案更适用于单人的行为识别。此外，打架行为对时序信息依赖较强，基于检测和分类的方案也不太适用。由于监控场景背景复杂，人的密集程度、光线、拍摄角度等都会对识别造成影响，本方案采用基于视频分类的方式判断视频中是否存在打架行为。针对摄像头距离人较远的情况，通过增大输入图像分辨率优化。由于训练数据有限，采用数据增强的方式提升模型的泛化性能。
+
+### 使用方法
+1. 从上表链接中下载预测部署模型并解压到`./output_inference`路径下；
+2. 修改解压后`ppTSM`文件夹中的文件名称为`model.pdiparams、model.pdiparams.info和model.pdmodel`；
+3. 修改配置文件`deploy/pphuman/config/infer_cfg_pphuman.yml`中`VIDEO_ACTION`下的`enable`为`True`；
+4. 输入视频，启动命令如下：
+```
+python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
+                                                   --video_file=test_video.mp4 \
+                                                   --device=gpu
+```
+
+测试效果如下：
+
+<div width="1000" align="center">
+  <img src="../images/fight_demo.gif"/>
+</div>
+
+数据来源及版权归属：Surveillance Camera Fight Dataset。
+
+### 方案说明
+
+目前打架识别模型使用的是[PP-TSM](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/pp-tsm.md)，并在PP-TSM视频分类模型训练流程的基础上修改适配，完成模型训练。对于输入的视频或者视频流，进行等间隔抽帧，当视频帧累计到指定数目时，输入到视频分类模型中判断是否存在打架行为。
+
 
 ## 参考文献
 ```

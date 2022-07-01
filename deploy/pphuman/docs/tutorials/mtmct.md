@@ -48,7 +48,7 @@ python3 deploy/pphuman/pipeline.py
   id聚类、重新分配id
 ```
 
-2. 模型方案为[reid-centroids](https://github.com/mikwieczorek/centroids-reid), Backbone为ResNet50, 主要特色为利用相同id的多个特征提升相似度效果。
+2. 模型方案为[reid-strong-baseline](https://github.com/michuanhaohao/reid-strong-baseline), Backbone为ResNet50, 主要特色为模型结构简单。
 本跨镜跟踪中所用REID模型在上述基础上，整合多个开源数据集并压缩模型特征到128维以提升泛化性能。大幅提升了在实际应用中的泛化效果。
 
 ### 其他建议
@@ -71,11 +71,21 @@ python3 deploy/pphuman/pipeline.py
 
 ## 参考文献
 ```
-@article{Wieczorek2021OnTU,
-  title={On the Unreasonable Effectiveness of Centroids in Image Retrieval},
-  author={Mikolaj Wieczorek and Barbara Rychalska and Jacek Dabrowski},
-  journal={ArXiv},
-  year={2021},
-  volume={abs/2104.13643}
+@InProceedings{Luo_2019_CVPR_Workshops,
+author = {Luo, Hao and Gu, Youzhi and Liao, Xingyu and Lai, Shenqi and Jiang, Wei},
+title = {Bag of Tricks and a Strong Baseline for Deep Person Re-Identification},
+booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR) Workshops},
+month = {June},
+year = {2019}
+}
+
+@ARTICLE{Luo_2019_Strong_TMM,
+author={H. {Luo} and W. {Jiang} and Y. {Gu} and F. {Liu} and X. {Liao} and S. {Lai} and J. {Gu}},
+journal={IEEE Transactions on Multimedia},
+title={A Strong Baseline and Batch Normalization Neck for Deep Person Re-identification},
+year={2019},
+pages={1-1},
+doi={10.1109/TMM.2019.2958756},
+ISSN={1941-0077},
 }
 ```
