@@ -96,8 +96,9 @@ class VideoActionRecognizer(object):
 
         self.recognize_times = Timer()
 
-        model_file_path = os.path.join(model_dir, "model.pdmodel")
-        params_file_path = os.path.join(model_dir, "model.pdiparams")
+        model_file_path = glob.glob(os.path.join(model_dir, "*.pdmodel"))[0]
+        params_file_path = glob.glob(os.path.join(model_dir, "*.pdiparams"))[0]
+
         self.config = Config(model_file_path, params_file_path)
 
         if device == "GPU" or device == "gpu":
