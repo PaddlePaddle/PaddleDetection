@@ -2,7 +2,7 @@ English | [简体中文](action.md)
 
 # Falling Recognition Module of PP-Human
 
-Falling Recognition is widely used in the intelligent community/smart city, and security monitoring. PP-Human provides the module of skeleton-based action recognition.
+Falling Recognition is widely used in the intelligent community/smart city, and security monitoring. PP-Human provides the module of video-based, detection-based, classification-based and skeleton-based action recognition.
 
 <div align="center">  <img src="../images/action.gif" width='1000'/> <center>Data source and copyright owner：Skyinfor
 Technology. Thanks for the provision of actual scenario data, which are only
@@ -12,11 +12,13 @@ used for academic research here. </center>
 
 ## Model Zoo
 
-There are multiple available pretrained models including pedestrian detection/tracking, keypoint detection, and fall detection models. Users can download and use them directly.
+There are multiple available pretrained models including pedestrian detection/tracking, keypoint detection, fighting, calling, smoking and fall detection models. Users can download and use them directly.
 
 | Task                          | Algorithm | Precision                 | Inference Speed(ms)                 | Model Weights |Model Inference and Deployment                                                                             |
 |:----------------------------- |:---------:|:-------------------------:|:-----------------------------------:| :-----------------:  |:-----------------------------------------------------------------------------------------:|
 | Pedestrian Detection/Tracking | PP-YOLOE  | mAP: 56.3 <br> MOTA: 72.0 | Detection: 28ms <br>Tracking：33.1ms |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| Calling Recognition | PP-HGNet | Precision Rate: 86.85 | - | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.pdparams) | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) |
+| Smoking Recognition | PP-YOLOE | mAP: 39.7 | - | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.pdparams) | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip) |
 | Keypoint Detection            | HRNet     | AP: 87.1                  | Single Person 2.9ms                 |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)     |
 | Falling Recognition            | ST-GCN    | Precision Rate: 96.43     | Single Person 2.7ms                 | - |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip)                      |
 
@@ -26,33 +28,51 @@ Note:
 
 2. The keypoint detection model is trained on [COCO](https://cocodataset.org/), [UAV-Human](https://github.com/SUTDCV/UAV-Human), and some business data, and the precision is obtained on test sets of business data.
 
-3. The action recognition model is trained on [NTU-RGB+D](https://rose1.ntu.edu.sg/dataset/actionRecognition/), [UR Fall Detection Dataset](http://fenix.univ.rzeszow.pl/~mkepski/ds/uf.html), and some business data, and the precision is obtained on the testing set of business data.
+3. The falling action recognition model is trained on [NTU-RGB+D](https://rose1.ntu.edu.sg/dataset/actionRecognition/), [UR Fall Detection Dataset](http://fenix.univ.rzeszow.pl/~mkepski/ds/uf.html), and some business data, and the precision is obtained on the testing set of business data.
 
-4. The inference speed is the speed of using TensorRT FP16 on NVIDIA T4, including the total time of data pre-training, model inference, and post-processing.
+4. The Calling action recognition model is trained and tested on [UAV-Human](https://github.com/SUTDCV/UAV-Human), by using video frames of calling in this dataset.
+
+5. The Smoking action recognition model is trained and tested on business data.
+
+6. The inference speed is the speed of using TensorRT FP16 on NVIDIA T4, including the total time of data pre-training, model inference, and post-processing.
 
 ## Description of Configuration
 
 Parameters related to action recognition in the [config file](../config/infer_cfg_pphuman.yml) are as follow:
 
 ```
-SKELETON_ACTION:
+SKELETON_ACTION: # Config for skeleton-based action recognition model
   model_dir: output_inference/STGCN  # Path of the model
   batch_size: 1 # The size of the inference batch. The only avilable size for inference is 1.
   max_frames: 50 # The number of frames of action segments. When frames of time-ordered skeleton keypoints of each pedestrian ID achieve the max value,the action type will be judged by the action recognition model. If the setting is the same as the training, there will be an ideal inference result.
   display_frames: 80 # The number of display frames. When the inferred action type is falling down, the time length of the act will be displayed in the ID.
   coord_size: [384, 512] # The unified size of the coordinate, which is the best when it is the same as the training setting.
-  basemode: "skeletonbased" #the models which is based on，whether we need the skeleton model.
-  enable: False #whether to enable this function
+  basemode: "skeletonbased" # The models which is based on，whether we need the skeleton model.
+  enable: False # Whether to enable this function
+
+ID_BASED_DETACTION: # Config for detection-based action recognition model
+  model_dir: output_inference/ppyoloe_crn_s_80e_smoking_visdrone # Path of the model
+  batch_size: 8  # The size of the inference batch
+  basemode: "idbased" # The models which is based on, whether the id of each object obtained by tracking is needed.
+  threshold: 0.4  # Threshold for corresponding behavior.
+  display_frames: 80 # The number of display frames. When the corresponding action is detected, the time length of the act will be displayed in the ID.
+  enable: False # Whether to enable this function
+
+ID_BASED_CLSACTION: # config for classfication-based action recognition model
+  model_dir: output_inference/PPHGNet_tiny_calling_halfbody  # Path of the model
+  batch_size: 8 # The size of the inference batch
+  basemode: "idbased" # the models which is based on, whether the id of each object obtained by tracking is needed.
+  threshold: 0.45 # Threshold for corresponding behavior
+  display_frames: 80 # The number of display frames. When the corresponding action is detected, the time length of the act will be displayed in the ID.
+  enable: False # Whether to enable this function
 ```
-
-
 
 
 ## How to Use
 
 - Download models from the links of the above table and unzip them to ```./output_inference```.
 
-- Now the only available input is the video input in the action recognition module. set the "enable: True" in SKELETON_ACTION of infer_cfg_pphuman.yml. And then run the command:
+- Now the only available input is the video input in the action recognition module. set the "enable: True" of `ID_BASED_DETACTION`, `ID_BASED_CLSACTION` or `SKELETON_ACTION` in infer_cfg_pphuman.yml. And then run the command:
 
   ```python
   python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
@@ -62,7 +82,7 @@ SKELETON_ACTION:
 
 - There are two ways to modify the model path:
 
-  - In ```./deploy/pphuman/config/infer_cfg_pphuman.yml```, you can configurate different model paths，which is proper only if you match keypoint models and action recognition models with the fields of `KPT` and `SKELETON_ACTION` respectively, and modify the corresponding path of each field into the expected path.
+  - In ```./deploy/pphuman/config/infer_cfg_pphuman.yml```, you can configurate different model path. Take the falling action model as an example, it is proper only if you match keypoint models and action recognition models with the fields of `KPT` and `SKELETON_ACTION` respectively, and modify the corresponding path of each field into the expected path.
 
   - Add `--model_dir` in the command line to revise the model path：
 
@@ -77,12 +97,30 @@ SKELETON_ACTION:
 
 1. Get the pedestrian detection box and the tracking ID number of the video input through object detection and multi-object tracking. The adopted model is PP-YOLOE, and for details, please refer to [PP-YOLOE](../../../configs/ppyoloe).
 
-2. Capture every pedestrian in frames of the input video accordingly by using the coordinate of the detection box, and employ the [keypoint detection model](../../../configs/keypoint/hrnet/dark_hrnet_w32_256x192.yml)
-   to obtain 17 skeleton keypoints. Their sequences and types are identical to
-   those of COCO. For details, please refer to the `COCO dataset` part of [how to
-   prepare keypoint datasets](../../../docs/tutorials/PrepareKeypointDataSet_en.md).
+2. Capture every pedestrian in frames of the input video accordingly by using the coordinate of the detection box, and different methods are performed according to different action recognition strategies.
 
-3. Each target pedestrian with a tracking ID has their own accumulation of skeleton keypoints, which is used to form a keypoint sequence in time order. When the number of accumulated frames reach a preset threshold or the tracking is lost, the action recognition model will be applied to judging the action type of the time-ordered keypoint sequence. The current model only supports the recognition of the act of falling down, and the relationship between the action type and `class id` is：
+### Detection-based action recognition
+- In this strategy, we detecting the typical specific target of this behavior in frame-level pedestrian images. When a specific target is detected, it is considered that the character is in the behavior state for a certain period of time. This task is implemented by [PP-YOLOE](../../../configs/ppyoloe/). In current version, the behavior of smoking is supported and the relationship between the action type and `class id` is:
+
+```
+0: Smoking
+
+1: Others
+```
+
+### Classification-based action recognition
+- In this strategy, the goal is achieved by image classification through pedestrian images at the frame level. When the category to which the image belongs is the corresponding behavior, it is considered that the character is in the behavior state for a certain period of time. This task is implemented with [PP-HGNet](https://github.com/PaddlePaddle/PaddleClas/blob/develop/docs/zh_CN/models/PP-HGNet.md). In current version, the behavior of calling is supported and the relationship between the action type and `class id` is:
+
+```
+0: Calling
+
+1: Others
+```
+
+### Skeleton-based action recognition
+- In this strategy, we use the [keypoint detection model](../../../configs/keypoint/hrnet/dark_hrnet_w32_256x192.yml) to obtain 17 skeleton keypoints. Their sequences and types are identical to those of COCO. For details, please refer to the `COCO dataset` part of [how to prepare keypoint datasets](../../../docs/tutorials/PrepareKeypointDataSet_en.md).
+
+- Each target pedestrian with a tracking ID has their own accumulation of skeleton keypoints, which is used to form a keypoint sequence in time order. When the number of accumulated frames reach a preset threshold or the tracking is lost, the action recognition model will be applied to judging the action type of the time-ordered keypoint sequence. The current model only supports the recognition of the act of falling down, and the relationship between the action type and `class id` is：
 
 ```
 0: Fall down
@@ -90,7 +128,7 @@ SKELETON_ACTION:
 1: Others
 ```
 
-4. The action recognition model uses [ST-GCN](https://arxiv.org/abs/1801.07455), and employ the [PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/stgcn.md) toolkit to complete model training.
+- The falling action recognition model uses [ST-GCN](https://arxiv.org/abs/1801.07455), and employ the [PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/stgcn.md) toolkit to complete model training.
 
 
 ## Custom Falling Training
@@ -101,7 +139,9 @@ The pretrained models are provided and can be used directly, including pedestria
 | ---- | ---- | -------- |
 | pedestrian detection/tracking | PP-YOLOE | [doc](../../../configs/ppyoloe/README.md#getting-start) |
 | keypoint detection | HRNet | [doc](../../../configs/keypoint/README_en.md#3training-and-testing) |
-| action recognition |  ST-GCN  | [doc](https://github.com/PaddlePaddle/PaddleVideo/tree/develop/applications/PPHuman) |
+| action recognition (fall down) |  ST-GCN  | [doc](https://github.com/PaddlePaddle/PaddleVideo/tree/develop/applications/PPHuman) |
+| action recognition (smoking) |  PP-YOLOE  | [doc](https://github.com/PaddlePaddle/PaddleVideo/tree/develop/applications/PPHuman) |
+| action recognition (calling) |  PP-HGNet  | [doc](https://github.com/PaddlePaddle/PaddleVideo/tree/develop/applications/PPHuman) |
 
 
 ## Reference
