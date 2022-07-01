@@ -109,7 +109,7 @@ python3 -m paddle.distributed.launch \
 ```
 python3 tools/export_model.py \
     -c ./ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml \
-    -o Global.pretrained_model=output/DistillationModel/best_model_student \
+    -o Global.pretrained_model=output/PPLCNet_x1_0/best_model \
     -o Global.save_inference_dir=deploy/models/PPLCNet_x1_0_person_attribute_infer
 ```
 

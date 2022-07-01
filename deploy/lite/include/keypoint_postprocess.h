@@ -33,7 +33,8 @@ void transform_preds(std::vector<float>& coords,
                      std::vector<float>& scale,
                      std::vector<int>& output_size,
                      std::vector<int>& dim,
-                     std::vector<float>& target_coords);
+                     std::vector<float>& target_coords,
+                     bool affine);
 void box_to_center_scale(std::vector<int>& box,
                          int width,
                          int height,
