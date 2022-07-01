@@ -14,7 +14,7 @@ filename:null
 ##
 trainer:pact_train
 norm_train:tools/train.py -c configs/ppyolo/ppyolo_mbv3_large_coco.yml -o
-pact_train:tools/train.py -c configs/ppyolo/ppyolo_mbv3_large_coco.yml --slim_config configs/slim/quant/yolov3_mobilenet_v3_qat.yml -o
+pact_train:tools/train.py -c configs/ppyolo/ppyolo_mbv3_large_coco.yml --slim_config configs/slim/quant/ppyolo_mbv3_large_qat.yml -o
 fpgm_train:tools/train.py -c configs/ppyolo/ppyolo_mbv3_large_coco.yml --slim_config configs/slim/prune/ppyolo_mbv3_large_prune_fpgm.yml -o
 distill_train:null
 null:null
