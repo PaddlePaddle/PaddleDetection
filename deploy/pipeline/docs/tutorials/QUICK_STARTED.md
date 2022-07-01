@@ -50,7 +50,7 @@ PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模�
 
 ## 三、配置文件说明
 
-PP-Human相关配置位于```deploy/pphuman/config/infer_cfg_pphuman.yml```中，存放模型路径，完成不同功能需要设置不同的任务类型
+PP-Human相关配置位于```deploy/pipeline/config/infer_cfg_pphuman.yml```中，存放模型路径，完成不同功能需要设置不同的任务类型
 
 功能及任务类型对应表单如下：
 
@@ -69,7 +69,7 @@ visual: True
 
 MOT:
   model_dir: output_inference/mot_ppyoloe_l_36e_pipeline/
-  tracker_config: deploy/pphuman/config/tracker_config.yml
+  tracker_config: deploy/pipeline/config/tracker_config.yml
   batch_size: 1
   basemode: "idbased"
   enable: False
@@ -91,23 +91,23 @@ ATTR:
 
 ```
 # 行人检测，指定配置文件路径和测试图片
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
 
-# 行人跟踪，指定配置文件路径和测试视频，在配置文件中```deploy/pphuman/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
+# 行人跟踪，指定配置文件路径和测试视频，在配置文件中```deploy/pipeline/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# 行人跟踪，指定配置文件路径，模型路径和测试视频，在配置文件中```deploy/pphuman/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
+# 行人跟踪，指定配置文件路径，模型路径和测试视频，在配置文件中```deploy/pipeline/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
 # 命令行中指定的模型路径优先级高于配置文件
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
 
-# 行人属性识别，指定配置文件路径和测试视频，在配置文件中```deploy/pphuman/config/infer_cfg_pphuman.yml```中的ATTR部分enable设置为```True```
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
+# 行人属性识别，指定配置文件路径和测试视频，在配置文件中```deploy/pipeline/config/infer_cfg_pphuman.yml```中的ATTR部分enable设置为```True```
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# 行为识别，指定配置文件路径和测试视频，在配置文件中```deploy/pphuman/config/infer_cfg_pphuman.yml```中的SKELETON_ACTION部分enable设置为```True```
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
+# 行为识别，指定配置文件路径和测试视频，在配置文件中```deploy/pipeline/config/infer_cfg_pphuman.yml```中的SKELETON_ACTION部分enable设置为```True```
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，在配置文件中```deploy/pphuman/config/infer_cfg_pphuman.yml```中的REID部分enable设置为```True```
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
+# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，在配置文件中```deploy/pipeline/config/infer_cfg_pphuman.yml```中的REID部分enable设置为```True```
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
 ```
 
 ### 4.1 参数说明

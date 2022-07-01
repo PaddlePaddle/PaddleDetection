@@ -29,9 +29,9 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
 from paddle.inference import Config, create_predictor
-from utils import argsparser, Timer, get_current_memory_mb
-from benchmark_utils import PaddleInferBenchmark
-from infer import Detector, print_arguments
+from python.utils import argsparser, Timer, get_current_memory_mb
+from python.benchmark_utils import PaddleInferBenchmark
+from python.infer import Detector, print_arguments
 from video_action_preprocess import VideoDecoder, Sampler, Scale, CenterCrop, Normalization, Image2Array
 
 
@@ -96,8 +96,8 @@ class VideoActionRecognizer(object):
 
         self.recognize_times = Timer()
 
-        model_file_path = os.path.join(model_dir, "model.pdmodel")
-        params_file_path = os.path.join(model_dir, "model.pdiparams")
+        model_file_path = os.path.join(model_dir, "ppTSM.pdmodel")
+        params_file_path = os.path.join(model_dir, "ppTSM.pdiparams")
         self.config = Config(model_file_path, params_file_path)
 
         if device == "GPU" or device == "gpu":

@@ -15,40 +15,38 @@
 import os
 import yaml
 import glob
-from collections import defaultdict
-
 import cv2
 import numpy as np
 import math
 import paddle
 import sys
 import copy
-from collections import Sequence
-from reid import ReID
+from collections import Sequence, defaultdict
 from datacollector import DataCollector, Result
-from mtmct import mtmct_process
 
 # add deploy path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
-from python.infer import Detector, DetectorPicoDet
-from python.attr_infer import AttrDetector
-from python.keypoint_infer import KeyPointDetector
-from python.keypoint_postprocess import translate_to_ori_images
-
-from python.video_action_infer import VideoActionRecognizer
-from python.action_infer import SkeletonActionRecognizer, DetActionRecognizer, ClsActionRecognizer
-from python.action_utils import KeyPointBuff, ActionVisualHelper
-
 from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
+
+from python.infer import Detector, DetectorPicoDet
+from python.keypoint_infer import KeyPointDetector
+from python.keypoint_postprocess import translate_to_ori_images
 from python.preprocess import decode_image, ShortSizeScale
 from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action, visualize_vehicleplate
 
 from pptracking.python.mot_sde_infer import SDE_Detector
 from pptracking.python.mot.visualize import plot_tracking_dict
 from pptracking.python.mot.utils import flow_statistic
+
+from pphuman.attr_infer import AttrDetector
+from pphuman.video_action_infer import VideoActionRecognizer
+from pphuman.action_infer import SkeletonActionRecognizer, DetActionRecognizer, ClsActionRecognizer
+from pphuman.action_utils import KeyPointBuff, ActionVisualHelper
+from pphuman.reid import ReID
+from pphuman.mtmct import mtmct_process
 
 from ppvehicle.vehicle_plate import PlateRecognizer
 from ppvehicle.vehicle_attr import VehicleAttr

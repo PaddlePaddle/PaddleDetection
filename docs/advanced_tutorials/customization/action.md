@@ -55,12 +55,12 @@ python split_fight_train_test_dataset.py "rawframes" 2 0.8
 
 参数说明：“rawframes”为视频帧存放的文件夹；2表示目录结构为两级，第二级表示每个行为对应的子文件夹；0.8表示训练集比例。
 
-其中`split_fight_train_test_dataset.py`文件在`deploy/pphuman/tools`路径下。
+其中`split_fight_train_test_dataset.py`文件在`deploy/pipeline/tools`路径下。
 
 执行完命令后会最终生成fight_train_list.txt和fight_val_list.txt两个文件。打架的标签为1，非打架的标签为0。
 
 #### 视频裁剪
-对于未裁剪的视频，需要先进行裁剪才能用于模型训练，`deploy/pphuman/tools/clip_video.py`中给出了视频裁剪的函数`cut_video`，输入为视频路径，裁剪的起始帧和结束帧以及裁剪后的视频保存路径。
+对于未裁剪的视频，需要先进行裁剪才能用于模型训练，`deploy/pipeline/tools/clip_video.py`中给出了视频裁剪的函数`cut_video`，输入为视频路径，裁剪的起始帧和结束帧以及裁剪后的视频保存路径。
 
 ## 模型优化
 

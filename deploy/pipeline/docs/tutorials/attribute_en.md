@@ -18,22 +18,22 @@ Pedestrian attribute recognition has been widely used in the intelligent communi
 1. Download the model from the link in the above table, and unzip it to```./output_inference```, and set the "enable: True" in ATTR of infer_cfg_pphuman.yml
 2. When inputting the image, run the command as follows:
 ```python
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --image_file=test_image.jpg \
                                                    --device=gpu \
 ```
 3. When inputting the video, run the command as follows:
 ```python
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
 ```
 4. If you want to change the model path, there are two methods：
 
-    - In ```./deploy/pphuman/config/infer_cfg_pphuman.yml``` you can configurate different model paths. In attribute recognition models, you can modify the configuration in the field of ATTR.
+    - In ```./deploy/pipeline/config/infer_cfg_pphuman.yml``` you can configurate different model paths. In attribute recognition models, you can modify the configuration in the field of ATTR.
     - Add `--model_dir` in the command line to change the model path：
 ```python
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
                                                    --model_dir det=ppyoloe/
