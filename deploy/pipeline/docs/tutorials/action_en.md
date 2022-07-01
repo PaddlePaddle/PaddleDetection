@@ -75,19 +75,18 @@ ID_BASED_CLSACTION: # config for classfication-based action recognition model
 - Now the only available input is the video input in the action recognition module. set the "enable: True" of `ID_BASED_DETACTION`, `ID_BASED_CLSACTION` or `SKELETON_ACTION` in infer_cfg_pphuman.yml. And then run the command:
 
   ```python
-  python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
+  python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
   ```
 
 - There are two ways to modify the model path:
 
-  - In ```./deploy/pphuman/config/infer_cfg_pphuman.yml```, you can configurate different model path. Take the falling action model as an example, it is proper only if you match keypoint models and action recognition models with the fields of `KPT` and `SKELETON_ACTION` respectively, and modify the corresponding path of each field into the expected path.
-
+  - In ```./deploy/pipeline/config/infer_cfg_pphuman.yml```, you can configurate different model paths，which is proper only if you match keypoint models and action recognition models with the fields of `KPT` and `SKELETON_ACTION` respectively, and modify the corresponding path of each field into the expected path.
   - Add `--model_dir` in the command line to revise the model path：
 
     ```python
-    python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
+    python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                        --video_file=test_video.mp4 \
                                                        --device=gpu \
                                                        --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN

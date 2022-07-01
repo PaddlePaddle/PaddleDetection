@@ -33,12 +33,6 @@
 using namespace paddle_infer;
 
 namespace PaddleDetection {
-// Object KeyPoint Result
-struct KeyPointResult {
-  // Keypoints: shape(N x 3); N: number of Joints; 3: x,y,conf
-  std::vector<float> keypoints;
-  int num_joints = -1;
-};
 
 // Visualiztion KeyPoint Result
 cv::Mat VisualizeKptsResult(const cv::Mat& img,

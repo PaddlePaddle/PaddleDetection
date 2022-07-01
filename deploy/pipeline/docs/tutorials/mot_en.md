@@ -17,23 +17,23 @@ Pedestrian detection and tracking is widely used in the intelligent community, i
 1. Download models from the links of the above table and unizp them to ```./output_inference```.
 2. When use the image as input, it's a detection task, the start command is as follows:
 ```python
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --image_file=test_image.jpg \
                                                    --device=gpu
 ```
 3. When use the video as input, it's a tracking task, first you should set the "enable: True" in MOT of infer_cfg_pphuman.yml, and then the start command is as follows:
 ```python
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu
 ```
 4. There are two ways to modify the model path:
 
-     - In `./deploy/pphuman/config/infer_cfg_pphuman.yml`, you can configurate different model paths，which is proper only if you match keypoint models and action recognition models with the fields of `DET` and `MOT` respectively, and modify the corresponding path of each field into the expected path.
+     - In `./deploy/pipeline/config/infer_cfg_pphuman.yml`, you can configurate different model paths，which is proper only if you match keypoint models and action recognition models with the fields of `DET` and `MOT` respectively, and modify the corresponding path of each field into the expected path.
     - Add `--model_dir` in the command line to revise the model path:
 
 ```python
-python deploy/pphuman/pipeline.py --config deploy/pphuman/config/infer_cfg_pphuman.yml \
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
                                                    --model_dir det=ppyoloe/
