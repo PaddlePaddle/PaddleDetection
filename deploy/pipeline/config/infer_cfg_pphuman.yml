@@ -10,7 +10,7 @@ DET:
 
 MOT:
   model_dir: output_inference/mot_ppyoloe_l_36e_pipeline/
-  tracker_config: deploy/pphuman/config/tracker_config.yml
+  tracker_config: deploy/pipeline/config/tracker_config.yml
   batch_size: 1
   basemode: "idbased"
   enable: False

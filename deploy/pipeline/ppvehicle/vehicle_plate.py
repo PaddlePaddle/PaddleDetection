@@ -29,9 +29,9 @@ sys.path.insert(0, parent_path)
 
 from python.infer import get_test_images
 from python.preprocess import preprocess, NormalizeImage, Permute, Resize_Mult32
-from pphuman.ppvehicle.vehicle_plateutils import create_predictor, get_infer_gpuid, get_rotate_crop_image, draw_boxes
-from pphuman.ppvehicle.vehicleplate_postprocess import build_post_process
-from pphuman.pipe_utils import merge_cfg, print_arguments, argsparser
+from pipeline.ppvehicle.vehicle_plateutils import create_predictor, get_infer_gpuid, get_rotate_crop_image, draw_boxes
+from pipeline.ppvehicle.vehicleplate_postprocess import build_post_process
+from pipeline.pipe_utils import merge_cfg, print_arguments, argsparser
 
 
 class PlateDetector(object):
@@ -62,18 +62,17 @@ class PlateDetector(object):
         self.predictor, self.input_tensor, self.output_tensors, self.config = create_predictor(
             args, cfg, 'det')
 
-    def preprocess(self, image_list):
+    def preprocess(self, im_path):
         preprocess_ops = []
         for op_type, new_op_info in self.pre_process_list.items():
             preprocess_ops.append(eval(op_type)(**new_op_info))
 
         input_im_lst = []
         input_im_info_lst = []
-        for im_path in image_list:
-            im, im_info = preprocess(im_path, preprocess_ops)
-            input_im_lst.append(im)
-            input_im_info_lst.append(im_info['im_shape'] /
-                                     im_info['scale_factor'])
+
+        im, im_info = preprocess(im_path, preprocess_ops)
+        input_im_lst.append(im)
+        input_im_info_lst.append(im_info['im_shape'] / im_info['scale_factor'])
 
         return np.stack(input_im_lst, axis=0), input_im_info_lst
 
@@ -119,27 +118,28 @@ class PlateDetector(object):
     def predict_image(self, img_list):
         st = time.time()
 
-        img, shape_list = self.preprocess(img_list)
-        if img is None:
-            return None, 0
-
-        self.input_tensor.copy_from_cpu(img)
-        self.predictor.run()
-        outputs = []
-        for output_tensor in self.output_tensors:
-            output = output_tensor.copy_to_cpu()
-            outputs.append(output)
-
-        preds = {}
-        preds['maps'] = outputs[0]
-
-        #self.predictor.try_shrink_memory()
-        post_result = self.postprocess_op(preds, shape_list)
-
         dt_batch_boxes = []
-        for idx in range(len(post_result)):
-            org_shape = img_list[idx].shape
-            dt_boxes = post_result[idx]['points']
+        for image in img_list:
+            img, shape_list = self.preprocess(image)
+            if img is None:
+                return None, 0
+
+            self.input_tensor.copy_from_cpu(img)
+            self.predictor.run()
+            outputs = []
+            for output_tensor in self.output_tensors:
+                output = output_tensor.copy_to_cpu()
+                outputs.append(output)
+
+            preds = {}
+            preds['maps'] = outputs[0]
+
+            #self.predictor.try_shrink_memory()
+            post_result = self.postprocess_op(preds, shape_list)
+            # print("post_result length:{}".format(len(post_result)))
+
+            org_shape = image.shape
+            dt_boxes = post_result[0]['points']
             dt_boxes = self.filter_tag_det_res(dt_boxes, org_shape)
             dt_batch_boxes.append(dt_boxes)
 
