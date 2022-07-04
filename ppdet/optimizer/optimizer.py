@@ -342,7 +342,7 @@ class OptimizerBuilder():
                     n: p
                     for n, p in model.named_parameters()
                     if any([k in n
-                            for k in group['params']] and p.trainable is True)
+                            for k in group['params']]) and p.trainable is True
                 }
                 _group = group.copy()
                 _group.update({'params': list(_params.values())})
