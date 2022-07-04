@@ -21,7 +21,6 @@ from ppdet.core.workspace import register
 from .anchor_generator import AnchorGenerator
 from .target_layer import RPNTargetAssign
 from .proposal_generator import ProposalGenerator
-from ..cls_utils import _get_class_default_kwargs
 
 
 class RPNFeat(nn.Layer):
@@ -68,15 +67,16 @@ class RPNHead(nn.Layer):
             derived by from_config
     """
     __shared__ = ['export_onnx']
+    __inject__ = ['loss_rpn_bbox', ]
 
     def __init__(self,
-                 anchor_generator=_get_class_default_kwargs(AnchorGenerator),
-                 rpn_target_assign=_get_class_default_kwargs(RPNTargetAssign),
-                 train_proposal=_get_class_default_kwargs(ProposalGenerator,
-                                                          12000, 2000),
-                 test_proposal=_get_class_default_kwargs(ProposalGenerator),
+                 anchor_generator=AnchorGenerator().__dict__,
+                 rpn_target_assign=RPNTargetAssign().__dict__,
+                 train_proposal=ProposalGenerator(12000, 2000).__dict__,
+                 test_proposal=ProposalGenerator().__dict__,
                  in_channel=1024,
-                 export_onnx=False):
+                 export_onnx=False,
+                 loss_rpn_bbox=None):
         super(RPNHead, self).__init__()
         self.anchor_generator = anchor_generator
         self.rpn_target_assign = rpn_target_assign
@@ -92,6 +92,7 @@ class RPNHead(nn.Layer):
         if isinstance(test_proposal, dict):
             self.test_proposal = ProposalGenerator(**test_proposal)
 
+        self.loss_rpn_bbox = loss_rpn_bbox
         num_anchors = self.anchor_generator.num_anchors
         self.rpn_feat = RPNFeat(in_channel, in_channel)
         # rpn head is shared with each level
@@ -298,7 +299,12 @@ class RPNHead(nn.Layer):
             loc_tgt = paddle.concat(loc_tgt)
             loc_tgt = paddle.gather(loc_tgt, pos_ind)
             loc_tgt.stop_gradient = True
-            loss_rpn_reg = paddle.abs(loc_pred - loc_tgt).sum()
+
+            if self.loss_rpn_bbox is None:
+                loss_rpn_reg = paddle.abs(loc_pred - loc_tgt).sum()
+            else:
+                loss_rpn_reg = self.loss_rpn_bbox(loc_pred, loc_tgt).sum()
+
         return {
             'loss_rpn_cls': loss_rpn_cls / norm,
             'loss_rpn_reg': loss_rpn_reg / norm
