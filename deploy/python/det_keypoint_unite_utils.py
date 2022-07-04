@@ -126,4 +126,16 @@ def argsparser():
             "3) rects: list of rect [xmin, ymin, xmax, ymax]"
             "4) keypoints: 17(joint numbers)*[x, y, conf], total 51 data in list"
             "5) scores: mean of all joint conf"))
+    parser.add_argument(
+        '--smooth',
+        type=ast.literal_eval,
+        default=False,
+        help='smoothing keypoints for each frame, new incoming keypoints will be more stable.'
+    )
+    parser.add_argument(
+        '--filter_type',
+        type=str,
+        default='OneEuro',
+        help='when set --smooth True, choose filter type you want to use, it can be [OneEuro] or [EMA].'
+    )
     return parser
