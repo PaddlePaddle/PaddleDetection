@@ -157,7 +157,8 @@ class PipeTimer(Times):
             'reid': Times(),
             'det_action': Times(),
             'cls_action': Times(),
-            'vehicle_attr': Times()
+            'vehicle_attr': Times(),
+            'vehicleplate': Times()
         }
         self.img_num = 0
 

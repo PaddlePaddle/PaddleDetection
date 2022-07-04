@@ -679,8 +679,12 @@ class PipePredictor(object):
                     frame_rgb, mot_res)
 
                 if self.with_vehicleplate:
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['vehicleplate'].start()
                     platelicense = self.vehicleplate_detector.get_platelicense(
                         crop_input)
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['vehicleplate'].end()
                     self.pipeline_res.update(platelicense, 'vehicleplate')
 
                 if self.with_human_attr:
