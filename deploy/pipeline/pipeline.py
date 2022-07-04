@@ -919,9 +919,12 @@ class PipePredictor(object):
             video_action_score = None
             if video_action_res and video_action_res["class"] == 1:
                 video_action_score = video_action_res["score"]
+            mot_boxes = None
+            if mot_res:
+                mot_boxes = mot_res['boxes']
             image = visualize_action(
                 image,
-                mot_res['boxes'],
+                mot_boxes,
                 action_visual_collector=None,
                 action_text="SkeletonAction",
                 video_action_score=video_action_score,

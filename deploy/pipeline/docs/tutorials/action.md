@@ -184,9 +184,8 @@ VIDEO_ACTION:  # 基于视频分类的行为识别模型配置
 
 ### 使用方法
 1. 从上表链接中下载预测部署模型并解压到`./output_inference`路径下；
-2. 修改解压后`ppTSM`文件夹中的文件名称为`model.pdiparams、model.pdiparams.info和model.pdmodel`；
-3. 修改配置文件`deploy/pipeline/config/infer_cfg_pphuman.yml`中`VIDEO_ACTION`下的`enable`为`True`；
-4. 输入视频，启动命令如下：
+2. 修改配置文件`deploy/pphuman/config/infer_cfg_pphuman.yml`中`VIDEO_ACTION`下的`enable`为`True`；
+3. 输入视频，启动命令如下：
 ```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
