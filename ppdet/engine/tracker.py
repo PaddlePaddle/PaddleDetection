@@ -20,6 +20,7 @@ import os
 import glob
 import re
 import paddle
+import paddle.nn as nn
 import numpy as np
 from tqdm import tqdm
 from collections import defaultdict
@@ -29,7 +30,7 @@ from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_box
 from ppdet.modeling.mot.utils import MOTTimer, load_det_results, write_mot_results, save_vis_results
 from ppdet.modeling.mot.tracker import JDETracker, DeepSORTTracker
-
+from ppdet.modeling.architectures import YOLOX
 from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric, MCMOTMetric
 import ppdet.utils.stats as stats
 
@@ -59,6 +60,12 @@ class Tracker(object):
 
         # build model
         self.model = create(cfg.architecture)
+
+        if isinstance(self.model.detector, YOLOX):
+            for k, m in self.model.named_sublayers():
+                if isinstance(m, nn.BatchNorm2D):
+                    m._epsilon = 1e-3  # for amp(fp16)
+                    m._momentum = 0.97  # 0.03 in pytorch
 
         self.status = {}
         self.start_epoch = 0

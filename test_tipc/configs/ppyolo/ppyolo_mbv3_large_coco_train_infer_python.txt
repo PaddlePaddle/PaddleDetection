@@ -35,19 +35,19 @@ export1:null
 export2:null
 kl_quant_export:tools/post_quant.py -c configs/ppyolo/ppyolo_mbv3_large_coco.yml --slim_config configs/slim/post_quant/ppyolo_mbv3_large_ptq.yml -o
 ##
-infer_mode:norm
-infer_quant:False
+infer_mode:norm|kl_quant
+infer_quant:False|True
 inference:./deploy/python/infer.py
 --device:gpu|cpu
---enable_mkldnn:True|False
---cpu_threads:1|6
+--enable_mkldnn:False
+--cpu_threads:4
 --batch_size:1|2
 --use_tensorrt:null
---run_mode:paddle|trt_fp32|trt_fp16
+--run_mode:paddle
 --model_dir:
 --image_dir:./dataset/coco/test2017/
 --save_log_path:null
---run_benchmark:True
+--run_benchmark:False
 null:null
 ===========================infer_benchmark_params===========================
-random_infer_input:[{float32,[3,320,320]},{float32,[2]},{float32,[2]}]
+numpy_infer_input:3x320x320.npy

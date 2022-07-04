@@ -32,22 +32,22 @@ pact_export:tools/export_model.py -c configs/faster_rcnn/faster_rcnn_r50_1x_coco
 fpgm_export:tools/export_model.py -c configs/faster_rcnn/faster_rcnn_r50_1x_coco.yml --slim_config _template_fpgm -o
 distill_export:null
 export1:null
-export2:null
+export_onnx:null
 kl_quant_export:tools/post_quant.py -c configs/faster_rcnn/faster_rcnn_r50_1x_coco.yml --slim_config _template_kl_quant -o
 ##
 infer_mode:norm
 infer_quant:False
 inference:./deploy/python/infer.py
 --device:gpu|cpu
---enable_mkldnn:True|False
---cpu_threads:1|6
+--enable_mkldnn:False
+--cpu_threads:4
 --batch_size:1|2
 --use_tensorrt:null
---run_mode:paddle|trt_fp32|trt_fp16
+--run_mode:paddle
 --model_dir:
 --image_dir:./dataset/coco/test2017/
 --save_log_path:null
---run_benchmark:True
+--run_benchmark:False
 --trt_max_shape:1600
 ===========================infer_benchmark_params===========================
-random_infer_input:[{float32,[3,800,1344]},{float32,[2]},{float32,[2]}]
+numpy_infer_input:3x800x1344.npy

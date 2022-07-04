@@ -1,0 +1,20 @@
+===========================ptq_params===========================
+model_name:tinypose_128x96
+python:python3.7
+filename:
+##
+--output_dir:./output_inference
+weights:https://paddledet.bj.bcebos.com/models/keypoint/tinypose_128x96.pdparams
+kl_quant_export:tools/post_quant.py -c test_tipc/configs/keypoint/tinypose_128x96.yml --slim_config configs/slim/post_quant/tinypose_128x96_ptq.yml -o
+export_param1:null
+##
+inference:./deploy/python/keypoint_infer.py
+--device:gpu|cpu
+--enable_mkldnn:False
+--cpu_threads:4
+--batch_size:1|2
+--run_mode:paddle
+--model_dir:
+--image_dir:./dataset/coco/test2017/
+--run_benchmark:False
+null:null

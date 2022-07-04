@@ -22,7 +22,7 @@ from ..losses import GIoULoss
 from ..initializer import bias_init_with_prob, constant_, normal_
 from ..assigners.utils import generate_anchors_for_grid_cell
 from ppdet.modeling.backbones.cspresnet import ConvBNLayer
-from ppdet.modeling.ops import get_static_shape, paddle_distributed_is_initialized, get_act_fn
+from ppdet.modeling.ops import get_static_shape, get_act_fn
 from ppdet.modeling.layers import MultiClassNMS
 
 __all__ = ['PPYOLOEHead']
@@ -111,6 +111,7 @@ class PPYOLOEHead(nn.Layer):
                     in_c, 4 * (self.reg_max + 1), 3, padding=1))
         # projection conv
         self.proj_conv = nn.Conv2D(self.reg_max + 1, 1, 1, bias_attr=False)
+        self.proj_conv.skip_quant = True
         self._init_weights()
 
     @classmethod
@@ -342,7 +343,7 @@ class PPYOLOEHead(nn.Layer):
             loss_cls = self._focal_loss(pred_scores, assigned_scores, alpha_l)
 
         assigned_scores_sum = assigned_scores.sum()
-        if paddle_distributed_is_initialized():
+        if paddle.distributed.get_world_size() > 1:
             paddle.distributed.all_reduce(assigned_scores_sum)
             assigned_scores_sum = paddle.clip(
                 assigned_scores_sum / paddle.distributed.get_world_size(),
@@ -365,7 +366,7 @@ class PPYOLOEHead(nn.Layer):
         }
         return out_dict
 
-    def post_process(self, head_outs, img_shape, scale_factor):
+    def post_process(self, head_outs, scale_factor):
         pred_scores, pred_dist, anchor_points, stride_tensor = head_outs
         pred_bboxes = batch_distance2bbox(anchor_points,
                                           pred_dist.transpose([0, 2, 1]))

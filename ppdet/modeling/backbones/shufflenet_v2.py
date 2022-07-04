@@ -192,7 +192,6 @@ class ShuffleNetV2(nn.Layer):
         else:
             raise NotImplementedError("This scale size:[" + str(scale) +
                                       "] is not implemented!")
-
         self._out_channels = []
         self._feature_idx = 0
         # 1. conv1

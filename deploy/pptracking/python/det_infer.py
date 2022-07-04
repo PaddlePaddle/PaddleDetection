@@ -32,7 +32,7 @@ sys.path.insert(0, parent_path)
 
 from benchmark_utils import PaddleInferBenchmark
 from picodet_postprocess import PicoDetPostProcess
-from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, decode_image
+from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, Pad, decode_image
 from mot.visualize import visualize_box_mask
 from mot_utils import argsparser, Timer, get_current_memory_mb
 
@@ -416,9 +416,15 @@ def load_predictor(model_dir,
         raise ValueError(
             "Predict by TensorRT mode: {}, expect device=='GPU', but device == {}"
             .format(run_mode, device))
-    config = Config(
-        os.path.join(model_dir, 'model.pdmodel'),
-        os.path.join(model_dir, 'model.pdiparams'))
+    infer_model = os.path.join(model_dir, 'model.pdmodel')
+    infer_params = os.path.join(model_dir, 'model.pdiparams')
+    if not os.path.exists(infer_model):
+        infer_model = os.path.join(model_dir, 'inference.pdmodel')
+        infer_params = os.path.join(model_dir, 'inference.pdiparams')
+        if not os.path.exists(infer_model):
+            raise ValueError(
+                "Cannot find any inference model in dir: {},".format(model_dir))
+    config = Config(infer_model, infer_params)
     if device == 'GPU':
         # initial GPU memory(M), device ID
         config.enable_use_gpu(200, 0)

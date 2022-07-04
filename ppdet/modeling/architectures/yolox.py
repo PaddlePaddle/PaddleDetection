@@ -23,7 +23,6 @@ import random
 import paddle
 import paddle.nn.functional as F
 import paddle.distributed as dist
-from ppdet.modeling.ops import paddle_distributed_is_initialized
 
 __all__ = ['YOLOX']
 

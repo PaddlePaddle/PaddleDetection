@@ -73,8 +73,9 @@ PaddleDetection团队提供了基于PP-YOLOE的各种垂类检测模型的配置
 ```bash
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --amp
 ```
-
-**注意:** 使用默认配置训练需要设置`--amp`以避免显存溢出.
+**注意:**
+- 使用默认配置训练需要设置`--amp`以避免显存溢出.
+- PaddleDetection支持多机训练，可以参考[多机训练教程](../../docs/DistributedTraining_cn.md).
 
 ### 评估
 
@@ -186,6 +187,7 @@ PP-YOLOE可以使用以下方式进行部署：
   - Paddle Inference [Python](../../deploy/python) & [C++](../../deploy/cpp)
   - [Paddle-TensorRT](../../deploy/TENSOR_RT.md)
   - [PaddleServing](https://github.com/PaddlePaddle/Serving)
+  - [PaddleSlim模型量化](../slim)
 
 接下来，我们将介绍PP-YOLOE如何使用Paddle Inference在TensorRT FP16模式下部署
 

@@ -20,7 +20,7 @@ import sys
 
 import paddle
 import six
-import paddle.version as fluid_version
+import paddle.version as paddle_version
 
 from .logger import setup_logger
 logger = setup_logger(__name__)
@@ -97,8 +97,8 @@ def check_version(version='2.0'):
           "Please make sure the version is good with your code.".format(version)
 
     version_installed = [
-        fluid_version.major, fluid_version.minor, fluid_version.patch,
-        fluid_version.rc
+        paddle_version.major, paddle_version.minor, paddle_version.patch,
+        paddle_version.rc
     ]
     if version_installed == ['0', '0', '0', '0']:
         return

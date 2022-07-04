@@ -13,7 +13,7 @@ pip install onnxruntime
 
 ## Inference images
 
-- 准备测试模型：根据[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/picodet)中【导出及转换模型】步骤，采用包含后处理的方式导出模型（`-o export.benchmark=False` ），并生成待测试模型简化后的onnx模型（可在下文链接中直接下载）。同时在本目录下新建```onnx_file```文件夹，将导出的onnx模型放在该目录下。
+- 准备测试模型：根据[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet)中【导出及转换模型】步骤，采用包含后处理的方式导出模型（`-o export.benchmark=False` ），并生成待测试模型简化后的onnx模型（可在下文链接中直接下载）。同时在本目录下新建```onnx_file```文件夹，将导出的onnx模型放在该目录下。
 
 - 准备测试所用图片：将待测试图片放在```./imgs```文件夹下，本demo已提供了两张测试图片。
 

@@ -17,13 +17,16 @@
 
 int64_t ShapeProduction(const std::vector<int64_t> &shape) {
   int64_t res = 1;
-  for (auto i : shape)
-    res *= i;
+  for (auto i : shape) res *= i;
   return res;
 }
 
-void NHWC3ToNC3HW(const float *src, float *dst, const float *mean,
-                  const float *std, int width, int height) {
+void NHWC3ToNC3HW(const float *src,
+                  float *dst,
+                  const float *mean,
+                  const float *std,
+                  int width,
+                  int height) {
   int size = height * width;
   float32x4_t vmean0 = vdupq_n_f32(mean ? mean[0] : 0.0f);
   float32x4_t vmean1 = vdupq_n_f32(mean ? mean[1] : 0.0f);
@@ -58,8 +61,12 @@ void NHWC3ToNC3HW(const float *src, float *dst, const float *mean,
   }
 }
 
-void NHWC1ToNC1HW(const float *src, float *dst, const float *mean,
-                  const float *std, int width, int height) {
+void NHWC1ToNC1HW(const float *src,
+                  float *dst,
+                  const float *mean,
+                  const float *std,
+                  int width,
+                  int height) {
   int size = height * width;
   float32x4_t vmean = vdupq_n_f32(mean ? mean[0] : 0.0f);
   float32x4_t vscale = vdupq_n_f32(std ? (1.0f / std[0]) : 1.0f);

@@ -23,5 +23,7 @@
 - [基于PP-PicoDetv2 的路面垃圾检测](https://aistudio.baidu.com/aistudio/projectdetail/3846170?channelType=0&channel=0)
 
 - [基于人体关键点检测的合规检测](https://aistudio.baidu.com/aistudio/projectdetail/4061642?contributionType=1)
-  
+
+- [打架识别](https://aistudio.baidu.com/aistudio/projectdetail/4086987?contributionType=1)
+
   *范例将持续更新中

@@ -32,7 +32,6 @@ import paddle
 import paddle.nn as nn
 import paddle.distributed as dist
 from paddle.distributed import fleet
-from paddle import amp
 from paddle.static import InputSpec
 from ppdet.optimizer import ModelEMA
 
@@ -44,9 +43,10 @@ from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
+from ppdet.utils.fuse_utils import fuse_conv_bn
 from ppdet.utils import profiler
 
-from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator
+from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback
 from .export_utils import _dump_infer_config, _prune_input_spec
 
 from ppdet.utils.logger import setup_logger
@@ -184,6 +184,8 @@ class Trainer(object):
                 self._callbacks.append(VisualDLWriter(self))
             if self.cfg.get('save_proposals', False):
                 self._callbacks.append(SniperProposalsGenerator(self))
+            if self.cfg.get('use_wandb', False) or 'wandb' in self.cfg:
+                self._callbacks.append(WandbCallback(self))
             self._compose_callback = ComposeCallback(self._callbacks)
         elif self.mode == 'eval':
             self._callbacks = [LogPrinter(self)]
@@ -204,7 +206,7 @@ class Trainer(object):
         classwise = self.cfg['classwise'] if 'classwise' in self.cfg else False
         if self.cfg.metric == 'COCO' or self.cfg.metric == "SNIPERCOCO":
             # TODO: bias should be unified
-            bias = self.cfg['bias'] if 'bias' in self.cfg else 0
+            bias = 1 if self.cfg.get('bias', False) else 0
             output_eval = self.cfg['output_eval'] \
                 if 'output_eval' in self.cfg else None
             save_prediction_only = self.cfg.get('save_prediction_only', False)
@@ -216,13 +218,14 @@ class Trainer(object):
 
             # when do validation in train, annotation file should be get from
             # EvalReader instead of self.dataset(which is TrainReader)
-            anno_file = self.dataset.get_anno()
-            dataset = self.dataset
             if self.mode == 'train' and validate:
                 eval_dataset = self.cfg['EvalDataset']
                 eval_dataset.check_or_download_dataset()
                 anno_file = eval_dataset.get_anno()
                 dataset = eval_dataset
+            else:
+                dataset = self.dataset
+                anno_file = dataset.get_anno()
 
             IouType = self.cfg['IouType'] if 'IouType' in self.cfg else 'bbox'
             if self.cfg.metric == "COCO":
@@ -374,15 +377,24 @@ class Trainer(object):
         assert self.mode == 'train', "Model not in 'train' mode"
         Init_mark = False
         if validate:
-            self.cfg.EvalDataset = create("EvalDataset")()
+            self.cfg['EvalDataset'] = self.cfg.EvalDataset = create(
+                "EvalDataset")()
 
+        model = self.model
         sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
                    self.cfg.use_gpu and self._nranks > 1)
         if sync_bn:
-            self.model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(
-                self.model)
+            model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
-        model = self.model
+        # enabel auto mixed precision mode
+        use_amp = self.cfg.get('amp', False)
+        amp_level = self.cfg.get('amp_level', 'O1')
+        if use_amp:
+            scaler = paddle.amp.GradScaler(
+                enable=self.cfg.use_gpu or self.cfg.use_npu,
+                init_loss_scaling=self.cfg.get('init_loss_scaling', 1024))
+            model = paddle.amp.decorate(models=model, level=amp_level)
+        # get distributed model
         if self.cfg.get('fleet', False):
             model = fleet.distributed_model(model)
             self.optimizer = fleet.distributed_optimizer(self.optimizer)
@@ -390,13 +402,7 @@ class Trainer(object):
             find_unused_parameters = self.cfg[
                 'find_unused_parameters'] if 'find_unused_parameters' in self.cfg else False
             model = paddle.DataParallel(
-                self.model, find_unused_parameters=find_unused_parameters)
-
-        # enabel auto mixed precision mode
-        if self.cfg.get('amp', False):
-            scaler = amp.GradScaler(
-                enable=self.cfg.use_gpu or self.cfg.use_npu,
-                init_loss_scaling=1024)
+                model, find_unused_parameters=find_unused_parameters)
 
         self.status.update({
             'epoch_id': self.start_epoch,
@@ -432,12 +438,12 @@ class Trainer(object):
                 self._compose_callback.on_step_begin(self.status)
                 data['epoch_id'] = epoch_id
 
-                if self.cfg.get('amp', False):
-                    with amp.auto_cast(enable=self.cfg.use_gpu):
+                if use_amp:
+                    with paddle.amp.auto_cast(
+                            enable=self.cfg.use_gpu, level=amp_level):
                         # model forward
                         outputs = model(data)
                         loss = outputs['loss']
-
                     # model backward
                     scaled_loss = scaler.scale(loss)
                     scaled_loss.backward()
@@ -681,7 +687,10 @@ class Trainer(object):
         name, ext = os.path.splitext(image_name)
         return os.path.join(output_dir, "{}".format(name)) + ext
 
-    def _get_infer_cfg_and_input_spec(self, save_dir, prune_input=True):
+    def _get_infer_cfg_and_input_spec(self,
+                                      save_dir,
+                                      prune_input=True,
+                                      kl_quant=False):
         image_shape = None
         im_shape = [None, 2]
         scale_factor = [None, 2]
@@ -705,9 +714,10 @@ class Trainer(object):
         if hasattr(self.model, 'deploy'):
             self.model.deploy = True
 
-        for layer in self.model.sublayers():
-            if hasattr(layer, 'convert_to_deploy'):
-                layer.convert_to_deploy()
+        if 'slim' not in self.cfg:
+            for layer in self.model.sublayers():
+                if hasattr(layer, 'convert_to_deploy'):
+                    layer.convert_to_deploy()
 
         export_post_process = self.cfg['export'].get(
             'post_process', False) if hasattr(self.cfg, 'export') else True
@@ -761,11 +771,29 @@ class Trainer(object):
                 "image": InputSpec(
                     shape=image_shape, name='image')
             }]
+        if kl_quant:
+            if self.cfg.architecture == 'PicoDet' or 'ppyoloe' in self.cfg.weights:
+                pruned_input_spec = [{
+                    "image": InputSpec(
+                        shape=image_shape, name='image'),
+                    "scale_factor": InputSpec(
+                        shape=scale_factor, name='scale_factor')
+                }]
+            elif 'tinypose' in self.cfg.weights:
+                pruned_input_spec = [{
+                    "image": InputSpec(
+                        shape=image_shape, name='image')
+                }]
 
         return static_model, pruned_input_spec
 
     def export(self, output_dir='output_inference'):
         self.model.eval()
+
+        if hasattr(self.cfg, 'export') and 'fuse_conv_bn' in self.cfg[
+                'export'] and self.cfg['export']['fuse_conv_bn']:
+            self.model = fuse_conv_bn(self.model)
+
         model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
         save_dir = os.path.join(output_dir, model_name)
         if not os.path.exists(save_dir):
@@ -775,7 +803,7 @@ class Trainer(object):
             save_dir)
 
         # dy2st and save model
-        if 'slim' not in self.cfg or self.cfg['slim_type'] != 'QAT':
+        if 'slim' not in self.cfg or 'QAT' not in self.cfg['slim_type']:
             paddle.jit.save(
                 static_model,
                 os.path.join(save_dir, 'model'),
@@ -799,8 +827,9 @@ class Trainer(object):
                 break
 
         # TODO: support prune input_spec
+        kl_quant = True if hasattr(self.cfg.slim, 'ptq') else False
         _, pruned_input_spec = self._get_infer_cfg_and_input_spec(
-            save_dir, prune_input=False)
+            save_dir, prune_input=False, kl_quant=kl_quant)
 
         self.cfg.slim.save_quantized_model(
             self.model,

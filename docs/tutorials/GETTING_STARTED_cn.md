@@ -12,7 +12,7 @@ PaddleDetection作为成熟的目标检测开发套件，提供了从数据准�
 
 ## 2 准备数据
 目前PaddleDetection支持：COCO VOC WiderFace, MOT四种数据格式。
-- 首先按照[准备数据文档](PrepareDataSet.md) 准备数据。  
+- 首先按照[准备数据文档](PrepareDetDataSet.md) 准备数据。  
 - 然后设置`configs/datasets`中相应的coco或voc等数据配置文件中的数据路径。
 - 在本项目中，我们使用路标识别数据集
  ```bash
@@ -99,6 +99,15 @@ python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 #windows和Mac下不需要执行该命令
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml
 ```
+
+* [GPU多机多卡训练](./DistributedTraining_cn.md)
+```bash
+$fleetrun \
+--ips="10.127.6.17,10.127.5.142,10.127.45.13,10.127.44.151" \
+--selected_gpu 0,1,2,3,4,5,6,7 \
+tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml \
+```
+
 * Fine-tune其他任务
 
   使用预训练模型fine-tune其他任务时，可以直接加载预训练模型，形状不匹配的参数将自动忽略，例如：

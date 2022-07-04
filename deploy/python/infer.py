@@ -40,25 +40,9 @@ from utils import argsparser, Timer, get_current_memory_mb
 
 # Global dictionary
 SUPPORT_MODELS = {
-    'YOLO',
-    'RCNN',
-    'SSD',
-    'Face',
-    'FCOS',
-    'SOLOv2',
-    'TTFNet',
-    'S2ANet',
-    'JDE',
-    'FairMOT',
-    'DeepSORT',
-    'GFL',
-    'PicoDet',
-    'CenterNet',
-    'TOOD',
-    'RetinaNet',
-    'StrongBaseline',
-    'STGCN',
-    'YOLOX',
+    'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
+    'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD', 'RetinaNet',
+    'StrongBaseline', 'STGCN', 'YOLOX', 'PPHGNet'
 }
 
 
@@ -158,18 +142,27 @@ class Detector(object):
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
-            input_tensor.copy_from_cpu(inputs[input_names[i]])
+            if input_names[i] == 'x':
+                input_tensor.copy_from_cpu(inputs['image'])
+            else:
+                input_tensor.copy_from_cpu(inputs[input_names[i]])
 
         return inputs
 
     def postprocess(self, inputs, result):
         # postprocess output of predictor
         np_boxes_num = result['boxes_num']
-        if np_boxes_num[0] <= 0:
-            print('[WARNNING] No object detected.')
-            result = {'boxes': np.zeros([0, 6]), 'boxes_num': [0]}
-        result = {k: v for k, v in result.items() if v is not None}
-        return result
+        out_result = {k: [] for k, v in result.items() if v is not None}
+        idx = 0
+        for num_box in np_boxes_num:
+            for k, v in out_result.items():
+                v.append(result[k][idx:idx + num_box])
+            idx += num_box
+            if num_box == 0:
+                print('[WARNNING] No object detected.')
+        out_result = {k: np.concatenate(v) for k, v in out_result.items()}
+        out_result['boxes_num'] = result['boxes_num']
+        return out_result
 
     def filter_box(self, result, threshold):
         np_boxes_num = result['boxes_num']
@@ -224,7 +217,7 @@ class Detector(object):
             for k, v in res.items():
                 results[k].append(v)
         for k, v in results.items():
-            if k != 'masks':
+            if k not in ['masks', 'segm']:
                 results[k] = np.concatenate(v)
         return results
 
@@ -704,9 +697,15 @@ def load_predictor(model_dir,
         raise ValueError(
             "Predict by TensorRT mode: {}, expect device=='GPU', but device == {}"
             .format(run_mode, device))
-    config = Config(
-        os.path.join(model_dir, 'model.pdmodel'),
-        os.path.join(model_dir, 'model.pdiparams'))
+    infer_model = os.path.join(model_dir, 'model.pdmodel')
+    infer_params = os.path.join(model_dir, 'model.pdiparams')
+    if not os.path.exists(infer_model):
+        infer_model = os.path.join(model_dir, 'inference.pdmodel')
+        infer_params = os.path.join(model_dir, 'inference.pdiparams')
+        if not os.path.exists(infer_model):
+            raise ValueError(
+                "Cannot find any inference model in dir: {},".format(model_dir))
+    config = Config(infer_model, infer_params)
     if device == 'GPU':
         # initial GPU memory(M), device ID
         config.enable_use_gpu(200, 0)

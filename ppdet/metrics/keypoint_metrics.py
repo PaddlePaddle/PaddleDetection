@@ -16,12 +16,12 @@ import os
 import json
 from collections import defaultdict, OrderedDict
 import numpy as np
+import paddle
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from ..modeling.keypoint_utils import oks_nms
 from scipy.io import loadmat, savemat
 from ppdet.utils.logger import setup_logger
-import paddle
 logger = setup_logger(__name__)
 
 __all__ = ['KeyPointTopDownCOCOEval', 'KeyPointTopDownMPIIEval']
@@ -72,10 +72,10 @@ class KeyPointTopDownCOCOEval(object):
                                   3] = kpts[:, :, 0:3]
         self.results['all_boxes'][self.idx:self.idx + num_images, 0:2] = inputs[
             'center'].numpy()[:, 0:2] if isinstance(
-                inputs['center'], paddle.Tensor) else inputs['center']
+                inputs['center'], paddle.Tensor) else inputs['center'][:, 0:2]
         self.results['all_boxes'][self.idx:self.idx + num_images, 2:4] = inputs[
             'scale'].numpy()[:, 0:2] if isinstance(
-                inputs['scale'], paddle.Tensor) else inputs['scale']
+                inputs['scale'], paddle.Tensor) else inputs['scale'][:, 0:2]
         self.results['all_boxes'][self.idx:self.idx + num_images, 4] = np.prod(
             inputs['scale'].numpy() * 200,
             1) if isinstance(inputs['scale'], paddle.Tensor) else np.prod(

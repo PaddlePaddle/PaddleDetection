@@ -1,0 +1,39 @@
+crop_thresh: 0.5
+visual: True
+warmup_frame: 50
+
+DET:
+  model_dir: output_inference/mot_ppyoloe_l_36e_ppvehicle/
+  batch_size: 1
+
+MOT:
+  model_dir: output_inference/mot_ppyoloe_l_36e_ppvehicle/
+  tracker_config: deploy/pipeline/config/tracker_config.yml
+  batch_size: 1
+  basemode: "idbased"
+  enable: False
+
+VEHICLE_PLATE:
+  det_model_dir: output_inference/ch_PP-OCRv3_det_infer/
+  det_limit_side_len: 480
+  det_limit_type: "max"
+  rec_model_dir: output_inference/ch_PP-OCRv3_rec_infer/
+  rec_image_shape: [3, 48, 320]
+  rec_batch_num: 6
+  word_dict_path: deploy/pipeline/ppvehicle/rec_word_dict.txt
+  basemode: "idbased"
+  enable: False
+
+VEHICLE_ATTR:
+  model_dir: output_inference/vehicle_attribute_infer/
+  batch_size: 8
+  basemode: "idbased"
+  color_threshold: 0.5
+  type_threshold: 0.5
+  enable: False
+
+REID:
+  model_dir: output_inference/vehicle_reid_model/
+  batch_size: 16
+  basemode: "idbased"
+  enable: False

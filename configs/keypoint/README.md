@@ -7,6 +7,7 @@
 </div>
 
 ## 目录
+
 - [简介](#简介)
 - [模型推荐](#模型推荐)
 - [模型库](#模型库)
@@ -22,6 +23,8 @@
       - [Top-Down模型联合部署](#top-down模型联合部署)
       - [Bottom-Up模型独立部署](#bottom-up模型独立部署)
       - [与多目标跟踪联合部署](#与多目标跟踪模型fairmot联合部署)
+    - [完整部署教程及Demo](#4完整部署教程及Demo)
+
 - [自定义数据训练](#自定义数据训练)
 - [BenchMark](#benchmark)
 
@@ -32,6 +35,7 @@ PaddleDetection 关键点检测能力紧跟业内最新最优算法方案，包�
 同时，PaddleDetection提供针对移动端设备优化的自研实时关键点检测模型[PP-TinyPose](./tiny_pose/README.md)，以满足用户的不同需求。
 
 ## 模型推荐
+
 ### 移动端模型推荐
 
 | 检测模型                                                     | 关键点模型                            |             输入尺寸             |         COCO数据集精度          |          平均推理耗时 (FP16)           | 参数量 （M）                |          Flops (G)          |                           模型权重                           |                  Paddle-Lite部署模型（FP16)                  |
@@ -68,7 +72,6 @@ COCO数据集
 | LiteHRNet-30                   | Top-Down|256x192  |     69.4     | [lite_hrnet_30_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_256x192_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_256x192_coco.yml)     |
 | LiteHRNet-30                   |Top-Down| 384x288  |     72.5     | [lite_hrnet_30_384x288_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_384x288_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_384x288_coco.yml)     |
 
-
 备注： Top-Down模型测试AP结果基于GroundTruth标注框
 
 MPII数据集
@@ -79,16 +82,18 @@ MPII数据集
 场景模型
 | 模型 | 方案 | 输入尺寸 | 精度 | 预测速度 |模型权重 | 部署模型 | 说明|
 | :---- | ---|----- | :--------: | :--------: | :------------: |:------------: |:-------------------: |
-| HRNet-w32 + DarkPose | Top-Down|256x192  |  AP: 87.1 (业务数据集)| 单人2.9ms |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) | 针对摔倒场景特别优化，该模型应用于[PP-Human](../../deploy/pphuman/README.md) |
+| HRNet-w32 + DarkPose | Top-Down|256x192  |  AP: 87.1 (业务数据集)| 单人2.9ms |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) | 针对摔倒场景特别优化，该模型应用于[PP-Human](../../deploy/pipeline/README.md) |
+
 
 我们同时推出了基于LiteHRNet（Top-Down）针对移动端设备优化的实时关键点检测模型[PP-TinyPose](./tiny_pose/README.md), 欢迎体验。
+
+
 
 ## 快速开始
 
 ### 1、环境安装
 
-​    请参考PaddleDetection [安装文档](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/INSTALL_cn.md)正确安装PaddlePaddle和PaddleDetection即可。
-
+​    请参考PaddleDetection [安装文档](../../docs/tutorials/INSTALL_cn.md)正确安装PaddlePaddle和PaddleDetection即可。
 
 ### 2、数据准备
 
@@ -96,9 +101,7 @@ MPII数据集
 
 ​    关于config配置文件内容说明请参考[关键点配置文件说明](../../docs/tutorials/KeyPointConfigGuide_cn.md)。
 
-
-  - 请注意，Top-Down方案使用检测框测试时，需要通过检测模型生成bbox.json文件。COCO val2017的检测结果可以参考[Detector having human AP of 56.4 on COCO val2017 dataset](https://paddledet.bj.bcebos.com/data/bbox.json)，下载后放在根目录（PaddleDetection）下，然后修改config配置文件中`use_gt_bbox: False`后生效。然后正常执行测试命令即可。
-
+- 请注意，Top-Down方案使用检测框测试时，需要通过检测模型生成bbox.json文件。COCO val2017的检测结果可以参考[Detector having human AP of 56.4 on COCO val2017 dataset](https://paddledet.bj.bcebos.com/data/bbox.json)，下载后放在根目录（PaddleDetection）下，然后修改config配置文件中`use_gt_bbox: False`后生效。然后正常执行测试命令即可。
 
 ### 3、训练与测试
 
@@ -144,7 +147,9 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/keypoint/higherhrnet/hi
 ```
 
 #### 模型部署
+
 ##### Top-Down模型联合部署
+
 ```shell
 #导出检测模型
 python tools/export_model.py -c configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams
@@ -155,16 +160,18 @@ python tools/export_model.py -c configs/keypoint/hrnet/hrnet_w32_256x192.yml -o 
 #detector 检测 + keypoint top-down模型联合部署（联合推理只支持top-down方式）
 python deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inference/ppyolo_r50vd_dcn_2x_coco/ --keypoint_model_dir=output_inference/hrnet_w32_384x288/ --video_file=../video/xxx.mp4  --device=gpu
 ```
+
 ##### Bottom-Up模型独立部署
+
 ```shell
 #导出模型
 python tools/export_model.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml -o weights=output/higherhrnet_hrnet_w32_512/model_final.pdparams
 
 #部署推理
 python deploy/python/keypoint_infer.py --model_dir=output_inference/higherhrnet_hrnet_w32_512/ --image_file=./demo/000000014439_640x640.jpg --device=gpu --threshold=0.5
-
 ```
-##### 与多目标跟踪模型FairMOT联合部署预测
+
+##### 与多目标跟踪模型FairMOT联合部署
 
 ```shell
 #导出FairMOT跟踪模型
@@ -173,10 +180,12 @@ python tools/export_model.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.y
 #用导出的跟踪和关键点模型Python联合预测
 python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inference/fairmot_dla34_30e_1088x608/ --keypoint_model_dir=output_inference/higherhrnet_hrnet_w32_512/ --video_file={your video name}.mp4 --device=GPU
 ```
+
 **注意:**
  跟踪模型导出教程请参考[文档](../mot/README.md)。
 
 ### 4、完整部署教程及Demo
+
 
 ​ 我们提供了PaddleInference(服务器端)、PaddleLite(移动端)、第三方部署(MNN、OpenVino)支持。无需依赖训练代码，deploy文件夹下相应文件夹提供独立完整部署代码。 详见 [部署文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/README.md)介绍。
 
@@ -217,6 +226,7 @@ upper_body_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]    #上半身对应关键点i
 我们给出了不同运行环境下的测试结果，供您在选用模型时参考。详细数据请见[Keypoint Inference Benchmark](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/keypoint/KeypointBenchmark.md)。
 
 ## 引用
+
 ```
 @inproceedings{cheng2020bottom,
   title={HigherHRNet: Scale-Aware Representation Learning for Bottom-Up Human Pose Estimation},

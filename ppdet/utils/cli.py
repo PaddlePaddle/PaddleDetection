@@ -81,6 +81,13 @@ class ArgsParser(ArgumentParser):
         return config
 
 
+def merge_args(config, args, exclude_args=['config', 'opt', 'slim_config']):
+    for k, v in vars(args).items():
+        if k not in exclude_args:
+            config[k] = v
+    return config
+
+
 def print_total_cfg(config):
     modules = get_registered_modules()
     color_tty = ColorTTY()

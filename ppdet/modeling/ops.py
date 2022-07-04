@@ -17,19 +17,15 @@ import paddle.nn.functional as F
 import paddle.nn as nn
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
+from paddle import _C_ops
 
-from paddle.fluid.framework import Variable, in_dygraph_mode
-from paddle.fluid import core
-from paddle.fluid.dygraph import parallel_helper
-from paddle.fluid.layer_helper import LayerHelper
-from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype
+from paddle import in_dynamic_mode
+from paddle.common_ops_import import Variable, LayerHelper, check_variable_and_dtype, check_type, check_dtype
 
 __all__ = [
     'prior_box',
     'generate_proposals',
-    'iou_similarity',
     'box_coder',
-    'yolo_box',
     'multiclass_nms',
     'distribute_fpn_proposals',
     'matrix_nms',
@@ -120,70 +116,6 @@ def batch_norm(ch,
 
 
 @paddle.jit.not_to_static
-def iou_similarity(x, y, box_normalized=True, name=None):
-    """
-    Computes intersection-over-union (IOU) between two box lists.
-    Box list 'X' should be a LoDTensor and 'Y' is a common Tensor,
-    boxes in 'Y' are shared by all instance of the batched inputs of X.
-    Given two boxes A and B, the calculation of IOU is as follows:
-
-    $$
-    IOU(A, B) = 
-    \\frac{area(A\\cap B)}{area(A)+area(B)-area(A\\cap B)}
-    $$
-
-    Args:
-        x (Tensor): Box list X is a 2-D Tensor with shape [N, 4] holds N 
-             boxes, each box is represented as [xmin, ymin, xmax, ymax], 
-             the shape of X is [N, 4]. [xmin, ymin] is the left top 
-             coordinate of the box if the input is image feature map, they
-             are close to the origin of the coordinate system. 
-             [xmax, ymax] is the right bottom coordinate of the box.
-             The data type is float32 or float64.
-        y (Tensor): Box list Y holds M boxes, each box is represented as 
-             [xmin, ymin, xmax, ymax], the shape of X is [N, 4]. 
-             [xmin, ymin] is the left top coordinate of the box if the 
-             input is image feature map, and [xmax, ymax] is the right 
-             bottom coordinate of the box. The data type is float32 or float64.
-        box_normalized(bool): Whether treat the priorbox as a normalized box.
-            Set true by default.
-        name(str, optional): For detailed information, please refer 
-            to :ref:`api_guide_Name`. Usually name is no need to set and 
-            None by default. 
-
-    Returns:
-        Tensor: The output of iou_similarity op, a tensor with shape [N, M] 
-              representing pairwise iou scores. The data type is same with x.
-
-    Examples:
-        .. code-block:: python
-
-            import paddle
-            from ppdet.modeling import ops
-            paddle.enable_static()
-
-            x = paddle.static.data(name='x', shape=[None, 4], dtype='float32')
-            y = paddle.static.data(name='y', shape=[None, 4], dtype='float32')
-            iou = ops.iou_similarity(x=x, y=y)
-    """
-
-    if in_dygraph_mode():
-        out = core.ops.iou_similarity(x, y, 'box_normalized', box_normalized)
-        return out
-    else:
-        helper = LayerHelper("iou_similarity", **locals())
-        out = helper.create_variable_for_type_inference(dtype=x.dtype)
-
-        helper.append_op(
-            type="iou_similarity",
-            inputs={"X": x,
-                    "Y": y},
-            attrs={"box_normalized": box_normalized},
-            outputs={"Out": out})
-        return out
-
-
-@paddle.jit.not_to_static
 def distribute_fpn_proposals(fpn_rois,
                              min_level,
                              max_level,
@@ -261,12 +193,12 @@ def distribute_fpn_proposals(fpn_rois,
     """
     num_lvl = max_level - min_level + 1
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         assert rois_num is not None, "rois_num should not be None in dygraph mode."
         attrs = ('min_level', min_level, 'max_level', max_level, 'refer_level',
                  refer_level, 'refer_scale', refer_scale, 'pixel_offset',
                  pixel_offset)
-        multi_rois, restore_ind, rois_num_per_level = core.ops.distribute_fpn_proposals(
+        multi_rois, restore_ind, rois_num_per_level = _C_ops.distribute_fpn_proposals(
             fpn_rois, rois_num, num_lvl, num_lvl, *attrs)
         return multi_rois, restore_ind, rois_num_per_level
 
@@ -310,143 +242,6 @@ def distribute_fpn_proposals(fpn_rois,
                 'pixel_offset': pixel_offset
             })
         return multi_rois, restore_ind, rois_num_per_level
-
-
-@paddle.jit.not_to_static
-def yolo_box(
-        x,
-        origin_shape,
-        anchors,
-        class_num,
-        conf_thresh,
-        downsample_ratio,
-        clip_bbox=True,
-        scale_x_y=1.,
-        name=None, ):
-    """
-
-    This operator generates YOLO detection boxes from output of YOLOv3 network.
-     
-     The output of previous network is in shape [N, C, H, W], while H and W
-     should be the same, H and W specify the grid size, each grid point predict
-     given number boxes, this given number, which following will be represented as S,
-     is specified by the number of anchors. In the second dimension(the channel
-     dimension), C should be equal to S * (5 + class_num), class_num is the object
-     category number of source dataset(such as 80 in coco dataset), so the
-     second(channel) dimension, apart from 4 box location coordinates x, y, w, h,
-     also includes confidence score of the box and class one-hot key of each anchor
-     box.
-     Assume the 4 location coordinates are :math:`t_x, t_y, t_w, t_h`, the box
-     predictions should be as follows:
-     $$
-     b_x = \\sigma(t_x) + c_x
-     $$
-     $$
-     b_y = \\sigma(t_y) + c_y
-     $$
-     $$
-     b_w = p_w e^{t_w}
-     $$
-     $$
-     b_h = p_h e^{t_h}
-     $$
-     in the equation above, :math:`c_x, c_y` is the left top corner of current grid
-     and :math:`p_w, p_h` is specified by anchors.
-     The logistic regression value of the 5th channel of each anchor prediction boxes
-     represents the confidence score of each prediction box, and the logistic
-     regression value of the last :attr:`class_num` channels of each anchor prediction
-     boxes represents the classifcation scores. Boxes with confidence scores less than
-     :attr:`conf_thresh` should be ignored, and box final scores is the product of
-     confidence scores and classification scores.
-     $$
-     score_{pred} = score_{conf} * score_{class}
-     $$
-
-    Args:
-        x (Tensor): The input tensor of YoloBox operator is a 4-D tensor with shape of [N, C, H, W].
-                    The second dimension(C) stores box locations, confidence score and
-                    classification one-hot keys of each anchor box. Generally, X should be the output of YOLOv3 network.
-                    The data type is float32 or float64.
-        origin_shape (Tensor): The image size tensor of YoloBox operator, This is a 2-D tensor with shape of [N, 2].
-                    This tensor holds height and width of each input image used for resizing output box in input image
-                    scale. The data type is int32.
-        anchors (list|tuple): The anchor width and height, it will be parsed pair by pair.
-        class_num (int): The number of classes to predict.
-        conf_thresh (float): The confidence scores threshold of detection boxes. Boxes with confidence scores
-                    under threshold should be ignored.
-        downsample_ratio (int): The downsample ratio from network input to YoloBox operator input,
-                    so 32, 16, 8 should be set for the first, second, and thrid YoloBox operators.
-        clip_bbox (bool): Whether clip output bonding box in Input(ImgSize) boundary. Default true.
-        scale_x_y (float): Scale the center point of decoded bounding box. Default 1.0.
-        name (string): The default value is None.  Normally there is no need
-                       for user to set this property.  For more information,
-                       please refer to :ref:`api_guide_Name`
-
-    Returns:
-        boxes Tensor: A 3-D tensor with shape [N, M, 4], the coordinates of boxes,  N is the batch num,
-                    M is output box number, and the 3rd dimension stores [xmin, ymin, xmax, ymax] coordinates of boxes.
-        scores Tensor: A 3-D tensor with shape [N, M, :attr:`class_num`], the coordinates of boxes,  N is the batch num,
-                    M is output box number.
-                    
-    Raises:
-        TypeError: Attr anchors of yolo box must be list or tuple
-        TypeError: Attr class_num of yolo box must be an integer
-        TypeError: Attr conf_thresh of yolo box must be a float number
-
-    Examples:
-
-    .. code-block:: python
-
-        import paddle
-        from ppdet.modeling import ops
-        
-        paddle.enable_static()
-        x = paddle.static.data(name='x', shape=[None, 255, 13, 13], dtype='float32')
-        img_size = paddle.static.data(name='img_size',shape=[None, 2],dtype='int64')
-        anchors = [10, 13, 16, 30, 33, 23]
-        boxes,scores = ops.yolo_box(x=x, img_size=img_size, class_num=80, anchors=anchors,
-                                        conf_thresh=0.01, downsample_ratio=32)
-    """
-    helper = LayerHelper('yolo_box', **locals())
-
-    if not isinstance(anchors, list) and not isinstance(anchors, tuple):
-        raise TypeError("Attr anchors of yolo_box must be list or tuple")
-    if not isinstance(class_num, int):
-        raise TypeError("Attr class_num of yolo_box must be an integer")
-    if not isinstance(conf_thresh, float):
-        raise TypeError("Attr ignore_thresh of yolo_box must be a float number")
-
-    if in_dygraph_mode():
-        attrs = ('anchors', anchors, 'class_num', class_num, 'conf_thresh',
-                 conf_thresh, 'downsample_ratio', downsample_ratio, 'clip_bbox',
-                 clip_bbox, 'scale_x_y', scale_x_y)
-        boxes, scores = core.ops.yolo_box(x, origin_shape, *attrs)
-        return boxes, scores
-    else:
-        boxes = helper.create_variable_for_type_inference(dtype=x.dtype)
-        scores = helper.create_variable_for_type_inference(dtype=x.dtype)
-
-        attrs = {
-            "anchors": anchors,
-            "class_num": class_num,
-            "conf_thresh": conf_thresh,
-            "downsample_ratio": downsample_ratio,
-            "clip_bbox": clip_bbox,
-            "scale_x_y": scale_x_y,
-        }
-
-        helper.append_op(
-            type='yolo_box',
-            inputs={
-                "X": x,
-                "ImgSize": origin_shape,
-            },
-            outputs={
-                'Boxes': boxes,
-                'Scores': scores,
-            },
-            attrs=attrs)
-        return boxes, scores
 
 
 @paddle.jit.not_to_static
@@ -551,14 +346,14 @@ def prior_box(input,
             max_sizes = [max_sizes]
         cur_max_sizes = max_sizes
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         attrs = ('min_sizes', min_sizes, 'aspect_ratios', aspect_ratios,
                  'variances', variance, 'flip', flip, 'clip', clip, 'step_w',
                  steps[0], 'step_h', steps[1], 'offset', offset,
                  'min_max_aspect_ratios_order', min_max_aspect_ratios_order)
         if cur_max_sizes is not None:
             attrs += ('max_sizes', cur_max_sizes)
-        box, var = core.ops.prior_box(input, image, *attrs)
+        box, var = _C_ops.prior_box(input, image, *attrs)
         return box, var
     else:
         attrs = {
@@ -696,13 +491,13 @@ def multiclass_nms(bboxes,
     """
     helper = LayerHelper('multiclass_nms3', **locals())
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         attrs = ('background_label', background_label, 'score_threshold',
                  score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
                  nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
                  'normalized', normalized)
-        output, index, nms_rois_num = core.ops.multiclass_nms3(bboxes, scores,
-                                                               rois_num, *attrs)
+        output, index, nms_rois_num = _C_ops.multiclass_nms3(bboxes, scores,
+                                                             rois_num, *attrs)
         if not return_index:
             index = None
         return output, nms_rois_num, index
@@ -837,13 +632,13 @@ def matrix_nms(bboxes,
     check_type(gaussian_sigma, 'gaussian_sigma', float, 'matrix_nms')
     check_type(background_label, 'background_label', int, 'matrix_nms')
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         attrs = ('background_label', background_label, 'score_threshold',
                  score_threshold, 'post_threshold', post_threshold, 'nms_top_k',
                  nms_top_k, 'gaussian_sigma', gaussian_sigma, 'use_gaussian',
                  use_gaussian, 'keep_top_k', keep_top_k, 'normalized',
                  normalized)
-        out, index, rois_num = core.ops.matrix_nms(bboxes, scores, *attrs)
+        out, index, rois_num = _C_ops.matrix_nms(bboxes, scores, *attrs)
         if not return_index:
             index = None
         if not return_rois_num:
@@ -994,14 +789,14 @@ def box_coder(prior_box,
     check_variable_and_dtype(target_box, 'target_box', ['float32', 'float64'],
                              'box_coder')
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         if isinstance(prior_box_var, Variable):
-            output_box = core.ops.box_coder(
+            output_box = _C_ops.box_coder(
                 prior_box, prior_box_var, target_box, "code_type", code_type,
                 "box_normalized", box_normalized, "axis", axis)
 
         elif isinstance(prior_box_var, list):
-            output_box = core.ops.box_coder(
+            output_box = _C_ops.box_coder(
                 prior_box, None, target_box, "code_type", code_type,
                 "box_normalized", box_normalized, "axis", axis, "variance",
                 prior_box_var)
@@ -1119,12 +914,12 @@ def generate_proposals(scores,
             rois, roi_probs = ops.generate_proposals(scores, bbox_deltas,
                          im_shape, anchors, variances)
     """
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         assert return_rois_num, "return_rois_num should be True in dygraph mode."
         attrs = ('pre_nms_topN', pre_nms_top_n, 'post_nms_topN', post_nms_top_n,
                  'nms_thresh', nms_thresh, 'min_size', min_size, 'eta', eta,
                  'pixel_offset', pixel_offset)
-        rpn_rois, rpn_roi_probs, rpn_rois_num = core.ops.generate_proposals_v2(
+        rpn_rois, rpn_roi_probs, rpn_rois_num = _C_ops.generate_proposals_v2(
             scores, bbox_deltas, im_shape, anchors, variances, *attrs)
         if not return_rois_num:
             rpn_rois_num = None
@@ -1225,8 +1020,3 @@ def get_static_shape(tensor):
     shape = paddle.shape(tensor)
     shape.stop_gradient = True
     return shape
-
-
-def paddle_distributed_is_initialized():
-    return core.is_compiled_with_dist(
-    ) and parallel_helper._is_parallel_ctx_initialized()

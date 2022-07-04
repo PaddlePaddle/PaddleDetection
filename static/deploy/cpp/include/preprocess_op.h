@@ -16,15 +16,15 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <vector>
-#include <string>
-#include <utility>
 #include <memory>
+#include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 namespace PaddleDetection {
 
@@ -38,7 +38,7 @@ class ImageBlob {
   // Original image width, height, shrink in float format
   std::vector<float> ori_im_size_f_;
   // Evaluation image width and height
-  std::vector<float>  eval_im_size_f_;
+  std::vector<float> eval_im_size_f_;
   // Scale factor for image size to origin image size
   std::vector<float> scale_factor_f_;
 };
@@ -50,7 +50,7 @@ class PreprocessOp {
   virtual void Run(cv::Mat* im, ImageBlob* data) = 0;
 };
 
-class InitInfo : public PreprocessOp{
+class InitInfo : public PreprocessOp {
  public:
   virtual void Init(const YAML::Node& item, const std::string& arch) {}
   virtual void Run(cv::Mat* im, ImageBlob* data);
@@ -78,8 +78,8 @@ class Normalize : public PreprocessOp {
 class Permute : public PreprocessOp {
  public:
   virtual void Init(const YAML::Node& item, const std::string& arch) {
-      to_bgr_ = item["to_bgr"].as<bool>();
-      is_channel_first_ = item["channel_first"].as<bool>();
+    to_bgr_ = item["to_bgr"].as<bool>();
+    is_channel_first_ = item["channel_first"].as<bool>();
   }
 
   virtual void Run(cv::Mat* im, ImageBlob* data);
@@ -97,11 +97,11 @@ class Resize : public PreprocessOp {
     arch_ = arch;
     interp_ = item["interp"].as<int>();
     max_size_ = item["max_size"].as<int>();
-  if (item["image_shape"].IsDefined()) {
-    image_shape_ = item["image_shape"].as<std::vector<int>>();
+    if (item["image_shape"].IsDefined()) {
+      image_shape_ = item["image_shape"].as<std::vector<int>>();
     }
     target_size_ = item["target_size"].as<int>();
- }
+  }
 
   // Compute best resize scale for x-dimension, y-dimension
   std::pair<float, float> GenerateScale(const cv::Mat& im);
@@ -166,4 +166,3 @@ class Preprocessor {
 };
 
 }  // namespace PaddleDetection
-

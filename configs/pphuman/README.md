@@ -4,7 +4,6 @@
 
 PaddleDetection团队提供了针对行人的基于PP-YOLOE的检测模型，用户可以下载模型进行使用。
 其中整理后的COCO格式的CrowdHuman数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/crowdhuman.zip)，检测类别仅一类 `pedestrian(1)`，原始数据集[下载链接](http://www.crowdhuman.org/download.html)。
-更多行人检测相关数据集将近期也会继续更新。
 
 |    模型   |  数据集  | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 |  下载  | 配置文件 |
 |:---------|:-------:|:------:|:------:| :----: | :------:|

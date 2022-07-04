@@ -1,0 +1,29 @@
+===========================cpp_infer_params===========================
+model_name:ppyolo_mbv3_large_coco
+python:python3.7
+filename:null
+##
+--output_dir:./output_inference
+weights:https://paddledet.bj.bcebos.com/models/ppyolo_mbv3_large_coco.pdparams
+norm_export:tools/export_model.py -c configs/ppyolo/ppyolo_mbv3_large_coco.yml -o
+quant_export:tools/export_model.py -c configs/ppyolo/ppyolo_mbv3_large_coco.yml --slim_config configs/slim/quant/ppyolo_mbv3_large_qat.yml -o
+fpgm_export:tools/export_model.py -c configs/ppyolo/ppyolo_mbv3_large_coco.yml --slim_config configs/slim/prune/ppyolo_mbv3_large_prune_fpgm.yml -o
+distill_export:null
+export1:null
+export2:null
+kl_quant_export:tools/post_quant.py -c configs/ppyolo/ppyolo_mbv3_large_coco.yml --slim_config configs/slim/post_quant/ppyolo_mbv3_large_ptq.yml -o
+##
+opencv_dir:default
+infer_mode:norm
+infer_quant:False
+inference:./deploy/cpp/build/main
+--device:gpu|cpu
+--use_mkldnn:False
+--cpu_threads:4
+--batch_size:1|2
+--use_tensorrt:null
+--run_mode:paddle
+--model_dir:
+--image_dir:./dataset/coco/test2017/
+--run_benchmark:False
+null:null
