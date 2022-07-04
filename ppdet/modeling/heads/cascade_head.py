@@ -160,6 +160,7 @@ class CascadeHead(BBoxHead):
                  bbox_weight=[[10., 10., 5., 5.], [20.0, 20.0, 10.0, 10.0],
                               [30.0, 30.0, 15.0, 15.0]],
                  num_cascade_stages=3,
+                 stage_loss_weights=[1 / 3., 1 / 3., 1 / 3.],
                  bbox_loss=None,
                  reg_class_agnostic=True):
         nn.Layer.__init__(self, )
@@ -173,6 +174,7 @@ class CascadeHead(BBoxHead):
         self.bbox_weight = bbox_weight
         self.num_cascade_stages = num_cascade_stages
         self.bbox_loss = bbox_loss
+        self.stage_loss_weights = stage_loss_weights
 
         self.reg_class_agnostic = reg_class_agnostic
         num_bbox_delta = 4 if reg_class_agnostic else 4 * num_classes
@@ -249,7 +251,7 @@ class CascadeHead(BBoxHead):
                                            self.bbox_weight[stage])
                 for k, v in loss_stage.items():
                     loss[k + "_stage{}".format(
-                        stage)] = v / self.num_cascade_stages
+                        stage)] = v * self.stage_loss_weights[stage]
 
             return loss, bbox_feat
         else:
