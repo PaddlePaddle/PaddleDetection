@@ -374,8 +374,8 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 - [Quick start](docs/tutorials/QUICK_STARTED_cn.md)
 - [Data preparation](docs/tutorials/data/README.md)
 - [Geting Started on PaddleDetection](docs/tutorials/GETTING_STARTED_cn.md)
-- [Customize data training]((docs/tutorials/CustomizeDataTraining.md)
-- [FAQ]((docs/tutorials/FAQ)
+- [Customize data training](docs/tutorials/CustomizeDataTraining.md)
+- [FAQ](docs/tutorials/FAQ)
 
 ### Advanced tutorials
 
@@ -384,7 +384,7 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
   - [RCNN Configuration](docs/tutorials/config_annotation/faster_rcnn_r50_fpn_1x_coco_annotation.md)
   - [PP-YOLO Configuration](docs/tutorials/config_annotation/ppyolo_r50vd_dcn_1x_coco_annotation.md)
 
-- Compression based on [PaddleSlim]([GitHub - PaddlePaddle/PaddleSlim: PaddleSlim is an open-source library for deep model compression and architecture search.](https://github.com/PaddlePaddle/PaddleSlim))
+- Compression based on [PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim)
   
   - [Pruning/Quantization/Distillation Tutorial](configs/slim)
 
@@ -411,7 +411,7 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
   - [New object detection models](docs/advanced_tutorials/MODEL_TECHNICAL.md)
   - Custumization
     - [Object detection](docs/advanced_tutorials/customization/detection.md)
-    - [Keypoint detection]((docs/advanced_tutorials/customization/keypoint_detection.md)
+    - [Keypoint detection](docs/advanced_tutorials/customization/keypoint_detection.md)
     - [Multiple object tracking](docs/advanced_tutorials/customization/mot.md)
     - [Action recognition](docs/advanced_tutorials/customization/action.md)
     - [Attribute recognition](docs/advanced_tutorials/customization/attribute.md)
