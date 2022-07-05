@@ -160,7 +160,10 @@ class CascadeHead(BBoxHead):
                  bbox_weight=[[10., 10., 5., 5.], [20.0, 20.0, 10.0, 10.0],
                               [30.0, 30.0, 15.0, 15.0]],
                  num_cascade_stages=3,
-                 bbox_loss=None):
+                 bbox_loss=None,
+                 reg_class_agnostic=True,
+                 stage_loss_weights=None):
+
         nn.Layer.__init__(self, )
         self.head = head
         self.roi_extractor = roi_extractor
@@ -172,6 +175,15 @@ class CascadeHead(BBoxHead):
         self.bbox_weight = bbox_weight
         self.num_cascade_stages = num_cascade_stages
         self.bbox_loss = bbox_loss
+        self.stage_loss_weights = [
+            1. / num_cascade_stages for _ in range(num_cascade_stages)
+        ] if stage_loss_weights is None else stage_loss_weights
+        assert len(
+            self.stage_loss_weights
+        ) == num_cascade_stages, f'stage_loss_weights({len(self.stage_loss_weights)}) do not equal to num_cascade_stages({num_cascade_stages})'
+
+        self.reg_class_agnostic = reg_class_agnostic
+        num_bbox_delta = 4 if reg_class_agnostic else 4 * num_classes
 
         self.bbox_score_list = []
         self.bbox_delta_list = []
@@ -190,7 +202,7 @@ class CascadeHead(BBoxHead):
                 delta_name,
                 nn.Linear(
                     in_channel,
-                    4,
+                    num_bbox_delta,
                     weight_attr=paddle.ParamAttr(initializer=Normal(
                         mean=0.0, std=0.001))))
             self.bbox_score_list.append(bbox_score)
@@ -227,6 +239,13 @@ class CascadeHead(BBoxHead):
             bbox_feat = self.head(rois_feat, i)
             scores = self.bbox_score_list[i](bbox_feat)
             deltas = self.bbox_delta_list[i](bbox_feat)
+
+            # TODO (lyuwenyu) Is it correct for only one class ?
+            if not self.reg_class_agnostic and i < self.num_cascade_stages - 1:
+                deltas = deltas.reshape([-1, self.num_classes, 4])
+                labels = scores[:, :-1].argmax(axis=-1)
+                deltas = deltas[paddle.arange(deltas.shape[0]), labels]
+
             head_out_list.append([scores, deltas, rois])
             pred_bbox = self._get_pred_bbox(deltas, rois, self.bbox_weight[i])
 
@@ -238,7 +257,7 @@ class CascadeHead(BBoxHead):
                                            self.bbox_weight[stage])
                 for k, v in loss_stage.items():
                     loss[k + "_stage{}".format(
-                        stage)] = v / self.num_cascade_stages
+                        stage)] = v * self.stage_loss_weights[stage]
 
             return loss, bbox_feat
         else:

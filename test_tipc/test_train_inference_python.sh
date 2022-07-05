@@ -293,7 +293,9 @@ else
                 # run train
                 train_log_path="${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}_nodes_${nodes}.log"
                 eval "${cmd} > ${train_log_path} 2>&1"
-                status_check $? "${cmd}" "${status_log}" "${model_name}"
+                last_status=$?
+                cat ${train_log_path}
+                status_check $last_status "${cmd}" "${status_log}" "${model_name}"
 
                 set_eval_trained_weight=$(func_set_params "${export_weight_key}" "${save_log}/${model_name}/${train_model_name}")
                 # run eval
@@ -302,7 +304,9 @@ else
                     eval_log_path="${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}_nodes_${nodes}_eval.log"
                     eval_cmd="${python} ${eval_py} ${set_eval_trained_weight} ${set_use_gpu} ${set_eval_params1}"
                     eval "${eval_cmd} > ${eval_log_path} 2>&1"
-                    status_check $? "${eval_cmd}" "${status_log}" "${model_name}"
+                    last_status=$?
+                    cat ${eval_log_path}
+                    status_check $last_status "${eval_cmd}" "${status_log}" "${model_name}"
                 fi
                 # run export model
                 if [ ${run_export} != "null" ]; then
@@ -321,7 +325,9 @@ else
                     export_log_path="${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}_nodes_${nodes}_export.log"
                     export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
                     eval "${export_cmd} > ${export_log_path} 2>&1"
-                    status_check $? "${export_cmd}" "${status_log}" "${model_name}"
+                    last_status=$?
+                    cat ${export_log_path}
+                    status_check $last_status "${export_cmd}" "${status_log}" "${model_name}"
 
                     #run inference
                     if [ ${export_onnx_key} != "export_onnx" ]; then

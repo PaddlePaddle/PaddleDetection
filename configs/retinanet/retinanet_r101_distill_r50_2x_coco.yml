@@ -1,0 +1,9 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/retinanet_r50_fpn.yml',
+  '_base_/optimizer_2x.yml',
+  '_base_/retinanet_reader.yml'
+]
+
+weights: https://paddledet.bj.bcebos.com/models/retinanet_r101_distill_r50_2x_coco.pdparams
