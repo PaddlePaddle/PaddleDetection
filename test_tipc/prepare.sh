@@ -41,6 +41,24 @@ elif [ ${MODE} = "cpp_infer" ];then
         cd ./output_inference/ && tar -xvf picodet_s_320_pedestrian.tar
         cd ../
     fi
+    # download KL model
+    if [[ ${model_name} = "picodet_lcnet_1_5x_416_coco_KL" ]]; then
+        wget -nc -P ./output_inference/picodet_lcnet_1_5x_416_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/picodet_lcnet_1_5x_416_coco_ptq.tar --no-check-certificate
+        cd ./output_inference/picodet_lcnet_1_5x_416_coco_KL/ && tar -xvf picodet_lcnet_1_5x_416_coco_ptq.tar && mv -n picodet_lcnet_1_5x_416_coco_ptq/* .
+        cd ../../
+    elif [[ ${model_name} = "ppyoloe_crn_s_300e_coco_KL" ]]; then
+        wget -nc -P ./output_inference/ppyoloe_crn_s_300e_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/ppyoloe_crn_s_300e_coco_ptq.tar --no-check-certificate
+        cd ./output_inference/ppyoloe_crn_s_300e_coco_KL/ && tar -xvf ppyoloe_crn_s_300e_coco_ptq.tar && mv -n ppyoloe_crn_s_300e_coco_ptq/* .
+        cd ../../
+    elif [[ ${model_name} = "ppyolo_mbv3_large_coco_KL" ]]; then
+        wget -nc -P ./output_inference/ppyolo_mbv3_large_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/ppyolo_mbv3_large_ptq.tar --no-check-certificate
+        cd ./output_inference/ppyolo_mbv3_large_coco_KL/ && tar -xvf ppyolo_mbv3_large_ptq.tar && mv -n ppyolo_mbv3_large_ptq/* .
+        cd ../../
+    elif [[ ${model_name} = "mask_rcnn_r50_fpn_1x_coco_KL" ]]; then
+        wget -nc -P ./output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/mask_rcnn_r50_fpn_1x_coco_ptq.tar --no-check-certificate
+        cd ./output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ && tar -xvf mask_rcnn_r50_fpn_1x_coco_ptq.tar && mv -n mask_rcnn_r50_fpn_1x_coco_ptq/* .
+        cd ../../
+    fi
     # download mot lite data
     wget -nc -P ./dataset/mot/ https://paddledet.bj.bcebos.com/data/tipc/mot_tipc.tar --no-check-certificate
     cd ./dataset/mot/ && tar -xvf mot_tipc.tar && mv -n mot_tipc/* .
@@ -85,6 +103,28 @@ elif [ ${MODE} = "serving_infer" ];then
     wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/tipc/coco_tipc.tar --no-check-certificate
     cd ./dataset/coco/ && tar -xvf coco_tipc.tar && mv -n coco_tipc/* .
     rm -rf coco_tipc/ && cd ../../
+    # download KL model
+    if [[ ${model_name} = "picodet_lcnet_1_5x_416_coco_KL" ]]; then
+        wget -nc -P ./output_inference/picodet_lcnet_1_5x_416_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/picodet_lcnet_1_5x_416_coco_ptq.tar --no-check-certificate
+        cd ./output_inference/picodet_lcnet_1_5x_416_coco_KL/ && tar -xvf picodet_lcnet_1_5x_416_coco_ptq.tar && mv -n picodet_lcnet_1_5x_416_coco_ptq/* .
+        cd ../../
+        eval "${python} -m paddle_serving_client.convert --dirname output_inference/picodet_lcnet_1_5x_416_coco_KL/ --model_filename model.pdmodel --params_filename model.pdiparams --serving_server output_inference/picodet_lcnet_1_5x_416_coco_KL/serving_server --serving_client output_inference/picodet_lcnet_1_5x_416_coco_KL/serving_client"
+    elif [[ ${model_name} = "ppyoloe_crn_s_300e_coco_KL" ]]; then
+        wget -nc -P ./output_inference/ppyoloe_crn_s_300e_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/ppyoloe_crn_s_300e_coco_ptq.tar --no-check-certificate
+        cd ./output_inference/ppyoloe_crn_s_300e_coco_KL/ && tar -xvf ppyoloe_crn_s_300e_coco_ptq.tar && mv -n ppyoloe_crn_s_300e_coco_ptq/* .
+        cd ../../
+        eval "${python} -m paddle_serving_client.convert --dirname output_inference/ppyoloe_crn_s_300e_coco_KL/ --model_filename model.pdmodel --params_filename model.pdiparams --serving_server output_inference/ppyoloe_crn_s_300e_coco_KL/serving_server --serving_client output_inference/ppyoloe_crn_s_300e_coco_KL/serving_client"
+    elif [[ ${model_name} = "ppyolo_mbv3_large_coco_KL" ]]; then
+        wget -nc -P ./output_inference/ppyolo_mbv3_large_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/ppyolo_mbv3_large_ptq.tar --no-check-certificate
+        cd ./output_inference/ppyolo_mbv3_large_coco_KL/ && tar -xvf ppyolo_mbv3_large_ptq.tar && mv -n ppyolo_mbv3_large_ptq/* .
+        cd ../../
+        eval "${python} -m paddle_serving_client.convert --dirname output_inference/ppyolo_mbv3_large_coco_KL/ --model_filename model.pdmodel --params_filename model.pdiparams --serving_server output_inference/ppyolo_mbv3_large_coco_KL/serving_server --serving_client output_inference/ppyolo_mbv3_large_coco_KL/serving_client"
+    elif [[ ${model_name} = "mask_rcnn_r50_fpn_1x_coco_KL" ]]; then
+        wget -nc -P ./output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/mask_rcnn_r50_fpn_1x_coco_ptq.tar --no-check-certificate
+        cd ./output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ && tar -xvf mask_rcnn_r50_fpn_1x_coco_ptq.tar && mv -n mask_rcnn_r50_fpn_1x_coco_ptq/* .
+        cd ../../
+        eval "${python} -m paddle_serving_client.convert --dirname output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ --model_filename model.pdmodel --params_filename model.pdiparams --serving_server output_inference/mask_rcnn_r50_fpn_1x_coco_KL/serving_server --serving_client output_inference/mask_rcnn_r50_fpn_1x_coco_KL/serving_client"
+    fi
 else
     # download coco lite data
     wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/tipc/coco_tipc.tar --no-check-certificate
