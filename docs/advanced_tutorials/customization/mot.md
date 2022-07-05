@@ -11,62 +11,7 @@
 
 ### 1. 使用自定义数据集训练
 
-基于准备的数据在数据配置文件中修改对应路径，例如`configs/dataset/coco_detection.yml`:
-
-```
-metric: COCO
-num_classes: 80
-
-TrainDataset:
-  !COCODataSet
-    image_dir: train2017 # 训练集的图片所在文件相对于dataset_dir的路径
-    anno_path: annotations/instances_train2017.json # 训练集的标注文件相对于dataset_dir的路径
-    dataset_dir: dataset/coco # 数据集所在路径，相对于PaddleDetection路径
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
-
-EvalDataset:
-  !COCODataSet
-    image_dir: val2017 # 验证集的图片所在文件相对于dataset_dir的路径
-    anno_path: annotations/instances_val2017.json # 验证集的标注文件相对于dataset_dir的路径
-    dataset_dir: dataset/coco # 数据集所在路径，相对于PaddleDetection路径
-
-TestDataset:
-  !ImageFolder
-    anno_path: annotations/instances_val2017.json # also support txt (like VOC's label_list.txt) # 标注文件所在文件 相对于dataset_dir的路径
-    dataset_dir: dataset/coco # if set, anno_path will be 'dataset_dir/anno_path' # 数据集所在路径，相对于PaddleDetection路径
-```
-
-可以下载MOT17数据集并解压放在`PaddleDetection/dataset/mot`目录下：
-```
-wget https://dataset.bj.bcebos.com/mot/MOT17.zip
-
-```
-配置文件修改如下：
-```
-metric: COCO
-num_classes: 1
-
-TrainDataset:
-  !COCODataSet
-    dataset_dir: dataset/mot/MOT17
-    anno_path: annotations/train_half.json
-    image_dir: images/train
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
-
-EvalDataset:
-  !COCODataSet
-    dataset_dir: dataset/mot/MOT17
-    anno_path: annotations/val_half.json
-    image_dir: images/train
-
-TestDataset:
-  !ImageFolder
-    dataset_dir: dataset/mot/MOT17
-    anno_path: annotations/val_half.json
-
-```
-
-配置修改完成后，即可以启动训练评估，命令如下
+ByteTrack跟踪方案采用的数据集只需要有检测标注即可。参照[MOT数据集准备](../../../configs/mot)和[MOT数据集教程](docs/tutorials/data/PrepareMOTDataSet.md)。
 
 ```
 # 单卡训练
