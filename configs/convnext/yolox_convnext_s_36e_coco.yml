@@ -10,7 +10,7 @@ width_mult: 0.50
 log_iter: 100
 snapshot_epoch: 5
 weights: output/yolox_convnext_s_36e_coco/model_final
-pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/convnext_tiny_22k_224.params
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/convnext_tiny_22k_224.pdparams
 
 
 YOLOX:
