@@ -1,0 +1,27 @@
+_BASE_: [
+  './cascade_rcnn_vit_base_hrfpn_cae_1x_coco.yml'
+]
+
+weights: output/cascade_rcnn_vit_large_hrfpn_cae_1x_coco/model_final
+
+
+depth: &depth 24
+dim: &dim 1024
+
+VisionTransformer:
+  embed_dim: *dim
+  depth: *depth
+  num_heads: 16
+  drop_path_rate: 0.2 # 0.1
+  out_indices: [7, 11, 15, 23]
+
+
+HRFPN:
+  in_channels: [*dim, *dim, *dim, *dim]
+
+
+OptimizerBuilder:
+  optimizer:
+    layer_decay: 0.75
+    weight_decay: 0.02
+    num_layers: *depth
