@@ -5,6 +5,8 @@
 * [ppyoloe-m](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_m_300e_coco.pdparams)
 * [ppyoloe-l](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams)
 * [ppyoloe-x](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_x_300e_coco.pdparams)
+* [ppyoloe-s-400e](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_400e_coco.pdparams)
+
 
 ## Export paddle model for deploying
 
@@ -12,6 +14,15 @@
 python ./tools/export_model.py \
     -c configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml \
     -o weights=ppyoloe_crn_s_300e_coco.pdparams \
+    trt=True \
+    exclude_nms=True \
+    TestReader.inputs_def.image_shape=[3,640,640] \
+    --output_dir ./
+
+# if you want to try ppyoloe-s-400e model
+python ./tools/export_model.py \
+    -c configs/ppyoloe/ppyoloe_crn_s_400e_coco.yml \
+    -o weights=ppyoloe_crn_s_400e_coco.pdparams \
     trt=True \
     exclude_nms=True \
     TestReader.inputs_def.image_shape=[3,640,640] \
@@ -40,6 +51,15 @@ python ./deploy/end2end_ppyoloe/end2end.py \
     --topk-all 100 \
     --iou-thres 0.6 \
     --conf-thres 0.4
+# if you want to try ppyoloe-s-400e model
+python ./deploy/end2end_ppyoloe/end2end.py \
+    --model-dir ppyoloe_crn_s_400e_coco \
+    --save-file ppyoloe_crn_s_400e_coco.onnx \
+    --opset 11 \
+    --batch-size 1 \
+    --topk-all 100 \
+    --iou-thres 0.6 \
+    --conf-thres 0.4
 ```
 #### Description of all arguments
 
@@ -59,6 +79,11 @@ python ./deploy/end2end_ppyoloe/end2end.py \
     --onnx=ppyoloe_crn_s_300e_coco.onnx \
     --saveEngine=ppyoloe_crn_s_300e_coco.engine \
     --fp16 # if export TensorRT fp16 model
+# if you want to try ppyoloe-s-400e model
+/path/to/trtexec \
+    --onnx=ppyoloe_crn_s_400e_coco.onnx \
+    --saveEngine=ppyoloe_crn_s_400e_coco.engine \
+    --fp16 # if export TensorRT fp16 model
 ```
 #### TensorRT image infer
 
@@ -67,4 +92,8 @@ python ./deploy/end2end_ppyoloe/end2end.py \
 python ./deploy/end2end_ppyoloe/cuda-python.py ppyoloe_crn_s_300e_coco.engine
 # cupy infer script
 python ./deploy/end2end_ppyoloe/cupy-python.py ppyoloe_crn_s_300e_coco.engine
+# if you want to try ppyoloe-s-400e model
+python ./deploy/end2end_ppyoloe/cuda-python.py ppyoloe_crn_s_400e_coco.engine
+# or
+python ./deploy/end2end_ppyoloe/cuda-python.py ppyoloe_crn_s_400e_coco.engine
 ```
