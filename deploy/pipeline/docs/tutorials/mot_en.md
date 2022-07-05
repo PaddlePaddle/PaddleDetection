@@ -56,9 +56,9 @@ Data source and copyright owner：Skyinfor Technology. Thanks for the provision 
 
 ## Introduction to the Solution
 
-1. Get the pedestrian detection box of the image/ video input through object detection and multi-object tracking. The adopted model is PP-YOLOE, and for details, please refer to [PP-YOLOE](../../../configs/ppyoloe).
+1. Get the pedestrian detection box of the image/ video input through object detection and multi-object tracking. The adopted model is PP-YOLOE, and for details, please refer to [PP-YOLOE](../../../../configs/ppyoloe).
 
-2. The multi-object tracking model solution is based on [ByteTrack](https://arxiv.org/pdf/2110.06864.pdf), and replace the original YOLOX with P-YOLOE as the detector，and BYTETracker as the tracker, please refer to [ByteTrack](../../../configs/mot/bytetrack).
+2. The multi-object tracking model solution is based on [ByteTrack](https://arxiv.org/pdf/2110.06864.pdf), and replace the original YOLOX with P-YOLOE as the detector，and BYTETracker as the tracker, please refer to [ByteTrack](../../../../configs/mot/bytetrack).
 
 ## Reference
 ```
