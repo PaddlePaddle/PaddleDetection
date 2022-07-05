@@ -178,8 +178,6 @@ class MobileOneBlock(nn.Layer):
             self.__delattr__('rbr_identity_st1')
         if hasattr(self, 'rbr_identity_st2'):
             self.__delattr__('rbr_identity_st2')
-        if hasattr(self, 'id_tensor'):
-            self.__delattr__('id_tensor')
 
     def get_equivalent_kernel_bias(self):
         st1_kernel3x3, st1_bias3x3 = self._fuse_bn_tensor(self.depth_conv)
@@ -248,7 +246,8 @@ class MobileOneBlock(nn.Layer):
                 dtype='float32')
             if kernel_size > 1:
                 for i in range(self.ch_in):
-                    kernel_value[i, i % input_dim, 1, 1] = 1
+                    kernel_value[i, i % input_dim, (kernel_size - 1) // 2, (
+                        kernel_size - 1) // 2] = 1
             elif kernel_size == 1:
                 for i in range(self.ch_in):
                     kernel_value[i, i % input_dim, 0, 0] = 1
