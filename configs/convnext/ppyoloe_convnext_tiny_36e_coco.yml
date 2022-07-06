@@ -1,0 +1,55 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '../ppyoloe/_base_/ppyoloe_crn.yml',
+  '../ppyoloe/_base_/ppyoloe_reader.yml',
+]
+depth_mult: 0.25
+width_mult: 0.50
+
+log_iter: 100
+snapshot_epoch: 5
+weights: output/ppyoloe_convnext_tiny_36e_coco/model_final
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/convnext_tiny_22k_224.pdparams
+
+
+YOLOv3:
+  backbone: ConvNeXt
+  neck: CustomCSPPAN
+  yolo_head: PPYOLOEHead
+  post_process: ~
+
+ConvNeXt:
+  arch: 'tiny'
+  drop_path_rate: 0.4
+  layer_scale_init_value: 1.0
+  return_idx: [1, 2, 3]
+
+
+PPYOLOEHead:
+  static_assigner_epoch: 12
+  nms:
+    nms_top_k: 10000
+    keep_top_k: 300
+    score_threshold: 0.01
+    nms_threshold: 0.7
+
+
+TrainReader:
+  batch_size: 16
+
+
+epoch: 36
+LearningRate:
+  base_lr: 0.0002
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [36]
+    use_warmup: false
+
+OptimizerBuilder:
+  regularizer: false
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0005
