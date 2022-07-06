@@ -193,6 +193,7 @@ def plot_tracking_dict(image,
                        fps=0.,
                        ids2names=[],
                        do_entrance_counting=False,
+                       do_break_in_counting=False,
                        entrance=None,
                        records=None,
                        center_traj=None):
@@ -214,7 +215,7 @@ def plot_tracking_dict(image,
                 text_scale, (0, 0, 255),
                 thickness=text_thickness)
 
-    if num_classes == 1 and do_entrance_counting:
+    if num_classes == 1 and (do_entrance_counting or do_break_in_counting):
         entrance_line = tuple(map(int, entrance))
         cv2.rectangle(
             im,

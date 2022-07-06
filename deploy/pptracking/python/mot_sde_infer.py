@@ -64,7 +64,16 @@ class SDE_Detector(Detector):
         secs_interval (int): The seconds interval to count after tracking, default as 10
         do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
             or getting out from the entrance, default as False，only support single class
-            counting in MOT.
+            counting in MOT, and the video should be taken by a static camera.
+        do_break_in_counting(bool): Whether counting the numbers of identifiers break in
+            the area, default as False，only support single class counting in MOT,
+            and the video should be taken by a static camera.
+        area_type (str): Area type for entrance counting or break in counting, 'horizontal'
+            and 'vertical' used when do entrance counting. 'custom' used when do break in counting. 
+            Note that only support single-class MOT, and the video should be taken by a static camera.
+        area_polygon (list): Clockwise point coords (x0,y0,x1,y1...) of polygon of area when
+            do_break_in_counting. Note that only support single-class MOT and
+            the video should be taken by a static camera.
         reid_model_dir (str): reid model dir, default None for ByteTrack, but set for DeepSORT
         mtmct_dir (str): MTMCT dir, default None, set for doing MTMCT
     """
@@ -88,6 +97,9 @@ class SDE_Detector(Detector):
                  draw_center_traj=False,
                  secs_interval=10,
                  do_entrance_counting=False,
+                 do_break_in_counting=False,
+                 area_type='horizontal',
+                 area_polygon=[],
                  reid_model_dir=None,
                  mtmct_dir=None):
         super(SDE_Detector, self).__init__(
@@ -108,6 +120,9 @@ class SDE_Detector(Detector):
         self.draw_center_traj = draw_center_traj
         self.secs_interval = secs_interval
         self.do_entrance_counting = do_entrance_counting
+        self.do_break_in_counting = do_break_in_counting
+        self.area_type = area_type
+        self.area_polygon = area_polygon
 
         assert batch_size == 1, "MOT model only supports batch_size=1."
         self.det_times = Timer(with_tracker=True)
@@ -502,7 +517,17 @@ class SDE_Detector(Detector):
             out_id_list = list()
             prev_center = dict()
             records = list()
-            entrance = [0, height / 2., width, height / 2.]
+            if self.do_entrance_counting or self.do_break_in_counting:
+                if self.area_type == 'horizontal':
+                    entrance = [0, height / 2., width, height / 2.]
+                elif self.area_type == 'vertical':
+                    entrance = [width / 2, 0., width / 2, height]
+                elif self.area_type == 'custom':
+                    entrance = self.area_polygon[:]
+                else:
+                    raise ValueError("area_type:{} is not supported.".format(
+                        self.area_type))
+
         video_fps = fps
 
         while (1):
@@ -528,8 +553,9 @@ class SDE_Detector(Detector):
                           online_ids[0])
                 statistic = flow_statistic(
                     result, self.secs_interval, self.do_entrance_counting,
-                    video_fps, entrance, id_set, interval_id_set, in_id_list,
-                    out_id_list, prev_center, records, data_type, num_classes)
+                    self.do_break_in_counting, self.area_type, video_fps,
+                    entrance, id_set, interval_id_set, in_id_list, out_id_list,
+                    prev_center, records, data_type, num_classes)
                 records = statistic['records']
 
             fps = 1. / timer.duration
@@ -714,6 +740,9 @@ def main():
         draw_center_traj=FLAGS.draw_center_traj,
         secs_interval=FLAGS.secs_interval,
         do_entrance_counting=FLAGS.do_entrance_counting,
+        do_break_in_counting=FLAGS.do_break_in_counting,
+        area_type=FLAGS.area_type,
+        area_polygon=FLAGS.area_polygon,
         reid_model_dir=FLAGS.reid_model_dir,
         mtmct_dir=FLAGS.mtmct_dir, )
 
