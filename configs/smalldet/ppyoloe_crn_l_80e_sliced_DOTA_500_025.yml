@@ -1,5 +1,5 @@
 _BASE_: [
-  '../datasets/DOTA_sliced_500_025_detection.yml',
+  './_base_/DOTA_sliced_500_025_detection.yml',
   '../runtime.yml',
   '../ppyoloe/_base_/optimizer_300e.yml',
   '../ppyoloe/_base_/ppyoloe_crn.yml',
