@@ -33,7 +33,7 @@
 - 2021.11.03: PaddleDetection released [release/2.3 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3)
   
   - Release light-weight featured detection model ⚡[PP-PicoDet](configs/picodet). With a 0.99m parameter, its inference speed could reach to 150FPS when COCO mAP as over 30% 
-  - Release light-weight keypoint special model ⚡[PP-TinyPose](configs/keypoint/tiny_pose), FP16 inference speed as 72.9 FPS  and on a single person detection. It has high performance and fast speed, unlimited detection headcounts while being effective on small objects.
+  - Release light-weight keypoint special model ⚡[PP-TinyPose](configs/keypoint/tiny_pose), FP16 inference speed as 122 FPS  and on a single person detection. It has high performance and fast speed, unlimited detection headcounts while being effective on small objects.
   - Release real-time tracking system [PP-Tracking](deploy/pptracking), covering pedestrian, vehicle and multi-category tracking with single and multi-camera, optimization for small and intensive objects, providing technical solutions for human and vehicle traffic.
   - Add object detection models [Swin Transformer](configs/faster_rcnn)，[TOOD](configs/tood)，[GFL](configs/gfl)
   - Release optimized small object detection model [Sniper](configs/sniper) and [PP-YOLO-EB](configs/ppyolo) model which optimized for EdgeBoard
@@ -43,7 +43,7 @@
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157795569-9fc77c85-732f-4870-9be0-99a7fe2cff27.png" alt="" width="20"> Brief Introduction
 
-**PaddleDetection** is an end-to-end object detection development kit based on PaddlePaddle. Providing **over 30 model algorithm** and **over 250 pre-trained models**, it covers object detection, instance segmentation, face recognition, multi-object tracking. In particular, PaddleDetection offers **high- performance & light-weight** industrial SOTA models on **servers and mobile** devices, champion solution and cutting-edge algorithm. PaddleDetection provides various data augmentation methods, configurable network components, loss functions and other advanced optimization & deployment schemes. In addition to running through the whole process of data processing, model development, training, compression and deployment, PaddlePaddle also provides rich cases and tutorials to accelerate the industrial application of algorithm.
+**PaddleDetection** is an end-to-end object detection development kit based on PaddlePaddle. Providing **over 30 model algorithm** and **over 250 pre-trained models**, it covers object detection, instance segmentation, keypoint detection, multi-object tracking. In particular, PaddleDetection offers **high- performance & light-weight** industrial SOTA models on **servers and mobile** devices, champion solution and cutting-edge algorithm. PaddleDetection provides various data augmentation methods, configurable network components, loss functions and other advanced optimization & deployment schemes. In addition to running through the whole process of data processing, model development, training, compression and deployment, PaddleDetection also provides rich cases and tutorials to accelerate the industrial application of algorithm.
 
 <div  align="center">
   <img src="https://user-images.githubusercontent.com/48054808/157826886-2e101a71-25a2-42f5-bf5e-30a97be28f46.gif" width="800"/>
@@ -64,7 +64,7 @@
 
 - If you have any question or suggestion, please give us your valuable input via [GitHub Issues](https://github.com/PaddlePaddle/PaddleDetection/issues) 
   
-  Welcome to join PaddleDetection user groups on QQ, WeChat (scan the QR code, add and reply "detection" to the assistant)
+  Welcome to join PaddleDetection user groups on QQ, WeChat (scan the QR code, add and reply "Detection" to the assistant)
   
   <div align="center">
   <img src="https://user-images.githubusercontent.com/48054808/157800129-2f9a0b72-6bb8-4b10-8310-93ab1639253f.jpg"  width = "200" />  
@@ -252,7 +252,7 @@ The comparison between COCO mAP and FPS on Tesla V100 of representative models o
 
 - `CBResNet` stands for `Cascade-Faster-RCNN-CBResNet200vd-FPN`, which has highest mAP on COCO as 53.3%
 - `Cascade-Faster-RCNN`stands for `Cascade-Faster-RCNN-ResNet50vd-DCN`, which has been optimized to 20 FPS inference speed when COCO mAP as 47.8% in PaddleDetection models
-- `PP-YOLO` reached accuracy as 45.9% on COCO dataset, inference speed as 72.9 FPS on Tesla V100, higher than [YOLOv4]([[2004.10934] YOLOv4: Optimal Speed and Accuracy of Object Detection](https://arxiv.org/abs/2004.10934)) in terms of speed and accuracy
+- `PP-YOLO` reached accuracy as 45.9% on COCO dataset, inference speed as 72.9 FPS on Tesla V100, higher than [YOLOv4](https://arxiv.org/abs/2004.10934) in terms of speed and accuracy
 - `PP-YOLO v2`are optimized `PP-YOLO`. It reached accuracy as 49.5% on COCO dataset, inference speed as 68.9 FPS on Tesla V100.
 - `PP-YOLOE`are optimized `PP-YOLO v2`. It reached accuracy as 51.4% on COCO dataset, inference speed as 78.1 FPS on Tesla V100
 - The models in the figure are available in the[ model library](#模型库)
