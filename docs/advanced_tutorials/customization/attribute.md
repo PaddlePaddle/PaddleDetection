@@ -70,35 +70,60 @@ train.txt文件内为所有训练图片名称（相对于根路径的文件路�
 00001.jpg    0,0,1,0,....
 ```
 
-注意：图片与标注值之间是以Tab[\t]符号隔开, 标注值之间是以逗号[,]隔开。该格式不能错，否则解析失败。
+注意：1)图片与标注值之间是以Tab[\t]符号隔开, 2)标注值之间是以逗号[,]隔开。该格式不能错，否则解析失败。
 
 ### 修改配置开始训练
 
-该任务的训练功能集成在[PaddleClas](https://github.com/PaddlePaddle/PaddleClas)套件中。
+首先执行以下命令下载训练代码：
 
-需要在配置文件[PPLCNet_x1_0.yaml](https://github.com/PaddlePaddle/PaddleClas/blob/develop/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml)中，修改的配置项如下：
+```shell
+git clone https://github.com/PaddlePaddle/PaddleClas
+```
+
+需要在配置文件`PaddleClas/blob/develop/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml`中，修改的配置项如下：
 
 ```
-      image_root: "dataset/attribute/data/"    指定训练图片所在根路径
-      cls_label_path: "dataset/attribute/trainval.txt" 指定训练列表文件位置
+DataLoader:
+  Train:
+    dataset:
+      name: MultiLabelDataset
+      image_root: "dataset/pa100k/"                     #指定训练图片所在根路径
+      cls_label_path: "dataset/pa100k/train_list.txt"   #指定训练列表文件位置
+      label_ratio: True
+      transform_ops:
+
+  Eval:
+    dataset:
+      name: MultiLabelDataset
+      image_root: "dataset/pa100k/"                     #指定训练图片所在根路径
+      cls_label_path: "dataset/pa100k/val_list.txt"     #指定训练列表文件位置
+      label_ratio: True
+      transform_ops:
 ```
 注意：
-
-1. 这里image_root路径+train.txt中图片相对路径，对应图片存放的完整路径。
-
-如果有修改属性数量，则还需修改内容配置项：
-
+1. 这里image_root路径+train.txt中图片相对路径，对应图片的完整路径位置。
+2. 如果有修改属性数量，则还需修改内容配置项中属性种类数量：
 ```
-  class_num: 26        #属性种类数量
+# model architecture
+Arch:
+  name: "PPLCNet_x1_0"
+  pretrained: True
+  use_ssld: True
+  class_num: 26           #属性种类数量
 ```
 
 然后运行以下命令开始训练。
 
 ```
+#多卡训练
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 python3 -m paddle.distributed.launch \
     --gpus="0,1,2,3" \
     tools/train.py \
+        -c ./ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml
+
+#单卡训练
+python3 tools/train.py \
         -c ./ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml
 ```
 
@@ -113,23 +138,34 @@ python3 tools/export_model.py \
     -o Global.save_inference_dir=deploy/models/PPLCNet_x1_0_person_attribute_infer
 ```
 
-导出模型后，然后将PP-Human中提供的部署模型[PPLCNet_x1_0](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.tar)中的infer_cfg.yml文件拷贝到导出的模型文件夹'PPLCNet_x1_0_person_attribute_infer'中。
+导出模型后，将PP-Human中提供的部署模型[PPLCNet_x1_0](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.tar)中的`infer_cfg.yml`文件拷贝到导出的模型文件夹`PPLCNet_x1_0_person_attribute_infer`中。
 
-使用时在PP-Human中的配置文件infer_cfg_pphuman.yml中修改
+使用时在PP-Human中的配置文件`./deploy/pipeline/config/infer_cfg_pphuman.yml`中修改新的模型路径
 ```
 ATTR:
-  model_dir: [YOUR_DEPLOY_MODEL_DIR]/PPLCNet_x1_0_person_attribute_infer/
-  enable: True
+  model_dir: [YOUR_DEPLOY_MODEL_DIR]/PPLCNet_x1_0_person_attribute_infer/   #新导出的模型路径位置
+  enable: True                                                              #开启功能
 ```
-然后可以使用。
+然后可以使用-->至此即完成新增属性类别识别任务。
 
 ## 属性增减
 
 上述是以26个属性为例的标注、训练过程。
 
-如果需要增加、减少属性数量，则只需修改1)标注、2)训练中train.txt所使用的属性数量和名称。
+如果需要增加、减少属性数量，则需要：
+1)标注时需增加新属性类别信息或删减属性类别信息；
+2)对应修改训练中train.txt所使用的属性数量和名称；
+3)修改训练配置，例如``PaddleClas/blob/develop/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml``文件中的属性数量,详细见上述`修改配置开始训练`部分。
 
-删减属性，例如，如果不需要年龄属性，则位置[1,2,3]的数值可以去掉。只需在train.txt中标注的26个数字中全部删除第1-3位数值即可，同时标注数据时也不再需要标注这3位属性值。
+增加属性示例：
 
-同理进行增加属性，在标注数据时在26位后继续增加新的属性标注数值，在train.txt文件的标注数值中也增加新的属性数值。注意属性类型在train.txt中属性数值列表中的位置的对应关系需要时固定的，例如第1-3位表示年龄，所有图片都要使用1-3位置表示年龄，不再赘述。
+1. 在标注数据时在26位后继续增加新的属性标注数值；
+2. 在train.txt文件的标注数值中也增加新的属性数值。
+3. 注意属性类型在train.txt中属性数值列表中的位置的对应关系需要时固定的，例如第1-3位表示年龄，所有图片都要使用1-3位置表示年龄，不再赘述。
 
+<div width="500" align="center">
+  <img src="../../images/add_attribute.png"/>
+</div>
+
+删减属性同理。
+例如，如果不需要年龄属性，则位置[1,2,3]的数值可以去掉。只需在train.txt中标注的26个数字中全部删除第1-3位数值即可，同时标注数据时也不再需要标注这3位属性值。
