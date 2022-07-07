@@ -1,12 +1,42 @@
-#目标检测标注工具
+# 目标检测标注工具
 
-[TOC]
+
+
+## 目录
+
+### [LabelMe](# LabelMe)
+
+#### [使用说明](# 使用说明)
+
+* [安装](# LabelMe安装)
+* [图片标注过程](# LabelMe图片标注过程)
+
+#### [标注格式](# LabelMe标注格式)
+
+* [导出数据格式](# LabelMe导出数据格式)
+* [格式转化总结](# 格式转化总结)
+* [标注文件(json)-->VOC](# 标注文件(json)-->VOC数据集)
+* [􏰁􏰄􏰥􏰦标注文件(json)-->COCO􏱚􏱛􏱠](# 标注文件 􏰁􏰄􏰥􏰦(json)-->COCO􏱚􏱛􏱠数据集)
+
+### [LabelImg](# LabelImg)
+
+#### [使用说明](# 使用说明)
+
+* [LabelImg安装](# LabelImg安装)
+* [安装注意事项](# 安装注意事项)
+* [图片标注过程](# LabelImg图片标注过程)
+
+#### [标注格式](# LabelImg标注格式)
+
+* [导出数据格式](# LabelImg导出数据格式)
+
+
 
 ## [LabelMe](https://github.com/wkentaro/labelme)
 
 ### 使用说明
 
-#### 安装
+#### LabelMe安装
 
 安装操作请参考[LabelMe官方教程](https://github.com/wkentaro/labelme)中的Installation
 
@@ -57,9 +87,7 @@ pip install labelme
 
 
 
-#### 图片标注过程
-
-##### 基本操作
+#### LabelMe图片标注过程
 
 启动labelme后，选择图片文件或者图片所在文件夹
 
@@ -71,9 +99,9 @@ pip install labelme
 
 
 
-### 标注格式
+### LabelMe标注格式
 
-#### 导出数据格式
+#### LabelMe导出数据格式
 
 ```
 #生成标注文件
@@ -160,7 +188,7 @@ dataset/xxx/
 
 ### 使用说明
 
-#### 安装
+#### LabelImg安装
 
 安装操作请参考[LabelImg官方教程](https://github.com/tzutalin/labelImg)
 
@@ -221,7 +249,7 @@ python labelImg.py [IMAGE_PATH] [PRE-DEFINED CLASS FILE]
 
 
 
-#### 图片标注过程
+#### LabelImg图片标注过程
 
 启动labelImg后，选择图片文件或者图片所在文件夹
 
@@ -237,9 +265,9 @@ python labelImg.py [IMAGE_PATH] [PRE-DEFINED CLASS FILE]
 
 
 
-### 标注格式
+### LabelImg标注格式
 
-#### 导出数据格式
+#### LabelImg导出数据格式
 
 ```
 #生成标注文件
