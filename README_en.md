@@ -25,10 +25,10 @@
 
 - 🔥 **2022.3.24：PaddleDetection released[release/2.4 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)**
   
-  - Release high-performanace SOTA object detection model [PP-YOLOE](configs/ppyoloe). It integrates cloud and edge devices and provides s/m/l/x versions. In particular, Verson I has the accuracy as 51.4% on COCO test 2017 dataset, inference speed as 78.1 FPS on a single Test V100. It supports mixed precision training, 33% faster than PP-YOLOv2. Its full range of multi-sized models can meet different hardware arithmetic requirements, and adaptable to server, edge-device GPU and other AI accelerator cards on servers.
+  - Release high-performanace SOTA object detection model [PP-YOLOE](configs/ppyoloe). It integrates cloud and edge devices and provides S/M/L/X versions. In particular, Verson L has the accuracy as 51.4% on COCO test 2017 dataset, inference speed as 78.1 FPS on a single Test V100. It supports mixed precision training, 33% faster than PP-YOLOv2. Its full range of multi-sized models can meet different hardware arithmetic requirements, and adaptable to server, edge-device GPU and other AI accelerator cards on servers.
   - Release ultra-lightweight SOTA object detection model [PP-PicoDet Plus](configs/picodet) with 2% improvement in accuracy and 63% improvement in CPU inference speed. Add PicoDet-XS model with a 0.7M parameter, providing model sparsification and quantization functions for model acceleration. No specific post processing module is required for all the hardware, simplifying the deployment.  
   - Release the real-time pedestrian analysis tool [PP-Human](deploy/pphuman). It has four major functions: pedestrian tracking, visitor flow statistics, human attribute recognition and falling detection. For falling detection, it is optimized based on real-life data with accurate recognition of various types of falling posture. It can adapt to different environmental background, light and camera angle.
-  - Add [YOLOX](configs/yolox) object detection model with nano/tiny/s/m/l/x. X version has the accuracy as 51.8% on COCO  Val2017 dataset.
+  - Add [YOLOX](configs/yolox) object detection model with nano/tiny/S/M/L/X. X version has the accuracy as 51.8% on COCO  Val2017 dataset.
 
 - 2021.11.03: PaddleDetection released [release/2.3 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3)
   
@@ -57,14 +57,14 @@
 - **High Performance**: Due to the high performance core, PaddlePaddle has clear advantages in training speed and memory occupation. It also supports FP16 training and multi-machine training.
 
 <div  align="center">
-  <img src="https://pcsdata.baidu.com/thumbnail/d775c7c64v0f6dea0348c33be01fb266?fid=2573618645-16051585-48700465526764&rt=pr&sign=FDTAER-yUdy3dSFZ0SVxtzShv1zcMqd-CDZxwEyVXlxu4BbVu4vukRc%2BWOQ%3D&expires=2h&chkv=0&chkbd=0&chkpc=&dp-logid=8893245804304207454&dp-callid=0&time=1656914400&bus_no=26&size=c1600_u1600&quality=100&vuk=-&ft=video" width="800"/>
+  <img src="(https://user-images.githubusercontent.com/107399028/177729290-038fe659-1ed4-49c0-9f1b-a396a6cd60d1.jpg" width="800"/>
 </div>
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157800467-2a9946ad-30d1-49a9-b9db-ba33413d9c90.png" alt="" width="20"> Exchanges
 
 - If you have any question or suggestion, please give us your valuable input via [GitHub Issues](https://github.com/PaddlePaddle/PaddleDetection/issues) 
   
-  Welcome to join PaddleDetection user groups on QQ, WeChat (scan the QR code, add and reply "Detection" to the assistant)
+  Welcome to join PaddleDetection user groups on QQ, WeChat (scan the QR code, add and reply "D" to the assistant)
   
   <div align="center">
   <img src="https://user-images.githubusercontent.com/48054808/157800129-2f9a0b72-6bb8-4b10-8310-93ab1639253f.jpg"  width = "200" />  
