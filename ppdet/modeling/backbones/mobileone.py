@@ -22,7 +22,7 @@ import paddle
 import paddle.nn as nn
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
-from paddle.nn.initializer import Normal
+from paddle.nn.initializer import Normal, Constant
 
 from ppdet.modeling.ops import get_act_fn
 from ppdet.modeling.layers import ConvNormLayer
@@ -57,9 +57,7 @@ class MobileOneBlock(nn.Layer):
 
         self.depth_conv = nn.LayerList()
         self.point_conv = nn.LayerList()
-        for i in range(self.k):
-            if i > 0:
-                stride = 1
+        for _ in range(self.k):
             self.depth_conv.append(
                 ConvNormLayer(
                     ch_in,
@@ -112,7 +110,8 @@ class MobileOneBlock(nn.Layer):
         self.rbr_identity_st2 = nn.BatchNorm2D(
             num_features=ch_out,
             weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-            bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
+            bias_attr=ParamAttr(regularizer=L2Decay(
+                0.0))) if ch_in == ch_out and self.stride == 1 else None
         self.act = get_act_fn(act) if act is None or isinstance(act, (
             str, dict)) else act
 
@@ -125,9 +124,10 @@ class MobileOneBlock(nn.Layer):
             else:
                 id_out_st1 = self.rbr_identity_st1(x)
 
-            x1_1 = x.clone()
+            x1_1 = 0
             for i in range(self.k):
-                x1_1 = self.depth_conv[i](x1_1)
+                x1_1 += self.depth_conv[i](x)
+
             x1_2 = self.rbr_1x1(x)
             x1 = self.act(x1_1 + x1_2 + id_out_st1)
 
@@ -136,9 +136,9 @@ class MobileOneBlock(nn.Layer):
             else:
                 id_out_st2 = self.rbr_identity_st2(x1)
 
-            x2_1 = x1.clone()
+            x2_1 = 0
             for i in range(self.k):
-                x2_1 = self.point_conv[i](x2_1)
+                x2_1 += self.point_conv[i](x1)
             y = self.act(x2_1 + id_out_st2)
 
         return y
@@ -151,7 +151,9 @@ class MobileOneBlock(nn.Layer):
                 kernel_size=self.kernel_size,
                 stride=self.stride,
                 padding=self.padding,
-                groups=self.ch_in)
+                groups=self.ch_in,
+                bias_attr=ParamAttr(
+                    initializer=Constant(value=0.), learning_rate=1.))
         if not hasattr(self, 'conv2'):
             self.conv2 = nn.Conv2D(
                 in_channels=self.ch_in,
@@ -159,7 +161,9 @@ class MobileOneBlock(nn.Layer):
                 kernel_size=1,
                 stride=1,
                 padding='SAME',
-                groups=1)
+                groups=1,
+                bias_attr=ParamAttr(
+                    initializer=Constant(value=0.), learning_rate=1.))
 
         conv1_kernel, conv1_bias, conv2_kernel, conv2_bias = self.get_equivalent_kernel_bias(
         )
@@ -174,8 +178,6 @@ class MobileOneBlock(nn.Layer):
             self.__delattr__('rbr_identity_st1')
         if hasattr(self, 'rbr_identity_st2'):
             self.__delattr__('rbr_identity_st2')
-        if hasattr(self, 'id_tensor'):
-            self.__delattr__('id_tensor')
 
     def get_equivalent_kernel_bias(self):
         st1_kernel3x3, st1_bias3x3 = self._fuse_bn_tensor(self.depth_conv)
@@ -211,26 +213,24 @@ class MobileOneBlock(nn.Layer):
             return 0, 0
 
         if isinstance(branch, nn.LayerList):
-            kernel = 0
-            running_mean = 0
-            running_var = 0
-            gamma = 0
-            beta = 0
-            eps = 0
+            fused_kernels = []
+            fused_bias = []
             for block in branch:
-                kernel += block.conv.weight
-                running_mean += block.norm._mean
-                running_var += block.norm._variance
-                gamma += block.norm.weight
-                beta += block.norm.bias
-                eps += block.norm._epsilon
+                kernel = block.conv.weight
+                running_mean = block.norm._mean
+                running_var = block.norm._variance
+                gamma = block.norm.weight
+                beta = block.norm.bias
+                eps = block.norm._epsilon
 
-            kernel /= len(branch)
-            running_mean /= len(branch)
-            running_var /= len(branch)
-            gamma /= len(branch)
-            beta /= len(branch)
-            eps /= len(branch)
+                std = (running_var + eps).sqrt()
+                t = (gamma / std).reshape((-1, 1, 1, 1))
+
+                fused_kernels.append(kernel * t)
+                fused_bias.append(beta - running_mean * gamma / std)
+
+            return sum(fused_kernels), sum(fused_bias)
+
         elif isinstance(branch, ConvNormLayer):
             kernel = branch.conv.weight
             running_mean = branch.norm._mean
@@ -246,7 +246,8 @@ class MobileOneBlock(nn.Layer):
                 dtype='float32')
             if kernel_size > 1:
                 for i in range(self.ch_in):
-                    kernel_value[i, i % input_dim, 1, 1] = 1
+                    kernel_value[i, i % input_dim, (kernel_size - 1) // 2, (
+                        kernel_size - 1) // 2] = 1
             elif kernel_size == 1:
                 for i in range(self.ch_in):
                     kernel_value[i, i % input_dim, 0, 0] = 1

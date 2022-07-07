@@ -45,7 +45,7 @@ SKELETON_ACTION:
   enable: False
 
 ID_BASED_DETACTION:
-  model_dir: output_inference/ppyoloe_crn_s_300e_smoking/
+  model_dir: output_inference/ppyoloe_crn_s_80e_smoking_visdrone
   batch_size: 8
   basemode: "idbased"
   threshold: 0.4

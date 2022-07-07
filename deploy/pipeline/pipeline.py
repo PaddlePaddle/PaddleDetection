@@ -679,8 +679,12 @@ class PipePredictor(object):
                     frame_rgb, mot_res)
 
                 if self.with_vehicleplate:
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['vehicleplate'].start()
                     platelicense = self.vehicleplate_detector.get_platelicense(
                         crop_input)
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['vehicleplate'].end()
                     self.pipeline_res.update(platelicense, 'vehicleplate')
 
                 if self.with_human_attr:
@@ -915,9 +919,12 @@ class PipePredictor(object):
             video_action_score = None
             if video_action_res and video_action_res["class"] == 1:
                 video_action_score = video_action_res["score"]
+            mot_boxes = None
+            if mot_res:
+                mot_boxes = mot_res['boxes']
             image = visualize_action(
                 image,
-                mot_res['boxes'],
+                mot_boxes,
                 action_visual_collector=None,
                 action_text="SkeletonAction",
                 video_action_score=video_action_score,
