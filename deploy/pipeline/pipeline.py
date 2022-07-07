@@ -342,7 +342,9 @@ class PipePredictor(object):
                 basemode = idbased_detaction_cfg['basemode']
                 threshold = idbased_detaction_cfg['threshold']
                 display_frames = idbased_detaction_cfg['display_frames']
+                skip_frame_num = idbased_detaction_cfg['skip_frame_num']
                 self.modebase[basemode] = True
+
                 self.det_action_predictor = DetActionRecognizer(
                     model_dir,
                     device,
@@ -355,7 +357,8 @@ class PipePredictor(object):
                     cpu_threads,
                     enable_mkldnn,
                     threshold=threshold,
-                    display_frames=display_frames)
+                    display_frames=display_frames,
+                    skip_frame_num=skip_frame_num)
                 self.det_action_visual_helper = ActionVisualHelper(1)
 
             if self.with_idbased_clsaction:
@@ -366,6 +369,8 @@ class PipePredictor(object):
                 threshold = idbased_clsaction_cfg['threshold']
                 self.modebase[basemode] = True
                 display_frames = idbased_clsaction_cfg['display_frames']
+                skip_frame_num = idbased_clsaction_cfg['skip_frame_num']
+
                 self.cls_action_predictor = ClsActionRecognizer(
                     model_dir,
                     device,
@@ -378,7 +383,8 @@ class PipePredictor(object):
                     cpu_threads,
                     enable_mkldnn,
                     threshold=threshold,
-                    display_frames=display_frames)
+                    display_frames=display_frames,
+                    skip_frame_num=skip_frame_num)
                 self.cls_action_visual_helper = ActionVisualHelper(1)
 
             if self.with_skeleton_action:

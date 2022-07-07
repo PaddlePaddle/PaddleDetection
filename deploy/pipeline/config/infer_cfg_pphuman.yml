@@ -50,6 +50,7 @@ ID_BASED_DETACTION:
   basemode: "idbased"
   threshold: 0.6
   display_frames: 80
+  skip_frame_num: 2
   enable: False
 
 ID_BASED_CLSACTION:
@@ -58,6 +59,7 @@ ID_BASED_CLSACTION:
   basemode: "idbased"
   threshold: 0.8
   display_frames: 80
+  skip_frame_num: 2
   enable: False
 
 REID:
