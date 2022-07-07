@@ -32,7 +32,7 @@
 
 #### LabelMe安装
 
-安装操作请参考[LabelMe官方教程](https://github.com/wkentaro/labelme)中的Installation
+具体安装操作请参考[LabelMe官方教程](https://github.com/wkentaro/labelme)中的Installation
 
 <details>
 <summary><b> Ubuntu</b></summary>
