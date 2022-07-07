@@ -95,8 +95,8 @@ DataLoader:
   Eval:
     dataset:
       name: MultiLabelDataset
-      image_root: "dataset/pa100k/"                     #指定训练图片所在根路径
-      cls_label_path: "dataset/pa100k/val_list.txt"     #指定训练列表文件位置
+      image_root: "dataset/pa100k/"                     #指定评估图片所在根路径
+      cls_label_path: "dataset/pa100k/val_list.txt"     #指定评估列表文件位置
       label_ratio: True
       transform_ops:
 ```

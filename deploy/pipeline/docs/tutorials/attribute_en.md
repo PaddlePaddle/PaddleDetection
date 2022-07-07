@@ -55,7 +55,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
-                                                   --model_dir det=ppyoloe/
+                                                   --model_dir attr=output_inference/PPLCNet_x1_0_person_attribute_945_infer/
 ```
 
 The test result is：
