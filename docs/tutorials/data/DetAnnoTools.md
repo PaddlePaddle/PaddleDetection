@@ -13,7 +13,7 @@
   * [导出数据格式](#LabelMe导出数据格式)
   * [格式转化总结](#格式转化总结)
   * [标注文件(json)-->VOC](#标注文件(json)-->VOC数据集)
-  * [􏰁􏰄标注文件(json)-->COCO􏱚􏱛􏱠](#标注文件 􏰁􏰄􏰥􏰦(json)-->COCO􏱚􏱛􏱠数据集)
+  * [标注文件(json)-->COCO](#标注文件(json)-->COCO数据集)
 
 [LabelImg](#LabelImg)
 
@@ -144,7 +144,7 @@ python labelme2voc.py data_annotated(标注文件所在文件夹) data_dataset_v
 
 
 
-####标注文件(json)-->COCO数据集
+#### 标注文件(json)-->COCO数据集
 
 使用[PaddleDetection提供的x2coco.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/tools/x2coco.py) 将labelme标注的数据转换为COCO数据集形式
 
