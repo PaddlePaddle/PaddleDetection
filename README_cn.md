@@ -19,14 +19,14 @@
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> 产品动态
 
 - 🔥 **2022.3.24：PaddleDetection发布[release/2.4版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)**
-  
+
   - 发布高精度云边一体SOTA目标检测模型[PP-YOLOE](configs/ppyoloe)，发布s/m/l/x版本，l版本COCO test2017数据集精度51.6%，V100预测速度78.1 FPS，支持混合精度训练，训练较PP-YOLOv2加速33%，全系列多尺度模型，满足不同硬件算力需求，可适配服务器、边缘端GPU及其他服务器端AI加速卡。
   - 发布边缘端和CPU端超轻量SOTA目标检测模型[PP-PicoDet增强版](configs/picodet)，精度提升2%左右，CPU预测速度提升63%，新增参数量0.7M的PicoDet-XS模型，提供模型稀疏化和量化功能，便于模型加速，各类硬件无需单独开发后处理模块，降低部署门槛。
   - 发布实时行人分析工具[PP-Human](deploy/pphuman)，支持行人跟踪、人流量统计、人体属性识别与摔倒检测四大能力，基于真实场景数据特殊优化，精准识别各类摔倒姿势，适应不同环境背景、光线及摄像角度。
   - 新增[YOLOX](configs/yolox)目标检测模型，支持nano/tiny/s/m/l/x版本，x版本COCO val2017数据集精度51.8%。
 
 - 2021.11.03: PaddleDetection发布[release/2.3版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3)
-  
+
   - 发布轻量级检测特色模型⚡[PP-PicoDet](configs/picodet)，0.99m的参数量可实现精度30+mAP、速度150FPS。
   - 发布轻量级关键点特色模型⚡[PP-TinyPose](configs/keypoint/tiny_pose)，单人场景FP16推理可达122FPS、51.8AP，具有精度高速度快、检测人数无限制、微小目标效果好的优势。
   - 发布实时跟踪系统[PP-Tracking](deploy/pptracking)，覆盖单、多镜头下行人、车辆、多类别跟踪，对小目标、密集型特殊优化，提供人、车流量技术解决方案。
@@ -35,13 +35,13 @@
   - 新增轻量化关键点模型[Lite HRNet](configs/keypoint)关键点模型并支持Paddle Lite部署。
 
 - 2021.08.10: PaddleDetection发布[release/2.2版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2)
-  
+
   - 发布Transformer检测系列模型，包括[DETR](configs/detr), [Deformable DETR](configs/deformable_detr), [Sparse RCNN](configs/sparse_rcnn)。
   - 新增Dark HRNet关键点模型和MPII数据集[关键点模型](configs/keypoint)
   - 新增[人头](configs/mot/headtracking21)、[车辆](configs/mot/vehicle)跟踪垂类模型。
 
 - 2021.05.20: PaddleDetection发布[release/2.1版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1)
-  
+
   - 新增[关键点检测](configs/keypoint)，模型包括HigherHRNet，HRNet。
   - 新增[多目标跟踪](configs/mot)能力，模型包括DeepSORT，JDE，FairMOT。
   - 发布PPYOLO系列模型压缩模型，新增[ONNX模型导出教程](deploy/EXPORT_ONNX_MODEL.md)。
@@ -74,10 +74,10 @@
 - 如果你发现任何PaddleDetection存在的问题或者是建议, 欢迎通过[GitHub Issues](https://github.com/PaddlePaddle/PaddleDetection/issues)给我们提issues。
 
 - 欢迎加入PaddleDetection QQ、微信用户群（添加并回复小助手“检测”）
-  
+
   <div align="center">
   <img src="https://user-images.githubusercontent.com/48054808/157800129-2f9a0b72-6bb8-4b10-8310-93ab1639253f.jpg"  width = "200" />  
-  <img src="https://user-images.githubusercontent.com/48054808/160531099-9811bbe6-cfbb-47d5-8bdb-c2b40684d7dd.png"  width = "200" />  
+  <img src="https://user-images.githubusercontent.com/34162360/177678712-4655747d-4290-4ad9-b7a1-4564a5418ac6.jpg"  width = "200" />  
   </div>
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157827140-03ffaff7-7d14-48b4-9440-c38986ea378c.png" width="20"/> 套件结构概览
@@ -277,16 +277,16 @@
 ### 进阶教程
 
 - 参数配置
-  
+
   - [RCNN参数说明](docs/tutorials/config_annotation/faster_rcnn_r50_fpn_1x_coco_annotation.md)
   - [PP-YOLO参数说明](docs/tutorials/config_annotation/ppyolo_r50vd_dcn_1x_coco_annotation.md)
 
 - 模型压缩(基于[PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim))
-  
+
   - [剪裁/量化/蒸馏教程](configs/slim)
 
 - [推理部署](deploy/README.md)
-  
+
   - [模型导出教程](deploy/EXPORT_MODEL.md)
   - [Paddle Inference部署](deploy/README.md)
     - [Python端推理部署](deploy/python)
@@ -297,7 +297,7 @@
   - [推理benchmark](deploy/BENCHMARK_INFER.md)
 
 - 进阶开发
-  
+
   - [数据处理模块](docs/advanced_tutorials/READER.md)
   - [新增检测模型](docs/advanced_tutorials/MODEL_TECHNICAL.md)
 
