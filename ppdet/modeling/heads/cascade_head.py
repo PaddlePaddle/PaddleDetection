@@ -162,7 +162,8 @@ class CascadeHead(BBoxHead):
                  num_cascade_stages=3,
                  bbox_loss=None,
                  reg_class_agnostic=True,
-                 stage_loss_weights=None):
+                 stage_loss_weights=None,
+                 loss_normalize_pos=False):
 
         nn.Layer.__init__(self, )
         self.head = head
@@ -184,6 +185,7 @@ class CascadeHead(BBoxHead):
 
         self.reg_class_agnostic = reg_class_agnostic
         num_bbox_delta = 4 if reg_class_agnostic else 4 * num_classes
+        self.loss_normalize_pos = loss_normalize_pos
 
         self.bbox_score_list = []
         self.bbox_delta_list = []
@@ -253,8 +255,13 @@ class CascadeHead(BBoxHead):
             loss = {}
             for stage, value in enumerate(zip(head_out_list, targets_list)):
                 (scores, deltas, rois), targets = value
-                loss_stage = self.get_loss(scores, deltas, targets, rois,
-                                           self.bbox_weight[stage])
+                loss_stage = self.get_loss(
+                    scores,
+                    deltas,
+                    targets,
+                    rois,
+                    self.bbox_weight[stage],
+                    loss_normalize_pos=self.loss_normalize_pos)
                 for k, v in loss_stage.items():
                     loss[k + "_stage{}".format(
                         stage)] = v * self.stage_loss_weights[stage]

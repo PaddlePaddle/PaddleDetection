@@ -44,16 +44,15 @@ VisionTransformer:
   mlp_ratio: 4
   qkv_bias: True
   drop_rate: 0.0
-  drop_path_rate: 0.2 # 0.1
+  drop_path_rate: 0.2
   init_values: 0.1
   final_norm: False
-  use_rel_pos_bias: False #
+  use_rel_pos_bias: False
   use_sincos_pos_emb: True
   epsilon: 0.000001 # 1e-6
   out_indices: [3, 5, 7, 11]
   with_fpn: True
-
-  # pretrained: ../params/init.params
+  pretrained: ~
 
 HRFPN:
   out_channel: 256
@@ -98,7 +97,7 @@ CascadeHead:
   num_cascade_stages: 3
   reg_class_agnostic: False
   stage_loss_weights: [1, 0.5, 0.25]
-
+  loss_normalize_pos: True
 
 BBoxAssigner:
   batch_size_per_im: 512
@@ -111,7 +110,6 @@ BBoxAssigner:
 
 CascadeXConvNormHead:
     norm_type: bn
-    # reset_initialized_parameter: False
 
 
 GIoULoss:
@@ -123,7 +121,7 @@ GIoULoss:
 BBoxPostProcess:
   decode:
     name: RCNNBox
-    prior_box_var: [30.0, 30.0, 15.0, 15.0] #
+    prior_box_var: [30.0, 30.0, 15.0, 15.0]
   nms:
     name: MultiClassNMS
     keep_top_k: 100

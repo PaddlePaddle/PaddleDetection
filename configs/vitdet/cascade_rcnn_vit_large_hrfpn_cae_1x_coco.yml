@@ -9,19 +9,18 @@ depth: &depth 24
 dim: &dim 1024
 
 VisionTransformer:
+  img_size: [800, 1344]
   embed_dim: *dim
   depth: *depth
   num_heads: 16
-  drop_path_rate: 0.2 # 0.1
+  drop_path_rate: 0.25
   out_indices: [7, 11, 15, 23]
-
 
 HRFPN:
   in_channels: [*dim, *dim, *dim, *dim]
 
-
 OptimizerBuilder:
   optimizer:
-    layer_decay: 0.75
+    layer_decay: 0.9
     weight_decay: 0.02
     num_layers: *depth
