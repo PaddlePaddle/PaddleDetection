@@ -20,7 +20,7 @@ KPT:
   batch_size: 8
 
 ATTR:
-  model_dir: output_inference/strongbaseline_r50_30e_pa100k/
+  model_dir: output_inference/PPLCNet_x1_0_person_attribute_945_infer/
   batch_size: 8
   basemode: "idbased"
   enable: False
@@ -50,6 +50,7 @@ ID_BASED_DETACTION:
   basemode: "idbased"
   threshold: 0.6
   display_frames: 80
+  skip_frame_num: 2
   enable: False
 
 ID_BASED_CLSACTION:
@@ -58,6 +59,7 @@ ID_BASED_CLSACTION:
   basemode: "idbased"
   threshold: 0.8
   display_frames: 80
+  skip_frame_num: 2
   enable: False
 
 REID:
