@@ -329,6 +329,9 @@ def res2dict(multi_res):
 
 def mtmct_process(multi_res, captures, mtmct_vis=True, output_dir="output"):
     cid_tid_dict = res2dict(multi_res)
+    if len(cid_tid_dict) == 0:
+        print("no tracking result found, mtmct will be skiped.")
+        return
     map_tid = sub_cluster(cid_tid_dict)
 
     if not os.path.exists(output_dir):
