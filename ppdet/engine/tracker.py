@@ -378,8 +378,8 @@ class Tracker(object):
                 online_scores = []
                 for t in online_targets:
                     tlwh = [t[0], t[1], t[2] - t[0], t[3] - t[1]]
-                    tid = int(t[4])
-                    tscore = 1.0
+                    tscore = float(t[4])
+                    tid = int(t[5])
                     if tlwh[2] * tlwh[3] > 0:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)

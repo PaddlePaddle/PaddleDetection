@@ -165,13 +165,14 @@ class SDE_Detector(Detector):
                 vertical_ratio=vertical_ratio, )
 
         elif self.use_ocsort_tracker:
-            det_thresh = cfg.get('det_thresh', 0.6)
+            det_thresh = cfg.get('det_thresh', 0.4)
             max_age = cfg.get('max_age', 30)
             min_hits = cfg.get('min_hits', 3)
             iou_threshold = cfg.get('iou_threshold', 0.3)
             delta_t = cfg.get('delta_t', 3)
-            asso_func = cfg.get('asso_func', "iou")
             inertia = cfg.get('inertia', 0.2)
+            min_box_area = cfg.get('min_box_area', 0)
+            vertical_ratio = cfg.get('vertical_ratio', 0)
             use_byte = cfg.get('use_byte', False)
 
             self.tracker = OCSORTTracker(
@@ -180,8 +181,9 @@ class SDE_Detector(Detector):
                 min_hits=min_hits,
                 iou_threshold=iou_threshold,
                 delta_t=delta_t,
-                asso_func=asso_func,
                 inertia=inertia,
+                min_box_area=min_box_area,
+                vertical_ratio=vertical_ratio,
                 use_byte=use_byte)
         else:
             # use ByteTracker
@@ -307,12 +309,17 @@ class SDE_Detector(Detector):
             return tracking_outs
 
         elif self.use_ocsort_tracker:
+            # use OCSORTTracker, only support singe class
             online_targets = self.tracker.update(pred_dets, pred_embs)
             online_tlwhs, online_scores, online_ids = [], [], []
             for t in online_targets:
                 tlwh = [t[0], t[1], t[2] - t[0], t[3] - t[1]]
-                tid = int(t[4])
-                tscore = 1.0
+                tscore = float(t[4])
+                tid = int(t[5])
+                if tlwh[2] * tlwh[3] <= self.tracker.min_box_area: continue
+                if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                        3] > self.tracker.vertical_ratio:
+                    continue
                 if tlwh[2] * tlwh[3] > 0:
                     online_tlwhs.append(tlwh)
                     online_ids.append(tid)
@@ -575,7 +582,7 @@ class SDE_Detector(Detector):
 
             fps = 1. / timer.duration
             if self.use_deepsort_tracker or self.use_ocsort_tracker:
-                # use DeepSORTTracker, only support singe class
+                # use DeepSORTTracker or OCSORTTracker, only support singe class
                 results[0].append(
                     (frame_id + 1, online_tlwhs, online_scores, online_ids))
                 im = plot_tracking(

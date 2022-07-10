@@ -11,17 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+This code is based on https://github.com/noahcao/OC_SORT/blob/master/trackers/ocsort_tracker/ocsort.py
+"""
 
 import numpy as np
-from ..matching.ocsort_matching import *
+from filterpy.kalman import KalmanFilter
 
-ASSO_FUNCS = {
-    "iou": iou_batch,
-    "giou": giou_batch,
-    "ciou": ciou_batch,
-    "diou": diou_batch,
-    "ct_dist": ct_dist
-}
+from ..matching.ocsort_matching import associate, linear_assignment, iou_batch
 
 
 def k_previous_obs(observations, cur_age, k):
@@ -62,6 +59,7 @@ def convert_x_to_bbox(x, score=None):
             [x[0] - w / 2., x[1] - h / 2., x[0] + w / 2.,
              x[1] + h / 2.]).reshape((1, 4))
     else:
+        score = np.array([score])
         return np.array([
             x[0] - w / 2., x[1] - h / 2., x[0] + w / 2., x[1] + h / 2., score
         ]).reshape((1, 5))
@@ -78,35 +76,29 @@ def speed_direction(bbox1, bbox2):
 class KalmanBoxTracker(object):
     """
     This class represents the internal state of individual tracked objects observed as bbox.
+
+    Args:
+        bbox (np.array): bbox in [x1,y1,x2,y2,score] format.
+        delta_t (int): delta_t of previous observation
     """
     count = 0
 
-    def __init__(self, bbox, delta_t=3, orig=False):
-        """
-        Initialises a tracker using initial bounding box.
-        """
-        # define constant velocity model
-        if not orig:
-            from ..motion.kalman_filter_ocsort import KalmanFilterNew as KalmanFilter
-            self.kf = KalmanFilter(dim_x=7, dim_z=4)
-        else:
-            from filterpy.kalman import KalmanFilter
-            self.kf = KalmanFilter(dim_x=7, dim_z=4)
+    def __init__(self, bbox, delta_t=3):
+        self.kf = KalmanFilter(dim_x=7, dim_z=4)
         self.kf.F = np.array([[1, 0, 0, 0, 1, 0, 0], [0, 1, 0, 0, 0, 1, 0],
                               [0, 0, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 0, 0],
                               [0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 1, 0],
                               [0, 0, 0, 0, 0, 0, 1]])
         self.kf.H = np.array([[1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0],
                               [0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0]])
-
         self.kf.R[2:, 2:] *= 10.
-        self.kf.P[
-            4:,
-            4:] *= 1000.  # give high uncertainty to the unobservable initial velocities
+        self.kf.P[4:, 4:] *= 1000.
+        # give high uncertainty to the unobservable initial velocities
         self.kf.P *= 10.
         self.kf.Q[-1, -1] *= 0.01
         self.kf.Q[4:, 4:] *= 0.01
 
+        self.score = bbox[4]
         self.kf.x[:4] = convert_bbox_to_z(bbox)
         self.time_since_update = 0
         self.id = KalmanBoxTracker.count
@@ -172,36 +164,49 @@ class KalmanBoxTracker(object):
         if (self.time_since_update > 0):
             self.hit_streak = 0
         self.time_since_update += 1
-        self.history.append(convert_x_to_bbox(self.kf.x))
+        self.history.append(convert_x_to_bbox(self.kf.x, score=self.score))
         return self.history[-1]
 
     def get_state(self):
-        """
-        Returns the current bounding box estimate.
-        """
-        return convert_x_to_bbox(self.kf.x)
+        return convert_x_to_bbox(self.kf.x, score=self.score)
 
 
 class OCSORTTracker(object):
+    """
+    OCSORT tracker, support single class
+
+    Args:
+        det_thresh (float): threshold of detection score
+        max_age (int): maximum number of missed misses before a track is deleted
+        min_hits (int): minimum hits for associate
+        iou_threshold (float): iou threshold for associate
+        delta_t (int): delta_t of previous observation
+        inertia (float): vdc_weight of angle_diff_cost for associate
+        vertical_ratio (float): w/h, the vertical ratio of the bbox to filter
+            bad results. If set <= 0 means no need to filter bboxes，usually set
+            1.6 for pedestrian tracking.
+        min_box_area (int): min box area to filter out low quality boxes
+        use_byte (bool): Whether use ByteTracker, default False
+    """
+
     def __init__(self,
                  det_thresh=0.6,
                  max_age=30,
                  min_hits=3,
                  iou_threshold=0.3,
                  delta_t=3,
-                 asso_func="iou",
                  inertia=0.2,
+                 vertical_ratio=-1,
+                 min_box_area=0,
                  use_byte=False):
-        """
-        Sets key parameters for SORT
-        """
         self.det_thresh = det_thresh
         self.max_age = max_age
         self.min_hits = min_hits
         self.iou_threshold = iou_threshold
         self.delta_t = delta_t
-        self.asso_func = ASSO_FUNCS[asso_func]
         self.inertia = inertia
+        self.vertical_ratio = vertical_ratio
+        self.min_box_area = min_box_area
         self.use_byte = use_byte
 
         self.trackers = []
@@ -210,14 +215,17 @@ class OCSORTTracker(object):
 
     def update(self, pred_dets, pred_embs=None):
         """
-        Params:
-          dets - a numpy array of detections in the format [[x1,y1,x2,y2,score],[x1,y1,x2,y2,score],...]
-        Requires: this method must be called once for each frame even with empty detections (use np.empty((0, 5)) for frames without detections).
-        Returns the a similar array, where the last column is the object ID.
-        NOTE: The number of objects returned may differ from the number of detections provided.
+        Args:
+            pred_dets (np.array): Detection results of the image, the shape is
+                [N, 6], means 'cls_id, score, x0, y0, x1, y1'.
+            pred_embs (np.array): Embedding results of the image, the shape is
+                [N, 128] or [N, 512], default as None.
+
+        Return:
+            tracking boxes (np.array): [M, 6], means 'x0, y0, x1, y1, score, id'.
         """
         if pred_dets is None:
-            return np.empty((0, 5))
+            return np.empty((0, 6))
 
         self.frame_count += 1
 
@@ -228,9 +236,8 @@ class OCSORTTracker(object):
 
         inds_low = scores > 0.1
         inds_high = scores < self.det_thresh
-        inds_second = np.logical_and(
-            inds_low,
-            inds_high)  # self.det_thresh > score > 0.1, for second matching
+        inds_second = np.logical_and(inds_low, inds_high)
+        # self.det_thresh > score > 0.1, for second matching
         dets_second = dets[inds_second]  # detections for second matching
         remain_inds = scores > self.det_thresh
         dets = dets[remain_inds]
@@ -272,7 +279,7 @@ class OCSORTTracker(object):
         if self.use_byte and len(dets_second) > 0 and unmatched_trks.shape[
                 0] > 0:
             u_trks = trks[unmatched_trks]
-            iou_left = self.asso_func(
+            iou_left = iou_batch(
                 dets_second,
                 u_trks)  # iou between low score detections and unmatched tracks
             iou_left = np.array(iou_left)
@@ -296,7 +303,7 @@ class OCSORTTracker(object):
         if unmatched_dets.shape[0] > 0 and unmatched_trks.shape[0] > 0:
             left_dets = dets[unmatched_dets]
             left_trks = last_boxes[unmatched_trks]
-            iou_left = self.asso_func(left_dets, left_trks)
+            iou_left = iou_batch(left_dets, left_trks)
             iou_left = np.array(iou_left)
             if iou_left.max() > self.iou_threshold:
                 """
@@ -332,11 +339,7 @@ class OCSORTTracker(object):
             if trk.last_observation.sum() < 0:
                 d = trk.get_state()[0]
             else:
-                """
-                    this is optional to use the recent observation or the kalman filter prediction,
-                    we didn't notice significant difference here
-                """
-                d = trk.last_observation[:4]
+                d = trk.last_observation  # tlbr + score
             if (trk.time_since_update < 1) and (
                     trk.hit_streak >= self.min_hits or
                     self.frame_count <= self.min_hits):
@@ -348,4 +351,4 @@ class OCSORTTracker(object):
                 self.trackers.pop(i)
         if (len(ret) > 0):
             return np.concatenate(ret)
-        return np.empty((0, 5))
+        return np.empty((0, 6))

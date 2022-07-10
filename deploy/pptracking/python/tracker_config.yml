@@ -16,13 +16,14 @@ JDETracker:
 
 
 OCSORTTracker:
-  det_thresh: 0.6
+  det_thresh: 0.4
   max_age: 30
   min_hits: 3
   iou_threshold: 0.3
   delta_t: 3
-  asso_func: "iou"
   inertia: 0.2
+  min_box_area: 0
+  vertical_ratio: 0
   use_byte: False
 
 
