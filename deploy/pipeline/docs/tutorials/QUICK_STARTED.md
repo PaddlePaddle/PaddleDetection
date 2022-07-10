@@ -144,7 +144,7 @@ PP-Human整体方案如下图所示
 
 ### 2. 行人跟踪
 - 采用SDE方案完成行人跟踪
-- 检测模型使用PP-YOLOE L
+- 检测模型使用PP-YOLOE L(高精度)和S(轻量级)
 - 跟踪模块采用Bytetrack方案
 - 详细文档参考[Bytetrack](../../../../configs/mot/bytetrack)和[检测跟踪文档](mot.md)
 
