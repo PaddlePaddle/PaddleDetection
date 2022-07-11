@@ -311,7 +311,9 @@ class SDE_Detector(Detector):
         elif self.use_ocsort_tracker:
             # use OCSORTTracker, only support singe class
             online_targets = self.tracker.update(pred_dets, pred_embs)
-            online_tlwhs, online_scores, online_ids = [], [], []
+            online_tlwhs = defaultdict(list)
+            online_scores = defaultdict(list)
+            online_ids = defaultdict(list)
             for t in online_targets:
                 tlwh = [t[0], t[1], t[2] - t[0], t[3] - t[1]]
                 tscore = float(t[4])
@@ -321,9 +323,9 @@ class SDE_Detector(Detector):
                         3] > self.tracker.vertical_ratio:
                     continue
                 if tlwh[2] * tlwh[3] > 0:
-                    online_tlwhs.append(tlwh)
-                    online_ids.append(tid)
-                    online_scores.append(tscore)
+                    online_tlwhs[0].append(tlwh)
+                    online_ids[0].append(tid)
+                    online_scores[0].append(tscore)
             tracking_outs = {
                 'online_tlwhs': online_tlwhs,
                 'online_scores': online_scores,

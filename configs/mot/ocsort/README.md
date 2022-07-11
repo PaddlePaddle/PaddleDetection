@@ -34,7 +34,7 @@
 ### 1. 训练
 通过如下命令一键式启动训练和评估
 ```bash
-python -m paddle.distributed.launch --log_dir=ppyoloe --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/bytetrack/detector/ppyoloe_crn_l_36e_640x640_mot17half.yml --eval --amp --fleet
+python -m paddle.distributed.launch --log_dir=ppyoloe --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/bytetrack/detector/ppyoloe_crn_l_36e_640x640_mot17half.yml --eval --amp
 ```
 
 ### 2. 评估
@@ -82,7 +82,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/bytetrack/det
 ### 5. 用导出的模型基于Python去预测
 
 ```bash
-python3.7 deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/yolox_x_24e_800x1440_mix_det/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --save_mot_txts
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/yolox_x_24e_800x1440_mix_det/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --save_mot_txts
 ```
 **注意:**
  - 运行前需要手动修改`tracker_config.yml`的跟踪器类型为`type: OCSORTTracker`。

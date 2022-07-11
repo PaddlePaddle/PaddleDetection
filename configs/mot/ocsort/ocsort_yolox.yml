@@ -64,8 +64,9 @@ OCSORTTracker:
   min_hits: 3
   iou_threshold: 0.3
   delta_t: 3
-  asso_func: "iou"
   inertia: 0.2
+  vertical_ratio: 1.6
+  min_box_area: 100
   use_byte: False
 
 
