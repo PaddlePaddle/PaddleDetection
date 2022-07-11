@@ -18,6 +18,8 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.nn.initializer import Normal, Constant
+
+from ..layers import Conv2d
 from ..initializer import kaiming_uniform_, kaiming_normal_
 
 from ppdet.core.workspace import register, serializable
@@ -32,12 +34,12 @@ class PyramidPoolingModule(nn.Layer):
         self.stages = []
         self.stages = nn.LayerList(
             [self._make_stage(in_channels, channels, size) for size in sizes])
-        self.bottleneck = nn.Conv2D(in_channels + len(sizes) * channels,
-                                    in_channels, 1)
+        self.bottleneck = Conv2d(in_channels + len(sizes) * channels,
+                                 in_channels, 1)
 
     def _make_stage(self, features, out_features, size):
         prior = nn.AdaptiveAvgPool2D(output_size=(size, size))
-        conv = nn.Conv2D(features, out_features, 1)
+        conv = Conv2d(features, out_features, 1)
         return nn.Sequential(prior, conv)
 
     def forward(self, feats):
@@ -70,17 +72,9 @@ class InstanceContextEncoder(nn.Layer):
         fpn_laterals = []
         fpn_outputs = []
         for in_channel in reversed(self.in_channels):
-            lateral_conv = nn.Conv2D(
-                in_channel,
-                self.num_channels,
-                1,
-                bias_attr=ParamAttr(initializer=Constant(value=0.)))
-            output_conv = nn.Conv2D(
-                self.num_channels,
-                self.num_channels,
-                3,
-                padding=1,
-                bias_attr=ParamAttr(initializer=Constant(value=0.)))
+            lateral_conv = Conv2d(in_channel, self.num_channels, 1)
+            output_conv = Conv2d(
+                self.num_channels, self.num_channels, 3, padding=1)
 
             kaiming_uniform_(lateral_conv.weight, a=1)
             kaiming_uniform_(output_conv.weight, a=1)
@@ -93,11 +87,7 @@ class InstanceContextEncoder(nn.Layer):
         self.ppm = PyramidPoolingModule(self.num_channels,
                                         self.num_channels // 4)
         # final fusion
-        self.fusion = nn.Conv2D(
-            self.num_channels * 3,
-            self.num_channels,
-            1,
-            bias_attr=ParamAttr(initializer=Constant(value=0.)))
+        self.fusion = Conv2d(self.num_channels * 3, self.num_channels, 1)
         kaiming_normal_(self.fusion.weight, mode="fan_out", nonlinearity="relu")
 
     def forward(self, in_features):

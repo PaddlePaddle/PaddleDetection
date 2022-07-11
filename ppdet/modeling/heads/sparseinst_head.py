@@ -21,9 +21,10 @@ from paddle import ParamAttr
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant
+
+from ..layers import Conv2d
 from ..initializer import kaiming_uniform_, bias_init_with_prob
 
-from ppdet.modeling.layers import ConvNormLayer, MaskMatrixNMS, DropBlock
 from ppdet.core.workspace import register
 
 from six.moves import zip
@@ -35,7 +36,7 @@ __all__ = ['BaseIAMDecoder', 'GroupIAMDecoder']
 def _make_stack_3x3_convs(num_convs, in_channels, out_channels):
     convs = []
     for _ in range(num_convs):
-        convs.append(nn.Conv2D(in_channels, out_channels, 3, padding=1))
+        convs.append(Conv2d(in_channels, out_channels, 3, padding=1))
         convs.append(nn.ReLU(True))
         in_channels = out_channels
     return nn.Sequential(*convs)
@@ -64,7 +65,8 @@ class InstanceBranch(nn.Layer):
             dim,
             num_classes,
             weight_attr=ParamAttr(
-                initializer=Normal(std=0.01), learning_rate=1.))
+                initializer=Normal(std=0.01), learning_rate=1.),
+            bias_attr=ParamAttr(initializer=Constant(value=bias_value)))
         self.mask_kernel = nn.Linear(
             dim,
             kernel_dim,
@@ -105,11 +107,7 @@ class MaskBranch(nn.Layer):
     def __init__(self, dim, num_convs, kernel_dim, in_channels):
         super().__init__()
         self.mask_convs = _make_stack_3x3_convs(num_convs, in_channels, dim)
-        self.projection = nn.Conv2D(dim, kernel_dim, kernel_size=1)
-        self._init_weights()
-
-    def _init_weights(self):
-        pass
+        self.projection = Conv2d(dim, kernel_dim, kernel_size=1)
 
     def forward(self, features):
         # mask features (x4 convs)
@@ -219,7 +217,8 @@ class GroupInstanceBranch(nn.Layer):
             expand_dim,
             num_classes,
             weight_attr=ParamAttr(
-                initializer=Normal(std=0.01), learning_rate=1.))
+                initializer=Normal(std=0.01), learning_rate=1.),
+            bias_attr=ParamAttr(initializer=Constant(value=bias_value)))
         self.mask_kernel = nn.Linear(
             expand_dim,
             kernel_dim,

@@ -137,7 +137,7 @@ class SparseInstLoss(object):
         }
 
         self.num_classes = num_classes
-        self.matcher = SparseInstMatcher(0.8, 0.2)
+        self.matcher = SparseInstMatcher(matcher_alpha, matcher_beta)
 
     def _get_src_permutation_idx(self, indices):
         # permute predictions following indices
@@ -174,7 +174,7 @@ class SparseInstLoss(object):
             target_classes != self.num_classes, as_tuple=True)[0]
         labels = paddle.zeros_like(src_logits)
         labels.stop_gradient = True
-        labels[pos_inds, target_classes[pos_inds]] = 1
+        labels[pos_inds, target_classes[pos_inds]] = 1.0
         # comp focal loss.
         class_loss = F.sigmoid_focal_loss(
             src_logits,
