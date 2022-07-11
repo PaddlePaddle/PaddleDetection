@@ -127,6 +127,7 @@ python3 tools/train.py \
         -c ./ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml
 ```
 
+
 ### 模型导出
 
 使用下述命令将训练好的模型导出为预测部署模型。
@@ -138,9 +139,9 @@ python3 tools/export_model.py \
     -o Global.save_inference_dir=deploy/models/PPLCNet_x1_0_person_attribute_infer
 ```
 
-导出模型后，将PP-Human中提供的部署模型[PPLCNet_x1_0](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.tar)中的`infer_cfg.yml`文件拷贝到导出的模型文件夹`PPLCNet_x1_0_person_attribute_infer`中。
+导出模型后，需要下载[infer_cfg.yml](https://bj.bcebos.com/v1/paddledet/models/pipeline/infer_cfg.yml)文件，并放置到导出的模型文件夹`PPLCNet_x1_0_person_attribute_infer`中。
 
-使用时在PP-Human中的配置文件`./deploy/pipeline/config/infer_cfg_pphuman.yml`中修改新的模型路径
+使用时在PP-Human中的配置文件`./deploy/pipeline/config/infer_cfg_pphuman.yml`中修改新的模型路径`model_dir`项，并开启功能`enable: True`。
 ```
 ATTR:
   model_dir: [YOUR_DEPLOY_MODEL_DIR]/PPLCNet_x1_0_person_attribute_infer/   #新导出的模型路径位置
@@ -153,8 +154,11 @@ ATTR:
 上述是以26个属性为例的标注、训练过程。
 
 如果需要增加、减少属性数量，则需要：
+
 1)标注时需增加新属性类别信息或删减属性类别信息；
+
 2)对应修改训练中train.txt所使用的属性数量和名称；
+
 3)修改训练配置，例如``PaddleClas/blob/develop/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml``文件中的属性数量,详细见上述`修改配置开始训练`部分。
 
 增加属性示例：
