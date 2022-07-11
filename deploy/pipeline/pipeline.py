@@ -51,6 +51,8 @@ from pphuman.mtmct import mtmct_process
 from ppvehicle.vehicle_plate import PlateRecognizer
 from ppvehicle.vehicle_attr import VehicleAttr
 
+from download import auto_download_model
+
 
 class Pipeline(object):
     """
@@ -292,9 +294,40 @@ class PipePredictor(object):
         self.file_name = None
         self.collector = DataCollector()
 
+        # auto download inference model
+        model_dir_dict = {}
+        for key in self.cfg.keys():
+            if type(self.cfg[key]) ==  dict and \
+                ("enable" in self.cfg[key].keys() and self.cfg[key]['enable']
+                    or "enable" not in self.cfg[key].keys()):
+
+                if "model_dir" in self.cfg[key].keys():
+                    model_dir = self.cfg[key]["model_dir"]
+                    downloaded_model_dir = auto_download_model(model_dir)
+                    if downloaded_model_dir:
+                        model_dir = downloaded_model_dir
+                    model_dir_dict[key] = model_dir
+                    print(key, " model dir:", model_dir)
+                elif "VEHICLE_PLATE" == key:
+                    det_model_dir = self.cfg[key]["det_model_dir"]
+                    downloaded_det_model_dir = auto_download_model(
+                        det_model_dir)
+                    if downloaded_det_model_dir:
+                        det_model_dir = downloaded_det_model_dir
+                    model_dir_dict["det_model_dir"] = det_model_dir
+                    print("det_model_dir model dir:", det_model_dir)
+
+                    rec_model_dir = self.cfg[key]["rec_model_dir"]
+                    downloaded_rec_model_dir = auto_download_model(
+                        rec_model_dir)
+                    if downloaded_rec_model_dir:
+                        rec_model_dir = downloaded_rec_model_dir
+                    model_dir_dict["rec_model_dir"] = rec_model_dir
+                    print("rec_model_dir model dir:", rec_model_dir)
+
         if not is_video:
             det_cfg = self.cfg['DET']
-            model_dir = det_cfg['model_dir']
+            model_dir = model_dir_dict['DET']
             batch_size = det_cfg['batch_size']
             self.det_predictor = Detector(
                 model_dir, device, run_mode, batch_size, trt_min_shape,
@@ -302,7 +335,7 @@ class PipePredictor(object):
                 enable_mkldnn)
             if self.with_human_attr:
                 attr_cfg = self.cfg['ATTR']
-                model_dir = attr_cfg['model_dir']
+                model_dir = model_dir_dict['ATTR']
                 batch_size = attr_cfg['batch_size']
                 basemode = attr_cfg['basemode']
                 self.modebase[basemode] = True
@@ -313,7 +346,7 @@ class PipePredictor(object):
 
             if self.with_vehicle_attr:
                 vehicleattr_cfg = self.cfg['VEHICLE_ATTR']
-                model_dir = vehicleattr_cfg['model_dir']
+                model_dir = model_dir_dict['VEHICLE_ATTR']
                 batch_size = vehicleattr_cfg['batch_size']
                 color_threshold = vehicleattr_cfg['color_threshold']
                 type_threshold = vehicleattr_cfg['type_threshold']
@@ -327,7 +360,7 @@ class PipePredictor(object):
         else:
             if self.with_human_attr:
                 attr_cfg = self.cfg['ATTR']
-                model_dir = attr_cfg['model_dir']
+                model_dir = model_dir_dict['ATTR']
                 batch_size = attr_cfg['batch_size']
                 basemode = attr_cfg['basemode']
                 self.modebase[basemode] = True
@@ -337,7 +370,7 @@ class PipePredictor(object):
                     enable_mkldnn)
             if self.with_idbased_detaction:
                 idbased_detaction_cfg = self.cfg['ID_BASED_DETACTION']
-                model_dir = idbased_detaction_cfg['model_dir']
+                model_dir = model_dir_dict['ID_BASED_DETACTION']
                 batch_size = idbased_detaction_cfg['batch_size']
                 basemode = idbased_detaction_cfg['basemode']
                 threshold = idbased_detaction_cfg['threshold']
@@ -363,7 +396,7 @@ class PipePredictor(object):
 
             if self.with_idbased_clsaction:
                 idbased_clsaction_cfg = self.cfg['ID_BASED_CLSACTION']
-                model_dir = idbased_clsaction_cfg['model_dir']
+                model_dir = model_dir_dict['ID_BASED_CLSACTION']
                 batch_size = idbased_clsaction_cfg['batch_size']
                 basemode = idbased_clsaction_cfg['basemode']
                 threshold = idbased_clsaction_cfg['threshold']
@@ -389,7 +422,7 @@ class PipePredictor(object):
 
             if self.with_skeleton_action:
                 skeleton_action_cfg = self.cfg['SKELETON_ACTION']
-                skeleton_action_model_dir = skeleton_action_cfg['model_dir']
+                skeleton_action_model_dir = model_dir_dict['SKELETON_ACTION']
                 skeleton_action_batch_size = skeleton_action_cfg['batch_size']
                 skeleton_action_frames = skeleton_action_cfg['max_frames']
                 display_frames = skeleton_action_cfg['display_frames']
@@ -414,7 +447,7 @@ class PipePredictor(object):
 
                 if self.modebase["skeletonbased"]:
                     kpt_cfg = self.cfg['KPT']
-                    kpt_model_dir = kpt_cfg['model_dir']
+                    kpt_model_dir = model_dir_dict['KPT']
                     kpt_batch_size = kpt_cfg['batch_size']
                     self.kpt_predictor = KeyPointDetector(
                         kpt_model_dir,
@@ -439,7 +472,7 @@ class PipePredictor(object):
 
             if self.with_vehicle_attr:
                 vehicleattr_cfg = self.cfg['VEHICLE_ATTR']
-                model_dir = vehicleattr_cfg['model_dir']
+                model_dir = model_dir_dict['VEHICLE_ATTR']
                 batch_size = vehicleattr_cfg['batch_size']
                 color_threshold = vehicleattr_cfg['color_threshold']
                 type_threshold = vehicleattr_cfg['type_threshold']
@@ -452,7 +485,7 @@ class PipePredictor(object):
 
             if self.with_mtmct:
                 reid_cfg = self.cfg['REID']
-                model_dir = reid_cfg['model_dir']
+                model_dir = model_dir_dict['REID']
                 batch_size = reid_cfg['batch_size']
                 basemode = reid_cfg['basemode']
                 self.modebase[basemode] = True
@@ -464,7 +497,7 @@ class PipePredictor(object):
             if self.with_mot or self.modebase["idbased"] or self.modebase[
                     "skeletonbased"]:
                 mot_cfg = self.cfg['MOT']
-                model_dir = mot_cfg['model_dir']
+                model_dir = model_dir_dict['MOT']
                 tracker_config = mot_cfg['tracker_config']
                 batch_size = mot_cfg['batch_size']
                 basemode = mot_cfg['basemode']
@@ -491,7 +524,7 @@ class PipePredictor(object):
                 basemode = video_action_cfg['basemode']
                 self.modebase[basemode] = True
 
-                video_action_model_dir = video_action_cfg['model_dir']
+                video_action_model_dir = model_dir_dict['VIDEO_ACTION']
                 video_action_batch_size = video_action_cfg['batch_size']
                 short_size = video_action_cfg["short_size"]
                 target_size = video_action_cfg["target_size"]
