@@ -65,5 +65,5 @@ python -m paddle.distributed.launch \
 |          Faster RCNN R50_vd FPN | 1x              |      1       |  8  |  8.6h  |  38.2% | - |
 |          Faster RCNN R50_vd FPN | 1x              |      2       |  8  |  5.1h  |  38.0% | 84% |
 
-* 由上图可知，2机8卡相比于单机8卡，加速比可以达到84%，2即4卡相比于单机4卡，加速比可以达到76%，而且精度几乎没有损失。
+* 由上图可知，2机8卡相比于单机8卡，加速比可以达到84%，2机4卡相比于单机4卡，加速比可以达到76%，而且精度几乎没有损失。
 * 1x实验相当于COCO数据集训练了约13个epoch，因此在trainer数量很多的时候，每个trainer可能无法训练完1个epoch，这会导致精度出现一些差异，这可以通过适当增加迭代轮数实现精度的对齐，我们实验发现，在训练多尺度3x实验时(配置文件：[configs/rcnn_enhance/faster_rcnn_dcn_r50_vd_fpn_3x_server_side.yml](../../configs/rcnn_enhance/faster_rcnn_dcn_r50_vd_fpn_3x_server_side.yml))，分布式训练与单机训练的模型精度是可以对齐的。
