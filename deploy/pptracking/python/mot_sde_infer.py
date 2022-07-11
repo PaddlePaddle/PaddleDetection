@@ -32,7 +32,7 @@ sys.path.insert(0, parent_path)
 
 from det_infer import Detector, get_test_images, print_arguments, bench_log, PredictConfig, load_predictor
 from mot_utils import argsparser, Timer, get_current_memory_mb, video2frames, _is_valid_video
-from mot.tracker import JDETracker, DeepSORTTracker
+from mot.tracker import JDETracker, DeepSORTTracker, OCSORTTracker
 from mot.utils import MOTTimer, write_mot_results, get_crops, clip_box, flow_statistic
 from mot.visualize import plot_tracking, plot_tracking_dict
 
@@ -142,8 +142,10 @@ class SDE_Detector(Detector):
         # tracker config
         self.use_deepsort_tracker = True if tracker_cfg[
             'type'] == 'DeepSORTTracker' else False
+        self.use_ocsort_tracker = True if tracker_cfg[
+            'type'] == 'OCSORTTracker' else False
+
         if self.use_deepsort_tracker:
-            # use DeepSORTTracker
             if self.reid_pred_config is not None and hasattr(
                     self.reid_pred_config, 'tracker'):
                 cfg = self.reid_pred_config.tracker
@@ -161,6 +163,28 @@ class SDE_Detector(Detector):
                 matching_threshold=matching_threshold,
                 min_box_area=min_box_area,
                 vertical_ratio=vertical_ratio, )
+
+        elif self.use_ocsort_tracker:
+            det_thresh = cfg.get('det_thresh', 0.4)
+            max_age = cfg.get('max_age', 30)
+            min_hits = cfg.get('min_hits', 3)
+            iou_threshold = cfg.get('iou_threshold', 0.3)
+            delta_t = cfg.get('delta_t', 3)
+            inertia = cfg.get('inertia', 0.2)
+            min_box_area = cfg.get('min_box_area', 0)
+            vertical_ratio = cfg.get('vertical_ratio', 0)
+            use_byte = cfg.get('use_byte', False)
+
+            self.tracker = OCSORTTracker(
+                det_thresh=det_thresh,
+                max_age=max_age,
+                min_hits=min_hits,
+                iou_threshold=iou_threshold,
+                delta_t=delta_t,
+                inertia=inertia,
+                min_box_area=min_box_area,
+                vertical_ratio=vertical_ratio,
+                use_byte=use_byte)
         else:
             # use ByteTracker
             use_byte = cfg.get('use_byte', False)
@@ -283,6 +307,32 @@ class SDE_Detector(Detector):
                     feat_data['feat'] = _feat
                     tracking_outs['feat_data'].update({_imgname: feat_data})
             return tracking_outs
+
+        elif self.use_ocsort_tracker:
+            # use OCSORTTracker, only support singe class
+            online_targets = self.tracker.update(pred_dets, pred_embs)
+            online_tlwhs = defaultdict(list)
+            online_scores = defaultdict(list)
+            online_ids = defaultdict(list)
+            for t in online_targets:
+                tlwh = [t[0], t[1], t[2] - t[0], t[3] - t[1]]
+                tscore = float(t[4])
+                tid = int(t[5])
+                if tlwh[2] * tlwh[3] <= self.tracker.min_box_area: continue
+                if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                        3] > self.tracker.vertical_ratio:
+                    continue
+                if tlwh[2] * tlwh[3] > 0:
+                    online_tlwhs[0].append(tlwh)
+                    online_ids[0].append(tid)
+                    online_scores[0].append(tscore)
+            tracking_outs = {
+                'online_tlwhs': online_tlwhs,
+                'online_scores': online_scores,
+                'online_ids': online_ids,
+            }
+            return tracking_outs
+
         else:
             # use ByteTracker, support multiple class
             online_tlwhs = defaultdict(list)
@@ -523,7 +573,7 @@ class SDE_Detector(Detector):
             online_tlwhs, online_scores, online_ids = mot_results[0]
 
             # flow statistic for one class, and only for bytetracker
-            if num_classes == 1 and not self.use_deepsort_tracker:
+            if num_classes == 1 and not self.use_deepsort_tracker and not self.use_ocsort_tracker:
                 result = (frame_id + 1, online_tlwhs[0], online_scores[0],
                           online_ids[0])
                 statistic = flow_statistic(
@@ -533,8 +583,8 @@ class SDE_Detector(Detector):
                 records = statistic['records']
 
             fps = 1. / timer.duration
-            if self.use_deepsort_tracker:
-                # use DeepSORTTracker, only support singe class
+            if self.use_deepsort_tracker or self.use_ocsort_tracker:
+                # use DeepSORTTracker or OCSORTTracker, only support singe class
                 results[0].append(
                     (frame_id + 1, online_tlwhs, online_scores, online_ids))
                 im = plot_tracking(
