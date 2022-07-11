@@ -15,6 +15,7 @@ VisionTransformer:
   num_heads: 16
   drop_path_rate: 0.25
   out_indices: [7, 11, 15, 23]
+  pretrained: https://bj.bcebos.com/v1/paddledet/models/pretrained/vit_large_cae_pretrained.pdparams
 
 HRFPN:
   in_channels: [*dim, *dim, *dim, *dim]
