@@ -117,7 +117,7 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=mot_ppyoloe_l_36e_p
 
 
 
-## 3. 对ByteTrack模型的导出和预测
+## 3. 对ByteTrack和OC_SORT模型的导出和预测
 ### 3.1 导出预测模型
 ```bash
 # 导出PPYOLOe行人检测模型
@@ -136,7 +136,7 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/pp
 python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
 ```
 **注意:**
- - 运行前需要确认`tracker_config.yml`的跟踪器类型为`type: JDETracker`。
+ - 运行ByteTrack模型需要确认`tracker_config.yml`的跟踪器类型为`type: JDETracker`。
  - 可切换`tracker_config.yml`的跟踪器类型为`type: OCSORTTracker`运行OC_SORT模型。
  - ByteTrack模型是加载导出的检测器和单独配置的`--tracker_config`文件运行的，为了实时跟踪所以不需要reid模型，`--reid_model_dir`表示reid导出模型的路径，默认为空，加不加具体视效果而定；
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_images`表示保存跟踪结果可视化图片。

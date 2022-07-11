@@ -18,14 +18,15 @@
 |  检测训练数据集      |  检测器     | 输入尺度  |  ReID  |  检测mAP  |  MOTA  |  IDF1  |  FPS | 配置文件 |
 | :--------         | :-----      | :----:  | :----:|:------:  | :----: |:-----: |:----:|:----:   |
 | MOT-17 half train | PP-YOLOE-l  | 640x640 | -     |  52.9    |  50.1  |  62.6  |   -    |[配置文件](./bytetrack_ppyoloe.yml) |
-| **mot17_ch**       | YOLOX-x    | 800x1440|   -   |  61.9    |  75.3  |  77.2  |   -    |[配置文件](./ocsort_yolox.yml) |
+| **mot17_ch**       | YOLOX-x    | 800x1440|   -   |  61.9    |  75.5  |  77.0  |   -    |[配置文件](./ocsort_yolox.yml) |
 
 **注意:**
-  - 模型权重下载链接在配置文件中的```det_weights```和```reid_weights```，运行验证的命令即可自动下载。
+  - 模型权重下载链接在配置文件中的```det_weights```和```reid_weights```，运行验证的命令即可自动下载，OC_SORT默认不需要```reid_weights```权重。
   - **MOT17-half train**是MOT17的train序列(共7个)每个视频的前一半帧的图片和标注组成的数据集，而为了验证精度可以都用**MOT17-half val**数据集去评估，它是每个视频的后一半帧组成的，数据集可以从[此链接](https://dataset.bj.bcebos.com/mot/MOT17.zip)下载，并解压放在`dataset/mot/`文件夹下。
   - **mix_mot_ch**数据集，是MOT17、CrowdHuman组成的联合数据集，**mix_det**是MOT17、CrowdHuman、Cityscapes、ETHZ组成的联合数据集，数据集整理的格式和目录可以参考[此链接](https://github.com/ifzhang/ByteTrack#data-preparation)，最终放置于`dataset/mot/`目录下。为了验证精度可以都用**MOT17-half val**数据集去评估。
   - OC_SORT的训练是单独的检测器训练MOT数据集，推理是组装跟踪器去评估MOT指标，单独的检测模型也可以评估检测指标。
-  - OC_SORT的导出部署，是单独导出检测模型，再组装跟踪器运行的，参照[PP-Tracking](../bytetrack)和[PP-Tracking](../../../deploy/pptracking/python)。
+  - OC_SORT的导出部署，是单独导出检测模型，再组装跟踪器运行的，参照[PP-Tracking](../../../deploy/pptracking/python)。
+  - OC_SORT是PP-Human和PP-Vehicle等Pipeline分析项目跟踪方向的主要方案，具体使用参照[Pipeline](../../../deploy/pipeline)和[MOT](../../../deploy/pipeline/docs/tutorials/mot.md)。
 
 
 ## 快速开始
@@ -81,12 +82,12 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/bytetrack/det
 ### 5. 用导出的模型基于Python去预测
 
 ```bash
-python3.7 deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/yolox_x_24e_800x1440_mix_det/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --scaled=True --save_mot_txts
+python3.7 deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/yolox_x_24e_800x1440_mix_det/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --save_mot_txts
 ```
 **注意:**
+ - 运行前需要手动修改`tracker_config.yml`的跟踪器类型为`type: OCSORTTracker`。
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_mot_txt_per_img`(对每张图片保存一个txt)表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
  - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
- - `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
 
 
 ## 引用

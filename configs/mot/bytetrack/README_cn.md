@@ -121,7 +121,7 @@ Step 2：导出ReID模型(可选步骤，默认不需要)
 CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid/deepsort_pplcnet.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams
 ```
 
-### 4. 用导出的模型基于Python去预测
+### 5. 用导出的模型基于Python去预测
 
 ```bash
 python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --save_mot_txts
