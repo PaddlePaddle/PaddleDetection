@@ -244,9 +244,16 @@ class CascadeHead(BBoxHead):
 
             # TODO (lyuwenyu) Is it correct for only one class ?
             if not self.reg_class_agnostic and i < self.num_cascade_stages - 1:
-                deltas = deltas.reshape([-1, self.num_classes, 4])
+                deltas = deltas.reshape([deltas.shape[0], self.num_classes, 4])
                 labels = scores[:, :-1].argmax(axis=-1)
-                deltas = deltas[paddle.arange(deltas.shape[0]), labels]
+
+                if self.training:
+                    deltas = deltas[paddle.arange(deltas.shape[0]), labels]
+                else:
+                    deltas = deltas[(deltas * F.one_hot(
+                        labels, num_classes=self.num_classes).unsqueeze(-1) != 0
+                                     ).nonzero(as_tuple=True)].reshape(
+                                         [deltas.shape[0], 4])
 
             head_out_list.append([scores, deltas, rois])
             pred_bbox = self._get_pred_bbox(deltas, rois, self.bbox_weight[i])
