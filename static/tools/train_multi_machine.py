@@ -192,7 +192,6 @@ def main():
                                                          extra_keys)
 
     exe.run(startup_prog)
-    compiled_train_prog = fleet.main_program
 
     if FLAGS.eval:
         compiled_eval_prog = fluid.CompiledProgram(eval_prog)
@@ -253,7 +252,7 @@ def main():
         time_cost = np.mean(time_stat)
         eta_sec = (cfg.max_iters - it) * time_cost
         eta = str(datetime.timedelta(seconds=int(eta_sec)))
-        outs = exe.run(compiled_train_prog, fetch_list=train_values)
+        outs = exe.run(train_prog, fetch_list=train_values)
         stats = {k: np.array(v).mean() for k, v in zip(train_keys, outs[:-1])}
 
         # use vdl-paddle to log loss
