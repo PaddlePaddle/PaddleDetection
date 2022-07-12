@@ -83,6 +83,9 @@ python prepare_dataset.py
 ### 检测-跟踪模型优化
 基于骨骼点的行为识别模型效果依赖于前序的检测和跟踪效果，如果实际场景中不能准确检测到行人位置，或是难以正确在不同帧之间正确分配人物ID，都会使行为识别部分表现受限。如果在实际使用中遇到了上述问题，请参考[目标检测任务二次开发](../detection.md)以及[多目标跟踪任务二次开发](../mot.md)对检测/跟踪模型进行优化。
 
+### 关键点模型优化
+骨骼点作为该方案的核心特征，对行人的骨骼点定位效果也决定了行为识别的整体效果。若发现在实际场景中对关键点坐标的识别结果有明显错误，从关键点组成的骨架图像看，已经难以辨别具体动作，可以参考[关键点检测任务二次开发](../keypoint_detection.md)对关键点模型进行优化。
+
 ### 坐标归一化处理
 在完成骨骼点坐标的获取后，建议根据各人物的检测框进行归一化处理，以消除人物位置、尺度的差异给网络带来的收敛难度。
 
@@ -151,7 +154,7 @@ python main.py -c applications/PPHuman/configs/stgcn_pphuman.yaml
 python main.py --validate -c applications/PPHuman/configs/stgcn_pphuman.yaml
 ```
 
-在训练完成后，采用以下命令进行预测：
+- 在训练完成后，采用以下命令进行预测：
 ```bash
 python main.py --test -c applications/PPHuman/configs/stgcn_pphuman.yaml  -w output/STGCN/STGCN_best.pdparams
 ```
@@ -184,7 +187,7 @@ STGCN
 至此，就可以使用PP-Human进行行为识别的推理了。
 
 **注意**：如果在训练时调整了视频序列的长度或关键点的数量，在此处需要对应修改配置文件中`INFERENCE`字段内容，以实现正确预测。
-```
+```yaml
 # 序列数据的维度为(N,C,T,V,M)
 INFERENCE:
     name: 'STGCN_Inference_helper'

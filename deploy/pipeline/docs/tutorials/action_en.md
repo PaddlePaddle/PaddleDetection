@@ -60,7 +60,7 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
 
 ## How to Use
 
-1. Download models `Pedestrian Detection/Tracking`, `Keypoint Detection` and `Falling Recognition` from the links in the Model Zoo and unzip them to ```./output_inference```.
+1. Download models `Pedestrian Detection/Tracking`, `Keypoint Detection` and `Falling Recognition` from the links in the Model Zoo and unzip them to ```./output_inference```. The models are automatically downloaded by default. If you download them manually, you need to modify the `model_dir` as the model storage path.
 
 2. Now the only available input is the video input in the action recognition module. set the "enable: True" of `SKELETON_ACTION` in infer_cfg_pphuman.yml. And then run the command:
 
@@ -123,7 +123,7 @@ ID_BASED_CLSACTION: # config for classfication-based action recognition model
 
 ### How to Use
 
-1. Download models `Pedestrian Detection/Tracking` and `Calling Recognition` from the links in `Model Zoo` and unzip them to ```./output_inference```.
+1. Download models `Pedestrian Detection/Tracking` and `Calling Recognition` from the links in `Model Zoo` and unzip them to ```./output_inference```. The models are automatically downloaded by default. If you download them manually, you need to modify the `model_dir` as the model storage path.
 
 2. Now the only available input is the video input in the action recognition module. Set the "enable: True" of `ID_BASED_CLSACTION` in infer_cfg_pphuman.yml.
 
@@ -170,7 +170,7 @@ ID_BASED_DETACTION: # Config for detection-based action recognition model
 
 ### How to Use
 
-1. Download models `Pedestrian Detection/Tracking` and `Smoking Recognition` from the links in `Model Zoo` and unzip them to ```./output_inference```.
+1. Download models `Pedestrian Detection/Tracking` and `Smoking Recognition` from the links in `Model Zoo` and unzip them to ```./output_inference```. The models are automatically downloaded by default. If you download them manually, you need to modify the `model_dir` as the model storage path.
 
 2. Now the only available input is the video input in the action recognition module. set the "enable: True" of `ID_BASED_DETACTION` in infer_cfg_pphuman.yml.
 
@@ -226,7 +226,7 @@ VIDEO_ACTION:  # Config for detection-based action recognition model
 
 ### How to Use
 
-1. Download model `Fighting Detection` from the links of the above table and unzip it to ```./output_inference```.
+1. Download model `Fighting Detection` from the links of the above table and unzip it to ```./output_inference```. The models are automatically downloaded by default. If you download them manually, you need to modify the `model_dir` as the model storage path.
 
 2. Modify the file names in the `ppTSM` folder  to `model.pdiparams, model.pdiparams.info and model.pdmodel`;
 

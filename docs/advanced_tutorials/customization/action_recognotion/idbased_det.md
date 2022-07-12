@@ -1,4 +1,4 @@
-# 基于人体id的检测开发
+# 基于人体id的检测模型开发
 
 ## 环境准备
 
@@ -38,7 +38,7 @@ dataset/smoking
 
 以`COCO`格式为例，完成后的json标注文件内容如下：
 
-```
+```json
 # images字段下包含了图像的路径，id及对应宽高信息
   "images": [
     {
@@ -103,7 +103,7 @@ dataset/smoking
 ### 配置文件设置
 参考[配置文件](../../../../configs/pphuman/ppyoloe_crn_s_80e_smoking_visdrone.yml), 其中需要关注重点如下：
 
-```
+```yaml
 metric: COCO
 num_classes: 1 # 如果新增了更多的类别，请对应修改此处
 
@@ -129,13 +129,23 @@ TestDataset:
     dataset_dir: dataset/smoking
 ```
 
-### 模型训练及测试
-- 模型训练: 参考[PP-YOLOE](../../../configs/ppyoloe/README_cn.md)，执行下列步骤实现
+### 模型训练及评估
+- 模型训练
 
+参考[PP-YOLOE](../../../configs/ppyoloe/README_cn.md)，执行下列步骤实现
 ```bash
 # At Root of PaddleDetection
 
 python -m paddle.distributed.launch --gpus 0,1,2,3  tools/train.py -c configs/pphuman/ppyoloe_crn_s_80e_smoking_visdrone.yml --eval
+```
+
+- 模型评估
+
+训练好模型之后，可以通过以下命令实现对模型指标的评估
+```bash
+# At Root of PaddleDetection
+
+python tools/eval.py -c configs/pphuman/ppyoloe_crn_s_80e_smoking_visdrone.yml
 ```
 
 ### 模型导出
