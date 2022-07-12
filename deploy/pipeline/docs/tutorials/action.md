@@ -47,7 +47,7 @@ SKELETON_ACTION: # 基于骨骼点的行为识别模型配置
 ```
 
 ### 使用方法
-1. 从上表链接中下载模型并解压到```./output_inference```路径下。
+1. 从上表链接中下载模型并解压到```./output_inference```路径下。默认自动下载模型，如果手动下载，需要修改模型文件夹为模型存放路径。
 2. 目前行为识别模块仅支持视频输入，根据期望开启的行为识别方案类型，设置infer_cfg_pphuman.yml中`SKELETON_ACTION`的enable: True, 然后启动命令如下：
 ```python
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \

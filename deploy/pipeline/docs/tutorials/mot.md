@@ -14,7 +14,7 @@
 
 ## 使用方法
 
-1. 从上表链接中下载模型并解压到```./output_inference```路径下
+1. 从上表链接中下载模型并解压到```./output_inference```路径下，并修改配置文件中模型路径。默认为自动下载模型，无需做改动。
 2. 图片输入时，是纯检测任务，启动命令如下
 ```python
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
