@@ -7,7 +7,7 @@ _BASE_: [
 ]
 log_iter: 100
 snapshot_epoch: 10
-weights: output/ppyoloe_crn_s_80e_visdrone/model_final
+weights: output/ppyoloe_crn_s_80e_visdrone_use_checkpoint/model_final
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams
 depth_mult: 0.33
