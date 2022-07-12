@@ -28,7 +28,7 @@ ATTR:                                                                     #modul
   enable: False                                                           #whether to enable this model
 ```
 
-2. When inputting the image, run the command as follows:
+2. When inputting the image, run the command as follows (please refer to [QUICK_STARTED-Parameters](./QUICK_STARTED.md#41-参数说明) for more details):
 ```python
 #single image
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
@@ -43,8 +43,14 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 ```
 3. When inputting the video, run the command as follows:
 ```python
+#a single video file
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
+                                                   --device=gpu \
+
+#directory of videos
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
+                                                   --video_dir=test_videos/ \
                                                    --device=gpu \
 ```
 4. If you want to change the model path, there are two methods：
