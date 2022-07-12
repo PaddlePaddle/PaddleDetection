@@ -20,7 +20,7 @@ KPT:
   batch_size: 8
 
 ATTR:
-  model_dir:  https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.tar
+  model_dir:  https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.zip
   batch_size: 8
   basemode: "idbased"
   enable: False
