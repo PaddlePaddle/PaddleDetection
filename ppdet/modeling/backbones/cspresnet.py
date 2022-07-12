@@ -77,7 +77,6 @@ class RepVggBlock(nn.Layer):
         self.act = get_act_fn(act) if act is None or isinstance(act, (
             str, dict)) else act
         if alpha:
-            print('===================alpha=true=============')
             self.alpha = self.create_parameter(
                 shape=[1],
                 attr=ParamAttr(initializer=Constant(value=1.)),
