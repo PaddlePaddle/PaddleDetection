@@ -1,1 +1,0 @@
-../../configs/yolov4/README.md

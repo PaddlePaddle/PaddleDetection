@@ -68,7 +68,7 @@ def get_net():
 ```
 def prepare_input():
     transforms = [
-        T.Resize(target_size=(target_width, target_height)), 
+        T.Resize(target_size=(target_width, target_height)),
         T.Normalize(mean=(0,0,0), std=(1,1,1))
     ]
     img_file = root_path / "images/street.jpeg"
@@ -93,7 +93,7 @@ def predict(exec_net, input):
     return result
 ```
 
-您可能会惊讶地看到, 最激动人心的步骤居然如此简单。 不过下一个阶段会加复杂。 
+您可能会惊讶地看到, 最激动人心的步骤居然如此简单。 不过下一个阶段会加复杂。
 
 4. ### 后处理
 
@@ -138,7 +138,7 @@ def postprocess(pred_dets, pred_embs, threshold = 0.5):
 
 5. ### 画出检测框(可选)
 
-这一步是可选的。出于演示目的，我只使用 `plot_tracking_dict()` 方法在图像上绘制所有边界框。 但是，如果您没有相同的要求，则不需要这样做。 
+这一步是可选的。出于演示目的，我只使用 `plot_tracking_dict()` 方法在图像上绘制所有边界框。 但是，如果您没有相同的要求，则不需要这样做。
 
 ```
 online_im = plot_tracking_dict(
@@ -154,4 +154,4 @@ online_im = plot_tracking_dict(
 
 之后会有一篇详细解释此过程的配套文章将会发布，并且该文章的链接将很快在此处更新。
 
-完整代码请查看 [Paddle OpenVINO 预测](docs/advanced_tutorials/openvino_inference/fairmot_onnx_openvino.py).
+完整代码请查看 [Paddle OpenVINO 预测](./fairmot_onnx_openvino.py).

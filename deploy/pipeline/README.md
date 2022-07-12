@@ -25,20 +25,45 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
 
 ## 🗳 模型库
 
-| 任务            | 适用场景 | 精度 | 预测速度（ms） | 模型权重 | 预测部署模型 |
-| :---------:     |:---------:     |:---------------     | :-------:  |  :------:      | :------:      |
-| 目标检测(高精度) | 图片输入 | mAP: 56.6  | 28.0ms          |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 目标检测(轻量级) | 图片输入 | mAP: 53.2  | 22.1ms          |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
-| 目标跟踪(高精度) | 视频输入 | MOTA: 79.5  | 33.1ms           |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 目标跟踪(轻量级) | 视频输入 | MOTA: 69.1  | 27.2ms           |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
-| 属性识别    | 图片/视频输入 属性识别  | mA: 94.86 |  单人2ms     | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
-| 关键点检测    | 视频输入 行为识别 | AP: 87.1 | 单人2.9ms        |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) |
-| 摔倒行为识别   |  视频输入 行为识别  | 准确率: 96.43 |  单人2.7ms      | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
-| 打电话行为识别   |  视频输入 行为识别  | 准确率: 86.85 |  单人2.94ms      | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) |
-| 抽烟行为识别   |  视频输入 行为识别  | mAP: 39.7 |  单人2.0ms      | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip) |
-| ReID         | 视频输入 跨镜跟踪   | mAP: 98.8 | 单人1.5ms        | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
+<details>
+<summary><b>单模型效果（点击展开）</b></summary>
 
-下载预测部署模型并解压存放至`./output_inference`新建目录中
+| 任务            | 适用场景 | 精度 | 预测速度（ms）| 模型体积 | 预测部署模型 |
+| :---------:     |:---------:     |:---------------     | :-------:  |  :------:      | :------:      |
+| 目标检测(高精度) | 图片输入 | mAP: 57.8  | 31.8ms          | 182M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 目标检测(轻量级) | 图片输入 | mAP: 53.2  | 21.0ms          | 27M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
+| 目标跟踪(高精度) | 视频输入 | MOTA: 82.2  | 31.8ms           | 182M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 目标跟踪(轻量级) | 视频输入 | MOTA: 73.9  | 21.0ms           |27M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
+| 属性识别（高精度）    | 图片/视频输入 属性识别  | mA: 95.4 |  单人4.2ms     | 86M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
+| 属性识别（轻量级）    | 图片/视频输入 属性识别  | mA: 94.5 |  单人2.9ms     | 7.2M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
+| 关键点检测    | 视频输入 行为识别 | AP: 87.1 | 单人5.7ms        | 101M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) |
+| 基于关键点序列分类   |  视频输入 行为识别  | 准确率: 96.43 |  单人0.07ms      | 21.8M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
+| 基于人体id图像分类 |  视频输入 行为识别  | 准确率: 86.85 |  单人1.8ms      | 45M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) |
+| 基于人体id检测 |  视频输入 行为识别  | AP50: 79.5 |  单人10.9ms      | 27M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip) |
+|    视频分类    |  视频输入 行为识别  | Accuracy： 89.0 | 19.7ms/1s视频 | 90M | [下载链接](https://videotag.bj.bcebos.com/PaddleVideo-release2.3/ppTSM_fight.pdparams) |
+| ReID         | 视频输入 跨镜跟踪   | mAP: 98.8 | 单人0.23ms   | 85M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
+
+</details>
+
+<details>
+<summary><b>端到端模型效果（点击展开）</b></summary>
+
+| 任务            | 端到端速度（ms）|  模型方案  |  模型体积 |
+| :---------:     | :-------:  |  :------: |:------: |
+|  行人跟踪（高精度）  | 31.8ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |  
+|  行人跟踪（轻量级）  | 21.0ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | 27M |
+|  属性识别（高精度）  |   单人8.5ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [属性识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) | 目标检测：182M<br>属性识别：86M |
+|  属性识别（轻量级）  |   单人7.1ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [属性识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) | 目标检测：182M<br>属性识别：86M |
+|  摔倒识别  |   单人10ms | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) <br> [关键点检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) <br> [基于关键点行为识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) | 多目标跟踪：182M<br>关键点检测：101M<br>基于关键点行为识别：21.8M |
+|  闯入识别  |   31.8ms | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 多目标跟踪：182M |
+|  打架识别  |   19.7ms | [视频分类](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 90M |
+|  抽烟识别  |   单人15.1ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[基于人体id的目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip) | 目标检测：182M<br>基于人体id的目标检测：27M |
+|  打电话识别  |   单人ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[基于人体id的图像分类](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) | 目标检测：182M<br>基于人体id的图像分类：45M |
+
+ </details>
+
+
+点击模型方案中的模型即可下载指定模型，下载后解压存放至`./output_inference`目录中
 
 ## 📚 文档教程
 
@@ -57,7 +82,7 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
 * [快速开始](docs/tutorials/action.md)
   * 摔倒检测
   * 打架识别
-* [二次开发教程](../../docs/advanced_tutorials/customization/action.md)
+* [二次开发教程](../../docs/advanced_tutorials/customization/action_recognotion/README.md)
   * 方案选择
   * 数据准备
   * 模型优化
@@ -70,9 +95,12 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
   * 数据准备
   * 模型优化
 
-### 人流量计数与轨迹记录
+### 行人跟踪、人流量计数与轨迹记录
 
 * [快速开始](docs/tutorials/mot.md)
+  * 行人跟踪
+  * 人流量计数与轨迹记录
+  * 区域闯入判断和计数
 * [二次开发教程](../../docs/advanced_tutorials/customization/mot.md)
   * 数据准备
   * 模型优化

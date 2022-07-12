@@ -471,7 +471,7 @@
 - 感谢[FL77N](https://github.com/FL77N/)贡献`Sparse-RCNN`模型。
 - 感谢[Chen-Song](https://github.com/Chen-Song)贡献`Swin Faster-RCNN`模型。
 - 感谢[yangyudong](https://github.com/yangyudong2020), [hchhtc123](https://github.com/hchhtc123) 开发PP-Tracking GUI界面
-- 感谢[Shigure19](https://github.com/Shigure19) 开发PP-TinyPose健身APP
+- 感谢Shigure19 开发PP-TinyPose健身APP
 - 感谢[manangoel99](https://github.com/manangoel99)贡献Wandb可视化方式
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157835276-9aab9d1c-1c46-446b-bdd4-5ab75c5cfa48.png" width="20"/> 引用

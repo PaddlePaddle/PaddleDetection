@@ -1,6 +1,20 @@
 # 快速开始
 
-## 一、环境准备
+## 目录
+
+- [环境准备](#环境准备)
+- [模型下载](#模型下载)
+- [配置文件说明](#配置文件说明)
+- [预测部署](#预测部署)
+  - [参数说明](#参数说明)
+- [方案介绍](#方案介绍)
+  - [行人检测](行人检测)
+  - [行人跟踪](行人跟踪)
+  - [跨镜行人跟踪](跨镜行人跟踪)
+  - [属性识别](属性识别)
+  - [行为识别](行为识别)
+
+## 环境准备
 
 环境要求： PaddleDetection版本 >= release/2.4 或 develop版本
 
@@ -25,20 +39,21 @@ pip install -r requirements.txt
 1. 详细安装文档参考[文档](../../../../docs/tutorials/INSTALL_cn.md)
 2. 如果需要TensorRT推理加速（测速方式），请安装带`TensorRT版本Paddle`。您可以从[Paddle安装包](https://paddleinference.paddlepaddle.org.cn/v2.2/user_guides/download_lib.html#python)下载安装，或者按照[指导文档](https://www.paddlepaddle.org.cn/inference/master/optimize/paddle_trt.html)使用docker或自编译方式准备Paddle环境。
 
-## 二、模型下载
+## 模型下载
 
 PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模型，以实现不同使用场景，用户可以直接下载使用
 
-| 任务            | 适用场景 | 精度 | 预测速度（ms） | 模型权重 | 预测部署模型 |
-| :---------:     |:---------:     |:---------------     | :-------:  |  :------:      | :------:      |
-| 目标检测(高精度) | 图片输入 | mAP: 56.6  | 28.0ms          |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 目标检测(轻量级) | 图片输入 | mAP: 53.2  | 22.1ms          |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
-| 目标跟踪(高精度) | 视频输入 | MOTA: 79.5  | 33.1ms           |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 目标跟踪(轻量级) | 视频输入 | MOTA: 69.1  | 27.2ms           |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
-| 属性识别    | 图片/视频输入 属性识别  | mA: 94.86 |  单人2ms     | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |
-| 关键点检测    | 视频输入 行为识别 | AP: 87.1 | 单人2.9ms        |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)
-| 行为识别   |  视频输入 行为识别  | 准确率: 96.43 |  单人2.7ms      | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
-| ReID         | 视频输入 跨镜跟踪   | mAP: 98.8 | 单人1.5ms        | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
+| 任务            | 端到端速度（ms）|  模型方案  |  模型体积 |
+| :---------:     | :-------:  |  :------: |:------: |
+|  行人跟踪（高精度）  | 31.8ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |
+|  行人跟踪（轻量级）  | 21.0ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | 27M |
+|  属性识别（高精度）  |   单人8.5ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [属性识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) | 目标检测：182M<br>属性识别：86M |
+|  属性识别（轻量级）  |   单人7.1ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [属性识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) | 目标检测：182M<br>属性识别：86M |
+|  摔倒识别  |   单人10ms | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) <br> [关键点检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) <br> [基于关键点行为识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) | 多目标跟踪：182M<br>关键点检测：101M<br>基于关键点行为识别：21.8M |
+|  闯入识别  |   31.8ms | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 多目标跟踪：182M |
+|  打架识别  |   19.7ms | [视频分类](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 90M |
+|  抽烟识别  |   单人15.1ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[基于人体id的目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip) | 目标检测：182M<br>基于人体id的目标检测：27M |
+|  打电话识别  |   单人ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[基于人体id的图像分类](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) | 目标检测：182M<br>基于人体id的图像分类：45M |
 
 下载模型后，解压至`./output_inference`文件夹。
 
@@ -50,7 +65,7 @@ PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模�
 - ReID模型精度为Market1501数据集测试结果
 - 预测速度为T4下，开启TensorRT FP16的效果, 模型预测速度包含数据预处理、模型预测、后处理全流程
 
-## 三、配置文件说明
+## 配置文件说明
 
 PP-Human相关配置位于```deploy/pipeline/config/infer_cfg_pphuman.yml```中，存放模型路径，完成不同功能需要设置不同的任务类型
 
@@ -74,13 +89,13 @@ MOT:
   tracker_config: deploy/pipeline/config/tracker_config.yml
   batch_size: 1
   basemode: "idbased"
-  enable: False
+  enable: True
 
 ATTR:
   model_dir: output_inference/strongbaseline_r50_30e_pa100k/
   batch_size: 8
   basemode: "idbased"
-  enable: False
+  enable: True
 ```
 
 **注意：**
@@ -89,30 +104,30 @@ ATTR:
 - 如果用户仅需要修改模型文件路径，可以在命令行中加入 `--model_dir det=ppyoloe/` 即可，也可以手动修改配置文件中的相应模型路径，详细说明参考下方参数说明文档。
 
 
-### 四、预测部署
+## 预测部署
 
 ```
 # 行人检测，指定配置文件路径和测试图片
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
 
-# 行人跟踪，指定配置文件路径和测试视频，在配置文件中```deploy/pipeline/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
+# 行人跟踪，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# 行人跟踪，指定配置文件路径，模型路径和测试视频，在配置文件中```deploy/pipeline/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
+# 行人跟踪，指定配置文件路径，模型路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
 # 命令行中指定的模型路径优先级高于配置文件
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
 
-# 行人属性识别，指定配置文件路径和测试视频，在配置文件中```deploy/pipeline/config/infer_cfg_pphuman.yml```中的ATTR部分enable设置为```True```
+# 行人属性识别，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的ATTR部分enable设置为```True```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# 行为识别，指定配置文件路径和测试视频，在配置文件中```deploy/pipeline/config/infer_cfg_pphuman.yml```中的SKELETON_ACTION部分enable设置为```True```
+# 行为识别，以摔倒识别为例，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的SKELETON_ACTION部分enable设置为```True```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
-# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，在配置文件中```deploy/pipeline/config/infer_cfg_pphuman.yml```中的REID部分enable设置为```True```
+# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的REID部分enable设置为```True```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
 ```
 
-### 4.1 参数说明
+### 参数说明
 
 | 参数 | 是否必须|含义 |
 |-------|-------|----------|
@@ -131,7 +146,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 | --do_entrance_counting | Option | 是否统计出入口流量，默认为False |
 | --draw_center_traj | Option | 是否绘制跟踪轨迹，默认为False |
 
-## 五、方案介绍
+## 方案介绍
 
 PP-Human整体方案如下图所示
 
@@ -140,29 +155,31 @@ PP-Human整体方案如下图所示
 </div>
 
 
-### 1. 行人检测
+### 行人检测
 - 采用PP-YOLOE L 作为目标检测模型
 - 详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/)和[检测跟踪文档](mot.md)
 
-### 2. 行人跟踪
+### 行人跟踪
 - 采用SDE方案完成行人跟踪
 - 检测模型使用PP-YOLOE L(高精度)和S(轻量级)
-- 跟踪模块采用Bytetrack方案
-- 详细文档参考[Bytetrack](../../../../configs/mot/bytetrack)和[检测跟踪文档](mot.md)
+- 跟踪模块采用OC_SORT方案
+- 详细文档参考[OC_SORT](../../../../configs/mot/ocsort)和[检测跟踪文档](mot.md)
 
-### 3. 跨镜行人跟踪
-- 使用PP-YOLOE + Bytetrack得到单镜头多目标跟踪轨迹
-- 使用ReID（centroid网络）对每一帧的检测结果提取特征
+### 跨镜行人跟踪
+- 使用PP-YOLOE + OC_SORT得到单镜头多目标跟踪轨迹
+- 使用ReID（StrongBaseline网络）对每一帧的检测结果提取特征
 - 多镜头轨迹特征进行匹配，得到跨镜头跟踪结果
 - 详细文档参考[跨镜跟踪](mtmct.md)
 
-### 4. 属性识别
-- 使用PP-YOLOE + Bytetrack跟踪人体
+### 属性识别
+- 使用PP-YOLOE + OC_SORT跟踪人体
 - 使用StrongBaseline（多分类模型）完成识别属性，主要属性包括年龄、性别、帽子、眼睛、上衣下衣款式、背包等
 - 详细文档参考[属性识别](attribute.md)
 
-### 5. 行为识别：
-- 使用PP-YOLOE + Bytetrack跟踪人体
-- 使用HRNet进行关键点检测得到人体17个骨骼点
-- 结合50帧内同一个人骨骼点的变化，通过ST-GCN判断50帧内发生的动作是否为摔倒
+### 行为识别：
+- 提供四种行为识别方案
+- 1. 基于骨骼点的行为识别，例如摔倒识别
+- 2. 基于图像分类的行为识别，例如打电话识别
+- 3. 基于检测的行为识别，例如吸烟识别
+- 4. 基于视频分类的行为识别，例如打架识别
 - 详细文档参考[行为识别](action.md)
