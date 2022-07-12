@@ -10,22 +10,25 @@
 
 | Attribute |  index    |  length   |
 |:----------|:----------|:----------|
-| 'Female'    | [0]    | 1    |
-| 'AgeOver60', 'Age18-60', 'AgeLess18'    | [1, 2, 3]    | 3    |
-| 'Front','Side','Back'    | [4, 5, 6]    |  3    |
-| 'Hat','Glasses'   |  [7, 8]   |  2    |
-| 'HandBag','ShoulderBag','Backpack','HoldObjectsInFront'   | [9,10,11,12]   | 4    |
-| 'ShortSleeve','LongSleeve','UpperStride','UpperLogo','UpperPlaid','UpperSplice'  | [13,14,15,16,17,18]   |  6    |
-| 'LowerStripe','LowerPattern','LongCoat','Trousers','Shorts','Skirt&Dress'   | [19,20,21,22,23,24]   |  6    |
-| 'boots'   | [25]   |  1   |
+| 'Hat','Glasses'   |  [0, 1]   |  2    |
+| 'ShortSleeve','LongSleeve','UpperStride','UpperLogo','UpperPlaid','UpperSplice'  | [2, 3, 4, 5, 6, 7]   |  6    |
+| 'LowerStripe','LowerPattern','LongCoat','Trousers','Shorts','Skirt&Dress'   | [8, 9, 10, 11, 12, 13]   |  6    |
+| 'boots'   | [14, ]   |  1   |
+| 'HandBag','ShoulderBag','Backpack','HoldObjectsInFront'   | [15, 16, 17, 18]   | 4    |
+| 'AgeOver60', 'Age18-60', 'AgeLess18'    | [19, 20, 21]    | 3    |
+| 'Female'    | [22, ]    | 1    |
+| 'Front','Side','Back'    | [23, 24, 25]    |  3    |
+
 
 举例：
 
-[0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
 
-第一组，位置[0]数值是0，表示'female'
+第一组，位置[0, 1]数值分别是[0, 1]，表示'no hat'、'has glasses'。
 
-第二组，位置[1,2,3]数值分别是 0、1、0, 表示'Age18-60'
+第二组，位置[22, ]数值分别是[0, ], 表示gender属性是'male', 否则是'female'。
+
+第三组，位置[23, 24, 25]数值分别是[0, 1, 0], 表示方向属性是侧面'side'。
 
 其他组依次类推
 
@@ -39,11 +42,12 @@
 
 1） 使用检测框，标注图片中每一个人的位置。
 
-2） 每一个检测框（对应每一个人），包含一组26位的属性值数组，数组的每一位以0或1表示。对应上述26个属性。例如，如果图片是'Female'，则数组第一位为0，如果满足'Age18-60'，则位置[1,2,3]对应的数值是[0,1,0], 或者满足'AgeOver60'，则相应数值为[1,0,0].
+2） 每一个检测框（对应每一个人），包含一组26位的属性值数组，数组的每一位以0或1表示。对应上述26个属性。例如，如果图片是'Female'，则数组第22位为0，如果满足'Age18-60'，则位置[19, 20, 21]对应的数值是[0, 1, 0], 或者满足'AgeOver60'，则相应数值为[1, 0, 0].
 
 标注完成后利用检测框将每一个人截取成单人图，其图片与26位属性标注建立对应关系。也可先截成单人图再进行标注，效果相同。
 
-## 模型优化
+
+## 模型训练
 
 数据标注完成后，就可以拿来做模型的训练，完成自定义模型的优化工作。
 
@@ -74,7 +78,7 @@ train.txt文件内为所有训练图片名称（相对于根路径的文件路�
 
 ### 修改配置开始训练
 
-首先执行以下命令下载训练代码：
+首先执行以下命令下载训练代码（更多环境问题请参考[Install_PaddleClas](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/en/installation/install_paddleclas_en.md)）:
 
 ```shell
 git clone https://github.com/PaddlePaddle/PaddleClas
@@ -127,6 +131,22 @@ python3 tools/train.py \
         -c ./ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml
 ```
 
+训练完成后可以执行以下命令进行性能评估：
+```
+#多卡评估
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+python3 -m paddle.distributed.launch \
+    --gpus="0,1,2,3" \
+    tools/eval.py \
+        -c ./ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml \
+        -o Global.pretrained_model=./output/PPLCNet_x1_0/best_model
+
+#单卡评估
+python3 tools/eval.py \
+        -c ./ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml \
+        -o Global.pretrained_model=./output/PPLCNet_x1_0/best_model
+```
+
 ### 模型导出
 
 使用下述命令将训练好的模型导出为预测部署模型。
@@ -138,9 +158,9 @@ python3 tools/export_model.py \
     -o Global.save_inference_dir=deploy/models/PPLCNet_x1_0_person_attribute_infer
 ```
 
-导出模型后，将PP-Human中提供的部署模型[PPLCNet_x1_0](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.tar)中的`infer_cfg.yml`文件拷贝到导出的模型文件夹`PPLCNet_x1_0_person_attribute_infer`中。
+导出模型后，需要下载[infer_cfg.yml](https://bj.bcebos.com/v1/paddledet/models/pipeline/infer_cfg.yml)文件，并放置到导出的模型文件夹`PPLCNet_x1_0_person_attribute_infer`中。
 
-使用时在PP-Human中的配置文件`./deploy/pipeline/config/infer_cfg_pphuman.yml`中修改新的模型路径
+使用时在PP-Human中的配置文件`./deploy/pipeline/config/infer_cfg_pphuman.yml`中修改新的模型路径`model_dir`项，并开启功能`enable: True`。
 ```
 ATTR:
   model_dir: [YOUR_DEPLOY_MODEL_DIR]/PPLCNet_x1_0_person_attribute_infer/   #新导出的模型路径位置
@@ -153,19 +173,22 @@ ATTR:
 上述是以26个属性为例的标注、训练过程。
 
 如果需要增加、减少属性数量，则需要：
+
 1)标注时需增加新属性类别信息或删减属性类别信息；
+
 2)对应修改训练中train.txt所使用的属性数量和名称；
+
 3)修改训练配置，例如``PaddleClas/blob/develop/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml``文件中的属性数量,详细见上述`修改配置开始训练`部分。
 
 增加属性示例：
 
 1. 在标注数据时在26位后继续增加新的属性标注数值；
 2. 在train.txt文件的标注数值中也增加新的属性数值。
-3. 注意属性类型在train.txt中属性数值列表中的位置的对应关系需要时固定的，例如第1-3位表示年龄，所有图片都要使用1-3位置表示年龄，不再赘述。
+3. 注意属性类型在train.txt中属性数值列表中的位置的对应关系需要时固定的，例如第[19, 20, 21]位表示年龄，所有图片都要使用[19, 20, 21]位置表示年龄，不再赘述。
 
 <div width="500" align="center">
   <img src="../../images/add_attribute.png"/>
 </div>
 
 删减属性同理。
-例如，如果不需要年龄属性，则位置[1,2,3]的数值可以去掉。只需在train.txt中标注的26个数字中全部删除第1-3位数值即可，同时标注数据时也不再需要标注这3位属性值。
+例如，如果不需要年龄属性，则位置[19, 20, 21]的数值可以去掉。只需在train.txt中标注的26个数字中全部删除第19-21位数值即可，同时标注数据时也不再需要标注这3位属性值。
