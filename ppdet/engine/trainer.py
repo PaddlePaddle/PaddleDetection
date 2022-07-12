@@ -440,25 +440,6 @@ class Trainer(object):
                 self._compose_callback.on_step_begin(self.status)
                 data['epoch_id'] = epoch_id
 
-                #                 if use_amp:
-                #                     with paddle.amp.auto_cast(
-                #                             enable=self.cfg.use_gpu, level=amp_level):
-                #                         # model forward
-                #                         outputs = model(data)
-                #                         loss = outputs['loss']
-                #                     # model backward
-                #                     scaled_loss = scaler.scale(loss)
-                #                     scaled_loss.backward()
-                #                     # in dygraph mode, optimizer.minimize is equal to optimizer.step
-                #                     scaler.minimize(self.optimizer, scaled_loss)
-                #                 else:
-                #                     # model forward
-                #                     outputs = model(data)
-                #                     loss = outputs['loss']
-                #                     # model backward
-                #                     loss.backward()
-                #                     self.optimizer.step()
-
                 if use_amp:
                     if isinstance(model, paddle.DataParallel):
                         with model.no_sync():

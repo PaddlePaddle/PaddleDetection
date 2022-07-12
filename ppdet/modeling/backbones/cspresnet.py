@@ -77,6 +77,7 @@ class RepVggBlock(nn.Layer):
         self.act = get_act_fn(act) if act is None or isinstance(act, (
             str, dict)) else act
         if alpha:
+            print('===================alpha=true=============')
             self.alpha = self.create_parameter(
                 shape=[1],
                 attr=ParamAttr(initializer=Constant(value=1.)),
@@ -141,11 +142,16 @@ class RepVggBlock(nn.Layer):
 
 
 class BasicBlock(nn.Layer):
-    def __init__(self, ch_in, ch_out, act='relu', shortcut=True):
+    def __init__(self,
+                 ch_in,
+                 ch_out,
+                 act='relu',
+                 shortcut=True,
+                 use_alpha=False):
         super(BasicBlock, self).__init__()
         assert ch_in == ch_out
         self.conv1 = ConvBNLayer(ch_in, ch_out, 3, stride=1, padding=1, act=act)
-        self.conv2 = RepVggBlock(ch_out, ch_out, act=act)
+        self.conv2 = RepVggBlock(ch_out, ch_out, act=act, alpha=use_alpha)
         self.shortcut = shortcut
 
     def forward(self, x):
@@ -182,7 +188,8 @@ class CSPResStage(nn.Layer):
                  n,
                  stride,
                  act='relu',
-                 attn='eca'):
+                 attn='eca',
+                 use_alpha=False):
         super(CSPResStage, self).__init__()
 
         ch_mid = (ch_in + ch_out) // 2
@@ -195,8 +202,11 @@ class CSPResStage(nn.Layer):
         self.conv2 = ConvBNLayer(ch_mid, ch_mid // 2, 1, act=act)
         self.blocks = nn.Sequential(*[
             block_fn(
-                ch_mid // 2, ch_mid // 2, act=act, shortcut=True)
-            for i in range(n)
+                ch_mid // 2,
+                ch_mid // 2,
+                act=act,
+                shortcut=True,
+                use_alpha=use_alpha) for i in range(n)
         ])
         if attn:
             self.attn = EffectiveSELayer(ch_mid, act='hardsigmoid')
@@ -233,6 +243,7 @@ class CSPResNet(nn.Layer):
                  depth_mult=1.0,
                  trt=False,
                  use_checkpoint=False,
+                 use_alpha=False,
                  **args):
         super(CSPResNet, self).__init__()
         self.use_checkpoint = use_checkpoint
@@ -273,12 +284,19 @@ class CSPResNet(nn.Layer):
 
         n = len(channels) - 1
         self.stages = nn.Sequential(*[(str(i), CSPResStage(
-            BasicBlock, channels[i], channels[i + 1], layers[i], 2, act=act))
-                                      for i in range(n)])
+            BasicBlock,
+            channels[i],
+            channels[i + 1],
+            layers[i],
+            2,
+            act=act,
+            use_alpha=use_alpha)) for i in range(n)])
 
         self._out_channels = channels[1:]
         self._out_strides = [4 * 2**i for i in range(n)]
         self.return_idx = return_idx
+        if use_checkpoint:
+            paddle.seed(0)
 
     def forward(self, inputs):
         x = inputs['image']
@@ -286,8 +304,6 @@ class CSPResNet(nn.Layer):
         outs = []
         for idx, stage in enumerate(self.stages):
             if self.use_checkpoint:
-                # for checkpoint
-                paddle.seed(0)
                 x = paddle.distributed.fleet.utils.recompute(
                     stage, x, **{"preserve_rng_state": True})
             else:
