@@ -118,8 +118,7 @@ class VideoActionRecognizer(object):
         }
         if run_mode in precision_map.keys():
             self.config.enable_tensorrt_engine(
-                max_batch_size=self.batch_size,
-                precision_mode=precision_map[run_mode])
+                max_batch_size=8, precision_mode=precision_map[run_mode])
 
         self.config.enable_memory_optim()
         # use zero copy
