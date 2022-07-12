@@ -118,6 +118,10 @@ class JDE_Detector(Detector):
         self.do_break_in_counting = do_break_in_counting
         self.region_type = region_type
         self.region_polygon = region_polygon
+        if self.region_type == 'custom':
+            assert len(
+                self.region_polygon
+            ) > 6, 'region_type is custom, region_polygon should be at least 3 pairs of point coords.'
 
         assert batch_size == 1, "MOT model only supports batch_size=1."
         self.det_times = Timer(with_tracker=True)
@@ -435,7 +439,10 @@ def main():
         save_mot_txts=FLAGS.save_mot_txts,
         draw_center_traj=FLAGS.draw_center_traj,
         secs_interval=FLAGS.secs_interval,
-        do_entrance_counting=FLAGS.do_entrance_counting, )
+        do_entrance_counting=FLAGS.do_entrance_counting,
+        do_break_in_counting=FLAGS.do_break_in_counting,
+        region_type=FLAGS.region_type,
+        region_polygon=FLAGS.region_polygon)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:

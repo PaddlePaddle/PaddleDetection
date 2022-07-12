@@ -69,7 +69,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 **注意:**
  - `--do_break_in_counting`表示是否进行区域出入后计数，不设置即默认为False。
  - `--region_type`表示流量计数的区域，当设置`--do_break_in_counting`时仅可选择`custom`，默认是`custom`，表示以用户自定义区域为出入口，同一物体框的下边界中点坐标在相邻两秒内从区域外到区域内，即完成计数加一。
- - `--region_polygon`表示用户自定义区域的多边形的点坐标序列，每两个为一对点坐标(x,y坐标)，至少需要3对点也即6个整数。用户可以运行[此段代码](../../tools/get_video_info.py)获取所测视频的分辨率帧数，以及可以自定义画出自己想要的多边形区域的可视化并自己调整。
+ - `--region_polygon`表示用户自定义区域的多边形的点坐标序列，每两个为一对点坐标(x,y坐标)，至少需要3对点也即6个整数，默认值是`[]`，需要用户自行设置点坐标。用户可以运行[此段代码](../../tools/get_video_info.py)获取所测视频的分辨率帧数，以及可以自定义画出自己想要的多边形区域的可视化并自己调整。
+ 自定义多边形区域的可视化代码如下：
   <details>
 
   ```python

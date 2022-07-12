@@ -122,7 +122,7 @@ def argsparser():
         '--region_polygon',
         nargs='+',
         type=int,
-        default=[900, 300, 1200, 300, 1150, 500, 850, 500],
+        default=[],
         help="Clockwise point coords (x0,y0,x1,y1...) of polygon of area when "
         "do_break_in_counting. Note that only support single-class MOT and "
         "the video should be taken by a static camera.")

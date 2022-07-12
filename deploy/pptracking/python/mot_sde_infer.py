@@ -123,6 +123,10 @@ class SDE_Detector(Detector):
         self.do_break_in_counting = do_break_in_counting
         self.region_type = region_type
         self.region_polygon = region_polygon
+        if self.region_type == 'custom':
+            assert len(
+                self.region_polygon
+            ) > 6, 'region_type is custom, region_polygon should be at least 3 pairs of point coords.'
 
         assert batch_size == 1, "MOT model only supports batch_size=1."
         self.det_times = Timer(with_tracker=True)

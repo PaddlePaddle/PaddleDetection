@@ -112,6 +112,10 @@ class Pipeline(object):
         self.do_break_in_counting = args.do_break_in_counting
         self.region_type = args.region_type
         self.region_polygon = args.region_polygon
+        if self.region_type == 'custom':
+            assert len(
+                self.region_polygon
+            ) > 6, 'region_type is custom, region_polygon should be at least 3 pairs of point coords.'
 
     def _parse_input(self, image_file, image_dir, video_file, video_dir,
                      camera_id):
