@@ -17,7 +17,7 @@
 
 ## 使用方法
 
-1. 从上表链接中下载模型并解压到```PaddleDetection/output_inference```路径下，并且设置```deploy/pipeline/config/infer_cfg_pphuman.yml```中`ATTR`的enable: True
+1. 从上表链接中下载模型并解压到```PaddleDetection/output_inference```路径下，并修改配置文件中模型路径，也可默认自动下载模型。设置```deploy/pipeline/config/infer_cfg_pphuman.yml```中`ATTR`的enable: True
 
 `infer_cfg_pphuman.yml`中配置项说明：
 ```
