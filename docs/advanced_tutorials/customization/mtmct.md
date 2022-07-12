@@ -22,7 +22,7 @@
 
 ### 数据标注
 
-理解了上面`属性标注`格式的含义后，就可以进行数据标注的工作。其本质是：每张单人图建立一个标注项，对应该行人分配的id。
+理解了上面`标注`格式的含义后，就可以进行数据标注的工作。其本质是：每张单人图建立一个标注项，对应该行人分配的id。
 
 举例：
 
@@ -34,7 +34,7 @@
 
 标注完成后利用检测框将每一个人截取成单人图，其图片与id属性标注建立对应关系。也可先截成单人图再进行标注，效果相同。
 
-## 模型优化
+## 模型训练
 
 
 数据标注完成后，就可以拿来做模型的训练，完成自定义模型的优化工作。
@@ -74,26 +74,60 @@ bounding_box_train.txt文件内为所有训练图片名称（相对于根路径�
 需要在配置文件[softmax_triplet_with_center.yaml](https://github.com/PaddlePaddle/PaddleClas/blob/develop/ppcls/configs/reid/strong_baseline/softmax_triplet_with_center.yaml)中，修改的配置项如下：
 
 ```
-        image_root: "./dataset/"                训练图片根路径
-        cls_label_path: "bounding_box_train"    训练文件列表
-```
-```
-    class_num: &class_num 751        #行人id总数量
+  Head:
+    name: "FC"
+    embedding_size: *feat_dim
+    class_num: &class_num 751                   #行人id总数量
+
+DataLoader:
+  Train:
+    dataset:
+        name: "Market1501"
+        image_root: "./dataset/"                #训练图片根路径
+        cls_label_path: "bounding_box_train"    #训练文件列表
+
+
+  Eval:
+    Query:
+      dataset:
+        name: "Market1501"
+        image_root: "./dataset/"                #评估图片根路径
+        cls_label_path: "query"                 #评估文件列表
+
 ```
 注意：
 
 1. 这里image_root路径+bounding_box_train.txt中图片相对路径，对应图片存放的完整路径。
 
-
 然后运行以下命令开始训练。
 
-
 ```
+#多卡训练
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 python3 -m paddle.distributed.launch \
     --gpus="0,1,2,3" \
     tools/train.py \
         -c ./ppcls/configs/reid/strong_baseline/softmax_triplet_with_center.yaml
+
+#单卡训练
+python3 tools/train.py \
+    -c ./ppcls/configs/reid/strong_baseline/softmax_triplet_with_center.yaml
+```
+
+训练完成后可以执行以下命令进行性能评估：
+```
+#多卡评估
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+python3 -m paddle.distributed.launch \
+    --gpus="0,1,2,3" \
+    tools/eval.py \
+        -c ./ppcls/configs/reid/strong_baseline/softmax_triplet_with_center.yaml \
+        -o Global.pretrained_model=./output/strong_baseline/best_model
+
+#单卡评估
+python3 tools/eval.py \
+        -c ./ppcls/configs/reid/strong_baseline/softmax_triplet_with_center.yaml \
+        -o Global.pretrained_model=./output/strong_baseline/best_model
 ```
 
 ### 模型导出
@@ -103,16 +137,16 @@ python3 -m paddle.distributed.launch \
 ```
 python3 tools/export_model.py \
     -c ./ppcls/configs/reid/strong_baseline/softmax_triplet_with_center.yaml \
-    -o Global.pretrained_model=output/strong_baseline/best_model \
+    -o Global.pretrained_model=./output/strong_baseline/best_model \
     -o Global.save_inference_dir=deploy/models/strong_baseline_inference
 ```
 
 导出模型后，然后将PP-Human中提供的部署模型[REID模型](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip)中的infer_cfg.yml文件拷贝到新导出的模型文件夹'strong_baseline_inference'中。
 
-使用时在PP-Human中的配置文件infer_cfg_pphuman.yml中修改
+使用时在PP-Human中的配置文件infer_cfg_pphuman.yml中修改模型路径`model_dir`并开启功能`enable`。
 ```
 REID:
   model_dir: [YOUR_DEPLOY_MODEL_DIR]/strong_baseline_inference/
   enable: True
 ```
-然后可以使用。
+然后可以使用。至此完成模型开发。

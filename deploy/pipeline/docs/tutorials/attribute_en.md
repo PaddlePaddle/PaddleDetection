@@ -28,7 +28,7 @@ ATTR:                                                                     #modul
   enable: False                                                           #whether to enable this model
 ```
 
-2. When inputting the image, run the command as follows (please refer to [QUICK_STARTED](./QUICK_STARTED.md) for more details):
+2. When inputting the image, run the command as follows (please refer to [QUICK_STARTED-Parameters](./QUICK_STARTED.md#41-参数说明) for more details):
 ```python
 #single image
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
