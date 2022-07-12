@@ -1,11 +1,15 @@
 # 基于人体骨骼点的行为识别
 
-## 数据准备
+## 环境准备
 
-基于骨骼点的行为识别方案是借助[PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo)进行模型训练的。使用该方案训练的模型，可以参考[此文档](https://github.com/PaddlePaddle/PaddleVideo/tree/develop/applications/PPHuman#%E5%87%86%E5%A4%87%E8%AE%AD%E7%BB%83%E6%95%B0%E6%8D%AE)准备训练数据。其主要流程包含以下步骤：
+基于骨骼点的行为识别方案是借助[PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo)进行模型训练的。请按照[安装说明](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/install.md)完成PaddleVideo的环境安装，以进行后续的模型训练及使用流程。
+
+## 数据准备
+使用该方案训练的模型，可以参考[此文档](https://github.com/PaddlePaddle/PaddleVideo/tree/develop/applications/PPHuman#%E5%87%86%E5%A4%87%E8%AE%AD%E7%BB%83%E6%95%B0%E6%8D%AE)准备训练数据，以适配PaddleVideo进行训练，其主要流程包含以下步骤：
+
 
 ### 数据格式说明
-STGCN是一个基于骨骼点坐标序列进行预测的模型。在PaddleVideo中，训练数据为采用`.npy`格式存储的`Numpy`数据，标签则可以是`.npy`或`.pkl`格式存储的文件。对于序列数据的维度要求为`(N,C,T,V,M)`。
+STGCN是一个基于骨骼点坐标序列进行预测的模型。在PaddleVideo中，训练数据为采用`.npy`格式存储的`Numpy`数据，标签则可以是`.npy`或`.pkl`格式存储的文件。对于序列数据的维度要求为`(N,C,T,V,M)`，当前方案仅支持单人构成的行为（但视频中可以存在多人，每个人独自进行行为识别判断），即`M=1`。
 
 | 维度 | 大小 | 说明 |
 | ---- | ---- | ---------- |
@@ -19,6 +23,29 @@ STGCN是一个基于骨骼点坐标序列进行预测的模型。在PaddleVideo�
 对于一个待标注的序列（这里序列指一个动作片段，可以是视频或有顺序的图片集合）。可以通过模型预测或人工标注的方式获取骨骼点（也称为关键点）坐标。
 - 模型预测：可以直接选用[PaddleDetection KeyPoint模型系列](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/keypoint) 模型库中的模型，并根据`3、训练与测试 - 部署预测 - 检测+keypoint top-down模型联合部署`中的步骤获取目标序列的17个关键点坐标。
 - 人工标注：若对关键点的数量或是定义有其他需求，也可以直接人工标注各个关键点的坐标位置，注意对于被遮挡或较难标注的点，仍需要标注一个大致坐标，否则后续网络学习过程会受到影响。
+
+
+当使用模型预测获取时，可以参考如下步骤进行，请注意此时在PaddleDetection中进行操作。
+
+```bash
+# current path is under root of PaddleDetection
+
+# Step 1: download pretrained inference models.
+wget https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip
+wget https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip
+unzip -d output_inference/ mot_ppyoloe_l_36e_pipeline.zip
+unzip -d output_inference/ dark_hrnet_w32_256x192.zip
+
+# Step 2: Get the keypoint coordinarys
+
+# if your data is image sequence
+python deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inference/mot_ppyoloe_l_36e_pipeline/ --keypoint_model_dir=output_inference/dark_hrnet_w32_256x192 --image_dir={your image directory path} --device=GPU --save_res=True
+
+# if your data is video
+python deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inference/mot_ppyoloe_l_36e_pipeline/ --keypoint_model_dir=output_inference/dark_hrnet_w32_256x192 --video_file={your video file path} --device=GPU --save_res=True
+```
+这样我们会得到一个`det_keypoint_unite_image_results.json`的检测结果文件。内容的具体含义请见[这里](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/deploy/python/det_keypoint_unite_infer.py#L108)。
+
 
 ### 统一序列的时序长度
 由于实际数据中每个动作的长度不一，首先需要根据您的数据和实际场景预定时序长度（在PP-Human中我们采用50帧为一个动作序列），并对数据做以下处理：
@@ -35,10 +62,26 @@ STGCN是一个基于骨骼点坐标序列进行预测的模型。在PaddleVideo�
 
 注意：这里的`class_id`是`int`类型，与其他分类任务类似。例如`0：摔倒， 1：其他`。
 
+
+我们提供了执行该步骤的[脚本文件](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/applications/PPHuman/datasets/prepare_dataset.py),可以直接处理生成的`det_keypoint_unite_image_results.json`文件，该脚本执行的内容包括解析json文件内容、前述步骤中介绍的整理训练数据及保存数据文件。
+
+```bash
+mkdir {root of PaddleVideo}/applications/PPHuman/datasets/annotations
+
+mv det_keypoint_unite_image_results.json {root of PaddleVideo}/applications/PPHuman/datasets/annotations/det_keypoint_unite_image_results_{video_id}_{camera_id}.json
+
+cd {root of PaddleVideo}/applications/PPHuman/datasets/
+
+python prepare_dataset.py
+```
+
 至此，我们得到了可用的训练数据（`.npy`）和对应的标注文件（`.pkl`）。
 
 
 ## 模型优化
+
+### 检测-跟踪模型优化
+基于骨骼点的行为识别模型效果依赖于前序的检测和跟踪效果，如果实际场景中不能准确检测到行人位置，或是难以正确在不同帧之间正确分配人物ID，都会使行为识别部分表现受限。如果在实际使用中遇到了上述问题，请参考[目标检测任务二次开发](../detection.md)以及[多目标跟踪任务二次开发](../mot.md)对检测/跟踪模型进行优化。
 
 ### 坐标归一化处理
 在完成骨骼点坐标的获取后，建议根据各人物的检测框进行归一化处理，以消除人物位置、尺度的差异给网络带来的收敛难度。
@@ -48,9 +91,58 @@ STGCN是一个基于骨骼点坐标序列进行预测的模型。在PaddleVideo�
 
 基于关键点的行为识别方案中，行为识别模型使用的是[ST-GCN](https://arxiv.org/abs/1801.07455)，并在[PaddleVideo训练流程](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/stgcn.md)的基础上修改适配，完成模型训练及导出使用流程。
 
+
+### 数据准备与配置文件修改
+- 按照`数据准备`, 准备训练数据（`.npy`）和对应的标注文件（`.pkl`）。对应放置在`{root of PaddleVideo}/applications/PPHuman/datasets/`下。
+
+- 参考[配置文件](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/applications/PPHuman/configs/stgcn_pphuman.yaml), 需要重点关注的内容如下：
+
+```yaml
+MODEL: #MODEL field
+    framework:
+        backbone:
+        name: "STGCN"
+        in_channels: 2  # 此处对应数据说明中的C维，表示二维坐标。
+        dropout: 0.5
+        layout: 'coco_keypoint'
+        data_bn: True
+    head:
+        name: "STGCNHead"
+        num_classes: 2  # 如果数据中有多种行为类型，需要修改此处使其与预测类型数目一致。
+    if_top5: False # 行为类型数量不足5时请设置为False，否则会报错
+
+...
+
+
+# 请根据数据路径正确设置train/valid/test部分的数据及label路径
+DATASET: #DATASET field
+    batch_size: 64
+    num_workers: 4
+    test_batch_size: 1
+    test_num_workers: 0
+    train:
+        format: "SkeletonDataset" #Mandatory, indicate the type of dataset, associate to the 'paddle
+        file_path: "./applications/PPHuman/datasets/train_data.npy" #mandatory, train data index file path
+        label_path: "./applications/PPHuman/datasets/train_label.pkl"
+
+    valid:
+        format: "SkeletonDataset" #Mandatory, indicate the type of dataset, associate to the 'paddlevideo/loader/dateset'
+        file_path: "./applications/PPHuman/datasets/val_data.npy" #Mandatory, valid data index file path
+        label_path: "./applications/PPHuman/datasets/val_label.pkl"
+
+        test_mode: True
+    test:
+        format: "SkeletonDataset" #Mandatory, indicate the type of dataset, associate to the 'paddlevideo/loader/dateset'
+        file_path: "./applications/PPHuman/datasets/val_data.npy" #Mandatory, valid data index file path
+        label_path: "./applications/PPHuman/datasets/val_label.pkl"
+
+        test_mode: True
+```
+
 ### 模型训练与测试
-- 按照`数据准备`, 准备训练数据
+
 - 在PaddleVideo中，使用以下命令即可开始训练：
+
 ```bash
 # current path is under root of PaddleVideo
 python main.py -c applications/PPHuman/configs/stgcn_pphuman.yaml
@@ -90,3 +182,14 @@ STGCN
 ```
 
 至此，就可以使用PP-Human进行行为识别的推理了。
+
+**注意**：如果在训练时调整了视频序列的长度或关键点的数量，在此处需要对应修改配置文件中`INFERENCE`字段内容，以实现正确预测。
+```
+# 序列数据的维度为(N,C,T,V,M)
+INFERENCE:
+    name: 'STGCN_Inference_helper'
+    num_channels: 2 # 对应C维
+    window_size: 50 # 对应T维，请对应调整为数据长度
+    vertex_nums: 17 # 对应V维，请对应调整为关键点数目
+    person_nums: 1 # 对应M维
+```

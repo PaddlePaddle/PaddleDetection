@@ -16,6 +16,13 @@ PaddleDetection团队提供了针对行人的基于PP-YOLOE的检测模型，用
 - 具体使用教程请参考[ppyoloe](../ppyoloe#getting-start)。
 
 
+# PP-YOLOE 香烟检测模型
+基于PP-YOLOE模型的香烟检测模型，是实现PP-Human中的基于检测的行为识别方案的一环，如何在PP-Human中使用该模型进行吸烟行为识别，可参考[PP-Human行为识别模块](../../deploy/pipeline/docs/tutorials/action.md)。该模型检测类别仅包含香烟一类。由于数据来源限制，目前暂无法直接公开训练数据。该模型使用了小目标数据集Visdrone上的权重作为预训练模型，以提升检测效果。
+
+|    模型   |  数据集  | mAP<sup>val<br>0.5:0.95 |  下载  | 配置文件 |
+| PP-YOLOE-s | 业务数据集 |  39.7 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.pdparams) | [配置文件](./ppyoloe_crn_s_80e_smoking_visdrone.yml) |
+
+
 ## 引用
 ```
 @article{shao2018crowdhuman,
