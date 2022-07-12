@@ -426,6 +426,9 @@ class Trainer(object):
 
         self._compose_callback.on_train_begin(self.status)
 
+        use_fused_allreduce_gradients = self.cfg[
+            'use_fused_allreduce_gradients'] if 'use_fused_allreduce_gradients' in self.cfg else False
+
         for epoch_id in range(self.start_epoch, self.cfg.epoch):
             self.status['mode'] = 'train'
             self.status['epoch_id'] = epoch_id
@@ -441,9 +444,12 @@ class Trainer(object):
                 data['epoch_id'] = epoch_id
 
                 if use_amp:
-                    if isinstance(model, paddle.DataParallel):
+                    if isinstance(
+                            model, paddle.
+                            DataParallel) and use_fused_allreduce_gradients:
                         with model.no_sync():
-                            with amp.auto_cast(enable=self.cfg.use_gpu):
+                            with amp.auto_cast(
+                                    enable=self.cfg.use_gpus, level=amp_level):
                                 # model forward
                                 outputs = model(data)
                                 loss = outputs['loss']
@@ -454,7 +460,8 @@ class Trainer(object):
                         fused_allreduce_gradients(
                             list(model.parameters()), None)
                     else:
-                        with amp.auto_cast(enable=self.cfg.use_gpu):
+                        with amp.auto_cast(
+                                enable=self.cfg.use_gpu, level=amp_level):
                             # model forward
                             outputs = model(data)
                             loss = outputs['loss']
@@ -467,7 +474,9 @@ class Trainer(object):
                     scaler.minimize(self.optimizer, scaled_loss)
 
                 else:
-                    if isinstance(model, paddle.DataParallel):
+                    if isinstance(
+                            model, paddle.
+                            DataParallel) and use_fused_allreduce_gradients:
                         with model.no_sync():
                             # model forward
                             outputs = model(data)
