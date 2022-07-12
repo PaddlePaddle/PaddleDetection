@@ -211,6 +211,8 @@ def preprocess_reid(imgs,
 def flow_statistic(result,
                    secs_interval,
                    do_entrance_counting,
+                   do_break_in_counting,
+                   region_type,
                    video_fps,
                    entrance,
                    id_set,
@@ -221,39 +223,84 @@ def flow_statistic(result,
                    records,
                    data_type='mot',
                    num_classes=1):
-    # Count in and out number: 
-    # Use horizontal center line as the entrance just for simplification.
-    # If a person located in the above the horizontal center line 
-    # at the previous frame and is in the below the line at the current frame,
-    # the in number is increased by one.
-    # If a person was in the below the horizontal center line 
-    # at the previous frame and locates in the below the line at the current frame,
-    # the out number is increased by one.
-    # TODO: if the entrance is not the horizontal center line,
-    # the counting method should be optimized.
+    # Count in/out number: 
+    # Note that 'region_type' should be one of ['horizontal', 'vertical', 'custom'],
+    # 'horizontal' and 'vertical' means entrance is the center line as the entrance when do_entrance_counting, 
+    # 'custom' means entrance is a region defined by users when do_break_in_counting.
+
     if do_entrance_counting:
-        entrance_y = entrance[1]  # xmin, ymin, xmax, ymax
+        assert region_type in [
+            'horizontal', 'vertical'
+        ], "region_type should be 'horizontal' or 'vertical' when do entrance counting."
+        entrance_x, entrance_y = entrance[0], entrance[1]
         frame_id, tlwhs, tscores, track_ids = result
         for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
             if track_id < 0: continue
             if data_type == 'kitti':
                 frame_id -= 1
-
             x1, y1, w, h = tlwh
             center_x = x1 + w / 2.
             center_y = y1 + h / 2.
             if track_id in prev_center:
-                if prev_center[track_id][1] <= entrance_y and \
-                   center_y > entrance_y:
-                    in_id_list.append(track_id)
-                if prev_center[track_id][1] >= entrance_y and \
-                   center_y < entrance_y:
-                    out_id_list.append(track_id)
+                if region_type == 'horizontal':
+                    # horizontal center line
+                    if prev_center[track_id][1] <= entrance_y and \
+                    center_y > entrance_y:
+                        in_id_list.append(track_id)
+                    if prev_center[track_id][1] >= entrance_y and \
+                    center_y < entrance_y:
+                        out_id_list.append(track_id)
+                else:
+                    # vertical center line
+                    if prev_center[track_id][0] <= entrance_x and \
+                    center_x > entrance_x:
+                        in_id_list.append(track_id)
+                    if prev_center[track_id][0] >= entrance_x and \
+                    center_x < entrance_x:
+                        out_id_list.append(track_id)
                 prev_center[track_id][0] = center_x
                 prev_center[track_id][1] = center_y
             else:
                 prev_center[track_id] = [center_x, center_y]
-    # Count totol number, number at a manual-setting interval
+
+    if do_break_in_counting:
+        assert region_type in [
+            'custom'
+        ], "region_type should be 'custom' when do break_in counting."
+        assert len(
+            entrance
+        ) >= 4, "entrance should be at least 3 points and (w,h) of image when do break_in counting."
+        im_w, im_h = entrance[-1][:]
+        entrance = np.array(entrance[:-1])
+
+        frame_id, tlwhs, tscores, track_ids = result
+        for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
+            if track_id < 0: continue
+            if data_type == 'kitti':
+                frame_id -= 1
+            x1, y1, w, h = tlwh
+            center_x = min(x1 + w / 2., im_w - 1)
+            center_down_y = min(y1 + h, im_h - 1)
+
+            # counting objects in region of the first frame
+            if frame_id == 1:
+                if in_quadrangle([center_x, center_down_y], entrance, im_h,
+                                 im_w):
+                    in_id_list.append(-1)
+                else:
+                    prev_center[track_id] = [center_x, center_down_y]
+            else:
+                if track_id in prev_center:
+                    if not in_quadrangle(prev_center[track_id], entrance, im_h,
+                                         im_w) and in_quadrangle(
+                                             [center_x, center_down_y],
+                                             entrance, im_h, im_w):
+                        in_id_list.append(track_id)
+                    prev_center[track_id] = [center_x, center_down_y]
+                else:
+                    prev_center[track_id] = [center_x, center_down_y]
+
+# Count totol number, number at a manual-setting interval
     frame_id, tlwhs, tscores, track_ids = result
     for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
         if track_id < 0: continue
@@ -268,6 +315,8 @@ def flow_statistic(result,
     if do_entrance_counting:
         info += ", In count: {}, Out count: {}".format(
             len(in_id_list), len(out_id_list))
+    if do_break_in_counting:
+        info += ", Break_in count: {}".format(len(in_id_list))
     if frame_id % video_fps == 0 and frame_id / video_fps % secs_interval == 0:
         info += ", Count during {} secs: {}".format(secs_interval,
                                                     curr_interval_count)
@@ -282,5 +331,15 @@ def flow_statistic(result,
         "in_id_list": in_id_list,
         "out_id_list": out_id_list,
         "prev_center": prev_center,
-        "records": records
+        "records": records,
     }
+
+
+def in_quadrangle(point, entrance, im_h, im_w):
+    mask = np.zeros((im_h, im_w, 1), np.uint8)
+    cv2.fillPoly(mask, [entrance], 255)
+    p = tuple(map(int, point))
+    if mask[p[1], p[0], :] > 0:
+        return True
+    else:
+        return False
