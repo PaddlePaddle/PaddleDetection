@@ -168,6 +168,45 @@ class Pipeline(object):
             self.predictor.run(self.input)
 
 
+def get_model_dir(cfg):
+    # auto download inference model
+    model_dir_dict = {}
+    for key in cfg.keys():
+        if type(cfg[key]) ==  dict and \
+            ("enable" in cfg[key].keys() and cfg[key]['enable']
+                or "enable" not in cfg[key].keys()):
+
+            if "model_dir" in cfg[key].keys():
+                model_dir = cfg[key]["model_dir"]
+                downloaded_model_dir = auto_download_model(model_dir)
+                if downloaded_model_dir:
+                    model_dir = downloaded_model_dir
+                model_dir_dict[key] = model_dir
+                print(key, " model dir:", model_dir)
+            elif key == "VEHICLE_PLATE":
+                det_model_dir = cfg[key]["det_model_dir"]
+                downloaded_det_model_dir = auto_download_model(det_model_dir)
+                if downloaded_det_model_dir:
+                    det_model_dir = downloaded_det_model_dir
+                model_dir_dict["det_model_dir"] = det_model_dir
+                print("det_model_dir model dir:", det_model_dir)
+
+                rec_model_dir = cfg[key]["rec_model_dir"]
+                downloaded_rec_model_dir = auto_download_model(rec_model_dir)
+                if downloaded_rec_model_dir:
+                    rec_model_dir = downloaded_rec_model_dir
+                model_dir_dict["rec_model_dir"] = rec_model_dir
+                print("rec_model_dir model dir:", rec_model_dir)
+        elif key == "MOT":  # for idbased and skeletonbased actions
+            model_dir = cfg[key]["model_dir"]
+            downloaded_model_dir = auto_download_model(model_dir)
+            if downloaded_model_dir:
+                model_dir = downloaded_model_dir
+            model_dir_dict[key] = model_dir
+
+    return model_dir_dict
+
+
 class PipePredictor(object):
     """
     Predictor in single camera
@@ -295,35 +334,7 @@ class PipePredictor(object):
         self.collector = DataCollector()
 
         # auto download inference model
-        model_dir_dict = {}
-        for key in self.cfg.keys():
-            if type(self.cfg[key]) ==  dict and \
-                ("enable" in self.cfg[key].keys() and self.cfg[key]['enable']
-                    or "enable" not in self.cfg[key].keys()):
-
-                if "model_dir" in self.cfg[key].keys():
-                    model_dir = self.cfg[key]["model_dir"]
-                    downloaded_model_dir = auto_download_model(model_dir)
-                    if downloaded_model_dir:
-                        model_dir = downloaded_model_dir
-                    model_dir_dict[key] = model_dir
-                    print(key, " model dir:", model_dir)
-                elif "VEHICLE_PLATE" == key:
-                    det_model_dir = self.cfg[key]["det_model_dir"]
-                    downloaded_det_model_dir = auto_download_model(
-                        det_model_dir)
-                    if downloaded_det_model_dir:
-                        det_model_dir = downloaded_det_model_dir
-                    model_dir_dict["det_model_dir"] = det_model_dir
-                    print("det_model_dir model dir:", det_model_dir)
-
-                    rec_model_dir = self.cfg[key]["rec_model_dir"]
-                    downloaded_rec_model_dir = auto_download_model(
-                        rec_model_dir)
-                    if downloaded_rec_model_dir:
-                        rec_model_dir = downloaded_rec_model_dir
-                    model_dir_dict["rec_model_dir"] = rec_model_dir
-                    print("rec_model_dir model dir:", rec_model_dir)
+        model_dir_dict = get_model_dir(self.cfg)
 
         if not is_video:
             det_cfg = self.cfg['DET']
