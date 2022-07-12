@@ -21,7 +21,16 @@
 
 打架（暴力行为）视频3956个，非打架（非暴力行为）视频3501个，共7457个视频，每个视频几秒钟。
 
+本项目为大家整理了前5个数据集，下载链接：[https://aistudio.baidu.com/aistudio/datasetdetail/149085](https://aistudio.baidu.com/aistudio/datasetdetail/149085)。
+
 ### 视频抽帧
+
+首先下载PaddleVideo代码：
+```bash
+git clone https://github.com/PaddlePaddle/PaddleVideo.git
+```
+
+假设PaddleVideo源码路径为PaddleVideo_root。
 
 为了加快训练速度，将视频进行抽帧。下面命令会根据视频的帧率FPS进行抽帧，如FPS=30，则每秒视频会抽取30帧图像。
 
@@ -29,7 +38,7 @@
 cd ${PaddleVideo_root}
 python data/ucf101/extract_rawframes.py dataset/ rawframes/ --level 2 --ext mp4
 ```
-其中，视频存放在`dataset`目录下，打架（暴力）视频存放在`dataset/fight`中；非打架（非暴力）视频存放在`dataset/nofight`中。`rawframes`目录存放抽取的视频帧。
+其中，假设视频已经存放在了`dataset`目录下，如果是其他路径请对应修改。打架（暴力）视频存放在`dataset/fight`中；非打架（非暴力）视频存放在`dataset/nofight`中。`rawframes`目录存放抽取的视频帧。
 
 ### 训练集和验证集划分
 
@@ -43,12 +52,12 @@ python split_fight_train_test_dataset.py "rawframes" 2 0.8
 
 参数说明：“rawframes”为视频帧存放的文件夹；2表示目录结构为两级，第二级表示每个行为对应的子文件夹；0.8表示训练集比例。
 
-其中`split_fight_train_test_dataset.py`文件在`deploy/pipeline/tools`路径下。
+其中`split_fight_train_test_dataset.py`文件在PaddleDetection中的`deploy/pipeline/tools`路径下。
 
 执行完命令后会最终生成fight_train_list.txt和fight_val_list.txt两个文件。打架的标签为1，非打架的标签为0。
 
 ### 视频裁剪
-对于未裁剪的视频，需要先进行裁剪才能用于模型训练，`deploy/pipeline/tools/clip_video.py`中给出了视频裁剪的函数`cut_video`，输入为视频路径，裁剪的起始帧和结束帧以及裁剪后的视频保存路径。
+对于未裁剪的视频，如UBI Abnormal Event Detection Dataset数据集，需要先进行裁剪才能用于模型训练，`deploy/pipeline/tools/clip_video.py`中给出了视频裁剪的函数`cut_video`，输入为视频路径，裁剪的起始帧和结束帧以及裁剪后的视频保存路径。
 
 
 ## 模型优化
