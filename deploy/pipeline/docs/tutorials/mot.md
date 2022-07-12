@@ -69,58 +69,12 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 **注意:**
  - `--do_break_in_counting`表示是否进行区域出入后计数，不设置即默认为False。
  - `--region_type`表示流量计数的区域，当设置`--do_break_in_counting`时仅可选择`custom`，默认是`custom`，表示以用户自定义区域为出入口，同一物体框的下边界中点坐标在相邻两秒内从区域外到区域内，即完成计数加一。
- - `--region_polygon`表示用户自定义区域的多边形的点坐标序列，每两个为一对点坐标(x,y坐标)，至少需要3对点也即6个整数，默认值是`[]`，需要用户自行设置点坐标。用户可以运行[此段代码](../../tools/get_video_info.py)获取所测视频的分辨率帧数，以及可以自定义画出自己想要的多边形区域的可视化并自己调整。
- 自定义多边形区域的可视化代码如下：
+ - `--region_polygon`表示用户自定义区域的多边形的点坐标序列，每两个为一对点坐标(x,y坐标),按顺时针顺序连成一个封闭区域，至少需要3对点也即6个整数，默认值是`[]`，需要用户自行设置点坐标。用户可以运行[此段代码](../../tools/get_video_info.py)获取所测视频的分辨率帧数，以及可以自定义画出自己想要的多边形区域的可视化并自己调整。运行方式如下：``` ```
+ 自定义多边形区域的可视化代码运行如下：
   <details>
 
   ```python
-  import os
-  import sys
-  import cv2
-  import numpy as np
-
-  video_file = 'demo.mp4'
-  region_polygon = [
-      [200, 200],
-      [400, 200],
-      [300, 400],
-      [100, 400],
-  ] # modify by yourself, at least 3 pairs of points
-  region_polygon = np.array(region_polygon)
-
-  if not os.path.exists(video_file):
-      print("video path '{}' not exists".format(video_file))
-      sys.exit(-1)
-  capture = cv2.VideoCapture(video_file)
-  width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-  height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-  print("video width: %d, height: %d" % (width, height))
-  np_masks = np.zeros((height, width, 1), np.uint8)
-  cv2.fillPoly(np_masks, [region_polygon], 255)
-
-  fps = int(capture.get(cv2.CAP_PROP_FPS))
-  frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-  print("video fps: %d, frame_count: %d" % (fps, frame_count))
-  cnt = 0
-  while (1):
-      ret, frame = capture.read()
-      cnt += 1
-      if cnt == 3: break
-
-  alpha = 0.3
-  img = np.array(frame).astype('float32')
-  mask = np_masks[:, :, 0]
-  color_mask = [0, 0, 255]
-  idx = np.nonzero(mask)
-  color_mask = np.array(color_mask)
-  img[idx[0], idx[1], :] *= 1.0 - alpha
-  img[idx[0], idx[1], :] += alpha * color_mask
-  cv2.imwrite('region_vis.jpg', img)
-
-  points_info = 'Your region_polygon points are:'
-  for p in region_polygon:
-      points_info += ' {} {}'.format(p[0], p[1])
-  ```
+  python3.7 get_video_info.py --video_file=demo.mp4 --region_polygon 200 200 400 200 300 400 100 400
 
   </details>
 
