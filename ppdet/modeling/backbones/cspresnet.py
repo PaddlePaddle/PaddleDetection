@@ -302,7 +302,7 @@ class CSPResNet(nn.Layer):
         x = self.stem(x)
         outs = []
         for idx, stage in enumerate(self.stages):
-            if self.use_checkpoint:
+            if self.use_checkpoint and self.training:
                 x = paddle.distributed.fleet.utils.recompute(
                     stage, x, **{"preserve_rng_state": True})
             else:
