@@ -21,6 +21,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
+from paddle.nn.initializer import Constant
 
 from ppdet.modeling.ops import get_act_fn
 from ppdet.core.workspace import register, serializable
@@ -65,7 +66,7 @@ class ConvBNLayer(nn.Layer):
 
 
 class RepVggBlock(nn.Layer):
-    def __init__(self, ch_in, ch_out, act='relu'):
+    def __init__(self, ch_in, ch_out, act='relu', alpha=False):
         super(RepVggBlock, self).__init__()
         self.ch_in = ch_in
         self.ch_out = ch_out
@@ -75,12 +76,22 @@ class RepVggBlock(nn.Layer):
             ch_in, ch_out, 1, stride=1, padding=0, act=None)
         self.act = get_act_fn(act) if act is None or isinstance(act, (
             str, dict)) else act
+        if alpha:
+            self.alpha = self.create_parameter(
+                shape=[1],
+                attr=ParamAttr(initializer=Constant(value=1.)),
+                dtype="float32")
+        else:
+            self.alpha = None
 
     def forward(self, x):
         if hasattr(self, 'conv'):
             y = self.conv(x)
         else:
-            y = self.conv1(x) + self.conv2(x)
+            if self.alpha:
+                y = self.conv1(x) + self.alpha * self.conv2(x)
+            else:
+                y = self.conv1(x) + self.conv2(x)
         y = self.act(y)
         return y
 
@@ -102,8 +113,12 @@ class RepVggBlock(nn.Layer):
     def get_equivalent_kernel_bias(self):
         kernel3x3, bias3x3 = self._fuse_bn_tensor(self.conv1)
         kernel1x1, bias1x1 = self._fuse_bn_tensor(self.conv2)
-        return kernel3x3 + self._pad_1x1_to_3x3_tensor(
-            kernel1x1), bias3x3 + bias1x1
+        if self.alpha:
+            return kernel3x3 + self.alpha * self._pad_1x1_to_3x3_tensor(
+                kernel1x1), bias3x3 + self.alpha * bias1x1
+        else:
+            return kernel3x3 + self._pad_1x1_to_3x3_tensor(
+                kernel1x1), bias3x3 + bias1x1
 
     def _pad_1x1_to_3x3_tensor(self, kernel1x1):
         if kernel1x1 is None:
@@ -216,8 +231,11 @@ class CSPResNet(nn.Layer):
                  use_large_stem=False,
                  width_mult=1.0,
                  depth_mult=1.0,
-                 trt=False):
+                 trt=False,
+                 use_checkpoint=False,
+                 **args):
         super(CSPResNet, self).__init__()
+        self.use_checkpoint = use_checkpoint
         channels = [max(round(c * width_mult), 1) for c in channels]
         layers = [max(round(l * depth_mult), 1) for l in layers]
         act = get_act_fn(
@@ -259,7 +277,7 @@ class CSPResNet(nn.Layer):
                                       for i in range(n)])
 
         self._out_channels = channels[1:]
-        self._out_strides = [4, 8, 16, 32]
+        self._out_strides = [4 * 2**i for i in range(n)]
         self.return_idx = return_idx
 
     def forward(self, inputs):
@@ -267,7 +285,13 @@ class CSPResNet(nn.Layer):
         x = self.stem(x)
         outs = []
         for idx, stage in enumerate(self.stages):
-            x = stage(x)
+            if self.use_checkpoint:
+                # for checkpoint
+                paddle.seed(0)
+                x = paddle.distributed.fleet.utils.recompute(
+                    stage, x, **{"preserve_rng_state": True})
+            else:
+                x = stage(x)
             if idx in self.return_idx:
                 outs.append(x)
 
