@@ -69,7 +69,12 @@ bounding_box_train.txt文件内为所有训练图片名称（相对于根路径�
 
 ### 修改配置开始训练
 
-该任务的训练功能集成在[PaddleClas](https://github.com/PaddlePaddle/PaddleClas)套件中。
+首先执行以下命令下载训练代码（更多环境问题请参考[Install_PaddleClas](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/en/installation/install_paddleclas_en.md)）:
+
+```shell
+git clone https://github.com/PaddlePaddle/PaddleClas
+```
+
 
 需要在配置文件[softmax_triplet_with_center.yaml](https://github.com/PaddlePaddle/PaddleClas/blob/develop/ppcls/configs/reid/strong_baseline/softmax_triplet_with_center.yaml)中，修改的配置项如下：
 
@@ -141,7 +146,7 @@ python3 tools/export_model.py \
     -o Global.save_inference_dir=deploy/models/strong_baseline_inference
 ```
 
-导出模型后，然后将PP-Human中提供的部署模型[REID模型](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip)中的infer_cfg.yml文件拷贝到新导出的模型文件夹'strong_baseline_inference'中。
+导出模型后，下载[infer_cfg.yml](https://bj.bcebos.com/v1/paddledet/models/pipeline/REID/infer_cfg.yml)文件到新导出的模型文件夹'strong_baseline_inference'中。
 
 使用时在PP-Human中的配置文件infer_cfg_pphuman.yml中修改模型路径`model_dir`并开启功能`enable`。
 ```

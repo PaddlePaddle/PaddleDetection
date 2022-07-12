@@ -78,7 +78,7 @@ train.txt文件内为所有训练图片名称（相对于根路径的文件路�
 
 ### 修改配置开始训练
 
-首先执行以下命令下载训练代码：
+首先执行以下命令下载训练代码（更多环境问题请参考[Install_PaddleClas](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/en/installation/install_paddleclas_en.md)）:
 
 ```shell
 git clone https://github.com/PaddlePaddle/PaddleClas
