@@ -155,6 +155,14 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 1: 其他
 ```
 
+## 基于检测的行为识别——闯入识别
+
+具体使用请参照[PP-Human检测跟踪模块](mot.md)的`5. 区域闯入判断和计数`。
+
+### 方案说明
+1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)。
+2. 通过行人检测框的下边界中点在相邻帧位于用户所选区域的内外位置，来识别是否闯入所选区域。
+
 
 ## 基于视频分类的行为识别——打架识别
 

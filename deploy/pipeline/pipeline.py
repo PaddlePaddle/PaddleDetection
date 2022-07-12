@@ -110,8 +110,8 @@ class Pipeline(object):
         self.secs_interval = args.secs_interval
         self.do_entrance_counting = args.do_entrance_counting
         self.do_break_in_counting = args.do_break_in_counting
-        self.area_type = args.area_type
-        self.area_polygon = args.area_polygon
+        self.region_type = args.region_type
+        self.region_polygon = args.region_polygon
 
     def _parse_input(self, image_file, image_dir, video_file, video_dir,
                      camera_id):
@@ -224,8 +224,8 @@ class PipePredictor(object):
         secs_interval = args.secs_interval
         do_entrance_counting = args.do_entrance_counting
         do_break_in_counting = args.do_break_in_counting
-        area_type = args.area_type
-        area_polygon = args.area_polygon
+        region_type = args.region_type
+        region_polygon = args.region_polygon
 
         # general module for pphuman and ppvehicle
         self.with_mot = cfg.get('MOT', False)['enable'] if cfg.get(
@@ -292,8 +292,8 @@ class PipePredictor(object):
         self.secs_interval = secs_interval
         self.do_entrance_counting = do_entrance_counting
         self.do_break_in_counting = do_break_in_counting
-        self.area_type = area_type
-        self.area_polygon = area_polygon
+        self.region_type = region_type
+        self.region_polygon = region_polygon
 
         self.warmup_frame = self.cfg['warmup_frame']
         self.pipeline_res = Result()
@@ -477,8 +477,8 @@ class PipePredictor(object):
                     secs_interval=secs_interval,
                     do_entrance_counting=do_entrance_counting,
                     do_break_in_counting=do_break_in_counting,
-                    area_type=area_type,
-                    area_polygon=area_polygon)
+                    region_type=region_type,
+                    region_polygon=region_polygon)
 
             if self.with_video_action:
                 video_action_cfg = self.cfg['VIDEO_ACTION']
@@ -628,15 +628,22 @@ class PipePredictor(object):
         prev_center = dict()
         records = list()
         if self.do_entrance_counting or self.do_break_in_counting:
-            if self.area_type == 'horizontal':
+            if self.region_type == 'horizontal':
                 entrance = [0, height / 2., width, height / 2.]
-            elif self.area_type == 'vertical':
+            elif self.region_type == 'vertical':
                 entrance = [width / 2, 0., width / 2, height]
-            elif self.area_type == 'custom':
-                entrance = self.area_polygon[:]
+            elif self.region_type == 'custom':
+                entrance = []
+                assert len(
+                    self.region_polygon
+                ) % 2 == 0, "region_polygon should be pairs of coords points when do break_in counting."
+                for i in range(0, len(self.region_polygon), 2):
+                    entrance.append(
+                        [self.region_polygon[i], self.region_polygon[i + 1]])
+                entrance.append([width, height])
             else:
-                raise ValueError("area_type:{} unsupported.".format(
-                    self.area_type))
+                raise ValueError("region_type:{} unsupported.".format(
+                    self.region_type))
 
         video_fps = fps
 
@@ -674,7 +681,7 @@ class PipePredictor(object):
                               ids[0])  # single class
                 statistic = flow_statistic(
                     mot_result, self.secs_interval, self.do_entrance_counting,
-                    self.do_break_in_counting, self.area_type, video_fps,
+                    self.do_break_in_counting, self.region_type, video_fps,
                     entrance, id_set, interval_id_set, in_id_list, out_id_list,
                     prev_center, records)
                 records = statistic['records']

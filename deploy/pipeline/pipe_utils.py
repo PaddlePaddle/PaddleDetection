@@ -111,7 +111,7 @@ def argsparser():
         "the area. Note that only support single-class MOT and "
         "the video should be taken by a static camera.")
     parser.add_argument(
-        "--area_type",
+        "--region_type",
         type=str,
         default='horizontal',
         help="Area type for entrance counting or break in counting, 'horizontal' and "
@@ -119,10 +119,10 @@ def argsparser():
         "Note that only support single-class MOT, and the video should be taken by a static camera."
     )
     parser.add_argument(
-        '--area_polygon',
+        '--region_polygon',
         nargs='+',
         type=int,
-        default=[300, 300, 500, 500],
+        default=[900, 300, 1200, 300, 1150, 500, 850, 500],
         help="Clockwise point coords (x0,y0,x1,y1...) of polygon of area when "
         "do_break_in_counting. Note that only support single-class MOT and "
         "the video should be taken by a static camera.")
