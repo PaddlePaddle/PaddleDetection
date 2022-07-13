@@ -31,8 +31,8 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
 
 | 任务            | 适用场景 | 精度 | 预测速度（ms）| 模型体积 | 预测部署模型 |
 | :---------:     |:---------:     |:---------------     | :-------:  |  :------:      | :------:      |
-| 目标检测(高精度) | 图片输入 | mAP: 57.8  | 31.8ms          | 182M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 目标检测(轻量级) | 图片输入 | mAP: 53.2  | 21.0ms          | 27M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
+| 目标检测(高精度) | 图片输入 | mAP: 57.8  | 22.3ms          | 182M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 目标检测(轻量级) | 图片输入 | mAP: 53.2  | 17.8ms          | 27M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
 | 目标跟踪(高精度) | 视频输入 | MOTA: 82.2  | 31.8ms           | 182M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
 | 目标跟踪(轻量级) | 视频输入 | MOTA: 73.9  | 21.0ms           |27M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
 | 属性识别（高精度）    | 图片/视频输入 属性识别  | mA: 95.4 |  单人4.2ms     | 86M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_small_person_attribute_954_infer.zip) |
@@ -51,6 +51,8 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
 
 | 任务            | 端到端速度（ms）|  模型方案  |  模型体积 |
 | :---------:     | :-------:  |  :------: |:------: |
+|  行人检测（高精度）  | 22.3ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |  
+|  行人检测（轻量级）  | 17.8ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | 27M |
 |  行人跟踪（高精度）  | 31.8ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |  
 |  行人跟踪（轻量级）  | 21.0ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | 27M |
 |  属性识别（高精度）  |   单人8.5ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [属性识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) | 目标检测：182M<br>属性识别：86M |
