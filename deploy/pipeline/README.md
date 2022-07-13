@@ -1,4 +1,4 @@
-[English](README_en.md) | 简体中文
+简体中文
 
 # 实时行人分析工具 PP-Human
 
