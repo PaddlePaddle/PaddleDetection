@@ -88,7 +88,7 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
 1. Get the pedestrian detection box and the tracking ID number of the video input through object detection and multi-object tracking. The adopted model is PP-YOLOE, and for details, please refer to [PP-YOLOE](../../../../configs/ppyoloe).
 
 2. Capture every pedestrian in frames of the input video accordingly by using the coordinate of the detection box.
-3. In this strategy, we use the [keypoint detection model](../../../configs/keypoint/hrnet/dark_hrnet_w32_256x192.yml) to obtain 17 skeleton keypoints. Their sequences and types are identical to those of COCO. For details, please refer to the `COCO dataset` part of [how to prepare keypoint datasets](../../../docs/tutorials/PrepareKeypointDataSet_en.md).
+3. In this strategy, we use the [keypoint detection model](../../../../configs/keypoint/hrnet/dark_hrnet_w32_256x192.yml) to obtain 17 skeleton keypoints. Their sequences and types are identical to those of COCO. For details, please refer to the `COCO dataset` part of [how to prepare keypoint datasets](../../../../docs/tutorials/data/PrepareKeypointDataSet_en.md).
 
 4. Each target pedestrian with a tracking ID has their own accumulation of skeleton keypoints, which is used to form a keypoint sequence in time order. When the number of accumulated frames reach a preset threshold or the tracking is lost, the action recognition model will be applied to judging the action type of the time-ordered keypoint sequence. The current model only supports the recognition of the act of falling down, and the relationship between the action type and `class id` is：
 
