@@ -832,7 +832,6 @@ class TTFBox(object):
         # batch size is 1
         scores_r = paddle.reshape(scores, [cat, -1])
         topk_scores, topk_inds = paddle.topk(scores_r, k)
-        topk_scores, topk_inds = paddle.topk(scores_r, k)
         topk_ys = topk_inds // width
         topk_xs = topk_inds % width
 
