@@ -262,7 +262,7 @@ else
                     continue
                 fi
 
-                if [ ${autocast} = "amp" ]; then
+                if [ ${autocast} = "amp" ] || [ ${autocast} = "fp16" ]; then
                     set_autocast="--amp"
                 else
                     set_autocast=" "
