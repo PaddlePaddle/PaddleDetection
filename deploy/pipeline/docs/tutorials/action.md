@@ -93,12 +93,12 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 ### 模型库
 
-基于图像分类的行为识别包含行人检测/跟踪，图像分类两个模型，首先需要下载以下预训练模型
+基于图像分类的行为识别包含行人检测/跟踪，打电话识别两个模型，首先需要下载以下预训练模型
 
 | 任务 | 算法 | 精度 | 预测速度(ms) | 模型权重 | 预测部署模型 |
 |:---------------------|:---------:|:------:|:------:| :------: |:---------------------------------------------------------------------------------: |
 | 行人检测/跟踪 |  PP-YOLOE | mAP: 56.3 <br> MOTA: 72.0 | 检测: 28ms <br> 跟踪：33.1ms |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 基于图像分类的行为识别 | PP-HGNet | 准确率: 86.85 | 单人 2.94ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) |
+| 打电话识别 | PP-HGNet | 准确率: 86.85 | 单人 2.94ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) |
 
 
 注：
@@ -150,12 +150,12 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 </div>
 
 ### 模型库
-在这里，我们提供了检测/跟踪、关键点识别、识别打架、打电话行为、抽烟行为、以及摔倒动作的预训练模型，用户可以直接下载使用。
+在这里，我们提供了行人检测/跟踪、吸烟行为识别的预训练模型，用户可以直接下载使用。
 
 | 任务 | 算法 | 精度 | 预测速度(ms) | 模型权重 | 预测部署模型 |
 |:---------------------|:---------:|:------:|:------:| :------: |:---------------------------------------------------------------------------------: |
 | 行人检测/跟踪 |  PP-YOLOE | mAP: 56.3 <br> MOTA: 72.0 | 检测: 28ms <br> 跟踪：33.1ms |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 基于检测的行为识别 | PP-YOLOE | mAP: 39.7 | 单人 2.0ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip) |
+| 吸烟行为识别 | PP-YOLOE | mAP: 39.7 | 单人 2.0ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip) |
 
 注：
 1. 检测/跟踪模型精度为[MOT17](https://motchallenge.net/)，[CrowdHuman](http://www.crowdhuman.org/)，[HIEVE](http://humaninevents.org/)和部分业务数据融合训练测试得到。
@@ -217,7 +217,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 该方案关注的场景为监控摄像头下的打架行为识别。打架行为涉及多人，基于骨骼点技术的方案更适用于单人的行为识别。此外，打架行为对时序信息依赖较强，基于检测和分类的方案也不太适用。由于监控场景背景复杂，人的密集程度、光线、拍摄角度等都会对识别造成影响，本方案采用基于视频分类的方式判断视频中是否存在打架行为。针对摄像头距离人较远的情况，通过增大输入图像分辨率优化。由于训练数据有限，采用数据增强的方式提升模型的泛化性能。
 
 ### 模型库
-在这里，我们提供了检测/跟踪、关键点识别、识别打架、打电话行为、抽烟行为、以及摔倒动作的预训练模型，用户可以直接下载使用。
+在这里，我们提供了打架识别的预训练模型，用户可以直接下载使用。
 
 | 任务 | 算法 | 精度 | 预测速度(ms) | 模型权重 | 预测部署模型 |
 |:---------------------|:---------:|:------:|:------:| :------: |:---------------------------------------------------------------------------------: |

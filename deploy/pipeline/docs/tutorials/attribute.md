@@ -6,9 +6,9 @@
 
 | 任务                 | 算法 | 精度 | 预测速度(ms) |下载链接                                                                               |
 |:---------------------|:---------:|:------:|:------:| :---------------------------------------------------------------------------------: |
-| 行人属性高精度模型    |  PP-HGNet_small  |  mA: 95.4  | 单人 1.54ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_small_person_attribute_954_infer.tar) |
-| 行人属性轻量级模型    |  PP-LCNet_x1_0  |  mA: 94.5  | 单人 0.54ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.tar) |
-| 行人属性精度与速度均衡模型    |  PP-HGNet_tiny  |  mA: 95.2  | 单人 1.14ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_person_attribute_952_infer.tar) |
+| 行人属性高精度模型    |  PP-HGNet_small  |  mA: 95.4  | 单人 1.54ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_small_person_attribute_954_infer.zip) |
+| 行人属性轻量级模型    |  PP-LCNet_x1_0  |  mA: 94.5  | 单人 0.54ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.zip) |
+| 行人属性精度与速度均衡模型    |  PP-HGNet_tiny  |  mA: 95.2  | 单人 1.14ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_person_attribute_952_infer.zip) |
 
 1. 行人属性分析精度为[PA100k](https://github.com/xh-liu/HydraPlus-Net#pa-100k-dataset)，[RAPv2](http://www.rapdataset.com/rapv2.html)，[PETA](http://mmlab.ie.cuhk.edu.hk/projects/PETA.html)和部分业务数据融合训练测试得到
 2. 预测速度为V100 机器上使用TensorRT FP16时的速度, 该处测速速度为模型预测速度
