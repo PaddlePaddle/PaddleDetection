@@ -67,6 +67,8 @@ class Trainer(object):
         self.mode = mode.lower()
         self.optimizer = None
         self.is_loaded_weights = False
+        self.use_amp = self.cfg.get('amp', False)
+        self.amp_level = self.cfg.get('amp_level', 'O1')
 
         # build data loader
         capital_mode = self.mode.capitalize()
@@ -126,17 +128,6 @@ class Trainer(object):
         else:
             self.model.load_meanstd(cfg['TestReader']['sample_transforms'])
 
-        self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
-        if self.use_ema:
-            ema_decay = self.cfg.get('ema_decay', 0.9998)
-            cycle_epoch = self.cfg.get('cycle_epoch', -1)
-            ema_decay_type = self.cfg.get('ema_decay_type', 'threshold')
-            self.ema = ModelEMA(
-                self.model,
-                decay=ema_decay,
-                ema_decay_type=ema_decay_type,
-                cycle_epoch=cycle_epoch)
-
         # EvalDataset build with BatchSampler to evaluate in single device
         # TODO: multi-device evaluate
         if self.mode == 'eval':
@@ -163,6 +154,20 @@ class Trainer(object):
             if self.cfg.get('unstructured_prune'):
                 self.pruner = create('UnstructuredPruner')(self.model,
                                                            steps_per_epoch)
+
+        if self.use_amp and self.amp_level == 'O2':
+            self.model = paddle.amp.decorate(
+                models=self.model, level=self.amp_level)
+        self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
+        if self.use_ema:
+            ema_decay = self.cfg.get('ema_decay', 0.9998)
+            cycle_epoch = self.cfg.get('cycle_epoch', -1)
+            ema_decay_type = self.cfg.get('ema_decay_type', 'threshold')
+            self.ema = ModelEMA(
+                self.model,
+                decay=ema_decay,
+                ema_decay_type=ema_decay_type,
+                cycle_epoch=cycle_epoch)
 
         self._nranks = dist.get_world_size()
         self._local_rank = dist.get_rank()
@@ -389,13 +394,10 @@ class Trainer(object):
             model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
         # enabel auto mixed precision mode
-        use_amp = self.cfg.get('amp', False)
-        amp_level = self.cfg.get('amp_level', 'O1')
-        if use_amp:
+        if self.use_amp:
             scaler = paddle.amp.GradScaler(
                 enable=self.cfg.use_gpu or self.cfg.use_npu,
                 init_loss_scaling=self.cfg.get('init_loss_scaling', 1024))
-            model = paddle.amp.decorate(models=model, level=amp_level)
         # get distributed model
         if self.cfg.get('fleet', False):
             model = fleet.distributed_model(model)
@@ -448,7 +450,7 @@ class Trainer(object):
                             model, paddle.
                             DataParallel) and use_fused_allreduce_gradients:
                         with model.no_sync():
-                            with amp.auto_cast(
+                            with paddle.amp.auto_cast(
                                     enable=self.cfg.use_gpus, level=amp_level):
                                 # model forward
                                 outputs = model(data)
@@ -460,7 +462,7 @@ class Trainer(object):
                         fused_allreduce_gradients(
                             list(model.parameters()), None)
                     else:
-                        with amp.auto_cast(
+                        with paddle.amp.auto_cast(
                                 enable=self.cfg.use_gpu, level=amp_level):
                             # model forward
                             outputs = model(data)
@@ -570,7 +572,12 @@ class Trainer(object):
             self.status['step_id'] = step_id
             self._compose_callback.on_step_begin(self.status)
             # forward
-            outs = self.model(data)
+            if self.use_amp:
+                with paddle.amp.auto_cast(
+                        enable=self.cfg.use_gpu, level=self.amp_level):
+                    outs = self.model(data)
+            else:
+                outs = self.model(data)
 
             # update metrics
             for metric in self._metrics:

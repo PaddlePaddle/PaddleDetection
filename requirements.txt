@@ -10,8 +10,11 @@ Cython
 pycocotools
 #xtcocotools==1.6 #only for crowdpose
 setuptools>=42.0.0
+pyclipper
+
+# for mot
 lap
 sklearn
 motmetrics
 openpyxl
-pyclipper
+filterpy

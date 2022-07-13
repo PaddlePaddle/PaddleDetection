@@ -1,0 +1,54 @@
+_BASE_: [
+  '../runtime.yml',
+  '../ppyoloe/_base_/optimizer_300e.yml',
+  '../ppyoloe/_base_/ppyoloe_crn.yml',
+  '../ppyoloe/_base_/ppyoloe_reader.yml',
+]
+
+log_iter: 100
+snapshot_epoch: 10
+weights: output/ppyoloe_crn_s_80e_smoking_visdrone/model_final
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_80e_visdrone.pdparams
+depth_mult: 0.33
+width_mult: 0.50
+
+TrainReader:
+  batch_size: 16
+
+LearningRate:
+  base_lr: 0.01
+
+epoch: 80
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+    - !CosineDecay
+      max_epochs: 80
+    - !LinearWarmup
+      start_factor: 0.
+      epochs: 1
+
+PPYOLOEHead:
+  static_assigner_epoch: -1
+
+metric: COCO
+num_classes: 1
+
+TrainDataset:
+  !COCODataSet
+    image_dir: ""
+    anno_path: smoking_train_cocoformat.json
+    dataset_dir: dataset/smoking
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: ""
+    anno_path: smoking_test_cocoformat.json
+    dataset_dir: dataset/smoking
+
+TestDataset:
+  !ImageFolder
+    anno_path: smoking_test_cocoformat.json
+    dataset_dir: dataset/smoking

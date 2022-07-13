@@ -14,7 +14,7 @@
 
 ## 使用方法
 
-1. 从上表链接中下载模型并解压到```./output_inference```路径下
+1. 从上表链接中下载模型并解压到```./output_inference```路径下，并修改配置文件中模型路径。默认为自动下载模型，无需做改动。
 2. 图片输入时，是纯检测任务，启动命令如下
 ```python
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
@@ -35,14 +35,16 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
+                                                   --region_type=horizontal \
                                                    --do_entrance_counting \
                                                    --draw_center_traj \
                                                    --model_dir det=ppyoloe/
 
 ```
 **注意:**
- - `--do_entrance_counting`表示是否统计出入口流量，不设置即默认为False
+ - `--do_entrance_counting`表示是否统计出入口流量，不设置即默认为False。
  - `--draw_center_traj`表示是否绘制跟踪轨迹，不设置即默认为False。注意绘制跟踪轨迹的测试视频最好是静止摄像头拍摄的。
+ - `--region_type`表示流量计数的区域，当设置`--do_entrance_counting`时可选择`horizontal`或者`vertical`，默认是`horizontal`，表示以视频图片的中心水平线为出入口，同一物体框的中心点在相邻两秒内分别在区域中心水平线的两侧，即完成计数加一。
 
 测试效果如下：
 
@@ -52,10 +54,34 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 数据来源及版权归属：天覆科技，感谢提供并开源实际场景数据，仅限学术研究使用
 
+5. 区域闯入判断和计数
+
+注意首先设置infer_cfg_pphuman.yml中的MOT配置的enable=True，然后启动命令如下
+```python
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
+                                                   --video_file=test_video.mp4 \
+                                                   --device=gpu \
+                                                   --draw_center_traj \
+                                                   --do_break_in_counting \
+                                                   --region_type=custom \
+                                                   --region_polygon 200 200 400 200 300 400 100 400
+```
+**注意:**
+ - `--do_break_in_counting`表示是否进行区域出入后计数，不设置即默认为False。
+ - `--region_type`表示流量计数的区域，当设置`--do_break_in_counting`时仅可选择`custom`，默认是`custom`，表示以用户自定义区域为出入口，同一物体框的下边界中点坐标在相邻两秒内从区域外到区域内，即完成计数加一。
+ - `--region_polygon`表示用户自定义区域的多边形的点坐标序列，每两个为一对点坐标(x,y坐标),按顺时针顺序连成一个封闭区域，至少需要3对点也即6个整数，默认值是`[]`，需要用户自行设置点坐标。用户可以运行[此段代码](../../tools/get_video_info.py)获取所测视频的分辨率帧数，以及可以自定义画出自己想要的多边形区域的可视化并自己调整。运行方式如下：``` ```
+ 自定义多边形区域的可视化代码运行如下：
+  <details>
+
+  ```python
+  python3.7 get_video_info.py --video_file=demo.mp4 --region_polygon 200 200 400 200 300 400 100 400
+
+  </details>
+
 ## 方案说明
 
 1. 目标检测/多目标跟踪获取图片/视频输入中的行人检测框，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/)
-2. 多目标跟踪模型方案基于[ByteTrack](https://arxiv.org/pdf/2110.06864.pdf)，采用PP-YOLOE替换原文的YOLOX作为检测器，采用BYTETracker作为跟踪器，详细文档参考[ByteTrack](../../../../configs/mot/bytetrack)
+2. 多目标跟踪模型方案采用[ByteTrack](https://arxiv.org/pdf/2110.06864.pdf)和[OC-SORT](https://arxiv.org/pdf/2203.14360.pdf)，采用PP-YOLOE替换原文的YOLOX作为检测器，采用BYTETracker和OCSORTTracker作为跟踪器，详细文档参考[ByteTrack](../../../../configs/mot/bytetrack)和[OC-SORT](../../../../configs/mot/ocsort)
 
 ## 参考文献
 ```
@@ -64,5 +90,12 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
   author={Zhang, Yifu and Sun, Peize and Jiang, Yi and Yu, Dongdong and Yuan, Zehuan and Luo, Ping and Liu, Wenyu and Wang, Xinggang},
   journal={arXiv preprint arXiv:2110.06864},
   year={2021}
+}
+
+@article{cao2022observation,
+  title={Observation-Centric SORT: Rethinking SORT for Robust Multi-Object Tracking},
+  author={Cao, Jinkun and Weng, Xinshuo and Khirodkar, Rawal and Pang, Jiangmiao and Kitani, Kris},
+  journal={arXiv preprint arXiv:2203.14360},
+  year={2022}
 }
 ```

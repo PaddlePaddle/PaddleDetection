@@ -2,7 +2,7 @@
 # The tracker of MOT JDE Detector (such as FairMOT) is exported together with the model.
 # Here 'min_box_area' and 'vertical_ratio' are set for pedestrian, you can modify for other objects tracking.
 
-type: JDETracker # 'JDETracker' or 'DeepSORTTracker'
+type: OCSORTTracker # choose one tracker in ['JDETracker', 'OCSORTTracker', 'DeepSORTTracker']
 
 # BYTETracker
 JDETracker:
@@ -13,6 +13,19 @@ JDETracker:
   match_thres: 0.9
   min_box_area: 0
   vertical_ratio: 0 # 1.6 for pedestrian
+
+
+OCSORTTracker:
+  det_thresh: 0.4
+  max_age: 30
+  min_hits: 3
+  iou_threshold: 0.3
+  delta_t: 3
+  inertia: 0.2
+  min_box_area: 0
+  vertical_ratio: 0
+  use_byte: False
+
 
 DeepSORTTracker:
   input_size: [64, 192]

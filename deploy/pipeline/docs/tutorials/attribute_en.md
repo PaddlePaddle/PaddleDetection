@@ -6,37 +6,62 @@ Pedestrian attribute recognition has been widely used in the intelligent communi
 
 | Task                 | Algorithm | Precision | Inference Speed(ms) | Download Link                                                                               |
 |:---------------------|:---------:|:------:|:------:| :---------------------------------------------------------------------------------: |
-| High-Precision Model    |  PP-HGNet_small  |  mA: 95.4  | per person 1.54ms | [Download](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.tar) |
+| High-Precision Model    |  PP-HGNet_small  |  mA: 95.4  | per person 1.54ms | [Download](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_small_person_attribute_954_infer.tar) |
 | Fast Model    |  PP-LCNet_x1_0  |  mA: 94.5  | per person 0.54ms | [Download](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.tar) |
 | Balanced Model    |  PP-HGNet_tiny  |  mA: 95.2  | per person 1.14ms | [Download](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_person_attribute_952_infer.tar) |
 
 1. The precision of pedestiran attribute analysis is obtained by training and testing on the dataset consist of [PA100k](https://github.com/xh-liu/HydraPlus-Net#pa-100k-dataset)，[RAPv2](http://www.rapdataset.com/rapv2.html)，[PETA](http://mmlab.ie.cuhk.edu.hk/projects/PETA.html) and some business data.
 2. The inference speed is V100, the speed of using TensorRT FP16.
+3. This model of Attribute is based on the result of tracking, please download tracking model in the [Page of Mot](./mot_en.md). The High precision and Faster model are both available.
+4. You should place the model unziped in the directory of `PaddleDetection/output_inference/`.
 
 ## Instruction
 
 1. Download the model from the link in the above table, and unzip it to```./output_inference```, and set the "enable: True" in ATTR of infer_cfg_pphuman.yml
-2. When inputting the image, run the command as follows:
+
+The meaning of configs of `infer_cfg_pphuman.yml`：
+```
+ATTR:                                                                     #module name
+  model_dir: output_inference/PPLCNet_x1_0_person_attribute_945_infer/    #model path
+  batch_size: 8                                                           #maxmum batchsize when inference
+  basemode: "idbased"                                                     #the routing type of pipeline，'idbased' means this model is based on tracking.
+  enable: False                                                           #whether to enable this model
+```
+
+2. When inputting the image, run the command as follows (please refer to [QUICK_STARTED-Parameters](./QUICK_STARTED.md#41-参数说明) for more details):
 ```python
+#single image
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --image_file=test_image.jpg \
                                                    --device=gpu \
+
+#image directory
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
+                                                   --image_dir=images/ \
+                                                   --device=gpu \
+
 ```
 3. When inputting the video, run the command as follows:
 ```python
+#a single video file
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
+                                                   --device=gpu \
+
+#directory of videos
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
+                                                   --video_dir=test_videos/ \
                                                    --device=gpu \
 ```
 4. If you want to change the model path, there are two methods：
 
-    - In ```./deploy/pipeline/config/infer_cfg_pphuman.yml``` you can configurate different model paths. In attribute recognition models, you can modify the configuration in the field of ATTR.
-    - Add `--model_dir` in the command line to change the model path：
+    - The first: In ```./deploy/pipeline/config/infer_cfg_pphuman.yml``` you can configurate different model paths. In attribute recognition models, you can modify the configuration in the field of ATTR.
+    - The second: Add `--model_dir` in the command line to change the model path：
 ```python
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
-                                                   --model_dir det=ppyoloe/
+                                                   --model_dir attr=output_inference/PPLCNet_x1_0_person_attribute_945_infer/
 ```
 
 The test result is：

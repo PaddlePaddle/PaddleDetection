@@ -57,7 +57,7 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
 * [快速开始](docs/tutorials/action.md)
   * 摔倒检测
   * 打架识别
-* [二次开发教程](../../docs/advanced_tutorials/customization/action.md)
+* [二次开发教程](../../docs/advanced_tutorials/customization/action_recognotion/README.md)
   * 方案选择
   * 数据准备
   * 模型优化
@@ -70,9 +70,12 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
   * 数据准备
   * 模型优化
 
-### 人流量计数与轨迹记录
+### 行人跟踪、人流量计数与轨迹记录
 
 * [快速开始](docs/tutorials/mot.md)
+  * 行人跟踪
+  * 人流量计数与轨迹记录
+  * 区域闯入判断和计数
 * [二次开发教程](../../docs/advanced_tutorials/customization/mot.md)
   * 数据准备
   * 模型优化

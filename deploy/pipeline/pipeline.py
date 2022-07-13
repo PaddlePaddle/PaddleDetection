@@ -51,6 +51,8 @@ from pphuman.mtmct import mtmct_process
 from ppvehicle.vehicle_plate import PlateRecognizer
 from ppvehicle.vehicle_attr import VehicleAttr
 
+from download import auto_download_model
+
 
 class Pipeline(object):
     """
@@ -109,6 +111,13 @@ class Pipeline(object):
         self.draw_center_traj = args.draw_center_traj
         self.secs_interval = args.secs_interval
         self.do_entrance_counting = args.do_entrance_counting
+        self.do_break_in_counting = args.do_break_in_counting
+        self.region_type = args.region_type
+        self.region_polygon = args.region_polygon
+        if self.region_type == 'custom':
+            assert len(
+                self.region_polygon
+            ) > 6, 'region_type is custom, region_polygon should be at least 3 pairs of point coords.'
 
     def _parse_input(self, image_file, image_dir, video_file, video_dir,
                      camera_id):
@@ -166,6 +175,45 @@ class Pipeline(object):
             self.predictor.run(self.input)
 
 
+def get_model_dir(cfg):
+    # auto download inference model
+    model_dir_dict = {}
+    for key in cfg.keys():
+        if type(cfg[key]) ==  dict and \
+            ("enable" in cfg[key].keys() and cfg[key]['enable']
+                or "enable" not in cfg[key].keys()):
+
+            if "model_dir" in cfg[key].keys():
+                model_dir = cfg[key]["model_dir"]
+                downloaded_model_dir = auto_download_model(model_dir)
+                if downloaded_model_dir:
+                    model_dir = downloaded_model_dir
+                model_dir_dict[key] = model_dir
+                print(key, " model dir:", model_dir)
+            elif key == "VEHICLE_PLATE":
+                det_model_dir = cfg[key]["det_model_dir"]
+                downloaded_det_model_dir = auto_download_model(det_model_dir)
+                if downloaded_det_model_dir:
+                    det_model_dir = downloaded_det_model_dir
+                model_dir_dict["det_model_dir"] = det_model_dir
+                print("det_model_dir model dir:", det_model_dir)
+
+                rec_model_dir = cfg[key]["rec_model_dir"]
+                downloaded_rec_model_dir = auto_download_model(rec_model_dir)
+                if downloaded_rec_model_dir:
+                    rec_model_dir = downloaded_rec_model_dir
+                model_dir_dict["rec_model_dir"] = rec_model_dir
+                print("rec_model_dir model dir:", rec_model_dir)
+        elif key == "MOT":  # for idbased and skeletonbased actions
+            model_dir = cfg[key]["model_dir"]
+            downloaded_model_dir = auto_download_model(model_dir)
+            if downloaded_model_dir:
+                model_dir = downloaded_model_dir
+            model_dir_dict[key] = model_dir
+
+    return model_dir_dict
+
+
 class PipePredictor(object):
     """
     Predictor in single camera
@@ -220,6 +268,9 @@ class PipePredictor(object):
         draw_center_traj = args.draw_center_traj
         secs_interval = args.secs_interval
         do_entrance_counting = args.do_entrance_counting
+        do_break_in_counting = args.do_break_in_counting
+        region_type = args.region_type
+        region_polygon = args.region_polygon
 
         # general module for pphuman and ppvehicle
         self.with_mot = cfg.get('MOT', False)['enable'] if cfg.get(
@@ -285,6 +336,9 @@ class PipePredictor(object):
         self.draw_center_traj = draw_center_traj
         self.secs_interval = secs_interval
         self.do_entrance_counting = do_entrance_counting
+        self.do_break_in_counting = do_break_in_counting
+        self.region_type = region_type
+        self.region_polygon = region_polygon
 
         self.warmup_frame = self.cfg['warmup_frame']
         self.pipeline_res = Result()
@@ -292,9 +346,12 @@ class PipePredictor(object):
         self.file_name = None
         self.collector = DataCollector()
 
+        # auto download inference model
+        model_dir_dict = get_model_dir(self.cfg)
+
         if not is_video:
             det_cfg = self.cfg['DET']
-            model_dir = det_cfg['model_dir']
+            model_dir = model_dir_dict['DET']
             batch_size = det_cfg['batch_size']
             self.det_predictor = Detector(
                 model_dir, device, run_mode, batch_size, trt_min_shape,
@@ -302,7 +359,7 @@ class PipePredictor(object):
                 enable_mkldnn)
             if self.with_human_attr:
                 attr_cfg = self.cfg['ATTR']
-                model_dir = attr_cfg['model_dir']
+                model_dir = model_dir_dict['ATTR']
                 batch_size = attr_cfg['batch_size']
                 basemode = attr_cfg['basemode']
                 self.modebase[basemode] = True
@@ -313,7 +370,7 @@ class PipePredictor(object):
 
             if self.with_vehicle_attr:
                 vehicleattr_cfg = self.cfg['VEHICLE_ATTR']
-                model_dir = vehicleattr_cfg['model_dir']
+                model_dir = model_dir_dict['VEHICLE_ATTR']
                 batch_size = vehicleattr_cfg['batch_size']
                 color_threshold = vehicleattr_cfg['color_threshold']
                 type_threshold = vehicleattr_cfg['type_threshold']
@@ -327,7 +384,7 @@ class PipePredictor(object):
         else:
             if self.with_human_attr:
                 attr_cfg = self.cfg['ATTR']
-                model_dir = attr_cfg['model_dir']
+                model_dir = model_dir_dict['ATTR']
                 batch_size = attr_cfg['batch_size']
                 basemode = attr_cfg['basemode']
                 self.modebase[basemode] = True
@@ -337,12 +394,14 @@ class PipePredictor(object):
                     enable_mkldnn)
             if self.with_idbased_detaction:
                 idbased_detaction_cfg = self.cfg['ID_BASED_DETACTION']
-                model_dir = idbased_detaction_cfg['model_dir']
+                model_dir = model_dir_dict['ID_BASED_DETACTION']
                 batch_size = idbased_detaction_cfg['batch_size']
                 basemode = idbased_detaction_cfg['basemode']
                 threshold = idbased_detaction_cfg['threshold']
                 display_frames = idbased_detaction_cfg['display_frames']
+                skip_frame_num = idbased_detaction_cfg['skip_frame_num']
                 self.modebase[basemode] = True
+
                 self.det_action_predictor = DetActionRecognizer(
                     model_dir,
                     device,
@@ -355,17 +414,20 @@ class PipePredictor(object):
                     cpu_threads,
                     enable_mkldnn,
                     threshold=threshold,
-                    display_frames=display_frames)
+                    display_frames=display_frames,
+                    skip_frame_num=skip_frame_num)
                 self.det_action_visual_helper = ActionVisualHelper(1)
 
             if self.with_idbased_clsaction:
                 idbased_clsaction_cfg = self.cfg['ID_BASED_CLSACTION']
-                model_dir = idbased_clsaction_cfg['model_dir']
+                model_dir = model_dir_dict['ID_BASED_CLSACTION']
                 batch_size = idbased_clsaction_cfg['batch_size']
                 basemode = idbased_clsaction_cfg['basemode']
                 threshold = idbased_clsaction_cfg['threshold']
                 self.modebase[basemode] = True
                 display_frames = idbased_clsaction_cfg['display_frames']
+                skip_frame_num = idbased_clsaction_cfg['skip_frame_num']
+
                 self.cls_action_predictor = ClsActionRecognizer(
                     model_dir,
                     device,
@@ -378,12 +440,13 @@ class PipePredictor(object):
                     cpu_threads,
                     enable_mkldnn,
                     threshold=threshold,
-                    display_frames=display_frames)
+                    display_frames=display_frames,
+                    skip_frame_num=skip_frame_num)
                 self.cls_action_visual_helper = ActionVisualHelper(1)
 
             if self.with_skeleton_action:
                 skeleton_action_cfg = self.cfg['SKELETON_ACTION']
-                skeleton_action_model_dir = skeleton_action_cfg['model_dir']
+                skeleton_action_model_dir = model_dir_dict['SKELETON_ACTION']
                 skeleton_action_batch_size = skeleton_action_cfg['batch_size']
                 skeleton_action_frames = skeleton_action_cfg['max_frames']
                 display_frames = skeleton_action_cfg['display_frames']
@@ -408,7 +471,7 @@ class PipePredictor(object):
 
                 if self.modebase["skeletonbased"]:
                     kpt_cfg = self.cfg['KPT']
-                    kpt_model_dir = kpt_cfg['model_dir']
+                    kpt_model_dir = model_dir_dict['KPT']
                     kpt_batch_size = kpt_cfg['batch_size']
                     self.kpt_predictor = KeyPointDetector(
                         kpt_model_dir,
@@ -433,7 +496,7 @@ class PipePredictor(object):
 
             if self.with_vehicle_attr:
                 vehicleattr_cfg = self.cfg['VEHICLE_ATTR']
-                model_dir = vehicleattr_cfg['model_dir']
+                model_dir = model_dir_dict['VEHICLE_ATTR']
                 batch_size = vehicleattr_cfg['batch_size']
                 color_threshold = vehicleattr_cfg['color_threshold']
                 type_threshold = vehicleattr_cfg['type_threshold']
@@ -444,10 +507,21 @@ class PipePredictor(object):
                     trt_max_shape, trt_opt_shape, trt_calib_mode, cpu_threads,
                     enable_mkldnn, color_threshold, type_threshold)
 
+            if self.with_mtmct:
+                reid_cfg = self.cfg['REID']
+                model_dir = model_dir_dict['REID']
+                batch_size = reid_cfg['batch_size']
+                basemode = reid_cfg['basemode']
+                self.modebase[basemode] = True
+                self.reid_predictor = ReID(
+                    model_dir, device, run_mode, batch_size, trt_min_shape,
+                    trt_max_shape, trt_opt_shape, trt_calib_mode, cpu_threads,
+                    enable_mkldnn)
+
             if self.with_mot or self.modebase["idbased"] or self.modebase[
                     "skeletonbased"]:
                 mot_cfg = self.cfg['MOT']
-                model_dir = mot_cfg['model_dir']
+                model_dir = model_dir_dict['MOT']
                 tracker_config = mot_cfg['tracker_config']
                 batch_size = mot_cfg['batch_size']
                 basemode = mot_cfg['basemode']
@@ -466,7 +540,10 @@ class PipePredictor(object):
                     enable_mkldnn,
                     draw_center_traj=draw_center_traj,
                     secs_interval=secs_interval,
-                    do_entrance_counting=do_entrance_counting)
+                    do_entrance_counting=do_entrance_counting,
+                    do_break_in_counting=do_break_in_counting,
+                    region_type=region_type,
+                    region_polygon=region_polygon)
 
             if self.with_video_action:
                 video_action_cfg = self.cfg['VIDEO_ACTION']
@@ -474,7 +551,7 @@ class PipePredictor(object):
                 basemode = video_action_cfg['basemode']
                 self.modebase[basemode] = True
 
-                video_action_model_dir = video_action_cfg['model_dir']
+                video_action_model_dir = model_dir_dict['VIDEO_ACTION']
                 video_action_batch_size = video_action_cfg['batch_size']
                 short_size = video_action_cfg["short_size"]
                 target_size = video_action_cfg["target_size"]
@@ -492,15 +569,6 @@ class PipePredictor(object):
                     trt_calib_mode=trt_calib_mode,
                     cpu_threads=cpu_threads,
                     enable_mkldnn=enable_mkldnn)
-
-            if self.with_mtmct:
-                reid_cfg = self.cfg['REID']
-                model_dir = reid_cfg['model_dir']
-                batch_size = reid_cfg['batch_size']
-                self.reid_predictor = ReID(
-                    model_dir, device, run_mode, batch_size, trt_min_shape,
-                    trt_max_shape, trt_opt_shape, trt_calib_mode, cpu_threads,
-                    enable_mkldnn)
 
     def set_file_name(self, path):
         if path is not None:
@@ -615,7 +683,24 @@ class PipePredictor(object):
         out_id_list = list()
         prev_center = dict()
         records = list()
-        entrance = [0, height / 2., width, height / 2.]
+        if self.do_entrance_counting or self.do_break_in_counting:
+            if self.region_type == 'horizontal':
+                entrance = [0, height / 2., width, height / 2.]
+            elif self.region_type == 'vertical':
+                entrance = [width / 2, 0., width / 2, height]
+            elif self.region_type == 'custom':
+                entrance = []
+                assert len(
+                    self.region_polygon
+                ) % 2 == 0, "region_polygon should be pairs of coords points when do break_in counting."
+                for i in range(0, len(self.region_polygon), 2):
+                    entrance.append(
+                        [self.region_polygon[i], self.region_polygon[i + 1]])
+                entrance.append([width, height])
+            else:
+                raise ValueError("region_type:{} unsupported.".format(
+                    self.region_type))
+
         video_fps = fps
 
         video_action_imgs = []
@@ -652,8 +737,9 @@ class PipePredictor(object):
                               ids[0])  # single class
                 statistic = flow_statistic(
                     mot_result, self.secs_interval, self.do_entrance_counting,
-                    video_fps, entrance, id_set, interval_id_set, in_id_list,
-                    out_id_list, prev_center, records)
+                    self.do_break_in_counting, self.region_type, video_fps,
+                    entrance, id_set, interval_id_set, in_id_list, out_id_list,
+                    prev_center, records)
                 records = statistic['records']
 
                 # nothing detected
@@ -881,6 +967,7 @@ class PipePredictor(object):
                 frame_id=frame_id,
                 fps=fps,
                 do_entrance_counting=self.do_entrance_counting,
+                do_break_in_counting=self.do_break_in_counting,
                 entrance=entrance,
                 records=records,
                 center_traj=center_traj)

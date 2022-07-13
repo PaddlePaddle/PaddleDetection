@@ -33,6 +33,7 @@
   <center>数据来源及版权归属：天覆科技，感谢提供并开源实际场景数据，仅限学术研究使用</center>
 </div>
 
+
 ### 配置说明
 [配置文件](../../config/infer_cfg_pphuman.yml)中与行为识别相关的参数如下：
 ```
@@ -47,7 +48,7 @@ SKELETON_ACTION: # 基于骨骼点的行为识别模型配置
 ```
 
 ### 使用方法
-1. 从上表链接中下载模型并解压到```./output_inference```路径下。
+1. 从`模型库`中下载`行人检测/跟踪`、`关键点识别`、`摔倒行为识别`三个预测部署模型并解压到```./output_inference```路径下;默认自动下载模型，如果手动下载，需要修改模型文件夹为模型存放路径。
 2. 目前行为识别模块仅支持视频输入，根据期望开启的行为识别方案类型，设置infer_cfg_pphuman.yml中`SKELETON_ACTION`的enable: True, 然后启动命令如下：
 ```python
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
@@ -64,6 +65,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
                                                    --device=gpu \
                                                    --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
 ```
+4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
+
 
 ### 方案说明
 1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)。
@@ -97,14 +100,15 @@ ID_BASED_CLSACTION: # 基于分类的行为识别模型配置
 ```
 
 ### 使用方法
-1. 从上表链接中下载预测部署模型并解压到`./output_inference`路径下；
+1. 从`模型库`中下载`行人检测/跟踪`、`打电话行为识别`两个预测部署模型并解压到`./output_inference`路径下；默认自动下载模型，如果手动下载，需要修改模型文件夹为模型存放路径。
 2. 修改配置文件`deploy/pipeline/config/infer_cfg_pphuman.yml`中`ID_BASED_CLSACTION`下的`enable`为`True`；
-3. 输入视频，启动命令如下：
+3. 仅支持输入视频，启动命令如下：
 ```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu
 ```
+4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
 
 ### 方案说明
 1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)。
@@ -137,14 +141,15 @@ ID_BASED_DETACTION: # 基于检测的行为识别模型配置
 ```
 
 ### 使用方法
-1. 从上表链接中下载预测部署模型并解压到`./output_inference`路径下；
+1. 从`模型库`中下载`行人检测/跟踪`、`抽烟行为识别`两个预测部署模型并解压到`./output_inference`路径下；默认自动下载模型，如果手动下载，需要修改模型文件夹为模型存放路径。
 2. 修改配置文件`deploy/pipeline/config/infer_cfg_pphuman.yml`中`ID_BASED_DETACTION`下的`enable`为`True`；
-3. 输入视频，启动命令如下：
+3. 仅支持输入视频，启动命令如下：
 ```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu
 ```
+4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
 
 ### 方案说明
 1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)。
@@ -154,6 +159,14 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 0: 吸烟，
 1: 其他
 ```
+
+## 基于检测的行为识别——闯入识别
+
+具体使用请参照[PP-Human检测跟踪模块](mot.md)的`5. 区域闯入判断和计数`。
+
+### 方案说明
+1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)。
+2. 通过行人检测框的下边界中点在相邻帧位于用户所选区域的内外位置，来识别是否闯入所选区域。
 
 
 ## 基于视频分类的行为识别——打架识别
@@ -183,14 +196,15 @@ VIDEO_ACTION:  # 基于视频分类的行为识别模型配置
 ```
 
 ### 使用方法
-1. 从上表链接中下载预测部署模型并解压到`./output_inference`路径下；
+1. 从上表链接中下载`打架识别`任务的预测部署模型并解压到`./output_inference`路径下；默认自动下载模型，如果手动下载，需要修改模型文件夹为模型存放路径。
 2. 修改配置文件`deploy/pphuman/config/infer_cfg_pphuman.yml`中`VIDEO_ACTION`下的`enable`为`True`；
-3. 输入视频，启动命令如下：
+3. 仅支持输入视频，启动命令如下：
 ```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu
 ```
+4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
 
 测试效果如下：
 
@@ -206,14 +220,14 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 ## 自定义模型训练
 我们已经提供了检测/跟踪、关键点识别以及识别摔倒、吸烟、打电话以及打架的预训练模型，可直接下载使用。如果希望使用自定义场景数据训练，或是对模型进行优化，根据具体模型，分别参考下面的链接：
-| 任务 | 算法 | 模型训练及导出文档 |
+| 任务 | 算法 | 模型开发文档 |
 | ---- | ---- | -------- |
 | 行人检测/跟踪 | PP-YOLOE | [使用教程](../../../../configs/ppyoloe/README_cn.md#使用教程) |
 | 关键点识别 | HRNet | [使用教程](../../../../configs/keypoint#3训练与测试) |
-| 行为识别（摔倒）|  ST-GCN  | [使用教程](https://github.com/PaddlePaddle/PaddleVideo/tree/develop/applications/PPHuman) |
-| 行为识别（吸烟）|  PP-YOLOE  | [使用教程](../../../../docs/advanced_tutorials/customization/action.md) |
-| 行为识别（打电话）|  PP-HGNet  | [使用教程](../../../../docs/advanced_tutorials/customization/action.md) |
-| 行为识别 （打架）| PP-TSM | [使用教程](../../../../docs/advanced_tutorials/customization/action.md)
+| 行为识别（摔倒）|  ST-GCN  | [使用教程](../../../../docs/advanced_tutorials/customization/action_recognotion/skeletonbased_rec.md) |
+| 行为识别（吸烟）|  PP-YOLOE  | [使用教程](../../../../docs/advanced_tutorials/customization/action_recognotion/idbased_det.md) |
+| 行为识别（打电话）|  PP-HGNet  | [使用教程](../../../../docs/advanced_tutorials/customization/action_recognotion/idbased_clas.md) |
+| 行为识别 （打架）| PP-TSM | [使用教程](../../../../docs/advanced_tutorials/customization/action_recognotion/videobased_rec.md)
 
 
 ## 参考文献
