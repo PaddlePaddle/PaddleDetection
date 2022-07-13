@@ -68,7 +68,7 @@
 
   <div align="center">
   <img src="https://user-images.githubusercontent.com/48054808/157800129-2f9a0b72-6bb8-4b10-8310-93ab1639253f.jpg"  width = "200" />  
-  <img src="https://user-images.githubusercontent.com/48054808/160531099-9811bbe6-cfbb-47d5-8bdb-c2b40684d7dd.png"  width = "200" />  
+  <img src="https://user-images.githubusercontent.com/34162360/177678712-4655747d-4290-4ad9-b7a1-4564a5418ac6.jpg"  width = "200" />  
   </div>
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157827140-03ffaff7-7d14-48b4-9440-c38986ea378c.png" width="20"/> 套件结构概览
@@ -283,28 +283,28 @@
 
 #### [PP-YOLOE](./configs/ppyoloe)系列 推荐场景：Nvidia V100, T4等云端GPU和Jetson系列等边缘端设备
 
-| 模型名称       | COCO精度（mAP） | V100 TensorRT FP16速度(FPS) | 配置文件                                                  | 模型下载                                                                                 |
-|:---------- |:-----------:|:-------------------------:|:-----------------------------------------------------:|:------------------------------------------------------------------------------------:|
-| PP-YOLOE-s | 42.7        | 333.3                     | [链接](configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml)     | [下载地址](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams)      |
-| PP-YOLOE-m | 48.6        | 208.3                     | [链接](configs/ppyolo/ppyolo_r50vd_dcn_2x_coco.yml)     | [下载地址](https://paddledet.bj.bcebos.com/models/ppyolo_r50vd_dcn_2x_coco.pdparams)     |
-| PP-YOLOE-l | 50.9        | 149.2                     | [链接](configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams) |
-| PP-YOLOE-x | 51.9        | 95.2                      | [链接](configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams) |
+| 模型名称       | COCO精度（mAP） | V100 TensorRT FP16速度(FPS) |                   配置文件                   |                   模型下载                   |
+| :--------- | :---------: | :-----------------------: | :--------------------------------------: | :--------------------------------------: |
+| PP-YOLOE-s |    42.7     |           333.3           | [链接](configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams) |
+| PP-YOLOE-m |    48.6     |           208.3           | [链接](configs/ppyolo/ppyolo_r50vd_dcn_2x_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/ppyolo_r50vd_dcn_2x_coco.pdparams) |
+| PP-YOLOE-l |    50.9     |           149.2           | [链接](configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams) |
+| PP-YOLOE-x |    51.9     |           95.2            | [链接](configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams) |
 
 #### [PP-PicoDet](./configs/picodet)系列 推荐场景：ARM CPU(RK3399, 树莓派等) 和NPU(比特大陆，晶晨等)移动端芯片和x86 CPU设备
 
-| 模型名称       | COCO精度（mAP） | 骁龙865 四线程速度(ms) | 配置文件                                                | 模型下载                                                                              |
-|:---------- |:-----------:|:---------------:|:---------------------------------------------------:|:---------------------------------------------------------------------------------:|
-| PicoDet-XS | 23.5        | 7.81            | [链接](configs/picodet/picodet_xs_320_coco_lcnet.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/picodet_xs_320_coco_lcnet.pdparams) |
-| PicoDet-S  | 29.1        | 9.56            | [链接](configs/picodet/picodet_s_320_coco_lcnet.yml)  | [下载地址](https://paddledet.bj.bcebos.com/models/picodet_s_320_coco_lcnet.pdparams)  |
-| PicoDet-M  | 34.4        | 17.68           | [链接](configs/picodet/picodet_m_320_coco_lcnet.yml)  | [下载地址](https://paddledet.bj.bcebos.com/models/picodet_m_320_coco_lcnet.pdparams)  |
-| PicoDet-L  | 36.1        | 25.21           | [链接](configs/picodet/picodet_l_320_coco_lcnet.yml)  | [下载地址](https://paddledet.bj.bcebos.com/models/picodet_l_320_coco_lcnet.pdparams)  |
+| 模型名称       | COCO精度（mAP） | 骁龙865 四线程速度(ms) |                   配置文件                   |                   模型下载                   |
+| :--------- | :---------: | :-------------: | :--------------------------------------: | :--------------------------------------: |
+| PicoDet-XS |    23.5     |      7.81       | [链接](configs/picodet/picodet_xs_320_coco_lcnet.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/picodet_xs_320_coco_lcnet.pdparams) |
+| PicoDet-S  |    29.1     |      9.56       | [链接](configs/picodet/picodet_s_320_coco_lcnet.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/picodet_s_320_coco_lcnet.pdparams) |
+| PicoDet-M  |    34.4     |      17.68      | [链接](configs/picodet/picodet_m_320_coco_lcnet.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/picodet_m_320_coco_lcnet.pdparams) |
+| PicoDet-L  |    36.1     |      25.21      | [链接](configs/picodet/picodet_l_320_coco_lcnet.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/picodet_l_320_coco_lcnet.pdparams) |
 
 #### 前沿检测算法
 
-| 模型名称                                                               | COCO精度（mAP） | V100 TensorRT FP16速度(FPS) | 配置文件                                                                                                         | 模型下载                                                                       |
-|:------------------------------------------------------------------ |:-----------:|:-------------------------:|:------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------:|
-| [YOLOX-l](configs/yolox)                                           | 50.1        | 107.5                     | [链接](configs/yolox/yolox_l_300e_coco.yml)                                                                    | [下载地址](https://paddledet.bj.bcebos.com/models/yolox_l_300e_coco.pdparams)  |
-| [YOLOv5-l](https://github.com/nemonameless/PaddleDetection_YOLOv5) | 48.6        | 136.0                     | [链接](https://github.com/nemonameless/PaddleDetection_YOLOv5/blob/main/configs/yolov5/yolov5_l_300e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/yolov5_l_300e_coco.pdparams) |
+| 模型名称                                     | COCO精度（mAP） | V100 TensorRT FP16速度(FPS) |                   配置文件                   |                   模型下载                   |
+| :--------------------------------------- | :---------: | :-----------------------: | :--------------------------------------: | :--------------------------------------: |
+| [YOLOX-l](configs/yolox)                 |    50.1     |           107.5           | [链接](configs/yolox/yolox_l_300e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/yolox_l_300e_coco.pdparams) |
+| [YOLOv5-l](https://github.com/nemonameless/PaddleDetection_YOLOv5) |    48.6     |           136.0           | [链接](https://github.com/nemonameless/PaddleDetection_YOLOv5/blob/main/configs/yolov5/yolov5_l_300e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/yolov5_l_300e_coco.pdparams) |
 
 #### 其他通用检测模型 [文档链接](docs/MODEL_ZOO_cn.md)
 
@@ -313,23 +313,23 @@
 <details>
 <summary><b> 2. 实例分割</b></summary>
 
-| 模型名称              | 模型简介         | 推荐场景 | COCO精度(mAP)                      | 配置文件                                                                  | 模型下载                                                                                              |
-|:----------------- |:------------ |:---- |:--------------------------------:|:---------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------:|
-| Mask RCNN         | 两阶段实例分割算法    | 云边端  | box AP: 41.4 <br/> mask AP: 37.5 | [链接](configs/mask_rcnn/mask_rcnn_r50_vd_fpn_2x_coco.yml)              | [下载地址](https://paddledet.bj.bcebos.com/models/mask_rcnn_r50_vd_fpn_2x_coco.pdparams)              |
+| 模型名称              | 模型简介         | 推荐场景 |           COCO精度(mAP)            |                   配置文件                   |                   模型下载                   |
+| :---------------- | :----------- | :--- | :------------------------------: | :--------------------------------------: | :--------------------------------------: |
+| Mask RCNN         | 两阶段实例分割算法    | 云边端  | box AP: 41.4 <br/> mask AP: 37.5 | [链接](configs/mask_rcnn/mask_rcnn_r50_vd_fpn_2x_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/mask_rcnn_r50_vd_fpn_2x_coco.pdparams) |
 | Cascade Mask RCNN | 两阶段实例分割算法    | 云边端  | box AP: 45.7 <br/> mask AP: 39.7 | [链接](configs/mask_rcnn/cascade_mask_rcnn_r50_vd_fpn_ssld_2x_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/cascade_mask_rcnn_r50_vd_fpn_ssld_2x_coco.pdparams) |
-| SOLOv2            | 轻量级单阶段实例分割算法 | 云边端  | mask AP: 38.0                    | [链接](configs/solov2/solov2_r50_fpn_3x_coco.yml)                       | [下载地址](https://paddledet.bj.bcebos.com/models/solov2_r50_fpn_3x_coco.pdparams)                    |
+| SOLOv2            | 轻量级单阶段实例分割算法 | 云边端  |          mask AP: 38.0           | [链接](configs/solov2/solov2_r50_fpn_3x_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/solov2_r50_fpn_3x_coco.pdparams) |
 
 </details>
 
 <details>
 <summary><b> 3. 关键点检测</b></summary>
 
-| 模型名称                                        | 模型简介                                                             | 推荐场景                               | COCO精度（AP） | 速度                      | 配置文件                                                    | 模型下载                                                                                    |
-|:------------------------------------------- |:---------------------------------------------------------------- |:---------------------------------- |:----------:|:-----------------------:|:-------------------------------------------------------:|:---------------------------------------------------------------------------------------:|
-| HRNet-w32 + DarkPose                        | <div style="width: 130pt">top-down 关键点检测算法<br/>输入尺寸384x288</div> | <div style="width: 50pt">云边端</div> | 78.3       | T4 TensorRT FP16 2.96ms | [链接](configs/keypoint/hrnet/dark_hrnet_w32_384x288.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/keypoint/dark_hrnet_w32_384x288.pdparams) |
-| HRNet-w32 + DarkPose                        | top-down 关键点检测算法<br/>输入尺寸256x192                                 | 云边端                                | 78.0       | T4 TensorRT FP16 1.75ms | [链接](configs/keypoint/hrnet/dark_hrnet_w32_256x192.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/keypoint/dark_hrnet_w32_256x192.pdparams) |
-| [PP-TinyPose](./configs/keypoint/tiny_pose) | 轻量级关键点算法<br/>输入尺寸256x192                                         | 移动端                                | 68.8       | 骁龙865 四线程 6.30ms        | [链接](configs/keypoint/tiny_pose/tinypose_256x192.yml)   | [下载地址](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams)    |
-| [PP-TinyPose](./configs/keypoint/tiny_pose) | 轻量级关键点算法<br/>输入尺寸128x96                                          | 移动端                                | 58.1       | 骁龙865 四线程 2.37ms        | [链接](configs/keypoint/tiny_pose/tinypose_128x96.yml)    | [下载地址](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams)     |
+| 模型名称                                     | 模型简介                                     | 推荐场景                               | COCO精度（AP） |           速度            |                   配置文件                   |                   模型下载                   |
+| :--------------------------------------- | :--------------------------------------- | :--------------------------------- | :--------: | :---------------------: | :--------------------------------------: | :--------------------------------------: |
+| HRNet-w32 + DarkPose                     | <div style="width: 130pt">top-down 关键点检测算法<br/>输入尺寸384x288</div> | <div style="width: 50pt">云边端</div> |    78.3    | T4 TensorRT FP16 2.96ms | [链接](configs/keypoint/hrnet/dark_hrnet_w32_384x288.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/keypoint/dark_hrnet_w32_384x288.pdparams) |
+| HRNet-w32 + DarkPose                     | top-down 关键点检测算法<br/>输入尺寸256x192         | 云边端                                |    78.0    | T4 TensorRT FP16 1.75ms | [链接](configs/keypoint/hrnet/dark_hrnet_w32_256x192.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/keypoint/dark_hrnet_w32_256x192.pdparams) |
+| [PP-TinyPose](./configs/keypoint/tiny_pose) | 轻量级关键点算法<br/>输入尺寸256x192                 | 移动端                                |    68.8    |    骁龙865 四线程 6.30ms     | [链接](configs/keypoint/tiny_pose/tinypose_256x192.yml) | [下载地址](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) |
+| [PP-TinyPose](./configs/keypoint/tiny_pose) | 轻量级关键点算法<br/>输入尺寸128x96                  | 移动端                                |    58.1    |    骁龙865 四线程 2.37ms     | [链接](configs/keypoint/tiny_pose/tinypose_128x96.yml) | [下载地址](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) |
 
 #### 其他关键点检测模型 [文档链接](configs/keypoint)
 
@@ -338,12 +338,12 @@
 <details>
 <summary><b> 4. 多目标跟踪PP-Tracking </b></summary>
 
-| 模型名称      | 模型简介                     | 推荐场景                               | 精度                     | 配置文件                                                                  | 模型下载                                                                                              |
-|:--------- |:------------------------ |:---------------------------------- |:----------------------:|:---------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------:|
-| DeepSORT  | SDE多目标跟踪算法 检测、ReID模型相互独立 | <div style="width: 50pt">云边端</div> | MOT-17 half val:  66.9 | [链接](configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid.yml)        | [下载地址](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)    |
+| 模型名称      | 模型简介                     | 推荐场景                               |           精度           |                   配置文件                   |                   模型下载                   |
+| :-------- | :----------------------- | :--------------------------------- | :--------------------: | :--------------------------------------: | :--------------------------------------: |
+| DeepSORT  | SDE多目标跟踪算法 检测、ReID模型相互独立 | <div style="width: 50pt">云边端</div> | MOT-17 half val:  66.9 | [链接](configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams) |
 | ByteTrack | SDE多目标跟踪算法 仅包含检测模型       | 云边端                                | MOT-17 half val:  77.3 | [链接](configs/mot/bytetrack/detector/yolox_x_24e_800x1440_mix_det.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/mot/deepsort/yolox_x_24e_800x1440_mix_det.pdparams) |
-| JDE       | JDE多目标跟踪算法 多任务联合学习方法     | 云边端                                | MOT-16 test: 64.6      | [链接](configs/mot/jde/jde_darknet53_30e_1088x608.yml)                  | [下载地址](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)            |
-| FairMOT   | JDE多目标跟踪算法 多任务联合学习方法     | 云边端                                | MOT-16 test: 75.0      | [链接](configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml)              | [下载地址](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams)            |
+| JDE       | JDE多目标跟踪算法 多任务联合学习方法     | 云边端                                |   MOT-16 test: 64.6    | [链接](configs/mot/jde/jde_darknet53_30e_1088x608.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams) |
+| FairMOT   | JDE多目标跟踪算法 多任务联合学习方法     | 云边端                                |   MOT-16 test: 75.0    | [链接](configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) |
 
 #### 其他多目标跟踪模型 [文档链接](configs/mot)
 
@@ -353,16 +353,16 @@
 <summary><b> 5. 产业级实时行人分析工具</b></summary>
 
 
-| 功能\模型                     | 目标检测                                                                                   | 多目标跟踪                                                                                  | 属性识别                                                                                      | 关键点检测                                                                                     | 行为识别                                                              | ReID                                                                   |
-|:------------------------- |:-------------------------------------------------------------------------------------- |:-------------------------------------------------------------------------------------- |:-----------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------:|:-----------------------------------------------------------------:|:----------------------------------------------------------------------:|
-| 行人检测                      | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                        |                                                                                           |                                                                                           |                                                                   |                                                                        |
-| 行人跟踪                      |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                           |                                                                                           |                                                                   |                                                                        |
-| 属性识别（图片）                  | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |                                                                                           |                                                                   |                                                                        |
-| 属性识别（视频）                  |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                           |                                                                                           |                                                                   |                                                                        |
-| 摔倒检测                      |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                           | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |                                                                        |
-| 跨镜跟踪                      |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                           |                                                                                           |                                                                   | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
-| **模型精度**                  | **mAP 56.3**                                                                           | **MOTA 72.0**                                                                          | **mA 94.86**                                                                              | **AP 87.1**                                                                               | **AP 96.43**                                                      | **mAP 98.8**                                                           |
-| **T4 TensorRT FP16 预测速度** | **28.0ms**                                                                             | **33.1ms**                                                                             | **单人2ms**                                                                                 | **单人2.9ms**                                                                               | **单人2.7ms**                                                       | **单人1.5ms**                                                            |
+| 功能\模型                     | 目标检测                                     | 多目标跟踪                                    |                   属性识别                   |                  关键点检测                   |                   行为识别                   |                   ReID                   |
+| :------------------------ | :--------------------------------------- | :--------------------------------------- | :--------------------------------------: | :--------------------------------------: | :--------------------------------------: | :--------------------------------------: |
+| 行人检测                      | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                          |                                          |                                          |                                          |                                          |
+| 行人跟踪                      |                                          | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                          |                                          |                                          |                                          |
+| 属性识别（图片）                  | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                          | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |                                          |                                          |                                          |
+| 属性识别（视频）                  |                                          | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                          |                                          |                                          |                                          |
+| 摔倒检测                      |                                          | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                          | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |                                          |
+| 跨镜跟踪                      |                                          | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                          |                                          |                                          | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
+| **模型精度**                  | **mAP 56.3**                             | **MOTA 72.0**                            |               **mA 94.86**               |               **AP 87.1**                |               **AP 96.43**               |               **mAP 98.8**               |
+| **T4 TensorRT FP16 预测速度** | **28.0ms**                               | **33.1ms**                               |                **单人2ms**                 |               **单人2.9ms**                |               **单人2.7ms**                |               **单人1.5ms**                |
 
 
 **点击“ ✅ ”即可下载对应模型**
