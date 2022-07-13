@@ -77,6 +77,12 @@ def parse_args():
         default=False,
         help='Whether to save the evaluation results only')
 
+    parser.add_argument(
+        "--amp",
+        action='store_true',
+        default=False,
+        help="Enable auto mixed precision eval.")
+
     args = parser.parse_args()
     return args
 
