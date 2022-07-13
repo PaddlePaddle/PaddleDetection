@@ -176,7 +176,8 @@ def compute_max_iou_gt(ious):
 def generate_anchors_for_grid_cell(feats,
                                    fpn_strides,
                                    grid_cell_size=5.0,
-                                   grid_cell_offset=0.5):
+                                   grid_cell_offset=0.5,
+                                   dtype='float32'):
     r"""
     Like ATSS, generate anchors based on grid size.
     Args:
@@ -206,16 +207,15 @@ def generate_anchors_for_grid_cell(feats,
                 shift_x - cell_half_size, shift_y - cell_half_size,
                 shift_x + cell_half_size, shift_y + cell_half_size
             ],
-            axis=-1).astype(feat.dtype)
-        anchor_point = paddle.stack(
-            [shift_x, shift_y], axis=-1).astype(feat.dtype)
+            axis=-1).astype(dtype)
+        anchor_point = paddle.stack([shift_x, shift_y], axis=-1).astype(dtype)
 
         anchors.append(anchor.reshape([-1, 4]))
         anchor_points.append(anchor_point.reshape([-1, 2]))
         num_anchors_list.append(len(anchors[-1]))
         stride_tensor.append(
             paddle.full(
-                [num_anchors_list[-1], 1], stride, dtype=feat.dtype))
+                [num_anchors_list[-1], 1], stride, dtype=dtype))
     anchors = paddle.concat(anchors)
     anchors.stop_gradient = True
     anchor_points = paddle.concat(anchor_points)

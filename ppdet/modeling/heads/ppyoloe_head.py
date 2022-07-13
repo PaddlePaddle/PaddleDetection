@@ -160,7 +160,7 @@ class PPYOLOEHead(nn.Layer):
             num_anchors_list, stride_tensor
         ], targets)
 
-    def _generate_anchors(self, feats=None):
+    def _generate_anchors(self, feats=None, dtype='float32'):
         # just use in eval time
         anchor_points = []
         stride_tensor = []
@@ -175,11 +175,9 @@ class PPYOLOEHead(nn.Layer):
             shift_y, shift_x = paddle.meshgrid(shift_y, shift_x)
             anchor_point = paddle.cast(
                 paddle.stack(
-                    [shift_x, shift_y], axis=-1), dtype='float32')
+                    [shift_x, shift_y], axis=-1), dtype=dtype)
             anchor_points.append(anchor_point.reshape([-1, 2]))
-            stride_tensor.append(
-                paddle.full(
-                    [h * w, 1], stride, dtype='float32'))
+            stride_tensor.append(paddle.full([h * w, 1], stride, dtype=dtype))
         anchor_points = paddle.concat(anchor_points)
         stride_tensor = paddle.concat(stride_tensor)
         return anchor_points, stride_tensor
