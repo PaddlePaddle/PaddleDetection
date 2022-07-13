@@ -19,7 +19,9 @@
 ## 模型优化
 
 ### 检测-跟踪模型优化
-在关键点检测中，Top-Down方案的模型效果依赖于前序的检测和跟踪效果，如果实际场景中不能准确检测到行人位置，会使关键点检测部分表现受限。如果在实际使用中遇到了上述问题，请参考[目标检测任务二次开发](./detection.md)以及[多目标跟踪任务二次开发](./mot.md)对检测/跟踪模型进行优化。
+在PaddleDetection中，关键点检测能力支持Top-Down、Bottom-Up两套方案，Top-Down先检测主体，再检测局部关键点，优点是精度较高，缺点是速度会随着检测对象的个数增加，Bottom-Up先检测关键点再组合到对应的部位上，优点是速度快，与检测对象个数无关，缺点是精度较低。关于两种方案的详情及对应模型，可参考[关键点检测系列模型](../../../configs/keypoint/README.md)
+
+当使用Top-Down方案时，模型效果依赖于前序的检测和跟踪效果，如果实际场景中不能准确检测到行人位置，会使关键点检测部分表现受限。如果在实际使用中遇到了上述问题，请参考[目标检测任务二次开发](./detection.md)以及[多目标跟踪任务二次开发](./mot.md)对检测/跟踪模型进行优化。
 
 ### 使用符合场景的数据迭代
 目前发布的关键点检测算法模型主要在`COCO`/ `AI Challenger`等开源数据集上迭代，这部分数据集中可能缺少与实际任务较为相似的监控场景（视角、光照等因素）、体育场景（存在较多非常规的姿态）。使用更符合实际任务场景的数据进行训练，有助于提升模型效果。
@@ -50,7 +52,12 @@ python tools/train.py -c configs/keypoint/hrnet/hrnet_w32_256x192.yml -o pretrai
 
 ### 数据准备
 根据前述说明，完成数据的准备，放置于`{root of PaddleDetection}/dataset`下。
-一个例子为：
+
+<details>
+<summary><b> 标注文件示例</b></summary>
+
+一个标注文件示例如下：
+
 ```
 self_dataset/
 ├── train_coco_joint.json  # 训练集标注文件
@@ -153,9 +160,17 @@ self_dataset/
     ...
 ```
 
+</details>
+
+
 ### 配置文件设置
 
 在配置文件中，完整的含义参考[config yaml配置项说明](../../tutorials/KeyPointConfigGuide_cn.md)。以[HRNet模型配置](../../../configs/keypoint/hrnet/hrnet_w32_256x192.yml)为例，重点需要关注的内容如下：
+
+<details>
+<summary><b> 配置文件示例</b></summary>
+
+一个配置文件的示例如下
 
 ```yaml
 use_gpu: true
@@ -201,6 +216,7 @@ EvalDataset:
     use_gt_bbox: True
     image_thre: 0.0
 ```
+</details>
 
 ### 模型训练及评估
 #### 模型训练
