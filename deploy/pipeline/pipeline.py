@@ -111,6 +111,13 @@ class Pipeline(object):
         self.draw_center_traj = args.draw_center_traj
         self.secs_interval = args.secs_interval
         self.do_entrance_counting = args.do_entrance_counting
+        self.do_break_in_counting = args.do_break_in_counting
+        self.region_type = args.region_type
+        self.region_polygon = args.region_polygon
+        if self.region_type == 'custom':
+            assert len(
+                self.region_polygon
+            ) > 6, 'region_type is custom, region_polygon should be at least 3 pairs of point coords.'
 
     def _parse_input(self, image_file, image_dir, video_file, video_dir,
                      camera_id):
@@ -261,6 +268,9 @@ class PipePredictor(object):
         draw_center_traj = args.draw_center_traj
         secs_interval = args.secs_interval
         do_entrance_counting = args.do_entrance_counting
+        do_break_in_counting = args.do_break_in_counting
+        region_type = args.region_type
+        region_polygon = args.region_polygon
 
         # general module for pphuman and ppvehicle
         self.with_mot = cfg.get('MOT', False)['enable'] if cfg.get(
@@ -326,6 +336,9 @@ class PipePredictor(object):
         self.draw_center_traj = draw_center_traj
         self.secs_interval = secs_interval
         self.do_entrance_counting = do_entrance_counting
+        self.do_break_in_counting = do_break_in_counting
+        self.region_type = region_type
+        self.region_polygon = region_polygon
 
         self.warmup_frame = self.cfg['warmup_frame']
         self.pipeline_res = Result()
@@ -527,7 +540,10 @@ class PipePredictor(object):
                     enable_mkldnn,
                     draw_center_traj=draw_center_traj,
                     secs_interval=secs_interval,
-                    do_entrance_counting=do_entrance_counting)
+                    do_entrance_counting=do_entrance_counting,
+                    do_break_in_counting=do_break_in_counting,
+                    region_type=region_type,
+                    region_polygon=region_polygon)
 
             if self.with_video_action:
                 video_action_cfg = self.cfg['VIDEO_ACTION']
@@ -667,7 +683,24 @@ class PipePredictor(object):
         out_id_list = list()
         prev_center = dict()
         records = list()
-        entrance = [0, height / 2., width, height / 2.]
+        if self.do_entrance_counting or self.do_break_in_counting:
+            if self.region_type == 'horizontal':
+                entrance = [0, height / 2., width, height / 2.]
+            elif self.region_type == 'vertical':
+                entrance = [width / 2, 0., width / 2, height]
+            elif self.region_type == 'custom':
+                entrance = []
+                assert len(
+                    self.region_polygon
+                ) % 2 == 0, "region_polygon should be pairs of coords points when do break_in counting."
+                for i in range(0, len(self.region_polygon), 2):
+                    entrance.append(
+                        [self.region_polygon[i], self.region_polygon[i + 1]])
+                entrance.append([width, height])
+            else:
+                raise ValueError("region_type:{} unsupported.".format(
+                    self.region_type))
+
         video_fps = fps
 
         video_action_imgs = []
@@ -704,8 +737,9 @@ class PipePredictor(object):
                               ids[0])  # single class
                 statistic = flow_statistic(
                     mot_result, self.secs_interval, self.do_entrance_counting,
-                    video_fps, entrance, id_set, interval_id_set, in_id_list,
-                    out_id_list, prev_center, records)
+                    self.do_break_in_counting, self.region_type, video_fps,
+                    entrance, id_set, interval_id_set, in_id_list, out_id_list,
+                    prev_center, records)
                 records = statistic['records']
 
                 # nothing detected
@@ -933,6 +967,7 @@ class PipePredictor(object):
                 frame_id=frame_id,
                 fps=fps,
                 do_entrance_counting=self.do_entrance_counting,
+                do_break_in_counting=self.do_break_in_counting,
                 entrance=entrance,
                 records=records,
                 center_traj=center_traj)

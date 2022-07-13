@@ -12,28 +12,6 @@
 
 行为识别在智慧社区，安防监控等方向具有广泛应用，根据行为的不同，PP-Human中集成了基于视频分类、基于检测、基于图像分类，基于行人轨迹以及基于骨骼点的行为识别模块，方便用户根据需求进行选择。
 
-## 模型库
-在这里，我们提供了检测/跟踪、关键点识别、识别打架、打电话行为、抽烟行为、以及摔倒动作的预训练模型，用户可以直接下载使用。
-
-| 任务 | 算法 | 精度 | 预测速度(ms) | 模型权重 | 预测部署模型 |
-|:---------------------|:---------:|:------:|:------:| :------: |:---------------------------------------------------------------------------------: |
-| 行人检测/跟踪 |  PP-YOLOE | mAP: 56.3 <br> MOTA: 72.0 | 检测: 28ms <br> 跟踪：33.1ms |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 打电话行为识别 | PP-HGNet | 准确率: 86.85 | 单人 2.94ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) |
-| 抽烟行为识别 | PP-YOLOE | mAP: 39.7 | 单人 2.0ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.pdparams) | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip) |
-| 关键点识别 | HRNet | AP: 87.1 | 单人 2.9ms |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)|
-| 摔倒行为识别 |  ST-GCN  | 准确率: 96.43 | 单人 2.7ms | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |
-| 打架识别 | PP-TSM | 准确率：89.06% | 2s视频 128ms | [下载链接](https://videotag.bj.bcebos.com/PaddleVideo-release2.3/ppTSM_fight.pdparams) | [下载链接](https://videotag.bj.bcebos.com/PaddleVideo-release2.3/ppTSM_fight.zip) |
-
-
-注：
-1. 检测/跟踪模型精度为[MOT17](https://motchallenge.net/)，[CrowdHuman](http://www.crowdhuman.org/)，[HIEVE](http://humaninevents.org/)和部分业务数据融合训练测试得到。
-2. 关键点模型使用[COCO](https://cocodataset.org/)，[UAV-Human](https://github.com/SUTDCV/UAV-Human)和部分业务数据融合训练, 精度在业务数据测试集上得到。
-3. 摔倒行为识别模型使用[NTU-RGB+D](https://rose1.ntu.edu.sg/dataset/actionRecognition/)，[UR Fall Detection Dataset](http://fenix.univ.rzeszow.pl/~mkepski/ds/uf.html)和部分业务数据融合训练，精度在业务数据测试集上得到。
-4. 打电话行为识别模型使用[UAV-Human](https://github.com/SUTDCV/UAV-Human)的打电话行为部分进行训练和测试。
-5. 抽烟行为识别模型使用业务数据进行训练和测试。
-6. 打架识别模型基于6个公开数据集训练得到：Surveillance Camera Fight Dataset、A Dataset for Automatic Violence Detection in Videos、Hockey Fight Detection Dataset、Video Fight Detection Dataset、Real Life Violence Situations Dataset、UBI Abnormal Event Detection Dataset。
-7. 预测速度为NVIDIA T4 机器上使用TensorRT FP16时的速度, 速度包含数据预处理、模型预测、后处理全流程。
-
 ## 基于骨骼点的行为识别
 
 应用行为：摔倒识别
@@ -73,7 +51,7 @@ SKELETON_ACTION: # 基于骨骼点的行为识别模型配置
 ```
 
 ### 使用方法
-1. 从上表链接中下载模型并解压到```./output_inference```路径下。默认自动下载模型，如果手动下载，需要修改模型文件夹为模型存放路径。
+1. 从`模型库`中下载`行人检测/跟踪`、`关键点识别`、`摔倒行为识别`三个预测部署模型并解压到```./output_inference```路径下;默认自动下载模型，如果手动下载，需要修改模型文件夹为模型存放路径。
 2. 目前行为识别模块仅支持视频输入，根据期望开启的行为识别方案类型，设置infer_cfg_pphuman.yml中`SKELETON_ACTION`的enable: True, 然后启动命令如下：
 ```python
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
@@ -90,6 +68,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
                                                    --device=gpu \
                                                    --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
 ```
+4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
+
 
 ### 方案说明
 1. 使用多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC_SORT，详细文档参考[OC_SORT](../../../../configs/mot/ocsort)。
@@ -139,14 +119,15 @@ ID_BASED_CLSACTION: # 基于分类的行为识别模型配置
 ```
 
 ### 使用方法
-1. 从上表链接中下载预测部署模型并解压到`./output_inference`路径下；
+1. 从`模型库`中下载`行人检测/跟踪`、`打电话行为识别`两个预测部署模型并解压到`./output_inference`路径下；默认自动下载模型，如果手动下载，需要修改模型文件夹为模型存放路径。
 2. 修改配置文件`deploy/pipeline/config/infer_cfg_pphuman.yml`中`ID_BASED_CLSACTION`下的`enable`为`True`；
-3. 输入视频，启动命令如下：
+3. 仅支持输入视频，启动命令如下：
 ```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu
 ```
+4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
 
 ### 方案说明
 1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC_SORT，详细文档参考[OC_SORT](../../../../configs/mot/ocsort)。
@@ -194,14 +175,15 @@ ID_BASED_DETACTION: # 基于检测的行为识别模型配置
 ```
 
 ### 使用方法
-1. 从上表链接中下载预测部署模型并解压到`./output_inference`路径下；
+1. 从`模型库`中下载`行人检测/跟踪`、`抽烟行为识别`两个预测部署模型并解压到`./output_inference`路径下；默认自动下载模型，如果手动下载，需要修改模型文件夹为模型存放路径。
 2. 修改配置文件`deploy/pipeline/config/infer_cfg_pphuman.yml`中`ID_BASED_DETACTION`下的`enable`为`True`；
-3. 输入视频，启动命令如下：
+3. 仅支持输入视频，启动命令如下：
 ```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu
 ```
+4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
 
 ### 方案说明
 1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC_SORT，详细文档参考[OC_SORT](../../../../configs/mot/ocsort)。
@@ -261,14 +243,15 @@ VIDEO_ACTION:  # 基于视频分类的行为识别模型配置
 ```
 
 ### 使用方法
-1. 从上表链接中下载预测部署模型并解压到`./output_inference`路径下；
+1. 从上表链接中下载`打架识别`任务的预测部署模型并解压到`./output_inference`路径下；默认自动下载模型，如果手动下载，需要修改模型文件夹为模型存放路径。
 2. 修改配置文件`deploy/pphuman/config/infer_cfg_pphuman.yml`中`VIDEO_ACTION`下的`enable`为`True`；
-3. 输入视频，启动命令如下：
+3. 仅支持输入视频，启动命令如下：
 ```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu
 ```
+4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
 
 
 ### 方案说明

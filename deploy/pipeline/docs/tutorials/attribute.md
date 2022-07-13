@@ -28,7 +28,7 @@ ATTR:                                                                     #模�
   enable: False                                                           #功能是否开启
 ```
 
-2. 图片输入时，启动命令如下
+2. 图片输入时，启动命令如下(更多命令参数说明，请参考[快速开始-参数说明](./QUICK_STARTED.md#41-参数说明))。
 ```python
 #单张图片
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
@@ -43,8 +43,14 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 ```
 3. 视频输入时，启动命令如下
 ```python
+#单个视频文件
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
+                                                   --device=gpu \
+
+#视频文件夹
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
+                                                   --video_dir=test_videos/ \
                                                    --device=gpu \
 ```
 
