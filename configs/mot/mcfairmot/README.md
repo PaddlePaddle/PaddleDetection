@@ -48,7 +48,7 @@ PP-tracking provides an AI studio public project tutorial. Please refer to this 
 |    Model      |  Compression Strategy | Prediction Delay（T4） |Prediction Delay（V100）| Model Configuration File |Compression Algorithm Configuration File |
 | :--------------| :------- | :------: | :----: | :----: | :----: |
 | DLA-34         | baseline |    41.3  |    21.9 |[Configuration File](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|    -     |
-| DLA-34         | off-line quantization   |  37.8    |  21.2  |[Configuration File](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|[Configuration File](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.3/configs/slim/post_quant/mcfairmot_ptq.yml)|
+| DLA-34         | off-line quantization   |  37.8    |  21.2  |[Configuration File](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|[Configuration File](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/slim/post_quant/mcfairmot_ptq.yml)|
 
 
 ## Getting Start
@@ -122,8 +122,8 @@ CUDA_VISIBLE_DEVICES=0 python3.7 tools/post_quant.py -c configs/mot/mcfairmot/mc
 
 @ARTICLE{9573394,
   author={Zhu, Pengfei and Wen, Longyin and Du, Dawei and Bian, Xiao and Fan, Heng and Hu, Qinghua and Ling, Haibin},
-  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence}, 
-  title={Detection and Tracking Meet Drones Challenge}, 
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  title={Detection and Tracking Meet Drones Challenge},
   year={2021},
   volume={},
   number={},

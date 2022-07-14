@@ -11,7 +11,7 @@ instructions](INSTALL_cn.md).
 
 ## Data preparation
 
-- Please refer to [PrepareDetDataSet](PrepareDetDataSet_en.md) for data preparation
+- Please refer to [PrepareDetDataSet](./data/PrepareDetDataSet_en.md) for data preparation
 - Please set the data path for data configuration file in ```configs/datasets```
 
 ## Training & Evaluation & Inference

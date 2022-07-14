@@ -47,7 +47,7 @@ PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking�
 |    骨干网络      |  压缩策略 | 预测时延（T4） |预测时延（V100）| 配置文件 |压缩算法配置文件 |
 | :--------------| :------- | :------: | :----: | :----: | :----: |
 | DLA-34         | baseline |    41.3  |    21.9 |[配置文件](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|    -     |
-| DLA-34         | 离线量化   |  37.8    |  21.2  |[配置文件](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.3/configs/slim/post_quant/mcfairmot_ptq.yml)|
+| DLA-34         | 离线量化   |  37.8    |  21.2  |[配置文件](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/slim/post_quant/mcfairmot_ptq.yml)|
 
 ## 快速开始
 
@@ -119,8 +119,8 @@ CUDA_VISIBLE_DEVICES=0 python3.7 tools/post_quant.py -c configs/mot/mcfairmot/mc
 
 @ARTICLE{9573394,
   author={Zhu, Pengfei and Wen, Longyin and Du, Dawei and Bian, Xiao and Fan, Heng and Hu, Qinghua and Ling, Haibin},
-  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence}, 
-  title={Detection and Tracking Meet Drones Challenge}, 
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  title={Detection and Tracking Meet Drones Challenge},
   year={2021},
   volume={},
   number={},
