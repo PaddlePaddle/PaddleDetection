@@ -49,11 +49,11 @@ At the same time, PaddleDetection provides [PP-TinyPose](./tiny_pose/README_en.m
 
 | Detection Model                                              | Keypoint Model                        |               Input Size                |             Accuracy of COCO             |     Average Inference Time (FP16)     |             Params (M)             |             Flops (G)              |                         Model Weight                         |              Paddle-Lite Inference Model（FP16)              |
 | :----------------------------------------------------------- | :------------------------------------ | :-------------------------------------: | :--------------------------------------: | :-----------------------------------: | :--------------------------------: | :--------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [PP-TinyPose](./tinypose_128x96.yml)  | Detection：192x192<br>Keypoint：128x96  | Detection mAP：29.0<br>Keypoint AP：58.1 | Detection：2.37ms<br>Keypoint：3.27ms | Detection：1.18<br/>Keypoint：1.36 | Detection：0.35<br/>Keypoint：0.08 | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
-| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [PP-TinyPose](./tinypose_256x192.yml) | Detection：320x320<br>Keypoint：256x192 | Detection mAP：38.5<br>Keypoint AP：68.8 | Detection：6.30ms<br>Keypoint：8.33ms | Detection：1.18<br/>Keypoint：1.36 | Detection：0.97<br/>Keypoint：0.32 | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
+| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [PP-TinyPose](./tiny_pose/tinypose_128x96.yml)  | Detection：192x192<br>Keypoint：128x96  | Detection mAP：29.0<br>Keypoint AP：58.1 | Detection：2.37ms<br>Keypoint：3.27ms | Detection：1.18<br/>Keypoint：1.36 | Detection：0.35<br/>Keypoint：0.08 | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
+| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [PP-TinyPose](./tiny_pose/tinypose_256x192.yml) | Detection：320x320<br>Keypoint：256x192 | Detection mAP：38.5<br>Keypoint AP：68.8 | Detection：6.30ms<br>Keypoint：8.33ms | Detection：1.18<br/>Keypoint：1.36 | Detection：0.97<br/>Keypoint：0.32 | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
 
 
-*Specific documents of PP-TinyPose, please refer to [Document]((./tiny_pose/README.md))。
+*Specific documents of PP-TinyPose, please refer to [Document](./tiny_pose/README.md)。
 
 ### Terminal Server
 
@@ -93,7 +93,7 @@ MPII Dataset
 Model for Scenes
 | Model | Strategy | Input Size | Precision | Inference Speed |Model Weights | Model Inference and Deployment | description|
 | :---- | ---|----- | :--------: | :-------: |:------------: |:------------: |:-------------------: |
-| HRNet-w32 + DarkPose | Top-Down|256x192  |  AP: 87.1 (on internal dataset)| 2.9ms per person |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) | Especially optimized for fall scenarios, the model is applied to [PP-Human](../../deploy/pipeline/README_en.md) |
+| HRNet-w32 + DarkPose | Top-Down|256x192  |  AP: 87.1 (on internal dataset)| 2.9ms per person |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) | Especially optimized for fall scenarios, the model is applied to [PP-Human](../../deploy/pipeline/README.md) |
 
 
 We also release [PP-TinyPose](./tiny_pose/README_en.md), a real-time keypoint detection model optimized for mobile devices. Welcome to experience.
@@ -106,7 +106,7 @@ We also release [PP-TinyPose](./tiny_pose/README_en.md), a real-time keypoint de
 
 ### 2.Dataset Preparation
 
-​    Currently, KeyPoint Detection Models support [COCO](https://cocodataset.org/#keypoints-2017) and [MPII](http://human-pose.mpi-inf.mpg.de/#overview). Please refer to [Keypoint Dataset Preparation](../../docs/tutorials/PrepareKeypointDataSet_en.md) to prepare dataset.
+​    Currently, KeyPoint Detection Models support [COCO](https://cocodataset.org/#keypoints-2017) and [MPII](http://human-pose.mpi-inf.mpg.de/#overview). Please refer to [Keypoint Dataset Preparation](../../docs/tutorials/data/PrepareDetDataSet_en.md) to prepare dataset.
 
 ​   About the description for config files, please refer to [Keypoint Config Guild](../../docs/tutorials/KeyPointConfigGuide_en.md).
 
@@ -201,7 +201,7 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 
 ## Train with custom data
 
-We take an example of [tinypose_256x192](.tiny_pose/README_en.md) to show how to train with custom data.
+We take an example of [tinypose_256x192](./tiny_pose/README_en.md) to show how to train with custom data.
 
 #### 1、For configs [tinypose_256x192.yml](../../configs/keypoint/tiny_pose/tinypose_256x192.yml)
 
