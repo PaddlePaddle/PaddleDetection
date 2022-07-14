@@ -72,7 +72,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 
 ### 方案说明
-1. 使用多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC_SORT，详细文档参考[OC_SORT](../../../../configs/mot/ocsort)。
+1. 使用多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC-SORT，详细文档参考[OC-SORT](../../../../configs/mot/ocsort)。
 2. 通过行人检测框的坐标在输入视频的对应帧中截取每个行人。
 3. 使用[关键点识别模型](../../../configs/keypoint/hrnet/dark_hrnet_w32_256x192.yml)得到对应的17个骨骼特征点。骨骼特征点的顺序及类型与COCO一致，详见[如何准备关键点数据集](../../../docs/tutorials/PrepareKeypointDataSet_cn.md)中的`COCO数据集`部分。
 4. 每个跟踪ID对应的目标行人各自累计骨骼特征点结果，组成该人物的时序关键点序列。当累计到预定帧数或跟踪丢失后，使用行为识别模型判断时序关键点序列的动作类型。当前版本模型支持摔倒行为的识别，预测得到的`class id`对应关系为：
@@ -130,7 +130,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
 
 ### 方案说明
-1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC_SORT，详细文档参考[OC_SORT](../../../../configs/mot/ocsort)。
+1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC-SORT，详细文档参考[OC-SORT](../../../../configs/mot/ocsort)。
 2. 通过行人检测框的坐标在输入视频的对应帧中截取每个行人。
 3. 通过在帧级别的行人图像通过图像分类的方式实现。当图片所属类别为对应行为时，即认为在一定时间段内该人物处于该行为状态中。该任务使用[PP-HGNet](https://github.com/PaddlePaddle/PaddleClas/blob/develop/docs/zh_CN/models/PP-HGNet.md)实现，当前版本模型支持打电话行为的识别，预测得到的`class id`对应关系为：
 ```
@@ -186,7 +186,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
 
 ### 方案说明
-1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC_SORT，详细文档参考[OC_SORT](../../../../configs/mot/ocsort)。
+1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC-SORT，详细文档参考[OC-SORT](../../../../configs/mot/ocsort)。
 2. 通过行人检测框的坐标在输入视频的对应帧中截取每个行人。
 3. 通过在帧级别的行人图像中检测该行为的典型特定目标实现。当检测到特定目标(在这里即烟头）以后，即认为在一定时间段内该人物处于该行为状态中。该任务使用[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)实现，当前版本模型支持吸烟行为的识别，预测得到的`class id`对应关系为：
 ```

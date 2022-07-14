@@ -4,7 +4,7 @@
 
 **PP-Human是基于飞桨深度学习框架的业界首个开源产业级实时行人分析工具，具有功能丰富，应用广泛和部署高效三大优势。**
 
-![](https://user-images.githubusercontent.com/48054808/173030254-ecf282bd-2cfe-43d5-b598-8fed29e22020.gif)
+![](https://user-images.githubusercontent.com/22989727/178892756-e2717a2c-beb0-4d88-ad32-ca37e24b47f8.gif)
 
 PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能覆盖多目标跟踪、属性识别、行为分析及人流量计数与轨迹记录。能够广泛应用于智慧交通、智慧社区、工业巡检等领域。支持服务器端部署及TensorRT加速，T4服务器上可达到实时。
 
