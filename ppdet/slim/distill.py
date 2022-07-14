@@ -74,14 +74,16 @@ class FGDDistillModel(nn.Layer):
 
     def __init__(self, cfg, slim_cfg):
         super(FGDDistillModel, self).__init__()
-        self.student_cfg = cfg
+
+        self.is_inherit = True
+        # build student model before load slim config
+        self.student_model = create(cfg.architecture)
+        self.arch = cfg.architecture
+        stu_pretrain = cfg['pretrain_weights']
         slim_cfg = load_config(slim_cfg)
         self.teacher_cfg = slim_cfg
         self.loss_cfg = slim_cfg
-        self.is_loaded_weights = True
-        self.is_inherit = True
-
-        self.student_model = create(self.student_cfg.architecture)
+        tea_pretrain = cfg['pretrain_weights']
 
         self.teacher_model = create(self.teacher_cfg.architecture)
         self.teacher_model.eval()
@@ -89,29 +91,22 @@ class FGDDistillModel(nn.Layer):
         for param in self.teacher_model.parameters():
             param.trainable = False
 
-        if 'pretrain_weights' in self.student_cfg and self.student_cfg.pretrain_weights:
+        if 'pretrain_weights' in cfg and stu_pretrain:
             if self.is_inherit and 'pretrain_weights' in self.teacher_cfg and self.teacher_cfg.pretrain_weights:
-                self._load_pretrain_weights(self.student_model,
-                                            self.teacher_cfg.pretrain_weights)
-                print("loading teacher weights to student model!")
+                load_pretrain_weight(self.student_model,
+                                     self.teacher_cfg.pretrain_weights)
+                logger.debug(
+                    "Inheriting! loading teacher weights to student model!")
 
-            self._load_pretrain_weights(self.student_model,
-                                        self.student_cfg.pretrain_weights)
-            print("loading student model Done")
+            load_pretrain_weight(self.student_model, stu_pretrain)
 
         if 'pretrain_weights' in self.teacher_cfg and self.teacher_cfg.pretrain_weights:
-            self._load_pretrain_weights(self.teacher_model,
-                                        self.teacher_cfg.pretrain_weights)
-            print("loading teacher model Done")
+            load_pretrain_weight(self.teacher_model,
+                                 self.teacher_cfg.pretrain_weights)
 
-        self.fgd_loss_dic = self.build_loss(self.loss_cfg.distill_loss)
-
-    def _load_pretrain_weights(self, model, weights):
-        if self.is_loaded_weights:
-            return
-        self.start_epoch = 0
-        load_pretrain_weight(model, weights)
-        logger.debug("Load weights {} to start training".format(weights))
+        self.fgd_loss_dic = self.build_loss(
+            self.loss_cfg.distill_loss,
+            name_list=self.loss_cfg['distill_loss_name'])
 
     def build_loss(self,
                    cfg,
@@ -137,20 +132,28 @@ class FGDDistillModel(nn.Layer):
             for idx, k in enumerate(self.fgd_loss_dic):
                 loss_dict[k] = self.fgd_loss_dic[k](s_neck_feats[idx],
                                                     t_neck_feats[idx], inputs)
-
-            loss = self.student_model.head(s_neck_feats, inputs)
+            if self.arch == "RetinaNet":
+                loss = self.student_model.head(s_neck_feats, inputs)
+            elif self.arch == "PicoDet":
+                loss = self.student_model.get_loss()
+            else:
+                raise ValueError(f"Unsupported model {self.arch}")
             for k in loss_dict:
                 loss['loss'] += loss_dict[k]
                 loss[k] = loss_dict[k]
             return loss
-
         else:
             body_feats = self.student_model.backbone(inputs)
             neck_feats = self.student_model.neck(body_feats)
             head_outs = self.student_model.head(neck_feats)
-            bbox, bbox_num = self.student_model.head.post_process(
-                head_outs, inputs['im_shape'], inputs['scale_factor'])
-            return {'bbox': bbox, 'bbox_num': bbox_num}
+            if self.arch == "RetinaNet":
+                bbox, bbox_num = self.student_model.head.post_process(
+                    head_outs, inputs['im_shape'], inputs['scale_factor'])
+                return {'bbox': bbox, 'bbox_num': bbox_num}
+            elif self.arch == "PicoDet":
+                return self.student_model.head.get_pred()
+            else:
+                raise ValueError(f"Unsupported model {self.arch}")
 
 
 @register
