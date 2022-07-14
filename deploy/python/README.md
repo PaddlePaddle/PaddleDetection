@@ -9,7 +9,7 @@ Python端预测部署主要包含两个步骤：
 
 ## 1. 导出预测模型
 
-PaddleDetection在训练过程包括网络的前向和优化器相关参数，而在部署过程中，我们只需要前向参数，具体参考:[导出模型](../deploy/EXPORT_MODEL.md)，例如
+PaddleDetection在训练过程包括网络的前向和优化器相关参数，而在部署过程中，我们只需要前向参数，具体参考:[导出模型](../EXPORT_MODEL.md)，例如
 
 ```bash
 # 导出YOLOv3检测模型
