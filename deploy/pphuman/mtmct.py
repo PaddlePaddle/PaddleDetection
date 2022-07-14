@@ -25,6 +25,8 @@ import pandas as pd
 from tqdm import tqdm
 from functools import reduce
 import warnings
+from python.visualize import visualize_attr
+
 warnings.filterwarnings("ignore")
 
 
@@ -98,7 +100,7 @@ def get_mtmct_matching_results(pred_mtmct_file, secs_interval=0.5,
     return camera_results, cid_tid_fid_results
 
 
-def save_mtmct_vis_results(camera_results, captures, output_dir):
+def save_mtmct_vis_results(camera_results, captures, multi_res, output_dir):
     # camera_results: 'cid, tid, fid, x1, y1, w, h'
     camera_ids = list(camera_results.keys())
 
@@ -121,7 +123,7 @@ def save_mtmct_vis_results(camera_results, captures, output_dir):
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = int(capture.get(cv2.CAP_PROP_FPS))
         frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         frame_id = 0
         while (1):
@@ -138,6 +140,21 @@ def save_mtmct_vis_results(camera_results, captures, output_dir):
             boxes = frame_results[:, -4:]
             ids = frame_results[:, 1]
             image = plot_tracking(frame, boxes, ids, frame_id=frame_id, fps=fps)
+
+            # add attr vis
+            attr_res = []
+            tid_list = [
+                'c' + str(idx) + '_' + 't' + str(int(j))
+                for j in range(1, len(ids) + 1)
+            ]  # c0_t1, c0_t2...
+            for k in tid_list:
+                if (frame_id - 1) >= len(multi_res[k]['attrs']):
+                    t_attr = None
+                else:
+                    t_attr = multi_res[k]['attrs'][frame_id - 1]
+                    attr_res.append(t_attr)
+            image = visualize_attr(image, attr_res, boxes, is_mtmct=True)
+
             writer.write(image)
         writer.release()
 
@@ -205,10 +222,10 @@ def get_sim_matrix_new(cid_tid_dict, cid_tids):
         [cid_tid_dict[cid_tids[i]]['mean_feat'] for i in range(count)])
     g_arr = np.array(
         [cid_tid_dict[cid_tids[i]]['mean_feat'] for i in range(count)])
-    #compute distmat
+    # compute distmat
     distmat = get_dist_mat(q_arr, g_arr, func_name="cosine")
 
-    #mask the element which belongs to same video
+    # mask the element which belongs to same video
     st_mask = np.ones((count, count), dtype=np.float32)
     st_mask = intracam_ignore(st_mask, cid_tids)
 
@@ -241,10 +258,10 @@ def get_cid_tid(cluster_labels, cid_tids):
 
 
 def get_labels(cid_tid_dict, cid_tids):
-    #compute cost matrix between features
+    # compute cost matrix between features
     cost_matrix = get_sim_matrix_new(cid_tid_dict, cid_tids)
 
-    #cluster all the features
+    # cluster all the features
     cluster1 = AgglomerativeClustering(
         n_clusters=None,
         distance_threshold=0.5,
@@ -261,13 +278,13 @@ def sub_cluster(cid_tid_dict):
     '''
     cid_tid_dict: all camera_id and track_id
     '''
-    #get all keys
+    # get all keys
     cid_tids = sorted([key for key in cid_tid_dict.keys()])
 
-    #cluster all trackid
+    # cluster all trackid
     clu = get_labels(cid_tid_dict, cid_tids)
 
-    #relabel every cluster groups
+    # relabel every cluster groups
     new_clu = list()
     for c_list in clu:
         new_clu.append([cid_tids[c] for c in c_list])
@@ -285,32 +302,32 @@ def distill_idfeat(mot_res):
 
     qualities_new = []
     feature_new = []
-    #filter rect less than 100*20
+    # filter rect less than 100*20
     for idx, rect in enumerate(rects):
         conf, xmin, ymin, xmax, ymax = rect[0]
         if (xmax - xmin) * (ymax - ymin) and (xmax > xmin) > 2000:
             qualities_new.append(qualities_list[idx])
             feature_new.append(feature_list[idx])
-    #take all features if available rect is less than 2
+    # take all features if available rect is less than 2
     if len(qualities_new) < 2:
         qualities_new = qualities_list
         feature_new = feature_list
 
-    #if available frames number is more than 200, take one frame data per 20 frames
+    # if available frames number is more than 200, take one frame data per 20 frames
     skipf = 1
     if len(qualities_new) > 20:
         skipf = 2
     quality_skip = np.array(qualities_new[::skipf])
     feature_skip = np.array(feature_new[::skipf])
 
-    #sort features with image qualities, take the most trustworth features
+    # sort features with image qualities, take the most trustworth features
     topk_argq = np.argsort(quality_skip)[::-1]
     if (quality_skip > 0.6).sum() > 1:
         topk_feat = feature_skip[topk_argq[quality_skip > 0.6]]
     else:
         topk_feat = feature_skip[topk_argq]
 
-    #get final features by mean or cluster, at most take five
+    # get final features by mean or cluster, at most take five
     mean_feat = np.mean(topk_feat[:5], axis=0)
     return mean_feat
 
