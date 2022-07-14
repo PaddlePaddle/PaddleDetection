@@ -150,10 +150,10 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 ## 方案介绍
 
-PP-Human整体方案如下图所示
+PP-Human v2整体方案如下图所示:
 
 <div width="1000" align="center">
-  <img src="../../../../docs/images/pphuman-tech.png"/>
+  <img src="../../../../docs/images/pphumanv2.png"/>
 </div>
 
 
