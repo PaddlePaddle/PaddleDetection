@@ -7,7 +7,7 @@ PP-Human跨镜头跟踪模块主要目的在于提供一套简洁、高效的跨
 
 ## 使用方法
 
-1. 下载模型 [REID模型](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) 并解压到```./output_inference```路径下，修改配置文件中模型路径。也可简单起见直接用默认配置，自动下载模型。 MOT模型请参考[mot说明](./mot.md)文件下载。
+1. 下载模型 [行人跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)和[REID模型](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) 并解压到```./output_inference```路径下，修改配置文件中模型路径。也可简单起见直接用默认配置，自动下载模型。 MOT模型请参考[mot说明](./mot.md)文件下载。
 
 2. 跨镜头跟踪模式下，要求输入的多个视频放在同一目录下，同时开启infer_cfg_pphuman.yml 中的REID选择中的enable=True, 命令如下：
 ```python
