@@ -1,4 +1,0 @@
-speedlimit
-crosswalk
-trafficlight
-stop

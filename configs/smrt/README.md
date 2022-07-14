@@ -120,11 +120,11 @@ cd PaddleDetection
 pip install -r requirements.txt
 ```
 
-详细安装文档请参考[文档](../docs/tutorials/INSTALL_cn.md)
+详细安装文档请参考[文档](../../docs/tutorials/INSTALL_cn.md)
 
 ### 2. 数据准备
 
-用户需要准备训练数据集，建议标注文件使用COCO数据格式。如果使用lableme或者VOC数据格式，先使用[格式转换脚本](../tools/x2coco.py)将标注格式转化为COCO，详细数据准备文档请参考[文档](../docs/tutorials/PrepareDataSet.md)
+用户需要准备训练数据集，建议标注文件使用COCO数据格式。如果使用lableme或者VOC数据格式，先使用[格式转换脚本](../../tools/x2coco.py)将标注格式转化为COCO，详细数据准备文档请参考[文档](../../docs/tutorials/PrepareDataSet.md)
 
 本文档以新能源电池工业质检子数据集为例展开，数据下载[链接](https://bj.bcebos.com/v1/paddle-smrt/data/battery_mini.zip)
 
@@ -170,7 +170,7 @@ python tools/eval.py -c configs/smrt/ppyoloe/ppyoloe_crn_m_300e_battery_1024.yml
 python tools/infer.py -c configs/smrt/ppyoloe/ppyoloe_crn_m_300e_battery_1024.yml -o weights=output/ppyoloe_crn_m_300e_battery_1024/model_final.pdparams --infer_img=images/Board_diaojiao_1591.png
 ```
 
-更多模型训练参数请参考[文档](../docs/tutorials/GETTING_STARTED_cn.md)
+更多模型训练参数请参考[文档](../../docs/tutorials/GETTING_STARTED_cn.md)
 
 ### 4. 模型导出部署
 
@@ -182,7 +182,7 @@ python tools/infer.py -c configs/smrt/ppyoloe/ppyoloe_crn_m_300e_battery_1024.ym
 python tools/export_model.py -c configs/smrt/ppyoloe/ppyoloe_crn_m_300e_battery_1024.yml -o weights=output/ppyoloe_crn_m_300e_battery_1024/model_final.pdparams
 ```
 
-接下来可以使用PaddleDetection中的部署代码实现C++部署，详细步骤请参考[文档](../deploy/cpp/README.md)
+接下来可以使用PaddleDetection中的部署代码实现C++部署，详细步骤请参考[文档](../../deploy/cpp/README.md)
 
 如果期望使用可视化界面的方式进行部署，可以参考下面部分的内容。
 
