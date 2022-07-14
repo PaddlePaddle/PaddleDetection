@@ -64,7 +64,7 @@ To use the rotating frame IOU to calculate the OP, the following conditions must
 - PaddlePaddle >= 2.1.1
 - GCC == 8.2
 
-Docker images are recommended[paddle:2.1.1-gpu-cuda10.1-cudnn7](registry.baidubce.com/paddlepaddle/paddle:2.1.1-gpu-cuda10.1-cudnn7)。
+Docker images are recommended paddle:2.1.1-gpu-cuda10.1-cudnn7。
 
 Run the following command to download the image and start the container:
 ```
