@@ -31,7 +31,8 @@
 ```bash
 python tools/train.py -c configs/keypoint/hrnet/hrnet_w32_256x192.yml -o pretrain_weights=https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams
 ```
-在加载预训练模型后，可以适当减小初始学习率和最终迭代轮数。
+在加载预训练模型后，可以适当减小初始学习率和最终迭代轮数, 建议初始学习率取默认配置值的1/2至1/5，并可开启`--eval`观察迭代过程中AP值的变化。
+
 
 ### 遮挡数据增强
 关键点任务中有较多遮挡问题，包括自身遮挡与不同目标之间的遮挡。
@@ -103,7 +104,7 @@ self_dataset/
                 "point4",
                 "point5",
             ],
-            "skeleton": [    # 点位构成的骨骼
+            "skeleton": [    # 点位构成的骨骼, 训练中非必要
                 [
                     1,
                     2
