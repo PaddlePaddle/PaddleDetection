@@ -53,7 +53,7 @@ DOTA数据集中总共有2806张图像，其中1411张图像作为训练集，45
 - PaddlePaddle >= 2.1.1
 - GCC == 8.2
 
-推荐使用docker镜像[paddle:2.1.1-gpu-cuda10.1-cudnn7](registry.baidubce.com/paddlepaddle/paddle:2.1.1-gpu-cuda10.1-cudnn7)。
+推荐使用docker镜像 paddle:2.1.1-gpu-cuda10.1-cudnn7。
 
 执行如下命令下载镜像并启动容器：
 ```
