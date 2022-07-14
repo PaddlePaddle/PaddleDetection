@@ -10,7 +10,7 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
 
 ## 📣 近期更新
 
-- 🔥 **2022.7.13：PP-Human v2发布，行为识别、人体属性识别、流量计数三大产业特色功能全面升级，覆盖行人检测、跟踪、属性三类核心算法能力，提供保姆级全流程开发及模型优化策略。**
+- 🔥 **2022.7.13：PP-Human v2发布，行为识别、人体属性识别、流量计数、跨镜跟踪四大产业特色功能全面升级，覆盖行人检测、跟踪、属性三类核心算法能力，提供保姆级全流程开发及模型优化策略。**
 - 2022.4.18：新增PP-Human全流程实战教程, 覆盖训练、部署、动作类型扩展等内容，AIStudio项目请见[链接](https://aistudio.baidu.com/aistudio/projectdetail/3842982)
 - 2022.4.10：新增PP-Human范例，赋能社区智能精细化管理, AIStudio快速上手教程[链接](https://aistudio.baidu.com/aistudio/projectdetail/3679564)
 - 2022.4.5：全新发布实时行人分析工具PP-Human，支持行人跟踪、人流量统计、人体属性识别与摔倒检测四大能力，基于真实场景数据特殊优化，精准识别各类摔倒姿势，适应不同环境背景、光线及摄像角度
@@ -31,8 +31,8 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
 
 | 任务            | 适用场景 | 精度 | 预测速度（ms）| 模型体积 | 预测部署模型 |
 | :---------:     |:---------:     |:---------------     | :-------:  |  :------:      | :------:      |
-| 目标检测(高精度) | 图片输入 | mAP: 57.8  | 22.3ms          | 182M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 目标检测(轻量级) | 图片输入 | mAP: 53.2  | 17.8ms          | 27M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
+| 目标检测(高精度) | 图片输入 | mAP: 57.8  | 25.1ms          | 182M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 目标检测(轻量级) | 图片输入 | mAP: 53.2  | 16.2ms          | 27M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
 | 目标跟踪(高精度) | 视频输入 | MOTA: 82.2  | 31.8ms           | 182M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
 | 目标跟踪(轻量级) | 视频输入 | MOTA: 73.9  | 21.0ms           |27M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
 | 属性识别（高精度）    | 图片/视频输入 属性识别  | mA: 95.4 |  单人4.2ms     | 86M |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_small_person_attribute_954_infer.zip) |
@@ -51,8 +51,8 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
 
 | 任务            | 端到端速度（ms）|  模型方案  |  模型体积 |
 | :---------:     | :-------:  |  :------: |:------: |
-|  行人检测（高精度）  | 22.3ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |  
-|  行人检测（轻量级）  | 17.8ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | 27M |
+|  行人检测（高精度）  | 25.1ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |  
+|  行人检测（轻量级）  | 16.2ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | 27M |
 |  行人跟踪（高精度）  | 31.8ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |  
 |  行人跟踪（轻量级）  | 21.0ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | 27M |
 |  属性识别（高精度）  |   单人8.5ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [属性识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) | 目标检测：182M<br>属性识别：86M |
