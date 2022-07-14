@@ -430,7 +430,7 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 
 - **[Industrial features] 2022.3.26** **[Smart City Industry Seven-Day Class](https://aistudio.baidu.com/aistudio/education/group/info/25620)** : Urban planning, Urban governance, Smart governance service, Traffic management, community governance.
 
-### [Industrial tutorial examples](./industrial_tutorial/README_cn.md)
+### [Industrial tutorial examples](./industrial_tutorial/README.md)
 
 - [Road litter detection based on PP-PicoDet Plus](https://aistudio.baidu.com/aistudio/projectdetail/3561097)
 
