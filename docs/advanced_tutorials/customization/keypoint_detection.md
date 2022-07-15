@@ -232,6 +232,11 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 python3 -m paddle.distributed.launch tools/train.py
 python3 tools/eval.py -c configs/keypoint/hrnet/hrnet_w32_256x192.yml
 ```
 
+注意：由于测试依赖pycocotools工具，其默认为`COCO`数据集的17点，如果修改后的模型并非预测17点，直接使用评估命令会报错。
+需要修改以下内容以获得正确的评估结果：
+- [sigma列表](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/ppdet/modeling/keypoint_utils.py#L219)，表示每个关键点的范围方差，越大则容忍度越高。其长度与预测点数一致。根据实际关键点可信区域设置，区域精确的一般0.25-0.5，例如眼睛。区域范围大的一般0.5-1.0，例如肩膀。若不确定建议0.75。
+- [pycocotools sigma列表](https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/cocoeval.py#L523)，含义及内容同上，取值与sigma列表一致。
+
 ### 模型导出及预测
 #### Top-Down模型联合部署
 ```shell
