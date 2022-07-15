@@ -348,14 +348,14 @@ def visualize_attr(im, results, boxes=None, is_mtmct=False):
         if boxes is None:
             text_w = 3
             text_h = 1
-        else:
-            box = boxes[i]  # single camera, bbox is 0, 0, x,y, w,h
-            text_w = int(box[2]) + 3
-            text_h = int(box[3])
-        if is_mtmct:  # multi camera, bbox is x,y, w,h
-            box = boxes[i]  # box: x, y, w, h
+        elif is_mtmct:
+            box = boxes[i]  # multi camera, bbox shape is x,y, w,h
             text_w = int(box[0]) + 3
             text_h = int(box[1])
+        else:
+            box = boxes[i]  # single camera, bbox shape is 0, 0, x,y, w,h
+            text_w = int(box[2]) + 3
+            text_h = int(box[3])
         for text in res:
             text_h += int(line_inter)
             text_loc = (text_w, text_h)

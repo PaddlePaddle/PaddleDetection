@@ -100,7 +100,8 @@ def get_mtmct_matching_results(pred_mtmct_file, secs_interval=0.5,
     return camera_results, cid_tid_fid_results
 
 
-def save_mtmct_vis_results(camera_results, captures, multi_res, output_dir):
+def save_mtmct_vis_results(camera_results, captures, output_dir,
+                           multi_res=None):
     # camera_results: 'cid, tid, fid, x1, y1, w, h'
     camera_ids = list(camera_results.keys())
 
@@ -358,4 +359,8 @@ def mtmct_process(multi_res, captures, mtmct_vis=True, output_dir="output"):
         camera_results, cid_tid_fid_res = get_mtmct_matching_results(
             pred_mtmct_file)
 
-        save_mtmct_vis_results(camera_results, captures, output_dir=output_dir)
+        save_mtmct_vis_results(
+            camera_results,
+            captures,
+            output_dir=output_dir,
+            multi_res=cid_tid_dict)
