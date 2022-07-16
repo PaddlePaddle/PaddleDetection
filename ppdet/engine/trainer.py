@@ -449,7 +449,7 @@ class Trainer(object):
                             model, paddle.
                             DataParallel) and use_fused_allreduce_gradients:
                         with model.no_sync():
-                            with amp.auto_cast(
+                            with paddle.amp.auto_cast(
                                     enable=self.cfg.use_gpus,
                                     level=self.amp_level):
                                 # model forward
@@ -461,7 +461,7 @@ class Trainer(object):
                         fused_allreduce_gradients(
                             list(model.parameters()), None)
                     else:
-                        with amp.auto_cast(
+                        with paddle.amp.auto_cast(
                                 enable=self.cfg.use_gpu, level=self.amp_level):
                             # model forward
                             outputs = model(data)
