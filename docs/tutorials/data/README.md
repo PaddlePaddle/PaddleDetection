@@ -12,5 +12,4 @@
 |:--------:| :--------:|:--------:|
 |    目标检测   |   [文档链接](DetAnnoTools.md)  |    [文档链接](PrepareDetDataSet.md)  |
 |    关键点检测   |   [文档链接](KeyPointAnnoTools.md)  |    [文档链接](PrepareKeypointDataSet.md)  |
-|    多目标跟踪   |   -  |    -  |
-
+|    多目标跟踪   |   [文档链接](MOTAnnoTools.md)  |    [文档链接](PrepareMOTDataSet.md)  |
