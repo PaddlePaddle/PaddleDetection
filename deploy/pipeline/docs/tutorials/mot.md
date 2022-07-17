@@ -6,8 +6,8 @@
 
 | 任务                 | 算法 | 精度 | 预测速度(ms) |下载链接                                                                               |
 |:---------------------|:---------:|:------:|:------:| :---------------------------------------------------------------------------------: |
-| 行人检测/跟踪    |  PP-YOLOE-l | mAP: 56.6 <br> MOTA: 79.5 | 检测: 25.1ms <br> 跟踪：31.8ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
-| 行人检测/跟踪    |  PP-YOLOE-s | mAP: 53.2 <br> MOTA: 69.1 | 检测: 16.2ms <br> 跟踪：21.0ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
+| 行人检测/跟踪    |  PP-YOLOE-l | mAP: 57.8 <br> MOTA: 82.2 | 检测: 25.1ms <br> 跟踪：31.8ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |
+| 行人检测/跟踪    |  PP-YOLOE-s | mAP: 53.2 <br> MOTA: 73.9 | 检测: 16.2ms <br> 跟踪：21.0ms | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) |
 
 1. 检测/跟踪模型精度为[COCO-Person](http://cocodataset.org/), [CrowdHuman](http://www.crowdhuman.org/), [HIEVE](http://humaninevents.org/) 和部分业务数据融合训练测试得到，验证集为业务数据
 2. 预测速度为T4 机器上使用TensorRT FP16时的速度, 速度包含数据预处理、模型预测、后处理全流程
@@ -69,12 +69,11 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 **注意:**
  - `--do_break_in_counting`表示是否进行区域出入后计数，不设置即默认为False。
  - `--region_type`表示流量计数的区域，当设置`--do_break_in_counting`时仅可选择`custom`，默认是`custom`，表示以用户自定义区域为出入口，同一物体框的下边界中点坐标在相邻两秒内从区域外到区域内，即完成计数加一。
- - `--region_polygon`表示用户自定义区域的多边形的点坐标序列，每两个为一对点坐标(x,y坐标),按顺时针顺序连成一个封闭区域，至少需要3对点也即6个整数，默认值是`[]`，需要用户自行设置点坐标。用户可以运行[此段代码](../../tools/get_video_info.py)获取所测视频的分辨率帧数，以及可以自定义画出自己想要的多边形区域的可视化并自己调整。运行方式如下：``` ```
+ - `--region_polygon`表示用户自定义区域的多边形的点坐标序列，每两个为一对点坐标(x,y坐标),按顺时针顺序连成一个封闭区域，至少需要3对点也即6个整数，默认值是`[]`，需要用户自行设置点坐标。用户可以运行[此段代码](../../tools/get_video_info.py)获取所测视频的分辨率帧数，以及可以自定义画出自己想要的多边形区域的可视化并自己调整。
  自定义多边形区域的可视化代码运行如下：
-
-```python
-  python3.7 get_video_info.py --video_file=demo.mp4 --region_polygon 200 200 400 200 300 400 100 400
-```
+ ```python
+ python3.7 get_video_info.py --video_file=demo.mp4 --region_polygon 200 200 400 200 300 400 100 400
+ ```
 
 测试效果如下：
 
@@ -84,8 +83,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 ## 方案说明
 
-1. 目标检测/多目标跟踪获取图片/视频输入中的行人检测框，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/)
-2. 多目标跟踪模型方案采用[ByteTrack](https://arxiv.org/pdf/2110.06864.pdf)和[OC-SORT](https://arxiv.org/pdf/2203.14360.pdf)，采用PP-YOLOE替换原文的YOLOX作为检测器，采用BYTETracker和OCSORTTracker作为跟踪器，详细文档参考[ByteTrack](../../../../configs/mot/bytetrack)和[OC-SORT](../../../../configs/mot/ocsort)
+1. 使用目标检测/多目标跟踪技术来获取图片/视频输入中的行人检测框，检测模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe)。
+2. 多目标跟踪模型方案采用[ByteTrack](https://arxiv.org/pdf/2110.06864.pdf)和[OC-SORT](https://arxiv.org/pdf/2203.14360.pdf)，采用PP-YOLOE替换原文的YOLOX作为检测器，采用BYTETracker和OCSORTTracker作为跟踪器，详细文档参考[ByteTrack](../../../../configs/mot/bytetrack)和[OC-SORT](../../../../configs/mot/ocsort)。
 
 ## 参考文献
 ```
