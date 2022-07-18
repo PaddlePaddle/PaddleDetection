@@ -966,6 +966,7 @@ class PipePredictor(object):
                 online_scores,
                 frame_id=frame_id,
                 fps=fps,
+                ids2names=self.mot_predictor.pred_config.labels,
                 do_entrance_counting=self.do_entrance_counting,
                 do_break_in_counting=self.do_break_in_counting,
                 entrance=entrance,
