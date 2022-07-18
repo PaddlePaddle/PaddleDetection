@@ -512,14 +512,15 @@ class SDE_Detector(Detector):
                         online_ids,
                         online_scores,
                         frame_id=frame_id,
-                        ids2names=[])
+                        ids2names=ids2names)
                 else:
                     im = plot_tracking(
                         frame,
                         online_tlwhs,
                         online_ids,
                         online_scores,
-                        frame_id=frame_id)
+                        frame_id=frame_id,
+                        ids2names=ids2names)
                 save_dir = os.path.join(self.output_dir, seq_name)
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
@@ -632,6 +633,7 @@ class SDE_Detector(Detector):
                     online_scores,
                     frame_id=frame_id,
                     fps=fps,
+                    ids2names=ids2names,
                     do_entrance_counting=self.do_entrance_counting,
                     entrance=entrance)
             else:
