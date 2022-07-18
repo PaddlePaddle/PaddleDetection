@@ -1,5 +1,5 @@
 _BASE_: [
-  './_base_/DOTA_sliced_500_025_detection.yml',
+  './_base_/xview_sliced_400_025_detection.yml',
   '../runtime.yml',
   '../ppyoloe/_base_/optimizer_300e.yml',
   '../ppyoloe/_base_/ppyoloe_crn.yml',
@@ -7,14 +7,30 @@ _BASE_: [
 ]
 log_iter: 100
 snapshot_epoch: 10
-weights: output/ppyoloe_crn_l_80e_sliced_DOTA_500_025/model_final
+weights: output/ppyoloe_crn_l_80e_sliced_xview_400_025/model_final
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 depth_mult: 1.0
 width_mult: 1.0
 
+
+CSPResNet:
+  return_idx: [0, 1, 2, 3]
+  use_checkpoint: True
+  use_alpha: True
+
+# when use_checkpoint
+use_fused_allreduce_gradients: True
+
+CustomCSPPAN:
+  out_channels: [768, 384, 192, 64]
+
 TrainReader:
-  batch_size: 8
+  batch_size: 4
+
+LearningRate:
+  base_lr: 0.005
+
 
 epoch: 80
 LearningRate:
@@ -27,6 +43,7 @@ LearningRate:
       epochs: 1
 
 PPYOLOEHead:
+  fpn_strides: [32, 16, 8, 4]
   static_assigner_epoch: -1
   nms:
     name: MultiClassNMS

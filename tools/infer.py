@@ -81,6 +81,31 @@ def parse_args():
         type=bool,
         default=False,
         help="Whether to save inference results to output_dir.")
+    parser.add_argument(
+        "--slice_infer",
+        action='store_true',
+        help="Whether to slice the image and merge the inference results for small object detection."
+    )
+    parser.add_argument(
+        "--slice_height",
+        type=int,
+        default=480,
+        help="Height of the sliced image.")
+    parser.add_argument(
+        "--slice_width",
+        type=int,
+        default=480,
+        help="Width of the sliced image.")
+    parser.add_argument(
+        "--overlap_height_ratio",
+        type=float,
+        default=0.2,
+        help="Overlap height ratio of the sliced image.")
+    parser.add_argument(
+        "--overlap_width_ratio",
+        type=float,
+        default=0.2,
+        help="Overlap width ratio of the sliced image.")
     args = parser.parse_args()
     return args
 
@@ -127,11 +152,22 @@ def run(FLAGS, cfg):
     images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
 
     # inference
-    trainer.predict(
-        images,
-        draw_threshold=FLAGS.draw_threshold,
-        output_dir=FLAGS.output_dir,
-        save_results=FLAGS.save_results)
+    if FLAGS.slice_infer:
+        trainer.slice_predict(
+            images,
+            slice_height=FLAGS.slice_height,
+            slice_width=FLAGS.slice_width,
+            overlap_height_ratio=FLAGS.overlap_height_ratio,
+            overlap_width_ratio=FLAGS.overlap_width_ratio,
+            draw_threshold=FLAGS.draw_threshold,
+            output_dir=FLAGS.output_dir,
+            save_results=FLAGS.save_results)
+    else:
+        trainer.predict(
+            images,
+            draw_threshold=FLAGS.draw_threshold,
+            output_dir=FLAGS.output_dir,
+            save_results=FLAGS.save_results)
 
 
 def main():

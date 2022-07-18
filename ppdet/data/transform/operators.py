@@ -123,12 +123,15 @@ class Decode(BaseOperator):
                 sample['image'] = f.read()
             sample.pop('im_file')
 
-        im = sample['image']
-        data = np.frombuffer(im, dtype='uint8')
-        im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
-        if 'keep_ori_im' in sample and sample['keep_ori_im']:
-            sample['ori_image'] = im
-        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        try:
+            im = sample['image']
+            data = np.frombuffer(im, dtype='uint8')
+            im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
+            if 'keep_ori_im' in sample and sample['keep_ori_im']:
+                sample['ori_image'] = im
+            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        except:
+            im = sample['image']
 
         sample['image'] = im
         if 'h' not in sample:

@@ -203,6 +203,24 @@ class ImageFolder(DetDataset):
         self.image_dir = images
         self.roidbs = self._load_images()
 
+    def set_sub_images(self, images, image_list):
+        records = []
+        ct = 0
+        im_file_name = images[0].split('.')[0]  # only bs=1
+        postfix = images[0].split('.')[-1]
+        for image in image_list:
+            rec = {
+                'im_id': np.array([ct]),
+                'image': image,
+                'im_file': im_file_name + '_{}.{}'.format(ct + 1, postfix),
+            }
+            self._imid2path[ct] = im_file_name + '_{}.{}'.format(ct + 1,
+                                                                 postfix)
+            ct += 1
+            records.append(rec)
+        assert len(records) > 0, "No image file found"
+        self.roidbs = records
+
 
 @register
 class CommonDataset(object):
