@@ -46,6 +46,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
  - `--do_entrance_counting` is whether to calculate flow at the gateway, and the default setting is False.
  - `--draw_center_traj` means whether to draw the track, and the default setting is False. It's worth noting that the test video of track drawing should be filmed by the still camera.
+ - `--region_type` means the region type of flow counting. When set `--do_entrance_counting`, you can select from `horizontal` or `vertical`, the default setting is `horizontal`, means that the central horizontal line of the video picture is used as the entrance and exit, and when the central point of the same object box is on both sides of the central horizontal line of the area in two adjacent seconds, the counting plus one is completed.
 
 The test result is：
 
@@ -68,13 +69,13 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
                                                    --region_polygon 200 200 400 200 300 400 100 400
 ```
 
-**注意:**
+**Note:**
  - `--do_break_in_counting` is whether to calculate flow when break in the user-defined region, and the default setting is False.
  - `--region_type` means the region type of flow counting. When set `--do_break_in_counting`, only `custom` can be selected, and the default is `custom`, which means that the user-defined region is used as the entrance and exit, and when the midpoint coords of the bottom boundary of the same object moves from outside to inside the region within two adjacent seconds, the counting plus one is completed.
  - `--region_polygon` means the point coords sequence of the polygon in the user-defined region. Every two integers are a pair of point coords (x,y), which are connected into a closed area in clockwise order. At least 3 pairs of points, that is, 6 integers, are required. The default value is `[]`, and the user needs to set the point coords by himself. Users can run this [code](../../tools/get_video_info.py) to obtain the resolution and frame number of the measured video, and can customize the visualization of drawing the polygon area they want and adjust it by themselves.
  The visualization code of the custom polygon region runs as follows:
  ```python
- python3.7 get_video_info.py --video_file=demo.mp4 --region_polygon 200 200 400 200 300 400 100 400
+ python get_video_info.py --video_file=demo.mp4 --region_polygon 200 200 400 200 300 400 100 400
  ```
 
 The test result is：
