@@ -27,8 +27,8 @@ PaddleDetection团队提供了针对自动驾驶场景的基于PP-YOLOE的检测
 ```
 TestDataset:
   !ImageFolder
-    anno_path: label_list.txt # 如不使用dataset_dir，则anno_path为相对于PaddleDetection主目录的绝对路径
-    # dataset_dir: dataset/ppvehicle # 如使用dataset_dir，则dataset_dir/anno_path为最终路径
+    anno_path: label_list.txt # 如不使用dataset_dir，则anno_path即为相对于PaddleDetection主目录的相对路径
+    # dataset_dir: dataset/ppvehicle # 如使用dataset_dir，则dataset_dir/anno_path作为新的anno_path
 ```
 label_list.txt里的一行记录一个对应种类，如下所示：
 ```
