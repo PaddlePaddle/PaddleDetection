@@ -60,6 +60,12 @@ def merge_matches(m1, m2, shape):
 
 
 def linear_assignment(cost_matrix, thresh):
+    try:
+        import lap
+    except Exception as e:
+        raise RuntimeError(
+            'Unable to use JDE/FairMOT/ByteTrack, please install lap, for example: `pip install lap`, see https://github.com/gatagat/lap'
+        )
     if cost_matrix.size == 0:
         return np.empty(
             (0, 2), dtype=int), tuple(range(cost_matrix.shape[0])), tuple(

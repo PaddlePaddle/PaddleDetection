@@ -90,6 +90,12 @@ class KalmanBoxTracker(object):
     count = 0
 
     def __init__(self, bbox, delta_t=3):
+        try:
+            from filterpy.kalman import KalmanFilter
+        except Exception as e:
+            raise RuntimeError(
+                'Unable to use OC-SORT, please install filterpy, for example: `pip install filterpy`, see https://github.com/rlabbe/filterpy'
+            )
         self.kf = KalmanFilter(dim_x=7, dim_z=4)
         self.kf.F = np.array([[1, 0, 0, 0, 1, 0, 0], [0, 1, 0, 0, 0, 1, 0],
                               [0, 0, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 0, 0],

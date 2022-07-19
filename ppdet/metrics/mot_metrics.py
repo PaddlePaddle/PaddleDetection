@@ -123,6 +123,13 @@ class MOTEvaluator(object):
         self.data_type = data_type
 
         self.load_annotations()
+        try:
+            import motmetrics as mm
+            mm.lap.default_solver = 'lap'
+        except Exception as e:
+            raise RuntimeError(
+                'Unable to use MOT metric, please install motmetrics, for example: `pip install motmetrics`, see https://github.com/longcw/py-motmetrics'
+            )
         self.reset_accumulator()
 
     def load_annotations(self):
@@ -888,11 +895,13 @@ class KITTIEvaluation(object):
                     print(tmptp, nignoredtp)
                     raise NameError("Something went wrong! TP is negative")
                 if tmpfn < 0:
-                    print(tmpfn, len(g), len(association_matrix), ignoredfn,
-                          nignoredpairs)
+                    print(tmpfn,
+                          len(g),
+                          len(association_matrix), ignoredfn, nignoredpairs)
                     raise NameError("Something went wrong! FN is negative")
                 if tmpfp < 0:
-                    print(tmpfp, len(t), tmptp, nignoredtracker, nignoredtp,
+                    print(tmpfp,
+                          len(t), tmptp, nignoredtracker, nignoredtp,
                           nignoredpairs)
                     raise NameError("Something went wrong! FP is negative")
                 if tmptp + tmpfn is not len(g) - ignoredfn - nignoredtp:
