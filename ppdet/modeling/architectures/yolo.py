@@ -26,7 +26,7 @@ __all__ = ['YOLOv3']
 @register
 class YOLOv3(BaseArch):
     __category__ = 'architecture'
-    __shared__ = ['data_format']
+    __shared__ = ['data_format', 'exclude_nms']
     __inject__ = ['post_process']
 
     def __init__(self,
@@ -35,7 +35,8 @@ class YOLOv3(BaseArch):
                  yolo_head='YOLOv3Head',
                  post_process='BBoxPostProcess',
                  data_format='NCHW',
-                 for_mot=False):
+                 for_mot=False,
+                 exclude_nms=False):
         """
         YOLOv3 network, see https://arxiv.org/abs/1804.02767
 
@@ -54,6 +55,7 @@ class YOLOv3(BaseArch):
         self.yolo_head = yolo_head
         self.post_process = post_process
         self.for_mot = for_mot
+        self.exclude_nms = exclude_nms
         self.return_idx = isinstance(post_process, JDEBBoxPostProcess)
 
     @classmethod
@@ -124,4 +126,7 @@ class YOLOv3(BaseArch):
         return self._forward()
 
     def get_pred(self):
-        return self._forward()
+        if self.exclude_nms:
+            return {'concat_box_class': self._forward()['bbox']}
+        else:
+            return self._forward()
