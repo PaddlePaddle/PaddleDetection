@@ -16,7 +16,13 @@ This code is based on https://github.com/noahcao/OC_SORT/blob/master/trackers/oc
 """
 
 import numpy as np
-from filterpy.kalman import KalmanFilter
+try:
+    from filterpy.kalman import KalmanFilter
+except:
+    print(
+        'Warning: Unable to use OC-SORT, please install filterpy, for example: `pip install filterpy`, see https://github.com/rlabbe/filterpy'
+    )
+    pass
 
 from ..matching.ocsort_matching import associate, linear_assignment, iou_batch
 

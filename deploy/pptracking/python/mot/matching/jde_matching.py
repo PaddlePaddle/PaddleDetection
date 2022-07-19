@@ -15,7 +15,14 @@
 This code is based on https://github.com/Zhongdao/Towards-Realtime-MOT/blob/master/tracker/matching.py
 """
 
-import lap
+try:
+    import lap
+except:
+    print(
+        'Warning: Unable to use JDE/FairMOT/ByteTrack, please install lap, for example: `pip install lap`, see https://github.com/gatagat/lap'
+    )
+    pass
+
 import scipy
 import numpy as np
 from scipy.spatial.distance import cdist
