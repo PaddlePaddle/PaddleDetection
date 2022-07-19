@@ -21,16 +21,21 @@ import copy
 import sys
 import math
 from collections import defaultdict
-from motmetrics.math_util import quiet_divide
 
 import numpy as np
 import pandas as pd
 
 from .metrics import Metric
-import motmetrics as mm
-import openpyxl
-metrics = mm.metrics.motchallenge_metrics
-mh = mm.metrics.create()
+try:
+    import motmetrics as mm
+    from motmetrics.math_util import quiet_divide
+    metrics = mm.metrics.motchallenge_metrics
+    mh = mm.metrics.create()
+except:
+    print(
+        'Warning: Unable to use MCMOT metric, please install motmetrics, for example: `pip install motmetrics`, see https://github.com/longcw/py-motmetrics'
+    )
+    pass
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 

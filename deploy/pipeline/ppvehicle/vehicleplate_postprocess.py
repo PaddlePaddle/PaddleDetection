@@ -17,7 +17,13 @@ import paddle
 from paddle.nn import functional as F
 import re
 from shapely.geometry import Polygon
-import pyclipper
+try:
+    import pyclipper
+except:
+    print(
+        'Warning: Unable to use vehicleplate postprocess in PP-Vehicle, please install pyclipper, for example: `pip install pyclipper`, see https://github.com/fonttools/pyclipper'
+    )
+    pass
 import cv2
 import copy
 

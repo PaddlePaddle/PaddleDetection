@@ -20,8 +20,14 @@ import re
 import cv2
 import gc
 import numpy as np
-from sklearn import preprocessing
-from sklearn.cluster import AgglomerativeClustering
+try:
+    from sklearn import preprocessing
+    from sklearn.cluster import AgglomerativeClustering
+except:
+    print(
+        'Warning: Unable to use MTMCT in PP-Tracking, please install sklearn, for example: `pip install sklearn`'
+    )
+    pass
 import motmetrics as mm
 import pandas as pd
 from tqdm import tqdm
@@ -195,10 +201,10 @@ def find_topk(a, k, axis=-1, largest=True, sorted=True):
 
     a = np.asanyarray(a)
     if largest:
-        index_array = np.argpartition(a, axis_size-k, axis=axis)
-        topk_indices = np.take(index_array, -np.arange(k)-1, axis=axis)
+        index_array = np.argpartition(a, axis_size - k, axis=axis)
+        topk_indices = np.take(index_array, -np.arange(k) - 1, axis=axis)
     else:
-        index_array = np.argpartition(a, k-1, axis=axis)
+        index_array = np.argpartition(a, k - 1, axis=axis)
         topk_indices = np.take(index_array, np.arange(k), axis=axis)
     topk_values = np.take_along_axis(a, topk_indices, axis=axis)
     if sorted:
@@ -228,7 +234,8 @@ def batch_numpy_topk(qf, gf, k1, N=6000):
         temp_qd = temp_qd / (np.max(temp_qd, axis=0)[0])
         temp_qd = temp_qd.T
         initial_rank.append(
-            find_topk(temp_qd, k=k1, axis=1, largest=False, sorted=True)[1])
+            find_topk(
+                temp_qd, k=k1, axis=1, largest=False, sorted=True)[1])
     del temp_qd
     del temp_gf
     del temp_qf
