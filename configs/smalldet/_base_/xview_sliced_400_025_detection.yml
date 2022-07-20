@@ -5,16 +5,16 @@ TrainDataset:
   !COCODataSet
     image_dir: train_images_400_025
     anno_path: train_400_025.json
-    dataset_dir: dataset/xview/xview_slic
+    dataset_dir: dataset/xview_sliced
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
     image_dir: val_images_400_025
     anno_path: val_400_025.json
-    dataset_dir: dataset/xview/xview_slic
+    dataset_dir: dataset/xview_sliced
 
 TestDataset:
   !ImageFolder
-    anno_path: dataset/xview/xview_slic/val_400_025.json
-    dataset_dir: dataset/xview/xview_slic/val_images_400_025
+    anno_path: dataset/xview_sliced/val_400_025.json
+    dataset_dir: dataset/xview_sliced/val_images_400_025
