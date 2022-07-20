@@ -189,18 +189,13 @@ paddle2onnx --model_dir output_inference/picodet_s_320_coco_lcnet/ \
 
 - Simplify ONNX model: use onnx-simplifier to simplify onnx model.
 
-  - Install onnx-simplifier >= 0.3.6:
+  - Install onnxsim >= 0.4.1:
   ```shell
-  pip install onnx-simplifier
+  pip install onnxsim
   ```
   - simplify onnx model:
   ```shell
-  python -m onnxsim picodet_s_320_coco.onnx picodet_s_processed.onnx
-  ```
-
-  If the model includes postprocessing, specify `dynamic-input-shape` when simplifying the model:
-  ```shell
-  python -m onnxsim picodet_s_320_coco.onnx picodet_s_processed.onnx --dynamic-input-shape --input-shape image:1,3,320,320
+  onnxsim picodet_s_320_coco.onnx picodet_s_processed.onnx
   ```
 
 </details>

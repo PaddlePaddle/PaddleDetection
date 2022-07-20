@@ -28,6 +28,15 @@ from .map_utils import ap_per_class
 from .metrics import Metric
 from .munkres import Munkres
 
+try:
+    import motmetrics as mm
+    mm.lap.default_solver = 'lap'
+except:
+    print(
+        'Warning: Unable to use MOT metric, please install motmetrics, for example: `pip install motmetrics`, see https://github.com/longcw/py-motmetrics'
+    )
+    pass
+
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
@@ -114,6 +123,13 @@ class MOTEvaluator(object):
         self.data_type = data_type
 
         self.load_annotations()
+        try:
+            import motmetrics as mm
+            mm.lap.default_solver = 'lap'
+        except Exception as e:
+            raise RuntimeError(
+                'Unable to use MOT metric, please install motmetrics, for example: `pip install motmetrics`, see https://github.com/longcw/py-motmetrics'
+            )
         self.reset_accumulator()
 
     def load_annotations(self):
@@ -129,13 +145,9 @@ class MOTEvaluator(object):
             gt_filename, is_ignore=True)
 
     def reset_accumulator(self):
-        import motmetrics as mm
-        mm.lap.default_solver = 'lap'
         self.acc = mm.MOTAccumulator(auto_id=True)
 
     def eval_frame(self, frame_id, trk_tlwhs, trk_ids, rtn_events=False):
-        import motmetrics as mm
-        mm.lap.default_solver = 'lap'
         # results
         trk_tlwhs = np.copy(trk_tlwhs)
         trk_ids = np.copy(trk_ids)
@@ -193,8 +205,6 @@ class MOTEvaluator(object):
                     names,
                     metrics=('mota', 'num_switches', 'idp', 'idr', 'idf1',
                              'precision', 'recall')):
-        import motmetrics as mm
-        mm.lap.default_solver = 'lap'
         names = copy.deepcopy(names)
         if metrics is None:
             metrics = mm.metrics.motchallenge_metrics
@@ -231,8 +241,6 @@ class MOTMetric(Metric):
         self.result_root = result_root
 
     def accumulate(self):
-        import motmetrics as mm
-        import openpyxl
         metrics = mm.metrics.motchallenge_metrics
         mh = mm.metrics.create()
         summary = self.MOTEvaluator.get_summary(self.accs, self.seqs, metrics)

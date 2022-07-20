@@ -49,7 +49,7 @@ PP-Tracking supports GUI predict and deployment. Please refer to this [doc](http
 ## Installation
 Install all the related dependencies for MOT:
 ```
-pip install lap sklearn motmetrics openpyxl
+pip install lap motmetrics sklearn filterpy
 or
 pip install -r requirements.txt
 ```
