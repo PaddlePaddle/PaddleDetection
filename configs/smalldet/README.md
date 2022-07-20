@@ -14,7 +14,7 @@ PaddleDetection团队提供了针对VisDrone、DOTA水平框、Xview等小目标
 - VisDrone数据集的模型请参照[visdrone](../visdrone)，VisDrone是使用原图训练的，暂时没有进行切图后训练。
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
 - 常用训练验证部署等步骤请参考[ppyoloe](../ppyoloe#getting-start)。
-- 切片推理运行需添加`--slice_infer`，例如：`CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.pdparams --infer_img=demo.jpg --slice_infer`。
+- 切片推理运行需添加`--slice_infer`，例如：`CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.pdparams --infer_img=demo.jpg --draw_threshold=0.25 --slice_infer`，默认子图结果框融合方式为NMS。
 
 
 # SAHI切图工具使用说明

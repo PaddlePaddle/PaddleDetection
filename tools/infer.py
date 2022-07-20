@@ -106,6 +106,11 @@ def parse_args():
         type=float,
         default=0.2,
         help="Overlap width ratio of the sliced image.")
+    parser.add_argument(
+        "--fuse_method",
+        type=str,
+        default='nms',
+        help="Fuse method of the sliced images' detection results.")
     args = parser.parse_args()
     return args
 
@@ -159,6 +164,7 @@ def run(FLAGS, cfg):
             slice_width=FLAGS.slice_width,
             overlap_height_ratio=FLAGS.overlap_height_ratio,
             overlap_width_ratio=FLAGS.overlap_width_ratio,
+            fuse_method=FLAGS.fuse_method,
             draw_threshold=FLAGS.draw_threshold,
             output_dir=FLAGS.output_dir,
             save_results=FLAGS.save_results)

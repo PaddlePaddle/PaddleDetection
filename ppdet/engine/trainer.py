@@ -606,6 +606,7 @@ class Trainer(object):
                       slice_width=480,
                       overlap_height_ratio=0.2,
                       overlap_width_ratio=0.2,
+                      fuse_method='nms',
                       draw_threshold=0.5,
                       output_dir='output',
                       save_results=False):
@@ -613,47 +614,13 @@ class Trainer(object):
             import sahi
             from sahi.slicing import slice_image
         except Exception as e:
-            logger.error('sahi not found, plaese install sahi. '
-                         'for example: `pip install sahi`.')
+            logger.error(
+                'sahi not found, plaese install sahi. '
+                'for example: `pip install sahi`, see https://github.com/obss/sahi.'
+            )
             raise e
 
-        def setup_metrics_for_loader():
-            # mem
-            metrics = copy.deepcopy(self._metrics)
-            mode = self.mode
-            save_prediction_only = self.cfg[
-                'save_prediction_only'] if 'save_prediction_only' in self.cfg else None
-            output_eval = self.cfg[
-                'output_eval'] if 'output_eval' in self.cfg else None
-
-            # modify
-            self.mode = 'test'
-            self.cfg['save_prediction_only'] = True
-            self.cfg['output_eval'] = output_dir
-            self._init_metrics()
-
-            # restore
-            self.mode = mode
-            self.cfg.pop('save_prediction_only')
-            if save_prediction_only is not None:
-                self.cfg['save_prediction_only'] = save_prediction_only
-
-            self.cfg.pop('output_eval')
-            if output_eval is not None:
-                self.cfg['output_eval'] = output_eval
-
-            _metrics = copy.deepcopy(self._metrics)
-            self._metrics = metrics
-
-            return _metrics
-
-        if save_results:
-            metrics = setup_metrics_for_loader()
-        else:
-            metrics = []
-
         imid2path = self.dataset.get_imid2path()
-
         anno_file = self.dataset.get_anno()
         clsid2catid, catid2name = get_categories(
             self.cfg.metric, anno_file=anno_file)
@@ -664,7 +631,6 @@ class Trainer(object):
         if self.cfg.get('print_flops', False):
             flops_loader = create('TestReader')(self.dataset, 0)
             self._flops(flops_loader)
-        results = []
 
         for img in images:
             slice_image_result = slice_image(
@@ -674,33 +640,22 @@ class Trainer(object):
                 overlap_height_ratio=overlap_height_ratio,
                 overlap_width_ratio=overlap_width_ratio, )
 
-        num_slices = len(slice_image_result)
-
-        num_batch = 1
-        # create prediction input
-        num_group = int(num_slices / num_batch)
-
         # perform sliced prediction
         image_list = []
         shift_amount_list = []
-        for _ind in range(num_slices):
+        for _ind in range(len(slice_image_result)):
             sub_img = slice_image_result.images[_ind]
             shift_amount_list.append(slice_image_result.starting_pixels[_ind])
             image_list.append(sub_img)
-            #sub_img = Image.fromarray(sub_img.astype('uint8'))
-            #sub_img.save('{}.jpg'.format(_ind+200), quality=95)
 
         self.dataset.set_sub_images(images, image_list)
         loader = create('TestReader')(self.dataset, 0)
 
+        results = []
         for step_id, data in enumerate(tqdm(loader)):
             self.status['step_id'] = step_id
             # forward
             outs = self.model(data)
-
-            for _m in metrics:
-                _m.update(data, outs)
-
             for key in ['im_shape', 'scale_factor', 'im_id']:
                 if isinstance(data, typing.Sequence):
                     outs[key] = data[0][key]
@@ -710,15 +665,6 @@ class Trainer(object):
                 if hasattr(value, 'numpy'):
                     outs[key] = value.numpy()
             results.append(outs)
-
-        # sniper
-        if type(self.dataset) == SniperCOCODataSet:
-            results = self.dataset.anno_cropper.aggregate_chips_detections(
-                results)
-
-        for _m in metrics:
-            _m.accumulate()
-            _m.reset()
 
         full_results = []
         for outs, image, shift_amount in zip(results, image_list,
@@ -740,7 +686,7 @@ class Trainer(object):
                 keypoint_res,
                 int(im_id),
                 catid2name,
-                threshold=0.2)
+                threshold=draw_threshold)
 
             self.status['result_image'] = np.array(image.copy())
             if self._compose_callback:
@@ -757,19 +703,22 @@ class Trainer(object):
         # merge matching predictions
         merged_results = {'bbox': []}
         if len(results) > 1:
-            if 0:
+            if fuse_method == 'nms':
                 from ppdet.modeling.post_process import nms
                 merged_results['bbox'] = nms(np.concatenate(full_results),
                                              thresh=0.95)
-            else:
+            elif fuse_method == 'concat':
                 merged_results['bbox'] = np.concatenate(full_results)
+            else:
+                raise ValueError(
+                    "Now only support nms or concat to fuse detection results.")
+
             merged_results['im_id'] = np.array([[0]])
             merged_results['bbox_num'] = np.array([len(merged_results['bbox'])])
 
             bbox_res = get_infer_results(merged_results, clsid2catid)
             mask_res, segm_res, keypoint_res = None, None, None
             image_path = images[0]
-
             image = Image.open(image_path).convert('RGB')
             image = ImageOps.exif_transpose(image)
 
@@ -782,12 +731,12 @@ class Trainer(object):
                 keypoint_res,
                 int(im_id),
                 catid2name,
-                threshold=0.15)
+                threshold=draw_threshold)
             # save image with detection
             save_name = self._get_save_image_name(output_dir, image_path)
+            image.save(save_name, quality=95)
             logger.info("Full Detection bbox results save in {}".format(
                 save_name))
-            image.save(save_name, quality=95)
 
     def predict(self,
                 images,
