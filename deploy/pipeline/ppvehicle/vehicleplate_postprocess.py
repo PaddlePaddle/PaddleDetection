@@ -17,7 +17,6 @@ import paddle
 from paddle.nn import functional as F
 import re
 from shapely.geometry import Polygon
-import pyclipper
 import cv2
 import copy
 
@@ -111,6 +110,12 @@ class DBPostProcess(object):
         return np.array(boxes, dtype=np.int16), scores
 
     def unclip(self, box):
+        try:
+            import pyclipper
+        except Exception as e:
+            raise RuntimeError(
+                'Unable to use vehicleplate postprocess in PP-Vehicle, please install pyclipper, for example: `pip install pyclipper`, see https://github.com/fonttools/pyclipper'
+            )
         unclip_ratio = self.unclip_ratio
         poly = Polygon(box)
         distance = poly.area * unclip_ratio / poly.length

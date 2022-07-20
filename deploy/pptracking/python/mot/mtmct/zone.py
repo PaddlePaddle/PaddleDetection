@@ -21,7 +21,13 @@ Note: The following codes are strongly related to zone of the AIC21 test-set S06
 import os
 import cv2
 import numpy as np
-from sklearn.cluster import AgglomerativeClustering
+try:
+    from sklearn.cluster import AgglomerativeClustering
+except:
+    print(
+        'Warning: Unable to use MTMCT in PP-Tracking, please install sklearn, for example: `pip install sklearn`'
+    )
+    pass
 
 BBOX_B = 10 / 15
 
