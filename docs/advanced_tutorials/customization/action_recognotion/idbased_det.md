@@ -1,3 +1,5 @@
+简体中文 | [English](./idbased_det_en.md)
+
 # 基于人体id的检测模型开发
 
 ## 环境准备
@@ -5,7 +7,7 @@
 基于人体id的检测方案是直接使用[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection)的功能进行模型训练的。请按照[安装说明](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/INSTALL_cn.md)完成环境安装，以进行后续的模型训练及使用流程。
 
 ## 数据准备
-基于检测的行为识别方案中，数据准备的流程与一般的检测模型一致，详情可参考[目标检测数据准备](../../tutorials/data/PrepareDetDataSet.md)。将图像和标注数据组织成PaddleDetection中支持的格式之一即可。
+基于检测的行为识别方案中，数据准备的流程与一般的检测模型一致，详情可参考[目标检测数据准备](../../../tutorials/data/PrepareDetDataSet.md)。将图像和标注数据组织成PaddleDetection中支持的格式之一即可。
 
 **注意** ： 在实际使用的预测过程中，使用的是单人图像进行预测，因此在训练过程中建议将图像裁剪为单人图像，再进行烟头检测框的标注，以提升准确率。
 
@@ -24,7 +26,7 @@
 
 ## 新增行为
 ### 数据准备
-参考[目标检测数据准备](../../tutorials/data/PrepareDetDataSet.md)完成训练数据准备。
+参考[目标检测数据准备](../../../tutorials/data/PrepareDetDataSet.md)完成训练数据准备。
 
 准备完成后，数据路径为
 ```
@@ -130,16 +132,16 @@ TestDataset:
 ```
 
 ### 模型训练及评估
-- 模型训练
+#### 模型训练
 
-参考[PP-YOLOE](../../../configs/ppyoloe/README_cn.md)，执行下列步骤实现
+参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，执行下列步骤实现
 ```bash
 # At Root of PaddleDetection
 
 python -m paddle.distributed.launch --gpus 0,1,2,3  tools/train.py -c configs/pphuman/ppyoloe_crn_s_80e_smoking_visdrone.yml --eval
 ```
 
-- 模型评估
+#### 模型评估
 
 训练好模型之后，可以通过以下命令实现对模型指标的评估
 ```bash
