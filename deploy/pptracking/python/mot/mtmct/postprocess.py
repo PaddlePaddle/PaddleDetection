@@ -20,7 +20,13 @@ import re
 import cv2
 from tqdm import tqdm
 import numpy as np
-import motmetrics as mm
+try:
+    import motmetrics as mm
+except:
+    print(
+        'Warning: Unable to use motmetrics in MTMCT in PP-Tracking, please install motmetrics, for example: `pip install motmetrics`, see https://github.com/longcw/py-motmetrics'
+    )
+    pass
 from functools import reduce
 
 from .utils import parse_pt_gt, parse_pt, compare_dataframes_mtmc
@@ -201,6 +207,12 @@ def print_mtmct_result(gt_file, pred_file):
     summary.loc[:, 'idr'] *= 100
     summary.loc[:, 'idf1'] *= 100
     summary.loc[:, 'mota'] *= 100
+    try:
+        import motmetrics as mm
+    except Exception as e:
+        raise RuntimeError(
+            'Unable to use motmetrics in MTMCT in PP-Tracking, please install motmetrics, for example: `pip install motmetrics`, see https://github.com/longcw/py-motmetrics'
+        )
     print(
         mm.io.render_summary(
             summary,

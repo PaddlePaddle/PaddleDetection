@@ -18,8 +18,14 @@ import re
 import cv2
 import gc
 import numpy as np
-from sklearn import preprocessing
-from sklearn.cluster import AgglomerativeClustering
+try:
+    from sklearn import preprocessing
+    from sklearn.cluster import AgglomerativeClustering
+except:
+    print(
+        'Warning: Unable to use MTMCT in PP-Human, please install sklearn, for example: `pip install sklearn`'
+    )
+    pass
 import pandas as pd
 from tqdm import tqdm
 from functools import reduce

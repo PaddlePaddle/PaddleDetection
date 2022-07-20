@@ -20,9 +20,6 @@ import re
 import cv2
 import gc
 import numpy as np
-from sklearn import preprocessing
-from sklearn.cluster import AgglomerativeClustering
-import motmetrics as mm
 import pandas as pd
 from tqdm import tqdm
 import warnings
@@ -195,10 +192,10 @@ def find_topk(a, k, axis=-1, largest=True, sorted=True):
 
     a = np.asanyarray(a)
     if largest:
-        index_array = np.argpartition(a, axis_size-k, axis=axis)
-        topk_indices = np.take(index_array, -np.arange(k)-1, axis=axis)
+        index_array = np.argpartition(a, axis_size - k, axis=axis)
+        topk_indices = np.take(index_array, -np.arange(k) - 1, axis=axis)
     else:
-        index_array = np.argpartition(a, k-1, axis=axis)
+        index_array = np.argpartition(a, k - 1, axis=axis)
         topk_indices = np.take(index_array, np.arange(k), axis=axis)
     topk_values = np.take_along_axis(a, topk_indices, axis=axis)
     if sorted:
@@ -228,7 +225,8 @@ def batch_numpy_topk(qf, gf, k1, N=6000):
         temp_qd = temp_qd / (np.max(temp_qd, axis=0)[0])
         temp_qd = temp_qd.T
         initial_rank.append(
-            find_topk(temp_qd, k=k1, axis=1, largest=False, sorted=True)[1])
+            find_topk(
+                temp_qd, k=k1, axis=1, largest=False, sorted=True)[1])
     del temp_qd
     del temp_gf
     del temp_qf
@@ -374,6 +372,12 @@ def visual_rerank(prb_feats,
 
 
 def normalize(nparray, axis=0):
+    try:
+        from sklearn import preprocessing
+    except Exception as e:
+        raise RuntimeError(
+            'Unable to use sklearn in MTMCT in PP-Tracking, please install sklearn, for example: `pip install sklearn`'
+        )
     nparray = preprocessing.normalize(nparray, norm='l2', axis=axis)
     return nparray
 
@@ -453,6 +457,12 @@ def parse_pt_gt(mot_feature):
 
 # eval result
 def compare_dataframes_mtmc(gts, ts):
+    try:
+        import motmetrics as mm
+    except Exception as e:
+        raise RuntimeError(
+            'Unable to use motmetrics in MTMCT in PP-Tracking, please install motmetrics, for example: `pip install motmetrics`, see https://github.com/longcw/py-motmetrics'
+        )
     """Compute ID-based evaluation metrics for MTMCT
     Return:
         df (pandas.DataFrame): Results of the evaluations in a df with only the 'idf1', 'idp', and 'idr' columns.
@@ -528,6 +538,12 @@ def get_labels(cid_tid_dict,
                use_ff=True,
                use_rerank=True,
                use_st_filter=False):
+    try:
+        from sklearn.cluster import AgglomerativeClustering
+    except Exception as e:
+        raise RuntimeError(
+            'Unable to use sklearn in MTMCT in PP-Tracking, please install sklearn, for example: `pip install sklearn`'
+        )
     # 1st cluster
     sim_matrix = get_sim_matrix(
         cid_tid_dict,
