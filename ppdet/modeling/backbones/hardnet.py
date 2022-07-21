@@ -146,7 +146,7 @@ class HarDBlock(nn.Layer):
 class HarDNet(nn.Layer):
     def __init__(self, depth_wise=False, return_idx=[1, 3, 8, 13], arch=85):
         super(HarDNet, self).__init__()
-        assert arch in [68, 85], "HarDNet-{} not support.".format(arch)
+        assert arch in [68, 85], "HarDNet-{} is not supported.".format(arch)
         if arch == 85:
             first_ch = [48, 96]
             second_kernel = 3
@@ -162,7 +162,7 @@ class HarDNet(nn.Layer):
             gr = [14, 16, 20, 40]
             n_layers = [8, 16, 16, 16]
         else:
-            raise ValueError("HarDNet-{} not support.".format(arch))
+            raise ValueError("HarDNet-{} is not supported.".format(arch))
 
         self.return_idx = return_idx
         self._out_channels = [96, 214, 458, 784]
