@@ -1,0 +1,44 @@
+architecture: SparseInst
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+num_classes: &num_classes 80
+
+SparseInst:
+  backbone: ResNet
+  encoder: InstanceContextEncoder
+  decoder: GroupIAMDecoder
+  cls_threshold: 0.005
+  mask_threshold: 0.45
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1, 2, 3]
+  num_stages: 4
+
+InstanceContextEncoder:
+  num_channels: 256
+  in_channels: [512, 1024, 2048]
+
+GroupIAMDecoder:
+  num_classes: *num_classes
+  num_masks: 100
+  in_channels: 256
+  kernel_dim: 128
+  scale_factor: 2.0
+  inst_dim: 256
+  mask_dim: 256
+  inst_num_convs: 4
+  mask_num_convs: 4
+  output_iam: false
+  groups: 4
+
+SparseInstLoss:
+  class_loss_weight: 2.0
+  mask_pixel_loss_weight: 5.0
+  mask_dice_loss_weight: 2.0
+  objectness_loss_weight: 1.0
+  matcher_alpha: 0.8
+  matcher_beta: 0.2
+  num_classes: *num_classes
