@@ -1,3 +1,5 @@
+简体中文 | [English](./skeletonbased_rec_en.md)
+
 # 基于人体骨骼点的行为识别
 
 ## 环境准备
@@ -143,7 +145,6 @@ DATASET: #DATASET field
 ```
 
 ### 模型训练与测试
-
 - 在PaddleVideo中，使用以下命令即可开始训练：
 
 ```bash
