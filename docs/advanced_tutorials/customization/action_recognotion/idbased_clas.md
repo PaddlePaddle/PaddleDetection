@@ -1,3 +1,5 @@
+简体中文 | [English](./idbased_clas_en.md)
+
 # 基于人体id的分类模型开发
 
 ## 环境准备
