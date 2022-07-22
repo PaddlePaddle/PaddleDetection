@@ -152,17 +152,30 @@ class Detector(object):
     def postprocess(self, inputs, result):
         # postprocess output of predictor
         np_boxes_num = result['boxes_num']
+        if np_boxes_num.sum() == 0:
+            return {
+                'boxes_num': np.array([0]),
+                'boxes': np.zeros(
+                    [0, 6], dtype='float32')
+            }
         out_result = {k: [] for k, v in result.items() if v is not None}
-        idx = 0
-        for num_box in np_boxes_num:
-            for k, v in out_result.items():
-                v.append(result[k][idx:idx + num_box])
-            idx += num_box
-            if num_box == 0:
-                print('[WARNNING] No object detected.')
-        out_result = {k: np.concatenate(v) for k, v in out_result.items()}
-        out_result['boxes_num'] = result['boxes_num']
-        return out_result
+        if 'int' in np_boxes_num.dtype.name:
+            idx = 0
+            for num_box in np_boxes_num:
+                for k, v in out_result.items():
+                    v.append(result[k][idx:idx + num_box])
+                idx += num_box
+                if num_box == 0:
+                    print('[WARNNING] No object detected.')
+            out_result = {k: np.concatenate(v) for k, v in out_result.items()}
+            out_result['boxes_num'] = result['boxes_num']
+            return out_result
+        else:
+            return {
+                'boxes_num': np.array([0]),
+                'boxes': np.zeros(
+                    [0, 6], dtype='float32')
+            }
 
     def filter_box(self, result, threshold):
         np_boxes_num = result['boxes_num']
@@ -194,7 +207,7 @@ class Detector(object):
                             shape: [N, im_h, im_w]
         '''
         # model prediction
-        np_boxes, np_masks = None, None
+        np_boxes, np_masks, np_boxes_num = None, None, np.array([0])
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
