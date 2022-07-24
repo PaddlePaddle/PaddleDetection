@@ -58,8 +58,8 @@ bool JDETracker::update(const cv::Mat &dets, const cv::Mat &emb, std::vector<Tra
     TrajectoryPool candidates(dets.rows);
     for (int i = 0; i < dets.rows; ++i)
     {
-        float score = *dets.ptr<float>(i, 4);
-        const cv::Mat &ltrb_ = dets(cv::Rect(0, i, 4, 1));
+        float score = *dets.ptr<float>(i, 1);
+        const cv::Mat &ltrb_ = dets(cv::Rect(2, i, 4, 1));
         cv::Vec4f ltrb = mat2vec4f(ltrb_);
         const cv::Mat &embedding = emb(cv::Rect(0, i, emb.cols, 1));
         candidates[i] = Trajectory(ltrb, score, embedding);
