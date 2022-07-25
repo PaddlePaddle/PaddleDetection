@@ -23,7 +23,17 @@ PaddleDetection团队提供了针对自动驾驶场景的基于PP-YOLOE的检测
 **注意:**
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
 - 具体使用教程请参考[ppyoloe](../ppyoloe#getting-start)。
-
+- 如需预测出对应类别，可自行修改和添加对应的label_list.txt文件(一行记录一个对应种类)，TestDataset中的anno_path为绝对路径，如：
+```
+TestDataset:
+  !ImageFolder
+    anno_path: label_list.txt # 如不使用dataset_dir，则anno_path即为相对于PaddleDetection主目录的相对路径
+    # dataset_dir: dataset/ppvehicle # 如使用dataset_dir，则dataset_dir/anno_path作为新的anno_path
+```
+label_list.txt里的一行记录一个对应种类，如下所示：
+```
+vehicle
+```
 
 ## 引用
 ```

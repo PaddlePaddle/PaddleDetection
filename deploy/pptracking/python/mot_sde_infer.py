@@ -32,7 +32,7 @@ sys.path.insert(0, parent_path)
 
 from det_infer import Detector, get_test_images, print_arguments, bench_log, PredictConfig, load_predictor
 from mot_utils import argsparser, Timer, get_current_memory_mb, video2frames, _is_valid_video
-from mot.tracker import JDETracker, DeepSORTTracker
+from mot.tracker import JDETracker, DeepSORTTracker, OCSORTTracker
 from mot.utils import MOTTimer, write_mot_results, get_crops, clip_box, flow_statistic
 from mot.visualize import plot_tracking, plot_tracking_dict
 
@@ -64,7 +64,16 @@ class SDE_Detector(Detector):
         secs_interval (int): The seconds interval to count after tracking, default as 10
         do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
             or getting out from the entrance, default as False，only support single class
-            counting in MOT.
+            counting in MOT, and the video should be taken by a static camera.
+        do_break_in_counting(bool): Whether counting the numbers of identifiers break in
+            the area, default as False，only support single class counting in MOT,
+            and the video should be taken by a static camera.
+        region_type (str): Area type for entrance counting or break in counting, 'horizontal'
+            and 'vertical' used when do entrance counting. 'custom' used when do break in counting. 
+            Note that only support single-class MOT, and the video should be taken by a static camera.
+        region_polygon (list): Clockwise point coords (x0,y0,x1,y1...) of polygon of area when
+            do_break_in_counting. Note that only support single-class MOT and
+            the video should be taken by a static camera.
         reid_model_dir (str): reid model dir, default None for ByteTrack, but set for DeepSORT
         mtmct_dir (str): MTMCT dir, default None, set for doing MTMCT
     """
@@ -88,6 +97,9 @@ class SDE_Detector(Detector):
                  draw_center_traj=False,
                  secs_interval=10,
                  do_entrance_counting=False,
+                 do_break_in_counting=False,
+                 region_type='horizontal',
+                 region_polygon=[],
                  reid_model_dir=None,
                  mtmct_dir=None):
         super(SDE_Detector, self).__init__(
@@ -108,6 +120,13 @@ class SDE_Detector(Detector):
         self.draw_center_traj = draw_center_traj
         self.secs_interval = secs_interval
         self.do_entrance_counting = do_entrance_counting
+        self.do_break_in_counting = do_break_in_counting
+        self.region_type = region_type
+        self.region_polygon = region_polygon
+        if self.region_type == 'custom':
+            assert len(
+                self.region_polygon
+            ) > 6, 'region_type is custom, region_polygon should be at least 3 pairs of point coords.'
 
         assert batch_size == 1, "MOT model only supports batch_size=1."
         self.det_times = Timer(with_tracker=True)
@@ -142,8 +161,10 @@ class SDE_Detector(Detector):
         # tracker config
         self.use_deepsort_tracker = True if tracker_cfg[
             'type'] == 'DeepSORTTracker' else False
+        self.use_ocsort_tracker = True if tracker_cfg[
+            'type'] == 'OCSORTTracker' else False
+
         if self.use_deepsort_tracker:
-            # use DeepSORTTracker
             if self.reid_pred_config is not None and hasattr(
                     self.reid_pred_config, 'tracker'):
                 cfg = self.reid_pred_config.tracker
@@ -161,6 +182,28 @@ class SDE_Detector(Detector):
                 matching_threshold=matching_threshold,
                 min_box_area=min_box_area,
                 vertical_ratio=vertical_ratio, )
+
+        elif self.use_ocsort_tracker:
+            det_thresh = cfg.get('det_thresh', 0.4)
+            max_age = cfg.get('max_age', 30)
+            min_hits = cfg.get('min_hits', 3)
+            iou_threshold = cfg.get('iou_threshold', 0.3)
+            delta_t = cfg.get('delta_t', 3)
+            inertia = cfg.get('inertia', 0.2)
+            min_box_area = cfg.get('min_box_area', 0)
+            vertical_ratio = cfg.get('vertical_ratio', 0)
+            use_byte = cfg.get('use_byte', False)
+
+            self.tracker = OCSORTTracker(
+                det_thresh=det_thresh,
+                max_age=max_age,
+                min_hits=min_hits,
+                iou_threshold=iou_threshold,
+                delta_t=delta_t,
+                inertia=inertia,
+                min_box_area=min_box_area,
+                vertical_ratio=vertical_ratio,
+                use_byte=use_byte)
         else:
             # use ByteTracker
             use_byte = cfg.get('use_byte', False)
@@ -283,6 +326,32 @@ class SDE_Detector(Detector):
                     feat_data['feat'] = _feat
                     tracking_outs['feat_data'].update({_imgname: feat_data})
             return tracking_outs
+
+        elif self.use_ocsort_tracker:
+            # use OCSORTTracker, only support singe class
+            online_targets = self.tracker.update(pred_dets, pred_embs)
+            online_tlwhs = defaultdict(list)
+            online_scores = defaultdict(list)
+            online_ids = defaultdict(list)
+            for t in online_targets:
+                tlwh = [t[0], t[1], t[2] - t[0], t[3] - t[1]]
+                tscore = float(t[4])
+                tid = int(t[5])
+                if tlwh[2] * tlwh[3] <= self.tracker.min_box_area: continue
+                if self.tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                        3] > self.tracker.vertical_ratio:
+                    continue
+                if tlwh[2] * tlwh[3] > 0:
+                    online_tlwhs[0].append(tlwh)
+                    online_ids[0].append(tid)
+                    online_scores[0].append(tscore)
+            tracking_outs = {
+                'online_tlwhs': online_tlwhs,
+                'online_scores': online_scores,
+                'online_ids': online_ids,
+            }
+            return tracking_outs
+
         else:
             # use ByteTracker, support multiple class
             online_tlwhs = defaultdict(list)
@@ -443,14 +512,15 @@ class SDE_Detector(Detector):
                         online_ids,
                         online_scores,
                         frame_id=frame_id,
-                        ids2names=[])
+                        ids2names=ids2names)
                 else:
                     im = plot_tracking(
                         frame,
                         online_tlwhs,
                         online_ids,
                         online_scores,
-                        frame_id=frame_id)
+                        frame_id=frame_id,
+                        ids2names=ids2names)
                 save_dir = os.path.join(self.output_dir, seq_name)
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
@@ -502,7 +572,25 @@ class SDE_Detector(Detector):
             out_id_list = list()
             prev_center = dict()
             records = list()
-            entrance = [0, height / 2., width, height / 2.]
+            if self.do_entrance_counting or self.do_break_in_counting:
+                if self.region_type == 'horizontal':
+                    entrance = [0, height / 2., width, height / 2.]
+                elif self.region_type == 'vertical':
+                    entrance = [width / 2, 0., width / 2, height]
+                elif self.region_type == 'custom':
+                    entrance = []
+                    assert len(
+                        self.region_polygon
+                    ) % 2 == 0, "region_polygon should be pairs of coords points when do break_in counting."
+                    for i in range(0, len(self.region_polygon), 2):
+                        entrance.append([
+                            self.region_polygon[i], self.region_polygon[i + 1]
+                        ])
+                    entrance.append([width, height])
+                else:
+                    raise ValueError("region_type:{} is not supported.".format(
+                        self.region_type))
+
         video_fps = fps
 
         while (1):
@@ -523,18 +611,19 @@ class SDE_Detector(Detector):
             online_tlwhs, online_scores, online_ids = mot_results[0]
 
             # flow statistic for one class, and only for bytetracker
-            if num_classes == 1 and not self.use_deepsort_tracker:
+            if num_classes == 1 and not self.use_deepsort_tracker and not self.use_ocsort_tracker:
                 result = (frame_id + 1, online_tlwhs[0], online_scores[0],
                           online_ids[0])
                 statistic = flow_statistic(
                     result, self.secs_interval, self.do_entrance_counting,
-                    video_fps, entrance, id_set, interval_id_set, in_id_list,
-                    out_id_list, prev_center, records, data_type, num_classes)
+                    self.do_break_in_counting, self.region_type, video_fps,
+                    entrance, id_set, interval_id_set, in_id_list, out_id_list,
+                    prev_center, records, data_type, num_classes)
                 records = statistic['records']
 
             fps = 1. / timer.duration
-            if self.use_deepsort_tracker:
-                # use DeepSORTTracker, only support singe class
+            if self.use_deepsort_tracker or self.use_ocsort_tracker:
+                # use DeepSORTTracker or OCSORTTracker, only support singe class
                 results[0].append(
                     (frame_id + 1, online_tlwhs, online_scores, online_ids))
                 im = plot_tracking(
@@ -544,6 +633,7 @@ class SDE_Detector(Detector):
                     online_scores,
                     frame_id=frame_id,
                     fps=fps,
+                    ids2names=ids2names,
                     do_entrance_counting=self.do_entrance_counting,
                     entrance=entrance)
             else:
@@ -714,6 +804,9 @@ def main():
         draw_center_traj=FLAGS.draw_center_traj,
         secs_interval=FLAGS.secs_interval,
         do_entrance_counting=FLAGS.do_entrance_counting,
+        do_break_in_counting=FLAGS.do_break_in_counting,
+        region_type=FLAGS.region_type,
+        region_polygon=FLAGS.region_polygon,
         reid_model_dir=FLAGS.reid_model_dir,
         mtmct_dir=FLAGS.mtmct_dir, )
 

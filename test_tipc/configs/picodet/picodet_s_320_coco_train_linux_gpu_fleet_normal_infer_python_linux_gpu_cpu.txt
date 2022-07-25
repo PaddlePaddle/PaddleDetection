@@ -1,0 +1,51 @@
+===========================train_params===========================
+model_name:picodet_s_320_coco
+python:python3.7
+gpu_list:192.168.0.1,192.168.0.2;0,1
+use_gpu:True
+auto_cast:null
+epoch:lite_train_lite_infer=1|lite_train_whole_infer=1|whole_train_whole_infer=300
+save_dir:null
+TrainReader.batch_size:lite_train_lite_infer=2|lite_train_whole_infer=2|whole_train_whole_infer=128
+pretrain_weights:https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams
+trained_model_name:model_final.pdparams
+train_infer_img_dir:./dataset/coco/test2017/
+filename:null
+##
+trainer:norm_train
+norm_train:tools/train.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml -o
+pact_train:tools/train.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml --slim_config _template_pact -o
+fpgm_train:tools/train.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml --slim_config _template_fpgm -o
+distill_train:null
+null:null
+null:null
+##
+===========================eval_params===========================
+eval:tools/eval.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml -o
+null:null
+##
+===========================infer_params===========================
+--output_dir:./output_inference
+weights:https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams
+norm_export:tools/export_model.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml -o
+pact_export:tools/export_model.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml --slim_config _template_pact -o
+fpgm_export:tools/export_model.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml --slim_config _template_fpgm -o
+distill_export:null
+export1:null
+export2:null
+kl_quant_export:tools/post_quant.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml --slim_config configs/slim/post_quant/yolov3_darknet53_ptq.yml -o
+##
+infer_mode:norm
+infer_quant:False
+inference:./deploy/python/infer.py
+--device:cpu
+--enable_mkldnn:False
+--cpu_threads:4
+--batch_size:1
+--use_tensorrt:null
+--run_mode:paddle
+--model_dir:
+--image_dir:./dataset/coco/test2017/
+--save_log_path:null
+--run_benchmark:False
+null:null

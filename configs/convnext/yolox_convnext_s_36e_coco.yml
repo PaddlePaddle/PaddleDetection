@@ -1,0 +1,58 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '../yolox/_base_/yolox_cspdarknet.yml',
+  '../yolox/_base_/yolox_reader.yml'
+]
+depth_mult: 0.33
+width_mult: 0.50
+
+log_iter: 100
+snapshot_epoch: 5
+weights: output/yolox_convnext_s_36e_coco/model_final
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/convnext_tiny_22k_224.pdparams
+
+
+YOLOX:
+  backbone: ConvNeXt
+  neck: YOLOCSPPAN
+  head: YOLOXHead
+  size_stride: 32
+  size_range: [15, 25] # multi-scale range [480*480 ~ 800*800]
+
+ConvNeXt:
+  arch: 'tiny'
+  drop_path_rate: 0.4
+  layer_scale_init_value: 1.0
+  return_idx: [1, 2, 3]
+
+
+TrainReader:
+  batch_size: 8
+  mosaic_epoch: 30
+
+
+YOLOXHead:
+  l1_epoch: 30
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 10000
+    keep_top_k: 1000
+    score_threshold: 0.001
+    nms_threshold: 0.65
+
+
+epoch: 36
+LearningRate:
+  base_lr: 0.0002
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [36]
+    use_warmup: false
+
+OptimizerBuilder:
+  regularizer: false
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0005

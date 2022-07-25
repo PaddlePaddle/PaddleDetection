@@ -578,9 +578,10 @@ class VisionTransformer(nn.Layer):
 
         x = self.patch_embed(x)
 
-        x_shape = paddle.shape(x)  # b * c * h * w
+        B, D, Hp, Wp = x.shape  # b * c * h * w
 
-        cls_tokens = self.cls_token.expand((x_shape[0], -1, -1))
+        cls_tokens = self.cls_token.expand(
+            (B, self.cls_token.shape[-2], self.cls_token.shape[-1]))
         x = x.flatten(2).transpose([0, 2, 1])  # b * hw * c
         x = paddle.concat([cls_tokens, x], axis=1)
 
@@ -592,8 +593,6 @@ class VisionTransformer(nn.Layer):
 
         rel_pos_bias = self.rel_pos_bias(
         ) if self.rel_pos_bias is not None else None
-
-        B, _, Hp, Wp = x_shape
 
         feats = []
         for idx, blk in enumerate(self.blocks):
@@ -607,7 +606,7 @@ class VisionTransformer(nn.Layer):
                 xp = paddle.reshape(
                     paddle.transpose(
                         self.norm(x[:, 1:, :]), perm=[0, 2, 1]),
-                    shape=[B, -1, Hp, Wp])
+                    shape=[B, D, Hp, Wp])
                 feats.append(xp)
 
         if self.with_fpn:

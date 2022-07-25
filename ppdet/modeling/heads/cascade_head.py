@@ -162,7 +162,8 @@ class CascadeHead(BBoxHead):
                  num_cascade_stages=3,
                  bbox_loss=None,
                  reg_class_agnostic=True,
-                 stage_loss_weights=None):
+                 stage_loss_weights=None,
+                 loss_normalize_pos=False):
 
         nn.Layer.__init__(self, )
         self.head = head
@@ -184,6 +185,7 @@ class CascadeHead(BBoxHead):
 
         self.reg_class_agnostic = reg_class_agnostic
         num_bbox_delta = 4 if reg_class_agnostic else 4 * num_classes
+        self.loss_normalize_pos = loss_normalize_pos
 
         self.bbox_score_list = []
         self.bbox_delta_list = []
@@ -242,9 +244,16 @@ class CascadeHead(BBoxHead):
 
             # TODO (lyuwenyu) Is it correct for only one class ?
             if not self.reg_class_agnostic and i < self.num_cascade_stages - 1:
-                deltas = deltas.reshape([-1, self.num_classes, 4])
+                deltas = deltas.reshape([deltas.shape[0], self.num_classes, 4])
                 labels = scores[:, :-1].argmax(axis=-1)
-                deltas = deltas[paddle.arange(deltas.shape[0]), labels]
+
+                if self.training:
+                    deltas = deltas[paddle.arange(deltas.shape[0]), labels]
+                else:
+                    deltas = deltas[(deltas * F.one_hot(
+                        labels, num_classes=self.num_classes).unsqueeze(-1) != 0
+                                     ).nonzero(as_tuple=True)].reshape(
+                                         [deltas.shape[0], 4])
 
             head_out_list.append([scores, deltas, rois])
             pred_bbox = self._get_pred_bbox(deltas, rois, self.bbox_weight[i])
@@ -253,8 +262,13 @@ class CascadeHead(BBoxHead):
             loss = {}
             for stage, value in enumerate(zip(head_out_list, targets_list)):
                 (scores, deltas, rois), targets = value
-                loss_stage = self.get_loss(scores, deltas, targets, rois,
-                                           self.bbox_weight[stage])
+                loss_stage = self.get_loss(
+                    scores,
+                    deltas,
+                    targets,
+                    rois,
+                    self.bbox_weight[stage],
+                    loss_normalize_pos=self.loss_normalize_pos)
                 for k, v in loss_stage.items():
                     loss[k + "_stage{}".format(
                         stage)] = v * self.stage_loss_weights[stage]
@@ -286,6 +300,12 @@ class CascadeHead(BBoxHead):
         num_prop = []
         for p in proposals:
             num_prop.append(p.shape[0])
+
+        # NOTE(dev): num_prob will be tagged as LoDTensorArray because it
+        # depends on batch_size under @to_static. However the argument
+        # num_or_sections in paddle.split does not support LoDTensorArray,
+        # so we use [-1] to replace it and whitout lossing correctness.
+        num_prop = [-1] if len(num_prop) == 1 else num_prop
         return pred_bbox.split(num_prop)
 
     def get_prediction(self, head_out_list):

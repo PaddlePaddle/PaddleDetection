@@ -18,8 +18,14 @@ import re
 import cv2
 import gc
 import numpy as np
-from sklearn import preprocessing
-from sklearn.cluster import AgglomerativeClustering
+try:
+    from sklearn import preprocessing
+    from sklearn.cluster import AgglomerativeClustering
+except:
+    print(
+        'Warning: Unable to use MTMCT in PP-Human, please install sklearn, for example: `pip install sklearn`'
+    )
+    pass
 import pandas as pd
 from tqdm import tqdm
 from functools import reduce
@@ -329,6 +335,9 @@ def res2dict(multi_res):
 
 def mtmct_process(multi_res, captures, mtmct_vis=True, output_dir="output"):
     cid_tid_dict = res2dict(multi_res)
+    if len(cid_tid_dict) == 0:
+        print("no tracking result found, mtmct will be skiped.")
+        return
     map_tid = sub_cluster(cid_tid_dict)
 
     if not os.path.exists(output_dir):

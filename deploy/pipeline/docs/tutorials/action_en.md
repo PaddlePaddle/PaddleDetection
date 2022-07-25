@@ -60,9 +60,9 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
 
 ## How to Use
 
-- Download models from the links of the above table and unzip them to ```./output_inference```.
+1. Download models `Pedestrian Detection/Tracking`, `Keypoint Detection` and `Falling Recognition` from the links in the Model Zoo and unzip them to ```./output_inference```. The models are automatically downloaded by default. If you download them manually, you need to modify the `model_dir` as the model storage path.
 
-- Now the only available input is the video input in the action recognition module. set the "enable: True" of `SKELETON_ACTION` in infer_cfg_pphuman.yml. And then run the command:
+2. Now the only available input is the video input in the action recognition module. set the "enable: True" of `SKELETON_ACTION` in infer_cfg_pphuman.yml. And then run the command:
 
   ```python
   python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
@@ -70,7 +70,7 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
                                                      --device=gpu
   ```
 
-- There are two ways to modify the model path:
+3. There are two ways to modify the model path:
 
   - In ```./deploy/pipeline/config/infer_cfg_pphuman.yml```, you can configurate different model paths，which is proper only if you match keypoint models and action recognition models with the fields of `KPT` and `SKELETON_ACTION` respectively, and modify the corresponding path of each field into the expected path.
   - Add `--model_dir` in the command line to revise the model path：
@@ -81,13 +81,14 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
                                                        --device=gpu \
                                                        --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
     ```
+4. For detailed parameter description, please refer to [Parameter Description](./QUICK_STARTED.md)
 
 ### Introduction to the Solution
 
 1. Get the pedestrian detection box and the tracking ID number of the video input through object detection and multi-object tracking. The adopted model is PP-YOLOE, and for details, please refer to [PP-YOLOE](../../../../configs/ppyoloe).
 
 2. Capture every pedestrian in frames of the input video accordingly by using the coordinate of the detection box.
-3. In this strategy, we use the [keypoint detection model](../../../configs/keypoint/hrnet/dark_hrnet_w32_256x192.yml) to obtain 17 skeleton keypoints. Their sequences and types are identical to those of COCO. For details, please refer to the `COCO dataset` part of [how to prepare keypoint datasets](../../../docs/tutorials/PrepareKeypointDataSet_en.md).
+3. In this strategy, we use the [keypoint detection model](../../../../configs/keypoint/hrnet/dark_hrnet_w32_256x192.yml) to obtain 17 skeleton keypoints. Their sequences and types are identical to those of COCO. For details, please refer to the `COCO dataset` part of [how to prepare keypoint datasets](../../../../docs/tutorials/data/PrepareKeypointDataSet_en.md).
 
 4. Each target pedestrian with a tracking ID has their own accumulation of skeleton keypoints, which is used to form a keypoint sequence in time order. When the number of accumulated frames reach a preset threshold or the tracking is lost, the action recognition model will be applied to judging the action type of the time-ordered keypoint sequence. The current model only supports the recognition of the act of falling down, and the relationship between the action type and `class id` is：
 
@@ -98,7 +99,7 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
 ```
 - The falling action recognition model uses [ST-GCN](https://arxiv.org/abs/1801.07455), and employ the [PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/stgcn.md) toolkit to complete model training.
 
-## Image-Classification-Based Action Recognition -- Calling Detection
+## Image-Classification-Based Action Recognition -- Calling Recognition
 
 <div align="center">  <img src="../images/calling.gif" width='1000'/> <center>Data source and copyright owner：Skyinfor
 Technology. Thanks for the provision of actual scenario data, which are only
@@ -122,9 +123,9 @@ ID_BASED_CLSACTION: # config for classfication-based action recognition model
 
 ### How to Use
 
-1. Download models from the links of the above table and unzip them to ```./output_inference```.
+1. Download models `Pedestrian Detection/Tracking` and `Calling Recognition` from the links in `Model Zoo` and unzip them to ```./output_inference```. The models are automatically downloaded by default. If you download them manually, you need to modify the `model_dir` as the model storage path.
 
-2. Now the only available input is the video input in the action recognition module. set the "enable: True" of `ID_BASED_CLSACTION` in infer_cfg_pphuman.yml.
+2. Now the only available input is the video input in the action recognition module. Set the "enable: True" of `ID_BASED_CLSACTION` in infer_cfg_pphuman.yml.
 
 3. Run this command:
   ```python
@@ -132,6 +133,7 @@ ID_BASED_CLSACTION: # config for classfication-based action recognition model
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
   ```
+4. For detailed parameter description, please refer to [Parameter Description](./QUICK_STARTED.md)
 
 ### Introduction to the Solution
 1. Get the pedestrian detection box and the tracking ID number of the video input through object detection and multi-object tracking. The adopted model is PP-YOLOE, and for details, please refer to [PP-YOLOE](../../../configs/ppyoloe).
@@ -168,7 +170,7 @@ ID_BASED_DETACTION: # Config for detection-based action recognition model
 
 ### How to Use
 
-1. Download models from the links of the above table and unzip them to ```./output_inference```.
+1. Download models `Pedestrian Detection/Tracking` and `Smoking Recognition` from the links in `Model Zoo` and unzip them to ```./output_inference```. The models are automatically downloaded by default. If you download them manually, you need to modify the `model_dir` as the model storage path.
 
 2. Now the only available input is the video input in the action recognition module. set the "enable: True" of `ID_BASED_DETACTION` in infer_cfg_pphuman.yml.
 
@@ -178,6 +180,7 @@ ID_BASED_DETACTION: # Config for detection-based action recognition model
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
   ```
+4. For detailed parameter description, please refer to [Parameter Description](./QUICK_STARTED.md)
 
 ### Introduction to the Solution
 1. Get the pedestrian detection box and the tracking ID number of the video input through object detection and multi-object tracking. The adopted model is PP-YOLOE, and for details, please refer to [PP-YOLOE](../../../../configs/ppyoloe).
@@ -223,18 +226,20 @@ VIDEO_ACTION:  # Config for detection-based action recognition model
 
 ### How to Use
 
-1. Download models from the links of the above table and unzip them to ```./output_inference```.
+1. Download model `Fighting Detection` from the links of the above table and unzip it to ```./output_inference```. The models are automatically downloaded by default. If you download them manually, you need to modify the `model_dir` as the model storage path.
 
 2. Modify the file names in the `ppTSM` folder  to `model.pdiparams, model.pdiparams.info and model.pdmodel`;
 
 3. Now the only available input is the video input in the action recognition module. set the "enable: True" of `VIDEO_ACTION` in infer_cfg_pphuman.yml.
 
-3. Run this command:
+4. Run this command:
   ```python
   python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
   ```
+5. For detailed parameter description, please refer to [Parameter Description](./QUICK_STARTED.md).
+
 
 The result is shown as follow:
 
@@ -252,14 +257,14 @@ The current fight recognition model is using [PP-TSM](https://github.com/PaddleP
 
 The pretrained models are provided and can be used directly, including pedestrian detection/ tracking, keypoint detection, smoking, calling and fighting recognition. If users need to train custom action or optimize the model performance, please refer the link below.
 
-| Task | Model | Training and Export doc |
+| Task | Model | Development Document |
 | ---- | ---- | -------- |
 | pedestrian detection/tracking | PP-YOLOE | [doc](../../../../configs/ppyoloe/README.md#getting-start) |
 | keypoint detection | HRNet | [doc](../../../../configs/keypoint/README_en.md#3training-and-testing) |
-| action recognition (fall down) |  ST-GCN  | [doc](https://github.com/PaddlePaddle/PaddleVideo/tree/develop/applications/PPHuman) |
-| action recognition (smoking) |  PP-YOLOE  | [doc](../../../../docs/advanced_tutorials/customization/action.md) |
-| action recognition (calling) |  PP-HGNet  | [doc](../../../../docs/advanced_tutorials/customization/action.md) |
-| action recognition (fighting) |  PP-TSM  | [doc](../../../../docs/advanced_tutorials/customization/action.md) |
+| action recognition (fall down) |  ST-GCN  | [doc](../../../../docs/advanced_tutorials/customization/action_recognotion/skeletonbased_rec.md) |
+| action recognition (smoking) |  PP-YOLOE  | [doc](../../../../docs/advanced_tutorials/customization/action_recognotion/idbased_det.md) |
+| action recognition (calling) |  PP-HGNet  | [doc](../../../../docs/advanced_tutorials/customization/action_recognotion/idbased_clas.md) |
+| action recognition (fighting) |  PP-TSM  | [doc](../../../../docs/advanced_tutorials/customization/action_recognotion/videobased_rec.md) |
 
 
 ## Reference

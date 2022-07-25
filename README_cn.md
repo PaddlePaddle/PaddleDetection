@@ -23,8 +23,17 @@
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> 产品动态
 
-- 🔥 **2022.3.24：PaddleDetection发布[release/2.4版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)**
+- 🔥 **2022.7.14：[行人分析工具PP-Human v2](./deploy/pipeline)发布**
+  - 四大产业特色功能：高性能易扩展的五大复杂行为识别、闪电级人体属性识别、一行代码即可实现的人流检测与轨迹留存以及高精度跨镜跟踪
+  - 底层核心算法性能强劲：覆盖行人检测、跟踪、属性三类核心算法能力，对目标人数、光线、背景均无限制
+  - 极低使用门槛：提供保姆级全流程开发及模型优化策略、一行命令完成推理、兼容各类数据输入格式
 
+**活动预告** 7月19日晚20点，PaddleDetection举办PP-Human v2线上私享交流会，欢迎大家扫码进群，获取线上会议链接！名额有限，抓紧报名！
+<div  align="center">
+  <img src="https://user-images.githubusercontent.com/22989727/178771163-66639dc0-cb65-4413-8de4-6ac5c5eed9f5.jpg" width="200"/>
+</div>
+
+- 2022.3.24：PaddleDetection发布[release/2.4版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)
   - 发布高精度云边一体SOTA目标检测模型[PP-YOLOE](configs/ppyoloe)，提供s/m/l/x版本，l版本COCO test2017数据集精度51.6%，V100预测速度78.1 FPS，支持混合精度训练，训练较PP-YOLOv2加速33%，全系列多尺度模型，满足不同硬件算力需求，可适配服务器、边缘端GPU及其他服务器端AI加速卡。
   - 发布边缘端和CPU端超轻量SOTA目标检测模型[PP-PicoDet增强版](configs/picodet)，精度提升2%左右，CPU预测速度提升63%，新增参数量0.7M的PicoDet-XS模型，提供模型稀疏化和量化功能，便于模型加速，各类硬件无需单独开发后处理模块，降低部署门槛。
   - 发布实时行人分析工具[PP-Human](deploy/pipeline)，支持行人跟踪、人流量统计、人体属性识别与摔倒检测四大能力，基于真实场景数据特殊优化，精准识别各类摔倒姿势，适应不同环境背景、光线及摄像角度。
@@ -68,7 +77,7 @@
 
   <div align="center">
   <img src="https://user-images.githubusercontent.com/48054808/157800129-2f9a0b72-6bb8-4b10-8310-93ab1639253f.jpg"  width = "200" />  
-  <img src="https://user-images.githubusercontent.com/48054808/160531099-9811bbe6-cfbb-47d5-8bdb-c2b40684d7dd.png"  width = "200" />  
+  <img src="https://user-images.githubusercontent.com/34162360/177678712-4655747d-4290-4ad9-b7a1-4564a5418ac6.jpg"  width = "200" />  
   </div>
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157827140-03ffaff7-7d14-48b4-9440-c38986ea378c.png" width="20"/> 套件结构概览
@@ -353,19 +362,22 @@
 <summary><b> 5. 产业级实时行人分析工具</b></summary>
 
 
-| 功能\模型                     | 目标检测                                                                                   | 多目标跟踪                                                                                  | 属性识别                                                                                      | 关键点检测                                                                                     | 行为识别                                                              | ReID                                                                   |
-|:------------------------- |:-------------------------------------------------------------------------------------- |:-------------------------------------------------------------------------------------- |:-----------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------:|:-----------------------------------------------------------------:|:----------------------------------------------------------------------:|
-| 行人检测                      | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                        |                                                                                           |                                                                                           |                                                                   |                                                                        |
-| 行人跟踪                      |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                           |                                                                                           |                                                                   |                                                                        |
-| 属性识别（图片）                  | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |                                                                                           |                                                                   |                                                                        |
-| 属性识别（视频）                  |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                           |                                                                                           |                                                                   |                                                                        |
-| 摔倒检测                      |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                           | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |                                                                        |
-| 跨镜跟踪                      |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                           |                                                                                           |                                                                   | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
-| **模型精度**                  | **mAP 56.3**                                                                           | **MOTA 72.0**                                                                          | **mA 94.86**                                                                              | **AP 87.1**                                                                               | **AP 96.43**                                                      | **mAP 98.8**                                                           |
-| **T4 TensorRT FP16 预测速度** | **28.0ms**                                                                             | **33.1ms**                                                                             | **单人2ms**                                                                                 | **单人2.9ms**                                                                               | **单人2.7ms**                                                       | **单人1.5ms**                                                            |
+| 任务            | 端到端速度（ms）|  模型方案  |  模型体积 |
+| :---------:     | :-------:  |  :------: |:------: |
+|  行人检测（高精度）  | 25.1ms  |  [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |  
+|  行人检测（轻量级）  | 16.2ms  |  [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | 27M |
+|  行人跟踪（高精度）  | 31.8ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |  
+|  行人跟踪（轻量级）  | 21.0ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | 27M |
+|  属性识别（高精度）  |   单人8.5ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [属性识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_small_person_attribute_954_infer.zip) | 目标检测：182M<br>属性识别：86M |
+|  属性识别（轻量级）  |   单人7.1ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [属性识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.zip) | 目标检测：182M<br>属性识别：86M |
+|  摔倒识别  |   单人10ms | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) <br> [关键点检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) <br> [基于关键点行为识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) | 多目标跟踪：182M<br>关键点检测：101M<br>基于关键点行为识别：21.8M |
+|  闯入识别  |   31.8ms | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |
+|  打架识别  |   19.7ms | [视频分类](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 90M |
+|  抽烟识别  |   单人15.1ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[基于人体id的目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip) | 目标检测：182M<br>基于人体id的目标检测：27M |
+|  打电话识别  |   单人ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[基于人体id的图像分类](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) | 目标检测：182M<br>基于人体id的图像分类：45M |
 
 
-**点击“ ✅ ”即可下载对应模型**
+点击模型方案中的模型即可下载指定模型
 
 详细信息参考[文档](deploy/pipeline)
 
@@ -424,7 +436,7 @@
 
 - **【行业特色】2022.3.26 [智慧城市行业七日课](https://aistudio.baidu.com/aistudio/education/group/info/25620)：** 城市规划、城市治理、智慧政务、交通管理、社区治理
 
-### [产业实践范例教程](./industrial_tutorial/README_cn.md)
+### [产业实践范例教程](./industrial_tutorial/README.md)
 
 - [基于PP-PicoDet增强版的路面垃圾检测](https://aistudio.baidu.com/aistudio/projectdetail/3846170?channelType=0&channel=0)
 
@@ -471,7 +483,7 @@
 - 感谢[FL77N](https://github.com/FL77N/)贡献`Sparse-RCNN`模型。
 - 感谢[Chen-Song](https://github.com/Chen-Song)贡献`Swin Faster-RCNN`模型。
 - 感谢[yangyudong](https://github.com/yangyudong2020), [hchhtc123](https://github.com/hchhtc123) 开发PP-Tracking GUI界面
-- 感谢[Shigure19](https://github.com/Shigure19) 开发PP-TinyPose健身APP
+- 感谢Shigure19 开发PP-TinyPose健身APP
 - 感谢[manangoel99](https://github.com/manangoel99)贡献Wandb可视化方式
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157835276-9aab9d1c-1c46-446b-bdd4-5ab75c5cfa48.png" width="20"/> 引用

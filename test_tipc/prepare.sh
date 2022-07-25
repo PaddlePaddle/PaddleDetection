@@ -58,6 +58,10 @@ elif [ ${MODE} = "cpp_infer" ];then
         wget -nc -P ./output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/mask_rcnn_r50_fpn_1x_coco_ptq.tar --no-check-certificate
         cd ./output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ && tar -xvf mask_rcnn_r50_fpn_1x_coco_ptq.tar && mv -n mask_rcnn_r50_fpn_1x_coco_ptq/* .
         cd ../../
+    elif [[ ${model_name} = "tinypose_128x96_KL" ]]; then
+        wget -nc -P ./output_inference/tinypose_128x96_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/tinypose_128x96_ptq.tar --no-check-certificate
+        cd ./output_inference/tinypose_128x96_KL/ && tar -xvf tinypose_128x96_ptq.tar && mv -n tinypose_128x96_ptq/* .
+        cd ../../
     fi
     # download mot lite data
     wget -nc -P ./dataset/mot/ https://paddledet.bj.bcebos.com/data/tipc/mot_tipc.tar --no-check-certificate
@@ -124,6 +128,11 @@ elif [ ${MODE} = "serving_infer" ];then
         cd ./output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ && tar -xvf mask_rcnn_r50_fpn_1x_coco_ptq.tar && mv -n mask_rcnn_r50_fpn_1x_coco_ptq/* .
         cd ../../
         eval "${python} -m paddle_serving_client.convert --dirname output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ --model_filename model.pdmodel --params_filename model.pdiparams --serving_server output_inference/mask_rcnn_r50_fpn_1x_coco_KL/serving_server --serving_client output_inference/mask_rcnn_r50_fpn_1x_coco_KL/serving_client"
+    elif [[ ${model_name} = "tinypose_128x96_KL" ]]; then
+        wget -nc -P ./output_inference/tinypose_128x96_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/tinypose_128x96_ptq.tar --no-check-certificate
+        cd ./output_inference/tinypose_128x96_KL/ && tar -xvf tinypose_128x96_ptq.tar && mv -n tinypose_128x96_ptq/* .
+        cd ../../
+        eval "${python} -m paddle_serving_client.convert --dirname output_inference/tinypose_128x96_KL/ --model_filename model.pdmodel --params_filename model.pdiparams --serving_server output_inference/tinypose_128x96_KL/serving_server --serving_client output_inference/tinypose_128x96_KL/serving_client"
     fi
 else
     # download coco lite data

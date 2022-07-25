@@ -40,11 +40,11 @@ PaddleDetection 关键点检测能力紧跟业内最新最优算法方案，包�
 
 | 检测模型                                                     | 关键点模型                            |             输入尺寸             |         COCO数据集精度          |          平均推理耗时 (FP16)           | 参数量 （M）                |          Flops (G)          |                           模型权重                           |                  Paddle-Lite部署模型（FP16)                  |
 | :----------------------------------------------------------- | :------------------------------------ | :------------------------------: | :-----------------------------: | :------------------------------------: | --------------------------- | :-------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [PP-TinyPose](./tinypose_128x96.yml)  | 检测：192x192<br>关键点：128x96  | 检测mAP：29.0<br>关键点AP：58.1 | 检测耗时：2.37ms<br>关键点耗时：3.27ms | 检测：1.18<br/>关键点：1.36 | 检测：0.35<br/>关键点：0.08 | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
-| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [PP-TinyPose](./tinypose_256x192.yml) | 检测：320x320<br>关键点：256x192 | 检测mAP：38.5<br>关键点AP：68.8 | 检测耗时：6.30ms<br>关键点耗时：8.33ms | 检测：1.18<br/>关键点：1.36 | 检测：0.97<br/>关键点：0.32 | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
+| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [PP-TinyPose](./tiny_pose/tinypose_128x96.yml)  | 检测：192x192<br>关键点：128x96  | 检测mAP：29.0<br>关键点AP：58.1 | 检测耗时：2.37ms<br>关键点耗时：3.27ms | 检测：1.18<br/>关键点：1.36 | 检测：0.35<br/>关键点：0.08 | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
+| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [PP-TinyPose](./tiny_pose/tinypose_256x192.yml) | 检测：320x320<br>关键点：256x192 | 检测mAP：38.5<br>关键点AP：68.8 | 检测耗时：6.30ms<br>关键点耗时：8.33ms | 检测：1.18<br/>关键点：1.36 | 检测：0.97<br/>关键点：0.32 | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
 
 
-*详细关于PP-TinyPose的使用请参考[文档]((./tiny_pose/README.md))。
+*详细关于PP-TinyPose的使用请参考[文档](./tiny_pose/README.md)。
 
 ### 服务端模型推荐
 
@@ -97,7 +97,7 @@ MPII数据集
 
 ### 2、数据准备
 
-​    目前KeyPoint模型支持[COCO](https://cocodataset.org/#keypoints-2017)数据集和[MPII](http://human-pose.mpi-inf.mpg.de/#overview)数据集，数据集的准备方式请参考[关键点数据准备](../../docs/tutorials/PrepareKeypointDataSet_cn.md)。
+​    目前KeyPoint模型支持[COCO](https://cocodataset.org/#keypoints-2017)数据集和[MPII](http://human-pose.mpi-inf.mpg.de/#overview)数据集，数据集的准备方式请参考[关键点数据准备](../../docs/tutorials/data/PrepareKeypointDataSet.md)。
 
 ​    关于config配置文件内容说明请参考[关键点配置文件说明](../../docs/tutorials/KeyPointConfigGuide_cn.md)。
 
@@ -191,7 +191,7 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 
 ## 自定义数据训练
 
-我们以[tinypose_256x192](.tiny_pose/README.md)为例来说明对于自定义数据如何修改：
+我们以[tinypose_256x192](./tiny_pose/README.md)为例来说明对于自定义数据如何修改：
 
 #### 1、配置文件[tinypose_256x192.yml](../../configs/keypoint/tiny_pose/tinypose_256x192.yml)
 
