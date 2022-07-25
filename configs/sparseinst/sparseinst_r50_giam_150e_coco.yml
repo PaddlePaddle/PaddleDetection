@@ -6,3 +6,4 @@ _BASE_: [
   '_base_/sparseinst_reader.yml',
 ]
 weights: output/sparseinst_r50_giam_150e_coco/model_final
+snapshot_epoch: 10
