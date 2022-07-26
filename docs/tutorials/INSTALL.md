@@ -110,6 +110,15 @@ Ran 7 tests in 12.816s
 OK
 ```
 
+## Use built Docker images
+
+> If you  do not have a Docker environment, please refer to [Docker](https://www.docker.com/).
+PaddleDetection provides built docker images with latest code. All you have to do is to **pull the docker image **and **run the docker image**. Then you can enjoy PaddleDetection without any extra action.
+
+Get these images and guidance in [docker hub](https://hub.docker.com/repository/docker/paddlecloud/paddledetection), including CPU, GPU, ROCm environment versions. 
+
+If you have some customized requirements about automatic building docker images, you can get it in github repo [PaddlePaddle/PaddleCloud](https://github.com/PaddlePaddle/PaddleCloud/tree/main/tekton).
+
 ## Inference demo
 
 **Congratulation!** Now you have installed PaddleDetection successfully and try our inference demo:
