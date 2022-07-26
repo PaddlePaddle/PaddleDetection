@@ -262,11 +262,6 @@ else
                     continue
                 fi
 
-                if [ ${autocast} = "amp" ] || [ ${autocast} = "fp16" ]; then
-                    set_autocast="--amp"
-                else
-                    set_autocast=" "
-                fi
                 set_epoch=$(func_set_params "${epoch_key}" "${epoch_num}")
                 set_pretrain=$(func_set_params "${pretrain_model_key}" "${pretrain_model_value}")
                 set_batchsize=$(func_set_params "${train_batch_key}" "${train_batch_value}")
@@ -274,6 +269,12 @@ else
                 set_use_gpu=$(func_set_params "${train_use_gpu_key}" "${use_gpu}")
                 set_train_params1=$(func_set_params "${train_param_key1}" "${train_param_value1}")
                 save_log="${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}"
+                if [ ${autocast} = "amp" ] || [ ${autocast} = "fp16" ]; then
+                    set_autocast="--amp"
+                    set_train_params1="amp_level=O2"
+                else
+                    set_autocast=" "
+                fi
 
                 set_save_model=$(func_set_params "${save_model_key}" "${save_log}")
                 nodes="1"
