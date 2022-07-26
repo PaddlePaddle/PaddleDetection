@@ -83,6 +83,9 @@ line_num=`expr $line_num + 1`
 fp_items=$(func_parser_value "${lines[line_num]}")
 line_num=`expr $line_num + 1`
 epoch=$(func_parser_value "${lines[line_num]}")
+eval "sed -i '10i\    repeat: ${epoch}' configs/datasets/coco_detection.yml"
+eval "sed -i '10i\    repeat: ${epoch}' configs/datasets/coco_instance.yml"
+eval "sed -i '10i\    repeat: ${epoch}' configs/datasets/mot.yml"
 
 line_num=`expr $line_num + 1`
 profile_option_key=$(func_parser_key "${lines[line_num]}")
@@ -157,7 +160,7 @@ for batch_size in ${batch_size_list[*]}; do
             # sed batchsize and precision
             func_sed_params "$FILENAME" "${line_precision}" "$precision"
             func_sed_params "$FILENAME" "${line_batchsize}" "$MODE=$batch_size"
-            func_sed_params "$FILENAME" "${line_epoch}" "$MODE=$epoch"
+            func_sed_params "$FILENAME" "${line_epoch}" "$MODE=1"
             gpu_id=$(set_gpu_id $device_num)
 
             if [ ${#gpu_id} -le 1 ];then
