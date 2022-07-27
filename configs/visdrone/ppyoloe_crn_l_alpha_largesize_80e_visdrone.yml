@@ -17,15 +17,7 @@ eval_width: &eval_width 1920
 eval_size: &eval_size [*eval_height, *eval_width]
 
 CSPResNet:
-  layers: [3, 6, 6, 3]
-  channels: [64, 128, 256, 512, 1024]
-  return_idx: [1, 2, 3]
-  use_large_stem: True
-  use_checkpoint: True
   use_alpha: True
-
-# when use_checkpoint
-use_fused_allreduce_gradients: True
 
 TrainReader:
   sample_transforms:
