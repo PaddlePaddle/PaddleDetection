@@ -1,14 +1,33 @@
+import os
+import glob
 import paddle
 from paddle.utils.cpp_extension import CppExtension, CUDAExtension, setup
 
-if __name__ == "__main__":
+
+def get_extensions():
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    ext_root_dir = os.path.join(root_dir, 'csrc')
+    sources = []
+    for ext_name in os.listdir(ext_root_dir):
+        ext_dir = os.path.join(ext_root_dir, ext_name)
+        source = glob.glob(os.path.join(ext_dir, '*.cc'))
+        kwargs = dict()
+        if paddle.device.is_compiled_with_cuda():
+            source += glob.glob(os.path.join(ext_dir, '*.cu'))
+
+        if not source:
+            continue
+
+        sources += source
+
     if paddle.device.is_compiled_with_cuda():
-        setup(
-            name='rbox_iou_ops',
-            ext_modules=CUDAExtension(
-                sources=['rbox_iou_op.cc', 'rbox_iou_op.cu'],
-                extra_compile_args={'cxx': ['-DPADDLE_WITH_CUDA']}))
+        extension = CUDAExtension(
+            sources, extra_compile_args={'cxx': ['-DPADDLE_WITH_CUDA']})
     else:
-        setup(
-            name='rbox_iou_ops',
-            ext_modules=CppExtension(sources=['rbox_iou_op.cc']))
+        extension = CppExtension(sources)
+
+    return extension
+
+
+if __name__ == "__main__":
+    setup(name='ext_op', ext_modules=get_extensions())

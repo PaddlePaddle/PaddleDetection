@@ -5,11 +5,7 @@ from shapely.geometry import Polygon
 import paddle
 import unittest
 
-try:
-    from rbox_iou_ops import rbox_iou
-except Exception as e:
-    print('import rbox_iou_ops error', e)
-    sys.exit(-1)
+from ext_op import rbox_iou
 
 
 def rbox2poly_single(rrect, get_best_begin_point=False):
@@ -80,7 +76,7 @@ def rbox_overlaps(anchors, gt_bboxes, use_cv2=False):
         gt_bboxes: [M, 5]  x1,y1,x2,y2,angle
 
     Returns:
-
+        iou: [NA, M]
     """
     assert anchors.shape[1] == 5
     assert gt_bboxes.shape[1] == 5
@@ -89,17 +85,16 @@ def rbox_overlaps(anchors, gt_bboxes, use_cv2=False):
     anchors_ploy = [rbox2poly_single(e) for e in anchors]
 
     num_gt, num_anchors = len(gt_bboxes_ploy), len(anchors_ploy)
-    iou = np.zeros((num_gt, num_anchors), dtype=np.float64)
+    iou = np.zeros((num_anchors, num_gt), dtype=np.float64)
 
     start_time = time.time()
-    for i in range(num_gt):
-        for j in range(num_anchors):
+    for i in range(num_anchors):
+        for j in range(num_gt):
             try:
-                iou[i, j] = intersection(gt_bboxes_ploy[i], anchors_ploy[j])
+                iou[i, j] = intersection(anchors_ploy[i], gt_bboxes_ploy[j])
             except Exception as e:
-                print('cur gt_bboxes_ploy[i]', gt_bboxes_ploy[i],
-                      'anchors_ploy[j]', anchors_ploy[j], e)
-    iou = iou.T
+                print('cur anchors_ploy[i]', anchors_ploy[i],
+                      'gt_bboxes_ploy[j]', gt_bboxes_ploy[j], e)
     return iou
 
 
