@@ -1,0 +1,30 @@
+_BASE_: [
+  'ppyoloe_crn_l_80e_visdrone.yml',
+]
+weights: output/ppyoloe_crn_l_p2_alpha_80e_visdrone/model_final
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
+
+TrainReader:
+  batch_size: 4
+
+LearningRate:
+  base_lr: 0.005
+
+CSPResNet:
+  return_idx: [0, 1, 2, 3]
+  use_alpha: True
+
+CustomCSPPAN:
+  out_channels: [768, 384, 192, 64]
+
+PPYOLOEHead:
+  fpn_strides: [32, 16, 8, 4]
+
+EvalDataset:
+  !COCODataSet
+#     image_dir: VisDrone2019-DET-val
+#     anno_path: val.json
+    image_dir: test_dev
+    anno_path: test_dev.json
+    dataset_dir: dataset/visdrone

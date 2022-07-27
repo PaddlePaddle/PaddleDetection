@@ -1,7 +1,7 @@
 _BASE_: [
-  'ppyoloe_crn_l_80e_visdrone.yml',
+  'ppyoloe_crn_s_80e_visdrone.yml',
 ]
-weights: output/ppyoloe_p2_crn_l_80e_visdrone/model_final
+weights: output/ppyoloe_crn_s_p2_alpha_80e_visdrone/model_final
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 
@@ -13,6 +13,7 @@ LearningRate:
 
 CSPResNet:
   return_idx: [0, 1, 2, 3]
+  use_alpha: True
 
 CustomCSPPAN:
   out_channels: [768, 384, 192, 64]
