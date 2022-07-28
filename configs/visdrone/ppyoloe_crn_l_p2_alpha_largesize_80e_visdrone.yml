@@ -1,15 +1,23 @@
 _BASE_: [
   'ppyoloe_crn_l_80e_visdrone.yml',
 ]
-weights: output/ppyoloe_crn_l_80e_visdrone_largesize/model_final
-
+weights: output/ppyoloe_crn_l_p2_alpha_largesize_80e_visdrone/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 
-TrainReader:
-  batch_size: 2
 
 LearningRate:
-  base_lr: 0.0025
+  base_lr: 0.005
+
+
+CSPResNet:
+  return_idx: [0, 1, 2, 3]
+  use_alpha: True
+
+CustomCSPPAN:
+  out_channels: [768, 384, 192, 64]
+
+PPYOLOEHead:
+  fpn_strides: [32, 16, 8, 4]
 
 
 worker_num: 2
@@ -25,11 +33,11 @@ TrainReader:
     - RandomCrop: {}
     - RandomFlip: {}
   batch_transforms:
-    - BatchRandomResize: {target_size: [1024, 1088, 1152, 1216, 1280, 1344, 1408, 1472, 1536, 1600, 1664, 1728, 1792, 1856, 1920], random_size: True, random_interp: True, keep_ratio: False}
+    - BatchRandomResize: {target_size: [1024, 1088, 1152, 1216, 1280, 1344, 1408, 1472, 1536, 1600, 1664, 1728, 1792, 1856, 1920, 1984, 2048], random_size: True, random_interp: True, keep_ratio: False}
     - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
     - Permute: {}
     - PadGT: {}
-  batch_size: 2
+  batch_size: 1
   shuffle: true
   drop_last: true
   use_shared_memory: true
