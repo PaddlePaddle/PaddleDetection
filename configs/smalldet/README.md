@@ -7,6 +7,7 @@
 |:---------|:---------------:|:---------------:|:---------------:|:------:|:-----------------------:|:-------------------:|:---------:| :-----: |
 |PP-YOLOE-l|   Xview  |  400 | 0.25 | 60 |  14.5 | 26.8 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_xview_400_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_xview_400_025.yml) |
 |PP-YOLOE-l|   DOTA   |  500 | 0.25 | 15 |  46.8 |  72.6 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_dota_500_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_DOTA_500_025.yml) |
+|PP-YOLOE-l| VisDrone |  500 | 0.25 | 10 |  29.7 |  48.5 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
 
 
 **注意:**

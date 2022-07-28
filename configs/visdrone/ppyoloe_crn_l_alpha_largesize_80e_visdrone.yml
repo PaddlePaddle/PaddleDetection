@@ -2,22 +2,21 @@ _BASE_: [
   'ppyoloe_crn_l_80e_visdrone.yml',
 ]
 weights: output/ppyoloe_crn_l_alpha_largesize_80e_visdrone/model_final
-
 pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 
-TrainReader:
-  batch_size: 2
+
+CSPResNet:
+  use_alpha: True
+
 
 LearningRate:
   base_lr: 0.0025
+
 
 worker_num: 2
 eval_height: &eval_height 1920
 eval_width: &eval_width 1920
 eval_size: &eval_size [*eval_height, *eval_width]
-
-CSPResNet:
-  use_alpha: True
 
 TrainReader:
   sample_transforms:
