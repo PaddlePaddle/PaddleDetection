@@ -1,17 +1,18 @@
 # PP-YOLOE 小目标检测模型
 
-PaddleDetection团队提供了针对VisDrone、DOTA水平框、Xview等小目标场景数据集的基于PP-YOLOE的检测模型，用户可以下载模型进行使用。
+PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小目标场景数据集的基于PP-YOLOE的检测模型，用户可以下载模型进行使用。
 
 
 |    模型   |       数据集     |  SLICE_SIZE  |  OVERLAP_RATIO  | 类别数  | mAP<sup>val<br>0.5:0.95 | AP<sup>val<br>0.5 | 下载链接  | 配置文件 |
 |:---------|:---------------:|:---------------:|:---------------:|:------:|:-----------------------:|:-------------------:|:---------:| :-----: |
 |PP-YOLOE-P2-l|   DOTA   |  500 | 0.25 | 15 |  53.9 |  78.6 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.pdparams) | [配置文件](./ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.yml) |
 |PP-YOLOE-P2-l|   Xview  |  400 | 0.25 | 60 |  14.9 | 27.0 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_p2_crn_l_80e_sliced_xview_400_025.pdparams) | [配置文件](./ppyoloe_p2_crn_l_80e_sliced_xview_400_025.yml) |
+|PP-YOLOE-l| VisDrone-DET|  500 | 0.25 | 10 |  29.7 |  48.5 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
 
 
 **注意:**
 - **SLICE_SIZE**表示使用SAHI工具切图后子图的边长大小，**OVERLAP_RATIO**表示切图的子图之间的重叠率，DOTA水平框和Xview数据集均是切图后训练，AP指标为切图后的子图val上的指标。
-- VisDrone数据集的模型请参照[visdrone](../visdrone)，VisDrone是使用原图训练的，暂时没有进行切图后训练。
+- VisDrone-DET数据集请参照[visdrone](../visdrone)，可使用原图训练，也可使用切图后训练。
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
 - 常用训练验证部署等步骤请参考[ppyoloe](../ppyoloe#getting-start)。
 - 切片推理运行需添加`--slice_infer`，例如：`CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.pdparams --infer_img=demo.jpg --draw_threshold=0.25 --slice_infer`，默认子图结果框融合方式为NMS。
@@ -23,7 +24,7 @@ PaddleDetection团队提供了针对VisDrone、DOTA水平框、Xview等小目标
 
 ### VisDrone-DET
 
-VisDrone-DET是一个无人机航拍场景的小目标数据集，整理后的COCO格式VisDrone-DET数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/smalldet/visdrone.zip)，检测其中的10类，包括 `pedestrian(1), people(2), bicycle(3), car(4), van(5), truck(6), tricycle(7), awning-tricycle(8), bus(9), motor(10)`，原始数据集[下载链接](https://github.com/VisDrone/VisDrone-Dataset)。
+VisDrone-DET是一个无人机航拍场景的小目标数据集，整理后的COCO格式VisDrone-DET数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/smalldet/visdrone.zip)，检测其中的**10类**，包括 `pedestrian(1), people(2), bicycle(3), car(4), van(5), truck(6), tricycle(7), awning-tricycle(8), bus(9), motor(10)`，原始数据集[下载链接](https://github.com/VisDrone/VisDrone-Dataset)。
 具体使用和下载请参考[visdrone](../visdrone)。
 
 ### DOTA水平框：
@@ -167,5 +168,16 @@ python slice_tools/slice_image.py --image_dir ../../dataset/DOTA/train/ --json_p
   booktitle={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
   pages={3974--3983},
   year={2018}
+}
+
+@ARTICLE{9573394,
+  author={Zhu, Pengfei and Wen, Longyin and Du, Dawei and Bian, Xiao and Fan, Heng and Hu, Qinghua and Ling, Haibin},
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  title={Detection and Tracking Meet Drones Challenge},
+  year={2021},
+  volume={},
+  number={},
+  pages={1-1},
+  doi={10.1109/TPAMI.2021.3119563}
 }
 ```

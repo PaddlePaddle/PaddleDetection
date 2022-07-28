@@ -38,6 +38,7 @@ class DetDataset(Dataset):
         data_fields (list): key name of data dictionary, at least have 'image'.
         sample_num (int): number of samples to load, -1 means all.
         use_default_label (bool): whether to load default label list.
+        repeat (int): repeat times for dataset, use in benchmark.
     """
 
     def __init__(self,
@@ -47,6 +48,7 @@ class DetDataset(Dataset):
                  data_fields=['image'],
                  sample_num=-1,
                  use_default_label=None,
+                 repeat=1,
                  **kwargs):
         super(DetDataset, self).__init__()
         self.dataset_dir = dataset_dir if dataset_dir is not None else ''
@@ -55,16 +57,19 @@ class DetDataset(Dataset):
         self.data_fields = data_fields
         self.sample_num = sample_num
         self.use_default_label = use_default_label
+        self.repeat = repeat
         self._epoch = 0
         self._curr_iter = 0
 
     def __len__(self, ):
-        return len(self.roidbs)
+        return len(self.roidbs) * self.repeat
 
     def __call__(self, *args, **kwargs):
         return self
 
     def __getitem__(self, idx):
+        if self.repeat > 1:
+            idx %= self.repeat
         # data batch
         roidb = copy.deepcopy(self.roidbs[idx])
         if self.mixup_epoch == 0 or self._epoch < self.mixup_epoch:

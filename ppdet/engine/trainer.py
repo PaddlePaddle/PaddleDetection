@@ -21,7 +21,7 @@ import sys
 import copy
 import time
 from tqdm import tqdm
-from IPython import embed
+
 import numpy as np
 import typing
 from PIL import Image, ImageOps, ImageFile
