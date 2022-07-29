@@ -70,7 +70,7 @@ inference_lite_lib.android.armv8/
 |   |   `-- libpaddle_lite_jni.so
 |   `-- src
 |-- demo                                     C++和Java示例代码
-|   |-- cxx                                  C++  预测库demo, 请将本目录的PaddleDetection相关代码拷贝至该文件夹下编译。
+|   |-- cxx                                  C++  预测库demo, 请将本文档目录下的PaddleDetection相关代码拷贝至该文件夹下执行交叉编译。
 |   `-- java                                 Java 预测库demo
 ```
 
