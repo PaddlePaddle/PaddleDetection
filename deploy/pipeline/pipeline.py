@@ -646,9 +646,9 @@ class PipePredictor(object):
                 attr_res = {'output': vehicle_attr_res_list}
                 self.pipeline_res.update(attr_res, 'vehicle_attr')
 
-            self.pipe_timer.img_num += len(batch_input)
             if i > self.warmup_frame:
                 self.pipe_timer.total_time.end()
+                self.pipe_timer.img_num += len(batch_input)
 
             if self.cfg['visual']:
                 self.visualize_image(batch_file, batch_input, self.pipeline_res)
