@@ -23,6 +23,18 @@ function func_parser_params(){
     echo ${tmp}
 }
 
+function set_dynamic_epoch(){
+    string=$1
+    num=$2
+    _str=${string:1:6}
+    IFS="C"
+    arr=(${_str})
+    M=${arr[0]}
+    P=${arr[1]}
+    ep=`expr $num \* $P`
+    echo $ep
+}
+
 function func_sed_params(){
     filename=$1
     line=$2
@@ -83,9 +95,8 @@ line_num=`expr $line_num + 1`
 fp_items=$(func_parser_value "${lines[line_num]}")
 line_num=`expr $line_num + 1`
 epoch=$(func_parser_value "${lines[line_num]}")
-eval "sed -i '10i\    repeat: ${epoch}' configs/datasets/coco_detection.yml"
-eval "sed -i '10i\    repeat: ${epoch}' configs/datasets/coco_instance.yml"
-eval "sed -i '10i\    repeat: ${epoch}' configs/datasets/mot.yml"
+line_num=`expr $line_num + 1`
+repeat=$(func_parser_value "${lines[line_num]}")
 
 line_num=`expr $line_num + 1`
 profile_option_key=$(func_parser_key "${lines[line_num]}")
@@ -130,7 +141,8 @@ if  [ ! -n "$PARAMS" ] ;then
     IFS="|"
     batch_size_list=(${batch_size})
     fp_items_list=(${fp_items})
-    device_num_list=(N1C4)
+    device_num="N1C4"
+    device_num_list=($device_num)
     run_mode="DP"
 else
     # parser params from input: modeltype_bs${bs_item}_${fp_item}_${run_mode}_${device_num}
@@ -153,6 +165,16 @@ else
     device_num_list=($device_num)
 fi
 
+if [[ ${model_name} =~ "higherhrnet" ]] || [[ ${model_name} =~ "hrnet" ]] || [[ ${model_name} =~ "tinypose" ]];then
+    epoch=$(set_dynamic_epoch $device_num $epoch)
+else
+    epoch=1
+    repeat=$(set_dynamic_epoch $device_num $repeat)
+    eval "sed -i '10c\    repeat: ${repeat}' configs/datasets/coco_detection.yml"
+    eval "sed -i '10c\    repeat: ${repeat}' configs/datasets/coco_instance.yml"
+    eval "sed -i '10c\    repeat: ${repeat}' configs/datasets/mot.yml"
+fi
+
 IFS="|"
 for batch_size in ${batch_size_list[*]}; do
     for precision in ${fp_items_list[*]}; do
@@ -160,7 +182,7 @@ for batch_size in ${batch_size_list[*]}; do
             # sed batchsize and precision
             func_sed_params "$FILENAME" "${line_precision}" "$precision"
             func_sed_params "$FILENAME" "${line_batchsize}" "$MODE=$batch_size"
-            func_sed_params "$FILENAME" "${line_epoch}" "$MODE=1"
+            func_sed_params "$FILENAME" "${line_epoch}" "$MODE=$epoch"
             gpu_id=$(set_gpu_id $device_num)
 
             if [ ${#gpu_id} -le 1 ];then
