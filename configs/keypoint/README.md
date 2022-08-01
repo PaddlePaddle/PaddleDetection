@@ -221,6 +221,26 @@ upper_body_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]    #上半身对应关键点i
 
 如有遗漏，欢迎反馈
 
+
+## 关键点稳定策略（仅适用于视频数据）
+使用关键点算法处理视频数据时，由于预测针对单帧图像进行，在视频结果上往往会有抖动的现象。在一些依靠精细化坐标的应用场景（例如健身计数、基于关键点的虚拟渲染等）上容易造成误检或体验不佳的问题。针对这个问题，在PaddleDetection关键点视频推理中加入了[OneEuro滤波器](http://www.lifl.fr/~casiez/publications/CHI2012-casiez.pdf)和EMA两种关键点稳定方式。实现将当前关键点坐标结果和历史关键点坐标结果结合计算，使得输出的点坐标更加稳定平滑。该功能同时支持在Python及C++推理中一键开启使用。
+
+```bash
+# 使用Python推理
+python deploy/python/det_keypoint_unite_infer.py \
+          --det_model_dir output_inference/picodet_s_320 \
+          --keypoint_model_dir output_inference/tinypose_256x192 \
+          --video_file test_video.mp4 --device gpu --smooth True
+
+# 使用CPP推理
+./deploy/cpp/build/main --det_model_dir output_inference/picodet_s_320 \
+          --keypoint_model_dir output_inference/tinypose_256x192 \
+          --video_file test_video.mp4 --device gpu --smooth True
+```
+效果如下：
+
+![](https://user-images.githubusercontent.com/15810355/181733125-3710bacc-2080-47e4-b397-3621a2f0caae.gif)
+
 ## BenchMark
 
 我们给出了不同运行环境下的测试结果，供您在选用模型时参考。详细数据请见[Keypoint Inference Benchmark](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/keypoint/KeypointBenchmark.md)。
