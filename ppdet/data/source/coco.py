@@ -39,6 +39,7 @@ class COCODataSet(DetDataset):
         empty_ratio (float): the ratio of empty record number to total 
             record's, if empty_ratio is out of [0. ,1.), do not sample the 
             records and use all the empty entries. 1. as default
+        repeat (int): repeat times for dataset, use in benchmark.
     """
 
     def __init__(self,
@@ -49,9 +50,15 @@ class COCODataSet(DetDataset):
                  sample_num=-1,
                  load_crowd=False,
                  allow_empty=False,
-                 empty_ratio=1.):
-        super(COCODataSet, self).__init__(dataset_dir, image_dir, anno_path,
-                                          data_fields, sample_num)
+                 empty_ratio=1.,
+                 repeat=1):
+        super(COCODataSet, self).__init__(
+            dataset_dir,
+            image_dir,
+            anno_path,
+            data_fields,
+            sample_num,
+            repeat=repeat)
         self.load_image_only = False
         self.load_semantic = False
         self.load_crowd = load_crowd

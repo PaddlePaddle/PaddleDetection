@@ -37,8 +37,15 @@ KEYPOINT_SUPPORT_MODELS = {
 
 def predict_with_given_det(image, det_res, keypoint_detector,
                            keypoint_batch_size, run_benchmark):
+    keypoint_res = {}
+
     rec_images, records, det_rects = keypoint_detector.get_person_from_rect(
         image, det_res)
+
+    if len(det_rects) == 0:
+        keypoint_res['keypoint'] = [[], []]
+        return keypoint_res
+
     keypoint_vector = []
     score_vector = []
 
@@ -47,7 +54,6 @@ def predict_with_given_det(image, det_res, keypoint_detector,
         rec_images, run_benchmark, repeats=10, visual=False)
     keypoint_vector, score_vector = translate_to_ori_images(keypoint_results,
                                                             np.array(records))
-    keypoint_res = {}
     keypoint_res['keypoint'] = [
         keypoint_vector.tolist(), score_vector.tolist()
     ] if len(keypoint_vector) > 0 else [[], []]

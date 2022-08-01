@@ -83,7 +83,8 @@ elif [ ${MODE} = "cpp_infer" ];then
     fi
     cd ../../
 elif [ ${MODE} = "benchmark_train" ];then
-    pip install -U pip Cython
+    pip install -U pip
+    pip install Cython
     pip install -r requirements.txt
     # prepare lite benchmark coco data
     wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/coco_benchmark.tar --no-check-certificate
