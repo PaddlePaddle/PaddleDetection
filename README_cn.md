@@ -22,8 +22,8 @@
 </div>
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> 产品动态
-- 🔥 **2022.8.01：发布[PP-TinyPose升级版](./configs/keypoint/tiny_pose/). 在健身、舞蹈等场景的业务数据集上精度提升5个百分点以上**
-  - 训练过程中结合场景数据，提升健身、舞蹈等复杂场景姿态下的模型表现
+- 🔥 **2022.8.01：发布[PP-TinyPose升级版](./configs/keypoint/tiny_pose/). 在健身、舞蹈等场景的业务数据集端到端AP提升9.1**
+  - 训练过程中结合场景数据，提升健身、舞蹈等复杂场景姿态下的模型表现。
   - 检测模型升级为[PP-PicoDet增强版](./configs/picodet/README.md)，检测精度更高, 迁移成本更低。
   - 关键点稳定性升级。加入滤波稳定方式，视频预测结果更加稳定平滑。
 
