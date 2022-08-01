@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// The code is based on https://github.com/csuhan/s2anet/blob/master/mmdet/ops/box_iou_rotated
+// The code is based on
+// https://github.com/csuhan/s2anet/blob/master/mmdet/ops/box_iou_rotated
 
-#include "rbox_iou_op.h"
 #include "paddle/extension.h"
+#include "rbox_iou_op.h"
 
 // 2D block with 32 * 16 = 512 threads per block
 const int BLOCK_DIM_X = 32;
@@ -25,17 +26,13 @@ const int BLOCK_DIM_Y = 16;
    Computes ceil(a / b)
 */
 
-static inline int CeilDiv(const int a, const int b) {
-  return (a + b - 1)  / b;
-}
+static inline int CeilDiv(const int a, const int b) { return (a + b - 1) / b; }
 
 template <typename T>
-__global__ void rbox_iou_cuda_kernel(
-    const int rbox1_num,
-    const int rbox2_num,
-    const T* rbox1_data_ptr,
-    const T* rbox2_data_ptr,
-    T* output_data_ptr) {
+__global__ void rbox_iou_cuda_kernel(const int rbox1_num, const int rbox2_num,
+                                     const T *rbox1_data_ptr,
+                                     const T *rbox2_data_ptr,
+                                     T *output_data_ptr) {
 
   // get row_start and col_start
   const int rbox1_block_idx = blockIdx.x * blockDim.x;
@@ -46,7 +43,6 @@ __global__ void rbox_iou_cuda_kernel(
 
   __shared__ T block_boxes1[BLOCK_DIM_X * 5];
   __shared__ T block_boxes2[BLOCK_DIM_Y * 5];
-
 
   // It's safe to copy using threadIdx.x since BLOCK_DIM_X >= BLOCK_DIM_Y
   if (threadIdx.x < rbox1_thread_num && threadIdx.y == 0) {
@@ -62,7 +58,8 @@ __global__ void rbox_iou_cuda_kernel(
         rbox1_data_ptr[(rbox1_block_idx + threadIdx.x) * 5 + 4];
   }
 
-  // threadIdx.x < BLOCK_DIM_Y=rbox2_thread_num, just use same condition as above: threadIdx.y == 0
+  // threadIdx.x < BLOCK_DIM_Y=rbox2_thread_num, just use same condition as
+  // above: threadIdx.y == 0
   if (threadIdx.x < rbox2_thread_num && threadIdx.y == 0) {
     block_boxes2[threadIdx.x * 5 + 0] =
         rbox2_data_ptr[(rbox2_block_idx + threadIdx.x) * 5 + 0];
@@ -80,41 +77,38 @@ __global__ void rbox_iou_cuda_kernel(
   __syncthreads();
 
   if (threadIdx.x < rbox1_thread_num && threadIdx.y < rbox2_thread_num) {
-    int offset = (rbox1_block_idx + threadIdx.x) * rbox2_num + rbox2_block_idx + threadIdx.y;
-    output_data_ptr[offset] = rbox_iou_single<T>(block_boxes1 + threadIdx.x * 5, block_boxes2 + threadIdx.y * 5);
+    int offset = (rbox1_block_idx + threadIdx.x) * rbox2_num + rbox2_block_idx +
+                 threadIdx.y;
+    output_data_ptr[offset] = rbox_iou_single<T>(
+        block_boxes1 + threadIdx.x * 5, block_boxes2 + threadIdx.y * 5);
   }
 }
 
-#define CHECK_INPUT_GPU(x) PD_CHECK(x.place() == paddle::PlaceType::kGPU, #x " must be a GPU Tensor.")
+#define CHECK_INPUT_GPU(x)                                                     \
+  PD_CHECK(x.place() == paddle::PlaceType::kGPU, #x " must be a GPU Tensor.")
 
-std::vector<paddle::Tensor> RboxIouCUDAForward(const paddle::Tensor& rbox1, const paddle::Tensor& rbox2) {
-    CHECK_INPUT_GPU(rbox1);
-    CHECK_INPUT_GPU(rbox2);
+std::vector<paddle::Tensor> RboxIouCUDAForward(const paddle::Tensor &rbox1,
+                                               const paddle::Tensor &rbox2) {
+  CHECK_INPUT_GPU(rbox1);
+  CHECK_INPUT_GPU(rbox2);
 
-    auto rbox1_num = rbox1.shape()[0];
-    auto rbox2_num = rbox2.shape()[0];
+  auto rbox1_num = rbox1.shape()[0];
+  auto rbox2_num = rbox2.shape()[0];
 
-    auto output = paddle::Tensor(paddle::PlaceType::kGPU, {rbox1_num, rbox2_num});
+  auto output = paddle::Tensor(paddle::PlaceType::kGPU, {rbox1_num, rbox2_num});
 
-    const int blocks_x = CeilDiv(rbox1_num, BLOCK_DIM_X);
-    const int blocks_y = CeilDiv(rbox2_num, BLOCK_DIM_Y);
+  const int blocks_x = CeilDiv(rbox1_num, BLOCK_DIM_X);
+  const int blocks_y = CeilDiv(rbox2_num, BLOCK_DIM_Y);
 
-    dim3 blocks(blocks_x, blocks_y);
-    dim3 threads(BLOCK_DIM_X, BLOCK_DIM_Y);
+  dim3 blocks(blocks_x, blocks_y);
+  dim3 threads(BLOCK_DIM_X, BLOCK_DIM_Y);
 
-    PD_DISPATCH_FLOATING_TYPES(
-        rbox1.type(),
-        "rbox_iou_cuda_kernel",
-        ([&] {
-            rbox_iou_cuda_kernel<data_t><<<blocks, threads, 0, rbox1.stream()>>>(
-                rbox1_num,
-                rbox2_num,
-                rbox1.data<data_t>(),
-                rbox2.data<data_t>(),
-                output.mutable_data<data_t>());
-        }));
+  PD_DISPATCH_FLOATING_TYPES(
+      rbox1.type(), "rbox_iou_cuda_kernel", ([&] {
+        rbox_iou_cuda_kernel<data_t><<<blocks, threads, 0, rbox1.stream()>>>(
+            rbox1_num, rbox2_num, rbox1.data<data_t>(), rbox2.data<data_t>(),
+            output.mutable_data<data_t>());
+      }));
 
-    return {output};
+  return {output};
 }
-
-
