@@ -601,9 +601,9 @@ class S2ANetHead(nn.Layer):
                 fam_bbox = paddle.sum(fam_bbox, axis=-1)
                 feat_bbox_weights = paddle.sum(feat_bbox_weights, axis=-1)
                 try:
-                    from rbox_iou_ops import rbox_iou
+                    from ext_op import rbox_iou
                 except Exception as e:
-                    print("import custom_ops error, try install rbox_iou_ops " \
+                    print("import custom_ops error, try install ext_op " \
                           "following ppdet/ext_op/README.md", e)
                     sys.stdout.flush()
                     sys.exit(-1)
@@ -716,9 +716,9 @@ class S2ANetHead(nn.Layer):
                 odm_bbox = paddle.sum(odm_bbox, axis=-1)
                 feat_bbox_weights = paddle.sum(feat_bbox_weights, axis=-1)
                 try:
-                    from rbox_iou_ops import rbox_iou
+                    from ext_op import rbox_iou
                 except Exception as e:
-                    print("import custom_ops error, try install rbox_iou_ops " \
+                    print("import custom_ops error, try install ext_op " \
                           "following ppdet/ext_op/README.md", e)
                     sys.stdout.flush()
                     sys.exit(-1)

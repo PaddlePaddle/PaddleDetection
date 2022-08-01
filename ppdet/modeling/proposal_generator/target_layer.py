@@ -392,9 +392,9 @@ class RBoxAssigner(object):
         gt_bboxes_xc_yc = paddle.to_tensor(gt_bboxes_xc_yc)
 
         try:
-            from rbox_iou_ops import rbox_iou
+            from ext_op import rbox_iou
         except Exception as e:
-            print("import custom_ops error, try install rbox_iou_ops " \
+            print("import custom_ops error, try install ext_op " \
                   "following ppdet/ext_op/README.md", e)
             sys.stdout.flush()
             sys.exit(-1)
