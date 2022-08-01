@@ -226,6 +226,10 @@ class ImageFolder(DetDataset):
         assert len(records) > 0, "No image file found"
         self.roidbs = records
 
+    def get_label_list(self):
+        # Only VOC dataset needs label list in ImageFold 
+        return self.anno_path
+
 
 @register
 class CommonDataset(object):
