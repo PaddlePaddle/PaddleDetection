@@ -22,6 +22,10 @@
 </div>
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> 产品动态
+- 🔥 **2022.8.01：发布[PP-TinyPose升级版](./configs/keypoint/tiny_pose/). 在健身、舞蹈等场景的业务数据集上精度提升5个百分点以上**
+  - 训练过程中结合场景数据，提升健身、舞蹈等复杂场景姿态下的模型表现
+  - 检测模型升级为[PP-PicoDet增强版](./configs/picodet/README.md)，检测精度更高, 迁移成本更低。
+  - 关键点稳定性升级。加入滤波稳定方式，视频预测结果更加稳定平滑。
 
 - 🔥 **2022.7.14：[行人分析工具PP-Human v2](./deploy/pipeline)发布**
   - 四大产业特色功能：高性能易扩展的五大复杂行为识别、闪电级人体属性识别、一行代码即可实现的人流检测与轨迹留存以及高精度跨镜跟踪

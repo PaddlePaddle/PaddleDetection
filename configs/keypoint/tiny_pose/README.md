@@ -8,9 +8,9 @@
 </div>
 
 ## 最新动态
-- 发布PP-TinyPose升级版（2022.07.29).
+- 发布PP-TinyPose升级版（2022.08.01). 在健身、舞蹈等场景的业务数据集上精度提升5个百分点以上。
   - 训练过程中结合场景数据，提升健身、舞蹈等复杂场景姿态下的模型表现
-  - 检测模型升级为[PP-PicoDet升级版](../../../configs/picodet/README.md)，检测精度更高, 迁移成本更低。
+  - 检测模型升级为[PP-PicoDet增强版](../../../configs/picodet/README.md)，检测精度更高, 迁移成本更低。
   - 关键点稳定性升级。加入滤波稳定方式，视频预测结果更加稳定平滑。
 
   ![](https://user-images.githubusercontent.com/15810355/181733705-d0f84232-c6a2-43dd-be70-4a3a246b8fbc.gif)
@@ -43,6 +43,23 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测�
 
 ## 模型库
 
+### Pipeline性能
+| 单人模型配置 | AP (业务数据集） | AP (COCO Val单人）| 单人耗时 (FP32) |  单人耗时 (FP16) |
+| :---------------------------------- | :------: | :------: | :---: | :---: |
+| PicoDet-S-Lcnet-Pedestrian-192\*192 + PP-TinyPose-128\*96 | 77.1 (+9.1) | 52.3 (+0.5) | 12.90 ms| 9.61 ms |
+
+| 多人模型配置 | AP (业务数据集) | AP (COCO Val多人）| 6人耗时 (FP32) | 6人耗时 (FP16)|
+| :------------------------ | :-------: | :-------: | :---: | :---: |
+| PicoDet-S-Lcnet-Pedestrian-320\*320 + PP-TinyPose-128\*96 | 78.0 (+7.7) | 50.1 (-0.2) | 47.63 ms| 34.62 ms |
+
+**说明**
+- 关键点检测模型的精度指标是基于对应行人检测模型检测得到的检测框。
+- 精度测试中去除了flip操作，且检测置信度阈值要求0.5。
+- 速度测试环境为qualcomm snapdragon 865，采用arm8下4线程推理。
+- Pipeline速度包含模型的预处理、推理及后处理部分。
+- 精度值的增量对比自历史版本中对应模型组合, 详情请见**历史版本-Pipeline性能**。
+- 精度测试中，为了公平比较，多人数据去除了6人以上（不含6人）的图像。
+
 ### 关键点检测模型
 | 模型        | 输入尺寸 | AP (业务数据集) | AP (COCO Val) | 单人推理耗时 (FP32) | 单人推理耗时（FP16) |             配置文件             |                           模型权重                           |                         预测部署模型                         |                  Paddle-Lite部署模型（FP32)                  |                  Paddle-Lite部署模型（FP16)                  |
 | :---------- | :------: | :-----------: | :-----------: | :-----------------: | :-----------------: | :------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
@@ -53,8 +70,8 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测�
 ### 行人检测模型
 | 模型                 | 输入尺寸 | mAP (COCO Val-Person) | 平均推理耗时 (FP32) | 平均推理耗时 (FP16) |                           配置文件                           |                           模型权重                           |                         预测部署模型                         |                  Paddle-Lite部署模型（FP32)                  |                  Paddle-Lite部署模型（FP16)                  |
 | :------------------- | :------: | :------------: | :-----------------: | :-----------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| PicoDet-v2-S-Pedestrian | 192*192  |      31.7      |       5.24ms        |       3.66ms        | [Config](../../picodet/legacy_model/application/pedestrian_detection/picodet_v2_s_192_pedestrian.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_v2_s_192_pedestrian.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_v2_s_192_pedestrian.zip) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_v2_s_192_pedestrian_fp32.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_v2_s_192_pedestrian_fp16.nb) |
-| PicoDet-v2-S-Pedestrian | 320*320  |      41.6      |       13.87ms       |       8.94ms        | [Config](../../picodet/legacy_model/application/pedestrian_detection/picodet_v2_s_320_pedestrian.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_v2_s_320_pedestrian.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_v2_s_320_pedestrian.zip) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_v2_s_320_pedestrian_fp32.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_v2_s_320_pedestrian_fp16.nb) |
+| PicoDet-S-Lcnet-Pedestrian | 192*192  |      31.7      |       5.24ms        |       3.66ms        | [Config](../../picodet/application/pedestrian_detection/picodet_s_192_lcnet_pedestrian.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_192_lcnet_pedestrian.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_192_lcnet_pedestrian.zip) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_192_lcnet_pedestrian_fp32.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_192_lcnet_pedestrian_fp16.nb) |
+| PicoDet-S-Lcnet-Pedestrian | 320*320  |      41.6      |       13.87ms       |       8.94ms        | [Config](../../picodet/application/pedestrian_detection/picodet_s_320_lcnet_pedestrian.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_320_lcnet_pedestrian.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_320_lcnet_pedestrian.zip) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_320_lcnet_pedestrian_fp32.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_320_lcnet_pedestrian_fp16.nb) |
 
 **说明**
 - 关键点检测模型与行人检测模型均使用`COCO train2017`, `AI Challenger trainset`以及采集的多姿态场景数据集作为训练集。关键点检测模型使用多姿态场景数据集作为测试集，行人检测模型采用`COCO instances val2017`作为测试集。
@@ -62,24 +79,31 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测�
 - 关键点检测模型与行人检测模型均在4卡环境下训练，若实际训练环境需要改变GPU数量或batch size， 须参考[FAQ](../../../docs/tutorials/FAQ/README.md)对应调整学习率。
 - 推理速度测试环境为 Qualcomm Snapdragon 865，采用arm8下4线程推理得到。
 
-### Pipeline性能
-| 单人模型配置 | AP (业务数据集） | 单人耗时 (FP32) |  单人耗时 (FP16) |
-| :---------------------------------- | :------: | :---: | :---: |
-| PicoDet-v2-S-Pedestrian-192\*192 + PP-TinyPose-128\*96 | 77.1 (+9.1) | 12.90 ms| 9.61 ms |
+## 历史版本
 
-| 多人模型配置 | AP (业务数据集) | 6人耗时 (FP32) | 6人耗时 (FP16)|
+<details>
+<summary>2021版本</summary>
+
+
+### Pipeline性能
+| 单人模型配置 | AP (COCO Val 单人) | 单人耗时 (FP32) |  单人耗时 (FP16) |
+| :------------------------ | :------: | :---: | :---: |
+| PicoDet-S-Pedestrian-192\*192 + PP-TinyPose-128\*96 | 51.8 | 11.72 ms| 8.18 ms |
+| 其他优秀开源模型-192\*192 | 22.3 | 12.0 ms| - |
+
+| 多人模型配置 | AP (COCO Val 多人) | 6人耗时 (FP32) | 6人耗时 (FP16)|
 | :------------------------ | :-------: | :---: | :---: |
-| PicoDet-v2-S-Pedestrian-320\*320 + PP-TinyPose-128\*96 | 78.0 (+7.7) | 47.63 ms| 34.62 ms |
+| PicoDet-S-Pedestrian-320\*320 + PP-TinyPose-128\*96 | 50.3 | 44.0 ms| 32.57 ms |
+| 其他优秀开源模型-256\*256 | 39.4 | 51.0 ms| - |
 
 **说明**
 - 关键点检测模型的精度指标是基于对应行人检测模型检测得到的检测框。
 - 精度测试中去除了flip操作，且检测置信度阈值要求0.5。
-- 速度测试环境为qualcomm snapdragon 865，采用arm8下4线程推理。
+- 精度测试中，为了公平比较，多人数据去除了6人以上（不含6人）的图像。
+- 速度测试环境为qualcomm snapdragon 865，采用arm8下4线程、FP32推理得到。
 - Pipeline速度包含模型的预处理、推理及后处理部分。
-
-
-<details>
-<summary>可训练版本</summary>
+- 其他优秀开源模型的测试及部署方案，请参考[这里](https://github.com/zhiboniu/MoveNet-PaddleLite)。
+- 更多环境下的性能测试结果，请参考[Keypoint Inference Benchmark](../KeypointBenchmark.md)。
 
 
 ### 关键点检测模型
@@ -101,25 +125,6 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测�
 - 关键点检测模型与行人检测模型均在4卡环境下训练，若实际训练环境需要改变GPU数量或batch size， 须参考[FAQ](../../../docs/tutorials/FAQ/README.md)对应调整学习率。
 - 推理速度测试环境为 Qualcomm Snapdragon 865，采用arm8下4线程推理得到。
 
-### Pipeline性能
-| 单人模型配置 | AP (COCO Val 单人) | 单人耗时 (FP32) |  单人耗时 (FP16) |
-| :------------------------ | :------: | :---: | :---: |
-| PicoDet-S-Pedestrian-192\*192 + PP-TinyPose-128\*96 | 51.8 | 11.72 ms| 8.18 ms |
-| 其他优秀开源模型-192\*192 | 22.3 | 12.0 ms| - |
-
-| 多人模型配置 | AP (COCO Val 多人) | 6人耗时 (FP32) | 6人耗时 (FP16)|
-| :------------------------ | :-------: | :---: | :---: |
-| PicoDet-S-Pedestrian-320\*320 + PP-TinyPose-128\*96 | 50.3 | 44.0 ms| 32.57 ms |
-| 其他优秀开源模型-256\*256 | 39.4 | 51.0 ms| - |
-
-**说明**
-- 关键点检测模型的精度指标是基于对应行人检测模型检测得到的检测框。
-- 精度测试中去除了flip操作，且检测置信度阈值要求0.5。
-- 精度测试中，为了公平比较，多人数据去除了6人以上（不含6人）的图像。
-- 速度测试环境为qualcomm snapdragon 865，采用arm8下4线程、FP32推理得到。
-- Pipeline速度包含模型的预处理、推理及后处理部分。
-- 其他优秀开源模型的测试及部署方案，请参考[这里](https://github.com/zhiboniu/MoveNet-PaddleLite)。
-- 更多环境下的性能测试结果，请参考[Keypoint Inference Benchmark](../KeypointBenchmark.md)。
 
 </details>
 

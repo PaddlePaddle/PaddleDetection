@@ -16,7 +16,7 @@ num_classes: 1
 
 architecture: PicoDet
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPLCNet_x0_75_pretrained.pdparams
-weights: output/picodet_v2_s_192_pedestrian/best_model
+weights: output/picodet_s_192_lcnet_pedestrian/best_model
 find_unused_parameters: True
 use_ema: true
 epoch: 300
