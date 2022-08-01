@@ -278,12 +278,18 @@ class Trainer(object):
                     save_prediction_only=save_prediction_only)
             ]
         elif self.cfg.metric == 'VOC':
+            output_eval = self.cfg['output_eval'] \
+                if 'output_eval' in self.cfg else None
+            save_prediction_only = self.cfg.get('save_prediction_only', False)
+
             self._metrics = [
                 VOCMetric(
                     label_list=self.dataset.get_label_list(),
                     class_num=self.cfg.num_classes,
                     map_type=self.cfg.map_type,
-                    classwise=classwise)
+                    classwise=classwise,
+                    output_eval=output_eval,
+                    save_prediction_only=save_prediction_only)
             ]
         elif self.cfg.metric == 'WiderFace':
             multi_scale = self.cfg.multi_scale_eval if 'multi_scale_eval' in self.cfg else True

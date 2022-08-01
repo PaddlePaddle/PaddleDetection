@@ -203,6 +203,10 @@ class ImageFolder(DetDataset):
         self.image_dir = images
         self.roidbs = self._load_images()
 
+    def get_label_list(self):
+        # Only VOC dataset needs label list in ImageFold 
+        return self.anno_path
+
 
 @register
 class CommonDataset(object):
