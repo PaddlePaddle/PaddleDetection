@@ -17,13 +17,9 @@ width_mult: 0.50
 TrainReader:
   batch_size: 32
 
-LearningRate:
-  base_lr: 0.04
-
-
 epoch: 400
 LearningRate:
-  base_lr: 0.025
+  base_lr: 0.04
   schedulers:
     - !CosineDecay
       max_epochs: 480
@@ -44,7 +40,7 @@ PPYOLOEHead:
   static_assigner_epoch: 133
   nms:
     name: MultiClassNMS
-    nms_top_k: 10000
+    nms_top_k: 1000
     keep_top_k: 300
     score_threshold: 0.01
     nms_threshold: 0.7
