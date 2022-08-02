@@ -56,7 +56,7 @@ PicoHeadV2:
   use_align_head: True
   static_assigner:
     name: ATSSAssigner
-    topk: 9
+    topk: 4
     force_gt_matching: False
   assigner:
     name: TaskAlignedAssigner
