@@ -143,20 +143,22 @@ def save_mtmct_vis_results(camera_results, captures, output_dir,
             image = plot_tracking(frame, boxes, ids, frame_id=frame_id, fps=fps)
 
             # add attr vis
-            attr_res = []
-            tid_list = [
-                'c' + str(idx) + '_' + 't' + str(int(j))
-                for j in range(1, len(ids) + 1)
-            ]  # c0_t1, c0_t2...
-            for k in tid_list:
-                if (frame_id - 1) >= len(multi_res[k]['attrs']):
-                    t_attr = None
-                else:
-                    t_attr = multi_res[k]['attrs'][frame_id - 1]
-                    attr_res.append(t_attr)
-            image = visualize_attr(image, attr_res, boxes, is_mtmct=True)
+            if not multi_res:
+                attr_res = []
+                tid_list = [
+                    'c' + str(idx) + '_' + 't' + str(int(j))
+                    for j in range(1, len(ids) + 1)
+                ]  # c0_t1, c0_t2...
+                for k in tid_list:
+                    if 'attrs' in multi_res[k]:
+                        if (frame_id - 1) >= len(multi_res[k]['attrs']):
+                            t_attr = None
+                        else:
+                            t_attr = multi_res[k]['attrs'][frame_id - 1]
+                            attr_res.append(t_attr)
+                image = visualize_attr(image, attr_res, boxes, is_mtmct=True)
 
-            writer.write(image)
+                writer.write(image)
         writer.release()
 
 
