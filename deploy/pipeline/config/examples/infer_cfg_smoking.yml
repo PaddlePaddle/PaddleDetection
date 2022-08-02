@@ -1,0 +1,17 @@
+crop_thresh: 0.5
+visual: True
+warmup_frame: 50
+
+MOT:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip
+  tracker_config: deploy/pipeline/config/tracker_config.yml
+  batch_size: 1
+  enable: True
+
+ID_BASED_DETACTION:
+  model_dir:  https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip
+  batch_size: 8
+  threshold: 0.6
+  display_frames: 80
+  skip_frame_num: 2
+  enable: True
