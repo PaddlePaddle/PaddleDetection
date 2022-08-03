@@ -103,7 +103,8 @@ def get_mtmct_matching_results(pred_mtmct_file, secs_interval=0.5,
     return camera_results, cid_tid_fid_results
 
 
-def save_mtmct_vis_results(camera_results, captures, output_dir):
+def save_mtmct_vis_results(camera_results, captures, output_dir,
+                           multi_res=None):
     # camera_results: 'cid, tid, fid, x1, y1, w, h'
     camera_ids = list(camera_results.keys())
 
@@ -126,7 +127,7 @@ def save_mtmct_vis_results(camera_results, captures, output_dir):
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = int(capture.get(cv2.CAP_PROP_FPS))
         frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         frame_id = 0
         while (1):
@@ -143,6 +144,23 @@ def save_mtmct_vis_results(camera_results, captures, output_dir):
             boxes = frame_results[:, -4:]
             ids = frame_results[:, 1]
             image = plot_tracking(frame, boxes, ids, frame_id=frame_id, fps=fps)
+
+            # add attr vis
+            if multi_res:
+                attr_res = []
+                tid_list = [
+                    'c' + str(idx) + '_' + 't' + str(int(j))
+                    for j in range(1, len(ids) + 1)
+                ]  # c0_t1, c0_t2...
+                for k in tid_list:
+                    if 'attrs' in multi_res[k]:
+                        if (frame_id - 1) >= len(multi_res[k]['attrs']):
+                            t_attr = None
+                        else:
+                            t_attr = multi_res[k]['attrs'][frame_id - 1]
+                            attr_res.append(t_attr)
+                image = visualize_attr(image, attr_res, boxes, is_mtmct=True)
+
             writer.write(image)
         writer.release()
 
@@ -349,4 +367,8 @@ def mtmct_process(multi_res, captures, mtmct_vis=True, output_dir="output"):
         camera_results, cid_tid_fid_res = get_mtmct_matching_results(
             pred_mtmct_file)
 
-        save_mtmct_vis_results(camera_results, captures, output_dir=output_dir)
+        save_mtmct_vis_results(
+            camera_results,
+            captures,
+            output_dir=output_dir,
+            multi_res=cid_tid_dict)

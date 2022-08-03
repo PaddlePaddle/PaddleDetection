@@ -331,7 +331,7 @@ def visualize_pose(imgfile,
     plt.close()
 
 
-def visualize_attr(im, results, boxes=None):
+def visualize_attr(im, results, boxes=None, is_mtmct=False):
     if isinstance(im, str):
         im = Image.open(im)
         im = np.ascontiguousarray(np.copy(im))
@@ -348,8 +348,12 @@ def visualize_attr(im, results, boxes=None):
         if boxes is None:
             text_w = 3
             text_h = 1
+        elif is_mtmct:
+            box = boxes[i]  # multi camera, bbox shape is x,y, w,h
+            text_w = int(box[0]) + 3
+            text_h = int(box[1])
         else:
-            box = boxes[i]
+            box = boxes[i]  # single camera, bbox shape is 0, 0, x,y, w,h
             text_w = int(box[2]) + 3
             text_h = int(box[3])
         for text in res:
