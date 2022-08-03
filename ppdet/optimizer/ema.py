@@ -66,7 +66,10 @@ class ModelEMA(object):
     def resume(self, state_dict, step=0):
         for k, v in state_dict.items():
             if k in self.state_dict:
-                self.state_dict[k] = v
+                if self.state_dict[k].dtype == v.dtype:
+                    self.state_dict[k] = v
+                else:
+                    self.state_dict[k] = v.astype(self.state_dict[k].dtype)
         self.step = step
 
     def update(self, model=None):
