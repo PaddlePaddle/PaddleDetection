@@ -27,9 +27,9 @@
 
 ## 简介
 
-PaddleDetection 关键点检测能力紧跟业内最新最优算法方案，包含Top-Down、Bottom-Up两套方案，Top-Down先检测主体，再检测局部关键点，优点是精度较高，缺点是速度会随着检测对象的个数增加，Bottom-Up先检测关键点再组合到对应的部位上，优点是速度快，与检测对象个数无关，缺点是精度较低。
+PaddleDetection 中的关键点检测部分紧跟最先进的算法，包括 Top-Down 和 Bottom-Up 两种方法，可以满足用户的不同需求。Top-Down 先检测对象，再检测特定关键点。Top-Down 模型的准确率会更高，但速度会随着对象数量的增加而变慢。不同的是，Bottom-Up 首先检测点，然后对这些点进行分组或连接以形成多个人体姿势实例。 Bottom-Up 的速度是固定的，不会随着物体数量的增加而变慢，但精度会更低。
 
-同时，PaddleDetection提供针对移动端设备优化的自研实时关键点检测模型[PP-TinyPose](./tiny_pose/README.md)，以满足用户的不同需求。
+同时，PaddleDetection 提供针对移动端设备优化的自研实时关键点检测模型 [PP-TinyPose](./tiny_pose/README.md)。
 
 ## 模型推荐
 ### 移动端模型推荐
