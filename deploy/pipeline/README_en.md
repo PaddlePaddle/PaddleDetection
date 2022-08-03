@@ -78,15 +78,15 @@ Click to download the model, then unzip and save it in the `. /output_inference`
 
 ### Pedestrian attribute/feature recognition
 
-* [A quick start](docs/tutorials/attribute.md)
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/attribute.md)
+* [A quick start](docs/tutorials/pphuman_attribute.md)
+* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_attribute.md)
   * Data Preparation
   * Model Optimization
   * New Attributes
 
 ### Behavior detection
 
-* [A quick start](docs/tutorials/action.md)
+* [A quick start](docs/tutorials/pphuman_action.md)
   * Falling detection
   * Fighting detection
 * [Customized development tutorials](../../docs/advanced_tutorials/customization/action_recognotion/README.md)
@@ -97,17 +97,17 @@ Click to download the model, then unzip and save it in the `. /output_inference`
 
 ### ReID
 
-* [A quick start](docs/tutorials/mtmct.md)
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/mtmct.md)
+* [A quick start](docs/tutorials/pphuman_mtmct.md)
+* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mtmct.md)
   * Data Preparation
   * Model Optimization
 
 ### Pedestrian tracking, visitor traffic statistics, trace records
 
-* [A quick start](docs/tutorials/mot.md)
+* [A quick start](docs/tutorials/pphuman_mot.md)
   * Pedestrian tracking,
   * Visitor traffic statistics
   * Regional intrusion diagnosis and counting
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/mot.md)
+* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mot.md)
   * Data Preparation
   * Model Optimization

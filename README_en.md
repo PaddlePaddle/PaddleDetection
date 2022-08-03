@@ -418,9 +418,9 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
   - Custumization
     - [Object detection](docs/advanced_tutorials/customization/detection.md)
     - [Keypoint detection](docs/advanced_tutorials/customization/keypoint_detection.md)
-    - [Multiple object tracking](docs/advanced_tutorials/customization/mot.md)
-    - [Action recognition](docs/advanced_tutorials/customization/action.md)
-    - [Attribute recognition](docs/advanced_tutorials/customization/attribute.md)
+    - [Multiple object tracking](docs/advanced_tutorials/customization/pphuman_mot.md)
+    - [Action recognition](docs/advanced_tutorials/customization/pphuman_action.md)
+    - [Attribute recognition](docs/advanced_tutorials/customization/pphuman_attribute.md)
 
 ### Courses
 

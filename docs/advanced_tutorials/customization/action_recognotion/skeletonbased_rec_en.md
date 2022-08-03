@@ -77,7 +77,7 @@ Now, we have available training data (`.npy`) and corresponding annotation files
 
 ## Model Optimization
 ### detection-tracking model optimization
-The performance of action recognition based on skelenton depends on the pre-order detection and tracking models. If the pedestrian location cannot be accurately detected in the actual scene, or it is difficult to correctly assign the person ID between different frames, the performance of the action recognition part will be limited. If you encounter the above problems in actual use, please refer to [Secondary Development of Detection Task](../detection_en.md) and [Secondary Development of Multi-target Tracking Task](../mot_en.md) for detection/track model optimization.
+The performance of action recognition based on skelenton depends on the pre-order detection and tracking models. If the pedestrian location cannot be accurately detected in the actual scene, or it is difficult to correctly assign the person ID between different frames, the performance of the action recognition part will be limited. If you encounter the above problems in actual use, please refer to [Secondary Development of Detection Task](../detection_en.md) and [Secondary Development of Multi-target Tracking Task](../pphuman_mot_en.md) for detection/track model optimization.
 
 ### keypoint model optimization
 As the core feature of the scheme, the skeleton point positioning performance also determines the overall effect of action recognition. If there are obvious errors in the recognition results of the keypoint coordinates of in the actual scene, it is difficult to distinguish the specific actions from the skeleton image composed of the keypoint.

@@ -26,7 +26,7 @@
   - **mix_mot_ch**数据集，是MOT17、CrowdHuman组成的联合数据集，**mix_det**是MOT17、CrowdHuman、Cityscapes、ETHZ组成的联合数据集，数据集整理的格式和目录可以参考[此链接](https://github.com/ifzhang/ByteTrack#data-preparation)，最终放置于`dataset/mot/`目录下。为了验证精度可以都用**MOT17-half val**数据集去评估。
   - OC_SORT的训练是单独的检测器训练MOT数据集，推理是组装跟踪器去评估MOT指标，单独的检测模型也可以评估检测指标。
   - OC_SORT的导出部署，是单独导出检测模型，再组装跟踪器运行的，参照[PP-Tracking](../../../deploy/pptracking/python)。
-  - OC_SORT是PP-Human和PP-Vehicle等Pipeline分析项目跟踪方向的主要方案，具体使用参照[Pipeline](../../../deploy/pipeline)和[MOT](../../../deploy/pipeline/docs/tutorials/mot.md)。
+  - OC_SORT是PP-Human和PP-Vehicle等Pipeline分析项目跟踪方向的主要方案，具体使用参照[Pipeline](../../../deploy/pipeline)和[MOT](../../../deploy/pipeline/docs/tutorials/pphuman_mot.md)。
 
 
 ## 快速开始

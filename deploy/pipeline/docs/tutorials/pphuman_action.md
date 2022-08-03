@@ -1,4 +1,4 @@
-[English](action_en.md) | 简体中文
+[English](pphuman_action_en.md) | 简体中文
 
 # PP-Human行为识别模块
 
@@ -202,7 +202,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
   <img src="https://user-images.githubusercontent.com/22989727/178769370-03ab1965-cfd1-401b-9902-82620a06e43c.gif" width='1000'/>
 </div>
 
-具体使用请参照[PP-Human检测跟踪模块](mot.md)的`5. 区域闯入判断和计数`。
+具体使用请参照[PP-Human检测跟踪模块](pphuman_mot.md)的`5. 区域闯入判断和计数`。
 
 ### 方案说明
 1. 使用多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC-SORT，详细文档参考[OC-SORT](../../../../configs/mot/ocsort)。

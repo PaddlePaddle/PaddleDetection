@@ -1,4 +1,4 @@
-English | [简体中文](action.md)
+English | [简体中文](pphuman_action.md)
 
 # Action Recognition Module of PP-Human
 
