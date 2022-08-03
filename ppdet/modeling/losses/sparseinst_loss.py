@@ -275,9 +275,13 @@ class SparseInstLoss(object):
 
         num_instances = paddle.to_tensor([num_instances], dtype=paddle.float32)
 
-        #if is_dist_avail_and_initialized():
-        #    paddle.distributed.all_reduce(num_instances)
-        #num_instances = paddle.clamp(num_instances / paddle.distributed.get_world_size(), min=1).item()
+        try:
+            num_instances = paddle.distributed.all_reduce(num_instances)
+            num_instances = paddle.clip(
+                num_instances / paddle.distributed.get_world_size(),
+                min=1).item()
+        except:
+            num_instances = max(num_instances.item(), 1)
 
         # Compute all the requested losses
         losses = {}
