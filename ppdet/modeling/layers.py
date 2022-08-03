@@ -39,6 +39,100 @@ def _to_list(l):
     return [l]
 
 
+class AlignConv(nn.Layer):
+    def __init__(self, in_channels, out_channels, kernel_size=3, groups=1):
+        super(AlignConv, self).__init__()
+        self.kernel_size = kernel_size
+        self.align_conv = paddle.vision.ops.DeformConv2D(
+            in_channels,
+            out_channels,
+            kernel_size=self.kernel_size,
+            padding=(self.kernel_size - 1) // 2,
+            groups=groups,
+            weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
+            bias_attr=None)
+
+    @paddle.no_grad()
+    def get_offset(self, anchors, featmap_size, stride):
+        """
+        Args:
+            anchors: [M,5] xc,yc,w,h,angle
+            featmap_size: (feat_h, feat_w)
+            stride: 8
+        Returns:
+
+        """
+        anchors = paddle.reshape(anchors, [-1, 5])  # (NA,5)
+        dtype = anchors.dtype
+        feat_h = featmap_size[0]
+        feat_w = featmap_size[1]
+        pad = (self.kernel_size - 1) // 2
+        idx = paddle.arange(-pad, pad + 1, dtype=dtype)
+
+        yy, xx = paddle.meshgrid(idx, idx)
+        xx = paddle.reshape(xx, [-1])
+        yy = paddle.reshape(yy, [-1])
+
+        # get sampling locations of default conv
+        xc = paddle.arange(0, feat_w, dtype=dtype)
+        yc = paddle.arange(0, feat_h, dtype=dtype)
+        yc, xc = paddle.meshgrid(yc, xc)
+
+        xc = paddle.reshape(xc, [-1, 1])
+        yc = paddle.reshape(yc, [-1, 1])
+        x_conv = xc + xx
+        y_conv = yc + yy
+
+        # get sampling locations of anchors
+        # x_ctr, y_ctr, w, h, a = np.unbind(anchors, dim=1)
+        x_ctr = anchors[:, 0]
+        y_ctr = anchors[:, 1]
+        w = anchors[:, 2]
+        h = anchors[:, 3]
+        a = anchors[:, 4]
+
+        x_ctr = paddle.reshape(x_ctr, [-1, 1])
+        y_ctr = paddle.reshape(y_ctr, [-1, 1])
+        w = paddle.reshape(w, [-1, 1])
+        h = paddle.reshape(h, [-1, 1])
+        a = paddle.reshape(a, [-1, 1])
+
+        x_ctr = x_ctr / stride
+        y_ctr = y_ctr / stride
+        w_s = w / stride
+        h_s = h / stride
+        cos, sin = paddle.cos(a), paddle.sin(a)
+        dw, dh = w_s / self.kernel_size, h_s / self.kernel_size
+        x, y = dw * xx, dh * yy
+        xr = cos * x - sin * y
+        yr = sin * x + cos * y
+        x_anchor, y_anchor = xr + x_ctr, yr + y_ctr
+        # get offset filed
+        offset_x = x_anchor - x_conv
+        offset_y = y_anchor - y_conv
+        offset = paddle.stack([offset_y, offset_x], axis=-1)
+        offset = paddle.reshape(
+            offset, [feat_h * feat_w, self.kernel_size * self.kernel_size * 2])
+        offset = paddle.transpose(offset, [1, 0])
+        offset = paddle.reshape(
+            offset,
+            [1, self.kernel_size * self.kernel_size * 2, feat_h, feat_w])
+        return offset
+
+    def forward(self, x, refine_anchors, featmap_size, stride):
+        batch = paddle.shape[0]
+        offset_list = [
+            self.get_offset(refine_anchors[i], featmap_size, stride)
+            for i in range(batch)
+        ]
+        offset = paddle.concat(offset_list, axis=0)
+        if self.training:
+            x = F.relu(self.align_conv(x, offset.detach()))
+        else:
+            x = F.relu(self.align_conv(x, offset))
+        return x
+
+
 class DeformableConvV2(nn.Layer):
     def __init__(self,
                  in_channels,
