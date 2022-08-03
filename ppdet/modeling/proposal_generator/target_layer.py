@@ -370,16 +370,6 @@ class RBoxAssigner(object):
                       neg_iou_thr,
                       min_iou_thr=0.0,
                       ignore_iof_thr=-2):
-        """
-
-        Args:
-            anchors:
-            gt_bboxes:[M, 5] rc,yc,w,h,angle
-            gt_lables:
-
-        Returns:
-
-        """
         assert anchors.shape[1] == 4 or anchors.shape[1] == 5
         assert gt_bboxes.shape[1] == 4 or gt_bboxes.shape[1] == 5
         anchors_xc_yc = anchors

@@ -16,16 +16,4 @@ ResNet:
   num_stages: 4
 
 S2ANetHead:
-  anchor_strides: [8, 16, 32, 64, 128]
-  anchor_scales: [4]
-  anchor_ratios: [1.0]
-  anchor_assign: RBoxAssigner
-  stacked_convs: 2
-  feat_in: 256
-  feat_out: 256
-  num_classes: 15
-  align_conv_type: 'Conv'  # AlignConv Conv
-  align_conv_size: 3
-  use_sigmoid_cls: True
-  reg_loss_weight: [1.0, 1.0, 1.0, 1.0, 1.1]
-  cls_loss_weight: [1.1, 1.05]
+  align_conv_type: 'Conv'

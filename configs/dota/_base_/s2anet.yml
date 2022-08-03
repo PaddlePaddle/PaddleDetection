@@ -7,8 +7,7 @@ weights: output/s2anet_r50_fpn_1x_dota/model_final.pdparams
 S2ANet:
   backbone: ResNet
   neck: FPN
-  s2anet_head: S2ANetHead
-  s2anet_bbox_post_process: S2ANetBBoxPostProcess
+  head: S2ANetHead
 
 ResNet:
   depth: 50
@@ -37,19 +36,18 @@ S2ANetHead:
   align_conv_type: 'AlignConv'  # AlignConv Conv
   align_conv_size: 3
   use_sigmoid_cls: True
-
-RBoxAssigner:
-  pos_iou_thr: 0.5
-  neg_iou_thr: 0.4
-  min_iou_thr: 0.0
-  ignore_iof_thr: -2
-
-S2ANetBBoxPostProcess:
+  reg_loss_weight: [1.0, 1.0, 1.0, 1.0, 1.1]
+  cls_loss_weight: [1.1, 1.05]
   nms_pre: 2000
-  min_bbox_size: 0.0
   nms:
     name: MultiClassNMS
     keep_top_k: -1
     score_threshold: 0.05
     nms_threshold: 0.1
     normalized: False
+
+RBoxAssigner:
+  pos_iou_thr: 0.5
+  neg_iou_thr: 0.4
+  min_iou_thr: 0.0
+  ignore_iof_thr: -2
