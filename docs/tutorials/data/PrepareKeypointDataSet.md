@@ -146,3 +146,31 @@ AI Challenger Description:
 我们提供了整合`COCO`训练集和`AI Challenger`数据集的[标注文件](https://bj.bcebos.com/v1/paddledet/data/keypoint/aic_coco_train_cocoformat.json)，供您参考调整后的效果。
 
 ### 自定义数据训练
+
+以[tinypose_256x192](../../../configs/keypoint/tiny_pose/README.md)为例来说明对于自定义数据如何修改：
+
+#### 1、配置文件[tinypose_256x192.yml](../../../configs/keypoint/tiny_pose/tinypose_256x192.yml)
+
+基本的修改内容及其含义如下：
+
+```
+num_joints: &num_joints 17    #自定义数据的关键点数量
+train_height: &train_height 256   #训练图片尺寸-高度h
+train_width: &train_width 192   #训练图片尺寸-宽度w
+hmsize: &hmsize [48, 64]  #对应训练尺寸的输出尺寸，这里是输入[w,h]的1/4
+flip_perm: &flip_perm [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16]] #关键点定义中左右对称的关键点，用于flip增强。若没有对称结构在 TrainReader 的 RandomFlipHalfBodyTransform 一栏中 flip_pairs 后面加一行 "flip: False"（注意缩紧对齐）
+num_joints_half_body: 8   #半身关键点数量，用于半身增强
+prob_half_body: 0.3   #半身增强实现概率，若不需要则修改为0
+upper_body_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]    #上半身对应关键点id，用于半身增强中获取上半身对应的关键点。
+```
+
+上述是自定义数据时所需要的修改部分，完整的配置及含义说明可参考文件：[关键点配置文件说明](../KeyPointConfigGuide_cn.md)。
+
+#### 2、其他代码修改（影响测试、可视化）
+- keypoint_utils.py中的sigmas = np.array([.26, .25, .25, .35, .35, .79, .79, .72, .72, .62, .62, 1.07, 1.07,.87, .87, .89, .89]) / 10.0，表示每个关键点的确定范围方差，根据实际关键点可信区域设置，区域精确的一般0.25-0.5，例如眼睛。区域范围大的一般0.5-1.0，例如肩膀。若不确定建议0.75。
+- visualizer.py中的draw_pose函数中的EDGES，表示可视化时关键点之间的连接线关系。
+- pycocotools工具中的sigmas，同第一个keypoint_utils.py中的设置。用于coco指标评估时计算。
+
+#### 3、数据准备注意
+- 训练数据请按coco数据格式处理。需要包括关键点[Nx3]、检测框[N]标注。
+- 请注意area>0，area=0时数据在训练时会被过滤掉。此外，由于COCO的评估机制，area较小的数据在评估时也会被过滤掉，我们建议在自定义数据时取`area = bbox_w * bbox_h`。

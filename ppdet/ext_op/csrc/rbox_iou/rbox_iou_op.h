@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// The code is based on https://github.com/csuhan/s2anet/blob/master/mmdet/ops/box_iou_rotated
+// The code is based on
+// https://github.com/csuhan/s2anet/blob/master/mmdet/ops/box_iou_rotated
 
 #pragma once
 
@@ -32,24 +33,20 @@
 
 namespace {
 
-template <typename T>
-struct RotatedBox {
-  T x_ctr, y_ctr, w, h, a;
-};
+template <typename T> struct RotatedBox { T x_ctr, y_ctr, w, h, a; };
 
-template <typename T>
-struct Point {
+template <typename T> struct Point {
   T x, y;
-  HOST_DEVICE_INLINE Point(const T& px = 0, const T& py = 0) : x(px), y(py) {}
-  HOST_DEVICE_INLINE Point operator+(const Point& p) const {
+  HOST_DEVICE_INLINE Point(const T &px = 0, const T &py = 0) : x(px), y(py) {}
+  HOST_DEVICE_INLINE Point operator+(const Point &p) const {
     return Point(x + p.x, y + p.y);
   }
-  HOST_DEVICE_INLINE Point& operator+=(const Point& p) {
+  HOST_DEVICE_INLINE Point &operator+=(const Point &p) {
     x += p.x;
     y += p.y;
     return *this;
   }
-  HOST_DEVICE_INLINE Point operator-(const Point& p) const {
+  HOST_DEVICE_INLINE Point operator-(const Point &p) const {
     return Point(x - p.x, y - p.y);
   }
   HOST_DEVICE_INLINE Point operator*(const T coeff) const {
@@ -58,22 +55,21 @@ struct Point {
 };
 
 template <typename T>
-HOST_DEVICE_INLINE T dot_2d(const Point<T>& A, const Point<T>& B) {
+HOST_DEVICE_INLINE T dot_2d(const Point<T> &A, const Point<T> &B) {
   return A.x * B.x + A.y * B.y;
 }
 
 template <typename T>
-HOST_DEVICE_INLINE T cross_2d(const Point<T>& A, const Point<T>& B) {
+HOST_DEVICE_INLINE T cross_2d(const Point<T> &A, const Point<T> &B) {
   return A.x * B.y - B.x * A.y;
 }
 
 template <typename T>
-HOST_DEVICE_INLINE void get_rotated_vertices(
-    const RotatedBox<T>& box,
-    Point<T> (&pts)[4]) {
+HOST_DEVICE_INLINE void get_rotated_vertices(const RotatedBox<T> &box,
+                                             Point<T> (&pts)[4]) {
   // M_PI / 180. == 0.01745329251
-  //double theta = box.a * 0.01745329251;
-  //MODIFIED
+  // double theta = box.a * 0.01745329251;
+  // MODIFIED
   double theta = box.a;
   T cosTheta2 = (T)cos(theta) * 0.5f;
   T sinTheta2 = (T)sin(theta) * 0.5f;
@@ -90,10 +86,9 @@ HOST_DEVICE_INLINE void get_rotated_vertices(
 }
 
 template <typename T>
-HOST_DEVICE_INLINE int get_intersection_points(
-    const Point<T> (&pts1)[4],
-    const Point<T> (&pts2)[4],
-    Point<T> (&intersections)[24]) {
+HOST_DEVICE_INLINE int get_intersection_points(const Point<T> (&pts1)[4],
+                                               const Point<T> (&pts2)[4],
+                                               Point<T> (&intersections)[24]) {
   // Line vector
   // A line from p1 to p2 is: p1 + (p2-p1)*t, t=[0,1]
   Point<T> vec1[4], vec2[4];
@@ -127,8 +122,8 @@ HOST_DEVICE_INLINE int get_intersection_points(
 
   // Check for vertices of rect1 inside rect2
   {
-    const auto& AB = vec2[0];
-    const auto& DA = vec2[3];
+    const auto &AB = vec2[0];
+    const auto &DA = vec2[3];
     auto ABdotAB = dot_2d<T>(AB, AB);
     auto ADdotAD = dot_2d<T>(DA, DA);
     for (int i = 0; i < 4; i++) {
@@ -150,8 +145,8 @@ HOST_DEVICE_INLINE int get_intersection_points(
 
   // Reverse the check - check for vertices of rect2 inside rect1
   {
-    const auto& AB = vec1[0];
-    const auto& DA = vec1[3];
+    const auto &AB = vec1[0];
+    const auto &DA = vec1[3];
     auto ABdotAB = dot_2d<T>(AB, AB);
     auto ADdotAD = dot_2d<T>(DA, DA);
     for (int i = 0; i < 4; i++) {
@@ -171,11 +166,9 @@ HOST_DEVICE_INLINE int get_intersection_points(
 }
 
 template <typename T>
-HOST_DEVICE_INLINE int convex_hull_graham(
-    const Point<T> (&p)[24],
-    const int& num_in,
-    Point<T> (&q)[24],
-    bool shift_to_zero = false) {
+HOST_DEVICE_INLINE int convex_hull_graham(const Point<T> (&p)[24],
+                                          const int &num_in, Point<T> (&q)[24],
+                                          bool shift_to_zero = false) {
   assert(num_in >= 2);
 
   // Step 1:
@@ -188,7 +181,7 @@ HOST_DEVICE_INLINE int convex_hull_graham(
       t = i;
     }
   }
-  auto& start = p[t]; // starting point
+  auto &start = p[t]; // starting point
 
   // Step 2:
   // Subtract starting point from every points (for sorting in the next step)
@@ -230,15 +223,15 @@ HOST_DEVICE_INLINE int convex_hull_graham(
   }
 #else
   // CPU version
-  std::sort(
-      q + 1, q + num_in, [](const Point<T>& A, const Point<T>& B) -> bool {
-        T temp = cross_2d<T>(A, B);
-        if (fabs(temp) < 1e-6) {
-          return dot_2d<T>(A, A) < dot_2d<T>(B, B);
-        } else {
-          return temp > 0;
-        }
-      });
+  std::sort(q + 1, q + num_in,
+            [](const Point<T> &A, const Point<T> &B) -> bool {
+              T temp = cross_2d<T>(A, B);
+              if (fabs(temp) < 1e-6) {
+                return dot_2d<T>(A, A) < dot_2d<T>(B, B);
+              } else {
+                return temp > 0;
+              }
+            });
 #endif
 
   // Step 4:
@@ -286,7 +279,7 @@ HOST_DEVICE_INLINE int convex_hull_graham(
 }
 
 template <typename T>
-HOST_DEVICE_INLINE T polygon_area(const Point<T> (&q)[24], const int& m) {
+HOST_DEVICE_INLINE T polygon_area(const Point<T> (&q)[24], const int &m) {
   if (m <= 2) {
     return 0;
   }
@@ -300,9 +293,8 @@ HOST_DEVICE_INLINE T polygon_area(const Point<T> (&q)[24], const int& m) {
 }
 
 template <typename T>
-HOST_DEVICE_INLINE T rboxes_intersection(
-    const RotatedBox<T>& box1,
-    const RotatedBox<T>& box2) {
+HOST_DEVICE_INLINE T rboxes_intersection(const RotatedBox<T> &box1,
+                                         const RotatedBox<T> &box2) {
   // There are up to 4 x 4 + 4 + 4 = 24 intersections (including dups) returned
   // from rotated_rect_intersection_pts
   Point<T> intersectPts[24], orderedPts[24];
@@ -327,8 +319,8 @@ HOST_DEVICE_INLINE T rboxes_intersection(
 } // namespace
 
 template <typename T>
-HOST_DEVICE_INLINE T
-rbox_iou_single(T const* const box1_raw, T const* const box2_raw) {
+HOST_DEVICE_INLINE T rbox_iou_single(T const *const box1_raw,
+                                     T const *const box2_raw) {
   // shift center to the middle point to achieve higher precision in result
   RotatedBox<T> box1, box2;
   auto center_shift_x = (box1_raw[0] + box2_raw[0]) / 2.0;

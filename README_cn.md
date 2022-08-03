@@ -22,16 +22,15 @@
 </div>
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> 产品动态
+- 🔥 **2022.8.01：发布[PP-TinyPose升级版](./configs/keypoint/tiny_pose/). 在健身、舞蹈等场景的业务数据集端到端AP提升9.1**
+  - 新增体育场景真实数据，复杂动作识别效果显著提升，覆盖侧身、卧躺、跳跃、高抬腿等非常规动作
+  - 检测模型采用[PP-PicoDet增强版](./configs/picodet/README.md)，在COCO数据集上精度提升3.1%
+  - 关键点稳定性增强，新增滤波稳定方式，使得视频预测结果更加稳定平滑
 
 - 🔥 **2022.7.14：[行人分析工具PP-Human v2](./deploy/pipeline)发布**
   - 四大产业特色功能：高性能易扩展的五大复杂行为识别、闪电级人体属性识别、一行代码即可实现的人流检测与轨迹留存以及高精度跨镜跟踪
   - 底层核心算法性能强劲：覆盖行人检测、跟踪、属性三类核心算法能力，对目标人数、光线、背景均无限制
   - 极低使用门槛：提供保姆级全流程开发及模型优化策略、一行命令完成推理、兼容各类数据输入格式
-
-**活动预告** 7月19日晚20点，PaddleDetection举办PP-Human v2线上私享交流会，欢迎大家扫码进群，获取线上会议链接！名额有限，抓紧报名！
-<div  align="center">
-  <img src="https://user-images.githubusercontent.com/22989727/178771163-66639dc0-cb65-4413-8de4-6ac5c5eed9f5.jpg" width="200"/>
-</div>
 
 - 2022.3.24：PaddleDetection发布[release/2.4版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)
   - 发布高精度云边一体SOTA目标检测模型[PP-YOLOE](configs/ppyoloe)，提供s/m/l/x版本，l版本COCO test2017数据集精度51.6%，V100预测速度78.1 FPS，支持混合精度训练，训练较PP-YOLOv2加速33%，全系列多尺度模型，满足不同硬件算力需求，可适配服务器、边缘端GPU及其他服务器端AI加速卡。
@@ -438,21 +437,17 @@
 
 ### [产业实践范例教程](./industrial_tutorial/README.md)
 
+- [基于PP-TinyPose增强版的智能健身动作识别](https://aistudio.baidu.com/aistudio/projectdetail/4385813)
+
+- [基于PP-Human的打架识别](https://aistudio.baidu.com/aistudio/projectdetail/4086987?contributionType=1)
+
 - [基于PP-PicoDet增强版的路面垃圾检测](https://aistudio.baidu.com/aistudio/projectdetail/3846170?channelType=0&channel=0)
 
 - [基于PP-PicoDet的通信塔识别及Android端部署](https://aistudio.baidu.com/aistudio/projectdetail/3561097)
 
-- [基于Faster-RCNN的瓷砖表面瑕疵检测](https://aistudio.baidu.com/aistudio/projectdetail/2571419)
-
-- [基于PaddleDetection的PCB瑕疵检测](https://aistudio.baidu.com/aistudio/projectdetail/2367089)
-
 - [基于FairMOT实现人流量统计](https://aistudio.baidu.com/aistudio/projectdetail/2421822)
 
-- [基于YOLOv3实现跌倒检测 ](https://aistudio.baidu.com/aistudio/projectdetail/2500639)
-
-- [基于人体关键点检测的合规检测](https://aistudio.baidu.com/aistudio/projectdetail/4061642?contributionType=1)
-
-- [打架识别](https://aistudio.baidu.com/aistudio/projectdetail/4086987?contributionType=1)
+- [更多其他范例](./industrial_tutorial/README.md)
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157836473-1cf451fa-f01f-4148-ba68-b6d06d5da2f9.png" alt="" width="20"> 应用案例
 

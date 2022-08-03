@@ -166,6 +166,7 @@ else
 fi
 
 if [[ ${model_name} =~ "higherhrnet" ]] || [[ ${model_name} =~ "hrnet" ]] || [[ ${model_name} =~ "tinypose" ]];then
+    echo "${model_name} run on full coco dataset"
     epoch=$(set_dynamic_epoch $device_num $epoch)
 else
     epoch=1

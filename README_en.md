@@ -432,19 +432,15 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 
 ### [Industrial tutorial examples](./industrial_tutorial/README.md)
 
+- [Intelligent fitness recognition based on PP-TinyPose Plus](https://aistudio.baidu.com/aistudio/projectdetail/4385813)
+
 - [Road litter detection based on PP-PicoDet Plus](https://aistudio.baidu.com/aistudio/projectdetail/3561097)
 
 - [Communication tower detection based on PP-PicoDet and deployment on Android](https://aistudio.baidu.com/aistudio/projectdetail/3561097)
 
-- [Tile surface defect detection based on Faster-RCNN](https://aistudio.baidu.com/aistudio/projectdetail/2571419)
-
-- [PCB defect detection based on PaddleDetection](https://aistudio.baidu.com/aistudio/projectdetail/2367089)
-
 - [Visitor flow statistics based on FairMOT](https://aistudio.baidu.com/aistudio/projectdetail/2421822)
 
-- [Falling detection based on YOLOv3](https://aistudio.baidu.com/aistudio/projectdetail/2500639)
-
-- [Compliance detection based on human key  point detection](https://aistudio.baidu.com/aistudio/projectdetail/4061642?contributionType=1)
+- [More examples](./industrial_tutorial/README.md)
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157836473-1cf451fa-f01f-4148-ba68-b6d06d5da2f9.png" alt="" width="20"> Applications
 
