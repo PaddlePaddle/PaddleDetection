@@ -27,7 +27,7 @@
 
 The keypoint detection part in PaddleDetection follows the state-of-the-art algorithm closely, including Top-Down and Bottom-Up methods, which can satisfy the different needs of users. Top-Down detects the object first and then detects the specific keypoint. Top-Down models will be more accurate, but slower as the number of objects increases. Differently, Bottom-Up detects the point first and then group or connect those points to form several instances of human pose. The speed of Bottom-Up is fixed, it won't slow down as the number of objects increases, but it will be less accurate.
 
-At the same time, PaddleDetection provides a self-developed real-time keypoint detection model [PP-TinyPose](./tiny_pose/README.md) optimized for mobile devices.
+At the same time, PaddleDetection provides a self-developed real-time keypoint detection model [PP-TinyPose](./tiny_pose/README_en.md) optimized for mobile devices.
 
 <div align="center">
   <img src="./football_keypoint.gif" width='800'/>
