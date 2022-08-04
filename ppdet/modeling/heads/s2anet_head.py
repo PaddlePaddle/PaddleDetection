@@ -22,7 +22,7 @@ from paddle.nn.initializer import Normal, Constant
 from ppdet.core.workspace import register
 from ppdet.modeling.bbox_utils import rbox2poly
 from ppdet.modeling.proposal_generator.target_layer import RBoxAssigner
-from ppdet.modeling.proposal_generator.proposal_generator import S2ANetAnchorGenerator
+from ppdet.modeling.proposal_generator.anchor_generator import S2ANetAnchorGenerator
 from ppdet.modeling.layers import AlignConv
 from ..cls_utils import _get_class_default_kwargs
 import numpy as np
@@ -268,20 +268,19 @@ class S2ANetHead(nn.Layer):
             init_anchors = self.anchor_generators[i]((H, W),
                                                      self.anchor_strides[i])
             init_anchors = init_anchors.reshape([1, NA, 5])
-            self.base_anchors_list.append(init_anchors.squeeze(0))
+            base_anchors_list.append(init_anchors.squeeze(0))
 
             if self.training:
                 refine_anchor = self.bbox_decode(fam_reg.detach(), init_anchors)
             else:
                 refine_anchor = self.bbox_decode(fam_reg, init_anchors)
 
-            refine_anchor_list.append(refine_anchor)
+            refine_anchors_list.append(refine_anchor)
 
             if self.align_conv_type == 'AlignConv':
                 align_feat = self.align_conv(feat,
-                                             refine_anchor.clone(),
-                                             featmap_size,
-                                             self.anchor_strides[feat_idx])
+                                             refine_anchor.clone(), (H, W),
+                                             self.anchor_strides[i])
             elif self.align_conv_type == 'DCN':
                 align_offset = self.align_conv_offset(feat)
                 align_feat = self.align_conv(feat, align_offset)
@@ -321,7 +320,7 @@ class S2ANetHead(nn.Layer):
 
     def get_bboxes(self, head_outs):
         perd_bboxes_list, pred_scores_list = head_outs
-        batch = pred_scores_list[0].shape[0]
+        batch = paddle.shape(pred_scores_list[0])[0]
         bboxes, bbox_num = [], []
         for i in range(batch):
             pred_scores_per_image = [t[i] for t in pred_scores_list]
@@ -414,7 +413,7 @@ class S2ANetHead(nn.Layer):
                 bbox_pred = paddle.gather(bbox_pred, topk_inds)
                 scores = paddle.gather(scores, topk_inds)
 
-            mlvl_bboxes.append(bboxes)
+            mlvl_bboxes.append(bbox_pred)
             mlvl_scores.append(scores)
 
         mlvl_bboxes = paddle.concat(mlvl_bboxes)
@@ -694,5 +693,5 @@ class S2ANetHead(nn.Layer):
         gh = rroi_h * dh.exp()
         ga = np.pi * dangle + rroi_angle
         ga = (ga + np.pi / 4) % np.pi - np.pi / 4
-        bboxes = paddle.stack([gx, gy, gw, gh, ga], axis=-1)
+        bboxes = paddle.concat([gx, gy, gw, gh, ga], axis=-1)
         return bboxes

@@ -19,6 +19,7 @@ import math
 
 import paddle
 import paddle.nn as nn
+import numpy as np
 
 from ppdet.core.workspace import register
 

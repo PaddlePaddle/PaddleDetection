@@ -27,8 +27,8 @@ except Exception:
 
 __all__ = [
     'BBoxPostProcess', 'MaskPostProcess', 'FCOSPostProcess',
-    'S2ANetBBoxPostProcess', 'JDEBBoxPostProcess', 'CenterNetPostProcess',
-    'DETRBBoxPostProcess', 'SparsePostProcess'
+    'JDEBBoxPostProcess', 'CenterNetPostProcess', 'DETRBBoxPostProcess',
+    'SparsePostProcess'
 ]
 
 

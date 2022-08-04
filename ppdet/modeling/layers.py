@@ -56,16 +56,15 @@ class AlignConv(nn.Layer):
     def get_offset(self, anchors, featmap_size, stride):
         """
         Args:
-            anchors: [M,5] xc,yc,w,h,angle
+            anchors: [B, L, 5] xc,yc,w,h,angle
             featmap_size: (feat_h, feat_w)
             stride: 8
         Returns:
 
         """
-        anchors = paddle.reshape(anchors, [-1, 5])  # (NA,5)
+        batch = anchors.shape[0]
         dtype = anchors.dtype
-        feat_h = featmap_size[0]
-        feat_w = featmap_size[1]
+        feat_h, feat_w = featmap_size
         pad = (self.kernel_size - 1) // 2
         idx = paddle.arange(-pad, pad + 1, dtype=dtype)
 
@@ -84,19 +83,7 @@ class AlignConv(nn.Layer):
         y_conv = yc + yy
 
         # get sampling locations of anchors
-        # x_ctr, y_ctr, w, h, a = np.unbind(anchors, dim=1)
-        x_ctr = anchors[:, 0]
-        y_ctr = anchors[:, 1]
-        w = anchors[:, 2]
-        h = anchors[:, 3]
-        a = anchors[:, 4]
-
-        x_ctr = paddle.reshape(x_ctr, [-1, 1])
-        y_ctr = paddle.reshape(y_ctr, [-1, 1])
-        w = paddle.reshape(w, [-1, 1])
-        h = paddle.reshape(h, [-1, 1])
-        a = paddle.reshape(a, [-1, 1])
-
+        x_ctr, y_ctr, w, h, a = paddle.split(anchors, 5, axis=-1)
         x_ctr = x_ctr / stride
         y_ctr = y_ctr / stride
         w_s = w / stride
@@ -111,21 +98,15 @@ class AlignConv(nn.Layer):
         offset_x = x_anchor - x_conv
         offset_y = y_anchor - y_conv
         offset = paddle.stack([offset_y, offset_x], axis=-1)
-        offset = paddle.reshape(
-            offset, [feat_h * feat_w, self.kernel_size * self.kernel_size * 2])
-        offset = paddle.transpose(offset, [1, 0])
-        offset = paddle.reshape(
-            offset,
-            [1, self.kernel_size * self.kernel_size * 2, feat_h, feat_w])
+        offset = offset.reshape(
+            [batch, feat_h, feat_w, self.kernel_size * self.kernel_size * 2])
+        offset = offset.transpose([0, 3, 1, 2])
+
         return offset
 
     def forward(self, x, refine_anchors, featmap_size, stride):
-        batch = paddle.shape[0]
-        offset_list = [
-            self.get_offset(refine_anchors[i], featmap_size, stride)
-            for i in range(batch)
-        ]
-        offset = paddle.concat(offset_list, axis=0)
+        batch = paddle.shape(x)[0].numpy()
+        offset = self.get_offset(refine_anchors, featmap_size, stride)
         if self.training:
             x = F.relu(self.align_conv(x, offset.detach()))
         else:
