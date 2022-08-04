@@ -14,8 +14,8 @@
 * [Annotation Format](#Annotation-Format-of-LabelMe)
   * [Export Format](#Export-Format-of-LabelMe)
   * [Summary of Format Conversion](#Summary-of-Format-Conversion)
-  * [Annotation file(json)—>VOC Dataset](#Annotation-file(json)—>VOC-Dataset)
-  * [Annotation file(json)—>COCO Dataset](#Annotation-file(json)—>COCO-Dataset)
+  * [Annotation file(json)—>VOC Dataset](#annotation-filejsonvoc-dataset)
+  * [Annotation file(json)—>COCO Dataset](#annotation-filejsoncoco-dataset)
 
 [LabelImg](#LabelImg)
 

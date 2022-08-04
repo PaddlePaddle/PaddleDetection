@@ -13,7 +13,7 @@
 - [Annotation Format](#Annotation-Format)
   - [Data Export Format](#Data-Export-Format)
   - [Summary of Format Conversion](#Summary-of-Format-Conversion)
-  - [Annotation file(json)—>COCO Dataset](#Annotation-file(json)—>COCO-Dataset)
+  - [Annotation file(json)—>COCO Dataset](#annotation-filejsoncoco-dataset)
 
 
 
