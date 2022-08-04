@@ -159,24 +159,24 @@ PP-Human v2整体方案如下图所示:
 
 ### 行人检测
 - 采用PP-YOLOE L 作为目标检测模型
-- 详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/)和[检测跟踪文档](mot.md)
+- 详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/)和[检测跟踪文档](pphuman_mot.md)
 
 ### 行人跟踪
 - 采用SDE方案完成行人跟踪
 - 检测模型使用PP-YOLOE L(高精度)和S(轻量级)
 - 跟踪模块采用OC-SORT方案
-- 详细文档参考[OC-SORT](../../../../configs/mot/ocsort)和[检测跟踪文档](mot.md)
+- 详细文档参考[OC-SORT](../../../../configs/mot/ocsort)和[检测跟踪文档](pphuman_mot.md)
 
 ### 跨镜行人跟踪
 - 使用PP-YOLOE + OC-SORT得到单镜头多目标跟踪轨迹
 - 使用ReID（StrongBaseline网络）对每一帧的检测结果提取特征
 - 多镜头轨迹特征进行匹配，得到跨镜头跟踪结果
-- 详细文档参考[跨镜跟踪](mtmct.md)
+- 详细文档参考[跨镜跟踪](pphuman_mtmct.md)
 
 ### 属性识别
 - 使用PP-YOLOE + OC-SORT跟踪人体
 - 使用StrongBaseline（多分类模型）完成识别属性，主要属性包括年龄、性别、帽子、眼睛、上衣下衣款式、背包等
-- 详细文档参考[属性识别](attribute.md)
+- 详细文档参考[属性识别](pphuman_attribute.md)
 
 ### 行为识别：
 - 提供四种行为识别方案
@@ -184,4 +184,4 @@ PP-Human v2整体方案如下图所示:
 - 2. 基于图像分类的行为识别，例如打电话识别
 - 3. 基于检测的行为识别，例如吸烟识别
 - 4. 基于视频分类的行为识别，例如打架识别
-- 详细文档参考[行为识别](action.md)
+- 详细文档参考[行为识别](pphuman_action.md)
