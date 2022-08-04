@@ -81,7 +81,7 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
                                                        --device=gpu \
                                                        --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
     ```
-4. For detailed parameter description, please refer to [Parameter Description](./QUICK_STARTED.md)
+4. For detailed parameter description, please refer to [Parameter Description](./PPHuman_QUICK_STARTED.md)
 
 ### Introduction to the Solution
 
@@ -133,7 +133,7 @@ ID_BASED_CLSACTION: # config for classfication-based action recognition model
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
   ```
-4. For detailed parameter description, please refer to [Parameter Description](./QUICK_STARTED.md)
+4. For detailed parameter description, please refer to [Parameter Description](./PPHuman_QUICK_STARTED.md)
 
 ### Introduction to the Solution
 1. Get the pedestrian detection box and the tracking ID number of the video input through object detection and multi-object tracking. The adopted model is PP-YOLOE, and for details, please refer to [PP-YOLOE](../../../configs/ppyoloe).
@@ -180,7 +180,7 @@ ID_BASED_DETACTION: # Config for detection-based action recognition model
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
   ```
-4. For detailed parameter description, please refer to [Parameter Description](./QUICK_STARTED.md)
+4. For detailed parameter description, please refer to [Parameter Description](./PPHuman_QUICK_STARTED.md)
 
 ### Introduction to the Solution
 1. Get the pedestrian detection box and the tracking ID number of the video input through object detection and multi-object tracking. The adopted model is PP-YOLOE, and for details, please refer to [PP-YOLOE](../../../../configs/ppyoloe).
@@ -238,7 +238,7 @@ VIDEO_ACTION:  # Config for detection-based action recognition model
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
   ```
-5. For detailed parameter description, please refer to [Parameter Description](./QUICK_STARTED.md).
+5. For detailed parameter description, please refer to [Parameter Description](./PPHuman_QUICK_STARTED.md).
 
 
 The result is shown as follow:

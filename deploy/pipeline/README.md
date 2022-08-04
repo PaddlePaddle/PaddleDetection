@@ -70,7 +70,7 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
 
 ## 📚 文档教程
 
-### [快速开始](docs/tutorials/QUICK_STARTED.md)
+### [快速开始](docs/tutorials/PPHuman_QUICK_STARTED.md)
 
 ### 行人属性/特征识别
 

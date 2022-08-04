@@ -74,7 +74,7 @@ Click to download the model, then unzip and save it in the `. /output_inference`
 
 ## 📚 Doc Tutorials
 
-### [A Quick Start](docs/tutorials/QUICK_STARTED.md)
+### [A Quick Start](docs/tutorials/PPHuman_QUICK_STARTED.md)
 
 ### Pedestrian attribute/feature recognition
 

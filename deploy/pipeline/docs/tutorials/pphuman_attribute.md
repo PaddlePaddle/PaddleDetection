@@ -31,7 +31,7 @@ ATTR:                                                                     #模�
   enable: False                                                           #功能是否开启
 ```
 
-2. 图片输入时，启动命令如下(更多命令参数说明，请参考[快速开始-参数说明](./QUICK_STARTED.md#41-参数说明))。
+2. 图片输入时，启动命令如下(更多命令参数说明，请参考[快速开始-参数说明](./PPHuman_QUICK_STARTED.md#41-参数说明))。
 ```python
 #单张图片
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
