@@ -31,7 +31,7 @@ from python.infer import get_test_images
 from python.preprocess import preprocess, NormalizeImage, Permute, Resize_Mult32
 from pipeline.ppvehicle.vehicle_plateutils import create_predictor, get_infer_gpuid, get_rotate_crop_image, draw_boxes
 from pipeline.ppvehicle.vehicleplate_postprocess import build_post_process
-from pipeline.pipe_utils import merge_cfg, print_arguments, argsparser
+from pipeline.cfg_utils import merge_cfg, print_arguments, argsparser
 
 
 class PlateDetector(object):

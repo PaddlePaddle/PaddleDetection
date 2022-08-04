@@ -28,7 +28,8 @@ from datacollector import DataCollector, Result
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
-from pipe_utils import argsparser, print_arguments, merge_cfg, PipeTimer
+from cfg_utils import argsparser, print_arguments, merge_cfg
+from pipe_utils import PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
 
 from python.infer import Detector, DetectorPicoDet
@@ -1106,7 +1107,6 @@ if __name__ == '__main__':
     # parse params from command
     parser = argsparser()
     FLAGS = parser.parse_args()
-
     FLAGS.device = FLAGS.device.upper()
     assert FLAGS.device in ['CPU', 'GPU', 'XPU'
                             ], "device should be CPU, GPU or XPU"
