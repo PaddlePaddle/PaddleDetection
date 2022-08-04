@@ -19,6 +19,7 @@ import math
 
 import paddle
 import paddle.nn as nn
+import numpy as np
 
 from ppdet.core.workspace import register
 
@@ -221,7 +222,8 @@ class S2ANetAnchorGenerator(nn.Layer):
         shifts = paddle.stack([shift_xx, shift_yy, shift_xx, shift_yy], axis=-1)
 
         all_anchors = self.base_anchors[:, :] + shifts[:, :]
-        all_anchors = all_anchors.cast(paddle.float32).reshape([feat_h * feat_w, 4])
+        all_anchors = all_anchors.cast(paddle.float32).reshape(
+            [feat_h * feat_w, 4])
         all_anchors = self.rect2rbox(all_anchors)
         return all_anchors
 
@@ -259,5 +261,6 @@ class S2ANetAnchorGenerator(nn.Layer):
         inds = paddle.cast(inds, paddle.float32)
         rboxes_angle = inds * np.pi / 2.0
 
-        rboxes = paddle.concat((x_ctr, y_ctr, rbox_w, rbox_h, rboxes_angle), axis=-1)
+        rboxes = paddle.concat(
+            (x_ctr, y_ctr, rbox_w, rbox_h, rboxes_angle), axis=-1)
         return rboxes
