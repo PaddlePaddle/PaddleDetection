@@ -1,20 +1,80 @@
 
 # PP-Vehicle车牌识别模块
 
-【应用介绍】
+车牌识别，在车辆应用场景中有着非常广泛的应用，起到车辆身份识别的作用。PP-Vehicle中提供了车辆的跟踪及其车牌识别的功能，并提供模型下载：
 
-【模型下载】
+| 任务                 | 算法 | 精度 | 预测速度(ms) |下载链接                                                                               |
+|:---------------------|:---------:|:------:|:------:| :---------------------------------------------------------------------------------: |
+| 车辆检测/跟踪 |  PP-YOLOE-l | mAP: 63.9 | 待定 |[下载链接](待定) |
+| 车牌检测模型    |  ch_PP-OCRv3_det  |  mA: 待定  | 待定 | [下载链接](待定) |
+| 车牌识别模型    |  ch_PP-OCRv3_rec  |  mA: 待定  | 待定 | [下载链接](待定) |
+1. 跟踪模型使用5个数据集(BDD100K-DET、BDD100K-MOT、UA-DETRAC、PPVehicle9cls、PPVehicle)整合训练。测试在 （待定）数据集测试。
+2. 车牌检测、识别模型使用PP-OCRv3模型在CCPD车牌数据集上fine-tune得到。
 
 ## 使用方法
 
-【配置项说明】
+1. 从上表链接中下载模型并解压到```PaddleDetection/output_inference```路径下，并修改配置文件中模型路径，也可默认自动下载模型。设置```deploy/pipeline/config/infer_cfg_ppvehicle.yml```中`VEHICLE_PLATE`的enable: True
 
-【使用命令】
+`infer_cfg_ppvehicle.yml`中配置项说明：
+```
+VEHICLE_PLATE:                                                            #模块名称
+  det_model_dir: output_inference/ch_PP-OCRv3_det_infer/                  #车牌检测模型路径
+  det_limit_side_len: 480                                                 #检测模型单边输入尺寸
+  det_limit_type: "max"                                                   #检测模型输入尺寸长短边选择，"max"表示长边
+  rec_model_dir: output_inference/ch_PP-OCRv3_rec_infer/                  #车牌识别模型路径
+  rec_image_shape: [3, 48, 320]                                           #车牌识别模型输入尺寸
+  rec_batch_num: 6                                                        #车牌识别batchsize
+  word_dict_path: deploy/pipeline/ppvehicle/rec_word_dict.txt             #OCR模型查询字典
+  basemode: "idbased"                                                     #流程类型，'idbased'表示基于跟踪模型
+  enable: False                                                           #功能是否开启
+```
 
-【效果展示】
+2. 图片输入时，启动命令如下(更多命令参数说明，请参考[快速开始-参数说明](./PPHuman_QUICK_STARTED.md#41-参数说明))。
+```python
+#单张图片
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
+                                                   --image_file=test_image.jpg \
+                                                   --device=gpu \
+
+#图片文件夹
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
+                                                   --image_dir=images/ \
+                                                   --device=gpu \
+
+```
+3. 视频输入时，启动命令如下
+```python
+#单个视频文件
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
+                                                   --video_file=test_video.mp4 \
+                                                   --device=gpu \
+
+#视频文件夹
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
+                                                   --video_dir=test_videos/ \
+                                                   --device=gpu \
+```
+
+4. 若修改模型路径，有以下两种方式：
+
+    - 方法一：```./deploy/pipeline/config/infer_cfg_ppvehicle.yml```下可以配置不同模型路径，属性识别模型修改ATTR字段下配置
+    - 方法二：命令行中增加`--det_model_dir`、`--rec_model_dir`修改模型路径，待完善。
+
+
+测试效果如下：
+
+<div width="1000" align="center">
+  <img src="../images/ppvehicleplate.gif"/>
+</div>
+
 
 ## 方案说明
 
-【实现方案及特色】
+1. 目标检测/多目标跟踪获取图片/视频输入中的车辆检测框，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../configs/ppyoloe/README_cn.md)
+2. 通过车辆检测框的坐标在输入图像中截取每个车辆
+3. 使用车牌检测模型在每张车辆截图中识别车牌所在位置，同理截取车牌区域
+4. 使用字符识别模型识别车牌中的字符。
 
-## 参考文献
+## 参考资料
+
+1. Paddle字符识别模型库[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
