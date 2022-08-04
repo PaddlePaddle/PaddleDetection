@@ -50,5 +50,5 @@
 1. [基于人体id检测的行为识别](./idbased_det.md)
 2. [基于人体id分类的行为识别](./idbased_clas.md)
 3. [基于人体骨骼点的行为识别](./skeletonbased_rec.md)
-4. [基于人体id跟踪的行为识别](../mot.md)
+4. [基于人体id跟踪的行为识别](../pphuman_mot.md)
 5. [基于视频分类的行为识别](./videobased_rec.md)

@@ -51,5 +51,5 @@ The following are detailed description for the five major categories of solution
 1. [action recognition based on detection with human id.](./idbased_det_en.md)
 2. [action recognition based on classification with human id.](./idbased_clas_en.md)
 3. [action recognition based on skelenton.](./skeletonbased_rec_en.md)
-4. [action recognition based on tracking with human id](../mot_en.md)
+4. [action recognition based on tracking with human id](../pphuman_mot_en.md)
 5. [action recognition based on video classification](./videobased_rec_en.md)
