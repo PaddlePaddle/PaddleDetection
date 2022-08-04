@@ -142,13 +142,12 @@ class AttrDetector(Detector):
             bag_label = bag if bag_score > self.threshold else 'No bag'
             label_res.append(bag_label)
             # upper
-            upper_res = res[4:8]
             upper_label = 'Upper:'
             sleeve = 'LongSleeve' if res[3] > res[2] else 'ShortSleeve'
             upper_label += ' {}'.format(sleeve)
-            for i, r in enumerate(upper_res):
-                if r > self.threshold:
-                    upper_label += ' {}'.format(upper_list[i])
+            upper_res = res[4:8]
+            if np.max(upper_res) > self.threshold:
+                upper_label += ' {}'.format(upper_list[np.argmax(upper_res)])
             label_res.append(upper_label)
             # lower
             lower_res = res[8:14]
