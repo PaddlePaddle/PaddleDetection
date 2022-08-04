@@ -8,24 +8,24 @@
 
 [LabelMe](#LabelMe)
 
-* [Instruction of LabelMe](#Instruction of LabelMe)
+* [Instruction](#Instruction-of-LabelMe)
   * [Installation](#Installation)
-  * [Annotation of Images in LabelMe](#Annotation of images in LabelMe)
-* [Annotation Format of LabelMe](#Annotation Format of LabelMe)
-  * [Export Format of LabelMe](#Export Format of LabelMe)
-  * [Summary of Format Conversion](#Summary of Format Conversion)
-  * [Annotation file(json)—>VOC Dataset](#标注文件(json)-->VOC数据集)
-  * [Annotation file(json)—>COCO Dataset](#Annotation file(json)—>COCO Dataset)
+  * [Annotation of Images](#Annotation-of-images-in-LabelMe)
+* [Annotation Format](#Annotation-Format-of-LabelMe)
+  * [Export Format](#Export-Format-of-LabelMe)
+  * [Summary of Format Conversion](#Summary-of-Format-Conversion)
+  * [Annotation file(json)—>VOC Dataset](#Annotation-file(json)—>VOC-Dataset)
+  * [Annotation file(json)—>COCO Dataset](#Annotation-file(json)—>COCO-Dataset)
 
 [LabelImg](#LabelImg)
 
-* [Instruction of LabelImg](#Instruction of LabelImg)
-  * [Installation of LabelImg](#Installation of LabelImg)
-  * [Installation Notes](#Installation Notes)
-  * [Annotation of images in LabelImg](#Annotation of images in LabelImg)
-* [Annotation Format of LabelImg ](#Annotation Format of LabelImg)
-  * [Export Format of LabelImg](#Export Format of LabelImg)
-  * [Notes of Format Conversion](#Notes of Format Conversion)
+* [Instruction](#Instruction-of-LabelImg)
+  * [Installation](#Installation-of-LabelImg)
+  * [Installation Notes](#Installation-Notes)
+  * [Annotation of images](#Annotation-of-images-in-LabelImg)
+* [Annotation Format](#Annotation-Format-of-LabelImg)
+  * [Export Format](#Export-Format-of-LabelImg)
+  * [Notes of Format Conversion](#Notes-of-Format-Conversion)
 
 
 

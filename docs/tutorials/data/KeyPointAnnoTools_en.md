@@ -8,12 +8,12 @@
 
 - [Instruction](#Instruction)
   - [Installation](#Installation)
-  - [Notes of Key Points Data](#Notes of Key Points Data)
-  - [Annotation of LabelMe](#Annotation of LabelMe)
-- [Annotation Format](#Annotation Format)
-  - [Data Export Format](#Export Data Format)
-  - [Summary of Format Conversion](#Summary of Format Conversion)
-  - [Annotation file(json)—>COCO Dataset](#Annotation file(json)—>COCO Dataset)
+  - [Notes of Key Points Data](#Notes-of-Key-Points-Data)
+  - [Annotation of LabelMe](#Annotation-of-LabelMe)
+- [Annotation Format](#Annotation-Format)
+  - [Data Export Format](#Data-Export-Format)
+  - [Summary of Format Conversion](#Summary-of-Format-Conversion)
+  - [Annotation file(json)—>COCO Dataset](#Annotation-file(json)—>COCO-Dataset)
 
 
 
