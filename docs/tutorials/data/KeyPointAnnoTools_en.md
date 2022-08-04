@@ -9,9 +9,9 @@
 - [Instruction](#Instruction)
   - [Installation](#Installation)
   - [Notes of Key Points Data](#Notes of Key Points Data)
-  - [Annotation](#Annotation of LabelMe)
-- [Annotation Format](#Annotation Format of LabelMe)
-  - [Data Export Format](#Export Data Format of LabelMe)
+  - [Annotation of LabelMe](#Annotation of LabelMe)
+- [Annotation Format](#Annotation Format)
+  - [Data Export Format](#Export Data Format)
   - [Summary of Format Conversion](#Summary of Format Conversion)
   - [Annotation file(json)—>COCO Dataset](#Annotation file(json)—>COCO Dataset)
 
@@ -111,9 +111,9 @@ Click the save button in the formula bar，it will generate an annotation file i
 
 
 
-### Annotation Format of LabelMe
+### Annotation Format
 
-#### Data Export Format of LabelMe
+#### Data Export Format
 
 ```
 #generate an annotation file
