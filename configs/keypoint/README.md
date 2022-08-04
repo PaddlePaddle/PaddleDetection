@@ -21,23 +21,24 @@
     - [模型部署](#模型部署)
       - [Top-Down模型联合部署](#top-down模型联合部署)
       - [Bottom-Up模型独立部署](#bottom-up模型独立部署)
-      - [与多目标跟踪联合部署](#与多目标跟踪模型fairmot联合部署)
+      - [与多目标跟踪联合部署](#与多目标跟踪模型FairMOT联合部署预测)
+    - [完整部署教程及Demo](#完整部署教程及Demo)
 - [自定义数据训练](#自定义数据训练)
 - [BenchMark](#benchmark)
 
 ## 简介
 
-PaddleDetection 关键点检测能力紧跟业内最新最优算法方案，包含Top-Down、Bottom-Up两套方案，Top-Down先检测主体，再检测局部关键点，优点是精度较高，缺点是速度会随着检测对象的个数增加，Bottom-Up先检测关键点再组合到对应的部位上，优点是速度快，与检测对象个数无关，缺点是精度较低。
+PaddleDetection 中的关键点检测部分紧跟最先进的算法，包括 Top-Down 和 Bottom-Up 两种方法，可以满足用户的不同需求。Top-Down 先检测对象，再检测特定关键点。Top-Down 模型的准确率会更高，但速度会随着对象数量的增加而变慢。不同的是，Bottom-Up 首先检测点，然后对这些点进行分组或连接以形成多个人体姿势实例。Bottom-Up 的速度是固定的，不会随着物体数量的增加而变慢，但精度会更低。
 
-同时，PaddleDetection提供针对移动端设备优化的自研实时关键点检测模型[PP-TinyPose](./tiny_pose/README.md)，以满足用户的不同需求。
+同时，PaddleDetection 提供针对移动端设备优化的自研实时关键点检测模型 [PP-TinyPose](./tiny_pose/README.md)。
 
 ## 模型推荐
 ### 移动端模型推荐
 
 | 检测模型                                                     | 关键点模型                            |             输入尺寸             |         COCO数据集精度          |          平均推理耗时 (FP16)           | 参数量 （M）                |          Flops (G)          |                           模型权重                           |                  Paddle-Lite部署模型（FP16)                  |
 | :----------------------------------------------------------- | :------------------------------------ | :------------------------------: | :-----------------------------: | :------------------------------------: | --------------------------- | :-------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [PP-TinyPose](./tinypose_128x96.yml)  | 检测：192x192<br>关键点：128x96  | 检测mAP：29.0<br>关键点AP：58.1 | 检测耗时：2.37ms<br>关键点耗时：3.27ms | 检测：1.18<br/>关键点：1.36 | 检测：0.35<br/>关键点：0.08 | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
-| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [PP-TinyPose](./tinypose_256x192.yml) | 检测：320x320<br>关键点：256x192 | 检测mAP：38.5<br>关键点AP：68.8 | 检测耗时：6.30ms<br>关键点耗时：8.33ms | 检测：1.18<br/>关键点：1.36 | 检测：0.97<br/>关键点：0.32 | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
+| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [PP-TinyPose](./tiny_pose/tinypose_128x96.yml)  | 检测：192x192<br>关键点：128x96  | 检测mAP：29.0<br>关键点AP：58.1 | 检测耗时：2.37ms<br>关键点耗时：3.27ms | 检测：1.18<br/>关键点：1.36 | 检测：0.35<br/>关键点：0.08 | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
+| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [PP-TinyPose](./tiny_pose/tinypose_256x192.yml) | 检测：320x320<br>关键点：256x192 | 检测mAP：38.5<br>关键点AP：68.8 | 检测耗时：6.30ms<br>关键点耗时：8.33ms | 检测：1.18<br/>关键点：1.36 | 检测：0.97<br/>关键点：0.32 | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
 
 
 *详细关于PP-TinyPose的使用请参考[文档]((./tiny_pose/README.md))。
@@ -176,7 +177,7 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 **注意:**
  跟踪模型导出教程请参考[文档](../mot/README.md)。
 
-### 4、完整部署教程及Demo
+### 完整部署教程及Demo
 
 ​ 我们提供了PaddleInference(服务器端)、PaddleLite(移动端)、第三方部署(MNN、OpenVino)支持。无需依赖训练代码，deploy文件夹下相应文件夹提供独立完整部署代码。 详见 [部署文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/README.md)介绍。
 
