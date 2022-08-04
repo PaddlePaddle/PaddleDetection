@@ -19,22 +19,15 @@
       - [Deployment for Top-Down models](#deployment-for-top-down-models)
       - [Deployment for Bottom-Up models](#deployment-for-bottom-up-models)
       - [Joint Inference with Multi-Object Tracking Model FairMOT](#joint-inference-with-multi-object-tracking-model-fairmot)
-  - [Complete Deploy Instruction and Demo](#4Complete-Deploy-Instruction-and-Demo)
-
-- [Train with custom data](#Train-with-custom-data)
-
+  - [Complete Deploy Instruction and Demo](#complete-deploy-instruction-and-demo)
+- [Train with custom data](#train-with-custom-data)
 - [BenchMark](#benchmark)
 
 ## Introduction
 
-The keypoint detection part in PaddleDetection follows the state-of-the-art algorithm closely, including Top-Down and Bottom-Up methods, which can satisfy the different needs of users.
+The keypoint detection part in PaddleDetection follows the state-of-the-art algorithm closely, including Top-Down and Bottom-Up methods, which can satisfy the different needs of users. Top-Down detects the object first and then detects the specific keypoint. Top-Down models will be more accurate, but slower as the number of objects increases. Differently, Bottom-Up detects the point first and then group or connect those points to form several instances of human pose. The speed of Bottom-Up is fixed, it won't slow down as the number of objects increases, but it will be less accurate.
 
-Top-Down detects the object first and then detect the specific keypoint. The accuracy of Top-Down models will be higher, but the time required will increase by the number of objects.
-
-
-Differently, Bottom-Up detects the point first and then group or connect those points to form several instances of human pose. The speed of Bottom-Up is fixed and will not increase by the number of objects, but the accuracy will be lower.
-
-At the same time, PaddleDetection provides [PP-TinyPose](./tiny_pose/README_en.md) specially for mobile devices.
+At the same time, PaddleDetection provides a self-developed real-time keypoint detection model [PP-TinyPose](./tiny_pose/README_en.md) optimized for mobile devices.
 
 <div align="center">
   <img src="./football_keypoint.gif" width='800'/>
@@ -195,7 +188,7 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 **Note:**
  To export MOT model, please refer to [Here](../../configs/mot/README_en.md).
 
-### 4.Complete Deploy Instruction and Demo
+### Complete Deploy Instruction and Demo
 
 ​ We provide standalone deploy of PaddleInference(Server-GPU)、PaddleLite(mobile、ARM)、Third-Engine(MNN、OpenVino), which is independent of training codes。For detail, please click [Deploy-docs](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/README_en.md)。
 
