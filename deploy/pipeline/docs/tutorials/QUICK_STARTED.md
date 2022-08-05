@@ -124,6 +124,10 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 # 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的REID部分enable设置为```True```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
+
+# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，直接使用```deploy/pipeline/config/examples/infer_cfg_reid.yml```配置文件，并利用```-o```命令修改跟踪模型路径
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_reid.yml --video_dir=mtmct_dir/ -o MOT.model_dir="mot_model_dir" --device=gpu [--run_mode trt_fp16]
+
 ```
 
 ### 参数说明
