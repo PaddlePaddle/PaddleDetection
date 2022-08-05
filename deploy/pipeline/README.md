@@ -70,19 +70,19 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
 
 ## 📚 文档教程
 
-### [快速开始](docs/tutorials/QUICK_STARTED.md)
+### [快速开始](docs/tutorials/PPHuman_QUICK_STARTED.md)
 
 ### 行人属性/特征识别
 
-* [快速开始](docs/tutorials/attribute.md)
-* [二次开发教程](../../docs/advanced_tutorials/customization/attribute.md)
+* [快速开始](docs/tutorials/pphuman_attribute.md)
+* [二次开发教程](../../docs/advanced_tutorials/customization/pphuman_attribute.md)
   * 数据准备
   * 模型优化
   * 新增属性
 
 ### 行为识别
 
-* [快速开始](docs/tutorials/action.md)
+* [快速开始](docs/tutorials/pphuman_action.md)
   * 摔倒检测
   * 打架识别
 * [二次开发教程](../../docs/advanced_tutorials/customization/action_recognotion/README.md)
@@ -93,17 +93,17 @@ PP-Human支持图片/单镜头视频/多镜头视频多种输入方式，功能�
 
 ### 跨镜跟踪ReID
 
-* [快速开始](docs/tutorials/mtmct.md)
-* [二次开发教程](../../docs/advanced_tutorials/customization/mtmct.md)
+* [快速开始](docs/tutorials/pphuman_mtmct.md)
+* [二次开发教程](../../docs/advanced_tutorials/customization/pphuman_mtmct.md)
   * 数据准备
   * 模型优化
 
 ### 行人跟踪、人流量计数与轨迹记录
 
-* [快速开始](docs/tutorials/mot.md)
+* [快速开始](docs/tutorials/pphuman_mot.md)
   * 行人跟踪
   * 人流量计数与轨迹记录
   * 区域闯入判断和计数
-* [二次开发教程](../../docs/advanced_tutorials/customization/mot.md)
+* [二次开发教程](../../docs/advanced_tutorials/customization/pphuman_mot.md)
   * 数据准备
   * 模型优化

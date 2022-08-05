@@ -1,4 +1,4 @@
-[English](attribute_en.md) | 简体中文
+[English](pphuman_attribute_en.md) | 简体中文
 
 # PP-Human属性识别模块
 
@@ -15,7 +15,7 @@
 1. 检测/跟踪模型精度为[MOT17](https://motchallenge.net/)，[CrowdHuman](http://www.crowdhuman.org/)，[HIEVE](http://humaninevents.org/)和部分业务数据融合训练测试得到。
 2. 行人属性分析精度为[PA100k](https://github.com/xh-liu/HydraPlus-Net#pa-100k-dataset)，[RAPv2](http://www.rapdataset.com/rapv2.html)，[PETA](http://mmlab.ie.cuhk.edu.hk/projects/PETA.html)和部分业务数据融合训练测试得到
 3. 预测速度为V100 机器上使用TensorRT FP16时的速度, 该处测速速度为模型预测速度
-4. 属性模型应用依赖跟踪模型结果，请在[跟踪模型页面](./mot.md)下载跟踪模型，依自身需求选择高精或轻量级下载。
+4. 属性模型应用依赖跟踪模型结果，请在[跟踪模型页面](./pphuman_mot.md)下载跟踪模型，依自身需求选择高精或轻量级下载。
 5. 模型下载后解压放置在PaddleDetection/output_inference/目录下。
 
 ## 使用方法
@@ -31,7 +31,7 @@ ATTR:                                                                     #模�
   enable: False                                                           #功能是否开启
 ```
 
-2. 图片输入时，启动命令如下(更多命令参数说明，请参考[快速开始-参数说明](./QUICK_STARTED.md#41-参数说明))。
+2. 图片输入时，启动命令如下(更多命令参数说明，请参考[快速开始-参数说明](./PPHuman_QUICK_STARTED.md#41-参数说明))。
 ```python
 #单张图片
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \

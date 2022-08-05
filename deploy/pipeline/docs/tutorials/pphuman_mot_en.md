@@ -1,4 +1,4 @@
-English | [简体中文](mot.md)
+English | [简体中文](pphuman_mot.md)
 
 # Detection and Tracking Module of PP-Human
 
