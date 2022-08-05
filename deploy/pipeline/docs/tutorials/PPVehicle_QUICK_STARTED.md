@@ -123,7 +123,7 @@ PP-Vehicle v2整体方案如下图所示:
 - 详细文档参考[OC-SORT](../../../../configs/mot/ocsort)和[检测跟踪文档](ppvehicle_mot.md)
 
 ### 属性识别
-- 使用PP-YOLOE + OC-SORT跟踪车辆
+- 使用PaddleClas提供的特色模型PP-LCNet，实现对车辆颜色及车型属性的识别。
 - 详细文档参考[属性识别](ppvehicle_attribute.md)
 
 ### 车牌识别
