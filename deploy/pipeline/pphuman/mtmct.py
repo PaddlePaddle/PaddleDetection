@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from pptracking.python.mot.visualize import plot_tracking
 from python.visualize import visualize_attr
 import os
@@ -149,19 +148,24 @@ def save_mtmct_vis_results(camera_results, captures, output_dir,
 
             # add attr vis
             if multi_res:
-                attr_res = []
                 tid_list = [
                     'c' + str(idx) + '_' + 't' + str(int(j))
                     for j in range(1, len(ids) + 1)
                 ]  # c0_t1, c0_t2...
-                for k in tid_list:
-                    if 'attrs' in multi_res[k]:
+                all_attr_result = [multi_res[i]["attrs"]
+                                   for i in tid_list]  # all cid_tid result
+                if any(
+                        all_attr_result
+                ):  # at least one cid_tid[attrs] is not None will goes to attrs_vis
+                    attr_res = []
+                    for k in tid_list:
                         if (frame_id - 1) >= len(multi_res[k]['attrs']):
                             t_attr = None
                         else:
                             t_attr = multi_res[k]['attrs'][frame_id - 1]
                             attr_res.append(t_attr)
-                image = visualize_attr(image, attr_res, boxes, is_mtmct=True)
+                    image = visualize_attr(
+                        image, attr_res, boxes, is_mtmct=True)
 
             writer.write(image)
         writer.release()
