@@ -1,6 +1,8 @@
+简体中文 | [English](DetAnnoTools_en.md)
+
+
+
 # 目标检测标注工具
-
-
 
 ## 目录
 
@@ -273,5 +275,5 @@ png/jpeg/jpg-->labelImg标注-->xml/txt/json
 
 #### 格式转换注意事项
 
-**PaddleDetection支持VOC或COCO格式的数据**，经LabelImg标注导出后的标注文件，需要修改为**VOC或COCO格式**，调整说明可以参考[准备训练数据](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/PrepareDataSet.md#%E5%87%86%E5%A4%87%E8%AE%AD%E7%BB%83%E6%95%B0%E6%8D%AE)
+**PaddleDetection支持VOC或COCO格式的数据**，经LabelImg标注导出后的标注文件，需要修改为**VOC或COCO格式**，调整说明可以参考[准备训练数据](./PrepareDataSet.md#%E5%87%86%E5%A4%87%E8%AE%AD%E7%BB%83%E6%95%B0%E6%8D%AE)
 
