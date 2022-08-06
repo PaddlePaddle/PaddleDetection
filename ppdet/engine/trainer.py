@@ -31,6 +31,7 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 import paddle
 import paddle.nn as nn
 import paddle.distributed as dist
+import paddle.profiler as profiler
 from paddle.distributed import fleet
 from paddle.static import InputSpec
 from ppdet.optimizer import ModelEMA
@@ -44,7 +45,7 @@ from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 from ppdet.utils.fuse_utils import fuse_conv_bn
-from ppdet.utils import profiler
+#from ppdet.utils import profiler
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback
 from .export_utils import _dump_infer_config, _prune_input_spec
@@ -57,6 +58,45 @@ logger = setup_logger('ppdet.engine')
 __all__ = ['Trainer']
 
 MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT', 'ByteTrack']
+
+
+GLOBAL_PROFILE_STATE = True
+def add_nvtx_event(event_name, is_first=False, is_last=False):
+    global GLOBAL_PROFILE_STATE
+    if not GLOBAL_PROFILE_STATE:
+        return
+
+    if not is_first:
+        paddle.fluid.core.nvprof_nvtx_pop()
+    if not is_last:
+        paddle.fluid.core.nvprof_nvtx_push(event_name)
+
+
+def switch_profile(start, end, step_idx, profiler_type=None, event_name=None):
+    if profiler_type is not None and profiler_type == "native-old":
+        if step_idx == start:
+            paddle.utils.profiler.start_profiler("All", "Default")
+        elif step_idx == end:
+            paddle.utils.profiler.stop_profiler("total", "tmp.profile")
+
+    if profiler_type is not None and profiler_type == "nvprof":
+        global GLOBAL_PROFILE_STATE
+        if step_idx > start and step_idx < end:
+            GLOBAL_PROFILE_STATE = True
+        else:
+            GLOBAL_PROFILE_STATE = False
+        if event_name is None:
+            event_name = str(step_idx)
+        if step_idx == start:
+            paddle.fluid.core.nvprof_start()
+            paddle.fluid.core.nvprof_enable_record_event()
+            paddle.fluid.core.nvprof_nvtx_push(event_name)
+        elif step_idx == end:
+            paddle.fluid.core.nvprof_nvtx_pop()
+            paddle.fluid.core.nvprof_stop()
+        elif step_idx > start and step_idx < end:
+            paddle.fluid.core.nvprof_nvtx_pop()
+            paddle.fluid.core.nvprof_nvtx_push(event_name)
 
 
 class Trainer(object):
@@ -403,6 +443,7 @@ class Trainer(object):
             model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
         # enabel auto mixed precision mode
+        print("use_amp={}, amp_level={}".format(self.use_amp, self.amp_level))
         if self.use_amp:
             scaler = paddle.amp.GradScaler(
                 enable=self.cfg.use_gpu or self.cfg.use_npu,
@@ -433,25 +474,60 @@ class Trainer(object):
             flops_loader = create('{}Reader'.format(self.mode.capitalize()))(
                 self.dataset, self.cfg.worker_num)
             self._flops(flops_loader)
-        profiler_options = self.cfg.get('profiler_options', None)
+        #profiler_options = self.cfg.get('profiler_options', None)
 
         self._compose_callback.on_train_begin(self.status)
 
         use_fused_allreduce_gradients = self.cfg[
             'use_fused_allreduce_gradients'] if 'use_fused_allreduce_gradients' in self.cfg else False
 
+        train_batch_size = self.cfg.TrainReader['batch_size']
+
+        profiler_type = "none" # "none", "native", "native-old", "nvprof"
+        prof = profiler.Profiler(targets=[profiler.ProfilerTarget.CPU, profiler.ProfilerTarget.GPU],
+                                 scheduler=[100, 110],
+                                 timer_only=profiler_type != "native")
+        prof.start()        
         for epoch_id in range(self.start_epoch, self.cfg.epoch):
             self.status['mode'] = 'train'
             self.status['epoch_id'] = epoch_id
             self._compose_callback.on_epoch_begin(self.status)
             self.loader.dataset.set_epoch(epoch_id)
+
+            use_fake_data = False
+            if use_fake_data:
+                saved_batch_data = []
+                for i in range(30):
+                    data_i = paddle.load('dataset/fcos_r50_fpn_1x_coco_{}.bs{}.dat'.format(i, train_batch_size))
+                    saved_batch_data.append(data_i)
+
             model.train()
+            benchmark_num_iters = 0
             iter_tic = time.time()
+            reader_tic = time.time()
             for step_id, data in enumerate(self.loader):
-                self.status['data_time'].update(time.time() - iter_tic)
+            #for step_id in range(200):
+                #for data_key, data_value in data.items():
+                #    print("name={}: dtype={}, shape={}".format(data_key, data_value.dtype, data_value.shape))
+                #paddle.save(data, "dataset/fcos_r50_fpn_1x_coco_{}.bs{}.dat".format(step_id, train_batch_size))
+                #if step_id == 30:
+                #    import sys
+                #    sys.exit(0)
+
+                if use_fake_data:
+                    idx = np.random.randint(low=0, high=30)
+                    data = saved_batch_data[idx]
+                image_shape = data["image"].shape
+
+                self.status['data_time'].update(time.time() - reader_tic)
                 self.status['step_id'] = step_id
-                profiler.add_profiler_step(profiler_options)
+                #profiler.add_profiler_step(profiler_options)
+                switch_profile(100, 110, step_id, profiler_type, "{}(image_shape={})".format(step_id, image_shape))
                 self._compose_callback.on_step_begin(self.status)
+                if step_id == 10:
+                    benchmark_start = time.time()
+                    benchmark_num_iters = 0
+                benchmark_num_iters += 1
                 data['epoch_id'] = epoch_id
 
                 if self.use_amp:
@@ -479,12 +555,16 @@ class Trainer(object):
                                 custom_black_list=self.custom_black_list,
                                 level=self.amp_level):
                             # model forward
+                            add_nvtx_event("forward", is_first=True, is_last=False)
                             outputs = model(data)
+                            add_nvtx_event("loss", is_first=False, is_last=False)
                             loss = outputs['loss']
                         # model backward
                         scaled_loss = scaler.scale(loss)
+                        add_nvtx_event("backward", is_first=False, is_last=False)
                         scaled_loss.backward()
                     # in dygraph mode, optimizer.minimize is equal to optimizer.step
+                    add_nvtx_event("optimizer", is_first=False, is_last=False)
                     scaler.minimize(self.optimizer, scaled_loss)
                 else:
                     if isinstance(
@@ -500,26 +580,43 @@ class Trainer(object):
                             list(model.parameters()), None)
                     else:
                         # model forward
+                        add_nvtx_event("forward", is_first=True, is_last=False)
                         outputs = model(data)
+                        add_nvtx_event("loss", is_first=False, is_last=False)
                         loss = outputs['loss']
                         # model backward
+                        add_nvtx_event("backward", is_first=False, is_last=False)
                         loss.backward()
+                    add_nvtx_event("optimizer", is_first=False, is_last=False)
                     self.optimizer.step()
+                add_nvtx_event("curr_lr", is_first=False, is_last=False)
                 curr_lr = self.optimizer.get_lr()
                 self.lr.step()
                 if self.cfg.get('unstructured_prune'):
                     self.pruner.step()
+                add_nvtx_event("clear_grad", is_first=False, is_last=False)
                 self.optimizer.clear_grad()
+                add_nvtx_event("status", is_first=False, is_last=False)
                 self.status['learning_rate'] = curr_lr
 
                 if self._nranks < 2 or self._local_rank == 0:
                     self.status['training_staus'].update(outputs)
 
                 self.status['batch_time'].update(time.time() - iter_tic)
+                iter_tic = time.time()
+                add_nvtx_event("other", is_first=False, is_last=True)
+                prof.step(num_samples=train_batch_size)
                 self._compose_callback.on_step_end(self.status)
+                #if step_id % self.cfg.log_iter == 0:
+                #    self._compose_callback.on_step_end(self.status)
+                #    print("[BENCHMARK] batch_size={}, use_ema={}, {}".format(self.cfg.TrainReader['batch_size'], self.use_ema, prof.step_info(unit="images/s")))
                 if self.use_ema:
                     self.ema.update()
-                iter_tic = time.time()
+                reader_tic = time.time()
+
+            benchmark_time = time.time() - benchmark_start
+            avg_batch_cost = benchmark_time / benchmark_num_iters
+            print("[BENCHMARK] batch_size={}, avg_batch_cost={:.4f}, avg_ips={:.4f} images/s".format(self.cfg.TrainReader['batch_size'], avg_batch_cost, self.cfg.TrainReader['batch_size'] / avg_batch_cost))
 
             if self.cfg.get('unstructured_prune'):
                 self.pruner.update_params()
@@ -564,6 +661,9 @@ class Trainer(object):
                 # reset original weight
                 self.model.set_dict(weight)
                 self.status.pop('weight')
+
+        prof.stop()
+        prof.summary(op_detail=False)
 
         self._compose_callback.on_train_end(self.status)
 

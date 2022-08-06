@@ -140,6 +140,7 @@ class BaseDataLoader(object):
                  collate_batch=True,
                  use_shared_memory=False,
                  **kwargs):
+        print("[BaseDataLoader] batch_size={}, shuffle={}, use_shared_memory={}".format(batch_size, shuffle, use_shared_memory))
         # sample transform
         self._sample_transforms = Compose(
             sample_transforms, num_classes=num_classes)
@@ -187,6 +188,7 @@ class BaseDataLoader(object):
                                "disable shared_memory in DataLoader")
                 use_shared_memory = False
 
+        print("worker_num={}, use_shared_memory={}".format(worker_num, use_shared_memory))
         self.dataloader = DataLoader(
             dataset=self.dataset,
             batch_sampler=self._batch_sampler,
