@@ -604,7 +604,7 @@ class S2ANetHead(nn.Layer):
         odm_reg_loss = paddle.add_n(odm_bbox_losses)
         return odm_cls_loss, odm_reg_loss
 
-    def get_loss(self, head_outs, gt_meta):
+    def get_loss(self, head_outs, inputs):
         fam_cls_list, fam_reg_list, odm_cls_list, odm_reg_list, \
             num_anchors_list, base_anchors_list, refine_anchors_list = head_outs
 
@@ -617,12 +617,14 @@ class S2ANetHead(nn.Layer):
         batch = len(inputs['gt_rbox'])
         for i in range(batch):
             # data_format: (xc, yc, w, h, theta)
-            gt_bboxes = inputs['gt_rbox'][im_id].numpy()
-            gt_labels = inputs['gt_class'][im_id].numpy()
-            is_crowd = inputs['is_crowd'][im_id].numpy()
+            gt_mask = inputs['pad_gt_mask'][i, :, 0]
+            gt_idx = paddle.nonzero(gt_mask).squeeze(-1)
+            gt_bboxes = paddle.gather(inputs['gt_rbox'][i], gt_idx).numpy()
+            gt_labels = paddle.gather(inputs['gt_class'][i], gt_idx).numpy()
+            is_crowd = paddle.gather(inputs['is_crowd'][i], gt_idx).numpy()
             gt_labels = gt_labels + 1
 
-            anchors_per_image = np.concatenate(self.base_anchors_list)
+            anchors_per_image = np.concatenate(base_anchors_list)
 
             fam_cls_per_image = [t[i] for t in fam_cls_list]
             fam_reg_per_image = [t[i] for t in fam_reg_list]
@@ -653,10 +655,10 @@ class S2ANetHead(nn.Layer):
                 odm_cls_loss_lst.append(im_odm_cls_loss)
                 odm_reg_loss_lst.append(im_odm_reg_loss)
 
-        fam_cls_loss = paddle.add_n(fam_cls_loss_lst)
-        fam_reg_loss = paddle.add_n(fam_reg_loss_lst)
-        odm_cls_loss = paddle.add_n(odm_cls_loss_lst)
-        odm_reg_loss = paddle.add_n(odm_reg_loss_lst)
+        fam_cls_loss = paddle.add_n(fam_cls_loss_lst) / batch
+        fam_reg_loss = paddle.add_n(fam_reg_loss_lst) / batch
+        odm_cls_loss = paddle.add_n(odm_cls_loss_lst) / batch
+        odm_reg_loss = paddle.add_n(odm_reg_loss_lst) / batch
         loss = fam_cls_loss + fam_reg_loss + odm_cls_loss + odm_reg_loss
 
         return {

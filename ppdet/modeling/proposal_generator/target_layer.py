@@ -365,7 +365,7 @@ class RBoxAssigner(object):
     def assign_anchor(self,
                       anchors,
                       gt_bboxes,
-                      gt_lables,
+                      gt_labels,
                       pos_iou_thr,
                       neg_iou_thr,
                       min_iou_thr=0.0,
@@ -418,12 +418,12 @@ class RBoxAssigner(object):
         # (4) assign max_iou as pos_ids >=0
         anchor_gt_bbox_iou_inds = anchor_gt_bbox_inds[gt_bbox_anchor_iou_inds]
         # gt_bbox_anchor_iou_inds = np.logical_and(gt_bbox_anchor_iou_inds, anchor_gt_bbox_iou >= min_iou_thr)
-        labels[gt_bbox_anchor_iou_inds] = gt_lables[anchor_gt_bbox_iou_inds]
+        labels[gt_bbox_anchor_iou_inds] = gt_labels[anchor_gt_bbox_iou_inds]
 
         # (5) assign >= pos_iou_thr as pos_ids
         iou_pos_iou_thr_ids = anchor_gt_bbox_iou >= pos_iou_thr
         iou_pos_iou_thr_ids_box_inds = anchor_gt_bbox_inds[iou_pos_iou_thr_ids]
-        labels[iou_pos_iou_thr_ids] = gt_lables[iou_pos_iou_thr_ids_box_inds]
+        labels[iou_pos_iou_thr_ids] = gt_labels[iou_pos_iou_thr_ids_box_inds]
         return anchor_gt_bbox_inds, anchor_gt_bbox_iou, labels
 
     def __call__(self, anchors, gt_bboxes, gt_labels, is_crowd):
