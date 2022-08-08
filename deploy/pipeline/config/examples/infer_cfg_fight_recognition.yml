@@ -1,0 +1,11 @@
+visual: True
+warmup_frame: 50
+
+VIDEO_ACTION:
+  model_dir: https://videotag.bj.bcebos.com/PaddleVideo-release2.3/ppTSM_fight.zip
+  batch_size: 1
+  frame_len: 8
+  sample_freq: 7
+  short_size: 340
+  target_size: 320
+  enable: True

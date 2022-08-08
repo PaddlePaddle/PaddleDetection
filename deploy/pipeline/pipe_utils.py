@@ -15,127 +15,12 @@
 import time
 import os
 import ast
-import argparse
 import glob
 import yaml
 import copy
 import numpy as np
 
 from python.keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
-
-
-def argsparser():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--config",
-        type=str,
-        default=None,
-        help=("Path of configure"),
-        required=True)
-    parser.add_argument(
-        "--image_file", type=str, default=None, help="Path of image file.")
-    parser.add_argument(
-        "--image_dir",
-        type=str,
-        default=None,
-        help="Dir of image file, `image_file` has a higher priority.")
-    parser.add_argument(
-        "--video_file",
-        type=str,
-        default=None,
-        help="Path of video file, `video_file` or `camera_id` has a highest priority."
-    )
-    parser.add_argument(
-        "--video_dir",
-        type=str,
-        default=None,
-        help="Dir of video file, `video_file` has a higher priority.")
-    parser.add_argument(
-        "--model_dir", nargs='*', help="set model dir in pipeline")
-    parser.add_argument(
-        "--camera_id",
-        type=int,
-        default=-1,
-        help="device id of camera to predict.")
-    parser.add_argument(
-        "--output_dir",
-        type=str,
-        default="output",
-        help="Directory of output visualization files.")
-    parser.add_argument(
-        "--run_mode",
-        type=str,
-        default='paddle',
-        help="mode of running(paddle/trt_fp32/trt_fp16/trt_int8)")
-    parser.add_argument(
-        "--device",
-        type=str,
-        default='cpu',
-        help="Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU."
-    )
-    parser.add_argument(
-        "--enable_mkldnn",
-        type=ast.literal_eval,
-        default=False,
-        help="Whether use mkldnn with CPU.")
-    parser.add_argument(
-        "--cpu_threads", type=int, default=1, help="Num of threads with CPU.")
-    parser.add_argument(
-        "--trt_min_shape", type=int, default=1, help="min_shape for TensorRT.")
-    parser.add_argument(
-        "--trt_max_shape",
-        type=int,
-        default=1280,
-        help="max_shape for TensorRT.")
-    parser.add_argument(
-        "--trt_opt_shape",
-        type=int,
-        default=640,
-        help="opt_shape for TensorRT.")
-    parser.add_argument(
-        "--trt_calib_mode",
-        type=bool,
-        default=False,
-        help="If the model is produced by TRT offline quantitative "
-        "calibration, trt_calib_mode need to set True.")
-    parser.add_argument(
-        "--do_entrance_counting",
-        action='store_true',
-        help="Whether counting the numbers of identifiers entering "
-        "or getting out from the entrance. Note that only support single-class MOT."
-    )
-    parser.add_argument(
-        "--do_break_in_counting",
-        action='store_true',
-        help="Whether counting the numbers of identifiers break in "
-        "the area. Note that only support single-class MOT and "
-        "the video should be taken by a static camera.")
-    parser.add_argument(
-        "--region_type",
-        type=str,
-        default='horizontal',
-        help="Area type for entrance counting or break in counting, 'horizontal' and "
-        "'vertical' used when do entrance counting. 'custom' used when do break in counting. "
-        "Note that only support single-class MOT, and the video should be taken by a static camera."
-    )
-    parser.add_argument(
-        '--region_polygon',
-        nargs='+',
-        type=int,
-        default=[],
-        help="Clockwise point coords (x0,y0,x1,y1...) of polygon of area when "
-        "do_break_in_counting. Note that only support single-class MOT and "
-        "the video should be taken by a static camera.")
-    parser.add_argument(
-        "--secs_interval",
-        type=int,
-        default=2,
-        help="The seconds interval to count after tracking")
-    parser.add_argument(
-        "--draw_center_traj",
-        action='store_true',
-        help="Whether drawing the trajectory of center")
-    return parser
 
 
 class Times(object):
@@ -231,49 +116,6 @@ class PipeTimer(Times):
 
         dic['img_num'] = self.img_num
         return dic
-
-
-def merge_model_dir(args, model_dir):
-    # set --model_dir DET=ppyoloe/ to overwrite the model_dir in config file
-    task_set = ['DET', 'ATTR', 'MOT', 'KPT', 'SKELETON_ACTION', 'REID']
-    if not model_dir:
-        return args
-    for md in model_dir:
-        md = md.strip()
-        k, v = md.split('=', 1)
-        k_upper = k.upper()
-        assert k_upper in task_set, 'Illegal type of task, expect task are: {}, but received {}'.format(
-            task_set, k)
-        args[k_upper].update({'model_dir': v})
-    return args
-
-
-def merge_cfg(args):
-    with open(args.config) as f:
-        pred_config = yaml.safe_load(f)
-
-    def merge(cfg, arg):
-        merge_cfg = copy.deepcopy(cfg)
-        for k, v in cfg.items():
-            if k in arg:
-                merge_cfg[k] = arg[k]
-            else:
-                if isinstance(v, dict):
-                    merge_cfg[k] = merge(v, arg)
-        return merge_cfg
-
-    args_dict = vars(args)
-    model_dir = args_dict.pop('model_dir')
-    pred_config = merge_model_dir(pred_config, model_dir)
-    pred_config = merge(pred_config, args_dict)
-    return pred_config
-
-
-def print_arguments(cfg):
-    print('-----------  Running Arguments -----------')
-    buffer = yaml.dump(cfg)
-    print(buffer)
-    print('------------------------------------------')
 
 
 def get_test_images(infer_dir, infer_img):
