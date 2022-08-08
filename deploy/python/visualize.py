@@ -418,7 +418,7 @@ def visualize_vehicleplate(im, results, boxes=None):
         im = np.ascontiguousarray(np.copy(im))
 
     im_h, im_w = im.shape[:2]
-    text_scale = max(0.5, im.shape[0] / 3000.)
+    text_scale = max(1.0, im.shape[0] / 1600.)
     text_thickness = 1
 
     line_inter = im.shape[0] / 40.

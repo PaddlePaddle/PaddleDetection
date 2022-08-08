@@ -84,6 +84,12 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 
 ```
 
+对rtsp流的支持，video_file后面的视频地址更换为rtsp流地址，示例如下：
+```
+# 车辆属性识别，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_ppvehicle.yml```中的ATTR部分enable设置为```True```
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml  -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu [--run_mode trt_fp16]
+```
+
 ### 参数说明
 
 | 参数 | 是否必须|含义 |
@@ -92,7 +98,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 | --model_dir | Option | 各任务模型路径，优先级高于配置文件, 例如`--model_dir det=better_det/ attr=better_attr/`|
 | --image_file | Option | 需要预测的图片 |
 | --image_dir  | Option |  要预测的图片文件夹路径   |
-| --video_file | Option | 需要预测的视频 |
+| --video_file | Option | 需要预测的视频，或者rtsp流地址 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4|
 | --device | Option | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
 | --output_dir | Option|可视化结果保存的根目录，默认为output/|

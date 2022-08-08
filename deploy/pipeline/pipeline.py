@@ -130,7 +130,9 @@ class Pipeline(object):
             self.multi_camera = False
 
         elif video_file is not None:
-            assert os.path.exists(video_file), "video_file not exists."
+            assert os.path.exists(
+                video_file
+            ) or 'rtsp' in video_file, "video_file not exists and not an rtsp site."
             self.multi_camera = False
             input = video_file
             self.is_video = True
@@ -659,6 +661,8 @@ class PipePredictor(object):
         # mot -> pose -> action
         capture = cv2.VideoCapture(video_file)
         video_out_name = 'output.mp4' if self.file_name is None else self.file_name
+        if "rtsp" in video_file:
+            video_out_name = video_out_name + "_rtsp.mp4"
 
         # Get Video info : resolution, fps, frame count
         width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -767,8 +771,10 @@ class PipePredictor(object):
                 if self.with_vehicleplate:
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['vehicleplate'].start()
+                    plate_input, _, _ = crop_image_with_mot(
+                        frame_rgb, mot_res, expand=False)
                     platelicense = self.vehicleplate_detector.get_platelicense(
-                        crop_input)
+                        plate_input)
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['vehicleplate'].end()
                     self.pipeline_res.update(platelicense, 'vehicleplate')
