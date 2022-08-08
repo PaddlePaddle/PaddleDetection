@@ -27,7 +27,6 @@
 ATTR:                                                                     #模块名称
   model_dir: output_inference/PPLCNet_x1_0_person_attribute_945_infer/    #模型路径
   batch_size: 8                                                           #推理最大batchsize
-  basemode: "idbased"                                                     #流程类型，'idbased'表示基于跟踪模型
   enable: False                                                           #功能是否开启
 ```
 
