@@ -69,8 +69,6 @@ def argsparser():
         type=str,
         default=None,
         help="Dir of video file, `video_file` has a higher priority.")
-    #parser.add_argument(
-    #    "--model_dir", nargs='*', help="set model dir in pipeline")
     parser.add_argument(
         "--camera_id",
         type=int,
