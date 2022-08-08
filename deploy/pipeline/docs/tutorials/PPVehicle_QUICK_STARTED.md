@@ -62,7 +62,7 @@ PP-Vehicle相关配置位于```deploy/pipeline/config/infer_cfg_ppvehicle.yml```
 
 **注意：**
 
-- 如果用户需要实现不同任务，可以在配置文件对应enable选项设置为True, 其basemode类型会在代码中开启依赖的基础能力模型，比如跟踪模型。
+- 如果用户需要实现不同任务，可以在配置文件对应enable选项设置为True。
 - 如果用户仅需要修改模型文件路径，可以在命令行中加入 `--model_dir det=ppyoloe/` 即可，也可以手动修改配置文件中的相应模型路径，详细说明参考下方参数说明文档。
 
 
