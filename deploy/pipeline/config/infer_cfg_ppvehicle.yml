@@ -1,5 +1,5 @@
 crop_thresh: 0.5
-visual: False
+visual: True
 warmup_frame: 50
 
 DET:
