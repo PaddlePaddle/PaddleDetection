@@ -24,7 +24,6 @@ The meaning of configs of `infer_cfg_pphuman.yml`：
 ATTR:                                                                     #module name
   model_dir: output_inference/PPLCNet_x1_0_person_attribute_945_infer/    #model path
   batch_size: 8                                                           #maxmum batchsize when inference
-  basemode: "idbased"                                                     #the routing type of pipeline，'idbased' means this model is based on tracking.
   enable: False                                                           #whether to enable this model
 ```
 
