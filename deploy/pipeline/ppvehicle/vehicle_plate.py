@@ -268,7 +268,7 @@ class PlateRecognizer(object):
             platelicense = ""
             for text_info in text_pcar:
                 text = text_info[0][0][0]
-                if len(text) > 2 and text[0] in simcode and len(text) < 10:
+                if len(text) > 2 and len(text) < 10:
                     platelicense = text
             plate_all["plate"].append(platelicense)
         return plate_all
