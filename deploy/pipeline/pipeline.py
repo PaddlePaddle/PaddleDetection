@@ -1009,19 +1009,20 @@ class PipePredictor(object):
             image = visualize_attr(image, vehicle_attr_res, boxes)
             image = np.array(image)
 
-        vehicleplate = False
-        plates = []
-        for trackid in mot_res['boxes'][:, 0]:
-            plate = collector.get_carlp(trackid)
-            if plate != None:
-                vehicleplate = True
-                plates.append(plate)
-            else:
-                plates.append("")
-        if vehicleplate:
-            boxes = mot_res['boxes'][:, 1:]
-            image = visualize_vehicleplate(image, plates, boxes)
-            image = np.array(image)
+        if mot_res is not None:
+            vehicleplate = False
+            plates = []
+            for trackid in mot_res['boxes'][:, 0]:
+                plate = collector.get_carlp(trackid)
+                if plate != None:
+                    vehicleplate = True
+                    plates.append(plate)
+                else:
+                    plates.append("")
+            if vehicleplate:
+                boxes = mot_res['boxes'][:, 1:]
+                image = visualize_vehicleplate(image, plates, boxes)
+                image = np.array(image)
 
         kpt_res = result.get('kpt')
         if kpt_res is not None:
