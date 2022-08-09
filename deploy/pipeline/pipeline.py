@@ -40,7 +40,7 @@ from python.visualize import visualize_box_mask, visualize_attr, visualize_pose,
 
 from pptracking.python.mot_sde_infer import SDE_Detector
 from pptracking.python.mot.visualize import plot_tracking_dict
-from pptracking.python.mot.utils import flow_statistic
+from pptracking.python.mot.utils import flow_statistic, update_object_info
 
 from pphuman.attr_infer import AttrDetector
 from pphuman.video_action_infer import VideoActionRecognizer
@@ -256,6 +256,7 @@ class PipePredictor(object):
         do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
             or getting out from the entrance, default as False, only support single class
             counting in MOT.
+        illegal_parking_time(int): default is -1 which means not recognize illegal parking, else the value of illegal_parking_time mean the time to recongnize illegal parking.
     """
 
     def __init__(self, args, cfg, is_video=True, multi_camera=False):
@@ -272,6 +273,7 @@ class PipePredictor(object):
         secs_interval = args.secs_interval
         do_entrance_counting = args.do_entrance_counting
         do_break_in_counting = args.do_break_in_counting
+        illegal_parking_time = args.illegal_parking_time
         region_type = args.region_type
         region_polygon = args.region_polygon
 
@@ -352,6 +354,7 @@ class PipePredictor(object):
         self.secs_interval = secs_interval
         self.do_entrance_counting = do_entrance_counting
         self.do_break_in_counting = do_break_in_counting
+        self.illegal_parking_time = illegal_parking_time
         self.region_type = region_type
         self.region_polygon = region_polygon
 
@@ -504,6 +507,10 @@ class PipePredictor(object):
 
             if self.with_vehicleplate:
                 vehicleplate_cfg = self.cfg['VEHICLE_PLATE']
+                vehicleplate_cfg["det_model_dir"] = model_dir_dict[
+                    "det_model_dir"]
+                vehicleplate_cfg["rec_model_dir"] = model_dir_dict[
+                    "rec_model_dir"]
                 self.vehicleplate_detector = PlateRecognizer(args,
                                                              vehicleplate_cfg)
                 basemode = self.basemode['VEHICLE_PLATE']
@@ -700,7 +707,7 @@ class PipePredictor(object):
         out_id_list = list()
         prev_center = dict()
         records = list()
-        if self.do_entrance_counting or self.do_break_in_counting:
+        if self.do_entrance_counting or self.do_break_in_counting or self.illegal_parking_time != -1:
             if self.region_type == 'horizontal':
                 entrance = [0, height / 2., width, height / 2.]
             elif self.region_type == 'vertical':
@@ -725,6 +732,9 @@ class PipePredictor(object):
         if self.with_video_action:
             short_size = self.cfg["VIDEO_ACTION"]["short_size"]
             scale = ShortSizeScale(short_size)
+
+        object_in_region_info = {
+        }  # store info for vehicle parking in region       
 
         while (1):
             if frame_id % 10 == 0:
@@ -759,7 +769,23 @@ class PipePredictor(object):
                     prev_center, records)
                 records = statistic['records']
 
-                # nothing detected
+                object_in_region_info, illegal_parking_dict = update_object_info(
+                    object_in_region_info, mot_result, self.region_type,
+                    entrance, video_fps, self.illegal_parking_time)
+                if len(illegal_parking_dict) != 0:
+                    # build relationship between id and plate
+                    collector_res = self.collector.get_res()
+                    for key, value in illegal_parking_dict.items():
+                        plate_res = collector_res[key]['vehicleplate']
+                        plate_res = [i for i in plate_res
+                                     if len(i) > 0]  # filter blank plate
+                        if len(plate_res) == 0:
+                            illegal_parking_dict[key]['plate'] = ''
+                        else:
+                            maxlabel = max(plate_res, key=plate_res.count)
+                            illegal_parking_dict[key]['plate'] = maxlabel
+
+# nothing detected
                 if len(mot_res['boxes']) == 0:
                     frame_id += 1
                     if frame_id > self.warmup_frame:
@@ -936,8 +962,9 @@ class PipePredictor(object):
             if self.cfg['visual']:
                 _, _, fps = self.pipe_timer.get_total_time()
                 im = self.visualize_video(frame, self.pipeline_res, frame_id,
-                                          fps, entrance, records,
-                                          center_traj)  # visualize
+                                          fps, entrance, records, center_traj,
+                                          self.illegal_parking_time != -1,
+                                          illegal_parking_dict)  # visualize
                 writer.write(im)
                 if self.file_name is None:  # use camera_id
                     cv2.imshow('Paddle-Pipeline', im)
@@ -954,7 +981,9 @@ class PipePredictor(object):
                         fps,
                         entrance=None,
                         records=None,
-                        center_traj=None):
+                        center_traj=None,
+                        do_illegal_parking_recognition=False,
+                        illegal_parking_dict=None):
         mot_res = copy.deepcopy(result.get('mot'))
         if mot_res is not None:
             ids = mot_res['boxes'][:, 0]
@@ -988,6 +1017,8 @@ class PipePredictor(object):
                 ids2names=self.mot_predictor.pred_config.labels,
                 do_entrance_counting=self.do_entrance_counting,
                 do_break_in_counting=self.do_break_in_counting,
+                do_illegal_parking_recognition=do_illegal_parking_recognition,
+                illegal_parking_dict=illegal_parking_dict,
                 entrance=entrance,
                 records=records,
                 center_traj=center_traj)

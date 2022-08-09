@@ -128,6 +128,12 @@ def argsparser():
         "the area. Note that only support single-class MOT and "
         "the video should be taken by a static camera.")
     parser.add_argument(
+        "--illegal_parking_time",
+        type=int,
+        default=-1,
+        help="illegal parking time(s), default is -1 which means not recognition illegal parking"
+    )
+    parser.add_argument(
         "--region_type",
         type=str,
         default='horizontal',
