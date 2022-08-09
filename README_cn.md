@@ -22,12 +22,18 @@
 </div>
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> 产品动态
+
+- 🔥 **2022.8.09：[YOLO家族全系列模型](https://github.com/nemonameless/PaddleDetection_YOLOSeries)发布**
+  - 全面覆盖的YOLO家族经典与最新模型: 包括YOLOv3，百度飞桨自研的实时高精度目标检测检测模型PP-YOLOE，以及前沿检测算法YOLOv4、YOLOv5、YOLOX，MT-YOLOv6及YOLOv7
+  - 更强的模型性能：基于各家前沿YOLO算法进行创新并升级，缩短训练周期5~8倍，精度普遍提升1%~5% mAP；使用模型压缩策略实现精度无损的同时速度提升30%以上
+  - 完备的端到端开发支持：支持从模型训练、评估、预测到模型量化压缩，部署多种硬件的端到端开发全流程。同时支持不同模型算法灵活切换，一键实现算法二次开发
+
 - 🔥 **2022.8.01：发布[PP-TinyPose升级版](./configs/keypoint/tiny_pose/). 在健身、舞蹈等场景的业务数据集端到端AP提升9.1**
   - 新增体育场景真实数据，复杂动作识别效果显著提升，覆盖侧身、卧躺、跳跃、高抬腿等非常规动作
   - 检测模型采用[PP-PicoDet增强版](./configs/picodet/README.md)，在COCO数据集上精度提升3.1%
   - 关键点稳定性增强，新增滤波稳定方式，使得视频预测结果更加稳定平滑
 
-- 🔥 **2022.7.14：[行人分析工具PP-Human v2](./deploy/pipeline)发布**
+- 2022.7.14：[行人分析工具PP-Human v2](./deploy/pipeline)发布
   - 四大产业特色功能：高性能易扩展的五大复杂行为识别、闪电级人体属性识别、一行代码即可实现的人流检测与轨迹留存以及高精度跨镜跟踪
   - 底层核心算法性能强劲：覆盖行人检测、跟踪、属性三类核心算法能力，对目标人数、光线、背景均无限制
   - 极低使用门槛：提供保姆级全流程开发及模型优化策略、一行命令完成推理、兼容各类数据输入格式
@@ -37,15 +43,6 @@
   - 发布边缘端和CPU端超轻量SOTA目标检测模型[PP-PicoDet增强版](configs/picodet)，精度提升2%左右，CPU预测速度提升63%，新增参数量0.7M的PicoDet-XS模型，提供模型稀疏化和量化功能，便于模型加速，各类硬件无需单独开发后处理模块，降低部署门槛。
   - 发布实时行人分析工具[PP-Human](deploy/pipeline)，支持行人跟踪、人流量统计、人体属性识别与摔倒检测四大能力，基于真实场景数据特殊优化，精准识别各类摔倒姿势，适应不同环境背景、光线及摄像角度。
   - 新增[YOLOX](configs/yolox)目标检测模型，支持nano/tiny/s/m/l/x版本，x版本COCO val2017数据集精度51.8%。
-
-- 2021.11.03: PaddleDetection发布[release/2.3版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3)
-
-  - 发布轻量级检测特色模型⚡[PP-PicoDet](configs/picodet)，0.99m的参数量可实现精度30+mAP、速度150FPS。
-  - 发布轻量级关键点特色模型⚡[PP-TinyPose](configs/keypoint/tiny_pose)，单人场景FP16推理可达122FPS、51.8AP，具有精度高速度快、检测人数无限制、微小目标效果好的优势。
-  - 发布实时跟踪系统[PP-Tracking](deploy/pptracking)，覆盖单、多镜头下行人、车辆、多类别跟踪，对小目标、密集型特殊优化，提供人、车流量技术解决方案。
-  - 新增[Swin Transformer](configs/faster_rcnn)，[TOOD](configs/tood)，[GFL](configs/gfl)目标检测模型。
-  - 发布[Sniper](configs/sniper)小目标检测优化模型，发布针对EdgeBoard优化[PP-YOLO-EB](configs/ppyolo)模型。
-  - 新增轻量化关键点模型[Lite HRNet](configs/keypoint)关键点模型并支持Paddle Lite部署。
 
 - [更多版本发布](https://github.com/PaddlePaddle/PaddleDetection/releases)
 
@@ -108,6 +105,9 @@
             <li>PSS-Det</li>
             <li>RetinaNet</li>
             <li>YOLOv3</li>  
+            <li>YOLOv5</li>  
+            <li>MT-YOLOv6</li>  
+            <li>YOLOv7</li>  
             <li>PP-YOLOv1/v2</li>
             <li>PP-YOLO-Tiny</li>
             <li>PP-YOLOE</li>
@@ -263,7 +263,7 @@
 - `PP-YOLO`在COCO数据集精度45.9%，Tesla V100预测速度72.9FPS，精度速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)
 - `PP-YOLO v2`是对`PP-YOLO`模型的进一步优化，在COCO数据集精度49.5%，Tesla V100预测速度68.9FPS
 - `PP-YOLOE`是对`PP-YOLO v2`模型的进一步优化，在COCO数据集精度51.6%，Tesla V100预测速度78.1FPS
-- [`YOLOX`](configs/yolox)和[`YOLOv5`](https://github.com/nemonameless/PaddleDetection_YOLOv5/tree/main/configs/yolov5)均为基于PaddleDetection复现算法
+- [`YOLOX`](configs/yolox)和[`YOLOv5`](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov5)均为基于PaddleDetection复现算法
 - 图中模型均可在[模型库](#模型库)中获取
 
 </details>
@@ -312,7 +312,8 @@
 | 模型名称                                                               | COCO精度（mAP） | V100 TensorRT FP16速度(FPS) | 配置文件                                                                                                         | 模型下载                                                                       |
 |:------------------------------------------------------------------ |:-----------:|:-------------------------:|:------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------:|
 | [YOLOX-l](configs/yolox)                                           | 50.1        | 107.5                     | [链接](configs/yolox/yolox_l_300e_coco.yml)                                                                    | [下载地址](https://paddledet.bj.bcebos.com/models/yolox_l_300e_coco.pdparams)  |
-| [YOLOv5-l](https://github.com/nemonameless/PaddleDetection_YOLOv5) | 48.6        | 136.0                     | [链接](https://github.com/nemonameless/PaddleDetection_YOLOv5/blob/main/configs/yolov5/yolov5_l_300e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/yolov5_l_300e_coco.pdparams) |
+| [YOLOv5-l](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov5) | 48.6        | 136.0                     | [链接](https://github.com/nemonameless/PaddleDetection_YOLOSeries/blob/develop/configs/yolov5/yolov5_l_300e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/yolov5_l_300e_coco.pdparams) |
+| [YOLOv7-l](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov7) | 51.0        | 135.0                     | [链接](https://github.com/nemonameless/PaddleDetection_YOLOSeries/blob/develop/configs/yolov7/yolov7_l_300e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/yolov7_l_300e_coco.pdparams) |
 
 #### 其他通用检测模型 [文档链接](docs/MODEL_ZOO_cn.md)
 
