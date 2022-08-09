@@ -96,6 +96,11 @@ class S2ANetHead(nn.Layer):
         self.reg_loss_type = reg_loss_type
         self.nms_pre = nms_pre
         self.nms = nms
+        self.fake_bbox = paddle.to_tensor(
+            np.array(
+                [[-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]],
+                dtype='float32'))
+        self.fake_bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
 
         # anchor
         self.anchor_generators = []
@@ -423,6 +428,10 @@ class S2ANetHead(nn.Layer):
         mlvl_scores = paddle.transpose(mlvl_scores, [1, 0]).unsqueeze(0)
 
         bbox, bbox_num, _ = self.nms(mlvl_polys, mlvl_scores)
+        if bbox.shape[0] <= 0:
+            bbox = self.fake_bbox
+            bbox_num = self.fake_bbox_num
+
         return bbox, bbox_num
 
     def smooth_l1_loss(self, pred, label, delta=1.0 / 9.0):
