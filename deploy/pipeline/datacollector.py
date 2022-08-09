@@ -14,6 +14,7 @@
 
 import os
 import copy
+from collections import Counter
 
 
 class Result(object):
@@ -113,9 +114,18 @@ class DataCollector(object):
                     idx])
                 self.collector[ids]["qualities"].append(reid_res['qualities'][
                     idx])
-            if vehicleplate_res:
+            if vehicleplate_res and vehicleplate_res['plate'][idx] != "":
                 self.collector[ids]["vehicleplate"].append(vehicleplate_res[
                     'plate'][idx])
 
     def get_res(self):
         return self.collector
+
+    def get_carlp(self, trackid):
+        lps = self.collector[trackid]["vehicleplate"]
+        counter = Counter(lps)
+        carlp = counter.most_common()
+        if len(carlp) > 0:
+            return carlp[0][0]
+        else:
+            return None

@@ -781,7 +781,7 @@ class PipePredictor(object):
                 crop_input, new_bboxes, ori_bboxes = crop_image_with_mot(
                     frame_rgb, mot_res)
 
-                if self.with_vehicleplate:
+                if self.with_vehicleplate and frame_id % 10 == 0:
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['vehicleplate'].start()
                     plate_input, _, _ = crop_image_with_mot(
@@ -791,6 +791,8 @@ class PipePredictor(object):
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['vehicleplate'].end()
                     self.pipeline_res.update(platelicense, 'vehicleplate')
+                else:
+                    self.pipeline_res.clear('vehicleplate')
 
                 if self.with_human_attr:
                     if frame_id > self.warmup_frame:
@@ -935,9 +937,9 @@ class PipePredictor(object):
 
             if self.cfg['visual']:
                 _, _, fps = self.pipe_timer.get_total_time()
-                im = self.visualize_video(frame, self.pipeline_res, frame_id,
-                                          fps, entrance, records,
-                                          center_traj)  # visualize
+                im = self.visualize_video(
+                    frame, self.pipeline_res, self.collector, frame_id, fps,
+                    entrance, records, center_traj)  # visualize
                 writer.write(im)
                 if self.file_name is None:  # use camera_id
                     cv2.imshow('Paddle-Pipeline', im)
@@ -950,6 +952,7 @@ class PipePredictor(object):
     def visualize_video(self,
                         image,
                         result,
+                        collector,
                         frame_id,
                         fps,
                         entrance=None,
@@ -1006,12 +1009,20 @@ class PipePredictor(object):
             image = visualize_attr(image, vehicle_attr_res, boxes)
             image = np.array(image)
 
-        vehicleplate_res = result.get('vehicleplate')
-        if vehicleplate_res:
-            boxes = mot_res['boxes'][:, 1:]
-            image = visualize_vehicleplate(image, vehicleplate_res['plate'],
-                                           boxes)
-            image = np.array(image)
+        if mot_res is not None:
+            vehicleplate = False
+            plates = []
+            for trackid in mot_res['boxes'][:, 0]:
+                plate = collector.get_carlp(trackid)
+                if plate != None:
+                    vehicleplate = True
+                    plates.append(plate)
+                else:
+                    plates.append("")
+            if vehicleplate:
+                boxes = mot_res['boxes'][:, 1:]
+                image = visualize_vehicleplate(image, plates, boxes)
+                image = np.array(image)
 
         kpt_res = result.get('kpt')
         if kpt_res is not None:
