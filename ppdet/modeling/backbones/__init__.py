@@ -58,3 +58,4 @@ from .convnext import *
 from .vision_transformer import *
 from .vision_transformer import *
 from .mobileone import *
+from .trans_encoder import *
