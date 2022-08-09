@@ -38,7 +38,7 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval, Pose3DEval
 from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
@@ -143,8 +143,7 @@ class Trainer(object):
                 # If metric is VOC, need to be set collate_batch=False.
                 if cfg.metric == 'VOC':
                     cfg[reader_name]['collate_batch'] = False
-                self.loader = create(reader_name)(self.dataset, cfg.worker_num,
-                                                  self._eval_batch_sampler)
+                self.loader = create(reader_name)(self.dataset, cfg.worker_num)
         # TestDataset build after user set images, skip loader creation here
 
         # build optimizer in train mode
@@ -342,6 +341,13 @@ class Trainer(object):
                     self.cfg.save_dir,
                     save_prediction_only=save_prediction_only)
             ]
+        elif self.cfg.metric == 'Pose3DEval':
+            save_prediction_only = self.cfg.get('save_prediction_only', False)
+            self._metrics = [
+                Pose3DEval(
+                    self.cfg.save_dir,
+                    save_prediction_only=save_prediction_only)
+            ]
         elif self.cfg.metric == 'MOTDet':
             self._metrics = [JDEDetMetric(), ]
         else:
@@ -450,6 +456,7 @@ class Trainer(object):
             self.loader.dataset.set_epoch(epoch_id)
             model.train()
             iter_tic = time.time()
+            print("loader len:", len(self.loader))
             for step_id, data in enumerate(self.loader):
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
@@ -537,7 +544,7 @@ class Trainer(object):
 
             self._compose_callback.on_epoch_end(self.status)
 
-            if validate and is_snapshot:
+            if validate:
                 if not hasattr(self, '_eval_loader'):
                     # build evaluation dataset and loader
                     self._eval_dataset = self.cfg.EvalDataset
@@ -549,9 +556,7 @@ class Trainer(object):
                     if self.cfg.metric == 'VOC':
                         self.cfg['EvalReader']['collate_batch'] = False
                     self._eval_loader = create('EvalReader')(
-                        self._eval_dataset,
-                        self.cfg.worker_num,
-                        batch_sampler=self._eval_batch_sampler)
+                        self._eval_dataset, self.cfg.worker_num)
                 # if validation in training is enabled, metrics should be re-init
                 # Init_mark makes sure this code will only execute once
                 if validate and Init_mark == False:
@@ -575,6 +580,7 @@ class Trainer(object):
         tic = time.time()
         self._compose_callback.on_epoch_begin(self.status)
         self.status['mode'] = 'eval'
+
         self.model.eval()
         if self.cfg.get('print_flops', False):
             flops_loader = create('{}Reader'.format(self.mode.capitalize()))(
@@ -617,6 +623,15 @@ class Trainer(object):
         self._reset_metrics()
 
     def evaluate(self):
+        # get distributed model
+        if self.cfg.get('fleet', False):
+            self.model = fleet.distributed_model(self.model)
+            self.optimizer = fleet.distributed_optimizer(self.optimizer)
+        elif self._nranks > 1:
+            find_unused_parameters = self.cfg[
+                'find_unused_parameters'] if 'find_unused_parameters' in self.cfg else False
+            self.model = paddle.DataParallel(
+                self.model, find_unused_parameters=find_unused_parameters)
         with paddle.no_grad():
             self._eval_with_loader(self.loader)
 
@@ -921,15 +936,17 @@ class Trainer(object):
                             if 'segm' in batch_res else None
                     keypoint_res = batch_res['keypoint'][start:end] \
                             if 'keypoint' in batch_res else None
-                    image = visualize_results(
-                        image, bbox_res, mask_res, segm_res, keypoint_res,
-                        int(im_id), catid2name, draw_threshold)
+                    pose3d_res = batch_res['pose3d'][start:end] \
+                            if 'pose3d' in batch_res else None
+                    image = visualize_results(image, bbox_res, mask_res, segm_res,
+                                            keypoint_res, pose3d_res,
+                                            int(im_id), catid2name,
+                                            draw_threshold)
                     self.status['result_image'] = np.array(image.copy())
                     if self._compose_callback:
                         self._compose_callback.on_step_end(self.status)
                     # save image with detection
-                    save_name = self._get_save_image_name(output_dir,
-                                                          image_path)
+                    save_name = self._get_save_image_name(output_dir, image_path)
                     logger.info("Detection bbox results save in {}".format(
                         save_name))
                     image.save(save_name, quality=95)
