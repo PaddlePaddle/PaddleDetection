@@ -27,6 +27,7 @@ EvalReader:
   batch_size: 2
   shuffle: false
   drop_last: false
+  collate_batch: false
 
 
 TestReader:

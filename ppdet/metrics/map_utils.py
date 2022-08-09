@@ -138,8 +138,7 @@ def calc_rbox_iou(pred, gt_rbox):
 def prune_zero_padding(gt_box, gt_label, difficult=None):
     valid_cnt = 0
     for i in range(len(gt_box)):
-        if gt_box[i, 0] == 0 and gt_box[i, 1] == 0 and \
-                gt_box[i, 2] == 0 and gt_box[i, 3] == 0:
+        if (gt_box[i] == 0).all():
             break
         valid_cnt += 1
     return (gt_box[:valid_cnt], gt_label[:valid_cnt], difficult[:valid_cnt]
@@ -331,8 +330,9 @@ class DetectionMAP(object):
             num_columns = min(6, len(results_per_category) * 2)
             results_flatten = list(itertools.chain(*results_per_category))
             headers = ['category', 'AP'] * (num_columns // 2)
-            results_2d = itertools.zip_longest(
-                *[results_flatten[i::num_columns] for i in range(num_columns)])
+            results_2d = itertools.zip_longest(* [
+                results_flatten[i::num_columns] for i in range(num_columns)
+            ])
             table_data = [headers]
             table_data += [result for result in results_2d]
             table = AsciiTable(table_data)
