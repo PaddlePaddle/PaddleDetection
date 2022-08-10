@@ -606,6 +606,59 @@ class Trainer(object):
         with paddle.no_grad():
             self._eval_with_loader(self.loader)
 
+    def _eval_with_loader_slice(self, loader, slice_height, slice_width,
+                                overlap_height_ratio, overlap_width_ratio,
+                                fuse_method):
+        sample_num = 0
+        tic = time.time()
+        self._compose_callback.on_epoch_begin(self.status)
+        self.status['mode'] = 'eval'
+        self.model.eval()
+        for step_id, data in enumerate(loader):
+            self.status['step_id'] = step_id
+            self._compose_callback.on_step_begin(self.status)
+            # forward
+            if self.use_amp:
+                with paddle.amp.auto_cast(
+                        enable=self.cfg.use_gpu, level=self.amp_level):
+                    outs = self.model(data)
+            else:
+                outs = self.model(data)
+
+            full_results = outs  #
+            # update metrics
+            for metric in self._metrics:
+                metric.update(data, full_results)
+
+            # multi-scale inputs: all inputs have same im_id
+            if isinstance(data, typing.Sequence):
+                sample_num += data[0]['im_id'].numpy().shape[0]
+            else:
+                sample_num += data['im_id'].numpy().shape[0]
+            self._compose_callback.on_step_end(self.status)
+
+        self.status['sample_num'] = sample_num
+        self.status['cost_time'] = time.time() - tic
+
+        # accumulate metric to log out
+        for metric in self._metrics:
+            metric.accumulate()
+            metric.log()
+        self._compose_callback.on_epoch_end(self.status)
+        # reset metric states for metric may performed multiple times
+        self._reset_metrics()
+
+    def evaluate_slice(self,
+                       slice_height=480,
+                       slice_width=480,
+                       overlap_height_ratio=0.2,
+                       overlap_width_ratio=0.2,
+                       fuse_method='nms'):
+        with paddle.no_grad():
+            self._eval_with_loader_slice(self.loader, slice_height, slice_width,
+                                         overlap_height_ratio,
+                                         overlap_width_ratio, fuse_method)
+
     def slice_predict(self,
                       images,
                       slice_height=480,
@@ -711,13 +764,22 @@ class Trainer(object):
         if len(results) > 1:
             if fuse_method == 'nms':
                 from ppdet.modeling.post_process import nms
-                merged_results['bbox'] = nms(np.concatenate(full_results),
-                                             thresh=0.95)
+                all_scale_outs = np.concatenate(full_results)
+                final_boxes = []
+                for c in range(self.cfg.num_classes):
+                    idxs = all_scale_outs[:, 0] == c
+                    if np.count_nonzero(idxs) == 0:
+                        continue
+                    r = nms(all_scale_outs[idxs, 1:], thresh=0.6)
+                    final_boxes.append(
+                        np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+                merged_results['bbox'] = np.concatenate(final_boxes)
             elif fuse_method == 'concat':
                 merged_results['bbox'] = np.concatenate(full_results)
             else:
                 raise ValueError(
-                    "Now only support nms or concat to fuse detection results.")
+                    "Now only support 'nms' or 'concat' to fuse detection results."
+                )
 
             merged_results['im_id'] = np.array([[0]])
             merged_results['bbox_num'] = np.array([len(merged_results['bbox'])])

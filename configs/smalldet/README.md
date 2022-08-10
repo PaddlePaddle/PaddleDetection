@@ -7,8 +7,13 @@ PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小�
 |:---------|:---------------:|:---------------:|:---------------:|:------:|:-----------------------:|:-------------------:|:---------:| :-----: |
 |PP-YOLOE-P2-l|   DOTA   |  500 | 0.25 | 15 |  53.9 |  78.6 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.pdparams) | [配置文件](./ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.yml) |
 |PP-YOLOE-P2-l|   Xview  |  400 | 0.25 | 60 |  14.9 | 27.0 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_p2_crn_l_80e_sliced_xview_400_025.pdparams) | [配置文件](./ppyoloe_p2_crn_l_80e_sliced_xview_400_025.yml) |
-|PP-YOLOE-l| VisDrone-DET|  500 | 0.25 | 10 |  29.7 |  48.5 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
+|PP-YOLOE-l| VisDrone-DET|  640 | 0.25 | 10 |  38.5 |  60.2 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
 
+
+|    模型   |       数据集     |  SLICE_SIZE  |  OVERLAP_RATIO  | 类别数  | mAP<sup>val<br>0.5:0.95 | AP<sup>val<br>0.5 | 下载链接  | 配置文件 |
+|:---------|:---------------:|:---------------:|:---------------:|:------:|:-----------------------:|:-------------------:|:---------:| :-----: |
+|PP-YOLOE-l| VisDrone-DET|  640 | 0.25 | 10 |  29.7 |  48.5 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
+|PP-YOLOE-l(merged)| VisDrone-DET|  640 | 0.25 | 10 |  - |  - | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
 
 **注意:**
 - **SLICE_SIZE**表示使用SAHI工具切图后子图的边长大小，**OVERLAP_RATIO**表示切图的子图之间的重叠率，DOTA水平框和Xview数据集均是切图后训练，AP指标为切图后的子图val上的指标。
@@ -18,24 +23,77 @@ PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小�
 - 切片推理运行需添加`--slice_infer`，例如：`CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.pdparams --infer_img=demo.jpg --draw_threshold=0.25 --slice_infer`，默认子图结果框融合方式为NMS。
 
 
+# 使用说明
+
+## 训练
+
+首先将你的数据集为COCO数据集格式，然后使用SAHI切图工具进行离线切图，对保存的子图按常规检测模型的训练流程走即可。
+也可直接下载PaddleDetection团队提供的切图后的VisDrone-DET、DOTA水平框、Xview数据集。
+
+执行以下指令使用混合精度训练PP-YOLOE
+
+```bash
+python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml --amp --eval
+```
+
+**注意:**
+- 使用默认配置训练需要设置`--amp`以避免显存溢出。
+
+## 评估
+
+1.按常规检测模型的评估流程，直接评估子图上的精度：
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams
+```
+
+2.修改验证集的标注文件路径为原图标注文件，直接评估原图上的精度：
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams
+```
+
+3.修改验证集的标注文件路径为原图标注文件，对原图进行切图后并重组来评估原图上的精度：
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --slice_infer
+```
+
+**注意:**
+- 设置`--slice_infer`表示切图预测并拼装重组结果，默认子图结果框融合方式为NMS，运行时间较长。
+
+
+## 预测
+
+与评估流程基本相同，如需对原图进行切图后并重组来预测原图：
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --infer_img=demo.jpg --draw_threshold=0.25 --slice_infer
+```
+- 设置`--slice_infer`表示切图预测并拼装重组结果，默认子图结果框融合方式为NMS，运行时间较长。
+
+
+## 部署
+
+
+
+
+
 # SAHI切图工具使用说明
 
 ## 1. 数据集下载
 
 ### VisDrone-DET
 
-VisDrone-DET是一个无人机航拍场景的小目标数据集，整理后的COCO格式VisDrone-DET数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/smalldet/visdrone.zip)，检测其中的**10类**，包括 `pedestrian(1), people(2), bicycle(3), car(4), van(5), truck(6), tricycle(7), awning-tricycle(8), bus(9), motor(10)`，原始数据集[下载链接](https://github.com/VisDrone/VisDrone-Dataset)。
+VisDrone-DET是一个无人机航拍场景的小目标数据集，整理后的COCO格式VisDrone-DET数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/smalldet/visdrone.zip)，切图后的COCO格式数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/smalldet/visdrone_sliced.zip)，检测其中的**10类**，包括 `pedestrian(1), people(2), bicycle(3), car(4), van(5), truck(6), tricycle(7), awning-tricycle(8), bus(9), motor(10)`，原始数据集[下载链接](https://github.com/VisDrone/VisDrone-Dataset)。
 具体使用和下载请参考[visdrone](../visdrone)。
 
 ### DOTA水平框：
 
-DOTA是一个大型的遥感影像公开数据集，这里使用**DOTA-v1.0**水平框数据集，整理后的COCO格式的DOTA水平框数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/smalldet/DOTA.zip)，检测其中的**15类**，
+DOTA是一个大型的遥感影像公开数据集，这里使用**DOTA-v1.0**水平框数据集，切图后整理的COCO格式的DOTA水平框数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/smalldet/dota_sliced.zip)，检测其中的**15类**，
 包括 `plane(0), baseball-diamond(1), bridge(2), ground-track-field(3), small-vehicle(4), large-vehicle(5), ship(6), tennis-court(7),basketball-court(8), storage-tank(9), soccer-ball-field(10), roundabout(11), harbor(12), swimming-pool(13), helicopter(14)`，
 图片及原始数据集[下载链接](https://captain-whu.github.io/DOAI2019/dataset.html)。
 
 ### Xview：
 
-Xview是一个大型的航拍遥感检测数据集，目标极小极多，整理后的COCO格式数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/smalldet/DOTA.zip)，检测其中的**60类**，
+Xview是一个大型的航拍遥感检测数据集，目标极小极多，切图后整理的COCO格式数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/smalldet/xview_sliced.zip)，检测其中的**60类**，
 具体类别为：
 
 <details>

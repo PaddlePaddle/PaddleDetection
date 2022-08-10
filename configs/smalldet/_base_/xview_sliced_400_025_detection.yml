@@ -16,5 +16,5 @@ EvalDataset:
 
 TestDataset:
   !ImageFolder
-    anno_path: dataset/xview_sliced/val_400_025.json
-    dataset_dir: dataset/xview_sliced/val_images_400_025
+    anno_path: val_400_025.json
+    dataset_dir: dataset/xview_sliced

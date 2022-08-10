@@ -83,6 +83,38 @@ def parse_args():
         default=False,
         help="Enable auto mixed precision eval.")
 
+    # for smalldet slice_infer
+    parser.add_argument(
+        "--slice_infer",
+        action='store_true',
+        help="Whether to slice the image and merge the inference results for small object detection."
+    )
+    parser.add_argument(
+        "--slice_height",
+        type=int,
+        default=480,
+        help="Height of the sliced image.")
+    parser.add_argument(
+        "--slice_width",
+        type=int,
+        default=480,
+        help="Width of the sliced image.")
+    parser.add_argument(
+        "--overlap_height_ratio",
+        type=float,
+        default=0.2,
+        help="Overlap height ratio of the sliced image.")
+    parser.add_argument(
+        "--overlap_width_ratio",
+        type=float,
+        default=0.2,
+        help="Overlap width ratio of the sliced image.")
+    parser.add_argument(
+        "--fuse_method",
+        type=str,
+        default='nms',
+        help="Fuse method of the sliced images' detection results.")
+
     args = parser.parse_args()
     return args
 
@@ -109,7 +141,10 @@ def run(FLAGS, cfg):
     trainer.load_weights(cfg.weights)
 
     # training
-    trainer.evaluate()
+    if FLAGS.slice_infer:
+        trainer.evaluate(slice_infer=FLAGS.slice_infer)
+    else:
+        trainer.evaluate()
 
 
 def main():
