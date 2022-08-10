@@ -32,7 +32,6 @@ S2ANetHead:
   stacked_convs: 2
   feat_in: 256
   feat_out: 256
-  num_classes: 15
   align_conv_type: 'AlignConv'  # AlignConv Conv
   align_conv_size: 3
   use_sigmoid_cls: True
