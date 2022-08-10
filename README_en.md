@@ -16,20 +16,36 @@ English | [简体中文](README_cn.md)
 
 </div>
 
+<div  align="center">
+  <img src="docs/images/ppdet.gif" width="800"/>
+
+</div>
+
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> Latest News
 
-- 🔥 **2022.3.24：PaddleDetection [release 2.4 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)**
+- 🔥 **2022.8.09：Release [YOLO series model zoo](https://github.com/nemonameless/PaddleDetection_YOLOSeries)**
+  - Comprehensive coverage of classic and latest models of the YOLO series: Including YOLOv3，Paddle real-time object detection model PP-YOLOE, and frontier detection algorithms YOLOv4, YOLOv5, YOLOX, MT-YOLOv6 and YOLOv7
+  - Better model performance：Upgrade based on various YOLO algorithms, shorten training time in 5-8 times and the accuracy is generally improved by 1%-5% mAP. The model compression strategy is used to achieve 30% improvement in speed without precision loss
+  - Complete end-to-end development support：End-to-end development pipieline including training, evaluation, inference, model compression and deployment on various hardware. Meanwhile, support flexible algorithnm switch and implement customized development efficiently
 
-  - Release GPU SOTA object detection series models (s/m/l/x) [PP-YOLOE](configs/ppyoloe), supporting s/m/l/x version, achieving mAP as 51.6% on COCO test dataset and 78.1 FPS on Nvidia V100 by PP-YOLOE-l, supporting AMP training and its training speed is 33% faster than PP-YOLOv2.
-  - Release enhanced models of [PP-PicoDet](configs/picodet), including PP-PicoDet-XS model with 0.7M parameters, its mAP promoted ~2% on COCO, inference speed accelerated 63% on CPU, and post-processing integrated into the network to optimize deployment pipeline.
-  - Release real-time human analysis tool [PP-Human](deploy/pphuman), which is based on data from real-life situations, supporting pedestrian detection, attribute recognition, human tracking, multi-camera tracking, human statistics and action recognition.
-  - Release [YOLOX](configs/yolox), supporting nano/tiny/s/m/l/x version, achieving mAP as 51.8% on COCO val dataset by YOLOX-x.
+- 🔥 **2022.8.01：Release [PP-TinyPose plus](./configs/keypoint/tiny_pose/). The end-to-end precision improves 9.1% AP in dataset
+ of fitness and dance scenes**
+  - Increase data of sports scenes, and the recognition performance of complex actions is significantly improved, covering actions such as sideways, lying down, jumping, and raising legs
+  - Detection model uses PP-PicoDet plus and the precision on COCO dataset is improved by 3.1% mAP
+  - The stability of keypoints is enhanced. Implement the filter stabilization method to make the video prediction result more stable and smooth.
 
-- 2021.11.03: Release [release/2.3](https://github.com/PaddlePaddle/Paddleetection/tree/release/2.3) version. Release mobile object detection model ⚡[PP-PicoDet](configs/picodet), mobile keypoint detection model ⚡[PP-TinyPose](configs/keypoint/tiny_pose)，Real-time tracking system [PP-Tracking](deploy/pptracking). Release object detection models, including [Swin-Transformer](configs/faster_rcnn), [TOOD](configs/tood), [GFL](configs/gfl), release [Sniper](configs/sniper) tiny object detection models and optimized [PP-YOLO-EB](configs/ppyolo) model for EdgeBoard. Release mobile keypoint detection model [Lite HRNet](configs/keypoint).
+- 2022.7.14：Release [pedestrian analysis tool PP-Human v2](./deploy/pipeline)
+  - Four major functions: five complicated action recognition with high performance and Flexible, real-time human attribute recognition, visitor flow statistics and high-accuracy multi-camera tracking.
+  - High performance algorithm: including pedestrian detection, tracking, attribute recognition which is robust to the number of targets and the variant of background and light.
+  - Highly Flexible: providing complete introduction of end-to-end development and optimization strategy, simple command for deployment and compatibility with different input format.
 
-- 2021.08.10: Release [release/2.2](https://github.com/PaddlePaddle/Paddleetection/tree/release/2.2) version. Release Transformer object detection models, including [DETR](configs/detr), [Deformable DETR](configs/deformable_detr), [Sparse RCNN](configs/sparse_rcnn). Release [keypoint detection](configs/keypoint) models, including DarkHRNet and model trained on MPII dataset. Release [head-tracking](configs/mot/headtracking21) and [vehicle-tracking](configs/mot/vehicle) multi-object tracking models.
+- 2022.3.24：PaddleDetection released[release/2.4 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)  
+  - Release high-performanace SOTA object detection model [PP-YOLOE](configs/ppyoloe). It integrates cloud and edge devices and provides S/M/L/X versions. In particular, Verson L has the accuracy as 51.4% on COCO test 2017 dataset, inference speed as 78.1 FPS on a single Test V100. It supports mixed precision training, 33% faster than PP-YOLOv2. Its full range of multi-sized models can meet different hardware arithmetic requirements, and adaptable to server, edge-device GPU and other AI accelerator cards on servers.
+  - Release ultra-lightweight SOTA object detection model [PP-PicoDet Plus](configs/picodet) with 2% improvement in accuracy and 63% improvement in CPU inference speed. Add PicoDet-XS model with a 0.7M parameter, providing model sparsification and quantization functions for model acceleration. No specific post processing module is required for all the hardware, simplifying the deployment.  
+  - Release the real-time pedestrian analysis tool [PP-Human](deploy/pphuman). It has four major functions: pedestrian tracking, visitor flow statistics, human attribute recognition and falling detection. For falling detection, it is optimized based on real-life data with accurate recognition of various types of falling posture. It can adapt to different environmental background, light and camera angle.
+  - Add [YOLOX](configs/yolox) object detection model with nano/tiny/S/M/L/X. X version has the accuracy as 51.8% on COCO  Val2017 dataset.
 
-- 2021.05.20: Release [release/2.1](https://github.com/PaddlePaddle/Paddleetection/tree/release/2.1) version. Release [Keypoint Detection](configs/keypoint), including HigherHRNet and HRNet, [Multi-Object Tracking](configs/mot), including DeepSORT，JDE and FairMOT. Release model compression for PPYOLO series models.Update documents such as [EXPORT ONNX MODEL](deploy/EXPORT_ONNX_MODEL.md).
+- [More releases](https://github.com/PaddlePaddle/PaddleDetection/releases)
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157795569-9fc77c85-732f-4870-9be0-99a7fe2cff27.png" alt="" width="20"> Introduction
 
@@ -72,8 +88,8 @@ PaddleDetection is an end-to-end object detection development kit based on Paddl
 - Welcome to Join PaddleDetection QQ Group and Wechat Group (reply "Det").
 
   <div align="center">
-  <img src="https://user-images.githubusercontent.com/48054808/157800129-2f9a0b72-6bb8-4b10-8310-93ab1639253f.jpg"  width = "200" />  
-  <img src="https://user-images.githubusercontent.com/48054808/160531099-9811bbe6-cfbb-47d5-8bdb-c2b40684d7dd.png"  width = "200" />  
+  <img src="https://user-images.githubusercontent.com/22989727/183843004-baebf75f-af7c-4a7c-8130-1497b9a3ec7e.png"  width = "200" />  
+  <img src="https://user-images.githubusercontent.com/34162360/177678712-4655747d-4290-4ad9-b7a1-4564a5418ac6.jpg"  width = "200" />  
   </div>
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157827140-03ffaff7-7d14-48b4-9440-c38986ea378c.png" width="20"/> Overview of Kit Structures
