@@ -1,15 +1,15 @@
 
 # PP-Vehicle车牌识别模块
 
-车牌识别，在车辆应用场景中有着非常广泛的应用，起到车辆身份识别的作用。PP-Vehicle中提供了车辆的跟踪及其车牌识别的功能，并提供模型下载：
+车牌识别，在车辆应用场景中有着非常广泛的应用，起到车辆身份识别的作用，比如车辆出入口自动闸机。PP-Vehicle中提供了车辆的跟踪及其车牌识别的功能，并提供模型下载：
 
 | 任务                 | 算法 | 精度 | 预测速度(ms) |下载链接                                                                               |
 |:---------------------|:---------:|:------:|:------:| :---------------------------------------------------------------------------------: |
-| 车辆检测/跟踪 |  PP-YOLOE-l | mAP: 63.9 | 待定 |[下载链接](待定) |
-| 车牌检测模型    |  ch_PP-OCRv3_det  |  mA: 待定  | 待定 | [下载链接](待定) |
-| 车牌识别模型    |  ch_PP-OCRv3_rec  |  mA: 待定  | 待定 | [下载链接](待定) |
+| 车辆检测/跟踪 |  PP-YOLOE-l | mAP: 63.9 | - |[下载链接](待定) |
+| 车牌检测模型    |  ch_PP-OCRv3_det  |  hmean: 0.979  | - | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz) |
+| 车牌识别模型    |  ch_PP-OCRv3_rec  |  acc: 0.773  | - | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz) |
 1. 跟踪模型使用5个数据集(BDD100K-DET、BDD100K-MOT、UA-DETRAC、PPVehicle9cls、PPVehicle)整合训练。测试在 （待定）数据集测试。
-2. 车牌检测、识别模型使用PP-OCRv3模型在CCPD车牌数据集上fine-tune得到。
+2. 车牌检测、识别模型使用PP-OCRv3模型在CCPD2019、CCPD2020混合车牌数据集上fine-tune得到。
 
 ## 使用方法
 
@@ -29,7 +29,7 @@ VEHICLE_PLATE:                                                            #模�
   enable: False                                                           #功能是否开启
 ```
 
-2. 图片输入时，启动命令如下(更多命令参数说明，请参考[快速开始-参数说明](./PPHuman_QUICK_STARTED.md#41-参数说明))。
+2. 图片输入时，启动命令如下(更多命令参数说明，请参考[快速开始-参数说明](./PPVehicle_QUICK_STARTED.md#41-参数说明))。
 ```python
 #单张图片
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
@@ -42,6 +42,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
                                                    --device=gpu \
 
 ```
+
 3. 视频输入时，启动命令如下
 ```python
 #单个视频文件
@@ -57,14 +58,14 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 
 4. 若修改模型路径，有以下两种方式：
 
-    - 方法一：```./deploy/pipeline/config/infer_cfg_ppvehicle.yml```下可以配置不同模型路径，属性识别模型修改ATTR字段下配置
-    - 方法二：命令行中增加`--det_model_dir`、`--rec_model_dir`修改模型路径，待完善。
+    - 方法一：```./deploy/pipeline/config/infer_cfg_ppvehicle.yml```下可以配置不同模型路径，车牌识别模型修改`VEHICLE_PLATE`字段下配置
+    - 方法二：命令行中--config配置项后面增加`-o VEHICLE_PLATE.det_model_dir=[YOUR_DETMODEL_PATH] VEHICLE_PLATE.rec_model_dir=[YOUR_RECMODEL_PATH]`修改模型路径。
 
 
 测试效果如下：
 
 <div width="1000" align="center">
-  <img src="../images/ppvehicleplate.gif"/>
+  <img src="../images/ppvehicleplate.jpg"/>
 </div>
 
 
@@ -72,9 +73,15 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 
 1. 目标检测/多目标跟踪获取图片/视频输入中的车辆检测框，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../configs/ppyoloe/README_cn.md)
 2. 通过车辆检测框的坐标在输入图像中截取每个车辆
-3. 使用车牌检测模型在每张车辆截图中识别车牌所在位置，同理截取车牌区域
-4. 使用字符识别模型识别车牌中的字符。
+3. 使用车牌检测模型在每张车辆截图中识别车牌所在位置，同理截取车牌区域，模型方案为PP-OCRv3_det模型，经CCPD数据集在车牌场景fine-tune得到。
+4. 使用字符识别模型识别车牌中的字符。模型方案为PP-OCRv3_rec模型，经CCPD数据集在车牌场景fine-tune得到。
+
+**性能优化措施：**
+
+1. 使用跳帧策略，每10帧做一次车牌检测，避免每帧做车牌检测的算力消耗。
+2. 车牌结果稳定策略，避免单帧结果的波动，利用同一个id的历史所有车牌识别结果进行投票，得到该id最大可能的正确结果。
 
 ## 参考资料
 
-1. Paddle字符识别模型库[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
+1. PaddeDetection特色检测模型[PP-YOLOE](../../../../configs/ppyoloe)。
+2. Paddle字符识别模型库[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)。

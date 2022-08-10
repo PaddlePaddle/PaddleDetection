@@ -298,7 +298,8 @@ class PlateRecognizer(object):
             '陕': 'SN-',
             '甘': 'GS-',
             '青': 'QH-',
-            '宁': 'NX-'
+            '宁': 'NX-',
+            '·': ' '
         }
         for _char in text:
             if _char in simcode:
