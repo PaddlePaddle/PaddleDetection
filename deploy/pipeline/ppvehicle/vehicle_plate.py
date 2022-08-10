@@ -258,20 +258,52 @@ class PlateRecognizer(object):
         return self.check_plate(plate_text_list)
 
     def check_plate(self, text_list):
-        simcode = [
-            '浙', '粤', '京', '津', '冀', '晋', '蒙', '辽', '黑', '沪', '吉', '苏', '皖',
-            '赣', '鲁', '豫', '鄂', '湘', '桂', '琼', '渝', '川', '贵', '云', '藏', '陕',
-            '甘', '青', '宁'
-        ]
         plate_all = {"plate": []}
         for text_pcar in text_list:
             platelicense = ""
             for text_info in text_pcar:
                 text = text_info[0][0][0]
                 if len(text) > 2 and len(text) < 10:
-                    platelicense = text
+                    platelicense = self.replace_cn_code(text)
             plate_all["plate"].append(platelicense)
         return plate_all
+
+    def replace_cn_code(self, text):
+        simcode = {
+            '浙': 'ZJ-',
+            '粤': 'GD-',
+            '京': 'BJ-',
+            '津': 'TJ-',
+            '冀': 'HE-',
+            '晋': 'SX-',
+            '蒙': 'NM-',
+            '辽': 'LN-',
+            '黑': 'HLJ-',
+            '沪': 'SH-',
+            '吉': 'JL-',
+            '苏': 'JS-',
+            '皖': 'AH-',
+            '赣': 'JX-',
+            '鲁': 'SD-',
+            '豫': 'HA-',
+            '鄂': 'HB-',
+            '湘': 'HN-',
+            '桂': 'GX-',
+            '琼': 'HI-',
+            '渝': 'CQ-',
+            '川': 'SC-',
+            '贵': 'GZ-',
+            '云': 'YN-',
+            '藏': 'XZ-',
+            '陕': 'SN-',
+            '甘': 'GS-',
+            '青': 'QH-',
+            '宁': 'NX-'
+        }
+        for _char in text:
+            if _char in simcode:
+                text = text.replace(_char, simcode[_char])
+        return text
 
 
 def main():
