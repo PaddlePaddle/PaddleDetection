@@ -131,7 +131,7 @@ def argsparser():
         "--illegal_parking_time",
         type=int,
         default=-1,
-        help="illegal parking time(s), default is -1 which means not recognition illegal parking"
+        help="illegal parking time which units are seconds, default is -1 which means not recognition illegal parking"
     )
     parser.add_argument(
         "--region_type",

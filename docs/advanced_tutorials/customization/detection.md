@@ -1,3 +1,5 @@
+简体中文 | [English](./detection_en.md)
+
 # 目标检测任务二次开发
 
 在目标检测算法产业落地过程中，常常会出现需要额外训练以满足实际使用的要求，项目迭代过程中也会出先需要修改类别的情况。本文档详细介绍如何使用PaddleDetection进行目标检测算法二次开发，流程包括：数据准备、模型优化思路和修改类别开发流程。
@@ -39,7 +41,7 @@ TestDataset:
 
 ```
 export CUDA_VISIBLE_DEVICES=0
-python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml --eval
+python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml --eval
 ```
 
 更详细的命令参考[30分钟快速上手PaddleDetection](../../tutorials/GETTING_STARTED_cn.md)

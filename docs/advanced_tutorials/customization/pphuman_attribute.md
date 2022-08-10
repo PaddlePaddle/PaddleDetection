@@ -1,3 +1,5 @@
+简体中文 | [English](./pphuman_attribute_en.md)
+
 # 属性识别任务二次开发
 
 ## 数据准备
