@@ -263,7 +263,7 @@ def plot_tracking_dict(image,
                 text_scale, (0, 0, 255),
                 thickness=text_thickness)
 
-        if len(illegal_parking_dict) != 0:
+        if illegal_parking_dict is not None and len(illegal_parking_dict) != 0:
             for key, value in illegal_parking_dict.items():
                 x1, y1, w, h = value['bbox']
                 plate = value['plate']

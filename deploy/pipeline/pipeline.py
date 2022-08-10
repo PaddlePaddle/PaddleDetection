@@ -735,6 +735,7 @@ class PipePredictor(object):
 
         object_in_region_info = {
         }  # store info for vehicle parking in region       
+        illegal_parking_dict = None
 
         while (1):
             if frame_id % 10 == 0:
@@ -769,14 +770,15 @@ class PipePredictor(object):
                     prev_center, records)
                 records = statistic['records']
 
-                object_in_region_info, illegal_parking_dict = update_object_info(
-                    object_in_region_info, mot_result, self.region_type,
-                    entrance, video_fps, self.illegal_parking_time)
-                if len(illegal_parking_dict) != 0:
-                    # build relationship between id and plate
-                    for key, value in illegal_parking_dict.items():
-                        plate = self.collector.get_carlp(key)
-                        illegal_parking_dict[key]['plate'] = plate
+                if self.illegal_parking_time != -1:
+                    object_in_region_info, illegal_parking_dict = update_object_info(
+                        object_in_region_info, mot_result, self.region_type,
+                        entrance, video_fps, self.illegal_parking_time)
+                    if len(illegal_parking_dict) != 0:
+                        # build relationship between id and plate
+                        for key, value in illegal_parking_dict.items():
+                            plate = self.collector.get_carlp(key)
+                            illegal_parking_dict[key]['plate'] = plate
 
                 # nothing detected
                 if len(mot_res['boxes']) == 0:
