@@ -64,7 +64,6 @@ faster_rcnn_r50_fpn_1x_coco
   └── model.pdmodel          # Static diagram model file
 ```
 
-
 ### Step 2. Convert the deployment model to ONNX format
 Install Paddle2ONNX (version 0.9.7 or higher)
 ```
@@ -87,3 +86,25 @@ paddle2onnx --model_dir inference_model/faster_rcnn_r50_fpn_1x_coco \
             --save_file faster_rcnn.onnx
 ```
 The transformed model is under the current path`yolov3.onnx` and `faster_rcnn.onnx`
+
+### Step 3. Inference with onnxruntime
+Install onnxruntime
+```
+pip install onnxruntime
+```
+Inference code examples are in [deploy/third_engine/onnx](./third_engine/onnx)
+
+Use the following commands for inference：
+```
+# YOLOv3
+python deploy/third_engine/onnx/infer.py
+            --infer_cfg inference_model/yolov3_darknet53_270e_coco/infer_cfg.yml \
+            --onnx_file yolov3.onnx \
+            --image_file demo/000000014439.jpg
+
+# Faster RCNN
+python deploy/third_engine/onnx/infer.py
+            --infer_cfg inference_model/faster_rcnn_r50_fpn_1x_coco/infer_cfg.yml \
+            --onnx_file faster_rcnn.onnx \
+            --image_file demo/000000014439.jpg
+```
