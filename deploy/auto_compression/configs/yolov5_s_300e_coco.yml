@@ -1,10 +1,10 @@
 
 Global:
-  reader_config: configs/ppyoloe_reader.yml
+  reader_config: configs/yolov5_reader.yml
   input_list: ['image', 'scale_factor']
   arch: YOLO
   Evaluation: True
-  model_dir: ./ppyoloe_crn_l_300e_coco
+  model_dir: ./yolov5_s_300e_coco
   model_filename: model.pdmodel
   params_filename: model.pdiparams
 
@@ -22,12 +22,11 @@ Quantization:
 TrainConfig:
   train_iter: 5000
   eval_iter: 1000
-  learning_rate:  
+  learning_rate:
     type: CosineAnnealingDecay
     learning_rate: 0.00003
     T_max: 6000
   optimizer_builder:
-    optimizer: 
+    optimizer:
       type: SGD
     weight_decay: 4.0e-05
-
