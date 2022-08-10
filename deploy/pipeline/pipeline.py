@@ -774,16 +774,9 @@ class PipePredictor(object):
                     entrance, video_fps, self.illegal_parking_time)
                 if len(illegal_parking_dict) != 0:
                     # build relationship between id and plate
-                    collector_res = self.collector.get_res()
                     for key, value in illegal_parking_dict.items():
-                        plate_res = collector_res[key]['vehicleplate']
-                        plate_res = [i for i in plate_res
-                                     if len(i) > 0]  # filter blank plate
-                        if len(plate_res) == 0:
-                            illegal_parking_dict[key]['plate'] = ''
-                        else:
-                            maxlabel = max(plate_res, key=plate_res.count)
-                            illegal_parking_dict[key]['plate'] = maxlabel
+                        plate = self.collector.get_carlp(key)
+                        illegal_parking_dict[key]['plate'] = plate
 
                 # nothing detected
                 if len(mot_res['boxes']) == 0:
