@@ -88,3 +88,25 @@ paddle2onnx --model_dir inference_model/faster_rcnn_r50_fpn_1x_coco \
             --save_file faster_rcnn.onnx
 ```
 转换后的模型即为在当前路径下的`yolov3.onnx`和`faster_rcnn.onnx`
+
+### 步骤三、使用onnxruntime进行推理
+安装onnxruntime
+```
+pip install onnxruntime
+```
+推理代码示例在[deploy/third_engine/onnx](./third_engine/onnx)下
+
+使用如下命令进行推理：
+```
+# YOLOv3
+python deploy/third_engine/onnx/infer.py
+            --infer_cfg inference_model/yolov3_darknet53_270e_coco/infer_cfg.yml \
+            --onnx_file yolov3.onnx \
+            --image_file demo/000000014439.jpg
+
+# Faster RCNN
+python deploy/third_engine/onnx/infer.py
+            --infer_cfg inference_model/faster_rcnn_r50_fpn_1x_coco/infer_cfg.yml \
+            --onnx_file faster_rcnn.onnx \
+            --image_file demo/000000014439.jpg
+```
