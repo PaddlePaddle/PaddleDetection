@@ -1,4 +1,4 @@
-English | [简体中文](action.md)
+English | [简体中文](pphuman_action.md)
 
 # Action Recognition Module of PP-Human
 
@@ -53,7 +53,6 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
     max_frames: 50 # The number of frames of action segments. When frames of time-ordered skeleton keypoints of each pedestrian ID achieve the max value,the action type will be judged by the action recognition model. If the setting is the same as the training, there will be an ideal inference result.
     display_frames: 80 # The number of display frames. When the inferred action type is falling down, the time length of the act will be displayed in the ID.
     coord_size: [384, 512] # The unified size of the coordinate, which is the best when it is the same as the training setting.
-    basemode: "skeletonbased" # The models which is based on，whether we need the skeleton model.
     enable: False # Whether to enable this function
 ```
 
@@ -81,7 +80,7 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
                                                        --device=gpu \
                                                        --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
     ```
-4. For detailed parameter description, please refer to [Parameter Description](./QUICK_STARTED.md)
+4. For detailed parameter description, please refer to [Parameter Description](./PPHuman_QUICK_STARTED.md)
 
 ### Introduction to the Solution
 
@@ -115,7 +114,6 @@ Parameters related to action recognition in the [config file](../../config/infer
 ID_BASED_CLSACTION: # config for classfication-based action recognition model
     model_dir: output_inference/PPHGNet_tiny_calling_halfbody  # Path of the model
     batch_size: 8 # The size of the inference batch
-    basemode: "idbased" # the models which is based on, whether the id of each object obtained by tracking is needed.
     threshold: 0.45 # Threshold for corresponding behavior
     display_frames: 80 # The number of display frames. When the corresponding action is detected, the time length of the act will be displayed in the ID.
     enable: False # Whether to enable this function
@@ -133,7 +131,7 @@ ID_BASED_CLSACTION: # config for classfication-based action recognition model
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
   ```
-4. For detailed parameter description, please refer to [Parameter Description](./QUICK_STARTED.md)
+4. For detailed parameter description, please refer to [Parameter Description](./PPHuman_QUICK_STARTED.md)
 
 ### Introduction to the Solution
 1. Get the pedestrian detection box and the tracking ID number of the video input through object detection and multi-object tracking. The adopted model is PP-YOLOE, and for details, please refer to [PP-YOLOE](../../../configs/ppyoloe).
@@ -162,7 +160,6 @@ Parameters related to action recognition in the [config file](../../config/infer
 ID_BASED_DETACTION: # Config for detection-based action recognition model
     model_dir: output_inference/ppyoloe_crn_s_80e_smoking_visdrone # Path of the model
     batch_size: 8  # The size of the inference batch
-    basemode: "idbased" # The models which is based on, whether the id of each object obtained by tracking is needed.
     threshold: 0.4  # Threshold for corresponding behavior.
     display_frames: 80 # The number of display frames. When the corresponding action is detected, the time length of the act will be displayed in the ID.
     enable: False # Whether to enable this function
@@ -180,7 +177,7 @@ ID_BASED_DETACTION: # Config for detection-based action recognition model
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
   ```
-4. For detailed parameter description, please refer to [Parameter Description](./QUICK_STARTED.md)
+4. For detailed parameter description, please refer to [Parameter Description](./PPHuman_QUICK_STARTED.md)
 
 ### Introduction to the Solution
 1. Get the pedestrian detection box and the tracking ID number of the video input through object detection and multi-object tracking. The adopted model is PP-YOLOE, and for details, please refer to [PP-YOLOE](../../../../configs/ppyoloe).
@@ -220,7 +217,6 @@ VIDEO_ACTION:  # Config for detection-based action recognition model
     sample_freq: 7 # Sampling frequency. It means how many frames to sample one frame.
     short_size: 340 # The shortest length for video frame scaling transforms.
     target_size: 320 # Target size for input video
-    basemode: "videobased"  # The models which is based on, whether to use video as model input.
     enable: False # Whether to enable this function
 ```
 
@@ -238,7 +234,7 @@ VIDEO_ACTION:  # Config for detection-based action recognition model
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
   ```
-5. For detailed parameter description, please refer to [Parameter Description](./QUICK_STARTED.md).
+5. For detailed parameter description, please refer to [Parameter Description](./PPHuman_QUICK_STARTED.md).
 
 
 The result is shown as follow:

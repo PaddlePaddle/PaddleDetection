@@ -68,20 +68,18 @@ class DetDataset(Dataset):
         return self
 
     def __getitem__(self, idx):
+        n = len(self.roidbs)
         if self.repeat > 1:
-            idx %= self.repeat
+            idx %= n
         # data batch
         roidb = copy.deepcopy(self.roidbs[idx])
         if self.mixup_epoch == 0 or self._epoch < self.mixup_epoch:
-            n = len(self.roidbs)
             idx = np.random.randint(n)
             roidb = [roidb, copy.deepcopy(self.roidbs[idx])]
         elif self.cutmix_epoch == 0 or self._epoch < self.cutmix_epoch:
-            n = len(self.roidbs)
             idx = np.random.randint(n)
             roidb = [roidb, copy.deepcopy(self.roidbs[idx])]
         elif self.mosaic_epoch == 0 or self._epoch < self.mosaic_epoch:
-            n = len(self.roidbs)
             roidb = [roidb, ] + [
                 copy.deepcopy(self.roidbs[np.random.randint(n)])
                 for _ in range(4)

@@ -69,6 +69,8 @@ class Trainer(object):
         self.is_loaded_weights = False
         self.use_amp = self.cfg.get('amp', False)
         self.amp_level = self.cfg.get('amp_level', 'O1')
+        self.custom_white_list = self.cfg.get('custom_white_list', None)
+        self.custom_black_list = self.cfg.get('custom_black_list', None)
 
         # build data loader
         capital_mode = self.mode.capitalize()
@@ -155,8 +157,10 @@ class Trainer(object):
                 self.pruner = create('UnstructuredPruner')(self.model,
                                                            steps_per_epoch)
         if self.use_amp and self.amp_level == 'O2':
-            self.model = paddle.amp.decorate(
-                models=self.model, level=self.amp_level)
+            self.model, self.optimizer = paddle.amp.decorate(
+                models=self.model,
+                optimizers=self.optimizer,
+                level=self.amp_level)
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         if self.use_ema:
             ema_decay = self.cfg.get('ema_decay', 0.9998)
@@ -456,7 +460,9 @@ class Trainer(object):
                             DataParallel) and use_fused_allreduce_gradients:
                         with model.no_sync():
                             with paddle.amp.auto_cast(
-                                    enable=self.cfg.use_gpus,
+                                    enable=self.cfg.use_gpu,
+                                    custom_white_list=self.custom_white_list,
+                                    custom_black_list=self.custom_black_list,
                                     level=self.amp_level):
                                 # model forward
                                 outputs = model(data)
@@ -468,7 +474,10 @@ class Trainer(object):
                             list(model.parameters()), None)
                     else:
                         with paddle.amp.auto_cast(
-                                enable=self.cfg.use_gpu, level=self.amp_level):
+                                enable=self.cfg.use_gpu,
+                                custom_white_list=self.custom_white_list,
+                                custom_black_list=self.custom_black_list,
+                                level=self.amp_level):
                             # model forward
                             outputs = model(data)
                             loss = outputs['loss']
@@ -477,7 +486,6 @@ class Trainer(object):
                         scaled_loss.backward()
                     # in dygraph mode, optimizer.minimize is equal to optimizer.step
                     scaler.minimize(self.optimizer, scaled_loss)
-
                 else:
                     if isinstance(
                             model, paddle.
@@ -575,7 +583,10 @@ class Trainer(object):
             # forward
             if self.use_amp:
                 with paddle.amp.auto_cast(
-                        enable=self.cfg.use_gpu, level=self.amp_level):
+                        enable=self.cfg.use_gpu,
+                        custom_white_list=self.custom_white_list,
+                        custom_black_list=self.custom_black_list,
+                        level=self.amp_level):
                     outs = self.model(data)
             else:
                 outs = self.model(data)

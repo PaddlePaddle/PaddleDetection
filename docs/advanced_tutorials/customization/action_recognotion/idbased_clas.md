@@ -53,7 +53,7 @@ data/
 ## 模型优化
 
 ### 检测-跟踪模型优化
-基于分类的行为识别模型效果依赖于前序的检测和跟踪效果，如果实际场景中不能准确检测到行人位置，或是难以正确在不同帧之间正确分配人物ID，都会使行为识别部分表现受限。如果在实际使用中遇到了上述问题，请参考[目标检测任务二次开发](../detection.md)以及[多目标跟踪任务二次开发](../mot.md)对检测/跟踪模型进行优化。
+基于分类的行为识别模型效果依赖于前序的检测和跟踪效果，如果实际场景中不能准确检测到行人位置，或是难以正确在不同帧之间正确分配人物ID，都会使行为识别部分表现受限。如果在实际使用中遇到了上述问题，请参考[目标检测任务二次开发](../detection.md)以及[多目标跟踪任务二次开发](../pphuman_mot.md)对检测/跟踪模型进行优化。
 
 
 ### 半身图预测
@@ -176,3 +176,48 @@ wget https://bj.bcebos.com/v1/paddledet/models/pipeline/infer_configs/PPHGNet_ti
 ```
 
 至此，即可使用PP-Human进行实际预测了。
+
+
+### 自定义行为输出
+基于人体id的分类的行为识别方案中，将任务转化为对应人物的图像进行图片级别的分类。对应分类的类型最终即视为当前阶段的行为。因此在完成自定义模型的训练及部署的基础上，还需要将分类模型结果转化为最终的行为识别结果作为输出，并修改可视化的显示结果。
+
+#### 转换为行为识别结果
+请对应修改[后处理函数](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pphuman/action_infer.py#L509)。
+
+核心代码为：
+```python
+# 确定分类模型的最高分数输出结果
+cls_id_res = 1
+cls_score_res = -1.0
+for cls_id in range(len(cls_result[idx])):
+    score = cls_result[idx][cls_id]
+    if score > cls_score_res:
+        cls_id_res = cls_id
+        cls_score_res = score
+
+# Current now,  class 0 is positive, class 1 is negative.
+if cls_id_res == 1 or (cls_id_res == 0 and
+                       cls_score_res < self.threshold):
+    # 如果分类结果不是目标行为或是置信度未达到阈值，则根据历史结果确定当前帧的行为
+    history_cls, life_remain, history_score = self.result_history.get(
+        tracker_id, [1, self.frame_life, -1.0])
+    cls_id_res = history_cls
+    cls_score_res = 1 - cls_score_res
+    life_remain -= 1
+    if life_remain <= 0 and tracker_id in self.result_history:
+        del (self.result_history[tracker_id])
+    elif tracker_id in self.result_history:
+        self.result_history[tracker_id][1] = life_remain
+    else:
+        self.result_history[
+            tracker_id] = [cls_id_res, life_remain, cls_score_res]
+else:
+    # 分类结果属于目标行为，则使用将该结果，并记录到历史结果中
+    self.result_history[
+        tracker_id] = [cls_id_res, self.frame_life, cls_score_res]
+
+    ...
+```
+
+#### 修改可视化输出
+目前基于ID的行为识别，是根据行为识别的结果及预定义的类别名称进行展示的。详细逻辑请见[此处](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pipeline.py#L1024-L1043)。如果自定义的行为需要修改为其他的展示名称，请对应修改此处，以正确输出对应结果。

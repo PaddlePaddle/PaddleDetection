@@ -1,4 +1,4 @@
-English | [简体中文](attribute.md)
+English | [简体中文](pphuman_attribute.md)
 
 # Attribute Recognition Modules of PP-Human
 
@@ -12,7 +12,7 @@ Pedestrian attribute recognition has been widely used in the intelligent communi
 
 1. The precision of pedestiran attribute analysis is obtained by training and testing on the dataset consist of [PA100k](https://github.com/xh-liu/HydraPlus-Net#pa-100k-dataset)，[RAPv2](http://www.rapdataset.com/rapv2.html)，[PETA](http://mmlab.ie.cuhk.edu.hk/projects/PETA.html) and some business data.
 2. The inference speed is V100, the speed of using TensorRT FP16.
-3. This model of Attribute is based on the result of tracking, please download tracking model in the [Page of Mot](./mot_en.md). The High precision and Faster model are both available.
+3. This model of Attribute is based on the result of tracking, please download tracking model in the [Page of Mot](./pphuman_mot_en.md). The High precision and Faster model are both available.
 4. You should place the model unziped in the directory of `PaddleDetection/output_inference/`.
 
 ## Instruction
@@ -24,11 +24,10 @@ The meaning of configs of `infer_cfg_pphuman.yml`：
 ATTR:                                                                     #module name
   model_dir: output_inference/PPLCNet_x1_0_person_attribute_945_infer/    #model path
   batch_size: 8                                                           #maxmum batchsize when inference
-  basemode: "idbased"                                                     #the routing type of pipeline，'idbased' means this model is based on tracking.
   enable: False                                                           #whether to enable this model
 ```
 
-2. When inputting the image, run the command as follows (please refer to [QUICK_STARTED-Parameters](./QUICK_STARTED.md#41-参数说明) for more details):
+2. When inputting the image, run the command as follows (please refer to [QUICK_STARTED-Parameters](./PPHuman_QUICK_STARTED.md#41-参数说明) for more details):
 ```python
 #single image
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \

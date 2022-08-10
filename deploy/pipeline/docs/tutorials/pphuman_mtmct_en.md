@@ -1,4 +1,4 @@
-English | [简体中文](mtmct.md)
+English | [简体中文](pphuman_mtmct.md)
 
 # Multi-Target Multi-Camera Tracking Module of PP-Human
 
@@ -7,7 +7,7 @@ The MTMCT module of PP-Human aims to provide a multi-target multi-camera pipleli
 
 ## How to Use
 
-1. Download [REID model](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) and unzip it to ```./output_inference```. For the MOT model, please refer to [mot description](./mot.md).
+1. Download [REID model](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) and unzip it to ```./output_inference```. For the MOT model, please refer to [mot description](./pphuman_mot.md).
 
 2. In the MTMCT mode, input videos are required to be put in the same directory. set the REID "enable: True" in the infer_cfg_pphuman.yml. The command line is:
 ```python

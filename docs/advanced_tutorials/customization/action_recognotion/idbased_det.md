@@ -15,7 +15,7 @@
 ## 模型优化
 
 ### 检测-跟踪模型优化
-基于检测的行为识别模型效果依赖于前序的检测和跟踪效果，如果实际场景中不能准确检测到行人位置，或是难以正确在不同帧之间正确分配人物ID，都会使行为识别部分表现受限。如果在实际使用中遇到了上述问题，请参考[目标检测任务二次开发](../detection.md)以及[多目标跟踪任务二次开发](../mot.md)对检测/跟踪模型进行优化。
+基于检测的行为识别模型效果依赖于前序的检测和跟踪效果，如果实际场景中不能准确检测到行人位置，或是难以正确在不同帧之间正确分配人物ID，都会使行为识别部分表现受限。如果在实际使用中遇到了上述问题，请参考[目标检测任务二次开发](../detection.md)以及[多目标跟踪任务二次开发](../pphuman_mot.md)对检测/跟踪模型进行优化。
 
 
 ### 更大的分辨率
@@ -168,3 +168,35 @@ ppyoloe_crn_s_80e_smoking_visdrone/
 ```
 
 至此，即可使用PP-Human进行实际预测了。
+
+
+### 自定义行为输出
+基于人体id的检测的行为识别方案中，将任务转化为在对应人物的图像中检测目标特征对象。当目标特征对象被检测到时，则视为行为正在发生。因此在完成自定义模型的训练及部署的基础上，还需要将检测模型结果转化为最终的行为识别结果作为输出，并修改可视化的显示结果。
+
+#### 转换为行为识别结果
+请对应修改[后处理函数](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pphuman/action_infer.py#L338)。
+核心代码为：
+```python
+# 解析检测模型输出，并筛选出置信度高于阈值的有效检测框。
+# Current now,  class 0 is positive, class 1 is negative.
+action_ret = {'class': 1.0, 'score': -1.0}
+box_num = np_boxes_num[idx]
+boxes = det_result['boxes'][cur_box_idx:cur_box_idx + box_num]
+cur_box_idx += box_num
+isvalid = (boxes[:, 1] > self.threshold) & (boxes[:, 0] == 0)
+valid_boxes = boxes[isvalid, :]
+
+if valid_boxes.shape[0] >= 1:
+    # 存在有效检测框时，行为识别结果的类别和分数对应修改
+    action_ret['class'] = valid_boxes[0, 0]
+    action_ret['score'] = valid_boxes[0, 1]
+    # 由于动作的持续性，有效检测结果可复用一定帧数
+    self.result_history[
+        tracker_id] = [0, self.frame_life, valid_boxes[0, 1]]
+else:
+    # 不存在有效检测框，则根据历史检测数据确定当前帧的结果
+    ...
+```
+
+#### 修改可视化输出
+目前基于ID的行为识别，是根据行为识别的结果及预定义的类别名称进行展示的。详细逻辑请见[此处](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pipeline.py#L1024-L1043)。如果自定义的行为需要修改为其他的展示名称，请对应修改此处，以正确输出对应结果。

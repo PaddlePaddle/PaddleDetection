@@ -262,11 +262,6 @@ else
                     continue
                 fi
 
-                if [ ${autocast} = "amp" ] || [ ${autocast} = "fp16" ]; then
-                    set_autocast="--amp"
-                else
-                    set_autocast=" "
-                fi
                 set_epoch=$(func_set_params "${epoch_key}" "${epoch_num}")
                 set_pretrain=$(func_set_params "${pretrain_model_key}" "${pretrain_model_value}")
                 set_batchsize=$(func_set_params "${train_batch_key}" "${train_batch_value}")
@@ -274,13 +269,27 @@ else
                 set_use_gpu=$(func_set_params "${train_use_gpu_key}" "${use_gpu}")
                 set_train_params1=$(func_set_params "${train_param_key1}" "${train_param_value1}")
                 save_log="${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}"
+                if [ ${autocast} = "amp" ] || [ ${autocast} = "fp16" ]; then
+                    set_autocast="--amp"
+                    set_amp_level="amp_level=O2"
+                else
+                    set_autocast=" "
+                    set_amp_level=" "
+                fi
+                if [ ${MODE} = "benchmark_train" ]; then
+                    set_shuffle="TrainReader.shuffle=False"
+                    set_enable_ce="--enable_ce=True"
+                else
+                    set_shuffle=" "
+                    set_enable_ce=" "
+                fi
 
                 set_save_model=$(func_set_params "${save_model_key}" "${save_log}")
                 nodes="1"
                 if [ ${#gpu} -le 2 ];then  # train with cpu or single gpu
-                    cmd="${python} ${run_train} LearningRate.base_lr=0.0001 log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_train_params1} ${set_autocast}"
+                    cmd="${python} ${run_train} LearningRate.base_lr=0.0001 log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_shuffle} ${set_amp_level} ${set_enable_ce} ${set_autocast} ${set_train_params1}"
                 elif [ ${#ips} -le 15 ];then  # train with multi-gpu
-                    cmd="${python} -m paddle.distributed.launch --gpus=${gpu} ${run_train} log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_train_params1} ${set_autocast}"
+                    cmd="${python} -m paddle.distributed.launch --gpus=${gpu} ${run_train} log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_shuffle} ${set_amp_level} ${set_enable_ce} ${set_autocast} ${set_train_params1}"
                 else     # train with multi-machine
                     IFS=","
                     ips_array=(${ips})
@@ -288,7 +297,7 @@ else
                     save_log="${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}_nodes_${nodes}"
                     IFS="|"
                     set_save_model=$(func_set_params "${save_model_key}" "${save_log}")
-                    cmd="${python} -m paddle.distributed.launch --ips=${ips} --gpus=${gpu} ${run_train} log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_train_params1} ${set_autocast}"
+                    cmd="${python} -m paddle.distributed.launch --ips=${ips} --gpus=${gpu} ${run_train} log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_shuffle} ${set_amp_level} ${set_enable_ce} ${set_autocast} ${set_train_params1}"
                 fi
                 # run train
                 train_log_path="${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}_nodes_${nodes}.log"

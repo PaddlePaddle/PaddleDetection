@@ -6,7 +6,7 @@ use_gpu:True
 auto_cast:null
 epoch:lite_train_lite_infer=1|lite_train_whole_infer=1|whole_train_whole_infer=300
 save_dir:null
-TrainReader.batch_size:lite_train_lite_infer=2|lite_train_whole_infer=2|whole_train_whole_infer=128
+TrainReader.batch_size:lite_train_lite_infer=2|lite_train_whole_infer=2|whole_train_whole_infer=64
 pretrain_weights:https://paddledet.bj.bcebos.com/models/picodet_s_320_coco_lcnet.pdparams
 trained_model_name:model_final.pdparams
 train_infer_img_dir:./dataset/coco/test2017/
@@ -49,11 +49,12 @@ inference:./deploy/python/infer.py
 --save_log_path:null
 --run_benchmark:False
 null:null
-===========================infer_benchmark_params===========================
-numpy_infer_input:3x320x320_2.npy
 ===========================train_benchmark_params==========================
-batch_size:128
+batch_size:64
 fp_items:fp32|fp16
 epoch:1
+repeat:25
 --profiler_options:batch_range=[10,20];state=GPU;tracer_option=Default;profile_path=model.profile
 flags:null
+===========================infer_benchmark_params===========================
+numpy_infer_input:3x320x320_2.npy

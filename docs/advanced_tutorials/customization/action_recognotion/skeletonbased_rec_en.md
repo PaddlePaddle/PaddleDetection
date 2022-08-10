@@ -77,7 +77,7 @@ Now, we have available training data (`.npy`) and corresponding annotation files
 
 ## Model Optimization
 ### detection-tracking model optimization
-The performance of action recognition based on skelenton depends on the pre-order detection and tracking models. If the pedestrian location cannot be accurately detected in the actual scene, or it is difficult to correctly assign the person ID between different frames, the performance of the action recognition part will be limited. If you encounter the above problems in actual use, please refer to [Secondary Development of Detection Task](../detection_en.md) and [Secondary Development of Multi-target Tracking Task](../mot_en.md) for detection/track model optimization.
+The performance of action recognition based on skelenton depends on the pre-order detection and tracking models. If the pedestrian location cannot be accurately detected in the actual scene, or it is difficult to correctly assign the person ID between different frames, the performance of the action recognition part will be limited. If you encounter the above problems in actual use, please refer to [Secondary Development of Detection Task](../detection_en.md) and [Secondary Development of Multi-target Tracking Task](../pphuman_mot_en.md) for detection/track model optimization.
 
 ### keypoint model optimization
 As the core feature of the scheme, the skeleton point positioning performance also determines the overall effect of action recognition. If there are obvious errors in the recognition results of the keypoint coordinates of in the actual scene, it is difficult to distinguish the specific actions from the skeleton image composed of the keypoint.
@@ -192,3 +192,9 @@ INFERENCE:
     vertex_nums: 17 # Corresponding to V dimension, please set it accordingly to the number of keypoints
     person_nums: 1 # Corresponding to M dimension
 ```
+
+### Custom Action Output
+In the skeleton-based action recognition, the classification result of the model represents the behavior type of the character in a certain period of time. The type of the corresponding classification is regarded as the action of the current period. Therefore, on the basis of completing the training and deployment of the custom model, the model output is directly used as the final result, and the displayed result of the visualization should be modified.
+
+#### Modify Visual Output
+At present, ID-based action recognition is displayed based on the results of action recognition and predefined category names. For the detail, please refer to [here](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pipeline.py#L1024-L1043). If the custom action needs to be modified to another display name, please modify it accordingly to output the corresponding result.

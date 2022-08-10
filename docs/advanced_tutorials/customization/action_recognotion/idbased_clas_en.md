@@ -54,7 +54,7 @@ data/
 ## Model Optimization
 
 ### Detection-Tracking Model Optimization
-The performance of action recognition based on classification with human id depends on the pre-order detection and tracking models. If the pedestrian location cannot be accurately detected in the actual scene, or it is difficult to correctly assign the person ID between different frames, the performance of the action recognition part will be limited. If you encounter the above problems in actual use, please refer to [Secondary Development of Detection Task](../detection_en.md) and [Secondary Development of Multi-target Tracking Task](../mot_en.md) for detection/track model optimization.
+The performance of action recognition based on classification with human id depends on the pre-order detection and tracking models. If the pedestrian location cannot be accurately detected in the actual scene, or it is difficult to correctly assign the person ID between different frames, the performance of the action recognition part will be limited. If you encounter the above problems in actual use, please refer to [Secondary Development of Detection Task](../detection_en.md) and [Secondary Development of Multi-target Tracking Task](../pphuman_mot_en.md) for detection/track model optimization.
 
 
 ### Half-Body Prediction
@@ -178,3 +178,47 @@ wget https://bj.bcebos.com/v1/paddledet/models/pipeline/infer_configs/PPHGNet_ti
 ```
 
 At this point, this model can be used in PP-Human.
+
+### Custom Action Output
+In the model of action recognition based on classification with human id, the task is defined as a picture-level classification task of corresponding person. The type of the corresponding classification is finally regarded as the action type of the current stage. Therefore, on the basis of completing the training and deployment of the custom model, it is also necessary to convert the classification model results to the final action recognition results as output, and the displayed result of the visualization should be modified.
+
+Please modify the [postprocessing function](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pphuman/action_infer.py#L509).
+
+The core code are:
+```python
+# Get the highest score output of the classification model
+cls_id_res = 1
+cls_score_res = -1.0
+for cls_id in range(len(cls_result[idx])):
+    score = cls_result[idx][cls_id]
+    if score > cls_score_res:
+        cls_id_res = cls_id
+        cls_score_res = score
+
+# Current now,  class 0 is positive, class 1 is negative.
+if cls_id_res == 1 or (cls_id_res == 0 and
+                       cls_score_res < self.threshold):
+    # If the classification result is not the target action or its confidence does not reach the threshold,
+    # determine the action type of the current frame according to the historical results
+    history_cls, life_remain, history_score = self.result_history.get(
+        tracker_id, [1, self.frame_life, -1.0])
+    cls_id_res = history_cls
+    cls_score_res = 1 - cls_score_res
+    life_remain -= 1
+    if life_remain <= 0 and tracker_id in self.result_history:
+        del (self.result_history[tracker_id])
+    elif tracker_id in self.result_history:
+        self.result_history[tracker_id][1] = life_remain
+    else:
+        self.result_history[
+            tracker_id] = [cls_id_res, life_remain, cls_score_res]
+else:
+    # If the classification result belongs to the target action, use the result and record it in the historical result
+    self.result_history[
+        tracker_id] = [cls_id_res, self.frame_life, cls_score_res]
+
+    ...
+```
+
+#### Modify Visual Output
+At present, ID-based action recognition is displayed based on the results of action recognition and predefined category names. For the detail, please refer to [here](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pipeline.py#L1024-L1043). If the custom action needs to be modified to another display name, please modify it accordingly to output the corresponding result.

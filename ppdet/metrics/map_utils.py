@@ -121,9 +121,9 @@ def calc_rbox_iou(pred, gt_rbox):
     pred_rbox = pred_rbox.reshape(-1, 5)
     pred_rbox = pred_rbox.reshape(-1, 5)
     try:
-        from rbox_iou_ops import rbox_iou
+        from ext_op import rbox_iou
     except Exception as e:
-        print("import custom_ops error, try install rbox_iou_ops " \
+        print("import custom_ops error, try install ext_op " \
                   "following ppdet/ext_op/README.md", e)
         sys.stdout.flush()
         sys.exit(-1)

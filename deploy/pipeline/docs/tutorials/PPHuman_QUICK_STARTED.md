@@ -69,7 +69,7 @@ PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模�
 
 ## 配置文件说明
 
-PP-Human相关配置位于```deploy/pipeline/config/infer_cfg_pphuman.yml```中，存放模型路径，完成不同功能需要设置不同的任务类型
+PP-Human相关配置位于```deploy/pipeline/config/infer_cfg_pphuman.yml```中，存放模型路径，该配置文件中包含了目前PP-Human支持的所有功能。如果想要查看某个单一功能的配置，请参见```deploy/pipeline/config/examples/```中相关配置。此外，配置文件中的内容可以通过```-o```命令行参数修改，如修改属性的模型目录，则可通过```-o ATTR.model_dir="DIR_PATH"```进行设置。
 
 功能及任务类型对应表单如下：
 
@@ -90,20 +90,17 @@ MOT:
   model_dir: output_inference/mot_ppyoloe_l_36e_pipeline/
   tracker_config: deploy/pipeline/config/tracker_config.yml
   batch_size: 1
-  basemode: "idbased"
   enable: True
 
 ATTR:
   model_dir: output_inference/strongbaseline_r50_30e_pa100k/
   batch_size: 8
-  basemode: "idbased"
   enable: True
 ```
 
 **注意：**
 
-- 如果用户需要实现不同任务，可以在配置文件对应enable选项设置为True, 其basemode类型会在代码中开启依赖的基础能力模型，比如跟踪模型。
-- 如果用户仅需要修改模型文件路径，可以在命令行中加入 `--model_dir det=ppyoloe/` 即可，也可以手动修改配置文件中的相应模型路径，详细说明参考下方参数说明文档。
+- 如果用户需要实现不同任务，可以在配置文件对应enable选项设置为True。
 
 
 ## 预测部署
@@ -117,7 +114,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 # 行人跟踪，指定配置文件路径，模型路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
 # 命令行中指定的模型路径优先级高于配置文件
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
 
 # 行人属性识别，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的ATTR部分enable设置为```True```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
@@ -127,6 +124,16 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 # 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的REID部分enable设置为```True```
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
+
+# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，直接使用```deploy/pipeline/config/examples/infer_cfg_reid.yml```配置文件，并利用```-o```命令修改跟踪模型路径
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_reid.yml --video_dir=mtmct_dir/ -o MOT.model_dir="mot_model_dir" --device=gpu [--run_mode trt_fp16]
+
+```
+
+对rtsp流的支持，video_file后面的视频地址更换为rtsp流地址，示例如下：
+```
+# 行人属性识别，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的ATTR部分enable设置为```True```
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu [--run_mode trt_fp16]
 ```
 
 ### 参数说明
@@ -134,10 +141,10 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 | 参数 | 是否必须|含义 |
 |-------|-------|----------|
 | --config | Yes | 配置文件路径 |
-| --model_dir | Option | PP-Human中各任务模型路径，优先级高于配置文件, 例如`--model_dir det=better_det/ attr=better_attr/`|
+| -o | Option | 覆盖配置文件中对应的配置  |
 | --image_file | Option | 需要预测的图片 |
 | --image_dir  | Option |  要预测的图片文件夹路径   |
-| --video_file | Option | 需要预测的视频 |
+| --video_file | Option | 需要预测的视频，或者rtsp流地址 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4|
 | --device | Option | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
 | --output_dir | Option|可视化结果保存的根目录，默认为output/|
@@ -159,24 +166,24 @@ PP-Human v2整体方案如下图所示:
 
 ### 行人检测
 - 采用PP-YOLOE L 作为目标检测模型
-- 详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/)和[检测跟踪文档](mot.md)
+- 详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/)和[检测跟踪文档](pphuman_mot.md)
 
 ### 行人跟踪
 - 采用SDE方案完成行人跟踪
 - 检测模型使用PP-YOLOE L(高精度)和S(轻量级)
 - 跟踪模块采用OC-SORT方案
-- 详细文档参考[OC-SORT](../../../../configs/mot/ocsort)和[检测跟踪文档](mot.md)
+- 详细文档参考[OC-SORT](../../../../configs/mot/ocsort)和[检测跟踪文档](pphuman_mot.md)
 
 ### 跨镜行人跟踪
 - 使用PP-YOLOE + OC-SORT得到单镜头多目标跟踪轨迹
 - 使用ReID（StrongBaseline网络）对每一帧的检测结果提取特征
 - 多镜头轨迹特征进行匹配，得到跨镜头跟踪结果
-- 详细文档参考[跨镜跟踪](mtmct.md)
+- 详细文档参考[跨镜跟踪](pphuman_mtmct.md)
 
 ### 属性识别
 - 使用PP-YOLOE + OC-SORT跟踪人体
 - 使用StrongBaseline（多分类模型）完成识别属性，主要属性包括年龄、性别、帽子、眼睛、上衣下衣款式、背包等
-- 详细文档参考[属性识别](attribute.md)
+- 详细文档参考[属性识别](pphuman_attribute.md)
 
 ### 行为识别：
 - 提供四种行为识别方案
@@ -184,4 +191,4 @@ PP-Human v2整体方案如下图所示:
 - 2. 基于图像分类的行为识别，例如打电话识别
 - 3. 基于检测的行为识别，例如吸烟识别
 - 4. 基于视频分类的行为识别，例如打架识别
-- 详细文档参考[行为识别](action.md)
+- 详细文档参考[行为识别](pphuman_action.md)

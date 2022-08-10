@@ -1,4 +1,4 @@
-[English](action_en.md) | 简体中文
+[English](pphuman_action_en.md) | 简体中文
 
 # PP-Human行为识别模块
 
@@ -46,7 +46,6 @@ SKELETON_ACTION: # 基于骨骼点的行为识别模型配置
   max_frames: 50 # 动作片段对应的帧数。在行人ID对应时序骨骼点结果时达到该帧数后，会通过行为识别模型判断该段序列的动作类型。与训练设置一致时效果最佳。
   display_frames: 80 # 显示帧数。当预测结果为摔倒时，在对应人物ID中显示状态的持续时间。
   coord_size: [384, 512] # 坐标统一缩放到的尺度大小。与训练设置一致时效果最佳。
-  basemode: "skeletonbased" # 模型基于的路线分支，是否需要skeleton作为输入
   enable: False # 是否开启该功能
 ```
 
@@ -68,7 +67,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
                                                    --device=gpu \
                                                    --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
 ```
-4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
+4. 启动命令中的完整参数说明，请参考[参数说明](./PPHuman_QUICK_STARTED.md)。
 
 
 ### 方案说明
@@ -112,7 +111,6 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 ID_BASED_CLSACTION: # 基于分类的行为识别模型配置
   model_dir: output_inference/PPHGNet_tiny_calling_halfbody # 模型所在路径
   batch_size: 8 # 预测批大小
-  basemode: "idbased" # 模型基于的路线分支，是否基于跟踪获得的ID信息
   threshold: 0.45 #识别为对应行为的阈值
   display_frames: 80 # 显示帧数。当识别到对应动作时，在对应人物ID中显示状态的持续时间。
   enable: False # 是否开启该功能
@@ -127,7 +125,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu
 ```
-4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
+4. 启动命令中的完整参数说明，请参考[参数说明](./PPHuman_QUICK_STARTED.md)。
 
 ### 方案说明
 1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC-SORT，详细文档参考[OC-SORT](../../../../configs/mot/ocsort)。
@@ -168,7 +166,6 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 ID_BASED_DETACTION: # 基于检测的行为识别模型配置
   model_dir: output_inference/ppyoloe_crn_s_80e_smoking_visdrone # 模型所在路径
   batch_size: 8  # 预测批大小
-  basemode: "idbased" # 模型基于的路线分支，是否基于跟踪获得的ID信息
   threshold: 0.4  # 识别为对应行为的阈值
   display_frames: 80 # 显示帧数。当识别到对应动作时，在对应人物ID中显示状态的持续时间。
   enable: False # 是否开启该功能
@@ -183,7 +180,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu
 ```
-4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
+4. 启动命令中的完整参数说明，请参考[参数说明](./PPHuman_QUICK_STARTED.md)。
 
 ### 方案说明
 1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC-SORT，详细文档参考[OC-SORT](../../../../configs/mot/ocsort)。
@@ -202,7 +199,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
   <img src="https://user-images.githubusercontent.com/22989727/178769370-03ab1965-cfd1-401b-9902-82620a06e43c.gif" width='1000'/>
 </div>
 
-具体使用请参照[PP-Human检测跟踪模块](mot.md)的`5. 区域闯入判断和计数`。
+具体使用请参照[PP-Human检测跟踪模块](pphuman_mot.md)的`5. 区域闯入判断和计数`。
 
 ### 方案说明
 1. 使用多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC-SORT，详细文档参考[OC-SORT](../../../../configs/mot/ocsort)。
@@ -242,7 +239,6 @@ VIDEO_ACTION:  # 基于视频分类的行为识别模型配置
   sample_freq: 7 # 抽样频率，即间隔多少帧抽样一帧
   short_size: 340 # 视频帧尺度变换最小边的长度
   target_size: 320 # 目标视频帧的大小
-  basemode: "videobased"  # 模型基于的路线分支，是否直接使用视频进行输入
   enable: False # 是否开启该功能
 ```
 
@@ -255,7 +251,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu
 ```
-4. 启动命令中的完整参数说明，请参考[参数说明](./QUICK_STARTED.md)。
+4. 启动命令中的完整参数说明，请参考[参数说明](./PPHuman_QUICK_STARTED.md)。
 
 
 ### 方案说明
