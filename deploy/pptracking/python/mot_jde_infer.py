@@ -61,6 +61,7 @@ class JDE_Detector(Detector):
         save_mot_txts (bool): Whether to save tracking results (txt), default as False
         draw_center_traj (bool): Whether drawing the trajectory of center, default as False
         secs_interval (int): The seconds interval to count after tracking, default as 10
+        skip_frame_num (int): Skip frame num to get faster MOT results, default as 1
         do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
             or getting out from the entrance, default as False，only support single class
             counting in MOT.
@@ -93,6 +94,7 @@ class JDE_Detector(Detector):
                  save_mot_txts=False,
                  draw_center_traj=False,
                  secs_interval=10,
+                 skip_frame_num=1,
                  do_entrance_counting=False,
                  do_break_in_counting=False,
                  region_type='horizontal',
@@ -114,6 +116,7 @@ class JDE_Detector(Detector):
         self.save_mot_txts = save_mot_txts
         self.draw_center_traj = draw_center_traj
         self.secs_interval = secs_interval
+        self.skip_frame_num = skip_frame_num
         self.do_entrance_counting = do_entrance_counting
         self.do_break_in_counting = do_break_in_counting
         self.region_type = region_type
@@ -309,7 +312,7 @@ class JDE_Detector(Detector):
         fourcc = cv2.VideoWriter_fourcc(*video_format)
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
 
-        frame_id = 1
+        frame_id = 0
         timer = MOTTimer()
         results = defaultdict(list)  # support single class and multi classes
         num_classes = self.num_classes
@@ -348,6 +351,8 @@ class JDE_Detector(Detector):
                         self.region_type))
 
         video_fps = fps
+        if self.skip_frame_num > 1:
+            online_tlwhs_pre, online_scores_pre, online_ids_pre = None, None, None
 
         while (1):
             ret, frame = capture.read()
@@ -355,12 +360,25 @@ class JDE_Detector(Detector):
                 break
             if frame_id % 10 == 0:
                 print('Tracking frame: %d' % (frame_id))
-            frame_id += 1
 
             timer.tic()
-            seq_name = video_out_name.split('.')[0]
-            mot_results = self.predict_image(
-                [frame], visual=False, seq_name=seq_name)
+            if self.skip_frame_num > 1:
+                if frame_id % self.skip_frame_num == 0:
+                    seq_name = video_out_name.split('.')[0]
+                    mot_results = self.predict_image(
+                        [frame], visual=False, seq_name=seq_name)
+                    # bs=1 in MOT model
+                    online_tlwhs, online_scores, online_ids = mot_results[0]
+                    if self.skip_frame_num > 1:
+                        online_tlwhs_pre = online_tlwhs
+                        online_scores_pre = online_scores
+                        online_ids_pre = online_ids
+            else:
+                seq_name = video_out_name.split('.')[0]
+                mot_results = self.predict_image(
+                    [frame], visual=False, seq_name=seq_name)
+                # bs=1 in MOT model
+                online_tlwhs, online_scores, online_ids = mot_results[0]
             timer.toc()
 
             online_tlwhs, online_scores, online_ids = mot_results[0]
@@ -400,6 +418,7 @@ class JDE_Detector(Detector):
                 cv2.imshow('Mask Detection', im)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
+            frame_id += 1
 
         if self.save_mot_txts:
             result_filename = os.path.join(
@@ -439,6 +458,7 @@ def main():
         save_mot_txts=FLAGS.save_mot_txts,
         draw_center_traj=FLAGS.draw_center_traj,
         secs_interval=FLAGS.secs_interval,
+        skip_frame_num=FLAGS.skip_frame_num,
         do_entrance_counting=FLAGS.do_entrance_counting,
         do_break_in_counting=FLAGS.do_break_in_counting,
         region_type=FLAGS.region_type,

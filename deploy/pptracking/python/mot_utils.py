@@ -138,6 +138,11 @@ def argsparser():
         default=True,
         help='whether to use darkpose to get better keypoint position predict ')
     parser.add_argument(
+        '--skip_frame_num',
+        type=int,
+        default=1,
+        help='Skip frames to speed up the process of getting mot results.')
+    parser.add_argument(
         "--do_entrance_counting",
         action='store_true',
         help="Whether counting the numbers of identifiers entering "

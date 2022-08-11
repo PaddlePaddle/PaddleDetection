@@ -10,6 +10,7 @@ MOT:
   model_dir: output_inference/mot_ppyoloe_l_36e_ppvehicle/
   tracker_config: deploy/pipeline/config/tracker_config.yml
   batch_size: 1
+  skip_frame_num: 1
   enable: False
 
 VEHICLE_PLATE:

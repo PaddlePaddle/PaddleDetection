@@ -539,6 +539,7 @@ class PipePredictor(object):
                 model_dir = model_dir_dict['MOT']
                 tracker_config = mot_cfg['tracker_config']
                 batch_size = mot_cfg['batch_size']
+                skip_frame_num = mot_cfg.get('skip_frame_num', 1)
                 basemode = self.basemode['MOT']
                 self.modebase[basemode] = True
                 self.mot_predictor = SDE_Detector(
@@ -553,6 +554,7 @@ class PipePredictor(object):
                     trt_calib_mode,
                     cpu_threads,
                     enable_mkldnn,
+                    skip_frame_num=skip_frame_num,
                     draw_center_traj=draw_center_traj,
                     secs_interval=secs_interval,
                     do_entrance_counting=do_entrance_counting,
@@ -725,7 +727,7 @@ class PipePredictor(object):
         if self.with_video_action:
             short_size = self.cfg["VIDEO_ACTION"]["short_size"]
             scale = ShortSizeScale(short_size)
-
+        res_previous = None
         while (1):
             if frame_id % 10 == 0:
                 print('frame id: ', frame_id)
@@ -739,8 +741,18 @@ class PipePredictor(object):
                 if frame_id > self.warmup_frame:
                     self.pipe_timer.total_time.start()
                     self.pipe_timer.module_time['mot'].start()
-                res = self.mot_predictor.predict_image(
-                    [copy.deepcopy(frame_rgb)], visual=False)
+
+                mot_skip_frame_num = self.mot_predictor.skip_frame_num
+                if mot_skip_frame_num > 1:
+                    if frame_id % mot_skip_frame_num == 0:
+                        res = self.mot_predictor.predict_image(
+                            [copy.deepcopy(frame_rgb)], visual=False)
+                        res_previous = res
+                    else:
+                        res = res_previous
+                else:
+                    res = self.mot_predictor.predict_image(
+                        [copy.deepcopy(frame_rgb)], visual=False)
 
                 if frame_id > self.warmup_frame:
                     self.pipe_timer.module_time['mot'].end()
