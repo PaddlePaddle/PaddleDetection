@@ -92,6 +92,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
             if key == 'Resize':
                 if int(image_shape[1]) != -1:
                     value['target_size'] = image_shape[1:]
+                value['interp'] = value.get('interp', 1)  # cv2.INTER_LINEAR
             if fuse_normalize and key == 'NormalizeImage':
                 continue
             p.update(value)
