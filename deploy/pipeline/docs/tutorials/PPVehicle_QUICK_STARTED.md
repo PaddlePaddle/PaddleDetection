@@ -41,6 +41,24 @@ pip install -r requirements.txt
 
 ## 模型下载
 
+PP-Vehicle提供了目标检测、属性识别、行为识别、ReID预训练模型，以实现不同使用场景，用户可以直接下载使用
+
+| 任务            | 端到端速度（ms）|  模型方案  |  模型体积 |
+| :---------:     | :-------:  |  :------: |:------: |
+|  车辆检测（高精度）  | 25.1ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) | 182M |  
+|  车辆检测（轻量级）  | 16.2ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip) | 27M |
+|  车辆跟踪（高精度）  | 31.8ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) | 182M |
+|  车辆跟踪（轻量级）  | 21.0ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip) | 27M |
+|  闯入识别  |   31.8ms | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) | 多目标跟踪：182M |
+
+下载模型后，解压至`./output_inference`文件夹。
+
+在配置文件中，模型路径默认为模型的下载路径，如果用户不修改，则在推理时会自动下载对应的模型。
+
+**注意：**
+
+- 检测跟踪模型精度为公开数据集BDD100K-MOT和UA-DETRAC整合后的联合数据集PPVehicle的结果，具体参照[ppvehicle](../../../../configs/ppvehicle)
+- 预测速度为T4下，开启TensorRT FP16的效果, 模型预测速度包含数据预处理、模型预测、后处理全流程
 
 ## 配置文件说明
 
@@ -57,7 +75,22 @@ PP-Vehicle相关配置位于```deploy/pipeline/config/infer_cfg_ppvehicle.yml```
 例如基于视频输入的属性识别，任务类型包含多目标跟踪和属性识别，具体配置如下：
 
 ```
+crop_thresh: 0.5
+visual: True
+warmup_frame: 50
 
+MOT:
+  model_dir: output_inference/mot_ppyoloe_l_36e_ppvehicle/
+  tracker_config: deploy/pipeline/config/tracker_config.yml
+  batch_size: 1
+  enable: True
+
+VEHICLE_ATTR:
+  model_dir: output_inference/vehicle_attribute_infer/
+  batch_size: 8
+  color_threshold: 0.5
+  type_threshold: 0.5
+  enable: True
 ```
 
 **注意：**
@@ -95,6 +128,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 | 参数 | 是否必须|含义 |
 |-------|-------|----------|
 | --config | Yes | 配置文件路径 |
+| -o | Option | 覆盖配置文件中对应的配置  |
 | --model_dir | Option | 各任务模型路径，优先级高于配置文件, 例如`--model_dir det=better_det/ attr=better_attr/`|
 | --image_file | Option | 需要预测的图片 |
 | --image_dir  | Option |  要预测的图片文件夹路径   |
