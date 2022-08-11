@@ -1,6 +1,6 @@
 
 Global:
-  reader_config: configs/yolov5_reader.yml
+  reader_config: configs/yolov7_reader.yml
   input_list: ['image', 'scale_factor']
   arch: YOLO
   Evaluation: True
