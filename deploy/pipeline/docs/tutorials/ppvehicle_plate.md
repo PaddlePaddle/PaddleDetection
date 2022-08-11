@@ -3,12 +3,12 @@
 
 车牌识别，在车辆应用场景中有着非常广泛的应用，起到车辆身份识别的作用，比如车辆出入口自动闸机。PP-Vehicle中提供了车辆的跟踪及其车牌识别的功能，并提供模型下载：
 
-| 任务                 | 算法 | 精度 | 预测速度(ms) |下载链接                                                                               |
+| 任务                 | 算法 | 精度 | 预测速度(ms) |预测模型下载链接                                                                               |
 |:---------------------|:---------:|:------:|:------:| :---------------------------------------------------------------------------------: |
-| 车辆检测/跟踪 |  PP-YOLOE-l | mAP: 63.9 | - |[下载链接](待定) |
+| 车辆检测/跟踪 |  PP-YOLOE-l | mAP: 63.9 | - |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) |
 | 车牌检测模型    |  ch_PP-OCRv3_det  |  hmean: 0.979  | - | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz) |
 | 车牌识别模型    |  ch_PP-OCRv3_rec  |  acc: 0.773  | - | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz) |
-1. 跟踪模型使用5个数据集(BDD100K-DET、BDD100K-MOT、UA-DETRAC、PPVehicle9cls、PPVehicle)整合训练。测试在 （待定）数据集测试。
+1. 跟踪模型使用PPVehicle数据集（整合了BDD100K-MOT和UA-DETRAC），是将BDD100K-MOT中的car, truck, bus, van和UA-DETRAC中的car, bus, van都合并为1类vehicle(1)后的数据集。
 2. 车牌检测、识别模型使用PP-OCRv3模型在CCPD2019、CCPD2020混合车牌数据集上fine-tune得到。
 
 ## 使用方法
