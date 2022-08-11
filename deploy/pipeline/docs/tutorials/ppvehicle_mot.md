@@ -55,9 +55,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
                                                    --device=gpu
 ```
 4. 若修改模型路径，有以下两种方式：
-
-    - ```./deploy/pipeline/config/infer_cfg_ppvehicle.yml```下可以配置不同模型路径，检测和跟踪模型分别对应`DET`和`MOT`字段，修改对应字段下的路径为实际期望的路径即可。
-    - 命令行中增加`--model_dir`修改模型路径：
+    - 方法一：```./deploy/pipeline/config/infer_cfg_ppvehicle.yml```下可以配置不同模型路径，检测和跟踪模型分别对应`DET`和`MOT`字段，修改对应字段下的路径为实际期望的路径即可。
+    - 方法二：命令行中--config配置项后面增加`-o MOT.model_dir=[YOUR_DETMODEL_PATH]`修改模型路径。
 ```python
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
                                                    --video_file=test_video.mp4 \
@@ -65,7 +64,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
                                                    --region_type=horizontal \
                                                    --do_entrance_counting \
                                                    --draw_center_traj \
-                                                   --model_dir det=ppyoloe/
+                                                   -o MOT.model_dir=ppyoloe/
 
 ```
 **注意:**
@@ -98,7 +97,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 【效果展示】
 
 <div width="1000" align="center">
-  <img src="../images/mot.gif"/>
+  <img src="../images/mot_vehicle.gif"/>
 </div>
 
 ## 方案说明

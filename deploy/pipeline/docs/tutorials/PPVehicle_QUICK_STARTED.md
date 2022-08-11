@@ -41,7 +41,7 @@ pip install -r requirements.txt
 
 ## 模型下载
 
-PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模型，以实现不同使用场景，用户可以直接下载使用
+PP-Vehicle提供了目标检测、属性识别、行为识别、ReID预训练模型，以实现不同使用场景，用户可以直接下载使用
 
 | 任务            | 端到端速度（ms）|  模型方案  |  模型体积 |
 | :---------:     | :-------:  |  :------: |:------: |
@@ -76,8 +76,8 @@ PP-Vehicle相关配置位于```deploy/pipeline/config/infer_cfg_ppvehicle.yml```
 
 ```
 crop_thresh: 0.5
-attr_thresh: 0.5
 visual: True
+warmup_frame: 50
 
 MOT:
   model_dir: output_inference/mot_ppyoloe_l_36e_ppvehicle/
@@ -85,9 +85,11 @@ MOT:
   batch_size: 1
   enable: True
 
-ATTR:
-  model_dir: output_inference/strongbaseline_r50_30e_pa100k/
+VEHICLE_ATTR:
+  model_dir: output_inference/vehicle_attribute_infer/
   batch_size: 8
+  color_threshold: 0.5
+  type_threshold: 0.5
   enable: True
 ```
 
