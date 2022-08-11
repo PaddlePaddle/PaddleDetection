@@ -180,7 +180,6 @@ class COCODataSet(DetDataset):
                 gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)
                 if is_rbox_anno:
                     gt_rbox = np.zeros((num_bbox, 5), dtype=np.float32)
-                gt_theta = np.zeros((num_bbox, 1), dtype=np.int32)
                 gt_class = np.zeros((num_bbox, 1), dtype=np.int32)
                 is_crowd = np.zeros((num_bbox, 1), dtype=np.int32)
                 gt_poly = [None] * num_bbox

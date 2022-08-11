@@ -492,3 +492,72 @@ def get_border(border, size):
     while size - border // i <= border // i:
         i *= 2
     return border // i
+
+
+def norm_angle(angle, range=[-np.pi / 4, np.pi]):
+    return (angle - range[0]) % range[1] + range[0]
+
+
+def poly2rbox_le135(poly):
+    """convert poly to rbox [-pi / 4, 3 * pi / 4]
+
+    Args:
+        poly: [x1, y1, x2, y2, x3, y3, x4, y4]
+
+    Returns:
+        rbox: [cx, cy, w, h, angle]
+    """
+    poly = np.array(poly[:8], dtype=np.float32)
+
+    pt1 = (poly[0], poly[1])
+    pt2 = (poly[2], poly[3])
+    pt3 = (poly[4], poly[5])
+    pt4 = (poly[6], poly[7])
+
+    edge1 = np.sqrt((pt1[0] - pt2[0]) * (pt1[0] - pt2[0]) + (pt1[1] - pt2[1]) *
+                    (pt1[1] - pt2[1]))
+    edge2 = np.sqrt((pt2[0] - pt3[0]) * (pt2[0] - pt3[0]) + (pt2[1] - pt3[1]) *
+                    (pt2[1] - pt3[1]))
+
+    width = max(edge1, edge2)
+    height = min(edge1, edge2)
+
+    rbox_angle = 0
+    if edge1 > edge2:
+        rbox_angle = np.arctan2(float(pt2[1] - pt1[1]), float(pt2[0] - pt1[0]))
+    elif edge2 >= edge1:
+        rbox_angle = np.arctan2(float(pt4[1] - pt1[1]), float(pt4[0] - pt1[0]))
+
+    rbox_angle = norm_angle(rbox_angle)
+
+    x_ctr = float(pt1[0] + pt3[0]) / 2
+    y_ctr = float(pt1[1] + pt3[1]) / 2
+    return x_ctr, y_ctr, width, height, rbox_angle
+
+
+def poly2rbox_oc(poly):
+    """convert poly to rbox (0, pi / 2]
+
+    Args:
+        poly: [x1, y1, x2, y2, x3, y3, x4, y4]
+
+    Returns:
+        rbox: [cx, cy, w, h, angle]
+    """
+    points = np.array(poly, dtype=np.float32).reshape((-1, 2))
+    (cx, cy), (w, h), angle = cv2.minAreaRect(points)
+    # using the new OpenCV Rotated BBox definition since 4.5.1
+    # if angle < 0, opencv is older than 4.5.1, angle is in [-90, 0)
+    if angle < 0:
+        angle += 90
+        w, h = h, w
+
+    # convert angle to [0, 90)
+    if angle == -0.0:
+        angle = 0.0
+    if angle == 90.0:
+        angle = 0.0
+        w, h = h, w
+
+    angle = angle / 180 * np.pi
+    return cx, cy, w, h, angle
