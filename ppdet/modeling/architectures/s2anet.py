@@ -26,26 +26,21 @@ __all__ = ['S2ANet']
 @register
 class S2ANet(BaseArch):
     __category__ = 'architecture'
-    __inject__ = [
-        's2anet_head',
-        's2anet_bbox_post_process',
-    ]
+    __inject__ = ['head']
 
-    def __init__(self, backbone, neck, s2anet_head, s2anet_bbox_post_process):
+    def __init__(self, backbone, neck, head):
         """
         S2ANet, see https://arxiv.org/pdf/2008.09397.pdf
 
         Args:
             backbone (object): backbone instance
             neck (object): `FPN` instance
-            s2anet_head (object): `S2ANetHead` instance
-            s2anet_bbox_post_process (object): `S2ANetBBoxPostProcess` instance
+            head (object): `Head` instance
         """
         super(S2ANet, self).__init__()
         self.backbone = backbone
         self.neck = neck
-        self.s2anet_head = s2anet_head
-        self.s2anet_bbox_post_process = s2anet_bbox_post_process
+        self.s2anet_head = head
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -55,42 +50,28 @@ class S2ANet(BaseArch):
 
         out_shape = neck and neck.out_shape or backbone.out_shape
         kwargs = {'input_shape': out_shape}
-        s2anet_head = create(cfg['s2anet_head'], **kwargs)
-        s2anet_bbox_post_process = create(cfg['s2anet_bbox_post_process'],
-                                          **kwargs)
+        head = create(cfg['head'], **kwargs)
 
-        return {
-            'backbone': backbone,
-            'neck': neck,
-            "s2anet_head": s2anet_head,
-            "s2anet_bbox_post_process": s2anet_bbox_post_process,
-        }
+        return {'backbone': backbone, 'neck': neck, "head": head}
 
     def _forward(self):
         body_feats = self.backbone(self.inputs)
         if self.neck is not None:
             body_feats = self.neck(body_feats)
-        self.s2anet_head(body_feats)
         if self.training:
-            loss = self.s2anet_head.get_loss(self.inputs)
-            total_loss = paddle.add_n(list(loss.values()))
-            loss.update({'loss': total_loss})
+            loss = self.s2anet_head(body_feats, self.inputs)
             return loss
         else:
+            head_outs = self.s2anet_head(body_feats)
+            # post_process
+            bboxes, bbox_num = self.s2anet_head.get_bboxes(head_outs)
+            # rescale the prediction back to origin image
             im_shape = self.inputs['im_shape']
             scale_factor = self.inputs['scale_factor']
-            nms_pre = self.s2anet_bbox_post_process.nms_pre
-            pred_scores, pred_bboxes = self.s2anet_head.get_prediction(nms_pre)
-
-            # post_process
-            pred_bboxes, bbox_num = self.s2anet_bbox_post_process(pred_scores,
-                                                                  pred_bboxes)
-            # rescale the prediction back to origin image
-            pred_bboxes = self.s2anet_bbox_post_process.get_pred(
-                pred_bboxes, bbox_num, im_shape, scale_factor)
-
+            bboxes = self.s2anet_head.get_pred(bboxes, bbox_num, im_shape,
+                                               scale_factor)
             # output
-            output = {'bbox': pred_bboxes, 'bbox_num': bbox_num}
+            output = {'bbox': bboxes, 'bbox_num': bbox_num}
             return output
 
     def get_loss(self, ):
