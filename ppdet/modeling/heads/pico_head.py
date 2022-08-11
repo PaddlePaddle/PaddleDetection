@@ -155,6 +155,8 @@ class PicoFeat(nn.Layer):
             x = F.leaky_relu(x)
         elif self.act == "hard_swish":
             x = F.hardswish(x)
+        elif self.act == "relu6":
+            x = F.relu6(x)
         return x
 
     def forward(self, fpn_feat, stage_idx):
