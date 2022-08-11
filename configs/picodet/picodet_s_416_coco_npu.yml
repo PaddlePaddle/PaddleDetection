@@ -1,0 +1,106 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/picodet_v2.yml',
+  '_base_/optimizer_300e.yml',
+]
+
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPLCNet_x0_75_pretrained.pdparams
+weights: output/picodet_s_416_coco/best_model
+find_unused_parameters: True
+keep_best_weight: True
+use_ema: True
+epoch: 300
+snapshot_epoch: 10
+
+PicoDet:
+  backbone: LCNet
+  neck: CSPPAN
+  head: PicoHeadV2
+
+LCNet:
+  scale: 0.75
+  feature_maps: [3, 4, 5]
+  act: relu6
+
+CSPPAN:
+  out_channels: 96
+  use_depthwise: True
+  num_csp_blocks: 1
+  num_features: 4
+  act: relu6
+
+PicoHeadV2:
+  conv_feat:
+    name: PicoFeat
+    feat_in: 96
+    feat_out: 96
+    num_convs: 4
+    num_fpn_stride: 4
+    norm_type: bn
+    share_cls_reg: True
+    use_se: True
+    act: relu6
+  feat_in_chan: 96
+  act: relu6
+
+LearningRate:
+  base_lr: 0.2
+  schedulers:
+  - !CosineDecay
+    max_epochs: 300
+    min_lr_ratio: 0.08
+    last_plateau_epochs: 30
+  - !ExpWarmup
+    epochs: 2
+
+worker_num: 6
+eval_height: &eval_height 416
+eval_width: &eval_width 416
+eval_size: &eval_size [*eval_height, *eval_width]
+
+TrainReader:
+  sample_transforms:
+  - Decode: {}
+  - Mosaic:
+      prob: 0.6
+      input_dim: [640, 640]
+      degrees: [-10, 10]
+      scale: [0.1, 2.0]
+      shear: [-2, 2]
+      translate: [-0.1, 0.1]
+      enable_mixup: True
+  - AugmentHSV: {is_bgr: False, hgain: 5, sgain: 30, vgain: 30}
+  - RandomFlip: {prob: 0.5}
+  batch_transforms:
+  - BatchRandomResize: {target_size: [320, 352, 384, 416, 448, 480, 512], random_size: True, random_interp: True, keep_ratio: False}
+  - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+  - Permute: {}
+  - PadGT: {}
+  batch_size: 40
+  shuffle: true
+  drop_last: true
+  mosaic_epoch: 180
+
+
+EvalReader:
+  sample_transforms:
+  - Decode: {}
+  - Resize: {interp: 2, target_size: *eval_size, keep_ratio: False}
+  - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+  - Permute: {}
+  batch_transforms:
+  - PadBatch: {pad_to_stride: 32}
+  batch_size: 8
+  shuffle: false
+
+
+TestReader:
+  inputs_def:
+    image_shape: [1, 3, *eval_height, *eval_width]
+  sample_transforms:
+  - Decode: {}
+  - Resize: {interp: 2, target_size: *eval_size, keep_ratio: False}
+  - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+  - Permute: {}
+  batch_size: 1
