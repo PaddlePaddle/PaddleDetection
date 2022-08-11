@@ -41,7 +41,6 @@ import threading
 MUTEX = threading.Lock()
 
 from ppdet.core.workspace import serializable
-from ppdet.modeling import bbox_utils
 from ..reader import Compose
 
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
@@ -657,18 +656,6 @@ class RandomFlip(BaseOperator):
         bbox[:, 2] = width - oldx1
         return bbox
 
-    def apply_rbox(self, bbox, width):
-        oldx1 = bbox[:, 0].copy()
-        oldx2 = bbox[:, 2].copy()
-        oldx3 = bbox[:, 4].copy()
-        oldx4 = bbox[:, 6].copy()
-        bbox[:, 0] = width - oldx1
-        bbox[:, 2] = width - oldx2
-        bbox[:, 4] = width - oldx3
-        bbox[:, 6] = width - oldx4
-        bbox = [bbox_utils.get_best_begin_point_single(e) for e in bbox]
-        return bbox
-
     def apply(self, sample, context=None):
         """Filp the image and bounding box.
         Operators:
@@ -699,10 +686,6 @@ class RandomFlip(BaseOperator):
 
             if 'gt_segm' in sample and sample['gt_segm'].any():
                 sample['gt_segm'] = sample['gt_segm'][:, :, ::-1]
-
-            if 'gt_rbox2poly' in sample and sample['gt_rbox2poly'].any():
-                sample['gt_rbox2poly'] = self.apply_rbox(sample['gt_rbox2poly'],
-                                                         width)
 
             sample['flipped'] = True
             sample['image'] = im
@@ -840,16 +823,6 @@ class Resize(BaseOperator):
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'],
                                                 [im_scale_x, im_scale_y],
                                                 [resize_w, resize_h])
-
-        # apply rbox
-        if 'gt_rbox2poly' in sample:
-            if np.array(sample['gt_rbox2poly']).shape[1] != 8:
-                logger.warning(
-                    "gt_rbox2poly's length shoule be 8, but actually is {}".
-                    format(len(sample['gt_rbox2poly'])))
-            sample['gt_rbox2poly'] = self.apply_bbox(sample['gt_rbox2poly'],
-                                                     [im_scale_x, im_scale_y],
-                                                     [resize_w, resize_h])
 
         # apply polygon
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
@@ -2112,33 +2085,6 @@ class Poly2Mask(BaseOperator):
 
 
 @register_op
-class Rbox2Poly(BaseOperator):
-    """
-    Convert rbbox format to poly format.
-    """
-
-    def __init__(self):
-        super(Rbox2Poly, self).__init__()
-
-    def apply(self, sample, context=None):
-        assert 'gt_rbox' in sample
-        assert sample['gt_rbox'].shape[1] == 5
-        rrects = sample['gt_rbox']
-        x_ctr = rrects[:, 0]
-        y_ctr = rrects[:, 1]
-        width = rrects[:, 2]
-        height = rrects[:, 3]
-        x1 = x_ctr - width / 2.0
-        y1 = y_ctr - height / 2.0
-        x2 = x_ctr + width / 2.0
-        y2 = y_ctr + height / 2.0
-        sample['gt_bbox'] = np.stack([x1, y1, x2, y2], axis=1)
-        polys = bbox_utils.rbox2poly_np(rrects)
-        sample['gt_rbox2poly'] = polys
-        return sample
-
-
-@register_op
 class AugmentHSV(BaseOperator):
     """ 
     Augment the SV channel of image data.
@@ -2455,16 +2401,6 @@ class RandomResizeCrop(BaseOperator):
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'],
                                                 [im_scale_x, im_scale_y],
                                                 [resize_w, resize_h])
-
-        # apply rbox
-        if 'gt_rbox2poly' in sample:
-            if np.array(sample['gt_rbox2poly']).shape[1] != 8:
-                logger.warn(
-                    "gt_rbox2poly's length shoule be 8, but actually is {}".
-                    format(len(sample['gt_rbox2poly'])))
-            sample['gt_rbox2poly'] = self.apply_bbox(sample['gt_rbox2poly'],
-                                                     [im_scale_x, im_scale_y],
-                                                     [resize_w, resize_h])
 
         # apply polygon
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
