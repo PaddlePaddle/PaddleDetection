@@ -1,3 +1,4 @@
+[English](ppvehicle_attribute_en.md) | 简体中文
 
 # PP-Vehicle属性识别模块
 
@@ -46,7 +47,7 @@
 
 ### 配置项说明
 
-配置文件中与属性相关的参数如下：
+[配置文件](../../config/infer_cfg_ppvehicle.yml)中与属性相关的参数如下：
 ```
 VEHICLE_ATTR:
   model_dir: output_inference/vehicle_attribute_infer/ # 车辆属性模型调用路径

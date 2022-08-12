@@ -63,7 +63,7 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
 
 2. Now the only available input is the video input in the action recognition module. set the "enable: True" of `SKELETON_ACTION` in infer_cfg_pphuman.yml. And then run the command:
 
-  ```python
+  ```bash
   python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
@@ -74,7 +74,7 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
   - In ```./deploy/pipeline/config/infer_cfg_pphuman.yml```, you can configurate different model paths，which is proper only if you match keypoint models and action recognition models with the fields of `KPT` and `SKELETON_ACTION` respectively, and modify the corresponding path of each field into the expected path.
   - Add `--model_dir` in the command line to revise the model path：
 
-    ```python
+    ```bash
     python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                        --video_file=test_video.mp4 \
                                                        --device=gpu \
@@ -172,7 +172,7 @@ ID_BASED_DETACTION: # Config for detection-based action recognition model
 2. Now the only available input is the video input in the action recognition module. set the "enable: True" of `ID_BASED_DETACTION` in infer_cfg_pphuman.yml.
 
 3. Run this command:
-  ```python
+  ```bash
   python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
@@ -229,7 +229,7 @@ VIDEO_ACTION:  # Config for detection-based action recognition model
 3. Now the only available input is the video input in the action recognition module. set the "enable: True" of `VIDEO_ACTION` in infer_cfg_pphuman.yml.
 
 4. Run this command:
-  ```python
+  ```bash
   python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                      --video_file=test_video.mp4 \
                                                      --device=gpu
