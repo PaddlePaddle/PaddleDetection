@@ -1,10 +1,10 @@
 
 Global:
-  reader_config: configs/ppyoloe_reader.yml
+  reader_config: configs/yolox_reader.yml
   input_list: ['image', 'scale_factor']
   arch: YOLO
   Evaluation: True
-  model_dir: ./ppyoloe_crn_l_300e_coco
+  model_dir: ./yolox_s_300e_coco
   model_filename: model.pdmodel
   params_filename: model.pdiparams
 

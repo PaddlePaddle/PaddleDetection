@@ -596,7 +596,7 @@ class VisionTransformer(nn.Layer):
 
         feats = []
         for idx, blk in enumerate(self.blocks):
-            if self.use_checkpoint:
+            if self.use_checkpoint and self.training:
                 x = paddle.distributed.fleet.utils.recompute(
                     blk, x, rel_pos_bias, **{"preserve_rng_state": True})
             else:

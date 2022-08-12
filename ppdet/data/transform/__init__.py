@@ -16,11 +16,13 @@ from . import operators
 from . import batch_operators
 from . import keypoint_operators
 from . import mot_operators
+from . import rotated_operators
 
 from .operators import *
 from .batch_operators import *
 from .keypoint_operators import *
 from .mot_operators import *
+from .rotated_operators import *
 
 __all__ = []
 __all__ += registered_ops

@@ -300,6 +300,25 @@ class PipePredictor(object):
         # auto download inference model
         get_model_dir(self.cfg)
 
+        if self.with_vehicleplate:
+            vehicleplate_cfg = self.cfg['VEHICLE_PLATE']
+            self.vehicleplate_detector = PlateRecognizer(args, vehicleplate_cfg)
+            basemode = self.basemode['VEHICLE_PLATE']
+            self.modebase[basemode] = True
+
+        if self.with_human_attr:
+            attr_cfg = self.cfg['ATTR']
+            basemode = self.basemode['ATTR']
+            self.modebase[basemode] = True
+            self.attr_predictor = AttrDetector.init_with_cfg(args, attr_cfg)
+
+        if self.with_vehicle_attr:
+            vehicleattr_cfg = self.cfg['VEHICLE_ATTR']
+            basemode = self.basemode['VEHICLE_ATTR']
+            self.modebase[basemode] = True
+            self.vehicle_attr_predictor = VehicleAttr.init_with_cfg(
+                args, vehicleattr_cfg)
+
         if not is_video:
             det_cfg = self.cfg['DET']
             model_dir = det_cfg['model_dir']
@@ -308,25 +327,7 @@ class PipePredictor(object):
                 model_dir, args.device, args.run_mode, batch_size,
                 args.trt_min_shape, args.trt_max_shape, args.trt_opt_shape,
                 args.trt_calib_mode, args.cpu_threads, args.enable_mkldnn)
-            if self.with_human_attr:
-                attr_cfg = self.cfg['ATTR']
-                basemode = self.basemode['ATTR']
-                self.modebase[basemode] = True
-                self.attr_predictor = AttrDetector.init_with_cfg(args, attr_cfg)
-
-            if self.with_vehicle_attr:
-                vehicleattr_cfg = self.cfg['VEHICLE_ATTR']
-                basemode = self.basemode['VEHICLE_ATTR']
-                self.modebase[basemode] = True
-                self.vehicle_attr_predictor = VehicleAttr.init_with_cfg(
-                    args, vehicleattr_cfg)
         else:
-            if self.with_human_attr:
-                attr_cfg = self.cfg['ATTR']
-                basemode = self.basemode['ATTR']
-                self.modebase[basemode] = True
-                self.attr_predictor = AttrDetector.init_with_cfg(args, attr_cfg)
-
             if self.with_idbased_detaction:
                 idbased_detaction_cfg = self.cfg['ID_BASED_DETACTION']
                 basemode = self.basemode['ID_BASED_DETACTION']
@@ -358,37 +359,22 @@ class PipePredictor(object):
                 self.skeleton_action_visual_helper = ActionVisualHelper(
                     display_frames)
 
-                if self.modebase["skeletonbased"]:
-                    kpt_cfg = self.cfg['KPT']
-                    kpt_model_dir = kpt_cfg['model_dir']
-                    kpt_batch_size = kpt_cfg['batch_size']
-                    self.kpt_predictor = KeyPointDetector(
-                        kpt_model_dir,
-                        args.device,
-                        args.run_mode,
-                        kpt_batch_size,
-                        args.trt_min_shape,
-                        args.trt_max_shape,
-                        args.trt_opt_shape,
-                        args.trt_calib_mode,
-                        args.cpu_threads,
-                        args.enable_mkldnn,
-                        use_dark=False)
-                    self.kpt_buff = KeyPointBuff(skeleton_action_frames)
-
-            if self.with_vehicleplate:
-                vehicleplate_cfg = self.cfg['VEHICLE_PLATE']
-                self.vehicleplate_detector = PlateRecognizer(args,
-                                                             vehicleplate_cfg)
-                basemode = self.basemode['VEHICLE_PLATE']
-                self.modebase[basemode] = True
-
-            if self.with_vehicle_attr:
-                vehicleattr_cfg = self.cfg['VEHICLE_ATTR']
-                basemode = self.basemode['VEHICLE_ATTR']
-                self.modebase[basemode] = True
-                self.vehicle_attr_predictor = VehicleAttr.init_with_cfg(
-                    args, vehicleattr_cfg)
+                kpt_cfg = self.cfg['KPT']
+                kpt_model_dir = kpt_cfg['model_dir']
+                kpt_batch_size = kpt_cfg['batch_size']
+                self.kpt_predictor = KeyPointDetector(
+                    kpt_model_dir,
+                    args.device,
+                    args.run_mode,
+                    kpt_batch_size,
+                    args.trt_min_shape,
+                    args.trt_max_shape,
+                    args.trt_opt_shape,
+                    args.trt_calib_mode,
+                    args.cpu_threads,
+                    args.enable_mkldnn,
+                    use_dark=False)
+                self.kpt_buff = KeyPointBuff(skeleton_action_frames)
 
             if self.with_mtmct:
                 reid_cfg = self.cfg['REID']
@@ -505,6 +491,20 @@ class PipePredictor(object):
 
                 attr_res = {'output': vehicle_attr_res_list}
                 self.pipeline_res.update(attr_res, 'vehicle_attr')
+
+            if self.with_vehicleplate:
+                if i > self.warmup_frame:
+                    self.pipe_timer.module_time['vehicleplate'].start()
+                crop_inputs = crop_image_with_det(batch_input, det_res)
+                platelicenses = []
+                for crop_input in crop_inputs:
+                    platelicense = self.vehicleplate_detector.get_platelicense(
+                        crop_input)
+                    platelicenses.extend(platelicense['plate'])
+                if i > self.warmup_frame:
+                    self.pipe_timer.module_time['vehicleplate'].end()
+                vehicleplate_res = {'vehicleplate': platelicenses}
+                self.pipeline_res.update(vehicleplate_res, 'vehicleplate')
 
             self.pipe_timer.img_num += len(batch_input)
             if i > self.warmup_frame:
@@ -927,6 +927,7 @@ class PipePredictor(object):
         det_res = result.get('det')
         human_attr_res = result.get('attr')
         vehicle_attr_res = result.get('vehicle_attr')
+        vehicleplate_res = result.get('vehicleplate')
 
         for i, (im_file, im) in enumerate(zip(im_files, images)):
             if det_res is not None:
@@ -937,7 +938,7 @@ class PipePredictor(object):
                 im = visualize_box_mask(
                     im,
                     det_res_i,
-                    labels=['person'],
+                    labels=['target'],
                     threshold=self.cfg['crop_thresh'])
                 im = np.ascontiguousarray(np.copy(im))
                 im = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
@@ -949,6 +950,11 @@ class PipePredictor(object):
                 vehicle_attr_res_i = vehicle_attr_res['output'][
                     start_idx:start_idx + boxes_num_i]
                 im = visualize_attr(im, vehicle_attr_res_i, det_res_i['boxes'])
+            if vehicleplate_res is not None:
+                plates = vehicleplate_res['vehicleplate']
+                det_res_i['boxes'][:, 4:6] = det_res_i[
+                    'boxes'][:, 4:6] - det_res_i['boxes'][:, 2:4]
+                im = visualize_vehicleplate(im, plates, det_res_i['boxes'])
 
             img_name = os.path.split(im_file)[-1]
             if not os.path.exists(self.output_dir):
