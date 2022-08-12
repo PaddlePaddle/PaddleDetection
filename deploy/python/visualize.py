@@ -419,7 +419,7 @@ def visualize_vehicleplate(im, results, boxes=None):
 
     im_h, im_w = im.shape[:2]
     text_scale = max(1.0, im.shape[0] / 1600.)
-    text_thickness = 1
+    text_thickness = 2
 
     line_inter = im.shape[0] / 40.
     for i, res in enumerate(results):
@@ -436,7 +436,7 @@ def visualize_vehicleplate(im, results, boxes=None):
             text_loc = (text_w, text_h)
             cv2.putText(
                 im,
-                text,
+                "LP: " + text,
                 text_loc,
                 cv2.FONT_ITALIC,
                 text_scale, (0, 255, 255),

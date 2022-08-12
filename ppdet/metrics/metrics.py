@@ -347,22 +347,12 @@ class WiderFaceMetric(Metric):
 
 class RBoxMetric(Metric):
     def __init__(self, anno_file, **kwargs):
-        assert os.path.isfile(anno_file), \
-                "anno_file {} not a file".format(anno_file)
-        assert os.path.exists(anno_file), "anno_file {} not exists".format(
-            anno_file)
         self.anno_file = anno_file
-        self.gt_anno = json.load(open(self.anno_file))
-        cats = self.gt_anno['categories']
-        self.clsid2catid = {i: cat['id'] for i, cat in enumerate(cats)}
-        self.catid2clsid = {cat['id']: i for i, cat in enumerate(cats)}
-        self.catid2name = {cat['id']: cat['name'] for cat in cats}
+        self.clsid2catid, self.catid2name = get_categories('COCO', anno_file)
+        self.catid2clsid = {v: k for k, v in self.clsid2catid.items()}
         self.classwise = kwargs.get('classwise', False)
         self.output_eval = kwargs.get('output_eval', None)
-        # TODO: bias should be unified
-        self.bias = kwargs.get('bias', 0)
         self.save_prediction_only = kwargs.get('save_prediction_only', False)
-        self.iou_type = kwargs.get('IouType', 'bbox')
         self.overlap_thresh = kwargs.get('overlap_thresh', 0.5)
         self.map_type = kwargs.get('map_type', '11point')
         self.evaluate_difficult = kwargs.get('evaluate_difficult', False)
@@ -379,7 +369,7 @@ class RBoxMetric(Metric):
         self.reset()
 
     def reset(self):
-        self.result_bbox = []
+        self.results = []
         self.detection_map.reset()
 
     def update(self, inputs, outputs):
@@ -389,35 +379,45 @@ class RBoxMetric(Metric):
             outs[k] = v.numpy() if isinstance(v, paddle.Tensor) else v
 
         im_id = inputs['im_id']
-        outs['im_id'] = im_id.numpy() if isinstance(im_id,
-                                                    paddle.Tensor) else im_id
+        im_id = im_id.numpy() if isinstance(im_id, paddle.Tensor) else im_id
+        outs['im_id'] = im_id
 
-        infer_results = get_infer_results(
-            outs, self.clsid2catid, bias=self.bias)
-        self.result_bbox += infer_results[
-            'bbox'] if 'bbox' in infer_results else []
-        bbox = [b['bbox'] for b in self.result_bbox]
-        score = [b['score'] for b in self.result_bbox]
-        label = [b['category_id'] for b in self.result_bbox]
-        label = [self.catid2clsid[e] for e in label]
-        gt_box = [
-            e['bbox'] for e in self.gt_anno['annotations']
-            if e['image_id'] == outs['im_id']
-        ]
-        gt_label = [
-            e['category_id'] for e in self.gt_anno['annotations']
-            if e['image_id'] == outs['im_id']
-        ]
-        gt_label = [self.catid2clsid[e] for e in gt_label]
-        self.detection_map.update(bbox, score, label, gt_box, gt_label)
+        infer_results = get_infer_results(outs, self.clsid2catid)
+        infer_results = infer_results['bbox'] if 'bbox' in infer_results else []
+        self.results += infer_results
+        if self.save_prediction_only:
+            return
+
+        gt_boxes = inputs['gt_rbox']
+        gt_labels = inputs['gt_class']
+        for i in range(len(gt_boxes)):
+            gt_box = gt_boxes[i].numpy() if isinstance(
+                gt_boxes[i], paddle.Tensor) else gt_boxes[i]
+            gt_label = gt_labels[i].numpy() if isinstance(
+                gt_labels[i], paddle.Tensor) else gt_labels[i]
+            gt_box, gt_label, _ = prune_zero_padding(gt_box, gt_label)
+            bbox = [
+                res['bbox'] for res in infer_results
+                if int(res['image_id']) == int(im_id[i])
+            ]
+            score = [
+                res['score'] for res in infer_results
+                if int(res['image_id']) == int(im_id[i])
+            ]
+            label = [
+                self.catid2clsid[int(res['category_id'])]
+                for res in infer_results
+                if int(res['image_id']) == int(im_id[i])
+            ]
+            self.detection_map.update(bbox, score, label, gt_box, gt_label)
 
     def accumulate(self):
-        if len(self.result_bbox) > 0:
+        if len(self.results) > 0:
             output = "bbox.json"
             if self.output_eval:
                 output = os.path.join(self.output_eval, output)
             with open(output, 'w') as f:
-                json.dump(self.result_bbox, f)
+                json.dump(self.results, f)
                 logger.info('The bbox result is saved to bbox.json.')
 
             if self.save_prediction_only:

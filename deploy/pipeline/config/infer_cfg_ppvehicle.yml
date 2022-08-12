@@ -14,8 +14,8 @@ MOT:
 
 VEHICLE_PLATE:
   det_model_dir: output_inference/ch_PP-OCRv3_det_infer/
-  det_limit_side_len: 480
-  det_limit_type: "max"
+  det_limit_side_len: 736
+  det_limit_type: "min"
   rec_model_dir: output_inference/ch_PP-OCRv3_rec_infer/
   rec_image_shape: [3, 48, 320]
   rec_batch_num: 6
