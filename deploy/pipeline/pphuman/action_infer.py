@@ -84,6 +84,20 @@ class SkeletonActionRecognizer(Detector):
             threshold=threshold,
             delete_shuffle_pass=True)
 
+    @classmethod
+    def init_with_cfg(cls, args, cfg):
+        return cls(model_dir=cfg['model_dir'],
+                   batch_size=cfg['batch_size'],
+                   window_size=cfg['max_frames'],
+                   device=args.device,
+                   run_mode=args.run_mode,
+                   trt_min_shape=args.trt_min_shape,
+                   trt_max_shape=args.trt_max_shape,
+                   trt_opt_shape=args.trt_opt_shape,
+                   trt_calib_mode=args.trt_calib_mode,
+                   cpu_threads=args.cpu_threads,
+                   enable_mkldnn=args.enable_mkldnn)
+
     def predict(self, repeats=1):
         '''
         Args:
@@ -322,6 +336,22 @@ class DetActionRecognizer(object):
         self.skip_frame_cnt = 0
         self.id_in_last_frame = []
 
+    @classmethod
+    def init_with_cfg(cls, args, cfg):
+        return cls(model_dir=cfg['model_dir'],
+                   batch_size=cfg['batch_size'],
+                   threshold=cfg['threshold'],
+                   display_frames=cfg['display_frames'],
+                   skip_frame_num=cfg['skip_frame_num'],
+                   device=args.device,
+                   run_mode=args.run_mode,
+                   trt_min_shape=args.trt_min_shape,
+                   trt_max_shape=args.trt_max_shape,
+                   trt_opt_shape=args.trt_opt_shape,
+                   trt_calib_mode=args.trt_calib_mode,
+                   cpu_threads=args.cpu_threads,
+                   enable_mkldnn=args.enable_mkldnn)
+
     def predict(self, images, mot_result):
         if self.skip_frame_cnt == 0 or (not self.check_id_is_same(mot_result)):
             det_result = self.detector.predict_image(images, visual=False)
@@ -472,6 +502,22 @@ class ClsActionRecognizer(AttrDetector):
         self.skip_frame_num = skip_frame_num
         self.skip_frame_cnt = 0
         self.id_in_last_frame = []
+
+    @classmethod
+    def init_with_cfg(cls, args, cfg):
+        return cls(model_dir=cfg['model_dir'],
+                   batch_size=cfg['batch_size'],
+                   threshold=cfg['threshold'],
+                   display_frames=cfg['display_frames'],
+                   skip_frame_num=cfg['skip_frame_num'],
+                   device=args.device,
+                   run_mode=args.run_mode,
+                   trt_min_shape=args.trt_min_shape,
+                   trt_max_shape=args.trt_max_shape,
+                   trt_opt_shape=args.trt_opt_shape,
+                   trt_calib_mode=args.trt_calib_mode,
+                   cpu_threads=args.cpu_threads,
+                   enable_mkldnn=args.enable_mkldnn)
 
     def predict_with_mot(self, images, mot_result):
         if self.skip_frame_cnt == 0 or (not self.check_id_is_same(mot_result)):
