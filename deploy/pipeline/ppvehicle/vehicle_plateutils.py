@@ -61,14 +61,13 @@ def create_predictor(args, cfg, mode):
             'trt_fp32': inference.PrecisionType.Float32,
             'trt_fp16': inference.PrecisionType.Half
         }
+        min_subgraph_size = 15
         if args.run_mode in precision_map.keys():
             config.enable_tensorrt_engine(
                 workspace_size=(1 << 25) * batch_size,
                 max_batch_size=batch_size,
                 min_subgraph_size=min_subgraph_size,
-                precision_mode=precision_map[args.run_mode],
-                use_static=False,
-                use_calib_mode=trt_calib_mode)
+                precision_mode=precision_map[args.run_mode])
             use_dynamic_shape = True
 
             if mode == "det":
