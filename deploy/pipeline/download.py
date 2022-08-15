@@ -137,7 +137,7 @@ def _download(url, path, md5sum=None):
             raise RuntimeError("Downloading from {} failed with code "
                                "{}!".format(url, req.status_code))
 
-        # For protecting download interupted,9b685b3de6 download to
+        # For protecting download interupted, download to
         # tmp_fullname firstly, move tmp_fullname to fullname
         # after download finished
         tmp_fullname = fullname + "_tmp"
