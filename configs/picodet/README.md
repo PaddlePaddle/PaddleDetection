@@ -6,7 +6,7 @@
 
 ## 最新动态
 
-- 发布PicoDet-NPU模型，支持模型全量化部署。**（2022.08.10）**
+- 发布PicoDet-NPU模型，支持模型全量化部署。详情请参考[PicoDet全量化示例](./FULL_QUANTIZATION.md) **（2022.08.10）**
 
 - 发布全新系列PP-PicoDet模型：**（2022.03.20）**
   - (1)引入TAL及ETA Head，优化PAN等结构，精度提升2个点以上；
