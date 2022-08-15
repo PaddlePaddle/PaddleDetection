@@ -15,7 +15,7 @@ non-trivial when new architectures, such as Vision Transformer (ViT) models, arr
 
 | Backbone | Pretrained | Model | Scheduler | Images/GPU  | Box AP | Config | Download |
 |:------:|:--------:|:--------------:|:--------------:|:--------------:|:------:|:------:|:--------:|
-| ViT-base | CAE | Cascade RCNN  | 1x | 1 | 52.7 | [config](./cascade_rcnn_vit_base_hrfpn_cae_1x_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/cascade_rcnn_vit_base_hrfpn_cae_1x_coco.pdparams) |
+| ViT-base | CAE | Cascade RCNN  | 1x | 1 | 52.5 | [config](./cascade_rcnn_vit_base_hrfpn_cae_1x_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/cascade_rcnn_vit_base_hrfpn_cae_1x_coco.pdparams) |
 | ViT-large | CAE | Cascade RCNN  | 1x | 1 | 55.7 | [config](./cascade_rcnn_vit_large_hrfpn_cae_1x_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/cascade_rcnn_vit_large_hrfpn_cae_1x_coco.pdparams) |
 
 **Notes:**
