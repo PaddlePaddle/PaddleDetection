@@ -30,14 +30,10 @@ DOWNLOAD_RETRY_LIMIT = 3
 WEIGHTS_HOME = osp.expanduser("~/.cache/paddle/infer_weights")
 
 MODEL_URL_MD5_DICT = {
-    "https://paddleocr.bj.bcebos.com/PP-OCRv3/chinese/ch_PP-OCRv3_det_infer.tar":
-    '982d2d8d83e55f5f981e96a7b941fff5',
     'https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz':
     '1b8eae0f098635699bd4e8bccf3067a7',
     'https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz':
     '64fa0e0701efd93c7db52a9b685b3de6',
-    "https://paddleocr.bj.bcebos.com/PP-OCRv3/chinese/ch_PP-OCRv3_rec_infer.tar":
-    '5f021b88518bdeda2cb4a3aacc481024',
     "https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip":
     "3859d1a26e0c498285c2374b1a347013",
     "https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip":
