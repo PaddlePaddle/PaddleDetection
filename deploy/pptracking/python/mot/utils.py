@@ -419,9 +419,6 @@ def update_object_info(object_in_region_info,
 
         if (object_in_region_info[track_id]["end_frame"]-object_in_region_info[track_id]["start_frame"]) /fps >= illegal_parking_time \
             and distance_from_start<distance_threshold_interval:
-            #print("**** illegal parking:", track_id, "frames:",
-            #      object_in_region_info[track_id]["start_frame"],
-            #      object_in_region_info[track_id]["end_frame"])
             illegal_parking_dict[track_id] = {"bbox": [x1, y1, w, h]}
 
     return object_in_region_info, illegal_parking_dict
