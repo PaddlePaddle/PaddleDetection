@@ -275,9 +275,9 @@ def plot_tracking_dict(image,
                 cv2.putText(
                     im,
                     "illegal_parking:" + plate,
-                    (int(x1), int(16 * text_scale + y1)),
+                    (int(x1) + 5, int(16 * text_scale + y1 + 15)),
                     cv2.FONT_ITALIC,
-                    text_scale, (0, 0, 255),
+                    text_scale * 1.5, (0, 0, 255),
                     thickness=text_thickness)
 
     for cls_id in range(num_classes):
