@@ -246,7 +246,13 @@ class CascadeHead(BBoxHead):
             if not self.reg_class_agnostic and i < self.num_cascade_stages - 1:
                 deltas = deltas.reshape([deltas.shape[0], self.num_classes, 4])
                 labels = scores[:, :-1].argmax(axis=-1)
-                deltas = deltas[paddle.arange(deltas.shape[0]), labels]
+
+                if deltas.shape[0] == -1 and not self.training:
+                    i_index = paddle.arange(1)  # bs=1, for deploy
+                else:
+                    i_index = paddle.arange(deltas.shape[0])
+
+                deltas = deltas[i_index, labels]
 
             head_out_list.append([scores, deltas, rois])
             pred_bbox = self._get_pred_bbox(deltas, rois, self.bbox_weight[i])
