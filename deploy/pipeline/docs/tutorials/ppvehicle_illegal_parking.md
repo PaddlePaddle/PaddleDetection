@@ -44,6 +44,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
                                                    --illegal_parking_time=5 \
                                                    --region_type=custom \
                                                    --region_polygon 100 1000 1000 1000 900 1700 0 1700
+```
 
 参数说明如下：
 - config：配置文件路径；
