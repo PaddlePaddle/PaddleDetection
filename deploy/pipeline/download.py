@@ -40,8 +40,6 @@ MODEL_URL_MD5_DICT = {
     '5f021b88518bdeda2cb4a3aacc481024',
     "https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip":
     "3859d1a26e0c498285c2374b1a347013",
-    "https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip":
-    "46a80e1b3a8f4599e0cc79367c195b7c",
     "https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip":
     "a20d5f6ca087bff0e9f2b18df45a36f2",
     "https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.zip":
