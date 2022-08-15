@@ -291,7 +291,7 @@ class PipePredictor(object):
         self.do_break_in_counting = args.do_break_in_counting
         self.region_type = args.region_type
         self.region_polygon = args.region_polygon
-        self.illegal_parking_timke = args.illegal_parking_time
+        self.illegal_parking_time = args.illegal_parking_time
 
         self.warmup_frame = self.cfg['warmup_frame']
         self.pipeline_res = Result()
@@ -380,10 +380,6 @@ class PipePredictor(object):
 
             if self.with_vehicleplate:
                 vehicleplate_cfg = self.cfg['VEHICLE_PLATE']
-                vehicleplate_cfg["det_model_dir"] = model_dir_dict[
-                    "det_model_dir"]
-                vehicleplate_cfg["rec_model_dir"] = model_dir_dict[
-                    "rec_model_dir"]
                 self.vehicleplate_detector = PlateRecognizer(args,
                                                              vehicleplate_cfg)
                 basemode = self.basemode['VEHICLE_PLATE']
