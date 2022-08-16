@@ -129,6 +129,8 @@ class JDE_Detector(Detector):
         assert batch_size == 1, "MOT model only supports batch_size=1."
         self.det_times = Timer(with_tracker=True)
         self.num_classes = len(self.pred_config.labels)
+        if self.skip_frame_num > 1:
+            self.previous_det_result = None
 
         # tracker config
         assert self.pred_config.tracker, "The exported JDE Detector model should have tracker."
@@ -207,7 +209,8 @@ class JDE_Detector(Detector):
                       run_benchmark=False,
                       repeats=1,
                       visual=True,
-                      seq_name=None):
+                      seq_name=None,
+                      reuse_det_result=False):
         mot_results = []
         num_classes = self.num_classes
         image_list.sort()
@@ -249,15 +252,22 @@ class JDE_Detector(Detector):
 
             else:
                 self.det_times.preprocess_time_s.start()
-                inputs = self.preprocess(batch_image_list)
+                if not reuse_det_result:
+                    inputs = self.preprocess(batch_image_list)
                 self.det_times.preprocess_time_s.end()
 
                 self.det_times.inference_time_s.start()
-                result = self.predict()
+                if not reuse_det_result:
+                    result = self.predict()
                 self.det_times.inference_time_s.end()
 
                 self.det_times.postprocess_time_s.start()
-                det_result = self.postprocess(inputs, result)
+                if not reuse_det_result:
+                    det_result = self.postprocess(inputs, result)
+                    self.previous_det_result = det_result
+                else:
+                    assert self.previous_det_result is not None
+                    det_result = self.previous_det_result
                 self.det_times.postprocess_time_s.end()
 
                 # tracking process
@@ -351,8 +361,6 @@ class JDE_Detector(Detector):
                         self.region_type))
 
         video_fps = fps
-        if self.skip_frame_num > 1:
-            online_tlwhs_pre, online_scores_pre, online_ids_pre = None, None, None
 
         while (1):
             ret, frame = capture.read()
@@ -362,23 +370,16 @@ class JDE_Detector(Detector):
                 print('Tracking frame: %d' % (frame_id))
 
             timer.tic()
-            if self.skip_frame_num > 1:
-                if frame_id % self.skip_frame_num == 0:
-                    seq_name = video_out_name.split('.')[0]
-                    mot_results = self.predict_image(
-                        [frame], visual=False, seq_name=seq_name)
-                    # bs=1 in MOT model
-                    online_tlwhs, online_scores, online_ids = mot_results[0]
-                    if self.skip_frame_num > 1:
-                        online_tlwhs_pre = online_tlwhs
-                        online_scores_pre = online_scores
-                        online_ids_pre = online_ids
-            else:
-                seq_name = video_out_name.split('.')[0]
-                mot_results = self.predict_image(
-                    [frame], visual=False, seq_name=seq_name)
-                # bs=1 in MOT model
-                online_tlwhs, online_scores, online_ids = mot_results[0]
+            mot_skip_frame_num = self.skip_frame_num
+            reuse_det_result = False
+            if mot_skip_frame_num > 1 and frame_id > 0 and frame_id % mot_skip_frame_num > 0:
+                reuse_det_result = True
+            seq_name = video_out_name.split('.')[0]
+            mot_results = self.predict_image(
+                [frame],
+                visual=False,
+                seq_name=seq_name,
+                reuse_det_result=reuse_det_result)
             timer.toc()
 
             online_tlwhs, online_scores, online_ids = mot_results[0]

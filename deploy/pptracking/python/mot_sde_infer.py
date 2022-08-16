@@ -605,8 +605,6 @@ class SDE_Detector(Detector):
                         self.region_type))
 
         video_fps = fps
-        if self.skip_frame_num > 1:
-            online_tlwhs_pre, online_scores_pre, online_ids_pre = None, None, None
 
         while (1):
             ret, frame = capture.read()
@@ -616,24 +614,20 @@ class SDE_Detector(Detector):
                 print('Tracking frame: %d' % (frame_id))
 
             timer.tic()
-            if self.skip_frame_num > 1:
-                if frame_id % self.skip_frame_num == 0:
-                    seq_name = video_out_name.split('.')[0]
-                    mot_results = self.predict_image(
-                        [frame], visual=False, seq_name=seq_name)
-                    # bs=1 in MOT model
-                    online_tlwhs, online_scores, online_ids = mot_results[0]
-                    if self.skip_frame_num > 1:
-                        online_tlwhs_pre = online_tlwhs
-                        online_scores_pre = online_scores
-                        online_ids_pre = online_ids
-            else:
-                seq_name = video_out_name.split('.')[0]
-                mot_results = self.predict_image(
-                    [frame], visual=False, seq_name=seq_name)
-                # bs=1 in MOT model
-                online_tlwhs, online_scores, online_ids = mot_results[0]
+            mot_skip_frame_num = self.skip_frame_num
+            reuse_det_result = False
+            if mot_skip_frame_num > 1 and frame_id > 0 and frame_id % mot_skip_frame_num > 0:
+                reuse_det_result = True
+            seq_name = video_out_name.split('.')[0]
+            mot_results = self.predict_image(
+                [frame],
+                visual=False,
+                seq_name=seq_name,
+                reuse_det_result=reuse_det_result)
             timer.toc()
+
+            # bs=1 in MOT model
+            online_tlwhs, online_scores, online_ids = mot_results[0]
 
             # flow statistic for one class, and only for bytetracker
             if num_classes == 1 and not self.use_deepsort_tracker and not self.use_ocsort_tracker:
