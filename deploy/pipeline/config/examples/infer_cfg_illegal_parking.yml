@@ -9,10 +9,10 @@ MOT:
   enable: True
 
 VEHICLE_PLATE:
-  det_model_dir: https://paddleocr.bj.bcebos.com/PP-OCRv3/chinese/ch_PP-OCRv3_det_infer.tar
+  det_model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz
   det_limit_side_len: 480
   det_limit_type: "max"
-  rec_model_dir: https://paddleocr.bj.bcebos.com/PP-OCRv3/chinese/ch_PP-OCRv3_rec_infer.tar
+  rec_model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz
   rec_image_shape: [3, 48, 320]
   rec_batch_num: 6
   word_dict_path: deploy/pipeline/ppvehicle/rec_word_dict.txt
