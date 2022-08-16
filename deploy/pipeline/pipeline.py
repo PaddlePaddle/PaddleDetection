@@ -598,10 +598,11 @@ class PipePredictor(object):
             if not ret:
                 break
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            if frame_id > self.warmup_frame:
+                self.pipe_timer.total_time.start()
 
             if self.modebase["idbased"] or self.modebase["skeletonbased"]:
                 if frame_id > self.warmup_frame:
-                    self.pipe_timer.total_time.start()
                     self.pipe_timer.module_time['mot'].start()
 
                 mot_skip_frame_num = self.mot_predictor.skip_frame_num
@@ -612,11 +613,12 @@ class PipePredictor(object):
                     [copy.deepcopy(frame_rgb)],
                     visual=False,
                     reuse_det_result=reuse_det_result)
-                if frame_id > self.warmup_frame:
-                    self.pipe_timer.module_time['mot'].end()
 
                 # mot output format: id, class, score, xmin, ymin, xmax, ymax
                 mot_res = parse_mot_res(res)
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.module_time['mot'].end()
+                    self.pipe_timer.track_num += len(mot_res['boxes'])
 
                 # flow_statistic only support single class MOT
                 boxes, scores, ids = res[0]  # batch size = 1 in MOT
