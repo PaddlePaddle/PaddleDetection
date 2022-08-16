@@ -29,12 +29,12 @@
   - 更强的模型性能：基于各家前沿YOLO算法进行创新并升级，缩短训练周期5~8倍，精度普遍提升1%~5% mAP；使用模型压缩策略实现精度无损的同时速度提升30%以上
   - 完备的端到端开发支持：支持从模型训练、评估、预测到模型量化压缩，部署多种硬件的端到端开发全流程。同时支持不同模型算法灵活切换，一键实现算法二次开发
 
-- 🔥 **2022.8.01：发布[PP-TinyPose升级版](./configs/keypoint/tiny_pose/). 在健身、舞蹈等场景的业务数据集端到端AP提升9.1**
+- 🔥 **2022.8.01：发布[PP-TinyPose升级版](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/tiny_pose). 在健身、舞蹈等场景的业务数据集端到端AP提升9.1**
   - 新增体育场景真实数据，复杂动作识别效果显著提升，覆盖侧身、卧躺、跳跃、高抬腿等非常规动作
   - 检测模型采用[PP-PicoDet增强版](./configs/picodet/README.md)，在COCO数据集上精度提升3.1%
   - 关键点稳定性增强，新增滤波稳定方式，使得视频预测结果更加稳定平滑
 
-- 2022.7.14：[行人分析工具PP-Human v2](./deploy/pipeline)发布
+- 2022.7.14：[行人分析工具PP-Human v2](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/deploy/pipeline)发布
   - 四大产业特色功能：高性能易扩展的五大复杂行为识别、闪电级人体属性识别、一行代码即可实现的人流检测与轨迹留存以及高精度跨镜跟踪
   - 底层核心算法性能强劲：覆盖行人检测、跟踪、属性三类核心算法能力，对目标人数、光线、背景均无限制
   - 极低使用门槛：提供保姆级全流程开发及模型优化策略、一行命令完成推理、兼容各类数据输入格式
@@ -42,7 +42,7 @@
 - 2022.3.24：PaddleDetection发布[release/2.4版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)
   - 发布高精度云边一体SOTA目标检测模型[PP-YOLOE](configs/ppyoloe)，提供s/m/l/x版本，l版本COCO test2017数据集精度51.6%，V100预测速度78.1 FPS，支持混合精度训练，训练较PP-YOLOv2加速33%，全系列多尺度模型，满足不同硬件算力需求，可适配服务器、边缘端GPU及其他服务器端AI加速卡。
   - 发布边缘端和CPU端超轻量SOTA目标检测模型[PP-PicoDet增强版](configs/picodet)，精度提升2%左右，CPU预测速度提升63%，新增参数量0.7M的PicoDet-XS模型，提供模型稀疏化和量化功能，便于模型加速，各类硬件无需单独开发后处理模块，降低部署门槛。
-  - 发布实时行人分析工具[PP-Human](deploy/pipeline)，支持行人跟踪、人流量统计、人体属性识别与摔倒检测四大能力，基于真实场景数据特殊优化，精准识别各类摔倒姿势，适应不同环境背景、光线及摄像角度。
+  - 发布实时行人分析工具[PP-Human](deploy/pphuman)，支持行人跟踪、人流量统计、人体属性识别与摔倒检测四大能力，基于真实场景数据特殊优化，精准识别各类摔倒姿势，适应不同环境背景、光线及摄像角度。
   - 新增[YOLOX](configs/yolox)目标检测模型，支持nano/tiny/s/m/l/x版本，x版本COCO val2017数据集精度51.8%。
 
 - [更多版本发布](https://github.com/PaddlePaddle/PaddleDetection/releases)
