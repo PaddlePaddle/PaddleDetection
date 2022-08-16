@@ -123,7 +123,6 @@ class PlateDetector(object):
             img, shape_list = self.preprocess(image)
             if img is None:
                 return None, 0
-
             self.input_tensor.copy_from_cpu(img)
             self.predictor.run()
             outputs = []
