@@ -108,7 +108,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 </div>
 
 ## 方案说明
-车辆属性模型使用了[PaddleClas](https://github.com/PaddlePaddle/PaddleClas) 的超轻量图像分类方案(PULC，Practical Ultra Lightweight image Classification)。关于该模型的数据准备、训练、测试等详细内容，请见[PULC 车辆属性识别模型](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/zh_CN/PULC/PULC_vehicle_attribute.md).
+车辆属性识别模型使用了[PaddleClas](https://github.com/PaddlePaddle/PaddleClas) 的超轻量图像分类方案(PULC，Practical Ultra Lightweight image Classification)。关于该模型的数据准备、训练、测试等详细内容，请见[PULC 车辆属性识别模型](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/zh_CN/PULC/PULC_vehicle_attribute.md).
 
 车辆属性识别模型选用了轻量级、高精度的PPLCNet。并在该模型的基础上，进一步使用了以下优化方案：
 

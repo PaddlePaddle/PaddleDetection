@@ -11,12 +11,12 @@ Vehicle attribute recognition is widely used in smart cities, smart transportati
 
 
 Note:
-1. The prediction speed of the attribute model is based on the test of Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz, the MKLDNN acceleration strategy is enabled, and the number of threads is 10.
-2. About the model PPLCNet, Please refer to [PP-LCNet Series](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/en/models/PP-LCNet_en.md).
-3. The training and test phase of vehicle attribute recognition model are both based on [VeRi dataset](https://www.v7labs.com/open-datasets/veri-dataset).
+1. The inference speed of the attribute model is obtained from the test on Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz, with the MKLDNN acceleration strategy enabled, and 10 threads.
+2. For introductions, please refer to [PP-LCNet Series](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/en/models/PP-LCNet_en.md). Related paper is available on PP-LCNet paper
+3. The training and test phase of vehicle attribute recognition model are both obtained from [VeRi dataset](https://www.v7labs.com/open-datasets/veri-dataset).
 
 
-- The published pretrained model support the recognition of 10 colors and 9 models, same with VeRi dataset. The detail are:
+- The provided pre-trained model supports 10 colors and 9 models, which is the same with VeRi dataset. The details are as follows:
 
 ```yaml
 # Vehicle Colors
@@ -47,7 +47,7 @@ Note:
 
 ### Description of Configuration
 
-Parameters related to vehicle attribute recognition in the [config file](../../config/infer_cfg_ppvehicle.yml) are as follow:
+Parameters related to vehicle attribute recognition in the [config file](../../config/infer_cfg_ppvehicle.yml) are as follows:
 
 ```yaml
 VEHICLE_ATTR:
@@ -58,12 +58,12 @@ VEHICLE_ATTR:
   enable: False         # Whether to enable this function
 ```
 
-### How to Use
+### How to Use This function
 1. Download models `Vehicle Detection/Tracking` and `Vehicle Attribute Recognition` from the links in `Model Zoo` and unzip them to ```./output_inference```. The models are automatically downloaded by default. If you download them manually, you need to modify the `model_dir` as the model storage path.
 
 2. Set the "enable: True" of `VEHICLE_ATTR` in infer_cfg_ppvehicle.yml.
 
-3. For image input, please run these commands. (Description of more parameters, please refer [QUICK_STARTED - Parameter_Description](./PPVehicle_QUICK_STARTED.md).
+3. For image input, please run these commands. (Description of more parameters, please refer to [QUICK_STARTED - Parameter_Description](./PPVehicle_QUICK_STARTED.md).
 
 ```bash
 # For single image
@@ -93,7 +93,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 
 5. There are two ways to modify the model path:
 
-    - Method 1：Convfigure different model paths in `./deploy/pipeline/config/infer_cfg_ppvehicle.yml`. For vehicle attribute recognition, the path should be modified under the `VEHICLE_ATTR` field.
+    - Method 1：Set paths of each model in `./deploy/pipeline/config/infer_cfg_ppvehicle.yml`. For vehicle attribute recognition, the path should be modified under the `VEHICLE_ATTR` field.
     - Method 2: Directly add --model_dir in command line：
 
 ```bash
@@ -110,12 +110,12 @@ The result is shown as follow:
 </div>
 
 
-### Introduction to the Solution
+### Features to the Solution
 
-The vehicle attribute recognition model is from ultra-lightweight image classification scheme (PULC, Practical Ultra Lightweight image Classification), which provided by [PaddleClas](https://github.com/PaddlePaddle/PaddleClas). For details on data preparation, training, and testing of the model, please refer to [PULC Recognition Model of Vehicle Attribute](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/en/PULC/PULC_vehicle_attribute_en.md).
+The vehicle attribute recognition model adopts PULC, Practical Ultra Lightweight image Classification from [PaddleClas](https://github.com/PaddlePaddle/PaddleClas). For details on data preparation, training, and testing of the model, please refer to [PULC Recognition Model of Vehicle Attribute](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/en/PULC/PULC_vehicle_attribute_en.md).
 
-The vehicle attribute recognition model adopts the lightweight and high-precision PPLCNet. And on the basis of this model, the following optimization scheme is further used:
+The vehicle attribute recognition model adopts the lightweight and high-precision PPLCNet. And on top of PPLCNet, our model optimized via::
 
-- By using the SSLD pre-trained model, the accuracy can be improved by about 0.5 percentage points without changing the inference speed.
-- Integrating the EDA data enhancement strategy, the accuracy can be improved by another 0.52 percentage points.
-- Using SKL-UGI knowledge distillation, the accuracy can continue to improve by 0.23 percentage points.
+- Improved about 0.5 percentage points accuracy by using the SSLD pre-trained model without changing the inference speed.
+- Improved 0.52 percentage points accuracy further by integrating EDA data augmentation strategy.
+- Improved 0.23 percentage points accuracy by using SKL-UGI knowledge distillation.
