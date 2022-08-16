@@ -68,6 +68,7 @@ class PipeTimer(Times):
             'vehicleplate': Times()
         }
         self.img_num = 0
+        self.track_num = 0
 
     def get_total_time(self):
         total_time = self.total_time.value()
@@ -86,8 +87,11 @@ class PipeTimer(Times):
 
         for k, v in self.module_time.items():
             v_time = round(v.value(), 4)
-            if v_time > 0:
+            if v_time > 0 and k in ['det', 'mot', 'video_action']:
                 print("{} time(ms): {}".format(k, v_time * 1000))
+            elif v_time > 0:
+                print("{} time(ms): {}; per trackid average time(ms): {}".
+                      format(k, v_time * 1000, v_time * 1000 / self.track_num))
 
         print("average latency time(ms): {:.2f}, QPS: {:2f}".format(
             average_latency * 1000, qps))
