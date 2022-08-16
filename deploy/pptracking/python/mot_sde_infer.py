@@ -134,6 +134,8 @@ class SDE_Detector(Detector):
         assert batch_size == 1, "MOT model only supports batch_size=1."
         self.det_times = Timer(with_tracker=True)
         self.num_classes = len(self.pred_config.labels)
+        if self.skip_frame_num > 1:
+            self.previous_det_result = None
 
         # reid config
         self.use_reid = False if reid_model_dir is None else True
@@ -417,7 +419,8 @@ class SDE_Detector(Detector):
                       run_benchmark=False,
                       repeats=1,
                       visual=True,
-                      seq_name=None):
+                      seq_name=None,
+                      reuse_det_result=False):
         num_classes = self.num_classes
         image_list.sort()
         ids2names = self.pred_config.labels
@@ -471,15 +474,22 @@ class SDE_Detector(Detector):
 
             else:
                 self.det_times.preprocess_time_s.start()
-                inputs = self.preprocess(batch_image_list)
+                if not reuse_det_result:
+                    inputs = self.preprocess(batch_image_list)
                 self.det_times.preprocess_time_s.end()
 
                 self.det_times.inference_time_s.start()
-                result = self.predict()
+                if not reuse_det_result:
+                    result = self.predict()
                 self.det_times.inference_time_s.end()
 
                 self.det_times.postprocess_time_s.start()
-                det_result = self.postprocess(inputs, result)
+                if not reuse_det_result:
+                    det_result = self.postprocess(inputs, result)
+                    self.previous_det_result = det_result
+                else:
+                    assert self.previous_det_result is not None
+                    det_result = self.previous_det_result
                 self.det_times.postprocess_time_s.end()
 
                 # tracking process

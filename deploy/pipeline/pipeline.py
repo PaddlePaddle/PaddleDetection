@@ -718,7 +718,7 @@ class PipePredictor(object):
         if self.with_video_action:
             short_size = self.cfg["VIDEO_ACTION"]["short_size"]
             scale = ShortSizeScale(short_size)
-        res_previous = None
+
         while (1):
             if frame_id % 10 == 0:
                 print('frame id: ', frame_id)
@@ -734,17 +734,13 @@ class PipePredictor(object):
                     self.pipe_timer.module_time['mot'].start()
 
                 mot_skip_frame_num = self.mot_predictor.skip_frame_num
-                if mot_skip_frame_num > 1:
-                    if frame_id % mot_skip_frame_num == 0:
-                        res = self.mot_predictor.predict_image(
-                            [copy.deepcopy(frame_rgb)], visual=False)
-                        res_previous = res
-                    else:
-                        res = res_previous
-                else:
-                    res = self.mot_predictor.predict_image(
-                        [copy.deepcopy(frame_rgb)], visual=False)
-
+                reuse_det_result = False
+                if mot_skip_frame_num > 1 and frame_id > 0 and frame_id % mot_skip_frame_num > 0:
+                    reuse_det_result = True
+                res = self.mot_predictor.predict_image(
+                    [copy.deepcopy(frame_rgb)],
+                    visual=False,
+                    reuse_det_result=reuse_det_result)
                 if frame_id > self.warmup_frame:
                     self.pipe_timer.module_time['mot'].end()
 
