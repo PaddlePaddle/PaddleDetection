@@ -105,6 +105,7 @@ function func_inference(){
     _log_path=$4
     _img_dir=$5
     _flag_quant=$6
+    _gpu=$7
     # inference
     for use_gpu in ${use_gpu_list[*]}; do
         if [ ${use_gpu} = "False" ] || [ ${use_gpu} = "cpu" ]; then
@@ -114,7 +115,7 @@ function func_inference(){
                 fi
                 for threads in ${cpu_threads_list[*]}; do
                     for batch_size in ${batch_size_list[*]}; do
-                        _save_log_path="${_log_path}/python_infer_cpu_usemkldnn_${use_mkldnn}_threads_${threads}_mode_paddle_batchsize_${batch_size}.log"
+                        _save_log_path="${_log_path}/python_infer_cpu_gpus_${gpu}_usemkldnn_${use_mkldnn}_threads_${threads}_mode_paddle_batchsize_${batch_size}.log"
                         set_infer_data=$(func_set_params "${image_dir_key}" "${_img_dir}")
                         set_benchmark=$(func_set_params "${benchmark_key}" "${benchmark_value}")
                         set_batchsize=$(func_set_params "${batch_size_key}" "${batch_size}")
@@ -125,7 +126,7 @@ function func_inference(){
                         eval $command
                         last_status=${PIPESTATUS[0]}
                         eval "cat ${_save_log_path}"
-                        status_check $last_status "${command}" "${status_log}" "${model_name}"
+                        status_check $last_status "${command}" "${status_log}" "${model_name}" "${_save_log_path}"
                     done
                 done
             done
@@ -140,7 +141,7 @@ function func_inference(){
                     fi
                 fi
                 for batch_size in ${batch_size_list[*]}; do
-                    _save_log_path="${_log_path}/python_infer_gpu_mode_${precision}_batchsize_${batch_size}.log"
+                    _save_log_path="${_log_path}/python_infer_gpu_gpus_${gpu}_mode_${precision}_batchsize_${batch_size}.log"
                     set_infer_data=$(func_set_params "${image_dir_key}" "${_img_dir}")
                     set_benchmark=$(func_set_params "${benchmark_key}" "${benchmark_value}")
                     set_batchsize=$(func_set_params "${batch_size_key}" "${batch_size}")
@@ -151,7 +152,7 @@ function func_inference(){
                     eval $command
                     last_status=${PIPESTATUS[0]}
                     eval "cat ${_save_log_path}"
-                    status_check $last_status "${command}" "${status_log}" "${model_name}"
+                    status_check $last_status "${command}" "${status_log}" "${model_name}" "${_save_log_path}"
                 done
             done
         else
@@ -171,6 +172,7 @@ if [ ${MODE} = "whole_infer" ] || [ ${MODE} = "klquant_whole_infer" ]; then
     eval $env
 
     Count=0
+    gpu=0
     IFS="|"
     infer_quant_flag=(${infer_is_quant_list})
     for infer_mode in ${infer_mode_list[*]}; do
@@ -198,12 +200,12 @@ if [ ${MODE} = "whole_infer" ] || [ ${MODE} = "klquant_whole_infer" ]; then
         export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
         echo  $export_cmd
         eval $export_cmd
-        status_check $? "${export_cmd}" "${status_log}" "${model_name}"
+        status_check $? "${export_cmd}" "${status_log}" "${model_name}" 
 
         #run inference
         save_export_model_dir="${save_export_value}/${model_name}"
         is_quant=${infer_quant_flag[Count]}
-        func_inference "${python}" "${inference_py}" "${save_export_model_dir}" "${LOG_PATH}" "${infer_img_dir}" ${is_quant}
+        func_inference "${python}" "${inference_py}" "${save_export_model_dir}" "${LOG_PATH}" "${infer_img_dir}" ${is_quant} "{gpu}"
         Count=$((${Count} + 1))
     done
 else
@@ -304,7 +306,7 @@ else
                 eval "${cmd} > ${train_log_path} 2>&1"
                 last_status=$?
                 cat ${train_log_path}
-                status_check $last_status "${cmd}" "${status_log}" "${model_name}"
+                status_check $last_status "${cmd}" "${status_log}" "${model_name}" "${train_log_path}"
 
                 set_eval_trained_weight=$(func_set_params "${export_weight_key}" "${save_log}/${model_name}/${train_model_name}")
                 # run eval
@@ -315,7 +317,7 @@ else
                     eval "${eval_cmd} > ${eval_log_path} 2>&1"
                     last_status=$?
                     cat ${eval_log_path}
-                    status_check $last_status "${eval_cmd}" "${status_log}" "${model_name}"
+                    status_check $last_status "${eval_cmd}" "${status_log}" "${model_name}" "${eval_log_path}"
                 fi
                 # run export model
                 if [ ${run_export} != "null" ]; then
@@ -336,7 +338,7 @@ else
                     eval "${export_cmd} > ${export_log_path} 2>&1"
                     last_status=$?
                     cat ${export_log_path}
-                    status_check $last_status "${export_cmd}" "${status_log}" "${model_name}"
+                    status_check $last_status "${export_cmd}" "${status_log}" "${model_name}" "${export_log_path}"
 
                     #run inference
                     if [ ${export_onnx_key} != "export_onnx" ]; then
@@ -344,7 +346,7 @@ else
                         eval "cp ${save_export_model_dir}/* ${save_log}/"
                     fi
                     eval $env
-                    func_inference "${python}" "${inference_py}" "${save_export_model_dir}" "${LOG_PATH}" "${train_infer_img_dir}" "${flag_quant}"
+                    func_inference "${python}" "${inference_py}" "${save_export_model_dir}" "${LOG_PATH}" "${train_infer_img_dir}" "${flag_quant}" "{gpu}"
 
                     eval "unset CUDA_VISIBLE_DEVICES"
                 fi
