@@ -87,13 +87,13 @@ attr_thresh: 0.5
 visual: True
 
 MOT:
-  model_dir: output_inference/mot_ppyoloe_l_36e_pipeline/
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip
   tracker_config: deploy/pipeline/config/tracker_config.yml
   batch_size: 1
   enable: True
 
 ATTR:
-  model_dir: output_inference/strongbaseline_r50_30e_pa100k/
+  model_dir:  https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.zip
   batch_size: 8
   enable: True
 ```

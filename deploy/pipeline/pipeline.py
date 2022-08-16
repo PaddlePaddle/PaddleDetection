@@ -397,6 +397,7 @@ class PipePredictor(object):
                 model_dir = mot_cfg['model_dir']
                 tracker_config = mot_cfg['tracker_config']
                 batch_size = mot_cfg['batch_size']
+                skip_frame_num = mot_cfg.get('skip_frame_num', -1)
                 basemode = self.basemode['MOT']
                 self.modebase[basemode] = True
                 self.mot_predictor = SDE_Detector(
@@ -411,6 +412,7 @@ class PipePredictor(object):
                     args.trt_calib_mode,
                     args.cpu_threads,
                     args.enable_mkldnn,
+                    skip_frame_num=skip_frame_num,
                     draw_center_traj=self.draw_center_traj,
                     secs_interval=self.secs_interval,
                     do_entrance_counting=self.do_entrance_counting,
@@ -601,9 +603,15 @@ class PipePredictor(object):
                 if frame_id > self.warmup_frame:
                     self.pipe_timer.total_time.start()
                     self.pipe_timer.module_time['mot'].start()
-                res = self.mot_predictor.predict_image(
-                    [copy.deepcopy(frame_rgb)], visual=False)
 
+                mot_skip_frame_num = self.mot_predictor.skip_frame_num
+                reuse_det_result = False
+                if mot_skip_frame_num > 1 and frame_id > 0 and frame_id % mot_skip_frame_num > 0:
+                    reuse_det_result = True
+                res = self.mot_predictor.predict_image(
+                    [copy.deepcopy(frame_rgb)],
+                    visual=False,
+                    reuse_det_result=reuse_det_result)
                 if frame_id > self.warmup_frame:
                     self.pipe_timer.module_time['mot'].end()
 
