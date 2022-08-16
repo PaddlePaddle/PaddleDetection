@@ -140,7 +140,7 @@ def argsparser():
     parser.add_argument(
         '--skip_frame_num',
         type=int,
-        default=1,
+        default=-1,
         help='Skip frames to speed up the process of getting mot results.')
     parser.add_argument(
         "--do_entrance_counting",

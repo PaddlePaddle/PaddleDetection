@@ -90,7 +90,6 @@ MOT:
   model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip
   tracker_config: deploy/pipeline/config/tracker_config.yml
   batch_size: 1
-  skip_frame_num: 1 # preferably not more than 3
   enable: True
 
 ATTR:

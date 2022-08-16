@@ -28,7 +28,7 @@ MOT:
   model_dir: output_inference/mot_ppyoloe_l_36e_ppvehicle/ # 车辆跟踪模型调用路径
   tracker_config: deploy/pipeline/config/tracker_config.yml
   batch_size: 1   # 模型预测时的batch_size大小, 跟踪任务只能设置为1
-  skip_frame_num: 1  # 跳帧预测的帧数，默认为1即不跳帧，建议跳帧帧数最大不超过4
+  skip_frame_num: -1  # 跳帧预测的帧数，-1表示不进行跳帧，建议跳帧帧数最大不超过3
   enable: False   # 是否开启该功能，使用跟踪前必须确保设置为True
 ```
 
@@ -40,7 +40,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
                                                    --image_file=test_image.jpg \
                                                    --device=gpu
 ```
-3. 视频输入时，是跟踪任务，注意首先设置infer_cfg_ppvehicle.yml中的MOT配置的`enable=True`，如果希望跳帧加速检测跟踪流程，可以设置`skip_frame_num: 2`，建议跳帧帧数最大不超过3，默认是1表示不进行跳帧跟踪：
+3. 视频输入时，是跟踪任务，注意首先设置infer_cfg_ppvehicle.yml中的MOT配置的`enable=True`，如果希望跳帧加速检测跟踪流程，可以设置`skip_frame_num: 2`，建议跳帧帧数最大不超过3：
 ```
 MOT:
   model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip

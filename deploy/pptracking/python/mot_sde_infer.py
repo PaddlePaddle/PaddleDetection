@@ -62,7 +62,7 @@ class SDE_Detector(Detector):
         save_mot_txts (bool): Whether to save tracking results (txt), default as False
         draw_center_traj (bool): Whether drawing the trajectory of center, default as False
         secs_interval (int): The seconds interval to count after tracking, default as 10
-        skip_frame_num (int): Skip frame num to get faster MOT results, default as 1
+        skip_frame_num (int): Skip frame num to get faster MOT results, default as -1
         do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
             or getting out from the entrance, default as False，only support single class
             counting in MOT, and the video should be taken by a static camera.
@@ -97,7 +97,7 @@ class SDE_Detector(Detector):
                  save_mot_txts=False,
                  draw_center_traj=False,
                  secs_interval=10,
-                 skip_frame_num=1,
+                 skip_frame_num=-1,
                  do_entrance_counting=False,
                  do_break_in_counting=False,
                  region_type='horizontal',

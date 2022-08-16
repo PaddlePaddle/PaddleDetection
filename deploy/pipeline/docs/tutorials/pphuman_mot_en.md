@@ -21,7 +21,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
                                                    --image_file=test_image.jpg \
                                                    --device=gpu
 ```
-3. When use the video as input, it's a tracking task, first you should set the "enable: True" in MOT of infer_cfg_pphuman.yml. If you want skip some frames speed up the detection and tracking process, you can set `skip_frame_num: 2`, it is recommended that the maximum number of skip_frame_num should not exceed 4:
+3. When use the video as input, it's a tracking task, first you should set the "enable: True" in MOT of infer_cfg_pphuman.yml. If you want skip some frames speed up the detection and tracking process, you can set `skip_frame_num: 2`, it is recommended that the maximum number of skip_frame_num should not exceed 3:
 ```
 MOT:
   model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip

@@ -397,7 +397,7 @@ class PipePredictor(object):
                 model_dir = mot_cfg['model_dir']
                 tracker_config = mot_cfg['tracker_config']
                 batch_size = mot_cfg['batch_size']
-                skip_frame_num = mot_cfg.get('skip_frame_num', 1)
+                skip_frame_num = mot_cfg.get('skip_frame_num', -1)
                 basemode = self.basemode['MOT']
                 self.modebase[basemode] = True
                 self.mot_predictor = SDE_Detector(
