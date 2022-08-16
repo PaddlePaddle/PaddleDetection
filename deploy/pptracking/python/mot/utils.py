@@ -17,10 +17,12 @@ import cv2
 import time
 import numpy as np
 import collections
+import math
 
 __all__ = [
     'MOTTimer', 'Detection', 'write_mot_results', 'load_det_results',
-    'preprocess_reid', 'get_crops', 'clip_box', 'scale_coords', 'flow_statistic'
+    'preprocess_reid', 'get_crops', 'clip_box', 'scale_coords',
+    'flow_statistic', 'update_object_info'
 ]
 
 
@@ -333,6 +335,93 @@ def flow_statistic(result,
         "prev_center": prev_center,
         "records": records,
     }
+
+
+def distance(center_1, center_2):
+    return math.sqrt(
+        math.pow(center_1[0] - center_2[0], 2) + math.pow(center_1[1] -
+                                                          center_2[1], 2))
+
+
+# update vehicle parking info
+def update_object_info(object_in_region_info,
+                       result,
+                       region_type,
+                       entrance,
+                       fps,
+                       illegal_parking_time,
+                       distance_threshold_frame=3,
+                       distance_threshold_interval=50):
+    '''
+    For consecutive frames, the distance between two frame is smaller than distance_threshold_frame, regard as parking
+    For parking in general, the move distance should smaller than distance_threshold_interval
+    The moving distance of the vehicle is scaled according to the y, which is inversely proportional to y.
+    '''
+
+    assert region_type in [
+        'custom'
+    ], "region_type should be 'custom' when do break_in counting."
+    assert len(
+        entrance
+    ) >= 4, "entrance should be at least 3 points and (w,h) of image when do break_in counting."
+
+    frame_id, tlwhs, tscores, track_ids = result  # result from mot
+
+    im_w, im_h = entrance[-1][:]
+    entrance = np.array(entrance[:-1])
+
+    illegal_parking_dict = {}
+    for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
+        if track_id < 0: continue
+
+        x1, y1, w, h = tlwh
+        center_x = min(x1 + w / 2., im_w - 1)
+        center_y = min(y1 + h / 2, im_h - 1)
+
+        if not in_quadrangle([center_x, center_y], entrance, im_h, im_w):
+            continue
+
+        current_center = (center_x, center_y)
+        if track_id not in object_in_region_info.keys(
+        ):  # first time appear in region
+            object_in_region_info[track_id] = {}
+            object_in_region_info[track_id]["start_frame"] = frame_id
+            object_in_region_info[track_id]["end_frame"] = frame_id
+            object_in_region_info[track_id]["prev_center"] = current_center
+            object_in_region_info[track_id]["start_center"] = current_center
+        else:
+            prev_center = object_in_region_info[track_id]["prev_center"]
+
+            dis = distance(current_center, prev_center)
+            scaled_dis = 200 * dis / (
+                current_center[1] + 1)  # scale distance according to y
+            dis = scaled_dis
+
+            if dis < distance_threshold_frame:  # not move
+                object_in_region_info[track_id]["end_frame"] = frame_id
+                object_in_region_info[track_id]["prev_center"] = current_center
+            else:  # move
+                object_in_region_info[track_id]["start_frame"] = frame_id
+                object_in_region_info[track_id]["end_frame"] = frame_id
+                object_in_region_info[track_id]["prev_center"] = current_center
+                object_in_region_info[track_id]["start_center"] = current_center
+
+        # whether current object parking
+        distance_from_start = distance(
+            object_in_region_info[track_id]["start_center"], current_center)
+        if distance_from_start > distance_threshold_interval:
+            # moved
+            object_in_region_info[track_id]["start_frame"] = frame_id
+            object_in_region_info[track_id]["end_frame"] = frame_id
+            object_in_region_info[track_id]["prev_center"] = current_center
+            object_in_region_info[track_id]["start_center"] = current_center
+            continue
+
+        if (object_in_region_info[track_id]["end_frame"]-object_in_region_info[track_id]["start_frame"]) /fps >= illegal_parking_time \
+            and distance_from_start<distance_threshold_interval:
+            illegal_parking_dict[track_id] = {"bbox": [x1, y1, w, h]}
+
+    return object_in_region_info, illegal_parking_dict
 
 
 def in_quadrangle(point, entrance, im_h, im_w):

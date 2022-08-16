@@ -1,10 +1,10 @@
 
 Global:
-  reader_config: configs/ppyoloe_reader.yml
+  reader_config: configs/yolov5_reader.yml
   input_list: ['image', 'scale_factor']
   arch: YOLO
   Evaluation: True
-  model_dir: ./ppyoloe_crn_l_300e_coco
+  model_dir: ./yolov6mt_s_400e_coco
   model_filename: model.pdmodel
   params_filename: model.pdiparams
 
@@ -13,21 +13,19 @@ Distillation:
   loss: soft_label
 
 Quantization:
-  use_pact: true
   activation_quantize_type: 'moving_average_abs_max'
   quantize_op_types:
   - conv2d
   - depthwise_conv2d
 
 TrainConfig:
-  train_iter: 5000
+  train_iter: 8000
   eval_iter: 1000
-  learning_rate:  
-    type: CosineAnnealingDecay
+  learning_rate: 
+    type: CosineAnnealingDecay 
     learning_rate: 0.00003
-    T_max: 6000
+    T_max: 8000
   optimizer_builder:
-    optimizer: 
+    optimizer:
       type: SGD
-    weight_decay: 4.0e-05
-
+    weight_decay: 0.00004

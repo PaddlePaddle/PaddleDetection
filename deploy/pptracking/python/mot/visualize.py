@@ -194,12 +194,14 @@ def plot_tracking_dict(image,
                        ids2names=[],
                        do_entrance_counting=False,
                        do_break_in_counting=False,
+                       do_illegal_parking_recognition=False,
+                       illegal_parking_dict=None,
                        entrance=None,
                        records=None,
                        center_traj=None):
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
-    if do_break_in_counting:
+    if do_break_in_counting or do_illegal_parking_recognition:
         entrance = np.array(entrance[:-1])  # last pair is [im_w, im_h] 
 
     text_scale = max(0.5, image.shape[1] / 3000.)
@@ -234,7 +236,8 @@ def plot_tracking_dict(image,
             text_scale, (0, 0, 255),
             thickness=text_thickness)
 
-    if num_classes == 1 and do_break_in_counting:
+    if num_classes == 1 and (do_break_in_counting or
+                             do_illegal_parking_recognition):
         np_masks = np.zeros((im_h, im_w, 1), np.uint8)
         cv2.fillPoly(np_masks, [entrance], 255)
 
@@ -249,14 +252,33 @@ def plot_tracking_dict(image,
         im[idx[0], idx[1], :] += alpha * color_mask
         im = np.array(im).astype('uint8')
 
-        # find start location for break in counting data
-        start = records[-1].find('Break_in')
-        cv2.putText(
-            im,
-            records[-1][start:-1], (entrance[0][0] - 10, entrance[0][1] - 10),
-            cv2.FONT_ITALIC,
-            text_scale, (0, 0, 255),
-            thickness=text_thickness)
+        if do_break_in_counting:
+            # find start location for break in counting data
+            start = records[-1].find('Break_in')
+            cv2.putText(
+                im,
+                records[-1][start:-1],
+                (entrance[0][0] - 10, entrance[0][1] - 10),
+                cv2.FONT_ITALIC,
+                text_scale, (0, 0, 255),
+                thickness=text_thickness)
+
+        if illegal_parking_dict is not None and len(illegal_parking_dict) != 0:
+            for key, value in illegal_parking_dict.items():
+                x1, y1, w, h = value['bbox']
+                plate = value['plate']
+
+                # red box
+                cv2.rectangle(im, (int(x1), int(y1)),
+                              (int(x1 + w), int(y1 + h)), (0, 0, 255), 2)
+
+                cv2.putText(
+                    im,
+                    "illegal_parking:" + plate,
+                    (int(x1) + 5, int(16 * text_scale + y1 + 15)),
+                    cv2.FONT_ITALIC,
+                    text_scale * 1.5, (0, 0, 255),
+                    thickness=text_thickness)
 
     for cls_id in range(num_classes):
         tlwhs = tlwhs_dict[cls_id]
