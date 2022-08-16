@@ -80,13 +80,14 @@ visual: True
 warmup_frame: 50
 
 MOT:
-  model_dir: output_inference/mot_ppyoloe_l_36e_ppvehicle/
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip
   tracker_config: deploy/pipeline/config/tracker_config.yml
   batch_size: 1
+  skip_frame_num: 1 # preferably not more than 3
   enable: True
 
 VEHICLE_ATTR:
-  model_dir: output_inference/vehicle_attribute_infer/
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip
   batch_size: 8
   color_threshold: 0.5
   type_threshold: 0.5
@@ -145,7 +146,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 
 ## 方案介绍
 
-PP-Vehicle v2整体方案如下图所示:
+PP-Vehicle 整体方案如下图所示:
 
 <div width="1000" align="center">
   <img src="../../../../docs/images/ppvehicle.png"/>

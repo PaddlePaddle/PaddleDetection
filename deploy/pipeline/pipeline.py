@@ -413,12 +413,12 @@ class PipePredictor(object):
                     args.cpu_threads,
                     args.enable_mkldnn,
                     skip_frame_num=skip_frame_num,
-                    draw_center_traj=draw_center_traj,
-                    secs_interval=secs_interval,
-                    do_entrance_counting=do_entrance_counting,
-                    do_break_in_counting=do_break_in_counting,
-                    region_type=region_type,
-                    region_polygon=region_polygon)
+                    draw_center_traj=self.draw_center_traj,
+                    secs_interval=self.secs_interval,
+                    do_entrance_counting=self.do_entrance_counting,
+                    do_break_in_counting=self.do_break_in_counting,
+                    region_type=self.region_type,
+                    region_polygon=self.region_polygon)
 
             if self.with_video_action:
                 video_action_cfg = self.cfg['VIDEO_ACTION']
