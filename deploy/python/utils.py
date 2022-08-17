@@ -161,7 +161,28 @@ def argsparser():
         type=bool,
         default=False,
         help="Whether save detection result to file using coco format")
-
+    parser.add_argument(
+        "--slice_infer",
+        action='store_true',
+        help="Whether to slice the image and merge the inference results for small object detection."
+    )
+    parser.add_argument(
+        '--slice_size',
+        nargs='+',
+        type=int,
+        default=[640, 640],
+        help="Height of the sliced image.")
+    parser.add_argument(
+        "--overlap_ratio",
+        nargs='+',
+        type=float,
+        default=[0.25, 0.25],
+        help="Overlap height ratio of the sliced image.")
+    parser.add_argument(
+        "--fuse_method",
+        type=str,
+        default='nms',
+        help="Fuse method of the sliced images' detection results.")
     return parser
 
 

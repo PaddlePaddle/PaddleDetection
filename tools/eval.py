@@ -90,25 +90,17 @@ def parse_args():
         help="Whether to slice the image and merge the inference results for small object detection."
     )
     parser.add_argument(
-        "--slice_height",
+        '--slice_size',
+        nargs='+',
         type=int,
-        default=480,
+        default=[640, 640],
         help="Height of the sliced image.")
     parser.add_argument(
-        "--slice_width",
-        type=int,
-        default=480,
-        help="Width of the sliced image.")
-    parser.add_argument(
-        "--overlap_height_ratio",
+        "--overlap_ratio",
+        nargs='+',
         type=float,
-        default=0.2,
+        default=[0.25, 0.25],
         help="Overlap height ratio of the sliced image.")
-    parser.add_argument(
-        "--overlap_width_ratio",
-        type=float,
-        default=0.2,
-        help="Overlap width ratio of the sliced image.")
     parser.add_argument(
         "--fuse_method",
         type=str,
@@ -142,7 +134,10 @@ def run(FLAGS, cfg):
 
     # training
     if FLAGS.slice_infer:
-        trainer.evaluate(slice_infer=FLAGS.slice_infer)
+        trainer.evaluate_slice(
+            slice_size=FLAGS.slice_size,
+            overlap_ratio=FLAGS.overlap_ratio,
+            fuse_method=FLAGS.fuse_method, )
     else:
         trainer.evaluate()
 

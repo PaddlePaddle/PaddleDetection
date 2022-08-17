@@ -617,35 +617,78 @@ class Trainer(object):
         with paddle.no_grad():
             self._eval_with_loader(self.loader)
 
-    def _eval_with_loader_slice(self, loader, slice_height, slice_width,
-                                overlap_height_ratio, overlap_width_ratio,
-                                fuse_method):
+    def _eval_with_loader_slice(self,
+                                loader,
+                                slice_size,
+                                overlap_ratio,
+                                fuse_method='nms'):
         sample_num = 0
         tic = time.time()
         self._compose_callback.on_epoch_begin(self.status)
         self.status['mode'] = 'eval'
         self.model.eval()
+        if self.cfg.get('print_flops', False):
+            flops_loader = create('{}Reader'.format(self.mode.capitalize()))(
+                self.dataset, self.cfg.worker_num, self._eval_batch_sampler)
+            self._flops(flops_loader)
+
+        merged_bboxs = []
         for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
             self._compose_callback.on_step_begin(self.status)
             # forward
             if self.use_amp:
                 with paddle.amp.auto_cast(
-                        enable=self.cfg.use_gpu, level=self.amp_level):
+                        enable=self.cfg.use_gpu,
+                        custom_white_list=self.custom_white_list,
+                        custom_black_list=self.custom_black_list,
+                        level=self.amp_level):
                     outs = self.model(data)
             else:
                 outs = self.model(data)
 
-            full_results = outs  #
-            # update metrics
-            for metric in self._metrics:
-                metric.update(data, full_results)
+            shift_amount = data['st_pix']
+            outs['bbox'][:, 2:4] = outs['bbox'][:, 2:4] + shift_amount
+            outs['bbox'][:, 4:6] = outs['bbox'][:, 4:6] + shift_amount
+            merged_bboxs.append(outs['bbox'])
 
-            # multi-scale inputs: all inputs have same im_id
-            if isinstance(data, typing.Sequence):
-                sample_num += data[0]['im_id'].numpy().shape[0]
-            else:
-                sample_num += data['im_id'].numpy().shape[0]
+            if data['is_last'] > 0:
+                # merge matching predictions
+                merged_results = {'bbox': []}
+                if fuse_method == 'nms':
+                    from ppdet.modeling.post_process import nms
+                    all_scale_outs = np.concatenate(merged_bboxs)
+                    final_boxes = []
+                    for c in range(self.cfg.num_classes):
+                        idxs = all_scale_outs[:, 0] == c
+                        if np.count_nonzero(idxs) == 0:
+                            continue
+                        r = nms(all_scale_outs[idxs, 1:], thresh=0.6)
+                        final_boxes.append(
+                            np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+                    merged_results['bbox'] = np.concatenate(final_boxes)
+                elif fuse_method == 'concat':
+                    merged_results['bbox'] = np.concatenate(merged_bboxs)
+                else:
+                    raise ValueError(
+                        "Now only support 'nms' or 'concat' to fuse detection results."
+                    )
+                merged_results['im_id'] = np.array([[0]])
+                merged_results['bbox_num'] = np.array(
+                    [len(merged_results['bbox'])])
+
+                merged_bboxs = []
+                data['im_id'] = data['ori_im_id']
+                # update metrics
+                for metric in self._metrics:
+                    metric.update(data, merged_results)
+
+                # multi-scale inputs: all inputs have same im_id
+                if isinstance(data, typing.Sequence):
+                    sample_num += data[0]['im_id'].numpy().shape[0]
+                else:
+                    sample_num += data['im_id'].numpy().shape[0]
+
             self._compose_callback.on_step_end(self.status)
 
         self.status['sample_num'] = sample_num
@@ -660,37 +703,26 @@ class Trainer(object):
         self._reset_metrics()
 
     def evaluate_slice(self,
-                       slice_height=480,
-                       slice_width=480,
-                       overlap_height_ratio=0.2,
-                       overlap_width_ratio=0.2,
+                       slice_size=[640, 640],
+                       overlap_ratio=[0.25, 0.25],
                        fuse_method='nms'):
         with paddle.no_grad():
-            self._eval_with_loader_slice(self.loader, slice_height, slice_width,
-                                         overlap_height_ratio,
-                                         overlap_width_ratio, fuse_method)
+            self._eval_with_loader_slice(self.loader, slice_size, overlap_ratio,
+                                         fuse_method)
 
     def slice_predict(self,
                       images,
-                      slice_height=480,
-                      slice_width=480,
-                      overlap_height_ratio=0.2,
-                      overlap_width_ratio=0.2,
+                      slice_size=[640, 640],
+                      overlap_ratio=[0.25, 0.25],
                       fuse_method='nms',
                       draw_threshold=0.5,
                       output_dir='output',
                       save_results=False):
-        try:
-            import sahi
-            from sahi.slicing import slice_image
-        except Exception as e:
-            logger.error(
-                'sahi not found, plaese install sahi. '
-                'for example: `pip install sahi`, see https://github.com/obss/sahi.'
-            )
-            raise e
+        self.dataset.set_slice_images(images, slice_size, overlap_ratio)
+        loader = create('TestReader')(self.dataset, 0)
 
         imid2path = self.dataset.get_imid2path()
+
         anno_file = self.dataset.get_anno()
         clsid2catid, catid2name = get_categories(
             self.cfg.metric, anno_file=anno_file)
@@ -702,120 +734,83 @@ class Trainer(object):
             flops_loader = create('TestReader')(self.dataset, 0)
             self._flops(flops_loader)
 
-        for img in images:
-            slice_image_result = slice_image(
-                image=img,
-                slice_height=slice_height,
-                slice_width=slice_width,
-                overlap_height_ratio=overlap_height_ratio,
-                overlap_width_ratio=overlap_width_ratio, )
-
-        # perform sliced prediction
-        image_list = []
-        shift_amount_list = []
-        for _ind in range(len(slice_image_result)):
-            sub_img = slice_image_result.images[_ind]
-            shift_amount_list.append(slice_image_result.starting_pixels[_ind])
-            image_list.append(sub_img)
-
-        self.dataset.set_sub_images(images, image_list)
-        loader = create('TestReader')(self.dataset, 0)
-
-        results = []
+        results = []  # all images
+        merged_bboxs = []  # single image
         for step_id, data in enumerate(tqdm(loader)):
             self.status['step_id'] = step_id
             # forward
             outs = self.model(data)
-            for key in ['im_shape', 'scale_factor', 'im_id']:
-                if isinstance(data, typing.Sequence):
-                    outs[key] = data[0][key]
+
+            outs['bbox'] = outs['bbox'].numpy()  # only in test mode
+            shift_amount = data['st_pix']
+            outs['bbox'][:, 2:4] = outs['bbox'][:, 2:4] + shift_amount.numpy()
+            outs['bbox'][:, 4:6] = outs['bbox'][:, 4:6] + shift_amount.numpy()
+            merged_bboxs.append(outs['bbox'])
+
+            if data['is_last'] > 0:
+                # merge matching predictions
+                merged_results = {'bbox': []}
+                if fuse_method == 'nms':
+                    from ppdet.modeling.post_process import nms
+                    all_scale_outs = np.concatenate(merged_bboxs)
+                    final_boxes = []
+                    for c in range(self.cfg.num_classes):
+                        idxs = all_scale_outs[:, 0] == c
+                        if np.count_nonzero(idxs) == 0:
+                            continue
+                        r = nms(all_scale_outs[idxs, 1:], thresh=0.8)
+                        final_boxes.append(
+                            np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+                    merged_results['bbox'] = np.concatenate(final_boxes)
+                elif fuse_method == 'concat':
+                    merged_results['bbox'] = np.concatenate(merged_bboxs)
                 else:
-                    outs[key] = data[key]
-            for key, value in outs.items():
-                if hasattr(value, 'numpy'):
-                    outs[key] = value.numpy()
-            results.append(outs)
+                    raise ValueError(
+                        "Now only support 'nms' or 'concat' to fuse detection results."
+                    )
+                merged_results['im_id'] = np.array([[0]])
+                merged_results['bbox_num'] = np.array(
+                    [len(merged_results['bbox'])])
 
-        full_results = []
-        for outs, image, shift_amount in zip(results, image_list,
-                                             shift_amount_list):
-            im_id = outs['im_id']
+                merged_bboxs = []
+                data['im_id'] = data['ori_im_id']
+
+                for key in ['im_shape', 'scale_factor', 'im_id']:
+                    if isinstance(data, typing.Sequence):
+                        outs[key] = data[0][key]
+                    else:
+                        outs[key] = data[key]
+                for key, value in merged_results.items():
+                    if hasattr(value, 'numpy'):
+                        merged_results[key] = value.numpy()
+                results.append(merged_results)
+
+        # visualize results
+        for outs in results:
             batch_res = get_infer_results(outs, clsid2catid)
-
-            image_path = imid2path[int(im_id)]
-            self.status['original_image'] = image
-            image = Image.fromarray(image.astype('uint8'))
-
-            bbox_res = batch_res['bbox'] if 'bbox' in batch_res else None
-            mask_res, segm_res, keypoint_res = None, None, None
-            image = visualize_results(
-                image,
-                bbox_res,
-                mask_res,
-                segm_res,
-                keypoint_res,
-                int(im_id),
-                catid2name,
-                threshold=draw_threshold)
-
-            self.status['result_image'] = np.array(image.copy())
-            if self._compose_callback:
-                self._compose_callback.on_step_end(self.status)
-            # save image with detection
-            save_name = self._get_save_image_name(output_dir, image_path)
-            logger.info("Detection bbox results save in {}".format(save_name))
-            image.save(save_name, quality=95)
-
-            outs['bbox'][:, 2:4] = outs['bbox'][:, 2:4] + shift_amount
-            outs['bbox'][:, 4:6] = outs['bbox'][:, 4:6] + shift_amount
-            full_results.append(outs['bbox'])
-
-        # merge matching predictions
-        merged_results = {'bbox': []}
-        if len(results) > 1:
-            if fuse_method == 'nms':
-                from ppdet.modeling.post_process import nms
-                all_scale_outs = np.concatenate(full_results)
-                final_boxes = []
-                for c in range(self.cfg.num_classes):
-                    idxs = all_scale_outs[:, 0] == c
-                    if np.count_nonzero(idxs) == 0:
-                        continue
-                    r = nms(all_scale_outs[idxs, 1:], thresh=0.6)
-                    final_boxes.append(
-                        np.concatenate([np.full((r.shape[0], 1), c), r], 1))
-                merged_results['bbox'] = np.concatenate(final_boxes)
-            elif fuse_method == 'concat':
-                merged_results['bbox'] = np.concatenate(full_results)
-            else:
-                raise ValueError(
-                    "Now only support 'nms' or 'concat' to fuse detection results."
-                )
-
-            merged_results['im_id'] = np.array([[0]])
-            merged_results['bbox_num'] = np.array([len(merged_results['bbox'])])
-
-            bbox_res = get_infer_results(merged_results, clsid2catid)
-            mask_res, segm_res, keypoint_res = None, None, None
-            image_path = images[0]
-            image = Image.open(image_path).convert('RGB')
-            image = ImageOps.exif_transpose(image)
-
-            im_id = merged_results['im_id']
-            image = visualize_results(
-                image,
-                bbox_res['bbox'],
-                mask_res,
-                segm_res,
-                keypoint_res,
-                int(im_id),
-                catid2name,
-                threshold=draw_threshold)
-            # save image with detection
-            save_name = self._get_save_image_name(output_dir, image_path)
-            image.save(save_name, quality=95)
-            logger.info("Full Detection bbox results save in {}".format(
-                save_name))
+            bbox_num = outs['bbox_num']
+            start = 0
+            for i, im_id in enumerate(outs['im_id']):
+                image_path = imid2path[int(im_id)]
+                image = Image.open(image_path).convert('RGB')
+                image = ImageOps.exif_transpose(image)
+                self.status['original_image'] = np.array(image.copy())
+                end = start + bbox_num[i]
+                bbox_res = batch_res['bbox'][start:end] \
+                        if 'bbox' in batch_res else None
+                mask_res, segm_res, keypoint_res = None, None, None
+                image = visualize_results(
+                    image, bbox_res, mask_res, segm_res, keypoint_res,
+                    int(im_id), catid2name, draw_threshold)
+                self.status['result_image'] = np.array(image.copy())
+                if self._compose_callback:
+                    self._compose_callback.on_step_end(self.status)
+                # save image with detection
+                save_name = self._get_save_image_name(output_dir, image_path)
+                logger.info("Detection bbox results save in {}".format(
+                    save_name))
+                image.save(save_name, quality=95)
+                start = end
 
     def predict(self,
                 images,

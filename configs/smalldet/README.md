@@ -56,26 +56,44 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/smalldet/ppyoloe_crn_l_80
 
 3.修改验证集的标注文件路径为原图标注文件，对原图进行切图后并重组来评估原图上的精度：
 ```bash
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --slice_infer
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025_slice_infer.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --slice_infer
 ```
 
 **注意:**
-- 设置`--slice_infer`表示切图预测并拼装重组结果，默认子图结果框融合方式为NMS，运行时间较长。
-
+- 设置`--slice_infer`表示切图预测并拼装重组结果，默认子图结果框融合方式为NMS，运行时间较长，注意需要确保EvalDataset的数据集类是SlicedCOCODataSet而不是COCODataSet。
+- 可以自行修改选择合适的子图尺度sliced_size和子图间重叠率overlap_ratio：
+```
+EvalDataset:
+  !SlicedCOCODataSet
+    image_dir: VisDrone2019-DET-val
+    anno_path: val.json
+    dataset_dir: dataset/visdrone
+    sliced_size: [640, 640]
+    overlap_ratio: [0.25, 0.25]
+```
 
 ## 预测
 
 与评估流程基本相同，如需对原图进行切图后并重组来预测原图：
 ```bash
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --infer_img=demo.jpg --draw_threshold=0.25 --slice_infer
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025_slice_infer.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --infer_img=demo.jpg --draw_threshold=0.25 --slice_infer --slice_size 640 640 --overlap_ratio 0.25 0.25
 ```
 - 设置`--slice_infer`表示切图预测并拼装重组结果，默认子图结果框融合方式为NMS，运行时间较长。
+- 设置`--slice_size`表示切图的子图尺寸大小，设置`--slice_size`表示子图间重叠率。
 
 
 ## 部署
 
+导出模型和使用原图infer，和常规模型的用法相同：
+```bash
+# export model
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams
 
-
+# deploy infer
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_80e_sliced_visdrone_640_025 --image_file=demo.jpg --device=GPU --threshold=0.25  --slice_infer --slice_size 640 640 --overlap_ratio 0.25 0.25
+```
+- 设置`--slice_infer`表示切图预测并拼装重组结果，默认子图结果框融合方式为NMS，运行时间较长。
+- 设置`--slice_size`表示切图的子图尺寸大小，设置`--slice_size`表示子图间重叠率。
 
 
 # SAHI切图工具使用说明
