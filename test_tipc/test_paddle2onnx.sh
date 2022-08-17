@@ -81,7 +81,7 @@ function func_paddle2onnx_inference(){
     eval "${trans_model_cmd} > ${trans_log_path} 2>&1"
     last_status=${PIPESTATUS[0]}
     cat ${trans_log_path}
-    status_check $last_status "${trans_model_cmd}" "${status_log}" "${model_name}"
+    status_check $last_status "${trans_model_cmd}" "${status_log}" "${model_name}" "${trans_log_path}"
 
     # python inference
     echo "################### run onnx infer ###################"
@@ -94,7 +94,7 @@ function func_paddle2onnx_inference(){
     eval "${infer_model_cmd} > ${_save_log_path} 2>&1"
     last_status=${PIPESTATUS[0]}
     cat ${_save_log_path}
-    status_check $last_status "${infer_model_cmd}" "${status_log}" "${model_name}"
+    status_check $last_status "${infer_model_cmd}" "${status_log}" "${model_name}" "${_save_log_path}"
 }
 
 export Count=0
@@ -120,7 +120,7 @@ for infer_mode in ${infer_mode_list[*]}; do
         eval "${export_cmd} > ${export_log_path} 2>&1"
         status_export=$?
         cat ${export_log_path}
-        status_check $status_export "${export_cmd}" "${status_log}" "${model_name}"
+        status_check $status_export "${export_cmd}" "${status_log}" "${model_name}" "${export_log_path}"
     fi
 
     #run inference
