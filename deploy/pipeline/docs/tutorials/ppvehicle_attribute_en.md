@@ -58,8 +58,8 @@ VEHICLE_ATTR:
   enable: False         # Whether to enable this function
 ```
 
-### How to Use This function
-1. Download models `Vehicle Detection/Tracking` and `Vehicle Attribute Recognition` from the links in `Model Zoo` and unzip them to ```./output_inference```. The models are automatically downloaded by default. If you download them manually, you need to modify the `model_dir` as the model storage path.
+### How to Use
+1. Download models `Vehicle Detection/Tracking` and `Vehicle Attribute Recognition` from the links in `Model Zoo` and unzip them to ```./output_inference```. The models are automatically downloaded by default. If you download them manually, you need to modify the `model_dir` as the model storage path to use this function.
 
 2. Set the "enable: True" of `VEHICLE_ATTR` in infer_cfg_ppvehicle.yml.
 
