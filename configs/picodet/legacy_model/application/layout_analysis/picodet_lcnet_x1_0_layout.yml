@@ -29,18 +29,18 @@ TrainDataset:
   !COCODataSet
     image_dir: train
     anno_path: train.json
-    dataset_dir: /root/publaynet/
+    dataset_dir: ./dataset/publaynet/
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
     image_dir: val
     anno_path: val.json
-    dataset_dir: /root/publaynet/
+    dataset_dir: ./dataset/publaynet/
 
 TestDataset:
   !ImageFolder
-    anno_path: /root/val.json
+    anno_path: ./dataset/publaynet/val.json
 
 
 worker_num: 8
