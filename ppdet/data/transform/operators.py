@@ -2103,6 +2103,8 @@ class Poly2Mask(BaseOperator):
         assert 'gt_poly' in sample
         im_h = sample['h']
         im_w = sample['w']
+        # new add - for sparseinst model
+        im_h, im_w = sample['im_shape']
         masks = [
             self._poly2mask(gt_poly, im_h, im_w)
             for gt_poly in sample['gt_poly']
