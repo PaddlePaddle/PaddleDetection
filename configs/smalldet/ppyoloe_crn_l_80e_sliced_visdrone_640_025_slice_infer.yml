@@ -37,19 +37,14 @@ PPYOLOEHead:
 
 
 # very slow, preferly eval with a determined weights(xx.pdparams)
-# if you want to eval during training, change SlicedCOCODataSet to COCODataSet
+# if you want to eval during training, change SlicedCOCODataSet to COCODataSet and delete sliced_size/overlap_ratio
 EvalDataset:
   !SlicedCOCODataSet
     image_dir: VisDrone2019-DET-val
     anno_path: val.json
     dataset_dir: dataset/visdrone
-    sliced_size: [640, 640]
-    overlap_ratio: [0.25, 0.25]
+    #sliced_size: [640, 640]
+    #overlap_ratio: [0.25, 0.25]
 
 EvalReader:
-  sample_transforms:
-    - Decode: {}
-    - Resize: {target_size: *eval_size, keep_ratio: False, interp: 2}
-    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
-    - Permute: {}
   batch_size: 1 # only support bs=1 when slice infer

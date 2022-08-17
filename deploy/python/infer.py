@@ -218,6 +218,99 @@ class Detector(object):
     def get_timer(self):
         return self.det_times
 
+    def predict_image_slice(self,
+                            img_list,
+                            num_classes,
+                            slice_size=[640, 640],
+                            overlap_ratio=[0.25, 0.25],
+                            fuse_method='nms',
+                            visual=True,
+                            save_file=None):
+        # only support bs=1
+        results = []
+        try:
+            import sahi
+            from sahi.slicing import slice_image
+        except Exception as e:
+            logger.error(
+                'sahi not found, plaese install sahi. '
+                'for example: `pip install sahi`, see https://github.com/obss/sahi.'
+            )
+            raise e
+        for i in range(img_list):
+            ori_image = img_list[i]
+            slice_image_result = sahi.slicing.slice_image(
+                image=im_path,
+                slice_height=self.sliced_size[0],
+                slice_width=self.sliced_size[1],
+                overlap_height_ratio=self.overlap_ratio[0],
+                overlap_width_ratio=self.overlap_ratio[1])
+            sub_img_num = len(slice_image_result)
+            merged_bboxs = []
+            for _ind in range(sub_img_num):
+                im = slice_image_result.images[_ind]
+                #sub_image_list.append(im)
+                self.det_times.preprocess_time_s.start()
+                inputs = self.preprocess(im)
+                self.det_times.preprocess_time_s.end()
+
+                # model prediction
+                self.det_times.inference_time_s.start()
+                result = self.predict()
+                self.det_times.inference_time_s.end()
+
+                # postprocess
+                self.det_times.postprocess_time_s.start()
+                result = self.postprocess(inputs, result)
+                self.det_times.postprocess_time_s.end()
+                self.det_times.img_num += 1
+
+                shift_amount = slice_image_result.starting_pixels[_ind]
+                result['boxes'][:, 2:4] = result['boxes'][:, 2:4] + shift_amount
+                result['boxes'][:, 4:6] = result['boxes'][:, 4:6] + shift_amount
+                merged_bboxs.append(result['boxes'])
+
+            merged_results = {'boxes': []}
+            if fuse_method == 'nms':
+                from .utils import nms
+                all_scale_outs = np.concatenate(merged_bboxs)
+                final_boxes = []
+                for c in range(num_classes):
+                    idxs = all_scale_outs[:, 0] == c
+                    if np.count_nonzero(idxs) == 0:
+                        continue
+                    r = nms(all_scale_outs[idxs, 1:], thresh=0.6)
+                    final_boxes.append(
+                        np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+                merged_results['boxes'] = np.concatenate(final_boxes)
+            elif fuse_method == 'concat':
+                merged_results['boxes'] = np.concatenate(merged_bboxs)
+            else:
+                raise ValueError(
+                    "Now only support 'nms' or 'concat' to fuse detection results."
+                )
+            merged_results['boxes_num'] = np.array(
+                [len(merged_results['boxes'])])
+
+            if visual:
+                visualize(
+                    im,
+                    merged_results,
+                    self.pred_config.labels,
+                    output_dir=self.output_dir,
+                    threshold=self.threshold)
+
+            results.append(merged_results)
+            if visual:
+                print('Test iter {}'.format(i))
+
+        if save_file is not None:
+            Path(self.output_dir).mkdir(exist_ok=True)
+            self.format_coco_results(image_list, results, save_file=save_file)
+
+        results = self.merge_batch_result(results)
+        return results
+
     def predict_image(self,
                       image_list,
                       run_benchmark=False,
@@ -871,8 +964,18 @@ def main():
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
         save_file = os.path.join(FLAGS.output_dir,
                                  'results.json') if FLAGS.save_results else None
-        detector.predict_image(
-            img_list, FLAGS.run_benchmark, repeats=100, save_file=save_file)
+        if FLAGS.slice_infer:
+            num_classes = len(yml_conf['label_list'])
+            detector.predict_image_slice(
+                img_list,
+                num_classes,
+                FLAGS.slice_size,
+                FLAGS.overlap_ratio,
+                FLAGS.fuse_method,
+                save_file=save_file)
+        else:
+            detector.predict_image(
+                img_list, FLAGS.run_benchmark, repeats=100, save_file=save_file)
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)
         else:
