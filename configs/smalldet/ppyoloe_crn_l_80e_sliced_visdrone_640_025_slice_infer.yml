@@ -43,8 +43,9 @@ EvalDataset:
     image_dir: VisDrone2019-DET-val
     anno_path: val.json
     dataset_dir: dataset/visdrone
-    #sliced_size: [640, 640]
-    #overlap_ratio: [0.25, 0.25]
+    sliced_size: [640, 640]
+    overlap_ratio: [0.25, 0.25]
+
 
 EvalReader:
   batch_size: 1 # only support bs=1 when slice infer

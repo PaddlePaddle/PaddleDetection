@@ -45,6 +45,7 @@ from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 from ppdet.utils.fuse_utils import fuse_conv_bn
 from ppdet.utils import profiler
+from ppdet.modeling.post_process import multiclass_nms
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback
 from .export_utils import _dump_infer_config, _prune_input_spec
@@ -619,9 +620,11 @@ class Trainer(object):
 
     def _eval_with_loader_slice(self,
                                 loader,
-                                slice_size,
-                                overlap_ratio,
-                                fuse_method='nms'):
+                                slice_size=[640, 640],
+                                overlap_ratio=[0.25, 0.25],
+                                combine_method='nms',
+                                match_threshold=0.6,
+                                match_metric='iou'):
         sample_num = 0
         tic = time.time()
         self._compose_callback.on_epoch_begin(self.status)
@@ -655,19 +658,12 @@ class Trainer(object):
             if data['is_last'] > 0:
                 # merge matching predictions
                 merged_results = {'bbox': []}
-                if fuse_method == 'nms':
-                    from ppdet.modeling.post_process import nms
-                    all_scale_outs = np.concatenate(merged_bboxs)
-                    final_boxes = []
-                    for c in range(self.cfg.num_classes):
-                        idxs = all_scale_outs[:, 0] == c
-                        if np.count_nonzero(idxs) == 0:
-                            continue
-                        r = nms(all_scale_outs[idxs, 1:], thresh=0.6)
-                        final_boxes.append(
-                            np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+                if combine_method == 'nms':
+                    final_boxes = multiclass_nms(
+                        np.concatenate(merged_bboxs), self.cfg.num_classes,
+                        match_threshold, match_metric)
                     merged_results['bbox'] = np.concatenate(final_boxes)
-                elif fuse_method == 'concat':
+                elif combine_method == 'concat':
                     merged_results['bbox'] = np.concatenate(merged_bboxs)
                 else:
                     raise ValueError(
@@ -705,16 +701,21 @@ class Trainer(object):
     def evaluate_slice(self,
                        slice_size=[640, 640],
                        overlap_ratio=[0.25, 0.25],
-                       fuse_method='nms'):
+                       combine_method='nms',
+                       match_threshold=0.6,
+                       match_metric='iou'):
         with paddle.no_grad():
             self._eval_with_loader_slice(self.loader, slice_size, overlap_ratio,
-                                         fuse_method)
+                                         combine_method, match_threshold,
+                                         match_metric)
 
     def slice_predict(self,
                       images,
                       slice_size=[640, 640],
                       overlap_ratio=[0.25, 0.25],
-                      fuse_method='nms',
+                      combine_method='nms',
+                      match_threshold=0.6,
+                      match_metric='iou',
                       draw_threshold=0.5,
                       output_dir='output',
                       save_results=False):
@@ -750,19 +751,12 @@ class Trainer(object):
             if data['is_last'] > 0:
                 # merge matching predictions
                 merged_results = {'bbox': []}
-                if fuse_method == 'nms':
-                    from ppdet.modeling.post_process import nms
-                    all_scale_outs = np.concatenate(merged_bboxs)
-                    final_boxes = []
-                    for c in range(self.cfg.num_classes):
-                        idxs = all_scale_outs[:, 0] == c
-                        if np.count_nonzero(idxs) == 0:
-                            continue
-                        r = nms(all_scale_outs[idxs, 1:], thresh=0.8)
-                        final_boxes.append(
-                            np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+                if combine_method == 'nms':
+                    final_boxes = multiclass_nms(
+                        np.concatenate(merged_bboxs), self.cfg.num_classes,
+                        match_threshold, match_metric)
                     merged_results['bbox'] = np.concatenate(final_boxes)
-                elif fuse_method == 'concat':
+                elif combine_method == 'concat':
                     merged_results['bbox'] = np.concatenate(merged_bboxs)
                 else:
                     raise ValueError(

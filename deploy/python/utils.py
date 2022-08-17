@@ -16,6 +16,7 @@ import time
 import os
 import ast
 import argparse
+import numpy as np
 
 
 def argsparser():
@@ -179,10 +180,21 @@ def argsparser():
         default=[0.25, 0.25],
         help="Overlap height ratio of the sliced image.")
     parser.add_argument(
-        "--fuse_method",
+        "--combine_method",
         type=str,
         default='nms',
-        help="Fuse method of the sliced images' detection results.")
+        help="Combine method of the sliced images' detection results, choose in ['nms', 'nmm', 'concat']."
+    )
+    parser.add_argument(
+        "--match_threshold",
+        type=float,
+        default=0.6,
+        help="Combine method matching threshold.")
+    parser.add_argument(
+        "--match_metric",
+        type=str,
+        default='iou',
+        help="Combine method matching metric, choose in ['iou', 'ios'].")
     return parser
 
 
@@ -311,8 +323,23 @@ def get_current_memory_mb():
     return round(cpu_mem, 4), round(gpu_mem, 4), round(gpu_percent, 4)
 
 
-def nms(dets, thresh):
-    """Apply classic DPM-style greedy NMS."""
+def multiclass_nms(bboxs, num_classes, match_threshold=0.6, match_metric='iou'):
+    final_boxes = []
+    for c in range(num_classes):
+        idxs = bboxs[:, 0] == c
+        if np.count_nonzero(idxs) == 0: continue
+        r = nms(bboxs[idxs, 1:], match_threshold, match_metric)
+        final_boxes.append(np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+    return final_boxes
+
+
+def nms(dets, match_threshold=0.6, match_metric='iou'):
+    """ Apply NMS to avoid detecting too many overlapping bounding boxes.
+        Args:
+            dets: shape [N, 5], [score, x1, y1, x2, y2]
+            match_metric: 'iou' or 'ios'
+            match_threshold: overlap thresh for match metric.
+    """
     if dets.shape[0] == 0:
         return dets[[], :]
     scores = dets[:, 0]
@@ -320,7 +347,6 @@ def nms(dets, thresh):
     y1 = dets[:, 2]
     x2 = dets[:, 3]
     y2 = dets[:, 4]
-
     areas = (x2 - x1 + 1) * (y2 - y1 + 1)
     order = scores.argsort()[::-1]
 
@@ -347,8 +373,15 @@ def nms(dets, thresh):
             w = max(0.0, xx2 - xx1 + 1)
             h = max(0.0, yy2 - yy1 + 1)
             inter = w * h
-            ovr = inter / (iarea + areas[j] - inter)
-            if ovr >= thresh:
+            if match_metric == 'iou':
+                union = iarea + areas[j] - inter
+                match_value = inter / union
+            elif match_metric == 'ios':
+                smaller = min(iarea, areas[j])
+                match_value = inter / smaller
+            else:
+                raise ValueError()
+            if match_value >= match_threshold:
                 suppressed[j] = 1
     keep = np.where(suppressed == 0)[0]
     dets = dets[keep, :]

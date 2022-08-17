@@ -16,6 +16,9 @@ width_mult: 1.0
 TrainReader:
   batch_size: 8
 
+EvalReader:
+  batch_size: 1
+
 epoch: 80
 LearningRate:
   base_lr: 0.01

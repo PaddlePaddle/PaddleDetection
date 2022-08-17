@@ -4,6 +4,7 @@ PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小�
 
 <img src="https://user-images.githubusercontent.com/82303451/182520025-f6bd1c76-a9f9-4f8c-af9b-b37a403258d8.png" title="VisDrone" alt="VisDrone" width="300"><img src="https://user-images.githubusercontent.com/82303451/182521833-4aa0314c-b3f2-4711-9a65-cabece612737.png" title="VisDrone" alt="VisDrone" width="300"><img src="https://user-images.githubusercontent.com/82303451/182520038-cacd5d09-0b85-475c-8e59-72f1fc48eef8.png" title="DOTA" alt="DOTA" height="168"><img src="https://user-images.githubusercontent.com/82303451/182524123-dcba55a2-ce2d-4ba1-9d5b-eb99cb440715.jpeg" title="Xview" alt="Xview" height="168">
 
+## 基础模型：
 
 |    模型   |       数据集     |  SLICE_SIZE  |  OVERLAP_RATIO  | 类别数  | mAP<sup>val<br>0.5:0.95 | AP<sup>val<br>0.5 | 下载链接  | 配置文件 |
 |:---------|:---------------:|:---------------:|:---------------:|:------:|:-----------------------:|:-------------------:|:---------:| :-----: |
@@ -11,23 +12,25 @@ PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小�
 |PP-YOLOE-P2-l|   Xview  |  400 | 0.25 | 60 |  14.9 | 27.0 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_p2_crn_l_80e_sliced_xview_400_025.pdparams) | [配置文件](./ppyoloe_p2_crn_l_80e_sliced_xview_400_025.yml) |
 |PP-YOLOE-l| VisDrone-DET|  640 | 0.25 | 10 |  38.5 |  60.2 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
 
+## 原图评估和拼图评估对比：
 
 |    模型   |       数据集     |  SLICE_SIZE  |  OVERLAP_RATIO  | 类别数  | mAP<sup>val<br>0.5:0.95 | AP<sup>val<br>0.5 | 下载链接  | 配置文件 |
 |:---------|:---------------:|:---------------:|:---------------:|:------:|:-----------------------:|:-------------------:|:---------:| :-----: |
 |PP-YOLOE-l| VisDrone-DET|  640 | 0.25 | 10 |  29.7 |  48.5 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
-|PP-YOLOE-l(Assembled)| VisDrone-DET|  640 | 0.25 | 10 |  - |  - | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
+|PP-YOLOE-l (Assembled)| VisDrone-DET|  640 | 0.25 | 10 | 37.2 | 59.4 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
 
 **注意:**
 - **SLICE_SIZE**表示使用SAHI工具切图后子图的边长大小，**OVERLAP_RATIO**表示切图的子图之间的重叠率，DOTA水平框和Xview数据集均是切图后训练，AP指标为切图后的子图val上的指标。
 - VisDrone-DET数据集请参照[visdrone](../visdrone)，可使用原图训练，也可使用切图后训练。
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
 - 常用训练验证部署等步骤请参考[ppyoloe](../ppyoloe#getting-start)。
-- 切片推理运行需添加`--slice_infer`，例如：`CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025.pdparams --infer_img=demo.jpg --draw_threshold=0.25 --slice_infer`，默认子图结果框融合方式为NMS。
+- 自动切图和拼图的推理预测需添加设置`--slice_infer`，具体见下文使用说明。
+- Assembled表示自动切图和拼图。
 
 
 # 使用说明
 
-## 训练
+## 1.训练
 
 首先将你的数据集为COCO数据集格式，然后使用SAHI切图工具进行离线切图，对保存的子图按常规检测模型的训练流程走即可。
 也可直接下载PaddleDetection团队提供的切图后的VisDrone-DET、DOTA水平框、Xview数据集。
@@ -41,28 +44,42 @@ python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c con
 **注意:**
 - 使用默认配置训练需要设置`--amp`以避免显存溢出。
 
-## 评估
+## 2.评估
 
-1.按常规检测模型的评估流程，直接评估子图上的精度：
+### 2.1 子图评估：
 
+默认评估方式是子图评估，子图数据集的验证集设置为：
+```
+EvalDataset:
+  !COCODataSet
+    image_dir: val_images_640_025
+    anno_path: val_640_025.json
+    dataset_dir: dataset/visdrone_sliced
+```
+按常规检测模型的评估流程，评估提前切好并存下来的子图上的精度：
 ```bash
 CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams
 ```
 
-2.修改验证集的标注文件路径为原图标注文件，直接评估原图上的精度：
+### 2.2 原图评估：
+修改验证集的标注文件路径为原图标注文件：
+```
+EvalDataset:
+  !COCODataSet
+    image_dir: VisDrone2019-DET-val
+    anno_path: val.json
+    dataset_dir: dataset/visdrone
+```
+直接评估原图上的精度：
 ```bash
 CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams
 ```
 
-3.修改验证集的标注文件路径为原图标注文件，对原图进行切图后并重组来评估原图上的精度：
-```bash
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025_slice_infer.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --slice_infer
+### 2.3 子图拼图评估：
+修改验证集的标注文件路径为原图标注文件：
 ```
-
-**注意:**
-- 设置`--slice_infer`表示切图预测并拼装重组结果，默认子图结果框融合方式为NMS，运行时间较长，注意需要确保EvalDataset的数据集类是SlicedCOCODataSet而不是COCODataSet。
-- 可以自行修改选择合适的子图尺度sliced_size和子图间重叠率overlap_ratio：
-```
+# very slow, preferly eval with a determined weights(xx.pdparams)
+# if you want to eval during training, change SlicedCOCODataSet to COCODataSet and delete sliced_size and overlap_ratio
 EvalDataset:
   !SlicedCOCODataSet
     image_dir: VisDrone2019-DET-val
@@ -71,29 +88,80 @@ EvalDataset:
     sliced_size: [640, 640]
     overlap_ratio: [0.25, 0.25]
 ```
-
-## 预测
-
-与评估流程基本相同，如需对原图进行切图后并重组来预测原图：
+会在评估过程中自动对原图进行切图最后再重组和融合结果来评估原图上的精度：
 ```bash
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025_slice_infer.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --infer_img=demo.jpg --draw_threshold=0.25 --slice_infer --slice_size 640 640 --overlap_ratio 0.25 0.25
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025_slice_infer.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --slice_infer --combine_method=nms --match_threshold=0.6 --match_metric=ios
 ```
-- 设置`--slice_infer`表示切图预测并拼装重组结果，默认子图结果框融合方式为NMS，运行时间较长。
-- 设置`--slice_size`表示切图的子图尺寸大小，设置`--slice_size`表示子图间重叠率。
+
+- 设置`--slice_infer`表示切图预测并拼装重组结果，如果不使用则不写；
+- 设置`--slice_size`表示切图的子图尺寸大小，设置`--overlap_ratio`表示子图间重叠率；
+- 设置`--combine_method`表示子图结果重组去重的方式，默认是`nms`；
+- 设置`--match_threshold`表示子图结果重组去重的阈值，默认是0.6；
+- 设置`--match_metric`表示子图结果重组去重的度量标准，默认是`ios`表示交小比(两个框交集面积除以更小框的面积)，也可以选择交并比`iou`(两个框交集面积除以并集面积)，精度效果因数据集而而异，但选择`ios`预测速度会更快一点；
 
 
-## 部署
 
-导出模型和使用原图infer，和常规模型的用法相同：
+**注意:**
+- 设置`--slice_infer`表示切图预测并拼装重组结果，如果不使用则不写，注意需要确保EvalDataset的数据集类是选用的SlicedCOCODataSet而不是COCODataSet；
+- 可以自行修改选择合适的子图尺度sliced_size和子图间重叠率overlap_ratio，如：
+```
+EvalDataset:
+  !SlicedCOCODataSet
+    image_dir: VisDrone2019-DET-val
+    anno_path: val.json
+    dataset_dir: dataset/visdrone
+    sliced_size: [480, 480]
+    overlap_ratio: [0.2, 0.2]
+```
+- 设置`--combine_method`表示子图结果重组去重的方式，默认是`nms`；
+- 设置`--match_threshold`表示子图结果重组去重的阈值，默认是0.6；
+- 设置`--match_metric`表示子图结果重组去重的度量标准，默认是`ios`表示交小比(两个框交集面积除以更小框的面积)，也可以选择交并比`iou`(两个框交集面积除以并集面积)，精度效果因数据集而而异，但选择`ios`预测速度会更快一点；
+
+
+## 3.预测
+
+### 3.1 子图或原图直接预测：
+与评估流程基本相同，可以在提前切好并存下来的子图上预测，也可以对原图预测，如：
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --infer_img=demo.jpg --draw_threshold=0.25
+```
+
+### 3.2 原图自动切图并拼图预测：
+也可以对原图进行自动切图并拼图重组来预测原图，如：
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --infer_img=demo.jpg --draw_threshold=0.25 --slice_infer --slice_size 640 640 --overlap_ratio 0.25 0.25 --combine_method=nms --match_threshold=0.6 --match_metric=ios
+```
+- 设置`--slice_infer`表示切图预测并拼装重组结果，如果不使用则不写；
+- 设置`--slice_size`表示切图的子图尺寸大小，设置`--overlap_ratio`表示子图间重叠率；
+- 设置`--combine_method`表示子图结果重组去重的方式，默认是`nms`；
+- 设置`--match_threshold`表示子图结果重组去重的阈值，默认是0.6；
+- 设置`--match_metric`表示子图结果重组去重的度量标准，默认是`ios`表示交小比(两个框交集面积除以更小框的面积)，也可以选择交并比`iou`(两个框交集面积除以并集面积)，精度效果因数据集而而异，但选择`ios`预测速度会更快一点；
+
+
+## 4.部署
+
+### 4.1 导出模型
 ```bash
 # export model
 CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams
-
-# deploy infer
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_80e_sliced_visdrone_640_025 --image_file=demo.jpg --device=GPU --threshold=0.25  --slice_infer --slice_size 640 640 --overlap_ratio 0.25 0.25
 ```
-- 设置`--slice_infer`表示切图预测并拼装重组结果，默认子图结果框融合方式为NMS，运行时间较长。
-- 设置`--slice_size`表示切图的子图尺寸大小，设置`--slice_size`表示子图间重叠率。
+
+### 4.2 使用原图或子图直接推理：
+```bash
+# deploy infer
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_80e_sliced_visdrone_640_025 --image_file=demo.jpg --device=GPU --threshold=0.25
+```
+
+### 4.3 使用原图自动切图并拼图重组结果来推理：
+```bash
+# deploy slice infer
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_80e_sliced_visdrone_640_025 --image_file=demo.jpg --device=GPU --threshold=0.25  --slice_infer --slice_size 640 640 --overlap_ratio 0.25 0.25 --combine_method=nms --match_threshold=0.6 --match_metric=ios
+```
+- 设置`--slice_infer`表示切图预测并拼装重组结果，如果不使用则不写；
+- 设置`--slice_size`表示切图的子图尺寸大小，设置`--overlap_ratio`表示子图间重叠率；
+- 设置`--combine_method`表示子图结果重组去重的方式，默认是`nms`；
+- 设置`--match_threshold`表示子图结果重组去重的阈值，默认是0.6；
+- 设置`--match_metric`表示子图结果重组去重的度量标准，默认是`ios`表示交小比(两个框交集面积除以更小框的面积)，也可以选择交并比`iou`(两个框交集面积除以并集面积)，精度效果因数据集而而异，但选择`ios`预测速度会更快一点；
 
 
 # SAHI切图工具使用说明

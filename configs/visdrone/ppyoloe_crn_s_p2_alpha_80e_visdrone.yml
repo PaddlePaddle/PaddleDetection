@@ -8,6 +8,9 @@ pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco
 TrainReader:
   batch_size: 4
 
+EvalReader:
+  batch_size: 1
+
 LearningRate:
   base_lr: 0.005
 

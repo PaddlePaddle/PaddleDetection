@@ -99,10 +99,21 @@ def parse_args():
         default=[0.25, 0.25],
         help="Overlap height ratio of the sliced image.")
     parser.add_argument(
-        "--fuse_method",
+        "--combine_method",
         type=str,
         default='nms',
-        help="Fuse method of the sliced images' detection results.")
+        help="Combine method of the sliced images' detection results, choose in ['nms', 'nmm', 'concat']."
+    )
+    parser.add_argument(
+        "--match_threshold",
+        type=float,
+        default=0.6,
+        help="Combine method matching threshold.")
+    parser.add_argument(
+        "--match_metric",
+        type=str,
+        default='iou',
+        help="Combine method matching metric, choose in ['iou', 'ios'].")
     args = parser.parse_args()
     return args
 
@@ -154,7 +165,9 @@ def run(FLAGS, cfg):
             images,
             slice_size=FLAGS.slice_size,
             overlap_ratio=FLAGS.overlap_ratio,
-            fuse_method=FLAGS.fuse_method,
+            combine_method=FLAGS.combine_method,
+            match_threshold=FLAGS.match_threshold,
+            match_metric=FLAGS.match_metric,
             draw_threshold=FLAGS.draw_threshold,
             output_dir=FLAGS.output_dir,
             save_results=FLAGS.save_results)

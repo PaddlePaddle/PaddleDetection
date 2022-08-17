@@ -36,7 +36,7 @@ from picodet_postprocess import PicoDetPostProcess
 from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, Pad, decode_image
 from keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
 from visualize import visualize_box_mask
-from utils import argsparser, Timer, get_current_memory_mb
+from utils import argsparser, Timer, get_current_memory_mb, multiclass_nms
 
 # Global dictionary
 SUPPORT_MODELS = {
@@ -220,13 +220,14 @@ class Detector(object):
 
     def predict_image_slice(self,
                             img_list,
-                            num_classes,
                             slice_size=[640, 640],
                             overlap_ratio=[0.25, 0.25],
-                            fuse_method='nms',
+                            combine_method='nms',
+                            match_threshold=0.6,
+                            match_metric='iou',
                             visual=True,
                             save_file=None):
-        # only support bs=1
+        # slice infer only support bs=1
         results = []
         try:
             import sahi
@@ -237,21 +238,21 @@ class Detector(object):
                 'for example: `pip install sahi`, see https://github.com/obss/sahi.'
             )
             raise e
-        for i in range(img_list):
+        num_classes = len(self.pred_config.labels)
+        for i in range(len(img_list)):
             ori_image = img_list[i]
             slice_image_result = sahi.slicing.slice_image(
-                image=im_path,
-                slice_height=self.sliced_size[0],
-                slice_width=self.sliced_size[1],
-                overlap_height_ratio=self.overlap_ratio[0],
-                overlap_width_ratio=self.overlap_ratio[1])
+                image=ori_image,
+                slice_height=slice_size[0],
+                slice_width=slice_size[1],
+                overlap_height_ratio=overlap_ratio[0],
+                overlap_width_ratio=overlap_ratio[1])
             sub_img_num = len(slice_image_result)
             merged_bboxs = []
             for _ind in range(sub_img_num):
                 im = slice_image_result.images[_ind]
-                #sub_image_list.append(im)
                 self.det_times.preprocess_time_s.start()
-                inputs = self.preprocess(im)
+                inputs = self.preprocess([im])  # should be list
                 self.det_times.preprocess_time_s.end()
 
                 # model prediction
@@ -271,30 +272,23 @@ class Detector(object):
                 merged_bboxs.append(result['boxes'])
 
             merged_results = {'boxes': []}
-            if fuse_method == 'nms':
-                from .utils import nms
-                all_scale_outs = np.concatenate(merged_bboxs)
-                final_boxes = []
-                for c in range(num_classes):
-                    idxs = all_scale_outs[:, 0] == c
-                    if np.count_nonzero(idxs) == 0:
-                        continue
-                    r = nms(all_scale_outs[idxs, 1:], thresh=0.6)
-                    final_boxes.append(
-                        np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+            if combine_method == 'nms':
+                final_boxes = multiclass_nms(
+                    np.concatenate(merged_bboxs), num_classes, match_threshold,
+                    match_metric)
                 merged_results['boxes'] = np.concatenate(final_boxes)
-            elif fuse_method == 'concat':
+            elif combine_method == 'concat':
                 merged_results['boxes'] = np.concatenate(merged_bboxs)
             else:
                 raise ValueError(
                     "Now only support 'nms' or 'concat' to fuse detection results."
                 )
             merged_results['boxes_num'] = np.array(
-                [len(merged_results['boxes'])])
+                [len(merged_results['boxes'])], dtype=np.int32)
 
             if visual:
                 visualize(
-                    im,
+                    [ori_image],  # should be list
                     merged_results,
                     self.pred_config.labels,
                     output_dir=self.output_dir,
@@ -965,13 +959,13 @@ def main():
         save_file = os.path.join(FLAGS.output_dir,
                                  'results.json') if FLAGS.save_results else None
         if FLAGS.slice_infer:
-            num_classes = len(yml_conf['label_list'])
             detector.predict_image_slice(
                 img_list,
-                num_classes,
                 FLAGS.slice_size,
                 FLAGS.overlap_ratio,
-                FLAGS.fuse_method,
+                FLAGS.combine_method,
+                FLAGS.match_threshold,
+                FLAGS.match_metric,
                 save_file=save_file)
         else:
             detector.predict_image(

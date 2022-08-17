@@ -42,7 +42,7 @@ EvalReader:
     - Resize: {target_size: *eval_size, keep_ratio: False, interp: 2}
     - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
     - Permute: {}
-  batch_size: 2
+  batch_size: 1
 
 TestReader:
   inputs_def:
