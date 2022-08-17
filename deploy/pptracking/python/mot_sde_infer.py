@@ -62,6 +62,7 @@ class SDE_Detector(Detector):
         save_mot_txts (bool): Whether to save tracking results (txt), default as False
         draw_center_traj (bool): Whether drawing the trajectory of center, default as False
         secs_interval (int): The seconds interval to count after tracking, default as 10
+        skip_frame_num (int): Skip frame num to get faster MOT results, default as -1
         do_entrance_counting(bool): Whether counting the numbers of identifiers entering 
             or getting out from the entrance, default as False，only support single class
             counting in MOT, and the video should be taken by a static camera.
@@ -96,6 +97,7 @@ class SDE_Detector(Detector):
                  save_mot_txts=False,
                  draw_center_traj=False,
                  secs_interval=10,
+                 skip_frame_num=-1,
                  do_entrance_counting=False,
                  do_break_in_counting=False,
                  region_type='horizontal',
@@ -119,6 +121,7 @@ class SDE_Detector(Detector):
         self.save_mot_txts = save_mot_txts
         self.draw_center_traj = draw_center_traj
         self.secs_interval = secs_interval
+        self.skip_frame_num = skip_frame_num
         self.do_entrance_counting = do_entrance_counting
         self.do_break_in_counting = do_break_in_counting
         self.region_type = region_type
@@ -131,6 +134,8 @@ class SDE_Detector(Detector):
         assert batch_size == 1, "MOT model only supports batch_size=1."
         self.det_times = Timer(with_tracker=True)
         self.num_classes = len(self.pred_config.labels)
+        if self.skip_frame_num > 1:
+            self.previous_det_result = None
 
         # reid config
         self.use_reid = False if reid_model_dir is None else True
@@ -414,7 +419,8 @@ class SDE_Detector(Detector):
                       run_benchmark=False,
                       repeats=1,
                       visual=True,
-                      seq_name=None):
+                      seq_name=None,
+                      reuse_det_result=False):
         num_classes = self.num_classes
         image_list.sort()
         ids2names = self.pred_config.labels
@@ -468,15 +474,22 @@ class SDE_Detector(Detector):
 
             else:
                 self.det_times.preprocess_time_s.start()
-                inputs = self.preprocess(batch_image_list)
+                if not reuse_det_result:
+                    inputs = self.preprocess(batch_image_list)
                 self.det_times.preprocess_time_s.end()
 
                 self.det_times.inference_time_s.start()
-                result = self.predict()
+                if not reuse_det_result:
+                    result = self.predict()
                 self.det_times.inference_time_s.end()
 
                 self.det_times.postprocess_time_s.start()
-                det_result = self.postprocess(inputs, result)
+                if not reuse_det_result:
+                    det_result = self.postprocess(inputs, result)
+                    self.previous_det_result = det_result
+                else:
+                    assert self.previous_det_result is not None
+                    det_result = self.previous_det_result
                 self.det_times.postprocess_time_s.end()
 
                 # tracking process
@@ -553,7 +566,7 @@ class SDE_Detector(Detector):
         fourcc = cv2.VideoWriter_fourcc(*video_format)
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
 
-        frame_id = 1
+        frame_id = 0
         timer = MOTTimer()
         results = defaultdict(list)
         num_classes = self.num_classes
@@ -599,12 +612,18 @@ class SDE_Detector(Detector):
                 break
             if frame_id % 10 == 0:
                 print('Tracking frame: %d' % (frame_id))
-            frame_id += 1
 
             timer.tic()
+            mot_skip_frame_num = self.skip_frame_num
+            reuse_det_result = False
+            if mot_skip_frame_num > 1 and frame_id > 0 and frame_id % mot_skip_frame_num > 0:
+                reuse_det_result = True
             seq_name = video_out_name.split('.')[0]
             mot_results = self.predict_image(
-                [frame], visual=False, seq_name=seq_name)
+                [frame],
+                visual=False,
+                seq_name=seq_name,
+                reuse_det_result=reuse_det_result)
             timer.toc()
 
             # bs=1 in MOT model
@@ -661,6 +680,7 @@ class SDE_Detector(Detector):
                 cv2.imshow('Mask Detection', im)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
+            frame_id += 1
 
         if self.save_mot_txts:
             result_filename = os.path.join(
@@ -803,6 +823,7 @@ def main():
         save_mot_txts=FLAGS.save_mot_txts,
         draw_center_traj=FLAGS.draw_center_traj,
         secs_interval=FLAGS.secs_interval,
+        skip_frame_num=FLAGS.skip_frame_num,
         do_entrance_counting=FLAGS.do_entrance_counting,
         do_break_in_counting=FLAGS.do_break_in_counting,
         region_type=FLAGS.region_type,

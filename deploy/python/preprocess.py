@@ -89,21 +89,15 @@ class Resize_Mult32(object):
 
         # limit the max side
         if self.limit_type == 'max':
-            if max(h, w) > limit_side_len:
-                if h > w:
-                    ratio = float(limit_side_len) / h
-                else:
-                    ratio = float(limit_side_len) / w
+            if h > w:
+                ratio = float(limit_side_len) / h
             else:
-                ratio = 1.
+                ratio = float(limit_side_len) / w
         elif self.limit_type == 'min':
-            if min(h, w) < limit_side_len:
-                if h < w:
-                    ratio = float(limit_side_len) / h
-                else:
-                    ratio = float(limit_side_len) / w
+            if h < w:
+                ratio = float(limit_side_len) / h
             else:
-                ratio = 1.
+                ratio = float(limit_side_len) / w
         elif self.limit_type == 'resize_long':
             ratio = float(limit_side_len) / max(h, w)
         else:

@@ -75,6 +75,19 @@ class ReID(object):
         self.batch_size = batch_size
         self.input_wh = (128, 256)
 
+    @classmethod
+    def init_with_cfg(cls, args, cfg):
+        return cls(model_dir=cfg['model_dir'],
+                   batch_size=cfg['batch_size'],
+                   device=args.device,
+                   run_mode=args.run_mode,
+                   trt_min_shape=args.trt_min_shape,
+                   trt_max_shape=args.trt_max_shape,
+                   trt_opt_shape=args.trt_opt_shape,
+                   trt_calib_mode=args.trt_calib_mode,
+                   cpu_threads=args.cpu_threads,
+                   enable_mkldnn=args.enable_mkldnn)
+
     def set_config(self, model_dir):
         return PredictConfig(model_dir)
 

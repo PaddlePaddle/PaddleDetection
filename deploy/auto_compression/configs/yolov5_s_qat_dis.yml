@@ -20,13 +20,11 @@ Quantization:
   - depthwise_conv2d
 
 TrainConfig:
-  train_iter: 5000
+  train_iter: 3000
   eval_iter: 1000
-  learning_rate:
-    type: CosineAnnealingDecay
-    learning_rate: 0.00003
-    T_max: 6000
+  learning_rate: 0.00001
   optimizer_builder:
     optimizer:
       type: SGD
     weight_decay: 4.0e-05
+  target_metric: 0.365
