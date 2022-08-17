@@ -5,8 +5,6 @@ weights: output/ppyoloe_crn_l_80e_visdrone_largesize/model_final
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 
-TrainReader:
-  batch_size: 2
 
 LearningRate:
   base_lr: 0.0025
