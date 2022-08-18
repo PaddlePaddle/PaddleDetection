@@ -38,7 +38,7 @@ class BBoxPostProcess(object):
     __inject__ = ['decode', 'nms']
 
     def __init__(self, num_classes=80, decode=None, nms=None,
-                 export_onnx=False, export_eb=False):
+                 export_onnx=False,export_eb=False):
         super(BBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.decode = decode
@@ -72,7 +72,7 @@ class BBoxPostProcess(object):
                                               scale_factor)
 
         if self.export_onnx:
-            # add fake box after postprocess when exporting onnx
+            # add fake box after postprocess when exporting onnx 
             fake_bboxes = paddle.to_tensor(
                 np.array(
                     [[0., 0.0, 0.0, 0.0, 1.0, 1.0]], dtype='float32'))
@@ -173,8 +173,7 @@ class BBoxPostProcess(object):
         keep_mask = paddle.unsqueeze(keep_mask, [1])
         pred_label = paddle.where(keep_mask, pred_label,
                                   paddle.ones_like(pred_label) * -1)
-        pred_result = paddle.concat(
-            [pred_label, pred_score, pred_bbox], axis=1)
+        pred_result = paddle.concat([pred_label, pred_score, pred_bbox], axis=1)
         return bboxes, pred_result, bbox_num
 
     def get_origin_shape(self, ):
@@ -564,8 +563,7 @@ class SparsePostProcess(object):
 
         scores = F.sigmoid(box_cls)
         labels = paddle.arange(0, self.num_classes). \
-            unsqueeze(0).tile([self.num_proposals, 1]).flatten(
-                start_axis=0, stop_axis=1)
+            unsqueeze(0).tile([self.num_proposals, 1]).flatten(start_axis=0, stop_axis=1)
 
         classes_all = []
         scores_all = []
