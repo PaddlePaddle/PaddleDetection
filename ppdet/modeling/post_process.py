@@ -34,16 +34,17 @@ __all__ = [
 
 @register
 class BBoxPostProcess(object):
-    __shared__ = ['num_classes', 'export_onnx']
+    __shared__ = ['num_classes', 'export_onnx', 'export_eb']
     __inject__ = ['decode', 'nms']
 
     def __init__(self, num_classes=80, decode=None, nms=None,
-                 export_onnx=False):
+                 export_onnx=False, export_eb=False):
         super(BBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.decode = decode
         self.nms = nms
         self.export_onnx = export_onnx
+        self.export_eb = export_eb
 
     def __call__(self, head_out, rois, im_shape, scale_factor):
         """
@@ -71,7 +72,7 @@ class BBoxPostProcess(object):
                                               scale_factor)
 
         if self.export_onnx:
-            # add fake box after postprocess when exporting onnx 
+            # add fake box after postprocess when exporting onnx
             fake_bboxes = paddle.to_tensor(
                 np.array(
                     [[0., 0.0, 0.0, 0.0, 1.0, 1.0]], dtype='float32'))
@@ -100,6 +101,8 @@ class BBoxPostProcess(object):
             pred_result (Tensor): The final prediction results with shape [N, 6]
                 including labels, scores and bboxes.
         """
+        if self.export_eb:
+            return bboxes, bboxes, bbox_num
         if not self.export_onnx:
             bboxes_list = []
             bbox_num_list = []
@@ -170,7 +173,8 @@ class BBoxPostProcess(object):
         keep_mask = paddle.unsqueeze(keep_mask, [1])
         pred_label = paddle.where(keep_mask, pred_label,
                                   paddle.ones_like(pred_label) * -1)
-        pred_result = paddle.concat([pred_label, pred_score, pred_bbox], axis=1)
+        pred_result = paddle.concat(
+            [pred_label, pred_score, pred_bbox], axis=1)
         return bboxes, pred_result, bbox_num
 
     def get_origin_shape(self, ):
@@ -560,7 +564,8 @@ class SparsePostProcess(object):
 
         scores = F.sigmoid(box_cls)
         labels = paddle.arange(0, self.num_classes). \
-            unsqueeze(0).tile([self.num_proposals, 1]).flatten(start_axis=0, stop_axis=1)
+            unsqueeze(0).tile([self.num_proposals, 1]).flatten(
+                start_axis=0, stop_axis=1)
 
         classes_all = []
         scores_all = []
