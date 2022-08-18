@@ -1,5 +1,5 @@
 architecture: SparseInst
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vb_normal_pretrained.pdparams
 num_classes: &num_classes 80
 
 SparseInst:

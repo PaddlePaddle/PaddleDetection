@@ -23,18 +23,9 @@ import paddle
 import paddle.nn as nn
 
 __all__ = [
-    'uniform_',
-    'normal_',
-    'constant_',
-    'ones_',
-    'zeros_',
-    'xavier_uniform_',
-    'xavier_normal_',
-    'kaiming_uniform_',
-    'kaiming_normal_',
-    'linear_init_',
-    'conv_init_',
-    'reset_initialized_parameter',
+    'uniform_', 'normal_', 'constant_', 'ones_', 'zeros_', 'xavier_uniform_',
+    'xavier_normal_', 'kaiming_uniform_', 'kaiming_normal_', 'linear_init_',
+    'conv_init_', 'reset_initialized_parameter', 'reset_parameters'
 ]
 
 
@@ -316,3 +307,13 @@ def reset_initialized_parameter(model, include_self=True):
             _no_grad_fill_(m.weight, 1.)
             if hasattr(m, 'bias') and getattr(m, 'bias') is not None:
                 _no_grad_fill_(m.bias, 0)
+
+
+def reset_parameters(module, reverse=False):
+    with paddle.no_grad():
+        kaiming_uniform_(module.weight, a=math.sqrt(5.0), reverse=reverse)
+        if module.bias is not None:
+            fan_in, fan_out = _calculate_fan_in_and_fan_out(
+                module.weight, reverse=reverse)
+            k = 1.0 / math.sqrt(fan_in) if fan_in > 0 else 0
+            uniform_(module.bias, -k, k)

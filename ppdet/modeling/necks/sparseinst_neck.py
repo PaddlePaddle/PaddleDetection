@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # This code is based on https://github.com/hustvl/SparseInst
+import math
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -20,7 +21,7 @@ from paddle import ParamAttr
 from paddle.nn.initializer import Normal, Constant
 
 from ..layers import Conv2d
-from ..initializer import kaiming_uniform_, kaiming_normal_
+from ..initializer import kaiming_uniform_, kaiming_normal_, reset_parameters
 
 from ppdet.core.workspace import register, serializable
 from ..shape_spec import ShapeSpec
@@ -36,10 +37,12 @@ class PyramidPoolingModule(nn.Layer):
             [self._make_stage(in_channels, channels, size) for size in sizes])
         self.bottleneck = Conv2d(in_channels + len(sizes) * channels,
                                  in_channels, 1)
+        reset_parameters(self.bottleneck)
 
     def _make_stage(self, features, out_features, size):
         prior = nn.AdaptiveAvgPool2D(output_size=(size, size))
         conv = Conv2d(features, out_features, 1)
+        reset_parameters(conv)
         return nn.Sequential(prior, conv)
 
     def forward(self, feats):

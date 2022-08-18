@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import math
 import paddle
 from paddle import ParamAttr
 import paddle.nn as nn
@@ -23,7 +24,7 @@ import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant
 
 from ..layers import Conv2d
-from ..initializer import kaiming_uniform_, bias_init_with_prob
+from ..initializer import kaiming_uniform_, kaiming_normal_, bias_init_with_prob, reset_parameters
 
 from ppdet.core.workspace import register
 
@@ -37,6 +38,7 @@ def _make_stack_3x3_convs(num_convs, in_channels, out_channels):
     convs = []
     for _ in range(num_convs):
         convs.append(Conv2d(in_channels, out_channels, 3, padding=1))
+        kaiming_normal_(convs[-1].weight, mode="fan_out", nonlinearity="relu")
         convs.append(nn.ReLU(True))
         in_channels = out_channels
     return nn.Sequential(*convs)
@@ -71,13 +73,10 @@ class InstanceBranch(nn.Layer):
             dim,
             kernel_dim,
             weight_attr=ParamAttr(
-                initializer=Normal(std=0.01), learning_rate=1.))
+                initializer=Normal(std=0.01), learning_rate=1.),
+            bias_attr=ParamAttr(initializer=Constant(0.0)))
         self.objectness = nn.Linear(dim, 1)
-
-        self._reset_parameters()
-
-    def _reset_parameters(self):
-        kaiming_uniform_(self.objectness.weight)
+        reset_parameters(self.objectness, reverse=True)
 
     def forward(self, features):
         # instance features (x4 convs)
@@ -108,6 +107,8 @@ class MaskBranch(nn.Layer):
         super().__init__()
         self.mask_convs = _make_stack_3x3_convs(num_convs, in_channels, dim)
         self.projection = Conv2d(dim, kernel_dim, kernel_size=1)
+        kaiming_normal_(
+            self.projection.weight, mode="fan_out", nonlinearity="relu")
 
     def forward(self, features):
         # mask features (x4 convs)
@@ -223,14 +224,11 @@ class GroupInstanceBranch(nn.Layer):
             expand_dim,
             kernel_dim,
             weight_attr=ParamAttr(
-                initializer=Normal(std=0.01), learning_rate=1.))
+                initializer=Normal(std=0.01), learning_rate=1.),
+            bias_attr=ParamAttr(initializer=Constant(0.0)))
         self.objectness = nn.Linear(expand_dim, 1)
-
-        self._reset_parameters()
-
-    def _reset_parameters(self):
+        reset_parameters(self.objectness, reverse=True)
         kaiming_uniform_(self.fc.weight, a=1)
-        kaiming_uniform_(self.objectness.weight)
 
     def forward(self, features):
         # instance features (x4 convs)
