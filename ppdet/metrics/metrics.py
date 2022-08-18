@@ -28,6 +28,7 @@ from .map_utils import prune_zero_padding, DetectionMAP
 from .coco_utils import get_infer_results, cocoapi_eval
 from .widerface_utils import face_eval_run
 from ppdet.data.source.category import get_categories
+from ppdet.modeling.rbox_utils import poly2rbox_np
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
@@ -388,11 +389,21 @@ class RBoxMetric(Metric):
         if self.save_prediction_only:
             return
 
-        gt_boxes = inputs['gt_rbox']
+        gt_boxes = inputs['gt_poly']
         gt_labels = inputs['gt_class']
+
+        if 'scale_factor' in inputs:
+            scale_factor = inputs['scale_factor'].numpy() if isinstance(
+                inputs['scale_factor'],
+                paddle.Tensor) else inputs['scale_factor']
+        else:
+            scale_factor = np.ones((gt_boxes.shape[0], 2)).astype('float32')
+
         for i in range(len(gt_boxes)):
             gt_box = gt_boxes[i].numpy() if isinstance(
                 gt_boxes[i], paddle.Tensor) else gt_boxes[i]
+            h, w = scale_factor[i]
+            gt_box = gt_box / np.array([w, h, w, h, w, h, w, h])
             gt_label = gt_labels[i].numpy() if isinstance(
                 gt_labels[i], paddle.Tensor) else gt_labels[i]
             gt_box, gt_label, _ = prune_zero_padding(gt_box, gt_label)
