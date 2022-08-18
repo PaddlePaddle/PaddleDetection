@@ -7,14 +7,27 @@ _BASE_: [
 ]
 log_iter: 100
 snapshot_epoch: 10
-weights: output/ppyoloe_crn_l_80e_sliced_xview_400_025/model_final
+weights: output/ppyoloe_p2_crn_l_80e_sliced_xview_400_025/model_final
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 depth_mult: 1.0
 width_mult: 1.0
 
+
+CSPResNet:
+  return_idx: [0, 1, 2, 3]
+  use_alpha: True
+
+CustomCSPPAN:
+  out_channels: [768, 384, 192, 64]
+
+
 TrainReader:
-  batch_size: 8
+  batch_size: 4
+
+EvalReader:
+  batch_size: 1
+
 
 epoch: 80
 LearningRate:
@@ -27,6 +40,7 @@ LearningRate:
       epochs: 1
 
 PPYOLOEHead:
+  fpn_strides: [32, 16, 8, 4]
   static_assigner_epoch: -1
   nms:
     name: MultiClassNMS

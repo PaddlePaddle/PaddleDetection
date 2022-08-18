@@ -1,5 +1,5 @@
 _BASE_: [
-  '../datasets/visdrone_detection.yml',
+  './_base_/DOTA_sliced_500_025_detection.yml',
   '../runtime.yml',
   '../ppyoloe/_base_/optimizer_300e.yml',
   '../ppyoloe/_base_/ppyoloe_crn.yml',
@@ -7,15 +7,23 @@ _BASE_: [
 ]
 log_iter: 100
 snapshot_epoch: 10
-weights: output/ppyoloe_crn_s_80e_visdrone/model_final
+weights: output/ppyoloe_p2_crn_l_80e_sliced_DOTA_500_025/model_final
 
-pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams
-depth_mult: 0.33
-width_mult: 0.50
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
+depth_mult: 1.0
+width_mult: 1.0
+
+
+CSPResNet:
+  return_idx: [0, 1, 2, 3]
+  use_alpha: True
+
+CustomCSPPAN:
+  out_channels: [768, 384, 192, 64]
 
 
 TrainReader:
-  batch_size: 8
+  batch_size: 4
 
 EvalReader:
   batch_size: 1
@@ -32,6 +40,7 @@ LearningRate:
       epochs: 1
 
 PPYOLOEHead:
+  fpn_strides: [32, 16, 8, 4]
   static_assigner_epoch: -1
   nms:
     name: MultiClassNMS

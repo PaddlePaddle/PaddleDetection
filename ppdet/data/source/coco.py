@@ -253,3 +253,126 @@ class COCODataSet(DetDataset):
             empty_records = self._sample_empty(empty_records, len(records))
             records += empty_records
         self.roidbs = records
+
+
+@register
+@serializable
+class SlicedCOCODataSet(COCODataSet):
+    """Sliced COCODataSet"""
+
+    def __init__(
+            self,
+            dataset_dir=None,
+            image_dir=None,
+            anno_path=None,
+            data_fields=['image'],
+            sample_num=-1,
+            load_crowd=False,
+            allow_empty=False,
+            empty_ratio=1.,
+            repeat=1,
+            sliced_size=[640, 640],
+            overlap_ratio=[0.25, 0.25], ):
+        super(SlicedCOCODataSet, self).__init__(
+            dataset_dir=dataset_dir,
+            image_dir=image_dir,
+            anno_path=anno_path,
+            data_fields=data_fields,
+            sample_num=sample_num,
+            load_crowd=load_crowd,
+            allow_empty=allow_empty,
+            empty_ratio=empty_ratio,
+            repeat=repeat, )
+        self.sliced_size = sliced_size
+        self.overlap_ratio = overlap_ratio
+
+    def parse_dataset(self):
+        anno_path = os.path.join(self.dataset_dir, self.anno_path)
+        image_dir = os.path.join(self.dataset_dir, self.image_dir)
+
+        assert anno_path.endswith('.json'), \
+            'invalid coco annotation file: ' + anno_path
+        from pycocotools.coco import COCO
+        coco = COCO(anno_path)
+        img_ids = coco.getImgIds()
+        img_ids.sort()
+        cat_ids = coco.getCatIds()
+        records = []
+        empty_records = []
+        ct = 0
+        ct_sub = 0
+
+        self.catid2clsid = dict({catid: i for i, catid in enumerate(cat_ids)})
+        self.cname2cid = dict({
+            coco.loadCats(catid)[0]['name']: clsid
+            for catid, clsid in self.catid2clsid.items()
+        })
+
+        if 'annotations' not in coco.dataset:
+            self.load_image_only = True
+            logger.warning('Annotation file: {} does not contains ground truth '
+                           'and load image information only.'.format(anno_path))
+        try:
+            import sahi
+            from sahi.slicing import slice_image
+        except Exception as e:
+            logger.error(
+                'sahi not found, plaese install sahi. '
+                'for example: `pip install sahi`, see https://github.com/obss/sahi.'
+            )
+            raise e
+
+        sub_img_ids = 0
+        for img_id in img_ids:
+            img_anno = coco.loadImgs([img_id])[0]
+            im_fname = img_anno['file_name']
+            im_w = float(img_anno['width'])
+            im_h = float(img_anno['height'])
+
+            im_path = os.path.join(image_dir,
+                                   im_fname) if image_dir else im_fname
+            is_empty = False
+            if not os.path.exists(im_path):
+                logger.warning('Illegal image file: {}, and it will be '
+                               'ignored'.format(im_path))
+                continue
+
+            if im_w < 0 or im_h < 0:
+                logger.warning('Illegal width: {} or height: {} in annotation, '
+                               'and im_id: {} will be ignored'.format(
+                                   im_w, im_h, img_id))
+                continue
+
+            slice_image_result = sahi.slicing.slice_image(
+                image=im_path,
+                slice_height=self.sliced_size[0],
+                slice_width=self.sliced_size[1],
+                overlap_height_ratio=self.overlap_ratio[0],
+                overlap_width_ratio=self.overlap_ratio[1])
+
+            sub_img_num = len(slice_image_result)
+            for _ind in range(sub_img_num):
+                im = slice_image_result.images[_ind]
+                coco_rec = {
+                    'image': im,
+                    'im_id': np.array([sub_img_ids + _ind]),
+                    'h': im.shape[0],
+                    'w': im.shape[1],
+                    'ori_im_id': np.array([img_id]),
+                    'st_pix': np.array(
+                        slice_image_result.starting_pixels[_ind],
+                        dtype=np.float32),
+                    'is_last': 1 if _ind == sub_img_num - 1 else 0,
+                } if 'image' in self.data_fields else {}
+                records.append(coco_rec)
+            ct_sub += sub_img_num
+            ct += 1
+            if self.sample_num > 0 and ct >= self.sample_num:
+                break
+        assert ct > 0, 'not found any coco record in %s' % (anno_path)
+        logger.info('{} samples and slice to {} sub_samples in file {}'.format(
+            ct, ct_sub, anno_path))
+        if self.allow_empty and len(empty_records) > 0:
+            empty_records = self._sample_empty(empty_records, len(records))
+            records += empty_records
+        self.roidbs = records
