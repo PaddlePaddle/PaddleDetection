@@ -13,8 +13,13 @@ pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco
 depth_mult: 1.0
 width_mult: 1.0
 
+
 TrainReader:
   batch_size: 8
+
+EvalReader:
+  batch_size: 1 # only support bs=1 when slice infer
+
 
 epoch: 80
 LearningRate:
@@ -45,7 +50,3 @@ EvalDataset:
     dataset_dir: dataset/visdrone
     sliced_size: [640, 640]
     overlap_ratio: [0.25, 0.25]
-
-
-EvalReader:
-  batch_size: 1 # only support bs=1 when slice infer

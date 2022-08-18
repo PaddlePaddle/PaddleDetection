@@ -1,6 +1,8 @@
 _BASE_: [
   'ppyoloe_crn_l_80e_visdrone.yml',
 ]
+log_iter: 100
+snapshot_epoch: 10
 weights: output/ppyoloe_crn_l_p2_alpha_largesize_80e_visdrone/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 

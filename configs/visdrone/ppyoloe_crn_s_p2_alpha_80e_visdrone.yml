@@ -1,15 +1,18 @@
 _BASE_: [
   'ppyoloe_crn_s_80e_visdrone.yml',
 ]
+log_iter: 100
+snapshot_epoch: 10
 weights: output/ppyoloe_crn_s_p2_alpha_80e_visdrone/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams
 
-pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 
 TrainReader:
   batch_size: 4
 
 EvalReader:
   batch_size: 1
+
 
 LearningRate:
   base_lr: 0.005

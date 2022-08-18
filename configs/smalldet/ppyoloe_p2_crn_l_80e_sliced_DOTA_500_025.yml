@@ -21,8 +21,13 @@ CSPResNet:
 CustomCSPPAN:
   out_channels: [768, 384, 192, 64]
 
+
 TrainReader:
   batch_size: 4
+
+EvalReader:
+  batch_size: 1
+
 
 epoch: 80
 LearningRate:
