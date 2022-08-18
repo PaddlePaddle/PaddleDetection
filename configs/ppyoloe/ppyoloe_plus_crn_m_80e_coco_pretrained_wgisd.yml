@@ -1,0 +1,68 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  './_base_/ppyoloe_crn.yml',
+  './_base_/ppyoloe_reader.yml',
+]
+
+log_iter: 100
+snapshot_epoch: 5
+weights: output/ppyoloe_plus_crn_m_80e_coco_pretrained_wgisd/model_final
+
+pretrain_weights: http://10.255.134.13:8091/weights/ppyoloe_obj365_coco/ppyoloe_crn_m_80e_obj365_coco.pdparams
+depth_mult: 0.67
+width_mult: 0.75
+
+TrainReader:
+  batch_size: 8
+
+CSPResNet:
+  layers: [3, 6, 6, 3]
+  channels: [64, 128, 256, 512, 1024]
+  return_idx: [1, 2, 3]
+  use_large_stem: True
+  use_alpha: True
+
+PPYOLOEHead:
+  static_assigner_epoch: 35
+
+epoch: 80
+
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+    - !CosineDecay
+      max_epochs: 96
+    - !LinearWarmup
+      start_factor: 0.
+      epochs: 5
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+metric: COCO
+num_classes: 5
+
+TrainDataset:
+  !COCODataSet
+    image_dir: data
+    anno_path: coco_annotations/new_train_bbox_instances.json
+    dataset_dir: dataset/wgisd/
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: data
+    anno_path: coco_annotations/new_test_bbox_instances.json
+    dataset_dir: dataset/wgisd/
+
+
+TestDataset:
+  !ImageFolder
+    anno_path: coco_annotations/new_test_bbox_instances.json # also support txt (like VOC's label_list.txt)
+    dataset_dir: dataset/wgisd/ # if set, anno_path will be 'dataset_dir/anno_path'
