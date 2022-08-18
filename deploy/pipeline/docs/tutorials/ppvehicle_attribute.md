@@ -92,13 +92,13 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 5. 若修改模型路径，有以下两种方式：
 
     - 方法一：`./deploy/pipeline/config/infer_cfg_ppvehicle.yml`下可以配置不同模型路径，属性识别模型修改`VEHICLE_ATTR`字段下配置
-    - 方法二：命令行中增加--model_dir修改模型路径：
+    - 方法二：直接在命令行中增加`-o`，以覆盖配置文件中的默认模型路径：
 
 ```bash
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
-                                                   --model_dir vehicle_attr=output_inference/vehicle_attribute_infer
+                                                   -o VEHICLE_ATTR.model_dir=output_inference/vehicle_attribute_infer
 ```
 
 测试效果如下：

@@ -94,13 +94,13 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 5. There are two ways to modify the model path:
 
     - Method 1：Set paths of each model in `./deploy/pipeline/config/infer_cfg_ppvehicle.yml`. For vehicle attribute recognition, the path should be modified under the `VEHICLE_ATTR` field.
-    - Method 2: Directly add --model_dir in command line：
+    - Method 2: Directly add `-o` in command line to override the default model path in the configuration file:
 
 ```bash
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
-                                                   --model_dir vehicle_attr=output_inference/vehicle_attribute_infer
+                                                   -o VEHICLE_ATTR.model_dir=output_inference/vehicle_attribute_infer
 ```
 
 The result is shown as follow:
