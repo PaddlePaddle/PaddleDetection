@@ -34,7 +34,9 @@ class Pose3DLoss(nn.Layer):
         KeyPointMSELoss layer
 
         Args:
-            use_target_weight (bool): whether to use target weight
+            weight_3d (float): weight of 3d loss
+            weight_2d (float): weight of 2d loss
+            reduction (bool): whether use reduction to loss
         """
         super(Pose3DLoss, self).__init__()
         self.weight_3d = weight_3d
@@ -46,13 +48,16 @@ class Pose3DLoss(nn.Layer):
         self.criterion_vertices = nn.L1Loss()
 
     def forward(self, pred3d, pred2d, inputs):
+        """
+        mpjpe: mpjpe loss between 3d joints
+        keypoint_2d_loss: 2d joints loss compute by criterion_2dpose
+        """
         gt_3d_joints = inputs['joints_3d']
         gt_2d_joints = inputs['joints_2d']
         has_3d_joints = inputs['has_3d_joints']
         has_2d_joints = inputs['has_2d_joints']
 
         loss_3d = mpjpe(pred3d, gt_3d_joints, has_3d_joints)
-        # loss_3d = mpjpe_criterion(pred3d, gt_3d_joints, has_3d_joints, self.criterion_smoothl1)
         loss_2d = keypoint_2d_loss(self.criterion_2dpose, pred2d, gt_2d_joints,
                                    has_2d_joints)
         return self.weight_3d * loss_3d + self.weight_2d * loss_2d
@@ -77,7 +82,7 @@ def filter_3d_joints(pred, gt, has_3d_joints):
 @serializable
 def mpjpe(pred, gt, has_3d_joints):
     """ 
-    mPJPE
+    mPJPE loss
     """
     pred, gt = filter_3d_joints(pred, gt, has_3d_joints)
     error = paddle.sqrt(((pred - gt)**2).sum(axis=-1)).mean()
@@ -88,25 +93,10 @@ def mpjpe(pred, gt, has_3d_joints):
 @serializable
 def mpjpe_criterion(pred, gt, has_3d_joints, criterion_pose3d):
     """ 
-    mPJPE
+    mPJPE loss of self define criterion
     """
     pred, gt = filter_3d_joints(pred, gt, has_3d_joints)
     error = paddle.sqrt(criterion_pose3d(pred, gt).sum(axis=-1)).mean()
-    return error
-
-
-@register
-@serializable
-def weighted_mpjpe2(pred, gt, has_3d_joints):
-    """ 
-    Weighted_mPJPE
-    """
-    pred, gt = filter_3d_joints(pred, gt, has_3d_joints)
-    weight = paddle.linalg.norm(pred, p=2, axis=-1)
-    weight = paddle.to_tensor(
-        [1.5, 1.3, 1.2, 1.2, 1.3, 1.5, 1.5, 1.3, 1.2, 1.2, 1.3, 1.5, 1., 1.])
-    # error = paddle.sqrt( ((pred - gt) ** 2).sum(axis=-1)).mean(axis=-1)
-    error = (weight * paddle.linalg.norm(pred - gt, p=2, axis=-1)).mean()
     return error
 
 
@@ -117,8 +107,9 @@ def weighted_mpjpe(pred, gt, has_3d_joints):
     Weighted_mPJPE
     """
     pred, gt = filter_3d_joints(pred, gt, has_3d_joints)
-    weight = 1 / (gt[..., 2] + 1e-6)  # Weight inversely proportional to depth
-    # error = paddle.sqrt( ((pred - gt) ** 2).sum(axis=-1)).mean(axis=-1)
+    weight = paddle.linalg.norm(pred, p=2, axis=-1)
+    weight = paddle.to_tensor(
+        [1.5, 1.3, 1.2, 1.2, 1.3, 1.5, 1.5, 1.3, 1.2, 1.2, 1.3, 1.5, 1., 1.])
     error = (weight * paddle.linalg.norm(pred - gt, p=2, axis=-1)).mean()
     return error
 
