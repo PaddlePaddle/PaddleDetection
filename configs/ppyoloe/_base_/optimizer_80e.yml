@@ -1,10 +1,10 @@
-epoch: 300
+epoch: 80
 
 LearningRate:
-  base_lr: 0.025
+  base_lr: 0.001
   schedulers:
     - !CosineDecay
-      max_epochs: 360
+      max_epochs: 96
     - !LinearWarmup
       start_factor: 0.
       epochs: 5
