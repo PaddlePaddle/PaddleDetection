@@ -5,17 +5,17 @@ TrainDataset:
   !COCODataSet
     image_dir: trainval1024/images
     anno_path: trainval1024/DOTA_trainval1024.json
-    dataset_dir: dataset/DOTA_1024/
+    dataset_dir: dataset/dota/
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_poly']
 
 EvalDataset:
   !COCODataSet
     image_dir: trainval1024/images
     anno_path: trainval1024/DOTA_trainval1024.json
-    dataset_dir: dataset/DOTA_1024/
+    dataset_dir: dataset/dota/
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_poly']
 
 TestDataset:
   !ImageFolder
     anno_path: trainval1024/DOTA_test1024.json
-    dataset_dir: dataset/DOTA_1024/
+    dataset_dir: dataset/dota/

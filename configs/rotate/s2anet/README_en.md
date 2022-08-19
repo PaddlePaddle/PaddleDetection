@@ -25,33 +25,33 @@
 Single GPU Training
 ```bash
 export CUDA_VISIBLE_DEVICES=0
-python tools/train.py -c configs/dota/s2anet_1x_spine.yml
+python tools/train.py -c configs/rotate/s2anet/s2anet_1x_spine.yml
 ```
 
 Multiple GPUs Training
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/dota/s2anet_1x_spine.yml
+python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/rotate/s2anet/s2anet_1x_spine.yml
 ```
 
 You can use `--eval`to enable train-by-test.
 
 ### 3. Evaluation
 ```bash
-python tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2anet_1x_spine/model_final.pdparams
+python tools/eval.py -c configs/rotate/s2anet/s2anet_1x_spine.yml -o weights=output/s2anet_1x_spine/model_final.pdparams
 
 # Use a trained model to evaluate
-python tools/eval.py -c configs/dota/s2anet_1x_spine.yml -o weights=https://paddledet.bj.bcebos.com/models/s2anet_1x_spine.pdparams
+python tools/eval.py -c configs/rotate/s2anet/s2anet_1x_spine.yml -o weights=https://paddledet.bj.bcebos.com/models/s2anet_1x_spine.pdparams
 ```
 
 ### 4. Prediction
 Executing the following command will save the image prediction results to the `output` folder.
 ```bash
-python tools/infer.py -c configs/dota/s2anet_1x_spine.yml -o weights=output/s2anet_1x_spine/model_final.pdparams --infer_img=demo/39006.jpg --draw_threshold=0.3
+python tools/infer.py -c configs/rotate/s2anet/s2anet_1x_spine.yml -o weights=output/s2anet_1x_spine/model_final.pdparams --infer_img=demo/39006.jpg --draw_threshold=0.3
 ```
 Prediction using models that provide training:
 ```bash
-python tools/infer.py -c configs/dota/s2anet_1x_spine.yml -o weights=https://paddledet.bj.bcebos.com/models/s2anet_1x_spine.pdparams --infer_img=demo/39006.jpg --draw_threshold=0.3
+python tools/infer.py -c configs/rotate/s2anet/s2anet_1x_spine.yml -o weights=https://paddledet.bj.bcebos.com/models/s2anet_1x_spine.pdparams --infer_img=demo/39006.jpg --draw_threshold=0.3
 ```
 
 ### 5. DOTA Data evaluation
@@ -72,8 +72,8 @@ zip -r submit.zip submit
 
 |     Model     |  Conv Type  |   mAP    |   Model Download   |   Configuration File   |
 |:-----------:|:----------:|:--------:| :----------:| :---------: |
-|   S2ANet    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_conv_2x_dota.yml)                   |
-|   S2ANet    |  AlignConv |   74.0   |  [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_alignconv_2x_dota.yml)                   |
+|   S2ANet    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/s2anet/s2anet_conv_2x_dota.yml)                   |
+|   S2ANet    |  AlignConv |   74.0   |  [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml)                   |
 
 **Attention:** `multiclass_nms` is used here, which is slightly different from the original author's use of NMS.
 
