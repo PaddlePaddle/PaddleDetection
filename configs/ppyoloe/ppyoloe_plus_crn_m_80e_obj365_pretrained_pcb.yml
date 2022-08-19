@@ -14,6 +14,7 @@ pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_c
 depth_mult: 0.67
 width_mult: 0.75
 
+
 metric: COCO
 num_classes: 6
 
