@@ -72,13 +72,13 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
 3. There are two ways to modify the model path:
 
   - In ```./deploy/pipeline/config/infer_cfg_pphuman.yml```, you can configurate different model paths，which is proper only if you match keypoint models and action recognition models with the fields of `KPT` and `SKELETON_ACTION` respectively, and modify the corresponding path of each field into the expected path.
-  - Add `--model_dir` in the command line to revise the model path：
+  - Add `-o KPT.model_dir=xxx SKELETON_ACTION.model_dir=xxx ` in the command line following the --config to change the model path：
 
     ```python
-    python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
-                                                       --video_file=test_video.mp4 \
-                                                       --device=gpu \
-                                                       --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
+                                                   -o KPT.model_dir=./dark_hrnet_w32_256x192 SKELETON_ACTION.model_dir=./STGCN\
+                                                   --video_file=test_video.mp4 \
+                                                   --device=gpu
     ```
 4. For detailed parameter description, please refer to [Parameter Description](./PPHuman_QUICK_STARTED.md)
 
