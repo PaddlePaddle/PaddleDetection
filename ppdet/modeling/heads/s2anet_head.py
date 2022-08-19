@@ -244,8 +244,10 @@ class S2ANetHead(nn.Layer):
             bias_attr=ParamAttr(initializer=Constant(0)))
 
     def forward(self, feats, targets=None):
-        fam_reg_list, fam_cls_list = [], []
-        odm_reg_list, odm_cls_list = [], []
+        fam_reg_list = []
+        fam_cls_list = []
+        odm_reg_list = []
+        odm_cls_list = []
         num_anchors_list, base_anchors_list, refine_anchors_list = [], [], []
 
         for i, feat in enumerate(feats):
@@ -326,7 +328,8 @@ class S2ANetHead(nn.Layer):
     def get_bboxes(self, head_outs):
         perd_bboxes_list, pred_scores_list = head_outs
         batch = paddle.shape(pred_scores_list[0])[0]
-        bboxes, bbox_num = [], []
+        bboxes = []
+        bbox_num = []
         for i in range(batch):
             pred_scores_per_image = [t[i] for t in pred_scores_list]
             pred_bboxes_per_image = [t[i] for t in perd_bboxes_list]
