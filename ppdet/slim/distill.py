@@ -417,10 +417,7 @@ class FGDFeatureLoss(nn.Layer):
             preds_S = paddle.index_select(preds_S, index_gt_t)
             preds_T = paddle.index_select(preds_T, index_gt_t)
 
-            img_metas_tmp = [{
-                'img_shape': inputs['im_shape'][i]
-            } for i in range(inputs['im_shape'].shape[0])]
-            img_metas = [img_metas_tmp[c] for c in index_gt]
+            ins_shape = [ins_shape[c] for c in index_gt]
             gt_bboxes = [gt_bboxes[c] for c in index_gt]
             assert len(gt_bboxes) == preds_T.shape[
                 0], f"The number of selected GT box [{len(gt_bboxes)}] should be same with first dim of input tensor [{preds_T.shape[0]}]."
