@@ -18,10 +18,9 @@ python3 deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pp
 
 ```python
 python3 deploy/pipeline/pipeline.py
-        --config deploy/pipeline/config/infer_cfg_pphuman.yml
+        --config deploy/pipeline/config/infer_cfg_pphuman.yml -o REID.model_dir=reid_best/
         --video_dir=[your_video_file_directory]
         --device=gpu
-        --model_dir reid=reid_best/
 ```
 
 ## Intorduction to the Solution

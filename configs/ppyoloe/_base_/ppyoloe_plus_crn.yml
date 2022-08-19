@@ -1,27 +1,3 @@
-_BASE_: [
-  '../datasets/coco_detection.yml',
-  '../runtime.yml',
-  './_base_/optimizer_36e_xpu.yml',
-  './_base_/ppyoloe_reader.yml',
-]
-
-# note: these are default values (use_gpu = true and use_xpu = false) for CI.
-# set use_gpu = false and use_xpu = true for training.
-use_gpu: true
-use_xpu: false
-
-log_iter: 100
-snapshot_epoch: 1
-weights: output/ppyoloe_crn_l_36e_coco/model_final
-find_unused_parameters: True
-
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_l_pretrained.pdparams
-depth_mult: 1.0
-width_mult: 1.0
-
-TrainReader:
-  batch_size: 8
-
 architecture: YOLOv3
 norm_type: sync_bn
 use_ema: true
@@ -38,6 +14,7 @@ CSPResNet:
   channels: [64, 128, 256, 512, 1024]
   return_idx: [1, 2, 3]
   use_large_stem: True
+  use_alpha: True
 
 CustomCSPPAN:
   out_channels: [768, 384, 192]
@@ -50,7 +27,7 @@ PPYOLOEHead:
   fpn_strides: [32, 16, 8]
   grid_cell_scale: 5.0
   grid_cell_offset: 0.5
-  static_assigner_epoch: 4
+  static_assigner_epoch: 30
   use_varifocal_loss: True
   loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
   static_assigner:
