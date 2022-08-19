@@ -1,6 +1,6 @@
 _BASE_: [
-  '../datasets/coco_detection.yml',
-  '../runtime.yml',
+  '../../datasets/coco_detection.yml',
+  '../../runtime.yml',
   './_base_/optimizer_300e.yml',
   './_base_/ppyoloe_crn.yml',
   './_base_/ppyoloe_reader.yml',
@@ -13,9 +13,3 @@ weights: output/ppyoloe_crn_x_300e_coco/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_x_pretrained.pdparams
 depth_mult: 1.33
 width_mult: 1.25
-
-TrainReader:
-  batch_size: 16
-
-LearningRate:
-  base_lr: 0.02
