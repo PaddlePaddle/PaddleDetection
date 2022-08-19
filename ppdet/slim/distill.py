@@ -135,7 +135,13 @@ class FGDDistillModel(nn.Layer):
             if self.arch == "RetinaNet":
                 loss = self.student_model.head(s_neck_feats, inputs)
             elif self.arch == "PicoDet":
-                loss = self.student_model.get_loss()
+                head_outs = self.student_model.head(
+                    s_neck_feats, self.student_model.export_post_process)
+                loss_gfl = self.student_model.head.get_loss(head_outs, inputs)
+                total_loss = paddle.add_n(list(loss_gfl.values()))
+                loss = {}
+                loss.update(loss_gfl)
+                loss.update({'loss': total_loss})
             else:
                 raise ValueError(f"Unsupported model {self.arch}")
             for k in loss_dict:
@@ -151,7 +157,14 @@ class FGDDistillModel(nn.Layer):
                     head_outs, inputs['im_shape'], inputs['scale_factor'])
                 return {'bbox': bbox, 'bbox_num': bbox_num}
             elif self.arch == "PicoDet":
-                return self.student_model.head.get_pred()
+                head_outs = self.student_model.head(
+                    neck_feats, self.student_model.export_post_process)
+                scale_factor = inputs['scale_factor']
+                bboxes, bbox_num = self.student_model.head.post_process(
+                    head_outs,
+                    scale_factor,
+                    export_nms=self.student_model.export_nms)
+                return {'bbox': bboxes, 'bbox_num': bbox_num}
             else:
                 raise ValueError(f"Unsupported model {self.arch}")
 
@@ -394,6 +407,24 @@ class FGDFeatureLoss(nn.Layer):
             inputs['im_shape'][i] for i in range(inputs['im_shape'].shape[0])
         ]
 
+        index_gt = []
+        for i in range(len(gt_bboxes)):
+            if gt_bboxes[i].size > 2:
+                index_gt.append(i)
+        # only distill feature with labeled GTbox
+        if len(index_gt) != len(gt_bboxes):
+            index_gt_t = paddle.to_tensor(index_gt)  # to tensor
+            preds_S = paddle.index_select(preds_S, index_gt_t)
+            preds_T = paddle.index_select(preds_T, index_gt_t)
+
+            img_metas_tmp = [{
+                'img_shape': inputs['im_shape'][i]
+            } for i in range(inputs['im_shape'].shape[0])]
+            img_metas = [img_metas_tmp[c] for c in index_gt]
+            gt_bboxes = [gt_bboxes[c] for c in index_gt]
+            assert len(gt_bboxes) == preds_T.shape[
+                0], f"The number of selected GT box [{len(gt_bboxes)}] should be same with first dim of input tensor [{preds_T.shape[0]}]."
+
         if self.align is not None:
             stu_feature = self.align(stu_feature)
 
@@ -408,10 +439,16 @@ class FGDFeatureLoss(nn.Layer):
         Mask_bg = paddle.ones_like(tea_spatial_att)
         one_tmp = paddle.ones([*tea_spatial_att.shape[1:]])
         zero_tmp = paddle.zeros([*tea_spatial_att.shape[1:]])
+        mask_fg.stop_gradient = True
+        Mask_bg.stop_gradient = True
+        one_tmp.stop_gradient = True
+        zero_tmp.stop_gradient = True
+
         wmin, wmax, hmin, hmax, area = [], [], [], [], []
 
         for i in range(N):
             tmp_box = paddle.ones_like(gt_bboxes[i])
+            tmp_box.stop_gradient = True
             tmp_box[:, 0] = gt_bboxes[i][:, 0] / ins_shape[i][1] * W
             tmp_box[:, 2] = gt_bboxes[i][:, 2] / ins_shape[i][1] * W
             tmp_box[:, 1] = gt_bboxes[i][:, 1] / ins_shape[i][0] * H
@@ -419,6 +456,9 @@ class FGDFeatureLoss(nn.Layer):
 
             zero = paddle.zeros_like(tmp_box[:, 0], dtype="int32")
             ones = paddle.ones_like(tmp_box[:, 2], dtype="int32")
+            zero.stop_gradient = True
+            ones.stop_gradient = True
+
             wmin.append(
                 paddle.cast(paddle.floor(tmp_box[:, 0]), "int32").maximum(zero))
             wmax.append(paddle.cast(paddle.ceil(tmp_box[:, 2]), "int32"))
