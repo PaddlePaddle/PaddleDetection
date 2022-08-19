@@ -61,13 +61,14 @@ def load_dota_infos(root_dir, num_process=8, ext=None):
                 pool.apply_async(load_dota_info, (image_dir, anno_dir,
                                                   file_name, ext)))
 
+        pool.close()
+        pool.join()
+
         for result in results:
             info = result.get()
             if info:
                 data_infos.append(info)
 
-        pool.close()
-        pool.join()
     else:
         for file_name in os.listdir(image_dir):
             info = load_dota_info(image_dir, anno_dir, file_name, ext)
@@ -133,13 +134,14 @@ def data_to_coco(infos, output_path, class_names, num_process):
                     process_single_sample, (info, image_id, class_names),
                     callback=lambda x: pbar.update()))
 
+        pool.close()
+        pool.join()
+
         for result in results:
             single_image, single_anno = result.get()
             images.append(single_image)
             annotations += single_anno
 
-        pool.close()
-        pool.join()
     else:
         for i, info in enumerate(infos):
             image_id = i + 1
@@ -148,6 +150,7 @@ def data_to_coco(infos, output_path, class_names, num_process):
             images.append(single_image)
             annotations += single_anno
             pbar.update()
+
     pbar.close()
 
     for i, anno in enumerate(annotations):

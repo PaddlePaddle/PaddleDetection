@@ -6,3 +6,81 @@ English | [简体中文](README.md)
 - [Introduction](#Introduction)
 - [Model Zoo](#Model-Zoo)
 - [Data Preparation](#Data-Preparation)
+- [Installation](#Installation)
+
+## Introduction
+Rotated object detection is used to detect rectangular bounding boxes with angle information, that is, the long and short sides of the rectangular bounding box are no longer parallel to the image coordinate axes. Oriented bounding boxes generally contain less background information than horizontal bounding boxes. Rotated object detection is often used in remote sensing scenarios.
+
+## Model Zoo
+| Model | mAP | Lr Scheduler | Angle | Aug | GPU Number | images/GPU | download | config |
+|:---:|:----:|:---------:|:-----:|:--------:|:-----:|:------------:|:-------:|:------:|
+| [S2ANet](./s2anet/README.md) | 74.0 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_alignconv_2x_dota.yml) |
+
+**Notes:**
+
+- if **GPU number** or **mini-batch size** is changed, **learning rate** should be adjusted according to the formula **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)**.
+
+## Data Preparation
+### DOTA Dataset preparation
+The DOTA dataset is a large-scale remote sensing image dataset containing annotations of oriented and horizontal bounding boxes. The dataset can be download from [Official Website of DOTA Dataset](https://captain-whu.github.io/DOTA/). When the dataset is decompressed, its directory structure is shown as follows.
+```
+${DOTA_ROOT}
+├── test
+│   └── images
+├── train
+│   ├── images
+│   └── labelTxt
+└── val
+    ├── images
+    └── labelTxt
+```
+
+The image resolution of DOTA dataset is relatively high, so we usually slice the images before training and testing. To slice the images with a single scale, you can use the command below
+```
+python configs/rotate/tools/prepare_data.py \
+    --input_dirs ${DOTA_ROOT}/train/ ${DOTA_ROOT}/val/ \
+    --output_dir ${OUTPUT_DIR}/trainval1024/ \
+    --coco_json_file DOTA_trainval1024.json \
+    --subsize 1024 \
+    --gap 200 \
+    --rates 1.0
+```
+To slice the images with multiple scales, you can use the command below
+```
+python configs/rotate/tools/prepare_data.py \
+    --input_dirs ${DOTA_ROOT}/train/ ${DOTA_ROOT}/val/ \
+    --output_dir ${OUTPUT_DIR}/trainval/ \
+    --coco_json_file DOTA_trainval1024.json \
+    --subsize 1024 \
+    --gap 500 \
+    --rates 0.5 1.0 1.5 \
+```
+For data without annotations, you should set `--image_only` as follows
+```
+python configs/rotate/tools/prepare_data.py \
+    --input_dirs ${DOTA_ROOT}/test/ \
+    --output_dir ${OUTPUT_DIR}/test1024/ \
+    --coco_json_file DOTA_test1024.json \
+    --subsize 1024 \
+    --gap 200 \
+    --rates 1.0 \
+    --image_only
+```
+
+## Installation
+Models of rotated object detection depend on external operators for training, evaluation, etc. In Linux environment, you can execute the following command to compile and install.
+```
+cd ppdet/ext_op
+python setup.py install
+```
+In Windows environment, perform the following steps to install it：
+
+（1）Visual Studio (version required >= Visual Studio 2015 Update3);
+
+（2）Go to Start --> Visual Studio 2017 --> X64 native Tools command prompt for VS 2017;
+
+（3）Setting Environment Variables：set DISTUTILS_USE_SDK=1
+
+（4）Enter `ppdet/ext_op` directory，use `python setup.py install` to install。
+
+After the installation, you can execute the unittest of `ppdet/ext_op/unittest` to verify whether the external oprators is installed correctly.

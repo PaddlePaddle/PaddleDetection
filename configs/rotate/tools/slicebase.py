@@ -196,7 +196,7 @@ class SliceBase(object):
                     else:
                         continue
                     outline = ' '.join(list(map(str, final_poly)))
-                    if iof > self.thresh:
+                    if iof >= self.thresh:
                         outline = outline + ' ' + anno['name'] + ' ' + str(anno[
                             'difficult'])
                     else:

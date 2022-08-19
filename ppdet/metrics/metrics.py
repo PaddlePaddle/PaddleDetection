@@ -22,6 +22,7 @@ import json
 import paddle
 import numpy as np
 import typing
+from collections import defaultdict
 from pathlib import Path
 
 from .map_utils import prune_zero_padding, DetectionMAP
@@ -357,6 +358,7 @@ class RBoxMetric(Metric):
         self.overlap_thresh = kwargs.get('overlap_thresh', 0.5)
         self.map_type = kwargs.get('map_type', '11point')
         self.evaluate_difficult = kwargs.get('evaluate_difficult', False)
+        self.imid2path = kwargs.get('imid2path', None)
         class_num = len(self.catid2name)
         self.detection_map = DetectionMAP(
             class_num=class_num,
@@ -422,21 +424,41 @@ class RBoxMetric(Metric):
             ]
             self.detection_map.update(bbox, score, label, gt_box, gt_label)
 
-    def accumulate(self):
-        if len(self.results) > 0:
-            output = "bbox.json"
-            if self.output_eval:
-                output = os.path.join(self.output_eval, output)
-            with open(output, 'w') as f:
-                json.dump(self.results, f)
-                logger.info('The bbox result is saved to bbox.json.')
+    def save_results(self, results, output_dir, imid2path):
+        if imid2path:
+            data_dicts = defaultdict(list)
+            for result in results:
+                image_id = result['image_id']
+                data_dicts[image_id].append(result)
 
-            if self.save_prediction_only:
-                logger.info('The bbox result is saved to {} and do not '
-                            'evaluate the mAP.'.format(output))
-            else:
-                logger.info("Accumulating evaluatation results...")
-                self.detection_map.accumulate()
+            for image_id, image_path in imid2path.items():
+                basename = os.path.splitext(os.path.split(image_path)[-1])[0]
+                output = os.path.join(output_dir, "{}.txt".format(basename))
+                dets = data_dicts.get(image_id, [])
+                with open(output, 'w') as f:
+                    for det in dets:
+                        catid, bbox, score = det['category_id'], det[
+                            'bbox'], det['score']
+                        bbox_pred = '{} {} '.format(self.catid2name[catid],
+                                                    score) + ' '.join(
+                                                        [str(e) for e in bbox])
+                        f.write(bbox_pred + '\n')
+
+            logger.info('The bbox result is saved to {}.'.format(output_dir))
+        else:
+            output = os.path.join(output_dir, "bbox.json")
+            with open(output, 'w') as f:
+                json.dump(results, f)
+
+            logger.info('The bbox result is saved to {}.'.format(output))
+
+    def accumulate(self):
+        if self.output_eval:
+            self.save_results(self.results, self.output_eval, self.imid2path)
+
+        if not self.save_prediction_only:
+            logger.info("Accumulating evaluatation results...")
+            self.detection_map.accumulate()
 
     def log(self):
         map_stat = 100. * self.detection_map.get_map()

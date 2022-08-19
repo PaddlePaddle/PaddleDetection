@@ -49,10 +49,13 @@ python tools/infer.py -c configs/rotate/s2anet/s2anet_1x_spine.yml -o weights=ht
 ### 5. DOTA数据评估
 执行如下命令，会在`output`文件夹下将每个图像预测结果保存到同文件夹名的txt文本中。
 ```
-python tools/infer.py -c configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml -o weights=./weights/s2anet_alignconv_2x_dota.pdparams  --infer_dir=dota_test_images --draw_threshold=0.05 --save_txt=True --output_dir=output
+python tools/infer.py -c configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml -o weights=./weights/s2anet_alignconv_2x_dota.pdparams --infer_dir=/path/to/test/images --output_dir=output --visualize=False --save_results=True
 ```
-
-请参考[DOTA_devkit](https://github.com/CAPTAIN-WHU/DOTA_devkit) 生成评估文件，评估文件格式请参考[DOTA Test](http://captain.whu.edu.cn/DOTAweb/tasks.html) ，生成zip文件，每个类一个txt文件，txt文件中每行格式为：`image_id score x1 y1 x2 y2 x3 y3 x4 y4`，提交服务器进行评估。您也可以参考`dataset/dota_coco/dota_generate_test_result.py`脚本生成评估文件，提交到服务器。
+参考[DOTA Task](https://captain-whu.github.io/DOTA/tasks.html), 评估DOTA数据集需要生成一个包含所有检测结果的zip文件，每一类的检测结果储存在一个txt文件中，txt文件中每行格式为：`image_name score x1 y1 x2 y2 x3 y3 x4 y4`。将生成的zip文件提交到[DOTA Evaluation](https://captain-whu.github.io/DOTA/evaluation.html)的Task1进行评估。你可以执行以下命令生成评估文件
+```
+python configs/rotate/tools/generate_result.py --pred_txt_dir=output/ --output_dir=submit/ --data_type=dota10
+zip -r submit.zip submit
+```
 
 ## 模型库
 

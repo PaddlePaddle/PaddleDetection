@@ -268,11 +268,7 @@ class Trainer(object):
             output_eval = self.cfg['output_eval'] \
                 if 'output_eval' in self.cfg else None
             save_prediction_only = self.cfg.get('save_prediction_only', False)
-
-            # pass clsid2catid info to metric instance to avoid multiple loading
-            # annotation file
-            clsid2catid = {v: k for k, v in self.dataset.catid2clsid.items()} \
-                                if self.mode == 'eval' else None
+            imid2path = self.cfg.get('imid2path', None)
 
             # when do validation in train, annotation file should be get from
             # EvalReader instead of self.dataset(which is TrainReader)
@@ -285,11 +281,11 @@ class Trainer(object):
             self._metrics = [
                 RBoxMetric(
                     anno_file=anno_file,
-                    clsid2catid=clsid2catid,
                     classwise=classwise,
                     output_eval=output_eval,
                     bias=bias,
-                    save_prediction_only=save_prediction_only)
+                    save_prediction_only=save_prediction_only,
+                    imid2path=imid2path)
             ]
         elif self.cfg.metric == 'VOC':
             output_eval = self.cfg['output_eval'] \
@@ -810,9 +806,15 @@ class Trainer(object):
                 images,
                 draw_threshold=0.5,
                 output_dir='output',
-                save_results=False):
+                save_results=False,
+                visualize=True):
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
         self.dataset.set_images(images)
         loader = create('TestReader')(self.dataset, 0)
+
+        imid2path = self.dataset.get_imid2path()
 
         def setup_metrics_for_loader():
             # mem
@@ -827,6 +829,7 @@ class Trainer(object):
             self.mode = '_test'
             self.cfg['save_prediction_only'] = True
             self.cfg['output_eval'] = output_dir
+            self.cfg['imid2path'] = imid2path
             self._init_metrics()
 
             # restore
@@ -839,6 +842,8 @@ class Trainer(object):
             if output_eval is not None:
                 self.cfg['output_eval'] = output_eval
 
+            self.cfg.pop('imid2path')
+
             _metrics = copy.deepcopy(self._metrics)
             self._metrics = metrics
 
@@ -848,8 +853,6 @@ class Trainer(object):
             metrics = setup_metrics_for_loader()
         else:
             metrics = []
-
-        imid2path = self.dataset.get_imid2path()
 
         anno_file = self.dataset.get_anno()
         clsid2catid, catid2name = get_categories(
@@ -889,46 +892,46 @@ class Trainer(object):
             _m.accumulate()
             _m.reset()
 
-        for outs in results:
-            batch_res = get_infer_results(outs, clsid2catid)
-            bbox_num = outs['bbox_num']
+        if visualize:
+            for outs in results:
+                batch_res = get_infer_results(outs, clsid2catid)
+                bbox_num = outs['bbox_num']
 
-            start = 0
-            for i, im_id in enumerate(outs['im_id']):
-                image_path = imid2path[int(im_id)]
-                image = Image.open(image_path).convert('RGB')
-                image = ImageOps.exif_transpose(image)
-                self.status['original_image'] = np.array(image.copy())
+                start = 0
+                for i, im_id in enumerate(outs['im_id']):
+                    image_path = imid2path[int(im_id)]
+                    image = Image.open(image_path).convert('RGB')
+                    image = ImageOps.exif_transpose(image)
+                    self.status['original_image'] = np.array(image.copy())
 
-                end = start + bbox_num[i]
-                bbox_res = batch_res['bbox'][start:end] \
-                        if 'bbox' in batch_res else None
-                mask_res = batch_res['mask'][start:end] \
-                        if 'mask' in batch_res else None
-                segm_res = batch_res['segm'][start:end] \
-                        if 'segm' in batch_res else None
-                keypoint_res = batch_res['keypoint'][start:end] \
-                        if 'keypoint' in batch_res else None
-                image = visualize_results(
-                    image, bbox_res, mask_res, segm_res, keypoint_res,
-                    int(im_id), catid2name, draw_threshold)
-                self.status['result_image'] = np.array(image.copy())
-                if self._compose_callback:
-                    self._compose_callback.on_step_end(self.status)
-                # save image with detection
-                save_name = self._get_save_image_name(output_dir, image_path)
-                logger.info("Detection bbox results save in {}".format(
-                    save_name))
-                image.save(save_name, quality=95)
+                    end = start + bbox_num[i]
+                    bbox_res = batch_res['bbox'][start:end] \
+                            if 'bbox' in batch_res else None
+                    mask_res = batch_res['mask'][start:end] \
+                            if 'mask' in batch_res else None
+                    segm_res = batch_res['segm'][start:end] \
+                            if 'segm' in batch_res else None
+                    keypoint_res = batch_res['keypoint'][start:end] \
+                            if 'keypoint' in batch_res else None
+                    image = visualize_results(
+                        image, bbox_res, mask_res, segm_res, keypoint_res,
+                        int(im_id), catid2name, draw_threshold)
+                    self.status['result_image'] = np.array(image.copy())
+                    if self._compose_callback:
+                        self._compose_callback.on_step_end(self.status)
+                    # save image with detection
+                    save_name = self._get_save_image_name(output_dir,
+                                                          image_path)
+                    logger.info("Detection bbox results save in {}".format(
+                        save_name))
+                    image.save(save_name, quality=95)
 
-                start = end
+                    start = end
 
     def _get_save_image_name(self, output_dir, image_path):
         """
         Get save image name from source image path.
         """
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
         image_name = os.path.split(image_path)[-1]
         name, ext = os.path.splitext(image_name)
         return os.path.join(output_dir, "{}".format(name)) + ext

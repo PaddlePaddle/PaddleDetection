@@ -9,11 +9,10 @@
 - [安装依赖](#安装依赖)
 
 ## 简介
-旋转框是带有角度信息的矩形框，即矩形框的宽和高不再与图像坐标轴平行。相较于水平矩形框，旋转矩形框一般包括更少的背景信息。旋转矩形框常用于遥感图像的目标检测等场景中。
+旋转框常用于检测带有角度信息的矩形框，即矩形框的宽和高不再与图像坐标轴平行。相较于水平矩形框，旋转矩形框一般包括更少的背景信息。旋转框检测常用于遥感等场景中。
 
 ## 模型库
 
-模型 mAP 学习率策略 角度表示 数据增广 GPU数目 每GPU图片数目 模型下载 配置文件
 | 模型 | mAP | 学习率策略 | 角度表示 | 数据增广 | GPU数目 | 每GPU图片数目 | 模型下载 | 配置文件 |
 |:---:|:----:|:---------:|:-----:|:--------:|:-----:|:------------:|:-------:|:------:|
 | [S2ANet](./s2anet/README.md) | 74.0 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/s2anet_alignconv_2x_dota.yml) |
@@ -24,7 +23,7 @@
 
 ## 数据准备
 ### DOTA数据准备
-DOTA数据集是一个大规模的遥感图像数据集，包含旋转框和水平框的标注。可以从[DOTA数据集官网](https://captain-whu.github.io/DOTA/)下载数据集并解压，目录结构如下所示：
+DOTA数据集是一个大规模的遥感图像数据集，包含旋转框和水平框的标注。可以从[DOTA数据集官网](https://captain-whu.github.io/DOTA/)下载数据集并解压，解压后的数据集目录结构如下所示：
 ```
 ${DOTA_ROOT}
 ├── test
@@ -37,7 +36,7 @@ ${DOTA_ROOT}
     └── labelTxt
 ```
 
-DOTA数据集分辨率较高，一般使用切图进行训练，使用单尺度进行切图可以使用以下命令：
+DOTA数据集分辨率较高，因此一般在训练和测试之前对图像进行切图，使用单尺度进行切图可以使用以下命令：
 ```
 python configs/rotate/tools/prepare_data.py \
     --input_dirs ${DOTA_ROOT}/train/ ${DOTA_ROOT}/val/ \
@@ -70,7 +69,7 @@ python configs/rotate/tools/prepare_data.py \
 ```
 
 ## 安装依赖
-除了安装PaddleDetection所需要的依赖之外，旋转框需要依赖外部算子进行训练，评估等。Linux环境下，你可以执行以下命令进行编译安装
+旋转框检测模型需要依赖外部算子进行训练，评估等。Linux环境下，你可以执行以下命令进行编译安装
 ```
 cd ppdet/ext_op
 python setup.py install

@@ -57,9 +57,14 @@ python tools/infer.py -c configs/dota/s2anet_1x_spine.yml -o weights=https://pad
 ### 5. DOTA Data evaluation
 Execute the following command, will save each image prediction result in `output` folder txt text with the same folder name.
 ```
-python tools/infer.py -c configs/dota/s2anet_alignconv_2x_dota.yml -o weights=./weights/s2anet_alignconv_2x_dota.pdparams  --infer_dir=dota_test_images --draw_threshold=0.05 --save_txt=True --output_dir=output
+python tools/infer.py -c configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml -o weights=./weights/s2anet_alignconv_2x_dota.pdparams --infer_dir=/path/to/test/images --output_dir=output --visualize=False --save_results=True
 ```
-Please refer to [DOTA_devkit](https://github.com/CAPTAIN-WHU/DOTA_devkit) generate assessment files, Assessment file format, please refer to [DOTA Test](http://captain.whu.edu.cn/DOTAweb/tasks.html), and generate the zip file, each class a txt file, every row in the txt file format for: `image_id score x1 y1 x2 y2 x3 y3 x4 y4` You can also reference the `dataset/dota_coco/dota_generate_test_result.py` script to generate an evaluation file and submit it to the server.
+Refering to [DOTA Task](https://captain-whu.github.io/DOTA/tasks.html), You need to submit a zip file containing results for all test images for evaluation. The detection results of each category are stored in a txt file, each line of which is in the following format
+`image_id score x1 y1 x2 y2 x3 y3 x4 y4`. To evaluate, you should submit the generated zip file to the Task1 of [DOTA Evaluation](https://captain-whu.github.io/DOTA/evaluation.html). You can execute the following command to generate the file
+```
+python configs/rotate/tools/generate_result.py --pred_txt_dir=output/ --output_dir=submit/ --data_type=dota10
+zip -r submit.zip submit
+```
 
 ## Model Library
 
