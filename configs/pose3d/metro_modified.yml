@@ -2,7 +2,7 @@ use_gpu: True
 log_iter: 20
 save_dir: output
 snapshot_epoch: 2
-weights: metro_torchinit_ppdet.pdparams
+weights: output/metro_modified/model_final
 epoch: 50
 metric: Pose3DEval
 num_classes: 1
@@ -13,7 +13,7 @@ num_joints: &num_joints 24
 
 #####model
 architecture: METRO_Body
-pretrain_weights: metro_torchinit_ppdet.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/HRNet_W40_C_pretrained.pdparams
 
 METRO_Body:
   backbone: HRNet
@@ -71,8 +71,6 @@ TrainDataset:
     dataset_dir: dataset/
     image_dirs: ["posetrack3d", "lspet/images", "lspet/images", "mpii/images", "coco/train2017", "coco/train2017", "coco/train2017", "human3.6m"]
     anno_list: ["pose3d/PoseTrack_ver01.json", "pose3d/LSPet_train_ver10.json", "pose3d/LSPet_test_ver10.json", "pose3d/MPII_ver01.json", "pose3d/COCO2014-All-ver01.json", "pose3d/COCO2014-Part-ver01.json", "pose3d/COCO2014-Val-ver10.json", "pose3d/Human3.6m_train.json"]
-    # image_dirs: ["coco/train2017", "coco/train2017", "coco/train2017"]
-    # anno_list: ["pose3d/COCO2014-All-ver01.json", "pose3d/COCO2014-Part-ver01.json", "pose3d/COCO2014-Val-ver10.json"]
     num_joints: *num_joints
     test_mode: False
 
