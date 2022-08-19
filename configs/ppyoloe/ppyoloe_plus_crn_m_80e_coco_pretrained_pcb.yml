@@ -6,7 +6,7 @@ _BASE_: [
 ]
 
 log_iter: 100
-snapshot_epoch: 5
+snapshot_epoch: 20
 weights: output/ppyoloe_plus_crn_m_80e_coco_pretrained_pcb/model_final
 
 pretrain_weights: http://10.255.134.13:8091/weights/ppyoloe_obj365_coco/ppyoloe_crn_m_80e_obj365_coco.pdparams
@@ -46,7 +46,7 @@ OptimizerBuilder:
     type: L2
 
 metric: COCO
-num_classes: 12
+num_classes: 6
 
 TrainDataset:
   !COCODataSet
