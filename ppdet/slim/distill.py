@@ -1,4 +1,3 @@
-
 # Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,16 +33,18 @@ class DistillModel(nn.Layer):
     def __init__(self, cfg, slim_cfg):
         super(DistillModel, self).__init__()
 
+        self.student_model = create(cfg.architecture)
+        logger.debug('Load student model pretrain_weights:{}'.format(
+            cfg.pretrain_weights))
+        load_pretrain_weight(self.student_model, cfg.pretrain_weights)
+
         slim_cfg = load_config(slim_cfg)
         self.teacher_model = create(slim_cfg.architecture)
         self.distill_loss = create(slim_cfg.distill_loss)
         logger.debug('Load teacher model pretrain_weights:{}'.format(
             slim_cfg.pretrain_weights))
         load_pretrain_weight(self.teacher_model, slim_cfg.pretrain_weights)
-        self.student_model = create(cfg.architecture)
-        logger.debug('Load student model pretrain_weights:{}'.format(
-            cfg.pretrain_weights))
-        load_pretrain_weight(self.student_model, cfg.pretrain_weights)
+
         for param in self.teacher_model.parameters():
             param.trainable = False
 
@@ -75,16 +76,18 @@ class FGDDistillModel(nn.Layer):
         super(FGDDistillModel, self).__init__()
 
         self.is_inherit = True
+        # build student model before load slim config
         self.student_model = create(cfg.architecture)
         self.arch = cfg.architecture
         stu_pretrain = cfg['pretrain_weights']
-
         slim_cfg = load_config(slim_cfg)
         self.teacher_cfg = slim_cfg
         self.loss_cfg = slim_cfg
-        tea_pretrain = slim_cfg['pretrain_weights']
+        tea_pretrain = cfg['pretrain_weights']
+
         self.teacher_model = create(self.teacher_cfg.architecture)
         self.teacher_model.eval()
+
         for param in self.teacher_model.parameters():
             param.trainable = False
 
@@ -126,10 +129,9 @@ class FGDDistillModel(nn.Layer):
                 t_neck_feats = self.teacher_model.neck(t_body_feats)
 
             loss_dict = {}
-            if 'gt_bbox' in inputs.keys():
-                for idx, k in enumerate(self.fgd_loss_dic):
-                    loss_dict[k] = self.fgd_loss_dic[k](s_neck_feats[idx],
-                                                        t_neck_feats[idx], inputs)
+            for idx, k in enumerate(self.fgd_loss_dic):
+                loss_dict[k] = self.fgd_loss_dic[k](s_neck_feats[idx],
+                                                    t_neck_feats[idx], inputs)
             if self.arch == "RetinaNet":
                 loss = self.student_model.head(s_neck_feats, inputs)
             elif self.arch == "PicoDet":
@@ -237,6 +239,8 @@ class FGDFeatureLoss(nn.Layer):
         gamma_fgd (float, optional): Weight of mask_loss. Defaults to 0.001
         lambda_fgd (float, optional): Weight of relation_loss. Defaults to 0.000005
     """
+
+
     def __init__(self,
                  student_channels,
                  teacher_channels,
@@ -258,24 +262,47 @@ class FGDFeatureLoss(nn.Layer):
         zeros_init = parameter_init("constant", 0.0)
 
         if student_channels != teacher_channels:
-            self.align = nn.Conv2d(student_channels, teacher_channels, kernel_size=1, stride=1, padding=0, weight_attr=kaiming_init)
+            self.align = nn.Conv2d(
+                student_channels, 
+                teacher_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                weight_attr=kaiming_init)
         else:
             self.align = None
         
-        self.conv_mask_s = nn.Conv2D(teacher_channels, 1, kernel_size=1, weight_attr=kaiming_init)
-        self.conv_mask_t = nn.Conv2D(teacher_channels, 1, kernel_size=1, weight_attr=kaiming_init)
+        self.conv_mask_s = nn.Conv2D(
+            teacher_channels, 1, kernel_size=1, weight_attr=kaiming_init)
+        self.conv_mask_t = nn.Conv2D(
+            teacher_channels, 1, kernel_size=1, weight_attr=kaiming_init)
         self.channel_add_conv_s = nn.Sequential(
-            nn.Conv2D(teacher_channels, teacher_channels//2, kernel_size=1, weight_attr=zeros_init),
+            nn.Conv2D(
+                teacher_channels,
+                teacher_channels//2,
+                kernel_size=1,
+                weight_attr=zeros_init),
             nn.LayerNorm([teacher_channels//2, 1, 1]),
             nn.ReLU(),  
-            nn.Conv2D(teacher_channels//2, teacher_channels, kernel_size=1, weight_attr=zeros_init))
+            nn.Conv2D(
+                    teacher_channels//2,
+                    teacher_channels,
+                    kernel_size=1,
+                    weight_attr=zeros_init))
         self.channel_add_conv_t = nn.Sequential(
-            nn.Conv2D(teacher_channels, teacher_channels//2, kernel_size=1, weight_attr=zeros_init),
+            nn.Conv2D(
+                teacher_channels,
+                teacher_channels//2,
+                kernel_size=1,
+                weight_attr=zeros_init),
             nn.LayerNorm([teacher_channels//2, 1, 1]),
             nn.ReLU(), 
-            nn.Conv2D(teacher_channels//2, teacher_channels, kernel_size=1, weight_attr=zeros_init))
+            nn.Conv2D(
+                teacher_channels//2,
+                teacher_channels,
+                kernel_size=1,
+                weight_attr=zeros_init))
 
-        # self.reset_parameters()
     def gc_block(self, feature, t=0.5):
         """
         """
