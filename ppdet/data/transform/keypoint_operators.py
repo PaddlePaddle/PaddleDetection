@@ -753,10 +753,6 @@ class FlipPose(object):
             print("error num_joints in flip :{}".format(num_joints))
 
     def __call__(self, records):
-        # if 'joints_2d' in records:
-        #     joints_2d = records['joints_2d']
-        #     joints_2d[:, :2] = 2. * joints_2d[:, :2] / self.img_res - 1.
-        #     records['joints_2d'] = joints_2d
 
         if np.random.random() < self.flip_pob:
             img = records['image']

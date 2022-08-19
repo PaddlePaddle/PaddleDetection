@@ -127,8 +127,6 @@ class Pose3DDataset(DetDataset):
                         imagename = imagename[len("COCO_val2014_"):]
                     imagename = os.path.join(img_prefix, imagename)
                     if not os.path.exists(imagename):
-                        # print("cannot find imagepath:{}".format(imagename))
-                        # continue
                         if "train2017" in imagename:
                             imagename = imagename.replace("train2017",
                                                           "val2017")
