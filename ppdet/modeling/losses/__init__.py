@@ -27,6 +27,7 @@ from . import detr_loss
 from . import sparsercnn_loss
 from . import focal_loss
 from . import smooth_l1_loss
+from . import probiou_loss
 
 from .yolo_loss import *
 from .iou_aware_loss import *
@@ -43,3 +44,4 @@ from .detr_loss import *
 from .sparsercnn_loss import *
 from .focal_loss import *
 from .smooth_l1_loss import *
+from .probiou_loss import *

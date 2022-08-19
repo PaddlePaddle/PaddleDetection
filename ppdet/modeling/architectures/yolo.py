@@ -77,7 +77,10 @@ class YOLOv3(BaseArch):
 
     def _forward(self):
         body_feats = self.backbone(self.inputs)
-        neck_feats = self.neck(body_feats, self.for_mot)
+        if self.for_mot:
+            neck_feats = self.neck(body_feats, self.for_mot)
+        else:
+            neck_feats = self.neck(body_feats)
 
         if isinstance(neck_feats, dict):
             assert self.for_mot == True
