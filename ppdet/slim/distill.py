@@ -135,12 +135,13 @@ class FGDDistillModel(nn.Layer):
             if self.arch == "RetinaNet":
                 loss = self.student_model.head(s_neck_feats, inputs)
             elif self.arch == "PicoDet":
-                head_outs = self.student_model.head(s_neck_feats, self.student_model.export_post_process)
+                head_outs = self.student_model.head(
+                    s_neck_feats, self.student_model.export_post_process)
                 loss_gfl = self.student_model.head.get_loss(head_outs, inputs)
-                total_loss = paddle.add_n(list(loss_gfl.values()))                                                                                     
-                loss = {}                                                                                                                              
-                loss.update(loss_gfl)                                                                                                                  
-                loss.update({'loss': total_loss}) 
+                total_loss = paddle.add_n(list(loss_gfl.values()))
+                loss = {}
+                loss.update(loss_gfl)
+                loss.update({'loss': total_loss})
             else:
                 raise ValueError(f"Unsupported model {self.arch}")
             for k in loss_dict:
@@ -156,10 +157,13 @@ class FGDDistillModel(nn.Layer):
                     head_outs, inputs['im_shape'], inputs['scale_factor'])
                 return {'bbox': bbox, 'bbox_num': bbox_num}
             elif self.arch == "PicoDet":
-                head_outs = self.student_model.head(neck_feats, self.student_model.export_post_process)
+                head_outs = self.student_model.head(
+                    neck_feats, self.student_model.export_post_process)
                 scale_factor = inputs['scale_factor']
                 bboxes, bbox_num = self.student_model.head.post_process(
-                               head_outs, scale_factor, export_nms=self.student_model.export_nms)
+                    head_outs,
+                    scale_factor,
+                    export_nms=self.student_model.export_nms)
                 return {'bbox': bboxes, 'bbox_num': bbox_num}
             else:
                 raise ValueError(f"Unsupported model {self.arch}")
@@ -226,7 +230,7 @@ def parameter_init(mode="kaiming", value=0.):
 @register
 class FGDFeatureLoss(nn.Layer):
     """
-    The API is reference from https://github.com/yzd-v/FGD/blob/master/mmdet/distillation/losses/fgd.py
+    The code is reference from https://github.com/yzd-v/FGD/blob/master/mmdet/distillation/losses/fgd.py
     Paddle version of `Focal and Global Knowledge Distillation for Detectors`
    
     Args:
@@ -240,17 +244,16 @@ class FGDFeatureLoss(nn.Layer):
         lambda_fgd (float, optional): Weight of relation_loss. Defaults to 0.000005
     """
 
-
-    def __init__(self,
-                 student_channels,
-                 teacher_channels,
-                 name=None,
-                 temp=0.5,
-                 alpha_fgd=0.001,
-                 beta_fgd=0.0005,
-                 gamma_fgd=0.001,
-                 lambda_fgd=0.000005,
-                 ):
+    def __init__(
+            self,
+            student_channels,
+            teacher_channels,
+            name=None,
+            temp=0.5,
+            alpha_fgd=0.001,
+            beta_fgd=0.0005,
+            gamma_fgd=0.001,
+            lambda_fgd=0.000005):
         super(FGDFeatureLoss, self).__init__()
         self.temp = temp
         self.alpha_fgd = alpha_fgd
@@ -263,7 +266,7 @@ class FGDFeatureLoss(nn.Layer):
 
         if student_channels != teacher_channels:
             self.align = nn.Conv2d(
-                student_channels, 
+                student_channels,
                 teacher_channels,
                 kernel_size=1,
                 stride=1,
@@ -271,7 +274,7 @@ class FGDFeatureLoss(nn.Layer):
                 weight_attr=kaiming_init)
         else:
             self.align = None
-        
+
         self.conv_mask_s = nn.Conv2D(
             teacher_channels, 1, kernel_size=1, weight_attr=kaiming_init)
         self.conv_mask_t = nn.Conv2D(
@@ -283,12 +286,12 @@ class FGDFeatureLoss(nn.Layer):
                 kernel_size=1,
                 weight_attr=zeros_init),
             nn.LayerNorm([teacher_channels // 2, 1, 1]),
-            nn.ReLU(),  
+            nn.ReLU(),
             nn.Conv2D(
-                    teacher_channels // 2,
-                    teacher_channels,
-                    kernel_size=1,
-                    weight_attr=zeros_init))
+                teacher_channels // 2,
+                teacher_channels,
+                kernel_size=1,
+                weight_attr=zeros_init))
         self.channel_add_conv_t = nn.Sequential(
             nn.Conv2D(
                 teacher_channels,
@@ -296,7 +299,7 @@ class FGDFeatureLoss(nn.Layer):
                 kernel_size=1,
                 weight_attr=zeros_init),
             nn.LayerNorm([teacher_channels // 2, 1, 1]),
-            nn.ReLU(), 
+            nn.ReLU(),
             nn.Conv2D(
                 teacher_channels // 2,
                 teacher_channels,
@@ -310,14 +313,17 @@ class FGDFeatureLoss(nn.Layer):
         N, C, H, W = shape
 
         _f = paddle.abs(feature)
-        s_map = paddle.reshape(paddle.mean(_f, axis=1, keepdim=True)/t, [N, -1])
+        s_map = paddle.reshape(
+            paddle.mean(
+                _f, axis=1, keepdim=True) / t, [N, -1])
         s_map = F.softmax(s_map, axis=1, dtype="float32") * H * W
         s_attention = paddle.reshape(s_map, [N, H, W])
 
-        c_map = paddle.mean(paddle.mean(_f, axis=2, keepdim=False), axis=2, keepdim=False)
-        c_attention = F.softmax(c_map/t, axis=1, dtype="float32")  * C
+        c_map = paddle.mean(
+            paddle.mean(
+                _f, axis=2, keepdim=False), axis=2, keepdim=False)
+        c_attention = F.softmax(c_map / t, axis=1, dtype="float32") * C
         return s_attention, c_attention
-
 
     def spatial_pool(self, x, in_type):
         batch, channel, width, height = x.shape
@@ -345,11 +351,12 @@ class FGDFeatureLoss(nn.Layer):
         return context
 
     def get_mask_loss(self, C_s, C_t, S_s, S_t):
-        mask_loss = paddle.sum(paddle.abs((C_s-C_t)))/len(C_s) + paddle.sum(paddle.abs((S_s-S_t)))/len(S_s)
+        mask_loss = paddle.sum(paddle.abs((C_s - C_t))) / len(C_s) + paddle.sum(
+            paddle.abs((S_s - S_t))) / len(S_s)
         return mask_loss
 
-
-    def get_fea_loss(self, preds_S, preds_T, Mask_fg, Mask_bg, C_s, C_t, S_s, S_t):        
+    def get_fea_loss(self, preds_S, preds_T, Mask_fg, Mask_bg, C_s, C_t, S_s,
+                     S_t):
         Mask_fg = Mask_fg.unsqueeze(axis=1)
         Mask_bg = Mask_bg.unsqueeze(axis=1)
 
@@ -358,7 +365,7 @@ class FGDFeatureLoss(nn.Layer):
 
         S_t = S_t.unsqueeze(axis=1)
 
-        fea_t= paddle.multiply(preds_T, paddle.sqrt(S_t))
+        fea_t = paddle.multiply(preds_T, paddle.sqrt(S_t))
         fea_t = paddle.multiply(fea_t, paddle.sqrt(C_t))
         fg_fea_t = paddle.multiply(fea_t, paddle.sqrt(Mask_fg))
         bg_fea_t = paddle.multiply(fea_t, paddle.sqrt(Mask_bg))
@@ -368,8 +375,8 @@ class FGDFeatureLoss(nn.Layer):
         fg_fea_s = paddle.multiply(fea_s, paddle.sqrt(Mask_fg))
         bg_fea_s = paddle.multiply(fea_s, paddle.sqrt(Mask_bg))
 
-        fg_loss = F.mse_loss(fg_fea_s, fg_fea_t, reduction="sum")/len(Mask_fg)
-        bg_loss = F.mse_loss(bg_fea_s, bg_fea_t, reduction="sum")/len(Mask_bg)
+        fg_loss = F.mse_loss(fg_fea_s, fg_fea_t, reduction="sum") / len(Mask_fg)
+        bg_loss = F.mse_loss(bg_fea_s, bg_fea_t, reduction="sum") / len(Mask_bg)
 
         return fg_loss, bg_loss
 
@@ -386,19 +393,15 @@ class FGDFeatureLoss(nn.Layer):
         channel_add_t = self.channel_add_conv_t(context_t)
         out_t = out_t + channel_add_t
 
-        rela_loss = F.mse_loss(out_s, out_t, reduction="sum")/len(out_s)
-        
+        rela_loss = F.mse_loss(out_s, out_t, reduction="sum") / len(out_s)
+
         return rela_loss
-    
+
     def mask_value(self, mask, xl, xr, yl, yr, value):
         mask[xl:xr, yl:yr] = paddle.maximum(mask[xl:xr, yl:yr], value)
         return mask
 
-
-    def forward(self, 
-                preds_S,
-                preds_T,
-                inputs):
+    def forward(self, preds_S, preds_T, inputs):
         """Forward function.
         Args:
             preds_S(Tensor): Bs*C*H*W, student's feature map
@@ -415,22 +418,24 @@ class FGDFeatureLoss(nn.Layer):
         for i in range(len(gt_bboxes)):
             if gt_bboxes[i].size > 2:
                 index_gt.append(i)
-        index_gt_t = paddle.to_tensor(index_gt) # to tensor
+        index_gt_t = paddle.to_tensor(index_gt)  # to tensor
         preds_S = paddle.index_select(preds_S, index_gt_t)
         preds_T = paddle.index_select(preds_T, index_gt_t)
         assert preds_S.shape == preds_T.shape, "error"
 
-        img_metas_tmp = [{'img_shape': inputs['im_shape'][i]} for i in range(inputs['im_shape'].shape[0])]
+        img_metas_tmp = [{
+            'img_shape': inputs['im_shape'][i]
+        } for i in range(inputs['im_shape'].shape[0])]
         img_metas = [img_metas_tmp[c] for c in index_gt]
         gt_bboxes = [gt_bboxes[c] for c in index_gt]
         assert len(gt_bboxes) == len(img_metas), "error"
-        
+
         assert len(gt_bboxes) == preds_T.shape[0], "error"
 
         if self.align is not None:
             preds_S = self.align(preds_S)
-        
-        N,C,H,W = preds_S.shape
+
+        N, C, H, W = preds_S.shape
 
         S_attention_t, C_attention_t = self.gc_block(preds_T, self.temp)
         S_attention_s, C_attention_s = self.gc_block(preds_S, self.temp)
@@ -439,35 +444,49 @@ class FGDFeatureLoss(nn.Layer):
         Mask_bg = paddle.ones_like(S_attention_t)
         one_tmp = paddle.ones([*S_attention_t.shape[1:]])
         zero_tmp = paddle.zeros([*S_attention_t.shape[1:]])
-        wmin,wmax,hmin,hmax, area = [],[],[],[], []
+        wmin, wmax, hmin, hmax, area = [], [], [], [], []
         for i in range(N):
             new_boxxes = paddle.ones_like(gt_bboxes[i])
-            new_boxxes[:, 0] = gt_bboxes[i][:, 0]/img_metas[i]['img_shape'][1]*W
-            new_boxxes[:, 2] = gt_bboxes[i][:, 2]/img_metas[i]['img_shape'][1]*W
-            new_boxxes[:, 1] = gt_bboxes[i][:, 1]/img_metas[i]['img_shape'][0]*H
-            new_boxxes[:, 3] = gt_bboxes[i][:, 3]/img_metas[i]['img_shape'][0]*H
+            new_boxxes[:, 0] = gt_bboxes[i][:, 0] / img_metas[i]['img_shape'][
+                1] * W
+            new_boxxes[:, 2] = gt_bboxes[i][:, 2] / img_metas[i]['img_shape'][
+                1] * W
+            new_boxxes[:, 1] = gt_bboxes[i][:, 1] / img_metas[i]['img_shape'][
+                0] * H
+            new_boxxes[:, 3] = gt_bboxes[i][:, 3] / img_metas[i]['img_shape'][
+                0] * H
             zero = paddle.zeros_like(new_boxxes[:, 0], dtype="int32")
             ones = paddle.ones_like(new_boxxes[:, 2], dtype="int32")
-            wmin.append(paddle.cast(paddle.floor(new_boxxes[:, 0]), "int32").maximum(zero))
+            wmin.append(
+                paddle.cast(paddle.floor(new_boxxes[:, 0]), "int32").maximum(
+                    zero))
             wmax.append(paddle.cast(paddle.ceil(new_boxxes[:, 2]), "int32"))
-            hmin.append(paddle.cast(paddle.floor(new_boxxes[:, 1]), "int32").maximum(zero))
+            hmin.append(
+                paddle.cast(paddle.floor(new_boxxes[:, 1]), "int32").maximum(
+                    zero))
             hmax.append(paddle.cast(paddle.ceil(new_boxxes[:, 3]), "int32"))
-            
-            area = 1.0/(hmax[i].reshape([1,-1]) + 1 - hmin[i].reshape([1,-1])) /(wmax[i].reshape([1,-1])+1-wmin[i].reshape([1,-1]))
+
+            area = 1.0 / (
+                hmax[i].reshape([1, -1]) + 1 - hmin[i].reshape([1, -1])) / (
+                    wmax[i].reshape([1, -1]) + 1 - wmin[i].reshape([1, -1]))
             for j in range(len(gt_bboxes[i])):
-                Mask_fg[i] = self.mask_value(Mask_fg[i], hmin[i][j], hmax[i][j]+1, wmin[i][j], wmax[i][j]+1, area[0][j])  
+                Mask_fg[i] = self.mask_value(Mask_fg[i], hmin[i][j],
+                                             hmax[i][j] + 1, wmin[i][j],
+                                             wmax[i][j] + 1, area[0][j])
             Mask_bg[i] = paddle.where(Mask_fg[i] > zero_tmp, zero_tmp, one_tmp)
 
             if paddle.sum(Mask_bg[i]):
                 Mask_bg[i] /= paddle.sum(Mask_bg[i])
 
-        fg_loss, bg_loss = self.get_fea_loss(preds_S, preds_T, Mask_fg, Mask_bg, 
-                           C_attention_s, C_attention_t, S_attention_s, S_attention_t)
-        mask_loss = self.get_mask_loss(C_attention_s, C_attention_t, S_attention_s, S_attention_t)
+        fg_loss, bg_loss = self.get_fea_loss(preds_S, preds_T, Mask_fg, Mask_bg,
+                                             C_attention_s, C_attention_t,
+                                             S_attention_s, S_attention_t)
+        mask_loss = self.get_mask_loss(C_attention_s, C_attention_t,
+                                       S_attention_s, S_attention_t)
         rela_loss = self.get_rela_loss(preds_S, preds_T)
 
 
         loss = self.alpha_fgd * fg_loss + self.beta_fgd * bg_loss \
                + self.gamma_fgd * mask_loss + self.lambda_fgd * rela_loss
-        
+
         return loss
