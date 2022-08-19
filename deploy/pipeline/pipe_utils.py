@@ -88,7 +88,8 @@ class PipeTimer(Times):
         for k, v in self.module_time.items():
             v_time = round(v.value(), 4)
             if v_time > 0 and k in ['det', 'mot', 'video_action']:
-                print("{} time(ms): {}".format(k, v_time * 1000))
+                print("{} time(ms): {}; per frame average time(ms): {}".format(
+                    k, v_time * 1000, v_time * 1000 / self.img_num))
             elif v_time > 0:
                 print("{} time(ms): {}; per trackid average time(ms): {}".
                       format(k, v_time * 1000, v_time * 1000 / self.track_num))
