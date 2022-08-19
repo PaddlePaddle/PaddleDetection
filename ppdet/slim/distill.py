@@ -279,26 +279,26 @@ class FGDFeatureLoss(nn.Layer):
         self.channel_add_conv_s = nn.Sequential(
             nn.Conv2D(
                 teacher_channels,
-                teacher_channels//2,
+                teacher_channels // 2,
                 kernel_size=1,
                 weight_attr=zeros_init),
-            nn.LayerNorm([teacher_channels//2, 1, 1]),
+            nn.LayerNorm([teacher_channels // 2, 1, 1]),
             nn.ReLU(),  
             nn.Conv2D(
-                    teacher_channels//2,
+                    teacher_channels // 2,
                     teacher_channels,
                     kernel_size=1,
                     weight_attr=zeros_init))
         self.channel_add_conv_t = nn.Sequential(
             nn.Conv2D(
                 teacher_channels,
-                teacher_channels//2,
+                teacher_channels // 2,
                 kernel_size=1,
                 weight_attr=zeros_init),
-            nn.LayerNorm([teacher_channels//2, 1, 1]),
+            nn.LayerNorm([teacher_channels // 2, 1, 1]),
             nn.ReLU(), 
             nn.Conv2D(
-                teacher_channels//2,
+                teacher_channels // 2,
                 teacher_channels,
                 kernel_size=1,
                 weight_attr=zeros_init))
