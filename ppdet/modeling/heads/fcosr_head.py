@@ -297,7 +297,7 @@ class FCOSRHead(nn.Layer):
             score, label, weight=weight, reduction=reduction)
         return loss
 
-    def post_process(self, head_outs, img_shape, scale_factor):
+    def post_process(self, head_outs, scale_factor):
         cls_pred_list, reg_pred_list, anchor_points = head_outs
         pred_scores = cls_pred_list.transpose([0, 2, 1])
         # [B, N, 5] -> [B, N, 5]
