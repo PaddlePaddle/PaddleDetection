@@ -17,5 +17,5 @@ EvalDataset:
 
 TestDataset:
   !ImageFolder
-    anno_path: trainval1024/DOTA_test1024.json
+    anno_path: test1024/DOTA_test1024.json
     dataset_dir: dataset/dota/
