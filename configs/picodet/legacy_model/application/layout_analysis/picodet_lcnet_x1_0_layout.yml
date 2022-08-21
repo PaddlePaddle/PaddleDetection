@@ -44,6 +44,9 @@ TestDataset:
 
 
 worker_num: 8
+eval_height: &eval_height 800
+eval_width: &eval_width 608
+eval_size: &eval_size [*eval_height, *eval_width]
 TrainReader:
   sample_transforms:
   - Decode: {}
