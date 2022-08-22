@@ -2,6 +2,15 @@
 
 # PP-YOLOE
 
+## 最新动态
+- 发布PP-YOLOE-plus模型: **(2022.08)**
+  - 使用大规模数据集obj365预训练模型
+  - 在backbone中block分支中增加alpha参数
+  - 优化端到端推理速度，提升训练收敛速度
+
+## 历史版本模型
+- 详情请参考：[PP-YOLOE 2022.03版本](./legacy_model)
+
 ## 内容
 - [简介](#简介)
 - [模型库](#模型库)
@@ -15,7 +24,7 @@ PP-YOLOE是基于PP-YOLOv2的卓越的单阶段Anchor-free模型，超越了多�
   <img src="../../docs/images/ppyoloe_map_fps.png" width=500 />
 </div>
 
-PP-YOLOE-l在COCO test-dev2017达到了51.6的mAP, 同时其速度在Tesla V100上达到了78.1 FPS。PP-YOLOE-s/m/x同样具有卓越的精度速度性价比, 其精度速度可以在[模型库](#模型库)中找到。
+PP-YOLOE-plus-l在COCO test-dev2017达到了51.6的mAP, 同时其速度在Tesla V100上达到了78.1 FPS。PP-YOLOE-plus-s/m/x同样具有卓越的精度速度性价比, 其精度速度可以在[模型库](#模型库)中找到。
 
 PP-YOLOE由以下方法组成
 - 可扩展的backbone和neck
