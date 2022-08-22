@@ -34,14 +34,16 @@ void NormalizeImage::Run(cv::Mat* im, ImageBlob* data) {
     e /= 255.0;
   }
   (*im).convertTo(*im, CV_32FC3, e);
-  for (int h = 0; h < im->rows; h++) {
-    for (int w = 0; w < im->cols; w++) {
-      im->at<cv::Vec3f>(h, w)[0] =
-          (im->at<cv::Vec3f>(h, w)[0] - mean_[0]) / scale_[0];
-      im->at<cv::Vec3f>(h, w)[1] =
-          (im->at<cv::Vec3f>(h, w)[1] - mean_[1]) / scale_[1];
-      im->at<cv::Vec3f>(h, w)[2] =
-          (im->at<cv::Vec3f>(h, w)[2] - mean_[2]) / scale_[2];
+  if (norm_type_ == "mean_std"){
+    for (int h = 0; h < im->rows; h++) {
+      for (int w = 0; w < im->cols; w++) {
+        im->at<cv::Vec3f>(h, w)[0] =
+            (im->at<cv::Vec3f>(h, w)[0] - mean_[0]) / scale_[0];
+        im->at<cv::Vec3f>(h, w)[1] =
+            (im->at<cv::Vec3f>(h, w)[1] - mean_[1]) / scale_[1];
+        im->at<cv::Vec3f>(h, w)[2] =
+            (im->at<cv::Vec3f>(h, w)[2] - mean_[2]) / scale_[2];
+      }
     }
   }
 }

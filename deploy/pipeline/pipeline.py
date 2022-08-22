@@ -465,6 +465,7 @@ class PipePredictor(object):
                                                     self.cfg['crop_thresh'])
             if i > self.warmup_frame:
                 self.pipe_timer.module_time['det'].end()
+                self.pipe_timer.track_num += len(det_res['boxes'])
             self.pipeline_res.update(det_res, 'det')
 
             if self.with_human_attr:

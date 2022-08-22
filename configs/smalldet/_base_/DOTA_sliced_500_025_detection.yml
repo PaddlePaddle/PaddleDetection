@@ -3,18 +3,18 @@ num_classes: 15
 
 TrainDataset:
   !COCODataSet
-    image_dir: DOTA_slice_train/train_images_500_025
-    anno_path: DOTA_slice_train/train_500_025.json
-    dataset_dir: dataset/DOTA
+    image_dir: train_images_500_025
+    anno_path: train_500_025.json
+    dataset_dir: dataset/dota_sliced
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
-    image_dir: DOTA_slice_val/val_images_500_025
-    anno_path: DOTA_slice_val/val_500_025.json
-    dataset_dir: dataset/DOTA
+    image_dir: val_images_500_025
+    anno_path: val_500_025.json
+    dataset_dir: dataset/dota_sliced
 
 TestDataset:
   !ImageFolder
-    anno_path: dataset/DOTA/DOTA_slice_val/val_500_025.json
-    dataset_dir: dataset/DOTA/DOTA_slice_val/val_images_500_025
+    anno_path: val_500_025.json
+    dataset_dir: dataset/dota_sliced
