@@ -1,3 +1,4 @@
+[English](ppvehicle_attribute_en.md) | 简体中文
 
 # PP-Vehicle属性识别模块
 
@@ -46,7 +47,7 @@
 
 ### 配置项说明
 
-配置文件中与属性相关的参数如下：
+[配置文件](../../config/infer_cfg_ppvehicle.yml)中与属性相关的参数如下：
 ```
 VEHICLE_ATTR:
   model_dir: output_inference/vehicle_attribute_infer/ # 车辆属性模型调用路径
@@ -91,13 +92,13 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 5. 若修改模型路径，有以下两种方式：
 
     - 方法一：`./deploy/pipeline/config/infer_cfg_ppvehicle.yml`下可以配置不同模型路径，属性识别模型修改`VEHICLE_ATTR`字段下配置
-    - 方法二：命令行中增加--model_dir修改模型路径：
+    - 方法二：直接在命令行中增加`-o`，以覆盖配置文件中的默认模型路径：
 
 ```bash
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
-                                                   --model_dir vehicle_attr=output_inference/vehicle_attribute_infer
+                                                   -o VEHICLE_ATTR.model_dir=output_inference/vehicle_attribute_infer
 ```
 
 测试效果如下：
@@ -107,7 +108,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 </div>
 
 ## 方案说明
-车辆属性模型使用了[PaddleClas](https://github.com/PaddlePaddle/PaddleClas) 的超轻量图像分类方案(PULC，Practical Ultra Lightweight image Classification)。关于该模型的数据准备、训练、测试等详细内容，请见[PULC 车辆属性识别模型](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/zh_CN/PULC/PULC_vehicle_attribute.md).
+车辆属性识别模型使用了[PaddleClas](https://github.com/PaddlePaddle/PaddleClas) 的超轻量图像分类方案(PULC，Practical Ultra Lightweight image Classification)。关于该模型的数据准备、训练、测试等详细内容，请见[PULC 车辆属性识别模型](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/zh_CN/PULC/PULC_vehicle_attribute.md).
 
 车辆属性识别模型选用了轻量级、高精度的PPLCNet。并在该模型的基础上，进一步使用了以下优化方案：
 
