@@ -101,7 +101,7 @@ class BBoxPostProcess(object):
             pred_result (Tensor): The final prediction results with shape [N, 6]
                 including labels, scores and bboxes.
         """
-        if not self.export_eb:
+        if self.export_eb:
             # enable rcnn models for edgeboard hw to skip the following postprocess.
             return bboxes, bboxes, bbox_num
 
