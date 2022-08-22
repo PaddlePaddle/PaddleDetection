@@ -413,7 +413,7 @@ class FGDFeatureLoss(nn.Layer):
                 index_gt.append(i)
         # only distill feature with labeled GTbox
         if len(index_gt) != len(gt_bboxes):
-            index_gt_t = paddle.to_tensor(index_gt)  # to tensor
+            index_gt_t = paddle.to_tensor(index_gt)
             preds_S = paddle.index_select(preds_S, index_gt_t)
             preds_T = paddle.index_select(preds_T, index_gt_t)
 
