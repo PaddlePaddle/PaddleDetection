@@ -38,7 +38,7 @@ class BBoxPostProcess(object):
     __inject__ = ['decode', 'nms']
 
     def __init__(self, num_classes=80, decode=None, nms=None,
-                 export_onnx=False,export_eb=False):
+                 export_onnx=False, export_eb=False):
         super(BBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.decode = decode
