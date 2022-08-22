@@ -21,7 +21,16 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
                                                    --image_file=test_image.jpg \
                                                    --device=gpu
 ```
-3. 视频输入时，是跟踪任务，注意首先设置infer_cfg_pphuman.yml中的MOT配置的enable=True，然后启动命令如下
+3. 视频输入时，是跟踪任务，注意首先设置infer_cfg_pphuman.yml中的MOT配置的`enable=True`，如果希望跳帧加速检测跟踪流程，可以设置`skip_frame_num: 2`，建议跳帧帧数最大不超过3：
+```
+MOT:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip
+  tracker_config: deploy/pipeline/config/tracker_config.yml
+  batch_size: 1
+  skip_frame_num: 2
+  enable: True
+```
+然后启动命令如下
 ```python
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
@@ -30,15 +39,15 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 4. 若修改模型路径，有以下两种方式：
 
     - ```./deploy/pipeline/config/infer_cfg_pphuman.yml```下可以配置不同模型路径，检测和跟踪模型分别对应`DET`和`MOT`字段，修改对应字段下的路径为实际期望的路径即可。
-    - 命令行中增加`--model_dir`修改模型路径：
+    - 命令行中--config后面紧跟着增加`-o MOT.model_dir`修改模型路径：
 ```python
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
+                                                   -o MOT.model_dir=ppyoloe/\
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
                                                    --region_type=horizontal \
                                                    --do_entrance_counting \
-                                                   --draw_center_traj \
-                                                   --model_dir det=ppyoloe/
+                                                   --draw_center_traj
 
 ```
 **注意:**

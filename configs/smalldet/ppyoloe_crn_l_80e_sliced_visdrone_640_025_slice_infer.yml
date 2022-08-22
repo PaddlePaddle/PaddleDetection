@@ -1,0 +1,52 @@
+_BASE_: [
+  './_base_/visdrone_sliced_640_025_detection.yml',
+  '../runtime.yml',
+  '../ppyoloe/_base_/optimizer_300e.yml',
+  '../ppyoloe/_base_/ppyoloe_crn.yml',
+  '../ppyoloe/_base_/ppyoloe_reader.yml',
+]
+log_iter: 100
+snapshot_epoch: 10
+weights: output/ppyoloe_crn_l_80e_sliced_visdrone_640_025/model_final
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
+depth_mult: 1.0
+width_mult: 1.0
+
+
+TrainReader:
+  batch_size: 8
+
+EvalReader:
+  batch_size: 1 # only support bs=1 when slice infer
+
+
+epoch: 80
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+    - !CosineDecay
+      max_epochs: 96
+    - !LinearWarmup
+      start_factor: 0.
+      epochs: 1
+
+PPYOLOEHead:
+  static_assigner_epoch: -1
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 10000
+    keep_top_k: 500
+    score_threshold: 0.01
+    nms_threshold: 0.6
+
+
+# very slow, preferly eval with a determined weights(xx.pdparams)
+# if you want to eval during training, change SlicedCOCODataSet to COCODataSet and delete sliced_size/overlap_ratio
+EvalDataset:
+  !SlicedCOCODataSet
+    image_dir: VisDrone2019-DET-val
+    anno_path: val.json
+    dataset_dir: dataset/visdrone
+    sliced_size: [640, 640]
+    overlap_ratio: [0.25, 0.25]

@@ -1,6 +1,8 @@
 _BASE_: [
   'ppyoloe_crn_l_80e_visdrone.yml',
 ]
+log_iter: 100
+snapshot_epoch: 10
 weights: output/ppyoloe_crn_l_p2_alpha_largesize_80e_visdrone/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 
@@ -49,7 +51,7 @@ EvalReader:
     - Resize: {target_size: *eval_size, keep_ratio: False, interp: 2}
     - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
     - Permute: {}
-  batch_size: 2
+  batch_size: 1
 
 TestReader:
   inputs_def:

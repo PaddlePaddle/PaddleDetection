@@ -12,7 +12,7 @@
 - [4.预测部署](#4预测部署)
 
 ## 1. 简介
-本示例使用PaddleDetection中Inference部署模型进行自动化压缩。本示例使用的自动化压缩策略为量化蒸馏。
+本示例使用PaddleDetection中Inference部署模型进行自动化压缩，使用的自动化压缩策略为量化蒸馏。
 
 
 ## 2.Benchmark
@@ -25,6 +25,15 @@
 
 - mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
 - PP-YOLOE-l模型在Tesla V100的GPU环境下测试，并且开启TensorRT，batch_size=1，包含NMS，测试脚本是[benchmark demo](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/deploy/python)。
+
+### PP-PicoDet
+
+| 模型  | 策略 | mAP | FP32 | FP16 | INT8 |  配置文件 | 模型  |
+| :-------- |:-------- |:--------: | :----------------: | :----------------: | :---------------: | :----------------------: | :---------------------: |
+| PicoDet-S-NPU | Baseline | 30.1   |   -   |  -  |  -  | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_416_coco_npu.yml) | [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_416_coco_npu.tar) |
+| PicoDet-S-NPU |  量化训练 | 29.7  |   -  |   -   |  -  |  [config](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/full_quantization/detection/configs/picodet_s_qat_dis.yaml) | [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_npu_quant.tar) |
+
+- mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
 
 ## 3. 自动压缩流程
 
