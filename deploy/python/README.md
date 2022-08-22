@@ -75,23 +75,24 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 
 参数说明如下:
 
-| 参数 | 是否必须|含义 |
-|-------|-------|----------|
-| --model_dir | Yes| 上述导出的模型路径 |
-| --image_file | Option | 需要预测的图片 |
-| --image_dir  | Option |  要预测的图片文件夹路径   |
-| --video_file | Option | 需要预测的视频 |
-| --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4|
-| --device | Option | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
-| --run_mode | Option |使用GPU时，默认为paddle, 可选（paddle/trt_fp32/trt_fp16/trt_int8）|
-| --batch_size | Option |预测时的batch size，在指定`image_dir`时有效，默认为1 |
-| --threshold | Option|预测得分的阈值，默认为0.5|
-| --output_dir | Option|可视化结果保存的根目录，默认为output/|
-| --run_benchmark | Option| 是否运行benchmark，同时需指定`--image_file`或`--image_dir`，默认为False |
-| --enable_mkldnn | Option | CPU预测中是否开启MKLDNN加速，默认为False |
-| --cpu_threads | Option| 设置cpu线程数，默认为1 |
-| --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
-| --save_results | Option| 是否在文件夹下将图片的预测结果以JSON的形式保存 |
+| 参数 | 是否必须| 含义                                                                                          |
+|-------|-------|---------------------------------------------------------------------------------------------|
+| --model_dir | Yes| 上述导出的模型路径                                                                                   |
+| --image_file | Option | 需要预测的图片                                                                                     |
+| --image_dir  | Option | 要预测的图片文件夹路径                                                                                 |
+| --video_file | Option | 需要预测的视频                                                                                     |
+| --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4 |
+| --device | Option | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`                                                            |
+| --run_mode | Option | 使用GPU时，默认为paddle, 可选（paddle/trt_fp32/trt_fp16/trt_int8）                                     |
+| --batch_size | Option | 预测时的batch size，在指定`image_dir`时有效，默认为1                                                       |
+| --threshold | Option| 预测得分的阈值，默认为0.5                                                                              |
+| --output_dir | Option| 可视化结果保存的根目录，默认为output/                                                                      |
+| --run_benchmark | Option| 是否运行benchmark，同时需指定`--image_file`或`--image_dir`，默认为False                                    |
+| --enable_mkldnn | Option | CPU预测中是否开启MKLDNN加速，默认为False                                                                 |
+| --cpu_threads | Option| 设置cpu线程数，默认为1                                                                               |
+| --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False         |
+| --save_images | Option| 是否保存可视化结果                                                                                   |
+| --save_results | Option| 是否在文件夹下将图片的预测结果以JSON的形式保存                                                                   |
 
 
 说明：
@@ -100,3 +101,4 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 - run_mode：paddle代表使用AnalysisPredictor，精度float32来推理，其他参数指用AnalysisPredictor，TensorRT不同精度来推理。
 - 如果安装的PaddlePaddle不支持基于TensorRT进行预测，需要自行编译，详细可参考[预测库编译教程](https://paddleinference.paddlepaddle.org.cn/user_guides/source_compile.html)。
 - --run_benchmark如果设置为True，则需要安装依赖`pip install pynvml psutil GPUtil`。
+- 如果需要使用导出模型在coco数据集上进行评估，请在推理时添加`--save_results`和`--use_coco_category`参数用以保存coco评估所需要的json文件

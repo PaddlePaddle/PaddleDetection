@@ -36,7 +36,7 @@ from picodet_postprocess import PicoDetPostProcess
 from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, Pad, decode_image
 from keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
 from visualize import visualize_box_mask
-from utils import argsparser, Timer, get_current_memory_mb, multiclass_nms
+from utils import argsparser, Timer, get_current_memory_mb, multiclass_nms, coco_clsid2catid
 
 # Global dictionary
 SUPPORT_MODELS = {
@@ -226,7 +226,7 @@ class Detector(object):
                             match_threshold=0.6,
                             match_metric='iou',
                             visual=True,
-                            save_file=None):
+                            save_results=False):
         # slice infer only support bs=1
         results = []
         try:
@@ -295,14 +295,13 @@ class Detector(object):
                     threshold=self.threshold)
 
             results.append(merged_results)
-            if visual:
-                print('Test iter {}'.format(i))
-
-        if save_file is not None:
-            Path(self.output_dir).mkdir(exist_ok=True)
-            self.format_coco_results(image_list, results, save_file=save_file)
+            print('Test iter {}'.format(i))
 
         results = self.merge_batch_result(results)
+        if save_results:
+            Path(self.output_dir).mkdir(exist_ok=True)
+            self.save_coco_results(
+                img_list, results, use_coco_category=FLAGS.use_coco_category)
         return results
 
     def predict_image(self,
@@ -310,7 +309,7 @@ class Detector(object):
                       run_benchmark=False,
                       repeats=1,
                       visual=True,
-                      save_file=None):
+                      save_results=False):
         batch_loop_cnt = math.ceil(float(len(image_list)) / self.batch_size)
         results = []
         for i in range(batch_loop_cnt):
@@ -367,14 +366,13 @@ class Detector(object):
                         threshold=self.threshold)
 
             results.append(result)
-            if visual:
-                print('Test iter {}'.format(i))
-
-        if save_file is not None:
-            Path(self.output_dir).mkdir(exist_ok=True)
-            self.format_coco_results(image_list, results, save_file=save_file)
+            print('Test iter {}'.format(i))
 
         results = self.merge_batch_result(results)
+        if save_results:
+            Path(self.output_dir).mkdir(exist_ok=True)
+            self.save_coco_results(
+                image_list, results, use_coco_category=FLAGS.use_coco_category)
         return results
 
     def predict_video(self, video_file, camera_id):
@@ -394,7 +392,7 @@ class Detector(object):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         index = 1
         while (1):
@@ -418,67 +416,62 @@ class Detector(object):
                     break
         writer.release()
 
-    @staticmethod
-    def format_coco_results(image_list, results, save_file=None):
-        coco_results = []
-        image_id = 0
+    def save_coco_results(self, image_list, results, use_coco_category=False):
+        bbox_results = []
+        mask_results = []
+        idx = 0
+        print("Start saving coco json files...")
+        for i, box_num in enumerate(results['boxes_num']):
+            file_name = os.path.split(image_list[i])[-1]
+            if use_coco_category:
+                img_id = int(os.path.splitext(file_name)[0])
+            else:
+                img_id = i
 
-        for result in results:
-            start_idx = 0
-            for box_num in result['boxes_num']:
-                idx_slice = slice(start_idx, start_idx + box_num)
-                start_idx += box_num
+            if 'boxes' in results:
+                boxes = results['boxes'][idx:idx + box_num].tolist()
+                bbox_results.extend([{
+                    'image_id': img_id,
+                    'category_id': coco_clsid2catid[int(box[0])] \
+                        if use_coco_category else int(box[0]),
+                    'file_name': file_name,
+                    'bbox': [box[2], box[3], box[4] - box[2],
+                         box[5] - box[3]],  # xyxy -> xywh
+                    'score': box[1]} for box in boxes])
 
-                image_file = image_list[image_id]
-                image_id += 1
+            if 'masks' in results:
+                import pycocotools.mask as mask_util
 
-                if 'boxes' in result:
-                    boxes = result['boxes'][idx_slice, :]
-                    per_result = [
-                        {
-                            'image_file': image_file,
-                            'bbox':
-                            [box[2], box[3], box[4] - box[2],
-                             box[5] - box[3]],  # xyxy -> xywh
-                            'score': box[1],
-                            'category_id': int(box[0]),
-                        } for k, box in enumerate(boxes.tolist())
-                    ]
-
-                elif 'segm' in result:
-                    import pycocotools.mask as mask_util
-
-                    scores = result['score'][idx_slice].tolist()
-                    category_ids = result['label'][idx_slice].tolist()
-                    segms = result['segm'][idx_slice, :]
-                    rles = [
-                        mask_util.encode(
-                            np.array(
-                                mask[:, :, np.newaxis],
-                                dtype=np.uint8,
-                                order='F'))[0] for mask in segms
-                    ]
-                    for rle in rles:
-                        rle['counts'] = rle['counts'].decode('utf-8')
-
-                    per_result = [{
-                        'image_file': image_file,
+                boxes = results['boxes'][idx:idx + box_num].tolist()
+                masks = results['masks'][i][:box_num].astype(np.uint8)
+                seg_res = []
+                for box, mask in zip(boxes, masks):
+                    rle = mask_util.encode(
+                        np.array(
+                            mask[:, :, None], dtype=np.uint8, order="F"))[0]
+                    if 'counts' in rle:
+                        rle['counts'] = rle['counts'].decode("utf8")
+                    seg_res.append({
+                        'image_id': img_id,
+                        'category_id': coco_clsid2catid[int(box[0])] \
+                        if use_coco_category else int(box[0]),
+                        'file_name': file_name,
                         'segmentation': rle,
-                        'score': scores[k],
-                        'category_id': category_ids[k],
-                    } for k, rle in enumerate(rles)]
+                        'score': box[1]})
+                mask_results.extend(seg_res)
 
-                else:
-                    raise RuntimeError('')
+            idx += box_num
 
-                # per_result = [item for item in per_result if item['score'] > threshold]
-                coco_results.extend(per_result)
-
-        if save_file:
-            with open(os.path.join(save_file), 'w') as f:
-                json.dump(coco_results, f)
-
-        return coco_results
+        if bbox_results:
+            bbox_file = os.path.join(self.output_dir, "bbox.json")
+            with open(bbox_file, 'w') as f:
+                json.dump(bbox_results, f)
+            print(f"The bbox result is saved to {bbox_file}")
+        if mask_results:
+            mask_file = os.path.join(self.output_dir, "mask.json")
+            with open(mask_file, 'w') as f:
+                json.dump(mask_results, f)
+            print(f"The mask result is saved to {mask_file}")
 
 
 class DetectorSOLOv2(Detector):
@@ -956,8 +949,6 @@ def main():
         if FLAGS.image_dir is None and FLAGS.image_file is not None:
             assert FLAGS.batch_size == 1, "batch_size should be 1, when image_file is not None"
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        save_file = os.path.join(FLAGS.output_dir,
-                                 'results.json') if FLAGS.save_results else None
         if FLAGS.slice_infer:
             detector.predict_image_slice(
                 img_list,
@@ -966,10 +957,15 @@ def main():
                 FLAGS.combine_method,
                 FLAGS.match_threshold,
                 FLAGS.match_metric,
-                save_file=save_file)
+                visual=FLAGS.save_images,
+                save_results=FLAGS.save_results)
         else:
             detector.predict_image(
-                img_list, FLAGS.run_benchmark, repeats=100, save_file=save_file)
+                img_list,
+                FLAGS.run_benchmark,
+                repeats=100,
+                visual=FLAGS.save_images,
+                save_results=FLAGS.save_results)
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)
         else:
