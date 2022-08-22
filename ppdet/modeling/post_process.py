@@ -102,6 +102,7 @@ class BBoxPostProcess(object):
                 including labels, scores and bboxes.
         """
         if not self.export_eb:
+            # This option enables rcnn models to skip the following postprocess.
             return bboxes, bboxes, bbox_num
 
         if not self.export_onnx:
