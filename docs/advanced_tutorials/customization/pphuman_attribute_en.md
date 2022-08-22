@@ -1,6 +1,6 @@
 [简体中文](pphuman_attribute.md) | English
 
-# Customized attribute recognition
+# Customized Pedestrian Attribute Recognition
 
 ## Data Preparation
 
@@ -51,7 +51,7 @@ After the annotation is completed, the model will use the detection box to inter
 
 
 
-Model Training
+## Model Training
 
 Once the data is annotated, it can be used for model training to complete the optimization of the customized model.
 
