@@ -150,6 +150,10 @@ class Trainer(object):
         # build optimizer in train mode
         if self.mode == 'train':
             steps_per_epoch = len(self.loader)
+            if steps_per_epoch < 1:
+                logger.warning(
+                    "Samples in dataset are less than batch_size, please set smaller batch_size in TrainReader."
+                )
             self.lr = create('LearningRate')(steps_per_epoch)
             self.optimizer = create('OptimizerBuilder')(self.lr, self.model)
 
