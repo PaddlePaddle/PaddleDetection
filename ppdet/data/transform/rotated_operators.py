@@ -29,8 +29,7 @@ import math
 import copy
 
 from .operators import register_op, BaseOperator
-from .op_helper import poly2rbox_le135, poly2rbox_oc
-from ppdet.modeling import bbox_utils
+from ppdet.modeling.rbox_utils import poly2rbox_le135_np, poly2rbox_oc_np, rbox2poly_np
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
@@ -195,7 +194,7 @@ class Poly2RBox(BaseOperator):
     def __init__(self, filter_threshold=4, filter_mode=None, rbox_type='le135'):
         super(Poly2RBox, self).__init__()
         self.filter_fn = lambda size: self.filter(size, filter_threshold, filter_mode)
-        self.rbox_fn = poly2rbox_le135 if rbox_type == 'le135' else poly2rbox_oc
+        self.rbox_fn = poly2rbox_le135_np if rbox_type == 'le135' else poly2rbox_oc_np
 
     def filter(self, size, threshold, mode):
         if mode == 'area':
@@ -248,7 +247,6 @@ class Poly2Array(BaseOperator):
 
     def apply(self, sample, context=None):
         if 'gt_poly' in sample:
-            logger.info('gt_poly shape: {}'.format(sample['gt_poly']))
             sample['gt_poly'] = np.array(
                 sample['gt_poly'], dtype=np.float32).reshape((-1, 8))
 
@@ -472,16 +470,10 @@ class Rbox2Poly(BaseOperator):
     def apply(self, sample, context=None):
         assert 'gt_rbox' in sample
         assert sample['gt_rbox'].shape[1] == 5
-        rrects = sample['gt_rbox']
-        x_ctr = rrects[:, 0]
-        y_ctr = rrects[:, 1]
-        width = rrects[:, 2]
-        height = rrects[:, 3]
-        x1 = x_ctr - width / 2.0
-        y1 = y_ctr - height / 2.0
-        x2 = x_ctr + width / 2.0
-        y2 = y_ctr + height / 2.0
-        sample['gt_bbox'] = np.stack([x1, y1, x2, y2], axis=1)
-        polys = bbox_utils.rbox2poly_np(rrects)
+        rboxes = sample['gt_rbox']
+        polys = rbox2poly_np(rboxes)
         sample['gt_poly'] = polys
+        xmin, ymin = polys[:, 0::2].min(1), polys[:, 1::2].min(1)
+        xmax, ymax = polys[:, 0::2].max(1), polys[:, 1::2].max(1)
+        sample['gt_bbox'] = np.stack([xmin, ymin, xmin, ymin], axis=1)
         return sample

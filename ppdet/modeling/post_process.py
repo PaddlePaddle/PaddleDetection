@@ -17,7 +17,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
-from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly
+from ppdet.modeling.bbox_utils import nonempty_bbox
 from ppdet.modeling.layers import TTFBox
 from .transformers import bbox_cxcywh_to_xyxy
 try:

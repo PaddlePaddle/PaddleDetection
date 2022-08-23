@@ -145,25 +145,14 @@ class COCODataSet(DetDataset):
                         if not any(np.array(inst['bbox'])):
                             continue
 
-                    # read rbox anno or not
-                    is_rbox_anno = True if len(inst['bbox']) == 5 else False
-                    if is_rbox_anno:
-                        xc, yc, box_w, box_h, angle = inst['bbox']
-                        x1 = xc - box_w / 2.0
-                        y1 = yc - box_h / 2.0
-                        x2 = x1 + box_w
-                        y2 = y1 + box_h
-                    else:
-                        x1, y1, box_w, box_h = inst['bbox']
-                        x2 = x1 + box_w
-                        y2 = y1 + box_h
+                    x1, y1, box_w, box_h = inst['bbox']
+                    x2 = x1 + box_w
+                    y2 = y1 + box_h
                     eps = 1e-5
                     if inst['area'] > 0 and x2 - x1 > eps and y2 - y1 > eps:
                         inst['clean_bbox'] = [
                             round(float(x), 3) for x in [x1, y1, x2, y2]
                         ]
-                        if is_rbox_anno:
-                            inst['clean_rbox'] = [xc, yc, box_w, box_h, angle]
                         bboxes.append(inst)
                     else:
                         logger.warning(
@@ -178,8 +167,6 @@ class COCODataSet(DetDataset):
                     is_empty = True
 
                 gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)
-                if is_rbox_anno:
-                    gt_rbox = np.zeros((num_bbox, 5), dtype=np.float32)
                 gt_class = np.zeros((num_bbox, 1), dtype=np.int32)
                 is_crowd = np.zeros((num_bbox, 1), dtype=np.int32)
                 gt_poly = [None] * num_bbox
@@ -189,13 +176,10 @@ class COCODataSet(DetDataset):
                     catid = box['category_id']
                     gt_class[i][0] = self.catid2clsid[catid]
                     gt_bbox[i, :] = box['clean_bbox']
-                    # xc, yc, w, h, theta
-                    if is_rbox_anno:
-                        gt_rbox[i, :] = box['clean_rbox']
                     is_crowd[i][0] = box['iscrowd']
                     # check RLE format 
                     if 'segmentation' in box and box['iscrowd'] == 1:
-                        gt_poly[i] = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
+                        gt_poly[i] = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
                     elif 'segmentation' in box and box['segmentation']:
                         if not np.array(box['segmentation']
                                         ).size > 0 and not self.allow_empty:
@@ -212,21 +196,12 @@ class COCODataSet(DetDataset):
                         gt_poly) and not self.allow_empty:
                     continue
 
-                if is_rbox_anno:
-                    gt_rec = {
-                        'is_crowd': is_crowd,
-                        'gt_class': gt_class,
-                        'gt_bbox': gt_bbox,
-                        'gt_rbox': gt_rbox,
-                        'gt_poly': gt_poly,
-                    }
-                else:
-                    gt_rec = {
-                        'is_crowd': is_crowd,
-                        'gt_class': gt_class,
-                        'gt_bbox': gt_bbox,
-                        'gt_poly': gt_poly,
-                    }
+                gt_rec = {
+                    'is_crowd': is_crowd,
+                    'gt_class': gt_class,
+                    'gt_bbox': gt_bbox,
+                    'gt_poly': gt_poly,
+                }
 
                 for k, v in gt_rec.items():
                     if k in self.data_fields:

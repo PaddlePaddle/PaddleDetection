@@ -1,6 +1,6 @@
 _BASE_: [
-  '../datasets/spine_coco.yml',
-  '../runtime.yml',
+  '../../datasets/spine_coco.yml',
+  '../../runtime.yml',
   '_base_/s2anet_optimizer_1x.yml',
   '_base_/s2anet.yml',
   '_base_/s2anet_reader.yml',
@@ -9,7 +9,7 @@ _BASE_: [
 weights: output/s2anet_1x_spine/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams
 
-# for 8 card
+# for 4 card
 LearningRate:
   base_lr: 0.01
   schedulers:
