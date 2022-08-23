@@ -2,7 +2,7 @@ worker_num: 4
 TrainReader:
   sample_transforms:
     - Decode: {}
-    - Rbox2Poly: {}
+    - Poly2Array: {}
     - RandomRFlip: {}
     - RResize: {target_size: [1024, 1024], keep_ratio: True, interp: 2}
     - Poly2RBox: {rbox_type: 'le135'}
@@ -19,6 +19,7 @@ TrainReader:
 EvalReader:
   sample_transforms:
     - Decode: {}
+    - Poly2Array: {}
     - RResize: {target_size: [1024, 1024], keep_ratio: True, interp: 2}
     - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
     - Permute: {}
