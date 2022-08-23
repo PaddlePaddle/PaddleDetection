@@ -95,7 +95,7 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
         if catid not in catid2color:
             idx = np.random.randint(len(color_list))
             catid2color[catid] = color_list[idx]
-        color = tuple(catid2color[catid])
+        color = tuple(int(val) for val in catid2color[catid])
 
         # draw bbox
         if len(bbox) == 4:
