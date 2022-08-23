@@ -20,7 +20,6 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant
 from ppdet.core.workspace import register
-from ppdet.modeling.bbox_utils import rbox2poly
 from ppdet.modeling.proposal_generator.target_layer import RBoxAssigner
 from ppdet.modeling.proposal_generator.anchor_generator import S2ANetAnchorGenerator
 from ppdet.modeling.layers import AlignConv
@@ -424,7 +423,7 @@ class S2ANetHead(nn.Layer):
         mlvl_bboxes = paddle.concat(mlvl_bboxes)
         mlvl_scores = paddle.concat(mlvl_scores)
 
-        mlvl_polys = rbox2poly(mlvl_bboxes).unsqueeze(0)
+        mlvl_polys = self.rbox2poly(mlvl_bboxes).unsqueeze(0)
         mlvl_scores = paddle.transpose(mlvl_scores, [1, 0]).unsqueeze(0)
 
         bbox, bbox_num, _ = self.nms(mlvl_polys, mlvl_scores)
@@ -706,3 +705,41 @@ class S2ANetHead(nn.Layer):
         ga = (ga + np.pi / 4) % np.pi - np.pi / 4
         bboxes = paddle.concat([gx, gy, gw, gh, ga], axis=-1)
         return bboxes
+
+    def rbox2poly(self, rboxes):
+        """
+        rboxes: [x_ctr,y_ctr,w,h,angle]
+        to
+        polys: [x0,y0,x1,y1,x2,y2,x3,y3]
+        """
+        N = paddle.shape(rboxes)[0]
+
+        x_ctr = rboxes[:, 0]
+        y_ctr = rboxes[:, 1]
+        width = rboxes[:, 2]
+        height = rboxes[:, 3]
+        angle = rboxes[:, 4]
+
+        tl_x, tl_y, br_x, br_y = -width * 0.5, -height * 0.5, width * 0.5, height * 0.5
+
+        normal_rects = paddle.stack(
+            [tl_x, br_x, br_x, tl_x, tl_y, tl_y, br_y, br_y], axis=0)
+        normal_rects = paddle.reshape(normal_rects, [2, 4, N])
+        normal_rects = paddle.transpose(normal_rects, [2, 0, 1])
+
+        sin, cos = paddle.sin(angle), paddle.cos(angle)
+        # M: [N,2,2]
+        M = paddle.stack([cos, -sin, sin, cos], axis=0)
+        M = paddle.reshape(M, [2, 2, N])
+        M = paddle.transpose(M, [2, 0, 1])
+
+        # polys: [N,8]
+        polys = paddle.matmul(M, normal_rects)
+        polys = paddle.transpose(polys, [2, 1, 0])
+        polys = paddle.reshape(polys, [-1, N])
+        polys = paddle.transpose(polys, [1, 0])
+
+        tmp = paddle.stack(
+            [x_ctr, y_ctr, x_ctr, y_ctr, x_ctr, y_ctr, x_ctr, y_ctr], axis=1)
+        polys = polys + tmp
+        return polys
