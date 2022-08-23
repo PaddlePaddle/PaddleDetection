@@ -128,7 +128,7 @@
 
 - [快速开始](docs/tutorials/ppvehicle_attribute.md)
 
-- 二次开发教程
+- [二次开发教程](../../docs/advanced_tutorials/customization/ppvehicle_attribute.md)
 
 #### 违章检测
 

@@ -65,7 +65,8 @@ class NormalizeImage : public PreprocessOp {
   virtual void Init(const YAML::Node& item) {
     mean_ = item["mean"].as<std::vector<float>>();
     scale_ = item["std"].as<std::vector<float>>();
-    is_scale_ = item["is_scale"].as<bool>();
+    if (item["is_scale"]) is_scale_ = item["is_scale"].as<bool>();
+    if (item["norm_type"]) norm_type_ = item["norm_type"].as<std::string>();
   }
 
   virtual void Run(cv::Mat* im, ImageBlob* data);
@@ -75,6 +76,7 @@ class NormalizeImage : public PreprocessOp {
   std::vector<float> mean_;
   std::vector<float> scale_;
   bool is_scale_ = true;
+  std::string norm_type_ = "mean_std";
 };
 
 class Permute : public PreprocessOp {

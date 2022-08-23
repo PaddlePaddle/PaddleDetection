@@ -359,19 +359,26 @@ class RandomErasingImage(BaseOperator):
 
 @register_op
 class NormalizeImage(BaseOperator):
-    def __init__(self, mean=[0.485, 0.456, 0.406], std=[1, 1, 1],
-                 is_scale=True):
+    def __init__(self,
+                 mean=[0.485, 0.456, 0.406],
+                 std=[0.229, 0.224, 0.225],
+                 is_scale=True,
+                 norm_type='mean_std'):
         """
         Args:
             mean (list): the pixel mean
             std (list): the pixel variance
+            is_scale (bool): scale the pixel to [0,1]
+            norm_type (str): type in ['mean_std', 'none']
         """
         super(NormalizeImage, self).__init__()
         self.mean = mean
         self.std = std
         self.is_scale = is_scale
+        self.norm_type = norm_type
         if not (isinstance(self.mean, list) and isinstance(self.std, list) and
-                isinstance(self.is_scale, bool)):
+                isinstance(self.is_scale, bool) and
+                self.norm_type in ['mean_std', 'none']):
             raise TypeError("{}: input type is invalid.".format(self))
         from functools import reduce
         if reduce(lambda x, y: x * y, self.std) == 0:
@@ -380,20 +387,20 @@ class NormalizeImage(BaseOperator):
     def apply(self, sample, context=None):
         """Normalize the image.
         Operators:
-            1.(optional) Scale the image to [0,1]
-            2. Each pixel minus mean and is divided by std
+            1.(optional) Scale the pixel to [0,1]
+            2.(optional) Each pixel minus mean and is divided by std
         """
         im = sample['image']
         im = im.astype(np.float32, copy=False)
-        mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
-        std = np.array(self.std)[np.newaxis, np.newaxis, :]
-
         if self.is_scale:
-            im = im / 255.0
+            scale = 1.0 / 255.0
+            im *= scale
 
-        im -= mean
-        im /= std
-
+        if self.norm_type == 'mean_std':
+            mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
+            std = np.array(self.std)[np.newaxis, np.newaxis, :]
+            im -= mean
+            im /= std
         sample['image'] = im
         return sample
 

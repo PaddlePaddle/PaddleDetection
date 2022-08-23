@@ -22,21 +22,22 @@ from functools import partial
 from shapely.geometry import Polygon
 import argparse
 
-nms_thresh = 0.1
-
-class_name_15 = [
+wordname_15 = [
     'plane', 'baseball-diamond', 'bridge', 'ground-track-field',
     'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
     'basketball-court', 'storage-tank', 'soccer-ball-field', 'roundabout',
     'harbor', 'swimming-pool', 'helicopter'
 ]
 
-class_name_16 = [
-    'plane', 'baseball-diamond', 'bridge', 'ground-track-field',
-    'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
-    'basketball-court', 'storage-tank', 'soccer-ball-field', 'roundabout',
-    'harbor', 'swimming-pool', 'helicopter', 'container-crane'
-]
+wordname_16 = wordname_15 + ['container-crane']
+
+wordname_18 = wordname_16 + ['airport', 'helipad']
+
+DATA_CLASSES = {
+    'dota10': wordname_15,
+    'dota15': wordname_16,
+    'dota20': wordname_18
+}
 
 
 def rbox_iou(g, p):
@@ -99,14 +100,11 @@ def py_cpu_nms_poly_fast(dets, thresh):
         h = np.maximum(0.0, yy2 - yy1)
         hbb_inter = w * h
         hbb_ovr = hbb_inter / (areas[i] + areas[order[1:]] - hbb_inter)
-        # h_keep_inds = np.where(hbb_ovr == 0)[0]
         h_inds = np.where(hbb_ovr > 0)[0]
         tmp_order = order[h_inds + 1]
         for j in range(tmp_order.size):
             iou = rbox_iou(polys[i], polys[tmp_order[j]])
             hbb_ovr[h_inds[j]] = iou
-            # ovr.append(iou)
-            # ovr_index.append(tmp_order[j])
 
         try:
             if math.isnan(ovr[0]):
@@ -148,7 +146,7 @@ def nmsbynamedict(nameboxdict, nms, thresh):
     return nameboxnmsdict
 
 
-def merge_single(output_dir, nms, pred_class_lst):
+def merge_single(output_dir, nms, nms_thresh, pred_class_lst):
     """
     Args:
         output_dir: output_dir
@@ -198,20 +196,20 @@ def merge_single(output_dir, nms, pred_class_lst):
                 f_out.write(outline + '\n')
 
 
-def dota_generate_test_result(pred_txt_dir,
-                              output_dir='output',
-                              dota_version='v1.0'):
+def generate_result(pred_txt_dir,
+                    output_dir='output',
+                    class_names=wordname_15,
+                    nms_thresh=0.1):
     """
     pred_txt_dir: dir of pred txt
     output_dir: dir of output
-    dota_version: dota_version v1.0 or v1.5 or v2.0
+    class_names: class names of data
     """
     pred_txt_list = glob.glob("{}/*.txt".format(pred_txt_dir))
 
     # step1: summary pred bbox
     pred_classes = {}
-    class_lst = class_name_15 if dota_version == 'v1.0' else class_name_16
-    for class_name in class_lst:
+    for class_name in class_names:
         pred_classes[class_name] = []
 
     for current_txt in pred_txt_list:
@@ -233,26 +231,36 @@ def dota_generate_test_result(pred_txt_dir,
         pred_classes_lst.append((class_name, pred_classes[class_name]))
 
     # step2: merge
-    pool = Pool(len(class_lst))
+    pool = Pool(len(class_names))
     nms = py_cpu_nms_poly_fast
-    mergesingle_fn = partial(merge_single, output_dir, nms)
+    mergesingle_fn = partial(merge_single, output_dir, nms, nms_thresh)
     pool.map(mergesingle_fn, pred_classes_lst)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description='generate test results')
+    parser.add_argument('--pred_txt_dir', type=str, help='path of pred txt dir')
+    parser.add_argument(
+        '--output_dir', type=str, default='output', help='path of output dir')
+    parser.add_argument(
+        '--data_type', type=str, default='dota10', help='data type')
+    parser.add_argument(
+        '--nms_thresh',
+        type=float,
+        default=0.1,
+        help='nms threshold whild merging results')
+
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='dota anno to coco')
-    parser.add_argument('--pred_txt_dir', help='path of pred txt dir')
-    parser.add_argument(
-        '--output_dir', help='path of output dir', default='output')
-    parser.add_argument(
-        '--dota_version',
-        help='dota_version, v1.0 or v1.5 or v2.0',
-        type=str,
-        default='v1.0')
+    args = parse_args()
 
-    args = parser.parse_args()
+    output_dir = args.output_dir
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-    # process
-    dota_generate_test_result(args.pred_txt_dir, args.output_dir,
-                              args.dota_version)
+    class_names = DATA_CLASSES[args.data_type]
+
+    generate_result(args.pred_txt_dir, output_dir, class_names)
     print('done!')
