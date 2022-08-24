@@ -135,7 +135,7 @@ json-->labelme2coco.py-->COCO数据集
 
 #### 标注文件(json)-->COCO数据集
 
-使用[PaddleDetection提供的x2coco.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/tools/x2coco.py) 将labelme标注的数据转换为COCO数据集形式
+使用[PaddleDetection提供的x2coco.py](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/tools/x2coco.py) 将labelme标注的数据转换为COCO数据集形式
 
 ```bash
 python tools/x2coco.py \
@@ -162,4 +162,3 @@ dataset/xxx/
 │   |   ...
 ...
 ```
-

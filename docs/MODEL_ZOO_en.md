@@ -28,109 +28,109 @@ Paddle provides a skeleton network pretraining model based on ImageNet. All pre-
 
 ### Faster R-CNN
 
-Please refer to[Faster R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/faster_rcnn/)
+Please refer to[Faster R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/faster_rcnn/)
 
 ### Mask R-CNN
 
-Please refer to[Mask R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mask_rcnn/)
+Please refer to[Mask R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/mask_rcnn/)
 
 ### Cascade R-CNN
 
-Please refer to[Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/cascade_rcnn)
+Please refer to[Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/cascade_rcnn)
 
 ### YOLOv3
 
-Please refer to[YOLOv3](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/)
+Please refer to[YOLOv3](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/yolov3/)
 
 ### SSD
 
-Please refer to[SSD](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssd/)
+Please refer to[SSD](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/ssd/)
 
 ### FCOS
 
-Please refer to[FCOS](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/fcos/)
+Please refer to[FCOS](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/fcos/)
 
 ### SOLOv2
 
-Please refer to[SOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/solov2/)
+Please refer to[SOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/solov2/)
 
 ### PP-YOLO
 
-Please refer to[PP-YOLO](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/)
+Please refer to[PP-YOLO](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/ppyolo/)
 
 ### TTFNet
 
-请参考[TTFNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/)
+请参考[TTFNet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/ttfnet/)
 
 ### Group Normalization
 
-Please refer to[Group Normalization](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gn/)
+Please refer to[Group Normalization](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/gn/)
 
 ### Deformable ConvNets v2
 
-Please refer to[Deformable ConvNets v2](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dcn/)
+Please refer to[Deformable ConvNets v2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/dcn/)
 
 ### HRNets
 
-Please refer to[HRNets](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/hrnet/)
+Please refer to[HRNets](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/hrnet/)
 
 ### Res2Net
 
-Please refer to[Res2Net](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/res2net/)
+Please refer to[Res2Net](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/res2net/)
 
 ### GFL
 
-Please refer to[GFL](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl)
+Please refer to[GFL](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/gfl)
 
 ### PicoDet
 
-Please refer to[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet)
+Please refer to[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/picodet)
 
 ### PP-YOLOE
 
-Please refer to[PP-YOLOE](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe)
+Please refer to[PP-YOLOE](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/ppyoloe)
 
 ### YOLOX
 
-Please refer to[YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolox)
+Please refer to[YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/yolox)
 
 
 ## Rotating frame detection
 
 ### S2ANet
 
-Please refer to[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/)
+Please refer to[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/dota/)
 
 
 ## KeyPoint Detection
 
 ### PP-TinyPose
 
-Please refer to [PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/tiny_pose)
+Please refer to [PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/keypoint/tiny_pose)
 
 ## HRNet
 
-Please refer to [HRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/hrnet)
+Please refer to [HRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/keypoint/hrnet)
 
 ## HigherHRNet
 
-Please refer to [HigherHRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/higherhrnet)
+Please refer to [HigherHRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/keypoint/higherhrnet)
 
 
 ## Multi-Object Tracking
 
 ### DeepSORT
 
-Please refer to [DeepSORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort)
+Please refer to [DeepSORT](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/mot/deepsort)
 
 ### JDE
 
-Please refer to [JDE](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde)
+Please refer to [JDE](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/mot/jde)
 
 ### FairMOT
 
-Please refer to [FairMOT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot)
+Please refer to [FairMOT](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/mot/fairmot)
 
 ### ByteTrack
 
-Please refer to [ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/bytetrack)
+Please refer to [ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/mot/bytetrack)

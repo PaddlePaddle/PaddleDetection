@@ -93,7 +93,7 @@ def check_version(version='2.0'):
     not satisfied.
     """
     err = "PaddlePaddle version {} or higher is required, " \
-          "or a suitable develop version is satisfied as well. \n" \
+          "or a suitable release/2.5 version is satisfied as well. \n" \
           "Please make sure the version is good with your code.".format(version)
 
     version_installed = [

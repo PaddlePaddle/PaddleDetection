@@ -2,7 +2,7 @@
 
 # Customize Object Detection task
 
-In the practical application of object detection algorithms in a specific industry, additional training is often required for practical use. The project iteration will also need to modify categories. This document details how to use PaddleDetection for a customized object detection algorithm. The process includes data preparation, model optimization roadmap, and modifying the category development process.
+In the practical application of object detection algorithms in a specific industry, additional training is often required for practical use. The project iteration will also need to modify categories. This document details how to use PaddleDetection for a customized object detection algorithm. The process includes data preparation, model optimization roadmap, and modifying the category release/2.5ment process.
 
 ## Data Preparation
 

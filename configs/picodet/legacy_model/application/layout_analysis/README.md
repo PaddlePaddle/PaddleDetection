@@ -22,7 +22,7 @@
 | PicoDet-LCNet_x1_0 |  800*608   |   93.5% | [trained model](https://paddleocr.bj.bcebos.com/ppstructure/models/layout/picodet_lcnet_x1_0_layout.pdparams) &#124; [inference model](https://paddleocr.bj.bcebos.com/ppstructure/models/layout/picodet_lcnet_x1_0_layout_infer.tar) | [config](./picodet_lcnet_x1_0_layout.yml) |
 | PicoDet-LCNet_x1_0 + FGD |  800*608   |   94.0%     | [trained model](https://paddleocr.bj.bcebos.com/ppstructure/models/layout/picodet_lcnet_x1_0_fgd_layout.pdparams) &#124; [inference model](https://paddleocr.bj.bcebos.com/ppstructure/models/layout/picodet_lcnet_x1_0_fgd_layout_infer.tar) | [teacher config](./picodet_lcnet_x2_5_layout.yml)&#124;[student config](./picodet_lcnet_x1_0_layout.yml) |
 
- [FGD蒸馏介绍](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/slim/distill/README.md)
+ [FGD蒸馏介绍](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/configs/slim/distill/README.md)
 
 ### 1.3 模型推理
 

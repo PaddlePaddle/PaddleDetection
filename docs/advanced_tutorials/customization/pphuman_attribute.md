@@ -86,7 +86,7 @@ train.txt文件内为所有训练图片名称（相对于根路径的文件路�
 git clone https://github.com/PaddlePaddle/PaddleClas
 ```
 
-需要在配置文件`PaddleClas/blob/develop/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml`中，修改的配置项如下：
+需要在配置文件`PaddleClas/blob/release/2.5/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml`中，修改的配置项如下：
 
 ```
 DataLoader:
@@ -180,7 +180,7 @@ ATTR:
 
 2)对应修改训练中train.txt所使用的属性数量和名称；
 
-3)修改训练配置，例如``PaddleClas/blob/develop/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml``文件中的属性数量,详细见上述`修改配置开始训练`部分。
+3)修改训练配置，例如``PaddleClas/blob/release/2.5/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml``文件中的属性数量,详细见上述`修改配置开始训练`部分。
 
 增加属性示例：
 

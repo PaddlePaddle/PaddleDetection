@@ -209,7 +209,7 @@ VEHICLE_ATTR:
 
 修改了属性定义后，pipeline后处理部分也需要做相应修改，主要影响结果可视化时的显示结果。
 
-相应代码在[文件](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/ppvehicle/vehicle_attr.py#L108)中`postprocess`函数。
+相应代码在[文件](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/deploy/pipeline/ppvehicle/vehicle_attr.py#L108)中`postprocess`函数。
 
 其函数实现说明如下：
 

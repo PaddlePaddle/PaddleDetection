@@ -48,7 +48,7 @@ python tools/train.py -c configs/keypoint/hrnet/hrnet_w32_256x192.yml -o pretrai
 在关键点模型训练中增加遮挡的数据增强，参考[PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/configs/keypoint/tiny_pose/tinypose_256x192.yml#L100)。有助于模型提升这类场景下的表现。
 
 ### 对视频预测进行平滑处理
-关键点模型是在图片级别的基础上进行训练和预测的，对于视频类型的输入也是将视频拆分为帧进行预测。帧与帧之间虽然内容大多相似，但微小的差异仍然可能导致模型的输出发生较大的变化，表现为虽然预测的坐标大体正确，但视觉效果上有较大的抖动问题。通过添加滤波平滑处理，将每一帧预测的结果与历史结果综合考虑，得到最终的输出结果，可以有效提升视频上的表现。该部分内容可参考[滤波平滑处理](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/python/det_keypoint_unite_infer.py#L206)。
+关键点模型是在图片级别的基础上进行训练和预测的，对于视频类型的输入也是将视频拆分为帧进行预测。帧与帧之间虽然内容大多相似，但微小的差异仍然可能导致模型的输出发生较大的变化，表现为虽然预测的坐标大体正确，但视觉效果上有较大的抖动问题。通过添加滤波平滑处理，将每一帧预测的结果与历史结果综合考虑，得到最终的输出结果，可以有效提升视频上的表现。该部分内容可参考[滤波平滑处理](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/deploy/python/det_keypoint_unite_infer.py#L206)。
 
 
 ## 新增或修改关键点点位定义
@@ -236,7 +236,7 @@ python3 tools/eval.py -c configs/keypoint/hrnet/hrnet_w32_256x192.yml
 
 注意：由于测试依赖pycocotools工具，其默认为`COCO`数据集的17点，如果修改后的模型并非预测17点，直接使用评估命令会报错。
 需要修改以下内容以获得正确的评估结果：
-- [sigma列表](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/ppdet/modeling/keypoint_utils.py#L219)，表示每个关键点的范围方差，越大则容忍度越高。其长度与预测点数一致。根据实际关键点可信区域设置，区域精确的一般0.25-0.5，例如眼睛。区域范围大的一般0.5-1.0，例如肩膀。若不确定建议0.75。
+- [sigma列表](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/ppdet/modeling/keypoint_utils.py#L219)，表示每个关键点的范围方差，越大则容忍度越高。其长度与预测点数一致。根据实际关键点可信区域设置，区域精确的一般0.25-0.5，例如眼睛。区域范围大的一般0.5-1.0，例如肩膀。若不确定建议0.75。
 - [pycocotools sigma列表](https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/cocoeval.py#L523)，含义及内容同上，取值与sigma列表一致。
 
 ### 模型导出及预测

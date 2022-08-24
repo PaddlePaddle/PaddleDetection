@@ -60,7 +60,7 @@ Augmentation of covered data in keypoint model training to improve model perform
 
 The keypoint model is trained and predicted on the basis of image, and video input is also predicted by splitting the video into frames. Although the content is mostly similar between frames, small differences may still lead to large changes in the output of the model. As a result of that, although the predicted coordinates are roughly correct, there may be jitters in the visual effect.
 
-By adding a smoothing filter process, the performance of the video output can be effectively improved by combining the predicted results of each frame and the historical results. For this part, please see [Filter Smoothing](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/python/det_keypoint_unite_infer.py#L206).
+By adding a smoothing filter process, the performance of the video output can be effectively improved by combining the predicted results of each frame and the historical results. For this part, please see [Filter Smoothing](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/deploy/python/det_keypoint_unite_infer.py#L206).
 
 ## Add or modify keypoint definition
 

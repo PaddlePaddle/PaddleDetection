@@ -397,7 +397,7 @@ def _download_dist(url, path, md5sum=None):
         # different machines in the case of multiple machines.
         # Different nodes will download data, and the same node
         # will only download data once.
-        # Reference https://github.com/PaddlePaddle/PaddleClas/blob/develop/ppcls/utils/download.py#L108
+        # Reference https://github.com/PaddlePaddle/PaddleClas/blob/release/2.5/ppcls/utils/download.py#L108
         rank_id_curr_node = int(os.environ.get("PADDLE_RANK_IN_NODE", 0))
         num_trainers = int(env['PADDLE_TRAINERS_NUM'])
         if num_trainers <= 1:

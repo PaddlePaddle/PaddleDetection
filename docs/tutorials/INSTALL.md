@@ -6,7 +6,7 @@ English | [简体中文](INSTALL_cn.md)
 This document covers how to install PaddleDetection and its dependencies
 (including PaddlePaddle), together with COCO and Pascal VOC dataset.
 
-For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/tree/develop).
+For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5).
 
 ## Requirements:
 
@@ -116,7 +116,7 @@ OK
 
 We provide docker images containing the latest PaddleDetection code, and all environment and package dependencies are pre-installed. All you have to do is to **pull and run the docker image**. Then you can enjoy PaddleDetection without any extra steps.
 
-Get these images and guidance in [docker hub](https://hub.docker.com/repository/docker/paddlecloud/paddledetection), including CPU, GPU, ROCm environment versions. 
+Get these images and guidance in [docker hub](https://hub.docker.com/repository/docker/paddlecloud/paddledetection), including CPU, GPU, ROCm environment versions.
 
 If you have some customized requirements about automatic building docker images, you can get it in github repo [PaddlePaddle/PaddleCloud](https://github.com/PaddlePaddle/PaddleCloud/tree/main/tekton).
 

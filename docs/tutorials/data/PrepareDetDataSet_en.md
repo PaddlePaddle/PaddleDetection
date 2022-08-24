@@ -330,7 +330,7 @@ dataset/xxx/
 ```
 
 ##### Reader of User Define Data  
-  If new data in the dataset needs to be added to paddedetection, you can refer to the [add new data source] (../advanced_tutorials/READER.md#2.3_Customizing_Dataset) document section in the data processing document to develop corresponding code to complete the new data source support. At the same time, you can read the [data processing document] (../advanced_tutorials/READER.md) for specific code analysis of data processing
+  If new data in the dataset needs to be added to paddedetection, you can refer to the [add new data source] (../advanced_tutorials/READER.md#2.3_Customizing_Dataset) document section in the data processing document to release/2.5 corresponding code to complete the new data source support. At the same time, you can read the [data processing document] (../advanced_tutorials/READER.md) for specific code analysis of data processing
 
 The configuration file for the Dataset exists in the `configs/datasets` folder. For example, the COCO dataset configuration file is as follows:
 ```

@@ -14,7 +14,7 @@ PP-Human supports various inputs such as images, single-camera, and multi-camera
 
 ## 📣 Updates
 
-- 🔥 **2022.7.13：PP-Human v2 launched with a full upgrade of four industrial features: behavior analysis, attributes recognition, visitor traffic statistics and ReID. It provides a strong core algorithm for pedestrian detection, tracking and attribute analysis with a simple and detailed development process and model optimization strategy.**
+- 🔥 **2022.7.13：PP-Human v2 launched with a full upgrade of four industrial features: behavior analysis, attributes recognition, visitor traffic statistics and ReID. It provides a strong core algorithm for pedestrian detection, tracking and attribute analysis with a simple and detailed release/2.5ment process and model optimization strategy.**
 - 2022.4.18: Add  PP-Human practical tutorials, including training, deployment, and action expansion. Details for AIStudio project please see [Link](https://aistudio.baidu.com/aistudio/projectdetail/3842982)
 
 - 2022.4.10: Add PP-Human examples; empower refined management of intelligent community management. A quick start for AIStudio [Link](https://aistudio.baidu.com/aistudio/projectdetail/3679564)
@@ -79,7 +79,7 @@ Click to download the model, then unzip and save it in the `. /output_inference`
 ### Pedestrian attribute/feature recognition
 
 * [A quick start](docs/tutorials/pphuman_attribute.md)
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_attribute.md)
+* [Customized release/2.5ment tutorials](../../docs/advanced_tutorials/customization/pphuman_attribute.md)
   * Data Preparation
   * Model Optimization
   * New Attributes
@@ -89,7 +89,7 @@ Click to download the model, then unzip and save it in the `. /output_inference`
 * [A quick start](docs/tutorials/pphuman_action.md)
   * Falling detection
   * Fighting detection
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/action_recognotion/README.md)
+* [Customized release/2.5ment tutorials](../../docs/advanced_tutorials/customization/action_recognotion/README.md)
   * Solution Selection
   * Data Preparation
   * Model Optimization
@@ -98,7 +98,7 @@ Click to download the model, then unzip and save it in the `. /output_inference`
 ### ReID
 
 * [A quick start](docs/tutorials/pphuman_mtmct.md)
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mtmct.md)
+* [Customized release/2.5ment tutorials](../../docs/advanced_tutorials/customization/pphuman_mtmct.md)
   * Data Preparation
   * Model Optimization
 
@@ -108,6 +108,6 @@ Click to download the model, then unzip and save it in the `. /output_inference`
   * Pedestrian tracking,
   * Visitor traffic statistics
   * Regional intrusion diagnosis and counting
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mot.md)
+* [Customized release/2.5ment tutorials](../../docs/advanced_tutorials/customization/pphuman_mot.md)
   * Data Preparation
   * Model Optimization

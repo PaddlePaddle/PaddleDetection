@@ -14,11 +14,11 @@
 ```
 cat /etc/nv_tegra_release
 ```
-* (2) 根据硬件，选择硬件可安装的`JetPack`版本，硬件和`JetPack`版本对应关系请参考[jetpack-archive](https://developer.nvidia.com/embedded/jetpack-archive).
+* (2) 根据硬件，选择硬件可安装的`JetPack`版本，硬件和`JetPack`版本对应关系请参考[jetpack-archive](https://release/2.5er.nvidia.com/embedded/jetpack-archive).
 
 * (3) 下载`JetPack`，请参考[NVIDIA Jetson Linux Developer Guide](https://docs.nvidia.com/jetson/l4t/index.html) 中的`Preparing a Jetson Developer Kit for Use`章节内容进行刷写系统镜像。
 
-**注意**: 请在[jetpack-archive](https://developer.nvidia.com/embedded/jetpack-archive) 根据硬件选择适配的`JetPack`版本进行刷机。
+**注意**: 请在[jetpack-archive](https://release/2.5er.nvidia.com/embedded/jetpack-archive) 根据硬件选择适配的`JetPack`版本进行刷机。
 
 ## 下载或编译`Paddle`预测库
 本文档使用`Paddle`在`JetPack4.3`上预先编译好的预测库，请根据硬件在[安装与编译 Linux 预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html) 中选择对应版本的`Paddle`预测库。

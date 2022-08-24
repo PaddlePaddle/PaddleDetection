@@ -42,7 +42,7 @@ The prediction model will be exported to the `output_inference/yolov3_darknet53_
 For details on model export, please refer to the documentation [Tutorial on Paddle Detection MODEL EXPORT](./EXPORT_MODEL_en.md).
 
 ### 2.2 Predictions are made using Paddle Serving
-* [Install PaddleServing](https://github.com/PaddlePaddle/Serving/blob/develop/README.md#installation)
+* [Install PaddleServing](https://github.com/PaddlePaddle/Serving/blob/release/2.5/README.md#installation)
 * [Use PaddleServing](./serving/README.md)
 
 

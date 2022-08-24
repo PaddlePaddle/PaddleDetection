@@ -81,7 +81,7 @@ First, execute the following command to download the training code (for more env
 git clone https://github.com/PaddlePaddle/PaddleClas
 ```
 
-You need to change the following configuration items in the configuration file [softmax_triplet_with_center.yaml](https://github.com/PaddlePaddle/PaddleClas/blob/develop/ppcls/configs/reid/strong_ baseline/softmax_triplet_with_center.yaml):
+You need to change the following configuration items in the configuration file [softmax_triplet_with_center.yaml](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.5/ppcls/configs/reid/strong_ baseline/softmax_triplet_with_center.yaml):
 
 ```
   Head:

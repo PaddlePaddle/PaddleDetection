@@ -223,7 +223,7 @@ The same applies to the deletion of attributes.
 After modifying the attribute definition, the post-processing part of the pipeline also needs to be modified accordingly, which mainly affects the display results when the results are visualized.
 
 
-The code is at [file](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/ppvehicle/vehicle_attr.py#L108), that is, the `postprocess` function.
+The code is at [file](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/deploy/pipeline/ppvehicle/vehicle_attr.py#L108), that is, the `postprocess` function.
 
 The function implementation is described as follows:
 

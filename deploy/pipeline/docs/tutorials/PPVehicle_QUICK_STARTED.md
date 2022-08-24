@@ -17,7 +17,7 @@
 
 ## 环境准备
 
-环境要求： PaddleDetection版本 >= release/2.4 或 develop版本
+环境要求： PaddleDetection版本 >= release/2.4 或 release/2.5版本
 
 PaddlePaddle和PaddleDetection安装
 

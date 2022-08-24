@@ -78,7 +78,7 @@ git clone https://github.com/PaddlePaddle/PaddleClas
 ```
 
 
-需要在配置文件[softmax_triplet_with_center.yaml](https://github.com/PaddlePaddle/PaddleClas/blob/develop/ppcls/configs/reid/strong_baseline/softmax_triplet_with_center.yaml)中，修改的配置项如下：
+需要在配置文件[softmax_triplet_with_center.yaml](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.5/ppcls/configs/reid/strong_baseline/softmax_triplet_with_center.yaml)中，修改的配置项如下：
 
 ```
   Head:

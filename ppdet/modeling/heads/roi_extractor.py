@@ -29,7 +29,7 @@ class RoIAlign(object):
     RoI Align module
 
     For more details, please refer to the document of roi_align in
-    in https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/vision/ops.py
+    in https://github.com/PaddlePaddle/Paddle/blob/release/2.5/python/paddle/vision/ops.py
 
     Args:
         resolution (int): The output size, default 14

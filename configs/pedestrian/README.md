@@ -5,7 +5,7 @@ We provide some models implemented by PaddlePaddle to detect objects in specific
 
 | Task                 | Algorithm | Box AP | Download                                                                                | Configs |
 |:---------------------|:---------:|:------:| :-------------------------------------------------------------------------------------: |:------:|
-| Pedestrian Detection |  YOLOv3  |  51.8  | [model](https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/pedestrian/pedestrian_yolov3_darknet.yml) |
+| Pedestrian Detection |  YOLOv3  |  51.8  | [model](https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/pedestrian/pedestrian_yolov3_darknet.yml) |
 
 ## Pedestrian Detection
 
@@ -17,7 +17,7 @@ The network for detecting vehicles is YOLOv3, the backbone of which is Dacknet53
 
 ### 2. Configuration for training
 
-PaddleDetection provides users with a configuration file [yolov3_darknet53_270e_coco.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) to train YOLOv3 on the COCO dataset, compared with this file, we modify some parameters as followed to conduct the training for pedestrian detection:
+PaddleDetection provides users with a configuration file [yolov3_darknet53_270e_coco.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/configs/yolov3/yolov3_darknet53_270e_coco.yml) to train YOLOv3 on the COCO dataset, compared with this file, we modify some parameters as followed to conduct the training for pedestrian detection:
 
 * num_classes: 1
 * dataset_dir: dataset/pedestrian

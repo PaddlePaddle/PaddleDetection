@@ -36,8 +36,8 @@ export NDK_ROOT=[YOUR_NDK_PATH]/android-ndk-r17c
 ```shell
 git clone https://github.com/PaddlePaddle/Paddle-Lite.git
 cd Paddle-Lite
-# 如果使用编译方式，建议使用develop分支编译预测库
-git checkout develop
+# 如果使用编译方式，建议使用release/2.5分支编译预测库
+git checkout release/2.5
 # FP32
 ./lite/tools/build_android.sh --arch=armv8 --toolchain=clang --with_cv=ON --with_extra=ON
 # FP16
@@ -96,7 +96,7 @@ Paddle-Lite 提供了多种策略来自动优化原始的模型，其中包括�
     # 如果准备环境时已经clone了Paddle-Lite，则不用重新clone Paddle-Lite
     git clone https://github.com/PaddlePaddle/Paddle-Lite.git
     cd Paddle-Lite
-    git checkout develop
+    git checkout release/2.5
     # 启动编译
     ./lite/tools/build.sh build_optimize_tool
     ```
@@ -169,7 +169,7 @@ python deploy/lite/convert_yml_to_json.py output_inference/picodet_s_320_coco/in
     ```
     2.3. Window安装ADB
 
-    win上安装需要去谷歌的安卓平台下载ADB软件包进行安装：[链接](https://developer.android.com/studio)
+    win上安装需要去谷歌的安卓平台下载ADB软件包进行安装：[链接](https://release/2.5er.android.com/studio)
 
 3. 手机连接电脑后，开启手机`USB调试`选项，选择`文件传输`模式，在电脑终端中输入：
 

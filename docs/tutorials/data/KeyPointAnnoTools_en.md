@@ -135,7 +135,7 @@ json-->labelme2coco.py-->COCO dataset
 
 #### Annotation file(json)—>COCO Dataset
 
-Convert the data annotated by LabelMe to COCO dataset by this script [x2coco.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/tools/x2coco.py).
+Convert the data annotated by LabelMe to COCO dataset by this script [x2coco.py](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/tools/x2coco.py).
 
 ```bash
 python tools/x2coco.py \
@@ -162,4 +162,3 @@ dataset/xxx/
 │   |   ...
 ...
 ```
-

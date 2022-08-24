@@ -30,7 +30,7 @@ wget https://paddle-qa.bj.bcebos.com/PaddleServing/opencv3.tar.gz && tar -xvf op
 export OPENCV_DIR=$PWD/opencv3
 
 # clone Serving
-git clone https://github.com/PaddlePaddle/Serving.git -b develop --depth=1
+git clone https://github.com/PaddlePaddle/Serving.git -b release/2.5 --depth=1
 cd Serving
 export Serving_repo_path=$PWD
 git submodule update --init --recursive

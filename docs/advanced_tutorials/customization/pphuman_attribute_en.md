@@ -90,7 +90,7 @@ First run the following command to download the training code (for more environm
 git clone https://github.com/PaddlePaddle/PaddleClas
 ```
 
-You need to modify the following configuration in the configuration file `PaddleClas/blob/develop/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml`
+You need to modify the following configuration in the configuration file `PaddleClas/blob/release/2.5/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml`
 
 ```
 DataLoader:
@@ -196,7 +196,7 @@ If the attributes need to be added or deleted, you need to
 
 2) Modify the number and name of attributes used in train.txt corresponding to the training.
 
-3) Modify the training configuration, for example, the number of attributes in the ``PaddleClas/blob/develop/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml`` file, for details, please see the ``Modify configuration to start training`` section above.
+3) Modify the training configuration, for example, the number of attributes in the ``PaddleClas/blob/release/2.5/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml`` file, for details, please see the ``Modify configuration to start training`` section above.
 
 Example of adding attributes.
 
@@ -209,7 +209,7 @@ Example of adding attributes.
 
    2) Modify the number and name of attributes used in train.txt corresponding to the training.
 
-   3) Modify the training configuration, for example, the number of attributes in the ``PaddleClas/blob/develop/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml`` file, for details, please see the ``Modify configuration to start training`` section above.
+   3) Modify the training configuration, for example, the number of attributes in the ``PaddleClas/blob/release/2.5/ppcls/configs/PULC/person_attribute/PPLCNet_x1_0.yaml`` file, for details, please see the ``Modify configuration to start training`` section above.
 
    Example of adding attributes.
 

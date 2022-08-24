@@ -2,7 +2,7 @@
 
 **Q：**SOLOv2训练mAP值宽幅震荡，无上升趋势，检测效果不好，检测置信度超过了1的原因是？
 
-**A：** SOLOv2训练不收敛的话，先更新PaddleDetection到release/2.2或者develop分支尝试。
+**A：** SOLOv2训练不收敛的话，先更新PaddleDetection到release/2.2或者release/2.5分支尝试。
 
 
 
@@ -14,7 +14,7 @@
 
 **Q：** 在tools/infer.py加入如下函数，得到FLOPs值为-1,请问原因？
 
-**A：** 更新PaddleDetection到release/2.2或者develop分支，`print_flops`设为True即可打印FLOPs。
+**A：** 更新PaddleDetection到release/2.2或者release/2.5分支，`print_flops`设为True即可打印FLOPs。
 
 
 
@@ -32,7 +32,7 @@
 
 **Q：** Develop分支下FairMot预测视频问题：预测视频时不会完全运行完毕。比如用一个300frame的视频，代码会保存预测结果的每一帧图片，但只保存到299张就没了，并且也没有预测好的视频文件生成，该如何解决？
 
-**A：** 已经支持自己设置帧率infer视频，请使用develop分支或release/2.2分支，命令如下：
+**A：** 已经支持自己设置帧率infer视频，请使用release/2.5分支或release/2.2分支，命令如下：
 
 ```
 CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams --video_file={your video name}.mp4 --frame_rate=20 --save_videos

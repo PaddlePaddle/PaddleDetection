@@ -1,13 +1,13 @@
 # TinyPose OpenVINO Demo
 
 This fold provides TinyPose inference code using
-[Intel's OpenVINO Toolkit](https://software.intel.com/content/www/us/en/develop/tools/openvino-toolkit.html). Most of the implements in this fold are same as *demo_ncnn*.  
+[Intel's OpenVINO Toolkit](https://software.intel.com/content/www/us/en/release/2.5/tools/openvino-toolkit.html). Most of the implements in this fold are same as *demo_ncnn*.  
 **Recommand** to use the xxx.tar.gz file to install instead of github method, [link](https://registrationcenter-download.intel.com/akdlm/irc_nas/18096/l_openvino_toolkit_p_2021.4.689.tgz).
 
 
 ## Install OpenVINO Toolkit
 
-Go to [OpenVINO HomePage](https://software.intel.com/content/www/us/en/develop/tools/openvino-toolkit.html)
+Go to [OpenVINO HomePage](https://software.intel.com/content/www/us/en/release/2.5/tools/openvino-toolkit.html)
 
 Download a suitable version and install.
 
@@ -104,7 +104,7 @@ make
 Download PicoDet openvino model [PicoDet openvino model download link](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_m_416_openvino.zip).
 Download TinyPose openvino model [TinyPose openvino model download link](https://paddledet.bj.bcebos.com/deploy/third_engine/tinypose_256_openvino.zip).
 
-move picodet and tinypose openvino model files to the demo's weight folder. 
+move picodet and tinypose openvino model files to the demo's weight folder.
 
 ### Edit file
 ```
@@ -165,4 +165,3 @@ Model: [Tinypose256_Openvino](https://paddledet.bj.bcebos.com/deploy/third_engin
 | param         | Min   | Max   | Avg   |
 | ------------- | ----- | ----- | ----- |
 | infer time(s) | 0.018 | 0.062 | 0.028 |
-
