@@ -224,7 +224,9 @@ class Detector(object):
                             overlap_ratio=[0.25, 0.25],
                             combine_method='nms',
                             match_threshold=0.6,
-                            match_metric='iou',
+                            match_metric='ios',
+                            run_benchmark=False,
+                            repeats=1,
                             visual=True,
                             save_results=False):
         # slice infer only support bs=1
@@ -249,10 +251,38 @@ class Detector(object):
                 overlap_width_ratio=overlap_ratio[1])
             sub_img_num = len(slice_image_result)
             merged_bboxs = []
-            for _ind in range(sub_img_num):
-                im = slice_image_result.images[_ind]
+
+            batch_image_list = [
+                slice_image_result.images[_ind] for _ind in range(sub_img_num)
+            ]
+            if run_benchmark:
+                # preprocess
+                inputs = self.preprocess(batch_image_list)  # warmup
                 self.det_times.preprocess_time_s.start()
-                inputs = self.preprocess([im])  # should be list
+                inputs = self.preprocess(batch_image_list)
+                self.det_times.preprocess_time_s.end()
+
+                # model prediction
+                result = self.predict(repeats=50)  # warmup
+                self.det_times.inference_time_s.start()
+                result = self.predict(repeats=repeats)
+                self.det_times.inference_time_s.end(repeats=repeats)
+
+                # postprocess
+                result_warmup = self.postprocess(inputs, result)  # warmup
+                self.det_times.postprocess_time_s.start()
+                result = self.postprocess(inputs, result)
+                self.det_times.postprocess_time_s.end()
+                self.det_times.img_num += 1
+
+                cm, gm, gu = get_current_memory_mb()
+                self.cpu_mem += cm
+                self.gpu_mem += gm
+                self.gpu_util += gu
+            else:
+                # preprocess
+                self.det_times.preprocess_time_s.start()
+                inputs = self.preprocess(batch_image_list)
                 self.det_times.preprocess_time_s.end()
 
                 # model prediction
@@ -266,10 +296,17 @@ class Detector(object):
                 self.det_times.postprocess_time_s.end()
                 self.det_times.img_num += 1
 
+            st, ed = 0, result['boxes_num'][0]  # start_index, end_index
+            for _ind in range(sub_img_num):
+                boxes_num = result['boxes_num'][_ind]
+                ed = boxes_num
                 shift_amount = slice_image_result.starting_pixels[_ind]
-                result['boxes'][:, 2:4] = result['boxes'][:, 2:4] + shift_amount
-                result['boxes'][:, 4:6] = result['boxes'][:, 4:6] + shift_amount
-                merged_bboxs.append(result['boxes'])
+                result['boxes'][st:ed][:, 2:4] = result['boxes'][
+                    st:ed][:, 2:4] + shift_amount
+                result['boxes'][st:ed][:, 4:6] = result['boxes'][
+                    st:ed][:, 4:6] + shift_amount
+                merged_bboxs.append(result['boxes'][st:ed])
+                st = ed
 
             merged_results = {'boxes': []}
             if combine_method == 'nms':
@@ -392,7 +429,7 @@ class Detector(object):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         index = 1
         while (1):

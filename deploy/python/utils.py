@@ -199,7 +199,7 @@ def argsparser():
     parser.add_argument(
         "--match_metric",
         type=str,
-        default='iou',
+        default='ios',
         help="Combine method matching metric, choose in ['iou', 'ios'].")
     return parser
 
