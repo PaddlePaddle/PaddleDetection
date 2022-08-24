@@ -1,5 +1,7 @@
 # PP-YOLOE 小目标检测模型(PP-YOLOE smalldet)
 
+<img src="https://user-images.githubusercontent.com/82303451/182520025-f6bd1c76-a9f9-4f8c-af9b-b37a403258d8.png" title="VisDrone" alt="VisDrone" width="300"><img src="https://user-images.githubusercontent.com/82303451/182521833-4aa0314c-b3f2-4711-9a65-cabece612737.png" title="VisDrone" alt="VisDrone" width="300"><img src="https://user-images.githubusercontent.com/82303451/182520038-cacd5d09-0b85-475c-8e59-72f1fc48eef8.png" title="DOTA" alt="DOTA" height="168"><img src="https://user-images.githubusercontent.com/82303451/182524123-dcba55a2-ce2d-4ba1-9d5b-eb99cb440715.jpeg" title="Xview" alt="Xview" height="168">
+
 ## 内容
 - [简介](#简介)
 - [模型库](#模型库)
@@ -7,19 +9,17 @@
     - [拼图模型](#拼图模型)
 - [数据集准备](#数据集准备)
 - [模型库使用说明](#模型库使用说明)
-    - [1.训练](#1.训练)
-    - [2.评估](#2.评估)
-    - [3.预测](#3.预测)
-    - [4.部署](#4.部署)
+    - [训练](#训练)
+    - [评估](#评估)
+    - [预测](#预测)
+    - [部署](#部署)
 - [切图使用说明](#切图使用说明)
     - [统计数据集分布](#统计数据集分布)
     - [SAHI切图](#SAHI切图)
 - [引用](#引用)
 
 ## 简介
-PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小目标场景数据集的基于PP-YOLOE的检测模型，以及提供了一套使用[SAHI](https://github.com/obss/sahi)(Slicing Aided Hyper Inference)工具切图和拼图的方案，用户可以下载模型进行使用。不通过切图拼图而直接使用原图的方案也可以参照[visdrone](../visdrone)。
-
-<img src="https://user-images.githubusercontent.com/82303451/182520025-f6bd1c76-a9f9-4f8c-af9b-b37a403258d8.png" title="VisDrone" alt="VisDrone" width="300"><img src="https://user-images.githubusercontent.com/82303451/182521833-4aa0314c-b3f2-4711-9a65-cabece612737.png" title="VisDrone" alt="VisDrone" width="300"><img src="https://user-images.githubusercontent.com/82303451/182520038-cacd5d09-0b85-475c-8e59-72f1fc48eef8.png" title="DOTA" alt="DOTA" height="168"><img src="https://user-images.githubusercontent.com/82303451/182524123-dcba55a2-ce2d-4ba1-9d5b-eb99cb440715.jpeg" title="Xview" alt="Xview" height="168">
+PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小目标场景数据集的基于PP-YOLOE的检测模型，以及提供了一套使用[SAHI](https://github.com/obss/sahi)(Slicing Aided Hyper Inference)工具切图和拼图的方案，用户可以下载模型进行使用。不通过切图拼图而直接使用原图的方案也可以参照[visdrone](../visdrone)。**是否需要切图**，建议参照[切图使用说明](#切图使用说明)中的[统计数据集分布](#统计数据集分布)先分析一下数据集再确定。
 
 ## 模型库
 
@@ -140,7 +140,7 @@ Tower(59)
 
 ## 模型库使用说明
 
-### 1.训练
+### 训练
 
 首先将你的数据集为COCO数据集格式，然后使用SAHI切图工具进行离线切图，对保存的子图按常规检测模型的训练流程走即可。
 也可直接下载PaddleDetection团队提供的切图后的VisDrone-DET、DOTA水平框、Xview数据集。
@@ -154,7 +154,7 @@ python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c con
 **注意:**
 - 使用默认配置训练需要设置`--amp`以避免显存溢出。
 
-### 2.评估
+### 评估
 
 #### 2.1 子图评估
 
@@ -220,7 +220,7 @@ EvalDataset:
 - 设置`--match_metric`表示子图结果重组去重的度量标准，默认是`ios`表示交小比(两个框交集面积除以更小框的面积)，也可以选择交并比`iou`(两个框交集面积除以并集面积)，精度效果因数据集而而异，但选择`ios`预测速度会更快一点；
 
 
-### 3.预测
+### 预测
 
 #### 3.1 子图或原图直接预测
 与评估流程基本相同，可以在提前切好并存下来的子图上预测，也可以对原图预测，如：
@@ -243,7 +243,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_8
 - 设置`--match_metric`表示子图结果重组去重的度量标准，默认是`ios`表示交小比(两个框交集面积除以更小框的面积)，也可以选择交并比`iou`(两个框交集面积除以并集面积)，精度效果因数据集而而异，但选择`ios`预测速度会更快一点；
 
 
-### 4.部署
+### 部署
 
 #### 4.1 导出模型
 ```bash
