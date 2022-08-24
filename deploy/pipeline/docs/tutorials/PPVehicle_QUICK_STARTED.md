@@ -104,26 +104,35 @@ VEHICLE_ATTR:
 
 ## 预测部署
 
+1. 直接使用默认配置或者examples中配置文件，或者直接在`infer_cfg_ppvehicle.yml`中修改配置：
 ```
-# 车辆检测，指定配置文件路径和测试图片
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
+# 例：车辆检测，指定配置文件路径和测试图片
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml --image_file=test_image.jpg --device=gpu
 
-# 车辆跟踪，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_ppvehicle.yml```中的MOT部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
-
-# 车辆跟踪，指定配置文件路径，模型路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_ppvehicle.yml```中的MOT部分enable设置为```True```
-# 命令行中指定的模型路径优先级高于配置文件
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml --video_file=test_video.mp4 --device=gpu  [--run_mode trt_fp16]
-
-# 车辆属性识别，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_ppvehicle.yml```中的ATTR部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
-
+# 例：车辆车牌识别，指定配置文件路径和测试视频
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_vehicle_plate.yml --video_file=test_video.mp4 --device=gpu
 ```
 
-对rtsp流的支持，video_file后面的视频地址更换为rtsp流地址，示例如下：
+2. 使用命令行进行功能开启，或者模型路径修改：
 ```
-# 车辆属性识别，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_ppvehicle.yml```中的ATTR部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml  -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu [--run_mode trt_fp16]
+# 例：车辆跟踪，指定配置文件路径和测试视频，命令行中开启MOT模型并修改模型路径，命令行中指定的模型路径优先级高于配置文件
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml -o MOT.enable=True MOT.model_dir=ppyoloe_infer/ --video_file=test_video.mp4 --device=gpu
+
+# 例：车辆违法分析，指定配置文件和测试视频，命令行中指定违停区域设置、违停时间判断。
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_illegal_parking.yml \
+                                                   --video_file=../car_test.mov \
+                                                   --device=gpu \
+                                                   --draw_center_traj \
+                                                   --illegal_parking_time=3 \
+                                                   --region_type=custom \
+                                                   --region_polygon 600 300 1300 300 1300 800 600 800
+
+```
+
+3. 对rtsp流的支持，video_file后面的视频地址更换为rtsp流地址，示例如下：
+```
+# 例：车辆属性识别，指定配置文件路径和测试视频
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_vehicle_attr.yml  -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu
 ```
 
 ### 参数说明

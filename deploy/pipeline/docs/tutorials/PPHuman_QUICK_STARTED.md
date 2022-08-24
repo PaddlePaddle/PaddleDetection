@@ -105,35 +105,28 @@ ATTR:
 
 ## 预测部署
 
+1. 直接使用默认配置或者examples中配置文件，或者直接在`infer_cfg_pphuman.yml`中修改配置：
 ```
-# 行人检测，指定配置文件路径和测试图片
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
+# 例：行人检测，指定配置文件路径和测试图片，图片输入默认打开检测模型
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --image_file=test_image.jpg --device=gpu
 
-# 行人跟踪，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
-
-# 行人跟踪，指定配置文件路径，模型路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
-# 命令行中指定的模型路径优先级高于配置文件
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
-
-# 行人属性识别，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的ATTR部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
-
-# 行为识别，以摔倒识别为例，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的SKELETON_ACTION部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
-
-# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的REID部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
-
-# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，直接使用```deploy/pipeline/config/examples/infer_cfg_reid.yml```配置文件，并利用```-o```命令修改跟踪模型路径
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_reid.yml --video_dir=mtmct_dir/ -o MOT.model_dir="mot_model_dir" --device=gpu [--run_mode trt_fp16]
-
+# 例：行人属性识别，直接使用examples中配置
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_human_attr.yml --video_file=test_video.mp4 --device=gpu
 ```
 
-对rtsp流的支持，video_file后面的视频地址更换为rtsp流地址，示例如下：
+2. 使用命令行进行功能开启，或者模型路径修改：
 ```
-# 行人属性识别，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的ATTR部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu [--run_mode trt_fp16]
+# 例：行人跟踪，指定配置文件路径，模型路径和测试视频, 命令行中指定的模型路径优先级高于配置文件
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml -o MOT.enable=True MOT.model_dir=ppyoloe_infer/ --video_file=test_video.mp4 --device=gpu
+
+# 例：行为识别，以摔倒识别为例，命令行中开启SKELETON_ACTION模型
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml -o SKELETON_ACTION.enbale=True --video_file=test_video.mp4 --device=gpu
+```
+
+3. 对rtsp流的支持，video_file后面的视频地址更换为rtsp流地址，示例如下：
+```
+# 例：行人属性识别，指定配置文件路径和测试视频
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_human_attr.yml -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu
 ```
 
 ### 参数说明
@@ -182,7 +175,7 @@ PP-Human v2整体方案如下图所示:
 
 ### 属性识别
 - 使用PP-YOLOE + OC-SORT跟踪人体
-- 使用StrongBaseline（多分类模型）完成识别属性，主要属性包括年龄、性别、帽子、眼睛、上衣下衣款式、背包等
+- 使用PP-HGNet、PP-LCNet（多分类模型）完成识别属性，主要属性包括年龄、性别、帽子、眼睛、上衣下衣款式、背包等
 - 详细文档参考[属性识别](pphuman_attribute.md)
 
 ### 行为识别：

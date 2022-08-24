@@ -98,7 +98,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 - 穿靴：是、否
 ```
 
-4. 属性识别模型方案为[StrongBaseline](https://arxiv.org/pdf/2107.03576.pdf)，模型结构为基于PP-HGNet、PP-LCNet的多分类网络结构，引入Weighted BCE loss提升模型效果。
+4. 属性识别模型方案为[StrongBaseline](https://arxiv.org/pdf/2107.03576.pdf)，模型结构更改为基于PP-HGNet、PP-LCNet的多分类网络结构，引入Weighted BCE loss提升模型效果。
 
 ## 参考文献
 ```
