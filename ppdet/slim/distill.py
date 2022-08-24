@@ -436,7 +436,7 @@ class FGDFeatureLoss(nn.Layer):
         Mask_bg = paddle.ones_like(tea_spatial_att)
         one_tmp = paddle.ones([*tea_spatial_att.shape[1:]])
         zero_tmp = paddle.zeros([*tea_spatial_att.shape[1:]])
-        mask_fg.stop_gradient = True
+        Mask_fg.stop_gradient = True
         Mask_bg.stop_gradient = True
         one_tmp.stop_gradient = True
         zero_tmp.stop_gradient = True
