@@ -15,6 +15,9 @@ PaddleDetection团队提供了针对行人的基于PP-YOLOE的检测模型，用
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
 - 具体使用教程请参考[ppyoloe](../ppyoloe#getting-start)。
 
+# YOLOv3 Human 检测模型
+
+请参考[YOLOv3页面](./pedestrian_yolov3/README_cn.md)
 
 # PP-YOLOE 香烟检测模型
 基于PP-YOLOE模型的香烟检测模型，是实现PP-Human中的基于检测的行为识别方案的一环，如何在PP-Human中使用该模型进行吸烟行为识别，可参考[PP-Human行为识别模块](../../deploy/pipeline/docs/tutorials/pphuman_action.md)。该模型检测类别仅包含香烟一类。由于数据来源限制，目前暂无法直接公开训练数据。该模型使用了小目标数据集VisDrone上的权重(参照[visdrone](../visdrone))作为预训练模型，以提升检测效果。

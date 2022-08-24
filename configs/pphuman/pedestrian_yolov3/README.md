@@ -45,6 +45,6 @@ python -u tools/infer.py -c configs/pedestrian/pedestrian_yolov3_darknet.yml \
 
 Some inference results are visualized below:
 
-![](../../docs/images/PedestrianDetection_001.png)
+![](../../../docs/images/PedestrianDetection_001.png)
 
-![](../../docs/images/PedestrianDetection_004.png)
+![](../../../docs/images/PedestrianDetection_004.png)

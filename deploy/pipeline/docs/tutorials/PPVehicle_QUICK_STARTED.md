@@ -146,6 +146,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 
 可以直接修改配置文件（推荐），也可以在命令行中修改（字段较长，不推荐）。
 
+
 ### 参数说明
 
 | 参数 | 是否必须|含义 |
@@ -164,6 +165,9 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 | --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
 | --do_entrance_counting | Option | 是否统计出入口流量，默认为False |
 | --draw_center_traj | Option | 是否绘制跟踪轨迹，默认为False |
+| --region_type | Option | 'horizontal'（默认值）、'vertical'：表示流量统计方向选择；'custom'：表示设置车辆禁停区域 |
+| --region_polygon | Option | 设置禁停区域多边形多点的坐标，无默认值 |
+| --illegal_parking_time | Option | 设置禁停时间阈值，单位秒（s），-1（默认值）表示不做检查 |
 
 ## 方案介绍
 
