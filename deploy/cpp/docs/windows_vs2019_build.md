@@ -72,7 +72,12 @@ cd D:\projects\PaddleDetection\deploy\cpp
 | PADDLE_DIR | Paddle预测库的路径 |
 | PADDLE_LIB_NAME | Paddle 预测库名称 |
 
-**注意：** 1. 使用`CPU`版预测库，请把`WITH_GPU`的勾去掉 2. 如果使用的是`openblas`版本，请把`WITH_MKL`勾去掉 3.如无需使用关键点模型可以把`WITH_KEYPOINT`勾去掉
+**注意：**
+
+1. 如果编译环境为CPU，需要下载`CPU`版预测库，请把`WITH_GPU`的勾去掉
+2. 如果使用的是`openblas`版本，请把`WITH_MKL`勾去掉
+3. 如无需使用关键点模型可以把`WITH_KEYPOINT`勾去掉
+4. Windows环境下，`PADDLE_LIB_NAME`需要设置为`paddle_inference`
 
 执行如下命令项目文件：
 ```
@@ -83,6 +88,8 @@ cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=O
 ```
 cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=ON -DCMAKE_BUILD_TYPE=Release -DCUDA_LIB=D:\projects\packages\cuda10_0\lib\x64 -DCUDNN_LIB=D:\projects\packages\cuda10_0\lib\x64 -DPADDLE_DIR=D:\projects\packages\paddle_inference -DPADDLE_LIB_NAME=paddle_inference -DOPENCV_DIR=D:\projects\packages\opencv3_4_6 -DWITH_KEYPOINT=ON
 ```
+
+
 
 3. 编译
 用`Visual Studio 16 2019`打开`cpp`文件夹下的`PaddleObjectDetector.sln`，将编译模式设置为`Release`，点击`生成`->`全部生成
@@ -146,7 +153,6 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 #检测模型检测到的人送入关键点模型进行关键点预测
 .\main --model_dir=D:\\models\\yolov3_darknet --model_dir_keypoint=D:\\models\\hrnet_w32_256x192 --image_file=D:\\images\\test.jpeg --device=GPU
 ```
-
 
 ## 性能测试
 Benchmark请查看[BENCHMARK_INFER](../../BENCHMARK_INFER.md)

@@ -244,8 +244,19 @@ if (WIN32 AND WITH_MKL)
     )
 endif()
 
+if (WIN32 AND NOT WITH_MKL)
+    add_custom_command(TARGET main POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/openblas/lib/openblas.dll ./openblas.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/openblas/lib/openblas.dll ./release/openblas.dll
+    )
+endif()
+
 if (WIN32)
     add_custom_command(TARGET main POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/onnxruntime/lib/onnxruntime.dll ./onnxruntime.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/paddle2onnx/lib/paddle2onnx.dll ./paddle2onnx.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/onnxruntime/lib/onnxruntime.dll ./release/onnxruntime.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/paddle2onnx/lib/paddle2onnx.dll ./release/paddle2onnx.dll
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/paddle/lib/${PADDLE_LIB_NAME}.dll ./release/${PADDLE_LIB_NAME}.dll
     )
 endif()
