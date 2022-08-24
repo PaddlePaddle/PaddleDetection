@@ -129,6 +129,17 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_human_attr.yml -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu
 ```
 
+### Jetson部署说明
+
+由于Jetson平台算力相比服务器有较大差距，有如下使用建议：
+
+1. 模型选择轻量级版本，特别是跟踪模型，推荐使用`ppyoloe_s: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip`
+2. 开启跟踪跳帧功能，推荐使用2或者3. `skip_frame_num: 3`
+
+使用该推荐配置，在TX2平台上可以达到较高速率，经测试属性案例达到20fps。
+
+可以直接修改配置文件（推荐），也可以在命令行中修改（字段较长，不推荐）。
+
 ### 参数说明
 
 | 参数 | 是否必须|含义 |
