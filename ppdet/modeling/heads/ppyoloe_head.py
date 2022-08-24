@@ -46,7 +46,9 @@ class ESEAttn(nn.Layer):
 
 @register
 class PPYOLOEHead(nn.Layer):
-    __shared__ = ['num_classes', 'eval_size', 'trt', 'exclude_nms']
+    __shared__ = [
+        'num_classes', 'eval_size', 'trt', 'exclude_nms', 'exclude_post_process'
+    ]
     __inject__ = ['static_assigner', 'assigner', 'nms']
 
     def __init__(self,
@@ -69,7 +71,8 @@ class PPYOLOEHead(nn.Layer):
                      'dfl': 0.5,
                  },
                  trt=False,
-                 exclude_nms=False):
+                 exclude_nms=False,
+                 exclude_post_process=False):
         super(PPYOLOEHead, self).__init__()
         assert len(in_channels) > 0, "len(in_channels) should > 0"
         self.in_channels = in_channels
@@ -90,6 +93,7 @@ class PPYOLOEHead(nn.Layer):
         if isinstance(self.nms, MultiClassNMS) and trt:
             self.nms.trt = trt
         self.exclude_nms = exclude_nms
+        self.exclude_post_process = exclude_post_process
         # stem
         self.stem_cls = nn.LayerList()
         self.stem_reg = nn.LayerList()
@@ -369,14 +373,19 @@ class PPYOLOEHead(nn.Layer):
         pred_bboxes = batch_distance2bbox(anchor_points,
                                           pred_dist.transpose([0, 2, 1]))
         pred_bboxes *= stride_tensor
-        # scale bbox to origin
-        scale_y, scale_x = paddle.split(scale_factor, 2, axis=-1)
-        scale_factor = paddle.concat(
-            [scale_x, scale_y, scale_x, scale_y], axis=-1).reshape([-1, 1, 4])
-        pred_bboxes /= scale_factor
-        if self.exclude_nms:
-            # `exclude_nms=True` just use in benchmark
-            return pred_bboxes.sum(), pred_scores.sum()
+        if self.exclude_post_process:
+            return paddle.concat(
+                [pred_bboxes, pred_scores.transpose([0, 2, 1])], axis=-1), None
         else:
-            bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
-            return bbox_pred, bbox_num
+            # scale bbox to origin
+            scale_y, scale_x = paddle.split(scale_factor, 2, axis=-1)
+            scale_factor = paddle.concat(
+                [scale_x, scale_y, scale_x, scale_y],
+                axis=-1).reshape([-1, 1, 4])
+            pred_bboxes /= scale_factor
+            if self.exclude_nms:
+                # `exclude_nms=True` just use in benchmark
+                return pred_bboxes, pred_scores
+            else:
+                bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
+                return bbox_pred, bbox_num

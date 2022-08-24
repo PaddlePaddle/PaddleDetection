@@ -718,7 +718,8 @@ class Trainer(object):
                       match_metric='iou',
                       draw_threshold=0.5,
                       output_dir='output',
-                      save_results=False):
+                      save_results=False,
+                      visualize=True):
         self.dataset.set_slice_images(images, slice_size, overlap_ratio)
         loader = create('TestReader')(self.dataset, 0)
 
@@ -771,40 +772,41 @@ class Trainer(object):
 
                 for key in ['im_shape', 'scale_factor', 'im_id']:
                     if isinstance(data, typing.Sequence):
-                        outs[key] = data[0][key]
+                        merged_results[key] = data[0][key]
                     else:
-                        outs[key] = data[key]
+                        merged_results[key] = data[key]
                 for key, value in merged_results.items():
                     if hasattr(value, 'numpy'):
                         merged_results[key] = value.numpy()
                 results.append(merged_results)
 
-        # visualize results
-        for outs in results:
-            batch_res = get_infer_results(outs, clsid2catid)
-            bbox_num = outs['bbox_num']
-            start = 0
-            for i, im_id in enumerate(outs['im_id']):
-                image_path = imid2path[int(im_id)]
-                image = Image.open(image_path).convert('RGB')
-                image = ImageOps.exif_transpose(image)
-                self.status['original_image'] = np.array(image.copy())
-                end = start + bbox_num[i]
-                bbox_res = batch_res['bbox'][start:end] \
-                        if 'bbox' in batch_res else None
-                mask_res, segm_res, keypoint_res = None, None, None
-                image = visualize_results(
-                    image, bbox_res, mask_res, segm_res, keypoint_res,
-                    int(im_id), catid2name, draw_threshold)
-                self.status['result_image'] = np.array(image.copy())
-                if self._compose_callback:
-                    self._compose_callback.on_step_end(self.status)
-                # save image with detection
-                save_name = self._get_save_image_name(output_dir, image_path)
-                logger.info("Detection bbox results save in {}".format(
-                    save_name))
-                image.save(save_name, quality=95)
-                start = end
+        if visualize:
+            for outs in results:
+                batch_res = get_infer_results(outs, clsid2catid)
+                bbox_num = outs['bbox_num']
+                start = 0
+                for i, im_id in enumerate(outs['im_id']):
+                    image_path = imid2path[int(im_id)]
+                    image = Image.open(image_path).convert('RGB')
+                    image = ImageOps.exif_transpose(image)
+                    self.status['original_image'] = np.array(image.copy())
+                    end = start + bbox_num[i]
+                    bbox_res = batch_res['bbox'][start:end] \
+                            if 'bbox' in batch_res else None
+                    mask_res, segm_res, keypoint_res = None, None, None
+                    image = visualize_results(
+                        image, bbox_res, mask_res, segm_res, keypoint_res,
+                        int(im_id), catid2name, draw_threshold)
+                    self.status['result_image'] = np.array(image.copy())
+                    if self._compose_callback:
+                        self._compose_callback.on_step_end(self.status)
+                    # save image with detection
+                    save_name = self._get_save_image_name(output_dir,
+                                                          image_path)
+                    logger.info("Detection bbox results save in {}".format(
+                        save_name))
+                    image.save(save_name, quality=95)
+                    start = end
 
     def predict(self,
                 images,
