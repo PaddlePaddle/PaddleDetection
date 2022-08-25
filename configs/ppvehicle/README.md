@@ -35,6 +35,10 @@ label_list.txt里的一行记录一个对应种类，如下所示：
 vehicle
 ```
 
+## YOLOv3 Vehicle 检测模型
+
+请参考[Vehicle_YOLOv3页面](./vehicle_yolov3/README_cn.md)
+
 ## 引用
 ```
 @InProceedings{bdd100k,

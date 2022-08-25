@@ -1,0 +1,42 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '../yolov3/_base_/optimizer_270e.yml',
+  '../yolov3/_base_/yolov3_darknet53.yml',
+  '../yolov3/_base_/yolov3_reader.yml',
+]
+
+snapshot_epoch: 5
+weights: https://paddledet.bj.bcebos.com/models/vehicle_yolov3_darknet.pdparams
+
+YOLOv3Head:
+  anchors: [[8, 9], [10, 23], [19, 15],
+            [23, 33], [40, 25], [54, 50],
+            [101, 80], [139, 145], [253, 224]]
+
+BBoxPostProcess:
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    score_threshold: 0.005
+    nms_threshold: 0.45
+    nms_top_k: 400
+
+num_classes: 6
+
+TrainDataset:
+  !COCODataSet
+    dataset_dir: dataset/vehicle
+    anno_path: annotations/instances_train2017.json
+    image_dir: train2017
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    dataset_dir: dataset/vehicle
+    anno_path: annotations/instances_val2017.json
+    image_dir: val2017
+
+TestDataset:
+  !ImageFolder
+    anno_path: configs/vehicle/vehicle.json

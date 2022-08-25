@@ -2,13 +2,15 @@
 
 # PP-YOLOE Human 检测模型
 
-PaddleDetection团队提供了针对行人的基于PP-YOLOE的检测模型，用户可以下载模型进行使用。
+PaddleDetection团队提供了针对行人的基于PP-YOLOE的检测模型，用户可以下载模型进行使用。PP-Human中使用模型为业务数据集模型，我们同时提供CrowdHuman训练配置，可以使用开源数据进行训练。
 其中整理后的COCO格式的CrowdHuman数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/crowdhuman.zip)，检测类别仅一类 `pedestrian(1)`，原始数据集[下载链接](http://www.crowdhuman.org/download.html)。
 
 |    模型   |  数据集  | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 |  下载  | 配置文件 |
 |:---------|:-------:|:------:|:------:| :----: | :------:|
 |PP-YOLOE-s|   CrowdHuman   |  42.5  |  77.9  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_36e_crowdhuman.pdparams) | [配置文件](./ppyoloe_crn_s_36e_crowdhuman.yml) |
 |PP-YOLOE-l|   CrowdHuman   |  48.0  |  81.9  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_36e_crowdhuman.pdparams) | [配置文件](./ppyoloe_crn_l_36e_crowdhuman.yml) |
+|PP-YOLOE-s|   业务数据集   |  53.2  |  -  | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | [配置文件](./ppyoloe_crn_s_36e_pphuman.yml) |
+|PP-YOLOE-l|   业务数据集   |  57.8  |  -  | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | [配置文件](./ppyoloe_crn_l_36e_pphuman.yml) |
 
 
 **注意:**
@@ -17,7 +19,7 @@ PaddleDetection团队提供了针对行人的基于PP-YOLOE的检测模型，用
 
 # YOLOv3 Human 检测模型
 
-请参考[YOLOv3页面](./pedestrian_yolov3/README_cn.md)
+请参考[Human_YOLOv3页面](./pedestrian_yolov3/README_cn.md)
 
 # PP-YOLOE 香烟检测模型
 基于PP-YOLOE模型的香烟检测模型，是实现PP-Human中的基于检测的行为识别方案的一环，如何在PP-Human中使用该模型进行吸烟行为识别，可参考[PP-Human行为识别模块](../../deploy/pipeline/docs/tutorials/pphuman_action.md)。该模型检测类别仅包含香烟一类。由于数据来源限制，目前暂无法直接公开训练数据。该模型使用了小目标数据集VisDrone上的权重(参照[visdrone](../visdrone))作为预训练模型，以提升检测效果。
