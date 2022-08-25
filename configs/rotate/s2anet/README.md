@@ -23,13 +23,13 @@
 **注意：**
 
 - 如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
-- 模型库中的模型默认使用单尺度训练。如果数据增广一栏标明MS，意味着使用多尺度训练和多尺度测试。如果数据增广一栏标明RR，意味着使用RandomRotate数据增广进行训练。
+- 模型库中的模型默认使用单尺度训练单尺度测试。如果数据增广一栏标明MS，意味着使用多尺度训练和多尺度测试。如果数据增广一栏标明RR，意味着使用RandomRotate数据增广进行训练。
 - 这里使用`multiclass_nms`，与原作者使用nms略有不同。
 
 
 ## 使用说明
 
-参考[数据准备](../README.md#数据准备)准备数据
+参考[数据准备](../README.md#数据准备)准备数据。
 
 ### 1. 训练
 
