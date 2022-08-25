@@ -15,11 +15,12 @@
 
 | 模型 | mAP | 学习率策略 | 角度表示 | 数据增广 | GPU数目 | 每GPU图片数目 | 模型下载 | 配置文件 |
 |:---:|:----:|:---------:|:-----:|:--------:|:-----:|:------------:|:-------:|:------:|
-| [S2ANet](./s2anet/README.md) | 74.0 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/dota/s2anet_alignconv_2x_dota.yml) |
+| [S2ANet](./s2anet/README.md) | 74.0 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml) |
 
 **注意:**
 
 - 如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
+- 模型库中的模型默认使用单尺度训练。如果数据增广一栏标明MS，意味着使用多尺度训练和多尺度测试。如果数据增广一栏标明RR，意味着使用RandomRotate数据增广进行训练。
 
 ## 数据准备
 ### DOTA数据准备
@@ -36,8 +37,15 @@ ${DOTA_ROOT}
     └── labelTxt
 ```
 
-DOTA数据集分辨率较高，因此一般在训练和测试之前对图像进行切图，使用单尺度进行切图可以使用以下命令：
+对于有标注的数据，每一张图片会对应一个同名的txt文件，文件中每一行为一个旋转框的标注，其格式如下：
 ```
+x1 y1 x2 y2 x3 y3 x4 y4 class_name difficult
+```
+
+### 单尺度切图
+DOTA数据集分辨率较高，因此一般在训练和测试之前对图像进行离线切图，使用单尺度进行切图可以使用以下命令：
+``` bash
+# 对于有标注的数据进行切图
 python configs/rotate/tools/prepare_data.py \
     --input_dirs ${DOTA_ROOT}/train/ ${DOTA_ROOT}/val/ \
     --output_dir ${OUTPUT_DIR}/trainval1024/ \
@@ -45,19 +53,8 @@ python configs/rotate/tools/prepare_data.py \
     --subsize 1024 \
     --gap 200 \
     --rates 1.0
-```
-使用多尺度进行切图可以使用以下命令：
-```
-python configs/rotate/tools/prepare_data.py \
-    --input_dirs ${DOTA_ROOT}/train/ ${DOTA_ROOT}/val/ \
-    --output_dir ${OUTPUT_DIR}/trainval/ \
-    --coco_json_file DOTA_trainval1024.json \
-    --subsize 1024 \
-    --gap 500 \
-    --rates 0.5 1.0 1.5 \
-```
-对于无标注的数据可以设置`--image_only`进行切图，如下所示：
-```
+
+# 对于无标注的数据进行切图需要设置--image_only
 python configs/rotate/tools/prepare_data.py \
     --input_dirs ${DOTA_ROOT}/test/ \
     --output_dir ${OUTPUT_DIR}/test1024/ \
@@ -65,6 +62,30 @@ python configs/rotate/tools/prepare_data.py \
     --subsize 1024 \
     --gap 200 \
     --rates 1.0 \
+    --image_only
+
+```
+
+### 多尺度切图
+使用多尺度进行切图可以使用以下命令：
+``` bash
+# 对于有标注的数据进行切图
+python configs/rotate/tools/prepare_data.py \
+    --input_dirs ${DOTA_ROOT}/train/ ${DOTA_ROOT}/val/ \
+    --output_dir ${OUTPUT_DIR}/trainval/ \
+    --coco_json_file DOTA_trainval1024.json \
+    --subsize 1024 \
+    --gap 500 \
+    --rates 0.5 1.0 1.5
+
+# 对于无标注的数据进行切图需要设置--image_only
+python configs/rotate/tools/prepare_data.py \
+    --input_dirs ${DOTA_ROOT}/test/ \
+    --output_dir ${OUTPUT_DIR}/test1024/ \
+    --coco_json_file DOTA_test1024.json \
+    --subsize 1024 \
+    --gap 500 \
+    --rates 0.5 1.0 1.5 \
     --image_only
 ```
 
