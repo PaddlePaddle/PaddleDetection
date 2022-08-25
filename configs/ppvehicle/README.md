@@ -1,6 +1,6 @@
 简体中文 | [English](README.md)
 
-# PP-YOLOE Vehicle 检测模型
+## PP-YOLOE Vehicle 检测模型
 
 PaddleDetection团队提供了针对自动驾驶场景的基于PP-YOLOE的检测模型，用户可以下载模型进行使用，主要包含5个数据集(BDD100K-DET、BDD100K-MOT、UA-DETRAC、PPVehicle9cls、PPVehicle)。其中前3者为公开数据集，后两者为整合数据集。
 - BDD100K-DET具体类别为10类，包括`pedestrian(1), rider(2), car(3), truck(4), bus(5), train(6), motorcycle(7), bicycle(8), traffic light(9), traffic sign(10)`。
@@ -38,6 +38,24 @@ vehicle
 ## YOLOv3 Vehicle 检测模型
 
 请参考[Vehicle_YOLOv3页面](./vehicle_yolov3/README_cn.md)
+
+## PP-OCRv3 车牌识别模型
+
+车牌识别采用Paddle自研超轻量级模型PP-OCRv3_det、PP-OCRv3_rec。在[CCPD数据集](https://github.com/detectRecog/CCPD)（CCPD2019+CCPD2020车牌数据集）上进行了fine-tune。模型训练基于[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/applications/%E8%BD%BB%E9%87%8F%E7%BA%A7%E8%BD%A6%E7%89%8C%E8%AF%86%E5%88%AB.md)完成，我们提供了预测模型下载：
+
+|    模型   |  数据集  | 精度 | 下载  | 配置文件 |
+|:---------|:-------:|:------:| :----: | :------:|
+| PP-OCRv3_det | CCPD组合数据集 |  hmean:0.979 |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz) | [配置文件](https://github.com/PaddlePaddle/PaddleOCR/blob/dygraph/configs/det/ch_PP-OCRv3/ch_PP-OCRv3_det_cml.yml) |
+| PP-OCRv3_rec | CCPD组合数据集 |  acc:0.773 |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz) | [配置文件](https://github.com/PaddlePaddle/PaddleOCR/blob/dygraph/configs/rec/PP-OCRv3/ch_PP-OCRv3_rec_distillation.yml) |
+
+## PP-LCNet 车牌属性模型
+
+车牌属性采用Paddle自研超轻量级模型PP-LCNet。在[VeRi数据集](https://www.v7labs.com/open-datasets/veri-dataset)进行训练。模型训练基于[PaddleClas](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/en/PULC/PULC_vehicle_attribute_en.md)完成，我们提供了预测模型下载：
+
+|    模型   |  数据集  | 精度 | 下载  | 配置文件 |
+|:---------|:-------:|:------:| :----: | :------:|
+| PP-LCNet_x1_0 | VeRi数据集 |  90.81 |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip) | [配置文件](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/ppcls/configs/PULC/vehicle_attribute/PPLCNet_x1_0.yaml) |
+
 
 ## 引用
 ```
