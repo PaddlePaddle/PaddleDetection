@@ -171,6 +171,8 @@
           <li>LCNet</li>  
           <li>ESNet</li>  
           <li>Swin-Transformer</li>
+          <li>ConvNeXt</li>
+          <li>Vision Transformer</li>
         </ul></details>
       </td>
       <td>
@@ -292,10 +294,10 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 
 | Model      | COCO Accuracy（mAP） | V100 TensorRT FP16 Speed(FPS) | Configuration                                           | Download                                                                                 |
 |:---------- |:------------------:|:-----------------------------:|:-------------------------------------------------------:|:----------------------------------------------------------------------------------------:|
-| PP-YOLOE-s | 42.7               | 333.3                         | [Link](configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml)     | [Download](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams)      |
-| PP-YOLOE-m | 48.6               | 208.3                         | [Link](configs/ppyolo/ppyolo_r50vd_dcn_2x_coco.yml)     | [Download](https://paddledet.bj.bcebos.com/models/ppyolo_r50vd_dcn_2x_coco.pdparams)     |
-| PP-YOLOE-l | 50.9               | 149.2                         | [Link](configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [Download](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams) |
-| PP-YOLOE-x | 51.9               | 95.2                          | [Link](configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [Download](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams) |
+| PP-YOLOE+_s | 43.9        | 333.3                     | [link](configs/ppyoloe/ppyoloe_plus_crn_s_80e_coco.yml)     | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco.pdparams)      |
+| PP-YOLOE+_m | 50.0        | 208.3                     | [link](configs/ppyoloe/ppyoloe_plus_crn_m_80e_coco.yml)     | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco.pdparams)     |
+| PP-YOLOE+_l | 53.3        | 149.2                     | [link](configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco.pdparams) |
+| PP-YOLOE+_x | 54.9        | 95.2                      | [link](configs/ppyoloe/ppyoloe_plus_crn_x_80e_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_x_80e_coco.pdparams) |
 
 #### PP-PicoDet series Recommended scenarios: Mobile chips and x86 CPU devices, such as ARM CPU(RK3399, Raspberry Pi) and NPU(BITMAIN)
 
