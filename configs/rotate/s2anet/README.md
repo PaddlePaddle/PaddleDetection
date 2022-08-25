@@ -1,16 +1,35 @@
-# S2ANet模型
+简体中文 | [English](README_en.md)
+
+# S2ANet
 
 ## 内容
 - [简介](#简介)
-- [开始训练](#开始训练)
 - [模型库](#模型库)
+- [使用说明](#使用说明)
 - [预测部署](#预测部署)
+- [引用](#引用)
 
 ## 简介
 
 [S2ANet](https://arxiv.org/pdf/2008.09397.pdf)是用于检测旋转框的模型，在DOTA 1.0数据集上单尺度训练能达到74.0的mAP.
 
-## 开始训练
+## 模型库
+
+| 模型 | Conv类型 | mAP | 学习率策略 | 角度表示 | 数据增广 | GPU数目 | 每GPU图片数目 | 模型下载 | 配置文件 |
+|:---:|:------:|:----:|:---------:|:-----:|:--------:|:-----:|:------------:|:-------:|:------:|
+| S2ANet | Conv | 71.42 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/s2anet/s2anet_conv_2x_dota.yml) |
+| S2ANet | AlignConv | 74.00 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml) |
+
+**注意：**
+
+- 如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
+- 模型库中的模型默认使用单尺度训练。如果数据增广一栏标明MS，意味着使用多尺度训练和多尺度测试。如果数据增广一栏标明RR，意味着使用RandomRotate数据增广进行训练。
+- 这里使用`multiclass_nms`，与原作者使用nms略有不同。
+
+
+## 使用说明
+
+参考[数据准备](../README.md#数据准备)准备数据
 
 ### 1. 训练
 
@@ -57,18 +76,6 @@ python configs/rotate/tools/generate_result.py --pred_txt_dir=output/ --output_d
 zip -r submit.zip submit
 ```
 
-## 模型库
-
-### S2ANet模型
-
-|     模型     |  Conv类型  |   mAP    |   模型下载   |   配置文件   |
-|:-----------:|:----------:|:--------:| :----------:| :---------: |
-|   S2ANet    |   Conv     |   71.42  |  [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/s2anet/s2anet_conv_2x_dota.yml)                   |
-|   S2ANet    |  AlignConv |   74.0   |  [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml)                   |
-
-**注意：** 这里使用`multiclass_nms`，与原作者使用nms略有不同。
-
-
 ## 预测部署
 
 Paddle中`multiclass_nms`算子的输入支持四边形输入，因此部署时可以不需要依赖旋转框IOU计算算子。
@@ -76,7 +83,7 @@ Paddle中`multiclass_nms`算子的输入支持四边形输入，因此部署时�
 部署教程请参考[预测部署](../../deploy/README.md)
 
 
-## Citations
+## 引用
 ```
 @article{han2021align,  
   author={J. {Han} and J. {Ding} and J. {Li} and G. -S. {Xia}},  
