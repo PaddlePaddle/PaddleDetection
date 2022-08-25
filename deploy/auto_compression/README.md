@@ -35,6 +35,19 @@
 
 - mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
 
+### PP-YOLOE-plus
+
+| 模型  | Base mAP | 离线量化mAP | ACT量化mAP | TRT-FP32 | TRT-FP16 | TRT-INT8 |  配置文件 | 量化模型  |
+| :-------- |:-------- |:--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :----------------------: | :---------------------: |
+| PP-YOLOE-plus-s | 43.7  |  - | 42.9  |   -  |   -   |  -  |  [config](./configs/ppyoloe_plus_s_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddledet/deploy/Inference/ppyoloe_plus_s_qat_dis.tar) |
+| PP-YOLOE-plus-m | 49.8  |  - | 49.3  |   -  |   -   |  -  |  [config](./configs/ppyoloe_plus_m_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddledet/deploy/Inference/ppyoloe_plus_m_qat_dis.tar) |
+| PP-YOLOE-plus-l | 52.9  |  - | 52.6  |   -  |   -   |  -  |  [config](./configs/ppyoloe_plus_l_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddledet/deploy/Inference/ppyoloe_plus_l_qat_dis.tar) |
+| PP-YOLOE-plus-x | 54.7  |  - | 54.4  |   -  |   -   |  -  |  [config](./configs/ppyoloe_plus_x_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddledet/deploy/Inference/ppyoloe_plus_x_qat_dis.tar) |
+
+- mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
+
+
+
 ## 3. 自动压缩流程
 
 #### 3.1 准备环境

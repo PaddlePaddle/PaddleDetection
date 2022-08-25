@@ -27,6 +27,7 @@ sys.path.insert(0, parent_path)
 import warnings
 warnings.filterwarnings('ignore')
 import glob
+import ast
 
 import paddle
 from ppdet.core.workspace import load_config, merge_config
@@ -112,8 +113,13 @@ def parse_args():
     parser.add_argument(
         "--match_metric",
         type=str,
-        default='iou',
+        default='ios',
         help="Combine method matching metric, choose in ['iou', 'ios'].")
+    parser.add_argument(
+        "--visualize",
+        type=ast.literal_eval,
+        default=True,
+        help="Whether to save visualize results to output_dir.")
     args = parser.parse_args()
     return args
 
@@ -170,13 +176,15 @@ def run(FLAGS, cfg):
             match_metric=FLAGS.match_metric,
             draw_threshold=FLAGS.draw_threshold,
             output_dir=FLAGS.output_dir,
-            save_results=FLAGS.save_results)
+            save_results=FLAGS.save_results,
+            visualize=FLAGS.visualize)
     else:
         trainer.predict(
             images,
             draw_threshold=FLAGS.draw_threshold,
             output_dir=FLAGS.output_dir,
-            save_results=FLAGS.save_results)
+            save_results=FLAGS.save_results,
+            visualize=FLAGS.visualize)
 
 
 def main():
