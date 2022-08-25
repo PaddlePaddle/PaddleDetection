@@ -17,14 +17,14 @@
 |    模型  |       数据集     | mAP<sup>val<br>0.5:0.95 |  下载链接  | 配置文件 |
 |:---------|:---------------:|:-----------------------:|:---------:| :-----: |
 |PP-YOLOE-m|   Embrapa WGISD  |  52.7 | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_m_80e_wgisd.pdparams) | [配置文件](./ppyoloe_crn_m_80e_wgisd.yml) |
-|PP-YOLOE-Plus-m<br>(obj365_pretrained)|   Embrapa WGISD  |  60.8 | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_obj365_pretrained_wgisd.pdparams) | [配置文件](./ppyoloe_plus_crn_m_80e_obj365_pretrained_wgisd.yml) |
-|PP-YOLOE-Plus-m<br>(coco_pretrained)|   Embrapa WGISD  |  59.7 | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco_pretrained_wgisd.pdparams) | [配置文件](./ppyoloe_plus_crn_m_80e_coco_pretrained_wgisd.yml) |
+|PP-YOLOE-Plus-m<br>(obj365_pretrained)|   Embrapa WGISD  |  60.8(+8.1) | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_obj365_pretrained_wgisd.pdparams) | [配置文件](./ppyoloe_plus_crn_m_80e_obj365_pretrained_wgisd.yml) |
+|PP-YOLOE-Plus-m<br>(coco_pretrained)|   Embrapa WGISD  |  59.7(+7.0) | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco_pretrained_wgisd.pdparams) | [配置文件](./ppyoloe_plus_crn_m_80e_coco_pretrained_wgisd.yml) |
 |PP-YOLOE-m|      ExDark      |  56.4 | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_m_80e_exdark.pdparams) | [配置文件](./ppyoloe_crn_m_80e_exdark.yml) |
-|PP-YOLOE-Plus-m<br>(obj365_pretrained)|   ExDark  |  57.7 | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_obj365_pretrained_exdark.pdparams) | [配置文件](./ppyoloe_plus_crn_m_80e_obj365_pretrained_exdark.yml) |
-|PP-YOLOE-Plus-m<br>(coco_pretrained)|   ExDark  |  58.1 | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco_pretrained_exdark.pdparams) | [配置文件](./ppyoloe_plus_crn_m_80e_coco_pretrained_exdark.yml) |
+|PP-YOLOE-Plus-m<br>(obj365_pretrained)|   ExDark  |  57.7(+1.3) | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_obj365_pretrained_exdark.pdparams) | [配置文件](./ppyoloe_plus_crn_m_80e_obj365_pretrained_exdark.yml) |
+|PP-YOLOE-Plus-m<br>(coco_pretrained)|   ExDark  |  58.1(+1.7) | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco_pretrained_exdark.pdparams) | [配置文件](./ppyoloe_plus_crn_m_80e_coco_pretrained_exdark.yml) |
 |PP-YOLOE-m|      PKU-Market-PCB      |  50.8 | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_m_80e_pcb.pdparams) | [配置文件](./ppyoloe_crn_m_80e_pcb.yml) |
-|PP-YOLOE-Plus-m<br>(obj365_pretrained)|   PKU-Market-PCB  |  52.7 | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_obj365_pretrained_pcb.pdparams) | [配置文件](./ppyoloe_plus_crn_m_80e_obj365_pretrained_pcb.yml) |
-|PP-YOLOE-Plus-m<br>(coco_pretrained)|   PKU-Market-PCB  |  52.4 | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco_pretrained_pcb.pdparams) | [配置文件](./ppyoloe_plus_crn_m_80e_coco_pretrained_pcb.yml) |
+|PP-YOLOE-Plus-m<br>(obj365_pretrained)|   PKU-Market-PCB  |  52.7(+1.9) | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_obj365_pretrained_pcb.pdparams) | [配置文件](./ppyoloe_plus_crn_m_80e_obj365_pretrained_pcb.yml) |
+|PP-YOLOE-Plus-m<br>(coco_pretrained)|   PKU-Market-PCB  |  52.4(+1.6) | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco_pretrained_pcb.pdparams) | [配置文件](./ppyoloe_plus_crn_m_80e_coco_pretrained_pcb.yml) |
 
 **注意:**
 - PP-YOLOE模型训练过程中使用8 GPUs进行训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
