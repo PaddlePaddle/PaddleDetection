@@ -1,0 +1,15 @@
+_BASE_: [
+  './_base_/wgisd_detection.yml',
+  '../../runtime.yml',
+  '../_base_/optimizer_80e.yml',
+  '../_base_/ppyoloe_plus_crn.yml',
+  '../_base_/ppyoloe_plus_reader.yml',
+]
+
+log_iter: 100
+snapshot_epoch: 5
+weights: output/ppyoloe_plus_crn_m_80e_obj365_pretrained_wgisd/model_final
+
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_m_obj365_pretrained.pdparams
+depth_mult: 0.67
+width_mult: 0.75
