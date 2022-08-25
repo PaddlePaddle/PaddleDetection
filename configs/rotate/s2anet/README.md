@@ -17,8 +17,8 @@
 
 | 模型 | Conv类型 | mAP | 学习率策略 | 角度表示 | 数据增广 | GPU数目 | 每GPU图片数目 | 模型下载 | 配置文件 |
 |:---:|:------:|:----:|:---------:|:-----:|:--------:|:-----:|:------------:|:-------:|:------:|
-| S2ANet | Conv | 71.42 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/s2anet/s2anet_conv_2x_dota.yml) |
-| S2ANet | AlignConv | 74.00 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml) |
+| S2ANet | Conv | 71.42 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/rotate/s2anet/s2anet_conv_2x_dota.yml) |
+| S2ANet | AlignConv | 74.00 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml) |
 
 **注意：**
 
