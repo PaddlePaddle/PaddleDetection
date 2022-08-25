@@ -694,3 +694,33 @@ class SwinTransformer(nn.Layer):
                 channels=self.num_features[i], stride=out_strides[i])
             for i in self.out_indices
         ]
+
+
+class SwinTransformer_Layer(nn.Layer):
+    def __init__(self,
+                 c1,
+                 c2,
+                 depth=2,
+                 num_heads=8,
+                 window_size=8,
+                 mlp_ratio=4.,
+                 qkv_bias=True,
+                 qk_scale=None,
+                 drop=0.,
+                 attn_drop=0.,
+                 drop_path=0.,
+                 norm_layer=nn.LayerNorm,
+                 downsample=None):
+        super().__init__()
+        self.pos_drop = nn.Dropout(p=drop)
+        self.strb = BasicLayer(c2, depth, num_heads, window_size, mlp_ratio,
+                               qkv_bias, qk_scale, drop, attn_drop, drop_path,
+                               norm_layer, downsample)
+
+    def forward(self, x):
+        B, C, Wh, Ww = x.shape[:]
+        y = x.reshape([B, C, Wh * Ww]).transpose([0, 2, 1])
+        y = self.pos_drop(y)
+        out, H, W, out_down, Wh, Ww = self.strb(y, Wh, Ww)
+        out = out.reshape([B, -1, H, W])
+        return out

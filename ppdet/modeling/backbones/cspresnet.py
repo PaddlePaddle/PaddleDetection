@@ -26,6 +26,8 @@ from paddle.nn.initializer import Constant
 from ppdet.modeling.ops import get_act_fn
 from ppdet.core.workspace import register, serializable
 from ..shape_spec import ShapeSpec
+from .swin_transformer import SwinTransformer_Layer
+from .transformer_utils import TransformerBlock, BoTBlock, CoTBlock
 
 __all__ = ['CSPResNet', 'BasicBlock', 'EffectiveSELayer', 'ConvBNLayer']
 
@@ -179,6 +181,24 @@ class EffectiveSELayer(nn.Layer):
         return x * self.act(x_se)
 
 
+def get_transformer_fn(name='T'):
+    # ['T', 'SwinT', 'BoT', 'CoT']
+    assert name in [
+        'T', 'SwinT', 'BoT', 'CoT'
+    ], "name of transformer should be one of 'T', 'SwinT', 'BoT', 'CoT'."
+    if name == 'T':
+        fn, num = TransformerBlock, 3
+    elif name == 'SwinT':
+        fn, num = SwinTransformer_Layer, 1
+    elif name == 'BoT':
+        fn, num = BoTBlock, 3
+    elif name == 'CoT':
+        fn, num = CoTBlock, 3
+    else:
+        raise ValueError
+    return fn, num
+
+
 class CSPResStage(nn.Layer):
     def __init__(self,
                  block_fn,
@@ -186,6 +206,7 @@ class CSPResStage(nn.Layer):
                  ch_out,
                  n,
                  stride,
+                 transformer=None,
                  act='relu',
                  attn='eca',
                  use_alpha=False):
@@ -198,15 +219,23 @@ class CSPResStage(nn.Layer):
         else:
             self.conv_down = None
         self.conv1 = ConvBNLayer(ch_mid, ch_mid // 2, 1, act=act)
+
         self.conv2 = ConvBNLayer(ch_mid, ch_mid // 2, 1, act=act)
-        self.blocks = nn.Sequential(*[
-            block_fn(
-                ch_mid // 2,
-                ch_mid // 2,
-                act=act,
-                shortcut=True,
-                use_alpha=use_alpha) for i in range(n)
-        ])
+        if transformer is None:
+            self.blocks = nn.Sequential(* [
+                block_fn(
+                    ch_mid // 2,
+                    ch_mid // 2,
+                    act=act,
+                    shortcut=True,
+                    use_alpha=use_alpha) for i in range(n)
+            ])
+        else:
+            transformer_fn, num = get_transformer_fn(name=transformer)
+            self.blocks = nn.Sequential(* [
+                transformer_fn(ch_mid // 2, ch_mid // 2) for i in range(num)
+            ])
+
         if attn:
             self.attn = EffectiveSELayer(ch_mid, act='hardsigmoid')
         else:
@@ -240,6 +269,7 @@ class CSPResNet(nn.Layer):
                  use_large_stem=False,
                  width_mult=1.0,
                  depth_mult=1.0,
+                 transformer=None,
                  trt=False,
                  use_checkpoint=False,
                  use_alpha=False,
@@ -282,12 +312,13 @@ class CSPResNet(nn.Layer):
                     act=act)))
 
         n = len(channels) - 1
-        self.stages = nn.Sequential(*[(str(i), CSPResStage(
+        self.stages = nn.Sequential(* [(str(i), CSPResStage(
             BasicBlock,
             channels[i],
             channels[i + 1],
             layers[i],
             2,
+            transformer=transformer if i == n - 1 else None,
             act=act,
             use_alpha=use_alpha)) for i in range(n)])
 
