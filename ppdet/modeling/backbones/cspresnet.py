@@ -235,7 +235,7 @@ class CSPResNet(nn.Layer):
                  layers=[3, 6, 6, 3],
                  channels=[64, 128, 256, 512, 1024],
                  act='swish',
-                 return_idx=[1, 2, 3],
+                 return_idx=[0, 1, 2, 3],
                  depth_wise=False,
                  use_large_stem=False,
                  width_mult=1.0,
