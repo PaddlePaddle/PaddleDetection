@@ -143,7 +143,7 @@ cv::Mat VisualizeResult(
       std::vector<int> mask_v = results[i].mask;
       if (mask_v.size() > 0) {
         cv::Mat mask = cv::Mat(img_h, img_w, CV_32S);
-        std::memcpy(mask.data, mask_v.data(), mask_v.size() * sizeof(int));
+        std::memcpy(mask.data, mask_v.data(), (img_h * img_w) * sizeof(int));
 
         cv::Mat colored_img = vis_img.clone();
 
