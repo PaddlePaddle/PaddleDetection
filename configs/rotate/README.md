@@ -16,6 +16,7 @@
 | 模型 | mAP | 学习率策略 | 角度表示 | 数据增广 | GPU数目 | 每GPU图片数目 | 模型下载 | 配置文件 |
 |:---:|:----:|:---------:|:-----:|:--------:|:-----:|:------------:|:-------:|:------:|
 | [S2ANet](./s2anet/README.md) | 73.84 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml) |
+| [FCOSR](./fcosr/README.md) | 76.62 | 3x | oc | - | 4 | 4 | [model](https://paddledet.bj.bcebos.com/models/fcosr_x50_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/rotate/fcosr/fcosr_x50_3x_dota.yml) |
 
 **注意:**
 

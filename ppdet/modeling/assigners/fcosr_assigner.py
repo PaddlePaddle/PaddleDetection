@@ -31,8 +31,7 @@ EPS = 1e-9
 
 @register
 class FCOSRAssigner(nn.Layer):
-    """FCOSR Assigner
-    """
+    """ FCOSR Assigner, refer to https://arxiv.org/abs/2111.10780 for details """
     __shared__ = ['num_classes']
 
     def __init__(self,
