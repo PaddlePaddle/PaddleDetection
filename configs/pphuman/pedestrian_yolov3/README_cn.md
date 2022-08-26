@@ -5,7 +5,7 @@
 
 | 任务                 | 算法 | 精度(Box AP) | 下载                                                                                | 配置文件 |
 |:---------------------|:---------:|:------:| :---------------------------------------------------------------------------------: | :------:|
-| 行人检测 |  YOLOv3  |  51.8  | [下载链接](https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/pedestrian/pedestrian_yolov3_darknet.yml) |
+| 行人检测 |  YOLOv3  |  51.8  | [下载链接](https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams) | [配置文件](./pedestrian_yolov3_darknet.yml) |
 
 ## 行人检测（Pedestrian Detection）
 
@@ -37,15 +37,15 @@ IOU=.5-.95时的AP为 0.518。
 
 ```
 export CUDA_VISIBLE_DEVICES=0
-python -u tools/infer.py -c configs/pedestrian/pedestrian_yolov3_darknet.yml \
+python -u tools/infer.py -c configs/pphuman/pedestrian_yolov3/pedestrian_yolov3_darknet.yml \
                          -o weights=https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams \
-                         --infer_dir configs/pedestrian/demo \
+                         --infer_dir configs/pphuman/pedestrian_yolov3/demo \
                          --draw_threshold 0.3 \
-                         --output_dir configs/pedestrian/demo/output
+                         --output_dir configs/pphuman/pedestrian_yolov3/demo/output
 ```
 
 预测结果示例：
 
-![](../../docs/images/PedestrianDetection_001.png)
+![](../../../docs/images/PedestrianDetection_001.png)
 
-![](../../docs/images/PedestrianDetection_004.png)
+![](../../../docs/images/PedestrianDetection_004.png)
