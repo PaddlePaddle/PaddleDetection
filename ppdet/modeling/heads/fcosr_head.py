@@ -90,6 +90,8 @@ class ConvBNLayer(nn.Layer):
 
 @register
 class FCOSRHead(nn.Layer):
+    """ FCOSR Head, refer to https://arxiv.org/abs/2111.10780 for details """
+
     __shared__ = ['num_classes']
     __inject__ = ['assigner', 'nms']
 

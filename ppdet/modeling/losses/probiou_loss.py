@@ -93,6 +93,8 @@ def probiou_loss(pred, target, eps=1e-3, mode='l1'):
 @serializable
 @register
 class ProbIoULoss(object):
+    """ ProbIoU Loss, refer to https://arxiv.org/abs/2106.06072 for details """
+
     def __init__(self, mode='l1', eps=1e-3):
         super(ProbIoULoss, self).__init__()
         self.mode = mode
