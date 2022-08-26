@@ -393,10 +393,21 @@ class JDE_Detector(Detector):
                 result = (frame_id + 1, online_tlwhs[0], online_scores[0],
                           online_ids[0])
                 statistic = flow_statistic(
-                    result, self.secs_interval, self.do_entrance_counting,
-                    self.do_break_in_counting, self.region_type, video_fps,
-                    entrance, id_set, interval_id_set, in_id_list, out_id_list,
-                    prev_center, records, data_type, num_classes)
+                    result,
+                    self.secs_interval,
+                    self.do_entrance_counting,
+                    self.do_break_in_counting,
+                    self.region_type,
+                    video_fps,
+                    entrance,
+                    id_set,
+                    interval_id_set,
+                    in_id_list,
+                    out_id_list,
+                    prev_center,
+                    records,
+                    data_type,
+                    ids2names=self.pred_config.labels)
                 records = statistic['records']
 
             fps = 1. / timer.duration
