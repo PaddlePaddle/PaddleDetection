@@ -135,6 +135,18 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_vehicle_attr.yml  -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu
 ```
 
+### Jetson部署说明
+
+由于Jetson平台算力相比服务器有较大差距，有如下使用建议：
+
+1. 模型选择轻量级版本，特别是跟踪模型，推荐使用`ppyoloe_s: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip`
+2. 开启跟踪跳帧功能，推荐使用2或者3. `skip_frame_num: 3`
+
+使用该推荐配置，在TX2平台上可以达到较高速率，经测试属性案例达到20fps。
+
+可以直接修改配置文件（推荐），也可以在命令行中修改（字段较长，不推荐）。
+
+
 ### 参数说明
 
 | 参数 | 是否必须|含义 |
@@ -153,6 +165,9 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 | --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
 | --do_entrance_counting | Option | 是否统计出入口流量，默认为False |
 | --draw_center_traj | Option | 是否绘制跟踪轨迹，默认为False |
+| --region_type | Option | 'horizontal'（默认值）、'vertical'：表示流量统计方向选择；'custom'：表示设置车辆禁停区域 |
+| --region_polygon | Option | 设置禁停区域多边形多点的坐标，无默认值 |
+| --illegal_parking_time | Option | 设置禁停时间阈值，单位秒（s），-1（默认值）表示不做检查 |
 
 ## 方案介绍
 

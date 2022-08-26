@@ -17,7 +17,7 @@
 **注意:**
   - 以上模型均可采用**MOT17-half train**数据集训练，数据集可以从[此链接](https://dataset.bj.bcebos.com/mot/MOT17.zip)下载。
   - **MOT17-half train**是MOT17的train序列(共7个)每个视频的前一半帧的图片和标注组成的数据集，而为了验证精度可以都用**MOT17-half val**数据集去评估，它是每个视频的后一半帧组成的，数据集可以从[此链接](https://paddledet.bj.bcebos.com/data/mot/mot17half/annotations.zip)下载，并解压放在`dataset/mot/MOT17/images/`文件夹下。
-  - YOLOv3和`configs/pedestrian/pedestrian_yolov3_darknet.yml`是相同的pedestrian数据集训练的，此数据集暂未开放。
+  - YOLOv3和`configs/pphuman/pedestrian_yolov3/pedestrian_yolov3_darknet.yml`是相同的pedestrian数据集训练的，此数据集暂未开放。
   - 行人跟踪请使用行人检测器结合行人ReID模型。车辆跟踪请使用车辆检测器结合车辆ReID模型。
   - 用于DeepSORT跟踪时需要高质量的检出框，因此这些模型的NMS阈值等后处理设置会与纯检测任务的设置不同。
 
