@@ -23,21 +23,25 @@
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> Product Update
 
-- 🔥 **2022.8.09：Release [YOLO series model zoo](https://github.com/nemonameless/PaddleDetection_YOLOSeries)**
-  - Comprehensive coverage of classic and latest models of the YOLO series: Including YOLOv3，Paddle real-time object detection model PP-YOLOE, and frontier detection algorithms YOLOv4, YOLOv5, YOLOX, MT-YOLOv6 and YOLOv7
-  - Better model performance：Upgrade based on various YOLO algorithms, shorten training time in 5-8 times and the accuracy is generally improved by 1%-5% mAP. The model compression strategy is used to achieve 30% improvement in speed without precision loss
-  - Complete end-to-end development support：End-to-end development pipieline including training, evaluation, inference, model compression and deployment on various hardware. Meanwhile, support flexible algorithnm switch and implement customized development efficiently
+- 🔥 **2022.8.26：PaddleDetection releases[release/2.5 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)**
 
-- 🔥 **2022.8.01：Release [PP-TinyPose plus](./configs/keypoint/tiny_pose/). The end-to-end precision improves 9.1% AP in dataset
- of fitness and dance scenes**
-  - Increase data of sports scenes, and the recognition performance of complex actions is significantly improved, covering actions such as sideways, lying down, jumping, and raising legs
-  - Detection model uses PP-PicoDet plus and the precision on COCO dataset is improved by 3.1% mAP
-  - The stability of keypoints is enhanced. Implement the filter stabilization method to make the video prediction result more stable and smooth.
+  - 🗳 Model features：
 
-- 2022.7.14：Release [pedestrian analysis tool PP-Human v2](./deploy/pipeline)
-  - Four major functions: five complicated action recognition with high performance and Flexible, real-time human attribute recognition, visitor flow statistics and high-accuracy multi-camera tracking.
-  - High performance algorithm: including pedestrian detection, tracking, attribute recognition which is robust to the number of targets and the variant of background and light.
-  - Highly Flexible: providing complete introduction of end-to-end development and optimization strategy, simple command for deployment and compatibility with different input format.
+    - Release [PP-YOLOE+](configs/ppyoloe): Increased accuracy by a maximum of 2.4% mAP to 54.9% mAP, 3.75 times faster model training convergence rate, and up to 2.3 times faster end-to-end inference speed; improved generalization for multiple downstream tasks
+    - Release [PicoDet-NPU](configs/picodet) model which supports full quantization deployment of models; add [PicoDet](configs/picodet) layout analysis model
+    - Release [PP-TinyPose Plus](./configs/keypoint/tiny_pose/). With 9.1% AP accuracy improvement in physical exercise, dance, and other scenarios, our PP-TinyPose Plus supports unconventional movements such as turning to one side, lying down, jumping, and high lifts
+
+  - 🔮 Functions in different scenarios
+
+    - Release the pedestrian analysis tool [PP-Human v2](./deploy/pipeline). It introduces four new behavior recognition: fighting, telephoning, smoking, and trespassing. The underlying algorithm performance is optimized, covering three core algorithm capabilities: detection, tracking, and attributes of pedestrians. Our model provides end-to-end development and model optimization strategies for beginners and supports online video streaming input.
+    - First release [PP-Vehicle](./deploy/pipeline), which has four major functions: license plate recognition, vehicle attribute analysis (color, model), traffic flow statistics, and violation detection. It is compatible with input formats, including pictures, online video streaming, and video. And we also offer our users a comprehensive set of tutorials for customization.
+
+  - 💡 Cutting-edge algorithms：
+
+    - Covers [YOLO family](https://github.com/nemonameless/PaddleDetection_YOLOSeries) classic and latest models: YOLOv3, PP-YOLOE (a real-time high-precision object detection model developed by Baidu PaddlePaddle), and cutting-edge detection algorithms such as YOLOv4, YOLOv5, YOLOX, MT-YOLOv6, and YOLOv7
+    - Newly add high precision detection model based on [ViT](configs/vitdet) backbone network, with a 55.7% mAP accuracy on COCO dataset; newly add multi-object tracking model [OC-SORT](configs/mot/ocsort); newly add [ConvNeXt](configs/convnext) backbone network.
+
+  - 📋 Industrial applications: Newly add [Smart Fitness](https://aistudio.baidu.com/aistudio/projectdetail/4385813), [Fighting recognition](https://aistudio.baidu.com/aistudio/projectdetail/4086987?channelType=0&channel=0),[ and Visitor Analysis](https://aistudio.baidu.com/aistudio/projectdetail/4230123?channelType=0&channel=0).
 
 - 2022.3.24：PaddleDetection released[release/2.4 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)  
   - Release high-performanace SOTA object detection model [PP-YOLOE](configs/ppyoloe). It integrates cloud and edge devices and provides S/M/L/X versions. In particular, Verson L has the accuracy as 51.4% on COCO test 2017 dataset, inference speed as 78.1 FPS on a single Test V100. It supports mixed precision training, 33% faster than PP-YOLOv2. Its full range of multi-sized models can meet different hardware arithmetic requirements, and adaptable to server, edge-device GPU and other AI accelerator cards on servers.
@@ -260,11 +264,10 @@ The comparison between COCO mAP and FPS on Tesla V100 of representative models o
 
 **Clarification：**
 
-- `CBResNet` stands for `Cascade-Faster-RCNN-CBResNet200vd-FPN`, which has highest mAP on COCO as 53.3%
+- `ViT` stands for `ViT-Cascade-Faster-RCNN`, which has highest mAP on COCO as 55.7%
 - `Cascade-Faster-RCNN`stands for `Cascade-Faster-RCNN-ResNet50vd-DCN`, which has been optimized to 20 FPS inference speed when COCO mAP as 47.8% in PaddleDetection models
-- `PP-YOLO` reached accuracy as 45.9% on COCO dataset, inference speed as 72.9 FPS on Tesla V100, higher than [YOLOv4]([[2004.10934] YOLOv4: Optimal Speed and Accuracy of Object Detection](https://arxiv.org/abs/2004.10934)) in terms of speed and accuracy
-- `PP-YOLO v2`are optimized `PP-YOLO`. It reached accuracy as 49.5% on COCO dataset, inference speed as 68.9 FPS on Tesla V100.
-- `PP-YOLOE`are optimized `PP-YOLO v2`. It reached accuracy as 51.4% on COCO dataset, inference speed as 78.1 FPS on Tesla V100
+- `PP-YOLOE` are optimized `PP-YOLO v2`. It reached accuracy as 51.4% on COCO dataset, inference speed as 78.1 FPS on Tesla V100
+- `PP-YOLOE+` are optimized `PP-YOLOE`. It reached accuracy as 53.3% on COCO dataset, inference speed as 78.1 FPS on Tesla V100
 - The models in the figure are available in the[ model library](#模型库)
 
 </details>
