@@ -5,7 +5,7 @@ We provide some models implemented by PaddlePaddle to detect objects in specific
 
 | Task                 | Algorithm | Box AP | Download                                                                                | Configs |
 |:---------------------|:---------:|:------:| :-------------------------------------------------------------------------------------: |:------:|
-| Pedestrian Detection |  YOLOv3  |  51.8  | [model](https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/pedestrian/pedestrian_yolov3_darknet.yml) |
+| Pedestrian Detection |  YOLOv3  |  51.8  | [model](https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams) | [config](./pedestrian_yolov3_darknet.yml) |
 
 ## Pedestrian Detection
 
@@ -36,15 +36,15 @@ Users can employ the model to conduct the inference:
 
 ```
 export CUDA_VISIBLE_DEVICES=0
-python -u tools/infer.py -c configs/pedestrian/pedestrian_yolov3_darknet.yml \
+python -u tools/infer.py -c configs/pphuman/pedestrian_yolov3/pedestrian_yolov3_darknet.yml \
                          -o weights=https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams \
-                         --infer_dir configs/pedestrian/demo \
+                         --infer_dir configs/pphuman/pedestrian_yolov3/demo \
                          --draw_threshold 0.3 \
-                         --output_dir configs/pedestrian/demo/output
+                         --output_dir configs/pphuman/pedestrian_yolov3/demo/output
 ```
 
 Some inference results are visualized below:
 
-![](../../docs/images/PedestrianDetection_001.png)
+![](../../../docs/images/PedestrianDetection_001.png)
 
-![](../../docs/images/PedestrianDetection_004.png)
+![](../../../docs/images/PedestrianDetection_004.png)

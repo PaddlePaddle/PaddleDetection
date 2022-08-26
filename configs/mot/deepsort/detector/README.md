@@ -16,7 +16,7 @@ English | [简体中文](README_cn.md)
 **Notes:**
   - The above models are trained with **MOT17-half train** set, it can be downloaded from this [link](https://dataset.bj.bcebos.com/mot/MOT17.zip).
   - **MOT17-half train** set is a dataset composed of pictures and labels of the first half frame of each video in MOT17 Train dataset (7 sequences in total). **MOT17-half val set** is used for evaluation, which is composed of the second half frame of each video. They can be downloaded from this [link](https://paddledet.bj.bcebos.com/data/mot/mot17half/annotations.zip). Download and unzip it in the `dataset/mot/MOT17/images/`folder.
-  - YOLOv3 is trained with the same pedestrian dataset as `configs/pedestrian/pedestrian_yolov3_darknet.yml`, which is not open yet.
+  - YOLOv3 is trained with the same pedestrian dataset as `configs/pphuman/pedestrian_yolov3/pedestrian_yolov3_darknet.yml`, which is not open yet.
   - For pedestrian tracking, please use pedestrian detector combined with pedestrian ReID model. For vehicle tracking, please use vehicle detector combined with vehicle ReID model.
   - High quality detected boxes are required for DeepSORT tracking, so the post-processing settings such as NMS threshold of these models are different from those in pure detection tasks.
 

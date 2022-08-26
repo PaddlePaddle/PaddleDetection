@@ -5,7 +5,7 @@
 
 | 任务                 | 算法 | 精度(Box AP) | 下载                                                                                | 配置文件 |
 |:---------------------|:---------:|:------:| :---------------------------------------------------------------------------------: | :------:|
-| 车辆检测    |  YOLOv3  |  54.5  | [下载链接](https://paddledet.bj.bcebos.com/models/vehicle_yolov3_darknet.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/vehicle/vehicle_yolov3_darknet.yml) |
+| 车辆检测    |  YOLOv3  |  54.5  | [下载链接](https://paddledet.bj.bcebos.com/models/vehicle_yolov3_darknet.pdparams) | [配置文件](./vehicle_yolov3_darknet.yml) |
 
 
 ## 车辆检测（Vehicle Detection）
@@ -40,15 +40,15 @@ IOU=.5时的AP为 0.764。
 
 ```
 export CUDA_VISIBLE_DEVICES=0
-python -u tools/infer.py -c configs/vehicle/vehicle_yolov3_darknet.yml \
+python -u tools/infer.py -c configs/ppvehicle/vehicle_yolov3/vehicle_yolov3_darknet.yml \
                          -o weights=https://paddledet.bj.bcebos.com/models/vehicle_yolov3_darknet.pdparams \
-                         --infer_dir configs/vehicle/demo \
+                         --infer_dir configs/ppvehicle/vehicle_yolov3/demo \
                          --draw_threshold 0.2 \
-                         --output_dir configs/vehicle/demo/output
+                         --output_dir configs/ppvehicle/vehicle_yolov3/demo/output
 ```
 
 预测结果示例：
 
-![](../../docs/images/VehicleDetection_001.jpeg)
+![](../../../docs/images/VehicleDetection_001.jpeg)
 
-![](../../docs/images/VehicleDetection_005.png)
+![](../../../docs/images/VehicleDetection_005.png)
