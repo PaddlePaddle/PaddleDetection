@@ -26,4 +26,4 @@ EvalDataset:
 
 TestDataset:
   !ImageFolder
-    anno_path: configs/pedestrian/pedestrian.json
+    anno_path: configs/pphuman/pedestrian_yolov3/pedestrian.json

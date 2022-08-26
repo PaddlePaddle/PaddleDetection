@@ -298,6 +298,7 @@ class PlateRecognizer(object):
             '甘': 'GS-',
             '青': 'QH-',
             '宁': 'NX-',
+            '闽': 'FJ-',
             '·': ' '
         }
         for _char in text:
