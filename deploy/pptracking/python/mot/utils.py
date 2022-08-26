@@ -224,7 +224,7 @@ def flow_statistic(result,
                    prev_center,
                    records,
                    data_type='mot',
-                   num_classes=1):
+                   ids2names=['pedestrian']):
     # Count in/out number: 
     # Note that 'region_type' should be one of ['horizontal', 'vertical', 'custom'],
     # 'horizontal' and 'vertical' means entrance is the center line as the entrance when do_entrance_counting, 
@@ -282,25 +282,27 @@ def flow_statistic(result,
                 frame_id -= 1
             x1, y1, w, h = tlwh
             center_x = min(x1 + w / 2., im_w - 1)
-            center_down_y = min(y1 + h, im_h - 1)
+            if ids2names[0] == 'pedestrian':
+                center_y = min(y1 + h, im_h - 1)
+            else:
+                center_y = min(y1 + h / 2, im_h - 1)
 
             # counting objects in region of the first frame
             if frame_id == 1:
-                if in_quadrangle([center_x, center_down_y], entrance, im_h,
-                                 im_w):
+                if in_quadrangle([center_x, center_y], entrance, im_h, im_w):
                     in_id_list.append(-1)
                 else:
-                    prev_center[track_id] = [center_x, center_down_y]
+                    prev_center[track_id] = [center_x, center_y]
             else:
                 if track_id in prev_center:
                     if not in_quadrangle(prev_center[track_id], entrance, im_h,
                                          im_w) and in_quadrangle(
-                                             [center_x, center_down_y],
-                                             entrance, im_h, im_w):
+                                             [center_x, center_y], entrance,
+                                             im_h, im_w):
                         in_id_list.append(track_id)
-                    prev_center[track_id] = [center_x, center_down_y]
+                    prev_center[track_id] = [center_x, center_y]
                 else:
-                    prev_center[track_id] = [center_x, center_down_y]
+                    prev_center[track_id] = [center_x, center_y]
 
 # Count totol number, number at a manual-setting interval
     frame_id, tlwhs, tscores, track_ids = result
