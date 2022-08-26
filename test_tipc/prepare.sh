@@ -152,8 +152,8 @@ else
     cd ./dataset/wider_face/ && tar -xvf wider_tipc.tar && mv -n wider_tipc/* .
     rm -rf wider_tipc/ && cd ../../
     # download spine_coco lite data
-    wget -nc -P ./dataset/spine_coco/ https://paddledet.bj.bcebos.com/data/tipc/spine_tipc.tar --no-check-certificate
-    cd ./dataset/spine_coco/ && tar -xvf spine_tipc.tar && mv -n spine_tipc/* .
+    wget -nc -P ./dataset/spine_coco/ https://paddledet.bj.bcebos.com/data/tipc/spine_coco_tipc.tar --no-check-certificate
+    cd ./dataset/spine_coco/ && tar -xvf spine_coco_tipc.tar && mv -n spine_coco_tipc/* .
     rm -rf spine_tipc/ && cd ../../
     if [[ ${model_name} =~ "s2anet" ]]; then
         cd ./ppdet/ext_op && eval "${python} setup.py install"
