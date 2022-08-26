@@ -168,11 +168,7 @@ def box2corners(box):
         corners (Tensor): (B, N, 4, 2) with (x1, y1, x2, y2, x3, y3, x4, y4)
     """
     B = box.shape[0]
-    x = box[..., 0:1]
-    y = box[..., 1:2]
-    w = box[..., 2:3]
-    h = box[..., 3:4]
-    alpha = box[..., 4:5]  # (B, N, 1)
+    x, y, w, h, alpha = paddle.split(box, 5, axis=-1)
     x4 = paddle.to_tensor(
         [0.5, 0.5, -0.5, -0.5], dtype=paddle.float32).reshape(
             (1, 1, 4))  # (1,1,4)
