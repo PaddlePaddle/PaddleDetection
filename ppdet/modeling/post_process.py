@@ -18,7 +18,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from ppdet.modeling.bbox_utils import nonempty_bbox
-from ppdet.modeling.layers import TTFBox
+from ppdet.modeling.layers import TTFBox, MultiClassNMS, MatrixNMS
 from .transformers import bbox_cxcywh_to_xyxy
 try:
     from collections.abc import Sequence
@@ -34,15 +34,30 @@ __all__ = [
 
 @register
 class BBoxPostProcess(object):
-    __shared__ = ['num_classes', 'export_onnx']
+    __shared__ = ['num_classes', 'export_onnx', 'trt']
     __inject__ = ['decode', 'nms']
 
-    def __init__(self, num_classes=80, decode=None, nms=None,
-                 export_onnx=False):
+    def __init__(self,
+                 num_classes=80,
+                 decode=None,
+                 nms=None,
+                 export_onnx=False,
+                 trt=False):
         super(BBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.decode = decode
         self.nms = nms
+        if trt:
+            if isinstance(self.nms, MultiClassNMS):
+                self.nms.trt = trt
+            elif isinstance(self.nms, MatrixNMS):
+                self.nms = MultiClassNMS(
+                    score_threshold=self.nms.score_threshold,
+                    nms_top_k=1000
+                    if self.nms.nms_top_k < 0 else self.nms.nms_top_k,
+                    keep_top_k=self.nms.keep_top_k,
+                    nms_threshold=0.65,
+                    trt=trt)
         self.export_onnx = export_onnx
 
     def __call__(self, head_out, rois, im_shape, scale_factor):
