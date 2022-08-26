@@ -2732,6 +2732,8 @@ class RandomSizeCrop(BaseOperator):
     def crop(self, sample, region):
         image_shape = sample['image'].shape[:2]
         sample['image'] = self.paddle_crop(sample['image'], *region)
+        sample['im_shape'] = np.array(
+            sample['image'].shape[:2], dtype=np.float32)
 
         keep_index = None
         # apply bbox
@@ -2759,13 +2761,15 @@ class RandomSizeCrop(BaseOperator):
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
             sample['gt_poly'] = self.apply_segm(sample['gt_poly'], region,
                                                 image_shape)
-            if keep_index is not None:
+            sample['gt_poly'] = np.array(sample['gt_poly'])
+            if keep_index is not None and len(keep_index) > 0:
                 sample['gt_poly'] = sample['gt_poly'][keep_index]
+            sample['gt_poly'] = sample['gt_poly'].tolist()
         # apply gt_segm
         if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
             i, j, h, w = region
             sample['gt_segm'] = sample['gt_segm'][:, i:i + h, j:j + w]
-            if keep_index is not None:
+            if keep_index is not None and len(keep_index) > 0:
                 sample['gt_segm'] = sample['gt_segm'][keep_index]
 
         return sample
@@ -2849,10 +2853,12 @@ class RandomSizeCrop(BaseOperator):
         return crop_segms
 
     def apply(self, sample, context=None):
-        h = random.randint(self.min_size,
-                           min(sample['image'].shape[0], self.max_size))
-        w = random.randint(self.min_size,
-                           min(sample['image'].shape[1], self.max_size))
+        h = random.randint(
+            min(sample['image'].shape[0], self.min_size),
+            min(sample['image'].shape[0], self.max_size) + 1)
+        w = random.randint(
+            min(sample['image'].shape[1], self.min_size),
+            min(sample['image'].shape[1], self.max_size) + 1)
 
         region = self.get_crop_params(sample['image'].shape[:2], [h, w])
         return self.crop(sample, region)
