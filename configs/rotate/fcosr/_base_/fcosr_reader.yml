@@ -26,6 +26,7 @@ TrainReader:
 EvalReader:
   sample_transforms:
     - Decode: {}
+    - Poly2Array: {}
     - RResize: {target_size: *image_size, keep_ratio: True, interp: 2}
     - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
     - Permute: {}
