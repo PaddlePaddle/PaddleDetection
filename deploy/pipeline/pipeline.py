@@ -626,10 +626,20 @@ class PipePredictor(object):
                 mot_result = (frame_id + 1, boxes[0], scores[0],
                               ids[0])  # single class
                 statistic = flow_statistic(
-                    mot_result, self.secs_interval, self.do_entrance_counting,
-                    self.do_break_in_counting, self.region_type, video_fps,
-                    entrance, id_set, interval_id_set, in_id_list, out_id_list,
-                    prev_center, records)
+                    mot_result,
+                    self.secs_interval,
+                    self.do_entrance_counting,
+                    self.do_break_in_counting,
+                    self.region_type,
+                    video_fps,
+                    entrance,
+                    id_set,
+                    interval_id_set,
+                    in_id_list,
+                    out_id_list,
+                    prev_center,
+                    records,
+                    ids2names=self.mot_predictor.pred_config.labels)
                 records = statistic['records']
 
                 if self.illegal_parking_time != -1:
