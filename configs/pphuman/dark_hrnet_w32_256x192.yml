@@ -101,7 +101,7 @@ TrainReader:
         flip_pairs: *flip_perm
     - TopDownAffine:
         trainsize: *trainsize
-    - ToHeatmapsTopDown:
+    - ToHeatmapsTopDown_DARK:
         hmsize: *hmsize
         sigma: 2
   batch_transforms:
@@ -125,6 +125,7 @@ EvalReader:
         is_scale: true
     - Permute: {}
   batch_size: 16
+  drop_empty: false
 
 TestReader:
   inputs_def:
@@ -139,4 +140,3 @@ TestReader:
         is_scale: true
     - Permute: {}
   batch_size: 1
-  fuse_normalize: false #whether to fuse nomalize layer into model while export model
