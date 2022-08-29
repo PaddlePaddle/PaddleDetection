@@ -194,7 +194,7 @@ PP-Vehicle 整体方案如下图所示:
 
 ### 车牌识别
 - 使用PaddleOCR特色模型ch_PP-OCRv3_det+ch_PP-OCRv3_rec模型，识别车牌号码
-- 详细文档参考[属性识别](ppvehicle_plate.md)
+- 详细文档参考[车牌识别](ppvehicle_plate.md)
 
 ### 违法停车识别
 - 车辆跟踪模型使用高精度模型PP-YOLOE L，根据车辆的跟踪轨迹以及指定的违停区域判断是否违法停车，如果存在则展示违法停车车牌号。
