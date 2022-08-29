@@ -22,12 +22,14 @@ import json
 import paddle
 import numpy as np
 import typing
+from collections import defaultdict
 from pathlib import Path
 
 from .map_utils import prune_zero_padding, DetectionMAP
 from .coco_utils import get_infer_results, cocoapi_eval
 from .widerface_utils import face_eval_run
 from ppdet.data.source.category import get_categories
+from ppdet.modeling.rbox_utils import poly2rbox_np
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
@@ -356,6 +358,7 @@ class RBoxMetric(Metric):
         self.overlap_thresh = kwargs.get('overlap_thresh', 0.5)
         self.map_type = kwargs.get('map_type', '11point')
         self.evaluate_difficult = kwargs.get('evaluate_difficult', False)
+        self.imid2path = kwargs.get('imid2path', None)
         class_num = len(self.catid2name)
         self.detection_map = DetectionMAP(
             class_num=class_num,
@@ -388,11 +391,21 @@ class RBoxMetric(Metric):
         if self.save_prediction_only:
             return
 
-        gt_boxes = inputs['gt_rbox']
+        gt_boxes = inputs['gt_poly']
         gt_labels = inputs['gt_class']
+
+        if 'scale_factor' in inputs:
+            scale_factor = inputs['scale_factor'].numpy() if isinstance(
+                inputs['scale_factor'],
+                paddle.Tensor) else inputs['scale_factor']
+        else:
+            scale_factor = np.ones((gt_boxes.shape[0], 2)).astype('float32')
+
         for i in range(len(gt_boxes)):
             gt_box = gt_boxes[i].numpy() if isinstance(
                 gt_boxes[i], paddle.Tensor) else gt_boxes[i]
+            h, w = scale_factor[i]
+            gt_box = gt_box / np.array([w, h, w, h, w, h, w, h])
             gt_label = gt_labels[i].numpy() if isinstance(
                 gt_labels[i], paddle.Tensor) else gt_labels[i]
             gt_box, gt_label, _ = prune_zero_padding(gt_box, gt_label)
@@ -411,21 +424,41 @@ class RBoxMetric(Metric):
             ]
             self.detection_map.update(bbox, score, label, gt_box, gt_label)
 
-    def accumulate(self):
-        if len(self.results) > 0:
-            output = "bbox.json"
-            if self.output_eval:
-                output = os.path.join(self.output_eval, output)
-            with open(output, 'w') as f:
-                json.dump(self.results, f)
-                logger.info('The bbox result is saved to bbox.json.')
+    def save_results(self, results, output_dir, imid2path):
+        if imid2path:
+            data_dicts = defaultdict(list)
+            for result in results:
+                image_id = result['image_id']
+                data_dicts[image_id].append(result)
 
-            if self.save_prediction_only:
-                logger.info('The bbox result is saved to {} and do not '
-                            'evaluate the mAP.'.format(output))
-            else:
-                logger.info("Accumulating evaluatation results...")
-                self.detection_map.accumulate()
+            for image_id, image_path in imid2path.items():
+                basename = os.path.splitext(os.path.split(image_path)[-1])[0]
+                output = os.path.join(output_dir, "{}.txt".format(basename))
+                dets = data_dicts.get(image_id, [])
+                with open(output, 'w') as f:
+                    for det in dets:
+                        catid, bbox, score = det['category_id'], det[
+                            'bbox'], det['score']
+                        bbox_pred = '{} {} '.format(self.catid2name[catid],
+                                                    score) + ' '.join(
+                                                        [str(e) for e in bbox])
+                        f.write(bbox_pred + '\n')
+
+            logger.info('The bbox result is saved to {}.'.format(output_dir))
+        else:
+            output = os.path.join(output_dir, "bbox.json")
+            with open(output, 'w') as f:
+                json.dump(results, f)
+
+            logger.info('The bbox result is saved to {}.'.format(output))
+
+    def accumulate(self):
+        if self.output_eval:
+            self.save_results(self.results, self.output_eval, self.imid2path)
+
+        if not self.save_prediction_only:
+            logger.info("Accumulating evaluatation results...")
+            self.detection_map.accumulate()
 
     def log(self):
         map_stat = 100. * self.detection_map.get_map()

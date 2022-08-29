@@ -176,37 +176,13 @@ class LinearWarmup(object):
         value = []
         warmup_steps = self.epochs * step_per_epoch \
             if self.epochs is not None else self.steps
+        warmup_steps = max(warmup_steps, 1)
         for i in range(warmup_steps + 1):
             if warmup_steps > 0:
                 alpha = i / warmup_steps
                 factor = self.start_factor * (1 - alpha) + alpha
                 lr = base_lr * factor
                 value.append(lr)
-            if i > 0:
-                boundary.append(i)
-        return boundary, value
-
-
-@serializable
-class BurninWarmup(object):
-    """
-    Warm up learning rate in burnin mode
-    Args:
-        steps (int): warm up steps
-    """
-
-    def __init__(self, steps=1000):
-        super(BurninWarmup, self).__init__()
-        self.steps = steps
-
-    def __call__(self, base_lr, step_per_epoch):
-        boundary = []
-        value = []
-        burnin = min(self.steps, step_per_epoch)
-        for i in range(burnin + 1):
-            factor = (i * 1.0 / burnin)**4
-            lr = base_lr * factor
-            value.append(lr)
             if i > 0:
                 boundary.append(i)
         return boundary, value
@@ -220,19 +196,22 @@ class ExpWarmup(object):
         steps (int): warm up steps.
         epochs (int|None): use epochs as warm up steps, the priority
             of `epochs` is higher than `steps`. Default: None.
+        power (int): Exponential coefficient. Default: 2.
     """
 
-    def __init__(self, steps=5, epochs=None):
+    def __init__(self, steps=1000, epochs=None, power=2):
         super(ExpWarmup, self).__init__()
         self.steps = steps
         self.epochs = epochs
+        self.power = power
 
     def __call__(self, base_lr, step_per_epoch):
         boundary = []
         value = []
         warmup_steps = self.epochs * step_per_epoch if self.epochs is not None else self.steps
+        warmup_steps = max(warmup_steps, 1)
         for i in range(warmup_steps + 1):
-            factor = (i / float(warmup_steps))**2
+            factor = (i / float(warmup_steps))**self.power
             value.append(base_lr * factor)
             if i > 0:
                 boundary.append(i)

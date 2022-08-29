@@ -115,7 +115,7 @@ def parse_args():
     parser.add_argument(
         "--match_metric",
         type=str,
-        default='iou',
+        default='ios',
         help="Combine method matching metric, choose in ['iou', 'ios'].")
     args = parser.parse_args()
     return args

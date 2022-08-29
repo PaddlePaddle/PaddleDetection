@@ -1,0 +1,33 @@
+_BASE_: [
+  '../../_base_/picodet_esnet.yml',
+]
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x2_5_ssld_pretrained.pdparams
+weights: output/picodet_lcnet_x2_5_layout/model_final
+find_unused_parameters: True
+
+PicoDet:
+  backbone: LCNet
+  neck: CSPPAN
+  head: PicoHead
+
+LCNet:
+  scale: 2.5
+  feature_maps: [3, 4, 5]
+
+CSPPAN:
+  spatial_scales: [0.125, 0.0625, 0.03125]
+
+slim: Distill
+slim_method: FGD
+distill_loss: FGDFeatureLoss
+distill_loss_name: ['neck_f_3', 'neck_f_2', 'neck_f_1', 'neck_f_0']
+
+FGDFeatureLoss:
+  student_channels: 128
+  teacher_channels: 128
+  temp: 0.5
+  alpha_fgd: 0.001
+  beta_fgd: 0.0005
+  gamma_fgd: 0.0005
+  lambda_fgd: 0.000005

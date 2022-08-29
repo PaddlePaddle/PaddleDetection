@@ -55,7 +55,7 @@ PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模�
 |  闯入识别  |   31.8ms | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 多目标跟踪：182M |
 |  打架识别  |   19.7ms | [视频分类](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 90M |
 |  抽烟识别  |   单人15.1ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[基于人体id的目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip) | 目标检测：182M<br>基于人体id的目标检测：27M |
-|  打电话识别  |   单人ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[基于人体id的图像分类](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) | 目标检测：182M<br>基于人体id的图像分类：45M |
+|  打电话识别  |   单人6.0ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[基于人体id的图像分类](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) | 目标检测：182M<br>基于人体id的图像分类：45M |
 
 下载模型后，解压至`./output_inference`文件夹。
 
@@ -105,36 +105,41 @@ ATTR:
 
 ## 预测部署
 
+1. 直接使用默认配置或者examples中配置文件，或者直接在`infer_cfg_pphuman.yml`中修改配置：
 ```
-# 行人检测，指定配置文件路径和测试图片
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
+# 例：行人检测，指定配置文件路径和测试图片，图片输入默认打开检测模型
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --image_file=test_image.jpg --device=gpu
 
-# 行人跟踪，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
-
-# 行人跟踪，指定配置文件路径，模型路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的MOT部分enable设置为```True```
-# 命令行中指定的模型路径优先级高于配置文件
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
-
-# 行人属性识别，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的ATTR部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
-
-# 行为识别，以摔倒识别为例，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的SKELETON_ACTION部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
-
-# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的REID部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml --video_dir=mtmct_dir/ --device=gpu [--run_mode trt_fp16]
-
-# 行人跨境跟踪，指定配置文件路径和测试视频列表文件夹，直接使用```deploy/pipeline/config/examples/infer_cfg_reid.yml```配置文件，并利用```-o```命令修改跟踪模型路径
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_reid.yml --video_dir=mtmct_dir/ -o MOT.model_dir="mot_model_dir" --device=gpu [--run_mode trt_fp16]
-
+# 例：行人属性识别，直接使用examples中配置
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_human_attr.yml --video_file=test_video.mp4 --device=gpu
 ```
 
-对rtsp流的支持，video_file后面的视频地址更换为rtsp流地址，示例如下：
+2. 使用命令行进行功能开启，或者模型路径修改：
 ```
-# 行人属性识别，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_pphuman.yml```中的ATTR部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu [--run_mode trt_fp16]
+# 例：行人跟踪，指定配置文件路径，模型路径和测试视频, 命令行中指定的模型路径优先级高于配置文件
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml -o MOT.enable=True MOT.model_dir=ppyoloe_infer/ --video_file=test_video.mp4 --device=gpu
+
+# 例：行为识别，以摔倒识别为例，命令行中开启SKELETON_ACTION模型
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml -o SKELETON_ACTION.enbale=True --video_file=test_video.mp4 --device=gpu
 ```
+
+3. 对rtsp流的支持，video_file后面的视频地址更换为rtsp流地址，示例如下：
+```
+# 例：行人属性识别，指定配置文件路径和测试视频
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_human_attr.yml -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu
+```
+
+### Jetson部署说明
+
+由于Jetson平台算力相比服务器有较大差距，有如下使用建议：
+
+1. 模型选择轻量级版本，特别是跟踪模型，推荐使用`ppyoloe_s: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip`
+2. 开启跟踪跳帧功能，推荐使用2或者3: `skip_frame_num: 3`
+
+使用该推荐配置，在TX2平台上可以达到较高速率，经测试属性案例达到20fps。
+
+可以直接修改配置文件（推荐），也可以在命令行中修改（字段较长，不推荐）。
+
 
 ### 参数说明
 
@@ -154,6 +159,9 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 | --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
 | --do_entrance_counting | Option | 是否统计出入口流量，默认为False |
 | --draw_center_traj | Option | 是否绘制跟踪轨迹，默认为False |
+| --region_type | Option | 'horizontal'（默认值）、'vertical'：表示流量统计方向选择；'custom'：表示设置闯入区域 |
+| --region_polygon | Option | 设置闯入区域多边形多点的坐标，无默认值 |
+| --do_break_in_counting | Option | 此项表示做区域闯入检查 |
 
 ## 方案介绍
 
@@ -182,7 +190,7 @@ PP-Human v2整体方案如下图所示:
 
 ### 属性识别
 - 使用PP-YOLOE + OC-SORT跟踪人体
-- 使用StrongBaseline（多分类模型）完成识别属性，主要属性包括年龄、性别、帽子、眼睛、上衣下衣款式、背包等
+- 使用PP-HGNet、PP-LCNet（多分类模型）完成识别属性，主要属性包括年龄、性别、帽子、眼睛、上衣下衣款式、背包等
 - 详细文档参考[属性识别](pphuman_attribute.md)
 
 ### 行为识别：
