@@ -8,7 +8,7 @@ _BASE_: [
 
 log_iter: 100
 snapshot_epoch: 10
-weights: output/ppyoloe_transformers_s_300e_coco/model_final
+weights: output/ppyoloe_transformer_s_300e_coco/model_final
 
 depth_mult: 0.33
 width_mult: 0.50
@@ -34,6 +34,7 @@ CSPResNet:
   #transformer: SwinT
   #transformer: BoT
   #transformer: CoT
+  # transformer only add in the last stage, but will destroy the pretrain weights
 
 CustomCSPPAN:
   out_channels: [768, 384, 192]
@@ -41,6 +42,11 @@ CustomCSPPAN:
   block_num: 3
   act: 'swish'
   spp: true
+  #transformer: T
+  #transformer: SwinT
+  #transformer: BoT
+  #transformer: CoT
+  # transformer only add in the last fpn_stages and two pan_stages
 
 PPYOLOEHead:
   fpn_strides: [32, 16, 8]

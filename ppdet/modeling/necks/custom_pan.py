@@ -18,7 +18,7 @@ import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling.layers import DropBlock
 from ppdet.modeling.ops import get_act_fn
-from ..backbones.cspresnet import ConvBNLayer, BasicBlock
+from ..backbones.cspresnet import ConvBNLayer, BasicBlock, get_transformer_fn
 from ..shape_spec import ShapeSpec
 
 __all__ = ['CustomCSPPAN']
@@ -61,22 +61,41 @@ class SPP(nn.Layer):
 
 
 class CSPStage(nn.Layer):
-    def __init__(self, block_fn, ch_in, ch_out, n, act='swish', spp=False):
+    def __init__(self,
+                 block_fn,
+                 ch_in,
+                 ch_out,
+                 n,
+                 transformer=None,
+                 act='swish',
+                 spp=False):
         super(CSPStage, self).__init__()
 
         ch_mid = int(ch_out // 2)
         self.conv1 = ConvBNLayer(ch_in, ch_mid, 1, act=act)
         self.conv2 = ConvBNLayer(ch_in, ch_mid, 1, act=act)
         self.convs = nn.Sequential()
-        next_ch_in = ch_mid
-        for i in range(n):
-            self.convs.add_sublayer(
-                str(i),
-                eval(block_fn)(next_ch_in, ch_mid, act=act, shortcut=False))
-            if i == (n - 1) // 2 and spp:
-                self.convs.add_sublayer(
-                    'spp', SPP(ch_mid * 4, ch_mid, 1, [5, 9, 13], act=act))
+        if transformer is None:
             next_ch_in = ch_mid
+            for i in range(n):
+                self.convs.add_sublayer(
+                    str(i),
+                    eval(block_fn)(next_ch_in, ch_mid, act=act, shortcut=False))
+                if i == (n - 1) // 2 and spp:
+                    self.convs.add_sublayer(
+                        'spp', SPP(ch_mid * 4, ch_mid, 1, [5, 9, 13], act=act))
+                next_ch_in = ch_mid
+        else:
+            transformer_fn, num = get_transformer_fn(name=transformer)
+            next_ch_in = ch_mid
+            for i in range(num):
+                self.convs.add_sublayer(
+                    str(i), transformer_fn(next_ch_in, ch_mid))
+                if i == (num - 1) // 2 and spp:
+                    self.convs.add_sublayer(
+                        'spp', SPP(ch_mid * 4, ch_mid, 1, [5, 9, 13], act=act))
+                next_ch_in = ch_mid
+
         self.conv3 = ConvBNLayer(ch_mid * 2, ch_out, 1, act=act)
 
     def forward(self, x):
@@ -109,6 +128,7 @@ class CustomCSPPAN(nn.Layer):
                  data_format='NCHW',
                  width_mult=1.0,
                  depth_mult=1.0,
+                 transformer=None,
                  trt=False):
 
         super(CustomCSPPAN, self).__init__()
@@ -135,6 +155,8 @@ class CustomCSPPAN(nn.Layer):
                                    ch_in if j == 0 else ch_out,
                                    ch_out,
                                    block_num,
+                                   transformer=transformer
+                                   if i == self.num_blocks - 1 else None,
                                    act=act,
                                    spp=(spp and i == 0)))
 
@@ -180,6 +202,7 @@ class CustomCSPPAN(nn.Layer):
                                    ch_in if j == 0 else ch_out,
                                    ch_out,
                                    block_num,
+                                   transformer=transformer,
                                    act=act,
                                    spp=False))
             if drop_block:
