@@ -20,8 +20,14 @@ from ppdet.modeling.layers import DropBlock
 from ppdet.modeling.ops import get_act_fn
 from ..backbones.cspresnet import ConvBNLayer, BasicBlock, get_transformer_fn
 from ..shape_spec import ShapeSpec
+from ..attention_utils import *
 
 __all__ = ['CustomCSPPAN']
+attn_list = [
+    'CrissCrossAttention', 'GAMAttention', 'CBAM', 'CoordAtt', 'NAMAttention',
+    'S2Attention', 'ScaledDotProductAttention', 'SEAttention',
+    'ShuffleAttention', 'SimAM', 'SKAttention'
+]
 
 
 class SPP(nn.Layer):
@@ -67,6 +73,7 @@ class CSPStage(nn.Layer):
                  ch_out,
                  n,
                  transformer=None,
+                 attn=None,
                  act='swish',
                  spp=False):
         super(CSPStage, self).__init__()
@@ -129,6 +136,7 @@ class CustomCSPPAN(nn.Layer):
                  width_mult=1.0,
                  depth_mult=1.0,
                  transformer=None,
+                 attn=None,
                  trt=False):
 
         super(CustomCSPPAN, self).__init__()
@@ -213,6 +221,15 @@ class CustomCSPPAN(nn.Layer):
         self.pan_stages = nn.LayerList(pan_stages[::-1])
         self.pan_routes = nn.LayerList(pan_routes[::-1])
 
+        self.attn = attn
+        if attn and attn in attn_list:
+            attns = []
+            for out_ch in self._out_channels:
+                attns.append(eval(attn)(out_ch))
+            self.attn_layers = nn.LayerList(attns)
+        else:
+            self.attn = None
+
     def forward(self, blocks, for_mot=False):
         blocks = blocks[::-1]
         fpn_feats = []
@@ -237,7 +254,12 @@ class CustomCSPPAN(nn.Layer):
             route = self.pan_stages[i](block)
             pan_feats.append(route)
 
-        return pan_feats[::-1]
+        outs = pan_feats[::-1]
+        if self.attn:
+            for i, attn_layer in enumerate(self.attn_layers):
+                outs[i] = attn_layer(outs[i])
+
+        return outs
 
     @classmethod
     def from_config(cls, cfg, input_shape):

@@ -28,8 +28,15 @@ from ppdet.core.workspace import register, serializable
 from ..shape_spec import ShapeSpec
 from .swin_transformer import SwinTransformer_Layer
 from .transformer_utils import TransformerBlock, BoTBlock, CoTBlock
+from ..attention_utils import *
 
 __all__ = ['CSPResNet', 'BasicBlock', 'EffectiveSELayer', 'ConvBNLayer']
+
+attn_list = [
+    'CrissCrossAttention', 'GAMAttention', 'CBAM', 'CoordAtt', 'NAMAttention',
+    'S2Attention', 'ScaledDotProductAttention', 'SEAttention',
+    'ShuffleAttention', 'SimAM', 'SKAttention'
+]
 
 
 class ConvBNLayer(nn.Layer):
@@ -208,7 +215,7 @@ class CSPResStage(nn.Layer):
                  stride,
                  transformer=None,
                  act='relu',
-                 attn='eca',
+                 attn='EffectiveSE',
                  use_alpha=False):
         super(CSPResStage, self).__init__()
 
@@ -236,8 +243,10 @@ class CSPResStage(nn.Layer):
                 transformer_fn(ch_mid // 2, ch_mid // 2) for i in range(num)
             ])
 
-        if attn:
+        if attn == 'EffectiveSE':
             self.attn = EffectiveSELayer(ch_mid, act='hardsigmoid')
+        elif attn in attn_list:
+            self.attn = eval(attn)(ch_mid)
         else:
             self.attn = None
 
@@ -270,6 +279,7 @@ class CSPResNet(nn.Layer):
                  width_mult=1.0,
                  depth_mult=1.0,
                  transformer=None,
+                 attn='EffectiveSE',
                  trt=False,
                  use_checkpoint=False,
                  use_alpha=False,
@@ -320,6 +330,7 @@ class CSPResNet(nn.Layer):
             2,
             transformer=transformer if i == n - 1 else None,
             act=act,
+            attn=attn,
             use_alpha=use_alpha)) for i in range(n)])
 
         self._out_channels = channels[1:]
