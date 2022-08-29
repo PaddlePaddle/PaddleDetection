@@ -78,10 +78,11 @@ PaddleDetection团队提供了基于PP-YOLOE的各种垂类检测模型的配置
 请执行以下指令训练PP-YOLOE+
 
 ```bash
-python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml
+python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml --eval --amp
 ```
 **注意:**
 - 如果需要边训练边评估，请添加`--eval`.
+- PP-YOLOE+支持混合精度训练，请添加`--amp`.
 - PaddleDetection支持多机训练，可以参考[多机训练教程](../../docs/DistributedTraining_cn.md).
 
 ### 评估
