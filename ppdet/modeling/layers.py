@@ -549,7 +549,7 @@ class MultiClassNMS(object):
         if background_label > -1:
             kwargs.update({'background_label': background_label})
         kwargs.pop('trt')
-        # TODO(wangxinxin08): paddle version should be release/2.5 or 2.3 and above to run nms on tensorrt
+        # TODO(wangxinxin08): paddle version should be develop or 2.3 and above to run nms on tensorrt
         if self.trt and (int(paddle.version.major) == 0 or
                          (int(paddle.version.major) >= 2 and
                           int(paddle.version.minor) >= 3)):
