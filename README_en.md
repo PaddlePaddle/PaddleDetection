@@ -115,6 +115,7 @@
             <li>PP-YOLOv1/v2</li>
             <li>PP-YOLO-Tiny</li>
             <li>PP-YOLOE</li>
+            <li>PP-YOLOE+</li>
             <li>YOLOX</li>
             <li>SSD</li>
             <li>CenterNet</li>
@@ -144,6 +145,7 @@
             <li>FairMOT</li>
             <li>DeepSORT</li>
             <li>ByteTrack</li>
+            <li>OC-SORT</li>
         </ul></details>
         <details><summary><b>KeyPoint-Detection</b></summary>
         <ul>
@@ -356,6 +358,7 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 | ByteTrack | SDE Multi-object tracking algorithm with detection model only | Edge-Cloud end        | MOT-17 half val:  77.3 | [Link](configs/mot/bytetrack/detector/yolox_x_24e_800x1440_mix_det.yml) | [Download](https://paddledet.bj.bcebos.com/models/mot/deepsort/yolox_x_24e_800x1440_mix_det.pdparams) |
 | JDE       | JDE multi-object tracking algorithm multi-task learning       | Edge-Cloud end        | MOT-16 test: 64.6      | [Link](configs/mot/jde/jde_darknet53_30e_1088x608.yml)                  | [Download](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)            |
 | FairMOT   | JDE multi-object tracking algorithm multi-task learning       | Edge-Cloud end        | MOT-16 test: 75.0      | [Link](configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml)              | [Download](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams)            |
+| OC-SORT   | SDE multi-object tracking algorithm with detection model only       | Edge-Cloud end        | MOT-16 half val: 75.5      | [Link](configs/mot/ocsort/ocsort_yolox.yml)              | -            |
 
 #### Other multi-object tracking models [docs](configs/mot)
 

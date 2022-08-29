@@ -110,6 +110,7 @@
             <li>PP-YOLOv1/v2</li>
             <li>PP-YOLO-Tiny</li>
             <li>PP-YOLOE</li>
+            <li>PP-YOLOE+</li>
             <li>YOLOX</li>
             <li>SSD</li>
             <li>CenterNet</li>
@@ -139,6 +140,7 @@
             <li>FairMOT</li>
             <li>DeepSORT</li>
             <li>ByteTrack</li>
+            <li>OC-SORT</li>
         </ul></details>
         <details><summary><b>KeyPoint-Detection</b></summary>
         <ul>
@@ -353,6 +355,7 @@
 | ByteTrack | SDE多目标跟踪算法 仅包含检测模型       | 云边端                                | MOT-17 half val:  77.3 | [链接](configs/mot/bytetrack/detector/yolox_x_24e_800x1440_mix_det.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/mot/deepsort/yolox_x_24e_800x1440_mix_det.pdparams) |
 | JDE       | JDE多目标跟踪算法 多任务联合学习方法     | 云边端                                | MOT-16 test: 64.6      | [链接](configs/mot/jde/jde_darknet53_30e_1088x608.yml)                  | [下载地址](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)            |
 | FairMOT   | JDE多目标跟踪算法 多任务联合学习方法     | 云边端                                | MOT-16 test: 75.0      | [链接](configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml)              | [下载地址](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams)            |
+| OC-SORT | SDE多目标跟踪算法 仅包含检测模型       | 云边端                                | MOT-17 half val:  75.5 | [链接](configs/mot/ocsort/ocsort_yolox.yml) | - |
 
 #### 其他多目标跟踪模型 [文档链接](configs/mot)
 
