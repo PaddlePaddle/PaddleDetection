@@ -4,6 +4,68 @@ English | [简体中文](./CHANGELOG.md)
 
 ## Last Version Information
 
+### 2.5(08.26/2022)
+
+- Featured model
+
+  - PP-YOLOE+：
+    - Released PP-YOLOE+ model, with a 0.7%-2.4% mAP improvement on COCO test2017. 3.75 times faster model training convergence rate and 1.73-2.3 times faster end-to-end inference speed
+    - Released pre-trained models for smart agriculture, night security detection, and industrial quality inspection with 1.3%-8.1% mAP accuracy improvement
+    - supports 10 high-performance training deployment capabilities, including distributed training, online quantization, and serving deployment. We also provide more than five new deployment demos, such as C++/Python Serving, TRT native inference, and ONNX Runtime
+  - PP-PicoDet：
+    - Release the PicoDet-NPU model to support full quantization of model deployment
+    - Add PicoDet layout analysis model with 0.5% mAP accuracy improvement due to FGD distillation algorithm
+  - PP-TinyPose
+    - Release PP-TinyPose Plus with 9.1% end-to-end AP improvement for business data sets such as physical exercises, dance, and other scenarios
+    - Covers unconventional movements such as turning to one side, lying down, jumping, high lift
+    - Add stabilization module (via filter) to significantly improve the stability at key points
+
+- Functions in different scenarios
+
+  - PP-Human v2
+    - Release PP-Human v2, which supports four industrial features: behavioral recognition case zoo for multiple solutions, human attribute recognition, human traffic detection and trajectory retention, as well as high precision multi-camera tracking
+    - Upgraded  underlying algorithm capabilities: 1.5% mAP improvement in pedestrian detection accuracy; 10.2% MOTA improvement in pedestrian tracking accuracy, 34% speed improvement in the lightweight model; 0.6% ma improvement in attribute recognition accuracy, 62.5% speed improvement in the lightweight model
+    - Provides comprehensive tutorials covering data collection and annotation, model training optimization and prediction deployment, and post-processing code modification in the pipeline
+    - Supports online video streaming input
+    - Become more user-friendly with a one-line code execution function that automates the process determination and model download
+  - PP-Vehicle
+    - Launch PP-Vehicle, which supports four core functions for traffic application: license plate recognition, attribute recognition, traffic flow statistics, and violation detection
+    - License plate recognition supports a lightweight model based on PP-OCR v3
+    - Vehicle attribute recognition supports a multi-label classification model based on PP-LCNet
+    - Compatible with various data input formats such as pictures, videos and online video streaming
+    - Become more user-friendly with a one-line code execution function that automates the process determination and model download
+
+- Cutting-edge algorithms
+
+  - YOLO Family
+    - Release the full range of YOLO family models covering the cutting-edge detection algorithms YOLOv5, MT-YOLOv6 and YOLOv7
+    - Based on the ConvNext backbone network, YOLO's algorithm training periods are reduced by 5-8 times with accuracy generally improving by 1%-5% mAP; Thanks to the model compression strategy, its speed increased by over 30% with no loss of precision.
+  - Newly add high precision detection model based on [ViT](configs/vitdet) backbone network, with a 55.7% mAP accuracy on the COCO dataset
+  - Newly add multi-object tracking model [OC-SORT](configs/mot/ocsort)
+  - Newly add [ConvNeXt](configs/convnext) backbone network.
+
+- Industrial application
+
+  - Intelligent physical exercise recognition based on PP-TinyPose Plus
+  - Fighting recognition based on PP-Human
+  - Business hall visitor analysis based on PP-Human
+  - Vehicle structuring analysis based on PP-Vehicle
+  - PCB board defect detection based on PP-YOLOE+
+
+- Framework capabilities
+
+  - New functions
+    - Release auto-compression tools and demos, 0.3% mAP accuracy loss for PP-YOLOE l version, while 13% speed increase for V100
+    - Release PaddleServing python/C++ and ONNXRuntime deployment demos
+    - Release PP-YOLOE end-to-end TensorRT deployment demo
+    - Release FGC distillation algorithm with RetinaNet accuracy improved by 3.3%
+    - Release distributed training documentation
+  - Improvement and fixes
+    - Fix compilation problem with Windows c++ deployment
+    - Fix problems when saving results of inference data in VOC format
+    - Fix the detection box output of FairMOT c++ deployment
+    - Rotating frame detection model S2ANet supports batch size>1 deployment
+
 ### 2.4(03.24/2022)
 
 - PP-YOLOE：
