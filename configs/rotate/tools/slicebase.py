@@ -222,8 +222,10 @@ class SliceBase(object):
         windows = self.get_windows(height, width)
         self.slice_image_single(resize_img, windows, output_dir, base_name)
         if not self.image_only:
-            self.slice_anno_single(info['annotation'], windows, output_dir,
-                                   base_name)
+            annos = info['annotation']
+            for anno in annos:
+                anno['poly'] = list(map(lambda x: rate * x, anno['poly']))
+            self.slice_anno_single(annos, windows, output_dir, base_name)
 
     def check_or_mkdirs(self, path):
         if not os.path.exists(path):
