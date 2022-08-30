@@ -13,6 +13,10 @@ TrainReader:
 EvalReader:
   batch_size: 1
 
+TestReader:
+  batch_size: 1
+  fuse_normalize: True
+
 
 LearningRate:
   base_lr: 0.005
