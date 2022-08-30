@@ -17,6 +17,9 @@ find_unused_parameters: True
 use_gpu: true
 norm_type: sync_bn
 
+OptimizerBuilder:
+  optimizer:
+    weight_decay: 0.05
 
 # reader
 worker_num: 2
