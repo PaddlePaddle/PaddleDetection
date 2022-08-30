@@ -267,6 +267,8 @@ def plot_tracking_dict(image,
             for key, value in illegal_parking_dict.items():
                 x1, y1, w, h = value['bbox']
                 plate = value['plate']
+                if plate is None:
+                    plate = ""
 
                 # red box
                 cv2.rectangle(im, (int(x1), int(y1)),
