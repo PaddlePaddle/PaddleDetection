@@ -34,16 +34,17 @@ __all__ = [
 
 @register
 class BBoxPostProcess(object):
-    __shared__ = ['num_classes', 'export_onnx']
+    __shared__ = ['num_classes', 'export_onnx', 'export_eb']
     __inject__ = ['decode', 'nms']
 
     def __init__(self, num_classes=80, decode=None, nms=None,
-                 export_onnx=False):
+                 export_onnx=False, export_eb=False):
         super(BBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.decode = decode
         self.nms = nms
         self.export_onnx = export_onnx
+        self.export_eb = export_eb
 
     def __call__(self, head_out, rois, im_shape, scale_factor):
         """
@@ -100,6 +101,10 @@ class BBoxPostProcess(object):
             pred_result (Tensor): The final prediction results with shape [N, 6]
                 including labels, scores and bboxes.
         """
+        if self.export_eb:
+            # enable rcnn models for edgeboard hw to skip the following postprocess.
+            return bboxes, bboxes, bbox_num
+
         if not self.export_onnx:
             bboxes_list = []
             bbox_num_list = []
