@@ -67,11 +67,13 @@
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157800467-2a9946ad-30d1-49a9-b9db-ba33413d9c90.png" alt="" width="20"> 技术交流
 
 - 如果你发现任何PaddleDetection存在的问题或者是建议, 欢迎通过[GitHub Issues](https://github.com/PaddlePaddle/PaddleDetection/issues)给我们提issues。
-
-- 欢迎加入PaddleDetection QQ、微信用户群（添加并回复小助手“检测”）
-
+- **欢迎加入PaddleDetection 微信用户群（扫码填写问卷即可入群）**
+  - **入群福利 💎：获取PaddleDetection团队整理的重磅学习大礼包🎁**
+    - 📊 福利一：获取飞桨联合业界企业整理的开源数据集
+    - 👨‍🏫 福利二：获取PaddleDetection历次发版直播视频与最新直播咨询
+    - 🗳 福利三：获取垂类场景预训练模型集合，包括工业、安防、交通等5+行业场景
+    - 🗂 福利四：获取10+全流程产业实操范例，覆盖火灾烟雾检测、人流量计数等产业高频场景
   <div align="center">
-  <img src="https://user-images.githubusercontent.com/22989727/183843004-baebf75f-af7c-4a7c-8130-1497b9a3ec7e.png"  width = "200" />  
   <img src="https://user-images.githubusercontent.com/34162360/177678712-4655747d-4290-4ad9-b7a1-4564a5418ac6.jpg"  width = "200" />  
   </div>
 
