@@ -33,7 +33,7 @@ class FPN(nn.Layer):
     Args:
         in_channels (list[int]): input channels of each level which can be 
             derived from the output shape of backbone by from_config
-        out_channel (list[int]): output channel of each level
+        out_channel (int): output channel of each level
         spatial_scales (list[float]): the spatial scales between input feature
             maps and original input image which can be derived from the output 
             shape of backbone by from_config
