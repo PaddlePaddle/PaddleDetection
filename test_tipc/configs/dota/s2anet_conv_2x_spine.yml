@@ -1,9 +1,9 @@
 _BASE_: [
   '../../../configs/datasets/spine_coco.yml',
   '../../../configs/runtime.yml',
-  '../../../configs/dota/_base_/s2anet_optimizer_2x.yml',
-  '../../../configs/dota/_base_/s2anet.yml',
-  '../../../configs/dota/_base_/s2anet_reader.yml',
+  '../../../configs/rotate/s2anet/_base_/s2anet_optimizer_2x.yml',
+  '../../../configs/rotate/s2anet/_base_/s2anet.yml',
+  '../../../configs/rotate/s2anet/_base_/s2anet_reader.yml',
 ]
 weights: output/s2anet_conv_1x_dota/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams

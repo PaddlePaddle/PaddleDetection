@@ -55,7 +55,7 @@ PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模�
 |  闯入识别  |   31.8ms | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 多目标跟踪：182M |
 |  打架识别  |   19.7ms | [视频分类](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 90M |
 |  抽烟识别  |   单人15.1ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[基于人体id的目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip) | 目标检测：182M<br>基于人体id的目标检测：27M |
-|  打电话识别  |   单人ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[基于人体id的图像分类](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) | 目标检测：182M<br>基于人体id的图像分类：45M |
+|  打电话识别  |   单人6.0ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[基于人体id的图像分类](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip) | 目标检测：182M<br>基于人体id的图像分类：45M |
 
 下载模型后，解压至`./output_inference`文件夹。
 
@@ -129,6 +129,18 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_human_attr.yml -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu
 ```
 
+### Jetson部署说明
+
+由于Jetson平台算力相比服务器有较大差距，有如下使用建议：
+
+1. 模型选择轻量级版本，特别是跟踪模型，推荐使用`ppyoloe_s: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip`
+2. 开启跟踪跳帧功能，推荐使用2或者3: `skip_frame_num: 3`
+
+使用该推荐配置，在TX2平台上可以达到较高速率，经测试属性案例达到20fps。
+
+可以直接修改配置文件（推荐），也可以在命令行中修改（字段较长，不推荐）。
+
+
 ### 参数说明
 
 | 参数 | 是否必须|含义 |
@@ -147,6 +159,9 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 | --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
 | --do_entrance_counting | Option | 是否统计出入口流量，默认为False |
 | --draw_center_traj | Option | 是否绘制跟踪轨迹，默认为False |
+| --region_type | Option | 'horizontal'（默认值）、'vertical'：表示流量统计方向选择；'custom'：表示设置闯入区域 |
+| --region_polygon | Option | 设置闯入区域多边形多点的坐标，无默认值 |
+| --do_break_in_counting | Option | 此项表示做区域闯入检查 |
 
 ## 方案介绍
 

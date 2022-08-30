@@ -32,27 +32,7 @@ PP-Human supports various inputs such as images, single-camera, and multi-camera
 ## 🗳 Model Zoo
 
 <details>
-<summary><b> Single model results (click to expand) </b></summary>
-
-| Task                                        | Application                             | Accuracy        | Inference speed（ms）  | Model size | Inference deployment model                                                                              |
-|:-------------------------------------------:|:---------------------------------------:|:--------------- |:--------------------:|:----------:|:-------------------------------------------------------------------------------------------------------:|
-| Object detection (high precision)           | Image input                             | mAP: 57.8       | 25.1ms               | 182M       | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)               |
-| Object detection (Lightweight)              | Image input                             | mAP: 53.2       | 16.2ms               | 27M        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip)               |
-| Object tracking (high precision)            | Video input                             | MOTA: 82.2      | 31.8ms               | 182M       | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)               |
-| Object tracking (high precision)            | Video input                             | MOTA: 73.9      | 21.0ms               | 27M        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip)               |
-| Attribute recognition (high precision)      | Image/Video input Attribute recognition | mA: 95.4        | Single person 4.2ms  | 86M        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_small_person_attribute_954_infer.zip) |
-| Attribute recognition (Lightweight)         | Image/Video input Attribute recognition | mA: 94.5        | Single person 2.9ms  | 7.2M       | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.zip)  |
-| Keypoint detection                          | Video input Attribute recognition       | AP: 87.1        | Single person 5.7ms  | 101M       | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip)                   |
-| Classification based on key point sequences | Video input Attribute recognition       | Accuracy: 96.43 | Single person 0.07ms | 21.8M      | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip)                                    |
-| Detection based on Human ID                 | Video input Attribute recognition       | Accuracy: 86.85 | Single person 1.8ms  | 45M        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip)            |
-| Detection based on Human ID                 | Video input Attribute recognition       | AP50: 79.5      | Single person 10.9ms | 27M        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip)       |
-| Video classification                        | Video input Attribute recognition       | Accuracy： 89.0  | 19.7ms/1s Video      | 90M        | [Link](https://videotag.bj.bcebos.com/PaddleVideo-release2.3/ppTSM_fight.pdparams)                      |
-| ReID                                        | Video input ReID                        | mAP: 98.8       | Single person 0.23ms | 85M        | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip)                               |
-
-</details>
-
-<details>
-<summary><b>End-to-end model results (click to expand)</b></summary>
+<summary><b>PP-Human End-to-end model results (click to expand)</b></summary>
 
 | Task                                   | End-to-End Speed（ms） | Model                                                                                                                                                                                                                                                                                                                           | Size                                                                                                   |
 |:--------------------------------------:|:--------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------:|
@@ -69,6 +49,21 @@ PP-Human supports various inputs such as images, single-camera, and multi-camera
 | Phoning detection                      | Single person ms     | [Object detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[Image classification based on Human ID](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip)                                                                                         | Object detection：182M<br>Image classification based on Human ID：45M                                    |
 
 </details>
+
+<details>
+<summary><b>PP-Vehicle End-to-end model results (click to expand)</b></summary>
+
+| Task                                   | End-to-End Speed（ms） | Model                                                                                                                                                                                                                                                                                                                           | Size                                                                                                   |
+|:--------------------------------------:|:--------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------:|
+| Vehicle detection (high precision)  | 25.7ms               | [object detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip)                                                                                                                                                                                                                      | 182M                                                                                                   |
+| Vehicle detection (lightweight)     | 13.2ms               | [object detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip)                                                                                                                                                                                                                      | 27M                                                                                                    |
+| Vehicle tracking (high precision)   | 40ms               | [multi-object tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip)                                                                                                                                                                                                                      | 182M                                                                                                   |
+| Vehicle tracking (lightweight)      | 25ms               | [multi-object tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip)                                                                                                                                                                                                                      | 27M                                                                                                    |
+| Plate Recognition                   | 4.68ms     | [plate detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz)<br>[plate recognition](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz)                                                                                         | Plate detection：3.9M<br>Plate recognition：12M                                    |
+| Vehicle attribute      | 7.31ms               | [attribute recognition](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip)                                                                                                                                                                                                                      | 7.2M                                                                                                    |
+
+</details>
+
 
 Click to download the model, then unzip and save it in the `. /output_inference`.
 

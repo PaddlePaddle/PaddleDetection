@@ -16,6 +16,8 @@ import paddle.nn as nn
 
 from ppdet.core.workspace import register, serializable
 from .resnet import ResNet, Blocks, BasicBlock, BottleNeck
+from ..shape_spec import ShapeSpec
+from .name_adapter import NameAdapter
 
 __all__ = ['SENet', 'SERes5Head']
 

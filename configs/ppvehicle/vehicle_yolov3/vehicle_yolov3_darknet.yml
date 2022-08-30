@@ -39,4 +39,4 @@ EvalDataset:
 
 TestDataset:
   !ImageFolder
-    anno_path: configs/vehicle/vehicle.json
+    anno_path: configs/ppvehicle/vehicle_yolov3/vehicle.json

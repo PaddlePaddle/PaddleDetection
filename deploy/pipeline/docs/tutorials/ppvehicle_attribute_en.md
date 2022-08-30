@@ -6,12 +6,12 @@ Vehicle attribute recognition is widely used in smart cities, smart transportati
 
 | Task | Algorithm | Precision | Inference Speed | Download |
 |-----------|------|-----------|----------|---------------------|
-| Vehicle Detection/Tracking | PP-YOLOE | - | - | [Inference and Deployment Model](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) |
-| Vehicle Attribute Recognition | PPLCNet | 90.81 | 2.36 ms | [Inference and Deployment Model](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip) |
+| Vehicle Detection/Tracking | PP-YOLOE | mAP 63.9 | 38.67ms | [Inference and Deployment Model](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) |
+| Vehicle Attribute Recognition | PPLCNet | 90.81 | 7.31 ms | [Inference and Deployment Model](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip) |
 
 
 Note:
-1. The inference speed of the attribute model is obtained from the test on Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz, with the MKLDNN acceleration strategy enabled, and 10 threads.
+1. The inference speed of the attribute model is obtained from the test on NVIDIA T4, with TensorRT FP16. The time includes data pre-process, model inference and post-process.
 2. For introductions, please refer to [PP-LCNet Series](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/en/models/PP-LCNet_en.md). Related paper is available on PP-LCNet paper
 3. The training and test phase of vehicle attribute recognition model are both obtained from [VeRi dataset](https://www.v7labs.com/open-datasets/veri-dataset).
 

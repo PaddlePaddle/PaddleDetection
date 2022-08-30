@@ -6,12 +6,12 @@
 
 | 任务 | 算法 | 精度 | 预测速度 | 下载链接|
 |-----------|------|-----------|----------|---------------|
-| 车辆检测/跟踪 | PP-YOLOE | - | - | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) |
-| 车辆属性识别 | PPLCNet | 90.81 | 2.36 ms | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip) |
+| 车辆检测/跟踪 | PP-YOLOE | mAP 63.9 | 38.67ms | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) |
+| 车辆属性识别 | PPLCNet | 90.81 | 7.31 ms | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip) |
 
 
 注意：
-1. 属性模型预测速度是基于Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz 测试得到，开启 MKLDNN 加速策略，线程数为10。
+1. 属性模型预测速度是基于NVIDIA T4, 开启TensorRT FP16得到。模型预测速度包含数据预处理、模型预测、后处理部分。
 2. 关于PP-LCNet的介绍可以参考[PP-LCNet](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.4/docs/zh_CN/models/PP-LCNet.md)介绍，相关论文可以查阅[PP-LCNet paper](https://arxiv.org/abs/2109.15099)。
 3. 属性模型的训练和精度测试均基于[VeRi数据集](https://www.v7labs.com/open-datasets/veri-dataset)。
 
