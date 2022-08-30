@@ -280,7 +280,7 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inferenc
 首先统计所用数据集标注框的平均宽高占图片真实宽高的比例分布：
 
 ```bash
-python slice_tools/box_distribution.py --json_path ../../dataset/DOTA/annotations/train.json --out_img box_distribution.jpg
+python tools/box_distribution.py --json_path ../../dataset/DOTA/annotations/train.json --out_img box_distribution.jpg
 ```
 - `--json_path` ：待统计数据集COCO 格式 annotation 的json文件路径
 - `--out_img` ：输出的统计分布图路径
