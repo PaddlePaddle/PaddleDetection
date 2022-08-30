@@ -41,11 +41,11 @@ PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小�
 **注意:**
 - 使用[SAHI](https://github.com/obss/sahi)切图工具需要首先安装：`pip install sahi`，参考[installation](https://github.com/obss/sahi/blob/main/README.md#installation)。
 - **SLICE_SIZE**表示使用SAHI工具切图后子图的边长大小，**OVERLAP_RATIO**表示切图的子图之间的重叠率，DOTA水平框和Xview数据集均是切图后训练，AP指标为切图后的子图val上的指标。
-- VisDrone-DET数据集请参照[visdrone](../visdrone)，可使用原图训练，也可使用切图后训练。
+- VisDrone-DET数据集请参照[visdrone](../visdrone)，可使用原图训练，也可使用切图后训练，这上面表格中的指标均是使用VisDrone-DET的val子集做验证而未使用test_dev子集。
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
 - 常用训练验证部署等步骤请参考[ppyoloe](../ppyoloe#getting-start)。
-- 自动切图和拼图的推理预测需添加设置`--slice_infer`，具体见下文使用说明。
-- Assembled表示自动切图和拼图。
+- 自动切图和拼图的推理预测需添加设置`--slice_infer`，具体见下文[模型库使用说明](#模型库使用说明)中的[预测](#预测)和[部署](#部署)。
+- Assembled表示自动切图和拼图，参照[2.3 子图拼图评估](#评估)。
 
 ## 数据集准备
 
@@ -280,7 +280,7 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inferenc
 首先统计所用数据集标注框的平均宽高占图片真实宽高的比例分布：
 
 ```bash
-python slice_tools/box_distribution.py --json_path ../../dataset/DOTA/annotations/train.json --out_img box_distribution.jpg
+python tools/box_distribution.py --json_path ../../dataset/DOTA/annotations/train.json --out_img box_distribution.jpg
 ```
 - `--json_path` ：待统计数据集COCO 格式 annotation 的json文件路径
 - `--out_img` ：输出的统计分布图路径
@@ -313,7 +313,7 @@ pip install sahi
 #### 基于SAHI切图
 
 ```bash
-python slice_tools/slice_image.py --image_dir ../../dataset/DOTA/train/ --json_path ../../dataset/DOTA/annotations/train.json --output_dir ../../dataset/dota_sliced --slice_size 500 --overlap_ratio 0.25
+python tools/slice_image.py --image_dir ../../dataset/DOTA/train/ --json_path ../../dataset/DOTA/annotations/train.json --output_dir ../../dataset/dota_sliced --slice_size 500 --overlap_ratio 0.25
 ```
 
 - `--image_dir`：原始数据集图片文件夹的路径
