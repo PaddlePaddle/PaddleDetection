@@ -26,6 +26,7 @@ EGG_DIR="paddledet.egg-info"
 
 CFG_DIR="configs"
 TEST_DIR=".tests"
+DATA_DIR="dataset"
 
 # command line log config
 RED='\033[0;31m'
@@ -86,6 +87,7 @@ function unittest() {
   #       make sure installed paddledet is used
   mkdir $TEST_DIR
   cp -r $CFG_DIR $TEST_DIR
+  cp -r $DATA_DIR $TEST_DIR
   cd $TEST_DIR
 
   if [ $? != 0  ]; then
