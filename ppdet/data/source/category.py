@@ -118,6 +118,9 @@ def get_categories(metric_type, anno_file=None, arch=None):
     ) == 'keypointtopdownmpiieval':
         return (None, {'id': 'keypoint'})
 
+    elif metric_type.lower() == 'pose3deval':
+        return (None, {'id': 'pose3d'})
+
     elif metric_type.lower() in ['mot', 'motdet', 'reid']:
         if anno_file and os.path.isfile(anno_file):
             cats = []
