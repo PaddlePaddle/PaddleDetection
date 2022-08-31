@@ -29,7 +29,7 @@
 |     x1,y1,w,h      | (x1,y1)为左上角坐标，w为目标区域宽度，h为目标区域高度  |
 |     xc,yc,w,h    | (xc,yc)为目标区域中心坐标，w为目标区域宽度，h为目标区域高度  |  
 
-常见的目标检测数据集如Pascal VOC采用的`[x1,y1,x2,y2]` 表示物体的bounding box, COCO采用的`[x1,y1,w,h]` 表示物体的bounding box, Cformat](https://cocodataset.org/#format-data).
+常见的目标检测数据集如Pascal VOC采用的`[x1,y1,x2,y2]` 表示物体的bounding box, [COCO](https://cocodataset.org/#format-data)采用的`[x1,y1,w,h]` 表示物体的bounding box.
 
 ### 准备训练数据  
 
