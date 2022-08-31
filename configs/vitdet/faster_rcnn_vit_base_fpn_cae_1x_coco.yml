@@ -74,29 +74,22 @@ RPNHead:
     min_size: 0.0
     nms_thresh: 0.7
     pre_nms_top_n: 2000
-    post_nms_top_n: 2000
+    post_nms_top_n: 1000
     topk_after_collect: True
   test_proposal:
     min_size: 0.0
     nms_thresh: 0.7
     pre_nms_top_n: 1000
     post_nms_top_n: 1000
-  loss_rpn_bbox: SmoothL1Loss
-
-SmoothL1Loss:
-  beta: 0.1111111111111111
 
 
 BBoxHead:
-  head: XConvNormHead
+  head: TwoFCHead
   roi_extractor:
     resolution: 7
     sampling_ratio: 0
     aligned: True
   bbox_assigner: BBoxAssigner
-  bbox_loss: GIoULoss
-  loss_normalize_pos: True
-
 
 BBoxAssigner:
   batch_size_per_im: 512
@@ -105,17 +98,8 @@ BBoxAssigner:
   fg_fraction: 0.25
   use_random: True
 
-
-XConvNormHead:
-  num_convs: 4
-  norm_type: bn
-
-
-GIoULoss:
-  loss_weight: 10.
-  reduction: 'none'
-  eps: 0.000001
-
+TwoFCHead:
+  out_channel: 1024
 
 BBoxPostProcess:
   decode: RCNNBox
