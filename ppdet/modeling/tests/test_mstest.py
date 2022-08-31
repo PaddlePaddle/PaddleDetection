@@ -21,6 +21,7 @@ import unittest
 from ppdet.core.workspace import load_config
 from ppdet.engine import Trainer
 
+
 class TestMultiScaleInference(unittest.TestCase):
     def setUp(self):
         self.set_config()
@@ -48,12 +49,13 @@ class TestMultiScaleInference(unittest.TestCase):
         tests_img_root = os.path.join(os.path.dirname(__file__), 'imgs')
 
         # input images to predict
-        imgs = ['coco2017_val2017_000000000139.jpg', 'coco2017_val2017_000000000724.jpg']
+        imgs = [
+            'coco2017_val2017_000000000139.jpg',
+            'coco2017_val2017_000000000724.jpg'
+        ]
         imgs = [os.path.join(tests_img_root, img) for img in imgs]
-        trainer.predict(imgs,
-                        draw_threshold=0.5,
-                        output_dir='output',
-                        save_txt=True)
+        trainer.predict(
+            imgs, draw_threshold=0.5, output_dir='output', save_results=False)
 
 
 if __name__ == '__main__':
