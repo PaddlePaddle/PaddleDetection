@@ -235,7 +235,7 @@ class Detector(object):
             import sahi
             from sahi.slicing import slice_image
         except Exception as e:
-            logger.error(
+            print(
                 'sahi not found, plaese install sahi. '
                 'for example: `pip install sahi`, see https://github.com/obss/sahi.'
             )
@@ -251,6 +251,7 @@ class Detector(object):
                 overlap_width_ratio=overlap_ratio[1])
             sub_img_num = len(slice_image_result)
             merged_bboxs = []
+            print('sub_img_num', sub_img_num)
 
             batch_image_list = [
                 slice_image_result.images[_ind] for _ind in range(sub_img_num)
