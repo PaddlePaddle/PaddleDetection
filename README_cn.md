@@ -414,7 +414,6 @@
 - [快速体验](docs/tutorials/QUICK_STARTED_cn.md)
 - [数据准备](docs/tutorials/data/README.md)
 - [PaddleDetection全流程使用](docs/tutorials/GETTING_STARTED_cn.md)
-- [自定义数据训练](docs/tutorials/CustomizeDataTraining.md)
 - [FAQ/常见问题汇总](docs/tutorials/FAQ)
 
 ### 进阶教程
@@ -447,7 +446,7 @@
     - [目标检测](docs/advanced_tutorials/customization/detection.md)
     - [关键点检测](docs/advanced_tutorials/customization/keypoint_detection.md)
     - [多目标跟踪](docs/advanced_tutorials/customization/pphuman_mot.md)
-    - [行为识别](docs/advanced_tutorials/customization/pphuman_action.md)
+    - [行为识别](docs/advanced_tutorials/customization/action_recognotion/)
     - [属性识别](docs/advanced_tutorials/customization/pphuman_attribute.md)
 
 ### 课程专栏
