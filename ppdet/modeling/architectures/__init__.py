@@ -62,3 +62,4 @@ from .tood import *
 from .retinanet import *
 from .bytetrack import *
 from .yolox import *
+from .pose3d_metro import *
