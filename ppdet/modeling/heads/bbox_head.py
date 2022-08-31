@@ -184,7 +184,8 @@ class BBoxHead(nn.Layer):
                  with_pool=False,
                  num_classes=80,
                  bbox_weight=[10., 10., 5., 5.],
-                 bbox_loss=None):
+                 bbox_loss=None,
+                 loss_normalize_pos=False):
         super(BBoxHead, self).__init__()
         self.head = head
         self.roi_extractor = roi_extractor
@@ -196,6 +197,7 @@ class BBoxHead(nn.Layer):
         self.num_classes = num_classes
         self.bbox_weight = bbox_weight
         self.bbox_loss = bbox_loss
+        self.loss_normalize_pos = loss_normalize_pos
 
         self.bbox_score = nn.Linear(
             in_channel,
@@ -250,8 +252,13 @@ class BBoxHead(nn.Layer):
         deltas = self.bbox_delta(feat)
 
         if self.training:
-            loss = self.get_loss(scores, deltas, targets, rois,
-                                 self.bbox_weight)
+            loss = self.get_loss(
+                scores,
+                deltas,
+                targets,
+                rois,
+                self.bbox_weight,
+                loss_normalize_pos=self.loss_normalize_pos)
             return loss, bbox_feat
         else:
             pred = self.get_prediction(scores, deltas)
