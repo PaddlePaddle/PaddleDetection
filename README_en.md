@@ -407,7 +407,6 @@ Please refer to [docs](deploy/pipeline/README_en.md) for details.
 - [Quick start](docs/tutorials/QUICK_STARTED_cn.md)
 - [Data preparation](docs/tutorials/data/README.md)
 - [Geting Started on PaddleDetection](docs/tutorials/GETTING_STARTED_cn.md)
-- [Customize data training]((docs/tutorials/CustomizeDataTraining.md)
 - [FAQ]((docs/tutorials/FAQ)
 
 ### Advanced tutorials
@@ -446,7 +445,7 @@ Please refer to [docs](deploy/pipeline/README_en.md) for details.
     - [Object detection](docs/advanced_tutorials/customization/detection.md)
     - [Keypoint detection](docs/advanced_tutorials/customization/keypoint_detection.md)
     - [Multiple object tracking](docs/advanced_tutorials/customization/pphuman_mot.md)
-    - [Action recognition](docs/advanced_tutorials/customization/pphuman_action.md)
+    - [Action recognition](docs/advanced_tutorials/customization/action_recognotion/)
     - [Attribute recognition](docs/advanced_tutorials/customization/pphuman_attribute.md)
 
 ### Courses
