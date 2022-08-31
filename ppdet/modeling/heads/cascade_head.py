@@ -250,7 +250,7 @@ class CascadeHead(BBoxHead):
                 if self.training:
                     deltas = deltas[paddle.arange(deltas.shape[0]), labels]
                 else:
-                    deltas = deltas[(deltas * F.one_hot(
+                    deltas = deltas[((deltas + 10000) * F.one_hot(
                         labels, num_classes=self.num_classes).unsqueeze(-1) != 0
                                      ).nonzero(as_tuple=True)].reshape(
                                          [deltas.shape[0], 4])
