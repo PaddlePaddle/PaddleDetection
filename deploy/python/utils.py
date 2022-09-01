@@ -108,7 +108,7 @@ def argsparser():
         "calibration, trt_calib_mode need to set True.")
     parser.add_argument(
         '--save_images',
-        type=bool,
+        type=ast.literal_eval,
         default=True,
         help='Save visualization image results.')
     parser.add_argument(
