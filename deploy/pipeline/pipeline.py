@@ -573,7 +573,8 @@ class PipePredictor(object):
         capture = cv2.VideoCapture(video_file)
         video_out_name = 'output.mp4' if self.file_name is None else self.file_name
         if "rtsp" in video_file:
-            video_out_name = video_out_name + "_rtsp.mp4"
+            video_out_name = video_out_name + "_t" + str(thread_idx).zfill(
+                2) + "_rtsp.mp4"
 
         # Get Video info : resolution, fps, frame count
         width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
