@@ -73,7 +73,7 @@ class Pipeline(object):
         self.vis_result = cfg['visual']
         self.input = self._parse_input(args.image_file, args.image_dir,
                                        args.video_file, args.video_dir,
-                                       args.camera_id)
+                                       args.camera_id, args.rtsp)
         if self.multi_camera:
             self.predictor = []
             for name in self.input:
@@ -85,10 +85,10 @@ class Pipeline(object):
         else:
             self.predictor = PipePredictor(args, cfg, self.is_video)
             if self.is_video:
-                self.predictor.set_file_name(args.video_file)
+                self.predictor.set_file_name(self.input)
 
     def _parse_input(self, image_file, image_dir, video_file, video_dir,
-                     camera_id):
+                     camera_id, rtsp):
 
         # parse input as is_video and multi_camera
 
@@ -115,6 +115,16 @@ class Pipeline(object):
                 input = videof[0]
             self.is_video = True
 
+        elif rtsp is not None:
+            if len(rtsp) > 1:
+                rtsp = [rtsp_item for rtsp_item in rtsp if 'rtsp' in rtsp_item]
+                self.multi_camera = True
+                input = rtsp
+            else:
+                self.multi_camera = False
+                input = rtsp[0]
+            self.is_video = True
+
         elif camera_id != -1:
             self.multi_camera = False
             input = camera_id
@@ -126,6 +136,37 @@ class Pipeline(object):
             )
 
         return input
+
+    def run_multithreads(self):
+        import threading
+        if self.multi_camera:
+            multi_res = []
+            threads = []
+            for idx, (predictor,
+                      input) in enumerate(zip(self.predictor, self.input)):
+                thread = threading.Thread(
+                    name=str(idx).zfill(3),
+                    target=predictor.run,
+                    args=(input, idx))
+                threads.append(thread)
+
+            for thread in threads:
+                thread.start()
+
+            for predictor, thread in zip(self.predictor, threads):
+                thread.join()
+                collector_data = predictor.get_result()
+                multi_res.append(collector_data)
+
+            if self.enable_mtmct:
+                mtmct_process(
+                    multi_res,
+                    self.input,
+                    mtmct_vis=self.vis_result,
+                    output_dir=self.output_dir)
+
+        else:
+            self.predictor.run(self.input)
 
     def run(self):
         if self.multi_camera:
@@ -437,9 +478,9 @@ class PipePredictor(object):
     def get_result(self):
         return self.collector.get_res()
 
-    def run(self, input):
+    def run(self, input, thread_idx=0):
         if self.is_video:
-            self.predict_video(input)
+            self.predict_video(input, thread_idx=thread_idx)
         else:
             self.predict_image(input)
         self.pipe_timer.info()
@@ -525,7 +566,7 @@ class PipePredictor(object):
             if self.cfg['visual']:
                 self.visualize_image(batch_file, batch_input, self.pipeline_res)
 
-    def predict_video(self, video_file):
+    def predict_video(self, video_file, thread_idx=0):
         # mot
         # mot -> attr
         # mot -> pose -> action
@@ -593,7 +634,7 @@ class PipePredictor(object):
 
         while (1):
             if frame_id % 10 == 0:
-                print('frame id: ', frame_id)
+                print('Thread: {}; frame id: {}'.format(thread_idx, frame_id))
 
             ret, frame = capture.read()
             if not ret:
@@ -620,6 +661,10 @@ class PipePredictor(object):
                 if frame_id > self.warmup_frame:
                     self.pipe_timer.module_time['mot'].end()
                     self.pipe_timer.track_num += len(mot_res['boxes'])
+
+                if frame_id % 10 == 0:
+                    print("Thread: {}; trackid number: {}".format(
+                        thread_idx, len(mot_res['boxes'])))
 
                 # flow_statistic only support single class MOT
                 boxes, scores, ids = res[0]  # batch size = 1 in MOT
@@ -1021,7 +1066,8 @@ def main():
     print_arguments(cfg)
 
     pipeline = Pipeline(FLAGS, cfg)
-    pipeline.run()
+    # pipeline.run()
+    pipeline.run_multithreads()
 
 
 if __name__ == '__main__':
