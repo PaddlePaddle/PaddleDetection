@@ -87,7 +87,7 @@ class RoIAlign(object):
             offset = 2
             k_min = self.start_level + offset
             k_max = self.end_level + offset
-            rois_dist, restore_index, rois_num_dist = ops.distribute_fpn_proposals(
+            rois_dist, restore_index, rois_num_dist = paddle.vision.ops.distribute_fpn_proposals(
                 roi,
                 k_min,
                 k_max,
