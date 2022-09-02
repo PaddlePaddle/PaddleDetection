@@ -23,21 +23,25 @@
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> Product Update
 
-- 🔥 **2022.8.09：Release [YOLO series model zoo](https://github.com/nemonameless/PaddleDetection_YOLOSeries)**
-  - Comprehensive coverage of classic and latest models of the YOLO series: Including YOLOv3，Paddle real-time object detection model PP-YOLOE, and frontier detection algorithms YOLOv4, YOLOv5, YOLOX, MT-YOLOv6 and YOLOv7
-  - Better model performance：Upgrade based on various YOLO algorithms, shorten training time in 5-8 times and the accuracy is generally improved by 1%-5% mAP. The model compression strategy is used to achieve 30% improvement in speed without precision loss
-  - Complete end-to-end development support：End-to-end development pipieline including training, evaluation, inference, model compression and deployment on various hardware. Meanwhile, support flexible algorithnm switch and implement customized development efficiently
+- 🔥 **2022.8.26：PaddleDetection releases[release/2.5 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)**
 
-- 🔥 **2022.8.01：Release [PP-TinyPose plus](./configs/keypoint/tiny_pose/). The end-to-end precision improves 9.1% AP in dataset
- of fitness and dance scenes**
-  - Increase data of sports scenes, and the recognition performance of complex actions is significantly improved, covering actions such as sideways, lying down, jumping, and raising legs
-  - Detection model uses PP-PicoDet plus and the precision on COCO dataset is improved by 3.1% mAP
-  - The stability of keypoints is enhanced. Implement the filter stabilization method to make the video prediction result more stable and smooth.
+  - 🗳 Model features：
 
-- 2022.7.14：Release [pedestrian analysis tool PP-Human v2](./deploy/pipeline)
-  - Four major functions: five complicated action recognition with high performance and Flexible, real-time human attribute recognition, visitor flow statistics and high-accuracy multi-camera tracking.
-  - High performance algorithm: including pedestrian detection, tracking, attribute recognition which is robust to the number of targets and the variant of background and light.
-  - Highly Flexible: providing complete introduction of end-to-end development and optimization strategy, simple command for deployment and compatibility with different input format.
+    - Release [PP-YOLOE+](configs/ppyoloe): Increased accuracy by a maximum of 2.4% mAP to 54.9% mAP, 3.75 times faster model training convergence rate, and up to 2.3 times faster end-to-end inference speed; improved generalization for multiple downstream tasks
+    - Release [PicoDet-NPU](configs/picodet) model which supports full quantization deployment of models; add [PicoDet](configs/picodet) layout analysis model
+    - Release [PP-TinyPose Plus](./configs/keypoint/tiny_pose/). With 9.1% AP accuracy improvement in physical exercise, dance, and other scenarios, our PP-TinyPose Plus supports unconventional movements such as turning to one side, lying down, jumping, and high lifts
+
+  - 🔮 Functions in different scenarios
+
+    - Release the pedestrian analysis tool [PP-Human v2](./deploy/pipeline). It introduces four new behavior recognition: fighting, telephoning, smoking, and trespassing. The underlying algorithm performance is optimized, covering three core algorithm capabilities: detection, tracking, and attributes of pedestrians. Our model provides end-to-end development and model optimization strategies for beginners and supports online video streaming input.
+    - First release [PP-Vehicle](./deploy/pipeline), which has four major functions: license plate recognition, vehicle attribute analysis (color, model), traffic flow statistics, and violation detection. It is compatible with input formats, including pictures, online video streaming, and video. And we also offer our users a comprehensive set of tutorials for customization.
+
+  - 💡 Cutting-edge algorithms：
+
+    - Covers [YOLO family](https://github.com/nemonameless/PaddleDetection_YOLOSeries) classic and latest models: YOLOv3, PP-YOLOE (a real-time high-precision object detection model developed by Baidu PaddlePaddle), and cutting-edge detection algorithms such as YOLOv4, YOLOv5, YOLOX, MT-YOLOv6, and YOLOv7
+    - Newly add high precision detection model based on [ViT](configs/vitdet) backbone network, with a 55.7% mAP accuracy on COCO dataset; newly add multi-object tracking model [OC-SORT](configs/mot/ocsort); newly add [ConvNeXt](configs/convnext) backbone network.
+
+  - 📋 Industrial applications: Newly add [Smart Fitness](https://aistudio.baidu.com/aistudio/projectdetail/4385813), [Fighting recognition](https://aistudio.baidu.com/aistudio/projectdetail/4086987?channelType=0&channel=0),[ and Visitor Analysis](https://aistudio.baidu.com/aistudio/projectdetail/4230123?channelType=0&channel=0).
 
 - 2022.3.24：PaddleDetection released[release/2.4 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4)  
   - Release high-performanace SOTA object detection model [PP-YOLOE](configs/ppyoloe). It integrates cloud and edge devices and provides S/M/L/X versions. In particular, Verson L has the accuracy as 51.4% on COCO test 2017 dataset, inference speed as 78.1 FPS on a single Test V100. It supports mixed precision training, 33% faster than PP-YOLOv2. Its full range of multi-sized models can meet different hardware arithmetic requirements, and adaptable to server, edge-device GPU and other AI accelerator cards on servers.
@@ -65,17 +69,16 @@
 - **High Performance**: Due to the high performance core, PaddlePaddle has clear advantages in training speed and memory occupation. It also supports FP16 training and multi-machine training.
 
 <div  align="center">
-  <img src="img width="484" alt="newstructure" src="https://user-images.githubusercontent.com/107399028/177736039-fdf69bfc-ef38-40e6-8746-1e581101e76a.png"" width="800"/>
+  <img src="img width="484" alt="newstructure" src="https://user-images.githubusercontent.com/22989727/186810676-29078214-27ab-45eb-9adb-5dea2b0d035b.png"" width="800"/>
 </div
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157800467-2a9946ad-30d1-49a9-b9db-ba33413d9c90.png" alt="" width="20"> Exchanges
 
 - If you have any question or suggestion, please give us your valuable input via [GitHub Issues](https://github.com/PaddlePaddle/PaddleDetection/issues)
 
-  Welcome to join PaddleDetection user groups on QQ, WeChat (scan the QR code, add and reply "D" to the assistant)
+  Welcome to join PaddleDetection user groups on WeChat (scan the QR code, add and reply "D" to the assistant)
 
   <div align="center">
-  <img src="https://user-images.githubusercontent.com/22989727/183843004-baebf75f-af7c-4a7c-8130-1497b9a3ec7e.png"  width = "200" />  
   <img src="https://user-images.githubusercontent.com/34162360/177678712-4655747d-4290-4ad9-b7a1-4564a5418ac6.jpg"  width = "200" />  
   </div>
 
@@ -111,6 +114,7 @@
             <li>PP-YOLOv1/v2</li>
             <li>PP-YOLO-Tiny</li>
             <li>PP-YOLOE</li>
+            <li>PP-YOLOE+</li>
             <li>YOLOX</li>
             <li>SSD</li>
             <li>CenterNet</li>
@@ -140,6 +144,7 @@
             <li>FairMOT</li>
             <li>DeepSORT</li>
             <li>ByteTrack</li>
+            <li>OC-SORT</li>
         </ul></details>
         <details><summary><b>KeyPoint-Detection</b></summary>
         <ul>
@@ -171,6 +176,8 @@
           <li>LCNet</li>  
           <li>ESNet</li>  
           <li>Swin-Transformer</li>
+          <li>ConvNeXt</li>
+          <li>Vision Transformer</li>
         </ul></details>
       </td>
       <td>
@@ -258,11 +265,10 @@ The comparison between COCO mAP and FPS on Tesla V100 of representative models o
 
 **Clarification：**
 
-- `CBResNet` stands for `Cascade-Faster-RCNN-CBResNet200vd-FPN`, which has highest mAP on COCO as 53.3%
+- `ViT` stands for `ViT-Cascade-Faster-RCNN`, which has highest mAP on COCO as 55.7%
 - `Cascade-Faster-RCNN`stands for `Cascade-Faster-RCNN-ResNet50vd-DCN`, which has been optimized to 20 FPS inference speed when COCO mAP as 47.8% in PaddleDetection models
-- `PP-YOLO` reached accuracy as 45.9% on COCO dataset, inference speed as 72.9 FPS on Tesla V100, higher than [YOLOv4]([[2004.10934] YOLOv4: Optimal Speed and Accuracy of Object Detection](https://arxiv.org/abs/2004.10934)) in terms of speed and accuracy
-- `PP-YOLO v2`are optimized `PP-YOLO`. It reached accuracy as 49.5% on COCO dataset, inference speed as 68.9 FPS on Tesla V100.
-- `PP-YOLOE`are optimized `PP-YOLO v2`. It reached accuracy as 51.4% on COCO dataset, inference speed as 78.1 FPS on Tesla V100
+- `PP-YOLOE` are optimized `PP-YOLO v2`. It reached accuracy as 51.4% on COCO dataset, inference speed as 78.1 FPS on Tesla V100
+- `PP-YOLOE+` are optimized `PP-YOLOE`. It reached accuracy as 53.3% on COCO dataset, inference speed as 78.1 FPS on Tesla V100
 - The models in the figure are available in the[ model library](#模型库)
 
 </details>
@@ -292,10 +298,10 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 
 | Model      | COCO Accuracy（mAP） | V100 TensorRT FP16 Speed(FPS) | Configuration                                           | Download                                                                                 |
 |:---------- |:------------------:|:-----------------------------:|:-------------------------------------------------------:|:----------------------------------------------------------------------------------------:|
-| PP-YOLOE-s | 42.7               | 333.3                         | [Link](configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml)     | [Download](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams)      |
-| PP-YOLOE-m | 48.6               | 208.3                         | [Link](configs/ppyolo/ppyolo_r50vd_dcn_2x_coco.yml)     | [Download](https://paddledet.bj.bcebos.com/models/ppyolo_r50vd_dcn_2x_coco.pdparams)     |
-| PP-YOLOE-l | 50.9               | 149.2                         | [Link](configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [Download](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams) |
-| PP-YOLOE-x | 51.9               | 95.2                          | [Link](configs/ppyolo/ppyolov2_r50vd_dcn_365e_coco.yml) | [Download](https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams) |
+| PP-YOLOE+_s | 43.9        | 333.3                     | [link](configs/ppyoloe/ppyoloe_plus_crn_s_80e_coco.yml)     | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco.pdparams)      |
+| PP-YOLOE+_m | 50.0        | 208.3                     | [link](configs/ppyoloe/ppyoloe_plus_crn_m_80e_coco.yml)     | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco.pdparams)     |
+| PP-YOLOE+_l | 53.3        | 149.2                     | [link](configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco.pdparams) |
+| PP-YOLOE+_x | 54.9        | 95.2                      | [link](configs/ppyoloe/ppyoloe_plus_crn_x_80e_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_x_80e_coco.pdparams) |
 
 #### PP-PicoDet series Recommended scenarios: Mobile chips and x86 CPU devices, such as ARM CPU(RK3399, Raspberry Pi) and NPU(BITMAIN)
 
@@ -347,10 +353,9 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 
 | Model     | Introduction                                                  | Recommended scenarios | Accuracy               | Configuration                                                           | Download                                                                                              |
 |:--------- |:------------------------------------------------------------- |:--------------------- |:----------------------:|:-----------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------------:|
-| DeepSORT  | SDE Multi-object tracking algorithm, independent ReID models  | Edge-Cloud end        | MOT-17 half val:  66.9 | [Link](configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid.yml)        | [Download](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)    |
 | ByteTrack | SDE Multi-object tracking algorithm with detection model only | Edge-Cloud end        | MOT-17 half val:  77.3 | [Link](configs/mot/bytetrack/detector/yolox_x_24e_800x1440_mix_det.yml) | [Download](https://paddledet.bj.bcebos.com/models/mot/deepsort/yolox_x_24e_800x1440_mix_det.pdparams) |
-| JDE       | JDE multi-object tracking algorithm multi-task learning       | Edge-Cloud end        | MOT-16 test: 64.6      | [Link](configs/mot/jde/jde_darknet53_30e_1088x608.yml)                  | [Download](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)            |
 | FairMOT   | JDE multi-object tracking algorithm multi-task learning       | Edge-Cloud end        | MOT-16 test: 75.0      | [Link](configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml)              | [Download](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams)            |
+| OC-SORT   | SDE multi-object tracking algorithm with detection model only       | Edge-Cloud end        | MOT-16 half val: 75.5      | [Link](configs/mot/ocsort/ocsort_yolox.yml)              | -            |
 
 #### Other multi-object tracking models [docs](configs/mot)
 
@@ -359,20 +364,40 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 <details>
 <summary><b> 5. Industrial real-time pedestrain analysis tool-PP Human</b></summary>
 
-| Function \ Model                     | Obejct detection                                                                       | Multi- object tracking                                                                 | Attribute recognition                                                                     | Keypoint detection                                                                        | Action recognition                                                | ReID                                                                   |
-|:------------------------------------ |:-------------------------------------------------------------------------------------- |:-------------------------------------------------------------------------------------- |:-----------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------:|:-----------------------------------------------------------------:|:----------------------------------------------------------------------:|
-| Pedestrian Detection                 | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                        |                                                                                           |                                                                                           |                                                                   |                                                                        |
-| Pedestrian Tracking                  |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                           |                                                                                           |                                                                   |                                                                        |
-| Attribute Recognition (Image)        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) |                                                                                           |                                                                   |                                                                        |
-| Attribute Recognition (Video)        |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                           |                                                                                           |                                                                   |                                                                        |
-| Falling Detection                    |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                           | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip) | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) |                                                                        |
-| ReID                                 |                                                                                        | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) |                                                                                           |                                                                                           |                                                                   | [✅](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) |
-| **Accuracy**                         | mAP 56.3                                                                               | MOTA 72.0                                                                              | mA 94.86                                                                                  | AP 87.1                                                                                   | AP 96.43                                                          | mAP 98.8                                                               |
-| **T4 TensorRT FP16 Inference speed** | 28.0ms                                                                                 | 33.1ms                                                                                 | Single person 2ms                                                                         | Single person 2.9ms                                                                       | Single person 2.7ms                                               | Single person 1.5ms                                                    |
+| Task                                   | End-to-End Speed（ms） | Model                                                                                                                                                                                                                                                                                                                           | Size                                                                                                   |
+|:--------------------------------------:|:--------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------:|
+| Pedestrian detection (high precision)  | 25.1ms               | [Multi-object tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)                                                                                                                                                                                                                      | 182M                                                                                                   |
+| Pedestrian detection (lightweight)     | 16.2ms               | [Multi-object tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip)                                                                                                                                                                                                                      | 27M                                                                                                    |
+| Pedestrian tracking (high precision)   | 31.8ms               | [Multi-object tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)                                                                                                                                                                                                                      | 182M                                                                                                   |
+| Pedestrian tracking (lightweight)      | 21.0ms               | [Multi-object tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip)                                                                                                                                                                                                                      | 27M                                                                                                    |
+| Attribute recognition (high precision) | Single person8.5ms   | [Object detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [Attribute recognition](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip)                                                                                                         | Object detection：182M<br>Attribute recognition：86M                                                     |
+| Attribute recognition (lightweight)    | Single person 7.1ms  | [Object detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [Attribute recognition](https://bj.bcebos.com/v1/paddledet/models/pipeline/strongbaseline_r50_30e_pa100k.zip)                                                                                                         | Object detection：182M<br>Attribute recognition：86M                                                     |
+| Falling detection                      | Single person 10ms   | [Multi-object tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) <br> [Keypoint detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) <br> [Behavior detection based on key points](https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip) | Multi-object tracking：182M<br>Keypoint detection：101M<br>Behavior detection based on key points: 21.8M |
+| Intrusion detection                    | 31.8ms               | [Multi-object tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)                                                                                                                                                                                                                      | 182M                                                                                                   |
+| Fighting detection                     | 19.7ms               | [Video classification](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)                                                                                                                                                                                                                       | 90M                                                                                                    |
+| Smoking detection                      | Single person 15.1ms | [Object detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[Object detection based on Human Id](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip)                                                                                        | Object detection：182M<br>Object detection based on Human ID: 27M                                       |
+| Phoning detection                      | Single person ms     | [Object detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br>[Image classification based on Human ID](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip)                                                                                         | Object detection：182M<br>Image classification based on Human ID：45M                                    |
+
+Please refer to [docs](deploy/pipeline/README_en.md) for details.
 
 </details>
 
-**Click “ ✅ ” to download**
+<details>
+<summary><b> 6. Industrial real-time vehicle analysis tool-PP Vehicle</b></summary>
+
+| Task                                   | End-to-End Speed（ms） | Model                                                                                                                                                                                                                                                                                                                           | Size                                                                                                   |
+|:--------------------------------------:|:--------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------:|
+| Vehicle detection (high precision)  | 25.7ms               | [object detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip)                                                                                                                                                                                                                      | 182M                                                                                                   |
+| Vehicle detection (lightweight)     | 13.2ms               | [object detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip)                                                                                                                                                                                                                      | 27M                                                                                                    |
+| Vehicle tracking (high precision)   | 40ms               | [multi-object tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip)                                                                                                                                                                                                                      | 182M                                                                                                   |
+| Vehicle tracking (lightweight)      | 25ms               | [multi-object tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip)                                                                                                                                                                                                                      | 27M                                                                                                    |
+| Plate Recognition                   | 4.68ms     | [plate detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz)<br>[plate recognition](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz)                                                                                         | Plate detection：3.9M<br>Plate recognition：12M                                    |
+| Vehicle attribute      | 7.31ms               | [attribute recognition](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip)                                                                                                                                                                                                                      | 7.2M                                                                                                    |
+
+Please refer to [docs](deploy/pipeline/README_en.md) for details.
+
+</details>
+
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157828296-d5eb0ccb-23ea-40f5-9957-29853d7d13a9.png" width="20"/>Document tutorials
 
@@ -382,7 +407,6 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 - [Quick start](docs/tutorials/QUICK_STARTED_cn.md)
 - [Data preparation](docs/tutorials/data/README.md)
 - [Geting Started on PaddleDetection](docs/tutorials/GETTING_STARTED_cn.md)
-- [Customize data training]((docs/tutorials/CustomizeDataTraining.md)
 - [FAQ]((docs/tutorials/FAQ)
 
 ### Advanced tutorials
@@ -421,7 +445,7 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
     - [Object detection](docs/advanced_tutorials/customization/detection.md)
     - [Keypoint detection](docs/advanced_tutorials/customization/keypoint_detection.md)
     - [Multiple object tracking](docs/advanced_tutorials/customization/pphuman_mot.md)
-    - [Action recognition](docs/advanced_tutorials/customization/pphuman_action.md)
+    - [Action recognition](docs/advanced_tutorials/customization/action_recognotion/)
     - [Attribute recognition](docs/advanced_tutorials/customization/pphuman_attribute.md)
 
 ### Courses

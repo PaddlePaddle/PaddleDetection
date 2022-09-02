@@ -52,21 +52,23 @@ SKELETON_ACTION: # 基于骨骼点的行为识别模型配置
 ### 使用方法
 1. 从`模型库`中下载`行人检测/跟踪`、`关键点识别`、`摔倒行为识别`三个预测部署模型并解压到```./output_inference```路径下;默认自动下载模型，如果手动下载，需要修改模型文件夹为模型存放路径。
 2. 目前行为识别模块仅支持视频输入，根据期望开启的行为识别方案类型，设置infer_cfg_pphuman.yml中`SKELETON_ACTION`的enable: True, 然后启动命令如下：
-```python
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
+    ```bash
+    python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
-```
+    ```
+
 3. 若修改模型路径，有以下两种方式：
 
     - ```./deploy/pipeline/config/infer_cfg_pphuman.yml```下可以配置不同模型路径，关键点模型和摔倒行为识别模型分别对应`KPT`和`SKELETON_ACTION`字段，修改对应字段下的路径为实际期望的路径即可。
-    - 命令行中增加`--model_dir`修改模型路径：
-```python
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
+    - 命令行中--config后面紧跟着增加`-o KPT.model_dir=xxx SKELETON_ACTION.model_dir=xxx `修改模型路径：
+    ```bash
+    python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
+                                                   -o KPT.model_dir=./dark_hrnet_w32_256x192 SKELETON_ACTION.model_dir=./STGCN \
                                                    --video_file=test_video.mp4 \
-                                                   --device=gpu \
-                                                   --model_dir kpt=./dark_hrnet_w32_256x192 action=./STGCN
-```
+                                                   --device=gpu
+    ```
+
 4. 启动命令中的完整参数说明，请参考[参数说明](./PPHuman_QUICK_STARTED.md)。
 
 

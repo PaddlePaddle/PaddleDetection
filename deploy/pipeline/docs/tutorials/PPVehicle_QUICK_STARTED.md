@@ -46,11 +46,13 @@ PP-Vehicle提供了目标检测、属性识别、行为识别、ReID预训练模
 
 | 任务            | 端到端速度（ms）|  模型方案  |  模型体积 |
 | :---------:     | :-------:  |  :------: |:------: |
-|  车辆检测（高精度）  | 25.1ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) | 182M |  
-|  车辆检测（轻量级）  | 16.2ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip) | 27M |
-|  车辆跟踪（高精度）  | 31.8ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) | 182M |
-|  车辆跟踪（轻量级）  | 21.0ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip) | 27M |
-|  闯入识别  |   31.8ms | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) | 多目标跟踪：182M |
+|  车辆检测（高精度）  | 25.7ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) | 182M |  
+|  车辆检测（轻量级）  | 13.2ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip) | 27M |
+|  车辆跟踪（高精度）  | 40ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) | 182M |
+|  车辆跟踪（轻量级）  | 25ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip) | 27M |
+|  车牌识别  |   4.68ms |  [车牌检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz) <br> [车牌字符识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz) | 车牌检测：3.9M  <br> 车牌字符识别： 12M |
+|  车辆属性  |   7.31ms | [车辆属性](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip) | 7.2M |
+
 
 下载模型后，解压至`./output_inference`文件夹。
 
@@ -81,13 +83,13 @@ visual: True
 warmup_frame: 50
 
 MOT:
-  model_dir: output_inference/mot_ppyoloe_l_36e_ppvehicle/
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip
   tracker_config: deploy/pipeline/config/tracker_config.yml
   batch_size: 1
   enable: True
 
 VEHICLE_ATTR:
-  model_dir: output_inference/vehicle_attribute_infer/
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip
   batch_size: 8
   color_threshold: 0.5
   type_threshold: 0.5
@@ -97,32 +99,53 @@ VEHICLE_ATTR:
 **注意：**
 
 - 如果用户需要实现不同任务，可以在配置文件对应enable选项设置为True。
-- 如果用户仅需要修改模型文件路径，可以在命令行中加入 `--model_dir det=ppyoloe/` 即可，也可以手动修改配置文件中的相应模型路径，详细说明参考下方参数说明文档。
+- 如果用户仅需要修改模型文件路径，可以在命令行中--config后面紧跟着 `-o MOT.model_dir=ppyoloe/` 进行修改即可，也可以手动修改配置文件中的相应模型路径，详细说明参考下方参数说明文档。
 
 
 ## 预测部署
 
+1. 直接使用默认配置或者examples中配置文件，或者直接在`infer_cfg_ppvehicle.yml`中修改配置：
 ```
-# 车辆检测，指定配置文件路径和测试图片
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml --image_file=test_image.jpg --device=gpu [--run_mode trt_fp16]
+# 例：车辆检测，指定配置文件路径和测试图片
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml --image_file=test_image.jpg --device=gpu
 
-# 车辆跟踪，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_ppvehicle.yml```中的MOT部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
-
-# 车辆跟踪，指定配置文件路径，模型路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_ppvehicle.yml```中的MOT部分enable设置为```True```
-# 命令行中指定的模型路径优先级高于配置文件
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml --video_file=test_video.mp4 --device=gpu --model_dir det=ppyoloe/ [--run_mode trt_fp16]
-
-# 车辆属性识别，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_ppvehicle.yml```中的ATTR部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml --video_file=test_video.mp4 --device=gpu [--run_mode trt_fp16]
-
+# 例：车辆车牌识别，指定配置文件路径和测试视频
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_vehicle_plate.yml --video_file=test_video.mp4 --device=gpu
 ```
 
-对rtsp流的支持，video_file后面的视频地址更换为rtsp流地址，示例如下：
+2. 使用命令行进行功能开启，或者模型路径修改：
 ```
-# 车辆属性识别，指定配置文件路径和测试视频，在配置文件```deploy/pipeline/config/infer_cfg_ppvehicle.yml```中的ATTR部分enable设置为```True```
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml  -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu [--run_mode trt_fp16]
+# 例：车辆跟踪，指定配置文件路径和测试视频，命令行中开启MOT模型并修改模型路径，命令行中指定的模型路径优先级高于配置文件
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml -o MOT.enable=True MOT.model_dir=ppyoloe_infer/ --video_file=test_video.mp4 --device=gpu
+
+# 例：车辆违法分析，指定配置文件和测试视频，命令行中指定违停区域设置、违停时间判断。
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_illegal_parking.yml \
+                                                   --video_file=../car_test.mov \
+                                                   --device=gpu \
+                                                   --draw_center_traj \
+                                                   --illegal_parking_time=3 \
+                                                   --region_type=custom \
+                                                   --region_polygon 600 300 1300 300 1300 800 600 800
+
 ```
+
+3. 对rtsp流的支持，video_file后面的视频地址更换为rtsp流地址，示例如下：
+```
+# 例：车辆属性识别，指定配置文件路径和测试视频
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_vehicle_attr.yml  -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu
+```
+
+### Jetson部署说明
+
+由于Jetson平台算力相比服务器有较大差距，有如下使用建议：
+
+1. 模型选择轻量级版本，特别是跟踪模型，推荐使用`ppyoloe_s: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip`
+2. 开启跟踪跳帧功能，推荐使用2或者3. `skip_frame_num: 3`
+
+使用该推荐配置，在TX2平台上可以达到较高速率，经测试属性案例达到20fps。
+
+可以直接修改配置文件（推荐），也可以在命令行中修改（字段较长，不推荐）。
+
 
 ### 参数说明
 
@@ -130,7 +153,6 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 |-------|-------|----------|
 | --config | Yes | 配置文件路径 |
 | -o | Option | 覆盖配置文件中对应的配置  |
-| --model_dir | Option | 各任务模型路径，优先级高于配置文件, 例如`--model_dir det=better_det/ attr=better_attr/`|
 | --image_file | Option | 需要预测的图片 |
 | --image_dir  | Option |  要预测的图片文件夹路径   |
 | --video_file | Option | 需要预测的视频，或者rtsp流地址 |
@@ -143,10 +165,13 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 | --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
 | --do_entrance_counting | Option | 是否统计出入口流量，默认为False |
 | --draw_center_traj | Option | 是否绘制跟踪轨迹，默认为False |
+| --region_type | Option | 'horizontal'（默认值）、'vertical'：表示流量统计方向选择；'custom'：表示设置车辆禁停区域 |
+| --region_polygon | Option | 设置禁停区域多边形多点的坐标，无默认值 |
+| --illegal_parking_time | Option | 设置禁停时间阈值，单位秒（s），-1（默认值）表示不做检查 |
 
 ## 方案介绍
 
-PP-Vehicle v2整体方案如下图所示:
+PP-Vehicle 整体方案如下图所示:
 
 <div width="1000" align="center">
   <img src="../../../../docs/images/ppvehicle.png"/>
@@ -169,7 +194,7 @@ PP-Vehicle v2整体方案如下图所示:
 
 ### 车牌识别
 - 使用PaddleOCR特色模型ch_PP-OCRv3_det+ch_PP-OCRv3_rec模型，识别车牌号码
-- 详细文档参考[属性识别](ppvehicle_plate.md)
+- 详细文档参考[车牌识别](ppvehicle_plate.md)
 
 ### 违法停车识别
 - 车辆跟踪模型使用高精度模型PP-YOLOE L，根据车辆的跟踪轨迹以及指定的违停区域判断是否违法停车，如果存在则展示违法停车车牌号。

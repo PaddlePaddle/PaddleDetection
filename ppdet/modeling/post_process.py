@@ -17,7 +17,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
-from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly
+from ppdet.modeling.bbox_utils import nonempty_bbox
 from ppdet.modeling.layers import TTFBox
 from .transformers import bbox_cxcywh_to_xyxy
 try:
@@ -34,16 +34,17 @@ __all__ = [
 
 @register
 class BBoxPostProcess(object):
-    __shared__ = ['num_classes', 'export_onnx']
+    __shared__ = ['num_classes', 'export_onnx', 'export_eb']
     __inject__ = ['decode', 'nms']
 
     def __init__(self, num_classes=80, decode=None, nms=None,
-                 export_onnx=False):
+                 export_onnx=False, export_eb=False):
         super(BBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.decode = decode
         self.nms = nms
         self.export_onnx = export_onnx
+        self.export_eb = export_eb
 
     def __call__(self, head_out, rois, im_shape, scale_factor):
         """
@@ -100,6 +101,10 @@ class BBoxPostProcess(object):
             pred_result (Tensor): The final prediction results with shape [N, 6]
                 including labels, scores and bboxes.
         """
+        if self.export_eb:
+            # enable rcnn models for edgeboard hw to skip the following postprocess.
+            return bboxes, bboxes, bbox_num
+
         if not self.export_onnx:
             bboxes_list = []
             bbox_num_list = []
@@ -617,8 +622,23 @@ class SparsePostProcess(object):
         return bbox_pred, bbox_num
 
 
-def nms(dets, thresh):
-    """Apply classic DPM-style greedy NMS."""
+def multiclass_nms(bboxs, num_classes, match_threshold=0.6, match_metric='iou'):
+    final_boxes = []
+    for c in range(num_classes):
+        idxs = bboxs[:, 0] == c
+        if np.count_nonzero(idxs) == 0: continue
+        r = nms(bboxs[idxs, 1:], match_threshold, match_metric)
+        final_boxes.append(np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+    return final_boxes
+
+
+def nms(dets, match_threshold=0.6, match_metric='iou'):
+    """ Apply NMS to avoid detecting too many overlapping bounding boxes.
+        Args:
+            dets: shape [N, 5], [score, x1, y1, x2, y2]
+            match_metric: 'iou' or 'ios'
+            match_threshold: overlap thresh for match metric.
+    """
     if dets.shape[0] == 0:
         return dets[[], :]
     scores = dets[:, 0]
@@ -626,24 +646,11 @@ def nms(dets, thresh):
     y1 = dets[:, 2]
     x2 = dets[:, 3]
     y2 = dets[:, 4]
-
     areas = (x2 - x1 + 1) * (y2 - y1 + 1)
     order = scores.argsort()[::-1]
 
     ndets = dets.shape[0]
     suppressed = np.zeros((ndets), dtype=np.int)
-
-    # nominal indices
-    # _i, _j
-    # sorted indices
-    # i, j
-    # temp variables for box i's (the box currently under consideration)
-    # ix1, iy1, ix2, iy2, iarea
-
-    # variables for computing overlap with box j (lower scoring box)
-    # xx1, yy1, xx2, yy2
-    # w, h
-    # inter, ovr
 
     for _i in range(ndets):
         i = order[_i]
@@ -665,8 +672,15 @@ def nms(dets, thresh):
             w = max(0.0, xx2 - xx1 + 1)
             h = max(0.0, yy2 - yy1 + 1)
             inter = w * h
-            ovr = inter / (iarea + areas[j] - inter)
-            if ovr >= thresh:
+            if match_metric == 'iou':
+                union = iarea + areas[j] - inter
+                match_value = inter / union
+            elif match_metric == 'ios':
+                smaller = min(iarea, areas[j])
+                match_value = inter / smaller
+            else:
+                raise ValueError()
+            if match_value >= match_threshold:
                 suppressed[j] = 1
     keep = np.where(suppressed == 0)[0]
     dets = dets[keep, :]

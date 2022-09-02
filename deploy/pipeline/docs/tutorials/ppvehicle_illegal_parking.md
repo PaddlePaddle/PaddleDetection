@@ -55,6 +55,17 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 - region_type：非法停车区域类型，custom表示自定义；
 - region_polygon：自定义非法停车多边形，至少为3个点。
 
+**注意:**
+ - 违法停车的测试视频必须是静止摄像头拍摄的，镜头不能抖动或移动。
+ - 判断车辆是否在违停区域内是**以车辆的中心点**作为参考，车辆擦边而过等场景不算作违法停车。
+ - `--region_polygon`表示用户自定义区域的多边形的点坐标序列，每两个为一对点坐标(x,y)，**按顺时针顺序**连成一个**封闭区域**，至少需要3对点也即6个整数，默认值是`[]`，需要用户自行设置点坐标，如是四边形区域，坐标顺序是`左上、右上、右下、左下`。用户可以运行[此段代码](../../tools/get_video_info.py)获取所测视频的分辨率帧数，以及可以自定义画出自己想要的多边形区域的可视化并自己调整。
+ 自定义多边形区域的可视化代码运行如下：
+ ```python
+ python get_video_info.py --video_file=demo.mp4 --region_polygon 200 200 400 200 300 400 100 400
+ ```
+ 快速画出想要的区域的小技巧：先任意取点得到图片，用画图工具打开，鼠标放到想要的区域点上会显示出坐标，记录下来并取整，作为这段可视化代码的region_polygon参数，并再次运行可视化，微调点坐标参数直至满意。
+
+
 3. 若修改模型路径，有以下两种方式：
 
     - 方法一：```./deploy/pipeline/config/examples/infer_cfg_illegal_parking.yml```下可以配置不同模型路径；
@@ -67,6 +78,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
   <img src="../images/illegal_parking_demo.gif"/>
 </div>
 
+可视化视频中左上角num后面的数值表示当前帧中车辆的数目；Total count表示画面中出现的车辆的总数，包括出现又消失的车辆。
 
 ## 方案说明
 

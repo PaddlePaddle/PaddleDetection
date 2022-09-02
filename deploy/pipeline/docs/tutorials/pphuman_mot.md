@@ -21,7 +21,16 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
                                                    --image_file=test_image.jpg \
                                                    --device=gpu
 ```
-3. 视频输入时，是跟踪任务，注意首先设置infer_cfg_pphuman.yml中的MOT配置的enable=True，然后启动命令如下
+3. 视频输入时，是跟踪任务，注意首先设置infer_cfg_pphuman.yml中的MOT配置的`enable=True`，如果希望跳帧加速检测跟踪流程，可以设置`skip_frame_num: 2`，建议跳帧帧数最大不超过3：
+```
+MOT:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip
+  tracker_config: deploy/pipeline/config/tracker_config.yml
+  batch_size: 1
+  skip_frame_num: 2
+  enable: True
+```
+然后启动命令如下
 ```python
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
                                                    --video_file=test_video.mp4 \
@@ -30,15 +39,15 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 4. 若修改模型路径，有以下两种方式：
 
     - ```./deploy/pipeline/config/infer_cfg_pphuman.yml```下可以配置不同模型路径，检测和跟踪模型分别对应`DET`和`MOT`字段，修改对应字段下的路径为实际期望的路径即可。
-    - 命令行中增加`--model_dir`修改模型路径：
+    - 命令行中--config后面紧跟着增加`-o MOT.model_dir`修改模型路径：
 ```python
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
+                                                   -o MOT.model_dir=ppyoloe/\
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
                                                    --region_type=horizontal \
                                                    --do_entrance_counting \
-                                                   --draw_center_traj \
-                                                   --model_dir det=ppyoloe/
+                                                   --draw_center_traj
 
 ```
 **注意:**
@@ -67,13 +76,16 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
                                                    --region_polygon 200 200 400 200 300 400 100 400
 ```
 **注意:**
+ - 区域闯入的测试视频必须是静止摄像头拍摄的，镜头不能抖动或移动。
  - `--do_break_in_counting`表示是否进行区域出入后计数，不设置即默认为False。
  - `--region_type`表示流量计数的区域，当设置`--do_break_in_counting`时仅可选择`custom`，默认是`custom`，表示以用户自定义区域为出入口，同一物体框的下边界中点坐标在相邻两秒内从区域外到区域内，即完成计数加一。
- - `--region_polygon`表示用户自定义区域的多边形的点坐标序列，每两个为一对点坐标(x,y),按顺时针顺序连成一个封闭区域，至少需要3对点也即6个整数，默认值是`[]`，需要用户自行设置点坐标。用户可以运行[此段代码](../../tools/get_video_info.py)获取所测视频的分辨率帧数，以及可以自定义画出自己想要的多边形区域的可视化并自己调整。
+ - `--region_polygon`表示用户自定义区域的多边形的点坐标序列，每两个为一对点坐标(x,y)，**按顺时针顺序**连成一个**封闭区域**，至少需要3对点也即6个整数，默认值是`[]`，需要用户自行设置点坐标，如是四边形区域，坐标顺序是`左上、右上、右下、左下`。用户可以运行[此段代码](../../tools/get_video_info.py)获取所测视频的分辨率帧数，以及可以自定义画出自己想要的多边形区域的可视化并自己调整。
  自定义多边形区域的可视化代码运行如下：
  ```python
  python get_video_info.py --video_file=demo.mp4 --region_polygon 200 200 400 200 300 400 100 400
  ```
+ 快速画出想要的区域的小技巧：先任意取点得到图片，用画图工具打开，鼠标放到想要的区域点上会显示出坐标，记录下来并取整，作为这段可视化代码的region_polygon参数，并再次运行可视化，微调点坐标参数直至满意。
+
 
 测试效果如下：
 

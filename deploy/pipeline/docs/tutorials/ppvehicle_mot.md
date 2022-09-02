@@ -28,7 +28,7 @@ MOT:
   model_dir: output_inference/mot_ppyoloe_l_36e_ppvehicle/ # 车辆跟踪模型调用路径
   tracker_config: deploy/pipeline/config/tracker_config.yml
   batch_size: 1   # 模型预测时的batch_size大小, 跟踪任务只能设置为1
-  skip_frame_num: 1  # 跳帧预测的帧数，默认为1即不跳帧，建议跳帧帧数最大不超过4
+  skip_frame_num: -1  # 跳帧预测的帧数，-1表示不进行跳帧，建议跳帧帧数最大不超过3
   enable: False   # 是否开启该功能，使用跟踪前必须确保设置为True
 ```
 
@@ -40,7 +40,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
                                                    --image_file=test_image.jpg \
                                                    --device=gpu
 ```
-3. 视频输入时，是跟踪任务，注意首先设置infer_cfg_ppvehicle.yml中的MOT配置的`enable=True`，如果希望跳帧加速检测跟踪流程，可以设置`skip_frame_num: 2`，建议跳帧帧数最大不超过4：
+3. 视频输入时，是跟踪任务，注意首先设置infer_cfg_ppvehicle.yml中的MOT配置的`enable=True`，如果希望跳帧加速检测跟踪流程，可以设置`skip_frame_num: 2`，建议跳帧帧数最大不超过3：
 ```
 MOT:
   model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip
@@ -86,13 +86,16 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
                                                    --region_polygon 200 200 400 200 300 400 100 400
 ```
 **注意:**
+ - 区域闯入的测试视频必须是静止摄像头拍摄的，镜头不能抖动或移动。
  - `--do_break_in_counting`表示是否进行区域出入后计数，不设置即默认为False。
  - `--region_type`表示流量计数的区域，当设置`--do_break_in_counting`时仅可选择`custom`，默认是`custom`，表示以用户自定义区域为出入口，同一物体框的下边界中点坐标在相邻两秒内从区域外到区域内，即完成计数加一。
- - `--region_polygon`表示用户自定义区域的多边形的点坐标序列，每两个为一对点坐标(x,y),按顺时针顺序连成一个封闭区域，至少需要3对点也即6个整数，默认值是`[]`，需要用户自行设置点坐标。用户可以运行[此段代码](../../tools/get_video_info.py)获取所测视频的分辨率帧数，以及可以自定义画出自己想要的多边形区域的可视化并自己调整。
+ - `--region_polygon`表示用户自定义区域的多边形的点坐标序列，每两个为一对点坐标(x,y)，**按顺时针顺序**连成一个**封闭区域**，至少需要3对点也即6个整数，默认值是`[]`，需要用户自行设置点坐标，如是四边形区域，坐标顺序是`左上、右上、右下、左下`。用户可以运行[此段代码](../../tools/get_video_info.py)获取所测视频的分辨率帧数，以及可以自定义画出自己想要的多边形区域的可视化并自己调整。
  自定义多边形区域的可视化代码运行如下：
  ```python
  python get_video_info.py --video_file=demo.mp4 --region_polygon 200 200 400 200 300 400 100 400
  ```
+ 快速画出想要的区域的小技巧：先任意取点得到图片，用画图工具打开，鼠标放到想要的区域点上会显示出坐标，记录下来并取整，作为这段可视化代码的region_polygon参数，并再次运行可视化，微调点坐标参数直至满意。
+
 
 【效果展示】
 

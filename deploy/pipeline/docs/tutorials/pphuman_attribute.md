@@ -59,12 +59,12 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 4. 若修改模型路径，有以下两种方式：
 
     - 方法一：```./deploy/pipeline/config/infer_cfg_pphuman.yml```下可以配置不同模型路径，属性识别模型修改ATTR字段下配置
-    - 方法二：命令行中增加`--model_dir`修改模型路径：
+    - 方法二：命令行中--config后面紧跟着增加`-o ATTR.model_dir`修改模型路径：
 ```python
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml
+                                                   -o ATTR.model_dir=output_inference/PPLCNet_x1_0_person_attribute_945_infer/\
                                                    --video_file=test_video.mp4 \
-                                                   --device=gpu \
-                                                   --model_dir attr=output_inference/PPLCNet_x1_0_person_attribute_945_infer/
+                                                   --device=gpu
 ```
 
 测试效果如下：
@@ -98,7 +98,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 - 穿靴：是、否
 ```
 
-4. 属性识别模型方案为[StrongBaseline](https://arxiv.org/pdf/2107.03576.pdf)，模型结构为基于PP-HGNet、PP-LCNet的多分类网络结构，引入Weighted BCE loss提升模型效果。
+4. 属性识别模型方案为[StrongBaseline](https://arxiv.org/pdf/2107.03576.pdf)，模型结构更改为基于PP-HGNet、PP-LCNet的多分类网络结构，引入Weighted BCE loss提升模型效果。
 
 ## 参考文献
 ```

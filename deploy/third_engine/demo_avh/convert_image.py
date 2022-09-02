@@ -24,10 +24,10 @@ import math
 from PIL import Image
 import numpy as np
 
+
 def resize_norm_img(img, image_shape, padding=True):
     imgC, imgH, imgW = image_shape
-    img = cv2.resize(
-        img, (imgW, imgH), interpolation=cv2.INTER_LINEAR)
+    img = cv2.resize(img, (imgW, imgH), interpolation=cv2.INTER_LINEAR)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = np.transpose(img, [2, 0, 1]) / 255
     img = np.expand_dims(img, 0)
@@ -47,9 +47,8 @@ def create_header_file(name, tensor_name, tensor_data, output_path):
     raw_path = file_path.with_suffix(".h").resolve()
     with open(raw_path, "a") as header_file:
         header_file.write(
-            "\n"
-            + f"const size_t {tensor_name}_len = {tensor_data.size};\n"
-            + f'__attribute__((section(".data.tvm"), aligned(16))) float {tensor_name}[] = '
+            "\n" + f"const size_t {tensor_name}_len = {tensor_data.size};\n" +
+            f'__attribute__((section(".data.tvm"), aligned(16))) float {tensor_name}[] = '
         )
 
         header_file.write("{")
@@ -66,14 +65,16 @@ def create_headers(image_name):
 
     # Resize image to 32x320
     img = cv2.imread(img_path)
-    img = resize_norm_img(img, [3,32,320])
+    img = resize_norm_img(img, [3, 32, 320])
     img_data = img.astype("float32")
-    
+
     # # Add the batch dimension, as we are expecting 4-dimensional input: NCHW.
     img_data = np.expand_dims(img_data, axis=0)
 
-    os.remove("./include/inputs.h")
-    os.remove("./include/outputs.h")
+    if os.path.exists("./include/inputs.h"):
+        os.remove("./include/inputs.h")
+    if os.path.exists("./include/outputs.h"):
+        os.remove("./include/outputs.h")
     # Create input header file
     create_header_file("inputs", "input", img_data, "./include")
     # Create output header file
@@ -82,15 +83,13 @@ def create_headers(image_name):
         "outputs",
         "output0",
         output_data,
-        "./include",
-    )
+        "./include", )
     output_data = np.zeros([170000], np.float)
     create_header_file(
         "outputs",
         "output1",
         output_data,
-        "./include",
-    )
+        "./include", )
 
 
 if __name__ == "__main__":

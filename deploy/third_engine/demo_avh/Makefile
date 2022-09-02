@@ -81,13 +81,27 @@ ${BUILD_DIR}/libcmsis_startup.a: $(CMSIS_STARTUP_SRCS)
 	$(QUIET)$(AR) -cr $(abspath $(BUILD_DIR)/libcmsis_startup.a) $(abspath $(BUILD_DIR))/libcmsis_startup/*.o
 	$(QUIET)$(RANLIB) $(abspath $(BUILD_DIR)/libcmsis_startup.a)
 
+CMSIS_SHA_FILE=${CMSIS_PATH}/977abe9849781a2e788b02282986480ff4e25ea6.sha
+ifneq ("$(wildcard $(CMSIS_SHA_FILE))","")
+${BUILD_DIR}/cmsis_nn/Source/libcmsis-nn.a:
+	$(QUIET)mkdir -p $(@D)
+	$(QUIET)cd $(CMSIS_PATH)/CMSIS/NN && $(CMAKE) -B $(abspath $(BUILD_DIR)/cmsis_nn) $(CMSIS_NN_CMAKE_FLAGS)
+	$(QUIET)cd $(abspath $(BUILD_DIR)/cmsis_nn) && $(MAKE) all
+else
 # Build CMSIS-NN
 ${BUILD_DIR}/cmsis_nn/Source/SoftmaxFunctions/libCMSISNNSoftmax.a:
 	$(QUIET)mkdir -p $(@D)
 	$(QUIET)cd $(CMSIS_PATH)/CMSIS/NN && $(CMAKE) -B $(abspath $(BUILD_DIR)/cmsis_nn) $(CMSIS_NN_CMAKE_FLAGS)
-	$(QUIET)cd $(abspath $(BUILD_DIR)/cmsis_nn) && $(MAKE) all	
+	$(QUIET)cd $(abspath $(BUILD_DIR)/cmsis_nn) && $(MAKE) all
+endif
 
 # Build demo application
+ifneq ("$(wildcard $(CMSIS_SHA_FILE))","")
+$(BUILD_DIR)/demo: $(DEMO_MAIN) $(UART_SRCS) $(BUILD_DIR)/stack_allocator.o $(BUILD_DIR)/crt_backend_api.o \
+	${BUILD_DIR}/libcodegen.a ${BUILD_DIR}/libcmsis_startup.a ${BUILD_DIR}/cmsis_nn/Source/libcmsis-nn.a
+	$(QUIET)mkdir -p $(@D)
+	$(QUIET)$(CC) $(PKG_CFLAGS) $(FREERTOS_FLAGS) -o $@ -Wl,--whole-archive $^ -Wl,--no-whole-archive $(PKG_LDFLAGS)
+else
 $(BUILD_DIR)/demo: $(DEMO_MAIN) $(UART_SRCS) $(BUILD_DIR)/stack_allocator.o $(BUILD_DIR)/crt_backend_api.o \
        ${BUILD_DIR}/libcodegen.a ${BUILD_DIR}/libcmsis_startup.a \
        ${BUILD_DIR}/cmsis_nn/Source/SoftmaxFunctions/libCMSISNNSoftmax.a \
@@ -102,6 +116,7 @@ $(BUILD_DIR)/demo: $(DEMO_MAIN) $(UART_SRCS) $(BUILD_DIR)/stack_allocator.o $(BU
        ${BUILD_DIR}/cmsis_nn/Source/PoolingFunctions/libCMSISNNPooling.a
 	$(QUIET)mkdir -p $(@D)
 	$(QUIET)$(CC) $(PKG_CFLAGS) $(FREERTOS_FLAGS) -o $@ -Wl,--whole-archive $^ -Wl,--no-whole-archive $(PKG_LDFLAGS)
+endif
 
 clean:
 	$(QUIET)rm -rf $(BUILD_DIR)/codegen

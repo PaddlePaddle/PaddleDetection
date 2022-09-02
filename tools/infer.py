@@ -27,6 +27,7 @@ sys.path.insert(0, parent_path)
 import warnings
 warnings.filterwarnings('ignore')
 import glob
+import ast
 
 import paddle
 from ppdet.core.workspace import load_config, merge_config
@@ -81,6 +82,44 @@ def parse_args():
         type=bool,
         default=False,
         help="Whether to save inference results to output_dir.")
+    parser.add_argument(
+        "--slice_infer",
+        action='store_true',
+        help="Whether to slice the image and merge the inference results for small object detection."
+    )
+    parser.add_argument(
+        '--slice_size',
+        nargs='+',
+        type=int,
+        default=[640, 640],
+        help="Height of the sliced image.")
+    parser.add_argument(
+        "--overlap_ratio",
+        nargs='+',
+        type=float,
+        default=[0.25, 0.25],
+        help="Overlap height ratio of the sliced image.")
+    parser.add_argument(
+        "--combine_method",
+        type=str,
+        default='nms',
+        help="Combine method of the sliced images' detection results, choose in ['nms', 'nmm', 'concat']."
+    )
+    parser.add_argument(
+        "--match_threshold",
+        type=float,
+        default=0.6,
+        help="Combine method matching threshold.")
+    parser.add_argument(
+        "--match_metric",
+        type=str,
+        default='ios',
+        help="Combine method matching metric, choose in ['iou', 'ios'].")
+    parser.add_argument(
+        "--visualize",
+        type=ast.literal_eval,
+        default=True,
+        help="Whether to save visualize results to output_dir.")
     args = parser.parse_args()
     return args
 
@@ -127,11 +166,25 @@ def run(FLAGS, cfg):
     images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
 
     # inference
-    trainer.predict(
-        images,
-        draw_threshold=FLAGS.draw_threshold,
-        output_dir=FLAGS.output_dir,
-        save_results=FLAGS.save_results)
+    if FLAGS.slice_infer:
+        trainer.slice_predict(
+            images,
+            slice_size=FLAGS.slice_size,
+            overlap_ratio=FLAGS.overlap_ratio,
+            combine_method=FLAGS.combine_method,
+            match_threshold=FLAGS.match_threshold,
+            match_metric=FLAGS.match_metric,
+            draw_threshold=FLAGS.draw_threshold,
+            output_dir=FLAGS.output_dir,
+            save_results=FLAGS.save_results,
+            visualize=FLAGS.visualize)
+    else:
+        trainer.predict(
+            images,
+            draw_threshold=FLAGS.draw_threshold,
+            output_dir=FLAGS.output_dir,
+            save_results=FLAGS.save_results,
+            visualize=FLAGS.visualize)
 
 
 def main():

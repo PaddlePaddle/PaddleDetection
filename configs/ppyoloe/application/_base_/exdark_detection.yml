@@ -1,0 +1,20 @@
+metric: COCO
+num_classes: 12
+
+TrainDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: coco_annotations/train.json
+    dataset_dir: dataset/Exdark/
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: coco_annotations/val.json
+    dataset_dir: dataset/Exdark/
+
+TestDataset:
+  !ImageFolder
+    anno_path: coco_annotations/val.json # also support txt (like VOC's label_list.txt)
+    dataset_dir: dataset/Exdark/ # if set, anno_path will be 'dataset_dir/anno_path'

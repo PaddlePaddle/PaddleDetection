@@ -83,6 +83,40 @@ def parse_args():
         default=False,
         help="Enable auto mixed precision eval.")
 
+    # for smalldet slice_infer
+    parser.add_argument(
+        "--slice_infer",
+        action='store_true',
+        help="Whether to slice the image and merge the inference results for small object detection."
+    )
+    parser.add_argument(
+        '--slice_size',
+        nargs='+',
+        type=int,
+        default=[640, 640],
+        help="Height of the sliced image.")
+    parser.add_argument(
+        "--overlap_ratio",
+        nargs='+',
+        type=float,
+        default=[0.25, 0.25],
+        help="Overlap height ratio of the sliced image.")
+    parser.add_argument(
+        "--combine_method",
+        type=str,
+        default='nms',
+        help="Combine method of the sliced images' detection results, choose in ['nms', 'nmm', 'concat']."
+    )
+    parser.add_argument(
+        "--match_threshold",
+        type=float,
+        default=0.6,
+        help="Combine method matching threshold.")
+    parser.add_argument(
+        "--match_metric",
+        type=str,
+        default='ios',
+        help="Combine method matching metric, choose in ['iou', 'ios'].")
     args = parser.parse_args()
     return args
 
@@ -109,7 +143,15 @@ def run(FLAGS, cfg):
     trainer.load_weights(cfg.weights)
 
     # training
-    trainer.evaluate()
+    if FLAGS.slice_infer:
+        trainer.evaluate_slice(
+            slice_size=FLAGS.slice_size,
+            overlap_ratio=FLAGS.overlap_ratio,
+            combine_method=FLAGS.combine_method,
+            match_threshold=FLAGS.match_threshold,
+            match_metric=FLAGS.match_metric)
+    else:
+        trainer.evaluate()
 
 
 def main():

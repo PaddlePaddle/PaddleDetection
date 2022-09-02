@@ -55,12 +55,12 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 4. If you want to change the model path, there are two methods：
 
     - The first: In ```./deploy/pipeline/config/infer_cfg_pphuman.yml``` you can configurate different model paths. In attribute recognition models, you can modify the configuration in the field of ATTR.
-    - The second: Add `--model_dir` in the command line to change the model path：
+    - The second: Add `-o ATTR.model_dir` in the command line following the --config to change the model path：
 ```python
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml \
+                                                   -o ATTR.model_dir=output_inference/PPLCNet_x1_0_person_attribute_945_infer/\
                                                    --video_file=test_video.mp4 \
-                                                   --device=gpu \
-                                                   --model_dir attr=output_inference/PPLCNet_x1_0_person_attribute_945_infer/
+                                                   --device=gpu
 ```
 
 The test result is：

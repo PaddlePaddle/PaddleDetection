@@ -13,8 +13,17 @@ pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco
 depth_mult: 1.0
 width_mult: 1.0
 
+
 TrainReader:
   batch_size: 8
+
+EvalReader:
+  batch_size: 1
+
+TestReader:
+  batch_size: 1
+  fuse_normalize: True
+
 
 epoch: 80
 LearningRate:
@@ -34,3 +43,10 @@ PPYOLOEHead:
     keep_top_k: 500
     score_threshold: 0.01
     nms_threshold: 0.6
+
+
+EvalDataset:
+  !COCODataSet
+    image_dir: val_images_640_025
+    anno_path: val_640_025.json
+    dataset_dir: dataset/visdrone_sliced

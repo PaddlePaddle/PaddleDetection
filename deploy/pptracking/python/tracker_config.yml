@@ -1,10 +1,12 @@
-# config of tracker for MOT SDE Detector, use 'JDETracker' as default.
+# config of tracker for MOT SDE Detector, use 'OCSORTTracker' as default, 'JDETracker' here is just BYTETracker.
 # The tracker of MOT JDE Detector (such as FairMOT) is exported together with the model.
 # Here 'min_box_area' and 'vertical_ratio' are set for pedestrian, you can modify for other objects tracking.
 
 type: OCSORTTracker # choose one tracker in ['JDETracker', 'OCSORTTracker', 'DeepSORTTracker']
+# When using for MTMCT(Multi-Target Multi-Camera Tracking), you should modify to 'DeepSORTTracker'
 
-# BYTETracker
+
+# just as BYTETracker, used for FairMOT in PP-Tracking project and for ByteTrack in PP-Humanv1 project
 JDETracker:
   use_byte: True
   det_thresh: 0.3
@@ -15,6 +17,7 @@ JDETracker:
   vertical_ratio: 0 # 1.6 for pedestrian
 
 
+# used for OC-SORT in PP-Humanv2 project and PP-Vehicle project
 OCSORTTracker:
   det_thresh: 0.4
   max_age: 30
@@ -27,8 +30,9 @@ OCSORTTracker:
   use_byte: False
 
 
+# used for DeepSORT and MTMCT in PP-Tracking project
 DeepSORTTracker:
-  input_size: [64, 192]
+  input_size: [64, 192] # An unique operation to scale the sub-image of the selected detected boxes to a fixed size
   min_box_area: 0
   vertical_ratio: -1
   budget: 100

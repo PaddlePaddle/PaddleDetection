@@ -397,6 +397,7 @@ class PipePredictor(object):
                 model_dir = mot_cfg['model_dir']
                 tracker_config = mot_cfg['tracker_config']
                 batch_size = mot_cfg['batch_size']
+                skip_frame_num = mot_cfg.get('skip_frame_num', -1)
                 basemode = self.basemode['MOT']
                 self.modebase[basemode] = True
                 self.mot_predictor = SDE_Detector(
@@ -411,6 +412,7 @@ class PipePredictor(object):
                     args.trt_calib_mode,
                     args.cpu_threads,
                     args.enable_mkldnn,
+                    skip_frame_num=skip_frame_num,
                     draw_center_traj=self.draw_center_traj,
                     secs_interval=self.secs_interval,
                     do_entrance_counting=self.do_entrance_counting,
@@ -463,6 +465,7 @@ class PipePredictor(object):
                                                     self.cfg['crop_thresh'])
             if i > self.warmup_frame:
                 self.pipe_timer.module_time['det'].end()
+                self.pipe_timer.track_num += len(det_res['boxes'])
             self.pipeline_res.update(det_res, 'det')
 
             if self.with_human_attr:
@@ -596,29 +599,47 @@ class PipePredictor(object):
             if not ret:
                 break
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            if frame_id > self.warmup_frame:
+                self.pipe_timer.total_time.start()
 
             if self.modebase["idbased"] or self.modebase["skeletonbased"]:
                 if frame_id > self.warmup_frame:
-                    self.pipe_timer.total_time.start()
                     self.pipe_timer.module_time['mot'].start()
-                res = self.mot_predictor.predict_image(
-                    [copy.deepcopy(frame_rgb)], visual=False)
 
-                if frame_id > self.warmup_frame:
-                    self.pipe_timer.module_time['mot'].end()
+                mot_skip_frame_num = self.mot_predictor.skip_frame_num
+                reuse_det_result = False
+                if mot_skip_frame_num > 1 and frame_id > 0 and frame_id % mot_skip_frame_num > 0:
+                    reuse_det_result = True
+                res = self.mot_predictor.predict_image(
+                    [copy.deepcopy(frame_rgb)],
+                    visual=False,
+                    reuse_det_result=reuse_det_result)
 
                 # mot output format: id, class, score, xmin, ymin, xmax, ymax
                 mot_res = parse_mot_res(res)
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.module_time['mot'].end()
+                    self.pipe_timer.track_num += len(mot_res['boxes'])
 
                 # flow_statistic only support single class MOT
                 boxes, scores, ids = res[0]  # batch size = 1 in MOT
                 mot_result = (frame_id + 1, boxes[0], scores[0],
                               ids[0])  # single class
                 statistic = flow_statistic(
-                    mot_result, self.secs_interval, self.do_entrance_counting,
-                    self.do_break_in_counting, self.region_type, video_fps,
-                    entrance, id_set, interval_id_set, in_id_list, out_id_list,
-                    prev_center, records)
+                    mot_result,
+                    self.secs_interval,
+                    self.do_entrance_counting,
+                    self.do_break_in_counting,
+                    self.region_type,
+                    video_fps,
+                    entrance,
+                    id_set,
+                    interval_id_set,
+                    in_id_list,
+                    out_id_list,
+                    prev_center,
+                    records,
+                    ids2names=self.mot_predictor.pred_config.labels)
                 records = statistic['records']
 
                 if self.illegal_parking_time != -1:
