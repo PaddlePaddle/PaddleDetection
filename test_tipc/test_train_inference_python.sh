@@ -326,9 +326,10 @@ else
                     set_save_export_dir=$(func_set_params "${save_export_key}" "${save_log}")
                     if [ ${export_onnx_key} = "export_onnx" ]; then
                         # run export onnx model for rcnn
-                        export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} export_onnx=True ${set_save_export_dir} "
+                        export_log_path_onnx=${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}_nodes_${nodes}_onnx_export.log
+                        export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} export_onnx=True ${set_save_export_dir} >${export_log_path_onnx} 2>&1"
                         eval $export_cmd
-                        status_check $? "${export_cmd}" "${status_log}" "${model_name}"
+                        status_check $? "${export_cmd}" "${status_log}" "${model_name}" "${export_log_path_onnx}"
                         # copy model for inference benchmark
                         eval "cp ${save_export_model_dir}/* ${save_log}/"
                     fi
