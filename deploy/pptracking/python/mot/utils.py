@@ -325,7 +325,7 @@ def flow_statistic(result,
         info += ", Count during {} secs: {}".format(secs_interval,
                                                     curr_interval_count)
         interval_id_set.clear()
-    print(info)
+    # print(info)
     info += "\n"
     records.append(info)
 
