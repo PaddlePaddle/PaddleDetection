@@ -237,8 +237,8 @@ def visualize_pose(imgfile,
         import matplotlib
         plt.switch_backend('agg')
     except Exception as e:
-        logger.error('Matplotlib not found, please install matplotlib.'
-                     'for example: `pip install matplotlib`.')
+        print('Matplotlib not found, please install matplotlib.'
+              'for example: `pip install matplotlib`.')
         raise e
     skeletons, scores = results['keypoint']
     skeletons = np.array(skeletons)
