@@ -92,13 +92,6 @@ class SparseInst(BaseArch):
             pred_objectness = F.sigmoid(raw_pred_out["pred_scores"])
             pred_scores = F.sigmoid(raw_pred_out["pred_logits"])
             pred_scores = paddle.sqrt(pred_scores * pred_objectness)
-            result = {
-                "segm": [],
-                "cate_score": [],
-                "cate_label": [],
-                "shape": [],
-                "bbox_num": [],
-            }
 
             # currently, only batch_size=1 is supported in inference
             for idx in range(1):
@@ -109,7 +102,6 @@ class SparseInst(BaseArch):
 
                 origin_shape = paddle.round(im_shape /
                                             scale_factor).astype(paddle.int32)
-                result["shape"].append(origin_shape)
                 # max/argmax
                 scores = scores_per_image.max(axis=-1)
                 labels = scores_per_image.argmax(axis=-1)
@@ -147,15 +139,10 @@ class SparseInst(BaseArch):
                     mode='bilinear',
                     align_corners=False).squeeze(1)
 
-                mask_pred = mask_pred_per_image > self.mask_threshold
-                result["bbox_num"].append(paddle.shape(mask_pred)[0])
-                result["segm"].append(mask_pred)
-                result["cate_score"].append(scores)
-                result["cate_label"].append(labels)
-            result["segm"] = result["segm"][0]
-            result["cate_score"] = result["cate_score"][0]
-            result["cate_label"] = result["cate_label"][0]
-            return result
+                bbox_num = paddle.shape(labels)[0]
+                mask_pred = paddle.cast(
+                    mask_pred_per_image > self.mask_threshold, 'uint8')
+            return mask_pred, bbox_num, labels, scores
 
     def get_loss(self):
         loss = self._forward()
@@ -164,5 +151,12 @@ class SparseInst(BaseArch):
         return loss
 
     def get_pred(self):
-        pred_out = self._forward()
-        return pred_out
+        mask_pred, bbox_num, labels, scores = self._forward()
+        result = {
+            "segm": mask_pred,
+            "bbox_num": bbox_num,
+            "cate_label": labels,
+            "cate_score": scores
+        }
+
+        return result

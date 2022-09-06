@@ -413,7 +413,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   int num_class = 80;
 
   auto inference_start = std::chrono::steady_clock::now();
-  if (config_.arch_ == "SOLOv2") {
+  if (config_.arch_ == "SOLOv2" || config_.arch_ == "SparseInst") {
     // warmup
     for (int i = 0; i < warmup; i++) {
       predictor_->Run();

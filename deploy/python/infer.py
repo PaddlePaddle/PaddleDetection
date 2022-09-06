@@ -40,25 +40,9 @@ from utils import argsparser, Timer, get_current_memory_mb
 
 # Global dictionary
 SUPPORT_MODELS = {
-    'YOLO',
-    'RCNN',
-    'SSD',
-    'Face',
-    'FCOS',
-    'SOLOv2',
-    'TTFNet',
-    'S2ANet',
-    'JDE',
-    'FairMOT',
-    'DeepSORT',
-    'GFL',
-    'PicoDet',
-    'CenterNet',
-    'TOOD',
-    'RetinaNet',
-    'StrongBaseline',
-    'STGCN',
-    'YOLOX',
+    'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
+    'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD', 'RetinaNet',
+    'StrongBaseline', 'STGCN', 'YOLOX', 'SparseInst'
 }
 
 
@@ -857,7 +841,7 @@ def main():
         yml_conf = yaml.safe_load(f)
     arch = yml_conf['arch']
     detector_func = 'Detector'
-    if arch == 'SOLOv2':
+    if arch in ['SOLOv2', 'SparseInst']:
         detector_func = 'DetectorSOLOv2'
     elif arch == 'PicoDet':
         detector_func = 'DetectorPicoDet'
