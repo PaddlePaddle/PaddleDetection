@@ -128,7 +128,7 @@ def save_mtmct_vis_results(camera_results, captures, output_dir,
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = int(capture.get(cv2.CAP_PROP_FPS))
         frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         frame_id = 0
         while (1):
@@ -148,10 +148,7 @@ def save_mtmct_vis_results(camera_results, captures, output_dir,
 
             # add attr vis
             if multi_res:
-                tid_list = [
-                    'c' + str(idx) + '_' + 't' + str(int(j))
-                    for j in range(1, len(ids) + 1)
-                ]  # c0_t1, c0_t2...
+                tid_list = multi_res.keys()  # c0_t1, c0_t2...
                 all_attr_result = [multi_res[i]["attrs"]
                                    for i in tid_list]  # all cid_tid result
                 if any(

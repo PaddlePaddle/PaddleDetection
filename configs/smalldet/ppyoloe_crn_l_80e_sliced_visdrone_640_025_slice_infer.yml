@@ -20,6 +20,10 @@ TrainReader:
 EvalReader:
   batch_size: 1 # only support bs=1 when slice infer
 
+TestReader:
+  batch_size: 1
+  fuse_normalize: True
+
 
 epoch: 80
 LearningRate:

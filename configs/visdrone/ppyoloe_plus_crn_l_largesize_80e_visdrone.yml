@@ -3,23 +3,16 @@ _BASE_: [
 ]
 log_iter: 100
 snapshot_epoch: 10
-weights: output/ppyoloe_crn_l_p2_alpha_largesize_80e_visdrone/model_final
-pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
-
-
-LearningRate:
-  base_lr: 0.005
+weights: output/ppyoloe_plus_crn_l_largesize_80e_visdrone/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams
 
 
 CSPResNet:
-  return_idx: [0, 1, 2, 3]
   use_alpha: True
 
-CustomCSPPAN:
-  out_channels: [768, 384, 192, 64]
 
-PPYOLOEHead:
-  fpn_strides: [32, 16, 8, 4]
+LearningRate:
+  base_lr: 0.0025
 
 
 worker_num: 2
@@ -35,11 +28,11 @@ TrainReader:
     - RandomCrop: {}
     - RandomFlip: {}
   batch_transforms:
-    - BatchRandomResize: {target_size: [1024, 1088, 1152, 1216, 1280, 1344, 1408, 1472, 1536, 1600, 1664, 1728, 1792, 1856, 1920, 1984, 2048], random_size: True, random_interp: True, keep_ratio: False}
-    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - BatchRandomResize: {target_size: [1024, 1088, 1152, 1216, 1280, 1344, 1408, 1472, 1536, 1600, 1664, 1728, 1792, 1856, 1920], random_size: True, random_interp: True, keep_ratio: False}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
     - Permute: {}
     - PadGT: {}
-  batch_size: 1
+  batch_size: 2
   shuffle: true
   drop_last: true
   use_shared_memory: true
@@ -49,7 +42,7 @@ EvalReader:
   sample_transforms:
     - Decode: {}
     - Resize: {target_size: *eval_size, keep_ratio: False, interp: 2}
-    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
     - Permute: {}
   batch_size: 1
 
@@ -59,7 +52,7 @@ TestReader:
   sample_transforms:
     - Decode: {}
     - Resize: {target_size: *eval_size, keep_ratio: False, interp: 2}
-    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
     - Permute: {}
   batch_size: 1
   fuse_normalize: True
