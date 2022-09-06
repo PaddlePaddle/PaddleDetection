@@ -163,7 +163,7 @@ def main():
     check.check_config(cfg)
     check.check_gpu(cfg.use_gpu)
     check.check_npu(cfg.use_npu)
-    check.check_version()
+    check.check_version('develop')
 
     run(FLAGS, cfg)
 
