@@ -217,7 +217,7 @@ def main():
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
-    check_version()
+    check_version('develop')
 
     # get dataset
     dataset = cfg['TrainDataset']

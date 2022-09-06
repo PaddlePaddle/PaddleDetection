@@ -87,7 +87,7 @@ def check_gpu(use_gpu):
         pass
 
 
-def check_version(version='2.0'):
+def check_version(version='2.2'):
     """
     Log error and exit when the installed version of paddlepaddle is
     not satisfied.
@@ -100,8 +100,19 @@ def check_version(version='2.0'):
         paddle_version.major, paddle_version.minor, paddle_version.patch,
         paddle_version.rc
     ]
+
+    # Paddledet develop version is only used on Paddle develop 
+    if version_installed == ['0', '0', '0', '0'] and version != 'develop':
+        raise Exception(
+            "PaddlePaddle version {} or higher is required, and develop version is only used for PaddleDetection develop version!".
+            format(version))
+
     if version_installed == ['0', '0', '0', '0']:
         return
+
+    if version == 'develop':
+        raise Exception("PaddlePaddle develop version is required!")
+
     version_split = version.split('.')
 
     length = min(len(version_installed), len(version_split))

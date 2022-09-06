@@ -99,7 +99,7 @@ def main():
     merge_config(FLAGS.opt)
     check_config(cfg)
     check_gpu(cfg.use_gpu)
-    check_version()
+    check_version('develop')
 
     run(FLAGS, cfg)
 
