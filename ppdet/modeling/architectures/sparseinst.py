@@ -68,7 +68,6 @@ class SparseInst(BaseArch):
 
         kwargs = {'input_shape': backbone.out_shape}
         encoder = create(cfg['encoder'], **kwargs)
-
         kwargs = {'input_shape': encoder.out_shape}
         decoder = create(cfg['decoder'], **kwargs)
 
@@ -79,10 +78,12 @@ class SparseInst(BaseArch):
         }
 
     def _forward(self):
-        input_shape = self.inputs["image"].shape[2:]
         body_feats = self.backbone(self.inputs)
         body_feats = self.encoder(body_feats)
         raw_pred_out = self.decoder(body_feats)
+
+        featmap_size = paddle.shape(raw_pred_out["pred_masks"])[-2:]
+        input_shape = [featmap_size[0] * 4, featmap_size[1] * 4]
 
         if self.training:
             return self.criterion(raw_pred_out, self.inputs, input_shape)
@@ -99,10 +100,13 @@ class SparseInst(BaseArch):
                 "bbox_num": [],
             }
 
-            for _, (scores_per_image, mask_pred_per_image, im_shape,
-                    scale_factor) in enumerate(
-                        zip(pred_scores, pred_masks, self.inputs['im_shape'],
-                            self.inputs['scale_factor'])):
+            # currently, only batch_size=1 is supported in inference
+            for idx in range(1):
+                scores_per_image = pred_scores[idx]
+                mask_pred_per_image = pred_masks[idx]
+                im_shape = self.inputs['im_shape'][idx]
+                scale_factor = self.inputs['scale_factor'][idx]
+
                 origin_shape = paddle.round(im_shape /
                                             scale_factor).astype(paddle.int32)
                 result["shape"].append(origin_shape)
@@ -110,18 +114,18 @@ class SparseInst(BaseArch):
                 scores = scores_per_image.max(axis=-1)
                 labels = scores_per_image.argmax(axis=-1)
 
-                # cls threshold
-                keep = scores > self.cls_threshold
-                scores = scores[keep]
-                labels = labels[keep]
-                mask_pred_per_image = mask_pred_per_image[keep]
+                # cls threshold filter, adaptation for converting to static model
+                keep = paddle.nonzero(
+                    paddle.where(scores > self.cls_threshold, scores,
+                                 paddle.zeros_like(scores))).squeeze(1)
+                scores = paddle.gather(scores, keep)
+                labels = paddle.gather(labels, keep)
+                mask_pred_per_image = paddle.gather(mask_pred_per_image, keep)
 
                 if scores.shape[0] == 0:
                     continue
-
                 h = paddle.cast(im_shape[0], 'int32')[0]
                 w = paddle.cast(im_shape[1], 'int32')[0]
-
                 # rescoring mask using maskness
                 scores = _rescoring_mask(
                     scores, mask_pred_per_image > self.mask_threshold,
@@ -131,7 +135,12 @@ class SparseInst(BaseArch):
                     mask_pred_per_image.unsqueeze(1),
                     size=input_shape,
                     mode="bilinear",
-                    align_corners=False)[:, :, :h, :w]
+                    align_corners=False)
+                mask_pred_per_image = paddle.slice(
+                    mask_pred_per_image,
+                    axes=[2, 3],
+                    starts=[0, 0],
+                    ends=[h, w])
                 mask_pred_per_image = F.interpolate(
                     mask_pred_per_image,
                     size=origin_shape,
@@ -139,7 +148,7 @@ class SparseInst(BaseArch):
                     align_corners=False).squeeze(1)
 
                 mask_pred = mask_pred_per_image > self.mask_threshold
-                result["bbox_num"].append(mask_pred.shape[0])
+                result["bbox_num"].append(paddle.shape(mask_pred)[0])
                 result["segm"].append(mask_pred)
                 result["cate_score"].append(scores)
                 result["cate_label"].append(labels)

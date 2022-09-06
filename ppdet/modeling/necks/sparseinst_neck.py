@@ -46,7 +46,7 @@ class PyramidPoolingModule(nn.Layer):
         return nn.Sequential(prior, conv)
 
     def forward(self, feats):
-        h, w = feats.shape[2], feats.shape[3]
+        h, w = paddle.shape(feats)[2:4]
         priors = [
             F.interpolate(
                 F.relu_(stage(feats)),
@@ -104,7 +104,7 @@ class InstanceContextEncoder(nn.Layer):
                 prev_features, scale_factor=2.0, mode='nearest')
             prev_features = lat_features + top_down_features
             outputs.insert(0, output_conv(prev_features))
-        size = outputs[0].shape[2:]
+        size = paddle.shape(outputs[0])[2:]
         features = [outputs[0]] + [
             F.interpolate(
                 x, size, mode='bilinear', align_corners=False)

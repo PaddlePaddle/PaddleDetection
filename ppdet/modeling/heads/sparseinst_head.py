@@ -39,7 +39,7 @@ def _make_stack_3x3_convs(num_convs, in_channels, out_channels):
     for _ in range(num_convs):
         convs.append(Conv2d(in_channels, out_channels, 3, padding=1))
         kaiming_normal_(convs[-1].weight, mode="fan_out", nonlinearity="relu")
-        convs.append(nn.ReLU(True))
+        convs.append(nn.ReLU())
         in_channels = out_channels
     return nn.Sequential(*convs)
 
@@ -85,8 +85,8 @@ class InstanceBranch(nn.Layer):
         iam = self.iam_conv(features)
         iam_prob = F.sigmoid(iam)
 
-        B, N = iam_prob.shape[:2]
-        C = features.shape[1]
+        B, N = paddle.shape(iam_prob)[:2]
+        C = paddle.shape(features)[1]
         # BxNxHxW -> BxNx(HW)
         iam_prob = iam_prob.reshape((B, N, -1))
         # aggregate features: BxCxHxW -> Bx(HW)xC
@@ -142,12 +142,16 @@ class BaseIAMDecoder(nn.Layer):
 
     @paddle.no_grad()
     def compute_coordinates(self, x):
-        h, w = x.shape[2:4]
+        h, w = paddle.shape(x)[2:4]
         y_loc = paddle.linspace(-1, 1, h)
         x_loc = paddle.linspace(-1, 1, w)
         y_loc, x_loc = paddle.meshgrid(y_loc, x_loc)
-        y_loc = y_loc.expand([x.shape[0], 1, -1, -1])
-        x_loc = x_loc.expand([x.shape[0], 1, -1, -1])
+
+        # Shape needs to be adjusted explicitly when to static
+        x_loc = paddle.unsqueeze(x_loc, [0, 1])
+        y_loc = paddle.unsqueeze(y_loc, [0, 1])
+        y_loc = y_loc.expand([paddle.shape(x)[0], 1, -1, -1])
+        x_loc = x_loc.expand([paddle.shape(x)[0], 1, -1, -1])
         locations = paddle.concat([x_loc, y_loc], 1)
         return paddle.cast(locations, x.dtype)
 
@@ -157,9 +161,12 @@ class BaseIAMDecoder(nn.Layer):
         pred_logits, pred_kernel, pred_scores, iam = self.inst_branch(features)
         mask_features = self.mask_branch(features)
 
-        N = pred_kernel.shape[1]
+        N = paddle.shape(pred_kernel)[1]
         # mask_features: BxCxHxW
-        B, C, H, W = mask_features.shape
+        B, C, H, W = paddle.shape(mask_features)
+        # The following line is use to convert model to static, do not remove.
+        C = mask_features.shape[1]
+
         pred_masks = paddle.bmm(pred_kernel,
                                 mask_features.reshape((B, C, H * W))).reshape(
                                     (B, N, H, W))
@@ -236,8 +243,8 @@ class GroupInstanceBranch(nn.Layer):
         # predict instance activation maps
         iam = self.iam_conv(features)
         iam_prob = F.sigmoid(iam)
-        B, N = iam_prob.shape[:2]
-        C = features.shape[1]
+        B, N = paddle.shape(iam_prob)[:2]
+        C = paddle.shape(features)[1]
         # BxNxHxW -> BxNx(HW)
         iam_prob = iam_prob.reshape((B, N, -1))
         # aggregate features: BxCxHxW -> Bx(HW)xC
