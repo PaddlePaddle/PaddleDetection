@@ -61,12 +61,13 @@
 - **高性能**: 基于飞桨的高性能内核，模型训练速度及显存占用优势明显。支持FP16训练, 支持多机训练。
 
 <div  align="center">
-  <img src="https://user-images.githubusercontent.com/22989727/186703085-8740e135-d61f-41df-9a29-30273285baa7.png" width="800"/>
+  <img src="https://user-images.githubusercontent.com/22989727/186810676-29078214-27ab-45eb-9adb-5dea2b0d035b.png" width="800"/>
 </div>
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157800467-2a9946ad-30d1-49a9-b9db-ba33413d9c90.png" alt="" width="20"> 技术交流
 
 - 如果你发现任何PaddleDetection存在的问题或者是建议, 欢迎通过[GitHub Issues](https://github.com/PaddlePaddle/PaddleDetection/issues)给我们提issues。
+
 - **欢迎加入PaddleDetection 微信用户群（扫码填写问卷即可入群）**
   - **入群福利 💎：获取PaddleDetection团队整理的重磅学习大礼包🎁**
     - 📊 福利一：获取飞桨联合业界企业整理的开源数据集
@@ -263,7 +264,7 @@
 
 **说明：**
 
-- `CBResNet`为`Cascade-Faster-RCNN-CBResNet200vd-FPN`模型，COCO数据集mAP高达53.3%
+- `ViT`为`ViT-Cascade-Faster-RCNN`模型，COCO数据集mAP高达55.7%
 - `Cascade-Faster-RCNN`为`Cascade-Faster-RCNN-ResNet50vd-DCN`，PaddleDetection将其优化到COCO数据mAP为47.8%时推理速度为20FPS
 - `PP-YOLOE`是对`PP-YOLO v2`模型的进一步优化，L版本在COCO数据集mAP为51.6%，Tesla V100预测速度78.1FPS
 - `PP-YOLOE+`是对`PPOLOE`模型的进一步优化，L版本在COCO数据集mAP为53.3%，Tesla V100预测速度78.1FPS
