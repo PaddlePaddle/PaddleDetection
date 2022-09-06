@@ -78,7 +78,7 @@ class YOLOv3Head(nn.Layer):
         self.num_outputs = len(self.anchors)
         self.data_format = data_format
 
-        self.yolo_outputs = nn.LayerList()
+        self.yolo_outputs = []
         for i in range(len(self.anchors)):
 
             if self.iou_aware:
@@ -94,7 +94,9 @@ class YOLOv3Head(nn.Layer):
                 padding=0,
                 data_format=data_format,
                 bias_attr=ParamAttr(regularizer=L2Decay(0.)))
-            self.yolo_outputs.append(conv)
+            conv.skip_quant = True
+            yolo_output = self.add_sublayer(name, conv)
+            self.yolo_outputs.append(yolo_output)
 
     def parse_anchor(self, anchors, anchor_masks):
         self.anchors = [[anchors[i] for i in mask] for mask in anchor_masks]
