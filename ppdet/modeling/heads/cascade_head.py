@@ -304,8 +304,10 @@ class CascadeHead(BBoxHead):
         # NOTE(dev): num_prob will be tagged as LoDTensorArray because it
         # depends on batch_size under @to_static. However the argument
         # num_or_sections in paddle.split does not support LoDTensorArray,
-        # so we use [-1] to replace it and whitout lossing correctness.
-        num_prop = [-1] if len(num_prop) == 1 else num_prop
+        # so we use [-1] to replace it if num_prop is not list. The modification
+        # This ensures the correctness of both dynamic and static graphs.
+        if not isinstance(num_prop, list): 
+            num_prop = [-1]
         return pred_bbox.split(num_prop)
 
     def get_prediction(self, head_out_list):
