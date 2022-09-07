@@ -70,6 +70,12 @@ def argsparser():
         default=None,
         help="Dir of video file, `video_file` has a higher priority.")
     parser.add_argument(
+        "--rtsp",
+        type=str,
+        nargs='+',
+        default=None,
+        help="list of rtsp inputs, for one or multiple rtsp input.")
+    parser.add_argument(
         "--camera_id",
         type=int,
         default=-1,
