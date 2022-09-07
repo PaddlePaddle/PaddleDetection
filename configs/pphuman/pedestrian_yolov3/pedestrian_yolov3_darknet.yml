@@ -1,9 +1,9 @@
 _BASE_: [
-  '../datasets/coco_detection.yml',
-  '../runtime.yml',
-  '../yolov3/_base_/optimizer_270e.yml',
-  '../yolov3/_base_/yolov3_darknet53.yml',
-  '../yolov3/_base_/yolov3_reader.yml',
+  '../../datasets/coco_detection.yml',
+  '../../runtime.yml',
+  '../../yolov3/_base_/optimizer_270e.yml',
+  '../../yolov3/_base_/yolov3_darknet53.yml',
+  '../../yolov3/_base_/yolov3_reader.yml',
 ]
 
 snapshot_epoch: 5
