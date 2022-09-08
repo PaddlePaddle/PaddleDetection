@@ -858,13 +858,16 @@ def load_predictor(model_dir,
 
         if use_dynamic_shape:
             min_input_shape = {
-                'image': [batch_size, 3, trt_min_shape, trt_min_shape]
+                'image': [batch_size, 3, trt_min_shape, trt_min_shape],
+                'scale_factor': [batch_size, 2]
             }
             max_input_shape = {
-                'image': [batch_size, 3, trt_max_shape, trt_max_shape]
+                'image': [batch_size, 3, trt_max_shape, trt_max_shape],
+                'scale_factor': [batch_size, 2]
             }
             opt_input_shape = {
-                'image': [batch_size, 3, trt_opt_shape, trt_opt_shape]
+                'image': [batch_size, 3, trt_opt_shape, trt_opt_shape],
+                'scale_factor': [batch_size, 2]
             }
             config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
                                               opt_input_shape)

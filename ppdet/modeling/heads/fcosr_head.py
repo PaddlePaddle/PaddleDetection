@@ -21,7 +21,7 @@ from paddle.regularizer import L2Decay
 
 from .fcos_head import ScaleReg
 from ..initializer import bias_init_with_prob, constant_, normal_
-from ..ops import get_act_fn
+from ..ops import get_act_fn, anchor_generator
 from ..rbox_utils import box2corners
 from ..losses import ProbIoULoss
 import numpy as np
@@ -40,6 +40,10 @@ def trunc_div(a, b):
 
 def fmod(a, b):
     return a - trunc_div(a, b) * b
+
+
+def fmod_eval(a, b):
+    return a - a.divide(b).cast(paddle.int32).cast(paddle.float32) * b
 
 
 class ConvBNLayer(nn.Layer):
@@ -92,7 +96,7 @@ class ConvBNLayer(nn.Layer):
 class FCOSRHead(nn.Layer):
     """ FCOSR Head, refer to https://arxiv.org/abs/2111.10780 for details """
 
-    __shared__ = ['num_classes']
+    __shared__ = ['num_classes', 'trt']
     __inject__ = ['assigner', 'nms']
 
     def __init__(self,
@@ -102,6 +106,7 @@ class FCOSRHead(nn.Layer):
                  stacked_convs=4,
                  act='relu',
                  fpn_strides=[4, 8, 16, 32, 64],
+                 trt=False,
                  loss_weight={'class': 1.0,
                               'probiou': 1.0},
                  norm_cfg={'name': 'gn',
@@ -118,8 +123,10 @@ class FCOSRHead(nn.Layer):
         self.half_pi = paddle.to_tensor(
             [1.5707963267948966], dtype=paddle.float32)
         self.probiou_loss = ProbIoULoss(mode='l1')
-        act = get_act_fn(act) if act is None or isinstance(act,
-                                                           (str, dict)) else act
+        act = get_act_fn(
+            act, trt=trt) if act is None or isinstance(act,
+                                                       (str, dict)) else act
+        self.trt = trt
         self.loss_weight = loss_weight
         self.assigner = assigner
         self.nms = nms
@@ -177,28 +184,51 @@ class FCOSRHead(nn.Layer):
         return {'in_channels': [i.channels for i in input_shape], }
 
     def _generate_anchors(self, feats):
-        # just use in eval time
-        anchor_points = []
-        stride_tensor = []
-        num_anchors_list = []
-        for i, stride in enumerate(self.fpn_strides):
-            _, _, h, w = feats[i].shape
-            shift_x = (paddle.arange(end=w) + 0.5) * stride
-            shift_y = (paddle.arange(end=h) + 0.5) * stride
-            shift_y, shift_x = paddle.meshgrid(shift_y, shift_x)
-            anchor_point = paddle.cast(
-                paddle.stack(
-                    [shift_x, shift_y], axis=-1), dtype='float32')
-            anchor_points.append(anchor_point.reshape([1, -1, 2]))
-            stride_tensor.append(
-                paddle.full(
-                    [1, h * w, 1], stride, dtype='float32'))
-            num_anchors_list.append(h * w)
-        anchor_points = paddle.concat(anchor_points, axis=1)
-        stride_tensor = paddle.concat(stride_tensor, axis=1)
-        return anchor_points, stride_tensor, num_anchors_list
+        if self.trt:
+            anchor_points = []
+            for feat, stride in zip(feats, self.fpn_strides):
+                _, _, h, w = paddle.shape(feat)
+                anchor, _ = anchor_generator(
+                    feat,
+                    stride * 4,
+                    1.0, [1.0, 1.0, 1.0, 1.0], [stride, stride],
+                    offset=0.5)
+                x1, y1, x2, y2 = paddle.split(anchor, 4, axis=-1)
+                xc = (x1 + x2 + 1) / 2
+                yc = (y1 + y2 + 1) / 2
+                anchor_point = paddle.concat(
+                    [xc, yc], axis=-1).reshape((1, h * w, 2))
+                anchor_points.append(anchor_point)
+            anchor_points = paddle.concat(anchor_points, axis=1)
+            return anchor_points, None, None
+        else:
+            anchor_points = []
+            stride_tensor = []
+            num_anchors_list = []
+            for i, stride in enumerate(self.fpn_strides):
+                _, _, h, w = feats[i].shape
+                shift_x = (paddle.arange(end=w) + 0.5) * stride
+                shift_y = (paddle.arange(end=h) + 0.5) * stride
+                shift_y, shift_x = paddle.meshgrid(shift_y, shift_x)
+                anchor_point = paddle.cast(
+                    paddle.stack(
+                        [shift_x, shift_y], axis=-1), dtype='float32')
+                anchor_points.append(anchor_point.reshape([1, -1, 2]))
+                stride_tensor.append(
+                    paddle.full(
+                        [1, h * w, 1], stride, dtype='float32'))
+                num_anchors_list.append(h * w)
+            anchor_points = paddle.concat(anchor_points, axis=1)
+            stride_tensor = paddle.concat(stride_tensor, axis=1)
+            return anchor_points, stride_tensor, num_anchors_list
 
     def forward(self, feats, target=None):
+        if self.training:
+            return self.forward_train(feats, target)
+        else:
+            return self.forward_eval(feats, target)
+
+    def forward_train(self, feats, target=None):
         anchor_points, stride_tensor, num_anchors_list = self._generate_anchors(
             feats)
         cls_pred_list, reg_pred_list = [], []
@@ -224,18 +254,67 @@ class FCOSRHead(nn.Layer):
         cls_pred_list = paddle.concat(cls_pred_list, axis=1)
         reg_pred_list = paddle.concat(reg_pred_list, axis=1)
 
-        if self.training:
-            return self.get_loss([
-                cls_pred_list, reg_pred_list, anchor_points, stride_tensor,
-                num_anchors_list
-            ], target)
-        else:
-            return cls_pred_list, reg_pred_list, anchor_points
+        return self.get_loss([
+            cls_pred_list, reg_pred_list, anchor_points, stride_tensor,
+            num_anchors_list
+        ], target)
+
+    def forward_eval(self, feats, target=None):
+        cls_pred_list, reg_pred_list = [], []
+        anchor_points, _, _ = self._generate_anchors(feats)
+        for stride, feat, scale in zip(self.fpn_strides, feats, self.scales):
+            b, _, h, w = paddle.shape(feat)
+            # cls
+            cls_feat = feat
+            for cls_layer in self.stem_cls:
+                cls_feat = cls_layer(cls_feat)
+            cls_pred = F.sigmoid(self.pred_cls(cls_feat))
+            cls_pred_list.append(cls_pred.reshape([b, self.num_classes, h * w]))
+            # reg
+            reg_feat = feat
+            for reg_layer in self.stem_reg:
+                reg_feat = reg_layer(reg_feat)
+
+            reg_xy = scale(self.pred_xy(reg_feat)) * stride
+            reg_wh = F.elu(scale(self.pred_wh(reg_feat)) + 1.) * stride
+            reg_angle = self.pred_angle(reg_feat)
+            reg_angle = fmod_eval(reg_angle, self.half_pi)
+            reg_pred = paddle.concat([reg_xy, reg_wh, reg_angle], axis=1)
+            reg_pred = reg_pred.reshape([b, 5, h * w]).transpose((0, 2, 1))
+            reg_pred_list.append(reg_pred)
+
+        cls_pred_list = paddle.concat(cls_pred_list, axis=2)
+        reg_pred_list = paddle.concat(reg_pred_list, axis=1)
+        reg_pred_list = self._bbox_decode(anchor_points, reg_pred_list)
+        return cls_pred_list, reg_pred_list
 
     def _bbox_decode(self, points, reg_pred_list):
         xy, wha = paddle.split(reg_pred_list, [2, 3], axis=-1)
         xy = xy + points
         return paddle.concat([xy, wha], axis=-1)
+
+    def _box2corners(self, pred_bboxes):
+        """ convert (x, y, w, h, angle) to (x1, y1, x2, y2, x3, y3, x4, y4)
+
+        Args:
+            pred_bboxes (Tensor): [B, N, 5]
+        
+        Returns:
+            polys (Tensor): [B, N, 8]
+        """
+        x, y, w, h, angle = paddle.split(pred_bboxes, 5, axis=-1)
+        cos_a_half = paddle.cos(angle) * 0.5
+        sin_a_half = paddle.sin(angle) * 0.5
+        w_x = cos_a_half * w
+        w_y = sin_a_half * w
+        h_x = -sin_a_half * h
+        h_y = cos_a_half * h
+        return paddle.concat(
+            [
+                x + w_x + h_x, y + w_y + h_y, x - w_x + h_x, y - w_y + h_y,
+                x - w_x - h_x, y - w_y - h_y, x + w_x - h_x, y + w_y - h_y
+            ],
+            axis=-1)
 
     def get_loss(self, head_outs, gt_meta):
         cls_pred_list, reg_pred_list, anchor_points, stride_tensor, num_anchors_list = head_outs
@@ -300,12 +379,9 @@ class FCOSRHead(nn.Layer):
         return loss
 
     def post_process(self, head_outs, scale_factor):
-        cls_pred_list, reg_pred_list, anchor_points = head_outs
-        pred_scores = cls_pred_list.transpose([0, 2, 1])
-        # [B, N, 5] -> [B, N, 5]
-        pred_rboxes = self._bbox_decode(anchor_points, reg_pred_list)
+        pred_scores, pred_rboxes = head_outs
         # [B, N, 5] -> [B, N, 4, 2] -> [B, N, 8]
-        pred_rboxes = box2corners(pred_rboxes).flatten(2)
+        pred_rboxes = self._box2corners(pred_rboxes)
         # scale bbox to origin
         scale_y, scale_x = paddle.split(scale_factor, 2, axis=-1)
         scale_factor = paddle.concat(
