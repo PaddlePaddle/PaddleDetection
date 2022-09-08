@@ -186,7 +186,8 @@ def generate_proposal_target(rpn_rois,
                              use_random=True,
                              is_cascade=False,
                              cascade_iou=0.5,
-                             assign_on_cpu=False):
+                             assign_on_cpu=False,
+                             add_gt_as_proposals=True):
 
     rois_with_gt = []
     tgt_labels = []
@@ -204,7 +205,7 @@ def generate_proposal_target(rpn_rois,
         gt_class = paddle.squeeze(gt_classes[i], axis=-1)
 
         # Concat RoIs and gt boxes except cascade rcnn or none gt
-        if not is_cascade and gt_bbox.shape[0] > 0:
+        if add_gt_as_proposals and gt_bbox.shape[0] > 0:
             bbox = paddle.concat([rpn_roi, gt_bbox])
         else:
             bbox = rpn_roi
