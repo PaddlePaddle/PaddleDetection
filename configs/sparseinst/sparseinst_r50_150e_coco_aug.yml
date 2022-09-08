@@ -1,0 +1,9 @@
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  '_base_/optimizer_150e.yml',
+  '_base_/sparseinst_r50_base.yml',
+  '_base_/sparseinst_aug_reader.yml',
+]
+weights: output/sparseinst_r50_150e_coco_aug/model_final
+snapshot_epoch: 10
