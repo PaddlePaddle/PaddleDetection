@@ -87,7 +87,7 @@ def main():
     merge_config(FLAGS.opt)
     check_config(cfg)
     check_gpu(cfg.use_gpu)
-    check_version('develop')
+    check_version()
 
     run(FLAGS, cfg)
 
