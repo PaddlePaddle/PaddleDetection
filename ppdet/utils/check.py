@@ -101,17 +101,8 @@ def check_version(version='2.2'):
         paddle_version.rc
     ]
 
-    # Paddledet develop version is only used on Paddle develop 
-    if version_installed == ['0', '0', '0', '0'] and version != 'develop':
-        raise Exception(
-            "PaddlePaddle version {} or higher is required, and develop version is only used for PaddleDetection develop version!".
-            format(version))
-
     if version_installed == ['0', '0', '0', '0']:
         return
-
-    if version == 'develop':
-        raise Exception("PaddlePaddle develop version is required!")
 
     version_split = version.split('.')
 
