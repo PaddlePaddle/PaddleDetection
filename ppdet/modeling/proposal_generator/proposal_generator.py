@@ -16,6 +16,10 @@ import paddle
 
 from ppdet.core.workspace import register, serializable
 from .. import ops
+try:
+    import paddle.vision.ops.generate_proposals as generate_proposals
+except:
+    import ops.generate_proposals as generate_proposals
 
 
 @register
@@ -62,7 +66,7 @@ class ProposalGenerator(object):
 
         top_n = self.pre_nms_top_n if self.topk_after_collect else self.post_nms_top_n
         variances = paddle.ones_like(anchors)
-        rpn_rois, rpn_rois_prob, rpn_rois_num = ops.generate_proposals(
+        rpn_rois, rpn_rois_prob, rpn_rois_num = generate_proposals(
             scores,
             bbox_deltas,
             im_shape,
