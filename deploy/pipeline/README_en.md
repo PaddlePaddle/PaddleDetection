@@ -69,22 +69,22 @@ Click to download the model, then unzip and save it in the `. /output_inference`
 
 ## 📚 Doc Tutorials
 
-### [A Quick Start](docs/tutorials/PPHuman_QUICK_STARTED.md)
+### [A Quick Start](docs/tutorials/PPHuman_QUICK_STARTED_en.md)
 
 ### Pedestrian attribute/feature recognition
 
-* [A quick start](docs/tutorials/pphuman_attribute.md)
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_attribute.md)
+* [A quick start](docs/tutorials/pphuman_attribute_en.md)
+* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_attribute_en.md)
   * Data Preparation
   * Model Optimization
   * New Attributes
 
 ### Behavior detection
 
-* [A quick start](docs/tutorials/pphuman_action.md)
+* [A quick start](docs/tutorials/pphuman_action_en.md)
   * Falling detection
   * Fighting detection
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/action_recognotion/README.md)
+* [Customized development tutorials](../../docs/advanced_tutorials/customization/action_recognotion/README_en.md)
   * Solution Selection
   * Data Preparation
   * Model Optimization
@@ -92,17 +92,17 @@ Click to download the model, then unzip and save it in the `. /output_inference`
 
 ### ReID
 
-* [A quick start](docs/tutorials/pphuman_mtmct.md)
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mtmct.md)
+* [A quick start](docs/tutorials/pphuman_mtmct_en.md)
+* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mtmct_en.md)
   * Data Preparation
   * Model Optimization
 
 ### Pedestrian tracking, visitor traffic statistics, trace records
 
-* [A quick start](docs/tutorials/pphuman_mot.md)
+* [A quick start](docs/tutorials/pphuman_mot_en.md)
   * Pedestrian tracking,
   * Visitor traffic statistics
   * Regional intrusion diagnosis and counting
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mot.md)
+* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mot_en.md)
   * Data Preparation
   * Model Optimization
