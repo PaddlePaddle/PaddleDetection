@@ -1,4 +1,6 @@
-# 快速开始
+[English](PPHuman_QUICK_STARTED_en.md) | 简体中文
+
+# PP-Human快速开始
 
 ## 目录
 
