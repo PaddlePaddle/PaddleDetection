@@ -31,7 +31,15 @@ EPS = 1e-9
 
 @register
 class FCOSRAssigner(nn.Layer):
-    """ FCOSR Assigner, refer to https://arxiv.org/abs/2111.10780 for details """
+    """ FCOSR Assigner, refer to https://arxiv.org/abs/2111.10780 for details
+
+    1. compute normalized gaussian distribution score and refined gaussian distribution score
+    2. refer to ellipse center sampling, sample points whose normalized gaussian distribution score is greater than threshold
+    3. refer to multi-level sampling, assign ground truth to feature map which follows two conditions.
+        i). first, the ratio between the short edge of the target and the stride of the feature map is less than 2.
+        ii). second, the long edge of minimum bounding rectangle of the target is larger than the acceptance range of feature map
+    4. refer to fuzzy sample label assignment, the points satisfying 2 and 3 will be assigned to the ground truth according to gaussian distribution score
+    """
     __shared__ = ['num_classes']
 
     def __init__(self,
@@ -79,14 +87,6 @@ class FCOSRAssigner(nn.Layer):
         delta_y = vec_dot_ad.pow(2) / (norm_ad.pow(3) * min_edge + EPS)
         # score [B, N, L]
         norm_score = paddle.exp(-0.5 * self.factor * (delta_x + delta_y))
-        # sigma 
-        # sigma_x = (norm_ab * min_edge / self.factor).sqrt()
-        # sigma_y = (norm_ad * min_edge / self.factor).sqrt()
-        # sigma = sigma_x * sigma_y
-
-        # sqrt_area = (norm_ab * norm_ad).sqrt()
-        # sigma = sqrt_area * min_edge / self.factor
-        # refined_score = norm_score / (2 * np.pi * sigma + EPS) * sqrt_area
 
         # simplified calculation
         sigma = min_edge / self.factor

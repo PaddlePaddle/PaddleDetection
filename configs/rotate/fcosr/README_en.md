@@ -40,7 +40,7 @@ Multiple GPUs Training
 CUDA_VISIBLE_DEVICES=0,1,2,3 python -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/rotate/fcosr/fcosr_x50_3x_dota.yml
 ```
 
-### 预测
+### Inference
 
 Run the follow command to infer single image, the result of inference will be saved in `output` directory by default.
 
