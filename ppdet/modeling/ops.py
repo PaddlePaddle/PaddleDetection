@@ -345,6 +345,102 @@ def distribute_fpn_proposals(fpn_rois,
 
 
 @paddle.jit.not_to_static
+def anchor_generator(input,
+                     anchor_sizes=None,
+                     aspect_ratios=None,
+                     variance=[0.1, 0.1, 0.2, 0.2],
+                     stride=None,
+                     offset=0.5):
+    """
+    **Anchor generator operator**
+    Generate anchors for Faster RCNN algorithm.
+    Each position of the input produce N anchors, N =
+    size(anchor_sizes) * size(aspect_ratios). The order of generated anchors
+    is firstly aspect_ratios loop then anchor_sizes loop.
+    Args:
+       input(Variable): 4-D Tensor with shape [N,C,H,W]. The input feature map.
+       anchor_sizes(float32|list|tuple, optional): The anchor sizes of generated
+          anchors, given in absolute pixels e.g. [64., 128., 256., 512.].
+          For instance, the anchor size of 64 means the area of this anchor 
+          equals to 64**2. None by default.
+       aspect_ratios(float32|list|tuple, optional): The height / width ratios 
+           of generated anchors, e.g. [0.5, 1.0, 2.0]. None by default.
+       variance(list|tuple, optional): The variances to be used in box 
+           regression deltas. The data type is float32, [0.1, 0.1, 0.2, 0.2] by 
+           default.
+       stride(list|tuple, optional): The anchors stride across width and height.
+           The data type is float32. e.g. [16.0, 16.0]. None by default.
+       offset(float32, optional): Prior boxes center offset. 0.5 by default.
+    Returns:
+        Tuple:
+        Anchors(Variable): The output anchors with a layout of [H, W, num_anchors, 4].
+        H is the height of input, W is the width of input,
+        num_anchors is the box count of each position. 
+        Each anchor is in (xmin, ymin, xmax, ymax) format an unnormalized.
+ 
+        Variances(Variable): The expanded variances of anchors
+        with a layout of [H, W, num_priors, 4].
+        H is the height of input, W is the width of input
+        num_anchors is the box count of each position.
+        Each variance is in (xcenter, ycenter, w, h) format.
+    Examples:
+        .. code-block:: python
+            import paddle.fluid as fluid
+            conv1 = fluid.data(name='conv1', shape=[None, 48, 16, 16], dtype='float32')
+            anchor, var = fluid.layers.anchor_generator(
+                input=conv1,
+                anchor_sizes=[64, 128, 256, 512],
+                aspect_ratios=[0.5, 1.0, 2.0],
+                variance=[0.1, 0.1, 0.2, 0.2],
+                stride=[16.0, 16.0],
+                offset=0.5)
+    """
+
+    def _is_list_or_tuple_(data):
+        return (isinstance(data, list) or isinstance(data, tuple))
+
+    if not _is_list_or_tuple_(anchor_sizes):
+        anchor_sizes = [anchor_sizes]
+    if not _is_list_or_tuple_(aspect_ratios):
+        aspect_ratios = [aspect_ratios]
+    if not (_is_list_or_tuple_(stride) and len(stride) == 2):
+        raise ValueError('stride should be a list or tuple ',
+                         'with length 2, (stride_width, stride_height).')
+
+    anchor_sizes = list(map(float, anchor_sizes))
+    aspect_ratios = list(map(float, aspect_ratios))
+    stride = list(map(float, stride))
+
+    if in_dynamic_mode():
+        attrs = ('anchor_sizes', anchor_sizes, 'aspect_ratios', aspect_ratios,
+                 'variances', variance, 'stride', stride, 'offset', offset)
+        anchor, var = _legacy_C_ops.anchor_generator(input, *attrs)
+        return anchor, var
+
+    helper = LayerHelper("anchor_generator", **locals())
+    dtype = helper.input_dtype()
+    attrs = {
+        'anchor_sizes': anchor_sizes,
+        'aspect_ratios': aspect_ratios,
+        'variances': variance,
+        'stride': stride,
+        'offset': offset
+    }
+
+    anchor = helper.create_variable_for_type_inference(dtype)
+    var = helper.create_variable_for_type_inference(dtype)
+    helper.append_op(
+        type="anchor_generator",
+        inputs={"Input": input},
+        outputs={"Anchors": anchor,
+                 "Variances": var},
+        attrs=attrs, )
+    anchor.stop_gradient = True
+    var.stop_gradient = True
+    return anchor, var
+
+
+@paddle.jit.not_to_static
 def prior_box(input,
               image,
               min_sizes,
