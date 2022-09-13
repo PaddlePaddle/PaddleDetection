@@ -96,7 +96,7 @@ class RoIAlign(object):
                     self.canonical_size,
                     rois_num=rois_num)
             else:
-                ops.distribute_fpn_proposals(
+                rois_dist, restore_index, rois_num_dist = ops.distribute_fpn_proposals(
                     roi,
                     k_min,
                     k_max,
