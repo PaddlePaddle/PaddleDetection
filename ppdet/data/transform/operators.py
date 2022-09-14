@@ -2107,6 +2107,8 @@ class Poly2Mask(BaseOperator):
             for gt_poly in sample['gt_poly']
         ]
         sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+        del (sample['gt_poly'])
+
         return sample
 
 

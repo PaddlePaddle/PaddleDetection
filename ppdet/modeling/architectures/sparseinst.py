@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This code is based on https://github.com/hustvl/SparseInst
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -34,13 +36,15 @@ def _rescoring_mask(scores, mask_pred, masks):
 @register
 class SparseInst(BaseArch):
     """
-    SparseInst network, see https://arxiv.org/abs/2003.10152
+    SparseInst network, please refer to https://arxiv.org/abs/2203.12827
 
     Args:
         backbone (object): an backbone instance
-        solov2_head (object): an `SOLOv2Head` instance
-        mask_head (object): an `SOLOv2MaskHead` instance
-        neck (object): neck of network, such as feature pyramid network instance
+        encoder (object): an sparseinst encoder instance
+        decoder (object): an sparseinst decoder instance
+        criterion (object): an loss instance for SparseInst training 
+        cls_threshold (float): the classification threshold for an instance.
+        mask_threshold (float): the mask threshold for mask.
     """
 
     __category__ = 'architecture'

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This code is based on https://github.com/hustvl/SparseInst
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -22,9 +24,52 @@ import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from scipy.optimize import linear_sum_assignment
 
-from ..mask_utils import nested_masks_from_list
-
 __all__ = ['SparseInstLoss']
+
+
+def _max_by_axis(the_list):
+    maxes = the_list[0]
+    for sublist in the_list[1:]:
+        for index, item in enumerate(sublist):
+            maxes[index] = max(maxes[index], item)
+    return maxes
+
+
+class NestedTensor(object):
+    def __init__(self, tensors, mask):
+        self.tensors = tensors
+        self.mask = mask
+
+    def decompose(self):
+        return self.tensors, self.mask
+
+    def __repr__(self):
+        return str(self.tensors)
+
+
+def nested_masks_from_list(tensor_list, input_shape=None):
+    if tensor_list[0].ndim == 3:
+        dim_size = sum([img.shape[0] for img in tensor_list])
+        if input_shape is None:
+            max_size = _max_by_axis(
+                [list(img.shape[-2:]) for img in tensor_list])
+        else:
+            max_size = [input_shape[0], input_shape[1]]
+        batch_shape = [dim_size] + max_size
+        # b, h, w = batch_shape
+        dtype = tensor_list[0].dtype
+        tensor = paddle.zeros(batch_shape, dtype=dtype)
+        mask = paddle.zeros(batch_shape, dtype=paddle.bool)
+        idx = 0
+        for img in tensor_list:
+            c = img.shape[0]
+            c_ = idx + c
+            tensor[idx:c_, :img.shape[1], :img.shape[2]].copy_(img)
+            mask[idx:c_, :img.shape[1], :img.shape[2]] = True
+            idx = c_
+    else:
+        raise ValueError('not supported tensor type')
+    return NestedTensor(tensor, mask)
 
 
 def _dice_score(inputs, targets):
@@ -71,7 +116,6 @@ class SparseInstMatcher(nn.Layer):
             pred_masks = outputs['pred_masks']
             pred_logits = F.sigmoid(outputs['pred_logits'])
             tgt_ids = paddle.concat(targets["gt_class"]).flatten()
-            #tgt_ids = targets["gt_class"]
             if tgt_ids.shape[0] == 0:
                 return [(paddle.to_tensor(
                     [], dtype=pred_logits.dtype), paddle.to_tensor(
@@ -88,7 +132,7 @@ class SparseInstMatcher(nn.Layer):
             tgt_masks = tgt_masks.flatten(1)
 
             mask_score = _dice_score(pred_masks, tgt_masks)
-            # Nx(Number of gts)
+
             matching_prob = paddle.gather(
                 pred_logits.reshape((B * N, -1)), tgt_ids, axis=1)
             C = (mask_score**self.alpha) * (matching_prob**self.beta)
@@ -112,14 +156,6 @@ class SparseInstMatcher(nn.Layer):
 @register
 @serializable
 class SparseInstLoss(object):
-    """
-    SOLOv2Loss
-    Args:
-        ins_loss_weight (float): Weight of instance loss.
-        focal_loss_gamma (float): Gamma parameter for focal loss.
-        focal_loss_alpha (float): Alpha parameter for focal loss.
-    """
-
     def __init__(self,
                  class_loss_weight=2.0,
                  mask_pixel_loss_weight=5.0,
@@ -140,14 +176,12 @@ class SparseInstLoss(object):
         self.matcher = SparseInstMatcher(matcher_alpha, matcher_beta)
 
     def _get_src_permutation_idx(self, indices):
-        # permute predictions following indices
         batch_idx = paddle.concat(
             [paddle.full_like(src, i) for i, (src, _) in enumerate(indices)])
         src_idx = paddle.concat([src for (src, _) in indices])
         return batch_idx, src_idx
 
     def _get_tgt_permutation_idx(self, indices):
-        # permute targets following indices
         batch_idx = paddle.concat(
             [paddle.full_like(tgt, i) for i, (_, tgt) in enumerate(indices)])
         tgt_idx = paddle.concat([tgt for (_, tgt) in indices])
@@ -168,14 +202,13 @@ class SparseInstLoss(object):
         target_classes[idx] = target_classes_o
 
         src_logits = src_logits.flatten(0, 1)
-        # prepare one_hot target.
         target_classes = target_classes.flatten(0, 1)
         pos_inds = paddle.nonzero(
             target_classes != self.num_classes, as_tuple=True)[0]
         labels = paddle.zeros_like(src_logits)
         labels.stop_gradient = True
         labels[pos_inds, target_classes[pos_inds]] = 1.0
-        # comp focal loss.
+
         class_loss = F.sigmoid_focal_loss(
             src_logits,
             labels,
@@ -190,14 +223,12 @@ class SparseInstLoss(object):
                                        num_instances, input_shape):
         src_idx = self._get_src_permutation_idx(indices)
         tgt_idx = self._get_tgt_permutation_idx(indices)
-        # Bx100xHxW
+
         assert "pred_masks" in outputs
         assert "pred_scores" in outputs
         src_iou_scores = outputs["pred_scores"]
         src_masks = outputs["pred_masks"]
         with paddle.no_grad():
-            #target_masks, _ = nested_masks_from_list(
-            #    [t["masks"].tensor for t in targets], input_shape).decompose()
             target_masks = paddle.concat(targets["gt_segm"])
         num_masks = [
             len(targets["gt_segm"][i]) for i in range(len(targets["gt_segm"]))
@@ -212,7 +243,6 @@ class SparseInstLoss(object):
             }
             return lossesa
 
-        # Note: indexing will loss first dim when bs = 1
         src_masks = src_masks[src_idx]
         target_masks = F.interpolate(
             target_masks[:, None],
@@ -221,7 +251,6 @@ class SparseInstLoss(object):
             align_corners=False).squeeze(1)
 
         src_masks = src_masks.flatten(1)
-        # FIXME: tgt_idx
         mix_tgt_idx = paddle.zeros_like(tgt_idx[1])
         cum_sum = 0
         for num_mask in num_masks:
@@ -248,26 +277,12 @@ class SparseInstLoss(object):
         return losses
 
     def __call__(self, outputs, targets, input_shape):
-        """
-        Get loss of network of SOLOv2.
-        Args:
-            ins_pred_list (list): Variable list of instance branch output.
-            ins_label_list (list): List of instance labels pre batch.
-            cate_preds (list): Concat Variable list of categroy branch output.
-            cate_labels (list): Concat list of categroy labels pre batch.
-            num_ins (int): Number of positive samples in a mini-batch.
-        Returns:
-            loss_ins (Variable): The instance loss Variable of SOLOv2 network.
-            loss_cate (Variable): The category loss Variable of SOLOv2 network.
-        """
         outputs_without_aux = {
             k: v
             for k, v in outputs.items() if k != 'aux_outputs'
         }
 
-        # Retrieve the matching between the outputs of the last layer and the targets
         indices = self.matcher(outputs_without_aux, targets, input_shape)
-        # Compute the average number of target boxes accross all nodes, for normalization purposes
         num_instances = sum([
             len(targets["gt_class"][i])
             for i in range(len(targets["gt_class"]))

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # This code is based on https://github.com/hustvl/SparseInst
+
 import math
 import paddle
 import paddle.nn as nn
@@ -61,13 +62,6 @@ class PyramidPoolingModule(nn.Layer):
 @register
 @serializable
 class InstanceContextEncoder(nn.Layer):
-    """ 
-    Instance Context Encoder
-    1. construct feature pyramids from ResNet
-    2. enlarge receptive fields (ppm)
-    3. multi-scale fusion 
-    """
-
     def __init__(self, num_channels, in_channels):
         super().__init__()
         self.num_channels = num_channels
@@ -86,10 +80,9 @@ class InstanceContextEncoder(nn.Layer):
             fpn_outputs.append(output_conv)
         self.fpn_laterals = nn.LayerList(fpn_laterals)
         self.fpn_outputs = nn.LayerList(fpn_outputs)
-        # ppm
         self.ppm = PyramidPoolingModule(self.num_channels,
                                         self.num_channels // 4)
-        # final fusion
+
         self.fusion = Conv2d(self.num_channels * 3, self.num_channels, 1)
         kaiming_normal_(self.fusion.weight, mode="fan_out", nonlinearity="relu")
 

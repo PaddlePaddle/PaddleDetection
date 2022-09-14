@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This code is based on https://github.com/hustvl/SparseInst
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -52,7 +54,6 @@ class InstanceBranch(nn.Layer):
         bias_value = bias_init_with_prob(0.01)
 
         self.inst_convs = _make_stack_3x3_convs(num_convs, in_channels, dim)
-        # iam prediction, a simple conv
         self.iam_conv = nn.Conv2D(
             dim,
             num_masks,
@@ -79,17 +80,13 @@ class InstanceBranch(nn.Layer):
         reset_parameters(self.objectness, reverse=True)
 
     def forward(self, features):
-        # instance features (x4 convs)
         features = self.inst_convs(features)
-        # predict instance activation maps
         iam = self.iam_conv(features)
         iam_prob = F.sigmoid(iam)
 
         B, N = paddle.shape(iam_prob)[:2]
         C = paddle.shape(features)[1]
-        # BxNxHxW -> BxNx(HW)
         iam_prob = iam_prob.reshape((B, N, -1))
-        # aggregate features: BxCxHxW -> Bx(HW)xC
         inst_features = paddle.bmm(iam_prob,
                                    features.reshape((B, C, -1)).transpose(
                                        (0, 2, 1)))
@@ -111,7 +108,6 @@ class MaskBranch(nn.Layer):
             self.projection.weight, mode="fan_out", nonlinearity="relu")
 
     def forward(self, features):
-        # mask features (x4 convs)
         features = self.mask_convs(features)
         return self.projection(features)
 
@@ -162,7 +158,6 @@ class BaseIAMDecoder(nn.Layer):
         mask_features = self.mask_branch(features)
 
         N = paddle.shape(pred_kernel)[1]
-        # mask_features: BxCxHxW
         B, C, H, W = paddle.shape(mask_features)
         # The following line is use to convert model to static, do not remove.
         C = mask_features.shape[1]
@@ -238,16 +233,12 @@ class GroupInstanceBranch(nn.Layer):
         kaiming_uniform_(self.fc.weight, a=1)
 
     def forward(self, features):
-        # instance features (x4 convs)
         features = self.inst_convs(features)
-        # predict instance activation maps
         iam = self.iam_conv(features)
         iam_prob = F.sigmoid(iam)
         B, N = paddle.shape(iam_prob)[:2]
         C = paddle.shape(features)[1]
-        # BxNxHxW -> BxNx(HW)
         iam_prob = iam_prob.reshape((B, N, -1))
-        # aggregate features: BxCxHxW -> Bx(HW)xC
         inst_features = paddle.bmm(iam_prob,
                                    features.reshape((B, C, -1)).transpose(
                                        (0, 2, 1)))

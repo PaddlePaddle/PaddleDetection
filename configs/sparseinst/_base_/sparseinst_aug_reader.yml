@@ -2,6 +2,7 @@ worker_num: 4
 TrainReader:
   sample_transforms:
   - Decode: {}
+  - Poly2Mask: {}
   - RandomFlip: {prob: 0.5}
   - RandomSelect: { transforms1: [ RandomShortSideResize: { short_side_sizes: [ 416, 448, 480, 512, 544, 576, 608, 640 ], max_size: 853 } ],
                     transforms2: [
@@ -10,7 +11,6 @@ TrainReader:
                         RandomShortSideResize: { short_side_sizes: [ 416, 448, 480, 512, 544, 576, 608, 640 ], max_size: 853 } ]
   }
   - NormalizeImage: {is_scale: false, mean: [123.675, 116.280, 103.530], std: [58.395, 57.120, 57.375]}
-  - Poly2Mask: {}
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
