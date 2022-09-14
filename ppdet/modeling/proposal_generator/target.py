@@ -340,7 +340,7 @@ def generate_mask_target(gt_segms, rois, labels_int32, sampled_gt_inds,
         # generate fake roi if foreground is empty
         if fg_inds.numel() == 0:
             has_fg = False
-            fg_inds = paddle.ones([1], dtype='int32')
+            fg_inds = paddle.ones([1, 1], dtype='int64')
         inds_per_im = sampled_gt_inds[k]
         inds_per_im = paddle.gather(inds_per_im, fg_inds)
 
