@@ -218,7 +218,7 @@ class FCOSHead(nn.Layer):
         location.stop_gradient = True
         return location
 
-    def forward(self, fpn_feats, is_training):
+    def forward(self, fpn_feats, targets=None):
         assert len(fpn_feats) == len(
             self.fpn_stride
         ), "The size of fpn_feats is not equal to size of fpn_stride"
@@ -236,7 +236,8 @@ class FCOSHead(nn.Layer):
                 centerness = self.fcos_head_centerness(fcos_cls_feat)
             if self.norm_reg_targets:
                 bbox_reg = F.relu(bbox_reg)
-                if not is_training:
+                if not self.training:
+                    # eval or infer
                     bbox_reg = bbox_reg * fpn_stride
             else:
                 bbox_reg = paddle.exp(bbox_reg)
@@ -244,17 +245,44 @@ class FCOSHead(nn.Layer):
             bboxes_reg_list.append(bbox_reg)
             centerness_list.append(centerness)
 
-        if not is_training:
+        if self.training:
+            losses = {}
+            fcos_head_outs = [cls_logits_list, bboxes_reg_list, centerness_list]
+            losses_fcos = self.get_loss(fcos_head_outs, targets)
+            losses.update(losses_fcos)
+
+            total_loss = paddle.add_n(list(losses.values()))
+            losses.update({'loss': total_loss})
+            return losses
+        else:
+            # eval or infer
             locations_list = []
             for fpn_stride, feature in zip(self.fpn_stride, fpn_feats):
                 location = self._compute_locations_by_level(fpn_stride, feature)
                 locations_list.append(location)
 
-            return locations_list, cls_logits_list, bboxes_reg_list, centerness_list
-        else:
-            return cls_logits_list, bboxes_reg_list, centerness_list
+            fcos_head_outs = [
+                locations_list, cls_logits_list, bboxes_reg_list,
+                centerness_list
+            ]
+            return fcos_head_outs
 
-    def get_loss(self, fcos_head_outs, tag_labels, tag_bboxes, tag_centerness):
+    def get_loss(self, fcos_head_outs, targets):
         cls_logits, bboxes_reg, centerness = fcos_head_outs
-        return self.fcos_loss(cls_logits, bboxes_reg, centerness, tag_labels,
-                              tag_bboxes, tag_centerness)
+
+        tag_labels, tag_bboxes, tag_centerness = [], [], []
+        for i in range(len(self.fpn_stride)):
+            # labels, reg_target, centerness
+            k_lbl = 'labels{}'.format(i)
+            if k_lbl in targets:
+                tag_labels.append(targets[k_lbl])
+            k_box = 'reg_target{}'.format(i)
+            if k_box in targets:
+                tag_bboxes.append(targets[k_box])
+            k_ctn = 'centerness{}'.format(i)
+            if k_ctn in targets:
+                tag_centerness.append(targets[k_ctn])
+
+        losses_fcos = self.fcos_loss(cls_logits, bboxes_reg, centerness,
+                                     tag_labels, tag_bboxes, tag_centerness)
+        return losses_fcos

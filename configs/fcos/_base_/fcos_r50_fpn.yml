@@ -8,19 +8,19 @@ FCOS:
   fcos_post_process: FCOSPostProcess
 
 ResNet:
-  # index 0 stands for res2
   depth: 50
+  variant: 'b'
   norm_type: bn
-  freeze_at: 0
-  return_idx: [1,2,3]
+  freeze_at: 0 # res2
+  return_idx: [1, 2, 3]
   num_stages: 4
 
 FPN:
   out_channel: 256
   spatial_scales: [0.125, 0.0625, 0.03125]
   extra_stage: 2
-  has_extra_convs: true
-  use_c5: false
+  has_extra_convs: True
+  use_c5: False
 
 FCOSHead:
   fcos_feat:
@@ -29,12 +29,12 @@ FCOSHead:
     feat_out: 256
     num_convs: 4
     norm_type: "gn"
-    use_dcn: false
+    use_dcn: False
   fpn_stride: [8, 16, 32, 64, 128]
   prior_prob: 0.01
   fcos_loss: FCOSLoss
-  norm_reg_targets: true
-  centerness_on_reg: true
+  norm_reg_targets: True
+  centerness_on_reg: True
 
 FCOSLoss:
   loss_alpha: 0.25

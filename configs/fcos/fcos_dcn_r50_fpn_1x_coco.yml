@@ -10,11 +10,12 @@ weights: output/fcos_dcn_r50_fpn_1x_coco/model_final
 
 ResNet:
   depth: 50
+  variant: 'b'
   norm_type: bn
-  freeze_at: 0
-  return_idx: [1,2,3]
+  freeze_at: 0 # res2
+  return_idx: [1, 2, 3]
   num_stages: 4
-  dcn_v2_stages: [1,2,3]
+  dcn_v2_stages: [1, 2, 3]
 
 FCOSHead:
   fcos_feat:
@@ -23,10 +24,9 @@ FCOSHead:
     feat_out: 256
     num_convs: 4
     norm_type: "gn"
-    use_dcn: true
-  num_classes: 80
+    use_dcn: True
   fpn_stride: [8, 16, 32, 64, 128]
   prior_prob: 0.01
   fcos_loss: FCOSLoss
-  norm_reg_targets: true
-  centerness_on_reg: true
+  norm_reg_targets: True
+  centerness_on_reg: True
