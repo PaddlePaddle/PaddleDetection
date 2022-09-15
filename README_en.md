@@ -464,6 +464,10 @@ Please refer to [docs](deploy/pipeline/README_en.md) for details.
 
 - [Visitor flow statistics based on FairMOT](https://aistudio.baidu.com/aistudio/projectdetail/2421822)
 
+- [Guest analysis based on PP-Human](https://aistudio.baidu.com/aistudio/projectdetail/4537344)
+
+- [Fight recognition based on video classification](https://aistudio.baidu.com/aistudio/projectdetail/4512242)
+
 - [More examples](./industrial_tutorial/README.md)
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157836473-1cf451fa-f01f-4148-ba68-b6d06d5da2f9.png" alt="" width="20"> Applications
