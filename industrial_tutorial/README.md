@@ -33,5 +33,6 @@ PaddleDetection场景应用覆盖通用，制造，城市，交通行业的主�
 
 - [基于人体关键点检测的合规检测](https://aistudio.baidu.com/aistudio/projectdetail/4061642?contributionType=1)
 
+- [基于PP-Human的来客分析案例教程](https://aistudio.baidu.com/aistudio/projectdetail/4537344)
 
   *范例将持续更新中
