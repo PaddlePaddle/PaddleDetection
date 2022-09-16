@@ -1,0 +1,20 @@
+epoch: 36
+
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+    - !PiecewiseDecay
+      gamma: 0.1
+      milestones: [24, 33]
+    - !LinearWarmup
+      start_factor: 0.3333333
+      steps: 500
+
+OptimizerBuilder:
+  clip_grad_by_norm: 35.
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2
