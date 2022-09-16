@@ -38,3 +38,4 @@ TestReader:
   batch_transforms:
     - PadBatch: {pad_to_stride: 128}
   batch_size: 1
+  fuse_normalize: True

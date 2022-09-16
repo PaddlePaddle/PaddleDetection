@@ -24,7 +24,7 @@ from paddle import ParamAttr
 from paddle.nn.initializer import Normal, Constant
 
 from ppdet.core.workspace import register
-from ppdet.modeling.layers import ConvNormLayer
+from ppdet.modeling.layers import ConvNormLayer, MultiClassNMS
 
 
 class ScaleReg(nn.Layer):
@@ -123,17 +123,19 @@ class FCOSHead(nn.Layer):
         norm_reg_targets (bool): Normalization the regression target if true
         centerness_on_reg (bool): The prediction of centerness on regression or clssification branch
     """
-    __inject__ = ['fcos_feat', 'fcos_loss']
-    __shared__ = ['num_classes']
+    __inject__ = ['fcos_feat', 'fcos_loss', 'nms']
+    __shared__ = ['num_classes', 'trt']
 
     def __init__(self,
-                 fcos_feat,
                  num_classes=80,
+                 fcos_feat='FCOSFeat',
                  fpn_stride=[8, 16, 32, 64, 128],
                  prior_prob=0.01,
-                 fcos_loss='FCOSLoss',
                  norm_reg_targets=True,
-                 centerness_on_reg=True):
+                 centerness_on_reg=True,
+                 fcos_loss='FCOSLoss',
+                 nms='MultiClassNMS',
+                 trt=False):
         super(FCOSHead, self).__init__()
         self.fcos_feat = fcos_feat
         self.num_classes = num_classes
@@ -142,6 +144,9 @@ class FCOSHead(nn.Layer):
         self.fcos_loss = fcos_loss
         self.norm_reg_targets = norm_reg_targets
         self.centerness_on_reg = centerness_on_reg
+        self.nms = nms
+        if isinstance(self.nms, MultiClassNMS) and trt:
+            self.nms.trt = trt
 
         conv_cls_name = "fcos_head_cls"
         bias_init_value = -math.log((1 - self.prior_prob) / self.prior_prob)
@@ -286,3 +291,48 @@ class FCOSHead(nn.Layer):
         losses_fcos = self.fcos_loss(cls_logits, bboxes_reg, centerness,
                                      tag_labels, tag_bboxes, tag_centerness)
         return losses_fcos
+
+    def post_process_by_level(self, locations, box_cls, box_reg, box_ctn):
+        b, _, h, w = box_cls.shape[:]
+        feat_size = h * w
+        c_cls, c_reg, c_ctn = box_cls.shape[1], box_reg.shape[1], box_ctn.shape[
+            1]
+
+        box_scores = F.sigmoid(box_cls.reshape([b, c_cls, feat_size]))
+        box_centerness = F.sigmoid(box_ctn.reshape([b, c_ctn, feat_size]))
+        pred_scores = box_scores * box_centerness
+
+        box_reg_ch_last = box_reg.reshape([b, c_reg, feat_size]).transpose(
+            [0, 2, 1])
+        box_reg_decoding = paddle.stack(
+            [
+                locations[:, 0] - box_reg_ch_last[:, :, 0],
+                locations[:, 1] - box_reg_ch_last[:, :, 1],
+                locations[:, 0] + box_reg_ch_last[:, :, 2],
+                locations[:, 1] + box_reg_ch_last[:, :, 3]
+            ],
+            axis=1)
+        pred_boxes = box_reg_decoding.transpose([0, 2, 1])
+
+        return pred_scores, pred_boxes
+
+    def post_process(self, fcos_head_outs, scale_factor):
+        locations, cls_logits, bboxes_reg, centerness = fcos_head_outs
+        pred_bboxes, pred_scores = [], []
+
+        for pts, cls, box, ctn in zip(locations, cls_logits, bboxes_reg,
+                                      centerness):
+            scores_lvl, boxes_lvl = self.post_process_by_level(pts, cls, box,
+                                                               ctn)
+            pred_scores.append(scores_lvl)
+            pred_bboxes.append(boxes_lvl)
+        pred_bboxes = paddle.concat(pred_bboxes, axis=1)
+        pred_scores = paddle.concat(pred_scores, axis=2)
+
+        scale_y, scale_x = paddle.split(scale_factor, 2, axis=-1)
+        scale_factor = paddle.concat(
+            [scale_x, scale_y, scale_x, scale_y], axis=-1).reshape([-1, 1, 4])
+        pred_bboxes /= scale_factor
+
+        bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
+        return bbox_pred, bbox_num

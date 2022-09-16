@@ -32,22 +32,15 @@ class FCOS(BaseArch):
         backbone (object): backbone instance
         neck (object): 'FPN' instance
         fcos_head (object): 'FCOSHead' instance
-        post_process (object): 'FCOSPostProcess' instance
     """
 
     __category__ = 'architecture'
-    __inject__ = ['fcos_post_process']
 
-    def __init__(self,
-                 backbone,
-                 neck,
-                 fcos_head='FCOSHead',
-                 fcos_post_process='FCOSPostProcess'):
+    def __init__(self, backbone, neck='FPN', fcos_head='FCOSHead'):
         super(FCOS, self).__init__()
         self.backbone = backbone
         self.neck = neck
         self.fcos_head = fcos_head
-        self.fcos_post_process = fcos_post_process
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -74,7 +67,7 @@ class FCOS(BaseArch):
             return losses
         else:
             fcos_head_outs = self.fcos_head(fpn_feats)
-            bbox_pred, bbox_num = self.fcos_post_process(
+            bbox_pred, bbox_num = self.fcos_head.post_process(
                 fcos_head_outs, self.inputs['scale_factor'])
             return {'bbox': bbox_pred, 'bbox_num': bbox_num}
 

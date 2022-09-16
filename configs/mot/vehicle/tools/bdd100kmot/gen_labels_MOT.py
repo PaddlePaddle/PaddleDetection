@@ -25,8 +25,7 @@ def mkdirs(d):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='BDD100K to MOT format')
-    parser.add_argument(
-        "--mot_data", default='./bdd100k')
+    parser.add_argument("--mot_data", default='./bdd100k')
     parser.add_argument("--phase", default='train')
     args = parser.parse_args()
 
