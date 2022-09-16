@@ -1,0 +1,17 @@
+_BASE_: [
+  '../../gfl/gfl_r18vd_1x_coco.yml',
+]
+
+# 换成教师的预训练模型
+pretrain_weights: https://paddledet.bj.bcebos.com/models/gfl_r101vd_fpn_mstrain_2x_coco.pdparams
+
+slim: Distill
+slim_method: LD
+
+ResNet:
+  depth: 101
+  variant: d
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1,2,3]
+  num_stages: 4
