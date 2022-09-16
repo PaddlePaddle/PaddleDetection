@@ -33,6 +33,7 @@ FCOSHead:
   prior_prob: 0.01
   norm_reg_targets: True
   centerness_on_reg: True
+  num_shift: 0.5
   fcos_loss:
     name: FCOSLoss
     loss_alpha: 0.25
