@@ -26,9 +26,8 @@ except Exception:
     from collections import Sequence
 
 __all__ = [
-    'BBoxPostProcess', 'MaskPostProcess', 'FCOSPostProcess',
-    'JDEBBoxPostProcess', 'CenterNetPostProcess', 'DETRBBoxPostProcess',
-    'SparsePostProcess'
+    'BBoxPostProcess', 'MaskPostProcess', 'JDEBBoxPostProcess',
+    'CenterNetPostProcess', 'DETRBBoxPostProcess', 'SparsePostProcess'
 ]
 
 
@@ -37,8 +36,12 @@ class BBoxPostProcess(object):
     __shared__ = ['num_classes', 'export_onnx', 'export_eb']
     __inject__ = ['decode', 'nms']
 
-    def __init__(self, num_classes=80, decode=None, nms=None,
-                 export_onnx=False, export_eb=False):
+    def __init__(self,
+                 num_classes=80,
+                 decode=None,
+                 nms=None,
+                 export_onnx=False,
+                 export_eb=False):
         super(BBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.decode = decode
@@ -277,26 +280,6 @@ class MaskPostProcess(object):
             paddle.set_device(device)
 
         return pred_result
-
-
-@register
-class FCOSPostProcess(object):
-    __inject__ = ['decode', 'nms']
-
-    def __init__(self, decode=None, nms=None):
-        super(FCOSPostProcess, self).__init__()
-        self.decode = decode
-        self.nms = nms
-
-    def __call__(self, fcos_head_outs, scale_factor):
-        """
-        Decode the bbox and do NMS in FCOS.
-        """
-        locations, cls_logits, bboxes_reg, centerness = fcos_head_outs
-        bboxes, score = self.decode(locations, cls_logits, bboxes_reg,
-                                    centerness, scale_factor)
-        bbox_pred, bbox_num, _ = self.nms(bboxes, score)
-        return bbox_pred, bbox_num
 
 
 @register
