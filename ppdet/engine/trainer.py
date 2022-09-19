@@ -136,6 +136,9 @@ class Trainer(object):
         if self.mode == 'eval':
             if cfg.architecture == 'FairMOT':
                 self.loader = create('EvalMOTReader')(self.dataset, 0)
+            elif cfg.architecture == "METRO_Body":
+                reader_name = '{}Reader'.format(self.mode.capitalize())
+                self.loader = create(reader_name)(self.dataset, cfg.worker_num)
             else:
                 self._eval_batch_sampler = paddle.io.BatchSampler(
                     self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
@@ -143,7 +146,8 @@ class Trainer(object):
                 # If metric is VOC, need to be set collate_batch=False.
                 if cfg.metric == 'VOC':
                     cfg[reader_name]['collate_batch'] = False
-                self.loader = create(reader_name)(self.dataset, cfg.worker_num)
+                self.loader = create(reader_name)(self.dataset, cfg.worker_num,
+                                                  self._eval_batch_sampler)
         # TestDataset build after user set images, skip loader creation here
 
         # build optimizer in train mode
@@ -555,8 +559,14 @@ class Trainer(object):
                     # If metric is VOC, need to be set collate_batch=False.
                     if self.cfg.metric == 'VOC':
                         self.cfg['EvalReader']['collate_batch'] = False
-                    self._eval_loader = create('EvalReader')(
-                        self._eval_dataset, self.cfg.worker_num)
+                    elif self.cfg.metric == "Pose3DEval":
+                        self._eval_loader = create('EvalReader')(
+                            self._eval_dataset, self.cfg.worker_num)
+                    else:
+                        self._eval_loader = create('EvalReader')(
+                            self._eval_dataset,
+                            self.cfg.worker_num,
+                            batch_sampler=self._eval_batch_sampler)
                 # if validation in training is enabled, metrics should be re-init
                 # Init_mark makes sure this code will only execute once
                 if validate and Init_mark == False:
@@ -938,15 +948,15 @@ class Trainer(object):
                             if 'keypoint' in batch_res else None
                     pose3d_res = batch_res['pose3d'][start:end] \
                             if 'pose3d' in batch_res else None
-                    image = visualize_results(image, bbox_res, mask_res, segm_res,
-                                            keypoint_res, pose3d_res,
-                                            int(im_id), catid2name,
-                                            draw_threshold)
+                    image = visualize_results(
+                        image, bbox_res, mask_res, segm_res, keypoint_res,
+                        pose3d_res, int(im_id), catid2name, draw_threshold)
                     self.status['result_image'] = np.array(image.copy())
                     if self._compose_callback:
                         self._compose_callback.on_step_end(self.status)
                     # save image with detection
-                    save_name = self._get_save_image_name(output_dir, image_path)
+                    save_name = self._get_save_image_name(output_dir,
+                                                          image_path)
                     logger.info("Detection bbox results save in {}".format(
                         save_name))
                     image.save(save_name, quality=95)
