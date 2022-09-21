@@ -49,7 +49,7 @@ class BBoxPostProcess(object):
         self.export_onnx = export_onnx
         self.export_eb = export_eb
 
-    def __call__(self, head_out, rois, im_shape, scale_factor):
+    def __call__(self, head_out, rois, im_shape, scale_factor, with_mask=False):
         """
         Decode the bbox and do NMS if needed.
 
@@ -83,6 +83,29 @@ class BBoxPostProcess(object):
             bbox_pred = paddle.concat([bbox_pred, fake_bboxes])
             bbox_num = bbox_num + 1
 
+        elif with_mask:
+            bboxes_list = []
+            bbox_num_list = []
+            id_start = 0
+            fake_bboxes = paddle.to_tensor(
+                np.array(
+                    [[0., 0.0, 0.0, 0.0, 1.0, 1.0]], dtype='float32'))
+            fake_bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
+
+            # add fake bbox when output is empty for each batch
+            for i in range(bbox_num.shape[0]):
+                if bbox_num[i] == 0:
+                    bboxes_i = fake_bboxes
+                    bbox_num_i = fake_bbox_num
+                else:
+                    bboxes_i = bbox_pred[id_start:id_start + bbox_num[i], :]
+                    bbox_num_i = bbox_num[i]
+                    id_start += bbox_num[i]
+                bboxes_list.append(bboxes_i)
+                bbox_num_list.append(bbox_num_i)
+            bbox_pred = paddle.concat(bboxes_list)
+            bbox_num = paddle.concat(bbox_num_list)
+
         return bbox_pred, bbox_num
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
@@ -107,30 +130,6 @@ class BBoxPostProcess(object):
         if self.export_eb:
             # enable rcnn models for edgeboard hw to skip the following postprocess.
             return bboxes, bboxes, bbox_num
-
-        if not self.export_onnx:
-            bboxes_list = []
-            bbox_num_list = []
-            id_start = 0
-            fake_bboxes = paddle.to_tensor(
-                np.array(
-                    [[0., 0.0, 0.0, 0.0, 1.0, 1.0]], dtype='float32'))
-            fake_bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
-
-            # add fake bbox when output is empty for each batch
-            for i in range(bbox_num.shape[0]):
-                if bbox_num[i] == 0:
-                    bboxes_i = fake_bboxes
-                    bbox_num_i = fake_bbox_num
-                else:
-                    bboxes_i = bboxes[id_start:id_start + bbox_num[i], :]
-                    bbox_num_i = bbox_num[i]
-                    id_start += bbox_num[i]
-                bboxes_list.append(bboxes_i)
-                bbox_num_list.append(bbox_num_i)
-            bboxes = paddle.concat(bboxes_list)
-            bbox_num = paddle.concat(bbox_num_list)
-
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
         if not self.export_onnx:
