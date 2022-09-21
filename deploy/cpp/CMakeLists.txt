@@ -79,6 +79,8 @@ link_directories("${PADDLE_DIR}/third_party/install/protobuf/lib")
 link_directories("${PADDLE_DIR}/third_party/install/glog/lib")
 link_directories("${PADDLE_DIR}/third_party/install/gflags/lib")
 link_directories("${PADDLE_DIR}/third_party/install/xxhash/lib")
+link_directories("${PADDLE_DIR}/third_party/install/paddle2onnx/lib")
+link_directories("${PADDLE_DIR}/third_party/install/onnxruntime/lib")
 link_directories("${PADDLE_DIR}/paddle/lib/")
 link_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
