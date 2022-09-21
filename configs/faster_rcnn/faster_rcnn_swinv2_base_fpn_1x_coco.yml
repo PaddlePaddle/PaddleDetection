@@ -1,0 +1,16 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_swin_1x.yml',
+  '_base_/faster_rcnn_swinv2_base_fpn.yml',
+  '_base_/faster_rcnn_swin_reader.yml',
+]
+weights: output/faster_rcnn_swinv2_base_fpn_1x_coco/model_final
+
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/swinv2_base_patch4_window12_192_22k.pdparams
+
+OptimizerBuilder:
+  clip_grad_by_norm: 1.0
+  optimizer:
+    type: AdamW
+    weight_decay: 0.1
