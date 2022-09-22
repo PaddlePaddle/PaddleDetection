@@ -51,7 +51,7 @@ SDE数据集是纯检测标注的数据集，用户自定义数据集可以参�
 
 以MOT17数据集为例，下载并解压放在`PaddleDetection/dataset/mot`目录下：
 ```
-wget https://dataset.bj.bcebos.com/mot/MOT17.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/MOT17.zip
 
 ```
 并修改数据集部分的配置文件如下：
@@ -88,19 +88,19 @@ dataset/mot
 ### JDE数据集
 JDE数据集是同时有检测和ReID标注的数据集，首先按照以下命令`image_lists.zip`并解压放在`PaddleDetection/dataset/mot`目录下：
 ```
-wget https://dataset.bj.bcebos.com/mot/image_lists.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/image_lists.zip
 ```
 
 然后按照以下命令可以快速下载各个公开数据集，也解压放在`PaddleDetection/dataset/mot`目录下：
 ```
 # MIX数据，同JDE,FairMOT论文使用的数据集
-wget https://dataset.bj.bcebos.com/mot/MOT17.zip
-wget https://dataset.bj.bcebos.com/mot/Caltech.zip
-wget https://dataset.bj.bcebos.com/mot/CUHKSYSU.zip
-wget https://dataset.bj.bcebos.com/mot/PRW.zip
-wget https://dataset.bj.bcebos.com/mot/Cityscapes.zip
-wget https://dataset.bj.bcebos.com/mot/ETHZ.zip
-wget https://dataset.bj.bcebos.com/mot/MOT16.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/MOT17.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/Caltech.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/CUHKSYSU.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/PRW.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/Cityscapes.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/ETHZ.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/MOT16.zip
 ```
 数据集目录为：
 ```
