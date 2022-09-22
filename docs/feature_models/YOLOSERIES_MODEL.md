@@ -1,6 +1,6 @@
 简体中文 | [English](YOLOSERIES_MODEL_en.md)
 
-# YOLOSeries
+# [**YOLOSeries**](https://github.com/nemonameless/PaddleDetection_YOLOSeries)
 
 ## 内容
 - [简介](#简介)
@@ -16,7 +16,7 @@
 
 ## 简介
 
-**YOLOSeries**是基于[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection)的YOLO系列模型库，**由PaddleDetection团队成员建设和维护**，支持`YOLOv3`,`PP-YOLOE`,`PP-YOLOE+`,`YOLOX`,`YOLOv5`,`YOLOv6`,`YOLOv7`等模型，其upstream为PaddleDetection的[develop](https://github.com/PaddlePaddle/PaddleDetection/tree/develop)分支，并与PaddleDetection主代码库分支保持同步更新，包括github和gitee的代码，欢迎一起使用和建设！
+[**YOLOSeries**](https://github.com/nemonameless/PaddleDetection_YOLOSeries)是基于[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection)的YOLO系列模型库，**由PaddleDetection团队成员建设和维护**，支持`YOLOv3`,`PP-YOLOE`,`PP-YOLOE+`,`YOLOX`,`YOLOv5`,`YOLOv6`,`YOLOv7`等模型，其upstream为PaddleDetection的[develop](https://github.com/PaddlePaddle/PaddleDetection/tree/develop)分支，并与PaddleDetection主代码库分支保持同步更新，包括github和gitee的代码，欢迎一起使用和建设！
 
 ## Updates!
 * 【2022/09/21】精简代码库只保留主要的YOLO模型相关的代码(release/2.5 branch)；
