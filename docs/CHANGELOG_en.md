@@ -38,7 +38,7 @@ English | [简体中文](./CHANGELOG.md)
 - Cutting-edge algorithms
 
   - YOLO Family
-    - Release the full range of YOLO family models covering the cutting-edge detection algorithms YOLOv5, MT-YOLOv6 and YOLOv7
+    - Release the full range of YOLO family models covering the cutting-edge detection algorithms YOLOv5, YOLOv6 and YOLOv7
     - Based on the ConvNext backbone network, YOLO's algorithm training periods are reduced by 5-8 times with accuracy generally improving by 1%-5% mAP; Thanks to the model compression strategy, its speed increased by over 30% with no loss of precision.
   - Newly add high precision detection model based on [ViT](configs/vitdet) backbone network, with a 55.7% mAP accuracy on the COCO dataset
   - Newly add multi-object tracking model [OC-SORT](configs/mot/ocsort)
