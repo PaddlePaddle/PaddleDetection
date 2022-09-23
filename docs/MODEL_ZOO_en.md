@@ -98,9 +98,9 @@ Please refer to[YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/deve
 
 Please refer to[YOLOv5](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov5)
 
-### MT-YOLOv6
+### YOLOv6
 
-Please refer to[MT-YOLOv6](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov6mt)
+Please refer to[YOLOv6](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov6)
 
 ### YOLOv7
 
