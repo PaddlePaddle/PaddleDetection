@@ -31,7 +31,7 @@ sys.path.insert(0, parent_path)
 from cfg_utils import argsparser, print_arguments, merge_cfg
 from pipe_utils import PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
-from pipe_utils import push_stream
+from pipe_utils import PushStream
 
 from python.infer import Detector, DetectorPicoDet
 from python.keypoint_infer import KeyPointDetector
@@ -586,7 +586,7 @@ class PipePredictor(object):
             video_out_name = 'output' if self.file_name is None else self.file_name
             pushurl = os.path.join(self.pushurl, video_out_name)
             print("the result will push stream to url:{}".format(pushurl))
-            pushstream = push_stream(pushurl)
+            pushstream = PushStream(pushurl)
             pushstream.initcmd(fps, width, height)
         elif self.cfg['visual']:
             video_out_name = 'output' if self.file_name is None else self.file_name

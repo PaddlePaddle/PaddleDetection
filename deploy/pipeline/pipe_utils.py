@@ -123,7 +123,7 @@ class PipeTimer(Times):
         dic['img_num'] = self.img_num
         return dic
 
-class push_stream(object):
+class PushStream(object):
     def __init__(self, pushurl = "rtsp://127.0.0.1:8554/"):
         self.command = ""
         # 自行设置
