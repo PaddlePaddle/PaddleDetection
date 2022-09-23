@@ -9,13 +9,14 @@
 
 |    数据集      |   下载链接     |  备注  |
 | :-------------| :-------------| :----: |
-| MOT17     | [download](https://dataset.bj.bcebos.com/mot/MOT16.zip) | - |
-| MOT16     | [download](https://dataset.bj.bcebos.com/mot/MOT16.zip) | - |
-| Caltech     | [download](https://dataset.bj.bcebos.com/mot/Caltech.zip) | - |
-| Cityscapes     | [download](https://dataset.bj.bcebos.com/mot/Cityscapes.zip) | - |
-| CUHKSYSU     | [download](https://dataset.bj.bcebos.com/mot/CUHKSYSU.zip) | - |
-| PRW     | [download](https://dataset.bj.bcebos.com/mot/PRW.zip) | - |
-| ETHZ     | [download](https://dataset.bj.bcebos.com/mot/ETHZ.zip) | - |
+| MOT17     | [download](https://bj.bcebos.com/v1/paddledet/data/mot/MOT17.zip) | - |
+| MOT16     | [download](https://bj.bcebos.com/v1/paddledet/data/mot/MOT16.zip) | - |
+| Caltech     | [download](https://bj.bcebos.com/v1/paddledet/data/mot/Caltech.zip) | - |
+| Cityscapes     | [download](https://bj.bcebos.com/v1/paddledet/data/mot/Cityscapes.zip) | - |
+| CUHKSYSU     | [download](https://bj.bcebos.com/v1/paddledet/data/mot/CUHKSYSU.zip) | - |
+| PRW     | [download](https://bj.bcebos.com/v1/paddledet/data/mot/PRW.zip) | - |
+| ETHZ     | [download](https://bj.bcebos.com/v1/paddledet/data/mot/ETHZ.zip) | - |
+
 
 ## 车辆跟踪
 
