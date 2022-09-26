@@ -1,4 +1,6 @@
-# 快速开始
+[English](PPVehicle_QUICK_STARTED_en.md) | 简体中文
+
+# PP-Vehicle快速开始
 
 ## 目录
 
@@ -12,7 +14,7 @@
   - [车辆跟踪](#车辆跟踪)
   - [车牌识别](#车牌识别)
   - [属性识别](#属性识别)
-  - [违法停车识别](#违法停车识别)
+  - [违章停车识别](#违章停车识别)
 
 
 ## 环境准备
@@ -118,7 +120,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 # 例：车辆跟踪，指定配置文件路径和测试视频，命令行中开启MOT模型并修改模型路径，命令行中指定的模型路径优先级高于配置文件
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml -o MOT.enable=True MOT.model_dir=ppyoloe_infer/ --video_file=test_video.mp4 --device=gpu
 
-# 例：车辆违法分析，指定配置文件和测试视频，命令行中指定违停区域设置、违停时间判断。
+# 例：车辆违章分析，指定配置文件和测试视频，命令行中指定违停区域设置、违停时间判断。
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_illegal_parking.yml \
                                                    --video_file=../car_test.mov \
                                                    --device=gpu \
@@ -129,10 +131,13 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 
 ```
 
-3. 对rtsp流的支持，video_file后面的视频地址更换为rtsp流地址，示例如下：
+3. 对rtsp流的支持，使用--rtsp RTSP [RTSP ...]参数指定一路或者多路rtsp视频流，如果是多路地址中间用空格隔开。(或者video_file后面的视频地址直接更换为rtsp流地址)，示例如下：
 ```
-# 例：车辆属性识别，指定配置文件路径和测试视频
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_vehicle_attr.yml  -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu
+# 例：行人属性识别，单路视频流
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_vehicle_attr.yml -o visual=False --rtsp rtsp://[YOUR_RTSP_SITE]  --device=gpu
+
+# 例：行人属性识别，多路视频流
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_vehicle_attr.yml -o visual=False --rtsp rtsp://[YOUR_RTSP_SITE1]  rtsp://[YOUR_RTSP_SITE2] --device=gpu
 ```
 
 ### Jetson部署说明
@@ -156,6 +161,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 | --image_file | Option | 需要预测的图片 |
 | --image_dir  | Option |  要预测的图片文件夹路径   |
 | --video_file | Option | 需要预测的视频，或者rtsp流地址 |
+| --rtsp | Option | rtsp视频流地址，支持一路或者多路同时输入 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4|
 | --device | Option | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
 | --output_dir | Option|可视化结果保存的根目录，默认为output/|
@@ -196,6 +202,6 @@ PP-Vehicle 整体方案如下图所示:
 - 使用PaddleOCR特色模型ch_PP-OCRv3_det+ch_PP-OCRv3_rec模型，识别车牌号码
 - 详细文档参考[车牌识别](ppvehicle_plate.md)
 
-### 违法停车识别
-- 车辆跟踪模型使用高精度模型PP-YOLOE L，根据车辆的跟踪轨迹以及指定的违停区域判断是否违法停车，如果存在则展示违法停车车牌号。
-- 详细文档参考[违法停车识别](ppvehicle_illegal_parking.md)
+### 违章停车识别
+- 车辆跟踪模型使用高精度模型PP-YOLOE L，根据车辆的跟踪轨迹以及指定的违停区域判断是否违章停车，如果存在则展示违章停车车牌号。
+- 详细文档参考[违章停车识别](ppvehicle_illegal_parking.md)

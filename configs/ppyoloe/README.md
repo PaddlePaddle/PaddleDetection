@@ -78,12 +78,12 @@ The PaddleDetection team provides configs and weights of various feature detecti
 Training PP-YOLOE+ on 8 GPUs with following command
 
 ```bash
-python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml
+python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml --eval --amp
 ```
 
 **Notes:**
-- use `--amp` to train with default config to avoid out of memeory.
 - If you need to evaluate while training, please add `--eval`.
+- PP-YOLOE+ supports mixed precision training, please add `--amp`.
 - PaddleDetection supports multi-machine distribued training, you can refer to [DistributedTraining tutorial](../../docs/DistributedTraining_en.md).
 
 

@@ -154,7 +154,7 @@ class Detector(object):
         np_boxes_num = result['boxes_num']
         if sum(np_boxes_num) <= 0:
             print('[WARNNING] No object detected.')
-            result = {'boxes': np.zeros([0, 6]), 'boxes_num': [0]}
+            result = {'boxes': np.zeros([0, 6]), 'boxes_num': np_boxes_num}
         result = {k: v for k, v in result.items() if v is not None}
         return result
 
@@ -235,7 +235,7 @@ class Detector(object):
             import sahi
             from sahi.slicing import slice_image
         except Exception as e:
-            logger.error(
+            print(
                 'sahi not found, plaese install sahi. '
                 'for example: `pip install sahi`, see https://github.com/obss/sahi.'
             )
@@ -251,6 +251,7 @@ class Detector(object):
                 overlap_width_ratio=overlap_ratio[1])
             sub_img_num = len(slice_image_result)
             merged_bboxs = []
+            print('sub_img_num', sub_img_num)
 
             batch_image_list = [
                 slice_image_result.images[_ind] for _ind in range(sub_img_num)
@@ -401,10 +402,8 @@ class Detector(object):
                         self.pred_config.labels,
                         output_dir=self.output_dir,
                         threshold=self.threshold)
-
             results.append(result)
             print('Test iter {}'.format(i))
-
         results = self.merge_batch_result(results)
         if save_results:
             Path(self.output_dir).mkdir(exist_ok=True)
@@ -857,13 +856,16 @@ def load_predictor(model_dir,
 
         if use_dynamic_shape:
             min_input_shape = {
-                'image': [batch_size, 3, trt_min_shape, trt_min_shape]
+                'image': [batch_size, 3, trt_min_shape, trt_min_shape],
+                'scale_factor': [batch_size, 2]
             }
             max_input_shape = {
-                'image': [batch_size, 3, trt_max_shape, trt_max_shape]
+                'image': [batch_size, 3, trt_max_shape, trt_max_shape],
+                'scale_factor': [batch_size, 2]
             }
             opt_input_shape = {
-                'image': [batch_size, 3, trt_opt_shape, trt_opt_shape]
+                'image': [batch_size, 3, trt_opt_shape, trt_opt_shape],
+                'scale_factor': [batch_size, 2]
             }
             config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
                                               opt_input_shape)

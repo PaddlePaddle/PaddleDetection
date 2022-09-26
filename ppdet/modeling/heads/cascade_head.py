@@ -163,7 +163,8 @@ class CascadeHead(BBoxHead):
                  bbox_loss=None,
                  reg_class_agnostic=True,
                  stage_loss_weights=None,
-                 loss_normalize_pos=False):
+                 loss_normalize_pos=False,
+                 add_gt_as_proposals=[True, False, False]):
 
         nn.Layer.__init__(self, )
         self.head = head
@@ -179,6 +180,8 @@ class CascadeHead(BBoxHead):
         self.stage_loss_weights = [
             1. / num_cascade_stages for _ in range(num_cascade_stages)
         ] if stage_loss_weights is None else stage_loss_weights
+        self.add_gt_as_proposals = add_gt_as_proposals
+
         assert len(
             self.stage_loss_weights
         ) == num_cascade_stages, f'stage_loss_weights({len(self.stage_loss_weights)}) do not equal to num_cascade_stages({num_cascade_stages})'
@@ -221,7 +224,11 @@ class CascadeHead(BBoxHead):
         """
         targets = []
         if self.training:
-            rois, rois_num, targets = self.bbox_assigner(rois, rois_num, inputs)
+            rois, rois_num, targets = self.bbox_assigner(
+                rois,
+                rois_num,
+                inputs,
+                add_gt_as_proposals=self.add_gt_as_proposals[0])
             targets_list = [targets]
             self.assigned_rois = (rois, rois_num)
             self.assigned_targets = targets
@@ -234,7 +241,12 @@ class CascadeHead(BBoxHead):
                                                            inputs['im_shape'])
                 if self.training:
                     rois, rois_num, targets = self.bbox_assigner(
-                        rois, rois_num, inputs, i, is_cascade=True)
+                        rois,
+                        rois_num,
+                        inputs,
+                        i,
+                        is_cascade=True,
+                        add_gt_as_proposals=self.add_gt_as_proposals[i])
                     targets_list.append(targets)
 
             rois_feat = self.roi_extractor(body_feats, rois, rois_num)
@@ -250,7 +262,7 @@ class CascadeHead(BBoxHead):
                 if self.training:
                     deltas = deltas[paddle.arange(deltas.shape[0]), labels]
                 else:
-                    deltas = deltas[(deltas * F.one_hot(
+                    deltas = deltas[((deltas + 10000) * F.one_hot(
                         labels, num_classes=self.num_classes).unsqueeze(-1) != 0
                                      ).nonzero(as_tuple=True)].reshape(
                                          [deltas.shape[0], 4])
@@ -304,8 +316,10 @@ class CascadeHead(BBoxHead):
         # NOTE(dev): num_prob will be tagged as LoDTensorArray because it
         # depends on batch_size under @to_static. However the argument
         # num_or_sections in paddle.split does not support LoDTensorArray,
-        # so we use [-1] to replace it and whitout lossing correctness.
-        num_prop = [-1] if len(num_prop) == 1 else num_prop
+        # so we use [-1] to replace it if num_prop is not list. The modification
+        # This ensures the correctness of both dynamic and static graphs.
+        if not isinstance(num_prop, list):
+            num_prop = [-1]
         return pred_bbox.split(num_prop)
 
     def get_prediction(self, head_out_list):

@@ -1,4 +1,6 @@
-# 快速开始
+[English](PPHuman_QUICK_STARTED_en.md) | 简体中文
+
+# PP-Human快速开始
 
 ## 目录
 
@@ -123,10 +125,13 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml -o SKELETON_ACTION.enbale=True --video_file=test_video.mp4 --device=gpu
 ```
 
-3. 对rtsp流的支持，video_file后面的视频地址更换为rtsp流地址，示例如下：
+3. 对rtsp流的支持，使用--rtsp RTSP [RTSP ...]参数指定一路或者多路rtsp视频流，如果是多路地址中间用空格隔开。(或者video_file后面的视频地址直接更换为rtsp流地址)，示例如下：
 ```
-# 例：行人属性识别，指定配置文件路径和测试视频
-python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_human_attr.yml -o visual=False --video_file=rtsp://[YOUR_RTSP_SITE] --device=gpu
+# 例：行人属性识别，单路视频流
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_human_attr.yml -o visual=False --rtsp rtsp://[YOUR_RTSP_SITE]  --device=gpu
+
+# 例：行人属性识别，多路视频流
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_human_attr.yml -o visual=False --rtsp rtsp://[YOUR_RTSP_SITE1]  rtsp://[YOUR_RTSP_SITE2] --device=gpu
 ```
 
 ### Jetson部署说明
@@ -149,7 +154,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 | -o | Option | 覆盖配置文件中对应的配置  |
 | --image_file | Option | 需要预测的图片 |
 | --image_dir  | Option |  要预测的图片文件夹路径   |
-| --video_file | Option | 需要预测的视频，或者rtsp流地址 |
+| --video_file | Option | 需要预测的视频，或者rtsp流地址（推荐使用rtsp参数） |
+| --rtsp | Option | rtsp视频流地址，支持一路或者多路同时输入 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4|
 | --device | Option | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
 | --output_dir | Option|可视化结果保存的根目录，默认为output/|
