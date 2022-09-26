@@ -19,7 +19,13 @@
 - [引用](#引用)
 
 ## 简介
-PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小目标场景数据集的基于PP-YOLOE的检测模型，以及提供了一套使用[SAHI](https://github.com/obss/sahi)(Slicing Aided Hyper Inference)工具切图和拼图的方案，用户可以下载模型进行使用。不通过切图拼图而直接使用原图的方案也可以参照[visdrone](../visdrone)。**是否需要切图**，建议参照[切图使用说明](#切图使用说明)中的[统计数据集分布](#统计数据集分布)先分析一下数据集再确定。
+PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小目标场景数据集的基于PP-YOLOE的检测模型，以及提供了一套使用[SAHI](https://github.com/obss/sahi)(Slicing Aided Hyper Inference)工具切图和拼图的方案，用户可以下载模型进行使用。
+
+**注意:**
+- **是否需要切图**，建议参照[切图使用说明](#切图使用说明)中的[统计数据集分布](#统计数据集分布)先分析一下数据集再确定，一般数据集所有目标均极小的时候推荐切图训练和切图预测。
+- 不通过切图拼图而直接使用原图的方案也可以参照[visdrone](../visdrone)。
+- 第三方AI Studio教程案例可参考[PPYOLOE：遥感场景下的小目标检测与部署（切图版）](https://aistudio.baidu.com/aistudio/projectdetail/4493701)和[涨分神器！基于PPYOLOE的切图和拼图解决方案](https://aistudio.baidu.com/aistudio/projectdetail/4438275)。
+
 
 ## 模型库
 
