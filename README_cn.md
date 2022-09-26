@@ -22,6 +22,29 @@
 
 </div>
 
+
+## 🔥 热门活动
+🎊YOLO Vision世界学术交流大会🎊
+
+PaddleDetection受邀参与首个以YOLO为主题的YOLO Vision世界大会，与全球AI领先开发者学习交流，欢迎大家报名参加！
+
+- ⏰时间：9月27日
+
+- 👨‍🏫演讲主题：PaddleDetection Toolkit and PP-YOLO Series
+
+- 💎圆桌论坛：Open Source Projects Enabling the Future of Computer Vision AI
+
+**⛓报名链接：https://ultralytics.com/yolo-vision**
+
+- 🔮彩蛋：8月26日 PaddleDetection发布YOLO系列全家族，包括YOLOv5/X/v6/v7与自研的PP-YOLOE、PP-YOLOE+
+
+- 🗳项目链接：https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/feature_models/YOLOSERIES_MODEL.md
+
+
+<div  align="center">
+  <img src="https://user-images.githubusercontent.com/48054808/192301374-940cf2fa-9661-419b-9c46-18a4570df381.jpeg" width="600"/>
+</div>
+
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> 产品动态
 
 - 🔥 **2022.8.26：PaddleDetection发布[release/2.5版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)**
@@ -53,21 +76,6 @@
   <img src="https://user-images.githubusercontent.com/22989727/189026616-75f9c06c-b403-4a61-9372-0fcbed6e0662.gif" width="800"/>
 </div>
 
-## 🔥 热门活动
-❗️重磅❗️飞桨智慧金融行业系列直播课
-
-✅ 覆盖智能风控、智能运维、智能营销、智能客服四大金融主流场景
-
-📆 9月6日-9月29日每周二、四19:00-20.00
-- 智慧金融行业深入洞察
-- 8节理论+实践精品直播课
-- 10+真实产业场景范例教学及实践
-- 更有免费算力+结业证书等礼品等你来拿
-
-扫码报名码住直播链接，与行业精英深度交流！
-<div  align="center">
-  <img src="https://user-images.githubusercontent.com/48054808/188538347-8796ba9e-fe53-4e9b-b2f4-b457bd85c015.jpg" width="200"/>
-</div>
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157799599-e6a66855-bac6-4e75-b9c0-96e13cb9612f.png" width="20"/> 特性
 
