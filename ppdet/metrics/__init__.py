@@ -17,6 +17,7 @@ from . import keypoint_metrics
 
 from .metrics import *
 from .keypoint_metrics import *
+from .pose3d_metrics import *
 
 __all__ = metrics.__all__ + keypoint_metrics.__all__
 
