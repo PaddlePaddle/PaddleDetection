@@ -473,6 +473,7 @@ Please refer to [docs](deploy/pipeline/README_en.md) for details.
 - **[Industrial features] 2022.3.26** **[Smart City Industry Seven-Day Class](https://aistudio.baidu.com/aistudio/education/group/info/25620)** : Urban planning, Urban governance, Smart governance service, Traffic management, community governance.
 
 ### [Industrial tutorial examples](./industrial_tutorial/README.md)
+- [Fall down recognition based on PP-Human v2](https://aistudio.baidu.com/aistudio/projectdetail/4606001)
 
 - [Intelligent fitness recognition based on PP-TinyPose Plus](https://aistudio.baidu.com/aistudio/projectdetail/4385813)
 
