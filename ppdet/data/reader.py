@@ -33,7 +33,7 @@ from .utils import default_collate_fn
 from ppdet.core.workspace import register
 from . import transform
 from .shm_utils import _get_shared_memory_size_in_M
-
+from ppdet.data.source.pose3d_cmb import CustomTempDBSampler
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('reader')
 
@@ -177,6 +177,12 @@ class BaseDataLoader(object):
                 batch_size=self.batch_size,
                 shuffle=self.shuffle,
                 drop_last=self.drop_last)
+        elif type(batch_sampler) == "CustomTempDBSampler":
+            self._batch_sampler = CustomTempDBSampler(
+                self.dataset,
+                batch_size=self.batch_size,
+                shuffle=True,
+                drop_last=False)
         else:
             self._batch_sampler = batch_sampler
 

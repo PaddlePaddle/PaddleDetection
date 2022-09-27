@@ -22,6 +22,8 @@ import paddle
 import paddle.nn as nn
 
 from ppdet.core.workspace import register, serializable
+from ppdet.utils.logger import setup_logger
+logger = setup_logger('ppdet.engine')
 
 __all__ = ['Pose3DLoss']
 
@@ -46,6 +48,7 @@ class Pose3DLoss(nn.Layer):
         self.criterion_smoothl1 = nn.SmoothL1Loss(
             reduction=reduction, delta=1.0)
         self.criterion_vertices = nn.L1Loss()
+        self.temp_num_perbatch = 42
 
     def forward(self, pred3d, pred2d, inputs):
         """
@@ -60,6 +63,8 @@ class Pose3DLoss(nn.Layer):
         loss_3d = mpjpe(pred3d, gt_3d_joints, has_3d_joints)
         loss_2d = keypoint_2d_loss(self.criterion_2dpose, pred2d, gt_2d_joints,
                                    has_2d_joints)
+        # loss_3d += 0.3 * temp_velocity_loss(pred3d, gt_3d_joints, has_3d_joints,
+        #                               self.temp_num_perbatch)
         return self.weight_3d * loss_3d + self.weight_2d * loss_2d
 
 
@@ -78,19 +83,33 @@ def filter_3d_joints(pred, gt, has_3d_joints):
     return pred, gt
 
 
-@register
-@serializable
 def mpjpe(pred, gt, has_3d_joints):
     """ 
     mPJPE loss
     """
     pred, gt = filter_3d_joints(pred, gt, has_3d_joints)
-    error = paddle.sqrt(((pred - gt)**2).sum(axis=-1)).mean()
+    error = paddle.sqrt((paddle.minimum((pred - gt), paddle.to_tensor(1.2))**2
+                         ).sum(axis=-1)).mean()
+    if paddle.isnan(error) or error > 10:
+        logger.info("error loss:{}, pred:{}, gt:{}".format(error.numpy(
+        ), pred.numpy(), gt.numpy()))
+        return 0
     return error
 
 
-@register
-@serializable
+def temp_velocity_loss(pred, gt, has_3d_joints, temp_num=42):
+    """ 
+    mPJPE loss
+    """
+    pred, gt = filter_3d_joints(pred, gt, has_3d_joints)
+
+    pred_v = pred[1:temp_num, ...] - pred[:temp_num - 1, ...]
+    gt_v = gt[1:temp_num, ...] - gt[:temp_num - 1, ...]
+
+    error = nn.functional.l1_loss(pred_v, gt_v)
+    return error
+
+
 def mpjpe_criterion(pred, gt, has_3d_joints, criterion_pose3d):
     """ 
     mPJPE loss of self define criterion

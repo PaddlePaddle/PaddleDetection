@@ -23,6 +23,173 @@ import pycocotools
 from pycocotools.coco import COCO
 from .dataset import DetDataset
 from ppdet.core.workspace import register, serializable
+from paddle.io import DistributedBatchSampler
+
+
+class CustomTempDBSampler(DistributedBatchSampler):
+    """
+    Custom DistributedBatchSampler for 3dpose temporal sample
+    """
+
+    def __init__(self,
+                 dataset,
+                 batch_size,
+                 num_replicas=None,
+                 rank=None,
+                 shuffle=False,
+                 drop_last=True):
+        self.dataset = dataset
+
+        assert isinstance(batch_size, int) and batch_size > 0, \
+                "batch_size should be a positive integer"
+        self.batch_size = batch_size
+        assert isinstance(shuffle, bool), \
+                "shuffle should be a boolean value"
+        self.shuffle = shuffle
+        assert isinstance(drop_last, bool), \
+                "drop_last should be a boolean number"
+
+        from paddle.fluid.dygraph.parallel import ParallelEnv
+
+        if num_replicas is not None:
+            assert isinstance(num_replicas, int) and num_replicas > 0, \
+                    "num_replicas should be a positive integer"
+            self.nranks = num_replicas
+        else:
+            self.nranks = ParallelEnv().nranks
+
+        if rank is not None:
+            assert isinstance(rank, int) and rank >= 0, \
+                    "rank should be a non-negative integer"
+            self.local_rank = rank
+        else:
+            self.local_rank = ParallelEnv().local_rank
+
+        self.drop_last = drop_last
+        self.epoch = 0
+
+        self.temp_num = self.dataset.get_temp_num()
+        self.batch_size_temp = int(self.batch_size *
+                                   (self.temp_num / len(self.dataset)))
+        self.batch_size_indep = self.batch_size - self.batch_size_temp
+        self.total_batch = self.temp_num // (self.batch_size_temp * self.nranks)
+        self.num_samples = self.total_batch * self.batch_size
+        self.total_size = self.num_samples * self.nranks
+        # print(
+        #     len(self.dataset), self.temp_num, self.batch_size,
+        #     self.batch_size_temp, self.batch_size_indep, self.total_size,
+        #     self.num_samples, self.num_samples / self.batch_size)
+
+    def __iter__(self):
+        num_samples = len(self.dataset)
+        indicestemp = np.arange(self.temp_num).tolist()
+        indiceindep = np.arange(self.temp_num, num_samples).tolist()
+        if len(indicestemp) % (self.batch_size_temp * self.nranks) != 0:
+            indicestemp = indicestemp[:-(len(indicestemp) % (
+                self.batch_size_temp * self.nranks))]
+        subindicestemp = indicestemp[0:len(indicestemp):self.batch_size_temp]
+        if self.shuffle:
+            np.random.RandomState(self.epoch).shuffle(subindicestemp)
+            np.random.RandomState(self.epoch).shuffle(indiceindep)
+            self.epoch += 1
+        if self.total_batch * self.batch_size_indep * self.nranks > len(
+                indiceindep):
+            indiceindep += indiceindep[:self.total_batch * self.batch_size_indep
+                                       * self.nranks - len(indiceindep)]
+        tempindices = []
+
+        for idx, index in enumerate(subindicestemp):
+            tempindices.extend(indicestemp[index:index + self.batch_size_temp])
+            tempindices.extend(indiceindep[idx * self.batch_size_indep:(idx + 1)
+                                           * self.batch_size_indep])
+
+        assert len(tempindices) == self.total_size
+
+        # subsample
+        def _get_indices_by_batch_size(indices):
+            subsampled_indices = []
+            last_batch_size = self.total_size % (self.batch_size * self.nranks)
+            assert last_batch_size % self.nranks == 0
+            last_local_batch_size = last_batch_size // self.nranks
+
+            for i in range(self.local_rank * self.batch_size,
+                           len(indices) - last_batch_size,
+                           self.batch_size * self.nranks):
+                subsampled_indices.extend(indices[i:i + self.batch_size])
+
+            indices = indices[len(indices) - last_batch_size:]
+            subsampled_indices.extend(indices[
+                self.local_rank * last_local_batch_size:(
+                    self.local_rank + 1) * last_local_batch_size])
+            return subsampled_indices
+
+        if self.nranks > 1:
+            tempindices = _get_indices_by_batch_size(tempindices)
+
+        assert len(tempindices) == self.num_samples
+        _sample_iter = iter(tempindices)
+
+        batch_indices = []
+        for idx in _sample_iter:
+            batch_indices.append(idx)
+            if len(batch_indices) == self.batch_size:
+                yield batch_indices
+                batch_indices = []
+        if not self.drop_last and len(batch_indices) > 0:
+            yield batch_indices
+
+
+class CustomTempDBSampler_bk(DistributedBatchSampler):
+    """
+    Custom DistributedBatchSampler for 3dpose temporal sample
+    """
+
+    def __iter__(self):
+        num_samples = len(self.dataset)
+        indices = np.arange(num_samples).tolist()
+        indices += indices[:(self.total_size - len(indices))]
+        assert len(indices) == self.total_size
+        subindices = indices[0:len(indices):self.batch_size]
+        if self.shuffle:
+            np.random.RandomState(self.epoch).shuffle(subindices)
+            self.epoch += 1
+        tempindices = []
+        for index in subindices:
+            tempindices.extend(indices[index:index + self.batch_size])
+        assert len(tempindices) == self.total_size
+
+        # subsample
+        def _get_indices_by_batch_size(indices):
+            subsampled_indices = []
+            last_batch_size = self.total_size % (self.batch_size * self.nranks)
+            assert last_batch_size % self.nranks == 0
+            last_local_batch_size = last_batch_size // self.nranks
+
+            for i in range(self.local_rank * self.batch_size,
+                           len(indices) - last_batch_size,
+                           self.batch_size * self.nranks):
+                subsampled_indices.extend(indices[i:i + self.batch_size])
+
+            indices = indices[len(indices) - last_batch_size:]
+            subsampled_indices.extend(indices[
+                self.local_rank * last_local_batch_size:(
+                    self.local_rank + 1) * last_local_batch_size])
+            return subsampled_indices
+
+        if self.nranks > 1:
+            tempindices = _get_indices_by_batch_size(tempindices)
+
+        assert len(tempindices) == self.num_samples
+        _sample_iter = iter(tempindices)
+
+        batch_indices = []
+        for idx in _sample_iter:
+            batch_indices.append(idx)
+            if len(batch_indices) == self.batch_size:
+                yield batch_indices
+                batch_indices = []
+        if not self.drop_last and len(batch_indices) > 0:
+            yield batch_indices
 
 
 @serializable
@@ -108,6 +275,7 @@ class Pose3DDataset(DetDataset):
         print("Loading annotations..., please wait")
         self.annos = []
         im_id = 0
+        self.human36m_num = 0
         for idx, annof in enumerate(self.anno_list):
             img_prefix = os.path.join(self.dataset_dir, self.image_dirs[idx])
             dataf = os.path.join(self.dataset_dir, annof)
@@ -138,6 +306,8 @@ class Pose3DDataset(DetDataset):
                             print("cannot find imagepath:{}".format(imagename))
                             continue
                     new_anno['imageName'] = imagename
+                    if 'human3.6m' in imagename:
+                        self.human36m_num += 1
                     new_anno['bbox_center'] = anno['bbox_center']
                     new_anno['bbox_scale'] = anno['bbox_scale']
                     new_anno['joints_2d'] = np.array(anno[
@@ -159,6 +329,10 @@ class Pose3DDataset(DetDataset):
                         'joints_2d'])
                     self.annos.append(new_anno)
                 del annos
+
+    def get_temp_num(self):
+        """get temporal data number, like human3.6m"""
+        return self.human36m_num
 
     def __len__(self):
         """Get dataset length."""

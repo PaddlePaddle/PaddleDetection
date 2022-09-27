@@ -93,8 +93,14 @@ class Trainer(object):
             self.dataset.set_images(images)
 
         if self.mode == 'train':
-            self.loader = create('{}Reader'.format(capital_mode))(
-                self.dataset, cfg.worker_num)
+            if cfg.architecture == 'METRO_Body_1':
+                self.loader = create('{}Reader'.format(capital_mode))(
+                    self.dataset,
+                    cfg.worker_num,
+                    batch_sampler="CustomTempDBSampler")
+            else:
+                self.loader = create('{}Reader'.format(capital_mode))(
+                    self.dataset, cfg.worker_num)
 
         if cfg.architecture == 'JDE' and self.mode == 'train':
             cfg['JDEEmbeddingHead'][

@@ -69,6 +69,33 @@ class METRO_Body(BaseArch):
         self.cam_param_fc = paddle.nn.Linear(3, 1)
         self.cam_param_fc2 = paddle.nn.Linear(10, 250)
         self.cam_param_fc3 = paddle.nn.Linear(250, 3)
+        # self.temp_fc1 = paddle.nn.Linear(81, 1024)
+        # self.temp_fc2 = paddle.nn.Linear(1024, 81)
+        # self.rest_joints = paddle.Tensor(
+        #     [[-9.1982e-02,  6.4817e-01,  8.3707e-02],
+        #     [-1.0776e-01,  2.4976e-01,  4.1392e-02],
+        #     [-1.3762e-01, -2.4549e-01,  2.1714e-02],
+        #     [ 1.3390e-01, -2.4533e-01,  1.6776e-02],
+        #     [ 1.0200e-01,  2.4327e-01,  3.9534e-02],
+        #     [ 8.8406e-02,  6.4123e-01,  8.3230e-02],
+        #     [-6.8420e-01, -6.6623e-01,  1.0311e-01],
+        #     [-4.2890e-01, -6.5845e-01,  9.7555e-02],
+        #     [-1.7516e-01, -6.7178e-01,  7.6154e-02],
+        #     [ 1.7244e-01, -6.7262e-01,  7.1353e-02],
+        #     [ 4.3205e-01, -6.5985e-01,  9.8809e-02],
+        #     [ 6.8128e-01, -6.6883e-01,  9.9980e-02],
+        #     [ 1.5762e-03, -7.3406e-01,  5.9082e-02],
+        #     [-1.1176e-04, -1.0022e+00,  5.0133e-02],
+        #     [-2.5436e-03, -2.4862e-01,  4.0846e-02],
+        #     [ 1.4044e-03, -6.9365e-01,  7.3388e-02],
+        #     [-6.3274e-03, -4.9322e-01,  7.2980e-02],
+        #     [ 8.4006e-03, -8.2030e-01, -9.1983e-03],
+        #     [-6.1768e-05, -9.3824e-01,  5.4323e-02],
+        #     [ 1.2258e-03, -8.5931e-01, -8.0475e-02],
+        #     [ 3.4353e-02, -8.9460e-01, -4.2776e-02],
+        #     [-3.2222e-02, -8.9410e-01, -4.1220e-02],
+        #     [ 7.4144e-02, -8.6779e-01,  4.8845e-02],
+        #     [-7.2048e-02, -8.6516e-01,  5.0976e-02]]) #[1,24,3]
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -85,7 +112,7 @@ class METRO_Body(BaseArch):
         image_feat_flatten = image_feat.reshape((batch_size, 2048, 49))
         image_feat_flatten = image_feat_flatten.transpose(perm=(0, 2, 1))
         # and apply a conv layer to learn image token for each 3d joint/vertex position
-        features = self.conv_learn_tokens(image_feat_flatten)
+        features = self.conv_learn_tokens(image_feat_flatten)  # (B, J, C)
 
         if self.training:
             # apply mask vertex/joint modeling
@@ -97,6 +124,13 @@ class METRO_Body(BaseArch):
                                                                   )
 
         pred_out = self.trans_encoder(features)
+        #temp test
+        # B,J,D = pred_out.shape
+        # pred_out_temp = pred_out.reshape((-1, B, J*D))
+        # inner_temp = self.temp_fc1(pred_out_temp)
+        # pred_out_temp = self.temp_fc2(inner_temp)
+        # pred_out = pred_out_temp.reshape((B,J,D))
+
         pred_3d_joints = pred_out[:, :self.num_joints, :]
         cam_features = pred_out[:, self.num_joints:, :]
 
