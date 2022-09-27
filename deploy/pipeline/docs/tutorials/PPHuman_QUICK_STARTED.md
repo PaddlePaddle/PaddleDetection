@@ -125,7 +125,10 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml -o SKELETON_ACTION.enbale=True --video_file=test_video.mp4 --device=gpu
 ```
 
-3. 对rtsp流的支持，使用--rtsp RTSP [RTSP ...]参数指定一路或者多路rtsp视频流，如果是多路地址中间用空格隔开。(或者video_file后面的视频地址直接更换为rtsp流地址)，示例如下：
+3. rtsp推拉流
+- rtsp拉流预测
+
+对rtsp拉流的支持，使用--rtsp RTSP [RTSP ...]参数指定一路或者多路rtsp视频流，如果是多路地址中间用空格隔开。(或者video_file后面的视频地址直接更换为rtsp流地址)，示例如下：
 ```
 # 例：行人属性识别，单路视频流
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_human_attr.yml -o visual=False --rtsp rtsp://[YOUR_RTSP_SITE]  --device=gpu
@@ -133,6 +136,18 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 # 例：行人属性识别，多路视频流
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_human_attr.yml -o visual=False --rtsp rtsp://[YOUR_RTSP_SITE1]  rtsp://[YOUR_RTSP_SITE2] --device=gpu
 ```
+
+- 视频结果推流rtsp
+
+预测结果进行rtsp推流，使用--pushurl rtsp:[IP] 推流到IP地址端，PC端可以使用[VLC播放器](https://vlc.onl/)打开网络流进行播放，播放地址为 `rtsp:[IP]/videoname`。其中`videoname`是预测的视频文件名，如果视频来源是本地摄像头则`videoname`默认为`output`.
+```
+# 例：行人属性识别，单路视频流，该示例播放地址为 rtsp://[YOUR_SERVER_IP]:8554/test_video
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_human_attr.yml --video_file=test_video.mp4 --device=gpu --pushurl rtsp://[YOUR_SERVER_IP]:8554
+```
+注：
+1. rtsp推流服务基于 [rtsp-simple-server](https://github.com/aler9/rtsp-simple-server), 如使用推流功能请先开启该服务.
+2. rtsp推流如果模型处理速度跟不上会出现很明显的卡顿现象，建议跟踪模型使用ppyoloe_s版本，即修改配置中跟踪模型mot_ppyoloe_l_36e_pipeline.zip替换为mot_ppyoloe_s_36e_pipeline.zip。
+
 
 ### Jetson部署说明
 
@@ -158,6 +173,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 | --rtsp | Option | rtsp视频流地址，支持一路或者多路同时输入 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4|
 | --device | Option | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
+| --pushurl | Option| 对预测结果视频进行推流的地址，以rtsp://开头，该选项优先级高于视频结果本地存储，打开时不再另外存储本地预测结果视频|
 | --output_dir | Option|可视化结果保存的根目录，默认为output/|
 | --run_mode | Option |使用GPU时，默认为paddle, 可选（paddle/trt_fp32/trt_fp16/trt_int8）|
 | --enable_mkldnn | Option | CPU预测中是否开启MKLDNN加速，默认为False |

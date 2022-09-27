@@ -86,6 +86,11 @@ def argsparser():
         default="output",
         help="Directory of output visualization files.")
     parser.add_argument(
+        "--pushurl",
+        type=str,
+        default="",
+        help="url of output visualization stream.")
+    parser.add_argument(
         "--run_mode",
         type=str,
         default='paddle',
