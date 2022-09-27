@@ -559,7 +559,7 @@ class Trainer(object):
                     # If metric is VOC, need to be set collate_batch=False.
                     if self.cfg.metric == 'VOC':
                         self.cfg['EvalReader']['collate_batch'] = False
-                    elif self.cfg.metric == "Pose3DEval":
+                    if self.cfg.metric == "Pose3DEval":
                         self._eval_loader = create('EvalReader')(
                             self._eval_dataset, self.cfg.worker_num)
                     else:
