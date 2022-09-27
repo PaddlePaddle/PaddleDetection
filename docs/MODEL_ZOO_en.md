@@ -96,15 +96,15 @@ Please refer to[YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/deve
 
 ### YOLOv5
 
-Please refer to[YOLOv5](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov5)
+Please refer to[YOLOv5](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov5)
 
 ### YOLOv6
 
-Please refer to[YOLOv6](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov6)
+Please refer to[YOLOv6](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov6)
 
 ### YOLOv7
 
-Please refer to[YOLOv7](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov7)
+Please refer to[YOLOv7](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov7)
 
 
 ## Rotating frame detection
