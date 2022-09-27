@@ -462,6 +462,8 @@
 
 ### [产业实践范例教程](./industrial_tutorial/README.md)
 
+- [【智能安防】基于PP-Human v2的摔倒检�](https://aistudio.baidu.com/aistudio/projectdetail/4606001)
+
 - [基于PP-TinyPose增强版的智能健身动作识别](https://aistudio.baidu.com/aistudio/projectdetail/4385813)
 
 - [基于PP-Human的打架识别](https://aistudio.baidu.com/aistudio/projectdetail/4086987?contributionType=1)
