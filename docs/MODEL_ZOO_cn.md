@@ -97,15 +97,15 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 ### YOLOv5
 
-请参考[YOLOv5](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov5)
+请参考[YOLOv5](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov5)
 
 ### YOLOv6
 
-请参考[YOLOv6](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov6)
+请参考[YOLOv6](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov6)
 
 ### YOLOv7
 
-请参考[YOLOv7](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov7)
+请参考[YOLOv7](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov7)
 
 
 ## 旋转框检测
