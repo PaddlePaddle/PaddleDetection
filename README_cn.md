@@ -486,7 +486,7 @@ PaddleDetection受邀参与首个以YOLO为主题的YOLO Vision世界大会，�
 
 ### [产业实践范例教程](./industrial_tutorial/README.md)
 
-- [【智能安防】基于PP-Human v2的摔倒检�](https://aistudio.baidu.com/aistudio/projectdetail/4606001)
+- [基于PP-Human v2的摔倒检测](https://aistudio.baidu.com/aistudio/projectdetail/4606001)
 
 - [基于PP-TinyPose增强版的智能健身动作识别](https://aistudio.baidu.com/aistudio/projectdetail/4385813)
 
