@@ -41,6 +41,9 @@
  sed -i "s/--device:gpu|cpu/--device:xpu|cpu/g" $FILENAME
  sed -i "s/trainer:pact_train/trainer:norm_train/g" $FILENAME
  sed -i "s/trainer:fpgm_train/trainer:norm_train/g" $FILENAME
+ sed -i "s/--slim_config _template_pact/ /g" $FILENAME
+ sed -i "s/--slim_config _template_fpgm/ /g" $FILENAME
+ sed -i "s/--slim_config _template_kl_quant/ /g" $FILENAME
  sed -i 's/\"gpu\"/\"xpu\"/g' test_tipc/test_train_inference_python.sh
 
  # parser params
