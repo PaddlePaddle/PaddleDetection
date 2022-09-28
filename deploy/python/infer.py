@@ -822,8 +822,12 @@ def load_predictor(model_dir,
         # optimize graph and fuse op
         config.switch_ir_optim(True)
     elif device == 'XPU':
+        if config.lite_engine_enabled():
+            config.enable_lite_engine()
         config.enable_xpu(10 * 1024 * 1024)
     elif device == 'NPU':
+        if config.lite_engine_enabled():
+            config.enable_lite_engine()
         config.enable_npu()
     else:
         config.disable_gpu()
