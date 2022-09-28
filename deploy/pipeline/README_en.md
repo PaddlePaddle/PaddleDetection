@@ -1,26 +1,30 @@
 [简体中文](README.md) | English
 
-# Real Time Pedestrian Analysis Tool PP-Human
+<img src="https://user-images.githubusercontent.com/48054808/185032511-0c97b21c-8bab-4ab1-89ee-16e5e81c22cc.png" title="" alt="" data-align="center">
 
-**PP-Human is the industry's first open-sourced real-time pedestrian analysis tool based on PaddlePaddle deep learning framework. It has three major features: rich functions, wide application, and efficient deployment.**
+**PaddleDetection has provide out-of-the-box tools in pedestrian and vehicle analysis, and it support multiple input format such as images/videos/multi-videos/online video streams. This make it popular in smart-city\smart transportation and so on. It can be deployed easily with GPU server and TensorRT, which achieves real-time performace.**
 
+- 🚶‍♂️🚶‍♀️ **PP-Human has four major toolbox for pedestrian analysis: five example of behavior analysis、26 attributes recognition、in-out counting、multi-target-multi-camera tracking(REID).**
 
+- 🚗🚙 **PP-Vehicle has four major toolbox for vehicle analysis: The license plate recognition、vechile attributes、in-out counting、illegal_parking recognition.**
 
-![](https://user-images.githubusercontent.com/22989727/178965250-14be25c1-125d-4d90-8642-7a9b01fecbe2.gif)
-
-
-
-PP-Human supports various inputs such as images, single-camera, and multi-camera videos. It covers multi-object tracking, attributes recognition, behavior analysis, visitor traffic statistics, and trace records. PP-Human can be applied to fields including Smart Transportation, Smart Community, and industrial inspections. It can also be deployed on server sides and TensorRT accelerator. On the T4 server, it could achieve real-time analysis.
+![](https://user-images.githubusercontent.com/48054808/184843170-c3ef7d29-913b-4c6e-b533-b83892a8b0e2.gif)
 
 ## 📣 Updates
 
-- 🔥 **2022.7.13：PP-Human v2 launched with a full upgrade of four industrial features: behavior analysis, attributes recognition, visitor traffic statistics and ReID. It provides a strong core algorithm for pedestrian detection, tracking and attribute analysis with a simple and detailed development process and model optimization strategy.**
+- 🔥🔥🔥 **2022.8.20：PP-Vehicle was first launched with four major toolbox for vehicle analysis，and it also provide detailed documentation for user to train with their own datas and model optimize.**
+- 🔥 2022.7.13：PP-Human v2 launched with a full upgrade of four industrial features: behavior analysis, attributes recognition, visitor traffic statistics and ReID. It provides a strong core algorithm for pedestrian detection, tracking and attribute analysis with a simple and detailed development process and model optimization strategy.
 - 2022.4.18: Add  PP-Human practical tutorials, including training, deployment, and action expansion. Details for AIStudio project please see [Link](https://aistudio.baidu.com/aistudio/projectdetail/3842982)
 
 - 2022.4.10: Add PP-Human examples; empower refined management of intelligent community management. A quick start for AIStudio [Link](https://aistudio.baidu.com/aistudio/projectdetail/3679564)
 - 2022.4.5: Launch the real-time pedestrian analysis tool PP-Human. It supports pedestrian tracking, visitor traffic statistics, attributes recognition, and falling detection. Due to its specific optimization of real-scene data, it can accurately recognize various falling gestures, and adapt to different environmental backgrounds, light and camera angles.
 
+![](https://user-images.githubusercontent.com/48054808/184843170-c3ef7d29-913b-4c6e-b533-b83892a8b0e2.gif)
+
+
 ## 🔮 Features and demonstration
+
+### PP-Human
 
 | ⭐ Feature                                          | 💟 Advantages                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | 💡Example                                                                                                                                     |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -28,6 +32,16 @@ PP-Human supports various inputs such as images, single-camera, and multi-camera
 | **Attribute analysis**                             | Compatible with a variety of data formats: support for images, video input<br/><br/>High performance: Integrated open-sourced datasets with real enterprise data for training, achieved mAP 94.86, 2ms/person<br/><br/>Support 26 attributes: gender, age, glasses, tops, shoes, hats, backpacks and other 26 high-frequency attributes                                                                                                                                                                                | <img src="https://user-images.githubusercontent.com/48054808/173036043-68b90df7-e95e-4ada-96ae-20f52bc98d7c.png" title="" alt="" width="207"> |
 | **Behaviour detection**                            | Rich function: support five high-frequency anomaly behavior detection of falling, fighting, smoking, telephoning, and intrusion<br/><br/>Robust: unlimited by different environmental backgrounds, light, and camera angles.<br/><br/>High performance: Compared with video recognition technology, it takes significantly smaller computation resources; support localization and service-oriented rapid deployment<br/><br/>Fast training: only takes 15 minutes to produce high precision behavior detection models | <img src="https://user-images.githubusercontent.com/48054808/173034825-623e4f78-22a5-4f14-9b83-dc47aa868478.gif" title="" alt="" width="209"> |
 | **Visitor traffic statistics**<br>**Trace record** | Simple and easy to use: single parameter to initiate functions of visitor traffic statistics and trace record                                                                                                                                                                                                                                                                                                                                                                                                          | <img src="https://user-images.githubusercontent.com/22989727/174736440-87cd5169-c939-48f8-90a1-0495a1fcb2b1.gif" title="" alt="" width="200"> |
+
+### PP-Vehicle
+
+| ⭐ Feature       | 💟 Advantages                                                                                    | 💡 Example                                                                                                                                         |
+| ---------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **License Plate-Recognition**   | Both support for traditional plate and new green plate <br/><br/> Sample the frame in a time windows to recognice the plate license, and vots the license in many samples, which lead less compute cost and better accuracy, and the result is much more stable.   <br/><br/>                                  | <img title="" src="https://user-images.githubusercontent.com/48054808/185027987-6144cafd-0286-4c32-8425-7ab9515d1ec3.png" alt="" width="191"> |
+| **Vehicle Attributes** | Identify 10 vehicle colors and 9 models <br/><br/> More powerfull backbone: PP-HGNet/PP-LCNet, with higher accuracy and faster speed <br/><br/> | <img title="" src="https://user-images.githubusercontent.com/48054808/185044490-00edd930-1885-4e79-b3d4-3a39a77dea93.gif" alt="" width="207"> |
+| **Illegal Parking**   | Easy to use with one line command, and define the illegal area by yourself <br/><br/> Get the license of illegal car <br/><br/>  | <img title="" src="https://user-images.githubusercontent.com/48054808/185028419-58ae0af8-a035-42e7-9583-25f5e4ce0169.png" alt="" width="209"> |
+| **in-out counting**  | Easy to use with one line command, and define the in-out line by yourself <br/><br/> Target route visualize with high tracking performance        | <img title="" src="https://user-images.githubusercontent.com/48054808/185028798-9e07379f-7486-4266-9d27-3aec943593e0.gif" alt="" width="200"> |
+
 
 ## 🗳 Model Zoo
 
@@ -69,40 +83,60 @@ Click to download the model, then unzip and save it in the `. /output_inference`
 
 ## 📚 Doc Tutorials
 
-### [A Quick Start](docs/tutorials/PPHuman_QUICK_STARTED_en.md)
+### 🚶‍♀️ PP-Human
 
-### Pedestrian attribute/feature recognition
+#### [A Quick Start](docs/tutorials/PPHuman_QUICK_STARTED_en.md)
+
+#### Pedestrian attribute/feature recognition
 
 * [A quick start](docs/tutorials/pphuman_attribute_en.md)
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_attribute_en.md)
-  * Data Preparation
-  * Model Optimization
-  * New Attributes
 
-### Behavior detection
+* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_attribute_en.md)
+
+#### Behavior detection
 
 * [A quick start](docs/tutorials/pphuman_action_en.md)
-  * Falling detection
-  * Fighting detection
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/action_recognotion/README_en.md)
-  * Solution Selection
-  * Data Preparation
-  * Model Optimization
-  * New Attributes
 
-### ReID
+* [Customized development tutorials](../../docs/advanced_tutorials/customization/action_recognotion/README_en.md)
+
+#### ReID
 
 * [A quick start](docs/tutorials/pphuman_mtmct_en.md)
-* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mtmct_en.md)
-  * Data Preparation
-  * Model Optimization
 
-### Pedestrian tracking, visitor traffic statistics, trace records
+* [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mtmct_en.md)
+
+#### Pedestrian tracking, visitor traffic statistics, trace records
 
 * [A quick start](docs/tutorials/pphuman_mot_en.md)
-  * Pedestrian tracking,
-  * Visitor traffic statistics
-  * Regional intrusion diagnosis and counting
+
 * [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mot_en.md)
-  * Data Preparation
-  * Model Optimization
+
+
+### 🚘 PP-Vehicle
+
+#### [A Quick Start](docs/tutorials/PPVehicle_QUICK_STARTED.md)
+
+#### Vehicle Plate License
+
+- [A quick start](docs/tutorials/ppvehicle_plate_en.md)
+
+- [Customized development tutorials](../../docs/advanced_tutorials/customization/ppvehicle_plate.md)
+
+#### Vehicle Attributes
+
+- [A quick start](docs/tutorials/ppvehicle_attribute_en.md)
+
+- [Customized development tutorials](../../docs/advanced_tutorials/customization/ppvehicle_attribute_en.md)
+
+#### Illegal Parking
+
+- [A quick start](docs/tutorials/ppvehicle_illegal_parking_en.md)
+
+- [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mot_en.md)
+
+#### Vehicle Tracking/in-out counint/Route Visualize
+
+- [A quick start](docs/tutorials/ppvehicle_mot_en.md)
+
+- [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mot_en.md)
+

@@ -35,10 +35,10 @@
 
 | ⭐ 功能       | 💟 方案优势                                                                                    | 💡示例图                                                                                                                                         |
 | ---------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| **车牌识别**   | 超强性能：针对车辆密集、车牌大小不一问题进行优化，实现【待补充】                                              | <img title="" src="https://user-images.githubusercontent.com/48054808/185027987-6144cafd-0286-4c32-8425-7ab9515d1ec3.png" alt="" width="191"> |
-| **车辆属性分析** | 支持车型、颜色类别识别<br/><br/>兼容多种数据格式：支持图片、视频、在线视频流输入<br/><br/>高性能：融合开源数据集与企业真实数据进行训练，实现【待补充】<br/><br/> | <img title="" src="https://user-images.githubusercontent.com/48054808/185044490-00edd930-1885-4e79-b3d4-3a39a77dea93.gif" alt="" width="207"> |
-| **违章检测**   | 易用性高：一行命令即可实现违停检测<br/><br/>鲁棒性强：对光照、视角、背景环境无限制                                             | <img title="" src="https://user-images.githubusercontent.com/48054808/185028419-58ae0af8-a035-42e7-9583-25f5e4ce0169.png" alt="" width="209"> |
-| **车流量计数**  | 一键运行：单个参数即可开启车流量计数与轨迹记录功能                                                                  | <img title="" src="https://user-images.githubusercontent.com/48054808/185028798-9e07379f-7486-4266-9d27-3aec943593e0.gif" alt="" width="200"> |
+| **车牌识别**   | 支持传统车牌和新能源绿色车牌 <br/><br/> 车牌识别采用长间隔采样识别与多次结果统计投票方式，算力消耗少，识别精度高，结果稳定性好。                   | <img title="" src="https://user-images.githubusercontent.com/48054808/185027987-6144cafd-0286-4c32-8425-7ab9515d1ec3.png" alt="" width="191"> |
+| **车辆属性分析** | 支持多种车型、颜色类别识别 <br/><br/> 使用更强力的Backbone模型PP-HGNet、PP-LCNet,精度高、速度快 | <img title="" src="https://user-images.githubusercontent.com/48054808/185044490-00edd930-1885-4e79-b3d4-3a39a77dea93.gif" alt="" width="207"> |
+| **违章检测**   | 简单易用：一行命令即可实现违停检测，自定义设置区域 <br/><br/> 检测、跟踪效果好，可实现违停车辆车牌识别    | <img title="" src="https://user-images.githubusercontent.com/48054808/185028419-58ae0af8-a035-42e7-9583-25f5e4ce0169.png" alt="" width="209"> |
+| **车流量计数**  | 简单易用：一行命令即可开启功能，自定义出入位置 <br/><br/> 可提供目标跟踪轨迹显示，统计准确度高        | <img title="" src="https://user-images.githubusercontent.com/48054808/185028798-9e07379f-7486-4266-9d27-3aec943593e0.gif" alt="" width="200"> |
 
 ## 🗳 模型库
 
