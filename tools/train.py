@@ -122,14 +122,22 @@ def run(FLAGS, cfg):
     # build trainer
     trainer = Trainer(cfg, mode='train')
 
+    semi_supervised = cfg.get('semi_supervised', False)
+
     # load weights
     if FLAGS.resume is not None:
         trainer.resume_weights(FLAGS.resume)
     elif 'pretrain_weights' in cfg and cfg.pretrain_weights:
-        trainer.load_weights(cfg.pretrain_weights)
+        if semi_supervised:
+            trainer.load_weights_ssod(cfg.pretrain_weights)
+        else:
+            trainer.load_weights(cfg.pretrain_weights)
 
     # training
-    trainer.train(FLAGS.eval)
+    if semi_supervised:
+        trainer.semi_train(FLAGS.eval)
+    else:
+        trainer.train(FLAGS.eval)
 
 
 def main():

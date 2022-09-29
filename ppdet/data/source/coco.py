@@ -13,12 +13,21 @@
 # limitations under the License.
 
 import os
+import json
+import copy
+try:
+    from collections.abc import Sequence
+except Exception:
+    from collections import Sequence
 import numpy as np
 from ppdet.core.workspace import register, serializable
 from .dataset import DetDataset
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
+from IPython import embed
+
+__all__ = ['COCODataSet', 'SlicedCOCODataSet', 'SemiCOCODataSet']
 
 
 @register
@@ -223,7 +232,8 @@ class COCODataSet(DetDataset):
             if self.sample_num > 0 and ct >= self.sample_num:
                 break
         assert ct > 0, 'not found any coco record in %s' % (anno_path)
-        logger.debug('{} samples in file {}'.format(ct, anno_path))
+        logger.info('Load [{} samples valid, {} samples invalid] in file {}.'.
+                    format(ct, len(img_ids) - ct, anno_path))
         if self.allow_empty and len(empty_records) > 0:
             empty_records = self._sample_empty(empty_records, len(records))
             records += empty_records
@@ -351,3 +361,82 @@ class SlicedCOCODataSet(COCODataSet):
             empty_records = self._sample_empty(empty_records, len(records))
             records += empty_records
         self.roidbs = records
+
+
+@register
+@serializable
+class SemiCOCODataSet(COCODataSet):
+    """Semi-COCODataSet used for supervised and unsupervised dataSet"""
+
+    def __init__(self,
+                 dataset_dir=None,
+                 image_dir=None,
+                 anno_path=None,
+                 data_fields=['image'],
+                 sample_num=-1,
+                 load_crowd=False,
+                 allow_empty=False,
+                 empty_ratio=1.,
+                 repeat=1,
+                 supervised=True,
+                 sup_file=None,
+                 sup_percentage=10.0,
+                 sup_seed=1):
+        super(SemiCOCODataSet, self).__init__(
+            dataset_dir, image_dir, anno_path, data_fields, sample_num,
+            load_crowd, allow_empty, empty_ratio, repeat)
+        self.supervised = supervised
+        self.sup_file = sup_file
+        self.sup_percentage = sup_percentage
+        self.sup_seed = sup_seed
+        if supervised == False:
+            self.load_image_only = True
+
+    def _get_parse_image_ids(self, full_img_ids):
+        assert str(self.sup_percentage) in [
+            '0.1', '0.5', '1.0', '2.0', '5.0', '10.0'
+        ], 'invalid sup_percentage: ' + self.percentage
+        assert str(self.sup_seed) in [str(x) for x in range(10)
+                                      ], 'invalid percentage: ' + self.sup_seed
+        supervised_idx = json.load(open(self.sup_file, 'r'))[str(
+            self.sup_percentage)][str(self.sup_seed)]
+        labeled_idx = [x for x in supervised_idx if x in full_img_ids]
+        assert len(set(supervised_idx)) < len(full_img_ids)
+
+        if self.supervised:
+            logger.info(
+                f'Use {len(labeled_idx)} sup_samples, {len(labeled_idx)/len(full_img_ids)*100.0:.2f}% data as LABELED, sup_seed={self.sup_seed}'
+            )
+            return labeled_idx
+        else:
+            left_idx = full_img_ids - set(labeled_idx)
+            unlabeled_idx = [
+                np.random.choice(left_idx) for _ in range(labeled_idx)
+            ]
+            logger.info(
+                f'Use {len(unlabeled_idx)} unsup_samples, {len(unlabeled_idx)/len(full_img_ids)*100.0:.2f}% data as UNLABELED, sup_seed={self.sup_seed}'
+            )
+            return unlabeled_idx
+
+    def parse_dataset_semi(self):
+        # get valid self.roidbs from self.parse_dataset()
+        full_img_ids = [db['im_id'] for db in self.roidbs]
+        if self.sup_file is not None:
+            full_img_ids = self._get_parse_image_ids(
+                full_img_ids)  # 117266 for 10%
+
+        if len(full_img_ids) < len(self.roidbs):
+            final_records = []
+            for db in self.roidbs:
+                if db['im_id'] in full_img_ids:
+                    final_records.append(db)
+            self.roidbs = final_records
+        else:
+            if self.supervised:
+                logger.info(
+                    f'Use {len(self.roidbs)} sup_samples, 100.0% data as LABELED'
+                )
+            else:
+                logger.info(
+                    f'Use {len(self.roidbs)} unsup_samples, 100.0% data as UNLABELED'
+                )

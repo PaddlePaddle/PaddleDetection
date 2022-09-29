@@ -3396,3 +3396,75 @@ class PadResize(BaseOperator):
         sample['gt_bbox'] = bboxes
         sample['gt_class'] = labels
         return sample
+
+
+class RandomColorJitter(BaseOperator):
+    def __init__(self,
+                 prob=0.8,
+                 brightness=0.4,
+                 contrast=0.4,
+                 saturation=0.4,
+                 hue=0.1):
+        super(RandomColorJitter, self).__init__()
+        self.prob = prob
+        self.brightness = brightness
+        self.contrast = contrast
+        self.saturation = saturation
+        self.hue = hue
+
+    def apply(self, sample, context=None):
+        if np.random.uniform(0, 1) < self.prob:
+            from paddle.vision.transforms import ColorJitter
+            transform = ColorJitter(self.brightness, self.contrast,
+                                    self.saturation, self.hue)
+            sample['image'] = transform(sample['image'])
+        return sample
+
+
+class RandomGrayscale(BaseOperator):
+    def __init__(self, prob=0.2):
+        super(RandomGrayscale, self).__init__()
+        self.prob = prob
+
+    def apply(self, sample, context=None):
+        if np.random.uniform(0, 1) < self.prob:
+            from paddle.vision.transforms import Grayscale
+            transform = Grayscale()
+            sample['image'] = transform(sample['image'])
+        return sample
+
+
+class RandomGaussianBlur(BaseOperator):
+    def __init__(self, prob=0.5, sigma=[0.1, 2.0]):
+        super(RandomGaussianBlur, self).__init__()
+        self.prob = prob
+        self.sigma = sigma
+        self.kernel_size = 23
+
+    def apply(self, sample, context=None):
+        if np.random.uniform(0, 1) < self.prob:
+            sigma = np.random.uniform(self.sigma[0], self.sigma[1])
+            im = cv2.GaussianBlur(sample['image'],
+                                  (self.kernel_size, self.kernel_size), sigma)
+            sample['image'] = im
+        return sample
+
+
+class RandomErasingCrop(BaseOperator):
+    def __init__(self):
+        super(RandomErasingCrop, self).__init__()
+        from paddle.vision.transforms import RandomErasing
+
+    def apply(self, sample, context=None):
+        transform1 = RandomErasing(
+            prob=0.7, scale=(0.05, 0.2), ratio=(0.3, 3.3), value="random")
+        transform2 = RandomErasing(
+            prob=0.5, scale=(0.05, 0.2), ratio=(0.1, 6), value="random")
+        transform3 = RandomErasing(
+            prob=0.3, scale=(0.05, 0.2), ratio=(0.05, 8), value="random")
+        im = sample['image']
+        im = transform1(im)
+        im = transform2(im)
+        im = transform3(im)
+        sample['image'] = im
+        return sample

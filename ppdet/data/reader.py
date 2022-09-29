@@ -234,6 +234,118 @@ class TrainReader(BaseDataLoader):
                                           num_classes, collate_batch, **kwargs)
 
 
+class SemiBaseDataLoader(BaseDataLoader):
+    __shared__ = ['num_classes']
+
+    def __init__(self,
+                 sample_transforms=[],
+                 strong_sample_transforms=[],
+                 batch_transforms=[],
+                 batch_size=1,
+                 shuffle=True,
+                 drop_last=True,
+                 num_classes=80,
+                 collate_batch=True,
+                 **kwargs):
+        super(SemiBaseDataLoader, self).__init__(
+            sample_transforms, batch_transforms, batch_size, shuffle, drop_last,
+            num_classes, collate_batch, **kwargs)
+        # new added
+        strong_sample_transforms = sample_transforms + strong_sample_transforms
+        self._strong_batch_transforms = Compose(
+            strong_sample_transforms, num_classes=num_classes)
+
+    def __call__(
+            self,
+            dataset,
+            worker_num,
+            strong_aug=False,  # new added
+            batch_sampler=None,
+            return_list=False):
+        self.dataset = dataset
+        self.dataset.check_or_download_dataset()
+        self.dataset.parse_dataset()
+        self.dataset.parse_dataset_semi()  # new added
+        # get data
+        if strong_aug:
+            self._sample_transforms = self._strong_batch_transforms  # new added
+        self.dataset.set_transform(self._sample_transforms)
+        # set kwargs
+        self.dataset.set_kwargs(**self.kwargs)
+        # batch sampler
+        if batch_sampler is None:
+            self._batch_sampler = DistributedBatchSampler(
+                self.dataset,
+                batch_size=self.batch_size,
+                shuffle=self.shuffle,
+                drop_last=self.drop_last)
+        else:
+            self._batch_sampler = batch_sampler
+
+        # DataLoader do not start sub-process in Windows and Mac
+        # system, do not need to use shared memory
+        use_shared_memory = self.use_shared_memory and \
+                            sys.platform not in ['win32', 'darwin']
+        # check whether shared memory size is bigger than 1G(1024M)
+        if use_shared_memory:
+            shm_size = _get_shared_memory_size_in_M()
+            if shm_size is not None and shm_size < 1024.:
+                logger.warning("Shared memory size is less than 1G, "
+                               "disable shared_memory in DataLoader")
+                use_shared_memory = False
+
+        self.dataloader = DataLoader(
+            dataset=self.dataset,
+            batch_sampler=self._batch_sampler,
+            collate_fn=self._batch_transforms,
+            num_workers=worker_num,
+            return_list=return_list,
+            use_shared_memory=use_shared_memory)
+        self.loader = iter(self.dataloader)
+
+        return self
+
+
+@register
+class SupTrainReader(SemiBaseDataLoader):
+    __shared__ = ['num_classes']
+
+    def __init__(self,
+                 sample_transforms=[],
+                 strong_sample_transforms=[],
+                 batch_transforms=[],
+                 batch_size=1,
+                 shuffle=True,
+                 drop_last=True,
+                 num_classes=80,
+                 collate_batch=True,
+                 **kwargs):
+        super(SupTrainReader, self).__init__(
+            sample_transforms, strong_sample_transforms, batch_transforms,
+            batch_size, shuffle, drop_last, num_classes, collate_batch,
+            **kwargs)
+
+
+@register
+class UnsupTrainReader(SemiBaseDataLoader):
+    __shared__ = ['num_classes']
+
+    def __init__(self,
+                 sample_transforms=[],
+                 strong_sample_transforms=[],
+                 batch_transforms=[],
+                 batch_size=1,
+                 shuffle=True,
+                 drop_last=True,
+                 num_classes=80,
+                 collate_batch=True,
+                 **kwargs):
+        super(UnsupTrainReader, self).__init__(
+            sample_transforms, strong_sample_transforms, batch_transforms,
+            batch_size, shuffle, drop_last, num_classes, collate_batch,
+            **kwargs)
+
+
 @register
 class EvalReader(BaseDataLoader):
     __shared__ = ['num_classes']

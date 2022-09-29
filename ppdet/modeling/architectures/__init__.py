@@ -37,6 +37,7 @@ from . import retinanet
 from . import bytetrack
 from . import yolox
 from . import pose3d_metro
+from . import dense_teacher
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -64,3 +65,4 @@ from .retinanet import *
 from .bytetrack import *
 from .yolox import *
 from .pose3d_metro import *
+from .dense_teacher import *

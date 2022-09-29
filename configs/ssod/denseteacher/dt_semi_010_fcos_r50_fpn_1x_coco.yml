@@ -1,0 +1,131 @@
+_BASE_: [
+  '../../fcos/fcos_r50_fpn_1x_coco.yml',
+]
+log_iter: 20
+snapshot_epoch: 1
+weights: output/dt_semi_010_fcos_r50_fpn_1x_coco/model_final
+# when export model for deploy, just keep _BASE_ and `dataset config`
+# Then comment all the other config component (global,model,data_aug,other)
+
+
+### global config
+semi_supervised: True
+semi_start_steps: 5000
+use_ema: True
+ema_decay: 0.9996
+ema_decay_type: None
+ema_start_steps: 3000
+
+
+### model config
+architecture: DenseTeacher
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+DenseTeacher:
+  teacher: FCOS
+  student: FCOS
+  train_cfg:
+    ratio: 0.01
+    sup_weight: 1.0
+    unsup_weight: 1.0
+    suppress: 'linear'
+    loss_weight: {distill_loss_cls: 4.0, distill_loss_box: 1.0, distill_loss_ctn: 1.0}
+    gamma: 2.0
+  test_cfg:
+    inference_on: student
+
+
+### dataset config
+metric: COCO
+num_classes: 80
+TrainDataset:
+  !SemiCOCODataSet
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir: dataset/coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+    sup_file: 'dataset/coco/coco_supervision.txt'
+    sup_percentage: 10.0
+    sup_seed: 1
+    supervised: True
+
+UnsupTrainDataset:
+  !SemiCOCODataSet
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir: dataset/coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+    sup_file: 'dataset/coco/coco_supervision.txt'
+    sup_percentage: 10.0
+    sup_seed: 1
+    supervised: False
+
+EvalDataset:
+  !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/instances_val2017.json # also support txt (like VOC's label_list.txt)
+    dataset_dir: dataset/coco # if set, anno_path will be 'dataset_dir/anno_path'
+
+
+### data_aug config
+worker_num: 2 # set 0 for single gpu debug
+SupTrainReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [800, 1333], keep_ratio: true, interp: 1}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: true}
+    - RandomFlip: {}
+  strong_sample_transforms:
+    - RandomGaussianBlur: {}
+  batch_transforms:
+    - Permute: {}
+    - PadBatch: {pad_to_stride: 128}
+    - Gt2FCOSTarget:
+        object_sizes_boundary: [64, 128, 256, 512]
+        center_sampling_radius: 1.5
+        downsample_ratios: [8, 16, 32, 64, 128]
+        norm_reg_targets: True
+  batch_size: 2
+  shuffle: true
+  drop_last: true
+
+UnsupTrainReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [800, 1333], keep_ratio: true, interp: 1}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: true}
+    - RandomFlip: {}
+  strong_sample_transforms:
+    - RandomGaussianBlur: {}
+  batch_transforms:
+    - Permute: {}
+    - PadBatch: {pad_to_stride: 128}
+  batch_size: 2
+  shuffle: true
+  drop_last: true
+
+
+### other config
+epoch: 240
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [240]
+  - !LinearWarmup
+    start_factor: 0.001
+    steps: 1000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2
+  clip_grad_by_norm: 1.0

@@ -218,8 +218,16 @@ class FCOSLoss(nn.Layer):
         ctn_loss = ctn_loss * mask_positive_float / num_positive_fp32
 
         loss_all = {
-            "loss_centerness": paddle.sum(ctn_loss),
             "loss_cls": paddle.sum(cls_loss),
-            "loss_box": paddle.sum(reg_loss)
+            "loss_box": paddle.sum(reg_loss),
+            "loss_ctn": paddle.sum(ctn_loss),
         }
-        return loss_all
+
+        losses = {
+            'loss': paddle.to_tensor(
+                0, dtype='float32', stop_gradient=False)
+        }
+        losses.update(loss_all)
+        total_loss = paddle.add_n(list(losses.values()))
+        losses['loss'] += total_loss
+        return losses

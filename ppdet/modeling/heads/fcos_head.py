@@ -22,9 +22,10 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.nn.initializer import Normal, Constant
-
+from IPython import embed
 from ppdet.core.workspace import register
 from ppdet.modeling.layers import ConvNormLayer, MultiClassNMS
+from ppdet.modeling.losses import GIoULoss
 
 __all__ = ['FCOSFeat', 'FCOSHead']
 
@@ -203,6 +204,8 @@ class FCOSHead(nn.Layer):
             scale_reg = self.add_sublayer(feat_name, ScaleReg())
             self.scales_regs.append(scale_reg)
 
+        self.iou_loss = GIoULoss()
+
     def _compute_locations_by_level(self, fpn_stride, feature, num_shift=0.5):
         """
         Compute locations of anchor points of each FPN layer
@@ -253,15 +256,18 @@ class FCOSHead(nn.Layer):
             bboxes_reg_list.append(bbox_reg)
             centerness_list.append(centerness)
 
+        is_teacher = targets.get('is_teacher', False)
+        if is_teacher:
+            return [cls_logits_list, bboxes_reg_list, centerness_list]
+
         if self.training:
-            losses = {}
+            get_data = targets.get('get_data', False)
+            if get_data:
+                return [cls_logits_list, bboxes_reg_list, centerness_list]
+
             fcos_head_outs = [cls_logits_list, bboxes_reg_list, centerness_list]
             losses_fcos = self.get_loss(fcos_head_outs, targets)
-            losses.update(losses_fcos)
-
-            total_loss = paddle.add_n(list(losses.values()))
-            losses.update({'loss': total_loss})
-            return losses
+            return losses_fcos
         else:
             # eval or infer
             locations_list = []
@@ -335,3 +341,101 @@ class FCOSHead(nn.Layer):
         pred_scores = pred_scores.transpose([0, 2, 1])
         bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
         return bbox_pred, bbox_num
+
+    def get_distill_loss(self, fcos_head_outs, teacher_fcos_head_outs):
+        student_logits, student_deltas, student_quality = fcos_head_outs
+        teacher_logits, teacher_deltas, teacher_quality = teacher_fcos_head_outs
+        nc = self.num_classes
+
+        student_logits = paddle.concat(
+            [permute_to_N_HWA_K(x, nc)
+             for x in student_logits], 1).reshape([-1, nc])
+        teacher_logits = paddle.concat(
+            [permute_to_N_HWA_K(x, nc)
+             for x in teacher_logits], 1).reshape([-1, nc])
+
+        student_deltas = paddle.concat(
+            [permute_to_N_HWA_K(x, 4)
+             for x in student_deltas], 1).reshape([-1, 4])
+        teacher_deltas = paddle.concat(
+            [permute_to_N_HWA_K(x, 4)
+             for x in teacher_deltas], 1).reshape([-1, 4])
+
+        student_quality = paddle.concat(
+            [permute_to_N_HWA_K(x, 1)
+             for x in student_quality], 1).reshape([-1, 1])
+        teacher_quality = paddle.concat(
+            [permute_to_N_HWA_K(x, 1)
+             for x in teacher_quality], 1).reshape([-1, 1])
+
+        with paddle.no_grad():
+            # Region Selection
+            ratio = 0.01  #self.cfg.TRAINER.DISTILL.RATIO
+            count_num = int(teacher_logits.shape[0] * ratio)
+            teacher_probs = F.sigmoid(teacher_logits)
+            # [8184, 80]
+            #max_vals = torch.max(teacher_probs, 1)[0]
+            max_vals = paddle.max(teacher_probs, 1)
+            sorted_vals, sorted_inds = paddle.topk(max_vals,
+                                                   teacher_logits.shape[0])
+            mask = paddle.zeros_like(max_vals)
+            mask[sorted_inds[:count_num]] = 1.
+            fg_num = sorted_vals[:count_num].sum()
+            b_mask = mask > 0.
+
+        loss_logits = QFLv2(
+            F.sigmoid(student_logits),
+            teacher_probs,
+            weight=mask,
+            reduction="sum") / fg_num
+
+        loss_deltas = (self.iou_loss(student_deltas[b_mask],
+                                     teacher_deltas[b_mask]) *
+                       teacher_quality[b_mask]).mean()
+        loss_quality = F.binary_cross_entropy(
+            F.sigmoid(student_quality[b_mask]),
+            F.sigmoid(teacher_quality[b_mask]),
+            reduction='mean')
+
+        return {
+            "distill_loss_cls": loss_logits,
+            "distill_loss_box": loss_deltas,
+            "distill_loss_ctn": loss_quality,
+        }
+
+
+def permute_to_N_HWA_K(tensor, K):
+    """
+    Transpose/reshape a tensor from (N, (A x K), H, W) to (N, (HxWxA), K)
+    """
+    N, _, H, W = tensor.shape
+    tensor = tensor.reshape([N, -1, K, H, W]).transpose([0, 3, 4, 1, 2])
+    tensor = tensor.reshape([N, -1, K])
+    return tensor
+
+
+def QFLv2(
+        pred_sigmoid,  # (n, 80)
+        teacher_sigmoid,  # (n) 0, 1-80: 0 is neg, 1-80 is positive
+        weight=None,
+        beta=2.0,
+        reduction='mean'):
+    # all goes to 0
+    pt = pred_sigmoid
+    zerolabel = paddle.zeros_like(pt)
+    loss = F.binary_cross_entropy(
+        pred_sigmoid, zerolabel, reduction='none') * pt.pow(beta)
+    pos = weight > 0
+
+    # positive goes to bbox quality
+    pt = teacher_sigmoid[pos] - pred_sigmoid[pos]
+    loss[pos] = F.binary_cross_entropy(
+        pred_sigmoid[pos], teacher_sigmoid[pos],
+        reduction='none') * pt.pow(beta)
+
+    valid = weight >= 0
+    if reduction == "mean":
+        loss = loss[valid].mean()
+    elif reduction == "sum":
+        loss = loss[valid].sum()
+    return loss

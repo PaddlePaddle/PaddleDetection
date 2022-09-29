@@ -1,0 +1,58 @@
+_BASE_: [
+  'dt_semi_010_fcos_r50_fpn_1x_coco.yml',
+]
+log_iter: 20
+snapshot_epoch: 1
+weights: output/dt_semi_005_fcos_r50_fpn_1x_coco/model_final
+# when export model for deploy, just keep _BASE_ and `dataset config`
+# Then comment all the other config component (global,model,data_aug,other)
+
+
+### dataset config
+metric: COCO
+num_classes: 80
+TrainDataset:
+  !SemiCOCODataSet
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir: dataset/coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+    sup_file: 'dataset/coco/coco_supervision.txt'
+    sup_percentage: 5.0
+    sup_seed: 1
+    supervised: True
+
+UnsupTrainDataset:
+  !SemiCOCODataSet
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir: dataset/coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+    sup_file: 'dataset/coco/coco_supervision.txt'
+    sup_percentage: 5.0
+    sup_seed: 1
+    supervised: False
+
+EvalDataset:
+  !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/instances_val2017.json # also support txt (like VOC's label_list.txt)
+    dataset_dir: dataset/coco # if set, anno_path will be 'dataset_dir/anno_path'
+
+
+### other config
+epoch: 480
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [480]
+  - !LinearWarmup
+    start_factor: 0.001
+    steps: 1000
