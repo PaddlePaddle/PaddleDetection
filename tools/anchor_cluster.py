@@ -215,6 +215,8 @@ def main():
     merge_config(FLAGS.opt)
     check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
+    if 'use_gpu' not in cfg:
+        cfg.use_gpu = False
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version('develop')
