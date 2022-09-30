@@ -499,7 +499,8 @@ class Trainer(object):
                         scaled_loss = scaler.scale(loss)
                         scaled_loss.backward()
                     # in dygraph mode, optimizer.minimize is equal to optimizer.step
-                    scaler.minimize(self.optimizer, scaled_loss)
+                    scaler.step(self.optimizer)
+                    scaler.update()
                 else:
                     if isinstance(
                             model, paddle.
