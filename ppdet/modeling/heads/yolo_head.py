@@ -198,7 +198,7 @@ class YOLOXHead(nn.Layer):
             self.stem_conv.append(BaseConv(in_c, feat_channels, 1, 1, act=act))
 
             self.conv_cls.append(
-                nn.Sequential(* [
+                nn.Sequential(*[
                     ConvBlock(
                         feat_channels, feat_channels, 3, 1, act=act), ConvBlock(
                             feat_channels, feat_channels, 3, 1, act=act),
@@ -210,7 +210,7 @@ class YOLOXHead(nn.Layer):
                 ]))
 
             self.conv_reg.append(
-                nn.Sequential(* [
+                nn.Sequential(*[
                     ConvBlock(
                         feat_channels, feat_channels, 3, 1, act=act),
                     ConvBlock(
@@ -405,12 +405,16 @@ class YOLOXHead(nn.Layer):
         pred_scores, pred_bboxes, stride_tensor = head_outs
         pred_scores = pred_scores.transpose([0, 2, 1])
         pred_bboxes *= stride_tensor
+        if self.exclude_post_process:
+            return paddle.concat(
+                [pred_bboxes, pred_scores.transpose([0, 2, 1])], axis=-1), None
         # scale bbox to origin image
-        scale_factor = scale_factor.flip(-1).tile([1, 2]).unsqueeze(1)
-        pred_bboxes /= scale_factor
-        if self.exclude_nms:
-            # `exclude_nms=True` just use in benchmark
-            return pred_bboxes.sum(), pred_scores.sum()
         else:
-            bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
-            return bbox_pred, bbox_num
+            scale_factor = scale_factor.flip(-1).tile([1, 2]).unsqueeze(1)
+            pred_bboxes /= scale_factor
+            if self.exclude_nms:
+                # `exclude_nms=True` just use in benchmark
+                return pred_bboxes, pred_scores
+            else:
+                bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
+                return bbox_pred, bbox_num
