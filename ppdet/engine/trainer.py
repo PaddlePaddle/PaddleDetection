@@ -195,12 +195,7 @@ class Trainer(object):
             ema_decay_type = self.cfg.get('ema_decay_type', 'threshold')
             cycle_epoch = self.cfg.get('cycle_epoch', -1)
             ema_black_list = self.cfg.get('ema_black_list', None)
-            self.ema = ModelEMA(
-                self.model,
-                decay=ema_decay,
-                ema_decay_type=ema_decay_type,
-                cycle_epoch=cycle_epoch,
-                ema_black_list=ema_black_list)
+            self.ema = ModelEMA(self.model, decay=ema_decay)
             self.ema_start_steps = self.cfg.get('ema_start_steps', 3000)
         else:
             if self.semi_supervised:
@@ -677,7 +672,11 @@ class Trainer(object):
                 "EvalDataset")()
 
         model = self.model
-        ema_model = self.ema
+        # try:
+        #    ema_model = self.ema #wjm 
+        # except ValueError as e:
+        #      print("{}:Please set use_ ema=true".format(e))
+
         sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
                    self.cfg.use_gpu and self._nranks > 1)
         if sync_bn:
@@ -740,7 +739,14 @@ class Trainer(object):
 
                 # model forward
                 # data_sup_w.extend(data_sup_s) ### TODO
-                loss_dict_sup = model.teacher(data_sup_w)
+                # loss_dict_sup = model.teacher(data_sup_w)  #old
+                '''
+                sup_weak.extend(sup_strong)
+                loss_dict_sup = self.model(sup_weak)
+                '''
+                loss_dict_sup_w = model.student(data_sup_w)  # wjm add
+                loss_dict_sup = model.student(data_sup_s)  # wjm add
+                loss_dict_sup['loss'] += loss_dict_sup_w['loss']  # wjm add
                 losses_sup = loss_dict_sup['loss'] * train_cfg['sup_weight']
                 losses_sup.backward()
 
@@ -813,17 +819,24 @@ class Trainer(object):
                 self.status['batch_time'].update(time.time() - iter_tic)
                 self._compose_callback.on_step_end(self.status)
                 # Note: ema_start_steps
-                if self.use_ema and curr_iter > self.ema_start_steps:
-                    self.ema.update()
+                if self.use_ema and curr_iter == self.ema_start_steps:  #wjm add
+                    # Start
+                    weight = copy.deepcopy(self.model.student.state_dict())
+                    self.model.teacher.set_dict(weight)  #将教师模型参数与学生同步
+                elif self.use_ema and curr_iter > self.ema_start_steps:  #wjm add
+                    self.ema.update(model)
+                    weight = copy.deepcopy(self.model.state_dict())
+                    self.status['weight'] = weight
                 iter_tic = time.time()
+
 
             is_snapshot = (self._nranks < 2 or self._local_rank == 0) \
                        and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 or epoch_id == self.end_epoch - 1)
-            if is_snapshot and self.use_ema:
-                # apply ema weight on model
-                weight = copy.deepcopy(self.model.state_dict())
-                self.model.set_dict(self.ema.apply())
-                self.status['weight'] = weight
+            # if is_snapshot and self.use_ema:
+            #     # apply ema weight on model
+            #     weight = copy.deepcopy(self.model.state_dict())
+            #     self.model.set_dict(self.ema.apply())
+            #     self.status['weight'] = weight
 
             self._compose_callback.on_epoch_end(self.status)
 

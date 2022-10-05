@@ -409,9 +409,13 @@ class SemiCOCODataSet(COCODataSet):
             )
             return labeled_idx
         else:
-            left_idx = full_img_ids - set(labeled_idx)
+            # left_idx = full_img_ids - list(set(labeled_idx)) #wjm add
+            # unlabeled_idx = [
+            #     np.random.choice(left_idx) for _ in range(labeled_idx)
+            # ]
             unlabeled_idx = [
-                np.random.choice(left_idx) for _ in range(labeled_idx)
+                id for id in (full_img_ids)
+                if id not in list(set(labeled_idx))
             ]
             logger.info(
                 f'Use {len(unlabeled_idx)} unsup_samples, {len(unlabeled_idx)/len(full_img_ids)*100.0:.2f}% data as UNLABELED, sup_seed={self.sup_seed}'
@@ -420,7 +424,9 @@ class SemiCOCODataSet(COCODataSet):
 
     def parse_dataset_semi(self):
         # get valid self.roidbs from self.parse_dataset()
-        full_img_ids = [db['im_id'] for db in self.roidbs]
+        full_img_ids = [
+            db['im_id'] for db in self.roidbs
+        ]  #self.roidbs(['im_file', 'im_id', 'h', 'w', 'is_crowd', 'gt_class', 'gt_bbox'])
         if self.sup_file is not None:
             full_img_ids = self._get_parse_image_ids(
                 full_img_ids)  # 117266 for 10%

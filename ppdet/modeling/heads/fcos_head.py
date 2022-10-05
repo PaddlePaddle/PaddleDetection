@@ -388,10 +388,16 @@ class FCOSHead(nn.Layer):
             teacher_probs,
             weight=mask,
             reduction="sum") / fg_num
-
-        loss_deltas = (self.iou_loss(student_deltas[b_mask],
-                                     teacher_deltas[b_mask]) *
-                       teacher_quality[b_mask]).mean()
+        inputs = paddle.concat(
+            (-student_deltas[b_mask][..., :2], student_deltas[b_mask][..., 2:]),
+            axis=-1)  #wjm add
+        targets = paddle.concat(
+            (-teacher_deltas[b_mask][..., :2], teacher_deltas[b_mask][..., 2:]),
+            axis=-1)  #wjm add
+        loss_deltas = (
+            self.iou_loss(
+                inputs,  #wjm add
+                targets) * targets).mean()
         loss_quality = F.binary_cross_entropy(
             F.sigmoid(student_quality[b_mask]),
             F.sigmoid(teacher_quality[b_mask]),

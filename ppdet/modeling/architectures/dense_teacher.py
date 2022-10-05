@@ -42,10 +42,12 @@ class DenseTeacher(BaseArch):
         self.student = student
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
+        if train_cfg is not None:  #wjm modify
+            self.freeze(self.teacher)
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
-        teacher = create(cfg['teacher'])
+        teacher = create(cfg['teacher'])  #从yml文件中传入cfg，最后初始化一个字典传入_init_中。
         student = create(cfg['student'])
         train_cfg = cfg['train_cfg']
         test_cfg = cfg['test_cfg']
@@ -67,6 +69,11 @@ class DenseTeacher(BaseArch):
             return {'bbox': bbox_pred, 'bbox_num': bbox_num}
 
         return True
+
+    def freeze(self, model):  #wjm modify
+        model.eval()
+        for param in model.parameters():
+            param.stop_gradient = True
 
     def get_loss(self):
         return self._forward()

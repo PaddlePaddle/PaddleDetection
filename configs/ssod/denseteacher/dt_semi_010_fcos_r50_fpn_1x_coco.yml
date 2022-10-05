@@ -1,7 +1,7 @@
 _BASE_: [
   '../../fcos/fcos_r50_fpn_1x_coco.yml',
 ]
-log_iter: 20
+log_iter: 1
 snapshot_epoch: 1
 weights: output/dt_semi_010_fcos_r50_fpn_1x_coco/model_final
 # when export model for deploy, just keep _BASE_ and `dataset config`
@@ -10,11 +10,11 @@ weights: output/dt_semi_010_fcos_r50_fpn_1x_coco/model_final
 
 ### global config
 semi_supervised: True
-semi_start_steps: 5000
+semi_start_steps: 20
 use_ema: True
 ema_decay: 0.9996
 ema_decay_type: None
-ema_start_steps: 3000
+ema_start_steps: 10
 
 
 ### model config
@@ -39,22 +39,22 @@ metric: COCO
 num_classes: 80
 TrainDataset:
   !SemiCOCODataSet
-    image_dir: train2017
-    anno_path: annotations/instances_train2017.json
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
     dataset_dir: dataset/coco
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
-    sup_file: 'dataset/coco/coco_supervision.txt'
+    sup_file: 'dataset/coco/instances_val2017.1@10.txt'
     sup_percentage: 10.0
     sup_seed: 1
     supervised: True
 
 UnsupTrainDataset:
   !SemiCOCODataSet
-    image_dir: train2017
-    anno_path: annotations/instances_train2017.json
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
     dataset_dir: dataset/coco
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
-    sup_file: 'dataset/coco/coco_supervision.txt'
+    sup_file: 'dataset/coco/instances_val2017.1@10.txt'
     sup_percentage: 10.0
     sup_seed: 1
     supervised: False
@@ -72,11 +72,11 @@ TestDataset:
 
 
 ### data_aug config
-worker_num: 2 # set 0 for single gpu debug
+worker_num: 0 # set 0 for single gpu debug
 SupTrainReader:
   sample_transforms:
     - Decode: {}
-    - Resize: {target_size: [800, 1333], keep_ratio: true, interp: 1}
+    - RandomResize: {target_size: [800, 1333], keep_ratio: true, interp: 1}
     - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: true}
     - RandomFlip: {}
   strong_sample_transforms:
@@ -100,13 +100,17 @@ UnsupTrainReader:
     - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: true}
     - RandomFlip: {}
   strong_sample_transforms:
+    - RandomColorJitter: {}
+    - RandomGrayscale: {}
     - RandomGaussianBlur: {}
+    - RandomCrop: {}
   batch_transforms:
     - Permute: {}
     - PadBatch: {pad_to_stride: 128}
   batch_size: 2
-  shuffle: true
+  shuffle: False #shuffle: true
   drop_last: true
+
 
 
 ### other config
