@@ -691,7 +691,7 @@ class Trainer(object):
                                                   False)
             model = paddle.DataParallel(
                 model, find_unused_parameters=find_unused_parameters)
-
+            model = model._layers  #wjm add
         self.status.update({
             'epoch_id': self.start_epoch,
             'step_id': 0,
