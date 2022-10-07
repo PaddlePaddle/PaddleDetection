@@ -10,11 +10,11 @@ weights: output/dt_semi_010_fcos_r50_fpn_1x_coco/model_final
 
 ### global config
 semi_supervised: True
-semi_start_steps: 20
+semi_start_steps: 5000
 use_ema: True
 ema_decay: 0.9996
 ema_decay_type: None
-ema_start_steps: 10
+ema_start_steps: 3000
 
 
 ### model config
@@ -39,22 +39,24 @@ metric: COCO
 num_classes: 80
 TrainDataset:
   !SemiCOCODataSet
-    image_dir: val2017
-    anno_path: annotations/instances_val2017.json
+    image_dir: train2017
+    anno_path: annotations/semi_supervised/instances_train2017.1@10.json
     dataset_dir: dataset/coco
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
-    sup_file: 'dataset/coco/instances_val2017.1@10.txt'
+    # sup_file: 'dataset/coco/COCO_supervision.txt'
+    sup_file: 'dataset/coco/COCO_supervision.txt'
     sup_percentage: 10.0
     sup_seed: 1
     supervised: True
 
 UnsupTrainDataset:
   !SemiCOCODataSet
-    image_dir: val2017
-    anno_path: annotations/instances_val2017.json
+    image_dir: train2017
+    anno_path: annotations/semi_supervised/instances_train2017.1@10-unlabeled.json
     dataset_dir: dataset/coco
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
-    sup_file: 'dataset/coco/instances_val2017.1@10.txt'
+    # sup_file: 'dataset/coco/COCO_supervision.txt'
+    sup_file: 'dataset/coco/COCO_supervision.txt'
     sup_percentage: 10.0
     sup_seed: 1
     supervised: False

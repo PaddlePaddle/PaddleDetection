@@ -265,7 +265,7 @@ class SemiBaseDataLoader(BaseDataLoader):
         self.dataset = dataset
         self.dataset.check_or_download_dataset()
         self.dataset.parse_dataset()
-        self.dataset.parse_dataset_semi()  # new added
+        # self.dataset.parse_dataset_semi()  # new added
         # get data
         if strong_aug:
             self._sample_transforms = self._strong_batch_transforms  # new added
