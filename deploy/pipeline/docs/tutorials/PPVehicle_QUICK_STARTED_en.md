@@ -18,7 +18,7 @@ English | [简体中文](PPVehicle_QUICK_STARTED.md)
 
 ## Environment Preparation
 
-Environment Preparation: PaddleDetection version >= release/2.4 or release/2.5
+Environment Preparation: PaddleDetection version >= release/2.5 or develop
 
 Installation of PaddlePaddle and PaddleDetection
 
@@ -73,7 +73,7 @@ The features and corresponding task types are as follows.
 | ------------------- | --------------------- | ------------------------------------------- | ---------------- |
 | Image               | Attribute Recognition | Object Detection Attribute Recognition      | DET ATTR         |
 | Single-camera video | Attribute Recognition | Multi-Object Tracking Attribute Recognition | MOT ATTR         |
-| Single-camera video | Attribute Recognition | Multi-Object Tracking Attribute Recognition | MOT VEHICLEPLATE |
+| Single-camera video | License-plate Recognition | Multi-Object Tracking License-plate Recognition | MOT VEHICLEPLATE |
 
 Take attribute recognition based on video input as an example: Its task type includes multi-object tracking and attributes recognition. The specific configuration is as follows.
 

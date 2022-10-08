@@ -19,7 +19,7 @@
 
 ## 环境准备
 
-环境要求： PaddleDetection版本 >= release/2.4 或 develop版本
+环境要求： PaddleDetection版本 >= release/2.5 或 develop版本
 
 PaddlePaddle和PaddleDetection安装
 
@@ -75,7 +75,7 @@ PP-Vehicle相关配置位于```deploy/pipeline/config/infer_cfg_ppvehicle.yml```
 |-------|-------|----------|-----|
 | 图片 | 属性识别 | 目标检测 属性识别 | DET ATTR |
 | 单镜头视频 | 属性识别 | 多目标跟踪 属性识别 | MOT ATTR |
-| 单镜头视频 | 属性识别 | 多目标跟踪 属性识别 | MOT VEHICLEPLATE |
+| 单镜头视频 | 车牌识别 | 多目标跟踪 车牌识别 | MOT VEHICLEPLATE |
 
 例如基于视频输入的属性识别，任务类型包含多目标跟踪和属性识别，具体配置如下：
 
