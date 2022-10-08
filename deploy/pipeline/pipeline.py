@@ -473,7 +473,9 @@ class PipePredictor(object):
 
     def set_file_name(self, path):
         if path is not None:
-            self.file_name = os.path.split(path)[-1].split(".")[-2]
+            self.file_name = os.path.split(path)[-1]
+            if "." in self.file_name:
+                self.file_name = self.file_name.split(".")[-2]
         else:
             # use camera id
             self.file_name = None

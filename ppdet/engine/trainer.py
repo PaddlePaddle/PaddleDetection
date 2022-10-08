@@ -538,7 +538,7 @@ class Trainer(object):
             if self.cfg.get('unstructured_prune'):
                 self.pruner.update_params()
 
-            is_snapshot = (self._nranks < 2 or self._local_rank == 0) \
+            is_snapshot = (self._nranks < 2 or (self._local_rank == 0 or self.cfg.metric == "Pose3DEval")) \
                        and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 or epoch_id == self.end_epoch - 1)
             if is_snapshot and self.use_ema:
                 # apply ema weight on model
