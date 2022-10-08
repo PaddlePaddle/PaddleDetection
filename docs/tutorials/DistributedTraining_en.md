@@ -36,9 +36,25 @@ tools/train.py -c configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml \
 
 ## 2. Performance
 
-* On single-machine and 4-machine 8-card V100 machines, model training is performed based on [PP-YOLOE-s](../../configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml). The model training time is as follows.
+* We conducted model training on 3x8 V100 GPUs. Accuracy, training time, and multi machine acceleration ratio of different models are shown below.
 
-Machine | mAP | Time cost
--|-|-
-single machine | 42.7% | 39h
-4 machines | 42.1% | 13h
+| Model    | Dataset | Configuration   | 8 GPU training time / Accuracy | 3x8 GPU training time / Accuracy | Acceleration ratio  |
+|:---------:|:--------:|:--------:|:--------:|:--------:|:------:|
+|  PP-YOLOE-s  | Objects365 | [ppyoloe_crn_s_300e_coco.yml](../../configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml)  | 301h/- | 162h/17.7%  | **1.85** |
+|  PP-YOLOE-l  | Objects365 | [ppyoloe_crn_l_300e_coco.yml](../../configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml)  | 401h/- | 178h/30.3%  | **2.25** |
+
+
+* We conducted model training on 4x8 V100 GPUs. Accuracy, training time, and multi machine acceleration ratio of different models are shown below.
+
+
+| Model    | Dataset | Configuration   | 8 GPU training time / Accuracy | 4x8 GPU training time / Accuracy | Acceleration ratio  |
+|:---------:|:--------:|:--------:|:--------:|:--------:|:------:|
+|  PP-YOLOE-s  | COCO | [ppyoloe_crn_s_300e_coco.yml](../../configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml)  | 39h/42.7% | 13h/42.1%  | **3.0** |
+|  PP-YOLOE-m  | Objects365 | [ppyoloe_crn_m_300e_coco.yml](../../configs/ppyoloe/ppyoloe_crn_m_300e_coco.yml)  | 337h/- | 112h/24.6%  | **3.0** |
+|  PP-YOLOE-x  | Objects365 | [ppyoloe_crn_x_300e_coco.yml](../../configs/ppyoloe/ppyoloe_crn_x_300e_coco.yml)  | 464h/- | 125h/32.1%  | **3.4** |
+
+
+* **Note**
+    * When the number of GPU cards for training is too large, the accuracy will be slightly lost (about 1%). At this time, you can try to warmup the training process or increase some training epochs to reduce the lost.
+    * The configuration files here are provided based on COCO datasets. If you need to train on other datasets, you need to modify the dataset path.
+    * For the multi-machine training process of `PP-YOLOE` series, the batch size of single card is set as 8 and learning rate is same as that of single machine.
