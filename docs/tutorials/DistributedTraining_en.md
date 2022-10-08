@@ -57,3 +57,4 @@ tools/train.py -c configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml \
 * **Note**
     * When the number of GPU cards for training is too large, the accuracy will be slightly lost (about 1%). At this time, you can try to warmup the training process or increase some training epochs to reduce the lost.
     * The configuration files here are provided based on COCO datasets. If you need to train on other datasets, you need to modify the dataset path.
+    * For the multi-machine training process of `PP-YOLOE` series, the batch size of single card is set as 8 and learning rate is same as that of single machine.
