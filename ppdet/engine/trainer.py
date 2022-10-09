@@ -401,14 +401,14 @@ class Trainer(object):
 
         model = self.model
         sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
-                   self.cfg.use_gpu and self._nranks > 1)
+                   (self.cfg.use_gpu or self.cfg.use_mlu) and self._nranks > 1)
         if sync_bn:
             model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
         # enabel auto mixed precision mode
         if self.use_amp:
             scaler = paddle.amp.GradScaler(
-                enable=self.cfg.use_gpu or self.cfg.use_npu,
+                enable=self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu,
                 init_loss_scaling=self.cfg.get('init_loss_scaling', 1024))
         # get distributed model
         if self.cfg.get('fleet', False):
@@ -463,7 +463,7 @@ class Trainer(object):
                             DataParallel) and use_fused_allreduce_gradients:
                         with model.no_sync():
                             with paddle.amp.auto_cast(
-                                    enable=self.cfg.use_gpu,
+                                    enable=self.cfg.use_gpu or self.cfg.use_mlu,
                                     custom_white_list=self.custom_white_list,
                                     custom_black_list=self.custom_black_list,
                                     level=self.amp_level):
@@ -477,7 +477,7 @@ class Trainer(object):
                             list(model.parameters()), None)
                     else:
                         with paddle.amp.auto_cast(
-                                enable=self.cfg.use_gpu,
+                                enable=self.cfg.use_gpu or self.cfg.use_mlu,
                                 custom_white_list=self.custom_white_list,
                                 custom_black_list=self.custom_black_list,
                                 level=self.amp_level):
@@ -586,7 +586,7 @@ class Trainer(object):
             # forward
             if self.use_amp:
                 with paddle.amp.auto_cast(
-                        enable=self.cfg.use_gpu,
+                        enable=self.cfg.use_gpu or self.cfg.use_mlu,
                         custom_white_list=self.custom_white_list,
                         custom_black_list=self.custom_black_list,
                         level=self.amp_level):
@@ -644,7 +644,7 @@ class Trainer(object):
             # forward
             if self.use_amp:
                 with paddle.amp.auto_cast(
-                        enable=self.cfg.use_gpu,
+                        enable=self.cfg.use_gpu or self.cfg.use_mlu,
                         custom_white_list=self.custom_white_list,
                         custom_black_list=self.custom_black_list,
                         level=self.amp_level):
