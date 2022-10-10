@@ -48,6 +48,7 @@ def knowledge_distillation_kl_div_loss(pred,
         torch.Tensor: Loss tensor with shape (N,).
     """
     #print('===1121===', pred.shape)
+    #print('===soft_label.shape===', soft_label.shape)
     assert pred.shape == soft_label.shape
     target = F.softmax(soft_label / T, axis=1)
     if detach_target:
@@ -102,7 +103,7 @@ class KnowledgeDistillationKLDivLoss(nn.Layer):
 
         reduction = (
             reduction_override if reduction_override else self.reduction)
-
+        #print('--soft_label.shape---', soft_label.shape)
         loss_kd_out = knowledge_distillation_kl_div_loss(
             pred,
             soft_label,
@@ -347,6 +348,8 @@ class GFLHead(nn.Layer):
 
         self.distribution_project = Integral(self.reg_max)
         self.loss_ld = KnowledgeDistillationKLDivLoss(loss_weight=0.25, T=10) #TODO
+        self.loss_kd = KnowledgeDistillationKLDivLoss(loss_weight=10, T=2)
+        self.loss_ld_vlr = KnowledgeDistillationKLDivLoss(loss_weight=0.25, T=10)
 
     def forward(self, fpn_feats):
         assert len(fpn_feats) == len(
@@ -411,7 +414,10 @@ class GFLHead(nn.Layer):
         cells_cy = (grid_cells[:, 3] + grid_cells[:, 1]) / 2
         return paddle.stack([cells_cx, cells_cy], axis=-1)
 
-    def get_loss(self, gfl_head_outs, gt_meta, soft_targets_list=None):
+    def get_loss(self, gfl_head_outs, gt_meta, soft_label_list=None, soft_targets_list=None): #, x_list=None, teacher_x_list=None):
+        # TODO
+        #soft_label_list, x_list, teacher_x_list = [], [], []
+        
         cls_logits, bboxes_reg = gfl_head_outs  #shape对应 直接load就行
         num_level_anchors = [
             featmap.shape[-2] * featmap.shape[-1] for featmap in cls_logits
@@ -427,7 +433,11 @@ class GFLHead(nn.Layer):
                                                     num_level_anchors)
         bbox_targets_list = self._images_to_levels(gt_meta['bbox_targets'],
                                                    num_level_anchors)
-                                                  
+        # newnew                                           
+        vlr_regions_list = self._images_to_levels(gt_meta['vlr_regions'],
+                                                   num_level_anchors)
+        # =====
+
         num_total_pos = sum(gt_meta['pos_num'])
         try:
             num_total_pos = paddle.distributed.all_reduce(num_total_pos.clone(
@@ -436,11 +446,15 @@ class GFLHead(nn.Layer):
             num_total_pos = max(num_total_pos, 1)
 
         loss_bbox_list, loss_dfl_list, loss_qfl_list, loss_ld_list, avg_factor = [], [], [], [], []
+        loss_ld_vlr_list, loss_kd_list = [], []
         if soft_targets_list == None:
             soft_targets_list = [None] * len(cls_logits)
-        for cls_score, bbox_pred, grid_cells, labels, label_weights, bbox_targets, stride, soft_targets in zip(
+        for cls_score, bbox_pred, grid_cells, labels, label_weights, bbox_targets, stride, soft_targets,\
+                soft_label, vlr_region in zip(
                 cls_logits, bboxes_reg, grid_cells_list, labels_list,
-                label_weights_list, bbox_targets_list, self.fpn_stride, soft_targets_list):
+                label_weights_list, bbox_targets_list, self.fpn_stride, soft_targets_list,
+                soft_label_list, vlr_regions_list):
+
             grid_cells = grid_cells.reshape([-1, 4])
             cls_score = cls_score.transpose([0, 2, 3, 1]).reshape(
                 [-1, self.cls_out_channels])
@@ -452,21 +466,39 @@ class GFLHead(nn.Layer):
                 soft_targets = soft_targets.transpose([0, 2, 3, 1]).reshape(
                     [-1, 4 * (self.reg_max + 1)])
             #==========
-            
+
+            # newnew
+            soft_label = soft_label.transpose([0, 2, 3, 1]).reshape([-1, self.cls_out_channels])
+            #print('=== 0 soft_label.shape===', soft_label.shape)
+            # 特征蒸馏
+            # teacher_x = teacher_x.transpose([0, 2, 3, 1]).reshape([-1, 256])
+            # x = x.transpose([0, 2, 3, 1]).reshape([-1, 256])  
+            #===          
+
             bbox_targets = bbox_targets.reshape([-1, 4])
             labels = labels.reshape([-1])
             label_weights = label_weights.reshape([-1])
 
+            # newnew
+            vlr_region = vlr_region.reshape([-1])
+            # ===
+            
             bg_class_ind = self.num_classes
             pos_inds = paddle.nonzero(
                 paddle.logical_and((labels >= 0), (labels < bg_class_ind)),
                 as_tuple=False).squeeze(1)
             score = np.zeros(labels.shape)
+
+            # newnew
+            remain_inds = (vlr_region > 0).nonzero()
+            #===
+
             #print('===len(pos_inds)====', len(pos_inds))
             if len(pos_inds) > 0:
                 pos_bbox_targets = paddle.gather(bbox_targets, pos_inds, axis=0)
                 pos_bbox_pred = paddle.gather(bbox_pred, pos_inds, axis=0)
                 pos_grid_cells = paddle.gather(grid_cells, pos_inds, axis=0)
+
                 pos_grid_cell_centers = self._grid_cells_to_center(
                     pos_grid_cells) / stride
 
@@ -509,6 +541,7 @@ class GFLHead(nn.Layer):
                 # ====new=====
                 # ld loss
                 if soft_targets is not None:
+                    #print('---loss_ld---')
                     loss_ld = self.loss_ld(
                         pred_corners,
                         soft_corners,
@@ -516,11 +549,46 @@ class GFLHead(nn.Layer):
                         avg_factor=4.0)
                 # =============
 
+                # newnew
+                #print('---loss_kd---', len(pos_inds))
+                # loss_kd = self.loss_kd(
+                #     cls_score[pos_inds],
+                #     soft_label[pos_inds],
+                #     weight=label_weights[pos_inds],
+                #     avg_factor=pos_inds.shape[0])
+                loss_kd = self.loss_kd(
+                    paddle.gather(cls_score, pos_inds, axis=0),
+                    paddle.gather(soft_label, pos_inds, axis=0),
+                    weight=paddle.gather(label_weights, pos_inds, axis=0),
+                    avg_factor=pos_inds.shape[0])
+                # ===
+
             else:
                 loss_bbox = bbox_pred.sum() * 0
                 loss_dfl = bbox_pred.sum() * 0
                 loss_ld = bbox_pred.sum() * 0
+                # newnew
+                loss_kd = bbox_pred.sum() * 0
                 weight_targets = paddle.to_tensor([0], dtype='float32')
+
+            # newnew
+            if len(remain_inds) > 0:
+                neg_pred_corners = bbox_pred[remain_inds].reshape([
+                    -1, self.reg_max + 1])
+                neg_soft_corners = soft_targets[remain_inds].reshape(
+                    [-1, self.reg_max + 1])
+
+                remain_targets = vlr_region[remain_inds]
+
+                #print('---loss_ld_vlr---')
+                loss_ld_vlr = self.loss_ld_vlr(
+                    neg_pred_corners,
+                    neg_soft_corners,
+                    weight=remain_targets.expand([-1, 4]).reshape([-1]),
+                    avg_factor=16.0)
+            else:
+                loss_ld_vlr = bbox_pred.sum() * 0
+            #===
 
             # qfl loss
             score = paddle.to_tensor(score)
@@ -535,13 +603,9 @@ class GFLHead(nn.Layer):
             avg_factor.append(weight_targets.sum())
             if soft_targets is not None:
                 loss_ld_list.append(loss_ld)
+            loss_ld_vlr_list.append(loss_ld_vlr)
+            loss_kd_list.append(loss_kd)
 
-        # #print(len(loss_bbox_list), len(loss_dfl_list), len(loss_qfl_list))
-        # print('loss_qfl: ', np.array([item.detach().numpy() for item in loss_qfl_list]))
-        # print('loss_bbox: ', np.array([item.detach().numpy() for item in loss_bbox_list]))
-        # print('loss_dfl: ', np.array([item.detach().numpy() for item in loss_dfl_list]))
-        # print('loss_ld: ', np.array([item.detach().numpy() for item in loss_ld_list]))
-        # exit()
 
         avg_factor = sum(avg_factor) # + 1e-6
         try:
@@ -555,12 +619,14 @@ class GFLHead(nn.Layer):
                 avg_factor / paddle.distributed.get_world_size(), min=1)
         except:
             avg_factor = max(avg_factor.item(), 1) # 这个地方不太一样，跑了这里取1
+
         if avg_factor <= 0:
             loss_qfl = paddle.to_tensor(0, dtype='float32', stop_gradient=False)
-            loss_bbox = paddle.to_tensor(
-                0, dtype='float32', stop_gradient=False)
+            loss_bbox = paddle.to_tensor(0, dtype='float32', stop_gradient=False)
             loss_dfl = paddle.to_tensor(0, dtype='float32', stop_gradient=False)
             loss_ld = paddle.to_tensor(0, dtype='float32', stop_gradient=False)
+            loss_ld_vlr = paddle.to_tensor(0, dtype='float32', stop_gradient=False)
+            loss_kd = paddle.to_tensor(0, dtype='float32', stop_gradient=False)
         else:
             losses_bbox = list(map(lambda x: x / avg_factor, loss_bbox_list))
             losses_dfl = list(map(lambda x: x / avg_factor, loss_dfl_list))
@@ -568,12 +634,17 @@ class GFLHead(nn.Layer):
             loss_bbox = sum(losses_bbox)
             loss_dfl = sum(losses_dfl)
             loss_ld = sum(loss_ld_list)
+            loss_ld_vlr = sum(loss_ld_vlr_list)
+            loss_kd = sum(loss_kd_list)
 
         loss_states = dict(
             loss_qfl=loss_qfl, loss_bbox=loss_bbox, loss_dfl=loss_dfl)
         
         if soft_targets is not None:
             loss_states['loss_ld'] = loss_ld
+        
+        loss_states['loss_ld_vlr'] = loss_ld_vlr
+        loss_states['loss_kd'] = loss_kd
 
         return loss_states
 

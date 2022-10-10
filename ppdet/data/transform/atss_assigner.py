@@ -43,7 +43,7 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     Returns:
         Tensor: shape (m, n) if ``is_aligned `` is False else shape (m,)
     """
-    assert mode in ['iou', 'iof', 'giou'], 'Unsupported mode {}'.format(mode)
+    assert mode in ['iou', 'iof', 'giou', 'diou'], 'Unsupported mode {}'.format(mode)
     # Either the boxes are empty or the length of boxes's last dimenstion is 4
     assert (bboxes1.shape[-1] == 4 or bboxes1.shape[0] == 0)
     assert (bboxes2.shape[-1] == 4 or bboxes2.shape[0] == 0)
@@ -83,6 +83,13 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
         if mode == 'giou':
             enclosed_lt = np.minimum(bboxes1[..., :2], bboxes2[..., :2])
             enclosed_rb = np.maximum(bboxes1[..., 2:], bboxes2[..., 2:])
+        if mode == 'diou':
+            enclosed_lt = np.minimum(bboxes1[..., :2], bboxes2[..., :2])
+            enclosed_rb = np.maximum(bboxes1[..., 2:], bboxes2[..., 2:])
+            b1_x1, b1_y1 = bboxes1[..., 0], bboxes1[..., 1]
+            b1_x2, b1_y2 = bboxes1[..., 2], bboxes1[..., 3]
+            b2_x1, b2_y1 = bboxes2[..., 0], bboxes2[..., 1]
+            b2_x2, b2_y2 = bboxes2[..., 2], bboxes2[..., 3]
     else:
         lt = np.maximum(bboxes1[..., :, None, :2],
                         bboxes2[..., None, :, :2])  # [B, rows, cols, 2]
@@ -101,6 +108,15 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
                                      bboxes2[..., None, :, :2])
             enclosed_rb = np.maximum(bboxes1[..., :, None, 2:],
                                      bboxes2[..., None, :, 2:])
+        if mode == 'diou':
+            enclosed_lt = np.minimum(bboxes1[..., :, None, :2],
+                                    bboxes2[..., None, :, :2])
+            enclosed_rb = np.maximum(bboxes1[..., :, None, 2:],
+                                    bboxes2[..., None, :, 2:])
+            b1_x1, b1_y1 = bboxes1[..., :, None, 0], bboxes1[..., :, None, 1]
+            b1_x2, b1_y2 = bboxes1[..., :, None, 2], bboxes1[..., :, None, 3]
+            b2_x1, b2_y1 = bboxes2[..., None, :, 0], bboxes2[..., None, :, 1]
+            b2_x2, b2_y2 = bboxes2[..., None, :, 2], bboxes2[..., None, :, 3]
 
     eps = np.array([eps])
     union = np.maximum(union, eps)
@@ -108,18 +124,37 @@ def bbox_overlaps(bboxes1, bboxes2, mode='iou', is_aligned=False, eps=1e-6):
     if mode in ['iou', 'iof']:
         return ious
     # calculate gious
-    enclose_wh = (enclosed_rb - enclosed_lt).clip(min=0)
-    enclose_area = enclose_wh[..., 0] * enclose_wh[..., 1]
-    enclose_area = np.maximum(enclose_area, eps)
-    gious = ious - (enclose_area - union) / enclose_area
-    return gious
-
+    if mode in ['giou']:
+        enclose_wh = (enclosed_rb - enclosed_lt).clip(min=0)
+        enclose_area = enclose_wh[..., 0] * enclose_wh[..., 1]
+        enclose_area = np.maximum(enclose_area, eps)
+        gious = ious - (enclose_area - union) / enclose_area
+        return gious
+    if mode in ['diou']:
+        left = ((b2_x1 + b2_x2) - (b1_x1 + b1_x2))**2 / 4
+        right = ((b2_y1 + b2_y2) - (b1_y1 + b1_y2))**2 / 4
+        rho2 = left + right
+        enclose_wh = (enclosed_rb - enclosed_lt).clip(min=0)
+        enclose_c = enclose_wh[..., 0]**2 + enclose_wh[..., 1]**2
+        enclose_c = np.maximum(enclose_c, eps)
+        dious = ious - rho2 / enclose_c
+        return dious
 
 def topk_(input, k, axis=1, largest=True):
     x = -input if largest else input
     if axis == 0:
         row_index = np.arange(input.shape[1 - axis])
-        topk_index = np.argpartition(x, k, axis=axis)[0:k, :]
+        #print('====', x.shape, k)
+        #exit()
+        if k == x.shape[0]:
+            #topk_index = np.arange(x.shape[0])
+            #topk_index = np.argsort(x, axis=axis) 
+            topk_index = np.argpartition(x, k-1, axis=axis)[0:k, :]
+            # print(topk_index.shape, topk_index[-10:])
+            # exit()
+        else:
+            topk_index = np.argpartition(x, k, axis=axis)[0:k, :]
+
         topk_data = x[topk_index, row_index]
 
         topk_index_sort = np.argsort(topk_data, axis=axis)
@@ -267,3 +302,137 @@ class ATSSAssigner(object):
                          -np.inf] = argmax_overlaps[max_overlaps != -np.inf] + 1
 
         return assigned_gt_inds, max_overlaps
+
+    def get_vlr_region(self,
+                       bboxes,
+                       num_level_bboxes,
+                       gt_bboxes,
+                       gt_bboxes_ignore=None,
+                       gt_labels=None):
+        """get vlr region for ld distillation.
+        Args:
+            bboxes (np.array): Bounding boxes to be assigned, shape(n, 4).
+            num_level_bboxes (List): num of bboxes in each level
+            gt_bboxes (np.array): Groundtruth boxes, shape (k, 4).
+            gt_bboxes_ignore (np.array, optional): Ground truth bboxes that are
+                labelled as `ignored`, e.g., crowd boxes in COCO.
+            gt_labels (np.array, optional): Label of gt_bboxes, shape (k, ).
+        """        
+        bboxes = bboxes[:, :4]
+
+        num_gt, num_bboxes = gt_bboxes.shape[0], bboxes.shape[0]
+
+        # compute iou between all bbox and gt
+        overlaps = bbox_overlaps(bboxes, gt_bboxes)
+        
+        # newnew
+        diou = bbox_overlaps(bboxes, gt_bboxes, mode='diou')
+        #===
+
+        # assign 0 by default
+        assigned_gt_inds = np.zeros((num_bboxes, ), dtype=np.int64)
+
+        # newnew
+        vlr_region_iou = (assigned_gt_inds + 0).astype(np.float32)
+        #===
+
+        if num_gt == 0 or num_bboxes == 0:
+            # No ground truth or boxes, return empty assignment
+            max_overlaps = np.zeros((num_bboxes, ))
+            if num_gt == 0:
+                # No truth, assign everything to background
+                assigned_gt_inds[:] = 0
+            if not np.any(gt_labels):  #gt_labels只在这里用了
+                assigned_labels = None
+            else:
+                assigned_labels = -np.ones((num_bboxes, ), dtype=np.int64)
+            return assigned_gt_inds, max_overlaps
+
+        # compute center distance between all bbox and gt
+        gt_cx = (gt_bboxes[:, 0] + gt_bboxes[:, 2]) / 2.0
+        gt_cy = (gt_bboxes[:, 1] + gt_bboxes[:, 3]) / 2.0
+        gt_points = np.stack((gt_cx, gt_cy), axis=1)
+
+        bboxes_cx = (bboxes[:, 0] + bboxes[:, 2]) / 2.0
+        bboxes_cy = (bboxes[:, 1] + bboxes[:, 3]) / 2.0
+        bboxes_points = np.stack((bboxes_cx, bboxes_cy), axis=1)
+
+        distances = np.sqrt(
+            np.power((bboxes_points[:, None, :] - gt_points[None, :, :]), 2)
+            .sum(-1)) 
+
+        # Selecting candidates based on the center distance
+        # newnew
+        candidate_idxs = []
+        #====
+        candidate_idxs_t = []
+        start_idx = 0
+        for bboxes_per_level in num_level_bboxes:
+            # on each pyramid level, for each gt,
+            # select k bbox whose center are closest to the gt center
+            end_idx = start_idx + bboxes_per_level
+            distances_per_level = distances[start_idx:end_idx, :]
+            selectable_t = min(self.topk, bboxes_per_level)
+            # newnew
+            selectable_k = min(bboxes_per_level, bboxes_per_level) #k选所有
+            # ===
+            _, topt_idxs_per_level = topk_(
+                distances_per_level, selectable_t, axis=0, largest=False)
+            # newnew
+            _, topk_idxs_per_level = topk_(
+                distances_per_level, selectable_k, axis=0, largest=False)
+            # === 
+            candidate_idxs_t.append(topt_idxs_per_level + start_idx)
+            # newnew
+            candidate_idxs.append(topk_idxs_per_level + start_idx)
+            #===
+            start_idx = end_idx
+
+        candidate_idxs_t = np.concatenate(candidate_idxs_t, axis=0) 
+        # newnew
+        candidate_idxs = np.concatenate(candidate_idxs, axis=0)
+
+        # get corresponding iou for the these candidates, and compute the
+        # mean and std, set mean + std as the iou threshold
+        candidate_overlaps_t = overlaps[candidate_idxs_t, np.arange(num_gt)] 
+
+        # newnew 所有算tdiou
+        t_diou = diou[candidate_idxs, np.arange(num_gt)] 
+        # ==== 
+
+        overlaps_mean_per_gt = candidate_overlaps_t.mean(0)
+        overlaps_std_per_gt = candidate_overlaps_t.std(0, ddof=1) #使用Bessel correction
+        overlaps_thr_per_gt = overlaps_mean_per_gt + overlaps_std_per_gt    
+
+        # newnew        
+        is_pos = (t_diou < overlaps_thr_per_gt[None, :]) & (
+            t_diou >= 0.25 * overlaps_thr_per_gt[None, :])
+
+        # limit the positive sample's center in gt
+        for gt_idx in range(num_gt):
+            candidate_idxs[:, gt_idx] += gt_idx * num_bboxes
+
+        candidate_idxs = candidate_idxs.reshape(-1)
+
+        # if an anchor box is assigned to multiple gts,
+        # the one with the highest IoU will be selected.
+        overlaps_inf = -np.inf * np.ones_like(overlaps).T.reshape(-1)
+        index = candidate_idxs.reshape(-1)[is_pos.reshape(-1)]
+
+        overlaps_inf[index] = overlaps.T.reshape(-1)[index]
+        overlaps_inf = overlaps_inf.reshape(num_gt, -1).T
+
+        max_overlaps = overlaps_inf.max(axis=1)
+        argmax_overlaps = overlaps_inf.argmax(axis=1)
+
+        overlaps_inf = -np.inf * np.ones_like(overlaps).T.reshape(-1)
+        overlaps_inf = overlaps_inf.reshape(num_gt, -1).T
+
+        assigned_gt_inds[max_overlaps !=
+                         -np.inf] = argmax_overlaps[max_overlaps != -np.inf] + 1
+
+        # newnew
+        vlr_region_iou[max_overlaps != 
+                       -np.inf] = max_overlaps[max_overlaps != -np.inf] + 0
+
+        return vlr_region_iou
