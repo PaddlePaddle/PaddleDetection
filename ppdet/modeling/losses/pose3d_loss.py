@@ -44,7 +44,7 @@ class Pose3DLoss(nn.Layer):
         self.weight_3d = weight_3d
         self.weight_2d = weight_2d
         self.criterion_2dpose = nn.MSELoss(reduction=reduction)
-        self.criterion_3dpose = nn.MSELoss(reduction=reduction)
+        self.criterion_3dpose = nn.L1Loss(reduction=reduction)
         self.criterion_smoothl1 = nn.SmoothL1Loss(
             reduction=reduction, delta=1.0)
         self.criterion_vertices = nn.L1Loss()
@@ -60,7 +60,9 @@ class Pose3DLoss(nn.Layer):
         has_3d_joints = inputs['has_3d_joints']
         has_2d_joints = inputs['has_2d_joints']
 
-        loss_3d = mpjpe(pred3d, gt_3d_joints, has_3d_joints)
+        # loss_3d = mpjpe(pred3d, gt_3d_joints, has_3d_joints)
+        loss_3d = mpjpe_mse(pred3d, gt_3d_joints, has_3d_joints)
+        # loss_3d = mpjpe_criterion(pred3d, gt_3d_joints, has_3d_joints, self.criterion_3dpose)
         loss_2d = keypoint_2d_loss(self.criterion_2dpose, pred2d, gt_2d_joints,
                                    has_2d_joints)
         # loss_3d += 0.3 * temp_velocity_loss(pred3d, gt_3d_joints, has_3d_joints,
@@ -90,10 +92,16 @@ def mpjpe(pred, gt, has_3d_joints):
     pred, gt = filter_3d_joints(pred, gt, has_3d_joints)
     error = paddle.sqrt((paddle.minimum((pred - gt), paddle.to_tensor(1.2))**2
                          ).sum(axis=-1)).mean()
-    if paddle.isnan(error) or error > 10:
-        logger.info("error loss:{}, pred:{}, gt:{}".format(error.numpy(
-        ), pred.numpy(), gt.numpy()))
-        return 0
+    return error
+
+
+def mpjpe_mse(pred, gt, has_3d_joints):
+    """ 
+    mPJPE loss
+    """
+    pred, gt = filter_3d_joints(pred, gt, has_3d_joints)
+    error = (paddle.minimum((pred - gt), paddle.to_tensor(1.2))
+             **2).sum(axis=-1).mean()
     return error
 
 
@@ -115,7 +123,7 @@ def mpjpe_criterion(pred, gt, has_3d_joints, criterion_pose3d):
     mPJPE loss of self define criterion
     """
     pred, gt = filter_3d_joints(pred, gt, has_3d_joints)
-    error = paddle.sqrt(criterion_pose3d(pred, gt).sum(axis=-1)).mean()
+    error = paddle.sqrt(criterion_pose3d(pred, gt)).mean()
     return error
 
 

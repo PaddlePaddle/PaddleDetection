@@ -93,7 +93,7 @@ class Trainer(object):
             self.dataset.set_images(images)
 
         if self.mode == 'train':
-            if cfg.architecture == 'METRO_Body_1':
+            if cfg.architecture == 'METRO_Body_temp':
                 self.loader = create('{}Reader'.format(capital_mode))(
                     self.dataset,
                     cfg.worker_num,

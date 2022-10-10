@@ -1,5 +1,5 @@
 use_gpu: True
-log_iter: 20
+log_iter: 1
 save_dir: output
 snapshot_epoch: 3
 weights: output/metro_modified/model_final
@@ -12,8 +12,8 @@ trainsize: &trainsize [*train_width, *train_height]
 num_joints: &num_joints 24
 
 #####model
-architecture: METRO_Body
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/Trunc_HRNet_W32_C_pretrained.pdparams
+architecture: METRO_Body_temp
+pretrain_weights: metro_torchinit_ppdet.pdparams
 
 METRO_Body:
   backbone: HRNet
@@ -22,7 +22,7 @@ METRO_Body:
   loss: Pose3DLoss
 
 HRNet:
-  width: 32
+  width: 40
   freeze_at: -1
   freeze_norm: False
   norm_momentum: 0.1
@@ -48,11 +48,11 @@ Pose3DLoss:
 
 #####optimizer
 LearningRate:
-  base_lr: 0.0001
+  base_lr: 0.00033
   schedulers:
   - !PiecewiseDecay
-    milestones: [25, 40]
-    gamma: 0.1
+    milestones: [10, 20, 30, 40]
+    gamma: 0.33
   - !LinearWarmup
     start_factor: 0.01
     steps: 2000
@@ -72,10 +72,8 @@ TrainDataset:
     dataset_dir: dataset/traindata/
     # image_dirs: ["human3.6m"]
     # anno_list: ["pose3d/Human3.6m_train.json"]
-    # image_dirs: ["coco/train2017", "coco/train2017", "coco/train2017"]
-    # anno_list: ["pose3d/COCO2014-All-ver01.json", "pose3d/COCO2014-Part-ver01.json", "pose3d/COCO2014-Val-ver10.json"]
-    image_dirs: ["human3.6m", "posetrack3d", "hr-lspet", "hr-lspet", "mpii/images", "coco/train2017"]
-    anno_list: ["pose3d/Human3.6m_train.json", "pose3d/PoseTrack_ver01.json", "pose3d/LSPet_train_ver10.json", "pose3d/LSPet_test_ver10.json", "pose3d/MPII_ver01.json", "pose3d/COCO2014-All-ver01.json"]
+    image_dirs: ["human3.6m", "posetrack3d", "lspet/images", "lspet/images", "mpii/images", "coco/train2017", "coco/train2017", "coco/train2017"]
+    anno_list: ["pose3d/Human3.6m_train.json", "pose3d/PoseTrack_ver01.json", "pose3d/LSPet_train_ver10.json", "pose3d/LSPet_test_ver10.json", "pose3d/MPII_ver01.json", "pose3d/COCO2014-All-ver01.json", "pose3d/COCO2014-Part-ver01.json", "pose3d/COCO2014-Val-ver10.json"]
     num_joints: *num_joints
     test_mode: False
 

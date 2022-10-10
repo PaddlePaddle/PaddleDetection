@@ -23,6 +23,7 @@ try:
 except Exception:
     from collections import Sequence
 
+import os
 import cv2
 import numpy as np
 import math
@@ -31,6 +32,7 @@ import copy
 from ...modeling.keypoint_utils import get_affine_mat_kernel, warp_affine_joints, get_affine_transform, affine_transform, get_warp_matrix
 from ppdet.core.workspace import serializable
 from ppdet.utils.logger import setup_logger
+from ppdet.utils.visualizer import draw_pose3d
 logger = setup_logger(__name__)
 
 registered_ops = []
@@ -694,6 +696,14 @@ class SinglePoseAffine(object):
         records['image'] = image
         if 'joints_2d' in records:
             records['joints_2d'] = joints
+
+        # if True:
+        #     savename = os.path.join("pose3dvis", os.path.basename(records['imageName']))
+        #     draw_pose3d(image, pose3d*1000, joints, save_name=savename, returnimg=False)
+        #     # print(joints)
+        #     print("saved img vis:{}".format(savename))
+        #     if records['has_2d_joints']:
+        #         import pdb;pdb.set_trace()
 
         return records
 

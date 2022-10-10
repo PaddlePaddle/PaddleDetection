@@ -38,6 +38,126 @@ class CustomTempDBSampler(DistributedBatchSampler):
                  rank=None,
                  shuffle=False,
                  drop_last=True):
+        self.tempsize = 4
+        self.dataset = dataset
+
+        assert isinstance(batch_size, int) and batch_size > 0, \
+                "batch_size should be a positive integer"
+        self.batch_size = batch_size
+        assert isinstance(shuffle, bool), \
+                "shuffle should be a boolean value"
+        self.shuffle = shuffle
+        assert isinstance(drop_last, bool), \
+                "drop_last should be a boolean number"
+
+        from paddle.fluid.dygraph.parallel import ParallelEnv
+
+        if num_replicas is not None:
+            assert isinstance(num_replicas, int) and num_replicas > 0, \
+                    "num_replicas should be a positive integer"
+            self.nranks = num_replicas
+        else:
+            self.nranks = ParallelEnv().nranks
+
+        if rank is not None:
+            assert isinstance(rank, int) and rank >= 0, \
+                    "rank should be a non-negative integer"
+            self.local_rank = rank
+        else:
+            self.local_rank = ParallelEnv().local_rank
+
+        self.drop_last = drop_last
+        self.epoch = 0
+
+        self.temp_num = self.dataset.get_temp_num()
+        batch_size_temp = int(self.batch_size *
+                              (self.temp_num / len(self.dataset)))
+        self.batch_size_temp = (batch_size_temp // tempsize) * tempsize
+        self.batch_size_indep = self.batch_size - self.batch_size_temp
+        self.total_batch = self.temp_num // (self.batch_size_temp * self.nranks)
+        self.num_samples = self.total_batch * self.batch_size
+        self.total_size = self.num_samples * self.nranks
+        print("bs:{}, bst:{}, bsi:{}, totalbc:{}".format(
+            self.batch_size, self.batch_size_temp, self.batch_size_indep,
+            self.total_batch))
+
+    def __iter__(self):
+        tempblock = self.batch_size_temp / self.tempsize
+        num_samples = len(self.dataset)
+        indicestemp = np.arange(self.temp_num).tolist()
+        indiceindep = np.arange(self.temp_num, num_samples).tolist()
+        if len(indicestemp) % (self.batch_size_temp * self.nranks) != 0:
+            indicestemp = indicestemp[:-(len(indicestemp) % (
+                self.batch_size_temp * self.nranks))]
+        subindicestemp = indicestemp[0:len(indicestemp):self.tempsize]
+        if self.shuffle:
+            np.random.RandomState(self.epoch).shuffle(subindicestemp)
+            np.random.RandomState(self.epoch).shuffle(indiceindep)
+            self.epoch += 1
+        if self.total_batch * self.batch_size_indep * self.nranks > len(
+                indiceindep):
+            indiceindep += indiceindep[:self.total_batch * self.batch_size_indep
+                                       * self.nranks - len(indiceindep)]
+        tempindices = []
+
+        for idx in range(self.total_batch):
+            for i in range(tempblock):
+                tempindices.extend(indicestemp[subindicestemp[
+                    idx * tempblock + i]:subindicestemp[idx * tempblock + i] +
+                                               self.tempsize])
+            tempindices.extend(indiceindep[idx * self.batch_size_indep:(idx + 1)
+                                           * self.batch_size_indep])
+            print(tempindices[-self.batch_size:])
+
+        assert len(tempindices) == self.total_size
+
+        # subsample
+        def _get_indices_by_batch_size(indices):
+            subsampled_indices = []
+            last_batch_size = self.total_size % (self.batch_size * self.nranks)
+            assert last_batch_size % self.nranks == 0
+            last_local_batch_size = last_batch_size // self.nranks
+
+            for i in range(self.local_rank * self.batch_size,
+                           len(indices) - last_batch_size,
+                           self.batch_size * self.nranks):
+                subsampled_indices.extend(indices[i:i + self.batch_size])
+
+            indices = indices[len(indices) - last_batch_size:]
+            subsampled_indices.extend(indices[
+                self.local_rank * last_local_batch_size:(
+                    self.local_rank + 1) * last_local_batch_size])
+            return subsampled_indices
+
+        if self.nranks > 1:
+            tempindices = _get_indices_by_batch_size(tempindices)
+
+        assert len(tempindices) == self.num_samples
+        _sample_iter = iter(tempindices)
+
+        batch_indices = []
+        for idx in _sample_iter:
+            batch_indices.append(idx)
+            if len(batch_indices) == self.batch_size:
+                yield batch_indices
+                batch_indices = []
+        if not self.drop_last and len(batch_indices) > 0:
+            yield batch_indices
+
+
+class CustomTempDBSampler_onetempblock(DistributedBatchSampler):
+    """
+    Custom DistributedBatchSampler for 3dpose temporal sample
+    """
+
+    def __init__(self,
+                 dataset,
+                 batch_size,
+                 num_replicas=None,
+                 rank=None,
+                 shuffle=False,
+                 drop_last=True):
+        tempsize = 4
         self.dataset = dataset
 
         assert isinstance(batch_size, int) and batch_size > 0, \
@@ -139,7 +259,7 @@ class CustomTempDBSampler(DistributedBatchSampler):
             yield batch_indices
 
 
-class CustomTempDBSampler_bk(DistributedBatchSampler):
+class CustomTempDBSampler_alltemp(DistributedBatchSampler):
     """
     Custom DistributedBatchSampler for 3dpose temporal sample
     """

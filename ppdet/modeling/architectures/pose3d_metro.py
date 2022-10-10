@@ -23,7 +23,7 @@ from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 from .. import layers as L
 
-__all__ = ['METRO_Body']
+__all__ = ['METRO_Body', 'METRO_Body_temp']
 
 
 def orthographic_projection(X, camera):
@@ -155,3 +155,46 @@ class METRO_Body(BaseArch):
         preds_3d, preds_2d = self._forward()
         outputs = {'pose3d': preds_3d, 'pose2d': preds_2d}
         return outputs
+
+
+@register
+class METRO_Body_temp(METRO_Body):
+    def _forward(self):
+        batch_size = self.inputs['image'].shape[0]
+
+        image_feat = self.backbone(self.inputs)
+        image_feat_flatten = image_feat.reshape((batch_size, 2048, 49))
+        image_feat_flatten = image_feat_flatten.transpose(perm=(0, 2, 1))
+        # and apply a conv layer to learn image token for each 3d joint/vertex position
+        features = self.conv_learn_tokens(image_feat_flatten)  # (B, J, C)
+
+        if self.training:
+            # apply mask vertex/joint modeling
+            # meta_masks is a tensor of all the masks, randomly generated in dataloader
+            # we pre-define a [MASK] token, which is a floating-value vector with 0.01s
+            meta_masks = self.inputs['mjm_mask'].expand((-1, -1, 2048))
+            constant_tensor = paddle.ones_like(features) * 0.01
+            features = features * meta_masks + constant_tensor * (1 - meta_masks
+                                                                  )
+
+        pred_out = self.trans_encoder(features)
+        #temp test
+        # B,J,D = pred_out.shape
+        # pred_out_temp = pred_out.reshape((-1, B, J*D))
+        # inner_temp = self.temp_fc1(pred_out_temp)
+        # pred_out_temp = self.temp_fc2(inner_temp)
+        # pred_out = pred_out_temp.reshape((B,J,D))
+
+        pred_3d_joints = pred_out[:, :self.num_joints, :]
+        cam_features = pred_out[:, self.num_joints:, :]
+
+        # learn camera parameters
+        x = self.cam_param_fc(cam_features)
+        x = x.transpose(perm=(0, 2, 1))
+        x = self.cam_param_fc2(x)
+        x = self.cam_param_fc3(x)
+        cam_param = x.transpose(perm=(0, 2, 1))
+        pred_camera = cam_param.squeeze()
+        pred_2d_joints = orthographic_projection(pred_3d_joints, pred_camera)
+
+        return pred_3d_joints, pred_2d_joints
