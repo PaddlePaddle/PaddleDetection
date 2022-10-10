@@ -87,13 +87,25 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 请参考[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet)
 
-### PP-YOLOE
+### PP-YOLOE/PP-YOLOE+
 
 请参考[PP-YOLOE](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe)
 
 ### YOLOX
 
 请参考[YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolox)
+
+### YOLOv5
+
+请参考[YOLOv5](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov5)
+
+### YOLOv6
+
+请参考[YOLOv6](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov6)
+
+### YOLOv7
+
+请参考[YOLOv7](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov7)
 
 
 ## 旋转框检测
@@ -135,3 +147,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 ### ByteTrack
 
 请参考[ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/bytetrack)
+
+### OC-SORT
+
+请参考[OC-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/ocsort)

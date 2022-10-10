@@ -34,6 +34,7 @@ from . import csp_darknet
 from . import convnext
 from . import vision_transformer
 from . import mobileone
+from . import trans_encoder
 
 from .vgg import *
 from .resnet import *

@@ -201,6 +201,9 @@ def main():
     if 'use_xpu' not in cfg:
         cfg.use_xpu = False
 
+    if 'use_gpu' not in cfg:
+        cfg.use_gpu = False
+
     if cfg.use_gpu:
         place = paddle.set_device('gpu')
     elif cfg.use_npu:

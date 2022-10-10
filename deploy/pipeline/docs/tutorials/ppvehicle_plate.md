@@ -1,3 +1,4 @@
+[English](ppvehicle_plate_en.md) | 简体中文
 
 # PP-Vehicle车牌识别模块
 

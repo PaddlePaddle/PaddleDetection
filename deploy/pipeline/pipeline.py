@@ -31,6 +31,7 @@ sys.path.insert(0, parent_path)
 from cfg_utils import argsparser, print_arguments, merge_cfg
 from pipe_utils import PipeTimer
 from pipe_utils import get_test_images, crop_image_with_det, crop_image_with_mot, parse_mot_res, parse_mot_keypoint
+from pipe_utils import PushStream
 
 from python.infer import Detector, DetectorPicoDet
 from python.keypoint_infer import KeyPointDetector
@@ -340,6 +341,8 @@ class PipePredictor(object):
         self.file_name = None
         self.collector = DataCollector()
 
+        self.pushurl = args.pushurl
+
         # auto download inference model
         get_model_dir(self.cfg)
 
@@ -471,6 +474,8 @@ class PipePredictor(object):
     def set_file_name(self, path):
         if path is not None:
             self.file_name = os.path.split(path)[-1]
+            if "." in self.file_name:
+                self.file_name = self.file_name.split(".")[-2]
         else:
             # use camera id
             self.file_name = None
@@ -571,10 +576,6 @@ class PipePredictor(object):
         # mot -> attr
         # mot -> pose -> action
         capture = cv2.VideoCapture(video_file)
-        video_out_name = 'output.mp4' if self.file_name is None else self.file_name
-        if "rtsp" in video_file:
-            video_out_name = video_out_name + "_t" + str(thread_idx).zfill(
-                2) + "_rtsp.mp4"
 
         # Get Video info : resolution, fps, frame count
         width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -583,11 +584,23 @@ class PipePredictor(object):
         frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
         print("video fps: %d, frame_count: %d" % (fps, frame_count))
 
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
-        out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
-        writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+        if len(self.pushurl) > 0:
+            video_out_name = 'output' if self.file_name is None else self.file_name
+            pushurl = os.path.join(self.pushurl, video_out_name)
+            print("the result will push stream to url:{}".format(pushurl))
+            pushstream = PushStream(pushurl)
+            pushstream.initcmd(fps, width, height)
+        elif self.cfg['visual']:
+            video_out_name = 'output' if self.file_name is None else self.file_name
+            if "rtsp" in video_file:
+                video_out_name = video_out_name + "_t" + str(thread_idx).zfill(
+                    2) + "_rtsp"
+            if not os.path.exists(self.output_dir):
+                os.makedirs(self.output_dir)
+            out_path = os.path.join(self.output_dir, video_out_name+".mp4")
+            fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+            writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+
         frame_id = 0
 
         entrance, records, center_traj = None, None, None
@@ -709,11 +722,14 @@ class PipePredictor(object):
                         im = self.visualize_video(frame, mot_res, frame_id, fps,
                                                   entrance, records,
                                                   center_traj)  # visualize
-                        writer.write(im)
-                        if self.file_name is None:  # use camera_id
-                            cv2.imshow('Paddle-Pipeline', im)
-                            if cv2.waitKey(1) & 0xFF == ord('q'):
-                                break
+                        if len(self.pushurl)>0:
+                            pushstream.pipe.stdin.write(im.tobytes())
+                        else:
+                            writer.write(im)
+                            if self.file_name is None:  # use camera_id
+                                cv2.imshow('Paddle-Pipeline', im)
+                                if cv2.waitKey(1) & 0xFF == ord('q'):
+                                    break
                     continue
 
                 self.pipeline_res.update(mot_res, 'mot')
@@ -882,14 +898,17 @@ class PipePredictor(object):
                                           entrance, records, center_traj,
                                           self.illegal_parking_time != -1,
                                           illegal_parking_dict)  # visualize
-                writer.write(im)
-                if self.file_name is None:  # use camera_id
-                    cv2.imshow('Paddle-Pipeline', im)
-                    if cv2.waitKey(1) & 0xFF == ord('q'):
-                        break
-
-        writer.release()
-        print('save result to {}'.format(out_path))
+                if len(self.pushurl)>0:
+                    pushstream.pipe.stdin.write(im.tobytes())
+                else:
+                    writer.write(im)
+                    if self.file_name is None:  # use camera_id
+                        cv2.imshow('Paddle-Pipeline', im)
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                            break
+        if self.cfg['visual'] and len(self.pushurl)==0:
+            writer.release()
+            print('save result to {}'.format(out_path))
 
     def visualize_video(self,
                         image,

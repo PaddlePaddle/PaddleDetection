@@ -22,6 +22,29 @@
 
 </div>
 
+
+## 🔥 热门活动
+🎊YOLO Vision世界学术交流大会🎊
+
+PaddleDetection受邀参与首个以YOLO为主题的YOLO Vision世界大会，与全球AI领先开发者学习交流，欢迎大家报名参加！
+
+- ⏰时间：9月27日
+
+- 👨‍🏫演讲主题：PaddleDetection Toolkit and PP-YOLO Series
+
+- 💎圆桌论坛：Open Source Projects Enabling the Future of Computer Vision AI
+
+**⛓报名链接：https://ultralytics.com/yolo-vision**
+
+- 🔮彩蛋：8月26日 PaddleDetection发布YOLO系列全家族，包括YOLOv5/X/v6/v7与自研的PP-YOLOE、PP-YOLOE+
+
+- 🗳项目链接：https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/feature_models/YOLOSERIES_MODEL.md
+
+
+<div  align="center">
+  <img src="https://user-images.githubusercontent.com/48054808/192301374-940cf2fa-9661-419b-9c46-18a4570df381.jpeg" width="600"/>
+</div>
+
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> 产品动态
 
 - 🔥 **2022.8.26：PaddleDetection发布[release/2.5版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)**
@@ -33,7 +56,7 @@
     - 发布行人分析工具[PP-Human v2](./deploy/pipeline)，新增打架、打电话、抽烟、闯入四大行为识别，底层算法性能升级，覆盖行人检测、跟踪、属性三类核心算法能力，提供保姆级全流程开发及模型优化策略，支持在线视频流输入
     - 首次发布[PP-Vehicle](./deploy/pipeline)，提供车牌识别、车辆属性分析（颜色、车型）、车流量统计以及违章检测四大功能，兼容图片、在线视频流、视频输入，提供完善的二次开发文档教程
   - 💡 前沿算法：
-    - 全面覆盖的[YOLO家族](https://github.com/nemonameless/PaddleDetection_YOLOSeries)经典与最新模型: 包括YOLOv3，百度飞桨自研的实时高精度目标检测检测模型PP-YOLOE，以及前沿检测算法YOLOv4、YOLOv5、YOLOX，MT-YOLOv6及YOLOv7
+    - 全面覆盖的[YOLO家族](docs/feature_models/YOLOSERIES_MODEL.md)经典与最新模型代码库[PaddleDetection_YOLOSeries](https://github.com/nemonameless/PaddleDetection_YOLOSeries): 包括YOLOv3，百度飞桨自研的实时高精度目标检测模型PP-YOLOE，以及前沿检测算法YOLOv4、YOLOv5、YOLOX，YOLOv6及YOLOv7
     - 新增基于[ViT](configs/vitdet)骨干网络高精度检测模型，COCO数据集精度达到55.7% mAP；新增[OC-SORT](configs/mot/ocsort)多目标跟踪模型；新增[ConvNeXt](configs/convnext)骨干网络
   - 📋 产业范例：新增[智能健身](https://aistudio.baidu.com/aistudio/projectdetail/4385813)、[打架识别](https://aistudio.baidu.com/aistudio/projectdetail/4086987?channelType=0&channel=0)、[来客分析](https://aistudio.baidu.com/aistudio/projectdetail/4230123?channelType=0&channel=0)、车辆结构化范例
 
@@ -50,8 +73,9 @@
 **PaddleDetection**为基于飞桨PaddlePaddle的端到端目标检测套件，内置**30+模型算法**及**250+预训练模型**，覆盖**目标检测、实例分割、跟踪、关键点检测**等方向，其中包括**服务器端和移动端高精度、轻量级**产业级SOTA模型、冠军方案和学术前沿算法，并提供配置化的网络模块组件、十余种数据增强策略和损失函数等高阶优化支持和多种部署方案，在打通数据处理、模型开发、训练、压缩、部署全流程的基础上，提供丰富的案例及教程，加速算法产业落地应用。
 
 <div  align="center">
-  <img src="https://user-images.githubusercontent.com/48054808/157826886-2e101a71-25a2-42f5-bf5e-30a97be28f46.gif" width="800"/>
+  <img src="https://user-images.githubusercontent.com/22989727/189026616-75f9c06c-b403-4a61-9372-0fcbed6e0662.gif" width="800"/>
 </div>
+
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157799599-e6a66855-bac6-4e75-b9c0-96e13cb9612f.png" width="20"/> 特性
 
@@ -61,7 +85,7 @@
 - **高性能**: 基于飞桨的高性能内核，模型训练速度及显存占用优势明显。支持FP16训练, 支持多机训练。
 
 <div  align="center">
-  <img src="https://user-images.githubusercontent.com/22989727/186810676-29078214-27ab-45eb-9adb-5dea2b0d035b.png" width="800"/>
+  <img src="https://user-images.githubusercontent.com/22989727/189026189-5d21e93a-5b33-40ce-bc36-c737122c1992.png" width="800"/>
 </div>
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157800467-2a9946ad-30d1-49a9-b9db-ba33413d9c90.png" alt="" width="20"> 技术交流
@@ -108,7 +132,7 @@
             <li>RetinaNet</li>
             <li>YOLOv3</li>  
             <li>YOLOv5</li>  
-            <li>MT-YOLOv6</li>  
+            <li>YOLOv6</li>  
             <li>YOLOv7</li>  
             <li>PP-YOLOv1/v2</li>
             <li>PP-YOLO-Tiny</li>
@@ -266,9 +290,9 @@
 
 - `ViT`为`ViT-Cascade-Faster-RCNN`模型，COCO数据集mAP高达55.7%
 - `Cascade-Faster-RCNN`为`Cascade-Faster-RCNN-ResNet50vd-DCN`，PaddleDetection将其优化到COCO数据mAP为47.8%时推理速度为20FPS
-- `PP-YOLOE`是对`PP-YOLO v2`模型的进一步优化，在COCO数据集精度51.6%，Tesla V100预测速度78.1FPS
-- `PP-YOLOE+`是对`PPOLOE`模型的进一步优化，在COCO数据集精度53.3%，Tesla V100预测速度78.1FPS
-- [`YOLOX`](configs/yolox)和[`YOLOv5`](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov5)均为基于PaddleDetection复现算法
+- `PP-YOLOE`是对`PP-YOLO v2`模型的进一步优化，L版本在COCO数据集mAP为51.6%，Tesla V100预测速度78.1FPS
+- `PP-YOLOE+`是对`PPOLOE`模型的进一步优化，L版本在COCO数据集mAP为53.3%，Tesla V100预测速度78.1FPS
+- [`YOLOX`](configs/yolox)和[`YOLOv5`](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov5)均为基于PaddleDetection复现算法，`YOLOv5`代码在[`PaddleDetection_YOLOSeries`](https://github.com/nemonameless/PaddleDetection_YOLOSeries)中，参照[YOLOSERIES_MODEL](docs/feature_models/YOLOSERIES_MODEL.md)
 - 图中模型均可在[模型库](#模型库)中获取
 
 </details>
@@ -320,6 +344,9 @@
 | [YOLOv5-l](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov5) | 48.6        | 136.0                     | [链接](https://github.com/nemonameless/PaddleDetection_YOLOSeries/blob/develop/configs/yolov5/yolov5_l_300e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/yolov5_l_300e_coco.pdparams) |
 | [YOLOv7-l](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov7) | 51.0        | 135.0                     | [链接](https://github.com/nemonameless/PaddleDetection_YOLOSeries/blob/develop/configs/yolov7/yolov7_l_300e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/yolov7_l_300e_coco.pdparams) |
 
+**注意:**
+- `YOLOv5`和`YOLOv7`代码在[`PaddleDetection_YOLOSeries`](https://github.com/nemonameless/PaddleDetection_YOLOSeries)中，为基于`PaddleDetection`复现的算法，可参照[YOLOSERIES_MODEL](docs/feature_models/YOLOSERIES_MODEL.md)。
+
 #### 其他通用检测模型 [文档链接](docs/MODEL_ZOO_cn.md)
 
 </details>
@@ -354,9 +381,9 @@
 
 | 模型名称      | 模型简介                     | 推荐场景                               | 精度                     | 配置文件                                                                  | 模型下载                                                                                              |
 |:--------- |:------------------------ |:---------------------------------- |:----------------------:|:---------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------:|
-| ByteTrack | SDE多目标跟踪算法 仅包含检测模型       | 云边端                                | MOT-17 half val:  77.3 | [链接](configs/mot/bytetrack/detector/yolox_x_24e_800x1440_mix_det.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/mot/deepsort/yolox_x_24e_800x1440_mix_det.pdparams) |
+| ByteTrack | SDE多目标跟踪算法 仅包含检测模型       | 云边端                                | MOT-17 test:  78.4 | [链接](configs/mot/bytetrack/bytetrack_yolox.yml) | [下载地址](https://bj.bcebos.com/v1/paddledet/models/mot/yolox_x_24e_800x1440_mix_det.pdparams) |
 | FairMOT   | JDE多目标跟踪算法 多任务联合学习方法     | 云边端                                | MOT-16 test: 75.0      | [链接](configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml)              | [下载地址](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams)            |
-| OC-SORT | SDE多目标跟踪算法 仅包含检测模型       | 云边端                                | MOT-17 half val:  75.5 | [链接](configs/mot/ocsort/ocsort_yolox.yml) | - |
+| OC-SORT | SDE多目标跟踪算法 仅包含检测模型       | 云边端                                | MOT-17 half val:  75.5 | [链接](configs/mot/ocsort/ocsort_yolox.yml) | [下载地址](https://bj.bcebos.com/v1/paddledet/models/mot/yolox_x_24e_800x1440_mix_mot_ch.pdparams) |
 
 #### 其他多目标跟踪模型 [文档链接](configs/mot)
 
@@ -459,6 +486,8 @@
 
 ### [产业实践范例教程](./industrial_tutorial/README.md)
 
+- [基于PP-Human v2的摔倒检测](https://aistudio.baidu.com/aistudio/projectdetail/4606001)
+
 - [基于PP-TinyPose增强版的智能健身动作识别](https://aistudio.baidu.com/aistudio/projectdetail/4385813)
 
 - [基于PP-Human的打架识别](https://aistudio.baidu.com/aistudio/projectdetail/4086987?contributionType=1)
@@ -468,6 +497,8 @@
 - [基于PP-PicoDet的通信塔识别及Android端部署](https://aistudio.baidu.com/aistudio/projectdetail/3561097)
 
 - [基于FairMOT实现人流量统计](https://aistudio.baidu.com/aistudio/projectdetail/2421822)
+
+- [基于PP-Human的来客分析案例教程](https://aistudio.baidu.com/aistudio/projectdetail/4537344)
 
 - [更多其他范例](./industrial_tutorial/README.md)
 

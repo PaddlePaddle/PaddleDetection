@@ -723,10 +723,9 @@ class HRNet(nn.Layer):
             multi_scale_output=len(return_idx) > 1,
             name="st4")
 
-        self.incre_modules, self.downsamp_modules, \
-            self.final_layer = self._make_head(channels_4, norm_momentum=norm_momentum, has_se=self.has_se)
-
-        self.classifier = nn.Linear(2048, 1000)
+        if self.downsample:
+            self.incre_modules, self.downsamp_modules, \
+                self.final_layer = self._make_head(channels_4, norm_momentum=norm_momentum, has_se=self.has_se)
 
     def _make_layer(self,
                     block,

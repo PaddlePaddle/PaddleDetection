@@ -315,7 +315,7 @@ class FGDFeatureLoss(nn.Layer):
         zeros_init = parameter_init("constant", 0.0)
 
         if student_channels != teacher_channels:
-            self.align = nn.Conv2d(
+            self.align = nn.Conv2D(
                 student_channels,
                 teacher_channels,
                 kernel_size=1,

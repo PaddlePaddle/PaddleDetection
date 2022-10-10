@@ -87,13 +87,23 @@ class RoIAlign(object):
             offset = 2
             k_min = self.start_level + offset
             k_max = self.end_level + offset
-            rois_dist, restore_index, rois_num_dist = paddle.vision.ops.distribute_fpn_proposals(
-                roi,
-                k_min,
-                k_max,
-                self.canconical_level,
-                self.canonical_size,
-                rois_num=rois_num)
+            if hasattr(paddle.vision.ops, "distribute_fpn_proposals"):
+                rois_dist, restore_index, rois_num_dist = paddle.vision.ops.distribute_fpn_proposals(
+                    roi,
+                    k_min,
+                    k_max,
+                    self.canconical_level,
+                    self.canonical_size,
+                    rois_num=rois_num)
+            else:
+                rois_dist, restore_index, rois_num_dist = ops.distribute_fpn_proposals(
+                    roi,
+                    k_min,
+                    k_max,
+                    self.canconical_level,
+                    self.canonical_size,
+                    rois_num=rois_num)
+
             rois_feat_list = []
             for lvl in range(self.start_level, self.end_level + 1):
                 roi_feat = paddle.vision.ops.roi_align(

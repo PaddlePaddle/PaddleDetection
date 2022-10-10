@@ -87,7 +87,7 @@ def check_gpu(use_gpu):
         pass
 
 
-def check_version(version='2.0'):
+def check_version(version='2.2'):
     """
     Log error and exit when the installed version of paddlepaddle is
     not satisfied.
@@ -100,8 +100,10 @@ def check_version(version='2.0'):
         paddle_version.major, paddle_version.minor, paddle_version.patch,
         paddle_version.rc
     ]
+
     if version_installed == ['0', '0', '0', '0']:
         return
+
     version_split = version.split('.')
 
     length = min(len(version_installed), len(version_split))

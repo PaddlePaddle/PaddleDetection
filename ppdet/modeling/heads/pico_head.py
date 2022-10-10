@@ -499,8 +499,8 @@ class PicoHeadV2(GFLHead):
         self.gfl_head_reg = None
         self.scales_regs = None
 
-        self.head_cls_list = []
-        self.head_reg_list = []
+        self.head_cls_list = nn.LayerList()
+        self.head_reg_list = nn.LayerList()
         self.cls_align = nn.LayerList()
 
         for i in range(len(fpn_stride)):

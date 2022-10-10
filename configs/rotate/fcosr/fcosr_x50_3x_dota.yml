@@ -1,0 +1,9 @@
+_BASE_: [
+  '../../datasets/dota.yml',
+  '../../runtime.yml',
+  '_base_/optimizer_3x.yml',
+  '_base_/fcosr_reader.yml',
+  '_base_/fcosr_x50.yml'
+]
+
+weights: output/fcosr_x50_3x_dota/model_final
