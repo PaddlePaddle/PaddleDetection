@@ -50,6 +50,14 @@ PP-YOLOE is composed of following methods:
 |       PP-YOLOE+_x        |  80   |      54.7       |    72.0    |     59.9     |     37.9     |     59.3      |     70.4     |     57.0     |     78.7      |     87.2     |
 
 
+### End-to-end Speed
+|    Model    | AP<sup>0.5:0.95 | TRT-FP32(fps) | TRT-FP16(fps) |
+|:-----------:|:---------------:|:-------------:|:-------------:|
+| PP-YOLOE+_s |      43.7       |     44.44     |     47.85     |
+| PP-YOLOE+_m |      49.8       |     39.06     |     43.86     |
+| PP-YOLOE+_l |      52.9       |     34.01     |     42.02     |
+| PP-YOLOE+_x |      54.7       |     26.88     |     36.76     |
+
 **Notes:**
 
 - PP-YOLOE is trained on COCO train2017 dataset and evaluated on val2017 & test-dev2017 dataset.
@@ -58,7 +66,7 @@ PP-YOLOE is composed of following methods:
 - PP-YOLOE inference speed is tesed on single Tesla V100 with batch size as 1, **CUDA 10.2**, **CUDNN 7.6.5**, **TensorRT 6.0.1.8** in TensorRT mode.
 - Refer to [Speed testing](#Speed-testing) to reproduce the speed testing results of PP-YOLOE.
 - If you set `--run_benchmark=True`，you should install these dependencies at first, `pip install pynvml psutil GPUtil`.
-
+- End-to-end speed test includes pre-processing + inference + post-processing and NMS time, using **Intel(R) Xeon(R) Gold 5117 CPU @ 2.00GHz**, **single Tesla V100**, **CUDA 11.2**, **CUDNN 8.2.0**, **TensorRT 8.0.1.6**.
 
 ### Feature Models
 
