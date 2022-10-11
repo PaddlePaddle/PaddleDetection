@@ -92,7 +92,7 @@ class PicoDet():
                     value=0)
         else:
             img = cv2.resize(
-                srcimg, self.input_shape, interpolation=cv2.INTER_AREA)
+                srcimg, self.input_shape, interpolation=cv2.INTER_LINEAR)
 
         return img, img_shape, scale_factor
 
@@ -167,7 +167,8 @@ class PicoDet():
         print(f"find {len(img_name_list)} images")
 
         for img_path in tqdm(img_name_list):
-            img = cv2.imread(str(img_path))
+            img = cv2.imread(str(img_path), 1)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
             srcimg = net.detect(img)
             save_path = str(result_path / img_path.name.replace(".png", ".jpg"))
