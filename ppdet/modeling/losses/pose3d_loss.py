@@ -48,7 +48,7 @@ class Pose3DLoss(nn.Layer):
         self.criterion_smoothl1 = nn.SmoothL1Loss(
             reduction=reduction, delta=1.0)
         self.criterion_vertices = nn.L1Loss()
-        self.temp_num_perbatch = 42
+        self.temp_num_perbatch = 44
 
     def forward(self, pred3d, pred2d, inputs):
         """
@@ -65,8 +65,8 @@ class Pose3DLoss(nn.Layer):
         # loss_3d = mpjpe_criterion(pred3d, gt_3d_joints, has_3d_joints, self.criterion_3dpose)
         loss_2d = keypoint_2d_loss(self.criterion_2dpose, pred2d, gt_2d_joints,
                                    has_2d_joints)
-        # loss_3d += 0.3 * temp_velocity_loss(pred3d, gt_3d_joints, has_3d_joints,
-        #                               self.temp_num_perbatch)
+        loss_3d += 0.3 * temp_velocity_loss(pred3d, gt_3d_joints, has_3d_joints,
+                                            self.temp_num_perbatch)
         return self.weight_3d * loss_3d + self.weight_2d * loss_2d
 
 
@@ -104,14 +104,19 @@ def mpjpe_mse(pred, gt, has_3d_joints):
     return error
 
 
-def temp_velocity_loss(pred, gt, has_3d_joints, temp_num=42):
+def temp_velocity_loss(pred, gt, has_3d_joints, temp_num=44):
     """ 
     mPJPE loss
     """
     pred, gt = filter_3d_joints(pred, gt, has_3d_joints)
 
-    pred_v = pred[1:temp_num, ...] - pred[:temp_num - 1, ...]
-    gt_v = gt[1:temp_num, ...] - gt[:temp_num - 1, ...]
+    shape = pred.shape
+    pred_reshape = pred[:temp_num].reshape(
+        (4, temp_num // 4, shape[1], shape[2]))
+    gt_reshape = gt[:temp_num].reshape((4, temp_num // 4, shape[1], shape[2]))
+
+    pred_v = pred_reshape[2:, ...] - pred_reshape[:-2, ...]
+    gt_v = gt_reshape[2:, ...] - gt_reshape[:-2, ...]
 
     error = nn.functional.l1_loss(pred_v, gt_v)
     return error
@@ -180,6 +185,15 @@ def mean_per_vertex_error(pred, gt, has_smpl):
     with paddle.no_grad():
         error = paddle.sqrt(((pred - gt)**2).sum(axis=-1)).mean()
         return error
+
+
+def filter_2d_joints(pred, gt, has_2d_joints):
+    """ 
+    filter 2d joints
+    """
+    gt = gt[has_2d_joints == 1]
+    pred = pred[has_2d_joints == 1]
+    return pred, gt
 
 
 @register

@@ -72,7 +72,8 @@ class CustomTempDBSampler(DistributedBatchSampler):
         self.temp_num = self.dataset.get_temp_num()
         batch_size_temp = int(self.batch_size *
                               (self.temp_num / len(self.dataset)))
-        self.batch_size_temp = (batch_size_temp // tempsize) * tempsize
+        self.batch_size_temp = (batch_size_temp //
+                                self.tempsize) * self.tempsize
         self.batch_size_indep = self.batch_size - self.batch_size_temp
         self.total_batch = self.temp_num // (self.batch_size_temp * self.nranks)
         self.num_samples = self.total_batch * self.batch_size
@@ -82,7 +83,7 @@ class CustomTempDBSampler(DistributedBatchSampler):
             self.total_batch))
 
     def __iter__(self):
-        tempblock = self.batch_size_temp / self.tempsize
+        tempblock = self.batch_size_temp // self.tempsize
         num_samples = len(self.dataset)
         indicestemp = np.arange(self.temp_num).tolist()
         indiceindep = np.arange(self.temp_num, num_samples).tolist()
@@ -100,16 +101,21 @@ class CustomTempDBSampler(DistributedBatchSampler):
                                        * self.nranks - len(indiceindep)]
         tempindices = []
 
-        for idx in range(self.total_batch):
+        for idx in range(self.total_batch * self.nranks):
             for i in range(tempblock):
                 tempindices.extend(indicestemp[subindicestemp[
                     idx * tempblock + i]:subindicestemp[idx * tempblock + i] +
                                                self.tempsize])
             tempindices.extend(indiceindep[idx * self.batch_size_indep:(idx + 1)
                                            * self.batch_size_indep])
-            print(tempindices[-self.batch_size:])
+            # print(tempindices[-self.batch_size:])
 
-        assert len(tempindices) == self.total_size
+        print(
+            len(tempindices), self.total_size,
+            len(indicestemp), len(subindicestemp))
+
+        # import pdb;pdb.set_trace()
+        # assert len(tempindices) == self.total_size
 
         # subsample
         def _get_indices_by_batch_size(indices):
@@ -132,7 +138,7 @@ class CustomTempDBSampler(DistributedBatchSampler):
         if self.nranks > 1:
             tempindices = _get_indices_by_batch_size(tempindices)
 
-        assert len(tempindices) == self.num_samples
+        # assert len(tempindices) == self.num_samples
         _sample_iter = iter(tempindices)
 
         batch_indices = []

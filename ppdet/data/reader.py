@@ -177,7 +177,7 @@ class BaseDataLoader(object):
                 batch_size=self.batch_size,
                 shuffle=self.shuffle,
                 drop_last=self.drop_last)
-        elif type(batch_sampler) == "CustomTempDBSampler":
+        elif type(batch_sampler) == str:
             self._batch_sampler = CustomTempDBSampler(
                 self.dataset,
                 batch_size=self.batch_size,
