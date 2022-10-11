@@ -493,6 +493,7 @@ class PipePredictor(object):
         # det -> attr
         batch_loop_cnt = math.ceil(
             float(len(input)) / self.det_predictor.batch_size)
+        self.warmup_frame = min(10, len(input)//2) - 1
         for i in range(batch_loop_cnt):
             start_index = i * self.det_predictor.batch_size
             end_index = min((i + 1) * self.det_predictor.batch_size, len(input))
