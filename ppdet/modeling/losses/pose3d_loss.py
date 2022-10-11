@@ -100,8 +100,7 @@ def mpjpe_mse(pred, gt, has_3d_joints):
     mPJPE loss
     """
     pred, gt = filter_3d_joints(pred, gt, has_3d_joints)
-    error = (paddle.minimum((pred - gt), paddle.to_tensor(1.2))
-             **2).sum(axis=-1).mean()
+    error = ((pred - gt)**2).sum(axis=-1).mean()
     return error
 
 
