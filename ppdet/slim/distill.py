@@ -38,7 +38,7 @@ class DistillModel(nn.Layer):
             cfg.pretrain_weights))
         load_pretrain_weight(self.student_model, cfg.pretrain_weights)
 
-        slim_cfg = load_config(slim_cfg) 
+        slim_cfg = load_config(slim_cfg)
 
         self.teacher_model = create(slim_cfg.architecture)
         self.distill_loss = create(slim_cfg.distill_loss)
@@ -65,29 +65,20 @@ class DistillModel(nn.Layer):
             return self.student_model(inputs)
 
 
-
-class LDDistillModel(nn.Layer):  #可以继承基类
+class LDDistillModel(nn.Layer):
     def __init__(self, cfg, slim_cfg):
         super(LDDistillModel, self).__init__()
         self.student_model = create(cfg.architecture)
         logger.debug('Load student model pretrain_weights:{}'.format(
             cfg.pretrain_weights))
-        
-        # 这里会load cfg的pretrain，因为此时cfg还没被slim_cfg覆盖
         load_pretrain_weight(self.student_model, cfg.pretrain_weights)
 
-        #print('-----', cfg.epoch, cfg.LearningRate, cfg.TrainReader)
-        slim_cfg = load_config(slim_cfg) #会覆盖student的cfg
-        #print('-----', cfg.use_ema, cfg.ema_decay, cfg.epoch, cfg.LearningRate, cfg.TrainReader)
-        #exit()
+        slim_cfg = load_config(slim_cfg)  #rewrite student cfg
         self.teacher_model = create(slim_cfg.architecture)
-        # print("==slim_cfg==slim_cfg", slim_cfg)
-        # exit()
-        #self.distill_loss = create(slim_cfg.distill_loss) # LD loss
         logger.debug('Load teacher model pretrain_weights:{}'.format(
             slim_cfg.pretrain_weights))
         load_pretrain_weight(self.teacher_model, slim_cfg.pretrain_weights)
-        
+
         for param in self.teacher_model.parameters():
             param.trainable = False
 
@@ -105,17 +96,18 @@ class LDDistillModel(nn.Layer):  #可以继承基类
             #student_loss = self.student_model(inputs)
             s_body_feats = self.student_model.backbone(inputs)
             s_neck_feats = self.student_model.neck(s_body_feats)
-            # student算的时候 直接把teacher head的输出喂进去
             s_head_outs = self.student_model.head(s_neck_feats)
+
             soft_label_list = t_head_outs[0]
             soft_targets_list = t_head_outs[1]
-#            student_loss = self.student_model.head.get_loss(s_head_outs, inputs, soft_label_list, soft_targets_list, s_neck_feats, t_neck_feats)
-            student_loss = self.student_model.head.get_loss(s_head_outs, inputs, soft_label_list, soft_targets_list) # 特征蒸馏
+            student_loss = self.student_model.head.get_loss(
+                s_head_outs, inputs, soft_label_list, soft_targets_list)  # 特征蒸馏
             total_loss = paddle.add_n(list(student_loss.values()))
             student_loss['loss'] = total_loss
             return student_loss
         else:
             return self.student_model(inputs)
+
 
 class FGDDistillModel(nn.Layer):
     """
@@ -541,4 +533,3 @@ class FGDFeatureLoss(nn.Layer):
                + self.gamma_fgd * mask_loss + self.lambda_fgd * rela_loss
 
         return loss
-

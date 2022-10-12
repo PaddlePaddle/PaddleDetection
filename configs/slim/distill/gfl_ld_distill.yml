@@ -2,7 +2,7 @@ _BASE_: [
   '../../gfl/gfl_r18vd_1x_coco.yml',
 ]
 
-# 换成教师的预训练模型
+# teacher pretrain model
 pretrain_weights: https://paddledet.bj.bcebos.com/models/gfl_r101vd_fpn_mstrain_2x_coco.pdparams
 
 slim: Distill
