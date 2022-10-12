@@ -34,7 +34,7 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
 
     if mode != 'train' and slim_load_cfg['slim'] == 'Distill':
         return cfg
-    
+
     if slim_load_cfg['slim'] == 'Distill':
         if "slim_method" in slim_load_cfg and slim_load_cfg[
                 'slim_method'] == "FGD":
@@ -83,7 +83,6 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
         cfg['slim'] = slim
         cfg['unstructured_prune'] = True
     else:
-        print('===-=-=-==', slim_load_cfg['slim'] )
         load_config(slim_cfg)
         model = create(cfg.architecture)
         if mode == 'train':

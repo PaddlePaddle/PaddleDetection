@@ -33,99 +33,6 @@ from ppdet.modeling.bbox_utils import distance2bbox, bbox2distance, batch_distan
 from ppdet.data.transform.atss_assigner import bbox_overlaps
 
 
-def knowledge_distillation_kl_div_loss(pred, soft_label, T, detach_target=True):
-    r"""Loss function for knowledge distilling using KL divergence.
-
-    Args:
-        pred (Tensor): Predicted logits with shape (N, n + 1).
-        soft_label (Tensor): Target logits with shape (N, N + 1).
-        T (int): Temperature for distillation.
-        detach_target (bool): Remove soft_label from automatic differentiation
-
-    Returns:
-        torch.Tensor: Loss tensor with shape (N,).
-    """
-
-    assert pred.shape == soft_label.shape
-    target = F.softmax(soft_label / T, axis=1)
-    if detach_target:
-        target = target.detach()
-
-    kd_loss = F.kl_div(
-        F.log_softmax(
-            pred / T, axis=1), target, reduction='none').mean(1) * (T * T)
-
-    return kd_loss
-
-
-class KnowledgeDistillationKLDivLoss(nn.Layer):
-    """Loss function for knowledge distilling using KL divergence.
-
-    Args:
-        reduction (str): Options are `'none'`, `'mean'` and `'sum'`.
-        loss_weight (float): Loss weight of current loss.
-        T (int): Temperature for distillation.
-    """
-
-    def __init__(self, reduction='mean', loss_weight=1.0, T=10):
-        super(KnowledgeDistillationKLDivLoss, self).__init__()
-        assert reduction in ('none', 'mean', 'sum')
-        assert T >= 1
-        self.reduction = reduction
-        self.loss_weight = loss_weight
-        self.T = T
-
-    def forward(self,
-                pred,
-                soft_label,
-                weight=None,
-                avg_factor=None,
-                reduction_override=None):
-        """Forward function.
-
-        Args:
-            pred (Tensor): Predicted logits with shape (N, n + 1).
-            soft_label (Tensor): Target logits with shape (N, N + 1).
-            weight (torch.Tensor, optional): The weight of loss for each
-                prediction. Defaults to None.
-            avg_factor (int, optional): Average factor that is used to average
-                the loss. Defaults to None.
-            reduction_override (str, optional): The reduction method used to
-                override the original reduction method of the loss.
-                Defaults to None.
-        """
-        assert reduction_override in (None, 'none', 'mean', 'sum')
-
-        reduction = (reduction_override
-                     if reduction_override else self.reduction)
-
-        loss_kd_out = knowledge_distillation_kl_div_loss(
-            pred, soft_label, T=self.T)
-
-        if weight is not None:
-            loss_kd_out = weight * loss_kd_out
-
-        if avg_factor is None:
-            if reduction == 'none':
-                loss = loss_kd_out
-            elif reduction == 'mean':
-                loss = loss_kd_out.mean()
-            elif reduction == 'sum':
-                loss = loss_kd_out.sum()
-        else:
-            # if reduction is mean, then average the loss by avg_factor
-            if reduction == 'mean':
-                loss = loss_kd_out.sum() / avg_factor
-            # if reduction is 'none', then do nothing, otherwise raise an error
-            elif reduction != 'none':
-                raise ValueError(
-                    'avg_factor can not be used with reduction="sum"')
-
-        loss_kd = self.loss_weight * loss
-
-        return loss_kd
-
-
 class ScaleReg(nn.Layer):
     """
     Parameter for scaling the regression outputs.
@@ -148,7 +55,6 @@ class Integral(nn.Layer):
     This layer calculates the target location by :math: `sum{P(y_i) * y_i}`,
     P(y_i) denotes the softmax vector that represents the discrete distribution
     y_i denotes the discrete set, usually {0, 1, 2, ..., reg_max}
-
     Args:
         reg_max (int): The maximal value of the discrete set. Default: 16. You
             may want to reset it according to your new dataset or related
@@ -181,7 +87,6 @@ class Integral(nn.Layer):
 @register
 class DGQP(nn.Layer):
     """Distribution-Guided Quality Predictor of GFocal head
-
     Args:
         reg_topk (int): top-k statistics of distribution to guide LQE
         reg_channels (int): hidden layer unit to generate LQE
@@ -329,11 +234,6 @@ class GFLHead(nn.Layer):
             self.scales_regs.append(scale_reg)
 
         self.distribution_project = Integral(self.reg_max)
-        self.loss_ld = KnowledgeDistillationKLDivLoss(
-            loss_weight=0.25, T=10)  #TODO
-        self.loss_kd = KnowledgeDistillationKLDivLoss(loss_weight=10, T=2)
-        self.loss_ld_vlr = KnowledgeDistillationKLDivLoss(
-            loss_weight=0.25, T=10)
 
     def forward(self, fpn_feats):
         assert len(fpn_feats) == len(
@@ -346,11 +246,10 @@ class GFLHead(nn.Layer):
             conv_cls_feat, conv_reg_feat = self.conv_feat(fpn_feat)
             cls_score = self.gfl_head_cls(conv_cls_feat)
             bbox_pred = scale_reg(self.gfl_head_reg(conv_reg_feat))
-
-            if self.dgqp_module:  #None
+            if self.dgqp_module:
                 quality_score = self.dgqp_module(bbox_pred)
                 cls_score = F.sigmoid(cls_score) * quality_score
-            if not self.training:  #False
+            if not self.training:
                 cls_score = F.sigmoid(cls_score.transpose([0, 2, 3, 1]))
                 bbox_pred = bbox_pred.transpose([0, 2, 3, 1])
                 b, cell_h, cell_w, _ = paddle.shape(cls_score)
@@ -371,7 +270,6 @@ class GFLHead(nn.Layer):
             cls_logits_list.append(cls_score)
             bboxes_reg_list.append(bbox_pred)
 
-        # feature map的size不变，通道数变成了类别数和回归的bbox数量
         return (cls_logits_list, bboxes_reg_list)
 
     def _images_to_levels(self, target, num_level_anchors):
@@ -398,34 +296,19 @@ class GFLHead(nn.Layer):
         cells_cy = (grid_cells[:, 3] + grid_cells[:, 1]) / 2
         return paddle.stack([cells_cx, cells_cy], axis=-1)
 
-    def get_loss(self,
-                 gfl_head_outs,
-                 gt_meta,
-                 soft_label_list=None,
-                 soft_targets_list=None):  #, x_list=None, teacher_x_list=None):
-        # TODO
-        #soft_label_list, x_list, teacher_x_list = [], [], []
-
-        cls_logits, bboxes_reg = gfl_head_outs  #shape对应 直接load就行
+    def get_loss(self, gfl_head_outs, gt_meta):
+        cls_logits, bboxes_reg = gfl_head_outs
         num_level_anchors = [
             featmap.shape[-2] * featmap.shape[-1] for featmap in cls_logits
         ]
-
         grid_cells_list = self._images_to_levels(gt_meta['grid_cells'],
                                                  num_level_anchors)
-
         labels_list = self._images_to_levels(gt_meta['labels'],
                                              num_level_anchors)
-
         label_weights_list = self._images_to_levels(gt_meta['label_weights'],
                                                     num_level_anchors)
         bbox_targets_list = self._images_to_levels(gt_meta['bbox_targets'],
                                                    num_level_anchors)
-        # newnew                                           
-        vlr_regions_list = self._images_to_levels(gt_meta['vlr_regions'],
-                                                  num_level_anchors)
-        # =====
-
         num_total_pos = sum(gt_meta['pos_num'])
         try:
             num_total_pos = paddle.distributed.all_reduce(num_total_pos.clone(
@@ -433,61 +316,28 @@ class GFLHead(nn.Layer):
         except:
             num_total_pos = max(num_total_pos, 1)
 
-        loss_bbox_list, loss_dfl_list, loss_qfl_list, loss_ld_list, avg_factor = [], [], [], [], []
-        loss_ld_vlr_list, loss_kd_list = [], []
-        if soft_targets_list == None:
-            soft_targets_list = [None] * len(cls_logits)
-        for cls_score, bbox_pred, grid_cells, labels, label_weights, bbox_targets, stride, soft_targets,\
-                soft_label, vlr_region in zip(
+        loss_bbox_list, loss_dfl_list, loss_qfl_list, avg_factor = [], [], [], []
+        for cls_score, bbox_pred, grid_cells, labels, label_weights, bbox_targets, stride in zip(
                 cls_logits, bboxes_reg, grid_cells_list, labels_list,
-                label_weights_list, bbox_targets_list, self.fpn_stride, soft_targets_list,
-                soft_label_list, vlr_regions_list):
-
+                label_weights_list, bbox_targets_list, self.fpn_stride):
             grid_cells = grid_cells.reshape([-1, 4])
             cls_score = cls_score.transpose([0, 2, 3, 1]).reshape(
                 [-1, self.cls_out_channels])
             bbox_pred = bbox_pred.transpose([0, 2, 3, 1]).reshape(
                 [-1, 4 * (self.reg_max + 1)])
-
-            #===new====
-            if soft_targets is not None:
-                soft_targets = soft_targets.transpose([0, 2, 3, 1]).reshape(
-                    [-1, 4 * (self.reg_max + 1)])
-            #==========
-
-            # newnew
-            soft_label = soft_label.transpose([0, 2, 3, 1]).reshape(
-                [-1, self.cls_out_channels])
-            #print('=== 0 soft_label.shape===', soft_label.shape)
-            # 特征蒸馏
-            # teacher_x = teacher_x.transpose([0, 2, 3, 1]).reshape([-1, 256])
-            # x = x.transpose([0, 2, 3, 1]).reshape([-1, 256])  
-            #===          
-
             bbox_targets = bbox_targets.reshape([-1, 4])
             labels = labels.reshape([-1])
             label_weights = label_weights.reshape([-1])
-
-            # newnew
-            vlr_region = vlr_region.reshape([-1])
-            # ===
 
             bg_class_ind = self.num_classes
             pos_inds = paddle.nonzero(
                 paddle.logical_and((labels >= 0), (labels < bg_class_ind)),
                 as_tuple=False).squeeze(1)
             score = np.zeros(labels.shape)
-
-            # newnew
-            remain_inds = (vlr_region > 0).nonzero()
-            #===
-
-            #print('===len(pos_inds)====', len(pos_inds))
             if len(pos_inds) > 0:
                 pos_bbox_targets = paddle.gather(bbox_targets, pos_inds, axis=0)
                 pos_bbox_pred = paddle.gather(bbox_pred, pos_inds, axis=0)
                 pos_grid_cells = paddle.gather(grid_cells, pos_inds, axis=0)
-
                 pos_grid_cell_centers = self._grid_cells_to_center(
                     pos_grid_cells) / stride
 
@@ -504,16 +354,6 @@ class GFLHead(nn.Layer):
                     is_aligned=True)
                 score[pos_inds.numpy()] = bbox_iou
                 pred_corners = pos_bbox_pred.reshape([-1, self.reg_max + 1])
-
-                #====new====
-                if soft_targets is not None:
-                    #pos_soft_targets = soft_targets[pos_inds]
-                    pos_soft_targets = paddle.gather(
-                        soft_targets, pos_inds, axis=0)
-                    soft_corners = pos_soft_targets.reshape(
-                        [-1, self.reg_max + 1])
-                #===========
-
                 target_corners = bbox2distance(pos_grid_cell_centers,
                                                pos_decode_bbox_targets,
                                                self.reg_max).reshape([-1])
@@ -528,61 +368,10 @@ class GFLHead(nn.Layer):
                     target_corners,
                     weight=weight_targets.expand([-1, 4]).reshape([-1]),
                     avg_factor=4.0)
-
-                # ====new=====
-                # ld loss
-                if soft_targets is not None:
-                    #print('---loss_ld---')
-                    loss_ld = self.loss_ld(
-                        pred_corners,
-                        soft_corners,
-                        weight=weight_targets.expand([-1, 4]).reshape([-1]),
-                        avg_factor=4.0)
-                # =============
-
-                # newnew
-                #print('---loss_kd---', len(pos_inds))
-                # loss_kd = self.loss_kd(
-                #     cls_score[pos_inds],
-                #     soft_label[pos_inds],
-                #     weight=label_weights[pos_inds],
-                #     avg_factor=pos_inds.shape[0])
-                loss_kd = self.loss_kd(
-                    paddle.gather(
-                        cls_score, pos_inds, axis=0),
-                    paddle.gather(
-                        soft_label, pos_inds, axis=0),
-                    weight=paddle.gather(
-                        label_weights, pos_inds, axis=0),
-                    avg_factor=pos_inds.shape[0])
-                # ===
-
             else:
                 loss_bbox = bbox_pred.sum() * 0
                 loss_dfl = bbox_pred.sum() * 0
-                loss_ld = bbox_pred.sum() * 0
-                # newnew
-                loss_kd = bbox_pred.sum() * 0
                 weight_targets = paddle.to_tensor([0], dtype='float32')
-
-            # newnew
-            if len(remain_inds) > 0:
-                neg_pred_corners = bbox_pred[remain_inds].reshape(
-                    [-1, self.reg_max + 1])
-                neg_soft_corners = soft_targets[remain_inds].reshape(
-                    [-1, self.reg_max + 1])
-
-                remain_targets = vlr_region[remain_inds]
-
-                #print('---loss_ld_vlr---')
-                loss_ld_vlr = self.loss_ld_vlr(
-                    neg_pred_corners,
-                    neg_soft_corners,
-                    weight=remain_targets.expand([-1, 4]).reshape([-1]),
-                    avg_factor=16.0)
-            else:
-                loss_ld_vlr = bbox_pred.sum() * 0
-            #===
 
             # qfl loss
             score = paddle.to_tensor(score)
@@ -590,17 +379,12 @@ class GFLHead(nn.Layer):
                 cls_score, (labels, score),
                 weight=label_weights,
                 avg_factor=num_total_pos)
-
             loss_bbox_list.append(loss_bbox)
             loss_dfl_list.append(loss_dfl)
             loss_qfl_list.append(loss_qfl)
             avg_factor.append(weight_targets.sum())
-            if soft_targets is not None:
-                loss_ld_list.append(loss_ld)
-            loss_ld_vlr_list.append(loss_ld_vlr)
-            loss_kd_list.append(loss_kd)
 
-        avg_factor = sum(avg_factor)  # + 1e-6
+        avg_factor = sum(avg_factor)
         try:
             avg_factor_clone = avg_factor.clone()
             tmp_avg_factor = paddle.distributed.all_reduce(avg_factor_clone)
@@ -611,35 +395,21 @@ class GFLHead(nn.Layer):
             avg_factor = paddle.clip(
                 avg_factor / paddle.distributed.get_world_size(), min=1)
         except:
-            avg_factor = max(avg_factor.item(), 1)  # 这个地方不太一样，跑了这里取1
-
+            avg_factor = max(avg_factor.item(), 1)
         if avg_factor <= 0:
             loss_qfl = paddle.to_tensor(0, dtype='float32', stop_gradient=False)
             loss_bbox = paddle.to_tensor(
                 0, dtype='float32', stop_gradient=False)
             loss_dfl = paddle.to_tensor(0, dtype='float32', stop_gradient=False)
-            loss_ld = paddle.to_tensor(0, dtype='float32', stop_gradient=False)
-            loss_ld_vlr = paddle.to_tensor(
-                0, dtype='float32', stop_gradient=False)
-            loss_kd = paddle.to_tensor(0, dtype='float32', stop_gradient=False)
         else:
             losses_bbox = list(map(lambda x: x / avg_factor, loss_bbox_list))
             losses_dfl = list(map(lambda x: x / avg_factor, loss_dfl_list))
             loss_qfl = sum(loss_qfl_list)
             loss_bbox = sum(losses_bbox)
             loss_dfl = sum(losses_dfl)
-            loss_ld = sum(loss_ld_list)
-            loss_ld_vlr = sum(loss_ld_vlr_list)
-            loss_kd = sum(loss_kd_list)
 
         loss_states = dict(
             loss_qfl=loss_qfl, loss_bbox=loss_bbox, loss_dfl=loss_dfl)
-
-        if soft_targets is not None:
-            loss_states['loss_ld'] = loss_ld
-
-        loss_states['loss_ld_vlr'] = loss_ld_vlr
-        loss_states['loss_kd'] = loss_kd
 
         return loss_states
 
