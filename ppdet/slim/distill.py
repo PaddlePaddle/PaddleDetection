@@ -491,31 +491,6 @@ class FGDFeatureLoss(nn.Layer):
         return loss
 
 
-def knowledge_distillation_kl_div_loss(pred, soft_label, T, detach_target=True):
-    r"""Loss function for knowledge distilling using KL divergence.
-
-    Args:
-        pred (Tensor): Predicted logits with shape (N, n + 1).
-        soft_label (Tensor): Target logits with shape (N, N + 1).
-        T (int): Temperature for distillation.
-        detach_target (bool): Remove soft_label from automatic differentiation
-
-    Returns:
-        torch.Tensor: Loss tensor with shape (N,).
-    """
-
-    assert pred.shape == soft_label.shape
-    target = F.softmax(soft_label / T, axis=1)
-    if detach_target:
-        target = target.detach()
-
-    kd_loss = F.kl_div(
-        F.log_softmax(
-            pred / T, axis=1), target, reduction='none').mean(1) * (T * T)
-
-    return kd_loss
-
-
 class LDDistillModel(nn.Layer):
     def __init__(self, cfg, slim_cfg):
         super(LDDistillModel, self).__init__()
@@ -578,6 +553,34 @@ class KnowledgeDistillationKLDivLoss(nn.Layer):
         self.loss_weight = loss_weight
         self.T = T
 
+    def knowledge_distillation_kl_div_loss(self,
+                                           pred,
+                                           soft_label,
+                                           T,
+                                           detach_target=True):
+        r"""Loss function for knowledge distilling using KL divergence.
+
+        Args:
+            pred (Tensor): Predicted logits with shape (N, n + 1).
+            soft_label (Tensor): Target logits with shape (N, N + 1).
+            T (int): Temperature for distillation.
+            detach_target (bool): Remove soft_label from automatic differentiation
+
+        Returns:
+            torch.Tensor: Loss tensor with shape (N,).
+        """
+
+        assert pred.shape == soft_label.shape
+        target = F.softmax(soft_label / T, axis=1)
+        if detach_target:
+            target = target.detach()
+
+        kd_loss = F.kl_div(
+            F.log_softmax(
+                pred / T, axis=1), target, reduction='none').mean(1) * (T * T)
+
+        return kd_loss
+
     def forward(self,
                 pred,
                 soft_label,
@@ -602,7 +605,7 @@ class KnowledgeDistillationKLDivLoss(nn.Layer):
         reduction = (reduction_override
                      if reduction_override else self.reduction)
 
-        loss_kd_out = knowledge_distillation_kl_div_loss(
+        loss_kd_out = self.knowledge_distillation_kl_div_loss(
             pred, soft_label, T=self.T)
 
         if weight is not None:
