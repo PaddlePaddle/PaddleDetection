@@ -1,4 +1,5 @@
 _BASE_: [
+  '../../datasets/dota_ms.yml',
   '../../runtime.yml',
   '_base_/optimizer_3x.yml',
   '_base_/ppyoloe_r_reader.yml',
@@ -12,25 +13,3 @@ weights: output/ppyoloe_r_crn_s_3x_dota/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_s_pretrained.pdparams
 depth_mult: 0.33
 width_mult: 0.50
-
-metric: RBOX
-num_classes: 15
-
-TrainDataset:
-  !COCODataSet
-    image_dir: trainval1024/images
-    anno_path: trainval1024/DOTA_trainval1024.json
-    dataset_dir: dataset/dota_ms/
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_poly']
-
-EvalDataset:
-  !COCODataSet
-    image_dir: trainval1024/images
-    anno_path: trainval1024/DOTA_trainval1024.json
-    dataset_dir: dataset/dota_ms/
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_poly']
-
-TestDataset:
-  !ImageFolder
-    anno_path: test1024/DOTA_test1024.json
-    dataset_dir: dataset/dota_ms/
