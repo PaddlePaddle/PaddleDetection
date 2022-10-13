@@ -487,7 +487,7 @@ class RandomDistort(BaseOperator):
 
     def apply_hue(self, img):
         low, high, prob = self.hue
-        if np.random.uniform(0., 1.) < prob:
+        if np.random.uniform(0., 1.) > prob:
             return img
 
         img = img.astype(np.float32)
@@ -506,7 +506,7 @@ class RandomDistort(BaseOperator):
 
     def apply_saturation(self, img):
         low, high, prob = self.saturation
-        if np.random.uniform(0., 1.) < prob:
+        if np.random.uniform(0., 1.) > prob:
             return img
         delta = np.random.uniform(low, high)
         img = img.astype(np.float32)
@@ -520,7 +520,7 @@ class RandomDistort(BaseOperator):
 
     def apply_contrast(self, img):
         low, high, prob = self.contrast
-        if np.random.uniform(0., 1.) < prob:
+        if np.random.uniform(0., 1.) > prob:
             return img
         delta = np.random.uniform(low, high)
         img = img.astype(np.float32)
@@ -529,7 +529,7 @@ class RandomDistort(BaseOperator):
 
     def apply_brightness(self, img):
         low, high, prob = self.brightness
-        if np.random.uniform(0., 1.) < prob:
+        if np.random.uniform(0., 1.) > prob:
             return img
         delta = np.random.uniform(low, high)
         img = img.astype(np.float32)
