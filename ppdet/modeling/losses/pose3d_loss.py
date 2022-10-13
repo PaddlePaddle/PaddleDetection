@@ -48,7 +48,7 @@ class Pose3DLoss(nn.Layer):
         self.criterion_smoothl1 = nn.SmoothL1Loss(
             reduction=reduction, delta=1.0)
         self.criterion_vertices = nn.L1Loss()
-        self.temp_num_perbatch = 44
+        self.temp_num_perbatch = 42
 
     def forward(self, pred3d, pred2d, inputs):
         """
@@ -104,7 +104,7 @@ def mpjpe_mse(pred, gt, has_3d_joints):
     return error
 
 
-def temp_velocity_loss(pred, gt, has_3d_joints, temp_num=44):
+def temp_velocity_loss(pred, gt, has_3d_joints, temp_num=42, blocknum=6):
     """ 
     mPJPE loss
     """
@@ -112,8 +112,9 @@ def temp_velocity_loss(pred, gt, has_3d_joints, temp_num=44):
 
     shape = pred.shape
     pred_reshape = pred[:temp_num].reshape(
-        (4, temp_num // 4, shape[1], shape[2]))
-    gt_reshape = gt[:temp_num].reshape((4, temp_num // 4, shape[1], shape[2]))
+        (blocknum, temp_num // blocknum, shape[1], shape[2]))
+    gt_reshape = gt[:temp_num].reshape(
+        (blocknum, temp_num // blocknum, shape[1], shape[2]))
 
     pred_v = pred_reshape[2:, ...] - pred_reshape[:-2, ...]
     gt_v = gt_reshape[2:, ...] - gt_reshape[:-2, ...]

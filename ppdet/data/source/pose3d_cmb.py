@@ -38,7 +38,7 @@ class CustomTempDBSampler(DistributedBatchSampler):
                  rank=None,
                  shuffle=False,
                  drop_last=True):
-        self.tempsize = 4
+        self.tempsize = 6
         self.dataset = dataset
 
         assert isinstance(batch_size, int) and batch_size > 0, \
