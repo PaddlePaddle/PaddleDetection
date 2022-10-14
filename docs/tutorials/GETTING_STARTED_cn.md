@@ -94,10 +94,22 @@ export CUDA_VISIBLE_DEVICES=0 #windows和Mac下不需要执行该命令
 python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml
 ```
 
+* MLU单卡训练
+```bash
+export MLU_VISIBLE_DEVICES=0 #windows和Mac下不需要执行该命令
+python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o use_mlu=True use_gpu=False
+```
+
 * GPU多卡训练
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 #windows和Mac下不需要执行该命令
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml
+```
+
+* MLU多卡训练
+```bash
+export MLU_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 #windows和Mac下不需要执行该命令
+python -m paddle.distributed.launch --mlus 0,1,2,3,4,5,6,7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o use_mlu=True use_gpu=False
 ```
 
 * [GPU多机多卡训练](./DistributedTraining_cn.md)
@@ -118,6 +130,12 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o pretrain_weights=output/model_final
 ```
 
+```bash
+export MLU_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+  # 如果模型中参数形状与加载权重形状不同，将不会加载这类参数
+python -m paddle.distributed.launch --mlus 0,1,2,3,4,5,6,7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o pretrain_weights=output/model_final use_mlu=True use_gpu=False
+```
+
 * 模型恢复训练
 
   在日常训练过程中，有的用户由于一些原因导致训练中断，用户可以使用-r的命令恢复训练
@@ -127,17 +145,33 @@ export CUDA_VISIBLE_DEVICES=0 #windows和Mac下不需要执行该命令
 python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -r output/faster_rcnn_r50_1x_coco/10000
  ```
 
+```bash
+export MLU_VISIBLE_DEVICES=0 #windows和Mac下不需要执行该命令
+python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -r output/faster_rcnn_r50_1x_coco/10000 -o use_mlu=True use_gpu=False
+ ```
+
 ## 5 评估
 * 默认将训练生成的模型保存在当前`output`文件夹下
  ```bash
 export CUDA_VISIBLE_DEVICES=0 #windows和Mac下不需要执行该命令
 python tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o weights=https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_roadsign.pdparams
 ```
+
+ ```bash
+export MLU_VISIBLE_DEVICES=0 #windows和Mac下不需要执行该命令
+python tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o weights=https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_roadsign.pdparams use_mlu=True use_gpu=False
+```
+
 * 边训练，边评估
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 #windows和Mac下不需要执行该命令
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml --eval
+```
+
+```bash
+export MLU_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 #windows和Mac下不需要执行该命令
+python -m paddle.distributed.launch --mlus 0,1,2,3,4,5,6,7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml --eval -o use_mlu=True use_gpu=False
 ```
 
   在训练中交替执行评估, 评估在每个epoch训练结束后开始。每次评估后还会评出最佳mAP模型保存到`best_model`文件夹下。
@@ -152,6 +186,15 @@ python tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml \
              --json_eval \
              -output_eval evaluation/
 ```
+
+```bash
+export MLU_VISIBLE_DEVICES=0 #windows和Mac下不需要执行该命令
+python tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml \
+             --json_eval \
+             -output_eval evaluation/ \
+             -o use_mlu=True use_gpu=False
+```
+
 * 上述命令中没有加载模型的选项，则使用配置文件中weights的默认配置，`weights`表示训练过程中保存的最后一轮模型文件
 
 * json文件必须命名为bbox.json或者mask.json，放在`evaluation`目录下。
@@ -161,6 +204,11 @@ python tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml \
   ```bash
   python tools/infer.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml --infer_img=demo/000000570688.jpg -o weights=https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_roadsign.pdparams
   ```
+
+  ```bash
+  python tools/infer.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml --infer_img=demo/000000570688.jpg -o weights=https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_roadsign.pdparams use_mlu=True use_gpu=False
+  ```
+
  * 设置参数预测
 
   ```bash
@@ -170,6 +218,16 @@ python tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml \
                       --output_dir=infer_output/ \
                       --draw_threshold=0.5 \
                       -o weights=output/yolov3_mobilenet_v1_roadsign/model_final \
+                      --use_vdl=True
+  ```
+
+  ```bash
+  export MLU_VISIBLE_DEVICES=0 #windows和Mac下不需要执行该命令
+  python tools/infer.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml \
+                      --infer_img=demo/road554.png \
+                      --output_dir=infer_output/ \
+                      --draw_threshold=0.5 \
+                      -o weights=output/yolov3_mobilenet_v1_roadsign/model_final use_mlu=True use_gpu=False \
                       --use_vdl=True
   ```
 
@@ -191,6 +249,14 @@ export CUDA_VISIBLE_DEVICES=0 #windows和Mac下不需要执行该命令
 python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml
                         --use_vdl=true \
                         --vdl_log_dir=vdl_dir/scalar \
+```
+
+```bash
+export MLU_VISIBLE_DEVICES=0 #windows和Mac下不需要执行该命令
+python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml
+                        --use_vdl=true \
+                        --vdl_log_dir=vdl_dir/scalar \
+                        -o use_mlu=True use_gpu=False
 ```
 
 使用如下命令启动VisualDL查看日志
