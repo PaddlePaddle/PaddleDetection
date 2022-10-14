@@ -21,7 +21,7 @@ import sys
 import numpy as np
 import itertools
 
-from ppdet.metrics.json_results import get_det_res, get_det_poly_res, get_seg_res, get_solov2_segm_res, get_keypoint_res
+from ppdet.metrics.json_results import get_det_res, get_det_poly_res, get_seg_res, get_solov2_segm_res, get_keypoint_res, get_pose3d_res
 from ppdet.metrics.map_utils import draw_pr_curve
 
 from ppdet.utils.logger import setup_logger
@@ -63,6 +63,10 @@ def get_infer_results(outs, catid, bias=0):
     if 'keypoint' in outs:
         infer_res['keypoint'] = get_keypoint_res(outs, im_id)
         outs['bbox_num'] = [len(infer_res['keypoint'])]
+
+    if 'pose3d' in outs:
+        infer_res['pose3d'] = get_pose3d_res(outs, im_id)
+        outs['bbox_num'] = [len(infer_res['pose3d'])]
 
     return infer_res
 
@@ -150,7 +154,7 @@ def cocoapi_eval(jsonfile,
         results_flatten = list(itertools.chain(*results_per_category))
         headers = ['category', 'AP'] * (num_columns // 2)
         results_2d = itertools.zip_longest(
-            *[results_flatten[i::num_columns] for i in range(num_columns)])
+            * [results_flatten[i::num_columns] for i in range(num_columns)])
         table_data = [headers]
         table_data += [result for result in results_2d]
         table = AsciiTable(table_data)

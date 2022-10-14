@@ -38,7 +38,7 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval, Pose3DEval
 from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
@@ -136,6 +136,9 @@ class Trainer(object):
         if self.mode == 'eval':
             if cfg.architecture == 'FairMOT':
                 self.loader = create('EvalMOTReader')(self.dataset, 0)
+            elif cfg.architecture == "METRO_Body":
+                reader_name = '{}Reader'.format(self.mode.capitalize())
+                self.loader = create(reader_name)(self.dataset, cfg.worker_num)
             else:
                 self._eval_batch_sampler = paddle.io.BatchSampler(
                     self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
@@ -342,6 +345,13 @@ class Trainer(object):
                     self.cfg.save_dir,
                     save_prediction_only=save_prediction_only)
             ]
+        elif self.cfg.metric == 'Pose3DEval':
+            save_prediction_only = self.cfg.get('save_prediction_only', False)
+            self._metrics = [
+                Pose3DEval(
+                    self.cfg.save_dir,
+                    save_prediction_only=save_prediction_only)
+            ]
         elif self.cfg.metric == 'MOTDet':
             self._metrics = [JDEDetMetric(), ]
         else:
@@ -401,14 +411,14 @@ class Trainer(object):
 
         model = self.model
         sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
-                   self.cfg.use_gpu and self._nranks > 1)
+                   (self.cfg.use_gpu or self.cfg.use_mlu) and self._nranks > 1)
         if sync_bn:
             model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
         # enabel auto mixed precision mode
         if self.use_amp:
             scaler = paddle.amp.GradScaler(
-                enable=self.cfg.use_gpu or self.cfg.use_npu,
+                enable=self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu,
                 init_loss_scaling=self.cfg.get('init_loss_scaling', 1024))
         # get distributed model
         if self.cfg.get('fleet', False):
@@ -450,6 +460,7 @@ class Trainer(object):
             self.loader.dataset.set_epoch(epoch_id)
             model.train()
             iter_tic = time.time()
+            print("loader len:", len(self.loader))
             for step_id, data in enumerate(self.loader):
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
@@ -463,7 +474,7 @@ class Trainer(object):
                             DataParallel) and use_fused_allreduce_gradients:
                         with model.no_sync():
                             with paddle.amp.auto_cast(
-                                    enable=self.cfg.use_gpu,
+                                    enable=self.cfg.use_gpu or self.cfg.use_mlu,
                                     custom_white_list=self.custom_white_list,
                                     custom_black_list=self.custom_black_list,
                                     level=self.amp_level):
@@ -477,7 +488,7 @@ class Trainer(object):
                             list(model.parameters()), None)
                     else:
                         with paddle.amp.auto_cast(
-                                enable=self.cfg.use_gpu,
+                                enable=self.cfg.use_gpu or self.cfg.use_mlu,
                                 custom_white_list=self.custom_white_list,
                                 custom_black_list=self.custom_black_list,
                                 level=self.amp_level):
@@ -527,7 +538,7 @@ class Trainer(object):
             if self.cfg.get('unstructured_prune'):
                 self.pruner.update_params()
 
-            is_snapshot = (self._nranks < 2 or self._local_rank == 0) \
+            is_snapshot = (self._nranks < 2 or (self._local_rank == 0 or self.cfg.metric == "Pose3DEval")) \
                        and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 or epoch_id == self.end_epoch - 1)
             if is_snapshot and self.use_ema:
                 # apply ema weight on model
@@ -548,10 +559,14 @@ class Trainer(object):
                     # If metric is VOC, need to be set collate_batch=False.
                     if self.cfg.metric == 'VOC':
                         self.cfg['EvalReader']['collate_batch'] = False
-                    self._eval_loader = create('EvalReader')(
-                        self._eval_dataset,
-                        self.cfg.worker_num,
-                        batch_sampler=self._eval_batch_sampler)
+                    if self.cfg.metric == "Pose3DEval":
+                        self._eval_loader = create('EvalReader')(
+                            self._eval_dataset, self.cfg.worker_num)
+                    else:
+                        self._eval_loader = create('EvalReader')(
+                            self._eval_dataset,
+                            self.cfg.worker_num,
+                            batch_sampler=self._eval_batch_sampler)
                 # if validation in training is enabled, metrics should be re-init
                 # Init_mark makes sure this code will only execute once
                 if validate and Init_mark == False:
@@ -575,6 +590,7 @@ class Trainer(object):
         tic = time.time()
         self._compose_callback.on_epoch_begin(self.status)
         self.status['mode'] = 'eval'
+
         self.model.eval()
         if self.cfg.get('print_flops', False):
             flops_loader = create('{}Reader'.format(self.mode.capitalize()))(
@@ -586,7 +602,7 @@ class Trainer(object):
             # forward
             if self.use_amp:
                 with paddle.amp.auto_cast(
-                        enable=self.cfg.use_gpu,
+                        enable=self.cfg.use_gpu or self.cfg.use_mlu,
                         custom_white_list=self.custom_white_list,
                         custom_black_list=self.custom_black_list,
                         level=self.amp_level):
@@ -617,6 +633,15 @@ class Trainer(object):
         self._reset_metrics()
 
     def evaluate(self):
+        # get distributed model
+        if self.cfg.get('fleet', False):
+            self.model = fleet.distributed_model(self.model)
+            self.optimizer = fleet.distributed_optimizer(self.optimizer)
+        elif self._nranks > 1:
+            find_unused_parameters = self.cfg[
+                'find_unused_parameters'] if 'find_unused_parameters' in self.cfg else False
+            self.model = paddle.DataParallel(
+                self.model, find_unused_parameters=find_unused_parameters)
         with paddle.no_grad():
             self._eval_with_loader(self.loader)
 
@@ -644,7 +669,7 @@ class Trainer(object):
             # forward
             if self.use_amp:
                 with paddle.amp.auto_cast(
-                        enable=self.cfg.use_gpu,
+                        enable=self.cfg.use_gpu or self.cfg.use_mlu,
                         custom_white_list=self.custom_white_list,
                         custom_black_list=self.custom_black_list,
                         level=self.amp_level):
@@ -921,9 +946,11 @@ class Trainer(object):
                             if 'segm' in batch_res else None
                     keypoint_res = batch_res['keypoint'][start:end] \
                             if 'keypoint' in batch_res else None
+                    pose3d_res = batch_res['pose3d'][start:end] \
+                            if 'pose3d' in batch_res else None
                     image = visualize_results(
                         image, bbox_res, mask_res, segm_res, keypoint_res,
-                        int(im_id), catid2name, draw_threshold)
+                        pose3d_res, int(im_id), catid2name, draw_threshold)
                     self.status['result_image'] = np.array(image.copy())
                     if self._compose_callback:
                         self._compose_callback.on_step_end(self.status)
