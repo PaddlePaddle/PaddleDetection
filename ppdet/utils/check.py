@@ -26,8 +26,28 @@ from .logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'check_gpu', 'check_npu', 'check_xpu', 'check_version', 'check_config'
+    'check_gpu', 'check_npu', 'check_xpu', 'check_mlu', 'check_version',
+    'check_config'
 ]
+
+
+def check_mlu(use_mlu):
+    """
+    Log error and exit when set use_mlu=true in paddlepaddle
+    cpu/gpu/xpu/npu version.
+    """
+    err = "Config use_mlu cannot be set as true while you are " \
+          "using paddlepaddle cpu/gpu/xpu/npu version ! \nPlease try: \n" \
+          "\t1. Install paddlepaddle-mlu to run model on MLU \n" \
+          "\t2. Set use_mlu as false in config file to run " \
+          "model on CPU/GPU/XPU/NPU"
+
+    try:
+        if use_mlu and not paddle.is_compiled_with_mlu():
+            logger.error(err)
+            sys.exit(1)
+    except Exception as e:
+        pass
 
 
 def check_npu(use_npu):
