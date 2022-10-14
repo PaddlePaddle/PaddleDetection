@@ -37,7 +37,8 @@ from python.infer import Detector, DetectorPicoDet
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
 from python.preprocess import decode_image, ShortSizeScale
-from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action, visualize_vehicleplate
+from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action, \
+    visualize_vehicleplate
 
 from pptracking.python.mot_sde_infer import SDE_Detector
 from pptracking.python.mot.visualize import plot_tracking_dict
@@ -193,9 +194,9 @@ def get_model_dir(cfg):
         Otherwise it will use the model_path directly.
     """
     for key in cfg.keys():
-        if type(cfg[key]) ==  dict and \
-            ("enable" in cfg[key].keys() and cfg[key]['enable']
-                or "enable" not in cfg[key].keys()):
+        if type(cfg[key]) == dict and \
+                ("enable" in cfg[key].keys() and cfg[key]['enable']
+                 or "enable" not in cfg[key].keys()):
 
             if "model_dir" in cfg[key].keys():
                 model_dir = cfg[key]["model_dir"]
@@ -272,10 +273,10 @@ class PipePredictor(object):
                                                         False) else False
         self.with_idbased_detaction = cfg.get(
             'ID_BASED_DETACTION', False)['enable'] if cfg.get(
-                'ID_BASED_DETACTION', False) else False
+            'ID_BASED_DETACTION', False) else False
         self.with_idbased_clsaction = cfg.get(
             'ID_BASED_CLSACTION', False)['enable'] if cfg.get(
-                'ID_BASED_CLSACTION', False) else False
+            'ID_BASED_CLSACTION', False) else False
         self.with_mtmct = cfg.get('REID', False)['enable'] if cfg.get(
             'REID', False) else False
 
@@ -436,7 +437,7 @@ class PipePredictor(object):
                 self.reid_predictor = ReID.init_with_cfg(args, reid_cfg)
 
             if self.with_mot or self.modebase["idbased"] or self.modebase[
-                    "skeletonbased"]:
+                "skeletonbased"]:
                 mot_cfg = self.cfg['MOT']
                 model_dir = mot_cfg['model_dir']
                 tracker_config = mot_cfg['tracker_config']
@@ -597,8 +598,8 @@ class PipePredictor(object):
                     2) + "_rtsp"
             if not os.path.exists(self.output_dir):
                 os.makedirs(self.output_dir)
-            out_path = os.path.join(self.output_dir, video_out_name+".mp4")
-            fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+            out_path = os.path.join(self.output_dir, video_out_name + ".mp4")
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
 
         frame_id = 0
@@ -612,11 +613,35 @@ class PipePredictor(object):
         out_id_list = list()
         prev_center = dict()
         records = list()
+        # 设置为水平或者垂直时，依旧读取region_polygon参数，此时只包含一个点，然后依照方向进行扩展
         if self.do_entrance_counting or self.do_break_in_counting or self.illegal_parking_time != -1:
             if self.region_type == 'horizontal':
-                entrance = [0, height / 2., width, height / 2.]
+                assert len(
+                    self.region_polygon
+                ) % 2 == 0, "region_polygon should be pairs of coords points when do do_entrance_counting."
+                assert len(
+                    self.region_polygon
+                ) == 2, 'region_polygon should be a pairs of point coords. in do_entrance_counting'
+
+                for i in range(0, len(self.region_polygon), 2):
+                    entrance.append(
+                        [self.region_polygon[i], self.region_polygon[i + 1]])
+                # when set type to horizontal the entrance is (0,y),(width,y)
+                entrance = [0, entrance[0][1], width, entrance[0][1]]
             elif self.region_type == 'vertical':
-                entrance = [width / 2, 0., width / 2, height]
+                entrance = []
+                assert len(
+                    self.region_polygon
+                ) % 2 == 0, "region_polygon should be pairs of coords points when do do_entrance_counting."
+                assert len(
+                    self.region_polygon
+                ) == 2, 'region_polygon should be a pairs of point coords. in do_entrance_counting'
+
+                for i in range(0, len(self.region_polygon), 2):
+                    entrance.append(
+                        [self.region_polygon[i], self.region_polygon[i + 1]])
+                # # when set type to vertical the entrance is (x,0),(x,height)
+                entrance = [entrance[0][0], 0, entrance[0][0], height]
             elif self.region_type == 'custom':
                 entrance = []
                 assert len(
@@ -722,7 +747,7 @@ class PipePredictor(object):
                         im = self.visualize_video(frame, mot_res, frame_id, fps,
                                                   entrance, records,
                                                   center_traj)  # visualize
-                        if len(self.pushurl)>0:
+                        if len(self.pushurl) > 0:
                             pushstream.pipe.stdin.write(im.tobytes())
                         else:
                             writer.write(im)
@@ -898,7 +923,7 @@ class PipePredictor(object):
                                           entrance, records, center_traj,
                                           self.illegal_parking_time != -1,
                                           illegal_parking_dict)  # visualize
-                if len(self.pushurl)>0:
+                if len(self.pushurl) > 0:
                     pushstream.pipe.stdin.write(im.tobytes())
                 else:
                     writer.write(im)
@@ -906,7 +931,7 @@ class PipePredictor(object):
                         cv2.imshow('Paddle-Pipeline', im)
                         if cv2.waitKey(1) & 0xFF == ord('q'):
                             break
-        if self.cfg['visual'] and len(self.pushurl)==0:
+        if self.cfg['visual'] and len(self.pushurl) == 0:
             writer.release()
             print('save result to {}'.format(out_path))
 
@@ -1050,7 +1075,7 @@ class PipePredictor(object):
                 det_res_i = {}
                 boxes_num_i = det_res['boxes_num'][i]
                 det_res_i['boxes'] = det_res['boxes'][start_idx:start_idx +
-                                                      boxes_num_i, :]
+                                                                boxes_num_i, :]
                 im = visualize_box_mask(
                     im,
                     det_res_i,
@@ -1060,16 +1085,16 @@ class PipePredictor(object):
                 im = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
             if human_attr_res is not None:
                 human_attr_res_i = human_attr_res['output'][start_idx:start_idx
-                                                            + boxes_num_i]
+                                                                      + boxes_num_i]
                 im = visualize_attr(im, human_attr_res_i, det_res_i['boxes'])
             if vehicle_attr_res is not None:
                 vehicle_attr_res_i = vehicle_attr_res['output'][
-                    start_idx:start_idx + boxes_num_i]
+                                     start_idx:start_idx + boxes_num_i]
                 im = visualize_attr(im, vehicle_attr_res_i, det_res_i['boxes'])
             if vehicleplate_res is not None:
                 plates = vehicleplate_res['vehicleplate']
                 det_res_i['boxes'][:, 4:6] = det_res_i[
-                    'boxes'][:, 4:6] - det_res_i['boxes'][:, 2:4]
+                                                 'boxes'][:, 4:6] - det_res_i['boxes'][:, 2:4]
                 im = visualize_vehicleplate(im, plates, det_res_i['boxes'])
 
             img_name = os.path.split(im_file)[-1]
