@@ -24,7 +24,7 @@ LD全称为[Localization Distillation for Dense Object Detection](https://arxiv.
 |:-:| :-: | :-: | :-:|
 | GFL_ResNet101-vd   | teacher          | 46.8  | [model](https://paddledet.bj.bcebos.com/models/gfl_r101vd_fpn_mstrain_2x_coco.pdparams), [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl/gfl_r101vd_fpn_mstrain_2x_coco.yml) |
 | GFL_ResNet18-vd   | student          | 36.6  | [model](https://paddledet.bj.bcebos.com/models/gfl_r18vd_1x_coco.pdparams), [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl/gfl_r18vd_1x_coco.yml) |
-| GFL_ResNet18-vd + LD   | student          | 38.2  | [model](https://bj.bcebos.com/v1/paddledet/models/gfl_ld_r18vd_1x_coco.pdparams), [config1](../../gfl/gfl_ld_r18vd_1x_coco.yml), [config2](./gfl_ld_distill.yml) |
+| GFL_ResNet18-vd + LD   | student          | 38.2  | [model](https://bj.bcebos.com/v1/paddledet/models/gfl_slim_ld_r18vd_1x_coco.pdparams), [config1](../../gfl/gfl_slim_ld_r18vd_1x_coco.yml), [config2](./gfl_ld_distill.yml) |
 
 ## Citations
 ```
