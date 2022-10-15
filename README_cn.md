@@ -23,27 +23,18 @@
 </div>
 
 
-## 🔥 热门活动
-🎊YOLO Vision世界学术交流大会🎊
-
-PaddleDetection受邀参与首个以YOLO为主题的YOLO Vision世界大会，与全球AI领先开发者学习交流，欢迎大家报名参加！
-
-- ⏰时间：9月27日
-
-- 👨‍🏫演讲主题：PaddleDetection Toolkit and PP-YOLO Series
-
-- 💎圆桌论坛：Open Source Projects Enabling the Future of Computer Vision AI
-
-**⛓报名链接：https://ultralytics.com/yolo-vision**
-
-- 🔮彩蛋：8月26日 PaddleDetection发布YOLO系列全家族，包括YOLOv5/X/v6/v7与自研的PP-YOLOE、PP-YOLOE+
-
-- 🗳项目链接：https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/feature_models/YOLOSERIES_MODEL.md
+## 🚀 热门活动
+- 🎊 **【AI快车道三日课】PP-YOLOE+、PP-Human v2、PP-Vehicle技术方案大揭秘！**
+  - ⏰ **时间：10月18-20日 晚上8:15**
+  - **10月18日：YOLO算法精讲与最强新星PP-YOLOE+升级详解**
+  - **10月19日：10分钟搭建行人分析系统**
+  - **10月20日：智能交通监控系统技术剖析**
+  - 🎁 **扫码入群即可获取专属直播链接与技术大礼包！**
 
 
-<div  align="center">
-  <img src="https://user-images.githubusercontent.com/48054808/192301374-940cf2fa-9661-419b-9c46-18a4570df381.jpeg" width="600"/>
-</div>
+  <div align="center">
+  <img src="https://user-images.githubusercontent.com/48054808/195969208-2c54c3ff-d8cd-46cb-9047-27cf36a79d7c.jpg"  width = "200" />  
+  </div>
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> 产品动态
 
