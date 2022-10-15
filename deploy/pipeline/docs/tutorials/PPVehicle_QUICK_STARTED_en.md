@@ -18,7 +18,7 @@ English | [简体中文](PPVehicle_QUICK_STARTED.md)
 
 ## Environment Preparation
 
-Environment Preparation: PaddleDetection version >= release/2.4 or release/2.5
+Environment Preparation: PaddleDetection version >= release/2.5 or develop
 
 Installation of PaddlePaddle and PaddleDetection
 
@@ -73,7 +73,7 @@ The features and corresponding task types are as follows.
 | ------------------- | --------------------- | ------------------------------------------- | ---------------- |
 | Image               | Attribute Recognition | Object Detection Attribute Recognition      | DET ATTR         |
 | Single-camera video | Attribute Recognition | Multi-Object Tracking Attribute Recognition | MOT ATTR         |
-| Single-camera video | Attribute Recognition | Multi-Object Tracking Attribute Recognition | MOT VEHICLEPLATE |
+| Single-camera video | License-plate Recognition | Multi-Object Tracking License-plate Recognition | MOT VEHICLEPLATE |
 
 Take attribute recognition based on video input as an example: Its task type includes multi-object tracking and attributes recognition. The specific configuration is as follows.
 
@@ -129,7 +129,10 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
                                                       --region_polygon 600 300 1300 300 1300 800 600 800
    ```
 
-3. For rtsp stream, use --rtsp RTSP [RTSP ...] parameter to specify one or more rtsp streams. Separate the multiple addresses with a space, or replace the video address directly after the video_file with the rtsp stream address), examples as follows
+3. rtsp push/pull stream
+- rtsp pull stream
+
+For rtsp pull stream, use --rtsp RTSP [RTSP ...] parameter to specify one or more rtsp streams. Separate the multiple addresses with a space, or replace the video address directly after the video_file with the rtsp stream address), examples as follows
 
    ```
    # Example: Single video stream for pedestrian attribute recognition
@@ -137,6 +140,18 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
    # Example: Multiple-video stream for pedestrian attribute recognition
    python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_human_attr.yml -o visual=False --rtsp rtsp://[YOUR_RTSP_SITE1] rtsp://[YOUR_RTSP_SITE2] --device=gpu                                                                      |
    ```
+
+- rtsp push stream
+
+For rtsp push stream, use --pushurl rtsp:[IP] parameter to push stream to a IP set, and you can visualize the output video by [VLC Player](https://vlc.onl/) with the `open network` funciton. the whole url path is `rtsp:[IP]/videoname`, the videoname here is the basename of the video file to infer, and the default of videoname is `output` when the video come from local camera and there is no video name. 
+
+```
+# Example：license plate recognition，in this example the whole url path is: rtsp://[YOUR_SERVER_IP]:8554/test_video
+python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_vehicle_plate.yml --video_file=test_video.mp4  --device=gpu --pushurl rtsp://[YOUR_SERVER_IP]:8554
+```
+Note: 
+1. rtsp push stream is based on [rtsp-simple-server](https://github.com/aler9/rtsp-simple-server), please enable this serving first.
+2. the output visualize will be frozen frequently if the model cost too much time, we suggest to use faster model like ppyoloe_s in tracking, this is simply replace mot_ppyoloe_l_36e_pipeline.zip with mot_ppyoloe_s_36e_pipeline.zip in model config yaml file.
 
 ### Jetson Deployment
 
@@ -161,6 +176,8 @@ With this recommended configuration, it is possible to achieve higher speeds on 
 | --rtsp                 | Option    | rtsp video stream address, supports one or more simultaneous streams input                                                                                                                                                                        |
 | --camera_id            | Option    | The camera ID for prediction, default is -1 ( for no camera prediction, can be set to 0 - (number of cameras - 1) ), press `q` in the visualization interface during the prediction process to output the prediction result to: output/output.mp4 |
 | --device               | Option    | Running device, options include `CPU/GPU/XPU`, and the default is `CPU`.                                                                                                                                                                          |
+| --pushurl              | Option    | push the output video to rtsp stream, normaly start with `rtsp://`; this has higher priority than local video save, while this is set, pipeline will not save local visualize video, the default is "", means this will not work now.
+                |
 | --output_dir           | Option    | The root directory for the visualization results, and the default is output/                                                                                                                                                                      |
 | --run_mode             | Option    | For GPU, the default is paddle, with (paddle/trt_fp32/trt_fp16/trt_int8) as optional                                                                                                                                                              |
 | --enable_mkldnn        | Option    | Whether to enable MKLDNN acceleration in CPU prediction, the default is False                                                                                                                                                                     |
