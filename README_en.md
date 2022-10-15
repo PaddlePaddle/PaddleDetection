@@ -21,23 +21,6 @@
 
 </div>
 
-## 🔥News
-🎊YOLO Vision Event🎊
-
-Join the experts of Ultralytics as well as leaders in the space on September 27th, 2022 to explore the technical and business insights shaping the future of Vision AI!
-
-- ⏰Time：Sep 27th
-- 👨‍🏫Tech Talk：PaddleDetection Toolkit and PP-YOLO Series
-- 💎Panel Topic：Open Source Projects Enabling the Future of Computer Vision AI
-
-**⛓Register Now：https://ultralytics.com/yolo-vision**
-
-- 🔮Easter eggs：PaddleDetection has released the YOLO Family model zoo on August 26th, including YOLOv3/YOLOv5/YOLOX/YOLOv7 and PP-YOLOE/PP-YOLOE+, feel free to check out: https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/feature_models/YOLOSERIES_MODEL.md
-
-<div  align="center">
-  <img src="https://user-images.githubusercontent.com/48054808/192301374-940cf2fa-9661-419b-9c46-18a4570df381.jpeg" width="600"/>
-</div>
-
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> Product Update
 
