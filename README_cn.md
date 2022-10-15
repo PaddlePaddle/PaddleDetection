@@ -22,6 +22,19 @@
 
 </div>
 
+## 🚀 热门活动
+- 🎊 **【AI快车道三日课】PP-YOLOE+、PP-Human v2、PP-Vehicle技术方案大揭秘！**
+  - ⏰ **时间：10月18-20日 晚上8:15**
+  - **10月18日：YOLO算法精讲与最强新星PP-YOLOE+升级详解**
+  - **10月19日：10分钟搭建行人分析系统**
+  - **10月20日：智能交通监控系统技术剖析**
+  - 🎁 **扫码入群即可获取专属直播链接与技术大礼包！**
+
+
+  <div align="center">
+  <img src="https://user-images.githubusercontent.com/48054808/195969208-2c54c3ff-d8cd-46cb-9047-27cf36a79d7c.jpg"  width = "200" />  
+  </div>
+
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> 产品动态
 
 - 🔥 **2022.8.26：PaddleDetection发布[release/2.5版本](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)**
