@@ -38,15 +38,15 @@ def _get_clones(module, N):
 
 
 def bbox_cxcywh_to_xyxy(x):
-    x_c, y_c, w, h = x.unbind(-1)
+    x_c, y_c, w, h = x.split(4, axis=-1)
     b = [(x_c - 0.5 * w), (y_c - 0.5 * h), (x_c + 0.5 * w), (y_c + 0.5 * h)]
-    return paddle.stack(b, axis=-1)
+    return paddle.concat(b, axis=-1)
 
 
 def bbox_xyxy_to_cxcywh(x):
-    x0, y0, x1, y1 = x.unbind(-1)
+    x0, y0, x1, y1 = x.split(4, axis=-1)
     b = [(x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0), (y1 - y0)]
-    return paddle.stack(b, axis=-1)
+    return paddle.concat(b, axis=-1)
 
 
 def sigmoid_focal_loss(logit, label, normalizer=1.0, alpha=0.25, gamma=2.0):

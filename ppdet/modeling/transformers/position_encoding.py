@@ -65,11 +65,9 @@ class PositionEmbedding(nn.Layer):
         Returns:
             pos (Tensor): [B, C, H, W]
         """
-        assert mask.dtype == paddle.bool
         if self.embed_type == 'sine':
-            mask = mask.astype('float32')
-            y_embed = mask.cumsum(1, dtype='float32')
-            x_embed = mask.cumsum(2, dtype='float32')
+            y_embed = mask.cumsum(1)
+            x_embed = mask.cumsum(2)
             if self.normalize:
                 y_embed = (y_embed + self.offset) / (
                     y_embed[:, -1:, :] + self.eps) * self.scale
@@ -101,8 +99,7 @@ class PositionEmbedding(nn.Layer):
                     x_emb.unsqueeze(0).repeat(h, 1, 1),
                     y_emb.unsqueeze(1).repeat(1, w, 1),
                 ],
-                axis=-1).transpose([2, 0, 1]).unsqueeze(0).tile(mask.shape[0],
-                                                                1, 1, 1)
+                axis=-1).transpose([2, 0, 1]).unsqueeze(0)
             return pos
         else:
             raise ValueError(f"not supported {self.embed_type}")
