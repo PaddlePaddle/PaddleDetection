@@ -7,6 +7,9 @@ _BASE_: [
 
 weights: output/mask_rcnn_vit_base_hrfpn_cae_1x_coco/model_final
 
+norm_type: sync_bn
+
+
 architecture: MaskRCNN
 MaskRCNN:
   backbone: VisionTransformer
@@ -85,8 +88,6 @@ BBoxAssigner:
   fg_fraction: 0.25
   use_random: True
 
-# TwoFCHead:
-#   out_channel: 1024
 
 XConvNormHead:
     num_convs: 4
