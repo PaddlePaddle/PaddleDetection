@@ -596,6 +596,10 @@ class Trainer(object):
             flops_loader = create('{}Reader'.format(self.mode.capitalize()))(
                 self.dataset, self.cfg.worker_num, self._eval_batch_sampler)
             self._flops(flops_loader)
+        eval_batch_size = self.cfg.EvalReader['batch_size']
+        logger.info("Eval loader length is {}, eval batch_size is {}.".format(
+            len(loader), eval_batch_size))
+        logger.info("Starting evaluation ......\n")
         for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
             self._compose_callback.on_step_begin(self.status)
@@ -898,6 +902,10 @@ class Trainer(object):
             flops_loader = create('TestReader')(self.dataset, 0)
             self._flops(flops_loader)
         results = []
+        test_batch_size = self.cfg.TestReader['batch_size']
+        logger.info("Test loader length is {}, test batch_size is {}.".format(
+            len(loader), test_batch_size))
+        logger.info("Starting predicting ......\n")
         for step_id, data in enumerate(tqdm(loader)):
             self.status['step_id'] = step_id
             # forward

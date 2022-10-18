@@ -76,7 +76,11 @@ def load_weight(model, weight, optimizer=None, ema=None):
         # Exchange model and ema_model to load
         ema_state_dict = paddle.load(pdparam_path)
         param_state_dict = paddle.load(path + '.pdema')
+        logger.info('Finish resuming ema_model weights: {}.pdema'.format(path))
     else:
+        if ema is not None:
+            logger.warning('Could not find ema_model weights: {}.pdema'.format(
+                path))
         ema_state_dict = None
         param_state_dict = paddle.load(pdparam_path)
 
@@ -117,8 +121,14 @@ def load_weight(model, weight, optimizer=None, ema=None):
         if ema_state_dict is not None:
             ema.resume(ema_state_dict,
                        optim_state_dict['LR_Scheduler']['last_epoch'])
-    elif ema_state_dict is not None:
-        ema.resume(ema_state_dict)
+        logger.info('Finish resuming pdopt weights: {}.pdopt'.format(path))
+
+    else:
+        if optimizer is not None:
+            logger.warning('Could not find pdopt weights: {}.pdopt'.format(
+                path))
+        if ema_state_dict is not None:
+            ema.resume(ema_state_dict)
     return last_epoch
 
 

@@ -43,8 +43,8 @@ def get_categories(metric_type, anno_file=None, arch=None):
         logger.warning(
             "anno_file '{}' is None or not set or not exist, "
             "please recheck TrainDataset/EvalDataset/TestDataset.anno_path, "
-            "otherwise the default categories will be used by metric_type.".
-            format(anno_file))
+            "otherwise the default categories will use as metric_type '{}'.".
+            format(anno_file, metric_type))
 
     if metric_type.lower() == 'coco' or metric_type.lower(
     ) == 'rbox' or metric_type.lower() == 'snipercoco':

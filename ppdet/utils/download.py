@@ -331,23 +331,29 @@ def _dataset_exists(path, annotation, image_dir):
     Check if user define dataset exists
     """
     if not osp.exists(path):
+        logger.warning("***" * 30)
         logger.warning("Config dataset_dir {} is not exits, "
                        "dataset config is not valid".format(path))
+        logger.warning("***" * 30)
         return False
 
     if annotation:
         annotation_path = osp.join(path, annotation)
         if not osp.isfile(annotation_path):
+            logger.warning("***" * 30)
             logger.warning("Config annotation {} is not a "
                            "file, dataset config is not "
                            "valid".format(annotation_path))
+            logger.warning("***" * 30)
             return False
     if image_dir:
         image_path = osp.join(path, image_dir)
         if not osp.isdir(image_path):
+            logger.warning("***" * 30)
             logger.warning("Config image_dir {} is not a "
                            "directory, dataset config is not "
                            "valid".format(image_path))
+            logger.warning("***" * 30)
             return False
     return True
 
