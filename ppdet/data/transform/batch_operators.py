@@ -574,6 +574,11 @@ class Gt2GFLTarget(BaseOperator):
             assign_gt_inds, _ = self.assigner(grid_cells, num_level_cells,
                                               gt_bboxes, gt_bboxes_ignore,
                                               gt_labels)
+
+            vlr_region = self.assigner.get_vlr_region(grid_cells, num_level_cells,
+                                                      gt_bboxes, gt_bboxes_ignore,
+                                                      gt_labels)
+
             pos_inds, neg_inds, pos_gt_bboxes, pos_assigned_gt_inds = self.get_sample(
                 assign_gt_inds, gt_bboxes)
 
@@ -600,6 +605,7 @@ class Gt2GFLTarget(BaseOperator):
             sample['label_weights'] = label_weights
             sample['bbox_targets'] = bbox_targets
             sample['pos_num'] = max(pos_inds.size, 1)
+            sample['vlr_regions'] = vlr_region
             sample.pop('is_crowd', None)
             sample.pop('difficult', None)
             sample.pop('gt_class', None)
