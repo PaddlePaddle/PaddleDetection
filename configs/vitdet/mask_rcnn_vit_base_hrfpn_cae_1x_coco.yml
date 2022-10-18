@@ -7,7 +7,12 @@ _BASE_: [
 
 weights: output/mask_rcnn_vit_base_hrfpn_cae_1x_coco/model_final
 
+
+# runtime
+log_iter: 100
+snapshot_epoch: 1
 norm_type: sync_bn
+use_fused_allreduce_gradients: &use_checkpoint False
 
 
 architecture: MaskRCNN
@@ -37,6 +42,7 @@ VisionTransformer:
   epsilon: 0.000001 # 1e-6
   out_indices: [3, 5, 7, 11]
   with_fpn: True
+  use_checkpoint: *use_checkpoint
   pretrained: https://bj.bcebos.com/v1/paddledet/models/pretrained/vit_base_cae_pretrained.pdparams
 
 HRFPN:
