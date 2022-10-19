@@ -572,7 +572,7 @@ class Trainer(object):
 
             self._compose_callback.on_epoch_end(self.status)
 
-            if validate and is_snapshot:
+            if validate:
                 if not hasattr(self, '_eval_loader'):
                     # build evaluation dataset and loader
                     self._eval_dataset = self.cfg.EvalDataset

@@ -65,8 +65,8 @@ class Pose3DLoss(nn.Layer):
         # loss_3d = mpjpe_criterion(pred3d, gt_3d_joints, has_3d_joints, self.criterion_3dpose)
         loss_2d = keypoint_2d_loss(self.criterion_2dpose, pred2d, gt_2d_joints,
                                    has_2d_joints)
-        loss_3d += 0.3 * temp_velocity_loss(pred3d, gt_3d_joints, has_3d_joints,
-                                            self.temp_num_perbatch)
+        # loss_3d += 0.3 * temp_velocity_loss(pred3d, gt_3d_joints, has_3d_joints,
+        #                                     self.temp_num_perbatch)
         return self.weight_3d * loss_3d + self.weight_2d * loss_2d
 
 
