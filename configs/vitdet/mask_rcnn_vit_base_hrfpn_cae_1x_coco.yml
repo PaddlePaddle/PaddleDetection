@@ -126,6 +126,7 @@ MaskHead:
 MaskFeat:
   num_convs: 4
   out_channel: 256
+  norm_type: ~
 
 MaskAssigner:
   mask_resolution: 28
