@@ -131,14 +131,24 @@ class MSDeformableAttention(nn.Layer):
             [bs, Len_q, self.num_heads, self.num_levels, self.num_points, 2])
         attention_weights = self.attention_weights(query).reshape(
             [bs, Len_q, self.num_heads, self.num_levels * self.num_points])
-        attention_weights = F.softmax(attention_weights, -1).reshape(
+        attention_weights = F.softmax(attention_weights).reshape(
             [bs, Len_q, self.num_heads, self.num_levels, self.num_points])
 
-        offset_normalizer = value_spatial_shapes.flip([1]).reshape(
-            [1, 1, 1, self.num_levels, 1, 2])
-        sampling_locations = reference_points.reshape([
-            bs, Len_q, 1, self.num_levels, 1, 2
-        ]) + sampling_offsets / offset_normalizer
+        if reference_points.shape[-1] == 2:
+            offset_normalizer = value_spatial_shapes.flip([1]).reshape(
+                [1, 1, 1, self.num_levels, 1, 2])
+            sampling_locations = reference_points.reshape([
+                bs, Len_q, 1, self.num_levels, 1, 2
+            ]) + sampling_offsets / offset_normalizer
+        elif reference_points.shape[-1] == 4:
+            sampling_locations = (
+                reference_points[:, :, None, :, None, :2] + sampling_offsets /
+                self.num_points * reference_points[:, :, None, :, None, 2:] *
+                0.5)
+        else:
+            raise ValueError(
+                "Last dim of reference_points must be 2 or 4, but get {} instead.".
+                format(reference_points.shape[-1]))
 
         output = self.ms_deformable_attn_core(
             value, value_spatial_shapes, value_level_start_index,
