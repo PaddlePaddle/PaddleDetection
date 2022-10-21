@@ -460,7 +460,6 @@ class Trainer(object):
             self.loader.dataset.set_epoch(epoch_id)
             model.train()
             iter_tic = time.time()
-            print("loader len:", len(self.loader))
             for step_id, data in enumerate(self.loader):
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
