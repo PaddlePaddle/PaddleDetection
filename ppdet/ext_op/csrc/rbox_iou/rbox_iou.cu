@@ -13,20 +13,14 @@
 // limitations under the License.
 //
 // The code is based on
-// https://github.com/csuhan/s2anet/blob/master/mmdet/ops/box_iou_rotated
+// https://github.com/facebookresearch/detectron2/blob/main/detectron2/layers/csrc/box_iou_rotated/
 
 #include "paddle/extension.h"
-#include "rbox_iou_op.h"
+#include "rbox_iou_utils.h"
 
 // 2D block with 32 * 16 = 512 threads per block
 const int BLOCK_DIM_X = 32;
 const int BLOCK_DIM_Y = 16;
-
-/**
-   Computes ceil(a / b)
-*/
-
-static inline int CeilDiv(const int a, const int b) { return (a + b - 1) / b; }
 
 template <typename T>
 __global__ void rbox_iou_cuda_kernel(const int rbox1_num, const int rbox2_num,
@@ -85,7 +79,7 @@ __global__ void rbox_iou_cuda_kernel(const int rbox1_num, const int rbox2_num,
 }
 
 #define CHECK_INPUT_GPU(x)                                                     \
-  PD_CHECK(x.place() == paddle::PlaceType::kGPU, #x " must be a GPU Tensor.")
+  PD_CHECK(x.place() == paddle::GPUPlace(), #x " must be a GPU Tensor.")
 
 std::vector<paddle::Tensor> RboxIouCUDAForward(const paddle::Tensor &rbox1,
                                                const paddle::Tensor &rbox2) {
@@ -95,7 +89,8 @@ std::vector<paddle::Tensor> RboxIouCUDAForward(const paddle::Tensor &rbox1,
   auto rbox1_num = rbox1.shape()[0];
   auto rbox2_num = rbox2.shape()[0];
 
-  auto output = paddle::Tensor(paddle::PlaceType::kGPU, {rbox1_num, rbox2_num});
+  auto output =
+      paddle::empty({rbox1_num, rbox2_num}, rbox1.dtype(), paddle::GPUPlace());
 
   const int blocks_x = CeilDiv(rbox1_num, BLOCK_DIM_X);
   const int blocks_y = CeilDiv(rbox2_num, BLOCK_DIM_Y);
@@ -107,7 +102,7 @@ std::vector<paddle::Tensor> RboxIouCUDAForward(const paddle::Tensor &rbox1,
       rbox1.type(), "rbox_iou_cuda_kernel", ([&] {
         rbox_iou_cuda_kernel<data_t><<<blocks, threads, 0, rbox1.stream()>>>(
             rbox1_num, rbox2_num, rbox1.data<data_t>(), rbox2.data<data_t>(),
-            output.mutable_data<data_t>());
+            output.data<data_t>());
       }));
 
   return {output};

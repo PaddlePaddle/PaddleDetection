@@ -205,8 +205,8 @@ class FCOSRHead(nn.Layer):
             anchor_points = []
             stride_tensor = []
             num_anchors_list = []
-            for i, stride in enumerate(self.fpn_strides):
-                _, _, h, w = feats[i].shape
+            for feat, stride in zip(feats, self.fpn_strides):
+                _, _, h, w = paddle.shape(feat)
                 shift_x = (paddle.arange(end=w) + 0.5) * stride
                 shift_y = (paddle.arange(end=h) + 0.5) * stride
                 shift_y, shift_x = paddle.meshgrid(shift_y, shift_x)

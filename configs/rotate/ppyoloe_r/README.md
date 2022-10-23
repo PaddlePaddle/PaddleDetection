@@ -11,7 +11,11 @@
 - [引用](#引用)
 
 ## 简介
-PP-YOLOE-R是一个高效的单阶段Anchor-free旋转框检测模型。基于PP-YOLOE, PP-YOLOE-R以极少的参数量和计算量为代价，引入了一系列有用的设计来提升检测精度。在DOTA 1.0数据集上，PP-YOLOE-R-l和PP-YOLOE-R-x在单尺度训练和测试的情况下分别达到了78.14和78.27 mAP，这超越了几乎所有的旋转框检测模型。通过多尺度训练和测试，PP-YOLOE-R-l和PP-YOLOE-R-x的检测精度进一步提升至80.02和80.73 mAP。在这种情况下，PP-YOLOE-R-x超越了所有的anchor-free方法并且和最先进的anchor-based的两阶段模型精度几乎相当。此外，PP-YOLOE-R-s和PP-YOLOE-R-m通过多尺度训练和测试可以达到79.42和79.71 mAP。考虑到这两个模型的参数量和计算量，其性能也非常卓越。在保持高精度的同时，PP-YOLOE-R避免使用特殊的算子，例如Deformable Convolution或Rotated RoI Align，以使其能轻松地部署在多种多样的硬件上。在1024x1024的输入分辨率下，PP-YOLOE-R-l在Tesla V100上使用TensorRT FP16达到了90.1 FPS。
+PP-YOLOE-R是一个高效的单阶段Anchor-free旋转框检测模型。基于PP-YOLOE, PP-YOLOE-R以极少的参数量和计算量为代价，引入了一系列有用的设计来提升检测精度。在DOTA 1.0数据集上，PP-YOLOE-R-l和PP-YOLOE-R-x在单尺度训练和测试的情况下分别达到了78.14和78.27 mAP，这超越了几乎所有的旋转框检测模型。通过多尺度训练和测试，PP-YOLOE-R-l和PP-YOLOE-R-x的检测精度进一步提升至80.02和80.73 mAP。在这种情况下，PP-YOLOE-R-x超越了所有的anchor-free方法并且和最先进的anchor-based的两阶段模型精度几乎相当。此外，PP-YOLOE-R-s和PP-YOLOE-R-m通过多尺度训练和测试可以达到79.42和79.71 mAP。考虑到这两个模型的参数量和计算量，其性能也非常卓越。在保持高精度的同时，PP-YOLOE-R避免使用特殊的算子，例如Deformable Convolution或Rotated RoI Align，以使其能轻松地部署在多种多样的硬件上。在1024x1024的输入分辨率下，PP-YOLOE-R-s/m/l/x在RTX 2080 Ti上使用TensorRT分别能达到69.8/55.1/48.3/37.1 FPS，在Tesla V100上分别能达到114.5/86.8/69.7/50.7 FPS。更多细节可以参考我们的技术报告。
+
+<div align="center">
+  <img src="../../../docs/images/ppyoloe_r_map_fps.png" width=500 />
+</div>
 
 PP-YOLOE-R相较于PP-YOLOE做了以下几点改动：
 - Rotated Task Alignment Learning
@@ -22,22 +26,23 @@ PP-YOLOE-R相较于PP-YOLOE做了以下几点改动：
 
 ## 模型库
 
-| 模型 | Backbone | mAP | 学习率策略 | 角度表示 | 数据增广 | GPU数目 | 每GPU图片数目 | 模型下载 | 配置文件 |
-|:---:|:--------:|:----:|:---------:|:-----:|:--------:|:-----:|:------------:|:-------:|:------:|
-| PP-YOLOE-R-s | CRN-s | 73.82 | 3x | oc | RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_s_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_s_3x_dota.yml) |
-| PP-YOLOE-R-s | CRN-s | 79.42 | 3x | oc | MS+RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_s_3x_dota_ms.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_s_3x_dota_ms.yml) |
-| PP-YOLOE-R-m | CRN-m | 77.64 | 3x | oc | RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_m_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_m_3x_dota.yml) |
-| PP-YOLOE-R-m | CRN-m | 79.71 | 3x | oc | MS+RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_m_3x_dota_ms.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_m_3x_dota_ms.yml) |
-| PP-YOLOE-R-l | CRN-l | 78.14 | 3x | oc | RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_l_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_l_3x_dota.yml) |
-| PP-YOLOE-R-l | CRN-l | 80.02 | 3x | oc | MS+RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_l_3x_dota_ms.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_l_3x_dota_ms.yml) |
-| PP-YOLOE-R-x | CRN-x | 78.28 | 3x | oc | RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_x_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_x_3x_dota.yml) |
-| PP-YOLOE-R-x | CRN-x | 80.73 | 3x | oc | MS+RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_x_3x_dota_ms.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_x_3x_dota_ms.yml) |
+| 模型 | Backbone | mAP | V100 TRT FP16 (FPS) | RTX 2080 Ti TRT FP16 (FPS) |学习率策略 | 角度表示 | 数据增广 | GPU数目 | 每GPU图片数目 | 模型下载 | 配置文件 |
+|:---:|:--------:|:----:|:--------------------:|:------------:|:--------------------:|:-----:|:--------:|:-------:|:------:|:-----------:|:------:|
+| PP-YOLOE-R-s | CRN-s | 73.82 | 114.5 | 69.8 | 3x | oc | RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_s_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_s_3x_dota.yml) |
+| PP-YOLOE-R-s | CRN-s | 79.42 | 114.5 | 69.8 | 3x | oc | MS+RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_s_3x_dota_ms.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_s_3x_dota_ms.yml) |
+| PP-YOLOE-R-m | CRN-m | 77.64 | 86.8 | 55.1 | 3x | oc | RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_m_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_m_3x_dota.yml) |
+| PP-YOLOE-R-m | CRN-m | 79.71 | 86.8 | 55.1 | 3x | oc | MS+RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_m_3x_dota_ms.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_m_3x_dota_ms.yml) |
+| PP-YOLOE-R-l | CRN-l | 78.14 | 69.7 | 48.3 | 3x | oc | RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_l_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_l_3x_dota.yml) |
+| PP-YOLOE-R-l | CRN-l | 80.02 | 69.7 | 48.3 | 3x | oc | MS+RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_l_3x_dota_ms.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_l_3x_dota_ms.yml) |
+| PP-YOLOE-R-x | CRN-x | 78.28 | 50.7 | 37.1 | 3x | oc | RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_x_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_x_3x_dota.yml) |
+| PP-YOLOE-R-x | CRN-x | 80.73 | 50.7 | 37.1 | 3x | oc | MS+RR | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_x_3x_dota_ms.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_x_3x_dota_ms.yml) |
 
 **注意:**
 
 - 如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
 - 模型库中的模型默认使用单尺度训练单尺度测试。如果数据增广一栏标明MS，意味着使用多尺度训练和多尺度测试。如果数据增广一栏标明RR，意味着使用RandomRotate数据增广进行训练。
 - CRN表示在PP-YOLOE中提出的CSPRepResNet
+- 速度测试使用TensorRT 8.2.3在DOTA测试集中测试2000张图片计算平均值得到。参考速度测试以复现[速度测试](#速度测试)
 
 ## 使用说明
 
@@ -75,9 +80,40 @@ python configs/rotate/tools/generate_result.py --pred_txt_dir=output_ppyoloe_r/ 
 zip -r submit.zip submit
 ```
 
+### 速度测试
+速度测试需要确保**TensorRT版本大于8.2, PaddlePaddle版本大于2.4.0rc0**。使用Paddle Inference且使用TensorRT进行测速，执行以下命令：
+
+``` bash
+# 导出模型
+python tools/export_model.py -c configs/rotate/ppyoloe_r/ppyoloe_r_crn_l_3x_dota.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_l_3x_dota.pdparams trt=True
+
+# 速度测试
+CUDA_VISIBLE_DEVICES=0 python configs/rotate/tools/inference_benchmark.py --model_dir output_inference/ppyoloe_r_crn_l_3x_dota/ --image_dir /path/to/dota/test/dir --run_mode trt_fp16
+```
+
 ## 预测部署
 
-部署教程请参考[预测部署](../../../deploy/README.md)
+**使用Paddle Inference但不使用TensorRT**进行部署，执行以下命令：
+``` bash
+# 导出模型
+python tools/export_model.py -c configs/rotate/ppyoloe_r/ppyoloe_r_crn_l_3x_dota.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_l_3x_dota.pdparams
+
+# 预测图片
+python deploy/python/infer.py --image_file demo/P0072__1.0__0___0.png --model_dir=output_inference/ppyoloe_r_crn_l_3x_dota --run_mode=paddle --device=gpu
+```
+
+**使用Paddle Inference且使用TensorRT**进行部署，执行以下命令：
+```
+# 导出模型
+python tools/export_model.py -c configs/rotate/ppyoloe_r/ppyoloe_r_crn_l_3x_dota.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_l_3x_dota.pdparams trt=True
+
+# 预测图片
+python deploy/python/infer.py --image_file demo/P0072__1.0__0___0.png --model_dir=output_inference/ppyoloe_r_crn_l_3x_dota --run_mode=trt_fp16 --device=gpu
+```
+
+**注意：**
+- 使用Paddle-TRT使用确保PaddlePaddle版本大于2.4.0rc且TensorRT版本大于8.2.
+
 
 ## 附录
 
