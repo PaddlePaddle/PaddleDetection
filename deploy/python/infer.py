@@ -42,8 +42,10 @@ from utils import argsparser, Timer, get_current_memory_mb, multiclass_nms, coco
 SUPPORT_MODELS = {
     'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
     'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD', 'RetinaNet',
-    'StrongBaseline', 'STGCN', 'YOLOX', 'PPHGNet', 'PPLCNet'
+    'StrongBaseline', 'STGCN', 'YOLOX', 'PPHGNet', 'PPLCNet', 'DETR'
 }
+
+TUNED_TRT_DYNAMIC_MODELS = {'DETR'}
 
 
 def bench_log(detector, img_list, model_info, batch_size=1, name=None):
@@ -103,6 +105,7 @@ class Detector(object):
         self.pred_config = self.set_config(model_dir)
         self.predictor, self.config = load_predictor(
             model_dir,
+            self.pred_config.arch,
             run_mode=run_mode,
             batch_size=batch_size,
             min_subgraph_size=self.pred_config.min_subgraph_size,
@@ -775,6 +778,7 @@ class PredictConfig():
 
 
 def load_predictor(model_dir,
+                   arch,
                    run_mode='paddle',
                    batch_size=1,
                    device='CPU',
@@ -787,7 +791,8 @@ def load_predictor(model_dir,
                    cpu_threads=1,
                    enable_mkldnn=False,
                    enable_mkldnn_bfloat16=False,
-                   delete_shuffle_pass=False):
+                   delete_shuffle_pass=False,
+                   tuned_trt_shape_file="shape_range_info.pbtxt"):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
@@ -854,6 +859,8 @@ def load_predictor(model_dir,
         'trt_fp16': Config.Precision.Half
     }
     if run_mode in precision_map.keys():
+        if arch in TUNED_TRT_DYNAMIC_MODELS:
+            config.collect_shape_range_info(tuned_trt_shape_file)
         config.enable_tensorrt_engine(
             workspace_size=(1 << 25) * batch_size,
             max_batch_size=batch_size,
@@ -861,6 +868,9 @@ def load_predictor(model_dir,
             precision_mode=precision_map[run_mode],
             use_static=False,
             use_calib_mode=trt_calib_mode)
+        if arch in TUNED_TRT_DYNAMIC_MODELS:
+            config.enable_tuned_tensorrt_dynamic_shape(tuned_trt_shape_file,
+                                                       True)
 
         if use_dynamic_shape:
             min_input_shape = {

@@ -39,6 +39,7 @@ class DistillModel(nn.Layer):
         load_pretrain_weight(self.student_model, cfg.pretrain_weights)
 
         slim_cfg = load_config(slim_cfg)
+
         self.teacher_model = create(slim_cfg.architecture)
         self.distill_loss = create(slim_cfg.distill_loss)
         logger.debug('Load teacher model pretrain_weights:{}'.format(
@@ -488,3 +489,144 @@ class FGDFeatureLoss(nn.Layer):
                + self.gamma_fgd * mask_loss + self.lambda_fgd * rela_loss
 
         return loss
+
+
+class LDDistillModel(nn.Layer):
+    def __init__(self, cfg, slim_cfg):
+        super(LDDistillModel, self).__init__()
+        self.student_model = create(cfg.architecture)
+        logger.debug('Load student model pretrain_weights:{}'.format(
+            cfg.pretrain_weights))
+        load_pretrain_weight(self.student_model, cfg.pretrain_weights)
+
+        slim_cfg = load_config(slim_cfg)  #rewrite student cfg
+        self.teacher_model = create(slim_cfg.architecture)
+        logger.debug('Load teacher model pretrain_weights:{}'.format(
+            slim_cfg.pretrain_weights))
+        load_pretrain_weight(self.teacher_model, slim_cfg.pretrain_weights)
+
+        for param in self.teacher_model.parameters():
+            param.trainable = False
+
+    def parameters(self):
+        return self.student_model.parameters()
+
+    def forward(self, inputs):
+        if self.training:
+
+            with paddle.no_grad():
+                t_body_feats = self.teacher_model.backbone(inputs)
+                t_neck_feats = self.teacher_model.neck(t_body_feats)
+                t_head_outs = self.teacher_model.head(t_neck_feats)
+
+            #student_loss = self.student_model(inputs)
+            s_body_feats = self.student_model.backbone(inputs)
+            s_neck_feats = self.student_model.neck(s_body_feats)
+            s_head_outs = self.student_model.head(s_neck_feats)
+
+            soft_label_list = t_head_outs[0]
+            soft_targets_list = t_head_outs[1]
+            student_loss = self.student_model.head.get_loss(
+                s_head_outs, inputs, soft_label_list, soft_targets_list)
+            total_loss = paddle.add_n(list(student_loss.values()))
+            student_loss['loss'] = total_loss
+            return student_loss
+        else:
+            return self.student_model(inputs)
+
+
+@register
+class KnowledgeDistillationKLDivLoss(nn.Layer):
+    """Loss function for knowledge distilling using KL divergence.
+
+    Args:
+        reduction (str): Options are `'none'`, `'mean'` and `'sum'`.
+        loss_weight (float): Loss weight of current loss.
+        T (int): Temperature for distillation.
+    """
+
+    def __init__(self, reduction='mean', loss_weight=1.0, T=10):
+        super(KnowledgeDistillationKLDivLoss, self).__init__()
+        assert reduction in ('none', 'mean', 'sum')
+        assert T >= 1
+        self.reduction = reduction
+        self.loss_weight = loss_weight
+        self.T = T
+
+    def knowledge_distillation_kl_div_loss(self,
+                                           pred,
+                                           soft_label,
+                                           T,
+                                           detach_target=True):
+        r"""Loss function for knowledge distilling using KL divergence.
+
+        Args:
+            pred (Tensor): Predicted logits with shape (N, n + 1).
+            soft_label (Tensor): Target logits with shape (N, N + 1).
+            T (int): Temperature for distillation.
+            detach_target (bool): Remove soft_label from automatic differentiation
+
+        Returns:
+            torch.Tensor: Loss tensor with shape (N,).
+        """
+
+        assert pred.shape == soft_label.shape
+        target = F.softmax(soft_label / T, axis=1)
+        if detach_target:
+            target = target.detach()
+
+        kd_loss = F.kl_div(
+            F.log_softmax(
+                pred / T, axis=1), target, reduction='none').mean(1) * (T * T)
+
+        return kd_loss
+
+    def forward(self,
+                pred,
+                soft_label,
+                weight=None,
+                avg_factor=None,
+                reduction_override=None):
+        """Forward function.
+
+        Args:
+            pred (Tensor): Predicted logits with shape (N, n + 1).
+            soft_label (Tensor): Target logits with shape (N, N + 1).
+            weight (Tensor, optional): The weight of loss for each
+                prediction. Defaults to None.
+            avg_factor (int, optional): Average factor that is used to average
+                the loss. Defaults to None.
+            reduction_override (str, optional): The reduction method used to
+                override the original reduction method of the loss.
+                Defaults to None.
+        """
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+
+        reduction = (reduction_override
+                     if reduction_override else self.reduction)
+
+        loss_kd_out = self.knowledge_distillation_kl_div_loss(
+            pred, soft_label, T=self.T)
+
+        if weight is not None:
+            loss_kd_out = weight * loss_kd_out
+
+        if avg_factor is None:
+            if reduction == 'none':
+                loss = loss_kd_out
+            elif reduction == 'mean':
+                loss = loss_kd_out.mean()
+            elif reduction == 'sum':
+                loss = loss_kd_out.sum()
+        else:
+            # if reduction is mean, then average the loss by avg_factor
+            if reduction == 'mean':
+                loss = loss_kd_out.sum() / avg_factor
+            # if reduction is 'none', then do nothing, otherwise raise an error
+            elif reduction != 'none':
+                raise ValueError(
+                    'avg_factor can not be used with reduction="sum"')
+
+        loss_kd = self.loss_weight * loss
+
+        return loss_kd
