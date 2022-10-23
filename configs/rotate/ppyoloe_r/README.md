@@ -11,7 +11,7 @@
 - [引用](#引用)
 
 ## 简介
-PP-YOLOE-R是一个高效的单阶段Anchor-free旋转框检测模型。基于PP-YOLOE, PP-YOLOE-R以极少的参数量和计算量为代价，引入了一系列有用的设计来提升检测精度。在DOTA 1.0数据集上，PP-YOLOE-R-l和PP-YOLOE-R-x在单尺度训练和测试的情况下分别达到了78.14和78.27 mAP，这超越了几乎所有的旋转框检测模型。通过多尺度训练和测试，PP-YOLOE-R-l和PP-YOLOE-R-x的检测精度进一步提升至80.02和80.73 mAP。在这种情况下，PP-YOLOE-R-x超越了所有的anchor-free方法并且和最先进的anchor-based的两阶段模型精度几乎相当。此外，PP-YOLOE-R-s和PP-YOLOE-R-m通过多尺度训练和测试可以达到79.42和79.71 mAP。考虑到这两个模型的参数量和计算量，其性能也非常卓越。在保持高精度的同时，PP-YOLOE-R避免使用特殊的算子，例如Deformable Convolution或Rotated RoI Align，以使其能轻松地部署在多种多样的硬件上。在1024x1024的输入分辨率下，PP-YOLOE-R-s/m/l/x在RTX 2080 Ti上使用TensorRT分别能达到69.8/55.1/48.3/37.1 FPS，在Tesla V100上分别能达到114.5/86.8/69.7/50.7 FPS。更多细节可以参考我们的技术报告。
+PP-YOLOE-R是一个高效的单阶段Anchor-free旋转框检测模型。基于PP-YOLOE, PP-YOLOE-R以极少的参数量和计算量为代价，引入了一系列有用的设计来提升检测精度。在DOTA 1.0数据集上，PP-YOLOE-R-l和PP-YOLOE-R-x在单尺度训练和测试的情况下分别达到了78.14和78.27 mAP，这超越了几乎所有的旋转框检测模型。通过多尺度训练和测试，PP-YOLOE-R-l和PP-YOLOE-R-x的检测精度进一步提升至80.02和80.73 mAP。在这种情况下，PP-YOLOE-R-x超越了所有的anchor-free方法并且和最先进的anchor-based的两阶段模型精度几乎相当。此外，PP-YOLOE-R-s和PP-YOLOE-R-m通过多尺度训练和测试可以达到79.42和79.71 mAP。考虑到这两个模型的参数量和计算量，其性能也非常卓越。在保持高精度的同时，PP-YOLOE-R避免使用特殊的算子，例如Deformable Convolution或Rotated RoI Align，以使其能轻松地部署在多种多样的硬件上。在1024x1024的输入分辨率下，PP-YOLOE-R-s/m/l/x在RTX 2080 Ti上使用TensorRT FP16分别能达到69.8/55.1/48.3/37.1 FPS，在Tesla V100上分别能达到114.5/86.8/69.7/50.7 FPS。更多细节可以参考我们的技术报告。
 
 <div align="center">
   <img src="../../../docs/images/ppyoloe_r_map_fps.png" width=500 />

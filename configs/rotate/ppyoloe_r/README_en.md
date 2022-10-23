@@ -14,7 +14,7 @@ English | [简体中文](README.md)
 PP-YOLOE-R is an efficient anchor-free rotated object detector. Based on PP-YOLOE, PP-YOLOE-R introduces a bag of useful tricks to improve detection precision at the expense of marginal parameters and computations.PP-YOLOE-R-l and PP-YOLOE-R-x achieve 78.14 and 78.27 mAP respectively on DOTA 1.0 dataset with single-scale training and testing, which outperform almost all other rotated object detectors. With multi-scale training and testing, the detection precision of PP-YOLOE-R-l and PP-YOLOE-R-x is further improved to 80.02 and 80.73 mAP. In this case, PP-YOLOE-R-x surpasses all anchor-free methods and demonstrates competitive performance to state-of-the-art anchor-based two-stage model. Moreover, PP-YOLOE-R-s and PP-YOLOE-R-m can achieve 79.42 and 79.71 mAP with multi-scale training and testing, which is an excellent result considering the parameters and GLOPS of these two models. While maintaining high precision, PP-YOLOE-R avoids using special operators, such as Deformable Convolution or Rotated RoI Align, to be deployed friendly on various hardware. At the input resolution of 1024$\times$1024, PP-YOLOE-R-s/m/l/x can reach 69.8/55.1/48.3/37.1 FPS on RTX 2080 Ti and 114.5/86.8/69.7/50.7 FPS on Tesla V100 GPU with TensorRT and FP16-precision. For more details, please refer to our technical report.
 
 <div align="center">
-  <img src="../../docs/images/ppyoloe_r_map_fps.png" width=500 />
+  <img src="../../../docs/images/ppyoloe_r_map_fps.png" width=500 />
 </div>
 
 Compared with PP-YOLOE, PP-YOLOE-R has made the following changes:
