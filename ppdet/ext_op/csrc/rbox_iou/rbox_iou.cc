@@ -34,7 +34,7 @@ void rbox_iou_cpu_kernel(const int rbox1_num, const int rbox2_num,
 }
 
 #define CHECK_INPUT_CPU(x)                                                     \
-  PD_CHECK(x.place() == paddle::CPUPlace(), #x " must be a CPU Tensor.")
+  PD_CHECK(x.is_cpu(), #x " must be a CPU Tensor.")
 
 std::vector<paddle::Tensor> RboxIouCPUForward(const paddle::Tensor &rbox1,
                                               const paddle::Tensor &rbox2) {
@@ -67,10 +67,10 @@ std::vector<paddle::Tensor> RboxIouCUDAForward(const paddle::Tensor &rbox1,
 std::vector<paddle::Tensor> RboxIouForward(const paddle::Tensor &rbox1,
                                            const paddle::Tensor &rbox2) {
   CHECK_INPUT_SAME(rbox1, rbox2);
-  if (rbox1.place() == paddle::CPUPlace()) {
+  if (rbox1.is_cpu()) {
     return RboxIouCPUForward(rbox1, rbox2);
 #ifdef PADDLE_WITH_CUDA
-  } else if (rbox1.place() == paddle::GPUPlace()) {
+  } else if (rbox1.is_gpu()) {
     return RboxIouCUDAForward(rbox1, rbox2);
 #endif
   }

@@ -45,7 +45,7 @@ nms_rotated_cuda_kernel(const T *boxes_data, const float threshold,
 }
 
 #define CHECK_INPUT_GPU(x)                                                     \
-  PD_CHECK(x.place() == paddle::GPUPlace(), #x " must be a GPU Tensor.")
+  PD_CHECK(x.is_gpu(), #x " must be a GPU Tensor.")
 
 std::vector<paddle::Tensor> NMSRotatedCUDAForward(const paddle::Tensor &boxes,
                                                   const paddle::Tensor &scores,

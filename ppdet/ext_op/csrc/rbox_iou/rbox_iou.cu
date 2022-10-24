@@ -79,7 +79,7 @@ __global__ void rbox_iou_cuda_kernel(const int rbox1_num, const int rbox2_num,
 }
 
 #define CHECK_INPUT_GPU(x)                                                     \
-  PD_CHECK(x.place() == paddle::GPUPlace(), #x " must be a GPU Tensor.")
+  PD_CHECK(x.is_gpu(), #x " must be a GPU Tensor.")
 
 std::vector<paddle::Tensor> RboxIouCUDAForward(const paddle::Tensor &rbox1,
                                                const paddle::Tensor &rbox2) {

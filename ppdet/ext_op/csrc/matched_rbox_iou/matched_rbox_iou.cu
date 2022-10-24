@@ -30,7 +30,7 @@ matched_rbox_iou_cuda_kernel(const int rbox_num, const T *rbox1_data_ptr,
 }
 
 #define CHECK_INPUT_GPU(x)                                                     \
-  PD_CHECK(x.place() == paddle::GPUPlace(), #x " must be a GPU Tensor.")
+  PD_CHECK(x.is_gpu(), #x " must be a GPU Tensor.")
 
 std::vector<paddle::Tensor>
 MatchedRboxIouCUDAForward(const paddle::Tensor &rbox1,

@@ -54,7 +54,7 @@ void nms_rotated_cpu_kernel(const T *boxes_data, const float threshold,
 }
 
 #define CHECK_INPUT_CPU(x)                                                     \
-  PD_CHECK(x.place() == paddle::CPUPlace(), #x " must be a CPU Tensor.")
+  PD_CHECK(x.is_cpu(), #x " must be a CPU Tensor.")
 
 std::vector<paddle::Tensor> NMSRotatedCPUForward(const paddle::Tensor &boxes,
                                                  const paddle::Tensor &scores,
@@ -92,10 +92,10 @@ std::vector<paddle::Tensor> NMSRotatedCUDAForward(const paddle::Tensor &boxes,
 std::vector<paddle::Tensor> NMSRotatedForward(const paddle::Tensor &boxes,
                                               const paddle::Tensor &scores,
                                               float threshold) {
-  if (boxes.place() == paddle::CPUPlace()) {
+  if (boxes.is_cpu()) {
     return NMSRotatedCPUForward(boxes, scores, threshold);
 #ifdef PADDLE_WITH_CUDA
-  } else if (boxes.place() == paddle::GPUPlace()) {
+  } else if (boxes.is_gpu()) {
     return NMSRotatedCUDAForward(boxes, scores, threshold);
 #endif
   }
