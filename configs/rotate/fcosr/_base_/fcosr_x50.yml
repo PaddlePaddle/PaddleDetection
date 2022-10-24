@@ -1,0 +1,44 @@
+architecture: YOLOv3
+snapshot_epoch: 1
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNeXt50_32x4d_pretrained.pdparams
+
+YOLOv3:
+  backbone: ResNet
+  neck: FPN
+  yolo_head: FCOSRHead
+  post_process: ~
+
+ResNet:
+  depth: 50
+  groups: 32
+  base_width: 4
+  variant: b
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1,2,3]
+  num_stages: 4
+
+FPN:
+  out_channel: 256
+  extra_stage: 2
+  has_extra_convs: true
+  use_c5: false
+  relu_before_extra_convs: true
+
+FCOSRHead:
+  feat_channels: 256
+  fpn_strides: [8, 16, 32, 64, 128]
+  stacked_convs: 4
+  loss_weight: {class: 1.0, probiou: 1.0}
+  assigner:
+    name: FCOSRAssigner
+    factor: 12
+    threshold: 0.23
+    boundary: [[-1, 64], [64, 128], [128, 256], [256, 512], [512, 100000000.0]]
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 2000
+    keep_top_k: -1
+    score_threshold: 0.1
+    nms_threshold: 0.1
+    normalized: False

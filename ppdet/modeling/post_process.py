@@ -26,9 +26,8 @@ except Exception:
     from collections import Sequence
 
 __all__ = [
-    'BBoxPostProcess', 'MaskPostProcess', 'FCOSPostProcess',
-    'JDEBBoxPostProcess', 'CenterNetPostProcess', 'DETRBBoxPostProcess',
-    'SparsePostProcess'
+    'BBoxPostProcess', 'MaskPostProcess', 'JDEBBoxPostProcess',
+    'CenterNetPostProcess', 'DETRBBoxPostProcess', 'SparsePostProcess'
 ]
 
 
@@ -37,8 +36,13 @@ class BBoxPostProcess(object):
     __shared__ = ['num_classes', 'export_onnx', 'export_eb']
     __inject__ = ['decode', 'nms']
 
-    def __init__(self, num_classes=80, decode=None, nms=None,
-                 export_onnx=False, export_eb=False):
+    def __init__(self,
+                 num_classes=80,
+                 decode=None,
+                 nms=None,
+                 export_onnx=False,
+                 export_eb=False):
+
         super(BBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.decode = decode
@@ -104,7 +108,7 @@ class BBoxPostProcess(object):
         if self.export_eb:
             # enable rcnn models for edgeboard hw to skip the following postprocess.
             return bboxes, bboxes, bbox_num
-            
+
         if not self.export_onnx:
             bboxes_list = []
             bbox_num_list = []
@@ -277,26 +281,6 @@ class MaskPostProcess(object):
             paddle.set_device(device)
 
         return pred_result
-
-
-@register
-class FCOSPostProcess(object):
-    __inject__ = ['decode', 'nms']
-
-    def __init__(self, decode=None, nms=None):
-        super(FCOSPostProcess, self).__init__()
-        self.decode = decode
-        self.nms = nms
-
-    def __call__(self, fcos_head_outs, scale_factor):
-        """
-        Decode the bbox and do NMS in FCOS.
-        """
-        locations, cls_logits, bboxes_reg, centerness = fcos_head_outs
-        bboxes, score = self.decode(locations, cls_logits, bboxes_reg,
-                                    centerness, scale_factor)
-        bbox_pred, bbox_num, _ = self.nms(bboxes, score)
-        return bbox_pred, bbox_num
 
 
 @register
@@ -496,9 +480,9 @@ class DETRBBoxPostProcess(object):
 
         bbox_pred = bbox_cxcywh_to_xyxy(bboxes)
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
-        img_h, img_w = origin_shape.unbind(1)
-        origin_shape = paddle.stack(
-            [img_w, img_h, img_w, img_h], axis=-1).unsqueeze(0)
+        img_h, img_w = paddle.split(origin_shape, 2, axis=-1)
+        origin_shape = paddle.concat(
+            [img_w, img_h, img_w, img_h], axis=-1).reshape([-1, 1, 4])
         bbox_pred *= origin_shape
 
         scores = F.sigmoid(logits) if self.use_focal_loss else F.softmax(

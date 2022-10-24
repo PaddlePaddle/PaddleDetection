@@ -86,7 +86,7 @@ Please refer to[GFL](https://github.com/PaddlePaddle/PaddleDetection/tree/releas
 
 Please refer to[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/picodet)
 
-### PP-YOLOE
+### PP-YOLOE/PP-YOLOE+
 
 Please refer to[PP-YOLOE](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/ppyoloe)
 
@@ -143,4 +143,8 @@ Please refer to [FairMOT](https://github.com/PaddlePaddle/PaddleDetection/tree/r
 
 ### ByteTrack
 
-Please refer to [ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/mot/bytetrack)
+Please refer to [ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/bytetrack)
+
+### OC-SORT
+
+Please refer to [OC-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/ocsort)

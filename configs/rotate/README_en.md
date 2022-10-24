@@ -14,7 +14,9 @@ Rotated object detection is used to detect rectangular bounding boxes with angle
 ## Model Zoo
 | Model | mAP | Lr Scheduler | Angle | Aug | GPU Number | images/GPU | download | config |
 |:---:|:----:|:---------:|:-----:|:--------:|:-----:|:------------:|:-------:|:------:|
-| [S2ANet](./s2anet/README_en.md) | 73.84 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml) |
+| [S2ANet](./s2anet/README_en.md) | 73.84 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml) |
+| [FCOSR](./fcosr/README_en.md) | 76.62 | 3x | oc | - | 4 | 4 | [model](https://paddledet.bj.bcebos.com/models/fcosr_x50_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/fcosr/fcosr_x50_3x_dota.yml) |
+
 
 **Notes:**
 

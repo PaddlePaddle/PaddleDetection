@@ -5,7 +5,8 @@
 
 | 任务                 | 算法 | 精度(Box AP) | 下载                                                                                | 配置文件 |
 |:---------------------|:---------:|:------:| :---------------------------------------------------------------------------------: | :------:|
-| 行人检测 |  YOLOv3  |  51.8  | [下载链接](https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams) | [配置文件](./pedestrian_yolov3_darknet.yml) |
+| 行人检测 |  YOLOv3  |  51.8  | [下载链接](https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/pphuman/pedestrian_yolov3/pedestrian_yolov3_darknet.yml) |
+README_cn.md
 
 ## 行人检测（Pedestrian Detection）
 

@@ -36,19 +36,12 @@ logger = setup_logger(__name__)
 registered_ops = []
 
 __all__ = [
-    'RandomAffine',
-    'KeyPointFlip',
-    'TagGenerate',
-    'ToHeatmaps',
-    'NormalizePermute',
-    'EvalAffine',
-    'RandomFlipHalfBodyTransform',
-    'TopDownAffine',
-    'ToHeatmapsTopDown',
-    'ToHeatmapsTopDown_DARK',
-    'ToHeatmapsTopDown_UDP',
-    'TopDownEvalAffine',
-    'AugmentationbyInformantionDropping',
+    'RandomAffine', 'KeyPointFlip', 'TagGenerate', 'ToHeatmaps',
+    'NormalizePermute', 'EvalAffine', 'RandomFlipHalfBodyTransform',
+    'TopDownAffine', 'ToHeatmapsTopDown', 'ToHeatmapsTopDown_DARK',
+    'ToHeatmapsTopDown_UDP', 'TopDownEvalAffine',
+    'AugmentationbyInformantionDropping', 'SinglePoseAffine', 'NoiseJitter',
+    'FlipPose'
 ]
 
 
@@ -615,6 +608,169 @@ class TopDownAffine(object):
         records['image'] = image
         records['joints'] = joints
 
+        return records
+
+
+@register_keypointop
+class SinglePoseAffine(object):
+    """apply affine transform to image and coords
+
+    Args:
+        trainsize (list): [w, h], the standard size used to train
+        use_udp (bool): whether to use Unbiased Data Processing.
+        records(dict): the dict contained the image and coords
+
+    Returns:
+        records (dict): contain the image and coords after tranformed
+
+    """
+
+    def __init__(self,
+                 trainsize,
+                 rotate=[1.0, 30],
+                 scale=[1.0, 0.25],
+                 use_udp=False):
+        self.trainsize = trainsize
+        self.use_udp = use_udp
+        self.rot_prob = rotate[0]
+        self.rot_range = rotate[1]
+        self.scale_prob = scale[0]
+        self.scale_ratio = scale[1]
+
+    def __call__(self, records):
+        image = records['image']
+        if 'joints_2d' in records:
+            joints = records['joints_2d'] if 'joints_2d' in records else None
+            joints_vis = records[
+                'joints_vis'] if 'joints_vis' in records else np.ones(
+                    (len(joints), 1))
+        rot = 0
+        s = 1.
+        if np.random.random() < self.rot_prob:
+            rot = np.clip(np.random.randn() * self.rot_range,
+                          -self.rot_range * 2, self.rot_range * 2)
+        if np.random.random() < self.scale_prob:
+            s = np.clip(np.random.randn() * self.scale_ratio + 1,
+                        1 - self.scale_ratio, 1 + self.scale_ratio)
+
+        if self.use_udp:
+            trans = get_warp_matrix(
+                rot,
+                np.array(records['bbox_center']) * 2.0,
+                [self.trainsize[0] - 1.0, self.trainsize[1] - 1.0],
+                records['bbox_scale'] * 200.0 * s)
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
+            if 'joints_2d' in records:
+                joints[:, 0:2] = warp_affine_joints(joints[:, 0:2].copy(),
+                                                    trans)
+        else:
+            trans = get_affine_transform(
+                np.array(records['bbox_center']),
+                records['bbox_scale'] * s * 200, rot, self.trainsize)
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
+            if 'joints_2d' in records:
+                for i in range(len(joints)):
+                    if joints_vis[i, 0] > 0.0:
+                        joints[i, 0:2] = affine_transform(joints[i, 0:2], trans)
+
+        if 'joints_3d' in records:
+            pose3d = records['joints_3d']
+            if not rot == 0:
+                trans_3djoints = np.eye(3)
+                rot_rad = -rot * np.pi / 180
+                sn, cs = np.sin(rot_rad), np.cos(rot_rad)
+                trans_3djoints[0, :2] = [cs, -sn]
+                trans_3djoints[1, :2] = [sn, cs]
+                pose3d[:, :3] = np.einsum('ij,kj->ki', trans_3djoints,
+                                          pose3d[:, :3])
+                records['joints_3d'] = pose3d
+
+        records['image'] = image
+        if 'joints_2d' in records:
+            records['joints_2d'] = joints
+
+        return records
+
+
+@register_keypointop
+class NoiseJitter(object):
+    """apply NoiseJitter to image
+
+    Args:
+        noise_factor (float): the noise factor ratio used to generate the jitter
+
+    Returns:
+        records (dict): contain the image and coords after tranformed
+
+    """
+
+    def __init__(self, noise_factor=0.4):
+        self.noise_factor = noise_factor
+
+    def __call__(self, records):
+        self.pn = np.random.uniform(1 - self.noise_factor,
+                                    1 + self.noise_factor, 3)
+        rgb_img = records['image']
+        rgb_img[:, :, 0] = np.minimum(
+            255.0, np.maximum(0.0, rgb_img[:, :, 0] * self.pn[0]))
+        rgb_img[:, :, 1] = np.minimum(
+            255.0, np.maximum(0.0, rgb_img[:, :, 1] * self.pn[1]))
+        rgb_img[:, :, 2] = np.minimum(
+            255.0, np.maximum(0.0, rgb_img[:, :, 2] * self.pn[2]))
+        records['image'] = rgb_img
+        return records
+
+
+@register_keypointop
+class FlipPose(object):
+    """random apply flip to image
+
+    Args:
+        noise_factor (float): the noise factor ratio used to generate the jitter
+
+    Returns:
+        records (dict): contain the image and coords after tranformed
+
+    """
+
+    def __init__(self, flip_prob=0.5, img_res=224, num_joints=14):
+        self.flip_pob = flip_prob
+        self.img_res = img_res
+        if num_joints == 24:
+            self.perm = [
+                5, 4, 3, 2, 1, 0, 11, 10, 9, 8, 7, 6, 12, 13, 14, 15, 16, 17,
+                18, 19, 21, 20, 23, 22
+            ]
+        elif num_joints == 14:
+            self.perm = [5, 4, 3, 2, 1, 0, 11, 10, 9, 8, 7, 6, 12, 13]
+        else:
+            print("error num_joints in flip :{}".format(num_joints))
+
+    def __call__(self, records):
+
+        if np.random.random() < self.flip_pob:
+            img = records['image']
+            img = np.fliplr(img)
+
+            if 'joints_2d' in records:
+                joints_2d = records['joints_2d']
+                joints_2d = joints_2d[self.perm]
+                joints_2d[:, 0] = self.img_res - joints_2d[:, 0]
+                records['joints_2d'] = joints_2d
+
+            if 'joints_3d' in records:
+                joints_3d = records['joints_3d']
+                joints_3d = joints_3d[self.perm]
+                joints_3d[:, 0] = -joints_3d[:, 0]
+                records['joints_3d'] = joints_3d
+
+            records['image'] = img
         return records
 
 

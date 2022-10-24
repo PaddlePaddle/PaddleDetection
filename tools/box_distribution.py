@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import json
 import numpy as np
 import argparse
+from pycocotools.coco import COCO
 
 
 def median(data):
@@ -44,13 +45,13 @@ def draw_distribution(width, height, out_path):
 
 
 def get_ratio_infos(jsonfile, out_img):
+    coco = COCO(annotation_file=jsonfile)
     allannjson = json.load(open(jsonfile, 'r'))
-    be_im_id = 1
+    be_im_id = allannjson['annotations'][0]['image_id'] 
     be_im_w = []
     be_im_h = []
     ratio_w = []
     ratio_h = []
-    images = allannjson['images']
     for i, ann in enumerate(allannjson['annotations']):
         if ann['iscrowd']:
             continue
@@ -59,8 +60,8 @@ def get_ratio_infos(jsonfile, out_img):
             be_im_w.append(w)
             be_im_h.append(h)
         else:
-            im_w = images[be_im_id - 1]['width']
-            im_h = images[be_im_id - 1]['height']
+            im_w = coco.imgs[be_im_id]['width']
+            im_h = coco.imgs[be_im_id]['height']
             im_m_w = np.mean(be_im_w)
             im_m_h = np.mean(be_im_h)
             dis_w = im_m_w / im_w
@@ -71,8 +72,8 @@ def get_ratio_infos(jsonfile, out_img):
             be_im_w = [w]
             be_im_h = [h]
 
-    im_w = images[be_im_id - 1]['width']
-    im_h = images[be_im_id - 1]['height']
+    im_w = coco.imgs[be_im_id]['width']
+    im_h = coco.imgs[be_im_id]['height']
     im_m_w = np.mean(be_im_w)
     im_m_h = np.mean(be_im_h)
     dis_w = im_m_w / im_w

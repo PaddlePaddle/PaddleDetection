@@ -7,7 +7,7 @@ TrainDataset:
     dataset_dir: dataset/mot
     image_lists: ['mot17.train', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
-
+    repeat: 80
 # for MOT evaluation
 # If you want to change the MOT evaluation dataset, please modify 'data_root'
 EvalMOTDataset:

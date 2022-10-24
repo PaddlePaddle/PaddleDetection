@@ -49,6 +49,8 @@ TRT_MIN_SUBGRAPH = {
     'CenterNet': 5,
     'TOOD': 5,
     'YOLOX': 8,
+    'METRO_Body': 3,
+    'DETR': 3,
 }
 
 KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
@@ -139,7 +141,6 @@ def _dump_infer_config(config, path, image_shape, model):
             "Exporting RCNN model to ONNX only support batch_size = 1")
         infer_cfg['export_onnx'] = True
         infer_cfg['export_eb'] = export_eb
-
 
     if infer_arch in MOT_ARCH:
         if infer_arch == 'DeepSORT':

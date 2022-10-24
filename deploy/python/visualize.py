@@ -378,7 +378,7 @@ def visualize_action(im,
     im = cv2.imread(im) if isinstance(im, str) else im
     im_h, im_w = im.shape[:2]
 
-    text_scale = max(1, im.shape[1] / 1600.)
+    text_scale = max(1, im.shape[1] / 400.)
     text_thickness = 2
 
     if action_visual_collector:
@@ -418,7 +418,7 @@ def visualize_vehicleplate(im, results, boxes=None):
         im = np.ascontiguousarray(np.copy(im))
 
     im_h, im_w = im.shape[:2]
-    text_scale = max(1.0, im.shape[0] / 1600.)
+    text_scale = max(1.0, im.shape[0] / 400.)
     text_thickness = 2
 
     line_inter = im.shape[0] / 40.

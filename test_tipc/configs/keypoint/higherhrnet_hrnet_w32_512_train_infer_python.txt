@@ -41,7 +41,7 @@ inference:./deploy/python/keypoint_infer.py
 --device:gpu|cpu
 --enable_mkldnn:False
 --cpu_threads:4
---batch_size:1|2
+--batch_size:1
 --use_tensorrt:null
 --run_mode:paddle
 --model_dir:

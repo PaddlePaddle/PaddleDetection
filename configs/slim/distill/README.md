@@ -17,6 +17,14 @@ FGD全称为[Focal and Global Knowledge Distillation for Detectors](https://arxi
 |retinaNet_r50_fpn_2x + FGD| student | 40.8 |[download](https://paddledet.bj.bcebos.com/models/retinanet_r101_distill_r50_2x_coco.pdparams) |
 
 
+## LD模型蒸馏
+
+LD全称为[Localization Distillation for Dense Object Detection](https://arxiv.org/abs/2102.12252)，将回归框表示为概率分布，把分类任务的KD用在定位任务上，并且使用因地制宜、分而治之的策略，在不同的区域分别学习分类知识与定位知识。在PaddleDetection中，我们实现了LD算法，并基于GFL模型进行验证，实验结果如下：
+| algorithm | model | AP | download|
+|:-:| :-: | :-: | :-:|
+| GFL_ResNet101-vd   | teacher          | 46.8  | [model](https://paddledet.bj.bcebos.com/models/gfl_r101vd_fpn_mstrain_2x_coco.pdparams), [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl/gfl_r101vd_fpn_mstrain_2x_coco.yml) |
+| GFL_ResNet18-vd   | student          | 36.6  | [model](https://paddledet.bj.bcebos.com/models/gfl_r18vd_1x_coco.pdparams), [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl/gfl_r18vd_1x_coco.yml) |
+| GFL_ResNet18-vd + LD   | student          | 38.2  | [model](https://bj.bcebos.com/v1/paddledet/models/gfl_slim_ld_r18vd_1x_coco.pdparams), [config1](../../gfl/gfl_slim_ld_r18vd_1x_coco.yml), [config2](./gfl_ld_distill.yml) |
 
 ## Citations
 ```
@@ -34,6 +42,13 @@ FGD全称为[Focal and Global Knowledge Distillation for Detectors](https://arxi
   author={Yang, Zhendong and Li, Zhe and Jiang, Xiaohu and Gong, Yuan and Yuan, Zehuan and Zhao, Danpei and Yuan, Chun},
   booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
   pages={4643--4652},
+  year={2022}
+}
+
+@Inproceedings{zheng2022LD,
+  title={Localization Distillation for Dense Object Detection},
+  author= {Zheng, Zhaohui and Ye, Rongguang and Wang, Ping and Ren, Dongwei and Zuo, Wangmeng and Hou, Qibin and Cheng, Mingming},
+  booktitle={CVPR},
   year={2022}
 }
 ```

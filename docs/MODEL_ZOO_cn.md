@@ -87,7 +87,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 请参考[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/picodet)
 
-### PP-YOLOE
+### PP-YOLOE/PP-YOLOE+
 
 请参考[PP-YOLOE](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/ppyoloe)
 
@@ -144,4 +144,9 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 ### ByteTrack
 
-请参考[ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/mot/bytetrack)
+
+请参考[ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/bytetrack)
+
+### OC-SORT
+
+请参考[OC-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/ocsort)

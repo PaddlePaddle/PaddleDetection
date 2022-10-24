@@ -21,6 +21,9 @@ import math
 import paddle
 import sys
 import copy
+import threading
+import queue
+import time
 from collections import Sequence, defaultdict
 from datacollector import DataCollector, Result
 
@@ -139,7 +142,7 @@ class Pipeline(object):
         return input
 
     def run_multithreads(self):
-        import threading
+
         if self.multi_camera:
             multi_res = []
             threads = []
@@ -495,6 +498,7 @@ class PipePredictor(object):
         # det -> attr
         batch_loop_cnt = math.ceil(
             float(len(input)) / self.det_predictor.batch_size)
+        self.warmup_frame = min(10, len(input) // 2) - 1
         for i in range(batch_loop_cnt):
             start_index = i * self.det_predictor.batch_size
             end_index = min((i + 1) * self.det_predictor.batch_size, len(input))
@@ -571,6 +575,18 @@ class PipePredictor(object):
             if self.cfg['visual']:
                 self.visualize_image(batch_file, batch_input, self.pipeline_res)
 
+    def capturevideo(self, capture, queue):
+        frame_id = 0
+        while (1):
+            if queue.full():
+                time.sleep(0.1)
+            else:
+                ret, frame = capture.read()
+                if not ret:
+                    return
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                queue.put(frame_rgb)
+
     def predict_video(self, video_file, thread_idx=0):
         # mot
         # mot -> attr
@@ -597,7 +613,7 @@ class PipePredictor(object):
                     2) + "_rtsp"
             if not os.path.exists(self.output_dir):
                 os.makedirs(self.output_dir)
-            out_path = os.path.join(self.output_dir, video_out_name+".mp4")
+            out_path = os.path.join(self.output_dir, video_out_name + ".mp4")
             fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
             writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
 
@@ -646,14 +662,18 @@ class PipePredictor(object):
         }  # store info for vehicle parking in region       
         illegal_parking_dict = None
 
-        while (1):
+        framequeue = queue.Queue(10)
+
+        thread = threading.Thread(
+            target=self.capturevideo, args=(capture, framequeue))
+        thread.start()
+        time.sleep(1)
+
+        while (not framequeue.empty()):
             if frame_id % 10 == 0:
                 print('Thread: {}; frame id: {}'.format(thread_idx, frame_id))
 
-            ret, frame = capture.read()
-            if not ret:
-                break
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame_rgb = framequeue.get()
             if frame_id > self.warmup_frame:
                 self.pipe_timer.total_time.start()
 
@@ -719,10 +739,10 @@ class PipePredictor(object):
                         self.pipe_timer.total_time.end()
                     if self.cfg['visual']:
                         _, _, fps = self.pipe_timer.get_total_time()
-                        im = self.visualize_video(frame, mot_res, frame_id, fps,
-                                                  entrance, records,
+                        im = self.visualize_video(frame_rgb, mot_res, frame_id,
+                                                  fps, entrance, records,
                                                   center_traj)  # visualize
-                        if len(self.pushurl)>0:
+                        if len(self.pushurl) > 0:
                             pushstream.pipe.stdin.write(im.tobytes())
                         else:
                             writer.write(im)
@@ -893,12 +913,12 @@ class PipePredictor(object):
             if self.cfg['visual']:
                 _, _, fps = self.pipe_timer.get_total_time()
 
-                im = self.visualize_video(frame, self.pipeline_res,
+                im = self.visualize_video(frame_rgb, self.pipeline_res,
                                           self.collector, frame_id, fps,
                                           entrance, records, center_traj,
                                           self.illegal_parking_time != -1,
                                           illegal_parking_dict)  # visualize
-                if len(self.pushurl)>0:
+                if len(self.pushurl) > 0:
                     pushstream.pipe.stdin.write(im.tobytes())
                 else:
                     writer.write(im)
@@ -906,12 +926,12 @@ class PipePredictor(object):
                         cv2.imshow('Paddle-Pipeline', im)
                         if cv2.waitKey(1) & 0xFF == ord('q'):
                             break
-        if self.cfg['visual'] and len(self.pushurl)==0:
+        if self.cfg['visual'] and len(self.pushurl) == 0:
             writer.release()
             print('save result to {}'.format(out_path))
 
     def visualize_video(self,
-                        image,
+                        image_rgb,
                         result,
                         collector,
                         frame_id,
@@ -921,6 +941,7 @@ class PipePredictor(object):
                         center_traj=None,
                         do_illegal_parking_recognition=False,
                         illegal_parking_dict=None):
+        image = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
         mot_res = copy.deepcopy(result.get('mot'))
         if mot_res is not None:
             ids = mot_res['boxes'][:, 0]
