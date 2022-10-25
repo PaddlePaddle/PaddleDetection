@@ -418,8 +418,8 @@ class VisionTransformer(nn.Layer):
 
         assert len(out_indices) <= 4, ''
         self.out_indices = out_indices
-        self.out_channels = [embed_dim for _ in range(len(out_indices))]
-        self.out_strides = [4, 8, 16, 32][-len(out_indices):] if with_fpn else [
+        self.out_channels = [embed_dim for _ in range(num_fpn_levels)]
+        self.out_strides = [4, 8, 16, 32][-num_fpn_levels:] if with_fpn else [
             patch_size for _ in range(len(out_indices))
         ]
 
@@ -617,8 +617,13 @@ class VisionTransformer(nn.Layer):
         if self.with_fpn:
             fpns = [self.fpn1, self.fpn2, self.fpn3, self.fpn4][
                 -self.num_fpn_levels:]
-            for i in range(len(feats)):
-                feats[i] = fpns[i](feats[i])
+            assert len(fpns) == len(feats) or len(feats) == 1, ''
+            outputs = []
+            for i, m in enumerate(fpns):
+                outputs.append(
+                    m(feats[i] if len(feats) == len(fpns) else feats[-1]))
+
+            return outputs
 
         return feats
 
