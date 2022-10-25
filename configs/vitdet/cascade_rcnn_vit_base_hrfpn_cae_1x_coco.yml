@@ -2,7 +2,7 @@
 _BASE_: [
   '../datasets/coco_detection.yml',
   '../runtime.yml',
-  './_base_/reader.yml',
+  './_base_/faster_rcnn_reader.yml',
   './_base_/optimizer_base_1x.yml'
 ]
 
