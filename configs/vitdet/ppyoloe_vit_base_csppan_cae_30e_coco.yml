@@ -3,10 +3,10 @@ _BASE_: [
   '../datasets/coco_detection.yml',
   '../runtime.yml',
   './_base_/ppyoloe_reader.yml',
-  './_base_/optimizer_base_1x.yml'
+  './_base_/optimizer_base_30e.yml'
 ]
 
-weights: output/ppyoloe_vit_base_csppan_cae_1x_coco/model_final
+weights: output/ppyoloe_vit_base_csppan_cae_30e_coco/model_final
 
 
 snapshot_epoch: 2
@@ -76,16 +76,3 @@ PPYOLOEHead:
     keep_top_k: 300
     score_threshold: 0.01
     nms_threshold: 0.7
-
-
-epoch: &epoch 30
-LearningRate:
-  base_lr: 0.0001
-  schedulers:
-    - !CosineDecay
-      max_epochs: *epoch
-      min_lr_ratio: 0.01
-      # last_plateau_epochs: 10
-    - !LinearWarmup
-      start_factor: 0.
-      epochs: 1
