@@ -2,11 +2,11 @@
 _BASE_: [
   '../datasets/coco_detection.yml',
   '../runtime.yml',
-  '../ppyoloe/_base_/ppyoloe_plus_reader.yml',
+  './_base_/ppyoloe_reader.yml',
   './_base_/optimizer_base_1x.yml'
 ]
 
-weights: output/ppyoloe_vit_base_pan_cae_1x_coco/model_final
+weights: output/ppyoloe_vit_base_csppan_cae_1x_coco/model_final
 
 
 snapshot_epoch: 2
