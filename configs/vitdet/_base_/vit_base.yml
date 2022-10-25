@@ -1,0 +1,18 @@
+VisionTransformer:
+  patch_size: 16
+  embed_dim: 768
+  depth: 12
+  num_heads: 12
+  mlp_ratio: 4
+  qkv_bias: True
+  drop_rate: 0.0
+  drop_path_rate: 0.2
+  init_values: 0.1
+  final_norm: False
+  use_rel_pos_bias: False
+  use_sincos_pos_emb: True
+  epsilon: 0.000001 # 1e-6
+  out_indices: [3, 5, 7, 11]
+  with_fpn: True
+  use_checkpoint: *use_checkpoint
+  pretrained: https://bj.bcebos.com/v1/paddledet/models/pretrained/vit_base_cae_pretrained.pdparams
