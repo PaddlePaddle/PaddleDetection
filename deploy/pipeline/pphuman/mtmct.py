@@ -155,12 +155,16 @@ def save_mtmct_vis_results(camera_results, captures, output_dir,
                         all_attr_result
                 ):  # at least one cid_tid[attrs] is not None will goes to attrs_vis
                     attr_res = []
+                    cid_str = 'c' + str(cid - 1) + "_"
                     for k in tid_list:
+                        if not k.startswith(cid_str):
+                            continue
                         if (frame_id - 1) >= len(multi_res[k]['attrs']):
                             t_attr = None
                         else:
                             t_attr = multi_res[k]['attrs'][frame_id - 1]
                             attr_res.append(t_attr)
+                    assert len(attr_res) == len(boxes)
                     image = visualize_attr(
                         image, attr_res, boxes, is_mtmct=True)
 
@@ -347,7 +351,7 @@ def res2dict(multi_res):
         for tid, res in c_res.items():
             key = "c" + str(cid) + "_t" + str(tid)
             if key not in cid_tid_dict:
-                if len(res["features"])==0:
+                if len(res["features"]) == 0:
                     continue
                 cid_tid_dict[key] = res
                 cid_tid_dict[key]['mean_feat'] = distill_idfeat(res)
