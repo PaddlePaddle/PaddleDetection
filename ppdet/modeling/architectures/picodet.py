@@ -62,7 +62,7 @@ class PicoDet(BaseArch):
 
     def _forward(self):
         body_feats = self.backbone(self.inputs)
-        fpn_feats = self.neck(body_feats)
+        fpn_feats = self.neck(body_feats)   # n, 128(各个head的通道一致), /8/16/32/64
         head_outs = self.head(fpn_feats, self.export_post_process)
         if self.training or not self.export_post_process:
             return head_outs, None

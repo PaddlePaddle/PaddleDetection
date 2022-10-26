@@ -164,7 +164,7 @@ class PicoFeat(nn.Layer):
         cls_feat = fpn_feat
         reg_feat = fpn_feat
         for i in range(len(self.cls_convs[stage_idx])):
-            cls_feat = self.act_func(self.cls_convs[stage_idx][i](cls_feat))
+            cls_feat = self.act_func(self.cls_convs[stage_idx][i](cls_feat))    # (5*5 1*1) * 4便，channel 128
             reg_feat = cls_feat
             if not self.share_cls_reg:
                 reg_feat = self.act_func(self.reg_convs[stage_idx][i](reg_feat))
@@ -260,8 +260,8 @@ class PicoHead(OTAVFLHead):
             head_cls = self.add_sublayer(
                 "head_cls" + str(i),
                 nn.Conv2D(
-                    in_channels=self.feat_in_chan,
-                    out_channels=self.cls_out_channels + 4 * (self.reg_max + 1)
+                    in_channels=self.feat_in_chan,  # 128
+                    out_channels=self.cls_out_channels + 4 * (self.reg_max + 1) # 5+4*8 先验的分离的区间数
                     if self.conv_feat.share_cls_reg else self.cls_out_channels,
                     kernel_size=1,
                     stride=1,
@@ -314,7 +314,7 @@ class PicoHead(OTAVFLHead):
                 cls_score = self.head_cls_list[i](conv_cls_feat)
                 bbox_pred = self.head_reg_list[i](conv_reg_feat)
 
-            if self.dgqp_module:
+            if self.dgqp_module:    # 不清楚，继承自OTAVFLHead
                 quality_score = self.dgqp_module(bbox_pred)
                 cls_score = F.sigmoid(cls_score) * quality_score
 

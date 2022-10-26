@@ -239,7 +239,7 @@ def create(cls_or_name, **kwargs):
                 # `key` is present in config
                 cls_kwargs[k] = global_config[shared_conf.key]
             else:
-                cls_kwargs[k] = shared_conf.default_value
+                cls_kwargs[k] = shared_conf.default_value   # set data_format
 
     # parse `inject` annoation of registered modules
     if getattr(cls, 'from_config', None):

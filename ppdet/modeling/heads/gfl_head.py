@@ -65,7 +65,7 @@ class Integral(nn.Layer):
     def __init__(self, reg_max=16):
         super(Integral, self).__init__()
         self.reg_max = reg_max
-        self.register_buffer('project',
+        self.register_buffer('project', # 注册了一个不可训练的参数并会保存到state dict里
                              paddle.linspace(0, self.reg_max, self.reg_max + 1))
 
     def forward(self, x):
@@ -78,8 +78,8 @@ class Integral(nn.Layer):
             x (Tensor): Integral result of box locations, i.e., distance
                 offsets from the box center in four directions, shape (N, 4).
         """
-        x = F.softmax(x.reshape([-1, self.reg_max + 1]), axis=1)
-        x = F.linear(x, self.project)
+        x = F.softmax(x.reshape([-1, self.reg_max + 1]), axis=1)    # n, feature size*,32
+        x = F.linear(x, self.project)   # n * feature size w*h,(7+1)  shape(8,)
         if self.training:
             x = x.reshape([-1, 4])
         return x

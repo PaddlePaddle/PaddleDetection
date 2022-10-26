@@ -512,9 +512,9 @@ class OTAVFLHead(OTAHead):
         else:
             losses_bbox = list(map(lambda x: x / avg_factor, loss_bbox_list))
             losses_dfl = list(map(lambda x: x / avg_factor, loss_dfl_list))
-            loss_vfl = sum(loss_vfl_list)
-            loss_bbox = sum(losses_bbox)
-            loss_dfl = sum(losses_dfl)
+            loss_vfl = sum(loss_vfl_list)   # 分类
+            loss_bbox = sum(losses_bbox)    # giou 回归
+            loss_dfl = sum(losses_dfl)      # Distribution Focal 回归损失
 
         loss_states = dict(
             loss_vfl=loss_vfl, loss_bbox=loss_bbox, loss_dfl=loss_dfl)

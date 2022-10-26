@@ -188,7 +188,7 @@ class BaseDataLoader(object):
                 use_shared_memory = False
 
         self.dataloader = DataLoader(
-            dataset=self.dataset,
+            dataset=self.dataset,   # 先跑self.dataset的单样本的transform,再跑dataloader的collate fn-batch_transforms
             batch_sampler=self._batch_sampler,
             collate_fn=self._batch_transforms,
             num_workers=worker_num,

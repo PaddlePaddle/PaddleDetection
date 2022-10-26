@@ -78,7 +78,7 @@ class DPModule(nn.Layer):
         super(DPModule, self).__init__()
         initializer = nn.initializer.KaimingUniform()
         self.use_act_in_out = use_act_in_out
-        self.dwconv = nn.Conv2D(
+        self.dwconv = nn.Conv2D(    #out_channel=in_channel,so groups=in_channel
             in_channels=in_channel,
             out_channels=out_channel,
             kernel_size=kernel_size,
@@ -159,7 +159,7 @@ class DarknetBottleneck(nn.Layer):
         out = self.conv1(x)
         out = self.conv2(out)
 
-        if self.add_identity:
+        if self.add_identity:   #
             return out + identity
         else:
             return out
@@ -211,7 +211,7 @@ class CSPLayer(nn.Layer):
         x_short = self.short_conv(x)
 
         x_main = self.main_conv(x)
-        x_main = self.blocks(x_main)
+        x_main = self.blocks(x_main)    # 在res残差后参照标准少一个1*1 conv
 
         x_final = paddle.concat((x_main, x_short), axis=1)
         return self.final_conv(x_final)

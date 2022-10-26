@@ -69,7 +69,7 @@ class SimOTAAssigner(object):
             [1, num_gt])
 
         # is prior centers in gt bboxes, shape: [n_center, n_gt]
-        l_ = flatten_x - gt_bboxes[:, 0]
+        l_ = flatten_x - gt_bboxes[:, 0]    # gt包裹每个center
         t_ = flatten_y - gt_bboxes[:, 1]
         r_ = gt_bboxes[:, 2] - flatten_x
         b_ = gt_bboxes[:, 3] - flatten_y
@@ -78,7 +78,7 @@ class SimOTAAssigner(object):
         is_in_gts = deltas.min(axis=1) > 0
         is_in_gts_all = is_in_gts.sum(axis=1) > 0
 
-        # is prior centers in gt centers
+        # is prior centers in gt centers  每个center在gt中心点半径的内
         gt_center_xs = (gt_bboxes[:, 0] + gt_bboxes[:, 2]) / 2.0
         gt_center_ys = (gt_bboxes[:, 1] + gt_bboxes[:, 3]) / 2.0
         ct_bound_l = gt_center_xs - self.center_radius * flatten_stride_x
@@ -122,13 +122,13 @@ class SimOTAAssigner(object):
         # calculate dynamic k for each gt
         dynamic_ks = paddle.clip(topk_ious.sum(0).cast('int'), min=1)
         for gt_idx in range(num_gt):
-            _, pos_idx = paddle.topk(
+            _, pos_idx = paddle.topk(   # 对于每个ground truth，选择最小的k个损失对应的锚点作为阳性样本
                 cost_matrix[:, gt_idx], k=dynamic_ks[gt_idx], largest=False)
             match_matrix[:, gt_idx][pos_idx.numpy()] = 1.0
 
         del topk_ious, dynamic_ks, pos_idx
 
-        # match points more than two gts
+        # match points more than two gts  一个特征点匹配两个gt时
         extra_match_gts_mask = match_matrix.sum(1) > 1
         if extra_match_gts_mask.sum() > 0:
             cost_matrix = cost_matrix.numpy()
@@ -138,7 +138,7 @@ class SimOTAAssigner(object):
             match_matrix[extra_match_gts_mask, cost_argmin] = 1.0
         # get foreground mask
         match_fg_mask_inmatrix = match_matrix.sum(1) > 0
-        match_gt_inds_to_fg = match_matrix[match_fg_mask_inmatrix, :].argmax(1)
+        match_gt_inds_to_fg = match_matrix[match_fg_mask_inmatrix, :].argmax(1) # (a,num_gt).argmax = a, 表明 当前center点的gt类别
 
         return match_gt_inds_to_fg, match_fg_mask_inmatrix
 
@@ -178,7 +178,7 @@ class SimOTAAssigner(object):
             label_weight = np.ones([num_bboxes], dtype=np.float32)
             bbox_target = np.zeros_like(flatten_center_and_stride)
             return 0, label, label_weight, bbox_target
-
+        # SimOTA首先通过中心先验确定候选区域，
         is_in_gts_or_centers_all, is_in_gts_or_centers_all_inds, is_in_boxes_and_center = self.get_in_gt_and_in_center_info(
             flatten_center_and_stride, gt_bboxes)
 
@@ -187,7 +187,7 @@ class SimOTAAssigner(object):
         valid_cls_pred_scores = flatten_cls_pred_scores[
             is_in_gts_or_centers_all_inds]
         num_valid_bboxes = valid_flatten_bboxes.shape[0]
-
+        #  然后计算预测框和候选区域中的ground truth的IoU
         pairwise_ious = batch_bbox_overlaps(valid_flatten_bboxes,
                                             gt_bboxes)  # [num_points,num_gts]
         if self.use_vfl:
@@ -199,11 +199,12 @@ class SimOTAAssigner(object):
             vfl_score[np.arange(0, vfl_score.shape[0]), gt_vfl_labels.numpy(
             )] = pairwise_ious.reshape([-1])
             vfl_score = paddle.to_tensor(vfl_score)
-            losses_vfl = varifocal_loss(
-                valid_pred_scores, vfl_score,
+            losses_vfl = varifocal_loss(    # 用iou动态分给某个预测的目标类别，比如与gt的2类iou0.8,那么类别的目标值是0.8 分类损失
+                valid_pred_scores, vfl_score,   # varifocalloss比focalloss优势在哪里？多目标检测
                 use_sigmoid=False).reshape([num_valid_bboxes, num_gt])
-            losses_giou = batch_bbox_overlaps(
+            losses_giou = batch_bbox_overlaps(  # 回归损失
                 valid_flatten_bboxes, gt_bboxes, mode='giou')
+            '''通过直接计算候选区域内所有预测框和ground truth的损失得到代价矩阵。'''
             cost_matrix = (
                 losses_vfl * self.cls_weight + losses_giou * self.iou_weight +
                 paddle.logical_not(is_in_boxes_and_center).cast('float32') *
@@ -224,7 +225,7 @@ class SimOTAAssigner(object):
                 cls_cost * self.cls_weight + iou_cost * self.iou_weight +
                 paddle.logical_not(is_in_boxes_and_center).cast('float32') *
                 100000000)
-
+        # 求ground truth最大的IoU的和n得到参数κ, 得到giou角度的正样本
         match_gt_inds_to_fg, match_fg_mask_inmatrix = \
             self.dynamic_k_matching(
                 cost_matrix, pairwise_ious, num_gt)
@@ -232,11 +233,11 @@ class SimOTAAssigner(object):
         # sample and assign results
         assigned_gt_inds = np.zeros([num_bboxes], dtype=np.int64)
         match_fg_mask_inall = np.zeros_like(assigned_gt_inds)
-        match_fg_mask_inall[is_in_gts_or_centers_all.numpy(
+        match_fg_mask_inall[is_in_gts_or_centers_all.numpy( # 综合giou和SimOTA选择的正样本矩阵
         )] = match_fg_mask_inmatrix
 
         assigned_gt_inds[match_fg_mask_inall.astype(
-            np.bool)] = match_gt_inds_to_fg + 1
+            np.bool)] = match_gt_inds_to_fg + 1 # +1 是把0留给背景类别
 
         pos_inds, neg_inds, pos_gt_bboxes, pos_assigned_gt_inds \
             = self.get_sample(assigned_gt_inds, gt_bboxes.numpy())
