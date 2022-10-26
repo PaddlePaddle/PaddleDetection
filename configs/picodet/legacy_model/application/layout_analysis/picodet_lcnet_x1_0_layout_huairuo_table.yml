@@ -4,7 +4,7 @@ _BASE_: [
   '../../_base_/optimizer_100e.yml',
   '../../_base_/picodet_640_reader.yml',
 ]
-
+# NO LOAD http
 pretrain_weights: /home/train/workspace/zzl/PaddleDetection/pretrained_model/picodet_lcnet_x1_0_fgd_layout_table.pdparams
 weights: output/picodet_lcnet_x1_0_layout/model_final
 find_unused_parameters: True
