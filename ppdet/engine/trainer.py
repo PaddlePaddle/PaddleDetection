@@ -1002,6 +1002,10 @@ class Trainer(object):
                 if hasattr(layer, 'convert_to_deploy'):
                     layer.convert_to_deploy()
 
+        if hasattr(self.cfg, 'export') and 'fuse_conv_bn' in self.cfg[
+                'export'] and self.cfg['export']['fuse_conv_bn']:
+            self.model = fuse_conv_bn(self.model)
+
         export_post_process = self.cfg['export'].get(
             'post_process', False) if hasattr(self.cfg, 'export') else True
         export_nms = self.cfg['export'].get('nms', False) if hasattr(
@@ -1072,10 +1076,6 @@ class Trainer(object):
 
     def export(self, output_dir='output_inference'):
         self.model.eval()
-
-        if hasattr(self.cfg, 'export') and 'fuse_conv_bn' in self.cfg[
-                'export'] and self.cfg['export']['fuse_conv_bn']:
-            self.model = fuse_conv_bn(self.model)
 
         model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
         save_dir = os.path.join(output_dir, model_name)
