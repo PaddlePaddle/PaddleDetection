@@ -5,7 +5,7 @@ _BASE_: [
   '../../_base_/picodet_640_reader.yml',
 ]
 
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/LCNet_x1_0_pretrained.pdparams
+pretrain_weights: /home/train/workspace/zzl/PaddleDetection/pretrained_model/picodet_lcnet_x1_0_fgd_layout_table.pdparams
 weights: output/picodet_lcnet_x1_0_layout/model_final
 find_unused_parameters: True
 use_ema: true
@@ -23,20 +23,20 @@ LCNet:
   feature_maps: [3, 4, 5]
 
 metric: COCO
-num_classes: 5
+num_classes: 2
 
 TrainDataset:
   !COCODataSet
-    image_dir: /home/train/workspace/zzl/PaddleDetection/dataset/publaynet/train
-    anno_path: /home/train/workspace/zzl/PaddleDetection/dataset/publaynet/train.json
-    dataset_dir: /home/train/workspace/zzl/PaddleDetection/dataset/publaynet/
+    image_dir: train
+    anno_path: train.json
+    dataset_dir: /home/train/workspace/zzl/PaddleDetection/dataset/huairuo_table/
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
   !COCODataSet
-    image_dir: /home/train/workspace/zzl/PaddleDetection/dataset/publaynet/val
-    anno_path: /home/train/workspace/zzl/PaddleDetection/dataset/publaynet/val.json
-    dataset_dir: /home/train/workspace/zzl/PaddleDetection/dataset/publaynet/
+    image_dir: test
+    anno_path: test.json
+    dataset_dir: /home/train/workspace/zzl/PaddleDetection/dataset/huairuo_table/
 
 TestDataset:
   !ImageFolder
