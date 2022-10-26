@@ -199,7 +199,7 @@ VEHICLE_ATTR:
 3. 注意属性类型在train.txt中属性数值列表中的位置的对应关系需要固定。
 
 <div width="500" align="center">
-  <img src="../../images/add_attribute.png"/>
+  <img src="../../images/ppvehicle_add_attribute.png"/>
 </div>
 
 删减属性同理。
