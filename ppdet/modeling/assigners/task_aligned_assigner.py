@@ -33,11 +33,17 @@ class TaskAlignedAssigner(nn.Layer):
     """TOOD: Task-aligned One-stage Object Detection
     """
 
-    def __init__(self, topk=13, alpha=1.0, beta=6.0, eps=1e-9):
+    def __init__(self,
+                 topk=13,
+                 alpha=1.0,
+                 beta=6.0,
+                 center_radius=None,
+                 eps=1e-9):
         super(TaskAlignedAssigner, self).__init__()
         self.topk = topk
         self.alpha = alpha
         self.beta = beta
+        self.center_radius = center_radius
         self.eps = eps
 
     @paddle.no_grad()
@@ -45,7 +51,7 @@ class TaskAlignedAssigner(nn.Layer):
                 pred_scores,
                 pred_bboxes,
                 anchor_points,
-                num_anchors_list,
+                stride_tensor,
                 gt_labels,
                 gt_bboxes,
                 pad_gt_mask,
@@ -65,7 +71,7 @@ class TaskAlignedAssigner(nn.Layer):
             pred_scores (Tensor, float32): predicted class probability, shape(B, L, C)
             pred_bboxes (Tensor, float32): predicted bounding boxes, shape(B, L, 4)
             anchor_points (Tensor, float32): pre-defined anchors, shape(L, 2), "cxcy" format
-            num_anchors_list (List): num of anchors in each level, shape(L)
+            stride_tensor (Tensor, float32): stride of feature map, shape(L, 1)
             gt_labels (Tensor, int64|int32): Label of gt_bboxes, shape(B, n, 1)
             gt_bboxes (Tensor, float32): Ground truth bboxes, shape(B, n, 4)
             pad_gt_mask (Tensor, float32): 1 means bbox, 0 means no bbox, shape(B, n, 1)
@@ -104,18 +110,29 @@ class TaskAlignedAssigner(nn.Layer):
         bbox_cls_scores = paddle.gather_nd(pred_scores, gt_labels_ind)
         # compute alignment metrics, [B, n, L]
         alignment_metrics = bbox_cls_scores.pow(self.alpha) * ious.pow(
-            self.beta)
-
-        # check the positive sample's center in gt, [B, n, L]
-        is_in_gts = check_points_inside_bboxes(anchor_points, gt_bboxes)
-
-        # select topk largest alignment metrics pred bbox as candidates
-        # for each gt, [B, n, L]
-        is_in_topk = gather_topk_anchors(
-            alignment_metrics * is_in_gts, self.topk, topk_mask=pad_gt_mask)
+            self.beta) * pad_gt_mask
 
         # select positive sample, [B, n, L]
-        mask_positive = is_in_topk * is_in_gts * pad_gt_mask
+        if self.center_radius is None:
+            # check the positive sample's center in gt, [B, n, L]
+            is_in_gts = check_points_inside_bboxes(anchor_points, gt_bboxes)
+            # select topk largest alignment metrics pred bbox as candidates
+            # for each gt, [B, n, L]
+            mask_positive = gather_topk_anchors(
+                alignment_metrics, self.topk, topk_mask=pad_gt_mask) * is_in_gts
+        else:
+            is_in_gts, is_in_center = check_points_inside_bboxes(
+                anchor_points, gt_bboxes, stride_tensor * self.center_radius)
+            is_in_gts *= pad_gt_mask
+            is_in_center *= pad_gt_mask
+            candidate_metrics = paddle.where(
+                is_in_gts.sum(-1, keepdim=True) == 0,
+                alignment_metrics + is_in_center,
+                alignment_metrics)
+            mask_positive = gather_topk_anchors(
+                candidate_metrics, self.topk,
+                topk_mask=pad_gt_mask) * paddle.cast((is_in_center > 0) |
+                                                     (is_in_gts > 0), 'float32')
 
         # if an anchor box is assigned to multiple gts,
         # the one with the highest iou will be selected, [B, n, L]
@@ -123,7 +140,7 @@ class TaskAlignedAssigner(nn.Layer):
         if mask_positive_sum.max() > 1:
             mask_multiple_gts = (mask_positive_sum.unsqueeze(1) > 1).tile(
                 [1, num_max_boxes, 1])
-            is_max_iou = compute_max_iou_anchor(ious)
+            is_max_iou = compute_max_iou_anchor(ious * mask_positive)
             mask_positive = paddle.where(mask_multiple_gts, is_max_iou,
                                          mask_positive)
             mask_positive_sum = mask_positive.sum(axis=-2)

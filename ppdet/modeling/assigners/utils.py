@@ -139,8 +139,8 @@ def check_points_inside_bboxes(points,
         b = (cy + center_radius_tensor) - y
         delta_ltrb_c = paddle.concat([l, t, r, b], axis=-1)
         is_in_center = (delta_ltrb_c.min(axis=-1) > eps)
-        return (paddle.logical_and(is_in_bboxes, is_in_center),
-                paddle.logical_or(is_in_bboxes, is_in_center))
+        return is_in_bboxes.astype(bboxes.dtype), is_in_center.astype(
+            bboxes.dtype)
 
     return is_in_bboxes.astype(bboxes.dtype)
 
