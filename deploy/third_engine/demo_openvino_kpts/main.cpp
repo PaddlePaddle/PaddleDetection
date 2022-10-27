@@ -375,9 +375,9 @@ int main(int argc, char** argv) {
     return -1;
   }
   std::cout << "start init model" << std::endl;
-  auto detector = PicoDet("../weight/picodet_m_416.xml");
+  auto detector = PicoDet("./weight/picodet_m_416.xml");
   auto kpts_detector =
-      new KeyPointDetector("../weight/tinypose256.xml", 256, 192);
+      new KeyPointDetector("./weight/tinypose256_git2-sim.xml", 256, 192);
   std::cout << "success" << std::endl;
 
   int mode = atoi(argv[1]);

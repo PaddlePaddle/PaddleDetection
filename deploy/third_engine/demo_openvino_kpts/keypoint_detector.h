@@ -69,7 +69,7 @@ class KeyPointDetector {
       if (idx == 0) {
         output_info.second->setPrecision(InferenceEngine::Precision::FP32);
       } else {
-        output_info.second->setPrecision(InferenceEngine::Precision::I32);
+        output_info.second->setPrecision(InferenceEngine::Precision::FP32);
       }
       idx++;
     }
@@ -99,14 +99,14 @@ class KeyPointDetector {
   // Postprocess result
   void Postprocess(std::vector<float>& output,
                    std::vector<uint64_t>& output_shape,
-                   std::vector<int>& idxout,
+                   std::vector<float>& idxout,
                    std::vector<uint64_t>& idx_shape,
                    std::vector<KeyPointResult>* result,
                    std::vector<std::vector<float>>& center,
                    std::vector<std::vector<float>>& scale);
 
   std::vector<float> output_data_;
-  std::vector<int> idx_data_;
+  std::vector<float> idx_data_;
   float threshold_;
   bool use_dark_;
 
