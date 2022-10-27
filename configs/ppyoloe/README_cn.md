@@ -139,7 +139,7 @@ python tools/export_model.py -c configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml 
 ```bash
 
 # 导出推理模型
-python tools/export_model.py -c configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams trt=True
 
 # 安装paddle2onnx
 pip install paddle2onnx
