@@ -2,8 +2,12 @@
 
 This fold provides TinyPose inference code using
 [Intel's OpenVINO Toolkit](https://software.intel.com/content/www/us/en/develop/tools/openvino-toolkit.html). Most of the implements in this fold are same as *demo_ncnn*.  
-**Recommand** to use the xxx.tar.gz file to install instead of github method, [link](https://registrationcenter-download.intel.com/akdlm/irc_nas/18096/l_openvino_toolkit_p_2021.4.689.tgz).
-
+**Recommand** 
+1. To use the xxx.tar.gz file to install instead of github method, [link](https://registrationcenter-download.intel.com/akdlm/irc_nas/18096/l_openvino_toolkit_p_2021.4.689.tgz).
+2. Your can also deploy openvino with docker, the command is :
+```
+docker pull openvino/ubuntu18_dev:2021.4.1
+```
 
 ## Install OpenVINO Toolkit
 
@@ -59,7 +63,30 @@ source /opt/intel/openvino_2021/bin/setupvars.sh
 
 ## Convert model
 
-   Convert to OpenVINO
+  **1. Conver to onnx**
+
+  Create picodet_m_416_coco.onnx and tinypose256.onnx
+
+  example:
+
+    ```shell
+    modelName=picodet_m_416_coco
+    # export model
+    python tools/export_model.py \
+            -c configs/picodet/${modelName}.yml \
+            -o weights=${modelName}.pdparams \
+            --output_dir=inference_model
+    # convert to onnx
+    paddle2onnx --model_dir inference_model/${modelName} \
+            --model_filename model.pdmodel  \
+            --params_filename model.pdiparams \
+            --opset_version 11 \
+            --save_file ${modelName}.onnx
+    # onnxsim
+    python -m onnxsim ${modelName}.onnx ${modelName}_sim.onnx
+    ```
+
+  **2.Convert to OpenVINO**
 
    ``` shell
    cd <INSTSLL_DIR>/openvino_2021/deployment_tools/model_optimizer
@@ -75,8 +102,10 @@ source /opt/intel/openvino_2021/bin/setupvars.sh
 
    Then convert model. Notice: mean_values and scale_values should be the same with your training settings in YAML config file.
    ```shell
-   python3 mo_onnx.py --input_model <ONNX_MODEL> --mean_values [103.53,116.28,123.675] --scale_values [57.375,57.12,58.395]
+   mo_onnx.py --input_model <ONNX_MODEL> --mean_values [103.53,116.28,123.675] --scale_values [57.375,57.12,58.395] --input_shape [1,3,256,192]
    ```
+
+   **Note: The new version of openvino convert tools may cause error in Resize op. If you has problem with this, please try the version: openvino_2021.4.689**
 
 ## Build
 
@@ -101,10 +130,40 @@ make
 
 
 ## Run demo
+
 Download PicoDet openvino model [PicoDet openvino model download link](https://paddledet.bj.bcebos.com/deploy/third_engine/picodet_m_416_openvino.zip).
-Download TinyPose openvino model [TinyPose openvino model download link](https://paddledet.bj.bcebos.com/deploy/third_engine/tinypose_256_openvino.zip).
+
+Download TinyPose openvino model [TinyPose openvino model download link](https://bj.bcebos.com/v1/paddledet/deploy/third_engine/demo_openvino_kpts.tar.gz), the origin paddlepaddle model is [Tinypose256](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/tinypose_256x192.pdparams).
 
 move picodet and tinypose openvino model files to the demo's weight folder. 
+
+Note:
+1. The model output node name may update by new version of paddle\paddle2onnx\onnxsim\openvino, please checkout your own model output node when the code can't find "conv2d_441.tmp_1"\"argmax_0.tmp_0".
+2. If you happened with this error "Cannot find blob with name: transpose_1.tmp_0", it means your picodet model is oldversion. you can modify the below code to fix it.
+
+```
+#picodet_openvino.h line 50-54
+
+  std::vector<HeadInfo> heads_info_{
+      // cls_pred|dis_pred|stride
+      {"transpose_0.tmp_0", "transpose_1.tmp_0", 8},
+      {"transpose_2.tmp_0", "transpose_3.tmp_0", 16},
+      {"transpose_4.tmp_0", "transpose_5.tmp_0", 32},
+      {"transpose_6.tmp_0", "transpose_7.tmp_0", 64},
+  };
+
+  modify to:
+
+  std::vector<HeadInfo> heads_info_{
+    // cls_pred|dis_pred|stride
+    {"save_infer_model/scale_0.tmp_1", "save_infer_model/scale_4.tmp_1", 8},
+    {"save_infer_model/scale_1.tmp_1", "save_infer_model/scale_5.tmp_1", 16},
+    {"save_infer_model/scale_2.tmp_1", "save_infer_model/scale_6.tmp_1", 32},
+    {"save_infer_model/scale_3.tmp_1", "save_infer_model/scale_7.tmp_1", 64},
+  };
+```
+
+3. you can view your onnx model with [Netron](https://netron.app/).
 
 ### Edit file
 ```
