@@ -318,7 +318,7 @@ class PPYOLOEHead(nn.Layer):
             assigned_labels, assigned_bboxes, assigned_scores = \
                 self.static_assigner(
                     anchors,
-                    stride_tensor,
+                    num_anchors_list,
                     gt_labels,
                     gt_bboxes,
                     pad_gt_mask,
@@ -331,7 +331,7 @@ class PPYOLOEHead(nn.Layer):
                 pred_scores.detach(),
                 pred_bboxes.detach() * stride_tensor,
                 anchor_points,
-                num_anchors_list,
+                stride_tensor,
                 gt_labels,
                 gt_bboxes,
                 pad_gt_mask,
