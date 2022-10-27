@@ -474,7 +474,9 @@ class PipePredictor(object):
                     args, video_action_cfg)
 
     def set_file_name(self, path):
-        if path is not None:
+        if type(path)==int:
+            self.file_name = path
+        elif path is not None:
             self.file_name = os.path.split(path)[-1]
             if "." in self.file_name:
                 self.file_name = self.file_name.split(".")[-2]
@@ -606,8 +608,8 @@ class PipePredictor(object):
             pushstream = PushStream(pushurl)
             pushstream.initcmd(fps, width, height)
         elif self.cfg['visual']:
-            video_out_name = 'output' if self.file_name is None else self.file_name
-            if "rtsp" in video_file:
+            video_out_name = 'output' if (self.file_name is None or type(self.file_name)==int) else self.file_name
+            if type(video_file)==str and "rtsp" in video_file:
                 video_out_name = video_out_name + "_t" + str(thread_idx).zfill(
                     2) + "_rtsp"
             if not os.path.exists(self.output_dir):
