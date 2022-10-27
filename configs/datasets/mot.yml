@@ -4,7 +4,7 @@ num_classes: 1
 # for MOT training
 TrainDataset:
   !MOTDataSet
-    dataset_dir: dataset/mot
+    dataset_dir: ./dataset/mot
     image_lists: ['mot17.train', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
 
@@ -12,12 +12,12 @@ TrainDataset:
 # If you want to change the MOT evaluation dataset, please modify 'data_root'
 EvalMOTDataset:
   !MOTImageFolder
-    dataset_dir: dataset/mot
+    dataset_dir: ./dataset/mot
     data_root: MOT16/images/train
     keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
 
 # for MOT video inference
 TestMOTDataset:
   !MOTImageFolder
-    dataset_dir: dataset/mot
+    dataset_dir: ./dataset/mot
     keep_ori_im: True # set True if save visualization images or video

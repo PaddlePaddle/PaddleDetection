@@ -37,11 +37,12 @@ class ScaleReg(nn.Layer):
     def __init__(self):
         super(ScaleReg, self).__init__()
         self.scale_reg = self.create_parameter(
-            shape=[1],
+            shape=[1, 1, 1, 1],
             attr=ParamAttr(initializer=Constant(value=1.)),
             dtype="float32")
 
     def forward(self, inputs):
+       # print("ScaleReg : ", inputs.shape, inputs.layout, self.scale_reg.shape, self.scale_reg.layout)
         out = inputs * self.scale_reg
         return out
 

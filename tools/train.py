@@ -180,4 +180,10 @@ def main():
 
 
 if __name__ == "__main__":
+    paddle.incubate.autotune.set_config(
+               config={"layout": {
+                   "enable": True
+                   #"enable": False
+               }})
+    is_autotune = paddle.fluid.core.use_layout_autotune()
     main()

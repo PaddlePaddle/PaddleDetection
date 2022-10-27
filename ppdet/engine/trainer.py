@@ -60,6 +60,42 @@ __all__ = ['Trainer']
 MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT', 'ByteTrack']
 
 
+GLOBAL_PROFILE_STATE = True #False
+def add_nvtx_event(event_name, is_first=False, is_last=False):
+    global GLOBAL_PROFILE_STATE
+    if not GLOBAL_PROFILE_STATE:
+        return
+
+    if not is_first:
+        paddle.fluid.core.nvprof_nvtx_pop()
+    if not is_last:
+        paddle.fluid.core.nvprof_nvtx_push(event_name)
+
+def switch_profile(start, end, step_idx, event_name=None):
+    global GLOBAL_PROFILE_STATE
+    if step_idx > start and step_idx < end:
+        GLOBAL_PROFILE_STATE = True
+    else:
+        GLOBAL_PROFILE_STATE = False
+
+    #if step_idx == start:
+    #    paddle.utils.profiler.start_profiler("All", "Default")
+    #elif step_idx == end:
+    #    paddle.utils.profiler.stop_profiler("total", "tmp.profile")
+
+    if event_name is None:
+        event_name = str(step_idx)
+    if step_idx == start:
+        paddle.fluid.core.nvprof_start()
+        paddle.fluid.core.nvprof_enable_record_event()
+        paddle.fluid.core.nvprof_nvtx_push(event_name)
+    elif step_idx == end:
+        paddle.fluid.core.nvprof_nvtx_pop()
+        paddle.fluid.core.nvprof_stop()
+    elif step_idx > start and step_idx < end:
+        paddle.fluid.core.nvprof_nvtx_pop()
+        paddle.fluid.core.nvprof_nvtx_push(event_name)
+
 class Trainer(object):
     def __init__(self, cfg, mode='train'):
         self.cfg = cfg
@@ -447,12 +483,15 @@ class Trainer(object):
                 self.dataset, self.cfg.worker_num)
             self._flops(flops_loader)
         profiler_options = self.cfg.get('profiler_options', None)
-
         self._compose_callback.on_train_begin(self.status)
-
+        train_batch_size = self.cfg.TrainReader['batch_size']
         use_fused_allreduce_gradients = self.cfg[
             'use_fused_allreduce_gradients'] if 'use_fused_allreduce_gradients' in self.cfg else False
 
+        prof = paddle.profiler.Profiler(targets=[paddle.profiler.ProfilerTarget.CPU,paddle. paddle.profiler.ProfilerTarget.GPU],
+                         scheduler=[40, 50],
+                         timer_only=True)
+        prof.start() 
         for epoch_id in range(self.start_epoch, self.cfg.epoch):
             self.status['mode'] = 'train'
             self.status['epoch_id'] = epoch_id
@@ -460,14 +499,15 @@ class Trainer(object):
             self.loader.dataset.set_epoch(epoch_id)
             model.train()
             iter_tic = time.time()
-            print("loader len:", len(self.loader))
             for step_id, data in enumerate(self.loader):
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
                 profiler.add_profiler_step(profiler_options)
+                #switch_profile(40, 50, step_id,"(iter is ={})".format(step_id))
                 self._compose_callback.on_step_begin(self.status)
                 data['epoch_id'] = epoch_id
-
+                #if step_id == 1:
+                #    break
                 if self.use_amp:
                     if isinstance(
                             model, paddle.
@@ -528,9 +568,9 @@ class Trainer(object):
 
                 if self._nranks < 2 or self._local_rank == 0:
                     self.status['training_staus'].update(outputs)
-
                 self.status['batch_time'].update(time.time() - iter_tic)
                 self._compose_callback.on_step_end(self.status)
+                prof.step(num_samples=train_batch_size)
                 if self.use_ema:
                     self.ema.update()
                 iter_tic = time.time()
@@ -582,7 +622,8 @@ class Trainer(object):
                 # reset original weight
                 self.model.set_dict(weight)
                 self.status.pop('weight')
-
+        prof.stop()
+        prof.summary(op_detail=True)
         self._compose_callback.on_train_end(self.status)
 
     def _eval_with_loader(self, loader):
