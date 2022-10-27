@@ -172,7 +172,7 @@ class FGDDistillModel(nn.Layer):
 
 class CWDDistillModel(nn.Layer):
     """                                                                                                                                                    
-    Build FGD distill model.                                                                                                                               
+    Build CWD distill model.                                                                                                                               
     Args:                                                                                                                                                  
         cfg: The student config.                                                                                                                           
         slim_cfg: The teacher and distill config.                                                                                                          
@@ -212,8 +212,6 @@ class CWDDistillModel(nn.Layer):
         self.loss_dic = self.build_loss(
             self.loss_cfg.distill_loss,
             name_list=self.loss_cfg['distill_loss_name'])
-        # for distill feature gfl
-        self.feat_cwd_func = ChannelWiseDivergence(256, 256, 'feat_cwd', 1, 50)
 
     def build_loss(self,
                    cfg,
@@ -226,6 +224,52 @@ class CWDDistillModel(nn.Layer):
             loss_func[k] = create(cfg)
         return loss_func
 
+    def get_loss_retinanet(self, stu_fea_list, tea_fea_list, inputs):
+        loss = self.student_model.head(stu_fea_list, inputs)
+        distill_loss = {}
+        # cwd kd loss
+        for idx, k in enumerate(self.loss_dic):
+            distill_loss[k] = self.loss_dic[k](stu_fea_list[idx],
+                                               tea_fea_list[idx])
+
+            loss['loss'] += distill_loss[k]
+            loss[k] = distill_loss[k]
+        return loss
+
+    def get_loss_gfl(self, stu_fea_list, tea_fea_list, inputs):
+        loss = {}
+        head_outs = self.student_model.head(stu_fea_list)
+        loss_gfl = self.student_model.head.get_loss(head_outs, inputs)
+        loss.update(loss_gfl)
+        total_loss = paddle.add_n(list(loss.values()))
+        loss.update({'loss': total_loss})
+        # cwd kd loss
+        feat_loss = {}
+        loss_dict = {}
+
+        s_cls_feat, t_cls_feat = [], []
+        for s_neck_f, t_neck_f in zip(stu_fea_list, tea_fea_list):
+            conv_cls_feat, _ = self.student_model.head.conv_feat(s_neck_f)
+            cls_score = self.student_model.head.gfl_head_cls(conv_cls_feat)
+            t_conv_cls_feat, _ = self.teacher_model.head.conv_feat(t_neck_f)
+            t_cls_score = self.teacher_model.head.gfl_head_cls(t_conv_cls_feat)
+            s_cls_feat.append(cls_score)
+            t_cls_feat.append(t_cls_score)
+
+        for idx, k in enumerate(self.loss_dic):
+            loss_dict[k] = self.loss_dic[k](s_cls_feat[idx], t_cls_feat[idx])
+            feat_loss[f"neck_f_{idx}"] = self.loss_dic[k](stu_fea_list[idx],
+                                                          tea_fea_list[idx])
+
+        for k in feat_loss:
+            loss['loss'] += feat_loss[k]
+            loss[k] = feat_loss[k]
+
+        for k in loss_dict:
+            loss['loss'] += loss_dict[k]
+            loss[k] = loss_dict[k]
+        return loss
+
     def forward(self, inputs):
         if self.training:
             s_body_feats = self.student_model.backbone(inputs)
@@ -235,53 +279,13 @@ class CWDDistillModel(nn.Layer):
                 t_body_feats = self.teacher_model.backbone(inputs)
                 t_neck_feats = self.teacher_model.neck(t_body_feats)
 
-            loss_dict = {}
-
             if self.arch == "RetinaNet":
-                # GT loss                                                                                                              
-                loss = self.student_model.head(s_neck_feats, inputs)
-                # distill FGD loss
-                for idx, k in enumerate(self.fgd_loss_dic):
-                    loss_dict[k] = self.loss_dic[idx](s_neck_feats[idx],
-                                                      t_neck_feats[idx])
-
-            if self.arch == "GFL":
-                # GT loss
-                loss = {}
-                head_outs = self.student_model.head(s_neck_feats)
-                loss_gfl = self.student_model.head.get_loss(head_outs, inputs)
-                loss.update(loss_gfl)
-                total_loss = paddle.add_n(list(loss.values()))
-                loss.update({'loss': total_loss})
-                # distill loss
-                feat_loss = {}
-                # get output of gfl_cls_head
-                s_cls_feat, t_cls_feat = [], []
-                for s_neck_f, t_neck_f in zip(s_neck_feats, t_neck_feats):
-                    conv_cls_feat, _ = self.student_model.head.conv_feat(
-                        s_neck_f)
-                    cls_score = self.student_model.head.gfl_head_cls(
-                        conv_cls_feat)
-                    t_conv_cls_feat, _ = self.teacher_model.head.conv_feat(
-                        t_neck_f)
-                    t_cls_score = self.teacher_model.head.gfl_head_cls(
-                        t_conv_cls_feat)
-                    s_cls_feat.append(cls_score)
-                    t_cls_feat.append(t_cls_score)
-
-                for idx, k in enumerate(self.fgd_loss_dic):
-                    loss_dict[k] = self.loss_dic[k](s_cls_feat[idx],
-                                                    t_cls_feat[idx])
-                    feat_loss[f"neck_f_{idx}"] = self.loss_dic[k](
-                        s_neck_feats[idx], t_neck_feats[idx])
-
-            for k in feat_loss:
-                loss['loss'] += feat_loss[k]
-                loss[k] = feat_loss[k]
-
-            for k in loss_dict:
-                loss['loss'] += loss_dict[k]
-                loss[k] = loss_dict[k]
+                loss = self.get_loss_retinanet(s_neck_feats, t_neck_feats,
+                                               inputs)
+            elif self.arch == "GFL":
+                loss = self.get_loss_gfl(s_neck_feats, t_neck_feats, inputs)
+            else:
+                raise ValueError(f"unsupported arch {self.arch}")
             return loss
         else:
             body_feats = self.student_model.backbone(inputs)
