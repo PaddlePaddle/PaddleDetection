@@ -18,7 +18,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
-from ppdet.modeling.layers import DropBlock, MultiHeadAttention, _convert_attention_mask
+from ppdet.modeling.layers import DropBlock, MultiHeadAttention
 from ppdet.modeling.ops import get_act_fn
 from ..backbones.cspresnet import ConvBNLayer, BasicBlock
 from ..shape_spec import ShapeSpec
@@ -101,7 +101,7 @@ class TransformerEncoderLayer(nn.Layer):
                  nhead,
                  dim_feedforward=2048,
                  dropout=0.1,
-                 activation="gelu",
+                 activation="relu",
                  attn_dropout=None,
                  act_dropout=None,
                  normalize_before=False):
@@ -132,8 +132,6 @@ class TransformerEncoderLayer(nn.Layer):
         return tensor if pos_embed is None else tensor + pos_embed
 
     def forward(self, src, src_mask=None, pos_embed=None):
-        src_mask = _convert_attention_mask(src_mask, src.dtype)
-
         residual = src
         if self.normalize_before:
             src = self.norm1(src)
@@ -162,8 +160,6 @@ class TransformerEncoder(nn.Layer):
         self.norm = norm
 
     def forward(self, src, src_mask=None, pos_embed=None):
-        src_mask = _convert_attention_mask(src_mask, src.dtype)
-
         output = src
         for layer in self.layers:
             output = layer(output, src_mask=src_mask, pos_embed=pos_embed)
@@ -195,7 +191,6 @@ class CustomCSPPAN(nn.Layer):
                  data_format='NCHW',
                  width_mult=1.0,
                  depth_mult=1.0,
-                 hidden_dim=1024,
                  dim_feedforward=2048,
                  dropout=0.1,
                  activation='gelu',
@@ -216,19 +211,19 @@ class CustomCSPPAN(nn.Layer):
         self.num_blocks = len(in_channels)
         self.data_format = data_format
         self._out_channels = out_channels
+        self.hidden_dim = in_channels[-1]
         in_channels = in_channels[::-1]
-        self.hidden_dim = hidden_dim
         self.nhead = nhead
         self.num_layers = num_layers
         self.use_trans = use_trans
-
-        encoder_layer = TransformerEncoderLayer(
-            hidden_dim, nhead, dim_feedforward, dropout, activation,
-            attn_dropout, act_dropout, normalize_before)
-        encoder_norm = nn.LayerNorm(hidden_dim) if normalize_before else None
-        self.encoder = TransformerEncoder(encoder_layer, self.num_layers,
-                                          encoder_norm)
-
+        if use_trans:
+            encoder_layer = TransformerEncoderLayer(
+                self.hidden_dim, nhead, dim_feedforward, dropout, activation,
+                attn_dropout, act_dropout, normalize_before)
+            encoder_norm = nn.LayerNorm(
+                self.hidden_dim) if normalize_before else None
+            self.encoder = TransformerEncoder(encoder_layer, self.num_layers,
+                                              encoder_norm)
         fpn_stages = []
         fpn_routes = []
         for i, (ch_in, ch_out) in enumerate(zip(in_channels, out_channels)):
@@ -328,7 +323,6 @@ class CustomCSPPAN(nn.Layer):
         if self.use_trans:
             last_feat = blocks[-1]
             n, c, h, w = last_feat.shape
-            assert c == 1024, 'c mast be 1024!!'
 
             # flatten [B, C, H, W] to [B, HxW, C]
             src_flatten = last_feat.flatten(2).transpose([0, 2, 1])

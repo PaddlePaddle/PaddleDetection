@@ -58,7 +58,8 @@ class PPYOLOEHead(nn.Layer):
                  fpn_strides=(32, 16, 8),
                  grid_cell_scale=5.0,
                  grid_cell_offset=0.5,
-                 reg_range=(0, 17),
+                 reg_max=16,
+                 reg_range=False,
                  static_assigner_epoch=4,
                  use_varifocal_loss=True,
                  static_assigner='ATSSAssigner',
@@ -80,8 +81,11 @@ class PPYOLOEHead(nn.Layer):
         self.fpn_strides = fpn_strides
         self.grid_cell_scale = grid_cell_scale
         self.grid_cell_offset = grid_cell_offset
-        self.reg_range = reg_range
-        self.reg_channels = reg_range[1] - reg_range[0]
+        if reg_range:
+            self.reg_range = reg_range
+        else:
+            self.reg_range = (0, reg_max + 1)
+        self.reg_channels = self.reg_range[1] - self.reg_range[0]
         self.iou_loss = GIoULoss()
         self.loss_weight = loss_weight
         self.use_varifocal_loss = use_varifocal_loss
