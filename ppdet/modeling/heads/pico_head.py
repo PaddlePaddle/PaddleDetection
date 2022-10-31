@@ -353,13 +353,13 @@ class PicoHead(OTAVFLHead):
                 bbox_pred = bbox_pred.reshape([1, (self.reg_max + 1) * 4,
                                                -1]).transpose([0, 2, 1])
             else:
-                b, _, h, w = fpn_feat.shape
+                _, _, h, w = fpn_feat.shape
                 l = h * w
                 cls_score_out = F.sigmoid(
-                    cls_score.reshape([b, self.cls_out_channels, l]))
+                    cls_score.reshape([-1, self.cls_out_channels, l]))
                 bbox_pred = bbox_pred.transpose([0, 2, 3, 1])
                 bbox_pred = self.distribution_project(bbox_pred)
-                bbox_pred = bbox_pred.reshape([b, l, 4])
+                bbox_pred = bbox_pred.reshape([-1, l, 4])
 
             cls_logits_list.append(cls_score_out)
             bboxes_reg_list.append(bbox_pred)
@@ -597,7 +597,7 @@ class PicoHeadV2(GFLHead):
             anchor_points, stride_tensor = self._generate_anchors(fpn_feats)
         cls_score_list, box_list = [], []
         for i, (fpn_feat, stride) in enumerate(zip(fpn_feats, self.fpn_stride)):
-            b, _, h, w = fpn_feat.shape
+            _, _, h, w = fpn_feat.shape
             # task decomposition
             conv_cls_feat, se_feat = self.conv_feat(fpn_feat, i)
             cls_logit = self.head_cls_list[i](se_feat)
@@ -620,10 +620,11 @@ class PicoHeadV2(GFLHead):
                         [0, 2, 1]))
             else:
                 l = h * w
-                cls_score_out = cls_score.reshape([b, self.cls_out_channels, l])
+                cls_score_out = cls_score.reshape(
+                    [-1, self.cls_out_channels, l])
                 bbox_pred = reg_pred.transpose([0, 2, 3, 1])
                 bbox_pred = self.distribution_project(bbox_pred)
-                bbox_pred = bbox_pred.reshape([b, l, 4])
+                bbox_pred = bbox_pred.reshape([-1, l, 4])
                 cls_score_list.append(cls_score_out)
                 box_list.append(bbox_pred)
 
