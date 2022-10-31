@@ -260,7 +260,7 @@ class GFLHead(nn.Layer):
                 center_points = paddle.stack([x, y], axis=-1)
                 cls_score = cls_score.reshape([b, -1, self.cls_out_channels])
                 bbox_pred = self.distribution_project(bbox_pred) * stride
-                bbox_pred = bbox_pred.reshape([b, cell_h * cell_w, 4])
+                bbox_pred = bbox_pred.reshape([-1, cell_h * cell_w, 4])
 
                 # NOTE: If keep_ratio=False and image shape value that
                 # multiples of 32, distance2bbox not set max_shapes parameter
