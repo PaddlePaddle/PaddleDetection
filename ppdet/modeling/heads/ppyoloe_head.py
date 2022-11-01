@@ -72,7 +72,9 @@ class PPYOLOEHead(nn.Layer):
                  },
                  trt=False,
                  exclude_nms=False,
-                 exclude_post_process=False):
+                 exclude_post_process=False,
+                 cot_classes=None,
+                 use_cot=False):
         super(PPYOLOEHead, self).__init__()
         assert len(in_channels) > 0, "len(in_channels) should > 0"
         self.in_channels = in_channels
@@ -85,6 +87,8 @@ class PPYOLOEHead(nn.Layer):
         self.loss_weight = loss_weight
         self.use_varifocal_loss = use_varifocal_loss
         self.eval_size = eval_size
+        self.use_cot = use_cot
+        self.cot_classes = cot_classes
 
         self.static_assigner_epoch = static_assigner_epoch
         self.static_assigner = static_assigner
@@ -103,16 +107,33 @@ class PPYOLOEHead(nn.Layer):
         for in_c in self.in_channels:
             self.stem_cls.append(ESEAttn(in_c, act=act))
             self.stem_reg.append(ESEAttn(in_c, act=act))
-        # pred head
-        self.pred_cls = nn.LayerList()
+
         self.pred_reg = nn.LayerList()
         for in_c in self.in_channels:
-            self.pred_cls.append(
-                nn.Conv2D(
-                    in_c, self.num_classes, 3, padding=1))
             self.pred_reg.append(
                 nn.Conv2D(
                     in_c, 4 * (self.reg_max + 1), 3, padding=1))
+        
+        self.cot_relation = None
+        # pred head
+        if self.use_cot:
+            self.pred_cls_cot = nn.LayerList()
+            self.pred_cls = nn.LayerList()
+            for in_c in self.in_channels:
+                self.pred_cls_cot.append(
+                    nn.Conv2D(
+                        in_c, self.num_classes, 3, padding=1))
+                self.pred_cls.append(
+                    nn.Conv2D(
+                        in_c, self.cot_classes, 3, padding=1))
+        else:
+            self.pred_cls = nn.LayerList()
+            for in_c in self.in_channels:
+                self.pred_cls.append(
+                    nn.Conv2D(
+                        in_c, self.num_classes, 3, padding=1))
+                        
+
         # projection conv
         self.proj_conv = nn.Conv2D(self.reg_max + 1, 1, 1, bias_attr=False)
         self.proj_conv.skip_quant = True
@@ -121,6 +142,12 @@ class PPYOLOEHead(nn.Layer):
     @classmethod
     def from_config(cls, cfg, input_shape):
         return {'in_channels': [i.channels for i in input_shape], }
+
+    def init_cot_head(self, relationship, cot_lambda, cot_scale):
+        self.cot_relation = relationship
+        self.cot_lambda = cot_lambda
+        self.cot_scale = cot_scale
+        # self.pred_cls_cot.set_dict(cot_head_dict)
 
     def _init_weights(self):
         bias_cls = bias_init_with_prob(0.01)
@@ -139,7 +166,7 @@ class PPYOLOEHead(nn.Layer):
             self.anchor_points = anchor_points
             self.stride_tensor = stride_tensor
 
-    def forward_train(self, feats, targets):
+    def forward_targets(self, feats, targets):
         anchors, anchor_points, num_anchors_list, stride_tensor = \
             generate_anchors_for_grid_cell(
                 feats, self.fpn_strides, self.grid_cell_scale,
@@ -152,14 +179,47 @@ class PPYOLOEHead(nn.Layer):
                                          feat)
             reg_distri = self.pred_reg[i](self.stem_reg[i](feat, avg_feat))
             # cls and reg
-            cls_score = F.sigmoid(cls_logit)
+            cls_score = F.softmax(cls_logit)
             cls_score_list.append(cls_score.flatten(2).transpose([0, 2, 1]))
             reg_distri_list.append(reg_distri.flatten(2).transpose([0, 2, 1]))
         cls_score_list = paddle.concat(cls_score_list, axis=1)
         reg_distri_list = paddle.concat(reg_distri_list, axis=1)
 
-        return self.get_loss([
+        return cls_score_list, self.get_label([
             cls_score_list, reg_distri_list, anchors, anchor_points,
+            num_anchors_list, stride_tensor
+        ], targets)
+
+    def forward_train(self, feats, targets):
+        anchors, anchor_points, num_anchors_list, stride_tensor = \
+            generate_anchors_for_grid_cell(
+                feats, self.fpn_strides, self.grid_cell_scale,
+                self.grid_cell_offset)
+
+        cls_score_list, reg_distri_list = [], []
+        cls_logit_cot_list = []
+        for i, feat in enumerate(feats):
+            avg_feat = F.adaptive_avg_pool2d(feat, (1, 1))
+            if self.use_cot:
+                cls_logit = self.pred_cls_cot[i](self.stem_cls[i](feat, avg_feat) + 
+                                            feat)
+                cls_logit_cot = self.pred_cls[i](self.stem_cls[i](feat, avg_feat) +
+                                            feat)
+                cls_logit_cot_list.append(cls_logit_cot.flatten(2).transpose([0, 2, 1]))
+            else:
+                cls_logit = self.pred_cls[i](self.stem_cls[i](feat, avg_feat) +
+                                            feat)
+            reg_distri = self.pred_reg[i](self.stem_reg[i](feat, avg_feat))
+            # cls and reg
+            cls_score = F.sigmoid(cls_logit)
+            cls_score_list.append(cls_score.flatten(2).transpose([0, 2, 1]))
+            reg_distri_list.append(reg_distri.flatten(2).transpose([0, 2, 1]))
+        cls_score_list = paddle.concat(cls_score_list, axis=1)
+        reg_distri_list = paddle.concat(reg_distri_list, axis=1)
+        cls_logit_cot_list = paddle.concat(cls_logit_cot_list, axis=1)
+
+        return self.get_loss([
+            cls_score_list, reg_distri_list, cls_logit_cot_list, anchors, anchor_points,
             num_anchors_list, stride_tensor
         ], targets)
 
@@ -299,7 +359,7 @@ class PPYOLOEHead(nn.Layer):
         return loss_l1, loss_iou, loss_dfl
 
     def get_loss(self, head_outs, gt_meta):
-        pred_scores, pred_distri, anchors,\
+        pred_scores, pred_distri, pred_cot, anchors,\
         anchor_points, num_anchors_list, stride_tensor = head_outs
 
         anchor_points_s = anchor_points / stride_tensor
@@ -337,7 +397,7 @@ class PPYOLOEHead(nn.Layer):
         # cls loss
         if self.use_varifocal_loss:
             one_hot_label = F.one_hot(assigned_labels,
-                                      self.num_classes + 1)[..., :-1]
+                                    self.num_classes + 1)[..., :-1]
             loss_cls = self._varifocal_loss(pred_scores, assigned_scores,
                                             one_hot_label)
         else:
@@ -349,6 +409,9 @@ class PPYOLOEHead(nn.Layer):
             assigned_scores_sum /= paddle.distributed.get_world_size()
         assigned_scores_sum = paddle.clip(assigned_scores_sum, min=1.)
         loss_cls /= assigned_scores_sum
+
+        # cot loss
+        
 
         loss_l1, loss_iou, loss_dfl = \
             self._bbox_loss(pred_distri, pred_bboxes, anchor_points_s,
@@ -365,6 +428,29 @@ class PPYOLOEHead(nn.Layer):
             'loss_l1': loss_l1,
         }
         return out_dict
+
+    def get_label(self, head_outs, gt_meta):
+        pred_scores, pred_distri, anchors,\
+        anchor_points, num_anchors_list, stride_tensor = head_outs
+
+        anchor_points_s = anchor_points / stride_tensor
+        pred_bboxes = self._bbox_decode(anchor_points_s, pred_distri)
+
+        gt_labels = gt_meta['gt_class']
+        gt_bboxes = gt_meta['gt_bbox']
+        pad_gt_mask = gt_meta['pad_gt_mask']
+        # label assignment
+        assigned_labels, assigned_bboxes, assigned_scores = \
+            self.static_assigner(
+                anchors,
+                num_anchors_list,
+                gt_labels,
+                gt_bboxes,
+                pad_gt_mask,
+                bg_index=self.num_classes,
+                pred_bboxes=pred_bboxes.detach() * stride_tensor)
+
+        return assigned_labels
 
     def post_process(self, head_outs, scale_factor):
         pred_scores, pred_dist, anchor_points, stride_tensor = head_outs

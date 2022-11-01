@@ -13,3 +13,27 @@ weights: output/ppyoloe_crn_s_300e_coco/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_s_pretrained.pdparams
 depth_mult: 0.33
 width_mult: 0.50
+
+
+num_classes: 4
+
+metric: COCO
+map_type: integral
+
+TrainDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: novel_only/train_shots10.json
+    dataset_dir: dataset/roadsign_coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: annotations/roadsign_valid.json
+    dataset_dir: dataset/roadsign_coco
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/roadsign_valid.json
+    dataset_dir: dataset/roadsign_coco

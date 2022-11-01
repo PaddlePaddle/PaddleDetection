@@ -19,6 +19,9 @@ from __future__ import print_function
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 from ..post_process import JDEBBoxPostProcess
+import numpy as np
+import copy
+import paddle
 
 __all__ = ['YOLOv3']
 
@@ -75,6 +78,9 @@ class YOLOv3(BaseArch):
             "yolo_head": yolo_head,
         }
 
+    def init_cot_head(self, relationship, cot_lambda, cot_scale):
+        self.yolo_head.init_cot_head(relationship, cot_lambda, cot_scale)
+
     def _forward(self):
         body_feats = self.backbone(self.inputs)
         if self.for_mot:
@@ -128,3 +134,88 @@ class YOLOv3(BaseArch):
 
     def get_pred(self):
         return self._forward()
+
+    def relationship_learning(self, loader, num_classes_novel, cot_scale, coco_labels, novel_labels):
+            # self.model.eval()
+        print('computing relationship')
+
+        for i in range(10):
+            train_labels_list = []
+            labels_list = []
+            for step_id, data in enumerate(loader):
+                bbox_prob, cur_label, cot_head_dict = self.target_bbox_forward(data)
+                bbox_prob.detach().numpy()
+
+                train_labels_list.append(cur_label.numpy())
+                labels_list.append(bbox_prob)
+                # inputs = data
+                # batch_size = inputs['im_id'].shape[0]
+                # offset_bbox = 0
+                # #print('batch results', inputs['gt_class'])
+                # for i in range(batch_size):
+                #     num_bbox = inputs['gt_class'][i].shape[0]
+                #     #for j in range(num_bbox):
+                #     #    print('gt predict', inputs['im_id'][i].tolist()[0], inputs['gt_class'][i][j].tolist()[0], inputs['gt_bbox'][i][j].tolist(), preds[offset_bbox+j].tolist()[0])            
+                #     offset_bbox += num_bbox
+                #     train_labels = inputs['gt_class'][i]
+                #     train_labels_list.append(train_labels.numpy().squeeze(1))
+            labels = np.concatenate(train_labels_list, 0)
+            if len(np.unique(labels)) == num_classes_novel:
+                logits = np.concatenate(labels_list, 0)
+                break
+            else:
+                print(labels)
+                continue
+        #print('debug cot1', labels.shape, logits.shape)
+        # print(labels, logits)
+        def softmax_np(x, dim):
+            max_el = np.max(x, axis=dim, keepdims=True)
+            x = x - max_el
+            x = np.exp(x)
+            s = np.sum(x, axis=dim, keepdims=True)
+            return x / s
+
+        # probabilities = softmax_np(logits * cot_scale, dim=1)
+        probabilities = logits
+        N_t = np.max(labels) + 1
+        conditional = []
+        for i in range(N_t):
+            this_class = probabilities[labels == i]
+            average = np.mean(this_class, axis=0, keepdims=True)
+            conditional.append(average)
+
+        ### debug co-tuning relationship begin ###
+        print('------- co-tuning relationship -------------')
+        for i in range(num_classes_novel):
+            average = conditional[i]
+            values, indices = paddle.topk(paddle.to_tensor(average), k=80)
+            print(indices)
+            print('Top related novel class ', i, novel_labels[i])
+            for k in range(3):
+                indice = int(indices.tolist()[0][k])
+                print('\t', 'coco class:', indice, coco_labels[indice], 'prob:', values.tolist()[0][k])
+            print('Least related novel class ', i, novel_labels[i])
+            for k in range(3):
+                indice = int(indices.tolist()[0][79-k])
+                print('\t', 'coco class:', indice, coco_labels[indice], 'prob:', values.tolist()[0][79-k])
+        ### debug co-tuning relationship end ###
+
+        return np.concatenate(conditional), cot_head_dict
+
+
+    def target_bbox_forward(self, inputs):
+        self.backbone.eval()
+        self.neck.eval()
+        # self.yolo_head.eval()
+        body_feats = self.backbone(inputs)
+        neck_feats = self.neck(body_feats, self.for_mot)
+
+        yolo_head_outs = self.yolo_head.forward_targets(neck_feats, inputs)
+        p = yolo_head_outs[0]
+        t = yolo_head_outs[1]
+        pcls = p.reshape([-1, p.shape[-1]])
+        tcls = t.reshape([-1])
+        mask = (tcls < 4)    
+        cot_head_dict = copy.deepcopy(self.yolo_head.pred_cls.state_dict())
+        
+        return pcls[mask], tcls[mask], cot_head_dict

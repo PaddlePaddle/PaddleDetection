@@ -10,6 +10,55 @@ log_iter: 100
 snapshot_epoch: 5
 weights: output/ppyoloe_plus_crn_l_80e_coco/model_final
 
-pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_l_obj365_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams
 depth_mult: 1.0
 width_mult: 1.0
+
+PPYOLOEHead:
+  fpn_strides: [32, 16, 8]
+  grid_cell_scale: 5.0
+  grid_cell_offset: 0.5
+  static_assigner_epoch: 30
+  use_varifocal_loss: True
+  loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
+  static_assigner:
+    name: ATSSAssigner
+    topk: 9
+  assigner:
+    name: TaskAlignedAssigner
+    topk: 13
+    alpha: 1.0
+    beta: 6.0
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 300
+    score_threshold: 0.01
+    nms_threshold: 0.7
+  use_cot: True
+  cot_classes: 80
+
+num_classes: 4
+metric: COCO
+map_type: integral
+
+TrainDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: novel_only/train_shots10.json
+    dataset_dir: dataset/roadsign_coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: annotations/roadsign_valid.json
+    dataset_dir: dataset/roadsign_coco
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/roadsign_valid.json
+    dataset_dir: dataset/roadsign_coco
+    
+cot_lambda: 0.5
+cot_scale: 1

@@ -16,6 +16,10 @@ __pycache__/
 # log file
 *.log
 
+configs/
+*.pdparams
+dataset/
+
 # Distribution / packaging
 /bin/
 /build/

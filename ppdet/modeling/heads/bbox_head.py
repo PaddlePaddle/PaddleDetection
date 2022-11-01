@@ -185,7 +185,9 @@ class BBoxHead(nn.Layer):
                  num_classes=80,
                  bbox_weight=[10., 10., 5., 5.],
                  bbox_loss=None,
-                 loss_normalize_pos=False):
+                 loss_normalize_pos=False,
+                 cot_classes=None,
+                 use_cot=False):
         super(BBoxHead, self).__init__()
         self.head = head
         self.roi_extractor = roi_extractor
@@ -198,14 +200,24 @@ class BBoxHead(nn.Layer):
         self.bbox_weight = bbox_weight
         self.bbox_loss = bbox_loss
         self.loss_normalize_pos = loss_normalize_pos
-
+        self.use_cot = use_cot
+        self.cot_classes = cot_classes
+        
         self.bbox_score = nn.Linear(
             in_channel,
             self.num_classes + 1,
             weight_attr=paddle.ParamAttr(initializer=Normal(
-                mean=0.0, std=0.01)))
+                mean=0.0, std=0.01)))       
         self.bbox_score.skip_quant = True
 
+        if self.use_cot:
+            self.bbox_score_cot = nn.Linear(
+                in_channel,
+                self.cot_classes + 1,
+                weight_attr=paddle.ParamAttr(initializer=Normal(
+                    mean=0.0, std=0.01)))     
+            self.bbox_score_cot.skip_quant = True
+            
         self.bbox_delta = nn.Linear(
             in_channel,
             4 * self.num_classes,
@@ -214,6 +226,7 @@ class BBoxHead(nn.Layer):
         self.bbox_delta.skip_quant = True
         self.assigned_label = None
         self.assigned_rois = None
+        self.relationship = None
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -236,6 +249,11 @@ class BBoxHead(nn.Layer):
         rois_num (Tensor): The number of RoIs in each image
         inputs (dict{Tensor}): The ground-truth of image
         """
+        if self.use_cot and self.relationship == None:
+            self.relationship = self.relationship_learning()
+
+
+            a = 1
         if self.training:
             rois, rois_num, targets = self.bbox_assigner(rois, rois_num, inputs)
             self.assigned_rois = (rois, rois_num)
@@ -248,7 +266,7 @@ class BBoxHead(nn.Layer):
             feat = paddle.squeeze(feat, axis=[2, 3])
         else:
             feat = bbox_feat
-        scores = self.bbox_score(feat)
+        scores = self.bbox_score_cot(feat)
         deltas = self.bbox_delta(feat)
 
         if self.training:
@@ -263,6 +281,13 @@ class BBoxHead(nn.Layer):
         else:
             pred = self.get_prediction(scores, deltas)
             return pred, self.head
+
+    def relationship_learning(self):
+        print('computing relationship')
+        
+        train_label_list = []
+        base_label_list = []
+        
 
     def get_loss(self,
                  scores,
