@@ -252,7 +252,7 @@ class PPYOLOEHead(nn.Layer):
             anchor_points, stride_tensor = self._generate_anchors(feats)
         cls_score_list, reg_dist_list = [], []
         for i, feat in enumerate(feats):
-            b, _, h, w = feat.shape
+            _, _, h, w = feat.shape
             l = h * w
             avg_feat = F.adaptive_avg_pool2d(feat, (1, 1))
             cls_logit = self.pred_cls[i](self.stem_cls[i](feat, avg_feat) +
@@ -263,7 +263,7 @@ class PPYOLOEHead(nn.Layer):
             reg_dist = self.proj_conv(F.softmax(reg_dist, axis=1)).squeeze(1)
             # cls and reg
             cls_score = F.sigmoid(cls_logit)
-            cls_score_list.append(cls_score.reshape([b, self.num_classes, l]))
+            cls_score_list.append(cls_score.reshape([-1, self.num_classes, l]))
             reg_dist_list.append(reg_dist)
 
         cls_score_list = paddle.concat(cls_score_list, axis=-1)
@@ -298,8 +298,8 @@ class PPYOLOEHead(nn.Layer):
         return loss
 
     def _bbox_decode(self, anchor_points, pred_dist):
-        b, l, _ = get_static_shape(pred_dist)
-        pred_dist = F.softmax(pred_dist.reshape([b, l, 4, self.reg_max + 1]))
+        _, l, _ = get_static_shape(pred_dist)
+        pred_dist = F.softmax(pred_dist.reshape([-1, l, 4, self.reg_max + 1]))
         pred_dist = self.proj_conv(pred_dist.transpose([0, 3, 1, 2])).squeeze(1)
         return batch_distance2bbox(anchor_points, pred_dist)
 
