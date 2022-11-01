@@ -49,7 +49,7 @@ class PPYOLOEHead(nn.Layer):
     __shared__ = [
         'num_classes', 'eval_size', 'trt', 'exclude_nms', 'exclude_post_process'
     ]
-    __inject__ = ['static_assigner', 'assigner', 'nms']
+    __inject__ = ['static_assigner', 'assigner', 'nms', 'loss_cot']
 
     def __init__(self,
                  in_channels=[1024, 512, 256],
@@ -73,6 +73,7 @@ class PPYOLOEHead(nn.Layer):
                  trt=False,
                  exclude_nms=False,
                  exclude_post_process=False,
+                 loss_cot = 'COTLoss',
                  cot_classes=None,
                  use_cot=False):
         super(PPYOLOEHead, self).__init__()
@@ -89,6 +90,7 @@ class PPYOLOEHead(nn.Layer):
         self.eval_size = eval_size
         self.use_cot = use_cot
         self.cot_classes = cot_classes
+        self.loss_cot = loss_cot
 
         self.static_assigner_epoch = static_assigner_epoch
         self.static_assigner = static_assigner
@@ -216,7 +218,8 @@ class PPYOLOEHead(nn.Layer):
             reg_distri_list.append(reg_distri.flatten(2).transpose([0, 2, 1]))
         cls_score_list = paddle.concat(cls_score_list, axis=1)
         reg_distri_list = paddle.concat(reg_distri_list, axis=1)
-        cls_logit_cot_list = paddle.concat(cls_logit_cot_list, axis=1)
+        if len(cls_logit_cot_list) > 0:
+            cls_logit_cot_list = paddle.concat(cls_logit_cot_list, axis=1)
 
         return self.get_loss([
             cls_score_list, reg_distri_list, cls_logit_cot_list, anchors, anchor_points,
@@ -411,8 +414,9 @@ class PPYOLOEHead(nn.Layer):
         loss_cls /= assigned_scores_sum
 
         # cot loss
+        if self.use_cot:
+            loss_cot = self.loss_cot(pred_cot, assigned_labels, self.cot_relation)
         
-
         loss_l1, loss_iou, loss_dfl = \
             self._bbox_loss(pred_distri, pred_bboxes, anchor_points_s,
                             assigned_labels, assigned_bboxes, assigned_scores,
@@ -420,13 +424,20 @@ class PPYOLOEHead(nn.Layer):
         loss = self.loss_weight['class'] * loss_cls + \
                self.loss_weight['iou'] * loss_iou + \
                self.loss_weight['dfl'] * loss_dfl
+        
         out_dict = {
             'loss': loss,
             'loss_cls': loss_cls,
             'loss_iou': loss_iou,
             'loss_dfl': loss_dfl,
             'loss_l1': loss_l1,
-        }
+        }        
+
+        if self.use_cot:
+            loss += loss_cot['loss_cot']
+            out_dict.update(loss_cot)
+            out_dict.update({'loss': loss})
+
         return out_dict
 
     def get_label(self, head_outs, gt_meta):

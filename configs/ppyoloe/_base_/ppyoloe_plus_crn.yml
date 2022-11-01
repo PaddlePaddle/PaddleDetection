@@ -46,3 +46,4 @@ PPYOLOEHead:
     keep_top_k: 300
     score_threshold: 0.01
     nms_threshold: 0.7
+  
