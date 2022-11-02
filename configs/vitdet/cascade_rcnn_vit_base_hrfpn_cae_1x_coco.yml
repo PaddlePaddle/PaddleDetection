@@ -98,6 +98,7 @@ CascadeHead:
   reg_class_agnostic: False
   stage_loss_weights: [1, 0.5, 0.25]
   loss_normalize_pos: True
+  add_gt_as_proposals: [True, True, True]
 
 
 BBoxAssigner:
