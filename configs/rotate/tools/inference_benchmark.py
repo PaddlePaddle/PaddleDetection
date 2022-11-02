@@ -18,6 +18,7 @@ from __future__ import print_function
 
 import os
 import sys
+import six
 import glob
 import time
 import yaml
@@ -26,9 +27,47 @@ import cv2
 import numpy as np
 
 import paddle
-from paddle.inference import Config
-from paddle.inference import create_predictor
-from paddle.inference import PrecisionType
+import paddle.version as paddle_version
+from paddle.inference import Config, create_predictor, PrecisionType, get_trt_runtime_version
+
+
+TUNED_TRT_DYNAMIC_MODELS = {'DETR'}
+
+def check_version(version='2.2'):
+    err = "PaddlePaddle version {} or higher is required, " \
+          "or a suitable develop version is satisfied as well. \n" \
+          "Please make sure the version is good with your code.".format(version)
+
+    version_installed = [
+        paddle_version.major, paddle_version.minor, paddle_version.patch,
+        paddle_version.rc
+    ]
+
+    if version_installed == ['0', '0', '0', '0']:
+        return
+
+    version_split = version.split('.')
+
+    length = min(len(version_installed), len(version_split))
+    for i in six.moves.range(length):
+        if version_installed[i] > version_split[i]:
+            return
+        if version_installed[i] < version_split[i]:
+            raise Exception(err)
+
+
+def check_trt_version(version='8.2'):
+    err = "TensorRT version {} or higher is required," \
+          "Please make sure the version is good with your code.".format(version)
+    version_split = list(map(int, version.split('.')))
+    version_installed = get_trt_runtime_version()
+    length = min(len(version_installed), len(version_split))
+    for i in six.moves.range(length):
+        if version_installed[i] > version_split[i]:
+            return
+        if version_installed[i] < version_split[i]:
+            raise Exception(err)
+
 
 # preprocess ops
 def decode_image(im_file, im_info):
@@ -158,6 +197,7 @@ def parse_args():
     parser.add_argument('--warmup_iter', type=int, default=5, help='num of warmup iters')
     parser.add_argument('--total_iter', type=int, default=2000, help='num of total iters')
     parser.add_argument('--log_iter', type=int, default=50, help='num of log interval')
+    parser.add_argument('--tuned_trt_shape_file', type=str, default='shape_range_info.pbtxt', help='dynamic shape range info')
     args = parser.parse_args()
     return args
 
@@ -183,7 +223,13 @@ def init_predictor(FLAGS):
         'trt_fp16': Config.Precision.Half
     }
 
+    arch = yml_conf['arch']
+    tuned_trt_shape_file = os.path.join(model_dir, FLAGS.tuned_trt_shape_file)
+
     if run_mode in precision_map.keys():
+        if arch in TUNED_TRT_DYNAMIC_MODELS and not os.path.exists(tuned_trt_shape_file):
+            print('dynamic shape range info is saved in {}. After that, rerun the code'.format(tuned_trt_shape_file))
+            config.collect_shape_range_info(tuned_trt_shape_file)
         config.enable_tensorrt_engine(
             workspace_size=(1 << 25) * batch_size,
             max_batch_size=batch_size,
@@ -193,20 +239,23 @@ def init_predictor(FLAGS):
             use_calib_mode=False)
 
         if yml_conf['use_dynamic_shape']:
-            min_input_shape = {
-                'image': [batch_size, 3, 640, 640],
-                'scale_factor': [batch_size, 2]
-            }
-            max_input_shape = {
-                'image': [batch_size, 3, 1280, 1280],
-                'scale_factor': [batch_size, 2]
-            }
-            opt_input_shape = {
-                'image': [batch_size, 3, 1024, 1024],
-                'scale_factor': [batch_size, 2]
-            }
-            config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
-                                              opt_input_shape)
+            if arch in TUNED_TRT_DYNAMIC_MODELS and os.path.exists(tuned_trt_shape_file):
+                config.enable_tuned_tensorrt_dynamic_shape(tuned_trt_shape_file, True)
+            else:
+                min_input_shape = {
+                    'image': [batch_size, 3, 640, 640],
+                    'scale_factor': [batch_size, 2]
+                }
+                max_input_shape = {
+                    'image': [batch_size, 3, 1280, 1280],
+                    'scale_factor': [batch_size, 2]
+                }
+                opt_input_shape = {
+                    'image': [batch_size, 3, 1024, 1024],
+                    'scale_factor': [batch_size, 2]
+                }
+                config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
+                                                opt_input_shape)
     
     # disable print log when predict
     config.disable_glog_info()
@@ -296,6 +345,8 @@ def measure_speed(FLAGS):
 
 if __name__ == '__main__':
     FLAGS = parse_args()
+    check_version('2.4')
+    check_trt_version('8.2')
     measure_speed(FLAGS)
 
 
