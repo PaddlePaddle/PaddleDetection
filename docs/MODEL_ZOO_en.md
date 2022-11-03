@@ -107,12 +107,9 @@ Please refer to[YOLOv6](https://github.com/nemonameless/PaddleDetection_YOLOSeri
 Please refer to[YOLOv7](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov7)
 
 
-## Rotating frame detection
+## Rotated Object detection
 
-### S2ANet
-
-Please refer to[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/)
-
+[Model Zoo for Rotated Object Detection](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate)
 
 ## KeyPoint Detection
 

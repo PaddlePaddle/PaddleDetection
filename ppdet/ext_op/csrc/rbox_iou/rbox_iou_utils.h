@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 // The code is based on
-// https://github.com/csuhan/s2anet/blob/master/mmdet/ops/box_iou_rotated
+// https://github.com/facebookresearch/detectron2/blob/main/detectron2/layers/csrc/box_iou_rotated/
 
 #pragma once
 
@@ -336,13 +336,21 @@ HOST_DEVICE_INLINE T rbox_iou_single(T const *const box1_raw,
   box2.h = box2_raw[3];
   box2.a = box2_raw[4];
 
-  const T area1 = box1.w * box1.h;
-  const T area2 = box2.w * box2.h;
-  if (area1 < 1e-14 || area2 < 1e-14) {
+  if (box1.w < 1e-2 || box1.h < 1e-2 || box2.w < 1e-2 || box2.h < 1e-2) {
     return 0.f;
   }
+  const T area1 = box1.w * box1.h;
+  const T area2 = box2.w * box2.h;
 
   const T intersection = rboxes_intersection<T>(box1, box2);
   const T iou = intersection / (area1 + area2 - intersection);
   return iou;
+}
+
+/**
+   Computes ceil(a / b)
+*/
+
+HOST_DEVICE inline int CeilDiv(const int a, const int b) {
+  return (a + b - 1) / b;
 }

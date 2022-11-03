@@ -17,7 +17,7 @@
 
 | 模型 | Backbone | mAP | 学习率策略 | 角度表示 | 数据增广 | GPU数目 | 每GPU图片数目 | 模型下载 | 配置文件 |
 |:---:|:--------:|:----:|:---------:|:-----:|:--------:|:-----:|:------------:|:-------:|:------:|
-| FCOSR-M | ResNeXt-50 | 76.62 | 3x | oc | - | 4 | 4 | [model](https://paddledet.bj.bcebos.com/models/fcosr_x50_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/fcosr/fcosr_x50_3x_dota.yml) |
+| FCOSR-M | ResNeXt-50 | 76.62 | 3x | oc | RR | 4 | 4 | [model](https://paddledet.bj.bcebos.com/models/fcosr_x50_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/fcosr/fcosr_x50_3x_dota.yml) |
 
 **注意:**
 

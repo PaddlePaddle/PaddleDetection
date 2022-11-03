@@ -26,18 +26,9 @@ from paddle import in_dynamic_mode
 from paddle.common_ops_import import Variable, LayerHelper, check_variable_and_dtype, check_type, check_dtype
 
 __all__ = [
-    'prior_box',
-    'generate_proposals',
-    'box_coder',
-    'multiclass_nms',
-    'distribute_fpn_proposals',
-    'matrix_nms',
-    'batch_norm',
-    'mish',
-    'silu',
-    'swish',
-    'identity',
-    'anchor_generator'
+    'prior_box', 'generate_proposals', 'box_coder', 'multiclass_nms',
+    'distribute_fpn_proposals', 'matrix_nms', 'batch_norm', 'mish', 'silu',
+    'swish', 'identity', 'anchor_generator'
 ]
 
 
@@ -117,6 +108,7 @@ def batch_norm(ch,
             param.stop_gradient = True
 
     return norm_layer
+
 
 @paddle.jit.not_to_static
 def anchor_generator(input,

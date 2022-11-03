@@ -239,3 +239,57 @@ def check_points_in_polys(points, polys):
     is_in_polys = (ap_dot_ab >= 0) & (ap_dot_ab <= norm_ab) & (
         ap_dot_ad >= 0) & (ap_dot_ad <= norm_ad)
     return is_in_polys
+
+
+def check_points_in_rotated_boxes(points, boxes):
+    """Check whether point is in rotated boxes
+
+    Args:
+        points (tensor): (1, L, 2) anchor points
+        boxes (tensor): [B, N, 5] gt_bboxes
+        eps (float): default 1e-9
+    
+    Returns:
+        is_in_box (tensor): (B, N, L)
+
+    """
+    # [B, N, 5] -> [B, N, 4, 2]
+    corners = box2corners(boxes)
+    # [1, L, 2] -> [1, 1, L, 2]
+    points = points.unsqueeze(0)
+    # [B, N, 4, 2] -> [B, N, 1, 2]
+    a, b, c, d = corners.split(4, axis=2)
+    ab = b - a
+    ad = d - a
+    # [B, N, L, 2]
+    ap = points - a
+    # [B, N, L]
+    norm_ab = paddle.sum(ab * ab, axis=-1)
+    # [B, N, L]
+    norm_ad = paddle.sum(ad * ad, axis=-1)
+    # [B, N, L] dot product
+    ap_dot_ab = paddle.sum(ap * ab, axis=-1)
+    # [B, N, L] dot product
+    ap_dot_ad = paddle.sum(ap * ad, axis=-1)
+    # [B, N, L] <A, B> = |A|*|B|*cos(theta) 
+    is_in_box = (ap_dot_ab >= 0) & (ap_dot_ab <= norm_ab) & (ap_dot_ad >= 0) & (
+        ap_dot_ad <= norm_ad)
+    return is_in_box
+
+
+def rotated_iou_similarity(box1, box2, eps=1e-9, func=''):
+    """Calculate iou of box1 and box2
+
+    Args:
+        box1 (Tensor): box with the shape [N, M1, 5]
+        box2 (Tensor): box with the shape [N, M2, 5]
+
+    Return:
+        iou (Tensor): iou between box1 and box2 with the shape [N, M1, M2]
+    """
+    from ext_op import rbox_iou
+    rotated_ious = []
+    for b1, b2 in zip(box1, box2):
+        rotated_ious.append(rbox_iou(b1, b2))
+
+    return paddle.stack(rotated_ious, axis=0)

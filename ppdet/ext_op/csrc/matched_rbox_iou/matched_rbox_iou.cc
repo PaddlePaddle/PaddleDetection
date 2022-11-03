@@ -13,14 +13,14 @@
 // limitations under the License.
 //
 // The code is based on
-// https://github.com/csuhan/s2anet/blob/master/mmdet/ops/box_iou_rotated
+// https://github.com/facebookresearch/detectron2/blob/main/detectron2/layers/csrc/box_iou_rotated/
 
+#include "../rbox_iou/rbox_iou_utils.h"
 #include "paddle/extension.h"
-#include "rbox_iou_op.h"
 
 template <typename T>
 void matched_rbox_iou_cpu_kernel(const int rbox_num, const T *rbox1_data_ptr,
-                            const T *rbox2_data_ptr, T *output_data_ptr) {
+                                 const T *rbox2_data_ptr, T *output_data_ptr) {
 
   int i;
   for (i = 0; i < rbox_num; i++) {
@@ -30,42 +30,43 @@ void matched_rbox_iou_cpu_kernel(const int rbox_num, const T *rbox1_data_ptr,
 }
 
 #define CHECK_INPUT_CPU(x)                                                     \
-  PD_CHECK(x.place() == paddle::PlaceType::kCPU, #x " must be a CPU Tensor.")
+  PD_CHECK(x.is_cpu(), #x " must be a CPU Tensor.")
 
-std::vector<paddle::Tensor> MatchedRboxIouCPUForward(const paddle::Tensor &rbox1,
-                                                 const paddle::Tensor &rbox2) {
+std::vector<paddle::Tensor>
+MatchedRboxIouCPUForward(const paddle::Tensor &rbox1,
+                         const paddle::Tensor &rbox2) {
   CHECK_INPUT_CPU(rbox1);
   CHECK_INPUT_CPU(rbox2);
   PD_CHECK(rbox1.shape()[0] == rbox2.shape()[0], "inputs must be same dim");
 
   auto rbox_num = rbox1.shape()[0];
-  auto output = paddle::Tensor(paddle::PlaceType::kCPU, {rbox_num});
+  auto output = paddle::empty({rbox_num}, rbox1.dtype(), paddle::CPUPlace());
 
-  PD_DISPATCH_FLOATING_TYPES(rbox1.type(), "rotated_iou_cpu_kernel", ([&] {
+  PD_DISPATCH_FLOATING_TYPES(rbox1.type(), "matched_rbox_iou_cpu_kernel", ([&] {
                                matched_rbox_iou_cpu_kernel<data_t>(
                                    rbox_num, rbox1.data<data_t>(),
-                                   rbox2.data<data_t>(),
-                                   output.mutable_data<data_t>());
+                                   rbox2.data<data_t>(), output.data<data_t>());
                              }));
 
   return {output};
 }
 
 #ifdef PADDLE_WITH_CUDA
-std::vector<paddle::Tensor> MatchedRboxIouCUDAForward(const paddle::Tensor &rbox1,
-                                                  const paddle::Tensor &rbox2);
+std::vector<paddle::Tensor>
+MatchedRboxIouCUDAForward(const paddle::Tensor &rbox1,
+                          const paddle::Tensor &rbox2);
 #endif
 
 #define CHECK_INPUT_SAME(x1, x2)                                               \
   PD_CHECK(x1.place() == x2.place(), "input must be smae pacle.")
 
 std::vector<paddle::Tensor> MatchedRboxIouForward(const paddle::Tensor &rbox1,
-                                              const paddle::Tensor &rbox2) {
+                                                  const paddle::Tensor &rbox2) {
   CHECK_INPUT_SAME(rbox1, rbox2);
-  if (rbox1.place() == paddle::PlaceType::kCPU) {
+  if (rbox1.is_cpu()) {
     return MatchedRboxIouCPUForward(rbox1, rbox2);
 #ifdef PADDLE_WITH_CUDA
-  } else if (rbox1.place() == paddle::PlaceType::kGPU) {
+  } else if (rbox1.is_gpu()) {
     return MatchedRboxIouCUDAForward(rbox1, rbox2);
 #endif
   }
@@ -73,12 +74,12 @@ std::vector<paddle::Tensor> MatchedRboxIouForward(const paddle::Tensor &rbox1,
 
 std::vector<std::vector<int64_t>>
 MatchedRboxIouInferShape(std::vector<int64_t> rbox1_shape,
-                     std::vector<int64_t> rbox2_shape) {
+                         std::vector<int64_t> rbox2_shape) {
   return {{rbox1_shape[0]}};
 }
 
 std::vector<paddle::DataType> MatchedRboxIouInferDtype(paddle::DataType t1,
-                                                   paddle::DataType t2) {
+                                                       paddle::DataType t2) {
   return {t1};
 }
 
