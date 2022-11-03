@@ -12,6 +12,5 @@ distill_loss_name: ['cls_f_4', 'cls_f_3', 'cls_f_2', 'cls_f_1', 'cls_f_0']
 ChannelWiseDivergence:
   student_channels: 80
   teacher_channels: 80
-  name: cwdloss
   tau: 1.0
   weight: 5.0

@@ -185,6 +185,11 @@ class CWDDistillModel(nn.Layer):
         # build student model before load slim config                                                                                                      
         self.student_model = create(cfg.architecture)
         self.arch = cfg.architecture
+        if self.arch not in ['GFL', 'RetinaNet']:
+            raise ValueError(
+                f"The arch can only be one of ['GFL', 'RetinaNet'], but received {self.arch}"
+            )
+
         stu_pretrain = cfg['pretrain_weights']
         slim_cfg = load_config(slim_cfg)
         self.teacher_cfg = slim_cfg
@@ -305,13 +310,7 @@ class CWDDistillModel(nn.Layer):
 
 @register
 class ChannelWiseDivergence(nn.Layer):
-    def __init__(
-            self,
-            student_channels,
-            teacher_channels,
-            name,
-            tau=1.0,
-            weight=1.0, ):
+    def __init__(self, student_channels, teacher_channels, tau=1.0, weight=1.0):
         super(ChannelWiseDivergence, self).__init__()
         self.tau = tau
         self.loss_weight = weight
