@@ -110,9 +110,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 ## 旋转框检测
 
-### S2ANet
-
-请参考[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/)
+[旋转框检测模型库](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate)
 
 
 ## 关键点检测
