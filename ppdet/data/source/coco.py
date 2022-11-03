@@ -178,7 +178,7 @@ class COCODataSet(DetDataset):
                     gt_bbox[i, :] = box['clean_bbox']
                     is_crowd[i][0] = box['iscrowd']
                     # check RLE format 
-                    if 'segmentation' in box and box['iscrowd'] == 1:
+                    if 'segmentation' in box and box['iscrowd'] != 1:
                         gt_poly[i] = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
                     elif 'segmentation' in box and box['segmentation']:
                         if not np.array(box['segmentation']
