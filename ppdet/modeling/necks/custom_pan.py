@@ -68,7 +68,14 @@ class SPP(nn.Layer):
 
 
 class CSPStage(nn.Layer):
-    def __init__(self, block_fn, ch_in, ch_out, n, act='swish', spp=False):
+    def __init__(self,
+                 block_fn,
+                 ch_in,
+                 ch_out,
+                 n,
+                 act='swish',
+                 spp=False,
+                 use_alpha=False):
         super(CSPStage, self).__init__()
 
         ch_mid = int(ch_out // 2)
@@ -79,7 +86,11 @@ class CSPStage(nn.Layer):
         for i in range(n):
             self.convs.add_sublayer(
                 str(i),
-                eval(block_fn)(next_ch_in, ch_mid, act=act, shortcut=False))
+                eval(block_fn)(next_ch_in,
+                               ch_mid,
+                               act=act,
+                               shortcut=False,
+                               use_alpha=use_alpha))
             if i == (n - 1) // 2 and spp:
                 self.convs.add_sublayer(
                     'spp', SPP(ch_mid * 4, ch_mid, 1, [5, 9, 13], act=act))
@@ -191,6 +202,8 @@ class CustomCSPPAN(nn.Layer):
                  data_format='NCHW',
                  width_mult=1.0,
                  depth_mult=1.0,
+                 use_alpha=False,
+                 trt=False,
                  dim_feedforward=2048,
                  dropout=0.1,
                  activation='gelu',
@@ -199,7 +212,6 @@ class CustomCSPPAN(nn.Layer):
                  attn_dropout=None,
                  act_dropout=None,
                  normalize_before=False,
-                 trt=False,
                  use_trans=False):
 
         super(CustomCSPPAN, self).__init__()
@@ -239,7 +251,8 @@ class CustomCSPPAN(nn.Layer):
                                    ch_out,
                                    block_num,
                                    act=act,
-                                   spp=(spp and i == 0)))
+                                   spp=(spp and i == 0),
+                                   use_alpha=use_alpha))
 
             if drop_block:
                 stage.add_sublayer('drop', DropBlock(block_size, keep_prob))
@@ -284,7 +297,8 @@ class CustomCSPPAN(nn.Layer):
                                    ch_out,
                                    block_num,
                                    act=act,
-                                   spp=False))
+                                   spp=False,
+                                   use_alpha=use_alpha))
             if drop_block:
                 stage.add_sublayer('drop', DropBlock(block_size, keep_prob))
 
