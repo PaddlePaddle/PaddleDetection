@@ -13,6 +13,7 @@ EvalDataset:
     image_dir: val2017
     anno_path: annotations/instances_val2017.json
     dataset_dir: dataset/coco
+    allow_empty: true
 
 TestDataset:
   !ImageFolder

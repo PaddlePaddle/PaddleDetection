@@ -121,8 +121,6 @@ EvalReader:
     - Permute: {}
   # 评估时batch_size
   batch_size: 8
-  # 是否丢弃没有标注的数据
-  drop_empty: false
 
 # 测试数据
 TestReader:
