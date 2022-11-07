@@ -1,0 +1,22 @@
+
+_BASE_: [
+  '../../picodet/_base_/picodet_v2.yml',
+]
+
+pretrain_weights: ./picodet_m_416_coco_lcnet.pdparams
+
+LCPAN:
+  out_channels: 128
+  spatial_scales: [0.125, 0.0625, 0.03125]
+
+slim: Distill
+slim_method: MGD
+distill_loss: MGDFeatureLoss
+distill_loss_name: ['neck_f_3', 'neck_f_2', 'neck_f_1', 'neck_f_0']
+
+MGDFeatureLoss:
+  student_channels: 96
+  teacher_channels: 128
+  alpha: 0.65
+  weight: 0.00002
+

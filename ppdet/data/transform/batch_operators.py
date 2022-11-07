@@ -49,7 +49,70 @@ __all__ = [
     'Gt2CenterNetTarget',
     'PadGT',
     'PadRGT',
+    'FGDMask',
 ]
+
+
+@register_op
+class FGDMask(BaseOperator):
+    def __init__(self, stride=[8, 16, 32, 64]):
+        super(FGDMask, self).__init__()
+        self.stride = stride
+
+    def __call__(self, samples, context=None):
+
+        for sample in samples:
+            gt_bbox = sample['gt_bbox']
+            gt_class = sample['gt_class']
+            # gen mask shape for fgd 
+            if 'gt_bbox' in sample.keys():
+                sample = self.get_fgd_mask_batch(sample, self.stride)
+
+        return samples
+    
+    def gen_fgd_fg_bg_batch(self, im_shape, gt_bbox, scale):
+        assert scale  % 2 < 1e-5, "error"
+        rh, rw = np.ceil(im_shape[0]/scale).astype(np.int32), np.ceil(im_shape[1]/scale).astype(np.int32)
+
+        tmp_box = gt_bbox / scale
+
+        ones = np.ones([rh, rw], dtype=np.float32)
+        zeros = np.zeros([rh, rw], dtype=np.float32)
+        mask_fg = np.zeros_like(ones, dtype=np.float32)
+        mask_bg = np.ones_like(mask_fg, dtype=np.float32)
+        # get area
+        wmin = np.maximum(np.floor(tmp_box[:, 0]).reshape([-1]).astype(np.int32), 0)
+        wmax = np.ceil(tmp_box[:, 2]).reshape([-1]).astype(np.int32)
+        hmin = np.maximum(np.floor(tmp_box[:, 1]).reshape([-1]).astype(np.int32), 0)
+        hmax = np.ceil(tmp_box[:, 3]).reshape([-1]).astype(np.int32)
+
+        area = 1.0/ (hmax + 1 - hmin) / (wmax + 1 - wmin)
+
+        for i in range(tmp_box.shape[0]):
+            mask_fg[hmin[i]:hmax[i]+1, wmin[i]:wmax[i]+1] = np.maximum(mask_fg[hmin[i]:hmax[i]+1, wmin[i]:wmax[i]+1], area[i])
+        
+        mask_bg = np.where(mask_fg > 0, 0, 1)
+
+        if np.sum(mask_bg) > 0.:
+            mask_bg = mask_bg * (1 / np.sum(mask_bg))
+        
+        return mask_fg, mask_bg
+
+    def get_fgd_mask_batch(self, sample, stride):
+        masks = {}
+        im_shape = sample['im_shape']
+        gt_bbox = sample['gt_bbox']
+        
+        for scale in stride:
+            resize_h, resize_w = np.ceil(im_shape[0]/scale).astype(np.int32), np.ceil(im_shape[1]/scale).astype(np.int32)
+            fg, bg = self.gen_fgd_fg_bg_batch(im_shape, gt_bbox, scale)
+            masks[f"fgd_fg_{scale}"] = fg.astype(np.float32)
+            masks[f"fgd_bg_{scale}"] = bg.astype(np.float32)
+        
+        sample.update(masks)
+        del masks
+        return sample
+
 
 
 @register_op

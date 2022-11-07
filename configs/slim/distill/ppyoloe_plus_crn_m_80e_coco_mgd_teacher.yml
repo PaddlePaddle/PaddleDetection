@@ -1,0 +1,29 @@
+
+_BASE_: [
+  '../../ppyoloe/_base_/ppyoloe_plus_crn.yml',
+]
+
+log_iter: 100
+snapshot_epoch: 5
+weights: output/ppyoloe_plus_crn_m_80e_coco/model_final
+
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_m_obj365_pretrained.pdparams
+depth_mult: 0.67
+width_mult: 0.75
+
+
+slim: Distill
+slim_method: MGD
+distill_loss: MGDFeatureLoss
+distill_loss_name: ['neck_f_3', 'neck_f_2', 'neck_f_1', 'neck_f_0']
+
+# student_channels_list: [384, 192, 96]    # ppyoloe_plus_s
+# teacher_channels_list: [576, 288, 144]   # ppyoloe_plus_m
+# teacher_channels_list: [768, 384, 192]   # ppyoloe_plus_l
+
+MGDFeatureLoss:
+  student_channels: [384, 192, 96]
+  teacher_channels: [576, 288, 144]
+  alpha: 0.65
+  weight: 0.00002
+

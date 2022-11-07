@@ -18,19 +18,19 @@ LCNet:
   feature_maps: [3, 4, 5]
 
 LCPAN:
-  out_channels: 96
+  out_channels: 128
 
 PicoHeadV2:
   conv_feat:
     name: PicoFeat
-    feat_in: 96
-    feat_out: 96
-    num_convs: 2
+    feat_in: 128
+    feat_out: 128
+    num_convs: 4
     num_fpn_stride: 4
     norm_type: bn
     share_cls_reg: True
     use_se: True
-  feat_in_chan: 96
+  feat_in_chan: 128
 
 TrainReader:
   batch_size: 48
