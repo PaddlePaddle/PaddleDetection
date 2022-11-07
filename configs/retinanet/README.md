@@ -5,6 +5,7 @@
 | Backbone     | Model     | imgs/GPU | lr schedule | FPS | Box AP | download   | config      |
 | ------------ | --------- | -------- | ----------- | --- | ------ | ---------- | ----------- |
 | ResNet50-FPN | RetinaNet | 2        | 1x          | --- | 37.5   | [model](https://bj.bcebos.com/v1/paddledet/models/retinanet_r50_fpn_1x_coco.pdparams) | [config](./retinanet_r50_fpn_1x_coco.yml) |
+| ResNet50-FPN | RetinaNet | 2        | 2x          | --- | 39.1   | [model](https://bj.bcebos.com/v1/paddledet/models/retinanet_r50_fpn_2x_coco.pdparams) | [config](./retinanet_r50_fpn_2x_coco.yml) |
 | ResNet101-FPN| RetinaNet | 2        | 2x          | --- | 40.6   | [model](https://paddledet.bj.bcebos.com/models/retinanet_r101_fpn_2x_coco.pdparams) | [config](./retinanet_r101_fpn_2x_coco.yml)  |
 | ResNet50-FPN | RetinaNet + [FGD](../slim/distill/README.md) | 2        | 2x          | --- | 40.8    | [model](https://bj.bcebos.com/v1/paddledet/models/retinanet_r101_distill_r50_2x_coco.pdparams) | [config](./retinanet_r50_fpn_2x_coco.yml)/[slim_config](../slim/distill/retinanet_resnet101_coco_distill.yml) |
 
