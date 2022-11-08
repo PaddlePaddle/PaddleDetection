@@ -60,7 +60,7 @@ class PPYOLOEHead(nn.Layer):
                  grid_cell_scale=5.0,
                  grid_cell_offset=0.5,
                  reg_max=16,
-                 reg_range=False,
+                 reg_range=None,
                  static_assigner_epoch=4,
                  use_varifocal_loss=True,
                  static_assigner='ATSSAssigner',
@@ -87,6 +87,7 @@ class PPYOLOEHead(nn.Layer):
             self.sm_use = True
             self.reg_range = reg_range
         else:
+            self.sm_use = False
             self.reg_range = (0, reg_max + 1)
         self.reg_channels = self.reg_range[1] - self.reg_range[0]
         self.iou_loss = GIoULoss()

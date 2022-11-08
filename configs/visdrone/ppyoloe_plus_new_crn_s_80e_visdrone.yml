@@ -44,7 +44,6 @@ PPYOLOEHead:
   static_assigner:
     name: ATSSAssigner
     topk: 9
-    sm_use: True
   assigner:
     name: TaskAlignedAssigner_CR
     center_radius: 1
