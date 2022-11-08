@@ -790,13 +790,13 @@ class MGDDistillModel(nn.Layer):
                 loss.update({'loss': total_loss})
                 # MGD distill loss
                 for idx in range(len(s_neck_feats)): 
-                    loss[f'cwd_n_f{idx}'] = self.loss_func(s_neck_feats[idx], t_neck_feats[idx])
-                    loss['loss'] += loss[f'cwd_n_f{idx}']
+                    loss[f'mgd_n_f{idx}'] = self.loss_func(s_neck_feats[idx], t_neck_feats[idx])
+                    loss['loss'] += loss[f'mgd_n_f{idx}']
             elif self.arch == "YOLOv3":
                 loss = self.student_model.yolo_head(s_neck_feats, inputs)
                 for idx in range(len(s_neck_feats)): 
                     loss[f'mgd_n_f{idx}'] = self.loss_func(s_neck_feats[idx], t_neck_feats[idx])
-                    loss['loss'] += loss[f'cwd_n_f{idx}']
+                    loss['loss'] += loss[f'mgd_n_f{idx}']
 
             else:
                 raise ValueError(f"not support arch: {self.arch}")
