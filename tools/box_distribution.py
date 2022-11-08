@@ -99,7 +99,7 @@ def get_ratio_infos(jsonfile, out_img, eval_size, small_stride):
     
     ratio_w = [i * 1000 for i in ratio_w]
     ratio_h = [i * 1000 for i in ratio_h]
-    print(f'suggested of reg_range[1] is {reg_max+1}' )
+    print(f'Suggested reg_range[1] is {reg_max+1}' )
     print(f'Median of ratio_w is {mid_w}')
     print(f'Median of ratio_h is {mid_h}')
     print('all_img with box: ', len(ratio_h))
