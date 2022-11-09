@@ -178,8 +178,9 @@ class FGDDistillModel(nn.Layer):
         else:
             body_feats = self.student_model.backbone(inputs)
             neck_feats = self.student_model.neck(body_feats)
-            head_outs = self.student_model.head(neck_feats)
+            #head_outs = self.student_model.head(neck_feats)
             if self.arch == "RetinaNet":
+                head_outs = self.student_model.head(neck_feats)
                 bbox, bbox_num = self.student_model.head.post_process(
                     head_outs, inputs['im_shape'], inputs['scale_factor'])
                 return {'bbox': bbox, 'bbox_num': bbox_num}
@@ -832,8 +833,8 @@ class MGDDistillModel(nn.Layer):
         else:
             body_feats = self.student_model.backbone(inputs)
             neck_feats = self.student_model.neck(body_feats)
-            head_outs = self.student_model.head(neck_feats)
             if self.arch == "RetinaNet":
+                head_outs = self.student_model.head(neck_feats)
                 bbox, bbox_num = self.student_model.head.post_process(
                     head_outs, inputs['im_shape'], inputs['scale_factor'])
                 return {'bbox': bbox, 'bbox_num': bbox_num}
@@ -878,6 +879,7 @@ class MGDDistillModel(nn.Layer):
                     export_nms=self.student_model.export_nms)
                 return {'bbox': bboxes, 'bbox_num': bbox_num}
             elif self.arch == "GFL":
+                head_outs = self.student_model.head(neck_feats)
                 bbox_pred, bbox_num = head_outs
                 output = {'bbox': bbox_pred, 'bbox_num': bbox_num}
                 return output
