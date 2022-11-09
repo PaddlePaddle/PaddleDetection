@@ -16,5 +16,5 @@ pyclipper
 # for mot
 lap
 motmetrics
-sklearn
+sklearn==0.0
 filterpy
