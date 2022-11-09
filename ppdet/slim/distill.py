@@ -91,7 +91,7 @@ class FGDDistillModel(nn.Layer):
 
         for param in self.teacher_model.parameters():
             param.trainable = False
-        
+
         for param in self.student_model.parameters():
             param.trainable = True
 
@@ -111,14 +111,15 @@ class FGDDistillModel(nn.Layer):
         self.fgd_loss_dic = self.build_loss(
             loss_name=self.loss_cfg.distill_loss,
             cfg=self.loss_cfg,
-            name_list=self.loss_cfg['distill_loss_name']
-            )
+            name_list=self.loss_cfg['distill_loss_name'])
 
-        print("=======>", "student_params: ", len(self.student_model.parameters()))
+        print("=======>", "student_params: ",
+              len(self.student_model.parameters()))
         print("=======> teacher params: ", len(self.student_model.parameters()))
         print("FGD loss params: ", len(self.fgd_loss_dic.parameters()))
 
-    def build_loss(self, loss_name,
+    def build_loss(self,
+                   loss_name,
                    cfg,
                    name_list=[
                        'neck_f_4', 'neck_f_3', 'neck_f_2', 'neck_f_1',
@@ -126,8 +127,11 @@ class FGDDistillModel(nn.Layer):
                    ]):
         loss_func = nn.Sequential()
 
-        if 'student_channels_list' in cfg and len(cfg['student_channels_list']) == len(cfg['teacher_channels_list']):
-            for idx, (k, s_c, t_c) in enumerate(zip(name_list, cfg['student_channels_list'], cfg['teacher_channels_list'])):
+        if 'student_channels_list' in cfg and len(cfg[
+                'student_channels_list']) == len(cfg['teacher_channels_list']):
+            for idx, (k, s_c, t_c) in enumerate(
+                    zip(name_list, cfg['student_channels_list'], cfg[
+                        'teacher_channels_list'])):
                 cfg['FGDFeatureLoss']['student_channels'] = s_c
                 cfg['FGDFeatureLoss']['teacher_channels'] = t_c
                 print(f"{idx}, ===> {cfg['FGDFeatureLoss']}")
@@ -192,7 +196,8 @@ class FGDDistillModel(nn.Layer):
                 yolo_head_outs = self.student_model.yolo_head(neck_feats)
                 if self.for_mot:
                     boxes_idx, bbox, bbox_num, nms_keep_idx = self.student_model.post_process(
-                        yolo_head_outs, self.student_model.yolo_head.mask_anchors)
+                        yolo_head_outs,
+                        self.student_model.yolo_head.mask_anchors)
                     output = {
                         'bbox': bbox,
                         'bbox_num': bbox_num,
@@ -203,11 +208,14 @@ class FGDDistillModel(nn.Layer):
                 else:
                     if self.student_model.return_idx:
                         _, bbox, bbox_num, _ = self.student_model.post_process(
-                            yolo_head_outs, self.student_model.yolo_head.mask_anchors)
+                            yolo_head_outs,
+                            self.student_model.yolo_head.mask_anchors)
                     elif self.student_model.post_process is not None:
                         bbox, bbox_num = self.student_model.post_process(
-                            yolo_head_outs, self.student_model.yolo_head.mask_anchors,
-                            self.inputs['im_shape'], self.inputs['scale_factor'])
+                            yolo_head_outs,
+                            self.student_model.yolo_head.mask_anchors,
+                            self.inputs['im_shape'],
+                            self.inputs['scale_factor'])
                     else:
                         bbox, bbox_num = self.student_model.yolo_head.post_process(
                             yolo_head_outs, self.inputs['scale_factor'])
@@ -439,14 +447,14 @@ class FGDFeatureLoss(nn.Layer):
     def mask_value(self, mask, xl, xr, yl, yr, value):
         mask[xl:xr, yl:yr] = paddle.maximum(mask[xl:xr, yl:yr], value)
         return mask
-    
+
     def forward(self, stu_feature, tea_feature, inputs):
 
         if "fgd_fg_32" not in inputs.keys():
             return self.forward_mask(stu_feature, tea_feature, inputs)
         else:
             return self.forward_(stu_feature, tea_feature, inputs)
-    
+
     def forward_(self, stu_feature, tea_feature, inputs):
         assert stu_feature.shape[-2:] == stu_feature.shape[-2:], \
             f'The shape of Student feature {stu_feature.shape} and Teacher feature {tea_feature.shape} should be the same.'
@@ -458,7 +466,8 @@ class FGDFeatureLoss(nn.Layer):
         ]
         # print("ins_shape: ", ins_shape)
         # print("feature_shape:", stu_feature.shape, tea_feature.shape, stride)
-        stride = int(paddle.ceil(ins_shape[0][0]/stu_feature.shape[2]).numpy()[0])
+        stride = int(
+            paddle.ceil(ins_shape[0][0] / stu_feature.shape[2]).numpy()[0])
         # print("stride: ", stride)
 
         if self.align is not None:
@@ -487,7 +496,6 @@ class FGDFeatureLoss(nn.Layer):
                + self.gamma_fgd * mask_loss + self.lambda_fgd * rela_loss
 
         return loss
-
 
     def forward_mask(self, stu_feature, tea_feature, inputs):
         """Forward function.
@@ -736,6 +744,7 @@ class MGDDistillModel(nn.Layer):
         cfg: The student config.
         slim_cfg: The teacher and distill config.
     """
+
     def __init__(self, cfg, slim_cfg):
         super(MGDDistillModel, self).__init__()
 
@@ -751,6 +760,9 @@ class MGDDistillModel(nn.Layer):
 
         self.teacher_model = create(self.teacher_cfg.architecture)
         self.teacher_model.eval()
+
+        for param in self.student_model.parameters():
+            param.trainable = True
 
         for param in self.teacher_model.parameters():
             param.trainable = False
@@ -771,8 +783,9 @@ class MGDDistillModel(nn.Layer):
         self.loss_func = self.build_loss(
             self.loss_cfg.distill_loss,
             name_list=self.loss_cfg['distill_loss_name'])
-        
-        print("p======>", "student_params: ", len(self.student_model.parameters()))
+
+        print("p======>", "student_params: ",
+              len(self.student_model.parameters()))
         print("=======> teacher params: ", len(self.student_model.parameters()))
         print("MGD loss params: ", len(self.loss_func.parameters()))
 
@@ -784,10 +797,10 @@ class MGDDistillModel(nn.Layer):
                    ]):
         loss_func = create(cfg)
         return loss_func
-    
+
     def forward(self, inputs):
-        if self.training:                                                                                                                                  
-            s_body_feats = self.student_model.backbone(inputs)                                                                                             
+        if self.training:
+            s_body_feats = self.student_model.backbone(inputs)
             s_neck_feats = self.student_model.neck(s_body_feats)
             with paddle.no_grad():
                 t_body_feats = self.teacher_model.backbone(inputs)
@@ -801,13 +814,15 @@ class MGDDistillModel(nn.Layer):
                 loss.update(loss_gfl)
                 loss.update({'loss': total_loss})
                 # MGD distill loss
-                for idx in range(len(s_neck_feats)): 
-                    loss[f'mgd_n_f{idx}'] = self.loss_func(s_neck_feats[idx], t_neck_feats[idx])
+                for idx in range(len(s_neck_feats)):
+                    loss[f'mgd_n_f{idx}'] = self.loss_func(s_neck_feats[idx],
+                                                           t_neck_feats[idx])
                     loss['loss'] += loss[f'mgd_n_f{idx}']
             elif self.arch == "YOLOv3":
                 loss = self.student_model.yolo_head(s_neck_feats, inputs)
-                for idx in range(len(s_neck_feats)): 
-                    loss[f'mgd_n_f{idx}'] = self.loss_func(s_neck_feats[idx], t_neck_feats[idx])
+                for idx in range(len(s_neck_feats)):
+                    loss[f'mgd_n_f{idx}'] = self.loss_func(s_neck_feats[idx],
+                                                           t_neck_feats[idx])
                     loss['loss'] += loss[f'mgd_n_f{idx}']
 
             else:
@@ -815,18 +830,19 @@ class MGDDistillModel(nn.Layer):
             return loss
 
         else:
-            body_feats = self.student_model.backbone(inputs)                                                                                               
-            neck_feats = self.student_model.neck(body_feats)                                                                                               
-            head_outs = self.student_model.head(neck_feats)                                                                                                
-            if self.arch == "RetinaNet":                                                                                                                   
-                bbox, bbox_num = self.student_model.head.post_process(                                                                                     
-                    head_outs, inputs['im_shape'], inputs['scale_factor'])                                                                                 
-                return {'bbox': bbox, 'bbox_num': bbox_num}    
+            body_feats = self.student_model.backbone(inputs)
+            neck_feats = self.student_model.neck(body_feats)
+            head_outs = self.student_model.head(neck_feats)
+            if self.arch == "RetinaNet":
+                bbox, bbox_num = self.student_model.head.post_process(
+                    head_outs, inputs['im_shape'], inputs['scale_factor'])
+                return {'bbox': bbox, 'bbox_num': bbox_num}
             elif self.arch == "YOLOv3":
                 yolo_head_outs = self.student_model.yolo_head(neck_feats)
                 if self.for_mot:
                     boxes_idx, bbox, bbox_num, nms_keep_idx = self.student_model.post_process(
-                        yolo_head_outs, self.student_model.yolo_head.mask_anchors)
+                        yolo_head_outs,
+                        self.student_model.yolo_head.mask_anchors)
                     output = {
                         'bbox': bbox,
                         'bbox_num': bbox_num,
@@ -837,11 +853,14 @@ class MGDDistillModel(nn.Layer):
                 else:
                     if self.student_model.return_idx:
                         _, bbox, bbox_num, _ = self.student_model.post_process(
-                            yolo_head_outs, self.student_model.yolo_head.mask_anchors)
+                            yolo_head_outs,
+                            self.student_model.yolo_head.mask_anchors)
                     elif self.student_model.post_process is not None:
                         bbox, bbox_num = self.student_model.post_process(
-                            yolo_head_outs, self.student_model.yolo_head.mask_anchors,
-                            self.inputs['im_shape'], self.inputs['scale_factor'])
+                            yolo_head_outs,
+                            self.student_model.yolo_head.mask_anchors,
+                            self.inputs['im_shape'],
+                            self.inputs['scale_factor'])
                     else:
                         bbox, bbox_num = self.student_model.yolo_head.post_process(
                             yolo_head_outs, self.inputs['scale_factor'])
@@ -861,9 +880,10 @@ class MGDDistillModel(nn.Layer):
             elif self.arch == "GFL":
                 bbox_pred, bbox_num = head_outs
                 output = {'bbox': bbox_pred, 'bbox_num': bbox_num}
-                return output     
+                return output
             else:
-                raise ValueError(f"unsupported arch {self.arch}") 
+                raise ValueError(f"unsupported arch {self.arch}")
+
 
 @register
 class MGDFeatureLoss(nn.Layer):
@@ -881,42 +901,50 @@ class MGDFeatureLoss(nn.Layer):
         if isinstance(student_channels, int):
             student_channels = [student_channels]
             teacher_channels = [teacher_channels]
-        
+
         kaiming_init = parameter_init("kaiming")
         zeros_init = parameter_init("constant", 0.0)
-        
+
         self.aligns = nn.Sequential()
         self.generations = nn.Sequential()
         for idx in range(len(student_channels)):
             if student_channels[idx] != teacher_channels[idx]:
-                self.aligns.add_sublayer(f'{teacher_channels[idx]}', nn.Conv2D(
-                    student_channels[idx],
-                    teacher_channels[idx],
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                    weight_attr=kaiming_init) 
-                )
+                self.aligns.add_sublayer(
+                    f'{teacher_channels[idx]}',
+                    nn.Conv2D(
+                        student_channels[idx],
+                        teacher_channels[idx],
+                        kernel_size=1,
+                        stride=1,
+                        padding=0,
+                        weight_attr=kaiming_init))
                 student_channels[idx] = teacher_channels[idx]
             else:
-                self.aligns.add_sublayer(f'{teacher_channels[idx]}',  None)
+                self.aligns.add_sublayer(f'{teacher_channels[idx]}', None)
 
-            self.generations.add_sublayer(f'{teacher_channels[idx]}', nn.Sequential(
-                nn.Conv2D(teacher_channels[idx], teacher_channels[idx], kernel_size=3, padding=1),
-                nn.ReLU(), 
-                nn.Conv2D(teacher_channels[idx], teacher_channels[idx], kernel_size=3, padding=1))
-            )
+            self.generations.add_sublayer(
+                f'{teacher_channels[idx]}',
+                nn.Sequential(
+                    nn.Conv2D(
+                        teacher_channels[idx],
+                        teacher_channels[idx],
+                        kernel_size=3,
+                        padding=1),
+                    nn.ReLU(),
+                    nn.Conv2D(
+                        teacher_channels[idx],
+                        teacher_channels[idx],
+                        kernel_size=3,
+                        padding=1)))
         self.mse_loss = paddle.nn.MSELoss(reduction='sum')
 
     def forward(self, stu_feature, tea_feature):
         N, C, H, W = tea_feature.shape
         if self.aligns[f'{C}'] is not None:
             stu_feature = self.aligns[f'{C}'](stu_feature)
-        mat = paddle.rand((N,1,H,W))
+        mat = paddle.rand((N, 1, H, W))
         mat = paddle.where(mat > 1 - self.alpha_mgd, 0, 1)
         masked_fea = stu_feature * mat
         new_fea = self.generations[f'{C}'](masked_fea)
-        dis_loss = self.loss_weight * self.mse_loss(new_fea, tea_feature)/N
+        dis_loss = self.loss_weight * self.mse_loss(new_fea, tea_feature) / N
         return dis_loss
-
-
