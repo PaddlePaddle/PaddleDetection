@@ -15,7 +15,6 @@ TrainReader:
     - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
     - Permute: {}
     - PadGT: {}
-    - FGDMask: {stride: [8, 16, 32]}
   batch_size: 8
   shuffle: true
   drop_last: true
