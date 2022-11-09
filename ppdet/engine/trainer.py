@@ -819,10 +819,18 @@ class Trainer(object):
                     end = start + bbox_num[i]
                     bbox_res = batch_res['bbox'][start:end] \
                             if 'bbox' in batch_res else None
-                    mask_res, segm_res, keypoint_res = None, None, None
+
                     image = visualize_results(
-                        image, bbox_res, mask_res, segm_res, keypoint_res,
-                        int(im_id), catid2name, draw_threshold)
+                        image,
+                        bbox_res,
+                        mask_res=None,
+                        segm_res=None,
+                        keypoint_res=None,
+                        pose3d_res=None,
+                        im_id=int(im_id),
+                        catid2name=catid2name,
+                        threshold=draw_threshold)
+
                     self.status['result_image'] = np.array(image.copy())
                     if self._compose_callback:
                         self._compose_callback.on_step_end(self.status)
