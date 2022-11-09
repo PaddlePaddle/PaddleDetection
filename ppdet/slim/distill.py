@@ -91,6 +91,9 @@ class FGDDistillModel(nn.Layer):
 
         for param in self.teacher_model.parameters():
             param.trainable = False
+        
+        for param in self.student_model.parameters():
+            param.trainable = True
 
         if 'pretrain_weights' in cfg and stu_pretrain:
             if self.is_inherit and 'pretrain_weights' in self.teacher_cfg and self.teacher_cfg.pretrain_weights:
@@ -111,22 +114,27 @@ class FGDDistillModel(nn.Layer):
             name_list=self.loss_cfg['distill_loss_name']
             )
 
+        print("=======>", "student_params: ", len(self.student_model.parameters()))
+        print("=======> teacher params: ", len(self.student_model.parameters()))
+        print("FGD loss params: ", len(self.fgd_loss_dic.parameters()))
+
     def build_loss(self, loss_name,
                    cfg,
                    name_list=[
                        'neck_f_4', 'neck_f_3', 'neck_f_2', 'neck_f_1',
                        'neck_f_0'
                    ]):
-        loss_func = dict()
+        loss_func = nn.Sequential()
 
         if 'student_channels_list' in cfg and len(cfg['student_channels_list']) == len(cfg['teacher_channels_list']):
             for idx, (k, s_c, t_c) in enumerate(zip(name_list, cfg['student_channels_list'], cfg['teacher_channels_list'])):
                 cfg['FGDFeatureLoss']['student_channels'] = s_c
                 cfg['FGDFeatureLoss']['teacher_channels'] = t_c
-                loss_func[k] = create(loss_name)
+                print(f"{idx}, ===> {cfg['FGDFeatureLoss']}")
+                loss_func.add_sublayer(k, create(loss_name))
         else:
             for idx, k in enumerate(name_list):
-                loss_func[k] = create(loss_name)
+                loss_func.add_sublayer(k, create(loss_name))
         return loss_func
 
     def forward(self, inputs):
@@ -142,7 +150,7 @@ class FGDDistillModel(nn.Layer):
 
             # print("s_f_shape: ", [s.shape for s in s_neck_feats])
             # print("t_f_shape: ", [t.shape for t in t_neck_feats])
-            for idx, k in enumerate(self.fgd_loss_dic):
+            for idx, k in enumerate(self.loss_cfg['distill_loss_name']):
                 loss_dict[k] = self.fgd_loss_dic[k](s_neck_feats[idx],
                                                     t_neck_feats[idx], inputs)
             if self.arch == "RetinaNet":
@@ -763,6 +771,10 @@ class MGDDistillModel(nn.Layer):
         self.loss_func = self.build_loss(
             self.loss_cfg.distill_loss,
             name_list=self.loss_cfg['distill_loss_name'])
+        
+        print("p======>", "student_params: ", len(self.student_model.parameters()))
+        print("=======> teacher params: ", len(self.student_model.parameters()))
+        print("MGD loss params: ", len(self.loss_func.parameters()))
 
     def build_loss(self,
                    cfg,
@@ -873,29 +885,28 @@ class MGDFeatureLoss(nn.Layer):
         kaiming_init = parameter_init("kaiming")
         zeros_init = parameter_init("constant", 0.0)
         
-        self.aligns = {}
-        self.generations = {}
+        self.aligns = nn.Sequential()
+        self.generations = nn.Sequential()
         for idx in range(len(student_channels)):
             if student_channels[idx] != teacher_channels[idx]:
-                self.aligns[f'{teacher_channels[idx]}'] = nn.Conv2D(
+                self.aligns.add_sublayer(f'{teacher_channels[idx]}', nn.Conv2D(
                     student_channels[idx],
                     teacher_channels[idx],
                     kernel_size=1,
                     stride=1,
                     padding=0,
-                    weight_attr=kaiming_init)
+                    weight_attr=kaiming_init) 
+                )
                 student_channels[idx] = teacher_channels[idx]
             else:
-                self.aligns[f'{teacher_channels[idx]}'] = None
+                self.aligns.add_sublayer(f'{teacher_channels[idx]}',  None)
 
-            self.generations[f'{teacher_channels[idx]}']  = nn.Sequential(
+            self.generations.add_sublayer(f'{teacher_channels[idx]}', nn.Sequential(
                 nn.Conv2D(teacher_channels[idx], teacher_channels[idx], kernel_size=3, padding=1),
                 nn.ReLU(), 
                 nn.Conv2D(teacher_channels[idx], teacher_channels[idx], kernel_size=3, padding=1))
-            
+            )
         self.mse_loss = paddle.nn.MSELoss(reduction='sum')
-        print("align keys: ", self.aligns.keys())
-        
 
     def forward(self, stu_feature, tea_feature):
         N, C, H, W = tea_feature.shape
