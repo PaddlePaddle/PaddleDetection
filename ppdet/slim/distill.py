@@ -115,7 +115,7 @@ class FGDDistillModel(nn.Layer):
 
         print("=======>", "student_params: ",
               len(self.student_model.parameters()))
-        print("=======> teacher params: ", len(self.student_model.parameters()))
+        print("=======> teacher params: ", len(self.teacher_model.parameters()))
         print("FGD loss params: ", len(self.fgd_loss_dic.parameters()))
 
     def build_loss(self,
@@ -786,7 +786,7 @@ class MGDDistillModel(nn.Layer):
 
         print("p======>", "student_params: ",
               len(self.student_model.parameters()))
-        print("=======> teacher params: ", len(self.student_model.parameters()))
+        print("=======> teacher params: ", len(self.teacher_model.parameters()))
         print("MGD loss params: ", len(self.loss_func.parameters()))
 
     def build_loss(self,
