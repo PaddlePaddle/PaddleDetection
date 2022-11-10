@@ -113,7 +113,7 @@ python deploy/third_engine/onnx/infer.py
 
 ## TensorRT部署优化策略
 
-Paddle2ONNX已经支持导出TensorRT DynamicBatchNMS插件。开发者在导出类似PPYOLOE+、PPYOLOE、PicoDet等模型，Paddle2ONNX会自动将其中的NMS转成DynamicBatchNMS，从而实现GPU的后处理，大幅提升端到端的部署性能。
+Paddle2ONNX已经支持导出TensorRT DynamicBatchNMS插件。开发者在导出类似PPYOLOE+、PPYOLOE、YOLOv3、YOLOX、PicoDet等模型，Paddle2ONNX会自动将其中的NMS转成DynamicBatchNMS，从而实现GPU的后处理，大幅提升端到端的部署性能。
 
 导出过程需要注意以下几点：
 - 1. 导出检测模型时，不要去除最后的NMS操作，不要添加--trt等参数，以确保NMS为模型的最后一个OP
