@@ -48,7 +48,8 @@ def layerwise_lr_decay(decay_rate, name_dict, n_layers, param):
     elif 'cls_token' in static_name or 'patch_embed' in static_name:
         ratio = decay_rate**(n_layers + 1)
 
-    param.optimize_attr['learning_rate'] *= ratio
+    # param.optimize_attr['learning_rate'] *= ratio
+    return ratio
 
 
 class AdamWDL(AdamW):
@@ -183,20 +184,8 @@ class AdamWDL(AdamW):
             apply_decay_param_fun=apply_decay_param_fun,
             weight_decay=weight_decay,
             lazy_mode=lazy_mode,
-            multi_precision=multi_precision)
-
-    def _append_optimize_op(self, block, param_and_grad):
-        if self.set_param_lr_func is None:
-            return super(AdamWDL, self)._append_optimize_op(block,
-                                                            param_and_grad)
-
-        self._append_decoupled_weight_decay(block, param_and_grad)
-        prev_lr = param_and_grad[0].optimize_attr["learning_rate"]
-        self.set_param_lr_func(param_and_grad[0])
-        # excute Adam op
-        res = super(AdamW, self)._append_optimize_op(block, param_and_grad)
-        param_and_grad[0].optimize_attr["learning_rate"] = prev_lr
-        return res
+            multi_precision=multi_precision,
+            lr_ratio=self.set_param_lr_func)
 
 
 def build_adamwdl(model,
