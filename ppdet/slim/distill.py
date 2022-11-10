@@ -92,9 +92,6 @@ class FGDDistillModel(nn.Layer):
         for param in self.teacher_model.parameters():
             param.trainable = False
 
-        for param in self.student_model.parameters():
-            param.trainable = True
-
         if 'pretrain_weights' in cfg and stu_pretrain:
             if self.is_inherit and 'pretrain_weights' in self.teacher_cfg and self.teacher_cfg.pretrain_weights:
                 load_pretrain_weight(self.student_model,
@@ -151,9 +148,6 @@ class FGDDistillModel(nn.Layer):
                 t_neck_feats = self.teacher_model.neck(t_body_feats)
 
             loss_dict = {}
-
-            # print("s_f_shape: ", [s.shape for s in s_neck_feats])
-            # print("t_f_shape: ", [t.shape for t in t_neck_feats])
             for idx, k in enumerate(self.loss_cfg['distill_loss_name']):
                 loss_dict[k] = self.fgd_loss_dic[k](s_neck_feats[idx],
                                                     t_neck_feats[idx], inputs)
@@ -171,14 +165,16 @@ class FGDDistillModel(nn.Layer):
                 loss = self.student_model.head.yolo_head(s_neck_feats, inputs)
             else:
                 raise ValueError(f"Unsupported model {self.arch}")
+
+            distill_loss = paddle.add_n(list(loss_dict.values()))
+            alpha = loss['loss'] / distill_loss * 1.25
             for k in loss_dict:
-                loss['loss'] += loss_dict[k]
+                loss['loss'] += loss_dict[k] * alpha
                 loss[k] = loss_dict[k]
             return loss
         else:
             body_feats = self.student_model.backbone(inputs)
             neck_feats = self.student_model.neck(body_feats)
-            #head_outs = self.student_model.head(neck_feats)
             if self.arch == "RetinaNet":
                 head_outs = self.student_model.head(neck_feats)
                 bbox, bbox_num = self.student_model.head.post_process(
@@ -195,33 +191,19 @@ class FGDDistillModel(nn.Layer):
                 return {'bbox': bboxes, 'bbox_num': bbox_num}
             elif self.arch == "YOLOv3":
                 yolo_head_outs = self.student_model.yolo_head(neck_feats)
-                if self.for_mot:
-                    boxes_idx, bbox, bbox_num, nms_keep_idx = self.student_model.post_process(
+                if self.student_model.return_idx:
+                    _, bbox, bbox_num, _ = self.student_model.post_process(
                         yolo_head_outs,
                         self.student_model.yolo_head.mask_anchors)
-                    output = {
-                        'bbox': bbox,
-                        'bbox_num': bbox_num,
-                        'boxes_idx': boxes_idx,
-                        'nms_keep_idx': nms_keep_idx,
-                        'emb_feats': emb_feats,
-                    }
+                elif self.student_model.post_process is not None:
+                    bbox, bbox_num = self.student_model.post_process(
+                        yolo_head_outs,
+                        self.student_model.yolo_head.mask_anchors,
+                        inputs['im_shape'], inputs['scale_factor'])
                 else:
-                    if self.student_model.return_idx:
-                        _, bbox, bbox_num, _ = self.student_model.post_process(
-                            yolo_head_outs,
-                            self.student_model.yolo_head.mask_anchors)
-                    elif self.student_model.post_process is not None:
-                        bbox, bbox_num = self.student_model.post_process(
-                            yolo_head_outs,
-                            self.student_model.yolo_head.mask_anchors,
-                            self.inputs['im_shape'],
-                            self.inputs['scale_factor'])
-                    else:
-                        bbox, bbox_num = self.student_model.yolo_head.post_process(
-                            yolo_head_outs, self.inputs['scale_factor'])
-                    output = {'bbox': bbox, 'bbox_num': bbox_num}
-
+                    bbox, bbox_num = self.student_model.yolo_head.post_process(
+                        yolo_head_outs, inputs['scale_factor'])
+                output = {'bbox': bbox, 'bbox_num': bbox_num}
                 return output
             else:
                 raise ValueError(f"Unsupported model {self.arch}")
@@ -762,9 +744,6 @@ class MGDDistillModel(nn.Layer):
         self.teacher_model = create(self.teacher_cfg.architecture)
         self.teacher_model.eval()
 
-        for param in self.student_model.parameters():
-            param.trainable = True
-
         for param in self.teacher_model.parameters():
             param.trainable = False
 
@@ -824,12 +803,11 @@ class MGDDistillModel(nn.Layer):
                 for idx in range(len(s_neck_feats)):
                     loss[f'mgd_n_f{idx}'] = self.loss_func(s_neck_feats[idx],
                                                            t_neck_feats[idx])
-                    loss['loss'] += loss[f'mgd_n_f{idx}']
+                    loss['loss'] += loss[f'mgd_n_f{idx}'] * 0.22
 
             else:
                 raise ValueError(f"not support arch: {self.arch}")
             return loss
-
         else:
             body_feats = self.student_model.backbone(inputs)
             neck_feats = self.student_model.neck(body_feats)
@@ -840,33 +818,19 @@ class MGDDistillModel(nn.Layer):
                 return {'bbox': bbox, 'bbox_num': bbox_num}
             elif self.arch == "YOLOv3":
                 yolo_head_outs = self.student_model.yolo_head(neck_feats)
-                if self.for_mot:
-                    boxes_idx, bbox, bbox_num, nms_keep_idx = self.student_model.post_process(
+                if self.student_model.return_idx:
+                    _, bbox, bbox_num, _ = self.student_model.post_process(
                         yolo_head_outs,
                         self.student_model.yolo_head.mask_anchors)
-                    output = {
-                        'bbox': bbox,
-                        'bbox_num': bbox_num,
-                        'boxes_idx': boxes_idx,
-                        'nms_keep_idx': nms_keep_idx,
-                        'emb_feats': emb_feats,
-                    }
+                elif self.student_model.post_process is not None:
+                    bbox, bbox_num = self.student_model.post_process(
+                        yolo_head_outs,
+                        self.student_model.yolo_head.mask_anchors,
+                        inputs['im_shape'], inputs['scale_factor'])
                 else:
-                    if self.student_model.return_idx:
-                        _, bbox, bbox_num, _ = self.student_model.post_process(
-                            yolo_head_outs,
-                            self.student_model.yolo_head.mask_anchors)
-                    elif self.student_model.post_process is not None:
-                        bbox, bbox_num = self.student_model.post_process(
-                            yolo_head_outs,
-                            self.student_model.yolo_head.mask_anchors,
-                            self.inputs['im_shape'],
-                            self.inputs['scale_factor'])
-                    else:
-                        bbox, bbox_num = self.student_model.yolo_head.post_process(
-                            yolo_head_outs, self.inputs['scale_factor'])
-                    output = {'bbox': bbox, 'bbox_num': bbox_num}
-
+                    bbox, bbox_num = self.student_model.yolo_head.post_process(
+                        yolo_head_outs, inputs['scale_factor'])
+                output = {'bbox': bbox, 'bbox_num': bbox_num}
                 return output
 
             elif self.arch == "PicoDet":
