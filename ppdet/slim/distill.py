@@ -162,7 +162,7 @@ class FGDDistillModel(nn.Layer):
                 loss.update(loss_gfl)
                 loss.update({'loss': total_loss})
             elif self.arch == "YOLOv3":
-                loss = self.student_model.head.yolo_head(s_neck_feats, inputs)
+                loss = self.student_model.yolo_head(s_neck_feats, inputs)
             else:
                 raise ValueError(f"Unsupported model {self.arch}")
 
