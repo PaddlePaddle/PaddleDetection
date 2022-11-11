@@ -167,6 +167,7 @@ class FGDDistillModel(nn.Layer):
                 raise ValueError(f"Unsupported model {self.arch}")
 
             distill_loss = paddle.add_n(list(loss_dict.values()))
+            # keep GT loss: FGD loss = 4:5, refer picodet FGD distill
             alpha = loss['loss'] / distill_loss * 1.25
             for k in loss_dict:
                 loss['loss'] += loss_dict[k] * alpha
@@ -800,10 +801,17 @@ class MGDDistillModel(nn.Layer):
                     loss['loss'] += loss[f'mgd_n_f{idx}']
             elif self.arch == "YOLOv3":
                 loss = self.student_model.yolo_head(s_neck_feats, inputs)
+
+                mgd_loss = {}
                 for idx in range(len(s_neck_feats)):
-                    loss[f'mgd_n_f{idx}'] = self.loss_func(s_neck_feats[idx],
-                                                           t_neck_feats[idx])
-                    loss['loss'] += loss[f'mgd_n_f{idx}'] * 0.22
+                    mgd_loss[f'mgd_n_f{idx}'] = self.loss_func(
+                        s_neck_feats[idx], t_neck_feats[idx])
+                # keep GT loss: MGD loss = 2:1, refer picodet mgd distill
+                distill_loss = paddle.add_n(list(mgd_loss.values()))
+                ratio = loss['loss'] / distill_loss / 2.
+                for k in mgd_loss:
+                    loss[k] = mgd_loss[k]
+                    loss['loss'] += ratio * mgd_loss[k]
 
             else:
                 raise ValueError(f"not support arch: {self.arch}")
