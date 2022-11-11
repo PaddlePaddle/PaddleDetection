@@ -136,7 +136,8 @@ Tower(59)
 `
 
 </details>
-，原始数据集[下载链接](https://challenge.xviewdataset.org/download-links)。
+
+，原始数据集[下载链接](https://challenge.xviewdataset.org/)。
 
 
 ### 用户自定义数据集准备
@@ -289,10 +290,15 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inferenc
 python tools/box_distribution.py --json_path ../../dataset/DOTA/annotations/train.json --out_img box_distribution.jpg
 ```
 - `--json_path` ：待统计数据集COCO 格式 annotation 的json文件路径
+- `--eval_size` ：推理尺度（默认640）
+- `--small_sride` ：模型最小步长（默认8）
 - `--out_img` ：输出的统计分布图路径
 
 以DOTA数据集的train数据集为例，统计结果打印如下：
 ```bash
+Suggested reg_range[1] is 13
+Mean of all img_w is 2304.3981547196595
+Mean of all img_h is 2180.9354151880766
 Median of ratio_w is 0.03799439775910364
 Median of ratio_h is 0.04074914637387802
 all_img with box:  1409
@@ -301,8 +307,8 @@ Distribution saved as box_distribution.jpg
 ```
 
 **注意:**
-- 当原始数据集全部有标注框的图片中，**有1/2以上的图片标注框的平均宽高与原图宽高比例小于0.04时**，建议进行切图训练。
-
+- `Suggested reg_range[1]` 为数据集在优化后DFL算法中推荐的`reg_range`上限，即` reg_max+1`。
+- 当原始数据集全部有标注框的图片中，**原图宽高均值大于1500且有1/2以上的图片标注框的平均宽高与原图宽高比例小于0.04时**，建议进行切图训练。
 
 ### SAHI切图
 
