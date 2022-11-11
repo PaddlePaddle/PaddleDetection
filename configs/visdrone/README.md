@@ -37,6 +37,7 @@ PaddleDetection团队提供了针对VisDrone-DET小目标数航拍场景的基�
 - P2表示增加P2层(1/4下采样层)的特征，共输出4个PPYOLOEHead。
 - Alpha表示对CSPResNet骨干网络增加可一个学习权重参数Alpha参与训练。
 - largesize表示使用以1600尺度为基础的多尺度训练和1920尺度预测，相应的训练batch_size也减小，以速度来换取高精度。
+- new 表示使用基于向量的DFL算法和针对小目标的中心先验优化策略，并在模型中加入transformer
 - MatlabAPI测试是使用官网评测工具[VisDrone2018-DET-toolkit](https://github.com/VisDrone/VisDrone2018-DET-toolkit)。
 - 切图训练模型的配置文件及训练相关流程请参照[smalldet](../smalldet)。
 
