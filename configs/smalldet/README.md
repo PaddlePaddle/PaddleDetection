@@ -1,10 +1,11 @@
-# PP-YOLOE 小目标检测模型(PP-YOLOE smalldet)
+# PP-YOLOE 小目标检测模型(PP-YOLOE Small Object Detection)
 
 <img src="https://user-images.githubusercontent.com/82303451/182520025-f6bd1c76-a9f9-4f8c-af9b-b37a403258d8.png" title="VisDrone" alt="VisDrone" width="300"><img src="https://user-images.githubusercontent.com/82303451/182521833-4aa0314c-b3f2-4711-9a65-cabece612737.png" title="VisDrone" alt="VisDrone" width="300"><img src="https://user-images.githubusercontent.com/82303451/182520038-cacd5d09-0b85-475c-8e59-72f1fc48eef8.png" title="DOTA" alt="DOTA" height="168"><img src="https://user-images.githubusercontent.com/82303451/182524123-dcba55a2-ce2d-4ba1-9d5b-eb99cb440715.jpeg" title="Xview" alt="Xview" height="168">
 
 ## 内容
 - [简介](#简介)
 - [模型库](#模型库)
+    - [VisDrone模型](#VisDrone模型)
     - [基础模型](#基础模型)
     - [拼图模型](#拼图模型)
 - [数据集准备](#数据集准备)
@@ -29,6 +30,25 @@ PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小�
 
 ## 模型库
 
+### [VisDrone](visdrone/)
+
+|    模型   | COCOAPI mAP<sup>val<br>0.5:0.95 | COCOAPI mAP<sup>val<br>0.5 | COCOAPI mAP<sup>test_dev<br>0.5:0.95 | COCOAPI mAP<sup>test_dev<br>0.5 | MatlabAPI mAP<sup>test_dev<br>0.5:0.95 | MatlabAPI mAP<sup>test_dev<br>0.5 | 下载  | 配置文件 |
+|:---------|:------:|:------:| :----: | :------:| :------: | :------:| :----: | :------:|
+|PP-YOLOE-s|  23.5  |  39.9  |  19.4  |  33.6   |  23.68   |  40.66  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_80e_visdrone.pdparams) | [配置文件](./ppyoloe_crn_s_80e_visdrone.yml) |
+|PP-YOLOE-P2-Alpha-s|    24.4  |  41.6  |  20.1  |  34.7  |  24.55   |  42.19  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_p2_alpha_80e_visdrone.pdparams) | [配置文件](./ppyoloe_crn_s_p2_alpha_80e_visdrone.yml) |
+|PP_YOLOE_plus_sod_s|  25.1  |  42.8  |  20.7  |  36.2   |  25.16  |  43.86   | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_s_80e_visdrone.pdparams) | [配置文件](./ppyoloe_plus_sod_crn_s_80e_visdrone.yml) |
+|PP-YOLOE-l|  29.2  |  47.3  |  23.5  |  39.1   |  28.00   |  46.20  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_visdrone.pdparams) | [配置文件](./ppyoloe_crn_l_80e_visdrone.yml) |
+|PP-YOLOE-P2-Alpha-l|  30.1  |  48.9  |  24.3  |  40.8   |  28.47   |  48.16  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_p2_alpha_80e_visdrone.pdparams) | [配置文件](./ppyoloe_crn_l_p2_alpha_80e_visdrone.yml) |
+|PP_YOLOE_plus_sod_l|  31.9  |  52.1  |  25.6  |  43.5   |  30.25  |  51.18   | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_80e_visdrone.pdparams) | [配置文件](./ppyoloe_plus_sod_crn_l_80e_visdrone.yml) |
+|PP-YOLOE-Alpha-largesize-l|  41.9  |  65.0 |  32.3  |  53.0   |  37.13   |  61.15  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_alpha_largesize_80e_visdrone.pdparams) | [配置文件](./ppyoloe_crn_l_alpha_largesize_80e_visdrone.yml) |
+|PP-YOLOE-P2-Alpha-largesize-l|  41.3  |  64.5  |  32.4  |  53.1   |  37.49   |  51.54  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_p2_alpha_largesize_80e_visdrone.pdparams) | [配置文件](./ppyoloe_crn_l_p2_alpha_largesize_80e_visdrone.yml) |
+|PP-YOLOE-plus-largesize-l |  43.3  |  66.7 |  33.5  |  54.7   |  38.24   |  62.76  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_largesize_80e_visdrone.pdparams) | [配置文件](./ppyoloe_plus_crn_l_largesize_80e_visdrone.yml) |
+|PP-YOLOE-plus_sod-largesize_l |  42.7  |  65.9 |  33.6  |  55.1   |  38.4   |  63.07  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.pdparams) | [配置文件](./ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.yml) |
+
+**注意:**
+  - 上表中的模型均为使用原图训练，和使用原图评估和预测。
+
+
 ### 基础模型
 
 |    模型   |       数据集     |  SLICE_SIZE  |  OVERLAP_RATIO  | 类别数  | mAP<sup>val<br>0.5:0.95 | AP<sup>val<br>0.5 | 下载链接  | 配置文件 |
@@ -37,21 +57,31 @@ PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小�
 |PP-YOLOE-P2-l|   Xview  |  400 | 0.25 | 60 |  14.9 | 27.0 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_p2_crn_l_80e_sliced_xview_400_025.pdparams) | [配置文件](./ppyoloe_p2_crn_l_80e_sliced_xview_400_025.yml) |
 |PP-YOLOE-l| VisDrone-DET|  640 | 0.25 | 10 |  38.5 |  60.2 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
 
+**注意:**
+  - 上表中的模型均为使用切图后的子图训练，和使用子图评估和预测。
+
+
 ### 拼图模型
 
 |    模型   |       数据集     |  SLICE_SIZE  |  OVERLAP_RATIO  | 类别数  | mAP<sup>val<br>0.5:0.95 | AP<sup>val<br>0.5 | 下载链接  | 配置文件 |
 |:---------|:---------------:|:---------------:|:---------------:|:------:|:-----------------------:|:-------------------:|:---------:| :-----: |
-|PP-YOLOE-l| VisDrone-DET|  640 | 0.25 | 10 |  29.7 |  48.5 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
-|PP-YOLOE-l (Assembled)| VisDrone-DET|  640 | 0.25 | 10 | 37.2 | 59.4 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
+|PP-YOLOE-l (原图评估)| VisDrone-DET|  640 | 0.25 | 10 |  29.7 |  48.5 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
+|PP-YOLOE-l (拼图评估)| VisDrone-DET|  640 | 0.25 | 10 | 37.2 | 59.4 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
 
 **注意:**
-- 使用[SAHI](https://github.com/obss/sahi)切图工具需要首先安装：`pip install sahi`，参考[installation](https://github.com/obss/sahi/blob/main/README.md#installation)。
+  - 上表中的模型均为使用切图后的子图训练，评估预测时分为两种，使用原图评估预测，和使用子图拼图评估预测。
+
+
+### 注意事项
+
+- 切图和拼图，需要使用[SAHI](https://github.com/obss/sahi)切图工具，需要首先安装：`pip install sahi`，参考[installation](https://github.com/obss/sahi/blob/main/README.md#installation)。
 - **SLICE_SIZE**表示使用SAHI工具切图后子图的边长大小，**OVERLAP_RATIO**表示切图的子图之间的重叠率，DOTA水平框和Xview数据集均是切图后训练，AP指标为切图后的子图val上的指标。
-- VisDrone-DET数据集请参照[visdrone](../visdrone)，可使用原图训练，也可使用切图后训练，这上面表格中的指标均是使用VisDrone-DET的val子集做验证而未使用test_dev子集。
+- VisDrone-DET数据集请参照[visdrone](./visdrone)，**可使用原图训练，也可使用切图后训练**，这上面表格中的指标均是使用VisDrone-DET的val子集做验证而未使用test_dev子集。
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
-- 常用训练验证部署等步骤请参考[ppyoloe](../ppyoloe#getting-start)。
+- 常用训练验证部署等步骤请参考[ppyoloe](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/ppyoloe#getting-start)。
 - 自动切图和拼图的推理预测需添加设置`--slice_infer`，具体见下文[模型库使用说明](#模型库使用说明)中的[预测](#预测)和[部署](#部署)。
-- Assembled表示自动切图和拼图，参照[2.3 子图拼图评估](#评估)。
+- 自动切图和拼图过程，参照[2.3 子图拼图评估](#评估)。
+
 
 ## 数据集准备
 
