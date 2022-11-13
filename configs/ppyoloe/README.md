@@ -33,6 +33,9 @@ PP-YOLOE is composed of following methods:
 - [SiLU(Swish) activation function](https://arxiv.org/abs/1710.05941)
 
 ## Model Zoo
+
+### Model Zoo on COCO
+
 |     Model      | Epoch | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>val<br>0.5:0.95 | Box AP<sup>test<br>0.5:0.95 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) |                                       download                                       |                   config                    |
 |:--------------:|:-----:|:-------:|:----------:|:----------:| :-------:|:--------------------------:|:---------------------------:|:---------:|:--------:|:---------------:| :---------------------: |:------------------------------------------------------------------------------------:|:-------------------------------------------:|
 |  PP-YOLOE+_s   |  80   |     8      |     8      | cspresnet-s |     640     |            43.7            |            43.9             |   7.93    |  17.36   |   208.3   |  333.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco.pdparams) | [config](./ppyoloe_plus_crn_s_80e_coco.yml) |
@@ -68,6 +71,15 @@ PP-YOLOE is composed of following methods:
 - If you set `--run_benchmark=True`，you should install these dependencies at first, `pip install pynvml psutil GPUtil`.
 - End-to-end speed test includes pre-processing + inference + post-processing and NMS time, using **Intel(R) Xeon(R) Gold 5117 CPU @ 2.00GHz**, **single Tesla V100**, **CUDA 11.2**, **CUDNN 8.2.0**, **TensorRT 8.0.1.6**.
 
+
+### Model Zoo on VOC
+
+|     Model      | Epoch | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>0.5 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) |  download  |  config  |
+|:---------------:|:-----:|:-----------:|:-----------:|:---------:|:----------:|:--------------:|:---------:|:---------:|:-------------:|:-----------------------:| :-------: |:--------:|
+|   PP-YOLOE+_s   |  30   |     8     |    8     | cspresnet-s |    640     |   86.7  |  7.93  |  17.36   |   208.3   |  333.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_30e_voc.pdparams) | [config](./ppyoloe_plus_crn_s_30e_voc.yml) |
+|   PP-YOLOE+_l   |  30   |     8     |    8     | cspresnet-l |    640     |    -    |  52.20 |  110.07  |   78.1    |  149.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_30e_voc.pdparams) | [config](./ppyoloe_plus_crn_l_30e_voc.yml) |
+
+
 ### Feature Models
 
 The PaddleDetection team provides configs and weights of various feature detection models based on PP-YOLOE, which users can download for use:
@@ -76,10 +88,34 @@ The PaddleDetection team provides configs and weights of various feature detecti
 | :--------: | :---------: | :------: |
 |Pedestrian Detection | CrowdHuman | [pphuman](../pphuman) |
 |Vehicle Detection | BDD100K, UA-DETRAC | [ppvehicle](../ppvehicle) |
-|Small Object Detection | VisDrone | [visdrone](../visdrone) |
+|Small Object Detection | VisDrone、DOTA、xView |  [smalldet](../smalldet) |
 
 
 ## Getting Start
+
+### Datasets and Metrics
+
+PaddleDetection team provides **COCO and VOC dataset** , decompress and place it under `PaddleDetection/dataset/`:
+
+```
+wget https://bj.bcebos.com/v1/paddledet/data/coco.tar
+# tar -xvf coco.tar
+
+wget https://bj.bcebos.com/v1/paddledet/data/voc.zip
+# unzip voc.zip
+```
+
+**Note:**
+  - For the format of COCO style dataset, please refer to [format-data](https://cocodataset.org/#format-data) and [format-results](https://cocodataset.org/#format-results).
+  - For the evaluation metric of COCO, please refer to [detection-eval](https://cocodataset.org/#detection-eval), and install  [cocoapi](https://github.com/cocodataset/cocoapi) at first.
+  - For the evaluation metric of VOC, please refer to [VOC2012](http://host.robots.ox.ac.uk/pascal/VOC/voc2012/index.html).
+
+### Custom dataset
+
+1.For the annotation of custom dataset, please refer to [DetAnnoTools](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/tutorials/data/DetAnnoTools_en.md);
+
+2.For training preparation of custom dataset，please refer to [PrepareDataSet](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/tutorials/data/PrepareDetDataSet_en.md).
+
 
 ### Training
 

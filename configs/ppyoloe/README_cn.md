@@ -33,6 +33,9 @@ PP-YOLOE由以下方法组成
 - [SiLU(Swish)激活函数](https://arxiv.org/abs/1710.05941)
 
 ## 模型库
+
+### COCO数据集模型库
+
 |       模型        | Epoch |   GPU个数   | 每GPU图片个数 |  骨干网络  |    输入尺寸    | Box AP<sup>val<br>0.5:0.95 | Box AP<sup>test<br>0.5:0.95 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) |                                         模型下载                                         |                    配置文件                     |
 |:---------------:|:-----:|:---------:|:--------:|:----------:|:----------:|:--------------------------:|:---------------------------:|:---------:|:--------:|:---------------:| :---------------------: |:------------------------------------------------------------------------------------:|:-------------------------------------------:|
 |   PP-YOLOE+_s   |  80   |     8     |    8     | cspresnet-s |    640     |            43.7            |            43.9             |   7.93    |  17.36   |   208.3   |  333.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco.pdparams) | [config](./ppyoloe_plus_crn_s_80e_coco.yml) |
@@ -69,6 +72,13 @@ PP-YOLOE由以下方法组成
 - 端到端速度测试包含模型前处理 + 模型推理 + 模型后处理及NMS的时间，测试使用**Intel(R) Xeon(R) Gold 5117 CPU @ 2.00GHz**, **单卡V100**, **CUDA 11.2**, **CUDNN 8.2.0**, **TensorRT 8.0.1.6**。
 
 
+### VOC数据集模型库
+|       模型       | Epoch |   GPU个数   | 每GPU图片个数 |  骨干网络  |   输入尺寸   | Box AP<sup>0.5 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) |  模型下载  |  配置文件 |
+|:---------------:|:-----:|:-----------:|:-----------:|:---------:|:----------:|:--------------:|:---------:|:---------:|:-------------:|:-----------------------:| :-------: |:--------:|
+|   PP-YOLOE+_s   |  30   |     8     |    8     | cspresnet-s |    640     |   86.7  |  7.93  |  17.36   |   208.3   |  333.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_30e_voc.pdparams) | [config](./ppyoloe_plus_crn_s_30e_voc.yml) |
+|   PP-YOLOE+_l   |  30   |     8     |    8     | cspresnet-l |    640     |    -    |  52.20 |  110.07  |   78.1    |  149.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_30e_voc.pdparams) | [config](./ppyoloe_plus_crn_l_30e_voc.yml) |
+
+
 ### 垂类应用模型
 
 PaddleDetection团队提供了基于PP-YOLOE的各种垂类检测模型的配置文件和权重，用户可以下载进行使用：
@@ -77,10 +87,33 @@ PaddleDetection团队提供了基于PP-YOLOE的各种垂类检测模型的配置
 | :--------: | :---------: | :------: |
 |  行人检测   | CrowdHuman  |   [pphuman](../pphuman)  |
 |  车辆检测   | BDD100K、UA-DETRAC  |  [ppvehicle](../ppvehicle)   |
-|  小目标检测 | VisDrone    |  [visdrone](../visdrone)   |
+|  小目标检测 | VisDrone、DOTA、xView |  [smalldet](../smalldet)   |
 
 
 ## 使用说明
+
+### 数据集和评价指标
+
+下载PaddleDetection团队提供的**COCO和VOC数据**，并解压放置于`PaddleDetection/dataset/`下：
+
+```
+wget https://bj.bcebos.com/v1/paddledet/data/coco.tar
+# tar -xvf coco.tar
+
+wget https://bj.bcebos.com/v1/paddledet/data/voc.zip
+# unzip voc.zip
+```
+
+**注意:**
+ - COCO风格格式，请参考 [format-data](https://cocodataset.org/#format-data) 和 [format-results](https://cocodataset.org/#format-results)。
+ - COCO风格评测指标，请参考 [detection-eval](https://cocodataset.org/#detection-eval) ，并首先安装 [cocoapi](https://github.com/cocodataset/cocoapi)。
+ - VOC风格格式和评测指标，请参考 [VOC2012](http://host.robots.ox.ac.uk/pascal/VOC/voc2012/index.html)。
+
+### 自定义数据集
+
+1.自定义数据集的标注制作，请参考 [DetAnnoTools](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/tutorials/data/DetAnnoTools.md);
+2.自定义数据集的训练准备，请参考 [PrepareDataSet](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/tutorials/data/PrepareDetDataSet.md).
+
 
 ### 训练
 
