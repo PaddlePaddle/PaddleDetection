@@ -512,7 +512,7 @@ def delta2bbox_v2(rois,
         wh_ratio_clip (float): to clip delta wh of decoded bboxes
         ctr_clip (float or None): whether to clip delta xy of decoded bboxes
     """
-    if rois.size == 0:
+    if rois.shape[0] == 0:
         return paddle.empty_like(rois)
     means = paddle.to_tensor(means)
     stds = paddle.to_tensor(stds)

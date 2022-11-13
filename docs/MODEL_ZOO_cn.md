@@ -95,6 +95,10 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 请参考[YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolox)
 
+### YOLOF
+
+请参考[YOLOF](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolof)
+
 ### YOLOv5
 
 请参考[YOLOv5](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov5)

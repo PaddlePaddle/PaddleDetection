@@ -94,6 +94,10 @@ Please refer to[PP-YOLOE](https://github.com/PaddlePaddle/PaddleDetection/tree/d
 
 Please refer to[YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolox)
 
+### YOLOF
+
+Please refer to[YOLOF](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolof)
+
 ### YOLOv5
 
 Please refer to[YOLOv5](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov5)

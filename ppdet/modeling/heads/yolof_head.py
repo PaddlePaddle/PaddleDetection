@@ -24,7 +24,6 @@ from paddle.nn.initializer import Normal, Constant
 from ppdet.modeling.layers import MultiClassNMS
 from ppdet.core.workspace import register
 from ppdet.modeling.bbox_utils import delta2bbox_v2, bbox2delta_v2
-from IPython import embed
 
 __all__ = ['YOLOFHead']
 
@@ -46,7 +45,8 @@ def find_inside_anchor(feat_size, stride, num_anchors, im_shape):
     inside_w = min(int(np.ceil(im_w / stride)), feat_w)
     inside_mask = paddle.zeros([feat_h, feat_w], dtype=paddle.bool)
     inside_mask[:inside_h, :inside_w] = True
-    inside_mask = inside_mask.unsqueeze(-1).expand([feat_h, feat_w, num_anchors])
+    inside_mask = inside_mask.unsqueeze(-1).expand(
+        [feat_h, feat_w, num_anchors])
     return inside_mask.reshape([-1])
 
 
@@ -55,7 +55,7 @@ class DeltaBBoxCoder:
     def __init__(self,
                  delta_mean=[0.0, 0.0, 0.0, 0.0],
                  delta_std=[1., 1., 1., 1.],
-                 wh_ratio_clip=16/1000.0,
+                 wh_ratio_clip=16 / 1000.0,
                  add_ctr_clip=False,
                  ctr_clip=32):
         self.delta_mean = delta_mean
@@ -105,7 +105,8 @@ class YOLOFFeat(nn.Layer):
                     3,
                     stride=1,
                     padding=1,
-                    weight_attr=ParamAttr(initializer=Normal(mean=0.0, std=0.01)),
+                    weight_attr=ParamAttr(initializer=Normal(
+                        mean=0.0, std=0.01)),
                     bias_attr=ParamAttr(initializer=Constant(value=0.0))))
             cls_subnet.append(
                 nn.BatchNorm2D(
@@ -116,14 +117,16 @@ class YOLOFFeat(nn.Layer):
 
         for i in range(self.num_reg_convs):
             feat_in = self.feat_in if i == 0 else self.feat_out
-            reg_subnet.append(nn.Conv2D(
-                feat_in,
-                self.feat_out,
-                3,
-                stride=1,
-                padding=1,
-                weight_attr=ParamAttr(initializer=Normal(mean=0.0, std=0.01)),
-                bias_attr=ParamAttr(initializer=Constant(value=0.0))))
+            reg_subnet.append(
+                nn.Conv2D(
+                    feat_in,
+                    self.feat_out,
+                    3,
+                    stride=1,
+                    padding=1,
+                    weight_attr=ParamAttr(initializer=Normal(
+                        mean=0.0, std=0.01)),
+                    bias_attr=ParamAttr(initializer=Constant(value=0.0))))
             reg_subnet.append(
                 nn.BatchNorm2D(
                     self.feat_out,
@@ -143,8 +146,10 @@ class YOLOFFeat(nn.Layer):
 @register
 class YOLOFHead(nn.Layer):
     __shared__ = ['num_classes', 'trt', 'exclude_nms']
-    __inject__ = ['conv_feat', 'anchor_generator', 'loss_class', 'loss_bbox',
-                  'bbox_assigner', 'bbox_coder', 'nms']
+    __inject__ = [
+        'conv_feat', 'anchor_generator', 'loss_class', 'loss_bbox',
+        'bbox_assigner', 'bbox_coder', 'nms'
+    ]
 
     def __init__(self,
                  num_classes=80,
@@ -170,7 +175,7 @@ class YOLOFHead(nn.Layer):
 
         self.bbox_assigner = bbox_assigner
         self.loss_class = loss_class
-        self.loss_bbox  = loss_bbox
+        self.loss_bbox = loss_bbox
 
         self.bbox_coder = bbox_coder
         self.nms = nms
@@ -178,7 +183,7 @@ class YOLOFHead(nn.Layer):
             self.nms.trt = trt
         self.exclude_nms = exclude_nms
 
-        bias_init_value = - math.log((1 - prior_prob) / prior_prob)
+        bias_init_value = -math.log((1 - prior_prob) / prior_prob)
         self.cls_score = self.add_sublayer(
             'cls_score',
             nn.Conv2D(
@@ -187,8 +192,10 @@ class YOLOFHead(nn.Layer):
                 kernel_size=3,
                 stride=1,
                 padding=1,
-                weight_attr=ParamAttr(initializer=Normal(mean=0.0, std=0.01)),
-                bias_attr=ParamAttr(initializer=Constant(value=bias_init_value))))
+                weight_attr=ParamAttr(initializer=Normal(
+                    mean=0.0, std=0.01)),
+                bias_attr=ParamAttr(initializer=Constant(
+                    value=bias_init_value))))
 
         self.bbox_pred = self.add_sublayer(
             'bbox_pred',
@@ -198,9 +205,10 @@ class YOLOFHead(nn.Layer):
                 kernel_size=3,
                 stride=1,
                 padding=1,
-                weight_attr=ParamAttr(initializer=Normal(mean=0.0, std=0.01)),
+                weight_attr=ParamAttr(initializer=Normal(
+                    mean=0.0, std=0.01)),
                 bias_attr=ParamAttr(initializer=Constant(value=0))))
-        
+
         self.object_pred = self.add_sublayer(
             'object_pred',
             nn.Conv2D(
@@ -209,7 +217,8 @@ class YOLOFHead(nn.Layer):
                 kernel_size=3,
                 stride=1,
                 padding=1,
-                weight_attr=ParamAttr(initializer=Normal(mean=0.0, std=0.01)),
+                weight_attr=ParamAttr(initializer=Normal(
+                    mean=0.0, std=0.01)),
                 bias_attr=ParamAttr(initializer=Constant(value=0))))
 
     def forward(self, feats, targets=None):
@@ -223,17 +232,16 @@ class YOLOFHead(nn.Layer):
         cls_logits = cls_logits.reshape((N, self.na, self.num_classes, H, W))
         objectness = objectness.reshape((N, self.na, 1, H, W))
         norm_cls_logits = cls_logits + objectness - paddle.log(
-            1.0 + paddle.clip(cls_logits.exp(), max=INF) +
-            paddle.clip(objectness.exp(), max=INF))
+            1.0 + paddle.clip(
+                cls_logits.exp(), max=INF) + paddle.clip(
+                    objectness.exp(), max=INF))
         norm_cls_logits = norm_cls_logits.reshape((N, C, H, W))
 
         anchors = self.anchor_generator([norm_cls_logits])
 
         if self.training:
             yolof_losses = self.get_loss(
-                [anchors[0], norm_cls_logits, bboxes_reg],
-                targets
-            )
+                [anchors[0], norm_cls_logits, bboxes_reg], targets)
             return yolof_losses
         else:
             return anchors[0], norm_cls_logits, bboxes_reg
@@ -241,7 +249,7 @@ class YOLOFHead(nn.Layer):
     def get_loss(self, head_outs, targets):
         anchors, cls_logits, bbox_preds = head_outs
 
-        feat_size  = cls_logits.shape[-2:]
+        feat_size = cls_logits.shape[-2:]
         cls_logits = cls_logits.transpose([0, 2, 3, 1])
         cls_logits = cls_logits.reshape([0, -1, self.num_classes])
         bbox_preds = bbox_preds.transpose([0, 2, 3, 1])
@@ -252,12 +260,11 @@ class YOLOFHead(nn.Layer):
         reg_pred_list, reg_tar_list = [], []
 
         for cls_logit, bbox_pred, gt_bbox, gt_class, im_shape in zip(
-                cls_logits, bbox_preds, targets['gt_bbox'], targets['gt_class'], targets['im_shape']):
+                cls_logits, bbox_preds, targets['gt_bbox'], targets['gt_class'],
+                targets['im_shape']):
             if self.use_inside_anchor:
                 inside_mask = find_inside_anchor(
-                    feat_size,
-                    self.anchor_generator.strides[0],
-                    self.na,
+                    feat_size, self.anchor_generator.strides[0], self.na,
                     im_shape.tolist())
                 cls_logit = cls_logit[inside_mask]
                 bbox_pred = bbox_pred[inside_mask]
@@ -266,17 +273,21 @@ class YOLOFHead(nn.Layer):
             bbox_pred = self.bbox_coder.decode(anchors, bbox_pred)
 
             # -2:ignore, -1:neg, >=0:pos
-            match_labels, pos_bbox_pred, pos_bbox_tar = self.bbox_assigner(bbox_pred, anchors, gt_bbox)
+            match_labels, pos_bbox_pred, pos_bbox_tar = self.bbox_assigner(
+                bbox_pred, anchors, gt_bbox)
             pos_mask = (match_labels >= 0)
             neg_mask = (match_labels == -1)
             chosen_mask = paddle.logical_or(pos_mask, neg_mask)
             gt_class = gt_class.reshape([-1])
             gt_class = paddle.concat([
-                gt_class,
-                paddle.to_tensor([self.num_classes], dtype=gt_class.dtype, place=gt_class.place)
+                gt_class, paddle.to_tensor(
+                    [self.num_classes],
+                    dtype=gt_class.dtype,
+                    place=gt_class.place)
             ])
             match_labels = paddle.where(
-                neg_mask, paddle.full_like(match_labels, gt_class.size - 1), match_labels)
+                neg_mask,
+                paddle.full_like(match_labels, gt_class.size - 1), match_labels)
             num_pos_list.append(max(1.0, pos_mask.sum().item()))
 
             cls_pred_list.append(cls_logit[chosen_mask])
@@ -289,16 +300,17 @@ class YOLOFHead(nn.Layer):
         num_tot_pos = max(1.0, num_tot_pos)
 
         cls_pred = paddle.concat(cls_pred_list)
-        cls_tar  = paddle.concat(cls_tar_list)
-        cls_loss = self.loss_class(cls_pred, cls_tar, reduction='sum') / num_tot_pos
+        cls_tar = paddle.concat(cls_tar_list)
+        cls_loss = self.loss_class(
+            cls_pred, cls_tar, reduction='sum') / num_tot_pos
 
         reg_pred_list = [_ for _ in reg_pred_list if _ is not None]
-        reg_tar_list  = [_ for _ in reg_tar_list  if _ is not None]
+        reg_tar_list = [_ for _ in reg_tar_list if _ is not None]
         if len(reg_pred_list) == 0:
             reg_loss = bbox_preds.sum() * 0.0
         else:
             reg_pred = paddle.concat(reg_pred_list)
-            reg_tar  = paddle.concat(reg_tar_list)
+            reg_tar = paddle.concat(reg_tar_list)
             reg_loss = self.loss_bbox(reg_pred, reg_tar).sum() / num_tot_pos
 
         yolof_losses = {
@@ -318,7 +330,8 @@ class YOLOFHead(nn.Layer):
         assert len(cls_scores) == len(bbox_preds)
         mlvl_bboxes = []
         mlvl_scores = []
-        for anchor, cls_score, bbox_pred in zip(anchors, cls_scores, bbox_preds):
+        for anchor, cls_score, bbox_pred in zip(anchors, cls_scores,
+                                                bbox_preds):
             cls_score = cls_score.reshape([-1, self.num_classes])
             bbox_pred = bbox_pred.reshape([-1, 4])
             if self.nms_pre is not None and cls_score.shape[0] > self.nms_pre:
@@ -327,7 +340,8 @@ class YOLOFHead(nn.Layer):
                 bbox_pred = bbox_pred.gather(topk_inds)
                 anchor = anchor.gather(topk_inds)
                 cls_score = cls_score.gather(topk_inds)
-            bbox_pred = self.bbox_coder.decode(anchor, bbox_pred, max_shape=im_shape).squeeze()
+            bbox_pred = self.bbox_coder.decode(
+                anchor, bbox_pred, max_shape=im_shape).squeeze()
             mlvl_bboxes.append(bbox_pred)
             mlvl_scores.append(F.sigmoid(cls_score))
         mlvl_bboxes = paddle.concat(mlvl_bboxes)
@@ -347,10 +361,7 @@ class YOLOFHead(nn.Layer):
             cls_score_list = [cls_scores[i][img_id] for i in range(num_lvls)]
             bbox_pred_list = [bbox_preds[i][img_id] for i in range(num_lvls)]
             bboxes, scores = self.get_bboxes_single(
-                anchors,
-                cls_score_list,
-                bbox_pred_list,
-                im_shape[img_id],
+                anchors, cls_score_list, bbox_pred_list, im_shape[img_id],
                 scale_factor[img_id])
             batch_bboxes.append(bboxes)
             batch_scores.append(scores)
