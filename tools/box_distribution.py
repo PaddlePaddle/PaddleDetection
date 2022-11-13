@@ -53,6 +53,7 @@ def get_ratio_infos(jsonfile, out_img, eval_size, small_stride):
     be_im_h = []
     ratio_w = []
     ratio_h = []
+    im_wid,im_hei=[],[]
     for ann in tqdm(allannjson['annotations']):
         if ann['iscrowd']:
             continue
@@ -63,6 +64,8 @@ def get_ratio_infos(jsonfile, out_img, eval_size, small_stride):
         else:
             im_w = coco.imgs[be_im_id]['width']
             im_h = coco.imgs[be_im_id]['height']
+            im_wid.append(im_w)
+            im_hei.append(im_h)
             im_m_w = np.mean(be_im_w)
             im_m_h = np.mean(be_im_h)
             dis_w = im_m_w / im_w
@@ -72,9 +75,16 @@ def get_ratio_infos(jsonfile, out_img, eval_size, small_stride):
             be_im_id = ann['image_id']
             be_im_w = [w]
             be_im_h = [h]
+        
 
     im_w = coco.imgs[be_im_id]['width']
     im_h = coco.imgs[be_im_id]['height']
+    im_wid.append(im_w)
+    im_hei.append(im_h)
+    all_im_m_w = np.mean(im_wid)
+    all_im_m_h = np.mean(im_hei)
+
+
     im_m_w = np.mean(be_im_w)
     im_m_h = np.mean(be_im_h)
     dis_w = im_m_w / im_w
@@ -100,6 +110,8 @@ def get_ratio_infos(jsonfile, out_img, eval_size, small_stride):
     ratio_w = [i * 1000 for i in ratio_w]
     ratio_h = [i * 1000 for i in ratio_h]
     print(f'Suggested reg_range[1] is {reg_max+1}' )
+    print(f'Mean of all img_w is {all_im_m_w}')
+    print(f'Mean of all img_h is {all_im_m_h}') 
     print(f'Median of ratio_w is {mid_w}')
     print(f'Median of ratio_h is {mid_h}')
     print('all_img with box: ', len(ratio_h))
