@@ -1,13 +1,13 @@
 _BASE_: [
-  '../datasets/visdrone_detection.yml',
-  '../runtime.yml',
-  '../ppyoloe/_base_/optimizer_80e.yml',
-  '../ppyoloe/_base_/ppyoloe_plus_crn.yml',
-  '../ppyoloe/_base_/ppyoloe_plus_reader.yml'
+  '../../datasets/visdrone_detection.yml',
+  '../../runtime.yml',
+  '../../ppyoloe/_base_/optimizer_80e.yml',
+  '../../ppyoloe/_base_/ppyoloe_plus_crn.yml',
+  '../../ppyoloe/_base_/ppyoloe_plus_reader.yml'
 ]
 log_iter: 100
 snapshot_epoch: 10
-weights: output/ppyoloe_plus_new_crn_l_80e_visdrone/model_final
+weights: output/ppyoloe_plus_sod_crn_l_80e_visdrone/model_final
 
 pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_l_80e_coco.pdparams
 depth_mult: 1.0
