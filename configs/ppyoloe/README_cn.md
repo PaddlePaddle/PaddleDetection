@@ -150,6 +150,16 @@ paddle2onnx --model_dir output_inference/ppyoloe_plus_crn_l_80e_coco --model_fil
 
 **注意：** ONNX模型目前只支持batch_size=1
 
+如果你想导出的模型将SPP模块中的MaxPool2D的kernel_size从[5,9,13]转换为等价的全部都是kernel_size=3的pool, 需要在导出时携带`-o spp_fission_3x3=True`额外的配置：
+
+```bash
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml \
+            --output_dir=output_inference \
+            -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams \
+            trt=True \
+            spp_fission_3x3=True
+```
+
 ### 速度测试
 
 为了公平起见，在[模型库](#模型库)中的速度测试结果均为不包含数据预处理和模型输出后处理(NMS)的数据(与[YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet)测试方法一致)，需要在导出模型时指定`-o exclude_nms=True`.

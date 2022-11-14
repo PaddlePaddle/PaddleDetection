@@ -149,6 +149,16 @@ paddle2onnx --model_dir output_inference/ppyoloe_plus_crn_l_80e_coco --model_fil
 
 **Notes:** ONNX model only supports batch_size=1 now
 
+If you want to export PP-YOLOE model and SPP Moudle(Kernel_size=[5, 9, 13]) fission into Kernel_size=3, use following command with extra `-o spp_fission_3x3=True` setting.
+
+```bash
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml \
+            --output_dir=output_inference \
+            -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams \
+            trt=True \
+            spp_fission_3x3=True
+```
+
 ### Speed testing
 
 For fair comparison, the speed in [Model Zoo](#Model-Zoo) do not contains the time cost of data reading and post-processing(NMS), which is same as [YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet) in testing method. Thus, you should export model with extra `-o exclude_nms=True` setting.

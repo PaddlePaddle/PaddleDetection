@@ -26,6 +26,8 @@ from ..initializer import linear_init_
 
 __all__ = ['CustomCSPPAN']
 
+SPP_MAP = {5: 2, 9: 4, 13: 6}
+
 
 def _get_clones(module, N):
     return nn.LayerList([copy.deepcopy(module) for _ in range(N)])
@@ -38,19 +40,30 @@ class SPP(nn.Layer):
                  k,
                  pool_size,
                  act='swish',
-                 data_format='NCHW'):
+                 data_format='NCHW',
+                 spp_fission_3x3=False):
         super(SPP, self).__init__()
         self.pool = []
         self.data_format = data_format
         for i, size in enumerate(pool_size):
-            pool = self.add_sublayer(
-                'pool{}'.format(i),
-                nn.MaxPool2D(
-                    kernel_size=size,
-                    stride=1,
-                    padding=size // 2,
-                    data_format=data_format,
-                    ceil_mode=False))
+            if size > 3 and spp_fission_3x3:
+                pool = nn.Sequential(* [
+                    nn.MaxPool2D(
+                        kernel_size=3,
+                        stride=1,
+                        padding=3 // 2,
+                        data_format=data_format,
+                        ceil_mode=False) for _ in range(SPP_MAP[size])
+                ])
+            else:
+                pool = self.add_sublayer(
+                    'pool{}'.format(i),
+                    nn.MaxPool2D(
+                        kernel_size=size,
+                        stride=1,
+                        padding=size // 2,
+                        data_format=data_format,
+                        ceil_mode=False))
             self.pool.append(pool)
         self.conv = ConvBNLayer(ch_in, ch_out, k, padding=k // 2, act=act)
 
@@ -75,6 +88,7 @@ class CSPStage(nn.Layer):
                  n,
                  act='swish',
                  spp=False,
+                 spp_fission_3x3=False,
                  use_alpha=False):
         super(CSPStage, self).__init__()
 
@@ -93,7 +107,12 @@ class CSPStage(nn.Layer):
                                use_alpha=use_alpha))
             if i == (n - 1) // 2 and spp:
                 self.convs.add_sublayer(
-                    'spp', SPP(ch_mid * 4, ch_mid, 1, [5, 9, 13], act=act))
+                    'spp',
+                    SPP(ch_mid * 4,
+                        ch_mid,
+                        1, [5, 9, 13],
+                        act=act,
+                        spp_fission_3x3=spp_fission_3x3))
             next_ch_in = ch_mid
         self.conv3 = ConvBNLayer(ch_mid * 2, ch_out, 1, act=act)
 
@@ -186,7 +205,7 @@ class TransformerEncoder(nn.Layer):
 class CustomCSPPAN(nn.Layer):
     __shared__ = [
         'norm_type', 'data_format', 'width_mult', 'depth_mult', 'trt',
-        'eval_size'
+        'eval_size', 'spp_fission_3x3'
     ]
 
     def __init__(self,
@@ -202,6 +221,7 @@ class CustomCSPPAN(nn.Layer):
                  block_size=3,
                  keep_prob=0.9,
                  spp=False,
+                 spp_fission_3x3=False,
                  data_format='NCHW',
                  width_mult=1.0,
                  depth_mult=1.0,
@@ -266,6 +286,7 @@ class CustomCSPPAN(nn.Layer):
                                    block_num,
                                    act=act,
                                    spp=(spp and i == 0),
+                                   spp_fission_3x3=spp_fission_3x3,
                                    use_alpha=use_alpha))
 
             if drop_block:
