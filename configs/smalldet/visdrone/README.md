@@ -86,16 +86,16 @@ python tools/export_model.py -c configs/smalldet/visdrone/ppyoloe_plus_sod_crn_l
 paddle2onnx --model_dir output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 12 --save_file ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.onnx
 
 # 推理单张图片
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/000000014439.jpg --device=gpu --run_mode=trt_fp16
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/0000315_01601_d_0000509.jpg --device=gpu --run_mode=trt_fp16
 
 # 推理文件夹下的所有图片
 CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_dir=demo/ --device=gpu --run_mode=trt_fp16
 
 # 单张图片普通测速
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/000000014439.jpg --device=gpu --run_benchmark=True
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/0000315_01601_d_0000509.jpg --device=gpu --run_benchmark=True
 
 # 单张图片TensorRT FP16测速
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/000000014439.jpg --device=gpu --run_benchmark=True --run_mode=trt_fp16
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/0000315_01601_d_0000509.jpg --device=gpu --run_benchmark=True --run_mode=trt_fp16
 ```
 
 3.运行以下命令导出**不带NMS的模型和ONNX**，并使用TensorRT FP16进行推理和测速，以及**ONNX下FP16测速**
@@ -108,16 +108,16 @@ python tools/export_model.py -c configs/smalldet/visdrone/ppyoloe_plus_sod_crn_l
 paddle2onnx --model_dir output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 12 --save_file ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.onnx
 
 # 推理单张图片
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/000000014439.jpg --device=gpu --run_mode=trt_fp16
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/0000315_01601_d_0000509.jpg --device=gpu --run_mode=trt_fp16
 
 # 推理文件夹下的所有图片
 CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_dir=demo/ --device=gpu --run_mode=trt_fp16
 
 # 单张图片普通测速
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/000000014439.jpg --device=gpu --run_benchmark=True
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/0000315_01601_d_0000509.jpg --device=gpu --run_benchmark=True
 
 # 单张图片TensorRT FP16测速
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/000000014439.jpg --device=gpu --run_benchmark=True --run_mode=trt_fp16
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/0000315_01601_d_0000509.jpg --device=gpu --run_benchmark=True --run_mode=trt_fp16
 
 # 单张图片ONNX TensorRT FP16测速
 /usr/local/TensorRT-8.0.3.4/bin/trtexec --onnx=ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.onnx --workspace=4096 --avgRuns=10 --shapes=input:1x3x1920x1920 --fp16
