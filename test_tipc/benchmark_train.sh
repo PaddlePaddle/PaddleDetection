@@ -141,7 +141,7 @@ if  [ ! -n "$PARAMS" ] ;then
     IFS="|"
     batch_size_list=(${batch_size})
     fp_items_list=(${fp_items})
-    device_num="N1C1"
+    device_num="N1C4"
     device_num_list=($device_num)
     run_mode="DP"
 else
