@@ -254,7 +254,8 @@ class ImageFolder(DetDataset):
                 records.append(rec)
             ct_sub += sub_img_num
             ct += 1
-        print('{} samples and slice to {} sub_samples'.format(ct, ct_sub))
+        logger.info('{} samples and slice to {} sub_samples.'.format(ct,
+                                                                     ct_sub))
         self.roidbs = records
 
     def get_label_list(self):
