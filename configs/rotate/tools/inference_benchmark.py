@@ -30,8 +30,8 @@ import paddle
 import paddle.version as paddle_version
 from paddle.inference import Config, create_predictor, PrecisionType, get_trt_runtime_version
 
-
 TUNED_TRT_DYNAMIC_MODELS = {'DETR'}
+
 
 def check_version(version='2.2'):
     err = "PaddlePaddle version {} or higher is required, " \
@@ -83,8 +83,8 @@ def decode_image(im_file, im_info):
     im_info['scale_factor'] = np.array([1., 1.], dtype=np.float32)
     return im, im_info
 
-class Resize(object):
 
+class Resize(object):
     def __init__(self, target_size, keep_ratio=True, interp=cv2.INTER_LINEAR):
         if isinstance(target_size, int):
             target_size = [target_size, target_size]
@@ -128,14 +128,15 @@ class Resize(object):
             im_scale_x = resize_w / float(origin_shape[1])
         return im_scale_y, im_scale_x
 
-class Permute(object):
 
+class Permute(object):
     def __init__(self, ):
         super(Permute, self).__init__()
 
     def __call__(self, im, im_info):
         im = im.transpose((2, 0, 1))
         return im, im_info
+
 
 class NormalizeImage(object):
     def __init__(self, mean, std, is_scale=True, norm_type='mean_std'):
@@ -159,7 +160,6 @@ class NormalizeImage(object):
 
 
 class PadStride(object):
-
     def __init__(self, stride=0):
         self.coarsest_stride = stride
 
@@ -190,14 +190,27 @@ def preprocess(im, preprocess_ops):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_dir', type=str, help='directory of inference model')
-    parser.add_argument('--run_mode', type=str, default='paddle', help='running mode')
+    parser.add_argument(
+        '--model_dir', type=str, help='directory of inference model')
+    parser.add_argument(
+        '--run_mode', type=str, default='paddle', help='running mode')
     parser.add_argument('--batch_size', type=int, default=1, help='batch size')
-    parser.add_argument('--image_dir', type=str, default='/paddle/data/DOTA_1024_ss/test1024/images', help='directory of test images')
-    parser.add_argument('--warmup_iter', type=int, default=5, help='num of warmup iters')
-    parser.add_argument('--total_iter', type=int, default=2000, help='num of total iters')
-    parser.add_argument('--log_iter', type=int, default=50, help='num of log interval')
-    parser.add_argument('--tuned_trt_shape_file', type=str, default='shape_range_info.pbtxt', help='dynamic shape range info')
+    parser.add_argument(
+        '--image_dir',
+        type=str,
+        default='/paddle/data/DOTA_1024_ss/test1024/images',
+        help='directory of test images')
+    parser.add_argument(
+        '--warmup_iter', type=int, default=5, help='num of warmup iters')
+    parser.add_argument(
+        '--total_iter', type=int, default=2000, help='num of total iters')
+    parser.add_argument(
+        '--log_iter', type=int, default=50, help='num of log interval')
+    parser.add_argument(
+        '--tuned_trt_shape_file',
+        type=str,
+        default='shape_range_info.pbtxt',
+        help='dynamic shape range info')
     args = parser.parse_args()
     return args
 
@@ -207,11 +220,11 @@ def init_predictor(FLAGS):
     yaml_file = os.path.join(model_dir, 'infer_cfg.yml')
     with open(yaml_file) as f:
         yml_conf = yaml.safe_load(f)
-    
+
     config = Config(
         os.path.join(model_dir, 'model.pdmodel'),
         os.path.join(model_dir, 'model.pdiparams'))
-    
+
     # initial GPU memory(M), device ID
     config.enable_use_gpu(200, 0)
     # optimize graph and fuse op
@@ -227,8 +240,11 @@ def init_predictor(FLAGS):
     tuned_trt_shape_file = os.path.join(model_dir, FLAGS.tuned_trt_shape_file)
 
     if run_mode in precision_map.keys():
-        if arch in TUNED_TRT_DYNAMIC_MODELS and not os.path.exists(tuned_trt_shape_file):
-            print('dynamic shape range info is saved in {}. After that, rerun the code'.format(tuned_trt_shape_file))
+        if arch in TUNED_TRT_DYNAMIC_MODELS and not os.path.exists(
+                tuned_trt_shape_file):
+            print(
+                'dynamic shape range info is saved in {}. After that, rerun the code'.
+                format(tuned_trt_shape_file))
             config.collect_shape_range_info(tuned_trt_shape_file)
         config.enable_tensorrt_engine(
             workspace_size=(1 << 25) * batch_size,
@@ -239,8 +255,10 @@ def init_predictor(FLAGS):
             use_calib_mode=False)
 
         if yml_conf['use_dynamic_shape']:
-            if arch in TUNED_TRT_DYNAMIC_MODELS and os.path.exists(tuned_trt_shape_file):
-                config.enable_tuned_tensorrt_dynamic_shape(tuned_trt_shape_file, True)
+            if arch in TUNED_TRT_DYNAMIC_MODELS and os.path.exists(
+                    tuned_trt_shape_file):
+                config.enable_tuned_tensorrt_dynamic_shape(tuned_trt_shape_file,
+                                                           True)
             else:
                 min_input_shape = {
                     'image': [batch_size, 3, 640, 640],
@@ -254,9 +272,9 @@ def init_predictor(FLAGS):
                     'image': [batch_size, 3, 1024, 1024],
                     'scale_factor': [batch_size, 2]
                 }
-                config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
-                                                opt_input_shape)
-    
+                config.set_trt_dynamic_shape_info(
+                    min_input_shape, max_input_shape, opt_input_shape)
+
     # disable print log when predict
     config.disable_glog_info()
     # enable shared memory
@@ -265,6 +283,7 @@ def init_predictor(FLAGS):
     config.switch_use_feed_fetch_ops(False)
     predictor = create_predictor(config)
     return predictor, yml_conf
+
 
 def create_preprocess_ops(yml_conf):
     preprocess_ops = []
@@ -294,8 +313,10 @@ def create_inputs(image_files, preprocess_ops):
         im_list.append(im)
         im_info_list.append(im_info)
 
-    inputs['im_shape'] = np.stack([e['im_shape'] for e in im_info_list], axis=0).astype('float32')
-    inputs['scale_factor'] = np.stack([e['scale_factor'] for e in im_info_list], axis=0).astype('float32')
+    inputs['im_shape'] = np.stack(
+        [e['im_shape'] for e in im_info_list], axis=0).astype('float32')
+    inputs['scale_factor'] = np.stack(
+        [e['scale_factor'] for e in im_info_list], axis=0).astype('float32')
     inputs['image'] = np.stack(im_list, axis=0).astype('float32')
     return inputs
 
@@ -318,7 +339,7 @@ def measure_speed(FLAGS):
         for name in input_names:
             input_tensor = predictor.get_input_handle(name)
             input_tensor.copy_from_cpu(inputs[name])
-        
+
         paddle.device.cuda.synchronize()
         # start running
         start_time = time.perf_counter()
@@ -334,7 +355,7 @@ def measure_speed(FLAGS):
                     f'fps: {fps:.1f} img / s, '
                     f'times per image: {1000 / fps:.1f} ms / img',
                     flush=True)
-        
+
         if (i + 1) == total_iter:
             fps = (i + 1 - warmup_iter) / total_time
             print(
@@ -343,14 +364,10 @@ def measure_speed(FLAGS):
                 flush=True)
             break
 
+
 if __name__ == '__main__':
     FLAGS = parse_args()
     check_version('2.4')
-    check_trt_version('8.2')
+    if 'trt' in FLAGS.run_mode:
+        check_trt_version('8.2')
     measure_speed(FLAGS)
-
-
-
-
-
-
