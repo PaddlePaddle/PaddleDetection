@@ -257,7 +257,7 @@ class Detector(object):
                 overlap_width_ratio=overlap_ratio[1])
             sub_img_num = len(slice_image_result)
             merged_bboxs = []
-            print('sub_img_num', sub_img_num)
+            print('slice to {} sub_samples.', sub_img_num)
 
             batch_image_list = [
                 slice_image_result.images[_ind] for _ind in range(sub_img_num)
@@ -306,7 +306,7 @@ class Detector(object):
             st, ed = 0, result['boxes_num'][0]  # start_index, end_index
             for _ind in range(sub_img_num):
                 boxes_num = result['boxes_num'][_ind]
-                ed = boxes_num
+                ed = st + boxes_num
                 shift_amount = slice_image_result.starting_pixels[_ind]
                 result['boxes'][st:ed][:, 2:4] = result['boxes'][
                     st:ed][:, 2:4] + shift_amount

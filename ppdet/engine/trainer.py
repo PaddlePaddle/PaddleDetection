@@ -755,9 +755,11 @@ class Trainer(object):
                       output_dir='output',
                       save_results=False,
                       visualize=True):
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
         self.dataset.set_slice_images(images, slice_size, overlap_ratio)
         loader = create('TestReader')(self.dataset, 0)
-
         imid2path = self.dataset.get_imid2path()
 
         anno_file = self.dataset.get_anno()
