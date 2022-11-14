@@ -1,9 +1,9 @@
 _BASE_: [
-  '../datasets/visdrone_detection.yml',
-  '../runtime.yml',
-  '../ppyoloe/_base_/optimizer_300e.yml',
-  '../ppyoloe/_base_/ppyoloe_crn.yml',
-  '../ppyoloe/_base_/ppyoloe_reader.yml',
+  '../../datasets/visdrone_detection.yml',
+  '../../runtime.yml',
+  '../../ppyoloe/_base_/optimizer_300e.yml',
+  '../../ppyoloe/_base_/ppyoloe_crn.yml',
+  '../../ppyoloe/_base_/ppyoloe_reader.yml',
 ]
 log_iter: 100
 snapshot_epoch: 10
