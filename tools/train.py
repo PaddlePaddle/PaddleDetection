@@ -103,6 +103,11 @@ def parse_args():
         type=str,
         default="sniper/proposals.json",
         help='Train proposals directory')
+    parser.add_argument(
+        "--to_static",
+        action='store_true',
+        default=False,
+        help="Enable dy2st to train.")
 
     args = parser.parse_args()
     return args
