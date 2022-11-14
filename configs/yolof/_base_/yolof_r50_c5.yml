@@ -46,12 +46,6 @@ YOLOFHead:
     alpha: 0.25
   loss_bbox:
     name: GIoULoss
-  bbox_coder:
-    name: DeltaBBoxCoder
-    delta_mean: [0.0, 0.0, 0.0, 0.0]
-    delta_std: [1.0, 1.0, 1.0, 1.0]
-    add_ctr_clip: true
-    ctr_clip: 32
   nms:
     name: MultiClassNMS
     nms_top_k: 1000
