@@ -66,6 +66,18 @@ PaddleDetection团队提供了针对VisDrone-DET小目标数航拍场景的基�
 
 2.运行以下命令导出**带NMS的模型和ONNX**，并使用TensorRT FP16进行推理和测速
 
+### 注意：
+
+- 由于NMS参数设置对速度影响极大，部署测速时可调整`keep_top_k`和`nms_top_k`，在只低约0.1 mAP精度的情况下加快预测速度，导出模型的时候也可这样设置：
+  ```
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000 # 10000
+    keep_top_k: 100 # 500
+    score_threshold: 0.01
+    nms_threshold: 0.6
+  ```
+
 ```bash
 # 导出带NMS的模型
 python tools/export_model.py -c configs/smalldet/visdrone/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.pdparams trt=True

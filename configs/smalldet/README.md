@@ -24,7 +24,7 @@ PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小�
 
 **注意:**
 - **是否需要切图**，建议参照[切图使用说明](#切图使用说明)中的[统计数据集分布](#统计数据集分布)先分析一下数据集再确定，一般数据集所有目标均极小的时候推荐切图训练和切图预测。
-- 不通过切图拼图而直接使用原图的方案也可以参照[visdrone](../visdrone)。
+- 不通过切图拼图而直接使用原图的方案也可以参照[visdrone](./visdrone)。
 - 第三方AI Studio教程案例可参考[PPYOLOE：遥感场景下的小目标检测与部署（切图版）](https://aistudio.baidu.com/aistudio/projectdetail/4493701)和[涨分神器！基于PPYOLOE的切图和拼图解决方案](https://aistudio.baidu.com/aistudio/projectdetail/4438275)。
 
 
@@ -46,7 +46,8 @@ PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小�
 |PP-YOLOE-plus_sod-largesize_l |  42.7  |  65.9 |  33.6  |  55.1   |  38.4   |  63.07  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.pdparams) | [配置文件](visdrone/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.yml) |
 
 **注意:**
-  - 上表中的模型均为**使用原图训练**，也使用**原图评估预测**。
+  - VisDrone-DET数据集**可使用原图训练，也可使用切图后训练**，上表中的模型均为**使用原图训练**，也使用**原图评估预测**，推荐直接使用带**sod**的模型配置文件去训练评估和预测部署。
+  - 上表中的模型指标均是使用VisDrone-DET的train子集作为训练集，使用VisDrone-DET的val子集和test_dev子集作为验证集。
   - **sod**表示使用**基于向量的DFL算法**和针对小目标的**中心先验优化策略**，并**在模型的Neck结构中加入transformer**。
   - **P2**表示增加P2层(1/4下采样层)的特征，共输出4个PPYOLOEHead。
   - **Alpha**表示对CSPResNet骨干网络增加可一个学习权重参数Alpha参与训练。
