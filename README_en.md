@@ -68,7 +68,7 @@
 - **High Performance**: Due to the high performance core, PaddlePaddle has clear advantages in training speed and memory occupation. It also supports FP16 training and multi-machine training.
 
 <div  align="center">
-  <img src="https://user-images.githubusercontent.com/22989727/189066615-89d1dde2-54bc-4946-887e-fce50069206e.png" width="800"/>
+  <img src="https://user-images.githubusercontent.com/22989727/202124454-a952eb57-8d77-43be-ac07-468697821c81.png" width="800"/>
 </div>
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157800467-2a9946ad-30d1-49a9-b9db-ba33413d9c90.png" alt="" width="20"> Exchanges
