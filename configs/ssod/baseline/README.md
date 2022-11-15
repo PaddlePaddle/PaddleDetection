@@ -6,8 +6,8 @@
 
 |  基础模型          |    监督数据比例   |  mAP<sup>val<br>0.5:0.95 |  模型下载  |   配置文件   |
 | :---------------: | :-------------: | :---------------------: |:--------: | :---------: |
-| FCOS ResNet50-FPN |        5%       |       21.3        | [download](https://paddledet.bj.bcebos.com/models/ssod/fcos_r50_fpn_2x_coco_sup005.pdparams) | [config](fcos_r50_fpn_2x_coco_sup005.yml) |
-| FCOS ResNet50-FPN |        10%      |       26.3        | [download](https://paddledet.bj.bcebos.com/models/ssod/fcos_r50_fpn_2x_coco_sup010.pdparams) | [config](fcos_r50_fpn_2x_coco_sup010.yml) |
+| FCOS ResNet50-FPN |        5%       |       21.3        | [download](https://paddledet.bj.bcebos.com/models/fcos_r50_fpn_2x_coco_sup005.pdparams) | [config](fcos_r50_fpn_2x_coco_sup005.yml) |
+| FCOS ResNet50-FPN |        10%      |       26.3        | [download](https://paddledet.bj.bcebos.com/models/fcos_r50_fpn_2x_coco_sup010.pdparams) | [config](fcos_r50_fpn_2x_coco_sup010.yml) |
 | FCOS ResNet50-FPN |        full     |       42.6        | [download](https://paddledet.bj.bcebos.com/models/fcos_r50_fpn_iou_multiscale_2x_coco.pdparams) | [config](../../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.yml) |
 
 
@@ -15,8 +15,8 @@
 
 |  基础模型          |    监督数据比例   |  mAP<sup>val<br>0.5:0.95 |  模型下载  |   配置文件   |
 | :---------------: | :-------------: | :---------------------: |:--------: | :---------: |
-| PP-YOLOE+_s       |        5%      |        32.8       | [download](https://paddledet.bj.bcebos.com/models/ssod/ppyoloe_plus_crn_s_80e_coco_sup005.pdparams) | [config](ppyoloe_plus_crn_s_80e_coco_sup005.yml) |
-| PP-YOLOE+_s       |        10%      |       35.3       | [download](https://paddledet.bj.bcebos.com/models/ssod/ppyoloe_plus_crn_s_80e_coco_sup010.pdparams) | [config](ppyoloe_plus_crn_s_80e_coco_sup010.yml) |
+| PP-YOLOE+_s       |        5%      |        32.8       | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco_sup005.pdparams) | [config](ppyoloe_plus_crn_s_80e_coco_sup005.yml) |
+| PP-YOLOE+_s       |        10%      |       35.3       | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco_sup010.pdparams) | [config](ppyoloe_plus_crn_s_80e_coco_sup010.yml) |
 | PP-YOLOE+_s       |        full     |       43.7       | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco.pdparams) | [config](../../ppyoloe/ppyoloe_plus_crn_s_80e_coco.yml) |
 
 
@@ -24,7 +24,7 @@
 
 |  基础模型          |    监督数据比例   |  mAP<sup>val<br>0.5:0.95 |  模型下载  |   配置文件   |
 | :---------------: | :-------------: | :---------------------: |:--------: | :---------: |
-| Faster R-CNN ResNet50-FPN |        10%      |       25.6      | [download](https://paddledet.bj.bcebos.com/models/ssod/faster_rcnn_r50_fpn_2x_coco_sup010.pdparams) | [config](faster_rcnn_r50_fpn_2x_coco_sup010.yml) |
+| Faster R-CNN ResNet50-FPN |        10%      |       25.6      | [download](https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_fpn_2x_coco_sup010.pdparams) | [config](faster_rcnn_r50_fpn_2x_coco_sup010.yml) |
 | Faster R-CNN ResNet50-FPN |        full     |       40.0      | [download](https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_fpn_2x_coco.pdparams) | [config](../../configs/faster_rcnn/faster_rcnn_r50_fpn_2x_coco.yml) |
 
 
@@ -32,7 +32,7 @@
 
 |  基础模型          |    监督数据比例   |  mAP<sup>val<br>0.5:0.95 |  模型下载  |   配置文件   |
 | :---------------: | :-------------: | :---------------------: |:--------: | :---------: |
-| RetinaNet ResNet50-FPN |        10%      |       23.6       | [download](https://paddledet.bj.bcebos.com/models/ssod/retinanet_r50_fpn_2x_coco_sup010.pdparams) | [config](retinanet_r50_fpn_2x_coco_sup010.yml) |
+| RetinaNet ResNet50-FPN |        10%      |       23.6       | [download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_sup010.pdparams) | [config](retinanet_r50_fpn_2x_coco_sup010.yml) |
 | RetinaNet ResNet50-FPN |        full     |       37.5(1x)       | [download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_1x_coco.pdparams) | [config](../../configs/retinanet/retinanet_r50_fpn_1x_coco.yml) |
 
 
