@@ -162,7 +162,7 @@ def main():
     merge_config(FLAGS.opt)
     check.check_config(cfg)
     check.check_gpu(cfg.use_gpu)
-    check.check_npu(cfg.use_npu)
+    #check.check_npu(cfg.use_npu)
     check.check_version()
 
     run(FLAGS, cfg)
