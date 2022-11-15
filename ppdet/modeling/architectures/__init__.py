@@ -36,6 +36,7 @@ from . import tood
 from . import retinanet
 from . import bytetrack
 from . import yolox
+from . import yolof
 from . import pose3d_metro
 
 from .meta_arch import *
@@ -63,4 +64,5 @@ from .tood import *
 from .retinanet import *
 from .bytetrack import *
 from .yolox import *
+from .yolof import *
 from .pose3d_metro import *

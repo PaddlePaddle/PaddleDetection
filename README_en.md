@@ -114,6 +114,7 @@
             <li>PP-YOLOE</li>
             <li>PP-YOLOE+</li>
             <li>YOLOX</li>
+            <li>YOLOF</li>
             <li>SSD</li>
             <li>CenterNet</li>
             <li>FCOS</li>  
