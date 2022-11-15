@@ -41,3 +41,24 @@
  - 抽取部分百分比的监督数据的抽法不同，或使用的`fold`号不同，精度都会因此而有约0.5 mAP之多的差异；
  - PP-YOLOE+ 使用Objects365预训练，其余模型均使用ImageNet预训练；
  - PP-YOLOE+ 训练80 epoch，其余模型均训练24 epoch，；
+
+
+## 使用教程
+
+将以下命令写在一个脚本文件里如```run.sh```，一键运行命令为：```sh run.sh```，也可命令行一句句去运行：
+
+```bash
+model_type=ssod/baseline
+job_name=ppyoloe_plus_crn_s_80e_coco_sup010 # 可修改，如 fcos_r50_fpn_2x_coco_sup010
+
+config=configs/${model_type}/${job_name}.yml
+log_dir=log_dir/${job_name}
+weights=output/${job_name}/model_final.pdparams
+
+# 1.training
+# CUDA_VISIBLE_DEVICES=0 python tools/train.py -c ${config}
+python -m paddle.distributed.launch --log_dir=${log_dir} --gpus 0,1,2,3,4,5,6,7 tools/train.py -c ${config} --eval
+
+# 2.eval
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c ${config} -o weights=${weights}
+```
