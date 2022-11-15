@@ -48,7 +48,7 @@ from ppdet.utils import profiler
 from ppdet.modeling.post_process import multiclass_nms
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback
-from .export_utils import _dump_infer_config, _prune_input_spec
+from .export_utils import _dump_infer_config, _prune_input_spec, apply_to_static
 
 from paddle.distributed.fleet.utils.hybrid_parallel_util import fused_allreduce_gradients
 
@@ -58,49 +58,6 @@ logger = setup_logger('ppdet.engine')
 __all__ = ['Trainer']
 
 MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT', 'ByteTrack']
-
-
-def apply_to_static(config, model):
-    support_to_static = config.get('to_static', False)
-
-    if support_to_static:
-        batch = config['TrainReader']['batch_size']
-        filename = config.get('filename', None)
-        spec = None
-        if filename == 'yolov3_darknet53_270e_coco':
-            specs = [{
-                'im_id': paddle.static.InputSpec(
-                    name='im_id', shape=[batch, 1], dtype='float32'),
-                'is_crowd': paddle.static.InputSpec(
-                    name='is_crowd', shape=[batch, 50], dtype='float32'),
-                'gt_bbox': paddle.static.InputSpec(
-                    name='gt_bbox', shape=[batch, 50, 4], dtype='float32'),
-                'curr_iter': paddle.static.InputSpec(
-                    name='curr_iter', shape=[batch], dtype='float32'),
-                'image': paddle.static.InputSpec(
-                    name='image', shape=[batch, 3, -1, -1], dtype='float32'),
-                'im_shape': paddle.static.InputSpec(
-                    name='im_shape', shape=[batch, 2], dtype='float32'),
-                'scale_factor': paddle.static.InputSpec(
-                    name='scale_factor', shape=[batch, 2], dtype='float32'),
-                'target0': paddle.static.InputSpec(
-                    name='target0',
-                    shape=[batch, 3, 86, -1, -1],
-                    dtype='float32'),
-                'target1': paddle.static.InputSpec(
-                    name='target1',
-                    shape=[batch, 3, 86, -1, -1],
-                    dtype='float32'),
-                'target2': paddle.static.InputSpec(
-                    name='target2',
-                    shape=[batch, 3, 86, -1, -1],
-                    dtype='float32'),
-            }]
-        model = paddle.jit.to_static(model, input_spec=specs)
-        logger.info("Successfully to apply @to_static with specs: {}".format(
-            specs))
-
-    return model
 
 
 class Trainer(object):
@@ -453,7 +410,8 @@ class Trainer(object):
                 "EvalDataset")()
 
         model = self.model
-        model = apply_to_static(self.cfg, model)
+        if self.cfg.get('to_static', False):
+            model = apply_to_static(self.cfg, model)
         sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
                    (self.cfg.use_gpu or self.cfg.use_mlu) and self._nranks > 1)
         if sync_bn:
