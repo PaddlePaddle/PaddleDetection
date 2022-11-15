@@ -33,6 +33,7 @@ EvalReader:
   batch_transforms:
     - PadBatch: {pad_to_stride: 32}
   batch_size: 2
+  collate_batch: false
 
 TestReader:
   sample_transforms:
@@ -42,4 +43,4 @@ TestReader:
     - Permute: {}
   batch_transforms:
     - PadBatch: {pad_to_stride: 32}
-  batch_size: 8
+  batch_size: 2

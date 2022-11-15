@@ -51,7 +51,7 @@ ${DOTA_ROOT}
 x1 y1 x2 y2 x3 y3 x4 y4 class_name difficult
 ```
 
-### 单尺度切图
+#### 单尺度切图
 DOTA数据集分辨率较高，因此一般在训练和测试之前对图像进行离线切图，使用单尺度进行切图可以使用以下命令：
 ``` bash
 # 对于有标注的数据进行切图
@@ -75,7 +75,7 @@ python configs/rotate/tools/prepare_data.py \
 
 ```
 
-### 多尺度切图
+#### 多尺度切图
 使用多尺度进行切图可以使用以下命令：
 ``` bash
 # 对于有标注的数据进行切图
@@ -97,6 +97,21 @@ python configs/rotate/tools/prepare_data.py \
     --rates 0.5 1.0 1.5 \
     --image_only
 ```
+
+### 自定义数据集
+旋转框使用标准COCO数据格式，你可以将你的数据集转换成COCO格式以训练模型。COCO标准数据格式的标注信息中包含以下信息：
+``` python
+'annotations': [
+    {
+        'id': 2083, 'category_id': 9, 'image_id': 9008,
+        'bbox': [x, y, w, h], # 水平框标注
+        'segmentation': [[x1, y1, x2, y2, x3, y3, x4, y4]], # 旋转框标注
+        ...
+    }
+    ...
+]
+```
+**需要注意的是`bbox`的标注是水平框标注，`segmentation`为旋转框四个点的标注(顺时针或逆时针均可)。在旋转框训练时`bbox`是可以缺省，一般推荐根据旋转框标注`segmentation`生成。** 在PaddleDetection 2.4及之前的版本，`bbox`为旋转框标注[x, y, w, h, angle]，`segmentation`缺省，**目前该格式已不再支持，请下载最新数据集或者转换成标准COCO格式**。
 
 ## 安装依赖
 旋转框检测模型需要依赖外部算子进行训练，评估等。Linux环境下，你可以执行以下命令进行编译安装
