@@ -184,7 +184,8 @@ class BBoxHead(nn.Layer):
                  with_pool=False,
                  num_classes=80,
                  bbox_weight=[10., 10., 5., 5.],
-                 bbox_loss=None):
+                 bbox_loss=None,
+                 loss_normalize_pos=False):
         super(BBoxHead, self).__init__()
         self.head = head
         self.roi_extractor = roi_extractor
@@ -196,6 +197,7 @@ class BBoxHead(nn.Layer):
         self.num_classes = num_classes
         self.bbox_weight = bbox_weight
         self.bbox_loss = bbox_loss
+        self.loss_normalize_pos = loss_normalize_pos
 
         self.bbox_score = nn.Linear(
             in_channel,
@@ -250,14 +252,25 @@ class BBoxHead(nn.Layer):
         deltas = self.bbox_delta(feat)
 
         if self.training:
-            loss = self.get_loss(scores, deltas, targets, rois,
-                                 self.bbox_weight)
+            loss = self.get_loss(
+                scores,
+                deltas,
+                targets,
+                rois,
+                self.bbox_weight,
+                loss_normalize_pos=self.loss_normalize_pos)
             return loss, bbox_feat
         else:
             pred = self.get_prediction(scores, deltas)
             return pred, self.head
 
-    def get_loss(self, scores, deltas, targets, rois, bbox_weight):
+    def get_loss(self,
+                 scores,
+                 deltas,
+                 targets,
+                 rois,
+                 bbox_weight,
+                 loss_normalize_pos=False):
         """
         scores (Tensor): scores from bbox head outputs
         deltas (Tensor): deltas from bbox head outputs
@@ -280,8 +293,15 @@ class BBoxHead(nn.Layer):
         else:
             tgt_labels = tgt_labels.cast('int64')
             tgt_labels.stop_gradient = True
-            loss_bbox_cls = F.cross_entropy(
-                input=scores, label=tgt_labels, reduction='mean')
+
+            if not loss_normalize_pos:
+                loss_bbox_cls = F.cross_entropy(
+                    input=scores, label=tgt_labels, reduction='mean')
+            else:
+                loss_bbox_cls = F.cross_entropy(
+                    input=scores, label=tgt_labels,
+                    reduction='none').sum() / (tgt_labels.shape[0] + 1e-7)
+
             loss_bbox[cls_name] = loss_bbox_cls
 
         # bbox reg
@@ -322,9 +342,16 @@ class BBoxHead(nn.Layer):
         if self.bbox_loss is not None:
             reg_delta = self.bbox_transform(reg_delta)
             reg_target = self.bbox_transform(reg_target)
-            loss_bbox_reg = self.bbox_loss(
-                reg_delta, reg_target).sum() / tgt_labels.shape[0]
-            loss_bbox_reg *= self.num_classes
+
+            if not loss_normalize_pos:
+                loss_bbox_reg = self.bbox_loss(
+                    reg_delta, reg_target).sum() / tgt_labels.shape[0]
+                loss_bbox_reg *= self.num_classes
+
+            else:
+                loss_bbox_reg = self.bbox_loss(
+                    reg_delta, reg_target).sum() / (tgt_labels.shape[0] + 1e-7)
+
         else:
             loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
             ) / tgt_labels.shape[0]

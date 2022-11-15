@@ -70,14 +70,15 @@ function func_serving_inference(){
         web_service_cmd="${_python} ${_service_script} ${_set_model_dir} ${_set_opt} ${set_web_service_params1} > ${server_log_path} 2>&1 &"
         eval $web_service_cmd
         last_status=${PIPESTATUS[0]}
-        status_check $last_status "${web_service_cmd}" "${status_log}" "${model_name}"
+        cat ${server_log_path}
+        status_check $last_status "${web_service_cmd}" "${status_log}" "${model_name}" "${server_log_path}"
         sleep 5s
         # run http client
         http_client_cmd="${_python} ${_client_script} ${_set_image_file} ${set_http_client_params1} > ${client_log_path} 2>&1"
         eval $http_client_cmd
         last_status=${PIPESTATUS[0]}
-        status_check $last_status "${http_client_cmd}" "${status_log}" "${model_name}"
-        eval "cat ${client_log_path}"
+        cat ${client_log_path}
+        status_check $last_status "${http_client_cmd}" "${status_log}" "${model_name}" "${client_log_path}"
         ps ux | grep -E 'web_service' | awk '{print $2}' | xargs kill -s 9
         sleep 2s
     done
@@ -115,7 +116,8 @@ for infer_mode in ${infer_mode_list[*]}; do
         echo  $export_cmd
         eval "${export_cmd} > ${export_log_path} 2>&1"
         status_export=$?
-        status_check $status_export "${export_cmd}" "${status_log}" "${model_name}"
+        cat ${export_log_path}
+        status_check $status_export "${export_cmd}" "${status_log}" "${model_name}" "${export_log_path}"
     fi
 
     #run inference

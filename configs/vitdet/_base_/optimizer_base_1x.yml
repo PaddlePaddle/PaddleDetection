@@ -1,0 +1,22 @@
+epoch: 12
+
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [9, 11]
+  - !LinearWarmup
+    start_factor: 0.001
+    steps: 1000
+
+OptimizerBuilder:
+  optimizer:
+    type: AdamWDL
+    betas: [0.9, 0.999]
+    layer_decay: 0.75
+    weight_decay: 0.02
+    num_layers: 12
+    filter_bias_and_bn: True
+    skip_decay_names: ['pos_embed', 'cls_token']
+    set_param_lr_func: 'layerwise_lr_decay'

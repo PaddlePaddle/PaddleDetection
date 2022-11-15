@@ -1,5 +1,5 @@
 # 自定义OP编译
-旋转框IOU计算OP是参考[自定义外部算子](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/07_new_op/new_custom_op.html) 。
+旋转框IOU计算OP是参考[自定义外部算子](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/custom_op/new_cpp_op_cn.html) 。
 
 ## 1. 环境依赖
 - Paddle >= 2.0.1
@@ -7,13 +7,13 @@
 
 ## 2. 安装
 ```
-python3.7 setup.py install
+python setup.py install
 ```
 
-按照如下方式使用
+编译完成后即可使用，以下为`rbox_iou`的使用示例
 ```
 # 引入自定义op
-from rbox_iou_ops import rbox_iou
+from ext_op import rbox_iou
 
 paddle.set_device('gpu:0')
 paddle.disable_static()
@@ -29,10 +29,7 @@ print('iou', iou)
 ```
 
 ## 3. 单元测试
-单元测试`test.py`文件中，通过对比python实现的结果和测试自定义op结果。
-
-由于python计算细节与cpp计算细节略有区别，误差区间设置为0.02。
+可以通过执行单元测试来确认自定义算子功能的正确性，执行单元测试的示例如下所示：
 ```
-python3.7 test.py
+python unittest/test_matched_rbox_iou.py
 ```
-提示`rbox_iou OP compute right!`说明OP测试通过。

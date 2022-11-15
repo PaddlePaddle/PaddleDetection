@@ -3,18 +3,19 @@ num_classes: 15
 
 TrainDataset:
   !COCODataSet
-    image_dir: trainval_split/images
-    anno_path: trainval_split/s2anet_trainval_paddle_coco.json
-    dataset_dir: dataset/DOTA_1024_s2anet
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_rbox']
+    image_dir: trainval1024/images
+    anno_path: trainval1024/DOTA_trainval1024.json
+    dataset_dir: dataset/dota/
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_poly']
 
 EvalDataset:
   !COCODataSet
-    image_dir: trainval_split/images
-    anno_path: trainval_split/s2anet_trainval_paddle_coco.json
-    dataset_dir: dataset/DOTA_1024_s2anet/
+    image_dir: trainval1024/images
+    anno_path: trainval1024/DOTA_trainval1024.json
+    dataset_dir: dataset/dota/
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_poly']
 
 TestDataset:
   !ImageFolder
-    anno_path: trainval_split/s2anet_trainval_paddle_coco.json
-    dataset_dir: dataset/DOTA_1024_s2anet/
+    anno_path: test1024/DOTA_test1024.json
+    dataset_dir: dataset/dota/

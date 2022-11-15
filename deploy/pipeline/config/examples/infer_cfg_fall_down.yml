@@ -1,0 +1,22 @@
+crop_thresh: 0.5
+kpt_thresh: 0.2
+visual: True
+warmup_frame: 50
+
+MOT:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip
+  tracker_config: deploy/pipeline/config/tracker_config.yml
+  batch_size: 1
+  enable: True
+
+KPT:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip
+  batch_size: 8
+
+SKELETON_ACTION:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip
+  batch_size: 1
+  max_frames: 50
+  display_frames: 80
+  coord_size: [384, 512]
+  enable: True

@@ -1,0 +1,20 @@
+crop_thresh: 0.5
+visual: True
+warmup_frame: 50
+
+DET:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip
+  batch_size: 1
+
+MOT:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip
+  tracker_config: deploy/pipeline/config/tracker_config.yml
+  batch_size: 1
+  enable: True
+
+VEHICLE_ATTR:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip
+  batch_size: 8
+  color_threshold: 0.5
+  type_threshold: 0.5
+  enable: True

@@ -72,7 +72,7 @@ function func_ptq_inference(){
                         eval $command
                         last_status=${PIPESTATUS[0]}
                         eval "cat ${_save_log_path}"
-                        status_check $last_status "${command}" "${status_log}" "${model_name}"
+                        status_check $last_status "${command}" "${status_log}" "${model_name}" "${_save_log_path}"
                     done
                 done
             done
@@ -87,7 +87,7 @@ function func_ptq_inference(){
                         eval $command
                         last_status=${PIPESTATUS[0]}
                         eval "cat ${_save_log_path}"
-                        status_check $last_status "${command}" "${status_log}" "${model_name}"
+                        status_check $last_status "${command}" "${status_log}" "${model_name}" "${_save_log_path}"
                     done
                 fi
             done
@@ -107,7 +107,8 @@ ptq_cmd="${python} ${kl_quant_export} ${set_export_weight} ${set_filename} ${set
 echo  $ptq_cmd
 eval "${ptq_cmd} > ${export_log_path} 2>&1"
 status_export=$?
-status_check $status_export "${ptq_cmd}" "${status_log}" "${model_name}"
+cat ${export_log_path}
+status_check $status_export "${ptq_cmd}" "${status_log}" "${model_name}" "${export_log_path}"
 
 #run inference
 set_export_model_dir=$(func_set_params "${model_dir_key}" "${save_export_value}/${model_name}")

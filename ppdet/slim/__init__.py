@@ -31,11 +31,19 @@ from ppdet.utils.checkpoint import load_pretrain_weight
 def build_slim_model(cfg, slim_cfg, mode='train'):
     with open(slim_cfg) as f:
         slim_load_cfg = yaml.load(f, Loader=yaml.Loader)
+
     if mode != 'train' and slim_load_cfg['slim'] == 'Distill':
         return cfg
 
     if slim_load_cfg['slim'] == 'Distill':
-        model = DistillModel(cfg, slim_cfg)
+        if "slim_method" in slim_load_cfg and slim_load_cfg[
+                'slim_method'] == "FGD":
+            model = FGDDistillModel(cfg, slim_cfg)
+        elif "slim_method" in slim_load_cfg and slim_load_cfg[
+                'slim_method'] == "LD":
+            model = LDDistillModel(cfg, slim_cfg)
+        else:
+            model = DistillModel(cfg, slim_cfg)
         cfg['model'] = model
         cfg['slim_type'] = cfg.slim
     elif slim_load_cfg['slim'] == 'OFA':

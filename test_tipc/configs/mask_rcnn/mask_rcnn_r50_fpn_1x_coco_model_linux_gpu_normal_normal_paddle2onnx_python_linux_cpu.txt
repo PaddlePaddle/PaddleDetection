@@ -21,7 +21,7 @@ cmd:paddle2onnx
 --params_filename:model.pdiparams
 --save_file:model.onnx
 --opset_version:16
---enable_onnx_checker:True
+--enable_dev_version:False
 paddle2onnx_param1:null
 infer_py:./deploy/third_engine/onnx/infer.py
 --infer_cfg:null

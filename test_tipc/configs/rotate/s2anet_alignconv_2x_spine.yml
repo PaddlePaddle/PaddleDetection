@@ -1,0 +1,26 @@
+_BASE_: [
+  '../../../configs/datasets/spine_coco.yml',
+  '../../../configs/runtime.yml',
+  '../../../configs/rotate/s2anet/_base_/s2anet_optimizer_2x.yml',
+  '../../../configs/rotate/s2anet/_base_/s2anet.yml',
+  '../../../configs/rotate/s2anet/_base_/s2anet_reader.yml',
+]
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+
+weights: output/s2anet_alignconv_2x_dota/model_final
+
+S2ANetHead:
+  anchor_strides: [8, 16, 32, 64, 128]
+  anchor_scales: [4]
+  anchor_ratios: [1.0]
+  anchor_assign: RBoxAssigner
+  stacked_convs: 2
+  feat_in: 256
+  feat_out: 256
+  num_classes: 9
+  align_conv_type: 'AlignConv'  # AlignConv Conv
+  align_conv_size: 3
+  use_sigmoid_cls: True
+  reg_loss_weight: [1.0, 1.0, 1.0, 1.0, 1.1]
+  cls_loss_weight: [1.1, 1.05]
+  reg_loss_type: 'l1'

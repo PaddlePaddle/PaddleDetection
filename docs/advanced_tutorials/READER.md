@@ -90,7 +90,7 @@ COCO数据集目前分为COCO2014和COCO2017，主要由json文件和image文件
   │   │   ...
   ```
 
-在`source/coco.py`中定义并注册了`COCODataSet`数据集类，其继承自`DetDataSet`，并实现了parse_dataset方法，调用[COCO API](https://github.com/cocodataset/cocoapi)加载并解析COCO格式数据源`roidbs`和`cname2cid`，具体可参见`source/coco.py`源码。将其他数据集转换成COCO格式可以参考[用户数据转成COCO数据](../tutorials/PrepareDataSet.md#用户数据转成COCO数据)
+在`source/coco.py`中定义并注册了`COCODataSet`数据集类，其继承自`DetDataSet`，并实现了parse_dataset方法，调用[COCO API](https://github.com/cocodataset/cocoapi)加载并解析COCO格式数据源`roidbs`和`cname2cid`，具体可参见`source/coco.py`源码。将其他数据集转换成COCO格式可以参考[用户数据转成COCO数据](../tutorials/data/PrepareDetDataSet.md#用户数据转成COCO数据)
 
 #### 2.2Pascal VOC数据集
 该数据集目前分为VOC2007和VOC2012，主要由xml文件和image文件组成，其组织结构如下所示：
@@ -118,7 +118,7 @@ COCO数据集目前分为COCO2014和COCO2017，主要由json文件和image文件
   │   ├── ImageSets
   │       │   ...
   ```
-在`source/voc.py`中定义并注册了`VOCDataSet`数据集，它继承自`DetDataSet`基类，并重写了`parse_dataset`方法，解析VOC数据集中xml格式标注文件，更新`roidbs`和`cname2cid`。将其他数据集转换成VOC格式可以参考[用户数据转成VOC数据](../tutorials/PrepareDataSet.md#用户数据转成VOC数据)
+在`source/voc.py`中定义并注册了`VOCDataSet`数据集，它继承自`DetDataSet`基类，并重写了`parse_dataset`方法，解析VOC数据集中xml格式标注文件，更新`roidbs`和`cname2cid`。将其他数据集转换成VOC格式可以参考[用户数据转成VOC数据](../tutorials/data/PrepareDetDataSet.md#用户数据转成VOC数据)
 
 #### 2.3自定义数据集
 如果COCODataSet和VOCDataSet不能满足你的需求，可以通过自定义数据集的方式来加载你的数据集。只需要以下两步即可实现自定义数据集
@@ -312,7 +312,6 @@ EvalReader:
     - Decode: {}
     ...
   batch_size: 1
-  drop_empty: false
 
 TestReader:
   inputs_def:

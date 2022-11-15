@@ -340,6 +340,7 @@ class VisionTransformer(nn.Layer):
                  use_abs_pos_emb=False,
                  use_sincos_pos_emb=True,
                  with_fpn=True,
+                 num_fpn_levels=4,
                  use_checkpoint=False,
                  **args):
         super().__init__()
@@ -350,9 +351,12 @@ class VisionTransformer(nn.Layer):
         self.use_sincos_pos_emb = use_sincos_pos_emb
         self.use_rel_pos_bias = use_rel_pos_bias
         self.final_norm = final_norm
+        self.out_indices = out_indices
+        self.num_fpn_levels = num_fpn_levels
 
         if use_checkpoint:
-            print('please set: FLAGS_allocator_strategy=naive_best_fit')
+            paddle.seed(0)
+
         self.patch_embed = PatchEmbed(
             img_size=img_size,
             patch_size=patch_size,
@@ -414,14 +418,15 @@ class VisionTransformer(nn.Layer):
 
         assert len(out_indices) <= 4, ''
         self.out_indices = out_indices
-        self.out_channels = [embed_dim for _ in range(len(out_indices))]
-        self.out_strides = [4, 8, 16, 32][-len(out_indices):] if with_fpn else [
-            8 for _ in range(len(out_indices))
+        self.out_channels = [embed_dim for _ in range(num_fpn_levels)]
+        self.out_strides = [4, 8, 16, 32][-num_fpn_levels:] if with_fpn else [
+            patch_size for _ in range(len(out_indices))
         ]
 
         self.norm = Identity()
 
         if self.with_fpn:
+            assert num_fpn_levels <= 4, ''
             self.init_fpn(
                 embed_dim=embed_dim,
                 patch_size=patch_size, )
@@ -578,9 +583,10 @@ class VisionTransformer(nn.Layer):
 
         x = self.patch_embed(x)
 
-        x_shape = paddle.shape(x)  # b * c * h * w
+        B, D, Hp, Wp = x.shape  # b * c * h * w
 
-        cls_tokens = self.cls_token.expand((x_shape[0], -1, -1))
+        cls_tokens = self.cls_token.expand(
+            (B, self.cls_token.shape[-2], self.cls_token.shape[-1]))
         x = x.flatten(2).transpose([0, 2, 1])  # b * hw * c
         x = paddle.concat([cls_tokens, x], axis=1)
 
@@ -593,11 +599,9 @@ class VisionTransformer(nn.Layer):
         rel_pos_bias = self.rel_pos_bias(
         ) if self.rel_pos_bias is not None else None
 
-        B, _, Hp, Wp = x_shape
-
         feats = []
         for idx, blk in enumerate(self.blocks):
-            if self.use_checkpoint:
+            if self.use_checkpoint and self.training:
                 x = paddle.distributed.fleet.utils.recompute(
                     blk, x, rel_pos_bias, **{"preserve_rng_state": True})
             else:
@@ -607,13 +611,19 @@ class VisionTransformer(nn.Layer):
                 xp = paddle.reshape(
                     paddle.transpose(
                         self.norm(x[:, 1:, :]), perm=[0, 2, 1]),
-                    shape=[B, -1, Hp, Wp])
+                    shape=[B, D, Hp, Wp])
                 feats.append(xp)
 
         if self.with_fpn:
-            fpns = [self.fpn1, self.fpn2, self.fpn3, self.fpn4]
-            for i in range(len(feats)):
-                feats[i] = fpns[i](feats[i])
+            fpns = [self.fpn1, self.fpn2, self.fpn3, self.fpn4][
+                -self.num_fpn_levels:]
+            assert len(fpns) == len(feats) or len(feats) == 1, ''
+            outputs = []
+            for i, m in enumerate(fpns):
+                outputs.append(
+                    m(feats[i] if len(feats) == len(fpns) else feats[-1]))
+
+            return outputs
 
         return feats
 

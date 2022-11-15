@@ -131,18 +131,41 @@ class ConvNeXt(nn.Layer):
         layer_scale_init_value (float): Init value for Layer Scale. Default: 1e-6.
     """
 
+    arch_settings = {
+        'tiny': {
+            'depths': [3, 3, 9, 3],
+            'dims': [96, 192, 384, 768]
+        },
+        'small': {
+            'depths': [3, 3, 27, 3],
+            'dims': [96, 192, 384, 768]
+        },
+        'base': {
+            'depths': [3, 3, 27, 3],
+            'dims': [128, 256, 512, 1024]
+        },
+        'large': {
+            'depths': [3, 3, 27, 3],
+            'dims': [192, 384, 768, 1536]
+        },
+        'xlarge': {
+            'depths': [3, 3, 27, 3],
+            'dims': [256, 512, 1024, 2048]
+        },
+    }
+
     def __init__(
             self,
+            arch='tiny',
             in_chans=3,
-            depths=[3, 3, 9, 3],
-            dims=[96, 192, 384, 768],
             drop_path_rate=0.,
             layer_scale_init_value=1e-6,
             return_idx=[1, 2, 3],
             norm_output=True,
             pretrained=None, ):
         super().__init__()
-
+        depths = self.arch_settings[arch]['depths']
+        dims = self.arch_settings[arch]['dims']
         self.downsample_layers = nn.LayerList(
         )  # stem and 3 intermediate downsampling conv layers
         stem = nn.Sequential(
@@ -164,7 +187,7 @@ class ConvNeXt(nn.Layer):
         dp_rates = [x for x in np.linspace(0, drop_path_rate, sum(depths))]
         cur = 0
         for i in range(4):
-            stage = nn.Sequential(*[
+            stage = nn.Sequential(* [
                 Block(
                     dim=dims[i],
                     drop_path=dp_rates[cur + j],

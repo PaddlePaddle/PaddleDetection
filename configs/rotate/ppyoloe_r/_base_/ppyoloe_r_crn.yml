@@ -1,0 +1,49 @@
+architecture: YOLOv3
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+
+YOLOv3:
+  backbone: CSPResNet
+  neck: CustomCSPPAN
+  yolo_head: PPYOLOERHead
+  post_process: ~
+
+CSPResNet:
+  layers: [3, 6, 6, 3]
+  channels: [64, 128, 256, 512, 1024]
+  return_idx: [1, 2, 3]
+  use_large_stem: True
+  use_alpha: True
+
+CustomCSPPAN:
+  out_channels: [768, 384, 192]
+  stage_num: 1
+  block_num: 3
+  act: 'swish'
+  spp: true
+  use_alpha: True
+
+PPYOLOERHead:
+  fpn_strides: [32, 16, 8]
+  grid_cell_offset: 0.5
+  use_varifocal_loss: true
+  static_assigner_epoch: -1
+  loss_weight: {class: 1.0, iou: 2.5, dfl: 0.05}
+  static_assigner:
+    name: FCOSRAssigner
+    factor: 12
+    threshold: 0.23
+    boundary: [[512, 10000], [256, 512], [-1, 256]]
+  assigner:
+    name: RotatedTaskAlignedAssigner
+    topk: 13
+    alpha: 1.0
+    beta: 6.0
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 2000
+    keep_top_k: -1
+    score_threshold: 0.1
+    nms_threshold: 0.1
+    normalized: False

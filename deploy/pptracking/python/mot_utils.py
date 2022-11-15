@@ -138,11 +138,38 @@ def argsparser():
         default=True,
         help='whether to use darkpose to get better keypoint position predict ')
     parser.add_argument(
+        '--skip_frame_num',
+        type=int,
+        default=-1,
+        help='Skip frames to speed up the process of getting mot results.')
+    parser.add_argument(
         "--do_entrance_counting",
         action='store_true',
         help="Whether counting the numbers of identifiers entering "
-        "or getting out from the entrance. Note that only support one-class"
-        "counting, multi-class counting is coming soon.")
+        "or getting out from the entrance. Note that only support single-class MOT."
+    )
+    parser.add_argument(
+        "--do_break_in_counting",
+        action='store_true',
+        help="Whether counting the numbers of identifiers break in "
+        "the area. Note that only support single-class MOT and "
+        "the video should be taken by a static camera.")
+    parser.add_argument(
+        "--region_type",
+        type=str,
+        default='horizontal',
+        help="Area type for entrance counting or break in counting, 'horizontal' and "
+        "'vertical' used when do entrance counting. 'custom' used when do break in counting. "
+        "Note that only support single-class MOT, and the video should be taken by a static camera."
+    )
+    parser.add_argument(
+        '--region_polygon',
+        nargs='+',
+        type=int,
+        default=[],
+        help="Clockwise point coords (x0,y0,x1,y1...) of polygon of area when "
+        "do_break_in_counting. Note that only support single-class MOT and "
+        "the video should be taken by a static camera.")
     parser.add_argument(
         "--secs_interval",
         type=int,

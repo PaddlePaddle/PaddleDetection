@@ -41,6 +41,28 @@ elif [ ${MODE} = "cpp_infer" ];then
         cd ./output_inference/ && tar -xvf picodet_s_320_pedestrian.tar
         cd ../
     fi
+    # download KL model
+    if [[ ${model_name} = "picodet_lcnet_1_5x_416_coco_KL" ]]; then
+        wget -nc -P ./output_inference/picodet_lcnet_1_5x_416_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/picodet_lcnet_1_5x_416_coco_ptq.tar --no-check-certificate
+        cd ./output_inference/picodet_lcnet_1_5x_416_coco_KL/ && tar -xvf picodet_lcnet_1_5x_416_coco_ptq.tar && mv -n picodet_lcnet_1_5x_416_coco_ptq/* .
+        cd ../../
+    elif [[ ${model_name} = "ppyoloe_crn_s_300e_coco_KL" ]]; then
+        wget -nc -P ./output_inference/ppyoloe_crn_s_300e_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/ppyoloe_crn_s_300e_coco_ptq.tar --no-check-certificate
+        cd ./output_inference/ppyoloe_crn_s_300e_coco_KL/ && tar -xvf ppyoloe_crn_s_300e_coco_ptq.tar && mv -n ppyoloe_crn_s_300e_coco_ptq/* .
+        cd ../../
+    elif [[ ${model_name} = "ppyolo_mbv3_large_coco_KL" ]]; then
+        wget -nc -P ./output_inference/ppyolo_mbv3_large_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/ppyolo_mbv3_large_ptq.tar --no-check-certificate
+        cd ./output_inference/ppyolo_mbv3_large_coco_KL/ && tar -xvf ppyolo_mbv3_large_ptq.tar && mv -n ppyolo_mbv3_large_ptq/* .
+        cd ../../
+    elif [[ ${model_name} = "mask_rcnn_r50_fpn_1x_coco_KL" ]]; then
+        wget -nc -P ./output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/mask_rcnn_r50_fpn_1x_coco_ptq.tar --no-check-certificate
+        cd ./output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ && tar -xvf mask_rcnn_r50_fpn_1x_coco_ptq.tar && mv -n mask_rcnn_r50_fpn_1x_coco_ptq/* .
+        cd ../../
+    elif [[ ${model_name} = "tinypose_128x96_KL" ]]; then
+        wget -nc -P ./output_inference/tinypose_128x96_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/tinypose_128x96_ptq.tar --no-check-certificate
+        cd ./output_inference/tinypose_128x96_KL/ && tar -xvf tinypose_128x96_ptq.tar && mv -n tinypose_128x96_ptq/* .
+        cd ../../
+    fi
     # download mot lite data
     wget -nc -P ./dataset/mot/ https://paddledet.bj.bcebos.com/data/tipc/mot_tipc.tar --no-check-certificate
     cd ./dataset/mot/ && tar -xvf mot_tipc.tar && mv -n mot_tipc/* .
@@ -61,20 +83,28 @@ elif [ ${MODE} = "cpp_infer" ];then
     fi
     cd ../../
 elif [ ${MODE} = "benchmark_train" ];then
-    pip install -U pip Cython
+    pip install -U pip
+    pip install Cython
     pip install -r requirements.txt
-    # prepare lite benchmark coco data
-    wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/coco_benchmark.tar --no-check-certificate
-    cd ./dataset/coco/ && tar -xvf coco_benchmark.tar 
-    mv -u coco_benchmark/* ./
-    ls ./
-    cd ../../
-    # prepare lite benchmark mot data
-    wget -nc -P ./dataset/mot/ https://paddledet.bj.bcebos.com/data/mot_benchmark.tar --no-check-certificate
-    cd ./dataset/mot/ && tar -xvf mot_benchmark.tar
-    mv -u mot_benchmark/* ./
-    ls ./
-    cd ../../
+    if [[ ${model_name} =~ "higherhrnet" ]] || [[ ${model_name} =~ "hrnet" ]] || [[ ${model_name} =~ "tinypose" ]];then
+        wget -nc -P ./dataset/ https://bj.bcebos.com/v1/paddledet/data/coco.tar --no-check-certificate
+        cd ./dataset/ && tar -xf coco.tar
+        ls ./coco/
+        cd ../
+    else
+        # prepare lite benchmark coco data
+        wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/coco_benchmark.tar --no-check-certificate
+        cd ./dataset/coco/ && tar -xf coco_benchmark.tar
+        mv -u coco_benchmark/* ./
+        ls ./
+        cd ../../
+        # prepare lite benchmark mot data
+        wget -nc -P ./dataset/mot/ https://paddledet.bj.bcebos.com/data/mot_benchmark.tar --no-check-certificate
+        cd ./dataset/mot/ && tar -xf mot_benchmark.tar
+        mv -u mot_benchmark/* ./
+        ls ./
+        cd ../../
+    fi
 elif [ ${MODE} = "paddle2onnx_infer" ];then
     # install paddle2onnx
     ${python} -m pip install paddle2onnx
@@ -85,6 +115,33 @@ elif [ ${MODE} = "serving_infer" ];then
     wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/tipc/coco_tipc.tar --no-check-certificate
     cd ./dataset/coco/ && tar -xvf coco_tipc.tar && mv -n coco_tipc/* .
     rm -rf coco_tipc/ && cd ../../
+    # download KL model
+    if [[ ${model_name} = "picodet_lcnet_1_5x_416_coco_KL" ]]; then
+        wget -nc -P ./output_inference/picodet_lcnet_1_5x_416_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/picodet_lcnet_1_5x_416_coco_ptq.tar --no-check-certificate
+        cd ./output_inference/picodet_lcnet_1_5x_416_coco_KL/ && tar -xvf picodet_lcnet_1_5x_416_coco_ptq.tar && mv -n picodet_lcnet_1_5x_416_coco_ptq/* .
+        cd ../../
+        eval "${python} -m paddle_serving_client.convert --dirname output_inference/picodet_lcnet_1_5x_416_coco_KL/ --model_filename model.pdmodel --params_filename model.pdiparams --serving_server output_inference/picodet_lcnet_1_5x_416_coco_KL/serving_server --serving_client output_inference/picodet_lcnet_1_5x_416_coco_KL/serving_client"
+    elif [[ ${model_name} = "ppyoloe_crn_s_300e_coco_KL" ]]; then
+        wget -nc -P ./output_inference/ppyoloe_crn_s_300e_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/ppyoloe_crn_s_300e_coco_ptq.tar --no-check-certificate
+        cd ./output_inference/ppyoloe_crn_s_300e_coco_KL/ && tar -xvf ppyoloe_crn_s_300e_coco_ptq.tar && mv -n ppyoloe_crn_s_300e_coco_ptq/* .
+        cd ../../
+        eval "${python} -m paddle_serving_client.convert --dirname output_inference/ppyoloe_crn_s_300e_coco_KL/ --model_filename model.pdmodel --params_filename model.pdiparams --serving_server output_inference/ppyoloe_crn_s_300e_coco_KL/serving_server --serving_client output_inference/ppyoloe_crn_s_300e_coco_KL/serving_client"
+    elif [[ ${model_name} = "ppyolo_mbv3_large_coco_KL" ]]; then
+        wget -nc -P ./output_inference/ppyolo_mbv3_large_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/ppyolo_mbv3_large_ptq.tar --no-check-certificate
+        cd ./output_inference/ppyolo_mbv3_large_coco_KL/ && tar -xvf ppyolo_mbv3_large_ptq.tar && mv -n ppyolo_mbv3_large_ptq/* .
+        cd ../../
+        eval "${python} -m paddle_serving_client.convert --dirname output_inference/ppyolo_mbv3_large_coco_KL/ --model_filename model.pdmodel --params_filename model.pdiparams --serving_server output_inference/ppyolo_mbv3_large_coco_KL/serving_server --serving_client output_inference/ppyolo_mbv3_large_coco_KL/serving_client"
+    elif [[ ${model_name} = "mask_rcnn_r50_fpn_1x_coco_KL" ]]; then
+        wget -nc -P ./output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/mask_rcnn_r50_fpn_1x_coco_ptq.tar --no-check-certificate
+        cd ./output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ && tar -xvf mask_rcnn_r50_fpn_1x_coco_ptq.tar && mv -n mask_rcnn_r50_fpn_1x_coco_ptq/* .
+        cd ../../
+        eval "${python} -m paddle_serving_client.convert --dirname output_inference/mask_rcnn_r50_fpn_1x_coco_KL/ --model_filename model.pdmodel --params_filename model.pdiparams --serving_server output_inference/mask_rcnn_r50_fpn_1x_coco_KL/serving_server --serving_client output_inference/mask_rcnn_r50_fpn_1x_coco_KL/serving_client"
+    elif [[ ${model_name} = "tinypose_128x96_KL" ]]; then
+        wget -nc -P ./output_inference/tinypose_128x96_KL/ https://bj.bcebos.com/v1/paddledet/data/tipc/models/tinypose_128x96_ptq.tar --no-check-certificate
+        cd ./output_inference/tinypose_128x96_KL/ && tar -xvf tinypose_128x96_ptq.tar && mv -n tinypose_128x96_ptq/* .
+        cd ../../
+        eval "${python} -m paddle_serving_client.convert --dirname output_inference/tinypose_128x96_KL/ --model_filename model.pdmodel --params_filename model.pdiparams --serving_server output_inference/tinypose_128x96_KL/serving_server --serving_client output_inference/tinypose_128x96_KL/serving_client"
+    fi
 else
     # download coco lite data
     wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/tipc/coco_tipc.tar --no-check-certificate
@@ -95,8 +152,8 @@ else
     cd ./dataset/wider_face/ && tar -xvf wider_tipc.tar && mv -n wider_tipc/* .
     rm -rf wider_tipc/ && cd ../../
     # download spine_coco lite data
-    wget -nc -P ./dataset/spine_coco/ https://paddledet.bj.bcebos.com/data/tipc/spine_tipc.tar --no-check-certificate
-    cd ./dataset/spine_coco/ && tar -xvf spine_tipc.tar && mv -n spine_tipc/* .
+    wget -nc -P ./dataset/spine_coco/ https://paddledet.bj.bcebos.com/data/tipc/spine_coco_tipc.tar --no-check-certificate
+    cd ./dataset/spine_coco/ && tar -xvf spine_coco_tipc.tar && mv -n spine_coco_tipc/* .
     rm -rf spine_tipc/ && cd ../../
     if [[ ${model_name} =~ "s2anet" ]]; then
         cd ./ppdet/ext_op && eval "${python} setup.py install"

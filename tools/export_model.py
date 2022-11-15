@@ -98,6 +98,8 @@ def main():
     # FIXME: Temporarily solve the priority problem of FLAGS.opt
     merge_config(FLAGS.opt)
     check_config(cfg)
+    if 'use_gpu' not in cfg:
+        cfg.use_gpu = False
     check_gpu(cfg.use_gpu)
     check_version()
 

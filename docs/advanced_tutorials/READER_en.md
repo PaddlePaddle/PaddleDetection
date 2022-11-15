@@ -91,7 +91,7 @@ COCO datasets are currently divided into COCO2014 and COCO2017, which are mainly
   │   │   ...
   ```
 class `COCODataSet` is defined and registered on `source/coco.py`. And implements the parse the dataset method, called [COCO API](https://github.com/cocodataset/cocoapi) to load and parse COCO format data source ` roidbs ` and ` cname2cid `, See `source/coco.py` source code for details. Converting other datasets to COCO format can be done by referring to [converting User Data to COCO Data](../tutorials/PrepareDataSet_en.md#convert-user-data-to-coco-data)
-And implements the parse the dataset method, called [COCO API](https://github.com/cocodataset/cocoapi) to load and parse COCO format data source `roidbs` and `cname2cid`, See `source/coco.py` source code for details. Converting other datasets to COCO format can be done by referring to [converting User Data to COCO Data](../tutorials/PrepareDataSet_en.md#convert-user-data-to-coco-data)
+And implements the parse the dataset method, called [COCO API](https://github.com/cocodataset/cocoapi) to load and parse COCO format data source `roidbs` and `cname2cid`, See `source/coco.py` source code for details. Converting other datasets to COCO format can be done by referring to [converting User Data to COCO Data](../tutorials/data/PrepareDetDataSet_en.md#convert-user-data-to-coco-data)
 
 
 #### 2.2Pascal VOC dataset
@@ -120,7 +120,7 @@ The dataset is currently divided into VOC2007 and VOC2012, mainly composed of XM
   │   ├── ImageSets
   │       │   ...
   ```
-The `VOCDataSet` dataset is defined and registered in `source/voc.py` . It inherits the `DetDataSet` base class and rewrites the `parse_dataset` method to parse XML annotations in the VOC dataset. Update `roidbs` and `cname2cid`. To convert other datasets to VOC format, refer to [User Data to VOC Data](../tutorials/PrepareDataSet_en.md#convert-user-data-to-voc-data)
+The `VOCDataSet` dataset is defined and registered in `source/voc.py` . It inherits the `DetDataSet` base class and rewrites the `parse_dataset` method to parse XML annotations in the VOC dataset. Update `roidbs` and `cname2cid`. To convert other datasets to VOC format, refer to [User Data to VOC Data](../tutorials/data/PrepareDetDataSet_en.md#convert-user-data-to-voc-data)
 
 
 #### 2.3Customize Dataset
@@ -312,7 +312,6 @@ EvalReader:
     - Decode: {}
     ...
   batch_size: 1
-  drop_empty: false
 
 TestReader:
   inputs_def:

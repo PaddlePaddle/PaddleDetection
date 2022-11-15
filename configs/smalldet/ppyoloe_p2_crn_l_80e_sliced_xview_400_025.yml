@@ -1,0 +1,54 @@
+_BASE_: [
+  './_base_/xview_sliced_400_025_detection.yml',
+  '../runtime.yml',
+  '../ppyoloe/_base_/optimizer_300e.yml',
+  '../ppyoloe/_base_/ppyoloe_crn.yml',
+  '../ppyoloe/_base_/ppyoloe_reader.yml',
+]
+log_iter: 100
+snapshot_epoch: 10
+weights: output/ppyoloe_p2_crn_l_80e_sliced_xview_400_025/model_final
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
+depth_mult: 1.0
+width_mult: 1.0
+
+
+CSPResNet:
+  return_idx: [0, 1, 2, 3]
+  use_alpha: True
+
+CustomCSPPAN:
+  out_channels: [768, 384, 192, 64]
+
+
+TrainReader:
+  batch_size: 4
+
+EvalReader:
+  batch_size: 1
+
+TestReader:
+  batch_size: 1
+  fuse_normalize: True
+
+
+epoch: 80
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+    - !CosineDecay
+      max_epochs: 96
+    - !LinearWarmup
+      start_factor: 0.
+      epochs: 1
+
+PPYOLOEHead:
+  fpn_strides: [32, 16, 8, 4]
+  static_assigner_epoch: -1
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 10000
+    keep_top_k: 500
+    score_threshold: 0.01
+    nms_threshold: 0.6

@@ -1,0 +1,25 @@
+_BASE_: [
+  '../../datasets/spine_coco.yml',
+  '../../runtime.yml',
+  '_base_/s2anet_optimizer_1x.yml',
+  '_base_/s2anet.yml',
+  '_base_/s2anet_reader.yml',
+]
+
+weights: output/s2anet_1x_spine/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams
+
+# for 4 card
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [7, 10]
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    epochs: 5
+
+S2ANetHead:
+  reg_loss_weight: [1.0, 1.0, 1.0, 1.0, 1.05]
+  cls_loss_weight: [1.05, 1.0]

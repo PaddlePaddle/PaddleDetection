@@ -1,0 +1,19 @@
+_BASE_: [
+  '../../datasets/dota.yml',
+  '../../runtime.yml',
+  '_base_/s2anet_optimizer_2x.yml',
+  '_base_/s2anet.yml',
+  '_base_/s2anet_reader.yml',
+]
+weights: output/s2anet_conv_1x_dota/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+
+ResNet:
+  depth: 50
+  variant: b
+  norm_type: bn
+  return_idx: [1,2,3]
+  num_stages: 4
+
+S2ANetHead:
+  align_conv_type: 'Conv'

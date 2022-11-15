@@ -38,7 +38,7 @@ kl_quant_export:tools/post_quant.py -c test_tipc/configs/mot/fairmot_hrnetv2_w18
 infer_mode:norm
 infer_quant:False
 inference:./deploy/pptracking/python/mot_jde_infer.py
---device:gpu|cpu
+--device:gpu
 --enable_mkldnn:False
 --cpu_threads:4
 --batch_size:1|2

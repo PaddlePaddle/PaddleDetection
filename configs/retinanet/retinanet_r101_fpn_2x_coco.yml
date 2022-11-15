@@ -1,0 +1,18 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/retinanet_r50_fpn.yml',
+  '_base_/optimizer_2x.yml',
+  '_base_/retinanet_reader.yml'
+]
+
+weights: output/retinanet_r101_fpn_2x_coco/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet101_pretrained.pdparams
+
+ResNet:
+  depth: 101
+  variant: b
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1, 2, 3]
+  num_stages: 4

@@ -13,9 +13,3 @@ weights: output/ppyoloe_crn_m_300e_coco/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_m_pretrained.pdparams
 depth_mult: 0.67
 width_mult: 0.75
-
-TrainReader:
-  batch_size: 28
-
-LearningRate:
-  base_lr: 0.035

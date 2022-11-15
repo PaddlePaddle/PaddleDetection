@@ -11,13 +11,12 @@ instructions](INSTALL_cn.md).
 
 ## Data preparation
 
-- Please refer to [PrepareDataSet](PrepareDataSet.md) for data preparation
+- Please refer to [PrepareDetDataSet](./data/PrepareDetDataSet_en.md) for data preparation
 - Please set the data path for data configuration file in ```configs/datasets```
-
 
 ## Training & Evaluation & Inference
 
-PaddleDetection provides scripts for training, evalution and inference with various features according to different configure.
+PaddleDetection provides scripts for training, evalution and inference with various features according to different configure. And for more distribued training details see [DistributedTraining].(./DistributedTraining_en.md)
 
 ```bash
 # training on single-GPU
@@ -26,6 +25,9 @@ python tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml
 # training on multi-GPU
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml
+# training on multi-machines and multi-GPUs
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+$fleetrun --ips="10.127.6.17,10.127.5.142,10.127.45.13,10.127.44.151" --selected_gpu 0,1,2,3,4,5,6,7 tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml
 # GPU evaluation
 export CUDA_VISIBLE_DEVICES=0
 python tools/eval.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_fpn_1x_coco.pdparams
