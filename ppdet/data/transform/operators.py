@@ -3396,3 +3396,64 @@ class PadResize(BaseOperator):
         sample['gt_bbox'] = bboxes
         sample['gt_class'] = labels
         return sample
+
+
+@register_op
+class RandomShift(BaseOperator):
+    """
+    Randomly shift image
+
+    Args:
+        prob (float): probability to do random shift.
+        max_shift (int): max shift pixels
+        filter_thr (int): filter gt bboxes if one side is smaller than this
+    """
+
+    def __init__(self, prob=0.5, max_shift=32, filter_thr=1):
+        super(RandomShift, self).__init__()
+        self.prob = prob
+        self.max_shift = max_shift
+        self.filter_thr = filter_thr
+
+    def calc_shift_coor(self, im_h, im_w, shift_h, shift_w):
+        return [
+            max(0, shift_w), max(0, shift_h), min(im_w, im_w + shift_w),
+            min(im_h, im_h + shift_h)
+        ]
+
+    def apply(self, sample, context=None):
+        if random.random() > self.prob:
+            return sample
+
+        im = sample['image']
+        gt_bbox = sample['gt_bbox']
+        gt_class = sample['gt_class']
+        im_h, im_w = im.shape[:2]
+        shift_h = random.randint(-self.max_shift, self.max_shift)
+        shift_w = random.randint(-self.max_shift, self.max_shift)
+
+        gt_bbox[:, 0::2] += shift_w
+        gt_bbox[:, 1::2] += shift_h
+        gt_bbox[:, 0::2] = np.clip(gt_bbox[:, 0::2], 0, im_w)
+        gt_bbox[:, 1::2] = np.clip(gt_bbox[:, 1::2], 0, im_h)
+        gt_bbox_h = gt_bbox[:, 2] - gt_bbox[:, 0]
+        gt_bbox_w = gt_bbox[:, 3] - gt_bbox[:, 1]
+        keep = (gt_bbox_w > self.filter_thr) & (gt_bbox_h > self.filter_thr)
+        if not keep.any():
+            return sample
+
+        gt_bbox = gt_bbox[keep]
+        gt_class = gt_class[keep]
+
+        # shift image
+        coor_new = self.calc_shift_coor(im_h, im_w, shift_h, shift_w)
+        # shift frame to the opposite direction
+        coor_old = self.calc_shift_coor(im_h, im_w, -shift_h, -shift_w)
+        canvas = np.zeros_like(im)
+        canvas[coor_new[1]:coor_new[3], coor_new[0]:coor_new[2]] \
+            = im[coor_old[1]:coor_old[3], coor_old[0]:coor_old[2]]
+
+        sample['image'] = canvas
+        sample['gt_bbox'] = gt_bbox
+        sample['gt_class'] = gt_class
+        return sample

@@ -150,6 +150,15 @@ class Trainer(object):
                                                   self._eval_batch_sampler)
         # TestDataset build after user set images, skip loader creation here
 
+        # get Params
+        print_params = self.cfg.get('print_params', False)
+        if print_params:
+            params = sum([
+                p.numel() for n, p in self.model.named_parameters()
+                if all([x not in n for x in ['_mean', '_variance']])
+            ])  # exclude BatchNorm running status
+            logger.info('Params: ', params / 1e6)
+
         # build optimizer in train mode
         if self.mode == 'train':
             steps_per_epoch = len(self.loader)
