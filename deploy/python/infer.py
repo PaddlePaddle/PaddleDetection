@@ -42,7 +42,7 @@ from utils import argsparser, Timer, get_current_memory_mb, multiclass_nms, coco
 SUPPORT_MODELS = {
     'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
     'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD', 'RetinaNet',
-    'StrongBaseline', 'STGCN', 'YOLOX', 'PPHGNet', 'PPLCNet', 'DETR'
+    'StrongBaseline', 'STGCN', 'YOLOX', 'YOLOF', 'PPHGNet', 'PPLCNet', 'DETR'
 }
 
 TUNED_TRT_DYNAMIC_MODELS = {'DETR'}
