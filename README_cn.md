@@ -47,11 +47,11 @@ PaddleDetection非常欢迎你加入到飞桨社区的开源建设中，参与�
 
 
 - 🔥 **2022.11.15：发布基于PP-YOLOE+扩展的旋转框、小目标检测SOTA模型**
-  - 旋转框检测模型[PP-YOLOE-R](configs/rotate/ppyoloe_r)
+  - 旋转框检测模型[PP-YOLOE-R](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r)
     - Anchor-free旋转框检测SOTA模型，精度速度双高
     - 云边一体，s/m/l/x四个模型适配不用算力硬件
     - 部署友好，避免使用特殊算子，能够轻松使用TensorRT加速
-  - 小目标检测模型[PP-YOLOE-SOD](configs/smalldet)
+  - 小目标检测模型[PP-YOLOE-SOD](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/smalldet)
     - 基于切图的端到端检测方案
     - 基于原图的检测模型，精度达VisDrone开源最优
 
