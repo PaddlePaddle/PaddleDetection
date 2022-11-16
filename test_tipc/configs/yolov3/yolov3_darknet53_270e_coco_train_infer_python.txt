@@ -13,7 +13,7 @@ train_infer_img_dir:./dataset/coco/test2017/
 filename:null
 ##
 trainer:norm_train
-norm_train:tools/train.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
+norm_train:tools/train.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o worker_num=4
 pact_train:tools/train.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --slim_config configs/slim/quant/yolov3_darknet_qat.yml -o
 fpgm_train:tools/train.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --slim_config configs/slim/prune/yolov3_darknet_prune_fpgm.yml -o
 distill_train:null

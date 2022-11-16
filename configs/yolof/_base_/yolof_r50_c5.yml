@@ -1,0 +1,54 @@
+architecture: YOLOF
+find_unused_parameters: True
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+
+YOLOF:
+  backbone: ResNet
+  neck: DilatedEncoder
+  head: YOLOFHead
+
+ResNet:
+  depth: 50
+  variant: b # resnet-va in paper
+  freeze_at: 0 # res2
+  return_idx: [3] # only res5 feature
+  lr_mult_list: [0.3333, 0.3333, 0.3333, 0.3333]
+
+DilatedEncoder:
+  in_channels: [2048]
+  out_channels: [512]
+  block_mid_channels: 128
+  num_residual_blocks: 4
+  block_dilations: [2, 4, 6, 8]
+
+YOLOFHead:
+  conv_feat:
+    name: YOLOFFeat
+    feat_in: 512
+    feat_out: 512
+    num_cls_convs: 2
+    num_reg_convs: 4
+    norm_type: bn
+  anchor_generator:
+    name: AnchorGenerator
+    anchor_sizes: [[32, 64, 128, 256, 512]]
+    aspect_ratios: [1.0]
+    strides: [32]
+  bbox_assigner:
+    name: UniformAssigner
+    pos_ignore_thr: 0.15
+    neg_ignore_thr: 0.7
+    match_times: 4
+  loss_class:
+    name: FocalLoss
+    gamma: 2.0
+    alpha: 0.25
+  loss_bbox:
+    name: GIoULoss
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.05
+    nms_threshold: 0.6

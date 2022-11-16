@@ -17,7 +17,9 @@ import paddle
 import numpy as np
 
 
-def bbox2delta(src_boxes, tgt_boxes, weights):
+def bbox2delta(src_boxes, tgt_boxes, weights=[1.0, 1.0, 1.0, 1.0]):
+    """Encode bboxes to deltas.
+    """
     src_w = src_boxes[:, 2] - src_boxes[:, 0]
     src_h = src_boxes[:, 3] - src_boxes[:, 1]
     src_ctr_x = src_boxes[:, 0] + 0.5 * src_w
@@ -38,7 +40,11 @@ def bbox2delta(src_boxes, tgt_boxes, weights):
     return deltas
 
 
-def delta2bbox(deltas, boxes, weights):
+def delta2bbox(deltas, boxes, weights=[1.0, 1.0, 1.0, 1.0], max_shape=None):
+    """Decode deltas to boxes. Used in RCNNBox,CascadeHead,RCNNHead,RetinaHead.
+    Note: return tensor shape [n,1,4]
+        If you want to add a reshape, please add after the calling code instead of here.
+    """
     clip_scale = math.log(1000.0 / 16)
 
     widths = boxes[:, 2] - boxes[:, 0]
@@ -67,6 +73,96 @@ def delta2bbox(deltas, boxes, weights):
     pred_boxes.append(pred_ctr_y + 0.5 * pred_h)
     pred_boxes = paddle.stack(pred_boxes, axis=-1)
 
+    if max_shape is not None:
+        pred_boxes[..., 0::2] = pred_boxes[..., 0::2].clip(
+            min=0, max=max_shape[1])
+        pred_boxes[..., 1::2] = pred_boxes[..., 1::2].clip(
+            min=0, max=max_shape[0])
+    return pred_boxes
+
+
+def bbox2delta_v2(src_boxes,
+                  tgt_boxes,
+                  delta_mean=[0.0, 0.0, 0.0, 0.0],
+                  delta_std=[1.0, 1.0, 1.0, 1.0]):
+    """Encode bboxes to deltas.
+    Modified from bbox2delta() which just use weight parameters to multiply deltas.
+    """
+    src_w = src_boxes[:, 2] - src_boxes[:, 0]
+    src_h = src_boxes[:, 3] - src_boxes[:, 1]
+    src_ctr_x = src_boxes[:, 0] + 0.5 * src_w
+    src_ctr_y = src_boxes[:, 1] + 0.5 * src_h
+
+    tgt_w = tgt_boxes[:, 2] - tgt_boxes[:, 0]
+    tgt_h = tgt_boxes[:, 3] - tgt_boxes[:, 1]
+    tgt_ctr_x = tgt_boxes[:, 0] + 0.5 * tgt_w
+    tgt_ctr_y = tgt_boxes[:, 1] + 0.5 * tgt_h
+
+    dx = (tgt_ctr_x - src_ctr_x) / src_w
+    dy = (tgt_ctr_y - src_ctr_y) / src_h
+    dw = paddle.log(tgt_w / src_w)
+    dh = paddle.log(tgt_h / src_h)
+
+    deltas = paddle.stack((dx, dy, dw, dh), axis=1)
+    deltas = (
+        deltas - paddle.to_tensor(delta_mean)) / paddle.to_tensor(delta_std)
+    return deltas
+
+
+def delta2bbox_v2(deltas,
+                  boxes,
+                  delta_mean=[0.0, 0.0, 0.0, 0.0],
+                  delta_std=[1.0, 1.0, 1.0, 1.0],
+                  max_shape=None,
+                  ctr_clip=32.0):
+    """Decode deltas to bboxes.
+    Modified from delta2bbox() which just use weight parameters to be divided by deltas.
+    Used in YOLOFHead.
+    Note: return tensor shape [n,1,4]
+        If you want to add a reshape, please add after the calling code instead of here.
+    """
+    clip_scale = math.log(1000.0 / 16)
+
+    widths = boxes[:, 2] - boxes[:, 0]
+    heights = boxes[:, 3] - boxes[:, 1]
+    ctr_x = boxes[:, 0] + 0.5 * widths
+    ctr_y = boxes[:, 1] + 0.5 * heights
+
+    deltas = deltas * paddle.to_tensor(delta_std) + paddle.to_tensor(delta_mean)
+    dx = deltas[:, 0::4]
+    dy = deltas[:, 1::4]
+    dw = deltas[:, 2::4]
+    dh = deltas[:, 3::4]
+
+    # Prevent sending too large values into paddle.exp()
+    dx = dx * widths.unsqueeze(1)
+    dy = dy * heights.unsqueeze(1)
+    if ctr_clip is not None:
+        dx = paddle.clip(dx, max=ctr_clip, min=-ctr_clip)
+        dy = paddle.clip(dy, max=ctr_clip, min=-ctr_clip)
+        dw = paddle.clip(dw, max=clip_scale)
+        dh = paddle.clip(dh, max=clip_scale)
+    else:
+        dw = dw.clip(min=-ctr_clip, max=ctr_clip)
+        dh = dh.clip(min=-ctr_clip, max=ctr_clip)
+
+    pred_ctr_x = dx + ctr_x.unsqueeze(1)
+    pred_ctr_y = dy + ctr_y.unsqueeze(1)
+    pred_w = paddle.exp(dw) * widths.unsqueeze(1)
+    pred_h = paddle.exp(dh) * heights.unsqueeze(1)
+
+    pred_boxes = []
+    pred_boxes.append(pred_ctr_x - 0.5 * pred_w)
+    pred_boxes.append(pred_ctr_y - 0.5 * pred_h)
+    pred_boxes.append(pred_ctr_x + 0.5 * pred_w)
+    pred_boxes.append(pred_ctr_y + 0.5 * pred_h)
+    pred_boxes = paddle.stack(pred_boxes, axis=-1)
+
+    if max_shape is not None:
+        pred_boxes[..., 0::2] = pred_boxes[..., 0::2].clip(
+            min=0, max=max_shape[1])
+        pred_boxes[..., 1::2] = pred_boxes[..., 1::2].clip(
+            min=0, max=max_shape[0])
     return pred_boxes
 
 
@@ -487,96 +583,6 @@ def batch_distance2bbox(points, distance, max_shapes=None):
         out_bbox = paddle.where(out_bbox > 0, out_bbox,
                                 paddle.zeros_like(out_bbox))
     return out_bbox
-
-
-def delta2bbox_v2(rois,
-                  deltas,
-                  means=(0.0, 0.0, 0.0, 0.0),
-                  stds=(1.0, 1.0, 1.0, 1.0),
-                  max_shape=None,
-                  wh_ratio_clip=16.0 / 1000.0,
-                  ctr_clip=None):
-    """Transform network output(delta) to bboxes.
-    Based on https://github.com/open-mmlab/mmdetection/blob/master/mmdet/core/
-             bbox/coder/delta_xywh_bbox_coder.py
-    Args:
-        rois (Tensor): shape [..., 4], base bboxes, typical examples include
-            anchor and rois
-        deltas (Tensor): shape [..., 4], offset relative to base bboxes
-        means (list[float]): the mean that was used to normalize deltas,
-            must be of size 4
-        stds (list[float]): the std that was used to normalize deltas,
-            must be of size 4
-        max_shape (list[float] or None): height and width of image, will be
-            used to clip bboxes if not None
-        wh_ratio_clip (float): to clip delta wh of decoded bboxes
-        ctr_clip (float or None): whether to clip delta xy of decoded bboxes
-    """
-    if rois.size == 0:
-        return paddle.empty_like(rois)
-    means = paddle.to_tensor(means)
-    stds = paddle.to_tensor(stds)
-    deltas = deltas * stds + means
-
-    dxy = deltas[..., :2]
-    dwh = deltas[..., 2:]
-
-    pxy = (rois[..., :2] + rois[..., 2:]) * 0.5
-    pwh = rois[..., 2:] - rois[..., :2]
-    dxy_wh = pwh * dxy
-
-    max_ratio = np.abs(np.log(wh_ratio_clip))
-    if ctr_clip is not None:
-        dxy_wh = paddle.clip(dxy_wh, max=ctr_clip, min=-ctr_clip)
-        dwh = paddle.clip(dwh, max=max_ratio)
-    else:
-        dwh = dwh.clip(min=-max_ratio, max=max_ratio)
-
-    gxy = pxy + dxy_wh
-    gwh = pwh * dwh.exp()
-    x1y1 = gxy - (gwh * 0.5)
-    x2y2 = gxy + (gwh * 0.5)
-    bboxes = paddle.concat([x1y1, x2y2], axis=-1)
-    if max_shape is not None:
-        bboxes[..., 0::2] = bboxes[..., 0::2].clip(min=0, max=max_shape[1])
-        bboxes[..., 1::2] = bboxes[..., 1::2].clip(min=0, max=max_shape[0])
-    return bboxes
-
-
-def bbox2delta_v2(src_boxes,
-                  tgt_boxes,
-                  means=(0.0, 0.0, 0.0, 0.0),
-                  stds=(1.0, 1.0, 1.0, 1.0)):
-    """Encode bboxes to deltas.
-    Modified from ppdet.modeling.bbox_utils.bbox2delta.
-    Args:
-        src_boxes (Tensor[..., 4]): base bboxes
-        tgt_boxes (Tensor[..., 4]): target bboxes
-        means (list[float]): the mean that will be used to normalize delta
-        stds (list[float]): the std that will be used to normalize delta
-    """
-    if src_boxes.size == 0:
-        return paddle.empty_like(src_boxes)
-    src_w = src_boxes[..., 2] - src_boxes[..., 0]
-    src_h = src_boxes[..., 3] - src_boxes[..., 1]
-    src_ctr_x = src_boxes[..., 0] + 0.5 * src_w
-    src_ctr_y = src_boxes[..., 1] + 0.5 * src_h
-
-    tgt_w = tgt_boxes[..., 2] - tgt_boxes[..., 0]
-    tgt_h = tgt_boxes[..., 3] - tgt_boxes[..., 1]
-    tgt_ctr_x = tgt_boxes[..., 0] + 0.5 * tgt_w
-    tgt_ctr_y = tgt_boxes[..., 1] + 0.5 * tgt_h
-
-    dx = (tgt_ctr_x - src_ctr_x) / src_w
-    dy = (tgt_ctr_y - src_ctr_y) / src_h
-    dw = paddle.log(tgt_w / src_w)
-    dh = paddle.log(tgt_h / src_h)
-
-    deltas = paddle.stack((dx, dy, dw, dh), axis=1)  # [n, 4]
-    means = paddle.to_tensor(means, place=src_boxes.place)
-    stds = paddle.to_tensor(stds, place=src_boxes.place)
-    deltas = (deltas - means) / stds
-    return deltas
 
 
 def iou_similarity(box1, box2, eps=1e-10):
