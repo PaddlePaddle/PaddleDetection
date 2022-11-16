@@ -8,7 +8,7 @@
 
 - 🚗🚙 **PP-Vehicle has four major toolbox for vehicle analysis: The license plate recognition、vechile attributes、in-out counting、illegal_parking recognition.**
 
-![](https://user-images.githubusercontent.com/48054808/184843170-c3ef7d29-913b-4c6e-b533-b83892a8b0e2.gif)
+![](https://user-images.githubusercontent.com/22989727/202134414-713a00d6-a0a4-4a77-b6e8-05cdb5d42b1e.gif)
 
 ## 📣 Updates
 
@@ -140,4 +140,3 @@ Click to download the model, then unzip and save it in the `. /output_inference`
 - [A quick start](docs/tutorials/ppvehicle_mot_en.md)
 
 - [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mot_en.md)
-

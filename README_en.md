@@ -23,7 +23,16 @@
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> Product Update
 
-- 🔥 **2022.8.26：PaddleDetection releases[release/2.5 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)**
+- 🔥 **2022.11.15：SOTA rotated object detector and small object detector based on PP-YOLOE**
+  - Rotated object detector [PP-YOLOE-R](configs/rotate/ppyoloe_r)
+    - SOTA Anchor-free rotated object detection model with high accuracy and efficiency
+    - A series of models, named s/m/l/x, for cloud and edge devices
+    - Avoiding using special operators to be deployed friendly with TensorRT.
+  - Small object detector [PP-YOLOE-SOD](configs/smalldet)
+    - End-to-end detection pipeline based on sliced images
+    - SOTA model on VisDrone based on original images.
+
+- 2022.8.26：PaddleDetection releases[release/2.5 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)
 
   - 🗳 Model features：
 
@@ -67,7 +76,7 @@
 - **High Performance**: Due to the high performance core, PaddlePaddle has clear advantages in training speed and memory occupation. It also supports FP16 training and multi-machine training.
 
 <div  align="center">
-  <img src="https://user-images.githubusercontent.com/22989727/189066615-89d1dde2-54bc-4946-887e-fce50069206e.png" width="800"/>
+  <img src="https://user-images.githubusercontent.com/22989727/202131382-45fd2de6-3805-460e-a70c-66db7188d37c.png" width="800"/>
 </div>
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157800467-2a9946ad-30d1-49a9-b9db-ba33413d9c90.png" alt="" width="20"> Exchanges
@@ -113,11 +122,14 @@
             <li>PP-YOLO-Tiny</li>
             <li>PP-YOLOE</li>
             <li>PP-YOLOE+</li>
+            <li>PP-YOLOE-R</li>
+            <li>PP-YOLOE-SOD</li>
             <li>YOLOX</li>
             <li>YOLOF</li>
             <li>SSD</li>
             <li>CenterNet</li>
             <li>FCOS</li>  
+            <li>FCOSR</li>  
             <li>TTFNet</li>
             <li>TOOD</li>
             <li>GFL</li>
