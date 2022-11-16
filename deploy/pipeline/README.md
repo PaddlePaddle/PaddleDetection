@@ -10,7 +10,7 @@
 
 - 🚗🚙 **PP-Vehicle囊括四大交通场景核心功能：车牌识别、属性识别、车流量统计、违章检测。**
 
-![](https://user-images.githubusercontent.com/48054808/184843170-c3ef7d29-913b-4c6e-b533-b83892a8b0e2.gif)
+![](https://user-images.githubusercontent.com/22989727/202134414-713a00d6-a0a4-4a77-b6e8-05cdb5d42b1e.gif)
 
 ## 📣 近期更新
 
