@@ -139,6 +139,7 @@ class FCOSHead(nn.Layer):
                  norm_reg_targets=True,
                  centerness_on_reg=True,
                  num_shift=0.5,
+                 sqrt_score=False,
                  fcos_loss='FCOSLoss',
                  nms='MultiClassNMS',
                  trt=False):
@@ -154,6 +155,7 @@ class FCOSHead(nn.Layer):
         self.nms = nms
         if isinstance(self.nms, MultiClassNMS) and trt:
             self.nms.trt = trt
+        self.sqrt_score = sqrt_score
 
         conv_cls_name = "fcos_head_cls"
         bias_init_value = -math.log((1 - self.prior_prob) / self.prior_prob)
@@ -296,10 +298,17 @@ class FCOSHead(nn.Layer):
                                      tag_labels, tag_bboxes, tag_centerness)
         return losses_fcos
 
-    def _post_process_by_level(self, locations, box_cls, box_reg, box_ctn):
+    def _post_process_by_level(self,
+                               locations,
+                               box_cls,
+                               box_reg,
+                               box_ctn,
+                               sqrt_score=False):
         box_scores = F.sigmoid(box_cls).flatten(2).transpose([0, 2, 1])
         box_centerness = F.sigmoid(box_ctn).flatten(2).transpose([0, 2, 1])
         pred_scores = box_scores * box_centerness
+        if sqrt_score:
+            pred_scores = paddle.sqrt(pred_scores)
 
         box_reg_ch_last = box_reg.flatten(2).transpose([0, 2, 1])
         box_reg_decoding = paddle.stack(
@@ -320,7 +329,8 @@ class FCOSHead(nn.Layer):
 
         for pts, cls, reg, ctn in zip(locations, cls_logits, bboxes_reg,
                                       centerness):
-            scores, boxes = self._post_process_by_level(pts, cls, reg, ctn)
+            scores, boxes = self._post_process_by_level(pts, cls, reg, ctn,
+                                                        self.sqrt_score)
             pred_scores.append(scores)
             pred_bboxes.append(boxes)
         pred_bboxes = paddle.concat(pred_bboxes, axis=1)
