@@ -165,14 +165,12 @@ else
     device_num_list=($device_num)
 fi
 
-# Only the models in the list support dy2st
-to_static_model_list=("yolov3_darknet53_270e_coco")
+# for log name
 to_static=""
 # parse "to_static" options and modify trainer into "to_static_trainer"
-if [[ "${to_static_model_list[*]}" =~ "${model_name}" ]] && [[ ${model_type} = "dynamicTostatic" ]];then
+if [[ ${model_type} = "dynamicTostatic" ]];then
     to_static="d2sT_"
     sed -i 's/trainer:norm_train/trainer:to_static_train/g' $FILENAME
-    sed -i '20c to_static_train:--to_static' $FILENAME
 fi
 
 
