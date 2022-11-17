@@ -397,7 +397,9 @@ python tools/slice_image.py --image_dir ../../dataset/DOTA/train/ --json_path ..
 @article{akyon2022sahi,
   title={Slicing Aided Hyper Inference and Fine-tuning for Small Object Detection},
   author={Akyon, Fatih Cagatay and Altinuc, Sinan Onur and Temizel, Alptekin},
-  journal={arXiv preprint arXiv:2202.06934},
+  journal={2022 IEEE International Conference on Image Processing (ICIP)},
+  doi={10.1109/ICIP46576.2022.9897990},
+  pages={966-970},
   year={2022}
 }
 
