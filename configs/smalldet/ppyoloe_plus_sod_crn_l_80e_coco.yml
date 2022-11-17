@@ -1,0 +1,31 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '../ppyoloe/_base_/optimizer_80e.yml',
+  '../ppyoloe/_base_/ppyoloe_plus_crn.yml',
+  '../ppyoloe/_base_/ppyoloe_plus_reader.yml',
+]
+log_iter: 100
+snapshot_epoch: 5
+weights: output/ppyoloe_plus_sod_crn_l_80e_coco/model_final
+
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_l_obj365_pretrained.pdparams
+depth_mult: 1.0
+width_mult: 1.0
+
+CustomCSPPAN:
+  num_layers: 4
+  use_trans: True
+
+PPYOLOEHead:
+  reg_range: [-2, 17]
+  static_assigner_epoch: -1
+  assigner:
+    name: TaskAlignedAssigner_CR
+    center_radius: 1
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 300
+    score_threshold: 0.01
+    nms_threshold: 0.7
