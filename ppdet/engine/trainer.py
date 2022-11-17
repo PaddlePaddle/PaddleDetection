@@ -52,6 +52,9 @@ from .export_utils import _dump_infer_config, _prune_input_spec
 
 from paddle.distributed.fleet.utils.hybrid_parallel_util import fused_allreduce_gradients
 
+import paddle.profiler as prof
+prof = prof.Profiler(targets=[prof.ProfilerTarget.CUSTOM_DEVICE], custom_device_types=['npu'])
+
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('ppdet.engine')
 
@@ -461,6 +464,9 @@ class Trainer(object):
             model.train()
             iter_tic = time.time()
             for step_id, data in enumerate(self.loader):
+                if step_id == 100:
+                    print("++++++++++++++ BEGIN ++++++++++++++++++", flush=True)
+                    prof.start()
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
                 profiler.add_profiler_step(profiler_options)
@@ -533,6 +539,9 @@ class Trainer(object):
                 if self.use_ema:
                     self.ema.update()
                 iter_tic = time.time()
+                if step_id == 100:
+                    prof.stop()
+                    print("++++++++++++++ ENDED ++++++++++++++++++", flush=True)
 
             if self.cfg.get('unstructured_prune'):
                 self.pruner.update_params()
