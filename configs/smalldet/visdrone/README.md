@@ -13,18 +13,20 @@ PaddleDetection团队提供了针对VisDrone-DET小目标数航拍场景的基�
 |:---------|:------:|:------:| :----: | :------:| :------: | :------:| :----: | :------:|
 |PP-YOLOE-s|  23.5  |  39.9  |  19.4  |  33.6   |  23.68   |  40.66  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_80e_visdrone.pdparams) | [配置文件](./ppyoloe_crn_s_80e_visdrone.yml) |
 |PP-YOLOE-P2-Alpha-s|    24.4  |  41.6  |  20.1  |  34.7  |  24.55   |  42.19  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_p2_alpha_80e_visdrone.pdparams) | [配置文件](./ppyoloe_crn_s_p2_alpha_80e_visdrone.yml) |
-|PP_YOLOE_plus_sod_s|  25.1  |  42.8  |  20.7  |  36.2   |  25.16  |  43.86   | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_s_80e_visdrone.pdparams) | [配置文件](./ppyoloe_plus_sod_crn_s_80e_visdrone.yml) |
+|**PP-YOLOE+_SOD-s**|  **25.1**  |  **42.8**  |  **20.7**  |  **36.2**   |  **25.16**  |  **43.86**   | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_s_80e_visdrone.pdparams) | [配置文件](./ppyoloe_plus_sod_crn_s_80e_visdrone.yml) |
 |PP-YOLOE-l|  29.2  |  47.3  |  23.5  |  39.1   |  28.00   |  46.20  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_visdrone.pdparams) | [配置文件](./ppyoloe_crn_l_80e_visdrone.yml) |
 |PP-YOLOE-P2-Alpha-l|  30.1  |  48.9  |  24.3  |  40.8   |  28.47   |  48.16  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_p2_alpha_80e_visdrone.pdparams) | [配置文件](./ppyoloe_crn_l_p2_alpha_80e_visdrone.yml) |
-|PP_YOLOE_plus_sod_l|  31.9  |  52.1  |  25.6  |  43.5   |  30.25  |  51.18   | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_80e_visdrone.pdparams) | [配置文件](./ppyoloe_plus_sod_crn_l_80e_visdrone.yml) |
+|**PP-YOLOE+_SOD-l**|  **31.9**  |  **52.1**  |  **25.6**  |  **43.5**   |  **30.25**  |  **51.18**   | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_80e_visdrone.pdparams) | [配置文件](./ppyoloe_plus_sod_crn_l_80e_visdrone.yml) |
 |PP-YOLOE-Alpha-largesize-l|  41.9  |  65.0 |  32.3  |  53.0   |  37.13   |  61.15  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_alpha_largesize_80e_visdrone.pdparams) | [配置文件](./ppyoloe_crn_l_alpha_largesize_80e_visdrone.yml) |
 |PP-YOLOE-P2-Alpha-largesize-l|  41.3  |  64.5  |  32.4  |  53.1   |  37.49   |  51.54  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_p2_alpha_largesize_80e_visdrone.pdparams) | [配置文件](./ppyoloe_crn_l_p2_alpha_largesize_80e_visdrone.yml) |
-|PP-YOLOE-plus-largesize-l |  43.3  |  66.7 |  33.5  |  54.7   |  38.24   |  62.76  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_largesize_80e_visdrone.pdparams) | [配置文件](./ppyoloe_plus_crn_l_largesize_80e_visdrone.yml) |
-|PP-YOLOE-plus_sod-largesize_l |  42.7  |  65.9 |  33.6  |  55.1   |  38.4   |  63.07  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.pdparams) | [配置文件](./ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.yml) |
+|PP-YOLOE+_largesize-l |  43.3  |  66.7 |  33.5  |  54.7   |  38.24   |  62.76  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_largesize_80e_visdrone.pdparams) | [配置文件](./ppyoloe_plus_crn_l_largesize_80e_visdrone.yml) |
+|**PP-YOLOE+_SOD-largesize-l** |  42.7  |  65.9 |  **33.6**  |  **55.1**   |  **38.4**   |  **63.07**  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.pdparams) | [配置文件](./ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.yml) |
 
 **注意:**
-  - 上表中的模型均为**使用原图训练**，也使用**原图评估预测**。
-  - **sod**表示使用**基于向量的DFL算法**和针对小目标的**中心先验优化策略**，并**在模型的Neck结构中加入transformer**。
+  - 上表中的模型均为**使用原图训练**，也**使用原图评估预测**，AP精度均为**原图验证集**上评估的结果。
+  - VisDrone-DET数据集**可使用原图训练，也可使用切图后训练**，通过数据集统计分布分析，推荐使用**原图训练**，推荐直接使用带**SOD**的模型配置文件去训练评估和预测部署，在显卡算力有限时也可使用切图后训练。
+  - 上表中的模型指标均是使用VisDrone-DET的train子集作为训练集，使用VisDrone-DET的val子集和test_dev子集作为验证集。
+  - **SOD**表示使用**基于向量的DFL算法**和针对小目标的**中心先验优化策略**，并**在模型的Neck结构中加入transformer**。
   - **P2**表示增加P2层(1/4下采样层)的特征，共输出4个PPYOLOEHead。
   - **Alpha**表示对CSPResNet骨干网络增加可一个学习权重参数Alpha参与训练。
   - **largesize**表示使用**以1600尺度为基础的多尺度训练**和**1920尺度预测**，相应的训练batch_size也减小，以速度来换取高精度。
@@ -38,8 +40,9 @@ PaddleDetection团队提供了针对VisDrone-DET小目标数航拍场景的基�
 |PP-YOLOE-l (拼图评估)| VisDrone-DET|  640 | 0.25 | 10 | 37.2 | 59.4 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](../ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
 
 **注意:**
-  - 上表中的模型均为使用**切图后的子图**训练，评估预测时分为两种，使用原图评估预测，和使用子图拼图评估预测。
+  - 上表中的模型均为使用**切图后的子图**训练，评估预测时分为两种，**直接使用原图**评估预测，和**使用子图自动拼成原图**评估预测，AP精度均为**原图验证集**上评估的结果。。
   - **SLICE_SIZE**表示使用SAHI工具切图后子图的边长大小，**OVERLAP_RATIO**表示切图的子图之间的重叠率。
+  - VisDrone-DET的模型与[切图模型](../README.md#切图模型)表格中的VisDrone-DET是**同一个模型权重**，但此处AP精度是在**原图验证集**上评估的结果。
 
 
 ## 注意事项：
@@ -49,13 +52,13 @@ PaddleDetection团队提供了针对VisDrone-DET小目标数航拍场景的基�
   - 切图训练模型的配置文件及训练相关流程请参照[README](../README.cn)。
 
 
-## 部署模型
+## PP-YOLOE+_SOD 部署模型
 
 | 网络模型     | 输入尺寸 | 导出后的权重(w/o NMS) | ONNX(w/o NMS)  |
 | :-------- | :--------: | :---------------------: | :----------------: |
-| PP_YOLOE_plus_sod_s |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_s_80e_visdrone_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_s_80e_visdrone_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_s_80e_visdrone_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_s_80e_visdrone_wo_nms.onnx) |
-| PP_YOLOE_plus_sod_l |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_80e_visdrone_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_80e_visdrone_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_80e_visdrone_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_80e_visdrone_wo_nms.onnx) |
-| PP-YOLOE-plus_sod-largesize_l     |  1920   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone_wo_nms.onnx) |
+| PP-YOLOE+_SOD-s |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_s_80e_visdrone_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_s_80e_visdrone_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_s_80e_visdrone_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_s_80e_visdrone_wo_nms.onnx) |
+| PP-YOLOE+_SOD-l |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_80e_visdrone_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_80e_visdrone_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_80e_visdrone_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_80e_visdrone_wo_nms.onnx) |
+| PP-YOLOE+_SOD-largesize-l |  1920   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/smalldet/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone_wo_nms.onnx) |
 
 
 ## 测速
