@@ -1,0 +1,22 @@
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  '_base_/optimizer_150e.yml',
+  '_base_/sparseinst_r50_giam.yml',
+  '_base_/sparseinst_aug_reader.yml',
+]
+weights: output/sparseinst_r50_giam_150e_coco/model_final
+snapshot_epoch: 10
+
+
+pretrain_weights:   https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+use_ema: true
+
+ResNet:
+  depth: 50
+  variant: d
+  freeze_at: 0
+  norm_type: sync_bn
+  return_idx: [1,2,3]
+  num_stages: 4
+  dcn_v2_stages: [1,2,3]

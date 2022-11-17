@@ -1,0 +1,19 @@
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  '_base_/optimizer_150e.yml',
+  '_base_/sparseinst_r50_giam.yml',
+  '_base_/sparseinst_aug_reader.yml',
+]
+weights: output/sparseinst_r50vd_giam_150e_coco/model_final
+snapshot_epoch: 10
+
+pretrain_weights:   https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_pretrained.pdparams
+
+ResNet:
+  depth: 50
+  variant: d
+  freeze_at: 0
+  norm_type: bn
+  return_idx: [1,2,3]
+  num_stages: 4
