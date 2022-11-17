@@ -17,31 +17,18 @@ import paddle.nn.functional as F
 import paddle.nn as nn
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
-from paddle import _C_ops
+try:
+    import paddle._legacy_C_ops as C_ops
+except:
+    import paddle._C_ops as C_ops
 
-from paddle.fluid.framework import Variable, in_dygraph_mode
-from paddle.fluid import core
-from paddle.fluid.dygraph import parallel_helper
-from paddle.fluid.layer_helper import LayerHelper
-from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype
+from paddle import in_dynamic_mode
+from paddle.common_ops_import import Variable, LayerHelper, check_variable_and_dtype, check_type, check_dtype
 
 __all__ = [
-    'roi_pool',
-    'roi_align',
-    'prior_box',
-    'generate_proposals',
-    'iou_similarity',
-    'box_coder',
-    'yolo_box',
-    'multiclass_nms',
-    'distribute_fpn_proposals',
-    'collect_fpn_proposals',
-    'matrix_nms',
-    'batch_norm',
-    'mish',
-    'silu',
-    'swish',
-    'identity',
+    'prior_box', 'generate_proposals', 'box_coder', 'multiclass_nms',
+    'distribute_fpn_proposals', 'matrix_nms', 'batch_norm', 'mish', 'silu',
+    'swish', 'identity', 'anchor_generator'
 ]
 
 
@@ -124,389 +111,99 @@ def batch_norm(ch,
 
 
 @paddle.jit.not_to_static
-def roi_pool(input,
-             rois,
-             output_size,
-             spatial_scale=1.0,
-             rois_num=None,
-             name=None):
+def anchor_generator(input,
+                     anchor_sizes=None,
+                     aspect_ratios=None,
+                     variance=[0.1, 0.1, 0.2, 0.2],
+                     stride=None,
+                     offset=0.5):
     """
-
-    This operator implements the roi_pooling layer.
-    Region of interest pooling (also known as RoI pooling) is to perform max pooling on inputs of nonuniform sizes to obtain fixed-size feature maps (e.g. 7*7).
-
-    The operator has three steps:
-
-        1. Dividing each region proposal into equal-sized sections with output_size(h, w);
-        2. Finding the largest value in each section;
-        3. Copying these max values to the output buffer.
-
-    For more information, please refer to https://stackoverflow.com/questions/43430056/what-is-roi-layer-in-fast-rcnn
-
+    **Anchor generator operator**
+    Generate anchors for Faster RCNN algorithm.
+    Each position of the input produce N anchors, N =
+    size(anchor_sizes) * size(aspect_ratios). The order of generated anchors
+    is firstly aspect_ratios loop then anchor_sizes loop.
     Args:
-        input (Tensor): Input feature, 4D-Tensor with the shape of [N,C,H,W], 
-            where N is the batch size, C is the input channel, H is Height, W is weight. 
-            The data type is float32 or float64.
-        rois (Tensor): ROIs (Regions of Interest) to pool over. 
-            2D-Tensor or 2D-LoDTensor with the shape of [num_rois,4], the lod level is 1. 
-            Given as [[x1, y1, x2, y2], ...], (x1, y1) is the top left coordinates, 
-            and (x2, y2) is the bottom right coordinates.
-        output_size (int or tuple[int, int]): The pooled output size(h, w), data type is int32. If int, h and w are both equal to output_size.
-        spatial_scale (float, optional): Multiplicative spatial scale factor to translate ROI coords from their input scale to the scale used when pooling. Default: 1.0
-        rois_num (Tensor): The number of RoIs in each image. Default: None
-        name(str, optional): For detailed information, please refer
-            to :ref:`api_guide_Name`. Usually name is no need to set and
-            None by default.
-
-
+       input(Variable): 4-D Tensor with shape [N,C,H,W]. The input feature map.
+       anchor_sizes(float32|list|tuple, optional): The anchor sizes of generated
+          anchors, given in absolute pixels e.g. [64., 128., 256., 512.].
+          For instance, the anchor size of 64 means the area of this anchor 
+          equals to 64**2. None by default.
+       aspect_ratios(float32|list|tuple, optional): The height / width ratios 
+           of generated anchors, e.g. [0.5, 1.0, 2.0]. None by default.
+       variance(list|tuple, optional): The variances to be used in box 
+           regression deltas. The data type is float32, [0.1, 0.1, 0.2, 0.2] by 
+           default.
+       stride(list|tuple, optional): The anchors stride across width and height.
+           The data type is float32. e.g. [16.0, 16.0]. None by default.
+       offset(float32, optional): Prior boxes center offset. 0.5 by default.
     Returns:
-        Tensor: The pooled feature, 4D-Tensor with the shape of [num_rois, C, output_size[0], output_size[1]].
-
-
-    Examples:
-
-    ..  code-block:: python
-
-        import paddle
-        from ppdet.modeling import ops
-        paddle.enable_static()
-
-        x = paddle.static.data(
-                name='data', shape=[None, 256, 32, 32], dtype='float32')
-        rois = paddle.static.data(
-                name='rois', shape=[None, 4], dtype='float32')
-        rois_num = paddle.static.data(name='rois_num', shape=[None], dtype='int32')
-
-        pool_out = ops.roi_pool(
-                input=x,
-                rois=rois,
-                output_size=(1, 1),
-                spatial_scale=1.0,
-                rois_num=rois_num)
-    """
-    check_type(output_size, 'output_size', (int, tuple), 'roi_pool')
-    if isinstance(output_size, int):
-        output_size = (output_size, output_size)
-
-    pooled_height, pooled_width = output_size
-    if in_dygraph_mode():
-        assert rois_num is not None, "rois_num should not be None in dygraph mode."
-        pool_out, argmaxes = _C_ops.roi_pool(
-            input, rois, rois_num, "pooled_height", pooled_height,
-            "pooled_width", pooled_width, "spatial_scale", spatial_scale)
-        return pool_out, argmaxes
-
-    else:
-        check_variable_and_dtype(input, 'input', ['float32'], 'roi_pool')
-        check_variable_and_dtype(rois, 'rois', ['float32'], 'roi_pool')
-        helper = LayerHelper('roi_pool', **locals())
-        dtype = helper.input_dtype()
-        pool_out = helper.create_variable_for_type_inference(dtype)
-        argmaxes = helper.create_variable_for_type_inference(dtype='int32')
-
-        inputs = {
-            "X": input,
-            "ROIs": rois,
-        }
-        if rois_num is not None:
-            inputs['RoisNum'] = rois_num
-        helper.append_op(
-            type="roi_pool",
-            inputs=inputs,
-            outputs={"Out": pool_out,
-                     "Argmax": argmaxes},
-            attrs={
-                "pooled_height": pooled_height,
-                "pooled_width": pooled_width,
-                "spatial_scale": spatial_scale
-            })
-        return pool_out, argmaxes
-
-
-@paddle.jit.not_to_static
-def roi_align(input,
-              rois,
-              output_size,
-              spatial_scale=1.0,
-              sampling_ratio=-1,
-              rois_num=None,
-              aligned=True,
-              name=None):
-    """
-
-    Region of interest align (also known as RoI align) is to perform
-    bilinear interpolation on inputs of nonuniform sizes to obtain 
-    fixed-size feature maps (e.g. 7*7)
-
-    Dividing each region proposal into equal-sized sections with
-    the pooled_width and pooled_height. Location remains the origin
-    result.
-
-    In each ROI bin, the value of the four regularly sampled locations 
-    are computed directly through bilinear interpolation. The output is
-    the mean of four locations.
-    Thus avoid the misaligned problem. 
-
-    Args:
-        input (Tensor): Input feature, 4D-Tensor with the shape of [N,C,H,W], 
-            where N is the batch size, C is the input channel, H is Height, W is weight. 
-            The data type is float32 or float64.
-        rois (Tensor): ROIs (Regions of Interest) to pool over.It should be
-            a 2-D Tensor or 2-D LoDTensor of shape (num_rois, 4), the lod level is 1. 
-            The data type is float32 or float64. Given as [[x1, y1, x2, y2], ...],
-            (x1, y1) is the top left coordinates, and (x2, y2) is the bottom right coordinates.
-        output_size (int or tuple[int, int]): The pooled output size(h, w), data type is int32. If int, h and w are both equal to output_size.
-        spatial_scale (float32, optional): Multiplicative spatial scale factor to translate ROI coords 
-            from their input scale to the scale used when pooling. Default: 1.0
-        sampling_ratio(int32, optional): number of sampling points in the interpolation grid. 
-            If <=0, then grid points are adaptive to roi_width and pooled_w, likewise for height. Default: -1
-        rois_num (Tensor): The number of RoIs in each image. Default: None
-        name(str, optional): For detailed information, please refer
-            to :ref:`api_guide_Name`. Usually name is no need to set and
-            None by default.
-
-    Returns:
-        Tensor:
-
-        Output: The output of ROIAlignOp is a 4-D tensor with shape (num_rois, channels, pooled_h, pooled_w). The data type is float32 or float64.
-
-
+        Tuple:
+        Anchors(Variable): The output anchors with a layout of [H, W, num_anchors, 4].
+        H is the height of input, W is the width of input,
+        num_anchors is the box count of each position. 
+        Each anchor is in (xmin, ymin, xmax, ymax) format an unnormalized.
+ 
+        Variances(Variable): The expanded variances of anchors
+        with a layout of [H, W, num_priors, 4].
+        H is the height of input, W is the width of input
+        num_anchors is the box count of each position.
+        Each variance is in (xcenter, ycenter, w, h) format.
     Examples:
         .. code-block:: python
-
-            import paddle
-            from ppdet.modeling import ops
-            paddle.enable_static()
-
-            x = paddle.static.data(
-                name='data', shape=[None, 256, 32, 32], dtype='float32')
-            rois = paddle.static.data(
-                name='rois', shape=[None, 4], dtype='float32')
-            rois_num = paddle.static.data(name='rois_num', shape=[None], dtype='int32')
-            align_out = ops.roi_align(input=x,
-                                               rois=rois,
-                                               output_size=(7, 7),
-                                               spatial_scale=0.5,
-                                               sampling_ratio=-1,
-                                               rois_num=rois_num)
-    """
-    check_type(output_size, 'output_size', (int, tuple), 'roi_align')
-    if isinstance(output_size, int):
-        output_size = (output_size, output_size)
-
-    pooled_height, pooled_width = output_size
-
-    if in_dygraph_mode():
-        assert rois_num is not None, "rois_num should not be None in dygraph mode."
-        align_out = _C_ops.roi_align(
-            input, rois, rois_num, "pooled_height", pooled_height,
-            "pooled_width", pooled_width, "spatial_scale", spatial_scale,
-            "sampling_ratio", sampling_ratio, "aligned", aligned)
-        return align_out
-
-    else:
-        check_variable_and_dtype(input, 'input', ['float32', 'float64'],
-                                 'roi_align')
-        check_variable_and_dtype(rois, 'rois', ['float32', 'float64'],
-                                 'roi_align')
-        helper = LayerHelper('roi_align', **locals())
-        dtype = helper.input_dtype()
-        align_out = helper.create_variable_for_type_inference(dtype)
-        inputs = {
-            "X": input,
-            "ROIs": rois,
-        }
-        if rois_num is not None:
-            inputs['RoisNum'] = rois_num
-        helper.append_op(
-            type="roi_align",
-            inputs=inputs,
-            outputs={"Out": align_out},
-            attrs={
-                "pooled_height": pooled_height,
-                "pooled_width": pooled_width,
-                "spatial_scale": spatial_scale,
-                "sampling_ratio": sampling_ratio,
-                "aligned": aligned,
-            })
-        return align_out
-
-
-@paddle.jit.not_to_static
-def iou_similarity(x, y, box_normalized=True, name=None):
-    """
-    Computes intersection-over-union (IOU) between two box lists.
-    Box list 'X' should be a LoDTensor and 'Y' is a common Tensor,
-    boxes in 'Y' are shared by all instance of the batched inputs of X.
-    Given two boxes A and B, the calculation of IOU is as follows:
-
-    $$
-    IOU(A, B) = 
-    \\frac{area(A\\cap B)}{area(A)+area(B)-area(A\\cap B)}
-    $$
-
-    Args:
-        x (Tensor): Box list X is a 2-D Tensor with shape [N, 4] holds N 
-             boxes, each box is represented as [xmin, ymin, xmax, ymax], 
-             the shape of X is [N, 4]. [xmin, ymin] is the left top 
-             coordinate of the box if the input is image feature map, they
-             are close to the origin of the coordinate system. 
-             [xmax, ymax] is the right bottom coordinate of the box.
-             The data type is float32 or float64.
-        y (Tensor): Box list Y holds M boxes, each box is represented as 
-             [xmin, ymin, xmax, ymax], the shape of X is [N, 4]. 
-             [xmin, ymin] is the left top coordinate of the box if the 
-             input is image feature map, and [xmax, ymax] is the right 
-             bottom coordinate of the box. The data type is float32 or float64.
-        box_normalized(bool): Whether treat the priorbox as a normalized box.
-            Set true by default.
-        name(str, optional): For detailed information, please refer 
-            to :ref:`api_guide_Name`. Usually name is no need to set and 
-            None by default. 
-
-    Returns:
-        Tensor: The output of iou_similarity op, a tensor with shape [N, M] 
-              representing pairwise iou scores. The data type is same with x.
-
-    Examples:
-        .. code-block:: python
-
-            import paddle
-            from ppdet.modeling import ops
-            paddle.enable_static()
-
-            x = paddle.static.data(name='x', shape=[None, 4], dtype='float32')
-            y = paddle.static.data(name='y', shape=[None, 4], dtype='float32')
-            iou = ops.iou_similarity(x=x, y=y)
+            import paddle.fluid as fluid
+            conv1 = fluid.data(name='conv1', shape=[None, 48, 16, 16], dtype='float32')
+            anchor, var = fluid.layers.anchor_generator(
+                input=conv1,
+                anchor_sizes=[64, 128, 256, 512],
+                aspect_ratios=[0.5, 1.0, 2.0],
+                variance=[0.1, 0.1, 0.2, 0.2],
+                stride=[16.0, 16.0],
+                offset=0.5)
     """
 
-    if in_dygraph_mode():
-        out = _C_ops.iou_similarity(x, y, 'box_normalized', box_normalized)
-        return out
-    else:
-        helper = LayerHelper("iou_similarity", **locals())
-        out = helper.create_variable_for_type_inference(dtype=x.dtype)
+    def _is_list_or_tuple_(data):
+        return (isinstance(data, list) or isinstance(data, tuple))
 
-        helper.append_op(
-            type="iou_similarity",
-            inputs={"X": x,
-                    "Y": y},
-            attrs={"box_normalized": box_normalized},
-            outputs={"Out": out})
-        return out
+    if not _is_list_or_tuple_(anchor_sizes):
+        anchor_sizes = [anchor_sizes]
+    if not _is_list_or_tuple_(aspect_ratios):
+        aspect_ratios = [aspect_ratios]
+    if not (_is_list_or_tuple_(stride) and len(stride) == 2):
+        raise ValueError('stride should be a list or tuple ',
+                         'with length 2, (stride_width, stride_height).')
 
+    anchor_sizes = list(map(float, anchor_sizes))
+    aspect_ratios = list(map(float, aspect_ratios))
+    stride = list(map(float, stride))
 
-@paddle.jit.not_to_static
-def collect_fpn_proposals(multi_rois,
-                          multi_scores,
-                          min_level,
-                          max_level,
-                          post_nms_top_n,
-                          rois_num_per_level=None,
-                          name=None):
-    """
-    
-    **This OP only supports LoDTensor as input**. Concat multi-level RoIs 
-    (Region of Interest) and select N RoIs with respect to multi_scores. 
-    This operation performs the following steps:
+    if in_dynamic_mode():
+        attrs = ('anchor_sizes', anchor_sizes, 'aspect_ratios', aspect_ratios,
+                 'variances', variance, 'stride', stride, 'offset', offset)
+        anchor, var = C_ops.anchor_generator(input, *attrs)
+        return anchor, var
 
-    1. Choose num_level RoIs and scores as input: num_level = max_level - min_level
-    2. Concat multi-level RoIs and scores
-    3. Sort scores and select post_nms_top_n scores
-    4. Gather RoIs by selected indices from scores
-    5. Re-sort RoIs by corresponding batch_id
+    helper = LayerHelper("anchor_generator", **locals())
+    dtype = helper.input_dtype()
+    attrs = {
+        'anchor_sizes': anchor_sizes,
+        'aspect_ratios': aspect_ratios,
+        'variances': variance,
+        'stride': stride,
+        'offset': offset
+    }
 
-    Args:
-        multi_rois(list): List of RoIs to collect. Element in list is 2-D 
-            LoDTensor with shape [N, 4] and data type is float32 or float64, 
-            N is the number of RoIs.
-        multi_scores(list): List of scores of RoIs to collect. Element in list 
-            is 2-D LoDTensor with shape [N, 1] and data type is float32 or
-            float64, N is the number of RoIs.
-        min_level(int): The lowest level of FPN layer to collect
-        max_level(int): The highest level of FPN layer to collect
-        post_nms_top_n(int): The number of selected RoIs
-        rois_num_per_level(list, optional): The List of RoIs' numbers. 
-            Each element is 1-D Tensor which contains the RoIs' number of each 
-            image on each level and the shape is [B] and data type is 
-            int32, B is the number of images. If it is not None then return 
-            a 1-D Tensor contains the output RoIs' number of each image and 
-            the shape is [B]. Default: None
-        name(str, optional): For detailed information, please refer 
-            to :ref:`api_guide_Name`. Usually name is no need to set and 
-            None by default.
-
-    Returns:
-        Variable:
-
-        fpn_rois(Variable): 2-D LoDTensor with shape [N, 4] and data type is 
-        float32 or float64. Selected RoIs. 
-
-        rois_num(Tensor): 1-D Tensor contains the RoIs's number of each 
-        image. The shape is [B] and data type is int32. B is the number of 
-        images. 
-
-    Examples:
-        .. code-block:: python
-           
-            import paddle
-            from ppdet.modeling import ops
-            paddle.enable_static()
-            multi_rois = []
-            multi_scores = []
-            for i in range(4):
-                multi_rois.append(paddle.static.data(
-                    name='roi_'+str(i), shape=[None, 4], dtype='float32', lod_level=1))
-            for i in range(4):
-                multi_scores.append(paddle.static.data(
-                    name='score_'+str(i), shape=[None, 1], dtype='float32', lod_level=1))
-
-            fpn_rois = ops.collect_fpn_proposals(
-                multi_rois=multi_rois, 
-                multi_scores=multi_scores,
-                min_level=2, 
-                max_level=5, 
-                post_nms_top_n=2000)
-    """
-    check_type(multi_rois, 'multi_rois', list, 'collect_fpn_proposals')
-    check_type(multi_scores, 'multi_scores', list, 'collect_fpn_proposals')
-    num_lvl = max_level - min_level + 1
-    input_rois = multi_rois[:num_lvl]
-    input_scores = multi_scores[:num_lvl]
-
-    if in_dygraph_mode():
-        assert rois_num_per_level is not None, "rois_num_per_level should not be None in dygraph mode."
-        attrs = ('post_nms_topN', post_nms_top_n)
-        output_rois, rois_num = _C_ops.collect_fpn_proposals(
-            input_rois, input_scores, rois_num_per_level, *attrs)
-        return output_rois, rois_num
-
-    else:
-        helper = LayerHelper('collect_fpn_proposals', **locals())
-        dtype = helper.input_dtype('multi_rois')
-        check_dtype(dtype, 'multi_rois', ['float32', 'float64'],
-                    'collect_fpn_proposals')
-        output_rois = helper.create_variable_for_type_inference(dtype)
-        output_rois.stop_gradient = True
-
-        inputs = {
-            'MultiLevelRois': input_rois,
-            'MultiLevelScores': input_scores,
-        }
-        outputs = {'FpnRois': output_rois}
-        if rois_num_per_level is not None:
-            inputs['MultiLevelRoIsNum'] = rois_num_per_level
-            rois_num = helper.create_variable_for_type_inference(dtype='int32')
-            rois_num.stop_gradient = True
-            outputs['RoisNum'] = rois_num
-        else:
-            rois_num = None
-        helper.append_op(
-            type='collect_fpn_proposals',
-            inputs=inputs,
-            outputs=outputs,
-            attrs={'post_nms_topN': post_nms_top_n})
-        return output_rois, rois_num
+    anchor = helper.create_variable_for_type_inference(dtype)
+    var = helper.create_variable_for_type_inference(dtype)
+    helper.append_op(
+        type="anchor_generator",
+        inputs={"Input": input},
+        outputs={"Anchors": anchor,
+                 "Variances": var},
+        attrs=attrs, )
+    anchor.stop_gradient = True
+    var.stop_gradient = True
+    return anchor, var
 
 
 @paddle.jit.not_to_static
@@ -587,13 +284,14 @@ def distribute_fpn_proposals(fpn_rois,
     """
     num_lvl = max_level - min_level + 1
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         assert rois_num is not None, "rois_num should not be None in dygraph mode."
         attrs = ('min_level', min_level, 'max_level', max_level, 'refer_level',
                  refer_level, 'refer_scale', refer_scale, 'pixel_offset',
                  pixel_offset)
-        multi_rois, restore_ind, rois_num_per_level = _C_ops.distribute_fpn_proposals(
+        multi_rois, restore_ind, rois_num_per_level = C_ops.distribute_fpn_proposals(
             fpn_rois, rois_num, num_lvl, num_lvl, *attrs)
+
         return multi_rois, restore_ind, rois_num_per_level
 
     else:
@@ -636,143 +334,6 @@ def distribute_fpn_proposals(fpn_rois,
                 'pixel_offset': pixel_offset
             })
         return multi_rois, restore_ind, rois_num_per_level
-
-
-@paddle.jit.not_to_static
-def yolo_box(
-        x,
-        origin_shape,
-        anchors,
-        class_num,
-        conf_thresh,
-        downsample_ratio,
-        clip_bbox=True,
-        scale_x_y=1.,
-        name=None, ):
-    """
-
-    This operator generates YOLO detection boxes from output of YOLOv3 network.
-     
-     The output of previous network is in shape [N, C, H, W], while H and W
-     should be the same, H and W specify the grid size, each grid point predict
-     given number boxes, this given number, which following will be represented as S,
-     is specified by the number of anchors. In the second dimension(the channel
-     dimension), C should be equal to S * (5 + class_num), class_num is the object
-     category number of source dataset(such as 80 in coco dataset), so the
-     second(channel) dimension, apart from 4 box location coordinates x, y, w, h,
-     also includes confidence score of the box and class one-hot key of each anchor
-     box.
-     Assume the 4 location coordinates are :math:`t_x, t_y, t_w, t_h`, the box
-     predictions should be as follows:
-     $$
-     b_x = \\sigma(t_x) + c_x
-     $$
-     $$
-     b_y = \\sigma(t_y) + c_y
-     $$
-     $$
-     b_w = p_w e^{t_w}
-     $$
-     $$
-     b_h = p_h e^{t_h}
-     $$
-     in the equation above, :math:`c_x, c_y` is the left top corner of current grid
-     and :math:`p_w, p_h` is specified by anchors.
-     The logistic regression value of the 5th channel of each anchor prediction boxes
-     represents the confidence score of each prediction box, and the logistic
-     regression value of the last :attr:`class_num` channels of each anchor prediction
-     boxes represents the classifcation scores. Boxes with confidence scores less than
-     :attr:`conf_thresh` should be ignored, and box final scores is the product of
-     confidence scores and classification scores.
-     $$
-     score_{pred} = score_{conf} * score_{class}
-     $$
-
-    Args:
-        x (Tensor): The input tensor of YoloBox operator is a 4-D tensor with shape of [N, C, H, W].
-                    The second dimension(C) stores box locations, confidence score and
-                    classification one-hot keys of each anchor box. Generally, X should be the output of YOLOv3 network.
-                    The data type is float32 or float64.
-        origin_shape (Tensor): The image size tensor of YoloBox operator, This is a 2-D tensor with shape of [N, 2].
-                    This tensor holds height and width of each input image used for resizing output box in input image
-                    scale. The data type is int32.
-        anchors (list|tuple): The anchor width and height, it will be parsed pair by pair.
-        class_num (int): The number of classes to predict.
-        conf_thresh (float): The confidence scores threshold of detection boxes. Boxes with confidence scores
-                    under threshold should be ignored.
-        downsample_ratio (int): The downsample ratio from network input to YoloBox operator input,
-                    so 32, 16, 8 should be set for the first, second, and thrid YoloBox operators.
-        clip_bbox (bool): Whether clip output bonding box in Input(ImgSize) boundary. Default true.
-        scale_x_y (float): Scale the center point of decoded bounding box. Default 1.0.
-        name (string): The default value is None.  Normally there is no need
-                       for user to set this property.  For more information,
-                       please refer to :ref:`api_guide_Name`
-
-    Returns:
-        boxes Tensor: A 3-D tensor with shape [N, M, 4], the coordinates of boxes,  N is the batch num,
-                    M is output box number, and the 3rd dimension stores [xmin, ymin, xmax, ymax] coordinates of boxes.
-        scores Tensor: A 3-D tensor with shape [N, M, :attr:`class_num`], the coordinates of boxes,  N is the batch num,
-                    M is output box number.
-                    
-    Raises:
-        TypeError: Attr anchors of yolo box must be list or tuple
-        TypeError: Attr class_num of yolo box must be an integer
-        TypeError: Attr conf_thresh of yolo box must be a float number
-
-    Examples:
-
-    .. code-block:: python
-
-        import paddle
-        from ppdet.modeling import ops
-        
-        paddle.enable_static()
-        x = paddle.static.data(name='x', shape=[None, 255, 13, 13], dtype='float32')
-        img_size = paddle.static.data(name='img_size',shape=[None, 2],dtype='int64')
-        anchors = [10, 13, 16, 30, 33, 23]
-        boxes,scores = ops.yolo_box(x=x, img_size=img_size, class_num=80, anchors=anchors,
-                                        conf_thresh=0.01, downsample_ratio=32)
-    """
-    helper = LayerHelper('yolo_box', **locals())
-
-    if not isinstance(anchors, list) and not isinstance(anchors, tuple):
-        raise TypeError("Attr anchors of yolo_box must be list or tuple")
-    if not isinstance(class_num, int):
-        raise TypeError("Attr class_num of yolo_box must be an integer")
-    if not isinstance(conf_thresh, float):
-        raise TypeError("Attr ignore_thresh of yolo_box must be a float number")
-
-    if in_dygraph_mode():
-        attrs = ('anchors', anchors, 'class_num', class_num, 'conf_thresh',
-                 conf_thresh, 'downsample_ratio', downsample_ratio, 'clip_bbox',
-                 clip_bbox, 'scale_x_y', scale_x_y)
-        boxes, scores = _C_ops.yolo_box(x, origin_shape, *attrs)
-        return boxes, scores
-    else:
-        boxes = helper.create_variable_for_type_inference(dtype=x.dtype)
-        scores = helper.create_variable_for_type_inference(dtype=x.dtype)
-
-        attrs = {
-            "anchors": anchors,
-            "class_num": class_num,
-            "conf_thresh": conf_thresh,
-            "downsample_ratio": downsample_ratio,
-            "clip_bbox": clip_bbox,
-            "scale_x_y": scale_x_y,
-        }
-
-        helper.append_op(
-            type='yolo_box',
-            inputs={
-                "X": x,
-                "ImgSize": origin_shape,
-            },
-            outputs={
-                'Boxes': boxes,
-                'Scores': scores,
-            },
-            attrs=attrs)
-        return boxes, scores
 
 
 @paddle.jit.not_to_static
@@ -877,14 +438,14 @@ def prior_box(input,
             max_sizes = [max_sizes]
         cur_max_sizes = max_sizes
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         attrs = ('min_sizes', min_sizes, 'aspect_ratios', aspect_ratios,
                  'variances', variance, 'flip', flip, 'clip', clip, 'step_w',
                  steps[0], 'step_h', steps[1], 'offset', offset,
                  'min_max_aspect_ratios_order', min_max_aspect_ratios_order)
         if cur_max_sizes is not None:
             attrs += ('max_sizes', cur_max_sizes)
-        box, var = _C_ops.prior_box(input, image, *attrs)
+        box, var = C_ops.prior_box(input, image, *attrs)
         return box, var
     else:
         attrs = {
@@ -1022,13 +583,13 @@ def multiclass_nms(bboxes,
     """
     helper = LayerHelper('multiclass_nms3', **locals())
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         attrs = ('background_label', background_label, 'score_threshold',
                  score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
                  nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
                  'normalized', normalized)
-        output, index, nms_rois_num = _C_ops.multiclass_nms3(bboxes, scores,
-                                                             rois_num, *attrs)
+        output, index, nms_rois_num = C_ops.multiclass_nms3(bboxes, scores,
+                                                            rois_num, *attrs)
         if not return_index:
             index = None
         return output, nms_rois_num, index
@@ -1163,13 +724,13 @@ def matrix_nms(bboxes,
     check_type(gaussian_sigma, 'gaussian_sigma', float, 'matrix_nms')
     check_type(background_label, 'background_label', int, 'matrix_nms')
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         attrs = ('background_label', background_label, 'score_threshold',
                  score_threshold, 'post_threshold', post_threshold, 'nms_top_k',
                  nms_top_k, 'gaussian_sigma', gaussian_sigma, 'use_gaussian',
                  use_gaussian, 'keep_top_k', keep_top_k, 'normalized',
                  normalized)
-        out, index, rois_num = _C_ops.matrix_nms(bboxes, scores, *attrs)
+        out, index, rois_num = C_ops.matrix_nms(bboxes, scores, *attrs)
         if not return_index:
             index = None
         if not return_rois_num:
@@ -1206,111 +767,6 @@ def matrix_nms(bboxes,
         if not return_rois_num:
             rois_num = None
         return output, rois_num, index
-
-
-def bipartite_match(dist_matrix,
-                    match_type=None,
-                    dist_threshold=None,
-                    name=None):
-    """
-
-    This operator implements a greedy bipartite matching algorithm, which is
-    used to obtain the matching with the maximum distance based on the input
-    distance matrix. For input 2D matrix, the bipartite matching algorithm can
-    find the matched column for each row (matched means the largest distance),
-    also can find the matched row for each column. And this operator only
-    calculate matched indices from column to row. For each instance,
-    the number of matched indices is the column number of the input distance
-    matrix. **The OP only supports CPU**.
-
-    There are two outputs, matched indices and distance.
-    A simple description, this algorithm matched the best (maximum distance)
-    row entity to the column entity and the matched indices are not duplicated
-    in each row of ColToRowMatchIndices. If the column entity is not matched
-    any row entity, set -1 in ColToRowMatchIndices.
-
-    NOTE: the input DistMat can be LoDTensor (with LoD) or Tensor.
-    If LoDTensor with LoD, the height of ColToRowMatchIndices is batch size.
-    If Tensor, the height of ColToRowMatchIndices is 1.
-
-    NOTE: This API is a very low level API. It is used by :code:`ssd_loss`
-    layer. Please consider to use :code:`ssd_loss` instead.
-
-    Args:
-        dist_matrix(Tensor): This input is a 2-D LoDTensor with shape
-            [K, M]. The data type is float32 or float64. It is pair-wise 
-            distance matrix between the entities represented by each row and 
-            each column. For example, assumed one entity is A with shape [K], 
-            another entity is B with shape [M]. The dist_matrix[i][j] is the 
-            distance between A[i] and B[j]. The bigger the distance is, the 
-            better matching the pairs are. NOTE: This tensor can contain LoD 
-            information to represent a batch of inputs. One instance of this 
-            batch can contain different numbers of entities.
-        match_type(str, optional): The type of matching method, should be
-           'bipartite' or 'per_prediction'. None ('bipartite') by default.
-        dist_threshold(float32, optional): If `match_type` is 'per_prediction',
-            this threshold is to determine the extra matching bboxes based
-            on the maximum distance, 0.5 by default.
-        name(str, optional): For detailed information, please refer 
-            to :ref:`api_guide_Name`. Usually name is no need to set and 
-            None by default.
- 
-    Returns:
-        Tuple:
-
-        matched_indices(Tensor): A 2-D Tensor with shape [N, M]. The data
-        type is int32. N is the batch size. If match_indices[i][j] is -1, it
-        means B[j] does not match any entity in i-th instance.
-        Otherwise, it means B[j] is matched to row
-        match_indices[i][j] in i-th instance. The row number of
-        i-th instance is saved in match_indices[i][j].
-
-        matched_distance(Tensor): A 2-D Tensor with shape [N, M]. The data
-        type is float32. N is batch size. If match_indices[i][j] is -1,
-        match_distance[i][j] is also -1.0. Otherwise, assumed
-        match_distance[i][j] = d, and the row offsets of each instance
-        are called LoD. Then match_distance[i][j] =
-        dist_matrix[d+LoD[i]][j].
-
-    Examples:
-
-        .. code-block:: python
-            import paddle
-            from ppdet.modeling import ops
-            from ppdet.modeling.utils import iou_similarity
-
-            paddle.enable_static()
-
-            x = paddle.static.data(name='x', shape=[None, 4], dtype='float32')
-            y = paddle.static.data(name='y', shape=[None, 4], dtype='float32')
-            iou = iou_similarity(x=x, y=y)
-            matched_indices, matched_dist = ops.bipartite_match(iou)
-    """
-    check_variable_and_dtype(dist_matrix, 'dist_matrix',
-                             ['float32', 'float64'], 'bipartite_match')
-
-    if in_dygraph_mode():
-        match_indices, match_distance = _C_ops.bipartite_match(
-            dist_matrix, "match_type", match_type, "dist_threshold",
-            dist_threshold)
-        return match_indices, match_distance
-
-    helper = LayerHelper('bipartite_match', **locals())
-    match_indices = helper.create_variable_for_type_inference(dtype='int32')
-    match_distance = helper.create_variable_for_type_inference(
-        dtype=dist_matrix.dtype)
-    helper.append_op(
-        type='bipartite_match',
-        inputs={'DistMat': dist_matrix},
-        attrs={
-            'match_type': match_type,
-            'dist_threshold': dist_threshold,
-        },
-        outputs={
-            'ColToRowMatchIndices': match_indices,
-            'ColToRowMatchDist': match_distance
-        })
-    return match_indices, match_distance
 
 
 @paddle.jit.not_to_static
@@ -1425,14 +881,14 @@ def box_coder(prior_box,
     check_variable_and_dtype(target_box, 'target_box', ['float32', 'float64'],
                              'box_coder')
 
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         if isinstance(prior_box_var, Variable):
-            output_box = _C_ops.box_coder(
+            output_box = C_ops.box_coder(
                 prior_box, prior_box_var, target_box, "code_type", code_type,
                 "box_normalized", box_normalized, "axis", axis)
 
         elif isinstance(prior_box_var, list):
-            output_box = _C_ops.box_coder(
+            output_box = C_ops.box_coder(
                 prior_box, None, target_box, "code_type", code_type,
                 "box_normalized", box_normalized, "axis", axis, "variance",
                 prior_box_var)
@@ -1550,12 +1006,12 @@ def generate_proposals(scores,
             rois, roi_probs = ops.generate_proposals(scores, bbox_deltas,
                          im_shape, anchors, variances)
     """
-    if in_dygraph_mode():
+    if in_dynamic_mode():
         assert return_rois_num, "return_rois_num should be True in dygraph mode."
         attrs = ('pre_nms_topN', pre_nms_top_n, 'post_nms_topN', post_nms_top_n,
                  'nms_thresh', nms_thresh, 'min_size', min_size, 'eta', eta,
                  'pixel_offset', pixel_offset)
-        rpn_rois, rpn_roi_probs, rpn_rois_num = _C_ops.generate_proposals_v2(
+        rpn_rois, rpn_roi_probs, rpn_rois_num = C_ops.generate_proposals_v2(
             scores, bbox_deltas, im_shape, anchors, variances, *attrs)
         if not return_rois_num:
             rpn_rois_num = None
@@ -1656,8 +1112,3 @@ def get_static_shape(tensor):
     shape = paddle.shape(tensor)
     shape.stop_gradient = True
     return shape
-
-
-def paddle_distributed_is_initialized():
-    return core.is_compiled_with_dist(
-    ) and parallel_helper._is_parallel_ctx_initialized()

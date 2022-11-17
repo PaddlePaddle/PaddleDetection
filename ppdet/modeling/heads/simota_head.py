@@ -179,8 +179,8 @@ class OTAHead(GFLHead):
                                                    num_level_anchors)
         num_total_pos = sum(pos_num_l)
         try:
-            num_total_pos = paddle.distributed.all_reduce(num_total_pos.clone(
-            )) / paddle.distributed.get_world_size()
+            paddle.distributed.all_reduce(num_total_pos)
+            num_total_pos = num_total_pos / paddle.distributed.get_world_size()
         except:
             num_total_pos = max(num_total_pos, 1)
 
@@ -255,7 +255,7 @@ class OTAHead(GFLHead):
 
         avg_factor = sum(avg_factor)
         try:
-            avg_factor = paddle.distributed.all_reduce(avg_factor.clone())
+            paddle.distributed.all_reduce(avg_factor)
             avg_factor = paddle.clip(
                 avg_factor / paddle.distributed.get_world_size(), min=1)
         except:
@@ -396,8 +396,8 @@ class OTAVFLHead(OTAHead):
                                                    num_level_anchors)
         num_total_pos = sum(pos_num_l)
         try:
-            num_total_pos = paddle.distributed.all_reduce(num_total_pos.clone(
-            )) / paddle.distributed.get_world_size()
+            paddle.distributed.all_reduce(num_total_pos)
+            num_total_pos = num_total_pos / paddle.distributed.get_world_size()
         except:
             num_total_pos = max(num_total_pos, 1)
 
@@ -475,7 +475,7 @@ class OTAVFLHead(OTAHead):
 
         avg_factor = sum(avg_factor)
         try:
-            avg_factor = paddle.distributed.all_reduce(avg_factor.clone())
+            paddle.distributed.all_reduce(avg_factor)
             avg_factor = paddle.clip(
                 avg_factor / paddle.distributed.get_world_size(), min=1)
         except:

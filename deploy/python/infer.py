@@ -36,14 +36,17 @@ from picodet_postprocess import PicoDetPostProcess
 from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, Pad, decode_image
 from keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
 from visualize import visualize_box_mask
-from utils import argsparser, Timer, get_current_memory_mb
+from utils import argsparser, Timer, get_current_memory_mb, multiclass_nms, coco_clsid2catid
 
 # Global dictionary
 SUPPORT_MODELS = {
     'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
     'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD', 'RetinaNet',
-    'StrongBaseline', 'STGCN', 'YOLOX', 'SparseInst'
+    'StrongBaseline', 'STGCN', 'YOLOX', 'YOLOF', 'PPHGNet', 'PPLCNet', 'DETR',
+    'SparseInst'
 }
+
+TUNED_TRT_DYNAMIC_MODELS = {'DETR'}
 
 
 def bench_log(detector, img_list, model_info, batch_size=1, name=None):
@@ -103,6 +106,7 @@ class Detector(object):
         self.pred_config = self.set_config(model_dir)
         self.predictor, self.config = load_predictor(
             model_dir,
+            self.pred_config.arch,
             run_mode=run_mode,
             batch_size=batch_size,
             min_subgraph_size=self.pred_config.min_subgraph_size,
@@ -152,9 +156,12 @@ class Detector(object):
     def postprocess(self, inputs, result):
         # postprocess output of predictor
         np_boxes_num = result['boxes_num']
-        if np_boxes_num[0] <= 0:
+        assert isinstance(np_boxes_num, np.ndarray), \
+            '`np_boxes_num` should be a `numpy.ndarray`'
+
+        if np_boxes_num.sum() <= 0:
             print('[WARNNING] No object detected.')
-            result = {'boxes': np.zeros([0, 6]), 'boxes_num': [0]}
+            result = {'boxes': np.zeros([0, 6]), 'boxes_num': np_boxes_num}
         result = {k: v for k, v in result.items() if v is not None}
         return result
 
@@ -188,7 +195,7 @@ class Detector(object):
                             shape: [N, im_h, im_w]
         '''
         # model prediction
-        np_boxes, np_masks = None, None
+        np_boxes_num, np_boxes, np_masks = np.array([0]), None, None
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -218,12 +225,136 @@ class Detector(object):
     def get_timer(self):
         return self.det_times
 
+    def predict_image_slice(self,
+                            img_list,
+                            slice_size=[640, 640],
+                            overlap_ratio=[0.25, 0.25],
+                            combine_method='nms',
+                            match_threshold=0.6,
+                            match_metric='ios',
+                            run_benchmark=False,
+                            repeats=1,
+                            visual=True,
+                            save_results=False):
+        # slice infer only support bs=1
+        results = []
+        try:
+            import sahi
+            from sahi.slicing import slice_image
+        except Exception as e:
+            print(
+                'sahi not found, plaese install sahi. '
+                'for example: `pip install sahi`, see https://github.com/obss/sahi.'
+            )
+            raise e
+        num_classes = len(self.pred_config.labels)
+        for i in range(len(img_list)):
+            ori_image = img_list[i]
+            slice_image_result = sahi.slicing.slice_image(
+                image=ori_image,
+                slice_height=slice_size[0],
+                slice_width=slice_size[1],
+                overlap_height_ratio=overlap_ratio[0],
+                overlap_width_ratio=overlap_ratio[1])
+            sub_img_num = len(slice_image_result)
+            merged_bboxs = []
+            print('slice to {} sub_samples.', sub_img_num)
+
+            batch_image_list = [
+                slice_image_result.images[_ind] for _ind in range(sub_img_num)
+            ]
+            if run_benchmark:
+                # preprocess
+                inputs = self.preprocess(batch_image_list)  # warmup
+                self.det_times.preprocess_time_s.start()
+                inputs = self.preprocess(batch_image_list)
+                self.det_times.preprocess_time_s.end()
+
+                # model prediction
+                result = self.predict(repeats=50)  # warmup
+                self.det_times.inference_time_s.start()
+                result = self.predict(repeats=repeats)
+                self.det_times.inference_time_s.end(repeats=repeats)
+
+                # postprocess
+                result_warmup = self.postprocess(inputs, result)  # warmup
+                self.det_times.postprocess_time_s.start()
+                result = self.postprocess(inputs, result)
+                self.det_times.postprocess_time_s.end()
+                self.det_times.img_num += 1
+
+                cm, gm, gu = get_current_memory_mb()
+                self.cpu_mem += cm
+                self.gpu_mem += gm
+                self.gpu_util += gu
+            else:
+                # preprocess
+                self.det_times.preprocess_time_s.start()
+                inputs = self.preprocess(batch_image_list)
+                self.det_times.preprocess_time_s.end()
+
+                # model prediction
+                self.det_times.inference_time_s.start()
+                result = self.predict()
+                self.det_times.inference_time_s.end()
+
+                # postprocess
+                self.det_times.postprocess_time_s.start()
+                result = self.postprocess(inputs, result)
+                self.det_times.postprocess_time_s.end()
+                self.det_times.img_num += 1
+
+            st, ed = 0, result['boxes_num'][0]  # start_index, end_index
+            for _ind in range(sub_img_num):
+                boxes_num = result['boxes_num'][_ind]
+                ed = st + boxes_num
+                shift_amount = slice_image_result.starting_pixels[_ind]
+                result['boxes'][st:ed][:, 2:4] = result['boxes'][
+                    st:ed][:, 2:4] + shift_amount
+                result['boxes'][st:ed][:, 4:6] = result['boxes'][
+                    st:ed][:, 4:6] + shift_amount
+                merged_bboxs.append(result['boxes'][st:ed])
+                st = ed
+
+            merged_results = {'boxes': []}
+            if combine_method == 'nms':
+                final_boxes = multiclass_nms(
+                    np.concatenate(merged_bboxs), num_classes, match_threshold,
+                    match_metric)
+                merged_results['boxes'] = np.concatenate(final_boxes)
+            elif combine_method == 'concat':
+                merged_results['boxes'] = np.concatenate(merged_bboxs)
+            else:
+                raise ValueError(
+                    "Now only support 'nms' or 'concat' to fuse detection results."
+                )
+            merged_results['boxes_num'] = np.array(
+                [len(merged_results['boxes'])], dtype=np.int32)
+
+            if visual:
+                visualize(
+                    [ori_image],  # should be list
+                    merged_results,
+                    self.pred_config.labels,
+                    output_dir=self.output_dir,
+                    threshold=self.threshold)
+
+            results.append(merged_results)
+            print('Test iter {}'.format(i))
+
+        results = self.merge_batch_result(results)
+        if save_results:
+            Path(self.output_dir).mkdir(exist_ok=True)
+            self.save_coco_results(
+                img_list, results, use_coco_category=FLAGS.use_coco_category)
+        return results
+
     def predict_image(self,
                       image_list,
                       run_benchmark=False,
                       repeats=1,
                       visual=True,
-                      save_file=None):
+                      save_results=False):
         batch_loop_cnt = math.ceil(float(len(image_list)) / self.batch_size)
         results = []
         for i in range(batch_loop_cnt):
@@ -278,16 +409,13 @@ class Detector(object):
                         self.pred_config.labels,
                         output_dir=self.output_dir,
                         threshold=self.threshold)
-
             results.append(result)
-            if visual:
-                print('Test iter {}'.format(i))
-
-        if save_file is not None:
-            Path(self.output_dir).mkdir(exist_ok=True)
-            self.format_coco_results(image_list, results, save_file=save_file)
-
+            print('Test iter {}'.format(i))
         results = self.merge_batch_result(results)
+        if save_results:
+            Path(self.output_dir).mkdir(exist_ok=True)
+            self.save_coco_results(
+                image_list, results, use_coco_category=FLAGS.use_coco_category)
         return results
 
     def predict_video(self, video_file, camera_id):
@@ -331,67 +459,62 @@ class Detector(object):
                     break
         writer.release()
 
-    @staticmethod
-    def format_coco_results(image_list, results, save_file=None):
-        coco_results = []
-        image_id = 0
+    def save_coco_results(self, image_list, results, use_coco_category=False):
+        bbox_results = []
+        mask_results = []
+        idx = 0
+        print("Start saving coco json files...")
+        for i, box_num in enumerate(results['boxes_num']):
+            file_name = os.path.split(image_list[i])[-1]
+            if use_coco_category:
+                img_id = int(os.path.splitext(file_name)[0])
+            else:
+                img_id = i
 
-        for result in results:
-            start_idx = 0
-            for box_num in result['boxes_num']:
-                idx_slice = slice(start_idx, start_idx + box_num)
-                start_idx += box_num
+            if 'boxes' in results:
+                boxes = results['boxes'][idx:idx + box_num].tolist()
+                bbox_results.extend([{
+                    'image_id': img_id,
+                    'category_id': coco_clsid2catid[int(box[0])] \
+                        if use_coco_category else int(box[0]),
+                    'file_name': file_name,
+                    'bbox': [box[2], box[3], box[4] - box[2],
+                         box[5] - box[3]],  # xyxy -> xywh
+                    'score': box[1]} for box in boxes])
 
-                image_file = image_list[image_id]
-                image_id += 1
+            if 'masks' in results:
+                import pycocotools.mask as mask_util
 
-                if 'boxes' in result:
-                    boxes = result['boxes'][idx_slice, :]
-                    per_result = [
-                        {
-                            'image_file': image_file,
-                            'bbox':
-                            [box[2], box[3], box[4] - box[2],
-                             box[5] - box[3]],  # xyxy -> xywh
-                            'score': box[1],
-                            'category_id': int(box[0]),
-                        } for k, box in enumerate(boxes.tolist())
-                    ]
-
-                elif 'segm' in result:
-                    import pycocotools.mask as mask_util
-
-                    scores = result['score'][idx_slice].tolist()
-                    category_ids = result['label'][idx_slice].tolist()
-                    segms = result['segm'][idx_slice, :]
-                    rles = [
-                        mask_util.encode(
-                            np.array(
-                                mask[:, :, np.newaxis],
-                                dtype=np.uint8,
-                                order='F'))[0] for mask in segms
-                    ]
-                    for rle in rles:
-                        rle['counts'] = rle['counts'].decode('utf-8')
-
-                    per_result = [{
-                        'image_file': image_file,
+                boxes = results['boxes'][idx:idx + box_num].tolist()
+                masks = results['masks'][i][:box_num].astype(np.uint8)
+                seg_res = []
+                for box, mask in zip(boxes, masks):
+                    rle = mask_util.encode(
+                        np.array(
+                            mask[:, :, None], dtype=np.uint8, order="F"))[0]
+                    if 'counts' in rle:
+                        rle['counts'] = rle['counts'].decode("utf8")
+                    seg_res.append({
+                        'image_id': img_id,
+                        'category_id': coco_clsid2catid[int(box[0])] \
+                        if use_coco_category else int(box[0]),
+                        'file_name': file_name,
                         'segmentation': rle,
-                        'score': scores[k],
-                        'category_id': category_ids[k],
-                    } for k, rle in enumerate(rles)]
+                        'score': box[1]})
+                mask_results.extend(seg_res)
 
-                else:
-                    raise RuntimeError('')
+            idx += box_num
 
-                # per_result = [item for item in per_result if item['score'] > threshold]
-                coco_results.extend(per_result)
-
-        if save_file:
-            with open(os.path.join(save_file), 'w') as f:
-                json.dump(coco_results, f)
-
-        return coco_results
+        if bbox_results:
+            bbox_file = os.path.join(self.output_dir, "bbox.json")
+            with open(bbox_file, 'w') as f:
+                json.dump(bbox_results, f)
+            print(f"The bbox result is saved to {bbox_file}")
+        if mask_results:
+            mask_file = os.path.join(self.output_dir, "mask.json")
+            with open(mask_file, 'w') as f:
+                json.dump(mask_results, f)
+            print(f"The mask result is saved to {mask_file}")
 
 
 class DetectorSOLOv2(Detector):
@@ -656,6 +779,7 @@ class PredictConfig():
 
 
 def load_predictor(model_dir,
+                   arch,
                    run_mode='paddle',
                    batch_size=1,
                    device='CPU',
@@ -668,7 +792,8 @@ def load_predictor(model_dir,
                    cpu_threads=1,
                    enable_mkldnn=False,
                    enable_mkldnn_bfloat16=False,
-                   delete_shuffle_pass=False):
+                   delete_shuffle_pass=False,
+                   tuned_trt_shape_file="shape_range_info.pbtxt"):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
@@ -706,8 +831,13 @@ def load_predictor(model_dir,
         # optimize graph and fuse op
         config.switch_ir_optim(True)
     elif device == 'XPU':
-        config.enable_lite_engine()
+        if config.lite_engine_enabled():
+            config.enable_lite_engine()
         config.enable_xpu(10 * 1024 * 1024)
+    elif device == 'NPU':
+        if config.lite_engine_enabled():
+            config.enable_lite_engine()
+        config.enable_npu()
     else:
         config.disable_gpu()
         config.set_cpu_math_library_num_threads(cpu_threads)
@@ -730,6 +860,8 @@ def load_predictor(model_dir,
         'trt_fp16': Config.Precision.Half
     }
     if run_mode in precision_map.keys():
+        if arch in TUNED_TRT_DYNAMIC_MODELS:
+            config.collect_shape_range_info(tuned_trt_shape_file)
         config.enable_tensorrt_engine(
             workspace_size=(1 << 25) * batch_size,
             max_batch_size=batch_size,
@@ -737,16 +869,22 @@ def load_predictor(model_dir,
             precision_mode=precision_map[run_mode],
             use_static=False,
             use_calib_mode=trt_calib_mode)
+        if arch in TUNED_TRT_DYNAMIC_MODELS:
+            config.enable_tuned_tensorrt_dynamic_shape(tuned_trt_shape_file,
+                                                       True)
 
         if use_dynamic_shape:
             min_input_shape = {
-                'image': [batch_size, 3, trt_min_shape, trt_min_shape]
+                'image': [batch_size, 3, trt_min_shape, trt_min_shape],
+                'scale_factor': [batch_size, 2]
             }
             max_input_shape = {
-                'image': [batch_size, 3, trt_max_shape, trt_max_shape]
+                'image': [batch_size, 3, trt_max_shape, trt_max_shape],
+                'scale_factor': [batch_size, 2]
             }
             opt_input_shape = {
-                'image': [batch_size, 3, trt_opt_shape, trt_opt_shape]
+                'image': [batch_size, 3, trt_opt_shape, trt_opt_shape],
+                'scale_factor': [batch_size, 2]
             }
             config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
                                               opt_input_shape)
@@ -869,10 +1007,23 @@ def main():
         if FLAGS.image_dir is None and FLAGS.image_file is not None:
             assert FLAGS.batch_size == 1, "batch_size should be 1, when image_file is not None"
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        save_file = os.path.join(FLAGS.output_dir,
-                                 'results.json') if FLAGS.save_results else None
-        detector.predict_image(
-            img_list, FLAGS.run_benchmark, repeats=100, save_file=save_file)
+        if FLAGS.slice_infer:
+            detector.predict_image_slice(
+                img_list,
+                FLAGS.slice_size,
+                FLAGS.overlap_ratio,
+                FLAGS.combine_method,
+                FLAGS.match_threshold,
+                FLAGS.match_metric,
+                visual=FLAGS.save_images,
+                save_results=FLAGS.save_results)
+        else:
+            detector.predict_image(
+                img_list,
+                FLAGS.run_benchmark,
+                repeats=100,
+                visual=FLAGS.save_images,
+                save_results=FLAGS.save_results)
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)
         else:
@@ -891,8 +1042,8 @@ if __name__ == '__main__':
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)
     FLAGS.device = FLAGS.device.upper()
-    assert FLAGS.device in ['CPU', 'GPU', 'XPU'
-                            ], "device should be CPU, GPU or XPU"
+    assert FLAGS.device in ['CPU', 'GPU', 'XPU', 'NPU'
+                            ], "device should be CPU, GPU, XPU or NPU"
     assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
 
     assert not (

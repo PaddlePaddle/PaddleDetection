@@ -7,12 +7,20 @@
   <center>图片来源：COCO2017开源数据集</center>
 </div>
 
+## 最新动态
+- **2022.8.01：发布PP-TinyPose升级版。 在健身、舞蹈等场景的业务数据集端到端AP提升9.1**
+  - 新增体育场景真实数据，复杂动作识别效果显著提升，覆盖侧身、卧躺、跳跃、高抬腿等非常规动作
+  - 检测模型升级为[PP-PicoDet增强版](../../../configs/picodet/README.md)，在COCO数据集上精度提升3.1%
+  - 关键点稳定性增强。新增滤波稳定方式，视频预测结果更加稳定平滑
+
+  ![](https://user-images.githubusercontent.com/15810355/181733705-d0f84232-c6a2-43dd-be70-4a3a246b8fbc.gif)
+
 ## 简介
 PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测模型，可流畅地在移动端设备上执行多人姿态估计任务。借助PaddleDetecion自研的优秀轻量级检测模型[PicoDet](../../picodet/README.md)，我们同时提供了特色的轻量级垂类行人检测模型。TinyPose的运行环境有以下依赖要求：
 - [PaddlePaddle](https://github.com/PaddlePaddle/Paddle)>=2.2
 
 如希望在移动端部署，则还需要：
-- [Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite)>=2.10
+- [Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite)>=2.11
 
 
 <div align="center">
@@ -34,27 +42,48 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测�
 
 
 ## 模型库
-### 关键点检测模型
-| 模型        | 输入尺寸 | AP (COCO Val) | 单人推理耗时 (FP32) | 单人推理耗时（FP16) |             配置文件             |                           模型权重                           |                         预测部署模型                         |                  Paddle-Lite部署模型（FP32)                  |                  Paddle-Lite部署模型（FP16)                  |
-| :---------- | :------: | :-----------: | :-----------------: | :-----------------: | :------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| PP-TinyPose |  128*96  |     58.1      |       4.57ms        |       3.27ms        | [Config](./tinypose_128x96.yml)  | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_lite.tar) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16_lite.tar) |
-| PP-TinyPose | 256*192  |     68.8      |       14.07ms       |       8.33ms        | [Config](./tinypose_256x192.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_lite.tar) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16_lite.tar) |
 
+### Pipeline性能
+| 单人模型配置 | AP (业务数据集） | AP (COCO Val单人）| 单人耗时 (FP32) |  单人耗时 (FP16) |
+| :---------------------------------- | :------: | :------: | :---: | :---: |
+| PicoDet-S-Lcnet-Pedestrian-192\*192 + PP-TinyPose-128\*96 | 77.1 (+9.1) | 52.3 (+0.5) | 12.90 ms| 9.61 ms |
+
+| 多人模型配置 | AP (业务数据集) | AP (COCO Val多人）| 6人耗时 (FP32) | 6人耗时 (FP16)|
+| :------------------------ | :-------: | :-------: | :---: | :---: |
+| PicoDet-S-Lcnet-Pedestrian-320\*320 + PP-TinyPose-128\*96 | 78.0 (+7.7) | 50.1 (-0.2) | 47.63 ms| 34.62 ms |
+
+**说明**
+- 关键点检测模型的精度指标是基于对应行人检测模型检测得到的检测框。
+- 精度测试中去除了flip操作，且检测置信度阈值要求0.5。
+- 速度测试环境为qualcomm snapdragon 865，采用arm8下4线程推理。
+- Pipeline速度包含模型的预处理、推理及后处理部分。
+- 精度值的增量对比自历史版本中对应模型组合, 详情请见**历史版本-Pipeline性能**。
+- 精度测试中，为了公平比较，多人数据去除了6人以上（不含6人）的图像。
+
+### 关键点检测模型
+| 模型        | 输入尺寸 | AP (业务数据集) | AP (COCO Val) | 参数量 | FLOPS |单人推理耗时 (FP32) | 单人推理耗时（FP16) |             配置文件             |                           模型权重                           |                         预测部署模型                         |                  Paddle-Lite部署模型（FP32)                  |                  Paddle-Lite部署模型（FP16)                  |
+| :---------- | :------: | :-----------: | :-----------: | :-----------: | :-----------: | :-----------------: | :-----------------: | :------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+| PP-TinyPose |  128*96  |     84.3      |    58.4     | 1.32 M | 81.56 M | 4.57ms        |       3.27ms        | [Config](./tinypose_128x96.yml)  | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/tinypose_128x96.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/tinypose_128x96.zip) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/tinypose_128x96_fp32.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/tinypose_128x96_fp16.nb) |
+| PP-TinyPose | 256*192  |     91.0      |   68.3       |  1.32 M  | 326.24M |14.07ms       |       8.33ms        | [Config](./tinypose_256x192.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/tinypose_256x192.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/tinypose_256x192.zip) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/tinypose_256x192_fp32.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/tinypose_256x192_fp16.nb) |
 
 
 ### 行人检测模型
-| 模型                 | 输入尺寸 | mAP (COCO Val) | 平均推理耗时 (FP32) | 平均推理耗时 (FP16) |                           配置文件                           |                           模型权重                           |                         预测部署模型                         |                  Paddle-Lite部署模型（FP32)                  |                  Paddle-Lite部署模型（FP16)                  |
-| :------------------- | :------: | :------------: | :-----------------: | :-----------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| PicoDet-S-Pedestrian | 192*192  |      29.0      |       4.30ms        |       2.37ms        | [Config](../../picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_lite.tar) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16_lite.tar) |
-| PicoDet-S-Pedestrian | 320*320  |      38.5      |       10.26ms       |       6.30ms        | [Config](../../picodet/legacy_model/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_lite.tar) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16_lite.tar) |
-
-
+| 模型                 | 输入尺寸 | mAP (COCO Val-Person) | 参数量 | FLOPS | 平均推理耗时 (FP32) | 平均推理耗时 (FP16) |                           配置文件                           |                           模型权重                           |                         预测部署模型                         |                  Paddle-Lite部署模型（FP32)                  |                  Paddle-Lite部署模型（FP16)                  |
+| :------------------- | :------: | :------------: | :------------: | :------------: | :-----------------: | :-----------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+| PicoDet-S-Lcnet-Pedestrian | 192*192  |      31.7      | 1.16 M  | 170.03 M |  5.24ms        |       3.66ms        | [Config](../../picodet/application/pedestrian_detection/picodet_s_192_lcnet_pedestrian.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_192_lcnet_pedestrian.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_192_lcnet_pedestrian.zip) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_192_lcnet_pedestrian_fp32.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_192_lcnet_pedestrian_fp16.nb) |
+| PicoDet-S-Lcnet-Pedestrian | 320*320  |      41.6      | 1.16 M   | 472.07 M | 13.87ms       |       8.94ms        | [Config](../../picodet/application/pedestrian_detection/picodet_s_320_lcnet_pedestrian.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_320_lcnet_pedestrian.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_320_lcnet_pedestrian.zip) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_320_lcnet_pedestrian_fp32.nb) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_enhance/picodet_s_320_lcnet_pedestrian_fp16.nb) |
 
 **说明**
-- 关键点检测模型与行人检测模型均使用`COCO train2017`和`AI Challenger trainset`作为训练集。关键点检测模型使用`COCO person keypoints val2017`作为测试集，行人检测模型采用`COCO instances val2017`作为测试集。
+- 关键点检测模型与行人检测模型均使用`COCO train2017`, `AI Challenger trainset`以及采集的多姿态场景数据集作为训练集。关键点检测模型使用多姿态场景数据集作为测试集，行人检测模型采用`COCO instances val2017`作为测试集。
 - 关键点检测模型的精度指标所依赖的检测框为ground truth标注得到。
 - 关键点检测模型与行人检测模型均在4卡环境下训练，若实际训练环境需要改变GPU数量或batch size， 须参考[FAQ](../../../docs/tutorials/FAQ/README.md)对应调整学习率。
 - 推理速度测试环境为 Qualcomm Snapdragon 865，采用arm8下4线程推理得到。
+
+## 历史版本
+
+<details>
+<summary>2021版本</summary>
+
 
 ### Pipeline性能
 | 单人模型配置 | AP (COCO Val 单人) | 单人耗时 (FP32) |  单人耗时 (FP16) |
@@ -75,6 +104,29 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测�
 - Pipeline速度包含模型的预处理、推理及后处理部分。
 - 其他优秀开源模型的测试及部署方案，请参考[这里](https://github.com/zhiboniu/MoveNet-PaddleLite)。
 - 更多环境下的性能测试结果，请参考[Keypoint Inference Benchmark](../KeypointBenchmark.md)。
+
+
+### 关键点检测模型
+| 模型        | 输入尺寸 | AP (COCO Val) | 单人推理耗时 (FP32) | 单人推理耗时（FP16) |             配置文件             |                           模型权重                           |                         预测部署模型                         |                  Paddle-Lite部署模型（FP32)                  |                  Paddle-Lite部署模型（FP16)                  |
+| :---------- | :------: | :-----------: | :-----------------: | :-----------------: | :------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+| PP-TinyPose |  128*96  |     58.1      |       4.57ms        |       3.27ms        | [Config](./tinypose_128x96.yml)  | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_lite.tar) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16_lite.tar) |
+| PP-TinyPose | 256*192  |     68.8      |       14.07ms       |       8.33ms        | [Config](./tinypose_256x192.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_lite.tar) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16_lite.tar) |
+
+### 行人检测模型
+| 模型                 | 输入尺寸 | mAP (COCO Val-Person) | 平均推理耗时 (FP32) | 平均推理耗时 (FP16) |                           配置文件                           |                           模型权重                           |                         预测部署模型                         |                  Paddle-Lite部署模型（FP32)                  |                  Paddle-Lite部署模型（FP16)                  |
+| :------------------- | :------: | :------------: | :-----------------: | :-----------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+| PicoDet-S-Pedestrian | 192*192  |      29.0      |       4.30ms        |       2.37ms        | [Config](../../picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_lite.tar) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16_lite.tar) |
+| PicoDet-S-Pedestrian | 320*320  |      38.5      |       10.26ms       |       6.30ms        | [Config](../../picodet/legacy_model/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [Model](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams) | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.tar) | [Lite部署模型](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_lite.tar) | [Lite部署模型(FP16)](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16_lite.tar) |
+
+
+**说明**
+- 关键点检测模型与行人检测模型均使用`COCO train2017`和`AI Challenger trainset`作为训练集。关键点检测模型使用`COCO person keypoints val2017`作为测试集，行人检测模型采用`COCO instances val2017`作为测试集。
+- 关键点检测模型的精度指标所依赖的检测框为ground truth标注得到。
+- 关键点检测模型与行人检测模型均在4卡环境下训练，若实际训练环境需要改变GPU数量或batch size， 须参考[FAQ](../../../docs/tutorials/FAQ/README.md)对应调整学习率。
+- 推理速度测试环境为 Qualcomm Snapdragon 865，采用arm8下4线程推理得到。
+
+
+</details>
 
 ## 模型训练
 关键点检测模型与行人检测模型的训练集在`COCO`以外还扩充了[AI Challenger](https://arxiv.org/abs/1711.06475)数据集，各数据集关键点定义如下：
@@ -176,7 +228,7 @@ python3 deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inferen
 ### 实现移动端部署
 #### 直接使用我们提供的模型进行部署
 1. 下载模型库中提供的`Paddle-Lite部署模型`，分别获取得到行人检测模型和关键点检测模型的`.nb`格式文件。
-2. 准备Paddle-Lite运行环境, 可直接通过[PaddleLite预编译库下载](https://paddle-lite.readthedocs.io/zh/latest/quick_start/release_lib.html)获取预编译库，无需自行编译。如需要采用FP16推理，则需要下载[FP16的预编译库](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.10-rc/inference_lite_lib.android.armv8_clang_c++_static_with_extra_with_cv_with_fp16.tiny_publish_427e46.zip)
+2. 准备Paddle-Lite运行环境, 可直接通过[PaddleLite预编译库下载](https://paddle-lite.readthedocs.io/zh/latest/quick_start/release_lib.html)获取预编译库，无需自行编译。如需要采用FP16推理，则需要下载FP16的预编译库。
 3. 编译模型运行代码，详细步骤见[Paddle-Lite端侧部署](../../../deploy/lite/README.md)。
 
 #### 将训练的模型实现端侧部署
@@ -216,11 +268,14 @@ paddle_lite_opt --model_dir=inference_model/tinypose_128x96 --valid_targets=arm 
 - 在导出模型时增加`TestReader.fuse_normalize=true`参数，可以将对图像的Normalize操作合并在模型中执行，从而实现加速。
 - FP16推理可实现更快的模型推理速度。若希望部署FP16模型，除模型转换步骤外，还需要编译支持FP16的Paddle-Lite预测库，详见[Paddle Lite 使用 ARM CPU 预测部署](https://paddle-lite.readthedocs.io/zh/latest/demo_guides/arm_cpu.html)。
 
+## 关键点稳定策略（仅支持视频推理）
+请参考[关键点稳定策略](../README.md#关键点稳定策略仅适用于视频数据)。
+
 ## 优化策略
 TinyPose采用了以下策略来平衡模型的速度和精度表现：
 - 轻量级的姿态估计任务骨干网络，[wider naive Lite-HRNet](https://arxiv.org/abs/2104.06403)。
-- 更小的输入尺寸。
+- 更小的输入尺寸，以提升整体推理速度。
 - 加入Distribution-Aware coordinate Representation of Keypoints ([DARK](https://arxiv.org/abs/1910.06278))，以提升低分辨率热力图下模型的精度表现。
-- Unbiased Data Processing ([UDP](https://arxiv.org/abs/1911.07524))。
-- Augmentation by Information Dropping ([AID](https://arxiv.org/abs/2008.07139v2))。
-- FP16 推理。
+- Unbiased Data Processing ([UDP](https://arxiv.org/abs/1911.07524))，使用无偏数据编解码提升模型精度。
+- Augmentation by Information Dropping ([AID](https://arxiv.org/abs/2008.07139v2))，通过添加信息丢失的数组增强，提升模型对关键点的定位能力。
+- FP16 推理, 实现更快的模型推理速度。

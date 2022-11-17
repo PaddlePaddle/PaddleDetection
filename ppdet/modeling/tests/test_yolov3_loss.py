@@ -17,7 +17,7 @@ from __future__ import division
 import unittest
 
 import paddle
-from paddle import fluid
+import paddle.nn.functional as F
 # add python path of PadleDetection to sys.path
 import os
 import sys
@@ -27,19 +27,9 @@ if parent_path not in sys.path:
 
 from ppdet.modeling.losses import YOLOv3Loss
 from ppdet.data.transform.op_helper import jaccard_overlap
+from ppdet.modeling.bbox_utils import iou_similarity
 import numpy as np
-
-
-def _split_ioup(output, an_num, num_classes):
-    """
-    Split output feature map to output, predicted iou
-    along channel dimension
-    """
-    ioup = fluid.layers.slice(output, axes=[1], starts=[0], ends=[an_num])
-    ioup = fluid.layers.sigmoid(ioup)
-    oriout = fluid.layers.slice(
-        output, axes=[1], starts=[an_num], ends=[an_num * (num_classes + 6)])
-    return (ioup, oriout)
+np.random.seed(0)
 
 
 def _split_output(output, an_num, num_classes):
@@ -47,31 +37,31 @@ def _split_output(output, an_num, num_classes):
     Split output feature map to x, y, w, h, objectness, classification
     along channel dimension
     """
-    x = fluid.layers.strided_slice(
+    x = paddle.strided_slice(
         output,
         axes=[1],
         starts=[0],
         ends=[output.shape[1]],
         strides=[5 + num_classes])
-    y = fluid.layers.strided_slice(
+    y = paddle.strided_slice(
         output,
         axes=[1],
         starts=[1],
         ends=[output.shape[1]],
         strides=[5 + num_classes])
-    w = fluid.layers.strided_slice(
+    w = paddle.strided_slice(
         output,
         axes=[1],
         starts=[2],
         ends=[output.shape[1]],
         strides=[5 + num_classes])
-    h = fluid.layers.strided_slice(
+    h = paddle.strided_slice(
         output,
         axes=[1],
         starts=[3],
         ends=[output.shape[1]],
         strides=[5 + num_classes])
-    obj = fluid.layers.strided_slice(
+    obj = paddle.strided_slice(
         output,
         axes=[1],
         starts=[4],
@@ -81,14 +71,12 @@ def _split_output(output, an_num, num_classes):
     stride = output.shape[1] // an_num
     for m in range(an_num):
         clss.append(
-            fluid.layers.slice(
+            paddle.slice(
                 output,
                 axes=[1],
                 starts=[stride * m + 5],
                 ends=[stride * m + 5 + num_classes]))
-    cls = fluid.layers.transpose(
-        fluid.layers.stack(
-            clss, axis=1), perm=[0, 1, 3, 4, 2])
+    cls = paddle.transpose(paddle.stack(clss, axis=1), perm=[0, 1, 3, 4, 2])
     return (x, y, w, h, obj, cls)
 
 
@@ -104,7 +92,7 @@ def _split_target(target):
     th = target[:, :, 3, :, :]
     tscale = target[:, :, 4, :, :]
     tobj = target[:, :, 5, :, :]
-    tcls = fluid.layers.transpose(target[:, :, 6:, :, :], perm=[0, 1, 3, 4, 2])
+    tcls = paddle.transpose(target[:, :, 6:, :, :], perm=[0, 1, 3, 4, 2])
     tcls.stop_gradient = True
     return (tx, ty, tw, th, tscale, tobj, tcls)
 
@@ -115,9 +103,9 @@ def _calc_obj_loss(output, obj, tobj, gt_box, batch_size, anchors, num_classes,
     # objectness loss will be ignored, process as follows:
     # 1. get pred bbox, which is same with YOLOv3 infer mode, use yolo_box here
     # NOTE: img_size is set as 1.0 to get noramlized pred bbox
-    bbox, prob = fluid.layers.yolo_box(
+    bbox, prob = paddle.vision.ops.yolo_box(
         x=output,
-        img_size=fluid.layers.ones(
+        img_size=paddle.ones(
             shape=[batch_size, 2], dtype="int32"),
         anchors=anchors,
         class_num=num_classes,
@@ -128,8 +116,8 @@ def _calc_obj_loss(output, obj, tobj, gt_box, batch_size, anchors, num_classes,
     # 2. split pred bbox and gt bbox by sample, calculate IoU between pred bbox
     #    and gt bbox in each sample
     if batch_size > 1:
-        preds = fluid.layers.split(bbox, batch_size, dim=0)
-        gts = fluid.layers.split(gt_box, batch_size, dim=0)
+        preds = paddle.split(bbox, batch_size, axis=0)
+        gts = paddle.split(gt_box, batch_size, axis=0)
     else:
         preds = [bbox]
         gts = [gt_box]
@@ -142,7 +130,7 @@ def _calc_obj_loss(output, obj, tobj, gt_box, batch_size, anchors, num_classes,
             y = box[:, 1]
             w = box[:, 2]
             h = box[:, 3]
-            return fluid.layers.stack(
+            return paddle.stack(
                 [
                     x - w / 2.,
                     y - h / 2.,
@@ -150,28 +138,29 @@ def _calc_obj_loss(output, obj, tobj, gt_box, batch_size, anchors, num_classes,
                     y + h / 2.,
                 ], axis=1)
 
-        pred = fluid.layers.squeeze(pred, axes=[0])
-        gt = box_xywh2xyxy(fluid.layers.squeeze(gt, axes=[0]))
-        ious.append(fluid.layers.iou_similarity(pred, gt))
-    iou = fluid.layers.stack(ious, axis=0)
+        pred = paddle.squeeze(pred, axis=[0])
+        gt = box_xywh2xyxy(paddle.squeeze(gt, axis=[0]))
+        ious.append(iou_similarity(pred, gt))
+    iou = paddle.stack(ious, axis=0)
     # 3. Get iou_mask by IoU between gt bbox and prediction bbox,
     #    Get obj_mask by tobj(holds gt_score), calculate objectness loss
-    max_iou = fluid.layers.reduce_max(iou, dim=-1)
-    iou_mask = fluid.layers.cast(max_iou <= ignore_thresh, dtype="float32")
-    output_shape = fluid.layers.shape(output)
+    max_iou = paddle.max(iou, axis=-1)
+    iou_mask = paddle.cast(max_iou <= ignore_thresh, dtype="float32")
+    output_shape = paddle.shape(output)
     an_num = len(anchors) // 2
-    iou_mask = fluid.layers.reshape(iou_mask, (-1, an_num, output_shape[2],
-                                               output_shape[3]))
+    iou_mask = paddle.reshape(iou_mask, (-1, an_num, output_shape[2],
+                                         output_shape[3]))
     iou_mask.stop_gradient = True
     # NOTE: tobj holds gt_score, obj_mask holds object existence mask
-    obj_mask = fluid.layers.cast(tobj > 0., dtype="float32")
+    obj_mask = paddle.cast(tobj > 0., dtype="float32")
     obj_mask.stop_gradient = True
     # For positive objectness grids, objectness loss should be calculated
     # For negative objectness grids, objectness loss is calculated only iou_mask == 1.0
-    loss_obj = fluid.layers.sigmoid_cross_entropy_with_logits(obj, obj_mask)
-    loss_obj_pos = fluid.layers.reduce_sum(loss_obj * tobj, dim=[1, 2, 3])
-    loss_obj_neg = fluid.layers.reduce_sum(
-        loss_obj * (1.0 - obj_mask) * iou_mask, dim=[1, 2, 3])
+    obj_sigmoid = F.sigmoid(obj)
+    loss_obj = F.binary_cross_entropy(obj_sigmoid, obj_mask, reduction='none')
+    loss_obj_pos = paddle.sum(loss_obj * tobj, axis=[1, 2, 3])
+    loss_obj_neg = paddle.sum(loss_obj * (1.0 - obj_mask) * iou_mask,
+                              axis=[1, 2, 3])
     return loss_obj_pos, loss_obj_neg
 
 
@@ -194,45 +183,48 @@ def fine_grained_loss(output,
     scale_x_y = scale_x_y
 
     if (abs(scale_x_y - 1.0) < eps):
-        loss_x = fluid.layers.sigmoid_cross_entropy_with_logits(
-            x, tx) * tscale_tobj
-        loss_x = fluid.layers.reduce_sum(loss_x, dim=[1, 2, 3])
-        loss_y = fluid.layers.sigmoid_cross_entropy_with_logits(
-            y, ty) * tscale_tobj
-        loss_y = fluid.layers.reduce_sum(loss_y, dim=[1, 2, 3])
+        x = F.sigmoid(x)
+        y = F.sigmoid(y)
+        loss_x = F.binary_cross_entropy(x, tx, reduction='none') * tscale_tobj
+        loss_x = paddle.sum(loss_x, axis=[1, 2, 3])
+        loss_y = F.binary_cross_entropy(y, ty, reduction='none') * tscale_tobj
+        loss_y = paddle.sum(loss_y, axis=[1, 2, 3])
     else:
-        dx = scale_x_y * fluid.layers.sigmoid(x) - 0.5 * (scale_x_y - 1.0)
-        dy = scale_x_y * fluid.layers.sigmoid(y) - 0.5 * (scale_x_y - 1.0)
-        loss_x = fluid.layers.abs(dx - tx) * tscale_tobj
-        loss_x = fluid.layers.reduce_sum(loss_x, dim=[1, 2, 3])
-        loss_y = fluid.layers.abs(dy - ty) * tscale_tobj
-        loss_y = fluid.layers.reduce_sum(loss_y, dim=[1, 2, 3])
+        dx = scale_x_y * F.sigmoid(x) - 0.5 * (scale_x_y - 1.0)
+        dy = scale_x_y * F.sigmoid(y) - 0.5 * (scale_x_y - 1.0)
+        loss_x = paddle.abs(dx - tx) * tscale_tobj
+        loss_x = paddle.sum(loss_x, axis=[1, 2, 3])
+        loss_y = paddle.abs(dy - ty) * tscale_tobj
+        loss_y = paddle.sum(loss_y, axis=[1, 2, 3])
 
     # NOTE: we refined loss function of (w, h) as L1Loss
-    loss_w = fluid.layers.abs(w - tw) * tscale_tobj
-    loss_w = fluid.layers.reduce_sum(loss_w, dim=[1, 2, 3])
-    loss_h = fluid.layers.abs(h - th) * tscale_tobj
-    loss_h = fluid.layers.reduce_sum(loss_h, dim=[1, 2, 3])
+    loss_w = paddle.abs(w - tw) * tscale_tobj
+    loss_w = paddle.sum(loss_w, axis=[1, 2, 3])
+    loss_h = paddle.abs(h - th) * tscale_tobj
+    loss_h = paddle.sum(loss_h, axis=[1, 2, 3])
 
     loss_obj_pos, loss_obj_neg = _calc_obj_loss(
         output, obj, tobj, gt_box, batch_size, anchors, num_classes, downsample,
         ignore_thresh, scale_x_y)
 
-    loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls)
-    loss_cls = fluid.layers.elementwise_mul(loss_cls, tobj, axis=0)
-    loss_cls = fluid.layers.reduce_sum(loss_cls, dim=[1, 2, 3, 4])
+    cls = F.sigmoid(cls)
+    loss_cls = F.binary_cross_entropy(cls, tcls, reduction='none')
+    tobj = paddle.unsqueeze(tobj, axis=-1)
 
-    loss_xys = fluid.layers.reduce_mean(loss_x + loss_y)
-    loss_whs = fluid.layers.reduce_mean(loss_w + loss_h)
-    loss_objs = fluid.layers.reduce_mean(loss_obj_pos + loss_obj_neg)
-    loss_clss = fluid.layers.reduce_mean(loss_cls)
+    loss_cls = paddle.multiply(loss_cls, tobj)
+    loss_cls = paddle.sum(loss_cls, axis=[1, 2, 3, 4])
+
+    loss_xys = paddle.mean(loss_x + loss_y)
+    loss_whs = paddle.mean(loss_w + loss_h)
+    loss_objs = paddle.mean(loss_obj_pos + loss_obj_neg)
+    loss_clss = paddle.mean(loss_cls)
 
     losses_all = {
-        "loss_xy": fluid.layers.sum(loss_xys),
-        "loss_wh": fluid.layers.sum(loss_whs),
-        "loss_loc": fluid.layers.sum(loss_xys) + fluid.layers.sum(loss_whs),
-        "loss_obj": fluid.layers.sum(loss_objs),
-        "loss_cls": fluid.layers.sum(loss_clss),
+        "loss_xy": paddle.sum(loss_xys),
+        "loss_wh": paddle.sum(loss_whs),
+        "loss_loc": paddle.sum(loss_xys) + paddle.sum(loss_whs),
+        "loss_obj": paddle.sum(loss_objs),
+        "loss_cls": paddle.sum(loss_clss),
     }
     return losses_all, x, y, tx, ty
 
@@ -364,10 +356,7 @@ class TestYolov3LossOp(unittest.TestCase):
             x, t, gtbox, anchor, self.downsample_ratio, self.scale_x_y)
         for k in yolo_loss2:
             self.assertAlmostEqual(
-                yolo_loss1[k].numpy()[0],
-                yolo_loss2[k].numpy()[0],
-                delta=1e-2,
-                msg=k)
+                float(yolo_loss1[k]), float(yolo_loss2[k]), delta=1e-2, msg=k)
 
 
 class TestYolov3LossNoGTScore(TestYolov3LossOp):

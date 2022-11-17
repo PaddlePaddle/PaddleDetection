@@ -19,22 +19,15 @@
       - [Deployment for Top-Down models](#deployment-for-top-down-models)
       - [Deployment for Bottom-Up models](#deployment-for-bottom-up-models)
       - [Joint Inference with Multi-Object Tracking Model FairMOT](#joint-inference-with-multi-object-tracking-model-fairmot)
-  - [Complete Deploy Instruction and Demo](#4Complete-Deploy-Instruction-and-Demo)
-
-- [Train with custom data](#Train-with-custom-data)
-
+  - [Complete Deploy Instruction and Demo](#complete-deploy-instruction-and-demo)
+- [Train with custom data](#train-with-custom-data)
 - [BenchMark](#benchmark)
 
 ## Introduction
 
-The keypoint detection part in PaddleDetection follows the state-of-the-art algorithm closely, including Top-Down and Bottom-Up methods, which can satisfy the different needs of users.
+The keypoint detection part in PaddleDetection follows the state-of-the-art algorithm closely, including Top-Down and Bottom-Up methods, which can satisfy the different needs of users. Top-Down detects the object first and then detects the specific keypoint. Top-Down models will be more accurate, but slower as the number of objects increases. Differently, Bottom-Up detects the point first and then group or connect those points to form several instances of human pose. The speed of Bottom-Up is fixed, it won't slow down as the number of objects increases, but it will be less accurate.
 
-Top-Down detects the object first and then detect the specific keypoint. The accuracy of Top-Down models will be higher, but the time required will increase by the number of objects.
-
-
-Differently, Bottom-Up detects the point first and then group or connect those points to form several instances of human pose. The speed of Bottom-Up is fixed and will not increase by the number of objects, but the accuracy will be lower.
-
-At the same time, PaddleDetection provides [PP-TinyPose](./tiny_pose/README_en.md) specially for mobile devices.
+At the same time, PaddleDetection provides a self-developed real-time keypoint detection model [PP-TinyPose](./tiny_pose/README_en.md) optimized for mobile devices.
 
 <div align="center">
   <img src="./football_keypoint.gif" width='800'/>
@@ -49,11 +42,11 @@ At the same time, PaddleDetection provides [PP-TinyPose](./tiny_pose/README_en.m
 
 | Detection Model                                              | Keypoint Model                        |               Input Size                |             Accuracy of COCO             |     Average Inference Time (FP16)     |             Params (M)             |             Flops (G)              |                         Model Weight                         |              Paddle-Lite Inference Model（FP16)              |
 | :----------------------------------------------------------- | :------------------------------------ | :-------------------------------------: | :--------------------------------------: | :-----------------------------------: | :--------------------------------: | :--------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [PP-TinyPose](./tinypose_128x96.yml)  | Detection：192x192<br>Keypoint：128x96  | Detection mAP：29.0<br>Keypoint AP：58.1 | Detection：2.37ms<br>Keypoint：3.27ms | Detection：1.18<br/>Keypoint：1.36 | Detection：0.35<br/>Keypoint：0.08 | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
-| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [PP-TinyPose](./tinypose_256x192.yml) | Detection：320x320<br>Keypoint：256x192 | Detection mAP：38.5<br>Keypoint AP：68.8 | Detection：6.30ms<br>Keypoint：8.33ms | Detection：1.18<br/>Keypoint：1.36 | Detection：0.97<br/>Keypoint：0.32 | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
+| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [PP-TinyPose](./tiny_pose/tinypose_128x96.yml)  | Detection：192x192<br>Keypoint：128x96  | Detection mAP：29.0<br>Keypoint AP：58.1 | Detection：2.37ms<br>Keypoint：3.27ms | Detection：1.18<br/>Keypoint：1.36 | Detection：0.35<br/>Keypoint：0.08 | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
+| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [PP-TinyPose](./tiny_pose/tinypose_256x192.yml) | Detection：320x320<br>Keypoint：256x192 | Detection mAP：38.5<br>Keypoint AP：68.8 | Detection：6.30ms<br>Keypoint：8.33ms | Detection：1.18<br/>Keypoint：1.36 | Detection：0.97<br/>Keypoint：0.32 | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [Detection](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[Keypoint](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
 
 
-*Specific documents of PP-TinyPose, please refer to [Document]((./tiny_pose/README.md))。
+*Specific documents of PP-TinyPose, please refer to [Document](./tiny_pose/README.md)。
 
 ### Terminal Server
 
@@ -93,7 +86,7 @@ MPII Dataset
 Model for Scenes
 | Model | Strategy | Input Size | Precision | Inference Speed |Model Weights | Model Inference and Deployment | description|
 | :---- | ---|----- | :--------: | :-------: |:------------: |:------------: |:-------------------: |
-| HRNet-w32 + DarkPose | Top-Down|256x192  |  AP: 87.1 (on internal dataset)| 2.9ms per person |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) | Especially optimized for fall scenarios, the model is applied to [PP-Human](../../deploy/pphuman/README_en.md) |
+| HRNet-w32 + DarkPose | Top-Down|256x192  |  AP: 87.1 (on internal dataset)| 2.9ms per person |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) | Especially optimized for fall scenarios, the model is applied to [PP-Human](../../deploy/pipeline/README.md) |
 
 
 We also release [PP-TinyPose](./tiny_pose/README_en.md), a real-time keypoint detection model optimized for mobile devices. Welcome to experience.
@@ -106,7 +99,7 @@ We also release [PP-TinyPose](./tiny_pose/README_en.md), a real-time keypoint de
 
 ### 2.Dataset Preparation
 
-​    Currently, KeyPoint Detection Models support [COCO](https://cocodataset.org/#keypoints-2017) and [MPII](http://human-pose.mpi-inf.mpg.de/#overview). Please refer to [Keypoint Dataset Preparation](../../docs/tutorials/PrepareKeypointDataSet_en.md) to prepare dataset.
+​    Currently, KeyPoint Detection Models support [COCO](https://cocodataset.org/#keypoints-2017) and [MPII](http://human-pose.mpi-inf.mpg.de/#overview). Please refer to [Keypoint Dataset Preparation](../../docs/tutorials/data/PrepareKeypointDataSet_en.md) to prepare dataset.
 
 ​   About the description for config files, please refer to [Keypoint Config Guild](../../docs/tutorials/KeyPointConfigGuide_en.md).
 
@@ -195,13 +188,13 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 **Note:**
  To export MOT model, please refer to [Here](../../configs/mot/README_en.md).
 
-### 4.Complete Deploy Instruction and Demo
+### Complete Deploy Instruction and Demo
 
 ​ We provide standalone deploy of PaddleInference(Server-GPU)、PaddleLite(mobile、ARM)、Third-Engine(MNN、OpenVino), which is independent of training codes。For detail, please click [Deploy-docs](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/README_en.md)。
 
 ## Train with custom data
 
-We take an example of [tinypose_256x192](.tiny_pose/README_en.md) to show how to train with custom data.
+We take an example of [tinypose_256x192](./tiny_pose/README_en.md) to show how to train with custom data.
 
 #### 1、For configs [tinypose_256x192.yml](../../configs/keypoint/tiny_pose/tinypose_256x192.yml)
 

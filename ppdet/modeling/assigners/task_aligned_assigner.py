@@ -21,7 +21,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 
 from ppdet.core.workspace import register
-from ..bbox_utils import iou_similarity
+from ..bbox_utils import batch_iou_similarity
 from .utils import (gather_topk_anchors, check_points_inside_bboxes,
                     compute_max_iou_anchor)
 
@@ -86,14 +86,14 @@ class TaskAlignedAssigner(nn.Layer):
         # negative batch
         if num_max_boxes == 0:
             assigned_labels = paddle.full(
-                [batch_size, num_anchors], bg_index, dtype=gt_labels.dtype)
+                [batch_size, num_anchors], bg_index, dtype='int32')
             assigned_bboxes = paddle.zeros([batch_size, num_anchors, 4])
             assigned_scores = paddle.zeros(
                 [batch_size, num_anchors, num_classes])
             return assigned_labels, assigned_bboxes, assigned_scores
 
         # compute iou between gt and pred bbox, [B, n, L]
-        ious = iou_similarity(gt_bboxes, pred_bboxes)
+        ious = batch_iou_similarity(gt_bboxes, pred_bboxes)
         # gather pred bboxes class score
         pred_scores = pred_scores.transpose([0, 2, 1])
         batch_ind = paddle.arange(

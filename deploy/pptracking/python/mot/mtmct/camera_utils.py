@@ -19,7 +19,13 @@ Note: The following codes are strongly related to camera parameters of the AIC21
 """
 
 import numpy as np
-from sklearn.cluster import AgglomerativeClustering
+try:
+    from sklearn.cluster import AgglomerativeClustering
+except:
+    print(
+        'Warning: Unable to use MTMCT in PP-Tracking, please install sklearn, for example: `pip install sklearn`'
+    )
+    pass
 from .utils import get_dire, get_match, get_cid_tid, combin_feature, combin_cluster
 from .utils import normalize, intracam_ignore, visual_rerank
 

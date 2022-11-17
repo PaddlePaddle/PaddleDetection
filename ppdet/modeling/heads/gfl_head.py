@@ -55,7 +55,6 @@ class Integral(nn.Layer):
     This layer calculates the target location by :math: `sum{P(y_i) * y_i}`,
     P(y_i) denotes the softmax vector that represents the discrete distribution
     y_i denotes the discrete set, usually {0, 1, 2, ..., reg_max}
-
     Args:
         reg_max (int): The maximal value of the discrete set. Default: 16. You
             may want to reset it according to your new dataset or related
@@ -88,7 +87,6 @@ class Integral(nn.Layer):
 @register
 class DGQP(nn.Layer):
     """Distribution-Guided Quality Predictor of GFocal head
-
     Args:
         reg_topk (int): top-k statistics of distribution to guide LQE
         reg_channels (int): hidden layer unit to generate LQE
@@ -260,7 +258,7 @@ class GFLHead(nn.Layer):
                 center_points = paddle.stack([x, y], axis=-1)
                 cls_score = cls_score.reshape([b, -1, self.cls_out_channels])
                 bbox_pred = self.distribution_project(bbox_pred) * stride
-                bbox_pred = bbox_pred.reshape([b, cell_h * cell_w, 4])
+                bbox_pred = bbox_pred.reshape([-1, cell_h * cell_w, 4])
 
                 # NOTE: If keep_ratio=False and image shape value that
                 # multiples of 32, distance2bbox not set max_shapes parameter
@@ -388,7 +386,7 @@ class GFLHead(nn.Layer):
 
         avg_factor = sum(avg_factor)
         try:
-            avg_factor = paddle.distributed.all_reduce(avg_factor.clone())
+            paddle.distributed.all_reduce(avg_factor)
             avg_factor = paddle.clip(
                 avg_factor / paddle.distributed.get_world_size(), min=1)
         except:

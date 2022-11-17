@@ -84,9 +84,14 @@ def load_weight(model, weight, optimizer=None, ema=None):
     model_weight = {}
     incorrect_keys = 0
 
-    for key in model_dict.keys():
+    for key, value in model_dict.items():
         if key in param_state_dict.keys():
-            model_weight[key] = param_state_dict[key]
+            if isinstance(param_state_dict[key], np.ndarray):
+                param_state_dict[key] = paddle.to_tensor(param_state_dict[key])
+            if value.dtype == param_state_dict[key].dtype:
+                model_weight[key] = param_state_dict[key]
+            else:
+                model_weight[key] = param_state_dict[key].astype(value.dtype)
         else:
             logger.info('Unmatched key: {}'.format(key))
             incorrect_keys += 1
@@ -208,6 +213,12 @@ def load_pretrain_weight(model, pretrain_weight):
     weights_path = path + '.pdparams'
     param_state_dict = paddle.load(weights_path)
     param_state_dict = match_state_dict(model_dict, param_state_dict)
+
+    for k, v in param_state_dict.items():
+        if isinstance(v, np.ndarray):
+            v = paddle.to_tensor(v)
+        if model_dict[k].dtype != v.dtype:
+            param_state_dict[k] = v.astype(model_dict[k].dtype)
 
     model.set_dict(param_state_dict)
     logger.info('Finish loading model weights: {}'.format(weights_path))

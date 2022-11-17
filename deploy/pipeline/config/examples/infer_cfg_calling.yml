@@ -1,0 +1,17 @@
+crop_thresh: 0.5
+visual: True
+warmup_frame: 50
+
+MOT:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip
+  tracker_config: deploy/pipeline/config/tracker_config.yml
+  batch_size: 1
+  enable: True
+
+ID_BASED_CLSACTION:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip
+  batch_size: 8
+  threshold: 0.8
+  display_frames: 80
+  skip_frame_num: 2
+  enable: True

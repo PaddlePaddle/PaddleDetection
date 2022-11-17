@@ -1,0 +1,24 @@
+===========================serving_infer_python_params===========================
+model_name:picodet_s_320_coco
+python:python3.7
+filename:null
+##
+--output_dir:./output_inference
+weights:https://paddledet.bj.bcebos.com/models/picodet_s_320_coco.pdparams
+norm_export:tools/export_model.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml --export_serving_model True -o
+quant_export:tools/export_model.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml --slim_config _template_pact --export_serving_model True -o
+fpgm_export:tools/export_model.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml --slim_config _template_fpgm --export_serving_model True -o
+distill_export:null
+export1:null
+export2:null
+kl_quant_export:tools/post_quant.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml --slim_config configs/slim/post_quant/picodet_s_ptq.yml --export_serving_model True -o
+##
+infer_mode:norm
+infer_quant:False
+web_service:deploy/serving/python/web_service.py --config=deploy/serving/python/config.yml
+--model_dir:null
+--opt:cpu:op.ppdet.local_service_conf.device_type=0|gpu:op.ppdet.local_service_conf.device_type=1
+null:null
+http_client:deploy/serving/python/pipeline_http_client.py
+--image_file:./demo/000000014439.jpg
+null:null

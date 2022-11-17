@@ -6,7 +6,7 @@
 - [简介](#简介)
 - [模型库](#模型库)
 - [快速开始](#快速开始)
-- [适配其他检测器](适配其他检测器)
+- [适配其他检测器](#适配其他检测器)
 - [引用](#引用)
 
 ## 简介
@@ -18,18 +18,18 @@
 
 |  骨干网络  |  输入尺寸  |  MOTA  |  IDF1  |  IDS |   FP   |   FN  |  FPS | 检测结果或模型 | ReID模型 |配置文件 |
 | :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :-----:| :-----: | :-----: |
-| ResNet-101 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./reid/deepsort_pcb_pyramid_r101.yml) |
+| ResNet-101 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  - | [检测结果](https://bj.bcebos.com/v1/paddledet/data/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./reid/deepsort_pcb_pyramid_r101.yml) |
 | ResNet-101 | 1088x608 |  68.3  |  56.5  | 1722 |  17337 | 15890 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./deepsort_jde_yolov3_pcb_pyramid.yml) |
-| PPLCNet    | 1088x608 |  72.2  |  59.5  | 1087  |  8034  | 21481 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./reid/deepsort_pplcnet.yml) |
+| PPLCNet    | 1088x608 |  72.2  |  59.5  | 1087  |  8034  | 21481 |  - | [检测结果](https://bj.bcebos.com/v1/paddledet/data/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./reid/deepsort_pplcnet.yml) |
 | PPLCNet    | 1088x608 |  68.1  |  53.6  | 1979 |  17446 | 15766 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./deepsort_jde_yolov3_pplcnet.yml) |
 
 ### DeepSORT在MOT-16 Test Set上结果
 
 |  骨干网络  |  输入尺寸  |  MOTA  |  IDF1  |  IDS |   FP   |   FN  |  FPS | 检测结果或模型 | ReID模型 |配置文件 |
 | :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :-----: | :-----: |:-----: |
-| ResNet-101 | 1088x608 |  64.1  |  53.0  | 1024  |  12457  | 51919 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) | [ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./reid/deepsort_pcb_pyramid_r101.yml) |
+| ResNet-101 | 1088x608 |  64.1  |  53.0  | 1024  |  12457  | 51919 |  - | [检测结果](https://bj.bcebos.com/v1/paddledet/data/mot/det_results_dir.zip) | [ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./reid/deepsort_pcb_pyramid_r101.yml) |
 | ResNet-101 | 1088x608 |  61.2  |  48.5  | 1799  |  25796  | 43232 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams)  |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](./deepsort_jde_yolov3_pcb_pyramid.yml) |
-| PPLCNet    | 1088x608 |  64.0  |  51.3  | 1208  |  12697  | 51784 |  - | [检测结果](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./reid/deepsort_pplcnet.yml) |
+| PPLCNet    | 1088x608 |  64.0  |  51.3  | 1208  |  12697  | 51784 |  - | [检测结果](https://bj.bcebos.com/v1/paddledet/data/mot/det_results_dir.zip) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./reid/deepsort_pplcnet.yml) |
 | PPLCNet    | 1088x608 |  61.1  |  48.8  | 2010 |  25401 | 43432 |  - | [检测模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams) |[ReID模型](https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams)|[配置文件](./deepsort_jde_yolov3_pplcnet.yml) |
 
 
@@ -41,8 +41,8 @@
 | MIX               | JDE YOLOv3 | PPLCNet     |  -       |  66.3  |  62.1  |   -    |[配置文件](./deepsort_jde_yolov3_pplcnet.yml) |
 | MOT-17 half train | YOLOv3     | PPLCNet     |  42.7    |  50.2  |  52.4  |   -    |[配置文件](./deepsort_yolov3_pplcnet.yml) |
 | MOT-17 half train | PPYOLOv2   | PPLCNet     |  46.8    |  51.8  |  55.8  |   -    |[配置文件](./deepsort_ppyolov2_pplcnet.yml) |
-| MOT-17 half train | PPYOLOe    | PPLCNet     |  52.9    |  56.7  |  60.5  |   -    |[配置文件](./deepsort_ppyoloe_pplcnet.yml) |
-| MOT-17 half train | PPYOLOe    | ResNet-50   |  52.9    |  56.7  |  64.6  |   -    |[配置文件](./deepsort_ppyoloe_resnet.yml) |
+| MOT-17 half train | PPYOLOe    | PPLCNet     |  52.7    |  56.7  |  60.5  |   -    |[配置文件](./deepsort_ppyoloe_pplcnet.yml) |
+| MOT-17 half train | PPYOLOe    | ResNet-50   |  52.7    |  56.7  |  64.6  |   -    |[配置文件](./deepsort_ppyoloe_resnet.yml) |
 
 **注意:**
 模型权重下载链接在配置文件中的```det_weights```和```reid_weights```，运行验证的命令即可自动下载。
@@ -60,7 +60,7 @@ det_results_dir
 ```
 对于MOT16数据集，可以下载PaddleDetection提供的一个经过匹配之后的检测框结果det_results_dir.zip并解压：
 ```
-wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/det_results_dir.zip
 ```
 如果使用更强的检测模型，可以取得更好的结果。其中每个txt是每个视频中所有图片的检测结果，每行都描述一个边界框，格式如下：
 ```
@@ -72,7 +72,7 @@ wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
 - `score`是目标框的得分
 - `class_id`是目标框的类别，如果只有1类则是`0`
 
-- **方式2**：同时加载检测模型和ReID模型，此处选用JDE版本的YOLOv3，具体配置见`configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid.yml`。加载其他通用检测模型可参照`configs/mot/deepsort/deepsort_ppyolov2_pplcnet.yml`进行修改。
+- **方式2**：同时加载检测模型和ReID模型，此处选用JDE版本的YOLOv3，具体配置见`configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid.yml`。加载其他通用检测模型可参照`configs/mot/deepsort/deepsort_yoloe_pplcnet.yml`进行修改。
 
 ## 快速开始
 
@@ -80,7 +80,7 @@ wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
 
 #### 1.1 评估检测效果
 ```bash
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mot/deepsort/detector/ppyoloe_crn_l_36e_640x640_mot17half.yml
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mot/deepsort/detector/ppyoloe_crn_l_36e_640x640_mot17half.yml -o weights=https://bj.bcebos.com/v1/paddledet/models/mot/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
 ```
 
 **注意:**
@@ -89,9 +89,12 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mot/deepsort/detector/ppy
 #### 1.2 评估跟踪效果
 **方式1**：加载检测结果文件和ReID模型，得到跟踪结果
 ```bash
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml --det_results_dir {your detection results}
+# 下载PaddleDetection提供的MOT16数据集检测结果文件并解压，如需自己使用其他检测器生成请参照这个文件里的格式
+wget https://bj.bcebos.com/v1/paddledet/data/mot/det_results_dir.zip
+
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml --det_results_dir det_results_dir
 # 或者
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/reid/deepsort_pplcnet.yml --det_results_dir {your detection results}
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/reid/deepsort_pplcnet.yml --det_results_dir det_results_dir
 ```
 
 **方式2**：加载行人检测模型和ReID模型，得到跟踪结果
@@ -115,11 +118,14 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort
 使用单个GPU通过如下命令预测一个视频，并保存为视频
 
 ```bash
-# 加载JDE YOLOv3行人检测模型和PCB Pyramid ReID模型，并保存为视频
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid.yml --video_file={your video name}.mp4  --save_videos
+# 下载demo视频
+wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/mot17_demo.mp4
 
-# 或者加载PPYOLOv2行人检测模型和PPLCNet ReID模型，并保存为视频
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_ppyolov2_pplcnet.yml --video_file={your video name}.mp4 --scaled=True --save_videos
+# 加载JDE YOLOv3行人检测模型和PCB Pyramid ReID模型，并保存为视频
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_jde_yolov3_pcb_pyramid.yml --video_file=mot17_demo.mp4  --save_videos
+
+# 或者加载PPYOLOE行人检测模型和PPLCNet ReID模型，并保存为视频
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_ppyoloe_pplcnet.yml --video_file=mot17_demo.mp4 --scaled=True --save_videos
 ```
 
 **注意:**
@@ -132,33 +138,34 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsor
 Step 1：导出检测模型
 ```bash
 # 导出JDE YOLOv3行人检测模型
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/jde_yolov3_darknet53_30e_1088x608_mix.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams
+CUDA_VISIBLE_DEVICES=0 python3.7 tools/export_model.py -c configs/mot/deepsort/detector/jde_yolov3_darknet53_30e_1088x608_mix.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/jde_yolov3_darknet53_30e_1088x608_mix.pdparams
 
-# 或导出PPYOLOv2行人检测模型
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_640x640_mot17half.pdparams
+# 或导出PPYOLOE行人检测模型
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/ppyoloe_crn_l_36e_640x640_mot17half.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
 ```
 
 Step 2：导出ReID模型
 ```bash
 # 导出PCB Pyramid ReID模型
 CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid/deepsort_pcb_pyramid_r101.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pcb_pyramid_r101.pdparams
+
 # 或者导出PPLCNet ReID模型
 CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid/deepsort_pplcnet.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet.pdparams
+
+# 或者导出ResNet ReID模型
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid/deepsort_resnet.yml -o reid_weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_resnet.pdparams
 ```
 
 ### 4. 用导出的模型基于Python去预测
 
 ```bash
-# 用导出JDE YOLOv3行人检测模型和PCB Pyramid ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/jde_yolov3_darknet53_30e_1088x608_mix/ --reid_model_dir=output_inference/deepsort_pcb_pyramid_r101/ --video_file={your video name}.mp4 --device=GPU --save_mot_txts
-
-# 或用导出的PPYOLOv2行人检测模型和PPLCNet ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyolov2_r50vd_dcn_365e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
+# 用导出的PPYOLOE行人检测模型和PPLCNet ReID模型
+python3.7 deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=deploy/pptracking/python/tracker_config.yml  --video_file=mot17_demo.mp4 --device=GPU --save_mot_txts --threshold=0.5
 ```
 **注意:**
- - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_mot_txt_per_img`(对每张图片保存一个txt)表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+ - 运行前需要先改动`deploy/pptracking/python/tracker_config.yml`里的tracker为`DeepSORTTracker`。
+ - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示对每个视频保存一个txt，或`--save_images`表示保存跟踪结果可视化图片。
  - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
- - `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
 
 
 ## 适配其他检测器
@@ -184,7 +191,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort
 ```
 #### 2.加载检测模型和ReID模型去推理:
 ```
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_xxx_yyy.yml --video_file={your video name}.mp4 --scaled=True --save_videos
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_xxx_yyy.yml --video_file=mot17_demo.mp4 --scaled=True --save_videos
 ```
 #### 3.导出检测模型和ReID模型:
 ```bash
@@ -195,7 +202,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid
 ```
 #### 4.使用导出的检测模型和ReID模型去部署:
 ```
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/xxx./ --reid_model_dir=output_inference/deepsort_yyy/ --video_file={your video name}.mp4 --device=GPU --scaled=True --save_mot_txts
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/xxx./ --reid_model_dir=output_inference/deepsort_yyy/ --video_file=mot17_demo.mp4 --device=GPU --scaled=True --save_mot_txts
 ```
 **注意:**
  - `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。

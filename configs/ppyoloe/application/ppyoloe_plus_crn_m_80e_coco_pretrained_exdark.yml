@@ -1,0 +1,15 @@
+_BASE_: [
+  './_base_/exdark_detection.yml',
+  '../../runtime.yml',
+  '../_base_/optimizer_80e.yml',
+  '../_base_/ppyoloe_plus_crn.yml',
+  '../_base_/ppyoloe_plus_reader.yml',
+]
+
+log_iter: 100
+snapshot_epoch: 5
+weights: output/ppyoloe_plus_crn_m_80e_coco_pretrained_exdark/model_final
+
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_m_80e_coco.pdparams
+depth_mult: 0.67
+width_mult: 0.75

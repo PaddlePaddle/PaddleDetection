@@ -29,6 +29,7 @@ import base64
 import binascii
 import tarfile
 import zipfile
+import errno
 
 from paddle.utils.download import _get_unique_endpoints
 from ppdet.core.workspace import BASE_KEY
@@ -96,8 +97,8 @@ DATASETS = {
         'https://paddlemodels.bj.bcebos.com/object_detection/roadsign_coco.tar',
         '49ce5a9b5ad0d6266163cd01de4b018e', ), ], ['annotations', 'images']),
     'spine_coco': ([(
-        'https://paddledet.bj.bcebos.com/data/spine_coco.tar',
-        '7ed69ae73f842cd2a8cf4f58dc3c5535', ), ], ['annotations', 'images']),
+        'https://paddledet.bj.bcebos.com/data/spine.tar',
+        '8a3a353c2c54a2284ad7d2780b65f6a6', ), ], ['annotations', 'images']),
     'mot': (),
     'objects365': (),
     'coco_ce': ([(
@@ -108,6 +109,20 @@ DATASETS = {
 DOWNLOAD_RETRY_LIMIT = 3
 
 PPDET_WEIGHTS_DOWNLOAD_URL_PREFIX = 'https://paddledet.bj.bcebos.com/'
+
+
+# When running unit tests, there could be multiple processes that
+# trying to create DATA_HOME directory simultaneously, so we cannot
+# use a if condition to check for the existence of the directory;
+# instead, we use the filesystem as the synchronization mechanism by
+# catching returned errors.
+def must_mkdirs(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno != errno.EEXIST:
+            raise
+        pass
 
 
 def parse_url(url):
@@ -344,8 +359,7 @@ def _download(url, path, md5sum=None):
     url (str): download url
     path (str): download to given path
     """
-    if not osp.exists(path):
-        os.makedirs(path)
+    must_mkdirs(path)
 
     fname = osp.split(url)[-1]
     fullname = osp.join(path, fname)
@@ -393,7 +407,12 @@ def _download(url, path, md5sum=None):
 def _download_dist(url, path, md5sum=None):
     env = os.environ
     if 'PADDLE_TRAINERS_NUM' in env and 'PADDLE_TRAINER_ID' in env:
-        trainer_id = int(env['PADDLE_TRAINER_ID'])
+        # Mainly used to solve the problem of downloading data from
+        # different machines in the case of multiple machines.
+        # Different nodes will download data, and the same node
+        # will only download data once.
+        # Reference https://github.com/PaddlePaddle/PaddleClas/blob/develop/ppcls/utils/download.py#L108
+        rank_id_curr_node = int(os.environ.get("PADDLE_RANK_IN_NODE", 0))
         num_trainers = int(env['PADDLE_TRAINERS_NUM'])
         if num_trainers <= 1:
             return _download(url, path, md5sum)
@@ -402,16 +421,12 @@ def _download_dist(url, path, md5sum=None):
             fullname = osp.join(path, fname)
             lock_path = fullname + '.download.lock'
 
-            if not osp.isdir(path):
-                os.makedirs(path)
+            must_mkdirs(path)
 
             if not osp.exists(fullname):
-                from paddle.distributed import ParallelEnv
-                unique_endpoints = _get_unique_endpoints(ParallelEnv()
-                                                         .trainer_endpoints[:])
                 with open(lock_path, 'w'):  # touch    
                     os.utime(lock_path, None)
-                if ParallelEnv().current_endpoint in unique_endpoints:
+                if rank_id_curr_node == 0:
                     _download(url, path, md5sum)
                     os.remove(lock_path)
                 else:

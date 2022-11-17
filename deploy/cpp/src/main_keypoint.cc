@@ -219,6 +219,8 @@ void PredictVideo(const std::string& video_path,
     printf("create video writer failed!\n");
     return;
   }
+  PaddleDetection::PoseSmooth smoother =
+      PaddleDetection::PoseSmooth(video_width, video_height);
 
   std::vector<PaddleDetection::ObjectResult> result;
   std::vector<int> bbox_num;
@@ -307,6 +309,13 @@ void PredictVideo(const std::string& video_path,
           scale_bs.clear();
         }
       }
+
+      if (result_kpts.size() == 1) {
+        for (int i = 0; i < result_kpts.size(); i++) {
+          result_kpts[i] = smoother.smooth_process(&(result_kpts[i]));
+        }
+      }
+
       cv::Mat out_im = VisualizeKptsResult(frame, result_kpts, colormap_kpts);
       video_out.write(out_im);
     } else {

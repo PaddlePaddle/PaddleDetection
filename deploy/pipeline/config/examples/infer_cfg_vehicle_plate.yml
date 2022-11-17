@@ -1,0 +1,23 @@
+crop_thresh: 0.5
+visual: True
+warmup_frame: 50
+
+DET:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip
+  batch_size: 1
+
+MOT:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip
+  tracker_config: deploy/pipeline/config/tracker_config.yml
+  batch_size: 1
+  enable: True
+
+VEHICLE_PLATE:
+  det_model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz
+  det_limit_side_len: 736
+  det_limit_type: "min"
+  rec_model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz
+  rec_image_shape: [3, 48, 320]
+  rec_batch_num: 6
+  word_dict_path: deploy/pipeline/ppvehicle/rec_word_dict.txt
+  enable: True

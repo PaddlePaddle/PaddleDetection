@@ -55,8 +55,9 @@ class PicoDet():
         origin_shape = srcimg.shape[:2]
         im_scale_y = newh / float(origin_shape[0])
         im_scale_x = neww / float(origin_shape[1])
-        img_shape = np.array([[float(origin_shape[0]), float(origin_shape[1])]
-                              ]).astype('float32')
+        img_shape = np.array([
+            [float(self.input_shape[0]), float(self.input_shape[1])]
+        ]).astype('float32')
         scale_factor = np.array([[im_scale_y, im_scale_x]]).astype('float32')
 
         if keep_ratio and srcimg.shape[0] != srcimg.shape[1]:
@@ -91,7 +92,7 @@ class PicoDet():
                     value=0)
         else:
             img = cv2.resize(
-                srcimg, self.input_shape, interpolation=cv2.INTER_AREA)
+                srcimg, self.input_shape, interpolation=cv2.INTER_LINEAR)
 
         return img, img_shape, scale_factor
 
@@ -166,7 +167,8 @@ class PicoDet():
         print(f"find {len(img_name_list)} images")
 
         for img_path in tqdm(img_name_list):
-            img = cv2.imread(str(img_path))
+            img = cv2.imread(str(img_path), 1)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
             srcimg = net.detect(img)
             save_path = str(result_path / img_path.name.replace(".png", ".jpg"))

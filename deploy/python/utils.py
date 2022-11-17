@@ -16,6 +16,7 @@ import time
 import os
 import ast
 import argparse
+import numpy as np
 
 
 def argsparser():
@@ -107,7 +108,8 @@ def argsparser():
         "calibration, trt_calib_mode need to set True.")
     parser.add_argument(
         '--save_images',
-        action='store_true',
+        type=ast.literal_eval,
+        default=True,
         help='Save visualization image results.')
     parser.add_argument(
         '--save_mot_txts',
@@ -158,10 +160,47 @@ def argsparser():
         help="Whether do random padding for action recognition.")
     parser.add_argument(
         "--save_results",
-        type=bool,
+        action='store_true',
         default=False,
         help="Whether save detection result to file using coco format")
-
+    parser.add_argument(
+        '--use_coco_category',
+        action='store_true',
+        default=False,
+        help='Whether to use the coco format dictionary `clsid2catid`')
+    parser.add_argument(
+        "--slice_infer",
+        action='store_true',
+        help="Whether to slice the image and merge the inference results for small object detection."
+    )
+    parser.add_argument(
+        '--slice_size',
+        nargs='+',
+        type=int,
+        default=[640, 640],
+        help="Height of the sliced image.")
+    parser.add_argument(
+        "--overlap_ratio",
+        nargs='+',
+        type=float,
+        default=[0.25, 0.25],
+        help="Overlap height ratio of the sliced image.")
+    parser.add_argument(
+        "--combine_method",
+        type=str,
+        default='nms',
+        help="Combine method of the sliced images' detection results, choose in ['nms', 'nmm', 'concat']."
+    )
+    parser.add_argument(
+        "--match_threshold",
+        type=float,
+        default=0.6,
+        help="Combine method matching threshold.")
+    parser.add_argument(
+        "--match_metric",
+        type=str,
+        default='ios',
+        help="Combine method matching metric, choose in ['iou', 'ios'].")
     return parser
 
 
@@ -288,3 +327,152 @@ def get_current_memory_mb():
         meminfo = pynvml.nvmlDeviceGetMemoryInfo(handle)
         gpu_mem = meminfo.used / 1024. / 1024.
     return round(cpu_mem, 4), round(gpu_mem, 4), round(gpu_percent, 4)
+
+
+def multiclass_nms(bboxs, num_classes, match_threshold=0.6, match_metric='iou'):
+    final_boxes = []
+    for c in range(num_classes):
+        idxs = bboxs[:, 0] == c
+        if np.count_nonzero(idxs) == 0: continue
+        r = nms(bboxs[idxs, 1:], match_threshold, match_metric)
+        final_boxes.append(np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+    return final_boxes
+
+
+def nms(dets, match_threshold=0.6, match_metric='iou'):
+    """ Apply NMS to avoid detecting too many overlapping bounding boxes.
+        Args:
+            dets: shape [N, 5], [score, x1, y1, x2, y2]
+            match_metric: 'iou' or 'ios'
+            match_threshold: overlap thresh for match metric.
+    """
+    if dets.shape[0] == 0:
+        return dets[[], :]
+    scores = dets[:, 0]
+    x1 = dets[:, 1]
+    y1 = dets[:, 2]
+    x2 = dets[:, 3]
+    y2 = dets[:, 4]
+    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+    order = scores.argsort()[::-1]
+
+    ndets = dets.shape[0]
+    suppressed = np.zeros((ndets), dtype=np.int)
+
+    for _i in range(ndets):
+        i = order[_i]
+        if suppressed[i] == 1:
+            continue
+        ix1 = x1[i]
+        iy1 = y1[i]
+        ix2 = x2[i]
+        iy2 = y2[i]
+        iarea = areas[i]
+        for _j in range(_i + 1, ndets):
+            j = order[_j]
+            if suppressed[j] == 1:
+                continue
+            xx1 = max(ix1, x1[j])
+            yy1 = max(iy1, y1[j])
+            xx2 = min(ix2, x2[j])
+            yy2 = min(iy2, y2[j])
+            w = max(0.0, xx2 - xx1 + 1)
+            h = max(0.0, yy2 - yy1 + 1)
+            inter = w * h
+            if match_metric == 'iou':
+                union = iarea + areas[j] - inter
+                match_value = inter / union
+            elif match_metric == 'ios':
+                smaller = min(iarea, areas[j])
+                match_value = inter / smaller
+            else:
+                raise ValueError()
+            if match_value >= match_threshold:
+                suppressed[j] = 1
+    keep = np.where(suppressed == 0)[0]
+    dets = dets[keep, :]
+    return dets
+
+
+coco_clsid2catid = {
+    0: 1,
+    1: 2,
+    2: 3,
+    3: 4,
+    4: 5,
+    5: 6,
+    6: 7,
+    7: 8,
+    8: 9,
+    9: 10,
+    10: 11,
+    11: 13,
+    12: 14,
+    13: 15,
+    14: 16,
+    15: 17,
+    16: 18,
+    17: 19,
+    18: 20,
+    19: 21,
+    20: 22,
+    21: 23,
+    22: 24,
+    23: 25,
+    24: 27,
+    25: 28,
+    26: 31,
+    27: 32,
+    28: 33,
+    29: 34,
+    30: 35,
+    31: 36,
+    32: 37,
+    33: 38,
+    34: 39,
+    35: 40,
+    36: 41,
+    37: 42,
+    38: 43,
+    39: 44,
+    40: 46,
+    41: 47,
+    42: 48,
+    43: 49,
+    44: 50,
+    45: 51,
+    46: 52,
+    47: 53,
+    48: 54,
+    49: 55,
+    50: 56,
+    51: 57,
+    52: 58,
+    53: 59,
+    54: 60,
+    55: 61,
+    56: 62,
+    57: 63,
+    58: 64,
+    59: 65,
+    60: 67,
+    61: 70,
+    62: 72,
+    63: 73,
+    64: 74,
+    65: 75,
+    66: 76,
+    67: 77,
+    68: 78,
+    69: 79,
+    70: 80,
+    71: 81,
+    72: 82,
+    73: 84,
+    74: 85,
+    75: 86,
+    76: 87,
+    77: 88,
+    78: 89,
+    79: 90
+}

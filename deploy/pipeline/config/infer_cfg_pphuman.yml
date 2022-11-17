@@ -1,0 +1,63 @@
+crop_thresh: 0.5
+attr_thresh: 0.5
+kpt_thresh: 0.2
+visual: True
+warmup_frame: 50
+
+DET:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip
+  batch_size: 1
+
+MOT:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip
+  tracker_config: deploy/pipeline/config/tracker_config.yml
+  batch_size: 1
+  skip_frame_num: -1 # preferably no more than 3
+  enable: False
+
+KPT:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip
+  batch_size: 8
+
+ATTR:
+  model_dir:  https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.zip
+  batch_size: 8
+  enable: False
+
+VIDEO_ACTION:
+  model_dir: https://videotag.bj.bcebos.com/PaddleVideo-release2.3/ppTSM_fight.zip
+  batch_size: 1
+  frame_len: 8
+  sample_freq: 7
+  short_size: 340
+  target_size: 320
+  enable: False
+
+SKELETON_ACTION:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip
+  batch_size: 1
+  max_frames: 50
+  display_frames: 80
+  coord_size: [384, 512]
+  enable: False
+
+ID_BASED_DETACTION:
+  model_dir:  https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip
+  batch_size: 8
+  threshold: 0.6
+  display_frames: 80
+  skip_frame_num: 2
+  enable: False
+
+ID_BASED_CLSACTION:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip
+  batch_size: 8
+  threshold: 0.8
+  display_frames: 80
+  skip_frame_num: 2
+  enable: False
+
+REID:
+  model_dir:  https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip
+  batch_size: 16
+  enable: False

@@ -74,7 +74,7 @@ cv::Mat VisualizeKptsResult(const cv::Mat& img,
 
 void KeyPointDetector::Postprocess(std::vector<float>& output,
                                    std::vector<uint64_t>& output_shape,
-                                   std::vector<int>& idxout,
+                                   std::vector<float>& idxout,
                                    std::vector<uint64_t>& idx_shape,
                                    std::vector<KeyPointResult>* result,
                                    std::vector<std::vector<float>>& center_bs,
@@ -141,7 +141,7 @@ void KeyPointDetector::Predict(const std::vector<cv::Mat> imgs,
   infer_request_.Infer();
 
   InferenceEngine::Blob::Ptr output_blob =
-      infer_request_.GetBlob("save_infer_model/scale_0.tmp_1");
+      infer_request_.GetBlob("conv2d_441.tmp_1");
   auto output_shape = output_blob->getTensorDesc().getDims();
   InferenceEngine::MemoryBlob::Ptr moutput =
       InferenceEngine::as<InferenceEngine::MemoryBlob>(output_blob);
@@ -159,12 +159,15 @@ void KeyPointDetector::Predict(const std::vector<cv::Mat> imgs,
     for (int j = 0; j < output_shape.size(); ++j) {
       output_size *= output_shape[j];
     }
+    
     output_data_.resize(output_size);
     std::copy_n(data, output_size, output_data_.data());
+
   }
 
+
   InferenceEngine::Blob::Ptr output_blob2 =
-      infer_request_.GetBlob("save_infer_model/scale_1.tmp_1");
+      infer_request_.GetBlob("argmax_0.tmp_0");
   auto idx_shape = output_blob2->getTensorDesc().getDims();
   InferenceEngine::MemoryBlob::Ptr moutput2 =
       InferenceEngine::as<InferenceEngine::MemoryBlob>(output_blob2);
@@ -175,7 +178,7 @@ void KeyPointDetector::Predict(const std::vector<cv::Mat> imgs,
     auto minputHolder = moutput2->rmap();
     // Original I64 precision was converted to I32
     auto data = minputHolder.as<const InferenceEngine::PrecisionTrait<
-        InferenceEngine::Precision::I32>::value_type*>();
+        InferenceEngine::Precision::FP32>::value_type*>();
 
     // Calculate output length
     int output_size = 1;

@@ -1,0 +1,31 @@
+#worker_num, 最大并发数。当build_dag_each_worker=True时, 框架会创建worker_num个进程，每个进程内构建grpcSever和DAG
+##当build_dag_each_worker=False时，框架会设置主线程grpc线程池的max_workers=worker_num
+worker_num: 20
+
+#http端口, rpc_port和http_port不允许同时为空。当rpc_port可用且http_port为空时，不自动生成http_port
+http_port: 18093
+rpc_port: 9993
+
+dag:
+    #op资源类型, True, 为线程模型；False，为进程模型
+    is_thread_op: False
+op:
+    #op名称，与web_service中的TIPCExampleService初始化name参数一致
+    ppdet:
+        #并发数，is_thread_op=True时，为线程并发；否则为进程并发
+        concurrency: 1
+
+        #当op配置没有server_endpoints时，从local_service_conf读取本地服务配置
+        local_service_conf:
+
+            #uci模型路径
+            model_config: "./serving_server"
+
+            #计算硬件类型: 空缺时由devices决定(CPU/GPU)，0=cpu, 1=gpu, 2=tensorRT, 3=arm cpu, 4=kunlun xpu
+            device_type:
+
+            #计算硬件ID，当devices为""或不写时为CPU预测；当devices为"0", "0,1,2"时为GPU预测，表示使用的GPU卡
+            devices: "0" # "0,1"
+
+            #client类型，包括brpc, grpc和local_predictor.local_predictor不启动Serving服务，进程内预测
+            client_type: local_predictor

@@ -86,7 +86,7 @@ Please refer to[GFL](https://github.com/PaddlePaddle/PaddleDetection/tree/develo
 
 Please refer to[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet)
 
-### PP-YOLOE
+### PP-YOLOE/PP-YOLOE+
 
 Please refer to[PP-YOLOE](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe)
 
@@ -94,13 +94,26 @@ Please refer to[PP-YOLOE](https://github.com/PaddlePaddle/PaddleDetection/tree/d
 
 Please refer to[YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolox)
 
+### YOLOF
 
-## Rotating frame detection
+Please refer to[YOLOF](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolof)
 
-### S2ANet
+### YOLOv5
 
-Please refer to[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/)
+Please refer to[YOLOv5](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov5)
 
+### YOLOv6
+
+Please refer to[YOLOv6](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov6)
+
+### YOLOv7
+
+Please refer to[YOLOv7](https://github.com/nemonameless/PaddleDetection_YOLOSeries/tree/develop/configs/yolov7)
+
+
+## Rotated Object detection
+
+[Model Zoo for Rotated Object Detection](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate)
 
 ## KeyPoint Detection
 
@@ -134,3 +147,7 @@ Please refer to [FairMOT](https://github.com/PaddlePaddle/PaddleDetection/tree/d
 ### ByteTrack
 
 Please refer to [ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/bytetrack)
+
+### OC-SORT
+
+Please refer to [OC-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/ocsort)

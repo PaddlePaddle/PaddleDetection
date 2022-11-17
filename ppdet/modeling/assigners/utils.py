@@ -108,7 +108,8 @@ def gather_topk_anchors(metrics, topk, largest=True, topk_mask=None, eps=1e-9):
 def check_points_inside_bboxes(points,
                                bboxes,
                                center_radius_tensor=None,
-                               eps=1e-9):
+                               eps=1e-9,
+                               sm_use=False):
     r"""
     Args:
         points (Tensor, float32): shape[L, 2], "xy" format, L: num_anchors
@@ -139,8 +140,12 @@ def check_points_inside_bboxes(points,
         b = (cy + center_radius_tensor) - y
         delta_ltrb_c = paddle.concat([l, t, r, b], axis=-1)
         is_in_center = (delta_ltrb_c.min(axis=-1) > eps)
-        return (paddle.logical_and(is_in_bboxes, is_in_center),
-                paddle.logical_or(is_in_bboxes, is_in_center))
+        if sm_use:
+            return is_in_bboxes.astype(bboxes.dtype), is_in_center.astype(
+                bboxes.dtype)
+        else:
+            return (paddle.logical_and(is_in_bboxes, is_in_center),
+                    paddle.logical_or(is_in_bboxes, is_in_center))
 
     return is_in_bboxes.astype(bboxes.dtype)
 
@@ -176,7 +181,8 @@ def compute_max_iou_gt(ious):
 def generate_anchors_for_grid_cell(feats,
                                    fpn_strides,
                                    grid_cell_size=5.0,
-                                   grid_cell_offset=0.5):
+                                   grid_cell_offset=0.5,
+                                   dtype='float32'):
     r"""
     Like ATSS, generate anchors based on grid size.
     Args:
@@ -206,16 +212,15 @@ def generate_anchors_for_grid_cell(feats,
                 shift_x - cell_half_size, shift_y - cell_half_size,
                 shift_x + cell_half_size, shift_y + cell_half_size
             ],
-            axis=-1).astype(feat.dtype)
-        anchor_point = paddle.stack(
-            [shift_x, shift_y], axis=-1).astype(feat.dtype)
+            axis=-1).astype(dtype)
+        anchor_point = paddle.stack([shift_x, shift_y], axis=-1).astype(dtype)
 
         anchors.append(anchor.reshape([-1, 4]))
         anchor_points.append(anchor_point.reshape([-1, 2]))
         num_anchors_list.append(len(anchors[-1]))
         stride_tensor.append(
             paddle.full(
-                [num_anchors_list[-1], 1], stride, dtype=feat.dtype))
+                [num_anchors_list[-1], 1], stride, dtype=dtype))
     anchors = paddle.concat(anchors)
     anchors.stop_gradient = True
     anchor_points = paddle.concat(anchor_points)

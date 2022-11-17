@@ -1,0 +1,14 @@
+_BASE_: [
+  'yolox_tiny_300e_coco.yml'
+]
+depth_mult: 0.33
+width_mult: 0.375
+
+log_iter: 100
+snapshot_epoch: 10
+weights: output/yolox_cdn_tiny_300e_coco/model_final
+
+CSPDarkNet:
+  arch: "P5" # using the same backbone of YOLOv5 releases v6.0 and later version
+  return_idx: [2, 3, 4]
+  depthwise: False

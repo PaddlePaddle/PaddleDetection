@@ -1,0 +1,10 @@
+_BASE_: [
+  '../../datasets/dota.yml',
+  '../../runtime.yml',
+  '_base_/s2anet_optimizer_2x.yml',
+  '_base_/s2anet.yml',
+  '_base_/s2anet_reader.yml',
+]
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+
+weights: output/s2anet_alignconv_2x_dota/model_final

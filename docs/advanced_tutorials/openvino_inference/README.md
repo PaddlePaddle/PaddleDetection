@@ -3,9 +3,9 @@
 ## Introduction
 PaddleDetection has been a vibrant open-source project and has a large amout of contributors and maintainers around it. It is an AI framework which enables developers to quickly integrate AI capacities into their own projects and applications.
 
-Intel OpenVINO is a widely used free toolkit. It facilitates the optimization of a deep learning model from a framework and deployment using an inference engine onto Intel hardware. 
+Intel OpenVINO is a widely used free toolkit. It facilitates the optimization of a deep learning model from a framework and deployment using an inference engine onto Intel hardware.
 
-Apparently, the upstream(Paddle) and the downstream(Intel OpenVINO) can work together to streamline and simplify the process of developing an AI model and deploying the model onto hardware, which, in turn, makes our lives easier. 
+Apparently, the upstream(Paddle) and the downstream(Intel OpenVINO) can work together to streamline and simplify the process of developing an AI model and deploying the model onto hardware, which, in turn, makes our lives easier.
 
 This article will show you how to use a PaddleDetection model [FairMOT](../../../configs/mot/fairmot/README.md) from the Model Zoo in PaddleDetection and use it with OpenVINO to do the inference.
 
@@ -50,7 +50,7 @@ Once the Paddle model has been converted to ONNX format, we can then use it with
 
 1. ### Get the execution network
 
-So the 1st thing to do here is to get an execution network which can be used later to do the inference. 
+So the 1st thing to do here is to get an execution network which can be used later to do the inference.
 
 Here is the code.
 
@@ -70,7 +70,7 @@ Every AI model has its own steps of preprocessing, let's have a look how to do i
 ```
 def prepare_input():
     transforms = [
-        T.Resize(target_size=(target_width, target_height)), 
+        T.Resize(target_size=(target_width, target_height)),
         T.Normalize(mean=(0,0,0), std=(1,1,1))
     ]
     img_file = root_path / "images/street.jpeg"
@@ -87,7 +87,7 @@ def prepare_input():
 
 3. ### Prediction
 
-After we have done all the load network and preprocessing, it finally comes to the stage of prediction. 
+After we have done all the load network and preprocessing, it finally comes to the stage of prediction.
 
 
 ```
@@ -100,7 +100,7 @@ You might be surprised to see the very exciting stage this small. Hang on there,
 
 4. ### Post-processing
 
-MOT(Multi-Object Tracking) is special, not like other AI models which require a few steps of post-processing. Instead, FairMOT requires a special object called tracker, to handle the prediction results. The prediction results are prediction detections and prediction embeddings. 
+MOT(Multi-Object Tracking) is special, not like other AI models which require a few steps of post-processing. Instead, FairMOT requires a special object called tracker, to handle the prediction results. The prediction results are prediction detections and prediction embeddings.
 
 Luckily, PaddleDetection has made this procesure easy for us, it has exported the JDETracker from `ppdet`, so that we do not need to write much code to handle it.
 
@@ -156,4 +156,4 @@ So these are the all steps which you need to follow in order to run FairMOT on y
 
 A companion article which explains in details of this procedure will be released soon and a link to that article will be updated here soon.
 
-To see the full code, please take a look at [Paddle OpenVINO Prediction](docs/advanced_tutorials/openvino_inference/fairmot_onnx_openvino.py).
+To see the full code, please take a look at [Paddle OpenVINO Prediction](./fairmot_onnx_openvino.py).

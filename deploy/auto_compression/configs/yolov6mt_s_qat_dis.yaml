@@ -1,0 +1,31 @@
+
+Global:
+  reader_config: configs/yolov5_reader.yml
+  input_list: ['image', 'scale_factor']
+  arch: YOLO
+  Evaluation: True
+  model_dir: ./yolov6mt_s_400e_coco
+  model_filename: model.pdmodel
+  params_filename: model.pdiparams
+
+Distillation:
+  alpha: 1.0
+  loss: soft_label
+
+Quantization:
+  activation_quantize_type: 'moving_average_abs_max'
+  quantize_op_types:
+  - conv2d
+  - depthwise_conv2d
+
+TrainConfig:
+  train_iter: 8000
+  eval_iter: 1000
+  learning_rate: 
+    type: CosineAnnealingDecay 
+    learning_rate: 0.00003
+    T_max: 8000
+  optimizer_builder:
+    optimizer:
+      type: SGD
+    weight_decay: 0.00004

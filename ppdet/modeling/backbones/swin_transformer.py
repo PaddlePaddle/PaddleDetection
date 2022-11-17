@@ -20,62 +20,13 @@ MIT License [see LICENSE for details]
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn.initializer import TruncatedNormal, Constant, Assign
 from ppdet.modeling.shape_spec import ShapeSpec
 from ppdet.core.workspace import register, serializable
 import numpy as np
 
-# Common initializations
-ones_ = Constant(value=1.)
-zeros_ = Constant(value=0.)
-trunc_normal_ = TruncatedNormal(std=.02)
-
-
-# Common Functions
-def to_2tuple(x):
-    return tuple([x] * 2)
-
-
-def add_parameter(layer, datas, name=None):
-    parameter = layer.create_parameter(
-        shape=(datas.shape), default_initializer=Assign(datas))
-    if name:
-        layer.add_parameter(name, parameter)
-    return parameter
-
-
-# Common Layers
-def drop_path(x, drop_prob=0., training=False):
-    """
-        Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks).
-        the original name is misleading as 'Drop Connect' is a different form of dropout in a separate paper...
-        See discussion: https://github.com/tensorflow/tpu/issues/494#issuecomment-532968956 ...
-    """
-    if drop_prob == 0. or not training:
-        return x
-    keep_prob = paddle.to_tensor(1 - drop_prob)
-    shape = (paddle.shape(x)[0], ) + (1, ) * (x.ndim - 1)
-    random_tensor = keep_prob + paddle.rand(shape, dtype=x.dtype)
-    random_tensor = paddle.floor(random_tensor)  # binarize
-    output = x.divide(keep_prob) * random_tensor
-    return output
-
-
-class DropPath(nn.Layer):
-    def __init__(self, drop_prob=None):
-        super(DropPath, self).__init__()
-        self.drop_prob = drop_prob
-
-    def forward(self, x):
-        return drop_path(x, self.drop_prob, self.training)
-
-
-class Identity(nn.Layer):
-    def __init__(self):
-        super(Identity, self).__init__()
-
-    def forward(self, input):
-        return input
+from .transformer_utils import DropPath, Identity
+from .transformer_utils import add_parameter, to_2tuple
+from .transformer_utils import ones_, zeros_, trunc_normal_
 
 
 class Mlp(nn.Layer):
@@ -112,7 +63,7 @@ def window_partition(x, window_size):
     """
     B, H, W, C = x.shape
     x = x.reshape(
-        [B, H // window_size, window_size, W // window_size, window_size, C])
+        [-1, H // window_size, window_size, W // window_size, window_size, C])
     windows = x.transpose([0, 1, 3, 2, 4, 5]).reshape(
         [-1, window_size, window_size, C])
     return windows
@@ -128,10 +79,11 @@ def window_reverse(windows, window_size, H, W):
     Returns:
         x: (B, H, W, C)
     """
+    _, _, _, C = windows.shape
     B = int(windows.shape[0] / (H * W / window_size / window_size))
     x = windows.reshape(
-        [B, H // window_size, W // window_size, window_size, window_size, -1])
-    x = x.transpose([0, 1, 3, 2, 4, 5]).reshape([B, H, W, -1])
+        [-1, H // window_size, W // window_size, window_size, window_size, C])
+    x = x.transpose([0, 1, 3, 2, 4, 5]).reshape([-1, H, W, C])
     return x
 
 
@@ -206,14 +158,14 @@ class WindowAttention(nn.Layer):
         """
         B_, N, C = x.shape
         qkv = self.qkv(x).reshape(
-            [B_, N, 3, self.num_heads, C // self.num_heads]).transpose(
+            [-1, N, 3, self.num_heads, C // self.num_heads]).transpose(
                 [2, 0, 3, 1, 4])
         q, k, v = qkv[0], qkv[1], qkv[2]
 
         q = q * self.scale
         attn = paddle.mm(q, k.transpose([0, 1, 3, 2]))
 
-        index = self.relative_position_index.reshape([-1])
+        index = self.relative_position_index.flatten()
 
         relative_position_bias = paddle.index_select(
             self.relative_position_bias_table, index)
@@ -227,7 +179,7 @@ class WindowAttention(nn.Layer):
 
         if mask is not None:
             nW = mask.shape[0]
-            attn = attn.reshape([B_ // nW, nW, self.num_heads, N, N
+            attn = attn.reshape([-1, nW, self.num_heads, N, N
                                  ]) + mask.unsqueeze(1).unsqueeze(0)
             attn = attn.reshape([-1, self.num_heads, N, N])
             attn = self.softmax(attn)
@@ -237,7 +189,7 @@ class WindowAttention(nn.Layer):
         attn = self.attn_drop(attn)
 
         # x = (attn @ v).transpose(1, 2).reshape([B_, N, C])
-        x = paddle.mm(attn, v).transpose([0, 2, 1, 3]).reshape([B_, N, C])
+        x = paddle.mm(attn, v).transpose([0, 2, 1, 3]).reshape([-1, N, C])
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
@@ -315,7 +267,7 @@ class SwinTransformerBlock(nn.Layer):
 
         shortcut = x
         x = self.norm1(x)
-        x = x.reshape([B, H, W, C])
+        x = x.reshape([-1, H, W, C])
 
         # pad feature maps to multiples of window size
         pad_l = pad_t = 0
@@ -337,7 +289,7 @@ class SwinTransformerBlock(nn.Layer):
         x_windows = window_partition(
             shifted_x, self.window_size)  # nW*B, window_size, window_size, C
         x_windows = x_windows.reshape(
-            [-1, self.window_size * self.window_size,
+            [x_windows.shape[0], self.window_size * self.window_size,
              C])  # nW*B, window_size*window_size, C
 
         # W-MSA/SW-MSA
@@ -346,7 +298,7 @@ class SwinTransformerBlock(nn.Layer):
 
         # merge windows
         attn_windows = attn_windows.reshape(
-            [-1, self.window_size, self.window_size, C])
+            [x_windows.shape[0], self.window_size, self.window_size, C])
         shifted_x = window_reverse(attn_windows, self.window_size, Hp,
                                    Wp)  # B H' W' C
 
@@ -362,7 +314,7 @@ class SwinTransformerBlock(nn.Layer):
         if pad_r > 0 or pad_b > 0:
             x = x[:, :H, :W, :]
 
-        x = x.reshape([B, H * W, C])
+        x = x.reshape([-1, H * W, C])
 
         # FFN
         x = shortcut + self.drop_path(x)
@@ -393,7 +345,7 @@ class PatchMerging(nn.Layer):
         B, L, C = x.shape
         assert L == H * W, "input feature has wrong size"
 
-        x = x.reshape([B, H, W, C])
+        x = x.reshape([-1, H, W, C])
 
         # padding
         pad_input = (H % 2 == 1) or (W % 2 == 1)
@@ -405,7 +357,7 @@ class PatchMerging(nn.Layer):
         x2 = x[:, 0::2, 1::2, :]  # B H/2 W/2 C
         x3 = x[:, 1::2, 1::2, :]  # B H/2 W/2 C
         x = paddle.concat([x0, x1, x2, x3], -1)  # B H/2 W/2 4*C
-        x = x.reshape([B, H * W // 4, 4 * C])  # B H/2*W/2 4*C
+        x = x.reshape([-1, H * W // 4, 4 * C])  # B H/2*W/2 4*C
 
         x = self.norm(x)
         x = self.reduction(x)
@@ -482,8 +434,7 @@ class BasicLayer(nn.Layer):
         # calculate attention mask for SW-MSA
         Hp = int(np.ceil(H / self.window_size)) * self.window_size
         Wp = int(np.ceil(W / self.window_size)) * self.window_size
-        img_mask = paddle.fluid.layers.zeros(
-            [1, Hp, Wp, 1], dtype='float32')  # 1 Hp Wp 1
+        img_mask = paddle.zeros([1, Hp, Wp, 1], dtype='float32')  # 1 Hp Wp 1
         h_slices = (slice(0, -self.window_size),
                     slice(-self.window_size, -self.shift_size),
                     slice(-self.shift_size, None))
@@ -713,7 +664,7 @@ class SwinTransformer(nn.Layer):
     def forward(self, x):
         """Forward function."""
         x = self.patch_embed(x['image'])
-        _, _, Wh, Ww = x.shape
+        B, _, Wh, Ww = x.shape
         if self.ape:
             # interpolate the position embedding to the corresponding size
             absolute_pos_embed = F.interpolate(

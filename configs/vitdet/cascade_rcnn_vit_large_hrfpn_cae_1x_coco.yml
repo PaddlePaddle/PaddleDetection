@@ -1,0 +1,29 @@
+_BASE_: [
+  './cascade_rcnn_vit_base_hrfpn_cae_1x_coco.yml'
+]
+
+weights: output/cascade_rcnn_vit_large_hrfpn_cae_1x_coco/model_final
+
+
+depth: &depth 24
+dim: &dim 1024
+use_fused_allreduce_gradients: &use_checkpoint True
+
+VisionTransformer:
+  img_size: [800, 1344]
+  embed_dim: *dim
+  depth: *depth
+  num_heads: 16
+  drop_path_rate: 0.25
+  out_indices: [7, 11, 15, 23]
+  use_checkpoint: *use_checkpoint
+  pretrained: https://bj.bcebos.com/v1/paddledet/models/pretrained/vit_large_cae_pretrained.pdparams
+
+HRFPN:
+  in_channels: [*dim, *dim, *dim, *dim]
+
+OptimizerBuilder:
+  optimizer:
+    layer_decay: 0.9
+    weight_decay: 0.02
+    num_layers: *depth

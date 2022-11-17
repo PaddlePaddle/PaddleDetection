@@ -1,5 +1,14 @@
 # PP-Tracking Python端预测部署
 
+## 内容
+- [简介](#简介)
+- [1-FairMOT模型导出和预测](#1-FairMOT模型导出和预测)
+- [2-DeepSORT模型导出和预测](#2-DeepSORT模型导出和预测)
+- [3-ByteTrack和OC_SORT模型导出和预测](#3-ByteTrack和OC_SORT模型导出和预测)
+- [4-车辆跨镜头跟踪模型导出和预测](#4-车辆跨镜头跟踪模型导出和预测)
+- [5-参数说明](#5-参数说明)
+
+## 简介
 在PaddlePaddle中预测引擎和训练引擎底层有着不同的优化方法, 预测引擎使用了AnalysisPredictor，专门针对推理进行了优化，是基于[C++预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/native_infer.html)的Python接口，该引擎可以对模型进行多项图优化，减少不必要的内存拷贝。如果用户在部署已训练模型的过程中对性能有较高的要求，我们提供了独立于PaddleDetection的预测脚本，方便用户直接集成部署。
 
 主要包含两个步骤：
@@ -11,7 +20,7 @@ PaddleDetection在训练过程包括网络的前向和优化器相关参数，�
 
 PP-Tracking也提供了AI Studio公开项目案例，教程请参考[PP-Tracking之手把手玩转多目标跟踪](https://aistudio.baidu.com/aistudio/projectdetail/3022582)。
 
-## 1. 对FairMOT模型的导出和预测
+## 1-FairMOT模型导出和预测
 ### 1.1 导出预测模型
 ```bash
 # 命令行导出PaddleDetection发布的权重
@@ -65,13 +74,12 @@ python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fa
  - bdd100k车辆跟踪和多类别demo视频可从此链接下载：`wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/bdd100k_demo.mp4`
 
 
-## 2. 对DeepSORT模型的导出和预测
+
+## 2-DeepSORT模型导出和预测
 ### 2.1 导出预测模型
 Step 1：导出检测模型
 ```bash
-# 导出PPYOLOv2行人检测模型
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/ppyolov2_r50vd_dcn_365e_640x640_mot17half.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_640x640_mot17half.pdparams
-# 或导出PPYOLOe行人检测模型
+# 导出PPYOLOe行人检测模型
 CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/ppyoloe_crn_l_36e_640x640_mot17half.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
 ```
 
@@ -88,45 +96,41 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/reid
 # 下载行人跟踪demo视频：
 wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/mot17_demo.mp4
 
-# 用导出的PPYOLOv2行人检测模型和PPLCNet ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyolov2_r50vd_dcn_365e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
-# 或用导出的PPYOLOe行人检测模型和PPLCNet ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
+# 用导出的PPYOLOE行人检测模型和PPLCNet ReID模型
+python3.7 deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=deploy/pptracking/python/tracker_config.yml  --video_file=mot17_demo.mp4 --device=GPU --save_mot_txts --threshold=0.5
 ```
 
 ### 2.3 用导出的模型基于Python去预测车辆跟踪
 ```bash
-# 下载车辆检测PicoDet导出的模型：
-wget https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_l_640_aic21mtmct_vehicle.tar
-tar -xvf picodet_l_640_aic21mtmct_vehicle.tar
-# 或者车辆检测PP-YOLOv2导出的模型：
-wget https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle.tar
-tar -xvf ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle.tar
+# 下载车辆demo视频
+wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/bdd100k_demo.mp4
+
+# 下载车辆检测PPYOLOE导出的模型：
+wget https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip
+unzip mot_ppyoloe_l_36e_ppvehicle.zip
 
 # 下载车辆ReID导出的模型：
 wget https://paddledet.bj.bcebos.com/models/mot/deepsort/deepsort_pplcnet_vehicle.tar
 tar -xvf deepsort_pplcnet_vehicle.tar
 
-# 用导出的PicoDet车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --tracker_config=deploy/pptracking/python/tracker_config.yml --device=GPU --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
-
-# 用导出的PP-YOLOv2车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --tracker_config=deploy/pptracking/python/tracker_config.yml --device=GPU --threshold=0.5 --video_file={your video}.mp4 --save_mot_txts --save_images
+# 用导出的PPYOLOE车辆检测模型和PPLCNet车辆ReID模型
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=mot_ppyoloe_l_36e_ppvehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --tracker_config=deploy/pptracking/python/tracker_config.yml --device=GPU --threshold=0.5 --video_file=bdd100k_demo.mp4 --save_mot_txts --save_images
 ```
 
 **注意:**
+ - 运行前需要手动修改`tracker_config.yml`的跟踪器类型为`type: DeepSORTTracker`。
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_images`表示保存跟踪结果可视化图片。
  - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
  - `--threshold`表示结果可视化的置信度阈值，默认为0.5，低于该阈值的结果会被过滤掉，为了可视化效果更佳，可根据实际情况自行修改。
  - DeepSORT算法不支持多类别跟踪，只支持单类别跟踪，且ReID模型最好是与检测模型同一类别的物体训练过的，比如行人跟踪最好使用行人ReID模型，车辆跟踪最好使用车辆ReID模型。
- - 需要手动修改`tracker_config.yml`的跟踪器类型为`type: DeepSORTTracker`。
 
 
-## 3. 对ByteTrack模型的导出和预测
+
+## 3-ByteTrack和OC_SORT模型导出和预测
 ### 3.1 导出预测模型
 ```bash
 # 导出PPYOLOe行人检测模型
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/detector/ppyoloe_crn_l_36e_640x640_mot17half.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/bytetrack/detector/ppyoloe_crn_l_36e_640x640_mot17half.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
 ```
 
 ### 3.2 用导出的模型基于Python去预测行人跟踪
@@ -135,27 +139,28 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/deepsort/dete
 wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/mot17_demo.mp4
 
 # 用导出的PPYOLOe行人检测模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --save_mot_txts
 
 # 用导出的PPYOLOe行人检测模型和PPLCNet ReID模型
 python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/ppyoloe_crn_l_36e_640x640_mot17half/ --reid_model_dir=output_inference/deepsort_pplcnet/ --tracker_config=deploy/pptracking/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --threshold=0.5 --save_mot_txts --save_images
 ```
 **注意:**
+ - 运行ByteTrack模型需要确认`tracker_config.yml`的跟踪器类型为`type: JDETracker`。
+ - 可切换`tracker_config.yml`的跟踪器类型为`type: OCSORTTracker`运行OC_SORT模型。
  - ByteTrack模型是加载导出的检测器和单独配置的`--tracker_config`文件运行的，为了实时跟踪所以不需要reid模型，`--reid_model_dir`表示reid导出模型的路径，默认为空，加不加具体视效果而定；
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)或`--save_images`表示保存跟踪结果可视化图片。
  - 跟踪结果txt文件每行信息是`frame,id,x1,y1,w,h,score,-1,-1,-1`。
  - `--threshold`表示结果可视化的置信度阈值，默认为0.5，低于该阈值的结果会被过滤掉，为了可视化效果更佳，可根据实际情况自行修改。
 
 
-## 4. 跨境跟踪模型的导出和预测
+
+## 4-车辆跨镜头跟踪模型导出和预测
 ### 4.1 导出预测模型
 Step 1：下载导出的检测模型
 ```bash
-wget https://paddledet.bj.bcebos.com/models/mot/deepsort/picodet_l_640_aic21mtmct_vehicle.tar
-tar -xvf picodet_l_640_aic21mtmct_vehicle.tar
-# 或者
-wget https://paddledet.bj.bcebos.com/models/mot/deepsort/ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle.tar
-tar -xvf ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle.tar
+# 下载车辆检测PPYOLOE导出的模型：
+wget https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip
+unzip mot_ppyoloe_l_36e_ppvehicle.zip
 ```
 Step 2：下载导出的ReID模型
 ```bash
@@ -169,14 +174,12 @@ tar -xvf deepsort_pplcnet_vehicle.tar
 wget https://paddledet.bj.bcebos.com/data/mot/demo/mtmct-demo.tar
 tar -xvf mtmct-demo.tar
 
-# 用导出的PicoDet车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=picodet_l_640_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir=mtmct-demo --mtmct_cfg=mtmct_cfg.yml --device=GPU --threshold=0.5 --save_mot_txts --save_images
-
-# 用导出的PP-YOLOv2车辆检测模型和PPLCNet车辆ReID模型
-python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_365e_aic21mtmct_vehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --mtmct_dir=mtmct-demo --mtmct_cfg=mtmct_cfg.yml --device=GPU --threshold=0.5 --save_mot_txts --save_images
-
+# 用导出的PPYOLOE车辆检测模型和PPLCNet车辆ReID模型
+python deploy/pptracking/python/mot_sde_infer.py --model_dir=mot_ppyoloe_l_36e_ppvehicle/ --reid_model_dir=deepsort_pplcnet_vehicle/ --tracker_config=deploy/pptracking/python/tracker_config.yml --mtmct_dir=mtmct-demo --mtmct_cfg=deploy/pptracking/python/mtmct_cfg.yml --device=GPU --threshold=0.5 --save_mot_txts --save_images
 ```
+
 **注意:**
+ - 运行前需要手动修改`tracker_config.yml`的跟踪器类型为`type: DeepSORTTracker`，跨镜头跟踪仅支持DeepSORT。
  - 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`(对每个视频保存一个txt)，或`--save_images`表示保存跟踪结果可视化图片。
  - 跨镜头跟踪结果txt文件每行信息是`camera_id,frame,id,x1,y1,w,h,-1,-1`。
  - `--threshold`表示结果可视化的置信度阈值，默认为0.5，低于该阈值的结果会被过滤掉，为了可视化效果更佳，可根据实际情况自行修改。
@@ -185,11 +188,12 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_
  - `--mtmct_cfg`是MTMCT预测的某个场景的配置文件，里面包含该一些trick操作的开关和该场景摄像头相关设置的文件路径，用户可以自行更改相关路径以及设置某些操作是否启用。
 
 
-## 5. 参数说明:
+## 5-参数说明
 
 | 参数 | 是否必须|含义 |
 |-------|-------|----------|
 | --model_dir | Yes| 上述导出的模型路径 |
+| --reid_model_dir | Option| ReID导出的模型路径 |
 | --image_file | Option | 需要预测的图片 |
 | --image_dir  | Option |  要预测的图片文件夹路径   |
 | --video_file | Option | 需要预测的视频 |
@@ -203,8 +207,10 @@ python deploy/pptracking/python/mot_sde_infer.py --model_dir=ppyolov2_r50vd_dcn_
 | --enable_mkldnn | Option | CPU预测中是否开启MKLDNN加速，默认为False |
 | --cpu_threads | Option| 设置cpu线程数，默认为1 |
 | --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
-| --do_entrance_counting | Option | 是否统计出入口流量，默认为False |
-| --draw_center_traj | Option | 是否绘制跟踪轨迹，默认为False |
+| --save_mot_txts | Option | 跟踪任务是否保存txt结果文件，默认为False |
+| --save_images | Option | 跟踪任务是否保存视频的可视化图片，默认为False |
+| --do_entrance_counting | Option | 跟踪任务是否统计出入口流量，默认为False |
+| --draw_center_traj | Option | 跟踪任务是否绘制跟踪轨迹，默认为False |
 | --mtmct_dir | Option | 需要进行MTMCT跨境头跟踪预测的图片文件夹路径，默认为None |
 | --mtmct_cfg | Option | 需要进行MTMCT跨境头跟踪预测的配置文件路径，默认为None |
 

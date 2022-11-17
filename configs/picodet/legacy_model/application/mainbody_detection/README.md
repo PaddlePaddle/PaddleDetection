@@ -20,7 +20,7 @@ PP-ShiTu图像识别任务中，训练主体检测模型时主要用到了以下
 | LogoDet-3k | 155k | 155k | Logo检测 | [地址](https://github.com/Wangjing1551/LogoDet-3K-Dataset) |
 | RPC | 54k | 54k  | 商品检测 | [地址](https://rpc-dataset.github.io/) |
 
-在实际训练的过程中，将所有数据集混合在一起。由于是主体检测，这里将所有标注出的检测框对应的类别都修改为 `前景` 的类别，最终融合的数据集中只包含 1 个类别，即前景，数据集定义配置可以参考[mainbody_detection.yml](./mainbody_detection.yml)。
+在实际训练的过程中，将所有数据集混合在一起。由于是主体检测，这里将所有标注出的检测框对应的类别都修改为 `前景` 的类别，最终融合的数据集中只包含 1 个类别，即前景，数据集定义配置可以参考[picodet_lcnet_x2_5_640_mainbody.yml](./picodet_lcnet_x2_5_640_mainbody.yml)。
 
 
 ### 1.2 模型库

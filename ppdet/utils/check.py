@@ -20,14 +20,34 @@ import sys
 
 import paddle
 import six
-import paddle.version as fluid_version
+import paddle.version as paddle_version
 
 from .logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'check_gpu', 'check_npu', 'check_xpu', 'check_version', 'check_config'
+    'check_gpu', 'check_npu', 'check_xpu', 'check_mlu', 'check_version',
+    'check_config'
 ]
+
+
+def check_mlu(use_mlu):
+    """
+    Log error and exit when set use_mlu=true in paddlepaddle
+    cpu/gpu/xpu/npu version.
+    """
+    err = "Config use_mlu cannot be set as true while you are " \
+          "using paddlepaddle cpu/gpu/xpu/npu version ! \nPlease try: \n" \
+          "\t1. Install paddlepaddle-mlu to run model on MLU \n" \
+          "\t2. Set use_mlu as false in config file to run " \
+          "model on CPU/GPU/XPU/NPU"
+
+    try:
+        if use_mlu and not paddle.is_compiled_with_mlu():
+            logger.error(err)
+            sys.exit(1)
+    except Exception as e:
+        pass
 
 
 def check_npu(use_npu):
@@ -87,7 +107,7 @@ def check_gpu(use_gpu):
         pass
 
 
-def check_version(version='2.0'):
+def check_version(version='2.2'):
     """
     Log error and exit when the installed version of paddlepaddle is
     not satisfied.
@@ -97,11 +117,13 @@ def check_version(version='2.0'):
           "Please make sure the version is good with your code.".format(version)
 
     version_installed = [
-        fluid_version.major, fluid_version.minor, fluid_version.patch,
-        fluid_version.rc
+        paddle_version.major, paddle_version.minor, paddle_version.patch,
+        paddle_version.rc
     ]
+
     if version_installed == ['0', '0', '0', '0']:
         return
+
     version_split = version.split('.')
 
     length = min(len(version_installed), len(version_split))

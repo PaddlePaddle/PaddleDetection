@@ -34,6 +34,7 @@ def visualize_results(image,
                       mask_res,
                       segm_res,
                       keypoint_res,
+                      pose3d_res,
                       im_id,
                       catid2name,
                       threshold=0.5):
@@ -48,6 +49,8 @@ def visualize_results(image,
         image = draw_segm(image, im_id, catid2name, segm_res, threshold)
     if keypoint_res is not None:
         image = draw_pose(image, keypoint_res, threshold)
+    if pose3d_res is not None:
+        image = draw_pose3d(image, pose3d_res, threshold)
     return image
 
 
@@ -319,3 +322,134 @@ def draw_pose(image,
     image = Image.fromarray(canvas.astype('uint8'))
     plt.close()
     return image
+
+
+def draw_pose3d(image,
+                results,
+                visual_thread=0.6,
+                save_name='pose3d.jpg',
+                save_dir='output',
+                returnimg=False,
+                ids=None):
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib
+        plt.switch_backend('agg')
+    except Exception as e:
+        logger.error('Matplotlib not found, please install matplotlib.'
+                     'for example: `pip install matplotlib`.')
+        raise e
+    pose3d = np.array(results[0]['pose3d']) * 1000
+
+    if pose3d.shape[0] == 24:
+        joints_connectivity_dict = [
+            [0, 1, 0], [1, 2, 0], [5, 4, 1], [4, 3, 1], [2, 3, 0], [2, 14, 1],
+            [3, 14, 1], [14, 15, 1], [15, 16, 1], [16, 12, 1], [6, 7, 0],
+            [7, 8, 0], [11, 10, 1], [10, 9, 1], [8, 12, 0], [9, 12, 1],
+            [12, 19, 1], [19, 18, 1], [19, 20, 0], [19, 21, 1], [22, 20, 0],
+            [23, 21, 1]
+        ]
+    elif pose3d.shape[0] == 14:
+        joints_connectivity_dict = [
+            [0, 1, 0], [1, 2, 0], [5, 4, 1], [4, 3, 1], [2, 3, 0], [2, 12, 0],
+            [3, 12, 1], [6, 7, 0], [7, 8, 0], [11, 10, 1], [10, 9, 1],
+            [8, 12, 0], [9, 12, 1], [12, 13, 1]
+        ]
+    else:
+        print(
+            "not defined joints number :{}, cannot visualize because unknown of joint connectivity".
+            format(pose.shape[0]))
+        return
+
+    def draw3Dpose(pose3d,
+                   ax,
+                   lcolor="#3498db",
+                   rcolor="#e74c3c",
+                   add_labels=False):
+        #    pose3d = orthographic_projection(pose3d, cam)
+        for i in joints_connectivity_dict:
+            x, y, z = [
+                np.array([pose3d[i[0], j], pose3d[i[1], j]]) for j in range(3)
+            ]
+            ax.plot(-x, -z, -y, lw=2, c=lcolor if i[2] else rcolor)
+
+        RADIUS = 1000
+        center_xy = 2 if pose3d.shape[0] == 14 else 14
+        x, y, z = pose3d[center_xy, 0], pose3d[center_xy, 1], pose3d[center_xy,
+                                                                     2]
+        ax.set_xlim3d([-RADIUS + x, RADIUS + x])
+        ax.set_ylim3d([-RADIUS + y, RADIUS + y])
+        ax.set_zlim3d([-RADIUS + z, RADIUS + z])
+
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z")
+
+    def draw2Dpose(pose2d,
+                   ax,
+                   lcolor="#3498db",
+                   rcolor="#e74c3c",
+                   add_labels=False):
+        for i in joints_connectivity_dict:
+            if pose2d[i[0], 2] and pose2d[i[1], 2]:
+                x, y = [
+                    np.array([pose2d[i[0], j], pose2d[i[1], j]])
+                    for j in range(2)
+                ]
+                ax.plot(x, y, 0, lw=2, c=lcolor if i[2] else rcolor)
+
+    def draw_img_pose(pose3d,
+                      pose2d=None,
+                      frame=None,
+                      figsize=(12, 12),
+                      savepath=None):
+        fig = plt.figure(figsize=figsize, dpi=80)
+        # fig.clear()
+        fig.tight_layout()
+
+        ax = fig.add_subplot(221)
+        if frame is not None:
+            ax.imshow(frame, interpolation='nearest')
+        if pose2d is not None:
+            draw2Dpose(pose2d, ax)
+
+        ax = fig.add_subplot(222, projection='3d')
+        ax.view_init(45, 45)
+        draw3Dpose(pose3d, ax)
+        ax = fig.add_subplot(223, projection='3d')
+        ax.view_init(0, 0)
+        draw3Dpose(pose3d, ax)
+        ax = fig.add_subplot(224, projection='3d')
+        ax.view_init(0, 90)
+        draw3Dpose(pose3d, ax)
+
+        if savepath is not None:
+            plt.savefig(savepath)
+            plt.close()
+        else:
+            return fig
+
+    def fig2data(fig):
+        """
+        fig = plt.figure()
+        image = fig2data(fig)
+        @brief Convert a Matplotlib figure to a 4D numpy array with RGBA channels and return it
+        @param fig a matplotlib figure
+        @return a numpy 3D array of RGBA values
+        """
+        # draw the renderer
+        fig.canvas.draw()
+
+        # Get the RGBA buffer from the figure
+        w, h = fig.canvas.get_width_height()
+        buf = np.fromstring(fig.canvas.tostring_argb(), dtype=np.uint8)
+        buf.shape = (w, h, 4)
+
+        # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
+        buf = np.roll(buf, 3, axis=2)
+        image = Image.frombytes("RGBA", (w, h), buf.tostring())
+        return image.convert("RGB")
+
+    fig = draw_img_pose(pose3d, frame=image)
+    data = fig2data(fig)
+    return data

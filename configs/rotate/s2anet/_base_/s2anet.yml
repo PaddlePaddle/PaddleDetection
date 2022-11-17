@@ -1,0 +1,52 @@
+architecture: S2ANet
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+weights: output/s2anet_r50_fpn_1x_dota/model_final.pdparams
+
+
+# Model Achitecture
+S2ANet:
+  backbone: ResNet
+  neck: FPN
+  head: S2ANetHead
+
+ResNet:
+  depth: 50
+  variant: d
+  norm_type: bn
+  return_idx: [1,2,3]
+  num_stages: 4
+
+FPN:
+  in_channels: [256, 512, 1024]
+  out_channel: 256
+  spatial_scales: [0.25, 0.125, 0.0625]
+  has_extra_convs: True
+  extra_stage: 2
+  relu_before_extra_convs: False
+
+S2ANetHead:
+  anchor_strides: [8, 16, 32, 64, 128]
+  anchor_scales: [4]
+  anchor_ratios: [1.0]
+  anchor_assign: RBoxAssigner
+  stacked_convs: 2
+  feat_in: 256
+  feat_out: 256
+  align_conv_type: 'AlignConv'  # AlignConv Conv
+  align_conv_size: 3
+  use_sigmoid_cls: True
+  reg_loss_weight: [1.0, 1.0, 1.0, 1.0, 1.1]
+  cls_loss_weight: [1.1, 1.05]
+  nms_pre: 2000
+  nms:
+    name: MultiClassNMS
+    keep_top_k: -1
+    score_threshold: 0.05
+    nms_threshold: 0.1
+    normalized: False
+
+RBoxAssigner:
+  pos_iou_thr: 0.5
+  neg_iou_thr: 0.4
+  min_iou_thr: 0.0
+  ignore_iof_thr: -2

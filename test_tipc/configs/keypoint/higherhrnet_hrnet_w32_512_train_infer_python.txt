@@ -41,7 +41,7 @@ inference:./deploy/python/keypoint_infer.py
 --device:gpu|cpu
 --enable_mkldnn:False
 --cpu_threads:4
---batch_size:1|2
+--batch_size:1
 --use_tensorrt:null
 --run_mode:paddle
 --model_dir:
@@ -52,7 +52,8 @@ inference:./deploy/python/keypoint_infer.py
 ===========================train_benchmark_params==========================
 batch_size:20|24
 fp_items:fp32|fp16
-epoch:20
+epoch:1
+repeat:1
 --profiler_options:batch_range=[10,20];state=GPU;tracer_option=Default;profile_path=model.profile
 flags:null
 ===========================infer_benchmark_params===========================

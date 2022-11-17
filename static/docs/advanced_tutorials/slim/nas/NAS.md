@@ -1,1 +1,0 @@
-../../../../slim/nas/README.md

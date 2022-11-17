@@ -23,16 +23,15 @@
       - [Top-Down模型联合部署](#top-down模型联合部署)
       - [Bottom-Up模型独立部署](#bottom-up模型独立部署)
       - [与多目标跟踪联合部署](#与多目标跟踪模型fairmot联合部署)
-    - [完整部署教程及Demo](#4完整部署教程及Demo)
-
+    - [完整部署教程及Demo](#完整部署教程及Demo)
 - [自定义数据训练](#自定义数据训练)
 - [BenchMark](#benchmark)
 
 ## 简介
 
-PaddleDetection 关键点检测能力紧跟业内最新最优算法方案，包含Top-Down、Bottom-Up两套方案，Top-Down先检测主体，再检测局部关键点，优点是精度较高，缺点是速度会随着检测对象的个数增加，Bottom-Up先检测关键点再组合到对应的部位上，优点是速度快，与检测对象个数无关，缺点是精度较低。
+PaddleDetection 中的关键点检测部分紧跟最先进的算法，包括 Top-Down 和 Bottom-Up 两种方法，可以满足用户的不同需求。Top-Down 先检测对象，再检测特定关键点。Top-Down 模型的准确率会更高，但速度会随着对象数量的增加而变慢。不同的是，Bottom-Up 首先检测点，然后对这些点进行分组或连接以形成多个人体姿势实例。Bottom-Up 的速度是固定的，不会随着物体数量的增加而变慢，但精度会更低。
 
-同时，PaddleDetection提供针对移动端设备优化的自研实时关键点检测模型[PP-TinyPose](./tiny_pose/README.md)，以满足用户的不同需求。
+同时，PaddleDetection 提供针对移动端设备优化的自研实时关键点检测模型 [PP-TinyPose](./tiny_pose/README.md)。
 
 ## 模型推荐
 
@@ -40,11 +39,11 @@ PaddleDetection 关键点检测能力紧跟业内最新最优算法方案，包�
 
 | 检测模型                                                     | 关键点模型                            |             输入尺寸             |         COCO数据集精度          |          平均推理耗时 (FP16)           | 参数量 （M）                |          Flops (G)          |                           模型权重                           |                  Paddle-Lite部署模型（FP16)                  |
 | :----------------------------------------------------------- | :------------------------------------ | :------------------------------: | :-----------------------------: | :------------------------------------: | --------------------------- | :-------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [PP-TinyPose](./tinypose_128x96.yml)  | 检测：192x192<br>关键点：128x96  | 检测mAP：29.0<br>关键点AP：58.1 | 检测耗时：2.37ms<br>关键点耗时：3.27ms | 检测：1.18<br/>关键点：1.36 | 检测：0.35<br/>关键点：0.08 | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
-| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [PP-TinyPose](./tinypose_256x192.yml) | 检测：320x320<br>关键点：256x192 | 检测mAP：38.5<br>关键点AP：68.8 | 检测耗时：6.30ms<br>关键点耗时：8.33ms | 检测：1.18<br/>关键点：1.36 | 检测：0.97<br/>关键点：0.32 | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
+| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml) | [PP-TinyPose](./tiny_pose/tinypose_128x96.yml)  | 检测：192x192<br>关键点：128x96  | 检测mAP：29.0<br>关键点AP：58.1 | 检测耗时：2.37ms<br>关键点耗时：3.27ms | 检测：1.18<br/>关键点：1.36 | 检测：0.35<br/>关键点：0.08 | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_192_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96_fp16.nb) |
+| [PicoDet-S-Pedestrian](../picodet/legacy_model/application/pedestrian_detection/picodet_s_320_pedestrian.yml) | [PP-TinyPose](./tiny_pose/tinypose_256x192.yml) | 检测：320x320<br>关键点：256x192 | 检测mAP：38.5<br>关键点AP：68.8 | 检测耗时：6.30ms<br>关键点耗时：8.33ms | 检测：1.18<br/>关键点：1.36 | 检测：0.97<br/>关键点：0.32 | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian.pdparams)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) | [检测](https://bj.bcebos.com/v1/paddledet/models/keypoint/picodet_s_320_pedestrian_fp16.nb)<br>[关键点](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192_fp16.nb) |
 
 
-*详细关于PP-TinyPose的使用请参考[文档]((./tiny_pose/README.md))。
+*详细关于PP-TinyPose的使用请参考[文档](./tiny_pose/README.md)。
 
 ### 服务端模型推荐
 
@@ -82,7 +81,7 @@ MPII数据集
 场景模型
 | 模型 | 方案 | 输入尺寸 | 精度 | 预测速度 |模型权重 | 部署模型 | 说明|
 | :---- | ---|----- | :--------: | :--------: | :------------: |:------------: |:-------------------: |
-| HRNet-w32 + DarkPose | Top-Down|256x192  |  AP: 87.1 (业务数据集)| 单人2.9ms |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) | 针对摔倒场景特别优化，该模型应用于[PP-Human](../../deploy/pphuman/README.md) |
+| HRNet-w32 + DarkPose | Top-Down|256x192  |  AP: 87.1 (业务数据集)| 单人2.9ms |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.pdparams) |[下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip) | 针对摔倒场景特别优化，该模型应用于[PP-Human](../../deploy/pipeline/README.md) |
 
 
 我们同时推出了基于LiteHRNet（Top-Down）针对移动端设备优化的实时关键点检测模型[PP-TinyPose](./tiny_pose/README.md), 欢迎体验。
@@ -97,7 +96,7 @@ MPII数据集
 
 ### 2、数据准备
 
-​    目前KeyPoint模型支持[COCO](https://cocodataset.org/#keypoints-2017)数据集和[MPII](http://human-pose.mpi-inf.mpg.de/#overview)数据集，数据集的准备方式请参考[关键点数据准备](../../docs/tutorials/PrepareKeypointDataSet_cn.md)。
+​    目前KeyPoint模型支持[COCO](https://cocodataset.org/#keypoints-2017)数据集和[MPII](http://human-pose.mpi-inf.mpg.de/#overview)数据集，数据集的准备方式请参考[关键点数据准备](../../docs/tutorials/data/PrepareKeypointDataSet.md)。
 
 ​    关于config配置文件内容说明请参考[关键点配置文件说明](../../docs/tutorials/KeyPointConfigGuide_cn.md)。
 
@@ -184,14 +183,14 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 **注意:**
  跟踪模型导出教程请参考[文档](../mot/README.md)。
 
-### 4、完整部署教程及Demo
+### 完整部署教程及Demo
 
 
 ​ 我们提供了PaddleInference(服务器端)、PaddleLite(移动端)、第三方部署(MNN、OpenVino)支持。无需依赖训练代码，deploy文件夹下相应文件夹提供独立完整部署代码。 详见 [部署文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/README.md)介绍。
 
 ## 自定义数据训练
 
-我们以[tinypose_256x192](.tiny_pose/README.md)为例来说明对于自定义数据如何修改：
+我们以[tinypose_256x192](./tiny_pose/README.md)为例来说明对于自定义数据如何修改：
 
 #### 1、配置文件[tinypose_256x192.yml](../../configs/keypoint/tiny_pose/tinypose_256x192.yml)
 
@@ -220,6 +219,26 @@ upper_body_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]    #上半身对应关键点i
 - 请注意area>0，area=0时数据在训练时会被过滤掉。此外，由于COCO的评估机制，area较小的数据在评估时也会被过滤掉，我们建议在自定义数据时取`area = bbox_w * bbox_h`。
 
 如有遗漏，欢迎反馈
+
+
+## 关键点稳定策略（仅适用于视频数据）
+使用关键点算法处理视频数据时，由于预测针对单帧图像进行，在视频结果上往往会有抖动的现象。在一些依靠精细化坐标的应用场景（例如健身计数、基于关键点的虚拟渲染等）上容易造成误检或体验不佳的问题。针对这个问题，在PaddleDetection关键点视频推理中加入了[OneEuro滤波器](http://www.lifl.fr/~casiez/publications/CHI2012-casiez.pdf)和EMA两种关键点稳定方式。实现将当前关键点坐标结果和历史关键点坐标结果结合计算，使得输出的点坐标更加稳定平滑。该功能同时支持在Python及C++推理中一键开启使用。
+
+```bash
+# 使用Python推理
+python deploy/python/det_keypoint_unite_infer.py \
+          --det_model_dir output_inference/picodet_s_320 \
+          --keypoint_model_dir output_inference/tinypose_256x192 \
+          --video_file test_video.mp4 --device gpu --smooth True
+
+# 使用CPP推理
+./deploy/cpp/build/main --det_model_dir output_inference/picodet_s_320 \
+          --keypoint_model_dir output_inference/tinypose_256x192 \
+          --video_file test_video.mp4 --device gpu --smooth True
+```
+效果如下：
+
+![](https://user-images.githubusercontent.com/15810355/181733125-3710bacc-2080-47e4-b397-3621a2f0caae.gif)
 
 ## BenchMark
 

@@ -15,6 +15,7 @@
 import cv2
 import numpy as np
 from keypoint_preprocess import get_affine_transform
+from PIL import Image
 
 
 def decode_image(im_file, im_info):
@@ -37,6 +38,79 @@ def decode_image(im_file, im_info):
     im_info['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
     im_info['scale_factor'] = np.array([1., 1.], dtype=np.float32)
     return im, im_info
+
+
+class Resize_Mult32(object):
+    """resize image by target_size and max_size
+    Args:
+        target_size (int): the target size of image
+        keep_ratio (bool): whether keep_ratio or not, default true
+        interp (int): method of resize
+    """
+
+    def __init__(self, limit_side_len, limit_type, interp=cv2.INTER_LINEAR):
+        self.limit_side_len = limit_side_len
+        self.limit_type = limit_type
+        self.interp = interp
+
+    def __call__(self, im, im_info):
+        """
+        Args:
+            im (np.ndarray): image (np.ndarray)
+            im_info (dict): info of image
+        Returns:
+            im (np.ndarray):  processed image (np.ndarray)
+            im_info (dict): info of processed image
+        """
+        im_channel = im.shape[2]
+        im_scale_y, im_scale_x = self.generate_scale(im)
+        im = cv2.resize(
+            im,
+            None,
+            None,
+            fx=im_scale_x,
+            fy=im_scale_y,
+            interpolation=self.interp)
+        im_info['im_shape'] = np.array(im.shape[:2]).astype('float32')
+        im_info['scale_factor'] = np.array(
+            [im_scale_y, im_scale_x]).astype('float32')
+        return im, im_info
+
+    def generate_scale(self, img):
+        """
+        Args:
+            img (np.ndarray): image (np.ndarray)
+        Returns:
+            im_scale_x: the resize ratio of X
+            im_scale_y: the resize ratio of Y
+        """
+        limit_side_len = self.limit_side_len
+        h, w, c = img.shape
+
+        # limit the max side
+        if self.limit_type == 'max':
+            if h > w:
+                ratio = float(limit_side_len) / h
+            else:
+                ratio = float(limit_side_len) / w
+        elif self.limit_type == 'min':
+            if h < w:
+                ratio = float(limit_side_len) / h
+            else:
+                ratio = float(limit_side_len) / w
+        elif self.limit_type == 'resize_long':
+            ratio = float(limit_side_len) / max(h, w)
+        else:
+            raise Exception('not support limit type, image ')
+        resize_h = int(h * ratio)
+        resize_w = int(w * ratio)
+
+        resize_h = max(int(round(resize_h / 32) * 32), 32)
+        resize_w = max(int(round(resize_w / 32) * 32), 32)
+
+        im_scale_y = resize_h / float(h)
+        im_scale_x = resize_w / float(w)
+        return im_scale_y, im_scale_x
 
 
 class Resize(object):
@@ -106,19 +180,109 @@ class Resize(object):
         return im_scale_y, im_scale_x
 
 
+class ShortSizeScale(object):
+    """
+    Scale images by short size.
+    Args:
+        short_size(float | int): Short size of an image will be scaled to the short_size.
+        fixed_ratio(bool): Set whether to zoom according to a fixed ratio. default: True
+        do_round(bool): Whether to round up when calculating the zoom ratio. default: False
+        backend(str): Choose pillow or cv2 as the graphics processing backend. default: 'pillow'
+    """
+
+    def __init__(self,
+                 short_size,
+                 fixed_ratio=True,
+                 keep_ratio=None,
+                 do_round=False,
+                 backend='pillow'):
+        self.short_size = short_size
+        assert (fixed_ratio and not keep_ratio) or (
+            not fixed_ratio
+        ), "fixed_ratio and keep_ratio cannot be true at the same time"
+        self.fixed_ratio = fixed_ratio
+        self.keep_ratio = keep_ratio
+        self.do_round = do_round
+
+        assert backend in [
+            'pillow', 'cv2'
+        ], "Scale's backend must be pillow or cv2, but get {backend}"
+
+        self.backend = backend
+
+    def __call__(self, img):
+        """
+        Performs resize operations.
+        Args:
+            img (PIL.Image): a PIL.Image.
+        return:
+            resized_img: a PIL.Image after scaling.
+        """
+
+        result_img = None
+
+        if isinstance(img, np.ndarray):
+            h, w, _ = img.shape
+        elif isinstance(img, Image.Image):
+            w, h = img.size
+        else:
+            raise NotImplementedError
+
+        if w <= h:
+            ow = self.short_size
+            if self.fixed_ratio:  # default is True
+                oh = int(self.short_size * 4.0 / 3.0)
+            elif not self.keep_ratio:  # no
+                oh = self.short_size
+            else:
+                scale_factor = self.short_size / w
+                oh = int(h * float(scale_factor) +
+                         0.5) if self.do_round else int(h * self.short_size / w)
+                ow = int(w * float(scale_factor) +
+                         0.5) if self.do_round else int(w * self.short_size / h)
+        else:
+            oh = self.short_size
+            if self.fixed_ratio:
+                ow = int(self.short_size * 4.0 / 3.0)
+            elif not self.keep_ratio:  # no
+                ow = self.short_size
+            else:
+                scale_factor = self.short_size / h
+                oh = int(h * float(scale_factor) +
+                         0.5) if self.do_round else int(h * self.short_size / w)
+                ow = int(w * float(scale_factor) +
+                         0.5) if self.do_round else int(w * self.short_size / h)
+
+        if type(img) == np.ndarray:
+            img = Image.fromarray(img, mode='RGB')
+
+        if self.backend == 'pillow':
+            result_img = img.resize((ow, oh), Image.BILINEAR)
+        elif self.backend == 'cv2' and (self.keep_ratio is not None):
+            result_img = cv2.resize(
+                img, (ow, oh), interpolation=cv2.INTER_LINEAR)
+        else:
+            result_img = Image.fromarray(
+                cv2.resize(
+                    np.asarray(img), (ow, oh), interpolation=cv2.INTER_LINEAR))
+
+        return result_img
+
+
 class NormalizeImage(object):
     """normalize image
     Args:
         mean (list): im - mean
         std (list): im / std
         is_scale (bool): whether need im / 255
-        is_channel_first (bool): if True: image shape is CHW, else: HWC
+        norm_type (str): type in ['mean_std', 'none']
     """
 
-    def __init__(self, mean, std, is_scale=True):
+    def __init__(self, mean, std, is_scale=True, norm_type='mean_std'):
         self.mean = mean
         self.std = std
         self.is_scale = is_scale
+        self.norm_type = norm_type
 
     def __call__(self, im, im_info):
         """
@@ -130,13 +294,15 @@ class NormalizeImage(object):
             im_info (dict): info of processed image
         """
         im = im.astype(np.float32, copy=False)
-        mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
-        std = np.array(self.std)[np.newaxis, np.newaxis, :]
-
         if self.is_scale:
-            im = im / 255.0
-        im -= mean
-        im /= std
+            scale = 1.0 / 255.0
+            im *= scale
+
+        if self.norm_type == 'mean_std':
+            mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
+            std = np.array(self.std)[np.newaxis, np.newaxis, :]
+            im -= mean
+            im /= std
         return im, im_info
 
 

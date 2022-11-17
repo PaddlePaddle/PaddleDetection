@@ -1,5 +1,5 @@
 # TensorRT预测部署教程
-TensorRT是NVIDIA提出的用于统一模型部署的加速库，可以应用于V100、JETSON Xavier等硬件，它可以极大提高预测速度。Paddle TensorRT教程请参考文档[使用Paddle-TensorRT库预测](https://paddle-inference.readthedocs.io/en/latest/optimize/paddle_trt.html#)
+TensorRT是NVIDIA提出的用于统一模型部署的加速库，可以应用于V100、JETSON Xavier等硬件，它可以极大提高预测速度。Paddle TensorRT教程请参考文档[使用Paddle-TensorRT库预测](https://www.paddlepaddle.org.cn/inference/optimize/paddle_trt.html)
 
 ## 1. 安装PaddleInference预测库
 - Python安装包，请从[这里](https://paddleinference.paddlepaddle.org.cn/user_guides/download_lib.html#python) 下载带有tensorrt的安装包进行安装
@@ -13,7 +13,7 @@ TensorRT是NVIDIA提出的用于统一模型部署的加速库，可以应用于
 - PaddleDetection中部署预测要求TensorRT版本 > 6.0。
 
 ## 2. 导出模型
-模型导出具体请参考文档[PaddleDetection模型导出教程](../EXPORT_MODEL.md)。
+模型导出具体请参考文档[PaddleDetection模型导出教程](./EXPORT_MODEL.md)。
 
 ## 3. 开启TensorRT加速
 ### 3.1 配置TensorRT
@@ -43,7 +43,7 @@ TestReader:
     image_shape: [3,608,608]
   ...
 ```
-或者在导出模型时设置`-o TestReader.inputs_def.image_shape=[3,608,608]`，模型将会进行固定尺寸预测，具体请参考[PaddleDetection模型导出教程](../EXPORT_MODEL.md) 。
+或者在导出模型时设置`-o TestReader.inputs_def.image_shape=[3,608,608]`，模型将会进行固定尺寸预测，具体请参考[PaddleDetection模型导出教程](./EXPORT_MODEL.md) 。
 
 可以通过[visualdl](https://www.paddlepaddle.org.cn/paddle/visualdl/demo/graph) 打开`model.pdmodel`文件，查看输入的第一个Tensor尺寸是否是固定的，如果不指定，尺寸会用`？`表示，如下图所示：
 ![img](../docs/images/input_shape.png)
