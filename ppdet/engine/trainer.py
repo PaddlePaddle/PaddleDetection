@@ -414,7 +414,7 @@ class Trainer(object):
 
         model = self.model
         sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
-                   (self.cfg.use_gpu or self.cfg.use_mlu) and self._nranks > 1)
+                   (self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu) and self._nranks > 1)
         if sync_bn:
             model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
@@ -479,7 +479,7 @@ class Trainer(object):
                             DataParallel) and use_fused_allreduce_gradients:
                         with model.no_sync():
                             with paddle.amp.auto_cast(
-                                    enable=self.cfg.use_gpu or self.cfg.use_mlu,
+                                    enable=self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu,
                                     custom_white_list=self.custom_white_list,
                                     custom_black_list=self.custom_black_list,
                                     level=self.amp_level):
@@ -493,7 +493,7 @@ class Trainer(object):
                             list(model.parameters()), None)
                     else:
                         with paddle.amp.auto_cast(
-                                enable=self.cfg.use_gpu or self.cfg.use_mlu,
+                                enable=self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu,
                                 custom_white_list=self.custom_white_list,
                                 custom_black_list=self.custom_black_list,
                                 level=self.amp_level):
@@ -540,8 +540,8 @@ class Trainer(object):
                     self.ema.update()
                 iter_tic = time.time()
                 if step_id == 100:
-                    prof.stop()
                     print("++++++++++++++ ENDED ++++++++++++++++++", flush=True)
+                    prof.stop()
 
             if self.cfg.get('unstructured_prune'):
                 self.pruner.update_params()
@@ -610,7 +610,7 @@ class Trainer(object):
             # forward
             if self.use_amp:
                 with paddle.amp.auto_cast(
-                        enable=self.cfg.use_gpu or self.cfg.use_mlu,
+                        enable=self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu,
                         custom_white_list=self.custom_white_list,
                         custom_black_list=self.custom_black_list,
                         level=self.amp_level):
@@ -677,7 +677,7 @@ class Trainer(object):
             # forward
             if self.use_amp:
                 with paddle.amp.auto_cast(
-                        enable=self.cfg.use_gpu or self.cfg.use_mlu,
+                        enable=self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu,
                         custom_white_list=self.custom_white_list,
                         custom_black_list=self.custom_black_list,
                         level=self.amp_level):
