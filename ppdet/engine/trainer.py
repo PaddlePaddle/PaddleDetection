@@ -456,6 +456,10 @@ class Trainer(object):
         use_fused_allreduce_gradients = self.cfg[
             'use_fused_allreduce_gradients'] if 'use_fused_allreduce_gradients' in self.cfg else False
 
+        first_step = True
+        self.steps_per_epoch = len(self.loader)
+        t_end = time.time()
+
         for epoch_id in range(self.start_epoch, self.cfg.epoch):
             self.status['mode'] = 'train'
             self.status['epoch_id'] = epoch_id
@@ -465,7 +469,7 @@ class Trainer(object):
             iter_tic = time.time()
             for step_id, data in enumerate(self.loader):
                 if step_id == 100:
-                    print("++++++++++++++ BEGIN ++++++++++++++++++", flush=True)
+                    print("++++++++++++++ BEGIN ++++++++++++++++++", time.time(), flush=True)
                     prof.start()
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
@@ -524,6 +528,24 @@ class Trainer(object):
                         # model backward
                         loss.backward()
                     self.optimizer.step()
+
+                if (epoch_id * self.steps_per_epoch + step_id) % 20 == 0:
+                    time_used = time.time() - t_end
+                    if first_step:
+                        fps = 32 / time_used
+                        per_step_time = time_used * 1000
+                        first_step = False
+                    else:
+                        fps = 32 * 20 / time_used
+                        per_step_time = time_used / 20 * 1000
+                    log_str = 'epoch[{}], iter[{}], fps:{:.2f} imgs/sec, per step time: {}ms'.format(epoch_id + 1, step_id + 1, fps, per_step_time)
+                    print(log_str, flush=True)
+                    t_end = time.time()
+
+                if step_id == 100:
+                    print("++++++++++++++ ENDED ++++++++++++++++++", time.time(), flush=True)
+                    prof.stop()
+
                 curr_lr = self.optimizer.get_lr()
                 self.lr.step()
                 if self.cfg.get('unstructured_prune'):
@@ -539,9 +561,6 @@ class Trainer(object):
                 if self.use_ema:
                     self.ema.update()
                 iter_tic = time.time()
-                if step_id == 100:
-                    print("++++++++++++++ ENDED ++++++++++++++++++", flush=True)
-                    prof.stop()
 
             if self.cfg.get('unstructured_prune'):
                 self.pruner.update_params()
