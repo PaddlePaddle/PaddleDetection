@@ -311,7 +311,7 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 |:---------- |:------------------:|:-----------------------------:|:-------------------------------------------------------:|:----------------------------------------------------------------------------------------:|
 | PP-YOLOE+_s | 43.9        | 333.3                     | [link](configs/ppyoloe/ppyoloe_plus_crn_s_80e_coco.yml)     | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco.pdparams)      |
 | PP-YOLOE+_m | 50.0        | 208.3                     | [link](configs/ppyoloe/ppyoloe_plus_crn_m_80e_coco.yml)     | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco.pdparams)     |
-| PP-YOLOE+_l | 53.3        | 149.2                     | [link](configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco.pdparams) |
+| PP-YOLOE+_l | 53.3        | 149.2                     | [link](configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams) |
 | PP-YOLOE+_x | 54.9        | 95.2                      | [link](configs/ppyoloe/ppyoloe_plus_crn_x_80e_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_x_80e_coco.pdparams) |
 
 #### PP-PicoDet series Recommended scenarios: Mobile chips and x86 CPU devices, such as ARM CPU(RK3399, Raspberry Pi) and NPU(BITMAIN)
@@ -470,19 +470,20 @@ Please refer to [docs](deploy/pipeline/README_en.md) for details.
 - **[Academic exchange] 2022.9.27 [YOLO Vision Event](https://www.youtube.com/playlist?list=PL1FZnkj4ad1NHVC7CMc3pjSQ-JRK-Ev6O):** As the first YOLO-themed event, PaddleDetection was invited to communicate with the experts in the field of Computer Vision around the world.
 
 ### [Industrial tutorial examples](./industrial_tutorial/README.md)
+
+- [Rotated object detection based on PP-YOLOE-R](https://aistudio.baidu.com/aistudio/projectdetail/5058293)
+
+- [Aerial image detection based on PP-YOLOE-SOD](https://aistudio.baidu.com/aistudio/projectdetail/5036782)
+
 - [Fall down recognition based on PP-Human v2](https://aistudio.baidu.com/aistudio/projectdetail/4606001)
 
 - [Intelligent fitness recognition based on PP-TinyPose Plus](https://aistudio.baidu.com/aistudio/projectdetail/4385813)
 
 - [Road litter detection based on PP-PicoDet Plus](https://aistudio.baidu.com/aistudio/projectdetail/3561097)
 
-- [Communication tower detection based on PP-PicoDet and deployment on Android](https://aistudio.baidu.com/aistudio/projectdetail/3561097)
-
 - [Visitor flow statistics based on FairMOT](https://aistudio.baidu.com/aistudio/projectdetail/2421822)
 
 - [Guest analysis based on PP-Human](https://aistudio.baidu.com/aistudio/projectdetail/4537344)
-
-- [Fight recognition based on video classification](https://aistudio.baidu.com/aistudio/projectdetail/4512242)
 
 - [More examples](./industrial_tutorial/README.md)
 
