@@ -1,0 +1,49 @@
+# This config is an assembled config for ByteTrack MOT, used as eval/infer mode for MOT.
+_BASE_: [
+  'bytetrack_ppyoloe.yml',
+  '_base_/ppyoloe_mot_reader_640x640.yml'
+]
+weights: output/bytetrack_ppyoloe_ppvehicle9cls/model_final
+
+metric: MCMOT # multi-class, `MOT` for single class
+num_classes: 9
+# pedestrian(1), rider(2), car(3), truck(4), bus(5), van(6), motorcycle(7), bicycle(8), others(9)
+TestMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    keep_ori_im: True # set True if save visualization images or video
+    anno_path: dataset/mot/label_list.txt # absolute path
+
+### write in label_list.txt each line:
+# pedestrian
+# rider
+# car
+# truck
+# bus
+# van
+# motorcycle
+# bicycle
+# others
+###
+
+det_weights: https://paddledet.bj.bcebos.com/models/mot_ppyoloe_l_36e_ppvehicle9cls.pdparams
+depth_mult: 1.0
+width_mult: 1.0
+
+# Tracking requires higher quality boxes, so NMS score_threshold will be higher
+PPYOLOEHead:
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.1 # 0.01 in original detector
+    nms_threshold: 0.4 # 0.6 in original detector
+
+# BYTETracker
+JDETracker:
+  use_byte: True
+  match_thres: 0.9
+  conf_thres: 0.2
+  low_conf_thres: 0.1
+  min_box_area: 0
+  vertical_ratio: 0 # only use 1.6 in MOT17 pedestrian
