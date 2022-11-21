@@ -60,6 +60,7 @@ pip install -r requirements.txt
 ## Model Zoo
 - Base models
     - [ByteTrack](bytetrack/README.md)
+    - [OC-SORT](ocsort/README.md)
     - [DeepSORT](deepsort/README.md)
     - [JDE](jde/README.md)
     - [FairMOT](fairmot/README.md)
