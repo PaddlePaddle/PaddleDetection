@@ -81,7 +81,7 @@ with open(path, 'w') as f:
 </details>
 
 
-<details>
+<details open>
 <summary> 解压后的数据集目录如下：</summary>
 
 ```

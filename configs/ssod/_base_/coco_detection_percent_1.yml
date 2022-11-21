@@ -1,0 +1,31 @@
+metric: COCO
+num_classes: 80
+
+# partial labeled COCO, use `SemiCOCODataSet` rather than `COCODataSet`
+TrainDataset:
+  !SemiCOCODataSet
+    image_dir: train2017
+    anno_path: semi_annotations/instances_train2017.1@1.json
+    dataset_dir: dataset/coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+# partial unlabeled COCO, use `SemiCOCODataSet` rather than `COCODataSet`
+UnsupTrainDataset:
+  !SemiCOCODataSet
+    image_dir: train2017
+    anno_path: semi_annotations/instances_train2017.1@1-unlabeled.json
+    dataset_dir: dataset/coco
+    data_fields: ['image']
+    supervised: False
+
+EvalDataset:
+  !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
+    allow_empty: true
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/instances_val2017.json # also support txt (like VOC's label_list.txt)
+    dataset_dir: dataset/coco # if set, anno_path will be 'dataset_dir/anno_path'

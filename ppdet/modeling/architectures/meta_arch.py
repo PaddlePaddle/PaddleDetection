@@ -47,6 +47,7 @@ class BaseArch(nn.Layer):
 
         if self.fuse_norm:
             image = inputs['image']
+            self.inputs = inputs
             self.inputs['image'] = image * self.scale + self.bias
             self.inputs['im_shape'] = inputs['im_shape']
             self.inputs['scale_factor'] = inputs['scale_factor']
