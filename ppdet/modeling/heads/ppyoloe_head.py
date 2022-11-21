@@ -128,6 +128,7 @@ class PPYOLOEHead(nn.Layer):
         self.proj_conv = nn.Conv2D(self.reg_channels, 1, 1, bias_attr=False)
         self.proj_conv.skip_quant = True
         self._init_weights()
+        self.distill_pairs = {}
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -315,10 +316,14 @@ class PPYOLOEHead(nn.Layer):
             loss_dfl = self._df_loss(pred_dist_pos, assigned_ltrb_pos,
                                      self.reg_range[0]) * bbox_weight
             loss_dfl = loss_dfl.sum() / assigned_scores_sum
+            self.distill_pairs['pred_bboxes_pos'] = pred_bboxes_pos
+            self.distill_pairs['pred_dist_pos'] = pred_dist_pos
+            self.distill_pairs['bbox_weight'] = bbox_weight
         else:
             loss_l1 = paddle.zeros([1])
             loss_iou = paddle.zeros([1])
             loss_dfl = pred_dist.sum() * 0.
+            self.distill_pairs['null_loss'] = pred_dist.sum() * 0.
         return loss_l1, loss_iou, loss_dfl
 
     def get_loss(self, head_outs, gt_meta):
@@ -333,7 +338,7 @@ class PPYOLOEHead(nn.Layer):
         pad_gt_mask = gt_meta['pad_gt_mask']
         # label assignment
         if gt_meta['epoch_id'] < self.static_assigner_epoch:
-            assigned_labels, assigned_bboxes, assigned_scores = \
+            assigned_labels, assigned_bboxes, assigned_scores, mask_positive = \
                 self.static_assigner(
                     anchors,
                     num_anchors_list,
@@ -344,19 +349,8 @@ class PPYOLOEHead(nn.Layer):
                     pred_bboxes=pred_bboxes.detach() * stride_tensor)
             alpha_l = 0.25
         else:
-            if self.sm_use:
-                assigned_labels, assigned_bboxes, assigned_scores = \
-                    self.assigner(
-                    pred_scores.detach(),
-                    pred_bboxes.detach() * stride_tensor,
-                    anchor_points,
-                    stride_tensor,
-                    gt_labels,
-                    gt_bboxes,
-                    pad_gt_mask,
-                    bg_index=self.num_classes)
-            else:
-                assigned_labels, assigned_bboxes, assigned_scores = \
+            if not hasattr(self, "assigned_labels"):
+                assigned_labels, assigned_bboxes, assigned_scores, mask_positive = \
                     self.assigner(
                     pred_scores.detach(),
                     pred_bboxes.detach() * stride_tensor,
@@ -366,6 +360,9 @@ class PPYOLOEHead(nn.Layer):
                     gt_bboxes,
                     pad_gt_mask,
                     bg_index=self.num_classes)
+                self.assigned_labels, self.assigned_bboxes, self.assigned_scores, self.mask_positive = assigned_labels, assigned_bboxes, assigned_scores, mask_positive
+            else:
+                assigned_labels, assigned_bboxes, assigned_scores, mask_positive = self.assigned_labels, self.assigned_bboxes, self.assigned_scores, self.mask_positive
             alpha_l = -1
         # rescale bbox
         assigned_bboxes /= stride_tensor
@@ -384,6 +381,14 @@ class PPYOLOEHead(nn.Layer):
             assigned_scores_sum /= paddle.distributed.get_world_size()
         assigned_scores_sum = paddle.clip(assigned_scores_sum, min=1.)
         loss_cls /= assigned_scores_sum
+
+        self.distill_pairs['pred_cls_scores'] = pred_scores
+        self.distill_pairs['pos_num'] = assigned_scores_sum
+        self.distill_pairs['assigned_scores'] = assigned_scores
+        self.distill_pairs['mask_positive'] = mask_positive
+
+        one_hot_label = F.one_hot(assigned_labels, self.num_classes + 1)[..., :-1]
+        self.distill_pairs['target_labels'] = one_hot_label
 
         loss_l1, loss_iou, loss_dfl = \
             self._bbox_loss(pred_distri, pred_bboxes, anchor_points_s,

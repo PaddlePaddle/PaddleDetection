@@ -93,7 +93,9 @@ class YOLOv3(BaseArch):
             if self.for_mot:
                 return {'det_losses': yolo_losses, 'emb_feats': emb_feats}
             else:
-                return yolo_losses
+                self.yolo_head.distill_pairs['emb_feats'] = neck_feats
+                self.yolo_head.distill_pairs['body_feats'] = body_feats
+                return {'det_losses': yolo_losses, 'emb_feats': neck_feats}
 
         else:
             yolo_head_outs = self.yolo_head(neck_feats)
