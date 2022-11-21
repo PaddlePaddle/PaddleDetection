@@ -17,7 +17,7 @@
 
 |  检测训练数据集      |  检测器     | 输入尺度  |  ReID  |  检测mAP  |  MOTA  |  IDF1  |  FPS | 配置文件 |
 | :--------         | :-----      | :----:  | :----:|:------:  | :----: |:-----: |:----:|:----:   |
-| MOT-17 half train | PP-YOLOE-l  | 640x640 | -     |  52.9    |  50.1  |  62.6  |   -    |[配置文件](./bytetrack_ppyoloe.yml) |
+| MOT-17 half train | PP-YOLOE-l  | 640x640 | -     |  52.9    |  50.1  |  62.6  |   -    |[配置文件](./ocsort_ppyoloe.yml) |
 | **mot17_ch**       | YOLOX-x    | 800x1440|   -   |  61.9    |  75.5  |  77.0  |   -    |[配置文件](./ocsort_yolox.yml) |
 
 **注意:**
