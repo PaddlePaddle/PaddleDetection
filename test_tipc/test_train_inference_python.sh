@@ -254,13 +254,16 @@ else
                 elif [ ${trainer} = "${distill_key}" ]; then
                     run_train=${distill_trainer}
                     run_export=${distill_export}
+                elif [ ${trainer} = "${trainer_key1}" ]; then
+                    run_train=${trainer_value1}
+                    run_export=${export_value1}
+                elif [ ${trainer} = "${trainer_key2}" ]; then
+                    run_train=${trainer_value2}
+                    run_export=${export_value2}
                 elif [ ${trainer} = "${to_static_key}" ]; then
                     run_train=${norm_trainer}
                     run_export=${norm_export}
                     set_to_static=${to_static_trainer}
-                elif [ ${trainer} = "${trainer_key2}" ]; then
-                    run_train=${trainer_value2}
-                    run_export=${export_value2}
                 else
                     continue
                 fi
