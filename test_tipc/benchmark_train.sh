@@ -144,6 +144,14 @@ if  [ ! -n "$PARAMS" ] ;then
     device_num="N1C4"
     device_num_list=($device_num)
     run_mode="DP"
+elif [[ ${PARAMS} = "dynamicTostatic" ]] ;then
+    IFS="|"
+    model_type=$PARAMS
+    batch_size_list=(${batch_size})
+    fp_items_list=(${fp_items})
+    device_num="N1C4"
+    device_num_list=($device_num)
+    run_mode="DP"
 else
     # parser params from input: modeltype_bs${bs_item}_${fp_item}_${run_mode}_${device_num}
     IFS="_"
