@@ -23,7 +23,16 @@
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> Product Update
 
-- 🔥 **2022.8.26：PaddleDetection releases[release/2.5 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)**
+- 🔥 **2022.11.15：SOTA rotated object detector and small object detector based on PP-YOLOE**
+  - Rotated object detector [PP-YOLOE-R](configs/rotate/ppyoloe_r)
+    - SOTA Anchor-free rotated object detection model with high accuracy and efficiency
+    - A series of models, named s/m/l/x, for cloud and edge devices
+    - Avoiding using special operators to be deployed friendly with TensorRT.
+  - Small object detector [PP-YOLOE-SOD](configs/smalldet)
+    - End-to-end detection pipeline based on sliced images
+    - SOTA model on VisDrone based on original images.
+
+- 2022.8.26：PaddleDetection releases[release/2.5 version](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)
 
   - 🗳 Model features：
 
@@ -38,7 +47,7 @@
 
   - 💡 Cutting-edge algorithms：
 
-    - Covers [YOLO family](https://github.com/nemonameless/PaddleDetection_YOLOSeries) classic and latest models: YOLOv3, PP-YOLOE (a real-time high-precision object detection model developed by Baidu PaddlePaddle), and cutting-edge detection algorithms such as YOLOv4, YOLOv5, YOLOX, YOLOv6, and YOLOv7
+    - Release [PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO) which overs classic and latest models of [YOLO family](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/docs/MODEL_ZOO_en.md): YOLOv3, PP-YOLOE (a real-time high-precision object detection model developed by Baidu PaddlePaddle), and cutting-edge detection algorithms such as YOLOv4, YOLOv5, YOLOX, YOLOv6, and YOLOv7
     - Newly add high precision detection model based on [ViT](configs/vitdet) backbone network, with a 55.7% mAP accuracy on COCO dataset; newly add multi-object tracking model [OC-SORT](configs/mot/ocsort); newly add [ConvNeXt](configs/convnext) backbone network.
 
   - 📋 Industrial applications: Newly add [Smart Fitness](https://aistudio.baidu.com/aistudio/projectdetail/4385813), [Fighting recognition](https://aistudio.baidu.com/aistudio/projectdetail/4086987?channelType=0&channel=0),[ and Visitor Analysis](https://aistudio.baidu.com/aistudio/projectdetail/4230123?channelType=0&channel=0).
@@ -67,7 +76,7 @@
 - **High Performance**: Due to the high performance core, PaddlePaddle has clear advantages in training speed and memory occupation. It also supports FP16 training and multi-machine training.
 
 <div  align="center">
-  <img src="https://user-images.githubusercontent.com/22989727/189066615-89d1dde2-54bc-4946-887e-fce50069206e.png" width="800"/>
+  <img src="https://user-images.githubusercontent.com/22989727/202131382-45fd2de6-3805-460e-a70c-66db7188d37c.png" width="800"/>
 </div>
 
 ## <img title="" src="https://user-images.githubusercontent.com/48054808/157800467-2a9946ad-30d1-49a9-b9db-ba33413d9c90.png" alt="" width="20"> Exchanges
@@ -113,10 +122,14 @@
             <li>PP-YOLO-Tiny</li>
             <li>PP-YOLOE</li>
             <li>PP-YOLOE+</li>
+            <li>PP-YOLOE-R</li>
+            <li>PP-YOLOE-SOD</li>
             <li>YOLOX</li>
+            <li>YOLOF</li>
             <li>SSD</li>
             <li>CenterNet</li>
             <li>FCOS</li>  
+            <li>FCOSR</li>  
             <li>TTFNet</li>
             <li>TOOD</li>
             <li>GFL</li>
@@ -298,7 +311,7 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 |:---------- |:------------------:|:-----------------------------:|:-------------------------------------------------------:|:----------------------------------------------------------------------------------------:|
 | PP-YOLOE+_s | 43.9        | 333.3                     | [link](configs/ppyoloe/ppyoloe_plus_crn_s_80e_coco.yml)     | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco.pdparams)      |
 | PP-YOLOE+_m | 50.0        | 208.3                     | [link](configs/ppyoloe/ppyoloe_plus_crn_m_80e_coco.yml)     | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco.pdparams)     |
-| PP-YOLOE+_l | 53.3        | 149.2                     | [link](configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco.pdparams) |
+| PP-YOLOE+_l | 53.3        | 149.2                     | [link](configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams) |
 | PP-YOLOE+_x | 54.9        | 95.2                      | [link](configs/ppyoloe/ppyoloe_plus_crn_x_80e_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_x_80e_coco.pdparams) |
 
 #### PP-PicoDet series Recommended scenarios: Mobile chips and x86 CPU devices, such as ARM CPU(RK3399, Raspberry Pi) and NPU(BITMAIN)
@@ -310,12 +323,13 @@ The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of 
 | PicoDet-M  | 34.4               | 17.68                                 | [Link](configs/picodet/picodet_m_320_coco_lcnet.yml)  | [Download](https://paddledet.bj.bcebos.com/models/picodet_m_320_coco_lcnet.pdparams)  |
 | PicoDet-L  | 36.1               | 25.21                                 | [Link](configs/picodet/picodet_l_320_coco_lcnet.yml)  | [Download](https://paddledet.bj.bcebos.com/models/picodet_l_320_coco_lcnet.pdparams)  |
 
-#### [Frontier detection algorithm](docs/feature_models/YOLOSERIES_MODEL.md)
+#### [Frontier detection algorithm](docs/feature_models/PaddleYOLO_MODEL.md)
 
 | Model    | COCO Accuracy（mAP） | V100 TensorRT FP16 speed(FPS) | Configuration                                                                                                  | Download                                                                       |
 |:-------- |:------------------:|:-----------------------------:|:--------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------:|
-| YOLOX-l  | 50.1               | 107.5                         | [Link](configs/yolox/yolox_l_300e_coco.yml)                                                                    | [Download](https://paddledet.bj.bcebos.com/models/yolox_l_300e_coco.pdparams)  |
-| YOLOv5-l | 48.6               | 136.0                         | [Link](https://github.com/nemonameless/PaddleDetection_YOLOv5/blob/main/configs/yolov5/yolov5_l_300e_coco.yml) | [Download](https://paddledet.bj.bcebos.com/models/yolov5_l_300e_coco.pdparams) |
+| [YOLOX-l](configs/yolox)  | 50.1               | 107.5                         | [Link](configs/yolox/yolox_l_300e_coco.yml)                                                                    | [Download](https://paddledet.bj.bcebos.com/models/yolox_l_300e_coco.pdparams)  |
+| [YOLOv5-l](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov5) | 48.6               | 136.0                         | [Link](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov5/yolov5_l_300e_coco.yml) | [Download](https://paddledet.bj.bcebos.com/models/yolov5_l_300e_coco.pdparams) |
+| [YOLOv7-l](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov7) | 51.0        | 135.0                     | [链接](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov7/yolov7_l_300e_coco.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/yolov7_l_300e_coco.pdparams) |
 
 #### Other general purpose models [doc](docs/MODEL_ZOO_en.md)
 
@@ -457,19 +471,20 @@ Please refer to [docs](deploy/pipeline/README_en.md) for details.
 - **[Academic exchange] 2022.9.27 [YOLO Vision Event](https://www.youtube.com/playlist?list=PL1FZnkj4ad1NHVC7CMc3pjSQ-JRK-Ev6O):** As the first YOLO-themed event, PaddleDetection was invited to communicate with the experts in the field of Computer Vision around the world.
 
 ### [Industrial tutorial examples](./industrial_tutorial/README.md)
+
+- [Rotated object detection based on PP-YOLOE-R](https://aistudio.baidu.com/aistudio/projectdetail/5058293)
+
+- [Aerial image detection based on PP-YOLOE-SOD](https://aistudio.baidu.com/aistudio/projectdetail/5036782)
+
 - [Fall down recognition based on PP-Human v2](https://aistudio.baidu.com/aistudio/projectdetail/4606001)
 
 - [Intelligent fitness recognition based on PP-TinyPose Plus](https://aistudio.baidu.com/aistudio/projectdetail/4385813)
 
 - [Road litter detection based on PP-PicoDet Plus](https://aistudio.baidu.com/aistudio/projectdetail/3561097)
 
-- [Communication tower detection based on PP-PicoDet and deployment on Android](https://aistudio.baidu.com/aistudio/projectdetail/3561097)
-
 - [Visitor flow statistics based on FairMOT](https://aistudio.baidu.com/aistudio/projectdetail/2421822)
 
 - [Guest analysis based on PP-Human](https://aistudio.baidu.com/aistudio/projectdetail/4537344)
-
-- [Fight recognition based on video classification](https://aistudio.baidu.com/aistudio/projectdetail/4512242)
 
 - [More examples](./industrial_tutorial/README.md)
 

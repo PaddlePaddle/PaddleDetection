@@ -48,7 +48,7 @@ from ppdet.utils import profiler
 from ppdet.modeling.post_process import multiclass_nms
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback
-from .export_utils import _dump_infer_config, _prune_input_spec
+from .export_utils import _dump_infer_config, _prune_input_spec, apply_to_static
 
 from paddle.distributed.fleet.utils.hybrid_parallel_util import fused_allreduce_gradients
 
@@ -152,6 +152,15 @@ class Trainer(object):
                 self.loader = create(reader_name)(self.dataset, cfg.worker_num,
                                                   self._eval_batch_sampler)
         # TestDataset build after user set images, skip loader creation here
+
+        # get Params
+        print_params = self.cfg.get('print_params', False)
+        if print_params:
+            params = sum([
+                p.numel() for n, p in self.model.named_parameters()
+                if all([x not in n for x in ['_mean', '_variance']])
+            ])  # exclude BatchNorm running status
+            logger.info('Params: ', params / 1e6)
 
         # build optimizer in train mode
         if self.mode == 'train':
@@ -413,6 +422,8 @@ class Trainer(object):
                 "EvalDataset")()
 
         model = self.model
+        if self.cfg.get('to_static', False):
+            model = apply_to_static(self.cfg, model)
         sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
                    (self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu) and self._nranks > 1)
         if sync_bn:

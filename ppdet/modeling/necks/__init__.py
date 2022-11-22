@@ -22,6 +22,7 @@ from . import csp_pan
 from . import es_pan
 from . import lc_pan
 from . import custom_pan
+from . import dilated_encoder
 
 from .fpn import *
 from .yolo_fpn import *
@@ -34,3 +35,4 @@ from .csp_pan import *
 from .es_pan import *
 from .lc_pan import *
 from .custom_pan import *
+from .dilated_encoder import *

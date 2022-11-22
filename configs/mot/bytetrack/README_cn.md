@@ -24,7 +24,11 @@
 | **mix_det** | YOLOX-x     | 800x1440|   -   |  65.4    |  84.5  |  77.4  |   -    |[配置文件](./bytetrack_yolox.yml) |
 
 **注意:**
-  - 检测任务相关配置和文档请查看[detector](detector/)
+  - 检测任务相关配置和文档请查看[detector](detector/)。
+  - 模型权重下载链接在配置文件中的```det_weights```和```reid_weights```，运行```tools/eval_mot.py```评估的命令即可自动下载，```reid_weights```若为None则表示不需要使用。
+  - **ByteTrack默认不使用ReID权重**，如需使用ReID权重，可以参考 [bytetrack_ppyoloe_pplcnet.yml](./bytetrack_ppyoloe_pplcnet.yml)，如需**更换ReID权重，可改动其中的`reid_weights: `为自己的权重路径**。
+  - **MOT17-half train**是MOT17的train序列(共7个)每个视频的前一半帧的图片和标注组成的数据集，而为了验证精度可以都用**MOT17-half val**数据集去评估，它是每个视频的后一半帧组成的，数据集可以从[此链接](https://bj.bcebos.com/v1/paddledet/data/mot/MOT17.zip)下载，并解压放在`dataset/mot/`文件夹下。
+  - **mix_mot_ch**数据集，是MOT17、CrowdHuman组成的联合数据集，**mix_det**数据集是MOT17、CrowdHuman、Cityscapes、ETHZ组成的联合数据集，数据集整理的格式和目录可以参考[此链接](https://github.com/ifzhang/ByteTrack#data-preparation)，最终放置于`dataset/mot/`目录下。为了验证精度可以都用**MOT17-half val**数据集去评估。
 
 
 ### YOLOX-x ByteTrack(mix_det)
@@ -34,17 +38,38 @@
 |    网络      |  测试集 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
 | :---------: | :-------: | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
 | ByteTrack-x| MOT-17 Train |  84.4  |  72.8  |  837  |  5653  | 10985 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/yolox_x_24e_800x1440_mix_det.pdparams) | [配置文件](./bytetrack_yolox.yml) |
-| ByteTrack-x| MOT-17 Test |  78.4  |  69.7  |  4974  |  37551  | 79524 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/yolox_x_24e_800x1440_mix_det.pdparams) | [配置文件](./bytetrack_yolox.yml) |
+| ByteTrack-x| **MOT-17 Test** |  **78.4**  |  69.7  |  4974  |  37551  | 79524 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/yolox_x_24e_800x1440_mix_det.pdparams) | [配置文件](./bytetrack_yolox.yml) |
 | ByteTrack-x| MOT-16 Train |  83.5  |  72.7  |  800  |  6973  | 10419 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/yolox_x_24e_800x1440_mix_det.pdparams) | [配置文件](./bytetrack_yolox.yml) |
-| ByteTrack-x| MOT-16 Test |  77.7  |  70.1  |  1570  |  15695  | 23304 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/yolox_x_24e_800x1440_mix_det.pdparams) | [配置文件](./bytetrack_yolox.yml) |
+| ByteTrack-x| **MOT-16 Test** |  **77.7**  |  70.1  |  1570  |  15695  | 23304 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/yolox_x_24e_800x1440_mix_det.pdparams) | [配置文件](./bytetrack_yolox.yml) |
 
 
 **注意:**
-  - 模型权重下载链接在配置文件中的```det_weights```和```reid_weights```，运行```tools/eval_mot.py```评估的命令即可自动下载，```reid_weights```若为None则表示不需要使用，ByteTrack默认不使用ReID权重。
-  - **MOT17-half train**是MOT17的train序列(共7个)每个视频的前一半帧的图片和标注组成的数据集，而为了验证精度可以都用**MOT17-half val**数据集去评估，它是每个视频的后一半帧组成的，数据集可以从[此链接](https://bj.bcebos.com/v1/paddledet/data/mot/MOT17.zip)下载，并解压放在`dataset/mot/`文件夹下。
-  - **mix_mot_ch**数据集，是MOT17、CrowdHuman组成的联合数据集，**mix_det**是MOT17、CrowdHuman、Cityscapes、ETHZ组成的联合数据集，数据集整理的格式和目录可以参考[此链接](https://github.com/ifzhang/ByteTrack#data-preparation)，最终放置于`dataset/mot/`目录下。为了验证精度可以都用**MOT17-half val**数据集去评估。
+  - **mix_det**数据集是MOT17、CrowdHuman、Cityscapes、ETHZ组成的联合数据集，数据集整理的格式和目录可以参考[此链接](https://github.com/ifzhang/ByteTrack#data-preparation)，最终放置于`dataset/mot/`目录下。
+  - MOT-17 Train 和 MOT-16 Train 的指标均为本地评估该数据后的指标，由于Train集包括在了训练集中，此MOTA指标不代表模型的检测跟踪能力，只是因为MOT-17和MOT-16无验证集而它们的Train集有ground truth，是为了方便验证精度。
+  - MOT-17 Test 和 MOT-16 Test 的指标均为交到 [MOTChallenge](https://motchallenge.net)官网评测后的指标，因为MOT-17和MOT-16的Test集未开放ground truth，此MOTA指标可以代表模型的检测跟踪能力。
   - ByteTrack的训练是单独的检测器训练MOT数据集，推理是组装跟踪器去评估MOT指标，单独的检测模型也可以评估检测指标。
   - ByteTrack的导出部署，是单独导出检测模型，再组装跟踪器运行的，参照[PP-Tracking](../../../deploy/pptracking/python/README.md)。
+
+
+## 多类别适配
+
+多类别ByteTrack，可以参考 [bytetrack_ppyoloe_ppvehicle9cls.yml](./bytetrack_ppyoloe_ppvehicle9cls.yml)，表示使用 [PP-Vehicle](../../ppvehicle/) 中的PPVehicle9cls数据集训好的模型权重去做多类别车辆跟踪。由于没有跟踪的ground truth标签无法做评估，故只做跟踪预测，只需修改`TestMOTDataset`确保路径存在，且其中的`anno_path`表示指定在一个`label_list.txt`中记录具体类别，需要自己手写，一行表示一个种类，注意路径`anno_path`如果写错或找不到则将默认使用COCO数据集80类的类别。
+
+如需**更换检测器权重，可改动其中的`det_weights: `为自己的权重路径**，并注意**数据集路径、`label_list.txt`和类别数**做出相应更改。
+
+预测多类别车辆跟踪：
+```bash
+# 下载demo视频
+wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/bdd100k_demo.mp4
+
+# 使用PPYOLOE 多类别车辆检测模型
+CUDA_VISIBLE_DEVICES=1 python tools/infer_mot.py -c configs/mot/bytetrack/bytetrack_ppyoloe_ppvehicle9cls.yml --video_file=bdd100k_demo.mp4 --scaled=True --save_videos
+```
+
+**注意:**
+ - 请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
+ - `--scaled`表示在模型输出结果的坐标是否已经是缩放回原图的，如果使用的检测模型是JDE的YOLOv3则为False，如果使用通用检测模型则为True。
+ - `--save_videos`表示保存可视化视频，同时会保存可视化的图片在`{output_dir}/mot_outputs/`中，`{output_dir}`可通过`--output_dir`设置，默认文件夹名为`output`。
 
 
 ## 快速开始
