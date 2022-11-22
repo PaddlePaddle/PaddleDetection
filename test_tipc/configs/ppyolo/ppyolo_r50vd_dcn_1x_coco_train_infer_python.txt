@@ -49,5 +49,12 @@ inference:./deploy/python/infer.py
 --save_log_path:null
 --run_benchmark:False
 null:null
+===========================train_benchmark_params==========================
+batch_size:24
+fp_items:fp32|fp16
+epoch:1
+repeat:10
+--profiler_options:batch_range=[10,20];state=GPU;tracer_option=Default;profile_path=model.profile
+flags:null
 ===========================infer_benchmark_params===========================
 numpy_infer_input:3x608x608.npy

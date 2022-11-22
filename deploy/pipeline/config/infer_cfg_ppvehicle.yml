@@ -3,37 +3,29 @@ visual: True
 warmup_frame: 50
 
 DET:
-  model_dir: output_inference/mot_ppyoloe_l_36e_ppvehicle/
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip
   batch_size: 1
 
 MOT:
-  model_dir: output_inference/mot_ppyoloe_l_36e_ppvehicle/
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip
   tracker_config: deploy/pipeline/config/tracker_config.yml
   batch_size: 1
-  basemode: "idbased"
+  skip_frame_num: -1 # preferably no more than 3
   enable: False
 
 VEHICLE_PLATE:
-  det_model_dir: output_inference/ch_PP-OCRv3_det_infer/
-  det_limit_side_len: 480
-  det_limit_type: "max"
-  rec_model_dir: output_inference/ch_PP-OCRv3_rec_infer/
+  det_model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz
+  det_limit_side_len: 736
+  det_limit_type: "min"
+  rec_model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz
   rec_image_shape: [3, 48, 320]
   rec_batch_num: 6
   word_dict_path: deploy/pipeline/ppvehicle/rec_word_dict.txt
-  basemode: "idbased"
   enable: False
 
 VEHICLE_ATTR:
-  model_dir: output_inference/vehicle_attribute_infer/
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip
   batch_size: 8
-  basemode: "idbased"
   color_threshold: 0.5
   type_threshold: 0.5
-  enable: False
-
-REID:
-  model_dir: output_inference/vehicle_reid_model/
-  batch_size: 16
-  basemode: "idbased"
   enable: False

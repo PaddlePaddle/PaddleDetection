@@ -1,0 +1,135 @@
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  './_base_/mask_rcnn_reader.yml',
+  './_base_/optimizer_base_1x.yml'
+]
+
+weights: output/mask_rcnn_vit_base_hrfpn_cae_1x_coco/model_final
+
+
+# runtime
+log_iter: 100
+snapshot_epoch: 1
+norm_type: sync_bn
+use_fused_allreduce_gradients: &use_checkpoint False
+
+
+architecture: MaskRCNN
+MaskRCNN:
+  backbone: VisionTransformer
+  neck: HRFPN
+  rpn_head: RPNHead
+  bbox_head: BBoxHead
+  mask_head: MaskHead
+  # post process
+  bbox_post_process: BBoxPostProcess
+  mask_post_process: MaskPostProcess
+
+VisionTransformer:
+  patch_size: 16
+  embed_dim: 768
+  depth: 12
+  num_heads: 12
+  mlp_ratio: 4
+  qkv_bias: True
+  drop_rate: 0.0
+  drop_path_rate: 0.2
+  init_values: 0.1
+  final_norm: False
+  use_rel_pos_bias: False
+  use_sincos_pos_emb: True
+  epsilon: 0.000001 # 1e-6
+  out_indices: [3, 5, 7, 11]
+  with_fpn: True
+  use_checkpoint: *use_checkpoint
+  pretrained: https://bj.bcebos.com/v1/paddledet/models/pretrained/vit_base_cae_pretrained.pdparams
+
+HRFPN:
+  out_channel: 256
+  use_bias: True
+
+RPNHead:
+  anchor_generator:
+    aspect_ratios: [0.5, 1.0, 2.0]
+    anchor_sizes: [[32], [64], [128], [256], [512]]
+    strides: [4, 8, 16, 32, 64]
+  rpn_target_assign:
+    batch_size_per_im: 256
+    fg_fraction: 0.5
+    negative_overlap: 0.3
+    positive_overlap: 0.7
+    use_random: True
+  train_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 2000
+    post_nms_top_n: 1000
+    topk_after_collect: True
+  test_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 1000
+    post_nms_top_n: 1000
+  loss_rpn_bbox: SmoothL1Loss
+
+SmoothL1Loss:
+  beta: 0.1111111111111111
+
+
+BBoxHead:
+  head: XConvNormHead
+  roi_extractor:
+    resolution: 7
+    sampling_ratio: 0
+    aligned: True
+  bbox_assigner: BBoxAssigner
+  loss_normalize_pos: True
+  bbox_loss: GIoULoss
+
+BBoxAssigner:
+  batch_size_per_im: 512
+  bg_thresh: 0.5
+  fg_thresh: 0.5
+  fg_fraction: 0.25
+  use_random: True
+
+
+XConvNormHead:
+    num_convs: 4
+    norm_type: bn
+
+GIoULoss:
+  loss_weight: 10.
+  reduction: 'none'
+  eps: 0.000001
+
+
+
+BBoxPostProcess:
+  decode: RCNNBox
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    score_threshold: 0.05
+    nms_threshold: 0.5
+
+MaskHead:
+  head: MaskFeat
+  roi_extractor:
+    resolution: 14
+    sampling_ratio: 0
+    aligned: True
+  mask_assigner: MaskAssigner
+  share_bbox_feat: False
+
+MaskFeat:
+  num_convs: 4
+  out_channel: 256
+  norm_type: ~
+
+MaskAssigner:
+  mask_resolution: 28
+
+MaskPostProcess:
+  binary_thresh: 0.5

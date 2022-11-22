@@ -84,6 +84,19 @@ class AttrDetector(Detector):
             output_dir=output_dir,
             threshold=threshold, )
 
+    @classmethod
+    def init_with_cfg(cls, args, cfg):
+        return cls(model_dir=cfg['model_dir'],
+                   batch_size=cfg['batch_size'],
+                   device=args.device,
+                   run_mode=args.run_mode,
+                   trt_min_shape=args.trt_min_shape,
+                   trt_max_shape=args.trt_max_shape,
+                   trt_opt_shape=args.trt_opt_shape,
+                   trt_calib_mode=args.trt_calib_mode,
+                   cpu_threads=args.cpu_threads,
+                   enable_mkldnn=args.enable_mkldnn)
+
     def get_label(self):
         return self.pred_config.labels
 
@@ -142,13 +155,12 @@ class AttrDetector(Detector):
             bag_label = bag if bag_score > self.threshold else 'No bag'
             label_res.append(bag_label)
             # upper
-            upper_res = res[4:8]
             upper_label = 'Upper:'
             sleeve = 'LongSleeve' if res[3] > res[2] else 'ShortSleeve'
             upper_label += ' {}'.format(sleeve)
-            for i, r in enumerate(upper_res):
-                if r > self.threshold:
-                    upper_label += ' {}'.format(upper_list[i])
+            upper_res = res[4:8]
+            if np.max(upper_res) > self.threshold:
+                upper_label += ' {}'.format(upper_list[np.argmax(upper_res)])
             label_res.append(upper_label)
             # lower
             lower_res = res[8:14]

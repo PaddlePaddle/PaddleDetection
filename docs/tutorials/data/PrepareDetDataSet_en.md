@@ -27,7 +27,7 @@ The general object position is represented by a rectangular box, which is genera
 |  x1,y1,w,h  | (x1,y1)is the top left coordinate, w is width of object, h is height of object |
 |  xc,yc,w,h  |    (xc,yc)is center of object, w is width of object, h is height of object     |
 
-Common object detection datasets such as Pascal VOC, adopting `[x1,y1,x2,y2]` to express the bounding box of object. COCO uses `[x1,y1,w,h]` , [format](https://cocodataset.org/#format-data).
+Common object detection datasets such as Pascal VOC, adopting `[x1,y1,x2,y2]` to express the bounding box of object. COCO uses `[x1,y1,w,h]`, [format](https://cocodataset.org/#format-data).
 
 ### Prepare Training Data
 PaddleDetection is supported [COCO](http://cocodataset.org) and [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) and [WIDER-FACE](http://shuoyang1213.me/WIDERFACE/) datasets by default.

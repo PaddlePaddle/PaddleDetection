@@ -33,6 +33,10 @@ from . import sparsercnn_head
 from . import tood_head
 from . import retina_head
 from . import ppyoloe_head
+from . import fcosr_head
+from . import ppyoloe_r_head
+from . import ld_gfl_head
+from . import yolof_head
 
 from .bbox_head import *
 from .mask_head import *
@@ -55,3 +59,7 @@ from .sparsercnn_head import *
 from .tood_head import *
 from .retina_head import *
 from .ppyoloe_head import *
+from .fcosr_head import *
+from .ld_gfl_head import *
+from .ppyoloe_r_head import *
+from .yolof_head import *

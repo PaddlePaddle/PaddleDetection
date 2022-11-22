@@ -39,6 +39,7 @@ class MOTDataSet(DetDataset):
         image_lists (str|list): mot data image lists, muiti-source mot dataset.
         data_fields (list): key name of data dictionary, at least have 'image'.
         sample_num (int): number of samples to load, -1 means all.
+        repeat (int): repeat times for dataset, use in benchmark.
 
     Notes:
         MOT datasets root directory following this:
@@ -77,11 +78,13 @@ class MOTDataSet(DetDataset):
                  dataset_dir=None,
                  image_lists=[],
                  data_fields=['image'],
-                 sample_num=-1):
+                 sample_num=-1,
+                 repeat=1):
         super(MOTDataSet, self).__init__(
             dataset_dir=dataset_dir,
             data_fields=data_fields,
-            sample_num=sample_num)
+            sample_num=sample_num,
+            repeat=repeat)
         self.dataset_dir = dataset_dir
         self.image_lists = image_lists
         if isinstance(self.image_lists, str):
@@ -95,7 +98,8 @@ class MOTDataSet(DetDataset):
         # only used to get categories and metric
         # only check first data, but the label_list of all data should be same.
         first_mot_data = self.image_lists[0].split('.')[0]
-        anno_file = os.path.join(self.dataset_dir, first_mot_data, 'label_list.txt')
+        anno_file = os.path.join(self.dataset_dir, first_mot_data,
+                                 'label_list.txt')
         return anno_file
 
     def parse_dataset(self):
@@ -276,7 +280,8 @@ class MCMOTDataSet(DetDataset):
         # only used to get categories and metric
         # only check first data, but the label_list of all data should be same.
         first_mot_data = self.image_lists[0].split('.')[0]
-        anno_file = os.path.join(self.dataset_dir, first_mot_data, 'label_list.txt')
+        anno_file = os.path.join(self.dataset_dir, first_mot_data,
+                                 'label_list.txt')
         return anno_file
 
     def parse_dataset(self):
@@ -472,7 +477,7 @@ class MOTImageFolder(DetDataset):
                  image_dir=None,
                  sample_num=-1,
                  keep_ori_im=False,
-                 anno_path=None,  
+                 anno_path=None,
                  **kwargs):
         super(MOTImageFolder, self).__init__(
             dataset_dir, image_dir, sample_num=sample_num)
@@ -575,6 +580,7 @@ class MOTImageFolder(DetDataset):
 
     def get_anno(self):
         return self.anno_path
+
 
 def _is_valid_video(f, extensions=('.mp4', '.avi', '.mov', '.rmvb', 'flv')):
     return f.lower().endswith(extensions)

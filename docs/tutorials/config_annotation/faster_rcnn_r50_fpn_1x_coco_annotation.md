@@ -114,8 +114,6 @@ EvalReader:
   shuffle: false
   # 是否丢弃最后不能完整组成batch的数据
   drop_last: false
-  # 是否丢弃没有标注的数据
-  drop_empty: false
 
 # 测试数据
 TestReader:

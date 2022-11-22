@@ -156,7 +156,8 @@ class BBoxAssigner(object):
                  rpn_rois_num,
                  inputs,
                  stage=0,
-                 is_cascade=False):
+                 is_cascade=False,
+                 add_gt_as_proposals=True):
         gt_classes = inputs['gt_class']
         gt_boxes = inputs['gt_bbox']
         is_crowd = inputs.get('is_crowd', None)
@@ -166,7 +167,7 @@ class BBoxAssigner(object):
             rpn_rois, gt_classes, gt_boxes, self.batch_size_per_im,
             self.fg_fraction, self.fg_thresh, self.bg_thresh, self.num_classes,
             self.ignore_thresh, is_crowd, self.use_random, is_cascade,
-            self.cascade_iou[stage], self.assign_on_cpu)
+            self.cascade_iou[stage], self.assign_on_cpu, add_gt_as_proposals)
         rois = outs[0]
         rois_num = outs[-1]
         # tgt_labels, tgt_bboxes, tgt_gt_inds
@@ -365,21 +366,11 @@ class RBoxAssigner(object):
     def assign_anchor(self,
                       anchors,
                       gt_bboxes,
-                      gt_lables,
+                      gt_labels,
                       pos_iou_thr,
                       neg_iou_thr,
                       min_iou_thr=0.0,
                       ignore_iof_thr=-2):
-        """
-
-        Args:
-            anchors:
-            gt_bboxes:[M, 5] rc,yc,w,h,angle
-            gt_lables:
-
-        Returns:
-
-        """
         assert anchors.shape[1] == 4 or anchors.shape[1] == 5
         assert gt_bboxes.shape[1] == 4 or gt_bboxes.shape[1] == 5
         anchors_xc_yc = anchors
@@ -392,9 +383,9 @@ class RBoxAssigner(object):
         gt_bboxes_xc_yc = paddle.to_tensor(gt_bboxes_xc_yc)
 
         try:
-            from rbox_iou_ops import rbox_iou
+            from ext_op import rbox_iou
         except Exception as e:
-            print("import custom_ops error, try install rbox_iou_ops " \
+            print("import custom_ops error, try install ext_op " \
                   "following ppdet/ext_op/README.md", e)
             sys.stdout.flush()
             sys.exit(-1)
@@ -428,12 +419,12 @@ class RBoxAssigner(object):
         # (4) assign max_iou as pos_ids >=0
         anchor_gt_bbox_iou_inds = anchor_gt_bbox_inds[gt_bbox_anchor_iou_inds]
         # gt_bbox_anchor_iou_inds = np.logical_and(gt_bbox_anchor_iou_inds, anchor_gt_bbox_iou >= min_iou_thr)
-        labels[gt_bbox_anchor_iou_inds] = gt_lables[anchor_gt_bbox_iou_inds]
+        labels[gt_bbox_anchor_iou_inds] = gt_labels[anchor_gt_bbox_iou_inds]
 
         # (5) assign >= pos_iou_thr as pos_ids
         iou_pos_iou_thr_ids = anchor_gt_bbox_iou >= pos_iou_thr
         iou_pos_iou_thr_ids_box_inds = anchor_gt_bbox_inds[iou_pos_iou_thr_ids]
-        labels[iou_pos_iou_thr_ids] = gt_lables[iou_pos_iou_thr_ids_box_inds]
+        labels[iou_pos_iou_thr_ids] = gt_labels[iou_pos_iou_thr_ids_box_inds]
         return anchor_gt_bbox_inds, anchor_gt_bbox_iou, labels
 
     def __call__(self, anchors, gt_bboxes, gt_labels, is_crowd):

@@ -96,6 +96,9 @@ LOG_PATH="./test_tipc/output/${model_name}/${MODE}"
 mkdir -p ${LOG_PATH}
 status_log="${LOG_PATH}/results_python.log"
 
+line_num=`grep -n -w "to_static_train_benchmark_params" $FILENAME  | cut -d ":" -f 1`
+to_static_key=$(func_parser_key "${lines[line_num]}")
+to_static_trainer=$(func_parser_value "${lines[line_num]}")
 
 function func_inference(){
     IFS='|'
@@ -105,6 +108,7 @@ function func_inference(){
     _log_path=$4
     _img_dir=$5
     _flag_quant=$6
+    _gpu=$7
     # inference
     for use_gpu in ${use_gpu_list[*]}; do
         if [ ${use_gpu} = "False" ] || [ ${use_gpu} = "cpu" ]; then
@@ -114,7 +118,7 @@ function func_inference(){
                 fi
                 for threads in ${cpu_threads_list[*]}; do
                     for batch_size in ${batch_size_list[*]}; do
-                        _save_log_path="${_log_path}/python_infer_cpu_usemkldnn_${use_mkldnn}_threads_${threads}_mode_paddle_batchsize_${batch_size}.log"
+                        _save_log_path="${_log_path}/python_infer_cpu_gpus_${gpu}_usemkldnn_${use_mkldnn}_threads_${threads}_mode_paddle_batchsize_${batch_size}.log"
                         set_infer_data=$(func_set_params "${image_dir_key}" "${_img_dir}")
                         set_benchmark=$(func_set_params "${benchmark_key}" "${benchmark_value}")
                         set_batchsize=$(func_set_params "${batch_size_key}" "${batch_size}")
@@ -125,7 +129,7 @@ function func_inference(){
                         eval $command
                         last_status=${PIPESTATUS[0]}
                         eval "cat ${_save_log_path}"
-                        status_check $last_status "${command}" "${status_log}" "${model_name}"
+                        status_check $last_status "${command}" "${status_log}" "${model_name}" "${_save_log_path}"
                     done
                 done
             done
@@ -140,7 +144,7 @@ function func_inference(){
                     fi
                 fi
                 for batch_size in ${batch_size_list[*]}; do
-                    _save_log_path="${_log_path}/python_infer_gpu_mode_${precision}_batchsize_${batch_size}.log"
+                    _save_log_path="${_log_path}/python_infer_gpu_gpus_${gpu}_mode_${precision}_batchsize_${batch_size}.log"
                     set_infer_data=$(func_set_params "${image_dir_key}" "${_img_dir}")
                     set_benchmark=$(func_set_params "${benchmark_key}" "${benchmark_value}")
                     set_batchsize=$(func_set_params "${batch_size_key}" "${batch_size}")
@@ -151,7 +155,7 @@ function func_inference(){
                     eval $command
                     last_status=${PIPESTATUS[0]}
                     eval "cat ${_save_log_path}"
-                    status_check $last_status "${command}" "${status_log}" "${model_name}"
+                    status_check $last_status "${command}" "${status_log}" "${model_name}" "${_save_log_path}"
                 done
             done
         else
@@ -171,6 +175,7 @@ if [ ${MODE} = "whole_infer" ] || [ ${MODE} = "klquant_whole_infer" ]; then
     eval $env
 
     Count=0
+    gpu=0
     IFS="|"
     infer_quant_flag=(${infer_is_quant_list})
     for infer_mode in ${infer_mode_list[*]}; do
@@ -198,12 +203,12 @@ if [ ${MODE} = "whole_infer" ] || [ ${MODE} = "klquant_whole_infer" ]; then
         export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
         echo  $export_cmd
         eval $export_cmd
-        status_check $? "${export_cmd}" "${status_log}" "${model_name}"
+        status_check $? "${export_cmd}" "${status_log}" "${model_name}" 
 
         #run inference
         save_export_model_dir="${save_export_value}/${model_name}"
         is_quant=${infer_quant_flag[Count]}
-        func_inference "${python}" "${inference_py}" "${save_export_model_dir}" "${LOG_PATH}" "${infer_img_dir}" ${is_quant}
+        func_inference "${python}" "${inference_py}" "${save_export_model_dir}" "${LOG_PATH}" "${infer_img_dir}" ${is_quant} "{gpu}"
         Count=$((${Count} + 1))
     done
 else
@@ -235,6 +240,7 @@ else
         for autocast in ${autocast_list[*]}; do
             for trainer in ${trainer_list[*]}; do
                 flag_quant=False
+                set_to_static=""
                 if [ ${trainer} = "${norm_key}" ]; then
                     run_train=${norm_trainer}
                     run_export=${norm_export}
@@ -254,6 +260,10 @@ else
                 elif [ ${trainer} = "${trainer_key2}" ]; then
                     run_train=${trainer_value2}
                     run_export=${export_value2}
+                elif [ ${trainer} = "${to_static_key}" ]; then
+                    run_train=${norm_trainer}
+                    run_export=${norm_export}
+                    set_to_static=${to_static_trainer}
                 else
                     continue
                 fi
@@ -262,11 +272,6 @@ else
                     continue
                 fi
 
-                if [ ${autocast} = "amp" ] || [ ${autocast} = "fp16" ]; then
-                    set_autocast="--amp"
-                else
-                    set_autocast=" "
-                fi
                 set_epoch=$(func_set_params "${epoch_key}" "${epoch_num}")
                 set_pretrain=$(func_set_params "${pretrain_model_key}" "${pretrain_model_value}")
                 set_batchsize=$(func_set_params "${train_batch_key}" "${train_batch_value}")
@@ -274,13 +279,27 @@ else
                 set_use_gpu=$(func_set_params "${train_use_gpu_key}" "${use_gpu}")
                 set_train_params1=$(func_set_params "${train_param_key1}" "${train_param_value1}")
                 save_log="${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}"
+                if [ ${autocast} = "amp" ] || [ ${autocast} = "fp16" ]; then
+                    set_autocast="--amp"
+                    set_amp_level="amp_level=O2"
+                else
+                    set_autocast=" "
+                    set_amp_level=" "
+                fi
+                if [ ${MODE} = "benchmark_train" ]; then
+                    set_shuffle="TrainReader.shuffle=False"
+                    set_enable_ce="--enable_ce=True"
+                else
+                    set_shuffle=" "
+                    set_enable_ce=" "
+                fi
 
                 set_save_model=$(func_set_params "${save_model_key}" "${save_log}")
                 nodes="1"
                 if [ ${#gpu} -le 2 ];then  # train with cpu or single gpu
-                    cmd="${python} ${run_train} LearningRate.base_lr=0.0001 log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_train_params1} ${set_autocast}"
+                    cmd="${python} ${run_train} LearningRate.base_lr=0.0001 log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_shuffle} ${set_amp_level} ${set_enable_ce} ${set_autocast} ${set_to_static} ${set_train_params1}"
                 elif [ ${#ips} -le 15 ];then  # train with multi-gpu
-                    cmd="${python} -m paddle.distributed.launch --gpus=${gpu} ${run_train} log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_train_params1} ${set_autocast}"
+                    cmd="${python} -m paddle.distributed.launch --gpus=${gpu} ${run_train} log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_shuffle} ${set_amp_level} ${set_enable_ce} ${set_autocast} ${set_to_static} ${set_train_params1}"
                 else     # train with multi-machine
                     IFS=","
                     ips_array=(${ips})
@@ -288,14 +307,14 @@ else
                     save_log="${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}_nodes_${nodes}"
                     IFS="|"
                     set_save_model=$(func_set_params "${save_model_key}" "${save_log}")
-                    cmd="${python} -m paddle.distributed.launch --ips=${ips} --gpus=${gpu} ${run_train} log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_train_params1} ${set_autocast}"
+                    cmd="${python} -m paddle.distributed.launch --ips=${ips} --gpus=${gpu} ${run_train} log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_shuffle} ${set_amp_level} ${set_enable_ce} ${set_autocast} ${set_to_static} ${set_train_params1}"
                 fi
                 # run train
                 train_log_path="${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}_nodes_${nodes}.log"
                 eval "${cmd} > ${train_log_path} 2>&1"
                 last_status=$?
                 cat ${train_log_path}
-                status_check $last_status "${cmd}" "${status_log}" "${model_name}"
+                status_check $last_status "${cmd}" "${status_log}" "${model_name}" "${train_log_path}"
 
                 set_eval_trained_weight=$(func_set_params "${export_weight_key}" "${save_log}/${model_name}/${train_model_name}")
                 # run eval
@@ -306,7 +325,7 @@ else
                     eval "${eval_cmd} > ${eval_log_path} 2>&1"
                     last_status=$?
                     cat ${eval_log_path}
-                    status_check $last_status "${eval_cmd}" "${status_log}" "${model_name}"
+                    status_check $last_status "${eval_cmd}" "${status_log}" "${model_name}" "${eval_log_path}"
                 fi
                 # run export model
                 if [ ${run_export} != "null" ]; then
@@ -315,9 +334,10 @@ else
                     set_save_export_dir=$(func_set_params "${save_export_key}" "${save_log}")
                     if [ ${export_onnx_key} = "export_onnx" ]; then
                         # run export onnx model for rcnn
-                        export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} export_onnx=True ${set_save_export_dir} "
+                        export_log_path_onnx=${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}_nodes_${nodes}_onnx_export.log
+                        export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} export_onnx=True ${set_save_export_dir} >${export_log_path_onnx} 2>&1"
                         eval $export_cmd
-                        status_check $? "${export_cmd}" "${status_log}" "${model_name}"
+                        status_check $? "${export_cmd}" "${status_log}" "${model_name}" "${export_log_path_onnx}"
                         # copy model for inference benchmark
                         eval "cp ${save_export_model_dir}/* ${save_log}/"
                     fi
@@ -327,7 +347,7 @@ else
                     eval "${export_cmd} > ${export_log_path} 2>&1"
                     last_status=$?
                     cat ${export_log_path}
-                    status_check $last_status "${export_cmd}" "${status_log}" "${model_name}"
+                    status_check $last_status "${export_cmd}" "${status_log}" "${model_name}" "${export_log_path}"
 
                     #run inference
                     if [ ${export_onnx_key} != "export_onnx" ]; then
@@ -335,7 +355,7 @@ else
                         eval "cp ${save_export_model_dir}/* ${save_log}/"
                     fi
                     eval $env
-                    func_inference "${python}" "${inference_py}" "${save_export_model_dir}" "${LOG_PATH}" "${train_infer_img_dir}" "${flag_quant}"
+                    func_inference "${python}" "${inference_py}" "${save_export_model_dir}" "${LOG_PATH}" "${train_infer_img_dir}" "${flag_quant}" "{gpu}"
 
                     eval "unset CUDA_VISIBLE_DEVICES"
                 fi

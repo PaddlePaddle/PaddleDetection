@@ -1,0 +1,15 @@
+_BASE_: [
+  'ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml',
+]
+weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams
+
+
+# very slow, better to use the determined weight (xx. pdparams) to evaluate separately, rather than evaling during training
+# if you want to eval during training, change SlicedCOCODataSet to COCODataSet, then delete sliced_size and overlap_ratio
+EvalDataset:
+  !SlicedCOCODataSet
+    image_dir: VisDrone2019-DET-val
+    anno_path: val.json
+    dataset_dir: dataset/visdrone
+    sliced_size: [640, 640]
+    overlap_ratio: [0.25, 0.25]

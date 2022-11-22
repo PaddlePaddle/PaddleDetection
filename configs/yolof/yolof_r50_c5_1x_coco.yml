@@ -1,0 +1,10 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  './_base_/optimizer_1x.yml',
+  './_base_/yolof_r50_c5.yml',
+  './_base_/yolof_reader.yml'
+]
+log_iter: 50
+snapshot_epoch: 1
+weights: output/yolof_r50_c5_1x_coco/model_final

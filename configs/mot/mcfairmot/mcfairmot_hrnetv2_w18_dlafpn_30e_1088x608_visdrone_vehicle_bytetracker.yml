@@ -63,8 +63,9 @@ LearningRate:
     gamma: 0.1
     milestones: [15, 22]
     use_warmup: True
-  - !BurninWarmup
+  - !ExpWarmup
     steps: 1000
+    power: 4
 
 OptimizerBuilder:
   optimizer:

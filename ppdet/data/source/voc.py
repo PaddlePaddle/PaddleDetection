@@ -46,6 +46,7 @@ class VOCDataSet(DetDataset):
         empty_ratio (float): the ratio of empty record number to total 
             record's, if empty_ratio is out of [0. ,1.), do not sample the 
             records and use all the empty entries. 1. as default
+        repeat (int): repeat times for dataset, use in benchmark.
     """
 
     def __init__(self,
@@ -56,13 +57,15 @@ class VOCDataSet(DetDataset):
                  sample_num=-1,
                  label_list=None,
                  allow_empty=False,
-                 empty_ratio=1.):
+                 empty_ratio=1.,
+                 repeat=1):
         super(VOCDataSet, self).__init__(
             dataset_dir=dataset_dir,
             image_dir=image_dir,
             anno_path=anno_path,
             data_fields=data_fields,
-            sample_num=sample_num)
+            sample_num=sample_num,
+            repeat=repeat)
         self.label_list = label_list
         self.allow_empty = allow_empty
         self.empty_ratio = empty_ratio

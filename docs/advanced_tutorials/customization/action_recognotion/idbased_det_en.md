@@ -14,7 +14,7 @@ The model of action recognition based on detection with human id directly recogn
 
 ## Model Optimization
 ### Detection-Tracking Model Optimization
-The performance of action recognition based on detection with human id depends on the pre-order detection and tracking models. If the pedestrian location cannot be accurately detected in the actual scene, or it is difficult to correctly assign the person ID between different frames, the performance of the action recognition part will be limited. If you encounter the above problems in actual use, please refer to [Secondary Development of Detection Task](../detection_en.md) and [Secondary Development of Multi-target Tracking Task](../mot_en.md) for detection/track model optimization.
+The performance of action recognition based on detection with human id depends on the pre-order detection and tracking models. If the pedestrian location cannot be accurately detected in the actual scene, or it is difficult to correctly assign the person ID between different frames, the performance of the action recognition part will be limited. If you encounter the above problems in actual use, please refer to [Secondary Development of Detection Task](../detection_en.md) and [Secondary Development of Multi-target Tracking Task](../pphuman_mot_en.md) for detection/track model optimization.
 
 
 ### Larger resolution
@@ -165,3 +165,35 @@ ppyoloe_crn_s_80e_smoking_visdrone/
 ```
 
 At this point, this model can be used in PP-Human.
+
+### Custom Action Output
+In the model of action recognition based on detection with human id, the task is defined to detect target objects in images of corresponding person. When the target object is detected, the behavior type of the character in a certain period of time. The type of the corresponding classification is regarded as the action of the current period. Therefore, on the basis of completing the training and deployment of the custom model, it is also necessary to convert the detection model results to the final action recognition results as output, and the displayed result of the visualization should be modified.
+
+#### Convert to Action Recognition Result
+Please modify the [postprocessing function](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pphuman/action_infer.py#L338).
+
+The core code are:
+```python
+# Parse the detection model output and filter out valid detection boxes with confidence higher than a threshold.
+# Current now,  class 0 is positive, class 1 is negative.
+action_ret = {'class': 1.0, 'score': -1.0}
+box_num = np_boxes_num[idx]
+boxes = det_result['boxes'][cur_box_idx:cur_box_idx + box_num]
+cur_box_idx += box_num
+isvalid = (boxes[:, 1] > self.threshold) & (boxes[:, 0] == 0)
+valid_boxes = boxes[isvalid, :]
+
+if valid_boxes.shape[0] >= 1:
+    # When there is a valid detection frame, the category and score of the behavior recognition result are modified accordingly.
+    action_ret['class'] = valid_boxes[0, 0]
+    action_ret['score'] = valid_boxes[0, 1]
+    # Due to the continuity of the action, valid detection results can be reused for a certain number of frames.
+    self.result_history[
+        tracker_id] = [0, self.frame_life, valid_boxes[0, 1]]
+else:
+    # If there is no valid detection frame, the result of the current frame is determined according to the historical detection result.
+    ...
+```
+
+#### Modify Visual Output
+At present, ID-based action recognition is displayed based on the results of action recognition and predefined category names. For the detail, please refer to [here](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pipeline.py#L1024-L1043). If the custom action needs to be modified to another display name, please modify it accordingly to output the corresponding result.

@@ -39,6 +39,81 @@ def _to_list(l):
     return [l]
 
 
+class AlignConv(nn.Layer):
+    def __init__(self, in_channels, out_channels, kernel_size=3, groups=1):
+        super(AlignConv, self).__init__()
+        self.kernel_size = kernel_size
+        self.align_conv = paddle.vision.ops.DeformConv2D(
+            in_channels,
+            out_channels,
+            kernel_size=self.kernel_size,
+            padding=(self.kernel_size - 1) // 2,
+            groups=groups,
+            weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
+            bias_attr=None)
+
+    @paddle.no_grad()
+    def get_offset(self, anchors, featmap_size, stride):
+        """
+        Args:
+            anchors: [B, L, 5] xc,yc,w,h,angle
+            featmap_size: (feat_h, feat_w)
+            stride: 8
+        Returns:
+
+        """
+        batch = anchors.shape[0]
+        dtype = anchors.dtype
+        feat_h, feat_w = featmap_size
+        pad = (self.kernel_size - 1) // 2
+        idx = paddle.arange(-pad, pad + 1, dtype=dtype)
+
+        yy, xx = paddle.meshgrid(idx, idx)
+        xx = paddle.reshape(xx, [-1])
+        yy = paddle.reshape(yy, [-1])
+
+        # get sampling locations of default conv
+        xc = paddle.arange(0, feat_w, dtype=dtype)
+        yc = paddle.arange(0, feat_h, dtype=dtype)
+        yc, xc = paddle.meshgrid(yc, xc)
+
+        xc = paddle.reshape(xc, [-1, 1])
+        yc = paddle.reshape(yc, [-1, 1])
+        x_conv = xc + xx
+        y_conv = yc + yy
+
+        # get sampling locations of anchors
+        x_ctr, y_ctr, w, h, a = paddle.split(anchors, 5, axis=-1)
+        x_ctr = x_ctr / stride
+        y_ctr = y_ctr / stride
+        w_s = w / stride
+        h_s = h / stride
+        cos, sin = paddle.cos(a), paddle.sin(a)
+        dw, dh = w_s / self.kernel_size, h_s / self.kernel_size
+        x, y = dw * xx, dh * yy
+        xr = cos * x - sin * y
+        yr = sin * x + cos * y
+        x_anchor, y_anchor = xr + x_ctr, yr + y_ctr
+        # get offset filed
+        offset_x = x_anchor - x_conv
+        offset_y = y_anchor - y_conv
+        offset = paddle.stack([offset_y, offset_x], axis=-1)
+        offset = offset.reshape(
+            [batch, feat_h, feat_w, self.kernel_size * self.kernel_size * 2])
+        offset = offset.transpose([0, 3, 1, 2])
+
+        return offset
+
+    def forward(self, x, refine_anchors, featmap_size, stride):
+        batch = paddle.shape(x)[0].numpy()
+        offset = self.get_offset(refine_anchors, featmap_size, stride)
+        if self.training:
+            x = F.relu(self.align_conv(x, offset.detach()))
+        else:
+            x = F.relu(self.align_conv(x, offset))
+        return x
+
+
 class DeformableConvV2(nn.Layer):
     def __init__(self,
                  in_channels,
@@ -481,8 +556,9 @@ class MultiClassNMS(object):
             # TODO(wangxinxin08): tricky switch to run nms on tensorrt
             kwargs.update({'nms_eta': 1.1})
             bbox, bbox_num, _ = ops.multiclass_nms(bboxes, score, **kwargs)
-            mask = paddle.slice(bbox, [-1], [0], [1]) != -1
-            bbox = paddle.masked_select(bbox, mask).reshape((-1, 6))
+            bbox = bbox.reshape([1, -1, 6])
+            idx = paddle.nonzero(bbox[..., 0] != -1)
+            bbox = paddle.gather_nd(bbox, idx)
             return bbox, bbox_num, None
         else:
             return ops.multiclass_nms(bboxes, score, **kwargs)
@@ -625,98 +701,6 @@ class SSDBox(object):
             scores, axis=1)).transpose([0, 2, 1])
 
         return output_boxes, output_scores
-
-
-@register
-@serializable
-class FCOSBox(object):
-    __shared__ = ['num_classes']
-
-    def __init__(self, num_classes=80):
-        super(FCOSBox, self).__init__()
-        self.num_classes = num_classes
-
-    def _merge_hw(self, inputs, ch_type="channel_first"):
-        """
-        Merge h and w of the feature map into one dimension.
-        Args:
-            inputs (Tensor): Tensor of the input feature map
-            ch_type (str): "channel_first" or "channel_last" style
-        Return:
-            new_shape (Tensor): The new shape after h and w merged
-        """
-        shape_ = paddle.shape(inputs)
-        bs, ch, hi, wi = shape_[0], shape_[1], shape_[2], shape_[3]
-        img_size = hi * wi
-        img_size.stop_gradient = True
-        if ch_type == "channel_first":
-            new_shape = paddle.concat([bs, ch, img_size])
-        elif ch_type == "channel_last":
-            new_shape = paddle.concat([bs, img_size, ch])
-        else:
-            raise KeyError("Wrong ch_type %s" % ch_type)
-        new_shape.stop_gradient = True
-        return new_shape
-
-    def _postprocessing_by_level(self, locations, box_cls, box_reg, box_ctn,
-                                 scale_factor):
-        """
-        Postprocess each layer of the output with corresponding locations.
-        Args:
-            locations (Tensor): anchor points for current layer, [H*W, 2]
-            box_cls (Tensor): categories prediction, [N, C, H, W], 
-                C is the number of classes
-            box_reg (Tensor): bounding box prediction, [N, 4, H, W]
-            box_ctn (Tensor): centerness prediction, [N, 1, H, W]
-            scale_factor (Tensor): [h_scale, w_scale] for input images
-        Return:
-            box_cls_ch_last (Tensor): score for each category, in [N, C, M]
-                C is the number of classes and M is the number of anchor points
-            box_reg_decoding (Tensor): decoded bounding box, in [N, M, 4]
-                last dimension is [x1, y1, x2, y2]
-        """
-        act_shape_cls = self._merge_hw(box_cls)
-        box_cls_ch_last = paddle.reshape(x=box_cls, shape=act_shape_cls)
-        box_cls_ch_last = F.sigmoid(box_cls_ch_last)
-
-        act_shape_reg = self._merge_hw(box_reg)
-        box_reg_ch_last = paddle.reshape(x=box_reg, shape=act_shape_reg)
-        box_reg_ch_last = paddle.transpose(box_reg_ch_last, perm=[0, 2, 1])
-        box_reg_decoding = paddle.stack(
-            [
-                locations[:, 0] - box_reg_ch_last[:, :, 0],
-                locations[:, 1] - box_reg_ch_last[:, :, 1],
-                locations[:, 0] + box_reg_ch_last[:, :, 2],
-                locations[:, 1] + box_reg_ch_last[:, :, 3]
-            ],
-            axis=1)
-        box_reg_decoding = paddle.transpose(box_reg_decoding, perm=[0, 2, 1])
-
-        act_shape_ctn = self._merge_hw(box_ctn)
-        box_ctn_ch_last = paddle.reshape(x=box_ctn, shape=act_shape_ctn)
-        box_ctn_ch_last = F.sigmoid(box_ctn_ch_last)
-
-        # recover the location to original image
-        im_scale = paddle.concat([scale_factor, scale_factor], axis=1)
-        im_scale = paddle.expand(im_scale, [box_reg_decoding.shape[0], 4])
-        im_scale = paddle.reshape(im_scale, [box_reg_decoding.shape[0], -1, 4])
-        box_reg_decoding = box_reg_decoding / im_scale
-        box_cls_ch_last = box_cls_ch_last * box_ctn_ch_last
-        return box_cls_ch_last, box_reg_decoding
-
-    def __call__(self, locations, cls_logits, bboxes_reg, centerness,
-                 scale_factor):
-        pred_boxes_ = []
-        pred_scores_ = []
-        for pts, cls, box, ctn in zip(locations, cls_logits, bboxes_reg,
-                                      centerness):
-            pred_scores_lvl, pred_boxes_lvl = self._postprocessing_by_level(
-                pts, cls, box, ctn, scale_factor)
-            pred_boxes_.append(pred_boxes_lvl)
-            pred_scores_.append(pred_scores_lvl)
-        pred_boxes = paddle.concat(pred_boxes_, axis=1)
-        pred_scores = paddle.concat(pred_scores_, axis=2)
-        return pred_boxes, pred_scores
 
 
 @register
@@ -1353,7 +1337,7 @@ class ConvMixer(nn.Layer):
         Seq, ActBn = nn.Sequential, lambda x: Seq(x, nn.GELU(), nn.BatchNorm2D(dim))
         Residual = type('Residual', (Seq, ),
                         {'forward': lambda self, x: self[0](x) + x})
-        return Seq(* [
+        return Seq(*[
             Seq(Residual(
                 ActBn(
                     nn.Conv2D(

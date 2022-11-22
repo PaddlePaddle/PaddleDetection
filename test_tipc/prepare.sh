@@ -83,20 +83,28 @@ elif [ ${MODE} = "cpp_infer" ];then
     fi
     cd ../../
 elif [ ${MODE} = "benchmark_train" ];then
-    pip install -U pip Cython
+    pip install -U pip
+    pip install Cython
     pip install -r requirements.txt
-    # prepare lite benchmark coco data
-    wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/coco_benchmark.tar --no-check-certificate
-    cd ./dataset/coco/ && tar -xvf coco_benchmark.tar 
-    mv -u coco_benchmark/* ./
-    ls ./
-    cd ../../
-    # prepare lite benchmark mot data
-    wget -nc -P ./dataset/mot/ https://paddledet.bj.bcebos.com/data/mot_benchmark.tar --no-check-certificate
-    cd ./dataset/mot/ && tar -xvf mot_benchmark.tar
-    mv -u mot_benchmark/* ./
-    ls ./
-    cd ../../
+    if [[ ${model_name} =~ "higherhrnet" ]] || [[ ${model_name} =~ "hrnet" ]] || [[ ${model_name} =~ "tinypose" ]];then
+        wget -nc -P ./dataset/ https://bj.bcebos.com/v1/paddledet/data/coco.tar --no-check-certificate
+        cd ./dataset/ && tar -xf coco.tar
+        ls ./coco/
+        cd ../
+    else
+        # prepare lite benchmark coco data
+        wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/coco_benchmark.tar --no-check-certificate
+        cd ./dataset/coco/ && tar -xf coco_benchmark.tar
+        mv -u coco_benchmark/* ./
+        ls ./
+        cd ../../
+        # prepare lite benchmark mot data
+        wget -nc -P ./dataset/mot/ https://paddledet.bj.bcebos.com/data/mot_benchmark.tar --no-check-certificate
+        cd ./dataset/mot/ && tar -xf mot_benchmark.tar
+        mv -u mot_benchmark/* ./
+        ls ./
+        cd ../../
+    fi
 elif [ ${MODE} = "paddle2onnx_infer" ];then
     # install paddle2onnx
     ${python} -m pip install paddle2onnx
@@ -144,8 +152,8 @@ else
     cd ./dataset/wider_face/ && tar -xvf wider_tipc.tar && mv -n wider_tipc/* .
     rm -rf wider_tipc/ && cd ../../
     # download spine_coco lite data
-    wget -nc -P ./dataset/spine_coco/ https://paddledet.bj.bcebos.com/data/tipc/spine_tipc.tar --no-check-certificate
-    cd ./dataset/spine_coco/ && tar -xvf spine_tipc.tar && mv -n spine_tipc/* .
+    wget -nc -P ./dataset/spine_coco/ https://paddledet.bj.bcebos.com/data/tipc/spine_coco_tipc.tar --no-check-certificate
+    cd ./dataset/spine_coco/ && tar -xvf spine_coco_tipc.tar && mv -n spine_coco_tipc/* .
     rm -rf spine_tipc/ && cd ../../
     if [[ ${model_name} =~ "s2anet" ]]; then
         cd ./ppdet/ext_op && eval "${python} setup.py install"

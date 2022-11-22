@@ -14,7 +14,7 @@ For general information about PaddleDetection, please see [README.md](https://gi
 - OS 64 bit
 - Python 3(3.5.1+/3.6/3.7/3.8/3.9)，64 bit
 - pip/pip3(9.0.1+), 64 bit
-- CUDA >= 10.1
+- CUDA >= 10.2
 - cuDNN >= 7.6
 
 
@@ -22,7 +22,8 @@ Dependency of PaddleDetection and PaddlePaddle:
 
 | PaddleDetection version | PaddlePaddle version  |    tips    |
 | :----------------: | :---------------: | :-------: |
-|    develop           |       >= 2.2.2   |     Dygraph mode is set as default    |
+|    develop           |       develop   |     Dygraph mode is set as default    |
+|    release/2.5       |       >= 2.2.2   |     Dygraph mode is set as default    |
 |    release/2.4       |       >= 2.2.2   |     Dygraph mode is set as default    |
 |    release/2.3       |       >= 2.2.0rc |     Dygraph mode is set as default    |
 |    release/2.2       |       >= 2.1.2   |     Dygraph mode is set as default    |
@@ -40,11 +41,11 @@ Dependency of PaddleDetection and PaddlePaddle:
 
 ```
 
-# CUDA10.1
-python -m pip install paddlepaddle-gpu==2.2.0.post101 -f https://www.paddlepaddle.org.cn/whl/linux/mkl/avx/stable.html
+# CUDA10.2
+python -m pip install paddlepaddle-gpu==2.2.2 -i https://mirror.baidu.com/pypi/simple
 
 # CPU
-python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle==2.2.2 -i https://mirror.baidu.com/pypi/simple
 ```
 
 - For more CUDA version or environment to quick install, please refer to the [PaddlePaddle Quick Installation document](https://www.paddlepaddle.org.cn/install/quick)
@@ -109,6 +110,16 @@ If the tests are passed, the following information will be prompted:
 Ran 7 tests in 12.816s
 OK
 ```
+
+## Use built Docker images
+
+> If you  do not have a Docker environment, please refer to [Docker](https://www.docker.com/).
+
+We provide docker images containing the latest PaddleDetection code, and all environment and package dependencies are pre-installed. All you have to do is to **pull and run the docker image**. Then you can enjoy PaddleDetection without any extra steps.
+
+Get these images and guidance in [docker hub](https://hub.docker.com/repository/docker/paddlecloud/paddledetection), including CPU, GPU, ROCm environment versions.
+
+If you have some customized requirements about automatic building docker images, you can get it in github repo [PaddlePaddle/PaddleCloud](https://github.com/PaddlePaddle/PaddleCloud/tree/main/tekton).
 
 ## Inference demo
 

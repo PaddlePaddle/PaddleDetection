@@ -41,7 +41,6 @@ import threading
 MUTEX = threading.Lock()
 
 from ppdet.core.workspace import serializable
-from ppdet.modeling import bbox_utils
 from ..reader import Compose
 
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
@@ -123,12 +122,15 @@ class Decode(BaseOperator):
                 sample['image'] = f.read()
             sample.pop('im_file')
 
-        im = sample['image']
-        data = np.frombuffer(im, dtype='uint8')
-        im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
-        if 'keep_ori_im' in sample and sample['keep_ori_im']:
-            sample['ori_image'] = im
-        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        try:
+            im = sample['image']
+            data = np.frombuffer(im, dtype='uint8')
+            im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
+            if 'keep_ori_im' in sample and sample['keep_ori_im']:
+                sample['ori_image'] = im
+            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        except:
+            im = sample['image']
 
         sample['image'] = im
         if 'h' not in sample:
@@ -357,19 +359,26 @@ class RandomErasingImage(BaseOperator):
 
 @register_op
 class NormalizeImage(BaseOperator):
-    def __init__(self, mean=[0.485, 0.456, 0.406], std=[1, 1, 1],
-                 is_scale=True):
+    def __init__(self,
+                 mean=[0.485, 0.456, 0.406],
+                 std=[0.229, 0.224, 0.225],
+                 is_scale=True,
+                 norm_type='mean_std'):
         """
         Args:
             mean (list): the pixel mean
             std (list): the pixel variance
+            is_scale (bool): scale the pixel to [0,1]
+            norm_type (str): type in ['mean_std', 'none']
         """
         super(NormalizeImage, self).__init__()
         self.mean = mean
         self.std = std
         self.is_scale = is_scale
+        self.norm_type = norm_type
         if not (isinstance(self.mean, list) and isinstance(self.std, list) and
-                isinstance(self.is_scale, bool)):
+                isinstance(self.is_scale, bool) and
+                self.norm_type in ['mean_std', 'none']):
             raise TypeError("{}: input type is invalid.".format(self))
         from functools import reduce
         if reduce(lambda x, y: x * y, self.std) == 0:
@@ -378,20 +387,20 @@ class NormalizeImage(BaseOperator):
     def apply(self, sample, context=None):
         """Normalize the image.
         Operators:
-            1.(optional) Scale the image to [0,1]
-            2. Each pixel minus mean and is divided by std
+            1.(optional) Scale the pixel to [0,1]
+            2.(optional) Each pixel minus mean and is divided by std
         """
         im = sample['image']
         im = im.astype(np.float32, copy=False)
-        mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
-        std = np.array(self.std)[np.newaxis, np.newaxis, :]
-
         if self.is_scale:
-            im = im / 255.0
+            scale = 1.0 / 255.0
+            im *= scale
 
-        im -= mean
-        im /= std
-
+        if self.norm_type == 'mean_std':
+            mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
+            std = np.array(self.std)[np.newaxis, np.newaxis, :]
+            im -= mean
+            im /= std
         sample['image'] = im
         return sample
 
@@ -657,18 +666,6 @@ class RandomFlip(BaseOperator):
         bbox[:, 2] = width - oldx1
         return bbox
 
-    def apply_rbox(self, bbox, width):
-        oldx1 = bbox[:, 0].copy()
-        oldx2 = bbox[:, 2].copy()
-        oldx3 = bbox[:, 4].copy()
-        oldx4 = bbox[:, 6].copy()
-        bbox[:, 0] = width - oldx1
-        bbox[:, 2] = width - oldx2
-        bbox[:, 4] = width - oldx3
-        bbox[:, 6] = width - oldx4
-        bbox = [bbox_utils.get_best_begin_point_single(e) for e in bbox]
-        return bbox
-
     def apply(self, sample, context=None):
         """Filp the image and bounding box.
         Operators:
@@ -699,10 +696,6 @@ class RandomFlip(BaseOperator):
 
             if 'gt_segm' in sample and sample['gt_segm'].any():
                 sample['gt_segm'] = sample['gt_segm'][:, :, ::-1]
-
-            if 'gt_rbox2poly' in sample and sample['gt_rbox2poly'].any():
-                sample['gt_rbox2poly'] = self.apply_rbox(sample['gt_rbox2poly'],
-                                                         width)
 
             sample['flipped'] = True
             sample['image'] = im
@@ -840,16 +833,6 @@ class Resize(BaseOperator):
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'],
                                                 [im_scale_x, im_scale_y],
                                                 [resize_w, resize_h])
-
-        # apply rbox
-        if 'gt_rbox2poly' in sample:
-            if np.array(sample['gt_rbox2poly']).shape[1] != 8:
-                logger.warning(
-                    "gt_rbox2poly's length shoule be 8, but actually is {}".
-                    format(len(sample['gt_rbox2poly'])))
-            sample['gt_rbox2poly'] = self.apply_bbox(sample['gt_rbox2poly'],
-                                                     [im_scale_x, im_scale_y],
-                                                     [resize_w, resize_h])
 
         # apply polygon
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
@@ -2112,33 +2095,6 @@ class Poly2Mask(BaseOperator):
 
 
 @register_op
-class Rbox2Poly(BaseOperator):
-    """
-    Convert rbbox format to poly format.
-    """
-
-    def __init__(self):
-        super(Rbox2Poly, self).__init__()
-
-    def apply(self, sample, context=None):
-        assert 'gt_rbox' in sample
-        assert sample['gt_rbox'].shape[1] == 5
-        rrects = sample['gt_rbox']
-        x_ctr = rrects[:, 0]
-        y_ctr = rrects[:, 1]
-        width = rrects[:, 2]
-        height = rrects[:, 3]
-        x1 = x_ctr - width / 2.0
-        y1 = y_ctr - height / 2.0
-        x2 = x_ctr + width / 2.0
-        y2 = y_ctr + height / 2.0
-        sample['gt_bbox'] = np.stack([x1, y1, x2, y2], axis=1)
-        polys = bbox_utils.rbox2poly_np(rrects)
-        sample['gt_rbox2poly'] = polys
-        return sample
-
-
-@register_op
 class AugmentHSV(BaseOperator):
     """ 
     Augment the SV channel of image data.
@@ -2455,16 +2411,6 @@ class RandomResizeCrop(BaseOperator):
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'],
                                                 [im_scale_x, im_scale_y],
                                                 [resize_w, resize_h])
-
-        # apply rbox
-        if 'gt_rbox2poly' in sample:
-            if np.array(sample['gt_rbox2poly']).shape[1] != 8:
-                logger.warn(
-                    "gt_rbox2poly's length shoule be 8, but actually is {}".
-                    format(len(sample['gt_rbox2poly'])))
-            sample['gt_rbox2poly'] = self.apply_bbox(sample['gt_rbox2poly'],
-                                                     [im_scale_x, im_scale_y],
-                                                     [resize_w, resize_h])
 
         # apply polygon
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
@@ -3449,4 +3395,65 @@ class PadResize(BaseOperator):
         sample['image'] = self._pad(image).astype(np.float32)
         sample['gt_bbox'] = bboxes
         sample['gt_class'] = labels
+        return sample
+
+
+@register_op
+class RandomShift(BaseOperator):
+    """
+    Randomly shift image
+
+    Args:
+        prob (float): probability to do random shift.
+        max_shift (int): max shift pixels
+        filter_thr (int): filter gt bboxes if one side is smaller than this
+    """
+
+    def __init__(self, prob=0.5, max_shift=32, filter_thr=1):
+        super(RandomShift, self).__init__()
+        self.prob = prob
+        self.max_shift = max_shift
+        self.filter_thr = filter_thr
+
+    def calc_shift_coor(self, im_h, im_w, shift_h, shift_w):
+        return [
+            max(0, shift_w), max(0, shift_h), min(im_w, im_w + shift_w),
+            min(im_h, im_h + shift_h)
+        ]
+
+    def apply(self, sample, context=None):
+        if random.random() > self.prob:
+            return sample
+
+        im = sample['image']
+        gt_bbox = sample['gt_bbox']
+        gt_class = sample['gt_class']
+        im_h, im_w = im.shape[:2]
+        shift_h = random.randint(-self.max_shift, self.max_shift)
+        shift_w = random.randint(-self.max_shift, self.max_shift)
+
+        gt_bbox[:, 0::2] += shift_w
+        gt_bbox[:, 1::2] += shift_h
+        gt_bbox[:, 0::2] = np.clip(gt_bbox[:, 0::2], 0, im_w)
+        gt_bbox[:, 1::2] = np.clip(gt_bbox[:, 1::2], 0, im_h)
+        gt_bbox_h = gt_bbox[:, 2] - gt_bbox[:, 0]
+        gt_bbox_w = gt_bbox[:, 3] - gt_bbox[:, 1]
+        keep = (gt_bbox_w > self.filter_thr) & (gt_bbox_h > self.filter_thr)
+        if not keep.any():
+            return sample
+
+        gt_bbox = gt_bbox[keep]
+        gt_class = gt_class[keep]
+
+        # shift image
+        coor_new = self.calc_shift_coor(im_h, im_w, shift_h, shift_w)
+        # shift frame to the opposite direction
+        coor_old = self.calc_shift_coor(im_h, im_w, -shift_h, -shift_w)
+        canvas = np.zeros_like(im)
+        canvas[coor_new[1]:coor_new[3], coor_new[0]:coor_new[2]] \
+            = im[coor_old[1]:coor_old[3], coor_old[0]:coor_old[2]]
+
+        sample['image'] = canvas
+        sample['gt_bbox'] = gt_bbox
+        sample['gt_class'] = gt_class
         return sample

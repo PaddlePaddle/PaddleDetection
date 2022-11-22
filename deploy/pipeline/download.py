@@ -29,6 +29,31 @@ DOWNLOAD_RETRY_LIMIT = 3
 
 WEIGHTS_HOME = osp.expanduser("~/.cache/paddle/infer_weights")
 
+MODEL_URL_MD5_DICT = {
+    'https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz':
+    '1b8eae0f098635699bd4e8bccf3067a7',
+    'https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz':
+    '64fa0e0701efd93c7db52a9b685b3de6',
+    "https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip":
+    "3859d1a26e0c498285c2374b1a347013",
+    "https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip":
+    "4ed58b546be2a76d8ccbb138f64874ac",
+    "https://bj.bcebos.com/v1/paddledet/models/pipeline/dark_hrnet_w32_256x192.zip":
+    "a20d5f6ca087bff0e9f2b18df45a36f2",
+    "https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.zip":
+    "1dfb161bf12bbc1365b2ed6866674483",
+    "https://videotag.bj.bcebos.com/PaddleVideo-release2.3/ppTSM_fight.zip":
+    "5d4609142501258608bf0a1445eedaba",
+    "https://bj.bcebos.com/v1/paddledet/models/pipeline/STGCN.zip":
+    "cf1c3c4bae90b975accb954d13129ea4",
+    "https://bj.bcebos.com/v1/paddledet/models/pipeline/ppyoloe_crn_s_80e_smoking_visdrone.zip":
+    "4cd12ae55be8f0eb2b90c08ac3b48218",
+    "https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_tiny_calling_halfbody.zip":
+    "cf86b87ace97540dace6ef08e62b584a",
+    "https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip":
+    "fdc4dac38393b8e2b5921c1e1fdd5315"
+}
+
 
 def is_url(path):
     """
@@ -91,7 +116,6 @@ def _download(url, path, md5sum=None):
     fname = osp.split(url)[-1]
     fullname = osp.join(path, fname)
     retry_cnt = 0
-
     while not (osp.exists(fullname) and _check_exist_file_md5(fullname, md5sum,
                                                               url)):
         if retry_cnt < DOWNLOAD_RETRY_LIMIT:
@@ -296,7 +320,10 @@ def get_weights_path(url):
     download it from url.
     """
     url = parse_url(url)
-    path, _ = get_path(url, WEIGHTS_HOME)
+    md5sum = None
+    if url in MODEL_URL_MD5_DICT.keys():
+        md5sum = MODEL_URL_MD5_DICT[url]
+    path, _ = get_path(url, WEIGHTS_HOME, md5sum)
     return path
 
 

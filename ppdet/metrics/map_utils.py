@@ -22,7 +22,7 @@ import sys
 import numpy as np
 import itertools
 import paddle
-from ppdet.modeling.bbox_utils import poly2rbox, rbox2poly_np
+from ppdet.modeling.rbox_utils import poly2rbox_np
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
@@ -91,15 +91,13 @@ def jaccard_overlap(pred, gt, is_bbox_normalized=False):
     return overlap
 
 
-def calc_rbox_iou(pred, gt_rbox):
+def calc_rbox_iou(pred, gt_poly):
     """
     calc iou between rotated bbox
     """
     # calc iou of bounding box for speedup
-    pred = np.array(pred, np.float32).reshape(-1, 8)
-    pred = pred.reshape(-1, 2)
-    gt_poly = rbox2poly_np(np.array(gt_rbox).reshape(-1, 5))[0]
-    gt_poly = gt_poly.reshape(-1, 2)
+    pred = np.array(pred, np.float32).reshape(-1, 2)
+    gt_poly = np.array(gt_poly, np.float32).reshape(-1, 2)
     pred_rect = [
         np.min(pred[:, 0]), np.min(pred[:, 1]), np.max(pred[:, 0]),
         np.max(pred[:, 1])
@@ -114,20 +112,15 @@ def calc_rbox_iou(pred, gt_rbox):
         return iou
 
     # calc rbox iou
-    pred = pred.reshape(-1, 8)
-
-    pred = np.array(pred, np.float32).reshape(-1, 8)
-    pred_rbox = poly2rbox(pred)
-    pred_rbox = pred_rbox.reshape(-1, 5)
-    pred_rbox = pred_rbox.reshape(-1, 5)
+    pred_rbox = poly2rbox_np(pred.reshape(-1, 8)).reshape(-1, 5)
+    gt_rbox = poly2rbox_np(gt_poly.reshape(-1, 8)).reshape(-1, 5)
     try:
-        from rbox_iou_ops import rbox_iou
+        from ext_op import rbox_iou
     except Exception as e:
-        print("import custom_ops error, try install rbox_iou_ops " \
+        print("import custom_ops error, try install ext_op " \
                   "following ppdet/ext_op/README.md", e)
         sys.stdout.flush()
         sys.exit(-1)
-    gt_rbox = np.array(gt_rbox, np.float32).reshape(-1, 5)
     pd_gt_rbox = paddle.to_tensor(gt_rbox, dtype='float32')
     pd_pred_rbox = paddle.to_tensor(pred_rbox, dtype='float32')
     iou = rbox_iou(pd_gt_rbox, pd_pred_rbox)
@@ -138,8 +131,7 @@ def calc_rbox_iou(pred, gt_rbox):
 def prune_zero_padding(gt_box, gt_label, difficult=None):
     valid_cnt = 0
     for i in range(len(gt_box)):
-        if gt_box[i, 0] == 0 and gt_box[i, 1] == 0 and \
-                gt_box[i, 2] == 0 and gt_box[i, 3] == 0:
+        if (gt_box[i] == 0).all():
             break
         valid_cnt += 1
     return (gt_box[:valid_cnt], gt_label[:valid_cnt], difficult[:valid_cnt]
@@ -212,7 +204,7 @@ class DetectionMAP(object):
             max_overlap = -1.0
             for i, gl in enumerate(gt_label):
                 if int(gl) == int(l):
-                    if len(gt_box[i]) == 5:
+                    if len(gt_box[i]) == 8:
                         overlap = calc_rbox_iou(pred, gt_box[i])
                     else:
                         overlap = jaccard_overlap(pred, gt_box[i],
@@ -331,8 +323,9 @@ class DetectionMAP(object):
             num_columns = min(6, len(results_per_category) * 2)
             results_flatten = list(itertools.chain(*results_per_category))
             headers = ['category', 'AP'] * (num_columns // 2)
-            results_2d = itertools.zip_longest(
-                *[results_flatten[i::num_columns] for i in range(num_columns)])
+            results_2d = itertools.zip_longest(* [
+                results_flatten[i::num_columns] for i in range(num_columns)
+            ])
             table_data = [headers]
             table_data += [result for result in results_2d]
             table = AsciiTable(table_data)

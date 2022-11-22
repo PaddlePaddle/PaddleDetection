@@ -7,6 +7,7 @@ weights: output/cascade_rcnn_vit_large_hrfpn_cae_1x_coco/model_final
 
 depth: &depth 24
 dim: &dim 1024
+use_fused_allreduce_gradients: &use_checkpoint True
 
 VisionTransformer:
   img_size: [800, 1344]
@@ -15,7 +16,8 @@ VisionTransformer:
   num_heads: 16
   drop_path_rate: 0.25
   out_indices: [7, 11, 15, 23]
-  pretrained: ~
+  use_checkpoint: *use_checkpoint
+  pretrained: https://bj.bcebos.com/v1/paddledet/models/pretrained/vit_large_cae_pretrained.pdparams
 
 HRFPN:
   in_channels: [*dim, *dim, *dim, *dim]

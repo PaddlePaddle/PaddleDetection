@@ -68,7 +68,8 @@ class ConvBNLayer(nn.Layer):
                  filter_size,
                  num_filters,
                  stride,
-                 num_groups=1):
+                 num_groups=1,
+                 act='hard_swish'):
         super().__init__()
 
         self.conv = Conv2D(
@@ -85,12 +86,15 @@ class ConvBNLayer(nn.Layer):
             num_filters,
             weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
             bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
-        self.hardswish = nn.Hardswish()
+        if act == 'hard_swish':
+            self.act = nn.Hardswish()
+        elif act == 'relu6':
+            self.act = nn.ReLU6()
 
     def forward(self, x):
         x = self.conv(x)
         x = self.bn(x)
-        x = self.hardswish(x)
+        x = self.act(x)
         return x
 
 
@@ -100,7 +104,8 @@ class DepthwiseSeparable(nn.Layer):
                  num_filters,
                  stride,
                  dw_size=3,
-                 use_se=False):
+                 use_se=False,
+                 act='hard_swish'):
         super().__init__()
         self.use_se = use_se
         self.dw_conv = ConvBNLayer(
@@ -108,14 +113,16 @@ class DepthwiseSeparable(nn.Layer):
             num_filters=num_channels,
             filter_size=dw_size,
             stride=stride,
-            num_groups=num_channels)
+            num_groups=num_channels,
+            act=act)
         if use_se:
             self.se = SEModule(num_channels)
         self.pw_conv = ConvBNLayer(
             num_channels=num_channels,
             filter_size=1,
             num_filters=num_filters,
-            stride=1)
+            stride=1,
+            act=act)
 
     def forward(self, x):
         x = self.dw_conv(x)
@@ -158,7 +165,7 @@ class SEModule(nn.Layer):
 @register
 @serializable
 class LCNet(nn.Layer):
-    def __init__(self, scale=1.0, feature_maps=[3, 4, 5]):
+    def __init__(self, scale=1.0, feature_maps=[3, 4, 5], act='hard_swish'):
         super().__init__()
         self.scale = scale
         self.feature_maps = feature_maps
@@ -169,7 +176,8 @@ class LCNet(nn.Layer):
             num_channels=3,
             filter_size=3,
             num_filters=make_divisible(16 * scale),
-            stride=2)
+            stride=2,
+            act=act)
 
         self.blocks2 = nn.Sequential(* [
             DepthwiseSeparable(
@@ -177,7 +185,8 @@ class LCNet(nn.Layer):
                 num_filters=make_divisible(out_c * scale),
                 dw_size=k,
                 stride=s,
-                use_se=se)
+                use_se=se,
+                act=act)
             for i, (k, in_c, out_c, s, se) in enumerate(NET_CONFIG["blocks2"])
         ])
 
@@ -187,7 +196,8 @@ class LCNet(nn.Layer):
                 num_filters=make_divisible(out_c * scale),
                 dw_size=k,
                 stride=s,
-                use_se=se)
+                use_se=se,
+                act=act)
             for i, (k, in_c, out_c, s, se) in enumerate(NET_CONFIG["blocks3"])
         ])
 
@@ -200,7 +210,8 @@ class LCNet(nn.Layer):
                 num_filters=make_divisible(out_c * scale),
                 dw_size=k,
                 stride=s,
-                use_se=se)
+                use_se=se,
+                act=act)
             for i, (k, in_c, out_c, s, se) in enumerate(NET_CONFIG["blocks4"])
         ])
 
@@ -213,7 +224,8 @@ class LCNet(nn.Layer):
                 num_filters=make_divisible(out_c * scale),
                 dw_size=k,
                 stride=s,
-                use_se=se)
+                use_se=se,
+                act=act)
             for i, (k, in_c, out_c, s, se) in enumerate(NET_CONFIG["blocks5"])
         ])
 
@@ -226,7 +238,8 @@ class LCNet(nn.Layer):
                 num_filters=make_divisible(out_c * scale),
                 dw_size=k,
                 stride=s,
-                use_se=se)
+                use_se=se,
+                act=act)
             for i, (k, in_c, out_c, s, se) in enumerate(NET_CONFIG["blocks6"])
         ])
 

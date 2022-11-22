@@ -17,7 +17,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
-from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly
+from ppdet.modeling.bbox_utils import nonempty_bbox
 from ppdet.modeling.layers import TTFBox
 from .transformers import bbox_cxcywh_to_xyxy
 try:
@@ -26,24 +26,28 @@ except Exception:
     from collections import Sequence
 
 __all__ = [
-    'BBoxPostProcess', 'MaskPostProcess', 'FCOSPostProcess',
-    'S2ANetBBoxPostProcess', 'JDEBBoxPostProcess', 'CenterNetPostProcess',
-    'DETRBBoxPostProcess', 'SparsePostProcess'
+    'BBoxPostProcess', 'MaskPostProcess', 'JDEBBoxPostProcess',
+    'CenterNetPostProcess', 'DETRBBoxPostProcess', 'SparsePostProcess'
 ]
 
 
 @register
 class BBoxPostProcess(object):
-    __shared__ = ['num_classes', 'export_onnx']
+    __shared__ = ['num_classes', 'export_onnx', 'export_eb']
     __inject__ = ['decode', 'nms']
 
-    def __init__(self, num_classes=80, decode=None, nms=None,
-                 export_onnx=False):
+    def __init__(self,
+                 num_classes=80,
+                 decode=None,
+                 nms=None,
+                 export_onnx=False,
+                 export_eb=False):
         super(BBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.decode = decode
         self.nms = nms
         self.export_onnx = export_onnx
+        self.export_eb = export_eb
 
     def __call__(self, head_out, rois, im_shape, scale_factor):
         """
@@ -100,6 +104,10 @@ class BBoxPostProcess(object):
             pred_result (Tensor): The final prediction results with shape [N, 6]
                 including labels, scores and bboxes.
         """
+        if self.export_eb:
+            # enable rcnn models for edgeboard hw to skip the following postprocess.
+            return bboxes, bboxes, bbox_num
+
         if not self.export_onnx:
             bboxes_list = []
             bbox_num_list = []
@@ -271,129 +279,6 @@ class MaskPostProcess(object):
         if self.assign_on_cpu:
             paddle.set_device(device)
 
-        return pred_result
-
-
-@register
-class FCOSPostProcess(object):
-    __inject__ = ['decode', 'nms']
-
-    def __init__(self, decode=None, nms=None):
-        super(FCOSPostProcess, self).__init__()
-        self.decode = decode
-        self.nms = nms
-
-    def __call__(self, fcos_head_outs, scale_factor):
-        """
-        Decode the bbox and do NMS in FCOS.
-        """
-        locations, cls_logits, bboxes_reg, centerness = fcos_head_outs
-        bboxes, score = self.decode(locations, cls_logits, bboxes_reg,
-                                    centerness, scale_factor)
-        bbox_pred, bbox_num, _ = self.nms(bboxes, score)
-        return bbox_pred, bbox_num
-
-
-@register
-class S2ANetBBoxPostProcess(nn.Layer):
-    __shared__ = ['num_classes']
-    __inject__ = ['nms']
-
-    def __init__(self, num_classes=15, nms_pre=2000, min_bbox_size=0, nms=None):
-        super(S2ANetBBoxPostProcess, self).__init__()
-        self.num_classes = num_classes
-        self.nms_pre = nms_pre
-        self.min_bbox_size = min_bbox_size
-        self.nms = nms
-        self.origin_shape_list = []
-        self.fake_pred_cls_score_bbox = paddle.to_tensor(
-            np.array(
-                [[-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]],
-                dtype='float32'))
-        self.fake_bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
-
-    def forward(self, pred_scores, pred_bboxes):
-        """
-        pred_scores : [N, M]  score
-        pred_bboxes : [N, 5]  xc, yc, w, h, a
-        im_shape : [N, 2]  im_shape
-        scale_factor : [N, 2]  scale_factor
-        """
-        pred_ploys0 = rbox2poly(pred_bboxes)
-        pred_ploys = paddle.unsqueeze(pred_ploys0, axis=0)
-
-        # pred_scores [NA, 16] --> [16, NA]
-        pred_scores0 = paddle.transpose(pred_scores, [1, 0])
-        pred_scores = paddle.unsqueeze(pred_scores0, axis=0)
-
-        pred_cls_score_bbox, bbox_num, _ = self.nms(pred_ploys, pred_scores,
-                                                    self.num_classes)
-        # Prevent empty bbox_pred from decode or NMS.
-        # Bboxes and score before NMS may be empty due to the score threshold.
-        if pred_cls_score_bbox.shape[0] <= 0 or pred_cls_score_bbox.shape[
-                1] <= 1:
-            pred_cls_score_bbox = self.fake_pred_cls_score_bbox
-            bbox_num = self.fake_bbox_num
-
-        pred_cls_score_bbox = paddle.reshape(pred_cls_score_bbox, [-1, 10])
-        return pred_cls_score_bbox, bbox_num
-
-    def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
-        """
-        Rescale, clip and filter the bbox from the output of NMS to
-        get final prediction.
-        Args:
-            bboxes(Tensor): bboxes [N, 10]
-            bbox_num(Tensor): bbox_num
-            im_shape(Tensor): [1 2]
-            scale_factor(Tensor): [1 2]
-        Returns:
-            bbox_pred(Tensor): The output is the prediction with shape [N, 8]
-                               including labels, scores and bboxes. The size of
-                               bboxes are corresponding to the original image.
-        """
-        origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
-
-        origin_shape_list = []
-        scale_factor_list = []
-        # scale_factor: scale_y, scale_x
-        for i in range(bbox_num.shape[0]):
-            expand_shape = paddle.expand(origin_shape[i:i + 1, :],
-                                         [bbox_num[i], 2])
-            scale_y, scale_x = scale_factor[i][0], scale_factor[i][1]
-            scale = paddle.concat([
-                scale_x, scale_y, scale_x, scale_y, scale_x, scale_y, scale_x,
-                scale_y
-            ])
-            expand_scale = paddle.expand(scale, [bbox_num[i], 8])
-            origin_shape_list.append(expand_shape)
-            scale_factor_list.append(expand_scale)
-
-        origin_shape_list = paddle.concat(origin_shape_list)
-        scale_factor_list = paddle.concat(scale_factor_list)
-
-        # bboxes: [N, 10], label, score, bbox
-        pred_label_score = bboxes[:, 0:2]
-        pred_bbox = bboxes[:, 2:]
-
-        # rescale bbox to original image
-        pred_bbox = pred_bbox.reshape([-1, 8])
-        scaled_bbox = pred_bbox / scale_factor_list
-        origin_h = origin_shape_list[:, 0]
-        origin_w = origin_shape_list[:, 1]
-
-        bboxes = scaled_bbox
-        zeros = paddle.zeros_like(origin_h)
-        x1 = paddle.maximum(paddle.minimum(bboxes[:, 0], origin_w - 1), zeros)
-        y1 = paddle.maximum(paddle.minimum(bboxes[:, 1], origin_h - 1), zeros)
-        x2 = paddle.maximum(paddle.minimum(bboxes[:, 2], origin_w - 1), zeros)
-        y2 = paddle.maximum(paddle.minimum(bboxes[:, 3], origin_h - 1), zeros)
-        x3 = paddle.maximum(paddle.minimum(bboxes[:, 4], origin_w - 1), zeros)
-        y3 = paddle.maximum(paddle.minimum(bboxes[:, 5], origin_h - 1), zeros)
-        x4 = paddle.maximum(paddle.minimum(bboxes[:, 6], origin_w - 1), zeros)
-        y4 = paddle.maximum(paddle.minimum(bboxes[:, 7], origin_h - 1), zeros)
-        pred_bbox = paddle.stack([x1, y1, x2, y2, x3, y3, x4, y4], axis=-1)
-        pred_result = paddle.concat([pred_label_score, pred_bbox], axis=1)
         return pred_result
 
 
@@ -594,9 +479,9 @@ class DETRBBoxPostProcess(object):
 
         bbox_pred = bbox_cxcywh_to_xyxy(bboxes)
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
-        img_h, img_w = origin_shape.unbind(1)
-        origin_shape = paddle.stack(
-            [img_w, img_h, img_w, img_h], axis=-1).unsqueeze(0)
+        img_h, img_w = paddle.split(origin_shape, 2, axis=-1)
+        origin_shape = paddle.concat(
+            [img_w, img_h, img_w, img_h], axis=-1).reshape([-1, 1, 4])
         bbox_pred *= origin_shape
 
         scores = F.sigmoid(logits) if self.use_focal_loss else F.softmax(
@@ -720,8 +605,23 @@ class SparsePostProcess(object):
         return bbox_pred, bbox_num
 
 
-def nms(dets, thresh):
-    """Apply classic DPM-style greedy NMS."""
+def multiclass_nms(bboxs, num_classes, match_threshold=0.6, match_metric='iou'):
+    final_boxes = []
+    for c in range(num_classes):
+        idxs = bboxs[:, 0] == c
+        if np.count_nonzero(idxs) == 0: continue
+        r = nms(bboxs[idxs, 1:], match_threshold, match_metric)
+        final_boxes.append(np.concatenate([np.full((r.shape[0], 1), c), r], 1))
+    return final_boxes
+
+
+def nms(dets, match_threshold=0.6, match_metric='iou'):
+    """ Apply NMS to avoid detecting too many overlapping bounding boxes.
+        Args:
+            dets: shape [N, 5], [score, x1, y1, x2, y2]
+            match_metric: 'iou' or 'ios'
+            match_threshold: overlap thresh for match metric.
+    """
     if dets.shape[0] == 0:
         return dets[[], :]
     scores = dets[:, 0]
@@ -729,24 +629,11 @@ def nms(dets, thresh):
     y1 = dets[:, 2]
     x2 = dets[:, 3]
     y2 = dets[:, 4]
-
     areas = (x2 - x1 + 1) * (y2 - y1 + 1)
     order = scores.argsort()[::-1]
 
     ndets = dets.shape[0]
     suppressed = np.zeros((ndets), dtype=np.int)
-
-    # nominal indices
-    # _i, _j
-    # sorted indices
-    # i, j
-    # temp variables for box i's (the box currently under consideration)
-    # ix1, iy1, ix2, iy2, iarea
-
-    # variables for computing overlap with box j (lower scoring box)
-    # xx1, yy1, xx2, yy2
-    # w, h
-    # inter, ovr
 
     for _i in range(ndets):
         i = order[_i]
@@ -768,8 +655,15 @@ def nms(dets, thresh):
             w = max(0.0, xx2 - xx1 + 1)
             h = max(0.0, yy2 - yy1 + 1)
             inter = w * h
-            ovr = inter / (iarea + areas[j] - inter)
-            if ovr >= thresh:
+            if match_metric == 'iou':
+                union = iarea + areas[j] - inter
+                match_value = inter / union
+            elif match_metric == 'ios':
+                smaller = min(iarea, areas[j])
+                match_value = inter / smaller
+            else:
+                raise ValueError()
+            if match_value >= match_threshold:
                 suppressed[j] = 1
     keep = np.where(suppressed == 0)[0]
     dets = dets[keep, :]

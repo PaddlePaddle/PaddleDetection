@@ -36,21 +36,30 @@ class ModelEMA(object):
             step. Defaults is -1, which means not reset. Its function is to
             add a regular effect to ema, which is set according to experience
             and is effective when the total training epoch is large.
+        ema_black_list (set|list|tuple, optional): The custom EMA black_list.
+            Blacklist of weight names that will not participate in EMA
+            calculation. Default: None.
     """
 
     def __init__(self,
                  model,
                  decay=0.9998,
                  ema_decay_type='threshold',
-                 cycle_epoch=-1):
+                 cycle_epoch=-1,
+                 ema_black_list=None):
         self.step = 0
         self.epoch = 0
         self.decay = decay
-        self.state_dict = dict()
-        for k, v in model.state_dict().items():
-            self.state_dict[k] = paddle.zeros_like(v)
         self.ema_decay_type = ema_decay_type
         self.cycle_epoch = cycle_epoch
+        self.ema_black_list = self._match_ema_black_list(
+            model.state_dict().keys(), ema_black_list)
+        self.state_dict = dict()
+        for k, v in model.state_dict().items():
+            if k in self.ema_black_list:
+                self.state_dict[k] = v
+            else:
+                self.state_dict[k] = paddle.zeros_like(v)
 
         self._model_state = {
             k: weakref.ref(p)
@@ -61,12 +70,18 @@ class ModelEMA(object):
         self.step = 0
         self.epoch = 0
         for k, v in self.state_dict.items():
-            self.state_dict[k] = paddle.zeros_like(v)
+            if k in self.ema_black_list:
+                self.state_dict[k] = v
+            else:
+                self.state_dict[k] = paddle.zeros_like(v)
 
     def resume(self, state_dict, step=0):
         for k, v in state_dict.items():
             if k in self.state_dict:
-                self.state_dict[k] = v
+                if self.state_dict[k].dtype == v.dtype:
+                    self.state_dict[k] = v
+                else:
+                    self.state_dict[k] = v.astype(self.state_dict[k].dtype)
         self.step = step
 
     def update(self, model=None):
@@ -86,9 +101,10 @@ class ModelEMA(object):
                 [v is not None for _, v in model_dict.items()]), 'python gc.'
 
         for k, v in self.state_dict.items():
-            v = decay * v + (1 - decay) * model_dict[k]
-            v.stop_gradient = True
-            self.state_dict[k] = v
+            if k not in self.ema_black_list:
+                v = decay * v + (1 - decay) * model_dict[k]
+                v.stop_gradient = True
+                self.state_dict[k] = v
         self.step += 1
 
     def apply(self):
@@ -96,12 +112,25 @@ class ModelEMA(object):
             return self.state_dict
         state_dict = dict()
         for k, v in self.state_dict.items():
-            if self.ema_decay_type != 'exponential':
-                v = v / (1 - self._decay**self.step)
-            v.stop_gradient = True
-            state_dict[k] = v
+            if k in self.ema_black_list:
+                v.stop_gradient = True
+                state_dict[k] = v
+            else:
+                if self.ema_decay_type != 'exponential':
+                    v = v / (1 - self._decay**self.step)
+                v.stop_gradient = True
+                state_dict[k] = v
         self.epoch += 1
         if self.cycle_epoch > 0 and self.epoch == self.cycle_epoch:
             self.reset()
 
         return state_dict
+
+    def _match_ema_black_list(self, weight_name, ema_black_list=None):
+        out_list = set()
+        if ema_black_list:
+            for name in weight_name:
+                for key in ema_black_list:
+                    if key in name:
+                        out_list.add(name)
+        return out_list

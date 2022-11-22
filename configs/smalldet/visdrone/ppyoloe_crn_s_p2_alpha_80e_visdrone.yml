@@ -1,0 +1,32 @@
+_BASE_: [
+  'ppyoloe_crn_s_80e_visdrone.yml',
+]
+log_iter: 100
+snapshot_epoch: 10
+weights: output/ppyoloe_crn_s_p2_alpha_80e_visdrone/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_300e_coco.pdparams
+
+
+TrainReader:
+  batch_size: 4
+
+EvalReader:
+  batch_size: 1
+
+TestReader:
+  batch_size: 1
+  fuse_normalize: True
+
+
+LearningRate:
+  base_lr: 0.005
+
+CSPResNet:
+  return_idx: [0, 1, 2, 3]
+  use_alpha: True
+
+CustomCSPPAN:
+  out_channels: [768, 384, 192, 64]
+
+PPYOLOEHead:
+  fpn_strides: [32, 16, 8, 4]

@@ -1,0 +1,46 @@
+worker_num: 4
+image_height: &image_height 1024
+image_width: &image_width 1024
+image_size: &image_size [*image_height, *image_width]
+
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - Poly2Array: {}
+    - RandomRFlip: {}
+    - RandomRRotate: {angle_mode: 'value', angle: [0, 90, 180, -90]}
+    - RandomRRotate: {angle_mode: 'value', angle: [30, 60], rotate_prob: 0.5}
+    - RResize: {target_size: *image_size, keep_ratio: True, interp: 2}
+    - Poly2RBox: {filter_threshold: 2, filter_mode: 'edge', rbox_type: 'oc'}
+  batch_transforms:
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+    - PadRGT: {}
+    - PadBatch: {pad_to_stride: 32}
+  batch_size: 4
+  shuffle: true
+  drop_last: true
+  use_shared_memory: true
+  collate_batch: true
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - Poly2Array: {}
+    - RResize: {target_size: *image_size, keep_ratio: True, interp: 2}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+  batch_transforms:
+    - PadBatch: {pad_to_stride: 32}
+  batch_size: 2
+  collate_batch: false
+
+TestReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: *image_size, keep_ratio: True, interp: 2}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - Permute: {}
+  batch_transforms:
+    - PadBatch: {pad_to_stride: 32}
+  batch_size: 2

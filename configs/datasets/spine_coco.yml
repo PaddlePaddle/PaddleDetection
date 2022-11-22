@@ -6,13 +6,14 @@ TrainDataset:
     image_dir: images
     anno_path: annotations/train.json
     dataset_dir: dataset/spine_coco
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_rbox']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_poly']
 
 EvalDataset:
   !COCODataSet
     image_dir: images
     anno_path: annotations/valid.json
     dataset_dir: dataset/spine_coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_poly']
 
 TestDataset:
   !ImageFolder

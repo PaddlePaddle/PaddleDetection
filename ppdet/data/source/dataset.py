@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import os
+import copy
 import numpy as np
-
 try:
     from collections.abc import Sequence
 except Exception:
@@ -22,8 +22,10 @@ except Exception:
 from paddle.io import Dataset
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.download import get_dataset_path
-import copy
 from ppdet.data import source
+
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
 
 
 @serializable
@@ -38,6 +40,7 @@ class DetDataset(Dataset):
         data_fields (list): key name of data dictionary, at least have 'image'.
         sample_num (int): number of samples to load, -1 means all.
         use_default_label (bool): whether to load default label list.
+        repeat (int): repeat times for dataset, use in benchmark.
     """
 
     def __init__(self,
@@ -47,6 +50,7 @@ class DetDataset(Dataset):
                  data_fields=['image'],
                  sample_num=-1,
                  use_default_label=None,
+                 repeat=1,
                  **kwargs):
         super(DetDataset, self).__init__()
         self.dataset_dir = dataset_dir if dataset_dir is not None else ''
@@ -55,28 +59,29 @@ class DetDataset(Dataset):
         self.data_fields = data_fields
         self.sample_num = sample_num
         self.use_default_label = use_default_label
+        self.repeat = repeat
         self._epoch = 0
         self._curr_iter = 0
 
     def __len__(self, ):
-        return len(self.roidbs)
+        return len(self.roidbs) * self.repeat
 
     def __call__(self, *args, **kwargs):
         return self
 
     def __getitem__(self, idx):
+        n = len(self.roidbs)
+        if self.repeat > 1:
+            idx %= n
         # data batch
         roidb = copy.deepcopy(self.roidbs[idx])
         if self.mixup_epoch == 0 or self._epoch < self.mixup_epoch:
-            n = len(self.roidbs)
             idx = np.random.randint(n)
             roidb = [roidb, copy.deepcopy(self.roidbs[idx])]
         elif self.cutmix_epoch == 0 or self._epoch < self.cutmix_epoch:
-            n = len(self.roidbs)
             idx = np.random.randint(n)
             roidb = [roidb, copy.deepcopy(self.roidbs[idx])]
         elif self.mosaic_epoch == 0 or self._epoch < self.mosaic_epoch:
-            n = len(self.roidbs)
             roidb = [roidb, ] + [
                 copy.deepcopy(self.roidbs[np.random.randint(n)])
                 for _ in range(4)
@@ -202,6 +207,60 @@ class ImageFolder(DetDataset):
     def set_images(self, images):
         self.image_dir = images
         self.roidbs = self._load_images()
+
+    def set_slice_images(self,
+                         images,
+                         slice_size=[640, 640],
+                         overlap_ratio=[0.25, 0.25]):
+        self.image_dir = images
+        ori_records = self._load_images()
+        try:
+            import sahi
+            from sahi.slicing import slice_image
+        except Exception as e:
+            logger.error(
+                'sahi not found, plaese install sahi. '
+                'for example: `pip install sahi`, see https://github.com/obss/sahi.'
+            )
+            raise e
+
+        sub_img_ids = 0
+        ct = 0
+        ct_sub = 0
+        records = []
+        for i, ori_rec in enumerate(ori_records):
+            im_path = ori_rec['im_file']
+            slice_image_result = sahi.slicing.slice_image(
+                image=im_path,
+                slice_height=slice_size[0],
+                slice_width=slice_size[1],
+                overlap_height_ratio=overlap_ratio[0],
+                overlap_width_ratio=overlap_ratio[1])
+
+            sub_img_num = len(slice_image_result)
+            for _ind in range(sub_img_num):
+                im = slice_image_result.images[_ind]
+                rec = {
+                    'image': im,
+                    'im_id': np.array([sub_img_ids + _ind]),
+                    'h': im.shape[0],
+                    'w': im.shape[1],
+                    'ori_im_id': np.array([ori_rec['im_id'][0]]),
+                    'st_pix': np.array(
+                        slice_image_result.starting_pixels[_ind],
+                        dtype=np.float32),
+                    'is_last': 1 if _ind == sub_img_num - 1 else 0,
+                } if 'image' in self.data_fields else {}
+                records.append(rec)
+            ct_sub += sub_img_num
+            ct += 1
+        logger.info('{} samples and slice to {} sub_samples.'.format(ct,
+                                                                     ct_sub))
+        self.roidbs = records
+
+    def get_label_list(self):
+        # Only VOC dataset needs label list in ImageFold 
+        return self.anno_path
 
 
 @register

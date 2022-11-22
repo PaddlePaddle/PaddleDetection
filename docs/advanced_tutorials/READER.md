@@ -312,7 +312,6 @@ EvalReader:
     - Decode: {}
     ...
   batch_size: 1
-  drop_empty: false
 
 TestReader:
   inputs_def:

@@ -90,7 +90,7 @@ COCO datasets are currently divided into COCO2014 and COCO2017, which are mainly
   │   ├── 000000000285.jpg
   │   │   ...
   ```
-class `COCODataSet` is defined and registered on `source/coco.py`. And implements the parse the dataset method, called [COCO API](https://github.com/cocodataset/cocoapi) to load and parse COCO format data source ` roidbs ` and ` cname2cid `, See `source/coco.py` source code for details. Converting other datasets to COCO format can be done by referring to [converting User Data to COCO Data](../tutorials/PrepareDataSet_en.md#convert-user-data-to-coco-data)
+class `COCODataSet` is defined and registered on `source/coco.py`. And implements the parse the dataset method, called [COCO API](https://github.com/cocodataset/cocoapi) to load and parse COCO format data source ` roidbs ` and ` cname2cid `, See `source/coco.py` source code for details. Converting other datasets to COCO format can be done by referring to [converting User Data to COCO Data](../tutorials/data/PrepareDataSet_en.md#convert-user-data-to-coco-data)
 And implements the parse the dataset method, called [COCO API](https://github.com/cocodataset/cocoapi) to load and parse COCO format data source `roidbs` and `cname2cid`, See `source/coco.py` source code for details. Converting other datasets to COCO format can be done by referring to [converting User Data to COCO Data](../tutorials/data/PrepareDetDataSet_en.md#convert-user-data-to-coco-data)
 
 
@@ -312,7 +312,6 @@ EvalReader:
     - Decode: {}
     ...
   batch_size: 1
-  drop_empty: false
 
 TestReader:
   inputs_def:

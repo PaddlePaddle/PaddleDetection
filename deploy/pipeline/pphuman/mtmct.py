@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from pptracking.python.mot.visualize import plot_tracking
+from python.visualize import visualize_attr
 import os
 import re
 import cv2
@@ -103,7 +104,8 @@ def get_mtmct_matching_results(pred_mtmct_file, secs_interval=0.5,
     return camera_results, cid_tid_fid_results
 
 
-def save_mtmct_vis_results(camera_results, captures, output_dir):
+def save_mtmct_vis_results(camera_results, captures, output_dir,
+                           multi_res=None):
     # camera_results: 'cid, tid, fid, x1, y1, w, h'
     camera_ids = list(camera_results.keys())
 
@@ -143,6 +145,29 @@ def save_mtmct_vis_results(camera_results, captures, output_dir):
             boxes = frame_results[:, -4:]
             ids = frame_results[:, 1]
             image = plot_tracking(frame, boxes, ids, frame_id=frame_id, fps=fps)
+
+            # add attr vis
+            if multi_res:
+                tid_list = multi_res.keys()  # c0_t1, c0_t2...
+                all_attr_result = [multi_res[i]["attrs"]
+                                   for i in tid_list]  # all cid_tid result
+                if any(
+                        all_attr_result
+                ):  # at least one cid_tid[attrs] is not None will goes to attrs_vis
+                    attr_res = []
+                    cid_str = 'c' + str(cid - 1) + "_"
+                    for k in tid_list:
+                        if not k.startswith(cid_str):
+                            continue
+                        if (frame_id - 1) >= len(multi_res[k]['attrs']):
+                            t_attr = None
+                        else:
+                            t_attr = multi_res[k]['attrs'][frame_id - 1]
+                            attr_res.append(t_attr)
+                    assert len(attr_res) == len(boxes)
+                    image = visualize_attr(
+                        image, attr_res, boxes, is_mtmct=True)
+
             writer.write(image)
         writer.release()
 
@@ -326,7 +351,7 @@ def res2dict(multi_res):
         for tid, res in c_res.items():
             key = "c" + str(cid) + "_t" + str(tid)
             if key not in cid_tid_dict:
-                if len(res["rects"]) < 10:
+                if len(res["features"]) == 0:
                     continue
                 cid_tid_dict[key] = res
                 cid_tid_dict[key]['mean_feat'] = distill_idfeat(res)
@@ -349,4 +374,8 @@ def mtmct_process(multi_res, captures, mtmct_vis=True, output_dir="output"):
         camera_results, cid_tid_fid_res = get_mtmct_matching_results(
             pred_mtmct_file)
 
-        save_mtmct_vis_results(camera_results, captures, output_dir=output_dir)
+        save_mtmct_vis_results(
+            camera_results,
+            captures,
+            output_dir=output_dir,
+            multi_res=cid_tid_dict)

@@ -31,7 +31,7 @@ from python.infer import get_test_images
 from python.preprocess import preprocess, NormalizeImage, Permute, Resize_Mult32
 from pipeline.ppvehicle.vehicle_plateutils import create_predictor, get_infer_gpuid, get_rotate_crop_image, draw_boxes
 from pipeline.ppvehicle.vehicleplate_postprocess import build_post_process
-from pipeline.pipe_utils import merge_cfg, print_arguments, argsparser
+from pipeline.cfg_utils import merge_cfg, print_arguments, argsparser
 
 
 class PlateDetector(object):
@@ -123,7 +123,6 @@ class PlateDetector(object):
             img, shape_list = self.preprocess(image)
             if img is None:
                 return None, 0
-
             self.input_tensor.copy_from_cpu(img)
             self.predictor.run()
             outputs = []
@@ -258,20 +257,54 @@ class PlateRecognizer(object):
         return self.check_plate(plate_text_list)
 
     def check_plate(self, text_list):
-        simcode = [
-            '浙', '粤', '京', '津', '冀', '晋', '蒙', '辽', '黑', '沪', '吉', '苏', '皖',
-            '赣', '鲁', '豫', '鄂', '湘', '桂', '琼', '渝', '川', '贵', '云', '藏', '陕',
-            '甘', '青', '宁'
-        ]
         plate_all = {"plate": []}
         for text_pcar in text_list:
             platelicense = ""
             for text_info in text_pcar:
                 text = text_info[0][0][0]
-                if len(text) > 2 and text[0] in simcode and len(text) < 10:
-                    platelicense = text
+                if len(text) > 2 and len(text) < 10:
+                    platelicense = self.replace_cn_code(text)
             plate_all["plate"].append(platelicense)
         return plate_all
+
+    def replace_cn_code(self, text):
+        simcode = {
+            '浙': 'ZJ-',
+            '粤': 'GD-',
+            '京': 'BJ-',
+            '津': 'TJ-',
+            '冀': 'HE-',
+            '晋': 'SX-',
+            '蒙': 'NM-',
+            '辽': 'LN-',
+            '黑': 'HLJ-',
+            '沪': 'SH-',
+            '吉': 'JL-',
+            '苏': 'JS-',
+            '皖': 'AH-',
+            '赣': 'JX-',
+            '鲁': 'SD-',
+            '豫': 'HA-',
+            '鄂': 'HB-',
+            '湘': 'HN-',
+            '桂': 'GX-',
+            '琼': 'HI-',
+            '渝': 'CQ-',
+            '川': 'SC-',
+            '贵': 'GZ-',
+            '云': 'YN-',
+            '藏': 'XZ-',
+            '陕': 'SN-',
+            '甘': 'GS-',
+            '青': 'QH-',
+            '宁': 'NX-',
+            '闽': 'FJ-',
+            '·': ' '
+        }
+        for _char in text:
+            if _char in simcode:
+                text = text.replace(_char, simcode[_char])
+        return text
 
 
 def main():

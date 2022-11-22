@@ -32,6 +32,7 @@ from ppdet.modeling.mot.utils import MOTTimer, load_det_results, write_mot_resul
 from ppdet.modeling.mot.tracker import JDETracker, DeepSORTTracker, OCSORTTracker
 from ppdet.modeling.architectures import YOLOX
 from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric, MCMOTMetric
+from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 
 from .callbacks import Callback, ComposeCallback
@@ -66,6 +67,13 @@ class Tracker(object):
                 if isinstance(m, nn.BatchNorm2D):
                     m._epsilon = 1e-3  # for amp(fp16)
                     m._momentum = 0.97  # 0.03 in pytorch
+
+        anno_file = self.dataset.get_anno()
+        clsid2catid, catid2name = get_categories(
+            self.cfg.metric, anno_file=anno_file)
+        self.ids2names = []
+        for k, v in catid2name.items():
+            self.ids2names.append(v)
 
         self.status = {}
         self.start_epoch = 0
@@ -180,7 +188,7 @@ class Tracker(object):
             timer.toc()
             save_vis_results(data, frame_id, online_ids, online_tlwhs,
                              online_scores, timer.average_time, show_image,
-                             save_dir, self.cfg.num_classes)
+                             save_dir, self.cfg.num_classes, self.ids2names)
             frame_id += 1
 
         return results, frame_id, timer.average_time, timer.calls
@@ -290,7 +298,7 @@ class Tracker(object):
                 online_ids, online_tlwhs, online_scores = None, None, None
                 save_vis_results(data, frame_id, online_ids, online_tlwhs,
                                  online_scores, timer.average_time, show_image,
-                                 save_dir, self.cfg.num_classes)
+                                 save_dir, self.cfg.num_classes, self.ids2names)
                 frame_id += 1
                 # thus will not inference reid model
                 continue
@@ -338,7 +346,7 @@ class Tracker(object):
                     (frame_id + 1, online_tlwhs, online_scores, online_ids))
                 save_vis_results(data, frame_id, online_ids, online_tlwhs,
                                  online_scores, timer.average_time, show_image,
-                                 save_dir, self.cfg.num_classes)
+                                 save_dir, self.cfg.num_classes, self.ids2names)
 
             elif isinstance(tracker, JDETracker):
                 # trick hyperparams only used for MOTChallenge (MOT17, MOT20) Test-set
@@ -369,7 +377,7 @@ class Tracker(object):
                 timer.toc()
                 save_vis_results(data, frame_id, online_ids, online_tlwhs,
                                  online_scores, timer.average_time, show_image,
-                                 save_dir, self.cfg.num_classes)
+                                 save_dir, self.cfg.num_classes, self.ids2names)
             elif isinstance(tracker, OCSORTTracker):
                 # OC_SORT Tracker
                 online_targets = tracker.update(pred_dets_old, pred_embs)
@@ -390,7 +398,7 @@ class Tracker(object):
                     (frame_id + 1, online_tlwhs, online_scores, online_ids))
                 save_vis_results(data, frame_id, online_ids, online_tlwhs,
                                  online_scores, timer.average_time, show_image,
-                                 save_dir, self.cfg.num_classes)
+                                 save_dir, self.cfg.num_classes, self.ids2names)
             else:
                 raise ValueError(tracker)
             frame_id += 1

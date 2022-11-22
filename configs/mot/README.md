@@ -22,6 +22,7 @@
 PaddleDetection中提供了SDE和JDE两个系列的多种算法实现：
 - SDE
   - [ByteTrack](./bytetrack)
+  - [OC-SORT](./ocsort)
   - [DeepSORT](./deepsort)
 - JDE
   - [JDE](./jde)
@@ -91,6 +92,7 @@ pip install lap motmetrics sklearn filterpy
 ## 模型库和选型
 - 基础模型
     - [ByteTrack](bytetrack/README_cn.md)
+    - [OC-SORT](ocsort/README_cn.md)
     - [DeepSORT](deepsort/README_cn.md)
     - [JDE](jde/README_cn.md)
     - [FairMOT](fairmot/README_cn.md)
@@ -109,8 +111,8 @@ pip install lap motmetrics sklearn filterpy
 
 |    MOT方式      |   经典算法      |  算法流程 |  数据集要求  |  其他特点  |
 | :--------------| :--------------| :------- | :----: | :----: |
-| SDE系列  | DeepSORT,ByteTrack | 分离式，两个独立模型权重先检测后ReID，也可不加ReID | 检测和ReID数据相对独立，不加ReID时即纯检测数据集 |检测和ReID可分别调优，鲁棒性较高，AI竞赛常用|
-| JDE系列  | FairMOT | 联合式，一个模型权重端到端同时检测和ReID | 必须同时具有检测和ReID标注 | 检测和ReID联合训练，不易调优，泛化性不强|
+| SDE系列  | DeepSORT,ByteTrack,OC-SORT | 分离式，两个独立模型权重先检测后ReID，也可不加ReID | 检测和ReID数据相对独立，不加ReID时即纯检测数据集 |检测和ReID可分别调优，鲁棒性较高，AI竞赛常用|
+| JDE系列  | FairMOT,JDE | 联合式，一个模型权重端到端同时检测和ReID | 必须同时具有检测和ReID标注 | 检测和ReID联合训练，不易调优，泛化性不强|
 
 **注意：**
   - 由于数据标注的成本较大，建议选型前优先考虑**数据集要求**，如果数据集只有检测框标注而没有ReID标注，是无法使用JDE系列算法训练的，更推荐使用SDE系列；
@@ -129,7 +131,7 @@ SDE数据集是纯检测标注的数据集，用户自定义数据集可以参�
 
 以MOT17数据集为例，下载并解压放在`PaddleDetection/dataset/mot`目录下：
 ```
-wget https://dataset.bj.bcebos.com/mot/MOT17.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/MOT17.zip
 
 ```
 并修改数据集部分的配置文件如下：
@@ -166,19 +168,19 @@ dataset/mot
 ### JDE数据集
 JDE数据集是同时有检测和ReID标注的数据集，首先按照以下命令`image_lists.zip`并解压放在`PaddleDetection/dataset/mot`目录下：
 ```
-wget https://dataset.bj.bcebos.com/mot/image_lists.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/image_lists.zip
 ```
 
 然后按照以下命令可以快速下载各个公开数据集，也解压放在`PaddleDetection/dataset/mot`目录下：
 ```
 # MIX数据，同JDE,FairMOT论文使用的数据集
-wget https://dataset.bj.bcebos.com/mot/MOT17.zip
-wget https://dataset.bj.bcebos.com/mot/Caltech.zip
-wget https://dataset.bj.bcebos.com/mot/CUHKSYSU.zip
-wget https://dataset.bj.bcebos.com/mot/PRW.zip
-wget https://dataset.bj.bcebos.com/mot/Cityscapes.zip
-wget https://dataset.bj.bcebos.com/mot/ETHZ.zip
-wget https://dataset.bj.bcebos.com/mot/MOT16.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/MOT17.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/Caltech.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/CUHKSYSU.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/PRW.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/Cityscapes.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/ETHZ.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/MOT16.zip
 ```
 数据集目录为：
 ```

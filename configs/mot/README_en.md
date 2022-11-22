@@ -60,6 +60,7 @@ pip install -r requirements.txt
 ## Model Zoo
 - Base models
     - [ByteTrack](bytetrack/README.md)
+    - [OC-SORT](ocsort/README.md)
     - [DeepSORT](deepsort/README.md)
     - [JDE](jde/README.md)
     - [FairMOT](fairmot/README.md)
@@ -86,18 +87,18 @@ PaddleDetection implement [JDE](https://github.com/Zhongdao/Towards-Realtime-MOT
 ### Dataset Directory
 First, download the image_lists.zip using the following command, and unzip them into `PaddleDetection/dataset/mot`:
 ```
-wget https://dataset.bj.bcebos.com/mot/image_lists.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/image_lists.zip
 ```
 
 Then, download the MIX dataset using the following command, and unzip them into `PaddleDetection/dataset/mot`:
 ```
-wget https://dataset.bj.bcebos.com/mot/MOT17.zip
-wget https://dataset.bj.bcebos.com/mot/Caltech.zip
-wget https://dataset.bj.bcebos.com/mot/CUHKSYSU.zip
-wget https://dataset.bj.bcebos.com/mot/PRW.zip
-wget https://dataset.bj.bcebos.com/mot/Cityscapes.zip
-wget https://dataset.bj.bcebos.com/mot/ETHZ.zip
-wget https://dataset.bj.bcebos.com/mot/MOT16.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/MOT17.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/Caltech.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/CUHKSYSU.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/PRW.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/Cityscapes.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/ETHZ.zip
+wget https://bj.bcebos.com/v1/paddledet/data/mot/MOT16.zip
 ```
 
 The final directory is:

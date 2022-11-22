@@ -69,8 +69,6 @@ class TransformerEncoderLayer(nn.Layer):
         return tensor if pos_embed is None else tensor + pos_embed
 
     def forward(self, src, src_mask=None, pos_embed=None):
-        src_mask = _convert_attention_mask(src_mask, src.dtype)
-
         residual = src
         if self.normalize_before:
             src = self.norm1(src)
@@ -99,8 +97,6 @@ class TransformerEncoder(nn.Layer):
         self.norm = norm
 
     def forward(self, src, src_mask=None, pos_embed=None):
-        src_mask = _convert_attention_mask(src_mask, src.dtype)
-
         output = src
         for layer in self.layers:
             output = layer(output, src_mask=src_mask, pos_embed=pos_embed)
@@ -158,7 +154,6 @@ class TransformerDecoderLayer(nn.Layer):
                 pos_embed=None,
                 query_pos_embed=None):
         tgt_mask = _convert_attention_mask(tgt_mask, tgt.dtype)
-        memory_mask = _convert_attention_mask(memory_mask, memory.dtype)
 
         residual = tgt
         if self.normalize_before:
@@ -209,7 +204,6 @@ class TransformerDecoder(nn.Layer):
                 pos_embed=None,
                 query_pos_embed=None):
         tgt_mask = _convert_attention_mask(tgt_mask, tgt.dtype)
-        memory_mask = _convert_attention_mask(memory_mask, memory.dtype)
 
         output = tgt
         intermediate = []
@@ -298,6 +292,9 @@ class DETRTransformer(nn.Layer):
             'backbone_num_channels': [i.channels for i in input_shape][-1],
         }
 
+    def _convert_attention_mask(self, mask):
+        return (mask - 1.0) * 1e9
+
     def forward(self, src, src_mask=None):
         r"""
         Applies a Transformer model on the inputs.
@@ -321,20 +318,21 @@ class DETRTransformer(nn.Layer):
         """
         # use last level feature map
         src_proj = self.input_proj(src[-1])
-        bs, c, h, w = src_proj.shape
+        bs, c, h, w = paddle.shape(src_proj)
         # flatten [B, C, H, W] to [B, HxW, C]
         src_flatten = src_proj.flatten(2).transpose([0, 2, 1])
         if src_mask is not None:
-            src_mask = F.interpolate(
-                src_mask.unsqueeze(0).astype(src_flatten.dtype),
-                size=(h, w))[0].astype('bool')
+            src_mask = F.interpolate(src_mask.unsqueeze(0), size=(h, w))[0]
         else:
-            src_mask = paddle.ones([bs, h, w], dtype='bool')
+            src_mask = paddle.ones([bs, h, w])
         pos_embed = self.position_embedding(src_mask).flatten(2).transpose(
             [0, 2, 1])
 
-        src_mask = _convert_attention_mask(src_mask, src_flatten.dtype)
-        src_mask = src_mask.reshape([bs, 1, 1, -1])
+        if self.training:
+            src_mask = self._convert_attention_mask(src_mask)
+            src_mask = src_mask.reshape([bs, 1, 1, h * w])
+        else:
+            src_mask = None
 
         memory = self.encoder(
             src_flatten, src_mask=src_mask, pos_embed=pos_embed)
@@ -349,5 +347,10 @@ class DETRTransformer(nn.Layer):
             pos_embed=pos_embed,
             query_pos_embed=query_pos_embed)
 
+        if self.training:
+            src_mask = src_mask.reshape([bs, 1, 1, h, w])
+        else:
+            src_mask = None
+
         return (output, memory.transpose([0, 2, 1]).reshape([bs, c, h, w]),
-                src_proj, src_mask.reshape([bs, 1, 1, h, w]))
+                src_proj, src_mask)

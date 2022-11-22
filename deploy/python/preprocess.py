@@ -89,21 +89,15 @@ class Resize_Mult32(object):
 
         # limit the max side
         if self.limit_type == 'max':
-            if max(h, w) > limit_side_len:
-                if h > w:
-                    ratio = float(limit_side_len) / h
-                else:
-                    ratio = float(limit_side_len) / w
+            if h > w:
+                ratio = float(limit_side_len) / h
             else:
-                ratio = 1.
+                ratio = float(limit_side_len) / w
         elif self.limit_type == 'min':
-            if min(h, w) < limit_side_len:
-                if h < w:
-                    ratio = float(limit_side_len) / h
-                else:
-                    ratio = float(limit_side_len) / w
+            if h < w:
+                ratio = float(limit_side_len) / h
             else:
-                ratio = 1.
+                ratio = float(limit_side_len) / w
         elif self.limit_type == 'resize_long':
             ratio = float(limit_side_len) / max(h, w)
         else:
@@ -281,13 +275,14 @@ class NormalizeImage(object):
         mean (list): im - mean
         std (list): im / std
         is_scale (bool): whether need im / 255
-        is_channel_first (bool): if True: image shape is CHW, else: HWC
+        norm_type (str): type in ['mean_std', 'none']
     """
 
-    def __init__(self, mean, std, is_scale=True):
+    def __init__(self, mean, std, is_scale=True, norm_type='mean_std'):
         self.mean = mean
         self.std = std
         self.is_scale = is_scale
+        self.norm_type = norm_type
 
     def __call__(self, im, im_info):
         """
@@ -299,13 +294,15 @@ class NormalizeImage(object):
             im_info (dict): info of processed image
         """
         im = im.astype(np.float32, copy=False)
-        mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
-        std = np.array(self.std)[np.newaxis, np.newaxis, :]
-
         if self.is_scale:
-            im = im / 255.0
-        im -= mean
-        im /= std
+            scale = 1.0 / 255.0
+            im *= scale
+
+        if self.norm_type == 'mean_std':
+            mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
+            std = np.array(self.std)[np.newaxis, np.newaxis, :]
+            im -= mean
+            im /= std
         return im, im_info
 
 

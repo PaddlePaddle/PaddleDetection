@@ -49,10 +49,46 @@ TRT_MIN_SUBGRAPH = {
     'CenterNet': 5,
     'TOOD': 5,
     'YOLOX': 8,
+    'YOLOF': 40,
+    'METRO_Body': 3,
+    'DETR': 3,
 }
 
 KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
 MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT', 'ByteTrack']
+
+TO_STATIC_SPEC = {
+    'yolov3_darknet53_270e_coco': [{
+        'im_id': paddle.static.InputSpec(
+            name='im_id', shape=[-1, 1], dtype='float32'),
+        'is_crowd': paddle.static.InputSpec(
+            name='is_crowd', shape=[-1, 50], dtype='float32'),
+        'gt_bbox': paddle.static.InputSpec(
+            name='gt_bbox', shape=[-1, 50, 4], dtype='float32'),
+        'curr_iter': paddle.static.InputSpec(
+            name='curr_iter', shape=[-1], dtype='float32'),
+        'image': paddle.static.InputSpec(
+            name='image', shape=[-1, 3, -1, -1], dtype='float32'),
+        'im_shape': paddle.static.InputSpec(
+            name='im_shape', shape=[-1, 2], dtype='float32'),
+        'scale_factor': paddle.static.InputSpec(
+            name='scale_factor', shape=[-1, 2], dtype='float32'),
+        'target0': paddle.static.InputSpec(
+            name='target0', shape=[-1, 3, 86, -1, -1], dtype='float32'),
+        'target1': paddle.static.InputSpec(
+            name='target1', shape=[-1, 3, 86, -1, -1], dtype='float32'),
+        'target2': paddle.static.InputSpec(
+            name='target2', shape=[-1, 3, 86, -1, -1], dtype='float32'),
+    }],
+}
+
+
+def apply_to_static(config, model):
+    filename = config.get('filename', None)
+    spec = TO_STATIC_SPEC.get(filename, None)
+    model = paddle.jit.to_static(model, input_spec=spec)
+    logger.info("Successfully to apply @to_static with specs: {}".format(spec))
+    return model
 
 
 def _prune_input_spec(input_spec, program, targets):
@@ -92,6 +128,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
             if key == 'Resize':
                 if int(image_shape[1]) != -1:
                     value['target_size'] = image_shape[1:]
+                value['interp'] = value.get('interp', 1)  # cv2.INTER_LINEAR
             if fuse_normalize and key == 'NormalizeImage':
                 continue
             p.update(value)
@@ -130,12 +167,14 @@ def _dump_infer_config(config, path, image_shape, model):
         'use_dynamic_shape': use_dynamic_shape
     })
     export_onnx = config.get('export_onnx', False)
+    export_eb = config.get('export_eb', False)
 
     infer_arch = config['architecture']
     if 'RCNN' in infer_arch and export_onnx:
         logger.warning(
             "Exporting RCNN model to ONNX only support batch_size = 1")
         infer_cfg['export_onnx'] = True
+        infer_cfg['export_eb'] = export_eb
 
     if infer_arch in MOT_ARCH:
         if infer_arch == 'DeepSORT':
@@ -151,7 +190,7 @@ def _dump_infer_config(config, path, image_shape, model):
             arch_state = True
             break
 
-    if infer_arch == 'YOLOX':
+    if infer_arch in ['YOLOX', 'YOLOF']:
         infer_cfg['arch'] = infer_arch
         infer_cfg['min_subgraph_size'] = TRT_MIN_SUBGRAPH[infer_arch]
         arch_state = True
