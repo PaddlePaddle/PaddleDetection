@@ -20,7 +20,7 @@ from . import unstructured_prune
 from .prune import *
 from .quant import *
 from .distill import *
-from .distill_deli import *
+from .distill_ppyoloe import *
 from .unstructured_prune import *
 from .ofa import *
 
@@ -37,7 +37,17 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
         return cfg
 
     if slim_load_cfg['slim'] == 'Distill':
-        model = DistillModel(cfg, slim_cfg)
+        if "slim_method" in slim_load_cfg and slim_load_cfg[
+                'slim_method'] == "FGD":
+            model = FGDDistillModel(cfg, slim_cfg)
+        elif "slim_method" in slim_load_cfg and slim_load_cfg[
+                'slim_method'] == "LD":
+            model = LDDistillModel(cfg, slim_cfg)
+        elif "slim_method" in slim_load_cfg and slim_load_cfg[
+                'slim_method'] == "PPYOLOE":
+            model = PPYOLOEDistillModel(cfg, slim_cfg)
+        else:
+            model = DistillModel(cfg, slim_cfg)
         cfg['model'] = model
         cfg['slim_type'] = cfg.slim
     elif slim_load_cfg['slim'] == 'OFA':

@@ -47,9 +47,15 @@ PPYOLOEHead:
     score_threshold: 0.01
     nms_threshold: 0.7
 
-depth_mult: 1.33
-width_mult: 1.25
-pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_x_80e_coco.pdparams
+depth_mult: 1.0
+width_mult: 1.0
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams
 find_unused_parameters: True
+
 slim: Distill
-distill_loss: DistillGFLLoss
+slim_method: PPYOLOE
+distill_loss: DistillPPYOLOELoss
+
+DistillPPYOLOELoss: # L -> S
+  teacher_width_mult: 1.0
+  student_width_mult: 0.5

@@ -51,5 +51,11 @@ depth_mult: 0.67
 width_mult: 0.75
 pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco.pdparams
 find_unused_parameters: True
+
 slim: Distill
-distill_loss: DistillGFLLoss
+slim_method: PPYOLOE
+distill_loss: DistillPPYOLOELoss
+
+DistillPPYOLOELoss: # M -> S
+  teacher_width_mult: 0.75
+  student_width_mult: 0.5
