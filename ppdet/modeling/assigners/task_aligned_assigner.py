@@ -156,5 +156,7 @@ class TaskAlignedAssigner(nn.Layer):
             max_metrics_per_instance + self.eps) * max_ious_per_instance
         alignment_metrics = alignment_metrics.max(-2).unsqueeze(-1)
         assigned_scores = assigned_scores * alignment_metrics
-
+        non_bg_index = paddle.where(assigned_labels!=80)
+        if non_bg_index[0].shape[0]==0:
+            print("$$$$ all assigned labels are background!")
         return assigned_labels, assigned_bboxes, assigned_scores

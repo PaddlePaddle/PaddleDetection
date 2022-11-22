@@ -505,8 +505,10 @@ class Trainer(object):
                         # model forward
                         outputs = model(data)
                         loss = outputs['loss']
+                        print("$$$$ loss:",loss.numpy())
                         # model backward
                         loss.backward()
+                        print("finish  loss.backward")
                     self.optimizer.step()
                 curr_lr = self.optimizer.get_lr()
                 self.lr.step()
