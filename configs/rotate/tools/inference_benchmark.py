@@ -46,6 +46,9 @@ def check_version(version='2.2'):
     if version_installed == ['0', '0', '0', '0']:
         return
 
+    if version == 'develop':
+        raise Exception("PaddlePaddle develop version is required!")
+
     version_split = version.split('.')
 
     length = min(len(version_installed), len(version_split))
@@ -367,7 +370,9 @@ def measure_speed(FLAGS):
 
 if __name__ == '__main__':
     FLAGS = parse_args()
-    check_version('2.4')
     if 'trt' in FLAGS.run_mode:
+        check_version('develop')
         check_trt_version('8.2')
+    else:
+        check_version('2.4')
     measure_speed(FLAGS)
