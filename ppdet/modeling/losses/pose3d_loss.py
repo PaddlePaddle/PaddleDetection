@@ -20,6 +20,7 @@ from itertools import cycle, islice
 from collections import abc
 import paddle
 import paddle.nn as nn
+import paddle.nn.functional as F
 
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.logger import setup_logger
@@ -61,13 +62,21 @@ class Pose3DLoss(nn.Layer):
         has_2d_joints = inputs['has_2d_joints']
 
         # loss_3d = mpjpe(pred3d, gt_3d_joints, has_3d_joints)
-        loss_3d = mpjpe_mse(pred3d, gt_3d_joints, has_3d_joints)
+        # loss_3d = mpjpe_mse(pred3d, gt_3d_joints, has_3d_joints)
+        loss_3d = mpjpe_focal(pred3d, gt_3d_joints, has_3d_joints)
+        loss = self.weight_3d * loss_3d
         # loss_3d = mpjpe_criterion(pred3d, gt_3d_joints, has_3d_joints, self.criterion_3dpose)
-        loss_2d = keypoint_2d_loss(self.criterion_2dpose, pred2d, gt_2d_joints,
-                                   has_2d_joints)
-        # loss_3d += 0.3 * temp_velocity_loss(pred3d, gt_3d_joints, has_3d_joints,
+        epoch = inputs['epoch_id']
+        if self.weight_2d > 0:
+            weight = self.weight_2d * pow(0.1, (epoch // 8))
+            if epoch > 8:
+                weight = 0
+            loss_2d = keypoint_2d_loss(self.criterion_2dpose, pred2d,
+                                       gt_2d_joints, has_2d_joints)
+            loss += weight * loss_2d
+        # loss += 0.3 * temp_velocity_loss(pred3d, gt_3d_joints, has_3d_joints,
         #                                     self.temp_num_perbatch)
-        return self.weight_3d * loss_3d + self.weight_2d * loss_2d
+        return loss
 
 
 def filter_3d_joints(pred, gt, has_3d_joints):
@@ -95,16 +104,35 @@ def mpjpe(pred, gt, has_3d_joints):
     return error
 
 
-def mpjpe_mse(pred, gt, has_3d_joints):
+def mpjpe_focal(pred, gt, has_3d_joints):
     """ 
     mPJPE loss
     """
     pred, gt = filter_3d_joints(pred, gt, has_3d_joints)
-    error = ((pred - gt)**2).sum(axis=-1).mean()
+    mse_error = ((pred - gt)**2).sum(axis=-1)
+    mpjpe_error = paddle.sqrt(mse_error)
+    mean = mpjpe_error.mean()
+    std = mpjpe_error.std()
+    atte = 2 * F.sigmoid(6 * (mpjpe_error - mean) / std)
+    mse_error *= atte
+    return mse_error.mean()
+
+
+def mpjpe_mse(pred, gt, has_3d_joints, weight=1.):
+    """ 
+    mPJPE loss
+    """
+    pred, gt = filter_3d_joints(pred, gt, has_3d_joints)
+    error = (((pred - gt)**2).sum(axis=-1)).mean()
     return error
 
 
-def temp_velocity_loss(pred, gt, has_3d_joints, temp_num=42, blocknum=6):
+def temp_velocity_loss(pred,
+                       gt,
+                       has_3d_joints,
+                       temp_num=42,
+                       blocknum=6,
+                       stride=2):
     """ 
     mPJPE loss
     """
@@ -116,8 +144,8 @@ def temp_velocity_loss(pred, gt, has_3d_joints, temp_num=42, blocknum=6):
     gt_reshape = gt[:temp_num].reshape(
         (blocknum, temp_num // blocknum, shape[1], shape[2]))
 
-    pred_v = pred_reshape[2:, ...] - pred_reshape[:-2, ...]
-    gt_v = gt_reshape[2:, ...] - gt_reshape[:-2, ...]
+    pred_v = pred_reshape[stride:, ...] - pred_reshape[:-stride, ...]
+    gt_v = gt_reshape[stride:, ...] - gt_reshape[:-stride, ...]
 
     error = nn.functional.l1_loss(pred_v, gt_v)
     return error
@@ -206,8 +234,8 @@ def keypoint_2d_loss(criterion_keypoints, pred_keypoints_2d, gt_keypoints_2d,
     The confidence (conf) is binary and indicates whether the keypoints exist or not.
     """
     conf = gt_keypoints_2d[:, :, -1].unsqueeze(-1).clone()
-    loss = (conf * criterion_keypoints(pred_keypoints_2d,
-                                       gt_keypoints_2d[:, :, :-1])).mean()
+    loss = (conf * criterion_keypoints(
+        pred_keypoints_2d, gt_keypoints_2d[:, :, :-1] * 0.001)).mean()
     return loss
 
 

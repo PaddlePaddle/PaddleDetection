@@ -67,14 +67,15 @@ class METRO_Body(BaseArch):
         self.deploy = False
 
         self.trans_encoder = trans_encoder
-        self.conv_learn_tokens = paddle.nn.Conv1D(49, 10 + num_joints, 1)
-        self.cam_param_fc = paddle.nn.Linear(3, 1)
+        self.conv_learn_tokens = paddle.nn.Conv1D(49, num_joints + 1,
+                                                  1)  #22 + 24？
+        self.cam_param_fc = paddle.nn.Linear(3, 2)
         self.cam_param_fc2 = paddle.nn.Linear(10, 250)
         self.cam_param_fc3 = paddle.nn.Linear(250, 3)
         # self.temp_fc1 = paddle.nn.Linear(81, 1024)
         # self.temp_fc2 = paddle.nn.Linear(1024, 81)
-        # self.rest_joints = paddle.Tensor(
-        #     [[-9.1982e-02,  6.4817e-01,  8.3707e-02],
+        # self.rest_joints = paddle.to_tensor(
+        #     [[[-9.1982e-02,  6.4817e-01,  8.3707e-02],
         #     [-1.0776e-01,  2.4976e-01,  4.1392e-02],
         #     [-1.3762e-01, -2.4549e-01,  2.1714e-02],
         #     [ 1.3390e-01, -2.4533e-01,  1.6776e-02],
@@ -97,7 +98,30 @@ class METRO_Body(BaseArch):
         #     [ 3.4353e-02, -8.9460e-01, -4.2776e-02],
         #     [-3.2222e-02, -8.9410e-01, -4.1220e-02],
         #     [ 7.4144e-02, -8.6779e-01,  4.8845e-02],
-        #     [-7.2048e-02, -8.6516e-01,  5.0976e-02]]) #[1,24,3]
+        #     [-7.2048e-02, -8.6516e-01,  5.0976e-02]]])
+
+    # [ 1.577800e-02,  3.984100e-01,  4.231500e-02],
+    # [ 2.986000e-02,  4.952500e-01,  1.967800e-02],
+    # [-1.359400e-02,  3.979600e-01,  4.369600e-02],
+    # [-3.190000e-02,  4.886000e-01,  2.275800e-02],
+    # [-2.715200e-01, -1.600000e-04,  4.938000e-03],
+    # [-1.350764e-01,  3.130000e-03, -1.913200e-02],
+    # [ 1.364436e-01,  3.290000e-03, -2.407000e-02],
+    # [ 3.783800e-03,  2.446000e-01, -3.213400e-02],
+    # [ 7.731800e-03, -2.004300e-01,  4.080000e-04],
+    # [-1.718000e-04,  4.041000e-02,  1.430600e-02],
+    # [-2.553000e-01, -7.780000e-03,  5.555000e-03],
+    # [-2.537400e-01,  1.333000e-02,  2.140100e-02],
+    # [ 2.492300e-01, -8.980000e-03,  1.171000e-03],
+    # [ 2.596100e-01,  1.277000e-02,  2.745600e-02],
+    # [-1.767362e-01,  6.228000e-02,  1.707200e-02],
+    # [ 1.708638e-01,  6.144000e-02,  1.227100e-02],
+    # [ 3.504000e-04,  1.252500e-01,  1.395570e-01],
+    # [ 1.287568e-03,  7.893000e-02, -1.347980e-01],
+    # [-3.312720e-02,  3.529000e-02, -3.769900e-02],
+    # [ 3.344780e-02,  3.479000e-02, -3.925500e-02],
+    # [ 3.979100e-02,  2.681000e-02,  9.162100e-02],
+    # [-3.982600e-02,  2.894000e-02,  9.219600e-02]]]) #joints [1,24,3], bones [1,22,3]
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -124,7 +148,7 @@ class METRO_Body(BaseArch):
             constant_tensor = paddle.ones_like(features) * 0.01
             features = features * meta_masks + constant_tensor * (1 - meta_masks
                                                                   )
-
+        # paddle.concat([features, self.rest_joints.expand((batch_size, -1, -1))], axis=2)
         pred_out = self.trans_encoder(features)
         #temp test
         # B,J,D = pred_out.shape
@@ -137,7 +161,9 @@ class METRO_Body(BaseArch):
         cam_features = pred_out[:, self.num_joints:, :]
 
         # learn camera parameters
-        x = self.cam_param_fc(cam_features)
+        pred_2d_joints = self.cam_param_fc(cam_features)
+        return pred_3d_joints, pred_2d_joints
+
         x = x.transpose(perm=(0, 2, 1))
         x = self.cam_param_fc2(x)
         x = self.cam_param_fc3(x)

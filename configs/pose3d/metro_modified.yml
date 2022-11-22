@@ -50,15 +50,15 @@ Pose3DLoss:
 LearningRate:
   base_lr: 0.0001
   schedulers:
-  - !PiecewiseDecay
-    milestones: [25, 40]
-    gamma: 0.1
+  - !CosineDecay
+    max_epochs: 52
   - !LinearWarmup
     start_factor: 0.01
     steps: 2000
 
+
 OptimizerBuilder:
-  clip_grad_by_norm: 0.3
+  clip_grad_by_norm: 0.2
   optimizer:
     type: Adam
   regularizer:
