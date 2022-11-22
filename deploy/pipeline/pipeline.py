@@ -40,7 +40,7 @@ from python.infer import Detector, DetectorPicoDet
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
 from python.preprocess import decode_image, ShortSizeScale
-from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action, visualize_vehicleplate
+from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action, visualize_vehicleplate, visualize_vehiclepress, visualize_lane, visualize_vehicle_retrograde
 
 from pptracking.python.mot_sde_infer import SDE_Detector
 from pptracking.python.mot.visualize import plot_tracking_dict
@@ -55,6 +55,9 @@ from pphuman.mtmct import mtmct_process
 
 from ppvehicle.vehicle_plate import PlateRecognizer
 from ppvehicle.vehicle_attr import VehicleAttr
+from ppvehicle.vehicle_pressing import VehiclePressingRecognizer
+from ppvehicle.vehicle_retrograde import VehicleRetrogradeRecognizer
+from ppvehicle.lane_seg_infer import LaneSegPredictor
 
 from download import auto_download_model
 
@@ -305,6 +308,18 @@ class PipePredictor(object):
         if self.with_vehicle_attr:
             print('Vehicle Attribute Recognition enabled')
 
+        self.with_vehicle_press = cfg.get(
+            'VEHICLE_PRESSING', False)['enable'] if cfg.get('VEHICLE_PRESSING',
+                                                            False) else False
+        if self.with_vehicle_press:
+            print('Vehicle Pressing Recognition enabled')
+
+        self.with_vehicle_retrograde = cfg.get(
+            'VEHICLE_RETROGRADE', False)['enable'] if cfg.get(
+                'VEHICLE_RETROGRADE', False) else False
+        if self.with_vehicle_retrograde:
+            print('Vehicle Retrograde Recognition enabled')
+
         self.modebase = {
             "framebased": False,
             "videobased": False,
@@ -322,6 +337,8 @@ class PipePredictor(object):
             "REID": "idbased",
             "VEHICLE_PLATE": "idbased",
             "VEHICLE_ATTR": "idbased",
+            "VEHICLE_PRESSING": "idbased",
+            "VEHICLE_RETROGRADE": "idbased",
         }
 
         self.is_video = is_video
@@ -367,7 +384,20 @@ class PipePredictor(object):
             self.vehicle_attr_predictor = VehicleAttr.init_with_cfg(
                 args, vehicleattr_cfg)
 
+        if self.with_vehicle_press:
+            vehiclepress_cfg = self.cfg['VEHICLE_PRESSING']
+            basemode = self.basemode['VEHICLE_PRESSING']
+            self.modebase[basemode] = True
+            self.vehicle_press_predictor = VehiclePressingRecognizer(
+                vehiclepress_cfg)
+
+        if self.with_vehicle_press or self.with_vehicle_retrograde:
+            laneseg_cfg = self.cfg['LANE_SEG']
+            self.laneseg_predictor = LaneSegPredictor(
+                laneseg_cfg['lane_seg_config'], device=args.device)
+
         if not is_video:
+
             det_cfg = self.cfg['DET']
             model_dir = det_cfg['model_dir']
             batch_size = det_cfg['batch_size']
@@ -473,8 +503,15 @@ class PipePredictor(object):
                 self.video_action_predictor = VideoActionRecognizer.init_with_cfg(
                     args, video_action_cfg)
 
+            if self.with_vehicle_retrograde:
+                vehicleretrograde_cfg = self.cfg['VEHICLE_RETROGRADE']
+                basemode = self.basemode['VEHICLE_RETROGRADE']
+                self.modebase[basemode] = True
+                self.vehicle_retrograde_predictor = VehicleRetrogradeRecognizer(
+                    vehicleretrograde_cfg)
+
     def set_file_name(self, path):
-        if type(path)==int:
+        if type(path) == int:
             self.file_name = path
         elif path is not None:
             self.file_name = os.path.split(path)[-1]
@@ -499,7 +536,7 @@ class PipePredictor(object):
         # det -> attr
         batch_loop_cnt = math.ceil(
             float(len(input)) / self.det_predictor.batch_size)
-        self.warmup_frame = min(10, len(input)//2) - 1
+        self.warmup_frame = min(10, len(input) // 2) - 1
         for i in range(batch_loop_cnt):
             start_index = i * self.det_predictor.batch_size
             end_index = min((i + 1) * self.det_predictor.batch_size, len(input))
@@ -569,6 +606,24 @@ class PipePredictor(object):
                 vehicleplate_res = {'vehicleplate': platelicenses}
                 self.pipeline_res.update(vehicleplate_res, 'vehicleplate')
 
+            if self.with_vehicle_press:
+                vehicle_press_res_list = []
+                if i > self.warmup_frame:
+                    self.pipe_timer.module_time['vehicle_press'].start()
+
+                lanes, direction = self.laneseg_predictor.run(batch_input)
+                if len(lanes) == 0:
+                    print(" no lanes!")
+                    continue
+
+                lanes_res = {'output': lanes, 'direction': direction}
+                self.pipeline_res.update(lanes_res, 'lanes')
+
+                vehicle_press_res_list = self.vehicle_press_predictor.run(
+                    lanes, det_res)
+                vehiclepress_res = {'output': vehicle_press_res_list}
+                self.pipeline_res.update(vehiclepress_res, 'vehicle_press')
+
             self.pipe_timer.img_num += len(batch_input)
             if i > self.warmup_frame:
                 self.pipe_timer.total_time.end()
@@ -578,7 +633,7 @@ class PipePredictor(object):
 
     def capturevideo(self, capture, queue):
         frame_id = 0
-        while(1):
+        while (1):
             if queue.full():
                 time.sleep(0.1)
             else:
@@ -608,13 +663,15 @@ class PipePredictor(object):
             pushstream = PushStream(pushurl)
             pushstream.initcmd(fps, width, height)
         elif self.cfg['visual']:
-            video_out_name = 'output' if (self.file_name is None or type(self.file_name)==int) else self.file_name
-            if type(video_file)==str and "rtsp" in video_file:
+            video_out_name = 'output' if (
+                self.file_name is None or
+                type(self.file_name) == int) else self.file_name
+            if type(video_file) == str and "rtsp" in video_file:
                 video_out_name = video_out_name + "_t" + str(thread_idx).zfill(
                     2) + "_rtsp"
             if not os.path.exists(self.output_dir):
                 os.makedirs(self.output_dir)
-            out_path = os.path.join(self.output_dir, video_out_name+".mp4")
+            out_path = os.path.join(self.output_dir, video_out_name + ".mp4")
             fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
             writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
 
@@ -662,16 +719,16 @@ class PipePredictor(object):
         object_in_region_info = {
         }  # store info for vehicle parking in region       
         illegal_parking_dict = None
-
+        cars_count = 0
+        retrograde_traj_len = 0
         framequeue = queue.Queue(10)
 
         thread = threading.Thread(
-            target=self.capturevideo,
-            args=(capture, framequeue))
+            target=self.capturevideo, args=(capture, framequeue))
         thread.start()
         time.sleep(1)
 
-        while(not framequeue.empty()):
+        while (not framequeue.empty()):
             if frame_id % 10 == 0:
                 print('Thread: {}; frame id: {}'.format(thread_idx, frame_id))
 
@@ -741,10 +798,10 @@ class PipePredictor(object):
                         self.pipe_timer.total_time.end()
                     if self.cfg['visual']:
                         _, _, fps = self.pipe_timer.get_total_time()
-                        im = self.visualize_video(frame_rgb, mot_res, frame_id, fps,
-                                                  entrance, records,
+                        im = self.visualize_video(frame_rgb, mot_res, frame_id,
+                                                  fps, entrance, records,
                                                   center_traj)  # visualize
-                        if len(self.pushurl)>0:
+                        if len(self.pushurl) > 0:
                             pushstream.pipe.stdin.write(im.tobytes())
                         else:
                             writer.write(im)
@@ -788,6 +845,38 @@ class PipePredictor(object):
                     if frame_id > self.warmup_frame:
                         self.pipe_timer.module_time['vehicle_attr'].end()
                     self.pipeline_res.update(attr_res, 'vehicle_attr')
+
+                if self.with_vehicle_press or self.with_vehicle_retrograde:
+                    if frame_id == 0 or cars_count > len(mot_res['boxes']):
+
+                        if frame_id > self.warmup_frame:
+                            self.pipe_timer.module_time['lanes'].start()
+                        lanes, directions = self.laneseg_predictor.run(
+                            [copy.deepcopy(frame_rgb)])
+                        lanes_res = {'output': lanes, 'directions': directions}
+                        if frame_id > self.warmup_frame:
+                            self.pipe_timer.module_time['lanes'].end()
+
+                        if frame_id == 0 or (len(lanes) > 0 and frame_id > 0):
+                            self.pipeline_res.update(lanes_res, 'lanes')
+
+                        cars_count = len(mot_res['boxes'])
+
+                if self.with_vehicle_press:
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['vehicle_press'].start()
+                    press_lane = copy.deepcopy(self.pipeline_res.get('lanes'))
+                    if press_lane is None:
+                        continue
+
+                    vehicle_press_res_list = self.vehicle_press_predictor.mot_run(
+                        press_lane, mot_res['boxes'])
+                    vehiclepress_res = {'output': vehicle_press_res_list}
+
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['vehicle_press'].end()
+
+                    self.pipeline_res.update(vehiclepress_res, 'vehicle_press')
 
                 if self.with_idbased_detaction:
                     if frame_id > self.warmup_frame:
@@ -905,6 +994,69 @@ class PipePredictor(object):
 
                     video_action_imgs.clear()  # next clip
 
+            if self.with_vehicle_retrograde:
+                # get the params
+                frame_len = self.cfg["VEHICLE_RETROGRADE"]["frame_len"]
+                sample_freq = self.cfg["VEHICLE_RETROGRADE"]["sample_freq"]
+
+                if sample_freq * frame_len > frame_count:  # video is too short
+                    sample_freq = int(frame_count / frame_len)
+
+                # filter the warmup frames
+                if frame_id > self.warmup_frame:
+                    self.pipe_timer.module_time['vehicle_retrograde'].start()
+
+                if frame_id % sample_freq == 0:
+
+                    frame_mot_res = copy.deepcopy(self.pipeline_res.get('mot'))
+                    self.vehicle_retrograde_predictor.update_center_traj(
+                        frame_mot_res, max_len=frame_len)
+                    retrograde_traj_len = retrograde_traj_len + 1
+
+                #the number of collected frames is enough to predict 
+                if retrograde_traj_len == frame_len:
+                    retrograde_mot_res = copy.deepcopy(
+                        self.pipeline_res.get('mot'))
+                    retrograde_lanes = copy.deepcopy(
+                        self.pipeline_res.get('lanes'))
+                    frame_shape = frame_rgb.shape
+
+                    if retrograde_lanes is None:
+                        continue
+                    retrograde_res, fence_line = self.vehicle_retrograde_predictor.mot_run(
+                        lanes_res=retrograde_lanes,
+                        det_res=retrograde_mot_res,
+                        frame_shape=frame_shape)
+
+                    retrograde_res_update = self.pipeline_res.get(
+                        'vehicle_retrograde')
+
+                    if retrograde_res_update is not None:
+                        retrograde_res_update = retrograde_res_update['output']
+                        if retrograde_res is not None:
+                            for retrograde_res_id in retrograde_res:
+                                if retrograde_res_id not in retrograde_res_update:
+                                    retrograde_res_update.append(
+                                        retrograde_res_id)
+                    else:
+                        retrograde_res_update = []
+
+                    retrograde_res_dict = {
+                        'output': retrograde_res_update,
+                        "fence_line": fence_line,
+                    }
+
+                    if retrograde_res is not None and len(retrograde_res) > 0:
+                        print("retrograde res:", retrograde_res)
+
+                    self.pipeline_res.update(retrograde_res_dict,
+                                             'vehicle_retrograde')
+
+                    if frame_id > self.warmup_frame:
+                        self.pipe_timer.module_time['vehicle_retrograde'].end()
+
+                    retrograde_traj_len = 0
+
             self.collector.append(frame_id, self.pipeline_res)
 
             if frame_id > self.warmup_frame:
@@ -920,7 +1072,7 @@ class PipePredictor(object):
                                           entrance, records, center_traj,
                                           self.illegal_parking_time != -1,
                                           illegal_parking_dict)  # visualize
-                if len(self.pushurl)>0:
+                if len(self.pushurl) > 0:
                     pushstream.pipe.stdin.write(im.tobytes())
                 else:
                     writer.write(im)
@@ -928,7 +1080,8 @@ class PipePredictor(object):
                         cv2.imshow('Paddle-Pipeline', im)
                         if cv2.waitKey(1) & 0xFF == ord('q'):
                             break
-        if self.cfg['visual'] and len(self.pushurl)==0:
+
+        if self.cfg['visual'] and len(self.pushurl) == 0:
             writer.release()
             print('save result to {}'.format(out_path))
 
@@ -945,6 +1098,7 @@ class PipePredictor(object):
                         illegal_parking_dict=None):
         image = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
         mot_res = copy.deepcopy(result.get('mot'))
+
         if mot_res is not None:
             ids = mot_res['boxes'][:, 0]
             scores = mot_res['boxes'][:, 2]
@@ -997,6 +1151,20 @@ class PipePredictor(object):
             image = visualize_attr(image, vehicle_attr_res, boxes)
             image = np.array(image)
 
+        lanes_res = result.get('lanes')
+        if lanes_res is not None:
+            lanes = lanes_res['output'][0]
+            image = visualize_lane(image, lanes)
+            image = np.array(image)
+
+        vehiclepress_res = result.get('vehicle_press')
+        if vehiclepress_res is not None:
+            press_vehicle = vehiclepress_res['output']
+            if len(press_vehicle) > 0:
+                image = visualize_vehiclepress(
+                    image, press_vehicle, threshold=self.cfg['crop_thresh'])
+                image = np.array(image)
+
         if mot_res is not None:
             vehicleplate = False
             plates = []
@@ -1036,6 +1204,13 @@ class PipePredictor(object):
                 video_action_score=video_action_score,
                 video_action_text="Fight")
 
+        vehicle_retrograde_res = result.get('vehicle_retrograde')
+        if vehicle_retrograde_res is not None:
+            mot_retrograde_res = copy.deepcopy(result.get('mot'))
+            image = visualize_vehicle_retrograde(image, mot_retrograde_res,
+                                                 vehicle_retrograde_res)
+            image = np.array(image)
+
         visual_helper_for_display = []
         action_to_display = []
 
@@ -1067,6 +1242,8 @@ class PipePredictor(object):
         human_attr_res = result.get('attr')
         vehicle_attr_res = result.get('vehicle_attr')
         vehicleplate_res = result.get('vehicleplate')
+        lanes_res = result.get('lanes')
+        vehiclepress_res = result.get('vehicle_press')
 
         for i, (im_file, im) in enumerate(zip(im_files, images)):
             if det_res is not None:
@@ -1094,6 +1271,16 @@ class PipePredictor(object):
                 det_res_i['boxes'][:, 4:6] = det_res_i[
                     'boxes'][:, 4:6] - det_res_i['boxes'][:, 2:4]
                 im = visualize_vehicleplate(im, plates, det_res_i['boxes'])
+            if vehiclepress_res is not None:
+                press_vehicle = vehiclepress_res['output'][i]
+                if len(press_vehicle) > 0:
+                    im = visualize_vehiclepress(
+                        im, press_vehicle, threshold=self.cfg['crop_thresh'])
+                    im = np.ascontiguousarray(np.copy(im))
+            if lanes_res is not None:
+                lanes = lanes_res['output'][i]
+                im = visualize_lane(im, lanes)
+                im = np.ascontiguousarray(np.copy(im))
 
             img_name = os.path.split(im_file)[-1]
             if not os.path.exists(self.output_dir):
