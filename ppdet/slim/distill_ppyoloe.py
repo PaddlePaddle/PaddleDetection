@@ -53,8 +53,6 @@ class PPYOLOEDistillModel(nn.Layer):
 
     def forward(self, inputs, alpha=0.125, beta=1.5):
         if self.training:
-            with paddle.no_grad():
-                teacher_out = self.teacher_model(inputs)
             if hasattr(self.teacher_model.yolo_head, "assigned_labels"):
                 self.student_model.yolo_head.assigned_labels, self.student_model.yolo_head.assigned_bboxes, self.student_model.yolo_head.assigned_scores, self.student_model.yolo_head.mask_positive = \
                     self.teacher_model.yolo_head.assigned_labels, self.teacher_model.yolo_head.assigned_bboxes, self.teacher_model.yolo_head.assigned_scores, self.teacher_model.yolo_head.mask_positive
@@ -64,9 +62,6 @@ class PPYOLOEDistillModel(nn.Layer):
                 delattr(self.teacher_model.yolo_head, "mask_positive")
 
             student_out = self.student_model(inputs)
-            tea_feature = teacher_out[
-                'emb_feats']  # [8, 768, 21, 30] [8, 384, 42, 60] [8, 192, 84, 120]
-            stu_feature = student_out['emb_feats']
 
             # head loss concerned
             soft_loss, fgdloss, distill_loss_dict = self.distill_loss(
@@ -318,7 +313,7 @@ class FGDFeatureLoss_norm(nn.Layer):
             student_channels=256,
             teacher_channels=256,
             temp=0.5,
-            alpha_fgd=0.00001,  #0.001
+            alpha_fgd=0.00001,  # 0.001
             beta_fgd=0.000005,  # 0.0005
             gamma_fgd=0.00001,  # 0.001
             lambda_fgd=0.00000005):  # 0.000005

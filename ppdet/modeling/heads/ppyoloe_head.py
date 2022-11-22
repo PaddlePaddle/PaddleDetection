@@ -349,20 +349,32 @@ class PPYOLOEHead(nn.Layer):
                     pred_bboxes=pred_bboxes.detach() * stride_tensor)
             alpha_l = 0.25
         else:
-            if not hasattr(self, "assigned_labels"):
-                assigned_labels, assigned_bboxes, assigned_scores, mask_positive = \
+            if self.sm_use:
+                assigned_labels, assigned_bboxes, assigned_scores = \
                     self.assigner(
                     pred_scores.detach(),
                     pred_bboxes.detach() * stride_tensor,
                     anchor_points,
-                    num_anchors_list,
+                    stride_tensor,
                     gt_labels,
                     gt_bboxes,
                     pad_gt_mask,
                     bg_index=self.num_classes)
-                self.assigned_labels, self.assigned_bboxes, self.assigned_scores, self.mask_positive = assigned_labels, assigned_bboxes, assigned_scores, mask_positive
             else:
-                assigned_labels, assigned_bboxes, assigned_scores, mask_positive = self.assigned_labels, self.assigned_bboxes, self.assigned_scores, self.mask_positive
+                if not hasattr(self, "assigned_labels"):
+                    assigned_labels, assigned_bboxes, assigned_scores, mask_positive = \
+                        self.assigner(
+                        pred_scores.detach(),
+                        pred_bboxes.detach() * stride_tensor,
+                        anchor_points,
+                        num_anchors_list,
+                        gt_labels,
+                        gt_bboxes,
+                        pad_gt_mask,
+                        bg_index=self.num_classes)
+                    self.assigned_labels, self.assigned_bboxes, self.assigned_scores, self.mask_positive = assigned_labels, assigned_bboxes, assigned_scores, mask_positive
+                else:
+                    assigned_labels, assigned_bboxes, assigned_scores, mask_positive = self.assigned_labels, self.assigned_bboxes, self.assigned_scores, self.mask_positive
             alpha_l = -1
         # rescale bbox
         assigned_bboxes /= stride_tensor
