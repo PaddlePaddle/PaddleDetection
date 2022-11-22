@@ -9,15 +9,32 @@ weights: output/denseteacher_fcos_r50_fpn_coco_semi005/model_final
 
 
 ### pretrain and warmup config, choose one and coment another
-pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/fcos_r50_fpn_2x_coco_sup005.pdparams # mAP=21.3
-semi_start_iters: 0
-ema_start_iters: 0
-use_warmup: &use_warmup False
+# pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/fcos_r50_fpn_2x_coco_sup005.pdparams # mAP=21.3
+# semi_start_iters: 0
+# ema_start_iters: 0
+# use_warmup: &use_warmup False
 
-# pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
-# semi_start_iters: 5000
-# ema_start_iters: 3000
-# use_warmup: &use_warmup True
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+semi_start_iters: 5000
+ema_start_iters: 3000
+use_warmup: &use_warmup True
+
+
+### global config
+use_simple_ema: True
+ema_decay: 0.9996
+ssod_method: DenseTeacher
+DenseTeacher:
+  train_cfg:
+    sup_weight: 1.0
+    unsup_weight: 1.0
+    loss_weight: {distill_loss_cls: 4.0, distill_loss_box: 1.0, distill_loss_quality: 1.0}
+    concat_sup_data: True
+    suppress: linear
+    ratio: 0.01
+    gamma: 2.0
+  test_cfg:
+    inference_on: teacher
 
 
 ### other config

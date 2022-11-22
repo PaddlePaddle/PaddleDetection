@@ -2,22 +2,22 @@ _BASE_: [
   '../../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.yml',
   '../_base_/coco_detection_percent_10.yml',
 ]
-log_iter: 20
+log_iter: 50
 snapshot_epoch: 5
 epochs: &epochs 240
 weights: output/denseteacher_fcos_r50_fpn_coco_semi010/model_final
 
 
 ### pretrain and warmup config, choose one and coment another
-pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/fcos_r50_fpn_2x_coco_sup010.pdparams # mAP=26.3
-semi_start_iters: 0
-ema_start_iters: 0
-use_warmup: &use_warmup False
+# pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/fcos_r50_fpn_2x_coco_sup010.pdparams # mAP=26.3
+# semi_start_iters: 0
+# ema_start_iters: 0
+# use_warmup: &use_warmup False
 
-# pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
-# semi_start_iters: 5000
-# ema_start_iters: 3000
-# use_warmup: &use_warmup True
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+semi_start_iters: 5000
+ema_start_iters: 3000
+use_warmup: &use_warmup True
 
 
 ### global config
@@ -62,6 +62,8 @@ SemiTrainReader:
         object_sizes_boundary: [64, 128, 256, 512]
         center_sampling_radius: 1.5
         downsample_ratios: [8, 16, 32, 64, 128]
+        num_shift: 0 # default 0.5
+        multiply_strides_reg_targets: True # default False
         norm_reg_targets: True
   unsup_batch_transforms:
     - Permute: {}
@@ -127,8 +129,9 @@ FCOSHead:
   prior_prob: 0.01
   norm_reg_targets: True
   centerness_on_reg: True
-  num_shift: 0.5
-  sqrt_score: False
+  num_shift: 0 # default 0.5
+  multiply_strides_reg_targets: True # default False
+  sqrt_score: True # default False
   fcos_loss:
     name: FCOSLoss
     loss_alpha: 0.25

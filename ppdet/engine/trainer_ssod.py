@@ -270,10 +270,7 @@ class Trainer_DenseTeacher(Trainer):
                 #     data_sup_w, data_sup_s = align_weak_strong_shape(data_sup_w, data_sup_s)
                 if concat_sup_data:
                     for k, v in data_sup_s.items():
-                        try:
-                            data_sup_s[k] = paddle.concat([v, data_sup_w[k]])
-                        except:
-                            embed()
+                        data_sup_s[k] = paddle.concat([v, data_sup_w[k]])
                     loss_dict_sup = self.model(data_sup_s)
                 else:
                     loss_dict_sup_w = self.model(data_sup_w)
