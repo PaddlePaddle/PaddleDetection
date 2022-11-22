@@ -83,7 +83,7 @@ We developed a series of lightweight models, named `PP-PicoDet`. Because of the 
 <summary>Installation</summary>
 
 - [Installation guide](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/INSTALL.md)
-- [Prepare dataset](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/PrepareDataSet_en.md)
+- [Prepare dataset](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/data/PrepareDataSet_en.md)
 
 </details>
 
