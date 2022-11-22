@@ -53,6 +53,8 @@ class PPYOLOEDistillModel(nn.Layer):
 
     def forward(self, inputs, alpha=0.125, beta=1.5):
         if self.training:
+            with paddle.no_grad():
+                teacher_out = self.teacher_model(inputs)
             if hasattr(self.teacher_model.yolo_head, "assigned_labels"):
                 self.student_model.yolo_head.assigned_labels, self.student_model.yolo_head.assigned_bboxes, self.student_model.yolo_head.assigned_scores, self.student_model.yolo_head.mask_positive = \
                     self.teacher_model.yolo_head.assigned_labels, self.teacher_model.yolo_head.assigned_bboxes, self.teacher_model.yolo_head.assigned_scores, self.teacher_model.yolo_head.mask_positive
