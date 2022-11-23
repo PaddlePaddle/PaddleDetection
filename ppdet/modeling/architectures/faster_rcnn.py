@@ -19,6 +19,7 @@ from __future__ import print_function
 import paddle
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
+import numpy as np
 
 __all__ = ['FasterRCNN']
 
@@ -68,6 +69,9 @@ class FasterRCNN(BaseArch):
             "bbox_head": bbox_head,
         }
 
+    def init_cot_head(self, relationship):
+        self.bbox_head.init_cot_head(relationship)
+        
     def _forward(self):
         body_feats = self.backbone(self.inputs)
         if self.neck is not None:
@@ -104,3 +108,38 @@ class FasterRCNN(BaseArch):
         bbox_pred, bbox_num = self._forward()
         output = {'bbox': bbox_pred, 'bbox_num': bbox_num}
         return output
+
+    def target_bbox_forward(self, data):
+        body_feats = self.backbone(data)
+        if self.neck is not None:
+            body_feats = self.neck(body_feats)
+        rois = [roi for roi in data['gt_bbox']]
+        rois_num = paddle.concat([paddle.shape(roi)[0] for roi in rois])
+
+        preds, _ = self.bbox_head(body_feats, rois, rois_num, None, cot=True)
+        return preds
+
+    def relationship_learning(self, loader, num_classes_novel):
+        print('computing relationship')
+        train_labels_list = []
+        label_list = []
+
+        for step_id, data in enumerate(loader):
+            _, bbox_prob = self.target_bbox_forward(data)      
+            batch_size = data['im_id'].shape[0]
+            for i in range(batch_size):
+                num_bbox = data['gt_class'][i].shape[0]           
+                train_labels = data['gt_class'][i]
+                train_labels_list.append(train_labels.numpy().squeeze(1))
+            base_labels = bbox_prob.detach().numpy()[:,:-1]
+            label_list.append(base_labels)
+
+        labels = np.concatenate(train_labels_list, 0)
+        probabilities = np.concatenate(label_list, 0)
+        N_t = np.max(labels) + 1
+        conditional = []
+        for i in range(N_t):
+            this_class = probabilities[labels == i]
+            average = np.mean(this_class, axis=0, keepdims=True)
+            conditional.append(average)
+        return np.concatenate(conditional)

@@ -160,8 +160,8 @@ class XConvNormHead(nn.Layer):
 
 @register
 class BBoxHead(nn.Layer):
-    __shared__ = ['num_classes']
-    __inject__ = ['bbox_assigner', 'bbox_loss']
+    __shared__ = ['num_classes', 'use_cot']
+    __inject__ = ['bbox_assigner', 'bbox_loss', 'loss_cot']
     """
     RCNN bbox head
 
@@ -185,7 +185,10 @@ class BBoxHead(nn.Layer):
                  num_classes=80,
                  bbox_weight=[10., 10., 5., 5.],
                  bbox_loss=None,
-                 loss_normalize_pos=False):
+                 loss_normalize_pos=False,
+                 cot_classes=None,
+                 loss_cot='COTLoss',
+                 use_cot=False):
         super(BBoxHead, self).__init__()
         self.head = head
         self.roi_extractor = roi_extractor
@@ -199,11 +202,30 @@ class BBoxHead(nn.Layer):
         self.bbox_loss = bbox_loss
         self.loss_normalize_pos = loss_normalize_pos
 
-        self.bbox_score = nn.Linear(
-            in_channel,
-            self.num_classes + 1,
-            weight_attr=paddle.ParamAttr(initializer=Normal(
-                mean=0.0, std=0.01)))
+        self.loss_cot = loss_cot
+        self.cot_relation = None
+        self.cot_classes = cot_classes
+        self.use_cot = use_cot
+
+        if use_cot:
+            self.cot_bbox_score = nn.Linear(
+                in_channel,
+                self.num_classes + 1,
+                weight_attr=paddle.ParamAttr(initializer=Normal(
+                    mean=0.0, std=0.01)))
+            
+            self.bbox_score = nn.Linear(
+                in_channel,
+                self.cot_classes + 1,
+                weight_attr=paddle.ParamAttr(initializer=Normal(
+                    mean=0.0, std=0.01)))
+            self.cot_bbox_score.skip_quant = True
+        else:
+            self.bbox_score = nn.Linear(
+                in_channel,
+                self.num_classes + 1,
+                weight_attr=paddle.ParamAttr(initializer=Normal(
+                    mean=0.0, std=0.01)))
         self.bbox_score.skip_quant = True
 
         self.bbox_delta = nn.Linear(
@@ -229,7 +251,10 @@ class BBoxHead(nn.Layer):
             'in_channel': head.out_shape[0].channels
         }
 
-    def forward(self, body_feats=None, rois=None, rois_num=None, inputs=None):
+    def init_cot_head(self, relationship):
+        self.cot_relation = relationship
+        
+    def forward(self, body_feats=None, rois=None, rois_num=None, inputs=None, cot=False):
         """
         body_feats (list[Tensor]): Feature maps from backbone
         rois (list[Tensor]): RoIs generated from RPN module
@@ -248,7 +273,11 @@ class BBoxHead(nn.Layer):
             feat = paddle.squeeze(feat, axis=[2, 3])
         else:
             feat = bbox_feat
-        scores = self.bbox_score(feat)
+        if self.use_cot:
+            scores = self.cot_bbox_score(feat)
+            cot_scores = self.bbox_score(feat)
+        else:
+            scores = self.bbox_score(feat)
         deltas = self.bbox_delta(feat)
 
         if self.training:
@@ -259,9 +288,17 @@ class BBoxHead(nn.Layer):
                 rois,
                 self.bbox_weight,
                 loss_normalize_pos=self.loss_normalize_pos)
+
+            if self.cot_relation is not None:
+                loss_cot = self.loss_cot(cot_scores, targets, self.cot_relation)
+                loss.update(loss_cot)
+
             return loss, bbox_feat
         else:
-            pred = self.get_prediction(scores, deltas)
+            if cot:
+                pred = self.get_prediction(cot_scores, deltas)
+            else:    
+                pred = self.get_prediction(scores, deltas)
             return pred, self.head
 
     def get_loss(self,
