@@ -40,6 +40,7 @@ BBoxHead:
     cot_lambda: 1
     cot_scale: 1
 
+
 num_classes: 4
 metric: COCO
 map_type: integral
