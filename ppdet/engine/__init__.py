@@ -15,6 +15,9 @@
 from . import trainer
 from .trainer import *
 
+from . import trainercot
+from .trainercot import *
+
 from . import callbacks
 from .callbacks import *
 

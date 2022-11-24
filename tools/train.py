@@ -30,7 +30,7 @@ warnings.filterwarnings('ignore')
 import paddle
 
 from ppdet.core.workspace import load_config, merge_config
-from ppdet.engine import Trainer, init_parallel_env, set_random_seed, init_fleet_env
+from ppdet.engine import Trainer, TrainerCot, init_parallel_env, set_random_seed, init_fleet_env
 from ppdet.slim import build_slim_model
 
 from ppdet.utils.cli import ArgsParser, merge_args
@@ -125,7 +125,10 @@ def run(FLAGS, cfg):
         set_random_seed(0)
 
     # build trainer
-    trainer = Trainer(cfg, mode='train')
+    if cfg.use_cot:
+        trainer = TrainerCot(cfg, mode='train')
+    else:
+        trainer = Trainer(cfg, mode='train')
 
     # load weights
     if FLAGS.resume is not None:
