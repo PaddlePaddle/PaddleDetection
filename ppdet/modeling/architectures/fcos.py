@@ -20,7 +20,9 @@ import paddle
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
-from ..ssod_utils import permute_to_N_HWA_K, QFLv2, giou_loss
+from ..ssod_utils import permute_to_N_HWA_K, QFLv2
+from ..losses import GIoULoss
+
 
 __all__ = ['FCOS']
 
@@ -177,8 +179,8 @@ class FCOS(BaseArch):
         targets = paddle.concat(
             (-teacher_deltas[b_mask][..., :2], teacher_deltas[b_mask][..., 2:]),
             axis=-1)
-        loss_deltas = giou_loss(inputs, targets).mean()
-
+        iou_loss= GIoULoss(reduction='mean')
+        loss_deltas =  iou_loss(inputs, targets)
         # distill_loss_quality
         loss_quality = F.binary_cross_entropy(
             F.sigmoid(student_quality[b_mask]),

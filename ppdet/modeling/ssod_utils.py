@@ -91,29 +91,3 @@ def QFLv2(pred_sigmoid,
     elif reduction == "sum":
         loss = loss[valid].sum()
     return loss
-
-
-def giou_loss(inputs, targets, eps=1e-7):
-    inputs_area = (inputs[..., 2] - inputs[..., 0]).clip_(min=0) \
-        * (inputs[..., 3] - inputs[..., 1]).clip_(min=0)
-    targets_area = (targets[..., 2] - targets[..., 0]).clip_(min=0) \
-        * (targets[..., 3] - targets[..., 1]).clip_(min=0)
-
-    w_intersect = (paddle.minimum(inputs[..., 2], targets[..., 2]) -
-                   paddle.maximum(inputs[..., 0], targets[..., 0])).clip_(min=0)
-    h_intersect = (paddle.minimum(inputs[..., 3], targets[..., 3]) -
-                   paddle.maximum(inputs[..., 1], targets[..., 1])).clip_(min=0)
-
-    area_intersect = w_intersect * h_intersect
-    area_union = targets_area + inputs_area - area_intersect
-
-    ious = area_intersect / area_union.clip(min=eps)
-
-    g_w_intersect = paddle.maximum(inputs[..., 2], targets[..., 2]) \
-        - paddle.minimum(inputs[..., 0], targets[..., 0])
-    g_h_intersect = paddle.maximum(inputs[..., 3], targets[..., 3]) \
-        - paddle.minimum(inputs[..., 1], targets[..., 1])
-    ac_uion = g_w_intersect * g_h_intersect
-    gious = ious - (ac_uion - area_union) / ac_uion.clip(min=eps)
-    loss = 1 - gious
-    return loss
