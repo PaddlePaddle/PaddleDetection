@@ -82,7 +82,7 @@ zip -r submit.zip submit
 ```
 
 ### 速度测试
-可以使用Paddle模式或者Paddle-TRT模式进行测速。当使用Paddle-TRT模式测速时，需要确保**TensorRT版本大于8.2, PaddlePaddle版本大于2.4.0rc0**。使用Paddle-TRT进行测速，可以执行以下命令：
+可以使用Paddle模式或者Paddle-TRT模式进行测速。当使用Paddle-TRT模式测速时，需要确保**TensorRT版本大于8.2, PaddlePaddle版本为develop版本**。使用Paddle-TRT进行测速，可以执行以下命令：
 
 ``` bash
 # 导出模型
@@ -121,7 +121,7 @@ python deploy/python/infer.py --image_file demo/P0072__1.0__0___0.png --model_di
 ```
 
 **注意：**
-- 使用Paddle-TRT使用确保**PaddlePaddle版本大于2.4.0rc且TensorRT版本大于8.2**.
+- 使用Paddle-TRT使用确保**PaddlePaddle版本为develop版本且TensorRT版本大于8.2**.
 
 
 ## 附录

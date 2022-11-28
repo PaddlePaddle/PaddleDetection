@@ -88,7 +88,7 @@ lines=(${dataline})
 model_name=$(func_parser_value "${lines[1]}")
 
 # 获取benchmark_params所在的行数
-line_num=`grep -n "train_benchmark_params" $FILENAME  | cut -d ":" -f 1`
+line_num=`grep -n -w "train_benchmark_params" $FILENAME  | cut -d ":" -f 1`
 # for train log parser
 batch_size=$(func_parser_value "${lines[line_num]}")
 line_num=`expr $line_num + 1`
@@ -139,6 +139,14 @@ func_sed_params "$FILENAME" "${line_python}"  "${python}"
 if  [ ! -n "$PARAMS" ] ;then
     # PARAMS input is not a word.
     IFS="|"
+    batch_size_list=(${batch_size})
+    fp_items_list=(${fp_items})
+    device_num="N1C4"
+    device_num_list=($device_num)
+    run_mode="DP"
+elif [[ ${PARAMS} = "dynamicTostatic" ]] ;then
+    IFS="|"
+    model_type=$PARAMS
     batch_size_list=(${batch_size})
     fp_items_list=(${fp_items})
     device_num="N1C4"

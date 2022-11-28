@@ -73,7 +73,7 @@ pip install paddledet
 
 ### 3.2 准备数据集
 
-本案例默认以COCO数据进行全量化实验，如果自定义数据，可将数据按照COCO数据的标准准备；其他自定义数据，可以参考[PaddleDetection数据准备文档](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/PrepareDataSet.md) 来准备。
+本案例默认以COCO数据进行全量化实验，如果自定义数据，可将数据按照COCO数据的标准准备；其他自定义数据，可以参考[PaddleDetection数据准备文档](../../docs/tutorials/data/PrepareDataSet.md) 来准备。
 
 以PicoDet-S-NPU模型为例，如果已经准备好数据集，请直接修改[picodet_reader.yml](./configs/picodet_reader.yml)中`EvalDataset`的`dataset_dir`字段为自己数据集路径即可。
 
