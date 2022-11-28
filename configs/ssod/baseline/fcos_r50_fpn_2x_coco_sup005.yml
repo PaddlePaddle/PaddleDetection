@@ -23,4 +23,4 @@ LearningRate:
     milestones: [16, 22]
   - !LinearWarmup
     start_factor: 0.001
-    steps: 1000
+    epochs: 1

@@ -136,6 +136,7 @@ class FCOSHead(nn.Layer):
                  fcos_feat='FCOSFeat',
                  fpn_stride=[8, 16, 32, 64, 128],
                  prior_prob=0.01,
+                 multiply_strides_reg_targets=False,
                  norm_reg_targets=True,
                  centerness_on_reg=True,
                  num_shift=0.5,
@@ -151,6 +152,7 @@ class FCOSHead(nn.Layer):
         self.fcos_loss = fcos_loss
         self.norm_reg_targets = norm_reg_targets
         self.centerness_on_reg = centerness_on_reg
+        self.multiply_strides_reg_targets = multiply_strides_reg_targets
         self.num_shift = num_shift
         self.nms = nms
         if isinstance(self.nms, MultiClassNMS) and trt:
@@ -246,16 +248,29 @@ class FCOSHead(nn.Layer):
                 centerness = self.fcos_head_centerness(fcos_cls_feat)
             if self.norm_reg_targets:
                 bbox_reg = F.relu(bbox_reg)
-                if not self.training:
-                    # eval or infer
+                if self.multiply_strides_reg_targets:
                     bbox_reg = bbox_reg * fpn_stride
+                else:
+                    if not self.training or targets.get(
+                            'get_data',
+                            False) or targets.get('is_teacher', False):
+                        bbox_reg = bbox_reg * fpn_stride
             else:
                 bbox_reg = paddle.exp(bbox_reg)
             cls_logits_list.append(cls_logits)
             bboxes_reg_list.append(bbox_reg)
             centerness_list.append(centerness)
 
-        if self.training:
+        if targets is not None:
+            is_teacher = targets.get('is_teacher', False)
+            if is_teacher:
+                return [cls_logits_list, bboxes_reg_list, centerness_list]
+
+        if self.training and targets is not None:
+            get_data = targets.get('get_data', False)
+            if get_data:
+                return [cls_logits_list, bboxes_reg_list, centerness_list]
+
             losses = {}
             fcos_head_outs = [cls_logits_list, bboxes_reg_list, centerness_list]
             losses_fcos = self.get_loss(fcos_head_outs, targets)

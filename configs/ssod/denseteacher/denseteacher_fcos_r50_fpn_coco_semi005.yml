@@ -1,0 +1,55 @@
+_BASE_: [
+  'denseteacher_fcos_r50_fpn_coco_semi010.yml',
+  '../_base_/coco_detection_percent_5.yml',
+]
+log_iter: 20
+snapshot_epoch: 5
+epochs: &epochs 480
+weights: output/denseteacher_fcos_r50_fpn_coco_semi005/model_final
+
+
+### pretrain and warmup config, choose one and coment another
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+semi_start_iters: 5000
+ema_start_iters: 3000
+use_warmup: &use_warmup True
+
+
+### global config
+use_simple_ema: True
+ema_decay: 0.9996
+ssod_method: DenseTeacher
+DenseTeacher:
+  train_cfg:
+    sup_weight: 1.0
+    unsup_weight: 1.0
+    loss_weight: {distill_loss_cls: 4.0, distill_loss_box: 1.0, distill_loss_quality: 1.0}
+    concat_sup_data: True
+    suppress: linear
+    ratio: 0.01
+    gamma: 2.0
+  test_cfg:
+    inference_on: teacher
+
+
+### other config
+epoch: *epochs
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [*epochs]
+    use_warmup: *use_warmup
+  - !LinearWarmup
+    start_factor: 0.001
+    steps: 1000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2
+  clip_grad_by_value: 1.0
