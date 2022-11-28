@@ -7,13 +7,13 @@
 - [模型库](#模型库)
     - [Baseline](#Baseline)
     - [DenseTeacher](#DenseTeacher)
-- [数据集准备](#数据集准备)
-- [配置半监督检测](#配置半监督检测)
-    - [半监督训练集配置](#半监督训练集配置)
-    - [预训练和warmup配置](#预训练和warmup配置)
+- [半监督数据集准备](#半监督数据集准备)
+- [半监督检测配置](#半监督检测配置)
+    - [训练集配置](#训练集配置)
+    - [预训练配置](#预训练配置)
     - [全局配置](#全局配置)
-    - [半监督模型配置](#半监督模型配置)
-    - [Reader和数据增强配置](#Reader和数据增强配置)
+    - [模型配置](#模型配置)
+    - [数据增强配置](#数据增强配置)
     - [其他配置](#其他配置)
 - [使用说明](#使用说明)
     - [训练](#训练)
@@ -43,7 +43,7 @@
 | DenseTeacher   |   [FCOS ResNet50-FPN](./../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.ymll)  |full| 42.6 |   -   |  36 (263844)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_full.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_full.yml) |
 
 
-## 数据集准备
+## 半监督数据集准备
 
 半监督目标检测**同时需要有标注数据和无标注数据**，且无标注数据量一般**远多于有标注数据量**。
 对于COCO数据集一般有两种常规设置：
@@ -131,7 +131,7 @@ PaddleDetection
 
 </details>
 
-## 配置半监督检测
+## 半监督检测配置
 
 配置半监督检测，需要基于选用的**基础检测器**的配置文件，如：
 
@@ -147,7 +147,7 @@ weights: output/denseteacher_fcos_r50_fpn_coco_semi010/model_final
 ```
 并依次做出如下几点改动：
 
-### 半监督训练集配置
+### 训练集配置
 
 首先可以直接引用已经配置好的半监督训练集，如：
 
@@ -204,7 +204,7 @@ UnsupTrainDataset:
 验证集`EvalDataset`和测试集`TestDataset`的配置**不需要更改**，且还是采用`COCODataSet`类。
 
 
-### 预训练和warmup配置
+### 预训练配置
 
 ```python
 ### pretrain and warmup config, choose one and coment another
@@ -236,7 +236,7 @@ DenseTeacher:
     inference_on: teacher
 ```
 
-### 半监督模型配置
+### 模型配置
 
 如果没有特殊改动，则直接继承自基础检测器里的模型配置。
 以 `DenseTeacher` 为例，选择 `fcos_r50_fpn_iou_multiscale_2x_coco.yml` 作为**基础检测器**进行半监督训练，**teacher网络的结构和student网络的结构均为基础检测器的结构，且结构相同**。
@@ -247,7 +247,7 @@ _BASE_: [
 ]
 ```
 
-### Reader和数据增强配置
+### 数据增强配置
 
 构建半监督训练集的Reader，需要在原先`TrainReader`的基础上，新增加`weak_aug`,`strong_aug`,`sup_batch_transforms`和`unsup_batch_transforms`，并且需要注意：
 - **如果有`NormalizeImage`，需要单独从`sample_transforms`中抽出来放在`weak_aug`和`strong_aug`中；

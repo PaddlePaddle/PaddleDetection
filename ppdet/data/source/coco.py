@@ -376,15 +376,12 @@ class SemiCOCODataSet(COCODataSet):
                  allow_empty=False,
                  empty_ratio=1.,
                  repeat=1,
-                 supervised=True,
-                 sup_file=None,
-                 sup_percentage=10.0,
-                 sup_seed=1):
+                 supervised=True):
         super(SemiCOCODataSet, self).__init__(
             dataset_dir, image_dir, anno_path, data_fields, sample_num,
             load_crowd, allow_empty, empty_ratio, repeat)
         self.supervised = supervised
-        self.length = -1  # defalut -1 means all, unsup length is set by sup length
+        self.length = -1  # defalut -1 means all
 
     def parse_dataset(self):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
@@ -544,7 +541,7 @@ class SemiCOCODataSet(COCODataSet):
         if self.supervised:
             logger.info(f'Use {len(self.roidbs)} sup_samples data as LABELED')
         else:
-            if self.length > 0:
+            if self.length > 0:  # unsup length will be decide by sup length
                 all_roidbs = self.roidbs.copy()
                 selected_idxs = [
                     np.random.choice(len(all_roidbs))
