@@ -344,7 +344,6 @@ class Compose_SSOD(object):
         for f in self.base_transforms_cls:
             try:
                 data = f(data)
-                #print(' base  finish ', f, data['image'].mean(), data['image'].sum())
             except Exception as e:
                 stack_info = traceback.format_exc()
                 logger.warning("fail to map sample transform [{}] "
@@ -357,7 +356,6 @@ class Compose_SSOD(object):
         for f in self.weak_augs_cls:
             try:
                 weak_data = f(weak_data)
-                #print(' weak_data  finish ', f, weak_data['image'].mean(), weak_data['image'].shape)
             except Exception as e:
                 stack_info = traceback.format_exc()
                 logger.warning("fail to map weak aug [{}] "
@@ -368,7 +366,6 @@ class Compose_SSOD(object):
         for f in self.strong_augs_cls:
             try:
                 strong_data = f(strong_data)
-                #print(' strong_data  finish ', f, strong_data['image'].mean(), strong_data['image'].shape)
             except Exception as e:
                 stack_info = traceback.format_exc()
                 logger.warning("fail to map strong aug [{}] "
@@ -459,6 +456,7 @@ class CombineSSODLoader(object):
             except:
                 self.unlabel_loader_iter = iter(self.unlabel_loader)
                 unlabel_samples = next(self.unlabel_loader_iter)
+
             yield (
                 label_samples[0],  # sup weak
                 label_samples[1],  # sup strong
@@ -485,14 +483,14 @@ class BaseSemiDataLoader(object):
                  collate_batch=True,
                  use_shared_memory=False,
                  **kwargs):
-        # label
+        # sup transforms
         self._sample_transforms_label = Compose_SSOD(
             sample_transforms, weak_aug, strong_aug, num_classes=num_classes)
         self._batch_transforms_label = BatchCompose_SSOD(
             sup_batch_transforms, num_classes, collate_batch)
         self.batch_size_label = sup_batch_size
 
-        # unlabel
+        # unsup transforms
         self._sample_transforms_unlabel = Compose_SSOD(
             sample_transforms, weak_aug, strong_aug, num_classes=num_classes)
         self._batch_transforms_unlabel = BatchCompose_SSOD(
@@ -512,7 +510,7 @@ class BaseSemiDataLoader(object):
                  batch_sampler_label=None,
                  batch_sampler_unlabel=None,
                  return_list=False):
-        # label dataset 
+        # sup dataset 
         self.dataset_label = dataset_label
         self.dataset_label.check_or_download_dataset()
         self.dataset_label.parse_dataset()
@@ -527,7 +525,7 @@ class BaseSemiDataLoader(object):
         else:
             self._batch_sampler_label = batch_sampler_label
 
-        # unlabel dataset
+        # unsup dataset
         self.dataset_unlabel = dataset_unlabel
         self.dataset_unlabel.length = self.dataset_label.__len__()
         self.dataset_unlabel.check_or_download_dataset()
