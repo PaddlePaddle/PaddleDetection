@@ -6,15 +6,17 @@
 
 |      模型       |          基础检测器      |  监督数据比例   | Sup mAP<sup>val<br>0.5:0.95 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
 | :------------: | :---------------------: | :-----------: | :-------------------------: |:---------------------------: |:--------------------: | :-------: |:---------: |
-| DenseTeacher   |   [FCOS ResNet50-FPN 2x](../baseline/fcos_r50_fpn_2x_coco_sup005.yml)  | 5% | 21.3 | 30.6  | 240 (87120) | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi005.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi005.yml) |
-| DenseTeacher   |   [FCOS ResNet50-FPN 2x](../baseline/fcos_r50_fpn_2x_coco_sup010.yml)  | 10%| 26.3 | 35.1  | 240 (174240)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi010.yml) |
-| DenseTeacher   |   [FCOS ResNet50-FPN 2x](../../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.ymll)  |full| 42.6 |   -   |  36 (263844)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_full.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_full.yml) |
+| DenseTeacher   |   [FCOS ResNet50-FPN](../baseline/fcos_r50_fpn_2x_coco_sup005.yml)  | 5% | 21.3 | 30.6  | 240 (87120) | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi005.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi005.yml) |
+| DenseTeacher   |   [FCOS ResNet50-FPN](../baseline/fcos_r50_fpn_2x_coco_sup010.yml)  | 10%| 26.3 | 35.1  | 240 (174240)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi010.yml) |
+| DenseTeacher   |   [FCOS ResNet50-FPN](../baseline/fcos_r50_fpn_2x_coco_sup010.yml)  | 10%-LSJ| 26.3 | -  | 240 (174240)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010_lsj.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi010_lsj.yml) |
+| DenseTeacher   |   [FCOS ResNet50-FPN](../../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.ymll)  |full| 42.6 |   -   |  36 (263844)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_full.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_full.yml) |
 
 
 **注意:**
  - 以上模型训练默认使用8 GPUs，监督数据总batch_size默认为16，无监督数据总batch_size默认也为16，默认初始学习率为0.01。如果改动了总batch_size，请按线性比例相应地调整学习率；
  - `Sup mAP`是**只使用有监督数据训练**的模型的精度，请参照**基础检测器的配置文件** 和 [baseline](../baseline)；
  - `Semi mAP`是**半监督训练**的模型的精度，模型下载和配置文件的链接均为**半监督模型**；
+ - `LSJ`表示 large-scale jittering，表示更大范围的多尺度训练；
  - 半监督检测的配置和使用，请参照[文档](../README.md)；
 
 

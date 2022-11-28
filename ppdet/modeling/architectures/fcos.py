@@ -23,7 +23,6 @@ from .meta_arch import BaseArch
 from ..ssod_utils import permute_to_N_HWA_K, QFLv2
 from ..losses import GIoULoss
 
-
 __all__ = ['FCOS']
 
 
@@ -132,27 +131,6 @@ class FCOS(BaseArch):
             ],
             axis=0)
 
-        # student_logits = paddle.concat(
-        #     [permute_to_N_HWA_K(x, nc)
-        #      for x in student_logits], axis=1).reshape([-1, nc])
-        # teacher_logits = paddle.concat(
-        #     [permute_to_N_HWA_K(x, nc)
-        #      for x in teacher_logits], axis=1).reshape([-1, nc])
-
-        # student_deltas = paddle.concat(
-        #     [permute_to_N_HWA_K(x, 4)
-        #      for x in student_deltas], axis=1).reshape([-1, 4])
-        # teacher_deltas = paddle.concat(
-        #     [permute_to_N_HWA_K(x, 4)
-        #      for x in teacher_deltas], 1).reshape([-1, 4])
-
-        # student_quality = paddle.concat(
-        #     [permute_to_N_HWA_K(x, 1)
-        #      for x in student_quality], axis=1).reshape([-1, 1])
-        # teacher_quality = paddle.concat(
-        #     [permute_to_N_HWA_K(x, 1)
-        #      for x in teacher_quality], axis=1).reshape([-1, 1])
-
         with paddle.no_grad():
             # Region Selection
             count_num = int(teacher_logits.shape[0] * ratio)
@@ -179,8 +157,9 @@ class FCOS(BaseArch):
         targets = paddle.concat(
             (-teacher_deltas[b_mask][..., :2], teacher_deltas[b_mask][..., 2:]),
             axis=-1)
-        iou_loss= GIoULoss(reduction='mean')
-        loss_deltas =  iou_loss(inputs, targets)
+        iou_loss = GIoULoss(reduction='mean')
+        loss_deltas = iou_loss(inputs, targets)
+
         # distill_loss_quality
         loss_quality = F.binary_cross_entropy(
             F.sigmoid(student_quality[b_mask]),

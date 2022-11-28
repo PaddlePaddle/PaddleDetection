@@ -9,11 +9,6 @@ weights: output/denseteacher_fcos_r50_fpn_coco_semi005/model_final
 
 
 ### pretrain and warmup config, choose one and coment another
-# pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/fcos_r50_fpn_2x_coco_sup005.pdparams # mAP=21.3
-# semi_start_iters: 0
-# ema_start_iters: 0
-# use_warmup: &use_warmup False
-
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
 semi_start_iters: 5000
 ema_start_iters: 3000
@@ -49,3 +44,12 @@ LearningRate:
   - !LinearWarmup
     start_factor: 0.001
     steps: 1000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2
+  clip_grad_by_value: 1.0
