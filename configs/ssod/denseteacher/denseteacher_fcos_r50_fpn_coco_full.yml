@@ -24,6 +24,7 @@ DenseTeacher:
     sup_weight: 1.0
     unsup_weight: 1.0
     loss_weight: {distill_loss_cls: 2.0, distill_loss_box: 1.0, distill_loss_quality: 1.0}
+    concat_sup_data: True
     suppress: linear
     ratio: 0.01
     gamma: 2.0

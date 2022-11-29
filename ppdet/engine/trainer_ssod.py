@@ -21,6 +21,8 @@ import sys
 import copy
 import time
 import typing
+import math
+import numpy as np
 
 import paddle
 import paddle.nn as nn
@@ -283,6 +285,15 @@ class Trainer_DenseTeacher(Trainer):
                         tar_iter = st_iter * 2
                         if curr_iter <= tar_iter:
                             unsup_weight *= (curr_iter - st_iter) / st_iter
+                    elif train_cfg['suppress'] == 'exp':
+                        tar_iter = st_iter + 2000
+                        if curr_iter <= tar_iter:
+                            scale = np.exp((curr_iter - tar_iter) / 1000)
+                            unsup_weight *= scale
+                    elif train_cfg['suppress'] == 'step':
+                        tar_iter = st_iter * 2
+                        if curr_iter <= tar_iter:
+                            unsup_weight *= 0.25
                     else:
                         raise ValueError
 
@@ -347,7 +358,7 @@ class Trainer_DenseTeacher(Trainer):
                     logger.info("***" * 30)
                     logger.info('EMA starting ...')
                     logger.info("***" * 30)
-                    self.ema.update(self.model, decay=0.)
+                    self.ema.update(self.model, decay=0)
                 elif self.use_ema and curr_iter > self.ema_start_iters:
                     self.ema.update(self.model)
                 iter_tic = time.time()
@@ -416,10 +427,10 @@ class Trainer_DenseTeacher(Trainer):
 
         test_cfg = self.cfg.DenseTeacher['test_cfg']
         if test_cfg['inference_on'] == 'teacher':
-            print("***** teacher evaluate *****")
+            logger.info("***** teacher model evaluating *****")
             eval_model = self.ema.model
         else:
-            print("***** student evaluate *****")
+            logger.info("***** student model evaluating *****")
             eval_model = self.model
 
         eval_model.eval()

@@ -158,6 +158,7 @@ class FCOSHead(nn.Layer):
         if isinstance(self.nms, MultiClassNMS) and trt:
             self.nms.trt = trt
         self.sqrt_score = sqrt_score
+        self.is_teacher = False
 
         conv_cls_name = "fcos_head_cls"
         bias_init_value = -math.log((1 - self.prior_prob) / self.prior_prob)
@@ -262,8 +263,8 @@ class FCOSHead(nn.Layer):
             centerness_list.append(centerness)
 
         if targets is not None:
-            is_teacher = targets.get('is_teacher', False)
-            if is_teacher:
+            self.is_teacher = targets.get('is_teacher', False)
+            if self.is_teacher:
                 return [cls_logits_list, bboxes_reg_list, centerness_list]
 
         if self.training and targets is not None:

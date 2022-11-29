@@ -3510,6 +3510,7 @@ class RandomColorJitter(BaseOperator):
             transform = ColorJitter(self.brightness, self.contrast,
                                     self.saturation, self.hue)
             sample['image'] = transform(sample['image'].astype(np.uint8))
+            sample['image'] = sample['image'].astype(np.float32)
         return sample
 
 

@@ -44,6 +44,7 @@ class FCOS(BaseArch):
         self.backbone = backbone
         self.neck = neck
         self.fcos_head = fcos_head
+        self.is_teacher = False
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -65,8 +66,8 @@ class FCOS(BaseArch):
         body_feats = self.backbone(self.inputs)
         fpn_feats = self.neck(body_feats)
 
-        is_teacher = self.inputs.get('is_teacher', False)
-        if self.training or is_teacher:
+        self.is_teacher = self.inputs.get('is_teacher', False)
+        if self.training or self.is_teacher:
             losses = self.fcos_head(fpn_feats, self.inputs)
             return losses
         else:
