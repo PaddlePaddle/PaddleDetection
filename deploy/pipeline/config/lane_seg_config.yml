@@ -2,7 +2,6 @@ type: PLSLaneseg
 
 
 PLSLaneseg:
-  model_dir: output_inference/pp_lite_stdc2_bdd100k
   batch_size: 1
   device: gpu
   use_trt: False
@@ -13,5 +12,6 @@ PLSLaneseg:
   enable_auto_tune: False #'Whether to enable tuned dynamic shape. We uses some images to collect
                           # the dynamic shape for trt sub graph, which avoids setting dynamic shape manually.'
   auto_tuned_shape_file: "auto_tune_tmp.pbtxt" #The temp file to save tuned dynamic shape
+  filter_horizontal_flag: True       #Whether to filter horizontal roads
   horizontal_filtration_degree: 23
   horizontal_filtering_threshold: 0.25

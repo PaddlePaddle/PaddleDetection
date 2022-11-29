@@ -105,7 +105,7 @@ class DeployConfig:
 
 
 class LaneSegPredictor:
-    def __init__(self, lane_seg_config, device):
+    def __init__(self, lane_seg_config, model_dir, device):
         """
         Prepare for prediction.
         The usage and docs of paddle inference, please refer to
@@ -115,8 +115,9 @@ class LaneSegPredictor:
             raise ValueError("Cannot find : {},".format(lane_seg_config))
 
         args = yaml.safe_load(open(lane_seg_config))
+        self.model_dir = model_dir
         args = args[args['type']]
-        cfg_path = os.path.join(args['model_dir'], "deploy.yaml")
+        cfg_path = os.path.join(self.model_dir, "deploy.yaml")
         if not os.path.exists(cfg_path):
             raise ValueError("Cannot find deploy.yaml in dir: {},".format(
                 model_dir))
@@ -124,6 +125,7 @@ class LaneSegPredictor:
         self.cfg = DeployConfig(cfg_path)
         self.args = args
         self.shape = None
+        self.filter_horizontal_flag = args['filter_horizontal_flag']
         self.horizontal_filtration_degree = args['horizontal_filtration_degree']
         self.horizontal_filtering_threshold = args[
             'horizontal_filtering_threshold']
@@ -342,7 +344,10 @@ class LaneSegPredictor:
 
         if len(lines) == 0:
             return [], None
+        if not self.filter_horizontal_flag:
+            return lines, None
 
+        #filter horizontal roads
         angles = np.array(angles)
 
         max_angle, min_angle = np.max(angles), np.min(angles)

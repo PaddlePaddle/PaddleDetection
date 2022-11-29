@@ -394,7 +394,9 @@ class PipePredictor(object):
         if self.with_vehicle_press or self.with_vehicle_retrograde:
             laneseg_cfg = self.cfg['LANE_SEG']
             self.laneseg_predictor = LaneSegPredictor(
-                laneseg_cfg['lane_seg_config'], device=args.device)
+                laneseg_cfg['lane_seg_config'],
+                laneseg_cfg['model_dir'],
+                device=args.device)
 
         if not is_video:
 

@@ -19,7 +19,7 @@ import math
 class VehicleRetrogradeRecognizer(object):
     def __init__(self, cfg):
         self.cfg = cfg
-
+        self.filter_horizontal_flag = self.cfg['filter_horizontal_flag']
         self.deviation = self.cfg['deviation']
         self.move_scale = self.cfg['move_scale']
         self.center_traj_retrograde = [{}]  #retrograde recognizer record use
@@ -53,7 +53,7 @@ class VehicleRetrogradeRecognizer(object):
                 obj_ids = online_ids[cls_id]
                 for i, tlwh in enumerate(tlwhs):
                     x1, y1, w, h = tlwh
-                    center = tuple(map(int, (x1 + w / 2., y1 + h / 2.)))
+                    center = tuple(map(int, (x1 + w / 2., y1 + h)))
                     obj_id = int(obj_ids[i])
                     if self.center_traj_retrograde is not None:
                         if obj_id not in self.center_traj_retrograde[cls_id]:
@@ -284,8 +284,9 @@ class VehicleRetrogradeRecognizer(object):
                 continue
 
             angle, angle_deviation = self.get_angle(traj_line['traj_line'])
-            if abs(angle_deviation - direction) > self.deviation:
-                continue
+            if direction is not None and self.filter_horizontal_flag:
+                if abs(angle_deviation - direction) > self.deviation:
+                    continue
 
             traj_line['angle'] = angle
             traj_lines.append(traj_line)
