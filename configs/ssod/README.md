@@ -23,8 +23,7 @@
 - [引用](#引用)
 
 ## 简介
-半监督目标检测(SSOD)是**同时使用有标注数据和无标注数据**进行训练的目标检测，既可以极大地节省标注成本，也可以充分利用无标注数据进一步提高检测精度。
-
+半监督目标检测(SSOD)是**同时使用有标注数据和无标注数据**进行训练的目标检测，既可以极大地节省标注成本，也可以充分利用无标注数据进一步提高检测精度。PaddleDetection团队复现了[DenseTeacher](denseteacher)半监督检测算法，用户可以下载使用。
 
 ## 模型库
 
@@ -346,35 +345,56 @@ OptimizerBuilder:
 
 ## 使用说明
 
-仅训练时需要特别配置，评估、预测、部署均按基础检测器的配置文件即可。
+仅训练时必须使用半监督检测的配置文件去训练，评估、预测、部署也可以按基础检测器的配置文件去执行。
 
 ### 训练
 
-```
-# CUDA_VISIBLE_DEVICES=0 python tools/train.py -c ssod/denseteacher/dt_semi_010_fcos_r50_fpn_1x_coco.yml
-python -m paddle.distributed.launch --log_dir=denseteacher_fcos/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c ssod/denseteacher/dt_semi_010_fcos_r50_fpn_1x_coco.yml --eval
+```bash
+# 单卡训练 (不推荐，需按线性比例相应地调整学习率)
+CUDA_VISIBLE_DEVICES=0 python tools/train.py -c ssod/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml --eval
+
+# 多卡训练
+python -m paddle.distributed.launch --log_dir=denseteacher_fcos_semi010/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c ssod/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml --eval
 ```
 
 ### 评估
 
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c ${config} -o weights=${weights}
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c ssod/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml -o weights=output/denseteacher_fcos_r50_fpn_coco_semi010/model_final.pdparams
+```
 
 ### 预测
 
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c ${config} -o weights=${weights} --infer_img=demo/000000014439.jpg
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c ssod/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml -o weights=output/denseteacher_fcos_r50_fpn_coco_semi010/model_final.pdparams --infer_img=demo/000000014439.jpg
+```
 
 ### 部署
 
-部署只需要基础检测器，只需保留`_BASE_`部分，即只保留模型和数据集配置，其余配置部分均可注释掉，即当做基础检测器去部署使用。
+部署可以使用半监督检测配置文件，也可以使用基础检测器的配置文件去部署和使用。
+
+```bash
+# 导出模型
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c ssod/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml -o weights=https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams
+
+# 导出权重预测
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/denseteacher_fcos_r50_fpn_coco_semi010 --image_file=demo/000000014439_640x640.jpg --device=GPU
+
+# 部署测速
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/denseteacher_fcos_r50_fpn_coco_semi010 --image_file=demo/000000014439_640x640.jpg --device=GPU --run_benchmark=True # --run_mode=trt_fp16
+
+# 导出ONNX
+paddle2onnx --model_dir output_inference/denseteacher_fcos_r50_fpn_coco_semi010/ --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 12 --save_file denseteacher_fcos_r50_fpn_coco_semi010.onnx
+```
 
 
 ## 引用
 
 ```
-@article{xu2021end,
-  title={End-to-End Semi-Supervised Object Detection with Soft Teacher},
-  author={Xu, Mengde and Zhang, Zheng and Hu, Han and Wang, Jianfeng and Wang, Lijuan and Wei, Fangyun and Bai, Xiang and Liu, Zicheng},
-  journal={Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
-  year={2021}
+ @article{denseteacher2022,
+  title={Dense Teacher: Dense Pseudo-Labels for Semi-supervised Object Detection},
+  author={Hongyu Zhou, Zheng Ge, Songtao Liu, Weixin Mao, Zeming Li, Haiyan Yu, Jian Sun},
+  journal={arXiv preprint arXiv:2207.02541},
+  year={2022}
 }
 ```
