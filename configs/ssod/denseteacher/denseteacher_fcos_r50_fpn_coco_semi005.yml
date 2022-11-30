@@ -4,7 +4,7 @@ _BASE_: [
 ]
 log_iter: 20
 snapshot_epoch: 5
-epochs: &epochs 480
+epochs: &epochs 240 # 480 will be better
 weights: output/denseteacher_fcos_r50_fpn_coco_semi005/model_final
 
 
@@ -56,8 +56,6 @@ SemiTrainReader:
         object_sizes_boundary: [64, 128, 256, 512]
         center_sampling_radius: 1.5
         downsample_ratios: [8, 16, 32, 64, 128]
-        num_shift: 0.5
-        multiply_strides_reg_targets: False
         norm_reg_targets: True
   unsup_batch_transforms:
     - Permute: {}
@@ -123,9 +121,6 @@ FCOSHead:
   prior_prob: 0.01
   norm_reg_targets: True
   centerness_on_reg: True
-  num_shift: 0.5
-  multiply_strides_reg_targets: False
-  sqrt_score: False
   fcos_loss:
     name: FCOSLoss
     loss_alpha: 0.25

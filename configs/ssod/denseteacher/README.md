@@ -8,7 +8,7 @@
 | :------------: | :---------------------: | :-----------: | :-------------------------: |:---------------------------: |:--------------------: | :-------: |:---------: |
 | DenseTeacher   |   [FCOS R50-FPN](../baseline/fcos_r50_fpn_2x_coco_sup005.yml)  | 5% | 21.3 | 30.6  | 240 (87120) | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi005.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi005.yml) |
 | DenseTeacher   |   [FCOS R50-FPN](../baseline/fcos_r50_fpn_2x_coco_sup010.yml)  | 10%| 26.3 | 35.1  | 240 (174240)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi010.yml) |
-| DenseTeacher(LSJ)|   [FCOS R50-FPN](../baseline/fcos_r50_fpn_2x_coco_sup010.yml)| 10%| 26.3 | 36.9  | 240 (174240)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010_lsj.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi010_lsj.yml) |
+| DenseTeacher(LSJ)|   [FCOS R50-FPN](../baseline/fcos_r50_fpn_2x_coco_sup010.yml)| 10%| 26.3 | 37.1  | 240 (174240)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010_lsj.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi010_lsj.yml) |
 | DenseTeacher   |   [FCOS R50-FPN](../../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.ymll)  |full| 42.6 |   -   |  36 (263844)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_full.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_full.yml) |
 
 

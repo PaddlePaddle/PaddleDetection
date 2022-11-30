@@ -32,7 +32,7 @@ SemiTrainReader:
         object_sizes_boundary: [64, 128, 256, 512]
         center_sampling_radius: 1.5
         downsample_ratios: [8, 16, 32, 64, 128]
-        num_shift: 0 # default 0.5
+        num_shift: 0. # default 0.5
         multiply_strides_reg_targets: False
         norm_reg_targets: True
   unsup_batch_transforms:
