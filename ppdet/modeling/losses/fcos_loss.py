@@ -217,12 +217,11 @@ class FCOSLoss(nn.Layer):
             mask_positive_float = paddle.squeeze(mask_positive_float, axis=-1)
             tag_center_flatten = paddle.squeeze(tag_center_flatten, axis=-1)
             reg_loss = self.__iou_loss(
-                bboxes_reg_flatten,  # [61570, 4]
+                bboxes_reg_flatten,
                 tag_bboxes_flatten,
-                mask_positive_float,  # [61570]  sum 57
-                weights=tag_center_flatten
-            )  # [61570] tag_center_flatten.sum()=34.43262482
-            reg_loss = reg_loss * mask_positive_float / normalize_sum  # 34.43262482
+                mask_positive_float,
+                weights=tag_center_flatten)
+            reg_loss = reg_loss * mask_positive_float / normalize_sum
 
             # 3. centerness: sigmoid_cross_entropy_with_logits_loss
             centerness_flatten = paddle.squeeze(centerness_flatten, axis=-1)

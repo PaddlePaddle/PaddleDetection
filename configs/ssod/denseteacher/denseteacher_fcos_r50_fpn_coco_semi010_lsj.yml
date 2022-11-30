@@ -1,0 +1,44 @@
+_BASE_: [
+  'denseteacher_fcos_r50_fpn_coco_semi010.yml',
+]
+log_iter: 50
+snapshot_epoch: 5
+epochs: &epochs 240
+weights: output/denseteacher_fcos_r50_fpn_coco_semi010_lsj/model_final
+
+
+### reader config
+worker_num: 2
+SemiTrainReader:
+  sample_transforms:
+    - Decode: {}
+    # large-scale jittering
+    - RandomResize: {target_size: [[400, 1333], [1200, 1333]], keep_ratio: True, interp: 1, random_range: True}
+    - RandomFlip: {}
+  weak_aug:
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: true}
+  strong_aug:
+    - StrongAugImage: {transforms: [
+        RandomColorJitter: {prob: 0.8, brightness: 0.4, contrast: 0.4, saturation: 0.4, hue: 0.1},
+        RandomErasingCrop: {},
+        RandomGaussianBlur: {prob: 0.5, sigma: [0.1, 2.0]},
+        RandomGrayscale: {prob: 0.2},
+      ]}
+    - NormalizeImage: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: true}
+  sup_batch_transforms:
+    - Permute: {}
+    - PadBatch: {pad_to_stride: 32}
+    - Gt2FCOSTarget:
+        object_sizes_boundary: [64, 128, 256, 512]
+        center_sampling_radius: 1.5
+        downsample_ratios: [8, 16, 32, 64, 128]
+        num_shift: 0. # default 0.5
+        multiply_strides_reg_targets: False
+        norm_reg_targets: True
+  unsup_batch_transforms:
+    - Permute: {}
+    - PadBatch: {pad_to_stride: 32}
+  sup_batch_size: 2
+  unsup_batch_size: 2
+  shuffle: True
+  drop_last: True
