@@ -159,7 +159,6 @@ class LogPrinter(Callback):
 class Checkpointer(Callback):
     def __init__(self, model):
         super(Checkpointer, self).__init__(model)
-        cfg = self.model.cfg
         self.best_ap = -1000.
         self.save_dir = os.path.join(self.model.cfg.save_dir,
                                      self.model.cfg.filename)
@@ -210,14 +209,30 @@ class Checkpointer(Callback):
                             key, eval_func, abs(self.best_ap)))
             if weight:
                 if self.model.use_ema:
-                    # save model and ema_model
-                    save_model(
-                        status['weight'],
-                        self.model.optimizer,
-                        self.save_dir,
-                        save_name,
-                        epoch_id + 1,
-                        ema_model=weight)
+                    if not self.model.use_simple_ema:
+                        # save model and ema_model
+                        save_model(
+                            status['weight'],
+                            self.model.optimizer,
+                            self.save_dir,
+                            save_name,
+                            epoch_id + 1,
+                            ema_model=weight)
+                    else:
+                        # save model(student model) and ema_model(teacher model)
+                        # in DenseTeacher SSOD, the teacher model will be higher,
+                        # so exchange when saving pdparams
+                        student_model = status['weight'] # model
+                        teacher_model = weight # ema_model
+                        save_model(
+                            teacher_model,
+                            self.model.optimizer,
+                            self.save_dir,
+                            save_name,
+                            epoch_id + 1,
+                            ema_model=student_model)
+                        del teacher_model
+                        del student_model
                 else:
                     save_model(weight, self.model.optimizer, self.save_dir,
                                save_name, epoch_id + 1)

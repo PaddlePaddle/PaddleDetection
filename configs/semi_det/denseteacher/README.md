@@ -1,10 +1,10 @@
 简体中文 | [English](README_en.md)
 
-# DenseTeacher (Dense Teacher: Dense Pseudo-Labels for Semi-supervised Object Detection)
+# Dense Teacher: Dense Pseudo-Labels for Semi-supervised Object Detection
 
 ## 模型库
 
-|      模型       |          基础检测器      |  监督数据比例   | Sup mAP<sup>val<br>0.5:0.95 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
+|      模型       |          基础检测器      |  监督数据比例   | Sup Baseline mAP<sup>val<br>0.5:0.95 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
 | :------------: | :---------------------: | :-----------: | :-------------------------: |:---------------------------: |:--------------------: | :-------: |:---------: |
 | DenseTeacher   |   [FCOS R50-FPN](../baseline/fcos_r50_fpn_2x_coco_sup005.yml)  | 5% | 21.3 | 30.6  | 240 (87120) | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi005.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi005.yml) |
 | DenseTeacher   |   [FCOS R50-FPN](../baseline/fcos_r50_fpn_2x_coco_sup010.yml)  | 10%| 26.3 | 35.1  | 240 (174240)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi010.yml) |

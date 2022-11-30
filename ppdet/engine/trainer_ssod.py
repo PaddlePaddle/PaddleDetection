@@ -254,8 +254,12 @@ class Trainer_DenseTeacher(Trainer):
                     data_sup_w, data_sup_s = align_weak_strong_shape(data_sup_w,
                                                                      data_sup_s)
 
+                data_sup_w['epoch_id'] = epoch_id
+                data_sup_s['epoch_id'] = epoch_id
                 if concat_sup_data:
                     for k, v in data_sup_s.items():
+                        if k in ['epoch_id']:
+                            continue
                         data_sup_s[k] = paddle.concat([v, data_sup_w[k]])
                     loss_dict_sup = self.model(data_sup_s)
                 else:
@@ -264,8 +268,6 @@ class Trainer_DenseTeacher(Trainer):
                     for k, v in loss_dict_sup_w.items():
                         loss_dict_sup[k] = (loss_dict_sup[k] + v) * 0.5
 
-                data_sup_w['epoch_id'] = epoch_id
-                data_sup_s['epoch_id'] = epoch_id
                 losses_sup = loss_dict_sup['loss'] * train_cfg['sup_weight']
                 losses_sup.backward()
 
