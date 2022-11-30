@@ -7,14 +7,14 @@
 | 任务 | 算法 | 精度 | 预测速度 | 下载链接|
 |-----------|------|-----------|----------|---------------|
 | 车辆检测/跟踪 | PP-YOLOE | mAP 63.9 | 38.67ms | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) |
-| 车道线识别 | PP-liteseg | mIou 32.69 | 47 ms | [预测部署模型]() |
+| 车道线识别 | PP-liteseg | mIou 32.69 | 47 ms | [预测部署模型](https://bj.bcebos.com/v1/paddledet/models/pipeline/pp_lite_stdc2_bdd100k.zip) |
 
 
 注意：
 1. 车辆检测/跟踪模型预测速度是基于NVIDIA T4, 开启TensorRT FP16得到。模型预测速度包含数据预处理、模型预测、后处理部分。
 2. 车辆检测/跟踪模型的训练和精度测试均基于[VeRi数据集](https://www.v7labs.com/open-datasets/veri-dataset)。
 3. 车道线模型预测速度基于Tesla P40,python端预测，模型预测速度包含数据预处理、模型预测、后处理部分。
-4. 车道线模型训练和精度测试均基于[BDD100K-LaneSeg]()和[Apollo Scape](http://apolloscape.auto/lane_segmentation.html#to_dataset_href)
+4. 车道线模型训练和精度测试均基于[BDD100K-LaneSeg](https://bdd-data.berkeley.edu/portal.html#download.)和[Apollo Scape](http://apolloscape.auto/lane_segmentation.html#to_dataset_href)
 
 
 ## 使用方法

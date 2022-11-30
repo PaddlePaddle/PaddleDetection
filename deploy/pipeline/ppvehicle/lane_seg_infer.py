@@ -20,92 +20,11 @@ import yaml
 import numpy as np
 import cv2
 from sklearn.cluster import DBSCAN
-from paddle.inference import create_predictor, PrecisionType
-from paddle.inference import Config as PredictConfig
-
-
-def use_auto_tune(args):
-    return hasattr(PredictConfig, "collect_shape_range_info") \
-        and hasattr(PredictConfig, "enable_tuned_tensorrt_dynamic_shape") \
-        and args['device'] == "gpu" and args['use_trt'] and args['enable_auto_tune']
-
-
-def auto_tune(args, imgs, img_nums):
-    """
-    Use images to auto tune the dynamic shape for trt sub graph.
-    The tuned shape saved in args.auto_tuned_shape_file.
-
-    Args:
-        args(dict): input args.
-        imgs(str, list[str], numpy): the path for images or the origin images.
-        img_nums(int): the nums of images used for auto tune.
-    Returns:
-        None
-    """
-    print("Auto tune the dynamic shape for GPU TRT.")
-
-    assert use_auto_tune(args), "Do not support auto_tune, which requires " \
-        "device==gpu && use_trt==True && paddle >= 2.2"
-
-    if not isinstance(imgs, (list, tuple)):
-        imgs = [imgs]
-    num = min(len(imgs), img_nums)
-
-    cfg = DeployConfig(args.cfg)
-    pred_cfg = PredictConfig(cfg.model, cfg.params)
-    pred_cfg.enable_use_gpu(100, 0)
-
-    pred_cfg.collect_shape_range_info(args['auto_tuned_shape_file'])
-
-    predictor = create_predictor(pred_cfg)
-    input_names = predictor.get_input_names()
-    input_handle = predictor.get_input_handle(input_names[0])
-
-    for i in range(0, num):
-        if isinstance(imgs[i], str):
-            data = {'img': imgs[i]}
-            data = np.array([cfg.transforms(data)['img']])
-        else:
-            data = imgs[i]
-        input_handle.reshape(data.shape)
-        input_handle.copy_from_cpu(data)
-        try:
-            predictor.run()
-        except Exception as e:
-            print(str(e))
-            print("Auto tune failed. Usually, the error is out of GPU memory "
-                  "for the model or image is too large. \n")
-            del predictor
-            if os.path.exists(args['auto_tuned_shape_file']):
-                os.remove(args['auto_tuned_shape_file'])
-            return
-
-    print("Auto tune success.\n")
-
-
-class DeployConfig:
-    def __init__(self, path):
-        with codecs.open(path, 'r', 'utf-8') as file:
-            self.dic = yaml.load(file, Loader=yaml.FullLoader)
-
-        # self._transforms = Compose()
-        self._dir = os.path.dirname(path)
-
-    @property
-    def transforms(self):
-        return self._transforms
-
-    @property
-    def model(self):
-        return os.path.join(self._dir, self.dic['Deploy']['model'])
-
-    @property
-    def params(self):
-        return os.path.join(self._dir, self.dic['Deploy']['params'])
+from pptracking.python.det_infer import load_predictor
 
 
 class LaneSegPredictor:
-    def __init__(self, lane_seg_config, model_dir, device):
+    def __init__(self, lane_seg_config, model_dir):
         """
         Prepare for prediction.
         The usage and docs of paddle inference, please refer to
@@ -116,93 +35,32 @@ class LaneSegPredictor:
 
         args = yaml.safe_load(open(lane_seg_config))
         self.model_dir = model_dir
-        args = args[args['type']]
-        cfg_path = os.path.join(self.model_dir, "deploy.yaml")
-        if not os.path.exists(cfg_path):
-            raise ValueError("Cannot find deploy.yaml in dir: {},".format(
-                model_dir))
+        self.args = args[args['type']]
 
-        self.cfg = DeployConfig(cfg_path)
-        self.args = args
         self.shape = None
-        self.filter_horizontal_flag = args['filter_horizontal_flag']
-        self.horizontal_filtration_degree = args['horizontal_filtration_degree']
-        self.horizontal_filtering_threshold = args[
+        self.filter_horizontal_flag = self.args['filter_horizontal_flag']
+        self.horizontal_filtration_degree = self.args[
+            'horizontal_filtration_degree']
+        self.horizontal_filtering_threshold = self.args[
             'horizontal_filtering_threshold']
 
-        self.init_base_config()
-
-        args['device'] = device
-        if args['device'] == 'cpu':
-            self.init_cpu_config()
-        else:
-            self.init_gpu_config()
-
         try:
-            self.predictor = create_predictor(self.pred_cfg)
+            self.predictor, _ = load_predictor(
+                model_dir=self.model_dir,
+                run_mode=self.args['run_mode'],
+                batch_size=self.args['batch_size'],
+                device=self.args['device'],
+                min_subgraph_size=self.args['min_subgraph_size'],
+                use_dynamic_shape=self.args['use_dynamic_shape'],
+                trt_min_shape=self.args['trt_min_shape'],
+                trt_max_shape=self.args['trt_max_shape'],
+                trt_opt_shape=self.args['trt_opt_shape'],
+                trt_calib_mode=self.args['trt_calib_mode'],
+                cpu_threads=self.args['cpu_threads'],
+                enable_mkldnn=self.args['enable_mkldnn'])
         except Exception as e:
             print(str(e))
-            print(
-                "If the above error is '(InvalidArgument) some trt inputs dynamic shape info not set, "
-                "..., Expected all_dynamic_shape_set == true, ...', "
-                "please set --enable_auto_tune=True to use auto_tune. \n")
             exit()
-
-    def init_base_config(self):
-        self.pred_cfg = PredictConfig(self.cfg.model, self.cfg.params)
-
-        self.pred_cfg.enable_memory_optim()
-        self.pred_cfg.switch_ir_optim(True)
-
-    def init_cpu_config(self):
-        """
-        Init the config for x86 cpu.
-        """
-        print("Use CPU")
-        self.pred_cfg.disable_gpu()
-        if self.args['enable_mkldnn']:
-            print("Use MKLDNN")
-            # cache 10 different shapes for mkldnn
-            self.pred_cfg.set_mkldnn_cache_capacity(10)
-            self.pred_cfg.enable_mkldnn()
-        self.pred_cfg.set_cpu_math_library_num_threads(self.args['cpu_threads'])
-
-    def init_gpu_config(self):
-        """
-        Init the config for nvidia gpu.
-        """
-        print("Use GPU")
-        self.pred_cfg.enable_use_gpu(100, 0)
-        precision_map = {
-            "fp16": PrecisionType.Half,
-            "fp32": PrecisionType.Float32,
-            "int8": PrecisionType.Int8
-        }
-        precision_mode = precision_map[self.args['precision']]
-
-        if self.args['use_trt']:
-            logger.info("Use TRT")
-            self.pred_cfg.enable_tensorrt_engine(
-                workspace_size=1 << 30,
-                max_batch_size=1,
-                min_subgraph_size=self.args.min_subgraph_size,
-                precision_mode=precision_mode,
-                use_static=False,
-                use_calib_mode=False)
-
-            if use_auto_tune(self.args) and \
-                os.path.exists(self.args['auto_tuned_shape_file']):
-                logger.info("Use auto tuned dynamic shape")
-                allow_build_at_runtime = True
-                self.pred_cfg.enable_tuned_tensorrt_dynamic_shape(
-                    self.args.auto_tuned_shape_file, allow_build_at_runtime)
-            else:
-                logger.info("Use manual set dynamic shape")
-                min_input_shape = {"x": [1, 3, 100, 100]}
-                max_input_shape = {"x": [1, 3, 2000, 3000]}
-                opt_input_shape = {"x": [1, 3, 512, 1024]}
-                self.pred_cfg.set_trt_dynamic_shape_info(
-                    min_input_shape, max_input_shape, opt_input_shape)
 
     def run(self, img):
 

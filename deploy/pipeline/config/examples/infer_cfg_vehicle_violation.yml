@@ -16,6 +16,7 @@ MOT:
 LANE_SEG:
   lane_seg_config: deploy/pipeline/config/lane_seg_config.yml
   model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/pp_lite_stdc2_bdd100k.zip
+
 VEHICLE_PRESSING:
   enable: True
 
