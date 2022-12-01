@@ -209,7 +209,8 @@ class Checkpointer(Callback):
                             key, eval_func, abs(self.best_ap)))
             if weight:
                 if self.model.use_ema:
-                    if not self.model.use_simple_ema:
+                    use_simple_ema = self.model.get('use_simple_ema', False)
+                    if not use_simple_ema:
                         # save model and ema_model
                         save_model(
                             status['weight'],
@@ -222,8 +223,8 @@ class Checkpointer(Callback):
                         # save model(student model) and ema_model(teacher model)
                         # in DenseTeacher SSOD, the teacher model will be higher,
                         # so exchange when saving pdparams
-                        student_model = status['weight'] # model
-                        teacher_model = weight # ema_model
+                        student_model = status['weight']  # model
+                        teacher_model = weight  # ema_model
                         save_model(
                             teacher_model,
                             self.model.optimizer,

@@ -4,7 +4,7 @@ _BASE_: [
 ]
 log_iter: 100
 snapshot_epoch: 2
-epochs: &epochs 36
+epochs: &epochs 24
 weights: output/denseteacher_fcos_r50_fpn_coco_full/model_final
 
 

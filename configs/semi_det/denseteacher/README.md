@@ -4,21 +4,34 @@
 
 ## 模型库
 
-|      模型       |          基础检测器      |  监督数据比例   | Sup Baseline mAP<sup>val<br>0.5:0.95 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
-| :------------: | :---------------------: | :-----------: | :-------------------------: |:---------------------------: |:--------------------: | :-------: |:---------: |
-| DenseTeacher   |   [FCOS R50-FPN](../baseline/fcos_r50_fpn_2x_coco_sup005.yml)  | 5% | 21.3 | 30.6  | 240 (87120) | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi005.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi005.yml) |
-| DenseTeacher   |   [FCOS R50-FPN](../baseline/fcos_r50_fpn_2x_coco_sup010.yml)  | 10%| 26.3 | 35.1  | 240 (174240)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi010.yml) |
-| DenseTeacher(LSJ)|   [FCOS R50-FPN](../baseline/fcos_r50_fpn_2x_coco_sup010.yml)| 10%| 26.3 | 37.1  | 240 (174240)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010_lsj.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi010_lsj.yml) |
-| DenseTeacher   |   [FCOS R50-FPN](../../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.ymll)  |full| 42.6 |   -   |  36 (263844)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_full.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_full.yml) |
+|      模型       |  监督数据比例 |        Sup Baseline     |    Sup Epochs (Iters)   |  Sup mAP<sup>val<br>0.5:0.95 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
+| :------------: | :---------: | :---------------------: | :---------------------: |:---------------------------: |:----------------------------: | :------------------: |:--------: |:----------: |
+| DenseTeacher-FCOS     |   5% |   [sup_config](../baseline/fcos_r50_fpn_2x_coco_sup005.yml)    |  24 (8712)  | 21.3 |  **30.6**  | 240 (87120)   | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi005.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi005.yml) |
+| DenseTeacher-FCOS     |   5% |   [sup_config](../baseline/fcos_r50_fpn_2x_coco_sup010.yml)    | 24 (17424)  | 26.3 |  **35.1**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi010.yml) |
+| DenseTeacher-FCOS(LSJ)|   5% |   [sup_config](../baseline/fcos_r50_fpn_2x_coco_sup010.yml)    | 24 (17424)  | 26.3 |  **37.1(LSJ)**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010_lsj.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_semi010_lsj.yml) |
+| DenseTeacher-FCOS |100%(full)|   [sup_config](../../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.ymll) | 24 (175896) | 42.6 | **44.2** | 24 (175896)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_full.pdparams) | [config](./denseteacher_fcos_r50_fpn_coco_full.yml) |
 
 
 **注意:**
  - 以上模型训练默认使用8 GPUs，监督数据总batch_size默认为16，无监督数据总batch_size默认也为16，默认初始学习率为0.01。如果改动了总batch_size，请按线性比例相应地调整学习率；
+ - **监督数据比例**是指使用的有标签COCO数据集占 COCO train2017 全量训练集的百分比，使用的无标签COCO数据集一般也是相同比例，但具体图片和有标签数据的图片不重合；
  - `Semi Epochs (Iters)`表示**半监督训练**的模型的 Epochs (Iters)，如果使用**自定义数据集**，需自行根据Iters换算到对应的Epochs调整，最好保证总Iters 和COCO数据集的设置较为接近；
  - `Sup mAP`是**只使用有监督数据训练**的模型的精度，请参照**基础检测器的配置文件** 和 [baseline](../baseline)；
  - `Semi mAP`是**半监督训练**的模型的精度，模型下载和配置文件的链接均为**半监督模型**；
- - `LSJ`表示 large-scale jittering，表示更大范围的多尺度训练，可进一步提升精度，但训练速度也会变慢；
+ - `LSJ`表示 **large-scale jittering**，表示使用更大范围的多尺度训练，可进一步提升精度，但训练速度也会变慢；
  - 半监督检测的配置和使用，请参照[文档](../README.md/#半监督检测配置)；
+ - `Dense Teacher`原文使用`R50-va-caffe`预训练，PaddleDetection中默认使用`R50-vb`预训练，如果使用`R50-vd`结合[SSLD](../../../docs/feature_models/SSLD_PRETRAINED_MODEL.md)的预训练模型，可进一步显著提升检测精度，如：
+ ```
+  pretrain_weights:  https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+  ResNet:
+    depth: 50
+    variant: d
+    norm_type: bn
+    freeze_at: 0
+    return_idx: [0,1,2,3]
+    num_stages: 4
+    lr_mult_list: [0.05, 0.05, 0.1, 0.15]
+ ```
 
 
 ## 使用说明
