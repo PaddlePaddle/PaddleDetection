@@ -191,8 +191,11 @@ class Trainer_DenseTeacher(Trainer):
         self.status.update({
             'epoch_id': self.start_epoch,
             'step_id': 0,
-            'steps_per_epoch': len(self.loader)
+            'steps_per_epoch': len(self.loader),
+            'exchange_save_model': True,
         })
+        # Note: exchange_save_model
+        # in DenseTeacher SSOD, the teacher model will be higher, so exchange when saving pdparams
 
         self.status['batch_time'] = stats.SmoothedValue(
             self.cfg.log_iter, fmt='{avg:.4f}')

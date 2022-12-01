@@ -209,8 +209,9 @@ class Checkpointer(Callback):
                             key, eval_func, abs(self.best_ap)))
             if weight:
                 if self.model.use_ema:
-                    use_simple_ema = self.model.get('use_simple_ema', False)
-                    if not use_simple_ema:
+                    exchange_save_model = status.get('exchange_save_model',
+                                                     False)
+                    if not exchange_save_model:
                         # save model and ema_model
                         save_model(
                             status['weight'],
