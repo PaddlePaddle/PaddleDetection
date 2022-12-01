@@ -1,6 +1,6 @@
 简体中文 | [English](README_en.md)
 
-# Semi-Supervised Object Detection (SSOD) 半监督目标检测
+# Semi-Supervised Detection (Semi DET) 半监督检测
 
 ## 内容
 - [简介](#简介)
@@ -34,12 +34,12 @@
 
 ### [DenseTeacher](denseteacher)
 
-|      模型       |          基础检测器      |  监督数据比例   | Sup mAP<sup>val<br>0.5:0.95 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
-| :------------: | :---------------------: | :-----------: | :-------------------------: |:---------------------------: |:--------------------: | :-------: |:---------: |
-| DenseTeacher   |   [FCOS ResNet50-FPN](./baseline/fcos_r50_fpn_2x_coco_sup005.yml)  | 5% | 21.3 | 30.6  | 240 (87120) | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi005.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_semi005.yml) |
-| DenseTeacher   |   [FCOS ResNet50-FPN](./baseline/fcos_r50_fpn_2x_coco_sup010.yml)  | 10%| 26.3 | 35.1  | 240 (174240)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml) |
-| DenseTeacher(LSJ)|   [FCOS ResNet50-FPN](./baseline/fcos_r50_fpn_2x_coco_sup010.yml) |10%| 26.3 | 37.1  | 240 (174240)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010_lsj.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_semi010_lsj.yml) |
-| DenseTeacher   |   [FCOS ResNet50-FPN](./../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.ymll)  |full| 42.6 |   -   |  36 (263844)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_full.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_full.yml) |
+|      模型       |  监督数据比例 |        Sup Baseline     |    Sup Epochs (Iters)   |  Sup mAP<sup>val<br>0.5:0.95 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
+| :------------: | :---------: | :---------------------: | :---------------------: |:---------------------------: |:----------------------------: | :------------------: |:--------: |:----------: |
+| DenseTeacher-FCOS     |   5% |   [sup_config](./baseline/fcos_r50_fpn_2x_coco_sup005.yml)    |  24 (8712)  | 21.3 |  **30.6**  | 240 (87120)   | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi005.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_semi005.yml) |
+| DenseTeacher-FCOS     |   5% |   [sup_config](./baseline/fcos_r50_fpn_2x_coco_sup010.yml)    | 24 (17424)  | 26.3 |  **35.1**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml) |
+| DenseTeacher-FCOS(LSJ)|   5% |   [sup_config](./baseline/fcos_r50_fpn_2x_coco_sup010.yml)    | 24 (17424)  | 26.3 |  **37.1(LSJ)**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010_lsj.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_semi010_lsj.yml) |
+| DenseTeacher-FCOS |100%(full)|   [sup_config](./../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.ymll) | 24 (175896) | 42.6 | **44.2** | 24 (175896)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_full.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_full.yml) |
 
 
 ## 半监督数据集准备
@@ -215,7 +215,7 @@ use_warmup: &use_warmup True
 
 ### 全局配置
 
-需要在配置文件中添加如下全局配置：
+需要在配置文件中添加如下全局配置，并且注意 DenseTeacher 模型需要使用`use_simple_ema: True`而不是`use_ema: True`：
 
 ```python
 ### global config
@@ -249,9 +249,9 @@ _BASE_: [
 ### 数据增强配置
 
 构建半监督训练集的Reader，需要在原先`TrainReader`的基础上，新增加`weak_aug`,`strong_aug`,`sup_batch_transforms`和`unsup_batch_transforms`，并且需要注意：
-- **如果有`NormalizeImage`，需要单独从`sample_transforms`中抽出来放在`weak_aug`和`strong_aug`中；
+- 如果有`NormalizeImage`，需要单独从`sample_transforms`中抽出来放在`weak_aug`和`strong_aug`中；
 - `sample_transforms`为**公用的基础数据增强**；
-- 完整的弱数据增强为``sample_transforms + weak_aug`，完整的强数据增强为`sample_transforms + strong_aug`；
+- 完整的弱数据增强为`sample_transforms + weak_aug`，完整的强数据增强为`sample_transforms + strong_aug`；
 
 如以下所示:
 
@@ -302,8 +302,6 @@ SemiTrainReader:
         object_sizes_boundary: [64, 128, 256, 512]
         center_sampling_radius: 1.5
         downsample_ratios: [8, 16, 32, 64, 128]
-        num_shift: 0.5
-        multiply_strides_reg_targets: False
         norm_reg_targets: True
   unsup_batch_transforms:
     - Permute: {}
@@ -351,22 +349,22 @@ OptimizerBuilder:
 
 ```bash
 # 单卡训练 (不推荐，需按线性比例相应地调整学习率)
-CUDA_VISIBLE_DEVICES=0 python tools/train.py -c ssod/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml --eval
+CUDA_VISIBLE_DEVICES=0 python tools/train.py -c configs/semi_det/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml --eval
 
 # 多卡训练
-python -m paddle.distributed.launch --log_dir=denseteacher_fcos_semi010/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c ssod/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml --eval
+python -m paddle.distributed.launch --log_dir=denseteacher_fcos_semi010/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/semi_det/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml --eval
 ```
 
 ### 评估
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c ssod/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml -o weights=output/denseteacher_fcos_r50_fpn_coco_semi010/model_final.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/semi_det/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml -o weights=output/denseteacher_fcos_r50_fpn_coco_semi010/model_final.pdparams
 ```
 
 ### 预测
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c ssod/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml -o weights=output/denseteacher_fcos_r50_fpn_coco_semi010/model_final.pdparams --infer_img=demo/000000014439.jpg
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/semi_det/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml -o weights=output/denseteacher_fcos_r50_fpn_coco_semi010/model_final.pdparams --infer_img=demo/000000014439.jpg
 ```
 
 ### 部署
@@ -375,7 +373,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c ssod/denseteacher/denseteacher_f
 
 ```bash
 # 导出模型
-CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c ssod/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml -o weights=https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/semi_det/denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml -o weights=https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams
 
 # 导出权重预测
 CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/denseteacher_fcos_r50_fpn_coco_semi010 --image_file=demo/000000014439_640x640.jpg --device=GPU

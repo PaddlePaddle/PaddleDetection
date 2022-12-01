@@ -62,7 +62,7 @@
 将以下命令写在一个脚本文件里如```run.sh```，一键运行命令为：```sh run.sh```，也可命令行一句句去运行：
 
 ```bash
-model_type=ssod/baseline
+model_type=semi_det/baseline
 job_name=ppyoloe_plus_crn_s_80e_coco_sup010 # 可修改，如 fcos_r50_fpn_2x_coco_sup010
 
 config=configs/${model_type}/${job_name}.yml
