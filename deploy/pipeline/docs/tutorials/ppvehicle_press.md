@@ -91,7 +91,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 测试效果如下：
 
 <div width="1000" align="center">
-  <img src="../images/vehicle_press.gif"/>
+  <img src="https://raw.githubusercontent.com/LokeZhou/PaddleDetection/develop/deploy/pipeline/docs/images/vehicle_press.gif"/>
 </div>
 
 ## 方案说明
