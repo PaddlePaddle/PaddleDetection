@@ -12,6 +12,7 @@
 
 **注意:**
   - `+ iou` 表示与原版 FCOS 相比，不使用 `centerness` 而是使用 `iou` 来参与计算loss。
+  - 基于 FCOS 的半监督检测方法 `DenseTeaher` 可以参照[DenseTeaher](../semi_det/denseteacher)去使用，结合无标签数据可以进一步提升检测性能。
 
 
 ## Citations

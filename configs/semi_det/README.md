@@ -23,7 +23,7 @@
 - [引用](#引用)
 
 ## 简介
-半监督目标检测(SSOD)是**同时使用有标注数据和无标注数据**进行训练的目标检测，既可以极大地节省标注成本，也可以充分利用无标注数据进一步提高检测精度。PaddleDetection团队复现了[DenseTeacher](denseteacher)半监督检测算法，用户可以下载使用。
+半监督目标检测(Semi DET)是**同时使用有标注数据和无标注数据**进行训练的目标检测，既可以极大地节省标注成本，也可以充分利用无标注数据进一步提高检测精度。PaddleDetection团队复现了[DenseTeacher](denseteacher)半监督检测算法，用户可以下载使用。
 
 ## 模型库
 
@@ -37,8 +37,8 @@
 |      模型       |  监督数据比例 |        Sup Baseline     |    Sup Epochs (Iters)   |  Sup mAP<sup>val<br>0.5:0.95 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
 | :------------: | :---------: | :---------------------: | :---------------------: |:---------------------------: |:----------------------------: | :------------------: |:--------: |:----------: |
 | DenseTeacher-FCOS     |   5% |   [sup_config](./baseline/fcos_r50_fpn_2x_coco_sup005.yml)    |  24 (8712)  | 21.3 |  **30.6**  | 240 (87120)   | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi005.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_semi005.yml) |
-| DenseTeacher-FCOS     |   5% |   [sup_config](./baseline/fcos_r50_fpn_2x_coco_sup010.yml)    | 24 (17424)  | 26.3 |  **35.1**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml) |
-| DenseTeacher-FCOS(LSJ)|   5% |   [sup_config](./baseline/fcos_r50_fpn_2x_coco_sup010.yml)    | 24 (17424)  | 26.3 |  **37.1(LSJ)**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010_lsj.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_semi010_lsj.yml) |
+| DenseTeacher-FCOS     |   10% |   [sup_config](./baseline/fcos_r50_fpn_2x_coco_sup010.yml)    | 24 (17424)  | 26.3 |  **35.1**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml) |
+| DenseTeacher-FCOS(LSJ)|   10% |   [sup_config](./baseline/fcos_r50_fpn_2x_coco_sup010.yml)    | 24 (17424)  | 26.3 |  **37.1(LSJ)**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010_lsj.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_semi010_lsj.yml) |
 | DenseTeacher-FCOS |100%(full)|   [sup_config](./../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.ymll) | 24 (175896) | 42.6 | **44.2** | 24 (175896)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_full.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_full.yml) |
 
 
@@ -57,6 +57,11 @@ python tools/gen_semi_coco.py
 - 标注数据集标注：`instances_train2017.{fold}@{percent}.json`
 - 无标注数据集标注：`instances_train2017.{fold}@{percent}-unlabeled.json`
 其中，`fold` 表示交叉验证，`percent` 表示有标注数据的百分比。
+
+注意如果根据`txt_file`生成，需要下载`COCO_supervision.txt`:
+```shell
+wget https://bj.bcebos.com/v1/paddledet/data/coco/COCO_supervision.txt
+```
 
 （2）使用全量原始训练集`train2017`作为有标注数据 和 全量原始无标签图片集`unlabeled2017`作为无标注数据；
 
@@ -165,7 +170,7 @@ _BASE_: [
 TrainDataset:
   !SemiCOCODataSet
     image_dir: train2017
-    anno_path: semi_annotations/instances_train2017.1@1.json
+    anno_path: semi_annotations/instances_train2017.1@10.json
     dataset_dir: dataset/coco
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
@@ -173,7 +178,7 @@ TrainDataset:
 UnsupTrainDataset:
   !SemiCOCODataSet
     image_dir: train2017
-    anno_path: semi_annotations/instances_train2017.1@1-unlabeled.json
+    anno_path: semi_annotations/instances_train2017.1@10-unlabeled.json
     dataset_dir: dataset/coco
     data_fields: ['image']
     supervised: False
@@ -211,6 +216,20 @@ pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos
 semi_start_iters: 5000
 ema_start_iters: 3000
 use_warmup: &use_warmup True
+```
+
+**注意:**
+ - `Dense Teacher`原文使用`R50-va-caffe`预训练，PaddleDetection中默认使用`R50-vb`预训练，如果使用`R50-vd`结合[SSLD](../../../docs/feature_models/SSLD_PRETRAINED_MODEL.md)的预训练模型，可进一步显著提升检测精度，同时backbone部分配置也需要做出相应更改，如：
+ ```python
+  pretrain_weights:  https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+  ResNet:
+    depth: 50
+    variant: d
+    norm_type: bn
+    freeze_at: 0
+    return_idx: [0,1,2,3]
+    num_stages: 4
+    lr_mult_list: [0.05, 0.05, 0.1, 0.15]
 ```
 
 ### 全局配置
