@@ -14,7 +14,7 @@
 1. 车辆检测/跟踪模型预测速度是基于NVIDIA T4, 开启TensorRT FP16得到。模型预测速度包含数据预处理、模型预测、后处理部分。
 2. 车辆检测/跟踪模型的训练和精度测试均基于[VeRi数据集](https://www.v7labs.com/open-datasets/veri-dataset)。
 3. 车道线模型预测速度基于Tesla P40,python端预测，模型预测速度包含数据预处理、模型预测、后处理部分。
-4. 车道线模型训练和精度测试均基于[BDD100K-LaneSeg](https://bdd-data.berkeley.edu/portal.html#download)和[Apollo Scape](http://apolloscape.auto/lane_segmentation.html#to_dataset_href)
+4. 车道线模型训练和精度测试均基于[BDD100K-LaneSeg](https://bdd-data.berkeley.edu/portal.html#download)和[Apollo Scape](http://apolloscape.auto/lane_segmentation.html#to_dataset_href),两个数据集车道线分割标签[Lane_dataset_label](https://bj.bcebos.com/v1/paddledet/data/mot/bdd100k/lane_dataset_label.zip)
 
 
 ## 使用方法
@@ -53,13 +53,15 @@ PLSLaneseg:
 ```bash
 # 预测单张图片文件
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
-                                                   --image_file=test_image.jpg \
-                                                   --device=gpu
+                                   -o VEHICLE_PRESSING.enable=true
+                                   --image_file=test_image.jpg \
+                                   --device=gpu
 
 # 预测包含一张或多张图片的文件夹
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
-                                                   --image_dir=images/ \
-                                                   --device=gpu
+                                   -o VEHICLE_PRESSING.enable=true
+                                   --image_dir=images/ \
+                                   --device=gpu
 ```
 
 4. 视频输入时，启动命令如下：
@@ -67,13 +69,15 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 ```bash
 #预测单个视频文件
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
-                                                   --video_file=test_video.mp4 \
-                                                   --device=gpu
+                                   -o VEHICLE_PRESSING.enable=true
+                                   --video_file=test_video.mp4 \
+                                   --device=gpu
 
 #预测包含一个或多个视频的文件夹
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
-                                                   --video_dir=test_videos/ \
-                                                   --device=gpu
+                                   --video_dir=test_videos/ \
+                                   -o VEHICLE_PRESSING.enable=true
+                                   --device=gpu
 ```
 
 5. 若修改模型路径，有以下两种方式：
@@ -85,7 +89,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
                                                    --video_file=test_video.mp4 \
                                                    --device=gpu \
-                                                   -o LANE_SEG.model_dir=output_inference/vehicle_attribute_infer
+                                                   -o VEHICLE_PRESSING.enable=true
+                                                   LANE_SEG.model_dir=output_inference
 ```
 
 测试效果如下：

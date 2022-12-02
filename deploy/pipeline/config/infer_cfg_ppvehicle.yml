@@ -42,6 +42,7 @@ VEHICLE_RETROGRADE:
   sample_freq: 7
   enable: False
   filter_horizontal_flag: True
+  keep_right_flag: True
   deviation: 23
   move_scale: 0.01
   fence_line: []   #[x1,y1,x2,y2] y2>y1.

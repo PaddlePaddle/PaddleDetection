@@ -467,6 +467,13 @@ class PipePredictor(object):
                 self.modebase[basemode] = True
                 self.reid_predictor = ReID.init_with_cfg(args, reid_cfg)
 
+            if self.with_vehicle_retrograde:
+                vehicleretrograde_cfg = self.cfg['VEHICLE_RETROGRADE']
+                basemode = self.basemode['VEHICLE_RETROGRADE']
+                self.modebase[basemode] = True
+                self.vehicle_retrograde_predictor = VehicleRetrogradeRecognizer(
+                    vehicleretrograde_cfg)
+
             if self.with_mot or self.modebase["idbased"] or self.modebase[
                     "skeletonbased"]:
                 mot_cfg = self.cfg['MOT']
@@ -502,13 +509,6 @@ class PipePredictor(object):
                 self.modebase[basemode] = True
                 self.video_action_predictor = VideoActionRecognizer.init_with_cfg(
                     args, video_action_cfg)
-
-            if self.with_vehicle_retrograde:
-                vehicleretrograde_cfg = self.cfg['VEHICLE_RETROGRADE']
-                basemode = self.basemode['VEHICLE_RETROGRADE']
-                self.modebase[basemode] = True
-                self.vehicle_retrograde_predictor = VehicleRetrogradeRecognizer(
-                    vehicleretrograde_cfg)
 
     def set_file_name(self, path):
         if type(path) == int:
@@ -847,7 +847,8 @@ class PipePredictor(object):
                     self.pipeline_res.update(attr_res, 'vehicle_attr')
 
                 if self.with_vehicle_press or self.with_vehicle_retrograde:
-                    if frame_id == 0 or cars_count > len(mot_res['boxes']):
+                    if frame_id == 0 or cars_count == 0 or cars_count > len(
+                            mot_res['boxes']):
 
                         if frame_id > self.warmup_frame:
                             self.pipe_timer.module_time['lanes'].start()

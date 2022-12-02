@@ -22,6 +22,7 @@ class VehicleRetrogradeRecognizer(object):
         self.filter_horizontal_flag = self.cfg['filter_horizontal_flag']
         self.deviation = self.cfg['deviation']
         self.move_scale = self.cfg['move_scale']
+        self.keep_right_flag = self.cfg['keep_right_flag']
         self.center_traj_retrograde = [{}]  #retrograde recognizer record use
         self.fence_line = None if len(self.cfg[
             'fence_line']) == 0 else self.cfg['fence_line']
@@ -245,7 +246,10 @@ class VehicleRetrogradeRecognizer(object):
         else:
             end_point_dir = -1
 
-        driver_dir = -1 if (line2[3] - line2[1]) >= 0 else 1
+        if self.keep_right_flag:
+            driver_dir = -1 if (line2[3] - line2[1]) >= 0 else 1
+        else:
+            driver_dir = -1 if (line2[3] - line2[1]) <= 0 else 1
 
         return start_point_dir == driver_dir and start_point_dir == end_point_dir
 
@@ -269,7 +273,6 @@ class VehicleRetrogradeRecognizer(object):
             class_id = int(det[i][1])
             mot_id = int(det[i][0])
             traj_i = self.center_traj_retrograde[class_id][mot_id]
-
             if len(traj_i) < 2:
                 continue
 
@@ -282,7 +285,6 @@ class VehicleRetrogradeRecognizer(object):
 
             if not self.is_move(traj_line['traj_line'], frame_shape):
                 continue
-
             angle, angle_deviation = self.get_angle(traj_line['traj_line'])
             if direction is not None and self.filter_horizontal_flag:
                 if abs(angle_deviation - direction) > self.deviation:

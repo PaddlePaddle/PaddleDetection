@@ -14,7 +14,7 @@
 1. 车辆检测/跟踪模型预测速度是基于NVIDIA T4, 开启TensorRT FP16得到。模型预测速度包含数据预处理、模型预测、后处理部分。
 2. 车辆检测/跟踪模型的训练和精度测试均基于[VeRi数据集](https://www.v7labs.com/open-datasets/veri-dataset)。
 3. 车道线模型预测速度基于Tesla P40,python端预测，模型预测速度包含数据预处理、模型预测、后处理部分。
-4. 车道线模型训练和精度测试均基于[BDD100K-LaneSeg](https://bdd-data.berkeley.edu/portal.html#download.)和[Apollo Scape](http://apolloscape.auto/lane_segmentation.html#to_dataset_href)
+4. 车道线模型训练和精度测试均基于[BDD100K-LaneSeg](https://bdd-data.berkeley.edu/portal.html#download.)和[Apollo Scape](http://apolloscape.auto/lane_segmentation.html#to_dataset_href)。两个数据集的标签文件[Lane_dataset_label](https://bj.bcebos.com/v1/paddledet/data/mot/bdd100k/lane_dataset_label.zip)
 
 
 ## 使用方法
@@ -32,8 +32,9 @@ VEHICLE_RETROGRADE:
   sample_freq: 7                      #采样频率
   enable: True                        #开启车辆逆行判断功能
   filter_horizontal_flag: False       #是否过滤水平方向车辆
-  deviation: 23                       #过滤水平方向角度阈值，如果大于该角度则过滤
-  move_scale: 0.01                    #过滤静止车辆阈值，若车辆移动像素大于图片对角线*move_scale，则认为车辆移动，反正
+  keep_right_flag: True               #按车辆靠右行驶规则，若车辆靠左行驶，则设为False
+  deviation: 23                       #过滤水平方向车辆的角度阈值，如果大于该角度则过滤
+  move_scale: 0.01                    #过滤静止车辆阈值，若车辆移动像素大于图片对角线*move_scale，则认为车辆移动，反之
                                       #车辆静止
   fence_line: []                      #车道中间线坐标，格式[x1,y1,x2,y2] 且y2>y1。若为空，由程序根据车流方向自动判断
 ```
@@ -59,18 +60,20 @@ PLSLaneseg:
 
 
 
-4. 车辆逆行识别功能需要视频输入时，启动命令如下：
+3. 车辆逆行识别功能需要视频输入时，启动命令如下：
 
 ```bash
 #预测单个视频文件
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
-                                                   --video_file=test_video.mp4 \
-                                                   --device=gpu
+                                   -o VEHICLE_RETROGRADE.enable=true \
+                                   --video_file=test_video.mp4 \
+                                   --device=gpu
 
 #预测包含一个或多个视频的文件夹
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
-                                                   --video_dir=test_videos/ \
-                                                   --device=gpu
+                                   -o VEHICLE_RETROGRADE.enable=true \
+                                   --video_dir=test_video.mp4\
+                                   --device=gpu
 ```
 
 5. 若修改模型路径，有以下两种方式：
@@ -80,11 +83,12 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 
 ```bash
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
-                                                   --video_file=test_video.mp4 \
-                                                   --device=gpu \
-                                                   -o LANE_SEG.model_dir=output_inference/vehicle_attribute_infer
-```
+                                   --video_file=test_video.mp4 \
+                                   --device=gpu \
+                                   -o LANE_SEG.model_dir=output_inference/
+                                   VEHICLE_RETROGRADE.enable=true
 
+```
 测试效果如下：
 
 <div width="1000" align="center">
@@ -92,7 +96,6 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 </div>
 
 **注意:**
- - 示例图指定绿化带左边方向下行，右边方向上行。绿框表示逆行车辆；
  - 车道线中间线自动判断条件：在采样的视频段内同时有两个相反方向的车辆，且判断一次后固定，不再更新；
  - 因摄像头角度以及2d视角问题，车道线中间线判断存在不准确case，可在配置文件手动输入中间线坐标
 
