@@ -30,6 +30,7 @@ from . import mot
 from . import transformers
 from . import assigners
 from . import rbox_utils
+from . import ssod_utils
 
 from .ops import *
 from .backbones import *
@@ -45,3 +46,4 @@ from .mot import *
 from .transformers import *
 from .assigners import *
 from .rbox_utils import *
+from .ssod_utils import *

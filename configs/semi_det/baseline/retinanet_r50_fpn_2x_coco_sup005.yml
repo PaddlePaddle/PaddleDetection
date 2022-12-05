@@ -1,9 +1,9 @@
 _BASE_: [
-  '../../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.yml',
+  '../../retinanet/retinanet_r50_fpn_2x_coco.yml',
 ]
 log_iter: 50
 snapshot_epoch: 2
-weights: output/fcos_r50_fpn_2x_coco_sup005/model_final
+weights: output/retinanet_r50_fpn_2x_coco_sup005/model_final
 
 
 TrainDataset:
@@ -23,4 +23,4 @@ LearningRate:
     milestones: [16, 22]
   - !LinearWarmup
     start_factor: 0.001
-    steps: 1000
+    epochs: 1

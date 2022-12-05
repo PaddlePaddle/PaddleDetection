@@ -1,5 +1,5 @@
 _BASE_: [
-  '../../retinanet/retinanet_r50_fpn_1x_coco.yml',
+  '../../retinanet/retinanet_r50_fpn_2x_coco.yml',
 ]
 log_iter: 50
 snapshot_epoch: 2
@@ -23,4 +23,4 @@ LearningRate:
     milestones: [16, 22]
   - !LinearWarmup
     start_factor: 0.001
-    steps: 500
+    epochs: 1

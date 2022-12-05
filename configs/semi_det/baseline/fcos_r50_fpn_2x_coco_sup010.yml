@@ -1,9 +1,9 @@
 _BASE_: [
-  '../../faster_rcnn/faster_rcnn_r50_fpn_2x_coco.yml',
+  '../../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.yml',
 ]
 log_iter: 50
 snapshot_epoch: 2
-weights: output/faster_rcnn_r50_fpn_2x_coco_sup010/model_final
+weights: output/fcos_r50_fpn_2x_coco_sup010/model_final
 
 
 TrainDataset:
@@ -22,5 +22,5 @@ LearningRate:
     gamma: 0.1
     milestones: [16, 22]
   - !LinearWarmup
-    start_factor: 0.1
-    steps: 500
+    start_factor: 0.001
+    epochs: 1

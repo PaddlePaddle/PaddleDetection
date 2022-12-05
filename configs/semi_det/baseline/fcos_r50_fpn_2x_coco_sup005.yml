@@ -3,13 +3,13 @@ _BASE_: [
 ]
 log_iter: 50
 snapshot_epoch: 2
-weights: output/fcos_r50_fpn_2x_coco_sup010/model_final
+weights: output/fcos_r50_fpn_2x_coco_sup005/model_final
 
 
 TrainDataset:
   !COCODataSet
     image_dir: train2017
-    anno_path: semi_annotations/instances_train2017.1@10.json
+    anno_path: semi_annotations/instances_train2017.1@5.json
     dataset_dir: dataset/coco
     data_fields: ['image', 'gt_bbox', 'gt_class']
 
@@ -23,4 +23,4 @@ LearningRate:
     milestones: [16, 22]
   - !LinearWarmup
     start_factor: 0.001
-    steps: 1000
+    epochs: 1
