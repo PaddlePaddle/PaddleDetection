@@ -60,7 +60,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 The test result is：
 
 <div width="1000" align="center">
-  <img src="../images/mot.gif"/>
+  <img src="https://user-images.githubusercontent.com/22989727/205599943-8da89ce8-f6d1-47e5-adc8-6d199b76d167.gif"/>
 </div>
 
 Data source and copyright owner：Skyinfor Technology. Thanks for the provision of actual scenario data, which are only used for academic research here.

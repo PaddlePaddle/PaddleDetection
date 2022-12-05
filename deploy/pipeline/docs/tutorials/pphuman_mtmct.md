@@ -59,12 +59,12 @@ python3 deploy/pipeline/pipeline.py
 
 - camera 1:
 <div width="1080" align="center">
-  <img src="../images/c1.gif"/>
+  <img src="https://user-images.githubusercontent.com/22989727/205595795-fd859feb-8218-450f-a109-91c27713a662.gif"/>
 </div>
 
 - camera 2:
 <div width="1080" align="center">
-  <img src="../images/c2.gif"/>
+  <img src="https://user-images.githubusercontent.com/22989727/205595826-18ab5f0e-a572-4950-a502-96e6eb904a1e.gif"/>
 </div>
 
 

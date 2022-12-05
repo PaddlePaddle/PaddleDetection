@@ -106,7 +106,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 The result is shown as follow:
 
 <div width="1000" align="center">
-  <img src="../images/vehicle_attribute.gif"/>
+  <img src="https://user-images.githubusercontent.com/22989727/205599146-56abd72f-6e0a-4a21-bd11-f8bb421f2887.gif"/>
 </div>
 
 

@@ -17,7 +17,7 @@
 应用行为：摔倒识别
 
 <div align="center">
-  <img src="../images/action.gif" width='1000'/>
+  <img src="https://user-images.githubusercontent.com/22989727/205582385-08a1b6ae-9b1b-465a-ac25-d6427571eb56.gif" width='1000'/>
   <center>数据来源及版权归属：天覆科技，感谢提供并开源实际场景数据，仅限学术研究使用</center>
 </div>
 
@@ -88,7 +88,7 @@ SKELETON_ACTION: # 基于骨骼点的行为识别模型配置
 应用行为：打电话识别
 
 <div align="center">
-  <img src="../images/calling.gif" width='1000'/>
+  <img src="https://user-images.githubusercontent.com/22989727/205596971-d92fd24e-977a-4742-91cc-ce5b4802473c.gif" width='1000'/>
   <center>数据来源及版权归属：天覆科技，感谢提供并开源实际场景数据，仅限学术研究使用</center>
 </div>
 
@@ -145,7 +145,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 应用行为：吸烟识别
 
 <div align="center">
-  <img src="../images/smoking.gif" width='1000'/>
+  <img src="https://user-images.githubusercontent.com/22989727/205599300-380c3805-63d6-43cc-9b77-2687b1328d7b.gif" width='1000'/>
   <center>数据来源及版权归属：天覆科技，感谢提供并开源实际场景数据，仅限学术研究使用</center>
 </div>
 
@@ -213,7 +213,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 应用行为：打架识别
 
 <div align="center">
-  <img src="../images/fight_demo.gif" width='1000'/>
+  <img src="https://user-images.githubusercontent.com/22989727/205597198-8b4333b3-6c39-472c-a25c-018dac908867.gif" width='1000'/>
   <center>数据来源及版权归属：Surveillance Camera Fight Dataset。</center>
 </div>
 

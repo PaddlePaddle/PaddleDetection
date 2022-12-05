@@ -75,7 +75,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 测试效果如下：
 
 <div width="1000" align="center">
-  <img src="../images/illegal_parking_demo.gif"/>
+  <img src="https://user-images.githubusercontent.com/22989727/205598624-bcf5165c-990c-4fe4-8cde-eb1d45298d8f.gif"/>
 </div>
 
 可视化视频中左上角num后面的数值表示当前帧中车辆的数目；Total count表示画面中出现的车辆的总数，包括出现又消失的车辆。
