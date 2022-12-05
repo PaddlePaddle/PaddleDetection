@@ -501,7 +501,8 @@ class RandomDistort(BaseOperator):
                  brightness=[0.5, 1.5, 0.5],
                  random_apply=True,
                  count=4,
-                 random_channel=False):
+                 random_channel=False,
+                 prob=1.0):
         super(RandomDistort, self).__init__()
         self.hue = hue
         self.saturation = saturation
@@ -510,6 +511,7 @@ class RandomDistort(BaseOperator):
         self.random_apply = random_apply
         self.count = count
         self.random_channel = random_channel
+        self.prob = prob
 
     def apply_hue(self, img):
         low, high, prob = self.hue
@@ -563,6 +565,8 @@ class RandomDistort(BaseOperator):
         return img
 
     def apply(self, sample, context=None):
+        if random.random() > self.prob:
+            return sample
         img = sample['image']
         if self.random_apply:
             functions = [
@@ -1488,7 +1492,8 @@ class RandomCrop(BaseOperator):
                  allow_no_crop=True,
                  cover_all_box=False,
                  is_mask_crop=False,
-                 ioumode="iou"):
+                 ioumode="iou",
+                 prob=1.0):
         super(RandomCrop, self).__init__()
         self.aspect_ratio = aspect_ratio
         self.thresholds = thresholds
@@ -1498,6 +1503,7 @@ class RandomCrop(BaseOperator):
         self.cover_all_box = cover_all_box
         self.is_mask_crop = is_mask_crop
         self.ioumode = ioumode
+        self.prob = prob
 
     def crop_segms(self, segms, valid_ids, crop, height, width):
         def _crop_poly(segm, crop):
@@ -1588,6 +1594,9 @@ class RandomCrop(BaseOperator):
         return sample
 
     def apply(self, sample, context=None):
+        if random.random() > self.prob:
+            return sample
+
         if 'gt_bbox' not in sample:
             # only used in semi-det as unsup data
             sample = self.set_fake_bboxes(sample)
@@ -2795,6 +2804,36 @@ class RandomSelect(BaseOperator):
 
 
 @register_op
+class RandomSelects(BaseOperator):
+    """
+    Randomly choose a transformation between transforms1 and transforms2,
+    and the probability of choosing transforms1 is p.
+
+    The code is based on https://github.com/facebookresearch/detr/blob/main/datasets/transforms.py
+
+    """
+
+    def __init__(self, transforms_list, p=None):
+        super(RandomSelects, self).__init__()
+        if p is not None:
+            assert isinstance(p, (list, tuple))
+            assert len(transforms_list) == len(p)
+        else:
+            assert len(transforms_list) > 0
+        self.transforms = [Compose(t) for t in transforms_list]
+        self.p = p
+
+    def apply(self, sample, context=None):
+        if self.p is None:
+            return random.choice(self.transforms)(sample)
+        else:
+            prob = random.random()
+            for p, t in zip(self.p, self.transforms):
+                if prob <= p:
+                    return t(sample)
+
+
+@register_op
 class RandomShortSideResize(BaseOperator):
     def __init__(self,
                  short_side_sizes,
@@ -2829,22 +2868,23 @@ class RandomShortSideResize(BaseOperator):
 
     def get_size_with_aspect_ratio(self, image_shape, size, max_size=None):
         h, w = image_shape
+        max_clip = False
         if max_size is not None:
             min_original_size = float(min((w, h)))
             max_original_size = float(max((w, h)))
             if max_original_size / min_original_size * size > max_size:
-                size = int(
-                    round(max_size * min_original_size / max_original_size))
+                size = int(max_size * min_original_size / max_original_size)
+                max_clip = True
 
         if (w <= h and w == size) or (h <= w and h == size):
             return (w, h)
 
         if w < h:
             ow = size
-            oh = int(round(size * h / w))
+            oh = int(round(size * h / w)) if not max_clip else max_size
         else:
             oh = size
-            ow = int(round(size * w / h))
+            ow = int(round(size * w / h)) if not max_clip else max_size
 
         return (ow, oh)
 

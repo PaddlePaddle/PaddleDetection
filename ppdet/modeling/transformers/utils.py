@@ -32,7 +32,7 @@ from ..bbox_utils import bbox_overlaps
 __all__ = [
     '_get_clones', 'bbox_overlaps', 'bbox_cxcywh_to_xyxy',
     'bbox_xyxy_to_cxcywh', 'sigmoid_focal_loss', 'inverse_sigmoid',
-    'deformable_attention_core_func'
+    'deformable_attention_core_func', 'varifocal_loss_with_logits'
 ]
 
 
@@ -395,3 +395,16 @@ def mask_to_box_coordinate(mask,
         out_bbox /= paddle.to_tensor([w, h, w, h]).astype(dtype)
 
     return out_bbox if format == "xyxy" else bbox_xyxy_to_cxcywh(out_bbox)
+
+
+def varifocal_loss_with_logits(pred_logits,
+                               gt_score,
+                               label,
+                               normalizer=1.0,
+                               alpha=0.75,
+                               gamma=2.0):
+    pred_score = F.sigmoid(pred_logits)
+    weight = alpha * pred_score.pow(gamma) * (1 - label) + gt_score * label
+    loss = F.binary_cross_entropy_with_logits(
+        pred_logits, gt_score, weight=weight, reduction='none')
+    return loss.mean(1).sum() / normalizer

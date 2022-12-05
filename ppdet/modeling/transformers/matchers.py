@@ -107,16 +107,15 @@ class HungarianMatcher(nn.Layer):
         tgt_bbox = paddle.concat(gt_bbox)
 
         # Compute the classification cost
+        out_prob = paddle.gather(out_prob, tgt_ids, axis=1)
         if self.use_focal_loss:
             neg_cost_class = (1 - self.alpha) * (out_prob**self.gamma) * (-(
                 1 - out_prob + 1e-8).log())
             pos_cost_class = self.alpha * (
                 (1 - out_prob)**self.gamma) * (-(out_prob + 1e-8).log())
-            cost_class = paddle.gather(
-                pos_cost_class, tgt_ids, axis=1) - paddle.gather(
-                    neg_cost_class, tgt_ids, axis=1)
+            cost_class = pos_cost_class - neg_cost_class
         else:
-            cost_class = -paddle.gather(out_prob, tgt_ids, axis=1)
+            cost_class = -out_prob
 
         # Compute the L1 cost between boxes
         cost_bbox = (

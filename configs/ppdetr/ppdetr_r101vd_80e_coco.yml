@@ -1,0 +1,37 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_80e.yml',
+  '_base_/ppdetr_r50vd.yml',
+  '_base_/ppdetr_reader.yml',
+]
+
+weights: output/ppdetr_r101vd_80e_coco/model_final
+find_unused_parameters: True
+log_iter: 200
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet101_vd_ssld_pretrained.pdparams
+
+ResNet:
+  # index 0 stands for res2
+  depth: 101
+  variant: d
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1, 2, 3]
+  lr_mult_list: [0.01, 0.01, 0.01, 0.01]
+  num_stages: 4
+  freeze_stem_only: True
+
+HybridEncoder:
+  hidden_dim: 384
+  use_encoder_idx: [2]
+  num_encoder_layers: 1
+  encoder_layer:
+    name: TransformerLayer
+    d_model: 384
+    nhead: 8
+    dim_feedforward: 2048
+    dropout: 0.
+    activation: 'gelu'
+  expansion: 1.0
