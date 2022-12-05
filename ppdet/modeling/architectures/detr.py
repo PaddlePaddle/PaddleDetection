@@ -40,9 +40,9 @@ class DETR(BaseArch):
                  exclude_post_process=False):
         super(DETR, self).__init__()
         self.backbone = backbone
-        self.neck = neck
         self.transformer = transformer
         self.detr_head = detr_head
+        self.neck = neck
         self.post_process = post_process
         self.with_mask = with_mask
         self.exclude_post_process = exclude_post_process
@@ -54,6 +54,7 @@ class DETR(BaseArch):
         # neck
         kwargs = {'input_shape': backbone.out_shape}
         neck = create(cfg['neck'], **kwargs) if cfg['neck'] else None
+
         # transformer
         if neck is not None:
             kwargs = {'input_shape': neck.out_shape}
