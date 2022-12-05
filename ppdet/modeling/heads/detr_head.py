@@ -368,9 +368,10 @@ class DeformableDETRHead(nn.Layer):
 class DINOHead(nn.Layer):
     __inject__ = ['loss']
 
-    def __init__(self, loss='DINOLoss'):
+    def __init__(self, loss='DINOLoss', eval_idx=-1):
         super(DINOHead, self).__init__()
         self.loss = loss
+        self.eval_idx = eval_idx
 
     def forward(self, out_transformer, body_feats, inputs=None):
         (dec_out_bboxes, dec_out_logits, enc_topk_bboxes, enc_topk_logits,
@@ -458,7 +459,8 @@ class DINOHead(nn.Layer):
                 dn_out_logits=dn_out_logits,
                 dn_meta=dn_meta)
         else:
-            return (dec_out_bboxes[-1], dec_out_logits[-1], None)
+            return (dec_out_bboxes[self.eval_idx],
+                    dec_out_logits[self.eval_idx], None)
 
 
 @register
