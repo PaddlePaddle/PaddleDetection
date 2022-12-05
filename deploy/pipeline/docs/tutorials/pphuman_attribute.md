@@ -69,7 +69,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 测试效果如下：
 
-<div width="1000" align="center">
+<div width="600" align="center">
   <img src="https://user-images.githubusercontent.com/22989727/205597518-7a602bd5-e643-44a1-a4ca-03c9ffecd918.gif"/>
 </div>
 

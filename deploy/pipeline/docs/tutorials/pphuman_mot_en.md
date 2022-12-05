@@ -59,7 +59,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 The test result is：
 
-<div width="1000" align="center">
+<div width="600" align="center">
   <img src="https://user-images.githubusercontent.com/22989727/205599943-8da89ce8-f6d1-47e5-adc8-6d199b76d167.gif"/>
 </div>
 
@@ -90,7 +90,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 The test result is：
 
 <div align="center">
-  <img src="https://user-images.githubusercontent.com/22989727/178769370-03ab1965-cfd1-401b-9902-82620a06e43c.gif" width='1000'/>
+  <img src="https://user-images.githubusercontent.com/22989727/178769370-03ab1965-cfd1-401b-9902-82620a06e43c.gif" width='600'/>
 </div>
 
 
