@@ -44,7 +44,7 @@ class ESEAttn(nn.Layer):
 
 @register
 class PPYOLOERHead(nn.Layer):
-    __shared__ = ['num_classes', 'trt']
+    __shared__ = ['num_classes', 'trt', 'export_onnx']
     __inject__ = ['static_assigner', 'assigner', 'nms']
 
     def __init__(self,
@@ -57,6 +57,7 @@ class PPYOLOERHead(nn.Layer):
                  use_varifocal_loss=True,
                  static_assigner_epoch=4,
                  trt=False,
+                 export_onnx=False,
                  static_assigner='ATSSAssigner',
                  assigner='TaskAlignedAssigner',
                  nms='MultiClassNMS',
@@ -84,6 +85,8 @@ class PPYOLOERHead(nn.Layer):
         self.stem_cls = nn.LayerList()
         self.stem_reg = nn.LayerList()
         self.stem_angle = nn.LayerList()
+        trt = False if export_onnx else trt
+        self.export_onnx = export_onnx
         act = get_act_fn(
             act, trt=trt) if act is None or isinstance(act,
                                                        (str, dict)) else act
@@ -415,5 +418,7 @@ class PPYOLOERHead(nn.Layer):
             ],
             axis=-1).reshape([-1, 1, 8])
         pred_bboxes /= scale_factor
+        if self.export_onnx:
+            return pred_bboxes, pred_scores
         bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
         return bbox_pred, bbox_num
