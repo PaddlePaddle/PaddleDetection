@@ -36,7 +36,7 @@ Note:
 
 ## Skeleton-based action recognition -- falling detection
 
-<div align="center">  <img src="https://user-images.githubusercontent.com/22989727/205582385-08a1b6ae-9b1b-465a-ac25-d6427571eb56.gif" width='600'/> <center>Data source and copyright owner：Skyinfor
+<div align="center">  <img src="https://user-images.githubusercontent.com/22989727/205582385-08a1b6ae-9b1b-465a-ac25-d6427571eb56.gif" width='600'/><br> <center>Data source and copyright owner：Skyinfor
 Technology. Thanks for the provision of actual scenario data, which are only
 used for academic research here. </center>
 
@@ -101,7 +101,7 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
 
 ## Image-Classification-Based Action Recognition -- Calling Recognition
 
-<div align="center">  <img src="https://user-images.githubusercontent.com/22989727/205596971-d92fd24e-977a-4742-91cc-ce5b4802473c.gif" width='600'/> <center>Data source and copyright owner：Skyinfor
+<div align="center">  <img src="https://user-images.githubusercontent.com/22989727/205596971-d92fd24e-977a-4742-91cc-ce5b4802473c.gif" width='600'/><br> <center>Data source and copyright owner：Skyinfor
 Technology. Thanks for the provision of actual scenario data, which are only
 used for academic research here. </center>
 
@@ -148,7 +148,7 @@ ID_BASED_CLSACTION: # config for classfication-based action recognition model
 
 ## Detection-based Action Recognition -- Smoking Detection
 
-<div align="center">  <img src="https://user-images.githubusercontent.com/22989727/205599300-380c3805-63d6-43cc-9b77-2687b1328d7b.gif" width='600'/> <center>Data source and copyright owner：Skyinfor
+<div align="center">  <img src="https://user-images.githubusercontent.com/22989727/205599300-380c3805-63d6-43cc-9b77-2687b1328d7b.gif" width='600'/><br> <center>Data source and copyright owner：Skyinfor
 Technology. Thanks for the provision of actual scenario data, which are only
 used for academic research here. </center>
 
