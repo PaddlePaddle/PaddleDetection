@@ -29,7 +29,7 @@ class COTLoss(nn.Layer):
         tgt_labels, tgt_bboxes, tgt_gt_inds = targets
         tgt_labels = paddle.concat(tgt_labels) if len(
             tgt_labels) > 1 else tgt_labels[0]
-
+        mask = (tgt_labels < self.num_classes)
         valid_inds = paddle.nonzero(tgt_labels >= 0).flatten()
         if valid_inds.shape[0] == 0:
             loss_bbox[cls_name] = paddle.zeros([1], dtype='float32')
@@ -40,10 +40,8 @@ class COTLoss(nn.Layer):
                 train_label = tgt_labels[i]
                 if train_label < self.num_classes:
                     valid_cot_targets.append(cot_relation[train_label])
-                else:
-                    valid_cot_targets.append(np.zeros(80))
             coco_targets = paddle.to_tensor(valid_cot_targets)
             coco_targets.stop_gradient = True
-            coco_loss = - coco_targets * F.log_softmax(scores[:, :-1] * self.cot_scale)
+            coco_loss = - coco_targets * F.log_softmax(scores[mask][:, :-1] * self.cot_scale)
             loss_bbox[cls_name] = self.cot_lambda * paddle.mean(paddle.sum(coco_loss, axis=-1))
         return loss_bbox
