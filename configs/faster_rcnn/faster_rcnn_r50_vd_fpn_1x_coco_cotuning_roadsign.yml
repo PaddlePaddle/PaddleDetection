@@ -2,7 +2,7 @@ _BASE_: [
   'faster_rcnn_r50_fpn_1x_coco.yml',
 ]
 pretrain_weights: https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_fpn_1x_coco.pdparams
-weights: output/label-cotuning_faster_rcnn_r50_vd_fpn_1x_coco/model_final
+weights: output/faster_rcnn_r50_vd_fpn_1x_coco_cotuning_roadsign/model_final
 
 snapshot_epoch: 5
 

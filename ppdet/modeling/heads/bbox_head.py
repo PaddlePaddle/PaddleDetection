@@ -173,7 +173,10 @@ class BBoxHead(nn.Layer):
             box.
         with_pool (bool): Whether to use pooling for the RoI feature.
         num_classes (int): The number of classes
-        bbox_weight (List[float]): The weight to get the decode box 
+        bbox_weight (List[float]): The weight to get the decode box
+        cot_classes (int): The number of base classes
+        loss_cot (object): The module of Label-cotuning
+        use_cot(bool): whether to use Label-cotuning 
     """
 
     def __init__(self,

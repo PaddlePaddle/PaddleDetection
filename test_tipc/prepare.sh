@@ -158,6 +158,12 @@ else
     if [[ ${model_name} =~ "s2anet" ]]; then
         cd ./ppdet/ext_op && eval "${python} setup.py install"
         cd ../../
+    elif [[ ${model_name} =~ "ppyoloe_r_crn_s_3x_spine_coco" ]]; then
+        cd ./ppdet/ext_op && eval "${python} setup.py install"
+        cd ../../
+    elif [[ ${model_name} =~ "fcosr_x50_3x_spine_coco" ]]; then
+        cd ./ppdet/ext_op && eval "${python} setup.py install"
+        cd ../../
     fi
     # download mot lite data
     wget -nc -P ./dataset/mot/ https://paddledet.bj.bcebos.com/data/tipc/mot_tipc.tar --no-check-certificate

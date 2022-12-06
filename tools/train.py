@@ -30,7 +30,10 @@ warnings.filterwarnings('ignore')
 import paddle
 
 from ppdet.core.workspace import load_config, merge_config
+
 from ppdet.engine import Trainer, TrainerCot, init_parallel_env, set_random_seed, init_fleet_env
+from ppdet.engine.trainer_ssod import Trainer_DenseTeacher
+
 from ppdet.slim import build_slim_model
 
 from ppdet.utils.cli import ArgsParser, merge_args
@@ -125,7 +128,15 @@ def run(FLAGS, cfg):
         set_random_seed(0)
 
     # build trainer
-    if cfg.use_cot:
+    ssod_method = cfg.get('ssod_method', None)
+    if ssod_method is not None:
+        if ssod_method == 'DenseTeacher':
+            trainer = Trainer_DenseTeacher(cfg, mode='train')
+        else:
+            raise ValueError(
+                "Semi-Supervised Object Detection only support DenseTeacher now."
+            )
+    elif cfg.use_cot:
         trainer = TrainerCot(cfg, mode='train')
     else:
         trainer = Trainer(cfg, mode='train')

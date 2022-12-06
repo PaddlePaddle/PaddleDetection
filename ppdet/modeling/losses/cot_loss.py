@@ -21,8 +21,7 @@ class COTLoss(nn.Layer):
         self.cot_scale = cot_scale
         self.cot_lambda = cot_lambda    
         self.num_classes = num_classes    
-        print('cot_scale:{x}'.format(x=self.cot_scale))
-        print('cot_lambda:{x}'.format(x=self.cot_lambda))
+        
     def forward(self, scores, targets, cot_relation):    
         cls_name = 'loss_bbox_cls_cot'
         loss_bbox = {}
