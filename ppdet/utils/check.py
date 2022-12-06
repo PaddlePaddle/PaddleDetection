@@ -62,7 +62,7 @@ def check_npu(use_npu):
           "model on CPU/GPU/XPU"
 
     try:
-        if use_npu and 'npu' in paddle.get_all_device_type():
+        if use_npu and not 'npu' in paddle.device.get_all_custom_device_type():
             logger.error(err)
             sys.exit(1)
     except Exception as e:
