@@ -65,7 +65,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 The test result is：
 
-<div width="1000" align="center">
+<div width="600" align="center">
   <img src="https://user-images.githubusercontent.com/48054808/159898428-5bda0831-7249-4889-babd-9165f26f664d.gif"/>
 </div>
 

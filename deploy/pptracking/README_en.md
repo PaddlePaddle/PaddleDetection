@@ -11,7 +11,7 @@ PP-Tracking supports two paradigms: single camera tracking (MOT) and multi-camer
 </div>
 
 <div width="1000" align="center">
-  <img src="../../docs/images/pptracking-demo.gif"/>
+  <img src="https://user-images.githubusercontent.com/22989727/205546999-f847183d-73e5-4abe-9896-ce6a245efc79.gif"/>
   <br>
   video source：VisDrone and BDD100K dataset</div>
 </div>

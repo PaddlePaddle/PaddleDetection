@@ -24,7 +24,7 @@ If you want to deploy it on the mobile devives, you also need:
 - [Android Fitness Demo](https://github.com/zhiboniu/pose_demo_android) based on PP-TinyPose, which efficiently implements fitness calibration and counting.
 
 <div align="center">
-  <img src="../../../docs/images/fitness_demo.gif" width='636'/>
+  <img src="https://user-images.githubusercontent.com/22989727/205545098-fe6515af-3f1d-4303-bb4d-6e2141e42e2c.gif" width='636'/>
 </div>
 
 - Welcome to scan the QR code for quick experience.
