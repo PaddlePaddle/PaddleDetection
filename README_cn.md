@@ -37,7 +37,7 @@ PaddleDetection将检测模型解耦成不同的模块组件，通过自定义�
 PaddleDetection支持大量的最新主流的算法基准以及预训练模型，涵盖目标检测、实例分割、人脸检测、关键点检测、多目标跟踪等方向。`传送门`：[模型库](#模型库)。
 
 - **产业级特色模型|工具箱**
-PaddleDetection打造产业级特色模型以及分析工具：PP-YOLOE+、PP-PicoDet、PP-TinyPose、PP-HumanV2、PP-Vehicle等，针对通用、高频垂类应用场景提供深度优化解决方案以及高度集成的分析工具，降低开发者的试错、选择成本，针对业务场景快速应用落地。`传送门`：[产业特色模型|工具箱](#产业特色模型--工具箱)。
+PaddleDetection打造产业级特色模型以及分析工具：PP-YOLOE+、PP-PicoDet、PP-TinyPose、PP-HumanV2、PP-Vehicle等，针对通用、高频垂类应用场景提供深度优化解决方案以及高度集成的分析工具，降低开发者的试错、选择成本，针对业务场景快速应用落地。`传送门`：[产业特色模型|工具箱](#产业特色模型工具箱)。
 
 - **产业级部署实践**
 PaddleDetection整理工业、农业、林业、交通、医疗、金融、能源电力等AI应用范例，打通数据标注-模型训练-模型调优-预测部署全流程，持续降低目标检测技术产业落地门槛。`传送门`：[产业实践范例](#产业实践范例)、[企业应用案例](#企业应用案例)。
@@ -128,7 +128,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 - [ONNX模型导出](deploy/EXPORT_ONNX_MODEL.md)
 - [推理benchmark](deploy/BENCHMARK_INFER.md)
 
-## 🧩模块组件
+## 模块组件
 
 <table align="center">
   <tbody>
@@ -259,7 +259,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
   </tbody>
 </table>
 
-## 📱模型库
+## 模型库
 
 <table align="center">
   <tbody>
@@ -367,7 +367,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
   </tbody>
 </table>
 
-## 🚀产业特色模型|工具箱
+## 产业特色模型|工具箱
 
 ### `PP-YOLOE 高精度目标检测模型`
 
@@ -578,7 +578,7 @@ PP-Vehicle囊括四大交通场景核心功能：车牌识别、属性识别、�
 | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | 智慧交通 | 交通监控车辆分析 | 本项目基于PP-Vehicle演示智慧交通中最刚需的车流量监控、车辆违停检测以及车辆结构化（车牌、车型、颜色）分析三大场景。 | [基于PP-Vehicle的交通监控分析系统](https://aistudio.baidu.com/aistudio/projectdetail/4512254) | [下载链接](https://aistudio.baidu.com/aistudio/projectdetail/4512254) |
 
-## 🎗️产业实践范例
+## 产业实践范例
 
 产业实践范例是PaddleDetection针对高频目标检测应用场景，提供的端到端开发示例，帮助开发者打通数据标注-模型训练-模型调优-预测部署全流程。
 针对每个范例我们都通过[AI-Studio](https://ai.baidu.com/ai-doc/AISTUDIO/Tk39ty6ho)提供了项目代码以及说明，用户可以同步运行体验。
@@ -598,7 +598,7 @@ PP-Vehicle囊括四大交通场景核心功能：车牌识别、属性识别、�
 - [基于PP-Human的来客分析案例教程](https://aistudio.baidu.com/aistudio/projectdetail/4537344)
 - 持续更新中...
 
-## 🏆企业应用案例
+## 企业应用案例
 - [中国南方电网——变电站智慧巡检](https://www.paddlepaddle.org.cn/support/news?action=detail&id=2330)
 - [国铁电气——轨道在线智能巡检系统](https://www.paddlepaddle.org.cn/support/news?action=detail&id=2280)
 - [京东物流——园区车辆行为识别](https://www.paddlepaddle.org.cn/support/news?action=detail&id=2611)
