@@ -112,10 +112,14 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
   2 实线
   3 虚线
 车辆逆行分析过滤虚线类；
+
 3.车道线通过对分割结果聚类得到，且默认过滤水平方向车道线，若不过滤可在[车道线配置文件](../../config/lane_seg.yml)修改`filter_flag`参数;
+
 4.车辆逆行判断默认过滤水平方向车辆，若不过滤可在[配置文件](../../config/infer_cfg_ppvehicle.yml)修改`filter_horizontal_flag`参数;
+
 5.车辆逆行默认按靠右行驶规则判断，若修改，可在[配置文件](../../config/infer_cfg_ppvehicle.yml)修改`keep_right_flag`参数;
 
-性能优化措施：
+**性能优化措施**：
 1.因摄像头视角原因，可以根据实际情况决定是否过滤水平方向车道线与水平方向车辆;
+
 2.车道中间线可手动输入；

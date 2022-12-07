@@ -106,8 +106,10 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
   2 实线
   3 虚线
 车辆压线分析过滤虚线类；
+
 2.车道线通过对分割结果聚类得到，且默认过滤水平方向车道线，若不过滤可在[车道线配置文件](../../config/lane_seg.yml)修改`filter_flag`参数；
+
 3.车辆压线判断条件：车辆的检测框底边线与车道线是否有交点；
 
-性能优化措施：
+**性能优化措施**
 1.因摄像头视角原因，可以根据实际情况决定是否过滤水平方向车道线;

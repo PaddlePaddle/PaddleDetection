@@ -110,11 +110,15 @@ The result is shown as follow:
   2 Solid line
   3 Dashed line
 Lane line recognition filtering Dashed lines;
+
 3.Lane lines are obtained by clustering segmentation results, and the horizontal lane lines are filtered by default. If not, you can modify the `filter_flag` in [lane line seg config file](../../config/lane_seg.yml);
+
 4.The vehicles in the horizontal direction are filtered by default when judging the vehicles in the reverse direction. If not, you can modify the `filter_horizontal_flag` in [config file](../../config/infer_cfg_ppvehicle.yml);
+
 5.The vehicle will be judged according to the right driving rule by default.If not, you can modify the `keep_right_flag` in [config file](../../config/infer_cfg_ppvehicle.yml);
 
 
 **Performance optimization measures：**
 1.Due to the camera's viewing angle, it can be decided whether to filter the lane lines and vehicles in the horizontal direction according to the actual situation;
+
 2.The lane middle line can be manually entered;
