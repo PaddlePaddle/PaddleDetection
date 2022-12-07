@@ -18,7 +18,7 @@
 
 
 <div  align="center">
-  <img src="docs/images/ppdet.gif" width="800"/>
+  <img src="https://user-images.githubusercontent.com/22989727/205581915-aa8d6bee-5624-4aec-8059-76b5ebaf96f1.gif" width="800"/>
 
 </div>
 
