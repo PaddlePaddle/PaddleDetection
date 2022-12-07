@@ -100,4 +100,14 @@ The result is shown as follow:
 </div>
 
 ## Features to the Solution
-Lane line recognition model uses [PaddleSeg]（ https://github.com/PaddlePaddle/PaddleSeg ）Super lightweight segmentation scheme.
+1.Lane line recognition model uses [PaddleSeg]（ https://github.com/PaddlePaddle/PaddleSeg ）Super lightweight segmentation scheme.Train [lable](https://bj.bcebos.com/v1/paddledet/data/mot/bdd100k/lane_dataset_label.zip)it is divided into four categories:
+  0 Background
+  1 Double yellow line
+  2 Solid line
+  3 Dashed line
+Lane line recognition filtering Dashed lines;
+2.Lane lines are obtained by clustering segmentation results, and the horizontal lane lines are filtered by default. If not, you can modify the `filter_flag` in [lane line seg config file](../../config/lane_seg.yml);
+3.Judgment conditions for vehicle line pressing: whether there is intersection between the bottom edge line of vehicle detection frame and lane line;
+
+**Performance optimization measures：**
+1.Due to the camera angle, it can be decided whether to filter the lane line in the horizontal direction according to the actual situation;

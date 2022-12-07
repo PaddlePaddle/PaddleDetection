@@ -14,7 +14,7 @@
 1. 车辆检测/跟踪模型预测速度是基于NVIDIA T4, 开启TensorRT FP16得到。模型预测速度包含数据预处理、模型预测、后处理部分。
 2. 车辆检测/跟踪模型的训练和精度测试均基于[VeRi数据集](https://www.v7labs.com/open-datasets/veri-dataset)。
 3. 车道线模型预测速度基于Tesla P40,python端预测，模型预测速度包含数据预处理、模型预测、后处理部分。
-4. 车道线模型训练和精度测试均基于[BDD100K-LaneSeg](https://bdd-data.berkeley.edu/portal.html#download)和[Apollo Scape](http://apolloscape.auto/lane_segmentation.html#to_dataset_href),两个数据集车道线分割标签[Lane_dataset_label](https://bj.bcebos.com/v1/paddledet/data/mot/bdd100k/lane_dataset_label.zip)
+4. 车道线模型训练和精度测试均基于[BDD100K-LaneSeg](https://bdd-data.berkeley.edu/portal.html#download)和[Apollo Scape](http://apolloscape.auto/lane_segmentation.html#to_dataset_href),两个数据集车道线分割[标签](https://bj.bcebos.com/v1/paddledet/data/mot/bdd100k/lane_dataset_label.zip)
 
 
 ## 使用方法
@@ -100,4 +100,14 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 </div>
 
 ## 方案说明
-车道线识别模型使用了[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg) 的超轻量分割方案。
+1.车道线识别模型使用了[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg) 的超轻量分割方案。训练样本[标签](https://bj.bcebos.com/v1/paddledet/data/mot/bdd100k/lane_dataset_label.zip)分为4类：
+  0 背景
+  1 双黄线
+  2 实线
+  3 虚线
+车辆压线分析过滤虚线类；
+2.车道线通过对分割结果聚类得到，且默认过滤水平方向车道线，若不过滤可在[车道线配置文件](../../config/lane_seg.yml)修改`filter_flag`参数；
+3.车辆压线判断条件：车辆的检测框底边线与车道线是否有交点；
+
+性能优化措施：
+1.因摄像头视角原因，可以根据实际情况决定是否过滤水平方向车道线;

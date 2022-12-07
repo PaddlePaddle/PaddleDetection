@@ -99,4 +99,22 @@ The result is shown as follow:
 
 
 ## Features to the Solution
-Lane line recognition model uses [PaddleSeg]（ https://github.com/PaddlePaddle/PaddleSeg ）Super lightweight segmentation scheme.
+1.In the sampling video segment, judge whether the vehicle is retrograde according to the location of the lane centerline and the vehicle track, and determine the flow chart:
+<div width="1000" align="center">
+  <img src="https://raw.githubusercontent.com/LokeZhou/PaddleDetection/develop/deploy/pipeline/docs/images/vehicle_retrograde_en.png"/>
+</div>
+
+2.Lane line recognition model uses [PaddleSeg]（ https://github.com/PaddlePaddle/PaddleSeg ）Super lightweight segmentation scheme.Train [lable](https://bj.bcebos.com/v1/paddledet/data/mot/bdd100k/lane_dataset_label.zip)it is divided into four categories:
+  0 Background
+  1 Double yellow line
+  2 Solid line
+  3 Dashed line
+Lane line recognition filtering Dashed lines;
+3.Lane lines are obtained by clustering segmentation results, and the horizontal lane lines are filtered by default. If not, you can modify the `filter_flag` in [lane line seg config file](../../config/lane_seg.yml);
+4.The vehicles in the horizontal direction are filtered by default when judging the vehicles in the reverse direction. If not, you can modify the `filter_horizontal_flag` in [config file](../../config/infer_cfg_ppvehicle.yml);
+5.The vehicle will be judged according to the right driving rule by default.If not, you can modify the `keep_right_flag` in [config file](../../config/infer_cfg_ppvehicle.yml);
+
+
+**Performance optimization measures：**
+1.Due to the camera's viewing angle, it can be decided whether to filter the lane lines and vehicles in the horizontal direction according to the actual situation;
+2.The lane middle line can be manually entered;

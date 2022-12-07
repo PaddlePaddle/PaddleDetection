@@ -97,8 +97,25 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 
 **注意:**
  - 车道线中间线自动判断条件：在采样的视频段内同时有两个相反方向的车辆，且判断一次后固定，不再更新；
- - 因摄像头角度以及2d视角问题，车道线中间线判断存在不准确case，可在配置文件手动输入中间线坐标
+ - 因摄像头角度以及2d视角问题，车道线中间线判断存在不准确情况，可在配置文件手动输入中间线坐标
 
 
 ## 方案说明
-车道线识别模型使用了[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg) 的超轻量分割方案。
+1.车辆在采样视频段内，根据车道中间线的位置与车辆轨迹，判断车辆是否逆行，判断流程图：
+<div width="1000" align="center">
+  <img src="https://raw.githubusercontent.com/LokeZhou/PaddleDetection/develop/deploy/pipeline/docs/images/vehicle_retrograde.png"/>
+</div>
+
+2.车道线识别模型使用了[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg) 的超轻量分割方案。训练样本[标签](https://bj.bcebos.com/v1/paddledet/data/mot/bdd100k/lane_dataset_label.zip)分为4类：
+  0 背景
+  1 双黄线
+  2 实线
+  3 虚线
+车辆逆行分析过滤虚线类；
+3.车道线通过对分割结果聚类得到，且默认过滤水平方向车道线，若不过滤可在[车道线配置文件](../../config/lane_seg.yml)修改`filter_flag`参数;
+4.车辆逆行判断默认过滤水平方向车辆，若不过滤可在[配置文件](../../config/infer_cfg_ppvehicle.yml)修改`filter_horizontal_flag`参数;
+5.车辆逆行默认按靠右行驶规则判断，若修改，可在[配置文件](../../config/infer_cfg_ppvehicle.yml)修改`keep_right_flag`参数;
+
+性能优化措施：
+1.因摄像头视角原因，可以根据实际情况决定是否过滤水平方向车道线与水平方向车辆;
+2.车道中间线可手动输入；
