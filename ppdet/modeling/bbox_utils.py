@@ -347,7 +347,7 @@ def make_grid(h, w, dtype):
         [paddle.arange(
             h, dtype=dtype), paddle.arange(
                 w, dtype=dtype)])
-    return paddle.stack((xv, yv), 2).cast(dtype=dtype)
+    return paddle.stack((xv, yv), 2)
 
 
 def decode_yolo(box, anchor, downsample_ratio):
