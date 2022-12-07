@@ -123,6 +123,21 @@ python deploy/python/infer.py --image_file demo/P0072__1.0__0___0.png --model_di
 **注意：**
 - 使用Paddle-TRT使用确保**PaddlePaddle版本为develop版本且TensorRT版本大于8.2**.
 
+**使用ONNX Runtime进行部署**，执行以下命令：
+```
+# 导出模型
+python tools/export_model.py -c configs/rotate/ppyoloe_r/ppyoloe_r_crn_l_3x_dota.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_l_3x_dota.pdparams export_onnx=True
+
+# 安装paddle2onnx
+pip install paddle2onnx
+
+# 转换成onnx模型
+paddle2onnx --model_dir output_inference/ppyoloe_r_crn_l_3x_dota --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 11 --save_file ppyoloe_r_crn_l_3x_dota.onnx
+
+# 预测图片
+python configs/rotate/tools/onnx_infer.py --infer_cfg output_inference/ppyoloe_r_crn_l_3x_dota/infer_cfg.yml --onnx_file ppyoloe_r_crn_l_3x_dota.onnx --image_file demo/P0072__1.0__0___0.png
+
+```
 
 ## 附录
 

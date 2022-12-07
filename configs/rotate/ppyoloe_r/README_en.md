@@ -114,7 +114,7 @@ python tools/export_model.py -c configs/rotate/ppyoloe_r/ppyoloe_r_crn_l_3x_dota
 python deploy/python/infer.py --image_file demo/P0072__1.0__0___0.png --model_dir=output_inference/ppyoloe_r_crn_l_3x_dota --run_mode=paddle --device=gpu
 ```
 
-**Using Paddle-TRT** to for deployment, run following command
+**Using Paddle-TRT** for deployment, run following command
 
 ``` bash
 # export inference model
@@ -125,6 +125,22 @@ python deploy/python/infer.py --image_file demo/P0072__1.0__0___0.png --model_di
 ```
 **Notes:**
 - When using Paddle-TRT for speed testing, make sure that **the version of TensorRT is larger than 8.2 and the version of PaddlePaddle is the develop version**
+
+**Using ONNX Runtime** for deployment, run following command
+
+``` bash
+# export inference model
+python tools/export_model.py -c configs/rotate/ppyoloe_r/ppyoloe_r_crn_l_3x_dota.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_l_3x_dota.pdparams export_onnx=True
+
+# install paddle2onnx
+pip install paddle2onnx
+
+# convert to onnx model
+paddle2onnx --model_dir output_inference/ppyoloe_r_crn_l_3x_dota --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 11 --save_file ppyoloe_r_crn_l_3x_dota.onnx
+
+# inference single image
+python configs/rotate/tools/onnx_infer.py --infer_cfg output_inference/ppyoloe_r_crn_l_3x_dota/infer_cfg.yml --onnx_file ppyoloe_r_crn_l_3x_dota.onnx --image_file demo/P0072__1.0__0___0.png
+```
 
 ## Appendix
 
