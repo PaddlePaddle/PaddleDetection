@@ -436,13 +436,13 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 各移动端模型在COCO数据集上精度mAP和高通骁龙865处理器上预测速度(FPS)对比图。
 
   <div  align="center">
-  <img src="https://user-images.githubusercontent.com/61035602/206434741-10460690-8fc3-4084-a11a-16fe4ce2fc85.png" width="800"/>
+  <img src="https://user-images.githubusercontent.com/61035602/206434741-10460690-8fc3-4084-a11a-16fe4ce2fc85.png" width="550"/>
 </div>
 
 
 `说明`：
 
-- 测试数据均使用高通骁龙865(4xA77+4xA55)处理器，batch size为1, 开启4线程测试，测试使用NCNN预测库，测试脚本见MobileDetBenchmark
+- 测试数据均使用高通骁龙865(4xA77+4xA55)处理器，batch size为1, 开启4线程测试，测试使用NCNN预测库，测试脚本见[MobileDetBenchmark](https://github.com/JiweiMaster/MobileDetBenchmark)
 - PP-PicoDet及PP-YOLO-Tiny为PaddleDetection自研模型，可在[📱模型库](#模型库)中获取，其余模型PaddleDetection暂未提供
 
 ## 🎗️产业特色模型|产业工具
