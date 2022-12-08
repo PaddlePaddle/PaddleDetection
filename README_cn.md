@@ -412,7 +412,9 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 ### 💎PP-YOLOE 高精度目标检测模型
 
 PP-YOLOE是基于PP-YOLOv2的卓越的单阶段Anchor-free模型，超越了多种流行的YOLO模型。PP-YOLOE避免了使用诸如Deformable Convolution或者Matrix NMS之类的特殊算子，以使其能轻松地部署在多种多样的硬件上。其使用大规模数据集obj365预训练模型进行预训练，可以在不同场景数据集上快速调优收敛。
+
 `传送门`：[PP-YOLOE说明](configs/ppyoloe/README_cn.md)。
+
 `传送门`：[arXiv论文](https://arxiv.org/abs/2203.16250)。
 
 <details>
@@ -440,6 +442,7 @@ PP-YOLOE是基于PP-YOLOv2的卓越的单阶段Anchor-free模型，超越了多�
 PP-YOLOE-R是一个高效的单阶段Anchor-free旋转框检测模型，基于PP-YOLOE+引入了一系列改进策略来提升检测精度。根据不同的硬件对精度和速度的要求，PP-YOLOE-R包含s/m/l/x四个尺寸的模型。在DOTA 1.0数据集上，PP-YOLOE-R-l和PP-YOLOE-R-x在单尺度训练和测试的情况下分别达到了78.14mAP和78.28 mAP，这在单尺度评估下超越了几乎所有的旋转框检测模型。通过多尺度训练和测试，PP-YOLOE-R-l和PP-YOLOE-R-x的检测精度进一步提升至80.02mAP和80.73 mAP，超越了所有的Anchor-free方法并且和最先进的Anchor-based的两阶段模型精度几乎相当。在保持高精度的同时，PP-YOLOE-R避免使用特殊的算子，例如Deformable Convolution或Rotated RoI Align，使其能轻松地部署在多种多样的硬件上。
 
 `传送门`：[PP-YOLOE-R说明](https://github.com/thinkthinking/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r)。
+
 `传送门`：[arXiv论文](https://arxiv.org/abs/2211.02386)。
 
 <details>
@@ -463,6 +466,7 @@ PP-YOLOE-R是一个高效的单阶段Anchor-free旋转框检测模型，基于PP
 ### 💎PP-YOLOE-SOD 高精度小目标检测模型
 
 PP-YOLOE-SOD(Small Object Detection)是PaddleDetection团队针对小目标检测提出的检测方案，在VisDrone-DET数据集上单模型精度达到38.5mAP，达到了SOTA性能。其分别基于切图拼图流程优化的小目标检测方案以及基于原图模型算法优化的小目标检测方案。同时提供了数据集自动分析脚本，只需输入数据集标注文件，便可得到数据集统计结果，辅助判断数据集是否是小目标数据集以及是否需要采用切图策略，同时给出网络超参数参考值。
+
 `传送门`：[PP-YOLOE-SOD 小目标检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/smalldet)。
 
 <details>
@@ -487,7 +491,9 @@ PP-YOLOE-SOD(Small Object Detection)是PaddleDetection团队针对小目标检�
 ### 💫PP-PicoDet 超轻量实时目标检测模型
 
 全新的轻量级系列模型PP-PicoDet，在移动端具有卓越的性能，成为全新SOTA轻量级模型。
+
 `传送门`：[PP-PicoDet说明](configs/picodet/README.md)。
+
 `传送门`：[arXiv论文](https://arxiv.org/abs/2111.00902)。
 
 <details>
@@ -545,6 +551,7 @@ PaddleDetection 中的关键点检测部分紧跟最先进的算法，包括 Top
 |  模型名称   |               模型简介               | COCO精度（AP） |         速度(FPS)         |  推荐部署硬件  |                        配置文件                         |                                         模型下载                                         |
 | :---------: | :----------------------------------: | :------------: | :-----------------------: | :------------: | :-----------------------------------------------------: | :--------------------------------------------------------------------------------------: |
 | PP-TinyPose | 轻量级关键点算法<br/>输入尺寸256x192 |      68.8      | 骁龙865 四线程: 158.7 FPS | 移动端、嵌入式 | [链接](configs/keypoint/tiny_pose/tinypose_256x192.yml) | [下载地址](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) |
+
 `传送门`：[全部预训练模型](configs/keypoint/README.md)。
 </details>
 
