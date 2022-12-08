@@ -80,7 +80,7 @@ class MaskFeat(nn.Layer):
         mask_conv.add_sublayer(
             'conv5_mask',
             nn.Conv2DTranspose(
-                in_channels=self.in_channel,
+                in_channels=self.out_channel if num_convs > 0 else self.in_channel,
                 out_channels=self.out_channel,
                 kernel_size=2,
                 stride=2,
