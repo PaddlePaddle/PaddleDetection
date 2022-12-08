@@ -5,17 +5,18 @@ TrainDataset:
   !COCODataSet
     image_dir: images
     anno_path: annotations/annotations_train.json
-    dataset_dir: /paddle/data/SKU110K_fixed
+    dataset_dir: dataset/SKU110K_fixed
     data_fields: ['image', 'gt_bbox', 'gt_class', 'difficult']
 
 EvalDataset:
   !COCODataSet
     image_dir: images
-    anno_path: annotations/annotations_test.json
-    dataset_dir: /paddle/data/SKU110K_fixed
+    anno_path: annotations/annotations_val.json
+    dataset_dir: dataset/SKU110K_fixed
+    allow_empty: true
 
 TestDataset:
   !COCODataSet
     image_dir: images
     anno_path: annotations/annotations_test.json
-    dataset_dir: /paddle/data/SKU110K_fixed
+    dataset_dir: dataset/SKU110K_fixed
