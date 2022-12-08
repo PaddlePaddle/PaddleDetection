@@ -18,12 +18,12 @@
 
 PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件，在提供丰富的模型组件和测试基准的同时，注重端到端的产业落地应用，通过打造产业级特色模型|工具、建设产业应用范例等手段，帮助开发者实现数据准备、模型选型、模型训练、模型部署的全流程打通，快速进行落地应用。
 
-|                                                  [通用目标检测](#pp-yoloe-高精度目标检测模型)                                                  |                                                [小目标检测](#pp-yoloe-sod-高精度小目标检测模型)                                                |                                                  [旋转框检测](#pp-yoloe-r-高性能旋转框检测模型)                                                  |                       [3D目标物检测]([examples/vision/segmentation/paddleseg](https://github.com/PaddlePaddle/Paddle3D))                       |
+|                                                  [通用目标检测](#pp-yoloe-高精度目标检测模型)                                                  |                                                [小目标检测](#pp-yoloe-sod-高精度小目标检测模型)                                                |                                                  [旋转框检测](#pp-yoloe-r-高性能旋转框检测模型)                                                  |                                            [3D目标物检测](https://github.com/PaddlePaddle/Paddle3D)                                            |
 | :--------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------: |
 | <img src='https://user-images.githubusercontent.com/61035602/206095864-f174835d-4e9a-42f7-96b8-d684fc3a3687.png' height="126px" width="190px"> | <img src='https://user-images.githubusercontent.com/61035602/206095892-934be83a-f869-4a31-8e52-1074184149d1.jpg' height="126px" width="190px"> |  <img src='https://user-images.githubusercontent.com/61035602/206111796-d9a9702a-c1a0-4647-b8e9-3e1307e9d34c.png' height="126px" width="190px">  | <img src='https://user-images.githubusercontent.com/61035602/206095622-cf6dbd26-5515-472f-9451-b39bbef5b1bf.gif' height="126px" width="190px"> |
 |                                                              [人脸检测](#模型库)                                                               |                                                [2D关键点检测](#pp-tinypose-人体骨骼关键点识别)                                                 |                                                  [多目标追踪](#pp-tracking-实时多目标跟踪系统)                                                   |                                                              [实例分割](#模型库)                                                               |
 | <img src='https://user-images.githubusercontent.com/61035602/206095684-72f42233-c9c7-4bd8-9195-e34859bd08bf.jpg' height="126px" width="190px"> | <img src='https://user-images.githubusercontent.com/61035602/206100220-ab01d347-9ff9-4f17-9718-290ec14d4205.gif' height="126px" width="190px"> | <img src='https://user-images.githubusercontent.com/61035602/206111753-836e7827-968e-4c80-92ef-7a78766892fc.gif' height="126px" width="190px"  > | <img src='https://user-images.githubusercontent.com/61035602/206095831-cc439557-1a23-4a99-b6b0-b6f2e97e8c57.jpg' height="126px" width="190px"> |
-|                                               [车辆分析——车牌识别](#pp-vehicle-实时车辆分析工具)                                               |                                               [车辆分析——车流统计](#pp-vehicle-实时车辆分析工具)                                               |                                                [车辆分析——违章检测](#pp-vehicle-实时车辆分析工具)                                                |                                               [车辆分析——属性分析](#pp-vehicle-实时车辆分析工具)                                               |
+|                                               [车辆分析——车牌识别](#️pp-vehicle-实时车辆分析工具)                                               |                                               [车辆分析——车流统计](#️pp-vehicle-实时车辆分析工具)                                               |                                                [车辆分析——违章检测](#️pp-vehicle-实时车辆分析工具)                                                |                                               [车辆分析——属性分析](#️pp-vehicle-实时车辆分析工具)                                               |
 | <img src='https://user-images.githubusercontent.com/61035602/206099328-2a1559e0-3b48-4424-9bad-d68f9ba5ba65.gif' height="126px" width="190px"> | <img src='https://user-images.githubusercontent.com/61035602/206095918-d0e7ad87-7bbb-40f1-bcc1-37844e2271ff.gif' height="126px" width="190px"> | <img src='https://user-images.githubusercontent.com/61035602/206100295-7762e1ab-ffce-44fb-b69d-45fb93657fa0.gif' height="126px" width="190px"  > | <img src='https://user-images.githubusercontent.com/61035602/206095905-8255776a-d8e6-4af1-b6e9-8d9f97e5059d.gif' height="126px" width="190px"> |
 |                                                [行人分析——闯入分析](#pp-human-实时行人分析工具)                                                |                                                [行人分析——行为分析](#pp-human-实时行人分析工具)                                                |                                                 [行人分析——属性分析](#pp-human-实时行人分析工具)                                                 |                                                [行人分析——人流统计](#pp-human-实时行人分析工具)                                                |
 | <img src='https://user-images.githubusercontent.com/61035602/206095792-ae0ac107-cd8e-492a-8baa-32118fc82b04.gif' height="126px" width="190px"> | <img src='https://user-images.githubusercontent.com/61035602/206095778-fdd73e5d-9f91-48c7-9d3d-6f2e02ec3f79.gif' height="126px" width="190px"> |  <img src='https://user-images.githubusercontent.com/61035602/206095709-2c3a209e-6626-45dd-be16-7f0bf4d48a14.gif' height="126px" width="190px">  | <img src="https://user-images.githubusercontent.com/61035602/206113351-cc59df79-8672-4d76-b521-a15acf69ae78.gif" height="126px" width="190px"> |
@@ -37,7 +37,7 @@ PaddleDetection将检测模型解耦成不同的模块组件，通过自定义�
 PaddleDetection支持大量的最新主流的算法基准以及预训练模型，涵盖目标检测、实例分割、人脸检测、关键点检测、多目标跟踪等方向。`传送门`：[📱模型库](#模型库)。
 
 #### 🎗️产业特色模型|产业工具
-PaddleDetection打造产业级特色模型以及分析工具：PP-YOLOE+、PP-PicoDet、PP-TinyPose、PP-HumanV2、PP-Vehicle等，针对通用、高频垂类应用场景提供深度优化解决方案以及高度集成的分析工具，降低开发者的试错、选择成本，针对业务场景快速应用落地。`传送门`：[🎗️产业特色模型|产业工具](#️产业特色模型产业工具)。
+PaddleDetection打造产业级特色模型以及分析工具：PP-YOLOE+、PP-PicoDet、PP-TinyPose、PP-HumanV2、PP-Vehicle等，针对通用、高频垂类应用场景提供深度优化解决方案以及高度集成的分析工具，降低开发者的试错、选择成本，针对业务场景快速应用落地。`传送门`：[🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)。
 
 #### 💡🏆产业级部署实践
 PaddleDetection整理工业、农业、林业、交通、医疗、金融、能源电力等AI应用范例，打通数据标注-模型训练-模型调优-预测部署全流程，持续降低目标检测技术产业落地门槛。`传送门`：[💡产业实践范例](#产业实践范例)、[🏆企业应用案例](#企业应用案例)。
@@ -52,11 +52,22 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 
 **💎稳定版本**
 
-位于[`release/2.5`](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)分支，最新的[**v2.5**](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)版本已经在 2022.09.13 发布，版本发新内容请参考[v2.5.0更新日志](https://github.com/PaddlePaddle/PaddleDetection/releases/tag/v2.5.0)
+位于[`release/2.5`](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)分支，最新的[**v2.5**](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)版本已经在 2022.09.13 发布，版本发新详细内容请参考[v2.5.0更新日志](https://github.com/PaddlePaddle/PaddleDetection/releases/tag/v2.5.0)，最新更新：
+- [🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)：
+    - 发布[PP-YOLOE+](configs/ppyoloe)，最高精度提升2.4% mAP，达到54.9% mAP，模型训练收敛速度提升3.75倍，端到端预测速度最高提升2.3倍；多个下游任务泛化性提升
+    - 发布[PicoDet-NPU](configs/picodet)模型，支持模型全量化部署；新增[PicoDet](configs/picodet)版面分析模型
+    - 发布[PP-TinyPose升级版](./configs/keypoint/tiny_pose/)增强版，在健身、舞蹈等场景精度提升9.1% AP，支持侧身、卧躺、跳跃、高抬腿等非常规动作
+    - 发布行人分析工具[PP-Human v2](./deploy/pipeline)，新增打架、打电话、抽烟、闯入四大行为识别，底层算法性能升级，覆盖行人检测、跟踪、属性三类核心算法能力，提供保姆级全流程开发及模型优化策略，支持在线视频流输入
+    - 首次发布[PP-Vehicle](./deploy/pipeline)，提供车牌识别、车辆属性分析（颜色、车型）、车流量统计以及违章检测四大功能，兼容图片、在线视频流、视频输入，提供完善的二次开发文档教程
+- [📱模型库](#模型库)：
+    - 全面覆盖的[YOLO家族](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/docs/MODEL_ZOO_cn.md)经典与最新算法模型的代码库[PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO): 包括YOLOv3，百度飞桨自研的实时高精度目标检测模型PP-YOLOE，以及前沿检测算法YOLOv4、YOLOv5、YOLOX，YOLOv6及YOLOv7
+    - 新增基于[ViT](configs/vitdet)骨干网络高精度检测模型，COCO数据集精度达到55.7% mAP；新增[OC-SORT](configs/mot/ocsort)多目标跟踪模型；新增[ConvNeXt](configs/convnext)骨干网络
+- [💡产业实践范例](#产业实践范例)：
+    - 新增[智能健身](https://aistudio.baidu.com/aistudio/projectdetail/4385813)、[打架识别](https://aistudio.baidu.com/aistudio/projectdetail/4086987?channelType=0&channel=0)、[来客分析](https://aistudio.baidu.com/aistudio/projectdetail/4230123?channelType=0&channel=0)
 
 **🧬预览版本**
 
-位于[`develop`](https://github.com/PaddlePaddle/PaddleDetection/tree/develop)分支，体验最新功能请切换到[该分支](https://github.com/PaddlePaddle/PaddleDetection/tree/develop)：
+位于[`develop`](https://github.com/PaddlePaddle/PaddleDetection/tree/develop)分支，体验最新功能请切换到[该分支](https://github.com/PaddlePaddle/PaddleDetection/tree/develop)，最近更新：
 - **模型库**
   - 新增[半监督检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/semi_det);
 - **产业级特色模型**
@@ -67,7 +78,9 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 
 - **📑项目合作：** 如果您是企业开发者且有明确的目标检测垂类应用需求，请扫描如下二维码入群，并联系`群管理员AI`后可免费与官方团队展开不同层次的合作。
 - **🏅️社区贡献：** PaddleDetection非常欢迎你加入到飞桨社区的开源建设中，参与贡献方式可以参考[开源项目开发指南](docs/contribution/README.md)。
+- **💻直播教程：** PaddleDetection会定期在飞桨直播间([B站:飞桨PaddlePaddle](https://space.bilibili.com/476867757)、[微信: 飞桨PaddlePaddle](https://mp.weixin.qq.com/s/6ji89VKqoXDY6SSGkxS8NQ))，针对发新内容、以及产业范例、使用教程等进行直播分享。
 - **🎁加入社区：** **微信扫描二维码并填写问卷之后，加入交流群领取20G重磅目标检测学习大礼包，包括：**
+  - 往期直播录播&PPT
   - 30+行人车辆等垂类高性能预训练模型
   - 七大任务开源数据集下载链接汇总
   - 40+前沿检测领域顶会算法
@@ -81,9 +94,9 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 
 - **🎈社区近期活动**
 
-  - **【直播课】手把手教你将PP-YOLOE+用于旋转框、小目标检测，达成SOTA性能**
+  - **【💻直播教程】手把手教你将PP-YOLOE+用于旋转框、小目标检测，达成SOTA性能**
     - `传送门`：[Yes, PP-YOLOE！80.73mAP、38.5mAP，旋转框、小目标检测能力双SOTA！](https://mp.weixin.qq.com/s/6ji89VKqoXDY6SSGkxS8NQ)
-  - **【开源项目建设】**
+  - **【🏅️社区贡献】**
     - `传送门`：[Yes, PP-YOLOE! 基于PP-YOLOE的算法开发](https://github.com/PaddlePaddle/PaddleDetection/issues/7345)
 
 ## 🍱安装
@@ -409,11 +422,11 @@ PP-YOLOE是基于PP-YOLOv2的卓越的单阶段Anchor-free模型，超越了多�
 
 **产业应用**
 
-| 行业 | 类别              | 亮点                                                                                                                                                                                                        | 文档说明                                                      | 模型下载                                            |
-| ---- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------- |
-| 农业 | 农作物检测        | 用于葡萄栽培中基于图像的监测和现场机器人技术，提供了来自5种不同葡萄品种的实地实例                        | [PP-YOLOE+ 下游任务](./configs/ppyoloe/application/README.md) | [下载链接](./configs/ppyoloe/application/README.md) |
-| 通用 | 低光场景检测      | 低光数据集使用ExDark，包括从极低光环境到暮光环境等10种不同光照条件下的图片。 | [PP-YOLOE+ 下游任务](./configs/ppyoloe/application/README.md) | [下载链接](./configs/ppyoloe/application/README.md) |
-| 工业 | PCB电路板瑕疵检测 | 工业数据集使用PKU-Market-PCB，该数据集用于印刷电路板（PCB）的瑕疵检测，提供了6种常见的PCB缺陷                                                 | [PP-YOLOE+ 下游任务](./configs/ppyoloe/application/README.md) | [下载链接](./configs/ppyoloe/application/README.md) |
+| 行业 | 类别              | 亮点                                                                                          | 文档说明                                                      | 模型下载                                            |
+| ---- | ----------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------- |
+| 农业 | 农作物检测        | 用于葡萄栽培中基于图像的监测和现场机器人技术，提供了来自5种不同葡萄品种的实地实例             | [PP-YOLOE+ 下游任务](./configs/ppyoloe/application/README.md) | [下载链接](./configs/ppyoloe/application/README.md) |
+| 通用 | 低光场景检测      | 低光数据集使用ExDark，包括从极低光环境到暮光环境等10种不同光照条件下的图片。                  | [PP-YOLOE+ 下游任务](./configs/ppyoloe/application/README.md) | [下载链接](./configs/ppyoloe/application/README.md) |
+| 工业 | PCB电路板瑕疵检测 | 工业数据集使用PKU-Market-PCB，该数据集用于印刷电路板（PCB）的瑕疵检测，提供了6种常见的PCB缺陷 | [PP-YOLOE+ 下游任务](./configs/ppyoloe/application/README.md) | [下载链接](./configs/ppyoloe/application/README.md) |
 
 ### 💎PP-YOLOE-R 高性能旋转框检测模型
 
@@ -432,8 +445,8 @@ PP-YOLOE-R是一个高效的单阶段Anchor-free旋转框检测模型，基于PP
 
 **产业应用**
 
-| 行业 | 类别       | 亮点                                                                   | 文档说明                                                                                | 模型下载                                                              |
-| ---- | ---------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 行业 | 类别       | 亮点                                                                  | 文档说明                                                                                | 模型下载                                                              |
+| ---- | ---------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | 通用 | 旋转框检测 | 手把手教你上手PP-YOLOE-R旋转框检测，10分钟将脊柱数据集精度训练至95mAP | [基于PP-YOLOE-R的旋转框检测](https://aistudio.baidu.com/aistudio/projectdetail/5058293) | [下载链接](https://aistudio.baidu.com/aistudio/projectdetail/5058293) |
 
 ### 💎PP-YOLOE-SOD 高精度小目标检测模型
@@ -445,9 +458,9 @@ PP-YOLOE-SOD(Small Object Detection)是PaddleDetection团队针对小目标检�
 
 - VisDrone数据集预训练模型
 
-| 模型                          | COCOAPI mAP<sup>val<br>0.5:0.95 | COCOAPI mAP<sup>val<br>0.5 | COCOAPI mAP<sup>test_dev<br>0.5:0.95 | COCOAPI mAP<sup>test_dev<br>0.5 | MatlabAPI mAP<sup>test_dev<br>0.5:0.95 | MatlabAPI mAP<sup>test_dev<br>0.5 |                                                   下载                                                    |                                配置文件                                |
-| :---------------------------- | :-----------------------------: | :------------------------: | :----------------------------------: | :-----------------------------: | :------------------------------------: | :-------------------------------: | :-------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------: |
-| **PP-YOLOE+_SOD-l**           |            **31.9**             |          **52.1**          |               **25.6**               |            **43.5**             |               **30.25**                |             **51.18**             |      [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_80e_visdrone.pdparams)      |      [配置文件](visdrone/ppyoloe_plus_sod_crn_l_80e_visdrone.yml)      |
+| 模型                | COCOAPI mAP<sup>val<br>0.5:0.95 | COCOAPI mAP<sup>val<br>0.5 | COCOAPI mAP<sup>test_dev<br>0.5:0.95 | COCOAPI mAP<sup>test_dev<br>0.5 | MatlabAPI mAP<sup>test_dev<br>0.5:0.95 | MatlabAPI mAP<sup>test_dev<br>0.5 |                                              下载                                               |                           配置文件                           |
+| :------------------ | :-----------------------------: | :------------------------: | :----------------------------------: | :-----------------------------: | :------------------------------------: | :-------------------------------: | :---------------------------------------------------------------------------------------------: | :----------------------------------------------------------: |
+| **PP-YOLOE+_SOD-l** |            **31.9**             |          **52.1**          |               **25.6**               |            **43.5**             |               **30.25**                |             **51.18**             | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_80e_visdrone.pdparams) | [配置文件](visdrone/ppyoloe_plus_sod_crn_l_80e_visdrone.yml) |
 
 `传送门`：[全部预训练模型](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/smalldet)。
 
@@ -465,17 +478,17 @@ PP-YOLOE-SOD(Small Object Detection)是PaddleDetection团队针对小目标检�
 
 **预训练模型(部分)**
 
-| 模型名称   | COCO精度（mAP） | 骁龙865 四线程速度(FPS) |  推荐部署硬件  |                       配置文件                        |                                       模型下载                                        |
-| :--------- | :-------------: | :---------------------: | :------------: | :---------------------------------------------------: | :-----------------------------------------------------------------------------------: |
-| PicoDet-L  |      36.1       |          39.7           | 移动端、嵌入式 | [链接](configs/picodet/picodet_l_320_coco_lcnet.yml)  | [下载地址](https://paddledet.bj.bcebos.com/models/picodet_l_320_coco_lcnet.pdparams)  |
+| 模型名称  | COCO精度（mAP） | 骁龙865 四线程速度(FPS) |  推荐部署硬件  |                       配置文件                       |                                       模型下载                                       |
+| :-------- | :-------------: | :---------------------: | :------------: | :--------------------------------------------------: | :----------------------------------------------------------------------------------: |
+| PicoDet-L |      36.1       |          39.7           | 移动端、嵌入式 | [链接](configs/picodet/picodet_l_320_coco_lcnet.yml) | [下载地址](https://paddledet.bj.bcebos.com/models/picodet_l_320_coco_lcnet.pdparams) |
 
 `传送门`：[全部预训练模型](configs/picodet/README.md)。
 
 
 **产业应用**
 
-| 行业     | 类别         | 亮点                                                                                                                                                                                               | 文档说明                                                                                                          | 模型下载                                                                                      |
-| -------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 行业     | 类别         | 亮点                                                                                                                           | 文档说明                                                                                                          | 模型下载                                                                                      |
+| -------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | 智慧城市 | 道路垃圾检测 | 通过在市政环卫车辆上安装摄像头对路面垃圾检测并分析，实现对路面遗撒的垃圾进行监控，记录并通知环卫人员清理，大大提升了环卫人效。 | [基于PP-PicoDet的路面垃圾检测](https://aistudio.baidu.com/aistudio/projectdetail/3846170?channelType=0&channel=0) | [下载链接](https://aistudio.baidu.com/aistudio/projectdetail/3846170?channelType=0&channel=0) |
 
 ### 📡PP-Tracking 实时多目标跟踪系统
@@ -506,9 +519,9 @@ PaddleDetection 中的关键点检测部分紧跟最先进的算法，包括 Top
 
 **预训练模型(部分)**
 
-|       模型名称       |                                  模型简介                                   | COCO精度（AP） |          速度(FPS)          |      推荐部署硬件      |                         配置文件                          |                                          模型下载                                           |
-| :------------------: | :-------------------------------------------------------------------------: | :------------: | :-------------------------: | :--------------------: | :-------------------------------------------------------: | :-----------------------------------------------------------------------------------------: |
-|     PP-TinyPose      |                    轻量级关键点算法<br/>输入尺寸256x192                     |      68.8      |  骁龙865 四线程: 158.7 FPS  |     移动端、嵌入式     |  [链接](configs/keypoint/tiny_pose/tinypose_256x192.yml)  |  [下载地址](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams)   |
+|  模型名称   |               模型简介               | COCO精度（AP） |         速度(FPS)         |  推荐部署硬件  |                        配置文件                         |                                         模型下载                                         |
+| :---------: | :----------------------------------: | :------------: | :-----------------------: | :------------: | :-----------------------------------------------------: | :--------------------------------------------------------------------------------------: |
+| PP-TinyPose | 轻量级关键点算法<br/>输入尺寸256x192 |      68.8      | 骁龙865 四线程: 158.7 FPS | 移动端、嵌入式 | [链接](configs/keypoint/tiny_pose/tinypose_256x192.yml) | [下载地址](https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_256x192.pdparams) |
 `传送门`：[全部预训练模型](configs/keypoint/README.md)。
 
 **产业应用**
