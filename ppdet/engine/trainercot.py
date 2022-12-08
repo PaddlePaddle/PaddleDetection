@@ -50,6 +50,10 @@ from . import Trainer
 __all__ = ['TrainerCot']
 
 class TrainerCot(Trainer):
+    """
+    Trainer for label-cotuning
+    calculate the relationship between base_classes and novel_classes
+    """
     def __init__(self, cfg, mode='train'):
         super(TrainerCot, self).__init__(cfg, mode)
         self.cotuning_init()
