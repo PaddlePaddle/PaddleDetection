@@ -34,7 +34,7 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
 PaddleDetection将检测模型解耦成不同的模块组件，通过自定义模块组件组合，用户可以便捷高效地完成检测模型的搭建。`传送门`：[🧩模块组件](#模块组件)。
 
 #### 📱丰富的模型库
-PaddleDetection支持大量的最新主流的算法基准以及预训练模型，涵盖目标检测、实例分割、人脸检测、关键点检测、多目标跟踪等方向。`传送门`：[📱模型库](#模型库)。
+PaddleDetection支持大量的最新主流的算法基准以及预训练模型，涵盖2D/3D目标检测、实例分割、人脸检测、关键点检测、多目标跟踪、半监督学习等方向。`传送门`：[📱模型库](#模型库)、[⚖️模型性能对比](#️模型性能对比)。
 
 #### 🎗️产业特色模型|产业工具
 PaddleDetection打造产业级特色模型以及分析工具：PP-YOLOE+、PP-PicoDet、PP-TinyPose、PP-HumanV2、PP-Vehicle等，针对通用、高频垂类应用场景提供深度优化解决方案以及高度集成的分析工具，降低开发者的试错、选择成本，针对业务场景快速应用落地。`传送门`：[🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)。
@@ -44,7 +44,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 
 <div align="center">
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/61035602/206356431-f7831762-0513-4c95-8a89-b93ea44f05f1.png" align="middle"/>
+  <img src="https://user-images.githubusercontent.com/61035602/206431371-912a14c8-ce1e-48ec-ae6f-7267016b308e.png" align="middle"/>
 </p>
 </div>
 
@@ -200,6 +200,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
           <li><a href="ppdet/modeling/backbones/convnext.py">ConvNeXt</a></li>
           <li><a href="ppdet/modeling/backbones/vgg.py">VGG</a></li>
           <li><a href="ppdet/modeling/backbones/vision_transformer.py">Vision Transformer</a></li>
+          <li><a href="configs/convnext">ConvNext</a></li>
       </ul>
       </td>
       <td>
@@ -249,14 +250,14 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
           <li><b>Training</b></li>
         <ul>
         <ul>
-            <li><a href="configs/hrnet">FP16 training</a></li>
+            <li><a href="tools/train.py#L62">FP16 training</a></li>
             <li><a href="docs/tutorials/DistributedTraining_cn.md">Multi-machine training </a></li>
                         </ul>
             </ul>
           <li><b>Common</b></li>
         <ul>
         <ul> 
-            <li>Sync-BN</li>
+            <li><a href="ppdet/modeling/backbones/resnet.py#L41">Sync-BN</a></li>
             <li><a href="configs/gn/README.md">Group Norm</a></li>
             <li><a href="configs/dcn/README.md">DCNv2</a></li>
             <li><a href="ppdet/optimizer/ema.py">EMA</a></li>
@@ -308,17 +309,20 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
       <td>
         <ul>
             <li><a href="configs/faster_rcnn/README.md">Faster RCNN</a></li>
-            <li><a href="configs/hrnet">FPN</a></li>
+            <li><a href="ppdet/modeling/necks/fpn.py">FPN</a></li>
             <li><a href="configs/cascade_rcnn/README.md">Cascade-RCNN</a></li>
-            <li>PSS-Det</li>
+            <li><a href="configs/rcnn_enhance">PSS-Det</a></li>
             <li><a href="configs/retinanet/README.md">RetinaNet</a></li>
             <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv3</a></li>  
-            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv5</a></li>  
+            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv5</a></li>
+            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOX</a></li>  
             <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv6</a></li>  
-            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv7</a></li>  
-            <li><a href="configs/ppyolo/README_cn.md">PP-YOLOv1</a></li>
+            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv7</a></li>
+            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">RTMDet</a></li>   
+            <li><a href="configs/ppyolo/README_cn.md">PP-YOLO</a></li>
+            <li><a href="configs/ppyolo#pp-yolo-tiny">PP-YOLO-Tiny</a></li>
+            <li><a href="configs/picodet">PP-PicoDet</a></li>
             <li><a href="configs/ppyolo/README_cn.md">PP-YOLOv2</a></li>
-            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOX</a></li>
             <li><a href="configs/ppyoloe/README_legacy.md">PP-YOLOE</a></li>
             <li><a href="configs/ppyoloe/README_cn.md">PP-YOLOE+</a></li>
             <li><a href="https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/smalldet">PP-YOLOE-SOD</a></li>
@@ -329,10 +333,9 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
             <li><a href="configs/ttfnet">TTFNet</a></li>
             <li><a href="configs/tood">TOOD</a></li>
             <li><a href="configs/gfl">GFL</a></li>
-            <li><a href="configs/picodet">PP-PicoDet</a></li>
+            <li><a href="configs/gfl/gflv2_r50_fpn_1x_coco.yml">GFLv2</a></li>
             <li><a href="configs/detr">DETR</a></li>
             <li><a href="configs/deformable_detr">Deformable DETR</a></li>
-            <li><a href="configs/hrnet">Swin Transformer</a></li>
             <li><a href="configs/sparse_rcnn">Sparse RCNN</a></li>
       </ul>
       </td>
@@ -409,6 +412,38 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
     </tr>
   </tbody>
 </table>
+
+## ⚖️模型性能对比
+
+#### 🖥️服务器端模型性能对比
+
+各模型结构和骨干网络的代表模型在COCO数据集上精度mAP和单卡Tesla V100上预测速度(FPS)对比图。
+
+  <div  align="center">
+  <img src="https://user-images.githubusercontent.com/61035602/206434766-caaa781b-b922-481f-af09-15faac9ed33b.png" width="800"/>
+</div>
+
+`说明`：
+- ViT为ViT-Cascade-Faster-RCNN模型，COCO数据集mAP高达55.7%
+- Cascade-Faster-RCNN为Cascade-Faster-RCNN-ResNet50vd-DCN，PaddleDetection将其优化到COCO数据mAP为47.8%时推理速度为20FPS
+- PP-YOLOE是对PP-YOLO v2模型的进一步优化，L版本在COCO数据集mAP为51.6%，Tesla V100预测速度78.1FPS
+- PP-YOLOE+是对PPOLOE模型的进一步优化，L版本在COCO数据集mAP为53.3%，Tesla V100预测速度78.1FPS
+- YOLOX和YOLOv5均为基于PaddleDetection复现算法，YOLOv5代码在PaddleYOLO中，参照PaddleYOLO_MODEL
+- 图中模型均可在[📱模型库](#模型库)中获取
+
+#### ⌚️移动端模型性能对比
+
+各移动端模型在COCO数据集上精度mAP和高通骁龙865处理器上预测速度(FPS)对比图。
+
+  <div  align="center">
+  <img src="https://user-images.githubusercontent.com/61035602/206434741-10460690-8fc3-4084-a11a-16fe4ce2fc85.png" width="800"/>
+</div>
+
+
+`说明`：
+
+- 测试数据均使用高通骁龙865(4xA77+4xA55)处理器，batch size为1, 开启4线程测试，测试使用NCNN预测库，测试脚本见MobileDetBenchmark
+- PP-PicoDet及PP-YOLO-Tiny为PaddleDetection自研模型，可在[📱模型库](#模型库)中获取，其余模型PaddleDetection暂未提供
 
 ## 🎗️产业特色模型|产业工具
 
