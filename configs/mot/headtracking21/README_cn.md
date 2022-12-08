@@ -6,7 +6,7 @@
 现有行人跟踪器对高人群密度场景表现不佳，人头跟踪更适用于密集场景的跟踪。
 [HT-21](https://motchallenge.net/data/Head_Tracking_21)是一个高人群密度拥挤场景的人头跟踪数据集，场景包括不同的光线和环境条件下的拥挤的室内和室外场景，所有序列的帧速率都是25fps。
 <div align="center">
-  <img src="../../../docs/images/ht_fairmot.gif" width='800'/>
+  <img src="https://user-images.githubusercontent.com/22989727/205540742-820984c2-8920-467a-bdde-faea421018c5.gif" width='800'/>
 </div>
 
 ## 模型库

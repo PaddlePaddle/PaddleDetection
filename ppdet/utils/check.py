@@ -53,16 +53,17 @@ def check_mlu(use_mlu):
 def check_npu(use_npu):
     """
     Log error and exit when set use_npu=true in paddlepaddle
-    cpu/gpu/xpu version.
+    version without paddle-custom-npu installed.
     """
     err = "Config use_npu cannot be set as true while you are " \
-          "using paddlepaddle cpu/gpu/xpu version ! \nPlease try: \n" \
-          "\t1. Install paddlepaddle-npu to run model on NPU \n" \
+          "using paddlepaddle version without paddle-custom-npu " \
+          "installed! \nPlease try: \n" \
+          "\t1. Install paddle-custom-npu to run model on NPU \n" \
           "\t2. Set use_npu as false in config file to run " \
-          "model on CPU/GPU/XPU"
+          "model on other devices supported."
 
     try:
-        if use_npu and not paddle.is_compiled_with_npu():
+        if use_npu and not 'npu' in paddle.device.get_all_custom_device_type():
             logger.error(err)
             sys.exit(1)
     except Exception as e:
