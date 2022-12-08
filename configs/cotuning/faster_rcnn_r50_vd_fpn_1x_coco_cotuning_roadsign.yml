@@ -1,5 +1,9 @@
 _BASE_: [
-  'faster_rcnn_r50_fpn_1x_coco.yml',
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/faster_rcnn_r50_fpn.yml',
+  '_base_/faster_fpn_reader.yml',
 ]
 pretrain_weights: https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_fpn_1x_coco.pdparams
 weights: output/faster_rcnn_r50_vd_fpn_1x_coco_cotuning_roadsign/model_final

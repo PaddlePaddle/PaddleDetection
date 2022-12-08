@@ -1,0 +1,22 @@
+epoch: 12
+
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [8, 11]
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 1000
+
+OptimizerBuilder:
+  clip_grad_by_norm: 1.0
+  optimizer:
+    type: AdamW
+    weight_decay: 0.05
+
+    param_groups:
+        -
+          params: ['absolute_pos_embed', 'relative_position_bias_table', 'norm']
+          weight_decay: 0.
