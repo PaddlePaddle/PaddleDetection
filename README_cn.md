@@ -52,7 +52,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 
 **💎稳定版本**
 
-位于[`release/2.5`](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)分支，最新的[**v2.5**](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)版本已经在 2022.09.13 发布，版本发新详细内容请参考[v2.5.0更新日志](https://github.com/PaddlePaddle/PaddleDetection/releases/tag/v2.5.0)，最新更新：
+位于[`release/2.5`](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)分支，最新的[**v2.5**](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)版本已经在 2022.09.13 发布，版本发新详细内容请参考[v2.5.0更新日志](https://github.com/PaddlePaddle/PaddleDetection/releases/tag/v2.5.0)，重点更新：
 - [🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)：
     - 发布[PP-YOLOE+](configs/ppyoloe)，最高精度提升2.4% mAP，达到54.9% mAP，模型训练收敛速度提升3.75倍，端到端预测速度最高提升2.3倍；多个下游任务泛化性提升
     - 发布[PicoDet-NPU](configs/picodet)模型，支持模型全量化部署；新增[PicoDet](configs/picodet)版面分析模型
@@ -68,9 +68,9 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 **🧬预览版本**
 
 位于[`develop`](https://github.com/PaddlePaddle/PaddleDetection/tree/develop)分支，体验最新功能请切换到[该分支](https://github.com/PaddlePaddle/PaddleDetection/tree/develop)，最近更新：
-- **模型库**
+- [📱模型库](#模型库)：
   - 新增[半监督检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/semi_det);
-- **产业级特色模型**
+- [🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)：
   - 发布**旋转框检测模型**[PP-YOLOE-R](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r)：Anchor-free旋转框检测SOTA模型，精度速度双高、云边一体，s/m/l/x四个模型适配不用算力硬件、部署友好，避免使用特殊算子，能够轻松使用TensorRT加速；
   - 发布**小目标检测模型**[PP-YOLOE-SOD](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/smalldet)：基于切图的端到端检测方案、基于原图的检测模型，精度达VisDrone开源最优；
 
