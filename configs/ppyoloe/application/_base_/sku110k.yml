@@ -16,7 +16,6 @@ EvalDataset:
     allow_empty: true
 
 TestDataset:
-  !COCODataSet
-    image_dir: images
+  !ImageFolder
     anno_path: annotations/annotations_test.json
     dataset_dir: dataset/SKU110K_fixed
