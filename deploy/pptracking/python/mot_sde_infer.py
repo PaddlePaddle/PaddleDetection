@@ -654,6 +654,11 @@ class SDE_Detector(Detector):
             fps = 1. / timer.duration
             if self.use_deepsort_tracker or self.use_ocsort_tracker:
                 # use DeepSORTTracker or OCSORTTracker, only support singe class
+                if isinstance(online_tlwhs, defaultdict):
+                    online_tlwhs = online_tlwhs[0]
+                    online_scores = online_scores[0]
+                    online_ids = online_ids[0]
+
                 results[0].append(
                     (frame_id + 1, online_tlwhs, online_scores, online_ids))
                 im = plot_tracking(
