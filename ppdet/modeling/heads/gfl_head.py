@@ -139,7 +139,7 @@ class DGQP(nn.Layer):
                     axis=2, keepdim=True)], axis=2)
         else:
             stat = prob_topk
-        y = F.relu(self.reg_conv1(stat.reshape([N, 4 * self.reg_topk, H, W])))
+        y = F.relu(self.reg_conv1(stat.reshape([N, 4 * self.total_dim, H, W])))
         y = F.sigmoid(self.reg_conv2(y))
         return y
 
