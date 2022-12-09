@@ -26,6 +26,6 @@ CWDPKDLoss:
   student_channels: 256   # get element from student_channels_list
   teacher_channels: 256   # get element from teacher_channels_list
   tau: 1.0        # not used
-  weight: 10.0     #
+  weight: 1.0     #
   is_norm: True   # must be True
   mode: pkd

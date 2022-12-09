@@ -763,6 +763,7 @@ class MGDDistillModel(nn.Layer):
 
         self.loss_func = self.build_loss(
             self.loss_cfg.distill_loss,
+            self.loss_cfg,
             name_list=self.loss_cfg['distill_loss_name'])
 
         print("p======>", "student_params: ",
@@ -771,6 +772,7 @@ class MGDDistillModel(nn.Layer):
         print("MGD loss params: ", len(self.loss_func.parameters()))
 
     def build_loss(self,
+                   loss_name,
                    cfg,
                    name_list=[
                        'neck_f_4', 'neck_f_3', 'neck_f_2', 'neck_f_1',
@@ -928,9 +930,12 @@ class CWDPKDDistillModel(MGDDistillModel):
     def build_loss(self,
                    loss_name,
                    cfg,
-                   name_list=['neck_f_2', 'neck_f_1', 'neck_f_0']):
+                   name_list=[
+                       'neck_f_4', 'neck_f_3', 'neck_f_2', 'neck_f_1',
+                       'neck_f_0'
+                   ]):
         loss_func = nn.Sequential()
-
+        print("student_channels_list: ", cfg)
         if 'student_channels_list' in cfg and len(cfg[
                 'student_channels_list']) == len(cfg['teacher_channels_list']):
             for idx, (k, s_c, t_c) in enumerate(
@@ -938,7 +943,7 @@ class CWDPKDDistillModel(MGDDistillModel):
                         'teacher_channels_list'])):
                 cfg['CWDPKDLoss']['student_channels'] = s_c
                 cfg['CWDPKDLoss']['teacher_channels'] = t_c
-                print(f"{idx}, ===> {cfg['CWDPKDLoss']}")
+                print(f"{idx}, ===> {cfg[loss_name]}")
                 loss_func.add_sublayer(k, create(loss_name))
         else:
             for idx, k in enumerate(name_list):
