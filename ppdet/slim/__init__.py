@@ -45,6 +45,10 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
         elif "slim_method" in slim_load_cfg and slim_load_cfg[
                 'slim_method'] == "MGD":
             model = MGDDistillModel(cfg, slim_cfg)
+        elif "slim_method" in slim_load_cfg and (
+                slim_load_cfg['slim_method'] == "CWD" or
+                slim_load_cfg['slim_method'] == "PKD"):
+            model = CWDPKDDistillModel(cfg, slim_cfg)
         else:
             model = DistillModel(cfg, slim_cfg)
         cfg['model'] = model

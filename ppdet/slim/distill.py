@@ -922,3 +922,161 @@ class MGDFeatureLoss(nn.Layer):
         new_fea = self.generations[f'{C}'](masked_fea)
         dis_loss = self.loss_weight * self.mse_loss(new_fea, tea_feature) / N
         return dis_loss
+
+
+class CWDPKDDistillModel(MGDDistillModel):
+    def build_loss(self,
+                   loss_name,
+                   cfg,
+                   name_list=['neck_f_2', 'neck_f_1', 'neck_f_0']):
+        loss_func = nn.Sequential()
+
+        if 'student_channels_list' in cfg and len(cfg[
+                'student_channels_list']) == len(cfg['teacher_channels_list']):
+            for idx, (k, s_c, t_c) in enumerate(
+                    zip(name_list, cfg['student_channels_list'], cfg[
+                        'teacher_channels_list'])):
+                cfg['CWDPKDLoss']['student_channels'] = s_c
+                cfg['CWDPKDLoss']['teacher_channels'] = t_c
+                print(f"{idx}, ===> {cfg['CWDPKDLoss']}")
+                loss_func.add_sublayer(k, create(loss_name))
+        else:
+            for idx, k in enumerate(name_list):
+                loss_func.add_sublayer(k, create(loss_name))
+        return loss_func
+
+    def forward(self, inputs):
+        if self.training:
+            s_body_feats = self.student_model.backbone(inputs)
+            s_neck_feats = self.student_model.neck(s_body_feats)
+            with paddle.no_grad():
+                t_body_feats = self.teacher_model.backbone(inputs)
+                t_neck_feats = self.teacher_model.neck(t_body_feats)
+            if self.arch == "PicoDet":
+                head_outs = self.student_model.head(
+                    s_neck_feats, self.student_model.export_post_process)
+                loss_gfl = self.student_model.head.get_loss(head_outs, inputs)
+                total_loss = paddle.add_n(list(loss_gfl.values()))
+                loss = {}
+                loss.update(loss_gfl)
+                loss.update({'loss': total_loss})
+            elif self.arch == "YOLOv3":
+                loss = self.student_model.yolo_head(s_neck_feats, inputs)
+            else:
+                raise ValueError(f"not support arch: {self.arch}")
+
+            for idx in range(len(s_neck_feats)):
+                k = self.loss_cfg['distill_loss_name'][idx]
+                loss[f'neck_f{idx}'] = self.loss_func[k](s_neck_feats[idx],
+                                                         t_neck_feats[idx])
+                loss['loss'] += loss[f'neck_f{idx}']
+            return loss
+        else:
+            body_feats = self.student_model.backbone(inputs)
+            neck_feats = self.student_model.neck(body_feats)
+            if self.arch == "YOLOv3":
+                yolo_head_outs = self.student_model.yolo_head(neck_feats)
+                if self.student_model.return_idx:
+                    _, bbox, bbox_num, _ = self.student_model.post_process(
+                        yolo_head_outs,
+                        self.student_model.yolo_head.mask_anchors)
+                elif self.student_model.post_process is not None:
+                    bbox, bbox_num = self.student_model.post_process(
+                        yolo_head_outs,
+                        self.student_model.yolo_head.mask_anchors,
+                        inputs['im_shape'], inputs['scale_factor'])
+                else:
+                    bbox, bbox_num = self.student_model.yolo_head.post_process(
+                        yolo_head_outs, inputs['scale_factor'])
+                output = {'bbox': bbox, 'bbox_num': bbox_num}
+                return output
+            elif self.arch == "PicoDet":
+                head_outs = self.student_model.head(
+                    neck_feats, self.student_model.export_post_process)
+                scale_factor = inputs['scale_factor']
+                bboxes, bbox_num = self.student_model.head.post_process(
+                    head_outs,
+                    scale_factor,
+                    export_nms=self.student_model.export_nms)
+                return {'bbox': bboxes, 'bbox_num': bbox_num}
+            else:
+                raise ValueError(f"unsupported arch {self.arch}")
+
+
+@register
+class CWDPKDLoss(nn.Layer):
+    def __init__(self,
+                 student_channels,
+                 teacher_channels,
+                 tau=1.0,
+                 weight=1.0,
+                 is_norm=False,
+                 mode='cwd'):
+        super(CWDPKDLoss, self).__init__()
+        self.tau = tau
+        self.loss_weight = weight
+
+        if student_channels != teacher_channels:
+            self.align = nn.Conv2D(
+                student_channels,
+                teacher_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0)
+        else:
+            self.align = None
+
+        self.mode = mode
+        self.is_norm = is_norm
+
+        assert self.mode.lower(
+        ) in ['cwd', 'pkd'], "The loss can only be one of ['cwd', 'pkd']"
+        if self.mode.lower() == 'pkd' and self.is_norm is False:
+            raise ValueError(
+                "Please set is_norm as True when use pkd distill loss")
+
+    def norm(self, feat):
+        """Normalize the feature maps to have zero mean and unit variances.
+        """
+        assert len(feat.shape) == 4
+        N, C, H, W = feat.shape
+        feat = feat.transpose([1, 0, 2, 3]).reshape([C, -1])
+        mean = feat.mean(axis=-1, keepdim=True)
+        std = feat.std(axis=-1, keepdim=True)
+        feat = (feat - mean) / (std + 1e-6)
+        return feat.reshape([C, N, H, W]).transpose([1, 0, 2, 3])
+
+    def distill_softmax(self, x, t):
+        _, _, w, h = paddle.shape(x)
+        x = paddle.reshape(x, [-1, w * h])
+        x /= t
+        return F.softmax(x, axis=1)
+
+    def forward(self, preds_s, preds_t):
+        assert preds_s.shape[-2:] == preds_t.shape[
+            -2:], 'the output dim of teacher and student differ'
+        N, C, W, H = preds_s.shape
+        eps = 1e-5
+        if self.align is not None:
+            preds_s = self.align(preds_s)
+
+        if self.is_norm is True:
+            preds_s = self.norm(preds_s)
+            preds_t = self.norm(preds_t)
+
+        if self.mode == 'cwd':
+            # calculate CWD loss
+            softmax_pred_s = self.distill_softmax(preds_s, self.tau)
+            softmax_pred_t = self.distill_softmax(preds_t, self.tau)
+
+            loss = paddle.sum(-softmax_pred_t * paddle.log(eps + softmax_pred_s)
+                              + softmax_pred_t * paddle.log(eps +
+                                                            softmax_pred_t))
+            return self.loss_weight * loss / (C * N)
+        elif self.mode == 'pkd':
+            # calculate PKD loss
+            # refer: https://github.com/open-mmlab/mmrazor/pull/304/files#diff-b473cf93d48f587233f0e57a4a02be9006714254b1b20d87cb7e76b58dab3a7b
+            loss = F.mse_loss(preds_s, preds_t, reduction='mean') / 2
+            return self.loss_weight * loss
+        else:
+            raise ValueError("The loss can only be one of ['cwd', 'pkd']")
