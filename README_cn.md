@@ -18,6 +18,8 @@
 
 PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件，在提供丰富的模型组件和测试基准的同时，注重端到端的产业落地应用，通过打造产业级特色模型|工具、建设产业应用范例等手段，帮助开发者实现数据准备、模型选型、模型训练、模型部署的全流程打通，快速进行落地应用。
 
+主要模型示例如下（点击标题可快速跳转）
+
 |                                                  [**通用目标检测**](#pp-yoloe-高精度目标检测模型)                                                  |                                                [**小目标检测**](#pp-yoloe-sod-高精度小目标检测模型)                                                |                                                  [**旋转框检测**](#pp-yoloe-r-高性能旋转框检测模型)                                                  |                                            [**3D目标物检测**](https://github.com/PaddlePaddle/Paddle3D)                                            |
 | :--------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------: |
 | <img src='https://user-images.githubusercontent.com/61035602/206095864-f174835d-4e9a-42f7-96b8-d684fc3a3687.png' height="126px" width="190px"> | <img src='https://user-images.githubusercontent.com/61035602/206095892-934be83a-f869-4a31-8e52-1074184149d1.jpg' height="126px" width="190px"> |  <img src='https://user-images.githubusercontent.com/61035602/206111796-d9a9702a-c1a0-4647-b8e9-3e1307e9d34c.png' height="126px" width="190px">  | <img src='https://user-images.githubusercontent.com/61035602/206095622-cf6dbd26-5515-472f-9451-b39bbef5b1bf.gif' height="126px" width="190px"> |
@@ -27,6 +29,16 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
 | <img src='https://user-images.githubusercontent.com/61035602/206099328-2a1559e0-3b48-4424-9bad-d68f9ba5ba65.gif' height="126px" width="190px"> | <img src='https://user-images.githubusercontent.com/61035602/206095918-d0e7ad87-7bbb-40f1-bcc1-37844e2271ff.gif' height="126px" width="190px"> | <img src='https://user-images.githubusercontent.com/61035602/206100295-7762e1ab-ffce-44fb-b69d-45fb93657fa0.gif' height="126px" width="190px"  > | <img src='https://user-images.githubusercontent.com/61035602/206095905-8255776a-d8e6-4af1-b6e9-8d9f97e5059d.gif' height="126px" width="190px"> |
 |                                                [**行人分析——闯入分析**](#pp-human-实时行人分析工具)                                                |                                                [**行人分析——行为分析**](#pp-human-实时行人分析工具)                                                |                                                 [**行人分析——属性分析**](#pp-human-实时行人分析工具)                                                 |                                                [**行人分析——人流统计**](#pp-human-实时行人分析工具)                                                |
 | <img src='https://user-images.githubusercontent.com/61035602/206095792-ae0ac107-cd8e-492a-8baa-32118fc82b04.gif' height="126px" width="190px"> | <img src='https://user-images.githubusercontent.com/61035602/206095778-fdd73e5d-9f91-48c7-9d3d-6f2e02ec3f79.gif' height="126px" width="190px"> |  <img src='https://user-images.githubusercontent.com/61035602/206095709-2c3a209e-6626-45dd-be16-7f0bf4d48a14.gif' height="126px" width="190px">  | <img src="https://user-images.githubusercontent.com/61035602/206113351-cc59df79-8672-4d76-b521-a15acf69ae78.gif" height="126px" width="190px"> |
+
+同时，PaddleDetection提供了模型的在线体验功能，用户可以选择自己的数据进行在线推理
+`说明`：考虑到服务器负载压力，在线推理均为CPU推理，完整的模型开发实例以及产业部署实践代码示例请前往[🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)。
+`传送门`：[模型在线体验](https://www.paddlepaddle.org.cn/models)
+
+<div align="center">
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/61035602/206896755-bd0cd498-1149-4e94-ae30-da590ea78a7a.gif" align="middle"/>
+</p>
+</div>
 
 ## ✨主要特性
 
@@ -44,7 +56,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 
 <div align="center">
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/61035602/206431371-912a14c8-ce1e-48ec-ae6f-7267016b308e.png" align="middle"/>
+  <img src="https://user-images.githubusercontent.com/61035602/206431371-912a14c8-ce1e-48ec-ae6f-7267016b308e.png" align="middle" width="1280"/>
 </p>
 </div>
 
@@ -452,7 +464,9 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 
 ## 🎗️产业特色模型|产业工具
 
+产业特色模型｜产业工具是PaddleDetection针对产业高频应用场景打造的兼顾精度和速度的模型以及工具箱，注重从数据处理-模型训练-模型调优-模型部署的端到端打通，且提供了实际生产环境中的实践范例代码，帮助拥有类似需求的开发者高效的完成产品开发落地应用。
 
+该系列模型｜工具均已PP前缀命名，具体介绍、预训练模型以及产业实践范例代码如下。
 
 ### 💎PP-YOLOE 高精度目标检测模型
 
