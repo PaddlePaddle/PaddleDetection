@@ -38,11 +38,6 @@ class QAT(object):
             logger.info("Model before quant:")
             logger.info(model)
 
-        # For PP-YOLOE, convert model to deploy firstly.
-        for layer in model.sublayers():
-            if hasattr(layer, 'convert_to_deploy'):
-                layer.convert_to_deploy()
-
         self.quanter.quantize(model)
 
         if self.print_model:

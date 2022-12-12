@@ -95,8 +95,10 @@ class RepVggBlock(nn.Layer):
         y = self.act(y)
         return y
 
-    def convert_to_deploy(self):
-        if not hasattr(self, 'conv'):
+    def convert_to_deploy(self, is_quant=False):
+        if hasattr(self, 'conv'):
+            return
+        if not is_quant:
             self.conv = nn.Conv2D(
                 in_channels=self.ch_in,
                 out_channels=self.ch_out,
@@ -104,11 +106,63 @@ class RepVggBlock(nn.Layer):
                 stride=1,
                 padding=1,
                 groups=1)
-        kernel, bias = self.get_equivalent_kernel_bias()
-        self.conv.weight.set_value(kernel)
-        self.conv.bias.set_value(bias)
+            kernel, bias = self.get_equivalent_kernel_bias()
+            self.conv.weight.set_value(kernel)
+            self.conv.bias.set_value(bias)
+        else:
+            conv = nn.Conv2D(
+                in_channels=self.ch_in,
+                out_channels=self.ch_out,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                groups=1)
+            self.conv = nn.quant.quant_layers.MAOutputScaleLayer(
+                nn.quant.quant_layers.QuantizedConv2D(
+                    conv,
+                    activation_quantize_type='moving_average_abs_max',
+                    weight_quantize_type='channel_wise_abs_max'))
+            kernel, bias, weight_scale, out_scale = self.get_equivalent_kernel_bias_quant(
+            )
+            self.conv._layer.weight.set_value(kernel)
+            self.conv._layer.bias.set_value(bias)
+            self.conv._layer._fake_quant_input._scale.set_value(
+                self.conv1.conv._layer._fake_quant_input._scale)
+            self.conv._layer._fake_quant_weight._scale.set_value(weight_scale)
+            self.conv._ma_output_scale._scale.set_value(out_scale)
+
         self.__delattr__('conv1')
         self.__delattr__('conv2')
+
+    def get_equivalent_kernel_bias_quant(self):
+        kernel3x3, bias3x3 = self._fuse_bn_tensor_quant(self.conv1)
+        kernel1x1, bias1x1 = self._fuse_bn_tensor_quant(self.conv2)
+        kernel, bias = None, None
+        if self.alpha:
+            kernel = kernel3x3 + self.alpha * self._pad_1x1_to_3x3_tensor(
+                kernel1x1)
+            bias = bias3x3 + self.alpha * bias1x1
+        else:
+            kernel = kernel3x3 + self._pad_1x1_to_3x3_tensor(kernel1x1)
+            bias = bias3x3 + bias1x1
+
+        weight_scale = self.conv1.conv._layer._fake_quant_weight._scale + self.conv2.conv._layer._fake_quant_weight._scale
+        out_scale = self.conv1.bn._ma_output_scale._scale + self.conv2.bn._ma_output_scale._scale
+
+        return kernel, bias, weight_scale, out_scale
+
+    def _fuse_bn_tensor_quant(self, branch):
+        if branch is None:
+            return 0, 0
+        kernel = branch.conv._layer.weight
+        running_mean = branch.bn._layer._mean
+        running_var = branch.bn._layer._variance
+        gamma = branch.bn._layer.weight
+        beta = branch.bn._layer.bias
+        eps = branch.bn._layer._epsilon
+        std = (running_var + eps).sqrt()
+        t = (gamma / std).reshape((-1, 1, 1, 1))
+        return kernel * t, beta - running_mean * gamma / std
 
     def get_equivalent_kernel_bias(self):
         kernel3x3, bias3x3 = self._fuse_bn_tensor(self.conv1)
@@ -199,7 +253,7 @@ class CSPResStage(nn.Layer):
             self.conv_down = None
         self.conv1 = ConvBNLayer(ch_mid, ch_mid // 2, 1, act=act)
         self.conv2 = ConvBNLayer(ch_mid, ch_mid // 2, 1, act=act)
-        self.blocks = nn.Sequential(*[
+        self.blocks = nn.Sequential(* [
             block_fn(
                 ch_mid // 2,
                 ch_mid // 2,
@@ -282,7 +336,7 @@ class CSPResNet(nn.Layer):
                     act=act)))
 
         n = len(channels) - 1
-        self.stages = nn.Sequential(*[(str(i), CSPResStage(
+        self.stages = nn.Sequential(* [(str(i), CSPResStage(
             BasicBlock,
             channels[i],
             channels[i + 1],
