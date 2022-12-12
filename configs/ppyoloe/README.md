@@ -89,6 +89,8 @@ The PaddleDetection team provides configs and weights of various feature detecti
 |Pedestrian Detection | CrowdHuman | [pphuman](../pphuman) |
 |Vehicle Detection | BDD100K, UA-DETRAC | [ppvehicle](../ppvehicle) |
 |Small Object Detection | VisDrone、DOTA、xView |  [smalldet](../smalldet) |
+|Densely Packed Object Detection | SKU110k | [application](./application) |
+|Rotated Object Detection | DOTA | [PP-YOLOE-R](../rotate/ppyoloe_r/) |
 
 
 ## Getting Start

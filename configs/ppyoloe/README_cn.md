@@ -88,6 +88,8 @@ PaddleDetection团队提供了基于PP-YOLOE的各种垂类检测模型的配置
 |  行人检测   | CrowdHuman  |   [pphuman](../pphuman)  |
 |  车辆检测   | BDD100K、UA-DETRAC  |  [ppvehicle](../ppvehicle)   |
 |  小目标检测 | VisDrone、DOTA、xView |  [smalldet](../smalldet)   |
+| 密集目标检测 | SKU110k | [application](./application) |
+| 旋转框检测 | DOTA | [PP-YOLOE-R](../rotate/ppyoloe_r/) |
 
 
 ## 使用说明
