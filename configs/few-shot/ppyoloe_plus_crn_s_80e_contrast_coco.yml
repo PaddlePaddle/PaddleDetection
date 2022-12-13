@@ -77,26 +77,5 @@ EvalDataset:
 
 TestDataset:
   !ImageFolder
-    anno_path: annotations/roadsign_valid.json
-    dataset_dir: dataset/roadsign_coco
-# num_classes: 4
-# metric: COCO
-# map_type: integral
-
-# TrainDataset:
-#   !COCODataSet
-#     image_dir: images
-#     anno_path: annotations/train_shots10.json
-#     dataset_dir: dataset/roadsign_coco
-#     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
-
-# EvalDataset:
-#   !COCODataSet
-#     image_dir: images
-#     anno_path: annotations/roadsign_valid.json
-#     dataset_dir: dataset/roadsign_coco
-
-# TestDataset:
-#   !ImageFolder
-#     anno_path: annotations/roadsign_valid.json
-#     dataset_dir: dataset/roadsign_coco
+    anno_path: pcb_cocoanno/val.json
+    dataset_dir: dataset/pcb
