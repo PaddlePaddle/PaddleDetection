@@ -5,6 +5,7 @@
 Kaggle上的 [road-sign-detection](https://www.kaggle.com/andrewmvd/road-sign-detection) 比赛数据包含877张图像，数据类别4类：crosswalk，speedlimit，stop，trafficlight。
 可从Kaggle上下载，也可以从[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar) 下载。
 分别从原始数据集中每类选取相同样本（例如：10shots即每类都有十个训练样本）训练即可。
+工业数据集使用PKU-Market-PCB，该数据集用于印刷电路板（PCB）的瑕疵检测，提供了6种常见的PCB缺陷[下载链接](./configs/ppyoloe/application/README.md)
 
 ## Model Zoo
 | 骨架网络             | 网络类型       | 每张GPU图片个数 |推理时间(fps) | Box AP |  配置文件  |

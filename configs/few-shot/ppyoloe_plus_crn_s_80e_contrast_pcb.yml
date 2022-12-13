@@ -8,7 +8,7 @@ _BASE_: [
 
 log_iter: 100
 snapshot_epoch: 10
-weights: output/ppyoloe_plus_crn_s_80e_contrast_coco/model_final
+weights: output/ppyoloe_plus_crn_s_80e_contrast_pcb/model_final
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco.pdparams
 depth_mult: 0.33
