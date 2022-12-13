@@ -11,8 +11,7 @@ Kaggle上的 [road-sign-detection](https://www.kaggle.com/andrewmvd/road-sign-de
 | 骨架网络             | 网络类型       | 每张GPU图片个数 |推理时间(fps) | Box AP |  配置文件  |
 | :------------------- | :------------- | :-----: | :-----: | :------------: | :-----: |
 | ResNet50-vd             | Faster         |    1    |     ----     |  60.1  | [配置文件](./faster_rcnn_r50_vd_fpn_1x_coco_cotuning_roadsign.yml) |
-| PPYOLOE_crn_s             | PPYOLOE         |    1    |     ----     |  14.4  | [配置文件](./
-ppyoloe_plus_crn_s_80e_contrast_coco.yml) |
+| PPYOLOE_crn_s             | PPYOLOE         |    1    |     ----     |  14.4  | [配置文件](./ppyoloe_plus_crn_s_80e_contrast_coco.yml) |
 
 ## Compare-cotuning
 | 骨架网络             | 网络类型       | 每张GPU图片个数 |推理时间(fps) | Cotuning |  Box AP  |
