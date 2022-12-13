@@ -1,5 +1,4 @@
-# Co-tuning for Transfer Learning  
-Supervised Contrastive Learning
+# Co-tuning for Transfer Learning <br />Supervised Contrastive Learning
 
 ## Data preparation
 以[Kaggle数据集](https://www.kaggle.com/andrewmvd/road-sign-detection) 比赛数据为例，说明如何准备自定义数据。
