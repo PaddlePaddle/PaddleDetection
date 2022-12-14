@@ -1,0 +1,53 @@
+_BASE_: [
+  '../../runtime.yml',
+  '_base_/optimizer_70e.yml',
+  '_base_/centertrack_dla34.yml',
+  '_base_/centertrack_reader.yml',
+]
+log_iter: 1 #20
+snapshot_epoch: 5
+weights: output/centertrack_dla34_70e_mot17half/model_final
+
+
+### for train.py/eval.py/infer.py
+# mot_metric: False
+# metric: COCO
+
+### for eval_mot.py/infer_mot_mot.py
+mot_metric: True
+metric: MOT
+
+
+# COCO style dataset for training
+num_classes: 1
+TrainDataset:
+  !COCODataSet
+    dataset_dir: dataset/mot/MOT17
+    anno_path: annotations/train_half.json
+    image_dir: images/train
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    dataset_dir: dataset/mot/MOT17
+    anno_path: annotations/val_im1.json
+    image_dir: images/train
+
+TestDataset:
+  !ImageFolder
+    dataset_dir: dataset/mot/MOT17
+    anno_path: annotations/val_half.json
+
+# for MOT evaluation
+# If you want to change the MOT evaluation dataset, please modify 'data_root'
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot/MOT17
+    data_root: images/half
+    keep_ori_im: True # set True if save visualization images or video, or used in SDE MOT
+
+# for MOT video inference
+TestMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot/MOT17
+    keep_ori_im: True # set True if save visualization images or video

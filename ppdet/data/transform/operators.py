@@ -2912,8 +2912,8 @@ class FlipWarpAffine(BaseOperator):
             input_w = (w | self.pad) + 1
             s = np.array([input_w, input_h], dtype=np.float32)
             c = np.array([w // 2, h // 2], dtype=np.float32)
-
         else:
+            # centernet training default
             s = max(h, w) * 1.0
             input_h, input_w = self.input_h, self.input_w
             c = np.array([w / 2., h / 2.], dtype=np.float32)
@@ -2921,6 +2921,7 @@ class FlipWarpAffine(BaseOperator):
         if self.use_random:
             gt_bbox = sample['gt_bbox']
             if not self.not_rand_crop:
+                # centernet default
                 s = s * np.random.choice(np.arange(0.6, 1.4, 0.1))
                 w_border = get_border(128, w)
                 h_border = get_border(128, h)

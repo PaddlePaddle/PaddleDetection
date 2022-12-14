@@ -1,0 +1,52 @@
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/crowdhuman_centertrack.pdparams
+architecture: CenterTrack
+for_mot: True
+mot_metric: True
+
+CenterTrack:
+  detector: CenterNet
+  plugin_head: CenterTrackHead
+  tracker: JDETracker
+  mot_metric: True # Note
+
+CenterNet:
+  backbone: DLA
+  neck: CenterNetDLAFPN
+  head: CenterNetHead
+  post_process: CenterNetPostProcess
+  for_mot: True # Note
+
+DLA:
+  depth: 34
+  pre_img: True
+  pre_hm: True
+
+CenterNetDLAFPN:
+  down_ratio: 4
+  last_level: 5
+  out_channel: 0
+  dcn_v2: True
+
+CenterNetHead:
+  head_planes: 256
+  prior_bias: -4.6 # Note
+  regress_ltrb: False
+  size_loss: 'L1'
+  loss_weight: {'heatmap': 1.0, 'size': 0.1, 'offset': 1.0}
+
+CenterNetPostProcess:
+  max_per_img: 100
+  regress_ltrb: False
+
+CenterTrackHead:
+  head_planes: 256
+  task: tracking
+  loss_weight: {'tracking': 1.0, 'ltrb_amodal': 0.1}
+  add_ltrb_amodal: True
+
+JDETracker:
+  conf_thres: 0.4
+  tracked_thresh: 0.4
+  metric_type: cosine
+  min_box_area: 200
+  vertical_ratio: 1.6 # for pedestrian

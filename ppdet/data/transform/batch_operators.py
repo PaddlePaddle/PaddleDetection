@@ -24,6 +24,7 @@ except Exception:
     from collections import Sequence
 
 import cv2
+import copy
 import math
 import numpy as np
 from .operators import register_op, BaseOperator, Resize
@@ -1009,40 +1010,50 @@ class Gt2CenterNetTarget(BaseOperator):
         max_objs (int): The maximum objects detected, 128 by default.
     """
 
-    def __init__(self, down_ratio, num_classes=80, max_objs=128):
+    def __init__(self,
+                 down_ratio,
+                 num_classes=80,
+                 max_objs=128,
+                 add_tracking=False,
+                 add_ltrb_amodal=False):
         super(Gt2CenterNetTarget, self).__init__()
         self.down_ratio = down_ratio
-        self.num_classes = num_classes
+        self.nc = num_classes
         self.max_objs = max_objs
+        self.add_tracking = add_tracking
+        self.add_ltrb_amodal = add_ltrb_amodal
 
     def __call__(self, sample, context=None):
         input_h, input_w = sample['image'].shape[1:]
         output_h = input_h // self.down_ratio
         output_w = input_w // self.down_ratio
-        num_classes = self.num_classes
-        c = sample['center']
-        s = sample['scale']
         gt_bbox = sample['gt_bbox']
         gt_class = sample['gt_class']
 
-        hm = np.zeros((num_classes, output_h, output_w), dtype=np.float32)
+        hm = np.zeros((self.nc, output_h, output_w), dtype=np.float32)
         wh = np.zeros((self.max_objs, 2), dtype=np.float32)
-        dense_wh = np.zeros((2, output_h, output_w), dtype=np.float32)
         reg = np.zeros((self.max_objs, 2), dtype=np.float32)
         ind = np.zeros((self.max_objs), dtype=np.int64)
         reg_mask = np.zeros((self.max_objs), dtype=np.int32)
-        cat_spec_wh = np.zeros(
-            (self.max_objs, num_classes * 2), dtype=np.float32)
-        cat_spec_mask = np.zeros(
-            (self.max_objs, num_classes * 2), dtype=np.int32)
+        if self.add_tracking:
+            tr = np.zeros((self.max_objs, 2), dtype=np.float32)
+        if self.add_ltrb_amodal:
+            ltrb_amodal = np.zeros((self.max_objs, 4), dtype=np.float32)
+        cat_spec_wh = np.zeros((self.max_objs, self.nc * 2), dtype=np.float32)
+        cat_spec_mask = np.zeros((self.max_objs, self.nc * 2), dtype=np.int32)
 
-        trans_output = get_affine_transform(c, [s, s], 0, [output_w, output_h])
+        trans_output = get_affine_transform(
+            center=sample['center'],
+            input_size=[sample['scale'], sample['scale']],
+            rot=0,
+            output_size=[output_w, output_h])
 
         gt_det = []
         for i, (bbox, cls) in enumerate(zip(gt_bbox, gt_class)):
             cls = int(cls)
             bbox[:2] = affine_transform(bbox[:2], trans_output)
             bbox[2:] = affine_transform(bbox[2:], trans_output)
+            bbox_amodal = copy.deepcopy(bbox)
             bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, output_w - 1)
             bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, output_h - 1)
             h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
@@ -1053,11 +1064,20 @@ class Gt2CenterNetTarget(BaseOperator):
                     [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2],
                     dtype=np.float32)
                 ct_int = ct.astype(np.int32)
+
+                # get hm,wh,reg,ind,ind_mask
                 draw_umich_gaussian(hm[cls], ct_int, radius)
                 wh[i] = 1. * w, 1. * h
-                ind[i] = ct_int[1] * output_w + ct_int[0]
                 reg[i] = ct - ct_int
+                ind[i] = ct_int[1] * output_w + ct_int[0]
                 reg_mask[i] = 1
+                # if self.add_tracking:
+                #     # pre_ct = 
+                #     tr[i] = pre_ct - ct_int
+                if self.add_ltrb_amodal:
+                    ltrb_amodal[i] = \
+                        bbox_amodal[0] - ct_int[0], bbox_amodal[1] - ct_int[1], \
+                        bbox_amodal[2] - ct_int[0], bbox_amodal[3] - ct_int[1]
                 cat_spec_wh[i, cls * 2:cls * 2 + 2] = wh[i]
                 cat_spec_mask[i, cls * 2:cls * 2 + 2] = 1
                 gt_det.append([
@@ -1071,11 +1091,16 @@ class Gt2CenterNetTarget(BaseOperator):
         sample.pop('scale', None)
         sample.pop('is_crowd', None)
         sample.pop('difficult', None)
-        sample['heatmap'] = hm
-        sample['index_mask'] = reg_mask
+
         sample['index'] = ind
+        sample['index_mask'] = reg_mask
+        sample['heatmap'] = hm
         sample['size'] = wh
         sample['offset'] = reg
+        if self.add_tracking:
+            sample['tracking'] = tr
+        if self.add_ltrb_amodal:
+            sample['ltrb_amodal'] = ltrb_amodal
         return sample
 
 

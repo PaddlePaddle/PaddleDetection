@@ -40,9 +40,9 @@ from .callbacks import Callback, ComposeCallback
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT', 'ByteTrack']
-MOT_ARCH_JDE = ['JDE', 'FairMOT']
-MOT_ARCH_SDE = ['DeepSORT', 'ByteTrack']
+MOT_ARCH = ['JDE', 'FairMOT', 'DeepSORT', 'ByteTrack', 'CenterTrack']
+MOT_ARCH_JDE = MOT_ARCH[:2]
+MOT_ARCH_SDE = MOT_ARCH[2:]
 MOT_DATA_TYPE = ['mot', 'mcmot', 'kitti']
 
 __all__ = ['Tracker']
@@ -205,7 +205,11 @@ class Tracker(object):
         if save_dir:
             if not os.path.exists(save_dir): os.makedirs(save_dir)
         use_detector = False if not self.model.detector else True
-        use_reid = False if not self.model.reid else True
+        use_reid = hasattr(self.model, 'reid')
+        if use_reid and self.model.reid is not None:
+            use_reid = True
+        else:
+            use_reid = False
 
         timer = MOTTimer()
         results = defaultdict(list)

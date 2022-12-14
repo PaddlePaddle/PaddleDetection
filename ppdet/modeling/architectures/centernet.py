@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import paddle
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
@@ -87,6 +88,7 @@ class CenterNet(BaseArch):
                 scale_factor=self.inputs['scale_factor'])
             output = {
                 "bbox": bbox,
+                "bbox_num": paddle.shape(bbox)[0:1],
                 "bbox_inds": bbox_inds,
                 "topk_clses": topk_clses,
                 "neck_feat": head_out['neck_feat']
