@@ -16,9 +16,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import paddle
 from paddle.optimizer import AdamW
 from functools import partial
 import re
+
+IS_PADDLE_LATER_2_4 = (
+    int(paddle.version.major) >= 2 and
+    int(paddle.version.minor) >= 4) or int(paddle.version.major) == 0
 
 
 def layerwise_lr_decay(decay_rate, name_dict, n_layers, param):
@@ -48,7 +53,10 @@ def layerwise_lr_decay(decay_rate, name_dict, n_layers, param):
     elif 'cls_token' in static_name or 'patch_embed' in static_name:
         ratio = decay_rate**(n_layers + 1)
 
-    param.optimize_attr['learning_rate'] *= ratio
+    if IS_PADDLE_LATER_2_4:
+        return ratio
+    else:
+        param.optimize_attr['learning_rate'] *= ratio
 
 
 class AdamWDL(AdamW):
@@ -172,31 +180,51 @@ class AdamWDL(AdamW):
         self.set_param_lr_func = partial(
             set_param_lr_func, layerwise_decay, name_dict,
             n_layers) if set_param_lr_func is not None else set_param_lr_func
-        super(AdamWDL, self).__init__(
-            learning_rate=learning_rate,
-            parameters=parameters,
-            beta1=beta1,
-            beta2=beta2,
-            epsilon=epsilon,
-            grad_clip=grad_clip,
-            name=name,
-            apply_decay_param_fun=apply_decay_param_fun,
-            weight_decay=weight_decay,
-            lazy_mode=lazy_mode,
-            multi_precision=multi_precision)
 
-    def _append_optimize_op(self, block, param_and_grad):
-        if self.set_param_lr_func is None:
-            return super(AdamWDL, self)._append_optimize_op(block,
-                                                            param_and_grad)
+        if IS_PADDLE_LATER_2_4:
+            super(AdamWDL, self).__init__(
+                learning_rate=learning_rate,
+                parameters=parameters,
+                beta1=beta1,
+                beta2=beta2,
+                epsilon=epsilon,
+                grad_clip=grad_clip,
+                name=name,
+                apply_decay_param_fun=apply_decay_param_fun,
+                weight_decay=weight_decay,
+                lazy_mode=lazy_mode,
+                multi_precision=multi_precision,
+                lr_ratio=self.set_param_lr_func)
+        else:
+            super(AdamWDL, self).__init__(
+                learning_rate=learning_rate,
+                parameters=parameters,
+                beta1=beta1,
+                beta2=beta2,
+                epsilon=epsilon,
+                grad_clip=grad_clip,
+                name=name,
+                apply_decay_param_fun=apply_decay_param_fun,
+                weight_decay=weight_decay,
+                lazy_mode=lazy_mode,
+                multi_precision=multi_precision)
 
-        self._append_decoupled_weight_decay(block, param_and_grad)
-        prev_lr = param_and_grad[0].optimize_attr["learning_rate"]
-        self.set_param_lr_func(param_and_grad[0])
-        # excute Adam op
-        res = super(AdamW, self)._append_optimize_op(block, param_and_grad)
-        param_and_grad[0].optimize_attr["learning_rate"] = prev_lr
-        return res
+
+def _append_optimize_op(self, block, param_and_grad):
+    if self.set_param_lr_func is None:
+        return super(AdamWDL, self)._append_optimize_op(block, param_and_grad)
+
+    self._append_decoupled_weight_decay(block, param_and_grad)
+    prev_lr = param_and_grad[0].optimize_attr["learning_rate"]
+    self.set_param_lr_func(param_and_grad[0])
+    # excute Adam op
+    res = super(AdamW, self)._append_optimize_op(block, param_and_grad)
+    param_and_grad[0].optimize_attr["learning_rate"] = prev_lr
+    return res
+
+
+if not IS_PADDLE_LATER_2_4:
+    AdamWDL._append_optimize_op = _append_optimize_op
 
 
 def build_adamwdl(model,
