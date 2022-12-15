@@ -18,7 +18,6 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from ppdet.modeling.bbox_utils import nonempty_bbox
-from ppdet.modeling.layers import TTFBox
 from .transformers import bbox_cxcywh_to_xyxy
 try:
     from collections.abc import Sequence
@@ -358,55 +357,78 @@ class JDEBBoxPostProcess(nn.Layer):
 
 
 @register
-class CenterNetPostProcess(TTFBox):
+class CenterNetPostProcess(object):
     """
     Postprocess the model outputs to get final prediction:
         1. Do NMS for heatmap to get top `max_per_img` bboxes.
         2. Decode bboxes using center offset and box size.
         3. Rescale decoded bboxes reference to the origin image shape.
-
     Args:
         max_per_img(int): the maximum number of predicted objects in a image,
             500 by default.
         down_ratio(int): the down ratio from images to heatmap, 4 by default.
         regress_ltrb (bool): whether to regress left/top/right/bottom or
             width/height for a box, true by default.
-        for_mot (bool): whether return other features used in tracking model.
     """
+    __shared__ = ['down_ratio']
 
-    __shared__ = ['down_ratio', 'for_mot']
-
-    def __init__(self,
-                 max_per_img=500,
-                 down_ratio=4,
-                 regress_ltrb=True,
-                 for_mot=False):
-        super(TTFBox, self).__init__()
+    def __init__(self, max_per_img=500, down_ratio=4, regress_ltrb=True):
+        super(CenterNetPostProcess, self).__init__()
         self.max_per_img = max_per_img
         self.down_ratio = down_ratio
         self.regress_ltrb = regress_ltrb
-        self.for_mot = for_mot
+        # _simple_nms() _topk() are same as TTFBox in ppdet/modeling/layers.py
+
+    def _simple_nms(self, heat, kernel=3):
+        """ Use maxpool to filter the max score, get local peaks. """
+        pad = (kernel - 1) // 2
+        hmax = F.max_pool2d(heat, kernel, stride=1, padding=pad)
+        keep = paddle.cast(hmax == heat, 'float32')
+        return heat * keep
+
+    def _topk(self, scores):
+        """ Select top k scores and decode to get xy coordinates. """
+        k = self.max_per_img
+        shape_fm = paddle.shape(scores)
+        shape_fm.stop_gradient = True
+        cat, height, width = shape_fm[1], shape_fm[2], shape_fm[3]
+        # batch size is 1
+        scores_r = paddle.reshape(scores, [cat, -1])
+        topk_scores, topk_inds = paddle.topk(scores_r, k)
+        topk_ys = topk_inds // width
+        topk_xs = topk_inds % width
+
+        topk_score_r = paddle.reshape(topk_scores, [-1])
+        topk_score, topk_ind = paddle.topk(topk_score_r, k)
+        k_t = paddle.full(paddle.shape(topk_ind), k, dtype='int64')
+        topk_clses = paddle.cast(paddle.floor_divide(topk_ind, k_t), 'float32')
+
+        topk_inds = paddle.reshape(topk_inds, [-1])
+        topk_ys = paddle.reshape(topk_ys, [-1, 1])
+        topk_xs = paddle.reshape(topk_xs, [-1, 1])
+        topk_inds = paddle.gather(topk_inds, topk_ind)
+        topk_ys = paddle.gather(topk_ys, topk_ind)
+        topk_xs = paddle.gather(topk_xs, topk_ind)
+        return topk_score, topk_inds, topk_clses, topk_ys, topk_xs
 
     def __call__(self, hm, wh, reg, im_shape, scale_factor):
+        # 1.get clses and scores, note that hm had been done sigmoid
         heat = self._simple_nms(hm)
         scores, inds, topk_clses, ys, xs = self._topk(heat)
-        scores = scores.unsqueeze(1)
         clses = topk_clses.unsqueeze(1)
+        scores = scores.unsqueeze(1)
 
+        # 2.get bboxes, note only support batch_size=1 now
         reg_t = paddle.transpose(reg, [0, 2, 3, 1])
-        # Like TTFBox, batch size is 1.
-        # TODO: support batch size > 1
         reg = paddle.reshape(reg_t, [-1, reg_t.shape[-1]])
         reg = paddle.gather(reg, inds)
         xs = paddle.cast(xs, 'float32')
         ys = paddle.cast(ys, 'float32')
         xs = xs + reg[:, 0:1]
         ys = ys + reg[:, 1:2]
-
         wh_t = paddle.transpose(wh, [0, 2, 3, 1])
         wh = paddle.reshape(wh_t, [-1, wh_t.shape[-1]])
         wh = paddle.gather(wh, inds)
-
         if self.regress_ltrb:
             x1 = xs - wh[:, 0:1]
             y1 = ys - wh[:, 1:2]
@@ -417,7 +439,6 @@ class CenterNetPostProcess(TTFBox):
             y1 = ys - wh[:, 1:2] / 2
             x2 = xs + wh[:, 0:1] / 2
             y2 = ys + wh[:, 1:2] / 2
-
         n, c, feat_h, feat_w = paddle.shape(hm)
         padw = (feat_w * self.down_ratio - im_shape[0, 1]) / 2
         padh = (feat_h * self.down_ratio - im_shape[0, 0]) / 2
@@ -425,12 +446,10 @@ class CenterNetPostProcess(TTFBox):
         y1 = y1 * self.down_ratio
         x2 = x2 * self.down_ratio
         y2 = y2 * self.down_ratio
-
         x1 = x1 - padw
         y1 = y1 - padh
         x2 = x2 - padw
         y2 = y2 - padh
-
         bboxes = paddle.concat([x1, y1, x2, y2], axis=1)
         scale_y = scale_factor[:, 0:1]
         scale_x = scale_factor[:, 1:2]
@@ -439,11 +458,9 @@ class CenterNetPostProcess(TTFBox):
         boxes_shape = bboxes.shape[:]
         scale_expand = paddle.expand(scale_expand, shape=boxes_shape)
         bboxes = paddle.divide(bboxes, scale_expand)
+
         results = paddle.concat([clses, scores, bboxes], axis=1)
-        if self.for_mot:
-            return results, inds, topk_clses
-        else:
-            return results, paddle.shape(results)[0:1], topk_clses
+        return results, paddle.shape(results)[0:1], inds, topk_clses, ys, xs
 
 
 @register

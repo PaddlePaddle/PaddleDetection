@@ -29,7 +29,7 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_box
 from ppdet.modeling.mot.utils import MOTTimer, load_det_results, write_mot_results, save_vis_results
-from ppdet.modeling.mot.tracker import JDETracker, DeepSORTTracker, OCSORTTracker
+from ppdet.modeling.mot.tracker import JDETracker, DeepSORTTracker, OCSORTTracker, CenterTracker
 from ppdet.modeling.architectures import YOLOX
 from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric, MCMOTMetric
 from ppdet.data.source.category import get_categories
@@ -382,6 +382,7 @@ class Tracker(object):
                 save_vis_results(data, frame_id, online_ids, online_tlwhs,
                                  online_scores, timer.average_time, show_image,
                                  save_dir, self.cfg.num_classes, self.ids2names)
+
             elif isinstance(tracker, OCSORTTracker):
                 # OC_SORT Tracker
                 online_targets = tracker.update(pred_dets_old, pred_embs)
@@ -392,6 +393,31 @@ class Tracker(object):
                     tlwh = [t[0], t[1], t[2] - t[0], t[3] - t[1]]
                     tscore = float(t[4])
                     tid = int(t[5])
+                    if tlwh[2] * tlwh[3] > 0:
+                        online_tlwhs.append(tlwh)
+                        online_ids.append(tid)
+                        online_scores.append(tscore)
+                timer.toc()
+                # save results
+                results[0].append(
+                    (frame_id + 1, online_tlwhs, online_scores, online_ids))
+                save_vis_results(data, frame_id, online_ids, online_tlwhs,
+                                 online_scores, timer.average_time, show_image,
+                                 save_dir, self.cfg.num_classes, self.ids2names)
+
+            elif isinstance(tracker, CenterTracker):
+                # CenterTrack tracker
+                online_targets = tracker.update(pred_dets, pred_embs=None)
+                online_tlwhs = []
+                online_ids = []
+                online_scores = []
+                for t in online_targets:
+                    bbox = t['bbox']
+                    tlwh = [
+                        bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]
+                    ]
+                    tscore = float(t['score'])
+                    tid = int(t['tracking_id'])
                     if tlwh[2] * tlwh[3] > 0:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)

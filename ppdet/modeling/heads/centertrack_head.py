@@ -84,7 +84,14 @@ class CenterTrackHead(nn.Layer):
             input_shape = input_shape[0]
         return {'in_channels': input_shape.channels}
 
-    def forward(self, feat, inputs):
+    def forward(self,
+                feat,
+                inputs,
+                bboxes=None,
+                bbox_inds=None,
+                topk_clses=None,
+                topk_ys=None,
+                topk_xs=None):
         tracking = self.tracking(feat)
         head_outs = {'tracking': tracking}
         if self.add_ltrb_amodal and 'ltrb_amodal' in self.loss_weight:
@@ -95,7 +102,9 @@ class CenterTrackHead(nn.Layer):
             losses = self.get_loss(inputs, self.loss_weight, head_outs)
             return losses
         else:
-            return head_outs
+            ret = self.generic_decode(head_outs, bboxes, bbox_inds, topk_ys,
+                                      topk_xs)
+            return ret
 
     def get_loss(self, inputs, weights, head_outs):
         index = inputs['index'].unsqueeze(2)
@@ -152,3 +161,44 @@ class CenterTrackHead(nn.Layer):
             plugin_loss += weights['ltrb_amodal'] * ltrb_amodal_loss
         losses.update({'plugin_loss': plugin_loss})
         return losses
+
+    def generic_decode(self, head_outs, bboxes, bbox_inds, topk_ys, topk_xs):
+        ret = {'bboxes': bboxes}
+
+        regression_heads = ['tracking']  # todo: add more tasks
+        for head in regression_heads:
+            if head in head_outs:
+                ret[head] = _tranpose_and_gather_feat(head_outs[head],
+                                                      bbox_inds)
+
+        if 'ltrb_amodal' in head_outs:
+            ltrb_amodal = head_outs['ltrb_amodal']
+            ltrb_amodal = _tranpose_and_gather_feat(ltrb_amodal, bbox_inds)
+            bboxes_amodal = paddle.concat(
+                [
+                    topk_xs + ltrb_amodal[..., 0:1],
+                    topk_ys + ltrb_amodal[..., 1:2],
+                    topk_xs + ltrb_amodal[..., 2:3],
+                    topk_ys + ltrb_amodal[..., 3:4]
+                ],
+                axis=2)
+            ret['bboxes_amodal'] = bboxes_amodal
+            ret['bboxes'] = bboxes_amodal
+
+        # if 'pre_inds' in head_outs and head_outs['pre_inds'] is not None:
+        #     pre_inds = head_outs['pre_inds'] # B x pre_K
+        #     pre_K = pre_inds.shape[1]
+        #     pre_ys = (pre_inds / width).int().float()
+        #     pre_xs = (pre_inds % width).int().float()
+
+        #     ret['pre_cts'] = paddle.concat(
+        #         [pre_xs.unsqueeze(2), pre_ys.unsqueeze(2)], axis=2)
+
+        return ret
+
+
+def _tranpose_and_gather_feat(feat, bbox_inds):
+    feat = feat.transpose([0, 2, 3, 1])
+    feat = feat.reshape([-1, feat.shape[3]])
+    feat = paddle.gather(feat, bbox_inds)
+    return feat

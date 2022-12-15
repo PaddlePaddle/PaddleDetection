@@ -16,7 +16,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import paddle
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
@@ -64,29 +63,31 @@ class CenterTrack(BaseArch):
 
     def _forward(self):
         det_outs = self.detector(self.inputs)
+        neck_feat = det_outs['neck_feat']
         if self.training:
             losses = {}
             for k, v in det_outs.items():
                 if 'loss' not in k: continue
                 losses.update({k: v})
 
-            plugin_outs = self.plugin_head(det_outs['neck_feat'], self.inputs)
+            plugin_outs = self.plugin_head(neck_feat, self.inputs)
             for k, v in plugin_outs.items():
                 if 'loss' not in k: continue
                 losses.update({k: v})
+
             losses['loss'] = det_outs['det_loss'] + plugin_outs['plugin_loss']
             return losses
         else:
-            if not self.mot_metric:
-                bbox = det_outs['bbox']
-                bbox_num = paddle.shape(det_outs['bbox'])[0:1]
-                return {'bbox': bbox, 'bbox_num': bbox_num}
-            else:
-                plugin_outs = self.plugin_head(det_outs['neck_feat'],
-                                               self.inputs)
-                # pred_dets = ['tracking', 'ltrb_amodal']
-                pred_dets = det_outs['bbox']
+            if self.mot_metric:
+                pred_dets, pred_embs = self.plugin_head(
+                    neck_feat, self.inputs, det_outs['bbox'],
+                    det_outs['bbox_inds'], det_outs['topk_clses'],
+                    det_outs['topk_ys'], det_outs['topk_xs'])
                 return pred_dets, pred_embs
+            else:
+                bbox = det_outs['bbox']
+                bbox_num = det_outs['bbox_num']
+                return {'bbox': bbox, 'bbox_num': bbox_num}
 
     def get_pred(self):
         return self._forward()

@@ -157,9 +157,10 @@ class DLA(nn.Layer):
     DLA, see https://arxiv.org/pdf/1707.06484.pdf
 
     Args:
-        depth (int): DLA depth, should be 34.
+        depth (int): DLA depth, only support 34 now.
         residual_root (bool): whether use a reidual layer in the root block
-
+        pre_img (bool): add pre_img, only used in CenterTrack
+        pre_hm (bool): add pre_hm, only used in CenterTrack
     """
 
     def __init__(self,
@@ -169,10 +170,12 @@ class DLA(nn.Layer):
                  pre_hm=False):
         super(DLA, self).__init__()
         assert depth == 34, 'Only support DLA with depth of 34 now.'
-        levels, channels = DLA_cfg[depth]
         if depth == 34:
             block = BasicBlock
+        levels, channels = DLA_cfg[depth]
         self.channels = channels
+        self.levels = levels
+
         self.base_layer = nn.Sequential(
             ConvNormLayer(
                 3,
@@ -218,8 +221,7 @@ class DLA(nn.Layer):
             level_root=True,
             root_residual=residual_root)
 
-        self.pre_img = pre_img
-        if self.pre_img:
+        if pre_img:
             self.pre_img_layer = nn.Sequential(
                 ConvNormLayer(
                     3,
@@ -229,9 +231,7 @@ class DLA(nn.Layer):
                     bias_on=False,
                     norm_decay=None),
                 nn.ReLU())
-
-        self.pre_hm = pre_hm
-        if self.pre_hm:
+        if pre_hm:
             self.pre_hm_layer = nn.Sequential(
                 ConvNormLayer(
                     1,
@@ -241,6 +241,8 @@ class DLA(nn.Layer):
                     bias_on=False,
                     norm_decay=None),
                 nn.ReLU())
+        self.pre_img = pre_img
+        self.pre_hm = pre_hm
 
     def _make_conv_level(self, ch_in, ch_out, conv_num, stride=1):
         modules = []
@@ -259,19 +261,21 @@ class DLA(nn.Layer):
 
     @property
     def out_shape(self):
-        return [ShapeSpec(channels=self.channels[i]) for i in range(6)]
+        return [
+            ShapeSpec(channels=self.channels[i]) for i in range(self.levels)
+        ]
 
-    def forward(self, inputs, pre_img=None, pre_hm=None):
+    def forward(self, inputs):
         outs = []
         im = inputs['image']
         feats = self.base_layer(im)
 
-        if self.pre_img and pre_img:
-            feats = feats + self.pre_img_layer(pre_img)
-        if self.pre_hm and pre_hm:
-            feats = feats + self.pre_hm_layer(pre_hm)
+        if self.pre_img and inputs['pre_img'] is not None:
+            feats = feats + self.pre_img_layer(inputs['pre_img'])
+        if self.pre_hm and inputs['pre_hm'] is not None:
+            feats = feats + self.pre_hm_layer(inputs['pre_hm'])
 
-        for i in range(6):
+        for i in range(self.levels):
             feats = getattr(self, 'level{}'.format(i))(feats)
             outs.append(feats)
 

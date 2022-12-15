@@ -19,6 +19,7 @@ TrainReader:
   batch_size: 16 # total 32 for 2 GPUs
   shuffle: True
   drop_last: True
+  collate_batch: True
   use_shared_memory: True
 
 
@@ -38,6 +39,7 @@ TestReader:
     - NormalizeImage: {mean: [0.40789655, 0.44719303, 0.47026116], std: [0.2886383 , 0.27408165, 0.27809834], is_scale: True}
     - Permute: {}
   batch_size: 1
+  fuse_normalize: True
 
 
 EvalMOTReader:
@@ -56,3 +58,4 @@ TestMOTReader:
     - NormalizeImage: {mean: [0.40789655, 0.44719303, 0.47026116], std: [0.2886383 , 0.27408165, 0.27809834], is_scale: True}
     - Permute: {}
   batch_size: 1
+  fuse_normalize: True
