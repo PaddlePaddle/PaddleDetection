@@ -202,6 +202,8 @@ class DetectorOp(Op):
                         result.append(
                             f"{int(line[0])} {line[1]} "
                             f"{line[2]} {line[3]} {line[4]} {line[5]}")
+                if len(result) == 0:
+                    result = 'No object detected!'
                 results[img_name] = result
             idx += num
         return results
