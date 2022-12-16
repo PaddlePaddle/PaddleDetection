@@ -22,8 +22,8 @@ from paddle import ParamAttr
 from paddle.nn import AdaptiveAvgPool2D, Conv2D
 from paddle.regularizer import L2Decay
 from paddle.nn.initializer import KaimingNormal
+from paddlecv.ppcv.register import BACKBONE
 
-from ppdet.core.workspace import register, serializable
 from numbers import Integral
 from ..shape_spec import ShapeSpec
 
@@ -162,8 +162,7 @@ class SEModule(nn.Layer):
         return x
 
 
-@register
-@serializable
+@BACKBONE.register
 class LCNet(nn.Layer):
     def __init__(self, scale=1.0, feature_maps=[3, 4, 5], act='hard_swish'):
         super().__init__()
@@ -179,7 +178,7 @@ class LCNet(nn.Layer):
             stride=2,
             act=act)
 
-        self.blocks2 = nn.Sequential(* [
+        self.blocks2 = nn.Sequential(*[
             DepthwiseSeparable(
                 num_channels=make_divisible(in_c * scale),
                 num_filters=make_divisible(out_c * scale),
@@ -190,7 +189,7 @@ class LCNet(nn.Layer):
             for i, (k, in_c, out_c, s, se) in enumerate(NET_CONFIG["blocks2"])
         ])
 
-        self.blocks3 = nn.Sequential(* [
+        self.blocks3 = nn.Sequential(*[
             DepthwiseSeparable(
                 num_channels=make_divisible(in_c * scale),
                 num_filters=make_divisible(out_c * scale),
@@ -204,7 +203,7 @@ class LCNet(nn.Layer):
         out_channels.append(
             make_divisible(NET_CONFIG["blocks3"][-1][2] * scale))
 
-        self.blocks4 = nn.Sequential(* [
+        self.blocks4 = nn.Sequential(*[
             DepthwiseSeparable(
                 num_channels=make_divisible(in_c * scale),
                 num_filters=make_divisible(out_c * scale),
@@ -218,7 +217,7 @@ class LCNet(nn.Layer):
         out_channels.append(
             make_divisible(NET_CONFIG["blocks4"][-1][2] * scale))
 
-        self.blocks5 = nn.Sequential(* [
+        self.blocks5 = nn.Sequential(*[
             DepthwiseSeparable(
                 num_channels=make_divisible(in_c * scale),
                 num_filters=make_divisible(out_c * scale),
@@ -232,7 +231,7 @@ class LCNet(nn.Layer):
         out_channels.append(
             make_divisible(NET_CONFIG["blocks5"][-1][2] * scale))
 
-        self.blocks6 = nn.Sequential(* [
+        self.blocks6 = nn.Sequential(*[
             DepthwiseSeparable(
                 num_channels=make_divisible(in_c * scale),
                 num_filters=make_divisible(out_c * scale),

@@ -26,17 +26,11 @@ sys.path.insert(0, parent_path)
 # ignore warning log
 import warnings
 warnings.filterwarnings('ignore')
+from paddlecv import Config
+from paddlecv import Trainer
+from paddlecv.ppcv.utils.logger import setup_logger
 
-import paddle
-
-from ppdet.core.workspace import load_config, merge_config
-from ppdet.engine import Trainer, init_parallel_env, set_random_seed, init_fleet_env
-from ppdet.engine.trainer_ssod import Trainer_DenseTeacher
-from ppdet.slim import build_slim_model
-
-from ppdet.utils.cli import ArgsParser, merge_args
-import ppdet.utils.check as check
-from ppdet.utils.logger import setup_logger
+from ppdet.utils.cli import ArgsParser
 logger = setup_logger('train')
 
 
@@ -45,10 +39,8 @@ def parse_args():
     parser.add_argument(
         "--eval",
         action='store_true',
-        default=False,
+        default=True,
         help="Whether to perform evaluation in train")
-    parser.add_argument(
-        "-r", "--resume", default=None, help="weights path for resume")
     parser.add_argument(
         "--slim_config",
         default=None,
@@ -60,28 +52,6 @@ def parse_args():
         default=False,
         help="If set True, enable continuous evaluation job."
         "This flag is only used for internal test.")
-    parser.add_argument(
-        "--amp",
-        action='store_true',
-        default=False,
-        help="Enable auto mixed precision training.")
-    parser.add_argument(
-        "--fleet", action='store_true', default=False, help="Use fleet or not")
-    parser.add_argument(
-        "--use_vdl",
-        type=bool,
-        default=False,
-        help="whether to record the data to VisualDL.")
-    parser.add_argument(
-        '--vdl_log_dir',
-        type=str,
-        default="vdl_log_dir/scalar",
-        help='VisualDL logging directory for scalar.')
-    parser.add_argument(
-        "--use_wandb",
-        type=bool,
-        default=False,
-        help="whether to record the data to wandb.")
     parser.add_argument(
         '--save_prediction_only',
         action='store_true',
@@ -114,84 +84,16 @@ def parse_args():
     return args
 
 
-def run(FLAGS, cfg):
-    # init fleet environment
-    if cfg.fleet:
-        init_fleet_env(cfg.get('find_unused_parameters', False))
-    else:
-        # init parallel environment if nranks > 1
-        init_parallel_env()
-
-    if FLAGS.enable_ce:
-        set_random_seed(0)
-
-    ssod_method = cfg.get('ssod_method', None)
-    if ssod_method is not None:
-        if ssod_method == 'DenseTeacher':
-            trainer = Trainer_DenseTeacher(cfg, mode='train')
-        else:
-            raise ValueError(
-                "Semi-Supervised Object Detection only support DenseTeacher now."
-            )
-    else:
-        # build trainer
-        trainer = Trainer(cfg, mode='train')
-
-    # load weights
-    if FLAGS.resume is not None:
-        trainer.resume_weights(FLAGS.resume)
-    elif 'pretrain_weights' in cfg and cfg.pretrain_weights:
-        trainer.load_weights(cfg.pretrain_weights)
-
-    # training
-    trainer.train(FLAGS.eval)
-
-
 def main():
     FLAGS = parse_args()
-    cfg = load_config(FLAGS.config)
-    merge_args(cfg, FLAGS)
-    merge_config(FLAGS.opt)
+    cfg = Config(FLAGS.config)
+    FLAGS = vars(FLAGS)
+    opt = FLAGS.pop('opt')
+    cfg.merge_dict(FLAGS)
+    cfg.merge_dict(opt)
 
-    # disable npu in config by default
-    if 'use_npu' not in cfg:
-        cfg.use_npu = False
-
-    # disable xpu in config by default
-    if 'use_xpu' not in cfg:
-        cfg.use_xpu = False
-
-    if 'use_gpu' not in cfg:
-        cfg.use_gpu = False
-
-    # disable mlu in config by default
-    if 'use_mlu' not in cfg:
-        cfg.use_mlu = False
-
-    if cfg.use_gpu:
-        place = paddle.set_device('gpu')
-    elif cfg.use_npu:
-        place = paddle.set_device('npu')
-    elif cfg.use_xpu:
-        place = paddle.set_device('xpu')
-    elif cfg.use_mlu:
-        place = paddle.set_device('mlu')
-    else:
-        place = paddle.set_device('cpu')
-
-    if FLAGS.slim_config:
-        cfg = build_slim_model(cfg, FLAGS.slim_config)
-
-    # FIXME: Temporarily solve the priority problem of FLAGS.opt
-    merge_config(FLAGS.opt)
-    check.check_config(cfg)
-    check.check_gpu(cfg.use_gpu)
-    check.check_npu(cfg.use_npu)
-    check.check_xpu(cfg.use_xpu)
-    check.check_mlu(cfg.use_mlu)
-    check.check_version()
-
-    run(FLAGS, cfg)
+    trainer = Trainer(cfg, mode='train_eval' if FLAGS['eval'] else 'train')
+    trainer.train()
 
 
 if __name__ == "__main__":

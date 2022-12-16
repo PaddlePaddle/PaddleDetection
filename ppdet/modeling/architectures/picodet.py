@@ -17,13 +17,14 @@ from __future__ import division
 from __future__ import print_function
 
 import paddle
-from ppdet.core.workspace import register, create
+from paddlecv.ppcv.register import MODEL, BACKBONE, NECK, HEAD
+
 from .meta_arch import BaseArch
 
 __all__ = ['PicoDet']
 
 
-@register
+@MODEL.register
 class PicoDet(BaseArch):
     """
     Generalized Focal Loss network, see https://arxiv.org/abs/2006.04388
@@ -36,29 +37,15 @@ class PicoDet(BaseArch):
 
     __category__ = 'architecture'
 
-    def __init__(self, backbone, neck, head='PicoHead'):
+    def __init__(self, backbone, neck, head='PicoHead', **kwargs):
         super(PicoDet, self).__init__()
-        self.backbone = backbone
-        self.neck = neck
-        self.head = head
+        self.backbone = BACKBONE.build(backbone)
+        kwargs = {'in_channels': [i.channels for i in self.backbone.out_shape]}
+        self.neck = NECK.build(neck, **kwargs)
+        kwargs = {'in_channels': [i.channels for i in self.neck.out_shape]}
+        self.head = HEAD.build(head, **kwargs)
         self.export_post_process = True
         self.export_nms = True
-
-    @classmethod
-    def from_config(cls, cfg, *args, **kwargs):
-        backbone = create(cfg['backbone'])
-
-        kwargs = {'input_shape': backbone.out_shape}
-        neck = create(cfg['neck'], **kwargs)
-
-        kwargs = {'input_shape': neck.out_shape}
-        head = create(cfg['head'], **kwargs)
-
-        return {
-            'backbone': backbone,
-            'neck': neck,
-            "head": head,
-        }
 
     def _forward(self):
         body_feats = self.backbone(self.inputs)

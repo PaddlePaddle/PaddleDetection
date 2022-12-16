@@ -22,6 +22,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 
 from ppdet.core.workspace import register
+from paddlecv.ppcv.register import OPERATOR
 from ..bbox_utils import iou_similarity, batch_iou_similarity
 from ..bbox_utils import bbox_center
 from .utils import (check_points_inside_bboxes, compute_max_iou_anchor,
@@ -30,7 +31,7 @@ from .utils import (check_points_inside_bboxes, compute_max_iou_anchor,
 __all__ = ['ATSSAssigner']
 
 
-@register
+@OPERATOR.register
 class ATSSAssigner(nn.Layer):
     """Bridging the Gap Between Anchor-based and Anchor-free Detection
      via Adaptive Training Sample Selection

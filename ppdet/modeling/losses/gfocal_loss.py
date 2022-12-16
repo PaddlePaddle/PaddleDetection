@@ -23,6 +23,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
+from paddlecv.ppcv.register import LOSS
 from ppdet.modeling import ops
 
 __all__ = ['QualityFocalLoss', 'DistributionFocalLoss']
@@ -166,8 +167,7 @@ class QualityFocalLoss(nn.Layer):
         return loss
 
 
-@register
-@serializable
+@LOSS.register
 class DistributionFocalLoss(nn.Layer):
     """Distribution Focal Loss (DFL) is a variant of `Generalized Focal Loss:
     Learning Qualified and Distributed Bounding Boxes for Dense Object

@@ -17,7 +17,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
-from ppdet.core.workspace import register, serializable
+from paddlecv.ppcv.register import NECK
 
 from ..shape_spec import ShapeSpec
 from ..backbones.lcnet import DepthwiseSeparable
@@ -26,8 +26,7 @@ from .csp_pan import ConvBNLayer, Channel_T, DPModule
 __all__ = ['LCPAN']
 
 
-@register
-@serializable
+@NECK.register
 class LCPAN(nn.Layer):
     """Path Aggregation Network with LCNet module.
     Args:
@@ -81,7 +80,7 @@ class LCPAN(nn.Layer):
         self.top_down_blocks = nn.LayerList()
         for idx in range(len(in_channels) - 1, 0, -1):
             self.top_down_blocks.append(
-                nn.Sequential(* [
+                nn.Sequential(*[
                     DepthwiseSeparable(
                         num_channels=in_c,
                         num_filters=out_c,
@@ -104,7 +103,7 @@ class LCPAN(nn.Layer):
                     stride=2,
                     act=act))
             self.bottom_up_blocks.append(
-                nn.Sequential(* [
+                nn.Sequential(*[
                     DepthwiseSeparable(
                         num_channels=in_c,
                         num_filters=out_c,

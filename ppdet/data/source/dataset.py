@@ -21,14 +21,16 @@ except Exception:
     from collections import Sequence
 from paddle.io import Dataset
 from ppdet.core.workspace import register, serializable
+from paddlecv.ppcv.register import DATASET
+from paddlecv.ppcv.utils.logger import setup_logger
 from ppdet.utils.download import get_dataset_path
 from ppdet.data import source
+from ppdet.data.utils import Compose
 
-from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-@serializable
+@DATASET.register
 class DetDataset(Dataset):
     """
     Load detection dataset.
@@ -50,6 +52,7 @@ class DetDataset(Dataset):
                  data_fields=['image'],
                  sample_num=-1,
                  use_default_label=None,
+                 transforms=[],
                  repeat=1,
                  **kwargs):
         super(DetDataset, self).__init__()
@@ -62,6 +65,7 @@ class DetDataset(Dataset):
         self.repeat = repeat
         self._epoch = 0
         self._curr_iter = 0
+        self.transform = Compose(transforms, **kwargs)
 
     def __len__(self, ):
         return len(self.roidbs) * self.repeat

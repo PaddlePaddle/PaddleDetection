@@ -23,12 +23,14 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.nn.initializer import Normal, Constant
+from paddlecv.ppcv.register import HEAD, LOSS, OPERATOR
 
+from ppdet.core.workspace import register
 from ppdet.modeling.ops import get_static_shape
 from ..initializer import normal_
 from ..assigners.utils import generate_anchors_for_grid_cell
 from ..bbox_utils import bbox_center, batch_distance2bbox, bbox2distance
-from ppdet.core.workspace import register
+
 from ppdet.modeling.layers import ConvNormLayer
 from .simota_head import OTAVFLHead
 from .gfl_head import Integral, GFLHead
@@ -56,7 +58,7 @@ class PicoSE(nn.Layer):
         return out
 
 
-@register
+@HEAD.register
 class PicoFeat(nn.Layer):
     """
     PicoFeat of PicoDet
@@ -413,7 +415,7 @@ class PicoHead(OTAVFLHead):
             return bbox_pred, bbox_num
 
 
-@register
+@HEAD.register
 class PicoHeadV2(GFLHead):
     """
     PicoHeadV2
@@ -455,7 +457,8 @@ class PicoHeadV2(GFLHead):
                  cell_offset=0,
                  act='hard_swish',
                  grid_cell_scale=5.0,
-                 eval_size=None):
+                 eval_size=None,
+                 **kwargs):
         super(PicoHeadV2, self).__init__(
             conv_feat=conv_feat,
             dgqp_module=dgqp_module,
@@ -470,21 +473,21 @@ class PicoHeadV2(GFLHead):
             nms=nms,
             nms_pre=nms_pre,
             cell_offset=cell_offset, )
-        self.conv_feat = conv_feat
+        self.conv_feat = HEAD.build(conv_feat)
         self.num_classes = num_classes
         self.fpn_stride = fpn_stride
         self.prior_prob = prior_prob
-        self.loss_vfl = loss_class
-        self.loss_dfl = loss_dfl
-        self.loss_bbox = loss_bbox
+        self.loss_vfl = LOSS.build(loss_class)
+        self.loss_dfl = LOSS.build(loss_dfl)
+        self.loss_bbox = LOSS.build(loss_bbox)
 
         self.static_assigner_epoch = static_assigner_epoch
-        self.static_assigner = static_assigner
-        self.assigner = assigner
+        self.static_assigner = OPERATOR.build(static_assigner)
+        self.assigner = OPERATOR.build(assigner)
 
         self.reg_max = reg_max
         self.feat_in_chan = feat_in_chan
-        self.nms = nms
+        self.nms = OPERATOR.build(nms)
         self.nms_pre = nms_pre
         self.cell_offset = cell_offset
         self.act = act

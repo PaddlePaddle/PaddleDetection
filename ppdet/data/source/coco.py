@@ -19,17 +19,16 @@ try:
 except Exception:
     from collections import Sequence
 import numpy as np
-from ppdet.core.workspace import register, serializable
+from paddlecv.ppcv.register import DATASET
+from paddlecv.ppcv.utils.logger import setup_logger
+
 from .dataset import DetDataset
 
-from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
-
 __all__ = ['COCODataSet', 'SlicedCOCODataSet', 'SemiCOCODataSet']
 
 
-@register
-@serializable
+@DATASET.register
 class COCODataSet(DetDataset):
     """
     Load dataset with COCO format.
@@ -53,18 +52,23 @@ class COCODataSet(DetDataset):
                  dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
+                 transforms=[],
                  data_fields=['image'],
                  sample_num=-1,
                  load_crowd=False,
                  allow_empty=False,
                  empty_ratio=1.,
-                 repeat=1):
+                 repeat=1,
+                 num_classes=80,
+                 **kwargs):
         super(COCODataSet, self).__init__(
             dataset_dir,
             image_dir,
             anno_path,
             data_fields,
             sample_num,
+            num_classes=num_classes,
+            transforms=transforms,
             repeat=repeat)
         self.load_image_only = False
         self.load_semantic = False
@@ -238,8 +242,7 @@ class COCODataSet(DetDataset):
         self.roidbs = records
 
 
-@register
-@serializable
+@DATASET.register
 class SlicedCOCODataSet(COCODataSet):
     """Sliced COCODataSet"""
 
@@ -361,8 +364,7 @@ class SlicedCOCODataSet(COCODataSet):
         self.roidbs = records
 
 
-@register
-@serializable
+@DATASET.register
 class SemiCOCODataSet(COCODataSet):
     """Semi-COCODataSet used for supervised and unsupervised dataSet"""
 

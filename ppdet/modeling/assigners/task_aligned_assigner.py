@@ -21,6 +21,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 
 from ppdet.core.workspace import register
+from paddlecv.ppcv.register import OPERATOR
 from ..bbox_utils import batch_iou_similarity
 from .utils import (gather_topk_anchors, check_points_inside_bboxes,
                     compute_max_iou_anchor)
@@ -28,7 +29,7 @@ from .utils import (gather_topk_anchors, check_points_inside_bboxes,
 __all__ = ['TaskAlignedAssigner']
 
 
-@register
+@OPERATOR.register
 class TaskAlignedAssigner(nn.Layer):
     """TOOD: Task-aligned One-stage Object Detection
     """

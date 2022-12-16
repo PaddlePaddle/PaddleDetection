@@ -41,8 +41,10 @@ import threading
 MUTEX = threading.Lock()
 
 import paddle
-from ppdet.core.workspace import serializable
-from ..reader import Compose
+from paddlecv.ppcv.register import OPERATOR
+from paddlecv.ppcv.utils.logger import setup_logger
+
+from ..utils import Compose
 
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
@@ -50,7 +52,6 @@ from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox_square, bbox_area_sampling,
                         is_poly, get_border)
 
-from ppdet.utils.logger import setup_logger
 from ppdet.modeling.keypoint_utils import get_affine_transform, affine_transform
 logger = setup_logger(__name__)
 
@@ -59,11 +60,8 @@ registered_ops = []
 
 def register_op(cls):
     registered_ops.append(cls.__name__)
-    if not hasattr(BaseOperator, cls.__name__):
-        setattr(BaseOperator, cls.__name__, cls)
-    else:
-        raise KeyError("The {} class has been registered.".format(cls.__name__))
-    return serializable(cls)
+    OPERATOR.register(cls)
+    return cls
 
 
 class BboxError(ValueError):
@@ -111,7 +109,7 @@ class BaseOperator(object):
 
 @register_op
 class Decode(BaseOperator):
-    def __init__(self):
+    def __init__(self, **kwargs):
         """ Transform the image data to numpy format following the rgb format
         """
         super(Decode, self).__init__()
@@ -166,7 +164,7 @@ def _make_dirs(dirname):
 
 @register_op
 class DecodeCache(BaseOperator):
-    def __init__(self, cache_root=None):
+    def __init__(self, cache_root=None, **kwargs):
         '''decode image and caching
         '''
         super(DecodeCache, self).__init__()
@@ -238,7 +236,7 @@ class DecodeCache(BaseOperator):
 
 @register_op
 class SniperDecodeCrop(BaseOperator):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(SniperDecodeCrop, self).__init__()
 
     def __call__(self, sample, context=None):
@@ -273,7 +271,7 @@ class SniperDecodeCrop(BaseOperator):
 
 @register_op
 class Permute(BaseOperator):
-    def __init__(self):
+    def __init__(self, **kwargs):
         """
         Change the channel to be (C, H, W)
         """
@@ -296,7 +294,7 @@ class Lighting(BaseOperator):
         alphastd (float): random weight of lighting, 0.1 by default
     """
 
-    def __init__(self, eigval, eigvec, alphastd=0.1):
+    def __init__(self, eigval, eigvec, alphastd=0.1, **kwargs):
         super(Lighting, self).__init__()
         self.alphastd = alphastd
         self.eigval = np.array(eigval).astype('float32')
@@ -310,7 +308,12 @@ class Lighting(BaseOperator):
 
 @register_op
 class RandomErasingImage(BaseOperator):
-    def __init__(self, prob=0.5, lower=0.02, higher=0.4, aspect_ratio=0.3):
+    def __init__(self,
+                 prob=0.5,
+                 lower=0.02,
+                 higher=0.4,
+                 aspect_ratio=0.3,
+                 **kwargs):
         """
         Random Erasing Data Augmentation, see https://arxiv.org/abs/1708.04896
         Args:
@@ -364,7 +367,8 @@ class NormalizeImage(BaseOperator):
                  mean=[0.485, 0.456, 0.406],
                  std=[0.229, 0.224, 0.225],
                  is_scale=True,
-                 norm_type='mean_std'):
+                 norm_type='mean_std',
+                 **kwargs):
         """
         Args:
             mean (list): the pixel mean
@@ -416,7 +420,8 @@ class GridMask(BaseOperator):
                  ratio=0.5,
                  mode=1,
                  prob=0.7,
-                 upper_iter=360000):
+                 upper_iter=360000,
+                 **kwargs):
         """
         GridMask Data Augmentation, see https://arxiv.org/abs/2001.04086
         Args:
@@ -476,7 +481,8 @@ class RandomDistort(BaseOperator):
                  brightness=[0.5, 1.5, 0.5],
                  random_apply=True,
                  count=4,
-                 random_channel=False):
+                 random_channel=False,
+                 **kwargs):
         super(RandomDistort, self).__init__()
         self.hue = hue
         self.saturation = saturation
@@ -571,7 +577,7 @@ class RandomDistort(BaseOperator):
 
 @register_op
 class AutoAugment(BaseOperator):
-    def __init__(self, autoaug_type="v1"):
+    def __init__(self, autoaug_type="v1", **kwargs):
         """
         Args:
             autoaug_type (str): autoaug type, support v0, v1, v2, v3, test
@@ -615,7 +621,7 @@ class AutoAugment(BaseOperator):
 
 @register_op
 class RandomFlip(BaseOperator):
-    def __init__(self, prob=0.5):
+    def __init__(self, prob=0.5, **kwargs):
         """
         Args:
             prob (float): the probability of flipping image
@@ -705,7 +711,11 @@ class RandomFlip(BaseOperator):
 
 @register_op
 class Resize(BaseOperator):
-    def __init__(self, target_size, keep_ratio, interp=cv2.INTER_LINEAR):
+    def __init__(self,
+                 target_size,
+                 keep_ratio,
+                 interp=cv2.INTER_LINEAR,
+                 **kwargs):
         """
         Resize image to target size. if keep_ratio is True, 
         resize the image's long side to the maximum of target_size
@@ -877,7 +887,8 @@ class MultiscaleTestResize(BaseOperator):
                  origin_target_size=[800, 1333],
                  target_size=[],
                  interp=cv2.INTER_LINEAR,
-                 use_flip=True):
+                 use_flip=True,
+                 **kwargs):
         """
         Rescale image to the each size in target size, and capped at max_size.
         Args:
@@ -929,7 +940,8 @@ class RandomResize(BaseOperator):
                  interp=cv2.INTER_LINEAR,
                  random_range=False,
                  random_size=True,
-                 random_interp=False):
+                 random_interp=False,
+                 **kwargs):
         """
         Resize image to target size randomly. random target_size and interpolation method
         Args:
@@ -999,7 +1011,11 @@ class RandomExpand(BaseOperator):
         fill_value (list): color value used to fill the canvas. in RGB order.
     """
 
-    def __init__(self, ratio=4., prob=0.5, fill_value=(127.5, 127.5, 127.5)):
+    def __init__(self,
+                 ratio=4.,
+                 prob=0.5,
+                 fill_value=(127.5, 127.5, 127.5),
+                 **kwargs):
         super(RandomExpand, self).__init__()
         assert ratio > 1.01, "expand ratio must be larger than 1.01"
         self.ratio = ratio
@@ -1037,7 +1053,11 @@ class RandomExpand(BaseOperator):
 
 @register_op
 class CropWithSampling(BaseOperator):
-    def __init__(self, batch_sampler, satisfy_all=False, avoid_no_bbox=True):
+    def __init__(self,
+                 batch_sampler,
+                 satisfy_all=False,
+                 avoid_no_bbox=True,
+                 **kwargs):
         """
         Args:
             batch_sampler (list): Multiple sets of different
@@ -1124,7 +1144,8 @@ class CropWithDataAchorSampling(BaseOperator):
                  das_anchor_scales=[16, 32, 64, 128],
                  sampling_prob=0.5,
                  min_size=8.,
-                 avoid_no_bbox=True):
+                 avoid_no_bbox=True,
+                 **kwargs):
         """
         Args:
             anchor_sampler (list): anchor_sampling sets of different
@@ -1319,7 +1340,8 @@ class RandomCrop(BaseOperator):
                  num_attempts=50,
                  allow_no_crop=True,
                  cover_all_box=False,
-                 is_mask_crop=False):
+                 is_mask_crop=False,
+                 **kwargs):
         super(RandomCrop, self).__init__()
         self.aspect_ratio = aspect_ratio
         self.thresholds = thresholds
@@ -1560,7 +1582,8 @@ class RandomScaledCrop(BaseOperator):
     def __init__(self,
                  target_dim=512,
                  scale_range=[.1, 2.],
-                 interp=cv2.INTER_LINEAR):
+                 interp=cv2.INTER_LINEAR,
+                 **kwargs):
         super(RandomScaledCrop, self).__init__()
         self.target_dim = target_dim
         self.scale_range = scale_range
@@ -1607,7 +1630,7 @@ class RandomScaledCrop(BaseOperator):
 
 @register_op
 class Cutmix(BaseOperator):
-    def __init__(self, alpha=1.5, beta=1.5):
+    def __init__(self, alpha=1.5, beta=1.5, **kwargs):
         """ 
         CutMix: Regularization Strategy to Train Strong Classifiers with Localizable Features, see https://arxiv.org/abs/1905.04899
         Cutmix image and gt_bbbox/gt_score
@@ -1696,7 +1719,7 @@ class Cutmix(BaseOperator):
 
 @register_op
 class Mixup(BaseOperator):
-    def __init__(self, alpha=1.5, beta=1.5):
+    def __init__(self, alpha=1.5, beta=1.5, **kwargs):
         """ Mixup image and gt_bbbox/gt_score
         Args:
             alpha (float): alpha parameter of beta distribute
@@ -1776,7 +1799,7 @@ class Mixup(BaseOperator):
 class NormalizeBox(BaseOperator):
     """Transform the bounding box's coornidates to [0,1]."""
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(NormalizeBox, self).__init__()
 
     def apply(self, sample, context):
@@ -1809,7 +1832,7 @@ class BboxXYXY2XYWH(BaseOperator):
     Convert bbox XYXY format to XYWH format.
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(BboxXYXY2XYWH, self).__init__()
 
     def apply(self, sample, context=None):
@@ -1823,7 +1846,7 @@ class BboxXYXY2XYWH(BaseOperator):
 
 @register_op
 class PadBox(BaseOperator):
-    def __init__(self, num_max_boxes=50):
+    def __init__(self, num_max_boxes=50, **kwargs):
         """
         Pad zeros to bboxes if number of bboxes is less than num_max_boxes.
         Args:
@@ -1880,7 +1903,8 @@ class DebugVisibleImage(BaseOperator):
     (Currently only supported when not cropping and flipping image.)
     """
 
-    def __init__(self, output_dir='output/debug', is_normalized=False):
+    def __init__(self, output_dir='output/debug', is_normalized=False,
+                 **kwargs):
         super(DebugVisibleImage, self).__init__()
         self.is_normalized = is_normalized
         self.output_dir = output_dir
@@ -1944,7 +1968,8 @@ class Pad(BaseOperator):
                  size_divisor=32,
                  pad_mode=0,
                  offsets=None,
-                 fill_value=(127.5, 127.5, 127.5)):
+                 fill_value=(127.5, 127.5, 127.5),
+                 **kwargs):
         """
         Pad image to a specified size or multiple of size_divisor.
         Args:
@@ -2078,7 +2103,7 @@ class Poly2Mask(BaseOperator):
     gt poly to mask annotations
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(Poly2Mask, self).__init__()
         import pycocotools.mask as maskUtils
         self.maskutils = maskUtils
@@ -2127,7 +2152,8 @@ class AugmentHSV(BaseOperator):
                  is_bgr=True,
                  hgain=None,
                  sgain=None,
-                 vgain=None):
+                 vgain=None,
+                 **kwargs):
         super(AugmentHSV, self).__init__()
         self.fraction = fraction
         self.is_bgr = is_bgr
@@ -2184,7 +2210,7 @@ class Norm2PixelBbox(BaseOperator):
     Transform the bounding box's coornidates which is in [0,1] to pixels.
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(Norm2PixelBbox, self).__init__()
 
     def apply(self, sample, context=None):
@@ -2204,7 +2230,7 @@ class BboxCXCYWH2XYXY(BaseOperator):
     [center_x, center_y, width, height] -> [x0, y0, x1, y1]
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(BboxCXCYWH2XYXY, self).__init__()
 
     def apply(self, sample, context=None):
@@ -2237,19 +2263,19 @@ class RandomResizeCrop(BaseOperator):
         is_mask_crop(bool): whether crop the segmentation.
     """
 
-    def __init__(
-            self,
-            resizes,
-            cropsizes,
-            prob=0.5,
-            mode='short',
-            keep_ratio=True,
-            interp=cv2.INTER_LINEAR,
-            num_attempts=3,
-            cover_all_box=False,
-            allow_no_crop=False,
-            thresholds=[0.3, 0.5, 0.7],
-            is_mask_crop=False, ):
+    def __init__(self,
+                 resizes,
+                 cropsizes,
+                 prob=0.5,
+                 mode='short',
+                 keep_ratio=True,
+                 interp=cv2.INTER_LINEAR,
+                 num_attempts=3,
+                 cover_all_box=False,
+                 allow_no_crop=False,
+                 thresholds=[0.3, 0.5, 0.7],
+                 is_mask_crop=False,
+                 **kwargs):
         super(RandomResizeCrop, self).__init__()
 
         self.resizes = resizes
@@ -2474,7 +2500,7 @@ class RandomSelect(BaseOperator):
 
     """
 
-    def __init__(self, transforms1, transforms2, p=0.5):
+    def __init__(self, transforms1, transforms2, p=0.5, **kwargs):
         super(RandomSelect, self).__init__()
         self.transforms1 = Compose(transforms1)
         self.transforms2 = Compose(transforms2)
@@ -2492,7 +2518,8 @@ class RandomShortSideResize(BaseOperator):
                  short_side_sizes,
                  max_size=None,
                  interp=cv2.INTER_LINEAR,
-                 random_interp=False):
+                 random_interp=False,
+                 **kwargs):
         """
         Resize the image randomly according to the short side. If max_size is not None,
         the long side is scaled according to max_size. The whole process will be keep ratio.
@@ -2657,7 +2684,7 @@ class RandomSizeCrop(BaseOperator):
     Cut the image randomly according to `min_size` and `max_size`
     """
 
-    def __init__(self, min_size, max_size):
+    def __init__(self, min_size, max_size, **kwargs):
         super(RandomSizeCrop, self).__init__()
         self.min_size = min_size
         self.max_size = max_size
@@ -2826,7 +2853,8 @@ class WarpAffine(BaseOperator):
                  input_h=512,
                  input_w=512,
                  scale=0.4,
-                 shift=0.1):
+                 shift=0.1,
+                 **kwargs):
         """WarpAffine
         Warp affine the image
 
@@ -2881,7 +2909,8 @@ class FlipWarpAffine(BaseOperator):
                  shift=0.1,
                  flip=0.5,
                  is_scale=True,
-                 use_random=True):
+                 use_random=True,
+                 **kwargs):
         """FlipWarpAffine
         1. Random Crop
         2. Flip the image horizontal
@@ -2964,7 +2993,7 @@ class CenterRandColor(BaseOperator):
         brightness (float): brightness settings.
     """
 
-    def __init__(self, saturation=0.4, contrast=0.4, brightness=0.4):
+    def __init__(self, saturation=0.4, contrast=0.4, brightness=0.4, **kwargs):
         super(CenterRandColor, self).__init__()
         self.saturation = saturation
         self.contrast = contrast
@@ -3042,7 +3071,8 @@ class Mosaic(BaseOperator):
                  enable_mixup=True,
                  mixup_prob=1.0,
                  mixup_scale=[0.5, 1.5],
-                 remove_outside_box=False):
+                 remove_outside_box=False,
+                 **kwargs):
         super(Mosaic, self).__init__()
         self.prob = prob
         if isinstance(input_dim, Integral):
@@ -3371,7 +3401,7 @@ class PadResize(BaseOperator):
         fill_value (float): pixel value of padded image
     """
 
-    def __init__(self, target_size, fill_value=114):
+    def __init__(self, target_size, fill_value=114, **kwargs):
         super(PadResize, self).__init__()
         if isinstance(target_size, Integral):
             target_size = [target_size, target_size]
@@ -3425,7 +3455,7 @@ class RandomShift(BaseOperator):
         filter_thr (int): filter gt bboxes if one side is smaller than this
     """
 
-    def __init__(self, prob=0.5, max_shift=32, filter_thr=1):
+    def __init__(self, prob=0.5, max_shift=32, filter_thr=1, **kwargs):
         super(RandomShift, self).__init__()
         self.prob = prob
         self.max_shift = max_shift
@@ -3477,7 +3507,7 @@ class RandomShift(BaseOperator):
 
 @register_op
 class StrongAugImage(BaseOperator):
-    def __init__(self, transforms):
+    def __init__(self, transforms, **kwargs):
         super(StrongAugImage, self).__init__()
         self.transforms = Compose(transforms)
 
@@ -3496,7 +3526,8 @@ class RandomColorJitter(BaseOperator):
                  brightness=0.4,
                  contrast=0.4,
                  saturation=0.4,
-                 hue=0.1):
+                 hue=0.1,
+                 **kwargs):
         super(RandomColorJitter, self).__init__()
         self.prob = prob
         self.brightness = brightness
@@ -3516,7 +3547,7 @@ class RandomColorJitter(BaseOperator):
 
 @register_op
 class RandomGrayscale(BaseOperator):
-    def __init__(self, prob=0.2):
+    def __init__(self, prob=0.2, **kwargs):
         super(RandomGrayscale, self).__init__()
         self.prob = prob
 
@@ -3530,7 +3561,7 @@ class RandomGrayscale(BaseOperator):
 
 @register_op
 class RandomGaussianBlur(BaseOperator):
-    def __init__(self, prob=0.5, sigma=[0.1, 2.0]):
+    def __init__(self, prob=0.5, sigma=[0.1, 2.0], **kwargs):
         super(RandomGaussianBlur, self).__init__()
         self.prob = prob
         self.sigma = sigma
@@ -3550,7 +3581,8 @@ class RandomErasing(BaseOperator):
                  scale=(0.02, 0.33),
                  ratio=(0.3, 3.3),
                  value=0,
-                 inplace=False):
+                 inplace=False,
+                 **kwargs):
         super(RandomErasing, self).__init__()
         assert isinstance(scale,
                           (tuple, list)), "scale should be a tuple or list"
@@ -3621,7 +3653,7 @@ class RandomErasing(BaseOperator):
 
 @register_op
 class RandomErasingCrop(BaseOperator):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(RandomErasingCrop, self).__init__()
         self.transform1 = RandomErasing(
             prob=0.7, scale=(0.05, 0.2), ratio=(0.3, 3.3), value="random")

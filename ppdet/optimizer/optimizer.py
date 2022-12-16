@@ -24,18 +24,18 @@ import paddle.nn as nn
 import paddle.optimizer as optimizer
 import paddle.regularizer as regularizer
 
-from ppdet.core.workspace import register, serializable
+from paddlecv.ppcv.register import LRSCHEDULER
 import copy
 
 from .adamw import AdamWDL, build_adamwdl
 
-__all__ = ['LearningRate', 'OptimizerBuilder']
+__all__ = ['LearningRate']
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-@serializable
+@LRSCHEDULER.register
 class CosineDecay(object):
     """
     Cosine learning rate decay
@@ -102,7 +102,7 @@ class CosineDecay(object):
             base_lr, T_max=max_iters, eta_min=min_lr)
 
 
-@serializable
+@LRSCHEDULER.register
 class PiecewiseDecay(object):
     """
     Multi step learning rate decay
@@ -153,7 +153,7 @@ class PiecewiseDecay(object):
         return optimizer.lr.PiecewiseDecay(boundary, value)
 
 
-@serializable
+@LRSCHEDULER.register
 class LinearWarmup(object):
     """
     Warm up learning rate linearly
@@ -188,7 +188,7 @@ class LinearWarmup(object):
         return boundary, value
 
 
-@serializable
+@LRSCHEDULER.register
 class ExpWarmup(object):
     """
     Warm up learning rate in exponential mode
@@ -218,7 +218,7 @@ class ExpWarmup(object):
         return boundary, value
 
 
-@register
+@LRSCHEDULER.register
 class LearningRate(object):
     """
     Learning Rate configuration
@@ -230,10 +230,13 @@ class LearningRate(object):
     __category__ = 'optim'
 
     def __init__(self,
-                 base_lr=0.01,
-                 schedulers=[PiecewiseDecay(), LinearWarmup()]):
+                 step_each_epoch,
+                 learning_rate=0.01,
+                 schedulers=[PiecewiseDecay(), LinearWarmup()],
+                 **kwargs):
         super(LearningRate, self).__init__()
-        self.base_lr = base_lr
+        self.base_lr = learning_rate
+        self.step_each_epoch = step_each_epoch
         self.schedulers = []
 
         schedulers = copy.deepcopy(schedulers)
@@ -247,109 +250,16 @@ class LearningRate(object):
             else:
                 self.schedulers.append(sched)
 
-    def __call__(self, step_per_epoch):
+    def __call__(self):
         assert len(self.schedulers) >= 1
         if not self.schedulers[0].use_warmup:
             return self.schedulers[0](base_lr=self.base_lr,
-                                      step_per_epoch=step_per_epoch)
+                                      step_per_epoch=self.step_each_epoch)
 
         # TODO: split warmup & decay
         # warmup
-        boundary, value = self.schedulers[1](self.base_lr, step_per_epoch)
+        boundary, value = self.schedulers[1](self.base_lr, self.step_each_epoch)
         # decay
         decay_lr = self.schedulers[0](self.base_lr, boundary, value,
-                                      step_per_epoch)
+                                      self.step_each_epoch)
         return decay_lr
-
-
-@register
-class OptimizerBuilder():
-    """
-    Build optimizer handles
-    Args:
-        regularizer (object): an `Regularizer` instance
-        optimizer (object): an `Optimizer` instance
-    """
-    __category__ = 'optim'
-
-    def __init__(self,
-                 clip_grad_by_norm=None,
-                 clip_grad_by_value=None,
-                 regularizer={'type': 'L2',
-                              'factor': .0001},
-                 optimizer={'type': 'Momentum',
-                            'momentum': .9}):
-        self.clip_grad_by_norm = clip_grad_by_norm
-        self.clip_grad_by_value = clip_grad_by_value
-        self.regularizer = regularizer
-        self.optimizer = optimizer
-
-    def __call__(self, learning_rate, model=None):
-        if self.clip_grad_by_norm is not None:
-            grad_clip = nn.ClipGradByGlobalNorm(
-                clip_norm=self.clip_grad_by_norm)
-        elif self.clip_grad_by_value is not None:
-            var = abs(self.clip_grad_by_value)
-            grad_clip = nn.ClipGradByValue(min=-var, max=var)
-        else:
-            grad_clip = None
-        if self.regularizer and self.regularizer != 'None':
-            reg_type = self.regularizer['type'] + 'Decay'
-            reg_factor = self.regularizer['factor']
-            regularization = getattr(regularizer, reg_type)(reg_factor)
-        else:
-            regularization = None
-
-        optim_args = self.optimizer.copy()
-        optim_type = optim_args['type']
-        del optim_args['type']
-
-        if optim_type == 'AdamWDL':
-            return build_adamwdl(model, lr=learning_rate, **optim_args)
-
-        if optim_type != 'AdamW':
-            optim_args['weight_decay'] = regularization
-
-        op = getattr(optimizer, optim_type)
-
-        if 'param_groups' in optim_args:
-            assert isinstance(optim_args['param_groups'], list), ''
-
-            param_groups = optim_args.pop('param_groups')
-
-            params, visited = [], []
-            for group in param_groups:
-                assert isinstance(group,
-                                  dict) and 'params' in group and isinstance(
-                                      group['params'], list), ''
-                _params = {
-                    n: p
-                    for n, p in model.named_parameters()
-                    if any([k in n
-                            for k in group['params']]) and p.trainable is True
-                }
-                _group = group.copy()
-                _group.update({'params': list(_params.values())})
-
-                params.append(_group)
-                visited.extend(list(_params.keys()))
-
-            ext_params = [
-                p for n, p in model.named_parameters()
-                if n not in visited and p.trainable is True
-            ]
-
-            if len(ext_params) < len(model.parameters()):
-                params.append({'params': ext_params})
-
-            elif len(ext_params) > len(model.parameters()):
-                raise RuntimeError
-
-        else:
-            _params = model.parameters()
-            params = [param for param in _params if param.trainable is True]
-
-        return op(learning_rate=learning_rate,
-                  parameters=params,
-                  grad_clip=grad_clip,
-                  **optim_args)

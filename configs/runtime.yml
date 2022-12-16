@@ -1,11 +1,8 @@
-use_gpu: true
-use_xpu: false
-use_mlu: false
+device: true
 log_iter: 20
-save_dir: output
-snapshot_epoch: 1
-print_flops: false
-print_params: false
+output_dir: output
+save_interval: 1
+by_epoch: true #
 
 # Exporting the model
 export:
@@ -13,3 +10,8 @@ export:
   nms: True           # Whether NMS is included in the network when export model.
   benchmark: False    # It is used to testing model performance, if set `True`, post-process and NMS will not be exported.
   fuse_conv_bn: False
+
+Callbacks:
+   - name: LogPrinter
+   - name: Checkpointer
+   - name: VisualDLWriter

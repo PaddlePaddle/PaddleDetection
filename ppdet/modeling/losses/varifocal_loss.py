@@ -22,7 +22,7 @@ import numpy as np
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from ppdet.core.workspace import register, serializable
+from paddlecv.ppcv.register import LOSS
 from ppdet.modeling import ops
 
 __all__ = ['VarifocalLoss']
@@ -75,8 +75,7 @@ def varifocal_loss(pred,
     return loss
 
 
-@register
-@serializable
+@LOSS.register
 class VarifocalLoss(nn.Layer):
     def __init__(self,
                  use_sigmoid=True,

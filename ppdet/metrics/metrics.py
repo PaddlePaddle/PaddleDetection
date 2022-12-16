@@ -24,6 +24,8 @@ import numpy as np
 import typing
 from collections import defaultdict
 from pathlib import Path
+from paddlecv.ppcv.register import METRIC
+from paddlecv.ppcv.utils.logger import setup_logger
 
 from .map_utils import prune_zero_padding, DetectionMAP
 from .coco_utils import get_infer_results, cocoapi_eval
@@ -31,7 +33,6 @@ from .widerface_utils import face_eval_run
 from ppdet.data.source.category import get_categories
 from ppdet.modeling.rbox_utils import poly2rbox_np
 
-from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
@@ -70,12 +71,14 @@ class Metric(paddle.metric.Metric):
         pass
 
 
+@METRIC.register
 class COCOMetric(Metric):
-    def __init__(self, anno_file, **kwargs):
-        self.anno_file = anno_file
+    def __init__(self, anno_path, main_indicator='ap', **kwargs):
+        self.main_indicator = main_indicator
+        self.anno_file = anno_path
         self.clsid2catid = kwargs.get('clsid2catid', None)
         if self.clsid2catid is None:
-            self.clsid2catid, _ = get_categories('COCO', anno_file)
+            self.clsid2catid, _ = get_categories('COCO', anno_path)
         self.classwise = kwargs.get('classwise', False)
         self.output_eval = kwargs.get('output_eval', None)
         # TODO: bias should be unified
@@ -84,8 +87,8 @@ class COCOMetric(Metric):
         self.iou_type = kwargs.get('IouType', 'bbox')
 
         if not self.save_prediction_only:
-            assert os.path.isfile(anno_file), \
-                    "anno_file {} not a file".format(anno_file)
+            assert os.path.isfile(anno_path), \
+                    "anno_file {} not a file".format(anno_path)
 
         if self.output_eval is not None:
             Path(self.output_eval).mkdir(exist_ok=True)
@@ -97,17 +100,17 @@ class COCOMetric(Metric):
         self.results = {'bbox': [], 'mask': [], 'segm': [], 'keypoint': []}
         self.eval_results = {}
 
-    def update(self, inputs, outputs):
+    def update(self, preds, data):
         outs = {}
         # outputs Tensor -> numpy.ndarray
-        for k, v in outputs.items():
+        for k, v in preds.items():
             outs[k] = v.numpy() if isinstance(v, paddle.Tensor) else v
 
         # multi-scale inputs: all inputs have same im_id
-        if isinstance(inputs, typing.Sequence):
-            im_id = inputs[0]['im_id']
+        if isinstance(data, typing.Sequence):
+            im_id = data[0]['im_id']
         else:
-            im_id = inputs['im_id']
+            im_id = data['im_id']
         outs['im_id'] = im_id.numpy() if isinstance(im_id,
                                                     paddle.Tensor) else im_id
 
@@ -141,6 +144,7 @@ class COCOMetric(Metric):
                     anno_file=self.anno_file,
                     classwise=self.classwise)
                 self.eval_results['bbox'] = bbox_stats
+                self.eval_results['bbox_ap'] = bbox_stats[0]
                 sys.stdout.flush()
 
         if len(self.results['mask']) > 0:
@@ -211,6 +215,7 @@ class COCOMetric(Metric):
                     use_area=use_area)
                 self.eval_results['keypoint'] = keypoint_stats
                 sys.stdout.flush()
+        return self.eval_results
 
     def log(self):
         pass

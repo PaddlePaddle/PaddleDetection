@@ -177,7 +177,8 @@ class GFLHead(nn.Layer):
                  feat_in_chan=256,
                  nms=None,
                  nms_pre=1000,
-                 cell_offset=0):
+                 cell_offset=0,
+                 use_sigmoid=False):
         super(GFLHead, self).__init__()
         self.conv_feat = conv_feat
         self.dgqp_module = dgqp_module
@@ -192,8 +193,7 @@ class GFLHead(nn.Layer):
         self.nms = nms
         self.nms_pre = nms_pre
         self.cell_offset = cell_offset
-        self.use_sigmoid = self.loss_qfl.use_sigmoid
-        if self.use_sigmoid:
+        if use_sigmoid:
             self.cls_out_channels = self.num_classes
         else:
             self.cls_out_channels = self.num_classes + 1

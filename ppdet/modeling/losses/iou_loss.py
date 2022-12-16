@@ -21,6 +21,7 @@ import math
 import paddle
 
 from ppdet.core.workspace import register, serializable
+from paddlecv.ppcv.register import LOSS
 from ..bbox_utils import bbox_iou
 
 __all__ = ['IouLoss', 'GIoULoss', 'DIouLoss', 'SIoULoss']
@@ -64,8 +65,7 @@ class IouLoss(object):
         return loss_iou
 
 
-@register
-@serializable
+@LOSS.register
 class GIoULoss(object):
     """
     Generalized Intersection over Union, see https://arxiv.org/abs/1902.09630

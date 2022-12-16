@@ -25,18 +25,18 @@ sys.path.insert(0, parent_path)
 
 # ignore warning log
 import warnings
+
 warnings.filterwarnings('ignore')
+from paddlecv import Config
+from paddlecv import Trainer
+from paddlecv.ppcv.utils.logger import setup_logger
 
 import paddle
 
-from ppdet.core.workspace import load_config, merge_config
-from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_version, check_config
-from ppdet.utils.cli import ArgsParser, merge_args
-from ppdet.engine import Trainer, init_parallel_env
+from ppdet.utils.cli import ArgsParser
 from ppdet.metrics.coco_utils import json_eval_results
 from ppdet.slim import build_slim_model
 
-from ppdet.utils.logger import setup_logger
 logger = setup_logger('eval')
 
 
@@ -121,82 +121,28 @@ def parse_args():
     return args
 
 
-def run(FLAGS, cfg):
-    if FLAGS.json_eval:
+def main():
+    FLAGS = parse_args()
+    cfg = Config(FLAGS.config)
+    FLAGS = vars(FLAGS)
+    opt = FLAGS.pop('opt')
+    cfg.merge_dict(FLAGS)
+    cfg.merge_dict(opt)
+
+    if FLAGS['json_eval']:
         logger.info(
             "In json_eval mode, PaddleDetection will evaluate json files in "
             "output_eval directly. And proposal.json, bbox.json and mask.json "
             "will be detected by default.")
         json_eval_results(
-            cfg.metric,
-            json_directory=FLAGS.output_eval,
-            dataset=cfg['EvalDataset'])
-        return
-
-    # init parallel environment if nranks > 1
-    init_parallel_env()
-
-    # build trainer
-    trainer = Trainer(cfg, mode='eval')
-
-    # load weights
-    trainer.load_weights(cfg.weights)
-
-    # training
-    if FLAGS.slice_infer:
-        trainer.evaluate_slice(
-            slice_size=FLAGS.slice_size,
-            overlap_ratio=FLAGS.overlap_ratio,
-            combine_method=FLAGS.combine_method,
-            match_threshold=FLAGS.match_threshold,
-            match_metric=FLAGS.match_metric)
+            cfg['Metric']['name'],
+            json_directory=FLAGS['output_eval'],
+            anno_file=os.path.join(
+                cfg['Eval']['dataset']['dataset_dir'],
+                os.path.join(cfg['Eval']['dataset']['anno_path'])))
     else:
+        trainer = Trainer(cfg, mode='eval')
         trainer.evaluate()
-
-
-def main():
-    FLAGS = parse_args()
-    cfg = load_config(FLAGS.config)
-    merge_args(cfg, FLAGS)
-    merge_config(FLAGS.opt)
-
-    # disable npu in config by default
-    if 'use_npu' not in cfg:
-        cfg.use_npu = False
-
-    # disable xpu in config by default
-    if 'use_xpu' not in cfg:
-        cfg.use_xpu = False
-
-    if 'use_gpu' not in cfg:
-        cfg.use_gpu = False
-
-    # disable mlu in config by default
-    if 'use_mlu' not in cfg:
-        cfg.use_mlu = False
-
-    if cfg.use_gpu:
-        place = paddle.set_device('gpu')
-    elif cfg.use_npu:
-        place = paddle.set_device('npu')
-    elif cfg.use_xpu:
-        place = paddle.set_device('xpu')
-    elif cfg.use_mlu:
-        place = paddle.set_device('mlu')
-    else:
-        place = paddle.set_device('cpu')
-
-    if FLAGS.slim_config:
-        cfg = build_slim_model(cfg, FLAGS.slim_config, mode='eval')
-
-    check_config(cfg)
-    check_gpu(cfg.use_gpu)
-    check_npu(cfg.use_npu)
-    check_xpu(cfg.use_xpu)
-    check_mlu(cfg.use_mlu)
-    check_version()
-
-    run(FLAGS, cfg)
 
 
 if __name__ == '__main__':

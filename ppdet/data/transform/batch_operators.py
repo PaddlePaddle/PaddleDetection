@@ -62,7 +62,7 @@ class PadBatch(BaseOperator):
             height and width is divisible by `pad_to_stride`.
     """
 
-    def __init__(self, pad_to_stride=0):
+    def __init__(self, pad_to_stride=0, **kwargs):
         super(PadBatch, self).__init__()
         self.pad_to_stride = pad_to_stride
 
@@ -130,7 +130,8 @@ class BatchRandomResize(BaseOperator):
                  keep_ratio,
                  interp=cv2.INTER_NEAREST,
                  random_size=True,
-                 random_interp=False):
+                 random_interp=False,
+                 **kwargs):
         super(BatchRandomResize, self).__init__()
         self.keep_ratio = keep_ratio
         self.interps = [
@@ -179,7 +180,8 @@ class Gt2YoloTarget(BaseOperator):
                  anchor_masks,
                  downsample_ratios,
                  num_classes=80,
-                 iou_thresh=1.):
+                 iou_thresh=1.,
+                 **kwargs):
         super(Gt2YoloTarget, self).__init__()
         self.anchors = anchors
         self.anchor_masks = anchor_masks
@@ -294,7 +296,8 @@ class Gt2FCOSTarget(BaseOperator):
                  downsample_ratios,
                  num_shift=0.5,
                  multiply_strides_reg_targets=False,
-                 norm_reg_targets=True):
+                 norm_reg_targets=True,
+                 **kwargs):
         super(Gt2FCOSTarget, self).__init__()
         self.center_sampling_radius = center_sampling_radius
         self.downsample_ratios = downsample_ratios
@@ -501,7 +504,8 @@ class Gt2GFLTarget(BaseOperator):
                  downsample_ratios=[8, 16, 32, 64, 128],
                  grid_cell_scale=4,
                  cell_offset=0,
-                 compute_vlr_region=False):
+                 compute_vlr_region=False,
+                 **kwargs):
         super(Gt2GFLTarget, self).__init__()
         self.num_classes = num_classes
         self.downsample_ratios = downsample_ratios
@@ -641,7 +645,7 @@ class Gt2TTFTarget(BaseOperator):
             0.54 by default.
     """
 
-    def __init__(self, num_classes=80, down_ratio=4, alpha=0.54):
+    def __init__(self, num_classes=80, down_ratio=4, alpha=0.54, **kwargs):
         super(Gt2TTFTarget, self).__init__()
         self.down_ratio = down_ratio
         self.num_classes = num_classes
@@ -746,7 +750,8 @@ class Gt2Solov2Target(BaseOperator):
                  scale_ranges=[[1, 96], [48, 192], [96, 384], [192, 768],
                                [384, 2048]],
                  coord_sigma=0.2,
-                 sampling_ratio=4.0):
+                 sampling_ratio=4.0,
+                 **kwargs):
         super(Gt2Solov2Target, self).__init__()
         self.num_grids = num_grids
         self.scale_ranges = scale_ranges
@@ -917,7 +922,7 @@ class Gt2SparseRCNNTarget(BaseOperator):
     Generate SparseRCNN targets by groud truth data
     '''
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(Gt2SparseRCNNTarget, self).__init__()
 
     def __call__(self, samples, context=None):
@@ -949,7 +954,7 @@ class PadMaskBatch(BaseOperator):
             `pad_mask` for transformer.
     """
 
-    def __init__(self, pad_to_stride=0, return_pad_mask=False):
+    def __init__(self, pad_to_stride=0, return_pad_mask=False, **kwargs):
         super(PadMaskBatch, self).__init__()
         self.pad_to_stride = pad_to_stride
         self.return_pad_mask = return_pad_mask
@@ -1009,7 +1014,7 @@ class Gt2CenterNetTarget(BaseOperator):
         max_objs (int): The maximum objects detected, 128 by default.
     """
 
-    def __init__(self, down_ratio, num_classes=80, max_objs=128):
+    def __init__(self, down_ratio, num_classes=80, max_objs=128, **kwargs):
         super(Gt2CenterNetTarget, self).__init__()
         self.down_ratio = down_ratio
         self.num_classes = num_classes
@@ -1089,7 +1094,7 @@ class PadGT(BaseOperator):
                                 1 means bbox, 0 means no bbox.
     """
 
-    def __init__(self, return_gt_mask=True):
+    def __init__(self, return_gt_mask=True, **kwargs):
         super(PadGT, self).__init__()
         self.return_gt_mask = return_gt_mask
 
@@ -1142,7 +1147,7 @@ class PadRGT(BaseOperator):
                                 1 means bbox, 0 means no bbox.
     """
 
-    def __init__(self, return_gt_mask=True):
+    def __init__(self, return_gt_mask=True, **kwargs):
         super(PadRGT, self).__init__()
         self.return_gt_mask = return_gt_mask
 

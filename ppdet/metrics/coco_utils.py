@@ -20,11 +20,11 @@ import os
 import sys
 import numpy as np
 import itertools
+from paddlecv.ppcv.utils.logger import setup_logger
 
 from ppdet.metrics.json_results import get_det_res, get_det_poly_res, get_seg_res, get_solov2_segm_res, get_keypoint_res, get_pose3d_res
 from ppdet.metrics.map_utils import draw_pr_curve
 
-from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 
@@ -154,7 +154,7 @@ def cocoapi_eval(jsonfile,
         results_flatten = list(itertools.chain(*results_per_category))
         headers = ['category', 'AP'] * (num_columns // 2)
         results_2d = itertools.zip_longest(
-            * [results_flatten[i::num_columns] for i in range(num_columns)])
+            *[results_flatten[i::num_columns] for i in range(num_columns)])
         table_data = [headers]
         table_data += [result for result in results_2d]
         table = AsciiTable(table_data)
@@ -166,12 +166,11 @@ def cocoapi_eval(jsonfile,
     return coco_eval.stats
 
 
-def json_eval_results(metric, json_directory, dataset):
+def json_eval_results(metric_name, json_directory, anno_file):
     """
     cocoapi eval with already exists proposal.json, bbox.json or mask.json
     """
-    assert metric == 'COCO'
-    anno_file = dataset.get_anno()
+    assert metric_name == 'COCOMetric'
     json_file_list = ['proposal.json', 'bbox.json', 'mask.json']
     if json_directory:
         assert os.path.exists(
