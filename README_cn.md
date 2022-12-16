@@ -93,7 +93,8 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 - **📑项目合作：** 如果您是企业开发者且有明确的目标检测垂类应用需求，请扫描如下二维码入群，并联系`群管理员AI`后可免费与官方团队展开不同层次的合作。
 - **🏅️社区贡献：** PaddleDetection非常欢迎你加入到飞桨社区的开源建设中，参与贡献方式可以参考[开源项目开发指南](docs/contribution/README.md)。
 - **💻直播教程：** PaddleDetection会定期在飞桨直播间([B站:飞桨PaddlePaddle](https://space.bilibili.com/476867757)、[微信: 飞桨PaddlePaddle](https://mp.weixin.qq.com/s/6ji89VKqoXDY6SSGkxS8NQ))，针对发新内容、以及产业范例、使用教程等进行直播分享。
-- **🎁加入社区：** **微信扫描二维码并填写问卷之后，加入交流群领取20G重磅目标检测学习大礼包，包括：**
+- **🎁加入社区：** **微信扫描二维码并填写问卷之后，可以及时获取如下信息，包括：**
+  - 社区最新文章、直播课等活动预告
   - 往期直播录播&PPT
   - 30+行人车辆等垂类高性能预训练模型
   - 七大任务开源数据集下载链接汇总
@@ -108,16 +109,33 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 
 - **🎈社区近期活动**
 
-  - **💻直播教程**
-    - `传送门`：[Yes, PP-YOLOE！80.73mAP、38.5mAP，旋转框、小目标检测能力双SOTA！](https://mp.weixin.qq.com/s/6ji89VKqoXDY6SSGkxS8NQ)
-  - **🏅️社区贡献**
-    - `传送门`：[Yes, PP-YOLOE! 基于PP-YOLOE的算法开发](https://github.com/PaddlePaddle/PaddleDetection/issues/7345)
-  - **🎊YOLO Vision世界学术交流大会🎊**
+  - **⚽️2022卡塔尔世界杯专题**
+    - `文章传送门`：[世界杯决赛号角吹响！趁周末来搭一套足球3D+AI量化分析系统吧！](https://mp.weixin.qq.com/s/koJxjWDPBOlqgI-98UsfKQ)
+  
+    <div align="center">
+    <img src="https://user-images.githubusercontent.com/61035602/208036574-f151a7ff-a5f1-4495-9316-a47218a6576b.gif"  height = "250" caption='' />
+    <p></p>
+    </div>
+
+  - **🔍旋转框小目标检测专题**
+    - `文章传送门`：[Yes, PP-YOLOE！80.73mAP、38.5mAP，旋转框、小目标检测能力双SOTA！](https://mp.weixin.qq.com/s/6ji89VKqoXDY6SSGkxS8NQ)
+  
+    <div align="center">
+    <img src="https://user-images.githubusercontent.com/61035602/208037368-5b9f01f7-afd9-46d8-bc80-271ccb5db7bb.png"  height = "220" caption='' />
+    <p></p>
+    </div>
+    
+  - **🎊YOLO Vision世界学术交流大会**
     - **PaddleDetection**受邀参与首个以**YOLO为主题**的**YOLO-VISION**世界大会，与全球AI领先开发者学习交流。
-    - `传送门`：[YOLO-VISION](https://ultralytics.com/yolo-vision)
-  <div  align="center">
-  <img src="https://user-images.githubusercontent.com/48054808/192301374-940cf2fa-9661-419b-9c46-18a4570df381.jpeg" width="500"/>
-</div>
+    - `活动链接传送门`：[YOLO-VISION](https://ultralytics.com/yolo-vision)
+
+    <div  align="center">
+    <img src="https://user-images.githubusercontent.com/48054808/192301374-940cf2fa-9661-419b-9c46-18a4570df381.jpeg" width="400"/>
+    </div>
+
+- **🏅️社区贡献**
+  - `活动链接传送门`：[Yes, PP-YOLOE! 基于PP-YOLOE的算法开发](https://github.com/PaddlePaddle/PaddleDetection/issues/7345)
+
 
 ## 🍱安装
 
