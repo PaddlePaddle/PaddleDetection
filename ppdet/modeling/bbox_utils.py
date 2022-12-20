@@ -343,8 +343,11 @@ def xywh2xyxy(box):
 
 
 def make_grid(h, w, dtype):
-    yv, xv = paddle.meshgrid([paddle.arange(h), paddle.arange(w)])
-    return paddle.stack((xv, yv), 2).cast(dtype=dtype)
+    yv, xv = paddle.meshgrid(
+        [paddle.arange(
+            h, dtype=dtype), paddle.arange(
+                w, dtype=dtype)])
+    return paddle.stack((xv, yv), 2)
 
 
 def decode_yolo(box, anchor, downsample_ratio):
@@ -365,8 +368,7 @@ def decode_yolo(box, anchor, downsample_ratio):
     x1 = (x + grid[:, :, :, :, 0:1]) / grid_w
     y1 = (y + grid[:, :, :, :, 1:2]) / grid_h
 
-    anchor = paddle.to_tensor(anchor)
-    anchor = paddle.cast(anchor, x.dtype)
+    anchor = paddle.to_tensor(anchor, dtype=x.dtype)
     anchor = anchor.reshape((1, na, 1, 1, 2))
     w1 = paddle.exp(w) * anchor[:, :, :, :, 0:1] / (downsample_ratio * grid_w)
     h1 = paddle.exp(h) * anchor[:, :, :, :, 1:2] / (downsample_ratio * grid_h)

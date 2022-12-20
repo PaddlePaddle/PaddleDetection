@@ -84,7 +84,7 @@ class DETR(BaseArch):
                     preds, self.inputs['im_shape'], self.inputs['scale_factor'])
             return bbox, bbox_num
 
-    def get_loss(self, ):
+    def get_loss(self):
         losses = self._forward()
         losses.update({
             'loss':

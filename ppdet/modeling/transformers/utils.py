@@ -38,15 +38,14 @@ def _get_clones(module, N):
 
 
 def bbox_cxcywh_to_xyxy(x):
-    x_c, y_c, w, h = x.split(4, axis=-1)
-    b = [(x_c - 0.5 * w), (y_c - 0.5 * h), (x_c + 0.5 * w), (y_c + 0.5 * h)]
-    return paddle.concat(b, axis=-1)
+    cxcy, wh = paddle.split(x, 2, axis=-1)
+    return paddle.concat([cxcy - 0.5 * wh, cxcy + 0.5 * wh], axis=-1)
 
 
 def bbox_xyxy_to_cxcywh(x):
-    x0, y0, x1, y1 = x.split(4, axis=-1)
-    b = [(x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0), (y1 - y0)]
-    return paddle.concat(b, axis=-1)
+    x1, y1, x2, y2 = x.split(4, axis=-1)
+    return paddle.concat(
+        [(x1 + x2) / 2, (y1 + y2) / 2, (x2 - x1), (y2 - y1)], axis=-1)
 
 
 def sigmoid_focal_loss(logit, label, normalizer=1.0, alpha=0.25, gamma=2.0):
@@ -67,24 +66,27 @@ def inverse_sigmoid(x, eps=1e-6):
 
 
 def deformable_attention_core_func(value, value_spatial_shapes,
-                                   sampling_locations, attention_weights):
+                                   value_level_start_index, sampling_locations,
+                                   attention_weights):
     """
     Args:
         value (Tensor): [bs, value_length, n_head, c]
         value_spatial_shapes (Tensor): [n_levels, 2]
+        value_level_start_index (Tensor): [n_levels]
         sampling_locations (Tensor): [bs, query_length, n_head, n_levels, n_points, 2]
         attention_weights (Tensor): [bs, query_length, n_head, n_levels, n_points]
 
     Returns:
         output (Tensor): [bs, Length_{query}, C]
     """
-    bs, Len_v, n_head, c = value.shape
-    _, Len_q, n_head, n_levels, n_points, _ = sampling_locations.shape
+    bs, _, n_head, c = value.shape
+    _, Len_q, _, n_levels, n_points, _ = sampling_locations.shape
 
-    value_list = value.split(value_spatial_shapes.prod(1).tolist(), axis=1)
+    value_list = value.split(
+        value_spatial_shapes.prod(1).split(n_levels), axis=1)
     sampling_grids = 2 * sampling_locations - 1
     sampling_value_list = []
-    for level, (h, w) in enumerate(value_spatial_shapes.tolist()):
+    for level, (h, w) in enumerate(value_spatial_shapes):
         # N_, H_*W_, M_, D_ -> N_, H_*W_, M_*D_ -> N_, M_*D_, H_*W_ -> N_*M_, D_, H_, W_
         value_l_ = value_list[level].flatten(2).transpose(
             [0, 2, 1]).reshape([bs * n_head, c, h, w])
@@ -107,3 +109,11 @@ def deformable_attention_core_func(value, value_spatial_shapes,
               attention_weights).sum(-1).reshape([bs, n_head * c, Len_q])
 
     return output.transpose([0, 2, 1])
+
+
+def get_valid_ratio(mask):
+    _, H, W = paddle.shape(mask)
+    valid_ratio_h = paddle.sum(mask[:, :, 0], 1) / H
+    valid_ratio_w = paddle.sum(mask[:, 0, :], 1) / W
+    # [b, 2]
+    return paddle.stack([valid_ratio_w, valid_ratio_h], -1)
