@@ -27,22 +27,6 @@ from ppdet.modeling.layers import MultiClassNMS
 from ppdet.modeling.heads.ppyoloe_head import PPYOLOEHead
 __all__ = ['PPYOLOEContrastHead']
 
-
-class ESEAttn(nn.Layer):
-    def __init__(self, feat_channels, act='swish'):
-        super(ESEAttn, self).__init__()
-        self.fc = nn.Conv2D(feat_channels, feat_channels, 1)
-        self.conv = ConvBNLayer(feat_channels, feat_channels, 1, act=act)
-
-        self._init_weights()
-
-    def _init_weights(self):
-        normal_(self.fc.weight, std=0.001)
-
-    def forward(self, feat, avg_feat):
-        weight = F.sigmoid(self.fc(avg_feat))
-        return self.conv(feat * weight)
-
 @register
 class PPYOLOEContrastHead(PPYOLOEHead):
     __shared__ = [

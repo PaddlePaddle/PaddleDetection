@@ -136,7 +136,7 @@ def run(FLAGS, cfg):
             raise ValueError(
                 "Semi-Supervised Object Detection only support DenseTeacher now."
             )
-    elif cfg.use_cot:
+    elif cfg.get('use_cot', False):
         trainer = TrainerCot(cfg, mode='train')
     else:
         trainer = Trainer(cfg, mode='train')
