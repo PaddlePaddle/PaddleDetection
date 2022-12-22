@@ -33,7 +33,7 @@ from ..initializer import linear_init_, constant_, xavier_uniform_, normal_
 
 __all__ = ['DeformableTransformer']
 
-
+@register
 class MSDeformableAttention(nn.Layer):
     def __init__(self,
                  embed_dim=256,
@@ -65,6 +65,7 @@ class MSDeformableAttention(nn.Layer):
         self.output_proj = nn.Linear(embed_dim, embed_dim)
         try:
             # use cuda op
+            print("use deformable_detr_ops in ms_deformable_attn")
             from deformable_detr_ops import ms_deformable_attn
         except:
             # use paddle func
@@ -72,6 +73,7 @@ class MSDeformableAttention(nn.Layer):
         self.ms_deformable_attn_core = ms_deformable_attn
 
         self._reset_parameters()
+
 
     def _reset_parameters(self):
         # sampling_offsets
@@ -99,11 +101,13 @@ class MSDeformableAttention(nn.Layer):
 
     def forward(self,
                 query,
-                reference_points,
+                key,
                 value,
+                reference_points,
                 value_spatial_shapes,
                 value_level_start_index,
-                value_mask=None):
+                attn_mask=None,
+                **kwargs):
         """
         Args:
             query (Tensor): [bs, query_length, C]
@@ -112,7 +116,7 @@ class MSDeformableAttention(nn.Layer):
             value (Tensor): [bs, value_length, C]
             value_spatial_shapes (Tensor): [n_levels, 2], [(H_0, W_0), (H_1, W_1), ..., (H_{L-1}, W_{L-1})]
             value_level_start_index (Tensor(int64)): [n_levels], [0, H_0*W_0, H_0*W_0+H_1*W_1, ...]
-            value_mask (Tensor): [bs, value_length], True for non-padding elements, False for padding elements
+            attn_mask (Tensor): [bs, value_length], True for non-padding elements, False for padding elements
 
         Returns:
             output (Tensor): [bs, Length_{query}, C]
@@ -122,9 +126,9 @@ class MSDeformableAttention(nn.Layer):
         assert int(value_spatial_shapes.prod(1).sum()) == Len_v
 
         value = self.value_proj(value)
-        if value_mask is not None:
-            value_mask = value_mask.astype(value.dtype).unsqueeze(-1)
-            value *= value_mask
+        if attn_mask is not None:
+            attn_mask = attn_mask.astype(value.dtype).unsqueeze(-1)
+            value *= attn_mask
         value = value.reshape([bs, Len_v, self.num_heads, self.head_dim])
 
         sampling_offsets = self.sampling_offsets(query).reshape(

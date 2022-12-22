@@ -82,7 +82,7 @@ The following example takes a parsed annotation information to illustrate the co
 ```
 {
     'joints_vis': [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    'joints': [
+    'gt_joints': [
         [-1.0, -1.0],
         [-1.0, -1.0],
         [-1.0, -1.0],

@@ -67,3 +67,4 @@ from .yolof_head import *
 from .ppyoloe_contrast_head import *
 from .centertrack_head import *
 from .sparse_roi_head import *
+from .petr_head import *

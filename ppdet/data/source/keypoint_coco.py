@@ -80,7 +80,7 @@ class KeypointBottomUpBaseDataset(DetDataset):
         records = copy.deepcopy(self._get_imganno(idx))
         records['image'] = cv2.imread(records['image_file'])
         records['image'] = cv2.cvtColor(records['image'], cv2.COLOR_BGR2RGB)
-        records['mask'] = (records['mask'] + 0).astype('uint8')
+        if 'mask' in records: records['mask'] = (records['mask'] + 0).astype('uint8')
         records = self.transform(records)
         return records
 
@@ -212,7 +212,7 @@ class KeypointBottomUpCocoDataset(KeypointBottomUpBaseDataset):
         db_rec['image_file'] = os.path.join(self.img_prefix,
                                             self.id2name[img_id])
         db_rec['mask'] = mask
-        db_rec['joints'] = joints
+        db_rec['gt_joints'] = joints
         db_rec['im_shape'] = orgsize
 
         return db_rec
@@ -506,7 +506,7 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
                     'image_file': os.path.join(self.img_prefix, file_name),
                     'center': center,
                     'scale': scale,
-                    'joints': joints,
+                    'gt_joints': joints,
                     'joints_vis': joints_vis,
                     'im_id': im_id,
                 })
@@ -570,7 +570,7 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
                 'center': center,
                 'scale': scale,
                 'score': score,
-                'joints': joints,
+                'gt_joints': joints,
                 'joints_vis': joints_vis,
             })
 
@@ -647,8 +647,8 @@ class KeypointTopDownMPIIDataset(KeypointTopDownBaseDataset):
                 (self.ann_info['num_joints'], 3), dtype=np.float32)
             joints_vis = np.zeros(
                 (self.ann_info['num_joints'], 3), dtype=np.float32)
-            if 'joints' in a:
-                joints_ = np.array(a['joints'])
+            if 'gt_joints' in a:
+                joints_ = np.array(a['gt_joints'])
                 joints_[:, 0:2] = joints_[:, 0:2] - 1
                 joints_vis_ = np.array(a['joints_vis'])
                 assert len(joints_) == self.ann_info[
@@ -664,7 +664,7 @@ class KeypointTopDownMPIIDataset(KeypointTopDownBaseDataset):
                 'im_id': im_id,
                 'center': c,
                 'scale': s,
-                'joints': joints,
+                'gt_joints': joints,
                 'joints_vis': joints_vis
             })
         print("number length: {}".format(len(gt_db)))
