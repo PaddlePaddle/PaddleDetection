@@ -73,6 +73,34 @@ class Trainer(object):
         self.custom_white_list = self.cfg.get('custom_white_list', None)
         self.custom_black_list = self.cfg.get('custom_black_list', None)
 
+        # Iter per epoch( if none, use len(loader) )
+        self.max_iters = self.cfg.get('iters', None)
+
+        # set fast dev run
+        self.fast_dev_run = self.cfg.get('fast_dev_run', (False, False))
+        if isinstance(self.fast_dev_run, (list, tuple)):
+            pass
+        elif isinstance(self.fast_dev_run, dict):
+            self.fast_dev_run = (self.fast_dev_run.get('epochs', 7),
+                                 self.fast_dev_run.get('iters', 7))
+        elif isinstance(self.fast_dev_run, bool):
+            self.fast_dev_run = (7, 7) if self.fast_dev_run else (False, False)
+        elif isinstance(self.fast_dev_run, int):
+            self.fast_dev_run = (self.fast_dev_run, self.fast_dev_run)
+        else:
+            logger.error(
+                "fast_dev_run should be bool, int, list, tuple or dict")
+            raise TypeError(
+                "fast_dev_run should be bool, int, list, tuple or dict, but got {}".
+                format(type(self.fast_dev_run)))
+
+        if self.fast_dev_run != (False, False):
+            self.cfg.snapshot_epoch = 2
+            logger.info("fast_dev_run is enabled, and will run {} epochs and {} iters".
+                        format(*self.fast_dev_run))
+            self.cfg.epoch = self.fast_dev_run[0] if self.fast_dev_run[0] else self.max_epoch
+            self.max_iters = self.fast_dev_run[1] if self.fast_dev_run[1] else self.max_iters
+
         # build data loader
         capital_mode = self.mode.capitalize()
         if cfg.architecture in MOT_ARCH and self.mode in ['eval', 'test']:
@@ -523,6 +551,17 @@ class Trainer(object):
                 if self.use_ema:
                     self.ema.update()
                 iter_tic = time.time()
+                
+                if self.max_iters and step_id >= self.max_iters:
+                    logger.info(
+                        'Reach max_iters, stop training now, total iters: {}'.
+                        format(step_id))
+                    if self.fast_dev_run[1]:
+                        logger.info(
+                            'fast_dev_run is enabled, stop epoch now'
+                        )
+                    break
+
 
             if self.cfg.get('unstructured_prune'):
                 self.pruner.update_params()
@@ -567,6 +606,9 @@ class Trainer(object):
                 # reset original weight
                 self.model.set_dict(weight)
                 self.status.pop('weight')
+            
+            if self.fast_dev_run[0]:
+                logger.info('fast_dev_run is enabled, stop training now')
 
         self._compose_callback.on_train_end(self.status)
 
