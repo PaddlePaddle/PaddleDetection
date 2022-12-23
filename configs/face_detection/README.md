@@ -128,7 +128,7 @@ if __name__ == '__main__':
     config_path = 'PaddleDetection/configs/face_detection/blazeface_1000e.yml'
     cfg = load_config(config_path)
     weight_path = 'PaddleDetection/output/blazeface_1000e.pdparams'
-    infer_img_path = 'PaddleDetection/demo/0001.jpg'
+    infer_img_path = 'PaddleDetection/demo/hrnet_demo.jpg'
     cfg.weights = weight_path
     bbox_thre = 0.8
     paddle.set_device('gpu')
