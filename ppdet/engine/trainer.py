@@ -77,7 +77,7 @@ class Trainer(object):
         self.max_iters = self.cfg.get('iters', None)
 
         # set fast dev run
-        self.fast_dev_run = self.cfg.get('fast_dev_run', (False, False))
+        self.fast_dev_run = self.cfg.get('use_fastrun', (False, False))
         if isinstance(self.fast_dev_run, (list, tuple)):
             pass
         elif isinstance(self.fast_dev_run, dict):

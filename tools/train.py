@@ -109,6 +109,11 @@ def parse_args():
         action='store_true',
         default=False,
         help="Enable dy2st to train.")
+    parser.add_argument(
+        "--use_fastrun",
+        type=bool,
+        default=False,
+        help="Runs 7 batches of train, val and test to find bugs (ie: a simple unit test).")
 
     args = parser.parse_args()
     return args
