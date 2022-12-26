@@ -188,8 +188,9 @@ class COCODataSet(DetDataset):
                     if 'segmentation' in box and box['iscrowd'] == 1:
                         gt_poly[i] = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
                     elif 'segmentation' in box and box['segmentation']:
-                        if not np.array(box['segmentation']
-                                        ).size > 0 and not self.allow_empty:
+                        if not np.array(
+                                box['segmentation'],
+                                dtype=object).size > 0 and not self.allow_empty:
                             bboxes.pop(i)
                             gt_poly.pop(i)
                             np.delete(is_crowd, i)

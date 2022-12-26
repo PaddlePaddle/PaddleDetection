@@ -78,13 +78,13 @@ def create_headers(image_name):
     # Create input header file
     create_header_file("inputs", "input", img_data, "./include")
     # Create output header file
-    output_data = np.zeros([8500], np.float)
+    output_data = np.zeros([8500], np.float32)
     create_header_file(
         "outputs",
         "output0",
         output_data,
         "./include", )
-    output_data = np.zeros([170000], np.float)
+    output_data = np.zeros([170000], np.float32)
     create_header_file(
         "outputs",
         "output1",
