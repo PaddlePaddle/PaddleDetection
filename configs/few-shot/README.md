@@ -8,10 +8,10 @@ Kaggle上的 [road-sign-detection](https://www.kaggle.com/andrewmvd/road-sign-de
 工业数据集使用PKU-Market-PCB，该数据集用于印刷电路板（PCB）的瑕疵检测，提供了6种常见的PCB缺陷[下载链接](./configs/ppyoloe/application/README.md)
 
 ## Model Zoo
-| 骨架网络             | 网络类型       | 每张GPU图片个数 |推理时间(fps) | Box AP |                           下载                          ｜  配置文件  |
-| :------------------- | :------------- | :-----: | :-----: | :------------: | :-----------------------------------------------------: ｜ :-----: |
-| ResNet50-vd             | Faster         |    1    |     ----     |  60.1  |  [下载链接](https://bj.bcebos.com/v1/paddledet/models/faster_rcnn_r50_vd_fpn_1x_coco.pdparams) ｜ [配置文件](./faster_rcnn_r50_vd_fpn_1x_coco_cotuning_roadsign.yml) |
-| PPYOLOE_crn_s             | PPYOLOE         |    1    |     ----     |  17.8  |  [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_s_80e_contrast_pcb.pdparams) ｜ [配置文件](./ppyoloe_plus_crn_s_80e_contrast_coco.yml) |
+| 骨架网络             | 网络类型       | 每张GPU图片个数 | 推理时间(fps) | Box AP |                           下载                          | 配置文件 |
+| :------------------- | :------------- | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
+| ResNet50-vd             | Faster         |    1    |     ----     |  60.1  |  [下载链接](https://bj.bcebos.com/v1/paddledet/models/faster_rcnn_r50_vd_fpn_1x_coco.pdparam) | [配置文件](./faster_rcnn_r50_vd_fpn_1x_coco_cotuning_roadsign.yml) |
+| PPYOLOE_crn_s             | PPYOLOE         |    1    |     ----     |  17.8  | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_s_80e_contrast_pcb.pdparams) |[配置文件](./ppyoloe_plus_crn_s_80e_contrast_coco.yml) |
 
 ## Compare-cotuning
 | 骨架网络             | 网络类型       | 每张GPU图片个数 |推理时间(fps) | Cotuning |  Box AP  |
