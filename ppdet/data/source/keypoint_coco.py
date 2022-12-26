@@ -487,9 +487,9 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
                     continue
 
                 joints = np.zeros(
-                    (self.ann_info['num_joints'], 3), dtype=np.float)
+                    (self.ann_info['num_joints'], 3), dtype=np.float32)
                 joints_vis = np.zeros(
-                    (self.ann_info['num_joints'], 3), dtype=np.float)
+                    (self.ann_info['num_joints'], 3), dtype=np.float32)
                 for ipt in range(self.ann_info['num_joints']):
                     joints[ipt, 0] = obj['keypoints'][ipt * 3 + 0]
                     joints[ipt, 1] = obj['keypoints'][ipt * 3 + 1]
@@ -560,9 +560,10 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
                 continue
 
             center, scale = self._box2cs(box)
-            joints = np.zeros((self.ann_info['num_joints'], 3), dtype=np.float)
+            joints = np.zeros(
+                (self.ann_info['num_joints'], 3), dtype=np.float32)
             joints_vis = np.ones(
-                (self.ann_info['num_joints'], 3), dtype=np.float)
+                (self.ann_info['num_joints'], 3), dtype=np.float32)
             kpt_db.append({
                 'image_file': img_name,
                 'im_id': im_id,
@@ -633,8 +634,8 @@ class KeypointTopDownMPIIDataset(KeypointTopDownBaseDataset):
             im_id = a['image_id'] if 'image_id' in a else int(
                 os.path.splitext(image_name)[0])
 
-            c = np.array(a['center'], dtype=np.float)
-            s = np.array([a['scale'], a['scale']], dtype=np.float)
+            c = np.array(a['center'], dtype=np.float32)
+            s = np.array([a['scale'], a['scale']], dtype=np.float32)
 
             # Adjust center/scale slightly to avoid cropping limbs
             if c[0] != -1:
@@ -642,9 +643,10 @@ class KeypointTopDownMPIIDataset(KeypointTopDownBaseDataset):
                 s = s * 1.25
             c = c - 1
 
-            joints = np.zeros((self.ann_info['num_joints'], 3), dtype=np.float)
+            joints = np.zeros(
+                (self.ann_info['num_joints'], 3), dtype=np.float32)
             joints_vis = np.zeros(
-                (self.ann_info['num_joints'], 3), dtype=np.float)
+                (self.ann_info['num_joints'], 3), dtype=np.float32)
             if 'joints' in a:
                 joints_ = np.array(a['joints'])
                 joints_[:, 0:2] = joints_[:, 0:2] - 1

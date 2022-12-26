@@ -82,8 +82,8 @@ def linear_assignment(cost_matrix, thresh):
 
 
 def bbox_ious(atlbrs, btlbrs):
-    boxes = np.ascontiguousarray(atlbrs, dtype=np.float)
-    query_boxes = np.ascontiguousarray(btlbrs, dtype=np.float)
+    boxes = np.ascontiguousarray(atlbrs, dtype=np.float32)
+    query_boxes = np.ascontiguousarray(btlbrs, dtype=np.float32)
     N = boxes.shape[0]
     K = query_boxes.shape[0]
     ious = np.zeros((N, K), dtype=boxes.dtype)
@@ -127,13 +127,13 @@ def embedding_distance(tracks, detections, metric='euclidean'):
     """
     Compute cost based on features between two list[STrack].
     """
-    cost_matrix = np.zeros((len(tracks), len(detections)), dtype=np.float)
+    cost_matrix = np.zeros((len(tracks), len(detections)), dtype=np.float32)
     if cost_matrix.size == 0:
         return cost_matrix
     det_features = np.asarray(
-        [track.curr_feat for track in detections], dtype=np.float)
+        [track.curr_feat for track in detections], dtype=np.float32)
     track_features = np.asarray(
-        [track.smooth_feat for track in tracks], dtype=np.float)
+        [track.smooth_feat for track in tracks], dtype=np.float32)
     cost_matrix = np.maximum(0.0, cdist(track_features, det_features,
                                         metric))  # Nomalized features
     return cost_matrix
