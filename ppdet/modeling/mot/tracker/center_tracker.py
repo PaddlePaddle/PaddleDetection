@@ -16,7 +16,6 @@ This code is based on https://github.com/xingyizhou/CenterTrack/blob/master/src/
 """
 import copy
 import numpy as np
-from sklearn.utils.linear_assignment_ import linear_assignment
 
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.logger import setup_logger
@@ -37,7 +36,8 @@ class CenterTracker(object):
                  vertical_ratio=-1,
                  track_thresh=0.3,
                  new_thresh=0.3,
-                 hungarian=False,
+                 pre_thresh=0.5,
+                 out_thresh=0.4,
                  max_age=-1):
         self.num_classes = num_classes
         self.input_size = input_size
@@ -46,28 +46,31 @@ class CenterTracker(object):
 
         self.track_thresh = track_thresh
         self.new_thresh = new_thresh
-        self.hungarian = hungarian
+        self.pre_thresh = pre_thresh
+        self.out_thresh = out_thresh
         self.max_age = max_age
 
-        self.tracks = []
-        self._next_id = 0  # 1?
+        self.reset()
 
     def init_track(self, results):
         for item in results:
             if item['score'] > self.new_thresh:
-                self._next_id += 1
+                self.id_count += 1
                 # active and age are never used in the paper
                 item['active'] = 1
                 item['age'] = 1
-                item['tracking_id'] = self._next_id
+                item['tracking_id'] = self.id_count
                 if not ('ct' in item):
                     bbox = item['bbox']
                     item['ct'] = [(bbox[0] + bbox[2]) / 2,
                                   (bbox[1] + bbox[3]) / 2]
                 self.tracks.append(item)
 
-    def update(self, pred_dets, pred_embs=None):
-        results = pred_dets
+    def reset(self):
+        self.id_count = 0
+        self.tracks = []
+
+    def update(self, results, public_det=None):
         N = len(results)
         M = len(self.tracks)
 
@@ -92,30 +95,16 @@ class CenterTracker(object):
             (item_cat.reshape(N, 1) != track_cat.reshape(1, M))) > 0
         dist = dist + invalid * 1e18
 
-        if self.hungarian:
-            item_score = np.array([item['score'] for item in results],
-                                  np.float32)  # N
-            dist[dist > 1e18] = 1e18
-            matched_indices = linear_assignment(dist)
-        else:
-            matched_indices = greedy_assignment(copy.deepcopy(dist))
+        # no hungarian
+        matched_indices = greedy_assignment(copy.deepcopy(dist))
 
         unmatched_dets = [d for d in range(dets.shape[0]) \
             if not (d in matched_indices[:, 0])]
         unmatched_tracks = [d for d in range(tracks.shape[0]) \
             if not (d in matched_indices[:, 1])]
 
-        if self.hungarian:
-            matches = []
-            for m in matched_indices:
-                if dist[m[0], m[1]] > 1e16:
-                    unmatched_dets.append(m[0])
-                    unmatched_tracks.append(m[1])
-                else:
-                    matches.append(m)
-            matches = np.array(matches).reshape(-1, 2)
-        else:
-            matches = matched_indices
+        # no hungarian
+        matches = matched_indices
 
         ret = []
         for m in matches:
@@ -129,8 +118,8 @@ class CenterTracker(object):
         for i in unmatched_dets:
             track = results[i]
             if track['score'] > self.new_thresh:
-                self._next_id += 1  # 
-                track['tracking_id'] = self._next_id  #
+                self.id_count += 1
+                track['tracking_id'] = self.id_count
                 track['age'] = 1
                 track['active'] = 1
                 ret.append(track)

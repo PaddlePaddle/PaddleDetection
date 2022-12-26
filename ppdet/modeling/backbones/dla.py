@@ -174,7 +174,7 @@ class DLA(nn.Layer):
             block = BasicBlock
         levels, channels = DLA_cfg[depth]
         self.channels = channels
-        self.levels = levels
+        self.num_levels = len(levels)
 
         self.base_layer = nn.Sequential(
             ConvNormLayer(
@@ -262,7 +262,7 @@ class DLA(nn.Layer):
     @property
     def out_shape(self):
         return [
-            ShapeSpec(channels=self.channels[i]) for i in range(self.levels)
+            ShapeSpec(channels=self.channels[i]) for i in range(self.num_levels)
         ]
 
     def forward(self, inputs):
@@ -270,12 +270,13 @@ class DLA(nn.Layer):
         im = inputs['image']
         feats = self.base_layer(im)
 
-        if self.pre_img and inputs['pre_img'] is not None:
+        if self.pre_img and 'pre_img' in inputs and inputs[
+                'pre_img'] is not None:
             feats = feats + self.pre_img_layer(inputs['pre_img'])
-        if self.pre_hm and inputs['pre_hm'] is not None:
+        if self.pre_hm and 'pre_hm' in inputs and inputs['pre_hm'] is not None:
             feats = feats + self.pre_hm_layer(inputs['pre_hm'])
 
-        for i in range(self.levels):
+        for i in range(self.num_levels):
             feats = getattr(self, 'level{}'.format(i))(feats)
             outs.append(feats)
 

@@ -23,38 +23,6 @@
   - **mix_mot_ch**数据集，是MOT17、CrowdHuman组成的联合数据集，**mix_det**数据集是MOT17、CrowdHuman、Cityscapes、ETHZ组成的联合数据集，数据集整理的格式和目录可以参考[此链接](https://github.com/ifzhang/ByteTrack#data-preparation)，最终放置于`dataset/mot/`目录下。为了验证精度可以都用**MOT17-half val**数据集去评估。
 
 
-export FLAGS_allocator_strategy=auto_growth
-model_type=centernet
-job_name=centernet_dla34_140e_coco
-config=configs/${model_type}/${job_name}.yml
-log_dir=log_dir/${job_name}
-weights=../${job_name}.pdparams #https://bj.bcebos.com/v1/paddledet/models/${job_name}.pdparams
-#weights=https://bj.bcebos.com/v1/paddledet/models/${job_name}.pdparams
-
-#python3.7 dygraph_print.py -c ${config} #2>&1 | tee paddle_centernet_dla34.txt
-# python3.7 4convert_torch2paddle.py ../mot17_half.pth weights_map_centertrack_mun.txt centertrack_dla34_70e_half.pdparams
-# python3.7 4convert_torch2paddle.py ../crowdhuman.pth weights_map_centertrack_mun.txt crowdhuman_centertrack.pdparams
-
-# 1. training
-#CUDA_VISIBLE_DEVICES=6 python3.7 tools/train.py -c ${config} --amp # -r ${weights}
-#python3.7 -m paddle.distributed.launch --log_dir=${log_dir} --gpus 1,2,3,4,5,6,7 tools/train.py -c ${config} --eval --amp
-
-# 2. eval
-#CUDA_VISIBLE_DEVICES=7 python3.7 tools/eval.py -c ${config} -o weights=${weights}
-#CUDA_VISIBLE_DEVICES=7 python3.7 tools/eval_mot.py -c ${config} -o weights=${weights}
-
-# 3. tools infer
-#CUDA_VISIBLE_DEVICES=4 python3.7 tools/infer.py -c ${config} -o weights=${weights} --infer_img=demo/000000014439_640x640.jpg --draw_threshold=0.3
-#CUDA_VISIBLE_DEVICES=7 python3.7 tools/infer_mot.py -c ${config} -o weights=${weights} --image_dir=motpose_demot --draw_threshold=0.3 --save_videos
-
-# 4.导出模型
-CUDA_VISIBLE_DEVICES=1 python3.7 tools/export_model.py -c ${config} -o weights=${weights}
-
-# 5.部署预测
-CUDA_VISIBLE_DEVICES=1 python3.7 deploy/python/infer.py --model_dir=output_inference/${job_name} --image_file=demo/000000014439_640x640.jpg --device=GPU
-#CUDA_VISIBLE_DEVICES=1 python3.7 python deploy/pptracking/python/mot_sde_infer.py --model_dir=output_inference/${job_name} --infer_dir=motpose_demot --device=GPU --save_mot_txts
-
-
 ## 快速开始
 
 ### 1.训练

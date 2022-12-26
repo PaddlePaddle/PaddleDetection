@@ -163,7 +163,8 @@ class CenterTrackHead(nn.Layer):
         return losses
 
     def generic_decode(self, head_outs, bboxes, bbox_inds, topk_ys, topk_xs):
-        ret = {'bboxes': bboxes}
+        cts = paddle.concat([topk_xs, topk_ys], 1)
+        ret = {'scores': bboxes[:, 1], 'clses': bboxes[:, 0], 'cts': cts}
 
         regression_heads = ['tracking']  # todo: add more tasks
         for head in regression_heads:
@@ -181,18 +182,18 @@ class CenterTrackHead(nn.Layer):
                     topk_xs + ltrb_amodal[..., 2:3],
                     topk_ys + ltrb_amodal[..., 3:4]
                 ],
-                axis=2)
+                axis=1)
             ret['bboxes_amodal'] = bboxes_amodal
             ret['bboxes'] = bboxes_amodal
 
-        # if 'pre_inds' in head_outs and head_outs['pre_inds'] is not None:
-        #     pre_inds = head_outs['pre_inds'] # B x pre_K
-        #     pre_K = pre_inds.shape[1]
-        #     pre_ys = (pre_inds / width).int().float()
-        #     pre_xs = (pre_inds % width).int().float()
+        if 'pre_inds' in head_outs and head_outs['pre_inds'] is not None:
+            width = head_outs['tracking'].shape[-1]
+            pre_inds = head_outs['pre_inds']
+            pre_ys = (pre_inds / width).int().float()
+            pre_xs = (pre_inds % width).int().float()
 
-        #     ret['pre_cts'] = paddle.concat(
-        #         [pre_xs.unsqueeze(2), pre_ys.unsqueeze(2)], axis=2)
+            ret['pre_cts'] = paddle.concat(
+                [pre_xs.unsqueeze(2), pre_ys.unsqueeze(2)], axis=2)
 
         return ret
 

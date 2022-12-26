@@ -8,7 +8,6 @@ CenterTrack:
   detector: CenterNet
   plugin_head: CenterTrackHead
   tracker: CenterTracker
-  mot_metric: True # Note
 
 
 ### CenterTrack.detector
@@ -52,8 +51,5 @@ CenterTrackHead:
 
 ### CenterTrack.tracker
 CenterTracker:
-  track_thresh: 0.3
-  new_thresh: 0.3
-  hungarian: False
   min_box_area: -1 #200
   vertical_ratio: -1 #1.6 # for MOT17 pedestrian

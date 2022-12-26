@@ -45,7 +45,7 @@ TestReader:
 EvalMOTReader:
   sample_transforms:
     - Decode: {}
-    - WarpAffine: {keep_res: True, input_h: *input_h, input_w: *input_w}
+    - WarpAffine: {keep_res: False, input_h: *input_h, input_w: *input_w}
     - NormalizeImage: {mean: [0.40789655, 0.44719303, 0.47026116], std: [0.2886383 , 0.27408165, 0.27809834], is_scale: True}
     - Permute: {}
   batch_size: 1
@@ -54,7 +54,7 @@ EvalMOTReader:
 TestMOTReader:
   sample_transforms:
     - Decode: {}
-    - WarpAffine: {keep_res: True, input_h: *input_h, input_w: *input_w}
+    - WarpAffine: {keep_res: False, input_h: *input_h, input_w: *input_w}
     - NormalizeImage: {mean: [0.40789655, 0.44719303, 0.47026116], std: [0.2886383 , 0.27408165, 0.27809834], is_scale: True}
     - Permute: {}
   batch_size: 1

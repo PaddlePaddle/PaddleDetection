@@ -18,6 +18,17 @@ metric: COCO
 # metric: MOT
 
 
+worker_num: 2
+TrainReader:
+  batch_size: 16 # total 32 for 2 GPUs
+
+EvalReader:
+  batch_size: 1
+
+EvalMOTReader:
+  batch_size: 1
+
+
 # COCO style dataset for training
 num_classes: 1
 TrainDataset:
@@ -30,7 +41,7 @@ TrainDataset:
 EvalDataset:
   !COCODataSet
     dataset_dir: dataset/mot/MOT17
-    anno_path: annotations/val_half.json
+    anno_path: annotations/val_im8.json
     image_dir: images/train
 
 TestDataset:

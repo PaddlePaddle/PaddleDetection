@@ -75,7 +75,9 @@ class Trainer(object):
 
         # build data loader
         capital_mode = self.mode.capitalize()
-        if cfg.architecture in MOT_ARCH and self.mode in ['eval', 'test']:
+        if cfg.architecture in MOT_ARCH and self.mode in [
+                'eval', 'test'
+        ] and cfg.metric not in ['COCO', 'VOC']:
             self.dataset = self.cfg['{}MOTDataset'.format(
                 capital_mode)] = create('{}MOTDataset'.format(capital_mode))()
         else:
