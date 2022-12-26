@@ -1,8 +1,15 @@
 num_classes: 80
+anno_path: &anno_path dataset/coco/annotations/instances_val2017.json
+
 Metric:
   name: COCOMetric
-  anno_path: dataset/coco/annotations/instances_val2017.json
+  anno_path: *anno_path
   main_indicator: bbox_ap
+
+PostProcess:
+  name: COCOResultParser
+  anno_path: *anno_path
+
 
 Train:
   dataset:

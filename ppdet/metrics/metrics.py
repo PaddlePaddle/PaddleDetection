@@ -28,7 +28,7 @@ from paddlecv.ppcv.register import METRIC
 from paddlecv.ppcv.utils.logger import setup_logger
 
 from .map_utils import prune_zero_padding, DetectionMAP
-from .coco_utils import get_infer_results, cocoapi_eval
+from .coco_utils import cocoapi_eval
 from .widerface_utils import face_eval_run
 from ppdet.data.source.category import get_categories
 from ppdet.modeling.rbox_utils import poly2rbox_np
@@ -36,8 +36,8 @@ from ppdet.modeling.rbox_utils import poly2rbox_np
 logger = setup_logger(__name__)
 
 __all__ = [
-    'Metric', 'COCOMetric', 'VOCMetric', 'WiderFaceMetric', 'get_infer_results',
-    'RBoxMetric', 'SNIPERCOCOMetric'
+    'Metric', 'COCOMetric', 'VOCMetric', 'WiderFaceMetric', 'RBoxMetric',
+    'SNIPERCOCOMetric'
 ]
 
 COCO_SIGMAS = np.array([
@@ -76,13 +76,8 @@ class COCOMetric(Metric):
     def __init__(self, anno_path, main_indicator='ap', **kwargs):
         self.main_indicator = main_indicator
         self.anno_file = anno_path
-        self.clsid2catid = kwargs.get('clsid2catid', None)
-        if self.clsid2catid is None:
-            self.clsid2catid, _ = get_categories('COCO', anno_path)
         self.classwise = kwargs.get('classwise', False)
         self.output_eval = kwargs.get('output_eval', None)
-        # TODO: bias should be unified
-        self.bias = kwargs.get('bias', 0)
         self.save_prediction_only = kwargs.get('save_prediction_only', False)
         self.iou_type = kwargs.get('IouType', 'bbox')
 
@@ -100,22 +95,7 @@ class COCOMetric(Metric):
         self.results = {'bbox': [], 'mask': [], 'segm': [], 'keypoint': []}
         self.eval_results = {}
 
-    def update(self, preds, data):
-        outs = {}
-        # outputs Tensor -> numpy.ndarray
-        for k, v in preds.items():
-            outs[k] = v.numpy() if isinstance(v, paddle.Tensor) else v
-
-        # multi-scale inputs: all inputs have same im_id
-        if isinstance(data, typing.Sequence):
-            im_id = data[0]['im_id']
-        else:
-            im_id = data['im_id']
-        outs['im_id'] = im_id.numpy() if isinstance(im_id,
-                                                    paddle.Tensor) else im_id
-
-        infer_results = get_infer_results(
-            outs, self.clsid2catid, bias=self.bias)
+    def update(self, infer_results, data):
         self.results['bbox'] += infer_results[
             'bbox'] if 'bbox' in infer_results else []
         self.results['mask'] += infer_results[

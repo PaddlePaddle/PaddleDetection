@@ -1,4 +1,4 @@
-device: true
+device: cpu
 log_iter: 20
 output_dir: output
 save_interval: 1
@@ -15,3 +15,7 @@ Callbacks:
    - name: LogPrinter
    - name: Checkpointer
    - name: VisualDLWriter
+
+Visualizer:
+  name: DetVis
+  draw_threshold: 0.5

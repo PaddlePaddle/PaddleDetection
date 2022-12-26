@@ -18,57 +18,91 @@ from __future__ import print_function
 
 import os
 import sys
+import typing
+import paddle
 import numpy as np
 import itertools
 from paddlecv.ppcv.utils.logger import setup_logger
+from paddlecv.ppcv.register import POSTPROCESS
 
+from ppdet.data.source.category import get_categories
 from ppdet.metrics.json_results import get_det_res, get_det_poly_res, get_seg_res, get_solov2_segm_res, get_keypoint_res, get_pose3d_res
 from ppdet.metrics.map_utils import draw_pr_curve
 
 logger = setup_logger(__name__)
 
 
-def get_infer_results(outs, catid, bias=0):
-    """
-    Get result at the stage of inference.
-    The output format is dictionary containing bbox or mask result.
+@POSTPROCESS.register
+class COCOResultParser(object):
+    def __init__(self, anno_path, bias=0, **kwargs):
+        self.clsid2catid, _ = get_categories('COCO', anno_path)
+        self.bias = bias
 
-    For example, bbox result is a list and each element contains
-    image_id, category_id, bbox and score.
-    """
-    if outs is None or len(outs) == 0:
-        raise ValueError(
-            'The number of valid detection result if zero. Please use reasonable model and check input data.'
-        )
+    def __call__(self, preds, data, *args, **kwargs):
+        """
+        Get result at the stage of inference.
+        The output format is dictionary containing bbox or mask result.
 
-    im_id = outs['im_id']
+        For example, bbox result is a list and each element contains
+        image_id, category_id, bbox and score.
+        """
+        outs = {}
+        # outputs Tensor -> numpy.ndarray
+        for k, v in preds.items():
+            outs[k] = v.numpy() if isinstance(v, paddle.Tensor) else v
 
-    infer_res = {}
-    if 'bbox' in outs:
-        if len(outs['bbox']) > 0 and len(outs['bbox'][0]) > 6:
-            infer_res['bbox'] = get_det_poly_res(
-                outs['bbox'], outs['bbox_num'], im_id, catid, bias=bias)
+        # multi-scale inputs: all inputs have same im_id
+        if isinstance(data, typing.Sequence):
+            im_id = data[0]['im_id']
         else:
-            infer_res['bbox'] = get_det_res(
-                outs['bbox'], outs['bbox_num'], im_id, catid, bias=bias)
+            im_id = data['im_id']
+        outs['im_id'] = im_id.numpy() if isinstance(im_id,
+                                                    paddle.Tensor) else im_id
 
-    if 'mask' in outs:
-        # mask post process
-        infer_res['mask'] = get_seg_res(outs['mask'], outs['bbox'],
-                                        outs['bbox_num'], im_id, catid)
+        if outs is None or len(outs) == 0:
+            raise ValueError(
+                'The number of valid detection result if zero. Please use reasonable model and check input data.'
+            )
 
-    if 'segm' in outs:
-        infer_res['segm'] = get_solov2_segm_res(outs, im_id, catid)
+        im_id = outs['im_id']
 
-    if 'keypoint' in outs:
-        infer_res['keypoint'] = get_keypoint_res(outs, im_id)
-        outs['bbox_num'] = [len(infer_res['keypoint'])]
+        infer_res = {}
+        if 'bbox' in outs:
+            if len(outs['bbox']) > 0 and len(outs['bbox'][0]) > 6:
+                infer_res['bbox'] = get_det_poly_res(
+                    outs['bbox'],
+                    outs['bbox_num'],
+                    im_id,
+                    self.clsid2catid,
+                    bias=self.bias)
+            else:
+                infer_res['bbox'] = get_det_res(
+                    outs['bbox'],
+                    outs['bbox_num'],
+                    im_id,
+                    self.clsid2catid,
+                    bias=self.bias)
+            infer_res['bbox_num'] = outs['bbox_num']
 
-    if 'pose3d' in outs:
-        infer_res['pose3d'] = get_pose3d_res(outs, im_id)
-        outs['bbox_num'] = [len(infer_res['pose3d'])]
+        if 'mask' in outs:
+            # mask post process
+            infer_res['mask'] = get_seg_res(outs['mask'], outs['bbox'],
+                                            outs['bbox_num'], im_id,
+                                            self.clsid2catid)
 
-    return infer_res
+        if 'segm' in outs:
+            infer_res['segm'] = get_solov2_segm_res(outs, im_id,
+                                                    self.clsid2catid)
+
+        if 'keypoint' in outs:
+            infer_res['keypoint'] = get_keypoint_res(outs, im_id)
+            infer_res['bbox_num'] = [len(infer_res['keypoint'])]
+
+        if 'pose3d' in outs:
+            infer_res['pose3d'] = get_pose3d_res(outs, im_id)
+            infer_res['bbox_num'] = [len(infer_res['pose3d'])]
+
+        return infer_res
 
 
 def cocoapi_eval(jsonfile,

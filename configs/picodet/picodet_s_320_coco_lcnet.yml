@@ -50,3 +50,6 @@ Ema:
   decay_type: threshold
   cycle_epoch: -1
   black_list:
+
+Visualizer:
+  metric_type: coco

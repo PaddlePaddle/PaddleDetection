@@ -30,13 +30,13 @@ import glob
 import ast
 
 import paddle
-from ppdet.core.workspace import load_config, merge_config
-from ppdet.engine import Trainer
-from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_version, check_config
-from ppdet.utils.cli import ArgsParser, merge_args
+from paddlecv import Config
+from paddlecv import Trainer
+from paddlecv.ppcv.utils.logger import setup_logger
+
+from ppdet.utils.cli import ArgsParser
 from ppdet.slim import build_slim_model
 
-from ppdet.utils.logger import setup_logger
 logger = setup_logger('train')
 
 
@@ -189,47 +189,17 @@ def run(FLAGS, cfg):
 
 def main():
     FLAGS = parse_args()
-    cfg = load_config(FLAGS.config)
-    merge_args(cfg, FLAGS)
-    merge_config(FLAGS.opt)
+    images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
 
-    # disable npu in config by default
-    if 'use_npu' not in cfg:
-        cfg.use_npu = False
+    cfg = Config(FLAGS.config)
+    FLAGS = vars(FLAGS)
+    opt = FLAGS.pop('opt')
+    opt['Test.dataset.image_dir'] = images
+    cfg.merge_dict(FLAGS)
+    cfg.merge_dict(opt)
 
-    # disable xpu in config by default
-    if 'use_xpu' not in cfg:
-        cfg.use_xpu = False
-
-    if 'use_gpu' not in cfg:
-        cfg.use_gpu = False
-
-    # disable mlu in config by default
-    if 'use_mlu' not in cfg:
-        cfg.use_mlu = False
-
-    if cfg.use_gpu:
-        place = paddle.set_device('gpu')
-    elif cfg.use_npu:
-        place = paddle.set_device('npu')
-    elif cfg.use_xpu:
-        place = paddle.set_device('xpu')
-    elif cfg.use_mlu:
-        place = paddle.set_device('mlu')
-    else:
-        place = paddle.set_device('cpu')
-
-    if FLAGS.slim_config:
-        cfg = build_slim_model(cfg, FLAGS.slim_config, mode='test')
-
-    check_config(cfg)
-    check_gpu(cfg.use_gpu)
-    check_npu(cfg.use_npu)
-    check_xpu(cfg.use_xpu)
-    check_mlu(cfg.use_mlu)
-    check_version()
-
-    run(FLAGS, cfg)
+    trainer = Trainer(cfg, mode='test')
+    trainer.test()
 
 
 if __name__ == '__main__':

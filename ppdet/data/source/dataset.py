@@ -141,13 +141,13 @@ def _make_dataset(dir):
     return images
 
 
-@register
-@serializable
+@DATASET.register
 class ImageFolder(DetDataset):
     def __init__(self,
                  dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
+                 transforms=[],
                  sample_num=-1,
                  use_default_label=None,
                  **kwargs):
@@ -156,6 +156,7 @@ class ImageFolder(DetDataset):
             image_dir,
             anno_path,
             sample_num=sample_num,
+            transforms=transforms,
             use_default_label=use_default_label)
         self._imid2path = {}
         self.roidbs = None

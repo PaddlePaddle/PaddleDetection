@@ -84,6 +84,7 @@ class BaseDataLoader(object):
         dataset.parse_dataset()
         # set kwargs
         dataset.set_kwargs(**kwargs)
+        self.dataset = dataset
         # batch sampler
         if batch_sampler is None:
             batch_sampler = DistributedBatchSampler(
@@ -91,7 +92,7 @@ class BaseDataLoader(object):
                 batch_size=batch_size,
                 shuffle=shuffle,
                 drop_last=drop_last)
-        self._batch_sampler = batch_sampler
+        self.batch_sampler = batch_sampler
         # DataLoader do not start sub-process in Windows and Mac
         # system, do not need to use shared memory
         use_shared_memory = use_shared_memory and \
@@ -116,7 +117,7 @@ class BaseDataLoader(object):
         return self
 
     def __len__(self):
-        return len(self._batch_sampler)
+        return len(self.batch_sampler)
 
     def __iter__(self):
         return self

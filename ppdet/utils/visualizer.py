@@ -17,16 +17,66 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import os
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageOps
 import cv2
 import math
-
+from ppdet.data.source.category import get_categories
 from .colormap import colormap
-from ppdet.utils.logger import setup_logger
+from paddlecv.ppcv.register import VISUALIZER
+from paddlecv.ppcv.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = ['visualize_results']
+
+
+@VISUALIZER.register
+class DetVis(object):
+    def __init__(self,
+                 output_dir,
+                 anno_path,
+                 draw_threshold=0.5,
+                 metric_type='coco',
+                 **kwargs):
+        self.draw_threshold = draw_threshold
+        self.output_dir = output_dir
+        _, self.catid2name = get_categories(metric_type, anno_file=anno_path)
+
+    def __call__(self, res, data, **kwargs):
+        imid2path = kwargs['test_dataloader'].dataset.get_imid2path()
+        bbox_num = res['bbox_num']
+
+        start = 0
+        for i, im_id in enumerate(data['im_id']):
+            image_path = imid2path[int(im_id)]
+            image = Image.open(image_path).convert('RGB')
+            image = ImageOps.exif_transpose(image)
+            original_image = np.array(image.copy())
+
+            end = start + bbox_num[i]
+            bbox_res = res['bbox'][start:end] \
+                if 'bbox' in res else None
+            mask_res = res['mask'][start:end] \
+                if 'mask' in res else None
+            segm_res = res['segm'][start:end] \
+                if 'segm' in res else None
+            keypoint_res = res['keypoint'][start:end] \
+                if 'keypoint' in res else None
+            pose3d_res = res['pose3d'][start:end] \
+                if 'pose3d' in res else None
+            image = visualize_results(
+                image, bbox_res, mask_res, segm_res, keypoint_res, pose3d_res,
+                int(im_id), self.catid2name, self.draw_threshold)
+            result_image = np.array(image.copy())
+            # save image with detection
+            image_name = os.path.split(image_path)[-1]
+            name, ext = os.path.splitext(image_name)
+            save_name = os.path.join(self.output_dir, "{}".format(name)) + ext
+            logger.info("Detection bbox results save in {}".format(save_name))
+            image.save(save_name, quality=95)
+
+            start = end
 
 
 def visualize_results(image,

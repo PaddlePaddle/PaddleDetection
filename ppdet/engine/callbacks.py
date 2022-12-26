@@ -27,7 +27,6 @@ import paddle
 import paddle.distributed as dist
 
 from ppdet.utils.checkpoint import save_model
-from ppdet.metrics import get_infer_results
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('ppdet.engine')
