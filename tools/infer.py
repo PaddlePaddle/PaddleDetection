@@ -155,38 +155,6 @@ def get_test_images(infer_dir, infer_img):
     return images
 
 
-def run(FLAGS, cfg):
-    # build trainer
-    trainer = Trainer(cfg, mode='test')
-
-    # load weights
-    trainer.load_weights(cfg.weights)
-
-    # get inference images
-    images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
-
-    # inference
-    if FLAGS.slice_infer:
-        trainer.slice_predict(
-            images,
-            slice_size=FLAGS.slice_size,
-            overlap_ratio=FLAGS.overlap_ratio,
-            combine_method=FLAGS.combine_method,
-            match_threshold=FLAGS.match_threshold,
-            match_metric=FLAGS.match_metric,
-            draw_threshold=FLAGS.draw_threshold,
-            output_dir=FLAGS.output_dir,
-            save_results=FLAGS.save_results,
-            visualize=FLAGS.visualize)
-    else:
-        trainer.predict(
-            images,
-            draw_threshold=FLAGS.draw_threshold,
-            output_dir=FLAGS.output_dir,
-            save_results=FLAGS.save_results,
-            visualize=FLAGS.visualize)
-
-
 def main():
     FLAGS = parse_args()
     images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
