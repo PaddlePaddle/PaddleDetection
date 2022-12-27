@@ -14,17 +14,10 @@
 """
 This code is based on https://github.com/noahcao/OC_SORT/blob/master/trackers/ocsort_tracker/ocsort.py
 """
-
+import time
 import numpy as np
-try:
-    from filterpy.kalman import KalmanFilter
-except:
-    print(
-        'Warning: Unable to use OC-SORT, please install filterpy, for example: `pip install filterpy`, see https://github.com/rlabbe/filterpy'
-    )
-    pass
-
-from ..matching.ocsort_matching import associate, linear_assignment, iou_batch
+from ..matching.ocsort_matching import associate, linear_assignment, iou_batch, associate_only_iou
+from ..motion.ocsort_kalman_filter import OCSORTKalmanFilter
 
 
 def k_previous_obs(observations, cur_age, k):
@@ -90,19 +83,14 @@ class KalmanBoxTracker(object):
     count = 0
 
     def __init__(self, bbox, delta_t=3):
-        try:
-            from filterpy.kalman import KalmanFilter
-        except Exception as e:
-            raise RuntimeError(
-                'Unable to use OC-SORT, please install filterpy, for example: `pip install filterpy`, see https://github.com/rlabbe/filterpy'
-            )
-        self.kf = KalmanFilter(dim_x=7, dim_z=4)
-        self.kf.F = np.array([[1, 0, 0, 0, 1, 0, 0], [0, 1, 0, 0, 0, 1, 0],
-                              [0, 0, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 0, 0],
-                              [0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 1, 0],
-                              [0, 0, 0, 0, 0, 0, 1]])
-        self.kf.H = np.array([[1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0],
-                              [0, 0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0]])
+
+        self.kf = OCSORTKalmanFilter(dim_x=7, dim_z=4)
+        self.kf.F = np.array([[1., 0, 0, 0, 1., 0, 0], [0, 1., 0, 0, 0, 1., 0],
+                              [0, 0, 1., 0, 0, 0, 1.], [0, 0, 0, 1., 0, 0, 0],
+                              [0, 0, 0, 0, 1., 0, 0], [0, 0, 0, 0, 0, 1., 0],
+                              [0, 0, 0, 0, 0, 0, 1.]])
+        self.kf.H = np.array([[1., 0, 0, 0, 0, 0, 0], [0, 1., 0, 0, 0, 0, 0],
+                              [0, 0, 1., 0, 0, 0, 0], [0, 0, 0, 1., 0, 0, 0]])
         self.kf.R[2:, 2:] *= 10.
         self.kf.P[4:, 4:] *= 1000.
         # give high uncertainty to the unobservable initial velocities
@@ -130,12 +118,13 @@ class KalmanBoxTracker(object):
         self.velocity = None
         self.delta_t = delta_t
 
-    def update(self, bbox):
+    def update(self, bbox, angle_cost=False):
         """
         Updates the state vector with observed bbox.
         """
         if bbox is not None:
-            if self.last_observation.sum() >= 0:  # no previous observation
+            if angle_cost and self.last_observation.sum(
+            ) >= 0:  # no previous observation
                 previous_box = None
                 for i in range(self.delta_t):
                     dt = self.delta_t - i
@@ -144,9 +133,9 @@ class KalmanBoxTracker(object):
                         break
                 if previous_box is None:
                     previous_box = self.last_observation
-                """
-                  Estimate the track speed direction with observations \Delta t steps away
-                """
+                # """
+                #   Estimate the track speed direction with observations \Delta t steps away
+                # """
                 self.velocity = speed_direction(previous_box, bbox)
             """
               Insert new observations. This is a ugly way to maintain both self.observations
@@ -199,6 +188,7 @@ class OCSORTTracker(object):
             1.6 for pedestrian tracking.
         min_box_area (int): min box area to filter out low quality boxes
         use_byte (bool): Whether use ByteTracker, default False
+        use_angle_cost (bool) Whether use angle cost, default False
     """
 
     def __init__(self,
@@ -210,7 +200,8 @@ class OCSORTTracker(object):
                  inertia=0.2,
                  vertical_ratio=-1,
                  min_box_area=0,
-                 use_byte=False):
+                 use_byte=False,
+                 use_angle_cost=False):
         self.det_thresh = det_thresh
         self.max_age = max_age
         self.min_hits = min_hits
@@ -220,6 +211,7 @@ class OCSORTTracker(object):
         self.vertical_ratio = vertical_ratio
         self.min_box_area = min_box_area
         self.use_byte = use_byte
+        self.use_angle_cost = use_angle_cost
 
         self.trackers = []
         self.frame_count = 0
@@ -267,23 +259,31 @@ class OCSORTTracker(object):
         for t in reversed(to_del):
             self.trackers.pop(t)
 
-        velocities = np.array([
-            trk.velocity if trk.velocity is not None else np.array((0, 0))
-            for trk in self.trackers
-        ])
+        if self.use_angle_cost:
+            velocities = np.array([
+                trk.velocity if trk.velocity is not None else np.array((0, 0))
+                for trk in self.trackers
+            ])
+            k_observations = np.array([
+                k_previous_obs(trk.observations, trk.age, self.delta_t)
+                for trk in self.trackers
+            ])
+
         last_boxes = np.array([trk.last_observation for trk in self.trackers])
-        k_observations = np.array([
-            k_previous_obs(trk.observations, trk.age, self.delta_t)
-            for trk in self.trackers
-        ])
         """
             First round of association
         """
-        matched, unmatched_dets, unmatched_trks = associate(
-            dets, trks, self.iou_threshold, velocities, k_observations,
-            self.inertia)
+        if self.use_angle_cost:
+            matched, unmatched_dets, unmatched_trks = associate(
+                dets, trks, self.iou_threshold, velocities, k_observations,
+                self.inertia)
+        else:
+            matched, unmatched_dets, unmatched_trks = associate_only_iou(
+                dets, trks, self.iou_threshold)
+
         for m in matched:
-            self.trackers[m[1]].update(dets[m[0], :])
+            self.trackers[m[1]].update(
+                dets[m[0], :], angle_cost=self.use_angle_cost)
         """
             Second round of associaton by OCR
         """
@@ -307,7 +307,8 @@ class OCSORTTracker(object):
                     det_ind, trk_ind = m[0], unmatched_trks[m[1]]
                     if iou_left[m[0], m[1]] < self.iou_threshold:
                         continue
-                    self.trackers[trk_ind].update(dets_second[det_ind, :])
+                    self.trackers[trk_ind].update(
+                        dets_second[det_ind, :], angle_cost=self.use_angle_cost)
                     to_remove_trk_indices.append(trk_ind)
                 unmatched_trks = np.setdiff1d(unmatched_trks,
                                               np.array(to_remove_trk_indices))
@@ -331,7 +332,8 @@ class OCSORTTracker(object):
                         1]]
                     if iou_left[m[0], m[1]] < self.iou_threshold:
                         continue
-                    self.trackers[trk_ind].update(dets[det_ind, :])
+                    self.trackers[trk_ind].update(
+                        dets[det_ind, :], angle_cost=self.use_angle_cost)
                     to_remove_det_indices.append(det_ind)
                     to_remove_trk_indices.append(trk_ind)
                 unmatched_dets = np.setdiff1d(unmatched_dets,
@@ -346,6 +348,7 @@ class OCSORTTracker(object):
         for i in unmatched_dets:
             trk = KalmanBoxTracker(dets[i, :], delta_t=self.delta_t)
             self.trackers.append(trk)
+
         i = len(self.trackers)
         for trk in reversed(self.trackers):
             if trk.last_observation.sum() < 0:

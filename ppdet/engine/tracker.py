@@ -29,7 +29,7 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_box
 from ppdet.modeling.mot.utils import MOTTimer, load_det_results, write_mot_results, save_vis_results
-from ppdet.modeling.mot.tracker import JDETracker, DeepSORTTracker, OCSORTTracker
+from ppdet.modeling.mot.tracker import JDETracker, DeepSORTTracker, OCSORTTracker, BOTSORTTracker
 from ppdet.modeling.architectures import YOLOX
 from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric, MCMOTMetric
 from ppdet.data.source.category import get_categories
@@ -399,6 +399,29 @@ class Tracker(object):
                 save_vis_results(data, frame_id, online_ids, online_tlwhs,
                                  online_scores, timer.average_time, show_image,
                                  save_dir, self.cfg.num_classes, self.ids2names)
+            elif isinstance(tracker, BOTSORTTracker):
+                # BOTSORT Tracker
+                online_targets = tracker.update(
+                    pred_dets_old, img=ori_image.numpy())
+                online_tlwhs = []
+                online_ids = []
+                online_scores = []
+                for t in online_targets:
+                    tlwh = t.tlwh
+                    tid = t.track_id
+                    tscore = t.score
+                    if tlwh[2] * tlwh[3] > 0:
+                        online_tlwhs.append(tlwh)
+                        online_ids.append(tid)
+                        online_scores.append(tscore)
+                timer.toc()
+                # save results
+                results[0].append(
+                    (frame_id + 1, online_tlwhs, online_scores, online_ids))
+                save_vis_results(data, frame_id, online_ids, online_tlwhs,
+                                 online_scores, timer.average_time, show_image,
+                                 save_dir, self.cfg.num_classes, self.ids2names)
+
             else:
                 raise ValueError(tracker)
             frame_id += 1

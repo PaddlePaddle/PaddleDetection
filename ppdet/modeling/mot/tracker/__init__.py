@@ -23,3 +23,4 @@ from .base_sde_tracker import *
 from .jde_tracker import *
 from .deepsort_tracker import *
 from .ocsort_tracker import *
+from .botsort_tracker import *

@@ -143,6 +143,12 @@ def argsparser():
         default=-1,
         help='Skip frames to speed up the process of getting mot results.')
     parser.add_argument(
+        '--warmup_frame',
+        type=int,
+        default=50,
+        help='Warmup frames to test speed of the process of getting mot results.'
+    )
+    parser.add_argument(
         "--do_entrance_counting",
         action='store_true',
         help="Whether counting the numbers of identifiers entering "
