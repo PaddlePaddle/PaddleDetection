@@ -1,0 +1,21 @@
+metric: COCO
+num_classes: 365
+
+TrainDataset:
+  !COCODataSet
+    image_dir: train
+    anno_path: annotations/zhiyuan_objv2_train.json
+    dataset_dir: dataset/objects365
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: val
+    anno_path: annotations/zhiyuan_objv2_val.json
+    dataset_dir: dataset/objects365
+    allow_empty: true
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/zhiyuan_objv2_val.json
+    dataset_dir: dataset/objects365/
