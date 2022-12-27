@@ -12,37 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import os
-import sys
-import copy
-import time
-
-import numpy as np
-from PIL import Image, ImageOps
-
-import paddle
-import paddle.distributed as dist
-from paddle.distributed import fleet
-from paddle import amp
-from paddle.static import InputSpec
-from ppdet.optimizer import ModelEMA
-
 from ppdet.core.workspace import create
-from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
-from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval
-from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric
-from ppdet.data.source.sniper_coco import SniperCOCODataSet
-from ppdet.data.source.category import get_categories
-import ppdet.utils.stats as stats
-from ppdet.utils import profiler
-
-from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator
-from .export_utils import _dump_infer_config, _prune_input_spec
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('ppdet.engine')
 
