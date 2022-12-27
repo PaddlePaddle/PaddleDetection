@@ -191,7 +191,7 @@ def get_dataset_path(path, annotation, image_dir):
             "Dataset {} is not valid for reason above, please check again.".
             format(osp.realpath(path)))
     else:
-        logger.WARNING(
+        logger.warning(
             "Dataset {} is not valid for reason above, try searching {} or "
             "downloading dataset...".format(osp.realpath(path), DATASET_HOME))
 
