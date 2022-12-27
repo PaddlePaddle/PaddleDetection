@@ -19,10 +19,10 @@ EvalReader:
 
 
 # ### remove comment below and run evaluate again to get 56.1 COCO for mAP(0.5:0.95)
-metric: COCO
-EvalDataset:
-  !COCODataSet
-    image_dir: VOCdevkit/VOC2007/JPEGImages
-    anno_path: voc_test.json
-    dataset_dir: dataset/voc
-    # wget https://bj.bcebos.com/v1/paddledet/data/voc.zip
+# metric: COCO
+# EvalDataset:
+#   !COCODataSet
+#     image_dir: VOCdevkit/VOC2007/JPEGImages
+#     anno_path: voc_test.json
+#     dataset_dir: dataset/voc
+#     # wget https://bj.bcebos.com/v1/paddledet/data/voc.zip
