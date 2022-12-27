@@ -31,7 +31,7 @@ logger = setup_logger(__name__)
 __all__ = ['visualize_results']
 
 
-@VISUALIZER.register
+@VISUALIZER.register()
 class DetVis(object):
     def __init__(self,
                  output_dir,

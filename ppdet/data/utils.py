@@ -52,7 +52,7 @@ class Compose(object):
         return data
 
 
-@COLLATEFN.register
+@COLLATEFN.register()
 class BatchCompose(Compose):
     def __init__(self, transforms, num_classes=80, collate_batch=True,
                  **kwargs):

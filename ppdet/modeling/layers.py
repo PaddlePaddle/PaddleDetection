@@ -505,7 +505,7 @@ class RCNNBox(object):
         return bboxes, scores
 
 
-@OPERATOR.register
+@OPERATOR.register()
 class MultiClassNMS(object):
     def __init__(self,
                  score_threshold=.05,

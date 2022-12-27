@@ -35,7 +35,7 @@ from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-@LRSCHEDULER.register
+@LRSCHEDULER.register()
 class CosineDecay(object):
     """
     Cosine learning rate decay
@@ -102,7 +102,7 @@ class CosineDecay(object):
             base_lr, T_max=max_iters, eta_min=min_lr)
 
 
-@LRSCHEDULER.register
+@LRSCHEDULER.register()
 class PiecewiseDecay(object):
     """
     Multi step learning rate decay
@@ -153,7 +153,7 @@ class PiecewiseDecay(object):
         return optimizer.lr.PiecewiseDecay(boundary, value)
 
 
-@LRSCHEDULER.register
+@LRSCHEDULER.register()
 class LinearWarmup(object):
     """
     Warm up learning rate linearly
@@ -188,7 +188,7 @@ class LinearWarmup(object):
         return boundary, value
 
 
-@LRSCHEDULER.register
+@LRSCHEDULER.register()
 class ExpWarmup(object):
     """
     Warm up learning rate in exponential mode
@@ -218,7 +218,7 @@ class ExpWarmup(object):
         return boundary, value
 
 
-@LRSCHEDULER.register
+@LRSCHEDULER.register()
 class LearningRate(object):
     """
     Learning Rate configuration

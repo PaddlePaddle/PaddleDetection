@@ -31,7 +31,7 @@ from .utils import (check_points_inside_bboxes, compute_max_iou_anchor,
 __all__ = ['ATSSAssigner']
 
 
-@OPERATOR.register
+@OPERATOR.register()
 class ATSSAssigner(nn.Layer):
     """Bridging the Gap Between Anchor-based and Anchor-free Detection
      via Adaptive Training Sample Selection

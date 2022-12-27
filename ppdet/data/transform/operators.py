@@ -60,7 +60,7 @@ registered_ops = []
 
 def register_op(cls):
     registered_ops.append(cls.__name__)
-    OPERATOR.register(cls)
+    OPERATOR.register()(cls)
     return cls
 
 

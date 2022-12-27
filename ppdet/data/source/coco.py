@@ -28,7 +28,7 @@ logger = setup_logger(__name__)
 __all__ = ['COCODataSet', 'SlicedCOCODataSet', 'SemiCOCODataSet']
 
 
-@DATASET.register
+@DATASET.register()
 class COCODataSet(DetDataset):
     """
     Load dataset with COCO format.
@@ -242,7 +242,7 @@ class COCODataSet(DetDataset):
         self.roidbs = records
 
 
-@DATASET.register
+@DATASET.register()
 class SlicedCOCODataSet(COCODataSet):
     """Sliced COCODataSet"""
 
@@ -364,7 +364,7 @@ class SlicedCOCODataSet(COCODataSet):
         self.roidbs = records
 
 
-@DATASET.register
+@DATASET.register()
 class SemiCOCODataSet(COCODataSet):
     """Semi-COCODataSet used for supervised and unsupervised dataSet"""
 

@@ -26,7 +26,7 @@ from .csp_pan import ConvBNLayer, Channel_T, DPModule
 __all__ = ['LCPAN']
 
 
-@NECK.register
+@NECK.register()
 class LCPAN(nn.Layer):
     """Path Aggregation Network with LCNet module.
     Args:

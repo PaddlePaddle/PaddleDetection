@@ -162,7 +162,7 @@ class SEModule(nn.Layer):
         return x
 
 
-@BACKBONE.register
+@BACKBONE.register()
 class LCNet(nn.Layer):
     def __init__(self, scale=1.0, feature_maps=[3, 4, 5], act='hard_swish'):
         super().__init__()

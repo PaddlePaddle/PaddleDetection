@@ -75,7 +75,7 @@ def varifocal_loss(pred,
     return loss
 
 
-@LOSS.register
+@LOSS.register()
 class VarifocalLoss(nn.Layer):
     def __init__(self,
                  use_sigmoid=True,

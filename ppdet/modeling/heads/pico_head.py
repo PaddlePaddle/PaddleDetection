@@ -58,7 +58,7 @@ class PicoSE(nn.Layer):
         return out
 
 
-@HEAD.register
+@HEAD.register()
 class PicoFeat(nn.Layer):
     """
     PicoFeat of PicoDet
@@ -415,7 +415,7 @@ class PicoHead(OTAVFLHead):
             return bbox_pred, bbox_num
 
 
-@HEAD.register
+@HEAD.register()
 class PicoHeadV2(GFLHead):
     """
     PicoHeadV2

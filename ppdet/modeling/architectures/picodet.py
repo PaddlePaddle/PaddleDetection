@@ -24,7 +24,7 @@ from .meta_arch import BaseArch
 __all__ = ['PicoDet']
 
 
-@MODEL.register
+@MODEL.register()
 class PicoDet(BaseArch):
     """
     Generalized Focal Loss network, see https://arxiv.org/abs/2006.04388

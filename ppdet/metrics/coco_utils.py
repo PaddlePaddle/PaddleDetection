@@ -32,7 +32,7 @@ from ppdet.metrics.map_utils import draw_pr_curve
 logger = setup_logger(__name__)
 
 
-@POSTPROCESS.register
+@POSTPROCESS.register()
 class COCOResultParser(object):
     def __init__(self, anno_path, bias=0, **kwargs):
         self.clsid2catid, _ = get_categories('COCO', anno_path)

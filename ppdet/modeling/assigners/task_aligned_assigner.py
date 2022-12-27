@@ -29,7 +29,7 @@ from .utils import (gather_topk_anchors, check_points_inside_bboxes,
 __all__ = ['TaskAlignedAssigner']
 
 
-@OPERATOR.register
+@OPERATOR.register()
 class TaskAlignedAssigner(nn.Layer):
     """TOOD: Task-aligned One-stage Object Detection
     """

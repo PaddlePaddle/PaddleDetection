@@ -71,7 +71,7 @@ class Metric(paddle.metric.Metric):
         pass
 
 
-@METRIC.register
+@METRIC.register()
 class COCOMetric(Metric):
     def __init__(self, anno_path, main_indicator='ap', **kwargs):
         self.main_indicator = main_indicator

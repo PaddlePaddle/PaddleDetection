@@ -30,7 +30,7 @@ from ppdet.data.utils import Compose
 logger = setup_logger(__name__)
 
 
-@DATASET.register
+@DATASET.register()
 class DetDataset(Dataset):
     """
     Load detection dataset.
@@ -141,7 +141,7 @@ def _make_dataset(dir):
     return images
 
 
-@DATASET.register
+@DATASET.register()
 class ImageFolder(DetDataset):
     def __init__(self,
                  dataset_dir=None,

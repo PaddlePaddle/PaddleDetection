@@ -65,7 +65,7 @@ class IouLoss(object):
         return loss_iou
 
 
-@LOSS.register
+@LOSS.register()
 class GIoULoss(object):
     """
     Generalized Intersection over Union, see https://arxiv.org/abs/1902.09630

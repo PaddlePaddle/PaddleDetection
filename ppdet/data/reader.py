@@ -39,7 +39,7 @@ logger = setup_logger('reader')
 MAIN_PID = os.getpid()
 
 
-@DATALOADER.register
+@DATALOADER.register()
 class BaseDataLoader(object):
     """
     Base DataLoader implementation for detection models
@@ -134,7 +134,7 @@ class BaseDataLoader(object):
         return self.__next__()
 
 
-@DATALOADER.register
+@DATALOADER.register()
 class TrainReader(BaseDataLoader):
     __shared__ = ['num_classes']
 
@@ -152,7 +152,7 @@ class TrainReader(BaseDataLoader):
             **kwargs)
 
 
-@DATALOADER.register
+@DATALOADER.register()
 class EvalReader(BaseDataLoader):
     __shared__ = ['num_classes']
 
@@ -170,7 +170,7 @@ class EvalReader(BaseDataLoader):
             **kwargs)
 
 
-@DATALOADER.register
+@DATALOADER.register()
 class TestReader(BaseDataLoader):
     __shared__ = ['num_classes']
 

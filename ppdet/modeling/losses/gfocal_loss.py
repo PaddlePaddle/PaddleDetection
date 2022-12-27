@@ -167,7 +167,7 @@ class QualityFocalLoss(nn.Layer):
         return loss
 
 
-@LOSS.register
+@LOSS.register()
 class DistributionFocalLoss(nn.Layer):
     """Distribution Focal Loss (DFL) is a variant of `Generalized Focal Loss:
     Learning Qualified and Distributed Bounding Boxes for Dense Object
