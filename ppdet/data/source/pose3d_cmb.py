@@ -68,7 +68,7 @@ class Pose3DDataset(DetDataset):
 
     def get_mask(self, mvm_percent=0.3):
         num_joints = self.num_joints
-        mjm_mask = np.ones((num_joints, 1)).astype(np.float)
+        mjm_mask = np.ones((num_joints, 1)).astype(np.float32)
         if self.test_mode == False:
             pb = np.random.random_sample()
             masked_num = int(
@@ -78,7 +78,7 @@ class Pose3DDataset(DetDataset):
                 np.arange(num_joints), replace=False, size=masked_num)
             mjm_mask[indices, :] = 0.0
 
-        mvm_mask = np.ones((10, 1)).astype(np.float)
+        mvm_mask = np.ones((10, 1)).astype(np.float32)
         if self.test_mode == False:
             num_vertices = 10
             pb = np.random.random_sample()

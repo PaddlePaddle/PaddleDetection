@@ -1,0 +1,67 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/faster_rcnn_r50_fpn.yml',
+  '_base_/faster_fpn_reader.yml',
+]
+pretrain_weights: https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_fpn_1x_coco.pdparams
+weights: output/faster_rcnn_r50_vd_fpn_1x_coco_cotuning_roadsign/model_final
+
+snapshot_epoch: 5
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  variant: d
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4
+
+epoch: 30
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1 
+    milestones: [8, 11]
+  - !LinearWarmup
+    start_factor: 0.1 
+    steps: 1000
+
+use_cot: True
+BBoxHead:
+  head: TwoFCHead
+  roi_extractor:
+    resolution: 7
+    sampling_ratio: 0
+    aligned: True
+  bbox_assigner: BBoxAssigner
+  cot_classes: 80
+  loss_cot: 
+    name: COTLoss
+    cot_lambda: 1
+    cot_scale: 1
+
+num_classes: 4
+metric: COCO
+map_type: integral
+
+TrainDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: annotations/train_shots10.json
+    dataset_dir: dataset/roadsign_coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: annotations/roadsign_valid.json
+    dataset_dir: dataset/roadsign_coco
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/roadsign_valid.json
+    dataset_dir: dataset/roadsign_coco
