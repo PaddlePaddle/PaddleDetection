@@ -91,6 +91,12 @@ elif [ ${MODE} = "benchmark_train" ];then
         cd ./dataset/ && tar -xf coco.tar
         ls ./coco/
         cd ../
+    elif [[ ${model_name} =~ "ppyoloe_r_crn_s_3x_spine_coco" ]];then
+        wget -nc -P ./dataset/spine_coco/ https://paddledet.bj.bcebos.com/data/tipc/spine_coco_tipc.tar --no-check-certificate
+        cd ./dataset/spine_coco/ && tar -xvf spine_coco_tipc.tar && mv -n spine_coco_tipc/* .
+        rm -rf spine_coco_tipc/ && cd ../../
+        cd ./ppdet/ext_op && eval "${python} setup.py install"
+        cd ../../
     else
         # prepare lite benchmark coco data
         wget -nc -P ./dataset/coco/ https://paddledet.bj.bcebos.com/data/coco_benchmark.tar --no-check-certificate
@@ -154,7 +160,7 @@ else
     # download spine_coco lite data
     wget -nc -P ./dataset/spine_coco/ https://paddledet.bj.bcebos.com/data/tipc/spine_coco_tipc.tar --no-check-certificate
     cd ./dataset/spine_coco/ && tar -xvf spine_coco_tipc.tar && mv -n spine_coco_tipc/* .
-    rm -rf spine_tipc/ && cd ../../
+    rm -rf spine_coco_tipc/ && cd ../../
     if [[ ${model_name} =~ "s2anet" ]]; then
         cd ./ppdet/ext_op && eval "${python} setup.py install"
         cd ../../

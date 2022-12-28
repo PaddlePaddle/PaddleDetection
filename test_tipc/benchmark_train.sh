@@ -183,7 +183,7 @@ fi
 
 
 
-if [[ ${model_name} =~ "higherhrnet" ]] || [[ ${model_name} =~ "hrnet" ]] || [[ ${model_name} =~ "tinypose" ]];then
+if [[ ${model_name} =~ "higherhrnet" ]] || [[ ${model_name} =~ "hrnet" ]] || [[ ${model_name} =~ "tinypose" ]] || [[ ${model_name} =~ "ppyoloe_r_crn_s_3x_spine_coco" ]] ;then
     echo "${model_name} run on full coco dataset"
     epoch=$(set_dynamic_epoch $device_num $epoch)
 else
