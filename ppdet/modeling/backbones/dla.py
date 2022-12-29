@@ -267,14 +267,15 @@ class DLA(nn.Layer):
 
     def forward(self, inputs):
         outs = []
-        im = inputs['image']
-        feats = self.base_layer(im)
+        feats = self.base_layer(inputs['image'])
 
-        if self.pre_img and 'pre_img' in inputs and inputs[
-                'pre_img'] is not None:
-            feats = feats + self.pre_img_layer(inputs['pre_img'])
-        if self.pre_hm and 'pre_hm' in inputs and inputs['pre_hm'] is not None:
-            feats = feats + self.pre_hm_layer(inputs['pre_hm'])
+        if self.pre_img and 'pre_images' in inputs and inputs[
+                'pre_images'] is not None:
+            feats = feats + self.pre_img_layer(inputs['pre_images'])
+
+        if self.pre_hm and 'pre_hms' in inputs and inputs[
+                'pre_hms'] is not None:
+            feats = feats + self.pre_hm_layer(inputs['pre_hms'])
 
         for i in range(self.num_levels):
             feats = getattr(self, 'level{}'.format(i))(feats)

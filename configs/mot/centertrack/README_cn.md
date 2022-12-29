@@ -11,16 +11,16 @@
 
 ### MOT17
 
-|      训练数据集     |  输入尺度  |  总batch_size  |  val MOTA  |  test MOTA  |     FPS   | 配置文件 |  下载链接|
-| :---------------: | :-------: | :------------: | :--------: | :---------: | :-------: | :----: | :-----: |
-| MOT17-half train |  544x960  |         32     |    -       |     -       |     -     |[config](./centertrack_dla34_70e_mot17half.yml) | [download](https://paddledet.bj.bcebos.com/models/mot/centertrack_dla34_70e_mot17half.pdparams) |
-| MOT17 train      |  544x960  |         32     |    -       |     -       |     -     |[config](./centertrack_dla34_70e_mot17.yml) | [download](https://paddledet.bj.bcebos.com/models/mot/centertrack_dla34_70e_mot17.pdparams) |
+|      训练数据集     |  输入尺度  |  总batch_size  |      val MOTA      |  test MOTA  |     FPS   | 配置文件 |  下载链接|
+| :---------------: | :-------: | :------------: | :----------------: | :---------: | :-------: | :----: | :-----: |
+| MOT17-half train |  544x960  |         32     |   66.9(MOT17-half)  |     -       |     -     |[config](./centertrack_dla34_70e_mot17half.yml) | [download](https://paddledet.bj.bcebos.com/models/mot/centertrack_dla34_70e_mot17half.pdparams) |
+| MOT17 train      |  544x960  |         32     |   74.5(MOT17-train) |    67.8     |     -     |[config](./centertrack_dla34_70e_mot17.yml) | [download](https://paddledet.bj.bcebos.com/models/mot/centertrack_dla34_70e_mot17.pdparams) |
 
 
 **注意:**
+  - CenterTrack默认使用2 GPUs总batch_size为32进行训练，请保持总batch_size为32去训练。
   - **MOT17-half train**是MOT17的train序列(共7个)每个视频的前一半帧的图片和标注用作训练集，而用每个视频的后一半帧组成的**MOT17-half val**作为验证集去评估，数据集可以从[此链接](https://bj.bcebos.com/v1/paddledet/data/mot/MOT17.zip)下载，并解压放在`dataset/mot/`文件夹下。
   - **MOT17 train**是MOT17的train序列(共7个)用作训练集，同时也用**MOT17 train**数据集去评估，**test MOTA**为交到[MOT Challenge官网](https://motchallenge.net)评测的结果。
-  - **mix_mot_ch**数据集，是MOT17、CrowdHuman组成的联合数据集，**mix_det**数据集是MOT17、CrowdHuman、Cityscapes、ETHZ组成的联合数据集，数据集整理的格式和目录可以参考[此链接](https://github.com/ifzhang/ByteTrack#data-preparation)，最终放置于`dataset/mot/`目录下。为了验证精度可以都用**MOT17-half val**数据集去评估。
 
 
 ## 快速开始
@@ -31,10 +31,11 @@
 # 单卡训练(不推荐)
 CUDA_VISIBLE_DEVICES=0 python tools/train.py -c configs/mot/centertrack/centertrack_dla34_70e_mot17half.yml --eval --amp
 # 多卡训练
-python -m paddle.distributed.launch --log_dir=centertrack_dla34_70e_mot17half/ --gpus 1,2,3,4,5,6,7 tools/train.py -c configs/mot/centertrack/centertrack_dla34_70e_mot17half.yml --eval --amp
+python -m paddle.distributed.launch --log_dir=centertrack_dla34_70e_mot17half/ --gpus 0,1 tools/train.py -c configs/mot/centertrack/centertrack_dla34_70e_mot17half.yml --eval --amp
 ```
 **注意:**
   - `--eval`是边训练边验证检测的mAP精度；`--amp`是混合精度训练避免溢出；
+  - CenterTrack默认使用2 GPUs总batch_size为32进行训练；
 
 
 ### 2.评估
@@ -48,8 +49,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mot/centertrack/centertra
 
 #### 2.2 评估跟踪效果
 
-注意首先需要取消配置文件中的`mot_metric: True`和`metric: MOT`的注释:
-
+注意首先需要**取消配置文件中的`mot_metric: True`和`metric: MOT`的注释**:
 ```python
 ### for train.py/eval.py/infer.py
 mot_metric: False
@@ -72,7 +72,18 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/centertrack/cente
 
 ### 3.预测
 
-使用单个GPU通过如下命令预测一个视频，并保存为视频
+预测是为跟踪模式预测，注意首先需要**取消配置文件中的`mot_metric: True`和`metric: MOT`的注释**:
+```python
+### for train.py/eval.py/infer.py
+mot_metric: False
+metric: COCO
+
+### for eval_mot.py/infer_mot_mot.py
+mot_metric: True # 默认是被注释的，评估跟踪需要为 True，会覆盖之前的 mot_metric: False
+metric: MOT # 默认是被注释的，评估跟踪需要使用 MOT，会覆盖之前的 metric: COCO
+```
+
+然后执行以下语句：
 ```bash
 # 下载demo视频
 wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/mot17_demo.mp4

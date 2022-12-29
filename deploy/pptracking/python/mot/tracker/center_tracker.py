@@ -19,15 +19,9 @@ import copy
 import numpy as np
 import sklearn
 
-from ppdet.core.workspace import register, serializable
-from ppdet.utils.logger import setup_logger
-logger = setup_logger(__name__)
-
 __all__ = ['CenterTracker']
 
 
-@register
-@serializable
 class CenterTracker(object):
     __shared__ = ['num_classes']
 

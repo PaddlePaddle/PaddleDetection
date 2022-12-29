@@ -246,6 +246,10 @@ Please refer to [ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree
 
 Please refer to [OC-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/ocsort)
 
+### CenterTrack
+
+Please refer to [CenterTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/centertrack)
+
 ### FairMOT/MC-FairMOT
 
 Please refer to [FairMOT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot)

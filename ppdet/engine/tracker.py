@@ -166,9 +166,7 @@ class Tracker(object):
             pred_ret = self.model(data)
 
             online_targets = tracker.update(pred_ret)
-            online_tlwhs = []
-            online_scores = []
-            online_ids = []
+            online_tlwhs, online_scores, online_ids = [], [], []
             for t in online_targets:
                 bbox = t['bbox']
                 tlwh = [bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]]
@@ -185,9 +183,7 @@ class Tracker(object):
             save_vis_results(data, frame_id, online_ids, online_tlwhs,
                              online_scores, timer.average_time, show_image,
                              save_dir, self.cfg.num_classes, self.ids2names)
-
             frame_id += 1
-
         return results, frame_id, timer.average_time, timer.calls
 
     def _eval_seq_jde(self,

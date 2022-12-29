@@ -6,7 +6,7 @@ _BASE_: [
 ]
 log_iter: 10
 snapshot_epoch: 5
-weights: output/centertrack_dla34_70e_mot17half/model_final
+weights: output/centertrack_dla34_70e_mot17/model_final
 
 
 ### for train.py/eval.py/infer.py
@@ -34,7 +34,7 @@ num_classes: 1
 TrainDataset:
   !COCODataSet
     dataset_dir: dataset/mot/MOT17
-    anno_path: annotations/train_half.json
+    anno_path: annotations/train.json
     image_dir: images/train
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
@@ -54,7 +54,7 @@ TestDataset:
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot/MOT17
-    data_root: images/half
+    data_root: images/train # set 'images/test' for MOTChallenge test
     keep_ori_im: True # set True if save visualization images or video, or used in SDE MOT
 
 # for MOT video inference

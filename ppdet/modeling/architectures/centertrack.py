@@ -53,8 +53,6 @@ class CenterTrack(BaseArch):
         self.mot_metric = mot_metric
 
         self.pre_images = None
-        self.pre_image_ori = None
-        self.pre_inds = None
         self.pre_hm = True
 
     @classmethod
@@ -103,35 +101,31 @@ class CenterTrack(BaseArch):
                 meta = self.inputs
 
                 for k in [
-                        'center', 'scale', 'out_height', 'out_width', 'height',
-                        'width', 'inp_height', 'inp_width', 'trans_input',
-                        'trans_output'
+                        'center', 'scale', 'out_height', 'out_width',
+                        'inp_height', 'inp_width', 'trans_input', 'trans_output'
                 ]:
                     meta[k] = meta[k].numpy()
 
-                # initializing tracker
-                pre_hms, pre_inds = None, None
-                # initialize the first frame
+                # initializing tracker for the first frame
                 if self.pre_images is None:
-                    print('Initialize tracking!')
                     self.pre_images = meta['image']
-                    self.tracker.init_track(meta['pre_dets']
-                                            if 'pre_dets' in meta else [])
-                meta['pre_images'] = self.pre_images
+                    self.tracker.init_track([])
 
+                meta['pre_images'] = self.pre_images
+                self.pre_images = meta['image']  # Note: update for next image
+
+                pre_hms, pre_inds = None, None
                 if self.pre_hm:
                     # render input heatmap from tracker status
-                    # pre_inds is not used in the current version.
-                    # We used pre_inds for learning an offset from previous image to
-                    # the current image.
-                    pre_hms, pre_inds = self._get_additional_inputs(
+                    # pre_inds is not used, it can learn an offset from previous
+                    # image to the current image.
+                    pre_hms, pre_inds = self.get_additional_inputs(
                         self.tracker.tracks, meta, with_hm=True)
                 meta['pre_hms'] = pre_hms
 
                 det_outs = self.detector(meta)
                 neck_feat = det_outs['neck_feat']
 
-                meta['pre_inds'] = pre_inds
                 dets = self.plugin_head(
                     neck_feat, meta, det_outs['bbox'], det_outs['bbox_inds'],
                     det_outs['topk_clses'], det_outs['topk_ys'],
@@ -139,8 +133,7 @@ class CenterTrack(BaseArch):
 
                 # convert the cropped and 4x downsampled output coordinate system
                 # back to the input image coordinate system
-                result = self.post_process(dets, meta)
-
+                result = self.tracking_post_process(dets, meta)
                 return result
 
     def get_pred(self):
@@ -149,18 +142,11 @@ class CenterTrack(BaseArch):
     def get_loss(self):
         return self._forward()
 
-    def _trans_bbox(self, bbox, trans, width, height):
-        '''
-        Transform bounding boxes according to image crop.
-        '''
-        bbox = np.array(copy.deepcopy(bbox), dtype=np.float32)
-        bbox[:2] = affine_transform(bbox[:2], trans)
-        bbox[2:] = affine_transform(bbox[2:], trans)
-        bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, width - 1)
-        bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, height - 1)
-        return bbox
+    def reset_tracking(self):
+        self.tracker.reset()
+        self.pre_images = None
 
-    def _get_additional_inputs(self, dets, meta, with_hm=True):
+    def get_additional_inputs(self, dets, meta, with_hm=True):
         '''
         Render input heatmap from previous trackings.
         '''
@@ -172,12 +158,12 @@ class CenterTrack(BaseArch):
 
         output_inds = []
         for det in dets:
-            if det['score'] < self.tracker.pre_thresh or det['active'] == 0:
+            if det['score'] < self.tracker.pre_thresh:  # or det['active'] == 0:
                 continue
-            bbox = self._trans_bbox(det['bbox'], trans_input, inp_width,
-                                    inp_height)
-            bbox_out = self._trans_bbox(det['bbox'], trans_output, out_width,
-                                        out_height)
+            bbox = affine_transform_bbox(det['bbox'], trans_input, inp_width,
+                                         inp_height)
+            bbox_out = affine_transform_bbox(det['bbox'], trans_output,
+                                             out_width, out_height)
             h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
             if (h > 0 and w > 0):
                 radius = gaussian_radius((math.ceil(h), math.ceil(w)))
@@ -187,7 +173,8 @@ class CenterTrack(BaseArch):
                     dtype=np.float32)
                 ct_int = ct.astype(np.int32)
                 if with_hm:
-                    draw_umich_gaussian(input_hm[0], ct_int, radius)
+                    input_hm[0] = draw_umich_gaussian(input_hm[0], ct_int,
+                                                      radius)
                 ct_out = np.array(
                     [(bbox_out[0] + bbox_out[2]) / 2,
                      (bbox_out[1] + bbox_out[3]) / 2],
@@ -199,26 +186,13 @@ class CenterTrack(BaseArch):
         output_inds = paddle.to_tensor(output_inds)
         return input_hm, output_inds
 
-    def post_process(self, dets, meta, scale=1):
-        dets = self.generic_post_process(
-            dets,
-            c=meta['center'],
-            s=meta['scale'],
-            h=meta['out_height'],
-            w=meta['out_width'])
-        return dets
-
-    def reset_tracking(self):
-        self.tracker.reset()
-        self.pre_images = None
-        self.pre_image_ori = None
-        self.pre_inds = None
-
-    def generic_post_process(self, dets, c, s, h, w):
+    def tracking_post_process(self, dets, meta):
         if not ('scores' in dets):
             return [{}], [{}]
 
         preds = []
+        c, s, h, w = meta['center'], meta['scale'], meta['out_height'], meta[
+            'out_width']
         trans = get_affine_transform(
             center=c[0],
             input_size=s[0],
@@ -251,6 +225,15 @@ class CenterTrack(BaseArch):
         return preds
 
 
+def affine_transform_bbox(bbox, trans, width, height):
+    bbox = np.array(copy.deepcopy(bbox), dtype=np.float32)
+    bbox[:2] = affine_transform(bbox[:2], trans)
+    bbox[2:] = affine_transform(bbox[2:], trans)
+    bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, width - 1)
+    bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, height - 1)
+    return bbox
+
+
 def gaussian_radius(det_size, min_overlap=0.7):
     height, width = det_size
     a1 = 1
@@ -278,16 +261,13 @@ def draw_umich_gaussian(heatmap, center, radius, k=1):
     gaussian = gaussian2D((diameter, diameter), sigma=diameter / 6)
 
     x, y = int(center[0]), int(center[1])
-
     height, width = heatmap.shape[0:2]
-
     left, right = min(x, radius), min(width - x, radius + 1)
     top, bottom = min(y, radius), min(height - y, radius + 1)
     masked_heatmap = heatmap[y - top:y + bottom, x - left:x + right]
     masked_gaussian = gaussian[radius - top:radius + bottom, radius - left:
                                radius + right]
-    if min(masked_gaussian.shape) > 0 and min(
-            masked_heatmap.shape) > 0:  # TODO debug
+    if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0:
         np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
     return heatmap
 

@@ -163,6 +163,8 @@ class CenterTrackHead(nn.Layer):
         return losses
 
     def generic_decode(self, head_outs, bboxes, bbox_inds, topk_ys, topk_xs):
+        topk_ys = paddle.floor(topk_ys)  # note: More accurate
+        topk_xs = paddle.floor(topk_xs)
         cts = paddle.concat([topk_xs, topk_ys], 1)
         ret = {'scores': bboxes[:, 1], 'clses': bboxes[:, 0], 'cts': cts}
 
@@ -177,23 +179,14 @@ class CenterTrackHead(nn.Layer):
             ltrb_amodal = _tranpose_and_gather_feat(ltrb_amodal, bbox_inds)
             bboxes_amodal = paddle.concat(
                 [
-                    topk_xs + ltrb_amodal[..., 0:1],
-                    topk_ys + ltrb_amodal[..., 1:2],
-                    topk_xs + ltrb_amodal[..., 2:3],
-                    topk_ys + ltrb_amodal[..., 3:4]
+                    topk_xs * 1.0 + ltrb_amodal[..., 0:1],
+                    topk_ys * 1.0 + ltrb_amodal[..., 1:2],
+                    topk_xs * 1.0 + ltrb_amodal[..., 2:3],
+                    topk_ys * 1.0 + ltrb_amodal[..., 3:4]
                 ],
                 axis=1)
             ret['bboxes_amodal'] = bboxes_amodal
             ret['bboxes'] = bboxes_amodal
-
-        if 'pre_inds' in head_outs and head_outs['pre_inds'] is not None:
-            width = head_outs['tracking'].shape[-1]
-            pre_inds = head_outs['pre_inds']
-            pre_ys = (pre_inds / width).int().float()
-            pre_xs = (pre_inds % width).int().float()
-
-            ret['pre_cts'] = paddle.concat(
-                [pre_xs.unsqueeze(2), pre_ys.unsqueeze(2)], axis=2)
 
         return ret
 
