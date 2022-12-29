@@ -3,10 +3,10 @@ _BASE_: [
   '../datasets/coco_detection.yml',
   '../runtime.yml',
   './_base_/ppyoloe_reader.yml',
-  './_base_/optimizer_base_30e.yml'
+  './_base_/optimizer_base_36e.yml'
 ]
 
-weights: output/ppyoloe_vit_base_csppan_cae_30e_coco/model_final
+weights: output/ppyoloe_vit_base_csppan_cae_36e_coco/model_final
 
 
 snapshot_epoch: 2

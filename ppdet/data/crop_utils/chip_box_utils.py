@@ -33,8 +33,10 @@ def intersection_over_box(chips, boxes):
 
     box_area = bbox_area(boxes)  # B
 
-    inter_x2y2 = np.minimum(np.expand_dims(chips, 1)[:, :, 2:], boxes[:, 2:])  # CxBX2
-    inter_x1y1 = np.maximum(np.expand_dims(chips, 1)[:, :, :2], boxes[:, :2])  # CxBx2
+    inter_x2y2 = np.minimum(np.expand_dims(chips, 1)[:, :, 2:],
+                            boxes[:, 2:])  # CxBX2
+    inter_x1y1 = np.maximum(np.expand_dims(chips, 1)[:, :, :2],
+                            boxes[:, :2])  # CxBx2
     inter_wh = inter_x2y2 - inter_x1y1
     inter_wh = np.clip(inter_wh, a_min=0, a_max=None)
     inter_area = inter_wh[:, :, 0] * inter_wh[:, :, 1]  # CxB
@@ -81,8 +83,9 @@ def transform_chip_box(gt_bbox: 'Gx4', boxes_idx: 'B', chip: '4'):
 def find_chips_to_cover_overlaped_boxes(iob, overlap_threshold):
     chip_ids, box_ids = np.nonzero(iob >= overlap_threshold)
     chip_id2overlap_box_num = np.bincount(chip_ids)  # 1d array
-    chip_id2overlap_box_num = np.pad(chip_id2overlap_box_num, (0, len(iob) - len(chip_id2overlap_box_num)),
-                                     constant_values=0)
+    chip_id2overlap_box_num = np.pad(
+        chip_id2overlap_box_num, (0, len(iob) - len(chip_id2overlap_box_num)),
+        constant_values=0)
 
     chosen_chip_ids = []
     while len(box_ids) > 0:
@@ -92,7 +95,8 @@ def find_chips_to_cover_overlaped_boxes(iob, overlap_threshold):
         chosen_chip_ids.append(max_count_chip_id)
 
         box_ids_in_cur_chip = box_ids[chip_ids == max_count_chip_id]
-        ids_not_in_cur_boxes_mask = np.logical_not(np.isin(box_ids, box_ids_in_cur_chip))
+        ids_not_in_cur_boxes_mask = np.logical_not(
+            np.isin(box_ids, box_ids_in_cur_chip))
         chip_ids = chip_ids[ids_not_in_cur_boxes_mask]
         box_ids = box_ids[ids_not_in_cur_boxes_mask]
     return chosen_chip_ids, chip_id2overlap_box_num
@@ -124,7 +128,7 @@ def nms(dets, thresh):
     order = scores.argsort()[::-1]
 
     ndets = dets.shape[0]
-    suppressed = np.zeros((ndets), dtype=np.int)
+    suppressed = np.zeros((ndets), dtype=np.int32)
 
     # nominal indices
     # _i, _j

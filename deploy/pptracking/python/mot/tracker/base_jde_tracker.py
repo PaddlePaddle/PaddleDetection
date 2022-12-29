@@ -95,14 +95,9 @@ class BaseTrack(object):
 
 
 class STrack(BaseTrack):
-    def __init__(self,
-                 tlwh,
-                 score,
-                 cls_id,
-                 buff_size=30,
-                 temp_feat=None):
+    def __init__(self, tlwh, score, cls_id, buff_size=30, temp_feat=None):
         # wait activate
-        self._tlwh = np.asarray(tlwh, dtype=np.float)
+        self._tlwh = np.asarray(tlwh, dtype=np.float32)
         self.score = score
         self.cls_id = cls_id
         self.track_len = 0

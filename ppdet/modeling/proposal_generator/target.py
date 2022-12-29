@@ -295,7 +295,7 @@ def polygons_to_mask(polygons, height, width):
     assert len(polygons) > 0, "COCOAPI does not support empty polygons"
     rles = mask_util.frPyObjects(polygons, height, width)
     rle = mask_util.merge(rles)
-    return mask_util.decode(rle).astype(np.bool)
+    return mask_util.decode(rle).astype(np.bool_)
 
 
 def rasterize_polygons_within_box(poly, box, resolution):
@@ -448,7 +448,7 @@ def libra_sample_via_interval(max_overlaps, full_set, num_expected, floor_thr,
             tmp_sampled_set = np.random.choice(
                 tmp_inds, size=per_num_expected, replace=False)
         else:
-            tmp_sampled_set = np.array(tmp_inds, dtype=np.int)
+            tmp_sampled_set = np.array(tmp_inds, dtype=np.int32)
         sampled_inds.append(tmp_sampled_set)
 
     sampled_inds = np.concatenate(sampled_inds)
@@ -509,13 +509,13 @@ def libra_sample_neg(max_overlaps,
                     size=num_expected_iou_sampling,
                     replace=False)
         else:
-            iou_sampled_inds = np.array(iou_sampling_neg_inds, dtype=np.int)
+            iou_sampled_inds = np.array(iou_sampling_neg_inds, dtype=np.int32)
         num_expected_floor = num_expected - len(iou_sampled_inds)
         if len(floor_neg_inds) > num_expected_floor:
             sampled_floor_inds = np.random.choice(
                 floor_neg_inds, size=num_expected_floor, replace=False)
         else:
-            sampled_floor_inds = np.array(floor_neg_inds, dtype=np.int)
+            sampled_floor_inds = np.array(floor_neg_inds, dtype=np.int32)
         sampled_inds = np.concatenate((sampled_floor_inds, iou_sampled_inds))
         if len(sampled_inds) < num_expected:
             num_extra = num_expected - len(sampled_inds)
