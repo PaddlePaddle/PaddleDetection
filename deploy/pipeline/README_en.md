@@ -140,3 +140,11 @@ Click to download the model, then unzip and save it in the `. /output_inference`
 - [A quick start](docs/tutorials/ppvehicle_mot_en.md)
 
 - [Customized development tutorials](../../docs/advanced_tutorials/customization/pphuman_mot_en.md)
+
+#### Vehicle Press Line
+
+- [A quick start](docs/tutorials/ppvehicle_press_en.md)
+
+#### Vehicle Retrograde
+
+- [A quick start](docs/tutorials/ppvehicle_retrograde_en.md)

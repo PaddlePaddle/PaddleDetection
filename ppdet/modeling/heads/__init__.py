@@ -37,6 +37,7 @@ from . import fcosr_head
 from . import ppyoloe_r_head
 from . import ld_gfl_head
 from . import yolof_head
+from . import ppyoloe_contrast_head
 from . import centertrack_head
 
 from .bbox_head import *
@@ -64,4 +65,5 @@ from .fcosr_head import *
 from .ld_gfl_head import *
 from .ppyoloe_r_head import *
 from .yolof_head import *
+from .ppyoloe_contrast_head import *
 from .centertrack_head import *

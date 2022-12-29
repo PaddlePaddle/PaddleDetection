@@ -21,7 +21,7 @@
       variant: d
       norm_type: bn
       freeze_at: 0
-      return_idx: [0,1,2,3]
+      return_idx: [1, 2, 3]
       num_stages: 4
       lr_mult_list: [0.05, 0.05, 0.1, 0.15]
   ```

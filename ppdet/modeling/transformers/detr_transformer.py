@@ -295,7 +295,7 @@ class DETRTransformer(nn.Layer):
     def _convert_attention_mask(self, mask):
         return (mask - 1.0) * 1e9
 
-    def forward(self, src, src_mask=None):
+    def forward(self, src, src_mask=None, *args, **kwargs):
         r"""
         Applies a Transformer model on the inputs.
 
@@ -325,8 +325,7 @@ class DETRTransformer(nn.Layer):
             src_mask = F.interpolate(src_mask.unsqueeze(0), size=(h, w))[0]
         else:
             src_mask = paddle.ones([bs, h, w])
-        pos_embed = self.position_embedding(src_mask).flatten(2).transpose(
-            [0, 2, 1])
+        pos_embed = self.position_embedding(src_mask).flatten(1, 2)
 
         if self.training:
             src_mask = self._convert_attention_mask(src_mask)

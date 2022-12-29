@@ -509,19 +509,21 @@ class DETRBBoxPostProcess(object):
             if scores.shape[1] > self.num_top_queries:
                 scores, index = paddle.topk(
                     scores, self.num_top_queries, axis=-1)
-                labels = paddle.stack(
-                    [paddle.gather(l, i) for l, i in zip(labels, index)])
-                bbox_pred = paddle.stack(
-                    [paddle.gather(b, i) for b, i in zip(bbox_pred, index)])
+                batch_ind = paddle.arange(
+                    end=scores.shape[0]).unsqueeze(-1).tile(
+                        [1, self.num_top_queries])
+                index = paddle.stack([batch_ind, index], axis=-1)
+                labels = paddle.gather_nd(labels, index)
+                bbox_pred = paddle.gather_nd(bbox_pred, index)
         else:
             scores, index = paddle.topk(
-                scores.reshape([logits.shape[0], -1]),
-                self.num_top_queries,
-                axis=-1)
-            labels = index % logits.shape[2]
-            index = index // logits.shape[2]
-            bbox_pred = paddle.stack(
-                [paddle.gather(b, i) for b, i in zip(bbox_pred, index)])
+                scores.flatten(1), self.num_top_queries, axis=-1)
+            labels = index % self.num_classes
+            index = index // self.num_classes
+            batch_ind = paddle.arange(end=scores.shape[0]).unsqueeze(-1).tile(
+                [1, self.num_top_queries])
+            index = paddle.stack([batch_ind, index], axis=-1)
+            bbox_pred = paddle.gather_nd(bbox_pred, index)
 
         bbox_pred = paddle.concat(
             [
@@ -650,7 +652,7 @@ def nms(dets, match_threshold=0.6, match_metric='iou'):
     order = scores.argsort()[::-1]
 
     ndets = dets.shape[0]
-    suppressed = np.zeros((ndets), dtype=np.int)
+    suppressed = np.zeros((ndets), dtype=np.int32)
 
     for _i in range(ndets):
         i = order[_i]

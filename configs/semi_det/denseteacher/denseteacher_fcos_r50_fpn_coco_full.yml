@@ -56,6 +56,7 @@ SemiTrainReader:
         object_sizes_boundary: [64, 128, 256, 512]
         center_sampling_radius: 1.5
         downsample_ratios: [8, 16, 32, 64, 128]
+        num_shift: 0.5
         norm_reg_targets: True
   unsup_batch_transforms:
     - Permute: {}
@@ -121,6 +122,7 @@ FCOSHead:
   prior_prob: 0.01
   norm_reg_targets: True
   centerness_on_reg: True
+  num_shift: 0.5
   fcos_loss:
     name: FCOSLoss
     loss_alpha: 0.25
@@ -132,7 +134,7 @@ FCOSHead:
     name: MultiClassNMS
     nms_top_k: 1000
     keep_top_k: 100
-    score_threshold: 0.05
+    score_threshold: 0.025
     nms_threshold: 0.6
 
 
