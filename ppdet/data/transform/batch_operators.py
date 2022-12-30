@@ -785,7 +785,7 @@ class Gt2Solov2Target(BaseOperator):
                 ins_label = []
                 grid_order = []
                 cate_label = np.zeros([num_grid, num_grid], dtype=np.int64)
-                ins_ind_label = np.zeros([num_grid**2], dtype=np.bool)
+                ins_ind_label = np.zeros([num_grid**2], dtype=np.bool_)
 
                 if num_ins == 0:
                     ins_label = np.zeros(
