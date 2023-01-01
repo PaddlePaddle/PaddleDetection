@@ -22,7 +22,7 @@ non-trivial when new architectures, such as Vision Transformer (ViT) models, arr
 **Notes:**
 - Model is trained on COCO train2017 dataset and evaluated on val2017 results of `mAP(IoU=0.5:0.95)
 - Base model is trained on 8x32G V100 GPU, large model on 8x80G A100
-- The above experiments are based on PaddlePaddle 2.2.2
+- The `Cascade RCNN` experiments are based on PaddlePaddle 2.2.2
 
 ## Citations
 ```
