@@ -17,6 +17,7 @@ non-trivial when new architectures, such as Vision Transformer (ViT) models, arr
 |:------:|:--------:|:--------------:|:--------------:|:--------------:|:------:|:------:|:--------:|
 | ViT-base | CAE | Cascade RCNN  | 1x | 1 | 52.7 | [config](./cascade_rcnn_vit_base_hrfpn_cae_1x_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/cascade_rcnn_vit_base_hrfpn_cae_1x_coco.pdparams) |
 | ViT-large | CAE | Cascade RCNN  | 1x | 1 | 55.7 | [config](./cascade_rcnn_vit_large_hrfpn_cae_1x_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/cascade_rcnn_vit_large_hrfpn_cae_1x_coco.pdparams) |
+| ViT-base | CAE | PP-YOLOE  | 36e | 2 | 52.2 | [config](./ppyoloe_vit_base_csppan_cae_36e_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_vit_base_csppan_cae_36e_coco.pdparams) |
 
 **Notes:**
 - Model is trained on COCO train2017 dataset and evaluated on val2017 results of `mAP(IoU=0.5:0.95)
