@@ -38,6 +38,7 @@ from . import bytetrack
 from . import yolox
 from . import yolof
 from . import pose3d_metro
+from . import queryinst
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -66,3 +67,4 @@ from .bytetrack import *
 from .yolox import *
 from .yolof import *
 from .pose3d_metro import *
+from .queryinst import *

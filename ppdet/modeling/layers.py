@@ -1312,6 +1312,83 @@ class MultiHeadAttention(nn.Layer):
         return out if len(outs) == 1 else tuple(outs)
 
 
+class MultiHeadAttentionV2(MultiHeadAttention):
+    """
+    This code is based on 'torch.nn.MultiheadAttention':
+    https://github.com/pytorch/pytorch/blob/release/1.8/torch/nn/modules/activation.py#L831
+    """
+    def __init__(self,
+                 embed_dim,
+                 num_heads,
+                 dropout=0.,
+                 kdim=None,
+                 vdim=None,
+                 need_weights=False):
+        super(MultiHeadAttentionV2, self).__init__(
+            embed_dim,
+            num_heads,
+            dropout,
+            kdim=kdim,
+            vdim=vdim,
+            need_weights=need_weights)
+
+    def compute_qkv(self, tensor, index):
+        tgt_len, bsz, embed_dim = tensor.shape
+        if self._qkv_same_embed_dim:
+            tensor = F.linear(
+                x=tensor,
+                weight=self.in_proj_weight[:, index * self.embed_dim:(index + 1)
+                                           * self.embed_dim],
+                bias=self.in_proj_bias[index * self.embed_dim:(index + 1) *
+                                       self.embed_dim]
+                if self.in_proj_bias is not None else None)
+        else:
+            tensor = getattr(self, self._type_list[index])(tensor)
+        tensor = tensor.reshape(
+            [tgt_len, bsz * self.num_heads, self.head_dim]).transpose([1, 0, 2])
+        return tensor
+
+    def forward(self, query, key=None, value=None, attn_mask=None):
+        key = query if key is None else key
+        value = query if value is None else value
+        tgt_len, bsz, embed_dim = query.shape
+
+        q, k, v = (self.compute_qkv(t, i)
+                   for i, t in enumerate([query, key, value]))
+
+        scaling = float(self.head_dim) ** -0.5
+        q = q * scaling
+
+        attn_output_weights = paddle.bmm(q, k.transpose([0, 2, 1]))
+
+        if attn_mask is not None:
+            attn_mask = _convert_attention_mask(
+                attn_mask, attn_output_weights.dtype)
+            attn_output_weights += attn_mask
+
+        attn_output_weights = F.softmax(attn_output_weights, axis=-1)
+        if self.dropout:
+            attn_output_weights = F.dropout(
+                attn_output_weights,
+                self.dropout,
+                training=self.training,
+                mode="upscale_in_train")
+
+        attn_output = paddle.bmm(attn_output_weights, v)
+        attn_output = attn_output.transpose([1, 0, 2])
+        attn_output = attn_output.reshape([tgt_len, bsz, embed_dim])
+
+        attn_output = self.out_proj(attn_output)
+
+        if self.need_weights:
+            attn_output_weights = attn_output_weights.reshape(
+                [bsz, self.num_heads, tgt_len, k.shape[1]])
+            attn_output_weights = attn_output_weights.sum(axis=1) / self.num_heads
+            return attn_output, attn_output_weights
+        else:
+            return attn_output, None
+
+
 @register
 class ConvMixer(nn.Layer):
     def __init__(

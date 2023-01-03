@@ -2100,13 +2100,14 @@ class Poly2Mask(BaseOperator):
 
     def apply(self, sample, context=None):
         assert 'gt_poly' in sample
-        im_h = sample['h']
-        im_w = sample['w']
+        im_h, im_w = sample['im_shape']
         masks = [
             self._poly2mask(gt_poly, im_h, im_w)
             for gt_poly in sample['gt_poly']
         ]
         sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+        del (sample['gt_poly'])
+
         return sample
 
 
@@ -2655,12 +2656,23 @@ class RandomShortSideResize(BaseOperator):
 class RandomSizeCrop(BaseOperator):
     """
     Cut the image randomly according to `min_size` and `max_size`
+    Args:
+        min_size (int): Min size for edges of cropped image. If it
+                        is set to smaller than length of the input image,
+                        the output will keep the origin length.
+        max_size (int): Max size for edges of cropped image. If it
+                        is set to larger than length of the input image,
+                        the output will keep the origin length.
+        keep_empty (bool): Whether to keep the cropped result with no object.
+                           If it is set to False, the no-object result will not
+                           be returned, replaced by the original input.
     """
 
-    def __init__(self, min_size, max_size):
+    def __init__(self, min_size, max_size, keep_empty=True):
         super(RandomSizeCrop, self).__init__()
         self.min_size = min_size
         self.max_size = max_size
+        self.keep_empty = keep_empty
 
         from paddle.vision.transforms.functional import crop as paddle_crop
         self.paddle_crop = paddle_crop
@@ -2690,17 +2702,20 @@ class RandomSizeCrop(BaseOperator):
         return i, j, th, tw
 
     def crop(self, sample, region):
-        image_shape = sample['image'].shape[:2]
-        sample['image'] = self.paddle_crop(sample['image'], *region)
-
         keep_index = None
-        # apply bbox
+        # apply bbox and check whether the cropped result is valid
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
-            sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], region)
-            bbox = sample['gt_bbox'].reshape([-1, 2, 2])
+            croped_bbox = self.apply_bbox(sample['gt_bbox'], region)
+            bbox = croped_bbox.reshape([-1, 2, 2])
             area = (bbox[:, 1, :] - bbox[:, 0, :]).prod(axis=1)
             keep_index = np.where(area > 0)[0]
-            sample['gt_bbox'] = sample['gt_bbox'][keep_index] if len(
+
+            if not self.keep_empty and len(keep_index) == 0:
+                # When keep_empty is set to False, cropped with no-object will
+                # not be used and return the origin content.
+                return sample
+
+            sample['gt_bbox'] = croped_bbox[keep_index] if len(
                 keep_index) > 0 else np.zeros(
                     [0, 4], dtype=np.float32)
             sample['gt_class'] = sample['gt_class'][keep_index] if len(
@@ -2715,17 +2730,24 @@ class RandomSizeCrop(BaseOperator):
                     keep_index) > 0 else np.zeros(
                         [0, 1], dtype=np.float32)
 
+        image_shape = sample['image'].shape[:2]
+        sample['image'] = self.paddle_crop(sample['image'], *region)
+        sample['im_shape'] = np.array(
+            sample['image'].shape[:2], dtype=np.float32)
+
         # apply polygon
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
             sample['gt_poly'] = self.apply_segm(sample['gt_poly'], region,
                                                 image_shape)
-            if keep_index is not None:
+            sample['gt_poly'] = np.array(sample['gt_poly'])
+            if keep_index is not None and len(keep_index) > 0:
                 sample['gt_poly'] = sample['gt_poly'][keep_index]
+            sample['gt_poly'] = sample['gt_poly'].tolist()
         # apply gt_segm
         if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
             i, j, h, w = region
             sample['gt_segm'] = sample['gt_segm'][:, i:i + h, j:j + w]
-            if keep_index is not None:
+            if keep_index is not None and len(keep_index) > 0:
                 sample['gt_segm'] = sample['gt_segm'][keep_index]
 
         return sample
@@ -2809,10 +2831,12 @@ class RandomSizeCrop(BaseOperator):
         return crop_segms
 
     def apply(self, sample, context=None):
-        h = random.randint(self.min_size,
-                           min(sample['image'].shape[0], self.max_size))
-        w = random.randint(self.min_size,
-                           min(sample['image'].shape[1], self.max_size))
+        h = random.randint(
+            min(sample['image'].shape[0], self.min_size),
+            min(sample['image'].shape[0], self.max_size) + 1)
+        w = random.randint(
+            min(sample['image'].shape[1], self.min_size),
+            min(sample['image'].shape[1], self.max_size) + 1)
 
         region = self.get_crop_params(sample['image'].shape[:2], [h, w])
         return self.crop(sample, region)

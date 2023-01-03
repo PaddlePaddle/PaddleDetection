@@ -43,7 +43,7 @@ __all__ = [
     'Gt2FCOSTarget',
     'Gt2TTFTarget',
     'Gt2Solov2Target',
-    'Gt2SparseRCNNTarget',
+    'Gt2SparseTarget',
     'PadMaskBatch',
     'Gt2GFLTarget',
     'Gt2CenterNetTarget',
@@ -912,27 +912,30 @@ class Gt2Solov2Target(BaseOperator):
 
 
 @register_op
-class Gt2SparseRCNNTarget(BaseOperator):
-    '''
-    Generate SparseRCNN targets by groud truth data
-    '''
-
-    def __init__(self):
-        super(Gt2SparseRCNNTarget, self).__init__()
+class Gt2SparseTarget(BaseOperator):
+    def __init__(self, use_padding_shape=True):
+        super(Gt2SparseTarget, self).__init__()
+        self.use_padding_shape = use_padding_shape
 
     def __call__(self, samples, context=None):
         for sample in samples:
-            im = sample["image"]
-            h, w = im.shape[1:3]
-            img_whwh = np.array([w, h, w, h], dtype=np.int32)
-            sample["img_whwh"] = img_whwh
-            if "scale_factor" in sample:
-                sample["scale_factor_wh"] = np.array(
-                    [sample["scale_factor"][1], sample["scale_factor"][0]],
-                    dtype=np.float32)
+            ori_h, ori_w = sample['h'], sample['w']
+            if self.use_padding_shape:
+                h, w = sample["image"].shape[1:3]
+                if "scale_factor" in sample:
+                    sf_w, sf_h = sample["scale_factor"][1], sample["scale_factor"][0]
+                    sample["scale_factor_whwh"] = np.array(
+                        [sf_w, sf_h, sf_w, sf_h], dtype=np.float32)
+                else:
+                    sample["scale_factor_whwh"] = np.array(
+                        [1.0, 1.0, 1.0, 1.0], dtype=np.float32)
             else:
-                sample["scale_factor_wh"] = np.array(
-                    [1.0, 1.0], dtype=np.float32)
+                h, w = round(sample['im_shape'][0]), round(sample['im_shape'][1])
+                sample["scale_factor_whwh"] = np.array(
+                    [w / ori_w, h / ori_h, w / ori_w, h / ori_h], dtype=np.float32)
+
+            sample["img_whwh"] = np.array([w, h, w, h], dtype=np.float32)
+            sample["ori_shape"] = np.array([ori_h, ori_w], dtype=np.int32)
 
         return samples
 
