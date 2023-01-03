@@ -250,6 +250,10 @@ class DINOTransformerDecoder(nn.Layer):
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
         self.return_intermediate = return_intermediate
+        self.norm = nn.LayerNorm(
+            hidden_dim,
+            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
+            bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
 
     def forward(self,
                 tgt,
@@ -258,7 +262,6 @@ class DINOTransformerDecoder(nn.Layer):
                 memory_spatial_shapes,
                 memory_level_start_index,
                 bbox_head,
-                score_head,
                 query_pos_head,
                 valid_ratios=None,
                 attn_mask=None,
@@ -269,10 +272,9 @@ class DINOTransformerDecoder(nn.Layer):
 
         output = tgt
         intermediate = []
-        dec_out_bboxes = []
-        dec_out_logits = []
+        inter_ref_bboxes = []
         for i, layer in enumerate(self.layers):
-            reference_points_input = reference_points.detach().unsqueeze(
+            reference_points_input = reference_points.unsqueeze(
                 2) * valid_ratios.tile([1, 1, 2]).unsqueeze(1)
             query_pos_embed = get_sine_pos_embed(
                 reference_points_input[..., 0, :], self.hidden_dim // 2)
@@ -282,27 +284,19 @@ class DINOTransformerDecoder(nn.Layer):
                            memory_spatial_shapes, memory_level_start_index,
                            attn_mask, memory_mask, query_pos_embed)
 
-            inter_ref_points = F.sigmoid(bbox_head[i](output) + inverse_sigmoid(
-                reference_points.detach()))
-            dec_logit = score_head[i](output)
+            inter_ref_bbox = F.sigmoid(bbox_head[i](output) + inverse_sigmoid(
+                reference_points))
 
             if self.return_intermediate:
-                intermediate.append(output)
-                if i == 0:
-                    dec_out_bboxes.append(inter_ref_points)
-                else:
-                    dec_out_bboxes.append(
-                        F.sigmoid(bbox_head[i](output) + inverse_sigmoid(
-                            reference_points)))
-                dec_out_logits.append(dec_logit)
+                intermediate.append(self.norm(output))
+                inter_ref_bboxes.append(inter_ref_bbox)
 
-            reference_points = inter_ref_points
+            reference_points = inter_ref_bbox.detach()
 
         if self.return_intermediate:
-            return paddle.stack(intermediate), paddle.stack(
-                dec_out_bboxes), paddle.stack(dec_out_logits)
+            return paddle.stack(intermediate), paddle.stack(inter_ref_bboxes)
 
-        return output, reference_points, dec_logit
+        return output, reference_points
 
 
 @register
@@ -325,7 +319,8 @@ class DINOTransformer(nn.Layer):
                  dim_feedforward=1024,
                  dropout=0.,
                  activation="relu",
-                 temperature=10000,
+                 pe_temperature=10000,
+                 pe_offset=-0.5,
                  num_denoising=100,
                  label_noise_ratio=0.5,
                  box_noise_scale=1.0,
@@ -342,6 +337,7 @@ class DINOTransformer(nn.Layer):
         self.num_classes = num_classes
         self.num_queries = num_queries
         self.eps = eps
+        self.num_decoder_layers = num_decoder_layers
 
         # backbone feature projection
         self._build_input_proj_layer(backbone_feat_channels)
@@ -370,10 +366,10 @@ class DINOTransformer(nn.Layer):
         # position embedding
         self.position_embedding = PositionEmbedding(
             hidden_dim // 2,
-            temperature=temperature,
+            temperature=pe_temperature,
             normalize=True if position_embed_type == 'sine' else False,
             embed_type=position_embed_type,
-            offset=-0.5)
+            offset=pe_offset)
         self.level_embed = nn.Embedding(num_levels, hidden_dim)
         # decoder embedding
         self.learnt_init_query = learnt_init_query
@@ -544,13 +540,28 @@ class DINOTransformer(nn.Layer):
             denoising_bbox)
 
         # decoder
-        _, dec_out_bboxes, dec_out_logits = self.decoder(
+        inter_feats, inter_ref_bboxes = self.decoder(
             target, init_ref_points, memory, spatial_shapes, level_start_index,
-            self.dec_bbox_head, self.dec_score_head, self.query_pos_head,
-            valid_ratios, attn_mask, mask_flatten)
+            self.dec_bbox_head, self.query_pos_head, valid_ratios, attn_mask,
+            mask_flatten)
+        out_bboxes = []
+        out_logits = []
+        for i in range(self.num_decoder_layers):
+            out_logits.append(self.dec_score_head[i](inter_feats[i]))
+            if i == 0:
+                out_bboxes.append(
+                    F.sigmoid(self.dec_bbox_head[i](inter_feats[i]) +
+                              inverse_sigmoid(init_ref_points)))
+            else:
+                out_bboxes.append(
+                    F.sigmoid(self.dec_bbox_head[i](inter_feats[i]) +
+                              inverse_sigmoid(inter_ref_bboxes[i - 1])))
 
-        return (dec_out_bboxes, dec_out_logits, enc_topk_bboxes,
-                enc_topk_logits, dn_meta)
+        out_bboxes = paddle.stack(out_bboxes)
+        out_logits = paddle.stack(out_logits)
+
+        return (out_bboxes, out_logits, enc_topk_bboxes, enc_topk_logits,
+                dn_meta)
 
     def _get_encoder_output_anchors(self,
                                     memory,

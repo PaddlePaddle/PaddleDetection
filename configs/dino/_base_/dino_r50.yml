@@ -29,7 +29,8 @@ DINOTransformer:
   dim_feedforward: 2048
   dropout: 0.0
   activation: relu
-  temperature: 20
+  pe_temperature: 20
+  pe_offset: 0.0
   num_denoising: 100
   label_noise_ratio: 0.5
   box_noise_scale: 1.0
