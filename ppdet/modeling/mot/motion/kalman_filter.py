@@ -63,10 +63,10 @@ class KalmanFilter(object):
         ndim, dt = 4, 1.
 
         # Create Kalman filter model matrices.
-        self._motion_mat = np.eye(2 * ndim, 2 * ndim)
+        self._motion_mat = np.eye(2 * ndim, 2 * ndim, dtype=np.float32)
         for i in range(ndim):
             self._motion_mat[i, ndim + i] = dt
-        self._update_mat = np.eye(ndim, 2 * ndim)
+        self._update_mat = np.eye(ndim, 2 * ndim, dtype=np.float32)
 
         # Motion and observation uncertainty are chosen relative to the current
         # state estimate. These weights control the amount of uncertainty in
@@ -100,7 +100,7 @@ class KalmanFilter(object):
             10 * self._std_weight_velocity * measurement[3]
         ]
         covariance = np.diag(np.square(std))
-        return mean, covariance
+        return mean, np.float32(covariance)
 
     def predict(self, mean, covariance):
         """
@@ -149,7 +149,7 @@ class KalmanFilter(object):
                 self._std_weight_position * mean[3], self._std_weight_position *
                 mean[3], 1e-1, self._std_weight_position * mean[3]
             ],
-            dtype=np.float64)
+            dtype=np.float32)
 
         return self._project(mean, covariance, std, self._update_mat)
 
