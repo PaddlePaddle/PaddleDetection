@@ -34,7 +34,6 @@ import paddle.distributed as dist
 from paddle.distributed import fleet
 from paddle.static import InputSpec
 from ppdet.optimizer import ModelEMA
-
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
@@ -59,6 +58,41 @@ __all__ = ['Trainer']
 
 MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT', 'ByteTrack']
 
+GLOBAL_PROFILE_STATE = False
+def add_nvtx_event(event_name, is_first=False, is_last=False):
+    global GLOBAL_PROFILE_STATE
+    if not GLOBAL_PROFILE_STATE:
+        return
+
+    if not is_first:
+        paddle.fluid.core.nvprof_nvtx_pop()
+    if not is_last:
+        paddle.fluid.core.nvprof_nvtx_push(event_name)
+
+def switch_profile(start, end, step_idx, event_name=None):
+    global GLOBAL_PROFILE_STATE
+    if step_idx > start and step_idx < end:
+        GLOBAL_PROFILE_STATE = True
+    else:
+        GLOBAL_PROFILE_STATE = False
+
+    #if step_idx == start:
+    #    paddle.utils.profiler.start_profiler("All", "Default")
+    #elif step_idx == end:
+    #    paddle.utils.profiler.stop_profiler("total", "tmp.profile")
+
+    if event_name is None:
+        event_name = str(step_idx)
+    if step_idx == start:
+        paddle.fluid.core.nvprof_start()
+        paddle.fluid.core.nvprof_enable_record_event()
+        paddle.fluid.core.nvprof_nvtx_push(event_name)
+    elif step_idx == end:
+        paddle.fluid.core.nvprof_nvtx_pop()
+        paddle.fluid.core.nvprof_stop()
+    elif step_idx > start and step_idx < end:
+        paddle.fluid.core.nvprof_nvtx_pop()
+        paddle.fluid.core.nvprof_nvtx_push(event_name)
 
 class Trainer(object):
     def __init__(self, cfg, mode='train'):
@@ -429,6 +463,7 @@ class Trainer(object):
             model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
         # enabel auto mixed precision mode
+        print("use_amp={}, amp_level={}".format(self.use_amp, self.amp_level))
         if self.use_amp:
             scaler = paddle.amp.GradScaler(
                 enable=self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu,
@@ -462,10 +497,13 @@ class Trainer(object):
         profiler_options = self.cfg.get('profiler_options', None)
 
         self._compose_callback.on_train_begin(self.status)
-
+        train_batch_size = self.cfg.TrainReader['batch_size']
         use_fused_allreduce_gradients = self.cfg[
             'use_fused_allreduce_gradients'] if 'use_fused_allreduce_gradients' in self.cfg else False
-
+        prof = paddle.profiler.Profiler(targets=[paddle.profiler.ProfilerTarget.CPU,paddle. paddle.profiler.ProfilerTarget.GPU],
+                                 scheduler=[60, 70],
+                                 timer_only=True)
+        prof.start() 
         for epoch_id in range(self.start_epoch, self.cfg.epoch):
             self.status['mode'] = 'train'
             self.status['epoch_id'] = epoch_id
@@ -477,6 +515,7 @@ class Trainer(object):
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
                 profiler.add_profiler_step(profiler_options)
+                #switch_profile(60, 70, step_id,"(iter is ={})".format(step_id))
                 self._compose_callback.on_step_begin(self.status)
                 data['epoch_id'] = epoch_id
 
@@ -507,12 +546,17 @@ class Trainer(object):
                                 custom_black_list=self.custom_black_list,
                                 level=self.amp_level):
                             # model forward
+                            add_nvtx_event("forward", is_first=True, is_last=False)
                             outputs = model(data)
+                            add_nvtx_event("loss", is_first=False, is_last=False)
                             loss = outputs['loss']
                         # model backward
+                        add_nvtx_event("scaleloss", is_first=False, is_last=False)
                         scaled_loss = scaler.scale(loss)
+                        add_nvtx_event("backward", is_first=False, is_last=False)
                         scaled_loss.backward()
                     # in dygraph mode, optimizer.minimize is equal to optimizer.step
+                    add_nvtx_event("optimizer", is_first=False, is_last=False)
                     scaler.minimize(self.optimizer, scaled_loss)
                 else:
                     if isinstance(
@@ -528,22 +572,31 @@ class Trainer(object):
                             list(model.parameters()), None)
                     else:
                         # model forward
+                        add_nvtx_event("forward", is_first=True, is_last=False)
                         outputs = model(data)
+                        add_nvtx_event("loss", is_first=False, is_last=False)
                         loss = outputs['loss']
                         # model backward
+                        add_nvtx_event("backward", is_first=False, is_last=False)
                         loss.backward()
+                    add_nvtx_event("optimizer", is_first=False, is_last=False)
                     self.optimizer.step()
+                add_nvtx_event("curr_lr", is_first=False, is_last=False)
                 curr_lr = self.optimizer.get_lr()
                 self.lr.step()
                 if self.cfg.get('unstructured_prune'):
                     self.pruner.step()
+                add_nvtx_event("clear_grad", is_first=False, is_last=False)
                 self.optimizer.clear_grad()
+                add_nvtx_event("status", is_first=False, is_last=False)
                 self.status['learning_rate'] = curr_lr
 
                 if self._nranks < 2 or self._local_rank == 0:
                     self.status['training_staus'].update(outputs)
 
                 self.status['batch_time'].update(time.time() - iter_tic)
+                add_nvtx_event("other", is_first=False, is_last=True)
+                prof.step(num_samples=train_batch_size)
                 self._compose_callback.on_step_end(self.status)
                 if self.use_ema:
                     self.ema.update()
@@ -596,7 +649,8 @@ class Trainer(object):
                 # reset original weight
                 self.model.set_dict(weight)
                 self.status.pop('weight')
-
+        prof.stop()
+        prof.summary(op_detail=True)
         self._compose_callback.on_train_end(self.status)
 
     def _eval_with_loader(self, loader):
