@@ -153,8 +153,9 @@ class LDGFLHead(GFLHead):
 
         num_total_pos = sum(gt_meta['pos_num'])
         try:
-            num_total_pos = paddle.distributed.all_reduce(num_total_pos.clone(
-            )) / paddle.distributed.get_world_size()
+            paddle.distributed.all_reduce(num_total_pos)
+            num_total_pos = paddle.clip(
+                num_total_pos / paddle.distributed.get_world_size(), min=1.)
         except:
             num_total_pos = max(num_total_pos, 1)
 
@@ -293,12 +294,7 @@ class LDGFLHead(GFLHead):
 
         avg_factor = sum(avg_factor)  # + 1e-6
         try:
-            avg_factor_clone = avg_factor.clone()
-            tmp_avg_factor = paddle.distributed.all_reduce(avg_factor_clone)
-            if tmp_avg_factor is not None:
-                avg_factor = tmp_avg_factor
-            else:
-                avg_factor = avg_factor_clone
+            paddle.distributed.all_reduce(avg_factor)
             avg_factor = paddle.clip(
                 avg_factor / paddle.distributed.get_world_size(), min=1)
         except:
