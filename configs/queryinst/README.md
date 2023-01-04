@@ -1,12 +1,12 @@
 # QueryInst: Instances as Queries
 
-
 ## Introduction
 
-QueryInst is a multi-stage end-to-end system that treats instances of interest as learnable queries, enabling query based object detectors, e.g., Sparse R-CNN, to have strong instance segmentation performance.
-The attributes of instances such as categories, bounding boxes, instance masks, and instance association embeddings are represented by queries in a unified manner.
-In QueryInst, a query is shared by both detection and segmentation via dynamic convolutions and driven by parallelly-supervised multi-stage learning.
-
+QueryInst is a multi-stage end-to-end system that treats instances of interest as learnable queries, enabling query
+based object detectors, e.g., Sparse R-CNN, to have strong instance segmentation performance. The attributes of
+instances such as categories, bounding boxes, instance masks, and instance association embeddings are represented by
+queries in a unified manner. In QueryInst, a query is shared by both detection and segmentation via dynamic convolutions
+and driven by parallelly-supervised multi-stage learning.
 
 ## Model Zoo
 
@@ -17,7 +17,7 @@ In QueryInst, a query is shared by both detection and segmentation via dynamic c
 | ResNet50-FPN |   3x    |    300    |     √      |     √      |    -    |    -    | -        | [config](./queryinst_r50_fpn_mscrop_3x_pro300_coco.yml) |
 
 - COCO val-set evaluation results.
-- These configurations are for 4-card training. 
+- These configurations are for 4-card training.
 
 Please modify these parameters as appropriate:
 

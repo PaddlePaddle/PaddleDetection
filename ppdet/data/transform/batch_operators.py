@@ -913,7 +913,7 @@ class Gt2Solov2Target(BaseOperator):
 
 @register_op
 class Gt2SparseTarget(BaseOperator):
-    def __init__(self, use_padding_shape=True):
+    def __init__(self, use_padding_shape=False):
         super(Gt2SparseTarget, self).__init__()
         self.use_padding_shape = use_padding_shape
 
