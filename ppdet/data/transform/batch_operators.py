@@ -48,6 +48,7 @@ __all__ = [
     'PadMaskBatch',
     'Gt2GFLTarget',
     'Gt2CenterNetTarget',
+    'Gt2CenterTrackTarget',
     'PadGT',
     'PadRGT',
 ]
@@ -170,6 +171,7 @@ class BatchRandomResize(BaseOperator):
 
 @register_op
 class Gt2YoloTarget(BaseOperator):
+    __shared__ = ['num_classes']
     """
     Generate YOLOv3 targets by groud truth data, this operator is only used in
     fine grained YOLOv3 loss mode
@@ -493,6 +495,7 @@ class Gt2FCOSTarget(BaseOperator):
 
 @register_op
 class Gt2GFLTarget(BaseOperator):
+    __shared__ = ['num_classes']
     """
     Generate GFocal loss targets by groud truth data
     """
@@ -1001,6 +1004,7 @@ class PadMaskBatch(BaseOperator):
 
 @register_op
 class Gt2CenterNetTarget(BaseOperator):
+    __shared__ = ['num_classes']
     """Gt2CenterNetTarget
     Genterate CenterNet targets by ground-truth
     Args:
@@ -1010,18 +1014,11 @@ class Gt2CenterNetTarget(BaseOperator):
         max_objs (int): The maximum objects detected, 128 by default.
     """
 
-    def __init__(self,
-                 down_ratio,
-                 num_classes=80,
-                 max_objs=128,
-                 add_tracking=False,
-                 add_ltrb_amodal=False):
+    def __init__(self, num_classes=80, down_ratio=4, max_objs=128):
         super(Gt2CenterNetTarget, self).__init__()
-        self.down_ratio = down_ratio
         self.nc = num_classes
+        self.down_ratio = down_ratio
         self.max_objs = max_objs
-        self.add_tracking = add_tracking
-        self.add_ltrb_amodal = add_ltrb_amodal
 
     def __call__(self, sample, context=None):
         input_h, input_w = sample['image'].shape[1:]
@@ -1035,10 +1032,6 @@ class Gt2CenterNetTarget(BaseOperator):
         reg = np.zeros((self.max_objs, 2), dtype=np.float32)
         ind = np.zeros((self.max_objs), dtype=np.int64)
         reg_mask = np.zeros((self.max_objs), dtype=np.int32)
-        if self.add_tracking:
-            tr = np.zeros((self.max_objs, 2), dtype=np.float32)
-        if self.add_ltrb_amodal:
-            ltrb_amodal = np.zeros((self.max_objs, 4), dtype=np.float32)
         cat_spec_wh = np.zeros((self.max_objs, self.nc * 2), dtype=np.float32)
         cat_spec_mask = np.zeros((self.max_objs, self.nc * 2), dtype=np.int32)
 
@@ -1071,13 +1064,6 @@ class Gt2CenterNetTarget(BaseOperator):
                 reg[i] = ct - ct_int
                 ind[i] = ct_int[1] * output_w + ct_int[0]
                 reg_mask[i] = 1
-                # if self.add_tracking:
-                #     # pre_ct = 
-                #     tr[i] = pre_ct - ct_int
-                if self.add_ltrb_amodal:
-                    ltrb_amodal[i] = \
-                        bbox_amodal[0] - ct_int[0], bbox_amodal[1] - ct_int[1], \
-                        bbox_amodal[2] - ct_int[0], bbox_amodal[3] - ct_int[1]
                 cat_spec_wh[i, cls * 2:cls * 2 + 2] = wh[i]
                 cat_spec_mask[i, cls * 2:cls * 2 + 2] = 1
                 gt_det.append([
@@ -1097,10 +1083,6 @@ class Gt2CenterNetTarget(BaseOperator):
         sample['heatmap'] = hm
         sample['size'] = wh
         sample['offset'] = reg
-        if self.add_tracking:
-            sample['tracking'] = tr
-        if self.add_ltrb_amodal:
-            sample['ltrb_amodal'] = ltrb_amodal
         return sample
 
 
@@ -1209,3 +1191,175 @@ class PadRGT(BaseOperator):
                                num_gt)
 
         return samples
+
+
+@register_op
+class Gt2CenterTrackTarget(BaseOperator):
+    __shared__ = ['num_classes']
+    """Gt2CenterTrackTarget
+    Genterate CenterTrack targets by ground-truth
+    Args:
+        num_classes (int): The number of classes, 1 by default.
+        down_ratio (int): The down sample ratio between output feature and 
+                          input image.
+        max_objs (int): The maximum objects detected, 256 by default.
+    """
+
+    def __init__(self,
+                 num_classes=1,
+                 down_ratio=4,
+                 max_objs=256,
+                 hm_disturb=0.05,
+                 lost_disturb=0.4,
+                 fp_disturb=0.1,
+                 pre_hm=True,
+                 add_tracking=True,
+                 add_ltrb_amodal=True):
+        super(Gt2CenterTrackTarget, self).__init__()
+        self.nc = num_classes
+        self.down_ratio = down_ratio
+        self.max_objs = max_objs
+
+        self.hm_disturb = hm_disturb
+        self.lost_disturb = lost_disturb
+        self.fp_disturb = fp_disturb
+        self.pre_hm = pre_hm
+        self.add_tracking = add_tracking
+        self.add_ltrb_amodal = add_ltrb_amodal
+
+    def _get_pre_dets(self, input_h, input_w, trans_input_pre, gt_bbox_pre,
+                      gt_class_pre, gt_track_id_pre):
+        hm_h, hm_w = input_h, input_w
+        reutrn_hm = self.pre_hm
+        pre_hm = np.zeros(
+            (1, hm_h, hm_w), dtype=np.float32) if reutrn_hm else None
+        pre_cts, track_ids = [], []
+
+        for i, (
+                bbox, cls, track_id
+        ) in enumerate(zip(gt_bbox_pre, gt_class_pre, gt_track_id_pre)):
+            cls = int(cls)
+            bbox[:2] = affine_transform(bbox[:2], trans_input_pre)
+            bbox[2:] = affine_transform(bbox[2:], trans_input_pre)
+            bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, hm_w - 1)
+            bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, hm_h - 1)
+            h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
+            max_rad = 1
+            if (h > 0 and w > 0):
+                radius = gaussian_radius((math.ceil(h), math.ceil(w)), 0.7)
+                radius = max(0, int(radius))
+                max_rad = max(max_rad, radius)
+                ct = np.array(
+                    [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2],
+                    dtype=np.float32)
+                ct0 = ct.copy()
+                conf = 1
+
+                ct[0] = ct[0] + np.random.randn() * self.hm_disturb * w
+                ct[1] = ct[1] + np.random.randn() * self.hm_disturb * h
+                conf = 1 if np.random.rand() > self.lost_disturb else 0
+
+                ct_int = ct.astype(np.int32)
+                if conf == 0:
+                    pre_cts.append(ct / self.down_ratio)
+                else:
+                    pre_cts.append(ct0 / self.down_ratio)
+
+                track_ids.append(track_id)
+                if reutrn_hm:
+                    draw_umich_gaussian(pre_hm[0], ct_int, radius, k=conf)
+
+                if np.random.rand() < self.fp_disturb and reutrn_hm:
+                    ct2 = ct0.copy()
+                    # Hard code heatmap disturb ratio, haven't tried other numbers.
+                    ct2[0] = ct2[0] + np.random.randn() * 0.05 * w
+                    ct2[1] = ct2[1] + np.random.randn() * 0.05 * h
+                    ct2_int = ct2.astype(np.int32)
+                    draw_umich_gaussian(pre_hm[0], ct2_int, radius, k=conf)
+        return pre_hm, pre_cts, track_ids
+
+    def __call__(self, sample, context=None):
+        input_h, input_w = sample['image'].shape[1:]
+        output_h = input_h // self.down_ratio
+        output_w = input_w // self.down_ratio
+        gt_bbox = sample['gt_bbox']
+        gt_class = sample['gt_class']
+
+        # init
+        hm = np.zeros((self.nc, output_h, output_w), dtype=np.float32)
+        wh = np.zeros((self.max_objs, 2), dtype=np.float32)
+        reg = np.zeros((self.max_objs, 2), dtype=np.float32)
+        ind = np.zeros((self.max_objs), dtype=np.int64)
+        reg_mask = np.zeros((self.max_objs), dtype=np.int32)
+        if self.add_tracking:
+            tr = np.zeros((self.max_objs, 2), dtype=np.float32)
+        if self.add_ltrb_amodal:
+            ltrb_amodal = np.zeros((self.max_objs, 4), dtype=np.float32)
+
+        trans_output = get_affine_transform(
+            center=sample['center'],
+            input_size=[sample['scale'], sample['scale']],
+            rot=0,
+            output_size=[output_w, output_h])
+
+        pre_hm, pre_cts, track_ids = self._get_pre_dets(
+            input_h, input_w, sample['trans_input'], sample['pre_gt_bbox'],
+            sample['pre_gt_class'], sample['pre_gt_track_id'])
+
+        for i, (bbox, cls) in enumerate(zip(gt_bbox, gt_class)):
+            cls = int(cls)
+            rect = np.array(
+                [[bbox[0], bbox[1]], [bbox[0], bbox[3]], [bbox[2], bbox[3]],
+                 [bbox[2], bbox[1]]],
+                dtype=np.float32)
+            for t in range(4):
+                rect[t] = affine_transform(rect[t], trans_output)
+                bbox[:2] = rect[:, 0].min(), rect[:, 1].min()
+                bbox[2:] = rect[:, 0].max(), rect[:, 1].max()
+
+            bbox_amodal = copy.deepcopy(bbox)
+            bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, output_w - 1)
+            bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, output_h - 1)
+
+            h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
+            if h > 0 and w > 0:
+                radius = gaussian_radius((math.ceil(h), math.ceil(w)), 0.7)
+                radius = max(0, int(radius))
+                ct = np.array(
+                    [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2],
+                    dtype=np.float32)
+                ct_int = ct.astype(np.int32)
+
+                # get hm,wh,reg,ind,ind_mask
+                draw_umich_gaussian(hm[cls], ct_int, radius)
+                wh[i] = 1. * w, 1. * h
+                reg[i] = ct - ct_int
+                ind[i] = ct_int[1] * output_w + ct_int[0]
+                reg_mask[i] = 1
+                if self.add_tracking:
+                    if sample['gt_track_id'][i] in track_ids:
+                        pre_ct = pre_cts[track_ids.index(sample['gt_track_id'][
+                            i])]
+                        tr[i] = pre_ct - ct_int
+
+                if self.add_ltrb_amodal:
+                    ltrb_amodal[i] = \
+                        bbox_amodal[0] - ct_int[0], bbox_amodal[1] - ct_int[1], \
+                        bbox_amodal[2] - ct_int[0], bbox_amodal[3] - ct_int[1]
+
+        new_sample = {'image': sample['image']}
+        new_sample['index'] = ind
+        new_sample['index_mask'] = reg_mask
+        new_sample['heatmap'] = hm
+        new_sample['size'] = wh
+        new_sample['offset'] = reg
+        if self.add_tracking:
+            new_sample['tracking'] = tr
+        if self.add_ltrb_amodal:
+            new_sample['ltrb_amodal'] = ltrb_amodal
+
+        new_sample['pre_image'] = sample['pre_image']
+        new_sample['pre_hm'] = pre_hm
+
+        del sample
+        return new_sample

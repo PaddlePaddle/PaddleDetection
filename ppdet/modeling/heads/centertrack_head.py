@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from .centernet_head import ConvLayer
+from ..keypoint_utils import get_affine_transform
 
 __all__ = ['CenterTrackHead']
 
@@ -189,6 +191,51 @@ class CenterTrackHead(nn.Layer):
             ret['bboxes'] = bboxes_amodal
 
         return ret
+
+    def tracking_post_process(self, dets, meta, out_thresh):
+        if not ('scores' in dets):
+            return [{}], [{}]
+
+        preds = []
+        c, s = meta['center'].numpy(), meta['scale'].numpy()
+        h, w = meta['out_height'].numpy(), meta['out_width'].numpy()
+        trans = get_affine_transform(
+            center=c[0],
+            input_size=s[0],
+            rot=0,
+            output_size=[w[0], h[0]],
+            shift=(0., 0.),
+            inv=True).astype(np.float32)
+
+        for j in range(len(dets['scores'])):
+            if dets['scores'][j] < out_thresh:
+                break
+            item = {}
+            item['score'] = dets['scores'][j]
+            item['class'] = int(dets['clses'][j]) + 1
+            item['ct'] = transform_preds_with_trans(
+                dets['cts'][j].reshape([1, 2]), trans).reshape(2)
+
+            if 'tracking' in dets:
+                tracking = transform_preds_with_trans(
+                    (dets['tracking'][j] + dets['cts'][j]).reshape([1, 2]),
+                    trans).reshape(2)
+                item['tracking'] = tracking - item['ct']
+
+            if 'bboxes' in dets:
+                bbox = transform_preds_with_trans(
+                    dets['bboxes'][j].reshape([2, 2]), trans).reshape(4)
+                item['bbox'] = bbox
+
+            preds.append(item)
+        return preds
+
+
+def transform_preds_with_trans(coords, trans):
+    target_coords = np.ones((coords.shape[0], 3), np.float32)
+    target_coords[:, :2] = coords
+    target_coords = np.dot(trans, target_coords.transpose()).transpose()
+    return target_coords[:, :2]
 
 
 def _tranpose_and_gather_feat(feat, bbox_inds):

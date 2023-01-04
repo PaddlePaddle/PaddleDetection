@@ -269,13 +269,12 @@ class DLA(nn.Layer):
         outs = []
         feats = self.base_layer(inputs['image'])
 
-        if self.pre_img and 'pre_images' in inputs and inputs[
-                'pre_images'] is not None:
-            feats = feats + self.pre_img_layer(inputs['pre_images'])
+        if self.pre_img and 'pre_image' in inputs and inputs[
+                'pre_image'] is not None:
+            feats = feats + self.pre_img_layer(inputs['pre_image'])
 
-        if self.pre_hm and 'pre_hms' in inputs and inputs[
-                'pre_hms'] is not None:
-            feats = feats + self.pre_hm_layer(inputs['pre_hms'])
+        if self.pre_hm and 'pre_hm' in inputs and inputs['pre_hm'] is not None:
+            feats = feats + self.pre_hm_layer(inputs['pre_hm'])
 
         for i in range(self.num_levels):
             feats = getattr(self, 'level{}'.format(i))(feats)

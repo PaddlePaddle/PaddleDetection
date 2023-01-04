@@ -283,6 +283,11 @@ class Permute(BaseOperator):
         im = sample['image']
         im = im.transpose((2, 0, 1))
         sample['image'] = im
+
+        if 'pre_image' in sample:
+            pre_im = sample['pre_image']
+            pre_im = pre_im.transpose((2, 0, 1))
+            sample['pre_image'] = pre_im
         return sample
 
 
@@ -305,6 +310,9 @@ class Lighting(BaseOperator):
     def apply(self, sample, context=None):
         alpha = np.random.normal(scale=self.alphastd, size=(3, ))
         sample['image'] += np.dot(self.eigvec, self.eigval * alpha)
+
+        if 'pre_image' in sample:
+            sample['pre_image'] += np.dot(self.eigvec, self.eigval * alpha)
         return sample
 
 
@@ -403,6 +411,20 @@ class NormalizeImage(BaseOperator):
             im -= mean
             im /= std
         sample['image'] = im
+
+        if 'pre_image' in sample:
+            pre_im = sample['pre_image']
+            pre_im = pre_im.astype(np.float32, copy=False)
+            if self.is_scale:
+                scale = 1.0 / 255.0
+                pre_im *= scale
+
+            if self.norm_type == 'mean_std':
+                mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
+                std = np.array(self.std)[np.newaxis, np.newaxis, :]
+                pre_im -= mean
+                pre_im /= std
+            sample['pre_image'] = pre_im
         return sample
 
 
@@ -2844,8 +2866,6 @@ class WarpAffine(BaseOperator):
     def apply(self, sample, context=None):
         img = sample['image']
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-        if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
-            return sample
 
         h, w = img.shape[:2]
 
@@ -2875,14 +2895,12 @@ class WarpAffine(BaseOperator):
             sample.update({
                 'center': c,
                 'scale': s,
-                'height': h,
-                'width': w,
                 'out_height': out_h,
                 'out_width': out_w,
                 'inp_height': input_h,
                 'inp_width': input_w,
                 'trans_input': trans_input,
-                'trans_output': trans_output
+                'trans_output': trans_output,
             })
         return sample
 
@@ -2899,11 +2917,13 @@ class FlipWarpAffine(BaseOperator):
                  shift=0.1,
                  flip=0.5,
                  is_scale=True,
-                 use_random=True):
+                 use_random=True,
+                 add_pre_img=False):
         """FlipWarpAffine
         1. Random Crop
         2. Flip the image horizontal
-        3. Warp affine the image 
+        3. Warp affine the image
+        4. (Optinal) Add previous image
         """
         super(FlipWarpAffine, self).__init__()
         self.keep_res = keep_res
@@ -2916,14 +2936,22 @@ class FlipWarpAffine(BaseOperator):
         self.flip = flip
         self.is_scale = is_scale
         self.use_random = use_random
+        self.add_pre_img = add_pre_img
 
-    def apply(self, sample, context=None):
+    def __call__(self, samples, context=None):
+        if self.add_pre_img:
+            assert isinstance(samples, Sequence) and len(samples) == 2
+            sample, pre_sample = samples[0], samples[1]
+        else:
+            sample = samples
+
         img = sample['image']
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
             return sample
 
         h, w = img.shape[:2]
+        flipped = 0
 
         if self.keep_res:
             input_h = (h | self.pad) + 1
@@ -2959,18 +2987,50 @@ class FlipWarpAffine(BaseOperator):
                 oldx2 = gt_bbox[:, 2].copy()
                 gt_bbox[:, 0] = w - oldx2 - 1
                 gt_bbox[:, 2] = w - oldx1 - 1
+                flipped = 1
             sample['gt_bbox'] = gt_bbox
 
         trans_input = get_affine_transform(c, s, 0, [input_w, input_h])
-        if not self.use_random:
-            img = cv2.resize(img, (w, h))
         inp = cv2.warpAffine(
             img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR)
         if self.is_scale:
             inp = (inp.astype(np.float32) / 255.)
+
         sample['image'] = inp
         sample['center'] = c
         sample['scale'] = s
+
+        if self.add_pre_img:
+            sample['trans_input'] = trans_input
+
+            # previous image, use same aug trans_input as current image
+            pre_img = pre_sample['image']
+            pre_img = cv2.cvtColor(pre_img, cv2.COLOR_RGB2BGR)
+            if flipped:
+                pre_img = pre_img[:, ::-1, :].copy()
+            pre_inp = cv2.warpAffine(
+                pre_img,
+                trans_input, (input_w, input_h),
+                flags=cv2.INTER_LINEAR)
+            if self.is_scale:
+                pre_inp = (pre_inp.astype(np.float32) / 255.)
+            sample['pre_image'] = pre_inp
+
+            # if empty gt_bbox
+            if 'gt_bbox' in pre_sample and len(pre_sample['gt_bbox']) == 0:
+                return sample
+            pre_gt_bbox = pre_sample['gt_bbox']
+            if flipped:
+                pre_oldx1 = pre_gt_bbox[:, 0].copy()
+                pre_oldx2 = pre_gt_bbox[:, 2].copy()
+                pre_gt_bbox[:, 0] = w - pre_oldx1 - 1
+                pre_gt_bbox[:, 2] = w - pre_oldx2 - 1
+            sample['pre_gt_bbox'] = pre_gt_bbox
+
+            sample['pre_gt_class'] = pre_sample['gt_class']
+            sample['pre_gt_track_id'] = pre_sample['gt_track_id']
+            del pre_sample
+
         return sample
 
 
@@ -3012,18 +3072,28 @@ class CenterRandColor(BaseOperator):
         img_mean *= (1 - alpha)
         img += img_mean
 
-    def __call__(self, sample, context=None):
-        img = sample['image']
-        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    def apply(self, sample, context=None):
         functions = [
             self.apply_brightness,
             self.apply_contrast,
             self.apply_saturation,
         ]
+
+        img = sample['image']
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         distortions = np.random.permutation(functions)
         for func in distortions:
             img = func(img, img_gray)
         sample['image'] = img
+
+        if 'pre_image' in sample:
+            pre_img = sample['pre_image']
+            pre_img_gray = cv2.cvtColor(pre_img, cv2.COLOR_BGR2GRAY)
+            pre_distortions = np.random.permutation(functions)
+            for func in pre_distortions:
+                pre_img = func(pre_img, pre_img_gray)
+            sample['pre_image'] = pre_img
+
         return sample
 
 
