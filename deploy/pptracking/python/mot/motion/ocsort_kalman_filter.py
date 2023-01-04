@@ -22,6 +22,27 @@ from numpy.linalg import inv
 use_numba = True
 try:
     import numba as nb
+
+    @nb.njit(fastmath=True, cache=True)
+    def nb_predict(x, F, P, Q):
+        x = dot(F, x)
+        P = dot(dot(F, P), F.T) + Q
+        return x, P
+
+    @nb.njit(fastmath=True, cache=True)
+    def nb_update(x, z, H, P, R, _I):
+
+        y = z - np.dot(H, x)
+        PHT = dot(P, H.T)
+
+        S = dot(H, PHT) + R
+        K = dot(PHT, inv(S))
+
+        x = x + dot(K, y)
+
+        I_KH = _I - dot(K, H)
+        P = dot(dot(I_KH, P), I_KH.T) + dot(dot(K, R), K.T)
+        return x, P
 except:
     use_numba = False
     print(
@@ -46,25 +67,19 @@ class OCSORTKalmanFilter:
 
     def predict(self):
         if use_numba:
-            self.x, self.P = self._predict(self.x, self.F, self.P, self.Q)
+            self.x, self.P = nb_predict(self.x, self.F, self.P, self.Q)
         else:
             self.x = dot(self.F, self.x)
             self.P = dot(dot(self.F, self.P), self.F.T) + self.Q
-
-    @staticmethod
-    @nb.njit(fastmath=True, cache=True)
-    def _predict(x, F, P, Q):
-        x = dot(F, x)
-        P = dot(dot(F, P), F.T) + Q
-        return x, P
 
     def update(self, z):
 
         if z is None:
             return
+
         if use_numba:
-            self.x, self.P = self._update(self.x, z, self.H, self.P, self.R,
-                                          self._I)
+            self.x, self.P = nb_update(self.x, z, self.H, self.P, self.R,
+                                       self._I)
         else:
             y = z - np.dot(self.H, self.x)
             PHT = dot(self.P, self.H.T)
@@ -76,19 +91,3 @@ class OCSORTKalmanFilter:
 
             I_KH = self._I - dot(K, self.H)
             self.P = dot(dot(I_KH, self.P), I_KH.T) + dot(dot(K, self.R), K.T)
-
-    @staticmethod
-    @nb.njit(fastmath=True, cache=True)
-    def _update(x, z, H, P, R, _I):
-
-        y = z - np.dot(H, x)
-        PHT = dot(P, H.T)
-
-        S = dot(H, PHT) + R
-        K = dot(PHT, inv(S))
-
-        x = x + dot(K, y)
-
-        I_KH = _I - dot(K, H)
-        P = dot(dot(I_KH, P), I_KH.T) + dot(dot(K, R), K.T)
-        return x, P

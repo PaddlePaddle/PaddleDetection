@@ -21,6 +21,29 @@ import scipy.linalg
 use_numba = True
 try:
     import numba as nb
+
+    @nb.njit(fastmath=True, cache=True)
+    def nb_project(mean, covariance, std, _update_mat):
+        innovation_cov = np.diag(np.square(std))
+        mean = np.dot(_update_mat, mean)
+        covariance = np.dot(np.dot(_update_mat, covariance), _update_mat.T)
+        return mean, covariance + innovation_cov
+
+    @nb.njit(fastmath=True, cache=True)
+    def nb_multi_predict(mean, covariance, motion_cov, motion_mat):
+        mean = np.dot(mean, motion_mat.T)
+        left = np.dot(motion_mat, covariance)
+        covariance = np.dot(left, motion_mat.T) + motion_cov
+        return mean, covariance
+
+    @nb.njit(fastmath=True, cache=True)
+    def nb_update(mean, covariance, proj_mean, proj_cov, measurement, meas_mat):
+        kalman_gain = np.linalg.solve(proj_cov, (covariance @meas_mat.T).T).T
+        innovation = measurement - proj_mean
+        mean = mean + innovation @kalman_gain.T
+        covariance = covariance - kalman_gain @proj_cov @kalman_gain.T
+        return mean, covariance
+
 except:
     use_numba = False
     print(
@@ -158,7 +181,7 @@ class KalmanFilter(object):
             dtype=np.float32)
 
         if use_numba:
-            return self._project(mean, covariance, std, self._update_mat)
+            return nb_project(mean, covariance, std, self._update_mat)
 
         innovation_cov = np.diag(np.square(std))
 
@@ -167,15 +190,15 @@ class KalmanFilter(object):
                                           self._update_mat.T))
         return mean, covariance + innovation_cov
 
-    @staticmethod
-    @nb.njit(fastmath=True, cache=True)
-    def _project(mean, covariance, std, _update_mat):
-        innovation_cov = np.diag(np.square(std))
+    # @staticmethod
+    # @nb.njit(fastmath=True, cache=True)
+    # def _project(mean, covariance, std, _update_mat):
+    #     innovation_cov = np.diag(np.square(std))
 
-        mean = np.dot(_update_mat, mean)
-        covariance = np.dot(np.dot(_update_mat, covariance), _update_mat.T)
+    #     mean = np.dot(_update_mat, mean)
+    #     covariance = np.dot(np.dot(_update_mat, covariance), _update_mat.T)
 
-        return mean, covariance + innovation_cov
+    #     return mean, covariance + innovation_cov
 
     def multi_predict(self, mean, covariance):
         """
@@ -204,11 +227,12 @@ class KalmanFilter(object):
         sqr = np.square(np.r_[std_pos, std_vel]).T
 
         if use_numba:
+
             means = []
             covariances = []
             for i in range(len(mean)):
-                a, b = self._multi_predict(mean[i], covariance[i],
-                                           np.diag(sqr[i]), self._motion_mat)
+                a, b = nb_multi_predict(mean[i], covariance[i],
+                                        np.diag(sqr[i]), self._motion_mat)
                 means.append(a)
                 covariances.append(b)
             return np.asarray(means), np.asarray(covariances)
@@ -224,15 +248,15 @@ class KalmanFilter(object):
 
         return mean, covariance
 
-    @staticmethod
-    @nb.njit(fastmath=True, cache=True)
-    def _multi_predict(mean, covariance, motion_cov, motion_mat):
+    # @staticmethod
+    # @nb.njit(fastmath=True, cache=True)
+    # def _multi_predict(mean, covariance, motion_cov, motion_mat):
 
-        mean = np.dot(mean, motion_mat.T)
-        left = np.dot(motion_mat, covariance)
-        covariance = np.dot(left, motion_mat.T) + motion_cov
+    #     mean = np.dot(mean, motion_mat.T)
+    #     left = np.dot(motion_mat, covariance)
+    #     covariance = np.dot(left, motion_mat.T) + motion_cov
 
-        return mean, covariance
+    #     return mean, covariance
 
     def update(self, mean, covariance, measurement):
         """
@@ -251,8 +275,9 @@ class KalmanFilter(object):
         projected_mean, projected_cov = self.project(mean, covariance)
 
         if use_numba:
-            return self._update(mean, covariance, projected_mean, projected_cov,
-                                measurement, self._update_mat)
+
+            return nb_update(mean, covariance, projected_mean, projected_cov,
+                             measurement, self._update_mat)
 
         kalman_gain = np.linalg.solve(projected_cov,
                                       (covariance @self._update_mat.T).T).T
@@ -261,14 +286,14 @@ class KalmanFilter(object):
         covariance = covariance - kalman_gain @projected_cov @kalman_gain.T
         return mean, covariance
 
-    @staticmethod
-    @nb.njit(fastmath=True, cache=True)
-    def _update(mean, covariance, proj_mean, proj_cov, measurement, meas_mat):
-        kalman_gain = np.linalg.solve(proj_cov, (covariance @meas_mat.T).T).T
-        innovation = measurement - proj_mean
-        mean = mean + innovation @kalman_gain.T
-        covariance = covariance - kalman_gain @proj_cov @kalman_gain.T
-        return mean, covariance
+    # @staticmethod
+    # @nb.njit(fastmath=True, cache=True)
+    # def _update(mean, covariance, proj_mean, proj_cov, measurement, meas_mat):
+    #     kalman_gain = np.linalg.solve(proj_cov, (covariance @meas_mat.T).T).T
+    #     innovation = measurement - proj_mean
+    #     mean = mean + innovation @kalman_gain.T
+    #     covariance = covariance - kalman_gain @proj_cov @kalman_gain.T
+    #     return mean, covariance
 
     def gating_distance(self,
                         mean,
