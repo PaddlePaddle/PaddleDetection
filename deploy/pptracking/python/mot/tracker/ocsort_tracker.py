@@ -14,6 +14,7 @@
 """
 This code is based on https://github.com/noahcao/OC_SORT/blob/master/trackers/ocsort_tracker/ocsort.py
 """
+
 import time
 import numpy as np
 from ..matching.ocsort_matching import associate, linear_assignment, iou_batch, associate_only_iou

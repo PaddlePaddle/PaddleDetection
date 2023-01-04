@@ -67,7 +67,7 @@ OCSORTTracker:
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
-    data_root: MOT17/images/half
+    data_root: MOT17_test/images/half
     keep_ori_im: True # set as True in DeepSORT and ByteTrack
 
 TestMOTDataset:

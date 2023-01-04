@@ -18,4 +18,3 @@ lap
 motmetrics
 sklearn==0.0
 filterpy
-numba

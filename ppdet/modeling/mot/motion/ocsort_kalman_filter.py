@@ -1,17 +1,36 @@
+# Copyright (c) 2023 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This code is based on https://github.com/danbochman/SORT/blob/danny_opencv/kalman_filter.py
+"""
+
 import numpy as np
 from numpy import dot, zeros, eye
 from numpy.linalg import inv
-import numba as nb
+
+use_numba = True
+try:
+    import numba as nb
+except:
+    use_numba = False
+    print(
+        'Warning: Unable to use numba in PP-Tracking, please install numba, for example(python3.7): `pip install numba==0.56.4`'
+    )
+    pass
 
 
 class OCSORTKalmanFilter:
-    '''
-    Kalman filtering, also known as linear quadratic estimation (LQE), is an algorithm that uses a series of measurements
-    observed over time, containing statistical noise and other inaccuracies,
-    and produces estimates of unknown variables that tend to be more accurate than those based on a single measurement
-    alone, by estimating a joint probability distribution over the variables for each time frame.
-    '''
-
     def __init__(self, dim_x, dim_z):
         self.dim_x = dim_x
         self.dim_z = dim_z
@@ -23,16 +42,14 @@ class OCSORTKalmanFilter:
         self.R = eye(dim_z)
         self.M = zeros((dim_z, dim_z))
 
-        self._I = eye(
-            dim_x
-        )  # This helps the I matrix to always be compatible to the state vector's dim
+        self._I = eye(dim_x)
 
     def predict(self):
-        '''
-        Predict next state (prior) using the Kalman filter state propagation
-        equations.
-        '''
-        self.x, self.P = self._predict(self.x, self.F, self.P, self.Q)
+        if use_numba:
+            self.x, self.P = self._predict(self.x, self.F, self.P, self.Q)
+        else:
+            self.x = dot(self.F, self.x)
+            self.P = dot(dot(self.F, self.P), self.F.T) + self.Q
 
     @staticmethod
     @nb.njit(fastmath=True, cache=True)
@@ -42,32 +59,36 @@ class OCSORTKalmanFilter:
         return x, P
 
     def update(self, z):
-        '''
-        At the time step k, this update step computes the posterior mean x and covariance P
-        of the system state given a new measurement z.
-        '''
+
         if z is None:
             return
-        self.x, self.P = self._update(self.x, z, self.H, self.P, self.R,
-                                      self._I)
+        if use_numba:
+            self.x, self.P = self._update(self.x, z, self.H, self.P, self.R,
+                                          self._I)
+        else:
+            y = z - np.dot(self.H, self.x)
+            PHT = dot(self.P, self.H.T)
+
+            S = dot(self.H, PHT) + self.R
+            K = dot(PHT, inv(S))
+
+            self.x = self.x + dot(K, y)
+
+            I_KH = self._I - dot(K, self.H)
+            self.P = dot(dot(I_KH, self.P), I_KH.T) + dot(dot(K, self.R), K.T)
 
     @staticmethod
     @nb.njit(fastmath=True, cache=True)
     def _update(x, z, H, P, R, _I):
-        # y = z - Hx (Residual between measurement and prediction)
+
         y = z - np.dot(H, x)
         PHT = dot(P, H.T)
 
-        # S = HPH' + R (Project system uncertainty into measurement space)
         S = dot(H, PHT) + R
-
-        # K = PH'S^-1  (map system uncertainty into Kalman gain)
         K = dot(PHT, inv(S))
 
-        # x = x + Ky  (predict new x with residual scaled by the Kalman gain)
         x = x + dot(K, y)
 
-        # P = (I-KH)P
         I_KH = _I - dot(K, H)
         P = dot(dot(I_KH, P), I_KH.T) + dot(dot(K, R), K.T)
         return x, P

@@ -17,7 +17,16 @@ This code is based on https://github.com/nwojke/deep_sort/blob/master/deep_sort/
 
 import numpy as np
 import scipy.linalg
-import numba as nb
+
+use_numba = True
+try:
+    import numba as nb
+except:
+    use_numba = False
+    print(
+        'Warning: Unable to use numba in PP-Tracking, please install numba, for example(python3.7): `pip install numba==0.56.4`'
+    )
+    pass
 
 __all__ = ['KalmanFilter']
 """
@@ -148,7 +157,15 @@ class KalmanFilter(object):
             ],
             dtype=np.float32)
 
-        return self._project(mean, covariance, std, self._update_mat)
+        if use_numba:
+            return self._project(mean, covariance, std, self._update_mat)
+
+        innovation_cov = np.diag(np.square(std))
+
+        mean = np.dot(self._update_mat, mean)
+        covariance = np.linalg.multi_dot((self._update_mat, covariance,
+                                          self._update_mat.T))
+        return mean, covariance + innovation_cov
 
     @staticmethod
     @nb.njit(fastmath=True, cache=True)
@@ -186,14 +203,26 @@ class KalmanFilter(object):
         ])
         sqr = np.square(np.r_[std_pos, std_vel]).T
 
-        means = []
-        covariances = []
+        if use_numba:
+            means = []
+            covariances = []
+            for i in range(len(mean)):
+                a, b = self._multi_predict(mean[i], covariance[i],
+                                           np.diag(sqr[i]), self._motion_mat)
+                means.append(a)
+                covariances.append(b)
+            return np.asarray(means), np.asarray(covariances)
+
+        motion_cov = []
         for i in range(len(mean)):
-            a, b = self._multi_predict(mean[i], covariance[i],
-                                       np.diag(sqr[i]), self._motion_mat)
-            means.append(a)
-            covariances.append(b)
-        return np.asarray(means), np.asarray(covariances)
+            motion_cov.append(np.diag(sqr[i]))
+        motion_cov = np.asarray(motion_cov)
+
+        mean = np.dot(mean, self._motion_mat.T)
+        left = np.dot(self._motion_mat, covariance).transpose((1, 0, 2))
+        covariance = np.dot(left, self._motion_mat.T) + motion_cov
+
+        return mean, covariance
 
     @staticmethod
     @nb.njit(fastmath=True, cache=True)
@@ -221,8 +250,16 @@ class KalmanFilter(object):
         """
         projected_mean, projected_cov = self.project(mean, covariance)
 
-        return self._update(mean, covariance, projected_mean, projected_cov,
-                            measurement, self._update_mat)
+        if use_numba:
+            return self._update(mean, covariance, projected_mean, projected_cov,
+                                measurement, self._update_mat)
+
+        kalman_gain = np.linalg.solve(projected_cov,
+                                      (covariance @self._update_mat.T).T).T
+        innovation = measurement - projected_mean
+        mean = mean + innovation @kalman_gain.T
+        covariance = covariance - kalman_gain @projected_cov @kalman_gain.T
+        return mean, covariance
 
     @staticmethod
     @nb.njit(fastmath=True, cache=True)
