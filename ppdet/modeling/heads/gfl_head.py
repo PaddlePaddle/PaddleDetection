@@ -311,8 +311,9 @@ class GFLHead(nn.Layer):
                                                    num_level_anchors)
         num_total_pos = sum(gt_meta['pos_num'])
         try:
-            num_total_pos = paddle.distributed.all_reduce(num_total_pos.clone(
-            )) / paddle.distributed.get_world_size()
+            paddle.distributed.all_reduce(num_total_pos)
+            num_total_pos = paddle.clip(
+                num_total_pos / paddle.distributed.get_world_size(), min=1)
         except:
             num_total_pos = max(num_total_pos, 1)
 
