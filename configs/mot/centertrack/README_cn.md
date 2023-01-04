@@ -133,7 +133,11 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/centertrack/c
 注意首先应在`deploy/python/tracker_config.yml`中设置`type: CenterTracker`。
 
 ```bash
-python deploy/python/mot_centertrack_infer.py --model_dir=output_inference/centertrack_dla34_70e_mot17half/ --tracker_config=deploy/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --save_mot_txts
+# 预测某个视频
+# wget https://bj.bcebos.com/v1/paddledet/data/mot/demo/mot17_demo.mp4
+python deploy/python/mot_centertrack_infer.py --model_dir=output_inference/centertrack_dla34_70e_mot17half/ --tracker_config=deploy/python/tracker_config.yml --video_file=mot17_demo.mp4 --device=GPU --save_images=True --save_mot_txts
+# 预测图片文件夹
+python deploy/python/mot_centertrack_infer.py --model_dir=output_inference/centertrack_dla34_70e_mot17half/ --tracker_config=deploy/python/tracker_config.yml --image_dir=mot17_demo/ --device=GPU --save_images=True --save_mot_txts
 ```
 
 **注意:**

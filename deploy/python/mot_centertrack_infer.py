@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import os
+import copy
+import math
 import time
 import yaml
 import cv2
@@ -21,9 +23,11 @@ from collections import defaultdict
 import paddle
 
 from benchmark_utils import PaddleInferBenchmark
-from preprocess import decode_image
+from utils import gaussian_radius, gaussian2D, draw_umich_gaussian
+from preprocess import preprocess, decode_image, WarpAffine, NormalizeImage, Permute
 from utils import argsparser, Timer, get_current_memory_mb
 from infer import Detector, get_test_images, print_arguments, bench_log, PredictConfig
+from keypoint_preprocess import get_affine_transform
 
 # add python path
 import sys
@@ -33,6 +37,28 @@ sys.path.insert(0, parent_path)
 from pptracking.python.mot import CenterTracker
 from pptracking.python.mot.utils import MOTTimer, write_mot_results
 from pptracking.python.mot.visualize import plot_tracking
+
+
+def transform_preds_with_trans(coords, trans):
+    target_coords = np.ones((coords.shape[0], 3), np.float32)
+    target_coords[:, :2] = coords
+    target_coords = np.dot(trans, target_coords.transpose()).transpose()
+    return target_coords[:, :2]
+
+
+def affine_transform(pt, t):
+    new_pt = np.array([pt[0], pt[1], 1.]).T
+    new_pt = np.dot(t, new_pt)
+    return new_pt[:2]
+
+
+def affine_transform_bbox(bbox, trans, width, height):
+    bbox = np.array(copy.deepcopy(bbox), dtype=np.float32)
+    bbox[:2] = affine_transform(bbox[:2], trans)
+    bbox[2:] = affine_transform(bbox[2:], trans)
+    bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, width - 1)
+    bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, height - 1)
+    return bbox
 
 
 class CenterTrack(Detector):
@@ -104,23 +130,137 @@ class CenterTrack(Detector):
             vertical_ratio=vertical_ratio,
             track_thresh=track_thresh,
             pre_thresh=pre_thresh)
+    
+        self.pre_image = None
+
+    def get_additional_inputs(self, dets, meta, with_hm=True):
+        # Render input heatmap from previous trackings.
+        trans_input = meta['trans_input']
+        inp_width, inp_height = int(meta['inp_width']), int(meta['inp_height'])
+        input_hm = np.zeros((1, inp_height, inp_width), dtype=np.float32)
+
+        for det in dets:
+            if det['score'] < self.tracker.pre_thresh:
+                continue
+            bbox = affine_transform_bbox(det['bbox'], trans_input, inp_width,
+                                         inp_height)
+            h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
+            if (h > 0 and w > 0):
+                radius = gaussian_radius(
+                    (math.ceil(h), math.ceil(w)), min_overlap=0.7)
+                radius = max(0, int(radius))
+                ct = np.array(
+                    [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2],
+                    dtype=np.float32)
+                ct_int = ct.astype(np.int32)
+                if with_hm:
+                    input_hm[0] = draw_umich_gaussian(input_hm[0], ct_int,
+                                                      radius)
+        if with_hm:
+            input_hm = input_hm[np.newaxis]
+        return input_hm
+
+    def preprocess(self, image_list):
+        preprocess_ops = []
+        for op_info in self.pred_config.preprocess_infos:
+            new_op_info = op_info.copy()
+            op_type = new_op_info.pop('type')
+            preprocess_ops.append(eval(op_type)(**new_op_info))
+
+        assert len(image_list) == 1, 'MOT only support bs=1'
+        im_path = image_list[0]
+        im, im_info = preprocess(im_path, preprocess_ops)
+        #inputs = create_inputs(im, im_info)
+        inputs = {}
+        inputs['image'] = np.array((im, )).astype('float32')
+        inputs['im_shape'] = np.array(
+            (im_info['im_shape'], )).astype('float32')
+        inputs['scale_factor'] = np.array(
+            (im_info['scale_factor'], )).astype('float32')
+        
+        inputs['trans_input'] = im_info['trans_input']
+        inputs['inp_width'] = im_info['inp_width']
+        inputs['inp_height'] = im_info['inp_height']
+        inputs['center'] = im_info['center']
+        inputs['scale'] = im_info['scale']
+        inputs['out_height'] = im_info['out_height']
+        inputs['out_width'] = im_info['out_width']
+        
+        if self.pre_image is None:
+            self.pre_image = inputs['image']
+            # initializing tracker for the first frame
+            self.tracker.init_track([])
+        inputs['pre_image'] = self.pre_image
+        self.pre_image = inputs['image']  # Note: update for next image
+
+        # render input heatmap from tracker status
+        pre_hm = self.get_additional_inputs(
+            self.tracker.tracks, inputs, with_hm=True)
+        inputs['pre_hm'] = pre_hm #.to_tensor(pre_hm)
+
+        input_names = self.predictor.get_input_names()
+        for i in range(len(input_names)):
+            input_tensor = self.predictor.get_input_handle(input_names[i])
+            if input_names[i] == 'x':
+                input_tensor.copy_from_cpu(inputs['image'])
+            else:
+                input_tensor.copy_from_cpu(inputs[input_names[i]])
+
+        return inputs
 
     def postprocess(self, inputs, result):
         # postprocess output of predictor
-        np_boxes = result['pred_dets']
-        if np_boxes.shape[0] <= 0:
-            print('[WARNNING] No object detected.')
-            result = {'pred_dets': np.zeros([0, 6]), 'pred_embs': None}
+        np_bboxes = result['bboxes']
+        if np_bboxes.shape[0] <= 0:
+            print('[WARNNING] No object detected and tracked.')
+            result = {'bboxes': np.zeros([0, 6]), 'cts': None, 'tracking': None}
+            return result
         result = {k: v for k, v in result.items() if v is not None}
         return result
 
-    def tracking(self, det_results):
-        pred_dets = det_results['bboxes']  # cls_id, score, x0, y0, x1, y1
-        online_targets = self.tracker.update(pred_dets)
+    def centertrack_post_process(self, dets, meta, out_thresh):
+        if not ('bboxes' in dets):
+            return [{}]
 
-        online_tlwhs = []
-        online_scores = []
-        online_ids = []
+        preds = []
+        c, s = meta['center'], meta['scale']
+        h, w = meta['out_height'], meta['out_width']
+        trans = get_affine_transform(
+            center=c,
+            input_size=s,
+            rot=0,
+            output_size=[w, h],
+            shift=(0., 0.),
+            inv=True).astype(np.float32)
+        for i, dets_bbox in enumerate(dets['bboxes']):
+            if dets_bbox[1] < out_thresh:
+                break
+            item = {}
+            item['score'] = dets_bbox[1]
+            item['class'] = int(dets_bbox[0]) + 1
+            item['ct'] = transform_preds_with_trans(
+                dets['cts'][i].reshape([1, 2]), trans).reshape(2)
+
+            if 'tracking' in dets:
+                tracking = transform_preds_with_trans(
+                    (dets['tracking'][i] + dets['cts'][i]).reshape([1, 2]),
+                    trans).reshape(2)
+                item['tracking'] = tracking - item['ct']
+
+            if 'bboxes' in dets:
+                bbox = transform_preds_with_trans(
+                    dets_bbox[2:6].reshape([2, 2]), trans).reshape(4)
+                item['bbox'] = bbox
+
+            preds.append(item)
+        return preds
+
+    def tracking(self, inputs, det_results):
+        result = self.centertrack_post_process(
+            det_results, inputs, self.tracker.out_thresh)
+        online_targets = self.tracker.update(result)
+
+        online_tlwhs, online_scores, online_ids = [], [], []
         for t in online_targets:
             bbox = t['bbox']
             tlwh = [bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]]
@@ -137,22 +277,25 @@ class CenterTrack(Detector):
         Args:
             repeats (int): repeats number for prediction
         Returns:
-            result (dict): include 'pred_dets': np.ndarray: shape:[N,6], N: number of box,
-                            matix element:[class, score, x_min, y_min, x_max, y_max]
-                            FairMOT(JDE)'s result include 'pred_embs': np.ndarray:
-                            shape: [N, 128]
+            result (dict): include 'bboxes', 'cts' and 'tracking':
+                np.ndarray: shape:[N,6],[N,2] and [N,2], N: number of box
         '''
         # model prediction
-        np_pred_dets, np_pred_embs = None, None
+        np_bboxes, np_cts, np_tracking = None, None, None
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
-            boxes_tensor = self.predictor.get_output_handle(output_names[0])
-            np_pred_dets = boxes_tensor.copy_to_cpu()
-            embs_tensor = self.predictor.get_output_handle(output_names[1])
-            np_pred_embs = embs_tensor.copy_to_cpu()
+            bboxes_tensor = self.predictor.get_output_handle(output_names[0])
+            np_bboxes = bboxes_tensor.copy_to_cpu()
+            cts_tensor = self.predictor.get_output_handle(output_names[1])
+            np_cts = cts_tensor.copy_to_cpu()
+            tracking_tensor = self.predictor.get_output_handle(output_names[2])
+            np_tracking = tracking_tensor.copy_to_cpu()
 
-        result = dict(pred_dets=np_pred_dets, pred_embs=np_pred_embs)
+        result = dict(
+            bboxes=np_bboxes,
+            cts=np_cts,
+            tracking=np_tracking)
         return result
 
     def predict_image(self,
@@ -188,9 +331,9 @@ class CenterTrack(Detector):
                 self.det_times.postprocess_time_s.end()
 
                 # tracking
-                result_warmup = self.tracking(det_result)
+                result_warmup = self.tracking(inputs, det_result)
                 self.det_times.tracking_time_s.start()
-                online_tlwhs, online_scores, online_ids = self.tracking(
+                online_tlwhs, online_scores, online_ids = self.tracking(inputs,
                     det_result)
                 self.det_times.tracking_time_s.end()
                 self.det_times.img_num += 1
@@ -215,7 +358,7 @@ class CenterTrack(Detector):
 
                 # tracking process
                 self.det_times.tracking_time_s.start()
-                online_tlwhs, online_scores, online_ids = self.tracking(
+                online_tlwhs, online_scores, online_ids = self.tracking(inputs, 
                     det_result)
                 self.det_times.tracking_time_s.end()
                 self.det_times.img_num += 1
@@ -227,7 +370,6 @@ class CenterTrack(Detector):
 
                 im = plot_tracking(
                     frame,
-                    num_classes,
                     online_tlwhs,
                     online_ids,
                     online_scores,
@@ -267,7 +409,7 @@ class CenterTrack(Detector):
 
         frame_id = 1
         timer = MOTTimer()
-        results = defaultdict(list)  # support single class and multi classes
+        results = defaultdict(list)  # centertrack onpy support single class
         num_classes = self.num_classes
         data_type = 'mcmot' if num_classes > 1 else 'mot'
         ids2names = self.pred_config.labels
@@ -285,16 +427,12 @@ class CenterTrack(Detector):
                 [frame[:, :, ::-1]], visual=False, seq_name=seq_name)
             timer.toc()
 
-            online_tlwhs, online_scores, online_ids = mot_results[0]
-            for cls_id in range(num_classes):
-                results[cls_id].append(
-                    (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id],
-                     online_ids[cls_id]))
-
             fps = 1. / timer.duration
+            online_tlwhs, online_scores, online_ids = mot_results[0]
+            results[0].append(
+                (frame_id + 1, online_tlwhs, online_scores, online_ids))
             im = plot_tracking(
                 frame,
-                num_classes,
                 online_tlwhs,
                 online_ids,
                 online_scores,

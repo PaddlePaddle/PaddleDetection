@@ -124,7 +124,7 @@ class CenterTrack(BaseArch):
                 if not self.deploy:
                     # convert the cropped and 4x downsampled output coordinate system
                     # back to the input image coordinate system
-                    result = self.plugin_head.tracking_post_process(
+                    result = self.plugin_head.centertrack_post_process(
                         result, self.inputs, self.tracker.out_thresh)
                 return result
 

@@ -168,7 +168,7 @@ class CenterTrackHead(nn.Layer):
         topk_ys = paddle.floor(topk_ys)  # note: More accurate
         topk_xs = paddle.floor(topk_xs)
         cts = paddle.concat([topk_xs, topk_ys], 1)
-        ret = {'scores': bboxes[:, 1], 'clses': bboxes[:, 0], 'cts': cts}
+        ret = {'bboxes': bboxes, 'cts': cts}
 
         regression_heads = ['tracking']  # todo: add more tasks
         for head in regression_heads:
@@ -187,14 +187,14 @@ class CenterTrackHead(nn.Layer):
                     topk_ys * 1.0 + ltrb_amodal[..., 3:4]
                 ],
                 axis=1)
-            ret['bboxes_amodal'] = bboxes_amodal
-            ret['bboxes'] = bboxes_amodal
+            ret['bboxes'] = paddle.concat([bboxes[:, 0:2], bboxes_amodal], 1)
+            # cls_id, score, x0, y0, x1, y1
 
         return ret
 
-    def tracking_post_process(self, dets, meta, out_thresh):
-        if not ('scores' in dets):
-            return [{}], [{}]
+    def centertrack_post_process(self, dets, meta, out_thresh):
+        if not ('bboxes' in dets):
+            return [{}]
 
         preds = []
         c, s = meta['center'].numpy(), meta['scale'].numpy()
@@ -206,25 +206,24 @@ class CenterTrackHead(nn.Layer):
             output_size=[w[0], h[0]],
             shift=(0., 0.),
             inv=True).astype(np.float32)
-
-        for j in range(len(dets['scores'])):
-            if dets['scores'][j] < out_thresh:
+        for i, dets_bbox in enumerate(dets['bboxes']):
+            if dets_bbox[1] < out_thresh:
                 break
             item = {}
-            item['score'] = dets['scores'][j]
-            item['class'] = int(dets['clses'][j]) + 1
+            item['score'] = dets_bbox[1]
+            item['class'] = int(dets_bbox[0]) + 1
             item['ct'] = transform_preds_with_trans(
-                dets['cts'][j].reshape([1, 2]), trans).reshape(2)
+                dets['cts'][i].reshape([1, 2]), trans).reshape(2)
 
             if 'tracking' in dets:
                 tracking = transform_preds_with_trans(
-                    (dets['tracking'][j] + dets['cts'][j]).reshape([1, 2]),
+                    (dets['tracking'][i] + dets['cts'][i]).reshape([1, 2]),
                     trans).reshape(2)
                 item['tracking'] = tracking - item['ct']
 
             if 'bboxes' in dets:
                 bbox = transform_preds_with_trans(
-                    dets['bboxes'][j].reshape([2, 2]), trans).reshape(4)
+                    dets_bbox[2:6].reshape([2, 2]), trans).reshape(4)
                 item['bbox'] = bbox
 
             preds.append(item)
