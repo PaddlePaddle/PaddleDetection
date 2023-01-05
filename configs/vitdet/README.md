@@ -13,11 +13,14 @@ non-trivial when new architectures, such as Vision Transformer (ViT) models, arr
 
 ## Model Zoo
 
-| Backbone | Pretrained | Model | Scheduler | Images/GPU  | Box AP | Config | Download |
-|:------:|:--------:|:--------------:|:--------------:|:--------------:|:------:|:------:|:--------:|
-| ViT-base | CAE | Cascade RCNN  | 1x | 1 | 52.7 | [config](./cascade_rcnn_vit_base_hrfpn_cae_1x_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/cascade_rcnn_vit_base_hrfpn_cae_1x_coco.pdparams) |
-| ViT-large | CAE | Cascade RCNN  | 1x | 1 | 55.7 | [config](./cascade_rcnn_vit_large_hrfpn_cae_1x_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/cascade_rcnn_vit_large_hrfpn_cae_1x_coco.pdparams) |
-| ViT-base | CAE | PP-YOLOE  | 36e | 2 | 52.2 | [config](./ppyoloe_vit_base_csppan_cae_36e_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_vit_base_csppan_cae_36e_coco.pdparams) |
+| Model | Backbone | Pretrained | Scheduler | Images/GPU  | Box AP | Mask AP | Config | Download |
+|:------:|:--------:|:--------------:|:--------------:|:--------------:|:--------------:|:------:|:------:|:--------:|
+| Cascade RCNN | ViT-base | CAE | 1x | 1 | 52.7 | - | [config](./cascade_rcnn_vit_base_hrfpn_cae_1x_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/cascade_rcnn_vit_base_hrfpn_cae_1x_coco.pdparams) |
+| Cascade RCNN | ViT-large | CAE | 1x | 1 | 55.7 | - | [config](./cascade_rcnn_vit_large_hrfpn_cae_1x_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/cascade_rcnn_vit_large_hrfpn_cae_1x_coco.pdparams) |
+| PP-YOLOE | ViT-base | CAE | 36e | 2 | 52.2 | - | [config](./ppyoloe_vit_base_csppan_cae_36e_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_vit_base_csppan_cae_36e_coco.pdparams) |
+| Mask RCNN | ViT-base | CAE | 1x | 1 | 50.6 | 44.9 | [config](./mask_rcnn_vit_base_hrfpn_cae_1x_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/mask_rcnn_vit_base_hrfpn_cae_1x_coco.pdparams) |
+| Mask RCNN | ViT-large | CAE | 1x | 1 | 54.2 | 47.4 | [config](./mask_rcnn_vit_large_hrfpn_cae_1x_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/mask_rcnn_vit_large_hrfpn_cae_1x_coco.pdparams) |
+
 
 **Notes:**
 - Model is trained on COCO train2017 dataset and evaluated on val2017 results of `mAP(IoU=0.5:0.95)
