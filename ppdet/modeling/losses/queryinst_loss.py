@@ -51,12 +51,8 @@ class QueryInstLoss(object):
         }
         self.giou_loss = GIoULoss(eps=1e-6, reduction='sum')
 
-        self.matcher = HungarianMatcher(
-            focal_loss_alpha,
-            focal_loss_gamma,
-            class_weight,
-            l1_weight,
-            giou_weight)
+        self.matcher = HungarianMatcher(focal_loss_alpha, focal_loss_gamma,
+                                        class_weight, l1_weight, giou_weight)
 
     def loss_classes(self, class_logits, targets, indices, avg_factor):
         tgt_labels = paddle.full(
@@ -64,7 +60,8 @@ class QueryInstLoss(object):
 
         if sum(len(v['labels']) for v in targets) > 0:
             tgt_classes = paddle.concat([
-                paddle.gather(tgt['labels'], tgt_idx, axis=0)
+                paddle.gather(
+                    tgt['labels'], tgt_idx, axis=0)
                 for tgt, (_, tgt_idx) in zip(targets, indices)
             ])
             batch_idx, src_idx = self._get_src_permutation_idx(indices)
@@ -90,12 +87,14 @@ class QueryInstLoss(object):
 
     def loss_bboxes(self, bbox_pred, targets, indices, avg_factor):
         bboxes = paddle.concat([
-            paddle.gather(src, src_idx, axis=0)
+            paddle.gather(
+                src, src_idx, axis=0)
             for src, (src_idx, _) in zip(bbox_pred, indices)
         ])
 
         tgt_bboxes = paddle.concat([
-            paddle.gather(tgt['boxes'], tgt_idx, axis=0)
+            paddle.gather(
+                tgt['boxes'], tgt_idx, axis=0)
             for tgt, (_, tgt_idx) in zip(targets, indices)
         ])
         tgt_bboxes.stop_gradient = True
@@ -113,9 +112,11 @@ class QueryInstLoss(object):
         }
         return losses
 
-    def loss_masks(self, pos_bbox_pred, mask_logits, targets, indices, avg_factor):
+    def loss_masks(self, pos_bbox_pred, mask_logits, targets, indices,
+                   avg_factor):
         tgt_segm = [
-            paddle.gather(tgt['gt_segm'], tgt_idx, axis=0)
+            paddle.gather(
+                tgt['gt_segm'], tgt_idx, axis=0)
             for tgt, (_, tgt_idx) in zip(targets, indices)
         ]
 
@@ -125,8 +126,10 @@ class QueryInstLoss(object):
             if len(gt_segm) == 0:
                 continue
             boxes = pos_bbox_pred[i]
-            boxes[:, 0::2] = paddle.clip(boxes[:, 0::2], min=0, max=gt_segm.shape[3])
-            boxes[:, 1::2] = paddle.clip(boxes[:, 1::2], min=0, max=gt_segm.shape[2])
+            boxes[:, 0::2] = paddle.clip(
+                boxes[:, 0::2], min=0, max=gt_segm.shape[3])
+            boxes[:, 1::2] = paddle.clip(
+                boxes[:, 1::2], min=0, max=gt_segm.shape[2])
             boxes_num = paddle.to_tensor([1] * len(boxes), dtype='int32')
             gt_mask = paddle.vision.ops.roi_align(
                 gt_segm,
@@ -140,7 +143,8 @@ class QueryInstLoss(object):
         tgt_masks.stop_gradient = True
 
         tgt_labels = paddle.concat([
-            paddle.gather(tgt['labels'], tgt_idx, axis=0)
+            paddle.gather(
+                tgt['labels'], tgt_idx, axis=0)
             for tgt, (_, tgt_idx) in zip(targets, indices)
         ])
 

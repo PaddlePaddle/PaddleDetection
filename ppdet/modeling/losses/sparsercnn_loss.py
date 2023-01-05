@@ -287,7 +287,7 @@ class HungarianMatcher(nn.Layer):
         if sum(len(v["labels"]) for v in targets) == 0:
             return [(paddle.to_tensor(
                 [], dtype=paddle.int64), paddle.to_tensor(
-                [], dtype=paddle.int64)) for _ in range(bs)]
+                    [], dtype=paddle.int64)) for _ in range(bs)]
 
         # We flatten to compute the cost matrices in a batch
         out_prob = F.sigmoid(outputs["pred_logits"].flatten(

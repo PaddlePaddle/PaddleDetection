@@ -63,10 +63,10 @@ class QueryInst(BaseArch):
         features = self.backbone(self.inputs)
         features = self.neck(features)
 
-        proposal_bboxes, proposal_features = self.rpn_head(
-            self.inputs['img_whwh'])
-        outputs = self.roi_head(
-            features, proposal_bboxes, proposal_features, targets)
+        proposal_bboxes, proposal_features = self.rpn_head(self.inputs[
+            'img_whwh'])
+        outputs = self.roi_head(features, proposal_bboxes, proposal_features,
+                                targets)
 
         if self.training:
             return outputs
@@ -101,8 +101,4 @@ class QueryInst(BaseArch):
 
     def get_pred(self):
         bbox_pred, bbox_num, mask_pred = self._forward()
-        return {
-            'bbox': bbox_pred,
-            'bbox_num': bbox_num,
-            'mask': mask_pred
-        }
+        return {'bbox': bbox_pred, 'bbox_num': bbox_num, 'mask': mask_pred}

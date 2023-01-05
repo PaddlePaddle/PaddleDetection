@@ -18,6 +18,7 @@ import paddle
 from paddle import nn
 
 from ppdet.core.workspace import register
+from ..transformers.utils import bbox_cxcywh_to_xyxy
 
 __all__ = ['EmbeddingRPNHead']
 
@@ -26,9 +27,7 @@ __all__ = ['EmbeddingRPNHead']
 class EmbeddingRPNHead(nn.Layer):
     __shared__ = ['proposal_embedding_dim']
 
-    def __init__(self,
-                 num_proposals,
-                 proposal_embedding_dim=256):
+    def __init__(self, num_proposals, proposal_embedding_dim=256):
         super(EmbeddingRPNHead, self).__init__()
 
         self.num_proposals = num_proposals
@@ -38,10 +37,9 @@ class EmbeddingRPNHead(nn.Layer):
         self._init_weights()
 
     def _init_layers(self):
-        self.init_proposal_bboxes = nn.Embedding(
-            self.num_proposals, 4)
-        self.init_proposal_features = nn.Embedding(
-            self.num_proposals, self.proposal_embedding_dim)
+        self.init_proposal_bboxes = nn.Embedding(self.num_proposals, 4)
+        self.init_proposal_features = nn.Embedding(self.num_proposals,
+                                                   self.proposal_embedding_dim)
 
     def _init_weights(self):
         init_bboxes = paddle.empty_like(self.init_proposal_bboxes.weight)
@@ -49,18 +47,13 @@ class EmbeddingRPNHead(nn.Layer):
         init_bboxes[:, 2:] = 1.0
         self.init_proposal_bboxes.weight.set_value(init_bboxes)
 
-    @staticmethod
-    def bbox_cxcywh_to_xyxy(bbox):
-        cx, cy, w, h = bbox.unbind(axis=-1)
-        bbox_new = [(cx - 0.5 * w), (cy - 0.5 * h), (cx + 0.5 * w), (cy + 0.5 * h)]
-        return paddle.stack(bbox_new, axis=-1)
-
     def forward(self, img_whwh):
         proposal_bboxes = self.init_proposal_bboxes.weight.clone()
-        proposal_bboxes = self.bbox_cxcywh_to_xyxy(proposal_bboxes)
+        proposal_bboxes = bbox_cxcywh_to_xyxy(proposal_bboxes)
         proposal_bboxes = proposal_bboxes.unsqueeze(0) * img_whwh.unsqueeze(1)
 
         proposal_features = self.init_proposal_features.weight.clone()
-        proposal_features = proposal_features.unsqueeze(0).tile([img_whwh.shape[0], 1, 1])
+        proposal_features = proposal_features.unsqueeze(0).tile(
+            [img_whwh.shape[0], 1, 1])
 
         return proposal_bboxes, proposal_features

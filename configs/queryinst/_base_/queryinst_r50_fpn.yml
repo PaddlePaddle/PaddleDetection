@@ -1,13 +1,7 @@
 num_proposals: &num_proposals 100
 proposal_embedding_dim: &proposal_embedding_dim 256
-
-roi_extractor: &roi_extractor
-  spatial_scale: [ 0.25, 0.125, 0.0625, 0.03125 ]
-  sampling_ratio: 2
-  aligned: True
 bbox_resolution: &bbox_resolution 7
 mask_resolution: &mask_resolution 14
-
 
 architecture: QueryInst
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
@@ -29,7 +23,7 @@ ResNet:
 
 FPN:
   out_channel: *proposal_embedding_dim
-  extra_stage: False
+  extra_stage: 0
 
 EmbeddingRPNHead:
   num_proposals: *num_proposals
@@ -38,10 +32,12 @@ SparseRoIHead:
   num_stages: 6
   bbox_roi_extractor:
     resolution: *bbox_resolution
-    <<: *roi_extractor
+    sampling_ratio: 2
+    aligned: True
   mask_roi_extractor:
     resolution: *mask_resolution
-    <<: *roi_extractor
+    sampling_ratio: 2
+    aligned: True
   bbox_head: DIIHead
   mask_head: DynamicMaskHead
   loss_func: QueryInstLoss

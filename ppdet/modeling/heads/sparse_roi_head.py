@@ -28,7 +28,7 @@ from ppdet.modeling import initializer as init
 from .roi_extractor import RoIAlign
 from ..bbox_utils import delta2bbox_v2
 from ..cls_utils import _get_class_default_kwargs
-from ..layers import MultiHeadAttentionV2
+from ..layers import MultiHeadAttention
 
 __all__ = ['SparseRoIHead', 'DIIHead', 'DynamicMaskHead']
 
@@ -48,8 +48,8 @@ class DynamicConv(nn.Layer):
 
         self.num_params_in = self.in_channels * self.feature_channels
         self.num_params_out = self.out_channels * self.feature_channels
-        self.dynamic_layer = nn.Linear(
-            self.in_channels, self.num_params_in + self.num_params_out)
+        self.dynamic_layer = nn.Linear(self.in_channels,
+                                       self.num_params_in + self.num_params_out)
 
         self.norm_in = nn.LayerNorm(self.feature_channels)
         self.norm_out = nn.LayerNorm(self.out_channels)
@@ -58,7 +58,7 @@ class DynamicConv(nn.Layer):
 
         self.with_proj = with_proj
         if self.with_proj:
-            num_output = self.out_channels * roi_resolution ** 2
+            num_output = self.out_channels * roi_resolution**2
             self.fc_layer = nn.Linear(num_output, self.out_channels)
             self.fc_norm = nn.LayerNorm(self.out_channels)
 
@@ -105,8 +105,7 @@ class FFN(nn.Layer):
             layers.append(
                 nn.Sequential(
                     nn.Linear(in_channels, feedforward_channels),
-                    nn.ReLU(),
-                    nn.Dropout(ffn_drop)))
+                    nn.ReLU(), nn.Dropout(ffn_drop)))
             in_channels = feedforward_channels
         layers.append(nn.Linear(feedforward_channels, embed_dims))
         layers.append(nn.Dropout(ffn_drop))
@@ -121,55 +120,6 @@ class FFN(nn.Layer):
             return out
         else:
             return out + identity
-
-
-class MultiheadAttention(nn.Layer):
-    def __init__(self,
-                 embed_dims,
-                 num_heads,
-                 attn_drop=0.,
-                 proj_drop=0.,
-                 dropout_layer_prob=0.):
-        super(MultiheadAttention, self).__init__()
-
-        self.embed_dims = embed_dims
-        self.num_heads = num_heads
-
-        self.attn = MultiHeadAttentionV2(embed_dims, num_heads, attn_drop)
-
-        self.proj_drop = nn.Dropout(proj_drop)
-        self.dropout_layer = nn.Dropout(dropout_layer_prob)
-
-    def forward(self,
-                query,
-                key=None,
-                value=None,
-                identity=None,
-                query_pos=None,
-                key_pos=None,
-                attn_mask=None):
-        if key is None:
-            key = query
-        if value is None:
-            value = key
-        if identity is None:
-            identity = query
-        if key_pos is None:
-            if query_pos is not None:
-                if query_pos.shape == key.shape:
-                    key_pos = query_pos
-        if query_pos is not None:
-            query = query + query_pos
-        if key_pos is not None:
-            key = key + key_pos
-
-        out = self.attn(
-            query=query,
-            key=key,
-            value=value,
-            attn_mask=attn_mask)[0]
-
-        return identity + self.dropout_layer(self.proj_drop(out))
 
 
 @register
@@ -240,8 +190,8 @@ class DynamicMaskHead(nn.Layer):
 
     def forward(self, roi_features, attn_features):
         attn_features = attn_features.reshape([-1, self.d_model])
-        attn_features_iic = self.instance_interactive_conv(
-            attn_features, roi_features)
+        attn_features_iic = self.instance_interactive_conv(attn_features,
+                                                           roi_features)
 
         x = attn_features_iic.transpose([0, 2, 1]).reshape(roi_features.shape)
 
@@ -275,7 +225,8 @@ class DIIHead(nn.Layer):
         self.num_classes = num_classes
         self.d_model = proposal_embedding_dim
 
-        self.attention = MultiheadAttention(self.d_model, num_attn_heads, dropout)
+        self.attention = MultiHeadAttention(self.d_model, num_attn_heads,
+                                            dropout)
         self.attention_norm = nn.LayerNorm(self.d_model)
 
         self.instance_interactive_conv = DynamicConv(
@@ -291,14 +242,18 @@ class DIIHead(nn.Layer):
 
         self.cls_fcs = nn.LayerList()
         for _ in range(num_cls_fcs):
-            self.cls_fcs.append(nn.Linear(self.d_model, self.d_model, bias_attr=False))
+            self.cls_fcs.append(
+                nn.Linear(
+                    self.d_model, self.d_model, bias_attr=False))
             self.cls_fcs.append(nn.LayerNorm(self.d_model))
             self.cls_fcs.append(nn.ReLU())
         self.fc_cls = nn.Linear(self.d_model, self.num_classes)
 
         self.reg_fcs = nn.LayerList()
         for _ in range(num_reg_fcs):
-            self.reg_fcs.append(nn.Linear(self.d_model, self.d_model, bias_attr=False))
+            self.reg_fcs.append(
+                nn.Linear(
+                    self.d_model, self.d_model, bias_attr=False))
             self.reg_fcs.append(nn.LayerNorm(self.d_model))
             self.reg_fcs.append(nn.ReLU())
         self.fc_reg = nn.Linear(self.d_model, 4)
@@ -316,14 +271,15 @@ class DIIHead(nn.Layer):
     def forward(self, roi_features, proposal_features):
         N, num_proposals = proposal_features.shape[:2]
 
-        proposal_features = proposal_features.transpose([1, 0, 2])
-        proposal_features = self.attention(proposal_features)
-        proposal_features = self.attention_norm(proposal_features)
-        attn_features = proposal_features.transpose([1, 0, 2])
+        proposal_features = proposal_features + self.attention(
+            proposal_features)
+        attn_features = self.attention_norm(proposal_features)
 
         proposal_features = attn_features.reshape([-1, self.d_model])
-        proposal_features_iic = self.instance_interactive_conv(proposal_features, roi_features)
-        proposal_features = proposal_features + self.instance_interactive_conv_dropout(proposal_features_iic)
+        proposal_features_iic = self.instance_interactive_conv(
+            proposal_features, roi_features)
+        proposal_features = proposal_features + self.instance_interactive_conv_dropout(
+            proposal_features_iic)
         obj_features = self.instance_interactive_conv_norm(proposal_features)
 
         obj_features = self.ffn(obj_features)
@@ -339,7 +295,8 @@ class DIIHead(nn.Layer):
             reg_feature = reg_layer(reg_feature)
         bbox_deltas = self.fc_reg(reg_feature)
 
-        class_logits = class_logits.reshape([N, num_proposals, self.num_classes])
+        class_logits = class_logits.reshape(
+            [N, num_proposals, self.num_classes])
         bbox_deltas = bbox_deltas.reshape([N, num_proposals, 4])
         obj_features = obj_features.reshape([N, num_proposals, self.d_model])
 
@@ -347,11 +304,12 @@ class DIIHead(nn.Layer):
 
     @staticmethod
     def refine_bboxes(proposal_bboxes, bbox_deltas):
-        pred_bboxes = delta2bbox_v2(bbox_deltas.reshape([-1, 4]),
-                                    proposal_bboxes.reshape([-1, 4]),
-                                    delta_mean=[0.0, 0.0, 0.0, 0.0],
-                                    delta_std=[0.5, 0.5, 1.0, 1.0],
-                                    ctr_clip=None)
+        pred_bboxes = delta2bbox_v2(
+            bbox_deltas.reshape([-1, 4]),
+            proposal_bboxes.reshape([-1, 4]),
+            delta_mean=[0.0, 0.0, 0.0, 0.0],
+            delta_std=[0.5, 0.5, 1.0, 1.0],
+            ctr_clip=None)
         return pred_bboxes.reshape(proposal_bboxes.shape)
 
 
@@ -377,16 +335,34 @@ class SparseRoIHead(nn.Layer):
         if isinstance(mask_roi_extractor, dict):
             self.mask_roi_extractor = RoIAlign(**mask_roi_extractor)
 
-        self.bbox_heads = nn.LayerList([
-            copy.deepcopy(bbox_head) for _ in range(num_stages)])
-        self.mask_heads = nn.LayerList([
-            copy.deepcopy(mask_head) for _ in range(num_stages)])
+        self.bbox_heads = nn.LayerList(
+            [copy.deepcopy(bbox_head) for _ in range(num_stages)])
+        self.mask_heads = nn.LayerList(
+            [copy.deepcopy(mask_head) for _ in range(num_stages)])
 
         self.loss_helper = loss_func
 
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        bbox_roi_extractor = cfg['bbox_roi_extractor']
+        mask_roi_extractor = cfg['mask_roi_extractor']
+        assert isinstance(bbox_roi_extractor, dict)
+        assert isinstance(mask_roi_extractor, dict)
+
+        kwargs = RoIAlign.from_config(cfg, input_shape)
+        bbox_roi_extractor.update(kwargs)
+        mask_roi_extractor.update(kwargs)
+
+        return {
+            'bbox_roi_extractor': bbox_roi_extractor,
+            'mask_roi_extractor': mask_roi_extractor
+        }
+
     @staticmethod
     def get_roi_features(features, bboxes, roi_extractor):
-        rois_list = [bboxes[i] for i in range(len(bboxes)) if len(bboxes[i]) > 0]
+        rois_list = [
+            bboxes[i] for i in range(len(bboxes)) if len(bboxes[i]) > 0
+        ]
         rois_num = paddle.to_tensor(
             [len(bboxes[i]) for i in range(len(bboxes))], dtype='int32')
 
@@ -403,19 +379,17 @@ class SparseRoIHead(nn.Layer):
             bbox_head = self.bbox_heads[stage]
             mask_head = self.mask_heads[stage]
 
-            roi_feats = self.get_roi_features(
-                body_feats, pro_bboxes, self.bbox_roi_extractor)
+            roi_feats = self.get_roi_features(body_feats, pro_bboxes,
+                                              self.bbox_roi_extractor)
             class_logits, bbox_deltas, pro_feats, attn_feats = bbox_head(
                 roi_feats, pro_feats)
-            bbox_pred = self.bbox_heads[stage].refine_bboxes(
-                pro_bboxes, bbox_deltas)
+            bbox_pred = self.bbox_heads[stage].refine_bboxes(pro_bboxes,
+                                                             bbox_deltas)
 
-            indices = self.loss_helper.matcher(
-                {
-                    'pred_logits': class_logits.detach(),
-                    'pred_boxes': bbox_pred.detach()
-                },
-                targets)
+            indices = self.loss_helper.matcher({
+                'pred_logits': class_logits.detach(),
+                'pred_boxes': bbox_pred.detach()
+            }, targets)
             avg_factor = paddle.to_tensor(
                 [sum(len(tgt['labels']) for tgt in targets)], dtype='float32')
             if paddle.distributed.get_world_size() > 1:
@@ -423,30 +397,30 @@ class SparseRoIHead(nn.Layer):
                 avg_factor /= paddle.distributed.get_world_size()
             avg_factor = paddle.clip(avg_factor, min=1.)
 
-            loss_classes = self.loss_helper.loss_classes(
-                class_logits, targets, indices, avg_factor)
+            loss_classes = self.loss_helper.loss_classes(class_logits, targets,
+                                                         indices, avg_factor)
             if sum(len(v['labels']) for v in targets) == 0:
                 loss_bboxes = {
                     'loss_bbox': paddle.to_tensor([0.]),
                     'loss_giou': paddle.to_tensor([0.])
                 }
-                loss_masks = {
-                    'loss_mask': paddle.to_tensor([0.])
-                }
+                loss_masks = {'loss_mask': paddle.to_tensor([0.])}
             else:
-                loss_bboxes = self.loss_helper.loss_bboxes(
-                    bbox_pred, targets, indices, avg_factor)
+                loss_bboxes = self.loss_helper.loss_bboxes(bbox_pred, targets,
+                                                           indices, avg_factor)
 
                 pos_attn_feats = paddle.concat([
-                    paddle.gather(src, src_idx, axis=0)
+                    paddle.gather(
+                        src, src_idx, axis=0)
                     for src, (src_idx, _) in zip(attn_feats, indices)
                 ])
                 pos_bbox_pred = [
-                    paddle.gather(src, src_idx, axis=0)
+                    paddle.gather(
+                        src, src_idx, axis=0)
                     for src, (src_idx, _) in zip(bbox_pred.detach(), indices)
                 ]
-                pos_roi_feats = self.get_roi_features(
-                    body_feats, pos_bbox_pred, self.mask_roi_extractor)
+                pos_roi_feats = self.get_roi_features(body_feats, pos_bbox_pred,
+                                                      self.mask_roi_extractor)
                 mask_logits = mask_head(pos_roi_feats, pos_attn_feats)
                 loss_masks = self.loss_helper.loss_masks(
                     pos_bbox_pred, mask_logits, targets, indices, avg_factor)
@@ -461,19 +435,18 @@ class SparseRoIHead(nn.Layer):
 
     def _forward_test(self, body_feats, pro_bboxes, pro_feats):
         for stage in range(self.num_stages):
-            roi_feats = self.get_roi_features(
-                body_feats, pro_bboxes, self.bbox_roi_extractor)
-            class_logits, bbox_deltas, pro_feats, attn_feats = self.bbox_heads[stage](
-                roi_feats, pro_feats)
-            bbox_pred = self.bbox_heads[stage].refine_bboxes(
-                pro_bboxes, bbox_deltas)
+            roi_feats = self.get_roi_features(body_feats, pro_bboxes,
+                                              self.bbox_roi_extractor)
+            class_logits, bbox_deltas, pro_feats, attn_feats = self.bbox_heads[
+                stage](roi_feats, pro_feats)
+            bbox_pred = self.bbox_heads[stage].refine_bboxes(pro_bboxes,
+                                                             bbox_deltas)
 
             pro_bboxes = bbox_pred.detach()
 
-        roi_feats = self.get_roi_features(
-            body_feats, bbox_pred, self.mask_roi_extractor)
-        mask_logits = self.mask_heads[stage](
-            roi_feats, attn_feats)
+        roi_feats = self.get_roi_features(body_feats, bbox_pred,
+                                          self.mask_roi_extractor)
+        mask_logits = self.mask_heads[stage](roi_feats, attn_feats)
 
         return {
             'class_logits': class_logits,
@@ -481,10 +454,14 @@ class SparseRoIHead(nn.Layer):
             'mask_logits': mask_logits
         }
 
-    def forward(self, body_features, proposal_bboxes, proposal_features, targets=None):
+    def forward(self,
+                body_features,
+                proposal_bboxes,
+                proposal_features,
+                targets=None):
         if self.training:
-            return self._forward_train(
-                body_features, proposal_bboxes, proposal_features, targets)
+            return self._forward_train(body_features, proposal_bboxes,
+                                       proposal_features, targets)
         else:
-            return self._forward_test(
-                body_features, proposal_bboxes, proposal_features)
+            return self._forward_test(body_features, proposal_bboxes,
+                                      proposal_features)

@@ -923,16 +923,19 @@ class Gt2SparseTarget(BaseOperator):
             if self.use_padding_shape:
                 h, w = sample["image"].shape[1:3]
                 if "scale_factor" in sample:
-                    sf_w, sf_h = sample["scale_factor"][1], sample["scale_factor"][0]
+                    sf_w, sf_h = sample["scale_factor"][1], sample[
+                        "scale_factor"][0]
                     sample["scale_factor_whwh"] = np.array(
                         [sf_w, sf_h, sf_w, sf_h], dtype=np.float32)
                 else:
                     sample["scale_factor_whwh"] = np.array(
                         [1.0, 1.0, 1.0, 1.0], dtype=np.float32)
             else:
-                h, w = round(sample['im_shape'][0]), round(sample['im_shape'][1])
+                h, w = round(sample['im_shape'][0]), round(sample['im_shape'][
+                    1])
                 sample["scale_factor_whwh"] = np.array(
-                    [w / ori_w, h / ori_h, w / ori_w, h / ori_h], dtype=np.float32)
+                    [w / ori_w, h / ori_h, w / ori_w, h / ori_h],
+                    dtype=np.float32)
 
             sample["img_whwh"] = np.array([w, h, w, h], dtype=np.float32)
             sample["ori_shape"] = np.array([ori_h, ori_w], dtype=np.int32)

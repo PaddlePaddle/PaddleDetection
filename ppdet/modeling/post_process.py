@@ -226,8 +226,8 @@ class MaskPostProcess(object):
 
         if self.export_onnx:
             h, w = origin_shape[0][0], origin_shape[0][1]
-            mask_onnx = paste_mask(mask_out[:, None, :, :], bboxes[:, 2:],
-                                   h, w, self.assign_on_cpu)
+            mask_onnx = paste_mask(mask_out[:, None, :, :], bboxes[:, 2:], h, w,
+                                   self.assign_on_cpu)
             mask_onnx = mask_onnx >= self.binary_thresh
             pred_result = paddle.cast(mask_onnx, 'int32')
 
@@ -243,8 +243,9 @@ class MaskPostProcess(object):
                 mask_out_i = mask_out[id_start:id_start + bbox_num[i], :, :]
                 im_h = origin_shape[i, 0]
                 im_w = origin_shape[i, 1]
-                pred_mask = paste_mask(mask_out_i[:, None, :, :], bboxes_i[:, 2:],
-                                       im_h, im_w, self.assign_on_cpu)
+                pred_mask = paste_mask(mask_out_i[:, None, :, :],
+                                       bboxes_i[:, 2:], im_h, im_w,
+                                       self.assign_on_cpu)
                 pred_mask = paddle.cast(pred_mask >= self.binary_thresh,
                                         'int32')
                 pred_result[id_start:id_start + bbox_num[i], :im_h, :
@@ -547,11 +548,14 @@ class SparsePostProcess(object):
                 if has_mask:
                     mask = paddle.zeros([1, H, W], dtype='uint8')
             else:
-                label = paddle.to_tensor(label.numpy()[keep]).astype('float32').unsqueeze(-1)
-                score = paddle.to_tensor(score.numpy()[keep]).astype('float32').unsqueeze(-1)
+                label = paddle.to_tensor(label.numpy()[keep]).astype(
+                    'float32').unsqueeze(-1)
+                score = paddle.to_tensor(score.numpy()[keep]).astype(
+                    'float32').unsqueeze(-1)
                 bbox = paddle.to_tensor(bbox.numpy()[keep]).astype('float32')
                 if has_mask:
-                    mask = paddle.to_tensor(mask.numpy()[keep]).astype('float32').unsqueeze(1)
+                    mask = paddle.to_tensor(mask.numpy()[keep]).astype(
+                        'float32').unsqueeze(1)
                     mask = paste_mask(mask, bbox, H, W, self.assign_on_cpu)
                     mask = paddle.cast(mask >= self.binary_thresh, 'uint8')
                 bbox = paddle.concat([label, score, bbox], axis=-1)
