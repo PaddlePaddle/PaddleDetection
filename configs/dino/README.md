@@ -10,8 +10,8 @@
 
 | Backbone |      Model      | Epochs | Box AP |                 Config                  |                                     Download                                     |
 |:------:|:---------------:|:------:|:------:|:---------------------------------------:|:--------------------------------------------------------------------------------:|
-| R-50 | dino_r50_4scale |   12   |  49.3  | [config](./dino_r50_4scale_1x_coco.yml) | [model](https://paddledet.bj.bcebos.com/models/dino_r50_4scale_1x_coco.pdparams) |
-| R-50 | dino_r50_4scale |   24   |  50.8  | [config](./dino_r50_4scale_2x_coco.yml) | [model](https://paddledet.bj.bcebos.com/models/dino_r50_4scale_2x_coco.pdparams) |
+| R-50 | dino_r50_4scale |   12   |  49.1  | [config](./dino_r50_4scale_1x_coco.yml) | [model](https://paddledet.bj.bcebos.com/models/dino_r50_4scale_1x_coco.pdparams) |
+| R-50 | dino_r50_4scale |   24   |  50.5  | [config](./dino_r50_4scale_2x_coco.yml) | [model](https://paddledet.bj.bcebos.com/models/dino_r50_4scale_2x_coco.pdparams) |
 
 **Notes:**
 
