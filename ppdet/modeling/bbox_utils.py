@@ -585,6 +585,55 @@ def batch_distance2bbox(points, distance, max_shapes=None):
     return out_bbox
 
 
+def is_close_gt(anchor, gt, stride_lst, max_dist=2.0, alpha=2.):
+    """Calculate distance ratio of box1 and box2 in batch
+    for larger stride anchors dist/stride to promote the survive of large distance match
+    Args:
+        anchor (Tensor): box with the shape [L, 2]
+        gt (Tensor): box with the shape [N, M2, 4]
+    Return:
+        dist (Tensor): dist ratio between box1 and box2 with the shape [N, M1, M2]
+    """
+    center1 = anchor.unsqueeze(0)
+    center2 = (gt[..., :2] + gt[..., -2:]) / 2.
+    center1 = center1.unsqueeze(1)  # [N, M1, 2] -> [N, 1, M1, 2]
+    center2 = center2.unsqueeze(2)  # [N, M2, 2] -> [N, M2, 1, 2]
+
+    stride = paddle.concat([
+        paddle.full([x], 32 / pow(2, idx)) for idx, x in enumerate(stride_lst)
+    ]).unsqueeze(0).unsqueeze(0)
+    dist = paddle.linalg.norm(center1 - center2, p=2, axis=-1) / stride
+    # dist_raito = paddle.pow(paddle.to_tensor(alpha), -dist)
+    dist_ratio = dist
+    dist_ratio[dist < max_dist] = 1.
+    dist_ratio[dist >= max_dist] = 0.
+    return dist_ratio
+
+
+def batch_dist(anchor, box2, stride_lst, max_dist=2.0, alpha=2.):
+    """Calculate distance ratio of box1 and box2 in batch
+    for larger stride anchors dist/stride to promote the survive of large distance match
+    Args:
+        box1 (Tensor): box with the shape [N, M1, 4]
+        box2 (Tensor): box with the shape [N, M2, 4]
+    Return:
+        dist (Tensor): dist ratio between box1 and box2 with the shape [N, M1, M2]
+    """
+    center1 = anchor
+    center2 = (box2[..., :2] + box2[..., -2:]) / 2.
+    # center1 = center1.unsqueeze(2)  # [N, M1, 2] -> [N, 1, M1, 2]
+    center2 = center2.unsqueeze(1)  # [N, M2, 2] -> [N, M2, 1, 2]
+
+    stride = paddle.concat([
+        paddle.full([x], 32 / pow(2, idx)) for idx, x in enumerate(stride_lst)
+    ]).unsqueeze(0).unsqueeze(0)
+    dist = paddle.linalg.norm(center1 - center2, p=2, axis=-1) / stride
+    # dist_raito = paddle.pow(paddle.to_tensor(alpha), -dist)
+    dist_ratio = dist
+    # dist_ratio[dist>max_dist] = 0.
+    return dist_ratio
+
+
 def iou_similarity(box1, box2, eps=1e-10):
     """Calculate iou of box1 and box2
 

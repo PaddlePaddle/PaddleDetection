@@ -21,11 +21,58 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 
 from ppdet.core.workspace import register
-from ..bbox_utils import batch_iou_similarity
+#from ..bbox_utils import batch_iou_similarity
+from ..bbox_utils import batch_iou_similarity, batch_dist, is_close_gt
 from .utils import (gather_topk_anchors, check_points_inside_bboxes,
                     compute_max_iou_anchor)
 
 __all__ = ['TaskAlignedAssigner']
+
+
+def loss_weight_dw(bbox_cls_scores, gt_labels, center_prior_weights, ious,
+                   inside_gt_bbox_mask, mask_positive):
+    """
+    return [B, L]
+    """
+    B, N, L = bbox_cls_scores.shape
+    num_gts = gt_labels.shape[1]
+    joint_conf = bbox_cls_scores
+    #To more precisely estimate the consistency degree between cls and reg heads, we represent IoU score as an expentional function of the reg loss.
+    # p_loc = paddle.exp(-reg_loss*5)
+    #replace exp(-reg_loss*5) to iou
+    p_loc = ious
+    # p_cls = bbox_cls_scores[gt_labels] 
+    p_cls = bbox_cls_scores
+    p_pos = p_cls * p_loc
+
+    p_neg_weight = paddle.ones_like(joint_conf)
+    neg_metrics = paddle.zeros_like(ious).fill_(-1)
+    alpha = 2
+    t = lambda x: 1 / (0.5**alpha - 1) * x**alpha - 1 / (0.5**alpha - 1)
+    if num_gts > 0:
+
+        def normalize(x):
+            x_ = t(x)
+            t1 = x_.min()
+            t2 = min(1., x_.max())
+            y = (x_ - t1 + 1e-12) / (t2 - t1 + 1e-12)
+            y[x < 0.5] = 1
+            return y
+
+        # import pdb;pdb.set_trace()
+        p_neg_weight = normalize(ious * mask_positive).min(
+            axis=1) * inside_gt_bbox_mask.max(axis=1)
+
+    p_neg_weight = p_neg_weight.detach()
+    # neg_avg_factor = (1 - p_neg_weight).sum()
+    score = (joint_conf * (gt_labels > 0)).max(axis=1)
+    p_neg_weight = p_neg_weight * score**2
+
+    p_pos_weight = (paddle.exp(5 * p_pos) * p_pos * center_prior_weights) / (
+        paddle.exp(3 * p_pos) * p_pos * center_prior_weights).sum(
+            0, keepdim=True).clip(min=1e-12)
+    p_pos_weight = (p_pos_weight * mask_positive).max(axis=1).detach()
+    return p_pos_weight, p_neg_weight
 
 
 @register
@@ -107,7 +154,9 @@ class TaskAlignedAssigner(nn.Layer):
             self.beta)
 
         # check the positive sample's center in gt, [B, n, L]
-        is_in_gts = check_points_inside_bboxes(anchor_points, gt_bboxes)
+        #is_in_gts = check_points_inside_bboxes(anchor_points, gt_bboxes)
+
+        is_in_gts = is_close_gt(anchor_points, gt_bboxes, num_anchors_list)
 
         # select topk largest alignment metrics pred bbox as candidates
         # for each gt, [B, n, L]
