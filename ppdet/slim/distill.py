@@ -170,6 +170,183 @@ class FGDDistillModel(nn.Layer):
                 raise ValueError(f"Unsupported model {self.arch}")
 
 
+class CWDDistillModel(nn.Layer):
+    """                                                                                                                                                    
+    Build CWD distill model.                                                                                                                               
+    Args:                                                                                                                                                  
+        cfg: The student config.                                                                                                                           
+        slim_cfg: The teacher and distill config.                                                                                                          
+    """
+
+    def __init__(self, cfg, slim_cfg):
+        super(CWDDistillModel, self).__init__()
+
+        self.is_inherit = False
+        # build student model before load slim config                                                                                                      
+        self.student_model = create(cfg.architecture)
+        self.arch = cfg.architecture
+        if self.arch not in ['GFL', 'RetinaNet']:
+            raise ValueError(
+                f"The arch can only be one of ['GFL', 'RetinaNet'], but received {self.arch}"
+            )
+
+        stu_pretrain = cfg['pretrain_weights']
+        slim_cfg = load_config(slim_cfg)
+        self.teacher_cfg = slim_cfg
+        self.loss_cfg = slim_cfg
+        tea_pretrain = cfg['pretrain_weights']
+
+        self.teacher_model = create(self.teacher_cfg.architecture)
+        self.teacher_model.eval()
+
+        for param in self.teacher_model.parameters():
+            param.trainable = False
+        if 'pretrain_weights' in cfg and stu_pretrain:
+            if self.is_inherit and 'pretrain_weights' in self.teacher_cfg and self.teacher_cfg.pretrain_weights:
+                load_pretrain_weight(self.student_model,
+                                     self.teacher_cfg.pretrain_weights)
+                logger.debug(
+                    "Inheriting! loading teacher weights to student model!")
+
+            load_pretrain_weight(self.student_model, stu_pretrain)
+
+        if 'pretrain_weights' in self.teacher_cfg and self.teacher_cfg.pretrain_weights:
+            load_pretrain_weight(self.teacher_model,
+                                 self.teacher_cfg.pretrain_weights)
+
+        self.loss_dic = self.build_loss(
+            self.loss_cfg.distill_loss,
+            name_list=self.loss_cfg['distill_loss_name'])
+
+    def build_loss(self,
+                   cfg,
+                   name_list=[
+                       'neck_f_4', 'neck_f_3', 'neck_f_2', 'neck_f_1',
+                       'neck_f_0'
+                   ]):
+        loss_func = dict()
+        for idx, k in enumerate(name_list):
+            loss_func[k] = create(cfg)
+        return loss_func
+
+    def get_loss_retinanet(self, stu_fea_list, tea_fea_list, inputs):
+        loss = self.student_model.head(stu_fea_list, inputs)
+        distill_loss = {}
+        # cwd kd loss
+        for idx, k in enumerate(self.loss_dic):
+            distill_loss[k] = self.loss_dic[k](stu_fea_list[idx],
+                                               tea_fea_list[idx])
+
+            loss['loss'] += distill_loss[k]
+            loss[k] = distill_loss[k]
+        return loss
+
+    def get_loss_gfl(self, stu_fea_list, tea_fea_list, inputs):
+        loss = {}
+        head_outs = self.student_model.head(stu_fea_list)
+        loss_gfl = self.student_model.head.get_loss(head_outs, inputs)
+        loss.update(loss_gfl)
+        total_loss = paddle.add_n(list(loss.values()))
+        loss.update({'loss': total_loss})
+        # cwd kd loss
+        feat_loss = {}
+        loss_dict = {}
+
+        s_cls_feat, t_cls_feat = [], []
+        for s_neck_f, t_neck_f in zip(stu_fea_list, tea_fea_list):
+            conv_cls_feat, _ = self.student_model.head.conv_feat(s_neck_f)
+            cls_score = self.student_model.head.gfl_head_cls(conv_cls_feat)
+            t_conv_cls_feat, _ = self.teacher_model.head.conv_feat(t_neck_f)
+            t_cls_score = self.teacher_model.head.gfl_head_cls(t_conv_cls_feat)
+            s_cls_feat.append(cls_score)
+            t_cls_feat.append(t_cls_score)
+
+        for idx, k in enumerate(self.loss_dic):
+            loss_dict[k] = self.loss_dic[k](s_cls_feat[idx], t_cls_feat[idx])
+            feat_loss[f"neck_f_{idx}"] = self.loss_dic[k](stu_fea_list[idx],
+                                                          tea_fea_list[idx])
+
+        for k in feat_loss:
+            loss['loss'] += feat_loss[k]
+            loss[k] = feat_loss[k]
+
+        for k in loss_dict:
+            loss['loss'] += loss_dict[k]
+            loss[k] = loss_dict[k]
+        return loss
+
+    def forward(self, inputs):
+        if self.training:
+            s_body_feats = self.student_model.backbone(inputs)
+            s_neck_feats = self.student_model.neck(s_body_feats)
+
+            with paddle.no_grad():
+                t_body_feats = self.teacher_model.backbone(inputs)
+                t_neck_feats = self.teacher_model.neck(t_body_feats)
+
+            if self.arch == "RetinaNet":
+                loss = self.get_loss_retinanet(s_neck_feats, t_neck_feats,
+                                               inputs)
+            elif self.arch == "GFL":
+                loss = self.get_loss_gfl(s_neck_feats, t_neck_feats, inputs)
+            else:
+                raise ValueError(f"unsupported arch {self.arch}")
+            return loss
+        else:
+            body_feats = self.student_model.backbone(inputs)
+            neck_feats = self.student_model.neck(body_feats)
+            head_outs = self.student_model.head(neck_feats)
+            if self.arch == "RetinaNet":
+                bbox, bbox_num = self.student_model.head.post_process(
+                    head_outs, inputs['im_shape'], inputs['scale_factor'])
+                return {'bbox': bbox, 'bbox_num': bbox_num}
+            elif self.arch == "GFL":
+                bbox_pred, bbox_num = head_outs
+                output = {'bbox': bbox_pred, 'bbox_num': bbox_num}
+                return output
+            else:
+                raise ValueError(f"unsupported arch {self.arch}")
+
+
+@register
+class ChannelWiseDivergence(nn.Layer):
+    def __init__(self, student_channels, teacher_channels, tau=1.0, weight=1.0):
+        super(ChannelWiseDivergence, self).__init__()
+        self.tau = tau
+        self.loss_weight = weight
+
+        if student_channels != teacher_channels:
+            self.align = nn.Conv2D(
+                student_channels,
+                teacher_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0)
+        else:
+            self.align = None
+
+    def distill_softmax(self, x, t):
+        _, _, w, h = paddle.shape(x)
+        x = paddle.reshape(x, [-1, w * h])
+        x /= t
+        return F.softmax(x, axis=1)
+
+    def forward(self, preds_s, preds_t):
+        assert preds_s.shape[-2:] == preds_t.shape[
+            -2:], 'the output dim of teacher and student differ'
+        N, C, W, H = preds_s.shape
+        eps = 1e-5
+        if self.align is not None:
+            preds_s = self.align(preds_s)
+
+        softmax_pred_s = self.distill_softmax(preds_s, self.tau)
+        softmax_pred_t = self.distill_softmax(preds_t, self.tau)
+
+        loss = paddle.sum(-softmax_pred_t * paddle.log(eps + softmax_pred_s) +
+                          softmax_pred_t * paddle.log(eps + softmax_pred_t))
+        return self.loss_weight * loss / (C * N)
+
+
 @register
 class DistillYOLOv3Loss(nn.Layer):
     def __init__(self, weight=1000):

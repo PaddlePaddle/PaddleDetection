@@ -30,7 +30,10 @@ class Result(object):
             'det_action': dict(),
             'cls_action': dict(),
             'vehicleplate': dict(),
-            'vehicle_attr': dict()
+            'vehicle_attr': dict(),
+            'lanes': dict(),
+            'vehicle_press': dict(),
+            'vehicle_retrograde': dict()
         }
 
     def update(self, res, name):

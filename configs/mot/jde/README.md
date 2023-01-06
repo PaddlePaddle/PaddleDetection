@@ -22,7 +22,7 @@ PP-Tracking supports two paradigms: single camera tracking (MOT) and multi-camer
 PP-tracking provides an AI studio public project tutorial. Please refer to this [tutorial](https://aistudio.baidu.com/aistudio/projectdetail/3022582).
 
 <div align="center">
-  <img src="../../../docs/images/mot16_jde.gif" width=500 />
+  <img src="https://user-images.githubusercontent.com/22989727/205540305-457d48bf-e9ec-4f28-896c-64c870126e05.gif" width=500 />
 </div>
 
 ## Model Zoo
@@ -82,7 +82,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53
 
 ### 3. Inference
 
-Inference a vidoe on single GPU with following command:
+Inference a video on single GPU with following command:
 
 ```bash
 # inference on video and save a video

@@ -142,3 +142,11 @@
 - [快速开始](docs/tutorials/ppvehicle_mot.md)
 
 - [二次开发教程](../../docs/advanced_tutorials/customization/pphuman_mot.md)
+
+#### 车辆违法压线
+
+- [快速开始](docs/tutorials/ppvehicle_press.md)
+
+#### 车辆逆行
+
+- [快速开始](docs/tutorials/ppvehicle_retrograde.md)

@@ -11,6 +11,8 @@
 工业数据集使用[PKU-Market-PCB](https://robotics.pkusz.edu.cn/resources/dataset/)，该数据集用于印刷电路板（PCB）的瑕疵检测，提供了6种常见的PCB缺陷，
 处理后的COCO格式，包含图片训练集555张，测试集138张，6个类别，[PKU-Market-PCB COCO格式下载](https://bj.bcebos.com/v1/paddledet/data/PCB_coco.zip)。
 
+商超数据集[SKU110k](https://github.com/eg4000/SKU110K_CVPR19)是商品超市场景下的密集目标检测数据集，包含11,762张图片和超过170个实例。其中包括8,233张用于训练的图像、588张用于验证的图像和2,941张用于测试的图像。
+
 
 ## 实验结果：
 
@@ -31,11 +33,30 @@
 - 具体使用教程请参考[ppyoloe](../ppyoloe#getting-start)。  
 
 
+## SKU110k Model ZOO
+|     Model      | Epoch | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>val<br>0.5:0.95 (maxDets=300) | Box AP<sup>test<br>0.5:0.95 (maxDets=300) | download | config |
+|:--------------:|:-----:|:-------:|:----------:|:----------:| :-------:|:-------------------------:|:---------------------------:|:---------:|:------:|
+| PP-YOLOE+_s | 80 | 8 | 8 | cspresnet-s | 960 | 57.4 | 58.8 | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_sku110k.pdparams) | [config](./ppyoloe_plus_crn_s_80e_sku110k.yml) |
+| PP-YOLOE+_m | 80 | 8 | 8 | cspresnet-m | 960 | 58.2 | 59.7 | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_sku110k.pdparams) | [config](./ppyoloe_plus_crn_m_80e_sku110k.yml) |
+| PP-YOLOE+_l | 80 | 8 | 4 | cspresnet-l | 960 | 58.8 | 60.2 | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_sku110k.pdparams) | [config](./ppyoloe_plus_crn_l_80e_sku110k.yml) |
+| PP-YOLOE+_x | 80 | 8 | 4 | cspresnet-x | 960 | 59.0 | 60.3 | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_x_80e_sku110k.pdparams) | [config](./ppyoloe_plus_crn_x_80e_sku110k.yml) |
 
+
+**注意:**
+- SKU110k系列模型训练过程中使用8 GPUs进行训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
+- SKU110k数据集使用**maxDets=300**的mAP值作为评估指标。
+- 具体使用教程请参考[ppyoloe](../ppyoloe#getting-start)。
 
 
 ## 引用
 ```
+@inproceedings{goldman2019dense,
+ author    = {Eran Goldman and Roei Herzig and Aviv Eisenschtat and Jacob Goldberger and Tal Hassner},
+ title     = {Precise Detection in Densely Packed Scenes},
+ booktitle = {Proc. Conf. Comput. Vision Pattern Recognition (CVPR)},
+ year      = {2019}
+}
+
 @article{Exdark,
 title={Getting to Know Low-light Images with The Exclusively Dark Dataset},
 author={Loh, Yuen Peng and Chan, Chee Seng},

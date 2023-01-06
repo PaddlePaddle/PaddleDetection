@@ -242,6 +242,8 @@ class SparseRCNNHead(nn.Layer):
             loss_func="SparseRCNNLoss",
             roi_input_shape=None, ):
         super().__init__()
+        assert head_num_heads > 0, \
+            f'At least one RoI Head is required, but {head_num_heads}.'
 
         # Build RoI.
         box_pooler = self._init_box_pooler(roi_input_shape)
@@ -337,11 +339,11 @@ class SparseRCNNHead(nn.Layer):
         inter_class_logits = []
         inter_pred_bboxes = []
 
-        for rcnn_head in self.head_series:
+        for stage, rcnn_head in enumerate(self.head_series):
             class_logits, pred_bboxes, proposal_features = rcnn_head(
                 features, bboxes, proposal_features, self.box_pooler)
 
-            if self.return_intermediate:
+            if self.return_intermediate or stage == len(self.head_series) - 1:
                 inter_class_logits.append(class_logits)
                 inter_pred_bboxes.append(pred_bboxes)
             bboxes = pred_bboxes.detach()

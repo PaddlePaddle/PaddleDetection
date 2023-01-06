@@ -38,6 +38,7 @@ from . import ppyoloe_r_head
 from . import ld_gfl_head
 from . import yolof_head
 from . import simple_conv_head
+from . import ppyoloe_contrast_head
 
 from .bbox_head import *
 from .mask_head import *
@@ -65,3 +66,5 @@ from .ld_gfl_head import *
 from .ppyoloe_r_head import *
 from .yolof_head import *
 from .simple_conv_head import *
+from .ppyoloe_contrast_head import *
+

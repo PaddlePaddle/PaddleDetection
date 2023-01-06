@@ -1,0 +1,19 @@
+type: PLSLaneseg
+
+
+PLSLaneseg:
+  run_mode: 'paddle'
+  batch_size: 1
+  device: gpu
+  min_subgraph_size: 3
+  use_dynamic_shape: False
+  trt_min_shape: [100,100]
+  trt_max_shape: [2000,3000]
+  trt_opt_shape: [512,1024]
+  trt_calib_mode: False
+  cpu_threads: 10
+  enable_mkldnn: False    #Enable to use mkldnn to speed up when using cpu.
+
+  filter_horizontal_flag: True       #Whether to filter horizontal roads
+  horizontal_filtration_degree: 23
+  horizontal_filtering_threshold: 0.25

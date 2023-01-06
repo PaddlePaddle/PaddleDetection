@@ -94,7 +94,7 @@ PP-PicoDet模型有如下特点：
 <summary>安装</summary>
 
 - [安装指导文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/INSTALL.md)
-- [准备数据文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/PrepareDataSet_en.md)
+- [准备数据文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/data/PrepareDataSet_en.md)
 
 </details>
 

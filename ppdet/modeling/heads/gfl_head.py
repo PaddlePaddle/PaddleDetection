@@ -139,7 +139,7 @@ class DGQP(nn.Layer):
                     axis=2, keepdim=True)], axis=2)
         else:
             stat = prob_topk
-        y = F.relu(self.reg_conv1(stat.reshape([N, -1, H, W])))
+        y = F.relu(self.reg_conv1(stat.reshape([N, 4 * self.total_dim, H, W])))
         y = F.sigmoid(self.reg_conv2(y))
         return y
 
@@ -311,8 +311,9 @@ class GFLHead(nn.Layer):
                                                    num_level_anchors)
         num_total_pos = sum(gt_meta['pos_num'])
         try:
-            num_total_pos = paddle.distributed.all_reduce(num_total_pos.clone(
-            )) / paddle.distributed.get_world_size()
+            paddle.distributed.all_reduce(num_total_pos)
+            num_total_pos = paddle.clip(
+                num_total_pos / paddle.distributed.get_world_size(), min=1)
         except:
             num_total_pos = max(num_total_pos, 1)
 

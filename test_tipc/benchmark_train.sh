@@ -88,7 +88,7 @@ lines=(${dataline})
 model_name=$(func_parser_value "${lines[1]}")
 
 # 获取benchmark_params所在的行数
-line_num=`grep -n "train_benchmark_params" $FILENAME  | cut -d ":" -f 1`
+line_num=`grep -n -w "train_benchmark_params" $FILENAME  | cut -d ":" -f 1`
 # for train log parser
 batch_size=$(func_parser_value "${lines[line_num]}")
 line_num=`expr $line_num + 1`
@@ -144,6 +144,14 @@ if  [ ! -n "$PARAMS" ] ;then
     device_num="N1C4"
     device_num_list=($device_num)
     run_mode="DP"
+elif [[ ${PARAMS} = "dynamicTostatic" ]] ;then
+    IFS="|"
+    model_type=$PARAMS
+    batch_size_list=(${batch_size})
+    fp_items_list=(${fp_items})
+    device_num="N1C4"
+    device_num_list=($device_num)
+    run_mode="DP"
 else
     # parser params from input: modeltype_bs${bs_item}_${fp_item}_${run_mode}_${device_num}
     IFS="_"
@@ -175,7 +183,7 @@ fi
 
 
 
-if [[ ${model_name} =~ "higherhrnet" ]] || [[ ${model_name} =~ "hrnet" ]] || [[ ${model_name} =~ "tinypose" ]];then
+if [[ ${model_name} =~ "higherhrnet" ]] || [[ ${model_name} =~ "hrnet" ]] || [[ ${model_name} =~ "tinypose" ]] || [[ ${model_name} =~ "ppyoloe_r_crn_s_3x_spine_coco" ]] ;then
     echo "${model_name} run on full coco dataset"
     epoch=$(set_dynamic_epoch $device_num $epoch)
 else

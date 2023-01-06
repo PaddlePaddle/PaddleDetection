@@ -41,8 +41,8 @@ fpgm_key=$(func_parser_key "${lines[17]}")
 fpgm_trainer=$(func_parser_value "${lines[17]}")
 distill_key=$(func_parser_key "${lines[18]}")
 distill_trainer=$(func_parser_value "${lines[18]}")
-to_static_key=$(func_parser_key "${lines[19]}")
-to_static_trainer=$(func_parser_value "${lines[19]}")
+trainer_key1=$(func_parser_key "${lines[19]}")
+trainer_value1=$(func_parser_value "${lines[19]}")
 trainer_key2=$(func_parser_key "${lines[20]}")
 trainer_value2=$(func_parser_value "${lines[20]}")
 
@@ -96,6 +96,9 @@ LOG_PATH="./test_tipc/output/${model_name}/${MODE}"
 mkdir -p ${LOG_PATH}
 status_log="${LOG_PATH}/results_python.log"
 
+line_num=`grep -n -w "to_static_train_benchmark_params" $FILENAME  | cut -d ":" -f 1`
+to_static_key=$(func_parser_key "${lines[line_num]}")
+to_static_trainer=$(func_parser_value "${lines[line_num]}")
 
 function func_inference(){
     IFS='|'
@@ -251,13 +254,16 @@ else
                 elif [ ${trainer} = "${distill_key}" ]; then
                     run_train=${distill_trainer}
                     run_export=${distill_export}
+                elif [ ${trainer} = "${trainer_key1}" ]; then
+                    run_train=${trainer_value1}
+                    run_export=${export_value1}
+                elif [ ${trainer} = "${trainer_key2}" ]; then
+                    run_train=${trainer_value2}
+                    run_export=${export_value2}
                 elif [ ${trainer} = "${to_static_key}" ]; then
                     run_train=${norm_trainer}
                     run_export=${norm_export}
                     set_to_static=${to_static_trainer}
-                elif [ ${trainer} = "${trainer_key2}" ]; then
-                    run_train=${trainer_value2}
-                    run_export=${export_value2}
                 else
                     continue
                 fi

@@ -292,7 +292,9 @@ class Gt2FCOSTarget(BaseOperator):
                  object_sizes_boundary,
                  center_sampling_radius,
                  downsample_ratios,
-                 norm_reg_targets=False):
+                 num_shift=0.5,
+                 multiply_strides_reg_targets=False,
+                 norm_reg_targets=True):
         super(Gt2FCOSTarget, self).__init__()
         self.center_sampling_radius = center_sampling_radius
         self.downsample_ratios = downsample_ratios
@@ -304,6 +306,8 @@ class Gt2FCOSTarget(BaseOperator):
                 self.object_sizes_boundary[i], self.object_sizes_boundary[i + 1]
             ])
         self.object_sizes_of_interest = object_sizes_of_interest
+        self.num_shift = num_shift
+        self.multiply_strides_reg_targets = multiply_strides_reg_targets
         self.norm_reg_targets = norm_reg_targets
 
     def _compute_points(self, w, h):
@@ -320,7 +324,8 @@ class Gt2FCOSTarget(BaseOperator):
             shift_x, shift_y = np.meshgrid(shift_x, shift_y)
             shift_x = shift_x.flatten()
             shift_y = shift_y.flatten()
-            location = np.stack([shift_x, shift_y], axis=1) + stride // 2
+            location = np.stack(
+                [shift_x, shift_y], axis=1) + stride * self.num_shift
             locations.append(location)
         num_points_each_level = [len(location) for location in locations]
         locations = np.concatenate(locations, axis=0)
@@ -459,11 +464,16 @@ class Gt2FCOSTarget(BaseOperator):
                 grid_w = int(np.ceil(w / self.downsample_ratios[lvl]))
                 grid_h = int(np.ceil(h / self.downsample_ratios[lvl]))
                 if self.norm_reg_targets:
-                    sample['reg_target{}'.format(lvl)] = \
-                        np.reshape(
-                            reg_targets_by_level[lvl] / \
-                            self.downsample_ratios[lvl],
+                    if self.multiply_strides_reg_targets:
+                        sample['reg_target{}'.format(lvl)] = np.reshape(
+                            reg_targets_by_level[lvl],
                             newshape=[grid_h, grid_w, 4])
+                    else:
+                        sample['reg_target{}'.format(lvl)] = \
+                            np.reshape(
+                                reg_targets_by_level[lvl] / \
+                                self.downsample_ratios[lvl],
+                                newshape=[grid_h, grid_w, 4])
                 else:
                     sample['reg_target{}'.format(lvl)] = np.reshape(
                         reg_targets_by_level[lvl],
@@ -490,12 +500,14 @@ class Gt2GFLTarget(BaseOperator):
                  num_classes=80,
                  downsample_ratios=[8, 16, 32, 64, 128],
                  grid_cell_scale=4,
-                 cell_offset=0):
+                 cell_offset=0,
+                 compute_vlr_region=False):
         super(Gt2GFLTarget, self).__init__()
         self.num_classes = num_classes
         self.downsample_ratios = downsample_ratios
         self.grid_cell_scale = grid_cell_scale
         self.cell_offset = cell_offset
+        self.compute_vlr_region = compute_vlr_region
 
         self.assigner = ATSSAssigner()
 
@@ -575,9 +587,11 @@ class Gt2GFLTarget(BaseOperator):
                                               gt_bboxes, gt_bboxes_ignore,
                                               gt_labels)
 
-            vlr_region = self.assigner.get_vlr_region(grid_cells, num_level_cells,
-                                                      gt_bboxes, gt_bboxes_ignore,
-                                                      gt_labels)
+            if self.compute_vlr_region:
+                vlr_region = self.assigner.get_vlr_region(
+                    grid_cells, num_level_cells, gt_bboxes, gt_bboxes_ignore,
+                    gt_labels)
+                sample['vlr_regions'] = vlr_region
 
             pos_inds, neg_inds, pos_gt_bboxes, pos_assigned_gt_inds = self.get_sample(
                 assign_gt_inds, gt_bboxes)
@@ -605,7 +619,6 @@ class Gt2GFLTarget(BaseOperator):
             sample['label_weights'] = label_weights
             sample['bbox_targets'] = bbox_targets
             sample['pos_num'] = max(pos_inds.size, 1)
-            sample['vlr_regions'] = vlr_region
             sample.pop('is_crowd', None)
             sample.pop('difficult', None)
             sample.pop('gt_class', None)
@@ -772,7 +785,7 @@ class Gt2Solov2Target(BaseOperator):
                 ins_label = []
                 grid_order = []
                 cate_label = np.zeros([num_grid, num_grid], dtype=np.int64)
-                ins_ind_label = np.zeros([num_grid**2], dtype=np.bool)
+                ins_ind_label = np.zeros([num_grid**2], dtype=np.bool_)
 
                 if num_ins == 0:
                     ins_label = np.zeros(

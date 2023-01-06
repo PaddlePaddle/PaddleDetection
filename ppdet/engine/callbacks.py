@@ -159,7 +159,6 @@ class LogPrinter(Callback):
 class Checkpointer(Callback):
     def __init__(self, model):
         super(Checkpointer, self).__init__(model)
-        cfg = self.model.cfg
         self.best_ap = -1000.
         self.save_dir = os.path.join(self.model.cfg.save_dir,
                                      self.model.cfg.filename)
@@ -210,14 +209,32 @@ class Checkpointer(Callback):
                             key, eval_func, abs(self.best_ap)))
             if weight:
                 if self.model.use_ema:
-                    # save model and ema_model
-                    save_model(
-                        status['weight'],
-                        self.model.optimizer,
-                        self.save_dir,
-                        save_name,
-                        epoch_id + 1,
-                        ema_model=weight)
+                    exchange_save_model = status.get('exchange_save_model',
+                                                     False)
+                    if not exchange_save_model:
+                        # save model and ema_model
+                        save_model(
+                            status['weight'],
+                            self.model.optimizer,
+                            self.save_dir,
+                            save_name,
+                            epoch_id + 1,
+                            ema_model=weight)
+                    else:
+                        # save model(student model) and ema_model(teacher model)
+                        # in DenseTeacher SSOD, the teacher model will be higher,
+                        # so exchange when saving pdparams
+                        student_model = status['weight']  # model
+                        teacher_model = weight  # ema_model
+                        save_model(
+                            teacher_model,
+                            self.model.optimizer,
+                            self.save_dir,
+                            save_name,
+                            epoch_id + 1,
+                            ema_model=student_model)
+                        del teacher_model
+                        del student_model
                 else:
                     save_model(weight, self.model.optimizer, self.save_dir,
                                save_name, epoch_id + 1)
@@ -322,6 +339,7 @@ class WandbCallback(Callback):
             self.run.define_metric("eval/*", step_metric="epoch")
 
         self.best_ap = -1000.
+        self.fps = []
 
     @property
     def run(self):
@@ -343,6 +361,7 @@ class WandbCallback(Callback):
                    last_epoch,
                    ema_model=None,
                    ap=None,
+                   fps=None,
                    tags=None):
         if dist.get_world_size() < 2 or dist.get_rank() == 0:
             model_path = os.path.join(save_dir, save_name)
@@ -350,6 +369,10 @@ class WandbCallback(Callback):
             metadata["last_epoch"] = last_epoch
             if ap:
                 metadata["ap"] = ap
+            
+            if fps:
+                metadata["fps"] = fps
+
             if ema_model is None:
                 ema_artifact = self.wandb.Artifact(
                     name="ema_model-{}".format(self.run.id),
@@ -381,7 +404,25 @@ class WandbCallback(Callback):
                 training_status = status['training_staus'].get()
                 for k, v in training_status.items():
                     training_status[k] = float(v)
+
+                # calculate ips, data_cost, batch_cost
+                batch_time = status['batch_time']
+                data_time = status['data_time']
+                batch_size = self.model.cfg['{}Reader'.format(mode.capitalize(
+                ))]['batch_size']
+
+                ips = float(batch_size) / float(batch_time.avg)
+                data_cost = float(data_time.avg)
+                batch_cost = f
+
                 metrics = {"train/" + k: v for k, v in training_status.items()}
+
+
+                metrics["train/ips"] = ips
+                metrics["train/data_cost"] = data_cost
+                metrics["train/batch_cost"] = batch_cost
+
+                self.fps.append(ips)
                 self.run.log(metrics)
 
     def on_epoch_end(self, status):
@@ -390,6 +431,9 @@ class WandbCallback(Callback):
         save_name = None
         if dist.get_world_size() < 2 or dist.get_rank() == 0:
             if mode == 'train':
+                fps = sum(self.fps) / len(self.fps)
+                self.fps = []
+
                 end_epoch = self.model.cfg.epoch
                 if (
                         epoch_id + 1
@@ -403,13 +447,21 @@ class WandbCallback(Callback):
                         save_name,
                         epoch_id + 1,
                         self.model.use_ema,
+                        fps=fps,
                         tags=tags)
             if mode == 'eval':
+                sample_num = status['sample_num']
+                cost_time = status['cost_time']
+
+                fps = sample_num / cost_time
+
                 merged_dict = {}
                 for metric in self.model._metrics:
                     for key, map_value in metric.get_results().items():
                         merged_dict["eval/{}-mAP".format(key)] = map_value[0]
                 merged_dict["epoch"] = status["epoch_id"]
+                merged_dict["eval/fps"] = sample_num / cost_time
+
                 self.run.log(merged_dict)
 
                 if 'save_best_model' in status and status['save_best_model']:
@@ -440,6 +492,7 @@ class WandbCallback(Callback):
                                 last_epoch=epoch_id + 1,
                                 ema_model=self.model.use_ema,
                                 ap=abs(self.best_ap),
+                                fps=fps,
                                 tags=tags)
 
     def on_train_end(self, status):

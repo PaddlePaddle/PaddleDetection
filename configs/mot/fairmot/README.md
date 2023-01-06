@@ -156,7 +156,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_d
 
 ### 3. Inference
 
-Inference a vidoe on single GPU with following command:
+Inference a video on single GPU with following command:
 
 ```bash
 # inference on video and save a video
