@@ -37,7 +37,7 @@ SimpleConvHead:
     num_classes: 80
     input_channel: 288
     feat_channels: [288,288,288,288]
-    stacked_convs: 3
+    stacked_convs: 1 # nanodet_plus is 3, to be verified
     strides: [8, 16, 32, 64]
     activation: LeakyReLU
     reg_max: 16
