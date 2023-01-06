@@ -1,14 +1,26 @@
 _BASE_: [
-  './queryinst_r50_fpn_ms_3x_pro100_coco.yml',
+  './queryinst_r50_fpn_1x_pro100_coco.yml',
 ]
 
-weights: output/queryinst_r50_fpn_crop_3x_pro300_coco/model_final
+weights: output/queryinst_r50_fpn_ms_crop_3x_pro300_coco/model_final
 
 EmbeddingRPNHead:
   num_proposals: 300
 
 QueryInstPostProcess:
   num_proposals: 300
+
+epoch: 36
+
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [27, 33]
+  - !LinearWarmup
+    start_factor: 0.001
+    steps: 1000
 
 TrainReader:
   sample_transforms:

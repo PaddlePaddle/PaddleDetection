@@ -10,11 +10,10 @@ and driven by parallelly-supervised multi-stage learning.
 
 ## Model Zoo
 
-|   Backbone   | Lr schd | Proposals | MultiScale | RandomCrop | bbox AP | mask AP | Download | Config                                                  |
-|:------------:|:-------:|:---------:|:----------:|:----------:|:-------:|:-------:|----------|---------------------------------------------------------|
-| ResNet50-FPN |   1x    |    100    |     ×      |     ×      |  42.1   |  37.8   | -        | [config](./queryinst_r50_fpn_1x_pro100_coco.yml)        |
-| ResNet50-FPN |   3x    |    100    |     √      |     ×      |    -    |    -    | -        | [config](./queryinst_r50_fpn_ms_3x_pro100_coco.yml)     |
-| ResNet50-FPN |   3x    |    300    |     √      |     √      |    -    |    -    | -        | [config](./queryinst_r50_fpn_mscrop_3x_pro300_coco.yml) |
+|   Backbone   | Lr schd | Proposals | MultiScale | RandomCrop | bbox AP | mask AP | Download | Config                                                   |
+|:------------:|:-------:|:---------:|:----------:|:----------:|:-------:|:-------:|----------|----------------------------------------------------------|
+| ResNet50-FPN |   1x    |    100    |     ×      |     ×      |  42.1   |  37.8   | -        | [config](./queryinst_r50_fpn_1x_pro100_coco.yml)         |
+| ResNet50-FPN |   3x    |    300    |     √      |     √      |  47.9   |  42.1   | -        | [config](./queryinst_r50_fpn_ms_crop_3x_pro300_coco.yml) |
 
 - COCO val-set evaluation results.
 - These configurations are for 4-card training.
