@@ -190,16 +190,6 @@ class KalmanFilter(object):
                                           self._update_mat.T))
         return mean, covariance + innovation_cov
 
-    # @staticmethod
-    # @nb.njit(fastmath=True, cache=True)
-    # def _project(mean, covariance, std, _update_mat):
-    #     innovation_cov = np.diag(np.square(std))
-
-    #     mean = np.dot(_update_mat, mean)
-    #     covariance = np.dot(np.dot(_update_mat, covariance), _update_mat.T)
-
-    #     return mean, covariance + innovation_cov
-
     def multi_predict(self, mean, covariance):
         """
         Run Kalman filter prediction step (Vectorized version).
@@ -248,16 +238,6 @@ class KalmanFilter(object):
 
         return mean, covariance
 
-    # @staticmethod
-    # @nb.njit(fastmath=True, cache=True)
-    # def _multi_predict(mean, covariance, motion_cov, motion_mat):
-
-    #     mean = np.dot(mean, motion_mat.T)
-    #     left = np.dot(motion_mat, covariance)
-    #     covariance = np.dot(left, motion_mat.T) + motion_cov
-
-    #     return mean, covariance
-
     def update(self, mean, covariance, measurement):
         """
         Run Kalman filter correction step.
@@ -285,15 +265,6 @@ class KalmanFilter(object):
         mean = mean + innovation @kalman_gain.T
         covariance = covariance - kalman_gain @projected_cov @kalman_gain.T
         return mean, covariance
-
-    # @staticmethod
-    # @nb.njit(fastmath=True, cache=True)
-    # def _update(mean, covariance, proj_mean, proj_cov, measurement, meas_mat):
-    #     kalman_gain = np.linalg.solve(proj_cov, (covariance @meas_mat.T).T).T
-    #     innovation = measurement - proj_mean
-    #     mean = mean + innovation @kalman_gain.T
-    #     covariance = covariance - kalman_gain @proj_cov @kalman_gain.T
-    #     return mean, covariance
 
     def gating_distance(self,
                         mean,
