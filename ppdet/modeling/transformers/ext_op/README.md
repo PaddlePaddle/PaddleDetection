@@ -16,6 +16,7 @@ python setup_ms_deformable_attn_op.py install
 ```
 # 引入自定义op
 from deformable_detr_ops import ms_deformable_attn
+
 # 构造fake input tensor
 bs, n_heads, c = 2, 8, 8
 query_length, n_levels, n_points = 2, 2, 2

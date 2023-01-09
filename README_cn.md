@@ -253,10 +253,10 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
       <td>
         <ul>
           <li><a href="ppdet/modeling/losses/smooth_l1_loss.py">Smooth-L1</a></li>
-          <li><a href="ppdet/modeling/losses/detr_loss.py">Detr Loss</a></li> 
+          <li><a href="ppdet/modeling/losses/detr_loss.py">Detr Loss</a></li>
           <li><a href="ppdet/modeling/losses/fairmot_loss.py">Fairmot Loss</a></li>
           <li><a href="ppdet/modeling/losses/fcos_loss.py">Fcos Loss</a></li>
-          <li><a href="ppdet/modeling/losses/gfocal_loss.py">GFocal Loss</a></li> 
+          <li><a href="ppdet/modeling/losses/gfocal_loss.py">GFocal Loss</a></li>
           <li><a href="ppdet/modeling/losses/jde_loss.py">JDE Loss</a></li>
           <li><a href="ppdet/modeling/losses/keypoint_loss.py">KeyPoint Loss</a></li>
           <li><a href="ppdet/modeling/losses/solov2_loss.py">SoloV2 Loss</a></li>
@@ -288,7 +288,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
             </ul>
           <li><b>Common</b></li>
         <ul>
-        <ul> 
+        <ul>
             <li><a href="ppdet/modeling/backbones/resnet.py#L41">Sync-BN</a></li>
             <li><a href="configs/gn/README.md">Group Norm</a></li>
             <li><a href="configs/dcn/README.md">DCNv2</a></li>
@@ -350,7 +350,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
             <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOX</a></li>  
             <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv6</a></li>  
             <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv7</a></li>
-            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">RTMDet</a></li>   
+            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">RTMDet</a></li>  
             <li><a href="configs/ppyolo/README_cn.md">PP-YOLO</a></li>
             <li><a href="configs/ppyolo#pp-yolo-tiny">PP-YOLO-Tiny</a></li>
             <li><a href="configs/picodet">PP-PicoDet</a></li>
@@ -378,6 +378,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
             <li><a href="configs/mot/deepsort">DeepSORT</a></li>
             <li><a href="configs/mot/bytetrack">ByteTrack</a></li>
             <li><a href="configs/mot/ocsort">OC-SORT</a></li>
+            <li><a href="configs/mot/centertrack">CenterTrack</a></li>
         </ul>
       </td>
       <td>
