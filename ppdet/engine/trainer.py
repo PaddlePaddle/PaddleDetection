@@ -399,8 +399,7 @@ class Trainer(object):
     def load_weights_sde(self, det_weights, reid_weights):
         if self.model.detector:
             load_weight(self.model.detector, det_weights)
-            load_weight(self.model.reid, reid_weights)
-        else:
+        if self.model.reid:
             load_weight(self.model.reid, reid_weights)
 
     def resume_weights(self, weights):
