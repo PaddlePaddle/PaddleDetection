@@ -4,7 +4,7 @@ _BASE_: [
   '../bytetrack/_base_/mot17.yml',
   '../bytetrack/_base_/ppyoloe_mot_reader_640x640.yml'
 ]
-weights: output/ocsort_ppyoloe/model_final
+weights: output/botsort_ppyoloe/model_final
 log_iter: 20
 snapshot_epoch: 2
 
@@ -16,7 +16,7 @@ pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_300e_c
 ByteTrack:
   detector: YOLOv3 # PPYOLOe version
   reid: None
-  tracker: OCSORTTracker
+  tracker: BOTSORTTracker
 det_weights: https://bj.bcebos.com/v1/paddledet/models/mot/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
 reid_weights: None
 
@@ -50,24 +50,23 @@ PPYOLOEHead:
     nms_threshold: 0.4 # 0.6 in original detector
 
 
-OCSORTTracker:
-  det_thresh: 0.4 # 0.6 in yolox ocsort
-  max_age: 30
-  min_hits: 3
-  iou_threshold: 0.3
-  delta_t: 3
-  inertia: 0.2
-  vertical_ratio: 0
+BOTSORTTracker:
+  track_high_thresh: 0.3
+  track_low_thresh: 0.2
+  new_track_thresh: 0.4
+  match_thresh: 0.7
+  track_buffer: 30
   min_box_area: 0
-  use_byte: False
-  use_angle_cost: False
+  camera_motion: False
+  cmc_method: 'sparseOptFlow' # only camera_motion is True,
+                              # sparseOptFlow | files (Vidstab GMC) | orb | ecc
 
 
 # MOTDataset for MOT evaluation and inference
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
-    data_root: MOT17_test/images/half
+    data_root: MOT17/images/half
     keep_ori_im: True # set as True in DeepSORT and ByteTrack
 
 TestMOTDataset:

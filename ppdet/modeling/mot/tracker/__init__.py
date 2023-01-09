@@ -26,4 +26,5 @@ from . import center_tracker
 from .jde_tracker import *
 from .deepsort_tracker import *
 from .ocsort_tracker import *
+from .botsort_tracker import *
 from .center_tracker import *

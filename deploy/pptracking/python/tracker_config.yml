@@ -2,7 +2,7 @@
 # The tracker of MOT JDE Detector (such as FairMOT) is exported together with the model.
 # Here 'min_box_area' and 'vertical_ratio' are set for pedestrian, you can modify for other objects tracking.
 
-type: OCSORTTracker # choose one tracker in ['JDETracker', 'OCSORTTracker', 'DeepSORTTracker']
+type: BOTSORTTracker # choose one tracker in ['JDETracker', 'OCSORTTracker', 'DeepSORTTracker','BOTSORTTracker']
 # When using for MTMCT(Multi-Target Multi-Camera Tracking), you should modify to 'DeepSORTTracker'
 
 
@@ -28,6 +28,7 @@ OCSORTTracker:
   min_box_area: 0
   vertical_ratio: 0
   use_byte: False
+  use_angle_cost: False
 
 
 # used for DeepSORT and MTMCT in PP-Tracking project
@@ -41,3 +42,14 @@ DeepSORTTracker:
   metric_type: cosine
   matching_threshold: 0.2
   max_iou_distance: 0.9
+
+BOTSORTTracker:
+  track_high_thresh: 0.3
+  track_low_thresh: 0.2
+  new_track_thresh: 0.4
+  match_thresh: 0.7
+  track_buffer: 30
+  min_box_area: 0
+  camera_motion: False
+  cmc_method: 'sparseOptFlow' # only camera_motion is True,
+                              # sparseOptFlow | files (Vidstab GMC) | orb | ecc
