@@ -29,7 +29,8 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_box
 from ppdet.modeling.mot.utils import MOTTimer, load_det_results, write_mot_results, save_vis_results
-from ppdet.modeling.mot.tracker import JDETracker, DeepSORTTracker, OCSORTTracker
+from ppdet.modeling.mot.tracker import JDETracker, CenterTracker
+from ppdet.modeling.mot.tracker import DeepSORTTracker, OCSORTTracker
 from ppdet.modeling.architectures import YOLOX
 from ppdet.metrics import Metric, MOTMetric, KITTIMOTMetric, MCMOTMetric
 from ppdet.data.source.category import get_categories
@@ -40,9 +41,9 @@ from .callbacks import Callback, ComposeCallback
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT', 'ByteTrack']
-MOT_ARCH_JDE = ['JDE', 'FairMOT']
-MOT_ARCH_SDE = ['DeepSORT', 'ByteTrack']
+MOT_ARCH = ['JDE', 'FairMOT', 'DeepSORT', 'ByteTrack', 'CenterTrack']
+MOT_ARCH_JDE = MOT_ARCH[:2]
+MOT_ARCH_SDE = MOT_ARCH[2:4]
 MOT_DATA_TYPE = ['mot', 'mcmot', 'kitti']
 
 __all__ = ['Tracker']
@@ -138,6 +139,53 @@ class Tracker(object):
         else:
             load_weight(self.model.reid, reid_weights)
 
+    def _eval_seq_centertrack(self,
+                              dataloader,
+                              save_dir=None,
+                              show_image=False,
+                              frame_rate=30,
+                              draw_threshold=0):
+        assert isinstance(self.model.tracker, CenterTracker)
+        if save_dir:
+            if not os.path.exists(save_dir): os.makedirs(save_dir)
+        tracker = self.model.tracker
+
+        timer = MOTTimer()
+        frame_id = 0
+        self.status['mode'] = 'track'
+        self.model.eval()
+        results = defaultdict(list)  # only support single class now
+
+        for step_id, data in enumerate(tqdm(dataloader)):
+            self.status['step_id'] = step_id
+            if step_id == 0:
+                self.model.reset_tracking()
+
+            # forward
+            timer.tic()
+            pred_ret = self.model(data)
+
+            online_targets = tracker.update(pred_ret)
+            online_tlwhs, online_scores, online_ids = [], [], []
+            for t in online_targets:
+                bbox = t['bbox']
+                tlwh = [bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]]
+                tscore = float(t['score'])
+                tid = int(t['tracking_id'])
+                if tlwh[2] * tlwh[3] > 0:
+                    online_tlwhs.append(tlwh)
+                    online_ids.append(tid)
+                    online_scores.append(tscore)
+            timer.toc()
+            # save results
+            results[0].append(
+                (frame_id + 1, online_tlwhs, online_scores, online_ids))
+            save_vis_results(data, frame_id, online_ids, online_tlwhs,
+                             online_scores, timer.average_time, show_image,
+                             save_dir, self.cfg.num_classes, self.ids2names)
+            frame_id += 1
+        return results, frame_id, timer.average_time, timer.calls
+
     def _eval_seq_jde(self,
                       dataloader,
                       save_dir=None,
@@ -205,7 +253,11 @@ class Tracker(object):
         if save_dir:
             if not os.path.exists(save_dir): os.makedirs(save_dir)
         use_detector = False if not self.model.detector else True
-        use_reid = False if not self.model.reid else True
+        use_reid = hasattr(self.model, 'reid')
+        if use_reid and self.model.reid is not None:
+            use_reid = True
+        else:
+            use_reid = False
 
         timer = MOTTimer()
         results = defaultdict(list)
@@ -378,6 +430,7 @@ class Tracker(object):
                 save_vis_results(data, frame_id, online_ids, online_tlwhs,
                                  online_scores, timer.average_time, show_image,
                                  save_dir, self.cfg.num_classes, self.ids2names)
+
             elif isinstance(tracker, OCSORTTracker):
                 # OC_SORT Tracker
                 online_targets = tracker.update(pred_dets_old, pred_embs)
@@ -399,6 +452,7 @@ class Tracker(object):
                 save_vis_results(data, frame_id, online_ids, online_tlwhs,
                                  online_scores, timer.average_time, show_image,
                                  save_dir, self.cfg.num_classes, self.ids2names)
+
             else:
                 raise ValueError(tracker)
             frame_id += 1
@@ -469,6 +523,12 @@ class Tracker(object):
                         scaled=scaled,
                         det_file=os.path.join(det_results_dir,
                                               '{}.txt'.format(seq)))
+                elif model_type == 'CenterTrack':
+                    results, nf, ta, tc = self._eval_seq_centertrack(
+                        dataloader,
+                        save_dir=save_dir,
+                        show_image=show_image,
+                        frame_rate=frame_rate)
                 else:
                     raise ValueError(model_type)
 
@@ -595,6 +655,12 @@ class Tracker(object):
                     det_file=os.path.join(det_results_dir,
                                           '{}.txt'.format(seq)),
                     draw_threshold=draw_threshold)
+            elif model_type == 'CenterTrack':
+                results, nf, ta, tc = self._eval_seq_centertrack(
+                    dataloader,
+                    save_dir=save_dir,
+                    show_image=show_image,
+                    frame_rate=frame_rate)
             else:
                 raise ValueError(model_type)
 

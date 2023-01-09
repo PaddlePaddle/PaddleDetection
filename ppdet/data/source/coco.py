@@ -177,8 +177,10 @@ class COCODataSet(DetDataset):
                 gt_class = np.zeros((num_bbox, 1), dtype=np.int32)
                 is_crowd = np.zeros((num_bbox, 1), dtype=np.int32)
                 gt_poly = [None] * num_bbox
+                gt_track_id = -np.ones((num_bbox, 1), dtype=np.int32)
 
                 has_segmentation = False
+                has_track_id = False
                 for i, box in enumerate(bboxes):
                     catid = box['category_id']
                     gt_class[i][0] = self.catid2clsid[catid]
@@ -200,6 +202,10 @@ class COCODataSet(DetDataset):
                             gt_poly[i] = box['segmentation']
                         has_segmentation = True
 
+                    if 'track_id' in box:
+                        gt_track_id[i][0] = box['track_id']
+                        has_track_id = True
+
                 if has_segmentation and not any(
                         gt_poly) and not self.allow_empty:
                     continue
@@ -210,6 +216,8 @@ class COCODataSet(DetDataset):
                     'gt_bbox': gt_bbox,
                     'gt_poly': gt_poly,
                 }
+                if has_track_id:
+                    gt_rec.update({'gt_track_id': gt_track_id})
 
                 for k, v in gt_rec.items():
                     if k in self.data_fields:

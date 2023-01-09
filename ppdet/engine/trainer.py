@@ -57,7 +57,7 @@ logger = setup_logger('ppdet.engine')
 
 __all__ = ['Trainer']
 
-MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT', 'ByteTrack']
+MOT_ARCH = ['JDE', 'FairMOT', 'DeepSORT', 'ByteTrack', 'CenterTrack']
 
 
 class Trainer(object):
@@ -75,7 +75,9 @@ class Trainer(object):
 
         # build data loader
         capital_mode = self.mode.capitalize()
-        if cfg.architecture in MOT_ARCH and self.mode in ['eval', 'test']:
+        if cfg.architecture in MOT_ARCH and self.mode in [
+                'eval', 'test'
+        ] and cfg.metric not in ['COCO', 'VOC']:
             self.dataset = self.cfg['{}MOTDataset'.format(
                 capital_mode)] = create('{}MOTDataset'.format(capital_mode))()
         else:

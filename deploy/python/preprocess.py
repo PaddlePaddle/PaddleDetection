@@ -450,13 +450,15 @@ class WarpAffine(object):
                  input_h=512,
                  input_w=512,
                  scale=0.4,
-                 shift=0.1):
+                 shift=0.1,
+                 down_ratio=4):
         self.keep_res = keep_res
         self.pad = pad
         self.input_h = input_h
         self.input_w = input_w
         self.scale = scale
         self.shift = shift
+        self.down_ratio = down_ratio
 
     def __call__(self, im, im_info):
         """
@@ -472,12 +474,14 @@ class WarpAffine(object):
         h, w = img.shape[:2]
 
         if self.keep_res:
+            # True in detection eval/infer
             input_h = (h | self.pad) + 1
             input_w = (w | self.pad) + 1
             s = np.array([input_w, input_h], dtype=np.float32)
             c = np.array([w // 2, h // 2], dtype=np.float32)
 
         else:
+            # False in centertrack eval_mot/eval_mot
             s = max(h, w) * 1.0
             input_h, input_w = self.input_h, self.input_w
             c = np.array([w / 2., h / 2.], dtype=np.float32)
@@ -486,6 +490,22 @@ class WarpAffine(object):
         img = cv2.resize(img, (w, h))
         inp = cv2.warpAffine(
             img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR)
+
+        if not self.keep_res:
+            out_h = input_h // self.down_ratio
+            out_w = input_w // self.down_ratio
+            trans_output = get_affine_transform(c, s, 0, [out_w, out_h])
+
+            im_info.update({
+                'center': c,
+                'scale': s,
+                'out_height': out_h,
+                'out_width': out_w,
+                'inp_height': input_h,
+                'inp_width': input_w,
+                'trans_input': trans_input,
+                'trans_output': trans_output,
+            })
         return inp, im_info
 
 
