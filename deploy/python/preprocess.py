@@ -449,16 +449,16 @@ class WarpAffine(object):
                  pad=31,
                  input_h=512,
                  input_w=512,
-                 down_ratio=4,
                  scale=0.4,
-                 shift=0.1):
+                 shift=0.1,
+                 down_ratio=4):
         self.keep_res = keep_res
         self.pad = pad
         self.input_h = input_h
         self.input_w = input_w
-        self.down_ratio = down_ratio
         self.scale = scale
         self.shift = shift
+        self.down_ratio = down_ratio
 
     def __call__(self, im, im_info):
         """

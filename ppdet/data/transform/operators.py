@@ -2847,9 +2847,9 @@ class WarpAffine(BaseOperator):
                  pad=31,
                  input_h=512,
                  input_w=512,
-                 down_ratio=4,
                  scale=0.4,
-                 shift=0.1):
+                 shift=0.1,
+                 down_ratio=4):
         """WarpAffine
         Warp affine the image
         The code is based on https://github.com/xingyizhou/CenterNet/blob/master/src/lib/datasets/sample/ctdet.py
@@ -2859,9 +2859,9 @@ class WarpAffine(BaseOperator):
         self.pad = pad
         self.input_h = input_h
         self.input_w = input_w
-        self.down_ratio = down_ratio
         self.scale = scale
         self.shift = shift
+        self.down_ratio = down_ratio
 
     def apply(self, sample, context=None):
         img = sample['image']

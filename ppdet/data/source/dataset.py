@@ -87,6 +87,7 @@ class DetDataset(Dataset):
                 for _ in range(4)
             ]
         elif self.pre_img_epoch == 0 or self._epoch < self.pre_img_epoch:
+            # Add previous image as input, only used in CenterTrack
             idx_pre_img = idx - 1
             if idx_pre_img < 0:
                 idx_pre_img = idx + 1
