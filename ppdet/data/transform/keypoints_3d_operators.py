@@ -47,73 +47,6 @@ from PIL import Image, ImageDraw
 from mpl_toolkits.mplot3d import Axes3D
 
 
-def plot_3D_joints(data, saved_fig_path, radius=40):
-    ap = np.array(data, dtype='float32')  # [24,3]
-    ap = ap - ap[0]  # 原点为第0个点
-
-    np_data = ap
-    xp = np_data.T[0].T  # [24]
-
-    zp = np_data.T[1].T  # y->z
-    yp = np_data.T[2].T  # z->y
-
-    ax = plt.axes(projection='3d')
-
-    ax.set_xlim3d([-radius, radius])
-    ax.set_zlim3d([-radius, radius])
-    ax.set_ylim3d([-radius, radius])
-    ax.view_init(elev=0, azim=90)  # elev沿y轴旋转
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel('z')
-    ax.dist = 1
-
-    # 3D scatter
-    ax.scatter3D(xp, yp, zp, cmap='Greens')
-
-    # left leg, node [0,1,4,7,10]
-    ax.plot(
-        np.hstack((xp[0], xp[1], xp[4], xp[7], xp[10])),
-        np.hstack((yp[0], yp[1], yp[4], yp[7], yp[10])),
-        np.hstack((zp[0], zp[1], zp[4], zp[7], zp[10])),
-        ls='-',
-        color='red')
-
-    # right leg, node [0,2,5,8,11]
-    ax.plot(
-        np.hstack((xp[0], xp[2], xp[5], xp[8], xp[11])),
-        np.hstack((yp[0], yp[2], yp[5], yp[8], yp[11])),
-        np.hstack((zp[0], zp[2], zp[5], zp[8], zp[11])),
-        ls='-',
-        color='blue')
-
-    # left arm, node [9,13,16, 18, 20, 22]
-    ax.plot(
-        np.hstack((xp[9], xp[13], xp[16], xp[18], xp[20], xp[22])),
-        np.hstack((yp[9], yp[13], yp[16], yp[18], yp[20], yp[22])),
-        np.hstack((zp[9], zp[13], zp[16], zp[18], zp[20], zp[22])),
-        ls='-',
-        color='red')
-
-    # right arm, node [9,14,17, 19, 21, 23]
-    ax.plot(
-        np.hstack((xp[9], xp[14], xp[17], xp[19], xp[21], xp[23])),
-        np.hstack((yp[9], yp[14], yp[17], yp[19], yp[21], yp[23])),
-        np.hstack((zp[9], zp[14], zp[17], zp[19], zp[21], zp[23])),
-        ls='-',
-        color='blue')
-
-    # spine, node [15, 12, 9, 6, 3,0]
-    ax.plot(
-        np.hstack((xp[15], xp[12], xp[9], xp[6], xp[3], xp[0])),
-        np.hstack((yp[15], yp[12], yp[9], yp[6], yp[3], yp[0])),
-        np.hstack((zp[15], zp[12], zp[9], zp[6], zp[3], zp[0])),
-        ls='-',
-        color='gray')
-
-    plt.savefig(saved_fig_path)
-
-
 def register_keypointop(cls):
     return serializable(cls)
 
@@ -151,8 +84,6 @@ class BaseOperator(object):
         Returns:
             result (dict): a processed sample
         """
-        #print(type(sample),len(sample),type(sample[0]),len(sample[0]),type(sample[0][0]),type(sample[0][1]))
-        #print(ccc)
         if isinstance(sample, Sequence):  # for batch_size
             for i in range(len(sample)):
                 sample[i] = self.apply(sample[i], context)
@@ -197,26 +128,6 @@ class CropAndFlipImages(object):
                     kps2d[:,pair[1], :], kps2d[:,pair[0], :].copy()
 
             records["kps2d"] = kps2d
-            '''
-            # vis
-            for i,frame_kps2d in enumerate(kps2d):
-                img = images[i]
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                for j,kp in enumerate(frame_kps2d):
-                    print(kp[0],kp[1])
-                    cv2.circle(img, (kp[0],kp[1]), 8, (0, 255, 255), thickness=-1, lineType=cv2.FILLED)
-                    cv2.putText(img, "{}".format(j), (kp[0],kp[1]), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2, lineType=cv2.LINE_AA)
-                #print(image_path)
-                #img = cv.imread(image_path)
-                #joints_2d = []
-                #for i in range(self.ann_info['num_joints']):
-                    #c_x,c_y = kps2d[i*3],kps2d[i*3+1]
-                    # c_x = width-c_x
-                    #joints_2d.append([c_x,c_y])
-                    
-                cv2.imwrite('/home/aistudio/2d_vis.jpg', img)
-                print(ccc)
-            '''
 
         return records
 
@@ -297,24 +208,6 @@ class ResizeImages(BaseOperator):
             kps2d[:, :, 1] = kps2d[:, :, 1] * im_scale_y
 
             sample['kps2d'] = kps2d
-            '''
-            # vis
-            for i,frame_kps2d in enumerate(kps2d):
-                img = resized_images[i]
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                for j,kp in enumerate(frame_kps2d):
-                    print(kp[0],kp[1])
-                    cv2.circle(img, (kp[0],kp[1]), 1, (0, 255, 255), thickness=-1, lineType=cv2.FILLED)
-                    cv2.putText(img, "{}".format(j), (kp[0],kp[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0, 0, 255), 1, lineType=cv2.LINE_AA)
-                
-                cv2.imwrite('/home/aistudio/2d_vis_3.jpg', img)
-                print(ccc)
-            '''
-
-        # vis
-        #cv2.imwrite("/home/aistudio/vis_image.jpg",sample['images'][0])
-        #plot_3D_joints(sample['kps3d'][0], "/home/aistudio/vis_points.jpg", radius=400)
-        #print(ccc)
 
         return sample
 
@@ -498,19 +391,6 @@ class RandomFlipHalfBody3DTransformImages(object):
             joints, joints_vis, kps2d = self.flip_joints(
                 joints, joints_vis, images.shape[2], self.flip_pairs,
                 kps2d)  # 关键点左右对称翻转
-            '''
-            # vis
-            for i,frame_kps2d in enumerate(kps2d):
-                img = images[i]
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                for j,kp in enumerate(frame_kps2d):
-                    print(kp[0],kp[1])
-                    cv2.circle(img, (kp[0],kp[1]), 8, (0, 255, 255), thickness=-1, lineType=cv2.FILLED)
-                    cv2.putText(img, "{}".format(j), (kp[0],kp[1]), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2, lineType=cv2.LINE_AA)
-                
-                cv2.imwrite('/home/aistudio/2d_vis_2.jpg', img)
-                print(ccc)
-            '''
         occlusion = False
         if self.do_occlusion and random.random() <= 0.5:  # 随机遮挡
             height = images[0].shape[0]
@@ -541,13 +421,6 @@ class RandomFlipHalfBody3DTransformImages(object):
                     mask = np.random.rand(h, w, 3) * 255
                     images[:, ymin:ymin + h, xmin:xmin + w, :] = mask[
                         None, :, :, :]
-                    '''
-                    for i in range(images.shape[0]):
-                        print(images[i].shape,mask.shape)
-                        print(ymin,xmin,h,w)
-                      
-                        images[i,ymin:ymin+h, xmin:xmin+w, :] = mask
-                    '''
                     break
 
         records['images'] = images
@@ -555,13 +428,5 @@ class RandomFlipHalfBody3DTransformImages(object):
         records['kps3d_vis'] = joints_vis
         if kps2d is not None:
             records['kps2d'] = kps2d
-        '''
-        if occlusion:
-            for i,image in enumerate(records['images']):
-                cv2.imwrite("/home/aistudio/test_occlusion/occlusion_"+str(i)+".jpg",image)
-                plot_3D_joints(records['kps3d'][i],"/home/aistudio/test_occlusion/occlusion_"+str(i)+"_skeleton.jpg" , radius=500)
-        
-            print(ccc)
-        '''
 
         return records

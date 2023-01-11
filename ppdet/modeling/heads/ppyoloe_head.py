@@ -139,7 +139,7 @@ class PPYOLOEHead(nn.Layer):
             self.anchor_points = anchor_points
             self.stride_tensor = stride_tensor
 
-    def forward_train(self, feats, targets, aux_pred=None):
+    def forward_train(self, feats, targets):
         anchors, anchor_points, num_anchors_list, stride_tensor = \
             generate_anchors_for_grid_cell(
                 feats, self.fpn_strides, self.grid_cell_scale,
@@ -161,7 +161,7 @@ class PPYOLOEHead(nn.Layer):
         return self.get_loss([
             cls_score_list, reg_distri_list, anchors, anchor_points,
             num_anchors_list, stride_tensor
-        ], targets, aux_pred)
+        ], targets)
 
     def _generate_anchors(self, feats=None, dtype='float32'):
         # just use in eval time
@@ -211,12 +211,12 @@ class PPYOLOEHead(nn.Layer):
 
         return cls_score_list, reg_dist_list, anchor_points, stride_tensor
 
-    def forward(self, feats, targets=None, aux_pred=None):
+    def forward(self, feats, targets=None):
         assert len(feats) == len(self.fpn_strides), \
             "The size of feats is not equal to size of fpn_strides"
 
         if self.training:
-            return self.forward_train(feats, targets, aux_pred)
+            return self.forward_train(feats, targets)
         else:
             return self.forward_eval(feats)
 
@@ -298,59 +298,12 @@ class PPYOLOEHead(nn.Layer):
             loss_dfl = pred_dist.sum() * 0.
         return loss_l1, loss_iou, loss_dfl
 
-    
-    def _get_loss_from_assign(self, cls_preds, reg_preds, pred_bboxes, anchor_points_s,assign, alpha_l):
-        assigned_labels, assigned_bboxes, assigned_scores = assign
-
-        # cls loss
-        if self.use_varifocal_loss: # True
-            one_hot_label = F.one_hot(assigned_labels,
-                                      self.num_classes + 1)[..., :-1]
-
-            loss_cls = self._varifocal_loss(cls_preds, assigned_scores,
-                                            one_hot_label)
-        else:
-            loss_cls = self._focal_loss(cls_preds, assigned_scores, alpha_l)
-
-        assigned_scores_sum = assigned_scores.sum()
-
-        if paddle.distributed.get_world_size() > 1:
-            paddle.distributed.all_reduce(assigned_scores_sum)
-            assigned_scores_sum /= paddle.distributed.get_world_size()
-
-        assigned_scores_sum = paddle.clip(assigned_scores_sum, min=1.) #[1]
-        loss_cls /= assigned_scores_sum
-        
-        # loss for regression
-        loss_l1, loss_iou, loss_dfl = \
-            self._bbox_loss(reg_preds, pred_bboxes, anchor_points_s,
-                            assigned_labels, assigned_bboxes, assigned_scores,
-                            assigned_scores_sum)
-        
-        loss = self.loss_weight['class'] * loss_cls + \
-               self.loss_weight['iou'] * loss_iou + \
-               self.loss_weight['dfl'] * loss_dfl
-
-        out_dict = {
-            'loss': loss,
-            'loss_cls': loss_cls,
-            'loss_iou': loss_iou,
-            'loss_dfl': loss_dfl,
-            'loss_l1': loss_l1,
-        }
-
-        return out_dict
-
-
-    def get_loss(self, head_outs, gt_meta, aux_pred=None):
+    def get_loss(self, head_outs, gt_meta):
         pred_scores, pred_distri, anchors,\
         anchor_points, num_anchors_list, stride_tensor = head_outs
 
         anchor_points_s = anchor_points / stride_tensor
         pred_bboxes = self._bbox_decode(anchor_points_s, pred_distri)
-
-        if aux_pred is not None:
-            pred_bboxes_aux = self._bbox_decode(anchor_points_s, aux_pred[1])
 
         gt_labels = gt_meta['gt_class']
         gt_bboxes = gt_meta['gt_bbox']
@@ -368,8 +321,7 @@ class PPYOLOEHead(nn.Layer):
                     pred_bboxes=pred_bboxes.detach() * stride_tensor)
             alpha_l = 0.25
         else:
-            if aux_pred is None:
-              assigned_labels, assigned_bboxes, assigned_scores = \
+            assigned_labels, assigned_bboxes, assigned_scores = \
                 self.assigner(
                 pred_scores.detach(),
                 pred_bboxes.detach() * stride_tensor,
@@ -379,38 +331,40 @@ class PPYOLOEHead(nn.Layer):
                 gt_bboxes,
                 pad_gt_mask,
                 bg_index=self.num_classes)
-            else:
-               aux_pred_scores, aux_pred_bboxes = aux_pred
-               assigned_labels, assigned_bboxes, assigned_scores = \
-                    self.assigner(
-                    aux_pred_scores.detach(),
-                    aux_pred_bboxes.detach() * stride_tensor,
-                    anchor_points,
-                    num_anchors_list,
-                    gt_labels,
-                    gt_bboxes,
-                    pad_gt_mask,
-                    bg_index=self.num_classes)
             alpha_l = -1
         # rescale bbox
         assigned_bboxes /= stride_tensor
-
-        assign=(assigned_labels, assigned_bboxes, assigned_scores)
-        assign_out_dict = self._get_loss_from_assign(pred_scores, pred_distri, pred_bboxes, anchor_points_s, 
-                                 assign, alpha_l)
-
-
-        if aux_pred is not None:
-            assign_out_dict_aux = self._get_loss_from_assign(aux_pred[0], aux_pred[1], pred_bboxes_aux, anchor_points_s, 
-                                    assign, alpha_l)
-        
-            loss = {}
-            for key in assign_out_dict.keys():
-                loss[key] = assign_out_dict[key]+assign_out_dict_aux[key]
+        # cls loss
+        if self.use_varifocal_loss:
+            one_hot_label = F.one_hot(assigned_labels,
+                                      self.num_classes + 1)[..., :-1]
+            loss_cls = self._varifocal_loss(pred_scores, assigned_scores,
+                                            one_hot_label)
         else:
-            loss = assign_out_dict
+            loss_cls = self._focal_loss(pred_scores, assigned_scores, alpha_l)
 
-        return loss
+        assigned_scores_sum = assigned_scores.sum()
+        if paddle.distributed.get_world_size() > 1:
+            paddle.distributed.all_reduce(assigned_scores_sum)
+            assigned_scores_sum /= paddle.distributed.get_world_size()
+        assigned_scores_sum = paddle.clip(assigned_scores_sum, min=1.)
+        loss_cls /= assigned_scores_sum
+
+        loss_l1, loss_iou, loss_dfl = \
+            self._bbox_loss(pred_distri, pred_bboxes, anchor_points_s,
+                            assigned_labels, assigned_bboxes, assigned_scores,
+                            assigned_scores_sum)
+        loss = self.loss_weight['class'] * loss_cls + \
+               self.loss_weight['iou'] * loss_iou + \
+               self.loss_weight['dfl'] * loss_dfl
+        out_dict = {
+            'loss': loss,
+            'loss_cls': loss_cls,
+            'loss_iou': loss_iou,
+            'loss_dfl': loss_dfl,
+            'loss_l1': loss_l1,
+        }
+        return out_dict
 
     def post_process(self, head_outs, scale_factor):
         pred_scores, pred_dist, anchor_points, stride_tensor = head_outs

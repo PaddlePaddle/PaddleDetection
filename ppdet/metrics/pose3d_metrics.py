@@ -49,9 +49,6 @@ def mean_per_joint_position_error(pred, gt, has_3d_joints):
     if len(gt.shape) == 4:
         gt = paddle.reshape(gt, (gt.shape[0] * gt.shape[1], gt.shape[2], -1))
 
-    #print('has_3d_joints:',has_3d_joints)
-    #print("has_3d_joints == 1:",has_3d_joints == 1)
-
     #gt = gt[has_3d_joints == 1]
     gt = gt[:, :, :3]
     #pred = pred[has_3d_joints == 1]
@@ -65,15 +62,6 @@ def mean_per_joint_position_error(pred, gt, has_3d_joints):
         # pred_pelvis = (pred[:, 2, :] + pred[:, 3, :]) / 2 # for Human3.6M
         pred_pelvis = pred[:, 0, :]
         pred = pred - pred_pelvis[:, None, :]
-
-        #print("gt:",gt[0])
-        #print("pred:",pred[0])
-        #print(ccc)
-
-        #print(((pred - gt)**2).shape) # [128, 24, 3]
-        #print(((pred - gt)**2)[0])
-        #print((((pred - gt)**2).sum(axis=-1)).shape,((pred - gt)**2).sum(axis=-1)) # (128, 24)
-        #print((paddle.sqrt(((pred - gt)**2).sum(axis=-1)).shape)) # (128, 24)
 
         error = paddle.sqrt(((pred - gt)**2).sum(axis=-1)).mean(
             axis=-1).numpy()  # (128)
