@@ -38,7 +38,7 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval, Pose3DEval
 from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
@@ -342,6 +342,13 @@ class Trainer(object):
                     self.cfg.save_dir,
                     save_prediction_only=save_prediction_only)
             ]
+        elif self.cfg.metric == 'Pose3DEval':
+            save_prediction_only = self.cfg.get('save_prediction_only', False)
+            self._metrics = [
+                Pose3DEval(
+                    self.cfg.save_dir,
+                    save_prediction_only=save_prediction_only)
+            ]
         elif self.cfg.metric == 'MOTDet':
             self._metrics = [JDEDetMetric(), ]
         else:
@@ -505,10 +512,8 @@ class Trainer(object):
                         # model forward
                         outputs = model(data)
                         loss = outputs['loss']
-                        print("$$$$ loss:",loss.numpy())
                         # model backward
                         loss.backward()
-                        print("finish  loss.backward")
                     self.optimizer.step()
                 curr_lr = self.optimizer.get_lr()
                 self.lr.step()
@@ -550,10 +555,14 @@ class Trainer(object):
                     # If metric is VOC, need to be set collate_batch=False.
                     if self.cfg.metric == 'VOC':
                         self.cfg['EvalReader']['collate_batch'] = False
+                    if self.cfg.metric == "Pose3DEval":
+                        self._eval_loader = create('EvalReader')(
+                            self._eval_dataset, self.cfg.worker_num)
                     self._eval_loader = create('EvalReader')(
                         self._eval_dataset,
                         self.cfg.worker_num,
                         batch_sampler=self._eval_batch_sampler)
+
                 # if validation in training is enabled, metrics should be re-init
                 # Init_mark makes sure this code will only execute once
                 if validate and Init_mark == False:

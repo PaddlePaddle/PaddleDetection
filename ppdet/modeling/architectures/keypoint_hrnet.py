@@ -24,8 +24,9 @@ from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 from ..keypoint_utils import transform_preds
 from .. import layers as L
+from paddle.nn import functional as F
 
-__all__ = ['TopDownHRNet']
+__all__ = ['TopDownHRNet', 'SMPL3DHRNet', 'SMPL3DHRHeatmapNet']
 
 
 @register
@@ -265,3 +266,229 @@ class HRNetPostProcess(object):
                     maxvals, axis=1)
         ]]
         return outputs
+
+
+class SMPLPostProcess(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, output, center, scale):
+        """
+        Args:
+            output (numpy.ndarray): numpy.ndarray([batch_size, num_joints, 3]), keypoints coords
+            scale (numpy.ndarray): The scale factor
+
+        Returns:
+            preds: numpy.ndarray([batch_size, num_joints, 3]), keypoints coords
+        """
+
+        # output第一个点可能不是原点
+
+        preds = output.numpy().copy()
+
+        # Transform back
+        for i in range(output.shape[0]):  # batch_size
+            preds[i][:, 0] = preds[i][:, 0] * scale[i][0]
+            preds[i][:, 1] = preds[i][:, 1] * scale[i][1]
+
+        return preds
+
+
+def soft_argmax(heatmaps, joint_num):
+    # heatmaps: [128, 768, 32, 32]
+
+    dims = heatmaps.shape
+    depth_dim = (int)(dims[1] / joint_num)
+    heatmaps = heatmaps.reshape((-1, joint_num, depth_dim * dims[2] * dims[3]))
+    heatmaps = F.softmax(heatmaps, 2)
+    heatmaps = heatmaps.reshape((-1, joint_num, depth_dim, dims[2], dims[3]))
+
+    accu_x = heatmaps.sum(axis=(2, 3))
+    accu_y = heatmaps.sum(axis=(2, 4))
+    accu_z = heatmaps.sum(axis=(3, 4))
+
+    accu_x = accu_x * paddle.arange(1, 33)
+    accu_y = accu_y * paddle.arange(1, 33)
+    accu_z = accu_z * paddle.arange(1, 33)
+
+    accu_x = accu_x.sum(axis=2, keepdim=True) - 1
+    accu_y = accu_y.sum(axis=2, keepdim=True) - 1
+    accu_z = accu_z.sum(axis=2, keepdim=True) - 1
+
+    coord_out = paddle.concat(
+        (accu_x, accu_y, accu_z), axis=2)  # [batch_size, joint_num, 3]
+
+    return coord_out
+
+
+@register
+class SMPL3DHRHeatmapNet(BaseArch):
+    __category__ = 'architecture'
+    __inject__ = ['loss']
+
+    def __init__(
+            self,
+            width,  # 40, backbone输出的channel数目
+            num_joints,
+            backbone='HRNet',
+            loss='KeyPointRegressionMSELoss',
+            post_process=SMPLPostProcess):
+        """
+        Args:
+            backbone (nn.Layer): backbone instance
+            post_process (object): post process instance
+        """
+        super(SMPL3DHRHeatmapNet, self).__init__()
+
+        self.backbone = backbone
+        self.post_process = SMPLPostProcess()
+        self.loss = loss
+        self.deploy = False
+        self.num_joints = num_joints
+
+        self.final_conv = L.Conv2d(width, num_joints, 1, 1, 0, bias=True)
+        # for heatmap output
+        self.final_conv_new = L.Conv2d(
+            width, num_joints * 32, 1, 1, 0, bias=True)
+
+    @classmethod
+    def from_config(cls, cfg, *args, **kwargs):
+        # backbone
+        backbone = create(cfg['backbone'])
+
+        return {'backbone': backbone, }
+
+    def _forward(self):
+        # type of inputs is dict
+        # image_file:list;center: 512(batch_size),2
+        # scale:(512, 2),im_id:512,image: Tensor(shape=[512, 3, 128, 96];score': Tensor(shape=[512],1;'rotate': Tensor(shape=[512];
+        # target': Tensor(shape=[512, 17, 32, 24];target_weight': Tensor(shape=[512, 17, 1];'epoch_id': 0
+        #print(type(self.inputs),self.inputs.keys())
+
+        feats = self.backbone(self.inputs)  # feats:[[batch_size, 40, 32, 24]]
+
+        hrnet_outputs = self.final_conv_new(feats[0])
+        res = soft_argmax(hrnet_outputs, self.num_joints)
+
+        if self.training:
+            return self.loss(res, self.inputs)
+        else:  # export model need
+            return res  #模型输出结果
+
+    def get_loss(self):
+        return self._forward()
+
+    def get_pred(self):
+        res_lst = self._forward()
+        outputs = {'keypoint': res_lst}
+        return outputs
+
+    def flip_back(self, output_flipped, matched_parts):
+        assert output_flipped.ndim == 4,\
+                'output_flipped should be [batch_size, num_joints, height, width]'
+
+        output_flipped = output_flipped[:, :, :, ::-1]
+
+        for pair in matched_parts:
+            tmp = output_flipped[:, pair[0], :, :].copy()
+            output_flipped[:, pair[0], :, :] = output_flipped[:, pair[1], :, :]
+            output_flipped[:, pair[1], :, :] = tmp
+
+        return output_flipped
+
+
+@register
+class SMPL3DHRNet(BaseArch):
+    __category__ = 'architecture'
+    __inject__ = ['loss']
+
+    def __init__(
+            self,
+            width,  # 40, backbone输出的channel数目
+            num_joints,
+            backbone='HRNet',
+            loss='KeyPointRegressionMSELoss',
+            post_process=SMPLPostProcess):
+        """
+        Args:
+            backbone (nn.Layer): backbone instance
+            post_process (object): post process instance
+        """
+        super(SMPL3DHRNet, self).__init__()
+        self.backbone = backbone
+        self.post_process = SMPLPostProcess()
+        self.loss = loss
+        self.deploy = False
+        self.num_joints = num_joints
+
+        self.final_conv = L.Conv2d(width, num_joints, 1, 1, 0, bias=True)
+
+        self.final_conv_new = L.Conv2d(
+            width, num_joints * 32, 1, 1, 0, bias=True)
+
+        self.flatten = paddle.nn.Flatten(start_axis=2, stop_axis=3)
+        self.fc1 = paddle.nn.Linear(768, 256)
+        self.act1 = paddle.nn.ReLU()
+        self.fc2 = paddle.nn.Linear(256, 64)
+        self.act2 = paddle.nn.ReLU()
+        self.fc3 = paddle.nn.Linear(64, 3)
+
+        # for human3.6M
+        self.fc1_1 = paddle.nn.Linear(3136, 1024)
+        self.fc2_1 = paddle.nn.Linear(1024, 256)
+        self.fc3_1 = paddle.nn.Linear(256, 3)
+
+    @classmethod
+    def from_config(cls, cfg, *args, **kwargs):
+        # backbone
+        backbone = create(cfg['backbone'])
+
+        return {'backbone': backbone, }
+
+    def _forward(self):
+        # type of inputs is dict
+        # image_file:list;center: 512(batch_size),2
+        # scale:(512, 2),im_id:512,image: Tensor(shape=[512, 3, 128, 96];score': Tensor(shape=[512],1;'rotate': Tensor(shape=[512];
+        # target': Tensor(shape=[512, 17, 32, 24];target_weight': Tensor(shape=[512, 17, 1];'epoch_id': 0
+        #print(type(self.inputs),self.inputs.keys())
+
+        feats = self.backbone(self.inputs)  # feats:[[batch_size, 40, 32, 24]]
+
+        hrnet_outputs = self.final_conv(feats[0])
+        flatten_res = self.flatten(
+            hrnet_outputs)  #  [batch_size, 24, (height/4)*(width/4)]
+        res = self.fc1(flatten_res)
+        res = self.act1(res)
+        res = self.fc2(res)
+        res = self.act2(res)
+        res = self.fc3(res)  # [batch_size, 24, 3]
+
+        # move to zero, nan
+        #center = res[:,0,:]
+        #res = res-center[:,None,:]
+
+        if self.training:
+            return self.loss(res, self.inputs)
+        else:  # export model need
+            return res  #模型输出结果
+
+    def get_loss(self):
+        return self._forward()
+
+    def get_pred(self):
+        res_lst = self._forward()
+        outputs = {'keypoint': res_lst}
+        return outputs
+
+    def flip_back(self, output_flipped, matched_parts):
+        assert output_flipped.ndim == 4,\
+                'output_flipped should be [batch_size, num_joints, height, width]'
+
+        output_flipped = output_flipped[:, :, :, ::-1]
+
+        for pair in matched_parts:
+            tmp = output_flipped[:, pair[0], :, :].copy()
+            output_flipped[:, pair[0], :, :] = output_flipped[:, pair[1], :, :]
+            output_flipped[:, pair[1], :, :] = tmp
+
+        return output_flipped
