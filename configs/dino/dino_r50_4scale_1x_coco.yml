@@ -1,0 +1,11 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/dino_r50.yml',
+  '_base_/dino_reader.yml',
+]
+
+weights: output/dino_r50_4scale_1x_coco/model_final
+find_unused_parameters: True
+log_iter: 100

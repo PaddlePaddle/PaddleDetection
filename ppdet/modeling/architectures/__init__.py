@@ -38,6 +38,7 @@ from . import bytetrack
 from . import yolox
 from . import yolof
 from . import pose3d_metro
+from . import centertrack
 from . import queryinst
 
 from .meta_arch import *
@@ -67,4 +68,5 @@ from .bytetrack import *
 from .yolox import *
 from .yolof import *
 from .pose3d_metro import *
+from .centertrack import *
 from .queryinst import *

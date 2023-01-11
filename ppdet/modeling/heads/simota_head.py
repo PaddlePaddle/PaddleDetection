@@ -180,7 +180,8 @@ class OTAHead(GFLHead):
         num_total_pos = sum(pos_num_l)
         try:
             paddle.distributed.all_reduce(num_total_pos)
-            num_total_pos = num_total_pos / paddle.distributed.get_world_size()
+            num_total_pos = paddle.clip(
+                num_total_pos / paddle.distributed.get_world_size(), min=1.)
         except:
             num_total_pos = max(num_total_pos, 1)
 
@@ -397,7 +398,8 @@ class OTAVFLHead(OTAHead):
         num_total_pos = sum(pos_num_l)
         try:
             paddle.distributed.all_reduce(num_total_pos)
-            num_total_pos = num_total_pos / paddle.distributed.get_world_size()
+            num_total_pos = paddle.clip(
+                num_total_pos / paddle.distributed.get_world_size(), min=1.)
         except:
             num_total_pos = max(num_total_pos, 1)
 
