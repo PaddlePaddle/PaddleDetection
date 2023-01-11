@@ -21,7 +21,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from .iou_loss import GIoULoss
-from ..transformers import bbox_cxcywh_to_xyxy, sigmoid_focal_loss
+from ..transformers.utils import bbox_cxcywh_to_xyxy, sigmoid_focal_loss
 
 __all__ = ['DETRLoss', 'DINOLoss']
 
