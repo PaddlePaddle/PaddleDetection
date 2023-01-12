@@ -47,10 +47,9 @@ class EmbeddingRPNHead(nn.Layer):
         self.init_proposal_bboxes.weight.set_value(init_bboxes)
 
     @staticmethod
-    def bbox_cxcywh_to_xyxy(bbox):
-        cx, cy, w, h = bbox.unbind(axis=-1)
-        bbox_new = [(cx - 0.5 * w), (cy - 0.5 * h), (cx + 0.5 * w), (cy + 0.5 * h)]
-        return paddle.stack(bbox_new, axis=-1)
+    def bbox_cxcywh_to_xyxy(x):
+        cxcy, wh = paddle.split(x, 2, axis=-1)
+        return paddle.concat([cxcy - 0.5 * wh, cxcy + 0.5 * wh], axis=-1)
 
     def forward(self, img_whwh):
         proposal_bboxes = self.init_proposal_bboxes.weight.clone()
