@@ -30,7 +30,7 @@ The keypoint detection part in PaddleDetection follows the state-of-the-art algo
 At the same time, PaddleDetection provides a self-developed real-time keypoint detection model [PP-TinyPose](./tiny_pose/README_en.md) optimized for mobile devices.
 
 <div align="center">
-  <img src="./football_keypoint.gif" width='800'/>
+  <img src="https://user-images.githubusercontent.com/22989727/205551833-a891a790-73c6-43cb-84f9-91553e9ef27b.gif" width='800'/>
 </div>
 
 ## Model Recommendation

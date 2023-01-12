@@ -76,7 +76,7 @@ pip install paddledet
 
 #### 3.2 准备数据集
 
-本案例默认以COCO数据进行自动压缩实验，如果自定义COCO数据，或者其他格式数据，请参考[数据准备文档](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/PrepareDataSet.md) 来准备数据。
+本案例默认以COCO数据进行自动压缩实验，如果自定义COCO数据，或者其他格式数据，请参考[数据准备文档](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/docs/tutorials/data/PrepareDataSet.md) 来准备数据。
 
 如果数据集为非COCO格式数据，请修改[configs](./configs)中reader配置文件中的Dataset字段。
 

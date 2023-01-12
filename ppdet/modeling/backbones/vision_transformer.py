@@ -340,6 +340,7 @@ class VisionTransformer(nn.Layer):
                  use_abs_pos_emb=False,
                  use_sincos_pos_emb=True,
                  with_fpn=True,
+                 num_fpn_levels=4,
                  use_checkpoint=False,
                  **args):
         super().__init__()
@@ -350,6 +351,8 @@ class VisionTransformer(nn.Layer):
         self.use_sincos_pos_emb = use_sincos_pos_emb
         self.use_rel_pos_bias = use_rel_pos_bias
         self.final_norm = final_norm
+        self.out_indices = out_indices
+        self.num_fpn_levels = num_fpn_levels
 
         if use_checkpoint:
             paddle.seed(0)
@@ -415,14 +418,15 @@ class VisionTransformer(nn.Layer):
 
         assert len(out_indices) <= 4, ''
         self.out_indices = out_indices
-        self.out_channels = [embed_dim for _ in range(len(out_indices))]
-        self.out_strides = [4, 8, 16, 32][-len(out_indices):] if with_fpn else [
-            8 for _ in range(len(out_indices))
+        self.out_channels = [embed_dim for _ in range(num_fpn_levels)]
+        self.out_strides = [4, 8, 16, 32][-num_fpn_levels:] if with_fpn else [
+            patch_size for _ in range(len(out_indices))
         ]
 
         self.norm = Identity()
 
         if self.with_fpn:
+            assert num_fpn_levels <= 4, ''
             self.init_fpn(
                 embed_dim=embed_dim,
                 patch_size=patch_size, )
@@ -505,16 +509,24 @@ class VisionTransformer(nn.Layer):
         dim = x.shape[-1]
         # we add a small number to avoid floating point error in the interpolation
         # see discussion at https://github.com/facebookresearch/dino/issues/8
-        w0, h0 = w0 + 0.1, h0 + 0.1
+        # w0, h0 = w0 + 0.1, h0 + 0.1
+        # patch_pos_embed = nn.functional.interpolate(
+        #     patch_pos_embed.reshape([
+        #         1, self.patch_embed.num_patches_w,
+        #         self.patch_embed.num_patches_h, dim
+        #     ]).transpose((0, 3, 1, 2)),
+        #     scale_factor=(w0 / self.patch_embed.num_patches_w,
+        #                   h0 / self.patch_embed.num_patches_h),
+        #     mode='bicubic', )
 
         patch_pos_embed = nn.functional.interpolate(
             patch_pos_embed.reshape([
                 1, self.patch_embed.num_patches_w,
                 self.patch_embed.num_patches_h, dim
             ]).transpose((0, 3, 1, 2)),
-            scale_factor=(w0 / self.patch_embed.num_patches_w,
-                          h0 / self.patch_embed.num_patches_h),
+            (w0, h0),
             mode='bicubic', )
+
         assert int(w0) == patch_pos_embed.shape[-2] and int(
             h0) == patch_pos_embed.shape[-1]
         patch_pos_embed = patch_pos_embed.transpose(
@@ -611,9 +623,15 @@ class VisionTransformer(nn.Layer):
                 feats.append(xp)
 
         if self.with_fpn:
-            fpns = [self.fpn1, self.fpn2, self.fpn3, self.fpn4]
-            for i in range(len(feats)):
-                feats[i] = fpns[i](feats[i])
+            fpns = [self.fpn1, self.fpn2, self.fpn3, self.fpn4][
+                -self.num_fpn_levels:]
+            assert len(fpns) == len(feats) or len(feats) == 1, ''
+            outputs = []
+            for i, m in enumerate(fpns):
+                outputs.append(
+                    m(feats[i] if len(feats) == len(fpns) else feats[-1]))
+
+            return outputs
 
         return feats
 

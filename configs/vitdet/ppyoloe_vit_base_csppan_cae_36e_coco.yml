@@ -1,0 +1,78 @@
+
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  './_base_/ppyoloe_reader.yml',
+  './_base_/optimizer_base_36e.yml'
+]
+
+weights: output/ppyoloe_vit_base_csppan_cae_36e_coco/model_final
+
+
+snapshot_epoch: 2
+log_iter: 100
+
+
+use_ema: true
+ema_decay: 0.9999
+ema_skip_names: ['yolo_head.proj_conv.weight', 'backbone.pos_embed']
+custom_black_list: ['reduce_mean']
+use_fused_allreduce_gradients: &use_checkpoint False
+
+
+architecture: YOLOv3
+norm_type: sync_bn
+
+YOLOv3:
+  backbone: VisionTransformer
+  neck: YOLOCSPPAN
+  yolo_head: PPYOLOEHead
+  post_process: ~
+
+VisionTransformer:
+  patch_size: 16
+  embed_dim: 768
+  depth: 12
+  num_heads: 12
+  mlp_ratio: 4
+  qkv_bias: True
+  drop_rate: 0.0
+  drop_path_rate: 0.2
+  init_values: 0.1
+  final_norm: False
+  use_rel_pos_bias: False
+  use_sincos_pos_emb: True
+  epsilon: 0.000001 # 1e-6
+  out_indices: [11, ]
+  with_fpn: True
+  num_fpn_levels: 3
+  out_with_norm: False
+  use_checkpoint: *use_checkpoint
+  pretrained: https://bj.bcebos.com/v1/paddledet/models/pretrained/vit_base_cae_pretrained.pdparams
+
+YOLOCSPPAN:
+  in_channels: [768, 768, 768]
+  act: 'silu'
+
+PPYOLOEHead:
+  fpn_strides: [8, 16, 32]
+  in_channels: [768, 768, 768]
+  static_assigner_epoch: -1
+  grid_cell_scale: 5.0
+  grid_cell_offset: 0.5
+  use_varifocal_loss: True
+  loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
+  static_assigner:
+    name: ATSSAssigner
+    topk: 9
+  assigner:
+    name: TaskAlignedAssigner
+    topk: 13
+    alpha: 1.0
+    beta: 6.0
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 300
+    score_threshold: 0.01
+    nms_threshold: 0.7

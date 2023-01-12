@@ -1,11 +1,13 @@
-# PP-YOLOE 小目标检测模型(PP-YOLOE smalldet)
+# PP-YOLOE-SOD 小目标检测模型(PP-YOLOE Small Object Detection)
 
 <img src="https://user-images.githubusercontent.com/82303451/182520025-f6bd1c76-a9f9-4f8c-af9b-b37a403258d8.png" title="VisDrone" alt="VisDrone" width="300"><img src="https://user-images.githubusercontent.com/82303451/182521833-4aa0314c-b3f2-4711-9a65-cabece612737.png" title="VisDrone" alt="VisDrone" width="300"><img src="https://user-images.githubusercontent.com/82303451/182520038-cacd5d09-0b85-475c-8e59-72f1fc48eef8.png" title="DOTA" alt="DOTA" height="168"><img src="https://user-images.githubusercontent.com/82303451/182524123-dcba55a2-ce2d-4ba1-9d5b-eb99cb440715.jpeg" title="Xview" alt="Xview" height="168">
 
 ## 内容
 - [简介](#简介)
 - [模型库](#模型库)
-    - [基础模型](#基础模型)
+    - [VisDrone模型](#VisDrone模型)
+    - [COCO模型](#COCO模型)
+    - [切图模型](#切图模型)
     - [拼图模型](#拼图模型)
 - [数据集准备](#数据集准备)
 - [模型库使用说明](#模型库使用说明)
@@ -21,15 +23,54 @@
 ## 简介
 PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小目标场景数据集的基于PP-YOLOE的检测模型，以及提供了一套使用[SAHI](https://github.com/obss/sahi)(Slicing Aided Hyper Inference)工具切图和拼图的方案，用户可以下载模型进行使用。
 
+AI Studio 官方教程案例请参考[基于PP-YOLOE-SOD的无人机航拍图像检测案例全流程实操](https://aistudio.baidu.com/aistudio/projectdetail/5036782)，欢迎一起动手实践学习。
+
 **注意:**
-- **是否需要切图**，建议参照[切图使用说明](#切图使用说明)中的[统计数据集分布](#统计数据集分布)先分析一下数据集再确定，一般数据集所有目标均极小的时候推荐切图训练和切图预测。
-- 不通过切图拼图而直接使用原图的方案也可以参照[visdrone](../visdrone)。
-- 第三方AI Studio教程案例可参考[PPYOLOE：遥感场景下的小目标检测与部署（切图版）](https://aistudio.baidu.com/aistudio/projectdetail/4493701)和[涨分神器！基于PPYOLOE的切图和拼图解决方案](https://aistudio.baidu.com/aistudio/projectdetail/4438275)。
+ - **是否需要切图**，建议参照[切图使用说明](#切图使用说明)中的[统计数据集分布](#统计数据集分布)先分析一下数据集再确定，一般数据集中**所有目标均极小**的情况下推荐切图训练和切图预测。
+ - 不通过切图拼图而**直接使用原图**的方案也可以参照[visdrone](./visdrone)。
+ - 第三方AI Studio教程案例可参考 [PPYOLOE：遥感场景下的小目标检测与部署(切图版)](https://aistudio.baidu.com/aistudio/projectdetail/4493701) 和 [涨分神器！基于PPYOLOE的切图和拼图解决方案](https://aistudio.baidu.com/aistudio/projectdetail/4438275)。
 
 
 ## 模型库
 
-### 基础模型
+### [VisDrone模型](visdrone/)
+
+|    模型   | COCOAPI mAP<sup>val<br>0.5:0.95 | COCOAPI mAP<sup>val<br>0.5 | COCOAPI mAP<sup>test_dev<br>0.5:0.95 | COCOAPI mAP<sup>test_dev<br>0.5 | MatlabAPI mAP<sup>test_dev<br>0.5:0.95 | MatlabAPI mAP<sup>test_dev<br>0.5 | 下载  | 配置文件 |
+|:---------|:------:|:------:| :----: | :------:| :------: | :------:| :----: | :------:|
+|PP-YOLOE-s|  23.5  |  39.9  |  19.4  |  33.6   |  23.68   |  40.66  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_80e_visdrone.pdparams) | [配置文件](visdrone/ppyoloe_crn_s_80e_visdrone.yml) |
+|PP-YOLOE-P2-Alpha-s|    24.4  |  41.6  |  20.1  |  34.7  |  24.55   |  42.19  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_p2_alpha_80e_visdrone.pdparams) | [配置文件](visdrone/ppyoloe_crn_s_p2_alpha_80e_visdrone.yml) |
+|**PP-YOLOE+_SOD-s**|  **25.1**  |  **42.8**  |  **20.7**  |  **36.2**   |  **25.16**  |  **43.86**   | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_s_80e_visdrone.pdparams) | [配置文件](visdrone/ppyoloe_plus_sod_crn_s_80e_visdrone.yml) |
+|PP-YOLOE-l|  29.2  |  47.3  |  23.5  |  39.1   |  28.00   |  46.20  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_visdrone.pdparams) | [配置文件](visdrone/ppyoloe_crn_l_80e_visdrone.yml) |
+|PP-YOLOE-P2-Alpha-l|  30.1  |  48.9  |  24.3  |  40.8   |  28.47   |  48.16  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_p2_alpha_80e_visdrone.pdparams) | [配置文件](visdrone/ppyoloe_crn_l_p2_alpha_80e_visdrone.yml) |
+|**PP-YOLOE+_SOD-l**|  **31.9**  |  **52.1**  |  **25.6**  |  **43.5**   |  **30.25**  |  **51.18**   | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_80e_visdrone.pdparams) | [配置文件](visdrone/ppyoloe_plus_sod_crn_l_80e_visdrone.yml) |
+|PP-YOLOE-Alpha-largesize-l|  41.9  |  65.0 |  32.3  |  53.0   |  37.13   |  61.15  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_alpha_largesize_80e_visdrone.pdparams) | [配置文件](visdrone/ppyoloe_crn_l_alpha_largesize_80e_visdrone.yml) |
+|PP-YOLOE-P2-Alpha-largesize-l|  41.3  |  64.5  |  32.4  |  53.1   |  37.49   |  51.54  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_p2_alpha_largesize_80e_visdrone.pdparams) | [配置文件](visdrone/ppyoloe_crn_l_p2_alpha_largesize_80e_visdrone.yml) |
+|PP-YOLOE+_largesize-l |  43.3  |  66.7 |  33.5  |  54.7   |  38.24   |  62.76  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_largesize_80e_visdrone.pdparams) | [配置文件](visdrone/ppyoloe_plus_crn_l_largesize_80e_visdrone.yml) |
+|**PP-YOLOE+_SOD-largesize-l** |  42.7  |  65.9 |  **33.6**  |  **55.1**   |  **38.4**   |  **63.07**  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.pdparams) | [配置文件](visdrone/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.yml) |
+
+**注意:**
+  - 上表中的模型均为**使用原图训练**，也**使用原图评估预测**，AP精度均为**原图验证集**上评估的结果。
+  - VisDrone-DET数据集**可使用原图训练，也可使用切图后训练**，通过数据集统计分布分析，推荐使用**原图训练**，推荐直接使用带**SOD**的模型配置文件去训练评估和预测部署，在显卡算力有限时也可使用切图后训练。
+  - 上表中的模型指标均是使用VisDrone-DET的train子集作为训练集，使用VisDrone-DET的val子集和test_dev子集作为验证集。
+  - **SOD**表示使用**基于向量的DFL算法**和针对小目标的**中心先验优化策略**，并**在模型的Neck结构中加入transformer**。
+  - **P2**表示增加P2层(1/4下采样层)的特征，共输出4个PPYOLOEHead。
+  - **Alpha**表示对CSPResNet骨干网络增加可一个学习权重参数Alpha参与训练。
+  - **largesize**表示使用**以1600尺度为基础的多尺度训练**和**1920尺度预测**，相应的训练batch_size也减小，以速度来换取高精度。
+
+
+### COCO模型
+
+|    模型   | mAP<sup>val<br>0.5:0.95 | AP<sup>0.5 | AP<sup>0.75 | AP<sup>small | AP<sup>medium | AP<sup>large | AR<sup>small | AR<sup>medium | AR<sup>large | 下载链接  | 配置文件 |
+|:--------:|:-----------------------:|:----------:|:-----------:|:------------:|:-------------:|:-----------:|:------------:|:-------------:|:------------:|:-------:|:-------:|
+|PP-YOLOE+_l|             52.9       |    70.1    |    57.9     |     35.2     |     57.5      |     69.1     |     56.0     |     77.9             |     86.9     | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams) | [配置文件](../ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml) |
+|**PP-YOLOE+_SOD-l**|     53.0       |  **70.4**  |    57.7     |    **37.1**  |     57.5      |     69.0     |     **56.5**   |     77.5             |     86.7     | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_80e_coco.pdparams) | [配置文件](./ppyoloe_plus_sod_crn_l_80e_coco.yml) |
+
+**注意:**
+  - 上表中的模型均为**使用原图训练**，也**原图评估预测**，网络输入尺度为640x640，训练集为COCO的train2017，验证集为val2017，均为8卡总batch_size为64训练80 epoch。
+  - **SOD**表示使用**基于向量的DFL算法**和针对小目标的**中心先验优化策略**，并**在模型的Neck结构中加入transformer**，可在 AP<sup>small 上提升1.9。
+
+
+### 切图模型
 
 |    模型   |       数据集     |  SLICE_SIZE  |  OVERLAP_RATIO  | 类别数  | mAP<sup>val<br>0.5:0.95 | AP<sup>val<br>0.5 | 下载链接  | 配置文件 |
 |:---------|:---------------:|:---------------:|:---------------:|:------:|:-----------------------:|:-------------------:|:---------:| :-----: |
@@ -37,21 +78,35 @@ PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小�
 |PP-YOLOE-P2-l|   Xview  |  400 | 0.25 | 60 |  14.9 | 27.0 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_p2_crn_l_80e_sliced_xview_400_025.pdparams) | [配置文件](./ppyoloe_p2_crn_l_80e_sliced_xview_400_025.yml) |
 |PP-YOLOE-l| VisDrone-DET|  640 | 0.25 | 10 |  38.5 |  60.2 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
 
+**注意:**
+  - 上表中的模型均为使用**切图后的子图训练**，且使用**切图后的子图评估预测**，AP精度均为**子图验证集**上评估的结果。
+  - **SLICE_SIZE**表示使用SAHI工具切图后子图的边长大小，**OVERLAP_RATIO**表示切图的子图之间的重叠率。
+  - VisDrone-DET的模型与[拼图模型](#拼图模型)表格中的VisDrone-DET是**同一个模型权重**，但此处AP精度是在**切图后的子图验证集**上评估的结果。
+
+
 ### 拼图模型
 
 |    模型   |       数据集     |  SLICE_SIZE  |  OVERLAP_RATIO  | 类别数  | mAP<sup>val<br>0.5:0.95 | AP<sup>val<br>0.5 | 下载链接  | 配置文件 |
 |:---------|:---------------:|:---------------:|:---------------:|:------:|:-----------------------:|:-------------------:|:---------:| :-----: |
-|PP-YOLOE-l| VisDrone-DET|  640 | 0.25 | 10 |  29.7 |  48.5 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
-|PP-YOLOE-l (Assembled)| VisDrone-DET|  640 | 0.25 | 10 | 37.2 | 59.4 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
+|PP-YOLOE-l (原图评估)| VisDrone-DET|  640 | 0.25 | 10 |  29.7 |  48.5 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
+|PP-YOLOE-l (拼图评估)| VisDrone-DET|  640 | 0.25 | 10 | 37.2 | 59.4 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025_slice_infer.yml) |
 
 **注意:**
-- 使用[SAHI](https://github.com/obss/sahi)切图工具需要首先安装：`pip install sahi`，参考[installation](https://github.com/obss/sahi/blob/main/README.md#installation)。
-- **SLICE_SIZE**表示使用SAHI工具切图后子图的边长大小，**OVERLAP_RATIO**表示切图的子图之间的重叠率，DOTA水平框和Xview数据集均是切图后训练，AP指标为切图后的子图val上的指标。
-- VisDrone-DET数据集请参照[visdrone](../visdrone)，可使用原图训练，也可使用切图后训练，这上面表格中的指标均是使用VisDrone-DET的val子集做验证而未使用test_dev子集。
+  - 上表中的模型均为使用**切图后的子图**训练，评估预测时分为两种，**直接使用原图**评估预测，和**使用子图自动拼成原图**评估预测，AP精度均为**原图验证集**上评估的结果。。
+  - **SLICE_SIZE**表示使用SAHI工具切图后子图的边长大小，**OVERLAP_RATIO**表示切图的子图之间的重叠率。
+  - VisDrone-DET的模型与[切图模型](#切图模型)表格中的VisDrone-DET是**同一个模型权重**，但此处AP精度是在**原图验证集**上评估的结果。
+
+
+### 注意事项
+
+- 切图和拼图，需要使用[SAHI](https://github.com/obss/sahi)切图工具，需要首先安装：`pip install sahi`，参考[installation](https://github.com/obss/sahi/blob/main/README.md#installation)。
+- DOTA水平框和Xview数据集均是**切图后训练**，AP指标为**切图后的子图val上的指标**。
+- VisDrone-DET数据集请参照[visdrone](./visdrone)，**可使用原图训练，也可使用切图后训练**，这上面表格中的指标均是使用VisDrone-DET的val子集做验证而未使用test_dev子集。
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
-- 常用训练验证部署等步骤请参考[ppyoloe](../ppyoloe#getting-start)。
+- 常用训练验证部署等步骤请参考[ppyoloe](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/ppyoloe#getting-start)。
 - 自动切图和拼图的推理预测需添加设置`--slice_infer`，具体见下文[模型库使用说明](#模型库使用说明)中的[预测](#预测)和[部署](#部署)。
-- Assembled表示自动切图和拼图，参照[2.3 子图拼图评估](#评估)。
+- 自动切图和拼图过程，参照[2.3 子图拼图评估](#评估)。
+
 
 ## 数据集准备
 
@@ -136,7 +191,8 @@ Tower(59)
 `
 
 </details>
-，原始数据集[下载链接](https://challenge.xviewdataset.org/download-links)。
+
+，原始数据集[下载链接](https://challenge.xviewdataset.org/)。
 
 
 ### 用户自定义数据集准备
@@ -231,14 +287,14 @@ EvalDataset:
 #### 3.1 子图或原图直接预测
 与评估流程基本相同，可以在提前切好并存下来的子图上预测，也可以对原图预测，如：
 ```bash
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --infer_img=demo.jpg --draw_threshold=0.25
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --infer_img=demo/0000315_01601_d_0000509.jpg --draw_threshold=0.25
 ```
 
 #### 3.2 原图自动切图并拼图预测
 也可以对原图进行自动切图并拼图重组来预测原图，如：
 ```bash
 # 单张图
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --infer_img=demo.jpg --draw_threshold=0.25 --slice_infer --slice_size 640 640 --overlap_ratio 0.25 0.25 --combine_method=nms --match_threshold=0.6 --match_metric=ios
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --infer_img=demo/0000315_01601_d_0000509.jpg --draw_threshold=0.25 --slice_infer --slice_size 640 640 --overlap_ratio 0.25 0.25 --combine_method=nms --match_threshold=0.6 --match_metric=ios
 # 或图片文件夹
 CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --infer_dir=demo/ --draw_threshold=0.25 --slice_infer --slice_size 640 640 --overlap_ratio 0.25 0.25 --combine_method=nms --match_threshold=0.6 --match_metric=ios
 ```
@@ -260,14 +316,14 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/smalldet/ppyoloe_
 #### 4.2 使用原图或子图直接推理
 ```bash
 # deploy infer
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_80e_sliced_visdrone_640_025 --image_file=demo.jpg --device=GPU --save_images --threshold=0.25
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_80e_sliced_visdrone_640_025 --image_file=demo/0000315_01601_d_0000509.jpg --device=GPU --save_images --threshold=0.25
 ```
 
 #### 4.3 使用原图自动切图并拼图重组结果来推理
 ```bash
 # deploy slice infer
 # 单张图
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_80e_sliced_visdrone_640_025 --image_file=demo.jpg --device=GPU --save_images --threshold=0.25  --slice_infer --slice_size 640 640 --overlap_ratio 0.25 0.25 --combine_method=nms --match_threshold=0.6 --match_metric=ios
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_80e_sliced_visdrone_640_025 --image_file=demo/0000315_01601_d_0000509.jpg --device=GPU --save_images --threshold=0.25  --slice_infer --slice_size 640 640 --overlap_ratio 0.25 0.25 --combine_method=nms --match_threshold=0.6 --match_metric=ios
 # 或图片文件夹
 CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_crn_l_80e_sliced_visdrone_640_025 --image_dir=demo/ --device=GPU --save_images --threshold=0.25  --slice_infer --slice_size 640 640 --overlap_ratio 0.25 0.25 --combine_method=nms --match_threshold=0.6 --match_metric=ios
 ```
@@ -289,10 +345,15 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inferenc
 python tools/box_distribution.py --json_path ../../dataset/DOTA/annotations/train.json --out_img box_distribution.jpg
 ```
 - `--json_path` ：待统计数据集COCO 格式 annotation 的json文件路径
+- `--eval_size` ：推理尺度（默认640）
+- `--small_sride` ：模型最小步长（默认8）
 - `--out_img` ：输出的统计分布图路径
 
 以DOTA数据集的train数据集为例，统计结果打印如下：
 ```bash
+Suggested reg_range[1] is 13
+Mean of all img_w is 2304.3981547196595
+Mean of all img_h is 2180.9354151880766
 Median of ratio_w is 0.03799439775910364
 Median of ratio_h is 0.04074914637387802
 all_img with box:  1409
@@ -301,8 +362,8 @@ Distribution saved as box_distribution.jpg
 ```
 
 **注意:**
-- 当原始数据集全部有标注框的图片中，**有1/2以上的图片标注框的平均宽高与原图宽高比例小于0.04时**，建议进行切图训练。
-
+- `Suggested reg_range[1]` 为数据集在优化后DFL算法中推荐的`reg_range`上限，即` reg_max+1`。
+- 当原始数据集全部有标注框的图片中，**原图宽高均值大于1500且有1/2以上的图片标注框的平均宽高与原图宽高比例小于0.04时**，建议进行切图训练。
 
 ### SAHI切图
 
@@ -336,7 +397,9 @@ python tools/slice_image.py --image_dir ../../dataset/DOTA/train/ --json_path ..
 @article{akyon2022sahi,
   title={Slicing Aided Hyper Inference and Fine-tuning for Small Object Detection},
   author={Akyon, Fatih Cagatay and Altinuc, Sinan Onur and Temizel, Alptekin},
-  journal={arXiv preprint arXiv:2202.06934},
+  journal={2022 IEEE International Conference on Image Processing (ICIP)},
+  doi={10.1109/ICIP46576.2022.9897990},
+  pages={966-970},
   year={2022}
 }
 

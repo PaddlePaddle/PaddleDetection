@@ -3,7 +3,7 @@
 # 关键点检测系列模型
 
 <div align="center">
-  <img src="./football_keypoint.gif" width='800'/>
+  <img src="https://user-images.githubusercontent.com/22989727/205551833-a891a790-73c6-43cb-84f9-91553e9ef27b.gif" width='800'/>
 </div>
 
 ## 目录

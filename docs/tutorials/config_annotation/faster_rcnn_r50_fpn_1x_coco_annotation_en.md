@@ -114,8 +114,6 @@ EvalReader:
   shuffle: false
   # Whether to discard data that does not complete the batch
   drop_last: false
-  # Whether to discard unlabeled data
-  drop_empty: false
 
 # test data
 TestReader:

@@ -143,6 +143,10 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 请参考[YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolox)
 
+### YOLOF
+
+请参考[YOLOF](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolof)
+
 
 ## 实例分割
 
@@ -242,6 +246,10 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 ### OC-SORT
 
 请参考[OC-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/ocsort)
+
+### CenterTrack
+
+请参考[CenterTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/centertrack)
 
 ### FairMOT/MC-FairMOT
 

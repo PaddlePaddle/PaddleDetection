@@ -53,20 +53,28 @@ class FCOSLoss(nn.Layer):
         loss_gamma (float): gamma in focal loss
         iou_loss_type (str): location loss type, IoU/GIoU/LINEAR_IoU
         reg_weights (float): weight for location loss
+        quality (str): quality branch, centerness/iou
     """
 
     def __init__(self,
                  loss_alpha=0.25,
                  loss_gamma=2.0,
                  iou_loss_type="giou",
-                 reg_weights=1.0):
+                 reg_weights=1.0,
+                 quality='centerness'):
         super(FCOSLoss, self).__init__()
         self.loss_alpha = loss_alpha
         self.loss_gamma = loss_gamma
         self.iou_loss_type = iou_loss_type
         self.reg_weights = reg_weights
+        self.quality = quality
 
-    def __iou_loss(self, pred, targets, positive_mask, weights=None):
+    def __iou_loss(self,
+                   pred,
+                   targets,
+                   positive_mask,
+                   weights=None,
+                   return_iou=False):
         """
         Calculate the loss for location prediction
         Args:
@@ -107,6 +115,9 @@ class FCOSLoss(nn.Layer):
         ious = (area_inter + 1.0) / (
             area_predict + area_target - area_inter + 1.0)
         ious = ious * positive_mask
+
+        if return_iou:
+            return ious
 
         if self.iou_loss_type.lower() == "linear_iou":
             loss = 1.0 - ious
@@ -201,25 +212,52 @@ class FCOSLoss(nn.Layer):
         cls_loss = F.sigmoid_focal_loss(
             cls_logits_flatten, tag_labels_flatten_bin) / num_positive_fp32
 
-        # 2. bboxes_reg: giou_loss
-        mask_positive_float = paddle.squeeze(mask_positive_float, axis=-1)
-        tag_center_flatten = paddle.squeeze(tag_center_flatten, axis=-1)
-        reg_loss = self.__iou_loss(
-            bboxes_reg_flatten,
-            tag_bboxes_flatten,
-            mask_positive_float,
-            weights=tag_center_flatten)
-        reg_loss = reg_loss * mask_positive_float / normalize_sum
+        if self.quality == 'centerness':
+            # 2. bboxes_reg: giou_loss
+            mask_positive_float = paddle.squeeze(mask_positive_float, axis=-1)
+            tag_center_flatten = paddle.squeeze(tag_center_flatten, axis=-1)
+            reg_loss = self.__iou_loss(
+                bboxes_reg_flatten,
+                tag_bboxes_flatten,
+                mask_positive_float,
+                weights=tag_center_flatten)
+            reg_loss = reg_loss * mask_positive_float / normalize_sum
 
-        # 3. centerness: sigmoid_cross_entropy_with_logits_loss
-        centerness_flatten = paddle.squeeze(centerness_flatten, axis=-1)
-        ctn_loss = ops.sigmoid_cross_entropy_with_logits(centerness_flatten,
-                                                         tag_center_flatten)
-        ctn_loss = ctn_loss * mask_positive_float / num_positive_fp32
+            # 3. centerness: sigmoid_cross_entropy_with_logits_loss
+            centerness_flatten = paddle.squeeze(centerness_flatten, axis=-1)
+            quality_loss = ops.sigmoid_cross_entropy_with_logits(
+                centerness_flatten, tag_center_flatten)
+            quality_loss = quality_loss * mask_positive_float / num_positive_fp32
+
+        elif self.quality == 'iou':
+            # 2. bboxes_reg: giou_loss
+            mask_positive_float = paddle.squeeze(mask_positive_float, axis=-1)
+            tag_center_flatten = paddle.squeeze(tag_center_flatten, axis=-1)
+            reg_loss = self.__iou_loss(
+                bboxes_reg_flatten,
+                tag_bboxes_flatten,
+                mask_positive_float,
+                weights=None)
+            reg_loss = reg_loss * mask_positive_float / num_positive_fp32
+            # num_positive_fp32 is num_foreground
+
+            # 3. centerness: sigmoid_cross_entropy_with_logits_loss
+            centerness_flatten = paddle.squeeze(centerness_flatten, axis=-1)
+            gt_ious = self.__iou_loss(
+                bboxes_reg_flatten,
+                tag_bboxes_flatten,
+                mask_positive_float,
+                weights=None,
+                return_iou=True)
+            quality_loss = ops.sigmoid_cross_entropy_with_logits(
+                centerness_flatten, gt_ious)
+            quality_loss = quality_loss * mask_positive_float / num_positive_fp32
+        else:
+            raise Exception(f'Unknown quality type: {self.quality}')
 
         loss_all = {
-            "loss_centerness": paddle.sum(ctn_loss),
             "loss_cls": paddle.sum(cls_loss),
-            "loss_box": paddle.sum(reg_loss)
+            "loss_box": paddle.sum(reg_loss),
+            "loss_quality": paddle.sum(quality_loss),
         }
         return loss_all

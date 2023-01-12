@@ -118,7 +118,6 @@ def save_mtmct_vis_results(camera_results, captures, output_dir,
     for idx, video_file in enumerate(captures):
         capture = cv2.VideoCapture(video_file)
         cid = camera_ids[idx]
-
         basename = os.path.basename(video_file)
         video_out_name = "vis_" + basename
         out_path = os.path.join(save_dir, video_out_name)
@@ -152,7 +151,6 @@ def save_mtmct_vis_results(camera_results, captures, output_dir,
                 tid_list = multi_res.keys()  # c0_t1, c0_t2...
                 all_attr_result = [multi_res[i]["attrs"]
                                    for i in tid_list]  # all cid_tid result
-
                 if any(
                         all_attr_result
                 ):  # at least one cid_tid[attrs] is not None will goes to attrs_vis
@@ -166,7 +164,6 @@ def save_mtmct_vis_results(camera_results, captures, output_dir,
                         else:
                             t_attr = multi_res[k]['attrs'][frame_id - 1]
                             attr_res.append(t_attr)
-
                     assert len(attr_res) == len(boxes)
                     image = visualize_attr(
                         image, attr_res, boxes, is_mtmct=True)

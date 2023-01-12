@@ -142,6 +142,10 @@ Please refer to [Vision Transformer](https://github.com/PaddlePaddle/PaddleDetec
 
 Please refer to [YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolox)
 
+### YOLOF
+
+Please refer to [YOLOF](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolof)
+
 
 ## Instance-Segmentation
 
@@ -241,6 +245,10 @@ Please refer to [ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree
 ### OC-SORT
 
 Please refer to [OC-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/ocsort)
+
+### CenterTrack
+
+Please refer to [CenterTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/centertrack)
 
 ### FairMOT/MC-FairMOT
 

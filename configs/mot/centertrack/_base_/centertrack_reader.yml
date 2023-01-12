@@ -1,0 +1,75 @@
+input_h: &input_h 544
+input_w: &input_w 960
+input_size: &input_size [*input_h, *input_w]
+pre_img_epoch: &pre_img_epoch 70 # Add previous image as input
+
+worker_num: 4
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - FlipWarpAffine:
+        keep_res: False
+        input_h: *input_h
+        input_w: *input_w
+        not_rand_crop: False
+        flip: 0.5
+        is_scale: True
+        use_random: True
+        add_pre_img: True
+    - CenterRandColor: {saturation: 0.4, contrast: 0.4, brightness: 0.4}
+    - Lighting: {alphastd: 0.1, eigval: [0.2141788, 0.01817699, 0.00341571], eigvec: [[-0.58752847, -0.69563484, 0.41340352], [-0.5832747, 0.00994535, -0.81221408], [-0.56089297, 0.71832671, 0.41158938]]}
+    - NormalizeImage: {mean: [0.40789655, 0.44719303, 0.47026116], std: [0.2886383 , 0.27408165, 0.27809834], is_scale: False}
+    - Permute: {}
+    - Gt2CenterTrackTarget:
+        down_ratio: 4
+        max_objs: 256
+        hm_disturb: 0.05
+        lost_disturb: 0.4
+        fp_disturb: 0.1
+        pre_hm: True
+        add_tracking: True
+        add_ltrb_amodal: True
+  batch_size: 16 # total 32 for 2 GPUs
+  shuffle: True
+  drop_last: True
+  collate_batch: True
+  use_shared_memory: True
+  pre_img_epoch: *pre_img_epoch
+
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - WarpAffine: {keep_res: True, input_h: *input_h, input_w: *input_w}
+    - NormalizeImage: {mean: [0.40789655, 0.44719303, 0.47026116], std: [0.2886383 , 0.27408165, 0.27809834], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+
+TestReader:
+  sample_transforms:
+    - Decode: {}
+    - WarpAffine: {keep_res: True, input_h: *input_h, input_w: *input_w}
+    - NormalizeImage: {mean: [0.40789655, 0.44719303, 0.47026116], std: [0.2886383 , 0.27408165, 0.27809834], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+  fuse_normalize: True
+
+
+EvalMOTReader:
+  sample_transforms:
+    - Decode: {}
+    - WarpAffine: {keep_res: False, input_h: *input_h, input_w: *input_w}
+    - NormalizeImage: {mean: [0.40789655, 0.44719303, 0.47026116], std: [0.2886383 , 0.27408165, 0.27809834], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+
+TestMOTReader:
+  sample_transforms:
+    - Decode: {}
+    - WarpAffine: {keep_res: False, input_h: *input_h, input_w: *input_w}
+    - NormalizeImage: {mean: [0.40789655, 0.44719303, 0.47026116], std: [0.2886383 , 0.27408165, 0.27809834], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+  fuse_normalize: True

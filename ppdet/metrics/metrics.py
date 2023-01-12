@@ -350,7 +350,7 @@ class WiderFaceMetric(Metric):
 class RBoxMetric(Metric):
     def __init__(self, anno_file, **kwargs):
         self.anno_file = anno_file
-        self.clsid2catid, self.catid2name = get_categories('COCO', anno_file)
+        self.clsid2catid, self.catid2name = get_categories('RBOX', anno_file)
         self.catid2clsid = {v: k for k, v in self.clsid2catid.items()}
         self.classwise = kwargs.get('classwise', False)
         self.output_eval = kwargs.get('output_eval', None)

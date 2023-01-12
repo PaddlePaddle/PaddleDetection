@@ -17,18 +17,18 @@
 </div>
 
 <div  align="center">
-  <img src="docs/images/ppdet.gif" width="800"/>
+  <img src="https://user-images.githubusercontent.com/22989727/205581915-aa8d6bee-5624-4aec-8059-76b5ebaf96f1.gif" width="800"/>
 
 </div>
 
 ## <img src="https://user-images.githubusercontent.com/48054808/157793354-6e7f381a-0aa6-4bb7-845c-9acf2ecc05c3.png" width="20"/> Product Update
 
 - 🔥 **2022.11.15：SOTA rotated object detector and small object detector based on PP-YOLOE**
-  - Rotated object detector [PP-YOLOE-R](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r)
+  - Rotated object detector [PP-YOLOE-R](configs/rotate/ppyoloe_r)
     - SOTA Anchor-free rotated object detection model with high accuracy and efficiency
     - A series of models, named s/m/l/x, for cloud and edge devices
     - Avoiding using special operators to be deployed friendly with TensorRT.
-  - Small object detector [PP-YOLOE-SOD](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/smalldet)
+  - Small object detector [PP-YOLOE-SOD](configs/smalldet)
     - End-to-end detection pipeline based on sliced images
     - SOTA model on VisDrone based on original images.
 
@@ -125,6 +125,7 @@
             <li>PP-YOLOE-R</li>
             <li>PP-YOLOE-SOD</li>
             <li>YOLOX</li>
+            <li>YOLOF</li>
             <li>SSD</li>
             <li>CenterNet</li>
             <li>FCOS</li>  
@@ -155,6 +156,7 @@
             <li>DeepSORT</li>
             <li>ByteTrack</li>
             <li>OC-SORT</li>
+            <li>CenterTrack</li>
         </ul></details>
         <details><summary><b>KeyPoint-Detection</b></summary>
         <ul>

@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 import json
 import numpy as np
 import argparse
+from pycocotools.coco import COCO
+from tqdm import tqdm
 
 
 def median(data):
@@ -43,15 +45,16 @@ def draw_distribution(width, height, out_path):
     plt.show()
 
 
-def get_ratio_infos(jsonfile, out_img):
+def get_ratio_infos(jsonfile, out_img, eval_size, small_stride):
+    coco = COCO(annotation_file=jsonfile)
     allannjson = json.load(open(jsonfile, 'r'))
-    be_im_id = 1
+    be_im_id = allannjson['annotations'][0]['image_id'] 
     be_im_w = []
     be_im_h = []
     ratio_w = []
     ratio_h = []
-    images = allannjson['images']
-    for i, ann in enumerate(allannjson['annotations']):
+    im_wid,im_hei=[],[]
+    for ann in tqdm(allannjson['annotations']):
         if ann['iscrowd']:
             continue
         x0, y0, w, h = ann['bbox'][:]
@@ -59,8 +62,10 @@ def get_ratio_infos(jsonfile, out_img):
             be_im_w.append(w)
             be_im_h.append(h)
         else:
-            im_w = images[be_im_id - 1]['width']
-            im_h = images[be_im_id - 1]['height']
+            im_w = coco.imgs[be_im_id]['width']
+            im_h = coco.imgs[be_im_id]['height']
+            im_wid.append(im_w)
+            im_hei.append(im_h)
             im_m_w = np.mean(be_im_w)
             im_m_h = np.mean(be_im_h)
             dis_w = im_m_w / im_w
@@ -70,9 +75,16 @@ def get_ratio_infos(jsonfile, out_img):
             be_im_id = ann['image_id']
             be_im_w = [w]
             be_im_h = [h]
+        
 
-    im_w = images[be_im_id - 1]['width']
-    im_h = images[be_im_id - 1]['height']
+    im_w = coco.imgs[be_im_id]['width']
+    im_h = coco.imgs[be_im_id]['height']
+    im_wid.append(im_w)
+    im_hei.append(im_h)
+    all_im_m_w = np.mean(im_wid)
+    all_im_m_h = np.mean(im_hei)
+
+
     im_m_w = np.mean(be_im_w)
     im_m_h = np.mean(be_im_h)
     dis_w = im_m_w / im_w
@@ -81,8 +93,25 @@ def get_ratio_infos(jsonfile, out_img):
     ratio_h.append(dis_h)
     mid_w = median(ratio_w)
     mid_h = median(ratio_h)
+
+    reg_ratio = []
+    ratio_all = ratio_h + ratio_w
+    for r in ratio_all:
+        if r < 0.2:
+            reg_ratio.append(r)
+        elif r < 0.4:
+            reg_ratio.append(r/2)
+        else:
+            reg_ratio.append(r/4)
+    reg_ratio = sorted(reg_ratio)
+    max_ratio = reg_ratio[int(0.95*len(reg_ratio))]
+    reg_max = round(max_ratio*eval_size/small_stride)
+    
     ratio_w = [i * 1000 for i in ratio_w]
     ratio_h = [i * 1000 for i in ratio_h]
+    print(f'Suggested reg_range[1] is {reg_max+1}' )
+    print(f'Mean of all img_w is {all_im_m_w}')
+    print(f'Mean of all img_h is {all_im_m_h}') 
     print(f'Median of ratio_w is {mid_w}')
     print(f'Median of ratio_h is {mid_h}')
     print('all_img with box: ', len(ratio_h))
@@ -95,13 +124,17 @@ def main():
     parser.add_argument(
         '--json_path', type=str, default=None, help="Dataset json path.")
     parser.add_argument(
+        '--eval_size', type=int, default=640, help="eval size.")
+    parser.add_argument(
+        '--small_stride', type=int, default=8, help="smallest stride.")
+    parser.add_argument(
         '--out_img',
         type=str,
         default='box_distribution.jpg',
         help="Name of distibution img.")
     args = parser.parse_args()
 
-    get_ratio_infos(args.json_path, args.out_img)
+    get_ratio_infos(args.json_path, args.out_img, args.eval_size, args.small_stride)
 
 
 if __name__ == "__main__":

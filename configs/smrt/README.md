@@ -124,7 +124,7 @@ pip install -r requirements.txt
 
 ### 2. 数据准备
 
-用户需要准备训练数据集，建议标注文件使用COCO数据格式。如果使用lableme或者VOC数据格式，先使用[格式转换脚本](../../tools/x2coco.py)将标注格式转化为COCO，详细数据准备文档请参考[文档](../../docs/tutorials/PrepareDataSet.md)
+用户需要准备训练数据集，建议标注文件使用COCO数据格式。如果使用lableme或者VOC数据格式，先使用[格式转换脚本](../../tools/x2coco.py)将标注格式转化为COCO，详细数据准备文档请参考[文档](../../docs/tutorials/data/PrepareDataSet.md)
 
 本文档以新能源电池工业质检子数据集为例展开，数据下载[链接](https://bj.bcebos.com/v1/paddle-smrt/data/battery_mini.zip)
 

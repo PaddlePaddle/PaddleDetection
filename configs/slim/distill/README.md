@@ -17,6 +17,27 @@ FGD全称为[Focal and Global Knowledge Distillation for Detectors](https://arxi
 |retinaNet_r50_fpn_2x + FGD| student | 40.8 |[download](https://paddledet.bj.bcebos.com/models/retinanet_r101_distill_r50_2x_coco.pdparams) |
 
 
+## LD模型蒸馏
+
+LD全称为[Localization Distillation for Dense Object Detection](https://arxiv.org/abs/2102.12252)，将回归框表示为概率分布，把分类任务的KD用在定位任务上，并且使用因地制宜、分而治之的策略，在不同的区域分别学习分类知识与定位知识。在PaddleDetection中，我们实现了LD算法，并基于GFL模型进行验证，实验结果如下：
+| algorithm | model | AP | download|
+|:-:| :-: | :-: | :-:|
+| GFL_ResNet101-vd   | teacher          | 46.8  | [model](https://paddledet.bj.bcebos.com/models/gfl_r101vd_fpn_mstrain_2x_coco.pdparams), [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl/gfl_r101vd_fpn_mstrain_2x_coco.yml) |
+| GFL_ResNet18-vd   | student          | 36.6  | [model](https://paddledet.bj.bcebos.com/models/gfl_r18vd_1x_coco.pdparams), [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl/gfl_r18vd_1x_coco.yml) |
+| GFL_ResNet18-vd + LD   | student          | 38.2  | [model](https://bj.bcebos.com/v1/paddledet/models/gfl_slim_ld_r18vd_1x_coco.pdparams), [config1](../../gfl/gfl_slim_ld_r18vd_1x_coco.yml), [config2](./gfl_ld_distill.yml) |
+
+## CWD模型蒸馏
+
+CWD全称为[Channel-wise Knowledge Distillation for Dense Prediction*](https://arxiv.org/pdf/2011.13256.pdf)，通过最小化教师网络与学生网络的通道概率图之间的 Kullback-Leibler (KL) 散度，使得在蒸馏过程更加关注每个通道的最显著的区域，进而提升文本检测与图像分割任务的精度。在PaddleDetection中，我们实现了CWD算法，并基于GFL和RetinaNet模型进行验证，实验结果如下：
+| algorithm | model | AP | download|
+|:-:| :-: | :-: | :-:|
+|retinaNet_r101_fpn_2x | teacher | 40.6 | [download](https://paddledet.bj.bcebos.com/models/retinanet_r101_fpn_2x_coco.pdparams) |
+|retinaNet_r50_fpn_1x| student | 37.5 |[download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_1x_coco.pdparams) |
+|retinaNet_r50_fpn_2x + CWD| student | 40.5 |[download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_cwd.pdparams) |
+|gfl_r101_fpn_2x | teacher | 46.8 | [download](https://paddledet.bj.bcebos.com/models/gfl_r101vd_fpn_mstrain_2x_coco.pdparams) |
+|gfl_r50_fpn_1x| student | 41.0 |[download](https://paddledet.bj.bcebos.com/models/gfl_r50_fpn_1x_coco.pdparams) |
+|gfl_r50_fpn_2x + CWD| student | 44.0 |[download](https://paddledet.bj.bcebos.com/models/gfl_r50_fpn_2x_coco_cwd.pdparams) |
+
 
 ## Citations
 ```
@@ -35,5 +56,20 @@ FGD全称为[Focal and Global Knowledge Distillation for Detectors](https://arxi
   booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
   pages={4643--4652},
   year={2022}
+}
+
+@Inproceedings{zheng2022LD,
+  title={Localization Distillation for Dense Object Detection},
+  author= {Zheng, Zhaohui and Ye, Rongguang and Wang, Ping and Ren, Dongwei and Zuo, Wangmeng and Hou, Qibin and Cheng, Mingming},
+  booktitle={CVPR},
+  year={2022}
+}
+
+@inproceedings{shu2021channel,
+  title={Channel-wise knowledge distillation for dense prediction},
+  author={Shu, Changyong and Liu, Yifan and Gao, Jianfei and Yan, Zheng and Shen, Chunhua},
+  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision},
+  pages={5311--5320},
+  year={2021}
 }
 ```

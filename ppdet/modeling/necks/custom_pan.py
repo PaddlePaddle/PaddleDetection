@@ -1,4 +1,4 @@
-# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2022 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,17 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import math
+import copy
+import numpy as np
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
-from ppdet.modeling.layers import DropBlock
+from ppdet.modeling.layers import DropBlock, MultiHeadAttention
 from ppdet.modeling.ops import get_act_fn
 from ..backbones.cspresnet import ConvBNLayer, BasicBlock
 from ..shape_spec import ShapeSpec
+from ..initializer import linear_init_
 
 __all__ = ['CustomCSPPAN']
+
+
+def _get_clones(module, N):
+    return nn.LayerList([copy.deepcopy(module) for _ in range(N)])
 
 
 class SPP(nn.Layer):
@@ -61,7 +68,14 @@ class SPP(nn.Layer):
 
 
 class CSPStage(nn.Layer):
-    def __init__(self, block_fn, ch_in, ch_out, n, act='swish', spp=False):
+    def __init__(self,
+                 block_fn,
+                 ch_in,
+                 ch_out,
+                 n,
+                 act='swish',
+                 spp=False,
+                 use_alpha=False):
         super(CSPStage, self).__init__()
 
         ch_mid = int(ch_out // 2)
@@ -72,7 +86,11 @@ class CSPStage(nn.Layer):
         for i in range(n):
             self.convs.add_sublayer(
                 str(i),
-                eval(block_fn)(next_ch_in, ch_mid, act=act, shortcut=False))
+                eval(block_fn)(next_ch_in,
+                               ch_mid,
+                               act=act,
+                               shortcut=False,
+                               use_alpha=use_alpha))
             if i == (n - 1) // 2 and spp:
                 self.convs.add_sublayer(
                     'spp', SPP(ch_mid * 4, ch_mid, 1, [5, 9, 13], act=act))
@@ -88,10 +106,88 @@ class CSPStage(nn.Layer):
         return y
 
 
+class TransformerEncoderLayer(nn.Layer):
+    def __init__(self,
+                 d_model,
+                 nhead,
+                 dim_feedforward=2048,
+                 dropout=0.1,
+                 activation="relu",
+                 attn_dropout=None,
+                 act_dropout=None,
+                 normalize_before=False):
+        super(TransformerEncoderLayer, self).__init__()
+        attn_dropout = dropout if attn_dropout is None else attn_dropout
+        act_dropout = dropout if act_dropout is None else act_dropout
+        self.normalize_before = normalize_before
+
+        self.self_attn = MultiHeadAttention(d_model, nhead, attn_dropout)
+        # Implementation of Feedforward model
+        self.linear1 = nn.Linear(d_model, dim_feedforward)
+        self.dropout = nn.Dropout(act_dropout, mode="upscale_in_train")
+        self.linear2 = nn.Linear(dim_feedforward, d_model)
+
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.dropout1 = nn.Dropout(dropout, mode="upscale_in_train")
+        self.dropout2 = nn.Dropout(dropout, mode="upscale_in_train")
+        self.activation = getattr(F, activation)
+        self._reset_parameters()
+
+    def _reset_parameters(self):
+        linear_init_(self.linear1)
+        linear_init_(self.linear2)
+
+    @staticmethod
+    def with_pos_embed(tensor, pos_embed):
+        return tensor if pos_embed is None else tensor + pos_embed
+
+    def forward(self, src, src_mask=None, pos_embed=None):
+        residual = src
+        if self.normalize_before:
+            src = self.norm1(src)
+        q = k = self.with_pos_embed(src, pos_embed)
+        src = self.self_attn(q, k, value=src, attn_mask=src_mask)
+
+        src = residual + self.dropout1(src)
+        if not self.normalize_before:
+            src = self.norm1(src)
+
+        residual = src
+        if self.normalize_before:
+            src = self.norm2(src)
+        src = self.linear2(self.dropout(self.activation(self.linear1(src))))
+        src = residual + self.dropout2(src)
+        if not self.normalize_before:
+            src = self.norm2(src)
+        return src
+
+
+class TransformerEncoder(nn.Layer):
+    def __init__(self, encoder_layer, num_layers, norm=None):
+        super(TransformerEncoder, self).__init__()
+        self.layers = _get_clones(encoder_layer, num_layers)
+        self.num_layers = num_layers
+        self.norm = norm
+
+    def forward(self, src, src_mask=None, pos_embed=None):
+        output = src
+        for layer in self.layers:
+            output = layer(output, src_mask=src_mask, pos_embed=pos_embed)
+
+        if self.norm is not None:
+            output = self.norm(output)
+
+        return output
+
+
 @register
 @serializable
 class CustomCSPPAN(nn.Layer):
-    __shared__ = ['norm_type', 'data_format', 'width_mult', 'depth_mult', 'trt']
+    __shared__ = [
+        'norm_type', 'data_format', 'width_mult', 'depth_mult', 'trt',
+        'eval_size'
+    ]
 
     def __init__(self,
                  in_channels=[256, 512, 1024],
@@ -109,7 +205,18 @@ class CustomCSPPAN(nn.Layer):
                  data_format='NCHW',
                  width_mult=1.0,
                  depth_mult=1.0,
-                 trt=False):
+                 use_alpha=False,
+                 trt=False,
+                 dim_feedforward=2048,
+                 dropout=0.1,
+                 activation='gelu',
+                 nhead=4,
+                 num_layers=4,
+                 attn_dropout=None,
+                 act_dropout=None,
+                 normalize_before=False,
+                 use_trans=False,
+                 eval_size=None):
 
         super(CustomCSPPAN, self).__init__()
         out_channels = [max(round(c * width_mult), 1) for c in out_channels]
@@ -120,7 +227,29 @@ class CustomCSPPAN(nn.Layer):
         self.num_blocks = len(in_channels)
         self.data_format = data_format
         self._out_channels = out_channels
+
+        self.hidden_dim = in_channels[-1]
         in_channels = in_channels[::-1]
+
+        self.use_trans = use_trans
+        self.eval_size = eval_size
+        if use_trans:
+            if eval_size is not None:
+                self.pos_embed = self.build_2d_sincos_position_embedding(
+                    eval_size[1] // 32,
+                    eval_size[0] // 32,
+                    embed_dim=self.hidden_dim)
+            else:
+                self.pos_embed = None
+
+            encoder_layer = TransformerEncoderLayer(
+                self.hidden_dim, nhead, dim_feedforward, dropout, activation,
+                attn_dropout, act_dropout, normalize_before)
+            encoder_norm = nn.LayerNorm(
+                self.hidden_dim) if normalize_before else None
+            self.encoder = TransformerEncoder(encoder_layer, num_layers,
+                                              encoder_norm)
+
         fpn_stages = []
         fpn_routes = []
         for i, (ch_in, ch_out) in enumerate(zip(in_channels, out_channels)):
@@ -136,7 +265,8 @@ class CustomCSPPAN(nn.Layer):
                                    ch_out,
                                    block_num,
                                    act=act,
-                                   spp=(spp and i == 0)))
+                                   spp=(spp and i == 0),
+                                   use_alpha=use_alpha))
 
             if drop_block:
                 stage.add_sublayer('drop', DropBlock(block_size, keep_prob))
@@ -181,7 +311,8 @@ class CustomCSPPAN(nn.Layer):
                                    ch_out,
                                    block_num,
                                    act=act,
-                                   spp=False))
+                                   spp=False,
+                                   use_alpha=use_alpha))
             if drop_block:
                 stage.add_sublayer('drop', DropBlock(block_size, keep_prob))
 
@@ -190,7 +321,49 @@ class CustomCSPPAN(nn.Layer):
         self.pan_stages = nn.LayerList(pan_stages[::-1])
         self.pan_routes = nn.LayerList(pan_routes[::-1])
 
+    def build_2d_sincos_position_embedding(
+            self,
+            w,
+            h,
+            embed_dim=1024,
+            temperature=10000., ):
+        grid_w = paddle.arange(int(w), dtype=paddle.float32)
+        grid_h = paddle.arange(int(h), dtype=paddle.float32)
+        grid_w, grid_h = paddle.meshgrid(grid_w, grid_h)
+        assert embed_dim % 4 == 0, 'Embed dimension must be divisible by 4 for 2D sin-cos position embedding'
+        pos_dim = embed_dim // 4
+        omega = paddle.arange(pos_dim, dtype=paddle.float32) / pos_dim
+        omega = 1. / (temperature**omega)
+
+        out_w = grid_w.flatten()[..., None] @omega[None]
+        out_h = grid_h.flatten()[..., None] @omega[None]
+
+        pos_emb = paddle.concat(
+            [
+                paddle.sin(out_w), paddle.cos(out_w), paddle.sin(out_h),
+                paddle.cos(out_h)
+            ],
+            axis=1)[None, :, :]
+
+        return pos_emb
+
     def forward(self, blocks, for_mot=False):
+        if self.use_trans:
+            last_feat = blocks[-1]
+            n, c, h, w = last_feat.shape
+
+            # flatten [B, C, H, W] to [B, HxW, C]
+            src_flatten = last_feat.flatten(2).transpose([0, 2, 1])
+            if self.eval_size is not None and not self.training:
+                pos_embed = self.pos_embed
+            else:
+                pos_embed = self.build_2d_sincos_position_embedding(
+                    w=w, h=h, embed_dim=self.hidden_dim)
+
+            memory = self.encoder(src_flatten, pos_embed=pos_embed)
+            last_feat_encode = memory.transpose([0, 2, 1]).reshape([n, c, h, w])
+            blocks[-1] = last_feat_encode
+
         blocks = blocks[::-1]
         fpn_feats = []
 

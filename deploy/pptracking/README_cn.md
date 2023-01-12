@@ -10,7 +10,7 @@ PP-Tracking支持单镜头跟踪(MOT)和跨镜头跟踪(MTMCT)两种模式，针
 </div>
 
 <div width="1000" align="center">
-  <img src="../../docs/images/pptracking-demo.gif"/>
+  <img src="https://user-images.githubusercontent.com/22989727/205546999-f847183d-73e5-4abe-9896-ce6a245efc79.gif"/>
   <br>
   视频来源：VisDrone和BDD100K公开数据集</div>
 </div>

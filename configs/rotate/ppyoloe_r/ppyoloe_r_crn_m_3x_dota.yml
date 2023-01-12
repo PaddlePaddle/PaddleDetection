@@ -1,0 +1,15 @@
+_BASE_: [
+  '../../datasets/dota.yml',
+  '../../runtime.yml',
+  '_base_/optimizer_3x.yml',
+  '_base_/ppyoloe_r_reader.yml',
+  '_base_/ppyoloe_r_crn.yml'
+]
+
+log_iter: 50
+snapshot_epoch: 1
+weights: output/ppyoloe_r_crn_m_3x_dota/model_final
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_m_pretrained.pdparams
+depth_mult: 0.67
+width_mult: 0.75

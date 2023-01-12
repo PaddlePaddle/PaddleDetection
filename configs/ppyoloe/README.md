@@ -33,6 +33,9 @@ PP-YOLOE is composed of following methods:
 - [SiLU(Swish) activation function](https://arxiv.org/abs/1710.05941)
 
 ## Model Zoo
+
+### Model Zoo on COCO
+
 |     Model      | Epoch | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>val<br>0.5:0.95 | Box AP<sup>test<br>0.5:0.95 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) |                                       download                                       |                   config                    |
 |:--------------:|:-----:|:-------:|:----------:|:----------:| :-------:|:--------------------------:|:---------------------------:|:---------:|:--------:|:---------------:| :---------------------: |:------------------------------------------------------------------------------------:|:-------------------------------------------:|
 |  PP-YOLOE+_s   |  80   |     8      |     8      | cspresnet-s |     640     |            43.7            |            43.9             |   7.93    |  17.36   |   208.3   |  333.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco.pdparams) | [config](./ppyoloe_plus_crn_s_80e_coco.yml) |
@@ -68,6 +71,27 @@ PP-YOLOE is composed of following methods:
 - If you set `--run_benchmark=True`，you should install these dependencies at first, `pip install pynvml psutil GPUtil`.
 - End-to-end speed test includes pre-processing + inference + post-processing and NMS time, using **Intel(R) Xeon(R) Gold 5117 CPU @ 2.00GHz**, **single Tesla V100**, **CUDA 11.2**, **CUDNN 8.2.0**, **TensorRT 8.0.1.6**.
 
+### Model Zoo on Objects365
+|     Model      | Epoch | Machine number | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>0.5 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) |  download  |  config  |
+|:---------------:|:-----:|:-----------:|:-----------:|:-----------:|:---------:|:----------:|:--------------:|:---------:|:---------:|:-------------:|:-----------------------:| :--------:|:--------:|
+|   PP-YOLOE+_s   |  60   |  3 |  8     |    8     | cspresnet-s |    640     |   18.1  |  7.93  |  17.36   |   208.3   |  333.3   | [model](https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_s_obj365_pretrained.pdparams) | [config](./ppyoloe_plus_crn_s_60e_objects365.yml) |
+|   PP-YOLOE+_m   |  60   |   4 |  8     |    8     | cspresnet-m |    640     |   25.0  |  23.43  |  49.91   |   123.4       |  208.3  | [model](https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_m_obj365_pretrained.pdparams) | [config](./ppyoloe_plus_crn_m_60e_objects365.yml) |
+|   PP-YOLOE+_l   |  60   |   3 |  8     |    8     | cspresnet-l |    640     |   30.8  |  52.20 |  110.07  |   78.1    |  149.2   | [model](https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_l_obj365_pretrained.pdparams) | [config](./ppyoloe_plus_crn_l_60e_objects365.yml) |
+|   PP-YOLOE+_x   |  60   |  4 |   8     |    8     | cspresnet-x |    640     |   32.7  |  98.42 |  206.59      |   45.0        |  95.2  | [model](https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_x_obj365_pretrained.pdparams) | [config](./ppyoloe_plus_crn_x_60e_objects365.yml) |
+
+
+**Notes:**
+- The Details for multiple machine and multi-gpu training, see [DistributedTraining](../../docs/tutorials/DistributedTraining_en.md)
+
+
+### Model Zoo on VOC
+
+|     Model      | Epoch | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>0.5 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) |  download  |  config  |
+|:---------------:|:-----:|:-----------:|:-----------:|:---------:|:----------:|:--------------:|:---------:|:---------:|:-------------:|:-----------------------:| :-------: |:--------:|
+|   PP-YOLOE+_s   |  30   |     8     |    8     | cspresnet-s |    640     |   86.7  |  7.93  |  17.36   |   208.3   |  333.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_30e_voc.pdparams) | [config](./ppyoloe_plus_crn_s_30e_voc.yml) |
+|   PP-YOLOE+_l   |  30   |     8     |    8     | cspresnet-l |    640     |   89.0  |  52.20 |  110.07  |   78.1    |  149.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_30e_voc.pdparams) | [config](./ppyoloe_plus_crn_l_30e_voc.yml) |
+
+
 ### Feature Models
 
 The PaddleDetection team provides configs and weights of various feature detection models based on PP-YOLOE, which users can download for use:
@@ -76,10 +100,36 @@ The PaddleDetection team provides configs and weights of various feature detecti
 | :--------: | :---------: | :------: |
 |Pedestrian Detection | CrowdHuman | [pphuman](../pphuman) |
 |Vehicle Detection | BDD100K, UA-DETRAC | [ppvehicle](../ppvehicle) |
-|Small Object Detection | VisDrone | [visdrone](../visdrone) |
+|Small Object Detection | VisDrone、DOTA、xView |  [smalldet](../smalldet) |
+|Densely Packed Object Detection | SKU110k | [application](./application) |
+|Rotated Object Detection | DOTA | [PP-YOLOE-R](../rotate/ppyoloe_r/) |
 
 
 ## Getting Start
+
+### Datasets and Metrics
+
+PaddleDetection team provides **COCO and VOC dataset** , decompress and place it under `PaddleDetection/dataset/`:
+
+```
+wget https://bj.bcebos.com/v1/paddledet/data/coco.tar
+# tar -xvf coco.tar
+
+wget https://bj.bcebos.com/v1/paddledet/data/voc.zip
+# unzip voc.zip
+```
+
+**Note:**
+  - For the format of COCO style dataset, please refer to [format-data](https://cocodataset.org/#format-data) and [format-results](https://cocodataset.org/#format-results).
+  - For the evaluation metric of COCO, please refer to [detection-eval](https://cocodataset.org/#detection-eval), and install  [cocoapi](https://github.com/cocodataset/cocoapi) at first.
+  - For the evaluation metric of VOC, please refer to [VOC2012](http://host.robots.ox.ac.uk/pascal/VOC/voc2012/index.html).
+
+### Custom dataset
+
+1.For the annotation of custom dataset, please refer to [DetAnnoTools](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/tutorials/data/DetAnnoTools_en.md);
+
+2.For training preparation of custom dataset，please refer to [PrepareDataSet](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/tutorials/data/PrepareDetDataSet_en.md).
+
 
 ### Training
 
@@ -137,7 +187,7 @@ If you want to export PP-YOLOE model to **ONNX format**, use following command r
 
 ```bash
 # export inference model
-python tools/export_model.py -c configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams
+python tools/export_model.py -c configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams trt=True
 
 # install paddle2onnx
 pip install paddle2onnx

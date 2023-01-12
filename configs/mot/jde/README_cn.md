@@ -20,7 +20,7 @@ PP-Tracking支持单镜头跟踪(MOT)和跨镜头跟踪(MTMCT)两种模式，针
 PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking之手把手玩转多目标跟踪](https://aistudio.baidu.com/aistudio/projectdetail/3022582)。
 
 <div align="center">
-  <img src="../../../docs/images/mot16_jde.gif" width=500 />
+  <img src="https://user-images.githubusercontent.com/22989727/205540305-457d48bf-e9ec-4f28-896c-64c870126e05.gif" width=500 />
 </div>
 
 ## 模型库

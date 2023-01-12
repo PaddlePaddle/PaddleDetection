@@ -22,7 +22,9 @@
 PaddleDetection中提供了SDE和JDE两个系列的多种算法实现：
 - SDE
   - [ByteTrack](./bytetrack)
+  - [OC-SORT](./ocsort)
   - [DeepSORT](./deepsort)
+  - [CenterTrack](./centertrack)
 - JDE
   - [JDE](./jde)
   - [FairMOT](./fairmot)
@@ -30,7 +32,7 @@ PaddleDetection中提供了SDE和JDE两个系列的多种算法实现：
 
 **注意：**
   - 以上算法原论文均为单类别的多目标跟踪，PaddleDetection团队同时也支持了[ByteTrack](./bytetrack)和FairMOT([MCFairMOT](./mcfairmot))的多类别的多目标跟踪；
-  - [DeepSORT](./deepsort)和[JDE](./jde)均只支持单类别的多目标跟踪；
+  - [DeepSORT](./deepsort)、[JDE](./jde)和[CenterTrack](./centertrack)均只支持单类别的多目标跟踪；
   - [DeepSORT](./deepsort)需要额外添加ReID权重一起执行，[ByteTrack](./bytetrack)可加可不加ReID权重，默认不加；
 
 
@@ -44,7 +46,7 @@ PP-Tracking单镜头跟踪采用的方案是[FairMOT](./fairmot)，跨镜头跟�
 </div>
 
 <div width="1000" align="center">
-  <img src="../../docs/images/pptracking-demo.gif"/>
+  <img src="https://user-images.githubusercontent.com/22989727/205546999-f847183d-73e5-4abe-9896-ce6a245efc79.gif"/>
   <br>
   视频来源：VisDrone和BDD100K公开数据集</div>
 </div>
@@ -91,9 +93,11 @@ pip install lap motmetrics sklearn filterpy
 ## 模型库和选型
 - 基础模型
     - [ByteTrack](bytetrack/README_cn.md)
+    - [OC-SORT](ocsort/README_cn.md)
     - [DeepSORT](deepsort/README_cn.md)
     - [JDE](jde/README_cn.md)
     - [FairMOT](fairmot/README_cn.md)
+    - [CenterTrack](centertrack/README_cn.md)
 - 特色垂类模型
     - [行人跟踪](pedestrian/README_cn.md)
     - [人头跟踪](headtracking21/README_cn.md)
@@ -109,8 +113,8 @@ pip install lap motmetrics sklearn filterpy
 
 |    MOT方式      |   经典算法      |  算法流程 |  数据集要求  |  其他特点  |
 | :--------------| :--------------| :------- | :----: | :----: |
-| SDE系列  | DeepSORT,ByteTrack | 分离式，两个独立模型权重先检测后ReID，也可不加ReID | 检测和ReID数据相对独立，不加ReID时即纯检测数据集 |检测和ReID可分别调优，鲁棒性较高，AI竞赛常用|
-| JDE系列  | FairMOT | 联合式，一个模型权重端到端同时检测和ReID | 必须同时具有检测和ReID标注 | 检测和ReID联合训练，不易调优，泛化性不强|
+| SDE系列  | DeepSORT,ByteTrack,OC-SORT,CenterTrack | 分离式，两个独立模型权重先检测后ReID，也可不加ReID | 检测和ReID数据相对独立，不加ReID时即纯检测数据集 |检测和ReID可分别调优，鲁棒性较高，AI竞赛常用|
+| JDE系列  | FairMOT,JDE | 联合式，一个模型权重端到端同时检测和ReID | 必须同时具有检测和ReID标注 | 检测和ReID联合训练，不易调优，泛化性不强|
 
 **注意：**
   - 由于数据标注的成本较大，建议选型前优先考虑**数据集要求**，如果数据集只有检测框标注而没有ReID标注，是无法使用JDE系列算法训练的，更推荐使用SDE系列；
@@ -262,6 +266,27 @@ MOT17
   title={FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking},
   author={Zhang, Yifu and Wang, Chunyu and Wang, Xinggang and Zeng, Wenjun and Liu, Wenyu},
   journal={arXiv preprint arXiv:2004.01888},
+  year={2020}
+}
+
+@article{zhang2021bytetrack,
+  title={ByteTrack: Multi-Object Tracking by Associating Every Detection Box},
+  author={Zhang, Yifu and Sun, Peize and Jiang, Yi and Yu, Dongdong and Yuan, Zehuan and Luo, Ping and Liu, Wenyu and Wang, Xinggang},
+  journal={arXiv preprint arXiv:2110.06864},
+  year={2021}
+}
+
+@article{cao2022observation,
+  title={Observation-Centric SORT: Rethinking SORT for Robust Multi-Object Tracking},
+  author={Cao, Jinkun and Weng, Xinshuo and Khirodkar, Rawal and Pang, Jiangmiao and Kitani, Kris},
+  journal={arXiv preprint arXiv:2203.14360},
+  year={2022}
+}
+
+@article{zhou2020tracking,
+  title={Tracking Objects as Points},
+  author={Zhou, Xingyi and Koltun, Vladlen and Kr{\"a}henb{\"u}hl, Philipp},
+  journal={ECCV},
   year={2020}
 }
 ```

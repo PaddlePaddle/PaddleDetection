@@ -1,0 +1,73 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/gfl_reader.yml',
+]
+
+weights: output/gfl_r18vd_1x_coco/model_final
+find_unused_parameters: True
+
+architecture: GFL
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet18_vd_pretrained.pdparams
+
+GFL:
+  backbone: ResNet
+  neck: FPN
+  head: LDGFLHead
+
+ResNet:
+  depth: 18
+  variant: d
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1,2,3]
+  num_stages: 4
+
+FPN:
+  out_channel: 256
+  spatial_scales: [0.125, 0.0625, 0.03125]
+  extra_stage: 2
+  has_extra_convs: true
+  use_c5: false
+
+LDGFLHead:   # new head
+  conv_feat:
+    name: FCOSFeat
+    feat_in: 256
+    feat_out: 256
+    num_convs: 4
+    norm_type: "gn"
+    use_dcn: false
+  fpn_stride: [8, 16, 32, 64, 128]
+  prior_prob: 0.01
+  reg_max: 16
+  loss_class:
+    name: QualityFocalLoss
+    use_sigmoid: True
+    beta: 2.0
+    loss_weight: 1.0
+  loss_dfl:
+    name: DistributionFocalLoss
+    loss_weight: 0.25
+  loss_bbox:
+    name: GIoULoss
+    loss_weight: 2.0
+  loss_ld:
+    name: KnowledgeDistillationKLDivLoss
+    loss_weight: 0.25
+    T: 10
+  loss_ld_vlr:
+    name: KnowledgeDistillationKLDivLoss
+    loss_weight: 0.25
+    T: 10
+  loss_kd:
+    name: KnowledgeDistillationKLDivLoss
+    loss_weight: 10
+    T: 2
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.025
+    nms_threshold: 0.6

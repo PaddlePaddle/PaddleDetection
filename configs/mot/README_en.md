@@ -40,7 +40,7 @@ PP-Tracking supports GUI predict and deployment. Please refer to this [doc](http
 </div>
 
 <div width="1000" align="center">
-  <img src="../../docs/images/pptracking-demo.gif"/>
+  <img src="https://user-images.githubusercontent.com/22989727/205546999-f847183d-73e5-4abe-9896-ce6a245efc79.gif"/>
   <br>
   video source：VisDrone, BDD100K dataset</div>
 </div>
@@ -60,9 +60,11 @@ pip install -r requirements.txt
 ## Model Zoo
 - Base models
     - [ByteTrack](bytetrack/README.md)
+    - [OC-SORT](ocsort/README.md)
     - [DeepSORT](deepsort/README.md)
     - [JDE](jde/README.md)
     - [FairMOT](fairmot/README.md)
+    - [CenterTrack](centertrack/README.md)
 - Feature models
     - [Pedestrian](pedestrian/README.md)
     - [Head](headtracking21/README.md)
@@ -181,6 +183,27 @@ In the annotation text, each line is describing a bounding box and has the follo
   title={FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking},
   author={Zhang, Yifu and Wang, Chunyu and Wang, Xinggang and Zeng, Wenjun and Liu, Wenyu},
   journal={arXiv preprint arXiv:2004.01888},
+  year={2020}
+}
+
+@article{zhang2021bytetrack,
+  title={ByteTrack: Multi-Object Tracking by Associating Every Detection Box},
+  author={Zhang, Yifu and Sun, Peize and Jiang, Yi and Yu, Dongdong and Yuan, Zehuan and Luo, Ping and Liu, Wenyu and Wang, Xinggang},
+  journal={arXiv preprint arXiv:2110.06864},
+  year={2021}
+}
+
+@article{cao2022observation,
+  title={Observation-Centric SORT: Rethinking SORT for Robust Multi-Object Tracking},
+  author={Cao, Jinkun and Weng, Xinshuo and Khirodkar, Rawal and Pang, Jiangmiao and Kitani, Kris},
+  journal={arXiv preprint arXiv:2203.14360},
+  year={2022}
+}
+
+@article{zhou2020tracking,
+  title={Tracking Objects as Points},
+  author={Zhou, Xingyi and Koltun, Vladlen and Kr{\"a}henb{\"u}hl, Philipp},
+  journal={ECCV},
   year={2020}
 }
 ```

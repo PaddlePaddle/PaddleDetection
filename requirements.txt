@@ -1,7 +1,8 @@
+numpy < 1.24
 tqdm
 typeguard
 visualdl>=2.2.0
-opencv-python
+opencv-python <= 4.6.0
 PyYAML
 shapely
 scipy

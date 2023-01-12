@@ -32,7 +32,7 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测�
 - [Android Fitness Demo](https://github.com/zhiboniu/pose_demo_android)  基于PP-TinyPose, 高效实现健身校准与计数功能。
 
 <div align="center">
-  <img src="../../../docs/images/fitness_demo.gif" width='636'/>
+  <img src="https://user-images.githubusercontent.com/22989727/205545098-fe6515af-3f1d-4303-bb4d-6e2141e42e2c.gif" width='636'/>
 </div>
 
 - 欢迎扫码快速体验
