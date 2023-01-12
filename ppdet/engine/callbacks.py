@@ -152,7 +152,7 @@ class LogPrinter(Callback):
             if mode == 'eval':
                 sample_num = status['sample_num']
                 cost_time = status['cost_time']
-                logger.info('Total sample number: {}, averge FPS: {}'.format(
+                logger.info('Total sample number: {}, average FPS: {}'.format(
                     sample_num, sample_num / cost_time))
 
 
@@ -369,7 +369,7 @@ class WandbCallback(Callback):
             metadata["last_epoch"] = last_epoch
             if ap:
                 metadata["ap"] = ap
-            
+
             if fps:
                 metadata["fps"] = fps
 
@@ -416,7 +416,6 @@ class WandbCallback(Callback):
                 batch_cost = f
 
                 metrics = {"train/" + k: v for k, v in training_status.items()}
-
 
                 metrics["train/ips"] = ips
                 metrics["train/data_cost"] = data_cost
