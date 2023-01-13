@@ -74,7 +74,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
     - 发布行人分析工具[PP-Human v2](./deploy/pipeline)，新增打架、打电话、抽烟、闯入四大行为识别，底层算法性能升级，覆盖行人检测、跟踪、属性三类核心算法能力，提供保姆级全流程开发及模型优化策略，支持在线视频流输入
     - 首次发布[PP-Vehicle](./deploy/pipeline)，提供车牌识别、车辆属性分析（颜色、车型）、车流量统计以及违章检测四大功能，兼容图片、在线视频流、视频输入，提供完善的二次开发文档教程
 - [📱模型库](#模型库)：
-    - 全面覆盖的[YOLO家族](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/docs/MODEL_ZOO_cn.md)经典与最新算法模型的代码库[PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO): 包括YOLOv3，百度飞桨自研的实时高精度目标检测模型PP-YOLOE，以及前沿检测算法YOLOv4、YOLOv5、YOLOX，YOLOv6及YOLOv7
+    - 全面覆盖的[YOLO家族](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/docs/MODEL_ZOO_cn.md)经典与最新算法模型的代码库[PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO): 包括YOLOv3，百度飞桨自研的实时高精度目标检测模型PP-YOLOE，以及前沿检测算法YOLOv4、YOLOv5、YOLOX，YOLOv6、YOLOv7以及YOLOv8
     - 新增基于[ViT](configs/vitdet)骨干网络高精度检测模型，COCO数据集精度达到55.7% mAP；新增[OC-SORT](configs/mot/ocsort)多目标跟踪模型；新增[ConvNeXt](configs/convnext)骨干网络
 - [💡产业实践范例](#产业实践范例)：
     - 新增[智能健身](https://aistudio.baidu.com/aistudio/projectdetail/4385813)、[打架识别](https://aistudio.baidu.com/aistudio/projectdetail/4086987?channelType=0&channel=0)、[来客分析](https://aistudio.baidu.com/aistudio/projectdetail/4230123?channelType=0&channel=0)
@@ -83,7 +83,9 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 
 位于[`develop`](https://github.com/PaddlePaddle/PaddleDetection/tree/develop)分支，体验最新功能请切换到[该分支](https://github.com/PaddlePaddle/PaddleDetection/tree/develop)，最近更新：
 - [📱模型库](#模型库)：
+  - 新增[少样本迁移学习](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/few-shot);
   - 新增[半监督检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/semi_det);
+  - 新增[YOLOv8](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8);
 - [🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)：
   - 发布**旋转框检测模型**[PP-YOLOE-R](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r)：Anchor-free旋转框检测SOTA模型，精度速度双高、云边一体，s/m/l/x四个模型适配不用算力硬件、部署友好，避免使用特殊算子，能够轻松使用TensorRT加速；
   - 发布**小目标检测模型**[PP-YOLOE-SOD](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/smalldet)：基于切图的端到端检测方案、基于原图的检测模型，精度达VisDrone开源最优；
@@ -109,6 +111,9 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 
 - **🎈社区近期活动**
 
+  - **少目标迁移学习专题**
+    - `文章传送门`：[囿于数据少？泛化性差？PaddleDetection少样本迁移学习助你一键突围！](https://mp.weixin.qq.com/s/dFEQoxSzVCOaWVZPb3N7WA)
+
   - **⚽️2022卡塔尔世界杯专题**
     - `文章传送门`：[世界杯决赛号角吹响！趁周末来搭一套足球3D+AI量化分析系统吧！](https://mp.weixin.qq.com/s/koJxjWDPBOlqgI-98UsfKQ)
   
@@ -124,7 +129,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
     <img src="https://user-images.githubusercontent.com/61035602/208037368-5b9f01f7-afd9-46d8-bc80-271ccb5db7bb.png"  height = "220" caption='' />
     <p></p>
     </div>
-    
+
   - **🎊YOLO Vision世界学术交流大会**
     - **PaddleDetection**受邀参与首个以**YOLO为主题**的**YOLO-VISION**世界大会，与全球AI领先开发者学习交流。
     - `活动链接传送门`：[YOLO-VISION](https://ultralytics.com/yolo-vision)
@@ -253,10 +258,10 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
       <td>
         <ul>
           <li><a href="ppdet/modeling/losses/smooth_l1_loss.py">Smooth-L1</a></li>
-          <li><a href="ppdet/modeling/losses/detr_loss.py">Detr Loss</a></li>
+          <li><a href="ppdet/modeling/losses/detr_loss.py">Detr Loss</a></li> 
           <li><a href="ppdet/modeling/losses/fairmot_loss.py">Fairmot Loss</a></li>
           <li><a href="ppdet/modeling/losses/fcos_loss.py">Fcos Loss</a></li>
-          <li><a href="ppdet/modeling/losses/gfocal_loss.py">GFocal Loss</a></li>
+          <li><a href="ppdet/modeling/losses/gfocal_loss.py">GFocal Loss</a></li> 
           <li><a href="ppdet/modeling/losses/jde_loss.py">JDE Loss</a></li>
           <li><a href="ppdet/modeling/losses/keypoint_loss.py">KeyPoint Loss</a></li>
           <li><a href="ppdet/modeling/losses/solov2_loss.py">SoloV2 Loss</a></li>
@@ -288,7 +293,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
             </ul>
           <li><b>Common</b></li>
         <ul>
-        <ul>
+        <ul> 
             <li><a href="ppdet/modeling/backbones/resnet.py#L41">Sync-BN</a></li>
             <li><a href="configs/gn/README.md">Group Norm</a></li>
             <li><a href="configs/dcn/README.md">DCNv2</a></li>
@@ -350,7 +355,8 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
             <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOX</a></li>  
             <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv6</a></li>  
             <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv7</a></li>
-            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">RTMDet</a></li>  
+            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8">YOLOv8</a></li> 
+            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">RTMDet</a></li> 
             <li><a href="configs/ppyolo/README_cn.md">PP-YOLO</a></li>
             <li><a href="configs/ppyolo#pp-yolo-tiny">PP-YOLO-Tiny</a></li>
             <li><a href="configs/picodet">PP-PicoDet</a></li>
@@ -378,7 +384,6 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
             <li><a href="configs/mot/deepsort">DeepSORT</a></li>
             <li><a href="configs/mot/bytetrack">ByteTrack</a></li>
             <li><a href="configs/mot/ocsort">OC-SORT</a></li>
-            <li><a href="configs/mot/centertrack">CenterTrack</a></li>
         </ul>
       </td>
       <td>
