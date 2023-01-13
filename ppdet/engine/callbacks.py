@@ -152,7 +152,7 @@ class LogPrinter(Callback):
             if mode == 'eval':
                 sample_num = status['sample_num']
                 cost_time = status['cost_time']
-                logger.info('Total sample number: {}, averge FPS: {}'.format(
+                logger.info('Total sample number: {}, average FPS: {}'.format(
                     sample_num, sample_num / cost_time))
 
 
