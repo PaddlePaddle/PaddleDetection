@@ -1,0 +1,27 @@
+metric: COCO
+num_classes: 80
+
+# Dataset configuration
+TrainDataset:
+  !COCODataSet
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir: dataset/coco/
+
+EvalDataset:
+  !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco/
+
+worker_num: 0
+
+# preprocess reader in test
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: True, interp: 1}
+    - Pad: {size: [640, 640], fill_value: [114., 114., 114.]}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - Permute: {}
+  batch_size: 4
