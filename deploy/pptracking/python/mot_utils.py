@@ -271,7 +271,7 @@ class Timer(Times):
                 format(preprocess_time * 1000, inference_time * 1000,
                        postprocess_time * 1000))
 
-    def tracking_info(self, average=False):
+    def tracking_info(self, average=True):
         pre_time = self.preprocess_time_s.value()
         infer_time = self.inference_time_s.value()
         post_time = self.postprocess_time_s.value()
