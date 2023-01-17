@@ -260,7 +260,7 @@ class GFLHead(nn.Layer):
                 center_points = paddle.stack([x, y], axis=-1)
                 cls_score = cls_score.reshape([b, -1, self.cls_out_channels])
                 bbox_pred = self.distribution_project(bbox_pred) * stride
-                bbox_pred = bbox_pred.reshape([b, cell_h * cell_w, 4])
+                bbox_pred = bbox_pred.reshape([-1, cell_h * cell_w, 4])
 
                 # NOTE: If keep_ratio=False and image shape value that
                 # multiples of 32, distance2bbox not set max_shapes parameter
@@ -388,12 +388,7 @@ class GFLHead(nn.Layer):
 
         avg_factor = sum(avg_factor)
         try:
-            avg_factor_clone = avg_factor.clone()
-            tmp_avg_factor = paddle.distributed.all_reduce(avg_factor_clone)
-            if tmp_avg_factor is not None:
-                avg_factor = tmp_avg_factor
-            else:
-                avg_factor = avg_factor_clone
+            paddle.distributed.all_reduce(avg_factor)
             avg_factor = paddle.clip(
                 avg_factor / paddle.distributed.get_world_size(), min=1)
         except:

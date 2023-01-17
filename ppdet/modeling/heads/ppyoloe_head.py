@@ -130,11 +130,10 @@ class PPYOLOEHead(nn.Layer):
             constant_(reg_.weight)
             constant_(reg_.bias, 1.0)
 
-        self.proj = paddle.linspace(0, self.reg_max, self.reg_max + 1)
-        self.proj_conv.weight.set_value(
-            self.proj.reshape([1, self.reg_max + 1, 1, 1]))
+        proj = paddle.linspace(0, self.reg_max, self.reg_max + 1).reshape(
+            [1, self.reg_max + 1, 1, 1])
+        self.proj_conv.weight.set_value(proj)
         self.proj_conv.weight.stop_gradient = True
-
         if self.eval_size:
             anchor_points, stride_tensor = self._generate_anchors()
             self.anchor_points = anchor_points
@@ -193,22 +192,22 @@ class PPYOLOEHead(nn.Layer):
             anchor_points, stride_tensor = self._generate_anchors(feats)
         cls_score_list, reg_dist_list = [], []
         for i, feat in enumerate(feats):
-            b, _, h, w = feat.shape
+            _, _, h, w = feat.shape
             l = h * w
             avg_feat = F.adaptive_avg_pool2d(feat, (1, 1))
             cls_logit = self.pred_cls[i](self.stem_cls[i](feat, avg_feat) +
                                          feat)
             reg_dist = self.pred_reg[i](self.stem_reg[i](feat, avg_feat))
             reg_dist = reg_dist.reshape([-1, 4, self.reg_max + 1, l]).transpose(
-                [0, 2, 1, 3])
-            reg_dist = self.proj_conv(F.softmax(reg_dist, axis=1))
+                [0, 2, 3, 1])
+            reg_dist = self.proj_conv(F.softmax(reg_dist, axis=1)).squeeze(1)
             # cls and reg
             cls_score = F.sigmoid(cls_logit)
-            cls_score_list.append(cls_score.reshape([b, self.num_classes, l]))
-            reg_dist_list.append(reg_dist.reshape([b, 4, l]))
+            cls_score_list.append(cls_score.reshape([-1, self.num_classes, l]))
+            reg_dist_list.append(reg_dist)
 
         cls_score_list = paddle.concat(cls_score_list, axis=-1)
-        reg_dist_list = paddle.concat(reg_dist_list, axis=-1)
+        reg_dist_list = paddle.concat(reg_dist_list, axis=1)
 
         return cls_score_list, reg_dist_list, anchor_points, stride_tensor
 
@@ -239,9 +238,9 @@ class PPYOLOEHead(nn.Layer):
         return loss
 
     def _bbox_decode(self, anchor_points, pred_dist):
-        b, l, _ = get_static_shape(pred_dist)
-        pred_dist = F.softmax(pred_dist.reshape([b, l, 4, self.reg_max + 1
-                                                 ])).matmul(self.proj)
+        _, l, _ = get_static_shape(pred_dist)
+        pred_dist = F.softmax(pred_dist.reshape([-1, l, 4, self.reg_max + 1]))
+        pred_dist = self.proj_conv(pred_dist.transpose([0, 3, 1, 2])).squeeze(1)
         return batch_distance2bbox(anchor_points, pred_dist)
 
     def _bbox2distance(self, points, bbox):
@@ -347,9 +346,8 @@ class PPYOLOEHead(nn.Layer):
         assigned_scores_sum = assigned_scores.sum()
         if paddle.distributed.get_world_size() > 1:
             paddle.distributed.all_reduce(assigned_scores_sum)
-            assigned_scores_sum = paddle.clip(
-                assigned_scores_sum / paddle.distributed.get_world_size(),
-                min=1)
+            assigned_scores_sum /= paddle.distributed.get_world_size()
+        assigned_scores_sum = paddle.clip(assigned_scores_sum, min=1.)
         loss_cls /= assigned_scores_sum
 
         loss_l1, loss_iou, loss_dfl = \
@@ -370,8 +368,7 @@ class PPYOLOEHead(nn.Layer):
 
     def post_process(self, head_outs, scale_factor):
         pred_scores, pred_dist, anchor_points, stride_tensor = head_outs
-        pred_bboxes = batch_distance2bbox(anchor_points,
-                                          pred_dist.transpose([0, 2, 1]))
+        pred_bboxes = batch_distance2bbox(anchor_points, pred_dist)
         pred_bboxes *= stride_tensor
         if self.exclude_post_process:
             return paddle.concat(

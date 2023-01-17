@@ -17,7 +17,10 @@ import paddle.nn.functional as F
 import paddle.nn as nn
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
-from paddle import _C_ops
+try:
+    import paddle._legacy_C_ops as C_ops
+except:
+    import paddle._C_ops as C_ops
 
 from paddle import in_dynamic_mode
 from paddle.common_ops_import import Variable, LayerHelper, check_variable_and_dtype, check_type, check_dtype
@@ -198,8 +201,9 @@ def distribute_fpn_proposals(fpn_rois,
         attrs = ('min_level', min_level, 'max_level', max_level, 'refer_level',
                  refer_level, 'refer_scale', refer_scale, 'pixel_offset',
                  pixel_offset)
-        multi_rois, restore_ind, rois_num_per_level = _C_ops.distribute_fpn_proposals(
+        multi_rois, restore_ind, rois_num_per_level = C_ops.distribute_fpn_proposals(
             fpn_rois, rois_num, num_lvl, num_lvl, *attrs)
+
         return multi_rois, restore_ind, rois_num_per_level
 
     else:
@@ -353,7 +357,7 @@ def prior_box(input,
                  'min_max_aspect_ratios_order', min_max_aspect_ratios_order)
         if cur_max_sizes is not None:
             attrs += ('max_sizes', cur_max_sizes)
-        box, var = _C_ops.prior_box(input, image, *attrs)
+        box, var = C_ops.prior_box(input, image, *attrs)
         return box, var
     else:
         attrs = {
@@ -496,8 +500,8 @@ def multiclass_nms(bboxes,
                  score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
                  nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
                  'normalized', normalized)
-        output, index, nms_rois_num = _C_ops.multiclass_nms3(bboxes, scores,
-                                                             rois_num, *attrs)
+        output, index, nms_rois_num = C_ops.multiclass_nms3(bboxes, scores,
+                                                            rois_num, *attrs)
         if not return_index:
             index = None
         return output, nms_rois_num, index
@@ -638,7 +642,7 @@ def matrix_nms(bboxes,
                  nms_top_k, 'gaussian_sigma', gaussian_sigma, 'use_gaussian',
                  use_gaussian, 'keep_top_k', keep_top_k, 'normalized',
                  normalized)
-        out, index, rois_num = _C_ops.matrix_nms(bboxes, scores, *attrs)
+        out, index, rois_num = C_ops.matrix_nms(bboxes, scores, *attrs)
         if not return_index:
             index = None
         if not return_rois_num:
@@ -791,12 +795,12 @@ def box_coder(prior_box,
 
     if in_dynamic_mode():
         if isinstance(prior_box_var, Variable):
-            output_box = _C_ops.box_coder(
+            output_box = C_ops.box_coder(
                 prior_box, prior_box_var, target_box, "code_type", code_type,
                 "box_normalized", box_normalized, "axis", axis)
 
         elif isinstance(prior_box_var, list):
-            output_box = _C_ops.box_coder(
+            output_box = C_ops.box_coder(
                 prior_box, None, target_box, "code_type", code_type,
                 "box_normalized", box_normalized, "axis", axis, "variance",
                 prior_box_var)
@@ -919,7 +923,7 @@ def generate_proposals(scores,
         attrs = ('pre_nms_topN', pre_nms_top_n, 'post_nms_topN', post_nms_top_n,
                  'nms_thresh', nms_thresh, 'min_size', min_size, 'eta', eta,
                  'pixel_offset', pixel_offset)
-        rpn_rois, rpn_roi_probs, rpn_rois_num = _C_ops.generate_proposals_v2(
+        rpn_rois, rpn_roi_probs, rpn_rois_num = C_ops.generate_proposals_v2(
             scores, bbox_deltas, im_shape, anchors, variances, *attrs)
         if not return_rois_num:
             rpn_rois_num = None

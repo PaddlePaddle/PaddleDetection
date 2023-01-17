@@ -15,6 +15,13 @@ PaddleDetection场景应用覆盖通用，制造，城市，交通行业的主�
 
 ## 范例列表
 
+- [基于PP-YOLOE-R的旋转框检测](https://aistudio.baidu.com/aistudio/projectdetail/5058293)
+
+- [基于PP-YOLOE-SOD的无人机航拍图像检测](https://aistudio.baidu.com/aistudio/projectdetail/5036782)
+
+
+- [基于PP-Human v2的摔倒检测](https://aistudio.baidu.com/aistudio/projectdetail/4606001)
+
 - [基于PP-TinyPose增强版的智能健身动作识别](https://aistudio.baidu.com/aistudio/projectdetail/4385813)
 
 - [基于PP-Human的打架识别](https://aistudio.baidu.com/aistudio/projectdetail/4086987?contributionType=1)
@@ -33,5 +40,6 @@ PaddleDetection场景应用覆盖通用，制造，城市，交通行业的主�
 
 - [基于人体关键点检测的合规检测](https://aistudio.baidu.com/aistudio/projectdetail/4061642?contributionType=1)
 
+- [基于PP-Human的来客分析案例教程](https://aistudio.baidu.com/aistudio/projectdetail/4537344)
 
   *范例将持续更新中

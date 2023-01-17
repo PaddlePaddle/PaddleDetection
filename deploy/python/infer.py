@@ -152,9 +152,12 @@ class Detector(object):
     def postprocess(self, inputs, result):
         # postprocess output of predictor
         np_boxes_num = result['boxes_num']
-        if sum(np_boxes_num) <= 0:
+        assert isinstance(np_boxes_num, np.ndarray), \
+            '`np_boxes_num` should be a `numpy.ndarray`'
+
+        if np_boxes_num.sum() <= 0:
             print('[WARNNING] No object detected.')
-            result = {'boxes': np.zeros([0, 6]), 'boxes_num': [0]}
+            result = {'boxes': np.zeros([0, 6]), 'boxes_num': np_boxes_num}
         result = {k: v for k, v in result.items() if v is not None}
         return result
 
@@ -188,7 +191,7 @@ class Detector(object):
                             shape: [N, im_h, im_w]
         '''
         # model prediction
-        np_boxes, np_masks = None, None
+        np_boxes_num, np_boxes, np_masks = np.array([0]), None, None
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -402,10 +405,8 @@ class Detector(object):
                         self.pred_config.labels,
                         output_dir=self.output_dir,
                         threshold=self.threshold)
-
             results.append(result)
             print('Test iter {}'.format(i))
-
         results = self.merge_batch_result(results)
         if save_results:
             Path(self.output_dir).mkdir(exist_ok=True)
@@ -430,7 +431,7 @@ class Detector(object):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         index = 1
         while (1):
