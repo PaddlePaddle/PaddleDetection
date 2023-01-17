@@ -17,24 +17,6 @@
 
 ## 2.Benchmark
 
-### PP-YOLOE
-
-| 模型  | Base mAP | 离线量化mAP | ACT量化mAP | TRT-FP32 | TRT-FP16 | TRT-INT8 |  配置文件 | 量化模型  |
-| :-------- |:-------- |:--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :----------------------: | :---------------------: |
-| PP-YOLOE-l | 50.9  |  - | 50.6  |   11.2ms  |   7.7ms   |  **6.7ms**  |  [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/deploy/auto_compression/configs/ppyoloe_l_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddle-slim-models/act/ppyoloe_crn_l_300e_coco_quant.tar) |
-
-- mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
-- PP-YOLOE-l模型在Tesla V100的GPU环境下测试，并且开启TensorRT，batch_size=1，包含NMS，测试脚本是[benchmark demo](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/deploy/python)。
-
-### PP-PicoDet
-
-| 模型  | 策略 | mAP | FP32 | FP16 | INT8 |  配置文件 | 模型  |
-| :-------- |:-------- |:--------: | :----------------: | :----------------: | :---------------: | :----------------------: | :---------------------: |
-| PicoDet-S-NPU | Baseline | 30.1   |   -   |  -  |  -  | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/picodet/picodet_s_416_coco_npu.yml) | [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_416_coco_npu.tar) |
-| PicoDet-S-NPU |  量化训练 | 29.7  |   -  |   -   |  -  |  [config](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/full_quantization/detection/configs/picodet_s_qat_dis.yaml) | [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_npu_quant.tar) |
-
-- mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
-
 ### PP-YOLOE+
 
 | 模型  | Base mAP | 离线量化mAP | ACT量化mAP | TRT-FP32 | TRT-FP16 | TRT-INT8 |  配置文件 | 量化模型  |
@@ -46,14 +28,41 @@
 
 - mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
 
+### YOLOv8
 
+| 模型  | Base mAP | 离线量化mAP | ACT量化mAP | TRT-FP32 | TRT-FP16 | TRT-INT8 |  配置文件 | 量化模型  |
+| :-------- |:-------- |:--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :----------------------: | :---------------------: |
+| YOLOv8-s | 44.9 |  43.9 | 44.3  |   9.27ms  |   4.65ms   |  **3.78ms**  |  [config](./configs/yolov8_s_qat_dis.yaml) | [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/yolov8_s_500e_coco_trt_nms_quant.tar) |
+
+**注意：**
+- 表格中YOLOv8模型均为带NMS的模型，可直接在TRT中部署，如果需要对齐测试标准，需要测试不带NMS的模型。
+- mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
+- 表格中的性能在Tesla T4的GPU环境下测试，并且开启TensorRT，batch_size=1。
+
+### PP-YOLOE
+
+| 模型  | Base mAP | 离线量化mAP | ACT量化mAP | TRT-FP32 | TRT-FP16 | TRT-INT8 |  配置文件 | 量化模型  |
+| :-------- |:-------- |:--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :----------------------: | :---------------------: |
+| PP-YOLOE-l | 50.9  |  - | 50.6  |   11.2ms  |   7.7ms   |  **6.7ms**  |  [config](./configs/ppyoloe_l_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddle-slim-models/act/ppyoloe_crn_l_300e_coco_quant.tar) |
+
+- mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
+- PP-YOLOE-l模型在Tesla V100的GPU环境下测试，并且开启TensorRT，batch_size=1，包含NMS，测试脚本是[benchmark demo](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/deploy/python)。
+
+### PP-PicoDet
+
+| 模型  | 策略 | mAP | FP32 | FP16 | INT8 |  配置文件 | 模型  |
+| :-------- |:-------- |:--------: | :----------------: | :----------------: | :---------------: | :----------------------: | :---------------------: |
+| PicoDet-S-NPU | Baseline | 30.1   |   -   |  -  |  -  | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/picodet/picodet_s_416_coco_npu.yml) | [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_416_coco_npu.tar) |
+| PicoDet-S-NPU |  量化训练 | 29.7  |   -  |   -   |  -  |  [config](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/full_quantization/detection/configs/picodet_s_qat_dis.yaml) | [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_npu_quant.tar) |
+
+- mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
 
 ## 3. 自动压缩流程
 
 #### 3.1 准备环境
-- PaddlePaddle >= 2.3 （可从[Paddle官网](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/install/pip/linux-pip.html)下载安装）
-- PaddleSlim >= 2.3
-- PaddleDet >= 2.4
+- PaddlePaddle >= 2.4 （可从[Paddle官网](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/install/pip/linux-pip.html)下载安装）
+- PaddleSlim >= 2.4.1
+- PaddleDet >= 2.5
 - opencv-python
 
 安装paddlepaddle：
@@ -74,9 +83,11 @@ pip install paddleslim
 pip install paddledet
 ```
 
+**注意：** YOLOv8模型的自动化压缩需要依赖安装最新[Develop Paddle](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/develop/install/pip/linux-pip.html)和[Develop PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim#%E5%AE%89%E8%A3%85)版本。
+
 #### 3.2 准备数据集
 
-本案例默认以COCO数据进行自动压缩实验，如果自定义COCO数据，或者其他格式数据，请参考[数据准备文档](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/PrepareDataSet.md) 来准备数据。
+本案例默认以COCO数据进行自动压缩实验，如果自定义COCO数据，或者其他格式数据，请参考[数据准备文档](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/tutorials/PrepareDataSet.md) 来准备数据。
 
 如果数据集为非COCO格式数据，请修改[configs](./configs)中reader配置文件中的Dataset字段。
 
@@ -101,6 +112,16 @@ python tools/export_model.py \
         -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams \
         trt=True \
 ```
+
+YOLOv8-s模型，包含NMS，具体可参考[YOLOv8模型文档](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8), 然后执行：
+```shell
+python tools/export_model.py \
+        -c configs/yolov8/yolov8_s_500e_coco.yml \
+        -o weights=https://paddledet.bj.bcebos.com/models/yolov8_s_500e_coco.pdparams \
+        trt=True
+```
+
+如快速体验，可直接下载[YOLOv8-s导出模型](https://bj.bcebos.com/v1/paddle-slim-models/act/yolov8_s_500e_coco_trt_nms.tar)
 
 #### 3.4 自动压缩并产出模型
 
@@ -131,4 +152,4 @@ python eval.py --config_path=./configs/ppyoloe_l_qat_dis.yaml
 
 ## 4.预测部署
 
-- 可以参考[PaddleDetection部署教程](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/deploy)，GPU上量化模型开启TensorRT并设置trt_int8模式进行部署。
+- 可以参考[PaddleDetection部署教程](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/deploy)，GPU上量化模型开启TensorRT并设置trt_int8模式进行部署。
