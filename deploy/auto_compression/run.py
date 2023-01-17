@@ -23,6 +23,7 @@ from ppdet.metrics import COCOMetric, VOCMetric, KeyPointTopDownCOCOEval
 from paddleslim.auto_compression.config_helpers import load_config as load_slim_config
 from paddleslim.auto_compression import AutoCompression
 from post_process import PPYOLOEPostProcess
+from paddleslim.common.dataloader import get_feed_vars
 
 
 def argsparser():
@@ -94,9 +95,12 @@ def eval_function(exe, compiled_test_program, test_feed_names, test_fetch_list):
                        fetch_list=test_fetch_list,
                        return_numpy=False)
         res = {}
-        if 'arch' in global_config and global_config['arch'] == 'PPYOLOE':
-            postprocess = PPYOLOEPostProcess(
-                score_threshold=0.01, nms_threshold=0.6)
+        if 'include_nms' in global_config and not global_config['include_nms']:
+            if 'arch' in global_config and global_config['arch'] == 'PPYOLOE':
+                postprocess = PPYOLOEPostProcess(
+                    score_threshold=0.01, nms_threshold=0.6)
+            else:
+                assert "Not support arch={} now.".format(global_config['arch'])
             res = postprocess(np.array(outs[0]), data_all['scale_factor'])
         else:
             for out in outs:
@@ -128,6 +132,10 @@ def main():
     train_loader = create('EvalReader')(reader_cfg['TrainDataset'],
                                         reader_cfg['worker_num'],
                                         return_list=True)
+    if global_config.get('input_list') is None:
+        global_config['input_list'] = get_feed_vars(
+            global_config['model_dir'], global_config['model_filename'],
+            global_config['params_filename'])
     train_loader = reader_wrapper(train_loader, global_config['input_list'])
 
     if 'Evaluation' in global_config.keys() and global_config[
