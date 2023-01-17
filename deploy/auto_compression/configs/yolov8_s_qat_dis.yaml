@@ -1,9 +1,9 @@
 
 Global:
-  reader_config: configs/ppyoloe_plus_reader.yml
+  reader_config: configs/yolov8_reader.yml
   include_nms: True
   Evaluation: True
-  model_dir: ./ppyoloe_plus_crn_m_80e_coco
+  model_dir: ./yolov8_s_500e_coco_trt_nms/
   model_filename: model.pdmodel
   params_filename: model.pdiparams
 
@@ -11,20 +11,20 @@ Distillation:
   alpha: 1.0
   loss: soft_label
 
-Quantization:
-  use_pact: true
+QuantAware:
+  onnx_format: true
   activation_quantize_type: 'moving_average_abs_max'
   quantize_op_types:
   - conv2d
   - depthwise_conv2d
 
 TrainConfig:
-  train_iter: 5000
+  train_iter: 8000
   eval_iter: 1000
   learning_rate:  
     type: CosineAnnealingDecay
     learning_rate: 0.00003
-    T_max: 6000
+    T_max: 10000
   optimizer_builder:
     optimizer: 
       type: SGD

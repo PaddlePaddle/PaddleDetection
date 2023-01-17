@@ -1,8 +1,7 @@
 
 Global:
   reader_config: configs/ppyoloe_plus_reader.yml
-  input_list: ['image', 'scale_factor']
-  arch: YOLO
+  include_nms: True
   Evaluation: True
   model_dir: ./ppyoloe_plus_crn_l_80e_coco  
   model_filename: model.pdmodel
