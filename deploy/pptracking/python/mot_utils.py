@@ -271,6 +271,40 @@ class Timer(Times):
                 format(preprocess_time * 1000, inference_time * 1000,
                        postprocess_time * 1000))
 
+    def tracking_info(self, average=False):
+        pre_time = self.preprocess_time_s.value()
+        infer_time = self.inference_time_s.value()
+        post_time = self.postprocess_time_s.value()
+        track_time = self.tracking_time_s.value()
+
+        total_time = pre_time + infer_time + post_time
+        if self.with_tracker:
+            total_time = total_time + track_time
+        total_time = round(total_time, 4)
+        print(
+            "------------------ Tracking Module Time Info ----------------------"
+        )
+
+        preprocess_time = round(pre_time / max(1, self.img_num),
+                                4) if average else pre_time
+        postprocess_time = round(post_time / max(1, self.img_num),
+                                 4) if average else post_time
+        inference_time = round(infer_time / max(1, self.img_num),
+                               4) if average else infer_time
+        tracking_time = round(track_time / max(1, self.img_num),
+                              4) if average else track_time
+
+        if self.with_tracker:
+            print(
+                "preprocess_time(ms): {:.2f}, inference_time(ms): {:.2f}, postprocess_time(ms): {:.2f}, tracking_time(ms): {:.2f}".
+                format(preprocess_time * 1000, inference_time * 1000,
+                       postprocess_time * 1000, tracking_time * 1000))
+        else:
+            print(
+                "preprocess_time(ms): {:.2f}, inference_time(ms): {:.2f}, postprocess_time(ms): {:.2f}".
+                format(preprocess_time * 1000, inference_time * 1000,
+                       postprocess_time * 1000))
+
     def report(self, average=False):
         dic = {}
         pre_time = self.preprocess_time_s.value()

@@ -530,6 +530,7 @@ class PipePredictor(object):
         else:
             self.predict_image(input)
         self.pipe_timer.info()
+        self.mot_predictor.det_times.tracking_info(average=True)
 
     def predict_image(self, input):
         # det
@@ -747,7 +748,8 @@ class PipePredictor(object):
                 res = self.mot_predictor.predict_image(
                     [copy.deepcopy(frame_rgb)],
                     visual=False,
-                    reuse_det_result=reuse_det_result)
+                    reuse_det_result=reuse_det_result,
+                    frame_count=frame_id)
 
                 # mot output format: id, class, score, xmin, ymin, xmax, ymax
                 mot_res = parse_mot_res(res)
