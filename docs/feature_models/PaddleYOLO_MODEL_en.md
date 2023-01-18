@@ -5,11 +5,12 @@
 ## Introduction
 - [Introduction](#Introduction)
 - [ModelZoo](#ModelZoo)
-    - [PP-YOLOE+](#PP-YOLOE+)
+    - [PP-YOLOE](#PP-YOLOE)
     - [YOLOX](#YOLOX)
     - [YOLOv5](#YOLOv5)
     - [YOLOv6](#YOLOv6)
     - [YOLOv7](#YOLOv7)
+    - [YOLOv8](#YOLOv8)
     - [RTMDet](#RTMDet)
     - [VOC](#VOC)
 - [UserGuide](#UserGuide)
@@ -18,10 +19,11 @@
 
 ## Introduction
 
-**PaddleYOLO** is a YOLO Series toolbox based on [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection), **only relevant codes of YOLO series models are included**. It supports `YOLOv3`,`PP-YOLO`,`PP-YOLOv2`,`PP-YOLOE`,`PP-YOLOE+`,`YOLOX`,`YOLOv5`,`YOLOv6`,`YOLOv7`,`RTMDet` and so on. Welcome to use and build it together!
+**PaddleYOLO** is a YOLO Series toolbox based on [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection), **only relevant codes of YOLO series models are included**. It supports `YOLOv3`,`PP-YOLO`,`PP-YOLOv2`,`PP-YOLOE`,`PP-YOLOE+`,`YOLOX`,`YOLOv5`,`YOLOv6`,`YOLOv7`,`YOLOv8`,`RTMDet` and so on. Welcome to use and build it together!
 
 ## Updates
 
+* 【2023/01/10】Support [YOLOv8](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8) inference and deploy;
 * 【2022/09/29】Support [RTMDet](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/rtmdet) inference and deploy;
 * 【2022/09/26】Release [`PaddleYOLO`](https://github.com/PaddlePaddle/PaddleYOLO);
 * 【2022/09/19】Support the new version of [`YOLOv6`](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6), including n/t/s/m/l model;
@@ -29,13 +31,13 @@
 
 
 **Notes：**
- - The Licence of **PaddleYOLO** is **GPL 3.0**, the codes of [YOLOv5](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov5),[YOLOv7](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov7) and [YOLOv6](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6) will not be merged into [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection). Except for these three YOLO models, other YOLO models are recommended to use in [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection), **which will be the first to release the latest progress of PP-YOLO series detection model**;
+ - The Licence of **PaddleYOLO** is **GPL 3.0**, the codes of [YOLOv5](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov5),[YOLOv6](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6),[YOLOv7](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov7) and [YOLOv8](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8) will not be merged into [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection). Except for these three YOLO models, other YOLO models are recommended to use in [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection), **which will be the first to release the latest progress of PP-YOLO series detection model**;
  - To use **PaddleYOLO**, **PaddlePaddle-2.3.2 or above is recommended**，please refer to the [official website](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/install/pip/linux-pip.html) to download the appropriate version. **For Windows platforms, please install the paddle develop version**;
  - Training **Custom dataset** please refer to [doc](#CustomDataset) and [issue](https://github.com/PaddlePaddle/PaddleYOLO/issues/43). Please **ensure COCO trained weights are loaded as pre-train** at first. We recommend to use YOLO detection model **with a total `batch_size` at least greater than `64` to train**. If the resources are insufficient, please **use the smaller model** or **reduce the input size of the model**. To ensure high detection accuracy, **you'd better never try to using single GPU or total `batch_size` less than `32` for training**;
 
 ## ModelZoo
 
-### [PP-YOLOE+](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/ppyoloe)
+### [PP-YOLOE](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/ppyoloe)
 
 <details>
 <summary> Baseline </summary>
@@ -147,13 +149,10 @@
 
 | Model        | Input Size  | images/GPU | Epoch | TRT-FP16-Latency(ms) | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params(M) | FLOPs(G) |    download       | config |
 | :------------- | :------- | :-------: | :------: | :---------: | :-----: |:-----: | :-----: |:-----: | :-------------: | :-----: |
-| YOLOv6-n       |  416     |    32      |   400e    |     1.0    |  31.1 |    45.3 |  4.74  | 5.16 |[model](https://paddledet.bj.bcebos.com/models/yolov6_n_416_400e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6/yolov6_n_416_400e_coco.yml) |
-| YOLOv6-n       |  640     |    32      |   400e    |     1.3    |  36.1 |    51.9 |  4.74  | 12.21 |[model](https://paddledet.bj.bcebos.com/models/yolov6_n_400e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6/yolov6_n_400e_coco.yml) |
-| *YOLOv6-t       |  640     |    32      |   400e    |     2.1    |  40.7 |    57.4 |  10.63  | 27.29 |[model](https://paddledet.bj.bcebos.com/models/yolov6_t_400e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6/yolov6_t_400e_coco.yml) |
-| *YOLOv6-s       |  640     |    32      |   400e    |     2.6    |  43.4 |    60.5 |  18.87  | 48.35 |[model](https://paddledet.bj.bcebos.com/models/yolov6_s_400e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6/yolov6_s_400e_coco.yml) |
-| *YOLOv6-m       |  640     |    32      |   300e    |     5.0    |  49.0 |    66.5 |  37.17  | 88.82 |[model](https://paddledet.bj.bcebos.com/models/yolov6_m_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6/yolov6_m_300e_coco.yml) |
-| *YOLOv6-l       |  640     |    32      |   300e    |     7.9    |  51.0 |    68.9 |  63.54  | 155.89 |[model](https://paddledet.bj.bcebos.com/models/yolov6_l_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6/yolov6_l_300e_coco.yml) |
-| *YOLOv6-l-silu  |  640     |    32      |   300e    |     9.6    |  51.7 |    69.6 |  58.59  | 142.66 |[model](https://paddledet.bj.bcebos.com/models/yolov6_l_silu_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6/yolov6_l_silu_300e_coco.yml) |
+| *YOLOv6-n       |  640     |    16      |   300e(+300e) |  2.0  |  37.5 |    53.1 |  5.07  | 12.49 |[model](https://paddledet.bj.bcebos.com/models/yolov6_n_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6/yolov6_n_300e_coco.yml) |
+| *YOLOv6-s       |  640     |    32      |   300e(+300e) |  2.7  |  44.8 |    61.7 |  20.18  | 49.36 |[model](https://paddledet.bj.bcebos.com/models/yolov6_s_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6/yolov6_s_300e_coco.yml) |
+| *YOLOv6-m       |  640     |    32      |   300e(+300e) |  -  |  49.5 |    66.9 |  37.74  | 92.47 |[model](https://paddledet.bj.bcebos.com/models/yolov6_m_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6/yolov6_m_300e_coco.yml) |
+| *YOLOv6-l(silu) |  640     |    32      |   300e(+300e) |  -  |  52.2 |    70.2 |  59.66  | 149.4 |[model](https://paddledet.bj.bcebos.com/models/yolov6_l_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6/yolov6_l_300e_coco.yml) |
 
 </details>
 
@@ -162,13 +161,10 @@
 
 | Model     | Input Size | Exported weights(w/o NMS) | ONNX(w/o NMS)  |
 | :-------- | :--------: | :---------------------: | :----------------: |
-| yolov6-n |  416   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_n_416_400e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_n_416_400e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_n_416_400e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_n_416_400e_coco_wo_nms.onnx) |
-| yolov6-n |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_n_400e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_n_400e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_n_400e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_n_400e_coco_wo_nms.onnx) |
-| yolov6-t |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_t_400e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_t_400e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_t_400e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_t_400e_coco_wo_nms.onnx) |
-| yolov6-s |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_s_400e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_s_400e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_s_400e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_s_400e_coco_wo_nms.onnx) |
-| yolov6-m |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_m_300e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_m_300e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_m_300e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_m_300e_coco_wo_nms.onnx) |
-| yolov6-l |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_l_300e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_l_300e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_l_300e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_l_300e_coco_wo_nms.onnx) |
-| yolov6-l-silu |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_l_silu_300e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_l_silu_300e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_l_silu_300e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_l_silu_300e_coco_wo_nms.onnx) |
+| yolov6-n |  640   | [(w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_n_300e_coco_w_nms.zip) &#124; [(w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_n_300e_coco_wo_nms.zip) | [(w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_n_300e_coco_w_nms.onnx) &#124; [(w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_n_300e_coco_wo_nms.onnx) |
+| yolov6-s |  640   | [(w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_s_300e_coco_w_nms.zip) &#124; [(w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_s_300e_coco_wo_nms.zip) | [(w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_s_300e_coco_w_nms.onnx) &#124; [(w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_s_300e_coco_wo_nms.onnx) |
+| yolov6-m |  640   | [(w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_m_300e_coco_w_nms.zip) &#124; [(w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_m_300e_coco_wo_nms.zip) | [(w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_m_300e_coco_w_nms.onnx) &#124; [(w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_m_300e_coco_wo_nms.onnx) |
+| yolov6-l(silu) |  640  | [(w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_l_300e_coco_w_nms.zip) &#124; [(w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_l_300e_coco_wo_nms.zip) | [(w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_l_300e_coco_w_nms.onnx) &#124; [(w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov6/yolov6_l_300e_coco_wo_nms.onnx) |
 
 </details>
 
@@ -205,6 +201,36 @@
 | YOLOv7-tiny |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov7/yolov7_tiny_300e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov7/yolov7_tiny_300e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov7/yolov7_tiny_300e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov7/yolov7_tiny_300e_coco_wo_nms.onnx) |
 | YOLOv7-tiny |  416   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov7/yolov7_tiny_416_300e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov7/yolov7_tiny_416_300e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov7/yolov7_tiny_416_300e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov7/yolov7_tiny_416_300e_coco_wo_nms.onnx) |
 | YOLOv7-tiny |  320   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov7/yolov7_tiny_320_300e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov7/yolov7_tiny_320_300e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov7/yolov7_tiny_320_300e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov7/yolov7_tiny_320_300e_coco_wo_nms.onnx) |
+
+</details>
+
+
+### [YOLOv8](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8)
+
+<details>
+<summary> Baseline </summary>
+
+| Model        | Input Size  | images/GPU | Epoch | TRT-FP16-Latency(ms) | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 | Params(M) | FLOPs(G) |    download       | config |
+| :------------- | :------- | :-------: | :------: | :------------: | :---------------------: | :----------------: |:---------: | :------: |:---------------: |:-----: |
+| *YOLOv8-n        |  640     |    16      |   500e   |    2.4   |  37.3  | 53.0 |  3.16   | 8.7 | [model](https://paddledet.bj.bcebos.com/models/yolov8_n_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8/yolov8_n_300e_coco.yml) |
+| *YOLOv8-s        |  640     |    16      |   500e   |    3.4   |  44.9  | 61.8 |  11.17  | 28.6 | [model](https://paddledet.bj.bcebos.com/models/yolov8_s_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8/yolov8_s_300e_coco.yml) |
+| *YOLOv8-m        |  640     |    16      |   500e   |    6.5   |  50.2  | 67.3 |  25.90  | 78.9 | [model](https://paddledet.bj.bcebos.com/models/yolov8_m_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8/yolov8_m_300e_coco.yml) |
+| *YOLOv8-l        |  640     |    16      |   500e   |    10.0  |  52.8  | 69.6 |  43.69  | 165.2 | [model](https://paddledet.bj.bcebos.com/models/yolov8_l_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8/yolov8_l_300e_coco.yml) |
+| *YOLOv8-x        |  640     |    16      |   500e   |    15.1  |  53.8  | 70.6 |  68.23  | 257.8 | [model](https://paddledet.bj.bcebos.com/models/yolov8_x_300e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8/yolov8_x_300e_coco.yml) |
+| *YOLOv8-P6-x     |  1280    |    16      |   500e   |    55.0  |    -   |   -  |  97.42  | 522.93 | [model](https://paddledet.bj.bcebos.com/models/yolov8p6_x_500e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8/yolov8p6_x_500e_coco.yml) |
+
+</details>
+
+<details>
+<summary> Deploy Models  </summary>
+
+| Model     | Input Size | Exported weights(w/o NMS) | ONNX(w/o NMS)  |
+| :-------- | :--------: | :---------------------: | :----------------: |
+| YOLOv8-n |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_n_500e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_n_500e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_n_500e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_n_500e_coco_wo_nms.onnx) |
+| YOLOv8-s |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_s_500e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_s_500e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_s_500e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_s_500e_coco_wo_nms.onnx) |
+| YOLOv8-m |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_m_500e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_m_500e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_m_500e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_m_500e_coco_wo_nms.onnx) |
+| YOLOv8-l |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_l_500e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_l_500e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_l_500e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_l_500e_coco_wo_nms.onnx) |
+| YOLOv8-x |  640   | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_x_500e_coco_w_nms.zip) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_x_500e_coco_wo_nms.zip) | [( w/ nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_x_500e_coco_w_nms.onnx) &#124; [( w/o nms)](https://paddledet.bj.bcebos.com/deploy/yoloseries/yolov8/yolov8_x_500e_coco_wo_nms.onnx) |
 
 </details>
 
@@ -254,7 +280,6 @@
 | Model        | Input Size  | images/GPU | Epoch | TRT-FP16-Latency(ms) | mAP(0.50,11point) | Params(M) | FLOPs(G) |    download       | config |
 | :-----------: | :-------: | :-------: | :------: | :------------: | :---------------: | :------------------: |:-----------------: | :------: | :------: |
 | YOLOv5-s        |  640     |    16     |   60e    |     3.2   |  80.3 |  7.24  | 16.54 | [model](https://paddledet.bj.bcebos.com/models/yolov5_s_60e_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/voc/yolov5_s_60e_voc.yml) |
-| YOLOv6-s        |  640     |    32     |   40e    |     2.7   |  84.7 |  18.87 | 48.35 | [model](https://paddledet.bj.bcebos.com/models/yolov6_s_40e_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/voc/yolov6_s_40e_voc.yml) |
 | YOLOv7-tiny     |  640     |    32     |   60e    |     2.6   |  80.2 |  6.23  | 6.90 | [model](https://paddledet.bj.bcebos.com/models/yolov7_tiny_60e_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/voc/yolov7_tiny_60e_voc.yml) |
 | YOLOX-s         |  640     |    8      |   40e    |     3.0   |  82.9 |  9.0   |  26.8 | [model](https://paddledet.bj.bcebos.com/models/yolox_s_40e_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/voc/yolox_s_40e_voc.yml) |
 | PP-YOLOE+_s     |  640     |    8      |   30e    |     2.9   |  86.7 |  7.93  |  17.36 | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_30e_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/voc/ppyoloe_plus_crn_s_30e_voc.yml) |
