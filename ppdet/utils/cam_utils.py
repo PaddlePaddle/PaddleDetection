@@ -40,6 +40,7 @@ def get_test_images(infer_dir, infer_img):
 
     return images
 
+
 def compute_ious(boxes1, boxes2):
     """[Compute pairwise IOU matrix for given two sets of boxes]
 
@@ -50,16 +51,21 @@ def compute_ious(boxes1, boxes2):
             pairwise IOU maxtrix with shape (N,M)，where the value at ith row jth column hold the iou between ith
             box and jth box from box1 and box2 respectively.
     """
-    lu = np.maximum(boxes1[:, None, :2],
-                    boxes2[:, :2])  # lu with shape N,M,2 ; boxes1[:,None,:2] with shape (N,1,2) boxes2 with shape(M,2)
+    lu = np.maximum(
+        boxes1[:, None, :2], boxes2[:, :2]
+    )  # lu with shape N,M,2 ; boxes1[:,None,:2] with shape (N,1,2) boxes2 with shape(M,2)
     rd = np.minimum(boxes1[:, None, 2:], boxes2[:, 2:])  # rd same to lu
     intersection_wh = np.maximum(0.0, rd - lu)
-    intersection_area = intersection_wh[:, :, 0] * intersection_wh[:, :, 1]  # with shape (N,M)
+    intersection_area = intersection_wh[:, :,
+                                        0] * intersection_wh[:, :,
+                                                             1]  # with shape (N,M)
     boxes1_wh = np.maximum(0.0, boxes1[:, 2:] - boxes1[:, :2])
     boxes1_area = boxes1_wh[:, 0] * boxes1_wh[:, 1]  # with shape (N,)
     boxes2_wh = np.maximum(0.0, boxes2[:, 2:] - boxes2[:, :2])
     boxes2_area = boxes2_wh[:, 0] * boxes2_wh[:, 1]  # with shape (M,)
-    union_area = np.maximum(boxes1_area[:, None] + boxes2_area - intersection_area, 1e-8)  # with shape (N,M)
+    union_area = np.maximum(
+        boxes1_area[:, None] + boxes2_area - intersection_area,
+        1e-8)  # with shape (N,M)
     ious = np.clip(intersection_area / union_area, 0.0, 1.0)
     return ious
 
@@ -93,7 +99,8 @@ def resize_cam(explanation, resize_shape) -> np.ndarray:
                                         f"Currently support 2D explanation results for visualization. " \
                                         "Reduce higher dimensions to 2D for visualization."
 
-    explanation = (explanation - explanation.min()) / (explanation.max() - explanation.min())
+    explanation = (explanation - explanation.min()) / (
+        explanation.max() - explanation.min())
 
     explanation = cv2.resize(explanation, resize_shape)
     explanation = np.uint8(255 * explanation)
@@ -135,7 +142,8 @@ class BBox_CAM:
             trainer.model.yolo_head.nms.return_index = True
         else:
             print(
-                'Only supported cam for faster_rcnn based and yolov3 based architecture for now,  the others are not supported temporarily!')
+                'Only supported cam for faster_rcnn based and yolov3 based architecture for now,  the others are not supported temporarily!'
+            )
             sys.exit()
 
         return trainer
@@ -190,12 +198,14 @@ class BBox_CAM:
         if self.cfg.architecture == 'FasterRCNN':
             # the bbox array shape of FasterRCNN before nms is [num_of_bboxes_before_nms, num_classes, 4],
             # we need to divide num_classes to get the before_nms_index；
-            before_nms_indexes = cam_data['before_nms_indexes'].cpu().numpy() // self.num_class  # num_class
+            before_nms_indexes = cam_data['before_nms_indexes'].cpu().numpy(
+            ) // self.num_class  # num_class
         elif self.cfg.architecture == 'YOLOv3':
             before_nms_indexes = cam_data['before_nms_indexes'].cpu().numpy()
         else:
             print(
-                'Only supported cam for faster_rcnn based and yolov3 based architecture for now,  the others are not supported temporarily!')
+                'Only supported cam for faster_rcnn based and yolov3 based architecture for now,  the others are not supported temporarily!'
+            )
             sys.exit()
 
         # Calculate and visualize the heatmap of per predict bbox
@@ -218,12 +228,14 @@ class BBox_CAM:
                 score_out = cam_data['scores'][0, :, target_bbox_before_nms]
             else:
                 print(
-                    'Only supported cam for faster_rcnn based and yolov3 based architecture for now,  the others are not supported temporarily!')
+                    'Only supported cam for faster_rcnn based and yolov3 based architecture for now,  the others are not supported temporarily!'
+                )
                 sys.exit()
 
             # construct one_hot label and do backward to get the gradients
             predicted_label = paddle.argmax(score_out)
-            label_onehot = paddle.nn.functional.one_hot(predicted_label, num_classes=len(score_out))
+            label_onehot = paddle.nn.functional.one_hot(
+                predicted_label, num_classes=len(score_out))
             label_onehot = label_onehot.squeeze()
             target = paddle.sum(score_out * label_onehot)
             target.backward(retain_graph=True)
@@ -232,11 +244,15 @@ class BBox_CAM:
                 # when the backbone output contains features of multiple scales,
                 # take the featuremap of the last scale
                 # Todo: fuse the cam result from multisclae featuremaps
-                backbone_grad = self.target_feats[self.target_layer_name][-1].grad.squeeze().cpu().numpy()
-                backbone_feat = self.target_feats[self.target_layer_name][-1].squeeze().cpu().numpy()
+                backbone_grad = self.target_feats[self.target_layer_name][
+                    -1].grad.squeeze().cpu().numpy()
+                backbone_feat = self.target_feats[self.target_layer_name][
+                    -1].squeeze().cpu().numpy()
             else:
-                backbone_grad = self.target_feats[self.target_layer_name].grad.squeeze().cpu().numpy()
-                backbone_feat = self.target_feats[self.target_layer_name].squeeze().cpu().numpy()
+                backbone_grad = self.target_feats[
+                    self.target_layer_name].grad.squeeze().cpu().numpy()
+                backbone_feat = self.target_feats[
+                    self.target_layer_name].squeeze().cpu().numpy()
 
             # grad_cam:
             exp = grad_cam(backbone_feat, backbone_grad)
@@ -246,21 +262,21 @@ class BBox_CAM:
 
             # set the area outside the predic bbox to 0
             mask = np.zeros((img.shape[0], img.shape[1], 3))
-            mask[int(target_bbox[3]):int(target_bbox[5]), int(target_bbox[2]):int(target_bbox[4]), :] = 1
+            mask[int(target_bbox[3]):int(target_bbox[5]), int(target_bbox[2]):
+                 int(target_bbox[4]), :] = 1
             resized_exp = resized_exp * mask
 
             # add the bbox cam back to the input image
             overlay_vis = np.uint8(resized_exp * 0.4 + img * 0.6)
-            cv2.rectangle(overlay_vis, (int(target_bbox[2]), int(target_bbox[3])),
-                          (int(target_bbox[4]), int(target_bbox[5])), (0, 0, 255), 2)
+            cv2.rectangle(
+                overlay_vis, (int(target_bbox[2]), int(target_bbox[3])),
+                (int(target_bbox[4]), int(target_bbox[5])), (0, 0, 255), 2)
 
             # save visualization result
             cam_image = Image.fromarray(overlay_vis)
             cam_image.save(self.FLAGS.cam_out + '/' + str(index) + '.jpg')
 
-            # clear gradients
+            # clear gradients after each bbox grad_cam
             target.clear_gradient()
             for n, v in self.trainer.model.named_sublayers():
                 v.clear_gradients()
-
-

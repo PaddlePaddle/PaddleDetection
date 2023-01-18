@@ -96,7 +96,7 @@ class FasterRCNN(BaseArch):
             # rescale the prediction back to origin image
             bboxes, bbox_pred, bbox_num = self.bbox_post_process.get_pred(
                 bbox, bbox_num, im_shape, scale_factor)
-            return bbox_pred, bbox_num
+            return bbox_pred, bbox_num, cam_data
 
     def get_loss(self, ):
         rpn_loss, bbox_loss = self._forward()
