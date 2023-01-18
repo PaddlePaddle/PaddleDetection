@@ -17,7 +17,7 @@
 </div>
 
 <div  align="center">
-  <img src="docs/images/ppdet.gif" width="800"/>
+  <img src="https://user-images.githubusercontent.com/22989727/205581915-aa8d6bee-5624-4aec-8059-76b5ebaf96f1.gif" width="800"/>
 
 </div>
 
@@ -47,7 +47,7 @@
 
   - 💡 Cutting-edge algorithms：
 
-    - Release [PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO) which overs classic and latest models of [YOLO family](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/docs/MODEL_ZOO_en.md): YOLOv3, PP-YOLOE (a real-time high-precision object detection model developed by Baidu PaddlePaddle), and cutting-edge detection algorithms such as YOLOv4, YOLOv5, YOLOX, YOLOv6, and YOLOv7
+    - Release [PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO) which overs classic and latest models of [YOLO family](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/docs/MODEL_ZOO_en.md): YOLOv3, PP-YOLOE (a real-time high-precision object detection model developed by Baidu PaddlePaddle), and cutting-edge detection algorithms such as YOLOv4, YOLOv5, YOLOX, YOLOv6, YOLOv7 and YOLOv8
     - Newly add high precision detection model based on [ViT](configs/vitdet) backbone network, with a 55.7% mAP accuracy on COCO dataset; newly add multi-object tracking model [OC-SORT](configs/mot/ocsort); newly add [ConvNeXt](configs/convnext) backbone network.
 
   - 📋 Industrial applications: Newly add [Smart Fitness](https://aistudio.baidu.com/aistudio/projectdetail/4385813), [Fighting recognition](https://aistudio.baidu.com/aistudio/projectdetail/4086987?channelType=0&channel=0),[ and Visitor Analysis](https://aistudio.baidu.com/aistudio/projectdetail/4230123?channelType=0&channel=0).
@@ -118,13 +118,20 @@
             <li>PSS-Det</li>
             <li>RetinaNet</li>
             <li>YOLOv3</li>  
-            <li>PP-YOLOv1/v2</li>
+            <li>YOLOX</li>  
+            <li>YOLOv5</li>  
+            <li>YOLOv6</li>  
+            <li>YOLOv7</li>  
+            <li>YOLOv8</li>  
+            <li>RTMDet</li>  
+            <li>PP-YOLO</li>
             <li>PP-YOLO-Tiny</li>
+            <li>PP-PicoDet</li>
+            <li>PP-YOLOv2</li>
             <li>PP-YOLOE</li>
             <li>PP-YOLOE+</li>
-            <li>PP-YOLOE-R</li>
             <li>PP-YOLOE-SOD</li>
-            <li>YOLOX</li>
+            <li>PP-YOLOE-R</li>
             <li>SSD</li>
             <li>CenterNet</li>
             <li>FCOS</li>  
@@ -132,7 +139,7 @@
             <li>TTFNet</li>
             <li>TOOD</li>
             <li>GFL</li>
-            <li>PP-PicoDet</li>
+            <li>GFLv2</li>
             <li>DETR</li>
             <li>Deformable DETR</li>
             <li>Swin Transformer</li>
