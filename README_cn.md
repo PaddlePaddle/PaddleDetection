@@ -809,3 +809,6 @@ PP-Vehicle囊括四大交通场景核心功能：车牌识别、属性识别、�
 title={PaddleDetection, Object detection and instance segmentation toolkit based on PaddlePaddle.},
 author={PaddlePaddle Authors},
 howpublished = {\url{https://github.com/PaddlePaddle/PaddleDetection}},
+year={2019}
+}
+```
