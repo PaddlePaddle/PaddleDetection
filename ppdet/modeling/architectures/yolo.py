@@ -21,6 +21,7 @@ from .meta_arch import BaseArch
 from ..post_process import JDEBBoxPostProcess
 
 __all__ = ['YOLOv3']
+# YOLOv3,PP-YOLO,PP-YOLOv2,PP-YOLOE,PP-YOLOE+ use the same architecture as YOLOv3
 
 
 @register
@@ -99,6 +100,7 @@ class YOLOv3(BaseArch):
             yolo_head_outs = self.yolo_head(neck_feats)
 
             if self.for_mot:
+                # the detection part of JDE MOT model
                 boxes_idx, bbox, bbox_num, nms_keep_idx = self.post_process(
                     yolo_head_outs, self.yolo_head.mask_anchors)
                 output = {
@@ -110,13 +112,16 @@ class YOLOv3(BaseArch):
                 }
             else:
                 if self.return_idx:
+                    # the detection part of JDE MOT model
                     _, bbox, bbox_num, _ = self.post_process(
                         yolo_head_outs, self.yolo_head.mask_anchors)
                 elif self.post_process is not None:
+                    # anchor based YOLOs: YOLOv3,PP-YOLO,PP-YOLOv2 use mask_anchors
                     bbox, bbox_num = self.post_process(
                         yolo_head_outs, self.yolo_head.mask_anchors,
                         self.inputs['im_shape'], self.inputs['scale_factor'])
                 else:
+                    # anchor free YOLOs: PP-YOLOE, PP-YOLOE+
                     bbox, bbox_num = self.yolo_head.post_process(
                         yolo_head_outs, self.inputs['scale_factor'])
                 output = {'bbox': bbox, 'bbox_num': bbox_num}
