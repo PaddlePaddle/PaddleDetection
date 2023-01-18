@@ -86,6 +86,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
   - 新增[少样本迁移学习](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/few-shot);
   - 新增[半监督检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/semi_det);
   - 新增[YOLOv8](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8);
+  - 更新[YOLOv6-v3.0](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6);
 - [🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)：
   - 发布**旋转框检测模型**[PP-YOLOE-R](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r)：Anchor-free旋转框检测SOTA模型，精度速度双高、云边一体，s/m/l/x四个模型适配不用算力硬件、部署友好，避免使用特殊算子，能够轻松使用TensorRT加速；
   - 发布**小目标检测模型**[PP-YOLOE-SOD](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/smalldet)：基于切图的端到端检测方案、基于原图的检测模型，精度达VisDrone开源最优；
@@ -116,7 +117,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 
   - **⚽️2022卡塔尔世界杯专题**
     - `文章传送门`：[世界杯决赛号角吹响！趁周末来搭一套足球3D+AI量化分析系统吧！](https://mp.weixin.qq.com/s/koJxjWDPBOlqgI-98UsfKQ)
-  
+
     <div align="center">
     <img src="https://user-images.githubusercontent.com/61035602/208036574-f151a7ff-a5f1-4495-9316-a47218a6576b.gif"  height = "250" caption='' />
     <p></p>
@@ -124,7 +125,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 
   - **🔍旋转框小目标检测专题**
     - `文章传送门`：[Yes, PP-YOLOE！80.73mAP、38.5mAP，旋转框、小目标检测能力双SOTA！](https://mp.weixin.qq.com/s/6ji89VKqoXDY6SSGkxS8NQ)
-  
+
     <div align="center">
     <img src="https://user-images.githubusercontent.com/61035602/208037368-5b9f01f7-afd9-46d8-bc80-271ccb5db7bb.png"  height = "220" caption='' />
     <p></p>
@@ -258,10 +259,10 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
       <td>
         <ul>
           <li><a href="ppdet/modeling/losses/smooth_l1_loss.py">Smooth-L1</a></li>
-          <li><a href="ppdet/modeling/losses/detr_loss.py">Detr Loss</a></li> 
+          <li><a href="ppdet/modeling/losses/detr_loss.py">Detr Loss</a></li>
           <li><a href="ppdet/modeling/losses/fairmot_loss.py">Fairmot Loss</a></li>
           <li><a href="ppdet/modeling/losses/fcos_loss.py">Fcos Loss</a></li>
-          <li><a href="ppdet/modeling/losses/gfocal_loss.py">GFocal Loss</a></li> 
+          <li><a href="ppdet/modeling/losses/gfocal_loss.py">GFocal Loss</a></li>
           <li><a href="ppdet/modeling/losses/jde_loss.py">JDE Loss</a></li>
           <li><a href="ppdet/modeling/losses/keypoint_loss.py">KeyPoint Loss</a></li>
           <li><a href="ppdet/modeling/losses/solov2_loss.py">SoloV2 Loss</a></li>
@@ -293,7 +294,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
             </ul>
           <li><b>Common</b></li>
         <ul>
-        <ul> 
+        <ul>
             <li><a href="ppdet/modeling/backbones/resnet.py#L41">Sync-BN</a></li>
             <li><a href="configs/gn/README.md">Group Norm</a></li>
             <li><a href="configs/dcn/README.md">DCNv2</a></li>
@@ -350,13 +351,14 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
             <li><a href="configs/cascade_rcnn/README.md">Cascade-RCNN</a></li>
             <li><a href="configs/rcnn_enhance">PSS-Det</a></li>
             <li><a href="configs/retinanet/README.md">RetinaNet</a></li>
-            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv3</a></li>  
-            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv5</a></li>
-            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOX</a></li>  
-            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv6</a></li>  
-            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">YOLOv7</a></li>
-            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8">YOLOv8</a></li> 
-            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO">RTMDet</a></li> 
+            <li><a href="configs/yolov3/README.md">YOLOv3</a></li>  
+            <li><a href="configs/yolof/README.md">YOLOF</a></li>  
+            <li><a href="configs/yolox/README.md">YOLOX</a></li>  
+            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov5">YOLOv5</a></li>
+            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov6">YOLOv6</a></li>  
+            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov7">YOLOv7</a></li>
+            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov8">YOLOv8</a></li>
+            <li><a href="https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/rtmdet">RTMDet</a></li>
             <li><a href="configs/ppyolo/README_cn.md">PP-YOLO</a></li>
             <li><a href="configs/ppyolo#pp-yolo-tiny">PP-YOLO-Tiny</a></li>
             <li><a href="configs/picodet">PP-PicoDet</a></li>
@@ -368,6 +370,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
             <li><a href="configs/ssd/README.md">SSD</a></li>
             <li><a href="configs/centernet">CenterNet</a></li>
             <li><a href="configs/fcos">FCOS</a></li>  
+            <li><a href="configs/rotate/fcosr">FCOSR</a></li>  
             <li><a href="configs/ttfnet">TTFNet</a></li>
             <li><a href="configs/tood">TOOD</a></li>
             <li><a href="configs/gfl">GFL</a></li>
@@ -468,7 +471,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 - Cascade-Faster-RCNN为Cascade-Faster-RCNN-ResNet50vd-DCN，PaddleDetection将其优化到COCO数据mAP为47.8%时推理速度为20FPS
 - PP-YOLOE是对PP-YOLO v2模型的进一步优化，L版本在COCO数据集mAP为51.6%，Tesla V100预测速度78.1FPS
 - PP-YOLOE+是对PPOLOE模型的进一步优化，L版本在COCO数据集mAP为53.3%，Tesla V100预测速度78.1FPS
-- YOLOX和YOLOv5均为基于PaddleDetection复现算法，YOLOv5代码在PaddleYOLO中，参照PaddleYOLO_MODEL
+- YOLOX和YOLOv5均为基于PaddleDetection复现算法，YOLOv5代码在[PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO)中，参照[PaddleYOLO_MODEL](docs/feature_models/PaddleYOLO_MODEL.md)
 - 图中模型均可在[📱模型库](#模型库)中获取
 </details>
 
