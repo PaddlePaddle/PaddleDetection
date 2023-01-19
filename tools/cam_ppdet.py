@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument(
         "--infer_img",
         type=str,
-        default='demo/1.jpeg',    # hxw: 404x640
+        default='demo/000000014439.jpg',    # hxw: 404x640
         help="Image path, has higher priority over --infer_dir")
     parser.add_argument("--weights",
                         type=str,

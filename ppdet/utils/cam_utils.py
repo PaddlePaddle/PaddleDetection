@@ -139,7 +139,12 @@ class BBoxCAM:
         if cfg.architecture == 'FasterRCNN':
             trainer.model.bbox_post_process.nms.return_index = True
         elif cfg.architecture == 'YOLOv3':
-            trainer.model.yolo_head.nms.return_index = True
+            if trainer.model.post_process is not None:
+                # anchor based YOLOs: YOLOv3,PP-YOLO
+                trainer.model.post_process.nms.return_index = True
+            else:
+                # anchor free YOLOs: PP-YOLOE, PP-YOLOE+
+                trainer.model.yolo_head.nms.return_index = True
         else:
             print(
                 'Only supported cam for faster_rcnn based and yolov3 based architecture for now,  the others are not supported temporarily!'
