@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore')
 from ppdet.utils.cli import ArgsParser, merge_args
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_version, check_config
-from ppdet.utils.cam_utils import BBox_CAM
+from ppdet.utils.cam_utils import BBoxCAM
 import paddle
 
 
@@ -87,7 +87,7 @@ def parse_args():
 def run(FLAGS, cfg):
     assert cfg.architecture in ['FasterRCNN', 'YOLOv3'],  'Only supported cam for faster_rcnn based and yolov3 based architecture for now,  the others are not supported temporarily!'
 
-    bbox_cam = BBox_CAM(FLAGS, cfg)
+    bbox_cam = BBoxCAM(FLAGS, cfg)
     bbox_cam.get_bboxes_cams()
 
     print('finish')

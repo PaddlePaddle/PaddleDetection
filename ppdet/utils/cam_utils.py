@@ -110,7 +110,7 @@ def resize_cam(explanation, resize_shape) -> np.ndarray:
     return explanation
 
 
-class BBox_CAM:
+class BBoxCAM:
     def __init__(self, FLAGS, cfg):
         self.FLAGS = FLAGS
         self.cfg = cfg
