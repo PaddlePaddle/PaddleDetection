@@ -28,7 +28,7 @@
 ## 通用设置
 
 - 所有模型均在COCO17数据集中训练和测试。
-- [YOLOv5](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov5)、[YOLOv6](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov6)和[YOLOv7](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov7)这3类模型的代码在[PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO)中，**PaddleYOLO库开源协议为GPL 3.0**。
+- [YOLOv5](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov5)、[YOLOv6](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov6)、[YOLOv7](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov7)和[YOLOv8](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov8)这几类模型的代码在[PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO)中，**PaddleYOLO库开源协议为GPL 3.0**。
 - 除非特殊说明，所有ResNet骨干网络采用[ResNet-B](https://arxiv.org/pdf/1812.01187)结构。
 - **推理时间(fps)**: 推理时间是在一张Tesla V100的GPU上通过'tools/eval.py'测试所有验证集得到，单位是fps(图片数/秒), cuDNN版本是7.5，包括数据加载、网络前向执行和后处理, batch size是1。
 
@@ -171,13 +171,17 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 请参考[YOLOv5](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov5)
 
-### YOLOv6
+### YOLOv6(v3.0)
 
 请参考[YOLOv6](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov6)
 
 ### YOLOv7
 
 请参考[YOLOv7](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov7)
+
+### YOLOv8
+
+请参考[YOLOv8](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov8)
 
 ### RTMDet
 
