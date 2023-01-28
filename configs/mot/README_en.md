@@ -49,7 +49,7 @@ PP-Tracking supports GUI predict and deployment. Please refer to this [doc](http
 ## Installation
 Install all the related dependencies for MOT:
 ```
-pip install lap motmetrics sklearn filterpy
+pip install lap motmetrics sklearn
 or
 pip install -r requirements.txt
 ```
@@ -61,6 +61,7 @@ pip install -r requirements.txt
 - Base models
     - [ByteTrack](bytetrack/README.md)
     - [OC-SORT](ocsort/README.md)
+    - [BoT-SORT](botsort/README.md)
     - [DeepSORT](deepsort/README.md)
     - [JDE](jde/README.md)
     - [FairMOT](fairmot/README.md)
@@ -197,6 +198,13 @@ In the annotation text, each line is describing a bounding box and has the follo
   title={Observation-Centric SORT: Rethinking SORT for Robust Multi-Object Tracking},
   author={Cao, Jinkun and Weng, Xinshuo and Khirodkar, Rawal and Pang, Jiangmiao and Kitani, Kris},
   journal={arXiv preprint arXiv:2203.14360},
+  year={2022}
+}
+
+@article{aharon2022bot,
+  title={BoT-SORT: Robust Associations Multi-Pedestrian Tracking},
+  author={Aharon, Nir and Orfaig, Roy and Bobrovsky, Ben-Zion},
+  journal={arXiv preprint arXiv:2206.14651},
   year={2022}
 }
 
