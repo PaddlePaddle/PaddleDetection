@@ -83,7 +83,7 @@ PP-Human赋能社区智能精细化管理教程[链接](https://aistudio.baidu.c
 ```
 pip install -r requirements.txt
 # 或手动pip安装MOT相关的库
-pip install lap motmetrics sklearn filterpy
+pip install lap motmetrics sklearn
 ```
 **注意：**
   - 预测需确保已安装[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
