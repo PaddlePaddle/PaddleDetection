@@ -20,6 +20,8 @@ from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
 __all__ = ['PPYOLOE']
+# PP-YOLOE and PP-YOLOE+ are recommended to use this architecture
+# PP-YOLOE and PP-YOLOE+ can also use the same architecture of YOLOv3 in yolo.py
 
 
 @register

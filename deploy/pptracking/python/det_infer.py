@@ -39,6 +39,7 @@ from mot_utils import argsparser, Timer, get_current_memory_mb
 # Global dictionary
 SUPPORT_MODELS = {
     'YOLO',
+    'PPYOLOE',
     'PicoDet',
     'JDE',
     'FairMOT',
