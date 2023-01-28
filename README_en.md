@@ -163,6 +163,7 @@
             <li>DeepSORT</li>
             <li>ByteTrack</li>
             <li>OC-SORT</li>
+            <li>BoT-SORT</li>
             <li>CenterTrack</li>
         </ul></details>
         <details><summary><b>KeyPoint-Detection</b></summary>

@@ -111,7 +111,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 </div>
 
 - **🎈社区近期活动**
-  
+
   - **👀YOLO系列专题**
     - `文章传送门`：[YOLOv8来啦！YOLO内卷期模型怎么选？9+款AI硬件如何快速部署？深度解析](https://mp.weixin.qq.com/s/rPwprZeHEpmGOe5wxrmO5g)
     - `代码传送门`：[PaddleYOLO全系列](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/feature_models/PaddleYOLO_MODEL.md)
@@ -396,6 +396,8 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
             <li><a href="configs/mot/deepsort">DeepSORT</a></li>
             <li><a href="configs/mot/bytetrack">ByteTrack</a></li>
             <li><a href="configs/mot/ocsort">OC-SORT</a></li>
+            <li><a href="configs/mot/botsort">BoT-SORT</a></li>
+            <li><a href="configs/mot/centertrack">CenterTrack</a></li>
         </ul>
       </td>
       <td>

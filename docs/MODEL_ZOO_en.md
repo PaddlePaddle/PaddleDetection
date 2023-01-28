@@ -250,6 +250,10 @@ Please refer to [ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree
 
 Please refer to [OC-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/ocsort)
 
+### BoT-SORT
+
+Please refer to [BoT-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/botsort)
+
 ### CenterTrack
 
 Please refer to [CenterTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/centertrack)

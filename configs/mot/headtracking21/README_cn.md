@@ -10,13 +10,13 @@
 </div>
 
 ## 模型库
-### FairMOT在HT-21 Training Set上结果
+### FairMOT 和 ByteTrack 在 HT-21 Training Set上的结果
 |    模型      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
 | :--------------| :------- | :----: | :----: | :---: | :----: | :---: | :------: | :----: |:----: |
 | FairMOT DLA-34  | 1088x608 |  64.7 |  69.0  |   8533  |  148817  |  234970  |     -   | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_headtracking21.yml) |
 | ByteTrack-x     | 1440x800 |  64.1 |  63.4  |  4191   |  185162  |  210240 |    -     | [下载链接](https://paddledet.bj.bcebos.com/models/mot/bytetrack_yolox_ht21.pdparams) | [配置文件](../bytetrack/bytetrack_yolox_ht21.yml) |
 
-### FairMOT在HT-21 Test Set上结果
+### FairMOT 和 ByteTrack 在 HT-21 Test Set上的结果
 |    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: | :----: |
 | FairMOT DLA-34  | 1088x608 |  60.8  |  62.8  |  12781   |  118109  |  198896 |    -     | [下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608_headtracking21.pdparams) | [配置文件](./fairmot_dla34_30e_1088x608_headtracking21.yml) |
@@ -76,6 +76,7 @@ python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fa
   journal={arXiv preprint arXiv:2004.01888},
   year={2020}
 }
+
 @InProceedings{Sundararaman_2021_CVPR,
     author    = {Sundararaman, Ramana and De Almeida Braga, Cedric and Marchand, Eric and Pettre, Julien},
     title     = {Tracking Pedestrian Heads in Dense Crowd},
@@ -83,5 +84,12 @@ python deploy/pptracking/python/mot_jde_infer.py --model_dir=output_inference/fa
     month     = {June},
     year      = {2021},
     pages     = {3865-3875}
+}
+
+@article{zhang2021bytetrack,
+  title={ByteTrack: Multi-Object Tracking by Associating Every Detection Box},
+  author={Zhang, Yifu and Sun, Peize and Jiang, Yi and Yu, Dongdong and Yuan, Zehuan and Luo, Ping and Liu, Wenyu and Wang, Xinggang},
+  journal={arXiv preprint arXiv:2110.06864},
+  year={2021}
 }
 ```
