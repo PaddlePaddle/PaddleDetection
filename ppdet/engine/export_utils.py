@@ -29,6 +29,7 @@ logger = setup_logger('ppdet.engine')
 # Global dictionary
 TRT_MIN_SUBGRAPH = {
     'YOLO': 3,
+    'PPYOLOE': 3,
     'SSD': 60,
     'RCNN': 40,
     'RetinaNet': 40,
@@ -193,7 +194,7 @@ def _dump_infer_config(config, path, image_shape, model):
             arch_state = True
             break
 
-    if infer_arch in ['YOLOX', 'YOLOF']:
+    if infer_arch in ['PPYOLOE', 'YOLOX', 'YOLOF']:
         infer_cfg['arch'] = infer_arch
         infer_cfg['min_subgraph_size'] = TRT_MIN_SUBGRAPH[infer_arch]
         arch_state = True

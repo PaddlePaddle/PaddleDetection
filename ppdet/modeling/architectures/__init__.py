@@ -16,6 +16,7 @@ from . import meta_arch
 from . import faster_rcnn
 from . import mask_rcnn
 from . import yolo
+from . import ppyoloe
 from . import cascade_rcnn
 from . import ssd
 from . import fcos
@@ -44,6 +45,7 @@ from .meta_arch import *
 from .faster_rcnn import *
 from .mask_rcnn import *
 from .yolo import *
+from .ppyoloe import *
 from .cascade_rcnn import *
 from .ssd import *
 from .fcos import *
