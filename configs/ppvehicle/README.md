@@ -19,6 +19,9 @@ PaddleDetection团队提供了针对自动驾驶场景的基于PP-YOLOE的检测
 |PP-YOLOE-s|   PPVehicle9cls |   9    |  35.3 | [下载链接](https://paddledet.bj.bcebos.com/models/mot_ppyoloe_s_36e_ppvehicle9cls.pdparams) | [配置文件](./mot_ppyoloe_s_36e_ppvehicle9cls.yml) |
 |PP-YOLOE-l|   PPVehicle     |   1    |  63.9 | [下载链接](https://paddledet.bj.bcebos.com/models/mot_ppyoloe_l_36e_ppvehicle.pdparams) | [配置文件](./mot_ppyoloe_l_36e_ppvehicle.yml) |
 |PP-YOLOE-s|   PPVehicle     |   1    |  61.3  | [下载链接](https://paddledet.bj.bcebos.com/models/mot_ppyoloe_s_36e_ppvehicle.pdparams) | [配置文件](./mot_ppyoloe_s_36e_ppvehicle.yml) |
+|PP-YOLOE+_tiny(320)|   PPVehicle   |   1    |  58.2  | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_t_60e_ppvehicle.zip) | [配置文件](./ppyoloe_plus_crn_tiny_60e_ppvehicle.yml) |
+|PP-YOLOE+_tiny(416)|   PPVehicle   |   1    |  60.5  | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_t_60e_ppvehicle.zip) | [配置文件](./ppyoloe_plus_crn_tiny_60e_ppvehicle.yml) |
+
 
 **注意:**
 - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。

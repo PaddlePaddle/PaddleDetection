@@ -236,12 +236,12 @@ class PPYOLOEHead(nn.Layer):
 
         return cls_score_list, reg_dist_list, anchor_points, stride_tensor
 
-    def forward(self, feats, targets=None):
+    def forward(self, feats, targets=None, aux_pred=None):
         assert len(feats) == len(self.fpn_strides), \
             "The size of feats is not equal to size of fpn_strides"
 
         if self.training:
-            return self.forward_train(feats, targets)
+            return self.forward_train(feats, targets, aux_pred)
         else:
             return self.forward_eval(feats)
 
@@ -592,8 +592,9 @@ class SimpleConvHead(nn.Layer):
                     padding=1,
                     norm_type=norm_type,
                     activation=act))
-        self.gfl_cls = nn.Conv2D(feat_out, self.num_classes, 3, 1)
-        self.gfl_reg = nn.Conv2D(feat_out, 4 * (self.reg_max + 1), 3, 1)
+        self.gfl_cls = nn.Conv2D(feat_out, self.num_classes, 3, 1, padding=1)
+        self.gfl_reg = nn.Conv2D(
+            feat_out, 4 * (self.reg_max + 1), 3, 1, padding=1)
 
         self.scales = nn.LayerList()
         for i in range(len(self.fpn_strides)):
@@ -629,7 +630,6 @@ class SimpleConvHead(nn.Layer):
 
             cls_scores.append(cls_score)
             bbox_preds.append(bbox_pred)
-
         cls_scores = paddle.concat(cls_scores, axis=1)
         bbox_preds = paddle.concat(bbox_preds, axis=1)
         return cls_scores, bbox_preds

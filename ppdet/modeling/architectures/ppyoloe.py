@@ -174,11 +174,10 @@ class PPYOLOEWithAuxHead(BaseArch):
                     [f, aux_f], axis=1) for f, aux_f in
                                    zip(neck_feats, aux_neck_feats))
             aux_cls_scores, aux_bbox_preds = self.aux_head(dual_neck_feats)
-
             loss = self.yolo_head(
                 neck_feats,
                 self.inputs,
-                aux_preds=(aux_cls_scores, aux_bbox_preds))
+                aux_pred=[aux_cls_scores, aux_bbox_preds])
             return loss
         else:
             yolo_head_outs = self.yolo_head(neck_feats)
