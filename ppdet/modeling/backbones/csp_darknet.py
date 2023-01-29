@@ -22,8 +22,33 @@ from ppdet.modeling.initializer import conv_init_
 from ..shape_spec import ShapeSpec
 
 __all__ = [
-    'CSPDarkNet', 'BaseConv', 'DWConv', 'BottleNeck', 'SPPLayer', 'SPPFLayer'
+    'CSPDarkNet',
+    'BaseConv',
+    'DWConv',
+    'BottleNeck',
+    'SPPLayer',
+    'SPPFLayer',
 ]
+
+
+def get_activation(name="silu"):
+    if name == "silu":
+        module = nn.Silu()
+    elif name == "relu":
+        module = nn.ReLU()
+    elif name in ["LeakyReLU", 'leakyrelu', 'lrelu']:
+        module = nn.LeakyReLU(0.1)
+    else:
+        raise AttributeError("Unsupported act type: {}".format(name))
+    return module
+
+
+class SiLU(nn.Layer):
+    def __init__(self):
+        super(SiLU, self).__init__()
+
+    def forward(self, x):
+        return x * F.sigmoid(x)
 
 
 class BaseConv(nn.Layer):
@@ -46,18 +71,24 @@ class BaseConv(nn.Layer):
             bias_attr=bias)
         self.bn = nn.BatchNorm2D(
             out_channels,
+            # epsilon=1e-3,  # for amp(fp16), set in ppdet/engine/trainer.py
+            # momentum=0.97,
             weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
             bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
-
+        self.act = get_activation(act)
         self._init_weights()
 
     def _init_weights(self):
         conv_init_(self.conv)
 
     def forward(self, x):
-        # use 'x * F.sigmoid(x)' replace 'silu'
         x = self.bn(self.conv(x))
-        y = x * F.sigmoid(x)
+        if self.training:
+            y = self.act(x)
+        else:
+            if isinstance(self.act, nn.Silu):
+                self.act = SiLU()
+            y = self.act(x)
         return y
 
 
@@ -128,6 +159,7 @@ class BottleNeck(nn.Layer):
                  in_channels,
                  out_channels,
                  shortcut=True,
+                 kernel_sizes=(1, 3),
                  expansion=0.5,
                  depthwise=False,
                  bias=False,
@@ -136,11 +168,16 @@ class BottleNeck(nn.Layer):
         hidden_channels = int(out_channels * expansion)
         Conv = DWConv if depthwise else BaseConv
         self.conv1 = BaseConv(
-            in_channels, hidden_channels, ksize=1, stride=1, bias=bias, act=act)
+            in_channels,
+            hidden_channels,
+            ksize=kernel_sizes[0],
+            stride=1,
+            bias=bias,
+            act=act)
         self.conv2 = Conv(
             hidden_channels,
             out_channels,
-            ksize=3,
+            ksize=kernel_sizes[1],
             stride=1,
             bias=bias,
             act=act)
@@ -149,8 +186,9 @@ class BottleNeck(nn.Layer):
     def forward(self, x):
         y = self.conv2(self.conv1(x))
         if self.add_shortcut:
-            y = y + x
-        return y
+            return paddle.add(y, x)
+        else:
+            return y
 
 
 class SPPLayer(nn.Layer):

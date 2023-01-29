@@ -22,7 +22,16 @@ from ..backbones.darknet import ConvBNLayer
 from ..shape_spec import ShapeSpec
 from ..backbones.csp_darknet import BaseConv, DWConv, CSPLayer
 
-__all__ = ['YOLOv3FPN', 'PPYOLOFPN', 'PPYOLOTinyFPN', 'PPYOLOPAN', 'YOLOCSPPAN']
+__all__ = [
+    'YOLOv3FPN',
+    'PPYOLOFPN',
+    'PPYOLOTinyFPN',
+    'PPYOLOPAN',
+    'YOLOCSPPAN',
+]
+
+# PP-YOLO use 'PPYOLOFPN' and 'PPYOLOTinyFPN', PP-YOLOv2 use 'PPYOLOPAN'
+# YOLOX and YOLOv5 use the same 'YOLOCSPPAN'
 
 
 def add_coord(x, data_format):
@@ -1011,9 +1020,6 @@ class YOLOCSPPAN(nn.Layer):
         Conv = DWConv if depthwise else BaseConv
 
         self.data_format = data_format
-        act = get_act_fn(
-            act, trt=trt) if act is None or isinstance(act,
-                                                       (str, dict)) else act
         self.upsample = nn.Upsample(scale_factor=2, mode="nearest")
 
         # top-down fpn

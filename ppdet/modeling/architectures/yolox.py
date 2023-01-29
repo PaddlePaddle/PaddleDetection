@@ -22,7 +22,6 @@ from .meta_arch import BaseArch
 import random
 import paddle
 import paddle.nn.functional as F
-import paddle.distributed as dist
 
 __all__ = ['YOLOX']
 
