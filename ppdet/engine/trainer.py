@@ -157,9 +157,10 @@ class Trainer(object):
         if print_params:
             params = sum([
                 p.numel() for n, p in self.model.named_parameters()
-                if all([x not in n for x in ['_mean', '_variance']])
+                if all([x not in n for x in ['_mean', '_variance', 'aux_']])
             ])  # exclude BatchNorm running status
-            logger.info('Params: ', params / 1e6)
+            logger.info('Model Params : {} M.'.format((params / 1e6).numpy()[
+                0]))
 
         # build optimizer in train mode
         if self.mode == 'train':
@@ -1105,6 +1106,10 @@ class Trainer(object):
         return static_model, pruned_input_spec
 
     def export(self, output_dir='output_inference'):
+        if hasattr(self.model, 'aux_neck'):
+            self.model.__delattr__('aux_neck')
+        if hasattr(self.model, 'aux_head'):
+            self.model.__delattr__('aux_head')
         self.model.eval()
 
         model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
@@ -1151,6 +1156,10 @@ class Trainer(object):
         logger.info("Export Post-Quant model and saved in {}".format(save_dir))
 
     def _flops(self, loader):
+        if hasattr(self.model, 'aux_neck'):
+            self.model.__delattr__('aux_neck')
+        if hasattr(self.model, 'aux_head'):
+            self.model.__delattr__('aux_head')
         self.model.eval()
         try:
             import paddleslim

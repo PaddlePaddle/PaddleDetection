@@ -44,9 +44,17 @@ PP-YOLOE is composed of following methods:
 |  PP-YOLOE+_x   |  80   |     8      |     8      | cspresnet-x |     640     |            54.7            |            54.9             |   98.42   |  206.59  |   45.0    |   95.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_x_80e_coco.pdparams) | [config](./ppyoloe_plus_crn_x_80e_coco.yml) |
 
 
+|     Model      | Epoch | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>val<br>0.5:0.95 | Box AP<sup>test<br>0.5:0.95 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) |                                       download                                       |                   config                    |
+|:--------------:|:-----:|:-------:|:----------:|:----------:| :-------:|:--------------------------:|:---------------------------:|:---------:|:--------:|:---------------:| :---------------------: |:------------------------------------------------------------------------------------:|:-------------------------------------------:|
+|   PP-YOLOE+_tiny   |  300   |     8     |    8     | cspresnet-t |    320  |            36.3            |            51.7             |   6.00   |  15.46  |   -    |   -   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_tiny_auxhead_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_tiny_auxhead_300e_coco.yml) |
+|   PP-YOLOE+_tiny   |  300   |     8     |    8     | cspresnet-t |    416  |            39.0            |            55.1             |   6.00   |  26.13  |   -    |   -   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_tiny_auxhead_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_tiny_auxhead_300e_coco.yml) |
+
+
 ### Comprehensive Metrics
 |          Model           | Epoch | AP<sup>0.5:0.95 | AP<sup>0.5 | AP<sup>0.75  | AP<sup>small | AP<sup>medium | AP<sup>large | AR<sup>small | AR<sup>medium | AR<sup>large |
 |:------------------------:|:-----:|:---------------:|:----------:|:------------:|:------------:| :-----------: |:------------:|:------------:|:-------------:|:------------:|
+|       PP-YOLOE+_tiny(320)|  300  |      36.3       |    51.7    |    39.4      |     18.1     |     38.4      |     53.3     |     36.2     |     64.5      |     78.3     |
+|       PP-YOLOE+_tiny(416)|  300  |      39.0       |    55.1    |    42.5      |     22.0     |     41.9      |     52.8     |     41.7     |     67.2      |     78.6     |
 |       PP-YOLOE+_s        |  80   |      43.7       |    60.6    |     47.9     |     26.5     |     47.5      |     59.0     |     46.7     |     71.4      |     81.7     |
 |       PP-YOLOE+_m        |  80   |      49.8       |    67.1    |     54.5     |     31.8     |     53.9      |     66.2     |     53.3     |     75.0      |     84.6     |
 |       PP-YOLOE+_l        |  80   |      52.9       |    70.1    |     57.9     |     35.2     |     57.5      |     69.1     |     56.0     |     77.9      |     86.9     |

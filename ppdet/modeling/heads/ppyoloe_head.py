@@ -16,24 +16,28 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
+from paddle import ParamAttr
+from paddle.nn.initializer import KaimingNormal
 
 from ..bbox_utils import batch_distance2bbox
 from ..losses import GIoULoss
 from ..initializer import bias_init_with_prob, constant_, normal_
 from ..assigners.utils import generate_anchors_for_grid_cell
-from ppdet.modeling.backbones.cspresnet import ConvBNLayer
+from ppdet.modeling.backbones.cspresnet import ConvBNLayer, RepVggBlock
 from ppdet.modeling.ops import get_static_shape, get_act_fn
 from ppdet.modeling.layers import MultiClassNMS
 
-__all__ = ['PPYOLOEHead']
+__all__ = ['PPYOLOEHead', 'SimpleConvHead']
 
 
 class ESEAttn(nn.Layer):
-    def __init__(self, feat_channels, act='swish'):
+    def __init__(self, feat_channels, act='swish', attn_conv='convbn'):
         super(ESEAttn, self).__init__()
         self.fc = nn.Conv2D(feat_channels, feat_channels, 1)
-        self.conv = ConvBNLayer(feat_channels, feat_channels, 1, act=act)
-
+        if attn_conv == 'convbn':
+            self.conv = ConvBNLayer(feat_channels, feat_channels, 1, act=act)
+        else:
+            self.conv = RepVggBlock(feat_channels, feat_channels, act=act)
         self._init_weights()
 
     def _init_weights(self):
@@ -73,6 +77,7 @@ class PPYOLOEHead(nn.Layer):
                      'dfl': 0.5,
                  },
                  trt=False,
+                 attn_conv='convbn',
                  exclude_nms=False,
                  exclude_post_process=False,
                  use_shared_conv=True):
@@ -112,8 +117,8 @@ class PPYOLOEHead(nn.Layer):
             act, trt=trt) if act is None or isinstance(act,
                                                        (str, dict)) else act
         for in_c in self.in_channels:
-            self.stem_cls.append(ESEAttn(in_c, act=act))
-            self.stem_reg.append(ESEAttn(in_c, act=act))
+            self.stem_cls.append(ESEAttn(in_c, act=act, attn_conv=attn_conv))
+            self.stem_reg.append(ESEAttn(in_c, act=act, attn_conv=attn_conv))
         # pred head
         self.pred_cls = nn.LayerList()
         self.pred_reg = nn.LayerList()
@@ -151,7 +156,7 @@ class PPYOLOEHead(nn.Layer):
             self.anchor_points = anchor_points
             self.stride_tensor = stride_tensor
 
-    def forward_train(self, feats, targets):
+    def forward_train(self, feats, targets, aux_pred=None):
         anchors, anchor_points, num_anchors_list, stride_tensor = \
             generate_anchors_for_grid_cell(
                 feats, self.fpn_strides, self.grid_cell_scale,
@@ -173,7 +178,7 @@ class PPYOLOEHead(nn.Layer):
         return self.get_loss([
             cls_score_list, reg_distri_list, anchors, anchor_points,
             num_anchors_list, stride_tensor
-        ], targets)
+        ], targets, aux_pred)
 
     def _generate_anchors(self, feats=None, dtype='float32'):
         # just use in eval time
@@ -321,12 +326,16 @@ class PPYOLOEHead(nn.Layer):
             loss_dfl = pred_dist.sum() * 0.
         return loss_l1, loss_iou, loss_dfl
 
-    def get_loss(self, head_outs, gt_meta):
+    def get_loss(self, head_outs, gt_meta, aux_pred=None):
         pred_scores, pred_distri, anchors,\
         anchor_points, num_anchors_list, stride_tensor = head_outs
 
         anchor_points_s = anchor_points / stride_tensor
         pred_bboxes = self._bbox_decode(anchor_points_s, pred_distri)
+
+        if aux_pred is not None:
+            pred_scores_aux = aux_pred[0]
+            pred_bboxes_aux = self._bbox_decode(anchor_points_s, aux_pred[1])
 
         gt_labels = gt_meta['gt_class']
         gt_bboxes = gt_meta['gt_bbox']
@@ -345,6 +354,7 @@ class PPYOLOEHead(nn.Layer):
             alpha_l = 0.25
         else:
             if self.sm_use:
+                # only used in smalldet of PPYOLOE-SOD model
                 assigned_labels, assigned_bboxes, assigned_scores = \
                     self.assigner(
                     pred_scores.detach(),
@@ -356,19 +366,51 @@ class PPYOLOEHead(nn.Layer):
                     pad_gt_mask,
                     bg_index=self.num_classes)
             else:
-                assigned_labels, assigned_bboxes, assigned_scores = \
-                    self.assigner(
-                    pred_scores.detach(),
-                    pred_bboxes.detach() * stride_tensor,
-                    anchor_points,
-                    num_anchors_list,
-                    gt_labels,
-                    gt_bboxes,
-                    pad_gt_mask,
-                    bg_index=self.num_classes)
+                if aux_pred is None:
+                    assigned_labels, assigned_bboxes, assigned_scores = \
+                        self.assigner(
+                        pred_scores.detach(),
+                        pred_bboxes.detach() * stride_tensor,
+                        anchor_points,
+                        num_anchors_list,
+                        gt_labels,
+                        gt_bboxes,
+                        pad_gt_mask,
+                        bg_index=self.num_classes)
+                else:
+                    assigned_labels, assigned_bboxes, assigned_scores = \
+                            self.assigner(
+                            pred_scores_aux.detach(),
+                            pred_bboxes_aux.detach() * stride_tensor,
+                            anchor_points,
+                            num_anchors_list,
+                            gt_labels,
+                            gt_bboxes,
+                            pad_gt_mask,
+                            bg_index=self.num_classes)
             alpha_l = -1
         # rescale bbox
         assigned_bboxes /= stride_tensor
+
+        assign_out_dict = self.get_loss_from_assign(
+            pred_scores, pred_distri, pred_bboxes, anchor_points_s,
+            assigned_labels, assigned_bboxes, assigned_scores, alpha_l)
+
+        if aux_pred is not None:
+            assign_out_dict_aux = self.get_loss_from_assign(
+                aux_pred[0], aux_pred[1], pred_bboxes_aux, anchor_points_s,
+                assigned_labels, assigned_bboxes, assigned_scores, alpha_l)
+            loss = {}
+            for key in assign_out_dict.keys():
+                loss[key] = assign_out_dict[key] + assign_out_dict_aux[key]
+        else:
+            loss = assign_out_dict
+
+        return loss
+
+    def get_loss_from_assign(self, pred_scores, pred_distri, pred_bboxes,
+                             anchor_points_s, assigned_labels, assigned_bboxes,
+                             assigned_scores, alpha_l):
         # cls loss
         if self.use_varifocal_loss:
             one_hot_label = F.one_hot(assigned_labels,
@@ -421,3 +463,173 @@ class PPYOLOEHead(nn.Layer):
             else:
                 bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
                 return bbox_pred, bbox_num
+
+
+def get_activation(name="LeakyReLU"):
+    if name == "silu":
+        module = nn.Silu()
+    elif name == "relu":
+        module = nn.ReLU()
+    elif name in ["LeakyReLU", 'leakyrelu', 'lrelu']:
+        module = nn.LeakyReLU(0.1)
+    else:
+        raise AttributeError("Unsupported act type: {}".format(name))
+    return module
+
+
+def constant_init(module, val, bias=0):
+    if hasattr(module, "weight") and module.weight is not None:
+        nn.initializer.Constant(val)
+    if hasattr(module, "bias") and module.bias is not None:
+        nn.initializer.Constant(val)
+
+
+def normal_init(module, mean=0, std=1, bias=0):
+    nn.initializer.Normal(module.weight, mean, std)
+    if hasattr(module, "bias") and module.bias is not None:
+        nn.initializer.Constant(bias)
+
+
+class ConvNormLayer(nn.Layer):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 padding=0,
+                 dilation=1,
+                 groups=1,
+                 norm_type='gn',
+                 activation="LeakyReLU"):
+        super(ConvNormLayer, self).__init__()
+        assert norm_type in ['bn', 'sync_bn', 'syncbn', 'gn', None]
+        self.conv = nn.Conv2D(
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            groups=groups,
+            bias_attr=False,
+            weight_attr=ParamAttr(initializer=KaimingNormal()))
+
+        if norm_type in ['bn', 'sync_bn', 'syncbn']:
+            self.norm = nn.BatchNorm2D(out_channels)
+        elif norm_type == 'gn':
+            self.norm = nn.GroupNorm(num_groups=32, num_channels=out_channels)
+        else:
+            self.norm = None
+
+        self.act = get_activation(activation)
+        constant_init(self.norm, 1, bias=0)
+
+    def forward(self, x):
+        y = self.conv(x)
+        if self.norm is not None:
+            y = self.norm(y)
+        y = self.act(y)
+        return y
+
+
+class ScaleReg(nn.Layer):
+    """
+    Parameter for scaling the regression outputs.
+    """
+
+    def __init__(self, scale=1.0):
+        super(ScaleReg, self).__init__()
+        scale = paddle.to_tensor(scale)
+        self.scale = self.create_parameter(
+            shape=[1],
+            dtype='float32',
+            default_initializer=nn.initializer.Assign(scale))
+
+    def forward(self, x):
+        return x * self.scale
+
+
+@register
+class SimpleConvHead(nn.Layer):
+    __shared__ = ['num_classes']
+
+    def __init__(self,
+                 num_classes=80,
+                 feat_in=288,
+                 feat_out=288,
+                 num_convs=1,
+                 fpn_strides=[32, 16, 8, 4],
+                 norm_type='gn',
+                 act='LeakyReLU',
+                 reg_max=16):
+        super(SimpleConvHead, self).__init__()
+        self.num_classes = num_classes
+        self.feat_in = feat_in
+        self.feat_out = feat_out
+        self.num_convs = num_convs
+        self.fpn_strides = fpn_strides
+        self.reg_max = reg_max
+
+        self.cls_convs = nn.LayerList()
+        self.reg_convs = nn.LayerList()
+        for i in range(self.num_convs):
+            in_c = feat_in if i == 0 else feat_out
+            self.cls_convs.append(
+                ConvNormLayer(
+                    in_c,
+                    feat_out,
+                    3,
+                    stride=1,
+                    padding=1,
+                    norm_type=norm_type,
+                    activation=act))
+            self.reg_convs.append(
+                ConvNormLayer(
+                    in_c,
+                    feat_out,
+                    3,
+                    stride=1,
+                    padding=1,
+                    norm_type=norm_type,
+                    activation=act))
+        self.gfl_cls = nn.Conv2D(feat_out, self.num_classes, 3, 1)
+        self.gfl_reg = nn.Conv2D(feat_out, 4 * (self.reg_max + 1), 3, 1)
+
+        self.scales = nn.LayerList()
+        for i in range(len(self.fpn_strides)):
+            self.scales.append(ScaleReg(1.0))
+
+        self.init_weights()
+
+    def init_weights(self):
+        for m in self.cls_convs:
+            normal_init(m.conv, std=0.01)
+        for m in self.reg_convs:
+            normal_init(m.conv, std=0.01)
+        normal_init(self.gfl_cls, std=0.01, bias=-4.595)
+        normal_init(self.gfl_reg, std=0.01)
+
+    def forward(self, feats):
+        cls_scores = []
+        bbox_preds = []
+        for x, scale in zip(feats, self.scales):
+            cls_feat = x
+            reg_feat = x
+            for cls_conv in self.cls_convs:
+                cls_feat = cls_conv(cls_feat)
+            for reg_conv in self.reg_convs:
+                reg_feat = reg_conv(reg_feat)
+
+            cls_score = self.gfl_cls(cls_feat)
+            cls_score = F.sigmoid(cls_score)
+            cls_score = cls_score.flatten(2).transpose([0, 2, 1])
+
+            bbox_pred = scale(self.gfl_reg(reg_feat))
+            bbox_pred = bbox_pred.flatten(2).transpose([0, 2, 1])
+
+            cls_scores.append(cls_score)
+            bbox_preds.append(bbox_pred)
+
+        cls_scores = paddle.concat(cls_scores, axis=1)
+        bbox_preds = paddle.concat(bbox_preds, axis=1)
+        return cls_scores, bbox_preds
