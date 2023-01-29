@@ -151,7 +151,10 @@ class YOLOv3Head(nn.Layer):
 
 @register
 class YOLOXHead(nn.Layer):
-    __shared__ = ['num_classes', 'width_mult', 'act', 'trt', 'exclude_nms']
+    __shared__ = [
+        'num_classes', 'width_mult', 'act', 'trt', 'exclude_nms',
+        'exclude_post_process'
+    ]
     __inject__ = ['assigner', 'nms']
 
     def __init__(self,
@@ -172,6 +175,7 @@ class YOLOXHead(nn.Layer):
                      'l1': 1.0,
                  },
                  trt=False,
+                 exclude_post_process=False,
                  exclude_nms=False):
         super(YOLOXHead, self).__init__()
         self._dtype = paddle.framework.get_default_dtype()
@@ -186,6 +190,7 @@ class YOLOXHead(nn.Layer):
         if isinstance(self.nms, MultiClassNMS) and trt:
             self.nms.trt = trt
         self.exclude_nms = exclude_nms
+        self.exclude_post_process = exclude_post_process
         self.loss_weight = loss_weight
         self.iou_loss = IouLoss(loss_weight=1.0)  # default loss_weight 2.5
 
@@ -308,8 +313,13 @@ class YOLOXHead(nn.Layer):
     def get_loss(self, head_outs, targets):
         pred_cls, pred_bboxes, pred_obj,\
         anchor_points, stride_tensor, num_anchors_list = head_outs
-        gt_labels = targets['gt_class']
-        gt_bboxes = targets['gt_bbox']
+        gt_nums = targets['pad_gt_mask'].sum(1).squeeze(-1)
+        gt_labels, gt_bboxes = [], []
+        bs = gt_nums.shape[0]
+        for i in range(bs):
+            gt_num = max(int(gt_nums[i]), 1)  # allow empty samples
+            gt_labels.append(targets['gt_class'][i][:gt_num])
+            gt_bboxes.append(targets['gt_bbox'][i][:gt_num])
         pred_scores = (pred_cls * pred_obj).sqrt()
         # label assignment
         center_and_strides = paddle.concat(
@@ -405,12 +415,17 @@ class YOLOXHead(nn.Layer):
         pred_scores, pred_bboxes, stride_tensor = head_outs
         pred_scores = pred_scores.transpose([0, 2, 1])
         pred_bboxes *= stride_tensor
-        # scale bbox to origin image
-        scale_factor = scale_factor.flip(-1).tile([1, 2]).unsqueeze(1)
-        pred_bboxes /= scale_factor
-        if self.exclude_nms:
-            # `exclude_nms=True` just use in benchmark
-            return pred_bboxes.sum(), pred_scores.sum()
+
+        if self.exclude_post_process:
+            return paddle.concat(
+                [pred_bboxes, pred_scores.transpose([0, 2, 1])], axis=-1), None
         else:
-            bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
-            return bbox_pred, bbox_num
+            # scale bbox to origin
+            scale_factor = scale_factor.flip(-1).tile([1, 2]).unsqueeze(1)
+            pred_bboxes /= scale_factor
+            if self.exclude_nms:
+                # `exclude_nms=True` just use in benchmark
+                return pred_bboxes, pred_scores
+            else:
+                bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
+                return bbox_pred, bbox_num

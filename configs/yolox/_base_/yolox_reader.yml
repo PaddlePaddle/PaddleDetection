@@ -17,10 +17,12 @@ TrainReader:
     - RandomFlip: {}
   batch_transforms:
     - Permute: {}
+    - PadGT: {}
   batch_size: 8
   shuffle: True
   drop_last: True
-  collate_batch: False
+  use_shared_memory: True
+  collate_batch: True
   mosaic_epoch: 285
 
 
