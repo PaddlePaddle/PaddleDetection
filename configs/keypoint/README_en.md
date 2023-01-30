@@ -198,7 +198,7 @@ We take an example of [tinypose_256x192](./tiny_pose/README_en.md) to show how t
 
 #### 1、For configs [tinypose_256x192.yml](../../configs/keypoint/tiny_pose/tinypose_256x192.yml)
 
-you may need to modity these for your job：
+you may need to modify these for your job：
 
 ```
 num_joints: &num_joints 17    #the number of joints in your job
@@ -207,7 +207,7 @@ train_width: &train_width 192   #the width of model input
 hmsize: &hmsize [48, 64]  #the shape of model output，usually 1/4 of [w,h]
 flip_perm: &flip_perm [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16]] #the correspondence between left and right keypoint id，used for flip transform。You can add an line(by "flip: False") behind of flip_pairs in RandomFlipHalfBodyTransform of TrainReader if you don't need it
 num_joints_half_body: 8   #The joint numbers of half body, used for half_body transform
-prob_half_body: 0.3   #The probility of half_body transform, set to 0 if you don't need it
+prob_half_body: 0.3   #The probability of half_body transform, set to 0 if you don't need it
 upper_body_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]    #The joint ids of half(upper) body, used to get the upper joints in half_body transform
 ```
 
