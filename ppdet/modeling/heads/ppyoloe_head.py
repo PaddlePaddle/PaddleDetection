@@ -18,6 +18,7 @@ import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from paddle import ParamAttr
 from paddle.nn.initializer import KaimingNormal
+from paddle.nn.initializer import Normal, Constant
 
 from ..bbox_utils import batch_distance2bbox
 from ..losses import GIoULoss
@@ -472,22 +473,11 @@ def get_activation(name="LeakyReLU"):
         module = nn.ReLU()
     elif name in ["LeakyReLU", 'leakyrelu', 'lrelu']:
         module = nn.LeakyReLU(0.1)
+    elif name is None:
+        module = nn.Identity()
     else:
         raise AttributeError("Unsupported act type: {}".format(name))
     return module
-
-
-def constant_init(module, val, bias=0):
-    if hasattr(module, "weight") and module.weight is not None:
-        nn.initializer.Constant(val)
-    if hasattr(module, "bias") and module.bias is not None:
-        nn.initializer.Constant(val)
-
-
-def normal_init(module, mean=0, std=1, bias=0):
-    nn.initializer.Normal(module.weight, mean, std)
-    if hasattr(module, "bias") and module.bias is not None:
-        nn.initializer.Constant(bias)
 
 
 class ConvNormLayer(nn.Layer):
@@ -522,7 +512,6 @@ class ConvNormLayer(nn.Layer):
             self.norm = None
 
         self.act = get_activation(activation)
-        constant_init(self.norm, 1, bias=0)
 
     def forward(self, x):
         y = self.conv(x)
@@ -561,6 +550,7 @@ class SimpleConvHead(nn.Layer):
                  fpn_strides=[32, 16, 8, 4],
                  norm_type='gn',
                  act='LeakyReLU',
+                 prior_prob=0.01,
                  reg_max=16):
         super(SimpleConvHead, self).__init__()
         self.num_classes = num_classes
@@ -592,23 +582,30 @@ class SimpleConvHead(nn.Layer):
                     padding=1,
                     norm_type=norm_type,
                     activation=act))
-        self.gfl_cls = nn.Conv2D(feat_out, self.num_classes, 3, 1, padding=1)
+
+        bias_cls = bias_init_with_prob(prior_prob)
+        self.gfl_cls = nn.Conv2D(
+            feat_out,
+            self.num_classes,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            weight_attr=ParamAttr(initializer=Normal(
+                mean=0.0, std=0.01)),
+            bias_attr=ParamAttr(initializer=Constant(value=bias_cls)))
         self.gfl_reg = nn.Conv2D(
-            feat_out, 4 * (self.reg_max + 1), 3, 1, padding=1)
+            feat_out,
+            4 * (self.reg_max + 1),
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            weight_attr=ParamAttr(initializer=Normal(
+                mean=0.0, std=0.01)),
+            bias_attr=ParamAttr(initializer=Constant(value=0)))
 
         self.scales = nn.LayerList()
         for i in range(len(self.fpn_strides)):
             self.scales.append(ScaleReg(1.0))
-
-        self.init_weights()
-
-    def init_weights(self):
-        for m in self.cls_convs:
-            normal_init(m.conv, std=0.01)
-        for m in self.reg_convs:
-            normal_init(m.conv, std=0.01)
-        normal_init(self.gfl_cls, std=0.01, bias=-4.595)
-        normal_init(self.gfl_reg, std=0.01)
 
     def forward(self, feats):
         cls_scores = []
@@ -624,12 +621,12 @@ class SimpleConvHead(nn.Layer):
             cls_score = self.gfl_cls(cls_feat)
             cls_score = F.sigmoid(cls_score)
             cls_score = cls_score.flatten(2).transpose([0, 2, 1])
+            cls_scores.append(cls_score)
 
             bbox_pred = scale(self.gfl_reg(reg_feat))
             bbox_pred = bbox_pred.flatten(2).transpose([0, 2, 1])
-
-            cls_scores.append(cls_score)
             bbox_preds.append(bbox_pred)
+
         cls_scores = paddle.concat(cls_scores, axis=1)
         bbox_preds = paddle.concat(bbox_preds, axis=1)
         return cls_scores, bbox_preds

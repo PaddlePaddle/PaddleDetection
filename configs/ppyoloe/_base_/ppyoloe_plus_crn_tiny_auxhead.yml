@@ -15,12 +15,12 @@ PPYOLOEWithAuxHead:
 CSPResNet:
   layers: [3, 6, 6, 3]
   channels: [64, 128, 256, 512, 1024]
-  return_idx: [0, 1, 2, 3]
+  return_idx: [1, 2, 3]
   use_large_stem: True
   use_alpha: True
 
 CustomCSPPAN:
-  out_channels: [384, 384, 384, 384]
+  out_channels: [384, 384, 384]
   stage_num: 1
   block_num: 3
   act: 'swish'
@@ -30,13 +30,13 @@ SimpleConvHead:
   feat_in: 288
   feat_out: 288
   num_convs: 1
-  fpn_strides: [32, 16, 8, 4]
+  fpn_strides: [32, 16, 8]
   norm_type: 'gn'
   act: 'LeakyReLU'
   reg_max: 16
 
 PPYOLOEHead:
-  fpn_strides: [32, 16, 8, 4]
+  fpn_strides: [32, 16, 8]
   grid_cell_scale: 5.0
   grid_cell_offset: 0.5
   static_assigner_epoch: 100

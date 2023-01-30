@@ -46,8 +46,8 @@ PP-YOLOE is composed of following methods:
 
 |     Model      | Epoch | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>val<br>0.5:0.95 | Box AP<sup>test<br>0.5:0.95 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) |                                       download                                       |                   config                    |
 |:--------------:|:-----:|:-------:|:----------:|:----------:| :-------:|:--------------------------:|:---------------------------:|:---------:|:--------:|:---------------:| :---------------------: |:------------------------------------------------------------------------------------:|:-------------------------------------------:|
-|   PP-YOLOE+_tiny   |  300   |     8     |    8     | cspresnet-t |    320  |            36.3            |            51.7             |   6.00   |  15.46  |   -    |   -   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_tiny_auxhead_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_tiny_auxhead_300e_coco.yml) |
-|   PP-YOLOE+_tiny   |  300   |     8     |    8     | cspresnet-t |    416  |            39.0            |            55.1             |   6.00   |  26.13  |   -    |   -   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_tiny_auxhead_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_tiny_auxhead_300e_coco.yml) |
+|   PP-YOLOE+_t-P2   |  300   |     8     |    8     | cspresnet-t |    320  |            36.3            |            51.7             |   6.00   |  15.46  |   -    |   -   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_p2_auxhead_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_t_p2_auxhead_300e_coco.yml) |
+|   PP-YOLOE+_t-P2   |  300   |     8     |    8     | cspresnet-t |    416  |            39.0            |            55.1             |   6.00   |  26.13  |   -    |   -   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_p2_auxhead_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_t_p2_auxhead_300e_coco.yml) |
 
 
 ### Comprehensive Metrics
