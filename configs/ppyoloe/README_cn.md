@@ -43,6 +43,15 @@ PP-YOLOE由以下方法组成
 |   PP-YOLOE+_l   |  80   |     8     |    8     | cspresnet-l |    640     |            52.9            |            53.3             |   52.20   |  110.07  |   78.1    |  149.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams) | [config](./ppyoloe_plus_crn_l_80e_coco.yml) |
 |   PP-YOLOE+_x   |  80   |     8     |    8     | cspresnet-x |    640     |            54.7            |            54.9             |   98.42   |  206.59  |   45.0    |   95.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_x_80e_coco.pdparams) | [config](./ppyoloe_plus_crn_x_80e_coco.yml) |
 
+#### Tiny模型
+
+|       模型        | Epoch |   GPU个数   | 每GPU图片个数 |  骨干网络  |    输入尺寸    | Box AP<sup>val<br>0.5:0.95 | Box AP<sup>test<br>0.5:0.95 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) |                                         模型下载                                         |                    配置文件                     |
+|:---------------:|:-----:|:---------:|:--------:|:----------:|:----------:|:--------------------------:|:---------------------------:|:---------:|:--------:|:---------------:| :---------------------: |:------------------------------------------------------------------------------------:|:-------------------------------------------:|
+|   PP-YOLOE-t-P2   |  300   |     8     |    8     | cspresnet-t  |    320  |            34.7            |            50.0             |   6.82   |  4.78  |   -    |   -   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_t_p2_300e_coco.pdparams) | [config](./ppyoloe_crn_t_p2_300e_coco.yml) |
+|   PP-YOLOE-t-P2   |  300   |     8     |    8     | cspresnet-t  |    416  |            36.4            |            52.3             |   6.82   |  8.07  |   -    |   -   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_t_p2_300e_coco.pdparams) | [config](./ppyoloe_crn_t_p2_300e_coco.yml) |
+|   PP-YOLOE+_t-P2(aux)   |  300   |     8     |    8     | cspresnet-t |    320  |            36.3            |            51.7             |   6.00   |  15.46  |   -    |   -   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_p2_auxhead_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_t_p2_auxhead_300e_coco.yml) |
+|   PP-YOLOE+_t-P2(aux)   |  300   |     8     |    8     | cspresnet-t |    416  |            39.0            |            55.1             |   6.00   |  26.13  |   -    |   -   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_p2_auxhead_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_t_p2_auxhead_300e_coco.yml) |
+
 
 ### 综合指标
 |            模型            | Epoch | AP<sup>0.5:0.95 | AP<sup>0.5 | AP<sup>0.75 | AP<sup>small | AP<sup>medium | AP<sup>large | AR<sup>small | AR<sup>medium | AR<sup>large |

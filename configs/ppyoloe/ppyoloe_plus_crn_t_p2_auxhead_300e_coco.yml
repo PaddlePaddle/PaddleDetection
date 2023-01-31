@@ -1,0 +1,36 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  './_base_/optimizer_300e.yml',
+  './_base_/ppyoloe_plus_crn_tiny_auxhead.yml',
+  './_base_/ppyoloe_plus_tiny_reader.yml',
+]
+
+log_iter: 100
+snapshot_epoch: 10
+weights: output/ppyoloe_plus_crn_t_p2_auxhead_300e_coco/model_final
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_t_pretrained.pdparams
+depth_mult: 0.33
+width_mult: 0.375
+
+
+architecture: PPYOLOEWithAuxHead
+PPYOLOEWithAuxHead:
+  backbone: CSPResNet
+  neck: CustomCSPPAN
+  yolo_head: PPYOLOEHead
+  aux_head: SimpleConvHead
+  post_process: ~
+
+CSPResNet:
+  return_idx: [0, 1, 2, 3] # index 0 stands for P2
+
+CustomCSPPAN:
+  out_channels: [384, 384, 384, 384]
+
+SimpleConvHead:
+  fpn_strides: [32, 16, 8, 4]
+
+PPYOLOEHead:
+  fpn_strides: [32, 16, 8, 4]

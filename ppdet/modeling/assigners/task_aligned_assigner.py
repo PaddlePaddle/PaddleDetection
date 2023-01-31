@@ -28,17 +28,47 @@ from .utils import (gather_topk_anchors, check_points_inside_bboxes,
 __all__ = ['TaskAlignedAssigner']
 
 
+def is_close_gt(anchor, gt, stride_lst, max_dist=2.0, alpha=2.):
+    """Calculate distance ratio of box1 and box2 in batch for larger stride
+        anchors dist/stride to promote the survive of large distance match
+    Args:
+        anchor (Tensor): box with the shape [L, 2]
+        gt (Tensor): box with the shape [N, M2, 4]
+    Return:
+        dist (Tensor): dist ratio between box1 and box2 with the shape [N, M1, M2]
+    """
+    center1 = anchor.unsqueeze(0)
+    center2 = (gt[..., :2] + gt[..., -2:]) / 2.
+    center1 = center1.unsqueeze(1)  # [N, M1, 2] -> [N, 1, M1, 2]
+    center2 = center2.unsqueeze(2)  # [N, M2, 2] -> [N, M2, 1, 2]
+
+    stride = paddle.concat([
+        paddle.full([x], 32 / pow(2, idx)) for idx, x in enumerate(stride_lst)
+    ]).unsqueeze(0).unsqueeze(0)
+    dist = paddle.linalg.norm(center1 - center2, p=2, axis=-1) / stride
+    dist_ratio = dist
+    dist_ratio[dist < max_dist] = 1.
+    dist_ratio[dist >= max_dist] = 0.
+    return dist_ratio
+
+
 @register
 class TaskAlignedAssigner(nn.Layer):
     """TOOD: Task-aligned One-stage Object Detection
     """
 
-    def __init__(self, topk=13, alpha=1.0, beta=6.0, eps=1e-9):
+    def __init__(self,
+                 topk=13,
+                 alpha=1.0,
+                 beta=6.0,
+                 eps=1e-9,
+                 is_close_gt=False):
         super(TaskAlignedAssigner, self).__init__()
         self.topk = topk
         self.alpha = alpha
         self.beta = beta
         self.eps = eps
+        self.is_close_gt = is_close_gt
 
     @paddle.no_grad()
     def forward(self,
@@ -107,7 +137,10 @@ class TaskAlignedAssigner(nn.Layer):
             self.beta)
 
         # check the positive sample's center in gt, [B, n, L]
-        is_in_gts = check_points_inside_bboxes(anchor_points, gt_bboxes)
+        if self.is_close_gt:
+            is_in_gts = is_close_gt(anchor_points, gt_bboxes, num_anchors_list)
+        else:
+            is_in_gts = check_points_inside_bboxes(anchor_points, gt_bboxes)
 
         # select topk largest alignment metrics pred bbox as candidates
         # for each gt, [B, n, L]
