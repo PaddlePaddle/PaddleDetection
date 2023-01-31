@@ -774,6 +774,44 @@ class Trainer(object):
         loader = create('TestReader')(self.dataset, 0)
         imid2path = self.dataset.get_imid2path()
 
+        def setup_metrics_for_loader():
+            # mem
+            metrics = copy.deepcopy(self._metrics)
+            mode = self.mode
+            save_prediction_only = self.cfg[
+                'save_prediction_only'] if 'save_prediction_only' in self.cfg else None
+            output_eval = self.cfg[
+                'output_eval'] if 'output_eval' in self.cfg else None
+
+            # modify
+            self.mode = '_test'
+            self.cfg['save_prediction_only'] = True
+            self.cfg['output_eval'] = output_dir
+            self.cfg['imid2path'] = imid2path
+            self._init_metrics()
+
+            # restore
+            self.mode = mode
+            self.cfg.pop('save_prediction_only')
+            if save_prediction_only is not None:
+                self.cfg['save_prediction_only'] = save_prediction_only
+
+            self.cfg.pop('output_eval')
+            if output_eval is not None:
+                self.cfg['output_eval'] = output_eval
+
+            self.cfg.pop('imid2path')
+
+            _metrics = copy.deepcopy(self._metrics)
+            self._metrics = metrics
+
+            return _metrics
+
+        if save_results:
+            metrics = setup_metrics_for_loader()
+        else:
+            metrics = []
+
         anno_file = self.dataset.get_anno()
         clsid2catid, catid2name = get_categories(
             self.cfg.metric, anno_file=anno_file)
@@ -819,6 +857,9 @@ class Trainer(object):
                 merged_bboxs = []
                 data['im_id'] = data['ori_im_id']
 
+                for _m in metrics:
+                    _m.update(data, merged_results)
+
                 for key in ['im_shape', 'scale_factor', 'im_id']:
                     if isinstance(data, typing.Sequence):
                         merged_results[key] = data[0][key]
@@ -829,31 +870,36 @@ class Trainer(object):
                         merged_results[key] = value.numpy()
                 results.append(merged_results)
 
+        for _m in metrics:
+            _m.accumulate()
+            _m.reset()
+
         if visualize:
             for outs in results:
                 batch_res = get_infer_results(outs, clsid2catid)
                 bbox_num = outs['bbox_num']
+
                 start = 0
                 for i, im_id in enumerate(outs['im_id']):
                     image_path = imid2path[int(im_id)]
                     image = Image.open(image_path).convert('RGB')
                     image = ImageOps.exif_transpose(image)
                     self.status['original_image'] = np.array(image.copy())
+
                     end = start + bbox_num[i]
                     bbox_res = batch_res['bbox'][start:end] \
                             if 'bbox' in batch_res else None
-
+                    mask_res = batch_res['mask'][start:end] \
+                            if 'mask' in batch_res else None
+                    segm_res = batch_res['segm'][start:end] \
+                            if 'segm' in batch_res else None
+                    keypoint_res = batch_res['keypoint'][start:end] \
+                            if 'keypoint' in batch_res else None
+                    pose3d_res = batch_res['pose3d'][start:end] \
+                            if 'pose3d' in batch_res else None
                     image = visualize_results(
-                        image,
-                        bbox_res,
-                        mask_res=None,
-                        segm_res=None,
-                        keypoint_res=None,
-                        pose3d_res=None,
-                        im_id=int(im_id),
-                        catid2name=catid2name,
-                        threshold=draw_threshold)
-
+                        image, bbox_res, mask_res, segm_res, keypoint_res,
+                        pose3d_res, int(im_id), catid2name, draw_threshold)
                     self.status['result_image'] = np.array(image.copy())
                     if self._compose_callback:
                         self._compose_callback.on_step_end(self.status)
@@ -863,6 +909,7 @@ class Trainer(object):
                     logger.info("Detection bbox results save in {}".format(
                         save_name))
                     image.save(save_name, quality=95)
+
                     start = end
 
     def predict(self,
@@ -992,7 +1039,7 @@ class Trainer(object):
                     image.save(save_name, quality=95)
 
                     start = end
-
+        return results
     def _get_save_image_name(self, output_dir, image_path):
         """
         Get save image name from source image path.
