@@ -202,7 +202,7 @@ def get_cosine(x, y, eps=1e-12):
     Computes cosine distance between two tensors.
     The cosine distance is the inverse cosine similarity
     -> cosine_distance = abs(-cosine_distance) to make it
-    similar in behaviour to euclidean distance
+    similar in behavior to euclidean distance
     """
     sim_mt = cosine_similarity(x, y, eps)
     return sim_mt
