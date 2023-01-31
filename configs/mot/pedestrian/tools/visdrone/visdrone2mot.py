@@ -58,7 +58,7 @@ def genGtFile(seqPath, outPath, classes=[]):
                     class_index = str(classes.index(line[7]) + 1)
                     newLine.append(class_index)
                 else:
-                    newLine.append('1')  # use permenant class '1'
+                    newLine.append('1')  # use permanent class '1'
                 newLine.append('1')
                 motLine.append(newLine)
         mkdir_if_missing(outPath)

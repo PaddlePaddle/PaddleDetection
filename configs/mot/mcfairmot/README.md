@@ -31,7 +31,7 @@ PP-tracking provides an AI studio public project tutorial. Please refer to this 
 | HRNetV2-W18    | 576x320 |  12.0  |  33.8  |  2178  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone.pdparams) | [config](./mcfairmot_hrnetv2_w18_dlafpn_30e_576x320_visdrone.yml) |
 
 **Notes:**
- - MOTA is the average MOTA of 10 catecories in the VisDrone2019 MOT dataset, and its value is also equal to the average MOTA of all the evaluated video sequences. Here we provide the download [link](https://bj.bcebos.com/v1/paddledet/data/mot/visdrone_mcmot.zip) of the dataset.
+ - MOTA is the average MOTA of 10 categories in the VisDrone2019 MOT dataset, and its value is also equal to the average MOTA of all the evaluated video sequences. Here we provide the download [link](https://bj.bcebos.com/v1/paddledet/data/mot/visdrone_mcmot.zip) of the dataset.
  - MCFairMOT used 4 GPUs for training 30 epoches. The batch size is 6 on each GPU for MCFairMOT DLA-34, and 8 for MCFairMOT HRNetV2-W18.
 
 ### MCFairMOT Results on VisDrone Vehicle Val Set
@@ -41,7 +41,7 @@ PP-tracking provides an AI studio public project tutorial. Please refer to this 
 | HRNetV2-W18    | 1088x608 |  35.6  |  56.3  |  190  |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle_bytetracker.pdparams) | [config](./mcfairmot_hrnetv2_w18_dlafpn_30e_1088x608_visdrone_vehicle_bytetracker.yml) |
 
 **Notes:**
- - MOTA is the average MOTA of 4 catecories in the VisDrone Vehicle dataset, and this dataset is extracted from the VisDrone2019 MOT dataset, here we provide the download [link](https://bj.bcebos.com/v1/paddledet/data/mot/visdrone_mcmot_vehicle.zip).
+ - MOTA is the average MOTA of 4 categories in the VisDrone Vehicle dataset, and this dataset is extracted from the VisDrone2019 MOT dataset, here we provide the download [link](https://bj.bcebos.com/v1/paddledet/data/mot/visdrone_mcmot_vehicle.zip).
  - The tracker used in MCFairMOT model here is ByteTracker.
 
 ### MCFairMOT off-line quantization results on VisDrone Vehicle val-set
