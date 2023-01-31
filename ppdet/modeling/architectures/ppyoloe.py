@@ -36,6 +36,7 @@ class PPYOLOE(BaseArch):
                  neck='CustomCSPPAN',
                  yolo_head='PPYOLOEHead',
                  post_process='BBoxPostProcess',
+                 for_distill=False,
                  for_mot=False):
         """
         PPYOLOE network, see https://arxiv.org/abs/2203.16250
@@ -54,6 +55,7 @@ class PPYOLOE(BaseArch):
         self.yolo_head = yolo_head
         self.post_process = post_process
         self.for_mot = for_mot
+        self.for_distill = for_distill
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -80,7 +82,12 @@ class PPYOLOE(BaseArch):
 
         if self.training:
             yolo_losses = self.yolo_head(neck_feats, self.inputs)
-            return yolo_losses
+
+            if self.for_distill:
+                self.yolo_head.distill_pairs['emb_feats'] = neck_feats
+                return {'det_losses': yolo_losses, 'emb_feats': neck_feats}
+            else:
+                return yolo_losses
         else:
             yolo_head_outs = self.yolo_head(neck_feats)
             if self.post_process is not None:
