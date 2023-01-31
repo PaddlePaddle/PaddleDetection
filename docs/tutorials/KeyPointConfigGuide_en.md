@@ -175,9 +175,9 @@ TestDataset:                                                                    
 
 worker_num: 2                                                                                  #the workers to load Dataset
 
-global_mean: &global_mean [0.485, 0.456, 0.406]                                                #means used to nomalize image
+global_mean: &global_mean [0.485, 0.456, 0.406]                                                #means used to normalize image
 
-global_std: &global_std [0.229, 0.224, 0.225]                                                  #stds used to nomalize image
+global_std: &global_std [0.229, 0.224, 0.225]                                                  #stds used to normalize image
 
 TrainReader:                                                                                   #TrainReader configs
 
