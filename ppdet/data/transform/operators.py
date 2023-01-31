@@ -3500,6 +3500,10 @@ class PadResize(BaseOperator):
         sample['image'] = self._pad(image).astype(np.float32)
         sample['gt_bbox'] = bboxes
         sample['gt_class'] = labels
+        if 'is_crowd' in sample:
+            sample.pop('is_crowd')
+        if 'difficult' in sample:
+            sample.pop('difficult')
         return sample
 
 

@@ -182,6 +182,13 @@ class SimOTAAssigner(object):
         is_in_gts_or_centers_all, is_in_gts_or_centers_all_inds, is_in_boxes_and_center = self.get_in_gt_and_in_center_info(
             flatten_center_and_stride, gt_bboxes)
 
+        if len(is_in_gts_or_centers_all_inds) == 0:
+            # No valid boxes
+            label = np.ones([num_bboxes], dtype=np.int64) * self.num_classes
+            label_weight = np.ones([num_bboxes], dtype=np.float32)
+            bbox_target = np.zeros_like(flatten_center_and_stride)
+            return 0, label, label_weight, bbox_target
+
         # bboxes and scores to calculate matrix
         valid_flatten_bboxes = flatten_bboxes[is_in_gts_or_centers_all_inds]
         valid_cls_pred_scores = flatten_cls_pred_scores[
