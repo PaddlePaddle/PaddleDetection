@@ -2,12 +2,12 @@
 
 In PaddleDetection, a complete tutorial and benchmarks for model compression based on [PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim) are provided. Currently supported methods:
 
-- [prunning](prune)
+- [pruning](prune)
 - [quantitative](quant)
 - [distillation](distill)
 - [The joint strategy](extensions)
 
-It is recommended that you use a combination of prunning and distillation training, or use prunning and quantization for test model compression. The following takes YOLOv3 as an example to carry out cutting, distillation and quantization experiments.
+It is recommended that you use a combination of pruning and distillation training, or use pruning and quantization for test model compression. The following takes YOLOv3 as an example to carry out cutting, distillation and quantization experiments.
 
 ## Experimental Environment
 
@@ -95,7 +95,7 @@ python tools/export_model.py -c configs/{MODEL.yml} --slim_config configs/slim/{
 
 ## Benchmark
 
-### Prunning
+### Pruning
 
 #### Pascal VOC Benchmark
 
@@ -158,7 +158,7 @@ Description:
 
 - Please refer to the specific distillation method[Distillation Policy Document](distill/README.md)
 
-### Distillation Prunning Combined Strategy
+### Distillation Pruning Combined Strategy
 
 #### COCO Benchmark
 
