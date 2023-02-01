@@ -152,7 +152,7 @@ python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c con
 **Notes:**
 - If you need to evaluate while training, please add `--eval`.
 - PP-YOLOE+ supports mixed precision training, please add `--amp`.
-- PaddleDetection supports multi-machine distribued training, you can refer to [DistributedTraining tutorial](../../docs/tutorials/DistributedTraining_en.md).
+- PaddleDetection supports multi-machine distributed training, you can refer to [DistributedTraining tutorial](../../docs/tutorials/DistributedTraining_en.md).
 
 
 ### Evaluation
@@ -259,7 +259,7 @@ trtexec --onnx=./ppyoloe_plus_crn_s_80e_coco.onnx --saveEngine=./ppyoloe_s_bs32.
 
 ### Deployment
 
-PP-YOLOE can be deployed by following approches:
+PP-YOLOE can be deployed by following approaches:
   - Paddle Inference [Python](../../deploy/python) & [C++](../../deploy/cpp)
   - [Paddle-TensorRT](../../deploy/TENSOR_RT.md)
   - [PaddleServing](https://github.com/PaddlePaddle/Serving)
@@ -299,7 +299,7 @@ Model | AP | AP<sub>50</sub>
 **PP-YOLOE** | **30.5** | **46.4**
 
 **Notes**
-- Here, we use [VisDrone](https://github.com/VisDrone/VisDrone-Dataset) dataset, and to detect 9 objects including `person, bicycles, car, van, truck, tricyle, awning-tricyle, bus, motor`.
+- Here, we use [VisDrone](https://github.com/VisDrone/VisDrone-Dataset) dataset, and to detect 9 objects including `person, bicycles, car, van, truck, tricycle, awning-tricycle, bus, motor`.
 - Above models trained using official default config, and load pretrained parameters on COCO dataset.
 - *Due to the limited time, more verification results will be supplemented in the future. You are also welcome to contribute to PP-YOLOE*
 

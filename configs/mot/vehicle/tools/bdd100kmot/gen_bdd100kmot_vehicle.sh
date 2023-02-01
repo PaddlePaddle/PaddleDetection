@@ -7,7 +7,7 @@ phasetrain=train
 phaseval=val
 classes=2,3,4,9,10
 
-# gen mot dataste
+# gen mot dataset
 python bdd100k2mot.py --data_path=${data_path}  --phase=${phasetrain} --classes=${classes} --img_dir=${img_dir} --label_dir=${label_dir} --save_path=${save_path}
 python bdd100k2mot.py --data_path=${data_path} --phase=${phaseval} --classes=${classes} --img_dir=${img_dir} --label_dir=${label_dir} --save_path=${save_path}
 
