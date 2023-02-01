@@ -1039,7 +1039,7 @@ class Trainer(object):
                     image.save(save_name, quality=95)
 
                     start = end
-
+        return results
     def _get_save_image_name(self, output_dir, image_path):
         """
         Get save image name from source image path.

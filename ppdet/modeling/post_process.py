@@ -67,7 +67,7 @@ class BBoxPostProcess(object):
         """
         if self.nms is not None:
             bboxes, score = self.decode(head_out, rois, im_shape, scale_factor)
-            bbox_pred, bbox_num, _ = self.nms(bboxes, score, self.num_classes)
+            bbox_pred, bbox_num, before_nms_indexes = self.nms(bboxes, score, self.num_classes)
 
         else:
             bbox_pred, bbox_num = self.decode(head_out, rois, im_shape,
@@ -82,7 +82,10 @@ class BBoxPostProcess(object):
             bbox_pred = paddle.concat([bbox_pred, fake_bboxes])
             bbox_num = bbox_num + 1
 
-        return bbox_pred, bbox_num
+        if self.nms is not None:
+            return bbox_pred, bbox_num, before_nms_indexes
+        else:
+            return bbox_pred, bbox_num
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
         """
