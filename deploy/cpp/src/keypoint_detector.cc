@@ -95,7 +95,7 @@ void KeyPointDetector::LoadModel(const std::string& model_dir,
   predictor_ = std::move(CreatePredictor(config));
 }
 
-// Visualiztion MaskDetector results
+// Visualization MaskDetector results
 cv::Mat VisualizeKptsResult(const cv::Mat& img,
                             const std::vector<KeyPointResult>& results,
                             const std::vector<int>& colormap) {

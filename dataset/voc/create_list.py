@@ -15,7 +15,7 @@
 import sys
 import os.path as osp
 import logging
-# add python path of PadleDetection to sys.path
+# add python path of PaddleDetection to sys.path
 parent_path = osp.abspath(osp.join(__file__, *(['..'] * 3)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)

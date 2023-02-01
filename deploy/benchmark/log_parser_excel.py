@@ -195,7 +195,7 @@ def trt_perf_analysis(raw_df):
     gpu_df = raw_df.loc[raw_df['runtime_device'] == 'gpu']
     new_df = filter_df_merge(gpu_df, "precision")
 
-    # calculate qps diff percentail
+    # calculate qps diff percentile
     infer_fp32 = "inference_time(ms)_precision_fp32"
     infer_fp16 = "inference_time(ms)_precision_fp16"
     infer_int8 = "inference_time(ms)_precision_int8"
@@ -228,7 +228,7 @@ def mkl_perf_analysis(raw_df):
     output_thread_df = filter_df_merge(thread_compare_df,
                                        'cpu_math_library_num_threads')
 
-    # calculate performance diff percentail
+    # calculate performance diff percentile
     # compare mkl performance with cpu
     enable_mkldnn = "inference_time(ms)_enable_mkldnn_True"
     disable_mkldnn = "inference_time(ms)_enable_mkldnn_False"

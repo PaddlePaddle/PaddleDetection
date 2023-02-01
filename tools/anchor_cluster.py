@@ -18,7 +18,7 @@ from __future__ import print_function
 
 import os
 import sys
-# add python path of PadleDetection to sys.path
+# add python path of PaddleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 

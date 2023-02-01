@@ -27,7 +27,7 @@ import time
 from collections import Sequence, defaultdict
 from datacollector import DataCollector, Result
 
-# add deploy path of PadleDetection to sys.path
+# add deploy path of PaddleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
