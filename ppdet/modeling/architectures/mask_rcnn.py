@@ -106,8 +106,8 @@ class MaskRCNN(BaseArch):
             im_shape = self.inputs['im_shape']
             scale_factor = self.inputs['scale_factor']
 
-            bbox, bbox_num = self.bbox_post_process(preds, (rois, rois_num),
-                                                    im_shape, scale_factor)
+            bbox, bbox_num, before_nms_indexes = self.bbox_post_process(
+                preds, (rois, rois_num), im_shape, scale_factor)
             mask_out = self.mask_head(
                 body_feats, bbox, bbox_num, self.inputs, feat_func=feat_func)
 
