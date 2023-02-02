@@ -480,7 +480,8 @@ class PPYOLOEHead(nn.Layer):
         pred_bboxes *= stride_tensor
         if self.exclude_post_process:
             return paddle.concat(
-                [pred_bboxes, pred_scores.transpose([0, 2, 1])], axis=-1), None
+                [pred_bboxes, pred_scores.transpose([0, 2, 1])],
+                axis=-1), None, None
         else:
             # scale bbox to origin
             scale_y, scale_x = paddle.split(scale_factor, 2, axis=-1)
@@ -490,9 +491,10 @@ class PPYOLOEHead(nn.Layer):
             pred_bboxes /= scale_factor
             if self.exclude_nms:
                 # `exclude_nms=True` just use in benchmark
-                return pred_bboxes, pred_scores
+                return pred_bboxes, pred_scores, None
             else:
-                bbox_pred, bbox_num, before_nms_indexes = self.nms(pred_bboxes, pred_scores)
+                bbox_pred, bbox_num, before_nms_indexes = self.nms(pred_bboxes,
+                                                                   pred_scores)
                 return bbox_pred, bbox_num, before_nms_indexes
 
 
