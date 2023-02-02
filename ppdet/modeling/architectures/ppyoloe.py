@@ -20,7 +20,6 @@ import paddle
 import copy
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
-from IPython import embed
 
 __all__ = ['PPYOLOE', 'PPYOLOEWithAuxHead']
 # PP-YOLOE and PP-YOLOE+ are recommended to use this architecture, especially when use distillation or aux head
