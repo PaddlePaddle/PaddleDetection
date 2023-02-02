@@ -7,12 +7,11 @@ pretrain_weights: https://paddledet.bj.bcebos.com/models/retinanet_r101_fpn_2x_c
 
 slim: Distill
 slim_method: CWD
-distill_loss: ChannelWiseDivergence
+distill_loss: CWDFeatureLoss
 distill_loss_name: ['cls_f_4', 'cls_f_3', 'cls_f_2', 'cls_f_1', 'cls_f_0']
 
-ChannelWiseDivergence:
+CWDFeatureLoss:
   student_channels: 80
   teacher_channels: 80
-  name: cwdloss
   tau: 1.0
   weight: 5.0

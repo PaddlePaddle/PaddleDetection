@@ -22,5 +22,11 @@ slim_method: PPYOLOEDistill
 distill_loss: DistillPPYOLOELoss
 
 DistillPPYOLOELoss: # L -> M
-  teacher_width_mult: 1.0
-  student_width_mult: 0.75
+  loss_weight: {'logits': 4.0, 'feat': 1.0}
+  logits_distill: True
+  logits_loss_weight: {'class': 1.0, 'iou': 2.5, 'dfl': 0.5}
+  feat_distill: True
+  feat_distiller: 'cwd'
+  teacher_width_mult: 1.0  # L
+  student_width_mult: 0.75  # M
+  neck_out_channels: [768, 384, 192]  # The actual channel will multiply width_mult
