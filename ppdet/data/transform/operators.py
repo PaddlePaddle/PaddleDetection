@@ -2097,13 +2097,16 @@ class Pad(BaseOperator):
 @register_op
 class Poly2Mask(BaseOperator):
     """
-    gt poly to mask annotations
+    gt poly to mask annotations.
+    Args:
+        del_poly (bool): Whether to delete poly after generating mask. Default: False.
     """
 
-    def __init__(self):
+    def __init__(self, del_poly=False):
         super(Poly2Mask, self).__init__()
         import pycocotools.mask as maskUtils
         self.maskutils = maskUtils
+        self.del_poly = del_poly
 
     def _poly2mask(self, mask_ann, img_h, img_w):
         if isinstance(mask_ann, list):
@@ -2128,7 +2131,8 @@ class Poly2Mask(BaseOperator):
             for gt_poly in sample['gt_poly']
         ]
         sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
-        del (sample['gt_poly'])
+        if self.del_poly:
+            del (sample['gt_poly'])
 
         return sample
 
@@ -2679,9 +2683,7 @@ class RandomSizeCrop(BaseOperator):
     """
     Cut the image randomly according to `min_size` and `max_size`
     Args:
-        min_size (int): Min size for edges of cropped image. If it
-                        is set to smaller than length of the input image,
-                        the output will keep the origin length.
+        min_size (int): Min size for edges of cropped image.
         max_size (int): Max size for edges of cropped image. If it
                         is set to larger than length of the input image,
                         the output will keep the origin length.
@@ -2853,12 +2855,10 @@ class RandomSizeCrop(BaseOperator):
         return crop_segms
 
     def apply(self, sample, context=None):
-        h = random.randint(
-            min(sample['image'].shape[0], self.min_size),
-            min(sample['image'].shape[0], self.max_size) + 1)
-        w = random.randint(
-            min(sample['image'].shape[1], self.min_size),
-            min(sample['image'].shape[1], self.max_size) + 1)
+        h = random.randint(self.min_size,
+                           min(sample['image'].shape[0], self.max_size))
+        w = random.randint(self.min_size,
+                           min(sample['image'].shape[1], self.max_size))
 
         region = self.get_crop_params(sample['image'].shape[:2], [h, w])
         return self.crop(sample, region)
