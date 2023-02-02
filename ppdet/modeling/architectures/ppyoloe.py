@@ -20,15 +20,17 @@ import paddle
 import copy
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
+from IPython import embed
 
 __all__ = ['PPYOLOE', 'PPYOLOEWithAuxHead']
-# PP-YOLOE and PP-YOLOE+ are recommended to use this architecture
-# PP-YOLOE and PP-YOLOE+ can also use the same architecture of YOLOv3 in yolo.py
+# PP-YOLOE and PP-YOLOE+ are recommended to use this architecture, especially when use distillation or aux head
+# PP-YOLOE and PP-YOLOE+ can also use the same architecture of YOLOv3 in yolo.py when not use distillation or aux head
 
 
 @register
 class PPYOLOE(BaseArch):
     __category__ = 'architecture'
+    __shared__ = ['for_distill']
     __inject__ = ['post_process']
 
     def __init__(self,
@@ -37,6 +39,7 @@ class PPYOLOE(BaseArch):
                  yolo_head='PPYOLOEHead',
                  post_process='BBoxPostProcess',
                  for_distill=False,
+                 feat_distill_place='neck_feats',
                  for_mot=False):
         """
         PPYOLOE network, see https://arxiv.org/abs/2203.16250
@@ -56,6 +59,9 @@ class PPYOLOE(BaseArch):
         self.post_process = post_process
         self.for_mot = for_mot
         self.for_distill = for_distill
+        self.feat_distill_place = feat_distill_place
+        if for_distill:
+            assert feat_distill_place in ['backbone_feats', 'neck_feats']
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -84,10 +90,13 @@ class PPYOLOE(BaseArch):
             yolo_losses = self.yolo_head(neck_feats, self.inputs)
 
             if self.for_distill:
-                self.yolo_head.distill_pairs['emb_feats'] = neck_feats
-                return {'det_losses': yolo_losses, 'emb_feats': neck_feats}
-            else:
-                return yolo_losses
+                if self.feat_distill_place == 'backbone_feats':
+                    self.yolo_head.distill_pairs['backbone_feats'] = body_feats
+                elif self.feat_distill_place == 'neck_feats':
+                    self.yolo_head.distill_pairs['neck_feats'] = neck_feats
+                else:
+                    raise ValueError
+            return yolo_losses
         else:
             yolo_head_outs = self.yolo_head(neck_feats)
             if self.post_process is not None:

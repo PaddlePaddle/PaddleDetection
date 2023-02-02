@@ -1,6 +1,6 @@
-# teacher config
+# teacher and slim config
 _BASE_: [
-  '../ppyoloe_plus_crn_l_80e_coco.yml',
+  '../../ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml',
 ]
 depth_mult: 1.0
 width_mult: 1.0
@@ -15,6 +15,7 @@ PPYOLOE:
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams
 find_unused_parameters: True
+for_distill: True
 
 
 slim: Distill
@@ -26,7 +27,8 @@ DistillPPYOLOELoss: # L -> M
   logits_distill: True
   logits_loss_weight: {'class': 1.0, 'iou': 2.5, 'dfl': 0.5}
   feat_distill: True
-  feat_distiller: 'cwd'
+  feat_distiller: 'fgd' # ['cwd', 'fgd', 'pkd', 'mgd', 'mimic']
+  feat_distill_place: 'neck_feats'
   teacher_width_mult: 1.0  # L
   student_width_mult: 0.75  # M
-  neck_out_channels: [768, 384, 192]  # The actual channel will multiply width_mult
+  feat_out_channels: [768, 384, 192]  # The actual channel will multiply width_mult

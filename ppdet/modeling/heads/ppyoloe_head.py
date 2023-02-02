@@ -53,7 +53,7 @@ class ESEAttn(nn.Layer):
 class PPYOLOEHead(nn.Layer):
     __shared__ = [
         'num_classes', 'eval_size', 'trt', 'exclude_nms',
-        'exclude_post_process', 'use_shared_conv'
+        'exclude_post_process', 'use_shared_conv', 'for_distill'
     ]
     __inject__ = ['static_assigner', 'assigner', 'nms']
 
@@ -81,7 +81,8 @@ class PPYOLOEHead(nn.Layer):
                  attn_conv='convbn',
                  exclude_nms=False,
                  exclude_post_process=False,
-                 use_shared_conv=True):
+                 use_shared_conv=True,
+                 for_distill=False):
         super(PPYOLOEHead, self).__init__()
         assert len(in_channels) > 0, "len(in_channels) should > 0"
         self.in_channels = in_channels
@@ -110,6 +111,7 @@ class PPYOLOEHead(nn.Layer):
         self.exclude_nms = exclude_nms
         self.exclude_post_process = exclude_post_process
         self.use_shared_conv = use_shared_conv
+        self.for_distill = for_distill
 
         # stem
         self.stem_cls = nn.LayerList()
@@ -134,7 +136,9 @@ class PPYOLOEHead(nn.Layer):
         self.proj_conv = nn.Conv2D(self.reg_channels, 1, 1, bias_attr=False)
         self.proj_conv.skip_quant = True
         self._init_weights()
-        self.distill_pairs = {}
+
+        if self.for_distill:
+            self.distill_pairs = {}
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -322,14 +326,14 @@ class PPYOLOEHead(nn.Layer):
             loss_dfl = self._df_loss(pred_dist_pos, assigned_ltrb_pos,
                                      self.reg_range[0]) * bbox_weight
             loss_dfl = loss_dfl.sum() / assigned_scores_sum
-            self.distill_pairs['pred_bboxes_pos'] = pred_bboxes_pos
-            self.distill_pairs['pred_dist_pos'] = pred_dist_pos
-            self.distill_pairs['bbox_weight'] = bbox_weight
+            if self.for_distill:
+                self.distill_pairs['pred_bboxes_pos'] = pred_bboxes_pos
+                self.distill_pairs['pred_dist_pos'] = pred_dist_pos
+                self.distill_pairs['bbox_weight'] = bbox_weight
         else:
             loss_l1 = paddle.zeros([1])
             loss_iou = paddle.zeros([1])
             loss_dfl = pred_dist.sum() * 0.
-            self.distill_pairs['null_loss'] = pred_dist.sum() * 0.
         return loss_l1, loss_iou, loss_dfl
 
     def get_loss(self, head_outs, gt_meta, aux_pred=None):
@@ -445,13 +449,14 @@ class PPYOLOEHead(nn.Layer):
         assigned_scores_sum = paddle.clip(assigned_scores_sum, min=1.)
         loss_cls /= assigned_scores_sum
 
-        self.distill_pairs['pred_cls_scores'] = pred_scores
-        self.distill_pairs['pos_num'] = assigned_scores_sum
-        self.distill_pairs['assigned_scores'] = assigned_scores
-        self.distill_pairs['mask_positive'] = mask_positive
-        one_hot_label = F.one_hot(assigned_labels,
-                                  self.num_classes + 1)[..., :-1]
-        self.distill_pairs['target_labels'] = one_hot_label
+        if self.for_distill:
+            self.distill_pairs['pred_cls_scores'] = pred_scores
+            self.distill_pairs['pos_num'] = assigned_scores_sum
+            self.distill_pairs['assigned_scores'] = assigned_scores
+            self.distill_pairs['mask_positive'] = mask_positive
+            one_hot_label = F.one_hot(assigned_labels,
+                                      self.num_classes + 1)[..., :-1]
+            self.distill_pairs['target_labels'] = one_hot_label
 
         loss_l1, loss_iou, loss_dfl = \
             self._bbox_loss(pred_distri, pred_bboxes, anchor_points_s,

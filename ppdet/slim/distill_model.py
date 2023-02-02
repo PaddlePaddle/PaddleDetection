@@ -338,15 +338,13 @@ class PPYOLOEDistillModel(DistillModel):
                 delattr(self.teacher_model.yolo_head, "assigned_bboxes")
                 delattr(self.teacher_model.yolo_head, "assigned_scores")
                 delattr(self.teacher_model.yolo_head, "mask_positive")
-            student_out = self.student_model(inputs)
+            student_loss = self.student_model(inputs)
             with paddle.no_grad():
-                teacher_out = self.teacher_model(inputs)
+                teacher_loss = self.teacher_model(inputs)
 
             logits_loss, feat_loss = self.distill_loss(self.teacher_model,
                                                        self.student_model)
-            student_loss = student_out['det_losses']
             det_total_loss = student_loss['loss']
-
             total_loss = alpha * (det_total_loss + logits_loss + feat_loss)
             student_loss['loss'] = total_loss
             student_loss['det_loss'] = det_total_loss

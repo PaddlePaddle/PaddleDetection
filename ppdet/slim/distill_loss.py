@@ -140,11 +140,7 @@ class KnowledgeDistillationKLDivLoss(nn.Layer):
             soft_label (Tensor): Target logits with shape (N, N + 1).
             T (int): Temperature for distillation.
             detach_target (bool): Remove soft_label from automatic differentiation
-
-        Returns:
-            torch.Tensor: Loss tensor with shape (N,).
         """
-
         assert pred.shape == soft_label.shape
         target = F.softmax(soft_label / T, axis=1)
         if detach_target:
@@ -217,10 +213,11 @@ class DistillPPYOLOELoss(nn.Layer):
                                 'iou': 2.5,
                                 'dfl': 0.5},
             feat_distill=True,
-            feat_distiller='cwd',
+            feat_distiller='fgd',
+            feat_distill_place='neck_feats',
             teacher_width_mult=1.0,  # L
             student_width_mult=0.75,  # M
-            neck_out_channels=[768, 384, 192]):
+            feat_out_channels=[768, 384, 192]):
         super(DistillPPYOLOELoss, self).__init__()
         self.loss_weight_logits = loss_weight['logits']
         self.loss_weight_feat = loss_weight['feat']
@@ -234,15 +231,17 @@ class DistillPPYOLOELoss(nn.Layer):
             self.loss_bbox = GIoULoss()
 
         if feat_distill and self.loss_weight_feat > 0:
-            assert feat_distiller in ['cwd', 'fgd', 'pkd', 'mgd']
-            self.distill_feat_loss_modules = []
+            assert feat_distiller in ['cwd', 'fgd', 'pkd', 'mgd', 'mimic']
+            assert feat_distill_place in ['backbone_feats', 'neck_feats']
+            self.feat_distill_place = feat_distill_place
             self.t_channel_list = [
-                int(c * teacher_width_mult) for c in neck_out_channels
+                int(c * teacher_width_mult) for c in feat_out_channels
             ]
             self.s_channel_list = [
-                int(c * student_width_mult) for c in neck_out_channels
+                int(c * student_width_mult) for c in feat_out_channels
             ]
-            for i in range(len(neck_out_channels)):
+            self.distill_feat_loss_modules = []
+            for i in range(len(feat_out_channels)):
                 if feat_distiller == 'cwd':
                     feat_loss_module = CWDFeatureLoss(
                         student_channels=self.s_channel_list[i],
@@ -262,30 +261,28 @@ class DistillPPYOLOELoss(nn.Layer):
                         student_channels=self.s_channel_list[i],
                         teacher_channels=self.t_channel_list[i],
                         normalize=True,
-                        resize_stu=False)
+                        resize_stu=True)
                 elif feat_distiller == 'mgd':
                     feat_loss_module = MGDFeatureLoss(
                         student_channels=self.s_channel_list[i],
                         teacher_channels=self.t_channel_list[i],
                         normalize=True,
                         loss_func='ssim')
+                elif feat_distiller == 'mimic':
+                    feat_loss_module = MimicFeatureLoss(
+                        student_channels=self.s_channel_list[i],
+                        teacher_channels=self.t_channel_list[i],
+                        normalize=True)
                 else:
                     raise ValueError
                 self.distill_feat_loss_modules.append(feat_loss_module)
 
-    def bbox_loss(self, s_bbox, t_bbox, weight_targets=None):
-        # [x,y,w,h]
-        if weight_targets is not None:
-            loss_bbox = paddle.sum(
-                self.loss_bbox(s_bbox, t_bbox) * weight_targets)
-            avg_factor = weight_targets.sum()
-            loss_bbox = loss_bbox / avg_factor
-        else:
-            loss_bbox = paddle.mean(self.loss_bbox(s_bbox, t_bbox))
-        return loss_bbox
-
-    def quality_focal_loss(self, pred_logits, soft_target_logits, beta=2.0, \
-            use_sigmoid=True, label_weights=None, num_total_pos=None, pos_mask=None):
+    def quality_focal_loss(self,
+                           pred_logits,
+                           soft_target_logits,
+                           beta=2.0,
+                           use_sigmoid=False,
+                           num_total_pos=None):
         if use_sigmoid:
             func = F.binary_cross_entropy_with_logits
             soft_target = F.sigmoid(soft_target_logits)
@@ -300,60 +297,49 @@ class DistillPPYOLOELoss(nn.Layer):
         scale_factor = pred_sigmoid - soft_target
         loss = func(
             preds, soft_target, reduction='none') * scale_factor.abs().pow(beta)
-        loss = loss
-        if pos_mask is not None:
-            loss *= pos_mask
-
         loss = loss.sum(1)
-        if label_weights is not None:
-            loss = loss * label_weights
+
         if num_total_pos is not None:
             loss = loss.sum() / num_total_pos
         else:
             loss = loss.mean()
         return loss
 
-    def distribution_focal_loss(self, pred_corners, target_corners,
-                                weight_targets):
-        target_corners_label = paddle.nn.functional.softmax(
-            target_corners, axis=-1)
-        loss_dfl = paddle.nn.functional.cross_entropy(
+    def bbox_loss(self, s_bbox, t_bbox, weight_targets=None):
+        # [x,y,w,h]
+        if weight_targets is not None:
+            loss = paddle.sum(self.loss_bbox(s_bbox, t_bbox) * weight_targets)
+            avg_factor = weight_targets.sum()
+            loss = loss / avg_factor
+        else:
+            loss = paddle.mean(self.loss_bbox(s_bbox, t_bbox))
+        return loss
+
+    def distribution_focal_loss(self,
+                                pred_corners,
+                                target_corners,
+                                weight_targets=None):
+        target_corners_label = F.softmax(target_corners, axis=-1)
+        loss_dfl = F.cross_entropy(
             pred_corners,
             target_corners_label,
             soft_label=True,
             reduction='none')
         loss_dfl = loss_dfl.sum(1)
+
         if weight_targets is not None:
             loss_dfl = loss_dfl * (weight_targets.expand([-1, 4]).reshape([-1]))
             loss_dfl = loss_dfl.sum(-1) / weight_targets.sum()
         else:
             loss_dfl = loss_dfl.mean(-1)
-        loss_dfl = loss_dfl / 4.0  # 4 direction
-        return loss_dfl
+        return loss_dfl / 4.0  # 4 direction
 
     def forward(self, teacher_model, student_model):
+        teacher_distill_pairs = teacher_model.yolo_head.distill_pairs
+        student_distill_pairs = student_model.yolo_head.distill_pairs
         if self.logits_distill and self.loss_weight_logits > 0:
-            teacher_distill_pairs = teacher_model.yolo_head.distill_pairs
-            student_distill_pairs = student_model.yolo_head.distill_pairs
             distill_bbox_loss, distill_dfl_loss, distill_cls_loss = [], [], []
-            distill_bbox_loss.append(
-                self.bbox_loss(student_distill_pairs['pred_bboxes_pos'],
-                                teacher_distill_pairs['pred_bboxes_pos'].detach(),
-                                weight_targets=student_distill_pairs['bbox_weight']
-                    ) if 'pred_bboxes_pos' in student_distill_pairs and \
-                        'pred_bboxes_pos' in teacher_distill_pairs and \
-                            'bbox_weight' in student_distill_pairs
-                    else student_distill_pairs['null_loss']
-                )
-            distill_dfl_loss.append(self.distribution_focal_loss(
-                        student_distill_pairs['pred_dist_pos'].reshape((-1, student_distill_pairs['pred_dist_pos'].shape[-1])),
-                        teacher_distill_pairs['pred_dist_pos'].detach().reshape((-1, teacher_distill_pairs['pred_dist_pos'].shape[-1])), \
-                        weight_targets=student_distill_pairs['bbox_weight']
-                    ) if 'pred_dist_pos' in student_distill_pairs and \
-                        'pred_dist_pos' in teacher_distill_pairs and \
-                            'bbox_weight' in student_distill_pairs
-                    else student_distill_pairs['null_loss']
-                )
+
             distill_cls_loss.append(
                 self.quality_focal_loss(
                     student_distill_pairs['pred_cls_scores'].reshape(
@@ -364,27 +350,48 @@ class DistillPPYOLOELoss(nn.Layer):
                          )),
                     num_total_pos=student_distill_pairs['pos_num'],
                     use_sigmoid=False))
-            distill_bbox_loss = paddle.add_n(distill_bbox_loss)
+
+            distill_bbox_loss.append(
+                self.bbox_loss(student_distill_pairs['pred_bboxes_pos'],
+                                teacher_distill_pairs['pred_bboxes_pos'].detach(),
+                                weight_targets=student_distill_pairs['bbox_weight']
+                    ) if 'pred_bboxes_pos' in student_distill_pairs and \
+                        'pred_bboxes_pos' in teacher_distill_pairs and \
+                            'bbox_weight' in student_distill_pairs
+                    else paddle.zeros([1]))
+
+            distill_dfl_loss.append(
+                self.distribution_focal_loss(
+                        student_distill_pairs['pred_dist_pos'].reshape((-1, student_distill_pairs['pred_dist_pos'].shape[-1])),
+                        teacher_distill_pairs['pred_dist_pos'].detach().reshape((-1, teacher_distill_pairs['pred_dist_pos'].shape[-1])), \
+                        weight_targets=student_distill_pairs['bbox_weight']
+                    ) if 'pred_dist_pos' in student_distill_pairs and \
+                        'pred_dist_pos' in teacher_distill_pairs and \
+                            'bbox_weight' in student_distill_pairs
+                    else paddle.zeros([1]))
+
             distill_cls_loss = paddle.add_n(distill_cls_loss)
+            distill_bbox_loss = paddle.add_n(distill_bbox_loss)
             distill_dfl_loss = paddle.add_n(distill_dfl_loss)
 
             logits_loss = distill_bbox_loss * self.bbox_loss_weight + distill_cls_loss * self.qfl_loss_weight + distill_dfl_loss * self.dfl_loss_weight
         else:
-            logits_loss = paddle.to_tensor([0])
+            logits_loss = paddle.zeros([1])
 
         if self.feat_distill and self.loss_weight_feat > 0:
             feat_loss_list = []
             inputs = student_model.inputs
-            teacher_fpn_feats = teacher_distill_pairs['emb_feats']
-            student_fpn_feats = student_distill_pairs['emb_feats']
             assert 'gt_bbox' in inputs
+            assert self.feat_distill_place in student_distill_pairs
+            assert self.feat_distill_place in teacher_distill_pairs
+            stu_feats = student_distill_pairs[self.feat_distill_place]
+            tea_feats = teacher_distill_pairs[self.feat_distill_place]
             for i, loss_module in enumerate(self.distill_feat_loss_modules):
                 feat_loss_list.append(
-                    loss_module(student_fpn_feats[i], teacher_fpn_feats[i],
-                                inputs))
+                    loss_module(stu_feats[i], tea_feats[i], inputs))
             feat_loss = paddle.add_n(feat_loss_list)
         else:
-            feat_loss = paddle.to_tensor([0])
+            feat_loss = paddle.zeros([1])
 
         student_model.yolo_head.distill_pairs.clear()
         teacher_model.yolo_head.distill_pairs.clear()
@@ -714,23 +721,7 @@ class PKDFeatureLoss(nn.Layer):
         self.loss_weight = loss_weight
         self.resize_stu = resize_stu
 
-        kaiming_init = parameter_init("kaiming")
-        if student_channels != teacher_channels:
-            self.align = nn.Conv2D(
-                student_channels,
-                teacher_channels,
-                kernel_size=1,
-                stride=1,
-                padding=0,
-                weight_attr=kaiming_init)
-        else:
-            self.align = None
-
     def forward(self, stu_feature, tea_feature, inputs):
-        if self.align is not None:
-            stu_feature = self.align(stu_feature)
-
-        loss = 0.
         size_s, size_t = stu_feature.shape[2:], tea_feature.shape[2:]
         if size_s[0] != size_t[0]:
             if self.resize_stu:
@@ -742,14 +733,44 @@ class PKDFeatureLoss(nn.Layer):
         assert stu_feature.shape == tea_feature.shape
 
         if self.normalize:
-            norm_stu_feature = feature_norm(stu_feature)
-            norm_tea_feature = feature_norm(tea_feature)
+            stu_feature = feature_norm(stu_feature)
+            tea_feature = feature_norm(tea_feature)
 
-        # First conduct feature normalization and then calculate the
-        # MSE loss. Methematically, it is equivalent to firstly calculate
-        # the Pearson Correlation Coefficient (r) between two feature
-        # vectors, and then use 1-r as the new feature imitation loss.
-        loss += F.mse_loss(norm_stu_feature, norm_tea_feature) / 2
+        loss = F.mse_loss(stu_feature, tea_feature) / 2
+        return loss * self.loss_weight
+
+
+@register
+class MimicFeatureLoss(nn.Layer):
+    def __init__(self,
+                 student_channels=256,
+                 teacher_channels=256,
+                 normalize=True,
+                 loss_weight=1.0):
+        super(MimicFeatureLoss, self).__init__()
+        self.normalize = normalize
+        self.loss_weight = loss_weight
+        self.mse_loss = nn.MSELoss()
+
+        if student_channels != teacher_channels:
+            self.align = nn.Conv2D(
+                student_channels,
+                teacher_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0)
+        else:
+            self.align = None
+
+    def forward(self, stu_feature, tea_feature, inputs):
+        if self.align is not None:
+            stu_feature = self.align(stu_feature)
+
+        if self.normalize:
+            stu_feature = feature_norm(stu_feature)
+            tea_feature = feature_norm(tea_feature)
+
+        loss = self.mse_loss(stu_feature, tea_feature)
         return loss * self.loss_weight
 
 
