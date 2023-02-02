@@ -105,7 +105,7 @@ void PrintBenchmarkLog(std::vector<double> det_time, int img_num) {
   LOG(INFO) << "input_shape: "
             << "dynamic shape";
   LOG(INFO) << "----------------------- Model info -----------------------";
-  FLAGS_model_dir.erase(FLAGS_model_dir.find_last_not_of("/") + 1);
+  FLAGS_model_dir.erase(FLAGS_model_dir.find_last_not_of(OS_PATH_SEP) + 1);
   LOG(INFO) << "model_name: " << FLAGS_model_dir;
   LOG(INFO) << "----------------------- Perf info ------------------------";
   LOG(INFO) << "Total number of predicted data: " << img_num
@@ -122,7 +122,7 @@ void PrintKptsBenchmarkLog(std::vector<double> det_time, int img_num) {
   LOG(INFO) << "batch_size_keypoint: " << FLAGS_batch_size_keypoint;
   LOG(INFO) << "----------------------- Model info -----------------------";
   FLAGS_model_dir_keypoint.erase(
-      FLAGS_model_dir_keypoint.find_last_not_of("/") + 1);
+      FLAGS_model_dir_keypoint.find_last_not_of(OS_PATH_SEP) + 1);
   LOG(INFO) << "keypoint_model_name: " << FLAGS_model_dir_keypoint;
   LOG(INFO) << "----------------------- Perf info ------------------------";
   LOG(INFO) << "Total number of predicted data: " << img_num
@@ -476,7 +476,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
         }
         std::string kpts_savepath =
             output_path + "keypoint_" +
-            image_file_path.substr(image_file_path.find_last_of('/') + 1);
+            image_file_path.substr(image_file_path.find_last_of(OS_PATH_SEP) + 1);
         cv::Mat kpts_vis_img =
             VisualizeKptsResult(im, result_kpts, colormap_kpts);
         cv::imwrite(kpts_savepath, kpts_vis_img, compression_params);
@@ -487,7 +487,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
             im, im_result, labels, colormap, is_rbox);
         std::string det_savepath =
             output_path +
-            image_file_path.substr(image_file_path.find_last_of('/') + 1);
+            image_file_path.substr(image_file_path.find_last_of(OS_PATH_SEP) + 1);
         cv::imwrite(det_savepath, vis_img, compression_params);
         printf("Visualized output saved as %s\n", det_savepath.c_str());
       }

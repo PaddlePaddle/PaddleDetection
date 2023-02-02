@@ -6,7 +6,7 @@ TrainReader:
     - Decode: {}
     - RandomDistort: {brightness: [0.5, 1.125, 0.875], random_apply: False}
     - RandomExpand: {fill_value: [127.5, 127.5, 127.5]}
-    - RandomCrop: {allow_no_crop: Fasle}
+    - RandomCrop: {allow_no_crop: False}
     - RandomFlip: {}
     - Resize: {target_size: [300, 300], keep_ratio: False, interp: 1}
     - NormalizeBox: {}

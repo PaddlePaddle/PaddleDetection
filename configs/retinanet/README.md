@@ -13,7 +13,7 @@
 **Notes:**
 
 - The ResNet50-FPN are trained on COCO train2017 with 8 GPUs. Both ResNet101-FPN and ResNet50-FPN with [FGD](../slim/distill/README.md) are trained on COCO train2017 with 4 GPUs.
-- All above models are evaludated on val2017. Box AP=`mAP(IoU=0.5:0.95)`.
+- All above models are evaluated on val2017. Box AP=`mAP(IoU=0.5:0.95)`.
 
 
 ## Citation

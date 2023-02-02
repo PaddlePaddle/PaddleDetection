@@ -18,7 +18,7 @@ import unittest
 
 import paddle
 import paddle.nn.functional as F
-# add python path of PadleDetection to sys.path
+# add python path of PaddleDetection to sys.path
 import os
 import sys
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 4)))

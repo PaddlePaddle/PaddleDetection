@@ -23,7 +23,7 @@ OFA:
                        'backbone.4_1._conv_pw_mv1._conv', 'backbone.4_2._conv_linear._conv',
                        'backbone.4_3._conv_linear._conv']
 
-        # For block-wise search, make layers in each block in the same search sapce
+        # For block-wise search, make layers in each block in the same search space
         same_search_space: [
                 ['backbone.2_1._conv_dw_1._conv', 'backbone.2_1._conv_pw_2._conv',
                  'backbone.2_1._conv_dw_2._conv', 'backbone.2_1._se.conv1', 'backbone.2_1._se.conv2'],
