@@ -16,10 +16,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import paddle
 import copy
+
+import paddle
+import paddle.nn.functional as F
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
+from ..ssod_utils import QFLv2
+from ..losses import GIoULoss
 
 __all__ = ['PPYOLOE', 'PPYOLOEWithAuxHead']
 # PP-YOLOE and PP-YOLOE+ are recommended to use this architecture, especially when use distillation or aux head
@@ -57,6 +61,16 @@ class PPYOLOE(BaseArch):
         self.yolo_head = yolo_head
         self.post_process = post_process
         self.for_mot = for_mot
+
+        # semi-det
+        self.is_teacher = False
+        self.queue_ptr = 0
+        self.queue_size = 100 * 672
+        self.queue_feats = paddle.zeros([self.queue_size, 80])
+        self.queue_probs = paddle.zeros([self.queue_size, 80])
+        self.iter = 0
+
+        # distill
         self.for_distill = for_distill
         self.feat_distill_place = feat_distill_place
         if for_distill:
@@ -85,7 +99,8 @@ class PPYOLOE(BaseArch):
         body_feats = self.backbone(self.inputs)
         neck_feats = self.neck(body_feats, self.for_mot)
 
-        if self.training:
+        self.is_teacher = self.inputs.get('is_teacher', False)  # for semi-det
+        if self.training or self.is_teacher:
             yolo_losses = self.yolo_head(neck_feats, self.inputs)
 
             if self.for_distill:
@@ -120,6 +135,92 @@ class PPYOLOE(BaseArch):
 
     def get_pred(self):
         return self._forward()
+
+    def get_loss_keys(self):
+        return ['loss_cls', 'loss_iou', 'loss_dfl', 'loss_contrast']
+
+    def get_distill_loss(self, student_head_outs, teacher_head_outs,
+                         ratio=0.01):
+        # for semi-det distill
+        # student_probs: already sigmoid
+        student_probs, student_deltas, student_dfl = student_head_outs
+        teacher_probs, teacher_deltas, teacher_dfl = teacher_head_outs
+        nc = student_probs.shape[-1]
+        student_probs = student_probs.reshape([-1, nc])
+        teacher_probs = teacher_probs.reshape([-1, nc])
+        student_deltas = student_deltas.reshape([-1, 4])
+        teacher_deltas = teacher_deltas.reshape([-1, 4])
+        student_dfl = student_dfl.reshape([-1, 4, 17])
+        teacher_dfl = teacher_dfl.reshape([-1, 4, 17])
+
+        with paddle.no_grad():
+            # Region Selection
+            count_num = int(teacher_probs.shape[0] * ratio)
+            max_vals = paddle.max(teacher_probs, 1)
+            sorted_vals, sorted_inds = paddle.topk(max_vals,
+                                                   teacher_probs.shape[0])
+            mask = paddle.zeros_like(max_vals)
+            mask[sorted_inds[:count_num]] = 1.
+            fg_num = sorted_vals[:count_num].sum()
+            b_mask = mask > 0.
+
+            # for contrast loss
+            probs = teacher_probs[b_mask].detach()
+            temperature = 0.2
+            alpha = 0.9
+            if self.iter > 100:
+                A = paddle.exp(
+                    paddle.mm(teacher_probs[b_mask], self.queue_probs.t()) /
+                    temperature)
+                A = A / A.sum(1, keepdim=True)
+                probs = alpha * probs + (1 - alpha) * paddle.mm(
+                    A, self.queue_probs)
+            n = student_probs[b_mask].shape[0]
+        sim = paddle.exp(
+            paddle.mm(student_probs[b_mask], teacher_probs[b_mask].t()) / 0.2)
+        sim_probs = sim / sim.sum(1, keepdim=True)
+        Q = paddle.mm(probs, probs.t())
+        Q.fill_diagonal_(1)
+        pos_mask = (Q >= 0.5).astype('float32')
+        Q = Q * pos_mask
+        Q = Q / Q.sum(1, keepdim=True)
+        self.queue_feats[self.queue_ptr:self.queue_ptr + n, :] = teacher_probs[
+            b_mask].detach()
+        self.queue_probs[self.queue_ptr:self.queue_ptr + n, :] = teacher_probs[
+            b_mask].detach()
+        self.queue_ptr = (self.queue_ptr + n) % self.queue_size
+        self.iter += 1
+        loss_contrast = -(paddle.log(sim_probs + 1e-7) * Q).sum(1)
+        loss_contrast = loss_contrast.mean()
+
+        # loss_cls
+        loss_cls = QFLv2(
+            student_probs, teacher_probs, weight=mask, reduction="sum") / fg_num
+
+        # loss_iou
+        inputs = paddle.concat(
+            (-student_deltas[b_mask][..., :2], student_deltas[b_mask][..., 2:]),
+            axis=-1)
+        targets = paddle.concat(
+            (-teacher_deltas[b_mask][..., :2], teacher_deltas[b_mask][..., 2:]),
+            axis=-1)
+        iou_loss = GIoULoss(reduction='mean')
+        loss_iou = iou_loss(inputs, targets)
+
+        # loss_dfl
+        loss_dfl = F.cross_entropy(
+            student_dfl[b_mask].reshape([-1, 17]),
+            teacher_dfl[b_mask].reshape([-1, 17]),
+            soft_label=True,
+            reduction='mean')
+
+        return {
+            "distill_loss_cls": loss_cls,
+            "distill_loss_iou": loss_iou,
+            "distill_loss_dfl": loss_dfl,
+            "distill_loss_contrast": loss_contrast,
+            "fg_sum": fg_num,
+        }
 
 
 @register

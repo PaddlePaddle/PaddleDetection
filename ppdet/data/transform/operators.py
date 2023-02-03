@@ -1420,10 +1420,38 @@ class RandomCrop(BaseOperator):
                 crop_segms.append(_crop_rle(segm, crop, height, width))
         return crop_segms
 
+    def set_fake_bboxes(self, sample):
+        sample['gt_bbox'] = np.array(
+            [
+                [32, 32, 128, 128],
+                [32, 32, 128, 256],
+                [32, 64, 128, 128],
+                [32, 64, 128, 256],
+                [64, 64, 128, 256],
+                [64, 64, 256, 256],
+                [64, 32, 128, 256],
+                [64, 32, 128, 256],
+                [96, 32, 128, 256],
+                [96, 32, 128, 256],
+            ],
+            dtype=np.float32)
+        sample['gt_class'] = np.array(
+            [[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]], np.int32)
+        return sample
+
     def apply(self, sample, context=None):
-        if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
+        if 'gt_bbox' not in sample:
+            # only used in semi-det as unsup data
+            sample = self.set_fake_bboxes(sample)
+            sample = self.random_crop(sample, fake_bboxes=True)
             return sample
 
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
+            return sample
+        sample = self.random_crop(sample)
+        return sample
+
+    def random_crop(self, sample, fake_bboxes=False):
         h, w = sample['image'].shape[:2]
         gt_bbox = sample['gt_bbox']
 
@@ -1515,6 +1543,9 @@ class RandomCrop(BaseOperator):
                         sample['gt_segm'], valid_ids, axis=0)
 
                 sample['image'] = self._crop_image(sample['image'], crop_box)
+                if fake_bboxes == True:
+                    return sample
+
                 sample['gt_bbox'] = np.take(cropped_box, valid_ids, axis=0)
                 sample['gt_class'] = np.take(
                     sample['gt_class'], valid_ids, axis=0)
