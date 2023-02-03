@@ -2,7 +2,7 @@ _BASE_: [
   '../../ppyoloe/ppyoloe_plus_crn_s_80e_coco.yml',
   '../_base_/coco_detection_percent_10.yml',
 ]
-log_iter: 1
+log_iter: 50
 snapshot_epoch: 5
 weights: output/denseteacher_ppyoloe_plus_crn_s_coco_semi010/model_final
 
@@ -30,7 +30,7 @@ DenseTeacher:
   train_cfg:
     sup_weight: 1.0
     unsup_weight: 1.0
-    loss_weight: {distill_loss_cls: 1.0, distill_loss_iou: 2.5, distill_loss_dfl: 0.5, distill_loss_contrast: 0.1}
+    loss_weight: {distill_loss_cls: 1.0, distill_loss_iou: 2.5, distill_loss_dfl: 0., distill_loss_contrast: 0.1}
     concat_sup_data: True
     suppress: linear
     ratio: 0.01
@@ -41,7 +41,7 @@ DenseTeacher:
 
 ### reader config
 batch_size: &batch_size 8
-worker_num: 0 #2
+worker_num: 2
 SemiTrainReader:
   sample_transforms:
     - Decode: {}
@@ -62,7 +62,7 @@ SemiTrainReader:
   sup_batch_transforms:
     - BatchRandomResize: {target_size: [640], random_size: True, random_interp: True, keep_ratio: False}
     - Permute: {}
-    - PadGT: {} #
+    - PadGT: {}
   unsup_batch_transforms:
     - BatchRandomResize: {target_size: [640], random_size: True, random_interp: True, keep_ratio: False}
     - Permute: {}

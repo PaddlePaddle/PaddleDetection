@@ -150,8 +150,8 @@ class PPYOLOE(BaseArch):
         teacher_probs = teacher_probs.reshape([-1, nc])
         student_deltas = student_deltas.reshape([-1, 4])
         teacher_deltas = teacher_deltas.reshape([-1, 4])
-        student_dfl = student_dfl.reshape([-1, 4, 17])
-        teacher_dfl = teacher_dfl.reshape([-1, 4, 17])
+        student_dfl = student_dfl.reshape([-1, 4, self.yolo_head.reg_channels])
+        teacher_dfl = teacher_dfl.reshape([-1, 4, self.yolo_head.reg_channels])
 
         with paddle.no_grad():
             # Region Selection
@@ -200,17 +200,17 @@ class PPYOLOE(BaseArch):
         # loss_iou
         inputs = paddle.concat(
             (-student_deltas[b_mask][..., :2], student_deltas[b_mask][..., 2:]),
-            axis=-1)
+            -1)
         targets = paddle.concat(
             (-teacher_deltas[b_mask][..., :2], teacher_deltas[b_mask][..., 2:]),
-            axis=-1)
+            -1)
         iou_loss = GIoULoss(reduction='mean')
         loss_iou = iou_loss(inputs, targets)
 
         # loss_dfl
         loss_dfl = F.cross_entropy(
-            student_dfl[b_mask].reshape([-1, 17]),
-            teacher_dfl[b_mask].reshape([-1, 17]),
+            student_dfl[b_mask].reshape([-1, self.yolo_head.reg_channels]),
+            teacher_dfl[b_mask].reshape([-1, self.yolo_head.reg_channels]),
             soft_label=True,
             reduction='mean')
 

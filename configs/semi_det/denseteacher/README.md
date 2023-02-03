@@ -2,7 +2,7 @@
 
 # Dense Teacher: Dense Pseudo-Labels for Semi-supervised Object Detection
 
-## 模型库
+## FCOS模型库
 
 |      模型       |  监督数据比例 |        Sup Baseline     |    Sup Epochs (Iters)   |  Sup mAP<sup>val<br>0.5:0.95 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
 | :------------: | :---------: | :---------------------: | :---------------------: |:---------------------------: |:----------------------------: | :------------------: |:--------: |:----------: |
@@ -32,6 +32,13 @@
     num_stages: 4
     lr_mult_list: [0.05, 0.05, 0.1, 0.15]
  ```
+
+
+## PPYOLOE+ 模型库
+
+|      模型       |  监督数据比例 |        Sup Baseline     |    Sup Epochs (Iters)   |  Sup mAP<sup>val<br>0.5:0.95 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
+| :------------: | :---------: | :---------------------: | :---------------------: |:---------------------------: |:----------------------------: | :------------------: |:--------: |:----------: |
+| DenseTeacher-PPYOLOE+_s | 10% |   [sup_config](../baseline/ppyoloe_plus_crn_s_80e_coco_sup010.yml) | 80 (14480) | 35.3 |  **37.5**  | 200 (36200)  | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco_sup010.pdparams) | [config](./denseteacher_ppyoloe_plus_crn_s_coco_semi010.yml) |
 
 
 ## 使用说明
