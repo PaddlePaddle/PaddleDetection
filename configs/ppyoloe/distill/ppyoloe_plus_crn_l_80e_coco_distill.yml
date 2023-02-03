@@ -1,0 +1,19 @@
+_BASE_: [
+  '../ppyoloe_plus_crn_l_80e_coco.yml',
+]
+for_distill: True
+architecture: PPYOLOE
+PPYOLOE:
+  backbone: CSPResNet
+  neck: CustomCSPPAN
+  yolo_head: PPYOLOEHead
+  post_process: ~
+
+
+log_iter: 100
+snapshot_epoch: 5
+weights: output/ppyoloe_plus_crn_l_80e_coco/model_final
+
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_l_obj365_pretrained.pdparams
+depth_mult: 1.0
+width_mult: 1.0

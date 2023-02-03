@@ -22,7 +22,7 @@ from ..post_process import JDEBBoxPostProcess
 
 __all__ = ['YOLOv3']
 # YOLOv3,PP-YOLO,PP-YOLOv2,PP-YOLOE,PP-YOLOE+ use the same architecture as YOLOv3
-# PP-YOLOE and PP-YOLOE+ are recommended to use PPYOLOE architecture in ppyoloe.py
+# PP-YOLOE and PP-YOLOE+ are recommended to use PPYOLOE architecture in ppyoloe.py, especially when use distillation or aux head
 
 
 @register

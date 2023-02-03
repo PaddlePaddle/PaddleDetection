@@ -53,7 +53,7 @@ class ESEAttn(nn.Layer):
 class PPYOLOEHead(nn.Layer):
     __shared__ = [
         'num_classes', 'eval_size', 'trt', 'exclude_nms',
-        'exclude_post_process', 'use_shared_conv'
+        'exclude_post_process', 'use_shared_conv', 'for_distill'
     ]
     __inject__ = ['static_assigner', 'assigner', 'nms']
 
@@ -81,7 +81,8 @@ class PPYOLOEHead(nn.Layer):
                  attn_conv='convbn',
                  exclude_nms=False,
                  exclude_post_process=False,
-                 use_shared_conv=True):
+                 use_shared_conv=True,
+                 for_distill=False):
         super(PPYOLOEHead, self).__init__()
         assert len(in_channels) > 0, "len(in_channels) should > 0"
         self.in_channels = in_channels
@@ -110,6 +111,7 @@ class PPYOLOEHead(nn.Layer):
         self.exclude_nms = exclude_nms
         self.exclude_post_process = exclude_post_process
         self.use_shared_conv = use_shared_conv
+        self.for_distill = for_distill
 
         # stem
         self.stem_cls = nn.LayerList()
@@ -134,6 +136,9 @@ class PPYOLOEHead(nn.Layer):
         self.proj_conv = nn.Conv2D(self.reg_channels, 1, 1, bias_attr=False)
         self.proj_conv.skip_quant = True
         self._init_weights()
+
+        if self.for_distill:
+            self.distill_pairs = {}
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -321,6 +326,10 @@ class PPYOLOEHead(nn.Layer):
             loss_dfl = self._df_loss(pred_dist_pos, assigned_ltrb_pos,
                                      self.reg_range[0]) * bbox_weight
             loss_dfl = loss_dfl.sum() / assigned_scores_sum
+            if self.for_distill:
+                self.distill_pairs['pred_bboxes_pos'] = pred_bboxes_pos
+                self.distill_pairs['pred_dist_pos'] = pred_dist_pos
+                self.distill_pairs['bbox_weight'] = bbox_weight
         else:
             loss_l1 = paddle.zeros([1])
             loss_iou = paddle.zeros([1])
@@ -343,7 +352,7 @@ class PPYOLOEHead(nn.Layer):
         pad_gt_mask = gt_meta['pad_gt_mask']
         # label assignment
         if gt_meta['epoch_id'] < self.static_assigner_epoch:
-            assigned_labels, assigned_bboxes, assigned_scores = \
+            assigned_labels, assigned_bboxes, assigned_scores, mask_positive = \
                 self.static_assigner(
                     anchors,
                     num_anchors_list,
@@ -356,7 +365,7 @@ class PPYOLOEHead(nn.Layer):
         else:
             if self.sm_use:
                 # only used in smalldet of PPYOLOE-SOD model
-                assigned_labels, assigned_bboxes, assigned_scores = \
+                assigned_labels, assigned_bboxes, assigned_scores, mask_positive = \
                     self.assigner(
                     pred_scores.detach(),
                     pred_bboxes.detach() * stride_tensor,
@@ -368,18 +377,28 @@ class PPYOLOEHead(nn.Layer):
                     bg_index=self.num_classes)
             else:
                 if aux_pred is None:
-                    assigned_labels, assigned_bboxes, assigned_scores = \
-                        self.assigner(
-                        pred_scores.detach(),
-                        pred_bboxes.detach() * stride_tensor,
-                        anchor_points,
-                        num_anchors_list,
-                        gt_labels,
-                        gt_bboxes,
-                        pad_gt_mask,
-                        bg_index=self.num_classes)
+                    if not hasattr(self, "assigned_labels"):
+                        assigned_labels, assigned_bboxes, assigned_scores, mask_positive = \
+                            self.assigner(
+                            pred_scores.detach(),
+                            pred_bboxes.detach() * stride_tensor,
+                            anchor_points,
+                            num_anchors_list,
+                            gt_labels,
+                            gt_bboxes,
+                            pad_gt_mask,
+                            bg_index=self.num_classes)
+                        self.assigned_labels = assigned_labels
+                        self.assigned_bboxes = assigned_bboxes
+                        self.assigned_scores = assigned_scores
+                        self.mask_positive = mask_positive
+                    else:
+                        assigned_labels = self.assigned_labels
+                        assigned_bboxes = self.assigned_bboxes
+                        assigned_scores = self.assigned_scores
+                        mask_positive = self.mask_positive
                 else:
-                    assigned_labels, assigned_bboxes, assigned_scores = \
+                    assigned_labels, assigned_bboxes, assigned_scores, mask_positive = \
                             self.assigner(
                             pred_scores_aux.detach(),
                             pred_bboxes_aux.detach() * stride_tensor,
@@ -395,12 +414,14 @@ class PPYOLOEHead(nn.Layer):
 
         assign_out_dict = self.get_loss_from_assign(
             pred_scores, pred_distri, pred_bboxes, anchor_points_s,
-            assigned_labels, assigned_bboxes, assigned_scores, alpha_l)
+            assigned_labels, assigned_bboxes, assigned_scores, mask_positive,
+            alpha_l)
 
         if aux_pred is not None:
             assign_out_dict_aux = self.get_loss_from_assign(
                 aux_pred[0], aux_pred[1], pred_bboxes_aux, anchor_points_s,
-                assigned_labels, assigned_bboxes, assigned_scores, alpha_l)
+                assigned_labels, assigned_bboxes, assigned_scores,
+                mask_positive, alpha_l)
             loss = {}
             for key in assign_out_dict.keys():
                 loss[key] = assign_out_dict[key] + assign_out_dict_aux[key]
@@ -411,7 +432,7 @@ class PPYOLOEHead(nn.Layer):
 
     def get_loss_from_assign(self, pred_scores, pred_distri, pred_bboxes,
                              anchor_points_s, assigned_labels, assigned_bboxes,
-                             assigned_scores, alpha_l):
+                             assigned_scores, mask_positive, alpha_l):
         # cls loss
         if self.use_varifocal_loss:
             one_hot_label = F.one_hot(assigned_labels,
@@ -427,6 +448,15 @@ class PPYOLOEHead(nn.Layer):
             assigned_scores_sum /= paddle.distributed.get_world_size()
         assigned_scores_sum = paddle.clip(assigned_scores_sum, min=1.)
         loss_cls /= assigned_scores_sum
+
+        if self.for_distill:
+            self.distill_pairs['pred_cls_scores'] = pred_scores
+            self.distill_pairs['pos_num'] = assigned_scores_sum
+            self.distill_pairs['assigned_scores'] = assigned_scores
+            self.distill_pairs['mask_positive'] = mask_positive
+            one_hot_label = F.one_hot(assigned_labels,
+                                      self.num_classes + 1)[..., :-1]
+            self.distill_pairs['target_labels'] = one_hot_label
 
         loss_l1, loss_iou, loss_dfl = \
             self._bbox_loss(pred_distri, pred_bboxes, anchor_points_s,
@@ -450,7 +480,8 @@ class PPYOLOEHead(nn.Layer):
         pred_bboxes *= stride_tensor
         if self.exclude_post_process:
             return paddle.concat(
-                [pred_bboxes, pred_scores.transpose([0, 2, 1])], axis=-1), None
+                [pred_bboxes, pred_scores.transpose([0, 2, 1])],
+                axis=-1), None, None
         else:
             # scale bbox to origin
             scale_y, scale_x = paddle.split(scale_factor, 2, axis=-1)
@@ -460,9 +491,10 @@ class PPYOLOEHead(nn.Layer):
             pred_bboxes /= scale_factor
             if self.exclude_nms:
                 # `exclude_nms=True` just use in benchmark
-                return pred_bboxes, pred_scores
+                return pred_bboxes, pred_scores, None
             else:
-                bbox_pred, bbox_num, before_nms_indexes = self.nms(pred_bboxes, pred_scores)
+                bbox_pred, bbox_num, before_nms_indexes = self.nms(pred_bboxes,
+                                                                   pred_scores)
                 return bbox_pred, bbox_num, before_nms_indexes
 
 
