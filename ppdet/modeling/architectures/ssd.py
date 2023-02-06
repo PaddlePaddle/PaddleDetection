@@ -75,9 +75,9 @@ class SSD(BaseArch):
                                  self.inputs['gt_class'])
         else:
             preds, anchors = self.ssd_head(body_feats, self.inputs['image'])
-            bbox, bbox_num = self.post_process(preds, anchors,
-                                               self.inputs['im_shape'],
-                                               self.inputs['scale_factor'])
+            bbox, bbox_num, before_nms_indexes = self.post_process(
+                preds, anchors, self.inputs['im_shape'],
+                self.inputs['scale_factor'])
             return bbox, bbox_num
 
     def get_loss(self, ):
