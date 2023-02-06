@@ -21,6 +21,9 @@
 | PP-YOLOE+_s       |        5%       |    80 (7200)      |       32.8       | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco_sup005.pdparams) | [config](ppyoloe_plus_crn_s_80e_coco_sup005.yml) |
 | PP-YOLOE+_s       |        10%      |    80 (14480)     |       35.3       | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco_sup010.pdparams) | [config](ppyoloe_plus_crn_s_80e_coco_sup010.yml) |
 | PP-YOLOE+_s       |        full     |    80 (146560)    |       43.7       | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco.pdparams) | [config](../../ppyoloe/ppyoloe_plus_crn_s_80e_coco.yml) |
+| PP-YOLOE+_l       |        5%       |    80 (7200)      |       42.9       | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco_sup005.pdparams) | [config](ppyoloe_plus_crn_l_80e_coco_sup005.yml) |
+| PP-YOLOE+_l       |        10%      |    80 (14480)     |       45.7       | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco_sup010.pdparams) | [config](ppyoloe_plus_crn_l_80e_coco_sup010.yml) |
+| PP-YOLOE+_l       |        full     |    80 (146560)    |       49.8       | [download](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams) | [config](../../ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml) |
 
 **注意:**
   - 以上模型训练默认使用8 GPUs，总batch_size默认为64，默认初始学习率为0.001。如果改动了总batch_size，请按线性比例相应地调整学习率。
