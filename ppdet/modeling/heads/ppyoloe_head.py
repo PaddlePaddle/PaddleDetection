@@ -413,11 +413,13 @@ class PPYOLOEHead(nn.Layer):
                             gt_bboxes,
                             pad_gt_mask,
                             bg_index=self.num_classes)
-                        self.assigned_labels = assigned_labels
-                        self.assigned_bboxes = assigned_bboxes
-                        self.assigned_scores = assigned_scores
-                        self.mask_positive = mask_positive
+                        if self.for_distill:
+                            self.assigned_labels = assigned_labels
+                            self.assigned_bboxes = assigned_bboxes
+                            self.assigned_scores = assigned_scores
+                            self.mask_positive = mask_positive
                     else:
+                        # only used in distill
                         assigned_labels = self.assigned_labels
                         assigned_bboxes = self.assigned_bboxes
                         assigned_scores = self.assigned_scores
