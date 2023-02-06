@@ -21,6 +21,8 @@ import paddle
 import weakref
 from copy import deepcopy
 
+from .utlis import get_bn_running_state_names
+
 __all__ = ['ModelEMA', 'SimpleModelEMA']
 
 
@@ -49,7 +51,8 @@ class ModelEMA(object):
                  decay=0.9998,
                  ema_decay_type='threshold',
                  cycle_epoch=-1,
-                 ema_black_list=None):
+                 ema_black_list=None,
+                 ema_filter_no_grad=None):
         self.step = 0
         self.epoch = 0
         self.decay = decay
@@ -63,6 +66,12 @@ class ModelEMA(object):
                 self.state_dict[k] = v
             else:
                 self.state_dict[k] = paddle.zeros_like(v)
+
+        bn_states_names = get_bn_running_state_names(model)
+        if ema_filter_no_grad:
+            for n, p in model.named_parameters():
+                if p.stop_gradient == True and n not in bn_states_names:
+                    self.ema_black_list.append(n)
 
         self._model_state = {
             k: weakref.ref(p)
