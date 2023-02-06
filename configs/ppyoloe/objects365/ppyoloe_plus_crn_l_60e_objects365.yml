@@ -1,9 +1,9 @@
 _BASE_: [
-  '../datasets/objects365_detection.yml',
-  '../runtime.yml',
-  './_base_/optimizer_60e.yml',
-  './_base_/ppyoloe_plus_crn.yml',
-  './_base_/ppyoloe_plus_reader.yml',
+  '../../datasets/objects365_detection.yml',
+  '../../runtime.yml',
+  '../_base_/optimizer_60e.yml',
+  '../_base_/ppyoloe_plus_crn.yml',
+  '../_base_/ppyoloe_plus_reader.yml',
 ]
 
 log_iter: 100

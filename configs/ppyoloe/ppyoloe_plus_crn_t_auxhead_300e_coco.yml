@@ -3,7 +3,7 @@ _BASE_: [
   '../runtime.yml',
   './_base_/optimizer_300e.yml',
   './_base_/ppyoloe_plus_crn_tiny_auxhead.yml',
-  './_base_/ppyoloe_plus_tiny_reader.yml',
+  './_base_/ppyoloe_plus_reader.yml', # 640
 ]
 
 log_iter: 100
