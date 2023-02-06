@@ -514,7 +514,7 @@ class MultiClassNMS(object):
                  nms_threshold=.5,
                  normalized=True,
                  nms_eta=1.0,
-                 return_index=False,
+                 return_index=True,
                  return_rois_num=True,
                  trt=False):
         super(MultiClassNMS, self).__init__()

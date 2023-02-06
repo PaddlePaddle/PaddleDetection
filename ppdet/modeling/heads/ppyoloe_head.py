@@ -493,9 +493,9 @@ class PPYOLOEHead(nn.Layer):
                 # `exclude_nms=True` just use in benchmark
                 return pred_bboxes, pred_scores, None
             else:
-                bbox_pred, bbox_num, before_nms_indexes = self.nms(pred_bboxes,
+                bbox_pred, bbox_num, nms_keep_idx = self.nms(pred_bboxes,
                                                                    pred_scores)
-                return bbox_pred, bbox_num, before_nms_indexes
+                return bbox_pred, bbox_num, nms_keep_idx
 
 
 def get_activation(name="LeakyReLU"):

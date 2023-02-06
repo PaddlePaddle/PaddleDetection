@@ -39,3 +39,5 @@ BBoxPostProcess:
     score_threshold: 0.01
     nms_threshold: 0.45
     nms_top_k: 1000
+    return_index: False # yolov3_darknet cpp infer fail when set return nms index True
+    #Todo fix cpp infer bug

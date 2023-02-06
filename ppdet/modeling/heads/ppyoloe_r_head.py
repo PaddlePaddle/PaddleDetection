@@ -420,6 +420,6 @@ class PPYOLOERHead(nn.Layer):
         pred_bboxes /= scale_factor
         if self.export_onnx:
             return pred_bboxes, pred_scores, None
-        bbox_pred, bbox_num, before_nms_indexes = self.nms(pred_bboxes,
+        bbox_pred, bbox_num, nms_keep_idx = self.nms(pred_bboxes,
                                                            pred_scores)
-        return bbox_pred, bbox_num, before_nms_indexes
+        return bbox_pred, bbox_num, nms_keep_idx
