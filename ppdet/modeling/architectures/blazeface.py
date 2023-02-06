@@ -74,9 +74,9 @@ class BlazeFace(BaseArch):
                                    self.inputs['gt_class'])
         else:
             preds, anchors = self.blaze_head(neck_feats, self.inputs['image'])
-            bbox, bbox_num = self.post_process(preds, anchors,
-                                               self.inputs['im_shape'],
-                                               self.inputs['scale_factor'])
+            bbox, bbox_num, before_nms_indexes = self.post_process(
+                preds, anchors, self.inputs['im_shape'],
+                self.inputs['scale_factor'])
             return bbox, bbox_num
 
     def get_loss(self, ):
