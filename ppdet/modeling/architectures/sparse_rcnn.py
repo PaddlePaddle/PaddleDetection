@@ -60,10 +60,10 @@ class SparseRCNN(BaseArch):
         head_outs = self.head(fpn_feats, self.inputs["img_whwh"])
 
         if not self.training:
-            bboxes = self.postprocess(
+            bbox_pred, bbox_num = self.postprocess(
                 head_outs["pred_logits"], head_outs["pred_boxes"],
-                self.inputs["scale_factor_wh"], self.inputs["img_whwh"])
-            return bboxes
+                self.inputs["scale_factor_whwh"], self.inputs["ori_shape"])
+            return bbox_pred, bbox_num
         else:
             return head_outs
 

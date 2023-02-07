@@ -3,17 +3,19 @@ worker_num: 4
 TrainReader:
   sample_transforms:
   - Decode: {}
-  - RandomResize: {target_size: [[480, 1333], [512, 1333], [544, 1333], [576, 1333], [608, 1333], [640, 1333], [672, 1333], [704, 1333], [736, 1333], [768, 1333], [800, 1333]], keep_ratio: true, interp: 1}
+  - Poly2Mask: {del_poly: True}
+  - Resize: {interp: 1, target_size: [800, 1333], keep_ratio: True}
   - RandomFlip: {prob: 0.5}
   - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
-  - Gt2SparseTarget: {use_padding_shape: True}
+  - Gt2SparseTarget: {}
   batch_size: 4
   shuffle: true
   drop_last: true
   collate_batch: false
+  use_shared_memory: true
 
 EvalReader:
   sample_transforms:
@@ -23,7 +25,7 @@ EvalReader:
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
-  - Gt2SparseTarget: {use_padding_shape: True}
+  - Gt2SparseTarget: {}
   batch_size: 1
   shuffle: false
   drop_last: false
@@ -36,6 +38,6 @@ TestReader:
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
-  - Gt2SparseTarget: {use_padding_shape: True}
+  - Gt2SparseTarget: {}
   batch_size: 1
   shuffle: false

@@ -1,0 +1,12 @@
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/queryinst_r50_fpn.yml',
+  '_base_/queryinst_reader.yml',
+]
+
+log_iter: 50
+find_unused_parameters: true
+
+weights: output/queryinst_r50_fpn_1x_pro100_coco/model_final
