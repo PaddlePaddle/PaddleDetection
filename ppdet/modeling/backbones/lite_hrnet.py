@@ -853,7 +853,15 @@ class LiteHRNet(nn.Layer):
         return nn.Sequential(*modules), in_channels
 
     def forward(self, inputs):
-        x = inputs['image']
+        if 'image' in inputs.keys():
+            x = inputs['image']
+        elif 'images' in inputs.keys():
+            x = inputs["images"]  # [1, 6, 3, 128, 96]
+            # reshape from (batch_size, num_frames,C,H,W) to (batch_size*num_frames,C,H,W)
+            dims = x.shape
+            x = paddle.reshape(x, (dims[0] * dims[1], dims[2], dims[3],
+                                   dims[4]))  # [6, 3, 128, 96]
+
         x = self.stem(x)
         y_list = [x]
         for stage_idx in range(3):
