@@ -391,5 +391,6 @@ class FCOSRHead(nn.Layer):
             ],
             axis=-1).reshape([-1, 1, 8])
         pred_rboxes /= scale_factor
-        bbox_pred, bbox_num, _ = self.nms(pred_rboxes, pred_scores)
-        return bbox_pred, bbox_num
+        bbox_pred, bbox_num, before_nms_indexes = self.nms(pred_rboxes,
+                                                           pred_scores)
+        return bbox_pred, bbox_num, before_nms_indexes

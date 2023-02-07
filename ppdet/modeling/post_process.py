@@ -206,31 +206,6 @@ class MaskPostProcess(object):
         self.export_onnx = export_onnx
         self.assign_on_cpu = assign_on_cpu
 
-    def paste_mask(self, masks, boxes, im_h, im_w):
-        """
-        Paste the mask prediction to the original image.
-        """
-        x0_int, y0_int = 0, 0
-        x1_int, y1_int = im_w, im_h
-        x0, y0, x1, y1 = paddle.split(boxes, 4, axis=1)
-        N = masks.shape[0]
-        img_y = paddle.arange(y0_int, y1_int) + 0.5
-        img_x = paddle.arange(x0_int, x1_int) + 0.5
-
-        img_y = (img_y - y0) / (y1 - y0) * 2 - 1
-        img_x = (img_x - x0) / (x1 - x0) * 2 - 1
-        # img_x, img_y have shapes (N, w), (N, h)
-
-        if self.assign_on_cpu:
-            paddle.set_device('cpu')
-        gx = img_x[:, None, :].expand(
-            [N, paddle.shape(img_y)[1], paddle.shape(img_x)[1]])
-        gy = img_y[:, :, None].expand(
-            [N, paddle.shape(img_y)[1], paddle.shape(img_x)[1]])
-        grid = paddle.stack([gx, gy], axis=3)
-        img_masks = F.grid_sample(masks, grid, align_corners=False)
-        return img_masks[:, 0]
-
     def __call__(self, mask_out, bboxes, bbox_num, origin_shape):
         """
         Decode the mask_out and paste the mask to the origin image.
@@ -253,8 +228,8 @@ class MaskPostProcess(object):
 
         if self.export_onnx:
             h, w = origin_shape[0][0], origin_shape[0][1]
-            mask_onnx = self.paste_mask(mask_out[:, None, :, :], bboxes[:, 2:],
-                                        h, w)
+            mask_onnx = paste_mask(mask_out[:, None, :, :], bboxes[:, 2:], h, w,
+                                   self.assign_on_cpu)
             mask_onnx = mask_onnx >= self.binary_thresh
             pred_result = paddle.cast(mask_onnx, 'int32')
 
@@ -270,9 +245,9 @@ class MaskPostProcess(object):
                 mask_out_i = mask_out[id_start:id_start + bbox_num[i], :, :]
                 im_h = origin_shape[i, 0]
                 im_w = origin_shape[i, 1]
-                bbox_num_i = bbox_num[id_start]
-                pred_mask = self.paste_mask(mask_out_i[:, None, :, :],
-                                            bboxes_i[:, 2:], im_h, im_w)
+                pred_mask = paste_mask(mask_out_i[:, None, :, :],
+                                       bboxes_i[:, 2:], im_h, im_w,
+                                       self.assign_on_cpu)
                 pred_mask = paddle.cast(pred_mask >= self.binary_thresh,
                                         'int32')
                 pred_result[id_start:id_start + bbox_num[i], :im_h, :
@@ -542,89 +517,110 @@ class DETRBBoxPostProcess(object):
 
 @register
 class SparsePostProcess(object):
-    __shared__ = ['num_classes']
+    __shared__ = ['num_classes', 'assign_on_cpu']
 
-    def __init__(self, num_proposals, num_classes=80):
+    def __init__(self,
+                 num_proposals,
+                 num_classes=80,
+                 binary_thresh=0.5,
+                 assign_on_cpu=False):
         super(SparsePostProcess, self).__init__()
         self.num_classes = num_classes
         self.num_proposals = num_proposals
+        self.binary_thresh = binary_thresh
+        self.assign_on_cpu = assign_on_cpu
 
-    def __call__(self, box_cls, box_pred, scale_factor_wh, img_whwh):
-        """
-        Arguments:
-            box_cls (Tensor): tensor of shape (batch_size, num_proposals, K).
-                The tensor predicts the classification probability for each proposal.
-            box_pred (Tensor): tensors of shape (batch_size, num_proposals, 4).
-                The tensor predicts 4-vector (x,y,w,h) box
-                regression values for every proposal
-            scale_factor_wh (Tensor): tensors of shape [batch_size, 2] the scalor of  per img
-            img_whwh (Tensor): tensors of shape [batch_size, 4]
-        Returns:
-            bbox_pred (Tensor): tensors of shape [num_boxes, 6] Each row has 6 values:
-            [label, confidence, xmin, ymin, xmax, ymax]
-            bbox_num (Tensor): tensors of shape [batch_size] the number of RoIs in each image.
-        """
-        assert len(box_cls) == len(scale_factor_wh) == len(img_whwh)
+    def __call__(self, scores, bboxes, scale_factor, ori_shape, masks=None):
+        assert len(scores) == len(bboxes) == \
+               len(ori_shape) == len(scale_factor)
+        device = paddle.device.get_device()
+        batch_size = len(ori_shape)
 
-        img_wh = img_whwh[:, :2]
+        scores = F.sigmoid(scores)
+        has_mask = masks is not None
+        if has_mask:
+            masks = F.sigmoid(masks)
+            masks = masks.reshape([batch_size, -1, *masks.shape[1:]])
 
-        scores = F.sigmoid(box_cls)
-        labels = paddle.arange(0, self.num_classes). \
-            unsqueeze(0).tile([self.num_proposals, 1]).flatten(start_axis=0, stop_axis=1)
+        bbox_pred = []
+        mask_pred = [] if has_mask else None
+        bbox_num = paddle.zeros([batch_size], dtype='int32')
+        for i in range(batch_size):
+            score = scores[i]
+            bbox = bboxes[i]
+            score, indices = score.flatten(0, 1).topk(
+                self.num_proposals, sorted=False)
+            label = indices % self.num_classes
+            if has_mask:
+                mask = masks[i]
+                mask = mask.flatten(0, 1)[indices]
 
-        classes_all = []
-        scores_all = []
-        boxes_all = []
-        for i, (scores_per_image,
-                box_pred_per_image) in enumerate(zip(scores, box_pred)):
+            H, W = ori_shape[i][0], ori_shape[i][1]
+            bbox = bbox[paddle.cast(indices / self.num_classes, indices.dtype)]
+            bbox /= scale_factor[i]
+            bbox[:, 0::2] = paddle.clip(bbox[:, 0::2], 0, W)
+            bbox[:, 1::2] = paddle.clip(bbox[:, 1::2], 0, H)
 
-            scores_per_image, topk_indices = scores_per_image.flatten(
-                0, 1).topk(
-                    self.num_proposals, sorted=False)
-            labels_per_image = paddle.gather(labels, topk_indices, axis=0)
-
-            box_pred_per_image = box_pred_per_image.reshape([-1, 1, 4]).tile(
-                [1, self.num_classes, 1]).reshape([-1, 4])
-            box_pred_per_image = paddle.gather(
-                box_pred_per_image, topk_indices, axis=0)
-
-            classes_all.append(labels_per_image)
-            scores_all.append(scores_per_image)
-            boxes_all.append(box_pred_per_image)
-
-        bbox_num = paddle.zeros([len(scale_factor_wh)], dtype="int32")
-        boxes_final = []
-
-        for i in range(len(scale_factor_wh)):
-            classes = classes_all[i]
-            boxes = boxes_all[i]
-            scores = scores_all[i]
-
-            boxes[:, 0::2] = paddle.clip(
-                boxes[:, 0::2], min=0, max=img_wh[i][0]) / scale_factor_wh[i][0]
-            boxes[:, 1::2] = paddle.clip(
-                boxes[:, 1::2], min=0, max=img_wh[i][1]) / scale_factor_wh[i][1]
-            boxes_w, boxes_h = (boxes[:, 2] - boxes[:, 0]).numpy(), (
-                boxes[:, 3] - boxes[:, 1]).numpy()
-
-            keep = (boxes_w > 1.) & (boxes_h > 1.)
-
-            if (keep.sum() == 0):
-                bboxes = paddle.zeros([1, 6]).astype("float32")
+            keep = ((bbox[:, 2] - bbox[:, 0]).numpy() > 1.) & \
+                   ((bbox[:, 3] - bbox[:, 1]).numpy() > 1.)
+            if keep.sum() == 0:
+                bbox = paddle.zeros([1, 6], dtype='float32')
+                if has_mask:
+                    mask = paddle.zeros([1, H, W], dtype='uint8')
             else:
-                boxes = paddle.to_tensor(boxes.numpy()[keep]).astype("float32")
-                classes = paddle.to_tensor(classes.numpy()[keep]).astype(
-                    "float32").unsqueeze(-1)
-                scores = paddle.to_tensor(scores.numpy()[keep]).astype(
-                    "float32").unsqueeze(-1)
+                label = paddle.to_tensor(label.numpy()[keep]).astype(
+                    'float32').unsqueeze(-1)
+                score = paddle.to_tensor(score.numpy()[keep]).astype(
+                    'float32').unsqueeze(-1)
+                bbox = paddle.to_tensor(bbox.numpy()[keep]).astype('float32')
+                if has_mask:
+                    mask = paddle.to_tensor(mask.numpy()[keep]).astype(
+                        'float32').unsqueeze(1)
+                    mask = paste_mask(mask, bbox, H, W, self.assign_on_cpu)
+                    mask = paddle.cast(mask >= self.binary_thresh, 'uint8')
+                bbox = paddle.concat([label, score, bbox], axis=-1)
 
-                bboxes = paddle.concat([classes, scores, boxes], axis=-1)
+            bbox_num[i] = bbox.shape[0]
+            bbox_pred.append(bbox)
+            if has_mask:
+                mask_pred.append(mask)
 
-            boxes_final.append(bboxes)
-            bbox_num[i] = bboxes.shape[0]
+        bbox_pred = paddle.concat(bbox_pred)
+        mask_pred = paddle.concat(mask_pred) if has_mask else None
 
-        bbox_pred = paddle.concat(boxes_final)
-        return bbox_pred, bbox_num
+        if self.assign_on_cpu:
+            paddle.set_device(device)
+
+        if has_mask:
+            return bbox_pred, bbox_num, mask_pred
+        else:
+            return bbox_pred, bbox_num
+
+
+def paste_mask(masks, boxes, im_h, im_w, assign_on_cpu=False):
+    """
+    Paste the mask prediction to the original image.
+    """
+    x0_int, y0_int = 0, 0
+    x1_int, y1_int = im_w, im_h
+    x0, y0, x1, y1 = paddle.split(boxes, 4, axis=1)
+    N = masks.shape[0]
+    img_y = paddle.arange(y0_int, y1_int) + 0.5
+    img_x = paddle.arange(x0_int, x1_int) + 0.5
+
+    img_y = (img_y - y0) / (y1 - y0) * 2 - 1
+    img_x = (img_x - x0) / (x1 - x0) * 2 - 1
+    # img_x, img_y have shapes (N, w), (N, h)
+
+    if assign_on_cpu:
+        paddle.set_device('cpu')
+    gx = img_x[:, None, :].expand(
+        [N, paddle.shape(img_y)[1], paddle.shape(img_x)[1]])
+    gy = img_y[:, :, None].expand(
+        [N, paddle.shape(img_y)[1], paddle.shape(img_x)[1]])
+    grid = paddle.stack([gx, gy], axis=3)
+    img_masks = F.grid_sample(masks, grid, align_corners=False)
+    return img_masks[:, 0]
 
 
 def multiclass_nms(bboxs, num_classes, match_threshold=0.6, match_metric='iou'):

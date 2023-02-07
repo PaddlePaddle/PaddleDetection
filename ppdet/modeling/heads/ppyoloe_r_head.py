@@ -258,7 +258,7 @@ class PPYOLOERHead(nn.Layer):
         pad_gt_mask = gt_meta['pad_gt_mask']
         # label assignment
         if gt_meta['epoch_id'] < self.static_assigner_epoch:
-            assigned_labels, assigned_bboxes, assigned_scores, _ = \
+            assigned_labels, assigned_bboxes, assigned_scores = \
                 self.static_assigner(
                     anchor_points,
                     stride_tensor,
@@ -271,7 +271,7 @@ class PPYOLOERHead(nn.Layer):
                     pred_bboxes.detach()
                 )
         else:
-            assigned_labels, assigned_bboxes, assigned_scores, _ = \
+            assigned_labels, assigned_bboxes, assigned_scores = \
                 self.assigner(
                 pred_scores.detach(),
                 pred_bboxes.detach(),
