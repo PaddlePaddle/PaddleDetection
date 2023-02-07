@@ -205,19 +205,6 @@ class Keypoint3DMultiFramesDataset(Dataset):
     Args:
         dataset_dir (str): Root path to the dataset.
         image_dir (str): Path to a directory where images are held.
-        anno_path: Relative path to the annotation file.
-        smpl_dir: Path to a directory where 3D keypoints are held.
-        num_joints (int): Keypoint numbers
-        trainsize (list):[w, h] Image target size
-        transform (composed(operators)): A sequence of data transforms.
-        bbox_file (str): Path to a detection bbox file
-            Default: None.
-        use_gt_bbox (bool): Whether to use ground truth bbox
-            Default: True.
-        pixel_std (int): The pixel std of the scale
-            Default: 200.
-        image_thre (float): The threshold to filter the detection box
-            Default: 0.0.
     """
 
     def __init__(
