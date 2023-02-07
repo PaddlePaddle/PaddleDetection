@@ -85,12 +85,10 @@ class FCOS(BaseArch):
     def get_loss_keys(self):
         return ['loss_cls', 'loss_box', 'loss_quality']
 
-    def get_distill_loss(self,
-                         fcos_head_outs,
-                         teacher_fcos_head_outs,
-                         ratio=0.01):
-        student_logits, student_deltas, student_quality = fcos_head_outs
-        teacher_logits, teacher_deltas, teacher_quality = teacher_fcos_head_outs
+    def get_ssod_distill_loss(self, student_head_outs, teacher_head_outs,
+                              train_cfg):
+        student_logits, student_deltas, student_quality = student_head_outs
+        teacher_logits, teacher_deltas, teacher_quality = teacher_head_outs
         nc = student_logits[0].shape[1]
 
         student_logits = paddle.concat(
@@ -132,6 +130,7 @@ class FCOS(BaseArch):
             ],
             axis=0)
 
+        ratio = train_cfg.get('ratio', 0.01)
         with paddle.no_grad():
             # Region Selection
             count_num = int(teacher_logits.shape[0] * ratio)

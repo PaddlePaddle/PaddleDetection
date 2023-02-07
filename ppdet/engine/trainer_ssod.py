@@ -314,16 +314,14 @@ class Trainer_DenseTeacher(Trainer):
                         data_unsup_w['is_teacher'] = True
                         teacher_preds = self.ema.model(data_unsup_w)
 
+                    train_cfg['curr_iter'] = curr_iter
+                    train_cfg['st_iter'] = st_iter
                     if self._nranks > 1:
-                        loss_dict_unsup = self.model._layers.get_distill_loss(
-                            student_preds,
-                            teacher_preds,
-                            ratio=train_cfg['ratio'])
+                        loss_dict_unsup = self.model._layers.get_ssod_distill_loss(
+                            student_preds, teacher_preds, train_cfg)
                     else:
-                        loss_dict_unsup = self.model.get_distill_loss(
-                            student_preds,
-                            teacher_preds,
-                            ratio=train_cfg['ratio'])
+                        loss_dict_unsup = self.model.get_ssod_distill_loss(
+                            student_preds, teacher_preds, train_cfg)
 
                     fg_num = loss_dict_unsup["fg_sum"]
                     del loss_dict_unsup["fg_sum"]

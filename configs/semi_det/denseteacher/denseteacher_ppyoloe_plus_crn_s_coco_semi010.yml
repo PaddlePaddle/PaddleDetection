@@ -31,10 +31,13 @@ DenseTeacher:
     sup_weight: 1.0
     unsup_weight: 1.0
     loss_weight: {distill_loss_cls: 1.0, distill_loss_iou: 2.5, distill_loss_dfl: 0., distill_loss_contrast: 0.1}
+    contrast_loss:
+      temperature: 0.2
+      alpha: 0.9
+      smooth_iter: 100
     concat_sup_data: True
     suppress: linear
     ratio: 0.01
-    gamma: 2.0
   test_cfg:
     inference_on: teacher
 

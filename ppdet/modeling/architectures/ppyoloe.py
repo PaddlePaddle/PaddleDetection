@@ -64,11 +64,6 @@ class PPYOLOE(BaseArch):
 
         # semi-det
         self.is_teacher = False
-        self.queue_ptr = 0
-        self.queue_size = 100 * 672
-        self.queue_feats = paddle.zeros([self.queue_size, 80])
-        self.queue_probs = paddle.zeros([self.queue_size, 80])
-        self.iter = 0
 
         # distill
         self.for_distill = for_distill
@@ -139,19 +134,35 @@ class PPYOLOE(BaseArch):
     def get_loss_keys(self):
         return ['loss_cls', 'loss_iou', 'loss_dfl', 'loss_contrast']
 
-    def get_distill_loss(self, student_head_outs, teacher_head_outs,
-                         ratio=0.01):
+    def get_ssod_distill_loss(self, student_head_outs, teacher_head_outs,
+                              train_cfg):
         # for semi-det distill
         # student_probs: already sigmoid
         student_probs, student_deltas, student_dfl = student_head_outs
         teacher_probs, teacher_deltas, teacher_dfl = teacher_head_outs
-        nc = student_probs.shape[-1]
+        bs, l, nc = student_probs.shape[:]
         student_probs = student_probs.reshape([-1, nc])
         teacher_probs = teacher_probs.reshape([-1, nc])
         student_deltas = student_deltas.reshape([-1, 4])
         teacher_deltas = teacher_deltas.reshape([-1, 4])
         student_dfl = student_dfl.reshape([-1, 4, self.yolo_head.reg_channels])
         teacher_dfl = teacher_dfl.reshape([-1, 4, self.yolo_head.reg_channels])
+
+        ratio = train_cfg.get('ratio', 0.01)
+
+        # for contrast loss
+        curr_iter = train_cfg['curr_iter']
+        st_iter = train_cfg['st_iter']
+        if curr_iter == st_iter + 1:
+            # start semi-det training
+            self.queue_ptr = 0
+            self.queue_size = int(bs * l * ratio)
+            self.queue_feats = paddle.zeros([self.queue_size, nc])
+            self.queue_probs = paddle.zeros([self.queue_size, nc])
+        contrast_loss_cfg = train_cfg['contrast_loss']
+        temperature = contrast_loss_cfg.get('temperature', 0.2)
+        alpha = contrast_loss_cfg.get('alpha', 0.9)
+        smooth_iter = contrast_loss_cfg.get('smooth_iter', 100) + st_iter
 
         with paddle.no_grad():
             # Region Selection
@@ -166,9 +177,7 @@ class PPYOLOE(BaseArch):
 
             # for contrast loss
             probs = teacher_probs[b_mask].detach()
-            temperature = 0.2
-            alpha = 0.9
-            if self.iter > 100:
+            if curr_iter > smooth_iter:  # memory-smoothing
                 A = paddle.exp(
                     paddle.mm(teacher_probs[b_mask], self.queue_probs.t()) /
                     temperature)
@@ -176,28 +185,32 @@ class PPYOLOE(BaseArch):
                 probs = alpha * probs + (1 - alpha) * paddle.mm(
                     A, self.queue_probs)
             n = student_probs[b_mask].shape[0]
+            # update memory bank
+            self.queue_feats[self.queue_ptr:self.queue_ptr +
+                             n, :] = teacher_probs[b_mask].detach()
+            self.queue_probs[self.queue_ptr:self.queue_ptr +
+                             n, :] = teacher_probs[b_mask].detach()
+            self.queue_ptr = (self.queue_ptr + n) % self.queue_size
+
+        # embedding similarity
         sim = paddle.exp(
             paddle.mm(student_probs[b_mask], teacher_probs[b_mask].t()) / 0.2)
         sim_probs = sim / sim.sum(1, keepdim=True)
+        # pseudo-label graph with self-loop
         Q = paddle.mm(probs, probs.t())
         Q.fill_diagonal_(1)
         pos_mask = (Q >= 0.5).astype('float32')
         Q = Q * pos_mask
         Q = Q / Q.sum(1, keepdim=True)
-        self.queue_feats[self.queue_ptr:self.queue_ptr + n, :] = teacher_probs[
-            b_mask].detach()
-        self.queue_probs[self.queue_ptr:self.queue_ptr + n, :] = teacher_probs[
-            b_mask].detach()
-        self.queue_ptr = (self.queue_ptr + n) % self.queue_size
-        self.iter += 1
+        # contrastive loss
         loss_contrast = -(paddle.log(sim_probs + 1e-7) * Q).sum(1)
         loss_contrast = loss_contrast.mean()
 
-        # loss_cls
+        # distill_loss_cls
         loss_cls = QFLv2(
             student_probs, teacher_probs, weight=mask, reduction="sum") / fg_num
 
-        # loss_iou
+        # distill_loss_iou
         inputs = paddle.concat(
             (-student_deltas[b_mask][..., :2], student_deltas[b_mask][..., 2:]),
             -1)
@@ -207,7 +220,7 @@ class PPYOLOE(BaseArch):
         iou_loss = GIoULoss(reduction='mean')
         loss_iou = iou_loss(inputs, targets)
 
-        # loss_dfl
+        # distill_loss_dfl
         loss_dfl = F.cross_entropy(
             student_dfl[b_mask].reshape([-1, self.yolo_head.reg_channels]),
             teacher_dfl[b_mask].reshape([-1, self.yolo_head.reg_channels]),
