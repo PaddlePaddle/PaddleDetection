@@ -399,10 +399,7 @@ class NormalizeImage(BaseOperator):
             1.(optional) Scale the pixel to [0,1]
             2.(optional) Each pixel minus mean and is divided by std
         """
-        if 'image' in sample.keys():
-            im = sample['image']
-        else:
-            im = sample['images']
+        im = sample['image']
 
         im = im.astype(np.float32, copy=False)
         if self.is_scale:
@@ -415,10 +412,7 @@ class NormalizeImage(BaseOperator):
             im -= mean
             im /= std
 
-        if 'image' in sample.keys():
-            sample['image'] = im
-        else:
-            sample['images'] = im
+        sample['image'] = im
 
         if 'pre_image' in sample:
             pre_im = sample['pre_image']
