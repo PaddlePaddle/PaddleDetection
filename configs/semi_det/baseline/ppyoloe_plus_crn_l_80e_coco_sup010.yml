@@ -1,0 +1,29 @@
+_BASE_: [
+  '../../ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml',
+]
+log_iter: 50
+snapshot_epoch: 5
+weights: output/ppyoloe_plus_crn_l_80e_coco_sup010/model_final
+
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_l_obj365_pretrained.pdparams
+depth_mult: 1.0
+width_mult: 1.0
+
+
+TrainDataset:
+  !COCODataSet
+    image_dir: train2017
+    anno_path: semi_annotations/instances_train2017.1@10.json
+    dataset_dir: dataset/coco
+    data_fields: ['image', 'gt_bbox', 'gt_class']
+
+
+epoch: 80
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+    - !CosineDecay
+      max_epochs: 96
+    - !LinearWarmup
+      start_factor: 0.
+      epochs: 5

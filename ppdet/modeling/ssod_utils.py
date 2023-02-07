@@ -35,12 +35,12 @@ def align_weak_strong_shape(data_weak, data_strong):
             mode='bilinear',
             align_corners=False)
         if 'gt_bbox' in data_strong:
-            gt_bboxes = data_strong['gt_bbox']
+            gt_bboxes = data_strong['gt_bbox'].numpy()
             for i in range(len(gt_bboxes)):
                 if len(gt_bboxes[i]) > 0:
                     gt_bboxes[i][:, 0::2] = gt_bboxes[i][:, 0::2] * scale_x_s
                     gt_bboxes[i][:, 1::2] = gt_bboxes[i][:, 1::2] * scale_y_s
-            data_strong['gt_bbox'] = gt_bboxes
+            data_strong['gt_bbox'] = paddle.to_tensor(gt_bboxes)
 
     if scale_x_w != 1 or scale_y_w != 1:
         data_weak['image'] = F.interpolate(
@@ -49,12 +49,12 @@ def align_weak_strong_shape(data_weak, data_strong):
             mode='bilinear',
             align_corners=False)
         if 'gt_bbox' in data_weak:
-            gt_bboxes = data_weak['gt_bbox']
+            gt_bboxes = data_weak['gt_bbox'].numpy()
             for i in range(len(gt_bboxes)):
                 if len(gt_bboxes[i]) > 0:
                     gt_bboxes[i][:, 0::2] = gt_bboxes[i][:, 0::2] * scale_x_w
                     gt_bboxes[i][:, 1::2] = gt_bboxes[i][:, 1::2] * scale_y_w
-            data_weak['gt_bbox'] = gt_bboxes
+            data_weak['gt_bbox'] = paddle.to_tensor(gt_bboxes)
     return data_weak, data_strong
 
 
