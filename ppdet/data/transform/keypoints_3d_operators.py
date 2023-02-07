@@ -1,4 +1,4 @@
-# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2023 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,8 +34,7 @@ logger = setup_logger(__name__)
 registered_ops = []
 
 __all__ = [
-    'CropAndFlipImages', 'ResizeImages', 'NormalizeImages', 'PermuteImages',
-    'RandomFlipHalfBody3DTransformImages'
+    'CropAndFlipImages', 'PermuteImages', 'RandomFlipHalfBody3DTransformImages'
 ]
 
 import matplotlib.pyplot as plt
@@ -102,16 +101,11 @@ class CropAndFlipImages(object):
         self.flip_pairs = flip_pairs
 
     def __call__(self, records):  # tuple
-        images = records[
-            "images"]  # RGB， Image读取的,(6, 1080, 1920, 3),(num_frames,h,w,c)
-        images = images[:, :, ::-1, :]  # 图像左右翻转
-        images = images[:, :, self.crop_range[0]:self.crop_range[
-            1]]  #(6, 1080, 810, 3)，裁剪
-        records["images"] = images
+        images = records["image"]
+        images = images[:, :, ::-1, :]
+        images = images[:, :, self.crop_range[0]:self.crop_range[1]]
+        records["image"] = images
 
-        # 2D kps处理
-        # 1. 裁剪
-        # 2. 点对应翻转
         if "kps2d" in records.keys():
             kps2d = records["kps2d"]
 
@@ -129,128 +123,6 @@ class CropAndFlipImages(object):
 
 
 @register_op
-class ResizeImages(BaseOperator):
-    def __init__(self, target_size, keep_ratio, interp=cv2.INTER_LINEAR):
-        """
-        Resize image to target size. if keep_ratio is True, 
-        resize the image's long side to the maximum of target_size
-        if keep_ratio is False, resize the image to target size(h, w)
-        Args:
-            target_size (int|list): image target size, h,w
-            keep_ratio (bool): whether keep_ratio or not, default true
-            interp (int): the interpolation method
-        """
-        super(ResizeImages, self).__init__()
-        self.keep_ratio = keep_ratio
-        self.interp = interp
-        if not isinstance(target_size, (Integral, Sequence)):
-            raise TypeError(
-                "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
-                format(type(target_size)))
-        if isinstance(target_size, Integral):
-            target_size = [target_size, target_size]
-        self.target_size = target_size
-
-    def apply_image(self, image, scale):
-        im_scale_x, im_scale_y = scale
-        return cv2.resize(
-            image,
-            None,
-            None,
-            fx=im_scale_x,
-            fy=im_scale_y,
-            interpolation=self.interp)
-
-    def apply(self, sample, context=None):
-        """ Resize the image numpy.
-        """
-        images = sample['images']  # (1080, 607, 3)，裁剪过的图像
-
-        # apply image
-        im_shape = images[0].shape
-        if self.keep_ratio:
-
-            im_size_min = np.min(im_shape[0:2])
-            im_size_max = np.max(im_shape[0:2])
-
-            target_size_min = np.min(self.target_size)
-            target_size_max = np.max(self.target_size)
-
-            im_scale = min(target_size_min / im_size_min,
-                           target_size_max / im_size_max)
-
-            resize_h = im_scale * float(im_shape[0])
-            resize_w = im_scale * float(im_shape[1])
-
-            im_scale_x = im_scale
-            im_scale_y = im_scale
-        else:
-            resize_h, resize_w = self.target_size
-            im_scale_y = resize_h / im_shape[0]
-            im_scale_x = resize_w / im_shape[1]
-
-        resized_images = []
-        for im in images:
-            im = self.apply_image(im, [im_scale_x, im_scale_y])
-            resized_images.append(im)
-
-        sample['images'] = np.array(resized_images)
-
-        # 2d keypoints resize
-        if 'kps2d' in sample.keys():
-            kps2d = sample['kps2d']
-            kps2d[:, :, 0] = kps2d[:, :, 0] * im_scale_x
-            kps2d[:, :, 1] = kps2d[:, :, 1] * im_scale_y
-
-            sample['kps2d'] = kps2d
-
-        return sample
-
-
-@register_op
-class NormalizeImages(BaseOperator):
-    def __init__(self, mean=[0.485, 0.456, 0.406], std=[1, 1, 1],
-                 is_scale=True):
-        """
-        Args:
-            mean (list): the pixel mean
-            std (list): the pixel variance
-        """
-        super(NormalizeImages, self).__init__()
-        self.mean = mean
-        self.std = std
-        self.is_scale = is_scale
-        if not (isinstance(self.mean, list) and isinstance(self.std, list) and
-                isinstance(self.is_scale, bool)):
-            raise TypeError("{}: input type is invalid.".format(self))
-        from functools import reduce
-        if reduce(lambda x, y: x * y, self.std) == 0:
-            raise ValueError('{}: std is invalid!'.format(self))
-
-    def apply(self, sample, context=None):
-        """Normalize the images.
-        Operators:
-            1.(optional) Scale the image to [0,1]
-            2. Each pixel minus mean and is divided by std
-        """
-        images = sample["images"]
-        images = images.astype(np.float32, copy=False)
-
-        mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
-        std = np.array(self.std)[np.newaxis, np.newaxis, :]
-
-        if self.is_scale:
-            images = images / 255.0
-
-        images -= mean
-        images /= std
-
-        sample["images"] = images
-
-        return sample
-
-
-@register_op
 class PermuteImages(BaseOperator):
     def __init__(self):
         """
@@ -259,10 +131,10 @@ class PermuteImages(BaseOperator):
         super(PermuteImages, self).__init__()
 
     def apply(self, sample, context=None):
-        images = sample["images"]
+        images = sample["image"]
         images = images.transpose((0, 3, 1, 2))
 
-        sample["images"] = images
+        sample["image"] = images
 
         return sample
 
@@ -369,7 +241,7 @@ class RandomFlipHalfBody3DTransformImages(object):
 
     def __call__(self, records):
         images = records[
-            'images']  #kps3d, kps3d_vis, images. images.shape(num_frames, width, height, 3)
+            'image']  #kps3d, kps3d_vis, images. images.shape(num_frames, width, height, 3)
 
         joints = records['kps3d']
         joints_vis = records['kps3d_vis']
@@ -415,7 +287,7 @@ class RandomFlipHalfBody3DTransformImages(object):
                         None, :, :, :]
                     break
 
-        records['images'] = images
+        records['image'] = images
         records['kps3d'] = joints
         records['kps3d_vis'] = joints_vis
         if kps2d is not None:

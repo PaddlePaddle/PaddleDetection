@@ -98,9 +98,9 @@ TrainReader:
         upper_body_ids: [0, 3, 6, 9, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
         flip_pairs: *flip_perm
         do_occlusion: true
-    - ResizeImages: {interp: 2, target_size: [*train_height,*train_width], keep_ratio: false}
+    - Resize: {interp: 2, target_size: [*train_height,*train_width], keep_ratio: false}
   batch_transforms:
-    - NormalizeImages:
+    - NormalizeImage:
         mean: *global_mean
         std: *global_std
         is_scale: true
@@ -113,10 +113,10 @@ EvalReader:
   sample_transforms:
     - CropAndFlipImages:
         crop_range: [556, 1366]
-    - ResizeImages: {interp: 2, target_size: [*train_height,*train_width], keep_ratio: false}
+    - Resize: {interp: 2, target_size: [*train_height,*train_width], keep_ratio: false}
     #- OriginPointTranslationImages: {}
   batch_transforms:
-    - NormalizeImages:
+    - NormalizeImage:
         mean: *global_mean
         std: *global_std
         is_scale: true

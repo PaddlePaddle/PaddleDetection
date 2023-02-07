@@ -281,8 +281,6 @@ class SMPLPostProcess(object):
             preds: numpy.ndarray([batch_size, num_joints, 3]), keypoints coords
         """
 
-        # output第一个点可能不是原点
-
         preds = output.numpy().copy()
 
         # Transform back
@@ -294,8 +292,6 @@ class SMPLPostProcess(object):
 
 
 def soft_argmax(heatmaps, joint_num):
-    # heatmaps: [128, 768, 32, 32]
-
     dims = heatmaps.shape
     depth_dim = (int)(dims[1] / joint_num)
     heatmaps = heatmaps.reshape((-1, joint_num, depth_dim * dims[2] * dims[3]))
@@ -358,12 +354,6 @@ class SMPL3DHRHeatmapNet(BaseArch):
         return {'backbone': backbone, }
 
     def _forward(self):
-        # type of inputs is dict
-        # image_file:list;center: 512(batch_size),2
-        # scale:(512, 2),im_id:512,image: Tensor(shape=[512, 3, 128, 96];score': Tensor(shape=[512],1;'rotate': Tensor(shape=[512];
-        # target': Tensor(shape=[512, 17, 32, 24];target_weight': Tensor(shape=[512, 17, 1];'epoch_id': 0
-        #print(type(self.inputs),self.inputs.keys())
-
         feats = self.backbone(self.inputs)  # feats:[[batch_size, 40, 32, 24]]
 
         hrnet_outputs = self.final_conv_new(feats[0])
@@ -372,7 +362,7 @@ class SMPL3DHRHeatmapNet(BaseArch):
         if self.training:
             return self.loss(res, self.inputs)
         else:  # export model need
-            return res  #模型输出结果
+            return res
 
     def get_loss(self):
         return self._forward()
@@ -401,13 +391,12 @@ class SMPL3DHRNet(BaseArch):
     __category__ = 'architecture'
     __inject__ = ['loss']
 
-    def __init__(
-            self,
-            width,  # 40, backbone输出的channel数目
-            num_joints,
-            backbone='HRNet',
-            loss='KeyPointRegressionMSELoss',
-            post_process=SMPLPostProcess):
+    def __init__(self,
+                 width,
+                 num_joints,
+                 backbone='HRNet',
+                 loss='KeyPointRegressionMSELoss',
+                 post_process=SMPLPostProcess):
         """
         Args:
             backbone (nn.Layer): backbone instance
@@ -445,12 +434,6 @@ class SMPL3DHRNet(BaseArch):
         return {'backbone': backbone, }
 
     def _forward(self):
-        # type of inputs is dict
-        # image_file:list;center: 512(batch_size),2
-        # scale:(512, 2),im_id:512,image: Tensor(shape=[512, 3, 128, 96];score': Tensor(shape=[512],1;'rotate': Tensor(shape=[512];
-        # target': Tensor(shape=[512, 17, 32, 24];target_weight': Tensor(shape=[512, 17, 1];'epoch_id': 0
-        #print(type(self.inputs),self.inputs.keys())
-
         feats = self.backbone(self.inputs)  # feats:[[batch_size, 40, 32, 24]]
 
         hrnet_outputs = self.final_conv(feats[0])
@@ -462,14 +445,10 @@ class SMPL3DHRNet(BaseArch):
         res = self.act2(res)
         res = self.fc3(res)  # [batch_size, 24, 3]
 
-        # move to zero, nan
-        #center = res[:,0,:]
-        #res = res-center[:,None,:]
-
         if self.training:
             return self.loss(res, self.inputs)
         else:  # export model need
-            return res  #模型输出结果
+            return res
 
     def get_loss(self):
         return self._forward()
