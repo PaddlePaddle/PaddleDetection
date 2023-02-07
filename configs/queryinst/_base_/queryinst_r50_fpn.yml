@@ -1,0 +1,74 @@
+num_proposals: &num_proposals 100
+proposal_embedding_dim: &proposal_embedding_dim 256
+bbox_resolution: &bbox_resolution 7
+mask_resolution: &mask_resolution 14
+
+architecture: QueryInst
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+
+QueryInst:
+  backbone: ResNet
+  neck: FPN
+  rpn_head: EmbeddingRPNHead
+  roi_head: SparseRoIHead
+  post_process: SparsePostProcess
+
+ResNet:
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [ 0, 1, 2, 3 ]
+  num_stages: 4
+  lr_mult_list: [ 0.1, 0.1, 0.1, 0.1 ]
+
+FPN:
+  out_channel: *proposal_embedding_dim
+  extra_stage: 0
+
+EmbeddingRPNHead:
+  num_proposals: *num_proposals
+
+SparseRoIHead:
+  num_stages: 6
+  bbox_roi_extractor:
+    resolution: *bbox_resolution
+    sampling_ratio: 2
+    aligned: True
+  mask_roi_extractor:
+    resolution: *mask_resolution
+    sampling_ratio: 2
+    aligned: True
+  bbox_head: DIIHead
+  mask_head: DynamicMaskHead
+  loss_func: QueryInstLoss
+
+DIIHead:
+  feedforward_channels: 2048
+  dynamic_feature_channels: 64
+  roi_resolution: *bbox_resolution
+  num_attn_heads: 8
+  dropout: 0.0
+  num_ffn_fcs: 2
+  num_cls_fcs: 1
+  num_reg_fcs: 3
+
+DynamicMaskHead:
+  dynamic_feature_channels: 64
+  roi_resolution: *mask_resolution
+  num_convs: 4
+  conv_kernel_size: 3
+  conv_channels: 256
+  upsample_method: 'deconv'
+  upsample_scale_factor: 2
+
+QueryInstLoss:
+  focal_loss_alpha: 0.25
+  focal_loss_gamma: 2.0
+  class_weight: 2.0
+  l1_weight: 5.0
+  giou_weight: 2.0
+  mask_weight: 8.0
+
+SparsePostProcess:
+  num_proposals: *num_proposals
+  binary_thresh: 0.5
