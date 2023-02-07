@@ -16,12 +16,12 @@ flip_perm: &flip_perm [[1, 2], [4, 5], [7, 8], [10, 11], [13, 14], [16, 17], [18
 
 
 #####model
-architecture: SMPL3DHRNet
+architecture: TinyPose3DHRNet
 pretrain_weights: medical_multi_frames_best_model.pdparams
 
-SMPL3DHRNet:
+TinyPose3DHRNet:
   backbone: LiteHRNet
-  post_process: SMPLPostProcess
+  post_process: TinyPose3DPostProcess
   num_joints: *num_joints
   width: &width 40
   loss: KeyPointRegressionMSELoss

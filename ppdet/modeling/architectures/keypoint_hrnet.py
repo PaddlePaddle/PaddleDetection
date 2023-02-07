@@ -26,7 +26,7 @@ from ..keypoint_utils import transform_preds
 from .. import layers as L
 from paddle.nn import functional as F
 
-__all__ = ['TopDownHRNet', 'SMPL3DHRNet', 'SMPL3DHRHeatmapNet']
+__all__ = ['TopDownHRNet', 'TinyPose3DHRNet', 'TinyPose3DHRHeatmapNet']
 
 
 @register
@@ -268,7 +268,7 @@ class HRNetPostProcess(object):
         return outputs
 
 
-class SMPLPostProcess(object):
+class TinyPose3DPostProcess(object):
     def __init__(self):
         pass
 
@@ -317,7 +317,7 @@ def soft_argmax(heatmaps, joint_num):
 
 
 @register
-class SMPL3DHRHeatmapNet(BaseArch):
+class TinyPose3DHRHeatmapNet(BaseArch):
     __category__ = 'architecture'
     __inject__ = ['loss']
 
@@ -327,16 +327,16 @@ class SMPL3DHRHeatmapNet(BaseArch):
             num_joints,
             backbone='HRNet',
             loss='KeyPointRegressionMSELoss',
-            post_process=SMPLPostProcess):
+            post_process=TinyPose3DPostProcess):
         """
         Args:
             backbone (nn.Layer): backbone instance
             post_process (object): post process instance
         """
-        super(SMPL3DHRHeatmapNet, self).__init__()
+        super(TinyPose3DHRHeatmapNet, self).__init__()
 
         self.backbone = backbone
-        self.post_process = SMPLPostProcess()
+        self.post_process = TinyPose3DPostProcess()
         self.loss = loss
         self.deploy = False
         self.num_joints = num_joints
@@ -387,7 +387,7 @@ class SMPL3DHRHeatmapNet(BaseArch):
 
 
 @register
-class SMPL3DHRNet(BaseArch):
+class TinyPose3DHRNet(BaseArch):
     __category__ = 'architecture'
     __inject__ = ['loss']
 
@@ -396,15 +396,15 @@ class SMPL3DHRNet(BaseArch):
                  num_joints,
                  backbone='HRNet',
                  loss='KeyPointRegressionMSELoss',
-                 post_process=SMPLPostProcess):
+                 post_process=TinyPose3DPostProcess):
         """
         Args:
             backbone (nn.Layer): backbone instance
             post_process (object): post process instance
         """
-        super(SMPL3DHRNet, self).__init__()
+        super(TinyPose3DHRNet, self).__init__()
         self.backbone = backbone
-        self.post_process = SMPLPostProcess()
+        self.post_process = TinyPose3DPostProcess()
         self.loss = loss
         self.deploy = False
         self.num_joints = num_joints
