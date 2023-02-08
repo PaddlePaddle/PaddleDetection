@@ -22,7 +22,7 @@ Notes：
 
 ### Description of Configuration
 
-[The parameters related to vehicle retrograde in [config file](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/config/infer_cfg_ppvehicle.yml) is as follows:
+[The parameters related to vehicle retrograde in [config file](../../config/infer_cfg_ppvehicle.yml) is as follows:
 ```
 LANE_SEG:
   lane_seg_config: deploy/pipeline/config/lane_seg_config.yml #lane line seg config file
@@ -38,7 +38,7 @@ VEHICLE_RETROGRADE:
   move_scale: 0.01                    #Filter the threshold value of stationary vehicles. If the vehicle moving pixel is greater than the image diagonal * move_scale, the vehicle is considered moving, otherwise, the vehicle is stationary
   fence_line: []                      #Lane centerline coordinates, format[x1,y1,x2,y2] and y2>y1. If it is empty, the program will automatically judge according to the direction of traffic flow
 ```
-The parameters related to Lane line segmentation in [lane line seg config file](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/config/lane_seg_config.yml)is as follows:
+The parameters related to Lane line segmentation in [lane line seg config file](../../config/lane_seg_config.yml)is as follows:
 ```
 type: PLSLaneseg  #Select segmentation Model
 
@@ -111,7 +111,7 @@ The result is shown as follow:
   3 Dashed line
 Lane line recognition filtering Dashed lines;
 
-3.Lane lines are obtained by clustering segmentation results, and the horizontal lane lines are filtered by default. If not, you can modify the `filter_flag` in [lane line seg config file](../../config/lane_seg.yml);
+3.Lane lines are obtained by clustering segmentation results, and the horizontal lane lines are filtered by default. If not, you can modify the `filter_flag` in [lane line seg config file](../../config/lane_seg_config.yml);
 
 4.The vehicles in the horizontal direction are filtered by default when judging the vehicles in the reverse direction. If not, you can modify the `filter_horizontal_flag` in [config file](../../config/infer_cfg_ppvehicle.yml);
 
