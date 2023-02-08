@@ -21,7 +21,7 @@ import paddle
 import weakref
 from copy import deepcopy
 
-from .utlis import get_bn_running_state_names
+from .utils import get_bn_running_state_names
 
 __all__ = ['ModelEMA', 'SimpleModelEMA']
 
@@ -52,7 +52,7 @@ class ModelEMA(object):
                  ema_decay_type='threshold',
                  cycle_epoch=-1,
                  ema_black_list=None,
-                 ema_filter_no_grad=None):
+                 ema_filter_no_grad=False):
         self.step = 0
         self.epoch = 0
         self.decay = decay
