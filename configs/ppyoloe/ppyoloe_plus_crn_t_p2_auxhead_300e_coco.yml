@@ -3,7 +3,7 @@ _BASE_: [
   '../runtime.yml',
   './_base_/optimizer_300e.yml',
   './_base_/ppyoloe_plus_crn_tiny_auxhead.yml',
-  './_base_/ppyoloe_plus_tiny_reader.yml',
+  './_base_/ppyoloe_plus_tiny_reader.yml', # 320*320
 ]
 
 log_iter: 100
@@ -34,3 +34,27 @@ SimpleConvHead:
 
 PPYOLOEHead:
   fpn_strides: [32, 16, 8, 4]
+
+
+worker_num: 4
+eval_height: &eval_height 320
+eval_width: &eval_width 320
+eval_size: &eval_size [*eval_height, *eval_width]
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: *eval_size, keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - Permute: {}
+  batch_size: 2
+
+TestReader:
+  inputs_def:
+    image_shape: [3, *eval_height, *eval_width]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: *eval_size, keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - Permute: {}
+  batch_size: 1
