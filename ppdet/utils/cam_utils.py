@@ -243,10 +243,21 @@ class BBoxCAM:
                     # when the featuremap contains of multiple scales,
                     # take the featuremap of the last scale
                     # Todo: fuse the cam result from multisclae featuremaps
-                    cam_grad = self.target_feats[self.target_layer_name][
-                        -1].grad.squeeze().cpu().numpy()
-                    cam_feat = self.target_feats[self.target_layer_name][
-                        -1].squeeze().cpu().numpy()
+                    if self.target_feats[self.target_layer_name][
+                            -1].shape[-1]==1:
+                        """
+                        if the last level featuremap is 1x1 size,
+                        we take the second last one
+                        """
+                        cam_grad = self.target_feats[self.target_layer_name][
+                            -2].grad.squeeze().cpu().numpy()
+                        cam_feat = self.target_feats[self.target_layer_name][
+                            -2].squeeze().cpu().numpy()
+                    else:
+                        cam_grad = self.target_feats[self.target_layer_name][
+                            -1].grad.squeeze().cpu().numpy()
+                        cam_feat = self.target_feats[self.target_layer_name][
+                            -1].squeeze().cpu().numpy()
                 else:
                     cam_grad = self.target_feats[
                         self.target_layer_name].grad.squeeze().cpu().numpy()
