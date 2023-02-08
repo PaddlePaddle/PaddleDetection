@@ -212,6 +212,9 @@ class DistillPPYOLOELoss(nn.Layer):
             logits_loss_weight={'class': 1.0,
                                 'iou': 2.5,
                                 'dfl': 0.5},
+            logits_ld_distill=False,
+            logits_ld_params={'weight': 20000,
+                              'T': 10},
             feat_distill=True,
             feat_distiller='fgd',
             feat_distill_place='neck_feats',
@@ -222,6 +225,7 @@ class DistillPPYOLOELoss(nn.Layer):
         self.loss_weight_logits = loss_weight['logits']
         self.loss_weight_feat = loss_weight['feat']
         self.logits_distill = logits_distill
+        self.logits_ld_distill = logits_ld_distill
         self.feat_distill = feat_distill
 
         if logits_distill and self.loss_weight_logits > 0:
@@ -229,6 +233,10 @@ class DistillPPYOLOELoss(nn.Layer):
             self.dfl_loss_weight = logits_loss_weight['dfl']
             self.qfl_loss_weight = logits_loss_weight['class']
             self.loss_bbox = GIoULoss()
+
+        if logits_ld_distill:
+            self.loss_kd = KnowledgeDistillationKLDivLoss(
+                loss_weight=logits_ld_params['weight'], T=logits_ld_params['T'])
 
         if feat_distill and self.loss_weight_feat > 0:
             assert feat_distiller in ['cwd', 'fgd', 'pkd', 'mgd', 'mimic']
@@ -373,8 +381,27 @@ class DistillPPYOLOELoss(nn.Layer):
             distill_cls_loss = paddle.add_n(distill_cls_loss)
             distill_bbox_loss = paddle.add_n(distill_bbox_loss)
             distill_dfl_loss = paddle.add_n(distill_dfl_loss)
-
             logits_loss = distill_bbox_loss * self.bbox_loss_weight + distill_cls_loss * self.qfl_loss_weight + distill_dfl_loss * self.dfl_loss_weight
+
+            # loss_kd
+            if self.logits_ld_distill:
+                mask_positive = student_distill_pairs['mask_positive2']
+                pred_scores = student_distill_pairs['pred_cls_scores']
+                soft_cls = teacher_distill_pairs['pred_cls_scores']
+                num_classes = student_model.yolo_head.num_classes
+                num_pos = mask_positive.sum()
+                if num_pos > 0:
+                    cls_mask = mask_positive.unsqueeze(-1).tile(
+                        [1, 1, num_classes])
+                    pred_scores_pos = paddle.masked_select(
+                        pred_scores, cls_mask).reshape([-1, num_classes])
+                    soft_cls_pos = paddle.masked_select(
+                        soft_cls, cls_mask).reshape([-1, num_classes])
+                    loss_kd = self.loss_kd(
+                        pred_scores_pos, soft_cls_pos, avg_factor=num_pos)
+                else:
+                    loss_kd = student_distill_pairs['null_loss']
+                logits_loss += loss_kd
         else:
             logits_loss = paddle.zeros([1])
 
