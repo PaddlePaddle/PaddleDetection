@@ -342,6 +342,20 @@ class DistillPPYOLOELoss(nn.Layer):
             loss_dfl = loss_dfl.mean(-1)
         return loss_dfl / 4.0  # 4 direction
 
+    def main_kd(self, mask_positive, pred_scores, soft_cls, num_classes):
+        num_pos = mask_positive.sum()
+        if num_pos > 0:
+            cls_mask = mask_positive.unsqueeze(-1).tile([1, 1, num_classes])
+            pred_scores_pos = paddle.masked_select(
+                pred_scores, cls_mask).reshape([-1, num_classes])
+            soft_cls_pos = paddle.masked_select(
+                soft_cls, cls_mask).reshape([-1, num_classes])
+            loss_kd = self.loss_kd(
+                pred_scores_pos, soft_cls_pos, avg_factor=num_pos)
+        else:
+            loss_kd = paddle.zeros([1])
+        return loss_kd
+
     def forward(self, teacher_model, student_model):
         teacher_distill_pairs = teacher_model.yolo_head.distill_pairs
         student_distill_pairs = student_model.yolo_head.distill_pairs
@@ -383,24 +397,12 @@ class DistillPPYOLOELoss(nn.Layer):
             distill_dfl_loss = paddle.add_n(distill_dfl_loss)
             logits_loss = distill_bbox_loss * self.bbox_loss_weight + distill_cls_loss * self.qfl_loss_weight + distill_dfl_loss * self.dfl_loss_weight
 
-            # loss_kd
             if self.logits_ld_distill:
-                mask_positive = student_distill_pairs['mask_positive2']
-                pred_scores = student_distill_pairs['pred_cls_scores']
-                soft_cls = teacher_distill_pairs['pred_cls_scores']
-                num_classes = student_model.yolo_head.num_classes
-                num_pos = mask_positive.sum()
-                if num_pos > 0:
-                    cls_mask = mask_positive.unsqueeze(-1).tile(
-                        [1, 1, num_classes])
-                    pred_scores_pos = paddle.masked_select(
-                        pred_scores, cls_mask).reshape([-1, num_classes])
-                    soft_cls_pos = paddle.masked_select(
-                        soft_cls, cls_mask).reshape([-1, num_classes])
-                    loss_kd = self.loss_kd(
-                        pred_scores_pos, soft_cls_pos, avg_factor=num_pos)
-                else:
-                    loss_kd = student_distill_pairs['null_loss']
+                loss_kd = self.main_kd(
+                    student_distill_pairs['mask_positive_select'],
+                    student_distill_pairs['pred_cls_scores'],
+                    teacher_distill_pairs['pred_cls_scores'],
+                    student_model.yolo_head.num_classes, )
                 logits_loss += loss_kd
         else:
             logits_loss = paddle.zeros([1])
