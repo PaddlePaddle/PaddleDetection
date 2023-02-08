@@ -1,4 +1,4 @@
-#   Copyright (c) 2022 PaddlePaddle Authors. All Rights Reserved.
+#   Copyright (c) 2023 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,17 +56,6 @@ def align_weak_strong_shape(data_weak, data_strong):
                     gt_bboxes[i][:, 1::2] = gt_bboxes[i][:, 1::2] * scale_y_w
             data_weak['gt_bbox'] = paddle.to_tensor(gt_bboxes)
     return data_weak, data_strong
-
-
-def permute_to_N_HWA_K(tensor, K):
-    """
-    Transpose/reshape a tensor from (N, (A x K), H, W) to (N, (HxWxA), K)
-    """
-    assert tensor.dim() == 4, tensor.shape
-    N, _, H, W = tensor.shape
-    tensor = tensor.reshape([N, -1, K, H, W]).transpose([0, 3, 4, 1, 2])
-    tensor = tensor.reshape([N, -1, K])
-    return tensor
 
 
 def QFLv2(pred_sigmoid,
