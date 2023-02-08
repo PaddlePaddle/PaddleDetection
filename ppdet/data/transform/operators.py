@@ -400,6 +400,7 @@ class NormalizeImage(BaseOperator):
             2.(optional) Each pixel minus mean and is divided by std
         """
         im = sample['image']
+
         im = im.astype(np.float32, copy=False)
         if self.is_scale:
             scale = 1.0 / 255.0
@@ -410,6 +411,7 @@ class NormalizeImage(BaseOperator):
             std = np.array(self.std)[np.newaxis, np.newaxis, :]
             im -= mean
             im /= std
+
         sample['image'] = im
 
         if 'pre_image' in sample:
@@ -425,6 +427,7 @@ class NormalizeImage(BaseOperator):
                 pre_im -= mean
                 pre_im /= std
             sample['pre_image'] = pre_im
+
         return sample
 
 
@@ -813,13 +816,14 @@ class Resize(BaseOperator):
         im = sample['image']
         if not isinstance(im, np.ndarray):
             raise TypeError("{}: image type is not numpy.".format(self))
-        if len(im.shape) != 3:
-            raise ImageError('{}: image is not 3-dimensional.'.format(self))
 
         # apply image
-        im_shape = im.shape
-        if self.keep_ratio:
+        if len(im.shape) == 3:
+            im_shape = im.shape
+        else:
+            im_shape = im[0].shape
 
+        if self.keep_ratio:
             im_size_min = np.min(im_shape[0:2])
             im_size_max = np.max(im_shape[0:2])
 
@@ -839,8 +843,25 @@ class Resize(BaseOperator):
             im_scale_y = resize_h / im_shape[0]
             im_scale_x = resize_w / im_shape[1]
 
-        im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
-        sample['image'] = im.astype(np.float32)
+        if len(im.shape) == 3:
+            im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
+            sample['image'] = im.astype(np.float32)
+        else:
+            resized_images = []
+            for one_im in im:
+                applied_im = self.apply_image(one_im, [im_scale_x, im_scale_y])
+                resized_images.append(applied_im)
+
+            sample['image'] = np.array(resized_images)
+
+        # 2d keypoints resize
+        if 'kps2d' in sample.keys():
+            kps2d = sample['kps2d']
+            kps2d[:, :, 0] = kps2d[:, :, 0] * im_scale_x
+            kps2d[:, :, 1] = kps2d[:, :, 1] * im_scale_y
+
+            sample['kps2d'] = kps2d
+
         sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
         if 'scale_factor' in sample:
             scale_factor = sample['scale_factor']
