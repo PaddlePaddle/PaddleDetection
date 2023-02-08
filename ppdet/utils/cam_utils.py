@@ -151,8 +151,17 @@ class BBoxCAM:
         def hook(layer, input, output):
             self.target_feats[layer._layer_name_for_hook] = output
 
-        self.trainer.model.backbone._layer_name_for_hook = self.target_layer_name
-        self.trainer.model.backbone.register_forward_post_hook(hook)
+        try:
+            exec('self.trainer.'+self.target_layer_name+'._layer_name_for_hook = self.target_layer_name')
+            # self.trainer.target_layer_name._layer_name_for_hook = self.target_layer_name
+            exec('self.trainer.'+self.target_layer_name+'.register_forward_post_hook(hook)')
+            # self.trainer.target_layer_name.register_forward_post_hook(hook)
+        except:
+            print("Error! "
+                  "The target_layer_name--"+self.target_layer_name+" is not in model! "
+                  "Please check the spelling and "
+                  "the network's architecture!")
+            sys.exit()
 
     def get_bboxes(self):
         # get inference images
@@ -227,25 +236,38 @@ class BBoxCAM:
             target = paddle.sum(score_out * label_onehot)
             target.backward(retain_graph=True)
 
-            if isinstance(self.target_feats[self.target_layer_name], list):
-                # when the featuremap contains of multiple scales,
-                # take the featuremap of the last scale
-                # Todo: fuse the cam result from multisclae featuremaps
-                cam_grad = self.target_feats[self.target_layer_name][
-                    -1].grad.squeeze().cpu().numpy()
-                cam_feat = self.target_feats[self.target_layer_name][
-                    -1].squeeze().cpu().numpy()
-            else:
+
+            if 'backbone' in self.target_layer_name or \
+                    'neck' in self.target_layer_name: # backbone/neck level feature
+                if isinstance(self.target_feats[self.target_layer_name], list):
+                    # when the featuremap contains of multiple scales,
+                    # take the featuremap of the last scale
+                    # Todo: fuse the cam result from multisclae featuremaps
+                    cam_grad = self.target_feats[self.target_layer_name][
+                        -1].grad.squeeze().cpu().numpy()
+                    cam_feat = self.target_feats[self.target_layer_name][
+                        -1].squeeze().cpu().numpy()
+                else:
+                    cam_grad = self.target_feats[
+                        self.target_layer_name].grad.squeeze().cpu().numpy()
+                    cam_feat = self.target_feats[
+                        self.target_layer_name].squeeze().cpu().numpy()
+            else: # roi level feature
                 cam_grad = self.target_feats[
-                    self.target_layer_name].grad.squeeze().cpu().numpy()
+                    self.target_layer_name].grad.squeeze().cpu().numpy()[target_bbox_before_nms]
                 cam_feat = self.target_feats[
-                    self.target_layer_name].squeeze().cpu().numpy()
+                    self.target_layer_name].squeeze().cpu().numpy()[target_bbox_before_nms]
 
             # grad_cam:
             exp = grad_cam(cam_feat, cam_grad)
 
-            if 'backbone' in self.target_layer_name:
-                """when use backbone featuremap, we first do the cam on whole image, and then set the area outside the predic bbox to 0"""
+            if 'backbone' in self.target_layer_name or \
+                    'neck' in self.target_layer_name:
+                """
+                when use backbone/neck featuremap, 
+                we first do the cam on whole image, 
+                and then set the area outside the predic bbox to 0
+                """
                 # reshape the cam image to the input image size
                 resized_exp = resize_cam(exp, (img.shape[1], img.shape[0]))
                 mask = np.zeros((img.shape[0], img.shape[1], 3))
@@ -268,7 +290,7 @@ class BBoxCAM:
                     int(target_bbox[2]):int(target_bbox[4]), :] = bbox_overlay_vis
             else:
                 print(
-                    'Only supported cam for  backbone feature and roi feature,  the others are not supported temporarily!'
+                    'Only supported cam for  backbone/neck feature and roi feature,  the others are not supported temporarily!'
                 )
                 sys.exit()
 

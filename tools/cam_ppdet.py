@@ -60,14 +60,14 @@ def parse_args():
     parser.add_argument(
         "--target_feature_layer_name",
         type=str,
-        default='trainer.model.backbone', # define the featuremap to show grad cam, such as trainer.model.backbone, trainer.model.bbox_head.roi_extractor
+        default='model.backbone', # define the featuremap to show grad cam, such as model.backbone, model.bbox_head.roi_extractor
         help="Whether to save inference results to output_dir.")
     args = parser.parse_args()
 
     return args
 
 def run(FLAGS, cfg):
-    assert cfg.architecture in ['FasterRCNN', 'MaskRCNN', 'YOLOv3'],  'Only supported cam for faster_rcnn based and yolov3 based architecture for now,  the others are not supported temporarily!'
+    assert cfg.architecture in ['FasterRCNN', 'MaskRCNN', 'YOLOv3', 'BlazeFace', 'SSD'],  'Only supported cam for faster_rcnn based and yolov3 based architecture for now,  the others are not supported temporarily!'
 
     bbox_cam = BBoxCAM(FLAGS, cfg)
     bbox_cam.get_bboxes_cams()

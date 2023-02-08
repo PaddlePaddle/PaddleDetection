@@ -56,6 +56,12 @@ class RetinaNet(BaseArch):
         if self.training:
             return self.head(neck_feats, self.inputs)
         else:
+            extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
+            """extra_data:{
+                        'scores': predict scores,
+                        'nms_keep_idx': bbox index before nms,
+                       }
+                       """
             head_outs = self.head(neck_feats)
             bbox, bbox_num = self.head.post_process(
                 head_outs, self.inputs['im_shape'], self.inputs['scale_factor'])

@@ -74,8 +74,14 @@ class SSD(BaseArch):
                                  self.inputs['gt_bbox'],
                                  self.inputs['gt_class'])
         else:
+            extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
+            """extra_data:{
+                        'scores': predict scores,
+                        'nms_keep_idx': bbox index before nms,
+                       }
+                       """
             preds, anchors = self.ssd_head(body_feats, self.inputs['image'])
-            bbox, bbox_num, before_nms_indexes = self.post_process(
+            bbox, bbox_num, nms_keep_idx = self.post_process(
                 preds, anchors, self.inputs['im_shape'],
                 self.inputs['scale_factor'])
             return bbox, bbox_num
