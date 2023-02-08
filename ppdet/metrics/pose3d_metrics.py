@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import paddle
-from paddle.fluid.dygraph.parallel import ParallelEnv
+from paddle.distributed import ParallelEnv
 import os
 import json
 from collections import defaultdict, OrderedDict

@@ -135,7 +135,7 @@ class BertAttention(nn.Layer):
         attention_feats = self.bert_selfattention(x, attention_mask, head_mask)
         features = self.fc(attention_feats[0])
         features = self.dropout(features)
-        features = self.layernorm(features + x)  #x*2.21
+        features = self.layernorm(features + x)
         if len(attention_feats) == 2:
             return (features, attention_feats[1])
         else:
@@ -163,7 +163,7 @@ class BertFeedForward(nn.Layer):
         features = self.act_fn(features)
         features = self.fc2(features)
         features = self.dropout(features)
-        features = self.layernorm(features + x)  #x*2.21
+        features = self.layernorm(features + x)
         return features
 
 
