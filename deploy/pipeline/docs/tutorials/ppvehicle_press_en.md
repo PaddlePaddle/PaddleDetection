@@ -22,7 +22,7 @@ Notes：
 
 ### Description of Configuration
 
-The parameters related to vehicle line pressing in [config file](../../config/infer_cfg_ppvehicle.yml) is as follows:
+The parameters related to vehicle line pressing in [config file](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/config/infer_cfg_ppvehicle.yml) is as follows:
 ```
 VEHICLE_PRESSING:
   enable: True               #Whether to enable the funcion
@@ -30,7 +30,7 @@ LANE_SEG:
   lane_seg_config: deploy/pipeline/config/lane_seg_config.yml #lane line seg config file
   model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/pp_lite_stdc2_bdd100k.zip   #model path
 ```
-The parameters related to Lane line segmentation in [lane line seg config file](../../config/lane_seg.yml)is as follows:
+The parameters related to Lane line segmentation in [lane line seg config file](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/config/lane_seg_config.yml)is as follows:
 ```
 type: PLSLaneseg  #Select segmentation Model
 

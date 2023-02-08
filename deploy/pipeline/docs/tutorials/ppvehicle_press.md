@@ -21,7 +21,7 @@
 
 ### 配置项说明
 
-[配置文件](../../config/infer_cfg_ppvehicle.yml)中与车辆压线相关的参数如下：
+[配置文件](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/config/infer_cfg_ppvehicle.yml)中与车辆压线相关的参数如下：
 ```
 VEHICLE_PRESSING:
   enable: True               #是否开启功能
@@ -29,7 +29,7 @@ LANE_SEG:
   lane_seg_config: deploy/pipeline/config/lane_seg_config.yml #车道线提取配置文件
   model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/pp_lite_stdc2_bdd100k.zip   #模型文件路径
 ```
-[车道线配置文件](../../config/lane_seg.yml)中与车道线提取相关的参数如下：
+[车道线配置文件](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/config/lane_seg_config.yml)中与车道线提取相关的参数如下：
 ```
 type: PLSLaneseg  #选择分割模型
 
