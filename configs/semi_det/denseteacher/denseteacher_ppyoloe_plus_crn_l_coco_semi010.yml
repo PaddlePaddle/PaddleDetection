@@ -11,7 +11,7 @@ cosine_epochs: &cosine_epochs 240
 
 
 ### pretrain and warmup config, choose one and comment another
-pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/semi_det/ppyoloe_plus_crn_l_80e_coco_sup010.pdparams # mAP=45.7
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_l_80e_coco_sup010.pdparams # mAP=45.7
 semi_start_iters: 0
 ema_start_iters: 0
 use_warmup: &use_warmup False
