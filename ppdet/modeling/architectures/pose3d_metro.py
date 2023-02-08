@@ -67,8 +67,6 @@ class METRO_Body(BaseArch):
         self.trans_encoder = trans_encoder
         self.conv_learn_tokens = paddle.nn.Conv1D(49, num_joints + 1, 1)
         self.cam_param_fc = paddle.nn.Linear(3, 2)
-        # self.cam_param_fc2 = paddle.nn.Linear(10, 250)
-        # self.cam_param_fc3 = paddle.nn.Linear(250, 3)
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -95,7 +93,6 @@ class METRO_Body(BaseArch):
             constant_tensor = paddle.ones_like(features) * 0.01
             features = features * meta_masks + constant_tensor * (1 - meta_masks
                                                                   )
-        # paddle.concat([features, self.rest_joints.expand((batch_size, -1, -1))], axis=2)
         pred_out = self.trans_encoder(features)
 
         pred_3d_joints = pred_out[:, :self.num_joints, :]

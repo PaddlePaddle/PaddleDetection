@@ -70,10 +70,6 @@ OptimizerBuilder:
 TrainDataset:
   !Pose3DDataset
     dataset_dir: dataset/traindata/
-    # image_dirs: ["human3.6m"]
-    # anno_list: ["pose3d/Human3.6m_train.json"]
-    # image_dirs: ["coco/train2017", "coco/train2017", "coco/train2017"]
-    # anno_list: ["pose3d/COCO2014-All-ver01.json", "pose3d/COCO2014-Part-ver01.json", "pose3d/COCO2014-Val-ver10.json"]
     image_dirs: ["human3.6m", "posetrack3d", "hr-lspet", "hr-lspet", "mpii/images", "coco/train2017"]
     anno_list: ["pose3d/Human3.6m_train.json", "pose3d/PoseTrack_ver01.json", "pose3d/LSPet_train_ver10.json", "pose3d/LSPet_test_ver10.json", "pose3d/MPII_ver01.json", "pose3d/COCO2014-All-ver01.json"]
     num_joints: *num_joints
