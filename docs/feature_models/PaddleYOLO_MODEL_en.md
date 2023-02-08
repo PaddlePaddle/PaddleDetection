@@ -1,21 +1,28 @@
-[简体中文](MODEL_ZOO_cn.md) | English
+[简体中文](PaddleYOLO_MODEL.md) | English
 
 # [**PaddleYOLO**](https://github.com/PaddlePaddle/PaddleYOLO)
 
 ## Introduction
-- [Introduction](#Introduction)
-- [ModelZoo](#ModelZoo)
-    - [PP-YOLOE](#PP-YOLOE)
-    - [YOLOX](#YOLOX)
-    - [YOLOv5](#YOLOv5)
-    - [YOLOv6](#YOLOv6)
-    - [YOLOv7](#YOLOv7)
-    - [YOLOv8](#YOLOv8)
-    - [RTMDet](#RTMDet)
-    - [VOC](#VOC)
-- [UserGuide](#UserGuide)
-    - [Pipeline](#Pipeline)
-    - [CustomDataset](#CustomDataset)
+- [**PaddleYOLO**](#paddleyolo)
+  - [Introduction](#introduction)
+  - [Introduction](#introduction-1)
+  - [Updates](#updates)
+  - [ModelZoo](#modelzoo)
+    - [PP-YOLOE](#pp-yoloe)
+    - [YOLOX](#yolox)
+    - [YOLOv5](#yolov5)
+    - [YOLOv6](#yolov6)
+    - [YOLOv7](#yolov7)
+    - [YOLOv8](#yolov8)
+    - [RTMDet](#rtmdet)
+    - [**Notes：**](#notes)
+    - [VOC](#voc)
+  - [UserGuide](#userguide)
+    - [**Pipeline**](#pipeline)
+    - [CustomDataset](#customdataset)
+      - [preparation：](#preparation)
+      - [fintune：](#fintune)
+      - [Predict and export:](#predict-and-export)
 
 ## Introduction
 
