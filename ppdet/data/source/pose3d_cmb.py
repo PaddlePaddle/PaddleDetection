@@ -77,10 +77,12 @@ class Pose3DDataset(DetDataset):
             indices = np.random.choice(
                 np.arange(num_joints), replace=False, size=masked_num)
             mjm_mask[indices, :] = 0.0
+        # return mjm_mask
 
-        mvm_mask = np.ones((10, 1)).astype(np.float32)
+        num_joints = 1
+        mvm_mask = np.ones((num_joints, 1)).astype(np.float)
         if self.test_mode == False:
-            num_vertices = 10
+            num_vertices = num_joints
             pb = np.random.random_sample()
             masked_num = int(
                 pb * mvm_percent *
@@ -108,6 +110,7 @@ class Pose3DDataset(DetDataset):
         print("Loading annotations..., please wait")
         self.annos = []
         im_id = 0
+        self.human36m_num = 0
         for idx, annof in enumerate(self.anno_list):
             img_prefix = os.path.join(self.dataset_dir, self.image_dirs[idx])
             dataf = os.path.join(self.dataset_dir, annof)
@@ -138,6 +141,8 @@ class Pose3DDataset(DetDataset):
                             print("cannot find imagepath:{}".format(imagename))
                             continue
                     new_anno['imageName'] = imagename
+                    if 'human3.6m' in imagename:
+                        self.human36m_num += 1
                     new_anno['bbox_center'] = anno['bbox_center']
                     new_anno['bbox_scale'] = anno['bbox_scale']
                     new_anno['joints_2d'] = np.array(anno[
@@ -159,6 +164,10 @@ class Pose3DDataset(DetDataset):
                         'joints_2d'])
                     self.annos.append(new_anno)
                 del annos
+
+    def get_temp_num(self):
+        """get temporal data number, like human3.6m"""
+        return self.human36m_num
 
     def __len__(self):
         """Get dataset length."""
