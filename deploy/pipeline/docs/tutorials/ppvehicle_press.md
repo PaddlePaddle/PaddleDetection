@@ -29,7 +29,7 @@ LANE_SEG:
   lane_seg_config: deploy/pipeline/config/lane_seg_config.yml #车道线提取配置文件
   model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/pp_lite_stdc2_bdd100k.zip   #模型文件路径
 ```
-[车道线配置文件](../../config/lane_seg.yml)中与车道线提取相关的参数如下：
+[车道线配置文件](../../config/lane_seg_config.yml)中与车道线提取相关的参数如下：
 ```
 type: PLSLaneseg  #选择分割模型
 
@@ -107,7 +107,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
   3 虚线
 车辆压线分析过滤虚线类；
 
-2.车道线通过对分割结果聚类得到，且默认过滤水平方向车道线，若不过滤可在[车道线配置文件](../../config/lane_seg.yml)修改`filter_flag`参数；
+2.车道线通过对分割结果聚类得到，且默认过滤水平方向车道线，若不过滤可在[车道线配置文件](../../config/lane_seg_config.yml)修改`filter_flag`参数；
 
 3.车辆压线判断条件：车辆的检测框底边线与车道线是否有交点；
 

@@ -43,6 +43,8 @@ DistillPPYOLOELoss: # M -> S
   loss_weight: {'logits': 4.0, 'feat': 1.0}
   logits_distill: True
   logits_loss_weight: {'class': 1.0, 'iou': 2.5, 'dfl': 0.5}
+  logits_ld_distill: True
+  logits_ld_params: {'weight': 20000, 'T': 10}
   feat_distill: True
   feat_distiller: 'fgd' # ['cwd', 'fgd', 'pkd', 'mgd', 'mimic']
   feat_distill_place: 'neck_feats'

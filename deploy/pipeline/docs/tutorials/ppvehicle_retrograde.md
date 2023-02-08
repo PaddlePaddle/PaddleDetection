@@ -38,7 +38,7 @@ VEHICLE_RETROGRADE:
                                       #车辆静止
   fence_line: []                      #车道中间线坐标，格式[x1,y1,x2,y2] 且y2>y1。若为空，由程序根据车流方向自动判断
 ```
-[车道线配置文件](../../config/lane_seg.yml)中与车道线提取相关的参数如下：
+[车道线配置文件](../../config/lane_seg_config.yml)中与车道线提取相关的参数如下：
 ```
 type: PLSLaneseg  #选择分割模型
 
@@ -113,7 +113,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
   3 虚线
 车辆逆行分析过滤虚线类；
 
-3.车道线通过对分割结果聚类得到，且默认过滤水平方向车道线，若不过滤可在[车道线配置文件](../../config/lane_seg.yml)修改`filter_flag`参数;
+3.车道线通过对分割结果聚类得到，且默认过滤水平方向车道线，若不过滤可在[车道线配置文件](../../config/lane_seg_config.yml)修改`filter_flag`参数;
 
 4.车辆逆行判断默认过滤水平方向车辆，若不过滤可在[配置文件](../../config/infer_cfg_ppvehicle.yml)修改`filter_horizontal_flag`参数;
 
