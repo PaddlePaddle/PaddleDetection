@@ -220,7 +220,7 @@ class BBoxCAM:
         """
 
         # array index of the predicted bbox before nms
-        if self.cfg.architecture in  self.nms_idx_need_divid_numclass_arch:
+        if self.cfg.architecture in self.nms_idx_need_divid_numclass_arch:
             # some network's bbox array shape before nms may be like [num_of_bboxes_before_nms, num_classes, 4],
             # we need to divide num_classes to get the before_nms_index；
             # currently, only include the rcnn architectures （fasterrcnn, maskrcnn, cascadercnn);

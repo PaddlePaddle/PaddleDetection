@@ -65,10 +65,8 @@ class METRO_Body(BaseArch):
         self.deploy = False
 
         self.trans_encoder = trans_encoder
-        self.conv_learn_tokens = paddle.nn.Conv1D(49, 10 + num_joints, 1)
-        self.cam_param_fc = paddle.nn.Linear(3, 1)
-        self.cam_param_fc2 = paddle.nn.Linear(10, 250)
-        self.cam_param_fc3 = paddle.nn.Linear(250, 3)
+        self.conv_learn_tokens = paddle.nn.Conv1D(49, num_joints + 1, 1)
+        self.cam_param_fc = paddle.nn.Linear(3, 2)
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -85,7 +83,7 @@ class METRO_Body(BaseArch):
         image_feat_flatten = image_feat.reshape((batch_size, 2048, 49))
         image_feat_flatten = image_feat_flatten.transpose(perm=(0, 2, 1))
         # and apply a conv layer to learn image token for each 3d joint/vertex position
-        features = self.conv_learn_tokens(image_feat_flatten)
+        features = self.conv_learn_tokens(image_feat_flatten)  # (B, J, C)
 
         if self.training:
             # apply mask vertex/joint modeling
@@ -95,20 +93,13 @@ class METRO_Body(BaseArch):
             constant_tensor = paddle.ones_like(features) * 0.01
             features = features * meta_masks + constant_tensor * (1 - meta_masks
                                                                   )
-
         pred_out = self.trans_encoder(features)
+
         pred_3d_joints = pred_out[:, :self.num_joints, :]
         cam_features = pred_out[:, self.num_joints:, :]
 
         # learn camera parameters
-        x = self.cam_param_fc(cam_features)
-        x = x.transpose(perm=(0, 2, 1))
-        x = self.cam_param_fc2(x)
-        x = self.cam_param_fc3(x)
-        cam_param = x.transpose(perm=(0, 2, 1))
-        pred_camera = cam_param.squeeze()
-        pred_2d_joints = orthographic_projection(pred_3d_joints, pred_camera)
-
+        pred_2d_joints = self.cam_param_fc(cam_features)
         return pred_3d_joints, pred_2d_joints
 
     def get_loss(self):

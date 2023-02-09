@@ -854,6 +854,11 @@ class LiteHRNet(nn.Layer):
 
     def forward(self, inputs):
         x = inputs['image']
+        dims = x.shape
+        if len(dims) == 5:
+            x = paddle.reshape(x, (dims[0] * dims[1], dims[2], dims[3],
+                                   dims[4]))  # [6, 3, 128, 96]
+
         x = self.stem(x)
         y_list = [x]
         for stage_idx in range(3):

@@ -1,0 +1,144 @@
+use_gpu: True
+log_iter: 20
+save_dir: output
+snapshot_epoch: 3
+weights: output/metro_modified/model_final
+epoch: 50
+metric: Pose3DEval
+num_classes: 1
+train_height: &train_height 224
+train_width: &train_width 224
+trainsize: &trainsize [*train_width, *train_height]
+num_joints: &num_joints 24
+
+#####model
+architecture: METRO_Body
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/Trunc_HRNet_W32_C_pretrained.pdparams
+
+METRO_Body:
+  backbone: HRNet
+  trans_encoder: TransEncoder
+  num_joints: *num_joints
+  loss: Pose3DLoss
+
+HRNet:
+  width: 32
+  freeze_at: -1
+  freeze_norm: False
+  norm_momentum: 0.1
+  downsample: True
+
+TransEncoder:
+  vocab_size: 30522
+  num_hidden_layers: 4
+  num_attention_heads: 4
+  position_embeddings_size: 512
+  intermediate_size: 3072
+  input_feat_dim: [2048, 512, 128]
+  hidden_feat_dim: [1024, 256, 128]
+  attention_probs_dropout_prob: 0.1
+  fc_dropout_prob: 0.1
+  act_fn: 'gelu'
+  output_attentions: False
+  output_hidden_feats: False
+
+Pose3DLoss:
+  weight_3d: 1.0
+  weight_2d: 0.0
+
+#####optimizer
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !CosineDecay
+    max_epochs: 52
+  - !LinearWarmup
+    start_factor: 0.01
+    steps: 2000
+
+
+OptimizerBuilder:
+  clip_grad_by_norm: 0.2
+  optimizer:
+    type: Adam
+  regularizer:
+    factor: 0.0
+    type: L2
+
+
+#####data
+TrainDataset:
+  !Pose3DDataset
+    dataset_dir: dataset/traindata/
+    image_dirs: ["human3.6m", "posetrack3d", "hr-lspet", "hr-lspet", "mpii/images", "coco/train2017"]
+    anno_list: ["pose3d/Human3.6m_train.json", "pose3d/PoseTrack_ver01.json", "pose3d/LSPet_train_ver10.json", "pose3d/LSPet_test_ver10.json", "pose3d/MPII_ver01.json", "pose3d/COCO2014-All-ver01.json"]
+    num_joints: *num_joints
+    test_mode: False
+
+EvalDataset:
+  !Pose3DDataset
+    dataset_dir: dataset/traindata/
+    image_dirs: ["human3.6m"]
+    anno_list: ["pose3d/Human3.6m_valid.json"]
+    num_joints: *num_joints
+    test_mode: True
+
+TestDataset:
+  !ImageFolder
+    anno_path: dataset/traindata/coco/keypoint_imagelist.txt
+
+worker_num: 4
+global_mean: &global_mean [0.485, 0.456, 0.406]
+global_std: &global_std [0.229, 0.224, 0.225]
+TrainReader:
+  sample_transforms:
+    - SinglePoseAffine:
+        trainsize: *trainsize
+        rotate: [1.0, 30] #[prob, rotate range]
+        scale: [1.0, 0.25] #[prob, scale range]
+    - FlipPose:
+        flip_prob: 0.5
+        img_res: *train_width
+        num_joints: *num_joints
+    - NoiseJitter:
+        noise_factor: 0.4
+  batch_transforms:
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - Permute: {}
+  batch_size: 64
+  shuffle: true
+  drop_last: true
+
+EvalReader:
+  sample_transforms:
+    - SinglePoseAffine:
+        trainsize: *trainsize
+        rotate: [0., 30]
+        scale: [0., 0.25]
+  batch_transforms:
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - Permute: {}
+  batch_size: 16
+  shuffle: false
+  drop_last: false
+
+TestReader:
+  inputs_def:
+    image_shape: [3, *train_height, *train_width]
+  sample_transforms:
+    - Decode: {}
+    - TopDownEvalAffine:
+        trainsize: *trainsize
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - Permute: {}
+  batch_size: 1
+  fuse_normalize: false #whether to fuse nomalize layer into model while export model

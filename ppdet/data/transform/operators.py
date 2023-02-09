@@ -400,6 +400,7 @@ class NormalizeImage(BaseOperator):
             2.(optional) Each pixel minus mean and is divided by std
         """
         im = sample['image']
+
         im = im.astype(np.float32, copy=False)
         if self.is_scale:
             scale = 1.0 / 255.0
@@ -410,6 +411,7 @@ class NormalizeImage(BaseOperator):
             std = np.array(self.std)[np.newaxis, np.newaxis, :]
             im -= mean
             im /= std
+
         sample['image'] = im
 
         if 'pre_image' in sample:
@@ -425,6 +427,7 @@ class NormalizeImage(BaseOperator):
                 pre_im -= mean
                 pre_im /= std
             sample['pre_image'] = pre_im
+
         return sample
 
 
@@ -813,13 +816,14 @@ class Resize(BaseOperator):
         im = sample['image']
         if not isinstance(im, np.ndarray):
             raise TypeError("{}: image type is not numpy.".format(self))
-        if len(im.shape) != 3:
-            raise ImageError('{}: image is not 3-dimensional.'.format(self))
 
         # apply image
-        im_shape = im.shape
-        if self.keep_ratio:
+        if len(im.shape) == 3:
+            im_shape = im.shape
+        else:
+            im_shape = im[0].shape
 
+        if self.keep_ratio:
             im_size_min = np.min(im_shape[0:2])
             im_size_max = np.max(im_shape[0:2])
 
@@ -839,8 +843,25 @@ class Resize(BaseOperator):
             im_scale_y = resize_h / im_shape[0]
             im_scale_x = resize_w / im_shape[1]
 
-        im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
-        sample['image'] = im.astype(np.float32)
+        if len(im.shape) == 3:
+            im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
+            sample['image'] = im.astype(np.float32)
+        else:
+            resized_images = []
+            for one_im in im:
+                applied_im = self.apply_image(one_im, [im_scale_x, im_scale_y])
+                resized_images.append(applied_im)
+
+            sample['image'] = np.array(resized_images)
+
+        # 2d keypoints resize
+        if 'kps2d' in sample.keys():
+            kps2d = sample['kps2d']
+            kps2d[:, :, 0] = kps2d[:, :, 0] * im_scale_x
+            kps2d[:, :, 1] = kps2d[:, :, 1] * im_scale_y
+
+            sample['kps2d'] = kps2d
+
         sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
         if 'scale_factor' in sample:
             scale_factor = sample['scale_factor']
@@ -1420,10 +1441,38 @@ class RandomCrop(BaseOperator):
                 crop_segms.append(_crop_rle(segm, crop, height, width))
         return crop_segms
 
+    def set_fake_bboxes(self, sample):
+        sample['gt_bbox'] = np.array(
+            [
+                [32, 32, 128, 128],
+                [32, 32, 128, 256],
+                [32, 64, 128, 128],
+                [32, 64, 128, 256],
+                [64, 64, 128, 256],
+                [64, 64, 256, 256],
+                [64, 32, 128, 256],
+                [64, 32, 128, 256],
+                [96, 32, 128, 256],
+                [96, 32, 128, 256],
+            ],
+            dtype=np.float32)
+        sample['gt_class'] = np.array(
+            [[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]], np.int32)
+        return sample
+
     def apply(self, sample, context=None):
-        if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
+        if 'gt_bbox' not in sample:
+            # only used in semi-det as unsup data
+            sample = self.set_fake_bboxes(sample)
+            sample = self.random_crop(sample, fake_bboxes=True)
             return sample
 
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
+            return sample
+        sample = self.random_crop(sample)
+        return sample
+
+    def random_crop(self, sample, fake_bboxes=False):
         h, w = sample['image'].shape[:2]
         gt_bbox = sample['gt_bbox']
 
@@ -1515,6 +1564,9 @@ class RandomCrop(BaseOperator):
                         sample['gt_segm'], valid_ids, axis=0)
 
                 sample['image'] = self._crop_image(sample['image'], crop_box)
+                if fake_bboxes == True:
+                    return sample
+
                 sample['gt_bbox'] = np.take(cropped_box, valid_ids, axis=0)
                 sample['gt_class'] = np.take(
                     sample['gt_class'], valid_ids, axis=0)

@@ -28,4 +28,4 @@ from .keypoint_coco import *
 from .mot import *
 from .sniper_coco import SniperCOCODataSet
 from .dataset import ImageFolder
-from .pose3d_cmb import Pose3DDataset
+from .pose3d_cmb import *

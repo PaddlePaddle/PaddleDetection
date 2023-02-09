@@ -16,12 +16,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-import sys
 import copy
 import time
 import typing
-import math
 import numpy as np
 
 import paddle
@@ -34,7 +31,7 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 import ppdet.utils.stats as stats
 from ppdet.utils import profiler
-from ppdet.modeling.ssod_utils import align_weak_strong_shape
+from ppdet.modeling.ssod.utils import align_weak_strong_shape
 from .trainer import Trainer
 
 from ppdet.utils.logger import setup_logger
@@ -317,16 +314,14 @@ class Trainer_DenseTeacher(Trainer):
                         data_unsup_w['is_teacher'] = True
                         teacher_preds = self.ema.model(data_unsup_w)
 
+                    train_cfg['curr_iter'] = curr_iter
+                    train_cfg['st_iter'] = st_iter
                     if self._nranks > 1:
-                        loss_dict_unsup = self.model._layers.get_distill_loss(
-                            student_preds,
-                            teacher_preds,
-                            ratio=train_cfg['ratio'])
+                        loss_dict_unsup = self.model._layers.get_ssod_loss(
+                            student_preds, teacher_preds, train_cfg)
                     else:
-                        loss_dict_unsup = self.model.get_distill_loss(
-                            student_preds,
-                            teacher_preds,
-                            ratio=train_cfg['ratio'])
+                        loss_dict_unsup = self.model.get_ssod_loss(
+                            student_preds, teacher_preds, train_cfg)
 
                     fg_num = loss_dict_unsup["fg_sum"]
                     del loss_dict_unsup["fg_sum"]

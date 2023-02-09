@@ -112,6 +112,7 @@ class PPYOLOEHead(nn.Layer):
         self.exclude_post_process = exclude_post_process
         self.use_shared_conv = use_shared_conv
         self.for_distill = for_distill
+        self.is_teacher = False
 
         # stem
         self.stem_cls = nn.LayerList()
@@ -181,6 +182,14 @@ class PPYOLOEHead(nn.Layer):
         cls_score_list = paddle.concat(cls_score_list, axis=1)
         reg_distri_list = paddle.concat(reg_distri_list, axis=1)
 
+        if targets.get('is_teacher', False):
+            pred_deltas, pred_dfls = self._bbox_decode_fake(reg_distri_list)
+            return cls_score_list, pred_deltas * stride_tensor, pred_dfls
+
+        if targets.get('get_data', False):
+            pred_deltas, pred_dfls = self._bbox_decode_fake(reg_distri_list)
+            return cls_score_list, pred_deltas * stride_tensor, pred_dfls
+
         return self.get_loss([
             cls_score_list, reg_distri_list, anchors, anchor_points,
             num_anchors_list, stride_tensor
@@ -249,6 +258,14 @@ class PPYOLOEHead(nn.Layer):
         if self.training:
             return self.forward_train(feats, targets, aux_pred)
         else:
+            if targets is not None:
+                # only for semi-det
+                self.is_teacher = targets.get('is_teacher', False)
+                if self.is_teacher:
+                    return self.forward_train(feats, targets, aux_pred=None)
+                else:
+                    return self.forward_eval(feats)
+
             return self.forward_eval(feats)
 
     @staticmethod
@@ -274,6 +291,14 @@ class PPYOLOEHead(nn.Layer):
         pred_dist = self.proj_conv(pred_dist.transpose([0, 3, 1, 2])).squeeze(1)
         return batch_distance2bbox(anchor_points, pred_dist)
 
+    def _bbox_decode_fake(self, pred_dist):
+        _, l, _ = get_static_shape(pred_dist)
+        pred_dist_dfl = F.softmax(
+            pred_dist.reshape([-1, l, 4, self.reg_channels]))
+        pred_dist = self.proj_conv(pred_dist_dfl.transpose([0, 3, 1, 2
+                                                            ])).squeeze(1)
+        return pred_dist, pred_dist_dfl
+
     def _bbox2distance(self, points, bbox):
         x1y1, x2y2 = paddle.split(bbox, 2, -1)
         lt = points - x1y1
@@ -298,6 +323,7 @@ class PPYOLOEHead(nn.Layer):
                    assigned_bboxes, assigned_scores, assigned_scores_sum):
         # select positive samples mask
         mask_positive = (assigned_labels != self.num_classes)
+        self.distill_pairs['mask_positive_select'] = mask_positive
         num_pos = mask_positive.sum()
         # pos/neg loss
         if num_pos > 0:
@@ -388,11 +414,13 @@ class PPYOLOEHead(nn.Layer):
                             gt_bboxes,
                             pad_gt_mask,
                             bg_index=self.num_classes)
-                        self.assigned_labels = assigned_labels
-                        self.assigned_bboxes = assigned_bboxes
-                        self.assigned_scores = assigned_scores
-                        self.mask_positive = mask_positive
+                        if self.for_distill:
+                            self.assigned_labels = assigned_labels
+                            self.assigned_bboxes = assigned_bboxes
+                            self.assigned_scores = assigned_scores
+                            self.mask_positive = mask_positive
                     else:
+                        # only used in distill
                         assigned_labels = self.assigned_labels
                         assigned_bboxes = self.assigned_bboxes
                         assigned_scores = self.assigned_scores

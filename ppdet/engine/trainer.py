@@ -187,12 +187,14 @@ class Trainer(object):
             ema_decay_type = self.cfg.get('ema_decay_type', 'threshold')
             cycle_epoch = self.cfg.get('cycle_epoch', -1)
             ema_black_list = self.cfg.get('ema_black_list', None)
+            ema_filter_no_grad = self.cfg.get('ema_filter_no_grad', False)
             self.ema = ModelEMA(
                 self.model,
                 decay=ema_decay,
                 ema_decay_type=ema_decay_type,
                 cycle_epoch=cycle_epoch,
-                ema_black_list=ema_black_list)
+                ema_black_list=ema_black_list,
+                ema_filter_no_grad=ema_filter_no_grad)
 
         self._nranks = dist.get_world_size()
         self._local_rank = dist.get_rank()
@@ -1040,6 +1042,7 @@ class Trainer(object):
 
                     start = end
         return results
+
     def _get_save_image_name(self, output_dir, image_path):
         """
         Get save image name from source image path.

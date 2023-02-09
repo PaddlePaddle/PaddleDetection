@@ -16,8 +16,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import paddle
 import copy
+import paddle
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
@@ -28,35 +28,46 @@ __all__ = ['PPYOLOE', 'PPYOLOEWithAuxHead']
 
 @register
 class PPYOLOE(BaseArch):
+    """
+    PPYOLOE network, see https://arxiv.org/abs/2203.16250
+
+    Args:
+        backbone (nn.Layer): backbone instance
+        neck (nn.Layer): neck instance
+        yolo_head (nn.Layer): anchor_head instance
+        post_process (object): `BBoxPostProcess` instance
+        ssod_loss (object): 'SSODPPYOLOELoss' instance, only used for semi-det(ssod)
+        for_distill (bool): whether for distillation
+        feat_distill_place (str): distill which feature for distillation
+        for_mot (bool): whether return other features for multi-object tracking
+            models, default False in pure object detection models.
+    """
+
     __category__ = 'architecture'
     __shared__ = ['for_distill']
-    __inject__ = ['post_process']
+    __inject__ = ['post_process', 'ssod_loss']
 
     def __init__(self,
                  backbone='CSPResNet',
                  neck='CustomCSPPAN',
                  yolo_head='PPYOLOEHead',
                  post_process='BBoxPostProcess',
+                 ssod_loss='SSODPPYOLOELoss',
                  for_distill=False,
                  feat_distill_place='neck_feats',
                  for_mot=False):
-        """
-        PPYOLOE network, see https://arxiv.org/abs/2203.16250
-
-        Args:
-            backbone (nn.Layer): backbone instance
-            neck (nn.Layer): neck instance
-            yolo_head (nn.Layer): anchor_head instance
-            post_process (object): `BBoxPostProcess` instance
-            for_mot (bool): whether return other features for multi-object tracking
-                models, default False in pure object detection models.
-        """
         super(PPYOLOE, self).__init__()
         self.backbone = backbone
         self.neck = neck
         self.yolo_head = yolo_head
         self.post_process = post_process
         self.for_mot = for_mot
+
+        # for ssod, semi-det
+        self.is_teacher = False
+        self.ssod_loss = ssod_loss
+
+        # distill
         self.for_distill = for_distill
         self.feat_distill_place = feat_distill_place
         if for_distill:
@@ -64,14 +75,11 @@ class PPYOLOE(BaseArch):
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
-        # backbone
         backbone = create(cfg['backbone'])
 
-        # fpn
         kwargs = {'input_shape': backbone.out_shape}
         neck = create(cfg['neck'], **kwargs)
 
-        # head
         kwargs = {'input_shape': neck.out_shape}
         yolo_head = create(cfg['yolo_head'], **kwargs)
 
@@ -85,7 +93,8 @@ class PPYOLOE(BaseArch):
         body_feats = self.backbone(self.inputs)
         neck_feats = self.neck(body_feats, self.for_mot)
 
-        if self.training:
+        self.is_teacher = self.inputs.get('is_teacher', False)  # for semi-det
+        if self.training or self.is_teacher:
             yolo_losses = self.yolo_head(neck_feats, self.inputs)
 
             if self.for_distill:
@@ -126,6 +135,14 @@ class PPYOLOE(BaseArch):
 
     def get_pred(self):
         return self._forward()
+
+    def get_loss_keys(self):
+        return ['loss_cls', 'loss_iou', 'loss_dfl', 'loss_contrast']
+
+    def get_ssod_loss(self, student_head_outs, teacher_head_outs, train_cfg):
+        ssod_losses = self.ssod_loss(student_head_outs, teacher_head_outs,
+                                     train_cfg)
+        return ssod_losses
 
 
 @register
