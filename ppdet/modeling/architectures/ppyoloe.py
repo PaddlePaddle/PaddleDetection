@@ -17,13 +17,9 @@ from __future__ import division
 from __future__ import print_function
 
 import copy
-
 import paddle
-import paddle.nn.functional as F
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
-from ..ssod_utils import QFLv2
-from ..losses import GIoULoss
 
 __all__ = ['PPYOLOE', 'PPYOLOEWithAuxHead']
 # PP-YOLOE and PP-YOLOE+ are recommended to use this architecture, especially when use distillation or aux head
@@ -32,29 +28,34 @@ __all__ = ['PPYOLOE', 'PPYOLOEWithAuxHead']
 
 @register
 class PPYOLOE(BaseArch):
+    """
+    PPYOLOE network, see https://arxiv.org/abs/2203.16250
+
+    Args:
+        backbone (nn.Layer): backbone instance
+        neck (nn.Layer): neck instance
+        yolo_head (nn.Layer): anchor_head instance
+        post_process (object): `BBoxPostProcess` instance
+        ssod_loss (object): 'SSODPPYOLOELoss' instance, only used for semi-det(ssod)
+        for_distill (bool): whether for distillation
+        feat_distill_place (str): distill which feature for distillation
+        for_mot (bool): whether return other features for multi-object tracking
+            models, default False in pure object detection models.
+    """
+
     __category__ = 'architecture'
     __shared__ = ['for_distill']
-    __inject__ = ['post_process']
+    __inject__ = ['post_process', 'ssod_loss']
 
     def __init__(self,
                  backbone='CSPResNet',
                  neck='CustomCSPPAN',
                  yolo_head='PPYOLOEHead',
                  post_process='BBoxPostProcess',
+                 ssod_loss='SSODPPYOLOELoss',
                  for_distill=False,
                  feat_distill_place='neck_feats',
                  for_mot=False):
-        """
-        PPYOLOE network, see https://arxiv.org/abs/2203.16250
-
-        Args:
-            backbone (nn.Layer): backbone instance
-            neck (nn.Layer): neck instance
-            yolo_head (nn.Layer): anchor_head instance
-            post_process (object): `BBoxPostProcess` instance
-            for_mot (bool): whether return other features for multi-object tracking
-                models, default False in pure object detection models.
-        """
         super(PPYOLOE, self).__init__()
         self.backbone = backbone
         self.neck = neck
@@ -62,8 +63,9 @@ class PPYOLOE(BaseArch):
         self.post_process = post_process
         self.for_mot = for_mot
 
-        # semi-det
+        # for ssod, semi-det
         self.is_teacher = False
+        self.ssod_loss = ssod_loss
 
         # distill
         self.for_distill = for_distill
@@ -73,14 +75,11 @@ class PPYOLOE(BaseArch):
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
-        # backbone
         backbone = create(cfg['backbone'])
 
-        # fpn
         kwargs = {'input_shape': backbone.out_shape}
         neck = create(cfg['neck'], **kwargs)
 
-        # head
         kwargs = {'input_shape': neck.out_shape}
         yolo_head = create(cfg['yolo_head'], **kwargs)
 
@@ -134,106 +133,10 @@ class PPYOLOE(BaseArch):
     def get_loss_keys(self):
         return ['loss_cls', 'loss_iou', 'loss_dfl', 'loss_contrast']
 
-    def get_ssod_distill_loss(self, student_head_outs, teacher_head_outs,
-                              train_cfg):
-        # for semi-det distill
-        # student_probs: already sigmoid
-        student_probs, student_deltas, student_dfl = student_head_outs
-        teacher_probs, teacher_deltas, teacher_dfl = teacher_head_outs
-        bs, l, nc = student_probs.shape[:]
-        student_probs = student_probs.reshape([-1, nc])
-        teacher_probs = teacher_probs.reshape([-1, nc])
-        student_deltas = student_deltas.reshape([-1, 4])
-        teacher_deltas = teacher_deltas.reshape([-1, 4])
-        student_dfl = student_dfl.reshape([-1, 4, self.yolo_head.reg_channels])
-        teacher_dfl = teacher_dfl.reshape([-1, 4, self.yolo_head.reg_channels])
-
-        ratio = train_cfg.get('ratio', 0.01)
-
-        # for contrast loss
-        curr_iter = train_cfg['curr_iter']
-        st_iter = train_cfg['st_iter']
-        if curr_iter == st_iter + 1:
-            # start semi-det training
-            self.queue_ptr = 0
-            self.queue_size = int(bs * l * ratio)
-            self.queue_feats = paddle.zeros([self.queue_size, nc])
-            self.queue_probs = paddle.zeros([self.queue_size, nc])
-        contrast_loss_cfg = train_cfg['contrast_loss']
-        temperature = contrast_loss_cfg.get('temperature', 0.2)
-        alpha = contrast_loss_cfg.get('alpha', 0.9)
-        smooth_iter = contrast_loss_cfg.get('smooth_iter', 100) + st_iter
-
-        with paddle.no_grad():
-            # Region Selection
-            count_num = int(teacher_probs.shape[0] * ratio)
-            max_vals = paddle.max(teacher_probs, 1)
-            sorted_vals, sorted_inds = paddle.topk(max_vals,
-                                                   teacher_probs.shape[0])
-            mask = paddle.zeros_like(max_vals)
-            mask[sorted_inds[:count_num]] = 1.
-            fg_num = sorted_vals[:count_num].sum()
-            b_mask = mask > 0.
-
-            # for contrast loss
-            probs = teacher_probs[b_mask].detach()
-            if curr_iter > smooth_iter:  # memory-smoothing
-                A = paddle.exp(
-                    paddle.mm(teacher_probs[b_mask], self.queue_probs.t()) /
-                    temperature)
-                A = A / A.sum(1, keepdim=True)
-                probs = alpha * probs + (1 - alpha) * paddle.mm(
-                    A, self.queue_probs)
-            n = student_probs[b_mask].shape[0]
-            # update memory bank
-            self.queue_feats[self.queue_ptr:self.queue_ptr +
-                             n, :] = teacher_probs[b_mask].detach()
-            self.queue_probs[self.queue_ptr:self.queue_ptr +
-                             n, :] = teacher_probs[b_mask].detach()
-            self.queue_ptr = (self.queue_ptr + n) % self.queue_size
-
-        # embedding similarity
-        sim = paddle.exp(
-            paddle.mm(student_probs[b_mask], teacher_probs[b_mask].t()) / 0.2)
-        sim_probs = sim / sim.sum(1, keepdim=True)
-        # pseudo-label graph with self-loop
-        Q = paddle.mm(probs, probs.t())
-        Q.fill_diagonal_(1)
-        pos_mask = (Q >= 0.5).astype('float32')
-        Q = Q * pos_mask
-        Q = Q / Q.sum(1, keepdim=True)
-        # contrastive loss
-        loss_contrast = -(paddle.log(sim_probs + 1e-7) * Q).sum(1)
-        loss_contrast = loss_contrast.mean()
-
-        # distill_loss_cls
-        loss_cls = QFLv2(
-            student_probs, teacher_probs, weight=mask, reduction="sum") / fg_num
-
-        # distill_loss_iou
-        inputs = paddle.concat(
-            (-student_deltas[b_mask][..., :2], student_deltas[b_mask][..., 2:]),
-            -1)
-        targets = paddle.concat(
-            (-teacher_deltas[b_mask][..., :2], teacher_deltas[b_mask][..., 2:]),
-            -1)
-        iou_loss = GIoULoss(reduction='mean')
-        loss_iou = iou_loss(inputs, targets)
-
-        # distill_loss_dfl
-        loss_dfl = F.cross_entropy(
-            student_dfl[b_mask].reshape([-1, self.yolo_head.reg_channels]),
-            teacher_dfl[b_mask].reshape([-1, self.yolo_head.reg_channels]),
-            soft_label=True,
-            reduction='mean')
-
-        return {
-            "distill_loss_cls": loss_cls,
-            "distill_loss_iou": loss_iou,
-            "distill_loss_dfl": loss_dfl,
-            "distill_loss_contrast": loss_contrast,
-            "fg_sum": fg_num,
-        }
+    def get_ssod_loss(self, student_head_outs, teacher_head_outs, train_cfg):
+        ssod_losses = self.ssod_loss(student_head_outs, teacher_head_outs,
+                                     train_cfg)
+        return ssod_losses
 
 
 @register
