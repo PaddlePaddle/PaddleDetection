@@ -126,7 +126,6 @@ class PPYOLOE(BaseArch):
                            }
                            """
                 extra_data['scores'] = yolo_head_outs[0]  # predict scores (probability)
-                # Todo: get logits output
                 extra_data['nms_keep_idx'] = nms_keep_idx
                 output = {'bbox': bbox, 'bbox_num': bbox_num, 'extra_data': extra_data}
             else:
