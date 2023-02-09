@@ -106,27 +106,31 @@ class PPYOLOE(BaseArch):
                     raise ValueError
             return yolo_losses
         else:
-            extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
-            """extra_data:{
-                        'scores': predict scores,
-                        'nms_keep_idx': bbox index before nms,
-                       }
-                       """
+
             yolo_head_outs = self.yolo_head(neck_feats)
-            extra_data['scores'] = yolo_head_outs[0] # predict scores (probability)
-            # Todo: get logits output
 
             if self.post_process is not None:
                 bbox, bbox_num, nms_keep_idx = self.post_process(
                     yolo_head_outs, self.yolo_head.mask_anchors,
                     self.inputs['im_shape'], self.inputs['scale_factor'])
-                extra_data['nms_keep_idx'] = nms_keep_idx
+
             else:
                 bbox, bbox_num, nms_keep_idx = self.yolo_head.post_process(
                     yolo_head_outs, self.inputs['scale_factor'])
-                # data for cam
+
+            if self.use_extra_data:
+                extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
+                """extra_data:{
+                            'scores': predict scores,
+                            'nms_keep_idx': bbox index before nms,
+                           }
+                           """
+                extra_data['scores'] = yolo_head_outs[0]  # predict scores (probability)
+                # Todo: get logits output
                 extra_data['nms_keep_idx'] = nms_keep_idx
-            output = {'bbox': bbox, 'bbox_num': bbox_num, 'extra_data': extra_data}
+                output = {'bbox': bbox, 'bbox_num': bbox_num, 'extra_data': extra_data}
+            else:
+                output = {'bbox': bbox, 'bbox_num': bbox_num}
 
             return output
 
@@ -224,27 +228,29 @@ class PPYOLOEWithAuxHead(BaseArch):
                 aux_pred=[aux_cls_scores, aux_bbox_preds])
             return loss
         else:
-            extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
-            """extra_data:{
-                        'scores': predict scores,
-                        'nms_keep_idx': bbox index before nms,
-                       }
-                       """
             yolo_head_outs = self.yolo_head(neck_feats)
-            extra_data['scores'] = yolo_head_outs[0] # predict scores (probability)
-            # Todo: get logits output
 
             if self.post_process is not None:
                 bbox, bbox_num, nms_keep_idx = self.post_process(
                     yolo_head_outs, self.yolo_head.mask_anchors,
                     self.inputs['im_shape'], self.inputs['scale_factor'])
-                extra_data['nms_keep_idx'] = nms_keep_idx
             else:
                 bbox, bbox_num, nms_keep_idx = self.yolo_head.post_process(
                     yolo_head_outs, self.inputs['scale_factor'])
-                # data for cam
+
+            if self.use_extra_data:
+                extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
+                """extra_data:{
+                            'scores': predict scores,
+                            'nms_keep_idx': bbox index before nms,
+                           }
+                           """
+                extra_data['scores'] = yolo_head_outs[0]  # predict scores (probability)
+                # Todo: get logits output
                 extra_data['nms_keep_idx'] = nms_keep_idx
-            output = {'bbox': bbox, 'bbox_num': bbox_num, 'extra_data': extra_data}
+                output = {'bbox': bbox, 'bbox_num': bbox_num, 'extra_data': extra_data}
+            else:
+                output = {'bbox': bbox, 'bbox_num': bbox_num}
 
             return output
 
