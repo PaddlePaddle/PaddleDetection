@@ -323,7 +323,11 @@ class PPYOLOEHead(nn.Layer):
                    assigned_bboxes, assigned_scores, assigned_scores_sum):
         # select positive samples mask
         mask_positive = (assigned_labels != self.num_classes)
-        self.distill_pairs['mask_positive_select'] = mask_positive
+
+        if self.for_distill:
+            # only used for LD main_kd distill
+            self.distill_pairs['mask_positive_select'] = mask_positive
+
         num_pos = mask_positive.sum()
         # pos/neg loss
         if num_pos > 0:
