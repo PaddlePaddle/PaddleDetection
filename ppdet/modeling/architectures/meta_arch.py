@@ -15,11 +15,12 @@ __all__ = ['BaseArch']
 
 @register
 class BaseArch(nn.Layer):
-    def __init__(self, data_format='NCHW'):
+    def __init__(self, data_format='NCHW', use_extra_data=False):
         super(BaseArch, self).__init__()
         self.data_format = data_format
         self.inputs = {}
         self.fuse_norm = False
+        self.use_extra_data = use_extra_data
 
     def load_meanstd(self, cfg_transform):
         scale = 1.

@@ -27,7 +27,7 @@ python tools/cam_ppdet.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --infer
 </center>
 <br><center>cam_ppyoloe/225.jpg</center></br>
 
-## 3. 目前支持基于FasterRCNN，MaskRCNN和PPYOLOE系列的网络。
+## 3. 目前支持基于FasterRCNN/MaskRCNN, PPYOLOE系列以及BlazeFace, SSD, Retinanet网络。
 * PPYOLOE网络热图可视化脚本
 ```bash
 python tools/cam_ppdet.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --infer_img demo/000000014439.jpg --cam_out cam_ppyoloe --target_feature_layer_name model.backbone -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
@@ -63,7 +63,7 @@ python tools/cam_ppdet.py -c configs/face_detection/blazeface_1000e.yml --infer_
 python tools/cam_ppdet.py -c configs/ssd/ssd_mobilenet_v1_300_120e_voc.yml --infer_img demo/000000014439.jpg --cam_out cam_ssd --target_feature_layer_name model.backbone -o weights=https://paddledet.bj.bcebos.com/models/ssd_mobilenet_v1_300_120e_voc.pdparams
 ```
 
-* Retinanet网络roi特征热图可视化脚本
+* Retinanet网络backbone特征热图可视化脚本
 ```bash
 python tools/cam_ppdet.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml --infer_img demo/000000014439.jpg --cam_out cam_retinanet --target_feature_layer_name model.backbone -o weights=https://bj.bcebos.com/v1/paddledet/models/retinanet_r50_fpn_2x_coco.pdparams
 ```

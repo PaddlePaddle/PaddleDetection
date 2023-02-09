@@ -57,22 +57,25 @@ class RetinaNet(BaseArch):
         if self.training:
             return self.head(neck_feats, self.inputs)
         else:
-            extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
-            """extra_data:{
-                        'scores': predict scores,
-                        'nms_keep_idx': bbox index before nms,
-                       }
-                       """
             head_outs = self.head(neck_feats)
-            preds_logits = self.head.decode_cls_logits(head_outs[0])
-            preds_scores = F.sigmoid(preds_logits)
-            extra_data['logits'] = preds_logits
-            extra_data['scores'] = preds_scores
-
             bbox, bbox_num, nms_keep_idx = self.head.post_process(
                 head_outs, self.inputs['im_shape'], self.inputs['scale_factor'])
-            extra_data['nms_keep_idx'] = nms_keep_idx  # bbox index before nms
-            return {'bbox': bbox, 'bbox_num': bbox_num, "extra_data": extra_data}
+
+            if self.use_extra_data:
+                extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
+                """extra_data:{
+                            'scores': predict scores,
+                            'nms_keep_idx': bbox index before nms,
+                           }
+                           """
+                preds_logits = self.head.decode_cls_logits(head_outs[0])
+                preds_scores = F.sigmoid(preds_logits)
+                extra_data['logits'] = preds_logits
+                extra_data['scores'] = preds_scores
+                extra_data['nms_keep_idx'] = nms_keep_idx  # bbox index before nms
+                return {'bbox': bbox, 'bbox_num': bbox_num, "extra_data": extra_data}
+            else:
+                return {'bbox': bbox, 'bbox_num': bbox_num}
 
     def get_loss(self):
         return self._forward()

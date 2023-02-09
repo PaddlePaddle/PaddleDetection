@@ -27,7 +27,7 @@ python tools/cam_ppdet.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --infer
 <br><center>cam_ppyoloe/225.jpg</center></br>
 
 
-## 3.Currently supports networks based on FasterRCNN、MaskRCNN、PPYOLOE series.
+## 3.Currently supports networks based on FasterRCNN/MaskRCNN, PPYOLOE series and BlazeFace, SSD, Retinanet.
 * PPYOLOE bbox heat map visualization script (with backbone featuremap)
 ```bash
 python tools/cam_ppdet.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --infer_img demo/000000014439.jpg --cam_out cam_ppyoloe -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams

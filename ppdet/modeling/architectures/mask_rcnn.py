@@ -100,16 +100,8 @@ class MaskRCNN(BaseArch):
                                        bbox_targets, bbox_feat)
             return rpn_loss, bbox_loss, mask_loss
         else:
-            extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
-            """extra_data:{
-                        'scores': predict scores,
-                        'nms_keep_idx': bbox index before nms,
-                       }
-                       """
             rois, rois_num, _ = self.rpn_head(body_feats, self.inputs)
             preds, feat_func = self.bbox_head(body_feats, rois, rois_num, None)
-            extra_data['scores'] = preds[1] # predict scores (probability)
-            # Todo: get logits output
 
             im_shape = self.inputs['im_shape']
             scale_factor = self.inputs['scale_factor']
@@ -118,7 +110,6 @@ class MaskRCNN(BaseArch):
                 preds, (rois, rois_num), im_shape, scale_factor)
             mask_out = self.mask_head(
                 body_feats, bbox, bbox_num, self.inputs, feat_func=feat_func)
-            extra_data['nms_keep_idx'] = nms_keep_idx  # bbox index before nms
 
             # rescale the prediction back to origin image
             bbox, bbox_pred, bbox_num = self.bbox_post_process.get_pred(
@@ -126,7 +117,20 @@ class MaskRCNN(BaseArch):
             origin_shape = self.bbox_post_process.get_origin_shape()
             mask_pred = self.mask_post_process(mask_out, bbox_pred, bbox_num,
                                                origin_shape)
-            return bbox_pred, bbox_num, mask_pred, extra_data
+
+            if self.use_extra_data:
+                extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
+                """extra_data:{
+                            'scores': predict scores,
+                            'nms_keep_idx': bbox index before nms,
+                           }
+                """
+                extra_data['scores'] = preds[1]  # predict scores (probability)
+                # Todo: get logits output
+                extra_data['nms_keep_idx'] = nms_keep_idx  # bbox index before nms
+                return bbox_pred, bbox_num, mask_pred, extra_data
+            else:
+                return bbox_pred, bbox_num, mask_pred
 
     def get_loss(self, ):
         bbox_loss, mask_loss, rpn_loss = self._forward()
@@ -139,6 +143,10 @@ class MaskRCNN(BaseArch):
         return loss
 
     def get_pred(self):
-        bbox_pred, bbox_num, mask_pred, extra_data = self._forward()
-        output = {'bbox': bbox_pred, 'bbox_num': bbox_num, 'mask': mask_pred, 'extra_data': extra_data}
+        if self.use_extra_data:
+            bbox_pred, bbox_num, mask_pred, extra_data = self._forward()
+            output = {'bbox': bbox_pred, 'bbox_num': bbox_num, 'mask': mask_pred, 'extra_data': extra_data}
+        else:
+            bbox_pred, bbox_num, mask_pred = self._forward()
+            output = {'bbox': bbox_pred, 'bbox_num': bbox_num, 'mask': mask_pred}
         return output

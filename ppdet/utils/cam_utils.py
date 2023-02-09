@@ -140,6 +140,8 @@ class BBoxCAM:
         # load weights
         trainer.load_weights(cfg.weights)
 
+        # set for get extra_data before nms
+        trainer.model.use_extra_data=True
         # set for record the bbox index before nms
         if cfg.architecture == 'FasterRCNN' or cfg.architecture == 'MaskRCNN':
             trainer.model.bbox_post_process.nms.return_index = True
