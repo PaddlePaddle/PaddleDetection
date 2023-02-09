@@ -140,6 +140,27 @@ class BBoxCAM:
         # load weights
         trainer.load_weights(cfg.weights)
 
+        # set for record the bbox index before nms
+        if cfg.architecture == 'FasterRCNN' or cfg.architecture == 'MaskRCNN':
+            trainer.model.bbox_post_process.nms.return_index = True
+        elif cfg.architecture == 'YOLOv3':
+            if trainer.model.post_process is not None:
+                # anchor based YOLOs: YOLOv3,PP-YOLO
+                trainer.model.post_process.nms.return_index = True
+            else:
+                # anchor free YOLOs: PP-YOLOE, PP-YOLOE+
+                trainer.model.yolo_head.nms.return_index = True
+        elif cfg.architecture=='BlazeFace' or cfg.architecture=='SSD':
+            trainer.model.post_process.nms.return_index = True
+        elif cfg.architecture=='RetinaNet':
+            trainer.model.head.nms.return_index = True
+        else:
+            print(
+                cfg.architecture+' is not supported for cam temporarily!'
+            )
+            sys.exit()
+        # Todo: Unify the head/post_process name in each model
+
         return trainer
 
     def set_hook(self, cfg):
