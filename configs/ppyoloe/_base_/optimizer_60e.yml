@@ -3,9 +3,9 @@ epoch: 60
 LearningRate:
   base_lr: 0.001
   schedulers:
-    - !CosineDecay
+    - name: CosineDecay
       max_epochs: 72
-    - !LinearWarmup
+    - name: LinearWarmup
       start_factor: 0.
       epochs: 1
 
