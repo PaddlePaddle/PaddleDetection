@@ -194,7 +194,7 @@ def get_contrastive_denoising_training_group(targets,
         known_bbox += rand_part * diff
         known_bbox.clip_(min=0.0, max=1.0)
         input_query_bbox = bbox_xyxy_to_cxcywh(known_bbox)
-        input_query_bbox.clip_(min=0.0, max=1.0)
+        input_query_bbox = inverse_sigmoid(input_query_bbox)
 
     class_embed = paddle.concat(
         [class_embed, paddle.zeros([1, class_embed.shape[-1]])])
