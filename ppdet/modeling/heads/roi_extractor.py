@@ -15,6 +15,7 @@
 import paddle
 from ppdet.core.workspace import register
 from ppdet.modeling import ops
+import paddle.nn as nn
 
 
 def _to_list(v):
@@ -24,7 +25,7 @@ def _to_list(v):
 
 
 @register
-class RoIAlign(object):
+class RoIAlign(nn.Layer):
     """
     RoI Align module
 
@@ -73,7 +74,7 @@ class RoIAlign(object):
     def from_config(cls, cfg, input_shape):
         return {'spatial_scale': [1. / i.stride for i in input_shape]}
 
-    def __call__(self, feats, roi, rois_num):
+    def forward(self, feats, roi, rois_num):
         roi = paddle.concat(roi) if len(roi) > 1 else roi[0]
         if len(feats) == 1:
             rois_feat = paddle.vision.ops.roi_align(

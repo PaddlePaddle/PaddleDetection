@@ -58,34 +58,16 @@ def parse_args():
         default=False,
         help="Whether to save inference results to output_dir.")
     parser.add_argument(
-        "--slice_infer",
-        action='store_true',
-        help="Whether to slice the image and merge the inference results for small object detection."
-    )
-    parser.add_argument(
-        '--slice_size',
-        nargs='+',
-        type=int,
-        default=[640, 640],
-        help="Height of the sliced image.")
-    parser.add_argument(
-        "--overlap_ratio",
-        nargs='+',
-        type=float,
-        default=[0.25, 0.25],
-        help="Overlap height ratio of the sliced image.")
-    parser.add_argument(
-        "--combine_method",
+        "--target_feature_layer_name",
         type=str,
-        default='nms',
-        help="Combine method of the sliced images' detection results, choose in ['nms', 'nmm', 'concat']."
-    )
+        default='model.backbone', # define the featuremap to show grad cam, such as model.backbone, model.bbox_head.roi_extractor
+        help="Whether to save inference results to output_dir.")
     args = parser.parse_args()
 
     return args
 
 def run(FLAGS, cfg):
-    assert cfg.architecture in ['FasterRCNN', 'YOLOv3'],  'Only supported cam for faster_rcnn based and yolov3 based architecture for now,  the others are not supported temporarily!'
+    assert cfg.architecture in ['FasterRCNN', 'MaskRCNN', 'YOLOv3', 'BlazeFace', 'SSD', 'RetinaNet'],  'Only supported cam for faster_rcnn based and yolov3 based architecture for now,  the others are not supported temporarily!'
 
     bbox_cam = BBoxCAM(FLAGS, cfg)
     bbox_cam.get_bboxes_cams()
