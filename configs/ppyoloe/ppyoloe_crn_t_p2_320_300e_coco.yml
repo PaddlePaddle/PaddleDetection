@@ -3,12 +3,12 @@ _BASE_: [
   '../runtime.yml',
   './_base_/optimizer_300e.yml',
   './_base_/ppyoloe_crn.yml',
-  './_base_/ppyoloe_plus_tiny_reader.yml', # 320*320
+  './_base_/ppyoloe_plus_reader_320.yml',
 ]
 
 log_iter: 100
 snapshot_epoch: 10
-weights: output/ppyoloe_crn_t_p2_300e_coco/model_final
+weights: output/ppyoloe_crn_t_p2_320_300e_coco/model_final
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_t_pretrained.pdparams
 depth_mult: 0.33
