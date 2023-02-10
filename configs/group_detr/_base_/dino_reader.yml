@@ -28,8 +28,6 @@ EvalReader:
   - Resize: {target_size: [800, 1333], keep_ratio: True}
   - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
   - Permute: {}
-  batch_transforms:
-  - PadMaskBatch: {pad_to_stride: -1, return_pad_mask: true}
   batch_size: 1
   shuffle: false
   drop_last: false
@@ -41,8 +39,6 @@ TestReader:
   - Resize: {target_size: [800, 1333], keep_ratio: True}
   - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
   - Permute: {}
-  batch_transforms:
-  - PadMaskBatch: {pad_to_stride: -1, return_pad_mask: true}
   batch_size: 1
   shuffle: false
   drop_last: false

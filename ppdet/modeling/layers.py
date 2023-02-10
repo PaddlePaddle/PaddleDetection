@@ -1135,6 +1135,7 @@ def _convert_attention_mask(attn_mask, dtype):
     """
     return nn.layer.transformer._convert_attention_mask(attn_mask, dtype)
 
+
 @register
 class MultiHeadAttention(nn.Layer):
     """
@@ -1296,7 +1297,6 @@ class MultiHeadAttention(nn.Layer):
                 self.dropout,
                 training=self.training,
                 mode="upscale_in_train")
-
         out = paddle.matmul(weights, v)
 
         # combine heads

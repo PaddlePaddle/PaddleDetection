@@ -8,7 +8,7 @@ DETR:
   backbone: ResNet
   transformer: GroupDINOTransformer
   detr_head: DINOHead
-  post_process: DETRBBoxPostProcess
+  post_process: DETRPostProcess
 
 ResNet:
   # index 0 stands for res2
@@ -47,7 +47,7 @@ DINOHead:
       name: HungarianMatcher
       matcher_coeff: {class: 2, bbox: 5, giou: 2}
 
-DETRBBoxPostProcess:
+DETRPostProcess:
   num_top_queries: 300
   dual_queries: True
   dual_groups: 10
