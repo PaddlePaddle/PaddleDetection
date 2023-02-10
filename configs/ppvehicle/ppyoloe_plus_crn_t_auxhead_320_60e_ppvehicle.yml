@@ -3,14 +3,14 @@ _BASE_: [
   '../runtime.yml',
   '../ppyoloe/_base_/optimizer_300e.yml',
   '../ppyoloe/_base_/ppyoloe_plus_crn_tiny_auxhead.yml',
-  '../ppyoloe/_base_/ppyoloe_plus_reader_tiny.yml',
+  '../ppyoloe/_base_/ppyoloe_plus_tiny_320.yml',
 ]
 
 log_iter: 100
 snapshot_epoch: 4
-weights: output/ppyoloe_plus_crn_tiny_60e_ppvehicle/model_final
+weights: output/ppyoloe_plus_crn_t_auxhead_320_60e_ppvehicle/model_final
 
-pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_tiny_auxhead_300e_coco.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_auxhead_300e_coco.pdparams # 640*640 COCO mAP 39.7
 depth_mult: 0.33
 width_mult: 0.375
 
