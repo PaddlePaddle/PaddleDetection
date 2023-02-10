@@ -38,7 +38,7 @@ VEHICLE_RETROGRADE:
   move_scale: 0.01                    #Filter the threshold value of stationary vehicles. If the vehicle moving pixel is greater than the image diagonal * move_scale, the vehicle is considered moving, otherwise, the vehicle is stationary
   fence_line: []                      #Lane centerline coordinates, format[x1,y1,x2,y2] and y2>y1. If it is empty, the program will automatically judge according to the direction of traffic flow
 ```
-The parameters related to Lane line segmentation in [lane line seg config file](../../config/lane_seg_config.yml)is as follows:
+The parameters related to Lane line segmentation in [lane line seg config file](../../config/lane_seg_config.yml) is as follows:
 ```
 type: PLSLaneseg  #Select segmentation Model
 
@@ -70,7 +70,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 #For folder contains one or multiple videos
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
                                    -o VEHICLE_RETROGRADE.enable=true \
-                                   --video_dir=test_video.mp4\
+                                   --video_dir=test_video\
                                    --device=gpu
 ```
 
@@ -95,7 +95,7 @@ The result is shown as follow:
 
 **Note:**
  - Automatic judgment condition of lane line middle line: there are two vehicles in opposite directions in the sampled video segment, and the judgment is fixed after one time and will not be updated;
- - Due to camera angle and 2d visual angle problems, the judgment of lane line middle line is inaccurate. You can manually enter the middle line coordinates in the configuration file
+ - Due to camera angle and 2d visual angle problems, the judgment of lane line middle line is inaccurate. You can manually enter the middle line coordinates in the configuration file。For [example file](../../config/examples/infer_cfg_vehicle_violation.yml)
 
 
 ## Features to the Solution
