@@ -24,7 +24,12 @@ import copy
 import threading
 import queue
 import time
-from collections import Sequence, defaultdict
+try:
+    from collections.abc import Sequence
+except Exception:
+    from collections import Sequence
+
+from collections import defaultdict
 from datacollector import DataCollector, Result
 
 # add deploy path of PaddleDetection to sys.path
