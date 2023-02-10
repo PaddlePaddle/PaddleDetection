@@ -1,7 +1,7 @@
 # Object detection grad_cam heatmap
 
 ## 1.Introduction
-Calculate the cam (class activation map) of the object predict bbox based on the backbone/roi feature map
+Calculate the cam (class activation map) of the object predict bbox based on the backbone/roi feature map, currently supports networks based on FasterRCNN/MaskRCNN series, PPYOLOE series and BlazeFace, SSD, Retinanet.
 
 ## 2.Usage
 * Taking PP-YOLOE as an example, after preparing the data, specify the network configuration file, model weight address, image path and output folder path, and then use the script to call tools/cam_ppdet.py to calculate the grad_cam heat map of the prediction box. Below is an example run script.
@@ -27,7 +27,7 @@ python tools/cam_ppdet.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --infer
 <br><center>cam_ppyoloe/225.jpg</center></br>
 
 
-## 3.Currently supports networks based on FasterRCNN/MaskRCNN, PPYOLOE series and BlazeFace, SSD, Retinanet.
+## 3.Currently supports networks based on FasterRCNN/MaskRCNN series, PPYOLOE series and BlazeFace, SSD, Retinanet.
 * PPYOLOE bbox heat map visualization script (with backbone featuremap)
 ```bash
 python tools/cam_ppdet.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --infer_img demo/000000014439.jpg --cam_out cam_ppyoloe -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams

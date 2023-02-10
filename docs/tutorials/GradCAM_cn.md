@@ -2,7 +2,7 @@
 
 ## 1.简介
 
-基于backbone/roi特征图计算物体预测框的cam(类激活图)
+基于backbone/roi特征图计算物体预测框的cam(类激活图), 目前支持基于FasterRCNN/MaskRCNN系列, PPYOLOE系列, 以及BlazeFace, SSD, Retinanet网络。
 
 ## 2.使用方法
 * 以PP-YOLOE为例，准备好数据之后，指定网络配置文件、模型权重地址和图片路径以及输出文件夹路径，使用脚本调用tools/cam_ppdet.py计算图片中物体预测框的grad_cam热力图。下面为运行脚本示例。
@@ -27,7 +27,7 @@ python tools/cam_ppdet.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --infer
 </center>
 <br><center>cam_ppyoloe/225.jpg</center></br>
 
-## 3. 目前支持基于FasterRCNN/MaskRCNN, PPYOLOE系列以及BlazeFace, SSD, Retinanet网络。
+## 3. 目前支持基于FasterRCNN/MaskRCNN系列, PPYOLOE系列以及BlazeFace, SSD, Retinanet网络。
 * PPYOLOE网络热图可视化脚本
 ```bash
 python tools/cam_ppdet.py -c configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml --infer_img demo/000000014439.jpg --cam_out cam_ppyoloe --target_feature_layer_name model.backbone -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams

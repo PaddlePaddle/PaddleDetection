@@ -143,9 +143,9 @@ class BBoxCAM:
         # set for get extra_data before nms
         trainer.model.use_extra_data=True
         # set for record the bbox index before nms
-        if cfg.architecture == 'FasterRCNN' or cfg.architecture == 'MaskRCNN':
+        if cfg.architecture in ['FasterRCNN', 'MaskRCNN']:
             trainer.model.bbox_post_process.nms.return_index = True
-        elif cfg.architecture == 'YOLOv3':
+        elif cfg.architecture in ['YOLOv3', 'PPYOLOE', 'PPYOLOEWithAuxHead']:
             if trainer.model.post_process is not None:
                 # anchor based YOLOs: YOLOv3,PP-YOLO
                 trainer.model.post_process.nms.return_index = True
