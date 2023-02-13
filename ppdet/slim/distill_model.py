@@ -18,8 +18,6 @@ from __future__ import print_function
 
 import paddle
 import paddle.nn as nn
-import paddle.nn.functional as F
-from paddle import ParamAttr
 
 from ppdet.core.workspace import register, create, load_config
 from ppdet.utils.checkpoint import load_pretrain_weight
@@ -206,13 +204,13 @@ class CWDDistillModel(DistillModel):
 
     def get_loss_retinanet(self, stu_fea_list, tea_fea_list, inputs):
         loss = self.student_model.head(stu_fea_list, inputs)
-        distill_loss = {}
-        for idx, k in enumerate(self.loss_dic):
-            distill_loss[k] = self.loss_dic[k](stu_fea_list[idx],
-                                               tea_fea_list[idx])
+        loss_dict = {}
+        for idx, k in enumerate(self.distill_loss):
+            loss_dict[k] = self.distill_loss[k](stu_fea_list[idx],
+                                                tea_fea_list[idx])
 
-            loss['loss'] += distill_loss[k]
-            loss[k] = distill_loss[k]
+            loss['loss'] += loss_dict[k]
+            loss[k] = loss_dict[k]
         return loss
 
     def get_loss_gfl(self, stu_fea_list, tea_fea_list, inputs):
@@ -234,10 +232,11 @@ class CWDDistillModel(DistillModel):
             s_cls_feat.append(cls_score)
             t_cls_feat.append(t_cls_score)
 
-        for idx, k in enumerate(self.loss_dic):
-            loss_dict[k] = self.loss_dic[k](s_cls_feat[idx], t_cls_feat[idx])
-            feat_loss[f"neck_f_{idx}"] = self.loss_dic[k](stu_fea_list[idx],
-                                                          tea_fea_list[idx])
+        for idx, k in enumerate(self.distill_loss):
+            loss_dict[k] = self.distill_loss[k](s_cls_feat[idx],
+                                                t_cls_feat[idx])
+            feat_loss[f"neck_f_{idx}"] = self.distill_loss[k](stu_fea_list[idx],
+                                                              tea_fea_list[idx])
 
         for k in feat_loss:
             loss['loss'] += feat_loss[k]
