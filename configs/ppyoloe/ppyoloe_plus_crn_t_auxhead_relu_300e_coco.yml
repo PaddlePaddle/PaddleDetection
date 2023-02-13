@@ -8,8 +8,19 @@ _BASE_: [
 
 log_iter: 100
 snapshot_epoch: 10
-weights: output/ppyoloe_plus_crn_t_auxhead_300e_coco/model_final
+weights: output/ppyoloe_plus_crn_t_auxhead_relu_300e_coco/model_final
 
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_t_pretrained.pdparams
 depth_mult: 0.33
 width_mult: 0.375
+
+
+CSPResNet:
+  act: 'relu'
+
+CustomCSPPAN:
+  act: 'relu'
+
+PPYOLOEHead:
+  act: 'relu'
+  attn_conv: None
