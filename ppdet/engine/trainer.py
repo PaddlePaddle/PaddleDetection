@@ -72,6 +72,8 @@ class Trainer(object):
         self.amp_level = self.cfg.get('amp_level', 'O1')
         self.custom_white_list = self.cfg.get('custom_white_list', None)
         self.custom_black_list = self.cfg.get('custom_black_list', None)
+        if 'slim' in cfg and cfg['slim_type'] == 'PTQ':
+            self.cfg['TestDataset'] = create('TestDataset')()
 
         # build data loader
         capital_mode = self.mode.capitalize()
