@@ -1,6 +1,6 @@
 # PPYOLOE+ Distillation(PPYOLOE+ 蒸馏)
 
-PaddleDetection提供了对PPYOLOE+ 进行模型蒸馏的方案，结合了logits蒸馏和feature蒸馏。
+PaddleDetection提供了对PPYOLOE+ 进行模型蒸馏的方案，结合了logits蒸馏和feature蒸馏。更多蒸馏方案可以查看[slim/distill](../../slim/distill/)。
 
 ## 模型库
 
