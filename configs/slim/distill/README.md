@@ -133,10 +133,10 @@ PaddleDetection提供了对PPYOLOE+ 进行模型蒸馏的方案，结合了logit
 | ----------------- | ----------- | ------ | :----: | :-----------: | :--------------: | :------------: |
 |   PP-YOLOE+_x     |  teacher   |  640     | 80e   |      54.7     | [config](../../ppyoloe/ppyoloe_plus_crn_x_80e_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_x_80e_coco.pdparams) |
 |   PP-YOLOE+_l     |  student   |  640     | 80e   |      52.9     | [config](../../ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_l_80e_coco.pdparams) |
-|   PP-YOLOE+_l     |  distill   |  640     | 80e   |   53.9(+1.0)  | [config](../../ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml),[slim_config](./ppyoloe_plus_distill_x_distill_l.yml)  | [model](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_l_80e_coco_distill.pdparams) |
+|   PP-YOLOE+_l     |  distill   |  640     | 80e   |   **54.0(+1.1)**  | [config](../../ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml),[slim_config](./ppyoloe_plus_distill_x_distill_l.yml)  | [model](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_l_80e_coco_distill.pdparams) |
 |   PP-YOLOE+_l     |  teacher   |  640     | 80e   |      52.9     | [config](../../ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_l_80e_coco.pdparams) |
 |   PP-YOLOE+_m     |  student   |  640     | 80e   |      49.8     | [config](../../ppyoloe/ppyoloe_plus_crn_m_80e_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_m_80e_coco.pdparams) |
-|   PP-YOLOE+_m     |  distill   |  640     | 80e   |    50.7(+0.9)    | [config](../../ppyoloe/distill/ppyoloe_plus_crn_m_80e_coco_distill.yml),[slim_config](./ppyoloe_plus_distill_l_distill_m.yml)  | [model](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_m_80e_coco_distill.pdparams) |
+|   PP-YOLOE+_m     |  distill   |  640     | 80e   |    **51.0(+1.2)**    | [config](../../ppyoloe/distill/ppyoloe_plus_crn_m_80e_coco_distill.yml),[slim_config](./ppyoloe_plus_distill_l_distill_m.yml)  | [model](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_m_80e_coco_distill.pdparams) |
 
 ```shell
 # 单卡训练(不推荐)
