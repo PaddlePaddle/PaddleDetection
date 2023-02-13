@@ -5,14 +5,15 @@
 PaddleDetection团队提供了针对行人的基于PP-YOLOE的检测模型，用户可以下载模型进行使用。PP-Human中使用模型为业务数据集模型，我们同时提供CrowdHuman训练配置，可以使用开源数据进行训练。
 其中整理后的COCO格式的CrowdHuman数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/crowdhuman.zip)，检测类别仅一类 `pedestrian(1)`，原始数据集[下载链接](http://www.crowdhuman.org/download.html)。
 
+相关模型的部署模型均在[PP-Human](../../deploy/pipeline/)项目中使用。
+
 |    模型   |  数据集  | mAP<sup>val<br>0.5:0.95 | mAP<sup>val<br>0.5 |  下载  | 配置文件 |
 |:---------|:-------:|:------:|:------:| :----: | :------:|
 |PP-YOLOE-s|   CrowdHuman   |  42.5  |  77.9  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_36e_crowdhuman.pdparams) | [配置文件](./ppyoloe_crn_s_36e_crowdhuman.yml) |
 |PP-YOLOE-l|   CrowdHuman   |  48.0  |  81.9  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_36e_crowdhuman.pdparams) | [配置文件](./ppyoloe_crn_l_36e_crowdhuman.yml) |
-|PP-YOLOE-s|   业务数据集   |  53.2  |  -  | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | [配置文件](./ppyoloe_crn_s_36e_pphuman.yml) |
-|PP-YOLOE-l|   业务数据集   |  57.8  |  -  | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | [配置文件](./ppyoloe_crn_l_36e_pphuman.yml) |
-|PP-YOLOE+_t-P2-aux(320)|   业务数据集   |  49.8  |  85.0  | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/pphuman/ppyoloe_plus_crn_t_p2_auxhead_320_60e_pphuman.zip) | [配置文件](./ppyoloe_plus_crn_t_p2_auxhead_320_60e_pphuman.yml) |
-|PP-YOLOE+_t-aux(320)|   业务数据集   |  45.7  |  81.2  | [下载链接](https://bj.bcebos.com/v1/paddledet/models/pipeline/pphuman/ppyoloe_plus_crn_t_auxhead_320_60e_pphuman.zip) | [配置文件](./ppyoloe_plus_crn_t_auxhead_320_60e_pphuman.yml) |
+|PP-YOLOE-s|   业务数据集   |  53.2  |  -  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_36e_pphuman.pdparams) | [配置文件](./ppyoloe_crn_s_36e_pphuman.yml) |
+|PP-YOLOE-l|   业务数据集   |  57.8  |  -  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_36e_pphuman.pdparams) | [配置文件](./ppyoloe_crn_l_36e_pphuman.yml) |
+|PP-YOLOE+_t-aux(320)|   业务数据集   |  45.7  |  81.2  | [下载链接](https://paddledet.bj.bcebos.com/models/pyoloe_plus_crn_t_auxhead_320_60e_pphuman.pdparams) | [配置文件](./ppyoloe_plus_crn_t_auxhead_320_60e_pphuman.yml) |
 
 
 **注意:**
