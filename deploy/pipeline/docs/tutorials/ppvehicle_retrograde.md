@@ -72,7 +72,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 #预测包含一个或多个视频的文件夹
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
                                    -o VEHICLE_RETROGRADE.enable=true \
-                                   --video_dir=test_video.mp4\
+                                   --video_dir=test_video \
                                    --device=gpu
 ```
 
@@ -97,7 +97,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 
 **注意:**
  - 车道线中间线自动判断条件：在采样的视频段内同时有两个相反方向的车辆，且判断一次后固定，不再更新；
- - 因摄像头角度以及2d视角问题，车道线中间线判断存在不准确情况，可在配置文件手动输入中间线坐标
+ - 因摄像头角度以及2d视角问题，车道线中间线判断存在不准确情况;
+ - 可在配置文件手动输入中间线坐标.参考[车辆违章配置文件](../../config/examples/infer_cfg_vehicle_violation.yml)
 
 
 ## 方案说明
