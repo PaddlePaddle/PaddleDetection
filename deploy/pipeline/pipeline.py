@@ -24,8 +24,12 @@ import copy
 import threading
 import queue
 import time
-from collections import Sequence, defaultdict
+from collections import defaultdict
 from datacollector import DataCollector, Result
+try:
+    from collections.abc import Sequence
+except Exception:
+    from collections import Sequence
 
 # add deploy path of PaddleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))

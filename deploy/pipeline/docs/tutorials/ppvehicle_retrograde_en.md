@@ -70,7 +70,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 #For folder contains one or multiple videos
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
                                    -o VEHICLE_RETROGRADE.enable=true \
-                                   --video_dir=test_video.mp4\
+                                   --video_dir=test_video \
                                    --device=gpu
 ```
 
@@ -95,7 +95,8 @@ The result is shown as follow:
 
 **Note:**
  - Automatic judgment condition of lane line middle line: there are two vehicles in opposite directions in the sampled video segment, and the judgment is fixed after one time and will not be updated;
- - Due to camera angle and 2d visual angle problems, the judgment of lane line middle line is inaccurate. You can manually enter the middle line coordinates in the configuration file
+ - Due to camera angle and 2d visual angle problems, the judgment of lane line middle line is inaccurate.
+ - You can manually enter the middle line coordinates in the configuration file.Example as [infer_cfg_vehicle_violation.yml](../../config/examples/infer_cfg_vehicle_violation.yml)
 
 
 ## Features to the Solution
