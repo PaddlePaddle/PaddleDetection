@@ -17,14 +17,12 @@ from __future__ import division
 from __future__ import print_function
 
 import math
-import numpy as np
-
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 
-from ppdet.core.workspace import register, create
+from ppdet.core.workspace import register
 from ppdet.modeling import ops
 from ppdet.modeling.losses.iou_loss import GIoULoss
 from ppdet.utils.logger import setup_logger
@@ -456,7 +454,7 @@ class CWDFeatureLoss(nn.Layer):
         x /= tau
         return F.softmax(x, axis=1)
 
-    def forward(self, preds_s, preds_t, inputs):
+    def forward(self, preds_s, preds_t, inputs=None):
         assert preds_s.shape[-2:] == preds_t.shape[-2:]
         N, C, H, W = preds_s.shape
         eps = 1e-5
@@ -676,7 +674,7 @@ class FGDFeatureLoss(nn.Layer):
 
         wmin, wmax, hmin, hmax = [], [], [], []
 
-        if gt_bboxes.shape[1] == 0:
+        if len(gt_bboxes) == 0:
             loss = self.relation_loss(stu_feature, tea_feature)
             return self.lambda_fgd * loss
 
@@ -750,7 +748,7 @@ class PKDFeatureLoss(nn.Layer):
         self.loss_weight = loss_weight
         self.resize_stu = resize_stu
 
-    def forward(self, stu_feature, tea_feature, inputs):
+    def forward(self, stu_feature, tea_feature, inputs=None):
         size_s, size_t = stu_feature.shape[2:], tea_feature.shape[2:]
         if size_s[0] != size_t[0]:
             if self.resize_stu:
@@ -791,7 +789,7 @@ class MimicFeatureLoss(nn.Layer):
         else:
             self.align = None
 
-    def forward(self, stu_feature, tea_feature, inputs):
+    def forward(self, stu_feature, tea_feature, inputs=None):
         if self.align is not None:
             stu_feature = self.align(stu_feature)
 
@@ -839,7 +837,7 @@ class MGDFeatureLoss(nn.Layer):
             nn.Conv2D(
                 teacher_channels, teacher_channels, kernel_size=3, padding=1))
 
-    def forward(self, stu_feature, tea_feature, inputs):
+    def forward(self, stu_feature, tea_feature, inputs=None):
         N = stu_feature.shape[0]
         if self.align is not None:
             stu_feature = self.align(stu_feature)
