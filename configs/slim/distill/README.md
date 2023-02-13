@@ -1,5 +1,14 @@
 # Distillation(蒸馏)
 
+## 内容
+- [YOLOv3模型蒸馏](#YOLOv3模型蒸馏)
+- [FGD模型蒸馏](#FGD模型蒸馏)
+- [CWD模型蒸馏](#CWD模型蒸馏)
+- [LD模型蒸馏](#LD模型蒸馏)
+- [PPYOLOE模型蒸馏](#PPYOLOE模型蒸馏)
+- [快速开始](#快速开始)
+- [引用](#引用)
+
 ## YOLOv3模型蒸馏
 
 以YOLOv3-MobileNetV1为例，使用YOLOv3-ResNet34作为蒸馏训练的teacher网络, 对YOLOv3-MobileNetV1结构的student网络进行蒸馏。
@@ -11,6 +20,20 @@ COCO数据集作为目标检测任务的训练目标难度更大，意味着teac
 | YOLOv3-ResNet34    | teacher     | 608   |  270e  |     36.2     | [config](../../yolov3/yolov3_r34_270e_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/yolov3_r34_270e_coco.pdparams) |
 | YOLOv3-MobileNetV1 | student     | 608   |  270e  |     29.4     | [config](../../yolov3/yolov3_mobilenet_v1_270e_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_270e_coco.pdparams) |
 | YOLOv3-MobileNetV1 | distill     | 608   |  270e  |  31.0(+1.6)  | [config](../../yolov3/yolov3_mobilenet_v1_270e_coco.yml),[slim_config](./yolov3_mobilenet_v1_coco_distill.yml) | [download](https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_coco_distill.pdparams) |
+
+```shell
+# 单卡训练(不推荐)
+python3.7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml --slim_config configs/slim/distill/yolov3_mobilenet_v1_coco_distill.yml
+# 多卡训练
+python3.7 -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml --slim_config configs/slim/distill/yolov3_mobilenet_v1_coco_distill.yml
+# 评估
+python3.7 tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_coco_distill.pdparams
+# 预测
+python3.7 tools/infer.py -c configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_coco_distill.pdparams --infer_img=demo/000000014439_640x640.jpg
+```
+
+- `-c`: 指定模型配置文件，也是student配置文件。
+- `--slim_config`: 指定压缩策略配置文件，也是teacher配置文件。
 
 
 ## FGD模型蒸馏
@@ -24,6 +47,57 @@ FGD全称为[Focal and Global Knowledge Distillation for Detectors](https://arxi
 | RetinaNet-ResNet50 | student    | 1333x800 |  2x  |      39.1     | [config](../../retinanet/retinanet_r50_fpn_2x_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco.pdparams) |
 | RetinaNet-ResNet50 | FGD        | 1333x800 |  2x  |   40.8(+1.7)  | [config](../../retinanet/retinanet_r50_fpn_2x_coco.yml),[slim_config](./retinanet_resnet101_coco_distill.yml) | [download](https://paddledet.bj.bcebos.com/models/retinanet_r101_distill_r50_2x_coco.pdparams) |
 
+```shell
+# 单卡训练(不推荐)
+python3.7 tools/train.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml --slim_config configs/slim/distill/retinanet_resnet101_coco_distill.yml
+# 多卡训练
+python3.7 -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml --slim_config configs/slim/distill/retinanet_resnet101_coco_distill.yml
+# 评估
+python3.7 tools/eval.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/retinanet_r101_distill_r50_2x_coco.pdparams
+# 预测
+python3.7 tools/infer.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/retinanet_r101_distill_r50_2x_coco.pdparams --infer_img=demo/000000014439_640x640.jpg
+```
+
+- `-c`: 指定模型配置文件，也是student配置文件。
+- `--slim_config`: 指定压缩策略配置文件，也是teacher配置文件。
+
+
+## CWD模型蒸馏
+
+CWD全称为[Channel-wise Knowledge Distillation for Dense Prediction*](https://arxiv.org/pdf/2011.13256.pdf)，通过最小化教师网络与学生网络的通道概率图之间的 Kullback-Leibler (KL) 散度，使得在蒸馏过程更加关注每个通道的最显著的区域，进而提升文本检测与图像分割任务的精度。在PaddleDetection中，我们实现了CWD算法，并基于GFL和RetinaNet模型进行验证，实验结果如下：
+
+| 模型               |    方案     | 输入尺寸 | epochs |    Box mAP    |       配置文件    |     下载链接    |
+| ----------------- | ----------- | ------ | :----: | :-----------: | :--------------: | :------------: |
+| RetinaNet-ResNet101| teacher    | 1333x800 |  2x  |     40.6     | [config](../../retinanet/retinanet_r101_fpn_2x_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/retinanet_r101_fpn_2x_coco.pdparams) |
+| RetinaNet-ResNet50 | student    | 1333x800 |  2x  |     39.1     | [config](../../retinanet/retinanet_r50_fpn_2x_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco.pdparams)  |
+| RetinaNet-ResNet50 | CWD        | 1333x800 |  2x  |   40.5(+1.4) | [config](../../retinanet/retinanet_r50_fpn_2x_coco.yml),[slim_config](./retinanet_resnet101_coco_distill_cwd.yml) | [download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_cwd.pdparams) |
+| GFL_ResNet101-vd| teacher    | 1333x800 |  2x  |     46.8     | [config](../../gfl/gfl_r101vd_fpn_mstrain_2x_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/gfl_r101vd_fpn_mstrain_2x_coco.pdparams) |
+| GFL_ResNet50    | student    | 1333x800 |  1x  |     41.0     | [config](../../gfl/gfl_r50_fpn_1x_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/gfl_r50_fpn_1x_coco.pdparams) |
+| GFL_ResNet50    | LD         | 1333x800 |  2x  |   44.0(+3.0) | [config](../../gfl/gfl_r50_fpn_1x_coco.yml),[slim_config](./gfl_r101vd_fpn_coco_distill_cwd.yml) | [download](https://bj.bcebos.com/v1/paddledet/models/gfl_r50_fpn_2x_coco_cwd.pdparams) |
+
+```shell
+# 单卡训练(不推荐)
+python3.7 tools/train.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml --slim_config configs/slim/distill/retinanet_resnet101_coco_distill_cwd.yml
+# 多卡训练
+python3.7 -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml --slim_config configs/slim/distill/retinanet_resnet101_coco_distill_cwd.yml
+# 评估
+python3.7 tools/eval.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_cwd.pdparams
+# 预测
+python3.7 tools/infer.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_cwd.pdparams --infer_img=demo/000000014439_640x640.jpg
+
+# 单卡训练(不推荐)
+python3.7 tools/train.py -c configs/gfl/gfl_r50_fpn_1x_coco.yml --slim_config configs/slim/distill/gfl_r101vd_fpn_coco_distill_cwd.yml
+# 多卡训练
+python3.7 -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/gfl/gfl_r50_fpn_1x_coco.yml --slim_config configs/slim/distill/gfl_r101vd_fpn_coco_distill_cwd.yml
+# 评估
+python3.7 tools/eval.py -c configs/gfl/gfl_r50_fpn_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/gfl_r50_fpn_2x_coco_cwd.pdparams
+# 预测
+python3.7 tools/infer.py -c configs/gfl/gfl_r50_fpn_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/gfl_r50_fpn_2x_coco_cwd.pdparams --infer_img=demo/000000014439_640x640.jpg
+```
+
+- `-c`: 指定模型配置文件，也是student配置文件。
+- `--slim_config`: 指定压缩策略配置文件，也是teacher配置文件。
+
 
 ## LD模型蒸馏
 
@@ -35,22 +109,23 @@ LD全称为[Localization Distillation for Dense Object Detection](https://arxiv.
 | GFL_ResNet18-vd | student    | 1333x800 |  1x  |     36.6     | [config](../../gfl/gfl_r18vd_1x_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/gfl_r18vd_1x_coco.pdparams) |
 | GFL_ResNet18-vd | LD         | 1333x800 |  1x  |   38.2(+1.6) | [config](../../gfl/gfl_slim_ld_r18vd_1x_coco.yml),[slim_config](./gfl_ld_distill.yml) | [download](https://bj.bcebos.com/v1/paddledet/models/gfl_slim_ld_r18vd_1x_coco.pdparams) |
 
+```shell
+# 单卡训练(不推荐)
+python3.7 tools/train.py -c configs/gfl/gfl_slim_ld_r18vd_1x_coco.yml --slim_config configs/slim/distill/gfl_ld_distill.yml
+# 多卡训练
+python3.7 -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/gfl/gfl_slim_ld_r18vd_1x_coco.yml --slim_config configs/slim/distill/gfl_ld_distill.yml
+# 评估
+python3.7 tools/eval.py -c configs/gfl/gfl_slim_ld_r18vd_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/gfl_slim_ld_r18vd_1x_coco.pdparams
+# 预测
+python3.7 tools/infer.py -c configs/gfl/gfl_slim_ld_r18vd_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/gfl_slim_ld_r18vd_1x_coco.pdparams --infer_img=demo/000000014439_640x640.jpg
 
-## CWD模型蒸馏
+```
 
-CWD全称为[Channel-wise Knowledge Distillation for Dense Prediction*](https://arxiv.org/pdf/2011.13256.pdf)，通过最小化教师网络与学生网络的通道概率图之间的 Kullback-Leibler (KL) 散度，使得在蒸馏过程更加关注每个通道的最显著的区域，进而提升文本检测与图像分割任务的精度。在PaddleDetection中，我们实现了CWD算法，并基于GFL和RetinaNet模型进行验证，实验结果如下：
-
-| 模型               |    方案     | 输入尺寸 | epochs |    Box mAP    |       配置文件    |     下载链接    |
-| ----------------- | ----------- | ------ | :----: | :-----------: | :--------------: | :------------: |
-| RetinaNet-ResNet101| teacher    | 1333x800 |  2x  |     40.6     | [config](../../retinanet/retinanet_r101_fpn_2x_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/retinanet_r101_fpn_2x_coco.pdparams) |
-| RetinaNet-ResNet50 | student    | 1333x800 |  2x  |     39.1     | [config](../../retinanet/retinanet_r50_fpn_2x_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco.pdparams)  |
-| RetinaNet-ResNet50 | CWD        | 1333x800 |  2x  |   40.5(+1.4) | [config](../../retinanet/retinanet_r50_fpn_2x_coco_cwd.yml),[slim_config](./retinanet_resnet101_coco_distill_cwd.yml) | [download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_cwd.pdparams) |
-| GFL_ResNet101-vd| teacher    | 1333x800 |  2x  |     46.8     | [config](../../gfl/gfl_r101vd_fpn_mstrain_2x_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/gfl_r101vd_fpn_mstrain_2x_coco.pdparams) |
-| GFL_ResNet50    | student    | 1333x800 |  1x  |     41.0     | [config](../../gfl/gfl_r50_fpn_1x_coco.yml) | [download](https://paddledet.bj.bcebos.com/models/gfl_r50_fpn_1x_coco.pdparams) |
-| GFL_ResNet50    | LD         | 1333x800 |  2x  |   44.0(+3.0) | [config](../../gfl/gfl_r50_fpn_2x_coco_cwd.yml),[slim_config](./gfl_r101vd_fpn_coco_distill_cwd.yml) | [download](https://bj.bcebos.com/v1/paddledet/models/gfl_r50_fpn_2x_coco_cwd.pdparams) |
+- `-c`: 指定模型配置文件，也是student配置文件。
+- `--slim_config`: 指定压缩策略配置文件，也是teacher配置文件。
 
 
-## PPYOLOE+ 模型蒸馏
+## PPYOLOE模型蒸馏
 
 PaddleDetection提供了对PPYOLOE+ 进行模型蒸馏的方案，结合了logits蒸馏和feature蒸馏。
 
@@ -63,41 +138,22 @@ PaddleDetection提供了对PPYOLOE+ 进行模型蒸馏的方案，结合了logit
 |   PP-YOLOE+_m     |  student   |  640     | 80e   |      49.8     | [config](../../ppyoloe/ppyoloe_plus_crn_m_80e_coco.yml) | [model](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_m_80e_coco.pdparams) |
 |   PP-YOLOE+_m     |  distill   |  640     | 80e   |    50.7(+0.9)    | [config](../../ppyoloe/distill/ppyoloe_plus_crn_m_80e_coco_distill.yml),[slim_config](./ppyoloe_plus_distill_l_distill_m.yml)  | [model](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_m_80e_coco_distill.pdparams) |
 
-
-## 快速开始
-
-### 训练
 ```shell
-# 单卡
-python tools/train.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml --slim_config configs/slim/distill/ppyoloe_plus_distill_x_distill_l.yml
-# 多卡
-python -m paddle.distributed.launch --log_dir=ppyoloe_plus_distill_x_distill_l/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml --slim_config configs/slim/distill/ppyoloe_plus_distill_x_distill_l.yml
+# 单卡训练(不推荐)
+python3.7 tools/train.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml --slim_config configs/slim/distill/ppyoloe_plus_distill_x_distill_l.yml
+# 多卡训练
+python3.7 -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml --slim_config configs/slim/distill/ppyoloe_plus_distill_x_distill_l.yml
+# 评估
+python3.7 tools/eval.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco_distill.pdparams
+# 预测
+python3.7 tools/infer.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco_distill.pdparams --infer_img=demo/000000014439_640x640.jpg
 ```
 
 - `-c`: 指定模型配置文件，也是student配置文件。
 - `--slim_config`: 指定压缩策略配置文件，也是teacher配置文件。
 
-### 评估
-```shell
-python tools/eval.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml -o weights=output/ppyoloe_plus_crn_l_80e_coco_distill/model_final.pdparams
-```
 
-- `-c`: 指定模型配置文件，也是student配置文件。
-- `--slim_config`: 指定压缩策略配置文件，也是teacher配置文件。
-- `-o weights`: 指定压缩算法训好的模型路径。
-
-### 测试
-```shell
-python tools/infer.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml -o weights=output/ppyoloe_plus_crn_l_80e_coco_distill/model_final.pdparams --infer_img=demo/000000014439_640x640.jpg
-```
-
-- `-c`: 指定模型配置文件。
-- `--slim_config`: 指定压缩策略配置文件。
-- `-o weights`: 指定压缩算法训好的模型路径。
-- `--infer_img`: 指定测试图像路径。
-
-
-## Citations
+## 引用
 ```
 @article{mehta2018object,
       title={Object detection at 200 Frames Per Second},
