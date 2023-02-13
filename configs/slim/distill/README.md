@@ -23,13 +23,13 @@ COCO数据集作为目标检测任务的训练目标难度更大，意味着teac
 
 ```shell
 # 单卡训练(不推荐)
-python3.7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml --slim_config configs/slim/distill/yolov3_mobilenet_v1_coco_distill.yml
+python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml --slim_config configs/slim/distill/yolov3_mobilenet_v1_coco_distill.yml
 # 多卡训练
-python3.7 -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml --slim_config configs/slim/distill/yolov3_mobilenet_v1_coco_distill.yml
+python -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml --slim_config configs/slim/distill/yolov3_mobilenet_v1_coco_distill.yml
 # 评估
-python3.7 tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_coco_distill.pdparams
+python tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_coco_distill.pdparams
 # 预测
-python3.7 tools/infer.py -c configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_coco_distill.pdparams --infer_img=demo/000000014439_640x640.jpg
+python tools/infer.py -c configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_coco_distill.pdparams --infer_img=demo/000000014439_640x640.jpg
 ```
 
 - `-c`: 指定模型配置文件，也是student配置文件。
@@ -49,13 +49,13 @@ FGD全称为[Focal and Global Knowledge Distillation for Detectors](https://arxi
 
 ```shell
 # 单卡训练(不推荐)
-python3.7 tools/train.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml --slim_config configs/slim/distill/retinanet_resnet101_coco_distill.yml
+python tools/train.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml --slim_config configs/slim/distill/retinanet_resnet101_coco_distill.yml
 # 多卡训练
-python3.7 -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml --slim_config configs/slim/distill/retinanet_resnet101_coco_distill.yml
+python -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml --slim_config configs/slim/distill/retinanet_resnet101_coco_distill.yml
 # 评估
-python3.7 tools/eval.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/retinanet_r101_distill_r50_2x_coco.pdparams
+python tools/eval.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/retinanet_r101_distill_r50_2x_coco.pdparams
 # 预测
-python3.7 tools/infer.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/retinanet_r101_distill_r50_2x_coco.pdparams --infer_img=demo/000000014439_640x640.jpg
+python tools/infer.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/retinanet_r101_distill_r50_2x_coco.pdparams --infer_img=demo/000000014439_640x640.jpg
 ```
 
 - `-c`: 指定模型配置文件，也是student配置文件。
@@ -77,22 +77,22 @@ CWD全称为[Channel-wise Knowledge Distillation for Dense Prediction*](https://
 
 ```shell
 # 单卡训练(不推荐)
-python3.7 tools/train.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml --slim_config configs/slim/distill/retinanet_resnet101_coco_distill_cwd.yml
+python tools/train.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml --slim_config configs/slim/distill/retinanet_resnet101_coco_distill_cwd.yml
 # 多卡训练
-python3.7 -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml --slim_config configs/slim/distill/retinanet_resnet101_coco_distill_cwd.yml
+python -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml --slim_config configs/slim/distill/retinanet_resnet101_coco_distill_cwd.yml
 # 评估
-python3.7 tools/eval.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_cwd.pdparams
+python tools/eval.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_cwd.pdparams
 # 预测
-python3.7 tools/infer.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_cwd.pdparams --infer_img=demo/000000014439_640x640.jpg
+python tools/infer.py -c configs/retinanet/retinanet_r50_fpn_2x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_cwd.pdparams --infer_img=demo/000000014439_640x640.jpg
 
 # 单卡训练(不推荐)
-python3.7 tools/train.py -c configs/gfl/gfl_r50_fpn_1x_coco.yml --slim_config configs/slim/distill/gfl_r101vd_fpn_coco_distill_cwd.yml
+python tools/train.py -c configs/gfl/gfl_r50_fpn_1x_coco.yml --slim_config configs/slim/distill/gfl_r101vd_fpn_coco_distill_cwd.yml
 # 多卡训练
-python3.7 -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/gfl/gfl_r50_fpn_1x_coco.yml --slim_config configs/slim/distill/gfl_r101vd_fpn_coco_distill_cwd.yml
+python -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/gfl/gfl_r50_fpn_1x_coco.yml --slim_config configs/slim/distill/gfl_r101vd_fpn_coco_distill_cwd.yml
 # 评估
-python3.7 tools/eval.py -c configs/gfl/gfl_r50_fpn_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/gfl_r50_fpn_2x_coco_cwd.pdparams
+python tools/eval.py -c configs/gfl/gfl_r50_fpn_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/gfl_r50_fpn_2x_coco_cwd.pdparams
 # 预测
-python3.7 tools/infer.py -c configs/gfl/gfl_r50_fpn_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/gfl_r50_fpn_2x_coco_cwd.pdparams --infer_img=demo/000000014439_640x640.jpg
+python tools/infer.py -c configs/gfl/gfl_r50_fpn_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/gfl_r50_fpn_2x_coco_cwd.pdparams --infer_img=demo/000000014439_640x640.jpg
 ```
 
 - `-c`: 指定模型配置文件，也是student配置文件。
@@ -111,13 +111,13 @@ LD全称为[Localization Distillation for Dense Object Detection](https://arxiv.
 
 ```shell
 # 单卡训练(不推荐)
-python3.7 tools/train.py -c configs/gfl/gfl_slim_ld_r18vd_1x_coco.yml --slim_config configs/slim/distill/gfl_ld_distill.yml
+python tools/train.py -c configs/gfl/gfl_slim_ld_r18vd_1x_coco.yml --slim_config configs/slim/distill/gfl_ld_distill.yml
 # 多卡训练
-python3.7 -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/gfl/gfl_slim_ld_r18vd_1x_coco.yml --slim_config configs/slim/distill/gfl_ld_distill.yml
+python -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/gfl/gfl_slim_ld_r18vd_1x_coco.yml --slim_config configs/slim/distill/gfl_ld_distill.yml
 # 评估
-python3.7 tools/eval.py -c configs/gfl/gfl_slim_ld_r18vd_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/gfl_slim_ld_r18vd_1x_coco.pdparams
+python tools/eval.py -c configs/gfl/gfl_slim_ld_r18vd_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/gfl_slim_ld_r18vd_1x_coco.pdparams
 # 预测
-python3.7 tools/infer.py -c configs/gfl/gfl_slim_ld_r18vd_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/gfl_slim_ld_r18vd_1x_coco.pdparams --infer_img=demo/000000014439_640x640.jpg
+python tools/infer.py -c configs/gfl/gfl_slim_ld_r18vd_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/gfl_slim_ld_r18vd_1x_coco.pdparams --infer_img=demo/000000014439_640x640.jpg
 
 ```
 
@@ -140,13 +140,13 @@ PaddleDetection提供了对PPYOLOE+ 进行模型蒸馏的方案，结合了logit
 
 ```shell
 # 单卡训练(不推荐)
-python3.7 tools/train.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml --slim_config configs/slim/distill/ppyoloe_plus_distill_x_distill_l.yml
+python tools/train.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml --slim_config configs/slim/distill/ppyoloe_plus_distill_x_distill_l.yml
 # 多卡训练
-python3.7 -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml --slim_config configs/slim/distill/ppyoloe_plus_distill_x_distill_l.yml
+python -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml --slim_config configs/slim/distill/ppyoloe_plus_distill_x_distill_l.yml
 # 评估
-python3.7 tools/eval.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco_distill.pdparams
+python tools/eval.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco_distill.pdparams
 # 预测
-python3.7 tools/infer.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco_distill.pdparams --infer_img=demo/000000014439_640x640.jpg
+python tools/infer.py -c configs/ppyoloe/distill/ppyoloe_plus_crn_l_80e_coco_distill.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco_distill.pdparams --infer_img=demo/000000014439_640x640.jpg
 ```
 
 - `-c`: 指定模型配置文件，也是student配置文件。
