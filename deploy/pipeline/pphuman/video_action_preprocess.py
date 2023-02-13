@@ -14,9 +14,12 @@
 
 import cv2
 import numpy as np
-from collections.abc import Sequence
 from PIL import Image
 import paddle
+try:
+    from collections.abc import Sequence
+except Exception:
+    from collections import Sequence
 
 
 class Sampler(object):

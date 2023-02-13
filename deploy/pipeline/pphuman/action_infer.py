@@ -21,7 +21,10 @@ import numpy as np
 import math
 import paddle
 import sys
-from collections import Sequence
+try:
+    from collections.abc import Sequence
+except Exception:
+    from collections import Sequence
 
 # add deploy path of PaddleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
