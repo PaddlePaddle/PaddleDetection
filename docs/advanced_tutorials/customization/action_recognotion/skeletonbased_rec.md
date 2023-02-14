@@ -202,4 +202,4 @@ INFERENCE:
 基于人体骨骼点的行为识别方案中，模型输出的分类结果即代表了该人物在一定时间段内行为类型。对应分类的类型最终即视为当前阶段的行为。因此在完成自定义模型的训练及部署的基础上，使用模型输出作为最终结果，修改可视化的显示结果即可。
 
 #### 修改可视化输出
-目前基于ID的行为识别，是根据行为识别的结果及预定义的类别名称进行展示的。详细逻辑请见[此处](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pipeline.py#L1024-L1043)。如果自定义的行为需要修改为其他的展示名称，请对应修改此处，以正确输出对应结果。
+目前基于ID的行为识别，是根据行为识别的结果及预定义的类别名称进行展示的。详细逻辑请见[此处](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.6/deploy/pipeline/pipeline.py#L1024-L1043)。如果自定义的行为需要修改为其他的展示名称，请对应修改此处，以正确输出对应结果。

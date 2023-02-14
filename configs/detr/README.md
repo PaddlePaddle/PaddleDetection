@@ -10,7 +10,7 @@ DETR is an object detection model based on transformer. We reproduced the model 
 
 | Backbone | Model | Images/GPU  | Inf time (fps) | Box AP | Config | Download |
 |:------:|:--------:|:--------:|:--------------:|:------:|:------:|:--------:|
-| R-50 | DETR  | 4 | --- | 42.3 | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/detr/detr_r50_1x_coco.yml) | [model](https://paddledet.bj.bcebos.com/models/detr_r50_1x_coco.pdparams) |
+| R-50 | DETR  | 4 | --- | 42.3 | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.6/configs/detr/detr_r50_1x_coco.yml) | [model](https://paddledet.bj.bcebos.com/models/detr_r50_1x_coco.pdparams) |
 
 **Notes:**
 

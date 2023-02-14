@@ -143,13 +143,13 @@ For rtsp pull stream, use --rtsp RTSP [RTSP ...] parameter to specify one or mor
 
 - rtsp push stream
 
-For rtsp push stream, use --pushurl rtsp:[IP] parameter to push stream to a IP set, and you can visualize the output video by [VLC Player](https://vlc.onl/) with the `open network` funciton. the whole url path is `rtsp:[IP]/videoname`, the videoname here is the basename of the video file to infer, and the default of videoname is `output` when the video come from local camera and there is no video name. 
+For rtsp push stream, use --pushurl rtsp:[IP] parameter to push stream to a IP set, and you can visualize the output video by [VLC Player](https://vlc.onl/) with the `open network` funciton. the whole url path is `rtsp:[IP]/videoname`, the videoname here is the basename of the video file to infer, and the default of videoname is `output` when the video come from local camera and there is no video name.
 
 ```
 # Example：license plate recognition，in this example the whole url path is: rtsp://[YOUR_SERVER_IP]:8554/test_video
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infer_cfg_vehicle_plate.yml --video_file=test_video.mp4  --device=gpu --pushurl rtsp://[YOUR_SERVER_IP]:8554
 ```
-Note: 
+Note:
 1. rtsp push stream is based on [rtsp-simple-server](https://github.com/aler9/rtsp-simple-server), please enable this serving first.
 2. the output visualize will be frozen frequently if the model cost too much time, we suggest to use faster model like ppyoloe_s in tracking, this is simply replace mot_ppyoloe_l_36e_pipeline.zip with mot_ppyoloe_s_36e_pipeline.zip in model config yaml file.
 

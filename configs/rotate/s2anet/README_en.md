@@ -16,8 +16,8 @@ English | [简体中文](README.md)
 ## Model Zoo
 | Model | Conv Type | mAP | Lr Scheduler | Angle | Aug | GPU Number | images/GPU | download | config |
 |:---:|:------:|:----:|:---------:|:-----:|:--------:|:-----:|:------------:|:-------:|:------:|
-| S2ANet | Conv | 71.45 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/s2anet/s2anet_conv_2x_dota.yml) |
-| S2ANet | AlignConv | 73.84 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml) |
+| S2ANet | Conv | 71.45 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_conv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/rotate/s2anet/s2anet_conv_2x_dota.yml) |
+| S2ANet | AlignConv | 73.84 | 2x | le135 | - | 4 | 2 | [model](https://paddledet.bj.bcebos.com/models/s2anet_alignconv_2x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/rotate/s2anet/s2anet_alignconv_2x_dota.yml) |
 
 **Notes:**
 - if **GPU number** or **mini-batch size** is changed, **learning rate** should be adjusted according to the formula **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)**.

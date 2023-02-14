@@ -168,7 +168,7 @@ python deploy/python/infer.py --model_dir=output_inference/yolox_s_300e_coco --i
 
 <details>
 <summary>如何计算模型参数量</summary>
-可以将以下代码插入：[trainer.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/ppdet/engine/trainer.py#L154) 来计算参数量。
+可以将以下代码插入：[trainer.py](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.6/ppdet/engine/trainer.py#L154) 来计算参数量。
 ```python
 params = sum([
     p.numel() for n, p in self.model.named_parameters()
