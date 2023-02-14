@@ -50,4 +50,4 @@ inference:./deploy/python/infer.py
 --run_benchmark:False
 null:null
 ===========================infer_benchmark_params===========================
-numpy_infer_input:3x1024x1024.npy
+numpy_infer_input:3x1024x1024_2.npy

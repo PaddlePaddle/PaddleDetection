@@ -57,4 +57,4 @@ repeat:1
 --profiler_options:batch_range=[10,20];state=GPU;tracer_option=Default;profile_path=model.profile
 flags:null
 ===========================infer_benchmark_params===========================
-numpy_infer_input:3x640x640.npy
+numpy_infer_input:3x640x640_2.npy
