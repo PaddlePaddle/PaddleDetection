@@ -41,7 +41,8 @@
 | **Vehicle Attributes** | Identify 10 vehicle colors and 9 models <br/><br/> More powerfull backbone: PP-HGNet/PP-LCNet, with higher accuracy and faster speed <br/><br/> accuracy of model: 90.81 <br/><br/>  | <img title="" src="https://user-images.githubusercontent.com/48054808/185044490-00edd930-1885-4e79-b3d4-3a39a77dea93.gif" alt="" width="207"> |
 | **Illegal Parking**   | Easy to use with one line command, and define the illegal area by yourself <br/><br/> Get the license of illegal car <br/><br/>  | <img title="" src="https://user-images.githubusercontent.com/48054808/185028419-58ae0af8-a035-42e7-9583-25f5e4ce0169.png" alt="" width="209"> |
 | **in-out counting**  | Easy to use with one line command, and define the in-out line by yourself <br/><br/> Target route visualize with high tracking performance        | <img title="" src="https://user-images.githubusercontent.com/48054808/185028798-9e07379f-7486-4266-9d27-3aec943593e0.gif" alt="" width="200"> |
-
+| **vehicle retrograde**   | Easy to use with one line command <br/><br/> High precision Segmetation model PP-Seg    | <img title="" src="https://raw.githubusercontent.com/LokeZhou/PaddleDetection/develop/deploy/pipeline/docs/images/vehicle_retrograde.gif" alt="" width="200"> |
+| **vehicle press line**  | Easy to use with one line command <br/><br/> High precision Segmetation model PP-Seg    | <img title="" src="https://raw.githubusercontent.com/LokeZhou/PaddleDetection/develop/deploy/pipeline/docs/images/vehicle_press.gif" alt="" width="200"> |
 
 ## 🗳 Model Zoo
 
@@ -75,7 +76,8 @@
 | Vehicle tracking (high precision)   | 40ms               | [multi-object tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip)                                                                                                                                                                                                                      | 182M                                                                                                   |
 | Vehicle tracking (lightweight)      | 25ms               | [multi-object tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip)                                                                                                                                                                                                                      | 27M                                                                                                    |
 | Plate Recognition                   | 4.68ms     | [plate detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz)<br>[plate recognition](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz)                                                                                         | Plate detection：3.9M<br>Plate recognition：12M                                    |
-| Vehicle attribute      | 7.31ms               | [attribute recognition](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip)                                                                                                                                                                                                                      | 7.2M                                                                                                    |
+| Vehicle attribute      | 7.31ms               | [attribute recognition](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip)                                                                                                                                                                                                                      | 7.2M                                                                                        |
+| Lane line Segmentation      |   47ms | [Lane line Segmentation](https://bj.bcebos.com/v1/paddledet/models/pipeline/pp_lite_stdc2_bdd100k.zip) | 47M |
 
 </details>
 
@@ -145,6 +147,10 @@ Click to download the model, then unzip and save it in the `. /output_inference`
 
 - [A quick start](docs/tutorials/ppvehicle_press_en.md)
 
+- [Customized development tutorials]
+
 #### Vehicle Retrograde
 
 - [A quick start](docs/tutorials/ppvehicle_retrograde_en.md)
+
+- [Customized development tutorials]
