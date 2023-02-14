@@ -8,6 +8,8 @@
 - [模型下载](#模型下载)
 - [配置文件说明](#配置文件说明)
 - [预测部署](#预测部署)
+  - [在线视频流](#在线视频流)
+  - [Jetson部署说明](#Jetson部署说明)
   - [参数说明](#参数说明)
 - [方案介绍](#方案介绍)
   - [车辆检测](#车辆检测)
@@ -54,7 +56,7 @@ PP-Vehicle提供了目标检测、属性识别、行为识别、ReID预训练模
 |  车辆跟踪（轻量级）  | 25ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip) | 27M |
 |  车牌识别  |   4.68ms |  [车牌检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz) <br> [车牌字符识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz) | 车牌检测：3.9M  <br> 车牌字符识别： 12M |
 |  车辆属性  |   7.31ms | [车辆属性](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip) | 7.2M |
-
+|  车道线检测  |   47ms | [车道线模型](https://bj.bcebos.com/v1/paddledet/models/pipeline/pp_lite_stdc2_bdd100k.zip) | 47M |
 
 下载模型后，解压至`./output_inference`文件夹。
 
@@ -131,7 +133,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 
 ```
 
-3. rtsp推拉流
+### 在线视频流
+
 - rtsp拉流预测
 
 对rtsp拉流的支持，使用--rtsp RTSP [RTSP ...]参数指定一路或者多路rtsp视频流，如果是多路地址中间用空格隔开。(或者video_file后面的视频地址直接更换为rtsp流地址)，示例如下：
@@ -152,18 +155,25 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 ```
 注：
 1. rtsp推流服务基于 [rtsp-simple-server](https://github.com/aler9/rtsp-simple-server), 如使用推流功能请先开启该服务.
+使用方法很简单，以linux平台为例：1）下载对应平台release包；2）解压后在命令行执行命令 `./rtsp-simple-server`即可，成功后进入服务开启状态就可以接收视频流了。
 2. rtsp推流如果模型处理速度跟不上会出现很明显的卡顿现象，建议跟踪模型使用ppyoloe_s版本，即修改配置中跟踪模型mot_ppyoloe_l_36e_pipeline.zip替换为mot_ppyoloe_s_36e_pipeline.zip。
 
 ### Jetson部署说明
 
 由于Jetson平台算力相比服务器有较大差距，有如下使用建议：
 
-1. 模型选择轻量级版本，特别是跟踪模型，推荐使用`ppyoloe_s: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip`
-2. 开启跟踪跳帧功能，推荐使用2或者3. `skip_frame_num: 3`
+1. 模型选择轻量级版本，我们最新提供了轻量级[PP-YOLOE-Plus Tiny模型](../../../../configs/ppvehicle/README.md)，该模型在Jetson AGX上可以实现4路视频流20fps实时跟踪。
+2. 如果需进一步提升速度，建议开启跟踪跳帧功能，推荐使用2或者3: `skip_frame_num: 3`，该功能当前默认关闭。
 
-使用该推荐配置，在TX2平台上可以达到较高速率，经测试属性案例达到20fps。
+上述修改可以直接修改配置文件（推荐），也可以在命令行中修改（字段较长，不推荐）。
 
-可以直接修改配置文件（推荐），也可以在命令行中修改（字段较长，不推荐）。
+PP-YOLOE-Plus Tiny模型在AGX平台不同功能开启时的速度如下：（测试视频跟踪车辆为1个）
+
+| 功能  | 平均每帧耗时(ms)  | 运行帧率(fps)  |
+|:----------|:----------|:----------|
+| tracking    | 13    | 77    |
+| Attribute    | 20.2    | 49.4    |
+| Plate    | -    | -    |
 
 
 ### 参数说明
@@ -195,7 +205,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 PP-Vehicle 整体方案如下图所示:
 
 <div width="1000" align="center">
-  <img src="../../../../docs/images/ppvehicle.png"/>
+  <img src="https://user-images.githubusercontent.com/31800336/218659932-31f4298c-042d-436d-9845-18879f5d31e3.png"/>
 </div>
 
 
@@ -220,3 +230,11 @@ PP-Vehicle 整体方案如下图所示:
 ### 违章停车识别
 - 车辆跟踪模型使用高精度模型PP-YOLOE L，根据车辆的跟踪轨迹以及指定的违停区域判断是否违章停车，如果存在则展示违章停车车牌号。
 - 详细文档参考[违章停车识别](ppvehicle_illegal_parking.md)
+
+### 违法分析-逆行
+- 违法分析-逆行，通过使用高精度分割模型PP-Seg，对车道线进行分割拟合，然后与车辆轨迹组合判断车辆行驶方向是否与道路方向一致。
+- 详细文档参考[违法分析-逆行](ppvehicle_retrograde.md)
+
+### 违法分析-压线
+- 违法分析-逆行，通过使用高精度分割模型PP-Seg，对车道线进行分割拟合，然后与车辆区域是否覆盖实线区域，进行压线判断。
+- 详细文档参考[违法分析-压线](ppvehicle_press.md)

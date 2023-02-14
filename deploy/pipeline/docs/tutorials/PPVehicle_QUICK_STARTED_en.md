@@ -8,6 +8,8 @@ English | [简体中文](PPVehicle_QUICK_STARTED.md)
 - [Model Download](#Model-Download)
 - [Configuration](#Configuration)
 - [Inference Deployment](#Inference-Deployment)
+  - [rtsp_stream](#rtsp_stream)
+  - [Nvidia_Jetson](#Nvidia_Jetson)
   - [Parameters](#Parameters)
 - [Solutions](#Solutions)
   - [Vehicle Detection](#Vehicle-Detection)
@@ -53,6 +55,7 @@ PP-Vehicle provides object detection, attribute recognition, behaviour recogniti
 | Vehicle Tracking（Lightweight）     | 25ms       | [Multi-Object Tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip)                                                                                                                              | 27M                                                                   |
 | License plate recognition         | 4.68ms     | [License plate recognition](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz) <br> [License plate character recognition](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz) | Vehicle Detection：3.9M  <br> License plate character recognition： 12M |
 | Vehicle Attribute Recognition     | 7.31ms     | [Vehicle Attribute](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip)                                                                                                                                      | 7.2M                                                                  |
+| Lane line Segmentation      |   47ms | [Lane line Segmentation](https://bj.bcebos.com/v1/paddledet/models/pipeline/pp_lite_stdc2_bdd100k.zip) | 47M |
 
 Download the model and unzip it into the `. /output_inference` folder.
 
@@ -60,7 +63,7 @@ In the configuration file, the model path defaults to the download path of the m
 
 **Notes：**
 
-- The accuracy of detection tracking model is obtained from the joint dataset PPVehicle (integration of the public dataset BDD100K-MOT and UA-DETRAC). For more details, please refer to [PP-Vehicle](... /... /... /... /configs/ppvehicle)
+- The accuracy of detection tracking model is obtained from the joint dataset PPVehicle (integration of the public dataset BDD100K-MOT and UA-DETRAC). For more details, please refer to [PP-Vehicle](../../../../configs/ppvehicle)
 - Inference speed is obtained at T4 with TensorRT FP16 enabled, which includes data pre-processing, model inference and post-processing.
 
 ## Configuration
@@ -129,7 +132,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
                                                       --region_polygon 600 300 1300 300 1300 800 600 800
    ```
 
-3. rtsp push/pull stream
+### rtsp_stream
+
 - rtsp pull stream
 
 For rtsp pull stream, use --rtsp RTSP [RTSP ...] parameter to specify one or more rtsp streams. Separate the multiple addresses with a space, or replace the video address directly after the video_file with the rtsp stream address), examples as follows
@@ -151,16 +155,24 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 ```
 Note:
 1. rtsp push stream is based on [rtsp-simple-server](https://github.com/aler9/rtsp-simple-server), please enable this serving first.
+It's very easy to use: 1) download the [release package](https://github.com/aler9/rtsp-simple-server/releases) which is compatible with your workspace. 2) run command './rtsp-simple-server', which works as a rtsp server.
 2. the output visualize will be frozen frequently if the model cost too much time, we suggest to use faster model like ppyoloe_s in tracking, this is simply replace mot_ppyoloe_l_36e_pipeline.zip with mot_ppyoloe_s_36e_pipeline.zip in model config yaml file.
 
-### Jetson Deployment
+### Nvidia_Jetson
 
 Due to the large gap in computing power of the Jetson platform compared to the server, we suggest:
 
-1. choose a lightweight model, especially for tracking model, `ppyoloe_s: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip` is recommended
-2. For frame skipping of tracking; we recommend 2 or 3: `skip_frame_num: 3`
+1. choose a lightweight model, we provide a new model named [PP-YOLOE-Plus Tiny](../../../../configs/ppvehicle/README.md)，which achieve 20fps with four rtsp streams work togather on Jetson AGX.
+2. For further speedup, you can set frame skipping of tracking; we recommend 2 or 3: `skip_frame_num: 3`
 
-With this recommended configuration, it is possible to achieve higher speeds on the TX2 platform. It has been tested with attribute case, with speeds up to 20fps. The configuration file can be modified directly (recommended) or from the command line (not recommended due to its long fields).
+PP-YOLOE-Plus Tiny module speed test data on AGX：（a single car in the test video）
+
+| module  | time cost per frame(ms)  | speed(fps)  |
+|:----------|:----------|:----------|
+| tracking    | 13    | 77    |
+| Attribute    | 20.2    | 49.4    |
+| Plate    | -    | -    |
+
 
 ### Parameters
 
@@ -176,8 +188,7 @@ With this recommended configuration, it is possible to achieve higher speeds on 
 | --rtsp                 | Option    | rtsp video stream address, supports one or more simultaneous streams input                                                                                                                                                                        |
 | --camera_id            | Option    | The camera ID for prediction, default is -1 ( for no camera prediction, can be set to 0 - (number of cameras - 1) ), press `q` in the visualization interface during the prediction process to output the prediction result to: output/output.mp4 |
 | --device               | Option    | Running device, options include `CPU/GPU/XPU`, and the default is `CPU`.                                                                                                                                                                          |
-| --pushurl              | Option    | push the output video to rtsp stream, normaly start with `rtsp://`; this has higher priority than local video save, while this is set, pipeline will not save local visualize video, the default is "", means this will not work now.
-                |
+| --pushurl              | Option    | push the output video to rtsp stream, normaly start with `rtsp://`; this has higher priority than local video save, while this is set, pipeline will not save local visualize video, the default is "", means this will not work now.|
 | --output_dir           | Option    | The root directory for the visualization results, and the default is output/                                                                                                                                                                      |
 | --run_mode             | Option    | For GPU, the default is paddle, with (paddle/trt_fp32/trt_fp16/trt_int8) as optional                                                                                                                                                              |
 | --enable_mkldnn        | Option    | Whether to enable MKLDNN acceleration in CPU prediction, the default is False                                                                                                                                                                     |
@@ -194,7 +205,7 @@ With this recommended configuration, it is possible to achieve higher speeds on 
 The overall solution for PP-Vehicle v2 is shown in the graph below:
 
 <div width="1000" align="center">
-  <img src="../../../../docs/images/ppvehicle.png"/>
+  <img src="https://user-images.githubusercontent.com/31800336/218659932-31f4298c-042d-436d-9845-18879f5d31e3.png"/>
 </div>
 
 ###
@@ -202,14 +213,14 @@ The overall solution for PP-Vehicle v2 is shown in the graph below:
 ### Vehicle detection
 
 - Take PP-YOLOE L as the object detection model
-- For detailed documentation, please refer to [PP-YOLOE](... /... /... /... /configs/ppyoloe/) and [Multiple-Object-Tracking](ppvehicle_mot_en.md)
+- For detailed documentation, please refer to [PP-YOLOE](../../../../configs/ppyoloe/) and [Multiple-Object-Tracking](ppvehicle_mot_en.md)
 
 ### Vehicle tracking
 
 - Vehicle tracking by SDE solution
 - Adopt PP-YOLOE L (high precision) and S (lightweight) for detection models
 - Adopt the OC-SORT solution for racking module
-- Refer to [OC-SORT](... /... /... /... /configs/mot/ocsort) and [Multi-Object Tracking](ppvehicle_mot_en.md) for details
+- Refer to [OC-SORT](../../../../configs/mot/ocsort) and [Multi-Object Tracking](ppvehicle_mot_en.md) for details
 
 ### Attribute Recognition
 
@@ -226,3 +237,14 @@ The overall solution for PP-Vehicle v2 is shown in the graph below:
 - Use vehicle tracking model (high precision) PP-YOLOE L to determine whether the parking is illegal based on the vehicle's trajectory and the designated illegal parking area. If it is illegal parking, display the illegal parking plate number.
 
 - For details, please refer to [Illegal Parking Detection](ppvehicle_illegal_parking_en.md)
+
+#### Vehicle Press Line
+
+- Use segmentation model PP-Seg to get the lane line in frame, combine it with vehicle route to find out the vehicle against traffic.
+- For details, please refer to [Vehicle Press Line](ppvehicle_press_en.md)
+
+#### Vehicle Retrograde
+
+- Use segmentation model PP-Seg to get the lane line in frame, combine it with vehicle detection box to juege if the car is pressing on lines.
+- For details, please refer to [Vehicle Retrograde](ppvehicle_retrograde_en.md)
+
