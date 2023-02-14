@@ -11,7 +11,7 @@ TOOD is an object detection model. We reproduced the model of the paper.
 
 | Backbone | Model | Images/GPU  | Inf time (fps) | Box AP | Config | Download |
 |:------:|:--------:|:--------:|:--------------:|:------:|:------:|:--------:|
-| R-50 | TOOD  | 4 | --- | 42.5 | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/tood/tood_r50_fpn_1x_coco.yml) | [model](https://paddledet.bj.bcebos.com/models/tood_r50_fpn_1x_coco.pdparams) |
+| R-50 | TOOD  | 4 | --- | 42.5 | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.6/configs/tood/tood_r50_fpn_1x_coco.yml) | [model](https://paddledet.bj.bcebos.com/models/tood_r50_fpn_1x_coco.pdparams) |
 
 **Notes:**
 

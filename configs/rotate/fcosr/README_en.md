@@ -17,7 +17,7 @@ English | [简体中文](README.md)
 
 | Model | Backbone | mAP | Lr Scheduler | Angle | Aug | GPU Number | images/GPU | download | config |
 |:---:|:--------:|:----:|:---------:|:-----:|:--------:|:-----:|:------------:|:-------:|:------:|
-| FCOSR-M | ResNeXt-50 | 76.62 | 3x | oc | RR | 4 | 4 | [model](https://paddledet.bj.bcebos.com/models/fcosr_x50_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/fcosr/fcosr_x50_3x_dota.yml) |
+| FCOSR-M | ResNeXt-50 | 76.62 | 3x | oc | RR | 4 | 4 | [model](https://paddledet.bj.bcebos.com/models/fcosr_x50_3x_dota.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/rotate/fcosr/fcosr_x50_3x_dota.yml) |
 
 **Notes:**
 

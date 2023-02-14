@@ -49,126 +49,126 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 ### Faster R-CNN
 
-请参考[Faster R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/faster_rcnn/)
+请参考[Faster R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/faster_rcnn/)
 
 ### YOLOv3
 
-请参考[YOLOv3](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/)
+请参考[YOLOv3](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/yolov3/)
 
 ### PP-YOLOE/PP-YOLOE+
 
-请参考[PP-YOLOE](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyoloe/)
+请参考[PP-YOLOE](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ppyoloe/)
 
 ### PP-YOLO/PP-YOLOv2
 
-请参考[PP-YOLO](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/)
+请参考[PP-YOLO](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ppyolo/)
 
 ### PicoDet
 
-请参考[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet)
+请参考[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/picodet)
 
 ### RetinaNet
 
-请参考[RetinaNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/retinanet/)
+请参考[RetinaNet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/retinanet/)
 
 ### Cascade R-CNN
 
-请参考[Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/cascade_rcnn)
+请参考[Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/cascade_rcnn)
 
 ### SSD/SSDLite
 
-请参考[SSD](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssd/)
+请参考[SSD](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ssd/)
 
 ### FCOS
 
-请参考[FCOS](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/fcos/)
+请参考[FCOS](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/fcos/)
 
 ### CenterNet
 
-请参考[CenterNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/centernet/)
+请参考[CenterNet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/centernet/)
 
 ### TTFNet/PAFNet
 
-请参考[TTFNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/)
+请参考[TTFNet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ttfnet/)
 
 ### Group Normalization
 
-请参考[Group Normalization](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gn/)
+请参考[Group Normalization](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/gn/)
 
 ### Deformable ConvNets v2
 
-请参考[Deformable ConvNets v2](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dcn/)
+请参考[Deformable ConvNets v2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/dcn/)
 
 ### HRNets
 
-请参考[HRNets](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/hrnet/)
+请参考[HRNets](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/hrnet/)
 
 ### Res2Net
 
-请参考[Res2Net](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/res2net/)
+请参考[Res2Net](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/res2net/)
 
 ### ConvNeXt
 
-请参考[ConvNeXt](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/convnext/)
+请参考[ConvNeXt](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/convnext/)
 
 ### GFL
 
-请参考[GFL](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gfl)
+请参考[GFL](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/gfl)
 
 ### TOOD
 
-请参考[TOOD](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/tood)
+请参考[TOOD](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/tood)
 
 ### PSS-DET(RCNN-Enhance)
 
-请参考[PSS-DET](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rcnn_enhance)
+请参考[PSS-DET](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/rcnn_enhance)
 
 ### DETR
 
-请参考[DETR](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/detr)
+请参考[DETR](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/detr)
 
 ### Deformable DETR
 
-请参考[Deformable DETR](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/deformable_detr)
+请参考[Deformable DETR](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/deformable_detr)
 
 ### Sparse R-CNN
 
-请参考[Sparse R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/sparse_rcnn)
+请参考[Sparse R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/sparse_rcnn)
 
 ###  Vision Transformer
 
-请参考[Vision Transformer](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/vitdet)
+请参考[Vision Transformer](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/vitdet)
 
 ### DINO
 
-请参考[DINO](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dino)
+请参考[DINO](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/dino)
 
 ### YOLOX
 
-请参考[YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolox)
+请参考[YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/yolox)
 
 ### YOLOF
 
-请参考[YOLOF](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolof)
+请参考[YOLOF](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/yolof)
 
 
 ## 实例分割
 
 ### Mask R-CNN
 
-请参考[Mask R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mask_rcnn/)
+请参考[Mask R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/mask_rcnn/)
 
 ### Cascade R-CNN
 
-请参考[Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/cascade_rcnn)
+请参考[Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/cascade_rcnn)
 
 ### SOLOv2
 
-请参考[SOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/solov2/)
+请参考[SOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/solov2/)
 
 ### QueryInst
 
-请参考[QueryInst](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/queryinst)
+请参考[QueryInst](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/queryinst)
 
 
 ## [PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO)
@@ -198,79 +198,79 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 ## 人脸检测
 
-请参考[人脸检测模型库](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/face_detection)
+请参考[人脸检测模型库](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/face_detection)
 
 ### BlazeFace
 
-请参考[BlazeFace](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/face_detection/)
+请参考[BlazeFace](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/face_detection/)
 
 
 ## 旋转框检测
 
-请参考[旋转框检测模型库](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate)
+请参考[旋转框检测模型库](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/rotate)
 
 ### PP-YOLOE-R
 
-请参考[PP-YOLOE-R](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r)
+请参考[PP-YOLOE-R](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/rotate/ppyoloe_r)
 
 ### FCOSR
 
-请参考[FCOSR](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/fcosr)
+请参考[FCOSR](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/rotate/fcosr)
 
 ### S2ANet
 
-请参考[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/s2anet)
+请参考[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/rotate/s2anet)
 
 
 ## 关键点检测
 
-请参考[关键点检测模型库](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint)
+请参考[关键点检测模型库](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/keypoint)
 
 ### PP-TinyPose
 
-请参考[PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/tiny_pose)
+请参考[PP-TinyPose](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/keypoint/tiny_pose)
 
 ### HRNet
 
-请参考[HRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/hrnet)
+请参考[HRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/keypoint/hrnet)
 
 ### Lite-HRNet
 
-请参考[Lite-HRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/lite_hrnet)
+请参考[Lite-HRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/keypoint/lite_hrnet)
 
 ### HigherHRNet
 
-请参考[HigherHRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/keypoint/higherhrnet)
+请参考[HigherHRNet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/keypoint/higherhrnet)
 
 
 ## 多目标跟踪
 
-请参考[多目标跟踪模型库](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot)
+请参考[多目标跟踪模型库](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/mot)
 
 ### DeepSORT
 
-请参考[DeepSORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort)
+请参考[DeepSORT](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/mot/deepsort)
 
 ### ByteTrack
 
-请参考[ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/bytetrack)
+请参考[ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/mot/bytetrack)
 
 ### OC-SORT
 
-请参考[OC-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/ocsort)
+请参考[OC-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/mot/ocsort)
 
 ### BoT-SORT
 
-请参考[BoT-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/botsort)
+请参考[BoT-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/mot/botsort)
 
 ### CenterTrack
 
-请参考[CenterTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/centertrack)
+请参考[CenterTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/mot/centertrack)
 
 ### FairMOT/MC-FairMOT
 
-请参考[FairMOT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot)
+请参考[FairMOT](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/mot/fairmot)
 
 ### JDE
 
-请参考[JDE](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde)
+请参考[JDE](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/mot/jde)

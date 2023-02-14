@@ -47,7 +47,7 @@ PP-Tracking 提供了AI Studio公开项目案例，教程请参考[PP-Tracking�
 |    骨干网络      |  压缩策略 | 预测时延（T4） |预测时延（V100）| 配置文件 |压缩算法配置文件 |
 | :--------------| :------- | :------: | :----: | :----: | :----: |
 | DLA-34         | baseline |    41.3  |    21.9 |[配置文件](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|    -     |
-| DLA-34         | 离线量化   |  37.8    |  21.2  |[配置文件](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/slim/post_quant/mcfairmot_ptq.yml)|
+| DLA-34         | 离线量化   |  37.8    |  21.2  |[配置文件](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.6/configs/slim/post_quant/mcfairmot_ptq.yml)|
 
 ## 快速开始
 

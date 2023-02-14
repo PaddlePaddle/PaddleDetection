@@ -5,7 +5,7 @@
 
 | 任务                 | 算法 | 精度(Box AP) | 下载                                                                                | 配置文件 |
 |:---------------------|:---------:|:------:| :---------------------------------------------------------------------------------: | :------:|
-| 行人检测 |  YOLOv3  |  51.8  | [下载链接](https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/pphuman/pedestrian_yolov3/pedestrian_yolov3_darknet.yml) |
+| 行人检测 |  YOLOv3  |  51.8  | [下载链接](https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/pphuman/pedestrian_yolov3/pedestrian_yolov3_darknet.yml) |
 
 ## 行人检测（Pedestrian Detection）
 
@@ -18,7 +18,7 @@ Backbone为Dacknet53的YOLOv3。
 
 ### 2. 训练参数配置
 
-PaddleDetection提供了使用COCO数据集对YOLOv3进行训练的参数配置文件[yolov3_darknet53_270e_coco.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml)，与之相比，在进行行人检测的模型训练时，我们对以下参数进行了修改：
+PaddleDetection提供了使用COCO数据集对YOLOv3进行训练的参数配置文件[yolov3_darknet53_270e_coco.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.6/configs/yolov3/yolov3_darknet53_270e_coco.yml)，与之相比，在进行行人检测的模型训练时，我们对以下参数进行了修改：
 
 * num_classes: 1
 * dataset_dir: dataset/pedestrian
