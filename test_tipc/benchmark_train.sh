@@ -189,8 +189,8 @@ if [[ ${model_name} =~ "higherhrnet" ]] || [[ ${model_name} =~ "hrnet" ]] || [[ 
 else
     epoch=1
     repeat=$(set_dynamic_epoch $device_num $repeat)
-    eval "sed -i '10c\    repeat: ${repeat}' configs/datasets/coco_detection.yml"
-    eval "sed -i '10c\    repeat: ${repeat}' configs/datasets/coco_instance.yml"
+    eval "sed -i '10c\  repeat: ${repeat}' configs/datasets/coco_detection.yml"
+    eval "sed -i '10c\  repeat: ${repeat}' configs/datasets/coco_instance.yml"
     eval "sed -i '10c\    repeat: ${repeat}' configs/datasets/mot.yml"
 fi
 
