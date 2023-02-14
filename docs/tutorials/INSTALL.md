@@ -12,7 +12,7 @@ For general information about PaddleDetection, please see [README.md](https://gi
 
 - PaddlePaddle 2.2
 - OS 64 bit
-- Python 3(3.5.1+/3.6/3.7/3.8/3.9)，64 bit
+- Python 3(3.5.1+/3.6/3.7/3.8/3.9/3.10)，64 bit
 - pip/pip3(9.0.1+), 64 bit
 - CUDA >= 10.2
 - cuDNN >= 7.6
@@ -22,7 +22,8 @@ Dependency of PaddleDetection and PaddlePaddle:
 
 | PaddleDetection version | PaddlePaddle version  |    tips    |
 | :----------------: | :---------------: | :-------: |
-|    develop           |       develop   |     Dygraph mode is set as default    |
+|    develop           |       >= 2.3.2   |     Dygraph mode is set as default    |
+|    release/2.6       |       >= 2.3.2   |     Dygraph mode is set as default    |
 |    release/2.5       |       >= 2.2.2   |     Dygraph mode is set as default    |
 |    release/2.4       |       >= 2.2.2   |     Dygraph mode is set as default    |
 |    release/2.3       |       >= 2.2.0rc |     Dygraph mode is set as default    |
@@ -42,10 +43,10 @@ Dependency of PaddleDetection and PaddlePaddle:
 ```
 
 # CUDA10.2
-python -m pip install paddlepaddle-gpu==2.2.2 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle-gpu==2.3.2 -i https://mirror.baidu.com/pypi/simple
 
 # CPU
-python -m pip install paddlepaddle==2.2.2 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle==2.3.2 -i https://mirror.baidu.com/pypi/simple
 ```
 
 - For more CUDA version or environment to quick install, please refer to the [PaddlePaddle Quick Installation document](https://www.paddlepaddle.org.cn/install/quick)
