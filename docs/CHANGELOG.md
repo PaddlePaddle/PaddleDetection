@@ -4,6 +4,38 @@
 
 ## 最新版本信息
 
+### 2.6(02.15/2023)
+
+- 特色模型
+  - 发布旋转框检测模型PP-YOLOE-R：Anchor-free旋转框检测SOTA模型，精度速度双高、云边一体，s/m/l/x四个模型适配不用算力硬件、部署友好，避免使用特殊算子，能够轻松使用TensorRT加速；
+  - 发布小目标检测模型PP-YOLOE-SOD：基于切图的端到端检测方案、基于原图的检测模型，精度达VisDrone开源最优；
+  - 发布密集检测模型：基于PP-YOLOE+的密集检测算法，SKU数据集检测精度60.3，达到开源最优
+- 前沿算法
+  - YOLO家族新增前沿算法YOLOv8，更新YOLOv6-v3.0
+  - 新增目标检测算法DINO，YOLOF
+  - 新增ViTDet系列检测模型，PP-YOLOE+ViT_base, Mask RCNN + ViT_base, Mask RCNN + ViT_large
+  - 新增多目标跟踪算法CenterTrack
+  - 新增旋转框检测算法FCOSR
+  - 新增实例分割算法QueryInst
+  - 新增3D关键点检测算法Metro3d
+  - 新增模型蒸馏算法FGD，LD，CWD，新增PP-YOLOE+模型蒸馏，精度提升1.1 mAP
+  - 新增半监督检测算法 DenseTeacher，并适配PP-YOLOE+
+  - 新增少样本迁移学习方案，包含Co-tuning，Contrastive learning两类算法
+- 场景能力
+  - PP-Human v2开源边缘端实时检测模型，精度45.7，Jetson AGX速度80FPS
+  - PP-Vehicle开源边缘端实时检测模型，精度53.5，Jetson AGX速度80FPS
+  - PP-Human v2，PP-Vehicle支持多路视频流部署能力，实现Jetson AGX 4路视频流端到端20FPS实时部署
+  - PP-Vehicle新增车辆压线检测和车辆逆行检测能力
+- 框架能力
+  - 功能新增
+    - 新增检测热力图可视化能力，适配FasterRCNN/MaskRCNN系列, PP-YOLOE系列, BlazeFace, SSD, RetinaNet
+  - 功能完善/Bug修复
+    - 支持python3.10版本
+    - EMA支持过滤不更新参数
+    - 简化PP-YOLOE architecture架构代码
+    - AdamW适配paddle2.4.1版本
+
+
 ### 2.5(08.26/2022)
 
 - 特色模型
