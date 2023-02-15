@@ -16,17 +16,69 @@ This code is based on https://github.com/microsoft/Swin-Transformer/blob/main/mo
 Ths copyright of microsoft/Swin-Transformer is as follows:
 MIT License [see LICENSE for details]
 """
-
+import numpy as np
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.modeling.shape_spec import ShapeSpec
 from ppdet.core.workspace import register, serializable
-import numpy as np
-
 from .transformer_utils import DropPath, Identity
 from .transformer_utils import add_parameter, to_2tuple
 from .transformer_utils import ones_, zeros_, trunc_normal_
+
+__all__ = ['SwinTransformer']
+
+MODEL_cfg = {
+    # use 22kto1k finetune weights as default pretrained, can set by SwinTransformer.pretrained in config
+    'swin_T_224': dict(
+        pretrain_img_size=224,
+        embed_dim=96,
+        depths=[2, 2, 6, 2],
+        num_heads=[3, 6, 12, 24],
+        window_size=7,
+        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_tiny_patch4_window7_224_22kto1k_pretrained.pdparams',
+    ),
+    'swin_S_224': dict(
+        pretrain_img_size=224,
+        embed_dim=96,
+        depths=[2, 2, 18, 2],
+        num_heads=[3, 6, 12, 24],
+        window_size=7,
+        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_small_patch4_window7_224_22kto1k_pretrained.pdparams',
+    ),
+    'swin_B_224': dict(
+        pretrain_img_size=224,
+        embed_dim=128,
+        depths=[2, 2, 18, 2],
+        num_heads=[4, 8, 16, 32],
+        window_size=7,
+        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_base_patch4_window7_224_22kto1k_pretrained.pdparams',
+    ),
+    'swin_L_224': dict(
+        pretrain_img_size=224,
+        embed_dim=192,
+        depths=[2, 2, 18, 2],
+        num_heads=[6, 12, 24, 48],
+        window_size=7,
+        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_large_patch4_window7_224_22kto1k_pretrained.pdparams',
+    ),
+    'swin_B_384': dict(
+        pretrain_img_size=384,
+        embed_dim=128,
+        depths=[2, 2, 18, 2],
+        num_heads=[4, 8, 16, 32],
+        window_size=12,
+        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_base_patch4_window12_384_22kto1k_pretrained.pdparams',
+    ),
+    'swin_L_384': dict(
+        pretrain_img_size=384,
+        embed_dim=192,
+        depths=[2, 2, 18, 2],
+        num_heads=[6, 12, 24, 48],
+        window_size=12,
+        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_large_patch4_window12_384_22kto1k_pretrained.pdparams',
+    ),
+}
 
 
 class Mlp(nn.Layer):
@@ -273,7 +325,8 @@ class SwinTransformerBlock(nn.Layer):
         pad_l = pad_t = 0
         pad_r = (self.window_size - W % self.window_size) % self.window_size
         pad_b = (self.window_size - H % self.window_size) % self.window_size
-        x = F.pad(x, [0, pad_l, 0, pad_b, 0, pad_r, 0, pad_t])
+        x = F.pad(x, [0, pad_l, 0, pad_b, 0, pad_r, 0, pad_t],
+                  data_format='NHWC')
         _, Hp, Wp, _ = x.shape
 
         # cyclic shift
@@ -350,7 +403,10 @@ class PatchMerging(nn.Layer):
         # padding
         pad_input = (H % 2 == 1) or (W % 2 == 1)
         if pad_input:
-            x = F.pad(x, [0, 0, 0, W % 2, 0, H % 2])
+            # paddle F.pad default data_format is 'NCHW'
+            x = F.pad(x, [0, 0, 0, H % 2, 0, W % 2, 0, 0], data_format='NHWC')
+            H += H % 2
+            W += W % 2
 
         x0 = x[:, 0::2, 0::2, :]  # B H/2 W/2 C
         x1 = x[:, 1::2, 0::2, :]  # B H/2 W/2 C
@@ -495,6 +551,7 @@ class PatchEmbed(nn.Layer):
             self.norm = None
 
     def forward(self, x):
+        # TODO # export dynamic shape
         B, C, H, W = x.shape
         # assert [H, W] == self.img_size[:2], "Input image size ({H}*{W}) doesn't match model ({}*{}).".format(H, W, self.img_size[0], self.img_size[1])
         if W % self.patch_size[1] != 0:
@@ -540,6 +597,7 @@ class SwinTransformer(nn.Layer):
     """
 
     def __init__(self,
+                 arch='swin_T_224',
                  pretrain_img_size=224,
                  patch_size=4,
                  in_chans=3,
@@ -560,10 +618,16 @@ class SwinTransformer(nn.Layer):
                  frozen_stages=-1,
                  pretrained=None):
         super(SwinTransformer, self).__init__()
+        assert arch in MODEL_cfg.keys(), "Unsupported arch: {}".format(arch)
+        pretrain_img_size = MODEL_cfg[arch]['pretrain_img_size']
+        embed_dim = MODEL_cfg[arch]['embed_dim']
+        depths = MODEL_cfg[arch]['depths']
+        num_heads = MODEL_cfg[arch]['num_heads']
+        window_size = MODEL_cfg[arch]['window_size']
+        if pretrained is None:
+            pretrained = MODEL_cfg[arch]['pretrained']
 
-        self.pretrain_img_size = pretrain_img_size
         self.num_layers = len(depths)
-        self.embed_dim = embed_dim
         self.ape = ape
         self.patch_norm = patch_norm
         self.out_indices = out_indices
