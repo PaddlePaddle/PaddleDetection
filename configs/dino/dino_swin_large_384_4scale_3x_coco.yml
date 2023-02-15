@@ -1,0 +1,20 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_3x.yml',
+  '_base_/dino_swin.yml',
+  '_base_/dino_reader.yml',
+]
+
+weights: output/dino_swin_large_384_4scale_3x_coco/model_final
+find_unused_parameters: True
+log_iter: 100
+snapshot_epoch: 2
+
+
+SwinTransformer:
+  arch: 'swin_L_384'
+  ape: false
+  drop_path_rate: 0.2
+  patch_norm: true
+  out_indices: [1, 2, 3]

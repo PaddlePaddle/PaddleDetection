@@ -21,7 +21,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import math
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -37,7 +36,7 @@ from ..initializer import (linear_init_, constant_, xavier_uniform_, normal_,
                            bias_init_with_prob)
 from .utils import (_get_clones, get_valid_ratio,
                     get_contrastive_denoising_training_group,
-                    get_sine_pos_embed, inverse_sigmoid)
+                    get_sine_pos_embed)
 
 __all__ = ['DINOTransformer']
 
@@ -502,7 +501,7 @@ class DINOTransformer(nn.Layer):
         # [num_levels, 2]
         spatial_shapes = paddle.to_tensor(
             paddle.stack(spatial_shapes).astype('int64'))
-        # [l], 每一个level的起始index
+        # [l] start index of each level
         level_start_index = paddle.concat([
             paddle.zeros(
                 [1], dtype='int64'), spatial_shapes.prod(1).cumsum(0)[:-1]
