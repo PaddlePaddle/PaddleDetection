@@ -8,6 +8,8 @@
 - [模型下载](#模型下载)
 - [配置文件说明](#配置文件说明)
 - [预测部署](#预测部署)
+  - [在线视频流](#在线视频流)
+  - [Jetson部署说明](#Jetson部署说明)
   - [参数说明](#参数说明)
 - [方案介绍](#方案介绍)
   - [行人检测](#行人检测)
@@ -49,8 +51,10 @@ PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模�
 | :---------:     | :-------:  |  :------: |:------: |
 |  行人检测（高精度）  | 25.1ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |  
 |  行人检测（轻量级）  | 16.2ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | 27M |
+| 行人检测（超轻量级） | 10ms(Jetson AGX)   | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/pphuman/ppyoloe_plus_crn_t_auxhead_320_60e_pphuman.tar.gz)        | 17M  |
 |  行人跟踪（高精度）  | 31.8ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |
 |  行人跟踪（轻量级）  | 21.0ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | 27M |
+| 行人跟踪（超轻量级） | 13.2ms(Jetson AGX)    | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/pphuman/ppyoloe_plus_crn_t_auxhead_320_60e_pphuman.tar.gz)        | 17M  |
 |  跨镜跟踪(REID)   |   单人1.5ms | [REID](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) | REID：92M |
 |  属性识别（高精度）  |   单人8.5ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [属性识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_small_person_attribute_954_infer.zip) | 目标检测：182M<br>属性识别：86M |
 |  属性识别（轻量级）  |   单人7.1ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [属性识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.zip) | 目标检测：182M<br>属性识别：86M |
@@ -126,7 +130,10 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pphuman.yml -o SKELETON_ACTION.enbale=True --video_file=test_video.mp4 --device=gpu
 ```
 
-3. rtsp推拉流
+### 在线视频流
+
+在线视频流解码功能基于opencv的capture函数，支持rtsp、rtmp格式。
+
 - rtsp拉流预测
 
 对rtsp拉流的支持，使用--rtsp RTSP [RTSP ...]参数指定一路或者多路rtsp视频流，如果是多路地址中间用空格隔开。(或者video_file后面的视频地址直接更换为rtsp流地址)，示例如下：
@@ -147,19 +154,30 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 ```
 注：
 1. rtsp推流服务基于 [rtsp-simple-server](https://github.com/aler9/rtsp-simple-server), 如使用推流功能请先开启该服务.
-2. rtsp推流如果模型处理速度跟不上会出现很明显的卡顿现象，建议跟踪模型使用ppyoloe_s版本，即修改配置中跟踪模型mot_ppyoloe_l_36e_pipeline.zip替换为mot_ppyoloe_s_36e_pipeline.zip。
+使用方法很简单，以linux平台为例：1）下载对应平台release包；2）解压后在命令行执行命令 `./rtsp-simple-server`即可，成功后进入服务开启状态就可以接收视频流了。
+2. rtsp推流如果模型处理速度跟不上会出现很明显的卡顿现象，建议跟踪模型使用ppyoloe_s或ppyoloe-plus-tiny版本，方式为修改配置中跟踪模型mot_ppyoloe_l_36e_pipeline.zip替换为mot_ppyoloe_s_36e_pipeline.zip。
 
 
 ### Jetson部署说明
 
 由于Jetson平台算力相比服务器有较大差距，有如下使用建议：
 
-1. 模型选择轻量级版本，特别是跟踪模型，推荐使用`ppyoloe_s: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip`
-2. 开启跟踪跳帧功能，推荐使用2或者3: `skip_frame_num: 3`
+1. 模型选择轻量级版本，我们最新提供了轻量级[PP-YOLOE-Plus Tiny模型](../../../../configs/pphuman/README.md)，该模型在Jetson AGX上可以实现4路视频流20fps实时跟踪。
+2. 如果需进一步提升速度，建议开启跟踪跳帧功能，推荐使用2或者3: `skip_frame_num: 3`，该功能当前默认关闭。
 
-使用该推荐配置，在TX2平台上可以达到较高速率，经测试属性案例达到20fps。
+上述修改可以直接修改配置文件（推荐），也可以在命令行中修改（字段较长，不推荐）。
 
-可以直接修改配置文件（推荐），也可以在命令行中修改（字段较长，不推荐）。
+PP-YOLOE-Plus Tiny模型在AGX平台不同功能开启时的速度如下：（跟踪人数为3人情况下，以属性为例，总耗时为跟踪13.3+5.2*3≈29ms）
+
+| 功能  | 平均每帧耗时(ms)  | 运行帧率(fps)  |
+|:----------|:----------|:----------|
+| 跟踪    | 13    | 77    |
+| 属性识别    | 29    | 34    |
+| 摔倒识别    | 64.5    | 15.5    |
+| 抽烟识别    | 68.8    | 14.5    |
+| 打电话识别    | 22.5    | 44.5    |
+| 打架识别    | 3.98    | 251    |
+
 
 
 ### 参数说明
