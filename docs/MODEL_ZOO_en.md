@@ -138,6 +138,10 @@ Please refer to [Sparse R-CNN](https://github.com/PaddlePaddle/PaddleDetection/t
 
 Please refer to [Vision Transformer](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/vitdet)
 
+### DINO
+
+Please refer to [DINO](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dino)
+
 ### YOLOX
 
 Please refer to [YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolox)
@@ -160,6 +164,10 @@ Please refer to [Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/
 ### SOLOv2
 
 Please refer to [SOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/solov2/)
+
+### QueryInst
+
+Please refer to [QueryInst](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/queryinst)
 
 
 ## [PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO)

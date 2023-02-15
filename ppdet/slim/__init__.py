@@ -83,9 +83,9 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
         load_config(slim_cfg)
         load_pretrain_weight(model, cfg.weights)
         slim = create(cfg.slim)
+        cfg['slim_type'] = cfg.slim
         cfg['slim'] = slim
         cfg['model'] = slim(model)
-        cfg['slim_type'] = cfg.slim
     elif slim_load_cfg['slim'] == 'UnstructuredPruner':
         load_config(slim_cfg)
         slim = create(cfg.slim)
