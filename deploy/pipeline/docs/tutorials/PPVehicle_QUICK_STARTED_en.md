@@ -51,8 +51,10 @@ PP-Vehicle provides object detection, attribute recognition, behaviour recogniti
 |:---------------------------------:|:----------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------:|
 | Vehicle Detection（high precision） | 25.7ms     | [Multi-Object Tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip)                                                                                                                              | 182M                                                                  |
 | Vehicle Detection（Lightweight）    | 13.2ms     | [Multi-Object Tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip)                                                                                                                              | 27M                                                                   |
+| Vehicle detection (super lightweight)     | 10ms(Jetson AGX)     | [object detection](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppvehicle/ppyoloe_plus_crn_t_auxhead_320_60e_ppvehicle.tar.gz)  | 17M     |
 | Vehicle Tracking（high precision）  | 40ms       | [Multi-Object Tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip)                                                                                                                              | 182M                                                                  |
 | Vehicle Tracking（Lightweight）     | 25ms       | [Multi-Object Tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip)                                                                                                                              | 27M                                                                   |
+| Vehicle tracking (super lightweight)     | 13.2ms(Jetson AGX)               | [multi-object tracking](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppvehicle/ppyoloe_plus_crn_t_auxhead_320_60e_ppvehicle.tar.gz)                                                                                                                           | 17M                              |
 | License plate recognition         | 4.68ms     | [License plate recognition](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz) <br> [License plate character recognition](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz) | Vehicle Detection：3.9M  <br> License plate character recognition： 12M |
 | Vehicle Attribute Recognition     | 7.31ms     | [Vehicle Attribute](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip)                                                                                                                                      | 7.2M                                                                  |
 | Lane line Segmentation      |   47ms | [Lane line Segmentation](https://bj.bcebos.com/v1/paddledet/models/pipeline/pp_lite_stdc2_bdd100k.zip) | 47M |
@@ -133,6 +135,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
    ```
 
 ### rtsp_stream
+
+The online stream decode based on opencv Capture function, normally support rtsp and rtmp.
 
 - rtsp pull stream
 
@@ -240,11 +244,11 @@ The overall solution for PP-Vehicle v2 is shown in the graph below:
 
 #### Vehicle Press Line
 
-- Use segmentation model PP-Seg to get the lane line in frame, combine it with vehicle route to find out the vehicle against traffic.
+- Use segmentation model PP-LiteSeg to get the lane line in frame, combine it with vehicle route to find out the vehicle against traffic.
 - For details, please refer to [Vehicle Press Line](ppvehicle_press_en.md)
 
 #### Vehicle Retrograde
 
-- Use segmentation model PP-Seg to get the lane line in frame, combine it with vehicle detection box to juege if the car is pressing on lines.
+- Use segmentation model PP-LiteSeg to get the lane line in frame, combine it with vehicle detection box to juege if the car is pressing on lines.
 - For details, please refer to [Vehicle Retrograde](ppvehicle_retrograde_en.md)
 
