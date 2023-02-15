@@ -52,8 +52,10 @@ PP-Vehicle提供了目标检测、属性识别、行为识别、ReID预训练模
 | :---------:     | :-------:  |  :------: |:------: |
 |  车辆检测（高精度）  | 25.7ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) | 182M |  
 |  车辆检测（轻量级）  | 13.2ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip) | 27M |
+|  车辆检测（超轻量级）  | 10ms（Jetson AGX）  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppvehicle/ppyoloe_plus_crn_t_auxhead_320_60e_ppvehicle.tar.gz) | 17M |
 |  车辆跟踪（高精度）  | 40ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) | 182M |
 |  车辆跟踪（轻量级）  | 25ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip) | 27M |
+|  车辆跟踪（超轻量级）  | 13.2ms（Jetson AGX）  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/ppvehicle/ppyoloe_plus_crn_t_auxhead_320_60e_ppvehicle.tar.gz) | 17M |
 |  车牌识别  |   4.68ms |  [车牌检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_det_infer.tar.gz) <br> [车牌字符识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/ch_PP-OCRv3_rec_infer.tar.gz) | 车牌检测：3.9M  <br> 车牌字符识别： 12M |
 |  车辆属性  |   7.31ms | [车辆属性](https://bj.bcebos.com/v1/paddledet/models/pipeline/vehicle_attribute_model.zip) | 7.2M |
 |  车道线检测  |   47ms | [车道线模型](https://bj.bcebos.com/v1/paddledet/models/pipeline/pp_lite_stdc2_bdd100k.zip) | 47M |
@@ -135,6 +137,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/examples/infe
 
 ### 在线视频流
 
+在线视频流解码功能基于opencv的capture函数，支持rtsp、rtmp格式。
+
 - rtsp拉流预测
 
 对rtsp拉流的支持，使用--rtsp RTSP [RTSP ...]参数指定一路或者多路rtsp视频流，如果是多路地址中间用空格隔开。(或者video_file后面的视频地址直接更换为rtsp流地址)，示例如下：
@@ -171,9 +175,9 @@ PP-YOLOE-Plus Tiny模型在AGX平台不同功能开启时的速度如下：（�
 
 | 功能  | 平均每帧耗时(ms)  | 运行帧率(fps)  |
 |:----------|:----------|:----------|
-| tracking    | 13    | 77    |
-| Attribute    | 20.2    | 49.4    |
-| Plate    | -    | -    |
+| 跟踪    | 13    | 77    |
+| 属性识别    | 20.2    | 49.4    |
+| 车牌识别    | -    | -    |
 
 
 ### 参数说明

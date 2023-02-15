@@ -51,8 +51,10 @@ PP-Human提供了目标检测、属性识别、行为识别、ReID预训练模�
 | :---------:     | :-------:  |  :------: |:------: |
 |  行人检测（高精度）  | 25.1ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |  
 |  行人检测（轻量级）  | 16.2ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | 27M |
+| 行人检测（超轻量级） | 10ms(Jetson AGX)   | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/pphuman/ppyoloe_plus_crn_t_auxhead_320_60e_pphuman.tar.gz)        | 17M  |
 |  行人跟踪（高精度）  | 31.8ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip) | 182M |
 |  行人跟踪（轻量级）  | 21.0ms  |  [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_pipeline.zip) | 27M |
+| 行人跟踪（超轻量级） | 13.2ms(Jetson AGX)    | [多目标跟踪](https://bj.bcebos.com/v1/paddledet/models/pipeline/pphuman/ppyoloe_plus_crn_t_auxhead_320_60e_pphuman.tar.gz)        | 17M  |
 |  跨镜跟踪(REID)   |   单人1.5ms | [REID](https://bj.bcebos.com/v1/paddledet/models/pipeline/reid_model.zip) | REID：92M |
 |  属性识别（高精度）  |   单人8.5ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [属性识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPHGNet_small_person_attribute_954_infer.zip) | 目标检测：182M<br>属性识别：86M |
 |  属性识别（轻量级）  |   单人7.1ms | [目标检测](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_pipeline.zip)<br> [属性识别](https://bj.bcebos.com/v1/paddledet/models/pipeline/PPLCNet_x1_0_person_attribute_945_infer.zip) | 目标检测：182M<br>属性识别：86M |
@@ -130,6 +132,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 ### 在线视频流
 
+在线视频流解码功能基于opencv的capture函数，支持rtsp、rtmp格式。
+
 - rtsp拉流预测
 
 对rtsp拉流的支持，使用--rtsp RTSP [RTSP ...]参数指定一路或者多路rtsp视频流，如果是多路地址中间用空格隔开。(或者video_file后面的视频地址直接更换为rtsp流地址)，示例如下：
@@ -167,12 +171,12 @@ PP-YOLOE-Plus Tiny模型在AGX平台不同功能开启时的速度如下：（�
 
 | 功能  | 平均每帧耗时(ms)  | 运行帧率(fps)  |
 |:----------|:----------|:----------|
-| tracking    | 13    | 77    |
-| Attribute    | 29    | 34    |
-| falldown    | 64.5    | 15.5    |
-| smoking    | 68.8    | 14.5    |
-| calling    | 22.5    | 44.5    |
-| fighting    | 3.98    | 251    |
+| 跟踪    | 13    | 77    |
+| 属性识别    | 29    | 34    |
+| 摔倒识别    | 64.5    | 15.5    |
+| 抽烟识别    | 68.8    | 14.5    |
+| 打电话识别    | 22.5    | 44.5    |
+| 打架识别    | 3.98    | 251    |
 
 
 
