@@ -36,7 +36,7 @@ MODEL_cfg = {
         depths=[2, 2, 6, 2],
         num_heads=[3, 6, 12, 24],
         window_size=7,
-        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_tiny_patch4_window7_224_22kto1k.pdparams',
+        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_tiny_patch4_window7_224_22kto1k_pretrained.pdparams',
     ),
     'swin_S_224': dict(
         pretrain_img_size=224,
@@ -44,7 +44,7 @@ MODEL_cfg = {
         depths=[2, 2, 18, 2],
         num_heads=[3, 6, 12, 24],
         window_size=7,
-        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_small_patch4_window7_224_22kto1k.pdparams',
+        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_small_patch4_window7_224_22kto1k_pretrained.pdparams',
     ),
     'swin_B_224': dict(
         pretrain_img_size=224,
@@ -52,7 +52,7 @@ MODEL_cfg = {
         depths=[2, 2, 18, 2],
         num_heads=[4, 8, 16, 32],
         window_size=7,
-        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_base_patch4_window7_224_22kto1k.pdparams',
+        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_base_patch4_window7_224_22kto1k_pretrained.pdparams',
     ),
     'swin_L_224': dict(
         pretrain_img_size=224,
@@ -60,7 +60,7 @@ MODEL_cfg = {
         depths=[2, 2, 18, 2],
         num_heads=[6, 12, 24, 48],
         window_size=7,
-        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_large_patch4_window7_224_22kto1k.pdparams',
+        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_large_patch4_window7_224_22kto1k_pretrained.pdparams',
     ),
     'swin_B_384': dict(
         pretrain_img_size=384,
@@ -68,7 +68,7 @@ MODEL_cfg = {
         depths=[2, 2, 18, 2],
         num_heads=[4, 8, 16, 32],
         window_size=12,
-        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_base_patch4_window12_384_22kto1k.pdparams',
+        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_base_patch4_window12_384_22kto1k_pretrained.pdparams',
     ),
     'swin_L_384': dict(
         pretrain_img_size=384,
@@ -76,7 +76,7 @@ MODEL_cfg = {
         depths=[2, 2, 18, 2],
         num_heads=[6, 12, 24, 48],
         window_size=12,
-        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_large_patch4_window12_384_22kto1k.pdparams',
+        pretrained='https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_large_patch4_window12_384_22kto1k_pretrained.pdparams',
     ),
 }
 
@@ -325,7 +325,8 @@ class SwinTransformerBlock(nn.Layer):
         pad_l = pad_t = 0
         pad_r = (self.window_size - W % self.window_size) % self.window_size
         pad_b = (self.window_size - H % self.window_size) % self.window_size
-        x = F.pad(x, [0, pad_l, 0, pad_b, 0, pad_r, 0, pad_t])
+        x = F.pad(x, [0, pad_l, 0, pad_b, 0, pad_r, 0, pad_t],
+                  data_format='NHWC')
         _, Hp, Wp, _ = x.shape
 
         # cyclic shift
@@ -404,13 +405,15 @@ class PatchMerging(nn.Layer):
         if pad_input:
             # paddle F.pad default data_format is 'NCHW'
             x = F.pad(x, [0, 0, 0, H % 2, 0, W % 2, 0, 0], data_format='NHWC')
+            H += H % 2
+            W += W % 2
 
         x0 = x[:, 0::2, 0::2, :]  # B H/2 W/2 C
         x1 = x[:, 1::2, 0::2, :]  # B H/2 W/2 C
         x2 = x[:, 0::2, 1::2, :]  # B H/2 W/2 C
         x3 = x[:, 1::2, 1::2, :]  # B H/2 W/2 C
         x = paddle.concat([x0, x1, x2, x3], -1)  # B H/2 W/2 4*C
-        x = x.reshape([B, -1, 4 * C])  # B H/2*W/2 4*C
+        x = x.reshape([-1, H * W // 4, 4 * C])  # B H/2*W/2 4*C
 
         x = self.norm(x)
         x = self.reduction(x)
@@ -548,6 +551,7 @@ class PatchEmbed(nn.Layer):
             self.norm = None
 
     def forward(self, x):
+        # TODO # export dynamic shape
         B, C, H, W = x.shape
         # assert [H, W] == self.img_size[:2], "Input image size ({H}*{W}) doesn't match model ({}*{}).".format(H, W, self.img_size[0], self.img_size[1])
         if W % self.patch_size[1] != 0:
