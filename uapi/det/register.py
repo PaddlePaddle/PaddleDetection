@@ -16,6 +16,7 @@ import os.path as osp
 
 from ..base.register import register_model_info, register_suite_info
 from .model import DetModel
+from .config import DetConfig
 from .runner import DetRunner
 
 # XXX: Hard-code relative path of repo root dir
@@ -24,6 +25,7 @@ register_suite_info({
     'suite_name': 'Det',
     'model': DetModel,
     'runner': DetRunner,
+    'config': DetConfig,
     'runner_root_path': REPO_ROOT_PATH
 })
 
@@ -31,5 +33,6 @@ register_model_info({
     'model_name': 'picodet_s_320',
     'suite': 'Det',
     'config_path': osp.join(REPO_ROOT_PATH, 'configs/picodet/legacy_model/picodet_s_320_coco.yml'),
-    'auto_compression_config_path': osp.join(REPO_ROOT_PATH, 'configs/picodet_s_qat_dis.yaml')
+    'auto_compression_config_path': osp.join(REPO_ROOT_PATH, 'configs/picodet_s_qat_dis.yaml'),
+    'supported_apis': ['train', 'predict', 'export', 'infer', 'compression']
 })

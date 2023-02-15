@@ -32,6 +32,7 @@ class DetModel(BaseModel):
               resume_path=None,
               dy2st=False,
               amp=None,
+              use_vdl=True,
               save_dir=None):
         # NOTE: We must use an absolute path here, 
         # so we can run the scripts either inside or outside the repo dir.
@@ -43,11 +44,10 @@ class DetModel(BaseModel):
             save_dir = abspath(save_dir)
 
         # Update config and collect cli args
-        config_file_path = self.model_info['config_path']
-        config = DetConfig.build_from_file(config_file_path)
+        config = self.config.copy()
         cli_args = []
 
-        config._update_dataset(dataset)
+        config.update_dataset(dataset)
         if batch_size is not None:
             config.update({'TrainReader.batch_size': batch_size})
         if learning_rate is not None:
@@ -62,13 +62,14 @@ class DetModel(BaseModel):
         if dy2st:
             cli_args.append(CLIArgument('--to_static', '', ''))
         if amp is not None:
-            # TODO: PaddleDetection
+            # TODO:
             cli_args.append(CLIArgument('--amp', '', ''))
         if save_dir is not None:
             config.update({'save_dir': save_dir})
 
-        config.dump(config_file_path)
-        self.runner.train(config_file_path, cli_args, device)
+        config_path = self._config_path
+        config.dump(config_path)
+        self.runner.train(config_path, cli_args, device)
 
     def predict(self,
                 input_path,
@@ -80,8 +81,7 @@ class DetModel(BaseModel):
         if save_dir is not None:
             save_dir = abspath(save_dir)
 
-        config_file_path = self.model_info['config_path']
-        config = DetConfig.build_from_file(config_file_path)
+        config = self.config.copy()
         cli_args = []
 
         config.update({'weights': weight_path})
@@ -91,15 +91,15 @@ class DetModel(BaseModel):
         if save_dir is not None:
             cli_args.append(CLIArgument('--output_dir', save_dir))
 
-        config.dump(config_file_path)
-        self.runner.predict(config_file_path, cli_args, device)
+        config_path = self._config_path
+        config.dump(config_path)
+        self.runner.predict(config_path, cli_args, device)
 
     def export(self, weight_path, save_dir, input_shape=None):
         weight_path = abspath(weight_path)
         save_dir = abspath(save_dir)
 
-        config_file_path = self.model_info['config_path']
-        config = DetConfig.build_from_file(config_file_path)
+        config = self.config.copy()
         cli_args = []
 
         config.update({'weights': weight_path})
@@ -107,16 +107,16 @@ class DetModel(BaseModel):
         if input_shape is not None:
             cli_args.append(CLIArgument('-o TestReader.inputs_def.image_shape', input_shape, '='))
 
-        config.dump(config_file_path)
-        self.runner.export(config_file_path, cli_args, None)
+        config_path = self._config_path
+        config.dump(config_path)
+        self.runner.export(config_path, cli_args, None)
 
     def infer(self, model_dir, input_path, save_dir, device='gpu'):
         model_dir = abspath(model_dir)
         input_path = abspath(input_path)
         save_dir = abspath(save_dir)
 
-        config_file_path = self.model_info['config_path']
-        config = DetConfig.build_from_file(config_file_path)
+        config = self.config.copy()
         cli_args = []
 
         cli_args.append(CLIArgument('--model_dir', model_dir, '='))
@@ -124,29 +124,32 @@ class DetModel(BaseModel):
         cli_args.append(CLIArgument('--output_dir', save_dir, '='))
         cli_args.append(CLIArgument('--device', device, '='))
 
-        config.dump(config_file_path)
-        self.runner.infer(config_file_path, cli_args, device)
+        config_path = self._config_path
+        config.dump(config_path)
+        self.runner.infer(config_path, cli_args, device)
 
     def compression(self,
-                    dataset,
+                    weight_path,
+                    dataset=None,
                     batch_size=None,
                     learning_rate=None,
                     epochs_iters=None,
                     device=None,
-                    weight_path=None,
                     save_dir=None):
-        dataset = abspath(dataset)
-        if weight_path is not None:
-            weight_path = abspath(weight_path)
+        raise NotImplementedError
+
+        '''
+        weight_path = abspath(weight_path)
+        if dataset is not None:
+            dataset = abspath(dataset)
         if save_dir is not None:
             save_dir = abspath(save_dir)
-
+        
         # Update YAML config file
-        config_file_path = self.model_info['auto_compression_config_path']
-        config = DetConfig.build_from_file(config_file_path)
-        config._update_dataset_config(dataset)
-        config_file_path = self.config_file_path
-        config.dump(config_file_path)
+        config_path = self.model_info['auto_compression_config_path']
+        config = Config(model_name, config_path=config_path)
+        config = DetConfig.build_from_file(config_path)
+        config.update_dataset(dataset)
 
         # Parse CLI arguments
         cli_args = []
@@ -161,4 +164,7 @@ class DetModel(BaseModel):
         if save_dir is not None:
             cli_args.append(CLIArgument('--save_dir', save_dir))
 
-        self.runner.compression(config_file_path, cli_args, device)
+        config_path = self._config_path
+        config.dump(config_path)
+        self.runner.compression(config_path, cli_args, device)
+        '''
