@@ -18,7 +18,7 @@ ppvehicle violation analysis divides the lane line into 4 categories
 
 ```
 
-1. For the bdd100k data set, we can combine the processing script provided by [lane_to_mask.py](../../../deploy/pipeline/tools/lane_to_mask.py) and bdd100k[repo](https://github.com/bdd100k/bdd100k) to process the data into the data format required for segmentation.
+1. For the bdd100k data set, we can combine the processing script provided by [lane_to_mask.py](../../../deploy/pipeline/tools/lane_to_mask.py) and bdd100k [repo](https://github.com/bdd100k/bdd100k) to process the data into the data format required for segmentation.
 
 
 ```
@@ -96,7 +96,7 @@ pip install -r requirements.txt
 ```
 
 ### Prepare configuration file
-For details, please refer to PaddleSeg[prepare configuration file](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.7/docs/config/pre_config_cn.md).
+For details, please refer to PaddleSeg [prepare configuration file](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.7/docs/config/pre_config_cn.md).
 
 exp: pp_liteseg_stdc2_bdd100k_1024x512.yml
 
