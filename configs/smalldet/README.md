@@ -25,30 +25,30 @@
 ## 简介
 PaddleDetection团队提供了针对VisDrone-DET、DOTA水平框、Xview等小目标场景数据集的基于PP-YOLOE改进的检测模型 PP-YOLOE-SOD，以及提供了一套使用[SAHI](https://github.com/obss/sahi)(Slicing Aided Hyper Inference)工具的切图和拼图的方案。
 
-  - PP-YOLOE-SOD 是小目标检测特色模型，使用**基于向量的DFL算法**和针对小目标的**中心先验优化策略**，并**在模型的Neck结构中加入transformer**，以及结合增加P2层、使用large size等策略，在多个小目标数据集上达到极高的精度。
+  - PP-YOLOE-SOD 是PaddleDetection团队自研的小目标检测特色模型，使用**数据集分布相关的基于向量的DFL算法** 和 **针对小目标优化的中心先验优化策略**，并且**在模型的Neck(FPN)结构中加入Transformer模块**，以及结合增加P2层、使用large size等策略，最终在多个小目标数据集上达到极高的精度。
 
-  - 切图拼图方案**适用于任何检测器**，建议使用 **PP-YOLOE-SOD 结合切图拼图方案**一起去使用以达到最佳效果。
+  - 切图拼图方案**适用于任何检测模型**，建议**使用 PP-YOLOE-SOD 结合切图拼图方案**一起使用以达到最佳的效果。
 
-  - 官方 AI Studio 教程案例请参考[基于PP-YOLOE-SOD的无人机航拍图像检测案例全流程实操](https://aistudio.baidu.com/aistudio/projectdetail/5036782)，欢迎一起动手实践学习。
+  - 官方 AI Studio 教程案例请参考 [基于PP-YOLOE-SOD的无人机航拍图像检测案例全流程实操](https://aistudio.baidu.com/aistudio/projectdetail/5036782)，欢迎一起动手实践学习。
 
   - 第三方 AI Studio 教程案例可参考 [PPYOLOE：遥感场景下的小目标检测与部署(切图版)](https://aistudio.baidu.com/aistudio/projectdetail/4493701) 和 [涨分神器！基于PPYOLOE的切图和拼图解决方案](https://aistudio.baidu.com/aistudio/projectdetail/4438275)，欢迎一起动手实践学习。
 
 **注意:**
- - **不通过切图拼图而直接使用原图或子图**去训练评估预测，推荐使用 PP-YOLOE-SOD 模型，更多细节和消融实验可参照[coco模型库](#coco模型库)和[visdrone模型库](./visdrone)。
+ - **不通过切图拼图而直接使用原图或子图**去训练评估预测，推荐使用 PP-YOLOE-SOD 模型，更多细节和消融实验可参照[COCO模型](#COCO模型)和[VisDrone模型](./visdrone)。
  - 是否需要切图然后使用子图去**训练**，建议首先参照[切图使用说明](#切图使用说明)中的[统计数据集分布](#统计数据集分布)分析一下数据集再确定，一般数据集中**所有的目标均极小**的情况下推荐切图去训练。
- - 是否需要切图然后使用子图去**预测**，建议在切图训练的情况下，配合着**同样操作的切图策略和参数**去预测(inference)效果更佳。但其实即便不切图训练，也可进行切图预测(inference)，只需**在常规的预测命令最后加上`--slice_infer`**以及相关子图参数即可。
- - 是否需要切图然后使用子图去**评估**，建议首先确保制作生成了合适的子图验证集，以及确保对应的标注框制作无误，并需要参照[模型库使用说明-评估](#评估)去**改动配置文件中的验证集(EvalDataset)的相关配置**，然后**在常规的评估命令最后加上`--slice_infer`**以及相关子图参数即可。
- - `--slice_infer`的操作默认**子图预测框会自动组合并拼回原图**，默认返回的是原图上的预测框，此方法也**适用于任何训好的检测模型**，无论是否切图训练。
+ - 是否需要切图然后使用子图去**预测**，建议在切图训练的情况下，配合着**同样操作的切图策略和参数**去预测(inference)效果更佳。但其实即便不切图训练，也可进行切图预测(inference)，只需**在常规的预测命令最后加上`--slice_infer`以及相关子图参数**即可。
+ - 是否需要切图然后使用子图去**评估**，建议首先确保制作生成了合适的子图验证集，以及确保对应的标注框制作无误，并需要参照[模型库使用说明-评估](#评估)去**改动配置文件中的验证集(EvalDataset)的相关配置**，然后**在常规的评估命令最后加上`--slice_infer`以及相关子图参数**即可。
+ - `--slice_infer`的操作在PaddleDetection中默认**子图预测框会自动组合并拼回原图**，默认返回的是原图上的预测框，此方法也**适用于任何训好的检测模型**，无论是否切图训练。
 
 
 ## 切图使用说明
 
 ### 小目标数据集下载
-PaddleDetection团队整理提供的VisDrone-DET、DOTA水平框、Xview等小目标场景数据集的下载链接可以参照[DataDownload.md](./DataDownload.md)。
+PaddleDetection团队整理提供的VisDrone-DET、DOTA水平框、Xview等小目标场景数据集的下载链接可以参照 [DataDownload.md](./DataDownload.md)。
 
 ### 统计数据集分布
 
-对于待训的数据集(默认已处理为COCO格式，参照[COCO格式数据集准备](../../docs/tutorials/data/PrepareDetDataSet.md#用户数据转成COCO数据)，首先统计**标注框的平均宽高占图片真实宽高的比例**分布：
+对于待训的数据集(默认已处理为COCO格式，参照 [COCO格式数据集准备](../../docs/tutorials/data/PrepareDetDataSet.md#用户数据转成COCO数据)，首先统计**标注框的平均宽高占图片真实宽高的比例**分布：
 
 以DOTA水平框数据集的train数据集为例：
 
@@ -98,11 +98,14 @@ python tools/slice_image.py --image_dir dataset/DOTA/train/ --json_path dataset/
   - `--slice_size`：切分以后子图的边长尺度大小(默认切图后为正方形)
   - `--overlap_ratio`：切分时的子图之间的重叠率
 
+**注意:**
+- 如果切图然后使用子图去**训练**，则只能**离线切图**，即切完图后保存成子图，存放在内存空间中。
+- 如果切图然后使用子图去**评估或预测**，则既可以**离线切图**，也可以**在线切图**，PaddleDetection中支持切图并自动拼图组合结果到原图上。
 
 
 ## 模型库
 
-### [VisDrone模型库](visdrone/)
+### [VisDrone模型](visdrone/)
 
 |    模型   | COCOAPI mAP<sup>val<br>0.5:0.95 | COCOAPI mAP<sup>val<br>0.5 | COCOAPI mAP<sup>test_dev<br>0.5:0.95 | COCOAPI mAP<sup>test_dev<br>0.5 | MatlabAPI mAP<sup>test_dev<br>0.5:0.95 | MatlabAPI mAP<sup>test_dev<br>0.5 | 下载  | 配置文件 |
 |:---------|:------:|:------:| :----: | :------:| :------: | :------:| :----: | :------:|
@@ -247,17 +250,28 @@ python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_
 
 ### 训练
 
-首先将你的数据集为COCO数据集格式，然后使用SAHI切图工具进行**离线切图**，对保存的子图按**常规检测模型的训练流程**走即可。
+#### 1.1 原图训练
+首先将待训数据集制作成COCO数据集格式，然后按照PaddleDetection的模型的常规训练流程训练即可。
+
+执行以下指令使用混合精度训练COCO数据集：
+
+```bash
+python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/smalldet/ppyoloe_plus_sod_crn_l_80e_coco.yml --amp --eval
+```
+
+**注意:**
+- 使用默认配置训练需要设置`--amp`以避免显存溢出，`--eval`表示边训边验证，会自动保存最佳精度的模型权重。
+
+#### 1.2 原图训练
+首先将待训数据集制作成COCO数据集格式，然后使用SAHI切图工具进行**离线切图**，对保存的子图按**常规检测模型的训练流程**走即可。
 也可直接下载PaddleDetection团队提供的切图后的VisDrone-DET、DOTA水平框、Xview数据集。
 
-执行以下指令使用混合精度训练PP-YOLOE
+执行以下指令使用混合精度训练VisDrone切图数据集：
 
 ```bash
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml --amp --eval
 ```
 
-**注意:**
-- 使用默认配置训练需要设置`--amp`以避免显存溢出。
 
 ### 评估
 
