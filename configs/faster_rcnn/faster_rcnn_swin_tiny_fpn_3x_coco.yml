@@ -14,9 +14,3 @@ LearningRate:
   - !LinearWarmup
     start_factor: 0.1
     steps: 1000
-
-OptimizerBuilder:
-  clip_grad_by_norm: 1.0
-  optimizer:
-    type: AdamW
-    weight_decay: 0.05
