@@ -1,4 +1,4 @@
-# Copyright (c) 2022 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2023 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,13 +21,9 @@ try:
 except ImportError:
     linear_sum_assignment = None
 
-import numpy as np
 import paddle
-import paddle.nn as nn
-import paddle.nn.functional as F
 
 from ppdet.core.workspace import register
-from .pose_utils import ClassificationCost, KptL1Cost, OksCost
 
 __all__ = ['PoseHungarianAssigner', 'PseudoSampler']
 
@@ -84,6 +80,7 @@ class AssignResult:
         }
         basic_info.update(self._extra_properties)
         return basic_info
+
 
 @register
 class PoseHungarianAssigner:
@@ -164,12 +161,8 @@ class PoseHungarianAssigner:
             num_gts = 0
 
         # 1. assign -1 by default
-        assigned_gt_inds = paddle.full((num_kpts, ),
-                                             -1,
-                                             dtype="int64")
-        assigned_labels = paddle.full((num_kpts, ),
-                                            -1,
-                                            dtype="int64")
+        assigned_gt_inds = paddle.full((num_kpts, ), -1, dtype="int64")
+        assigned_labels = paddle.full((num_kpts, ), -1, dtype="int64")
         if num_gts == 0 or num_kpts == 0:
             # No ground truth or keypoints, return empty assignment
             if num_gts == 0:
@@ -178,7 +171,9 @@ class PoseHungarianAssigner:
             return AssignResult(
                 num_gts, assigned_gt_inds, None, labels=assigned_labels)
         img_h, img_w, _ = img_meta['img_shape']
-        factor = paddle.to_tensor([img_w, img_h, img_w, img_h], dtype=gt_keypoints.dtype).reshape((1, -1))
+        factor = paddle.to_tensor(
+            [img_w, img_h, img_w, img_h], dtype=gt_keypoints.dtype).reshape(
+                (1, -1))
 
         # 2. compute the weighted costs
         # classification cost
@@ -186,17 +181,17 @@ class PoseHungarianAssigner:
 
         # keypoint regression L1 cost
         gt_keypoints_reshape = gt_keypoints.reshape((gt_keypoints.shape[0], -1,
-                                                    3))
+                                                     3))
         valid_kpt_flag = gt_keypoints_reshape[..., -1]
-        kpt_pred_tmp = kpt_pred.clone().detach().reshape((
-            kpt_pred.shape[0], -1, 2))
+        kpt_pred_tmp = kpt_pred.clone().detach().reshape((kpt_pred.shape[0], -1,
+                                                          2))
         normalize_gt_keypoints = gt_keypoints_reshape[
             ..., :2] / factor[:, :2].unsqueeze(0)
         kpt_cost = self.kpt_cost(kpt_pred_tmp, normalize_gt_keypoints,
                                  valid_kpt_flag)
         # keypoint OKS cost
-        kpt_pred_tmp = kpt_pred.clone().detach().reshape((
-            kpt_pred.shape[0], -1, 2))
+        kpt_pred_tmp = kpt_pred.clone().detach().reshape((kpt_pred.shape[0], -1,
+                                                          2))
         kpt_pred_tmp = kpt_pred_tmp * factor[:, :2].unsqueeze(0)
         oks_cost = self.oks_cost(kpt_pred_tmp, gt_keypoints_reshape[..., :2],
                                  valid_kpt_flag, gt_areas)
@@ -217,9 +212,11 @@ class PoseHungarianAssigner:
         assigned_gt_inds[:] = 0
         # assign foregrounds based on matching results
         assigned_gt_inds[matched_row_inds] = matched_col_inds + 1
-        assigned_labels[matched_row_inds] = gt_labels[matched_col_inds][...,0].astype("int64")
+        assigned_labels[matched_row_inds] = gt_labels[matched_col_inds][
+            ..., 0].astype("int64")
         return AssignResult(
             num_gts, assigned_gt_inds, None, labels=assigned_labels)
+
 
 class SamplingResult:
     """Bbox sampling result.
@@ -240,12 +237,16 @@ class SamplingResult:
             if gt_bboxes.numel() == 0:
                 # hack for index error case
                 assert self.pos_assigned_gt_inds.numel() == 0
-                self.pos_gt_bboxes = paddle.zeros(gt_bboxes.shape, dtype=gt_bboxes.dtype).reshape((-1, 4))
+                self.pos_gt_bboxes = paddle.zeros(
+                    gt_bboxes.shape, dtype=gt_bboxes.dtype).reshape((-1, 4))
             else:
                 if len(gt_bboxes.shape) < 2:
                     gt_bboxes = gt_bboxes.reshape((-1, 4))
 
-                self.pos_gt_bboxes = paddle.index_select(gt_bboxes, self.pos_assigned_gt_inds.astype('int64'), axis=0)
+                self.pos_gt_bboxes = paddle.index_select(
+                    gt_bboxes,
+                    self.pos_assigned_gt_inds.astype('int64'),
+                    axis=0)
 
             if assign_result.labels is not None:
                 self.pos_gt_labels = assign_result.labels[pos_inds]
@@ -278,6 +279,7 @@ class SamplingResult:
             'pos_assigned_gt_inds': self.pos_assigned_gt_inds,
         }
 
+
 @register
 class PseudoSampler:
     """A pseudo sampler that does not do sampling actually."""
@@ -304,10 +306,6 @@ class PseudoSampler:
         Returns:
             :obj:`SamplingResult`: sampler results
         """
-        # pos_inds = paddle.nonzero(
-        #     assign_result.gt_inds > 0, as_tuple=False).squeeze(-1).unique()
-        # neg_inds = paddle.nonzero(
-        #     assign_result.gt_inds == 0, as_tuple=False).squeeze(-1).unique()
         pos_inds = paddle.nonzero(
             assign_result.gt_inds > 0, as_tuple=False).squeeze(-1)
         neg_inds = paddle.nonzero(

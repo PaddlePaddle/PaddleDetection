@@ -22,25 +22,22 @@ import paddle.nn.functional as F
 
 from ppdet.core.workspace import register
 
-__all__ = [
-    'KptL1Cost', 'OksCost', 'ClassificationCost'
-]
+__all__ = ['KptL1Cost', 'OksCost', 'ClassificationCost']
+
 
 def masked_fill(x, mask, value):
     y = paddle.full(x.shape, value, x.dtype)
     return paddle.where(mask, y, x)
 
+
 @register
 class KptL1Cost(object):
     """KptL1Cost.
 
+    this function based on: https://github.com/hikvision-research/opera/blob/main/opera/core/bbox/match_costs/match_cost.py
+
     Args:
         weight (int | float, optional): loss_weight.
-
-    Examples:
-        >>> from opera.core.bbox.match_costs.match_cost import KptL1Cost
-        >>> import paddle
-        >>> self = KptL1Cost()
     """
 
     def __init__(self, weight=1.0):
@@ -62,19 +59,21 @@ class KptL1Cost(object):
         """
         kpt_cost = []
         for i in range(len(gt_keypoints)):
-            if gt_keypoints[i].size==0:
-                kpt_cost.append(kpt_pred.sum()*0)
+            if gt_keypoints[i].size == 0:
+                kpt_cost.append(kpt_pred.sum() * 0)
             kpt_pred_tmp = kpt_pred.clone()
             valid_flag = valid_kpt_flag[i] > 0
-            valid_flag_expand = valid_flag.unsqueeze(0).unsqueeze(
-                -1).expand_as(kpt_pred_tmp)
+            valid_flag_expand = valid_flag.unsqueeze(0).unsqueeze(-1).expand_as(
+                kpt_pred_tmp)
             if not valid_flag_expand.all():
                 kpt_pred_tmp = masked_fill(kpt_pred_tmp, ~valid_flag_expand, 0)
             cost = F.pairwise_distance(
                 kpt_pred_tmp.reshape((kpt_pred_tmp.shape[0], -1)),
-                gt_keypoints[i].reshape((-1,)).unsqueeze(0),
-                p=1,keepdim=True)
-            avg_factor = paddle.clip(valid_flag.astype('float32').sum() * 2, 1.0)
+                gt_keypoints[i].reshape((-1, )).unsqueeze(0),
+                p=1,
+                keepdim=True)
+            avg_factor = paddle.clip(
+                valid_flag.astype('float32').sum() * 2, 1.0)
             cost = cost / avg_factor
             kpt_cost.append(cost)
         kpt_cost = paddle.concat(kpt_cost, axis=1)
@@ -85,37 +84,29 @@ class KptL1Cost(object):
 class OksCost(object):
     """OksCost.
 
-    Args:
-        weight (int | float, optional): loss_weight.
+    this function based on: https://github.com/hikvision-research/opera/blob/main/opera/core/bbox/match_costs/match_cost.py
 
-    Examples:
-        >>> from opera.core.bbox.match_costs.match_cost import OksCost
-        >>> import paddle
-        >>> self = OksCost()
+    Args:
+        num_keypoints (int): number of keypoints
+        weight (int | float, optional): loss_weight.
     """
 
     def __init__(self, num_keypoints=17, weight=1.0):
         self.weight = weight
         if num_keypoints == 17:
-            self.sigmas = np.array([
-                .26,
-                .25, .25,
-                .35, .35,
-                .79, .79,
-                .72, .72,
-                .62, .62,
-                1.07, 1.07,
-                .87, .87,
-                .89, .89], dtype=np.float32) / 10.0
+            self.sigmas = np.array(
+                [
+                    .26, .25, .25, .35, .35, .79, .79, .72, .72, .62, .62, 1.07,
+                    1.07, .87, .87, .89, .89
+                ],
+                dtype=np.float32) / 10.0
         elif num_keypoints == 14:
-            self.sigmas = np.array([
-                .79, .79,
-                .72, .72,
-                .62, .62,
-                1.07, 1.07,
-                .87, .87,
-                .89, .89,
-                .79, .79], dtype=np.float32) / 10.0
+            self.sigmas = np.array(
+                [
+                    .79, .79, .72, .72, .62, .62, 1.07, 1.07, .87, .87, .89,
+                    .89, .79, .79
+                ],
+                dtype=np.float32) / 10.0
         else:
             raise ValueError(f'Unsupported keypoints number {num_keypoints}')
 
@@ -139,8 +130,8 @@ class OksCost(object):
         oks_cost = []
         assert len(gt_keypoints) == len(gt_areas)
         for i in range(len(gt_keypoints)):
-            if gt_keypoints[i].size==0:
-                oks_cost.append(kpt_pred.sum()*0)
+            if gt_keypoints[i].size == 0:
+                oks_cost.append(kpt_pred.sum() * 0)
             squared_distance = \
                 (kpt_pred[:, :, 0] - gt_keypoints[i, :, 0].unsqueeze(0)) ** 2 + \
                 (kpt_pred[:, :, 1] - gt_keypoints[i, :, 1].unsqueeze(0)) ** 2
@@ -148,20 +139,22 @@ class OksCost(object):
             vis_ind = vis_flag.nonzero(as_tuple=False)[:, 0]
             num_vis_kpt = vis_ind.shape[0]
             # assert num_vis_kpt > 0
-            if num_vis_kpt==0:
-                oks_cost.append(paddle.zeros((squared_distance.shape[0],1)))
+            if num_vis_kpt == 0:
+                oks_cost.append(paddle.zeros((squared_distance.shape[0], 1)))
                 continue
             area = gt_areas[i]
 
             squared_distance0 = squared_distance / (area * variances * 2)
-            squared_distance0 = paddle.index_select(squared_distance0, vis_ind, axis=1)
-            squared_distance1 = paddle.exp(-squared_distance0).sum(
-                axis=1, keepdim=True)
+            squared_distance0 = paddle.index_select(
+                squared_distance0, vis_ind, axis=1)
+            squared_distance1 = paddle.exp(-squared_distance0).sum(axis=1,
+                                                                   keepdim=True)
             oks = squared_distance1 / num_vis_kpt
             # The 1 is a constant that doesn't change the matching, so omitted.
             oks_cost.append(-oks)
         oks_cost = paddle.concat(oks_cost, axis=1)
         return oks_cost * self.weight
+
 
 @register
 class ClassificationCost:
@@ -169,20 +162,6 @@ class ClassificationCost:
 
      Args:
          weight (int | float, optional): loss_weight
-
-     Examples:
-         >>> from mmdet.core.bbox.match_costs.match_cost import \
-         ... ClassificationCost
-         >>> import paddle
-         >>> self = ClassificationCost()
-         >>> cls_pred = paddle.rand(4, 3)
-         >>> gt_labels = paddle.tensor([0, 1, 2])
-         >>> factor = paddle.tensor([10, 8, 10, 8])
-         >>> self(cls_pred, gt_labels)
-         tensor([[-0.3430, -0.3525, -0.3045],
-                [-0.3077, -0.2931, -0.3992],
-                [-0.3664, -0.3455, -0.2881],
-                [-0.3343, -0.2701, -0.3956]])
     """
 
     def __init__(self, weight=1.):
@@ -206,6 +185,7 @@ class ClassificationCost:
         cls_cost = -cls_score[:, gt_labels]
         return cls_cost * self.weight
 
+
 @register
 class FocalLossCost:
     """FocalLossCost.
@@ -217,19 +197,6 @@ class FocalLossCost:
          eps (float, optional): default 1e-12
          binary_input (bool, optional): Whether the input is binary,
             default False.
-
-     Examples:
-         >>> from mmdet.core.bbox.match_costs.match_cost import FocalLossCost
-         >>> import paddle
-         >>> self = FocalLossCost()
-         >>> cls_pred = paddle.rand(4, 3)
-         >>> gt_labels = paddle.tensor([0, 1, 2])
-         >>> factor = paddle.tensor([10, 8, 10, 8])
-         >>> self(cls_pred, gt_labels)
-         tensor([[-0.3236, -0.3364, -0.2699],
-                [-0.3439, -0.3209, -0.4807],
-                [-0.4099, -0.3795, -0.2929],
-                [-0.1950, -0.1207, -0.2626]])
     """
 
     def __init__(self,
@@ -254,7 +221,7 @@ class FocalLossCost:
         Returns:
             paddle.Tensor: cls_cost value with weight
         """
-        if gt_labels.size==0:
+        if gt_labels.size == 0:
             return cls_pred.sum() * 0
         cls_pred = F.sigmoid(cls_pred)
         neg_cost = -(1 - cls_pred + self.eps).log() * (
@@ -262,7 +229,9 @@ class FocalLossCost:
         pos_cost = -(cls_pred + self.eps).log() * self.alpha * (
             1 - cls_pred).pow(self.gamma)
 
-        cls_cost = paddle.index_select(pos_cost, gt_labels, axis=1) - paddle.index_select(neg_cost, gt_labels, axis=1)
+        cls_cost = paddle.index_select(
+            pos_cost, gt_labels, axis=1) - paddle.index_select(
+                neg_cost, gt_labels, axis=1)
         return cls_cost * self.weight
 
     def _mask_focal_loss_cost(self, cls_pred, gt_labels):

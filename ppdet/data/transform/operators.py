@@ -593,6 +593,7 @@ class RandomDistort(BaseOperator):
         sample['image'] = img
         return sample
 
+
 @register_op
 class PhotoMetricDistortion(BaseOperator):
     """Apply photometric distortion to image sequentially, every transformation
@@ -641,7 +642,7 @@ class PhotoMetricDistortion(BaseOperator):
         # random brightness
         if np.random.randint(2):
             delta = np.random.uniform(-self.brightness_delta,
-                                   self.brightness_delta)
+                                      self.brightness_delta)
             img += delta
 
         # mode == 0 --> do random contrast first
@@ -650,7 +651,7 @@ class PhotoMetricDistortion(BaseOperator):
         if mode == 1:
             if np.random.randint(2):
                 alpha = np.random.uniform(self.contrast_lower,
-                                       self.contrast_upper)
+                                          self.contrast_upper)
                 img *= alpha
 
         # convert color from BGR to HSV
@@ -659,7 +660,7 @@ class PhotoMetricDistortion(BaseOperator):
         # random saturation
         if np.random.randint(2):
             img[..., 1] *= np.random.uniform(self.saturation_lower,
-                                          self.saturation_upper)
+                                             self.saturation_upper)
 
         # random hue
         if np.random.randint(2):
@@ -674,7 +675,7 @@ class PhotoMetricDistortion(BaseOperator):
         if mode == 0:
             if np.random.randint(2):
                 alpha = np.random.uniform(self.contrast_lower,
-                                       self.contrast_upper)
+                                          self.contrast_upper)
                 img *= alpha
 
         # randomly swap channels
@@ -693,6 +694,7 @@ class PhotoMetricDistortion(BaseOperator):
         repr_str += f'{(self.saturation_lower, self.saturation_upper)},\n'
         repr_str += f'hue_delta={self.hue_delta})'
         return repr_str
+
 
 @register_op
 class AutoAugment(BaseOperator):
@@ -882,10 +884,6 @@ class Resize(BaseOperator):
         joints[..., 1] *= im_scale_y
         joints[..., 0] = np.clip(joints[..., 0], 0, resize_w)
         joints[..., 1] = np.clip(joints[..., 1], 0, resize_h)
-        # joints[joints[..., 0] > resize_w, :] = 0
-        # joints[joints[..., 1] > resize_h, :] = 0
-        # joints[joints[..., 0] < 0, :] = 0
-        # joints[joints[..., 1] < 0, :] = 0
         return joints
 
     def apply_segm(self, segms, im_size, scale):
@@ -997,7 +995,8 @@ class Resize(BaseOperator):
 
         # apply areas
         if 'gt_areas' in sample:
-            sample['gt_areas'] = self.apply_area(sample['gt_areas'], [im_scale_x, im_scale_y])
+            sample['gt_areas'] = self.apply_area(sample['gt_areas'],
+                                                 [im_scale_x, im_scale_y])
 
         # apply polygon
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
@@ -1034,8 +1033,8 @@ class Resize(BaseOperator):
 
         if 'gt_joints' in sample:
             sample['gt_joints'] = self.apply_joints(sample['gt_joints'],
-                                                [im_scale_x, im_scale_y],
-                                                [resize_w, resize_h])
+                                                    [im_scale_x, im_scale_y],
+                                                    [resize_w, resize_h])
 
         return sample
 
@@ -1707,9 +1706,10 @@ class RandomCrop(BaseOperator):
                 if 'difficult' in sample:
                     sample['difficult'] = np.take(
                         sample['difficult'], valid_ids, axis=0)
-                
+
                 if 'gt_joints' in sample:
-                    sample['gt_joints'] = self._crop_joints(sample['gt_joints'], crop_box)
+                    sample['gt_joints'] = self._crop_joints(sample['gt_joints'],
+                                                            crop_box)
 
                 return sample
 
@@ -1768,6 +1768,7 @@ class RandomCrop(BaseOperator):
         joints[..., 0] -= x1
         joints[..., 1] -= y1
         return joints
+
 
 @register_op
 class RandomScaledCrop(BaseOperator):
@@ -2597,7 +2598,8 @@ class RandomResizeCrop(BaseOperator):
                         sample['is_crowd'], valid_ids, axis=0)
 
                 if 'gt_areas' in sample:
-                    sample['gt_areas'] = np.take(sample['gt_areas'], valid_ids, axis=0)
+                    sample['gt_areas'] = np.take(
+                        sample['gt_areas'], valid_ids, axis=0)
 
                 if 'gt_joints' in sample:
                     gt_joints = self._crop_joints(sample['gt_joints'], crop_box)
@@ -2697,8 +2699,8 @@ class RandomResizeCrop(BaseOperator):
 
         if 'gt_joints' in sample:
             sample['gt_joints'] = self.apply_joints(sample['gt_joints'],
-                                                [im_scale_x, im_scale_y],
-                                                [resize_w, resize_h])
+                                                    [im_scale_x, im_scale_y],
+                                                    [resize_w, resize_h])
 
         return sample
 
@@ -2834,13 +2836,13 @@ class RandomShortSideResize(BaseOperator):
             sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
 
         if 'gt_joints' in sample:
-            sample['gt_joints'] = self.apply_joints(sample['gt_joints'],
-                                                [im_scale_x, im_scale_y],
-                                                target_size)
+            sample['gt_joints'] = self.apply_joints(
+                sample['gt_joints'], [im_scale_x, im_scale_y], target_size)
 
         # apply areas
         if 'gt_areas' in sample:
-            sample['gt_areas'] = self.apply_area(sample['gt_areas'], [im_scale_x, im_scale_y])
+            sample['gt_areas'] = self.apply_area(sample['gt_areas'],
+                                                 [im_scale_x, im_scale_y])
 
         return sample
 
@@ -2916,12 +2918,10 @@ class RandomShortSideResize(BaseOperator):
 
         return self.resize(sample, target_size, self.max_size, interp)
 
+
 @register_op
 class RandomShortSideRangeResize(RandomShortSideResize):
-    def __init__(self,
-                 scales,
-                 interp=cv2.INTER_LINEAR,
-                 random_interp=False):
+    def __init__(self, scales, interp=cv2.INTER_LINEAR, random_interp=False):
         """
         Resize the image randomly according to the short side. If max_size is not None,
         the long side is scaled according to max_size. The whole process will be keep ratio.
@@ -2930,7 +2930,8 @@ class RandomShortSideRangeResize(RandomShortSideResize):
             interp (int): The interpolation method.
             random_interp (bool): Whether random select interpolation method.
         """
-        super(RandomShortSideRangeResize, self).__init__(scales, None, interp, random_interp)
+        super(RandomShortSideRangeResize, self).__init__(scales, None, interp,
+                                                         random_interp)
 
         assert isinstance(scales,
                           Sequence), "short_side_sizes must be List or Tuple"
@@ -2941,11 +2942,9 @@ class RandomShortSideRangeResize(RandomShortSideResize):
         img_scale_long = [max(s) for s in img_scales]
         img_scale_short = [min(s) for s in img_scales]
         long_edge = np.random.randint(
-            min(img_scale_long),
-            max(img_scale_long) + 1)
+            min(img_scale_long), max(img_scale_long) + 1)
         short_edge = np.random.randint(
-            min(img_scale_short),
-            max(img_scale_short) + 1)
+            min(img_scale_short), max(img_scale_short) + 1)
         img_scale = (long_edge, short_edge)
         return img_scale
 
@@ -2956,6 +2955,7 @@ class RandomShortSideRangeResize(RandomShortSideResize):
             self.interps) if self.random_interp else self.interp
 
         return self.resize(sample, short_edge, long_edge, interp)
+
 
 @register_op
 class RandomSizeCrop(BaseOperator):
@@ -3033,7 +3033,8 @@ class RandomSizeCrop(BaseOperator):
                     keep_index) > 0 else np.zeros(
                         [0, 1], dtype=np.float32)
             if 'gt_areas' in sample:
-                sample['gt_areas'] = np.take(sample['gt_areas'], keep_index, axis=0)
+                sample['gt_areas'] = np.take(
+                    sample['gt_areas'], keep_index, axis=0)
 
         image_shape = sample['image'].shape[:2]
         sample['image'] = self.paddle_crop(sample['image'], *region)

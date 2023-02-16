@@ -243,8 +243,8 @@ class CustomCSPPAN(nn.Layer):
                 self.pos_embed = None
 
             encoder_layer = TransformerEncoderLayer(
-                self.hidden_dim, nhead, dim_feedforward, dropout, activation,
-                attn_dropout, act_dropout, normalize_before)
+                self.hidden_dim, None, nhead, dim_feedforward, dropout,
+                activation, attn_dropout, act_dropout, normalize_before)
             encoder_norm = nn.LayerNorm(
                 self.hidden_dim) if normalize_before else None
             self.encoder = TransformerEncoder(encoder_layer, num_layers,

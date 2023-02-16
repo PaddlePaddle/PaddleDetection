@@ -10,6 +10,10 @@ __pycache__/
 # C extensions
 *.so
 
+#extra option
+ppdet/modeling/transformers/ext_op/build/
+ppdet/modeling/transformers/ext_op/deformable_detr_ops.egg-info/
+ppdet/modeling/transformers/ext_op/dist/
 # json file
 *.json
 

@@ -87,11 +87,6 @@ class KeyPointFlip(object):
                 else:
                     kpts_lst[idx] = kpts_lst[idx][self.flip_permutation]
                 kpts_lst[idx][..., 0] = hmsize - kpts_lst[idx][..., 0]
-                # kpts_lst[idx] = kpts_lst[idx].astype(np.int64)
-                # kpts_lst[idx][kpts_lst[idx][..., 0] > hmsize, :] = 0
-                # kpts_lst[idx][kpts_lst[idx][..., 1] > hmsize, :] = 0
-                # kpts_lst[idx][kpts_lst[idx][..., 0] < 0, :] = 0
-                # kpts_lst[idx][kpts_lst[idx][..., 1] < 0, :] = 0
         else:
             hmsize = sizelst[0]
             if kpts_lst.ndim == 3:
@@ -99,12 +94,7 @@ class KeyPointFlip(object):
             else:
                 kpts_lst = kpts_lst[self.flip_permutation]
             kpts_lst[..., 0] = hmsize - kpts_lst[..., 0]
-            # kpts_lst = kpts_lst.astype(np.int64)
-            # kpts_lst[kpts_lst[..., 0] > hmsize, :] = 0
-            # kpts_lst[kpts_lst[..., 1] > hmsize, :] = 0
-            # kpts_lst[kpts_lst[..., 0] < 0, :] = 0
-            # kpts_lst[kpts_lst[..., 1] < 0, :] = 0
-        
+
         records['gt_joints'] = kpts_lst
         return records
 
@@ -143,8 +133,7 @@ class KeyPointFlip(object):
             self._flipjoints(records, sizelst)
             self._flipmask(records, sizelst)
             self._flipbbox(records, sizelst)
-            
-            
+
         return records
 
 
@@ -174,7 +163,7 @@ class RandomAffine(object):
                  hmsize=None,
                  trainsize=512,
                  scale_type='short',
-                 boldervalue=[114,114,114]):
+                 boldervalue=[114, 114, 114]):
         super(RandomAffine, self).__init__()
         self.max_degree = max_degree
         self.min_scale = scale[0]
@@ -213,7 +202,7 @@ class RandomAffine(object):
 
     def _get_affine_matrix(self, center, scale, res, rot=0):
         """Generate transformation matrix."""
-        w,h = scale
+        w, h = scale
         t = np.zeros((3, 3), dtype=np.float32)
         t[0, 0] = float(res[0]) / w
         t[1, 1] = float(res[1]) / h
@@ -237,12 +226,19 @@ class RandomAffine(object):
             t = np.dot(t_inv, np.dot(rot_mat, np.dot(t_mat, t)))
         return t
 
-    def _affine_joints_mask(self, degree, center, roi_size, dsize, keypoints=None, heatmap_mask=None, gt_bbox=None):
+    def _affine_joints_mask(self,
+                            degree,
+                            center,
+                            roi_size,
+                            dsize,
+                            keypoints=None,
+                            heatmap_mask=None,
+                            gt_bbox=None):
         kpts = None
         mask = None
         bbox = None
-        mask_affine_mat = self._get_affine_matrix(
-            center, roi_size, dsize, degree)[:2]
+        mask_affine_mat = self._get_affine_matrix(center, roi_size, dsize,
+                                                  degree)[:2]
         if heatmap_mask is not None:
             mask = cv2.warpAffine(heatmap_mask, mask_affine_mat, dsize)
             mask = ((mask / 255) > 0.5).astype(np.float32)
@@ -255,9 +251,9 @@ class RandomAffine(object):
             kpts[(kpts[..., 0]) < 0, :] = 0
             kpts[(kpts[..., 1]) < 0, :] = 0
         if gt_bbox is not None:
-            temp_bbox = gt_bbox[:,[0,3,2,1]]
-            cat_bbox = np.concatenate((gt_bbox, temp_bbox),axis=-1)
-            gt_bbox_warped = warp_affine_joints(cat_bbox,mask_affine_mat)
+            temp_bbox = gt_bbox[:, [0, 3, 2, 1]]
+            cat_bbox = np.concatenate((gt_bbox, temp_bbox), axis=-1)
+            gt_bbox_warped = warp_affine_joints(cat_bbox, mask_affine_mat)
             bbox = np.zeros_like(gt_bbox)
             bbox[:, 0] = gt_bbox_warped[:, 0::2].min(1).clip(0, dsize[0])
             bbox[:, 2] = gt_bbox_warped[:, 0::2].max(1).clip(0, dsize[0])
@@ -313,25 +309,31 @@ class RandomAffine(object):
             dsize = scale
             imgshape = (shape.tolist())
 
-        image_affine_mat = self._get_affine_matrix(center, roi_size, dsize, degree)[:2]
+        image_affine_mat = self._get_affine_matrix(center, roi_size, dsize,
+                                                   degree)[:2]
         image = cv2.warpAffine(
             image,
-            image_affine_mat, imgshape,
+            image_affine_mat,
+            imgshape,
             flags=cv2.INTER_LINEAR,
             borderValue=self.boldervalue)
 
         if self.hmsize is None:
-            kpts, mask, gt_bbox = self._affine_joints_mask(degree, center, roi_size, dsize, keypoints, heatmap_mask, gt_bbox)
+            kpts, mask, gt_bbox = self._affine_joints_mask(
+                degree, center, roi_size, dsize, keypoints, heatmap_mask,
+                gt_bbox)
             records['image'] = image
             if kpts is not None: records['gt_joints'] = kpts
             if mask is not None: records['mask'] = mask
             if gt_bbox is not None: records['gt_bbox'] = gt_bbox
             return records
-            
+
         kpts_lst = []
         mask_lst = []
         for hmsize in self.hmsize:
-            kpts, mask, gt_bbox = self._affine_joints_mask(degree, center, roi_size, [hmsize, hmsize], keypoints, heatmap_mask, gt_bbox)
+            kpts, mask, gt_bbox = self._affine_joints_mask(
+                degree, center, roi_size, [hmsize, hmsize], keypoints,
+                heatmap_mask, gt_bbox)
             kpts_lst.append(kpts)
             mask_lst.append(mask)
         records['image'] = image
@@ -1144,13 +1146,14 @@ class ToHeatmapsTopDown_UDP(object):
 
         return records
 
+
 from typing import Optional, Tuple, Union, List
 import numbers
 
+
 def _scale_size(
-    size: Tuple[int, int],
-    scale: Union[float, int, tuple],
-) -> Tuple[int, int]:
+        size: Tuple[int, int],
+        scale: Union[float, int, tuple], ) -> Tuple[int, int]:
     """Rescale a size by a ratio.
 
     Args:
@@ -1165,9 +1168,10 @@ def _scale_size(
     w, h = size
     return int(w * float(scale[0]) + 0.5), int(h * float(scale[1]) + 0.5)
 
+
 def rescale_size(old_size: tuple,
                  scale: Union[float, int, tuple],
-                 return_scale: bool = False) -> tuple:
+                 return_scale: bool=False) -> tuple:
     """Calculate the new size to be rescaled to.
 
     Args:
@@ -1203,13 +1207,13 @@ def rescale_size(old_size: tuple,
     else:
         return new_size
 
-def imrescale(
-    img: np.ndarray,
-    scale: Union[float, Tuple[int, int]],
-    return_scale: bool = False,
-    interpolation: str = 'bilinear',
-    backend: Optional[str] = None
-) -> Union[np.ndarray, Tuple[np.ndarray, float]]:
+
+def imrescale(img: np.ndarray,
+              scale: Union[float, Tuple[int, int]],
+              return_scale: bool=False,
+              interpolation: str='bilinear',
+              backend: Optional[str]=None) -> Union[np.ndarray, Tuple[
+                  np.ndarray, float]]:
     """Resize image while keeping the aspect ratio.
 
     Args:
@@ -1235,15 +1239,16 @@ def imrescale(
     else:
         return rescaled_img
 
+
 def imresize(
-    img: np.ndarray,
-    size: Tuple[int, int],
-    return_scale: bool = False,
-    interpolation: str = 'bilinear',
-    out: Optional[np.ndarray] = None,
-    backend: Optional[str] = None,
-    interp=cv2.INTER_LINEAR,
-) -> Union[Tuple[np.ndarray, float, float], np.ndarray]:
+        img: np.ndarray,
+        size: Tuple[int, int],
+        return_scale: bool=False,
+        interpolation: str='bilinear',
+        out: Optional[np.ndarray]=None,
+        backend: Optional[str]=None,
+        interp=cv2.INTER_LINEAR, ) -> Union[Tuple[np.ndarray, float, float],
+                                            np.ndarray]:
     """Resize image to a given size.
 
     Args:
@@ -1275,14 +1280,14 @@ def imresize(
         pil_image = pil_image.resize(size, pillow_interp_codes[interpolation])
         resized_img = np.array(pil_image)
     else:
-        resized_img = cv2.resize(
-            img, size, dst=out, interpolation=interp)
+        resized_img = cv2.resize(img, size, dst=out, interpolation=interp)
     if not return_scale:
         return resized_img
     else:
         w_scale = size[0] / w
         h_scale = size[1] / h
         return resized_img, w_scale, h_scale
+
 
 class PETR_Resize:
     """Resize images & bbox & mask.
@@ -1402,11 +1407,9 @@ class PETR_Resize:
         img_scale_long = [max(s) for s in img_scales]
         img_scale_short = [min(s) for s in img_scales]
         long_edge = np.random.randint(
-            min(img_scale_long),
-            max(img_scale_long) + 1)
+            min(img_scale_long), max(img_scale_long) + 1)
         short_edge = np.random.randint(
-            min(img_scale_short),
-            max(img_scale_short) + 1)
+            min(img_scale_short), max(img_scale_short) + 1)
         img_scale = (long_edge, short_edge)
         return img_scale, None
 
@@ -1456,8 +1459,8 @@ class PETR_Resize:
         """
 
         if self.ratio_range is not None:
-            scale, scale_idx = self.random_sample_ratio(
-                self.img_scale[0], self.ratio_range)
+            scale, scale_idx = self.random_sample_ratio(self.img_scale[0],
+                                                        self.ratio_range)
         elif len(self.img_scale) == 1:
             scale, scale_idx = self.img_scale[0], 0
         elif self.multiscale_mode == 'range':
@@ -1492,10 +1495,9 @@ class PETR_Resize:
                     return_scale=True,
                     interpolation=self.interpolation,
                     backend=self.backend)
-            
 
-            scale_factor = np.array([w_scale, h_scale, w_scale, h_scale],
-                                    dtype=np.float32)
+            scale_factor = np.array(
+                [w_scale, h_scale, w_scale, h_scale], dtype=np.float32)
             results['im_shape'] = np.array(img.shape)
             # in case that there is no padding
             results['pad_shape'] = img.shape
@@ -1545,16 +1547,12 @@ class PETR_Resize:
         """Resize keypoints with ``results['scale_factor']``."""
         for key in ['gt_joints'] if 'gt_joints' in results else []:
             keypoints = results[key].copy()
-            keypoints[...,
-                      0] = keypoints[..., 0] * results['scale_factor'][0]
-            keypoints[...,
-                      1] = keypoints[..., 1] * results['scale_factor'][1]
+            keypoints[..., 0] = keypoints[..., 0] * results['scale_factor'][0]
+            keypoints[..., 1] = keypoints[..., 1] * results['scale_factor'][1]
             if self.keypoint_clip_border:
                 img_shape = results['im_shape']
-                keypoints[..., 0] = np.clip(keypoints[..., 0], 0,
-                                             img_shape[1])
-                keypoints[..., 1] = np.clip(keypoints[..., 1], 0,
-                                             img_shape[0])
+                keypoints[..., 0] = np.clip(keypoints[..., 0], 0, img_shape[1])
+                keypoints[..., 1] = np.clip(keypoints[..., 1], 0, img_shape[0])
             results[key] = keypoints
 
     def _resize_areas(self, results):

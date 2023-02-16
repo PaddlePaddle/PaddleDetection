@@ -1,4 +1,4 @@
-# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved. 
+# Copyright (c) 2023 PaddlePaddle Authors. All Rights Reserved. 
 #   
 # Licensed under the Apache License, Version 2.0 (the "License");   
 # you may not use this file except in compliance with the License.  
@@ -11,18 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
 # See the License for the specific language governing permissions and   
 # limitations under the License.
-"""
-this code is base on https://github.com/open-mmlab/mmpose
-"""
+
 import os
-import cv2
 import numpy as np
-import json
-import copy
 import pycocotools
 from pycocotools.coco import COCO
 from .keypoint_coco import KeypointBottomUpBaseDataset
 from ppdet.core.workspace import register, serializable
+
 
 @register
 @serializable
@@ -84,22 +80,12 @@ class PETRCocoDataset(KeypointBottomUpBaseDataset):
 
         self.img_ids = self.coco.getImgIds()
         if not self.test_mode:
-            # self.img_ids = [
-            #     img_id for img_id in self.img_ids
-            #     if len(self.coco.getAnnIds(
-            #         imgIds=img_id, iscrowd=False)) > 0
-            # ]
-
             self.img_ids_tmp = []
             for img_id in self.img_ids:
                 ann_ids = self.coco.getAnnIds(imgIds=img_id)
                 anno = self.coco.loadAnns(ann_ids)
-                anno = [
-                    obj for obj in anno
-                    if obj['iscrowd'] == 0
-                    # if obj['iscrowd'] == 0 and obj['num_keypoints'] > 0
-                ]
-                if len(anno)==0:
+                anno = [obj for obj in anno if obj['iscrowd'] == 0]
+                if len(anno) == 0:
                     continue
                 self.img_ids_tmp.append(img_id)
             self.img_ids = self.img_ids_tmp
@@ -163,20 +149,14 @@ class PETRCocoDataset(KeypointBottomUpBaseDataset):
         bboxes = self._get_bboxs(anno, idx)
         db_rec['gt_bbox'] = bboxes
 
-        # gt_bboxes_ignore = np.zeros((0, 4), dtype=np.float32)
-        # db_rec['gt_bboxes_ignore'] = gt_bboxes_ignore.copy()
-
         db_rec['gt_class'] = self._get_labels(anno, idx)
 
         db_rec['gt_areas'] = self._get_areas(anno, idx)
-        
+
         db_rec['im_id'] = img_id
         db_rec['image_file'] = os.path.join(self.img_prefix,
                                             self.id2name[img_id])
 
-        # mask = self._get_mask(anno, idx)
-        # db_rec['mask'] = mask
-        
         return db_rec
 
     def _get_joints(self, anno, idx):
@@ -191,38 +171,27 @@ class PETRCocoDataset(KeypointBottomUpBaseDataset):
                 np.array(obj['keypoints']).reshape([-1, 3])
 
         img_info = self.coco.loadImgs(self.img_ids[idx])[0]
-        # joints[..., 0] /= img_info['width']
-        # joints[..., 1] /= img_info['height']
         orgsize = np.array([img_info['height'], img_info['width'], 1])
 
         return joints, orgsize
 
     def _get_bboxs(self, anno, idx):
         num_people = len(anno)
-        gt_bboxes = np.zeros(
-            (num_people, 4), dtype=np.float32)
+        gt_bboxes = np.zeros((num_people, 4), dtype=np.float32)
 
-        for idx,obj in enumerate(anno):
+        for idx, obj in enumerate(anno):
             if 'bbox' in obj:
-                gt_bboxes[idx,:] = obj['bbox']
+                gt_bboxes[idx, :] = obj['bbox']
 
-        # if self.denorm_bbox:
-        if False:
-            bbox_num = gt_bboxes.shape[0]
-            if bbox_num != 0:
-                img_info = self.coco.loadImgs(self.img_ids[idx])[0]
-                gt_bboxes[:, 0::2] *= img_info['width']
-                gt_bboxes[:, 1::2] *= img_info['height']
         gt_bboxes[:, 2] += gt_bboxes[:, 0]
         gt_bboxes[:, 3] += gt_bboxes[:, 1]
         return gt_bboxes
 
     def _get_labels(self, anno, idx):
         num_people = len(anno)
-        gt_labels = np.zeros(
-            (num_people, 1), dtype=np.float32)
+        gt_labels = np.zeros((num_people, 1), dtype=np.float32)
 
-        for idx,obj in enumerate(anno):
+        for idx, obj in enumerate(anno):
             if 'category_id' in obj:
                 catid = obj['category_id']
                 gt_labels[idx, 0] = self.catid2clsid[catid]
@@ -230,14 +199,12 @@ class PETRCocoDataset(KeypointBottomUpBaseDataset):
 
     def _get_areas(self, anno, idx):
         num_people = len(anno)
-        gt_areas = np.zeros(
-            (num_people,), dtype=np.float32)
+        gt_areas = np.zeros((num_people, ), dtype=np.float32)
 
-        for idx,obj in enumerate(anno):
+        for idx, obj in enumerate(anno):
             if 'area' in obj:
-                gt_areas[idx,] = obj['area']
+                gt_areas[idx, ] = obj['area']
         return gt_areas
-
 
     def _get_mask(self, anno, idx):
         """Get ignore masks to mask out losses."""

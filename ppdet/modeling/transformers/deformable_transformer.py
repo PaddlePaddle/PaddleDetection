@@ -33,6 +33,7 @@ from ..initializer import linear_init_, constant_, xavier_uniform_, normal_
 
 __all__ = ['DeformableTransformer']
 
+
 @register
 class MSDeformableAttention(nn.Layer):
     def __init__(self,
@@ -73,7 +74,6 @@ class MSDeformableAttention(nn.Layer):
         self.ms_deformable_attn_core = ms_deformable_attn
 
         self._reset_parameters()
-
 
     def _reset_parameters(self):
         # sampling_offsets
@@ -214,7 +214,7 @@ class DeformableTransformerEncoderLayer(nn.Layer):
                 pos_embed=None):
         # self attention
         src2 = self.self_attn(
-            self.with_pos_embed(src, pos_embed), reference_points, src,
+            self.with_pos_embed(src, pos_embed), None, src, reference_points,
             spatial_shapes, level_start_index, src_mask)
         src = src + self.dropout1(src2)
         src = self.norm1(src)
@@ -332,8 +332,9 @@ class DeformableTransformerDecoderLayer(nn.Layer):
 
         # cross attention
         tgt2 = self.cross_attn(
-            self.with_pos_embed(tgt, query_pos_embed), reference_points, memory,
-            memory_spatial_shapes, memory_level_start_index, memory_mask)
+            self.with_pos_embed(tgt, query_pos_embed), None, memory,
+            reference_points, memory_spatial_shapes, memory_level_start_index,
+            memory_mask)
         tgt = tgt + self.dropout2(tgt2)
         tgt = self.norm2(tgt)
 

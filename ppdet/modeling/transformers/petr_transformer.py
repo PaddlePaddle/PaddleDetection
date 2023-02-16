@@ -1,4 +1,4 @@
-# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2023 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+this code is base on https://github.com/hikvision-research/opera/blob/main/opera/models/utils/transformer.py
+"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -24,17 +26,20 @@ from paddle import ParamAttr
 
 from ppdet.core.workspace import register
 from ..layers import MultiHeadAttention, _convert_attention_mask
-from .position_encoding import PositionEmbedding
-from .utils import _get_clones, deformable_attention_core_func
-from ..initializer import linear_init_, conv_init_, xavier_uniform_, normal_, constant_
+from .utils import _get_clones
+from ..initializer import linear_init_, normal_
 
-__all__ = ['PETRTransformer', 'MultiScaleDeformablePoseAttention', 
-    'PETR_TransformerDecoderLayer', 'PETR_TransformerDecoder', 
-    'PETR_DeformableDetrTransformerDecoder', 'PETR_DeformableTransformerDecoder']
+__all__ = [
+    'PETRTransformer', 'MultiScaleDeformablePoseAttention',
+    'PETR_TransformerDecoderLayer', 'PETR_TransformerDecoder',
+    'PETR_DeformableDetrTransformerDecoder', 'PETR_DeformableTransformerDecoder'
+]
+
 
 def masked_fill(x, mask, value):
     y = paddle.full(x.shape, value, x.dtype)
     return paddle.where(mask, y, x)
+
 
 def inverse_sigmoid(x, eps=1e-5):
     """Inverse function of sigmoid.
@@ -53,6 +58,7 @@ def inverse_sigmoid(x, eps=1e-5):
     x1 = x.clip(min=eps)
     x2 = (1 - x).clip(min=eps)
     return paddle.log(x1 / x2)
+
 
 @register
 class MultiScaleDeformablePoseAttention(nn.Layer):
@@ -106,11 +112,10 @@ class MultiScaleDeformablePoseAttention(nn.Layer):
             return (n & (n - 1) == 0) and n != 0
 
         if not _is_power_of_2(dim_per_head):
-            warnings.warn(
-                "You'd better set embed_dims in "
-                'MultiScaleDeformAttention to make '
-                'the dimension of each attention head a power of 2 '
-                'which is more efficient in our CUDA implementation.')
+            warnings.warn("You'd better set embed_dims in "
+                          'MultiScaleDeformAttention to make '
+                          'the dimension of each attention head a power of 2 '
+                          'which is more efficient in our CUDA implementation.')
 
         self.im2col_step = im2col_step
         self.embed_dims = embed_dims
@@ -118,7 +123,7 @@ class MultiScaleDeformablePoseAttention(nn.Layer):
         self.num_heads = num_heads
         self.num_points = num_points
         self.sampling_offsets = nn.Linear(
-            embed_dims, 
+            embed_dims,
             num_heads * num_levels * num_points * 2,
             weight_attr=ParamAttr(learning_rate=lr_mult),
             bias_attr=ParamAttr(learning_rate=lr_mult))
@@ -196,29 +201,30 @@ class MultiScaleDeformablePoseAttention(nn.Layer):
         bs, num_query, _ = query.shape
         bs, num_key, _ = value.shape
         try:
-            assert (value_spatial_shapes[:, 0].numpy() * value_spatial_shapes[:, 1].numpy()).sum() == num_key
+            assert (value_spatial_shapes[:, 0].numpy() *
+                    value_spatial_shapes[:, 1].numpy()).sum() == num_key
         except:
             print("value_spatial_shapes error")
-            import pdb;pdb.set_trace()
+            import pdb
+            pdb.set_trace()
 
         value = self.value_proj(value)
         if attn_mask is not None:
             # value = value.masked_fill(attn_mask[..., None], 0.0)
             value *= attn_mask.unsqueeze(-1)
         value = value.reshape([bs, num_key, self.num_heads, -1])
-        sampling_offsets = self.sampling_offsets(query).reshape(
-            [bs, num_query, self.num_heads, self.num_levels, self.num_points, 2])
+        sampling_offsets = self.sampling_offsets(query).reshape([
+            bs, num_query, self.num_heads, self.num_levels, self.num_points, 2
+        ])
         attention_weights = self.attention_weights(query).reshape(
             [bs, num_query, self.num_heads, self.num_levels * self.num_points])
         attention_weights = F.softmax(attention_weights, axis=-1)
 
-        attention_weights = attention_weights.reshape([bs, num_query,
-                                                   self.num_heads,
-                                                   self.num_levels,
-                                                   self.num_points])
+        attention_weights = attention_weights.reshape(
+            [bs, num_query, self.num_heads, self.num_levels, self.num_points])
         if reference_points.shape[-1] == self.num_points * 2:
-            reference_points_reshape = reference_points.reshape((
-                bs, num_query, self.num_levels, -1, 2)).unsqueeze(2)
+            reference_points_reshape = reference_points.reshape(
+                (bs, num_query, self.num_levels, -1, 2)).unsqueeze(2)
             x1 = reference_points[:, :, :, 0::2].min(axis=-1, keepdim=True)
             y1 = reference_points[:, :, :, 1::2].min(axis=-1, keepdim=True)
             x2 = reference_points[:, :, :, 0::2].max(axis=-1, keepdim=True)
@@ -238,96 +244,9 @@ class MultiScaleDeformablePoseAttention(nn.Layer):
             value, value_spatial_shapes, value_level_start_index,
             sampling_locations, attention_weights)
 
-        # output = self.output_proj(output).transpose((1, 0, 2))
         output = self.output_proj(output)
-        # (num_query, bs ,embed_dims)
-        # return self.dropout(output) + inp_residual
         return output
 
-# @register
-# class TransformerEncoderLayer(nn.Layer):
-#     __inject__ = ['attn']
-
-#     def __init__(self,
-#                  d_model,
-#                  attn=None,
-#                  nhead=8,
-#                  dim_feedforward=2048,
-#                  dropout=0.1,
-#                  activation="relu",
-#                  attn_dropout=None,
-#                  act_dropout=None,
-#                  normalize_before=False):
-#         super(TransformerEncoderLayer, self).__init__()
-#         attn_dropout = dropout if attn_dropout is None else attn_dropout
-#         act_dropout = dropout if act_dropout is None else act_dropout
-#         self.normalize_before = normalize_before
-#         self.embed_dims = d_model
-
-#         if attn is None:
-#             self.self_attn = MultiHeadAttention(d_model, nhead, attn_dropout)
-#         else:
-#             self.self_attn = attn
-#         # Implementation of Feedforward model
-#         self.linear1 = nn.Linear(d_model, dim_feedforward)
-#         self.dropout = nn.Dropout(act_dropout, mode="upscale_in_train")
-#         self.linear2 = nn.Linear(dim_feedforward, d_model)
-
-#         self.norm1 = nn.LayerNorm(d_model)
-#         self.norm2 = nn.LayerNorm(d_model)
-#         self.dropout1 = nn.Dropout(dropout, mode="upscale_in_train")
-#         self.dropout2 = nn.Dropout(dropout, mode="upscale_in_train")
-#         self.activation = getattr(F, activation)
-#         self._reset_parameters()
-
-#     def _reset_parameters(self):
-#         linear_init_(self.linear1)
-#         linear_init_(self.linear2)
-
-#     @staticmethod
-#     def with_pos_embed(tensor, pos_embed):
-#         return tensor if pos_embed is None else tensor + pos_embed
-
-#     def forward(self, src, src_mask=None, pos_embed=None, **kwargs):
-#         residual = src
-#         if self.normalize_before:
-#             src = self.norm1(src)
-#         q = k = self.with_pos_embed(src, pos_embed)
-#         src = self.self_attn(q, k, value=src, attn_mask=src_mask, **kwargs)
-
-#         src = residual + self.dropout1(src)
-#         if not self.normalize_before:
-#             src = self.norm1(src)
-
-#         residual = src
-#         if self.normalize_before:
-#             src = self.norm2(src)
-#         src = self.linear2(self.dropout(self.activation(self.linear1(src))))
-#         src = residual + self.dropout2(src)
-#         if not self.normalize_before:
-#             src = self.norm2(src)
-#         return src
-
-# @register
-# class TransformerEncoder(nn.Layer):
-#     __inject__ = ['encoder_layer']
-
-#     def __init__(self, encoder_layer, num_layers, norm=None):
-#         super(TransformerEncoder, self).__init__()
-#         self.layers = _get_clones(encoder_layer, num_layers)
-#         self.num_layers = num_layers
-#         self.norm = norm
-#         self.embed_dims = encoder_layer.embed_dims
-
-#     def forward(self, src, src_mask=None, pos_embed=None, **kwargs):
-#         output = src
-#         for layer in self.layers:
-#             output = layer(output, src_mask=src_mask, pos_embed=pos_embed, **kwargs)
-
-#         if self.norm is not None:
-#             output = self.norm(output)
-
-#         return output
 
 @register
 class PETR_TransformerDecoderLayer(nn.Layer):
@@ -335,7 +254,7 @@ class PETR_TransformerDecoderLayer(nn.Layer):
 
     def __init__(self,
                  d_model,
-                 nhead = 8,
+                 nhead=8,
                  self_attn=None,
                  cross_attn=None,
                  dim_feedforward=2048,
@@ -404,7 +323,8 @@ class PETR_TransformerDecoderLayer(nn.Layer):
         q = self.with_pos_embed(tgt, query_pos_embed)
         key_tmp = tgt
         # k = self.with_pos_embed(memory, pos_embed)
-        tgt = self.cross_attn(q, key=key_tmp, value=memory, attn_mask=memory_mask, **kwargs)
+        tgt = self.cross_attn(
+            q, key=key_tmp, value=memory, attn_mask=memory_mask, **kwargs)
         tgt = residual + self.dropout2(tgt)
         if not self.normalize_before:
             tgt = self.norm2(tgt)
@@ -417,6 +337,7 @@ class PETR_TransformerDecoderLayer(nn.Layer):
         if not self.normalize_before:
             tgt = self.norm3(tgt)
         return tgt
+
 
 @register
 class PETR_TransformerDecoder(nn.Layer):
@@ -506,6 +427,7 @@ class PETR_TransformerDecoder(nn.Layer):
 
         return output, reference_points
 
+
 @register
 class PETR_DeformableTransformerDecoder(nn.Layer):
     __inject__ = ['decoder_layer']
@@ -537,6 +459,7 @@ class PETR_DeformableTransformerDecoder(nn.Layer):
 
         return output.unsqueeze(0)
 
+
 @register
 class PETR_DeformableDetrTransformerDecoder(PETR_DeformableTransformerDecoder):
     """Implements the decoder in DETR transformer.
@@ -549,7 +472,8 @@ class PETR_DeformableDetrTransformerDecoder(PETR_DeformableTransformerDecoder):
 
     def __init__(self, *args, return_intermediate=False, **kwargs):
 
-        super(PETR_DeformableDetrTransformerDecoder, self).__init__(*args, **kwargs)
+        super(PETR_DeformableDetrTransformerDecoder, self).__init__(*args,
+                                                                    **kwargs)
         self.return_intermediate = return_intermediate
 
     def forward(self,
@@ -597,7 +521,6 @@ class PETR_DeformableDetrTransformerDecoder(PETR_DeformableTransformerDecoder):
                 *args,
                 reference_points=reference_points_input,
                 **kwargs)
-            # output = output.transpose((1, 0, 2))
 
             if reg_branches is not None:
                 tmp = reg_branches[lid](output)
@@ -613,7 +536,6 @@ class PETR_DeformableDetrTransformerDecoder(PETR_DeformableTransformerDecoder):
                     new_reference_points = F.sigmoid(new_reference_points)
                 reference_points = new_reference_points.detach()
 
-            # output = output.transpose((1, 0, 2))
             if self.return_intermediate:
                 intermediate.append(output)
                 intermediate_reference_points.append(reference_points)
@@ -623,6 +545,7 @@ class PETR_DeformableDetrTransformerDecoder(PETR_DeformableTransformerDecoder):
                 intermediate_reference_points)
 
         return output, reference_points
+
 
 @register
 class PETRTransformer(nn.Layer):
@@ -639,15 +562,15 @@ class PETRTransformer(nn.Layer):
     __inject__ = ["encoder", "decoder", "hm_encoder", "refine_decoder"]
 
     def __init__(self,
-                encoder="",
-                decoder="",
-                hm_encoder="",
-                refine_decoder="",
-                as_two_stage=True,
-                num_feature_levels=4,
-                two_stage_num_proposals=300,
-                num_keypoints=17,
-                **kwargs):
+                 encoder="",
+                 decoder="",
+                 hm_encoder="",
+                 refine_decoder="",
+                 as_two_stage=True,
+                 num_feature_levels=4,
+                 two_stage_num_proposals=300,
+                 num_keypoints=17,
+                 **kwargs):
         super(PETRTransformer, self).__init__(**kwargs)
         self.as_two_stage = as_two_stage
         self.num_feature_levels = num_feature_levels
@@ -663,7 +586,8 @@ class PETRTransformer(nn.Layer):
     def init_layers(self):
         """Initialize layers of the DeformableDetrTransformer."""
         #paddle.create_parameter
-        self.level_embeds = paddle.create_parameter((self.num_feature_levels, self.embed_dims), dtype="float32")
+        self.level_embeds = paddle.create_parameter(
+            (self.num_feature_levels, self.embed_dims), dtype="float32")
 
         if self.as_two_stage:
             self.enc_output = nn.Linear(self.embed_dims, self.embed_dims)
@@ -727,10 +651,12 @@ class PETRTransformer(nn.Layer):
                     0, H - 1, H, dtype="float32"),
                 paddle.linspace(
                     0, W - 1, W, dtype="float32"))
-            grid = paddle.concat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], -1)
+            grid = paddle.concat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)],
+                                 -1)
 
-            scale = paddle.concat([valid_W.unsqueeze(-1),
-                               valid_H.unsqueeze(-1)], 1).reshape([N, 1, 1, 2])
+            scale = paddle.concat(
+                [valid_W.unsqueeze(-1),
+                 valid_H.unsqueeze(-1)], 1).reshape([N, 1, 1, 2])
             grid = (grid.unsqueeze(0).expand((N, -1, -1, -1)) + 0.5) / scale
             proposal = grid.reshape([N, -1, 2])
             proposals.append(proposal)
@@ -740,24 +666,18 @@ class PETRTransformer(nn.Layer):
                                   (output_proposals < 0.99)).all(
                                       -1, keepdim=True).astype("bool")
         output_proposals = paddle.log(output_proposals / (1 - output_proposals))
-        # output_proposals = output_proposals.masked_fill(
-        #     memory_padding_mask.unsqueeze(-1), float('inf'))
-        # output_proposals = output_proposals.masked_fill(
-        #     ~output_proposals_valid, float('inf'))
-        output_proposals = masked_fill(output_proposals, 
-            ~memory_padding_mask.astype("bool").unsqueeze(-1), float('inf'))
-        output_proposals = masked_fill(output_proposals, 
-            ~output_proposals_valid, float('inf'))
+        output_proposals = masked_fill(
+            output_proposals, ~memory_padding_mask.astype("bool").unsqueeze(-1),
+            float('inf'))
+        output_proposals = masked_fill(output_proposals,
+                                       ~output_proposals_valid, float('inf'))
 
         output_memory = memory
-        # output_memory = output_memory.masked_fill(
-        #     memory_padding_mask.unsqueeze(-1), float(0))
-        # output_memory = output_memory.masked_fill(~output_proposals_valid,
-        #                                           float(0))
-        output_memory = masked_fill(output_memory, 
-            ~memory_padding_mask.astype("bool").unsqueeze(-1), float(0))
+        output_memory = masked_fill(
+            output_memory, ~memory_padding_mask.astype("bool").unsqueeze(-1),
+            float(0))
         output_memory = masked_fill(output_memory, ~output_proposals_valid,
-                                                  float(0))
+                                    float(0))
         output_memory = self.enc_output_norm(self.enc_output(output_memory))
         return output_memory, output_proposals
 
@@ -782,10 +702,10 @@ class PETRTransformer(nn.Layer):
                     0.5, H - 0.5, H, dtype="float32"),
                 paddle.linspace(
                     0.5, W - 0.5, W, dtype="float32"))
-            ref_y = ref_y.reshape((-1,))[None] / (
-                valid_ratios[:, None, lvl, 1] * H)
-            ref_x = ref_x.reshape((-1,))[None] / (
-                valid_ratios[:, None, lvl, 0] * W)
+            ref_y = ref_y.reshape(
+                (-1, ))[None] / (valid_ratios[:, None, lvl, 1] * H)
+            ref_x = ref_x.reshape(
+                (-1, ))[None] / (valid_ratios[:, None, lvl, 0] * W)
             ref = paddle.stack((ref_x, ref_y), -1)
             reference_points_list.append(ref)
         reference_points = paddle.concat(reference_points_list, 1)
@@ -808,16 +728,16 @@ class PETRTransformer(nn.Layer):
                                temperature=10000):
         """Get the position embedding of proposal."""
         scale = 2 * math.pi
-        dim_t = paddle.arange(
-            num_pos_feats, dtype="float32")
+        dim_t = paddle.arange(num_pos_feats, dtype="float32")
         dim_t = temperature**(2 * (dim_t // 2) / num_pos_feats)
         # N, L, 4
         proposals = F.sigmoid(proposals) * scale
         # N, L, 4, 128
         pos = proposals[:, :, :, None] / dim_t
         # N, L, 4, 64, 2
-        pos = paddle.stack((pos[:, :, :, 0::2].sin(), pos[:, :, :, 1::2].cos()),
-                          axis=4).flatten(2)
+        pos = paddle.stack(
+            (pos[:, :, :, 0::2].sin(), pos[:, :, :, 1::2].cos()),
+            axis=4).flatten(2)
         return pos
 
     def forward(self,
@@ -875,24 +795,25 @@ class PETRTransformer(nn.Layer):
         mask_flatten = []
         lvl_pos_embed_flatten = []
         spatial_shapes = []
-        for lvl, (feat, mask, pos_embed) in enumerate(
-                zip(mlvl_feats, mlvl_masks, mlvl_pos_embeds)):
+        for lvl, (feat, mask, pos_embed
+                  ) in enumerate(zip(mlvl_feats, mlvl_masks, mlvl_pos_embeds)):
             bs, c, h, w = feat.shape
             spatial_shape = (h, w)
             spatial_shapes.append(spatial_shape)
             feat = feat.flatten(2).transpose((0, 2, 1))
             mask = mask.flatten(1)
             pos_embed = pos_embed.flatten(2).transpose((0, 2, 1))
-            lvl_pos_embed = pos_embed + self.level_embeds[lvl].reshape([1, 1, -1])
+            lvl_pos_embed = pos_embed + self.level_embeds[lvl].reshape(
+                [1, 1, -1])
             lvl_pos_embed_flatten.append(lvl_pos_embed)
             feat_flatten.append(feat)
             mask_flatten.append(mask)
         feat_flatten = paddle.concat(feat_flatten, 1)
         mask_flatten = paddle.concat(mask_flatten, 1)
         lvl_pos_embed_flatten = paddle.concat(lvl_pos_embed_flatten, 1)
-        spatial_shapes_cumsum = paddle.to_tensor(np.array(spatial_shapes).prod(1).cumsum(0))
-        spatial_shapes = paddle.to_tensor(
-            spatial_shapes, dtype="int64")
+        spatial_shapes_cumsum = paddle.to_tensor(
+            np.array(spatial_shapes).prod(1).cumsum(0))
+        spatial_shapes = paddle.to_tensor(spatial_shapes, dtype="int64")
         level_start_index = paddle.concat((paddle.zeros(
             (1, ), dtype=spatial_shapes.dtype), spatial_shapes_cumsum[:-1]))
         valid_ratios = paddle.stack(
@@ -902,9 +823,6 @@ class PETRTransformer(nn.Layer):
             self.get_reference_points(spatial_shapes,
                                       valid_ratios)
 
-        # feat_flatten = feat_flatten.transpose((1, 0, 2))  # (H*W, bs, embed_dims)
-        # lvl_pos_embed_flatten = lvl_pos_embed_flatten.transpose((
-        #     1, 0, 2))  # (H*W, bs, embed_dims)
         memory = self.encoder(
             src=feat_flatten,
             pos_embed=lvl_pos_embed_flatten,
@@ -914,22 +832,31 @@ class PETRTransformer(nn.Layer):
             value_level_start_index=level_start_index,
             valid_ratios=valid_ratios)
 
-        # memory = memory.transpose((1, 0, 2))
         bs, _, c = memory.shape
 
         hm_proto = None
         if self.training:
-            # hm_memory = memory[:, level_start_index[0]:level_start_index[1], :]
-            # hm_pos_embed = lvl_pos_embed_flatten[level_start_index[0]:level_start_index[1], :, :]
-            # hm_mask = mask_flatten[:, level_start_index[0]:level_start_index[1]]
-            # hm_reference_points = reference_points[:, level_start_index[0]:level_start_index[1], [0], :]
+            hm_memory = paddle.slice(
+                memory,
+                starts=level_start_index[0],
+                ends=level_start_index[1],
+                axes=[1])
+            hm_pos_embed = paddle.slice(
+                lvl_pos_embed_flatten,
+                starts=level_start_index[0],
+                ends=level_start_index[1],
+                axes=[1])
+            hm_mask = paddle.slice(
+                mask_flatten,
+                starts=level_start_index[0],
+                ends=level_start_index[1],
+                axes=[1])
+            hm_reference_points = paddle.slice(
+                reference_points,
+                starts=level_start_index[0],
+                ends=level_start_index[1],
+                axes=[1])[:, :, :1, :]
 
-            hm_memory = paddle.slice(memory, starts=level_start_index[0], ends=level_start_index[1], axes=[1])
-            hm_pos_embed = paddle.slice(lvl_pos_embed_flatten, starts=level_start_index[0], ends=level_start_index[1], axes=[1])
-            hm_mask = paddle.slice(mask_flatten, starts=level_start_index[0], ends=level_start_index[1], axes=[1])
-            hm_reference_points = paddle.slice(reference_points, starts=level_start_index[0], ends=level_start_index[1], axes=[1])[:,:,:1,:]
-
-            # hm_memory = hm_memory.transpose((1, 0, 2))
             # official code make a mistake of pos_embed to pose_embed, which disable pos_embed
             hm_memory = self.hm_encoder(
                 src=hm_memory,
@@ -939,8 +866,8 @@ class PETRTransformer(nn.Layer):
                 reference_points=hm_reference_points,
                 value_level_start_index=level_start_index[0],
                 valid_ratios=valid_ratios[:, :1, :])
-            hm_memory = hm_memory.reshape((bs,
-                spatial_shapes[0, 0], spatial_shapes[0, 1], -1))
+            hm_memory = hm_memory.reshape((bs, spatial_shapes[0, 0],
+                                           spatial_shapes[0, 1], -1))
             hm_proto = (hm_memory, mlvl_masks[0])
 
         if self.as_two_stage:
@@ -957,28 +884,22 @@ class PETRTransformer(nn.Layer):
             topk = self.two_stage_num_proposals
             topk_proposals = paddle.topk(
                 enc_outputs_class[..., 0], topk, axis=1)[1].unsqueeze(-1)
-            # topk_coords_unact = paddle.gather(
-            #     enc_outputs_coord_unact, 1,
-            #     topk_proposals.unsqueeze(-1).repeat(1, 1, 4))
-            # topk_coords_unact = topk_coords_unact.detach()
-            # topk_kpts_unact = paddle.gather(
-            #     enc_outputs_kpt_unact, 
-            #     topk_proposals.unsqueeze(-1).tile((
-            #         1, 1, enc_outputs_kpt_unact.shape[-1])), 1)
-            #markniu paddle.take_along_axis 对应torch.gather
-            topk_kpts_unact = paddle.take_along_axis(
-                enc_outputs_kpt_unact, 
-                topk_proposals, 1)
+
+            #paddle.take_along_axis 对应torch.gather
+            topk_kpts_unact = paddle.take_along_axis(enc_outputs_kpt_unact,
+                                                     topk_proposals, 1)
             topk_kpts_unact = topk_kpts_unact.detach()
 
             reference_points = F.sigmoid(topk_kpts_unact)
             init_reference_out = reference_points
             # learnable query and query_pos
-            query_pos, query = paddle.split(query_embed, query_embed.shape[1]//c, axis=1)
+            query_pos, query = paddle.split(
+                query_embed, query_embed.shape[1] // c, axis=1)
             query_pos = query_pos.unsqueeze(0).expand((bs, -1, -1))
             query = query.unsqueeze(0).expand((bs, -1, -1))
         else:
-            query_pos, query = paddle.split(query_embed, query_embed.shape[1]//c, axis=1)
+            query_pos, query = paddle.split(
+                query_embed, query_embed.shape[1] // c, axis=1)
             query_pos = query_pos.unsqueeze(0).expand((bs, -1, -1))
             query = query.unsqueeze(0).expand((bs, -1, -1))
             reference_points = F.sigmoid(self.reference_points(query_pos))
@@ -1020,24 +941,24 @@ class PETRTransformer(nn.Layer):
             mask = mask.flatten(1)
             mask_flatten.append(mask)
         mask_flatten = paddle.concat(mask_flatten, 1)
-        spatial_shapes_cumsum=paddle.to_tensor(np.array(spatial_shapes, dtype='int64').prod(1).cumsum(0))
-        spatial_shapes = paddle.to_tensor(
-            spatial_shapes, dtype="int64")
-        level_start_index = paddle.concat((paddle.zeros((1, ), dtype=spatial_shapes.dtype), spatial_shapes_cumsum[:-1]))
+        spatial_shapes_cumsum = paddle.to_tensor(
+            np.array(
+                spatial_shapes, dtype='int64').prod(1).cumsum(0))
+        spatial_shapes = paddle.to_tensor(spatial_shapes, dtype="int64")
+        level_start_index = paddle.concat((paddle.zeros(
+            (1, ), dtype=spatial_shapes.dtype), spatial_shapes_cumsum[:-1]))
         valid_ratios = paddle.stack(
             [self.get_valid_ratio(m) for m in mlvl_masks], 1)
 
         # pose refinement (17 queries corresponding to 17 keypoints)
         # learnable query and query_pos
         refine_query_embedding = self.refine_query_embedding.weight
-        query_pos, query = paddle.split(
-            refine_query_embedding, 2, axis=1)
+        query_pos, query = paddle.split(refine_query_embedding, 2, axis=1)
         pos_num = reference_points_pose.shape[0]
         query_pos = query_pos.unsqueeze(0).expand((pos_num, -1, -1))
         query = query.unsqueeze(0).expand((pos_num, -1, -1))
-        reference_points = reference_points_pose.reshape((
-            pos_num,
-            reference_points_pose.shape[1] // 2, 2))
+        reference_points = reference_points_pose.reshape(
+            (pos_num, reference_points_pose.shape[1] // 2, 2))
         pos_memory = memory[img_inds]
         mask_flatten = mask_flatten[img_inds]
         valid_ratios = valid_ratios[img_inds]

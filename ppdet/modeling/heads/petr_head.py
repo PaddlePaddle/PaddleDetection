@@ -1,4 +1,4 @@
-# Copyright (c) 2022 PaddlePaddle Authors. All Rights Reserved. 
+# Copyright (c) 2023 PaddlePaddle Authors. All Rights Reserved. 
 #   
 # Licensed under the Apache License, Version 2.0 (the "License");   
 # you may not use this file except in compliance with the License.  
@@ -11,24 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
 # See the License for the specific language governing permissions and   
 # limitations under the License.
-
+"""
+this code is base on https://github.com/hikvision-research/opera/blob/main/opera/models/dense_heads/petr_head.py
+"""
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
-from paddle.regularizer import L2Decay
-from paddle import ParamAttr
 import paddle.distributed as dist
 
 from ..transformers.petr_transformer import inverse_sigmoid, masked_fill
-from ..layers import AnchorGeneratorSSD
-from ..cls_utils import _get_class_default_kwargs
 import copy
 import numpy as np
 
 __all__ = ["PETRHead"]
 
 from functools import partial
+
+
 def multi_apply(func, *args, **kwargs):
     """Apply function to a list of arguments.
 
@@ -51,12 +51,17 @@ def multi_apply(func, *args, **kwargs):
     res = tuple(map(list, zip(*map_results)))
     return res
 
+
 def reduce_mean(tensor):
     """"Obtain the mean of tensor on different GPUs."""
     if not (dist.get_world_size() and dist.is_initialized()):
         return tensor
     tensor = tensor.clone()
-    dist.all_reduce(tensor.divide(paddle.to_tensor(dist.get_world_size(), dtype='float32')), op=dist.ReduceOp.SUM)
+    dist.all_reduce(
+        tensor.divide(
+            paddle.to_tensor(
+                dist.get_world_size(), dtype='float32')),
+        op=dist.ReduceOp.SUM)
     return tensor
 
 
@@ -68,19 +73,19 @@ def gaussian_radius(det_size, min_overlap=0.7):
     a1 = 1
     b1 = (height + width)
     c1 = width * height * (1 - min_overlap) / (1 + min_overlap)
-    sq1 = paddle.sqrt(b1 ** 2 - 4 * a1 * c1)
+    sq1 = paddle.sqrt(b1**2 - 4 * a1 * c1)
     r1 = (b1 + sq1) / 2
 
     a2 = 4
     b2 = 2 * (height + width)
     c2 = (1 - min_overlap) * width * height
-    sq2 = paddle.sqrt(b2 ** 2 - 4 * a2 * c2)
+    sq2 = paddle.sqrt(b2**2 - 4 * a2 * c2)
     r2 = (b2 + sq2) / 2
 
     a3 = 4 * min_overlap
     b3 = -2 * min_overlap * (height + width)
     c3 = (min_overlap - 1) * width * height
-    sq3 = paddle.sqrt(b3 ** 2 - 4 * a3 * c3)
+    sq3 = paddle.sqrt(b3**2 - 4 * a3 * c3)
     r3 = (b3 + sq3) / 2
     return min(r1, r2, r3)
 
@@ -94,6 +99,7 @@ def gaussian2D(shape, sigma=1):
     h = paddle.exp(-(x * x + y * y) / (2 * sigma * sigma))
     h[h < np.finfo(np.float32).eps * h.max()] = 0
     return h
+
 
 def draw_umich_gaussian(heatmap, center, radius, k=1):
     diameter = 2 * radius + 1
@@ -109,12 +115,14 @@ def draw_umich_gaussian(heatmap, center, radius, k=1):
     top, bottom = min(y, radius), min(height - y, radius + 1)
 
     masked_heatmap = heatmap[y - top:y + bottom, x - left:x + right]
-    masked_gaussian = gaussian[radius - top:radius + bottom,
-                               radius - left:radius + right]
+    masked_gaussian = gaussian[radius - top:radius + bottom, radius - left:
+                               radius + right]
     # assert masked_gaussian.equal(1).float().sum() == 1
     if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0:
-        heatmap[y - top:y + bottom, x - left:x + right] = paddle.maximum(masked_heatmap, masked_gaussian * k)
+        heatmap[y - top:y + bottom, x - left:x + right] = paddle.maximum(
+            masked_heatmap, masked_gaussian * k)
     return heatmap
+
 
 @register
 class PETRHead(nn.Layer):
@@ -150,7 +158,11 @@ class PETRHead(nn.Layer):
         init_cfg (dict or list[dict], optional): Initialization config dict.
             Default: None.
     """
-    __inject__ = ["transformer", "positional_encoding", "assigner", "sampler", "loss_cls", "loss_kpt", "loss_oks", "loss_hm", "loss_kpt_rpn", "loss_kpt_refine", "loss_oks_refine"]
+    __inject__ = [
+        "transformer", "positional_encoding", "assigner", "sampler", "loss_cls",
+        "loss_kpt", "loss_oks", "loss_hm", "loss_kpt_rpn", "loss_kpt_refine",
+        "loss_oks_refine"
+    ]
 
     def __init__(self,
                  num_classes,
@@ -168,9 +180,9 @@ class PETRHead(nn.Layer):
                  with_kpt_refine=True,
                  assigner='PoseHungarianAssigner',
                  sampler='PseudoSampler',
-                 loss_kpt_rpn='L1Loss', 
-                 loss_kpt_refine='L1Loss', 
-                 loss_oks_refine='opera.OKSLoss', 
+                 loss_kpt_rpn='L1Loss',
+                 loss_kpt_refine='L1Loss',
+                 loss_oks_refine='opera.OKSLoss',
                  test_cfg=dict(max_per_img=100),
                  init_cfg=None,
                  **kwargs):
@@ -180,8 +192,8 @@ class PETRHead(nn.Layer):
         super().__init__()
         self.bg_cls_weight = 0
         self.sync_cls_avg_factor = sync_cls_avg_factor
-        self.assigner=assigner
-        self.sampler=sampler
+        self.assigner = assigner
+        self.sampler = sampler
         self.num_query = num_query
         self.num_classes = num_classes
         self.in_channels = in_channels
@@ -202,9 +214,6 @@ class PETRHead(nn.Layer):
             self.cls_out_channels = num_classes
         else:
             self.cls_out_channels = num_classes + 1
-        # self.act_cfg = transformer.get('act_cfg',
-        #                                dict(type='ReLU', inplace=True))
-        # self.activate = build_activation_layer(self.act_cfg)
         self.positional_encoding = positional_encoding
         self.transformer = transformer
         self.embed_dims = self.transformer.embed_dims
@@ -241,17 +250,16 @@ class PETRHead(nn.Layer):
             self.cls_branches = _get_clones(fc_cls, num_pred)
             self.kpt_branches = _get_clones(kpt_branch, num_pred)
         else:
-            self.cls_branches = nn.LayerList(
-                [fc_cls for _ in range(num_pred)])
+            self.cls_branches = nn.LayerList([fc_cls for _ in range(num_pred)])
             self.kpt_branches = nn.LayerList(
                 [kpt_branch for _ in range(num_pred)])
 
-        self.query_embedding = nn.Embedding(self.num_query,
-                                            self.embed_dims * 2)
+        self.query_embedding = nn.Embedding(self.num_query, self.embed_dims * 2)
 
         refine_kpt_branch = []
         for _ in range(self.num_kpt_fcs):
-            refine_kpt_branch.append(nn.Linear(self.embed_dims, self.embed_dims))
+            refine_kpt_branch.append(
+                nn.Linear(self.embed_dims, self.embed_dims))
             refine_kpt_branch.append(nn.ReLU())
         refine_kpt_branch.append(nn.Linear(self.embed_dims, 2))
         refine_kpt_branch = nn.Sequential(*refine_kpt_branch)
@@ -305,8 +313,6 @@ class PETRHead(nn.Layer):
 
         batch_size = mlvl_feats[0].shape[0]
         input_img_h, input_img_w = img_metas[0]['batch_input_shape']
-        # img_masks = mlvl_feats[0].new_ones(
-        #     (batch_size, input_img_h, input_img_w))
         img_masks = paddle.zeros(
             (batch_size, input_img_h, input_img_w), dtype=mlvl_feats[0].dtype)
         for img_id in range(batch_size):
@@ -317,11 +323,11 @@ class PETRHead(nn.Layer):
         mlvl_positional_encodings = []
         for feat in mlvl_feats:
             mlvl_masks.append(
-                F.interpolate(img_masks[None],
-                              size=feat.shape[-2:]).squeeze(0))
+                F.interpolate(
+                    img_masks[None], size=feat.shape[-2:]).squeeze(0))
             mlvl_positional_encodings.append(
-                self.positional_encoding(mlvl_masks[-1]).transpose([0, 3, 1, 2]))
-
+                self.positional_encoding(mlvl_masks[-1]).transpose(
+                    [0, 3, 1, 2]))
 
         query_embeds = self.query_embedding.weight
         hs, init_reference, inter_references, \
@@ -336,7 +342,7 @@ class PETRHead(nn.Layer):
                     cls_branches=self.cls_branches \
                         if self.as_two_stage else None  # noqa:E501
             )
-        # hs = hs.transpose((0, 2, 1, 3))
+
         outputs_classes = []
         outputs_kpts = []
 
@@ -362,7 +368,6 @@ class PETRHead(nn.Layer):
             hm_memory, hm_mask = hm_proto
             hm_pred = self.fc_hm(hm_memory)
             hm_proto = (hm_pred.transpose((0, 3, 1, 2)), hm_mask)
-        # print("input size:{}, hm_pred.size:{}".format(img_metas[0]['batch_input_shape'], hm_pred.transpose((0, 3, 1, 2)).shape))
 
         if self.as_two_stage:
             return outputs_classes, outputs_kpts, \
@@ -389,20 +394,20 @@ class PETRHead(nn.Layer):
         pos_inds = kpt_weights.sum(-1) > 0
         if not pos_inds.any():
             pos_kpt_preds = paddle.zeros_like(kpt_preds[:1])
-            # pos_img_inds = kpt_preds.new_zeros([1], dtype="int64")
             pos_img_inds = paddle.zeros([1], dtype="int64")
         else:
             pos_kpt_preds = kpt_preds[pos_inds]
-            pos_img_inds = (pos_inds.nonzero() / self.num_query).squeeze(1).astype(
-                "int64")
+            pos_img_inds = (pos_inds.nonzero() /
+                            self.num_query).squeeze(1).astype("int64")
         hs, init_reference, inter_references = self.transformer.forward_refine(
             mlvl_masks,
             memory,
             pos_kpt_preds.detach(),
             pos_img_inds,
-            kpt_branches=self.refine_kpt_branches if self.with_kpt_refine else None,  # noqa:E501
+            kpt_branches=self.refine_kpt_branches
+            if self.with_kpt_refine else None,  # noqa:E501
         )
-        # hs = hs.transpose((0, 2, 1, 3))
+
         outputs_kpts = []
 
         for lvl in range(hs.shape[0]):
@@ -423,7 +428,8 @@ class PETRHead(nn.Layer):
 
         num_valid_kpt = paddle.clip(
             reduce_mean(kpt_weights.sum()), min=1).item()
-        num_total_pos = paddle.to_tensor([outputs_kpts.shape[1]], dtype=kpt_weights.dtype)
+        num_total_pos = paddle.to_tensor(
+            [outputs_kpts.shape[1]], dtype=kpt_weights.dtype)
         num_total_pos = paddle.clip(reduce_mean(num_total_pos), min=1).item()
 
         if not pos_inds.any():
@@ -440,7 +446,8 @@ class PETRHead(nn.Layer):
             img_h, img_w, _ = img_metas[img_id]['img_shape']
             factor = paddle.to_tensor(
                 [img_w, img_h, img_w, img_h],
-                dtype="float32").squeeze(-1).unsqueeze(0).tile((self.num_query, 1))
+                dtype="float32").squeeze(-1).unsqueeze(0).tile(
+                    (self.num_query, 1))
             factors.append(factor)
         factors = paddle.concat(factors, 0)
         factors = factors[pos_inds][:, :2].tile((1, kpt_preds.shape[-1] // 2))
@@ -449,7 +456,7 @@ class PETRHead(nn.Layer):
         pos_kpt_targets = kpt_targets[pos_inds]
         pos_kpt_targets_scaled = pos_kpt_targets * factors
         pos_areas = area_targets[pos_inds]
-        pos_valid = kpt_weights[pos_inds][:,0::2]
+        pos_valid = kpt_weights[pos_inds][:, 0::2]
         for i, kpt_refine_preds in enumerate(outputs_kpts):
             if not pos_inds.any():
                 print("refine kpt and oks skip")
@@ -459,8 +466,8 @@ class PETRHead(nn.Layer):
                 continue
 
             # kpt L1 Loss
-            pos_refine_preds = kpt_refine_preds.reshape((
-                kpt_refine_preds.shape[0], -1))
+            pos_refine_preds = kpt_refine_preds.reshape(
+                (kpt_refine_preds.shape[0], -1))
             loss_kpt = self.loss_kpt_refine(
                 pos_refine_preds,
                 pos_kpt_targets,
@@ -526,8 +533,8 @@ class PETRHead(nn.Layer):
         # losses = losses_and_targets
         losses, refine_targets = losses_and_targets
         # get pose refinement loss
-        losses = self.forward_refine(memory, mlvl_masks, refine_targets,
-                                     losses, img_metas)
+        losses = self.forward_refine(memory, mlvl_masks, refine_targets, losses,
+                                     img_metas)
         return losses
 
     def loss(self,
@@ -634,20 +641,17 @@ class PETRHead(nn.Layer):
         assert hm_pred.shape[-2:] == hm_mask.shape[-2:]
         num_img, _, h, w = hm_pred.shape
         # placeholder of heatmap target (Gaussian distribution)
-        # hm_target = hm_pred.new_zeros(hm_pred.shape)
         hm_target = paddle.zeros(hm_pred.shape, hm_pred.dtype)
-        for i, (gt_label, gt_bbox, gt_keypoint) in enumerate(
-                zip(gt_labels, gt_bboxes, gt_keypoints)):
+        for i, (gt_label, gt_bbox, gt_keypoint
+                ) in enumerate(zip(gt_labels, gt_bboxes, gt_keypoints)):
             if gt_label.shape[0] == 0:
                 continue
             gt_keypoint = gt_keypoint.reshape((gt_keypoint.shape[0], -1,
-                                              3)).clone()
+                                               3)).clone()
             gt_keypoint[..., :2] /= 8
 
-            assert gt_keypoint[..., 0].max() <= w+0.5  # new coordinate system
-            assert gt_keypoint[..., 1].max() <= h+0.5  # new coordinate system
-            if gt_keypoint[..., 0].max()>w or gt_keypoint[..., 1].max()>h:
-                print("joints: [{},{}] out of [{},{}]\n".format(gt_keypoint[..., 0].max(), gt_keypoint[..., 1].max(), w, h))
+            assert gt_keypoint[..., 0].max() <= w + 0.5  # new coordinate system
+            assert gt_keypoint[..., 1].max() <= h + 0.5  # new coordinate system
             gt_bbox /= 8
             gt_w = gt_bbox[:, 2] - gt_bbox[:, 0]
             gt_h = gt_bbox[:, 3] - gt_bbox[:, 1]
@@ -655,27 +659,27 @@ class PETRHead(nn.Layer):
                 # get heatmap radius
                 kp_radius = paddle.clip(
                     paddle.floor(
-                        gaussian_radius((gt_h[j], gt_w[j]), min_overlap=0.9)),
-                    min=0, max=3)
+                        gaussian_radius(
+                            (gt_h[j], gt_w[j]), min_overlap=0.9)),
+                    min=0,
+                    max=3)
                 for k in range(self.num_keypoints):
                     if gt_keypoint[j, k, 2] > 0:
                         gt_kp = gt_keypoint[j, k, :2]
                         gt_kp_int = paddle.floor(gt_kp)
-                        hm_target[i, k] = draw_umich_gaussian(hm_target[i, k], gt_kp_int,
-                                            kp_radius)
+                        hm_target[i, k] = draw_umich_gaussian(
+                            hm_target[i, k], gt_kp_int, kp_radius)
         # compute heatmap loss
         hm_pred = paddle.clip(
             F.sigmoid(hm_pred), min=1e-4, max=1 - 1e-4)  # refer to CenterNet
-        loss_hm = self.loss_hm(hm_pred, hm_target.detach(), mask=~hm_mask.astype("bool").unsqueeze(1))
+        loss_hm = self.loss_hm(
+            hm_pred,
+            hm_target.detach(),
+            mask=~hm_mask.astype("bool").unsqueeze(1))
         return loss_hm
 
-    def loss_single(self,
-                    cls_scores,
-                    kpt_preds,
-                    gt_labels_list,
-                    gt_keypoints_list,
-                    gt_areas_list,
-                    img_metas):
+    def loss_single(self, cls_scores, kpt_preds, gt_labels_list,
+                    gt_keypoints_list, gt_areas_list, img_metas):
         """Loss function for outputs from a single decoder layer of a single
         feature level.
 
@@ -719,7 +723,8 @@ class PETRHead(nn.Layer):
             num_total_neg * self.bg_cls_weight
         if self.sync_cls_avg_factor:
             cls_avg_factor = reduce_mean(
-                paddle.to_tensor([cls_avg_factor], dtype=cls_scores.dtype))
+                paddle.to_tensor(
+                    [cls_avg_factor], dtype=cls_scores.dtype))
         cls_avg_factor = max(cls_avg_factor, 1)
 
         loss_cls = self.loss_cls(
@@ -734,9 +739,10 @@ class PETRHead(nn.Layer):
         factors = []
         for img_meta, kpt_pred in zip(img_metas, kpt_preds):
             img_h, img_w, _ = img_meta['img_shape']
-            factor = paddle.to_tensor([img_w, img_h, img_w,
-                                          img_h], dtype=kpt_pred.dtype).squeeze().unsqueeze(0).tile((
-                                              kpt_pred.shape[0], 1))
+            factor = paddle.to_tensor(
+                [img_w, img_h, img_w, img_h],
+                dtype=kpt_pred.dtype).squeeze().unsqueeze(0).tile(
+                    (kpt_pred.shape[0], 1))
             factors.append(factor)
         factors = paddle.concat(factors, 0)
 
@@ -746,14 +752,18 @@ class PETRHead(nn.Layer):
             reduce_mean(kpt_weights.sum()), min=1).item()
         # assert num_valid_kpt == (kpt_targets>0).sum().item()
         loss_kpt = self.loss_kpt(
-            kpt_preds, kpt_targets.detach(), kpt_weights.detach(), avg_factor=num_valid_kpt)
+            kpt_preds,
+            kpt_targets.detach(),
+            kpt_weights.detach(),
+            avg_factor=num_valid_kpt)
 
         # keypoint oks loss
         pos_inds = kpt_weights.sum(-1) > 0
         if not pos_inds.any():
             loss_oks = kpt_preds.sum() * 0
         else:
-            factors = factors[pos_inds][:, :2].tile(((1, kpt_preds.shape[-1] // 2)))
+            factors = factors[pos_inds][:, :2].tile((
+                (1, kpt_preds.shape[-1] // 2)))
             pos_kpt_preds = kpt_preds[pos_inds] * factors
             pos_kpt_targets = kpt_targets[pos_inds] * factors
             pos_areas = area_targets[pos_inds]
@@ -768,13 +778,8 @@ class PETRHead(nn.Layer):
         return loss_cls, loss_kpt, loss_oks, kpt_preds, kpt_targets, \
             area_targets, kpt_weights
 
-    def get_targets(self,
-                    cls_scores_list,
-                    kpt_preds_list,
-                    gt_labels_list,
-                    gt_keypoints_list,
-                    gt_areas_list,
-                    img_metas):
+    def get_targets(self, cls_scores_list, kpt_preds_list, gt_labels_list,
+                    gt_keypoints_list, gt_areas_list, img_metas):
         """Compute regression and classification targets for a batch image.
 
         Outputs from a single decoder layer of a single feature level are used.
@@ -813,7 +818,7 @@ class PETRHead(nn.Layer):
         """
         (labels_list, label_weights_list, kpt_targets_list, kpt_weights_list,
          area_targets_list, pos_inds_list, neg_inds_list) = multi_apply(
-             self._get_target_single, cls_scores_list, kpt_preds_list, 
+             self._get_target_single, cls_scores_list, kpt_preds_list,
              gt_labels_list, gt_keypoints_list, gt_areas_list, img_metas)
         num_total_pos = sum((inds.numel() for inds in pos_inds_list))
         num_total_neg = sum((inds.numel() for inds in neg_inds_list))
@@ -821,13 +826,8 @@ class PETRHead(nn.Layer):
                 kpt_weights_list, area_targets_list, num_total_pos,
                 num_total_neg)
 
-    def _get_target_single(self,
-                           cls_score,
-                           kpt_pred,
-                           gt_labels,
-                           gt_keypoints,
-                           gt_areas,
-                           img_meta):
+    def _get_target_single(self, cls_score, kpt_pred, gt_labels, gt_keypoints,
+                           gt_areas, img_meta):
         """Compute regression and classification targets for one image.
 
         Outputs from a single decoder layer of a single feature level are used.
@@ -861,66 +861,59 @@ class PETRHead(nn.Layer):
         num_bboxes = kpt_pred.shape[0]
         # assigner and sampler
         assign_result = self.assigner.assign(cls_score, kpt_pred, gt_labels,
-                                            gt_keypoints, gt_areas, img_meta)
+                                             gt_keypoints, gt_areas, img_meta)
         sampling_result = self.sampler.sample(assign_result, kpt_pred,
-                                            gt_keypoints)
+                                              gt_keypoints)
 
         pos_inds = sampling_result.pos_inds
         neg_inds = sampling_result.neg_inds
 
         # label targets
-        labels = paddle.full((num_bboxes, ),
-                                    self.num_classes,
-                                    dtype="int64")
-        label_weights = paddle.ones((num_bboxes,), dtype=gt_labels.dtype)
+        labels = paddle.full((num_bboxes, ), self.num_classes, dtype="int64")
+        label_weights = paddle.ones((num_bboxes, ), dtype=gt_labels.dtype)
         kpt_targets = paddle.zeros_like(kpt_pred)
         kpt_weights = paddle.zeros_like(kpt_pred)
-        area_targets = paddle.zeros((kpt_pred.shape[0],), dtype=kpt_pred.dtype)
+        area_targets = paddle.zeros((kpt_pred.shape[0], ), dtype=kpt_pred.dtype)
 
-        if pos_inds.size==0:
+        if pos_inds.size == 0:
             return (labels, label_weights, kpt_targets, kpt_weights,
-                area_targets, pos_inds, neg_inds)
-        
-        labels[pos_inds] = gt_labels[sampling_result.pos_assigned_gt_inds][...,0].astype("int64")
-        
+                    area_targets, pos_inds, neg_inds)
+
+        labels[pos_inds] = gt_labels[sampling_result.pos_assigned_gt_inds][
+            ..., 0].astype("int64")
+
         img_h, img_w, _ = img_meta['img_shape']
         # keypoint targets
         pos_gt_kpts = gt_keypoints[sampling_result.pos_assigned_gt_inds]
-        pos_gt_kpts = pos_gt_kpts.reshape((len(sampling_result.pos_assigned_gt_inds),
-                                          -1, 3))
+        pos_gt_kpts = pos_gt_kpts.reshape(
+            (len(sampling_result.pos_assigned_gt_inds), -1, 3))
         valid_idx = pos_gt_kpts[:, :, 2] > 0
-        pos_kpt_weights = kpt_weights[pos_inds].reshape((
-            pos_gt_kpts.shape[0], kpt_weights.shape[-1] // 2, 2))
+        pos_kpt_weights = kpt_weights[pos_inds].reshape(
+            (pos_gt_kpts.shape[0], kpt_weights.shape[-1] // 2, 2))
         # pos_kpt_weights[valid_idx][...] = 1.0
-        pos_kpt_weights = masked_fill(pos_kpt_weights, valid_idx.unsqueeze(-1), 1.0)
-        kpt_weights[pos_inds] = pos_kpt_weights.reshape((
-            pos_kpt_weights.shape[0], kpt_pred.shape[-1]))
+        pos_kpt_weights = masked_fill(pos_kpt_weights,
+                                      valid_idx.unsqueeze(-1), 1.0)
+        kpt_weights[pos_inds] = pos_kpt_weights.reshape(
+            (pos_kpt_weights.shape[0], kpt_pred.shape[-1]))
 
-        factor = paddle.to_tensor([img_w, img_h], dtype=kpt_pred.dtype).squeeze().unsqueeze(0)
+        factor = paddle.to_tensor(
+            [img_w, img_h], dtype=kpt_pred.dtype).squeeze().unsqueeze(0)
         pos_gt_kpts_normalized = pos_gt_kpts[..., :2]
         pos_gt_kpts_normalized[..., 0] = pos_gt_kpts_normalized[..., 0] / \
             factor[:, 0:1]
         pos_gt_kpts_normalized[..., 1] = pos_gt_kpts_normalized[..., 1] / \
             factor[:, 1:2]
-        kpt_targets[pos_inds] = pos_gt_kpts_normalized.reshape((
-            pos_gt_kpts.shape[0], kpt_pred.shape[-1]))
+        kpt_targets[pos_inds] = pos_gt_kpts_normalized.reshape(
+            (pos_gt_kpts.shape[0], kpt_pred.shape[-1]))
 
-        # area_targets = kpt_pred.new_zeros(
-        #     kpt_pred.shape[0])  # get areas for calculating oks
-        
         pos_gt_areas = gt_areas[sampling_result.pos_assigned_gt_inds][..., 0]
         area_targets[pos_inds] = pos_gt_areas
 
-        return (labels, label_weights, kpt_targets, kpt_weights,
-                area_targets, pos_inds, neg_inds)
+        return (labels, label_weights, kpt_targets, kpt_weights, area_targets,
+                pos_inds, neg_inds)
 
-    def loss_single_rpn(self,
-                        cls_scores,
-                        kpt_preds,
-                        gt_labels_list,
-                        gt_keypoints_list,
-                        gt_areas_list,
-                        img_metas):
+    def loss_single_rpn(self, cls_scores, kpt_preds, gt_labels_list,
+                        gt_keypoints_list, gt_areas_list, img_metas):
         """Loss function for outputs from a single decoder layer of a single
         feature level.
 
@@ -963,7 +956,8 @@ class PETRHead(nn.Layer):
             num_total_neg * self.bg_cls_weight
         if self.sync_cls_avg_factor:
             cls_avg_factor = reduce_mean(
-                paddle.to_tensor([cls_avg_factor], dtype=cls_scores.dtype))
+                paddle.to_tensor(
+                    [cls_avg_factor], dtype=cls_scores.dtype))
         cls_avg_factor = max(cls_avg_factor, 1)
 
         cls_avg_factor = max(cls_avg_factor, 1)
@@ -1027,8 +1021,6 @@ class PETRHead(nn.Layer):
         """
         cls_scores = all_cls_scores[-1]
         kpt_preds = all_kpt_preds[-1]
-        # cls_scores = enc_cls_scores
-        # kpt_preds = enc_kpt_preds
 
         result_list = []
         for img_id in range(len(img_metas)):
@@ -1039,9 +1031,9 @@ class PETRHead(nn.Layer):
             # TODO: only support single image test
             # memory_i = memory[:, img_id, :]
             # mlvl_mask = mlvl_masks[img_id]
-            proposals = self._get_bboxes_single(cls_score, kpt_pred,
-                                                img_shape, scale_factor,
-                                                memory, mlvl_masks, rescale)
+            proposals = self._get_bboxes_single(cls_score, kpt_pred, img_shape,
+                                                scale_factor, memory,
+                                                mlvl_masks, rescale)
             result_list.append(proposals)
         return result_list
 
@@ -1101,8 +1093,8 @@ class PETRHead(nn.Layer):
         # import time
         # start = time.time()
         refine_targets = (kpt_pred, None, None, paddle.ones_like(kpt_pred))
-        refine_outputs = self.forward_refine(memory, mlvl_masks,
-                                             refine_targets, None, None)
+        refine_outputs = self.forward_refine(memory, mlvl_masks, refine_targets,
+                                             None, None)
         # end = time.time()
         # print(f'refine time: {end - start:.6f}')
         det_kpts = refine_outputs[-1]
@@ -1113,7 +1105,8 @@ class PETRHead(nn.Layer):
         det_kpts[..., 1].clip_(min=0, max=img_shape[0])
         if rescale:
             det_kpts /= paddle.to_tensor(
-                scale_factor[:2], dtype=det_kpts.dtype).unsqueeze(0).unsqueeze(0)
+                scale_factor[:2],
+                dtype=det_kpts.dtype).unsqueeze(0).unsqueeze(0)
 
         # use circumscribed rectangle box of keypoints as det bboxes
         x1 = det_kpts[..., 0].min(axis=1, keepdim=True)
@@ -1124,10 +1117,12 @@ class PETRHead(nn.Layer):
         det_bboxes = paddle.concat((det_bboxes, scores.unsqueeze(1)), -1)
 
         det_kpts = paddle.concat(
-            (det_kpts, paddle.ones(det_kpts[..., :1].shape, dtype=det_kpts.dtype)), axis=2)
+            (det_kpts, paddle.ones(
+                det_kpts[..., :1].shape, dtype=det_kpts.dtype)),
+            axis=2)
 
         return det_bboxes, det_labels, det_kpts
-    
+
     def simple_test(self, feats, img_metas, rescale=False):
         """Test det bboxes without test-time augmentation.
 

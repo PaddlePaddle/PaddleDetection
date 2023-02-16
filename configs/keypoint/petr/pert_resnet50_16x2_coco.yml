@@ -18,7 +18,7 @@ architecture: PETR
 pretrain_weights: Trunc_epoch_1_0.pdparams
 
 PETR:
-  backbone: 
+  backbone:
     name: ResNet
     depth: 50
     variant: b
@@ -28,7 +28,7 @@ PETR:
     return_idx: [1,2,3]
     num_stages: 4
     lr_mult_list: [0.1, 0.1, 0.1, 0.1]
-  neck: 
+  neck:
     name: ChannelMapper
     in_channels: [512, 1024, 2048]
     kernel_size: 1
@@ -37,7 +37,7 @@ PETR:
     norm_groups: 32
     act: None
     num_outs: 4
-  bbox_head:  
+  bbox_head:
     name: PETRHead
     num_query: 300
     num_classes: 1  # only person
@@ -47,12 +47,12 @@ PETR:
     transformer:
       name: PETRTransformer
       as_two_stage: true
-      encoder: 
+      encoder:
         name: TransformerEncoder
-        encoder_layer: 
+        encoder_layer:
           name: TransformerEncoderLayer
           d_model: 256
-          attn: 
+          attn:
             name: MSDeformableAttention
             embed_dim: 256
             num_heads: 8
@@ -61,7 +61,7 @@ PETR:
           dim_feedforward: 1024
           dropout: 0.1
         num_layers: 6
-      decoder: 
+      decoder:
         name: PETR_TransformerDecoder
         num_layers: 3
         return_intermediate: true
@@ -81,12 +81,12 @@ PETR:
             num_heads: 8
             num_levels: 4
             num_points: 17
-      hm_encoder: 
+      hm_encoder:
         name: TransformerEncoder
-        encoder_layer: 
+        encoder_layer:
           name: TransformerEncoderLayer
           d_model: 256
-          attn: 
+          attn:
             name: MSDeformableAttention
             embed_dim: 256
             num_heads: 8
@@ -95,7 +95,7 @@ PETR:
           dim_feedforward: 1024
           dropout: 0.1
         num_layers: 1
-      refine_decoder: 
+      refine_decoder:
         name: PETR_DeformableDetrTransformerDecoder
         num_layers: 2
         return_intermediate: true
@@ -118,7 +118,7 @@ PETR:
       num_pos_feats: 128
       normalize: true
       offset: -0.5
-    loss_cls: 
+    loss_cls:
         name: Weighted_FocalLoss
         use_sigmoid: true
         gamma: 2.0
@@ -202,7 +202,6 @@ global_std: &global_std [0.229, 0.224, 0.225]
 TrainReader:
   sample_transforms:
     - Decode: {}
-    # - RandomDistort: {}
     - PhotoMetricDistortion:
         brightness_delta: 32
         contrast_range: [0.5, 1.5]

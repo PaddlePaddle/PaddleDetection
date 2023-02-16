@@ -31,6 +31,7 @@ from ..initializer import linear_init_, conv_init_, xavier_uniform_, normal_
 
 __all__ = ['DETRTransformer', 'TransformerEncoderLayer', 'TransformerEncoder']
 
+
 @register
 class TransformerEncoderLayer(nn.Layer):
     __inject__ = ['attn']
@@ -110,12 +111,14 @@ class TransformerEncoder(nn.Layer):
     def forward(self, src, src_mask=None, pos_embed=None, **kwargs):
         output = src
         for layer in self.layers:
-            output = layer(output, src_mask=src_mask, pos_embed=pos_embed, **kwargs)
+            output = layer(
+                output, src_mask=src_mask, pos_embed=pos_embed, **kwargs)
 
         if self.norm is not None:
             output = self.norm(output)
 
         return output
+
 
 class TransformerDecoderLayer(nn.Layer):
     def __init__(self,
@@ -263,7 +266,7 @@ class DETRTransformer(nn.Layer):
         self.nhead = nhead
 
         encoder_layer = TransformerEncoderLayer(
-            hidden_dim, nhead, dim_feedforward, dropout, activation,
+            hidden_dim, None, nhead, dim_feedforward, dropout, activation,
             attn_dropout, act_dropout, normalize_before)
         encoder_norm = nn.LayerNorm(hidden_dim) if normalize_before else None
         self.encoder = TransformerEncoder(encoder_layer, num_encoder_layers,
