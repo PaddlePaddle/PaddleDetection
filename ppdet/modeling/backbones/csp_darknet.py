@@ -21,6 +21,8 @@ from ppdet.core.workspace import register, serializable
 from ppdet.modeling.initializer import conv_init_
 from ..shape_spec import ShapeSpec
 
+from typing import Callable
+
 __all__ = [
     'CSPDarkNet', 'BaseConv', 'DWConv', 'BottleNeck', 'SPPLayer', 'SPPFLayer'
 ]
@@ -49,6 +51,13 @@ class BaseConv(nn.Layer):
             weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
             bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
 
+        if isinstance(act, Callable):
+            self.act = act
+        elif isinstance(act, str):
+            self.act = lambda x: x * F.sigmoid(x) if act in ('silu', 'mish') else getattr(F, act)
+        else:
+            raise AttributeError(f'{act} is not available.')
+
         self._init_weights()
 
     def _init_weights(self):
@@ -56,9 +65,8 @@ class BaseConv(nn.Layer):
 
     def forward(self, x):
         # use 'x * F.sigmoid(x)' replace 'silu'
-        x = self.bn(self.conv(x))
-        y = x * F.sigmoid(x)
-        return y
+        x = self.act(self.bn(self.conv(x)))
+        return x
 
 
 class DWConv(nn.Layer):
@@ -231,7 +239,7 @@ class CSPLayer(nn.Layer):
             in_channels, hidden_channels, ksize=1, stride=1, bias=bias, act=act)
         self.conv2 = BaseConv(
             in_channels, hidden_channels, ksize=1, stride=1, bias=bias, act=act)
-        self.bottlenecks = nn.Sequential(* [
+        self.bottlenecks = nn.Sequential(*[
             BottleNeck(
                 hidden_channels,
                 hidden_channels,
