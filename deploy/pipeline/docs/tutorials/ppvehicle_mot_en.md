@@ -13,7 +13,7 @@ Vehicle detection and tracking are widely used in traffic monitoring and autonom
 | Vehicle Detection/Tracking | PP-YOLOE-l | mAP: 63.9<br>MOTA: 50.1 | Detection: 25.1ms<br>Tracking：31.8ms | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip) |
 | Vehicle Detection/Tracking | PP-YOLOE-s | mAP: 61.3<br>MOTA: 46.8 | Detection: 16.2ms<br>Tracking：21.0ms | [Link](https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_s_36e_ppvehicle.zip) |
 
-1. The detection/tracking model uses the PPVehicle dataset ( which integrates BDD100K-MOT and UA-DETRAC). The dataset merged car, truck, bus, van from BDD100K-MOT and car, bus, van from UA-DETRAC all into 1 class vehicle(1). The detection accuracy mAP was tested on the test set of PPVehicle, and the tracking accuracy MOTA was obtained on the test set of BDD100K-MOT (`car, truck, bus, van` were combined into 1 class `vehicle`). For more details about the training procedure, please refer to [ppvehicle](... /... /... /... /configs/ppvehicle).
+1. The detection/tracking model uses the PPVehicle dataset ( which integrates BDD100K-MOT and UA-DETRAC). The dataset merged car, truck, bus, van from BDD100K-MOT and car, bus, van from UA-DETRAC all into 1 class vehicle(1). The detection accuracy mAP was tested on the test set of PPVehicle, and the tracking accuracy MOTA was obtained on the test set of BDD100K-MOT (`car, truck, bus, van` were combined into 1 class `vehicle`). For more details about the training procedure, please refer to [ppvehicle](../../../../configs/ppvehicle).
 2. Inference speed is obtained at T4 with TensorRT FP16 enabled, which includes data pre-processing, model inference and post-processing.
 
 ## How To Use
