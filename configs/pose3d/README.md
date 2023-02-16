@@ -1,5 +1,9 @@
 简体中文
 
+  <div align="center">
+    <img src="https://user-images.githubusercontent.com/31800336/219260054-ba3766b1-8223-42bf-b69b-7092019995cc.jpg" width='600'/>
+  </div>
+
 # 3D Pose系列模型
 
 ## 目录
@@ -39,11 +43,17 @@ PaddleDetection 中提供了两种3D Pose算法（稀疏关键点），分别是
 
 ### 2、数据准备
 
+  我们的训练数据由coco、human3.6m、hr-lspet、posetrack3d、mpii组成。
+
 ​  2.1 我们的训练数据下载地址为：
 
-  [训练数据下载]()
+  [coco](https://bj.bcebos.com/v1/paddledet/data/coco.tar)
 
-  [标注文件下载]()
+  [human3.6m](https://bj.bcebos.com/v1/paddledet/data/pose3d/human3.6m.tar.gz)
+
+  [lspet+posetrack+mpii](https://bj.bcebos.com/v1/paddledet/data/pose3d/pose3d_others.tar.gz)
+
+  [标注文件下载](https://bj.bcebos.com/v1/paddledet/data/pose3d/pose3d.tar.gz)
 
   2.2 数据下载后按如下结构放在repo目录下
 
@@ -66,12 +76,12 @@ ${REPO_DIR}
 |           |-- LSPet_test_ver10.json
 |           |-- MPII_ver01.json
 |           |-- PoseTrack_ver01.json
-|-- ppdet 
-|-- deploy 
-|-- demo 
-|-- README_cn.md 
-|-- README_en.md 
-|-- ... 
+|-- ppdet
+|-- deploy
+|-- demo
+|-- README_cn.md
+|-- README_en.md
+|-- ...
 ```
 
 
@@ -118,7 +128,7 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/pose3d/metro3d_24kpts.y
   由于（1）的原因训练数据往往只能覆盖少量动作，导致模型泛化性困难。由于（2）的原因图像在预测3D Pose坐标时深度z轴上误差通常大于x、y方向，容易导致时序间的较大抖动，且数据标注误差越大该问题表现的更加明显。
 
   要解决上述两个问题，就造成了两个矛盾的需求：1）提高泛化性需要更多的标注数据；2）降低预测误差需要高精度的数据标注。而3D Pose本身数据标注的困难导致越高精度的标注成本越高，标注数量则会相应降低。
-  
+
   因此，我们提供的解决方案是：
 
   - 1）使用自动拟合标注方法自动产生大量低精度的数据。训练第一版模型，使其具有较普遍的泛化性。
@@ -129,7 +139,7 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/pose3d/metro3d_24kpts.y
 
   我们在医疗康复高精度数据上的训练效果展示如下
 
-  <div align="left">
+  <div align="center">
     <img src="https://user-images.githubusercontent.com/31800336/218949226-22e6ab25-facb-4cc6-8eca-38d4bfd973e5.mp4" width='600'/>
   </div>
 
