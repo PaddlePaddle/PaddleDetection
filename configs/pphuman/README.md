@@ -13,7 +13,7 @@ PaddleDetection团队提供了针对行人的基于PP-YOLOE的检测模型，用
 |PP-YOLOE-l|   CrowdHuman   |  48.0  |  81.9  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_36e_crowdhuman.pdparams) | [配置文件](./ppyoloe_crn_l_36e_crowdhuman.yml) |
 |PP-YOLOE-s|   业务数据集   |  53.2  |  -  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_s_36e_pphuman.pdparams) | [配置文件](./ppyoloe_crn_s_36e_pphuman.yml) |
 |PP-YOLOE-l|   业务数据集   |  57.8  |  -  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_36e_pphuman.pdparams) | [配置文件](./ppyoloe_crn_l_36e_pphuman.yml) |
-|PP-YOLOE+_t-aux(320)|   业务数据集   |  45.7  |  81.2  | [下载链接](https://paddledet.bj.bcebos.com/models/pyoloe_plus_crn_t_auxhead_320_60e_pphuman.pdparams) | [配置文件](./ppyoloe_plus_crn_t_auxhead_320_60e_pphuman.yml) |
+|PP-YOLOE+_t-aux(320)|   业务数据集   |  45.7  |  81.2  | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_auxhead_320_60e_pphuman.pdparams) | [配置文件](./ppyoloe_plus_crn_t_auxhead_320_60e_pphuman.yml) |
 
 
 **注意:**

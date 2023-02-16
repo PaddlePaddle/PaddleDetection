@@ -2,10 +2,10 @@
 ## 目录
 - [目标检测数据说明](#目标检测数据说明)
 - [准备训练数据](#准备训练数据)
-    - [VOC数据数据](#VOC数据数据)
+    - [VOC数据](#VOC数据)
         - [VOC数据集下载](#VOC数据集下载)
         - [VOC数据标注文件介绍](#VOC数据标注文件介绍)
-    - [COCO数据数据](#COCO数据数据)
+    - [COCO数据](#COCO数据)
         - [COCO数据集下载](#COCO数据下载)
         - [COCO数据标注文件介绍](#COCO数据标注文件介绍)
     - [用户数据准备](#用户数据准备)
@@ -36,8 +36,8 @@
 PaddleDetection默认支持[COCO](http://cocodataset.org)和[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 和[WIDER-FACE](http://shuoyang1213.me/WIDERFACE/) 数据源。  
 同时还支持自定义数据源，包括：  
 
-(1) 自定义数据数据转换成VOC数据；  
-(2) 自定义数据数据转换成COCO数据；  
+(1) 自定义数据转换成VOC数据；  
+(2) 自定义数据转换成COCO数据；  
 (3) 自定义新的数据源，增加自定义的reader。
 
 
@@ -47,7 +47,7 @@ cd PaddleDetection/
 ppdet_root=$(pwd)
 ```
 
-#### VOC数据数据  
+#### VOC数据
 
 VOC数据是[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 比赛使用的数据。Pascal VOC比赛不仅包含图像分类分类任务，还包含图像目标检测、图像分割等任务，其标注文件中包含多个任务的标注内容。
 VOC数据集指的是Pascal VOC比赛使用的数据。用户自定义的VOC数据，xml文件中的非必须字段，请根据实际情况选择是否标注或是否使用默认值。
@@ -148,7 +148,7 @@ xml文件中包含以下字段：
     |   bndbox子标签    |  (xmin,ymin) 左上角坐标，(xmax,ymax) 右下角坐标，  |  
 
 
-#### COCO数据  
+#### COCO数据
 COCO数据是[COCO](http://cocodataset.org) 比赛使用的数据。同样的，COCO比赛数也包含多个比赛任务，其标注文件中包含多个任务的标注内容。
 COCO数据集指的是COCO比赛使用的数据。用户自定义的COCO数据，json文件中的一些字段，请根据实际情况选择是否标注或是否使用默认值。
 
