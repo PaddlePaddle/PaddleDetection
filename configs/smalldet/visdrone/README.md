@@ -30,24 +30,65 @@ PaddleDetection团队提供了针对VisDrone-DET小目标数航拍场景的基�
   - **P2**表示增加P2层(1/4下采样层)的特征，共输出4个PPYOLOEHead。
   - **Alpha**表示对CSPResNet骨干网络增加可一个学习权重参数Alpha参与训练。
   - **largesize**表示使用**以1600尺度为基础的多尺度训练**和**1920尺度预测**，相应的训练batch_size也减小，以速度来换取高精度。
+  - MatlabAPI测试是使用官网评测工具[VisDrone2018-DET-toolkit](https://github.com/VisDrone/VisDrone2018-DET-toolkit)。
+
+<details>
+<summary> 快速开始 </summary>
+
+```shell
+# 训练
+python -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/smalldet/visdrone/ppyoloe_plus_sod_crn_l_80e_visdrone.yml --amp --eval
+# 评估
+python tools/eval.py -c configs/smalldet/visdrone/ppyoloe_plus_sod_crn_l_80e_visdrone.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_80e_visdrone.pdparams
+# 预测
+python tools/infer.py -c configs/smalldet/visdrone/ppyoloe_plus_sod_crn_l_80e_visdrone.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_80e_visdrone.pdparams --infer_img=demo/visdrone_0000315_01601_d_0000509.jpg --draw_threshold=0.25
+```
+
+</details>
 
 
 ## 子图训练，原图评估和拼图评估：
 
 |    模型   |       数据集     |  SLICE_SIZE  |  OVERLAP_RATIO  | 类别数  | mAP<sup>val<br>0.5:0.95 | AP<sup>val<br>0.5 | 下载链接  | 配置文件 |
 |:---------|:---------------:|:---------------:|:---------------:|:------:|:-----------------------:|:-------------------:|:---------:| :-----: |
-|PP-YOLOE-l(原图评估)| VisDrone-DET|  640 | 0.25 | 10 |  29.7 |  48.5 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](../ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
-|PP-YOLOE-l (拼图评估)| VisDrone-DET|  640 | 0.25 | 10 | 37.2 | 59.4 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](../ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
+|PP-YOLOE-l(子图直接评估)| VisDrone-DET|  640 | 0.25 | 10 |  38.5(子图val) |  60.2 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](./ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
+|PP-YOLOE-l(原图直接评估)| VisDrone-DET|  640 | 0.25 | 10 |  29.7(原图val) |  48.5 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](../ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
+|PP-YOLOE-l (切图拼图评估)| VisDrone-DET|  640 | 0.25 | 10 | 37.3(原图val) | 59.5 | [下载链接](https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams) | [配置文件](../ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml) |
 
 **注意:**
   - 上表中的模型均为使用**切图后的子图**训练，评估预测时分为两种，**直接使用原图**评估预测，和**使用子图自动拼成原图**评估预测，AP精度均为**原图验证集**上评估的结果。。
   - **SLICE_SIZE**表示使用SAHI工具切图后子图的边长大小，**OVERLAP_RATIO**表示切图的子图之间的重叠率。
-  - VisDrone-DET的模型与[切图模型](../README.md#切图模型)表格中的VisDrone-DET是**同一个模型权重**，但此处AP精度是在**原图验证集**上评估的结果。
+  - VisDrone-DET的模型与[切图模型](../README.md#切图模型)表格中的VisDrone-DET是**同一个模型权重**，但此处AP精度是在**原图验证集**上评估的结果，需要提前修改`ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml`里的`EvalDataset`的默认的子图验证集路径为以下**原图验证集路径**：
+  ```
+  EvalDataset:
+    !COCODataSet
+      image_dir: VisDrone2019-DET-val
+      anno_path: val.json
+      dataset_dir: dataset/visdrone
+  ```
+
+<details>
+<summary> 快速开始 </summary>
+
+```shell
+# 训练
+python -m paddle.distributed.launch --log_dir=logs/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml --amp --eval
+# 子图直接评估
+python tools/eval.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams
+# 原图直接评估，注意需要提前修改此yml中的 `EvalDataset` 的默认的子图验证集路径 为 原图验证集路径：
+python tools/eval.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams
+# 切图拼图评估，加上 --slice_infer，注意是使用的带 _slice_infer 后缀的yml配置文件
+python tools/eval.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025_slice_infer.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --slice_infer
+# 切图拼图预测，加上 --slice_infer
+python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_025.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_80e_sliced_visdrone_640_025.pdparams --infer_img=demo/visdrone_0000315_01601_d_0000509.jpg --draw_threshold=0.25 --slice_infer
+```
+
+</details>
 
 
 ## 注意事项：
   - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
-  - 具体使用教程请参考[ppyoloe](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/ppyoloe#getting-start)。
+  - 具体使用教程请参考[ppyoloe](../../ppyoloe#getting-start)。
   - MatlabAPI测试是使用官网评测工具[VisDrone2018-DET-toolkit](https://github.com/VisDrone/VisDrone2018-DET-toolkit)。
   - 切图训练模型的配置文件及训练相关流程请参照[README](../README.cn)。
 
@@ -89,16 +130,16 @@ python tools/export_model.py -c configs/smalldet/visdrone/ppyoloe_plus_sod_crn_l
 paddle2onnx --model_dir output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 12 --save_file ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.onnx
 
 # 推理单张图片
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/0000315_01601_d_0000509.jpg --device=gpu --run_mode=trt_fp16
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/visdrone_0000315_01601_d_0000509.jpg --device=gpu --run_mode=trt_fp16
 
 # 推理文件夹下的所有图片
 CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_dir=demo/ --device=gpu --run_mode=trt_fp16
 
 # 单张图片普通测速
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/0000315_01601_d_0000509.jpg --device=gpu --run_benchmark=True
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/visdrone_0000315_01601_d_0000509.jpg --device=gpu --run_benchmark=True
 
 # 单张图片TensorRT FP16测速
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/0000315_01601_d_0000509.jpg --device=gpu --run_benchmark=True --run_mode=trt_fp16
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/visdrone_0000315_01601_d_0000509.jpg --device=gpu --run_benchmark=True --run_mode=trt_fp16
 ```
 
 3.运行以下命令导出**不带NMS的模型和ONNX**，并使用TensorRT FP16进行推理和测速，以及**ONNX下FP16测速**
@@ -111,16 +152,16 @@ python tools/export_model.py -c configs/smalldet/visdrone/ppyoloe_plus_sod_crn_l
 paddle2onnx --model_dir output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 12 --save_file ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.onnx
 
 # 推理单张图片
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/0000315_01601_d_0000509.jpg --device=gpu --run_mode=trt_fp16
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/visdrone_0000315_01601_d_0000509.jpg --device=gpu --run_mode=trt_fp16
 
 # 推理文件夹下的所有图片
 CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_dir=demo/ --device=gpu --run_mode=trt_fp16
 
 # 单张图片普通测速
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/0000315_01601_d_0000509.jpg --device=gpu --run_benchmark=True
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/visdrone_0000315_01601_d_0000509.jpg --device=gpu --run_benchmark=True
 
 # 单张图片TensorRT FP16测速
-CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/0000315_01601_d_0000509.jpg --device=gpu --run_benchmark=True --run_mode=trt_fp16
+CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/ppyoloe_plus_sod_crn_l_largesize_80e_visdrone --image_file=demo/visdrone_0000315_01601_d_0000509.jpg --device=gpu --run_benchmark=True --run_mode=trt_fp16
 
 # 单张图片ONNX TensorRT FP16测速
 /usr/local/TensorRT-8.0.3.4/bin/trtexec --onnx=ppyoloe_plus_sod_crn_l_largesize_80e_visdrone.onnx --workspace=4096 --avgRuns=10 --shapes=input:1x3x1920x1920 --fp16
