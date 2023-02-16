@@ -1,6 +1,6 @@
 # VisDrone-DET 小目标检测模型
 
-PaddleDetection团队提供了针对VisDrone-DET小目标数航拍场景的基于PP-YOLOE的检测模型，用户可以下载模型进行使用。整理后的COCO格式VisDrone-DET数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/smalldet/visdrone.zip)，检测其中的10类，包括 `pedestrian(1), people(2), bicycle(3), car(4), van(5), truck(6), tricycle(7), awning-tricycle(8), bus(9), motor(10)`，原始数据集[下载链接](https://github.com/VisDrone/VisDrone-Dataset)。
+PaddleDetection团队提供了针对VisDrone-DET小目标数航拍场景的基于PP-YOLOE的检测模型，用户可以下载模型进行使用。整理后的COCO格式VisDrone-DET数据集[下载链接](https://bj.bcebos.com/v1/paddledet/data/smalldet/visdrone.zip)，检测其中的10类，包括 `pedestrian(1), people(2), bicycle(3), car(4), van(5), truck(6), tricycle(7), awning-tricycle(8), bus(9), motor(10)`，原始数据集[下载链接](https://github.com/VisDrone/VisDrone-Dataset)。其他相关小目标数据集可参照 [DataDownload.md](../DataDownload.md)。
 
 **注意:**
 - VisDrone-DET数据集包括**train集6471张，val集548张，test_dev集1610张**，test-challenge集1580张(未开放检测框标注)，前三者均有开放检测框标注。
@@ -90,7 +90,6 @@ python tools/infer.py -c configs/smalldet/ppyoloe_crn_l_80e_sliced_visdrone_640_
   - PP-YOLOE模型训练过程中使用8 GPUs进行混合精度训练，如果**GPU卡数**或者**batch size**发生了改变，你需要按照公式 **lr<sub>new</sub> = lr<sub>default</sub> * (batch_size<sub>new</sub> * GPU_number<sub>new</sub>) / (batch_size<sub>default</sub> * GPU_number<sub>default</sub>)** 调整学习率。
   - 具体使用教程请参考[ppyoloe](../../ppyoloe#getting-start)。
   - MatlabAPI测试是使用官网评测工具[VisDrone2018-DET-toolkit](https://github.com/VisDrone/VisDrone2018-DET-toolkit)。
-  - 切图训练模型的配置文件及训练相关流程请参照[README](../README.cn)。
 
 
 ## PP-YOLOE+_SOD 部署模型
