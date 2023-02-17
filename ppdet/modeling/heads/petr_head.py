@@ -14,6 +14,9 @@
 """
 this code is base on https://github.com/hikvision-research/opera/blob/main/opera/models/dense_heads/petr_head.py
 """
+import copy
+import numpy as np
+
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -21,12 +24,17 @@ from ppdet.core.workspace import register
 import paddle.distributed as dist
 
 from ..transformers.petr_transformer import inverse_sigmoid, masked_fill
-import copy
-import numpy as np
+from ..initializer import constant_, normal_
 
 __all__ = ["PETRHead"]
 
 from functools import partial
+
+
+def bias_init_with_prob(prior_prob: float) -> float:
+    """initialize conv/fc bias value according to a given probability value."""
+    bias_init = float(-np.log((1 - prior_prob) / prior_prob))
+    return bias_init
 
 
 def multi_apply(func, *args, **kwargs):
@@ -223,6 +231,7 @@ class PETRHead(nn.Layer):
             f' be exactly 2 times of num_feats. Found {self.embed_dims}' \
             f' and {num_feats}.'
         self._init_layers()
+        self.init_weights()
 
     def _init_layers(self):
         """Initialize classification branch and keypoint branch of head."""
@@ -274,16 +283,17 @@ class PETRHead(nn.Layer):
         if self.loss_cls.use_sigmoid:
             bias_init = bias_init_with_prob(0.01)
             for m in self.cls_branches:
-                nn.init.constant_(m.bias, bias_init)
+                constant_(m.bias, bias_init)
         for m in self.kpt_branches:
-            constant_init(m[-1], 0, bias=0)
+            constant_(m[-1].bias, 0)
         # initialization of keypoint refinement branch
         if self.with_kpt_refine:
             for m in self.refine_kpt_branches:
-                constant_init(m[-1], 0, bias=0)
+                constant_(m[-1].bias, 0)
         # initialize bias for heatmap prediction
         bias_init = bias_init_with_prob(0.1)
-        normal_init(self.fc_hm, std=0.01, bias=bias_init)
+        normal_(self.fc_hm.weight, std=0.01)
+        constant_(self.fc_hm.bias, bias_init)
 
     def forward(self, mlvl_feats, img_metas):
         """Forward function.

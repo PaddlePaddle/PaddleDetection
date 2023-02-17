@@ -191,3 +191,27 @@ class PETR(BaseArch):
             for det_bboxes, det_labels, det_kpts in results_list
         ]
         return bbox_kpt_results
+
+    def bbox_kpt2result(self, bboxes, labels, kpts, num_classes):
+        """Convert detection results to a list of numpy arrays.
+
+        Args:
+            bboxes (paddle.Tensor | np.ndarray): shape (n, 5).
+            labels (paddle.Tensor | np.ndarray): shape (n, ).
+            kpts (paddle.Tensor | np.ndarray): shape (n, K, 3).
+            num_classes (int): class number, including background class.
+
+        Returns:
+            list(ndarray): bbox and keypoint results of each class.
+        """
+        if bboxes.shape[0] == 0:
+            return [np.zeros((0, 5), dtype=np.float32) for i in range(num_classes)], \
+                [np.zeros((0, kpts.size(1), 3), dtype=np.float32)
+                    for i in range(num_classes)]
+        else:
+            if isinstance(bboxes, paddle.Tensor):
+                bboxes = bboxes.numpy()
+                labels = labels.numpy()
+                kpts = kpts.numpy()
+            return [bboxes[labels == i, :] for i in range(num_classes)], \
+                [kpts[labels == i, :, :] for i in range(num_classes)]

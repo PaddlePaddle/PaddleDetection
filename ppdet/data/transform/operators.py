@@ -1487,7 +1487,8 @@ class RandomCrop(BaseOperator):
                  num_attempts=50,
                  allow_no_crop=True,
                  cover_all_box=False,
-                 is_mask_crop=False):
+                 is_mask_crop=False,
+                 ioumode="iou"):
         super(RandomCrop, self).__init__()
         self.aspect_ratio = aspect_ratio
         self.thresholds = thresholds
@@ -1496,6 +1497,7 @@ class RandomCrop(BaseOperator):
         self.allow_no_crop = allow_no_crop
         self.cover_all_box = cover_all_box
         self.is_mask_crop = is_mask_crop
+        self.ioumode = ioumode
 
     def crop_segms(self, segms, valid_ids, crop, height, width):
         def _crop_poly(segm, crop):
@@ -1641,9 +1643,14 @@ class RandomCrop(BaseOperator):
                 crop_y = np.random.randint(0, h - crop_h)
                 crop_x = np.random.randint(0, w - crop_w)
                 crop_box = [crop_x, crop_y, crop_x + crop_w, crop_y + crop_h]
-                iou = self._gtcropiou_matrix(
-                    gt_bbox, np.array(
-                        [crop_box], dtype=np.float32))
+                if self.ioumode == "iof":
+                    iou = self._gtcropiou_matrix(
+                        gt_bbox, np.array(
+                            [crop_box], dtype=np.float32))
+                elif self.ioumode == "iou":
+                    iou = self._iou_matrix(
+                        gt_bbox, np.array(
+                            [crop_box], dtype=np.float32))
                 if iou.max() < thresh:
                     continue
 
@@ -2465,25 +2472,26 @@ class RandomResizeCrop(BaseOperator):
         is_mask_crop(bool): whether crop the segmentation.
     """
 
-    def __init__(
-            self,
-            resizes,
-            cropsizes,
-            prob=0.5,
-            mode='short',
-            keep_ratio=True,
-            interp=cv2.INTER_LINEAR,
-            num_attempts=3,
-            cover_all_box=False,
-            allow_no_crop=False,
-            thresholds=[0.3, 0.5, 0.7],
-            is_mask_crop=False, ):
+    def __init__(self,
+                 resizes,
+                 cropsizes,
+                 prob=0.5,
+                 mode='short',
+                 keep_ratio=True,
+                 interp=cv2.INTER_LINEAR,
+                 num_attempts=3,
+                 cover_all_box=False,
+                 allow_no_crop=False,
+                 thresholds=[0.3, 0.5, 0.7],
+                 is_mask_crop=False,
+                 ioumode="iou"):
         super(RandomResizeCrop, self).__init__()
 
         self.resizes = resizes
         self.cropsizes = cropsizes
         self.prob = prob
         self.mode = mode
+        self.ioumode = ioumode
 
         self.resizer = Resize(0, keep_ratio=keep_ratio, interp=interp)
         self.croper = RandomCrop(
@@ -2538,9 +2546,14 @@ class RandomResizeCrop(BaseOperator):
                 crop_x = random.randint(0, w - crop_w)
 
                 crop_box = [crop_x, crop_y, crop_x + crop_w, crop_y + crop_h]
-                iou = self._gtcropiou_matrix(
-                    gt_bbox, np.array(
-                        [crop_box], dtype=np.float32))
+                if self.ioumode == "iof":
+                    iou = self._gtcropiou_matrix(
+                        gt_bbox, np.array(
+                            [crop_box], dtype=np.float32))
+                elif self.ioumode == "iou":
+                    iou = self._iou_matrix(
+                        gt_bbox, np.array(
+                            [crop_box], dtype=np.float32))
                 if iou.max() < thresh:
                     continue
 
@@ -2860,10 +2873,10 @@ class RandomShortSideResize(BaseOperator):
         resize_w, resize_h = size
         joints[..., 0] *= im_scale_x
         joints[..., 1] *= im_scale_y
-        joints[joints[..., 0] >= resize_w, :] = 0
-        joints[joints[..., 1] >= resize_h, :] = 0
-        joints[joints[..., 0] < 0, :] = 0
-        joints[joints[..., 1] < 0, :] = 0
+        # joints[joints[..., 0] >= resize_w, :] = 0
+        # joints[joints[..., 1] >= resize_h, :] = 0
+        # joints[joints[..., 0] < 0, :] = 0
+        # joints[joints[..., 1] < 0, :] = 0
         joints[..., 0] = np.clip(joints[..., 0], 0, resize_w)
         joints[..., 1] = np.clip(joints[..., 1], 0, resize_h)
         return joints

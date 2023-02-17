@@ -29,17 +29,13 @@ from .position_encoding import PositionEmbedding
 from .utils import _get_clones
 from ..initializer import linear_init_, conv_init_, xavier_uniform_, normal_
 
-__all__ = ['DETRTransformer', 'TransformerEncoderLayer', 'TransformerEncoder']
+__all__ = ['DETRTransformer']
 
 
-@register
 class TransformerEncoderLayer(nn.Layer):
-    __inject__ = ['attn']
-
     def __init__(self,
                  d_model,
-                 attn=None,
-                 nhead=8,
+                 nhead,
                  dim_feedforward=2048,
                  dropout=0.1,
                  activation="relu",
@@ -50,12 +46,8 @@ class TransformerEncoderLayer(nn.Layer):
         attn_dropout = dropout if attn_dropout is None else attn_dropout
         act_dropout = dropout if act_dropout is None else act_dropout
         self.normalize_before = normalize_before
-        self.embed_dims = d_model
 
-        if attn is None:
-            self.self_attn = MultiHeadAttention(d_model, nhead, attn_dropout)
-        else:
-            self.self_attn = attn
+        self.self_attn = MultiHeadAttention(d_model, nhead, attn_dropout)
         # Implementation of Feedforward model
         self.linear1 = nn.Linear(d_model, dim_feedforward)
         self.dropout = nn.Dropout(act_dropout, mode="upscale_in_train")
@@ -76,12 +68,12 @@ class TransformerEncoderLayer(nn.Layer):
     def with_pos_embed(tensor, pos_embed):
         return tensor if pos_embed is None else tensor + pos_embed
 
-    def forward(self, src, src_mask=None, pos_embed=None, **kwargs):
+    def forward(self, src, src_mask=None, pos_embed=None):
         residual = src
         if self.normalize_before:
             src = self.norm1(src)
         q = k = self.with_pos_embed(src, pos_embed)
-        src = self.self_attn(q, k, value=src, attn_mask=src_mask, **kwargs)
+        src = self.self_attn(q, k, value=src, attn_mask=src_mask)
 
         src = residual + self.dropout1(src)
         if not self.normalize_before:
@@ -97,22 +89,17 @@ class TransformerEncoderLayer(nn.Layer):
         return src
 
 
-@register
 class TransformerEncoder(nn.Layer):
-    __inject__ = ['encoder_layer']
-
     def __init__(self, encoder_layer, num_layers, norm=None):
         super(TransformerEncoder, self).__init__()
         self.layers = _get_clones(encoder_layer, num_layers)
         self.num_layers = num_layers
         self.norm = norm
-        self.embed_dims = encoder_layer.embed_dims
 
-    def forward(self, src, src_mask=None, pos_embed=None, **kwargs):
+    def forward(self, src, src_mask=None, pos_embed=None):
         output = src
         for layer in self.layers:
-            output = layer(
-                output, src_mask=src_mask, pos_embed=pos_embed, **kwargs)
+            output = layer(output, src_mask=src_mask, pos_embed=pos_embed)
 
         if self.norm is not None:
             output = self.norm(output)
@@ -266,7 +253,7 @@ class DETRTransformer(nn.Layer):
         self.nhead = nhead
 
         encoder_layer = TransformerEncoderLayer(
-            hidden_dim, None, nhead, dim_feedforward, dropout, activation,
+            hidden_dim, nhead, dim_feedforward, dropout, activation,
             attn_dropout, act_dropout, normalize_before)
         encoder_norm = nn.LayerNorm(hidden_dim) if normalize_before else None
         self.encoder = TransformerEncoder(encoder_layer, num_encoder_layers,

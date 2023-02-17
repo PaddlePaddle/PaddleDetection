@@ -18,6 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import math
 import numpy as np
 import paddle
 import paddle.nn as nn
@@ -27,12 +28,14 @@ from paddle import ParamAttr
 from ppdet.core.workspace import register
 from ..layers import MultiHeadAttention, _convert_attention_mask
 from .utils import _get_clones
-from ..initializer import linear_init_, normal_
+from ..initializer import linear_init_, normal_, constant_, xavier_uniform_
 
 __all__ = [
     'PETRTransformer', 'MultiScaleDeformablePoseAttention',
     'PETR_TransformerDecoderLayer', 'PETR_TransformerDecoder',
-    'PETR_DeformableDetrTransformerDecoder', 'PETR_DeformableTransformerDecoder'
+    'PETR_DeformableDetrTransformerDecoder',
+    'PETR_DeformableTransformerDecoder', 'TransformerEncoderLayer',
+    'TransformerEncoder', 'MSDeformableAttention'
 ]
 
 
@@ -58,6 +61,222 @@ def inverse_sigmoid(x, eps=1e-5):
     x1 = x.clip(min=eps)
     x2 = (1 - x).clip(min=eps)
     return paddle.log(x1 / x2)
+
+
+@register
+class TransformerEncoderLayer(nn.Layer):
+    __inject__ = ['attn']
+
+    def __init__(self,
+                 d_model,
+                 attn=None,
+                 nhead=8,
+                 dim_feedforward=2048,
+                 dropout=0.1,
+                 activation="relu",
+                 attn_dropout=None,
+                 act_dropout=None,
+                 normalize_before=False):
+        super(TransformerEncoderLayer, self).__init__()
+        attn_dropout = dropout if attn_dropout is None else attn_dropout
+        act_dropout = dropout if act_dropout is None else act_dropout
+        self.normalize_before = normalize_before
+        self.embed_dims = d_model
+
+        if attn is None:
+            self.self_attn = MultiHeadAttention(d_model, nhead, attn_dropout)
+        else:
+            self.self_attn = attn
+        # Implementation of Feedforward model
+        self.linear1 = nn.Linear(d_model, dim_feedforward)
+        self.dropout = nn.Dropout(act_dropout, mode="upscale_in_train")
+        self.linear2 = nn.Linear(dim_feedforward, d_model)
+
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+        self.dropout1 = nn.Dropout(dropout, mode="upscale_in_train")
+        self.dropout2 = nn.Dropout(dropout, mode="upscale_in_train")
+        self.activation = getattr(F, activation)
+        self._reset_parameters()
+
+    def _reset_parameters(self):
+        linear_init_(self.linear1)
+        linear_init_(self.linear2)
+
+    @staticmethod
+    def with_pos_embed(tensor, pos_embed):
+        return tensor if pos_embed is None else tensor + pos_embed
+
+    def forward(self, src, src_mask=None, pos_embed=None, **kwargs):
+        residual = src
+        if self.normalize_before:
+            src = self.norm1(src)
+        q = k = self.with_pos_embed(src, pos_embed)
+        src = self.self_attn(q, k, value=src, attn_mask=src_mask, **kwargs)
+
+        src = residual + self.dropout1(src)
+        if not self.normalize_before:
+            src = self.norm1(src)
+
+        residual = src
+        if self.normalize_before:
+            src = self.norm2(src)
+        src = self.linear2(self.dropout(self.activation(self.linear1(src))))
+        src = residual + self.dropout2(src)
+        if not self.normalize_before:
+            src = self.norm2(src)
+        return src
+
+
+@register
+class TransformerEncoder(nn.Layer):
+    __inject__ = ['encoder_layer']
+
+    def __init__(self, encoder_layer, num_layers, norm=None):
+        super(TransformerEncoder, self).__init__()
+        self.layers = _get_clones(encoder_layer, num_layers)
+        self.num_layers = num_layers
+        self.norm = norm
+        self.embed_dims = encoder_layer.embed_dims
+
+    def forward(self, src, src_mask=None, pos_embed=None, **kwargs):
+        output = src
+        for layer in self.layers:
+            output = layer(
+                output, src_mask=src_mask, pos_embed=pos_embed, **kwargs)
+
+        if self.norm is not None:
+            output = self.norm(output)
+
+        return output
+
+
+@register
+class MSDeformableAttention(nn.Layer):
+    def __init__(self,
+                 embed_dim=256,
+                 num_heads=8,
+                 num_levels=4,
+                 num_points=4,
+                 lr_mult=0.1):
+        """
+        Multi-Scale Deformable Attention Module
+        """
+        super(MSDeformableAttention, self).__init__()
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.num_levels = num_levels
+        self.num_points = num_points
+        self.total_points = num_heads * num_levels * num_points
+
+        self.head_dim = embed_dim // num_heads
+        assert self.head_dim * num_heads == self.embed_dim, "embed_dim must be divisible by num_heads"
+
+        self.sampling_offsets = nn.Linear(
+            embed_dim,
+            self.total_points * 2,
+            weight_attr=ParamAttr(learning_rate=lr_mult),
+            bias_attr=ParamAttr(learning_rate=lr_mult))
+
+        self.attention_weights = nn.Linear(embed_dim, self.total_points)
+        self.value_proj = nn.Linear(embed_dim, embed_dim)
+        self.output_proj = nn.Linear(embed_dim, embed_dim)
+        try:
+            # use cuda op
+            print("use deformable_detr_ops in ms_deformable_attn")
+            from deformable_detr_ops import ms_deformable_attn
+        except:
+            # use paddle func
+            from .utils import deformable_attention_core_func as ms_deformable_attn
+        self.ms_deformable_attn_core = ms_deformable_attn
+
+        self._reset_parameters()
+
+    def _reset_parameters(self):
+        # sampling_offsets
+        constant_(self.sampling_offsets.weight)
+        thetas = paddle.arange(
+            self.num_heads,
+            dtype=paddle.float32) * (2.0 * math.pi / self.num_heads)
+        grid_init = paddle.stack([thetas.cos(), thetas.sin()], -1)
+        grid_init = grid_init / grid_init.abs().max(-1, keepdim=True)
+        grid_init = grid_init.reshape([self.num_heads, 1, 1, 2]).tile(
+            [1, self.num_levels, self.num_points, 1])
+        scaling = paddle.arange(
+            1, self.num_points + 1,
+            dtype=paddle.float32).reshape([1, 1, -1, 1])
+        grid_init *= scaling
+        self.sampling_offsets.bias.set_value(grid_init.flatten())
+        # attention_weights
+        constant_(self.attention_weights.weight)
+        constant_(self.attention_weights.bias)
+        # proj
+        xavier_uniform_(self.value_proj.weight)
+        constant_(self.value_proj.bias)
+        xavier_uniform_(self.output_proj.weight)
+        constant_(self.output_proj.bias)
+
+    def forward(self,
+                query,
+                key,
+                value,
+                reference_points,
+                value_spatial_shapes,
+                value_level_start_index,
+                attn_mask=None,
+                **kwargs):
+        """
+        Args:
+            query (Tensor): [bs, query_length, C]
+            reference_points (Tensor): [bs, query_length, n_levels, 2], range in [0, 1], top-left (0,0),
+                bottom-right (1, 1), including padding area
+            value (Tensor): [bs, value_length, C]
+            value_spatial_shapes (Tensor): [n_levels, 2], [(H_0, W_0), (H_1, W_1), ..., (H_{L-1}, W_{L-1})]
+            value_level_start_index (Tensor(int64)): [n_levels], [0, H_0*W_0, H_0*W_0+H_1*W_1, ...]
+            attn_mask (Tensor): [bs, value_length], True for non-padding elements, False for padding elements
+
+        Returns:
+            output (Tensor): [bs, Length_{query}, C]
+        """
+        bs, Len_q = query.shape[:2]
+        Len_v = value.shape[1]
+        assert int(value_spatial_shapes.prod(1).sum()) == Len_v
+
+        value = self.value_proj(value)
+        if attn_mask is not None:
+            attn_mask = attn_mask.astype(value.dtype).unsqueeze(-1)
+            value *= attn_mask
+        value = value.reshape([bs, Len_v, self.num_heads, self.head_dim])
+
+        sampling_offsets = self.sampling_offsets(query).reshape(
+            [bs, Len_q, self.num_heads, self.num_levels, self.num_points, 2])
+        attention_weights = self.attention_weights(query).reshape(
+            [bs, Len_q, self.num_heads, self.num_levels * self.num_points])
+        attention_weights = F.softmax(attention_weights).reshape(
+            [bs, Len_q, self.num_heads, self.num_levels, self.num_points])
+
+        if reference_points.shape[-1] == 2:
+            offset_normalizer = value_spatial_shapes.flip([1]).reshape(
+                [1, 1, 1, self.num_levels, 1, 2])
+            sampling_locations = reference_points.reshape([
+                bs, Len_q, 1, self.num_levels, 1, 2
+            ]) + sampling_offsets / offset_normalizer
+        elif reference_points.shape[-1] == 4:
+            sampling_locations = (
+                reference_points[:, :, None, :, None, :2] + sampling_offsets /
+                self.num_points * reference_points[:, :, None, :, None, 2:] *
+                0.5)
+        else:
+            raise ValueError(
+                "Last dim of reference_points must be 2 or 4, but get {} instead.".
+                format(reference_points.shape[-1]))
+
+        output = self.ms_deformable_attn_core(
+            value, value_spatial_shapes, value_level_start_index,
+            sampling_locations, attention_weights)
+        output = self.output_proj(output)
+
+        return output
 
 
 @register
@@ -144,10 +363,14 @@ class MultiScaleDeformablePoseAttention(nn.Layer):
 
     def init_weights(self):
         """Default initialization for Parameters of Module."""
-        # constant_(self.sampling_offsets, 0.)
-        # constant_(self.attention_weights, val=0., bias=0.)
-        # xavier_uniform_(self.value_proj, distribution='uniform', bias=0.)
-        # xavier_uniform_(self.output_proj, distribution='uniform', bias=0.)
+        constant_(self.sampling_offsets.weight)
+        constant_(self.sampling_offsets.bias)
+        constant_(self.attention_weights.weight)
+        constant_(self.attention_weights.bias)
+        xavier_uniform_(self.value_proj.weight)
+        constant_(self.value_proj.bias)
+        xavier_uniform_(self.output_proj.weight)
+        constant_(self.output_proj.bias)
 
     def forward(self,
                 query,
@@ -191,22 +414,10 @@ class MultiScaleDeformablePoseAttention(nn.Layer):
         if value is None:
             value = key
 
-        # if residual is None:
-        #     inp_residual = query
-        # if not self.batch_first:
-        #     # change to (bs, num_query ,embed_dims)
-        #     query = query.transpose((1, 0, 2))
-        #     value = value.transpose((1, 0, 2))
-
         bs, num_query, _ = query.shape
         bs, num_key, _ = value.shape
-        try:
-            assert (value_spatial_shapes[:, 0].numpy() *
-                    value_spatial_shapes[:, 1].numpy()).sum() == num_key
-        except:
-            print("value_spatial_shapes error")
-            import pdb
-            pdb.set_trace()
+        assert (value_spatial_shapes[:, 0].numpy() *
+                value_spatial_shapes[:, 1].numpy()).sum() == num_key
 
         value = self.value_proj(value)
         if attn_mask is not None:
@@ -582,6 +793,7 @@ class PETRTransformer(nn.Layer):
         self.hm_encoder = hm_encoder
         self.refine_decoder = refine_decoder
         self.init_layers()
+        self.init_weights()
 
     def init_layers(self):
         """Initialize layers of the DeformableDetrTransformer."""
@@ -601,16 +813,19 @@ class PETRTransformer(nn.Layer):
     def init_weights(self):
         """Initialize the transformer weights."""
         for p in self.parameters():
-            if p.dim() > 1:
-                nn.init.xavier_uniform_(p)
-        for m in self.modules():
-            if isinstance(m, MultiScaleDeformableAttention):
-                m.init_weights()
-        for m in self.modules():
+            if p.rank() > 1:
+                xavier_uniform_(p)
+                if hasattr(p, 'bias') and p.bias is not None:
+                    constant_(p.bais)
+        for m in self.sublayers():
+            if isinstance(m, MSDeformableAttention):
+                m._reset_parameters()
+        for m in self.sublayers():
             if isinstance(m, MultiScaleDeformablePoseAttention):
                 m.init_weights()
         if not self.as_two_stage:
-            xavier_init(self.reference_points, distribution='uniform', bias=0.)
+            xavier_uniform_(self.reference_points.weight)
+            constant_(self.reference_points.bias)
         normal_(self.level_embeds)
         normal_(self.refine_query_embedding.weight)
 
@@ -860,7 +1075,7 @@ class PETRTransformer(nn.Layer):
             # official code make a mistake of pos_embed to pose_embed, which disable pos_embed
             hm_memory = self.hm_encoder(
                 src=hm_memory,
-                pos_embed=hm_pos_embed,
+                pose_embed=hm_pos_embed,
                 src_mask=hm_mask,
                 value_spatial_shapes=spatial_shapes[[0]],
                 reference_points=hm_reference_points,

@@ -14,8 +14,7 @@ find_unused_parameters: False
 
 #####model
 architecture: PETR
-# pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vb_normal_pretrained.pdparams
-pretrain_weights: Trunc_epoch_1_0.pdparams
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/PETR_pretrained.pdparams
 
 PETR:
   backbone:
@@ -218,7 +217,7 @@ TrainReader:
     - RandomSelect: { transforms1: [ RandomShortSideRangeResize: { scales: [[400, 1400], [1400, 1400]]} ],
                       transforms2: [
                           RandomShortSideResize: { short_side_sizes: [ 400, 500, 600 ] },
-                          RandomSizeCrop: { min_size: 384, max_size: 600 },
+                          RandomSizeCrop: { min_size: 384, max_size: 600},
                           RandomShortSideRangeResize: { scales: [[400, 1400], [1400, 1400]]} ]}
   batch_transforms:
     - NormalizeImage: {mean: *global_mean, std: *global_std, is_scale: True}

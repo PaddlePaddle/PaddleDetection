@@ -19,6 +19,7 @@ import paddle.nn as nn
 from ppdet.core.workspace import register, serializable
 from ..backbones.hrnet import ConvNormLayer
 from ..shape_spec import ShapeSpec
+from ..initializer import xavier_uniform_, constant_
 
 __all__ = ['ChannelMapper']
 
@@ -90,6 +91,7 @@ class ChannelMapper(nn.Layer):
                         norm_type='gn',
                         norm_groups=32,
                         act=act))
+        self.init_weights()
 
     def forward(self, inputs):
         """Forward function."""
@@ -110,3 +112,11 @@ class ChannelMapper(nn.Layer):
                 channels=self.out_channel, stride=1. / s)
             for s in self.spatial_scales
         ]
+
+    def init_weights(self):
+        """Initialize the transformer weights."""
+        for p in self.parameters():
+            if p.rank() > 1:
+                xavier_uniform_(p)
+                if hasattr(p, 'bias') and p.bias is not None:
+                    constant_(p.bais)

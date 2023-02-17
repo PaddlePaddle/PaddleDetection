@@ -10,10 +10,6 @@ __pycache__/
 # C extensions
 *.so
 
-#extra option
-ppdet/modeling/transformers/ext_op/build/
-ppdet/modeling/transformers/ext_op/deformable_detr_ops.egg-info/
-ppdet/modeling/transformers/ext_op/dist/
 # json file
 *.json
 
@@ -22,9 +18,9 @@ ppdet/modeling/transformers/ext_op/dist/
 
 # Distribution / packaging
 /bin/
-/build/
+*build/
 /develop-eggs/
-/dist/
+*dist/
 /eggs/
 /lib/
 /lib64/
@@ -34,7 +30,7 @@ ppdet/modeling/transformers/ext_op/dist/
 /parts/
 /sdist/
 /var/
-/*.egg-info/
+*.egg-info/
 /.installed.cfg
 /*.egg
 /.eggs
