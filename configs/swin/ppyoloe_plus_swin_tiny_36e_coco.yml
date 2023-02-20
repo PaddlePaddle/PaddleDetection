@@ -8,7 +8,7 @@ depth_mult: 0.25
 width_mult: 0.50
 
 log_iter: 50
-snapshot_epoch: 1
+snapshot_epoch: 4
 weights: output/ppyoloe_plus_swin_tiny_36e_coco/model_final
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/swin_tiny_patch4_window7_224_22kto1k_pretrained.pdparams
 
