@@ -84,7 +84,7 @@ class BatchCompose(Compose):
                 raise e
 
         # remove keys which is not needed by model
-        extra_key = ['h', 'w', 'flipped']
+        extra_key = ['h', 'w', 'flipped',]
         for k in extra_key:
             for sample in data:
                 if k in sample:
@@ -100,7 +100,7 @@ class BatchCompose(Compose):
                 tmp_data = []
                 for i in range(len(data)):
                     tmp_data.append(data[i][k])
-                if not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k:
+                if not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k and not 'Random' in k and not 'Original' in k:
                     tmp_data = np.stack(tmp_data, axis=0)
                 batch_data[k] = tmp_data
         return batch_data
@@ -401,7 +401,7 @@ class BatchCompose_SSOD(Compose):
                 raise e
 
         # remove keys which is not needed by model
-        extra_key = ['h', 'w', 'flipped']
+        extra_key = ['h', 'w']
         for k in extra_key:
             for sample in data:
                 if k in sample:
@@ -422,7 +422,7 @@ class BatchCompose_SSOD(Compose):
                 tmp_data = []
                 for i in range(len(data)):
                     tmp_data.append(data[i][k])
-                if not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k:
+                if not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k and not 'Random' in k and not 'Original' in k and not 'RandomErasing' in k:
                     tmp_data = np.stack(tmp_data, axis=0)
                 batch_data[k] = tmp_data
 
@@ -431,7 +431,7 @@ class BatchCompose_SSOD(Compose):
                 tmp_data = []
                 for i in range(len(strong_data)):
                     tmp_data.append(strong_data[i][k])
-                if not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k:
+                if not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k and not 'Random' in k and not 'Original' in k and not 'RandomErasing' in k:
                     tmp_data = np.stack(tmp_data, axis=0)
                 strong_batch_data[k] = tmp_data
         return batch_data, strong_batch_data

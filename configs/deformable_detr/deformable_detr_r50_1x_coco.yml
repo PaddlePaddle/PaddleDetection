@@ -7,7 +7,7 @@ _BASE_: [
 ]
 weights: output/deformable_detr_r50_1x_coco/model_final
 find_unused_parameters: True
-snapshot_epoch: 5
+snapshot_epoch: 1
 
 metric: COCO
 num_classes: 80

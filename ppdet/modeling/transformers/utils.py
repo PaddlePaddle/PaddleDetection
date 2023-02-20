@@ -60,18 +60,17 @@ def sigmoid_focal_loss(logit, label, normalizer=1.0, alpha=0.25, gamma=2.0):
     if alpha >= 0:
         alpha_t = alpha * label + (1 - alpha) * (1 - label)
         loss = alpha_t * loss
-    semi_empty=False
-    semi_loss=paddle.zeros([1])
-    for i in range(label.shape[0]):
-        if label[i].sum()==0:
-            semi_empty=True
-            semi_loss+=loss[i].mean(1).sum()
-        else:
-            semi_loss+=loss[i].mean(1).sum()/ normalizer
-    if semi_empty==True:
-        return semi_loss
-    else:
-        return loss.mean(1).sum() / normalizer
+    indicator_matrix=[]
+    for i in range(len(label)):
+       if label[i].sum()>0:
+           indicator_matrix.append(paddle.ones([1, loss.shape[1], loss.shape[-1]]))
+       else:
+           indicator_matrix.append(paddle.zeros([1, loss.shape[1], loss.shape[-1]]))
+    indicator_matrix=paddle.concat(indicator_matrix)
+    # indicator_matrix = paddle.cat([i * paddle.ones(1, loss.shape[1], loss.shape[-1]) for i in label])
+    # indicator_matrix = indicator_matrix.cuda()
+    loss = loss * indicator_matrix
+    return loss.mean(1).sum() / normalizer
 
 
 def inverse_sigmoid(x, eps=1e-6):

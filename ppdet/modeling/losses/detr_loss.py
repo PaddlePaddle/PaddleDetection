@@ -243,7 +243,7 @@ class DETRLoss(nn.Layer):
         """
         for i,gt in enumerate(zip(gt_bbox,gt_class)):
             bbox,cls=gt
-            if bbox.sum()==0:
+            if bbox.sum()==-400:
                gt_bbox[i]=paddle.zeros([0,4]) 
                gt_class[i]=paddle.zeros([0,1])
 

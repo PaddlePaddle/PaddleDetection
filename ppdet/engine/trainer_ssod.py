@@ -60,12 +60,15 @@ class Trainer_DenseTeacher(Trainer):
         capital_mode = self.mode.capitalize()
         self.dataset = self.cfg['{}Dataset'.format(capital_mode)] = create(
             '{}Dataset'.format(capital_mode))()
-
         if self.mode == 'train':
+            self.burnin_dataset = self.cfg['BurninTrainDataset'] = create(
+                'BurninTrainDataset')
             self.dataset_unlabel = self.cfg['UnsupTrainDataset'] = create(
                 'UnsupTrainDataset')
             self.loader = create('SemiTrainReader')(
                 self.dataset, self.dataset_unlabel, cfg.worker_num)
+            self.burnin_loader = create('TrainReader')(
+                self.burnin_dataset, cfg.worker_num)
 
         # build model
         if 'model' not in self.cfg:
@@ -245,6 +248,12 @@ class Trainer_DenseTeacher(Trainer):
             iter_tic = time.time()
             for step_id in range(len(self.loader)):
                 data = next(self.loader)
+
+                try:
+                    data_burnin = self.burnin_loader.next()
+                except StopIteration:
+                    self.burnin_loader = iter(self.burnin_loader)
+                    data_burnin = self.burnin_loader.next()
                 data_sup_w, data_sup_s, data_unsup_w, data_unsup_s = data
                 data_sup_w['epoch_id'] = epoch_id
                 data_sup_s['epoch_id'] = epoch_id
@@ -256,6 +265,7 @@ class Trainer_DenseTeacher(Trainer):
                 self.status['step_id'] = step_id
                 self.status['iter_id'] = iter_id
                 data.append(iter_id)
+                data_burnin['iter_id'] = iter_id
                 profiler.add_profiler_step(profiler_options)
                 self._compose_callback.on_step_begin(self.status)
                 if self.cfg.get('amp', False):
@@ -271,7 +281,10 @@ class Trainer_DenseTeacher(Trainer):
                     scaled_loss.backward()
                     scaler.minimize(self.optimizer, scaled_loss)
                 else:
-                    outputs = model(data)                    
+                    if iter_id >=self.cfg.DETR_SSOD['train_cfg']['semi_start_iters']:
+                        outputs = model(data) 
+                    else:   
+                        outputs = model(data_burnin)                 
                     loss = outputs['loss']
                     # model backward
                     loss.backward()

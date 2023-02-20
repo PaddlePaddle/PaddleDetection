@@ -701,6 +701,8 @@ class RandomFlip(BaseOperator):
             sample: the image, bounding box and segmentation part
                     in sample are flipped.
         """
+        sample.update({'OriginalImageSize':sample['image'].shape[:2]})
+        sample['flipped'] = False
         if np.random.uniform(0, 1) < self.prob:
             im = sample['image']
             height, width = im.shape[:2]
@@ -2506,6 +2508,8 @@ class RandomSelect(BaseOperator):
         self.p = p
 
     def apply(self, sample, context=None):
+        sample['RandomResize_scale']=[None,None]
+        sample['RandomSizeCrop']=[None]
         if random.random() < self.p:
             return self.transforms1(sample)
         return self.transforms2(sample)
@@ -2670,6 +2674,12 @@ class RandomShortSideResize(BaseOperator):
 
     def apply(self, sample, context=None):
         target_size = random.choice(self.short_side_sizes)
+        if 'RandomResize_times' in sample.keys():
+            sample['RandomResize_times'] = sample['RandomResize_times'] + 1
+        else:
+            sample['RandomResize_times'] = 1
+        i=sample['RandomResize_times']-1
+        sample['RandomResize_scale'][i] = target_size
         interp = random.choice(
             self.interps) if self.random_interp else self.interp
 
@@ -2840,6 +2850,7 @@ class RandomSizeCrop(BaseOperator):
                            min(sample['image'].shape[1], self.max_size))
 
         region = self.get_crop_params(sample['image'].shape[:2], [h, w])
+        sample['RandomSizeCrop'] = region 
         return self.crop(sample, region)
 
 
@@ -3704,8 +3715,9 @@ class RandomErasing(BaseOperator):
                     "Value should be a single number or a sequence with length equals to image's channel."
                 )
             im = sample['image']
-            top, left, erase_h, erase_w, v = self._get_param(im, self.scale,
-                                                             self.ratio, value)
+            region = self._get_param(im, self.scale,self.ratio, value)
+            top, left, erase_h, erase_w, v = region
+            sample['RandomErasing'+context] = region
             im = self._erase(im, top, left, erase_h, erase_w, v, self.inplace)
             sample['image'] = im
         return sample
@@ -3723,7 +3735,7 @@ class RandomErasingCrop(BaseOperator):
             prob=0.3, scale=(0.05, 0.2), ratio=(0.05, 8), value="random")
 
     def apply(self, sample, context=None):
-        sample = self.transform1(sample)
-        sample = self.transform2(sample)
-        sample = self.transform3(sample)
+        sample = self.transform1(sample,context='1')
+        sample = self.transform2(sample,context='2')
+        sample = self.transform3(sample,context='3')
         return sample

@@ -543,6 +543,7 @@ class Trainer(object):
                             list(model.parameters()), None)
                     else:
                         # model forward
+                        
                         outputs = model(data)
                         loss = outputs['loss']
                         # model backward

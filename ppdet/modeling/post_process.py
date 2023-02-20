@@ -726,10 +726,10 @@ class DETRBBoxSemiPostProcess(object):
         import copy
         soft_scores=copy.deepcopy(scores)
         scores, index = paddle.topk(
-            scores.max(-1), self.num_top_queries, axis=-1)
+            scores.max(-1), 300, axis=-1)
         # labels = soft_scores.argmax(-1)[index]
         batch_ind = paddle.arange(end=scores.shape[0]).unsqueeze(-1).tile(
-            [1, self.num_top_queries])
+            [1, 300])
         index = paddle.stack([batch_ind, index], axis=-1)
         labels = paddle.gather_nd(soft_scores.argmax(-1), index)
         bbox_pred = paddle.gather_nd(bbox_pred, index)
