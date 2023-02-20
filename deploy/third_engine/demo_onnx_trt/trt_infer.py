@@ -51,9 +51,9 @@ TRT_LOGGER = trt.Logger()
 trt.init_libnvinfer_plugins(TRT_LOGGER, namespace="")
 # Global dictionary
 SUPPORT_MODELS = {
-    'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
-    'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD', 'RetinaNet',
-    'StrongBaseline', 'STGCN', 'YOLOX', 'HRNet'
+    'YOLO', 'PPYOLOE', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet',
+    'S2ANet', 'JDE', 'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet',
+    'TOOD', 'RetinaNet', 'StrongBaseline', 'STGCN', 'YOLOX', 'HRNet'
 }
 
 
@@ -205,8 +205,8 @@ def create_trt_bindings(engine, context):
             "is_input": True if engine.binding_is_input(name) else False
         }
         if engine.binding_is_input(name):
-            bindings[name]['cpu_data'] = np.random.randn(
-                *shape).astype(np.float32)
+            bindings[name]['cpu_data'] = np.random.randn(*shape).astype(
+                np.float32)
             bindings[name]['cuda_ptr'] = cuda.mem_alloc(bindings[name][
                 'cpu_data'].nbytes)
         else:

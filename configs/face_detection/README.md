@@ -11,8 +11,8 @@
 
 | 网络结构 | 输入尺寸 | 图片个数/GPU | 学习率策略 | Easy/Medium/Hard Set  | 预测时延（SD855）| 模型大小(MB) | 下载 | 配置文件 |
 |:------------:|:--------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|
-| BlazeFace  | 640  |    8    | 1000e     | 0.885 / 0.855 / 0.731 | - | 0.472 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/face_detection/blazeface_1000e.yml) |
-| BlazeFace-FPN-SSH  | 640  |    8    | 1000e     | 0.907 / 0.883 / 0.793 | - | 0.479 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_fpn_ssh_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/face_detection/blazeface_fpn_ssh_1000e.yml) |
+| BlazeFace  | 640  |    8    | 1000e     | 0.885 / 0.855 / 0.731 | - | 0.472 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/face_detection/blazeface_1000e.yml) |
+| BlazeFace-FPN-SSH  | 640  |    8    | 1000e     | 0.907 / 0.883 / 0.793 | - | 0.479 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_fpn_ssh_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/face_detection/blazeface_fpn_ssh_1000e.yml) |
 
 **注意:**  
 - 我们使用多尺度评估策略得到`Easy/Medium/Hard Set`里的mAP。具体细节请参考[在WIDER-FACE数据集上评估](#在WIDER-FACE数据集上评估)。
@@ -111,6 +111,58 @@ legend_name = 'Paddle-BlazeFace';
 matlab -nodesktop -nosplash -nojvm -r "run wider_eval.m;quit;"
 ```
 
+### Python脚本预测
+为了支持二次开发，这里提供通过Python脚本使用Paddle Detection whl包来进行预测的示例。
+```python
+import cv2
+import paddle
+import numpy as np
+from ppdet.core.workspace import load_config
+from ppdet.engine import Trainer
+from ppdet.metrics import get_infer_results
+from ppdet.data.transform.operators import NormalizeImage, Permute
+
+
+if __name__ == '__main__':
+    # 准备基础的参数
+    config_path = 'PaddleDetection/configs/face_detection/blazeface_1000e.yml'
+    cfg = load_config(config_path)
+    weight_path = 'PaddleDetection/output/blazeface_1000e.pdparams'
+    infer_img_path = 'PaddleDetection/demo/hrnet_demo.jpg'
+    cfg.weights = weight_path
+    bbox_thre = 0.8
+    paddle.set_device('gpu')
+    # 创建所需的类
+    trainer = Trainer(cfg, mode='test')
+    trainer.load_weights(cfg.weights)
+    trainer.model.eval()
+    normaler = NormalizeImage(mean=[123, 117, 104], std=[127.502231, 127.502231, 127.502231], is_scale=False)
+    permuter = Permute()
+    # 进行图片读取
+    im = cv2.imread(infer_img_path)
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    # 准备数据字典
+    data_dict = {'image': im}
+    data_dict = normaler(data_dict)
+    data_dict = permuter(data_dict)
+    h, w, c = im.shape
+    data_dict['im_id'] = paddle.Tensor(np.array([[0]]))
+    data_dict['im_shape'] = paddle.Tensor(np.array([[h, w]], dtype=np.float32))
+    data_dict['scale_factor'] = paddle.Tensor(np.array([[1., 1.]], dtype=np.float32))
+    data_dict['image'] = paddle.Tensor(data_dict['image'].reshape((1, c, h, w)))
+    data_dict['curr_iter'] = paddle.Tensor(np.array([0]))
+    # 进行预测
+    outs = trainer.model(data_dict)
+    # 对预测的数据进行后处理得到最终的bbox信息
+    for key in ['im_shape', 'scale_factor', 'im_id']:
+        outs[key] = data_dict[key]
+    for key, value in outs.items():
+        outs[key] = value.numpy()
+    clsid2catid, catid2name = {0: 'face'}, {0: 0}
+    batch_res = get_infer_results(outs, clsid2catid)
+    bbox = [sub_dict for sub_dict in batch_res['bbox'] if sub_dict['score'] > bbox_thre]
+    print(bbox)
+```
 
 ## Citations
 

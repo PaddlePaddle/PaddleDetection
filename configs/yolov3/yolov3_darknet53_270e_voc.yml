@@ -8,9 +8,21 @@ _BASE_: [
 
 snapshot_epoch: 5
 weights: output/yolov3_darknet53_270e_voc/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams
+
 
 # set collate_batch to false because ground-truth info is needed
 # on voc dataset and should not collate data in batch when batch size
 # is larger than 1.
 EvalReader:
   collate_batch: false
+
+
+# ### remove comment below and run evaluate again to get 56.1 COCO for mAP(0.5:0.95)
+# metric: COCO
+# EvalDataset:
+#   !COCODataSet
+#     image_dir: VOCdevkit/VOC2007/JPEGImages
+#     anno_path: voc_test.json
+#     dataset_dir: dataset/voc
+#     # wget https://bj.bcebos.com/v1/paddledet/data/voc.zip

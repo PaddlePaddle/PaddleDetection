@@ -1,3 +1,4 @@
+numpy < 1.24
 tqdm
 typeguard
 visualdl>=2.2.0
@@ -10,11 +11,10 @@ Cython
 pycocotools
 setuptools
 
-# for vehicleplate
-pyclipper
-
-# for mot
+# for MOT evaluation and inference
 lap
 motmetrics
 sklearn==0.0
-filterpy
+
+# for vehicleplate in deploy/pipeline/ppvehicle
+pyclipper

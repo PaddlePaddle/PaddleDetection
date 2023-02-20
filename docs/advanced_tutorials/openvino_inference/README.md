@@ -1,11 +1,11 @@
 # Using OpenVINO for Inference
 
 ## Introduction
-PaddleDetection has been a vibrant open-source project and has a large amout of contributors and maintainers around it. It is an AI framework which enables release/2.5ers to quickly integrate AI capacities into their own projects and applications.
+PaddleDetection has been a vibrant open-source project and has a large amout of contributors and maintainers around it. It is an AI framework which enables developers to quickly integrate AI capacities into their own projects and applications.
 
 Intel OpenVINO is a widely used free toolkit. It facilitates the optimization of a deep learning model from a framework and deployment using an inference engine onto Intel hardware.
 
-Apparently, the upstream(Paddle) and the downstream(Intel OpenVINO) can work together to streamline and simplify the process of release/2.5ing an AI model and deploying the model onto hardware, which, in turn, makes our lives easier.
+Apparently, the upstream(Paddle) and the downstream(Intel OpenVINO) can work together to streamline and simplify the process of developing an AI model and deploying the model onto hardware, which, in turn, makes our lives easier.
 
 This article will show you how to use a PaddleDetection model [FairMOT](../../../configs/mot/fairmot/README.md) from the Model Zoo in PaddleDetection and use it with OpenVINO to do the inference.
 

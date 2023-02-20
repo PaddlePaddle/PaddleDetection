@@ -2,7 +2,7 @@
 
 # Customized multi-object tracking task
 
-When applying multi-object tracking algorithms in industrial applications, there will be inevitable demands for customized types of multi-object tracking or optimization of existing multi-object tracking models to improve the effectiveness of the models in specific scenarios. In this document, we present examples of how to choose a multi-object tracking solution based on the expected identified behavior, and how to use PaddleDetection for further release/2.5ment of multi-object tracking algorithms, including data preparation, model optimization ideas, and the release/2.5ment process of tracking category modification.
+When applying multi-object tracking algorithms in industrial applications, there will be inevitable demands for customized types of multi-object tracking or optimization of existing multi-object tracking models to improve the effectiveness of the models in specific scenarios. In this document, we present examples of how to choose a multi-object tracking solution based on the expected identified behavior, and how to use PaddleDetection for further development of multi-object tracking algorithms, including data preparation, model optimization ideas, and the development process of tracking category modification.
 
 ## Data Preparation
 

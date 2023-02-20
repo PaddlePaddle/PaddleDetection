@@ -499,8 +499,8 @@ class PicoHeadV2(GFLHead):
         self.gfl_head_reg = None
         self.scales_regs = None
 
-        self.head_cls_list = []
-        self.head_reg_list = []
+        self.head_cls_list = nn.LayerList()
+        self.head_reg_list = nn.LayerList()
         self.cls_align = nn.LayerList()
 
         for i in range(len(fpn_stride)):
@@ -651,7 +651,7 @@ class PicoHeadV2(GFLHead):
 
         # label assignment
         if gt_meta['epoch_id'] < self.static_assigner_epoch:
-            assigned_labels, assigned_bboxes, assigned_scores = self.static_assigner(
+            assigned_labels, assigned_bboxes, assigned_scores, _ = self.static_assigner(
                 anchors,
                 num_anchors_list,
                 gt_labels,
@@ -662,7 +662,7 @@ class PicoHeadV2(GFLHead):
                 pred_bboxes=pred_bboxes.detach() * stride_tensor_list)
 
         else:
-            assigned_labels, assigned_bboxes, assigned_scores = self.assigner(
+            assigned_labels, assigned_bboxes, assigned_scores, _ = self.assigner(
                 pred_scores.detach(),
                 pred_bboxes.detach() * stride_tensor_list,
                 centers,

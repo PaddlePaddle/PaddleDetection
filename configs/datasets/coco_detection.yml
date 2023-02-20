@@ -4,7 +4,7 @@ num_classes: 80
 TrainDataset:
   !COCODataSet
     image_dir: train2017
-    anno_path: annotations/instances_train2017.json
+    anno_path: semi_annotations/instances_train2017.1@5.json
     dataset_dir: dataset/coco
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
@@ -13,6 +13,7 @@ EvalDataset:
     image_dir: val2017
     anno_path: annotations/instances_val2017.json
     dataset_dir: dataset/coco
+    allow_empty: true
 
 TestDataset:
   !ImageFolder

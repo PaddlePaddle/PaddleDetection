@@ -44,7 +44,7 @@ PP-tracking provides an AI studio public project tutorial. Please refer to this 
 | DLA-34         | 576x320 |  69.9  |  70.2  |  1044   |  8869  |  44898 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_576x320.pdparams) | [config](./fairmot_dla34_30e_576x320.yml) |
 
 **Notes:**
- - FairMOT DLA-34 used 2 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
+ - FairMOT DLA-34 used 2 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epochs.
 
 
 ### FairMOT enhance model
@@ -62,8 +62,8 @@ PP-tracking provides an AI studio public project tutorial. Please refer to this 
 
 **Notes:**
  - FairMOT enhance used 8 GPUs for training, and the crowdhuman dataset is added to the train-set during training.
- - For FairMOT enhance DLA-34 the batch size is 16 on each GPU，and trained for 60 epoches.
- - For FairMOT enhance HarDNet-85 the batch size is 10 on each GPU，and trained for 30 epoches.
+ - For FairMOT enhance DLA-34 the batch size is 16 on each GPU，and trained for 60 epochs.
+ - For FairMOT enhance HarDNet-85 the batch size is 10 on each GPU，and trained for 30 epochs.
 
 ### FairMOT light model
 ### Results on MOT-16 Test Set
@@ -79,7 +79,7 @@ PP-tracking provides an AI studio public project tutorial. Please refer to this 
 | HRNetV2-W18   | 576x320  |  65.3  |  64.8  |  4137  |  28860  | 163017 |    -     |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_hrnetv2_w18_dlafpn_30e_576x320.pdparams) | [config](./fairmot_hrnetv2_w18_dlafpn_30e_576x320.yml) |
 
 **Notes:**
- - FairMOT HRNetV2-W18 used 8 GPUs for training and mini-batch size as 4 on each GPU, and trained for 30 epoches. Only ImageNet pre-train model is used, and the optimizer adopts Momentum. The crowdhuman dataset is added to the train-set during training.
+ - FairMOT HRNetV2-W18 used 8 GPUs for training and mini-batch size as 4 on each GPU, and trained for 30 epochs. Only ImageNet pre-train model is used, and the optimizer adopts Momentum. The crowdhuman dataset is added to the train-set during training.
 
 ### FairMOT + BYTETracker
 
@@ -156,7 +156,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_d
 
 ### 3. Inference
 
-Inference a vidoe on single GPU with following command:
+Inference a video on single GPU with following command:
 
 ```bash
 # inference on video and save a video

@@ -4,7 +4,7 @@
 
 ## 环境准备
 
-基于人体id的检测方案是直接使用[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection)的功能进行模型训练的。请按照[安装说明](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/tutorials/INSTALL_cn.md)完成环境安装，以进行后续的模型训练及使用流程。
+基于人体id的检测方案是直接使用[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection)的功能进行模型训练的。请按照[安装说明](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/INSTALL_cn.md)完成环境安装，以进行后续的模型训练及使用流程。
 
 ## 数据准备
 基于检测的行为识别方案中，数据准备的流程与一般的检测模型一致，详情可参考[目标检测数据准备](../../../tutorials/data/PrepareDetDataSet.md)。将图像和标注数据组织成PaddleDetection中支持的格式之一即可。
@@ -174,7 +174,7 @@ ppyoloe_crn_s_80e_smoking_visdrone/
 基于人体id的检测的行为识别方案中，将任务转化为在对应人物的图像中检测目标特征对象。当目标特征对象被检测到时，则视为行为正在发生。因此在完成自定义模型的训练及部署的基础上，还需要将检测模型结果转化为最终的行为识别结果作为输出，并修改可视化的显示结果。
 
 #### 转换为行为识别结果
-请对应修改[后处理函数](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/deploy/pipeline/pphuman/action_infer.py#L338)。
+请对应修改[后处理函数](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pphuman/action_infer.py#L338)。
 核心代码为：
 ```python
 # 解析检测模型输出，并筛选出置信度高于阈值的有效检测框。
@@ -199,4 +199,4 @@ else:
 ```
 
 #### 修改可视化输出
-目前基于ID的行为识别，是根据行为识别的结果及预定义的类别名称进行展示的。详细逻辑请见[此处](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/deploy/pipeline/pipeline.py#L1024-L1043)。如果自定义的行为需要修改为其他的展示名称，请对应修改此处，以正确输出对应结果。
+目前基于ID的行为识别，是根据行为识别的结果及预定义的类别名称进行展示的。详细逻辑请见[此处](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pipeline.py#L1024-L1043)。如果自定义的行为需要修改为其他的展示名称，请对应修改此处，以正确输出对应结果。

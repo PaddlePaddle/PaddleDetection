@@ -36,8 +36,8 @@
 
 | 模型            | 策略       | mAP  | FP32 | INT8 | 配置文件                                                                                                                              | 模型                                                                                  |
 |:------------- |:-------- |:----:|:----:|:----:|:---------------------------------------------------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------:|
-| PicoDet-S-NPU | Baseline | 30.1 | -    | -    | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/picodet/picodet_s_416_coco_npu.yml)                 | [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_416_coco_npu.tar) |
-| PicoDet-S-NPU | 量化训练     | 29.7 | -    | -    | [config](https://github.com/PaddlePaddle/PaddleSlim/tree/release/2.5/demo/full_quantization/detection/configs/picodet_s_qat_dis.yaml) | [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_npu_quant.tar)    |
+| PicoDet-S-NPU | Baseline | 30.1 | -    | -    | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_416_coco_npu.yml)                 | [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_416_coco_npu.tar) |
+| PicoDet-S-NPU | 量化训练     | 29.7 | -    | -    | [config](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/full_quantization/detection/configs/picodet_s_qat_dis.yaml) | [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_npu_quant.tar)    |
 
 - mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
 
@@ -73,7 +73,7 @@ pip install paddledet
 
 ### 3.2 准备数据集
 
-本案例默认以COCO数据进行全量化实验，如果自定义数据，可将数据按照COCO数据的标准准备；其他自定义数据，可以参考[PaddleDetection数据准备文档](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/PrepareDataSet.md) 来准备。
+本案例默认以COCO数据进行全量化实验，如果自定义数据，可将数据按照COCO数据的标准准备；其他自定义数据，可以参考[PaddleDetection数据准备文档](../../docs/tutorials/data/PrepareDataSet.md) 来准备。
 
 以PicoDet-S-NPU模型为例，如果已经准备好数据集，请直接修改[picodet_reader.yml](./configs/picodet_reader.yml)中`EvalDataset`的`dataset_dir`字段为自己数据集路径即可。
 

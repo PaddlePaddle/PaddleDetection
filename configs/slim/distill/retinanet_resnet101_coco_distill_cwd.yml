@@ -1,0 +1,17 @@
+_BASE_: [
+  '../../retinanet/retinanet_r101_fpn_2x_coco.yml',
+]
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/retinanet_r101_fpn_2x_coco.pdparams
+
+
+slim: Distill
+slim_method: CWD
+distill_loss: CWDFeatureLoss
+distill_loss_name: ['cls_f_4', 'cls_f_3', 'cls_f_2', 'cls_f_1', 'cls_f_0']
+
+CWDFeatureLoss:
+  student_channels: 80
+  teacher_channels: 80
+  tau: 1.0
+  weight: 5.0

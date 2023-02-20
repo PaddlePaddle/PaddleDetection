@@ -124,7 +124,7 @@ pip install -r requirements.txt
 
 ### 2. 数据准备
 
-用户需要准备训练数据集，建议标注文件使用COCO数据格式。如果使用lableme或者VOC数据格式，先使用[格式转换脚本](../../tools/x2coco.py)将标注格式转化为COCO，详细数据准备文档请参考[文档](../../docs/tutorials/PrepareDataSet.md)
+用户需要准备训练数据集，建议标注文件使用COCO数据格式。如果使用lableme或者VOC数据格式，先使用[格式转换脚本](../../tools/x2coco.py)将标注格式转化为COCO，详细数据准备文档请参考[文档](../../docs/tutorials/data/PrepareDataSet.md)
 
 本文档以新能源电池工业质检子数据集为例展开，数据下载[链接](https://bj.bcebos.com/v1/paddle-smrt/data/battery_mini.zip)
 
@@ -190,7 +190,7 @@ python tools/export_model.py -c configs/smrt/ppyoloe/ppyoloe_crn_m_300e_battery_
 
 为了更方便大家部署，我们也提供了完备的可视化部署Demo，欢迎尝试使用
 
-* [Windows Demo下载地址](https://github.com/PaddlePaddle/PaddleX/tree/release/2.5/deploy/cpp/docs/csharp_deploy)
+* [Windows Demo下载地址](https://github.com/PaddlePaddle/PaddleX/tree/develop/deploy/cpp/docs/csharp_deploy)
 
 <div align="center">
   <img src="https://user-images.githubusercontent.com/48433081/169064583-c931f4c0-dfd6-4bfa-85f1-be68eb351e4a.png"  width = "800" />  

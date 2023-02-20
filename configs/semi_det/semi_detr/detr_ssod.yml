@@ -1,0 +1,199 @@
+eval_interval: 2000
+save_interval: 2000
+weights: output/semi_detr_semi005_size_600_1000/model_final
+find_unused_parameters: True
+save_dir: output
+log_iter: 1
+ssod_method: DenseTeacher
+### global config
+use_simple_ema: True
+ema_decay: 0.9996
+use_gpu: true
+
+### reader config
+worker_num: 4
+SemiTrainReader:
+  sample_transforms:
+  - DecodeCache: {cache_root: 'dataset/coco/cache/buffer' }
+  - RandomFlip: {prob: 0.5}
+  - RandomSelect: { transforms1: [ RandomShortSideResize: { short_side_sizes: [360, 384, 408, 432, 456, 480, 504, 528, 552, 576, 600], max_size: 1000 } ],
+                  transforms2: [
+                      RandomShortSideResize: { short_side_sizes: [ 400, 500, 600 ] },
+                      RandomSizeCrop: { min_size: 384, max_size: 600 },
+                      RandomShortSideResize: { short_side_sizes: [360, 384, 408, 432, 456, 480, 504, 528, 552, 576, 600], max_size: 1000 } ]
+  }
+  weak_aug:
+    - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+    - NormalizeBox: {}
+    - BboxXYXY2XYWH: {}
+    - Permute: {}
+  strong_aug:
+    - StrongAugImage: {transforms: [
+        RandomColorJitter: {prob: 0.8, brightness: 0.4, contrast: 0.4, saturation: 0.4, hue: 0.1},
+        RandomErasingCrop: {},
+        RandomGaussianBlur: {prob: 0.5, sigma: [0.1, 2.0]},
+        RandomGrayscale: {prob: 0.2},
+      ]}
+    - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+    - NormalizeBox: {}
+    - BboxXYXY2XYWH: {}
+    - Permute: {}
+  sup_batch_transforms:
+    # - Permute: {}
+   - PadMaskBatch: {pad_to_stride: -1, return_pad_mask: true}
+  unsup_batch_transforms:
+    # - Permute: {}
+   - PadMaskBatch: {pad_to_stride: -1, return_pad_mask: true}
+  sup_batch_size: 1
+  unsup_batch_size: 1
+  shuffle: true
+  drop_last: true
+  collate_batch: false
+  use_shared_memory: false
+
+
+
+
+
+EvalReader:
+  sample_transforms:
+  - Decode: {}
+  - Resize: {target_size: [600, 1000], keep_ratio: True}
+  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - Permute: {}
+  batch_transforms:
+  - PadMaskBatch: {pad_to_stride: -1, return_pad_mask: true}
+  batch_size: 1
+  shuffle: false
+  drop_last: false
+
+TestReader:
+  sample_transforms:
+  - Decode: {}
+  - Resize: {target_size: [800, 1333], keep_ratio: True}
+  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - Permute: {}
+  batch_transforms:
+  - PadMaskBatch: {pad_to_stride: -1, return_pad_mask: true}
+  batch_size: 1
+  shuffle: false
+  drop_last: false
+
+architecture: DETR
+hidden_dim: 256
+use_focal_loss: True
+
+
+DETR:
+  backbone: ResNet
+  transformer: DeformableTransformer
+  detr_head: DeformableDETRHead
+  post_process: DETRBBoxPostProcess
+  post_process_semi: DETRBBoxSemiPostProcess
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1, 2, 3]
+  lr_mult_list: [0.0, 0.1, 0.1, 0.1]
+  num_stages: 4
+
+
+DeformableTransformer:
+  num_queries: 300
+  position_embed_type: sine
+  nhead: 8
+  num_encoder_layers: 6
+  num_decoder_layers: 6
+  dim_feedforward: 1024
+  dropout: 0.1
+  activation: relu
+  num_feature_levels: 4
+  num_encoder_points: 4
+  num_decoder_points: 4
+
+
+DeformableDETRHead:
+  num_mlp_layers: 3
+
+
+DETRLoss:
+  loss_coeff: {class: 2, bbox: 5, giou: 2, mask: 1, dice: 1}
+  aux_loss: True
+
+
+HungarianMatcher:
+  matcher_coeff: {class: 2, bbox: 5, giou: 2}
+
+pretrain_student_weights: 124.pdparams #19.9
+pretrain_teacher_weights: 124.pdparams
+
+SSOD: DETR_SSOD
+DETR_SSOD:
+  teacher: DETR
+  student: DETR
+  train_cfg:
+    sup_weight: 1.0
+    unsup_weight: 2.0
+    semi_start_iters: -1
+    ema_start_iters:  -1
+    pseudo_label_initial_score_thr: 0.7
+    min_pseduo_box_size: 0
+    concat_sup_data: True
+  test_cfg:
+    inference_on: teacher
+
+
+
+
+
+
+metric: COCO
+num_classes: 80
+
+# partial labeled COCO, use `SemiCOCODataSet` rather than `COCODataSet`
+TrainDataset:
+  !SemiCOCODataSet
+    image_dir: train2017
+    anno_path: semi_annotations/instances_train2017.1@5.json
+    dataset_dir: dataset/coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+# partial unlabeled COCO, use `SemiCOCODataSet` rather than `COCODataSet`
+UnsupTrainDataset:
+  !SemiCOCODataSet
+    image_dir: train2017
+    anno_path: semi_annotations/instances_train2017.1@5-unlabeled.json
+    dataset_dir: dataset/coco
+    data_fields: ['image']
+    supervised: False
+
+EvalDataset:
+  !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
+    allow_empty: true
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/instances_val2017.json # also support txt (like VOC's label_list.txt)
+    dataset_dir: dataset/coco # if set, anno_path will be 'dataset_dir/anno_path'
+
+epoch: 240
+LearningRate:
+  base_lr: 0.0002
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [200]
+    use_warmup: false
+
+OptimizerBuilder:
+  clip_grad_by_norm: 0.1
+  regularizer: false
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0001

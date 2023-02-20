@@ -63,21 +63,30 @@ class ProposalGenerator(object):
         top_n = self.pre_nms_top_n if self.topk_after_collect else self.post_nms_top_n
         variances = paddle.ones_like(anchors)
         if hasattr(paddle.vision.ops, "generate_proposals"):
-            generate_proposals = getattr(paddle.vision.ops,
-                                         "generate_proposals")
+            rpn_rois, rpn_rois_prob, rpn_rois_num = paddle.vision.ops.generate_proposals(
+                scores,
+                bbox_deltas,
+                im_shape,
+                anchors,
+                variances,
+                pre_nms_top_n=self.pre_nms_top_n,
+                post_nms_top_n=top_n,
+                nms_thresh=self.nms_thresh,
+                min_size=self.min_size,
+                eta=self.eta,
+                return_rois_num=True)
         else:
-            generate_proposals = ops.generate_proposals
-        rpn_rois, rpn_rois_prob, rpn_rois_num = generate_proposals(
-            scores,
-            bbox_deltas,
-            im_shape,
-            anchors,
-            variances,
-            pre_nms_top_n=self.pre_nms_top_n,
-            post_nms_top_n=top_n,
-            nms_thresh=self.nms_thresh,
-            min_size=self.min_size,
-            eta=self.eta,
-            return_rois_num=True)
+            rpn_rois, rpn_rois_prob, rpn_rois_num = ops.generate_proposals(
+                scores,
+                bbox_deltas,
+                im_shape,
+                anchors,
+                variances,
+                pre_nms_top_n=self.pre_nms_top_n,
+                post_nms_top_n=top_n,
+                nms_thresh=self.nms_thresh,
+                min_size=self.min_size,
+                eta=self.eta,
+                return_rois_num=True)
 
         return rpn_rois, rpn_rois_prob, rpn_rois_num, self.post_nms_top_n

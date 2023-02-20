@@ -23,12 +23,11 @@ CenterNetDLAFPN:
 
 CenterNetHead:
   head_planes: 256
-  heatmap_weight: 1
+  prior_bias: -2.19
   regress_ltrb: True
-  size_weight: 0.1
   size_loss: 'L1'
-  offset_weight: 1
-  iou_weight: 0
+  loss_weight: {'heatmap': 1.0, 'size': 0.1, 'offset': 1.0, 'iou': 0.0}
+  add_iou: False
 
 FairMOTEmbeddingHead:
   ch_head: 256

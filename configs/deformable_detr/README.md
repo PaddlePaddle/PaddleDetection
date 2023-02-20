@@ -10,7 +10,7 @@ Deformable DETR is an object detection model based on DETR. We reproduced the mo
 
 | Backbone | Model | Images/GPU  | Inf time (fps) | Box AP | Config | Download |
 |:------:|:--------:|:--------:|:--------------:|:------:|:------:|:--------:|
-| R-50 | Deformable DETR  | 2 | --- | 44.1 | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/configs/deformable_detr/deformable_detr_r50_1x_coco.yml) | [model](https://paddledet.bj.bcebos.com/models/deformable_detr_r50_1x_coco.pdparams) |
+| R-50 | Deformable DETR  | 2 | --- |  44.5  | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/deformable_detr/deformable_detr_r50_1x_coco.yml) | [model](https://paddledet.bj.bcebos.com/models/deformable_detr_r50_1x_coco.pdparams) |
 
 **Notes:**
 

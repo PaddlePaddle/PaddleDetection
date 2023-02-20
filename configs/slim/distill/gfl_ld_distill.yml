@@ -1,0 +1,25 @@
+_BASE_: [
+  '../../gfl/gfl_r18vd_1x_coco.yml',
+]
+
+# teacher pretrain model
+pretrain_weights: https://paddledet.bj.bcebos.com/models/gfl_r101vd_fpn_mstrain_2x_coco.pdparams
+
+slim: Distill
+slim_method: LD
+
+ResNet:
+  depth: 101
+  variant: d
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1,2,3]
+  num_stages: 4
+
+TrainReader:
+  batch_transforms:
+  - PadBatch: {pad_to_stride: 32}
+  - Gt2GFLTarget:
+      downsample_ratios: [8, 16, 32, 64, 128]
+      grid_cell_scale: 8
+      compute_vlr_region: True

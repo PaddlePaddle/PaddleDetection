@@ -42,9 +42,25 @@ tools/train.py -c configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml \
 
 ## 3. 性能效果测试
 
-* 在单机和4机8卡V100的机器上，基于[PP-YOLOE-s](../../configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml)进行模型训练，模型的训练耗时情况如下所示。
+* 在3机8卡V100的机器上进行模型训练，不同模型的精度、训练耗时、多机加速比情况如下所示。
 
-机器 | 精度 | 耗时
--|-|-
-单机8卡 | 42.7% | 39h
-4机8卡 | 42.1% | 13h
+| 模型    | 数据集 | 配置   | 单机8卡耗时/精度 | 3机8卡耗时/精度 | 加速比  |
+|:---------:|:--------:|:--------:|:--------:|:--------:|:------:|
+|  PP-YOLOE-s  | Objects365 | [ppyoloe_crn_s_300e_coco.yml](../../configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml)  | 301h/- | 162h/17.7%  | **1.85** |
+|  PP-YOLOE-l  | Objects365 | [ppyoloe_crn_l_300e_coco.yml](../../configs/ppyoloe/ppyoloe_crn_l_300e_coco.yml)  | 401h/- | 178h/30.3%  | **2.25** |
+
+
+* 在4机8卡V100的机器上进行模型训练，不同模型的精度、训练耗时、多机加速比情况如下所示。
+
+
+| 模型    | 数据集 | 配置   | 单机8卡耗时/精度 | 4机8卡耗时/精度 | 加速比  |
+|:---------:|:--------:|:--------:|:--------:|:--------:|:------:|
+|  PP-YOLOE-s  | COCO | [ppyoloe_crn_s_300e_coco.yml](../../configs/ppyoloe/ppyoloe_crn_s_300e_coco.yml)  | 39h/42.7% | 13h/42.1%  | **3.0** |
+|  PP-YOLOE-m  | Objects365 | [ppyoloe_crn_m_300e_coco.yml](../../configs/ppyoloe/ppyoloe_crn_m_300e_coco.yml)  | 337h/- | 112h/24.6%  | **3.0** |
+|  PP-YOLOE-x  | Objects365 | [ppyoloe_crn_x_300e_coco.yml](../../configs/ppyoloe/ppyoloe_crn_x_300e_coco.yml)  | 464h/- | 125h/32.1%  | **3.4** |
+
+
+* **注意**
+    * 在训练的GPU卡数过多时，精度会稍微有所损失（1%左右），此时可以尝试通过添加warmup或者适当增加迭代轮数来弥补精度损失。
+    * 这里的配置文件均提供的是COCO数据集的配置文件，如果需要训练其他的数据集，需要修改数据集路径。
+    * 上面的`PP-YOLOE`系列模型在多机训练过程中，均设置单卡batch size为8，同时学习率相比于单机8卡保持不变。

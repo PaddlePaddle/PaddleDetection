@@ -108,7 +108,7 @@ class CascadeRCNN(BaseArch):
             im_shape = self.inputs['im_shape']
             scale_factor = self.inputs['scale_factor']
 
-            bbox, bbox_num = self.bbox_post_process(
+            bbox, bbox_num, before_nms_indexes = self.bbox_post_process(
                 preds, (refined_rois, rois_num), im_shape, scale_factor)
             # rescale the prediction back to origin image
             bbox, bbox_pred, bbox_num = self.bbox_post_process.get_pred(

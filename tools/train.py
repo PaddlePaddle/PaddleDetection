@@ -19,7 +19,7 @@ from __future__ import print_function
 import os
 import sys
 
-# add python path of PadleDetection to sys.path
+# add python path of PaddleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
@@ -30,7 +30,10 @@ warnings.filterwarnings('ignore')
 import paddle
 
 from ppdet.core.workspace import load_config, merge_config
-from ppdet.engine import Trainer, init_parallel_env, set_random_seed, init_fleet_env
+
+from ppdet.engine import Trainer, TrainerCot, init_parallel_env, set_random_seed, init_fleet_env
+from ppdet.engine.trainer_ssod import Trainer_DenseTeacher
+
 from ppdet.slim import build_slim_model
 
 from ppdet.utils.cli import ArgsParser, merge_args
@@ -103,6 +106,11 @@ def parse_args():
         type=str,
         default="sniper/proposals.json",
         help='Train proposals directory')
+    parser.add_argument(
+        "--to_static",
+        action='store_true',
+        default=False,
+        help="Enable dy2st to train.")
 
     args = parser.parse_args()
     return args
@@ -120,11 +128,25 @@ def run(FLAGS, cfg):
         set_random_seed(0)
 
     # build trainer
-    trainer = Trainer(cfg, mode='train')
+    ssod_method = cfg.get('ssod_method', None)
+    if ssod_method is not None:
+        if ssod_method == 'DenseTeacher':
+            trainer = Trainer_DenseTeacher(cfg, mode='train')
+        else:
+            raise ValueError(
+                "Semi-Supervised Object Detection only support DenseTeacher now."
+            )
+    elif cfg.get('use_cot', False):
+        trainer = TrainerCot(cfg, mode='train')
+    else:
+        trainer = Trainer(cfg, mode='train')
 
     # load weights
     if FLAGS.resume is not None:
         trainer.resume_weights(FLAGS.resume)
+    elif 'pretrain_student_weights' in cfg and 'pretrain_teacher_weights' in cfg \
+            and cfg.pretrain_teacher_weights and cfg.pretrain_student_weights:
+                trainer.load_semi_weights(cfg.pretrain_teacher_weights, cfg.pretrain_student_weights)
     elif 'pretrain_weights' in cfg and cfg.pretrain_weights:
         trainer.load_weights(cfg.pretrain_weights)
 
@@ -146,12 +168,21 @@ def main():
     if 'use_xpu' not in cfg:
         cfg.use_xpu = False
 
+    if 'use_gpu' not in cfg:
+        cfg.use_gpu = False
+
+    # disable mlu in config by default
+    if 'use_mlu' not in cfg:
+        cfg.use_mlu = False
+
     if cfg.use_gpu:
         place = paddle.set_device('gpu')
     elif cfg.use_npu:
         place = paddle.set_device('npu')
     elif cfg.use_xpu:
         place = paddle.set_device('xpu')
+    elif cfg.use_mlu:
+        place = paddle.set_device('mlu')
     else:
         place = paddle.set_device('cpu')
 
@@ -163,6 +194,8 @@ def main():
     check.check_config(cfg)
     check.check_gpu(cfg.use_gpu)
     check.check_npu(cfg.use_npu)
+    check.check_xpu(cfg.use_xpu)
+    check.check_mlu(cfg.use_mlu)
     check.check_version()
 
     run(FLAGS, cfg)

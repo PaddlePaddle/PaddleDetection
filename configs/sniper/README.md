@@ -10,8 +10,8 @@ English | [简体中文](README_cn.md)
 | w/ |    4    |    1    | ResNet-r50-FPN      | [VisDrone](https://github.com/VisDrone/VisDrone-Dataset)   |   1x    |  29.7  | [Download Link](https://bj.bcebos.com/v1/paddledet/models/faster_rcnn_r50_fpn_1x_sniper_visdrone.pdparams) | [config](./faster_rcnn_r50_fpn_1x_sniper_visdrone.yml) |
 
 ### Note
-- Here, we use VisDrone dataset, and to detect 9 objects including `person, bicycles, car, van, truck, tricyle, awning-tricyle, bus, motor`.
-- Do not support deploy by now because sniper dataset crop behavor.
+- Here, we use VisDrone dataset, and to detect 9 objects including `person, bicycles, car, van, truck, tricycle, awning-tricycle, bus, motor`.
+- Do not support deploy by now because sniper dataset crop behavior.
 
 ## Getting Start
 ### 1. Training
@@ -19,7 +19,7 @@ a. optional: Run `tools/sniper_params_stats.py` to get image_target_sizes\valid_
 ```bash
 python tools/sniper_params_stats.py FasterRCNN annotations/instances_train2017.json
 ```
-b. optional: trian detector to get negative proposals.
+b. optional: train detector to get negative proposals.
 ```bash
 python -m paddle.distributed.launch --log_dir=./sniper/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/sniper/faster_rcnn_r50_fpn_1x_sniper_visdrone.yml --save_proposals --proposals_path=./proposals.json &>sniper.log 2>&1 &
 ```

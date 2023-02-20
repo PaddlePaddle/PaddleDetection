@@ -29,6 +29,7 @@ import base64
 import binascii
 import tarfile
 import zipfile
+import errno
 
 from paddle.utils.download import _get_unique_endpoints
 from ppdet.core.workspace import BASE_KEY
@@ -98,16 +99,30 @@ DATASETS = {
     'spine_coco': ([(
         'https://paddledet.bj.bcebos.com/data/spine.tar',
         '8a3a353c2c54a2284ad7d2780b65f6a6', ), ], ['annotations', 'images']),
-    'mot': (),
-    'objects365': (),
     'coco_ce': ([(
         'https://paddledet.bj.bcebos.com/data/coco_ce.tar',
         'eadd1b79bc2f069f2744b1dd4e0c0329', ), ], [])
 }
 
+DOWNLOAD_DATASETS_LIST = DATASETS.keys()
+
 DOWNLOAD_RETRY_LIMIT = 3
 
 PPDET_WEIGHTS_DOWNLOAD_URL_PREFIX = 'https://paddledet.bj.bcebos.com/'
+
+
+# When running unit tests, there could be multiple processes that
+# trying to create DATA_HOME directory simultaneously, so we cannot
+# use a if condition to check for the existence of the directory;
+# instead, we use the filesystem as the synchronization mechanism by
+# catching returned errors.
+def must_mkdirs(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno != errno.EEXIST:
+            raise
+        pass
 
 
 def parse_url(url):
@@ -170,30 +185,21 @@ def get_dataset_path(path, annotation, image_dir):
     if _dataset_exists(path, annotation, image_dir):
         return path
 
-    logger.info("Dataset {} is not valid for reason above, try searching {} or "
-                "downloading dataset...".format(
-                    osp.realpath(path), DATASET_HOME))
-
     data_name = os.path.split(path.strip().lower())[-1]
+    if data_name not in DOWNLOAD_DATASETS_LIST:
+        raise ValueError(
+            "Dataset {} is not valid for reason above, please check again.".
+            format(osp.realpath(path)))
+    else:
+        logger.warning(
+            "Dataset {} is not valid for reason above, try searching {} or "
+            "downloading dataset...".format(osp.realpath(path), DATASET_HOME))
+
     for name, dataset in DATASETS.items():
         if data_name == name:
             logger.debug("Parse dataset_dir {} as dataset "
                          "{}".format(path, name))
-            if name == 'objects365':
-                raise NotImplementedError(
-                    "Dataset {} is not valid for download automatically. "
-                    "Please apply and download the dataset from "
-                    "https://www.objects365.org/download.html".format(name))
             data_dir = osp.join(DATASET_HOME, name)
-
-            if name == 'mot':
-                if osp.exists(path) or osp.exists(data_dir):
-                    return data_dir
-                else:
-                    raise NotImplementedError(
-                        "Dataset {} is not valid for download automatically. "
-                        "Please apply and download the dataset following docs/tutorials/PrepareMOTDataSet.md".
-                        format(name))
 
             if name == "spine_coco":
                 if _dataset_exists(data_dir, annotation, image_dir):
@@ -221,12 +227,7 @@ def get_dataset_path(path, annotation, image_dir):
                 create_voc_list(data_dir)
             return data_dir
 
-    # not match any dataset in DATASETS
-    raise ValueError(
-        "Dataset {} is not valid and cannot parse dataset type "
-        "'{}' for automaticly downloading, which only supports "
-        "'voc' , 'coco', 'wider_face', 'fruit', 'roadsign_voc' and 'mot' currently".
-        format(path, osp.split(path)[-1]))
+    raise ValueError("Dataset automaticly downloading Error.")
 
 
 def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
@@ -344,8 +345,7 @@ def _download(url, path, md5sum=None):
     url (str): download url
     path (str): download to given path
     """
-    if not osp.exists(path):
-        os.makedirs(path)
+    must_mkdirs(path)
 
     fname = osp.split(url)[-1]
     fullname = osp.join(path, fname)
@@ -397,7 +397,7 @@ def _download_dist(url, path, md5sum=None):
         # different machines in the case of multiple machines.
         # Different nodes will download data, and the same node
         # will only download data once.
-        # Reference https://github.com/PaddlePaddle/PaddleClas/blob/release/2.5/ppcls/utils/download.py#L108
+        # Reference https://github.com/PaddlePaddle/PaddleClas/blob/develop/ppcls/utils/download.py#L108
         rank_id_curr_node = int(os.environ.get("PADDLE_RANK_IN_NODE", 0))
         num_trainers = int(env['PADDLE_TRAINERS_NUM'])
         if num_trainers <= 1:
@@ -407,8 +407,7 @@ def _download_dist(url, path, md5sum=None):
             fullname = osp.join(path, fname)
             lock_path = fullname + '.download.lock'
 
-            if not osp.isdir(path):
-                os.makedirs(path)
+            must_mkdirs(path)
 
             if not osp.exists(fullname):
                 with open(lock_path, 'w'):  # touch    

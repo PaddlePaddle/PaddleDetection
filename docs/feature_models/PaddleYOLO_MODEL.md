@@ -1,28 +1,21 @@
-简体中文 | [English](PaddleYOLO_MODEL_en.md)
+简体中文 | [English](MODEL_ZOO_en.md)
 
 # [**PaddleYOLO**](https://github.com/PaddlePaddle/PaddleYOLO)
 
 ## 内容
-- [**PaddleYOLO**](#paddleyolo)
-  - [内容](#内容)
-  - [简介](#简介)
-  - [更新日志](#更新日志)
-  - [模型库](#模型库)
-    - [PP-YOLOE](#pp-yoloe)
-    - [YOLOX](#yolox)
-    - [YOLOv5](#yolov5)
-    - [YOLOv6](#yolov6)
-    - [YOLOv7](#yolov7)
-    - [YOLOv8](#yolov8)
-    - [RTMDet](#rtmdet)
-    - [**注意:**](#注意)
-    - [VOC](#voc)
-  - [使用指南](#使用指南)
-    - [**一键运行全流程**](#一键运行全流程)
+- [简介](#简介)
+- [模型库](#模型库)
+    - [PP-YOLOE](#PP-YOLOE)
+    - [YOLOX](#YOLOX)
+    - [YOLOv5](#YOLOv5)
+    - [YOLOv6](#YOLOv6)
+    - [YOLOv7](#YOLOv7)
+    - [YOLOv8](#YOLOv8)
+    - [RTMDet](#RTMDet)
+    - [VOC](#VOC)
+- [使用指南](#使用指南)
+    - [一键运行全流程](#一键运行全流程)
     - [自定义数据集](#自定义数据集)
-      - [数据集准备：](#数据集准备)
-      - [fintune训练：](#fintune训练)
-      - [预测和导出：](#预测和导出)
 
 ## 简介
 
@@ -406,29 +399,3 @@ label_list.txt里的一行记录一个对应种类，如下所示：
 person
 vehicle
 ```
-    
-## FastDeploy多硬件部署
-
-FastDeploy是飞桨推出的统一部署工具，支持云边端部署。目前在YOLO系列支持的部署能力如下所示。具体部署示例，可以前往[FastDeploy仓库](https://github.com/PaddlePaddle/FastDeploy)使用。
-
-|                                                                                                                                | [YOLOv5](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/paddledetection) | [YOLOv6](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/paddledetection) | [YOLOv7](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/paddledetection) | [YOLOv8](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/paddledetection) | [PP-YOLOE+](https://github.com/PaddlePaddle/FastDeploy/tree/develop/examples/vision/detection/paddledetection) | 部署特色                       |
-| ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| [Intel CPU](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/build_and_install/download_prebuilt_libraries.md)  | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                             | 集成PaddleSlim一键压缩压缩，实现极致性能             |
-| [NVIDIA GPU](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/build_and_install/download_prebuilt_libraries.md) | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                             | 集成PaddleSlim一键压缩工具、CUDA预处理加速，实现极致性能   |
-| [飞腾 CPU]()                                                                                                                     | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                             | X86 CPU与ARM CPU无缝切换                   |
-| [昆仑芯 R200*](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/build_and_install/kunlunxin.md)                    | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                             | 无缝部署Paddle模型                          |
-| [昇腾310*](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/build_and_install/kunlunxin.md)                       | 支持                                                                                                          | 即将支持                                                                                                        | 即将支持                                                                                                        | 即将支持                                                                                                        | 支持                                                                                                             | 无缝部署Paddle模型                          |
-| [算能SC7-FP300*](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/build_and_install/sophgo.md)                    | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                             | 充分发挥硬件工具链特性，实现模型快速部署                  |
-| [Jetson](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/build_and_install/jetson.md)                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                             | 集成PaddleSlim一键压缩工具、CUDA预处理加速，实现极致性能   |
-| [ARM CPU](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/build_and_install/download_prebuilt_libraries.md)    | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                             | 集成PaddleSlim一键压缩工具、预处理加速库FlyCV，实现极致性能 |
-| [RK3588*](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/build_and_install/rknpu2.md)                         | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                          | 支持                                                                                                             | 充分发挥硬件工具链特性，实现模型快速部署                  |
-| [RV1126*](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/build_and_install/rv1126.md)                         | 支持                                                                                                          | 暂不支持                                                                                                        | 暂不支持                                                                                                        | 暂不支持                                                                                                        | 支持                                                                                                             | 联合全量化实现模型端到端的优化                       |
-| [服务化部署](https://github.com/PaddlePaddle/FastDeploy/tree/develop/serving)                                                       | 支持                                                                                                          | 暂不支持                                                                                                        | 暂不支持                                                                                                        | 暂不支持                                                                                                        | 支持                                                                                                             | 实现企业级高并发需求                            |
-| [视频流部署](https://github.com/PaddlePaddle/FastDeploy/tree/develop/streamer)                                                      | 暂不支持                                                                                                        | 暂不支持                                                                                                        | 暂不支持                                                                                                        | 暂不支持                                                                                                        | 支持                                                                                                             | 调用硬解码核，实现数据零拷贝，充分利用硬件资源               |
-
-备注：
-    
-*表示：FastDeploy目前在该型号硬件上测试。通常同类型硬件上使用的是相同的软件栈，该部署能力可以延伸到同软件架栈的硬件。譬如RK3588与RK3566、RK3568相同的软件栈。
-    
-「硬件列-纵轴」链接到部署预编译包安装或部署示例，「横轴」跳转到具体部署示例。
-

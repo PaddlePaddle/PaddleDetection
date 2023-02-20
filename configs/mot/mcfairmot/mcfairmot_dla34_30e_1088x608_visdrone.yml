@@ -15,7 +15,6 @@ CenterNetHead:
   regress_ltrb: False
 
 CenterNetPostProcess:
-  for_mot: True
   regress_ltrb: False
   max_per_img: 200
 

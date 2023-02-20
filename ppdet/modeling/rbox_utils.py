@@ -157,3 +157,139 @@ def rbox2poly_np(rboxes):
         polys.append(poly)
     polys = np.array(polys)
     return polys
+
+
+# rbox function implemented using paddle
+def box2corners(box):
+    """convert box coordinate to corners
+    Args:
+        box (Tensor): (B, N, 5) with (x, y, w, h, alpha) angle is in [0, 90)
+    Returns:
+        corners (Tensor): (B, N, 4, 2) with (x1, y1, x2, y2, x3, y3, x4, y4)
+    """
+    B = box.shape[0]
+    x, y, w, h, alpha = paddle.split(box, 5, axis=-1)
+    x4 = paddle.to_tensor(
+        [0.5, 0.5, -0.5, -0.5], dtype=paddle.float32).reshape(
+            (1, 1, 4))  # (1,1,4)
+    x4 = x4 * w  # (B, N, 4)
+    y4 = paddle.to_tensor(
+        [-0.5, 0.5, 0.5, -0.5], dtype=paddle.float32).reshape((1, 1, 4))
+    y4 = y4 * h  # (B, N, 4)
+    corners = paddle.stack([x4, y4], axis=-1)  # (B, N, 4, 2)
+    sin = paddle.sin(alpha)
+    cos = paddle.cos(alpha)
+    row1 = paddle.concat([cos, sin], axis=-1)
+    row2 = paddle.concat([-sin, cos], axis=-1)  # (B, N, 2)
+    rot_T = paddle.stack([row1, row2], axis=-2)  # (B, N, 2, 2)
+    rotated = paddle.bmm(corners.reshape([-1, 4, 2]), rot_T.reshape([-1, 2, 2]))
+    rotated = rotated.reshape([B, -1, 4, 2])  # (B*N, 4, 2) -> (B, N, 4, 2)
+    rotated[..., 0] += x
+    rotated[..., 1] += y
+    return rotated
+
+
+def paddle_gather(x, dim, index):
+    index_shape = index.shape
+    index_flatten = index.flatten()
+    if dim < 0:
+        dim = len(x.shape) + dim
+    nd_index = []
+    for k in range(len(x.shape)):
+        if k == dim:
+            nd_index.append(index_flatten)
+        else:
+            reshape_shape = [1] * len(x.shape)
+            reshape_shape[k] = x.shape[k]
+            x_arange = paddle.arange(x.shape[k], dtype=index.dtype)
+            x_arange = x_arange.reshape(reshape_shape)
+            dim_index = paddle.expand(x_arange, index_shape).flatten()
+            nd_index.append(dim_index)
+    ind2 = paddle.transpose(paddle.stack(nd_index), [1, 0]).astype("int64")
+    paddle_out = paddle.gather_nd(x, ind2).reshape(index_shape)
+    return paddle_out
+
+
+def check_points_in_polys(points, polys):
+    """Check whether point is in rotated boxes
+    Args:
+        points (tensor): (1, L, 2) anchor points
+        polys (tensor): [B, N, 4, 2] gt_polys
+        eps (float): default 1e-9
+    Returns:
+        is_in_polys (tensor): (B, N, L)
+    """
+    # [1, L, 2] -> [1, 1, L, 2]
+    points = points.unsqueeze(0)
+    # [B, N, 4, 2] -> [B, N, 1, 2]
+    a, b, c, d = polys.split(4, axis=2)
+    ab = b - a
+    ad = d - a
+    # [B, N, L, 2]
+    ap = points - a
+    # [B, N, 1]
+    norm_ab = paddle.sum(ab * ab, axis=-1)
+    # [B, N, 1]
+    norm_ad = paddle.sum(ad * ad, axis=-1)
+    # [B, N, L] dot product
+    ap_dot_ab = paddle.sum(ap * ab, axis=-1)
+    # [B, N, L] dot product
+    ap_dot_ad = paddle.sum(ap * ad, axis=-1)
+    # [B, N, L] <A, B> = |A|*|B|*cos(theta)
+    is_in_polys = (ap_dot_ab >= 0) & (ap_dot_ab <= norm_ab) & (
+        ap_dot_ad >= 0) & (ap_dot_ad <= norm_ad)
+    return is_in_polys
+
+
+def check_points_in_rotated_boxes(points, boxes):
+    """Check whether point is in rotated boxes
+
+    Args:
+        points (tensor): (1, L, 2) anchor points
+        boxes (tensor): [B, N, 5] gt_bboxes
+        eps (float): default 1e-9
+    
+    Returns:
+        is_in_box (tensor): (B, N, L)
+
+    """
+    # [B, N, 5] -> [B, N, 4, 2]
+    corners = box2corners(boxes)
+    # [1, L, 2] -> [1, 1, L, 2]
+    points = points.unsqueeze(0)
+    # [B, N, 4, 2] -> [B, N, 1, 2]
+    a, b, c, d = corners.split(4, axis=2)
+    ab = b - a
+    ad = d - a
+    # [B, N, L, 2]
+    ap = points - a
+    # [B, N, L]
+    norm_ab = paddle.sum(ab * ab, axis=-1)
+    # [B, N, L]
+    norm_ad = paddle.sum(ad * ad, axis=-1)
+    # [B, N, L] dot product
+    ap_dot_ab = paddle.sum(ap * ab, axis=-1)
+    # [B, N, L] dot product
+    ap_dot_ad = paddle.sum(ap * ad, axis=-1)
+    # [B, N, L] <A, B> = |A|*|B|*cos(theta) 
+    is_in_box = (ap_dot_ab >= 0) & (ap_dot_ab <= norm_ab) & (ap_dot_ad >= 0) & (
+        ap_dot_ad <= norm_ad)
+    return is_in_box
+
+
+def rotated_iou_similarity(box1, box2, eps=1e-9, func=''):
+    """Calculate iou of box1 and box2
+
+    Args:
+        box1 (Tensor): box with the shape [N, M1, 5]
+        box2 (Tensor): box with the shape [N, M2, 5]
+
+    Return:
+        iou (Tensor): iou between box1 and box2 with the shape [N, M1, M2]
+    """
+    from ext_op import rbox_iou
+    rotated_ious = []
+    for b1, b2 in zip(box1, box2):
+        rotated_ious.append(rbox_iou(b1, b2))
+
+    return paddle.stack(rotated_ious, axis=0)

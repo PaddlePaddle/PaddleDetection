@@ -2,7 +2,7 @@
 _BASE_: [
   '../datasets/coco_detection.yml',
   '../runtime.yml',
-  './_base_/reader.yml',
+  './_base_/faster_rcnn_reader.yml',
   './_base_/optimizer_base_1x.yml'
 ]
 
@@ -81,15 +81,30 @@ RPNHead:
     nms_thresh: 0.7
     pre_nms_top_n: 1000
     post_nms_top_n: 1000
+  loss_rpn_bbox: SmoothL1Loss
+
+
+SmoothL1Loss:
+  beta: 0.1111111111111111
 
 
 BBoxHead:
-  head: TwoFCHead
+  # head: TwoFCHead
+  head: XConvNormHead
   roi_extractor:
     resolution: 7
     sampling_ratio: 0
     aligned: True
   bbox_assigner: BBoxAssigner
+  loss_normalize_pos: True
+  bbox_loss: GIoULoss
+
+
+GIoULoss:
+  loss_weight: 10.
+  reduction: 'none'
+  eps: 0.000001 # 1e-6
+
 
 BBoxAssigner:
   batch_size_per_im: 512
@@ -98,8 +113,13 @@ BBoxAssigner:
   fg_fraction: 0.25
   use_random: True
 
-TwoFCHead:
-  out_channel: 1024
+# TwoFCHead:
+#   out_channel: 1024
+
+XConvNormHead:
+  num_convs: 4
+  norm_type: bn
+
 
 BBoxPostProcess:
   decode: RCNNBox

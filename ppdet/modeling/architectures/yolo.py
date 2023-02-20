@@ -21,6 +21,8 @@ from .meta_arch import BaseArch
 from ..post_process import JDEBBoxPostProcess
 
 __all__ = ['YOLOv3']
+# YOLOv3,PP-YOLO,PP-YOLOv2,PP-YOLOE,PP-YOLOE+ use the same architecture as YOLOv3
+# PP-YOLOE and PP-YOLOE+ are recommended to use PPYOLOE architecture in ppyoloe.py, especially when use distillation or aux head
 
 
 @register
@@ -77,7 +79,10 @@ class YOLOv3(BaseArch):
 
     def _forward(self):
         body_feats = self.backbone(self.inputs)
-        neck_feats = self.neck(body_feats, self.for_mot)
+        if self.for_mot:
+            neck_feats = self.neck(body_feats, self.for_mot)
+        else:
+            neck_feats = self.neck(body_feats)
 
         if isinstance(neck_feats, dict):
             assert self.for_mot == True
@@ -93,9 +98,12 @@ class YOLOv3(BaseArch):
                 return yolo_losses
 
         else:
+            cam_data = {} # record bbox scores and index before nms
             yolo_head_outs = self.yolo_head(neck_feats)
+            cam_data['scores'] = yolo_head_outs[0]
 
             if self.for_mot:
+                # the detection part of JDE MOT model
                 boxes_idx, bbox, bbox_num, nms_keep_idx = self.post_process(
                     yolo_head_outs, self.yolo_head.mask_anchors)
                 output = {
@@ -107,16 +115,22 @@ class YOLOv3(BaseArch):
                 }
             else:
                 if self.return_idx:
+                    # the detection part of JDE MOT model
                     _, bbox, bbox_num, _ = self.post_process(
                         yolo_head_outs, self.yolo_head.mask_anchors)
                 elif self.post_process is not None:
-                    bbox, bbox_num = self.post_process(
+                    # anchor based YOLOs: YOLOv3,PP-YOLO,PP-YOLOv2 use mask_anchors
+                    bbox, bbox_num, before_nms_indexes = self.post_process(
                         yolo_head_outs, self.yolo_head.mask_anchors,
                         self.inputs['im_shape'], self.inputs['scale_factor'])
+                    cam_data['before_nms_indexes'] = before_nms_indexes
                 else:
-                    bbox, bbox_num = self.yolo_head.post_process(
+                    # anchor free YOLOs: PP-YOLOE, PP-YOLOE+
+                    bbox, bbox_num, before_nms_indexes = self.yolo_head.post_process(
                         yolo_head_outs, self.inputs['scale_factor'])
-                output = {'bbox': bbox, 'bbox_num': bbox_num}
+                    # data for cam 
+                    cam_data['before_nms_indexes'] = before_nms_indexes
+                output = {'bbox': bbox, 'bbox_num': bbox_num, 'cam_data': cam_data}
 
             return output
 

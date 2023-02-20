@@ -33,7 +33,7 @@ ResNetEmbedding:
 DeepSORTTracker:
   input_size: [64, 192]
   min_box_area: 0 # filter out too small boxes
-  vertical_ratio: -1 # filter out bboxes, usuallly set 1.6 for pedestrian
+  vertical_ratio: -1 # filter out bboxes, usually set 1.6 for pedestrian
   budget: 100
   max_age: 70
   n_init: 3

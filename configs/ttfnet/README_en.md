@@ -14,7 +14,7 @@ The training time is short. Based on DarkNet53 backbone network, V100 8 cards on
 
 | Backbone  | Network type | Number of images per GPU | Learning rate strategy | Inferring time(fps) | Box AP |                                     Download                                     |                                                       Configuration File                                                       |
 | :-------- | :----------- | :----------------------: | :--------------------: | :-----------------: | :----: | :------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------: |
-| DarkNet53 | TTFNet       |            12            |           1x           |        ----         |  33.5  | [link](https://paddledet.bj.bcebos.com/models/ttfnet_darknet53_1x_coco.pdparams) | [Configuration File](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/ttfnet/ttfnet_darknet53_1x_coco.yml) |
+| DarkNet53 | TTFNet       |            12            |           1x           |        ----         |  33.5  | [link](https://paddledet.bj.bcebos.com/models/ttfnet_darknet53_1x_coco.pdparams) | [Configuration File](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/ttfnet_darknet53_1x_coco.yml) |
 
 
 
@@ -41,7 +41,7 @@ PAFNet series models optimize TTFNet model from the following aspects:
 
 | Backbone   | Net type | Number of images per GPU | Learning rate strategy | Inferring time(fps) | Box AP |                                Download                                 |                                                  Configuration File                                                   |
 | :--------- | :------- | :----------------------: | :--------------------: | :-----------------: | :----: | :---------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------: |
-| ResNet50vd | PAFNet   |            18            |          10x           |        ----         |  39.8  | [link](https://paddledet.bj.bcebos.com/models/pafnet_10x_coco.pdparams) | [Configuration File](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/ttfnet/pafnet_10x_coco.yml) |
+| ResNet50vd | PAFNet   |            18            |          10x           |        ----         |  39.8  | [link](https://paddledet.bj.bcebos.com/models/pafnet_10x_coco.pdparams) | [Configuration File](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/pafnet_10x_coco.yml) |
 
 
 
@@ -49,7 +49,7 @@ PAFNet series models optimize TTFNet model from the following aspects:
 
 | Backbone    | Net type    | Number of images per GPU | Learning rate strategy | Box AP | kirin 990 delay（ms） | volume（M） |                                         Download                                          |                                                           Configuration File                                                            |
 | :---------- | :---------- | :----------------------: | :--------------------: | :----: | :-------------------: | :---------: | :---------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------: |
-| MobileNetv3 | PAFNet-Lite |            12            |          20x           |  23.9  |         26.00         |     14      | [link](https://paddledet.bj.bcebos.com/models/pafnet_lite_mobilenet_v3_20x_coco.pdparams) | [Configuration File](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/ttfnet/pafnet_lite_mobilenet_v3_20x_coco.yml) |
+| MobileNetv3 | PAFNet-Lite |            12            |          20x           |  23.9  |         26.00         |     14      | [link](https://paddledet.bj.bcebos.com/models/pafnet_lite_mobilenet_v3_20x_coco.pdparams) | [Configuration File](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/pafnet_lite_mobilenet_v3_20x_coco.yml) |
 
 **Attention:** Due to the overall upgrade of the dynamic graph framework, the weighting model published by PaddleDetection of PAF Net needs to be evaluated with a --bias field, for example
 

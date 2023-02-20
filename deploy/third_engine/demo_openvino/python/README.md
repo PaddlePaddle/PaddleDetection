@@ -15,9 +15,9 @@ pip install openvino==2022.1.0
 
 ## Benchmark测试
 
-- 准备测试模型：根据[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/picodet)中【导出及转换模型】步骤，采用不包含后处理的方式导出模型（`-o export.benchmark=True` ），并生成待测试模型简化后的onnx模型（可在下文链接中直接下载）。同时在本目录下新建```out_onnxsim```文件夹，将导出的onnx模型放在该目录下。
+- 准备测试模型：根据[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet)中【导出及转换模型】步骤，采用不包含后处理的方式导出模型（`-o export.benchmark=True` ），并生成待测试模型简化后的onnx模型（可在下文链接中直接下载）。同时在本目录下新建```out_onnxsim```文件夹，将导出的onnx模型放在该目录下。
 
-- 准备测试所用图片：本demo默认利用PaddleDetection/demo/[000000014439.jpg](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/demo/000000014439.jpg)
+- 准备测试所用图片：本demo默认利用PaddleDetection/demo/[000000014439.jpg](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/demo/000000014439.jpg)
 
 - 在本目录下直接运行：
 
@@ -31,9 +31,9 @@ python openvino_benchmark.py --img_path ..\..\..\..\demo\000000014439.jpg --onnx
 
 ## 真实图片测试(网络包含后处理，但不包含NMS)
 
-- 准备测试模型：根据[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/picodet)中【导出及转换模型】步骤，采用**包含后处理**但**不包含NMS**的方式导出模型（`-o export.benchmark=False export.nms=False` ），并生成待测试模型简化后的onnx模型（可在下文链接中直接下载）。同时在本目录下新建```out_onnxsim_infer```文件夹，将导出的onnx模型放在该目录下。
+- 准备测试模型：根据[PicoDet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet)中【导出及转换模型】步骤，采用**包含后处理**但**不包含NMS**的方式导出模型（`-o export.benchmark=False export.nms=False` ），并生成待测试模型简化后的onnx模型（可在下文链接中直接下载）。同时在本目录下新建```out_onnxsim_infer```文件夹，将导出的onnx模型放在该目录下。
 
-- 准备测试所用图片：默认利用../../demo_onnxruntime/imgs/[bus.jpg](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/deploy/third_engine/demo_onnxruntime/imgs/bus.jpg)
+- 准备测试所用图片：默认利用../../demo_onnxruntime/imgs/[bus.jpg](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/third_engine/demo_onnxruntime/imgs/bus.jpg)
 
 ```shell
 # Linux

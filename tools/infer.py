@@ -19,7 +19,7 @@ from __future__ import print_function
 import os
 import sys
 
-# add python path of PadleDetection to sys.path
+# add python path of PaddleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
@@ -32,7 +32,7 @@ import ast
 import paddle
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.engine import Trainer
-from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_version, check_config
 from ppdet.utils.cli import ArgsParser, merge_args
 from ppdet.slim import build_slim_model
 
@@ -201,12 +201,21 @@ def main():
     if 'use_xpu' not in cfg:
         cfg.use_xpu = False
 
+    if 'use_gpu' not in cfg:
+        cfg.use_gpu = False
+
+    # disable mlu in config by default
+    if 'use_mlu' not in cfg:
+        cfg.use_mlu = False
+
     if cfg.use_gpu:
         place = paddle.set_device('gpu')
     elif cfg.use_npu:
         place = paddle.set_device('npu')
     elif cfg.use_xpu:
         place = paddle.set_device('xpu')
+    elif cfg.use_mlu:
+        place = paddle.set_device('mlu')
     else:
         place = paddle.set_device('cpu')
 
@@ -217,6 +226,7 @@ def main():
     check_gpu(cfg.use_gpu)
     check_npu(cfg.use_npu)
     check_xpu(cfg.use_xpu)
+    check_mlu(cfg.use_mlu)
     check_version()
 
     run(FLAGS, cfg)

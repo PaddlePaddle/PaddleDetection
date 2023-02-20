@@ -18,7 +18,7 @@ from __future__ import print_function
 
 import os
 import sys
-# add python path of PadleDetection to sys.path
+# add python path of PaddleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
@@ -215,9 +215,11 @@ def main():
     merge_config(FLAGS.opt)
     check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
+    if 'use_gpu' not in cfg:
+        cfg.use_gpu = False
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
-    check_version()
+    check_version('develop')
 
     # get dataset
     dataset = cfg['TrainDataset']

@@ -29,7 +29,7 @@ class RoIAlign(object):
     RoI Align module
 
     For more details, please refer to the document of roi_align in
-    in https://github.com/PaddlePaddle/Paddle/blob/release/2.5/python/paddle/vision/ops.py
+    in https://github.com/PaddlePaddle/Paddle/blob/develop/python/paddle/vision/ops.py
 
     Args:
         resolution (int): The output size, default 14
@@ -88,17 +88,21 @@ class RoIAlign(object):
             k_min = self.start_level + offset
             k_max = self.end_level + offset
             if hasattr(paddle.vision.ops, "distribute_fpn_proposals"):
-                distribute_fpn_proposals = getattr(paddle.vision.ops,
-                                                   "distribute_fpn_proposals")
+                rois_dist, restore_index, rois_num_dist = paddle.vision.ops.distribute_fpn_proposals(
+                    roi,
+                    k_min,
+                    k_max,
+                    self.canconical_level,
+                    self.canonical_size,
+                    rois_num=rois_num)
             else:
-                distribute_fpn_proposals = ops.distribute_fpn_proposals
-            rois_dist, restore_index, rois_num_dist = distribute_fpn_proposals(
-                roi,
-                k_min,
-                k_max,
-                self.canconical_level,
-                self.canonical_size,
-                rois_num=rois_num)
+                rois_dist, restore_index, rois_num_dist = ops.distribute_fpn_proposals(
+                    roi,
+                    k_min,
+                    k_max,
+                    self.canconical_level,
+                    self.canonical_size,
+                    rois_num=rois_num)
 
             rois_feat_list = []
             for lvl in range(self.start_level, self.end_level + 1):

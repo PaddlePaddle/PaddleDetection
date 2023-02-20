@@ -99,7 +99,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 
 【效果展示】
 
-<div width="1000" align="center">
+<div width="600" align="center">
   <img src="../images/mot_vehicle.gif"/>
 </div>
 

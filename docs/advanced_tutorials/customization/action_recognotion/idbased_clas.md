@@ -182,7 +182,7 @@ wget https://bj.bcebos.com/v1/paddledet/models/pipeline/infer_configs/PPHGNet_ti
 基于人体id的分类的行为识别方案中，将任务转化为对应人物的图像进行图片级别的分类。对应分类的类型最终即视为当前阶段的行为。因此在完成自定义模型的训练及部署的基础上，还需要将分类模型结果转化为最终的行为识别结果作为输出，并修改可视化的显示结果。
 
 #### 转换为行为识别结果
-请对应修改[后处理函数](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/deploy/pipeline/pphuman/action_infer.py#L509)。
+请对应修改[后处理函数](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pphuman/action_infer.py#L509)。
 
 核心代码为：
 ```python
@@ -220,4 +220,4 @@ else:
 ```
 
 #### 修改可视化输出
-目前基于ID的行为识别，是根据行为识别的结果及预定义的类别名称进行展示的。详细逻辑请见[此处](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/deploy/pipeline/pipeline.py#L1024-L1043)。如果自定义的行为需要修改为其他的展示名称，请对应修改此处，以正确输出对应结果。
+目前基于ID的行为识别，是根据行为识别的结果及预定义的类别名称进行展示的。详细逻辑请见[此处](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pipeline.py#L1024-L1043)。如果自定义的行为需要修改为其他的展示名称，请对应修改此处，以正确输出对应结果。

@@ -32,7 +32,7 @@ PP-TinyPose是PaddleDetecion针对移动端设备优化的实时关键点检测�
 - [Android Fitness Demo](https://github.com/zhiboniu/pose_demo_android)  基于PP-TinyPose, 高效实现健身校准与计数功能。
 
 <div align="center">
-  <img src="../../../docs/images/fitness_demo.gif" width='636'/>
+  <img src="https://user-images.githubusercontent.com/22989727/205545098-fe6515af-3f1d-4303-bb4d-6e2141e42e2c.gif" width='636'/>
 </div>
 
 - 欢迎扫码快速体验
@@ -184,9 +184,9 @@ python3 -m paddle.distributed.launch tools/train.py -c configs/picodet/applicati
 ### 实现部署预测
 1. 通过以下命令将训练得到的模型导出：
 ```bash
-python3 tools/export_model.py -c configs/picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml --output_dir=output_inference -o weights=output/picodet_s_192_pedestrian/model_final
+python3 tools/export_model.py -c configs/picodet/application/pedestrian_detection/picodet_s_192_pedestrian.yml --output_dir=outut_inference -o weights=output/picodet_s_192_pedestrian/model_final
 
-python3 tools/export_model.py -c configs/keypoint/tiny_pose/tinypose_128x96.yml --output_dir=output_inference -o weights=output/tinypose_128x96/model_final
+python3 tools/export_model.py -c configs/keypoint/tiny_pose/tinypose_128x96.yml --output_dir=outut_inference -o weights=output/tinypose_128x96/model_final
 ```
 导出后的模型如：
 ```

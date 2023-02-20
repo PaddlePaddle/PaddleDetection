@@ -10,7 +10,7 @@
 
 - 🚗🚙 **PP-Vehicle囊括四大交通场景核心功能：车牌识别、属性识别、车流量统计、违章检测。**
 
-![](https://user-images.githubusercontent.com/22989727/202133504-1ea2091d-a026-4e02-b8f9-b3afd48c6c60.gif)
+![](https://user-images.githubusercontent.com/22989727/202134414-713a00d6-a0a4-4a77-b6e8-05cdb5d42b1e.gif)
 
 ## 📣 近期更新
 
@@ -142,3 +142,11 @@
 - [快速开始](docs/tutorials/ppvehicle_mot.md)
 
 - [二次开发教程](../../docs/advanced_tutorials/customization/pphuman_mot.md)
+
+#### 车辆违法压线
+
+- [快速开始](docs/tutorials/ppvehicle_press.md)
+
+#### 车辆逆行
+
+- [快速开始](docs/tutorials/ppvehicle_retrograde.md)

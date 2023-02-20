@@ -30,9 +30,9 @@ import yaml
 
 # Global dictionary
 SUPPORT_MODELS = {
-    'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
-    'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD', 'RetinaNet',
-    'StrongBaseline', 'STGCN', 'YOLOX', 'HRNet'
+    'YOLO', 'PPYOLOE', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet',
+    'S2ANet', 'JDE', 'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet',
+    'TOOD', 'RetinaNet', 'StrongBaseline', 'STGCN', 'YOLOX', 'HRNet'
 }
 
 GLOBAL_VAR = {}
@@ -191,14 +191,20 @@ class DetectorOp(Op):
         idx = 0
         results = {}
         for img_name, num in zip(input_dict.keys(), bboxes_num):
-            result = []
-            bbox = bboxes[idx:idx + num]
-            for line in bbox:
-                if line[0] > -1 and line[1] > GLOBAL_VAR[
-                        'model_config'].draw_threshold:
-                    result.append(f"{int(line[0])} {line[1]} "
-                                  f"{line[2]} {line[3]} {line[4]} {line[5]}")
-            results[img_name] = result
+            if num == 0:
+                results[img_name] = 'No object detected!'
+            else:
+                result = []
+                bbox = bboxes[idx:idx + num]
+                for line in bbox:
+                    if line[0] > -1 and line[1] > GLOBAL_VAR[
+                            'model_config'].draw_threshold:
+                        result.append(
+                            f"{int(line[0])} {line[1]} "
+                            f"{line[2]} {line[3]} {line[4]} {line[5]}")
+                if len(result) == 0:
+                    result = 'No object detected!'
+                results[img_name] = result
             idx += num
         return results
 

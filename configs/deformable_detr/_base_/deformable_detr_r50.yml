@@ -9,7 +9,7 @@ DETR:
   transformer: DeformableTransformer
   detr_head: DeformableDETRHead
   post_process: DETRBBoxPostProcess
-
+  post_process_semi: DETRBBoxSemiPostProcess
 
 ResNet:
   # index 0 stands for res2

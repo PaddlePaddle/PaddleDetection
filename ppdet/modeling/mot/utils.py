@@ -152,7 +152,8 @@ def save_vis_results(data,
                      average_time,
                      show_image,
                      save_dir,
-                     num_classes=1):
+                     num_classes=1,
+                     ids2names=[]):
     if show_image or save_dir is not None:
         assert 'ori_image' in data
         img0 = data['ori_image'].numpy()[0]
@@ -167,7 +168,8 @@ def save_vis_results(data,
                     online_ids,
                     online_scores,
                     frame_id=frame_id,
-                    fps=1. / average_time)
+                    fps=1. / average_time,
+                    ids2names=ids2names)
             else:
                 online_im = plot_tracking(
                     img0,
@@ -175,7 +177,8 @@ def save_vis_results(data,
                     online_ids,
                     online_scores,
                     frame_id=frame_id,
-                    fps=1. / average_time)
+                    fps=1. / average_time,
+                    ids2names=ids2names)
     if show_image:
         cv2.imshow('online_im', online_im)
     if save_dir is not None:

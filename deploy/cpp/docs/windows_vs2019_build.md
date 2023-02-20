@@ -5,7 +5,7 @@ Windows 平台下，我们使用`Visual Studio 2019 Community` 进行了测试�
 
 ## 前置条件
 * Visual Studio 2019 (根据Paddle预测库所使用的VS版本选择，请参考 [Visual Studio 不同版本二进制兼容性](https://docs.microsoft.com/zh-cn/cpp/porting/binary-compat-2015-2017?view=vs-2019) )
-* CUDA 9.0 / CUDA 10.0，cudnn 7+ / TensoRT（仅在使用GPU版本的预测库时需要）
+* CUDA 9.0 / CUDA 10.0，cudnn 7+ / TensorRT（仅在使用GPU版本的预测库时需要）
 * CMake 3.0+ [CMake下载](https://cmake.org/download/)
 
 **特别注意：windows下预测库需要的TensorRT版本为：**。

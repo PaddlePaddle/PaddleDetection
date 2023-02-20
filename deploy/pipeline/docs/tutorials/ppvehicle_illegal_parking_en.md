@@ -62,8 +62,8 @@ The parameter description:
 
 Test Result:
 
-<div width="1000" align="center">
-  <img src="../images/illegal_parking_demo.gif"/>
+<div width="600" align="center">
+  <img src="https://user-images.githubusercontent.com/22989727/205598624-bcf5165c-990c-4fe4-8cde-eb1d45298d8f.gif"/>
 </div>
 
 

@@ -31,9 +31,9 @@ Case 2: If the demo is run in the [ci_cpu Docker container](https://github.com/a
 Case 3: If the demo is not run in the ci_cpu Docker container, then you will need the following:
 - Software required to build and run the demo (These can all be installed by running
   tvm/docker/install/ubuntu_install_ethosu_driver_stack.sh.)
-  - [Fixed Virtual Platform (FVP) based on Arm(R) Corstone(TM)-300 software](https://release/2.5er.arm.com/tools-and-software/open-source-software/arm-platforms-software/arm-ecosystem-fvps)
+  - [Fixed Virtual Platform (FVP) based on Arm(R) Corstone(TM)-300 software](https://developer.arm.com/tools-and-software/open-source-software/arm-platforms-software/arm-ecosystem-fvps)
   - [cmake 3.19.5](https://github.com/Kitware/CMake/releases/)
-  - [GCC toolchain from Arm(R)](https://release/2.5er.arm.com/-/media/Files/downloads/gnu-rm/10-2020q4/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2)
+  - [GCC toolchain from Arm(R)](https://developer.arm.com/-/media/Files/downloads/gnu-rm/10-2020q4/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2)
   - [Arm(R) Ethos(TM)-U NPU driver stack](https://review.mlplatform.org)
   - [CMSIS](https://github.com/ARM-software/CMSIS_5)
 - The python libraries listed in the requirements.txt of this directory

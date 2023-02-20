@@ -36,7 +36,7 @@ Note:
 
 ## Skeleton-based action recognition -- falling detection
 
-<div align="center">  <img src="../images/action.gif" width='1000'/> <center>Data source and copyright owner：Skyinfor
+<div align="center">  <img src="https://user-images.githubusercontent.com/22989727/205582385-08a1b6ae-9b1b-465a-ac25-d6427571eb56.gif" width='600'/><br> <center>Data source and copyright owner：Skyinfor
 Technology. Thanks for the provision of actual scenario data, which are only
 used for academic research here. </center>
 
@@ -97,11 +97,11 @@ SKELETON_ACTION: # Config for skeleton-based action recognition model
 
 1: Others
 ```
-- The falling action recognition model uses [ST-GCN](https://arxiv.org/abs/1801.07455), and employ the [PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/blob/release/2.5/docs/zh-CN/model_zoo/recognition/stgcn.md) toolkit to complete model training.
+- The falling action recognition model uses [ST-GCN](https://arxiv.org/abs/1801.07455), and employ the [PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/stgcn.md) toolkit to complete model training.
 
 ## Image-Classification-Based Action Recognition -- Calling Recognition
 
-<div align="center">  <img src="../images/calling.gif" width='1000'/> <center>Data source and copyright owner：Skyinfor
+<div align="center">  <img src="https://user-images.githubusercontent.com/22989727/205596971-d92fd24e-977a-4742-91cc-ce5b4802473c.gif" width='600'/><br> <center>Data source and copyright owner：Skyinfor
 Technology. Thanks for the provision of actual scenario data, which are only
 used for academic research here. </center>
 
@@ -138,7 +138,7 @@ ID_BASED_CLSACTION: # config for classfication-based action recognition model
 1. Get the pedestrian detection box and the tracking ID number of the video input through object detection and multi-object tracking. The adopted model is PP-YOLOE, and for details, please refer to [PP-YOLOE](../../../configs/ppyoloe).
 
 2. Capture every pedestrian in frames of the input video accordingly by using the coordinate of the detection box.
-3. With image classification through pedestrian images at the frame level, when the category to which the image belongs is the corresponding behavior, it is considered that the character is in the behavior state for a certain period of time. This task is implemented with [PP-HGNet](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.5/docs/zh_CN/models/PP-HGNet.md). In current version, the behavior of calling is supported and the relationship between the action type and `class id` is:
+3. With image classification through pedestrian images at the frame level, when the category to which the image belongs is the corresponding behavior, it is considered that the character is in the behavior state for a certain period of time. This task is implemented with [PP-HGNet](https://github.com/PaddlePaddle/PaddleClas/blob/develop/docs/zh_CN/models/PP-HGNet.md). In current version, the behavior of calling is supported and the relationship between the action type and `class id` is:
 ```
 0: Calling
 
@@ -148,7 +148,7 @@ ID_BASED_CLSACTION: # config for classfication-based action recognition model
 
 ## Detection-based Action Recognition -- Smoking Detection
 
-<div align="center">  <img src="../images/smoking.gif" width='1000'/> <center>Data source and copyright owner：Skyinfor
+<div align="center">  <img src="https://user-images.githubusercontent.com/22989727/205599300-380c3805-63d6-43cc-9b77-2687b1328d7b.gif" width='600'/><br> <center>Data source and copyright owner：Skyinfor
 Technology. Thanks for the provision of actual scenario data, which are only
 used for academic research here. </center>
 
@@ -240,14 +240,14 @@ VIDEO_ACTION:  # Config for detection-based action recognition model
 
 The result is shown as follow:
 
-<div width="1000" align="center">
-  <img src="../images/fight_demo.gif"/>
+<div width="600" align="center">
+  <img src="https://user-images.githubusercontent.com/22989727/205597198-8b4333b3-6c39-472c-a25c-018dac908867.gif"/>
 </div>
 
 Data source and copyright owner: Surveillance Camera Fight Dataset.
 
 ### Introduction to the Solution
-The current fight recognition model is using [PP-TSM](https://github.com/PaddlePaddle/PaddleVideo/blob/release/2.5/docs/zh-CN/model_zoo/recognition/pp-tsm.md), and adaptated to complete the model training. For the input video or video stream, we extraction frame at a certain interval. When the video frame accumulates to the specified number, it is input into the video classification model to determine whether there is fighting.
+The current fight recognition model is using [PP-TSM](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/pp-tsm.md), and adaptated to complete the model training. For the input video or video stream, we extraction frame at a certain interval. When the video frame accumulates to the specified number, it is input into the video classification model to determine whether there is fighting.
 
 
 ## Custom Training

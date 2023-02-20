@@ -17,12 +17,12 @@ STGCN is a model based on the sequence of skeleton point coordinates. In PaddleV
 | N | Not Fixed | The number of sequences in the dataset |
 | C | 2 | Keypoint coordinate, i.e. (x, y) |
 | T | 50 | The temporal dimension of the action sequence (i.e. the number of continuous frames)|
-| V | 17 | The number of keypoints of each person, here we use the definition of the `COCO` dataset, see [here](../../../tutorials/PrepareKeypointDataSet_en.md#description-for-coco-datasetkeypoint) |
+| V | 17 | The number of keypoints of each person, here we use the definition of the `COCO` dataset, see [here](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/PrepareKeypointDataSet_en.md#description-for-coco-datasetkeypoint) |
 | M | 1 | The number of persons, here we only predict a single person for each action sequence |
 
 ### Get The Skeleton Point Coordinates of The Sequence
 For a sequence to be labeled (here a sequence refers to an action segment, which can be a video or an ordered collection of pictures). The coordinates of skeletal points (also known as keypoints) can be obtained through model prediction or manual annotation.
-- Model prediction: You can directly select the model in the [PaddleDetection KeyPoint Models](../../../../configs/keypoint/README_en.md) and according to `3, training and testing - Deployment Prediction - Detect + keypoint top-down model joint deployment` to get the 17 keypoint coordinates of the target sequence.
+- Model prediction: You can directly select the model in the [PaddleDetection KeyPoint Models](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/configs/keypoint/README_en.md) and according to `3, training and testing - Deployment Prediction - Detect + keypoint top-down model joint deployment` to get the 17 keypoint coordinates of the target sequence.
 
 When using the model to predict and obtain the coordinates, you can refer to the following steps, please note that the operation in PaddleDetection at this time.
 
@@ -43,7 +43,7 @@ python deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inferenc
 # if your data is video
 python deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inference/mot_ppyoloe_l_36e_pipeline/ --keypoint_model_dir=output_inference/dark_hrnet_w32_256x192 --video_file={your video file path} --device=GPU --save_res=True
 ```
-We can get a detection result file named `det_keypoint_unite_image_results.json`. The detail of content can be seen at [Here](../../../../deploy/python/det_keypoint_unite_infer.py#L108).
+We can get a detection result file named `det_keypoint_unite_image_results.json`. The detail of content can be seen at [Here](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/deploy/python/det_keypoint_unite_infer.py#L108).
 
 
 ### Uniform Sequence Length
@@ -197,4 +197,4 @@ INFERENCE:
 In the skeleton-based action recognition, the classification result of the model represents the behavior type of the character in a certain period of time. The type of the corresponding classification is regarded as the action of the current period. Therefore, on the basis of completing the training and deployment of the custom model, the model output is directly used as the final result, and the displayed result of the visualization should be modified.
 
 #### Modify Visual Output
-At present, ID-based action recognition is displayed based on the results of action recognition and predefined category names. For the detail, please refer to [here](../../../../deploy/pipeline/pipeline.py#L1024-L1043). If the custom action needs to be modified to another display name, please modify it accordingly to output the corresponding result.
+At present, ID-based action recognition is displayed based on the results of action recognition and predefined category names. For the detail, please refer to [here](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pipeline.py#L1024-L1043). If the custom action needs to be modified to another display name, please modify it accordingly to output the corresponding result.

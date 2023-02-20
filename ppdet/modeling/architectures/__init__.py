@@ -16,6 +16,7 @@ from . import meta_arch
 from . import faster_rcnn
 from . import mask_rcnn
 from . import yolo
+from . import ppyoloe
 from . import cascade_rcnn
 from . import ssd
 from . import fcos
@@ -36,11 +37,16 @@ from . import tood
 from . import retinanet
 from . import bytetrack
 from . import yolox
-
+from . import yolof
+from . import pose3d_metro
+from . import centertrack
+from . import detr_ssod
+from . import multi_stream_detector
 from .meta_arch import *
 from .faster_rcnn import *
 from .mask_rcnn import *
 from .yolo import *
+from .ppyoloe import *
 from .cascade_rcnn import *
 from .ssd import *
 from .fcos import *
@@ -62,3 +68,8 @@ from .tood import *
 from .retinanet import *
 from .bytetrack import *
 from .yolox import *
+from .yolof import *
+from .pose3d_metro import *
+from .centertrack import *
+from .detr_ssod import *
+from .multi_stream_detector import *

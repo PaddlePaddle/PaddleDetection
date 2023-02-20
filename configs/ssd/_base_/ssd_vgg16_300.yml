@@ -1,7 +1,7 @@
 architecture: SSD
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/VGG16_caffe_pretrained.pdparams
 
-# Model Achitecture
+# Model Architecture
 SSD:
   # model feat info flow
   backbone: VGG

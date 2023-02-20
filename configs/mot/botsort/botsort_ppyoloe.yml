@@ -1,0 +1,75 @@
+# This config is an assembled config for ByteTrack MOT, used as eval/infer mode for MOT.
+_BASE_: [
+  '../bytetrack/detector/ppyoloe_crn_l_36e_640x640_mot17half.yml',
+  '../bytetrack/_base_/mot17.yml',
+  '../bytetrack/_base_/ppyoloe_mot_reader_640x640.yml'
+]
+weights: output/botsort_ppyoloe/model_final
+log_iter: 20
+snapshot_epoch: 2
+
+metric: MOT # eval/infer mode, set 'COCO' can be training mode
+num_classes: 1
+
+architecture: ByteTrack
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/ppyoloe_crn_l_300e_coco.pdparams
+ByteTrack:
+  detector: YOLOv3 # PPYOLOe version
+  reid: None
+  tracker: BOTSORTTracker
+det_weights: https://bj.bcebos.com/v1/paddledet/models/mot/ppyoloe_crn_l_36e_640x640_mot17half.pdparams
+reid_weights: None
+
+YOLOv3:
+  backbone: CSPResNet
+  neck: CustomCSPPAN
+  yolo_head: PPYOLOEHead
+  post_process: ~
+
+# Tracking requires higher quality boxes, so NMS score_threshold will be higher
+PPYOLOEHead:
+  fpn_strides: [32, 16, 8]
+  grid_cell_scale: 5.0
+  grid_cell_offset: 0.5
+  static_assigner_epoch: -1 # 100
+  use_varifocal_loss: True
+  loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
+  static_assigner:
+    name: ATSSAssigner
+    topk: 9
+  assigner:
+    name: TaskAlignedAssigner
+    topk: 13
+    alpha: 1.0
+    beta: 6.0
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.1 # 0.01 in original detector
+    nms_threshold: 0.4 # 0.6 in original detector
+
+
+BOTSORTTracker:
+  track_high_thresh: 0.3
+  track_low_thresh: 0.2
+  new_track_thresh: 0.4
+  match_thresh: 0.7
+  track_buffer: 30
+  min_box_area: 0
+  camera_motion: False
+  cmc_method: 'sparseOptFlow' # only camera_motion is True,
+                              # sparseOptFlow | files (Vidstab GMC) | orb | ecc
+
+
+# MOTDataset for MOT evaluation and inference
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    data_root: MOT17/images/half
+    keep_ori_im: True # set as True in DeepSORT and ByteTrack
+
+TestMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot
+    keep_ori_im: True # set True if save visualization images or video

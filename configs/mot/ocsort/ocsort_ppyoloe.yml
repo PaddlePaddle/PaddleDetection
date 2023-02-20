@@ -60,6 +60,7 @@ OCSORTTracker:
   vertical_ratio: 0
   min_box_area: 0
   use_byte: False
+  use_angle_cost: False
 
 
 # MOTDataset for MOT evaluation and inference
