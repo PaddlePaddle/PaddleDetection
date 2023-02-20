@@ -32,9 +32,10 @@ cp PaddleDetection/deploy/pipeline/tools/lane_to_mask.py bdd100k/
 cd bdd100k && pip install -r requirements.txt
 
 #bdd100k to mask
-python to_mask.py -i dataset/labels/lane/polygons/lane_train.json -o /output_path
+python lane_to_mask.py -i dataset/labels/lane/polygons/lane_train.json -o /output_path
 
-#-i means input path for bdd100k dataset label json，-o for output patn
+# -i means input path for bdd100k dataset label json，
+# -o for output patn
 
 ```
 
@@ -72,10 +73,11 @@ dataset_root
     |
 ```
 
-run [create_dataset_list.py](../../../deploy/pipeline/tools/../../../deploy/pipeline/tools/) create txt file
+run [create_dataset_list.py](../../../deploy/pipeline/tools/create_dataset_list.py) create txt file
 
 ```
-python create_dataset_list.py <dataset_root>
+python create_dataset_list.py <dataset_root> #dataset path
+                              --type  custom #dataset type，support cityscapes、custom
 
 ```
 

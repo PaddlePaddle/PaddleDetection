@@ -28,9 +28,10 @@ cp PaddleDetection/deploy/pipeline/tools/lane_to_mask.py bdd100k/
 cd bdd100k && pip install -r requirements.txt
 
 #数据转换
-python to_mask.py -i dataset/labels/lane/polygons/lane_train.json -o /output_path
+python lane_to_mask.py -i dataset/labels/lane/polygons/lane_train.json -o /output_path
 
-#-i为bdd100k数据集label的json路径，-o 为生成的mask图像路径
+# -i bdd100k数据集label的json路径，
+# -o 生成的mask图像路径
 
 ```
 
@@ -67,9 +68,11 @@ dataset_root
     |       |--...
     |
 ```
-运行[create_dataset_list.py](../../../deploy/pipeline/tools/../../../deploy/pipeline/tools/)生成txt文件
+运行[create_dataset_list.py](../../../deploy/pipeline/tools/create_dataset_list.py)生成txt文件
 ```
-python create_dataset_list.py <dataset_root>
+python create_dataset_list.py <dataset_root> #数据根目录
+                              --type  custom #数据类型，支持cityscapes、custom
+
 
 ```
 其他数据以及数据标注，可参考PaddleSeg[准备自定义数据集](https://github.com/PaddlePaddle/PaddleSeg/blob/release/2.7/docs/data/marker/marker_cn.md)
