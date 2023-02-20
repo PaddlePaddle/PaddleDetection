@@ -50,7 +50,7 @@ PP-YOLOE由以下方法组成
 |   PP-YOLOE+_t-aux(640) |  300   |     8     |    8     | cspresnet-t  |    640  |            39.7       |            56.4             |   4.85   |  19.15 |  344.8   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_auxhead_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_t_auxhead_300e_coco.yml) |
 |   PP-YOLOE+_t-aux(640)-relu |  300   |     8     |    8     | cspresnet-t  |    640  |            36.4       |            53.0        |   3.60   |  12.17 |   476.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_auxhead_relu_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_t_auxhead_relu_300e_coco.yml) |
 |   PP-YOLOE+_t-aux(320) |  300   |     8     |    8     | cspresnet-t  |    320  |            33.3       |            48.5             |   4.85   |  4.80 |   729.9   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_auxhead_320_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_t_auxhead_320_300e_coco.yml) |
-|   PP-YOLOE+_t-aux(320)-relu |  300   |     8     |    8     | cspresnet-t  |    320  |            29.5       |            43.7        |   3.60   |  3.04 |   952.4   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_auxhead_relu_320_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_t_auxhead_relu_320_300e_coco.yml) |
+|   PP-YOLOE+_t-aux(320)-relu |  300   |     8     |    8     | cspresnet-t  |    320  |            29.5       |            43.7        |   3.60   |  3.04 |   984.8   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_auxhead_relu_320_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_t_auxhead_relu_320_300e_coco.yml) |
 
 
 ### 综合指标
