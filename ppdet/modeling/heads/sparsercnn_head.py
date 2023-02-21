@@ -333,7 +333,7 @@ class SparseRCNNHead(nn.Layer):
         bboxes = bboxes * input_whwh.unsqueeze(-2)
 
         init_features = self.init_proposal_features.weight.unsqueeze(0).tile(
-            [1, bs, 1])
+            [bs, 1, 1])
         proposal_features = init_features.clone()
 
         inter_class_logits = []
