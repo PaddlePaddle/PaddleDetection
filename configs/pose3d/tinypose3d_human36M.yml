@@ -13,12 +13,13 @@ train_width: &train_width 128
 trainsize: &trainsize [*train_width, *train_height]
 
 #####model
-architecture: TopDown3DHRNet
+architecture: TinyPose3DHRNet
 pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams
 
-TopDown3DHRNet:
+TinyPose3DHRNet:
   backbone: LiteHRNet
   post_process: HR3DNetPostProcess
+  fc_channel: 1024
   num_joints: *num_joints
   width: &width 40
   loss: Pose3DLoss

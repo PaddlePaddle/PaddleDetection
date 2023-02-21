@@ -397,6 +397,7 @@ class TinyPose3DHRNet(BaseArch):
     def __init__(self,
                  width,
                  num_joints,
+                 fc_channel=768,
                  backbone='HRNet',
                  loss='KeyPointRegressionMSELoss',
                  post_process=TinyPose3DPostProcess):
@@ -414,20 +415,12 @@ class TinyPose3DHRNet(BaseArch):
 
         self.final_conv = L.Conv2d(width, num_joints, 1, 1, 0, bias=True)
 
-        self.final_conv_new = L.Conv2d(
-            width, num_joints * 32, 1, 1, 0, bias=True)
-
         self.flatten = paddle.nn.Flatten(start_axis=2, stop_axis=3)
-        self.fc1 = paddle.nn.Linear(768, 256)
+        self.fc1 = paddle.nn.Linear(fc_channel, 256)
         self.act1 = paddle.nn.ReLU()
         self.fc2 = paddle.nn.Linear(256, 64)
         self.act2 = paddle.nn.ReLU()
         self.fc3 = paddle.nn.Linear(64, 3)
-
-        # for human3.6M
-        self.fc1_1 = paddle.nn.Linear(3136, 1024)
-        self.fc2_1 = paddle.nn.Linear(1024, 256)
-        self.fc3_1 = paddle.nn.Linear(256, 3)
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -451,100 +444,6 @@ class TinyPose3DHRNet(BaseArch):
         if self.training:
             return self.loss(res, self.inputs)
         else:  # export model need
-            return res
-
-    def get_loss(self):
-        return self._forward()
-
-    def get_pred(self):
-        res_lst = self._forward()
-        outputs = {'keypoint': res_lst}
-        return outputs
-
-    def flip_back(self, output_flipped, matched_parts):
-        assert output_flipped.ndim == 4,\
-                'output_flipped should be [batch_size, num_joints, height, width]'
-
-        output_flipped = output_flipped[:, :, :, ::-1]
-
-        for pair in matched_parts:
-            tmp = output_flipped[:, pair[0], :, :].copy()
-            output_flipped[:, pair[0], :, :] = output_flipped[:, pair[1], :, :]
-            output_flipped[:, pair[1], :, :] = tmp
-
-        return output_flipped
-
-
-@register
-class TopDown3DHRNet(BaseArch):
-    __category__ = 'architecture'
-    __inject__ = ['loss']
-
-    def __init__(
-            self,
-            width,  # 40
-            num_joints,  # 24
-            backbone='HRNet',
-            loss='KeyPointMSELoss',  # TODO
-            post_process='HR3DNetPostProcess', ):
-        """
-        HRNet network, see https://arxiv.org/abs/1902.09212
-
-        Args:
-            backbone (nn.Layer): backbone instance
-        """
-
-        super(TopDown3DHRNet, self).__init__()
-        self.backbone = backbone
-        self.loss = loss
-        self.num_joints = num_joints
-
-        self.final_conv = L.Conv2d(width, num_joints * 32, 1, 1, 0, bias=True)
-
-        # for human3.6M
-        self.flatten = paddle.nn.Flatten(start_axis=2, stop_axis=3)
-        self.fc1 = paddle.nn.Linear(1024, 256)
-        self.dropout1 = paddle.nn.Dropout()
-        self.fc2 = paddle.nn.Linear(256, 64)
-        self.dropout2 = paddle.nn.Dropout()
-        self.fc3 = paddle.nn.Linear(64, 3)
-
-        self.act1 = paddle.nn.ReLU()
-        self.act2 = paddle.nn.ReLU()
-
-    @classmethod
-    def from_config(cls, cfg, *args, **kwargs):
-        # backbone
-        backbone = create(cfg['backbone'])
-        return {'backbone': backbone, }
-
-    def _forward(self):
-        feats = self.backbone(self.inputs)
-        hrnet_outputs = self.final_conv(
-            feats[0])  # [batch_size, num_joints, 32, 32] 
-
-        flatten_res = self.flatten(
-            hrnet_outputs)  #  [batch_size, keypoints_num, (height/4)*(width/4)]
-
-        res = self.fc1(flatten_res)
-        res = self.act1(res)
-        res = self.dropout1(res)
-        res = self.fc2(res)
-        res = self.act2(res)
-        res = self.dropout2(res)
-        res = self.fc3(res)  # [batch_size, 24, 3] 
-
-        if self.training:
-            ## coordinate loss
-            loss_coord = paddle.abs(res - self.inputs['joints_3d'])
-            loss_coord = (
-                loss_coord[:, :, 0] + loss_coord[:, :, 1] + loss_coord[:, :, 2]
-            ) / 3.
-            loss_coord = loss_coord.mean()
-            loss = {'loss': loss_coord}
-
-            return loss
-        else:
             return res
 
     def get_loss(self):
