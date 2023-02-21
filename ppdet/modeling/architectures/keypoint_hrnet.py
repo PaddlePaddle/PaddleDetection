@@ -26,10 +26,7 @@ from ..keypoint_utils import transform_preds
 from .. import layers as L
 from paddle.nn import functional as F
 
-__all__ = [
-    'TopDownHRNet', 'TinyPose3DHRNet', 'TinyPose3DHRHeatmapNet',
-    'TopDown3DHRNet'
-]
+__all__ = ['TopDownHRNet', 'TinyPose3DHRNet', 'TinyPose3DHRHeatmapNet']
 
 
 @register
