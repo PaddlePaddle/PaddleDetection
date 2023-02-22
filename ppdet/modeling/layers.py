@@ -1135,7 +1135,7 @@ def _convert_attention_mask(attn_mask, dtype):
     """
     return nn.layer.transformer._convert_attention_mask(attn_mask, dtype)
 
-
+@register
 class MultiHeadAttention(nn.Layer):
     """
     Attention mapps queries and a set of key-value pairs to outputs, and
