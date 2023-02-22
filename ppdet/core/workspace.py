@@ -67,6 +67,15 @@ class AttrDict(dict):
             return self[key]
         raise AttributeError("object has no attribute '{}'".format(key))
 
+    def __setattr__(self, key, value):
+        self[key] = value
+
+    def copy(self):
+        new_dict = AttrDict()
+        for k, v in self.items():
+            new_dict.update({k: v})
+        return new_dict
+
 
 global_config = AttrDict()
 
