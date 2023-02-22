@@ -177,19 +177,21 @@ OptimizerBuilder:
 
 #####data
 TrainDataset:
-  !PETRCocoDataset
+  !KeypointBottomUpCocoDataset
     image_dir: train2017
     anno_path: annotations/person_keypoints_train2017.json
     dataset_dir: dataset/coco
     num_joints: *num_joints
+    return_mask: false
 
 EvalDataset:
-  !PETRCocoDataset
+  !KeypointBottomUpCocoDataset
     image_dir: val2017
     anno_path: annotations/person_keypoints_val2017.json
     dataset_dir: dataset/coco
     num_joints: *num_joints
     test_mode: true
+    return_mask: false
 
 TestDataset:
   !ImageFolder

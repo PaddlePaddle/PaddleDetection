@@ -29,4 +29,3 @@ from .mot import *
 from .sniper_coco import SniperCOCODataSet
 from .dataset import ImageFolder
 from .pose3d_cmb import *
-from .petr_coco import PETRCocoDataset
