@@ -394,6 +394,7 @@ class TinyPose3DHRNet(BaseArch):
     def __init__(self,
                  width,
                  num_joints,
+                 fc_channel=768,
                  backbone='HRNet',
                  loss='KeyPointRegressionMSELoss',
                  post_process=TinyPose3DPostProcess):
@@ -411,20 +412,12 @@ class TinyPose3DHRNet(BaseArch):
 
         self.final_conv = L.Conv2d(width, num_joints, 1, 1, 0, bias=True)
 
-        self.final_conv_new = L.Conv2d(
-            width, num_joints * 32, 1, 1, 0, bias=True)
-
         self.flatten = paddle.nn.Flatten(start_axis=2, stop_axis=3)
-        self.fc1 = paddle.nn.Linear(768, 256)
+        self.fc1 = paddle.nn.Linear(fc_channel, 256)
         self.act1 = paddle.nn.ReLU()
         self.fc2 = paddle.nn.Linear(256, 64)
         self.act2 = paddle.nn.ReLU()
         self.fc3 = paddle.nn.Linear(64, 3)
-
-        # for human3.6M
-        self.fc1_1 = paddle.nn.Linear(3136, 1024)
-        self.fc2_1 = paddle.nn.Linear(1024, 256)
-        self.fc3_1 = paddle.nn.Linear(256, 3)
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
