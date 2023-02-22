@@ -10,7 +10,7 @@ snapshot_epoch: 2
 # schedule configuration for fine-tuning
 epoch: 24
 LearningRate:
-  base_lr: 0.00075 # fintune
+  base_lr: 0.00075 # fine-tune
   schedulers:
   - !CosineDecay
     max_epochs: 24

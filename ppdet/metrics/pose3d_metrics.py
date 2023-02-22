@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import paddle
+from paddle.distributed import ParallelEnv
 import os
 import json
 from collections import defaultdict, OrderedDict
@@ -161,8 +162,10 @@ class Pose3DEval(object):
         return paddle.index_select(input, J24_TO_J14, axis=1)
 
     def update(self, inputs, outputs):
-        gt_3d_joints = all_gather(inputs['joints_3d'])
-        has_3d_joints = all_gather(inputs['has_3d_joints'])
+        gt_3d_joints = all_gather(inputs['joints_3d'].cuda(ParallelEnv()
+                                                           .local_rank))
+        has_3d_joints = all_gather(inputs['has_3d_joints'].cuda(ParallelEnv()
+                                                                .local_rank))
         pred_3d_joints = all_gather(outputs['pose3d'])
         if gt_3d_joints.shape[1] == 24:
             gt_3d_joints = self.get_human36m_joints(gt_3d_joints)

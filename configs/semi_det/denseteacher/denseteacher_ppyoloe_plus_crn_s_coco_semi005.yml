@@ -1,0 +1,151 @@
+_BASE_: [
+  '../../ppyoloe/ppyoloe_plus_crn_s_80e_coco.yml',
+  '../_base_/coco_detection_percent_5.yml',
+]
+log_iter: 50
+snapshot_epoch: 5
+weights: output/denseteacher_ppyoloe_plus_crn_s_coco_semi005/model_final
+
+epochs: &epochs 200
+cosine_epochs: &cosine_epochs 240
+
+
+### pretrain and warmup config, choose one and comment another
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/ppyoloe_plus_crn_s_80e_coco_sup005.pdparams # mAP=32.8
+semi_start_iters: 0
+ema_start_iters: 0
+use_warmup: &use_warmup False
+
+# pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_s_obj365_pretrained.pdparams
+# semi_start_iters: 5000
+# ema_start_iters: 3000
+# use_warmup: &use_warmup True
+
+
+### global config
+use_simple_ema: True
+ema_decay: 0.9996
+ssod_method: DenseTeacher
+DenseTeacher:
+  train_cfg:
+    sup_weight: 1.0
+    unsup_weight: 1.0
+    loss_weight: {distill_loss_cls: 1.0, distill_loss_iou: 2.5, distill_loss_dfl: 0., distill_loss_contrast: 0.1}
+    contrast_loss:
+      temperature: 0.2
+      alpha: 0.9
+      smooth_iter: 100
+    concat_sup_data: True
+    suppress: linear
+    ratio: 0.01
+  test_cfg:
+    inference_on: teacher
+
+
+### reader config
+batch_size: &batch_size 8
+worker_num: 2
+SemiTrainReader:
+  sample_transforms:
+    - Decode: {}
+    - RandomDistort: {}
+    - RandomExpand: {fill_value: [123.675, 116.28, 103.53]}
+    - RandomFlip: {}
+    - RandomCrop: {} # unsup will be fake gt_boxes
+  weak_aug:
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], is_scale: true, norm_type: none}
+  strong_aug:
+    - StrongAugImage: {transforms: [
+        RandomColorJitter: {prob: 0.8, brightness: 0.4, contrast: 0.4, saturation: 0.4, hue: 0.1},
+        RandomErasingCrop: {},
+        RandomGaussianBlur: {prob: 0.5, sigma: [0.1, 2.0]},
+        RandomGrayscale: {prob: 0.2},
+      ]}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], is_scale: true, norm_type: none}
+  sup_batch_transforms:
+    - BatchRandomResize: {target_size: [640], random_size: True, random_interp: True, keep_ratio: False}
+    - Permute: {}
+    - PadGT: {}
+  unsup_batch_transforms:
+    - BatchRandomResize: {target_size: [640], random_size: True, random_interp: True, keep_ratio: False}
+    - Permute: {}
+  sup_batch_size: *batch_size
+  unsup_batch_size: *batch_size
+  shuffle: True
+  drop_last: True
+  collate_batch: True
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - Permute: {}
+  batch_size: 2
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 640, 640]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - Permute: {}
+  batch_size: 1
+
+
+### model config
+architecture: PPYOLOE
+norm_type: sync_bn
+ema_black_list: ['proj_conv.weight']
+custom_black_list: ['reduce_mean']
+PPYOLOE:
+  backbone: CSPResNet
+  neck: CustomCSPPAN
+  yolo_head: PPYOLOEHead
+  post_process: ~
+
+eval_size: ~ # means None, but not str 'None'
+PPYOLOEHead:
+  fpn_strides: [32, 16, 8]
+  grid_cell_scale: 5.0
+  grid_cell_offset: 0.5
+  static_assigner_epoch: -1 #
+  use_varifocal_loss: True
+  loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
+  static_assigner:
+    name: ATSSAssigner
+    topk: 9
+  assigner:
+    name: TaskAlignedAssigner
+    topk: 13
+    alpha: 1.0
+    beta: 6.0
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 300
+    score_threshold: 0.01
+    nms_threshold: 0.7
+
+
+### other config
+epoch: *epochs
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !CosineDecay
+    max_epochs: *cosine_epochs
+    use_warmup: *use_warmup
+  - !LinearWarmup
+    start_factor: 0.001
+    epochs: 3
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005 # dt-fcos 0.0001
+    type: L2
+  clip_grad_by_norm: 1.0 # dt-fcos clip_grad_by_value

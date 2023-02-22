@@ -7,9 +7,9 @@
 
 ## 环境要求
 
-- PaddlePaddle 2.2
+- PaddlePaddle 2.3.2
 - OS 64位操作系统
-- Python 3(3.5.1+/3.6/3.7/3.8/3.9)，64位版本
+- Python 3(3.5.1+/3.6/3.7/3.8/3.9/3.10)，64位版本
 - pip/pip3(9.0.1+)，64位版本
 - CUDA >= 10.2
 - cuDNN >= 7.6
@@ -18,7 +18,8 @@ PaddleDetection 依赖 PaddlePaddle 版本关系：
 
 |  PaddleDetection版本  | PaddlePaddle版本  |    备注    |
 | :------------------: | :---------------: | :-------: |
-|    develop           |       develop    |     默认使用动态图模式    |
+|    develop           |       >=2.3.2     |     默认使用动态图模式    |
+|    release/2.6       |       >=2.3.2     |     默认使用动态图模式    |
 |    release/2.5       |       >= 2.2.2    |     默认使用动态图模式    |
 |    release/2.4       |       >= 2.2.2    |     默认使用动态图模式    |
 |    release/2.3       |       >= 2.2.0rc  |     默认使用动态图模式    |
@@ -36,10 +37,10 @@ PaddleDetection 依赖 PaddlePaddle 版本关系：
 
 ```
 # CUDA10.2
-python -m pip install paddlepaddle-gpu==2.2.2 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle-gpu==2.3.2 -i https://mirror.baidu.com/pypi/simple
 
 # CPU
-python -m pip install paddlepaddle==2.2.2 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle==2.3.2 -i https://mirror.baidu.com/pypi/simple
 ```
 - 更多CUDA版本或环境快速安装，请参考[PaddlePaddle快速安装文档](https://www.paddlepaddle.org.cn/install/quick)
 - 更多安装方式例如conda或源码编译安装方法，请参考[PaddlePaddle安装文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/index_cn.html)

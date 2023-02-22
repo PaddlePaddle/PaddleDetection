@@ -5,15 +5,22 @@
 ## 内容
 - [简介](#简介)
 - [模型库](#模型库)
+    - [行人跟踪](#行人跟踪)
+    - [人头跟踪](#人头跟踪)
+- [多类别适配](#多类别适配)
 - [快速开始](#快速开始)
 - [引用](#引用)
+
 
 ## 简介
 [ByteTrack](https://arxiv.org/abs/2110.06864)(ByteTrack: Multi-Object Tracking by Associating Every Detection Box) 通过关联每个检测框来跟踪，而不仅是关联高分的检测框。对于低分数检测框会利用它们与轨迹片段的相似性来恢复真实对象并过滤掉背景检测框。此处提供了几个常用检测器的配置作为参考。由于训练数据集、输入尺度、训练epoch数、NMS阈值设置等的不同均会导致模型精度和性能的差异，请自行根据需求进行适配。
 
+
 ## 模型库
 
-### 基于不同检测器的ByteTrack在MOT-17 half Val Set上结果
+### 行人跟踪
+
+#### 基于不同检测器的ByteTrack在 MOT-17 half Val Set 上的结果
 
 |  检测训练数据集      |  检测器     | 输入尺度  |  ReID  |  检测mAP(0.5:0.95)  |  MOTA  |  IDF1  |  FPS | 配置文件 |
 | :--------         | :-----      | :----:  | :----:|:------:  | :----: |:-----: |:----:|:----:   |
@@ -31,7 +38,7 @@
   - **mix_mot_ch**数据集，是MOT17、CrowdHuman组成的联合数据集，**mix_det**数据集是MOT17、CrowdHuman、Cityscapes、ETHZ组成的联合数据集，数据集整理的格式和目录可以参考[此链接](https://github.com/ifzhang/ByteTrack#data-preparation)，最终放置于`dataset/mot/`目录下。为了验证精度可以都用**MOT17-half val**数据集去评估。
 
 
-### YOLOX-x ByteTrack(mix_det)
+#### YOLOX-x ByteTrack(mix_det)在 MOT-16/MOT-17 上的结果
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/pp-yoloe-an-evolved-version-of-yolo/multi-object-tracking-on-mot16)](https://paperswithcode.com/sota/multi-object-tracking-on-mot16?p=pp-yoloe-an-evolved-version-of-yolo)
 
@@ -49,6 +56,24 @@
   - MOT-17 Test 和 MOT-16 Test 的指标均为交到 [MOTChallenge](https://motchallenge.net)官网评测后的指标，因为MOT-17和MOT-16的Test集未开放ground truth，此MOTA指标可以代表模型的检测跟踪能力。
   - ByteTrack的训练是单独的检测器训练MOT数据集，推理是组装跟踪器去评估MOT指标，单独的检测模型也可以评估检测指标。
   - ByteTrack的导出部署，是单独导出检测模型，再组装跟踪器运行的，参照[PP-Tracking](../../../deploy/pptracking/python/README.md)。
+
+
+### 人头跟踪
+
+#### YOLOX-x ByteTrack 在 HT-21 Test Set上的结果
+
+|    模型      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
+| :--------------| :------- | :----: | :----: | :---: | :----: | :---: | :------: | :----: |:----: |
+| ByteTrack-x     | 1440x800 |  64.1 |  63.4  |  4191   |  185162  |  210240 |    -     | [下载链接](https://paddledet.bj.bcebos.com/models/mot/bytetrack_yolox_ht21.pdparams) | [配置文件](./bytetrack_yolox_ht21.yml) |
+
+#### YOLOX-x ByteTrack 在 HT-21 Test Set上的结果
+
+|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: | :----: |
+| ByteTrack-x     | 1440x800 |  72.6  |  61.8  |  5163   |  71235  |  154139 |    -     | [下载链接](https://paddledet.bj.bcebos.com/models/mot/bytetrack_yolox_ht21.pdparams) | [配置文件](./bytetrack_yolox_ht21.yml) |
+
+**注意:**
+  - 更多人头跟踪模型可以参考[headtracking21](../headtracking21)。
 
 
 ## 多类别适配

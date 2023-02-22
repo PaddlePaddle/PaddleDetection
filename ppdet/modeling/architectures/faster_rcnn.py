@@ -84,16 +84,29 @@ class FasterRCNN(BaseArch):
         else:
             rois, rois_num, _ = self.rpn_head(body_feats, self.inputs)
             preds, _ = self.bbox_head(body_feats, rois, rois_num, None)
-
             im_shape = self.inputs['im_shape']
             scale_factor = self.inputs['scale_factor']
-            bbox, bbox_num = self.bbox_post_process(preds, (rois, rois_num),
+            bbox, bbox_num, nms_keep_idx = self.bbox_post_process(preds, (rois, rois_num),
                                                     im_shape, scale_factor)
 
             # rescale the prediction back to origin image
             bboxes, bbox_pred, bbox_num = self.bbox_post_process.get_pred(
                 bbox, bbox_num, im_shape, scale_factor)
-            return bbox_pred, bbox_num
+
+            if self.use_extra_data:
+                extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
+                """extra_data:{
+                            'scores': predict scores,
+                            'nms_keep_idx': bbox index before nms,
+                           }
+                """
+                extra_data['scores'] = preds[1]  # predict scores (probability)
+                # Todo: get logits output
+                extra_data['nms_keep_idx'] = nms_keep_idx  # bbox index before nms
+                return bbox_pred, bbox_num, extra_data
+            else:
+                return bbox_pred, bbox_num
+
 
     def get_loss(self, ):
         rpn_loss, bbox_loss = self._forward()
@@ -105,8 +118,12 @@ class FasterRCNN(BaseArch):
         return loss
 
     def get_pred(self):
-        bbox_pred, bbox_num = self._forward()
-        output = {'bbox': bbox_pred, 'bbox_num': bbox_num}
+        if self.use_extra_data:
+            bbox_pred, bbox_num, extra_data = self._forward()
+            output = {'bbox': bbox_pred, 'bbox_num': bbox_num, 'extra_data': extra_data}
+        else:
+            bbox_pred, bbox_num = self._forward()
+            output = {'bbox': bbox_pred, 'bbox_num': bbox_num}
         return output
 
     def target_bbox_forward(self, data):

@@ -44,6 +44,16 @@ PP-YOLOE is composed of following methods:
 |  PP-YOLOE+_x   |  80   |     8      |     8      | cspresnet-x |     640     |            54.7            |            54.9             |   98.42   |  206.59  |   45.0    |   95.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_x_80e_coco.pdparams) | [config](./ppyoloe_plus_crn_x_80e_coco.yml) |
 
 
+#### Tiny model
+
+|   Model  | Epoch | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>val<br>0.5:0.95 | Box AP<sup>test<br>0.5:0.95 | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) | download  | config  |
+|:--------:|:-----:|:----------:|:----------:|:----------:|:-----------:|:--------------------------:|:---------------------------:|:---------:|:--------:|:---------------------:| :------: |:--------:|
+|   PP-YOLOE+_t-aux(640) |  300   |     8     |    8     | cspresnet-t  |    640  |            39.7       |            56.4             |   4.85   |  19.15 |  344.8   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_auxhead_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_t_auxhead_300e_coco.yml) |
+|   PP-YOLOE+_t-aux(640)-relu |  300   |     8     |    8     | cspresnet-t  |    640  |            36.4       |            53.0        |   3.60   |  12.17 |   476.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_auxhead_relu_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_t_auxhead_relu_300e_coco.yml) |
+|   PP-YOLOE+_t-aux(320) |  300   |     8     |    8     | cspresnet-t  |    320  |            33.3       |            48.5             |   4.85   |  4.80 |   729.9   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_auxhead_320_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_t_auxhead_320_300e_coco.yml) |
+|   PP-YOLOE+_t-aux(320)-relu |  300   |     8     |    8     | cspresnet-t  |    320  |            29.5       |            43.7        |   3.60   |  3.04 |   984.8   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_t_auxhead_relu_320_300e_coco.pdparams) | [config](./ppyoloe_plus_crn_t_auxhead_relu_320_300e_coco.yml) |
+
+
 ### Comprehensive Metrics
 |          Model           | Epoch | AP<sup>0.5:0.95 | AP<sup>0.5 | AP<sup>0.75  | AP<sup>small | AP<sup>medium | AP<sup>large | AR<sup>small | AR<sup>medium | AR<sup>large |
 |:------------------------:|:-----:|:---------------:|:----------:|:------------:|:------------:| :-----------: |:------------:|:------------:|:-------------:|:------------:|
@@ -74,10 +84,10 @@ PP-YOLOE is composed of following methods:
 ### Model Zoo on Objects365
 |     Model      | Epoch | Machine number | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>0.5 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) |  download  |  config  |
 |:---------------:|:-----:|:-----------:|:-----------:|:-----------:|:---------:|:----------:|:--------------:|:---------:|:---------:|:-------------:|:-----------------------:| :--------:|:--------:|
-|   PP-YOLOE+_s   |  60   |  3 |  8     |    8     | cspresnet-s |    640     |   18.1  |  7.93  |  17.36   |   208.3   |  333.3   | [model](https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_s_obj365_pretrained.pdparams) | [config](./ppyoloe_plus_crn_s_60e_objects365.yml) |
-|   PP-YOLOE+_m   |  60   |   4 |  8     |    8     | cspresnet-m |    640     |   25.0  |  23.43  |  49.91   |   123.4       |  208.3  | [model](https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_m_obj365_pretrained.pdparams) | [config](./ppyoloe_plus_crn_m_60e_objects365.yml) |
-|   PP-YOLOE+_l   |  60   |   3 |  8     |    8     | cspresnet-l |    640     |   30.8  |  52.20 |  110.07  |   78.1    |  149.2   | [model](https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_l_obj365_pretrained.pdparams) | [config](./ppyoloe_plus_crn_l_60e_objects365.yml) |
-|   PP-YOLOE+_x   |  60   |  4 |   8     |    8     | cspresnet-x |    640     |   32.7  |  98.42 |  206.59      |   45.0        |  95.2  | [model](https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_x_obj365_pretrained.pdparams) | [config](./ppyoloe_plus_crn_x_60e_objects365.yml) |
+|   PP-YOLOE+_s   |  60   |  3 |  8     |    8     | cspresnet-s |    640     |   18.1  |  7.93  |  17.36   |   208.3   |  333.3   | [model](https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_s_obj365_pretrained.pdparams) | [config](./objects365/ppyoloe_plus_crn_s_60e_objects365.yml) |
+|   PP-YOLOE+_m   |  60   |   4 |  8     |    8     | cspresnet-m |    640     |   25.0  |  23.43  |  49.91   |   123.4       |  208.3  | [model](https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_m_obj365_pretrained.pdparams) | [config](./objects365/ppyoloe_plus_crn_m_60e_objects365.yml) |
+|   PP-YOLOE+_l   |  60   |   3 |  8     |    8     | cspresnet-l |    640     |   30.8  |  52.20 |  110.07  |   78.1    |  149.2   | [model](https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_l_obj365_pretrained.pdparams) | [config](./objects365/ppyoloe_plus_crn_l_60e_objects365.yml) |
+|   PP-YOLOE+_x   |  60   |  4 |   8     |    8     | cspresnet-x |    640     |   32.7  |  98.42 |  206.59      |   45.0        |  95.2  | [model](https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_x_obj365_pretrained.pdparams) | [config](./objects365/ppyoloe_plus_crn_x_60e_objects365.yml) |
 
 
 **Notes:**
@@ -88,8 +98,8 @@ PP-YOLOE is composed of following methods:
 
 |     Model      | Epoch | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>0.5 | Params(M) | FLOPs(G) | V100 FP32(FPS) | V100 TensorRT FP16(FPS) |  download  |  config  |
 |:---------------:|:-----:|:-----------:|:-----------:|:---------:|:----------:|:--------------:|:---------:|:---------:|:-------------:|:-----------------------:| :-------: |:--------:|
-|   PP-YOLOE+_s   |  30   |     8     |    8     | cspresnet-s |    640     |   86.7  |  7.93  |  17.36   |   208.3   |  333.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_30e_voc.pdparams) | [config](./ppyoloe_plus_crn_s_30e_voc.yml) |
-|   PP-YOLOE+_l   |  30   |     8     |    8     | cspresnet-l |    640     |   89.0  |  52.20 |  110.07  |   78.1    |  149.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_30e_voc.pdparams) | [config](./ppyoloe_plus_crn_l_30e_voc.yml) |
+|   PP-YOLOE+_s   |  30   |     8     |    8     | cspresnet-s |    640     |   86.7  |  7.93  |  17.36   |   208.3   |  333.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_30e_voc.pdparams) | [config](./voc/ppyoloe_plus_crn_s_30e_voc.yml) |
+|   PP-YOLOE+_l   |  30   |     8     |    8     | cspresnet-l |    640     |   89.0  |  52.20 |  110.07  |   78.1    |  149.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_30e_voc.pdparams) | [config](./voc/ppyoloe_plus_crn_l_30e_voc.yml) |
 
 
 ### Feature Models
@@ -142,7 +152,7 @@ python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c con
 **Notes:**
 - If you need to evaluate while training, please add `--eval`.
 - PP-YOLOE+ supports mixed precision training, please add `--amp`.
-- PaddleDetection supports multi-machine distribued training, you can refer to [DistributedTraining tutorial](../../docs/tutorials/DistributedTraining_en.md).
+- PaddleDetection supports multi-machine distributed training, you can refer to [DistributedTraining tutorial](../../docs/tutorials/DistributedTraining_en.md).
 
 
 ### Evaluation
@@ -249,7 +259,7 @@ trtexec --onnx=./ppyoloe_plus_crn_s_80e_coco.onnx --saveEngine=./ppyoloe_s_bs32.
 
 ### Deployment
 
-PP-YOLOE can be deployed by following approches:
+PP-YOLOE can be deployed by following approaches:
   - Paddle Inference [Python](../../deploy/python) & [C++](../../deploy/cpp)
   - [Paddle-TensorRT](../../deploy/TENSOR_RT.md)
   - [PaddleServing](https://github.com/PaddlePaddle/Serving)
@@ -289,7 +299,7 @@ Model | AP | AP<sub>50</sub>
 **PP-YOLOE** | **30.5** | **46.4**
 
 **Notes**
-- Here, we use [VisDrone](https://github.com/VisDrone/VisDrone-Dataset) dataset, and to detect 9 objects including `person, bicycles, car, van, truck, tricyle, awning-tricyle, bus, motor`.
+- Here, we use [VisDrone](https://github.com/VisDrone/VisDrone-Dataset) dataset, and to detect 9 objects including `person, bicycles, car, van, truck, tricycle, awning-tricycle, bus, motor`.
 - Above models trained using official default config, and load pretrained parameters on COCO dataset.
 - *Due to the limited time, more verification results will be supplemented in the future. You are also welcome to contribute to PP-YOLOE*
 

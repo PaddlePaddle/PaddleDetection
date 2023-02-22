@@ -50,7 +50,8 @@ def visualize_results(image,
     if keypoint_res is not None:
         image = draw_pose(image, keypoint_res, threshold)
     if pose3d_res is not None:
-        image = draw_pose3d(image, pose3d_res, threshold)
+        pose3d = np.array(pose3d_res[0]['pose3d']) * 1000
+        image = draw_pose3d(image, pose3d, visual_thread=threshold)
     return image
 
 
@@ -325,12 +326,11 @@ def draw_pose(image,
 
 
 def draw_pose3d(image,
-                results,
+                pose3d,
+                pose2d=None,
                 visual_thread=0.6,
                 save_name='pose3d.jpg',
-                save_dir='output',
-                returnimg=False,
-                ids=None):
+                returnimg=True):
     try:
         import matplotlib.pyplot as plt
         import matplotlib
@@ -339,12 +339,11 @@ def draw_pose3d(image,
         logger.error('Matplotlib not found, please install matplotlib.'
                      'for example: `pip install matplotlib`.')
         raise e
-    pose3d = np.array(results[0]['pose3d']) * 1000
 
     if pose3d.shape[0] == 24:
         joints_connectivity_dict = [
             [0, 1, 0], [1, 2, 0], [5, 4, 1], [4, 3, 1], [2, 3, 0], [2, 14, 1],
-            [3, 14, 1], [14, 15, 1], [15, 16, 1], [16, 12, 1], [6, 7, 0],
+            [3, 14, 1], [14, 16, 1], [15, 16, 1], [15, 12, 1], [6, 7, 0],
             [7, 8, 0], [11, 10, 1], [10, 9, 1], [8, 12, 0], [9, 12, 1],
             [12, 19, 1], [19, 18, 1], [19, 20, 0], [19, 21, 1], [22, 20, 0],
             [23, 21, 1]
@@ -450,6 +449,9 @@ def draw_pose3d(image,
         image = Image.frombytes("RGBA", (w, h), buf.tostring())
         return image.convert("RGB")
 
-    fig = draw_img_pose(pose3d, frame=image)
+    fig = draw_img_pose(pose3d, pose2d, frame=image)
     data = fig2data(fig)
-    return data
+    if returnimg is False:
+        data.save(save_name)
+    else:
+        return data

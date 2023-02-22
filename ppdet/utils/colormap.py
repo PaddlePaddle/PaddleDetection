@@ -55,4 +55,4 @@ def colormap(rgb=False):
     color_list = color_list.reshape((-1, 3)) * 255
     if not rgb:
         color_list = color_list[:, ::-1]
-    return color_list
+    return color_list.astype('int32')

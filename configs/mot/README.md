@@ -23,6 +23,7 @@ PaddleDetection中提供了SDE和JDE两个系列的多种算法实现：
 - SDE
   - [ByteTrack](./bytetrack)
   - [OC-SORT](./ocsort)
+  - [BoT-SORT](./botsort)
   - [DeepSORT](./deepsort)
   - [CenterTrack](./centertrack)
 - JDE
@@ -32,7 +33,7 @@ PaddleDetection中提供了SDE和JDE两个系列的多种算法实现：
 
 **注意：**
   - 以上算法原论文均为单类别的多目标跟踪，PaddleDetection团队同时也支持了[ByteTrack](./bytetrack)和FairMOT([MCFairMOT](./mcfairmot))的多类别的多目标跟踪；
-  - [DeepSORT](./deepsort)、[JDE](./jde)和[CenterTrack](./centertrack)均只支持单类别的多目标跟踪；
+  - [DeepSORT](./deepsort)、[JDE](./jde)、[OC-SORT](./ocsort)、[BoT-SORT](./botsort)和[CenterTrack](./centertrack)均只支持单类别的多目标跟踪；
   - [DeepSORT](./deepsort)需要额外添加ReID权重一起执行，[ByteTrack](./bytetrack)可加可不加ReID权重，默认不加；
 
 
@@ -83,7 +84,7 @@ PP-Human赋能社区智能精细化管理教程[链接](https://aistudio.baidu.c
 ```
 pip install -r requirements.txt
 # 或手动pip安装MOT相关的库
-pip install lap motmetrics sklearn filterpy
+pip install lap motmetrics sklearn
 ```
 **注意：**
   - 预测需确保已安装[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
@@ -94,6 +95,7 @@ pip install lap motmetrics sklearn filterpy
 - 基础模型
     - [ByteTrack](bytetrack/README_cn.md)
     - [OC-SORT](ocsort/README_cn.md)
+    - [BoT-SORT](botsort/README_cn.md)
     - [DeepSORT](deepsort/README_cn.md)
     - [JDE](jde/README_cn.md)
     - [FairMOT](fairmot/README_cn.md)
@@ -113,7 +115,7 @@ pip install lap motmetrics sklearn filterpy
 
 |    MOT方式      |   经典算法      |  算法流程 |  数据集要求  |  其他特点  |
 | :--------------| :--------------| :------- | :----: | :----: |
-| SDE系列  | DeepSORT,ByteTrack,OC-SORT,CenterTrack | 分离式，两个独立模型权重先检测后ReID，也可不加ReID | 检测和ReID数据相对独立，不加ReID时即纯检测数据集 |检测和ReID可分别调优，鲁棒性较高，AI竞赛常用|
+| SDE系列  | DeepSORT,ByteTrack,OC-SORT,BoT-SORT,CenterTrack | 分离式，两个独立模型权重先检测后ReID，也可不加ReID | 检测和ReID数据相对独立，不加ReID时即纯检测数据集 |检测和ReID可分别调优，鲁棒性较高，AI竞赛常用|
 | JDE系列  | FairMOT,JDE | 联合式，一个模型权重端到端同时检测和ReID | 必须同时具有检测和ReID标注 | 检测和ReID联合训练，不易调优，泛化性不强|
 
 **注意：**
@@ -280,6 +282,13 @@ MOT17
   title={Observation-Centric SORT: Rethinking SORT for Robust Multi-Object Tracking},
   author={Cao, Jinkun and Weng, Xinshuo and Khirodkar, Rawal and Pang, Jiangmiao and Kitani, Kris},
   journal={arXiv preprint arXiv:2203.14360},
+  year={2022}
+}
+
+@article{aharon2022bot,
+  title={BoT-SORT: Robust Associations Multi-Pedestrian Tracking},
+  author={Aharon, Nir and Orfaig, Roy and Bobrovsky, Ben-Zion},
+  journal={arXiv preprint arXiv:2206.14651},
   year={2022}
 }
 

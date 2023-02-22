@@ -413,7 +413,7 @@ class WandbCallback(Callback):
 
                 ips = float(batch_size) / float(batch_time.avg)
                 data_cost = float(data_time.avg)
-                batch_cost = f
+                batch_cost = float(batch_time.avg)
 
                 metrics = {"train/" + k: v for k, v in training_status.items()}
 

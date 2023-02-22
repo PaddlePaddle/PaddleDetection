@@ -24,10 +24,14 @@ import copy
 import threading
 import queue
 import time
-from collections import Sequence, defaultdict
+from collections import defaultdict
 from datacollector import DataCollector, Result
+try:
+    from collections.abc import Sequence
+except Exception:
+    from collections import Sequence
 
-# add deploy path of PadleDetection to sys.path
+# add deploy path of PaddleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
@@ -530,6 +534,7 @@ class PipePredictor(object):
         else:
             self.predict_image(input)
         self.pipe_timer.info()
+        self.mot_predictor.det_times.tracking_info(average=True)
 
     def predict_image(self, input):
         # det
@@ -747,7 +752,8 @@ class PipePredictor(object):
                 res = self.mot_predictor.predict_image(
                     [copy.deepcopy(frame_rgb)],
                     visual=False,
-                    reuse_det_result=reuse_det_result)
+                    reuse_det_result=reuse_det_result,
+                    frame_count=frame_id)
 
                 # mot output format: id, class, score, xmin, ymin, xmax, ymax
                 mot_res = parse_mot_res(res)

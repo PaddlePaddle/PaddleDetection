@@ -16,7 +16,6 @@ ResNet:
   return_idx: [0, 1, 2, 3]
   freeze_at: -1
   norm_decay: 0.
-  variant: d
   dcn_v2_stages: [1, 2, 3]
 
 TTFFPN:

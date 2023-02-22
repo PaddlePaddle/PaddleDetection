@@ -1,4 +1,5 @@
 architecture: FasterRCNN
+# pretrain_weights: # rewrite in SwinTransformer.pretrained in ppdet/modeling/backbones/swin_transformer.py
 
 FasterRCNN:
   backbone: SwinTransformer
@@ -8,15 +9,12 @@ FasterRCNN:
   bbox_post_process: BBoxPostProcess
 
 SwinTransformer:
-  embed_dim: 96
-  depths: [2, 2, 6, 2]
-  num_heads: [3, 6, 12, 24]
-  window_size: 7
+  arch: 'swin_T_224'
   ape: false
   drop_path_rate: 0.1
   patch_norm: true
-  out_indices: [0,1,2,3]
-  pretrained: https://paddledet.bj.bcebos.com/models/pretrained/swin_tiny_patch4_window7_224.pdparams
+  out_indices: [0, 1, 2, 3]
+  pretrained: https://paddledet.bj.bcebos.com/models/pretrained/swin_tiny_patch4_window7_224_22kto1k_pretrained.pdparams
 
 FPN:
   out_channel: 256

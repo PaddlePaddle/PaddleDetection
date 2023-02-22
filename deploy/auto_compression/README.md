@@ -17,6 +17,28 @@
 
 ## 2.Benchmark
 
+### PP-YOLOE+
+
+| 模型  | Base mAP | 离线量化mAP | ACT量化mAP | TRT-FP32 | TRT-FP16 | TRT-INT8 |  配置文件 | 量化模型  |
+| :-------- |:-------- |:--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :----------------------: | :---------------------: |
+| PP-YOLOE+_s	 | 43.7  |  - | 42.9  |   -  |   -   |  -  |  [config](./configs/ppyoloe_plus_s_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddledet/deploy/Inference/ppyoloe_plus_s_qat_dis.tar) |
+| PP-YOLOE+_m | 49.8  |  - | 49.3  |   -  |   -   |  -  |  [config](./configs/ppyoloe_plus_m_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddledet/deploy/Inference/ppyoloe_plus_m_qat_dis.tar) |
+| PP-YOLOE+_l | 52.9  |  - | 52.6  |   -  |   -   |  -  |  [config](./configs/ppyoloe_plus_l_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddledet/deploy/Inference/ppyoloe_plus_l_qat_dis.tar) |
+| PP-YOLOE+_x | 54.7  |  - | 54.4  |   -  |   -   |  -  |  [config](./configs/ppyoloe_plus_x_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddledet/deploy/Inference/ppyoloe_plus_x_qat_dis.tar) |
+
+- mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
+
+### YOLOv8
+
+| 模型  | Base mAP | 离线量化mAP | ACT量化mAP | TRT-FP32 | TRT-FP16 | TRT-INT8 |  配置文件 | 量化模型  |
+| :-------- |:-------- |:--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :----------------------: | :---------------------: |
+| YOLOv8-s | 44.9 |  43.9 | 44.3  |   9.27ms  |   4.65ms   |  **3.78ms**  |  [config](https://github.com/PaddlePaddle/PaddleSlim/blob/develop/example/auto_compression/detection/configs/yolov8_s_qat_dis.yaml) | [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/yolov8_s_500e_coco_trt_nms_quant.tar) |
+
+**注意：**
+- 表格中YOLOv8模型均为带NMS的模型，可直接在TRT中部署，如果需要对齐测试标准，需要测试不带NMS的模型。
+- mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
+- 表格中的性能在Tesla T4的GPU环境下测试，并且开启TensorRT，batch_size=1。
+
 ### PP-YOLOE
 
 | 模型  | Base mAP | 离线量化mAP | ACT量化mAP | TRT-FP32 | TRT-FP16 | TRT-INT8 |  配置文件 | 量化模型  |
@@ -35,25 +57,12 @@
 
 - mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
 
-### PP-YOLOE+
-
-| 模型  | Base mAP | 离线量化mAP | ACT量化mAP | TRT-FP32 | TRT-FP16 | TRT-INT8 |  配置文件 | 量化模型  |
-| :-------- |:-------- |:--------: | :---------------------: | :----------------: | :----------------: | :---------------: | :----------------------: | :---------------------: |
-| PP-YOLOE+_s	 | 43.7  |  - | 42.9  |   -  |   -   |  -  |  [config](./configs/ppyoloe_plus_s_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddledet/deploy/Inference/ppyoloe_plus_s_qat_dis.tar) |
-| PP-YOLOE+_m | 49.8  |  - | 49.3  |   -  |   -   |  -  |  [config](./configs/ppyoloe_plus_m_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddledet/deploy/Inference/ppyoloe_plus_m_qat_dis.tar) |
-| PP-YOLOE+_l | 52.9  |  - | 52.6  |   -  |   -   |  -  |  [config](./configs/ppyoloe_plus_l_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddledet/deploy/Inference/ppyoloe_plus_l_qat_dis.tar) |
-| PP-YOLOE+_x | 54.7  |  - | 54.4  |   -  |   -   |  -  |  [config](./configs/ppyoloe_plus_x_qat_dis.yaml) | [Quant Model](https://bj.bcebos.com/v1/paddledet/deploy/Inference/ppyoloe_plus_x_qat_dis.tar) |
-
-- mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
-
-
-
 ## 3. 自动压缩流程
 
 #### 3.1 准备环境
-- PaddlePaddle >= 2.3 （可从[Paddle官网](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/install/pip/linux-pip.html)下载安装）
-- PaddleSlim >= 2.3
-- PaddleDet >= 2.4
+- PaddlePaddle >= 2.4 （可从[Paddle官网](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/install/pip/linux-pip.html)下载安装）
+- PaddleSlim >= 2.4.1
+- PaddleDet >= 2.5
 - opencv-python
 
 安装paddlepaddle：
@@ -73,6 +82,8 @@ pip install paddleslim
 ```shell
 pip install paddledet
 ```
+
+**注意：** YOLOv8模型的自动化压缩需要依赖安装最新[Develop Paddle](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/develop/install/pip/linux-pip.html)和[Develop PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim#%E5%AE%89%E8%A3%85)版本。
 
 #### 3.2 准备数据集
 
@@ -101,6 +112,16 @@ python tools/export_model.py \
         -o weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams \
         trt=True \
 ```
+
+YOLOv8-s模型，包含NMS，具体可参考[YOLOv8模型文档](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8), 然后执行：
+```shell
+python tools/export_model.py \
+        -c configs/yolov8/yolov8_s_500e_coco.yml \
+        -o weights=https://paddledet.bj.bcebos.com/models/yolov8_s_500e_coco.pdparams \
+        trt=True
+```
+
+如快速体验，可直接下载[YOLOv8-s导出模型](https://bj.bcebos.com/v1/paddle-slim-models/act/yolov8_s_500e_coco_trt_nms.tar)
 
 #### 3.4 自动压缩并产出模型
 

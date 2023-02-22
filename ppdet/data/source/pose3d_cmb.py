@@ -23,6 +23,7 @@ import pycocotools
 from pycocotools.coco import COCO
 from .dataset import DetDataset
 from ppdet.core.workspace import register, serializable
+from paddle.io import Dataset
 
 
 @serializable
@@ -77,10 +78,12 @@ class Pose3DDataset(DetDataset):
             indices = np.random.choice(
                 np.arange(num_joints), replace=False, size=masked_num)
             mjm_mask[indices, :] = 0.0
+        # return mjm_mask
 
-        mvm_mask = np.ones((10, 1)).astype(np.float32)
+        num_joints = 1
+        mvm_mask = np.ones((num_joints, 1)).astype(np.float)
         if self.test_mode == False:
-            num_vertices = 10
+            num_vertices = num_joints
             pb = np.random.random_sample()
             masked_num = int(
                 pb * mvm_percent *
@@ -108,6 +111,7 @@ class Pose3DDataset(DetDataset):
         print("Loading annotations..., please wait")
         self.annos = []
         im_id = 0
+        self.human36m_num = 0
         for idx, annof in enumerate(self.anno_list):
             img_prefix = os.path.join(self.dataset_dir, self.image_dirs[idx])
             dataf = os.path.join(self.dataset_dir, annof)
@@ -138,6 +142,8 @@ class Pose3DDataset(DetDataset):
                             print("cannot find imagepath:{}".format(imagename))
                             continue
                     new_anno['imageName'] = imagename
+                    if 'human3.6m' in imagename:
+                        self.human36m_num += 1
                     new_anno['bbox_center'] = anno['bbox_center']
                     new_anno['bbox_scale'] = anno['bbox_scale']
                     new_anno['joints_2d'] = np.array(anno[
@@ -159,6 +165,10 @@ class Pose3DDataset(DetDataset):
                         'joints_2d'])
                     self.annos.append(new_anno)
                 del annos
+
+    def get_temp_num(self):
+        """get temporal data number, like human3.6m"""
+        return self.human36m_num
 
     def __len__(self):
         """Get dataset length."""
@@ -189,3 +199,184 @@ class Pose3DDataset(DetDataset):
             raise ValueError(
                 "Some dataset is not valid and cannot download automatically now, please prepare the dataset first"
             )
+
+
+@register
+@serializable
+class Keypoint3DMultiFramesDataset(Dataset):
+    """24 keypoints 3D dataset for pose estimation. 
+
+    each item is a list of images
+
+    The dataset loads raw features and apply specified transforms
+    to return a dict containing the image tensors and other information.
+
+    Args:
+        dataset_dir (str): Root path to the dataset.
+        image_dir (str): Path to a directory where images are held.
+    """
+
+    def __init__(
+            self,
+            dataset_dir,  # 数据集根目录
+            image_dir,  # 图像文件夹
+            p3d_dir,  # 3D关键点文件夹
+            json_path,
+            img_size,  #图像resize大小
+            num_frames,  # 帧序列长度
+            anno_path=None, ):
+
+        self.dataset_dir = dataset_dir
+        self.image_dir = image_dir
+        self.p3d_dir = p3d_dir
+        self.json_path = json_path
+        self.img_size = img_size
+        self.num_frames = num_frames
+        self.anno_path = anno_path
+
+        self.data_labels, self.mf_inds = self._generate_multi_frames_list()
+
+    def _generate_multi_frames_list(self):
+        act_list = os.listdir(self.dataset_dir)  # 动作列表
+        count = 0
+        mf_list = []
+        annos_dict = {'images': [], 'annotations': [], 'act_inds': []}
+        for act in act_list:  #对每个动作，生成帧序列
+            if '.' in act:
+                continue
+
+            json_path = os.path.join(self.dataset_dir, act, self.json_path)
+            with open(json_path, 'r') as j:
+                annos = json.load(j)
+            length = len(annos['images'])
+            for k, v in annos.items():
+                if k in annos_dict:
+                    annos_dict[k].extend(v)
+            annos_dict['act_inds'].extend([act] * length)
+
+            mf = [[i + j + count for j in range(self.num_frames)]
+                  for i in range(0, length - self.num_frames + 1)]
+            mf_list.extend(mf)
+            count += length
+
+        print("total data number:", len(mf_list))
+        return annos_dict, mf_list
+
+    def __call__(self, *args, **kwargs):
+        return self
+
+    def __getitem__(self, index):  # 拿一个连续的序列
+        inds = self.mf_inds[
+            index]  # 如[568, 569, 570, 571, 572, 573]，长度为num_frames
+
+        images = self.data_labels['images']  # all images
+        annots = self.data_labels['annotations']  # all annots
+
+        act = self.data_labels['act_inds'][inds[0]]  # 动作名（文件夹名）
+
+        kps3d_list = []
+        kps3d_vis_list = []
+        names = []
+
+        h, w = 0, 0
+        for ind in inds:  # one image
+            height = float(images[ind]['height'])
+            width = float(images[ind]['width'])
+            name = images[ind]['file_name']  # 图像名称，带有后缀
+
+            kps3d_name = name.split('.')[0] + '.obj'
+            kps3d_path = os.path.join(self.dataset_dir, act, self.p3d_dir,
+                                      kps3d_name)
+
+            joints, joints_vis = self.kps3d_process(kps3d_path)
+            joints_vis = np.array(joints_vis, dtype=np.float32)
+
+            kps3d_list.append(joints)
+            kps3d_vis_list.append(joints_vis)
+            names.append(name)
+
+        kps3d = np.array(kps3d_list)  # (6, 24, 3),(num_frames, joints_num, 3)
+        kps3d_vis = np.array(kps3d_vis_list)
+
+        # read image
+        imgs = []
+        for name in names:
+            img_path = os.path.join(self.dataset_dir, act, self.image_dir, name)
+
+            image = cv2.imread(img_path, cv2.IMREAD_COLOR |
+                               cv2.IMREAD_IGNORE_ORIENTATION)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+            imgs.append(np.expand_dims(image, axis=0))
+
+        imgs = np.concatenate(imgs, axis=0)
+        imgs = imgs.astype(
+            np.float32)  # (6, 1080, 1920, 3),(num_frames, h, w, c)
+
+        # attention: 此时图像和标注是镜像的
+        records = {
+            'kps3d': kps3d,
+            'kps3d_vis': kps3d_vis,
+            "image": imgs,
+            'act': act,
+            'names': names,
+            'im_id': index
+        }
+
+        return self.transform(records)
+
+    def kps3d_process(self, kps3d_path):
+        count = 0
+        kps = []
+        kps_vis = []
+
+        with open(kps3d_path, 'r') as f:
+            lines = f.readlines()
+            for line in lines:
+                if line[0] == 'v':
+                    kps.append([])
+                    line = line.strip('\n').split(' ')[1:]
+                    for kp in line:
+                        kps[-1].append(float(kp))
+                    count += 1
+
+                    kps_vis.append([1, 1, 1])
+
+        kps = np.array(kps)  # 52，3
+        kps_vis = np.array(kps_vis)
+
+        kps *= 10  # scale points
+        kps -= kps[[0], :]  # set root point to zero
+
+        kps = np.concatenate((kps[0:23], kps[[37]]), axis=0)  # 24,3
+
+        kps *= 10
+
+        kps_vis = np.concatenate((kps_vis[0:23], kps_vis[[37]]), axis=0)  # 24,3
+
+        return kps, kps_vis
+
+    def __len__(self):
+        return len(self.mf_inds)
+
+    def get_anno(self):
+        if self.anno_path is None:
+            return
+        return os.path.join(self.dataset_dir, self.anno_path)
+
+    def check_or_download_dataset(self):
+        return
+
+    def parse_dataset(self, ):
+        return
+
+    def set_transform(self, transform):
+        self.transform = transform
+
+    def set_epoch(self, epoch_id):
+        self._epoch = epoch_id
+
+    def set_kwargs(self, **kwargs):
+        self.mixup_epoch = kwargs.get('mixup_epoch', -1)
+        self.cutmix_epoch = kwargs.get('cutmix_epoch', -1)
+        self.mosaic_epoch = kwargs.get('mosaic_epoch', -1)

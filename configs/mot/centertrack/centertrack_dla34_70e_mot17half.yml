@@ -14,7 +14,7 @@ pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/crowdhuma
 # mot_metric: False
 # metric: COCO
 
-### for MOT eval_mot.py/infer_mot_mot.py
+### for MOT eval_mot.py/infer_mot.py
 mot_metric: True
 metric: MOT
 

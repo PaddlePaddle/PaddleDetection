@@ -49,7 +49,7 @@ inference:./deploy/python/infer.py
 --save_log_path:null
 --run_benchmark:False
 --trt_max_shape:1600
-===========================train_benchmark_params==========================
+===========================disable_train_benchmark==========================
 batch_size:8
 fp_items:fp32|fp16
 epoch:1
@@ -57,4 +57,4 @@ repeat:12
 --profiler_options:batch_range=[10,20];state=GPU;tracer_option=Default;profile_path=model.profile
 flags:null
 ===========================infer_benchmark_params===========================
-numpy_infer_input:3x640x640.npy
+numpy_infer_input:3x640x640_2.npy

@@ -1,0 +1,138 @@
+use_gpu: true
+log_iter: 5
+save_dir: output
+snapshot_epoch: 1
+weights: output/tinypose_3D_multi_frames/model_final
+epoch: 420
+num_joints: &num_joints 24
+pixel_std: &pixel_std 200
+metric: Pose3DEval
+num_classes: 1
+train_height: &train_height 128
+train_width: &train_width 96
+trainsize: &trainsize [*train_width, *train_height]
+hmsize: &hmsize [24, 32]
+flip_perm: &flip_perm [[1, 2], [4, 5], [7, 8], [10, 11], [13, 14], [16, 17], [18, 19], [20, 21], [22, 23]]
+
+
+#####model
+architecture: TinyPose3DHRNet
+pretrain_weights: medical_multi_frames_best_model.pdparams
+
+TinyPose3DHRNet:
+  backbone: LiteHRNet
+  post_process: TinyPose3DPostProcess
+  num_joints: *num_joints
+  width: &width 40
+  loss: KeyPointRegressionMSELoss
+
+LiteHRNet:
+  network_type: wider_naive
+  freeze_at: -1
+  freeze_norm: false
+  return_idx: [0]
+
+KeyPointRegressionMSELoss:
+  reduction: 'mean'
+
+#####optimizer
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+  - !PiecewiseDecay
+    milestones: [17, 21]
+    gamma: 0.1
+  - !LinearWarmup
+    start_factor: 0.01
+    steps: 1000
+
+OptimizerBuilder:
+  optimizer:
+    type: Adam
+  regularizer:
+    factor: 0.0
+    type: L2
+
+#####data
+TrainDataset:
+  !Keypoint3DMultiFramesDataset
+    dataset_dir: "data/medical/multi_frames/train"
+    image_dir: "images"
+    p3d_dir: "joint_pc/player_0"
+    json_path: "json_results/player_0/player_0.json"
+    img_size: *trainsize # w,h
+    num_frames: 6
+
+
+EvalDataset:
+  !Keypoint3DMultiFramesDataset
+    dataset_dir: "data/medical/multi_frames/val"
+    image_dir: "images"
+    p3d_dir: "joint_pc/player_0"
+    json_path: "json_results/player_0/player_0.json"
+    img_size: *trainsize # w,h
+    num_frames: 6
+
+TestDataset:
+  !Keypoint3DMultiFramesDataset
+    dataset_dir: "data/medical/multi_frames/val"
+    image_dir: "images"
+    p3d_dir: "joint_pc/player_0"
+    json_path: "json_results/player_0/player_0.json"
+    img_size: *trainsize # w,h
+    num_frames: 6
+
+worker_num: 4
+global_mean: &global_mean [0.485, 0.456, 0.406]
+global_std: &global_std [0.229, 0.224, 0.225]
+TrainReader:
+  sample_transforms:
+    - CropAndFlipImages:
+        crop_range: [556, 1366]
+    - RandomFlipHalfBody3DTransformImages:
+        scale: 0.25
+        rot: 30
+        num_joints_half_body: 9
+        prob_half_body: 0.3
+        pixel_std: *pixel_std
+        trainsize: *trainsize
+        upper_body_ids: [0, 3, 6, 9, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+        flip_pairs: *flip_perm
+        do_occlusion: true
+    - Resize: {interp: 2, target_size: [*train_height,*train_width], keep_ratio: false}
+  batch_transforms:
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - PermuteImages: {}
+  batch_size: 32
+  shuffle: true
+  drop_last: false
+
+EvalReader:
+  sample_transforms:
+    - CropAndFlipImages:
+        crop_range: [556, 1366]
+    - Resize: {interp: 2, target_size: [*train_height,*train_width], keep_ratio: false}
+  batch_transforms:
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - PermuteImages: {}
+  batch_size: 32
+
+TestReader:
+  inputs_def:
+    image_shape: [3, *train_height, *train_width]
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: { target_size: [*train_height,*train_width]}
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - Permute: {}
+  batch_size: 1
+  fuse_normalize: false

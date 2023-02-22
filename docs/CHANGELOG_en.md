@@ -4,6 +4,44 @@ English | [简体中文](./CHANGELOG.md)
 
 ## Last Version Information
 
+### 2.6(02.15/2023)
+
+- Featured model
+
+  - Release rotated object detector PP-YOLOE-R：SOTA Anchor-free rotated object detection model with high accuracy and efficiency. It has a series of models, named s/m/l/x, for cloud and edge devices and avoids using special operators to be deployed friendly with TensorRT.
+    - Release small object detector PP-YOLOE-SOD: End-to-end detection pipeline based on sliced images and SOTA model on VisDrone based on original images.
+    - Release crowded object detector: Crowded object detection model with top accuracy on SKU dataset.
+
+- Functions in different scenarios
+
+  - Release real-time object detection model on edge device in PP-Human v2. The model reaches 45.7mAP and 80FPS on Jetson AGX
+  - Release real-time object detection model on edge device in PP-Vehicle. The model reaches 53.5mAP and 80FPS on Jetson AGX
+  - Support multi-stream deployment in PP-Human v2 and PP-Vehicle. Achieved 20FPS in 4-stream deployment on Jetson AGX
+  - Support retrograde and press line detection in PP-Vehicle
+
+- Cutting-edge algorithms
+
+  - Release YOLOv8 and YOLOv6 3.0 in YOLO Family
+  - Release object detection algorithm DINO, YOLOF
+  - Rich ViTDet series including PP-YOLOE+ViT_base, Mask RCNN + ViT_base, Mask RCNN + ViT_large
+  - Release MOT algorithm CenterTrack
+  - Release oriented object detection algorithm FCOSR
+  - Release instance segmentation algorithm QueryInst
+  - Release 3D keypoint detection algorithm Metro3d
+  - Release distillation algorithm FGD，LD，CWD and PP-YOLOE+ distillation with improvement of 1.1+ mAP
+  - Release SSOD algorithm DenseTeacher and adapt for PP-YOLOE+
+  - Release few shot finetuning algorithm, including Co-tuning and Contrastive learning
+
+- Framework capabilities
+
+  - New functions
+    - Release Grad-CAM for heatmap visualization. Support Faster RCNN, Mask RCNN, PP-YOLOE, BlazeFace, SSD, RetinaNet.
+  - Improvement and fixes
+    - Support python 3.10
+    - Fix EMA for no-grad parameters
+    - Simplify PP-YOLOE architecture
+    - Support AdamW for Paddle 2.4.1
+
 ### 2.5(08.26/2022)
 
 - Featured model

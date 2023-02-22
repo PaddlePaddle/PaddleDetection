@@ -28,7 +28,7 @@
 ## General Settings
 
 - All models were trained and tested in the COCO17 dataset.
-- The codes of [YOLOv5](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov5),[YOLOv6](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov6) and [YOLOv7](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov7) can be found in [PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO). Note that **the LICENSE of PaddleYOLO is GPL 3.0**.
+- The codes of [YOLOv5](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov5),[YOLOv6](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov6),[YOLOv7](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov7) and [YOLOv8](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov8) can be found in [PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO). Note that **the LICENSE of PaddleYOLO is GPL 3.0**.
 - Unless special instructions, all the ResNet backbone network using [ResNet-B](https://arxiv.org/pdf/1812.01187) structure.
 - **Inference time (FPS)**: The reasoning time was calculated on a Tesla V100 GPU by `tools/eval.py` testing all validation sets in FPS (number of pictures/second). CuDNN version is 7.5, including data loading, network forward execution and post-processing, and Batch size is 1.
 
@@ -138,6 +138,10 @@ Please refer to [Sparse R-CNN](https://github.com/PaddlePaddle/PaddleDetection/t
 
 Please refer to [Vision Transformer](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/vitdet)
 
+### DINO
+
+Please refer to [DINO](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dino)
+
 ### YOLOX
 
 Please refer to [YOLOX](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolox)
@@ -161,6 +165,10 @@ Please refer to [Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/
 
 Please refer to [SOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/solov2/)
 
+### QueryInst
+
+Please refer to [QueryInst](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/queryinst)
+
 
 ## [PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO)
 
@@ -170,13 +178,17 @@ Please refer to [Model Zoo for PaddleYOLO](https://github.com/PaddlePaddle/Paddl
 
 Please refer to [YOLOv5](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov5)
 
-### YOLOv6
+### YOLOv6(v3.0)
 
 Please refer to [YOLOv6](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov6)
 
 ### YOLOv7
 
 Please refer to [YOLOv7](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov7)
+
+### YOLOv8
+
+Please refer to [YOLOv7](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/configs/yolov8)
 
 ### RTMDet
 
@@ -245,6 +257,10 @@ Please refer to [ByteTrack](https://github.com/PaddlePaddle/PaddleDetection/tree
 ### OC-SORT
 
 Please refer to [OC-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/ocsort)
+
+### BoT-SORT
+
+Please refer to [BoT-SORT](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/botsort)
 
 ### CenterTrack
 

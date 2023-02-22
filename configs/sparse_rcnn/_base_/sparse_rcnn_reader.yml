@@ -1,5 +1,4 @@
 worker_num: 4
-use_process: true
 
 TrainReader:
   sample_transforms:
@@ -10,12 +9,11 @@ TrainReader:
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
-  - Gt2SparseRCNNTarget: {}
+  - Gt2SparseTarget: {use_padding_shape: True}
   batch_size: 4
   shuffle: true
   drop_last: true
   collate_batch: false
-  use_process: true
 
 EvalReader:
   sample_transforms:
@@ -25,11 +23,10 @@ EvalReader:
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
-  - Gt2SparseRCNNTarget: {}
+  - Gt2SparseTarget: {use_padding_shape: True}
   batch_size: 1
   shuffle: false
   drop_last: false
-  use_process: true
 
 TestReader:
   sample_transforms:
@@ -39,6 +36,6 @@ TestReader:
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
-  - Gt2SparseRCNNTarget: {}
+  - Gt2SparseTarget: {use_padding_shape: True}
   batch_size: 1
   shuffle: false

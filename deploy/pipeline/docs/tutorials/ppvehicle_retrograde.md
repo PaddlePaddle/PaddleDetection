@@ -38,7 +38,7 @@ VEHICLE_RETROGRADE:
                                       #车辆静止
   fence_line: []                      #车道中间线坐标，格式[x1,y1,x2,y2] 且y2>y1。若为空，由程序根据车流方向自动判断
 ```
-[车道线配置文件](../../config/lane_seg.yml)中与车道线提取相关的参数如下：
+[车道线配置文件](../../config/lane_seg_config.yml)中与车道线提取相关的参数如下：
 ```
 type: PLSLaneseg  #选择分割模型
 
@@ -72,7 +72,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 #预测包含一个或多个视频的文件夹
 python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppvehicle.yml \
                                    -o VEHICLE_RETROGRADE.enable=true \
-                                   --video_dir=test_video.mp4\
+                                   --video_dir=test_video \
                                    --device=gpu
 ```
 
@@ -97,7 +97,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
 
 **注意:**
  - 车道线中间线自动判断条件：在采样的视频段内同时有两个相反方向的车辆，且判断一次后固定，不再更新；
- - 因摄像头角度以及2d视角问题，车道线中间线判断存在不准确情况，可在配置文件手动输入中间线坐标
+ - 因摄像头角度以及2d视角问题，车道线中间线判断存在不准确情况;
+ - 可在配置文件手动输入中间线坐标.参考[车辆违章配置文件](../../config/examples/infer_cfg_vehicle_violation.yml)
 
 
 ## 方案说明
@@ -113,7 +114,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_ppv
   3 虚线
 车辆逆行分析过滤虚线类；
 
-3.车道线通过对分割结果聚类得到，且默认过滤水平方向车道线，若不过滤可在[车道线配置文件](../../config/lane_seg.yml)修改`filter_flag`参数;
+3.车道线通过对分割结果聚类得到，且默认过滤水平方向车道线，若不过滤可在[车道线配置文件](../../config/lane_seg_config.yml)修改`filter_flag`参数;
 
 4.车辆逆行判断默认过滤水平方向车辆，若不过滤可在[配置文件](../../config/infer_cfg_ppvehicle.yml)修改`filter_horizontal_flag`参数;
 

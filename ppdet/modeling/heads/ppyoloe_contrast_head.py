@@ -17,21 +17,18 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 
-from ..bbox_utils import batch_distance2bbox
-from ..losses import GIoULoss
-from ..initializer import bias_init_with_prob, constant_, normal_
+from ..initializer import bias_init_with_prob, constant_
 from ..assigners.utils import generate_anchors_for_grid_cell
-from ppdet.modeling.backbones.cspresnet import ConvBNLayer
-from ppdet.modeling.ops import get_static_shape, get_act_fn
-from ppdet.modeling.layers import MultiClassNMS
 from ppdet.modeling.heads.ppyoloe_head import PPYOLOEHead
+
 __all__ = ['PPYOLOEContrastHead']
+
 
 @register
 class PPYOLOEContrastHead(PPYOLOEHead):
     __shared__ = [
         'num_classes', 'eval_size', 'trt', 'exclude_nms',
-        'exclude_post_process', 'use_shared_conv'
+        'exclude_post_process', 'use_shared_conv', 'for_distill'
     ]
     __inject__ = ['static_assigner', 'assigner', 'nms', 'contrast_loss']
 
@@ -57,36 +54,23 @@ class PPYOLOEContrastHead(PPYOLOEHead):
                      'dfl': 0.5,
                  },
                  trt=False,
+                 attn_conv='convbn',
                  exclude_nms=False,
                  exclude_post_process=False,
-                 use_shared_conv=True):
-        super().__init__(in_channels,
-                 num_classes,
-                 act,
-                 fpn_strides,
-                 grid_cell_scale,
-                 grid_cell_offset,
-                 reg_max,
-                 reg_range,
-                 static_assigner_epoch,
-                 use_varifocal_loss,
-                 static_assigner,
-                 assigner,
-                 nms,
-                 eval_size,
-                 loss_weight,
-                 trt,
-                 exclude_nms,
-                 exclude_post_process,
-                 use_shared_conv)
-                 
+                 use_shared_conv=True,
+                 for_distill=False):
+        super().__init__(in_channels, num_classes, act, fpn_strides,
+                         grid_cell_scale, grid_cell_offset, reg_max, reg_range,
+                         static_assigner_epoch, use_varifocal_loss,
+                         static_assigner, assigner, nms, eval_size, loss_weight,
+                         trt, attn_conv, exclude_nms, exclude_post_process,
+                         use_shared_conv, for_distill)
+
         assert len(in_channels) > 0, "len(in_channels) should > 0"
         self.contrast_loss = contrast_loss
         self.contrast_encoder = nn.LayerList()
         for in_c in self.in_channels:
-            self.contrast_encoder.append(
-                nn.Conv2D(
-                    in_c, 128, 3, padding=1))
+            self.contrast_encoder.append(nn.Conv2D(in_c, 128, 3, padding=1))
         self._init_contrast_encoder()
 
     def _init_contrast_encoder(self):
@@ -95,7 +79,7 @@ class PPYOLOEContrastHead(PPYOLOEHead):
             constant_(en_.weight)
             constant_(en_.bias, bias_en)
 
-    def forward_train(self, feats, targets):
+    def forward_train(self, feats, targets, aux_pred=None):
         anchors, anchor_points, num_anchors_list, stride_tensor = \
             generate_anchors_for_grid_cell(
                 feats, self.fpn_strides, self.grid_cell_scale,
@@ -108,9 +92,10 @@ class PPYOLOEContrastHead(PPYOLOEHead):
             cls_logit = self.pred_cls[i](self.stem_cls[i](feat, avg_feat) +
                                          feat)
             reg_distri = self.pred_reg[i](self.stem_reg[i](feat, avg_feat))
-            contrast_logit = self.contrast_encoder[i](self.stem_cls[i](feat, avg_feat) +
-                                         feat)
-            contrast_encoder_list.append(contrast_logit.flatten(2).transpose([0, 2, 1]))
+            contrast_logit = self.contrast_encoder[i](self.stem_cls[i](
+                feat, avg_feat) + feat)
+            contrast_encoder_list.append(
+                contrast_logit.flatten(2).transpose([0, 2, 1]))
             # cls and reg
             cls_score = F.sigmoid(cls_logit)
             cls_score_list.append(cls_score.flatten(2).transpose([0, 2, 1]))
@@ -120,8 +105,8 @@ class PPYOLOEContrastHead(PPYOLOEHead):
         contrast_encoder_list = paddle.concat(contrast_encoder_list, axis=1)
 
         return self.get_loss([
-            cls_score_list, reg_distri_list, contrast_encoder_list, anchors, anchor_points,
-            num_anchors_list, stride_tensor
+            cls_score_list, reg_distri_list, contrast_encoder_list, anchors,
+            anchor_points, num_anchors_list, stride_tensor
         ], targets)
 
     def get_loss(self, head_outs, gt_meta):
@@ -136,7 +121,7 @@ class PPYOLOEContrastHead(PPYOLOEHead):
         pad_gt_mask = gt_meta['pad_gt_mask']
         # label assignment
         if gt_meta['epoch_id'] < self.static_assigner_epoch:
-            assigned_labels, assigned_bboxes, assigned_scores = \
+            assigned_labels, assigned_bboxes, assigned_scores, _ = \
                 self.static_assigner(
                     anchors,
                     num_anchors_list,
@@ -148,7 +133,7 @@ class PPYOLOEContrastHead(PPYOLOEHead):
             alpha_l = 0.25
         else:
             if self.sm_use:
-                assigned_labels, assigned_bboxes, assigned_scores = \
+                assigned_labels, assigned_bboxes, assigned_scores, _ = \
                     self.assigner(
                     pred_scores.detach(),
                     pred_bboxes.detach() * stride_tensor,
@@ -159,7 +144,7 @@ class PPYOLOEContrastHead(PPYOLOEHead):
                     pad_gt_mask,
                     bg_index=self.num_classes)
             else:
-                assigned_labels, assigned_bboxes, assigned_scores = \
+                assigned_labels, assigned_bboxes, assigned_scores, _ = \
                     self.assigner(
                     pred_scores.detach(),
                     pred_bboxes.detach() * stride_tensor,

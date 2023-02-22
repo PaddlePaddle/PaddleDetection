@@ -245,5 +245,34 @@ class RetinaHead(nn.Layer):
         bboxes, scores = self.decode(anchors, cls_logits, bboxes_reg, im_shape,
                                      scale_factor)
 
-        bbox_pred, bbox_num, _ = self.nms(bboxes, scores)
-        return bbox_pred, bbox_num
+        bbox_pred, bbox_num, nms_keep_idx = self.nms(bboxes, scores)
+        return bbox_pred, bbox_num, nms_keep_idx
+
+
+    def get_scores_single(self, cls_scores_list):
+        mlvl_logits = []
+        for cls_score in  cls_scores_list:
+            cls_score = cls_score.reshape([-1, self.num_classes])
+            if self.nms_pre is not None and cls_score.shape[0] > self.nms_pre:
+                max_score = cls_score.max(axis=1)
+                _, topk_inds = max_score.topk(self.nms_pre)
+                cls_score = cls_score.gather(topk_inds)
+
+            mlvl_logits.append(cls_score)
+
+        mlvl_logits = paddle.concat(mlvl_logits)
+        mlvl_logits = mlvl_logits.transpose([1, 0])
+
+        return mlvl_logits
+
+    def decode_cls_logits(self, cls_logits_list):
+        cls_logits = [_.transpose([0, 2, 3, 1]) for _ in cls_logits_list]
+        batch_logits = []
+        for img_id in range(cls_logits[0].shape[0]):
+            num_lvls = len(cls_logits)
+            cls_scores_list = [cls_logits[i][img_id] for i in range(num_lvls)]
+            logits = self.get_scores_single(cls_scores_list)
+            batch_logits.append(logits)
+        batch_logits = paddle.stack(batch_logits, axis=0)
+        return batch_logits
+

@@ -8,7 +8,12 @@ epochs: &epochs 24
 weights: output/denseteacher_fcos_r50_fpn_coco_full/model_final
 
 
-### pretrain and warmup config, choose one and coment another
+### pretrain and warmup config, choose one and comment another
+# pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/fcos_r50_fpn_iou_multiscale_2x_coco.pdparams # mAP=42.6
+# semi_start_iters: 0
+# ema_start_iters: 0
+# use_warmup: &use_warmup False
+
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
 semi_start_iters: 5000
 ema_start_iters: 3000

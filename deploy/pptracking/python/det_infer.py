@@ -26,7 +26,7 @@ from paddle.inference import Config
 from paddle.inference import create_predictor
 
 import sys
-# add deploy path of PadleDetection to sys.path
+# add deploy path of PaddleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'])))
 sys.path.insert(0, parent_path)
 
@@ -39,6 +39,7 @@ from mot_utils import argsparser, Timer, get_current_memory_mb
 # Global dictionary
 SUPPORT_MODELS = {
     'YOLO',
+    'PPYOLOE',
     'PicoDet',
     'JDE',
     'FairMOT',
