@@ -18,12 +18,13 @@ from __future__ import print_function
 
 from itertools import cycle, islice
 from collections import abc
+import numpy as np
 import paddle
 import paddle.nn as nn
 
 from ppdet.core.workspace import register, serializable
 
-__all__ = ['HrHRNetLoss', 'KeyPointMSELoss']
+__all__ = ['HrHRNetLoss', 'KeyPointMSELoss', 'OKSLoss', 'CenterFocalLoss', 'L1Loss']
 
 
 @register
@@ -226,3 +227,406 @@ def recursive_sum(inputs):
     if isinstance(inputs, abc.Sequence):
         return sum([recursive_sum(x) for x in inputs])
     return inputs
+
+
+def oks_overlaps(kpt_preds, kpt_gts, kpt_valids, kpt_areas, sigmas):
+    if not kpt_gts.astype('bool').any():
+        return kpt_preds.sum()*0
+    
+    sigmas = paddle.to_tensor(sigmas, dtype=kpt_preds.dtype)
+    variances = (sigmas * 2)**2
+
+    assert kpt_preds.shape[0] == kpt_gts.shape[0]
+    kpt_preds = kpt_preds.reshape((-1, kpt_preds.shape[-1] // 2, 2))
+    kpt_gts = kpt_gts.reshape((-1, kpt_gts.shape[-1] // 2, 2))
+
+    squared_distance = (kpt_preds[:, :, 0] - kpt_gts[:, :, 0]) ** 2 + \
+        (kpt_preds[:, :, 1] - kpt_gts[:, :, 1]) ** 2
+    assert (kpt_valids.sum(-1) > 0).all()
+    squared_distance0 = squared_distance / (
+        kpt_areas[:, None] * variances[None, :] * 2)
+    squared_distance1 = paddle.exp(-squared_distance0)
+    squared_distance1 = squared_distance1 * kpt_valids
+    oks = squared_distance1.sum(axis=1) / kpt_valids.sum(axis=1)
+
+    return oks
+
+
+def oks_loss(pred,
+             target,
+             weight,
+             valid=None,
+             area=None,
+             linear=False,
+             sigmas=None,
+             eps=1e-6,
+             avg_factor=None, 
+             reduction=None):
+    """Oks loss.
+
+    Computing the oks loss between a set of predicted poses and target poses.
+    The loss is calculated as negative log of oks.
+
+    Args:
+        pred (Tensor): Predicted poses of format (x1, y1, x2, y2, ...),
+            shape (n, K*2).
+        target (Tensor): Corresponding gt poses, shape (n, K*2).
+        linear (bool, optional): If True, use linear scale of loss instead of
+            log scale. Default: False.
+        eps (float): Eps to avoid log(0).
+
+    Returns:
+        Tensor: Loss tensor.
+    """
+    oks = oks_overlaps(pred, target, valid, area, sigmas).clip(min=eps)
+    if linear:
+        loss = 1 - oks
+    else:
+        loss = -oks.log()
+
+    if weight is not None:
+        if weight.shape != loss.shape:
+            if weight.shape[0] == loss.shape[0]:
+                # For most cases, weight is of shape (num_priors, ),
+                #  which means it does not have the second axis num_class
+                weight = weight.reshape((-1, 1))
+            else:
+                # Sometimes, weight per anchor per class is also needed. e.g.
+                #  in FSAF. But it may be flattened of shape
+                #  (num_priors x num_class, ), while loss is still of shape
+                #  (num_priors, num_class).
+                assert weight.numel() == loss.numel()
+                weight = weight.reshape((loss.shape[0], -1))
+        assert weight.ndim == loss.ndim
+        loss = loss * weight
+
+    # if avg_factor is not specified, just reduce the loss
+    if avg_factor is None:
+        if reduction == 'mean':
+            loss = loss.mean()
+        elif reduction == 'sum':
+            loss = loss.sum()
+    else:
+        # if reduction is mean, then average the loss by avg_factor
+        if reduction == 'mean':
+            # Avoid causing ZeroDivisionError when avg_factor is 0.0,
+            # i.e., all labels of an image belong to ignore index.
+            eps = 1e-10
+            loss = loss.sum() / (avg_factor + eps)
+        # if reduction is 'none', then do nothing, otherwise raise an error
+        elif reduction != 'none':
+            raise ValueError('avg_factor can not be used with reduction="sum"')
+
+
+    return loss
+
+@register
+@serializable
+class OKSLoss(nn.Layer):
+    """OKSLoss.
+
+    Computing the oks loss between a set of predicted poses and target poses.
+
+    Args:
+        linear (bool): If True, use linear scale of loss instead of log scale.
+            Default: False.
+        eps (float): Eps to avoid log(0).
+        reduction (str): Options are "none", "mean" and "sum".
+        loss_weight (float): Weight of loss.
+    """
+
+    def __init__(self,
+                 linear=False,
+                 num_keypoints=17,
+                 eps=1e-6,
+                 reduction='mean',
+                 loss_weight=1.0):
+        super(OKSLoss, self).__init__()
+        self.linear = linear
+        self.eps = eps
+        self.reduction = reduction
+        self.loss_weight = loss_weight
+        if num_keypoints == 17:
+            self.sigmas = np.array([
+                .26, .25, .25, .35, .35, .79, .79, .72, .72, .62, .62, 1.07,
+                1.07, .87, .87, .89, .89
+            ], dtype=np.float32) / 10.0
+        elif num_keypoints == 14:
+            self.sigmas = np.array([
+                .79, .79, .72, .72, .62, .62, 1.07, 1.07, .87, .87, .89, .89,
+                .79, .79
+            ]) / 10.0
+        else:
+            raise ValueError(f'Unsupported keypoints number {num_keypoints}')
+
+    def forward(self,
+                pred,
+                target,
+                valid,
+                area,
+                weight=None,
+                avg_factor=None,
+                reduction_override=None,
+                **kwargs):
+        """Forward function.
+
+        Args:
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            valid (Tensor): The visible flag of the target pose.
+            area (Tensor): The area of the target pose.
+            weight (Tensor, optional): The weight of loss for each
+                prediction. Defaults to None.
+            avg_factor (int, optional): Average factor that is used to average
+                the loss. Defaults to None.
+            reduction_override (str, optional): The reduction method used to
+                override the original reduction method of the loss.
+                Defaults to None. Options are "none", "mean" and "sum".
+        """
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
+        if (weight is not None) and (not paddle.any(weight > 0)) and (
+                reduction != 'none'):
+            if pred.dim() == weight.dim() + 1:
+                weight = weight.unsqueeze(1)
+            return (pred * weight).sum()  # 0
+        if weight is not None and weight.dim() > 1:
+            # TODO: remove this in the future
+            # reduce the weight of shape (n, 4) to (n,) to match the
+            # iou_loss of shape (n,)
+            assert weight.shape == pred.shape
+            weight = weight.mean(-1)
+        loss = self.loss_weight * oks_loss(
+            pred,
+            target,
+            weight,
+            valid=valid,
+            area=area,
+            linear=self.linear,
+            sigmas=self.sigmas,
+            eps=self.eps,
+            reduction=reduction,
+            avg_factor=avg_factor,
+            **kwargs)
+        return loss
+
+
+def center_focal_loss(pred, gt, weight=None, mask=None, avg_factor=None, reduction=None):
+    """Modified focal loss. Exactly the same as CornerNet.
+    Runs faster and costs a little bit more memory.
+
+    Args:
+        pred (Tensor): The prediction with shape [bs, c, h, w].
+        gt (Tensor): The learning target of the prediction in gaussian
+            distribution, with shape [bs, c, h, w].
+        mask (Tensor): The valid mask. Defaults to None.
+    """
+    if not gt.astype('bool').any():
+        return pred.sum()*0
+    pos_inds = gt.equal(1).astype('float32')
+    if mask is None:
+        neg_inds = gt.less_than(paddle.to_tensor([1], dtype='float32')).astype('float32')
+    else:
+        neg_inds = gt.less_than(paddle.to_tensor([1], dtype='float32')).astype('float32') * mask.equal(0).astype('float32')
+
+    neg_weights = paddle.pow(1 - gt, 4)
+
+    loss = 0
+
+    pos_loss = paddle.log(pred) * paddle.pow(1 - pred, 2) * pos_inds
+    neg_loss = paddle.log(1 - pred) * paddle.pow(pred, 2) * neg_weights * \
+        neg_inds
+
+    num_pos = pos_inds.astype('float32').sum()
+    pos_loss = pos_loss.sum()
+    neg_loss = neg_loss.sum()
+
+    if num_pos == 0:
+        loss = loss - neg_loss
+    else:
+        loss = loss - (pos_loss + neg_loss) / num_pos
+
+    if weight is not None:
+        if weight.shape != loss.shape:
+            if weight.shape[0] == loss.shape[0]:
+                # For most cases, weight is of shape (num_priors, ),
+                #  which means it does not have the second axis num_class
+                weight = weight.reshape((-1, 1))
+            else:
+                # Sometimes, weight per anchor per class is also needed. e.g.
+                #  in FSAF. But it may be flattened of shape
+                #  (num_priors x num_class, ), while loss is still of shape
+                #  (num_priors, num_class).
+                assert weight.numel() == loss.numel()
+                weight = weight.reshape((loss.shape[0], -1))
+        assert weight.ndim == loss.ndim
+        loss = loss * weight
+
+    # if avg_factor is not specified, just reduce the loss
+    if avg_factor is None:
+        if reduction == 'mean':
+            loss = loss.mean()
+        elif reduction == 'sum':
+            loss = loss.sum()
+    else:
+        # if reduction is mean, then average the loss by avg_factor
+        if reduction == 'mean':
+            # Avoid causing ZeroDivisionError when avg_factor is 0.0,
+            # i.e., all labels of an image belong to ignore index.
+            eps = 1e-10
+            loss = loss.sum() / (avg_factor + eps)
+        # if reduction is 'none', then do nothing, otherwise raise an error
+        elif reduction != 'none':
+            raise ValueError('avg_factor can not be used with reduction="sum"')
+
+    return loss
+
+@register
+@serializable
+class CenterFocalLoss(nn.Layer):
+    """CenterFocalLoss is a variant of focal loss.
+
+    More details can be found in the `paper
+    <https://arxiv.org/abs/1808.01244>`_
+
+    Args:
+        reduction (str): Options are "none", "mean" and "sum".
+        loss_weight (float): Loss weight of current loss.
+    """
+
+    def __init__(self,
+                 reduction='none',
+                 loss_weight=1.0):
+        super(CenterFocalLoss, self).__init__()
+        self.reduction = reduction
+        self.loss_weight = loss_weight
+
+    def forward(self,
+                pred,
+                target,
+                weight=None,
+                mask=None,
+                avg_factor=None,
+                reduction_override=None):
+        """Forward function.
+
+        Args:
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction in gaussian
+                distribution.
+            weight (Tensor, optional): The weight of loss for each
+                prediction. Defaults to None.
+            mask (Tensor): The valid mask. Defaults to None.
+            avg_factor (int, optional): Average factor that is used to average
+                the loss. Defaults to None.
+            reduction_override (str, optional): The reduction method used to
+                override the original reduction method of the loss.
+                Defaults to None.
+        """
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
+        loss_reg = self.loss_weight * center_focal_loss(
+            pred,
+            target,
+            weight,
+            mask=mask,
+            reduction=reduction,
+            avg_factor=avg_factor)
+        return loss_reg
+
+def l1_loss(pred, target, weight=None, reduction='mean', avg_factor=None):
+    """L1 loss.
+
+    Args:
+        pred (Tensor): The prediction.
+        target (Tensor): The learning target of the prediction.
+
+    Returns:
+        Tensor: Calculated loss
+    """
+    if not target.astype('bool').any():
+        return pred.sum() * 0
+
+    assert pred.shape == target.shape
+    loss = paddle.abs(pred - target)
+
+    if weight is not None:
+        if weight.shape != loss.shape:
+            if weight.shape[0] == loss.shape[0]:
+                # For most cases, weight is of shape (num_priors, ),
+                #  which means it does not have the second axis num_class
+                weight = weight.reshape((-1, 1))
+            else:
+                # Sometimes, weight per anchor per class is also needed. e.g.
+                #  in FSAF. But it may be flattened of shape
+                #  (num_priors x num_class, ), while loss is still of shape
+                #  (num_priors, num_class).
+                assert weight.numel() == loss.numel()
+                weight = weight.reshape((loss.shape[0], -1))
+        assert weight.ndim == loss.ndim
+        loss = loss * weight
+
+    # if avg_factor is not specified, just reduce the loss
+    if avg_factor is None:
+        if reduction == 'mean':
+            loss = loss.mean()
+        elif reduction == 'sum':
+            loss = loss.sum()
+    else:
+        # if reduction is mean, then average the loss by avg_factor
+        if reduction == 'mean':
+            # Avoid causing ZeroDivisionError when avg_factor is 0.0,
+            # i.e., all labels of an image belong to ignore index.
+            eps = 1e-10
+            loss = loss.sum() / (avg_factor + eps)
+        # if reduction is 'none', then do nothing, otherwise raise an error
+        elif reduction != 'none':
+            raise ValueError('avg_factor can not be used with reduction="sum"')
+
+
+    return loss
+
+@register
+@serializable
+class L1Loss(nn.Layer):
+    """L1 loss.
+
+    Args:
+        reduction (str, optional): The method to reduce the loss.
+            Options are "none", "mean" and "sum".
+        loss_weight (float, optional): The weight of loss.
+    """
+
+    def __init__(self, reduction='mean', loss_weight=1.0):
+        super(L1Loss, self).__init__()
+        self.reduction = reduction
+        self.loss_weight = loss_weight
+
+    def forward(self,
+                pred,
+                target,
+                weight=None,
+                avg_factor=None,
+                reduction_override=None):
+        """Forward function.
+
+        Args:
+            pred (Tensor): The prediction.
+            target (Tensor): The learning target of the prediction.
+            weight (Tensor, optional): The weight of loss for each
+                prediction. Defaults to None.
+            avg_factor (int, optional): Average factor that is used to average
+                the loss. Defaults to None.
+            reduction_override (str, optional): The reduction method used to
+                override the original reduction method of the loss.
+                Defaults to None.
+        """
+        assert reduction_override in (None, 'none', 'mean', 'sum')
+        reduction = (
+            reduction_override if reduction_override else self.reduction)
+        loss_bbox = self.loss_weight * l1_loss(
+            pred, target, weight, reduction=reduction, avg_factor=avg_factor)
+        return loss_bbox
+
