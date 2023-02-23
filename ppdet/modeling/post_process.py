@@ -449,10 +449,14 @@ class DETRBBoxPostProcess(object):
     def __init__(self,
                  num_classes=80,
                  num_top_queries=100,
+                 dual_queries=False,
+                 dual_groups=0,
                  use_focal_loss=False):
         super(DETRBBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.num_top_queries = num_top_queries
+        self.dual_queries = dual_queries
+        self.dual_groups = dual_groups
         self.use_focal_loss = use_focal_loss
 
     def __call__(self, head_out, im_shape, scale_factor):
@@ -471,6 +475,10 @@ class DETRBBoxPostProcess(object):
                 shape [bs], and is N.
         """
         bboxes, logits, masks = head_out
+        if self.dual_queries:
+            num_queries = logits.shape[1]
+            logits, bboxes = logits[:, :int(num_queries // (self.dual_groups + 1)), :], \
+                             bboxes[:, :int(num_queries // (self.dual_groups + 1)), :]
 
         bbox_pred = bbox_cxcywh_to_xyxy(bboxes)
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
