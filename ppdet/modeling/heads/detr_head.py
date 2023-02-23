@@ -380,13 +380,60 @@ class DINOHead(nn.Layer):
             assert 'gt_bbox' in inputs and 'gt_class' in inputs
 
             if dn_meta is not None:
-                dn_out_bboxes, dec_out_bboxes = paddle.split(
-                    dec_out_bboxes, dn_meta['dn_num_split'], axis=2)
-                dn_out_logits, dec_out_logits = paddle.split(
-                    dec_out_logits, dn_meta['dn_num_split'], axis=2)
+                if isinstance(dn_meta, list):
+                    dual_groups = len(dn_meta) - 1
+                    dec_out_bboxes = paddle.split(
+                            dec_out_bboxes, dual_groups + 1, axis=2)
+                    dec_out_logits = paddle.split(
+                            dec_out_logits, dual_groups + 1, axis=2)
+                    enc_topk_bboxes = paddle.split(
+                            enc_topk_bboxes, dual_groups + 1, axis=1)
+                    enc_topk_logits = paddle.split(
+                            enc_topk_logits, dual_groups + 1, axis=1)
+
+                    dec_out_bboxes_list = []
+                    dec_out_logits_list = []
+                    dn_out_bboxes_list = []
+                    dn_out_logits_list = []
+                    loss = {}
+                    for g_id in range(dual_groups + 1):
+                        if dn_meta[g_id] is not None:
+                            dn_out_bboxes_gid, dec_out_bboxes_gid = paddle.split(
+                                dec_out_bboxes[g_id], dn_meta[g_id]['dn_num_split'], axis=2)
+                            dn_out_logits_gid, dec_out_logits_gid = paddle.split(
+                                dec_out_logits[g_id], dn_meta[g_id]['dn_num_split'], axis=2)
+                        else:
+                            dn_out_bboxes_gid, dn_out_logits_gid = None, None
+                            dec_out_bboxes_gid = dec_out_bboxes[g_id]
+                            dec_out_logits_gid = dec_out_logits[g_id]
+                        out_bboxes_gid = paddle.concat(
+                            [enc_topk_bboxes[g_id].unsqueeze(0), dec_out_bboxes_gid])
+                        out_logits_gid = paddle.concat(
+                            [enc_topk_logits[g_id].unsqueeze(0), dec_out_logits_gid])
+                        loss_gid = self.loss(
+                            out_bboxes_gid,
+                            out_logits_gid,
+                            inputs['gt_bbox'],
+                            inputs['gt_class'],
+                            dn_out_bboxes=dn_out_bboxes_gid,
+                            dn_out_logits=dn_out_logits_gid,
+                            dn_meta=dn_meta[g_id])
+                        # sum loss
+                        for key, value in loss_gid.items():
+                            loss.update({key: loss.get(key, paddle.zeros([1])) + value})
+
+                    # average across (dual_groups + 1)
+                    for key, value in loss.items():
+                        loss.update({key: value / (dual_groups + 1)})
+                    return loss
+                else:
+                    dn_out_bboxes, dec_out_bboxes = paddle.split(
+                        dec_out_bboxes, dn_meta['dn_num_split'], axis=2)
+                    dn_out_logits, dec_out_logits = paddle.split(
+                        dec_out_logits, dn_meta['dn_num_split'], axis=2)
             else:
                 dn_out_bboxes, dn_out_logits = None, None
-
+            
             out_bboxes = paddle.concat(
                 [enc_topk_bboxes.unsqueeze(0), dec_out_bboxes])
             out_logits = paddle.concat(
