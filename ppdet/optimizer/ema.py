@@ -114,9 +114,9 @@ class ModelEMA(object):
 
         for k, v in self.state_dict.items():
             if k not in self.ema_black_list:
-                v = decay * v + (1 - decay) * model_dict[k]
-                v.stop_gradient = True
-                self.state_dict[k] = v
+                cur = (1 - decay) * model_dict[k].detach()
+                v.scale_(decay)
+                v.add_(cur)
         self.step += 1
 
     def apply(self):
