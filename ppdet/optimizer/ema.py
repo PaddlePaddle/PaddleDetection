@@ -63,9 +63,11 @@ class ModelEMA(object):
         self.state_dict = dict()
         for k, v in model.state_dict().items():
             if k in self.ema_black_list:
-                self.state_dict[k] = v
+                self.state_dict[k] = v.detach()
             else:
                 self.state_dict[k] = paddle.zeros_like(v)
+
+            self.state_dict[k].stop_gradient = True
 
         bn_states_names = get_bn_running_state_names(model)
         if ema_filter_no_grad:
@@ -114,9 +116,11 @@ class ModelEMA(object):
 
         for k, v in self.state_dict.items():
             if k not in self.ema_black_list:
-                cur = (1 - decay) * model_dict[k].detach()
+                cur = model_dict[k].detach()
+                cur.stop_gradient = True
                 v.scale_(decay)
-                v.add_(cur)
+                v.add_(cur * (1 - decay))
+
         self.step += 1
 
     def apply(self):
