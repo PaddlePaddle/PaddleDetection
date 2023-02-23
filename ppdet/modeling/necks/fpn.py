@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
 # See the License for the specific language governing permissions and   
 # limitations under the License.
-
+import math
+import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
@@ -21,7 +22,7 @@ from ppdet.core.workspace import register, serializable
 from ppdet.modeling.layers import ConvNormLayer
 from ..shape_spec import ShapeSpec
 
-__all__ = ['FPN']
+__all__ = ['FPN', 'SimpleFeaturePyramid']
 
 
 @register
@@ -229,3 +230,139 @@ class FPN(nn.Layer):
                 channels=self.out_channel, stride=1. / s)
             for s in self.spatial_scales
         ]
+
+class LayerNorm(nn.Layer):
+    """
+    A LayerNorm variant, popularized by Transformers, that performs point-wise mean and
+    variance normalization over the channel dimension for inputs that have shape
+    (batch_size, channels, height, width).    
+    Note that, the modified LayerNorm on used in ResBlock and SimpleFeaturePyramid.
+
+    In ViT, we use the nn.LayerNorm
+    """
+
+    def __init__(self, normalized_shape, eps=1e-6):
+        super().__init__()
+        self.weight = self.create_parameter([normalized_shape])
+        self.bias = self.create_parameter([normalized_shape])
+        self.eps = eps
+        self.normalized_shape = (normalized_shape,)
+
+    def forward(self, x):
+        u = x.mean(1, keepdim=True)
+        s = (x - u).pow(2).mean(1, keepdim=True)
+        x = (x - u) / paddle.sqrt(s + self.eps)
+        x = self.weight[:, None, None] * x + self.bias[:, None, None]
+        return x
+    
+@register
+@serializable
+class SimpleFeaturePyramid(nn.Layer):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        spatial_scales,
+        num_levels=4,
+        use_bias=False
+    ):
+        """
+        Args:
+            in_channels (list[int]): input channels of each level which can be 
+                derived from the output shape of backbone by from_config
+            out_channel (int): output channel of each level.
+            spatial_scales (list[float]): list of scaling factors to upsample or downsample
+                the input features for creating pyramid features which can be derived from 
+                the output shape of backbone by from_config
+            num_levels (int): number of levels of output features.
+            use_bias (bool): whether use bias or not.
+        """
+        super(SimpleFeaturePyramid, self).__init__()
+
+        self.in_channels = in_channels[0]
+        self.out_channels = out_channels
+        self.num_levels = num_levels
+
+        self.stages = []
+        dim = self.in_channels
+        if num_levels == 4:
+            scale_factors = [2.0, 1.0, 0.5]
+        elif num_levels == 5:
+            scale_factors = [4.0, 2.0, 1.0, 0.5]
+        else:
+            raise NotImplementedError(f"num_levels={num_levels} is not supported yet.")
+
+        dim = in_channels[0]
+        for idx, scale in enumerate(scale_factors):
+            out_dim = dim
+            if scale == 4.0:
+                layers = [
+                    nn.Conv2DTranspose(dim, dim // 2, kernel_size=2, stride=2),
+                    nn.LayerNorm(dim // 2),
+                    nn.GELU(),
+                    nn.Conv2DTranspose(dim // 2, dim // 4, kernel_size=2, stride=2),
+                ]
+                out_dim = dim // 4
+            elif scale == 2.0:
+                layers = [nn.Conv2DTranspose(dim, dim // 2, kernel_size=2, stride=2)]
+                out_dim = dim // 2
+            elif scale == 1.0:
+                layers = []
+            elif scale == 0.5:
+                layers = [nn.MaxPool2D(kernel_size=2, stride=2)]
+                
+            layers.extend(
+                [
+                    nn.Conv2D(
+                        out_dim,
+                        out_channels,
+                        kernel_size=1,
+                        bias_attr=use_bias,
+                    ),
+                    LayerNorm(out_channels),
+                    nn.Conv2D(
+                        out_channels,
+                        out_channels,
+                        kernel_size=3,
+                        padding=1,
+                        bias_attr=use_bias,
+                    ),
+                    LayerNorm(out_channels)
+                ]
+            )
+            layers = nn.Sequential(*layers)
+
+            stage = -int(math.log2(spatial_scales[0] * scale_factors[idx]))
+            self.add_sublayer(f"simfp_{stage}", layers)
+            self.stages.append(layers)
+
+        # top block output feature maps.
+        self.top_block = nn.Sequential(nn.MaxPool2D(kernel_size=1, stride=2, padding=0))
+
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {'in_channels': [i.channels for i in input_shape], 
+                'spatial_scales': [1.0 / i.stride for i in input_shape],
+        }
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=self.out_channels) for _ in range(self.num_levels)]
+
+    def forward(self, feats):
+        """
+        Args:
+            x: Tensor of shape (N,C,H,W).
+        """
+        features = feats[0]
+        results = []
+
+        for stage in self.stages:
+            results.append(stage(features))
+
+        top_block_in_feature = results[-1]
+        results.append(self.top_block(top_block_in_feature))
+        assert self.num_levels == len(results)
+        
+        return results
