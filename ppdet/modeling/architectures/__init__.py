@@ -64,6 +64,7 @@ from .gfl import *
 from .picodet import *
 from .detr import *
 from .sparse_rcnn import *
+from .diffusion_det import *
 from .tood import *
 from .retinanet import *
 from .bytetrack import *

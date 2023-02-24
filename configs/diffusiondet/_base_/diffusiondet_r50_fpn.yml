@@ -1,0 +1,50 @@
+architecture: DiffusionDet
+# pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+pretrain_weights: /home/sama/.cache/paddle/weights/ResNet50_cos_pretrained.pdparams
+
+DiffusionDet:
+  backbone: ResNet
+  neck: FPN
+  head: DiffusionDetHead
+  postprocess: SparsePostProcess
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  freeze_norm: true
+  return_idx: [0,1,2,3]
+  num_stages: 4
+
+FPN:
+  out_channel: 256
+  extra_stage: 0
+
+DiffusionDetHead:
+  head_hidden_dim: 256
+  head_dim_feedforward: 2048
+  nhead: 8
+  head_dropout: 0.0
+  head_cls: 1
+  head_reg: 3
+  head_dim_dynamic: 64
+  head_num_dynamic: 2
+  head_num_heads: 6
+  deep_supervision: true
+  num_proposals: 100
+  timesteps: 1000
+  sampling_timesteps: 1
+  loss_func: DiffusionDetSparseRCNNLoss
+
+DiffusionDetSparseRCNNLoss:
+  losses: ["labels", "boxes"]
+  focal_loss_alpha: 0.25
+  focal_loss_gamma: 2.0
+  class_weight: 2.0
+  l1_weight: 5.0
+  giou_weight: 2.0
+  eos_coef: 0.1
+
+SparsePostProcess:
+  num_proposals: 100

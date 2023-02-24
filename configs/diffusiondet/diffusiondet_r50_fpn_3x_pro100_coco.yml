@@ -1,0 +1,10 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/diffusiondet_r50_fpn.yml',
+  '_base_/optimizer_3x.yml',
+  '_base_/diffusiondet_reader.yml',
+]
+
+num_classes: 80
+# weights: output/sparse_rcnn_r50_fpn_3x_pro100_coco/model_final

@@ -31,6 +31,7 @@ from . import probiou_loss
 from . import cot_loss
 from . import supcontrast
 from . import queryinst_loss
+from . import diffusion_det_loss
 
 from .yolo_loss import *
 from .iou_aware_loss import *
@@ -52,3 +53,4 @@ from .probiou_loss import *
 from .cot_loss import *
 from .supcontrast import *
 from .queryinst_loss import *
+from .diffusion_det_loss import *
