@@ -417,7 +417,9 @@ class GroupDINOTransformer(nn.Layer):
         if self.dual_queries:
             self.denoising_class_embed_groups = nn.LayerList([
                 nn.Embedding(
-                    num_classes + 1, hidden_dim, padding_idx=num_classes)
+                    num_classes,
+                    hidden_dim,
+                    weight_attr=ParamAttr(initializer=nn.initializer.Normal()))
                 for _ in range(self.dual_groups)
             ])
 
