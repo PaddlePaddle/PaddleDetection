@@ -392,7 +392,7 @@ class DiffusionDetHead(nn.Layer):
             
             image_size_xyxy = targets["img_whwh"][im_id]
             gt_classes = targets["gt_class"][im_id]
-            gt_boxes = targets["gt_bbox"][im_id] / image_size_xyxy
+            gt_boxes = targets["gt_bbox"][im_id] / image_size_xyxy if targets["gt_bbox"][im_id].size != 0 else targets["gt_bbox"][im_id]
             gt_boxes = bbox_xyxy_to_cxcywh(gt_boxes)
             d_boxes, d_noise, d_t = self.prepare_diffusion_concat(gt_boxes)
 
@@ -404,7 +404,7 @@ class DiffusionDetHead(nn.Layer):
             target["boxes"] = gt_boxes
             target["boxes_xyxy"] = targets["gt_bbox"][im_id]
             target["image_size_xyxy"] = image_size_xyxy
-            image_size_xyxy_tgt = image_size_xyxy.unsqueeze(0).tile([len(gt_boxes), 1])
+            image_size_xyxy_tgt = image_size_xyxy[None].tile([len(gt_boxes), 1]) if 0 != gt_boxes.size else image_size_xyxy[None]
             target["image_size_xyxy_tgt"] = image_size_xyxy_tgt
             # target["area"] = targets_per_image.gt_boxes.area().to(self.device)
             new_targets.append(target)
@@ -566,12 +566,20 @@ class DiffusionDetHead(nn.Layer):
 
 
 def bbox_cxcywh_to_xyxy(x):
+    
+    if x.size == 0:
+        return x
+    
     x_c, y_c, w, h = x.unbind(-1)
     b = [(x_c - 0.5 * w), (y_c - 0.5 * h), (x_c + 0.5 * w), (y_c + 0.5 * h)]
     return paddle.stack(b, axis=-1)
 
 
 def bbox_xyxy_to_cxcywh(x):
+    
+    if x.size == 0:
+        return x
+    
     x1, y1, x2, y2 = x.split(4, axis=-1)
     return paddle.concat(
         [(x1 + x2) / 2, (y1 + y2) / 2, (x2 - x1), (y2 - y1)], axis=-1)

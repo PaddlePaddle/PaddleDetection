@@ -360,9 +360,9 @@ class HungarianMatcherDynamicK(nn.Layer):
             bz_tgt_ids = targets[batch_idx]["labels"]
             num_insts = len(bz_tgt_ids)
             if num_insts == 0:  # empty object in key frame
-                non_valid = torch.zeros(bz_out_prob.shape[0]).to(bz_out_prob) > 0
-                indices_batchi = (non_valid, torch.arange(0, 0).to(bz_out_prob))
-                matched_qidx = torch.arange(0, 0).to(bz_out_prob)
+                non_valid = paddle.zeros([bz_out_prob.shape[0]]) > 0
+                indices_batchi = (non_valid, paddle.to_tensor([]).astype("int64"))
+                matched_qidx = paddle.to_tensor([]).astype("int64")
                 indices.append(indices_batchi)
                 matched_ids.append(matched_qidx)
                 continue
@@ -528,11 +528,9 @@ def box_area(boxes):
 def boxes_iou(boxes1, boxes2):
     '''
     Compute iou
-
     Args:
         boxes1 (paddle.tensor) shape (N, 4)
         boxes2 (paddle.tensor) shape (M, 4)
-
     Return:
         (paddle.tensor) shape (N, M)
     '''
@@ -553,12 +551,10 @@ def boxes_iou(boxes1, boxes2):
 
 def get_bboxes_giou(boxes1, boxes2, eps=1e-9):
     """calculate the ious of boxes1 and boxes2
-
     Args:
         boxes1 (Tensor): shape [N, 4]
         boxes2 (Tensor): shape [M, 4]
         eps (float): epsilon to avoid divide by zero
-
     Return:
         ious (Tensor): ious of boxes1 and boxes2, with the shape [N, M]
     """
