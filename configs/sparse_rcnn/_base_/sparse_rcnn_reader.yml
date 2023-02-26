@@ -9,7 +9,7 @@ TrainReader:
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
-  - Gt2SparseTarget: {use_padding_shape: False}
+  - Gt2SparseTarget: {use_padding_shape: True}
   batch_size: 4
   shuffle: true
   drop_last: true
@@ -23,7 +23,7 @@ EvalReader:
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
-  - Gt2SparseTarget: {use_padding_shape: False}
+  - Gt2SparseTarget: {use_padding_shape: True}
   batch_size: 1
   shuffle: false
   drop_last: false
@@ -36,6 +36,6 @@ TestReader:
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32}
-  - Gt2SparseTarget: {use_padding_shape: False}
+  - Gt2SparseTarget: {use_padding_shape: True}
   batch_size: 1
   shuffle: false
