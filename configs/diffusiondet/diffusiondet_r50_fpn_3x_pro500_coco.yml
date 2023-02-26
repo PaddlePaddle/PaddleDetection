@@ -6,8 +6,10 @@ _BASE_: [
   '_base_/diffusiondet_reader.yml',
 ]
 
+use_focal: True
+use_fed_loss: False
 num_classes: 80
-# weights: output/sparse_rcnn_r50_fpn_3x_pro300_coco/model_final
+weights: output/model_final
 
 snapshot_epoch: 1
 
@@ -15,5 +17,5 @@ snapshot_epoch: 1
 DiffusionDetHead:
   num_proposals: 500
 
-SparsePostProcess:
+DiffusionDetPostProcess:
   num_proposals: 500

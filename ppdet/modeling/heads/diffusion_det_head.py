@@ -24,9 +24,13 @@ from __future__ import print_function
 import math
 import random
 import copy
+from collections import namedtuple
+import numpy as np
+
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
+from paddle.vision.ops import nms as batched_nms
 
 from ppdet.core.workspace import register
 from ppdet.modeling.heads.roi_extractor import RoIAlign
@@ -35,7 +39,7 @@ from .. import initializer as init
 from .sparsercnn_head import DynamicConv
 
 _DEFAULT_SCALE_CLAMP = math.log(100000. / 16)
-
+ModelPrediction = namedtuple('ModelPrediction', ['pred_noise', 'pred_x_start'])
 
 class SinusoidalPositionEmbeddings(nn.Layer):
     def __init__(self, dim):
@@ -214,7 +218,7 @@ class DiffusionDetHead(nn.Layer):
         num_proposals (int): the number of proposals boxes and features
     '''
     __inject__ = ['loss_func']
-    __shared__ = ['num_classes']
+    __shared__ = ['num_classes', 'use_focal', 'use_fed_loss']
 
     def __init__(
             self,
@@ -233,6 +237,9 @@ class DiffusionDetHead(nn.Layer):
             timesteps=1000,
             snr_scale=2.,
             sampling_timesteps=1,
+            use_nms=True,
+            use_focal=True,
+            use_fed_loss=False,
             loss_func="SparseRCNNLoss",
             roi_input_shape=None, ):
         super().__init__()
@@ -264,11 +271,13 @@ class DiffusionDetHead(nn.Layer):
             head_cls,
             head_reg,
             head_dim_dynamic,
-            head_num_dynamic, )
+            head_num_dynamic, 
+            )
         self.head_series = nn.LayerList(
             [copy.deepcopy(rcnn_head) for i in range(head_num_heads)])
         self.return_intermediate = deep_supervision
 
+        self.objective = 'pred_x0'
         betas = cosine_beta_schedule(timesteps)
         alphas = 1. - betas
         alphas_cumprod = paddle.cumprod(alphas, 0)
@@ -285,6 +294,10 @@ class DiffusionDetHead(nn.Layer):
         self.box_renewal = True
         self.use_ensemble = True
         
+        self.use_focal = use_focal
+        self.use_fed_loss = use_fed_loss
+        self.use_nms = use_nms
+        
         assert self.sampling_timesteps <= timesteps
         self.is_ddim_sampling = self.sampling_timesteps < timesteps
 
@@ -298,8 +311,8 @@ class DiffusionDetHead(nn.Layer):
         self.register_buffer('sqrt_alphas_cumprod', paddle.sqrt(alphas_cumprod))
         self.register_buffer('sqrt_one_minus_alphas_cumprod', paddle.sqrt(1. - alphas_cumprod))
         # self.register_buffer('log_one_minus_alphas_cumprod', paddle.log(1. - alphas_cumprod))
-        # self.register_buffer('sqrt_recip_alphas_cumprod', paddle.sqrt(1. / alphas_cumprod))
-        # self.register_buffer('sqrt_recipm1_alphas_cumprod', paddle.sqrt(1. / alphas_cumprod - 1))
+        self.register_buffer('sqrt_recip_alphas_cumprod', paddle.sqrt(1. / alphas_cumprod))
+        self.register_buffer('sqrt_recipm1_alphas_cumprod', paddle.sqrt(1. / alphas_cumprod - 1))
 
         # calculations for posterior q(x_{t-1} | x_t, x_0)
 
@@ -465,14 +478,214 @@ class DiffusionDetHead(nn.Layer):
         sqrt_one_minus_alphas_cumprod_t = self.extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape)
 
         return sqrt_alphas_cumprod_t * x_start + sqrt_one_minus_alphas_cumprod_t * noise
+    
+    def predict_noise_from_start(self, x_t, t, x0):
+        return (
+                (self.extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t - x0) /
+                 self.extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape)
+        )
 
+    def model_predictions(self, backbone_feats, images_whwh, x, t, x_self_cond=None, clip_x_start=False):
+        x_boxes = paddle.clip(x, min=-1 * self.scale, max=self.scale)
+        x_boxes = ((x_boxes / self.scale) + 1) / 2
+        x_boxes = bbox_cxcywh_to_xyxy(x_boxes)
+        x_boxes = x_boxes * images_whwh[:, None, :]
+        outputs_class, outputs_coord = self.inter_forward(backbone_feats, x_boxes, t, None)
+
+        x_start = outputs_coord[-1]  # (batch, num_proposals, 4) predict boxes: absolute coordinates (x1, y1, x2, y2)
+        x_start = x_start / images_whwh[:, None, :]
+        x_start = bbox_xyxy_to_cxcywh(x_start)
+        x_start = (x_start * 2 - 1.) * self.scale
+        x_start = paddle.clip(x_start, min=-1 * self.scale, max=self.scale)
+        pred_noise = self.predict_noise_from_start(x, t, x_start)
+
+        return ModelPrediction(pred_noise, x_start), outputs_class, outputs_coord
+    
+    
+
+    def inference(self, box_cls, box_pred, image_sizes):
+        """
+        Arguments:
+            box_cls (Tensor): tensor of shape (batch_size, num_proposals, K).
+                The tensor predicts the classification probability for each proposal.
+            box_pred (Tensor): tensors of shape (batch_size, num_proposals, 4).
+                The tensor predicts 4-vector (x,y,w,h) box
+                regression values for every proposal
+            image_sizes (List[torch.Size]): the input image sizes
+
+        Returns:
+            results (List[Instances]): a list of #images elements.
+        """
+        assert len(box_cls) == len(image_sizes)
+        results = []
+
+        if self.use_focal or self.use_fed_loss:
+            scores = F.sigmoid(box_cls)
+            labels = paddle.arange(self.num_classes). \
+                unsqueeze(0).tile([self.num_proposals, 1]).flatten(0, 1)
+
+            for i, (scores_per_image, box_pred_per_image, image_size) in enumerate(zip(
+                    scores, box_pred, image_sizes
+            )):
+                # result = Instances(image_size)
+                scores_per_image, topk_indices = scores_per_image.flatten(0, 1).topk(self.num_proposals, sorted=False)
+                labels_per_image = labels[topk_indices]
+                box_pred_per_image = box_pred_per_image.reshape([-1, 1, 4]).tile([1, self.num_classes, 1]).reshape([-1, 4])
+                box_pred_per_image = box_pred_per_image[topk_indices]
+
+                if self.use_ensemble and self.sampling_timesteps > 1:
+                    return box_pred_per_image, scores_per_image, labels_per_image
+
+                if self.use_nms:
+                    # keep = batched_nms(box_pred_per_image, scores_per_image, labels_per_image, 0.5)
+                    cls_arange = paddle.arange(self.num_classes)
+                    keep = batched_nms(box_pred_per_image, 0.5, scores_per_image, labels_per_image, cls_arange)
+                    box_pred_per_image = box_pred_per_image[keep]
+                    scores_per_image = scores_per_image[keep]
+                    labels_per_image = labels_per_image[keep]
+
+                result = {}
+                result['pred_boxes'] = box_pred_per_image
+                result['scores'] = scores_per_image
+                result['pred_classes'] = labels_per_image
+                results.append(result)
+
+        else:
+            # For each box we assign the best class or the second best if the best on is `no_object`.
+            scores, labels = F.softmax(box_cls, dim=-1)[:, :, :-1].max(-1)
+
+            for i, (scores_per_image, labels_per_image, box_pred_per_image, image_size) in enumerate(zip(
+                    scores, labels, box_pred, image_sizes
+            )):
+                if self.use_ensemble and self.sampling_timesteps > 1:
+                    return box_pred_per_image, scores_per_image, labels_per_image
+
+                if self.use_nms:
+                    # keep = batched_nms(box_pred_per_image, scores_per_image, labels_per_image, 0.5)
+                    keep = batched_nms(box_pred_per_image, 0.5, scores_per_image, labels_per_image)
+                    box_pred_per_image = box_pred_per_image[keep]
+                    scores_per_image = scores_per_image[keep]
+                    labels_per_image = labels_per_image[keep]
+                # result = Instances(image_size)
+                result = {}
+                result["pred_boxes"] = box_pred_per_image
+                result["scores"] = scores_per_image
+                result["pred_classes"] = labels_per_image
+                results.append(result)
+
+        return results
+    
+    
+    
+    
+
+    @paddle.no_grad()
+    def ddim_sample(self, batched_inputs, backbone_feats, images=None, clip_denoised=True, do_postprocess=True):
+        
+        
+        images_real_whwh = batched_inputs["img_whwh"]
+        batch = images_real_whwh.shape[0]
+        shape = (batch, self.num_proposals, 4)
+        total_timesteps, sampling_timesteps, eta, objective = self.num_timesteps, self.sampling_timesteps, self.ddim_sampling_eta, self.objective
+
+        # [-1, 0, 1, 2, ..., T-1] when sampling_timesteps == total_timesteps
+        times = paddle.linspace(-1, total_timesteps - 1, num=sampling_timesteps + 1)
+        times = list(reversed(times.cast("int32").tolist()))
+        time_pairs = list(zip(times[:-1], times[1:]))  # [(T-1, T-2), (T-2, T-3), ..., (1, 0), (0, -1)]
+
+        img = paddle.randn(shape)
+
+        ensemble_score, ensemble_label, ensemble_coord = [], [], []
+        x_start = None
+        for time, time_next in time_pairs:
+            time_cond = paddle.full(shape=(batch,), fill_value=time, dtype="int64")
+            self_cond = x_start if self.self_condition else None
+
+            preds, outputs_class, outputs_coord = self.model_predictions(backbone_feats, images_real_whwh, 
+                                                                         img, time_cond,
+                                                                         self_cond, clip_x_start=clip_denoised)
+            pred_noise, x_start = preds.pred_noise, preds.pred_x_start
+
+            if self.box_renewal:  # filter
+                score_per_image, box_per_image = outputs_class[-1][0], outputs_coord[-1][0]
+                threshold = 0.5
+                score_per_image = F.sigmoid(score_per_image)
+                value = paddle.max(score_per_image, axis=-1, keepdim=False)
+                keep_idx = value > threshold
+                num_remain = keep_idx.sum()
+                
+                
+                bs_zero_4_tensor = paddle.to_tensor(np.array([]).reshape([batch, 0, 4]))
+                pred_noise = pred_noise[:, keep_idx] if keep_idx.all().item() else bs_zero_4_tensor.astype(pred_noise.dtype)
+                x_start = x_start[:, keep_idx] if keep_idx.all().item() else bs_zero_4_tensor.astype(x_start.dtype)
+                img = img[:, keep_idx] if keep_idx.all().item() else bs_zero_4_tensor.astype(img.dtype)
+            if time_next < 0:
+                img = x_start
+                continue
+
+            alpha = self.alphas_cumprod[time]
+            alpha_next = self.alphas_cumprod[time_next]
+
+            sigma = eta * ((1 - alpha / alpha_next) * (1 - alpha_next) / (1 - alpha)).sqrt()
+            c = (1 - alpha_next - sigma ** 2).sqrt()
+
+            noise = torch.randn_like(img)
+
+            img = x_start * alpha_next.sqrt() + \
+                  c * pred_noise + \
+                  sigma * noise
+
+            if self.box_renewal:  # filter
+                # replenish with randn boxes
+                img = paddle.concat((img, torch.randn(1, self.num_proposals - num_remain, 4, device=img.device)), dim=1)
+            if self.use_ensemble and self.sampling_timesteps > 1:
+                box_pred_per_image, scores_per_image, labels_per_image = self.inference(outputs_class[-1],
+                                                                                        outputs_coord[-1],
+                                                                                        images.image_sizes)
+                ensemble_score.append(scores_per_image)
+                ensemble_label.append(labels_per_image)
+                ensemble_coord.append(box_pred_per_image)
+
+        if self.use_ensemble and self.sampling_timesteps > 1: # False
+            box_pred_per_image = paddle.concat(ensemble_coord, axis=0)
+            scores_per_image = paddle.concat(ensemble_score, axis=0)
+            labels_per_image = paddle.concat(ensemble_label, axis=0)
+            if self.use_nms:
+                # keep = batched_nms(box_pred_per_image, scores_per_image, labels_per_image, 0.5)
+                keep = batched_nms(box_pred_per_image, 0.5, scores_per_image, labels_per_image)
+                box_pred_per_image = box_pred_per_image[keep]
+                scores_per_image = scores_per_image[keep]
+                labels_per_image = labels_per_image[keep]
+
+            # result = Instances(images.image_sizes[0])
+            result = {}
+            result["pred_boxes"] = box_pred_per_image
+            result["scores"] = scores_per_image
+            result["pred_classes"] = labels_per_image
+            results = [result]
+        else:
+            output = {'pred_logits': outputs_class[-1], 'pred_boxes': outputs_coord[-1]}
+            box_cls = output["pred_logits"]
+            box_pred = output["pred_boxes"]
+            results = self.inference(box_cls, box_pred, images_real_whwh)
+            
+        # if do_postprocess:
+        #     processed_results = []
+        #     for results_per_image, input_per_image, image_size in zip(results, batched_inputs, images.image_sizes):
+        #         height = input_per_image.get("height", image_size[0])
+        #         width = input_per_image.get("width", image_size[1])
+        #         r = detector_postprocess(results_per_image, height, width)
+        #         processed_results.append({"instances": r})
+        #     return processed_results
+        
+        return results
     
     def forward(self, features, batched_inputs, init_features=None):
         
 
         # Prepare Proposals.
         if not self.training:
-            results = self.ddim_sample(batched_inputs, features, images_whwh, images)
+            results = self.ddim_sample(batched_inputs, features)
             return results, None
         
         
@@ -516,6 +729,35 @@ class DiffusionDetHead(nn.Layer):
 
         return output, targets
 
+
+    def inter_forward(self, features, init_bboxes, t, init_features):
+        # assert t shape (batch_size)
+        time = self.time_mlp(t)
+
+        inter_class_logits = []
+        inter_pred_bboxes = []
+
+        bs = len(features[0])
+        bboxes = init_bboxes
+        num_boxes = bboxes.shape[1]
+
+        if init_features is not None:
+            init_features = init_features[None].tile([1, bs, 1])
+            proposal_features = init_features.clone()
+        else:
+            proposal_features = None
+        
+        for head_idx, rcnn_head in enumerate(self.head_series):
+            class_logits, pred_bboxes, proposal_features = rcnn_head(features, bboxes, proposal_features, self.box_pooler, time)
+            if self.return_intermediate:
+                inter_class_logits.append(class_logits)
+                inter_pred_bboxes.append(pred_bboxes)
+            bboxes = pred_bboxes.detach()
+
+        if self.return_intermediate:
+            return paddle.stack(inter_class_logits), paddle.stack(inter_pred_bboxes)
+
+        return class_logits[None], pred_bboxes[None]
 
 
 

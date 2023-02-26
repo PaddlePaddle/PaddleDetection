@@ -102,16 +102,16 @@ class DiffusionDetSparseRCNNLoss(nn.Layer):
                 classes to keep when calculating the federated loss, including both unique gt
                 classes and sampled negative classes.
         """
-        unique_gt_classes = torch.unique(gt_classes)
-        prob = unique_gt_classes.new_ones(num_classes + 1).float()
+        unique_gt_classes = paddle.unique(gt_classes)
+        prob = unique_gt_classes.new_ones(num_classes + 1).cast("float32")
         prob[-1] = 0
         if len(unique_gt_classes) < num_fed_loss_classes:
-            prob[:num_classes] = weight.float().clone()
+            prob[:num_classes] = weight.cast("float32").clone()
             prob[unique_gt_classes] = 0
             sampled_negative_classes = torch.multinomial(
                 prob, num_fed_loss_classes - len(unique_gt_classes), replacement=False
             )
-            fed_loss_classes = torch.cat([unique_gt_classes, sampled_negative_classes])
+            fed_loss_classes = paddle.concat([unique_gt_classes, sampled_negative_classes])
         else:
             fed_loss_classes = unique_gt_classes
         return fed_loss_classes

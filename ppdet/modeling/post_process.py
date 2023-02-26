@@ -19,6 +19,7 @@ import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from ppdet.modeling.bbox_utils import nonempty_bbox
 from .transformers import bbox_cxcywh_to_xyxy
+from typing import Dict, Tuple
 try:
     from collections.abc import Sequence
 except Exception:
@@ -26,7 +27,8 @@ except Exception:
 
 __all__ = [
     'BBoxPostProcess', 'MaskPostProcess', 'JDEBBoxPostProcess',
-    'CenterNetPostProcess', 'DETRBBoxPostProcess', 'SparsePostProcess'
+    'CenterNetPostProcess', 'DETRBBoxPostProcess', 'SparsePostProcess',
+    'DiffusionDetPostProcess'
 ]
 
 
@@ -686,3 +688,138 @@ def nms(dets, match_threshold=0.6, match_metric='iou'):
     keep = np.where(suppressed == 0)[0]
     dets = dets[keep, :]
     return dets
+
+
+def nonempty(box: paddle.Tensor, threshold: float = 0.0) -> paddle.Tensor:
+    """
+    Find boxes that are non-empty.
+    A box is considered empty, if either of its side is no larger than threshold.
+
+    Returns:
+        Tensor:
+            a binary vector which represents whether each box is empty
+            (False) or non-empty (True).
+    """
+    # box = self.tensor
+    widths = box[:, 2] - box[:, 0]
+    heights = box[:, 3] - box[:, 1]
+    keep = (widths > threshold) & (heights > threshold)
+    return keep
+
+
+def _clip(tensor, box_size: Tuple[int, int]) -> None:
+    """
+    Clip (in place) the boxes by limiting x coordinates to the range [0, width]
+    and y coordinates to the range [0, height].
+
+    Args:
+        box_size (height, width): The clipping box's size.
+    """
+    assert paddle.isfinite(tensor).all(), "Box tensor contains infinite or NaN!"
+    h, w = box_size
+    x1 = tensor[:, 0].clip(min=0, max=w)
+    y1 = tensor[:, 1].clip(min=0, max=h)
+    x2 = tensor[:, 2].clip(min=0, max=w)
+    y2 = tensor[:, 3].clip(min=0, max=h)
+    tensor = paddle.stack((x1, y1, x2, y2), axis=-1)
+    
+    return tensor
+
+
+def _scale(tensor, scale_x: float, scale_y: float) -> None:
+    """
+    Scale the box with horizontal and vertical scaling factors
+    """
+    tensor[:, 0::2] /= scale_x
+    tensor[:, 1::2] /= scale_y
+    
+    return tensor
+
+
+@register
+class DiffusionDetPostProcess(object):
+    
+    def __init__(self,
+                 num_proposals,
+                 num_classes=80,
+                 binary_thresh=0.5,
+                 assign_on_cpu=False):
+        super(DiffusionDetPostProcess, self).__init__()
+        # self.num_classes = num_classes
+        # self.num_proposals = num_proposals
+        # self.binary_thresh = binary_thresh
+        # self.assign_on_cpu = assign_on_cpu
+
+    def __call__(self, results: Dict, output_height: int, output_width: int, image_size=None, mask_threshold: float = 0.5, ):
+        
+        """
+        Resize the output instances.
+        The input images are often resized when entering an object detector.
+        As a result, we often need the outputs of the detector in a different
+        resolution from its inputs.
+
+        This function will resize the raw outputs of an R-CNN detector
+        to produce outputs according to the desired output resolution.
+
+        Args:
+            results (Instances): the raw outputs from the detector.
+                `results.image_size` contains the input image resolution the detector sees.
+                This object might be modified in-place.
+            output_height, output_width: the desired output resolution.
+        Returns:
+            Instances: the resized output from the model, based on the output resolution
+        """
+        if isinstance(output_width, paddle.Tensor):
+            # This shape might (but not necessarily) be tensors during tracing.
+            # Converts integer tensors to float temporaries to ensure true
+            # division is performed when computing scale_x and scale_y.
+            output_width_tmp = output_width.cast("float32")
+            output_height_tmp = output_height.cast("float32")
+            new_size = paddle.stack([output_height, output_width])
+        else:
+            new_size = (output_height, output_width)
+            output_width_tmp = output_width
+            output_height_tmp = output_height
+
+        scale_x, scale_y = (
+            output_width_tmp / image_size[0][1],
+            output_height_tmp / image_size[0][0],
+        )
+        
+        # results = Instances(new_size, **results.get_fields())
+
+        if "pred_boxes" in results:
+            output_boxes = results["pred_boxes"]
+        elif "proposal_boxes" in results:
+            output_boxes = results.proposal_boxes
+        else:
+            output_boxes = None
+        assert output_boxes is not None, "Predictions must contain boxes!"
+
+        # output_boxes.scale(scale_x, scale_y)
+        # output_boxes.clip(results.image_size)
+        output_boxes = _scale(output_boxes, scale_x, scale_y)
+        output_boxes = _clip(output_boxes, image_size[0])
+
+        non_em = nonempty(output_boxes)
+        results = {key:results[key][non_em] for key in results}
+
+        # if results.has("pred_masks"):
+        #     if isinstance(results.pred_masks, ROIMasks):
+        #         roi_masks = results.pred_masks
+        #     else:
+        #         # pred_masks is a tensor of shape (N, 1, M, M)
+        #         roi_masks = ROIMasks(results.pred_masks[:, 0, :, :])
+        #     results.pred_masks = roi_masks.to_bitmasks(
+        #         results.pred_boxes, output_height, output_width, mask_threshold
+        #     ).tensor  # TODO return ROIMasks/BitMask object in the future
+
+        # if results.has("pred_keypoints"):
+        #     results.pred_keypoints[:, :, 0] *= scale_x
+        #     results.pred_keypoints[:, :, 1] *= scale_y
+        
+        bbox = paddle.concat([results['pred_classes'][:, None].cast("float32"), 
+                              results['scores'][:, None], 
+                              results['pred_boxes']], axis=-1)
+
+        return bbox, [bbox.shape[0]]
