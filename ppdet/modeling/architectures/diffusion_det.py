@@ -61,9 +61,8 @@ class DiffusionDet(BaseArch):
 
         if not self.training:
             h, w = self.inputs['im_shape'][0].numpy().astype(int)
-            bbox_pred, bbox_num = self.postprocess(
-                head_outs[0], h, w, self.inputs['ori_shape']
-                )
+            bbox_pred, bbox_num = self.postprocess(head_outs[0], h, w,
+                                                   self.inputs['ori_shape'])
             return bbox_pred, bbox_num
         else:
             return head_outs, targets

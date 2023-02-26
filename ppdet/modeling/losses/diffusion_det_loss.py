@@ -67,9 +67,10 @@ class DiffusionDetSparseRCNNLoss(nn.Layer):
         }
         self.weight_dict = weight_dict
 
-        self.matcher = HungarianMatcherDynamicK(focal_loss_alpha, focal_loss_gamma,
-                                        class_weight, l1_weight, giou_weight)
-        
+        self.matcher = HungarianMatcherDynamicK(focal_loss_alpha,
+                                                focal_loss_gamma, class_weight,
+                                                l1_weight, giou_weight)
+
         self.num_classes = num_classes
         self.weight_dict = weight_dict
         self.eos_coef = eos_coef
@@ -84,12 +85,10 @@ class DiffusionDetSparseRCNNLoss(nn.Layer):
             empty_weight = paddle.ones(self.num_classes + 1)
             empty_weight[-1] = self.eos_coef
             self.register_buffer('empty_weight', empty_weight)
-    
-    
-    
-    
+
     # copy-paste from https://github.com/facebookresearch/detectron2/blob/main/detectron2/modeling/roi_heads/fast_rcnn.py#L356
-    def get_fed_loss_classes(self, gt_classes, num_fed_loss_classes, num_classes, weight):
+    def get_fed_loss_classes(self, gt_classes, num_fed_loss_classes,
+                             num_classes, weight):
         """
         Args:
             gt_classes: a long tensor of shape R that contains the gt class label of each proposal.
@@ -109,13 +108,14 @@ class DiffusionDetSparseRCNNLoss(nn.Layer):
             prob[:num_classes] = weight.cast("float32").clone()
             prob[unique_gt_classes] = 0
             sampled_negative_classes = torch.multinomial(
-                prob, num_fed_loss_classes - len(unique_gt_classes), replacement=False
-            )
-            fed_loss_classes = paddle.concat([unique_gt_classes, sampled_negative_classes])
+                prob,
+                num_fed_loss_classes - len(unique_gt_classes),
+                replacement=False)
+            fed_loss_classes = paddle.concat(
+                [unique_gt_classes, sampled_negative_classes])
         else:
             fed_loss_classes = unique_gt_classes
         return fed_loss_classes
-
 
     def loss_labels(self, outputs, targets, indices, num_boxes, log=False):
         """Classification loss (NLL)
@@ -127,7 +127,8 @@ class DiffusionDetSparseRCNNLoss(nn.Layer):
 
         # idx = self._get_src_permutation_idx(indices)
         # target_classes_o = torch.cat([t["labels"][J] for t, (_, J) in zip(targets, indices)])
-        target_classes = paddle.full(src_logits.shape[:2], self.num_classes, dtype="int64")
+        target_classes = paddle.full(
+            src_logits.shape[:2], self.num_classes, dtype="int64")
         src_logits_list = []
         target_classes_o_list = []
         # target_classes[idx] = target_classes_o
@@ -138,21 +139,23 @@ class DiffusionDetSparseRCNNLoss(nn.Layer):
                 continue
             bz_src_logits = src_logits[batch_idx]
             target_classes_o = targets[batch_idx]["labels"]
-            target_classes[batch_idx, valid_query] = target_classes_o[gt_multi_idx]
+            target_classes[batch_idx, valid_query] = target_classes_o[
+                gt_multi_idx]
 
             src_logits_list.append(bz_src_logits[valid_query])
             target_classes_o_list.append(target_classes_o[gt_multi_idx])
 
         if self.use_focal or self.use_fed_loss:
-            num_boxes = paddle.concat(target_classes_o_list).shape[0] if len(target_classes_o_list) != 0 else 1
+            num_boxes = paddle.concat(target_classes_o_list).shape[0] if len(
+                target_classes_o_list) != 0 else 1
 
             # target_classes_onehot = torch.zeros([src_logits.shape[0], src_logits.shape[1], self.num_classes + 1],
             #                                     dtype=src_logits.dtype, layout=src_logits.layout,
             #                                     device=src_logits.device)
             # target_classes_onehot.scatter_(2, target_classes.unsqueeze(-1), 1)
-            eye_class_add1 = paddle.eye(self.num_classes + 1, dtype=src_logits.dtype)
+            eye_class_add1 = paddle.eye(self.num_classes + 1,
+                                        dtype=src_logits.dtype)
             target_classes_onehot = eye_class_add1[target_classes]
-            
 
             # gt_classes = paddle.argmax(target_classes_onehot, axis=-1)
             gt_classes = target_classes
@@ -161,14 +164,16 @@ class DiffusionDetSparseRCNNLoss(nn.Layer):
             src_logits = src_logits.flatten(0, 1)
             target_classes_onehot = target_classes_onehot.flatten(0, 1)
             if self.use_focal:
-                cls_loss = F.sigmoid_focal_loss(src_logits, 
-                                                target_classes_onehot, 
-                                                alpha=self.focal_loss_alpha, 
-                                                gamma=self.focal_loss_gamma, 
-                                                reduction="none")
+                cls_loss = F.sigmoid_focal_loss(
+                    src_logits,
+                    target_classes_onehot,
+                    alpha=self.focal_loss_alpha,
+                    gamma=self.focal_loss_gamma,
+                    reduction="none")
             else:
-                cls_loss = F.binary_cross_entropy_with_logits(src_logits, target_classes_onehot, reduction="none")
-                
+                cls_loss = F.binary_cross_entropy_with_logits(
+                    src_logits, target_classes_onehot, reduction="none")
+
             if self.use_fed_loss:
                 K = self.num_classes
                 N = src_logits.shape[0]
@@ -176,8 +181,7 @@ class DiffusionDetSparseRCNNLoss(nn.Layer):
                     gt_classes,
                     num_fed_loss_classes=self.fed_loss_num_classes,
                     num_classes=K,
-                    weight=self.fed_loss_cls_weights,
-                )
+                    weight=self.fed_loss_cls_weights, )
                 fed_loss_classes_mask = fed_loss_classes.new_zeros(K + 1)
                 fed_loss_classes_mask[fed_loss_classes] = 1
                 fed_loss_classes_mask = fed_loss_classes_mask[:K]
@@ -214,34 +218,44 @@ class DiffusionDetSparseRCNNLoss(nn.Layer):
                 continue
             bz_image_whwh = targets[batch_idx]['image_size_xyxy']
             bz_src_boxes = src_boxes[batch_idx]
-            bz_target_boxes = targets[batch_idx]["boxes"]  # normalized (cx, cy, w, h)
-            bz_target_boxes_xyxy = targets[batch_idx]["boxes_xyxy"]  # absolute (x1, y1, x2, y2)
+            bz_target_boxes = targets[batch_idx][
+                "boxes"]  # normalized (cx, cy, w, h)
+            bz_target_boxes_xyxy = targets[batch_idx][
+                "boxes_xyxy"]  # absolute (x1, y1, x2, y2)
             pred_box_list.append(bz_src_boxes[valid_query].reshape([-1, 4]))
-            pred_norm_box_list.append(bz_src_boxes[valid_query].reshape([-1, 4]) / bz_image_whwh)  # normalize (x1, y1, x2, y2)
+            pred_norm_box_list.append(bz_src_boxes[valid_query].reshape(
+                [-1, 4]) / bz_image_whwh)  # normalize (x1, y1, x2, y2)
             tgt_box_list.append(bz_target_boxes[gt_multi_idx].reshape([-1, 4]))
-            tgt_box_xyxy_list.append(bz_target_boxes_xyxy[gt_multi_idx].reshape([-1, 4]))
+            tgt_box_xyxy_list.append(bz_target_boxes_xyxy[gt_multi_idx].reshape(
+                [-1, 4]))
 
         if len(pred_box_list) != 0:
             src_boxes = paddle.concat(pred_box_list)
-            src_boxes_norm = paddle.concat(pred_norm_box_list)  # normalized (x1, y1, x2, y2)
+            src_boxes_norm = paddle.concat(
+                pred_norm_box_list)  # normalized (x1, y1, x2, y2)
             target_boxes = paddle.concat(tgt_box_list)
             target_boxes_abs_xyxy = paddle.concat(tgt_box_xyxy_list)
             num_boxes = src_boxes.shape[0]
 
             losses = {}
             # require normalized (x1, y1, x2, y2)
-            loss_bbox = F.l1_loss(src_boxes_norm, bbox_cxcywh_to_xyxy(target_boxes), reduction='none') # TODO ?
+            loss_bbox = F.l1_loss(
+                src_boxes_norm,
+                bbox_cxcywh_to_xyxy(target_boxes),
+                reduction='none')  # TODO ?
             losses['loss_bbox'] = loss_bbox.sum() / num_boxes
 
             # loss_giou = giou_loss(box_ops.box_cxcywh_to_xyxy(src_boxes), box_ops.box_cxcywh_to_xyxy(target_boxes))
-            loss_giou = 1 - paddle.diag(get_bboxes_giou(src_boxes, target_boxes_abs_xyxy))
+            loss_giou = 1 - paddle.diag(
+                get_bboxes_giou(src_boxes, target_boxes_abs_xyxy))
             losses['loss_giou'] = loss_giou.sum() / num_boxes
         else:
-            losses = {'loss_bbox': outputs['pred_boxes'].sum() * 0,
-                      'loss_giou': outputs['pred_boxes'].sum() * 0}
+            losses = {
+                'loss_bbox': outputs['pred_boxes'].sum() * 0,
+                'loss_giou': outputs['pred_boxes'].sum() * 0
+            }
 
         return losses
-    
 
     def get_loss(self, loss, outputs, targets, indices, num_boxes, **kwargs):
         loss_map = {
@@ -303,24 +317,24 @@ class DiffusionDetSparseRCNNLoss(nn.Layer):
         return losses
 
 
-
 class HungarianMatcherDynamicK(nn.Layer):
     """This class computes an assignment between the targets and the predictions of the network
     For efficiency reasons, the targets don't include the no_object. Because of this, in general,
     there are more predictions than targets. In this case, we do a 1-to-k (dynamic) matching of the best predictions,
     while the others are un-matched (and thus treated as non-objects).
     """
-    def __init__(self,
-                 cost_class: float = 1, 
-                 cost_bbox: float = 1, 
-                 cost_giou: float = 1, 
-                 cost_mask: float = 1, 
-                 use_focal: bool = True,
-                 use_fed_loss: bool =False,
-                 ota_k: int = 5,
-                 focal_loss_alpha: float = 0.25,
-                 focal_loss_gamma: float = 2.0,
-                 ):
+
+    def __init__(
+            self,
+            cost_class: float=1,
+            cost_bbox: float=1,
+            cost_giou: float=1,
+            cost_mask: float=1,
+            use_focal: bool=True,
+            use_fed_loss: bool=False,
+            ota_k: int=5,
+            focal_loss_alpha: float=0.25,
+            focal_loss_gamma: float=2.0, ):
         """Creates the matche
         Params:
             cost_class: This is the relative weight of the classification error in the matching cost
@@ -337,7 +351,7 @@ class HungarianMatcherDynamicK(nn.Layer):
         if self.use_focal:
             self.focal_loss_alpha = focal_loss_alpha
             self.focal_loss_gamma = focal_loss_gamma
-        assert cost_class != 0 or cost_bbox != 0 or cost_giou != 0,  "all costs cant be 0"
+        assert cost_class != 0 or cost_bbox != 0 or cost_giou != 0, "all costs cant be 0"
 
     @paddle.no_grad()
     def forward(self, outputs, targets):
@@ -345,10 +359,13 @@ class HungarianMatcherDynamicK(nn.Layer):
         bs, num_queries = outputs["pred_logits"].shape[:2]
         # We flatten to compute the cost matrices in a batch
         if self.use_focal or self.use_fed_loss:
-            out_prob = F.sigmoid(outputs["pred_logits"])  # [batch_size, num_queries, num_classes]
+            out_prob = F.sigmoid(outputs[
+                "pred_logits"])  # [batch_size, num_queries, num_classes]
             out_bbox = outputs["pred_boxes"]  # [batch_size,  num_queries, 4]
         else:
-            out_prob = F.softmax(outputs["pred_logits"], axis=-1)  # [batch_size, num_queries, num_classes]
+            out_prob = F.softmax(
+                outputs["pred_logits"],
+                axis=-1)  # [batch_size, num_queries, num_classes]
             out_bbox = outputs["pred_boxes"]  # [batch_size, num_queries, 4]
 
         indices = []
@@ -361,19 +378,21 @@ class HungarianMatcherDynamicK(nn.Layer):
             num_insts = len(bz_tgt_ids)
             if num_insts == 0:  # empty object in key frame
                 non_valid = paddle.zeros([bz_out_prob.shape[0]]) > 0
-                indices_batchi = (non_valid, paddle.to_tensor([]).astype("int64"))
+                indices_batchi = (non_valid, paddle.to_tensor(
+                    []).astype("int64"))
                 matched_qidx = paddle.to_tensor([]).astype("int64")
                 indices.append(indices_batchi)
                 matched_ids.append(matched_qidx)
                 continue
 
-            bz_gtboxs = targets[batch_idx]['boxes']  # [num_gt, 4] normalized (cx, xy, w, h)
+            bz_gtboxs = targets[batch_idx][
+                'boxes']  # [num_gt, 4] normalized (cx, xy, w, h)
             bz_gtboxs_abs_xyxy = targets[batch_idx]['boxes_xyxy']
             fg_mask, is_in_boxes_and_center = self.get_in_boxes_info(
                 bbox_xyxy_to_cxcywh(bz_boxes),  # absolute (cx, cy, w, h)
-                bbox_xyxy_to_cxcywh(bz_gtboxs_abs_xyxy),  # absolute (cx, cy, w, h)
-                expanded_strides=32
-            )
+                bbox_xyxy_to_cxcywh(
+                    bz_gtboxs_abs_xyxy),  # absolute (cx, cy, w, h)
+                expanded_strides=32)
 
             pair_wise_ious, _ = boxes_iou(bz_boxes, bz_gtboxs_abs_xyxy)
 
@@ -381,8 +400,10 @@ class HungarianMatcherDynamicK(nn.Layer):
             if self.use_focal:
                 alpha = self.focal_loss_alpha
                 gamma = self.focal_loss_gamma
-                neg_cost_class = (1 - alpha) * (bz_out_prob ** gamma) * (-(1 - bz_out_prob + 1e-8).log())
-                pos_cost_class = alpha * ((1 - bz_out_prob) ** gamma) * (-(bz_out_prob + 1e-8).log())
+                neg_cost_class = (1 - alpha) * (bz_out_prob**gamma) * (-(
+                    1 - bz_out_prob + 1e-8).log())
+                pos_cost_class = alpha * (
+                    (1 - bz_out_prob)**gamma) * (-(bz_out_prob + 1e-8).log())
                 # cost_class = pos_cost_class[:, bz_tgt_ids] - neg_cost_class[:, bz_tgt_ids]
                 cost_class = pos_cost_class.gather(index=bz_tgt_ids, axis=1) - \
                              neg_cost_class.gather(index=bz_tgt_ids, axis=1)
@@ -411,12 +432,14 @@ class HungarianMatcherDynamicK(nn.Layer):
             cost_giou = -get_bboxes_giou(bz_boxes, bz_gtboxs_abs_xyxy)
 
             # Final cost matrix
-            cost = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou + 100.0 * (~is_in_boxes_and_center)
+            cost = self.cost_bbox * cost_bbox + self.cost_class * cost_class + self.cost_giou * cost_giou + 100.0 * (
+                ~is_in_boxes_and_center)
             # cost = (cost_class + 3.0 * cost_giou + 100.0 * (~is_in_boxes_and_center))  # [num_query,num_gt]
             cost[~fg_mask] = cost[~fg_mask] + 10000.0
 
             # if bz_gtboxs.shape[0]>0:
-            indices_batchi, matched_qidx = self.dynamic_k_matching(cost, pair_wise_ious, bz_gtboxs.shape[0])
+            indices_batchi, matched_qidx = self.dynamic_k_matching(
+                cost, pair_wise_ious, bz_gtboxs.shape[0])
 
             indices.append(indices_batchi)
             matched_ids.append(matched_qidx)
@@ -442,10 +465,14 @@ class HungarianMatcherDynamicK(nn.Layer):
         center_radius = 2.5
         # Modified to self-adapted sampling --- the center size depends on the size of the gt boxes
         # https://github.com/dulucas/UVO_Challenge/blob/main/Track1/detection/mmdet/core/bbox/assigners/rpn_sim_ota_assigner.py#L212
-        b_l = anchor_center_x > (target_gts[:, 0] - (center_radius * (xy_target_gts[:, 2] - xy_target_gts[:, 0]))).unsqueeze(0)
-        b_r = anchor_center_x < (target_gts[:, 0] + (center_radius * (xy_target_gts[:, 2] - xy_target_gts[:, 0]))).unsqueeze(0)
-        b_t = anchor_center_y > (target_gts[:, 1] - (center_radius * (xy_target_gts[:, 3] - xy_target_gts[:, 1]))).unsqueeze(0)
-        b_b = anchor_center_y < (target_gts[:, 1] + (center_radius * (xy_target_gts[:, 3] - xy_target_gts[:, 1]))).unsqueeze(0)
+        b_l = anchor_center_x > (target_gts[:, 0] - (center_radius * (
+            xy_target_gts[:, 2] - xy_target_gts[:, 0]))).unsqueeze(0)
+        b_r = anchor_center_x < (target_gts[:, 0] + (center_radius * (
+            xy_target_gts[:, 2] - xy_target_gts[:, 0]))).unsqueeze(0)
+        b_t = anchor_center_y > (target_gts[:, 1] - (center_radius * (
+            xy_target_gts[:, 3] - xy_target_gts[:, 1]))).unsqueeze(0)
+        b_b = anchor_center_y < (target_gts[:, 1] + (center_radius * (
+            xy_target_gts[:, 3] - xy_target_gts[:, 1]))).unsqueeze(0)
 
         is_in_centers = ((b_l.cast("int64") + b_r.cast("int64") + \
                           b_t.cast("int64") + b_b.cast("int64")) == 4)
@@ -466,7 +493,8 @@ class HungarianMatcherDynamicK(nn.Layer):
         dynamic_ks = paddle.clip(topk_ious.sum(0).cast("int64"), min=1)
 
         for gt_idx in range(num_gt):
-            _, pos_idx = paddle.topk(cost[:, gt_idx], k=dynamic_ks[gt_idx].item(), largest=False)
+            _, pos_idx = paddle.topk(
+                cost[:, gt_idx], k=dynamic_ks[gt_idx].item(), largest=False)
             # matching_matrix[:, gt_idx][pos_idx] = 1.0
             matching_matrix[pos_idx, gt_idx] = 1.0
 
@@ -478,7 +506,7 @@ class HungarianMatcherDynamicK(nn.Layer):
             # _, cost_argmin = paddle.min(cost[anchor_matching_gt > 1], dim=1)
             cost_argmin = paddle.argmin(cost[anchor_matching_gt > 1], axis=1)
             matching_matrix[anchor_matching_gt > 1] *= 0
-            
+
             ma_ma_idx = paddle.where(anchor_matching_gt > 1)[0].flatten()
             matching_matrix[ma_ma_idx, cost_argmin] = 1
 
@@ -486,20 +514,25 @@ class HungarianMatcherDynamicK(nn.Layer):
             # num_zero_gt = (matching_matrix.sum(0) == 0).sum()
             matched_query_id = matching_matrix.sum(1) > 0
             cost[matched_query_id] += 100000.0
-            unmatch_id = paddle.nonzero(matching_matrix.sum(0) == 0, as_tuple=False).squeeze(1)
+            unmatch_id = paddle.nonzero(
+                matching_matrix.sum(0) == 0, as_tuple=False).squeeze(1)
             for gt_idx in unmatch_id:
                 pos_idx = paddle.argmin(cost[:, gt_idx])
                 # matching_matrix[:, gt_idx][pos_idx] = 1.0
                 matching_matrix[pos_idx, gt_idx] = 1.0
-            if (matching_matrix.sum(1) > 1).sum() > 0:  # If a query matches more than one gt
+            if (matching_matrix.sum(1) > 1
+                ).sum() > 0:  # If a query matches more than one gt
                 # _, cost_argmin = torch.min(cost[anchor_matching_gt > 1],
                 #                            dim=1)  # find gt for these queries with minimal cost
-                cost_argmin = paddle.argmin(cost[anchor_matching_gt > 1],
-                                            axis=1)  # find gt for these queries with minimal cost
-                matching_matrix[anchor_matching_gt > 1] *= 0  # reset mapping relationship
-                
+                cost_argmin = paddle.argmin(
+                    cost[anchor_matching_gt > 1],
+                    axis=1)  # find gt for these queries with minimal cost
+                matching_matrix[anchor_matching_gt >
+                                1] *= 0  # reset mapping relationship
+
                 ma_ma_idx = paddle.where(anchor_matching_gt > 1)[0].flatten()
-                matching_matrix[ma_ma_idx, cost_argmin,] = 1  # keep gt with minimal cost
+                matching_matrix[ma_ma_idx, cost_argmin,
+                                ] = 1  # keep gt with minimal cost
 
         assert not (matching_matrix.sum(0) == 0).any()
         selected_query = matching_matrix.sum(1) > 0
@@ -512,11 +545,6 @@ class HungarianMatcherDynamicK(nn.Layer):
         matched_query_id = paddle.argmin(cost, axis=0)
 
         return (selected_query, gt_indices), matched_query_id
-
-
-
-
-
 
 
 def box_area(boxes):
@@ -607,12 +635,14 @@ def bbox_xyxy_to_cxcywh(x):
     x1, y1, x2, y2 = x.split(4, axis=-1)
     return paddle.concat(
         [(x1 + x2) / 2, (y1 + y2) / 2, (x2 - x1), (y2 - y1)], axis=-1)
-    
+
 
 def paddle_cdist(x, y, p=2):
     y_len = y.shape[0]
     out = paddle.concat(
-        [paddle.linalg.norm(x-y[i], p=p, axis=1, keepdim=True) for i in range(y_len)],
-        axis=1
-    )
+        [
+            paddle.linalg.norm(
+                x - y[i], p=p, axis=1, keepdim=True) for i in range(y_len)
+        ],
+        axis=1)
     return out

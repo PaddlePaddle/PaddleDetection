@@ -69,7 +69,8 @@ class BBoxPostProcess(object):
         """
         if self.nms is not None:
             bboxes, score = self.decode(head_out, rois, im_shape, scale_factor)
-            bbox_pred, bbox_num, before_nms_indexes = self.nms(bboxes, score, self.num_classes)
+            bbox_pred, bbox_num, before_nms_indexes = self.nms(bboxes, score,
+                                                               self.num_classes)
 
         else:
             bbox_pred, bbox_num = self.decode(head_out, rois, im_shape,
@@ -690,7 +691,7 @@ def nms(dets, match_threshold=0.6, match_metric='iou'):
     return dets
 
 
-def nonempty(box: paddle.Tensor, threshold: float = 0.0) -> paddle.Tensor:
+def nonempty(box: paddle.Tensor, threshold: float=0.0) -> paddle.Tensor:
     """
     Find boxes that are non-empty.
     A box is considered empty, if either of its side is no larger than threshold.
@@ -722,7 +723,7 @@ def _clip(tensor, box_size: Tuple[int, int]) -> None:
     x2 = tensor[:, 2].clip(min=0, max=w)
     y2 = tensor[:, 3].clip(min=0, max=h)
     tensor = paddle.stack((x1, y1, x2, y2), axis=-1)
-    
+
     return tensor
 
 
@@ -732,13 +733,12 @@ def _scale(tensor, scale_x: float, scale_y: float) -> None:
     """
     tensor[:, 0::2] /= scale_x
     tensor[:, 1::2] /= scale_y
-    
+
     return tensor
 
 
 @register
 class DiffusionDetPostProcess(object):
-    
     def __init__(self,
                  num_proposals,
                  num_classes=80,
@@ -750,8 +750,13 @@ class DiffusionDetPostProcess(object):
         # self.binary_thresh = binary_thresh
         # self.assign_on_cpu = assign_on_cpu
 
-    def __call__(self, results: Dict, output_height: int, output_width: int, image_size=None, mask_threshold: float = 0.5, ):
-        
+    def __call__(
+            self,
+            results: Dict,
+            output_height: int,
+            output_width: int,
+            image_size=None,
+            mask_threshold: float=0.5, ):
         """
         Resize the output instances.
         The input images are often resized when entering an object detector.
@@ -783,9 +788,8 @@ class DiffusionDetPostProcess(object):
 
         scale_x, scale_y = (
             output_width_tmp / image_size[0][1],
-            output_height_tmp / image_size[0][0],
-        )
-        
+            output_height_tmp / image_size[0][0], )
+
         # results = Instances(new_size, **results.get_fields())
 
         if "pred_boxes" in results:
@@ -802,7 +806,7 @@ class DiffusionDetPostProcess(object):
         output_boxes = _clip(output_boxes, image_size[0])
 
         non_em = nonempty(output_boxes)
-        results = {key:results[key][non_em] for key in results}
+        results = {key: results[key][non_em] for key in results}
 
         # if results.has("pred_masks"):
         #     if isinstance(results.pred_masks, ROIMasks):
@@ -817,9 +821,12 @@ class DiffusionDetPostProcess(object):
         # if results.has("pred_keypoints"):
         #     results.pred_keypoints[:, :, 0] *= scale_x
         #     results.pred_keypoints[:, :, 1] *= scale_y
-        
-        bbox = paddle.concat([results['pred_classes'][:, None].cast("float32"), 
-                              results['scores'][:, None], 
-                              results['pred_boxes']], axis=-1)
+
+        bbox = paddle.concat(
+            [
+                results['pred_classes'][:, None].cast("float32"),
+                results['scores'][:, None], results['pred_boxes']
+            ],
+            axis=-1)
 
         return bbox, [bbox.shape[0]]
