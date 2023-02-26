@@ -73,3 +73,4 @@ from .yolof import *
 from .pose3d_metro import *
 from .centertrack import *
 from .queryinst import *
+from .keypoint_petr import *
