@@ -238,7 +238,7 @@ def draw_pose(image,
                      'for example: `pip install matplotlib`.')
         raise e
 
-    skeletons = np.array([item['keypoints'] for item in results])
+    skeletons = np.array([item['keypoints'] for item in results]).reshape((-1, 51))
     kpt_nums = 17
     if len(skeletons) > 0:
         kpt_nums = int(skeletons.shape[1] / 3)
