@@ -147,7 +147,7 @@ class RandomAffine(object):
         max_scale (list[2]): the scale range to apply, transform range is [min, max]
         max_shift (float): the max abslute shift ratio to apply, transform range is [-max_shift*imagesize, max_shift*imagesize]
         hmsize (list[2]): output heatmap's shape list of different scale outputs of higherhrnet
-        trainsize (int): the standard length used to train, the 'scale_type' of [h,w] will be resize to trainsize for standard
+        trainsize (list[2]): the standard length used to train, the 'scale_type' of [h,w] will be resize to trainsize for standard
         scale_type (str): the length of [h,w] to used for trainsize, chosed between 'short' and 'long'
         records(dict): the dict contained the image, mask and coords
 
@@ -161,7 +161,7 @@ class RandomAffine(object):
                  scale=[0.75, 1.5],
                  max_shift=0.2,
                  hmsize=None,
-                 trainsize=512,
+                 trainsize=[512, 512],
                  scale_type='short',
                  boldervalue=[114, 114, 114]):
         super(RandomAffine, self).__init__()
@@ -379,6 +379,7 @@ class EvalAffine(object):
         if 'gt_joints' in records:
             del records['gt_joints']
         records['image'] = image_resized
+        records['scale_factor'] = self.size / min(h, w)
         return records
 
 
@@ -1574,14 +1575,13 @@ class PETR_Resize:
             dict: Resized results, 'im_shape', 'pad_shape', 'scale_factor', \
                 'keep_ratio' keys are added into result dict.
         """
-
         if 'scale' not in results:
             if 'scale_factor' in results:
                 img_shape = results['image'].shape[:2]
-                scale_factor = results['scale_factor']
-                assert isinstance(scale_factor, float)
-                results['scale'] = tuple(
-                    [int(x * scale_factor) for x in img_shape][::-1])
+                scale_factor = results['scale_factor'][0]
+                # assert isinstance(scale_factor, float)
+                results['scale'] = [int(x * scale_factor)
+                                    for x in img_shape][::-1]
             else:
                 self._random_scale(results)
         else:

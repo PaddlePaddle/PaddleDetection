@@ -245,8 +245,7 @@ EvalReader:
 TestReader:
   sample_transforms:
     - Decode: {}
-    - EvalAffine:
-        size: *trainsize
+    - EvalAffine: {size: 800}
     - NormalizeImage:
         mean: *global_mean
         std: *global_std
