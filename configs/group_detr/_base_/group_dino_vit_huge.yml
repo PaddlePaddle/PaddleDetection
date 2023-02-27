@@ -4,20 +4,19 @@ hidden_dim: 256
 use_focal_loss: True
 
 DETR:
-  backbone: VisionTransformer
+  backbone: VisionTransformer2D
   neck: SimpleFeaturePyramid
   transformer: GroupDINOTransformer
   detr_head: DINOHead
   post_process: DETRBBoxPostProcess
 
-
-VisionTransformer:
+VisionTransformer2D:
   patch_size: 16
   embed_dim: 1280
   depth: 32
   num_heads: 16
   mlp_ratio: 4
-  qkv_bias: True
+  attn_bias: True
   drop_rate: 0.0
   drop_path_rate: 0.1
   lr_decay_rate: 0.7
