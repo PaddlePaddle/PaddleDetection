@@ -76,7 +76,7 @@ class KeyPointFlip(object):
         '''
         records['gt_joints'] is Sequence in higherhrnet
         '''
-        if not ('gt_joints' in records and records['gt_joints'].size > 0):
+        if not ('gt_joints' in records and len(records['gt_joints']) > 0):
             return records
 
         kpts_lst = records['gt_joints']
@@ -304,7 +304,7 @@ class RandomAffine(object):
         input_size = 2 * center
         if self.trainsize != -1:
             dsize = self.trainsize
-            imgshape = (dsize, dsize)
+            imgshape = (dsize)
         else:
             dsize = scale
             imgshape = (shape.tolist())
