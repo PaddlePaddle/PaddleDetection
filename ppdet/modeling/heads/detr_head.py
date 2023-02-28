@@ -21,10 +21,13 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 import pycocotools.mask as mask_util
-from ..initializer import linear_init_, constant_
+from ..initializer import linear_init_, constant_, xavier_uniform_, bias_init_with_prob
 from ..transformers.utils import inverse_sigmoid
 
-__all__ = ['DETRHead', 'DeformableDETRHead', 'DINOHead']
+import math
+import copy
+
+__all__ = ['DETRHead', 'DeformableDETRHead', 'DINOHead', 'OVDeformableDETRHead']
 
 
 class MLP(nn.Layer):
@@ -402,3 +405,164 @@ class DINOHead(nn.Layer):
                 dn_meta=dn_meta)
         else:
             return (dec_out_bboxes[-1], dec_out_logits[-1], None)
+
+@register
+class OVDeformableDETRHead(nn.Layer):
+    __shared__ = ['num_classes', 'hidden_dim']
+    __inject__ = ['loss']
+
+    def __init__(self,
+                 num_classes=80,
+                 hidden_dim=1024,
+                 nhead=8,
+                 num_mlp_layers=3,
+                 num_decoder_layer=6,
+                 aux_loss=True,
+                 with_box_refine=True,
+                 two_stage=True,
+                 cls_out_channels=1,
+                 loss='OVDETRLoss'):
+        super(OVDeformableDETRHead, self).__init__()
+        self.num_classes = num_classes
+        self.hidden_dim = hidden_dim
+        self.nhead = nhead
+        self.loss = loss
+
+        self.score_head = nn.Linear(hidden_dim, cls_out_channels)
+        self.bbox_head = MLP(hidden_dim,
+                             hidden_dim,
+                             output_dim=4,
+                             num_layers=num_mlp_layers)
+        self.feature_align = nn.Linear(256, 512)
+
+        self.aux_loss = aux_loss
+        self.with_box_refine = with_box_refine
+        self.two_stage = two_stage
+
+        self._reset_parameters()
+
+        self.num_pred = (num_decoder_layer) if two_stage else num_decoder_layer
+        if with_box_refine:
+            self.score_head = _get_clones(self.score_head, self.num_pred + 1)
+            self.bbox_head = _get_clones(self.bbox_head, self.num_pred + 1)
+            self.feature_align = _get_clones(self.feature_align, self.num_pred)
+            constant_(self.bbox_head[0].layers[-1].bias[2:], -2.0)
+        else:
+            constant_(self.bbox_head.layers[-1].bias[2:], -2.0)
+            self.score_head = nn.LayerList([self.score_head for _ in range(self.num_pred)])
+            self.bbox_head = nn.LayerList([self.bbox_head for _ in range(self.num_pred)])
+            self.feature_align = nn.LayerList([self.feature_align for _ in range(self.num_pred)])
+        if two_stage:
+            # hack implementation for two-stage
+            for box_embed in self.bbox_head:
+                constant_(box_embed.layers[-1].bias[2:], 0.0)
+
+    def _reset_parameters(self):
+        linear_init_(self.score_head)
+
+        constant_(self.score_head.bias, bias_init_with_prob())
+
+        constant_(self.bbox_head.layers[-1].weight)
+        constant_(self.bbox_head.layers[-1].bias)
+
+        xavier_uniform_(self.feature_align.weight)
+        constant_(self.feature_align.bias)
+
+
+    @classmethod
+    def from_config(cls, cfg, hidden_dim, nhead, input_shape, two_stage):
+        return {'hidden_dim': hidden_dim, 'nhead': nhead, 'two_stage': two_stage}
+
+    def forward(self,
+                head_inputs_dict,
+                body_feats,
+                inputs=None):
+        r"""
+        Args:
+            head_inputs_dict (dict): (feats(Tensor): [num_levels, batch_size,
+                                                num_queries*max_pad_len, hidden_dim],
+                                    reference_points(List(Tensor)): List[num_levels*[batch_size, num_queries*max_pad_len, 4],
+                                                                    [batch_size, num_queries*max_pad_len, 4]],
+                                    select_id(List):[max_pad_len],
+                                    clip_query_ori(Tensor):[max_pad_len, 2*hidden_dim])
+            body_feats (List(Tensor)): list[[B, C, H, W]]
+            inputs (dict): dict(inputs)
+        """
+
+        feats = head_inputs_dict['feats']
+        reference_list = head_inputs_dict['reference']
+        enc_outputs_class = head_inputs_dict['enc_outputs_class']
+        enc_outputs_coord_unact = head_inputs_dict['enc_outputs_coord_unact']
+        select_id = head_inputs_dict['select_id']
+        clip_query_ori = head_inputs_dict['clip_query_ori']
+
+        outputs_classes = []
+        outputs_coords = []
+        outputs_embeds = []
+
+        for lvl in range(feats.shape[0]):
+            reference = inverse_sigmoid(reference_list[lvl])
+            outputs_class = self.score_head[lvl](feats[lvl])
+            tmp = self.bbox_head[lvl](feats[lvl])
+            if reference.shape[-1] == 4:
+                tmp += reference
+            else:
+                assert reference.shape[-1] == 2
+                tmp = paddle.concat(
+                    [
+                        tmp[:, :, :, :2] + reference,
+                        tmp[:, :, :, 2:]
+                    ],
+                    axis=-1)
+            outputs_coord = F.sigmoid(tmp)
+
+            outputs_classes.append(outputs_class)
+            outputs_coords.append(outputs_coord)
+            outputs_embeds.append(self.feature_align[lvl](feats[lvl]))
+
+        outputs_class = paddle.stack(outputs_classes)
+        outputs_bbox = paddle.stack(outputs_coords)
+        outputs_embed = paddle.stack(outputs_embeds)
+
+        out = {
+            "pred_logits": outputs_class[-1],
+            "pred_boxes": outputs_bbox[-1],
+            "pred_embed": outputs_embed[-1],
+            "select_id": select_id,
+            "clip_query": clip_query_ori,
+        }
+        if self.aux_loss:
+            out["aux_outputs"] = {
+                "pred_logits": outputs_class[:-1],
+                "pred_boxes": outputs_bbox[:-1],
+                "pred_embed": outputs_embed[:-1],
+                "select_id": select_id,
+                "clip_query": clip_query_ori,
+            }
+
+        if self.two_stage:
+            enc_outputs_coord = F.sigmoid(enc_outputs_coord_unact)
+            out["enc_outputs"] = {
+                "pred_logits": enc_outputs_class,
+                "pred_boxes": enc_outputs_coord,
+                "select_id": select_id,
+            }
+
+        if self.training:
+            assert inputs is not None
+            assert 'gt_class' in inputs and 'gt_bbox' in inputs
+
+            return self.loss(out, inputs)
+        else:
+            return (outputs_coord[-1], outputs_class[-1], None)
+
+    def _set_aux_loss(self, outputs_class, outputs_coord):
+        # this is a workaround to make torchscript happy, as torchscript
+        # doesn't support dictionary with non-homogeneous values, such
+        # as a dict having both a Tensor and a list.
+        return [{'pred_logits': a, 'pred_boxes': b}
+                for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
+
+
+def _get_clones(module, N):
+    return nn.LayerList([copy.deepcopy(module) for i in range(N)])
