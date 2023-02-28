@@ -5,68 +5,90 @@ _BASE_: [
   '_base_/optimizer_focal_3x.yml',
   '_base_/dino_focalnet.yml',
   #'_base_/dino_reader.yml',
-  'ppyoloe_plus_reader.yml',
+  '_base_/ppyoloe_plus_reader.yml',
 ]
 
 weights: output/dino_focalnet_large_fl4_3x_coco/model_final
 find_unused_parameters: True
 log_iter: 100
 snapshot_epoch: 1
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/focalnet_large_fl4_pretrained_on_o365.pdparams
 
 
-FocalNet:
-  arch: 'focalnet_L_384_22k_fl4'
-  out_indices: [0, 1, 2, 3]
+epoch: 36
+LearningRate:
+  base_lr: 0.00001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [33]
+    use_warmup: false
 
-DINOTransformer:
-  num_levels: 5
-
-
-num_classes: 91
-TrainDataset:
-  name: COCODataSet
-  image_dir: val2017
-  anno_path: annotations/instances_val2017_8img.json
-  dataset_dir: dataset/coco
-  data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
-  use_coco_90cls: True
-
-EvalDataset:
-  name: COCODataSet
-  image_dir: val2017
-  #anno_path: annotations/instances_val2017.json
-  #anno_path: annotations/instances_val2017_8img.json
-  #anno_path: annotations/instances_val2017_rand24.json
-  #anno_path: annotations/instances_val2017_1img.json
-  dataset_dir: dataset/coco
-  allow_empty: true
-  use_coco_90cls: True
-
-worker_num: 0
-EvalReader2:  # cocoval 5000 62.7, 100  62.5 # 62.3 #60.5
-  sample_transforms:
-    - Decode: {}
-    - Resize: {target_size: [800, 1333], keep_ratio: True}
-    - NormalizeImage: {is_scale: true, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
-    - Permute: {}
-  batch_transforms:
-    - PadMaskBatch: {pad_to_stride: -1, return_pad_mask: False}
-  batch_size: 1
+OptimizerBuilder:
+  clip_grad_by_norm: 0.1
+  regularizer: false
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0001
+    param_groups:
+      - params: ['backbone']
+        learning_rate: 0.000001
 
 
-EvalReader: # cocoval 5000  59.7, 100 59.3 # 59.8
-  sample_transforms:
-    - Decode: {}
-    - Resize: {target_size: [640, 640], keep_ratio: False}
-    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
-    - Permute: {}
-  batch_size: 1
+
+# FocalNet:
+#   arch: 'focalnet_L_384_22k_fl4'
+#   out_indices: [0, 1, 2, 3]
+
+# DINOTransformer:
+#   num_levels: 5
 
 
-EvalReader5: # cocoval 5000  60.8 , 100  60.5
-  sample_transforms:
-    - Decode: {}
-    - Resize: {target_size: [640, 640], keep_ratio: False}
-    - NormalizeImage: {is_scale: true, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
-    - Permute: {}
-  batch_size: 1
+# num_classes: 91
+# TrainDataset:
+#   name: COCODataSet
+#   image_dir: val2017
+#   anno_path: annotations/instances_val2017_8img.json
+#   dataset_dir: dataset/coco
+#   data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+#   use_coco_90cls: True
+
+# EvalDataset:
+#   name: COCODataSet
+#   image_dir: val2017
+#   #anno_path: annotations/instances_val2017.json
+#   #anno_path: annotations/instances_val2017_8img.json
+#   #anno_path: annotations/instances_val2017_rand24.json
+#   #anno_path: annotations/instances_val2017_1img.json
+#   dataset_dir: dataset/coco
+#   allow_empty: true
+#   use_coco_90cls: True
+
+# worker_num: 0
+# EvalReader2:  # cocoval 5000 62.7, 100  62.5 # 62.3 #60.5
+#   sample_transforms:
+#     - Decode: {}
+#     - Resize: {target_size: [800, 1333], keep_ratio: True}
+#     - NormalizeImage: {is_scale: true, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+#     - Permute: {}
+#   batch_transforms:
+#     - PadMaskBatch: {pad_to_stride: -1, return_pad_mask: False}
+#   batch_size: 1
+
+
+# EvalReader: # cocoval 5000  59.7, 100 59.3 # 59.8
+#   sample_transforms:
+#     - Decode: {}
+#     - Resize: {target_size: [640, 640], keep_ratio: False}
+#     - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+#     - Permute: {}
+#   batch_size: 1
+
+
+# EvalReader5: # cocoval 5000  60.8 , 100  60.5
+#   sample_transforms:
+#     - Decode: {}
+#     - Resize: {target_size: [640, 640], keep_ratio: False}
+#     - NormalizeImage: {is_scale: true, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+#     - Permute: {}
+#   batch_size: 1
