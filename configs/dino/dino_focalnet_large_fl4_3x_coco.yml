@@ -12,12 +12,13 @@ weights: output/dino_focalnet_large_fl4_3x_coco/model_final
 find_unused_parameters: True
 log_iter: 100
 snapshot_epoch: 1
-pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/focalnet_large_fl4_pretrained_on_o365.pdparams
+# pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/focalnet_large_fl4_pretrained_on_o365.pdparams
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/focalnet_large_lrf_384_fl4_pretrained.pdparams
 
 
 epoch: 36
 LearningRate:
-  base_lr: 0.00001
+  base_lr: 0.0001
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
@@ -30,18 +31,18 @@ OptimizerBuilder:
   optimizer:
     type: AdamW
     weight_decay: 0.0001
-    param_groups:
-      - params: ['backbone']
-        learning_rate: 0.000001
+    # param_groups:
+    #   - params: ['backbone']
+    #     learning_rate: 0.000001
 
 
+FocalNet:
+  arch: 'focalnet_L_384_22k_fl4'
+  #out_indices: [0, 1, 2, 3]
+  out_indices: [1, 2, 3]
 
-# FocalNet:
-#   arch: 'focalnet_L_384_22k_fl4'
-#   out_indices: [0, 1, 2, 3]
-
-# DINOTransformer:
-#   num_levels: 5
+DINOTransformer:
+  num_levels: 4 #5
 
 
 # num_classes: 91
