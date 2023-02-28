@@ -67,6 +67,9 @@ TrainDataset:
     anno_path: annotations/person_keypoints_train2017.json
     dataset_dir: dataset/coco
     num_joints: *num_joints
+    return_bbox: False
+    return_area: False
+    return_class: False
 
 EvalDataset:
   !KeypointBottomUpCocoDataset
@@ -75,6 +78,9 @@ EvalDataset:
     dataset_dir: dataset/coco
     num_joints: *num_joints
     test_mode: true
+    return_bbox: False
+    return_area: False
+    return_class: False
 
 TestDataset:
   !ImageFolder
