@@ -355,14 +355,13 @@ class TinyPose3DHRHeatmapNet(BaseArch):
 
         hrnet_outputs = self.final_conv(feats[0])
         res = soft_argmax(hrnet_outputs, self.num_joints)
-
-        if self.training:
-            return self.loss(res, self.inputs)
-        else:  # export model need
-            return res
+        return res
 
     def get_loss(self):
-        return self._forward()
+        pose3d = self._forward()
+        loss = self.loss(pose3d, None, self.inputs)
+        outputs = {'loss': loss}
+        return outputs
 
     def get_pred(self):
         res_lst = self._forward()
