@@ -93,6 +93,24 @@ TO_STATIC_SPEC = {
         'scale_factor': paddle.static.InputSpec(
             name='scale_factor', shape=[-1, 2], dtype='float32'),
     }],
+    'tinypose_128x96': [{
+        'center': paddle.static.InputSpec(
+            name='center', shape=[-1, 2], dtype='float32'),
+        'scale': paddle.static.InputSpec(
+            name='scale', shape=[-1, 2], dtype='float32'),
+        'im_id': paddle.static.InputSpec(
+            name='im_id', shape=[-1, 1], dtype='float32'),
+        'image': paddle.static.InputSpec(
+            name='image', shape=[-1, 3, 128, 96], dtype='float32'),
+        'score': paddle.static.InputSpec(
+            name='score', shape=[-1], dtype='float32'),
+        'rotate': paddle.static.InputSpec(
+            name='rotate', shape=[-1], dtype='float32'),
+        'target': paddle.static.InputSpec(
+            name='target', shape=[-1, 17, 32, 24], dtype='float32'),
+        'target_weight': paddle.static.InputSpec(
+            name='target_weight', shape=[-1, 17, 1], dtype='float32'),
+    }],
     'fcos_r50_fpn_1x_coco': [{
         'im_id': paddle.static.InputSpec(
             name='im_id', shape=[-1, 1], dtype='float32'),
