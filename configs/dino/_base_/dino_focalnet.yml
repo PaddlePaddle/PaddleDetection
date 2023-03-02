@@ -1,5 +1,5 @@
 architecture: DETR
-# pretrain_weights: # rewrite in SwinTransformer.pretrained in ppdet/modeling/backbones/focalnet.py
+# pretrain_weights: # rewrite in FocalNet.pretrained in ppdet/modeling/backbones/focalnet.py
 pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/focalnet_large_lrf_384_fl4_pretrained.pdparams
 hidden_dim: 256
 use_focal_loss: True
@@ -13,6 +13,7 @@ DETR:
 FocalNet:
   arch: 'focalnet_L_384_22k_fl4'
   out_indices: [1, 2, 3]
+  pretrained: https://bj.bcebos.com/v1/paddledet/models/pretrained/focalnet_large_lrf_384_fl4_pretrained.pdparams
 
 DINOTransformer:
   num_queries: 900

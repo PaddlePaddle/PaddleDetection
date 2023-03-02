@@ -58,8 +58,7 @@ class COCODataSet(DetDataset):
                  load_crowd=False,
                  allow_empty=False,
                  empty_ratio=1.,
-                 repeat=1,
-                 use_coco_90cls=False):
+                 repeat=1):
         super(COCODataSet, self).__init__(
             dataset_dir,
             image_dir,
@@ -72,7 +71,6 @@ class COCODataSet(DetDataset):
         self.load_crowd = load_crowd
         self.allow_empty = allow_empty
         self.empty_ratio = empty_ratio
-        self.use_coco_90cls = use_coco_90cls
 
     def _sample_empty(self, records, num):
         # if empty_ratio is out of [0. ,1.), do not sample the records
@@ -99,14 +97,7 @@ class COCODataSet(DetDataset):
         empty_records = []
         ct = 0
 
-        if not self.use_coco_90cls:
-            self.catid2clsid = dict(
-                {catid: i
-                 for i, catid in enumerate(cat_ids)})
-        else:
-            self.catid2clsid = dict(
-                {catid: catid
-                 for i, catid in enumerate(cat_ids)})
+        self.catid2clsid = dict({catid: i for i, catid in enumerate(cat_ids)})
         self.cname2cid = dict({
             coco.loadCats(catid)[0]['name']: clsid
             for catid, clsid in self.catid2clsid.items()
