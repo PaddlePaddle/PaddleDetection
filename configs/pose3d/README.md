@@ -24,12 +24,12 @@
 
 PaddleDetection 中提供了两种3D Pose算法（稀疏关键点），分别是适用于服务器端的大模型Metro3D和移动端的TinyPose3D。其中Metro3D基于[End-to-End Human Pose and Mesh Reconstruction with Transformers](https://arxiv.org/abs/2012.09760)进行了稀疏化改造，TinyPose3D是在TinyPose基础上修改输出3D关键点。
 
-## 模型推荐（待补充）
+## 模型推荐
 
-|模型|适用场景|human3.6m精度|模型下载|
-|:--:|:--:|:--:|:--:|
-|Metro3D|服务器端|-|-|
-|TinyPose3D|移动端|-|-|
+|模型|适用场景|human3.6m精度(14关键点)|human3.6m精度(17关键点)|模型下载|
+|:--:|:--:|:--:|:--:|:--:|
+|Metro3D|服务器端|56.014|46.619|[metro3d_24kpts.pdparams](https://bj.bcebos.com/v1/paddledet/models/pose3d/metro3d_24kpts.pdparams)|
+|TinyPose3D|移动端|86.381|71.223|[tinypose3d_human36m.pdparams](https://bj.bcebos.com/v1/paddledet/models/pose3d/tinypose3d_human36M.pdparams)|
 
 注：
 1. 训练数据基于 [MeshTransfomer](https://github.com/microsoft/MeshTransformer) 中的训练数据。
@@ -137,11 +137,12 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/pose3d/metro3d_24kpts.y
 
   我们的训练数据提供了大量的低精度自动生成式的数据，用户可以在此数据训练的基础上，标注自己高精度的目标动作数据进行finetune，即可得到相对稳定较好的模型。
 
-  我们在医疗康复高精度数据上的训练效果展示如下
+  我们在医疗康复高精度数据上的训练效果展示如下  [高清视频](https://user-images.githubusercontent.com/31800336/218949226-22e6ab25-facb-4cc6-8eca-38d4bfd973e5.mp4)
 
   <div align="center">
-    <img src="https://user-images.githubusercontent.com/31800336/218949226-22e6ab25-facb-4cc6-8eca-38d4bfd973e5.mp4" width='600'/>
+    <img src="https://user-images.githubusercontent.com/31800336/221747019-ceacfd64-e218-476b-a369-c6dc259816b2.gif" width='600'/>
   </div>
+
 
 
 ## 引用
