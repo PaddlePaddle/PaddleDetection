@@ -25,3 +25,4 @@ from .matchers import *
 from .position_encoding import *
 from .deformable_transformer import *
 from .dino_transformer import *
+from .petr_transformer import *

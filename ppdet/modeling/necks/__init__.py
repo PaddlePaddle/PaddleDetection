@@ -36,3 +36,4 @@ from .es_pan import *
 from .lc_pan import *
 from .custom_pan import *
 from .dilated_encoder import *
+from .channel_mapper import *

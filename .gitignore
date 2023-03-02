@@ -18,9 +18,9 @@ __pycache__/
 
 # Distribution / packaging
 /bin/
-/build/
+*build/
 /develop-eggs/
-/dist/
+*dist/
 /eggs/
 /lib/
 /lib64/
@@ -30,7 +30,7 @@ __pycache__/
 /parts/
 /sdist/
 /var/
-/*.egg-info/
+*.egg-info/
 /.installed.cfg
 /*.egg
 /.eggs

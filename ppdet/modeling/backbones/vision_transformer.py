@@ -284,9 +284,9 @@ class RelativePositionBias(nn.Layer):
 
     def forward(self):
         relative_position_bias = \
-            self.relative_position_bias_table[self.relative_position_index.view(-1)].view(
+            self.relative_position_bias_table[self.relative_position_index.reshape([-1])].reshape([
                  self.window_size[0] * self.window_size[1] + 1,
-                 self.window_size[0] * self.window_size[1] + 1, -1)  # Wh*Ww,Wh*Ww,nH 
+                 self.window_size[0] * self.window_size[1] + 1, -1])  # Wh*Ww,Wh*Ww,nH 
         return relative_position_bias.transpose((2, 0, 1))  # nH, Wh*Ww, Wh*Ww
 
 

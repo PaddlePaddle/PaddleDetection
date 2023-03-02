@@ -137,11 +137,6 @@ def all_gather(data):
 
 
 class Pose3DEval(object):
-    """refer to
-        https://github.com/leoxiaobin/deep-high-resolution-net.pytorch
-        Copyright (c) Microsoft, under the MIT License.
-    """
-
     def __init__(self, output_eval, save_prediction_only=False):
         super(Pose3DEval, self).__init__()
         self.output_eval = output_eval
