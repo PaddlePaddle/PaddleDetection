@@ -4,7 +4,7 @@ _BASE_: [
   '../ppyoloe/_base_/ppyoloe_plus_crn.yml',
   '../ppyoloe/_base_/ppyoloe_plus_reader.yml',
 ]
-depth_mult: 0.25
+depth_mult: 0.33 # s version
 width_mult: 0.50
 
 log_iter: 50
