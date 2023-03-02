@@ -69,12 +69,12 @@ class FCOSLoss(nn.Layer):
         self.reg_weights = reg_weights
         self.quality = quality
 
-    def __iou_loss(self,
-                   pred,
-                   targets,
-                   positive_mask,
-                   weights=None,
-                   return_iou=False):
+    def _iou_loss(self,
+                  pred,
+                  targets,
+                  positive_mask,
+                  weights=None,
+                  return_iou=False):
         """
         Calculate the loss for location prediction
         Args:
@@ -216,7 +216,7 @@ class FCOSLoss(nn.Layer):
             # 2. bboxes_reg: giou_loss
             mask_positive_float = paddle.squeeze(mask_positive_float, axis=-1)
             tag_center_flatten = paddle.squeeze(tag_center_flatten, axis=-1)
-            reg_loss = self.__iou_loss(
+            reg_loss = self._iou_loss(
                 bboxes_reg_flatten,
                 tag_bboxes_flatten,
                 mask_positive_float,
@@ -233,7 +233,7 @@ class FCOSLoss(nn.Layer):
             # 2. bboxes_reg: giou_loss
             mask_positive_float = paddle.squeeze(mask_positive_float, axis=-1)
             tag_center_flatten = paddle.squeeze(tag_center_flatten, axis=-1)
-            reg_loss = self.__iou_loss(
+            reg_loss = self._iou_loss(
                 bboxes_reg_flatten,
                 tag_bboxes_flatten,
                 mask_positive_float,
@@ -243,7 +243,7 @@ class FCOSLoss(nn.Layer):
 
             # 3. centerness: sigmoid_cross_entropy_with_logits_loss
             centerness_flatten = paddle.squeeze(centerness_flatten, axis=-1)
-            gt_ious = self.__iou_loss(
+            gt_ious = self._iou_loss(
                 bboxes_reg_flatten,
                 tag_bboxes_flatten,
                 mask_positive_float,
