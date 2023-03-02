@@ -62,7 +62,7 @@ MOT_ARCH = ['JDE', 'FairMOT', 'DeepSORT', 'ByteTrack', 'CenterTrack']
 
 class Trainer(object):
     def __init__(self, cfg, mode='train'):
-        self.cfg = cfg
+        self.cfg = cfg.copy()
         assert mode.lower() in ['train', 'eval', 'test'], \
                 "mode should be 'train', 'eval' or 'test'"
         self.mode = mode.lower()
@@ -99,12 +99,12 @@ class Trainer(object):
                 self.dataset, cfg.worker_num)
 
         if cfg.architecture == 'JDE' and self.mode == 'train':
-            cfg['JDEEmbeddingHead'][
+            self.cfg['JDEEmbeddingHead'][
                 'num_identities'] = self.dataset.num_identities_dict[0]
             # JDE only support single class MOT now.
 
         if cfg.architecture == 'FairMOT' and self.mode == 'train':
-            cfg['FairMOTEmbeddingHead'][
+            self.cfg['FairMOTEmbeddingHead'][
                 'num_identities_dict'] = self.dataset.num_identities_dict
             # FairMOT support single class and multi-class MOT now.
 
@@ -149,7 +149,7 @@ class Trainer(object):
                 reader_name = '{}Reader'.format(self.mode.capitalize())
                 # If metric is VOC, need to be set collate_batch=False.
                 if cfg.metric == 'VOC':
-                    cfg[reader_name]['collate_batch'] = False
+                    self.cfg[reader_name]['collate_batch'] = False
                 self.loader = create(reader_name)(self.dataset, cfg.worker_num,
                                                   self._eval_batch_sampler)
         # TestDataset build after user set images, skip loader creation here

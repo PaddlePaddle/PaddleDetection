@@ -181,7 +181,7 @@ class Detector(object):
         filter_res = {'boxes': boxes, 'boxes_num': filter_num}
         return filter_res
 
-    def predict(self, repeats=1):
+    def predict(self, repeats=1, run_benchmark=False):
         '''
         Args:
             repeats (int): repeats number for prediction
@@ -193,6 +193,15 @@ class Detector(object):
         '''
         # model prediction
         np_boxes_num, np_boxes, np_masks = np.array([0]), None, None
+
+        if run_benchmark:
+            for i in range(repeats):
+                self.predictor.run()
+                paddle.device.cuda.synchronize()
+            result = dict(
+                boxes=np_boxes, masks=np_masks, boxes_num=np_boxes_num)
+            return result
+
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -272,9 +281,9 @@ class Detector(object):
                 self.det_times.preprocess_time_s.end()
 
                 # model prediction
-                result = self.predict(repeats=50)  # warmup
+                result = self.predict(repeats=50, run_benchmark=True)  # warmup
                 self.det_times.inference_time_s.start()
-                result = self.predict(repeats=repeats)
+                result = self.predict(repeats=repeats, run_benchmark=True)
                 self.det_times.inference_time_s.end(repeats=repeats)
 
                 # postprocess
@@ -370,9 +379,9 @@ class Detector(object):
                 self.det_times.preprocess_time_s.end()
 
                 # model prediction
-                result = self.predict(repeats=50)  # warmup
+                result = self.predict(repeats=50, run_benchmark=True)  # warmup
                 self.det_times.inference_time_s.start()
-                result = self.predict(repeats=repeats)
+                result = self.predict(repeats=repeats, run_benchmark=True)
                 self.det_times.inference_time_s.end(repeats=repeats)
 
                 # postprocess
@@ -568,7 +577,7 @@ class DetectorSOLOv2(Detector):
             output_dir=output_dir,
             threshold=threshold, )
 
-    def predict(self, repeats=1):
+    def predict(self, repeats=1, run_benchmark=False):
         '''
         Args:
             repeats (int): repeat number for prediction
@@ -577,7 +586,20 @@ class DetectorSOLOv2(Detector):
                             'cate_label': label of segm, shape:[N]
                             'cate_score': confidence score of segm, shape:[N]
         '''
-        np_label, np_score, np_segms = None, None, None
+        np_segms, np_label, np_score, np_boxes_num = None, None, None, np.array(
+            [0])
+
+        if run_benchmark:
+            for i in range(repeats):
+                self.predictor.run()
+                paddle.device.cuda.synchronize()
+            result = dict(
+                segm=np_segms,
+                label=np_label,
+                score=np_score,
+                boxes_num=np_boxes_num)
+            return result
+
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -659,7 +681,7 @@ class DetectorPicoDet(Detector):
         result = dict(boxes=np_boxes, boxes_num=np_boxes_num)
         return result
 
-    def predict(self, repeats=1):
+    def predict(self, repeats=1, run_benchmark=False):
         '''
         Args:
             repeats (int): repeat number for prediction
@@ -668,6 +690,14 @@ class DetectorPicoDet(Detector):
                             matix element:[class, score, x_min, y_min, x_max, y_max]
         '''
         np_score_list, np_boxes_list = [], []
+
+        if run_benchmark:
+            for i in range(repeats):
+                self.predictor.run()
+                paddle.device.cuda.synchronize()
+            result = dict(boxes=np_score_list, boxes_num=np_boxes_list)
+            return result
+
         for i in range(repeats):
             self.predictor.run()
             np_score_list.clear()

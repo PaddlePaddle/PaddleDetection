@@ -64,32 +64,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
 
 ## 📣最新进展
 
-**💎稳定版本**
-
-位于[`release/2.5`](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)分支，最新的[**v2.5**](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5)版本已经在 2022.09.13 发布，版本发新详细内容请参考[v2.5.0更新日志](https://github.com/PaddlePaddle/PaddleDetection/releases/tag/v2.5.0)，重点更新：
-- [🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)：
-    - 发布[PP-YOLOE+](configs/ppyoloe)，最高精度提升2.4% mAP，达到54.9% mAP，模型训练收敛速度提升3.75倍，端到端预测速度最高提升2.3倍；多个下游任务泛化性提升
-    - 发布[PicoDet-NPU](configs/picodet)模型，支持模型全量化部署；新增[PicoDet](configs/picodet)版面分析模型
-    - 发布[PP-TinyPose升级版](./configs/keypoint/tiny_pose/)增强版，在健身、舞蹈等场景精度提升9.1% AP，支持侧身、卧躺、跳跃、高抬腿等非常规动作
-    - 发布行人分析工具[PP-Human v2](./deploy/pipeline)，新增打架、打电话、抽烟、闯入四大行为识别，底层算法性能升级，覆盖行人检测、跟踪、属性三类核心算法能力，提供保姆级全流程开发及模型优化策略，支持在线视频流输入
-    - 首次发布[PP-Vehicle](./deploy/pipeline)，提供车牌识别、车辆属性分析（颜色、车型）、车流量统计以及违章检测四大功能，兼容图片、在线视频流、视频输入，提供完善的二次开发文档教程
-- [📱模型库](#模型库)：
-    - 全面覆盖的[YOLO家族](https://github.com/PaddlePaddle/PaddleYOLO/tree/develop/docs/MODEL_ZOO_cn.md)经典与最新算法模型的代码库[PaddleYOLO](https://github.com/PaddlePaddle/PaddleYOLO): 包括YOLOv3，百度飞桨自研的实时高精度目标检测模型PP-YOLOE，以及前沿检测算法YOLOv4、YOLOv5、YOLOX，YOLOv6、YOLOv7以及YOLOv8
-    - 新增基于[ViT](configs/vitdet)骨干网络高精度检测模型，COCO数据集精度达到55.7% mAP；新增[OC-SORT](configs/mot/ocsort)多目标跟踪模型；新增[ConvNeXt](configs/convnext)骨干网络
-- [💡产业实践范例](#产业实践范例)：
-    - 新增[智能健身](https://aistudio.baidu.com/aistudio/projectdetail/4385813)、[打架识别](https://aistudio.baidu.com/aistudio/projectdetail/4086987?channelType=0&channel=0)、[来客分析](https://aistudio.baidu.com/aistudio/projectdetail/4230123?channelType=0&channel=0)
-
-**🧬预览版本**
-
-位于[`develop`](https://github.com/PaddlePaddle/PaddleDetection/tree/develop)分支，体验最新功能请切换到[该分支](https://github.com/PaddlePaddle/PaddleDetection/tree/develop)，最近更新：
-- [📱模型库](#模型库)：
-  - 新增[少样本迁移学习](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/few-shot);
-  - 新增[半监督检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/semi_det);
-  - 新增[YOLOv8](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov8);
-  - 更新[YOLOv6-v3.0](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.5/configs/yolov6);
-- [🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)：
-  - 发布**旋转框检测模型**[PP-YOLOE-R](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r)：Anchor-free旋转框检测SOTA模型，精度速度双高、云边一体，s/m/l/x四个模型适配不用算力硬件、部署友好，避免使用特殊算子，能够轻松使用TensorRT加速；
-  - 发布**小目标检测模型**[PP-YOLOE-SOD](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/smalldet)：基于切图的端到端检测方案、基于原图的检测模型，精度达VisDrone开源最优；
+PaddleDetection 2.6版本发布! [点击查看版本更新介绍](https://github.com/PaddlePaddle/PaddleDetection/releases/tag/v2.6.0)
 
 ## 👫开源社区
 
@@ -106,7 +81,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
   - 10+工业安防交通全流程项目实操（含源码）
 
 <div align="center">
-<img src="https://user-images.githubusercontent.com/22989727/202123813-1097e3f6-c784-4991-9b94-8cbcd972de82.png"  width = "150" height = "150",caption='' />
+<img src="https://user-images.githubusercontent.com/61035602/220354166-f6bf1b5f-3038-4e8b-a196-d198ba7dce36.png"  width = "150" height = "150",caption='' />
 <p>PaddleDetection官方交流群二维码</p>
 </div>
 
@@ -374,8 +349,8 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
             <li><a href="configs/ppyolo/README_cn.md">PP-YOLOv2</a></li>
             <li><a href="configs/ppyoloe/README_legacy.md">PP-YOLOE</a></li>
             <li><a href="configs/ppyoloe/README_cn.md">PP-YOLOE+</a></li>
-            <li><a href="https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/smalldet">PP-YOLOE-SOD</a></li>
-            <li><a href="https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/rotate/README.md">PP-YOLOE-R</a></li>
+            <li><a href="configs/smalldet">PP-YOLOE-SOD</a></li>
+            <li><a href="configs/rotate/README.md">PP-YOLOE-R</a></li>
             <li><a href="configs/ssd/README.md">SSD</a></li>
             <li><a href="configs/centernet">CenterNet</a></li>
             <li><a href="configs/fcos">FCOS</a></li>  
@@ -427,7 +402,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
           <li><b>Semi-Supervised Detection</b></li>
         <ul>
         <ul>
-            <li><a href="https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/semi_det">DenseTeacher</a></li>
+            <li><a href="configs/semi_det">DenseTeacher</a></li>
         </ul>
         </ul>
           <li><b>3D Detection</b></li>
@@ -548,7 +523,7 @@ PP-YOLOE是基于PP-YOLOv2的卓越的单阶段Anchor-free模型，超越了多�
 
 PP-YOLOE-R是一个高效的单阶段Anchor-free旋转框检测模型，基于PP-YOLOE+引入了一系列改进策略来提升检测精度。根据不同的硬件对精度和速度的要求，PP-YOLOE-R包含s/m/l/x四个尺寸的模型。在DOTA 1.0数据集上，PP-YOLOE-R-l和PP-YOLOE-R-x在单尺度训练和测试的情况下分别达到了78.14mAP和78.28 mAP，这在单尺度评估下超越了几乎所有的旋转框检测模型。通过多尺度训练和测试，PP-YOLOE-R-l和PP-YOLOE-R-x的检测精度进一步提升至80.02mAP和80.73 mAP，超越了所有的Anchor-free方法并且和最先进的Anchor-based的两阶段模型精度几乎相当。在保持高精度的同时，PP-YOLOE-R避免使用特殊的算子，例如Deformable Convolution或Rotated RoI Align，使其能轻松地部署在多种多样的硬件上。
 
-`传送门`：[PP-YOLOE-R说明](https://github.com/thinkthinking/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r)。
+`传送门`：[PP-YOLOE-R说明](configs/rotate/ppyoloe_r)。
 
 `传送门`：[arXiv论文](https://arxiv.org/abs/2211.02386)。
 
@@ -561,7 +536,7 @@ PP-YOLOE-R是一个高效的单阶段Anchor-free旋转框检测模型，基于PP
 | :----------: | :------: | :---: | :-----------------: | :------------------------: | :--------: | :-------: | :--------: | :------: | :------: | :-----: | :-----------: | :---------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------: |
 | PP-YOLOE-R-l |  CRN-l   | 80.02 |        69.7         |            48.3            |   53.29    |  281.65   |     3x     |    oc    |  MS+RR   |    4    |       2       | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_r_crn_l_3x_dota_ms.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r/ppyoloe_r_crn_l_3x_dota_ms.yml) |
 
-`传送门`：[全部预训练模型](https://github.com/thinkthinking/PaddleDetection/tree/develop/configs/rotate/ppyoloe_r)。
+`传送门`：[全部预训练模型](configs/rotate/ppyoloe_r)。
 </details>
 
 <details>
@@ -579,7 +554,7 @@ PP-YOLOE-R是一个高效的单阶段Anchor-free旋转框检测模型，基于PP
 
 PP-YOLOE-SOD(Small Object Detection)是PaddleDetection团队针对小目标检测提出的检测方案，在VisDrone-DET数据集上单模型精度达到38.5mAP，达到了SOTA性能。其分别基于切图拼图流程优化的小目标检测方案以及基于原图模型算法优化的小目标检测方案。同时提供了数据集自动分析脚本，只需输入数据集标注文件，便可得到数据集统计结果，辅助判断数据集是否是小目标数据集以及是否需要采用切图策略，同时给出网络超参数参考值。
 
-`传送门`：[PP-YOLOE-SOD 小目标检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/smalldet)。
+`传送门`：[PP-YOLOE-SOD 小目标检测模型](configs/smalldet)。
 
 </details>
 
@@ -591,7 +566,7 @@ PP-YOLOE-SOD(Small Object Detection)是PaddleDetection团队针对小目标检�
 | :------------------ | :-----------------------------: | :------------------------: | :----------------------------------: | :-----------------------------: | :------------------------------------: | :-------------------------------: | :---------------------------------------------------------------------------------------------: | :----------------------------------------------------------: |
 | **PP-YOLOE+_SOD-l** |            **31.9**             |          **52.1**          |               **25.6**               |            **43.5**             |               **30.25**                |             **51.18**             | [下载链接](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_sod_crn_l_80e_visdrone.pdparams) | [配置文件](visdrone/ppyoloe_plus_sod_crn_l_80e_visdrone.yml) |
 
-`传送门`：[全部预训练模型](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/smalldet)。
+`传送门`：[全部预训练模型](configs/smalldet)。
 </details>
 
 <details>

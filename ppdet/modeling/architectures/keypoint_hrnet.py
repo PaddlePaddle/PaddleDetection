@@ -46,7 +46,7 @@ class TopDownHRNet(BaseArch):
                  use_dark=True):
         """
         HRNet network, see https://arxiv.org/abs/1902.09212
-
+ 
         Args:
             backbone (nn.Layer): backbone instance
             post_process (object): `HRNetPostProcess` instance
@@ -132,10 +132,10 @@ class HRNetPostProcess(object):
 
     def get_max_preds(self, heatmaps):
         '''get predictions from score maps
-
+ 
         Args:
             heatmaps: numpy.ndarray([batch_size, num_joints, height, width])
-
+ 
         Returns:
             preds: numpy.ndarray([batch_size, num_joints, 2]), keypoints coords
             maxvals: numpy.ndarray([batch_size, num_joints, 2]), the maximum confidence of the keypoints
@@ -220,12 +220,12 @@ class HRNetPostProcess(object):
     def get_final_preds(self, heatmaps, center, scale, kernelsize=3):
         """the highest heatvalue location with a quarter offset in the
         direction from the highest response to the second highest response.
-
+ 
         Args:
             heatmaps (numpy.ndarray): The predicted heatmaps
             center (numpy.ndarray): The boxes center
             scale (numpy.ndarray): The scale factor
-
+ 
         Returns:
             preds: numpy.ndarray([batch_size, num_joints, 2]), keypoints coords
             maxvals: numpy.ndarray([batch_size, num_joints, 1]), the maximum confidence of the keypoints
@@ -341,10 +341,7 @@ class TinyPose3DHRHeatmapNet(BaseArch):
         self.deploy = False
         self.num_joints = num_joints
 
-        self.final_conv = L.Conv2d(width, num_joints, 1, 1, 0, bias=True)
-        # for heatmap output
-        self.final_conv_new = L.Conv2d(
-            width, num_joints * 32, 1, 1, 0, bias=True)
+        self.final_conv = L.Conv2d(width, num_joints * 32, 1, 1, 0, bias=True)
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -356,20 +353,19 @@ class TinyPose3DHRHeatmapNet(BaseArch):
     def _forward(self):
         feats = self.backbone(self.inputs)  # feats:[[batch_size, 40, 32, 24]]
 
-        hrnet_outputs = self.final_conv_new(feats[0])
+        hrnet_outputs = self.final_conv(feats[0])
         res = soft_argmax(hrnet_outputs, self.num_joints)
-
-        if self.training:
-            return self.loss(res, self.inputs)
-        else:  # export model need
-            return res
+        return res
 
     def get_loss(self):
-        return self._forward()
+        pose3d = self._forward()
+        loss = self.loss(pose3d, None, self.inputs)
+        outputs = {'loss': loss}
+        return outputs
 
     def get_pred(self):
         res_lst = self._forward()
-        outputs = {'keypoint': res_lst}
+        outputs = {'pose3d': res_lst}
         return outputs
 
     def flip_back(self, output_flipped, matched_parts):
@@ -394,6 +390,7 @@ class TinyPose3DHRNet(BaseArch):
     def __init__(self,
                  width,
                  num_joints,
+                 fc_channel=768,
                  backbone='HRNet',
                  loss='KeyPointRegressionMSELoss',
                  post_process=TinyPose3DPostProcess):
@@ -411,20 +408,12 @@ class TinyPose3DHRNet(BaseArch):
 
         self.final_conv = L.Conv2d(width, num_joints, 1, 1, 0, bias=True)
 
-        self.final_conv_new = L.Conv2d(
-            width, num_joints * 32, 1, 1, 0, bias=True)
-
         self.flatten = paddle.nn.Flatten(start_axis=2, stop_axis=3)
-        self.fc1 = paddle.nn.Linear(768, 256)
+        self.fc1 = paddle.nn.Linear(fc_channel, 256)
         self.act1 = paddle.nn.ReLU()
         self.fc2 = paddle.nn.Linear(256, 64)
         self.act2 = paddle.nn.ReLU()
         self.fc3 = paddle.nn.Linear(64, 3)
-
-        # for human3.6M
-        self.fc1_1 = paddle.nn.Linear(3136, 1024)
-        self.fc2_1 = paddle.nn.Linear(1024, 256)
-        self.fc3_1 = paddle.nn.Linear(256, 3)
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -434,16 +423,23 @@ class TinyPose3DHRNet(BaseArch):
         return {'backbone': backbone, }
 
     def _forward(self):
-        feats = self.backbone(self.inputs)  # feats:[[batch_size, 40, 32, 24]]
+        '''
+        self.inputs is a dict
+        '''
+        feats = self.backbone(
+            self.inputs)  # feats:[[batch_size, 40, width/4, height/4]]
 
-        hrnet_outputs = self.final_conv(feats[0])
+        hrnet_outputs = self.final_conv(
+            feats[0])  # hrnet_outputs: [batch_size, num_joints*32,32,32]
+
         flatten_res = self.flatten(
-            hrnet_outputs)  #  [batch_size, 24, (height/4)*(width/4)]
+            hrnet_outputs)  # [batch_size,num_joints*32,32*32]
+
         res = self.fc1(flatten_res)
         res = self.act1(res)
         res = self.fc2(res)
         res = self.act2(res)
-        res = self.fc3(res)  # [batch_size, 24, 3]
+        res = self.fc3(res)
 
         if self.training:
             return self.loss(res, self.inputs)
@@ -455,7 +451,7 @@ class TinyPose3DHRNet(BaseArch):
 
     def get_pred(self):
         res_lst = self._forward()
-        outputs = {'keypoint': res_lst}
+        outputs = {'pose3d': res_lst}
         return outputs
 
     def flip_back(self, output_flipped, matched_parts):
