@@ -1,0 +1,11 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/group_dino_vit_huge.yml',
+  '_base_/dino_2000_reader.yml',
+]
+
+weights: output/group_dino_vit_h_4scale_1x_coco/model_final
+find_unused_parameters: True
+log_iter: 100
