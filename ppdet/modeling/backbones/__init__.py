@@ -61,3 +61,4 @@ from .vision_transformer import *
 from .mobileone import *
 from .trans_encoder import *
 from .focalnet import *
+from .vitpose import *
