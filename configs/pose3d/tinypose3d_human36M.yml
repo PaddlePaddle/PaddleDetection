@@ -13,13 +13,12 @@ train_width: &train_width 128
 trainsize: &trainsize [*train_width, *train_height]
 
 #####model
-architecture: TinyPose3DHRNet
+architecture: TinyPose3DHRHeatmapNet
 pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams
 
-TinyPose3DHRNet:
+TinyPose3DHRHeatmapNet:
   backbone: LiteHRNet
   post_process: HR3DNetPostProcess
-  fc_channel: 1024
   num_joints: *num_joints
   width: &width 40
   loss: Pose3DLoss
@@ -56,17 +55,17 @@ OptimizerBuilder:
 #####data
 TrainDataset:
   !Pose3DDataset
-    dataset_dir: Human3.6M
-    image_dirs: ["Images"]
-    anno_list:  ['Human3.6m_train.json']
+    dataset_dir: dataset/traindata/
+    image_dirs: ["human3.6m"]
+    anno_list:  ['pose3d/Human3.6m_train.json']
     num_joints: *num_joints
     test_mode: False
 
 EvalDataset:
   !Pose3DDataset
-    dataset_dir: Human3.6M
-    image_dirs: ["Images"]
-    anno_list: ['Human3.6m_valid.json']
+    dataset_dir: dataset/traindata/
+    image_dirs: ["human3.6m"]
+    anno_list:  ['pose3d/Human3.6m_valid.json']
     num_joints: *num_joints
     test_mode: True
 
