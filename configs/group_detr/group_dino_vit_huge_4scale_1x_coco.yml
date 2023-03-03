@@ -6,6 +6,6 @@ _BASE_: [
   '_base_/dino_2000_reader.yml',
 ]
 
-weights: output/group_dino_vit_h_4scale_1x_coco/model_final
+weights: output/group_dino_vit_huge_4scale_1x_coco/model_final
 find_unused_parameters: True
 log_iter: 100
