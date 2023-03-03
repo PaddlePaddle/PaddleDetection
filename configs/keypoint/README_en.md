@@ -75,7 +75,7 @@ COCO Dataset
 | LiteHRNet-18                   | 384x288  |     69.7     | [lite_hrnet_18_384x288_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_18_384x288_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_18_384x288_coco.yml)     |
 | LiteHRNet-30                   | 256x192  |     69.4     | [lite_hrnet_30_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_256x192_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_256x192_coco.yml)     |
 | LiteHRNet-30                   | 384x288  |     72.5     | [lite_hrnet_30_384x288_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_384x288_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_384x288_coco.yml)     |
-| Vitpose_base_simple                   |Top-Down| 256x192  |     77.7     | [vitpose_base_simple_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/vitpose_base_simple_256x192_coco.pdparams) | [config](./vit_pose/vitpose_base_simple_coco_256x192.yml)     |
+| Vitpose_base_simple                   | 256x192  |     77.7     | [vitpose_base_simple_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/vitpose_base_simple_256x192_coco.pdparams) | [config](./vit_pose/vitpose_base_simple_coco_256x192.yml)     |
 
 Note：1.The AP results of Top-Down models are based on bounding boxes in GroundTruth.
       2.Vitpose training uses [MAE](https://bj.bcebos.com/v1/paddledet/models/keypoint/mae_pretrain_vit_base.pdparams) as the pre-training model
