@@ -1,4 +1,4 @@
-# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2023 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,14 +14,13 @@
 #
 # Modified from Deformable-DETR (https://github.com/fundamentalvision/Deformable-DETR)
 # Copyright (c) 2020 SenseTime. All Rights Reserved.
+# Modified from detrex (https://github.com/IDEA-Research/detrex)
+# Copyright 2022 The IDEA Authors. All rights reserved.
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-import math
-import numpy as np
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -32,6 +31,7 @@ from ppdet.core.workspace import register
 from ..layers import MultiHeadAttention
 from .position_encoding import PositionEmbedding
 from ..heads.detr_head import MLP
+from .deformable_transformer import MSDeformableAttention
 from ..initializer import (linear_init_, constant_, xavier_uniform_, normal_,
                            bias_init_with_prob)
 from .utils import (_get_clones, get_valid_ratio,
@@ -39,127 +39,6 @@ from .utils import (_get_clones, get_valid_ratio,
                     get_sine_pos_embed, inverse_sigmoid)
 
 __all__ = ['GroupDINOTransformer']
-class MSDeformableAttention(nn.Layer):
-    def __init__(self,
-                 embed_dim=256,
-                 num_heads=8,
-                 num_levels=4,
-                 num_points=4,
-                 lr_mult=1.0):
-        """
-        Multi-Scale Deformable Attention Module
-        """
-        super(MSDeformableAttention, self).__init__()
-        self.embed_dim = embed_dim
-        self.num_heads = num_heads
-        self.num_levels = num_levels
-        self.num_points = num_points
-        self.total_points = num_heads * num_levels * num_points
-
-        self.head_dim = embed_dim // num_heads
-        assert self.head_dim * num_heads == self.embed_dim, "embed_dim must be divisible by num_heads"
-
-        self.sampling_offsets = nn.Linear(
-            embed_dim,
-            self.total_points * 2,
-            weight_attr=ParamAttr(learning_rate=lr_mult),
-            bias_attr=ParamAttr(learning_rate=lr_mult))
-        self.attention_weights = nn.Linear(embed_dim, self.total_points)
-        self.value_proj = nn.Linear(embed_dim, embed_dim)
-        self.output_proj = nn.Linear(embed_dim, embed_dim)
-        try:
-            # use cuda op
-            from deformable_detr_ops import ms_deformable_attn
-        except:
-            # use paddle func
-            from .utils import deformable_attention_core_func as ms_deformable_attn
-        self.ms_deformable_attn_core = ms_deformable_attn
-
-        self._reset_parameters()
-
-    def _reset_parameters(self):
-        # sampling_offsets
-        constant_(self.sampling_offsets.weight)
-        thetas = paddle.arange(
-            self.num_heads,
-            dtype=paddle.float32) * (2.0 * math.pi / self.num_heads)
-        grid_init = paddle.stack([thetas.cos(), thetas.sin()], -1)
-        grid_init = grid_init / grid_init.abs().max(-1, keepdim=True)
-        grid_init = grid_init.reshape([self.num_heads, 1, 1, 2]).tile(
-            [1, self.num_levels, self.num_points, 1])
-        scaling = paddle.arange(
-            1, self.num_points + 1,
-            dtype=paddle.float32).reshape([1, 1, -1, 1])
-        grid_init *= scaling
-        self.sampling_offsets.bias.set_value(grid_init.flatten())
-        # attention_weights
-        constant_(self.attention_weights.weight)
-        constant_(self.attention_weights.bias)
-        # proj
-        xavier_uniform_(self.value_proj.weight)
-        constant_(self.value_proj.bias)
-        xavier_uniform_(self.output_proj.weight)
-        constant_(self.output_proj.bias)
-
-    def forward(self,
-                query,
-                reference_points,
-                value,
-                value_spatial_shapes,
-                value_level_start_index,
-                value_mask=None):
-        """
-        Args:
-            query (Tensor): [bs, query_length, C]
-            reference_points (Tensor): [bs, query_length, n_levels, 2], range in [0, 1], top-left (0,0),
-                bottom-right (1, 1), including padding area
-            value (Tensor): [bs, value_length, C]
-            value_spatial_shapes (Tensor): [n_levels, 2], [(H_0, W_0), (H_1, W_1), ..., (H_{L-1}, W_{L-1})]
-            value_level_start_index (Tensor(int64)): [n_levels], [0, H_0*W_0, H_0*W_0+H_1*W_1, ...]
-            value_mask (Tensor): [bs, value_length], True for non-padding elements, False for padding elements
-
-        Returns:
-            output (Tensor): [bs, Length_{query}, C]
-        """
-        bs, Len_q = query.shape[:2]
-        Len_v = value.shape[1]
-        assert int(value_spatial_shapes.prod(1).sum()) == Len_v
-
-        value = self.value_proj(value)
-        if value_mask is not None:
-            value_mask = value_mask.astype(value.dtype).unsqueeze(-1)
-            value = value * value_mask
-        value = value.reshape([bs, Len_v, self.num_heads, self.head_dim])
-        sampling_offsets = self.sampling_offsets(query).reshape(
-            [bs, Len_q, self.num_heads, self.num_levels, self.num_points, 2])
-        attention_weights = self.attention_weights(query).reshape(
-            [bs, Len_q, self.num_heads, self.num_levels * self.num_points])
-        attention_weights = F.softmax(attention_weights).reshape(
-            [bs, Len_q, self.num_heads, self.num_levels, self.num_points])
-
-        if reference_points.shape[-1] == 2:
-            offset_normalizer = value_spatial_shapes.flip(1).reshape(
-                [1, 1, 1, self.num_levels, 1, 2])
-            sampling_locations = reference_points.reshape([
-                bs, Len_q, 1, self.num_levels, 1, 2
-            ]) + sampling_offsets / offset_normalizer
-        elif reference_points.shape[-1] == 4:
-            reference_points = reference_points.reshape(
-                [bs, Len_q, 1, self.num_levels, 1, 4])
-            sampling_locations = (
-                reference_points[..., :2] + sampling_offsets / self.num_points *
-                reference_points[..., 2:] * 0.5)
-        else:
-            raise ValueError(
-                "Last dim of reference_points must be 2 or 4, but get {} instead.".
-                format(reference_points.shape[-1]))
-
-        output = self.ms_deformable_attn_core(
-            value, value_spatial_shapes, value_level_start_index,
-            sampling_locations, attention_weights)
-        output = self.output_proj(output)
-
-        return output
 
 
 class DINOTransformerEncoderLayer(nn.Layer):
@@ -176,7 +55,7 @@ class DINOTransformerEncoderLayer(nn.Layer):
         super(DINOTransformerEncoderLayer, self).__init__()
         # self attention
         self.self_attn = MSDeformableAttention(d_model, n_head, n_levels,
-                                               n_points)
+                                               n_points, 1.0)
         self.dropout1 = nn.Dropout(dropout)
         self.norm1 = nn.LayerNorm(
             d_model,
@@ -296,7 +175,7 @@ class DINOTransformerDecoderLayer(nn.Layer):
 
         # cross attention
         self.cross_attn = MSDeformableAttention(d_model, n_head, n_levels,
-                                                n_points)
+                                                n_points, 1.0)
         self.dropout2 = nn.Dropout(dropout)
         self.norm2 = nn.LayerNorm(
             d_model,
@@ -486,7 +365,7 @@ class GroupDINOTransformer(nn.Layer):
                  dual_queries=False,
                  dual_groups=0,
                  eps=1e-2):
-        super(DINOTransformer, self).__init__()
+        super(GroupDINOTransformer, self).__init__()
         assert position_embed_type in ['sine', 'learned'], \
             f'ValueError: position_embed_type not supported {position_embed_type}!'
         assert len(backbone_feat_channels) <= num_levels
@@ -525,7 +404,9 @@ class GroupDINOTransformer(nn.Layer):
 
         # denoising part
         self.denoising_class_embed = nn.Embedding(
-            num_classes + 1, hidden_dim, padding_idx=num_classes)
+            num_classes,
+            hidden_dim,
+            weight_attr=ParamAttr(initializer=nn.initializer.Normal()))
         self.num_denoising = num_denoising
         self.label_noise_ratio = label_noise_ratio
         self.box_noise_scale = box_noise_scale
@@ -621,7 +502,8 @@ class GroupDINOTransformer(nn.Layer):
             linear_init_(enc_output[0])
             xavier_uniform_(enc_output[0].weight)
         normal_(self.level_embed.weight)
-        xavier_uniform_(self.tgt_embed.weight)
+        if self.learnt_init_query:
+            xavier_uniform_(self.tgt_embed.weight)
         xavier_uniform_(self.query_pos_head.layers[0].weight)
         xavier_uniform_(self.query_pos_head.layers[1].weight)
         normal_(self.denoising_class_embed.weight)
@@ -712,7 +594,7 @@ class GroupDINOTransformer(nn.Layer):
         # [num_levels, 2]
         spatial_shapes = paddle.to_tensor(
             paddle.stack(spatial_shapes).astype('int64'))
-        # [l], 每一个level的起始index
+        # [l] start index of each level
         level_start_index = paddle.concat([
             paddle.zeros(
                 [1], dtype='int64'), spatial_shapes.prod(1).cumsum(0)[:-1]
@@ -738,7 +620,7 @@ class GroupDINOTransformer(nn.Layer):
                 get_contrastive_denoising_training_group(gt_meta,
                                             self.num_classes,
                                             self.num_queries,
-                                            self.denoising_class_embed,
+                                            self.denoising_class_embed.weight,
                                             self.num_denoising,
                                             self.label_noise_ratio,
                                             self.box_noise_scale)
@@ -752,7 +634,7 @@ class GroupDINOTransformer(nn.Layer):
                         get_contrastive_denoising_training_group(gt_meta,
                                                     self.num_classes,
                                                     self.num_queries,
-                                                    self.denoising_class_embed_groups[g_id],
+                                                    self.denoising_class_embed_groups[g_id].weight,
                                                     self.num_denoising,
                                                     self.label_noise_ratio,
                                                     self.box_noise_scale)
