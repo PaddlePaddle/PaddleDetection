@@ -142,6 +142,46 @@ TO_STATIC_SPEC = {
         'centerness4': paddle.static.InputSpec(
             name='centerness4', shape=[-1, 10, 10, 1], dtype='float32'),
     }],
+    'picodet_s_320_coco_lcnet': [{
+        'im_id': paddle.static.InputSpec(
+            name='im_id', shape=[-1, 1], dtype='float32'),
+        'is_crowd': paddle.static.InputSpec(
+            name='is_crowd', shape=[-1, -1, 1], dtype='float32'),
+        'gt_class': paddle.static.InputSpec(
+            name='gt_class', shape=[-1, -1, 1], dtype='int32'),
+        'gt_bbox': paddle.static.InputSpec(
+            name='gt_bbox', shape=[-1, -1, 4], dtype='float32'),
+        'curr_iter': paddle.static.InputSpec(
+            name='curr_iter', shape=[-1], dtype='float32'),
+        'image': paddle.static.InputSpec(
+            name='image', shape=[-1, 3, -1, -1], dtype='float32'),
+        'im_shape': paddle.static.InputSpec(
+            name='im_shape', shape=[-1, 2], dtype='float32'),
+        'scale_factor': paddle.static.InputSpec(
+            name='scale_factor', shape=[-1, 2], dtype='float32'),
+        'pad_gt_mask': paddle.static.InputSpec(
+            name='pad_gt_mask', shape=[-1, -1, 1], dtype='float32'),
+    }],
+    'ppyoloe_crn_s_300e_coco': [{
+        'im_id': paddle.static.InputSpec(
+            name='im_id', shape=[-1, 1], dtype='float32'),
+        'is_crowd': paddle.static.InputSpec(
+            name='is_crowd', shape=[-1, -1, 1], dtype='float32'),
+        'gt_class': paddle.static.InputSpec(
+            name='gt_class', shape=[-1, -1, 1], dtype='int32'),
+        'gt_bbox': paddle.static.InputSpec(
+            name='gt_bbox', shape=[-1, -1, 4], dtype='float32'),
+        'curr_iter': paddle.static.InputSpec(
+            name='curr_iter', shape=[-1], dtype='float32'),
+        'image': paddle.static.InputSpec(
+            name='image', shape=[-1, 3, -1, -1], dtype='float32'),
+        'im_shape': paddle.static.InputSpec(
+            name='im_shape', shape=[-1, 2], dtype='float32'),
+        'scale_factor': paddle.static.InputSpec(
+            name='scale_factor', shape=[-1, 2], dtype='float32'),
+        'pad_gt_mask': paddle.static.InputSpec(
+            name='pad_gt_mask', shape=[-1, -1, 1], dtype='float32'),
+    }],
 }
 
 

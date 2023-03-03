@@ -169,8 +169,9 @@ class ATSSAssigner(nn.Layer):
         # the one with the highest iou will be selected.
         mask_positive_sum = mask_positive.sum(axis=-2)
         if mask_positive_sum.max() > 1:
-            mask_multiple_gts = (mask_positive_sum.unsqueeze(1) > 1).tile(
-                [1, num_max_boxes, 1])
+            mask_multiple_gts = (
+                mask_positive_sum.unsqueeze(1) > 1).astype('int32').tile(
+                    [1, num_max_boxes, 1]).astype('bool')
             if self.sm_use:
                 is_max_iou = compute_max_iou_anchor(ious * mask_positive)
             else:
@@ -221,4 +222,4 @@ class ATSSAssigner(nn.Layer):
                                          paddle.zeros_like(gather_scores))
             assigned_scores *= gather_scores.unsqueeze(-1)
 
-        return assigned_labels, assigned_bboxes, assigned_scores, mask_positive
+        return assigned_labels, assigned_bboxes, assigned_scores
