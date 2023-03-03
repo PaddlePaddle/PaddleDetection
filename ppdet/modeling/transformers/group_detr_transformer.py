@@ -315,12 +315,12 @@ class DINOTransformerDecoderLayer(nn.Layer):
             d_model,
             weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
             bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
-        
+
         # for dual groups 
         self.dual_queries = dual_queries
         self.dual_groups = dual_groups
         self.n_head = n_head
-        
+
         self._reset_parameters()
 
     def _reset_parameters(self):
@@ -358,20 +358,25 @@ class DINOTransformerDecoderLayer(nn.Layer):
                 attn_mask = None
             else:
                 # [(dual_groups + 1), g_num_queries, g_num_queries]
-                attn_mask = paddle.concat([sa_mask.unsqueeze(0) for sa_mask in attn_mask], axis=0)
+                attn_mask = paddle.concat(
+                    [sa_mask.unsqueeze(0) for sa_mask in attn_mask], axis=0)
                 # [1, (dual_groups + 1), 1, g_num_queries, g_num_queries]
                 # --> [bs, (dual_groups + 1), nhead, g_num_queries, g_num_queries]
                 # --> [bs * (dual_groups + 1), nhead, g_num_queries, g_num_queries]
-                attn_mask = attn_mask.unsqueeze(0).unsqueeze(2).tile([bs, 1, self.n_head, 1, 1])
-                attn_mask = attn_mask.reshape([bs * (dual_groups + 1), self.n_head, g_num_queries, g_num_queries])
-                
+                attn_mask = attn_mask.unsqueeze(0).unsqueeze(2).tile(
+                    [bs, 1, self.n_head, 1, 1])
+                attn_mask = attn_mask.reshape([
+                    bs * (dual_groups + 1), self.n_head, g_num_queries,
+                    g_num_queries
+                ])
+
         if attn_mask is not None:
             attn_mask = attn_mask.astype('bool')
-        
+
         tgt2 = self.self_attn(q, k, value=tgt, attn_mask=attn_mask)
         tgt = tgt + self.dropout1(tgt2)
         tgt = self.norm2(tgt)
-        
+
         # trace back
         if self.dual_queries:
             tgt = paddle.concat(tgt.split(dual_groups + 1, axis=0), axis=1)
@@ -422,17 +427,17 @@ class DINOTransformerDecoder(nn.Layer):
         if valid_ratios is None:
             valid_ratios = paddle.ones(
                 [memory.shape[0], memory_spatial_shapes.shape[0], 2])
-        
+
         output = tgt
         intermediate = []
         inter_ref_bboxes = []
         for i, layer in enumerate(self.layers):
             reference_points_input = reference_points.unsqueeze(
-                2) * valid_ratios.tile([1, 1, 2]).unsqueeze(1) 
+                2) * valid_ratios.tile([1, 1, 2]).unsqueeze(1)
             query_pos_embed = get_sine_pos_embed(
                 reference_points_input[..., 0, :], self.hidden_dim // 2)
             query_pos_embed = query_pos_head(query_pos_embed)
-            
+
             output = layer(output, reference_points_input, memory,
                            memory_spatial_shapes, memory_level_start_index,
                            attn_mask, memory_mask, query_pos_embed)
@@ -505,8 +510,15 @@ class GroupDINOTransformer(nn.Layer):
             num_encoder_points)
         self.encoder = DINOTransformerEncoder(encoder_layer, num_encoder_layers)
         decoder_layer = DINOTransformerDecoderLayer(
-            hidden_dim, nhead, dim_feedforward, dropout, activation, num_levels,
-            num_decoder_points, dual_queries=dual_queries, dual_groups=dual_groups)
+            hidden_dim,
+            nhead,
+            dim_feedforward,
+            dropout,
+            activation,
+            num_levels,
+            num_decoder_points,
+            dual_queries=dual_queries,
+            dual_groups=dual_groups)
         self.decoder = DINOTransformerDecoder(hidden_dim, decoder_layer,
                                               num_decoder_layers,
                                               return_intermediate_dec)
@@ -517,13 +529,16 @@ class GroupDINOTransformer(nn.Layer):
         self.num_denoising = num_denoising
         self.label_noise_ratio = label_noise_ratio
         self.box_noise_scale = box_noise_scale
-        
+
         # for dual group
         self.dual_queries = dual_queries
         self.dual_groups = dual_groups
         if self.dual_queries:
             self.denoising_class_embed_groups = nn.LayerList([
-                nn.Embedding(num_classes + 1, hidden_dim, padding_idx=num_classes) 
+                nn.Embedding(
+                    num_classes,
+                    hidden_dim,
+                    weight_attr=ParamAttr(initializer=nn.initializer.Normal()))
                 for _ in range(self.dual_groups)
             ])
 
@@ -541,7 +556,10 @@ class GroupDINOTransformer(nn.Layer):
             self.tgt_embed = nn.Embedding(num_queries, hidden_dim)
             normal_(self.tgt_embed.weight)
             if self.dual_queries:
-                self.tgt_embed_dual = nn.LayerList([nn.Embedding(num_queries, hidden_dim) for _ in range(self.dual_groups)])
+                self.tgt_embed_dual = nn.LayerList([
+                    nn.Embedding(num_queries, hidden_dim)
+                    for _ in range(self.dual_groups)
+                ])
                 for dual_tgt_module in self.tgt_embed_dual:
                     normal_(dual_tgt_module.weight)
         self.query_pos_head = MLP(2 * hidden_dim,
@@ -557,21 +575,23 @@ class GroupDINOTransformer(nn.Layer):
                 weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
                 bias_attr=ParamAttr(regularizer=L2Decay(0.0))))
         if self.dual_queries:
-            self.enc_output = _get_clones(
-                self.enc_output, self.dual_groups + 1)
+            self.enc_output = _get_clones(self.enc_output, self.dual_groups + 1)
         else:
-            self.enc_output = _get_clones(
-                self.enc_output, 1)
-        
+            self.enc_output = _get_clones(self.enc_output, 1)
+
         self.enc_score_head = nn.Linear(hidden_dim, num_classes)
         self.enc_bbox_head = MLP(hidden_dim, hidden_dim, 4, num_layers=3)
-        
+
         if self.dual_queries:
-            self.enc_bbox_head_dq = nn.LayerList(
-                [MLP(hidden_dim, hidden_dim, 4, num_layers=3) for i in range(self.dual_groups)])
-            self.enc_score_head_dq = nn.LayerList(
-                [nn.Linear(hidden_dim, num_classes) for i in range(self.dual_groups)])
-        
+            self.enc_bbox_head_dq = nn.LayerList([
+                MLP(hidden_dim, hidden_dim, 4, num_layers=3)
+                for i in range(self.dual_groups)
+            ])
+            self.enc_score_head_dq = nn.LayerList([
+                nn.Linear(hidden_dim, num_classes)
+                for i in range(self.dual_groups)
+            ])
+
         # decoder head
         self.dec_score_head = nn.LayerList([
             nn.Linear(hidden_dim, num_classes)
@@ -645,7 +665,9 @@ class GroupDINOTransformer(nn.Layer):
     def _get_encoder_input(self, feats, pad_mask=None):
         if self.use_input_proj:
             # get projection features
-            proj_feats = [self.input_proj[i](feat) for i, feat in enumerate(feats)]
+            proj_feats = [
+                self.input_proj[i](feat) for i, feat in enumerate(feats)
+            ]
             if self.num_levels > len(proj_feats):
                 len_srcs = len(proj_feats)
                 for i in range(len_srcs, self.num_levels):
@@ -705,11 +727,10 @@ class GroupDINOTransformer(nn.Layer):
         (feat_flatten, spatial_shapes, level_start_index, mask_flatten,
          lvl_pos_embed_flatten,
          valid_ratios) = self._get_encoder_input(feats, pad_mask)
-        
-        # encoder
-        memory = self.encoder(feat_flatten, spatial_shapes, level_start_index, 
-                              mask_flatten, lvl_pos_embed_flatten, valid_ratios)
 
+        # encoder
+        memory = self.encoder(feat_flatten, spatial_shapes, level_start_index,
+                              mask_flatten, lvl_pos_embed_flatten, valid_ratios)
 
         # prepare denoising training
         if self.training:
@@ -739,7 +760,7 @@ class GroupDINOTransformer(nn.Layer):
                     denoising_bbox_groups.append(denoising_bbox_gid)
                     attn_mask_groups.append(attn_mask_gid)
                     dn_meta_groups.append(dn_meta_gid)
-                
+
                 # combine
                 denoising_class = [denoising_class] + denoising_class_groups
                 denoising_bbox = [denoising_bbox] + denoising_bbox_groups
@@ -762,7 +783,8 @@ class GroupDINOTransformer(nn.Layer):
         inter_feats[0] += self.denoising_class_embed.weight[0, 0] * 0.
         if self.dual_queries:
             for g_id in range(self.dual_groups):
-                inter_feats[0] += self.denoising_class_embed_groups[g_id].weight[0, 0] * 0.0
+                inter_feats[0] += self.denoising_class_embed_groups[
+                    g_id].weight[0, 0] * 0.0
 
         out_bboxes = []
         out_logits = []
@@ -823,7 +845,10 @@ class GroupDINOTransformer(nn.Layer):
 
         memory = paddle.where(valid_mask, memory, paddle.to_tensor(0.))
         if self.dual_queries:
-            output_memory = [self.enc_output[g_id](memory) for g_id in range(self.dual_groups + 1)]
+            output_memory = [
+                self.enc_output[g_id](memory)
+                for g_id in range(self.dual_groups + 1)
+            ]
         else:
             output_memory = self.enc_output[0](memory)
         return output_memory, output_anchors
@@ -840,8 +865,8 @@ class GroupDINOTransformer(nn.Layer):
             memory, spatial_shapes, memory_mask)
         if self.dual_queries:
             enc_outputs_class = self.enc_score_head(output_memory[0])
-            enc_outputs_coord_unact = self.enc_bbox_head(
-                output_memory[0]) + output_anchors
+            enc_outputs_coord_unact = self.enc_bbox_head(output_memory[
+                0]) + output_anchors
         else:
             enc_outputs_class = self.enc_score_head(output_memory)
             enc_outputs_coord_unact = self.enc_bbox_head(
@@ -858,77 +883,93 @@ class GroupDINOTransformer(nn.Layer):
         enc_topk_bboxes = F.sigmoid(topk_coords_unact)
         reference_points = enc_topk_bboxes.detach()
         enc_topk_logits = paddle.gather_nd(enc_outputs_class, topk_ind)
-        
+
         if self.dual_queries:
             enc_topk_logits_groups = []
             enc_topk_bboxes_groups = []
             reference_points_groups = []
             topk_ind_groups = []
             for g_id in range(self.dual_groups):
-                enc_outputs_class_gid = self.enc_score_head_dq[g_id](output_memory[g_id + 1])
-                enc_outputs_coord_unact_gid = self.enc_bbox_head_dq[g_id](output_memory[g_id + 1]) + output_anchors
+                enc_outputs_class_gid = self.enc_score_head_dq[g_id](
+                    output_memory[g_id + 1])
+                enc_outputs_coord_unact_gid = self.enc_bbox_head_dq[g_id](
+                    output_memory[g_id + 1]) + output_anchors
                 _, topk_ind_gid = paddle.topk(
                     enc_outputs_class_gid.max(-1), self.num_queries, axis=1)
                 # extract region proposal boxes
                 batch_ind = paddle.arange(end=bs, dtype=topk_ind_gid.dtype)
                 batch_ind = batch_ind.unsqueeze(-1).tile([1, self.num_queries])
                 topk_ind_gid = paddle.stack([batch_ind, topk_ind_gid], axis=-1)
-                topk_coords_unact_gid = paddle.gather_nd(enc_outputs_coord_unact_gid,
-                                                     topk_ind_gid)  # unsigmoided.
+                topk_coords_unact_gid = paddle.gather_nd(
+                    enc_outputs_coord_unact_gid, topk_ind_gid)  # unsigmoided.
                 enc_topk_bboxes_gid = F.sigmoid(topk_coords_unact_gid)
                 reference_points_gid = enc_topk_bboxes_gid.detach()
-                enc_topk_logits_gid = paddle.gather_nd(enc_outputs_class_gid, topk_ind_gid)
-                
+                enc_topk_logits_gid = paddle.gather_nd(enc_outputs_class_gid,
+                                                       topk_ind_gid)
+
                 # append and combine
                 topk_ind_groups.append(topk_ind_gid)
                 enc_topk_logits_groups.append(enc_topk_logits_gid)
                 enc_topk_bboxes_groups.append(enc_topk_bboxes_gid)
                 reference_points_groups.append(reference_points_gid)
-                
-            enc_topk_bboxes = paddle.concat([enc_topk_bboxes] + enc_topk_bboxes_groups, 1)
-            enc_topk_logits = paddle.concat([enc_topk_logits] + enc_topk_logits_groups, 1)
-            reference_points = paddle.concat([reference_points] + reference_points_groups, 1)
+
+            enc_topk_bboxes = paddle.concat(
+                [enc_topk_bboxes] + enc_topk_bboxes_groups, 1)
+            enc_topk_logits = paddle.concat(
+                [enc_topk_logits] + enc_topk_logits_groups, 1)
+            reference_points = paddle.concat(
+                [reference_points] + reference_points_groups, 1)
             topk_ind = paddle.concat([topk_ind] + topk_ind_groups, 1)
 
-        
         # extract region features
         if self.learnt_init_query:
             target = self.tgt_embed.weight.unsqueeze(0).tile([bs, 1, 1])
             if self.dual_queries:
-                target = paddle.concat(
-                    [target] + [self.tgt_embed_dual[g_id].weight.unsqueeze(0).tile([bs, 1, 1]) 
-                    for g_id in range(self.dual_groups)], 1
-                )
+                target = paddle.concat([target] + [
+                    self.tgt_embed_dual[g_id].weight.unsqueeze(0).tile(
+                        [bs, 1, 1]) for g_id in range(self.dual_groups)
+                ], 1)
         else:
             if self.dual_queries:
                 target = paddle.gather_nd(output_memory[0], topk_ind)
                 target_groups = []
                 for g_id in range(self.dual_groups):
-                    target_gid = paddle.gather_nd(output_memory[g_id + 1], topk_ind_groups[g_id])
+                    target_gid = paddle.gather_nd(output_memory[g_id + 1],
+                                                  topk_ind_groups[g_id])
                     target_groups.append(target_gid)
                 target = paddle.concat([target] + target_groups, 1).detach()
             else:
                 target = paddle.gather_nd(output_memory, topk_ind).detach()
-        
+
         if denoising_bbox is not None:
-            if isinstance(denoising_bbox, list) and isinstance(denoising_class, list) and self.dual_queries:
+            if isinstance(denoising_bbox, list) and isinstance(
+                    denoising_class, list) and self.dual_queries:
                 if denoising_bbox[0] is not None:
                     reference_points_list = paddle.split(
                         reference_points, self.dual_groups + 1, axis=1)
                     reference_points = paddle.concat(
-                        [paddle.concat([ref, ref_], axis=1) for ref, ref_ in zip(denoising_bbox, reference_points_list)], 
+                        [
+                            paddle.concat(
+                                [ref, ref_], axis=1)
+                            for ref, ref_ in zip(denoising_bbox,
+                                                 reference_points_list)
+                        ],
                         axis=1)
 
                     target_list = paddle.split(
                         target, self.dual_groups + 1, axis=1)
                     target = paddle.concat(
-                        [paddle.concat([tgt, tgt_], axis=1) for tgt, tgt_ in zip(denoising_class, target_list)], 
+                        [
+                            paddle.concat(
+                                [tgt, tgt_], axis=1)
+                            for tgt, tgt_ in zip(denoising_class, target_list)
+                        ],
                         axis=1)
                 else:
                     reference_points, target = reference_points, target
             else:
                 reference_points = paddle.concat(
                     [denoising_bbox, reference_points], 1)
-                target = paddle.concat([denoising_class, target], 1)           
+                target = paddle.concat([denoising_class, target], 1)
 
         return target, reference_points, enc_topk_bboxes, enc_topk_logits
