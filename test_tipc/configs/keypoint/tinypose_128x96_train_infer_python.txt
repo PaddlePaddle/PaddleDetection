@@ -58,3 +58,5 @@ repeat:1
 flags:null
 ===========================infer_benchmark_params===========================
 random_infer_input:[{float32,[3,128,96]}]
+===========================to_static_train_benchmark_params===========================
+to_static_train:--to_static

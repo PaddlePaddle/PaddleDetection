@@ -121,7 +121,7 @@ class PPYOLOEContrastHead(PPYOLOEHead):
         pad_gt_mask = gt_meta['pad_gt_mask']
         # label assignment
         if gt_meta['epoch_id'] < self.static_assigner_epoch:
-            assigned_labels, assigned_bboxes, assigned_scores, _ = \
+            assigned_labels, assigned_bboxes, assigned_scores = \
                 self.static_assigner(
                     anchors,
                     num_anchors_list,
@@ -133,7 +133,7 @@ class PPYOLOEContrastHead(PPYOLOEHead):
             alpha_l = 0.25
         else:
             if self.sm_use:
-                assigned_labels, assigned_bboxes, assigned_scores, _ = \
+                assigned_labels, assigned_bboxes, assigned_scores = \
                     self.assigner(
                     pred_scores.detach(),
                     pred_bboxes.detach() * stride_tensor,
@@ -144,7 +144,7 @@ class PPYOLOEContrastHead(PPYOLOEHead):
                     pad_gt_mask,
                     bg_index=self.num_classes)
             else:
-                assigned_labels, assigned_bboxes, assigned_scores, _ = \
+                assigned_labels, assigned_bboxes, assigned_scores = \
                     self.assigner(
                     pred_scores.detach(),
                     pred_bboxes.detach() * stride_tensor,

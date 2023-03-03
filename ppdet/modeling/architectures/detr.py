@@ -80,7 +80,7 @@ class DETR(BaseArch):
             body_feats = self.neck(body_feats)
 
         # Transformer
-        pad_mask = self.inputs['pad_mask'] if self.training else None
+        pad_mask = self.inputs.get('pad_mask', None)
         out_transformer = self.transformer(body_feats, pad_mask, self.inputs)
 
         # DETR Head

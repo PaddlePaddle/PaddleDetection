@@ -53,7 +53,7 @@ class METRO_Body(BaseArch):
             trans_encoder='',
             loss='Pose3DLoss', ):
         """
-        METRO network, see https://arxiv.org/abs/
+        Modified from METRO network, see https://arxiv.org/abs/2012.09760
 
         Args:
             backbone (nn.Layer): backbone instance
@@ -65,7 +65,7 @@ class METRO_Body(BaseArch):
         self.deploy = False
 
         self.trans_encoder = trans_encoder
-        self.conv_learn_tokens = paddle.nn.Conv1D(49, num_joints + 1, 1)
+        self.conv_learn_tokens = paddle.nn.Conv1D(49, num_joints + 10, 1)
         self.cam_param_fc = paddle.nn.Linear(3, 2)
 
     @classmethod
