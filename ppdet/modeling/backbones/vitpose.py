@@ -111,7 +111,7 @@ class Attention(nn.Layer):
         self.proj_drop = nn.Dropout(proj_drop)
 
     def forward(self, x):
-        # B= paddle.shape(x)[0]
+
         N, C = x.shape[1:]
         qkv = self.qkv(x).reshape((-1, N, 3, self.num_heads, C //
                                    self.num_heads)).transpose((2, 0, 3, 1, 4))
@@ -219,6 +219,14 @@ class PatchEmbed(nn.Layer):
 @serializable
 class ViT(nn.Layer):
     """ Vision Transformer with support for patch input
+
+        This module is different from ppdet's VisionTransformer (from ppdet/modeling/backbones/visio_transformer.py),
+        the main differences are:
+        1.the module PatchEmbed.proj has padding set,padding=(4 + 2 * (ratio // 2 - 1), 4 + 2 * (ratio // 2 - 1)
+        2.Attention module qkv is standard.but VisionTransformer provide more options
+        3.MLP module only one Dropout,and VisionTransformer twice;
+        4.VisionTransformer provide fpn layer,but the module does not.
+
     """
 
     def __init__(self,
