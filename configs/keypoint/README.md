@@ -73,6 +73,7 @@ COCO数据集
 | LiteHRNet-30                   | Top-Down|256x192  |     69.4     | [lite_hrnet_30_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_256x192_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_256x192_coco.yml)     |
 | LiteHRNet-30                   |Top-Down| 384x288  |     72.5     | [lite_hrnet_30_384x288_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_384x288_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_384x288_coco.yml)     |
 |Vitpose_base_simple                   |Top-Down| 256x192  |     77.7     | [vitpose_base_simple_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/vitpose_base_simple_256x192_coco.pdparams) | [config](./vit_pose/vitpose_base_simple_coco_256x192.yml)     |
+|Vitpose_base                   |Top-Down| 256x192  |     78.2     | [vitpose_base_coco_256x192.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/vitpose_base_coco_256x192.pdparams) | [config](./vit_pose/vitpose_base_coco_256x192.yml)     |
 
 备注： 1.Top-Down模型测试AP结果基于GroundTruth标注框
       2.vitpose训练用[MAE](https://bj.bcebos.com/v1/paddledet/models/keypoint/mae_pretrain_vit_base.pdparams)做为预训练模型

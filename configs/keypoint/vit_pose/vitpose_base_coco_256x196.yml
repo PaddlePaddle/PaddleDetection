@@ -17,7 +17,7 @@ flip_perm: &flip_perm [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 1
 
 #####model
 architecture: VitPose_TopDown
-pretrain_weights: ./mae_pretrain_vit_base.pdparams
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/keypoint/mae_pretrain_vit_base.pdparams
 VitPose_TopDown:
   backbone: ViT
   head: TopdownHeatmapSimpleHead
@@ -104,8 +104,7 @@ EvalDataset:
     trainsize: *trainsize
     pixel_std: *pixel_std
     image_thre: 0.0
-    bbox_file: person_detection_results/COCO_val2017_detections_AP_H_56_person.json
-    use_gt_bbox: False
+    use_gt_bbox: True
 
 TestDataset:
   !ImageFolder
