@@ -216,14 +216,12 @@ class TopdownHeatmapSimpleHead(nn.Layer):
 
         if flip_pairs is not None:
             output_heatmap = flip_back(
-                output.cpu().numpy(),
-                self.flip_pairs,
-                target_type=self.target_type)
+                output, self.flip_pairs, target_type=self.target_type)
             # feature is not aligned, shift flipped heatmap for higher accuracy
             if self.shift_heatmap:
                 output_heatmap[:, :, :, 1:] = output_heatmap[:, :, :, :-1]
         else:
-            output_heatmap = output.cpu().numpy()
+            output_heatmap = output
         return output_heatmap
 
     def _make_deconv_layer(self, num_layers, num_filters, num_kernels):

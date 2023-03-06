@@ -73,7 +73,7 @@ class VitPose_TopDown(BaseArch):
     def _forward_test(self):
 
         feats = self.backbone.forward_features(self.inputs['image'])
-        output_heatmap = self.head(feats).cpu().numpy()
+        output_heatmap = self.head(feats)
 
         if self.flip_test:
             img_flipped = self.inputs['image'].flip(3)
@@ -90,7 +90,7 @@ class VitPose_TopDown(BaseArch):
         scale = self.inputs['scale'].numpy(
         ) if 'scale' in self.inputs else imshape / 200.
 
-        result = self.post_process(output_heatmap, center, scale)
+        result = self.post_process(output_heatmap.cpu().numpy(), center, scale)
 
         return result
 

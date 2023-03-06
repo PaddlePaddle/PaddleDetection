@@ -222,11 +222,12 @@ class ViT(nn.Layer):
 
         This module is different from ppdet's VisionTransformer (from ppdet/modeling/backbones/visio_transformer.py),
         the main differences are:
-        1.the module PatchEmbed.proj has padding set,padding=(4 + 2 * (ratio // 2 - 1), 4 + 2 * (ratio // 2 - 1)
+        1.the module PatchEmbed.proj has padding set,padding=(4 + 2 * (ratio // 2 - 1), 4 + 2 * (ratio // 2 - 1),
+          VisionTransformer dose not
         2.Attention module qkv is standard.but VisionTransformer provide more options
         3.MLP module only one Dropout,and VisionTransformer twice;
         4.VisionTransformer provide fpn layer,but the module does not.
-
+        
     """
 
     def __init__(self,
