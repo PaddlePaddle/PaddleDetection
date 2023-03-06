@@ -273,7 +273,8 @@ def kaiming_normal_(tensor,
 def linear_init_(module):
     bound = 1 / math.sqrt(module.weight.shape[0])
     uniform_(module.weight, -bound, bound)
-    uniform_(module.bias, -bound, bound)
+    if hasattr(module, "bias") and module.bias is not None:
+        uniform_(module.bias, -bound, bound)
 
 
 def conv_init_(module):
