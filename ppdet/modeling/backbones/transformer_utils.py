@@ -14,6 +14,7 @@
 
 import paddle
 import paddle.nn as nn
+import paddle.nn.functional as F
 
 from paddle.nn.initializer import TruncatedNormal, Constant, Assign
 
@@ -72,3 +73,52 @@ def add_parameter(layer, datas, name=None):
     if name:
         layer.add_parameter(name, parameter)
     return parameter
+
+
+def window_partition(x, window_size):
+    """
+    Partition into non-overlapping windows with padding if needed.
+    Args:
+        x (tensor): input tokens with [B, H, W, C].
+        window_size (int): window size.
+    Returns:
+        windows: windows after partition with [B * num_windows, window_size, window_size, C].
+        (Hp, Wp): padded height and width before partition
+    """
+    B, H, W, C = paddle.shape(x)
+
+    pad_h = (window_size - H % window_size) % window_size
+    pad_w = (window_size - W % window_size) % window_size
+    x = F.pad(x.transpose([0, 3, 1, 2]),
+              paddle.to_tensor(
+                  [0, int(pad_w), 0, int(pad_h)],
+                  dtype='int32')).transpose([0, 2, 3, 1])
+    Hp, Wp = H + pad_h, W + pad_w
+
+    num_h, num_w = Hp // window_size, Wp // window_size
+
+    x = x.reshape([B, num_h, window_size, num_w, window_size, C])
+    windows = x.transpose([0, 1, 3, 2, 4, 5]).reshape(
+        [-1, window_size, window_size, C])
+    return windows, (Hp, Wp), (num_h, num_w)
+
+
+def window_unpartition(x, pad_hw, num_hw, hw):
+    """
+    Window unpartition into original sequences and removing padding.
+    Args:
+        x (tensor): input tokens with [B * num_windows, window_size, window_size, C].
+        pad_hw (Tuple): padded height and width (Hp, Wp).
+        hw (Tuple): original height and width (H, W) before padding.
+    Returns:
+        x: unpartitioned sequences with [B, H, W, C].
+    """
+    Hp, Wp = pad_hw
+    num_h, num_w = num_hw
+    H, W = hw
+    B, window_size, _, C = paddle.shape(x)
+    B = B // (num_h * num_w)
+    x = x.reshape([B, num_h, num_w, window_size, window_size, C])
+    x = x.transpose([0, 1, 3, 2, 4, 5]).reshape([B, Hp, Wp, C])
+
+    return x[:, :H, :W, :]
