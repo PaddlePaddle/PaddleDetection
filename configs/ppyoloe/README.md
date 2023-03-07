@@ -40,9 +40,13 @@ PP-YOLOE is composed of following methods:
 |:--------------:|:-----:|:-------:|:----------:|:----------:| :-------:|:--------------------------:|:---------------------------:|:---------:|:--------:|:---------------:| :---------------------: |:------------------------------------------------------------------------------------:|:-------------------------------------------:|
 |  PP-YOLOE+_s   |  80   |     8      |     8      | cspresnet-s |     640     |            43.7            |            43.9             |   7.93    |  17.36   |   208.3   |  333.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_s_80e_coco.pdparams) | [config](./ppyoloe_plus_crn_s_80e_coco.yml) |
 |  PP-YOLOE+_m   |  80   |     8      |     8      | cspresnet-m |     640     |            49.8            |            50.0             |   23.43   |  49.91   |   123.4   |  208.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco.pdparams) | [config](./ppyoloe_plus_crn_m_80e_coco.yml) |
+|   PP-YOLOE+_m(distill)   |  80   |     8     |    8     | cspresnet-m |    640     |            **51.0**            |            51.2             |   23.43   |  49.91   |   123.4   |  208.3   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_m_80e_coco_distill.pdparams) | [config](distill/ppyoloe_plus_crn_m_80e_coco_distill.yml) |
 |  PP-YOLOE+_l   |  80   |     8      |     8      | cspresnet-l |     640     |            52.9            |            53.3             |   52.20   |  110.07  |   78.1    |  149.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams) | [config](./ppyoloe_plus_crn_l_80e_coco.yml) |
+|   PP-YOLOE+_l(distill)   |  80   |     8     |    8     | cspresnet-l |    640     |            **54.0**            |            54.4             |   52.20   |  110.07  |   78.1    |  149.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco_distill.pdparams) | [config](distill/ppyoloe_plus_crn_l_80e_coco_distill.yml) |
 |  PP-YOLOE+_x   |  80   |     8      |     8      | cspresnet-x |     640     |            54.7            |            54.9             |   98.42   |  206.59  |   45.0    |   95.2   | [model](https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_x_80e_coco.pdparams) | [config](./ppyoloe_plus_crn_x_80e_coco.yml) |
 
+**Note:**
+- M and L models use distillation, please refer to [distill](distill) for details.
 
 #### Tiny model
 
@@ -57,10 +61,15 @@ PP-YOLOE is composed of following methods:
 ### Comprehensive Metrics
 |          Model           | Epoch | AP<sup>0.5:0.95 | AP<sup>0.5 | AP<sup>0.75  | AP<sup>small | AP<sup>medium | AP<sup>large | AR<sup>small | AR<sup>medium | AR<sup>large |
 |:------------------------:|:-----:|:---------------:|:----------:|:------------:|:------------:| :-----------: |:------------:|:------------:|:-------------:|:------------:|
-|       PP-YOLOE+_s        |  80   |      43.7       |    60.6    |     47.9     |     26.5     |     47.5      |     59.0     |     46.7     |     71.4      |     81.7     |
-|       PP-YOLOE+_m        |  80   |      49.8       |    67.1    |     54.5     |     31.8     |     53.9      |     66.2     |     53.3     |     75.0      |     84.6     |
-|       PP-YOLOE+_l        |  80   |      52.9       |    70.1    |     57.9     |     35.2     |     57.5      |     69.1     |     56.0     |     77.9      |     86.9     |
-|       PP-YOLOE+_x        |  80   |      54.7       |    72.0    |     59.9     |     37.9     |     59.3      |     70.4     |     57.0     |     78.7      |     87.2     |
+|       PP-YOLOE+_s        |  80   |      43.7       |    60.6    |    47.9     |     26.5     |     47.5      |     59.0     |     46.7     |     71.4      |     81.7     |
+|       PP-YOLOE+_m        |  80   |      49.8       |    67.1    |    54.5     |     31.8     |     53.9      |     66.2     |     53.3     |     75.0      |     84.6     |
+|       PP-YOLOE+_m(distill)|  80   |      51.0       |    68.1    |    55.8     |     32.5     |     55.7      |     67.4     |     51.9     |     76.1      |     86.4     |
+|       PP-YOLOE+_l        |  80   |      52.9       |    70.1    |    57.9     |     35.2     |     57.5      |     69.1     |     56.0     |     77.9      |     86.9     |
+|       PP-YOLOE+_l(distill)|  80   |      54.0       |    71.2    |    59.2     |     36.1     |     58.8      |     70.4     |     55.0     |     78.7      |     87.7     |
+|       PP-YOLOE+_x        |  80   |      54.7       |    72.0    |    59.9     |     37.9     |     59.3      |     70.4     |     57.0     |     78.7      |     87.2     |
+
+**Note:**
+- M and L models use distillation, please refer to [distill](distill) for details.
 
 
 ### End-to-end Speed
@@ -92,6 +101,14 @@ PP-YOLOE is composed of following methods:
 
 **Notes:**
 - The Details for multiple machine and multi-gpu training, see [DistributedTraining](../../docs/tutorials/DistributedTraining_en.md)
+- For Objects365 dataset download, please refer to [objects365 official website](http://www.objects365.org/overview.html). The specific category list can be downloaded from [objects365_detection_label_list.txt](https://bj.bcebos.com/v1/paddledet/data/objects365/objects365_detection_label_list.txt) organized by PaddleDetection team. It should be stored in `dataset/objects365/`, and each line represents one category. The categories need to be read when exporting the model or doing inference. If the json file is not exist, you can make the following changes to `configs/datasets/objects365_detection.yml`:
+```
+TestDataset:
+  !ImageFolder
+    # anno_path: annotations/zhiyuan_objv2_val.json
+    anno_path: objects365_detection_label_list.txt
+    dataset_dir: dataset/objects365/
+```
 
 
 ### Model Zoo on VOC
