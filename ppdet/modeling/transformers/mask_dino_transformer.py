@@ -1,4 +1,4 @@
-# Copyright (c) 2022 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2023 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import math
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -28,118 +29,63 @@ from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register
-from ..layers import MultiHeadAttention
 from .position_encoding import PositionEmbedding
 from ..heads.detr_head import MLP
-from .deformable_transformer import (MSDeformableAttention,
-                                     DeformableTransformerEncoderLayer,
+from .deformable_transformer import (DeformableTransformerEncoderLayer,
                                      DeformableTransformerEncoder)
-from ..initializer import (linear_init_, constant_, xavier_uniform_, normal_,
+from .dino_transformer import (DINOTransformerDecoderLayer)
+from ..initializer import (linear_init_, constant_, xavier_uniform_,
                            bias_init_with_prob)
-from .utils import (_get_clones, get_valid_ratio,
-                    get_contrastive_denoising_training_group,
-                    get_sine_pos_embed, inverse_sigmoid)
+from .utils import (_get_clones, get_valid_ratio, get_denoising_training_group,
+                    get_sine_pos_embed, inverse_sigmoid, mask_to_box_coordinate)
 
-__all__ = ['DINOTransformer']
+__all__ = ['MaskDINO']
 
 
-class DINOTransformerDecoderLayer(nn.Layer):
+class ConvGNBlock(nn.Layer):
     def __init__(self,
-                 d_model=256,
-                 n_head=8,
-                 dim_feedforward=1024,
-                 dropout=0.,
-                 activation="relu",
-                 n_levels=4,
-                 n_points=4,
-                 lr_mult=1.0,
-                 weight_attr=None,
-                 bias_attr=None):
-        super(DINOTransformerDecoderLayer, self).__init__()
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 groups=1,
+                 num_groups=32,
+                 bias=False,
+                 act=None):
+        super(ConvGNBlock, self).__init__()
+        self.conv = nn.Conv2D(
+            in_channels,
+            out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=(kernel_size - 1) // 2,
+            groups=groups,
+            bias_attr=bias)
+        self.norm = nn.GroupNorm(
+            num_groups,
+            out_channels,
+            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
+            bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
+        self.act = getattr(F, act) if act is not None else None
 
-        # self attention
-        self.self_attn = MultiHeadAttention(d_model, n_head, dropout=dropout)
-        self.dropout1 = nn.Dropout(dropout)
-        self.norm1 = nn.LayerNorm(
-            d_model, weight_attr=weight_attr, bias_attr=bias_attr)
+        self._init_weights()
 
-        # cross attention
-        self.cross_attn = MSDeformableAttention(d_model, n_head, n_levels,
-                                                n_points, lr_mult)
-        self.dropout2 = nn.Dropout(dropout)
-        self.norm2 = nn.LayerNorm(
-            d_model, weight_attr=weight_attr, bias_attr=bias_attr)
+    def _init_weights(self):
+        xavier_uniform_(self.conv.weight)
 
-        # ffn
-        self.linear1 = nn.Linear(d_model, dim_feedforward)
-        self.activation = getattr(F, activation)
-        self.dropout3 = nn.Dropout(dropout)
-        self.linear2 = nn.Linear(dim_feedforward, d_model)
-        self.dropout4 = nn.Dropout(dropout)
-        self.norm3 = nn.LayerNorm(
-            d_model, weight_attr=weight_attr, bias_attr=bias_attr)
-        self._reset_parameters()
-
-    def _reset_parameters(self):
-        linear_init_(self.linear1)
-        linear_init_(self.linear2)
-        xavier_uniform_(self.linear1.weight)
-        xavier_uniform_(self.linear2.weight)
-
-    def with_pos_embed(self, tensor, pos):
-        return tensor if pos is None else tensor + pos
-
-    def forward_ffn(self, tgt):
-        return self.linear2(self.dropout3(self.activation(self.linear1(tgt))))
-
-    def forward(self,
-                tgt,
-                reference_points,
-                memory,
-                memory_spatial_shapes,
-                memory_level_start_index,
-                attn_mask=None,
-                memory_mask=None,
-                query_pos_embed=None):
-        # self attention
-        q = k = self.with_pos_embed(tgt, query_pos_embed)
-        if attn_mask is not None:
-            attn_mask = paddle.where(
-                attn_mask.astype('bool'),
-                paddle.zeros(attn_mask.shape, tgt.dtype),
-                paddle.full(attn_mask.shape, float("-inf"), tgt.dtype))
-        tgt2 = self.self_attn(q, k, value=tgt, attn_mask=attn_mask)
-        tgt = tgt + self.dropout1(tgt2)
-        tgt = self.norm1(tgt)
-
-        # cross attention
-        tgt2 = self.cross_attn(
-            self.with_pos_embed(tgt, query_pos_embed), reference_points, memory,
-            memory_spatial_shapes, memory_level_start_index, memory_mask)
-        tgt = tgt + self.dropout2(tgt2)
-        tgt = self.norm2(tgt)
-
-        # ffn
-        tgt2 = self.forward_ffn(tgt)
-        tgt = tgt + self.dropout4(tgt2)
-        tgt = self.norm3(tgt)
-
-        return tgt
+    def forward(self, x):
+        x = self.norm(self.conv(x))
+        if self.act is not None:
+            x = self.act(x)
+        return x
 
 
-class DINOTransformerDecoder(nn.Layer):
-    def __init__(self,
-                 hidden_dim,
-                 decoder_layer,
-                 num_layers,
-                 weight_attr=None,
-                 bias_attr=None):
-        super(DINOTransformerDecoder, self).__init__()
+class MaskDINOTransformerDecoder(nn.Layer):
+    def __init__(self, hidden_dim, decoder_layer, num_layers):
+        super(MaskDINOTransformerDecoder, self).__init__()
         self.layers = _get_clones(decoder_layer, num_layers)
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
-        self.norm = nn.LayerNorm(
-            hidden_dim, weight_attr=weight_attr, bias_attr=bias_attr)
 
     def forward(self,
                 tgt,
@@ -149,6 +95,7 @@ class DINOTransformerDecoder(nn.Layer):
                 memory_level_start_index,
                 bbox_head,
                 query_pos_head,
+                dec_norm,
                 valid_ratios=None,
                 attn_mask=None,
                 memory_mask=None):
@@ -171,45 +118,48 @@ class DINOTransformerDecoder(nn.Layer):
                            memory_spatial_shapes, memory_level_start_index,
                            attn_mask, memory_mask, query_pos_embed)
 
-            ref_points = F.sigmoid(bbox_head[i](output) + inverse_sigmoid(
-                ref_points.detach()))
+            ref_points = F.sigmoid(
+                bbox_head(output) + inverse_sigmoid(ref_points.detach()))
 
-            intermediate.append(self.norm(output))
+            intermediate.append(dec_norm(output))
             inter_bboxes.append(ref_points)
 
         return paddle.stack(intermediate), paddle.stack(inter_bboxes)
 
 
 @register
-class DINOTransformer(nn.Layer):
+class MaskDINO(nn.Layer):
     __shared__ = ['num_classes', 'hidden_dim']
 
     def __init__(self,
                  num_classes=80,
                  hidden_dim=256,
-                 num_queries=900,
+                 num_queries=300,
                  position_embed_type='sine',
-                 in_feats_channel=[512, 1024, 2048],
-                 num_levels=4,
+                 in_feats_channel=[256, 512, 1024, 2048],
+                 num_levels=3,
                  num_encoder_points=4,
                  num_decoder_points=4,
                  nhead=8,
                  num_encoder_layers=6,
-                 num_decoder_layers=6,
-                 dim_feedforward=1024,
+                 num_decoder_layers=9,
+                 enc_dim_feedforward=1024,
+                 dec_dim_feedforward=2048,
                  dropout=0.,
                  activation="relu",
                  lr_mult=1.0,
                  pe_temperature=10000,
                  pe_offset=-0.5,
                  num_denoising=100,
-                 label_noise_ratio=0.5,
-                 box_noise_scale=1.0,
-                 learnt_init_query=True,
+                 label_noise_ratio=0.4,
+                 box_noise_scale=0.4,
+                 learnt_init_query=False,
+                 mask_enhanced=True,
                  eps=1e-2):
-        super(DINOTransformer, self).__init__()
+        super(MaskDINO, self).__init__()
         assert position_embed_type in ['sine', 'learned'], \
             f'ValueError: position_embed_type not supported {position_embed_type}!'
+        feat0_dim = in_feats_channel.pop(0)
         assert len(in_feats_channel) <= num_levels
 
         self.hidden_dim = hidden_dim
@@ -219,6 +169,7 @@ class DINOTransformer(nn.Layer):
         self.num_queries = num_queries
         self.eps = eps
         self.num_decoder_layers = num_decoder_layers
+        self.mask_enhanced = mask_enhanced
 
         weight_attr = ParamAttr(regularizer=L2Decay(0.0))
         bias_attr = ParamAttr(regularizer=L2Decay(0.0))
@@ -227,16 +178,15 @@ class DINOTransformer(nn.Layer):
 
         # Transformer module
         encoder_layer = DeformableTransformerEncoderLayer(
-            hidden_dim, nhead, dim_feedforward, dropout, activation, num_levels,
-            num_encoder_points, lr_mult, weight_attr, bias_attr)
+            hidden_dim, nhead, enc_dim_feedforward, dropout, activation,
+            num_levels, num_encoder_points, lr_mult, weight_attr, bias_attr)
         self.encoder = DeformableTransformerEncoder(encoder_layer,
                                                     num_encoder_layers)
         decoder_layer = DINOTransformerDecoderLayer(
-            hidden_dim, nhead, dim_feedforward, dropout, activation, num_levels,
-            num_decoder_points, lr_mult, weight_attr, bias_attr)
-        self.decoder = DINOTransformerDecoder(hidden_dim, decoder_layer,
-                                              num_decoder_layers, weight_attr,
-                                              bias_attr)
+            hidden_dim, nhead, dec_dim_feedforward, dropout, activation,
+            num_levels, num_decoder_points, lr_mult, weight_attr, bias_attr)
+        self.decoder = MaskDINOTransformerDecoder(hidden_dim, decoder_layer,
+                                                  num_decoder_layers)
 
         # denoising part
         self.denoising_class_embed = nn.Embedding(
@@ -254,7 +204,10 @@ class DINOTransformer(nn.Layer):
             normalize=True if position_embed_type == 'sine' else False,
             embed_type=position_embed_type,
             offset=pe_offset)
-        self.level_embed = nn.Embedding(num_levels, hidden_dim)
+        self.level_embed = nn.Embedding(
+            num_levels,
+            hidden_dim,
+            weight_attr=ParamAttr(initializer=nn.initializer.Normal()))
         # decoder embedding
         self.learnt_init_query = learnt_init_query
         if learnt_init_query:
@@ -263,49 +216,49 @@ class DINOTransformer(nn.Layer):
                                   hidden_dim,
                                   hidden_dim,
                                   num_layers=2)
+        # mask embedding
+        self.mask_query_head = MLP(hidden_dim,
+                                   hidden_dim,
+                                   hidden_dim,
+                                   num_layers=3)
 
+        # encoder mask head
+        self.enc_mask_lateral = ConvGNBlock(feat0_dim, hidden_dim, 1)
+        self.enc_mask_output = nn.Sequential(
+            ConvGNBlock(
+                hidden_dim, hidden_dim, 3, act=activation),
+            nn.Conv2D(hidden_dim, hidden_dim, 1))
         # encoder head
         self.enc_output = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             nn.LayerNorm(
                 hidden_dim, weight_attr=weight_attr, bias_attr=bias_attr))
-        self.enc_score_head = nn.Linear(hidden_dim, num_classes)
-        self.enc_bbox_head = MLP(hidden_dim, hidden_dim, 4, num_layers=3)
-        # decoder head
-        self.dec_score_head = nn.LayerList([
-            nn.Linear(hidden_dim, num_classes)
-            for _ in range(num_decoder_layers)
-        ])
-        self.dec_bbox_head = nn.LayerList([
-            MLP(hidden_dim, hidden_dim, 4, num_layers=3)
-            for _ in range(num_decoder_layers)
-        ])
+        # decoder norm layer
+        self.dec_norm = nn.LayerNorm(
+            hidden_dim, weight_attr=weight_attr, bias_attr=bias_attr)
+        # shared prediction head
+        self.class_head = nn.Linear(hidden_dim, num_classes)
+        self.bbox_head = MLP(hidden_dim, hidden_dim, 4, num_layers=3)
 
         self._reset_parameters()
 
     def _reset_parameters(self):
         # class and bbox head init
         bias_cls = bias_init_with_prob(0.01)
-        linear_init_(self.enc_score_head)
-        constant_(self.enc_score_head.bias, bias_cls)
-        constant_(self.enc_bbox_head.layers[-1].weight)
-        constant_(self.enc_bbox_head.layers[-1].bias)
-        for cls_, reg_ in zip(self.dec_score_head, self.dec_bbox_head):
-            linear_init_(cls_)
-            constant_(cls_.bias, bias_cls)
-            constant_(reg_.layers[-1].weight)
-            constant_(reg_.layers[-1].bias)
+        linear_init_(self.class_head)
+        constant_(self.class_head.bias, bias_cls)
+        constant_(self.bbox_head.layers[-1].weight)
+        constant_(self.bbox_head.layers[-1].bias)
 
+        xavier_uniform_(self.enc_mask_output[1].weight)
         linear_init_(self.enc_output[0])
         xavier_uniform_(self.enc_output[0].weight)
-        normal_(self.level_embed.weight)
         if self.learnt_init_query:
             xavier_uniform_(self.tgt_embed.weight)
         xavier_uniform_(self.query_pos_head.layers[0].weight)
         xavier_uniform_(self.query_pos_head.layers[1].weight)
         for l in self.input_proj:
             xavier_uniform_(l[0].weight)
-            constant_(l[0].bias)
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -387,7 +340,7 @@ class DINOTransformer(nn.Layer):
         # [num_levels, 2]
         spatial_shapes = paddle.to_tensor(
             paddle.stack(spatial_shapes).astype('int64'))
-        # [l] start index of each level
+        # [l], 每一个level的起始index
         level_start_index = paddle.concat([
             paddle.zeros(
                 [1], dtype='int64'), spatial_shapes.prod(1).cumsum(0)[:-1]
@@ -398,6 +351,7 @@ class DINOTransformer(nn.Layer):
                 lvl_pos_embed_flatten, valid_ratios)
 
     def forward(self, feats, pad_mask=None, gt_meta=None):
+        feat0 = feats.pop(0)
         # input projection and embedding
         (feat_flatten, spatial_shapes, level_start_index, mask_flatten,
          lvl_pos_embed_flatten,
@@ -407,10 +361,13 @@ class DINOTransformer(nn.Layer):
         memory = self.encoder(feat_flatten, spatial_shapes, level_start_index,
                               mask_flatten, lvl_pos_embed_flatten, valid_ratios)
 
+        mask_feat = self._get_encoder_mask_feature(feat0, memory,
+                                                   spatial_shapes)
+
         # prepare denoising training
         if self.training:
             denoising_class, denoising_bbox_unact, attn_mask, dn_meta = \
-                get_contrastive_denoising_training_group(gt_meta,
+                get_denoising_training_group(gt_meta,
                                             self.num_classes,
                                             self.num_queries,
                                             self.denoising_class_embed.weight,
@@ -420,33 +377,55 @@ class DINOTransformer(nn.Layer):
         else:
             denoising_class, denoising_bbox_unact, attn_mask, dn_meta = None, None, None, None
 
-        target, init_ref_points_unact, enc_topk_bboxes, enc_topk_logits = \
+        target, init_ref_points_unact, enc_out, init_out = \
             self._get_decoder_input(
-            memory, spatial_shapes, mask_flatten, denoising_class,
+            memory, mask_feat, spatial_shapes, mask_flatten, denoising_class,
             denoising_bbox_unact)
 
         # decoder
         inter_feats, inter_bboxes = self.decoder(
             target, init_ref_points_unact, memory, spatial_shapes,
-            level_start_index, self.dec_bbox_head, self.query_pos_head,
-            valid_ratios, attn_mask, mask_flatten)
-        out_bboxes = []
+            level_start_index, self.bbox_head, self.query_pos_head,
+            self.dec_norm, valid_ratios, attn_mask, mask_flatten)
+
         out_logits = []
+        out_bboxes = []
+        out_masks = []
         for i in range(self.num_decoder_layers):
-            out_logits.append(self.dec_score_head[i](inter_feats[i]))
+            if self.training or i == self.num_decoder_layers - 1:
+                logits_, masks_ = self._get_pred_class_and_mask(inter_feats[i],
+                                                                mask_feat)
+            else:
+                continue
+            out_logits.append(logits_)
+            out_masks.append(masks_)
             if i == 0:
                 out_bboxes.append(
-                    F.sigmoid(self.dec_bbox_head[i](inter_feats[i]) +
-                              init_ref_points_unact))
+                    F.sigmoid(
+                        self.bbox_head(inter_feats[i]) + init_ref_points_unact))
             else:
                 out_bboxes.append(
-                    F.sigmoid(self.dec_bbox_head[i](inter_feats[i]) +
-                              inverse_sigmoid(inter_bboxes[i - 1])))
+                    F.sigmoid(
+                        self.bbox_head(inter_feats[i]) + inverse_sigmoid(
+                            inter_bboxes[i - 1])))
         out_bboxes = paddle.stack(out_bboxes)
         out_logits = paddle.stack(out_logits)
+        out_masks = paddle.stack(out_masks)
 
-        return (out_bboxes, out_logits, enc_topk_bboxes, enc_topk_logits,
-                dn_meta)
+        return (out_logits, out_bboxes, out_masks, enc_out, init_out, dn_meta)
+
+    def _get_encoder_mask_feature(self, in_feat, memory, spatial_shapes):
+        memory_feat0 = memory.split(
+            spatial_shapes.prod(1).split(self.num_levels), axis=1)[0]
+        h, w = spatial_shapes[0]
+        memory_feat0 = memory_feat0.reshape(
+            [0, h, w, self.hidden_dim]).transpose([0, 3, 1, 2])
+        out = self.enc_mask_lateral(in_feat) + F.interpolate(
+            memory_feat0,
+            scale_factor=2.0,
+            mode='bilinear',
+            align_corners=False)
+        return self.enc_mask_output(out)
 
     def _get_encoder_output_anchors(self,
                                     memory,
@@ -490,39 +469,68 @@ class DINOTransformer(nn.Layer):
 
     def _get_decoder_input(self,
                            memory,
+                           mask_feat,
                            spatial_shapes,
                            memory_mask=None,
                            denoising_class=None,
                            denoising_bbox_unact=None):
-        bs, _, _ = memory.shape
         # prepare input for decoder
+        bs, _, _ = memory.shape
         output_memory, output_anchors = self._get_encoder_output_anchors(
             memory, spatial_shapes, memory_mask)
-        enc_outputs_class = self.enc_score_head(output_memory)
-        enc_outputs_coord_unact = self.enc_bbox_head(
-            output_memory) + output_anchors
+        enc_logits_unact = self.class_head(output_memory)
+        enc_bboxes_unact = self.bbox_head(output_memory) + output_anchors
 
+        # get topk index
         _, topk_ind = paddle.topk(
-            enc_outputs_class.max(-1), self.num_queries, axis=1)
-        # extract region proposal boxes
+            enc_logits_unact.max(-1), self.num_queries, axis=1)
         batch_ind = paddle.arange(end=bs).astype(topk_ind.dtype)
         batch_ind = batch_ind.unsqueeze(-1).tile([1, self.num_queries])
         topk_ind = paddle.stack([batch_ind, topk_ind], axis=-1)
-        reference_points_unact = paddle.gather_nd(enc_outputs_coord_unact,
-                                                  topk_ind)  # unsigmoided.
-        enc_topk_bboxes = F.sigmoid(reference_points_unact)
-        if denoising_bbox_unact is not None:
-            reference_points_unact = paddle.concat(
-                [denoising_bbox_unact, reference_points_unact], 1)
-        enc_topk_logits = paddle.gather_nd(enc_outputs_class, topk_ind)
 
-        # extract region features
+        # extract content and position query embedding
+        target = paddle.gather_nd(output_memory, topk_ind)
+        reference_points_unact = paddle.gather_nd(enc_bboxes_unact,
+                                                  topk_ind)  # unsigmoided.
+        # get encoder output: {logits, bboxes, masks}
+        enc_out_logits, enc_out_masks = self._get_pred_class_and_mask(target,
+                                                                      mask_feat)
+        enc_out_bboxes = F.sigmoid(reference_points_unact)
+        enc_out = (enc_out_logits, enc_out_bboxes, enc_out_masks)
+
+        # concat denoising query
         if self.learnt_init_query:
             target = self.tgt_embed.weight.unsqueeze(0).tile([bs, 1, 1])
         else:
-            target = paddle.gather_nd(output_memory, topk_ind).detach()
+            target = target.detach()
         if denoising_class is not None:
             target = paddle.concat([denoising_class, target], 1)
+        if self.mask_enhanced:
+            # use mask-enhanced anchor box initialization
+            reference_points = mask_to_box_coordinate(
+                enc_out_masks > 0, normalize=True, format="xywh")
+            reference_points_unact = inverse_sigmoid(reference_points)
+        if denoising_bbox_unact is not None:
+            reference_points_unact = paddle.concat(
+                [denoising_bbox_unact, reference_points_unact], 1)
 
-        return target, reference_points_unact.detach(
-        ), enc_topk_bboxes, enc_topk_logits
+        # direct prediction from the matching and denoising part in the begining
+        if self.training and denoising_class is not None:
+            init_out_logits, init_out_masks = self._get_pred_class_and_mask(
+                target, mask_feat)
+            init_out_bboxes = F.sigmoid(reference_points_unact)
+            init_out = (init_out_logits, init_out_bboxes, init_out_masks)
+        else:
+            init_out = None
+
+        return target, reference_points_unact.detach(), enc_out, init_out
+
+    def _get_pred_class_and_mask(self, query_embed, mask_feat):
+        out_query = self.dec_norm(query_embed)
+        out_logits = self.class_head(out_query)
+        mask_query_embed = self.mask_query_head(out_query)
+        _, _, h, w = paddle.shape(mask_feat)
+        # [b, q, c] x [b, c, h, w] -> [b, q, h, w]
+        out_mask = paddle.bmm(mask_query_embed, mask_feat.flatten(2)).reshape(
+            [0, 0, h, w])
+        return out_logits, out_mask

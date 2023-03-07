@@ -54,8 +54,8 @@ class DETRLoss(nn.Layer):
             use_focal_loss (bool): Use focal loss or not.
         """
         super(DETRLoss, self).__init__()
-        self.num_classes = num_classes
 
+        self.num_classes = num_classes
         self.matcher = matcher
         self.loss_coeff = loss_coeff
         self.aux_loss = aux_loss
@@ -76,8 +76,7 @@ class DETRLoss(nn.Layer):
                         postfix=""):
         # logits: [b, query, num_classes], gt_class: list[[n, 1]]
         name_class = "loss_class" + postfix
-        if logits is None:
-            return {name_class: paddle.zeros([1])}
+
         target_label = paddle.full(logits.shape[:2], bg_index, dtype='int64')
         bs, num_query_objects = target_label.shape
         if sum(len(a) for a in gt_class) > 0:
@@ -101,8 +100,7 @@ class DETRLoss(nn.Layer):
         # boxes: [b, query, 4], gt_bbox: list[[n, 4]]
         name_bbox = "loss_bbox" + postfix
         name_giou = "loss_giou" + postfix
-        if boxes is None:
-            return {name_bbox: paddle.zeros([1]), name_giou: paddle.zeros([1])}
+
         loss = dict()
         if sum(len(a) for a in gt_bbox) == 0:
             loss[name_bbox] = paddle.to_tensor([0.])
@@ -124,8 +122,7 @@ class DETRLoss(nn.Layer):
         # masks: [b, query, h, w], gt_mask: list[[n, H, W]]
         name_mask = "loss_mask" + postfix
         name_dice = "loss_dice" + postfix
-        if masks is None:
-            return {name_mask: paddle.zeros([1]), name_dice: paddle.zeros([1])}
+
         loss = dict()
         if sum(len(a) for a in gt_mask) == 0:
             loss[name_mask] = paddle.to_tensor([0.])
@@ -164,20 +161,22 @@ class DETRLoss(nn.Layer):
                       bg_index,
                       num_gts,
                       dn_match_indices=None,
-                      postfix=""):
-        if boxes is None or logits is None:
-            return {
-                "loss_class_aux" + postfix: paddle.paddle.zeros([1]),
-                "loss_bbox_aux" + postfix: paddle.paddle.zeros([1]),
-                "loss_giou_aux" + postfix: paddle.paddle.zeros([1])
-            }
+                      postfix="",
+                      masks=None,
+                      gt_mask=None):
         loss_class = []
-        loss_bbox = []
-        loss_giou = []
-        for aux_boxes, aux_logits in zip(boxes, logits):
+        loss_bbox, loss_giou = [], []
+        loss_mask, loss_dice = [], []
+        for i, (aux_boxes, aux_logits) in enumerate(zip(boxes, logits)):
+            aux_masks = masks[i] if masks is not None else None
             if dn_match_indices is None:
-                match_indices = self.matcher(aux_boxes, aux_logits, gt_bbox,
-                                             gt_class)
+                match_indices = self.matcher(
+                    aux_boxes,
+                    aux_logits,
+                    gt_bbox,
+                    gt_class,
+                    masks=aux_masks,
+                    gt_mask=gt_mask)
             else:
                 match_indices = dn_match_indices
             loss_class.append(
@@ -188,11 +187,19 @@ class DETRLoss(nn.Layer):
                                         num_gts, postfix)
             loss_bbox.append(loss_['loss_bbox' + postfix])
             loss_giou.append(loss_['loss_giou' + postfix])
+            if masks is not None and gt_mask is not None:
+                loss_ = self._get_loss_mask(aux_masks, gt_mask, match_indices,
+                                            num_gts, postfix)
+                loss_mask.append(loss_['loss_mask' + postfix])
+                loss_dice.append(loss_['loss_dice' + postfix])
         loss = {
             "loss_class_aux" + postfix: paddle.add_n(loss_class),
             "loss_bbox_aux" + postfix: paddle.add_n(loss_bbox),
             "loss_giou_aux" + postfix: paddle.add_n(loss_giou)
         }
+        if masks is not None and gt_mask is not None:
+            loss["loss_mask_aux" + postfix] = paddle.add_n(loss_mask)
+            loss["loss_dice_aux" + postfix] = paddle.add_n(loss_dice)
         return loss
 
     def _get_index_updates(self, num_query_objects, target, match_indices):
@@ -220,6 +227,44 @@ class DETRLoss(nn.Layer):
         ])
         return src_assign, target_assign
 
+    def _get_num_gts(self, targets, dtype="float32"):
+        num_gts = sum(len(a) for a in targets)
+        num_gts = paddle.to_tensor([num_gts], dtype=dtype)
+        if paddle.distributed.get_world_size() > 1:
+            paddle.distributed.all_reduce(num_gts)
+            num_gts /= paddle.distributed.get_world_size()
+        num_gts = paddle.clip(num_gts, min=1.)
+        return num_gts
+
+    def _get_prediction_loss(self,
+                             boxes,
+                             logits,
+                             gt_bbox,
+                             gt_class,
+                             masks=None,
+                             gt_mask=None,
+                             postfix="",
+                             dn_match_indices=None,
+                             num_gts=1):
+        if dn_match_indices is None:
+            match_indices = self.matcher(
+                boxes, logits, gt_bbox, gt_class, masks=masks, gt_mask=gt_mask)
+        else:
+            match_indices = dn_match_indices
+
+        loss = dict()
+        loss.update(
+            self._get_loss_class(logits, gt_class, match_indices,
+                                 self.num_classes, num_gts, postfix))
+        loss.update(
+            self._get_loss_bbox(boxes, gt_bbox, match_indices, num_gts,
+                                postfix))
+        if masks is not None and gt_mask is not None:
+            loss.update(
+                self._get_loss_mask(masks, gt_mask, match_indices, num_gts,
+                                    postfix))
+        return loss
+
     def forward(self,
                 boxes,
                 logits,
@@ -231,48 +276,44 @@ class DETRLoss(nn.Layer):
                 **kwargs):
         r"""
         Args:
-            boxes (Tensor|None): [l, b, query, 4]
-            logits (Tensor|None): [l, b, query, num_classes]
+            boxes (Tensor): [l, b, query, 4]
+            logits (Tensor): [l, b, query, num_classes]
             gt_bbox (List(Tensor)): list[[n, 4]]
             gt_class (List(Tensor)): list[[n, 1]]
-            masks (Tensor, optional): [b, query, h, w]
+            masks (Tensor, optional): [l, b, query, h, w]
             gt_mask (List(Tensor), optional): list[[n, H, W]]
             postfix (str): postfix of loss name
         """
+
         dn_match_indices = kwargs.get("dn_match_indices", None)
-        if dn_match_indices is None and (boxes is not None and
-                                         logits is not None):
-            match_indices = self.matcher(boxes[-1].detach(),
-                                         logits[-1].detach(), gt_bbox, gt_class)
-        else:
-            match_indices = dn_match_indices
+        num_gts = kwargs.get("num_gts", None)
+        if num_gts is None:
+            num_gts = self._get_num_gts(gt_class)
 
-        num_gts = sum(len(a) for a in gt_bbox)
-        num_gts = paddle.to_tensor([num_gts], dtype="float32")
-        if paddle.distributed.get_world_size() > 1:
-            paddle.distributed.all_reduce(num_gts)
-            num_gts /= paddle.distributed.get_world_size()
-        num_gts = paddle.clip(num_gts, min=1.) * kwargs.get("dn_num_group", 1.)
-
-        total_loss = dict()
-        total_loss.update(
-            self._get_loss_class(logits[
-                -1] if logits is not None else None, gt_class, match_indices,
-                                 self.num_classes, num_gts, postfix))
-        total_loss.update(
-            self._get_loss_bbox(boxes[-1] if boxes is not None else None,
-                                gt_bbox, match_indices, num_gts, postfix))
-        if masks is not None and gt_mask is not None:
-            total_loss.update(
-                self._get_loss_mask(masks if masks is not None else None,
-                                    gt_mask, match_indices, num_gts, postfix))
+        total_loss = self._get_prediction_loss(
+            boxes[-1],
+            logits[-1],
+            gt_bbox,
+            gt_class,
+            masks=masks[-1] if masks is not None else None,
+            gt_mask=gt_mask,
+            postfix=postfix,
+            dn_match_indices=dn_match_indices,
+            num_gts=num_gts)
 
         if self.aux_loss:
             total_loss.update(
                 self._get_loss_aux(
-                    boxes[:-1] if boxes is not None else None, logits[:-1]
-                    if logits is not None else None, gt_bbox, gt_class,
-                    self.num_classes, num_gts, dn_match_indices, postfix))
+                    boxes[:-1],
+                    logits[:-1],
+                    gt_bbox,
+                    gt_class,
+                    self.num_classes,
+                    num_gts,
+                    dn_match_indices,
+                    postfix,
+                    masks=masks[:-1] if masks is not None else None,
+                    gt_mask=gt_mask))
 
         return total_loss
 
@@ -291,8 +332,9 @@ class DINOLoss(DETRLoss):
                 dn_out_logits=None,
                 dn_meta=None,
                 **kwargs):
-        total_loss = super(DINOLoss, self).forward(boxes, logits, gt_bbox,
-                                                   gt_class)
+        num_gts = self._get_num_gts(gt_class)
+        total_loss = super(DINOLoss, self).forward(
+            boxes, logits, gt_bbox, gt_class, num_gts=num_gts)
 
         if dn_meta is not None:
             dn_positive_idx, dn_num_group = \
@@ -300,31 +342,186 @@ class DINOLoss(DETRLoss):
             assert len(gt_class) == len(dn_positive_idx)
 
             # denoising match indices
-            dn_match_indices = []
-            for i in range(len(gt_class)):
-                num_gt = len(gt_class[i])
-                if num_gt > 0:
-                    gt_idx = paddle.arange(end=num_gt, dtype="int64")
-                    gt_idx = gt_idx.unsqueeze(0).tile(
-                        [dn_num_group, 1]).flatten()
-                    assert len(gt_idx) == len(dn_positive_idx[i])
-                    dn_match_indices.append((dn_positive_idx[i], gt_idx))
-                else:
-                    dn_match_indices.append((paddle.zeros(
-                        [0], dtype="int64"), paddle.zeros(
-                            [0], dtype="int64")))
-        else:
-            dn_match_indices, dn_num_group = None, 1.
+            dn_match_indices = self.get_dn_match_indices(
+                gt_class, dn_positive_idx, dn_num_group)
 
-        # compute denoising training loss
-        dn_loss = super(DINOLoss, self).forward(
-            dn_out_bboxes,
-            dn_out_logits,
-            gt_bbox,
-            gt_class,
-            postfix="_dn",
-            dn_match_indices=dn_match_indices,
-            dn_num_group=dn_num_group)
-        total_loss.update(dn_loss)
+            # compute denoising training loss
+            num_gts *= dn_num_group
+            dn_loss = super(DINOLoss, self).forward(
+                dn_out_bboxes,
+                dn_out_logits,
+                gt_bbox,
+                gt_class,
+                postfix="_dn",
+                dn_match_indices=dn_match_indices,
+                num_gts=num_gts)
+            total_loss.update(dn_loss)
+        else:
+            total_loss.update(
+                {k + '_dn': paddle.to_tensor([0.])
+                 for k in total_loss.keys()})
 
         return total_loss
+
+    @staticmethod
+    def get_dn_match_indices(labels, dn_positive_idx, dn_num_group):
+        dn_match_indices = []
+        for i in range(len(labels)):
+            num_gt = len(labels[i])
+            if num_gt > 0:
+                gt_idx = paddle.arange(end=num_gt, dtype="int64")
+                gt_idx = gt_idx.tile([dn_num_group])
+                assert len(dn_positive_idx[i]) == len(gt_idx)
+                dn_match_indices.append((dn_positive_idx[i], gt_idx))
+            else:
+                dn_match_indices.append((paddle.zeros(
+                    [0], dtype="int64"), paddle.zeros(
+                        [0], dtype="int64")))
+        return dn_match_indices
+
+
+@register
+class MaskDINOLoss(DETRLoss):
+    __shared__ = ['num_classes', 'use_focal_loss', 'num_sample_points']
+    __inject__ = ['matcher']
+
+    def __init__(self,
+                 num_classes=80,
+                 matcher='HungarianMatcher',
+                 loss_coeff={
+                     'class': 4,
+                     'bbox': 5,
+                     'giou': 2,
+                     'mask': 5,
+                     'dice': 5
+                 },
+                 aux_loss=True,
+                 use_focal_loss=False,
+                 num_sample_points=12544,
+                 oversample_ratio=3.0,
+                 important_sample_ratio=0.75):
+        super(MaskDINOLoss, self).__init__(num_classes, matcher, loss_coeff,
+                                           aux_loss, use_focal_loss)
+        assert oversample_ratio >= 1
+        assert important_sample_ratio <= 1 and important_sample_ratio >= 0
+
+        self.num_sample_points = num_sample_points
+        self.oversample_ratio = oversample_ratio
+        self.important_sample_ratio = important_sample_ratio
+        self.num_oversample_points = int(num_sample_points * oversample_ratio)
+        self.num_important_points = int(num_sample_points *
+                                        important_sample_ratio)
+        self.num_random_points = num_sample_points - self.num_important_points
+
+    def forward(self,
+                boxes,
+                logits,
+                gt_bbox,
+                gt_class,
+                masks=None,
+                gt_mask=None,
+                postfix="",
+                dn_out_bboxes=None,
+                dn_out_logits=None,
+                dn_out_masks=None,
+                dn_meta=None,
+                **kwargs):
+        num_gts = self._get_num_gts(gt_class)
+        total_loss = super(MaskDINOLoss, self).forward(
+            boxes,
+            logits,
+            gt_bbox,
+            gt_class,
+            masks=masks,
+            gt_mask=gt_mask,
+            num_gts=num_gts)
+
+        if dn_meta is not None:
+            dn_positive_idx, dn_num_group = \
+                dn_meta["dn_positive_idx"], dn_meta["dn_num_group"]
+            assert len(gt_class) == len(dn_positive_idx)
+
+            # denoising match indices
+            dn_match_indices = DINOLoss.get_dn_match_indices(
+                gt_class, dn_positive_idx, dn_num_group)
+
+            # compute denoising training loss
+            num_gts *= dn_num_group
+            dn_loss = super(MaskDINOLoss, self).forward(
+                dn_out_bboxes,
+                dn_out_logits,
+                gt_bbox,
+                gt_class,
+                masks=dn_out_masks,
+                gt_mask=gt_mask,
+                postfix="_dn",
+                dn_match_indices=dn_match_indices,
+                num_gts=num_gts)
+            total_loss.update(dn_loss)
+        else:
+            total_loss.update(
+                {k + '_dn': paddle.to_tensor([0.])
+                 for k in total_loss.keys()})
+
+        return total_loss
+
+    def _get_loss_mask(self, masks, gt_mask, match_indices, num_gts,
+                       postfix=""):
+        # masks: [b, query, h, w], gt_mask: list[[n, H, W]]
+        name_mask = "loss_mask" + postfix
+        name_dice = "loss_dice" + postfix
+
+        loss = dict()
+        if sum(len(a) for a in gt_mask) == 0:
+            loss[name_mask] = paddle.to_tensor([0.])
+            loss[name_dice] = paddle.to_tensor([0.])
+            return loss
+
+        src_masks, target_masks = self._get_src_target_assign(masks, gt_mask,
+                                                              match_indices)
+        # sample points
+        sample_points = self._get_point_coords_by_uncertainty(src_masks)
+        sample_points = 2.0 * sample_points.unsqueeze(1) - 1.0
+
+        src_masks = F.grid_sample(
+            src_masks.unsqueeze(1), sample_points,
+            align_corners=False).squeeze([1, 2])
+
+        target_masks = F.grid_sample(
+            target_masks.unsqueeze(1), sample_points,
+            align_corners=False).squeeze([1, 2]).detach()
+
+        loss[name_mask] = self.loss_coeff[
+            'mask'] * F.binary_cross_entropy_with_logits(
+                src_masks, target_masks,
+                reduction='none').mean(1).sum() / num_gts
+        loss[name_dice] = self.loss_coeff['dice'] * self._dice_loss(
+            src_masks, target_masks, num_gts)
+        return loss
+
+    def _get_point_coords_by_uncertainty(self, masks):
+        # Sample points based on their uncertainty.
+        masks = masks.detach()
+        num_masks = masks.shape[0]
+        sample_points = paddle.rand(
+            [num_masks, 1, self.num_oversample_points, 2])
+
+        out_mask = F.grid_sample(
+            masks.unsqueeze(1), 2.0 * sample_points - 1.0,
+            align_corners=False).squeeze([1, 2])
+        out_mask = -paddle.abs(out_mask)
+
+        _, topk_ind = paddle.topk(out_mask, self.num_important_points, axis=1)
+        batch_ind = paddle.arange(end=num_masks, dtype=topk_ind.dtype)
+        batch_ind = batch_ind.unsqueeze(-1).tile([1, self.num_important_points])
+        topk_ind = paddle.stack([batch_ind, topk_ind], axis=-1)
+
+        sample_points = paddle.gather_nd(sample_points.squeeze(1), topk_ind)
+        if self.num_random_points > 0:
+            sample_points = paddle.concat(
+                [
+                    sample_points,
+                    paddle.rand([num_masks, self.num_random_points, 2])
+                ],
+                axis=1)
+        return sample_points

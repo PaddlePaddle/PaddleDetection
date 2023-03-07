@@ -26,7 +26,7 @@ except Exception:
 
 __all__ = [
     'BBoxPostProcess', 'MaskPostProcess', 'JDEBBoxPostProcess',
-    'CenterNetPostProcess', 'DETRBBoxPostProcess', 'SparsePostProcess'
+    'CenterNetPostProcess', 'DETRPostProcess', 'SparsePostProcess'
 ]
 
 
@@ -443,8 +443,8 @@ class CenterNetPostProcess(object):
 
 
 @register
-class DETRBBoxPostProcess(object):
-    __shared__ = ['num_classes', 'use_focal_loss']
+class DETRPostProcess(object):
+    __shared__ = ['num_classes', 'use_focal_loss', 'with_mask']
     __inject__ = []
 
     def __init__(self,
@@ -452,22 +452,39 @@ class DETRBBoxPostProcess(object):
                  num_top_queries=100,
                  dual_queries=False,
                  dual_groups=0,
-                 use_focal_loss=False):
-        super(DETRBBoxPostProcess, self).__init__()
+                 use_focal_loss=False,
+                 with_mask=False,
+                 mask_threshold=0.5,
+                 use_avg_mask_score=False):
+        super(DETRPostProcess, self).__init__()
         self.num_classes = num_classes
         self.num_top_queries = num_top_queries
         self.dual_queries = dual_queries
         self.dual_groups = dual_groups
         self.use_focal_loss = use_focal_loss
+        self.with_mask = with_mask
+        self.mask_threshold = mask_threshold
+        self.use_avg_mask_score = use_avg_mask_score
 
-    def __call__(self, head_out, im_shape, scale_factor):
+    def _mask_postprocess(self, mask_pred, score_pred, index):
+        mask_score = F.sigmoid(paddle.gather_nd(mask_pred, index))
+        mask_pred = (mask_score > self.mask_threshold).astype(mask_score.dtype)
+        if self.use_avg_mask_score:
+            avg_mask_score = (mask_pred * mask_score).sum([-2, -1]) / (
+                mask_pred.sum([-2, -1]) + 1e-6)
+            score_pred *= avg_mask_score
+
+        return mask_pred[0].astype('int32'), score_pred
+
+    def __call__(self, head_out, im_shape, scale_factor, pad_shape):
         """
         Decode the bbox.
 
         Args:
             head_out (tuple): bbox_pred, cls_logit and masks of bbox_head output.
-            im_shape (Tensor): The shape of the input image.
+            im_shape (Tensor): The shape of the input image without padding.
             scale_factor (Tensor): The scale factor of the input image.
+            pad_shape (Tensor): The shape of the input image with padding.
         Returns:
             bbox_pred (Tensor): The output prediction with shape [N, 6], including
                 labels, scores and bboxes. The size of bboxes are corresponding
@@ -482,11 +499,13 @@ class DETRBBoxPostProcess(object):
                              bboxes[:, :int(num_queries // (self.dual_groups + 1)), :]
 
         bbox_pred = bbox_cxcywh_to_xyxy(bboxes)
+        # calculate the original shape of the image
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
         img_h, img_w = paddle.split(origin_shape, 2, axis=-1)
-        origin_shape = paddle.concat(
-            [img_w, img_h, img_w, img_h], axis=-1).reshape([-1, 1, 4])
-        bbox_pred *= origin_shape
+        # calculate the shape of the image with padding
+        out_shape = pad_shape / im_shape * origin_shape
+        out_shape = out_shape.flip(1).tile([1, 2]).unsqueeze(1)
+        bbox_pred *= out_shape
 
         scores = F.sigmoid(logits) if self.use_focal_loss else F.softmax(
             logits)[:, :, :-1]
@@ -512,6 +531,25 @@ class DETRBBoxPostProcess(object):
             index = paddle.stack([batch_ind, index], axis=-1)
             bbox_pred = paddle.gather_nd(bbox_pred, index)
 
+        mask_pred = None
+        if self.with_mask:
+            assert masks is not None
+            masks = F.interpolate(
+                masks, scale_factor=4, mode="bilinear", align_corners=False)
+            # TODO: Support prediction with bs>1.
+            # remove padding for input image
+            h, w = im_shape.astype('int32')[0]
+            masks = masks[..., :h, :w]
+            # get pred_mask in the original resolution.
+            img_h = img_h[0].astype('int32')
+            img_w = img_w[0].astype('int32')
+            masks = F.interpolate(
+                masks,
+                size=(img_h, img_w),
+                mode="bilinear",
+                align_corners=False)
+            mask_pred, scores = self._mask_postprocess(masks, scores, index)
+
         bbox_pred = paddle.concat(
             [
                 labels.unsqueeze(-1).astype('float32'), scores.unsqueeze(-1),
@@ -519,9 +557,9 @@ class DETRBBoxPostProcess(object):
             ],
             axis=-1)
         bbox_num = paddle.to_tensor(
-            bbox_pred.shape[1], dtype='int32').tile([bbox_pred.shape[0]])
+            self.num_top_queries, dtype='int32').tile([bbox_pred.shape[0]])
         bbox_pred = bbox_pred.reshape([-1, 6])
-        return bbox_pred, bbox_num
+        return bbox_pred, bbox_num, mask_pred
 
 
 @register

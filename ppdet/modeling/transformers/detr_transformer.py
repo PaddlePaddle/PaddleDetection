@@ -243,6 +243,8 @@ class DETRTransformer(nn.Layer):
                  dim_feedforward=2048,
                  dropout=0.1,
                  activation="relu",
+                 pe_temperature=10000,
+                 pe_offset=0.,
                  attn_dropout=None,
                  act_dropout=None,
                  normalize_before=False):
@@ -274,8 +276,10 @@ class DETRTransformer(nn.Layer):
         self.query_pos_embed = nn.Embedding(num_queries, hidden_dim)
         self.position_embedding = PositionEmbedding(
             hidden_dim // 2,
+            temperature=pe_temperature,
             normalize=True if position_embed_type == 'sine' else False,
-            embed_type=position_embed_type)
+            embed_type=position_embed_type,
+            offset=pe_offset)
 
         self._reset_parameters()
 

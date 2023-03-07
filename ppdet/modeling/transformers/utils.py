@@ -63,9 +63,9 @@ def sigmoid_focal_loss(logit, label, normalizer=1.0, alpha=0.25, gamma=2.0):
     return loss.mean(1).sum() / normalizer
 
 
-def inverse_sigmoid(x, eps=1e-6):
+def inverse_sigmoid(x, eps=1e-5):
     x = x.clip(min=0., max=1.)
-    return paddle.log(x / (1 - x + eps) + eps)
+    return paddle.log(x.clip(min=eps) / (1 - x).clip(min=eps))
 
 
 def deformable_attention_core_func(value, value_spatial_shapes,
@@ -120,6 +120,99 @@ def get_valid_ratio(mask):
     valid_ratio_w = paddle.sum(mask[:, 0, :], 1) / W
     # [b, 2]
     return paddle.stack([valid_ratio_w, valid_ratio_h], -1)
+
+
+def get_denoising_training_group(targets,
+                                 num_classes,
+                                 num_queries,
+                                 class_embed,
+                                 num_denoising=100,
+                                 label_noise_ratio=0.5,
+                                 box_noise_scale=1.0):
+    if num_denoising <= 0:
+        return None, None, None, None
+    num_gts = [len(t) for t in targets["gt_class"]]
+    max_gt_num = max(num_gts)
+    if max_gt_num == 0:
+        return None, None, None, None
+
+    num_group = num_denoising // max_gt_num
+    num_group = 1 if num_group == 0 else num_group
+    # pad gt to max_num of a batch
+    bs = len(targets["gt_class"])
+    input_query_class = paddle.full(
+        [bs, max_gt_num], num_classes, dtype='int32')
+    input_query_bbox = paddle.zeros([bs, max_gt_num, 4])
+    pad_gt_mask = paddle.zeros([bs, max_gt_num])
+    for i in range(bs):
+        num_gt = num_gts[i]
+        if num_gt > 0:
+            input_query_class[i, :num_gt] = targets["gt_class"][i].squeeze(-1)
+            input_query_bbox[i, :num_gt] = targets["gt_bbox"][i]
+            pad_gt_mask[i, :num_gt] = 1
+
+    input_query_class = input_query_class.tile([1, num_group])
+    input_query_bbox = input_query_bbox.tile([1, num_group, 1])
+    pad_gt_mask = pad_gt_mask.tile([1, num_group])
+
+    dn_positive_idx = paddle.nonzero(pad_gt_mask)[:, 1]
+    dn_positive_idx = paddle.split(dn_positive_idx,
+                                   [n * num_group for n in num_gts])
+    # total denoising queries
+    num_denoising = int(max_gt_num * num_group)
+
+    if label_noise_ratio > 0:
+        input_query_class = input_query_class.flatten()
+        pad_gt_mask = pad_gt_mask.flatten()
+        # half of bbox prob
+        mask = paddle.rand(input_query_class.shape) < (label_noise_ratio * 0.5)
+        chosen_idx = paddle.nonzero(mask * pad_gt_mask).squeeze(-1)
+        # randomly put a new one here
+        new_label = paddle.randint_like(
+            chosen_idx, 0, num_classes, dtype=input_query_class.dtype)
+        input_query_class.scatter_(chosen_idx, new_label)
+        input_query_class.reshape_([bs, num_denoising])
+        pad_gt_mask.reshape_([bs, num_denoising])
+
+    if box_noise_scale > 0:
+        diff = paddle.concat(
+            [input_query_bbox[..., 2:] * 0.5, input_query_bbox[..., 2:]],
+            axis=-1) * box_noise_scale
+        diff *= (paddle.rand(input_query_bbox.shape) * 2.0 - 1.0)
+        input_query_bbox += diff
+        input_query_bbox = inverse_sigmoid(input_query_bbox)
+
+    class_embed = paddle.concat(
+        [class_embed, paddle.zeros([1, class_embed.shape[-1]])])
+    input_query_class = paddle.gather(
+        class_embed, input_query_class.flatten(),
+        axis=0).reshape([bs, num_denoising, -1])
+
+    tgt_size = num_denoising + num_queries
+    attn_mask = paddle.ones([tgt_size, tgt_size]) < 0
+    # match query cannot see the reconstruction
+    attn_mask[num_denoising:, :num_denoising] = True
+    # reconstruct cannot see each other
+    for i in range(num_group):
+        if i == 0:
+            attn_mask[max_gt_num * i:max_gt_num * (i + 1), max_gt_num * (i + 1):
+                      num_denoising] = True
+        if i == num_group - 1:
+            attn_mask[max_gt_num * i:max_gt_num * (i + 1), :max_gt_num *
+                      i] = True
+        else:
+            attn_mask[max_gt_num * i:max_gt_num * (i + 1), max_gt_num * (i + 1):
+                      num_denoising] = True
+            attn_mask[max_gt_num * i:max_gt_num * (i + 1), :max_gt_num *
+                      i] = True
+    attn_mask = ~attn_mask
+    dn_meta = {
+        "dn_positive_idx": dn_positive_idx,
+        "dn_num_group": num_group,
+        "dn_num_split": [num_denoising, num_queries]
+    }
+
+    return input_query_class, input_query_bbox, attn_mask, dn_meta
 
 
 def get_contrastive_denoising_training_group(targets,
@@ -204,7 +297,7 @@ def get_contrastive_denoising_training_group(targets,
 
     tgt_size = num_denoising + num_queries
     attn_mask = paddle.ones([tgt_size, tgt_size]) < 0
-    # match query cannot see the reconstruct
+    # match query cannot see the reconstruction
     attn_mask[num_denoising:, :num_denoising] = True
     # reconstruct cannot see each other
     for i in range(num_group):
@@ -263,3 +356,42 @@ def get_sine_pos_embed(pos_tensor,
         pos_res[0], pos_res[1] = pos_res[1], pos_res[0]
     pos_res = paddle.concat(pos_res, axis=2)
     return pos_res
+
+
+def mask_to_box_coordinate(mask,
+                           normalize=False,
+                           format="xyxy",
+                           dtype="float32"):
+    """
+    Compute the bounding boxes around the provided mask.
+    Args:
+        mask (Tensor:bool): [b, c, h, w]
+
+    Returns:
+        bbox (Tensor): [b, c, 4]
+    """
+    assert mask.ndim == 4
+    assert format in ["xyxy", "xywh"]
+    if mask.sum() == 0:
+        return paddle.zeros([mask.shape[0], mask.shape[1], 4], dtype=dtype)
+
+    h, w = mask.shape[-2:]
+    y, x = paddle.meshgrid(
+        paddle.arange(
+            end=h, dtype=dtype), paddle.arange(
+                end=w, dtype=dtype))
+
+    x_mask = x * mask
+    x_max = x_mask.flatten(-2).max(-1) + 1
+    x_min = paddle.where(mask, x_mask,
+                         paddle.to_tensor(1e8)).flatten(-2).min(-1)
+
+    y_mask = y * mask
+    y_max = y_mask.flatten(-2).max(-1) + 1
+    y_min = paddle.where(mask, y_mask,
+                         paddle.to_tensor(1e8)).flatten(-2).min(-1)
+    out_bbox = paddle.stack([x_min, y_min, x_max, y_max], axis=-1)
+    if normalize:
+        out_bbox /= paddle.to_tensor([w, h, w, h]).astype(dtype)
+
+    return out_bbox if format == "xyxy" else bbox_xyxy_to_cxcywh(out_bbox)
