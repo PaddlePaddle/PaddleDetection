@@ -236,7 +236,7 @@ def get_sine_pos_embed(pos_tensor,
     """generate sine position embedding from a position tensor
 
     Args:
-        pos_tensor (torch.Tensor): Shape as `(None, n)`.
+        pos_tensor (Tensor): Shape as `(None, n)`.
         num_pos_feats (int): projected shape for each float in the tensor. Default: 128
         temperature (int): The temperature used for scaling
             the position embedding. Default: 10000.
@@ -245,7 +245,7 @@ def get_sine_pos_embed(pos_tensor,
             be `[pos(y), pos(x)]`. Defaults: True.
 
     Returns:
-        torch.Tensor: Returned position embedding  # noqa
+        Tensor: Returned position embedding  # noqa
         with shape `(None, n * num_pos_feats)`.
     """
     scale = 2. * math.pi

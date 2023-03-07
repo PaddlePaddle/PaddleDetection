@@ -23,7 +23,7 @@
 | ResNet50-vd-SSLDv2-FPN | Faster       |    1    |   2x    |     ----     |  42.3  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_fpn_ssld_2x_coco.pdparams) | [配置文件](./faster_rcnn_r50_vd_fpn_ssld_2x_coco.yml) |
 | Swin-Tiny-FPN | Faster       |    2    |   1x    |     ----     |  42.6  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_swin_tiny_fpn_1x_coco.pdparams) | [配置文件](./faster_rcnn_swin_tiny_fpn_1x_coco.yml) |
 | Swin-Tiny-FPN | Faster       |    2    |   2x    |     ----     |  44.8  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_swin_tiny_fpn_2x_coco.pdparams) | [配置文件](./faster_rcnn_swin_tiny_fpn_2x_coco.yml) |
-| Swin-Tiny-FPN | Faster       |    2    |   3x    |     ----     |  45.3  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_swin_tiny_fpn_3x_coco.pdparams) | [配置文件](./faster_rcnn_swin_tiny_fpn_3x_coco.yml) |
+| Swin-Tiny-FPN | Faster       |    2    |   3x    |     ----     |  45.3  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_swin_tiny_fpn_3x_coco.pdparams) | [配置文件](../swin/faster_rcnn_swin_tiny_fpn_3x_coco.yml) |
 
 ## Citations
 ```
