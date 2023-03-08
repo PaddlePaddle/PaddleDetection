@@ -8,10 +8,10 @@
 
 ## Model Zoo
 
-| Backbone |      Model      | Epochs | Box AP |                 Config                  |                                     Download                                     |
-|:------:|:---------------:|:------:|:------:|:---------------------------------------:|:--------------------------------------------------------------------------------:|
-| R-50 | dino_r50_4scale |   12   |  49.1  | [config](./dino_r50_4scale_1x_coco.yml) | [model](https://paddledet.bj.bcebos.com/models/dino_r50_4scale_1x_coco.pdparams) |
-| R-50 | dino_r50_4scale |   24   |  50.5  | [config](./dino_r50_4scale_2x_coco.yml) | [model](https://paddledet.bj.bcebos.com/models/dino_r50_4scale_2x_coco.pdparams) |
+| Backbone |      Model      | Epochs | Box AP |                 Config                  |                                       Log                                       |                                     Download                                     |
+|:------:|:---------------:|:------:|:------:|:---------------------------------------:|:-------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------:|
+| R-50 | dino_r50_4scale |   12   |  49.5  | [config](./dino_r50_4scale_1x_coco.yml) | [log](https://bj.bcebos.com/v1/paddledet/logs/dino_r50_4scale_1x_coco_49.5.log) | [model](https://paddledet.bj.bcebos.com/models/dino_r50_4scale_1x_coco.pdparams) |
+| R-50 | dino_r50_4scale |   24   |  50.8  | [config](./dino_r50_4scale_2x_coco.yml) | [log](https://bj.bcebos.com/v1/paddledet/logs/dino_r50_4scale_2x_coco_50.8.log) | [model](https://paddledet.bj.bcebos.com/models/dino_r50_4scale_2x_coco.pdparams) |
 
 **Notes:**
 
