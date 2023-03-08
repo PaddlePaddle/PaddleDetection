@@ -201,6 +201,16 @@ def argsparser():
         type=str,
         default='ios',
         help="Combine method matching metric, choose in ['iou', 'ios'].")
+    parser.add_argument(
+        "--collect_trt_shape_info",
+        action='store_true',
+        default=False,
+        help="Whether to collect dynamic shape before using tensorrt.")
+    parser.add_argument(
+        "--tuned_trt_shape_file",
+        type=str,
+        default="shape_range_info.pbtxt",
+        help="Path of a dynamic shape file for tensorrt.")
     return parser
 
 
