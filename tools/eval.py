@@ -29,7 +29,7 @@ warnings.filterwarnings('ignore')
 
 import paddle
 
-from ppdet.core.workspace import load_config, merge_config
+from ppdet.core.workspace import create, load_config, merge_config
 from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_version, check_config
 from ppdet.utils.cli import ArgsParser, merge_args
 from ppdet.engine import Trainer, init_parallel_env
@@ -130,7 +130,7 @@ def run(FLAGS, cfg):
         json_eval_results(
             cfg.metric,
             json_directory=FLAGS.output_eval,
-            dataset=cfg['EvalDataset'])
+            dataset=create('EvalDataset')())
         return
 
     # init parallel environment if nranks > 1
