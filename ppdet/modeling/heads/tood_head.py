@@ -293,7 +293,7 @@ class TOODHead(nn.Layer):
         pad_gt_mask = gt_meta['pad_gt_mask']
         # label assignment
         if gt_meta['epoch_id'] < self.static_assigner_epoch:
-            assigned_labels, assigned_bboxes, assigned_scores, _ = self.static_assigner(
+            assigned_labels, assigned_bboxes, assigned_scores = self.static_assigner(
                 anchors,
                 num_anchors_list,
                 gt_labels,
@@ -302,7 +302,7 @@ class TOODHead(nn.Layer):
                 bg_index=self.num_classes)
             alpha_l = 0.25
         else:
-            assigned_labels, assigned_bboxes, assigned_scores, _ = self.assigner(
+            assigned_labels, assigned_bboxes, assigned_scores = self.assigner(
                 pred_scores.detach(),
                 pred_bboxes.detach() * stride_tensor,
                 bbox_center(anchors),
