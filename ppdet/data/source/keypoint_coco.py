@@ -491,7 +491,8 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
                  bbox_file=None,
                  use_gt_bbox=True,
                  pixel_std=200,
-                 image_thre=0.0):
+                 image_thre=0.0,
+                 center_scale=None):
         super().__init__(dataset_dir, image_dir, anno_path, num_joints,
                          transform)
 
@@ -500,6 +501,7 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
         self.trainsize = trainsize
         self.pixel_std = pixel_std
         self.image_thre = image_thre
+        self.center_scale = center_scale
         self.dataset_name = 'coco'
 
     def parse_dataset(self):
@@ -573,6 +575,9 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
         center[0] = x + w * 0.5
         center[1] = y + h * 0.5
         aspect_ratio = self.trainsize[0] * 1.0 / self.trainsize[1]
+
+        if self.center_scale is not None and np.random.rand() < 0.3:
+            center += self.center_scale * (np.random.rand(2) - 0.5) * [w, h]
 
         if w > aspect_ratio * h:
             h = w * 1.0 / aspect_ratio
