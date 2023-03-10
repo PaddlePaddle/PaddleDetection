@@ -84,7 +84,8 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
   <p></p>
   </div>
 
-  - `v2.6版本版本更新解读文章传送门`：[《PaddleDetection v2.6发布：目标小？数据缺？标注累？泛化差？PP新员逐一应对！》](https://mp.weixin.qq.com/s/rPwprZeHEpmGOe5wxrmO5g)
+  - `v2.6版本版本更新解读文章传送门`：
+    -  [《PaddleDetection v2.6发布：目标小？数据缺？标注累？泛化差？PP新员逐一应对！》](https://mp.weixin.qq.com/s/SLITj5k120d_fQc7jEO8Vw)
   - `v2.6版本重点更新体验传送门`：
     - [PP-YOLOE+：高精度通用目标检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ppyoloe)
     - [PP-YOLOE-R：旋转框检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/rotate/ppyoloe_r)
@@ -134,7 +135,7 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
 
   - **👀YOLO系列专题**
 
-    - `文章传送门`：[YOLOv8来啦！YOLO内卷期模型怎么选？9+款AI硬件如何快速部署？深度解析](https://mp.weixin.qq.com/s/SLITj5k120d_fQc7jEO8Vw)
+    - `文章传送门`：[YOLOv8来啦！YOLO内卷期模型怎么选？9+款AI硬件如何快速部署？深度解析](https://mp.weixin.qq.com/s/rPwprZeHEpmGOe5wxrmO5g)
     - `代码传送门`：[PaddleYOLO全系列](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/feature_models/PaddleYOLO_MODEL.md)
 
     <div align="center">
