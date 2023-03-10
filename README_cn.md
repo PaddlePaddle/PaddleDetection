@@ -14,6 +14,39 @@
 </p>
 </div>
 
+## 💌目录
+- [💌目录](#目录)
+- [🌈简介](#简介)
+- [📣最新进展](#最新进展)
+- [👫开源社区](#开源社区)
+- [✨主要特性](#主要特性)
+    - [🧩模块化设计](#模块化设计)
+    - [📱丰富的模型库](#丰富的模型库)
+    - [🎗️产业特色模型|产业工具](#️产业特色模型产业工具)
+    - [💡🏆产业级部署实践](#产业级部署实践)
+- [🍱安装](#安装)
+- [🔥教程](#教程)
+- [🔑FAQ](#faq)
+- [🧩模块组件](#模块组件)
+- [📱模型库](#模型库)
+- [⚖️模型性能对比](#️模型性能对比)
+    - [🖥️服务器端模型性能对比](#️服务器端模型性能对比)
+    - [⌚️移动端模型性能对比](#️移动端模型性能对比)
+- [🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)
+  - [💎PP-YOLOE 高精度目标检测模型](#pp-yoloe-高精度目标检测模型)
+  - [💎PP-YOLOE-R 高性能旋转框检测模型](#pp-yoloe-r-高性能旋转框检测模型)
+  - [💎PP-YOLOE-SOD 高精度小目标检测模型](#pp-yoloe-sod-高精度小目标检测模型)
+  - [💫PP-PicoDet 超轻量实时目标检测模型](#pp-picodet-超轻量实时目标检测模型)
+  - [📡PP-Tracking 实时多目标跟踪系统](#pp-tracking-实时多目标跟踪系统)
+  - [⛷️PP-TinyPose 人体骨骼关键点识别](#️pp-tinypose-人体骨骼关键点识别)
+  - [🏃🏻PP-Human 实时行人分析工具](#pp-human-实时行人分析工具)
+  - [🏎️PP-Vehicle 实时车辆分析工具](#️pp-vehicle-实时车辆分析工具)
+- [💡产业实践范例](#产业实践范例)
+- [🏆企业应用案例](#企业应用案例)
+- [📝许可证书](#许可证书)
+- [📌引用](#引用)
+
+
 ## 🌈简介
 
 PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件，在提供丰富的模型组件和测试基准的同时，注重端到端的产业落地应用，通过打造产业级特色模型|工具、建设产业应用范例等手段，帮助开发者实现数据准备、模型选型、模型训练、模型部署的全流程打通，快速进行落地应用。
@@ -42,29 +75,41 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
 </p>
 </div>
 
-## ✨主要特性
-
-#### 🧩模块化设计
-PaddleDetection将检测模型解耦成不同的模块组件，通过自定义模块组件组合，用户可以便捷高效地完成检测模型的搭建。`传送门`：[🧩模块组件](#模块组件)。
-
-#### 📱丰富的模型库
-PaddleDetection支持大量的最新主流的算法基准以及预训练模型，涵盖2D/3D目标检测、实例分割、人脸检测、关键点检测、多目标跟踪、半监督学习等方向。`传送门`：[📱模型库](#模型库)、[⚖️模型性能对比](#️模型性能对比)。
-
-#### 🎗️产业特色模型|产业工具
-PaddleDetection打造产业级特色模型以及分析工具：PP-YOLOE+、PP-PicoDet、PP-TinyPose、PP-HumanV2、PP-Vehicle等，针对通用、高频垂类应用场景提供深度优化解决方案以及高度集成的分析工具，降低开发者的试错、选择成本，针对业务场景快速应用落地。`传送门`：[🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)。
-
-#### 💡🏆产业级部署实践
-PaddleDetection整理工业、农业、林业、交通、医疗、金融、能源电力等AI应用范例，打通数据标注-模型训练-模型调优-预测部署全流程，持续降低目标检测技术产业落地门槛。`传送门`：[💡产业实践范例](#产业实践范例)、[🏆企业应用案例](#企业应用案例)。
-
-<div align="center">
-<p align="center">
-  <img src="https://user-images.githubusercontent.com/61035602/206431371-912a14c8-ce1e-48ec-ae6f-7267016b308e.png" align="middle" width="1280"/>
-</p>
-</div>
-
 ## 📣最新进展
 
-PaddleDetection 2.6版本发布! [点击查看版本更新介绍](https://github.com/PaddlePaddle/PaddleDetection/releases/tag/v2.6.0)
+**🔥PaddleDetection v2.6版本更新解读**
+
+  <div align="center">
+  <img src="https://user-images.githubusercontent.com/61035602/224244188-da8495fc-eea9-432f-bc2d-6f0144c2dde9.png"  height = "250" caption='' />
+  <p></p>
+  </div>
+
+  - `v2.6版本版本更新解读文章传送门`：[《PaddleDetection v2.6发布：目标小？数据缺？标注累？泛化差？PP新员逐一应对！》](https://mp.weixin.qq.com/s/rPwprZeHEpmGOe5wxrmO5g)
+  - `v2.6版本重点更新体验传送门`：
+    - [PP-YOLOE+：高精度通用目标检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ppyoloe)
+    - [PP-YOLOE-R：旋转框检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/rotate/ppyoloe_r)
+    - [PP-YOLOE-SOD：小目标检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/smalldet)
+    - [PP-YOLOE-DOD：密集检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ppyoloe/application)
+    - [PP-YOLOE+_t：超轻量通用目标检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ppyoloe)
+    - [PP-YOLOE+少样本学习方案](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/few-shot)
+    - [PP-YOLOE+半监督学习方案](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/semi_det/baseline)
+    - [PP-YOLOE+模型蒸馏方案](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ppyoloe/distill)
+    - [PP-Human：行人分析工具箱，推理提速、多路视频流支持](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/deploy/pipeline)
+    - [PP-Vehicle：车辆分析工具箱，新增逆行、压线分析、推理提速、多路视频流支持](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/deploy/pipeline)
+    - [半监督检测算法合集](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/semi_det)
+    - [少样本学习算法合集](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.6/configs/few-shot)
+    - [模型蒸馏算法合集](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ppyoloe/distill)
+    - [YOLO新增模型YOLOv8、YOLOv6-3.0](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.6/configs)
+    - [目标检测算法新增DINO](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/dino)
+    - [目标检测算法新增YOLOF](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/yolof)
+    - [新增ViTDet系列检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/vitdet)
+    - [新增目标检测算法CenterTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/mot/centertrack)
+    - [新增旋转框检测算法FCOSR](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/rotate/fcosr)
+    - [新增实例分割算法QueryInst](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/queryinst)
+    - [新增3D关键点检测算法Metro3d](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/pose3d)
+    - [新增检测热力图可视化能力](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.6/docs/tutorials/GradCAM_cn.md)
+    - [Roadmap of PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/issues/7892)
+    - [飞桨黑客松第四期-PaddleDetection任务专区](https://github.com/PaddlePaddle/PaddleDetection/issues/7906)
 
 ## 👫开源社区
 
@@ -88,7 +133,8 @@ PaddleDetection 2.6版本发布! [点击查看版本更新介绍](https://github
 - **🎈社区近期活动**
 
   - **👀YOLO系列专题**
-    - `文章传送门`：[YOLOv8来啦！YOLO内卷期模型怎么选？9+款AI硬件如何快速部署？深度解析](https://mp.weixin.qq.com/s/rPwprZeHEpmGOe5wxrmO5g)
+
+    - `文章传送门`：[YOLOv8来啦！YOLO内卷期模型怎么选？9+款AI硬件如何快速部署？深度解析](https://mp.weixin.qq.com/s/SLITj5k120d_fQc7jEO8Vw)
     - `代码传送门`：[PaddleYOLO全系列](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/feature_models/PaddleYOLO_MODEL.md)
 
     <div align="center">
@@ -125,6 +171,26 @@ PaddleDetection 2.6版本发布! [点击查看版本更新介绍](https://github
 
 - **🏅️社区贡献**
   - `活动链接传送门`：[Yes, PP-YOLOE! 基于PP-YOLOE的算法开发](https://github.com/PaddlePaddle/PaddleDetection/issues/7345)
+
+## ✨主要特性
+
+#### 🧩模块化设计
+PaddleDetection将检测模型解耦成不同的模块组件，通过自定义模块组件组合，用户可以便捷高效地完成检测模型的搭建。`传送门`：[🧩模块组件](#模块组件)。
+
+#### 📱丰富的模型库
+PaddleDetection支持大量的最新主流的算法基准以及预训练模型，涵盖2D/3D目标检测、实例分割、人脸检测、关键点检测、多目标跟踪、半监督学习等方向。`传送门`：[📱模型库](#模型库)、[⚖️模型性能对比](#️模型性能对比)。
+
+#### 🎗️产业特色模型|产业工具
+PaddleDetection打造产业级特色模型以及分析工具：PP-YOLOE+、PP-PicoDet、PP-TinyPose、PP-HumanV2、PP-Vehicle等，针对通用、高频垂类应用场景提供深度优化解决方案以及高度集成的分析工具，降低开发者的试错、选择成本，针对业务场景快速应用落地。`传送门`：[🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)。
+
+#### 💡🏆产业级部署实践
+PaddleDetection整理工业、农业、林业、交通、医疗、金融、能源电力等AI应用范例，打通数据标注-模型训练-模型调优-预测部署全流程，持续降低目标检测技术产业落地门槛。`传送门`：[💡产业实践范例](#产业实践范例)、[🏆企业应用案例](#企业应用案例)。
+
+<div align="center">
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/61035602/206431371-912a14c8-ce1e-48ec-ae6f-7267016b308e.png" align="middle" width="1280"/>
+</p>
+</div>
 
 
 ## 🍱安装
