@@ -29,7 +29,7 @@ ConvNeXt:
 PPYOLOEHead:
   static_assigner_epoch: 12
   nms:
-    nms_top_k: 10000
+    nms_top_k: 1000
     keep_top_k: 300
     score_threshold: 0.01
     nms_threshold: 0.7
