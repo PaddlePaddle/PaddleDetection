@@ -7,8 +7,19 @@ body:
   attributes:
     value: >
       #### 请统一前往[Roadmap Of PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/issues/7892)提出新特性或者新功能的需求。
+      
       #### Please Go to [Roadmap Of PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/issues/7892) to submit a request for a new feature.
 
+- type: checkboxes
+  attributes:
+    label: 是否愿意提交PR Are you willing to submit a PR?
+    description: >
+      (可选)如果你对新feature有自己的想法，十分鼓励提交[Pull Request](https://github.com/PaddlePaddle/PaddleDetection/pulls)，共同提升PaddleDetection
+
+      (Optional) We encourage you to submit a [Pull Request](https://github.com/PaddlePaddle/PaddleDetection/pulls) (PR) to help improve PaddleDetection for everyone, especially if you have a good understanding of how to implement a fix or feature.
+    options:
+      - label: Yes I'd like to help by submitting a PR!
+      
 - type: markdown
   attributes:
     value: >
