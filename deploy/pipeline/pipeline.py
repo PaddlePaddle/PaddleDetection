@@ -805,9 +805,9 @@ class PipePredictor(object):
                         self.pipe_timer.total_time.end()
                     if self.cfg['visual']:
                         _, _, fps = self.pipe_timer.get_total_time()
-                        im = self.visualize_video(frame_rgb, mot_res, frame_id,
-                                                  fps, entrance, records,
-                                                  center_traj)  # visualize
+                        im = self.visualize_video(
+                            frame_rgb, mot_res, self.collector, frame_id, fps,
+                            entrance, records, center_traj)  # visualize
                         if len(self.pushurl) > 0:
                             pushstream.pipe.stdin.write(im.tobytes())
                         else:
