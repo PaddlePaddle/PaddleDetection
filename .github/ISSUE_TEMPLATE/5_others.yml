@@ -1,6 +1,6 @@
 name: 🧩 其他 Others
 description: 提出其他问题。 Report any other non-support related issues.
-labels: [type/others, status/new-issue]
+labels: [others]
 
 body:
 - type: markdown
