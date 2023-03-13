@@ -534,7 +534,8 @@ class PipePredictor(object):
         else:
             self.predict_image(input)
         self.pipe_timer.info()
-        self.mot_predictor.det_times.tracking_info(average=True)
+        if hasattr(self, 'mot_predictor'):
+            self.mot_predictor.det_times.tracking_info(average=True)
 
     def predict_image(self, input):
         # det
