@@ -1,6 +1,6 @@
 name: 📚 文档 Documentation Issue
 description: 反馈一个官网文档错误。 Report an issue related to https://github.com/PaddlePaddle/PaddleDetection.
-labels: [type/docs, status/new-issue]
+labels: [documentation]
 
 body:
 - type: markdown
