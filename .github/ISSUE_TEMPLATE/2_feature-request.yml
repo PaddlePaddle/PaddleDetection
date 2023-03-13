@@ -7,7 +7,6 @@ body:
   attributes:
     value: >
       #### 请统一前往[Roadmap Of PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/issues/7892)提出新特性或者新功能的需求。
-
       #### Please Go to [Roadmap Of PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/issues/7892) to submit a request for a new feature.
 
 - type: markdown
