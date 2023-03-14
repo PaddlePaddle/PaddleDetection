@@ -48,7 +48,6 @@ tar xvf ppyoloe_crn_l_300e_coco.tgz
 运行完成可视化结果如下图所示
 
 - 注意，以上命令只适用于Linux或MacOS, Windows下SDK的使用方式请参考: [如何在Windows中使用FastDeploy C++ SDK](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/faq/use_sdk_on_windows.md)  
-如果用户使用华为昇腾NPU部署, 请参考以下方式在部署前初始化部署环境:
 - 关于如何通过FastDeploy使用更多不同的推理后端，以及如何使用不同的硬件，请参考文档：[如何切换模型推理后端引擎](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/faq/how_to_change_backend.md)  
 
 ## 5. 目前已支持的PaddleDetection模型C++类
