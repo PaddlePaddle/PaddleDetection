@@ -41,16 +41,19 @@ tar xvf ppyoloe_crn_l_300e_coco.tgz
 ./infer_demo ./ppyoloe_crn_l_300e_coco 000000014439.jpg 0
 # GPU推理
 ./infer_demo ./ppyoloe_crn_l_300e_coco 000000014439.jpg 1
-# GPU上GPU上Paddle-TensorRT推理
+# GPU上Paddle-TensorRT推理（注意：TensorRT推理第一次运行，有序列化模型的操作，有一定耗时，需要耐心等待）
 ./infer_demo ./ppyoloe_crn_l_300e_coco 000000014439.jpg 2
 ```
 
 运行完成可视化结果如下图所示
+<div  align="center">  
+<img src="https://user-images.githubusercontent.com/19339784/184326520-7075e907-10ed-4fad-93f8-52d0e35d4964.jpg", width=480px, height=320px />
+</div> 
 
 - 注意，以上命令只适用于Linux或MacOS, Windows下SDK的使用方式请参考: [如何在Windows中使用FastDeploy C++ SDK](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/faq/use_sdk_on_windows.md)  
 - 关于如何通过FastDeploy使用更多不同的推理后端，以及如何使用不同的硬件，请参考文档：[如何切换模型推理后端引擎](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/faq/how_to_change_backend.md)  
 
-## 5. 目前已支持的PaddleDetection模型C++类
+## 5. PaddleDetection C++接口
 FastDeploy目前支持的模型系列，包括但不限于`PPYOLOE`, `PicoDet`, `PaddleYOLOX`, `PPYOLO`, `FasterRCNN`，`SSD`,`PaddleYOLOv5`,`PaddleYOLOv6`,`PaddleYOLOv7`,`RTMDet`,`CascadeRCNN`,`PSSDet`,`RetinaNet`,`PPYOLOESOD`,`FCOS`,`TTFNet`,`TOOD`,`GFL`所有类名的构造函数和预测函数在参数上完全一致。所有模型的调用，只需要参考PPYOLOE的示例，即可快速调用。 
 ```c++
 fastdeploy::vision::detection::PicoDet(const string& model_file, const string& params_file, const string& config_file, const RuntimeOption& runtime_option = RuntimeOption(), const ModelFormat& model_format = ModelFormat::PADDLE);
@@ -74,6 +77,7 @@ fastdeploy::vision::detection::FCOS(const string& model_file, const string& para
 fastdeploy::vision::detection::TOOD(const string& model_file, const string& params_file, const string& config_file, const RuntimeOption& runtime_option = RuntimeOption(), const ModelFormat& model_format = ModelFormat::PADDLE);
 fastdeploy::vision::detection::GFL(const string& model_file, const string& params_file, const string& config_file, const RuntimeOption& runtime_option = RuntimeOption(), const ModelFormat& model_format = ModelFormat::PADDLE);
 ```
+PaddleDetection模型加载和初始化，其中model_file， params_file为导出的Paddle部署模型格式, config_file为PaddleDetection同时导出的部署配置yaml文件  
 
 ## 6. 更多指南
 - [PaddleDetection C++ API文档](https://www.paddlepaddle.org.cn/fastdeploy-api-doc/cpp/html/namespacefastdeploy_1_1vision_1_1detection.html)
