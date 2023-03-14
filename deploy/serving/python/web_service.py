@@ -62,7 +62,6 @@ class ArgsParser(ArgumentParser):
         assert args.config is not None, \
             "Please specify --config=configure_file_path."
         args.service_config = self._parse_opt(args.opt, args.config)
-        print("args config:", args.service_config)
         args.model_config = PredictConfig(args.model_dir)
         return args
 
@@ -254,6 +253,7 @@ if __name__ == '__main__':
     GLOBAL_VAR['fetch_vars'] = fetch_vars
     GLOBAL_VAR['preprocess_ops'] = FLAGS.model_config.preprocess_infos
     GLOBAL_VAR['model_config'] = FLAGS.model_config
+    print(FLAGS)
     # define the service
     uci_service = DetectorService(name="ppdet")
     uci_service.prepare_pipeline_config(yml_dict=FLAGS.service_config)
