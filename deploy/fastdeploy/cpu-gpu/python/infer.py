@@ -32,23 +32,23 @@ def build_option(args):
         option.use_gpu()
 
     if args.use_trt:
-        option.use_trt_backend()
+        option.use_paddle_infer_backend()
         # If use original Tensorrt, not Paddle-TensorRT,
-        # comment the following two lines
+        # please try `option.use_trt_backend()`
         option.paddle_infer_option.enable_trt = True
         option.paddle_infer_option.collect_trt_shape = True
         option.trt_option.set_shape("image", [1, 3, 640, 640], [1, 3, 640, 640],
                                              [1, 3, 640, 640])
-        option.set_trt_option.set_shape("scale_factor", [1, 2], [1, 2], [1, 2])
+        option.trt_option.set_shape("scale_factor", [1, 2], [1, 2], [1, 2])
     return option
 
 
 args = parse_arguments()
 
-if args.model_dir is None:
+if args.model is None:
     model_dir = fd.download_model(name='ppyoloe_crn_l_300e_coco')
 else:
-    model_dir = args.model_dir
+    model_dir = args.model
 
 model_file = os.path.join(model_dir, "model.pdmodel")
 params_file = os.path.join(model_dir, "model.pdiparams")

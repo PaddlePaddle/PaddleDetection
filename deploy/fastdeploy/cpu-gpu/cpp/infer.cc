@@ -82,9 +82,9 @@ void TrtInfer(const std::string& model_dir, const std::string& image_file) {
 
   auto option = fastdeploy::RuntimeOption();
   option.UseGpu();
-  option.UseTrtBackend();
+  option.UsePaddleInferBackend();
   // If use original Tensorrt, not Paddle-TensorRT,
-  // comment the following two lines
+  // please try `option.UseTrtBackend()`
   option.paddle_infer_option.enable_trt = true;
   option.paddle_infer_option.collect_trt_shape = true;
   option.trt_option.SetShape("image", {1, 3, 640, 640}, {1, 3, 640, 640}, 

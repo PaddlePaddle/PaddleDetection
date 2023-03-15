@@ -17,8 +17,8 @@ PaddleDetection支持利用FastDeploy在NVIDIA GPU、X86 CPU、飞腾CPU、ARM C
 
 ```bash
 # 下载FastDeploy预编译库，用户可在上文提到的`FastDeploy预编译库`中自行选择合适的版本使用
-wget https://bj.bcebos.com/fastdeploy/release/cpp/fastdeploy-linux-x64-x.x.x.tgz
-tar xvf fastdeploy-linux-x64-x.x.x.tgz
+wget https://bj.bcebos.com/fastdeploy/release/cpp/fastdeploy-linux-x64-gpu-x.x.x.tgz
+tar xvf fastdeploy-linux-x64-gpu-x.x.x.tgz
 
 # 下载部署示例代码
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
@@ -28,7 +28,8 @@ cd PaddleDetection/deploy/fastdeploy/cpu-gpu/cpp
 
 # 编译部署示例
 mkdir build && cd build
-cmake .. -DFASTDEPLOY_INSTALL_DIR=${PWD}/fastdeploy-linux-x64-x.x.x
+mv ../fastdeploy-linux-x64-gpu-x.x.x .
+cmake .. -DFASTDEPLOY_INSTALL_DIR=${PWD}/fastdeploy-linux-x64-gpu-x.x.x
 make -j
 
 # 下载PPYOLOE模型文件和测试图片
