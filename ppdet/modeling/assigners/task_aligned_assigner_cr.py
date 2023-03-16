@@ -96,7 +96,8 @@ class TaskAlignedAssigner_CR(nn.Layer):
             assigned_bboxes = paddle.zeros([batch_size, num_anchors, 4])
             assigned_scores = paddle.zeros(
                 [batch_size, num_anchors, num_classes])
-            return assigned_labels, assigned_bboxes, assigned_scores
+            mask_positive = paddle.zeros([batch_size, 1, num_anchors])
+            return assigned_labels, assigned_bboxes, assigned_scores, mask_positive
 
         # compute iou between gt and pred bbox, [B, n, L]
         ious = batch_iou_similarity(gt_bboxes, pred_bboxes)
