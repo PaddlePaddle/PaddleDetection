@@ -17,6 +17,7 @@ import sys
 import numpy as np
 import argparse
 import paddle
+sys.path.append("/paddle/zhouhao21_workspace/code/PaddleDetection")
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.core.workspace import create
 from ppdet.metrics import COCOMetric, VOCMetric, KeyPointTopDownCOCOEval
