@@ -1,12 +1,9 @@
 
 Global:
-  reader_config: configs/ppyoloe_crn_l_80e_sliced_visdrone_640_025_reader.yml
-  input_list: ['image', 'scale_factor']
-  arch: YOLO
+  reader_config: configs/ppyoloe_plus_reader.yml
   include_nms: True
   Evaluation: True
-  #model_dir: ../../output_inference/ppyoloe_crn_l_80e_sliced_visdrone_640_025
-  model_dir: /paddle/zhouhao21_workspace/code/PaddleDetection/deploy/auto_compression/add_arch/
+  model_dir: ../../output_inference/ppyoloe_plus_crn_t_auxhead_300e_coco/
   model_filename: model.pdmodel
   params_filename: model.pdiparams
 
@@ -24,7 +21,7 @@ QuantAware:
 
 TrainConfig:
   train_iter: 8000
-  eval_iter: 500
+  eval_iter: 1000
   learning_rate:
     type: CosineAnnealingDecay
     learning_rate: 0.00003

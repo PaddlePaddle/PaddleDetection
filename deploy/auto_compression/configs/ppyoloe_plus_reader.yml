@@ -6,13 +6,13 @@ TrainDataset:
   !COCODataSet
     image_dir: train2017
     anno_path: annotations/instances_train2017.json
-    dataset_dir: /paddle/zhouhao21_workspace/code/PaddleDetection/dataset/coco/
+    dataset_dir: /paddle/zhouhao21_workspace/data/coco
 
 EvalDataset:
   !COCODataSet
     image_dir: val2017
     anno_path: annotations/instances_val2017.json
-    dataset_dir: /paddle/zhouhao21_workspace/code/PaddleDetection/dataset/coco/
+    dataset_dir: /paddle/zhouhao21_workspace/data/coco
 
 worker_num: 0
 
@@ -23,4 +23,4 @@ EvalReader:
     - Resize: {target_size: [640, 640], keep_ratio: False, interp: 2}
     - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
     - Permute: {}
-  batch_size: 4
+  batch_size: 32
