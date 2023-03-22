@@ -41,7 +41,7 @@ from ppdet.utils.logger import setup_logger
 from ppdet.engine.export_utils import _dump_infer_config, _prune_input_spec
 logger = setup_logger('ppdet.engine')
 
-__all__ = ['Trainer_DenseTeacher', 'ARSLTrainer']
+__all__ = ['Trainer_DenseTeacher', 'Trainer_ARSL']
 
 
 class Trainer_DenseTeacher(Trainer):
@@ -479,7 +479,7 @@ class Trainer_DenseTeacher(Trainer):
         self._reset_metrics()
 
 
-class ARSLTrainer(Trainer):
+class Trainer_ARSL(Trainer):
     def __init__(self, cfg, mode='train'):
         self.cfg = cfg
         assert mode.lower() in ['train', 'eval', 'test'], \
