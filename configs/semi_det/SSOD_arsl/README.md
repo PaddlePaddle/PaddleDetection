@@ -5,7 +5,7 @@
 ## FCOS模型库
 
 |      模型      |  监督数据比例 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
-| :------------: | :---------: :----------------------------: | :------------------: |:--------: |:----------: |
+| :------------: | :---------:|:----------------------------: | :------------------: |:--------: |:----------: |
 | ARSL-FCOS     |    1% |  **22.8**  | 240 (87120)   | [download](https://paddledet.bj.bcebos.com/models/fcos_r50_fpn_arsl_coco_semi001.pdparams) | [config](./fcos_r50_fpn_arsl_90k_coco_001.yml) |
 | ARSL-FCOS     |    5% |  **33.1**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/fcos_r50_fpn_arsl_coco_semi005.pdparams) | [config](./fcos_r50_fpn_arsl_90k_coco_005.yml ) |
 | ARSL-FCOS(LSJ)|   10% |  **36.9**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/fcos_r50_fpn_arsl_coco_semi010.pdparams) | [config](./fcos_r50_fpn_arsl_90k_coco_010.yml ) |
