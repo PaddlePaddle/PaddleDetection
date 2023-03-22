@@ -1,0 +1,31 @@
+epoch: 30 # employ iter to control shedule
+LearningRate:
+  base_lr: 0.02 # 0.02 for 8*(4+4) batch
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [300] # do not decay lr
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 1000
+
+max_iter: 90000 #90000 # 90k for 32 batch, 180k for 16b tach
+epoch_iter: 3000 # set epoch_iter for saving checkpoint and eval
+# 20230210 update student params according to loss_grad every X iter.
+optimize_rate: 1
+SEMISUPNET:
+  BBOX_THRESHOLD: 0.5 # not used
+  TEACHER_UPDATE_ITER: 1
+  BURN_UP_STEP: 9000
+  EMA_KEEP_RATE: 0.9996
+  UNSUP_LOSS_WEIGHT: 1.0 # detailed weights for cls and loc task can be seen in cr_loss
+
+  PSEUDO_WARM_UP_STEPS: 2000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2
