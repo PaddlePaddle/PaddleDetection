@@ -179,7 +179,7 @@ def match_state_dict(model_state_dict, weight_state_dict, mode='default'):
         return a == b or a.endswith("." + b)
         #return a == b
 
-    # 20220706 select match type
+    #select match type
 
     if mode == 'student':
         match_op = student_match

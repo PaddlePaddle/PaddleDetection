@@ -18,7 +18,6 @@ from __future__ import print_function
 
 import paddle
 from ppdet.core.workspace import register, create
-#from .meta_arch import BaseArch
 from ppdet.modeling.architectures.meta_arch import BaseArch
 import paddle.nn.functional as F
 
@@ -66,7 +65,7 @@ class FCOS_SSOD_ARSL(BaseArch):
         kwargs = {'input_shape': neck.out_shape}
         fcos_head = create(cfg['fcos_head'], **kwargs)
 
-        # 20220723 consistency regularization loss
+        # consistency regularization loss
         fcos_cr_loss = create(cfg['fcos_cr_loss'])
 
         return {

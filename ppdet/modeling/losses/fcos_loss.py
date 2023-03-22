@@ -518,7 +518,7 @@ class FCOSLossMILC(FCOSLoss):
             weights=tag_center_flatten)
         reg_loss = reg_loss * mask_positive_float / normalize_sum
 
-        # 20220721 iou loss
+        #iou loss
         pos_iou_pred = paddle.squeeze(centerness_flatten, axis=-1)[pos_ind]
         loss_iou = ops.sigmoid_cross_entropy_with_logits(pos_iou_pred, bbox_iou)
         loss_iou = loss_iou / num_positive_fp32 * 0.5
@@ -532,7 +532,7 @@ class FCOSLossMILC(FCOSLoss):
         return loss_all
 
 
-    # 20220724 Concat multi-level feature maps by image
+    #Concat multi-level feature maps by image
 def levels_to_images(mlvl_tensor):
     batch_size = mlvl_tensor[0].shape[0]
     batch_list = [[] for _ in range(batch_size)]
@@ -545,7 +545,6 @@ def levels_to_images(mlvl_tensor):
     return [paddle.concat(item, axis=0) for item in batch_list]
 
 
-# 20220724 from mmdetection
 def multi_apply(func, *args, **kwargs):
     """Apply function to a list of arguments.
 

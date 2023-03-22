@@ -670,7 +670,7 @@ class Trainer_ARSL(Trainer):
                     self._reset_metrics()
                 with paddle.no_grad():
                     self.status['save_best_model'] = True
-                    # 20220922 LC: before burn-in stage, eval student. after burn-in stage, eval teacher
+                    # before burn-in stage, eval student. after burn-in stage, eval teacher
                     if self.iter <= self.cfg.SEMISUPNET['BURN_UP_STEP']:
                         print("start eval student model")
                         self._eval_with_loader(
@@ -731,7 +731,7 @@ class Trainer_ARSL(Trainer):
                 self._update_teacher_model(
                     keep_rate=self.cfg.SEMISUPNET['EMA_KEEP_RATE'])
 
-            # 20220723 warm-up weight for pseudo loss
+            #warm-up weight for pseudo loss
             pseudo_weight = self.cfg.SEMISUPNET['UNSUP_LOSS_WEIGHT']
             pseudo_warmup_iter = self.cfg.SEMISUPNET['PSEUDO_WARM_UP_STEPS']
             temp = self.iter - self.cfg.SEMISUPNET['BURN_UP_STEP']
