@@ -8,4 +8,5 @@ _BASE_: [
 
 weights: output/fcos_r50_fpn_arsl_90k_coco_010/model_final
 
+#semi detector type
 ssod_method: ARSL
