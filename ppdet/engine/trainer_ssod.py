@@ -16,11 +16,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
+import sys
 import copy
 import time
 import typing
 import numpy as np
 
+from paddle.static import InputSpec
 import paddle
 import paddle.nn as nn
 import paddle.distributed as dist
@@ -28,16 +31,17 @@ from paddle.distributed import fleet
 from ppdet.optimizer import ModelEMA, SimpleModelEMA
 
 from ppdet.core.workspace import create
-from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
+from ppdet.utils.checkpoint import load_weight, load_pretrain_weight, save_model
 import ppdet.utils.stats as stats
 from ppdet.utils import profiler
 from ppdet.modeling.ssod.utils import align_weak_strong_shape
 from .trainer import Trainer
-
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval
 from ppdet.utils.logger import setup_logger
+from ppdet.engine.export_utils import _dump_infer_config, _prune_input_spec
 logger = setup_logger('ppdet.engine')
 
-__all__ = ['Trainer_DenseTeacher']
+__all__ = ['Trainer_DenseTeacher', 'ARSLTrainer']
 
 
 class Trainer_DenseTeacher(Trainer):
@@ -473,3 +477,666 @@ class Trainer_DenseTeacher(Trainer):
         self._compose_callback.on_epoch_end(self.status)
         # reset metric states for metric may performed multiple times
         self._reset_metrics()
+
+
+class ARSLTrainer(Trainer):
+    def __init__(self, cfg, mode='train'):
+        self.cfg = cfg
+        assert mode.lower() in ['train', 'eval', 'test'], \
+                "mode should be 'train', 'eval' or 'test'"
+        self.mode = mode.lower()
+        self.optimizer = None
+        self.is_loaded_weights = False
+        capital_mode = self.mode.capitalize()
+        self.dataset = self.cfg['{}Dataset'.format(capital_mode)] = create(
+            '{}Dataset'.format(capital_mode))()
+        if self.mode == 'train':
+            self.dataset_unlabel = self.cfg['UnsupTrainDataset'] = create(
+                'UnsupTrainDataset')
+            self.loader = create('SemiTrainReader')(
+                self.dataset, self.dataset_unlabel, cfg.worker_num)
+
+        # build model
+        if 'model' not in self.cfg:
+            self.student_model = create(cfg.architecture)
+            self.teacher_model = create(cfg.architecture)
+            self.model = EnsembleTSModel(self.teacher_model, self.student_model)
+        else:
+            self.model = self.cfg.model
+            self.is_loaded_weights = True
+
+        # Pseudo Assignment
+
+        # save path for burn-in model
+        self.base_path = cfg.get('weights')
+        self.base_path = os.path.dirname(self.base_path)
+
+        # EvalDataset build with BatchSampler to evaluate in single device
+        # TODO: multi-device evaluate
+        if self.mode == 'eval':
+            self._eval_batch_sampler = paddle.io.BatchSampler(
+                self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
+            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
+                self.dataset, cfg.worker_num, self._eval_batch_sampler)
+        # TestDataset build after user set images, skip loader creation here
+
+        self.start_epoch = 0
+        self.end_epoch = 0 if 'epoch' not in cfg else cfg.epoch
+        self.epoch_iter = self.cfg.epoch_iter  # LC: set fixed iter in each epoch to control checkpoint
+
+        # build optimizer in train mode
+        if self.mode == 'train':
+            #steps_per_epoch = len(self.loader)
+            steps_per_epoch = self.epoch_iter
+            self.lr = create('LearningRate')(steps_per_epoch)
+            self.optimizer = create('OptimizerBuilder')(self.lr,
+                                                        self.model.modelStudent)
+
+        self._nranks = dist.get_world_size()
+        self._local_rank = dist.get_rank()
+
+        self.status = {}
+
+        # initial default callbacks
+        self._init_callbacks()
+
+        # initial default metrics
+        self._init_metrics()
+        self._reset_metrics()
+        self.iter = 0
+
+    def load_weights(self, weights):
+        if self.is_loaded_weights:
+            return
+        self.start_epoch = 0
+        load_pretrain_weight(self.model, weights)
+        logger.debug("Load weights {} to start training".format(weights))
+
+    def resume_weights(self, weights):
+        # support Distill resume weights
+        if hasattr(self.model, 'student_model'):
+            self.start_epoch = load_weight(self.model.student_model, weights,
+                                           self.optimizer)
+        else:
+            self.start_epoch = load_weight(self.model, weights, self.optimizer)
+        logger.debug("Resume weights of epoch {}".format(self.start_epoch))
+
+    def train(self, validate=False):
+        assert self.mode == 'train', "Model not in 'train' mode"
+        Init_mark = False
+
+        # if validation in training is enabled, metrics should be re-init
+        if validate:
+            self._init_metrics(validate=validate)
+            self._reset_metrics()
+
+        if self.cfg.get('fleet', False):
+            self.model.modelStudent = fleet.distributed_model(
+                self.model.modelStudent)
+            self.optimizer = fleet.distributed_optimizer(self.optimizer)
+        elif self._nranks > 1:
+            find_unused_parameters = self.cfg[
+                'find_unused_parameters'] if 'find_unused_parameters' in self.cfg else False
+            self.model.modelStudent = paddle.DataParallel(
+                self.model.modelStudent,
+                find_unused_parameters=find_unused_parameters)
+
+        # set fixed iter in each epoch to control checkpoint
+        self.status.update({
+            'epoch_id': self.start_epoch,
+            'step_id': 0,
+            'steps_per_epoch': self.epoch_iter
+        })
+        print('338 Len of DataLoader: {}'.format(len(self.loader)))
+
+        self.status['batch_time'] = stats.SmoothedValue(
+            self.cfg.log_iter, fmt='{avg:.4f}')
+        self.status['data_time'] = stats.SmoothedValue(
+            self.cfg.log_iter, fmt='{avg:.4f}')
+        self.status['training_staus'] = stats.TrainingStats(self.cfg.log_iter)
+
+        if self.cfg.get('print_flops', False):
+            # flops_loader = create('{}Reader'.format(self.mode.capitalize()))(
+            #     self.dataset, self.cfg.worker_num)
+            self._flops(self.loader)
+        # profiler_options = self.cfg.get('profiler_options', None)
+
+        self._compose_callback.on_train_begin(self.status)
+
+        epoch_id = self.start_epoch
+        #self.iter = self.start_epoch * len(self.loader)
+        self.iter = self.start_epoch * self.epoch_iter
+        # use iter rather than epoch to control training schedule
+        while self.iter < self.cfg.max_iter:
+            # epoch loop
+            self.status['mode'] = 'train'
+            self.status['epoch_id'] = epoch_id
+            self._compose_callback.on_epoch_begin(self.status)
+            self.loader.dataset_label.set_epoch(epoch_id)
+            self.loader.dataset_unlabel.set_epoch(epoch_id)
+            paddle.device.cuda.empty_cache()  # clear GPU memory
+            # set model status
+            self.model.modelStudent.train()
+            self.model.modelTeacher.eval()
+            iter_tic = time.time()
+
+            # iter loop in each eopch
+            for step_id in range(self.epoch_iter):
+                data = next(self.loader)
+                self.status['data_time'].update(time.time() - iter_tic)
+                self.status['step_id'] = step_id
+                # profiler.add_profiler_step(profiler_options)
+                self._compose_callback.on_step_begin(self.status)
+
+                # model forward and calculate loss
+                loss_dict = self.run_step_full_semisup(data)
+
+                if (step_id + 1) % self.cfg.optimize_rate == 0:
+                    self.optimizer.step()
+                    self.optimizer.clear_grad()
+                curr_lr = self.optimizer.get_lr()
+                self.lr.step()
+
+                # update log status
+                self.status['learning_rate'] = curr_lr
+                if self._nranks < 2 or self._local_rank == 0:
+                    self.status['training_staus'].update(loss_dict)
+                self.status['batch_time'].update(time.time() - iter_tic)
+                self._compose_callback.on_step_end(self.status)
+                self.iter += 1
+                iter_tic = time.time()
+
+            self._compose_callback.on_epoch_end(self.status)
+
+            if validate and (self._nranks < 2 or self._local_rank == 0) \
+                    and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 \
+                             or epoch_id == self.end_epoch - 1):
+                if not hasattr(self, '_eval_loader'):
+                    # build evaluation dataset and loader
+                    self._eval_dataset = self.cfg.EvalDataset
+                    self._eval_batch_sampler = \
+                        paddle.io.BatchSampler(
+                            self._eval_dataset,
+                            batch_size=self.cfg.EvalReader['batch_size'])
+                    self._eval_loader = create('EvalReader')(
+                        self._eval_dataset,
+                        self.cfg.worker_num,
+                        batch_sampler=self._eval_batch_sampler)
+                # if validation in training is enabled, metrics should be re-init
+                # Init_mark makes sure this code will only execute once
+                if validate and Init_mark == False:
+                    Init_mark = True
+                    self._init_metrics(validate=validate)
+                    self._reset_metrics()
+                with paddle.no_grad():
+                    self.status['save_best_model'] = True
+                    # 20220922 LC: before burn-in stage, eval student. after burn-in stage, eval teacher
+                    if self.iter <= self.cfg.SEMISUPNET['BURN_UP_STEP']:
+                        print("start eval student model")
+                        self._eval_with_loader(
+                            self._eval_loader, mode="student")
+                    else:
+                        print("start eval teacher model")
+                        self._eval_with_loader(
+                            self._eval_loader, mode="teacher")
+
+            epoch_id += 1
+
+        self._compose_callback.on_train_end(self.status)
+
+    def merge_data(self, data1, data2):
+        data = copy.deepcopy(data1)
+        for k, v in data1.items():
+            if type(v) is paddle.Tensor:
+                data[k] = paddle.concat(x=[data[k], data2[k]], axis=0)
+            elif type(v) is list:
+                data[k].extend(data2[k])
+        return data
+
+    def run_step_full_semisup(self, data):
+        label_data_k, label_data_q, unlabel_data_k, unlabel_data_q = data
+        data_merge = self.merge_data(label_data_k, label_data_q)
+        loss_sup_dict = self.model.modelStudent(data_merge, branch="supervised")
+        loss_dict = {}
+        for key in loss_sup_dict.keys():
+            if key[:4] == "loss":
+                loss_dict[key] = loss_sup_dict[key] * 1
+        losses_sup = paddle.add_n(list(loss_dict.values()))
+        # norm loss when using gradient accumulation
+        losses_sup = losses_sup / self.cfg.optimize_rate
+        losses_sup.backward()
+
+        for key in loss_sup_dict.keys():
+            loss_dict[key + "_pseudo"] = paddle.to_tensor([0])
+        loss_dict["loss_tot"] = losses_sup
+        """
+        semi-supervised training after burn-in stage
+        """
+        if self.iter >= self.cfg.SEMISUPNET['BURN_UP_STEP']:
+            # init teacher model with burn-up weight
+            if self.iter == self.cfg.SEMISUPNET['BURN_UP_STEP']:
+                print(
+                    'Starting semi-supervised learning and load the teacher model.'
+                )
+                self._update_teacher_model(keep_rate=0.00)
+                # save burn-in model
+                if dist.get_world_size() < 2 or dist.get_rank() == 0:
+                    print('saving burn-in model.')
+                    save_name = 'burnIn'
+                    epoch_id = self.iter // self.epoch_iter
+                    save_model(self.model, self.optimizer, self.base_path,
+                               save_name, epoch_id)
+            # Update teacher model with EMA
+            elif (self.iter + 1) % self.cfg.optimize_rate == 0:
+                self._update_teacher_model(
+                    keep_rate=self.cfg.SEMISUPNET['EMA_KEEP_RATE'])
+
+            # 20220723 warm-up weight for pseudo loss
+            pseudo_weight = self.cfg.SEMISUPNET['UNSUP_LOSS_WEIGHT']
+            pseudo_warmup_iter = self.cfg.SEMISUPNET['PSEUDO_WARM_UP_STEPS']
+            temp = self.iter - self.cfg.SEMISUPNET['BURN_UP_STEP']
+            if temp <= pseudo_warmup_iter:
+                pseudo_weight *= (temp / pseudo_warmup_iter)
+
+            # get teacher predictions on weak-augmented unlabeled data
+
+            with paddle.no_grad():
+                teacher_pred = self.model.modelTeacher(
+                    unlabel_data_k, branch='semi_supervised')
+
+            # calculate unsupervised loss on strong-augmented unlabeled data
+            loss_unsup_dict = self.model.modelStudent(
+                unlabel_data_q,
+                branch="semi_supervised",
+                teacher_prediction=teacher_pred, )
+
+            for key in loss_unsup_dict.keys():
+                if key[-6:] == "pseudo":
+                    loss_unsup_dict[key] = loss_unsup_dict[key] * pseudo_weight
+            losses_unsup = paddle.add_n(list(loss_unsup_dict.values()))
+            # norm loss when using gradient accumulation
+            losses_unsup = losses_unsup / self.cfg.optimize_rate
+            losses_unsup.backward()
+
+            loss_dict.update(loss_unsup_dict)
+            loss_dict["loss_tot"] += losses_unsup
+        return loss_dict
+
+    def _eval_with_loader(self, loader, mode="teacher"):
+        sample_num = 0
+        tic = time.time()
+        self._compose_callback.on_epoch_begin(self.status)
+        self.status['mode'] = 'eval'
+        # self.model.eval()
+        self.model.modelTeacher.eval()
+        self.model.modelStudent.eval()
+        if self.cfg.get('print_flops', False):
+            # flops_loader = create('{}Reader'.format(self.mode.capitalize()))(
+            #     self.dataset, self.cfg.worker_num, self._eval_batch_sampler)
+            # self._flops(flops_loader)
+            self._flops(loader)
+        for step_id, data in enumerate(loader):
+            self.status['step_id'] = step_id
+            self._compose_callback.on_step_begin(self.status)
+            # forward
+            # outs = self.model(data)
+            if mode == "teacher":
+                outs = self.model.modelTeacher(data)
+            else:
+                outs = self.model.modelStudent(data)
+
+            # update metrics
+            for metric in self._metrics:
+                metric.update(data, outs)
+
+            sample_num += data['im_id'].numpy().shape[0]
+            self._compose_callback.on_step_end(self.status)
+
+        self.status['sample_num'] = sample_num
+        self.status['cost_time'] = time.time() - tic
+
+        # accumulate metric to log out
+        for metric in self._metrics:
+            metric.accumulate()
+            metric.log()
+        self._compose_callback.on_epoch_end(self.status)
+        # reset metric states for metric may performed multiple times
+        self._reset_metrics()
+
+    def evaluate(self):
+        with paddle.no_grad():
+            self._eval_with_loader(self.loader)
+
+    def predict(self,
+                images,
+                draw_threshold=0.5,
+                output_dir='output',
+                save_txt=False):
+        self.dataset.set_images(images)
+        loader = create('TestReader')(self.dataset, 0)
+
+        imid2path = self.dataset.get_imid2path()
+
+        anno_file = self.dataset.get_anno()
+        clsid2catid, catid2name = get_categories(
+            self.cfg.metric, anno_file=anno_file)
+
+        # Run Infer 
+        self.status['mode'] = 'test'
+        self.model.modelTeacher.eval()
+        if self.cfg.get('print_flops', False):
+
+            self._flops(loader)
+        for step_id, data in enumerate(loader):
+            self.status['step_id'] = step_id
+            outs = self.model.modelTeacher(data)
+
+            for key in ['im_shape', 'scale_factor', 'im_id']:
+                outs[key] = data[key]
+            for key, value in outs.items():
+                if hasattr(value, 'numpy'):
+                    outs[key] = value.numpy()
+            batch_res = get_infer_results(outs, clsid2catid)
+            bbox_num = outs['bbox_num']
+
+            start = 0
+            for i, im_id in enumerate(outs['im_id']):
+                image_path = imid2path[int(im_id)]
+                image = Image.open(image_path).convert('RGB')
+                self.status['original_image'] = np.array(image.copy())
+
+                end = start + bbox_num[i]
+                bbox_res = batch_res['bbox'][start:end] \
+                        if 'bbox' in batch_res else None
+                mask_res = batch_res['mask'][start:end] \
+                        if 'mask' in batch_res else None
+                segm_res = batch_res['segm'][start:end] \
+                        if 'segm' in batch_res else None
+                keypoint_res = batch_res['keypoint'][start:end] \
+                        if 'keypoint' in batch_res else None
+                image = visualize_results(
+                    image, bbox_res, mask_res, segm_res, keypoint_res,
+                    int(im_id), catid2name, draw_threshold)
+                self.status['result_image'] = np.array(image.copy())
+                if self._compose_callback:
+                    self._compose_callback.on_step_end(self.status)
+                # save image with detection
+                save_name = self._get_save_image_name(output_dir, image_path)
+                logger.info("Detection bbox results save in {}".format(
+                    save_name))
+                image.save(save_name, quality=95)
+                if save_txt:
+                    save_path = os.path.splitext(save_name)[0] + '.txt'
+                    results = {}
+                    results["im_id"] = im_id
+                    if bbox_res:
+                        results["bbox_res"] = bbox_res
+                    if keypoint_res:
+                        results["keypoint_res"] = keypoint_res
+                    save_result(save_path, results, catid2name, draw_threshold)
+                start = end
+
+    def _get_save_image_name(self, output_dir, image_path):
+        """
+        Get save image name from source image path.
+        """
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        image_name = os.path.split(image_path)[-1]
+        name, ext = os.path.splitext(image_name)
+        return os.path.join(output_dir, "{}".format(name)) + ext
+
+    def export(self, output_dir='output_inference'):
+        self.model.eval()
+        model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
+        save_dir = os.path.join(output_dir, model_name)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        image_shape = None
+        test_reader_name = 'TestReader'
+        if 'inputs_def' in self.cfg[test_reader_name]:
+            inputs_def = self.cfg[test_reader_name]['inputs_def']
+            image_shape = inputs_def.get('image_shape', None)
+        # set image_shape=[3, -1, -1] as default
+        if image_shape is None:
+            image_shape = [3, -1, -1]
+
+        self.model.modelTeacher.eval()
+        if hasattr(self.model.modelTeacher, 'deploy'):
+            self.model.modelTeacher.deploy = True
+
+        # Save infer cfg
+        _dump_infer_config(self.cfg,
+                           os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
+                           self.model.modelTeacher)
+
+        input_spec = [{
+            "image": InputSpec(
+                shape=[None] + image_shape, name='image'),
+            "im_shape": InputSpec(
+                shape=[None, 2], name='im_shape'),
+            "scale_factor": InputSpec(
+                shape=[None, 2], name='scale_factor')
+        }]
+        if self.cfg.architecture == 'DeepSORT':
+            input_spec[0].update({
+                "crops": InputSpec(
+                    shape=[None, 3, 192, 64], name='crops')
+            })
+
+        static_model = paddle.jit.to_static(
+            self.model.modelTeacher, input_spec=input_spec)
+        # NOTE: dy2st do not pruned program, but jit.save will prune program
+        # input spec, prune input spec here and save with pruned input spec
+        pruned_input_spec = self._prune_input_spec(
+            input_spec, static_model.forward.main_program,
+            static_model.forward.outputs)
+
+        # dy2st and save model
+        if 'slim' not in self.cfg or self.cfg['slim_type'] != 'QAT':
+            paddle.jit.save(
+                static_model,
+                os.path.join(save_dir, 'model'),
+                input_spec=pruned_input_spec)
+        else:
+            self.cfg.slim.save_quantized_model(
+                self.model.modelTeacher,
+                os.path.join(save_dir, 'model'),
+                input_spec=pruned_input_spec)
+        logger.info("Export model and saved in {}".format(save_dir))
+
+    def _prune_input_spec(self, input_spec, program, targets):
+        # try to prune static program to figure out pruned input spec
+        # so we perform following operations in static mode
+        paddle.enable_static()
+        pruned_input_spec = [{}]
+        program = program.clone()
+        program = program._prune(targets=targets)
+        global_block = program.global_block()
+        for name, spec in input_spec[0].items():
+            try:
+                v = global_block.var(name)
+                pruned_input_spec[0][name] = spec
+            except Exception:
+                pass
+        paddle.disable_static()
+        return pruned_input_spec
+
+    def _flops(self, loader):
+        # self.model.eval()
+        self.model.modelTeacher.eval()
+        try:
+            import paddleslim
+        except Exception as e:
+            logger.warning(
+                'Unable to calculate flops, please install paddleslim, for example: `pip install paddleslim`'
+            )
+            return
+
+        from paddleslim.analysis import dygraph_flops as flops
+        input_data = None
+        for data in loader:
+            input_data = data
+            break
+
+        input_spec = [{
+            "image": input_data['image'][0].unsqueeze(0),
+            "im_shape": input_data['im_shape'][0].unsqueeze(0),
+            "scale_factor": input_data['scale_factor'][0].unsqueeze(0)
+        }]
+        # flops = flops(self.model, input_spec) / (1000**3)
+        flops = flops(self.model.modelTeacher, input_spec) / (1000**3)
+        logger.info(" Model FLOPs : {:.6f}G. (image shape is {})".format(
+            flops, input_data['image'][0].unsqueeze(0).shape))
+
+    @paddle.no_grad()
+    def _update_teacher_model(self, keep_rate=0.996):
+        student_model_dict = copy.deepcopy(self.model.modelStudent.state_dict())
+        new_teacher_dict = dict()
+        for key, value in self.model.modelTeacher.state_dict().items():
+            if key in student_model_dict.keys():
+                v = student_model_dict[key] * (1 - keep_rate
+                                               ) + value * keep_rate
+                v.stop_gradient = True
+                new_teacher_dict[key] = v
+            else:
+                raise Exception("{} is not found in student model".format(key))
+
+        self.model.modelTeacher.set_dict(new_teacher_dict)
+
+    # for two-stage detector, only select pseudo datas
+    # for one-stage detector, additionally perform pseudo assignment
+    def process_pseudo_label(self, proposal_bbox, cur_threshold,
+                             unlabel_samples):
+        proposal_bbox_pseudo = self.select_bbox(
+            proposal_bbox, thres=cur_threshold)
+        # for two-stage detector directly add pseudo datas as GT in unlabel data
+        if self.pseudo_assigment is None:
+            unlabel_samples = self.add_label(unlabel_samples,
+                                             proposal_bbox_pseudo)
+        # for one-stage detector which perform pseudo assignment here
+        else:
+            unlabel_samples = self.assign_pseudo_datas(unlabel_samples,
+                                                       proposal_bbox_pseudo)
+        return unlabel_samples
+
+    def assign_pseudo_datas(self, unlabel_samples, pseudo_bboxes):
+
+        assert len(pseudo_bboxes['gt_bbox']) == unlabel_samples['im_id'].shape[0], \
+        'Num of Unlabel Img must match the batch size of Pseudo Labels.'
+
+        unlabel_samples = self.add_label(unlabel_samples, pseudo_bboxes)
+        unlabel_samples = self.pseudo_assigment(unlabel_samples)
+
+        return unlabel_samples
+
+    def select_bbox(self, proposal_bbox_dict, thres=0.7):
+        proposal_bbox_tot = proposal_bbox_dict["bbox"].numpy()
+        proposal_bbox_num = proposal_bbox_dict["bbox_num"].numpy()
+        cur_num = 0
+        data = {}
+        data['is_crowd'] = []
+        data['gt_class'] = []
+        data['gt_bbox'] = []
+        for num in proposal_bbox_num:
+            num = int(num)
+            if num > 0:
+                proposal_bbox = proposal_bbox_tot[cur_num:cur_num + num]
+                cur_num += num
+                valid_map = proposal_bbox[:, 1] > thres
+                new_proposal_bbox = paddle.to_tensor(
+                    proposal_bbox[valid_map, 2:], 'float32')
+                new_proposal_cls = paddle.to_tensor(proposal_bbox[valid_map, 0])
+                if new_proposal_cls.shape[0] > 0:
+                    new_proposal_cls = paddle.cast(
+                        paddle.unsqueeze(
+                            new_proposal_cls, axis=[1]), 'int32')
+                    new_proposal_cls.stop_gradient = True
+                    new_proposal_bbox.stop_gradient = True
+                    data['gt_class'].append(paddle.to_tensor(new_proposal_cls))
+                    data['gt_bbox'].append(new_proposal_bbox)
+                    new_is_crowd = paddle.to_tensor(
+                        paddle.zeros_like(new_proposal_cls), 'int32')
+                    new_is_crowd.stop_gradient = True
+                    data['is_crowd'].append(new_is_crowd)
+                else:
+                    data['gt_class'].append(paddle.to_tensor([[-1]], 'int32'))
+                    data['gt_bbox'].append(
+                        paddle.to_tensor([[0, 0, 0, 0]], 'float32'))
+                    data['is_crowd'].append(paddle.to_tensor([[0]], 'int32'))
+
+            else:
+                data['gt_class'].append(paddle.to_tensor([[-1]], 'int32'))
+                data['gt_bbox'].append(
+                    paddle.to_tensor([[0, 0, 0, 0]], 'float32'))
+                data['is_crowd'].append(paddle.to_tensor([[0]], 'int32'))
+
+        return data
+
+    # show pseudo label
+    def show_label(self, sample, save_flag=True):
+
+        import cv2
+        base_path = './pseudo_visualization'
+        if not os.path.exists(base_path):
+            os.makedirs(base_path)
+        batch = sample['im_id'].shape[0]
+        invalid_bbox = paddle.to_tensor([[0, 0, 0, 0]], 'float32')
+        for i in range(batch):
+
+            # if no valid gt, skip img 
+            box_anns = sample.get('gt_bbox', None)[i]
+            if paddle.equal_all(box_anns, invalid_bbox):
+                continue
+
+            image = sample['image'][i].transpose([1, 2, 0]).numpy().copy()
+            img_mean = np.array(
+                [0.485, 0.456, 0.406])[np.newaxis, np.newaxis, :]
+            img_std = np.array([0.229, 0.224, 0.225])[np.newaxis, np.newaxis, :]
+            image = image * img_std
+            image = image + img_mean
+            image *= 255.0
+            img_id = sample.get('im_id', None)[i].item()
+            box_anns = box_anns.numpy()
+            img_name = '{:0>9d}.jpg'.format(img_id)
+            save_path = os.path.abspath(os.path.join(base_path, img_name))
+            #print('save_path:{}'.format(save_path))
+
+            ori_img_name = '{:0>9d}_ori.jpg'.format(img_id)
+            ori_save_path = os.path.abspath(
+                os.path.join(base_path, ori_img_name))
+            if save_flag:
+                print('saving original img {}'.format(img_name))
+                cv2.imwrite(ori_save_path, image)
+
+            num_bbox = box_anns.shape[0]
+            for j in range(num_bbox):
+                box_ann = box_anns[j]
+                xmin = int(box_ann[0])
+                ymin = int(box_ann[1])
+                xmax = int(box_ann[2])
+                ymax = int(box_ann[3])
+                print('valid bbox: {}'.format((xmin, ymin, xmax, ymax)))
+                print('img shape: {}'.format((image.shape)))
+                cv2.rectangle(
+                    image, (xmin, ymin), (xmax, ymax), (0, 255, 0), thickness=2)
+            if save_flag:
+                print('saving pseudo labels in img {}'.format(img_name))
+                cv2.imwrite(save_path, image)
+
+    def add_label(self, unlabled_data, label, show_flag=False):
+        unlabled_data['is_crowd'] = copy.deepcopy(label['is_crowd'])
+        unlabled_data['gt_class'] = copy.deepcopy(label['gt_class'])
+        unlabled_data['gt_bbox'] = copy.deepcopy(label['gt_bbox'])
+        # check pseudo label
+        if show_flag:
+            self.show_label(unlabled_data)
+
+        return unlabled_data
+
+
+class EnsembleTSModel(nn.Layer):
+    def __init__(self, modelTeacher, modelStudent):
+        super(EnsembleTSModel, self).__init__()
+        self.modelTeacher = modelTeacher
+        self.modelStudent = modelStudent

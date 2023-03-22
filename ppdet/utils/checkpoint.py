@@ -92,28 +92,35 @@ def load_weight(model, weight, optimizer=None, ema=None, exchange=True):
         ema_state_dict = None
         param_state_dict = paddle.load(pdparam_path)
 
-    model_dict = model.state_dict()
-    model_weight = {}
-    incorrect_keys = 0
+    if hasattr(model, 'modelTeacher') and hasattr(model, 'modelStudent'):
+        print('Loading pretrain weights for Teacher-Student framework.')
+        print('Loading pretrain weights for Student model.')
+        student_model_dict = model.modelStudent.state_dict()
+        student_param_state_dict = match_state_dict(
+            student_model_dict, param_state_dict, mode='student')
+        model.modelStudent.set_dict(student_param_state_dict)
+        print('Loading pretrain weights for Teacher model.')
+        teacher_model_dict = model.modelTeacher.state_dict()
 
-    for key, value in model_dict.items():
-        if key in param_state_dict.keys():
-            if isinstance(param_state_dict[key], np.ndarray):
-                param_state_dict[key] = paddle.to_tensor(param_state_dict[key])
-            if value.dtype == param_state_dict[key].dtype:
+        teacher_param_state_dict = match_state_dict(
+            teacher_model_dict, param_state_dict, mode='teacher')
+        model.modelTeacher.set_dict(teacher_param_state_dict)
+
+    else:
+        model_dict = model.state_dict()
+        model_weight = {}
+        incorrect_keys = 0
+        for key in model_dict.keys():
+            if key in param_state_dict.keys():
                 model_weight[key] = param_state_dict[key]
             else:
-                model_weight[key] = param_state_dict[key].astype(value.dtype)
-        else:
-            logger.info('Unmatched key: {}'.format(key))
-            incorrect_keys += 1
-
-    assert incorrect_keys == 0, "Load weight {} incorrectly, \
-            {} keys unmatched, please check again.".format(weight,
-                                                           incorrect_keys)
-    logger.info('Finish resuming model weights: {}'.format(pdparam_path))
-
-    model.set_dict(model_weight)
+                logger.info('Unmatched key: {}'.format(key))
+                incorrect_keys += 1
+        assert incorrect_keys == 0, "Load weight {} incorrectly, \
+                {} keys unmatched, please check again.".format(weight,
+                                                               incorrect_keys)
+        logger.info('Finish resuming model weights: {}'.format(pdparam_path))
+        model.set_dict(model_weight)
 
     last_epoch = 0
     if optimizer is not None and os.path.exists(path + '.pdopt'):
@@ -134,16 +141,16 @@ def load_weight(model, weight, optimizer=None, ema=None, exchange=True):
     return last_epoch
 
 
-def match_state_dict(model_state_dict, weight_state_dict):
+def match_state_dict(model_state_dict, weight_state_dict, mode='default'):
     """
     Match between the model state dict and pretrained weight state dict.
     Return the matched state dict.
 
     The method supposes that all the names in pretrained weight state dict are
     subclass of the names in models`, if the prefix 'backbone.' in pretrained weight
-    keys is stripped. And we could get the candidates for each model key. Then we
+    keys is stripped. And we could get the candidates for each model key. Then we 
     select the name with the longest matched size as the final match result. For
-    example, the model state dict has the name of
+    example, the model state dict has the name of 
     'backbone.res2.res2a.branch2a.conv.weight' and the pretrained weight as
     name of 'res2.res2a.branch2a.conv.weight' and 'branch2a.conv.weight'. We
     match the 'res2.res2a.branch2a.conv.weight' to the model key.
@@ -152,33 +159,52 @@ def match_state_dict(model_state_dict, weight_state_dict):
     model_keys = sorted(model_state_dict.keys())
     weight_keys = sorted(weight_state_dict.keys())
 
+    def teacher_match(a, b):
+        # skip student params
+        if b.startswith('modelStudent'):
+            return False
+        return a == b or a.endswith("." + b) or b.endswith("." + a)
+
+    def student_match(a, b):
+        # skip teacher params
+        if b.startswith('modelTeacher'):
+            return False
+        return a == b or a.endswith("." + b) or b.endswith("." + a)
+
     def match(a, b):
-        if b.startswith('backbone.res5'):
-            # In Faster RCNN, res5 pretrained weights have prefix of backbone,
-            # however, the corresponding model weights have difficult prefix,
-            # bbox_head.
+        if a.startswith('backbone.res5'):
+
             b = b[9:]
+
         return a == b or a.endswith("." + b)
+        #return a == b
+
+    # 20220706 select match type
+
+    if mode == 'student':
+        match_op = student_match
+    elif mode == 'teacher':
+        match_op = teacher_match
+    else:
+        match_op = match
 
     match_matrix = np.zeros([len(model_keys), len(weight_keys)])
     for i, m_k in enumerate(model_keys):
         for j, w_k in enumerate(weight_keys):
-            if match(m_k, w_k):
+            if match_op(m_k, w_k):
                 match_matrix[i, j] = len(w_k)
     max_id = match_matrix.argmax(1)
     max_len = match_matrix.max(1)
     max_id[max_len == 0] = -1
-
-    load_id = set(max_id)
-    load_id.discard(-1)
     not_load_weight_name = []
-    for idx in range(len(weight_keys)):
-        if idx not in load_id:
-            not_load_weight_name.append(weight_keys[idx])
 
+    for match_idx in range(len(max_id)):
+        if max_id[match_idx] == -1:
+            not_load_weight_name.append(model_keys[match_idx])
     if len(not_load_weight_name) > 0:
-        logger.info('{} in pretrained weight is not used in the model, '
-                    'and its will not be loaded'.format(not_load_weight_name))
+        logger.info('{} in model is not matched with pretrained weights, '
+                    'and its will be trained from scratch'.format(
+                        not_load_weight_name))
     matched_keys = {}
     result_state_dict = {}
     for model_id, weight_id in enumerate(max_id):
@@ -188,6 +214,30 @@ def match_state_dict(model_state_dict, weight_state_dict):
         weight_key = weight_keys[weight_id]
         weight_value = weight_state_dict[weight_key]
         model_value_shape = list(model_state_dict[model_key].shape)
+
+        #interpolate pretrained position embedding
+        if 'pos_embed' in model_key and 'pos_embed' in weight_key:
+            model_value = model_state_dict[model_key]
+
+            if len(weight_value.shape) == 3 and len(model_value.shape) == 4:
+                _, m_emd_dim, H, W = model_value.shape
+                _, L, w_emd_dim = weight_value.shape
+                assert w_emd_dim == m_emd_dim, 'embed dim doesnot match'
+                num_cls_token = 1
+                if (L - num_cls_token) != H * W:
+                    print(
+                        'interpolate pretrained position embedding from {} to {}*{}'.
+                        format(L, H, W))
+                    ori_size = int((L - num_cls_token)**0.5)
+                    weight_value = weight_value[:, num_cls_token:, :]
+                    weight_value = weight_value.reshape(
+                        [-1, ori_size, ori_size, w_emd_dim]).transpose(
+                            [0, 3, 1, 2])
+                    import paddle.nn.functional as F
+                    if type(weight_value) is np.ndarray:
+                        weight_value = paddle.to_tensor(weight_value)
+                    weight_value = F.interpolate(
+                        weight_value, size=(H, W), mode='bicubic')
 
         if list(weight_value.shape) != model_value_shape:
             logger.info(
