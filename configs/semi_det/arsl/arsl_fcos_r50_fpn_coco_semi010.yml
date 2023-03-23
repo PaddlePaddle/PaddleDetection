@@ -1,5 +1,5 @@
 _BASE_: [
-  '../_base_/coco_detection_percent_full.yml',
+  '../_base_/coco_detection_percent_10.yml',
   '../../runtime.yml',
   '_base_/fcos_r50_fpn_arsl.yml',
   '_base_/optimizer_360k.yml',
