@@ -269,8 +269,14 @@ def load_pretrain_weight(model, pretrain_weight):
                          "If you don't want to load pretrain model, "
                          "please delete `pretrain_weights` field in "
                          "config file.".format(path))
-
-    model_dict = model.state_dict()
+    teacher_student_flag = False
+    if hasattr(model, 'modelTeacher') and hasattr(model, 'modelStudent'):
+        print('Loading pretrain weights for Teacher-Student framework.')
+        print('Assert Teacher model has the same structure with Student model.')
+        model_dict = model.modelStudent.state_dict()
+        teacher_student_flag = True
+    else:
+        model_dict = model.state_dict()
 
     weights_path = path + '.pdparams'
     param_state_dict = paddle.load(weights_path)
@@ -282,7 +288,11 @@ def load_pretrain_weight(model, pretrain_weight):
         if model_dict[k].dtype != v.dtype:
             param_state_dict[k] = v.astype(model_dict[k].dtype)
 
-    model.set_dict(param_state_dict)
+    if teacher_student_flag:
+        model.modelStudent.set_dict(param_state_dict)
+        model.modelTeacher.set_dict(param_state_dict)
+    else:
+        model.set_dict(param_state_dict)
     logger.info('Finish loading model weights: {}'.format(weights_path))
 
 
