@@ -27,8 +27,8 @@ SemiTrainReader:
   unsup_batch_transforms:
     - Permute: {}
     - PadBatch: {pad_to_stride: 32}
-  sup_batch_size: 4
-  unsup_batch_size: 4
+  sup_batch_size: 2
+  unsup_batch_size: 2
   shuffle: True
   drop_last: True
 

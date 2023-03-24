@@ -1,4 +1,4 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+# Copyright (c) 2023 PaddlePaddle Authors. All Rights Reserved. 
 #   
 # Licensed under the Apache License, Version 2.0 (the "License");   
 # you may not use this file except in compliance with the License.  
@@ -19,15 +19,12 @@ from __future__ import print_function
 import paddle
 from ppdet.core.workspace import register, create
 from ppdet.modeling.architectures.meta_arch import BaseArch
-import paddle.nn.functional as F
 
-import time
-
-__all__ = ['FCOS_SSOD_ARSL']
+__all__ = ['ARSL_SSOD_FCOS']
 
 
 @register
-class FCOS_SSOD_ARSL(BaseArch):
+class ARSL_SSOD_FCOS(BaseArch):
     """
     FCOS network, see https://arxiv.org/abs/1904.01355
 
@@ -47,8 +44,8 @@ class FCOS_SSOD_ARSL(BaseArch):
                  fcos_head='FCOSHead_SSOD',
                  fcos_post_process='FCOSPostProcess',
                  fcos_cr_loss=None):
-        super(FCOS_SSOD_ARSL, self).__init__()
-        print('FCOS_SSOD_ARSL class')
+        super(ARSL_SSOD_FCOS, self).__init__()
+        print('ARSL_SSOD_FCOS class')
         self.backbone = backbone
         self.neck = neck
         self.fcos_head = fcos_head

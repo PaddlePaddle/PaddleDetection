@@ -21,6 +21,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from ppdet.modeling import ops
+from functools import partial
 
 __all__ = ['FCOSLoss', 'FCOSLossMILC', 'FCOSLossCR']
 
@@ -388,18 +389,9 @@ class FCOSLossMILC(FCOSLoss):
         assert pred.shape == target.shape
         pred = F.sigmoid(pred)
         target = target.cast(pred.dtype)
-        # implicit iou
+
         if implicit_iou is not None:
             pred = pred * implicit_iou
-        # focal weight
-        # if iou_weighted:
-        #     focal_weight = target * (target > 0.0).cast('float32') + \
-        #         alpha * (pred - target).abs().pow(gamma) * \
-        #         (target <= 0.0).cast('float32')
-        # else:
-        #     focal_weight = (target > 0.0).cast('float32') + \
-        #         alpha * (pred - target).abs().pow(gamma) * \
-        #         (target <= 0.0).cast('float32')
 
         if iou_weighted:
             focal_weight = (pred - target).abs().pow(gamma) * target * (target > 0.0).cast('float32') + \
@@ -444,7 +436,7 @@ class FCOSLossMILC(FCOSLoss):
         tag_bboxes_flatten_list = []
         tag_center_flatten_list = []
         num_lvl = len(cls_logits)
-        # LC flatten batch*H*W in  level 
+
         for lvl in range(num_lvl):
             cls_logits_flatten_list.append(
                 flatten_tensor(cls_logits[lvl], True))
@@ -460,7 +452,6 @@ class FCOSLossMILC(FCOSLoss):
             tag_center_flatten_list.append(
                 flatten_tensor(tag_center[lvl], False))
 
-        # LC concate multi-level
         cls_logits_flatten = paddle.concat(cls_logits_flatten_list, axis=0)
         bboxes_reg_flatten = paddle.concat(bboxes_reg_flatten_list, axis=0)
         centerness_flatten = paddle.concat(centerness_flatten_list, axis=0)
@@ -910,7 +901,7 @@ class FCOSLossCR(FCOSLossMILC):
             candidate_score_mean = candidate_score.mean()
             candidate_score_std = candidate_score.std()
             pos_thresh = (candidate_score_mean + candidate_score_std).clip(
-                max=0.4)  #max=0.4 wjmadd perimage 不同的阈值
+                max=0.4)
             # select pos
             pos_ind = paddle.nonzero(max_vals >= pos_thresh).squeeze(axis=-1)
             num_pos = pos_ind.shape[0]

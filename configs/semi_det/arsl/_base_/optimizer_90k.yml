@@ -9,9 +9,9 @@ LearningRate:
     start_factor: 0.3333333333333333
     steps: 1000
 
-max_iter: 90000 #90000 # 90k for 32 batch, 180k for 16b tach
+max_iter: 90000 # 90k for 32 batch, 180k for 16b tach
 epoch_iter: 3000 # set epoch_iter for saving checkpoint and eval
-# 20230210 update student params according to loss_grad every X iter.
+# update student params according to loss_grad every X iter.
 optimize_rate: 1
 SEMISUPNET:
   BBOX_THRESHOLD: 0.5 # not used

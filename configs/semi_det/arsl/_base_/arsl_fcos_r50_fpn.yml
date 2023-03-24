@@ -1,7 +1,7 @@
-architecture: FCOS_SSOD_ARSL
+architecture: ARSL_SSOD_FCOS
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
 
-FCOS_SSOD_ARSL:
+ARSL_SSOD_FCOS:
   backbone: ResNet
   neck: FPN
   fcos_head: FCOSHead_SSOD

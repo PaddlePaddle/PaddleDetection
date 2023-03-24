@@ -17,9 +17,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import errno
 import os
-import time
 import numpy as np
 import paddle
 import paddle.nn as nn
@@ -38,21 +36,6 @@ def is_url(path):
     return path.startswith('http://') \
             or path.startswith('https://') \
             or path.startswith('ppdet://')
-
-
-def _get_unique_endpoints(trainer_endpoints):
-    # Sorting is to avoid different environmental variables for each card
-    trainer_endpoints.sort()
-    ips = set()
-    unique_endpoints = set()
-    for endpoint in trainer_endpoints:
-        ip = endpoint.split(":")[0]
-        if ip in ips:
-            continue
-        ips.add(ip)
-        unique_endpoints.add(endpoint)
-    logger.info("unique_endpoints {}".format(unique_endpoints))
-    return unique_endpoints
 
 
 def _strip_postfix(path):
@@ -177,9 +160,6 @@ def match_state_dict(model_state_dict, weight_state_dict, mode='default'):
             b = b[9:]
 
         return a == b or a.endswith("." + b)
-        #return a == b
-
-    #select match type
 
     if mode == 'student':
         match_op = student_match
