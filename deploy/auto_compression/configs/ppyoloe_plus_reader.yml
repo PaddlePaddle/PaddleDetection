@@ -6,13 +6,13 @@ TrainDataset:
   !COCODataSet
     image_dir: train2017
     anno_path: annotations/instances_train2017.json
-    dataset_dir: /paddle/zhouhao21_workspace/data/coco
+    dataset_dir: dataset/coco
 
 EvalDataset:
   !COCODataSet
     image_dir: val2017
     anno_path: annotations/instances_val2017.json
-    dataset_dir: /paddle/zhouhao21_workspace/data/coco
+    dataset_dir: dataset/coco
 
 worker_num: 0
 

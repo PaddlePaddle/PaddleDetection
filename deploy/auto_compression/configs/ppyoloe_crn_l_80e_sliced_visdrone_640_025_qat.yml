@@ -5,8 +5,7 @@ Global:
   arch: YOLO
   include_nms: True
   Evaluation: True
-  #model_dir: ../../output_inference/ppyoloe_crn_l_80e_sliced_visdrone_640_025
-  model_dir: /paddle/zhouhao21_workspace/code/PaddleDetection/deploy/auto_compression/add_arch/
+  model_dir: ../../output_inference/ppyoloe_crn_l_80e_sliced_visdrone_640_025
   model_filename: model.pdmodel
   params_filename: model.pdiparams
 
