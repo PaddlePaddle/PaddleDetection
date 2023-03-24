@@ -17,4 +17,4 @@ EvalDataset:
 TestDataset:
   !ImageFolder
     anno_path: val_640_025.json
-    dataset_dir: /paddle/zhouhao21_workspace/data/visdrone_sliced
+    dataset_dir: dataset/visdrone_sliced

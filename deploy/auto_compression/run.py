@@ -17,7 +17,6 @@ import sys
 import numpy as np
 import argparse
 import paddle
-
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.core.workspace import create
 from ppdet.metrics import COCOMetric, VOCMetric, KeyPointTopDownCOCOEval
