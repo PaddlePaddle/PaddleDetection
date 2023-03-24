@@ -59,19 +59,6 @@ FCOSPostProcess:
   norm_reg_targets: true
   centerness_on_reg: true
 
-# 20220705 move assignment from BatchCompose to FCOS.getloss()
-# Gt2FCOSTarget_SSOD:
-#   object_sizes_boundary: [64, 128, 256, 512]
-#   center_sampling_radius: 1.5
-#   downsample_ratios: [8, 16, 32, 64, 128]
-#   norm_reg_targets: True
-
-# FCOSLoss:
-#   loss_alpha: 0.25
-#   loss_gamma: 2.0
-#   iou_loss_type: "giou"
-#   reg_weights: 1.0
-
 FCOSLossMILC:
   loss_alpha: 0.25
   loss_gamma: 2.0
