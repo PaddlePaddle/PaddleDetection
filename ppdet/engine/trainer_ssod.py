@@ -488,6 +488,7 @@ class Trainer_ARSL(Trainer):
         self.optimizer = None
         self.is_loaded_weights = False
         capital_mode = self.mode.capitalize()
+        self.use_ema = False
         self.dataset = self.cfg['{}Dataset'.format(capital_mode)] = create(
             '{}Dataset'.format(capital_mode))()
         if self.mode == 'train':

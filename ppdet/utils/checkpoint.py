@@ -316,21 +316,24 @@ def save_model(model,
     """
     if paddle.distributed.get_rank() != 0:
         return
-    assert isinstance(model, dict), ("model is not a instance of dict, "
-                                     "please call model.state_dict() to get.")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_path = os.path.join(save_dir, save_name)
     # save model
-    if ema_model is None:
-        paddle.save(model, save_path + ".pdparams")
+    if isinstance(model, nn.Layer):
+        paddle.save(model.state_dict(), save_path + ".pdparams")
     else:
-        assert isinstance(ema_model,
-                          dict), ("ema_model is not a instance of dict, "
-                                  "please call model.state_dict() to get.")
-        # Exchange model and ema_model to save
-        paddle.save(ema_model, save_path + ".pdparams")
-        paddle.save(model, save_path + ".pdema")
+        assert isinstance(model,
+                          dict), 'model is not a instance of nn.layer or dict'
+        if ema_model is None:
+            paddle.save(model, save_path + ".pdparams")
+        else:
+            assert isinstance(ema_model,
+                              dict), ("ema_model is not a instance of dict, "
+                                      "please call model.state_dict() to get.")
+            # Exchange model and ema_model to save
+            paddle.save(ema_model, save_path + ".pdparams")
+            paddle.save(model, save_path + ".pdema")
     # save optimizer
     state_dict = optimizer.state_dict()
     state_dict['last_epoch'] = last_epoch

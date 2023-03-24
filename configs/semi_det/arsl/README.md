@@ -8,9 +8,9 @@
 | :------------: | :---------:|:----------------------------: | :------------------: |:--------: |:----------: |
 | ARSL-FCOS     |    1% |  **22.8**  | 240 (87120)   | [download](https://paddledet.bj.bcebos.com/models/fcos_r50_fpn_arsl_coco_semi001.pdparams) | [config](./arsl_fcos_r50_fpn_coco_semi001.yml) |
 | ARSL-FCOS     |    5% |  **33.1**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/fcos_r50_fpn_arsl_coco_semi005.pdparams) | [config](./arsl_fcos_r50_fpn_coco_semi005.yml ) |
-| ARSL-FCOS(LSJ)|   10% |  **36.9**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/fcos_r50_fpn_arsl_coco_semi010.pdparams) | [config](./arsl_fcos_r50_fpn_coco_semi010.yml ) |
-
-
+| ARSL-FCOS|   10% |  **36.9**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/fcos_r50_fpn_arsl_coco_semi010.pdparams) | [config](./arsl_fcos_r50_fpn_coco_semi010.yml ) |
+| ARSL-FCOS|   10% |  **38.5(LSJ)**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/fcos_r50_fpn_arsl_coco_semi010_lsj.pdparams) | [config](./arsl_fcos_r50_fpn_coco_semi010.yml ) |
+| ARSL-FCOS|   FULL |  **45.1**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/fcos_r50_fpn_arsl_coco_full.pdparams) | [config](./arsl_fcos_r50_fpn_coco_full.yml ) |
 ### 训练
 
 ```bash
