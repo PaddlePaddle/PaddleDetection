@@ -15,8 +15,8 @@
 
 ```bash
 # 单卡训练 (不推荐，需按线性比例相应地调整学习率)
-CUDA_VISIBLE_DEVICES=0 python tools/train.py -c configs/semi_det/SSOD_arsl/arsl_fcos_r50_fpn_coco_semi010.yml --eval
+CUDA_VISIBLE_DEVICES=0 python tools/train.py -c configs/semi_det/arsl/arsl_fcos_r50_fpn_coco_semi010.yml --eval
 
 # 多卡训练
-python -m paddle.distributed.launch --log_dir=denseteacher_fcos_semi010/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/semi_det/SSOD_arsl/arsl_fcos_r50_fpn_coco_semi010.yml --eval
+python -m paddle.distributed.launch --log_dir=denseteacher_fcos_semi010/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/semi_det/arsl/arsl_fcos_r50_fpn_coco_semi010.yml --eval
 ```
