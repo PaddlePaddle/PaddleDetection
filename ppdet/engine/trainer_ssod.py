@@ -38,7 +38,6 @@ from ppdet.modeling.ssod.utils import align_weak_strong_shape
 from .trainer import Trainer
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval
 from ppdet.utils.logger import setup_logger
-from ppdet.engine.export_utils import _dump_infer_config, _prune_input_spec
 logger = setup_logger('ppdet.engine')
 
 __all__ = ['Trainer_DenseTeacher', 'Trainer_ARSL']
@@ -886,65 +885,6 @@ class Trainer_ARSL(Trainer):
         image_name = os.path.split(image_path)[-1]
         name, ext = os.path.splitext(image_name)
         return os.path.join(output_dir, "{}".format(name)) + ext
-
-    def export(self, output_dir='output_inference'):
-        self.model.eval()
-        model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
-        save_dir = os.path.join(output_dir, model_name)
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        image_shape = None
-        test_reader_name = 'TestReader'
-        if 'inputs_def' in self.cfg[test_reader_name]:
-            inputs_def = self.cfg[test_reader_name]['inputs_def']
-            image_shape = inputs_def.get('image_shape', None)
-        # set image_shape=[3, -1, -1] as default
-        if image_shape is None:
-            image_shape = [3, -1, -1]
-
-        self.model.modelTeacher.eval()
-        if hasattr(self.model.modelTeacher, 'deploy'):
-            self.model.modelTeacher.deploy = True
-
-        # Save infer cfg
-        _dump_infer_config(self.cfg,
-                           os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
-                           self.model.modelTeacher)
-
-        input_spec = [{
-            "image": InputSpec(
-                shape=[None] + image_shape, name='image'),
-            "im_shape": InputSpec(
-                shape=[None, 2], name='im_shape'),
-            "scale_factor": InputSpec(
-                shape=[None, 2], name='scale_factor')
-        }]
-        if self.cfg.architecture == 'DeepSORT':
-            input_spec[0].update({
-                "crops": InputSpec(
-                    shape=[None, 3, 192, 64], name='crops')
-            })
-
-        static_model = paddle.jit.to_static(
-            self.model.modelTeacher, input_spec=input_spec)
-        # NOTE: dy2st do not pruned program, but jit.save will prune program
-        # input spec, prune input spec here and save with pruned input spec
-        pruned_input_spec = self._prune_input_spec(
-            input_spec, static_model.forward.main_program,
-            static_model.forward.outputs)
-
-        # dy2st and save model
-        if 'slim' not in self.cfg or self.cfg['slim_type'] != 'QAT':
-            paddle.jit.save(
-                static_model,
-                os.path.join(save_dir, 'model'),
-                input_spec=pruned_input_spec)
-        else:
-            self.cfg.slim.save_quantized_model(
-                self.model.modelTeacher,
-                os.path.join(save_dir, 'model'),
-                input_spec=pruned_input_spec)
-        logger.info("Export model and saved in {}".format(save_dir))
 
     def _prune_input_spec(self, input_spec, program, targets):
         # try to prune static program to figure out pruned input spec
