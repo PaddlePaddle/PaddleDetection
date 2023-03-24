@@ -22,7 +22,6 @@ import numpy as np
 import paddle
 from paddle.inference import Config
 from paddle.inference import create_predictor
-sys.path.append("/paddle/zhouhao21_workspace/code/PaddleDetection")
 from ppdet.core.workspace import load_config, create
 from ppdet.metrics import COCOMetric
 
