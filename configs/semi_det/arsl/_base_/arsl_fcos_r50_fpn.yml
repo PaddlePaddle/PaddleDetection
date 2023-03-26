@@ -1,10 +1,10 @@
-architecture: ARSL_SSOD_FCOS
+architecture: ARSL_FCOS
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
 
-ARSL_SSOD_FCOS:
+ARSL_FCOS:
   backbone: ResNet
   neck: FPN
-  fcos_head: FCOSHead_SSOD
+  fcos_head: FCOSHead_ARSL
   fcos_cr_loss: FCOSLossCR
 
 
@@ -22,8 +22,7 @@ FPN:
   has_extra_convs: true
   use_c5: false
 
-
-FCOSHead_SSOD:
+FCOSHead_ARSL:
   fcos_feat:
     name: FCOSFeat
     feat_in: 256
@@ -31,12 +30,16 @@ FCOSHead_SSOD:
     num_convs: 4
     norm_type: "gn"
     use_dcn: false
-  num_classes: 80
   fpn_stride: [8, 16, 32, 64, 128]
   prior_prob: 0.01
-  fcos_loss: FCOSLossMILC #FCOSLoss
-  norm_reg_targets: true
-  centerness_on_reg: true
+  norm_reg_targets: True
+  centerness_on_reg: True
+  fcos_loss:
+    name: FCOSLossMILC
+    loss_alpha: 0.25
+    loss_gamma: 2.0
+    iou_loss_type: "giou"
+    reg_weights: 1.0
   nms:
     name: MultiClassNMS
     nms_top_k: 1000
@@ -44,26 +47,6 @@ FCOSHead_SSOD:
     score_threshold: 0.025
     nms_threshold: 0.6
 
-FCOSPostProcess:
-  fcos_feat:
-    name: FCOSFeat
-    feat_in: 256
-    feat_out: 256
-    num_convs: 4
-    norm_type: "gn"
-    use_dcn: false
-  num_classes: 80
-  fpn_stride: [8, 16, 32, 64, 128]
-  prior_prob: 0.01
-  fcos_loss: FCOSLossMILC #FCOSLoss
-  norm_reg_targets: true
-  centerness_on_reg: true
-
-FCOSLossMILC:
-  loss_alpha: 0.25
-  loss_gamma: 2.0
-  iou_loss_type: "giou"
-  reg_weights: 1.0
 
 FCOSLossCR:
   iou_loss_type: "giou"

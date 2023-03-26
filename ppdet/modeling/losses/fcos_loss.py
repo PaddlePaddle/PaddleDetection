@@ -267,7 +267,7 @@ class FCOSLoss(nn.Layer):
 @register
 class FCOSLossMILC(FCOSLoss):
     """
-    FCOSLoss
+    FCOSLossMILC for ARSL in semi-det(ssod)
     Args:
         loss_alpha (float): alpha in focal loss
         loss_gamma (float): gamma in focal loss
@@ -365,11 +365,6 @@ class FCOSLossMILC(FCOSLoss):
         ith = paddle.minimum(pth, tth)
         ibh = paddle.minimum(pbh, tbh)
 
-        clw = paddle.maximum(plw, tlw)
-        crw = paddle.maximum(prw, trw)
-        cth = paddle.maximum(pth, tth)
-        cbh = paddle.maximum(pbh, tbh)
-
         area_predict = (plw + prw) * (pth + pbh)
         area_target = (tlw + trw) * (tth + tbh)
         area_inter = (ilw + irw) * (ith + ibh)
@@ -436,7 +431,6 @@ class FCOSLossMILC(FCOSLoss):
         tag_bboxes_flatten_list = []
         tag_center_flatten_list = []
         num_lvl = len(cls_logits)
-
         for lvl in range(num_lvl):
             cls_logits_flatten_list.append(
                 flatten_tensor(cls_logits[lvl], True))
@@ -479,7 +473,7 @@ class FCOSLossMILC(FCOSLoss):
         normalize_sum = paddle.sum(tag_center_flatten * mask_positive_float)
         normalize_sum.stop_gradient = True
 
-        ### IoU-Based soft label loss
+        # 1. IoU-Based soft label loss
         # calculate iou
         with paddle.no_grad():
             pos_ind = paddle.nonzero(
@@ -487,10 +481,8 @@ class FCOSLossMILC(FCOSLoss):
             pos_pred = bboxes_reg_flatten[pos_ind]
             pos_target = tag_bboxes_flatten[pos_ind]
             bbox_iou = self._bbox_overlap_align(pos_pred, pos_target)
-            #print('mean iou:{}'.format(bbox_iou.mean().item()))
         # pos labels
         pos_labels = tag_labels_flatten[pos_ind].squeeze(1)
-        # iou-based cls target, stop_gradient=True
         cls_target = paddle.zeros(cls_logits_flatten.shape)
         cls_target[pos_ind, pos_labels - 1] = bbox_iou
         cls_loss = self.iou_based_soft_label_loss(
@@ -509,7 +501,7 @@ class FCOSLossMILC(FCOSLoss):
             weights=tag_center_flatten)
         reg_loss = reg_loss * mask_positive_float / normalize_sum
 
-        #iou loss
+        # 3. iou loss
         pos_iou_pred = paddle.squeeze(centerness_flatten, axis=-1)[pos_ind]
         loss_iou = ops.sigmoid_cross_entropy_with_logits(pos_iou_pred, bbox_iou)
         loss_iou = loss_iou / num_positive_fp32 * 0.5
@@ -517,13 +509,13 @@ class FCOSLossMILC(FCOSLoss):
         loss_all = {
             "loss_cls": paddle.sum(cls_loss),
             "loss_box": paddle.sum(reg_loss),
-            'loss_iou': paddle.sum(loss_iou)
+            'loss_iou': paddle.sum(loss_iou),
         }
 
         return loss_all
 
 
-    #Concat multi-level feature maps by image
+# Concat multi-level feature maps by image
 def levels_to_images(mlvl_tensor):
     batch_size = mlvl_tensor[0].shape[0]
     batch_list = [[] for _ in range(batch_size)]
@@ -562,9 +554,6 @@ def multi_apply(func, *args, **kwargs):
 class FCOSLossCR(FCOSLossMILC):
     """
     FCOSLoss of Consistency Regularization
-    Args:
-        iou_loss_type (str): location loss type, IoU/GIoU/LINEAR_IoU
-        reg_weights (float): weight for location loss
     """
 
     def __init__(self,
@@ -659,17 +648,11 @@ class FCOSLossCR(FCOSLossMILC):
         ith = paddle.minimum(pth, tth)
         ibh = paddle.minimum(pbh, tbh)
 
-        clw = paddle.maximum(plw, tlw)
-        crw = paddle.maximum(prw, trw)
-        cth = paddle.maximum(pth, tth)
-        cbh = paddle.maximum(pbh, tbh)
-
         area_predict = (plw + prw) * (pth + pbh)
         area_target = (tlw + trw) * (tth + tbh)
         area_inter = (ilw + irw) * (ith + ibh)
         ious = (area_inter + 1.0) / (
             area_predict + area_target - area_inter + 1.0)
-
         return ious
 
     # cls loss: iou-based soft lable with joint iou
@@ -681,7 +664,6 @@ class FCOSLossCR(FCOSLossMILC):
                            alpha=0.75,
                            gamma=2.0,
                            avg_factor='sum'):
-
         stu_cls = F.sigmoid(stu_cls)
         if quality is not None:
             stu_cls = stu_cls * F.sigmoid(quality)
@@ -768,7 +750,6 @@ class FCOSLossCR(FCOSLossMILC):
                         loc_mask,
                         loc_targets,
                         iou_thresh=0.6):
-
         # get points locations and strides
         points_list = []
         strides_list = []
@@ -950,7 +931,6 @@ class FCOSLossCR(FCOSLossMILC):
                cls_targets, loc_targets, iou_targets
 
     def forward(self, student_prediction, teacher_prediction):
-
         stu_cls_lvl, stu_loc_lvl, stu_iou_lvl = student_prediction
         tea_cls_lvl, tea_loc_lvl, tea_iou_lvl, self.fpn_stride = teacher_prediction
 
@@ -1035,6 +1015,6 @@ class FCOSLossCR(FCOSLossMILC):
         loss_all = {
             "loss_cls": loss_cls,
             "loss_box": loss_box,
-            "loss_iou": loss_iou
+            "loss_iou": loss_iou,
         }
         return loss_all

@@ -131,9 +131,9 @@ def match_state_dict(model_state_dict, weight_state_dict, mode='default'):
 
     The method supposes that all the names in pretrained weight state dict are
     subclass of the names in models`, if the prefix 'backbone.' in pretrained weight
-    keys is stripped. And we could get the candidates for each model key. Then we 
+    keys is stripped. And we could get the candidates for each model key. Then we
     select the name with the longest matched size as the final match result. For
-    example, the model state dict has the name of 
+    example, the model state dict has the name of
     'backbone.res2.res2a.branch2a.conv.weight' and the pretrained weight as
     name of 'res2.res2a.branch2a.conv.weight' and 'branch2a.conv.weight'. We
     match the 'res2.res2a.branch2a.conv.weight' to the model key.
@@ -155,10 +155,11 @@ def match_state_dict(model_state_dict, weight_state_dict, mode='default'):
         return a == b or a.endswith("." + b) or b.endswith("." + a)
 
     def match(a, b):
-        if a.startswith('backbone.res5'):
-
+        if b.startswith('backbone.res5'):
+            # In Faster RCNN, res5 pretrained weights have prefix of backbone,
+            # however, the corresponding model weights have difficult prefix,
+            # bbox_head.
             b = b[9:]
-
         return a == b or a.endswith("." + b)
 
     if mode == 'student':
@@ -194,30 +195,6 @@ def match_state_dict(model_state_dict, weight_state_dict, mode='default'):
         weight_key = weight_keys[weight_id]
         weight_value = weight_state_dict[weight_key]
         model_value_shape = list(model_state_dict[model_key].shape)
-
-        #interpolate pretrained position embedding
-        if 'pos_embed' in model_key and 'pos_embed' in weight_key:
-            model_value = model_state_dict[model_key]
-
-            if len(weight_value.shape) == 3 and len(model_value.shape) == 4:
-                _, m_emd_dim, H, W = model_value.shape
-                _, L, w_emd_dim = weight_value.shape
-                assert w_emd_dim == m_emd_dim, 'embed dim doesnot match'
-                num_cls_token = 1
-                if (L - num_cls_token) != H * W:
-                    print(
-                        'interpolate pretrained position embedding from {} to {}*{}'.
-                        format(L, H, W))
-                    ori_size = int((L - num_cls_token)**0.5)
-                    weight_value = weight_value[:, num_cls_token:, :]
-                    weight_value = weight_value.reshape(
-                        [-1, ori_size, ori_size, w_emd_dim]).transpose(
-                            [0, 3, 1, 2])
-                    import paddle.nn.functional as F
-                    if type(weight_value) is np.ndarray:
-                        weight_value = paddle.to_tensor(weight_value)
-                    weight_value = F.interpolate(
-                        weight_value, size=(H, W), mode='bicubic')
 
         if list(weight_value.shape) != model_value_shape:
             logger.info(

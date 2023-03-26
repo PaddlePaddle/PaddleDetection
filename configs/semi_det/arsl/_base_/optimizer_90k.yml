@@ -9,7 +9,7 @@ LearningRate:
     start_factor: 0.3333333333333333
     steps: 1000
 
-max_iter: 90000 # 90k for 32 batch, 180k for 16b tach
+max_iter: 90000 # 90k for 32 batch, 180k for 16 batch
 epoch_iter: 3000 # set epoch_iter for saving checkpoint and eval
 # update student params according to loss_grad every X iter.
 optimize_rate: 1
@@ -19,7 +19,6 @@ SEMISUPNET:
   BURN_UP_STEP: 9000
   EMA_KEEP_RATE: 0.9996
   UNSUP_LOSS_WEIGHT: 1.0 # detailed weights for cls and loc task can be seen in cr_loss
-
   PSEUDO_WARM_UP_STEPS: 2000
 
 OptimizerBuilder:

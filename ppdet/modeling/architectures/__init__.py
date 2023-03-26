@@ -42,7 +42,6 @@ from . import yolof
 from . import pose3d_metro
 from . import centertrack
 from . import queryinst
-from . import arsl_ssod_fcos
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -76,4 +75,3 @@ from .pose3d_metro import *
 from .centertrack import *
 from .queryinst import *
 from .keypoint_petr import *
-from .arsl_ssod_fcos import *

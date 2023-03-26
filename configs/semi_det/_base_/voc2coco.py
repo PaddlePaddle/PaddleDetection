@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
+# convert VOC xml to COCO format json
 import xml.etree.ElementTree as ET
 import os
 import json
 import argparse
-
-#from pycocotools.coco import COCO
 
 
 # create and init coco json, img set, and class set
@@ -93,7 +91,6 @@ def convert_voc_to_coco(txt_path, json_path, xml_path):
     img_id = 0
     ann_id = 0
     while img_line:
-
         print('img_id:', img_id)
 
         # find corresponding xml
@@ -186,9 +183,7 @@ def convert_voc_to_coco(txt_path, json_path, xml_path):
     json.dump(coco_json, open(json_path, 'w'))
 
 
-#convert VOC xml to COCO json
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--type', type=str, default='VOC2007_test', help="data type")

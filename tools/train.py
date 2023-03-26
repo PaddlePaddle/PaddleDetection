@@ -136,7 +136,7 @@ def run(FLAGS, cfg):
             trainer = Trainer_ARSL(cfg, mode='train')
         else:
             raise ValueError(
-                "Semi-Supervised Object Detection only support DenseTeacher now."
+                "Semi-Supervised Object Detection only support DenseTeacher and ARSL now."
             )
     elif cfg.get('use_cot', False):
         trainer = TrainerCot(cfg, mode='train')
