@@ -10,7 +10,7 @@ LearningRate:
     steps: 1000
 
 max_iter: 90000 # 90k for 32 batch, 180k for 16 batch
-epoch_iter: 3000 # set epoch_iter for saving checkpoint and eval
+epoch_iter: 1000 # set epoch_iter for saving checkpoint and eval
 # update student params according to loss_grad every X iter.
 optimize_rate: 1
 SEMISUPNET:
