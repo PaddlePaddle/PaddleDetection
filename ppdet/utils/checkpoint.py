@@ -155,10 +155,7 @@ def match_state_dict(model_state_dict, weight_state_dict, mode='default'):
         return a == b or a.endswith("." + b) or b.endswith("." + a)
 
     def match(a, b):
-        if b.startswith('backbone.res5'):
-            # In Faster RCNN, res5 pretrained weights have prefix of backbone,
-            # however, the corresponding model weights have difficult prefix,
-            # bbox_head.
+        if a.startswith('backbone.res5'):
             b = b[9:]
         return a == b or a.endswith("." + b)
 

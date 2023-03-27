@@ -176,20 +176,8 @@ class ARSL_FCOS(BaseArch):
     # supervised loss for labeled data
     def get_loss(self):
         loss = {}
-        # tag_labels, tag_bboxes, tag_centerness = [], [], []
-        # for i in range(len(self.fcos_head.fpn_stride)):
-        #     # labels, reg_target, centerness
-        #     k_lbl = 'labels{}'.format(i)
-        #     if k_lbl in self.inputs:
-        #         tag_labels.append(self.inputs[k_lbl])
-        #     k_box = 'reg_target{}'.format(i)
-        #     if k_box in self.inputs:
-        #         tag_bboxes.append(self.inputs[k_box])
-        #     k_ctn = 'centerness{}'.format(i)
-        #     if k_ctn in self.inputs:
-        #         tag_centerness.append(self.inputs[k_ctn])
         fcos_head_outs = self.model_forward()
-        loss_fcos = self.fcos_head.get_loss(fcos_head_outs)
+        loss_fcos = self.fcos_head.get_loss(fcos_head_outs, self.inputs)
         loss.update(loss_fcos)
         return loss
 
