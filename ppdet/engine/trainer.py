@@ -487,6 +487,9 @@ class Trainer(object):
                 profiler.add_profiler_step(profiler_options)
                 self._compose_callback.on_step_begin(self.status)
                 data['epoch_id'] = epoch_id
+                if self.cfg.get('to_static',
+                                False) and 'image_file' in data.keys():
+                    data.pop('image_file')
 
                 if self.use_amp:
                     if isinstance(

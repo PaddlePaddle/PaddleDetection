@@ -311,7 +311,7 @@ else
                 fi
                 # run train
                 train_log_path="${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}_nodes_${nodes}.log"
-                eval "${cmd} > ${train_log_path} 2>&1"
+                eval "timeout 5m ${cmd} > ${train_log_path} 2>&1"
                 last_status=$?
                 cat ${train_log_path}
                 status_check $last_status "${cmd}" "${status_log}" "${model_name}" "${train_log_path}"
