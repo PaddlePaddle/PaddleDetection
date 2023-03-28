@@ -505,3 +505,8 @@ class FCOSHead_ARSL(FCOSHead):
             return locations_list, cls_logits_list, bboxes_reg_list, centerness_list
         else:
             return cls_logits_list, bboxes_reg_list, centerness_list
+
+    def get_loss(self, fcos_head_outs, tag_labels, tag_bboxes, tag_centerness):
+        cls_logits, bboxes_reg, centerness = fcos_head_outs
+        return self.fcos_loss(cls_logits, bboxes_reg, centerness, tag_labels,
+                              tag_bboxes, tag_centerness)

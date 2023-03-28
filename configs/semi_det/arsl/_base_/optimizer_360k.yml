@@ -10,12 +10,12 @@ LearningRate:
     steps: 1000
 
 max_iter: 360000 # 360k for 32 batch, 720k for 16 batch
-epoch_iter: 3000 # set epoch_iter for saving checkpoint and eval
+epoch_iter: 1000 # set epoch_iter for saving checkpoint and eval
 optimize_rate: 1
 SEMISUPNET:
   BBOX_THRESHOLD: 0.5 # # not used
   TEACHER_UPDATE_ITER: 1
-  BURN_UP_STEP: -1
+  BURN_UP_STEP: 30000
   EMA_KEEP_RATE: 0.9996
   UNSUP_LOSS_WEIGHT: 1.0 # detailed weights for cls and loc task can be seen in cr_loss
   PSEUDO_WARM_UP_STEPS: 2000
