@@ -60,5 +60,5 @@ bash run_with_adb.sh infer_demo ppyoloe_noshare_qat 000000014439.jpg $DEVICE_ID
 需要特别注意的是，在 RV1126 上部署的模型需要是量化后的模型，模型的量化请参考：[模型量化](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/quantize.md)
 
 ## 4. 更多指南
-- [PaddleDetection C++ API文档](https://www.paddlepaddle.org.cn/fastdeploy-api-doc/cpp/html/namespacefastdeploy_1_1vision_1_1segmentation.html)
+- [PaddleDetection C++ API文档](https://www.paddlepaddle.org.cn/fastdeploy-api-doc/cpp/html/namespacefastdeploy_1_1vision_1_1detection.html)
 - [FastDeploy部署PaddleDetection模型概览](../../)
