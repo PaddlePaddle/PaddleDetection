@@ -1,0 +1,33 @@
+
+Global:
+  reader_config: configs/ppyoloe_plus_reader.yml
+  include_nms: True
+  Evaluation: True
+  model_dir: ../../output_inference/ppyoloe_plus_sod_crn_l_80e_coco  
+  model_filename: model.pdmodel
+  params_filename: model.pdiparams
+
+Distillation:
+  alpha: 1.0
+  loss: soft_label
+
+QuantAware:
+  onnx_format: True
+  use_pact: true
+  activation_quantize_type: 'moving_average_abs_max'
+  quantize_op_types:
+  - conv2d
+  - depthwise_conv2d
+
+TrainConfig:
+  train_iter: 1
+  eval_iter: 1
+  learning_rate:  
+    type: CosineAnnealingDecay
+    learning_rate: 0.00003
+    T_max: 6000
+  optimizer_builder:
+    optimizer: 
+      type: SGD
+    weight_decay: 4.0e-05
+
