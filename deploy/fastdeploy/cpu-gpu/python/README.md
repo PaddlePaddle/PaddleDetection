@@ -29,11 +29,11 @@ tar xvf ppyoloe_crn_l_300e_coco.tgz
 
 # 运行部署示例
 # CPU推理
-python infer.py --model ppyoloe_crn_l_300e_coco --image 000000014439.jpg --device cpu
+python infer.py --model_dir ppyoloe_crn_l_300e_coco --image_file 000000014439.jpg --device cpu
 # GPU推理
-python infer.py --model ppyoloe_crn_l_300e_coco --image 000000014439.jpg --device gpu
+python infer.py --model_dir ppyoloe_crn_l_300e_coco --image_file 000000014439.jpg --device gpu
 # GPU上Paddle-TensorRT推理 （注意：TensorRT推理第一次运行，有序列化模型的操作，有一定耗时，需要耐心等待）
-python infer.py --model ppyoloe_crn_l_300e_coco --image 000000014439.jpg --device gpu --use_trt True
+python infer.py --model_dir ppyoloe_crn_l_300e_coco --image_file 000000014439.jpg --device gpu --use_trt True
 ```
 
 运行完成可视化结果如下图所示
@@ -45,8 +45,8 @@ python infer.py --model ppyoloe_crn_l_300e_coco --image 000000014439.jpg --devic
 
 |参数|含义|默认值
 |---|---|---|  
-|--model|指定模型文件夹所在的路径|None|
-|--image|指定测试图片所在的路径|None|  
+|--model_dir|指定模型文件夹所在的路径|None|
+|--image_file|指定测试图片所在的路径|None|  
 |--device|指定即将运行的硬件类型，支持的值为`[cpu, gpu]`，当设置为cpu时，可运行在x86 cpu/arm cpu等cpu上|cpu|
 |--use_trt|是否使用trt，该项只在device为gpu时有效|False|  
 

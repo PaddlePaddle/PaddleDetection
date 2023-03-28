@@ -1,6 +1,6 @@
 [English](README.md) | 简体中文
 
-# PaddleDetection高性能全场景模型部署方案—FastDeploy
+# PaddleDetection检测模型在CPU-GPU上的部署方案—FastDeploy
 
 ## 1. 说明
 PaddleDetection支持利用FastDeploy在NVIDIA GPU、X86 CPU、飞腾CPU、ARM CPU、Intel GPU(独立显卡/集成显卡)硬件上快速部署检测模型

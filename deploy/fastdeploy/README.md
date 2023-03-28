@@ -29,10 +29,10 @@
 |ARM CPU|✅|[链接](./cpu-gpu)|✅|✅|
 |Intel GPU(集成显卡)|✅|[链接](./cpu-gpu)|✅|✅|  
 |Intel GPU(独立显卡)|✅|[链接](./cpu-gpu)|✅|✅|  
-|昆仑|✅|[链接](./kunlun)|✅|✅|
+|昆仑|✅|[链接](./kunlunxin)|✅|✅|
 |昇腾|✅|[链接](./ascend)|✅|✅|
 |瑞芯微|✅|[链接](./rockchip)|✅|✅|  
-|晶晨|✅|[链接](./amlogic)|--|✅|✅|  
+|晶晨|✅|[链接](./amlogic)|-|✅|✅|  
 |算能|✅|[链接](./sophgo)|✅|✅|  
 
 ### 2.2. 详细使用文档
@@ -57,9 +57,9 @@
   - [Python部署示例](./cpu-gpu/python/)
   - [C++部署示例](./cpu-gpu/cpp/)
 - 昆仑 XPU
-  - [部署模型准备](./kunlun)  
-  - [Python部署示例](./kunlun/python/)
-  - [C++部署示例](./kunlun/cpp/)
+  - [部署模型准备](./kunlunxin)  
+  - [Python部署示例](./kunlunxin/python/)
+  - [C++部署示例](./kunlunxin/cpp/)
 - 昇腾 Ascend
   - [部署模型准备](./ascend)  
   - [Python部署示例](./ascend/python/)

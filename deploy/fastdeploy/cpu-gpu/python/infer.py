@@ -9,9 +9,9 @@ def parse_arguments():
     import ast
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model", required=True, help="Path of PaddleSeg model.")
+        "--model_dir", required=True, help="Path of PaddleDetection model.")
     parser.add_argument(
-        "--image", type=str, required=True, help="Path of test image file.")
+        "--image_file", type=str, required=True, help="Path of test image file.")
     parser.add_argument(
         "--device",
         type=str,
@@ -45,10 +45,10 @@ def build_option(args):
 
 args = parse_arguments()
 
-if args.model is None:
+if args.model_dir is None:
     model_dir = fd.download_model(name='ppyoloe_crn_l_300e_coco')
 else:
-    model_dir = args.model
+    model_dir = args.model_dir
 
 model_file = os.path.join(model_dir, "model.pdmodel")
 params_file = os.path.join(model_dir, "model.pdiparams")
@@ -60,11 +60,11 @@ model = fd.vision.detection.PPYOLOE(
     model_file, params_file, config_file, runtime_option=runtime_option)
 
 # predict
-if args.image is None:
-    image = fd.utils.get_detection_test_image()
+if args.image_file is None:
+    image_file = fd.utils.get_detection_test_image()
 else:
-    image = args.image
-im = cv2.imread(image)
+    image_file = args.image_file
+im = cv2.imread(image_file)
 result = model.predict(im)
 print(result)
 
