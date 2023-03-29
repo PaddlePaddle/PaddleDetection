@@ -212,7 +212,7 @@ def match_state_dict(model_state_dict, weight_state_dict, mode='default'):
     return result_state_dict
 
 
-def load_pretrain_weight(model, pretrain_weight):
+def load_pretrain_weight(model, pretrain_weight, ARSL_eval=False):
     if is_url(pretrain_weight):
         pretrain_weight = get_weights_path(pretrain_weight)
 
@@ -224,30 +224,47 @@ def load_pretrain_weight(model, pretrain_weight):
                          "please delete `pretrain_weights` field in "
                          "config file.".format(path))
     teacher_student_flag = False
-    if hasattr(model, 'modelTeacher') and hasattr(model, 'modelStudent'):
-        print('Loading pretrain weights for Teacher-Student framework.')
-        print('Assert Teacher model has the same structure with Student model.')
-        model_dict = model.modelStudent.state_dict()
-        teacher_student_flag = True
+    if not ARSL_eval:
+        if hasattr(model, 'modelTeacher') and hasattr(model, 'modelStudent'):
+            print('Loading pretrain weights for Teacher-Student framework.')
+            print(
+                'Assert Teacher model has the same structure with Student model.'
+            )
+            model_dict = model.modelStudent.state_dict()
+            teacher_student_flag = True
+        else:
+            model_dict = model.state_dict()
+
+        weights_path = path + '.pdparams'
+        param_state_dict = paddle.load(weights_path)
+        param_state_dict = match_state_dict(model_dict, param_state_dict)
+        for k, v in param_state_dict.items():
+            if isinstance(v, np.ndarray):
+                v = paddle.to_tensor(v)
+            if model_dict[k].dtype != v.dtype:
+                param_state_dict[k] = v.astype(model_dict[k].dtype)
+
+        if teacher_student_flag:
+            model.modelStudent.set_dict(param_state_dict)
+            model.modelTeacher.set_dict(param_state_dict)
+        else:
+            model.set_dict(param_state_dict)
+        logger.info('Finish loading model weights: {}'.format(weights_path))
+
     else:
-        model_dict = model.state_dict()
+        weights_path = path + '.pdparams'
+        param_state_dict = paddle.load(weights_path)
+        student_model_dict = model.modelStudent.state_dict()
+        student_param_state_dict = match_state_dict(
+            student_model_dict, param_state_dict, mode='student')
+        model.modelStudent.set_dict(student_param_state_dict)
+        print('Loading pretrain weights for Teacher model.')
+        teacher_model_dict = model.modelTeacher.state_dict()
 
-    weights_path = path + '.pdparams'
-    param_state_dict = paddle.load(weights_path)
-    param_state_dict = match_state_dict(model_dict, param_state_dict)
-
-    for k, v in param_state_dict.items():
-        if isinstance(v, np.ndarray):
-            v = paddle.to_tensor(v)
-        if model_dict[k].dtype != v.dtype:
-            param_state_dict[k] = v.astype(model_dict[k].dtype)
-
-    if teacher_student_flag:
-        model.modelStudent.set_dict(param_state_dict)
-        model.modelTeacher.set_dict(param_state_dict)
-    else:
-        model.set_dict(param_state_dict)
-    logger.info('Finish loading model weights: {}'.format(weights_path))
+        teacher_param_state_dict = match_state_dict(
+            teacher_model_dict, param_state_dict, mode='teacher')
+        model.modelTeacher.set_dict(teacher_param_state_dict)
+        logger.info('Finish loading model weights: {}'.format(weights_path))
 
 
 def save_model(model,

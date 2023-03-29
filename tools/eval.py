@@ -32,7 +32,7 @@ import paddle
 from ppdet.core.workspace import create, load_config, merge_config
 from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_version, check_config
 from ppdet.utils.cli import ArgsParser, merge_args
-from ppdet.engine import Trainer, init_parallel_env
+from ppdet.engine import Trainer, Trainer_ARSL, init_parallel_env
 from ppdet.metrics.coco_utils import json_eval_results
 from ppdet.slim import build_slim_model
 
@@ -135,12 +135,15 @@ def run(FLAGS, cfg):
 
     # init parallel environment if nranks > 1
     init_parallel_env()
-
+    ssod_method = cfg.get('ssod_method', None)
+    if ssod_method == 'ARSL':
+        trainer = Trainer_ARSL(cfg, mode='eval')
     # build trainer
-    trainer = Trainer(cfg, mode='eval')
+    else:
+        trainer = Trainer(cfg, mode='eval')
 
     # load weights
-    trainer.load_weights(cfg.weights)
+    trainer.load_weights(cfg.weights, ARSL_eval=True)
 
     # training
     if FLAGS.slice_infer:

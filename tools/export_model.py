@@ -64,14 +64,16 @@ def run(FLAGS, cfg):
     ssod_method = cfg.get('ssod_method', None)
     if ssod_method is not None and ssod_method == 'ARSL':
         trainer = Trainer_ARSL(cfg, mode='test')
+        trainer.load_weights(cfg.weights, ARSL_eval=True)
     # build detector
-    trainer = Trainer(cfg, mode='test')
-
-    # load weights
-    if cfg.architecture in ['DeepSORT', 'ByteTrack']:
-        trainer.load_weights_sde(cfg.det_weights, cfg.reid_weights)
     else:
-        trainer.load_weights(cfg.weights)
+        trainer = Trainer(cfg, mode='test')
+
+        # load weights
+        if cfg.architecture in ['DeepSORT', 'ByteTrack']:
+            trainer.load_weights_sde(cfg.det_weights, cfg.reid_weights)
+        else:
+            trainer.load_weights(cfg.weights)
 
     # export model
     trainer.export(FLAGS.output_dir)

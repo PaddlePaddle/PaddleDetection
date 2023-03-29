@@ -394,11 +394,11 @@ class Trainer(object):
                     "metrics shoule be instances of subclass of Metric"
         self._metrics.extend(metrics)
 
-    def load_weights(self, weights):
+    def load_weights(self, weights, ARSL_eval=False):
         if self.is_loaded_weights:
             return
         self.start_epoch = 0
-        load_pretrain_weight(self.model, weights)
+        load_pretrain_weight(self.model, weights, ARSL_eval)
         logger.debug("Load weights {} to start training".format(weights))
 
     def load_weights_sde(self, det_weights, reid_weights):
@@ -985,8 +985,10 @@ class Trainer(object):
         for step_id, data in enumerate(tqdm(loader)):
             self.status['step_id'] = step_id
             # forward
-            outs = self.model(data)
-
+            if hasattr(self.model, 'modelTeacher'):
+                outs = self.model.modelTeacher(data)
+            else:
+                outs = self.model(data)
             for _m in metrics:
                 _m.update(data, outs)
 

@@ -780,9 +780,9 @@ class Trainer_ARSL(Trainer):
             self.model.modelTeacher, input_spec=input_spec)
         # NOTE: dy2st do not pruned program, but jit.save will prune program
         # input spec, prune input spec here and save with pruned input spec
-        pruned_input_spec = self._prune_input_spec(
-            input_spec, static_model.forward.main_program,
-            static_model.forward.outputs)
+        pruned_input_spec = _prune_input_spec(input_spec,
+                                              static_model.forward.main_program,
+                                              static_model.forward.outputs)
 
         # dy2st and save model
         if 'slim' not in self.cfg or self.cfg['slim_type'] != 'QAT':
