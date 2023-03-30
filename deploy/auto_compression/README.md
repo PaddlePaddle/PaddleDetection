@@ -150,8 +150,15 @@ export CUDA_VISIBLE_DEVICES=0
 python eval.py --config_path=./configs/ppyoloe_l_qat_dis.yaml
 ```
 
+使用paddle inference并使用trt int8得到模型的mAP:
+```
+export CUDA_VISIBLE_DEVICES=0
+python paddle_inference_eval.py --model_path ./output/ --reader_config configs/ppyoloe_reader.yml --precision int8 --use_trt=True
+```
+
 **注意**：
 - 要测试的模型路径可以在配置文件中`model_dir`字段下进行修改。
+- --precision 默认为paddle，如果使用trt，需要设置--use_trt=True，同时--precision 可设置为fp32/fp16/int8
 
 ## 4.预测部署
 
