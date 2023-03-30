@@ -450,7 +450,8 @@ class DeformableTransformer(nn.Layer):
             temperature=pe_temperature,
             normalize=True if position_embed_type == 'sine' else False,
             embed_type=position_embed_type,
-            offset=pe_offset)
+            offset=pe_offset,
+            eps=1e-4)
 
         self._reset_parameters()
 
