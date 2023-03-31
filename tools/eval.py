@@ -137,13 +137,15 @@ def run(FLAGS, cfg):
     init_parallel_env()
     ssod_method = cfg.get('ssod_method', None)
     if ssod_method == 'ARSL':
+        # build ARSL_trainer
         trainer = Trainer_ARSL(cfg, mode='eval')
-    # build trainer
+        # load ARSL_weights
+        trainer.load_weights(cfg.weights, ARSL_eval=True)
     else:
+        # build trainer
         trainer = Trainer(cfg, mode='eval')
-
-    # load weights
-    trainer.load_weights(cfg.weights, ARSL_eval=True)
+        #load weights
+        trainer.load_weights(cfg.weights)
 
     # training
     if FLAGS.slice_infer:

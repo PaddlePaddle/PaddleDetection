@@ -162,7 +162,7 @@ def run(FLAGS, cfg):
         trainer.load_weights(cfg.weights, ARSL_eval=True)
     else:
         trainer = Trainer(cfg, mode='test')
-        trainer.load_weights(cfg.weights, ARSL_eval=True)
+        trainer.load_weights(cfg.weights)
     # get inference images
     images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
 
