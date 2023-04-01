@@ -1,0 +1,12 @@
+_BASE_: [
+  '../_base_/coco_detection_percent_1.yml',
+  '../../runtime.yml',
+  '_base_/arsl_fcos_r50_fpn.yml',
+  '_base_/optimizer_90k.yml',
+  '_base_/arsl_fcos_reader.yml',
+]
+
+weights: output/arsl_fcos_r50_fpn_coco_semi001/model_final
+
+#semi detector type
+ssod_method: ARSL

@@ -1,4 +1,4 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+# Copyright (c) 2023 PaddlePaddle Authors. All Rights Reserved. 
 #   
 # Licensed under the Apache License, Version 2.0 (the "License");   
 # you may not use this file except in compliance with the License.  
@@ -26,7 +26,7 @@ from paddle.nn.initializer import Normal, Constant
 from ppdet.core.workspace import register
 from ppdet.modeling.layers import ConvNormLayer, MultiClassNMS
 
-__all__ = ['FCOSFeat', 'FCOSHead']
+__all__ = ['FCOSFeat', 'FCOSHead', 'FCOSHead_ARSL']
 
 
 class ScaleReg(nn.Layer):
@@ -263,9 +263,22 @@ class FCOSHead(nn.Layer):
             centerness_list.append(centerness)
 
         if targets is not None:
-            self.is_teacher = targets.get('is_teacher', False)
+            self.is_teacher = targets.get('ARSL_teacher', False)
             if self.is_teacher:
                 return [cls_logits_list, bboxes_reg_list, centerness_list]
+
+        if targets is not None:
+            self.is_student = targets.get('ARSL_student', False)
+            if self.is_student:
+                return [cls_logits_list, bboxes_reg_list, centerness_list]
+
+        if targets is not None:
+            self.is_teacher = targets.get('is_teacher', False)
+            if self.is_teacher:
+                return [
+                    locations_list, cls_logits_list, bboxes_reg_list,
+                    centerness_list
+                ]
 
         if self.training and targets is not None:
             get_data = targets.get('get_data', False)
@@ -361,3 +374,139 @@ class FCOSHead(nn.Layer):
         pred_scores = pred_scores.transpose([0, 2, 1])
         bbox_pred, bbox_num, _ = self.nms(pred_bboxes, pred_scores)
         return bbox_pred, bbox_num
+
+
+@register
+class FCOSHead_ARSL(FCOSHead):
+    """
+    FCOSHead of ARSL for semi-det(ssod)
+    Args:
+        fcos_feat (object): Instance of 'FCOSFeat'
+        num_classes (int): Number of classes
+        fpn_stride (list): The stride of each FPN Layer
+        prior_prob (float): Used to set the bias init for the class prediction layer
+        fcos_loss (object): Instance of 'FCOSLoss'
+        norm_reg_targets (bool): Normalization the regression target if true
+        centerness_on_reg (bool): The prediction of centerness on regression or clssification branch
+        nms (object): Instance of 'MultiClassNMS'
+        trt (bool): Whether to use trt in nms of deploy
+    """
+    __inject__ = ['fcos_feat', 'fcos_loss', 'nms']
+    __shared__ = ['num_classes', 'trt']
+
+    def __init__(self,
+                 num_classes=80,
+                 fcos_feat='FCOSFeat',
+                 fpn_stride=[8, 16, 32, 64, 128],
+                 prior_prob=0.01,
+                 multiply_strides_reg_targets=False,
+                 norm_reg_targets=True,
+                 centerness_on_reg=True,
+                 num_shift=0.5,
+                 sqrt_score=False,
+                 fcos_loss='FCOSLossMILC',
+                 nms='MultiClassNMS',
+                 trt=False):
+        super(FCOSHead_ARSL, self).__init__()
+        self.fcos_feat = fcos_feat
+        self.num_classes = num_classes
+        self.fpn_stride = fpn_stride
+        self.prior_prob = prior_prob
+        self.fcos_loss = fcos_loss
+        self.norm_reg_targets = norm_reg_targets
+        self.centerness_on_reg = centerness_on_reg
+        self.multiply_strides_reg_targets = multiply_strides_reg_targets
+        self.num_shift = num_shift
+        self.nms = nms
+        if isinstance(self.nms, MultiClassNMS) and trt:
+            self.nms.trt = trt
+        self.sqrt_score = sqrt_score
+
+        conv_cls_name = "fcos_head_cls"
+        bias_init_value = -math.log((1 - self.prior_prob) / self.prior_prob)
+        self.fcos_head_cls = self.add_sublayer(
+            conv_cls_name,
+            nn.Conv2D(
+                in_channels=256,
+                out_channels=self.num_classes,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                weight_attr=ParamAttr(initializer=Normal(
+                    mean=0., std=0.01)),
+                bias_attr=ParamAttr(
+                    initializer=Constant(value=bias_init_value))))
+
+        conv_reg_name = "fcos_head_reg"
+        self.fcos_head_reg = self.add_sublayer(
+            conv_reg_name,
+            nn.Conv2D(
+                in_channels=256,
+                out_channels=4,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                weight_attr=ParamAttr(initializer=Normal(
+                    mean=0., std=0.01)),
+                bias_attr=ParamAttr(initializer=Constant(value=0))))
+
+        conv_centerness_name = "fcos_head_centerness"
+        self.fcos_head_centerness = self.add_sublayer(
+            conv_centerness_name,
+            nn.Conv2D(
+                in_channels=256,
+                out_channels=1,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                weight_attr=ParamAttr(initializer=Normal(
+                    mean=0., std=0.01)),
+                bias_attr=ParamAttr(initializer=Constant(value=0))))
+
+        self.scales_regs = []
+        for i in range(len(self.fpn_stride)):
+            lvl = int(math.log(int(self.fpn_stride[i]), 2))
+            feat_name = 'p{}_feat'.format(lvl)
+            scale_reg = self.add_sublayer(feat_name, ScaleReg())
+            self.scales_regs.append(scale_reg)
+
+    def forward(self, fpn_feats, targets=None):
+        assert len(fpn_feats) == len(
+            self.fpn_stride
+        ), "The size of fpn_feats is not equal to size of fpn_stride"
+        cls_logits_list = []
+        bboxes_reg_list = []
+        centerness_list = []
+        for scale_reg, fpn_stride, fpn_feat in zip(self.scales_regs,
+                                                   self.fpn_stride, fpn_feats):
+            fcos_cls_feat, fcos_reg_feat = self.fcos_feat(fpn_feat)
+            cls_logits = self.fcos_head_cls(fcos_cls_feat)
+            bbox_reg = scale_reg(self.fcos_head_reg(fcos_reg_feat))
+            if self.centerness_on_reg:
+                centerness = self.fcos_head_centerness(fcos_reg_feat)
+            else:
+                centerness = self.fcos_head_centerness(fcos_cls_feat)
+            if self.norm_reg_targets:
+                bbox_reg = F.relu(bbox_reg)
+                if not self.training:
+                    bbox_reg = bbox_reg * fpn_stride
+            else:
+                bbox_reg = paddle.exp(bbox_reg)
+            cls_logits_list.append(cls_logits)
+            bboxes_reg_list.append(bbox_reg)
+            centerness_list.append(centerness)
+
+        if not self.training:
+            locations_list = []
+            for fpn_stride, feature in zip(self.fpn_stride, fpn_feats):
+                location = self._compute_locations_by_level(fpn_stride, feature)
+                locations_list.append(location)
+
+            return locations_list, cls_logits_list, bboxes_reg_list, centerness_list
+        else:
+            return cls_logits_list, bboxes_reg_list, centerness_list
+
+    def get_loss(self, fcos_head_outs, tag_labels, tag_bboxes, tag_centerness):
+        cls_logits, bboxes_reg, centerness = fcos_head_outs
+        return self.fcos_loss(cls_logits, bboxes_reg, centerness, tag_labels,
+                              tag_bboxes, tag_centerness)

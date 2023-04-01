@@ -31,7 +31,7 @@ import ast
 
 import paddle
 from ppdet.core.workspace import load_config, merge_config
-from ppdet.engine import Trainer
+from ppdet.engine import Trainer, Trainer_ARSL
 from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_version, check_config
 from ppdet.utils.cli import ArgsParser, merge_args
 from ppdet.slim import build_slim_model
@@ -156,12 +156,13 @@ def get_test_images(infer_dir, infer_img):
 
 
 def run(FLAGS, cfg):
-    # build trainer
-    trainer = Trainer(cfg, mode='test')
-
-    # load weights
-    trainer.load_weights(cfg.weights)
-
+    ssod_method = cfg.get('ssod_method', None)
+    if ssod_method == 'ARSL':
+        trainer = Trainer_ARSL(cfg, mode='test')
+        trainer.load_weights(cfg.weights, ARSL_eval=True)
+    else:
+        trainer = Trainer(cfg, mode='test')
+        trainer.load_weights(cfg.weights)
     # get inference images
     images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
 
