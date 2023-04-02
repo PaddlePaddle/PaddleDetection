@@ -26,7 +26,7 @@ def get_output_names(net):
 
 def prepare_input():
     transforms = [
-        T.Resize(size=(target_height, target_width)), 
+        T.Resize(size=(target_height, target_width)),
         T.Normalize(mean=(0,0,0), std=(1,1,1), data_format='HWC', to_rgb= True),
         T.Transpose()
     ]

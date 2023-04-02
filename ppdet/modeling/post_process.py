@@ -74,7 +74,7 @@ class BBoxPostProcess(object):
                                               scale_factor)
 
         if self.export_onnx:
-            # add fake box after postprocess when exporting onnx 
+            # add fake box after postprocess when exporting onnx
             fake_bboxes = paddle.to_tensor(
                 np.array(
                     [[0., 0.0, 0.0, 0.0, 1.0, 1.0]], dtype='float32'))

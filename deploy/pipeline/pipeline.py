@@ -723,7 +723,7 @@ class PipePredictor(object):
             scale = ShortSizeScale(short_size)
 
         object_in_region_info = {
-        }  # store info for vehicle parking in region       
+        }  # store info for vehicle parking in region
         illegal_parking_dict = None
         cars_count = 0
         retrograde_traj_len = 0
@@ -1021,7 +1021,7 @@ class PipePredictor(object):
                         frame_mot_res, max_len=frame_len)
                     retrograde_traj_len = retrograde_traj_len + 1
 
-                #the number of collected frames is enough to predict 
+                #the number of collected frames is enough to predict
                 if retrograde_traj_len == frame_len:
                     retrograde_mot_res = copy.deepcopy(
                         self.pipeline_res.get('mot'))

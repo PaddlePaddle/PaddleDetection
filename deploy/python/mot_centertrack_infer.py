@@ -358,7 +358,7 @@ class CenterTrack(Detector):
 
                 # tracking process
                 self.det_times.tracking_time_s.start()
-                online_tlwhs, online_scores, online_ids = self.tracking(inputs, 
+                online_tlwhs, online_scores, online_ids = self.tracking(inputs,
                     det_result)
                 self.det_times.tracking_time_s.end()
                 self.det_times.img_num += 1

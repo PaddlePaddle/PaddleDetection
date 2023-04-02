@@ -208,7 +208,7 @@ class Detector(object):
             boxes_tensor = self.predictor.get_output_handle(output_names[0])
             np_boxes = boxes_tensor.copy_to_cpu()
             if len(output_names) == 1:
-                # some exported model can not get tensor 'bbox_num' 
+                # some exported model can not get tensor 'bbox_num'
                 np_boxes_num = np.array([len(np_boxes)])
             else:
                 boxes_num = self.predictor.get_output_handle(output_names[1])

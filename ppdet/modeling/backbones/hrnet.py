@@ -768,7 +768,7 @@ class HRNet(nn.Layer):
         head_block = BottleneckBlock
         head_channels = [32, 64, 128, 256]
 
-        # Increasing the #channels on each resolution 
+        # Increasing the #channels on each resolution
         # from C, 2C, 4C, 8C to 128, 256, 512, 1024
         incre_modules = []
         for i, channels in enumerate(pre_stage_channels):

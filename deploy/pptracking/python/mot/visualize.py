@@ -202,7 +202,7 @@ def plot_tracking_dict(image,
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
     if do_break_in_counting or do_illegal_parking_recognition:
-        entrance = np.array(entrance[:-1])  # last pair is [im_w, im_h] 
+        entrance = np.array(entrance[:-1])  # last pair is [im_w, im_h]
 
     text_scale = max(0.5, image.shape[1] / 3000.)
     text_thickness = 2

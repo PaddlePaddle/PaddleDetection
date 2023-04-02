@@ -286,7 +286,7 @@ class Tracker(object):
             scale_factor = data['scale_factor'][0].numpy()
 
             empty_detections = False
-            # when it has no detected bboxes, will not inference reid model 
+            # when it has no detected bboxes, will not inference reid model
             # and if visualize, use original image instead
 
             # forward
@@ -321,7 +321,7 @@ class Tracker(object):
                         # with LetterBoxResize and JDEBBoxPostProcess.
                         #
                         # 'scaled' means whether the coords after detector outputs
-                        # have been scaled back to the original image, set True 
+                        # have been scaled back to the original image, set True
                         # in general detector, set False in JDE YOLOv3.
                         pred_bboxes = scale_coords(outs['bbox'][:, 2:],
                                                    input_shape, im_shape,
@@ -632,7 +632,7 @@ class Tracker(object):
         assert model_type in MOT_ARCH, \
             "model_type should be 'JDE', 'DeepSORT', 'FairMOT' or 'ByteTrack'"
 
-        # run tracking        
+        # run tracking
         if video_file:
             seq = video_file.split('/')[-1].split('.')[0]
             self.dataset.set_video(video_file, frame_rate)

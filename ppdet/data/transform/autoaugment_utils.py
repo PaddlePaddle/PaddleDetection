@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Reference: 
+# Reference:
 #   https://github.com/tensorflow/tpu/blob/master/models/official/detection/utils/autoaugment_utils.py
 """AutoAugment util file."""
 
@@ -65,7 +65,7 @@ def policy_v1():
         [('ShearY_Only_BBoxes', 0.8, 2), ('Flip_Only_BBoxes', 0.0, 10)],
         [('Equalize', 0.6, 10), ('TranslateX_BBox', 0.2, 2)],
         [('Color', 1.0, 10), ('TranslateY_Only_BBoxes', 0.4, 6)],
-        [('Rotate_BBox', 0.8, 10), ('Contrast', 0.0, 10)],  # , 
+        [('Rotate_BBox', 0.8, 10), ('Contrast', 0.0, 10)],  # ,
         [('Cutout', 0.2, 2), ('Brightness', 0.8, 10)],
         [('Color', 1.0, 6), ('Equalize', 1.0, 2)],
         [('Cutout_Only_BBoxes', 0.4, 6), ('TranslateY_Only_BBoxes', 0.8, 2)],

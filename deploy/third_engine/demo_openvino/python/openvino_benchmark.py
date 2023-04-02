@@ -304,7 +304,7 @@ def detect(img_file, compiled_model, re_shape, class_label):
 
 def benchmark(test_image, compiled_model):
 
-    # benchmark       
+    # benchmark
     loop_num = 100
     warm_up = 8
     timeall = 0

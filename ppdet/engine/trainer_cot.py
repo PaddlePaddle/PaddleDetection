@@ -28,7 +28,7 @@ class TrainerCot(Trainer):
         super(TrainerCot, self).__init__(cfg, mode)
         self.cotuning_init()
 
-    def cotuning_init(self):    
+    def cotuning_init(self):
         num_classes_novel = self.cfg['num_classes']
 
         self.load_weights(self.cfg.pretrain_weights)

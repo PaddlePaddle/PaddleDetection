@@ -154,8 +154,8 @@ def load_det_results(det_file, num_frames):
 
 def scale_coords(coords, input_shape, im_shape, scale_factor):
     # Note: ratio has only one value, scale_factor[0] == scale_factor[1]
-    # 
-    # This function only used for JDE YOLOv3 or other detectors with 
+    #
+    # This function only used for JDE YOLOv3 or other detectors with
     # LetterBoxResize and JDEBBoxPostProcess, coords output from detector had
     # not scaled back to the origin image.
 
@@ -225,9 +225,9 @@ def flow_statistic(result,
                    records,
                    data_type='mot',
                    ids2names=['pedestrian']):
-    # Count in/out number: 
+    # Count in/out number:
     # Note that 'region_type' should be one of ['horizontal', 'vertical', 'custom'],
-    # 'horizontal' and 'vertical' means entrance is the center line as the entrance when do_entrance_counting, 
+    # 'horizontal' and 'vertical' means entrance is the center line as the entrance when do_entrance_counting,
     # 'custom' means entrance is a region defined by users when do_break_in_counting.
 
     if do_entrance_counting:

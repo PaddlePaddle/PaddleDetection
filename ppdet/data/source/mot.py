@@ -351,10 +351,10 @@ class MCMOTDataSet(DetDataset):
         self.num_imgs_each_data = [len(x) for x in self.img_files.values()]
         self.total_imgs = sum(self.num_imgs_each_data)
 
-        # cname2cid and cid2cname 
+        # cname2cid and cid2cname
         cname2cid = {}
         if self.label_list is not None:
-            # if use label_list for multi source mix dataset, 
+            # if use label_list for multi source mix dataset,
             # please make sure label_list in the first sub_dataset at least.
             sub_dataset = self.image_lists[0].split('.')[0]
             label_path = os.path.join(self.dataset_dir, sub_dataset,

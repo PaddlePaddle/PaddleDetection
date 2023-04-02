@@ -50,7 +50,7 @@ class SupContrast(nn.Layer):
                                                               scores[negative_mask]
         
         N = negative_features.shape[0]
-        S = self.sample_num - positive_mask.sum()   
+        S = self.sample_num - positive_mask.sum()
         index = paddle.to_tensor(random.sample(range(N), int(S)), dtype='int32')
 
         negative_features = paddle.index_select(x=negative_features, index=index, axis=0)

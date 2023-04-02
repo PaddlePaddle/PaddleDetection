@@ -260,7 +260,7 @@ def oks_loss(pred,
              linear=False,
              sigmas=None,
              eps=1e-6,
-             avg_factor=None, 
+             avg_factor=None,
              reduction=None):
     """Oks loss.
 

@@ -1,15 +1,15 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
-#   
-# Licensed under the Apache License, Version 2.0 (the "License");   
-# you may not use this file except in compliance with the License.  
-# You may obtain a copy of the License at   
-#   
-#     http://www.apache.org/licenses/LICENSE-2.0    
-#   
-# Unless required by applicable law or agreed to in writing, software   
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
-# See the License for the specific language governing permissions and   
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
 # limitations under the License.
 
 from __future__ import absolute_import
@@ -142,10 +142,10 @@ class FasterRCNN(BaseArch):
         label_list = []
 
         for step_id, data in enumerate(loader):
-            _, bbox_prob = self.target_bbox_forward(data)      
+            _, bbox_prob = self.target_bbox_forward(data)
             batch_size = data['im_id'].shape[0]
             for i in range(batch_size):
-                num_bbox = data['gt_class'][i].shape[0]           
+                num_bbox = data['gt_class'][i].shape[0]
                 train_labels = data['gt_class'][i]
                 train_labels_list.append(train_labels.numpy().squeeze(1))
             base_labels = bbox_prob.detach().numpy()[:,:-1]

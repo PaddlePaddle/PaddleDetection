@@ -87,7 +87,7 @@ class Attention(nn.Layer):
             coords_w = paddle.arange(window_size[1])
             coords = paddle.stack(paddle.meshgrid(
                 [coords_h, coords_w]))  # 2, Wh, Ww
-            coords_flatten = paddle.flatten(coords, 1)  # 2, Wh*Ww 
+            coords_flatten = paddle.flatten(coords, 1)  # 2, Wh*Ww
             coords_flatten_1 = paddle.unsqueeze(coords_flatten, 2)
             coords_flatten_2 = paddle.unsqueeze(coords_flatten, 1)
             relative_coords = coords_flatten_1.clone() - coords_flatten_2.clone(
@@ -269,7 +269,7 @@ class RelativePositionBias(nn.Layer):
                                          None] - coords_flatten[:,
                                                                 None, :]  # 2, Wh*Ww, Wh*Ww
         relative_coords = relative_coords.transpos(
-            (1, 2, 0))  # Wh*Ww, Wh*Ww, 2 
+            (1, 2, 0))  # Wh*Ww, Wh*Ww, 2
         relative_coords[:, :, 0] += window_size[0] - 1  # shift to start from 0
         relative_coords[:, :, 1] += window_size[1] - 1
         relative_coords[:, :, 0] *= 2 * window_size[1] - 1
@@ -286,7 +286,7 @@ class RelativePositionBias(nn.Layer):
         relative_position_bias = \
             self.relative_position_bias_table[self.relative_position_index.reshape([-1])].reshape([
                  self.window_size[0] * self.window_size[1] + 1,
-                 self.window_size[0] * self.window_size[1] + 1, -1])  # Wh*Ww,Wh*Ww,nH 
+                 self.window_size[0] * self.window_size[1] + 1, -1])  # Wh*Ww,Wh*Ww,nH
         return relative_position_bias.transpose((2, 0, 1))  # nH, Wh*Ww, Wh*Ww
 
 

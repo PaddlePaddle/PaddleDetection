@@ -48,7 +48,7 @@ def draw_distribution(width, height, out_path):
 def get_ratio_infos(jsonfile, out_img, eval_size, small_stride):
     coco = COCO(annotation_file=jsonfile)
     allannjson = json.load(open(jsonfile, 'r'))
-    be_im_id = allannjson['annotations'][0]['image_id'] 
+    be_im_id = allannjson['annotations'][0]['image_id']
     be_im_w = []
     be_im_h = []
     ratio_w = []
@@ -111,7 +111,7 @@ def get_ratio_infos(jsonfile, out_img, eval_size, small_stride):
     ratio_h = [i * 1000 for i in ratio_h]
     print(f'Suggested reg_range[1] is {reg_max+1}' )
     print(f'Mean of all img_w is {all_im_m_w}')
-    print(f'Mean of all img_h is {all_im_m_h}') 
+    print(f'Mean of all img_h is {all_im_m_h}')
     print(f'Median of ratio_w is {mid_w}')
     print(f'Median of ratio_h is {mid_h}')
     print('all_img with box: ', len(ratio_h))

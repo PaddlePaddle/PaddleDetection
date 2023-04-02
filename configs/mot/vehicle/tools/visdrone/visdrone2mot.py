@@ -20,7 +20,7 @@ import argparse
 import numpy as np
 import random
 
-# The object category indicates the type of annotated object, 
+# The object category indicates the type of annotated object,
 # (i.e., ignored regions(0), pedestrian(1), people(2), bicycle(3), car(4), van(5), truck(6), tricycle(7), awning-tricycle(8), bus(9), motor(10),others(11))
 
 # Extract single class or multi class
@@ -229,7 +229,7 @@ def gen_labels_mot(MOT_data, phase='train'):
         mkdir_if_missing(seq_label_root)
 
         for fid, tid, x, y, w, h, mark, label, _ in gt:
-            # if mark == 0 or not label == 1: 
+            # if mark == 0 or not label == 1:
             #     continue
             fid = int(fid)
             tid = int(tid)

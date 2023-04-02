@@ -389,7 +389,7 @@ def visualize_action(im,
                 id_action_dict[pid] = id_action_dict.get(pid, [])
                 id_action_dict[pid].append(action_type)
         for mot_box in mot_boxes:
-            # mot_box is a format with [mot_id, class, score, xmin, ymin, w, h] 
+            # mot_box is a format with [mot_id, class, score, xmin, ymin, w, h]
             if mot_box[0] in id_action_dict:
                 text_position = (int(mot_box[3] + mot_box[5] * 0.75),
                                  int(mot_box[4] - 10))

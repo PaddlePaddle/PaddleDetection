@@ -149,7 +149,7 @@ class BaseDataLoader(object):
         self._sample_transforms = Compose(
             sample_transforms, num_classes=num_classes)
 
-        # batch transfrom 
+        # batch transfrom
         self._batch_transforms = BatchCompose(batch_transforms, num_classes,
                                               collate_batch)
         self.batch_size = batch_size
@@ -510,7 +510,7 @@ class BaseSemiDataLoader(object):
                  batch_sampler_label=None,
                  batch_sampler_unlabel=None,
                  return_list=False):
-        # sup dataset 
+        # sup dataset
         self.dataset_label = dataset_label
         self.dataset_label.check_or_download_dataset()
         self.dataset_label.parse_dataset()

@@ -1,15 +1,15 @@
-# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved. 
-#   
-# Licensed under the Apache License, Version 2.0 (the "License");   
-# you may not use this file except in compliance with the License.  
-# You may obtain a copy of the License at   
-#   
-#     http://www.apache.org/licenses/LICENSE-2.0    
-#   
-# Unless required by applicable law or agreed to in writing, software   
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
-# See the License for the specific language governing permissions and   
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
 # limitations under the License.
 
 # The code is based on:
@@ -553,7 +553,7 @@ class LDGFLHead(GFLHead):
                                                     num_level_anchors)
         bbox_targets_list = self._images_to_levels(gt_meta['bbox_targets'],
                                                    num_level_anchors)
-        # vlr regions                                         
+        # vlr regions
         vlr_regions_list = self._images_to_levels(gt_meta['vlr_regions'],
                                                   num_level_anchors)
 
@@ -588,7 +588,7 @@ class LDGFLHead(GFLHead):
 
             # feture im
             # teacher_x = teacher_x.transpose([0, 2, 3, 1]).reshape([-1, 256])
-            # x = x.transpose([0, 2, 3, 1]).reshape([-1, 256])  
+            # x = x.transpose([0, 2, 3, 1]).reshape([-1, 256])
 
             bbox_targets = bbox_targets.reshape([-1, 4])
             labels = labels.reshape([-1])

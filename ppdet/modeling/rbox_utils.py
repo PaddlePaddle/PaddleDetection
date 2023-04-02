@@ -271,7 +271,7 @@ def check_points_in_rotated_boxes(points, boxes):
     ap_dot_ab = paddle.sum(ap * ab, axis=-1)
     # [B, N, L] dot product
     ap_dot_ad = paddle.sum(ap * ad, axis=-1)
-    # [B, N, L] <A, B> = |A|*|B|*cos(theta) 
+    # [B, N, L] <A, B> = |A|*|B|*cos(theta)
     is_in_box = (ap_dot_ab >= 0) & (ap_dot_ab <= norm_ab) & (ap_dot_ad >= 0) & (
         ap_dot_ad <= norm_ad)
     return is_in_box

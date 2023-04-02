@@ -107,7 +107,7 @@ class RRotate(BaseOperator):
         matrix, h, w = self.get_rotated_matrix(self.angle, self.scale, h, w)
         sample['image'] = self.apply_image(image, matrix, h, w)
         polys = sample['gt_poly']
-        # TODO: segment or keypoint to be processed 
+        # TODO: segment or keypoint to be processed
         if len(polys) > 0:
             pts = self.apply_pts(polys, matrix, h, w)
             sample['gt_poly'] = pts

@@ -232,7 +232,7 @@ class Gt2YoloTarget(BaseOperator):
                     gi = int(gx * grid_w)
                     gj = int(gy * grid_h)
 
-                    # gtbox should be regresed in this layes if best match 
+                    # gtbox should be regresed in this layes if best match
                     # anchor index in anchor mask of this layer
                     if best_idx in mask:
                         best_n = mask.index(best_idx)
@@ -252,7 +252,7 @@ class Gt2YoloTarget(BaseOperator):
                         # classification
                         target[best_n, 6 + cls, gj, gi] = 1.
 
-                    # For non-matched anchors, calculate the target if the iou 
+                    # For non-matched anchors, calculate the target if the iou
                     # between anchor and gt is larger than iou_thresh
                     if self.iou_thresh < 1:
                         for idx, mask_i in enumerate(mask):

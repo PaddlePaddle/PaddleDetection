@@ -99,7 +99,7 @@ def _split_target(target):
 
 def _calc_obj_loss(output, obj, tobj, gt_box, batch_size, anchors, num_classes,
                    downsample, ignore_thresh, scale_x_y):
-    # A prediction bbox overlap any gt_bbox over ignore_thresh, 
+    # A prediction bbox overlap any gt_bbox over ignore_thresh,
     # objectness loss will be ignored, process as follows:
     # 1. get pred bbox, which is same with YOLOv3 infer mode, use yolo_box here
     # NOTE: img_size is set as 1.0 to get noramlized pred bbox
@@ -256,7 +256,7 @@ def gt2yolotarget(gt_bbox, gt_class, gt_score, anchors, mask, num_classes, size,
         gi = int(gx * grid_w)
         gj = int(gy * grid_h)
 
-        # gtbox should be regresed in this layes if best match 
+        # gtbox should be regresed in this layes if best match
         # anchor index in anchor mask of this layer
         if best_idx in mask:
             best_n = mask.index(best_idx)

@@ -388,7 +388,7 @@ class ATSSAssigner(object):
             0, ddof=1)  # NOTE: use Bessel correction
         overlaps_thr_per_gt = overlaps_mean_per_gt + overlaps_std_per_gt
 
-        # compute region        
+        # compute region
         is_pos = (t_diou < overlaps_thr_per_gt[None, :]) & (
             t_diou >= 0.25 * overlaps_thr_per_gt[None, :])
 

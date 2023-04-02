@@ -208,8 +208,8 @@ def load_det_results(det_file, num_frames):
 
 def scale_coords(coords, input_shape, im_shape, scale_factor):
     # Note: ratio has only one value, scale_factor[0] == scale_factor[1]
-    # 
-    # This function only used for JDE YOLOv3 or other detectors with 
+    #
+    # This function only used for JDE YOLOv3 or other detectors with
     # LetterBoxResize and JDEBBoxPostProcess, coords output from detector had
     # not scaled back to the origin image.
 

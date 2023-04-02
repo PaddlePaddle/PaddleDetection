@@ -119,13 +119,13 @@ class AttrDetector(Detector):
         for res in im_results:
             res = res.tolist()
             label_res = []
-            # gender 
+            # gender
             gender = 'Female' if res[22] > self.threshold else 'Male'
             label_res.append(gender)
             # age
             age = age_list[np.argmax(res[19:22])]
             label_res.append(age)
-            # direction 
+            # direction
             direction = direct_list[np.argmax(res[23:])]
             label_res.append(direction)
             # glasses

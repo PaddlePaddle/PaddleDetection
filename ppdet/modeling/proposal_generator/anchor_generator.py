@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# The code is based on 
+# The code is based on
 # https://github.com/facebookresearch/detectron2/blob/main/detectron2/modeling/anchor_generator.py
 
 import math

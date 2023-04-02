@@ -28,15 +28,15 @@ __all__ = ['COTLoss']
 class COTLoss(nn.Layer):
     __shared__ = ['num_classes']
     def __init__(self,
-                 num_classes=80, 
+                 num_classes=80,
                  cot_scale=1,
                  cot_lambda=1):
         super(COTLoss, self).__init__()
         self.cot_scale = cot_scale
-        self.cot_lambda = cot_lambda    
-        self.num_classes = num_classes    
+        self.cot_lambda = cot_lambda
+        self.num_classes = num_classes
         
-    def forward(self, scores, targets, cot_relation):    
+    def forward(self, scores, targets, cot_relation):
         cls_name = 'loss_bbox_cls_cot'
         loss_bbox = {}
 
