@@ -8,6 +8,7 @@ PaddleDetection支持利用FastDeploy在NVIDIA GPU、X86 CPU、飞腾CPU、ARM C
 ## 2. 使用预导出的模型列表  
 为了方便开发者的测试，下面提供了PaddleDetection导出的各系列模型，开发者可直接下载使用。其中精度指标来源于PaddleDetection中对各模型的介绍，详情各参考PaddleDetection中的说明。
 
+### 2.1 目标检测及实例分割模型
 | 模型                                                               | 参数大小    | 精度    | 备注 |
 |:---------------------------------------------------------------- |:----- |:----- | :------ |
 | [picodet_l_320_coco_lcnet](https://bj.bcebos.com/paddlehub/fastdeploy/picodet_l_320_coco_lcnet.tgz) |23MB | Box AP 42.6% |
@@ -46,6 +47,14 @@ PaddleDetection支持利用FastDeploy在NVIDIA GPU、X86 CPU、飞腾CPU、ARM C
 | [yolov8_s_500e_coco](https://bj.bcebos.com/paddlehub/fastdeploy/yolov8_s_500e_coco.tgz) | 43M | Box AP 44.9%
 | [yolov8_n_500e_coco](https://bj.bcebos.com/paddlehub/fastdeploy/yolov8_n_500e_coco.tgz) | 13M | Box AP 37.3%
 
+### 2.2 关键点检测模型  
+| 模型 | 说明 | 模型格式 | 版本 |
+| :--- | :--- | :------- | :--- |
+| [PP-TinyPose-128x96](https://bj.bcebos.com/paddlehub/fastdeploy/PP_TinyPose_128x96_infer.tgz) | 单人关键点检测模型 | Paddle | [Release/2.5](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/keypoint/tiny_pose) |
+| [PP-TinyPose-256x192](https://bj.bcebos.com/paddlehub/fastdeploy/PP_TinyPose_256x192_infer.tgz) | 单人关键点检测模型 | Paddle | [Release/2.5](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/keypoint/tiny_pose) |
+| [PicoDet-S-Lcnet-Pedestrian-192x192](https://bj.bcebos.com/paddlehub/fastdeploy/PP_PicoDet_V2_S_Pedestrian_192x192_infer.tgz) + [PP-TinyPose-128x96](https://bj.bcebos.com/paddlehub/fastdeploy/PP_TinyPose_128x96_infer.tgz) | 单人关键点检测串联配置 | Paddle |[Release/2.5](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/keypoint/tiny_pose) |
+| [PicoDet-S-Lcnet-Pedestrian-320x320](https://bj.bcebos.com/paddlehub/fastdeploy/PP_PicoDet_V2_S_Pedestrian_320x320_infer.tgz) + [PP-TinyPose-256x192](https://bj.bcebos.com/paddlehub/fastdeploy/PP_TinyPose_256x192_infer.tgz)  | 多人关键点检测串联配置 | Paddle |[Release/2.5](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/keypoint/tiny_pose) |
+
 
 ## 3. 自行导出PaddleDetection部署模型  
 ### 3.1 模型版本
@@ -72,6 +81,7 @@ PaddleDetection支持利用FastDeploy在NVIDIA GPU、X86 CPU、飞腾CPU、ARM C
 - [TTFNet系列模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ttfnet)
 - [TOOD系列模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/tood)
 - [GFL系列模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/gfl)
+- [PP-PicoDet + PP-TinyPose系列模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/keypoint/tiny_pose/README.md)
 
 ### 3.2 模型导出   
 PaddleDetection模型导出，请参考其文档说明[模型导出](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.6/deploy/EXPORT_MODEL.md)，**注意**：PaddleDetection导出的模型包含`model.pdmodel`、`model.pdiparams`和`infer_cfg.yml`三个文件，FastDeploy会从yaml文件中获取模型在推理时需要的预处理信息

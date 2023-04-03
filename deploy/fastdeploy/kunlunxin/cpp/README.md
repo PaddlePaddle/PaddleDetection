@@ -15,6 +15,7 @@ PaddleDetection支持利用FastDeploy在NVIDIA GPU、X86 CPU、飞腾CPU、ARM C
 ## 4. 运行部署示例
 以Linux上推理为例，在本目录执行如下命令即可完成编译测试，支持此模型需保证FastDeploy版本1.0.4以上(x.x.x>=1.0.4)
 
+### 4.1 目标检测示例
 ```bash
 # 下载部署示例代码
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
@@ -35,7 +36,6 @@ wget https://gitee.com/paddlepaddle/PaddleDetection/raw/release/2.4/demo/0000000
 tar xvf ppyoloe_crn_l_300e_coco.tgz
 
 # 运行部署示例
-# CPU推理
 ./infer_demo ./ppyoloe_crn_l_300e_coco 000000014439.jpg
 ```
 
@@ -44,10 +44,46 @@ tar xvf ppyoloe_crn_l_300e_coco.tgz
 <img src="https://user-images.githubusercontent.com/19339784/184326520-7075e907-10ed-4fad-93f8-52d0e35d4964.jpg", width=480px, height=320px />
 </div> 
 
+### 4.2 关键点检测示例 
+```bash
+# 下载FastDeploy预编译库，用户可在上文提到的`FastDeploy预编译库`中自行选择合适的版本使用
+wget https://bj.bcebos.com/fastdeploy/release/cpp/fastdeploy-linux-x64-gpu-x.x.x.tgz
+tar xvf fastdeploy-linux-x64-gpu-x.x.x.tgz
+
+# 下载部署示例代码
+git clone https://github.com/PaddlePaddle/PaddleDetection.git
+cd PaddleDetection/deploy/fastdeploy/kunlunxin/cpp
+# 注意：如果当前分支找不到下面的fastdeploy测试代码，请切换到develop分支
+# git checkout develop
+
+# 编译部署示例
+mkdir build && cd build
+mv ../fastdeploy-linux-x64-gpu-x.x.x .
+cmake .. -DFASTDEPLOY_INSTALL_DIR=${PWD}/fastdeploy-linux-x64-gpu-x.x.x
+make -j
+
+# 下载PP-TinyPose模型文件和测试图片
+wget https://bj.bcebos.com/paddlehub/fastdeploy/PP_TinyPose_256x192_infer.tgz
+tar -xvf PP_TinyPose_256x192_infer.tgz
+wget https://bj.bcebos.com/paddlehub/fastdeploy/hrnet_demo.jpg
+
+# 运行部署示例
+./infer_tinypose_demo PP_TinyPose_256x192_infer hrnet_demo.jpg 
+```
+
+运行完成可视化结果如下图所示
+<div  align="center">  
+<img src="https://user-images.githubusercontent.com/16222477/196386764-dd51ad56-c410-4c54-9580-643f282f5a83.jpeg", width=359px, height=423px />
+</div>  
+
+关于如何进行多人关键点检测，请参考[PPTinyPose Pipeline示例](./det_keypoint_unite/)
+
 - 关于如何通过FastDeploy使用更多不同的推理后端，以及如何使用不同的硬件，请参考文档：[如何切换模型推理后端引擎](https://github.com/PaddlePaddle/FastDeploy/blob/develop/docs/cn/faq/how_to_change_backend.md)  
 
 ## 5. PaddleDetection C++接口
 FastDeploy目前支持的模型系列，包括但不限于`PPYOLOE`, `PicoDet`, `PaddleYOLOX`, `PPYOLO`, `FasterRCNN`，`SSD`,`PaddleYOLOv5`,`PaddleYOLOv6`,`PaddleYOLOv7`,`RTMDet`,`CascadeRCNN`,`PSSDet`,`RetinaNet`,`PPYOLOESOD`,`FCOS`,`TTFNet`,`TOOD`,`GFL`所有类名的构造函数和预测函数在参数上完全一致。所有模型的调用，只需要参考PPYOLOE的示例，即可快速调用。 
+
+### 5.1 目标检测及实例分割模型
 ```c++
 fastdeploy::vision::detection::PicoDet(const string& model_file, const string& params_file, const string& config_file, const RuntimeOption& runtime_option = RuntimeOption(), const ModelFormat& model_format = ModelFormat::PADDLE);
 fastdeploy::vision::detection::SOLOv2(const string& model_file, const string& params_file, const string& config_file, const RuntimeOption& runtime_option = RuntimeOption(), const ModelFormat& model_format = ModelFormat::PADDLE);
@@ -70,6 +106,12 @@ fastdeploy::vision::detection::FCOS(const string& model_file, const string& para
 fastdeploy::vision::detection::TOOD(const string& model_file, const string& params_file, const string& config_file, const RuntimeOption& runtime_option = RuntimeOption(), const ModelFormat& model_format = ModelFormat::PADDLE);
 fastdeploy::vision::detection::GFL(const string& model_file, const string& params_file, const string& config_file, const RuntimeOption& runtime_option = RuntimeOption(), const ModelFormat& model_format = ModelFormat::PADDLE);
 ```
+
+### 5.2 关键点检测模型  
+```C++
+fastdeploy::vision::keypointdetection::PPTinyPose(const string& model_file, const string& params_file, const string& config_file, const RuntimeOption& runtime_option = RuntimeOption(), const ModelFormat& model_format = ModelFormat::PADDLE);
+```
+
 PaddleDetection模型加载和初始化，其中model_file， params_file为导出的Paddle部署模型格式, config_file为PaddleDetection同时导出的部署配置yaml文件  
 
 ## 6. 更多指南

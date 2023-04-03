@@ -16,7 +16,7 @@ def parse_arguments():
         "--device",
         type=str,
         default='cpu',
-        help="Type of inference device, support 'kunlunxin', 'cpu' or 'gpu'.")
+        help="Type of inference device, support, 'cpu' or 'gpu'.")
     parser.add_argument(
         "--use_trt",
         type=ast.literal_eval,
