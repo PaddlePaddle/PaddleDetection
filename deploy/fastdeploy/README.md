@@ -78,7 +78,7 @@
 
 ### 2.3 更多部署方式
 
-- [Android ARM CPU部署](./android)  
+- [Android ARM CPU部署](https://github.com/PaddlePaddle/FastDeploy/tree/develop/java/android#Detection)  
 - [服务化Serving部署](./serving)  
 - [web部署](./web)  
 - [模型自动化压缩工具](./quantize)
