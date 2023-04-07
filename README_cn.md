@@ -133,6 +133,16 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
 
 - **🎈社区近期活动**
 
+  - **🏆半监督检测**
+
+    - `文章传送门`：[CVPR 2023 | 单阶段半监督目标检测SOTA：ARSL](https://mp.weixin.qq.com/s/UZLIGL6va2KBfofC-nKG4g)
+    - `代码传送门`：[ARSL](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/semi_det)
+
+    <div align="center">
+    <img src="https://user-images.githubusercontent.com/61035602/230522850-21873665-ba79-4f8d-8dce-43d736111df8.png"  height = "250" caption='' />
+    <p></p>
+    </div>
+
   - **👀YOLO系列专题**
 
     - `文章传送门`：[YOLOv8来啦！YOLO内卷期模型怎么选？9+款AI硬件如何快速部署？深度解析](https://mp.weixin.qq.com/s/rPwprZeHEpmGOe5wxrmO5g)
