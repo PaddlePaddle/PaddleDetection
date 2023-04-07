@@ -184,7 +184,7 @@ class DETR_SSOD(MultiSteamDetector):
                         proposal[:,:4],
                         proposal_label,
                         proposal_score,
-                        thr=0.9,
+                        thr=0.7,
                         min_size=self.train_cfg['min_pseduo_box_size'],
                     )
                     for proposal, proposal_label ,proposal_score in zip(
