@@ -1,3 +1,4 @@
+
 architecture: DETR
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
 norm_type: sync_bn

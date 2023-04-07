@@ -155,7 +155,7 @@ def match_state_dict(model_state_dict, weight_state_dict, mode='default'):
         return a == b or a.endswith("." + b) or b.endswith("." + a)
 
     def match(a, b):
-        if a.startswith('backbone.res5'):
+        if b.startswith('backbone.res5'):
             b = b[9:]
         return a == b or a.endswith("." + b)
 
@@ -174,15 +174,16 @@ def match_state_dict(model_state_dict, weight_state_dict, mode='default'):
     max_id = match_matrix.argmax(1)
     max_len = match_matrix.max(1)
     max_id[max_len == 0] = -1
+    load_id = set(max_id)
+    load_id.discard(-1)
     not_load_weight_name = []
+    for idx in range(len(weight_keys)):
+        if idx not in load_id:
+            not_load_weight_name.append(weight_keys[idx])
 
-    for match_idx in range(len(max_id)):
-        if max_id[match_idx] == -1:
-            not_load_weight_name.append(model_keys[match_idx])
     if len(not_load_weight_name) > 0:
-        logger.info('{} in model is not matched with pretrained weights, '
-                    'and its will be trained from scratch'.format(
-                        not_load_weight_name))
+        logger.info('{} in pretrained weight is not used in the model, '
+                    'and its will not be loaded'.format(not_load_weight_name))
     matched_keys = {}
     result_state_dict = {}
     for model_id, weight_id in enumerate(max_id):
@@ -309,4 +310,44 @@ def save_model(model,
     state_dict = optimizer.state_dict()
     state_dict['last_epoch'] = last_epoch
     paddle.save(state_dict, save_path + ".pdopt")
+    logger.info("Save checkpoint: {}".format(save_dir))
+  
+def save_semi_model(
+               teacher_model,
+               student_model,
+               optimizer,
+               save_dir,
+               save_name,
+               last_epoch,
+               last_iter):
+    """
+    save teacher and student model into disk.
+    Args:
+        teacher_model (dict): the teacher_model state_dict to save parameters.
+        student_model (dict): the student_model state_dict to save parameters.
+        optimizer (paddle.optimizer.Optimizer): the Optimizer instance to
+            save optimizer states.
+        save_dir (str): the directory to be saved.
+        save_name (str): the path to be saved.
+        last_epoch (int): the epoch index.
+        last_iter (int): the iter index.
+    """
+    if paddle.distributed.get_rank() != 0:
+        return
+    assert isinstance(teacher_model, dict), ("teacher_model is not a instance of dict, "
+                                     "please call teacher_model.state_dict() to get.")
+    assert isinstance(student_model, dict), ("student_model is not a instance of dict, "
+                                     "please call student_model.state_dict() to get.")
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    save_path = os.path.join(save_dir, save_name)
+    # save model
+    paddle.save(teacher_model, save_path +str(last_epoch)+"epoch_t.pdparams")
+    paddle.save(student_model, save_path +str(last_epoch)+"epoch_s.pdparams")
+
+    # save optimizer
+    state_dict = optimizer.state_dict()
+    state_dict['last_epoch'] = last_epoch
+    state_dict['last_iter'] = last_iter
+    paddle.save(state_dict, save_path + str(last_epoch)+"epoch.pdopt")
     logger.info("Save checkpoint: {}".format(save_dir))

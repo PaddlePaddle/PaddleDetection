@@ -9,3 +9,5 @@ _BASE_: [
 weights: output/ppdetr_r50vd_80e_coco/model_final
 find_unused_parameters: True
 log_iter: 200
+snapshot_epoch: 5
+pretrain_weights: http://10.181.196.20:8009/output/ppdetr_r50vd_80e_coco/99.pdparams
