@@ -1054,7 +1054,7 @@ class Trainer(object):
         """
         image_name = os.path.split(image_path)[-1]
         name, ext = os.path.splitext(image_name)
-        return os.path.join(output_dir, "{}".format(name)) + extsplit
+        return os.path.join(output_dir, "{}".format(name)) + ext
 
     def _get_infer_cfg_and_input_spec(self,
                                       save_dir,
