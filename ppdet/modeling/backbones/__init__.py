@@ -35,6 +35,7 @@ from . import convnext
 from . import vision_transformer
 from . import mobileone
 from . import trans_encoder
+from . import clrnet_resnet
 
 from .vgg import *
 from .resnet import *
@@ -60,3 +61,4 @@ from .vision_transformer import *
 from .vision_transformer import *
 from .mobileone import *
 from .trans_encoder import *
+from .clrnet_resnet import *

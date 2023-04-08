@@ -1,0 +1,50 @@
+metric: CULaneMetric
+num_classes: 5 # 4 + 1 (background)
+
+ori_img_w: &ori_img_w 1640
+ori_img_h: &ori_img_h 590
+img_w: &img_w 800
+img_h: &img_h 320
+cut_height: &cut_height 270
+# input_height: &input_height 800
+# input_width: &input_width 1440
+# input_size: &input_size [*input_height, *input_width]
+
+
+
+TrainDataset:
+  name: CULaneDataSet
+  dataset_dir: /home/yikh/mycode/CLRNet/data/CULane/
+  split: train
+  ori_img_w: *ori_img_w
+  ori_img_h: *ori_img_h
+  cut_height: *cut_height
+  img_w: *img_w
+  img_h: *img_h
+  num_points: 72
+  max_lanes: 4
+    
+EvalDataset:
+  name: CULaneDataSet
+  dataset_dir: /home/yikh/mycode/CLRNet/data/CULane/
+  split: test
+  cut_height: *cut_height
+  ori_img_w: *ori_img_w
+  ori_img_h: *ori_img_h
+  img_w: *img_w
+  img_h: *img_h
+  num_points: 72
+  max_lanes: 4
+
+
+TestDataset:
+  name: CULaneDataSet
+  dataset_dir: /home/yikh/mycode/CLRNet/data/CULane/ # if set, anno_path will be 'dataset_dir/anno_path'
+  split: test
+  cut_height: *cut_height
+  ori_img_w: *ori_img_w
+  ori_img_h: *ori_img_h
+  img_w: *img_w
+  img_h: *img_h
+  num_points: 72
+  max_lanes: 4

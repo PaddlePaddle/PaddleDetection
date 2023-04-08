@@ -1,0 +1,44 @@
+architecture: CLRNet
+# pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+
+CLRNet:
+  backbone: CLRResNet
+  neck: CLRFPN
+  clr_head: CLRHead
+
+CLRResNet:
+  resnet: 'resnet18'
+  pretrained: True
+
+CLRFPN:
+  in_channels: [128,256,512]
+  out_channel: 64
+  extra_stage: 0
+
+CLRHead:
+  num_points: 72
+  prior_feat_channels: 64
+  fc_hidden_dim: 64
+  num_priors: 192
+  num_fc: 2
+  refine_layers: 3 
+  sample_points: 36
+  loss: CLRNetLoss
+
+CLRNetLoss:
+  cls_loss_weight : 2.0
+  xyt_loss_weight : 0.2
+  iou_loss_weight : 2.0
+  seg_loss_weight : 1.0
+  refine_layers : 3
+  img_w : 800
+  img_h : 320
+  num_points : 72
+  ignore_label: 255
+  num_classes: 5 
+  bg_weight: 0.4
+
+LineProcess:
+  num_classes: 5
+  ignore_label: 255
+  bg_weight: 0.4

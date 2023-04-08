@@ -23,6 +23,7 @@ from . import es_pan
 from . import lc_pan
 from . import custom_pan
 from . import dilated_encoder
+from . import clrnet_fpn
 
 from .fpn import *
 from .yolo_fpn import *
@@ -37,3 +38,4 @@ from .lc_pan import *
 from .custom_pan import *
 from .dilated_encoder import *
 from .channel_mapper import *
+from .clrnet_fpn import *

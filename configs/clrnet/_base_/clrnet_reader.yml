@@ -1,0 +1,22 @@
+worker_num: 10
+TrainReader:
+  batch_size: 24
+  shuffle: True
+  drop_last: False
+
+
+
+
+EvalReader:
+  batch_size: 24
+  shuffle: False
+  drop_last: False
+
+
+
+TestReader:
+  batch_size: 24
+  shuffle: False
+  drop_last: False
+
+
