@@ -1,0 +1,14 @@
+architecture: SAM
+find_unused_parameters: True
+
+SAM:
+  image_encoder: ImageEncoderViT
+  prompt_encoder: PromptEncoder
+  mask_decoder: MaskDecoder
+
+ImageEncoderViT:
+  arch: 'B'
+
+# PromptEncoder:
+
+# MaskDecoder:

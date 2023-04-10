@@ -41,6 +41,8 @@ from . import yolof
 from . import pose3d_metro
 from . import centertrack
 from . import queryinst
+from . import keypoint_petr
+from . import sam
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -73,3 +75,4 @@ from .pose3d_metro import *
 from .centertrack import *
 from .queryinst import *
 from .keypoint_petr import *
+from .sam import *

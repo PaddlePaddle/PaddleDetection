@@ -35,6 +35,8 @@ from . import convnext
 from . import vision_transformer
 from . import mobileone
 from . import trans_encoder
+from . import vit_image_encoder
+from . import prompt_encoder
 
 from .vgg import *
 from .resnet import *
@@ -60,3 +62,5 @@ from .vision_transformer import *
 from .vision_transformer import *
 from .mobileone import *
 from .trans_encoder import *
+from .vit_image_encoder import *
+from .prompt_encoder import *

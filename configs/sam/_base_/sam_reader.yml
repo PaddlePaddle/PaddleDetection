@@ -1,0 +1,39 @@
+input_height: &input_height 1024
+input_width: &input_width 1024
+input_size: &input_size [*input_height, *input_width]
+worker_num: 2
+
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: *input_size, keep_ratio: True}
+    - NormalizeImage: {is_scale: True, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+    - PadResize: {target_size: *input_size}
+    - RandomFlip: {}
+  batch_transforms:
+    - Permute: {}
+  batch_size: 2
+  shuffle: True
+  drop_last: True
+  collate_batch: False
+
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: *input_size, keep_ratio: True}
+    - NormalizeImage: {is_scale: True, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+    - Pad: {size: *input_size, fill_value: [0., 0., 0.]}
+    - Permute: {}
+  batch_size: 1
+
+
+TestReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: *input_size, keep_ratio: True}
+    - NormalizeImage: {is_scale: True, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
+    - Pad: {size: *input_size, fill_value: [0., 0., 0.]}
+    - Permute: {}
+  batch_size: 1
+  fuse_normalize: False

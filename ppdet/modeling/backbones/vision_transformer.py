@@ -128,7 +128,7 @@ class Attention(nn.Layer):
         if self.q_bias is not None:
             qkv_bias = paddle.concat(
                 (self.q_bias, paddle.zeros_like(self.v_bias), self.v_bias))
-        qkv = F.linear(x, weight=self.qkv.weight, bias=qkv_bias)
+        qkv = F.linear(x, weight=self.qkv.weight, bias_attr=qkv_bias)
 
         qkv = qkv.reshape((-1, N, 3, self.num_heads,
                            C // self.num_heads)).transpose((2, 0, 3, 1, 4))

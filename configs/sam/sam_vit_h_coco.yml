@@ -1,0 +1,14 @@
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  './_base_/optimizer_1x.yml',
+  './_base_/sam_vit.yml',
+  './_base_/sam_reader.yml'
+]
+log_iter: 50
+snapshot_epoch: 1
+weights: output/sam_vit_h_coco/model_final
+
+
+ImageEncoderViT:
+  arch: 'H'

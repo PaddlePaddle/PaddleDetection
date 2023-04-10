@@ -39,6 +39,8 @@ from . import yolof_head
 from . import ppyoloe_contrast_head
 from . import centertrack_head
 from . import sparse_roi_head
+from . import petr_head
+from . import mask_decoder
 
 from .bbox_head import *
 from .mask_head import *
@@ -68,3 +70,4 @@ from .ppyoloe_contrast_head import *
 from .centertrack_head import *
 from .sparse_roi_head import *
 from .petr_head import *
+from .mask_decoder import *
