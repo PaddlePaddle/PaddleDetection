@@ -1,14 +1,14 @@
 export FLAGS_allocator_strategy=auto_growth
 name=b
 # name=l
-name=h
+# name=h
 model_name=sam
 job_name=sam_vit_${name}_coco
 config=configs/${model_name}/${job_name}.yml
 log_dir=log_dir/${job_name}
-# weights=../sam_vit_b_01ec64.pdparams
+weights=../sam_vit_b_01ec64.pdparams
 # weights=../sam_vit_l_0b3195.pdparams
-weights=../sam_vit_h_4b8939.pdparams
+# weights=../sam_vit_h_4b8939.pdparams
 #weights=../sam_vit_${name}.pdparams
 
 # 1. training
@@ -19,7 +19,7 @@ weights=../sam_vit_h_4b8939.pdparams
 #CUDA_VISIBLE_DEVICES=1 python3.7 tools/eval.py -c ${config} -o weights=${weights} #--amp
 
 # 3. tools infer
-CUDA_VISIBLE_DEVICES=2 python3.7 tools/infer.py -c ${config} -o weights=${weights} --infer_img=demo/000000014439.jpg --draw_threshold=0.5
+CUDA_VISIBLE_DEVICES=1 python3.7 tools/infer.py -c ${config} -o weights=${weights} --infer_img=demo/000000014439.jpg --draw_threshold=0.2
 
 # 4. export
 #CUDA_VISIBLE_DEVICES=1 python3.7 tools/export_model.py -c ${config} -o weights=${weights} #exclude_nms=True trt=True

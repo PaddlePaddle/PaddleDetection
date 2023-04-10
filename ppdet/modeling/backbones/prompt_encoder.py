@@ -21,12 +21,13 @@ Modified from https://github.com/facebookresearch/segment-anything
 
 import paddle
 import paddle.nn as nn
-import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 
 import numpy as np
 from typing import Any, Optional, Tuple, Type
 from .vit_image_encoder import LayerNorm2d
+
+__all__ = ['PromptEncoder']
 
 
 @register
@@ -61,26 +62,26 @@ class PromptEncoder(nn.Layer):
         point_embeddings = [
             nn.Linear(1, embed_dim) for i in range(self.num_point_embeddings)
         ]
-        self.point_embeddings = paddle.nn.LayerList(sublayers=point_embeddings)
+        self.point_embeddings = nn.LayerList(sublayers=point_embeddings)
         self.not_a_point_embed = nn.Linear(1, embed_dim)
         self.mask_input_size = 4 * image_embedding_size[
             0], 4 * image_embedding_size[1]
-        self.mask_downscaling = paddle.nn.Sequential(
-            paddle.nn.Conv2D(
+        self.mask_downscaling = nn.Sequential(
+            nn.Conv2D(
                 in_channels=1,
                 out_channels=mask_in_chans // 4,
                 kernel_size=2,
                 stride=2),
             LayerNorm2d(mask_in_chans // 4),
             activation(),
-            paddle.nn.Conv2D(
+            nn.Conv2D(
                 in_channels=mask_in_chans // 4,
                 out_channels=mask_in_chans,
                 kernel_size=2,
                 stride=2),
             LayerNorm2d(mask_in_chans),
             activation(),
-            paddle.nn.Conv2D(
+            nn.Conv2D(
                 in_channels=mask_in_chans,
                 out_channels=embed_dim,
                 kernel_size=1))
@@ -192,7 +193,7 @@ class PromptEncoder(nn.Layer):
         return sparse_embeddings, dense_embeddings
 
 
-class PositionEmbeddingRandom(paddle.nn.Layer):
+class PositionEmbeddingRandom(nn.Layer):
     """
     Positional encoding using random spatial frequencies.
     """

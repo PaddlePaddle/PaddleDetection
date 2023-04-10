@@ -18,7 +18,7 @@ Modified from https://github.com/facebookresearch/segment-anything
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 '''
-
+from IPython import embed
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -27,20 +27,35 @@ from ppdet.core.workspace import register, serializable
 
 from typing import Optional, Tuple, Type
 
+__all__ = ['ImageEncoderViT']
+
+MODEL_cfg = {
+    'B': dict(
+        encoder_embed_dim=768,
+        encoder_depth=12,
+        encoder_num_heads=12,
+        encoder_global_attn_indexes=[2, 5, 8, 11]),
+    'L': dict(
+        encoder_embed_dim=1024,
+        encoder_depth=24,
+        encoder_num_heads=16,
+        encoder_global_attn_indexes=[5, 11, 17, 23]),
+    'H': dict(
+        encoder_embed_dim=1280,
+        encoder_depth=32,
+        encoder_num_heads=16,
+        encoder_global_attn_indexes=[7, 15, 23, 31]),
+}
+
 
 class MLPBlock(nn.Layer):
-    def __init__(self,
-                 embedding_dim: int,
-                 mlp_dim: int,
-                 act: Type[paddle.nn.Layer]=paddle.nn.GELU) -> None:
+    def __init__(self, embedding_dim, mlp_dim, act=nn.GELU) -> None:
         super().__init__()
-        self.lin1 = paddle.nn.Linear(
-            in_features=embedding_dim, out_features=mlp_dim)
-        self.lin2 = paddle.nn.Linear(
-            in_features=mlp_dim, out_features=embedding_dim)
+        self.lin1 = nn.Linear(embedding_dim, mlp_dim)
+        self.lin2 = nn.Linear(mlp_dim, embedding_dim)
         self.act = act()
 
-    def forward(self, x: paddle.Tensor) -> paddle.Tensor:
+    def forward(self, x):
         return self.lin2(self.act(self.lin1(x)))
 
 
@@ -62,39 +77,20 @@ class LayerNorm2d(nn.Layer):
         return x
 
 
-MODEL_cfg = {
-    'B': dict(
-        encoder_embed_dim=1280,
-        encoder_depth=32,
-        encoder_num_heads=16,
-        encoder_global_attn_indexes=[7, 15, 23, 31], ),
-    'L': dict(
-        encoder_embed_dim=1024,
-        encoder_depth=24,
-        encoder_num_heads=16,
-        encoder_global_attn_indexes=[5, 11, 17, 23], ),
-    'H': dict(
-        encoder_embed_dim=768,
-        encoder_depth=12,
-        encoder_num_heads=12,
-        encoder_global_attn_indexes=[2, 5, 8, 11], ),
-}
-
-
 class Block(nn.Layer):
     """Transformer blocks with support of window attention and residual propagation blocks"""
 
     def __init__(self,
-                 dim: int,
-                 num_heads: int,
-                 mlp_ratio: float=4.0,
-                 qkv_bias: bool=True,
-                 norm_layer: Type[paddle.nn.Layer]=paddle.nn.LayerNorm,
-                 act_layer: Type[paddle.nn.Layer]=paddle.nn.GELU,
-                 use_rel_pos: bool=False,
-                 rel_pos_zero_init: bool=True,
-                 window_size: int=0,
-                 input_size: Optional[Tuple[int, int]]=None) -> None:
+                 dim,
+                 num_heads,
+                 mlp_ratio=4.0,
+                 qkv_bias=True,
+                 norm_layer=nn.LayerNorm,
+                 act_layer=nn.GELU,
+                 use_rel_pos=False,
+                 rel_pos_zero_init=True,
+                 window_size=0,
+                 input_size=None):
         """
         Args:
             dim (int): Number of input channels.
@@ -188,14 +184,13 @@ class Attention(nn.Layer):
             [2, 0, 3, 1, 4])
         # q, k, v with shape (B * nHead, H * W, C)
         q, k, v = qkv.reshape([3, B * self.num_heads, H * W, -1]).unbind(0)
-
-        attn = (q * self.scale) @k.transpose([-2, -1])
+        attn = (q * self.scale) @k.transpose([0, 2, 1])
 
         if self.use_rel_pos:
             attn = add_decomposed_rel_pos(attn, q, self.rel_pos_h,
                                           self.rel_pos_w, (H, W), (H, W))
 
-        attn = attn.softmax(dim=-1)
+        attn = F.softmax(attn, axis=-1)
         x = (attn @v).reshape([B, self.num_heads, H, W, -1]).transpose(
             [0, 2, 3, 1, 4]).reshape([B, H, W, -1])
         x = self.proj(x)
@@ -203,8 +198,7 @@ class Attention(nn.Layer):
         return x
 
 
-def window_partition(x: paddle.Tensor,
-                     window_size: int) -> Tuple[paddle.Tensor, Tuple[int, int]]:
+def window_partition(x, window_size):
     """
     Partition into non-overlapping windows with padding if needed.
     Args:
@@ -219,7 +213,7 @@ def window_partition(x: paddle.Tensor,
     pad_h = (window_size - H % window_size) % window_size
     pad_w = (window_size - W % window_size) % window_size
     if pad_h > 0 or pad_w > 0:
-        x = F.pad(x, pad=(0, 0, 0, pad_w, 0, pad_h))
+        x = F.pad(x, pad=(0, 0, 0, pad_w, 0, pad_h, 0, 0))
     Hp, Wp = H + pad_h, W + pad_w
     x = x.reshape(
         [B, Hp // window_size, window_size, Wp // window_size, window_size, C])
@@ -322,10 +316,6 @@ def add_decomposed_rel_pos(attn: paddle.Tensor,
 
 
 class PatchEmbed(nn.Layer):
-    """
-    Image to Patch Embedding.
-    """
-
     def __init__(self,
                  kernel_size: Tuple[int, int]=(16, 16),
                  stride: Tuple[int, int]=(16, 16),
@@ -341,14 +331,14 @@ class PatchEmbed(nn.Layer):
             embed_dim (int):  embed_dim (int): Patch embedding dimension.
         """
         super().__init__()
-        self.proj = paddle.nn.Conv2D(
+        self.proj = nn.Conv2D(
             in_channels=in_chans,
             out_channels=embed_dim,
             kernel_size=kernel_size,
             stride=stride,
             padding=padding)
 
-    def forward(self, x: paddle.Tensor) -> paddle.Tensor:
+    def forward(self, x):
         x = self.proj(x)
         x = x.transpose(perm=[0, 2, 3, 1])
         return x
@@ -416,7 +406,7 @@ class ImageEncoderViT(nn.Layer):
                 ],
                 default_initializer=Constant(value=0.))
 
-        self.blocks = paddle.nn.LayerList()
+        self.blocks = nn.LayerList()
         for i in range(depth):
             block = Block(
                 dim=embed_dim,
@@ -431,14 +421,14 @@ class ImageEncoderViT(nn.Layer):
                 input_size=(img_size // patch_size, img_size // patch_size))
             self.blocks.append(block)
 
-        self.neck = paddle.nn.Sequential(
-            paddle.nn.Conv2D(
+        self.neck = nn.Sequential(
+            nn.Conv2D(
                 in_channels=embed_dim,
                 out_channels=out_chans,
                 kernel_size=1,
                 bias_attr=False),
             LayerNorm2d(out_chans),
-            paddle.nn.Conv2D(
+            nn.Conv2D(
                 in_channels=out_chans,
                 out_channels=out_chans,
                 kernel_size=3,
@@ -446,7 +436,7 @@ class ImageEncoderViT(nn.Layer):
                 bias_attr=False),
             LayerNorm2d(out_chans))
 
-    def forward(self, x: paddle.Tensor) -> paddle.Tensor:
+    def forward(self, x):
         x = x['image'] if isinstance(x, dict) else x
         x = self.patch_embed(x)
         if self.pos_embed is not None:

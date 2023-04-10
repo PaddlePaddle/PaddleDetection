@@ -19,6 +19,7 @@ Modified from https://github.com/facebookresearch/segment-anything
 # LICENSE file in the root directory of this source tree.
 '''
 import math
+from IPython import embed
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -26,6 +27,8 @@ from ppdet.core.workspace import register, serializable
 
 from typing import List, Tuple, Type
 from ..backbones.vit_image_encoder import LayerNorm2d, MLPBlock
+
+__all__ = ['MaskDecoder']
 
 
 class TwoWayTransformer(nn.Layer):
@@ -107,12 +110,12 @@ class TwoWayTransformer(nn.Layer):
 
 class TwoWayAttentionBlock(nn.Layer):
     def __init__(self,
-                 embedding_dim: int,
-                 num_heads: int,
-                 mlp_dim: int=2048,
-                 activation: Type[paddle.nn.Layer]=paddle.nn.ReLU,
-                 attention_downsample_rate: int=2,
-                 skip_first_layer_pe: bool=False) -> None:
+                 embedding_dim,
+                 num_heads,
+                 mlp_dim=2048,
+                 activation=nn.ReLU,
+                 attention_downsample_rate=2,
+                 skip_first_layer_pe=False):
         """
         A transformer block with four layers: (1) self-attention of sparse
         inputs, (2) cross attention of sparse inputs to dense inputs, (3) mlp
@@ -128,25 +131,25 @@ class TwoWayAttentionBlock(nn.Layer):
         """
         super().__init__()
         self.self_attn = Attention(embedding_dim, num_heads)
-        self.norm1 = paddle.nn.LayerNorm(
+        self.norm1 = nn.LayerNorm(
             normalized_shape=embedding_dim,
             epsilon=1e-05,
             weight_attr=None,
             bias_attr=None)
         self.cross_attn_token_to_image = Attention(
             embedding_dim, num_heads, downsample_rate=attention_downsample_rate)
-        self.norm2 = paddle.nn.LayerNorm(
+        self.norm2 = nn.LayerNorm(
             normalized_shape=embedding_dim,
             epsilon=1e-05,
             weight_attr=None,
             bias_attr=None)
         self.mlp = MLPBlock(embedding_dim, mlp_dim, activation)
-        self.norm3 = paddle.nn.LayerNorm(
+        self.norm3 = nn.LayerNorm(
             normalized_shape=embedding_dim,
             epsilon=1e-05,
             weight_attr=None,
             bias_attr=None)
-        self.norm4 = paddle.nn.LayerNorm(
+        self.norm4 = nn.LayerNorm(
             normalized_shape=embedding_dim,
             epsilon=1e-05,
             weight_attr=None,
@@ -238,7 +241,6 @@ class Attention(nn.Layer):
 class MaskDecoder(nn.Layer):
     def __init__(self,
                  num_multimask_outputs=3,
-                 transformer=TwoWayTransformer,
                  transformer_dim=256,
                  activation=nn.GELU,
                  iou_head_depth=3,
@@ -261,27 +263,33 @@ class MaskDecoder(nn.Layer):
         """
         super().__init__()
         self.transformer_dim = transformer_dim
-        self.transformer = transformer
+        self.transformer = TwoWayTransformer(
+            depth=2,
+            embedding_dim=256,
+            num_heads=8,
+            mlp_dim=2048,
+            activation=nn.GELU)
+
         self.num_multimask_outputs = num_multimask_outputs
         self.iou_token = nn.Linear(1, transformer_dim)  # Embedding
         self.num_mask_tokens = num_multimask_outputs + 1
         self.mask_tokens = nn.Linear(self.num_mask_tokens,
                                      transformer_dim)  # Embedding
         self.output_upscaling = nn.Sequential(
-            paddle.nn.Conv2DTranspose(
+            nn.Conv2DTranspose(
                 in_channels=transformer_dim,
                 out_channels=transformer_dim // 4,
                 kernel_size=2,
                 stride=2),
             LayerNorm2d(transformer_dim // 4),
             activation(),
-            paddle.nn.Conv2DTranspose(
+            nn.Conv2DTranspose(
                 in_channels=transformer_dim // 4,
                 out_channels=transformer_dim // 8,
                 kernel_size=2,
                 stride=2),
             activation())
-        self.output_hypernetworks_mlps = paddle.nn.LayerList(sublayers=[
+        self.output_hypernetworks_mlps = nn.LayerList(sublayers=[
             MLP(transformer_dim, transformer_dim, transformer_dim // 8, 3)
             for i in range(self.num_mask_tokens)
         ])
@@ -322,33 +330,30 @@ class MaskDecoder(nn.Layer):
         iou_pred = iou_pred[:, (mask_slice)]
         return masks, iou_pred
 
-    def predict_masks(self,
-                      image_embeddings: paddle.Tensor,
-                      image_pe: paddle.Tensor,
-                      sparse_prompt_embeddings: paddle.Tensor,
-                      dense_prompt_embeddings: paddle.Tensor) -> Tuple[
-                          paddle.Tensor, paddle.Tensor]:
+    def predict_masks(
+            self,
+            image_embeddings: paddle.Tensor,  # [1, 256, 64, 64]
+            image_pe: paddle.Tensor,  # [1, 256, 64, 64]
+            sparse_prompt_embeddings: paddle.Tensor,  # [1, 0, 256]
+            dense_prompt_embeddings: paddle.Tensor):  # [1, 256, 64, 64]
         """Predicts masks. See 'forward' for more details."""
         output_tokens = paddle.concat(
             x=[self.iou_token.weight, self.mask_tokens.weight], axis=0)
         output_tokens = output_tokens.unsqueeze(axis=0).expand(
             [sparse_prompt_embeddings.shape[0], -1, -1])
+        # [1, 5, 256]
         tokens = paddle.concat(
             x=(output_tokens, sparse_prompt_embeddings), axis=1)
         src = paddle.repeat_interleave(
-            image_embeddings, tokens.shape[0], dim=0)  ####
+            image_embeddings, tokens.shape[0], axis=0)
         src = src + dense_prompt_embeddings
-        pos_src = paddle.repeat_interleave(
-            image_pe, tokens.shape[0], dim=0)  ####
+        pos_src = paddle.repeat_interleave(image_pe, tokens.shape[0], axis=0)
         b, c, h, w = src.shape
         hs, src = self.transformer(src, pos_src, tokens)
         iou_token_out = hs[:, (0), :]
         mask_tokens_out = hs[:, 1:1 + self.num_mask_tokens, :]
-        x = src
-        perm_2 = list(range(x.ndim))
-        perm_2[1] = 2
-        perm_2[2] = 1
-        src = x.transpose(perm=perm_2).reshape([b, c, h, w])  ### NOTE
+        src = src.transpose([0, 2, 1]).reshape([b, c, h, w])
+        # [1, 256, 64, 64]
         upscaled_embedding = self.output_upscaling(src)
         hyper_in_list: List[paddle.Tensor] = []
         for i in range(self.num_mask_tokens):

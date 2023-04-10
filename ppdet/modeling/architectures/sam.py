@@ -62,48 +62,45 @@ class SAM(BaseArch):
 
         curr_embedding = self.image_encoder(self.inputs)
 
-        outputs = []
-        # for image_record, curr_embedding in zip(batched_input, image_embeddings):
-        if 1:
-            image_record = self.inputs
-            multimask_output = self.inputs
+        image_record = self.inputs  ### TODO
+        multimask_output = self.inputs
 
-            if "point_coords" in image_record:
-                points = (image_record["point_coords"],
-                          image_record["point_labels"])
-            else:
-                points = None
+        if "point_coords" in image_record:
+            points = (image_record["point_coords"],
+                      image_record["point_labels"])
+        else:
+            points = None
 
-            sparse_embeddings, dense_embeddings = self.prompt_encoder(
-                points=points,
-                boxes=image_record.get("boxes", None),
-                masks=image_record.get("mask_inputs", None), )
+        sparse_embeddings, dense_embeddings = self.prompt_encoder(
+            points=points,
+            boxes=image_record.get("boxes", None),
+            masks=image_record.get("mask_inputs", None))
 
-            low_res_masks, iou_predictions = self.mask_decoder(
-                image_embeddings=curr_embedding.unsqueeze(0),
-                image_pe=self.prompt_encoder.get_dense_pe(),
-                sparse_prompt_embeddings=sparse_embeddings,
-                dense_prompt_embeddings=dense_embeddings,
-                multimask_output=multimask_output, )
+        low_res_masks, iou_predictions = self.mask_decoder(
+            image_embeddings=curr_embedding,
+            image_pe=self.prompt_encoder.get_dense_pe(),
+            sparse_prompt_embeddings=sparse_embeddings,
+            dense_prompt_embeddings=dense_embeddings,
+            multimask_output=multimask_output)
 
-            masks = self.postprocess_masks(
-                low_res_masks,
-                input_size=image_record["image"].shape[-2:],
-                original_size=image_record["original_size"], )
-            masks = masks > self.mask_threshold
-            outputs.append({
-                "masks": masks,
-                "iou_predictions": iou_predictions,
-                "low_res_logits": low_res_masks,
-            })
-        return outputs[0]
+        masks = self.postprocess_masks(
+            low_res_masks,
+            input_size=image_record["image"].shape[-2:],
+            original_size=image_record["original_size"])
+        masks = masks > self.mask_threshold
+        outputs = {
+            "masks": masks,
+            "iou_predictions": iou_predictions,
+            "low_res_logits": low_res_masks,
+        }
+        return outputs
 
     def postprocess_masks(self, masks, input_size, original_size):
         """
         Remove padding and upscale masks to the original image size.
 
         Arguments:
-          masks (torch.Tensor): Batched masks from the mask_decoder,
+          masks (paddle.Tensor): Batched masks from the mask_decoder,
             in BxCxHxW format.
           input_size (tuple(int, int)): The size of the image input to the
             model, in (H, W) format. Used to remove padding.
@@ -111,14 +108,13 @@ class SAM(BaseArch):
             before resizing for input to the model, in (H, W) format.
 
         Returns:
-          (torch.Tensor): Batched masks in BxCxHxW format, where (H, W)
+          (paddle.Tensor): Batched masks in BxCxHxW format, where (H, W)
             is given by original_size.
         """
         masks = F.interpolate(
-            masks,
-            (self.image_encoder.img_size, self.image_encoder.img_size),
+            masks, (self.image_encoder.img_size, self.image_encoder.img_size),
             mode="bilinear",
-            align_corners=False, )
+            align_corners=False)
         masks = masks[..., :input_size[0], :input_size[1]]
         masks = F.interpolate(
             masks, original_size, mode="bilinear", align_corners=False)
