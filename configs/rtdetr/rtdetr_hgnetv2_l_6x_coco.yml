@@ -18,18 +18,12 @@ DETR:
 
 PPHGNetV2:
   stem_channels: [24, 24, 48]
-
-  # in_channels, mid_channels, out_channels, blocks, downsample, dw_block, dw_kernel_size, act
   stage_config: {
         "stage1": [48, 48, 128, 1, False, False, 3, "ReLU"],
         "stage2": [128, 96, 512, 1, True, False, 3, "ReLU"],
         "stage3": [512, 192, 1024, 3, True, True, 5, "ReLU"],
         "stage4": [1024, 384, 2048, 1, True, True, 5, "ReLU"],
   }
-  depth_mult: 1.0
-  width_mult: 1.0
-  layer_num: 6
-  dw_act: [False, True]
   return_idx: [1, 2, 3]
   freeze_stem_only: True
   freeze_at: 0

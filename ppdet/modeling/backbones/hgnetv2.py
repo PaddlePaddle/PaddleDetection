@@ -1,4 +1,4 @@
-# copyright (c) 2022 PaddlePaddle Authors. All Rights Reserve.
+# copyright (c) 2023 PaddlePaddle Authors. All Rights Reserve.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -337,14 +337,6 @@ class HG_Block(nn.Layer):
             freeze_norm=freeze_norm,
             lr=lr,
             stride=1)
-        '''
-        self.aggregation_conv = ConvBNAct(
-            in_channels=total_channels,
-            out_channels=out_channels,
-            kernel_size=1,
-            stride=1)
-        '''
-        #self.att = ESEModule(out_channels, lr=lr)
 
     def forward(self, x):
         identity = x
@@ -356,7 +348,6 @@ class HG_Block(nn.Layer):
         x = paddle.concat(output, axis=1)
         x = self.aggregation_conv1(x)
         x = self.aggregation_conv2(x)
-        #x = self.att(x)
         if self.identity:
             x += identity
         return x
@@ -433,7 +424,7 @@ class PPHGNetV2(nn.Layer):
     PPHGNet
     Args:
         stem_channels: list. Stem channel list of PPHGNet.
-        stage_config: dict. The configuration of each stage of PPHGNet. such as the number of channels, stride, etc.
+        stage_config: dict. The configuration of each stage of PPHGNet. [in_channels, mid_channels, out_channels, blocks, downsample, dw_block, dw_kernel_size, act]
         layer_num: int. Number of layers of HG_Block.
     Returns:
         model: nn.Layer. Specific PPHGNet model depends on args.
@@ -442,10 +433,10 @@ class PPHGNetV2(nn.Layer):
     def __init__(self,
                  stem_channels,
                  stage_config,
-                 layer_num,
+                 layer_num=6,
                  depth_mult=1.0,
                  width_mult=1.0,
-                 dw_act=[True, True],
+                 dw_act=[False, True],
                  return_idx=[0, 1, 2, 3],
                  lr_mult_list=[1.0, 1.0, 1.0, 1.0],
                  freeze_stem_only=False,

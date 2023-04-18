@@ -25,10 +25,6 @@ PPHGNetV2:
         "stage3": [512, 256, 1024, 5, True, True, 5, "ReLU"],
         "stage4": [1024, 512, 2048, 2, True, True, 5, "ReLU"],
   }
-  depth_mult: 1.0
-  width_mult: 1.0
-  layer_num: 6
-  dw_act: [False, True]
   return_idx: [1, 2, 3]
   freeze_stem_only: True
   freeze_at: 0
