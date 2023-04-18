@@ -1,12 +1,12 @@
 _BASE_: [
   '../datasets/coco_detection.yml',
   '../runtime.yml',
-  '_base_/optimizer_80e.yml',
-  '_base_/ppdetr_r50vd.yml',
-  '_base_/ppdetr_reader.yml',
+  '_base_/optimizer_6x.yml',
+  '_base_/rtdetr_r50vd.yml',
+  '_base_/rtdetr_reader.yml',
 ]
 
-weights: output/ppdetr_r101vd_80e_coco/model_final
+weights: output/rtdetr_r101vd_6x_coco/model_final
 find_unused_parameters: True
 log_iter: 200
 

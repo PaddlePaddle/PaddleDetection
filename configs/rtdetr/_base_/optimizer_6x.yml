@@ -1,4 +1,4 @@
-epoch: 80
+epoch: 72
 
 LearningRate:
   base_lr: 0.0001
