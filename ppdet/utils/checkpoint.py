@@ -18,7 +18,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
-from typing import KeysView
 import numpy as np
 import paddle
 import paddle.nn as nn
