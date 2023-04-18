@@ -37,6 +37,7 @@ from . import mobileone
 from . import trans_encoder
 from . import focalnet
 from . import vit_mae
+from . import hgnetv2
 
 from .vgg import *
 from .resnet import *
@@ -64,3 +65,4 @@ from .trans_encoder import *
 from .focalnet import *
 from .vitpose import *
 from .vit_mae import *
+from .hgnetv2 import *
