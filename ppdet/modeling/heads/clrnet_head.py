@@ -361,7 +361,7 @@ class CLRHead(nn.Layer):
 
 
 
-            mask = ious < nms_overlap_thresh
+            mask = ious <= nms_overlap_thresh
             id = paddle.where(mask==False)
 
             if id[0].shape[0] == 0:
