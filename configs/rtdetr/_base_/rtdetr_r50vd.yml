@@ -13,7 +13,7 @@ eval_size: [640, 640]
 DETR:
   backbone: ResNet
   neck: HybridEncoder
-  transformer: PPDETRTransformer
+  transformer: RTDETRTransformer
   detr_head: DINOHead
   post_process: DETRPostProcess
 
@@ -42,7 +42,7 @@ HybridEncoder:
   expansion: 1.0
 
 
-PPDETRTransformer:
+RTDETRTransformer:
   num_queries: 300
   position_embed_type: sine
   feat_strides: [8, 16, 32]

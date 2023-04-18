@@ -36,7 +36,7 @@ from ..initializer import (linear_init_, constant_, xavier_uniform_, normal_,
 from .utils import (_get_clones, get_sine_pos_embed,
                     get_contrastive_denoising_training_group, inverse_sigmoid)
 
-__all__ = ['PPDETRTransformer']
+__all__ = ['RTDETRTransformer']
 
 
 class PPMSDeformableAttention(MSDeformableAttention):
@@ -254,7 +254,7 @@ class TransformerDecoder(nn.Layer):
 
 
 @register
-class PPDETRTransformer(nn.Layer):
+class RTDETRTransformer(nn.Layer):
     __shared__ = ['num_classes', 'hidden_dim', 'eval_size']
 
     def __init__(self,
@@ -278,7 +278,7 @@ class PPDETRTransformer(nn.Layer):
                  eval_size=None,
                  eval_idx=-1,
                  eps=1e-2):
-        super(PPDETRTransformer, self).__init__()
+        super(RTDETRTransformer, self).__init__()
         assert position_embed_type in ['sine', 'learned'], \
             f'ValueError: position_embed_type not supported {position_embed_type}!'
         assert len(backbone_feat_channels) <= num_levels
