@@ -32,7 +32,7 @@ RT-DETR是第一个实时端到端目标检测器。具体而言，我们设计�
 <details open>
 <summary>依赖包:</summary>
 
-- PaddlePaddle == 2.4.1
+- PaddlePaddle >= 2.4.1
 
 </details>
 
@@ -85,7 +85,7 @@ python tools/infer.py -c configs/rtdetr/rtdetr_r50vd_6x_coco.yml \
 ### 导出及转换模型
 
 <details open>
-<summary>1. 导出模型</summary>
+<summary>1. 导出模型 </summary>
 
 ```shell
 cd PaddleDetection
@@ -97,7 +97,7 @@ python tools/export_model.py -c configs/rtdetr/rtdetr_r50vd_6x_coco.yml \
 </details>
 
 <details>
-<summary>2. 转换模型至ONNX (点击展开)</summary>
+<summary>2. 转换模型至ONNX </summary>
 
 - 安装[Paddle2ONNX](https://github.com/PaddlePaddle/Paddle2ONNX) 和 ONNX
 
@@ -114,6 +114,18 @@ paddle2onnx --model_dir=./output_inference/rtdetr_r50vd_6x_coco/ \
             --params_filename model.pdiparams \
             --opset_version 16 \
             --save_file rtdetr_r50vd_6x_coco.onnx
+```
+
+- 转换成TensorRT（可选）:
+
+```shell
+# 保证TensorRT的版本>=8.5.1
+trtexec --onnx=./rtdetr_r50vd_6x_coco.onnx \
+        --workspace=4096 \
+        --shapes=image:1x3x640x640 \
+        --saveEngine=rtdetr_r50vd_6x_coco.trt \
+        --avgRuns=100 \
+        --fp16
 ```
 
 </details>
