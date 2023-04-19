@@ -449,7 +449,7 @@ class SOLOv2Head(nn.Layer):
             seg_masks, cate_labels, cate_scores = self.get_seg_single(
                 cate_pred_list, seg_pred_list, kernel_pred_list, featmap_size,
                 im_shape[idx], scale_factor[idx][0])
-            bbox_num = paddle.shape(cate_labels)[0]
+            bbox_num = paddle.shape(cate_labels)[0:1]
         return seg_masks, cate_labels, cate_scores, bbox_num
 
     def get_seg_single(self, cate_preds, seg_preds, kernel_preds, featmap_size,

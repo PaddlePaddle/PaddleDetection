@@ -127,8 +127,8 @@ class BBoxPostProcess(object):
                     bbox_num_i = fake_bbox_num
                 else:
                     bboxes_i = bboxes[id_start:id_start + bbox_num[i], :]
-                    bbox_num_i = bbox_num[i]
-                    id_start += bbox_num[i]
+                    bbox_num_i = bbox_num[i:i + 1]
+                    id_start += bbox_num[i:i + 1]
                 bboxes_list.append(bboxes_i)
                 bbox_num_list.append(bbox_num_i)
             bboxes = paddle.concat(bboxes_list)
@@ -142,10 +142,10 @@ class BBoxPostProcess(object):
             # scale_factor: scale_y, scale_x
             for i in range(bbox_num.shape[0]):
                 expand_shape = paddle.expand(origin_shape[i:i + 1, :],
-                                             [bbox_num[i], 2])
-                scale_y, scale_x = scale_factor[i][0], scale_factor[i][1]
+                                             [bbox_num[i:i + 1], 2])
+                scale_y, scale_x = scale_factor[i, 0:1], scale_factor[i, 1:2]
                 scale = paddle.concat([scale_x, scale_y, scale_x, scale_y])
-                expand_scale = paddle.expand(scale, [bbox_num[i], 4])
+                expand_scale = paddle.expand(scale, [bbox_num[i:i + 1], 4])
                 origin_shape_list.append(expand_shape)
                 scale_factor_list.append(expand_scale)
 
@@ -158,8 +158,8 @@ class BBoxPostProcess(object):
             scale = paddle.concat(
                 [scale_x, scale_y, scale_x, scale_y]).unsqueeze(0)
             self.origin_shape_list = paddle.expand(origin_shape,
-                                                   [bbox_num[0], 2])
-            scale_factor_list = paddle.expand(scale, [bbox_num[0], 4])
+                                                   [bbox_num[0:1], 2])
+            scale_factor_list = paddle.expand(scale, [bbox_num[0:1], 4])
 
         # bboxes: [N, 6], label, score, bbox
         pred_label = bboxes[:, 0:1]
