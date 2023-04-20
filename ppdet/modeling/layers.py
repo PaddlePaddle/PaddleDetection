@@ -1003,7 +1003,7 @@ class MaskMatrixNMS(object):
         keep = paddle.squeeze(keep, axis=[1])
         # Prevent empty and increase fake data
         keep = paddle.concat(
-            [keep, paddle.cast(paddle.shape(cate_scores)[0] - 1, 'int64')])
+            [keep, paddle.cast(paddle.shape(cate_scores)[0:1] - 1, 'int64')])
 
         seg_preds = paddle.gather(seg_preds, index=keep)
         cate_scores = paddle.gather(cate_scores, index=keep)
@@ -1337,7 +1337,7 @@ class ConvMixer(nn.Layer):
         Seq, ActBn = nn.Sequential, lambda x: Seq(x, nn.GELU(), nn.BatchNorm2D(dim))
         Residual = type('Residual', (Seq, ),
                         {'forward': lambda self, x: self[0](x) + x})
-        return Seq(*[
+        return Seq(* [
             Seq(Residual(
                 ActBn(
                     nn.Conv2D(
