@@ -3,7 +3,7 @@ log_iter: 5
 save_dir: output
 snapshot_epoch: 10
 weights: output/tinypose_256x256_hand/model_final
-epoch: 100
+epoch: 210
 num_joints: &num_joints 21
 pixel_std: &pixel_std 200
 metric: KeyPointTopDownCOCOWholeBadyHandEval
@@ -43,7 +43,7 @@ LearningRate:
   base_lr: 0.002
   schedulers:
   - !PiecewiseDecay
-    milestones: [80]
+    milestones: [170, 200]
     gamma: 0.1
   - !LinearWarmup
     start_factor: 0.001
@@ -95,11 +95,11 @@ TrainReader:
         rot_prob: 0.6
         rot_factor: 90
         scale_factor: 0.3
-    - AugmentationbyInformantionDropping:
-        prob_cutout: 0.5
-        offset_factor: 0.05
-        num_patch: 1
-        trainsize: *trainsize
+    # - AugmentationbyInformantionDropping:
+    #     prob_cutout: 0.5
+    #     offset_factor: 0.05
+    #     num_patch: 1
+    #     trainsize: *trainsize
     - TopDownAffine:
         trainsize: *trainsize
         use_udp: true
