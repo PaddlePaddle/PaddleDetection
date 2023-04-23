@@ -9,17 +9,19 @@ OV_DETR is a open-vocabulary object detection model based on transformer. We rep
 ## Model Zoo
 
 | Backbone | Model | Images/GPU  | Inf time (fps) | Box AP | Box AP Seen| Box AP Unseen| Config |
-|:------:|:--------:|:--------:|:--------------:|:------:|:------:||:------:||:------:|:--------:|
+|:------:|:--------:|:--------:|:--------------:|:------:|:------:|:------:|:------:|
 | R-50 | OV_DETR  | -- | -- | -- | -- | -- |[config](ov_detr_r50_1x_coco.yml) |
 
 ## Prepare
-Download the open-vocabulary [Annotations](https://bj.bcebos.com/v1/paddledet/data/coco/zero-shot.zip),replace the relevant path in the configuration file
+Download the open-vocabulary [Annotations](https://bj.bcebos.com/v1/paddledet/data/coco/zero-shot.zip), replace the relevant path in the configuration file
 ```
 ov_detr_r50_1x_coco.yml
   ....
   text_embedding: zeroshot_w.npy
   ....
   clip_feat_path: clip_feat_coco.pkl
+
+
 _base_/ov_detr_coco_detection.yml
   TrainDataset:
     ....
