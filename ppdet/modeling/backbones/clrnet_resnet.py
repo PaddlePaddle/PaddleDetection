@@ -281,13 +281,10 @@ class ResNet(nn.Layer):
         ]
 
     def forward(self, x):
-        # print(self.conv1.weight.dtype)
-        # return self.conv1.weight
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
-        # print(x.stop_gradient)
         
         out_layers = []
         x = self.layer1(x)

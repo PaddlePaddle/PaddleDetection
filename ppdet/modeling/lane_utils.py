@@ -28,7 +28,7 @@ class Lane:
         return lane_xs
 
     def to_array(self, cfg):
-        sample_y = cfg.sample_y
+        sample_y = range(cfg['sample_y'].start, cfg['sample_y'].end, cfg['sample_y'].step)
         img_w, img_h = cfg.ori_img_w, cfg.ori_img_h
         ys = np.array(sample_y) / float(img_h)
         xs = self(ys)

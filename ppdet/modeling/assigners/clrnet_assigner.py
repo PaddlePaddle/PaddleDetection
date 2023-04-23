@@ -80,50 +80,7 @@ def dynamic_k_assign(cost, pair_wise_ious):
 
 
 def cdist_paddle(x1, x2, p=2):
-    """
-    计算x1和x2之间的p范数距离
-    Args:
-        x1 (paddle.Tensor): shape为(B, P, M)的数组
-        x2 (paddle.Tensor): shape为(B, R, M)的数组
-        p (float): 范数的指数,默认为2,表示欧氏距离
-    Returns:
-        dist (paddle.Tensor): shape为(B, P, R)的数组,表示x1和x2之间的p范数距离
-    """
-    assert x1.shape[-1] == x2.shape[-1], "x1和x2的最后一维必须相同"
-    B, P, M = x1.shape
-    R = x2.shape[1]
-    # if p == np.inf:
-    #     dist = paddle.max(paddle.abs(x1.reshape([B, P, 1, M]) - x2.reshape([B, 1, R, M])), axis=-1)
-    if p == 1:
-        dist = paddle.sum(paddle.abs(x1.reshape([B, P, 1, M]) - x2.reshape([B, 1, R, M])), axis=-1)
-    else:
-        dist = paddle.pow(paddle.sum(paddle.pow(paddle.abs(x1.reshape([B, P, 1, M]) - x2.reshape([B, 1, R, M])), p), axis=-1), 1/p)
-    return dist
-
-def cdist_paddle_3d(x1, x2, p=2):
-    """
-    计算x1和x2之间的p范数距离
-    Args:
-        x1 (paddle.Tensor): shape为(B, P, M)的数组
-        x2 (paddle.Tensor): shape为(B, R, M)的数组
-        p (float): 范数的指数,默认为2,表示欧氏距离
-    Returns:
-        dist (paddle.Tensor): shape为(B, P, R)的数组,表示x1和x2之间的p范数距离
-    """
-    assert x1.shape[-1] == x2.shape[-1], "x1和x2的最后一维必须相同"
-    B, P, M = x1.shape
-    R = x2.shape[1]
-    # if p == np.inf:
-    #     dist = paddle.max(paddle.abs(x1.reshape([B, P, 1, M]) - x2.reshape([B, 1, R, M])), axis=-1)
-    if p == 1:
-        dist = paddle.sum(paddle.abs(x1.reshape([B, P, 1, M]) - x2.reshape([B, 1, R, M])), axis=-1)
-    else:
-        dist = paddle.pow(paddle.sum(paddle.pow(paddle.abs(x1.reshape([B, P, 1, M]) - x2.reshape([B, 1, R, M])), p), axis=-1), 1/p)
-    return dist
-
-
-def cdist_paddle(x1, x2, p=2):
-    assert x1.shape[1] == x2.shape[1], "x1和x2的列数必须相同"
+    assert x1.shape[1] == x2.shape[1]
     B, M = x1.shape
     # if p == np.inf:
     #     dist = np.max(np.abs(x1[:, np.newaxis, :] - x2[np.newaxis, :, :]), axis=-1)

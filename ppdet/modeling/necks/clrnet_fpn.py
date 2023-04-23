@@ -250,8 +250,3 @@ class CLRFPN(nn.Layer):
             for s in self.spatial_scales
         ]
     
-
-if __name__ == "__main__":
-    fpn = CLRFPN(in_channels=[128,256,512],out_channel=64,extra_stage=1)
-    for name, param in fpn.named_parameters():
-        print(name, param.shape)

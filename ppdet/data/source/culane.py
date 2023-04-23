@@ -19,24 +19,6 @@ import ppdet.metrics.culane_metrics as culane_metrics
 
 logger = setup_logger(__name__)
 
-LIST_FILE = {
-    'train': 'list/train_gt.txt',
-    'val': 'list/val.txt',
-    'test': 'list/test.txt',
-}
-
-CATEGORYS = {
-    'normal': 'list/test_split/test0_normal.txt',
-    'crowd': 'list/test_split/test1_crowd.txt',
-    'hlight': 'list/test_split/test2_hlight.txt',
-    'shadow': 'list/test_split/test3_shadow.txt',
-    'noline': 'list/test_split/test4_noline.txt',
-    'arrow': 'list/test_split/test5_arrow.txt',
-    'curve': 'list/test_split/test6_curve.txt',
-    'cross': 'list/test_split/test7_cross.txt',
-    'night': 'list/test_split/test8_night.txt',
-}
-
 
 def trainTransforms(img_h, img_w):
     return [
@@ -85,9 +67,8 @@ class CULaneDataSet(DetDataset):
                 img_h,
                 cut_height,
                 num_points,
-                ori_img_w,
-                ori_img_h,
                 max_lanes,
+                list_path,
                 split='train',
                 data_fields=['image'],
                 transforms=None,
@@ -99,11 +80,9 @@ class CULaneDataSet(DetDataset):
             data_fields=data_fields,
         )
         self.dataset_dir = dataset_dir
-        self.list_path = osp.join(dataset_dir, LIST_FILE[split])
+        self.list_path = osp.join(dataset_dir, list_path)
         self.cut_height = cut_height
         self.data_fields = data_fields
-        self.ori_img_w = ori_img_w
-        self.ori_img_h = ori_img_h
         self.split = split
         self.training = 'train' in split
         self.img_w = img_w
@@ -212,9 +191,6 @@ class CULaneDataSet(DetDataset):
     def __getitem__(self,idx):
         data_info = self.data_infos[idx]
         img = cv2.imread(data_info['img_path'])
-        # print("paddle img path:",data_info['img_path'])
-        # print(img is None)
-        # print(img.shape)
         img = img[self.cut_height:, :, :]
         sample = data_info.copy()
         sample.update({'img': img})
@@ -226,7 +202,6 @@ class CULaneDataSet(DetDataset):
             label = label.squeeze()
             label = label[self.cut_height:, :]
             sample.update({'mask': label})
-            # print("paddle mask:",sample['mask'])
             if self.cut_height != 0:
                 new_lanes = []
                 for i in sample['lanes']:
@@ -252,7 +227,6 @@ class CULaneDataSet(DetDataset):
                 image=img_org.copy().astype(np.uint8),
                 line_strings=line_strings_org)
         line_strings.clip_out_of_image_()
-        # print(line_strings)
         new_anno = {'lanes': linestrings_to_lanes(line_strings)}
         
         for i in range(30):
@@ -277,52 +251,15 @@ class CULaneDataSet(DetDataset):
         sample['gt_points'] = new_anno['lanes']
         sample['seg'] = seg.get_arr() if self.training else np.zeros(
             img_org.shape)
-        # print(sample.keys())
-        # meta = DataContainer({'full_img_path': data_info['img_path'],
-        #         'img_name': data_info['img_name']},cpu_only=True)
-        
-        # sample.update({'meta': meta})
         
         sample['img'] = sample['img'].transpose(2,0,1)
-        # print("paddle img:",sample['img'])
-        # print(sample['img'].shape)
+
         final_sample = {}
         final_sample['img'] = sample['img']
         final_sample['lane_line'] = sample['lane_line']
         final_sample['seg'] = sample['seg']
+
         final_sample['full_img_path'] = data_info['img_path']
         final_sample['img_name'] = data_info['img_name']
         final_sample['im_id'] = np.array([idx])
         return final_sample
-    
-
-    def evaluate(self, predictions, output_basedir):
-        loss_lines = [[], [], [], []]
-        print('Generating prediction output...')
-        for idx, pred in enumerate(predictions):
-            output_dir = os.path.join(
-                output_basedir,
-                os.path.dirname(self.data_infos[idx]['img_name']))
-            output_filename = os.path.basename(
-                self.data_infos[idx]['img_name'])[:-3] + 'lines.txt'
-            os.makedirs(output_dir, exist_ok=True)
-            output = self.get_prediction_string(pred)
-
-            with open(os.path.join(output_dir, output_filename),
-                      'w') as out_file:
-                out_file.write(output)
-
-        for cate, cate_file in CATEGORYS.items():
-            result = culane_metrics.eval_predictions(output_basedir,
-                                                    self.data_root,
-                                                    os.path.join(self.data_root, cate_file),
-                                                    iou_thresholds=[0.5],
-                                                    official=True)
-
-        result = culane_metrics.eval_predictions(output_basedir,
-                                                self.data_root,
-                                                self.list_path,
-                                                iou_thresholds=np.linspace(0.5, 0.95, 10),
-                                                official=True)
-
-        return result[0.5]['F1']

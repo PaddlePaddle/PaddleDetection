@@ -19,10 +19,13 @@ __all__ = ['CLRHead']
 @register
 class CLRHead(nn.Layer):
     __inject__ = ['loss']
-    def __init__(self, num_points=72, prior_feat_channels=64, fc_hidden_dim
-        =64, num_priors=192, num_fc=2, refine_layers=3, sample_points=36,
-        img_w=800, img_h=320, ori_img_w = 1640,ori_img_h = 590,num_classes = 4 + 1,
-        ignore_label = 255,bg_weight = 0.4,cut_height=270,
+    __shared__ = ['img_w', 'img_h', 'ori_img_h',
+                  'num_classes','cut_height','num_points']
+    def __init__(self, num_points=72, prior_feat_channels=64, 
+                 fc_hidden_dim=64, num_priors=192, 
+                 img_w=800,img_h=320,ori_img_h=590,
+                 cut_height=270,num_classes=5,
+                 num_fc=2, refine_layers=3, sample_points=36,
         conf_threshold=0.4, nms_thres=0.5,max_lanes=4,loss='CLRNetLoss'):
         super(CLRHead, self).__init__()
         self.img_w = img_w
@@ -34,14 +37,10 @@ class CLRHead(nn.Layer):
         self.refine_layers = refine_layers
         self.num_classes = num_classes
         self.fc_hidden_dim = fc_hidden_dim
-        self.ignore_label = ignore_label
         self.ori_img_h = ori_img_h
-        self.ori_img_w = ori_img_w
         self.cut_height = cut_height
-        self.bg_weight = bg_weight
         self.conf_threshold = conf_threshold
         self.nms_thres = nms_thres
-        self.nms_topk = max_lanes
         self.max_lanes = max_lanes
         self.prior_feat_channels = prior_feat_channels
         self.loss = loss
@@ -127,31 +126,19 @@ class CLRHead(nn.Layer):
                 self.prior_embeddings.weight[i, 0] = i // 2 * strip_size
                 self.prior_embeddings.weight[i, 1] = 0.0
                 self.prior_embeddings.weight[i, 2] = 0.16 if i % 2 == 0 else 0.32
-                # constant_(self.prior_embeddings.weight[i, 0], i //
-                #     2 * strip_size)
-                # constant_(self.prior_embeddings.weight[i, 1], 0.0)
-                # constant_(self.prior_embeddings.weight[i, 2], 
-                #     0.16 if i % 2 == 0 else 0.32)
+
         
             for i in range(left_priors_nums, left_priors_nums + bottom_priors_nums):
                 self.prior_embeddings.weight[i, 0] = 0.0
                 self.prior_embeddings.weight[i, 1] = ((i -left_priors_nums) // 4 + 1) * bottom_strip_size
                 self.prior_embeddings.weight[i, 2] = 0.2 *(i % 4 + 1)
-                # constant_(self.prior_embeddings.weight[i, 0], 0.0)
-                # constant_(self.prior_embeddings.weight[i, 1], 
-                #           ((i -left_priors_nums) // 4 + 1) * bottom_strip_size)
-                # constant_(self.prior_embeddings.weight[i, 2], 
-                #           0.2 *(i % 4 + 1))
+
             
             for i in range(left_priors_nums + bottom_priors_nums, self.num_priors):
                 self.prior_embeddings.weight[i, 0] = (i - left_priors_nums - bottom_priors_nums) // 2 * strip_size
                 self.prior_embeddings.weight[i, 1] = 1.0
                 self.prior_embeddings.weight[i, 2] = 0.68 if i % 2 == 0 else 0.84
-                # constant_(self.prior_embeddings.weight[i, 0], (i -
-                #     left_priors_nums - bottom_priors_nums) // 2 * strip_size)
-                # constant_(self.prior_embeddings.weight[i, 1], 1.0)
-                # constant_(self.prior_embeddings.weight[i, 2], 
-                #     0.68 if i % 2 == 0 else 0.84)
+
 
     def forward(self, x, inputs=None):
         """
@@ -174,8 +161,6 @@ class CLRHead(nn.Layer):
                                                 batch_size, 1, 1])
         predictions_lists = []
         prior_features_stages = []
-
-        
 
         for stage in range(self.refine_layers):
             num_priors = priors_on_featmap.shape[1]
@@ -281,60 +266,7 @@ class CLRHead(nn.Layer):
             lanes.append(lane)
         return lanes
 
-    def devIoU(self, a,b):
-        """
-        shape: conf,y,x,lenght,72offsets
-        Compute distance between two lanes.
-        """
-        DATASET_OFFSET = 0
-        start_a = int(a[2] * self.n_strips - DATASET_OFFSET + 0.5)
-        start_b = int(b[2] * self.n_strips - DATASET_OFFSET + 0.5)
-        start = max(start_a, start_b)
-        end_a = int(start_a + a[4] - 1 + 0.5 - ((a[4] - 1) < 0)) # - (x<0) trick to adjust for negative numbers (in case length is 0)
-        end_b = int(start_b + b[4] - 1 + 0.5 - ((b[4] - 1) < 0))
-        end = min(min(end_a, end_b), self.n_offsets - 1)
-
-        if end < start:
-            return paddle.to_tensor(1e9)
-        dist = paddle.abs(a[5+start:5+end+1] - b[5+start:5+end+1]).sum()
-        return dist / (end - start + 1)
-
     def lane_nms(self, predictions, scores, nms_overlap_thresh, top_k):
-        """
-        NMS for lane detection.
-        predictions: paddle.Tensor [num_lanes,conf,y,x,lenght,72offsets]
-        scores: paddle.Tensor [num_lanes]
-        nms_overlap_thresh: float
-        top_k: int
-        """
-        # sort by scores to get idx
-        idx = scores.argsort(descending=True)
-        keep = []
-
-        condidates = predictions.clone()
-        condidates.index_select(idx)
-
-        while len(condidates) > 0:
-            keep.append(idx[0])
-            if len(keep) >= top_k or len(condidates) == 1:
-                break
-            ious = []
-
-            for i in range(1, len(condidates)):
-                ious.append(self.devIoU(condidates[0], condidates[i]))
-
-            ious = paddle.to_tensor(ious)
-            mask = ious < nms_overlap_thresh
-            id = paddle.where(mask==False)
-            if id[0].shape[0] == 0:
-                break
-            condidates = condidates[1:].index_select(id)
-            idx = idx[1:].index_select(id)
-        
-        return keep
-
-
-    def lane_nms_paddle2(self, predictions, scores, nms_overlap_thresh, top_k):
         """
         NMS for lane detection.
         predictions: paddle.Tensor [num_lanes,conf,y,x,lenght,72offsets] [12,77]
@@ -396,7 +328,7 @@ class CLRHead(nn.Layer):
             nms_predictions[..., 4] = nms_predictions[..., 4] * self.n_strips
             nms_predictions[..., 5:] = nms_predictions[..., 5:] * (self.img_w - 1)
 
-            keep = self.lane_nms_paddle2(nms_predictions[...,5:], scores, 
+            keep = self.lane_nms(nms_predictions[...,5:], scores, 
                 nms_overlap_thresh=self.nms_thres, top_k=self.max_lanes)
 
             predictions = predictions.index_select(keep)
@@ -412,8 +344,3 @@ class CLRHead(nn.Layer):
             decoded.append(pred)
         return decoded
 
-
-if __name__ == '__main__':
-    x = CLRHead()
-    for name, param in x.named_parameters():
-        print(name, param.shape)

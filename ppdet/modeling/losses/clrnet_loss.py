@@ -142,9 +142,11 @@ class FocalLoss(nn.Layer):
 
 @register
 class CLRNetLoss(nn.Layer):
+    __shared__ = ['img_w', 'img_h', 
+                  'num_classes','num_points']
     def __init__(self, cls_loss_weight=2.0, xyt_loss_weight=0.2,
         iou_loss_weight=2.0, seg_loss_weight=1.0,refine_layers=3,num_points=72,
-        img_w=800,img_h=320,num_classes = 4 + 1, ignore_label = 255,bg_weight=0.4):
+        img_w=800,img_h=320,num_classes=5, ignore_label=255,bg_weight=0.4):
         super(CLRNetLoss, self).__init__()
         self.cls_loss_weight = cls_loss_weight
         self.xyt_loss_weight = xyt_loss_weight
@@ -221,22 +223,15 @@ class CLRNetLoss(nn.Layer):
                 
                 target_yxtl[:, 0] *= self.n_strips
                 target_yxtl[:, 2] *= 180
-                # print("reg_yxtl")
-                # print(reg_yxtl)
-                # print(target_yxtl)
+
                 reg_xytl_loss = reg_xytl_loss + F.smooth_l1_loss(
                     input=reg_yxtl, label=target_yxtl,
                     reduction='none').mean()
-                # print("reg_pred")
-                # print(reg_pred)
-                # print(reg_targets)
+
                 iou_loss = iou_loss + liou_loss(
                     reg_pred, reg_targets, 
                     self.img_w, length=15)
-                # print("cls_pred")
-                # print(cls_pred)
-                # print(cls_target)
-                # calculate acc
+
                 cls_accuracy = accuracy(cls_pred, cls_target)
                 cls_acc_stage.append(cls_accuracy)
             
