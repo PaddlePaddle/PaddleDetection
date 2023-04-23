@@ -26,7 +26,8 @@ except Exception:
 
 __all__ = [
     'BBoxPostProcess', 'MaskPostProcess', 'JDEBBoxPostProcess',
-    'CenterNetPostProcess', 'DETRPostProcess', 'SparsePostProcess'
+    'CenterNetPostProcess', 'DETRPostProcess', 'SparsePostProcess',
+    'OVDETRPostProcess'
 ]
 
 
@@ -570,6 +571,63 @@ class DETRPostProcess(object):
             self.num_top_queries, dtype='int32').tile([bbox_pred.shape[0]])
         bbox_pred = bbox_pred.reshape([-1, 6])
         return bbox_pred, bbox_num, mask_pred
+
+
+@register
+class OVDETRPostProcess(object):
+    """This module converts the model's output into the format expected by the coco api"""
+
+    def __init__(self, num_queries=300):
+        super().__init__()
+        self.num_queries = num_queries
+
+    def __call__(self, pred_logits, pred_boxes, select_id, target_sizes,
+                 scale_factor):
+        out_logits, out_bbox = pred_logits, pred_boxes
+        select_id = select_id
+        if type(select_id) == int:
+            select_id = [select_id]
+
+        assert len(out_logits) == len(target_sizes)
+        assert target_sizes.shape[1] == 2
+
+        prob = F.sigmoid(out_logits)
+
+        scores, topk_indexes = paddle.topk(
+            prob.reshape([out_logits.shape[0], -1]), 300, axis=1)
+        topk_boxes = topk_indexes // out_logits.shape[2]
+
+        labels = paddle.zeros_like(prob).flatten(1)
+        num_queries = self.num_queries
+
+        for ind, c in enumerate(select_id):
+            labels[:, ind * num_queries:(ind + 1) * num_queries] = c
+
+        labels = paddle.take_along_axis(arr=labels, axis=1, indices=topk_boxes)
+
+        boxes = bbox_cxcywh_to_xyxy(out_bbox)
+        boxes = paddle.take_along_axis(
+            arr=boxes,
+            axis=1,
+            indices=topk_boxes.unsqueeze(axis=-1).tile(repeat_times=[1, 1, 4]))
+
+        origin_shape = paddle.floor(target_sizes / scale_factor + 0.5)
+        img_h, img_w = paddle.split(origin_shape, 2, axis=-1)
+        scale_fct = paddle.stack([img_w, img_h, img_w, img_h], axis=1)
+        boxes = boxes * scale_fct.transpose([0, 2, 1])
+
+        bbox_pred = paddle.concat(
+            [
+                labels.unsqueeze(-1).astype('float32'), scores.unsqueeze(-1),
+                boxes
+            ],
+            axis=-1)
+        bbox_num = paddle.to_tensor(
+            300, dtype='int32').tile([bbox_pred.shape[0]])
+        bbox_pred = bbox_pred.reshape([-1, 6])
+
+        results = {'bbox': bbox_pred, 'bbox_num': bbox_num}
+        return results
 
 
 @register

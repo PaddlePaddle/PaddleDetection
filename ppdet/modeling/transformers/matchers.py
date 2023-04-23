@@ -28,7 +28,7 @@ from ppdet.core.workspace import register, serializable
 from ..losses.iou_loss import GIoULoss
 from .utils import bbox_cxcywh_to_xyxy
 
-__all__ = ['HungarianMatcher']
+__all__ = ['HungarianMatcher', 'OVHungarianMatcher']
 
 
 @register
@@ -183,3 +183,173 @@ class HungarianMatcher(nn.Layer):
         return [(paddle.to_tensor(
             i, dtype=paddle.int64), paddle.to_tensor(
                 j, dtype=paddle.int64)) for i, j in indices]
+
+
+@register
+@serializable
+class OVHungarianMatcher(nn.Layer):
+    def __init__(self,
+                 matcher_coeff={
+                     'class': 3,
+                     'bbox': 5,
+                     'giou': 2,
+                     'mask': 1,
+                     'dice': 1
+                 },
+                 alpha=0.25,
+                 gamma=2.0):
+        super().__init__()
+
+        self.matcher_coeff = matcher_coeff
+        self.alpha = alpha
+        self.gamma = gamma
+
+        self.giou_loss = GIoULoss()
+
+    def forward(self,
+                boxes,
+                logits,
+                gt_bbox,
+                gt_class,
+                select_id=None,
+                masks=None,
+                gt_mask=None):
+        r"""
+        Args:
+            boxes (Tensor): [b, query, 4]
+            logits (Tensor): [b, query, num_classes]
+            gt_bbox (List(Tensor)): list[[n, 4]]
+            gt_class (List(Tensor)): list[[n, 1]]
+            masks (Tensor|None): [b, query, h, w]
+            gt_mask (List(Tensor)): list[[n, H, W]]
+            select_id (List): [b*max_len]
+
+        Returns:
+            A list of size batch_size, containing tuples of (index_i, index_j) where:
+                - index_i is the indices of the selected predictions (in order)
+                - index_j is the indices of the corresponding selected targets (in order)
+            For each batch element, it holds:
+                len(index_i) = len(index_j) = min(num_queries, num_target_boxes)
+        """
+        if select_id is None:
+
+            bs, num_queries = boxes.shape[:2]
+            num_gts = [len(a) for a in gt_class]
+            if sum(num_gts) == 0:
+                return [(paddle.to_tensor(
+                    [], dtype=paddle.int64), paddle.to_tensor(
+                        [], dtype=paddle.int64)) for _ in range(bs)]
+
+            # We flatten to compute the cost matrices in a batch
+            out_prob = F.sigmoid(logits.flatten(0, 1))
+            out_bbox = boxes.flatten(0, 1)  # [batch_size * num_queries, 4]
+
+            # Also concat the target labels and boxes
+            tgt_ids = paddle.concat(gt_class).flatten()
+            tgt_bbox = paddle.concat(gt_bbox)
+
+            # Compute the classification cost.
+            neg_cost_class = (1 - self.alpha) * (out_prob**self.gamma) * (-(
+                1 - out_prob + 1e-8).log())
+            pos_cost_class = self.alpha * (
+                (1 - out_prob)**self.gamma) * (-(out_prob + 1e-8).log())
+            #cost_class = pos_cost_class[:, tgt_ids] - neg_cost_class[:, tgt_ids]
+            cost_class = pos_cost_class.repeat_interleave(
+                tgt_ids.shape[0], axis=1) - neg_cost_class.repeat_interleave(
+                    tgt_ids.shape[0], axis=1)
+
+            # Compute the L1 cost between boxes
+            cost_bbox = (
+                out_bbox.unsqueeze(1) - tgt_bbox.unsqueeze(0)).abs().sum(-1)
+
+            # Compute the giou cost betwen boxes
+            cost_giou = self.giou_loss(
+                bbox_cxcywh_to_xyxy(out_bbox.unsqueeze(1)),
+                bbox_cxcywh_to_xyxy(tgt_bbox.unsqueeze(0))).squeeze(-1) - 1.0
+
+            # Final cost matrix
+            C = (self.matcher_coeff['bbox'] * cost_bbox +
+                 self.matcher_coeff['class'] * cost_class +
+                 self.matcher_coeff['giou'] * cost_giou)
+            C = C.reshape([bs, num_queries, -1])
+            sizes = [len(a) for a in gt_class]
+            indices = [
+                linear_sum_assignment(c.split(sizes, -1)[i].numpy())
+                for i, c in enumerate(C)
+            ]
+
+            return [(paddle.to_tensor(data=i).astype('int64'),
+                     paddle.to_tensor(data=j).astype('int64'))
+                    for i, j in indices]
+
+        else:
+            num_patch = len(select_id)
+            bs, num_queries = boxes.shape[:2]
+            num_queries = num_queries // num_patch
+
+            num_gts = [len(a) for a in gt_class]
+            if sum(num_gts) == 0:
+                return [(paddle.to_tensor(
+                    [], dtype=paddle.int64), paddle.to_tensor(
+                        [], dtype=paddle.int64)) for _ in range(bs)]
+
+            out_prob_all = paddle.reshape(logits,
+                                          [bs, num_patch, num_queries, -1])
+            out_bbox_all = paddle.reshape(boxes,
+                                          [bs, num_patch, num_queries, -1])
+
+            # Also concat the target labels and boxes
+            tgt_ids_all = paddle.concat(gt_class).flatten()
+            tgt_bbox_all = paddle.concat(gt_bbox)
+
+            ans = [[[], []] for _ in range(bs)]
+            for index, label in enumerate(select_id):
+                out_prob = F.sigmoid(out_prob_all[:, index, :, :].flatten(
+                    start_axis=0, stop_axis=1))
+                out_bbox = out_bbox_all[:, index, :, :].flatten(
+                    start_axis=0, stop_axis=1)
+
+                mask = (tgt_ids_all == label).nonzero().squeeze(axis=1)
+                if mask.shape[0] == 0:
+                    continue
+                tgt_bbox = tgt_bbox_all[mask]
+
+                neg_cost_class = (1 - self.alpha) * out_prob**self.gamma * -(
+                    1 - out_prob + 1e-08).log()
+                pos_cost_class = self.alpha * (1 - out_prob)**self.gamma * -(
+                    out_prob + 1e-08).log()
+                cost_class = pos_cost_class[:, 0:1] - neg_cost_class[:, 0:1]
+
+                # Compute the L1 cost between boxes
+                cost_bbox = (
+                    out_bbox.unsqueeze(1) - tgt_bbox.unsqueeze(0)).abs().sum(-1)
+
+                # Compute the giou cost betwen boxes
+                cost_giou = self.giou_loss(
+                    bbox_cxcywh_to_xyxy(out_bbox.unsqueeze(1)),
+                    bbox_cxcywh_to_xyxy(tgt_bbox.unsqueeze(0))).squeeze(
+                        -1) - 1.0
+                C = (self.matcher_coeff['bbox'] * cost_bbox +
+                     self.matcher_coeff['class'] * cost_class +
+                     self.matcher_coeff['giou'] * cost_giou)
+                C = C.reshape([bs, num_queries, -1])
+                sizes = [len(a[a == label]) for a in gt_class]
+
+                indices = [
+                    linear_sum_assignment(c.split(sizes, -1)[i].numpy())
+                    for i, c in enumerate(C)
+                ]
+
+                for ind in range(bs):
+                    x, y = indices[ind]
+                    if len(x) == 0:
+                        continue
+                    x += index * num_queries
+                    ans[ind][0] += x.tolist()
+                    y_label = (gt_class[ind] == label
+                               ).squeeze(1).nonzero().squeeze(1).numpy()
+                    y_label = y_label[y].tolist()
+                    ans[ind][1] += y_label
+
+            return [(paddle.to_tensor(data=i).astype('int64'),
+                     paddle.to_tensor(data=j).astype('int64')) for i, j in ans]

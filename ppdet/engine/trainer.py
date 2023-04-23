@@ -153,7 +153,12 @@ class Trainer(object):
                 self.loader = create(reader_name)(self.dataset, cfg.worker_num,
                                                   self._eval_batch_sampler)
         # TestDataset build after user set images, skip loader creation here
-
+        if cfg.architecture == 'OVDETR':
+            if self.cfg.get('label_map', False):
+                new_clip_feat = {}
+                for key, value in self.model.head.clip_feat.items():
+                    new_clip_feat[self.loader.dataset.catid2clsid[key]] = value
+                self.model.head.clip_feat = new_clip_feat
         # get Params
         print_params = self.cfg.get('print_params', False)
         if print_params:
@@ -240,6 +245,8 @@ class Trainer(object):
             self._metrics = []
             return
         classwise = self.cfg['classwise'] if 'classwise' in self.cfg else False
+        unseen_list = self.cfg[
+            'unseen_list'] if 'unseen_list' in self.cfg else None
         if self.cfg.metric == 'COCO' or self.cfg.metric == "SNIPERCOCO":
             # TODO: bias should be unified
             bias = 1 if self.cfg.get('bias', False) else 0
@@ -273,7 +280,8 @@ class Trainer(object):
                         output_eval=output_eval,
                         bias=bias,
                         IouType=IouType,
-                        save_prediction_only=save_prediction_only)
+                        save_prediction_only=save_prediction_only,
+                        unseen_list=unseen_list)
                 ]
             elif self.cfg.metric == "SNIPERCOCO":  # sniper
                 self._metrics = [

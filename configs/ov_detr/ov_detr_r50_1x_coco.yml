@@ -1,0 +1,73 @@
+_BASE_: [
+  '_base_/ov_detr_coco_detection.yml',
+  '_base_/ov_detr_reader.yml',
+  '_base_/ovdetr_optimizer_1x.yml',
+  '../runtime.yml'
+]
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vb_normal_pretrained.pdparams
+weights: output/ov_detr_r50_1x_coco/model_final
+
+label_map: True
+unseen_list: [4, 5, 11, 12, 15, 16, 21, 23, 27, 29, 32, 34, 45, 47, 54, 58, 63]
+
+architecture: OVDETR
+hidden_dim: 256
+label_map: true
+
+OVDETR:
+  backbone: ResNet
+  head: OVDETRHead
+  post_process: OVDETRPostProcess
+  text_embedding: zeroshot_w.npy
+
+ResNet:
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1,2,3]
+  lr_mult_list: [0.00002, 0.00002, 0.00002, 0.00002]
+  num_stages: 4
+
+
+
+OVDETRHead:
+  num_queries: 300
+  with_box_refine: true
+  num_layers: 6
+  two_stage: true
+  cls_out_channels: 1
+  clip_feat_path: clip_feat_coco.pkl
+  max_len: 15
+  prob: 0.75
+  loss: OVDETRLoss
+  transformer:
+    name: OVDeformableTransformer
+    hidden_dim: 256
+    num_queries: 300
+    position_embed_type: sine
+    nhead: 8
+    num_encoder_layers: 6
+    num_decoder_layers: 6
+    dim_feedforward: 1024
+    dropout: 0.1
+    activation: relu
+    lr_mult: 0.00002
+    num_feature_levels: 4
+    num_encoder_points: 4
+    num_decoder_points: 4
+    two_stage: true
+    two_stage_num_proposals: 300
+
+
+OVDETRLoss:
+  aux_loss: True
+  loss_coeff: {class: 3, bbox: 5, giou: 2,embed: 2, no_object: 0.1}
+  losses: ["class","boxes","embed"]
+  use_focal_loss: True
+  matcher:
+    name: OVHungarianMatcher
+    matcher_coeff: {class: 3, bbox: 5, giou: 2}
+
+
+OVDETRPostProcess:
+  num_queries: 300

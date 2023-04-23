@@ -77,6 +77,7 @@ class COCOMetric(Metric):
         if self.clsid2catid is None:
             self.clsid2catid, _ = get_categories('COCO', anno_file)
         self.classwise = kwargs.get('classwise', False)
+        self.unseen_list = kwargs.get('unseen_list', None)
         self.output_eval = kwargs.get('output_eval', None)
         # TODO: bias should be unified
         self.bias = kwargs.get('bias', 0)
@@ -139,7 +140,8 @@ class COCOMetric(Metric):
                     output,
                     'bbox',
                     anno_file=self.anno_file,
-                    classwise=self.classwise)
+                    classwise=self.classwise,
+                    unseen_list=self.unseen_list)
                 self.eval_results['bbox'] = bbox_stats
                 sys.stdout.flush()
 

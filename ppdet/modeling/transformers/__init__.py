@@ -20,6 +20,7 @@ from . import deformable_transformer
 from . import dino_transformer
 from . import group_detr_transformer
 from . import mask_dino_transformer
+from . import ov_deformable_transformer
 
 from .detr_transformer import *
 from .utils import *
@@ -30,3 +31,4 @@ from .dino_transformer import *
 from .petr_transformer import *
 from .group_detr_transformer import *
 from .mask_dino_transformer import *
+from .ov_deformable_transformer import *

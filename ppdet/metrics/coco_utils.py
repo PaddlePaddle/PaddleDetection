@@ -78,7 +78,8 @@ def cocoapi_eval(jsonfile,
                  max_dets=(100, 300, 1000),
                  classwise=False,
                  sigmas=None,
-                 use_area=True):
+                 use_area=True,
+                 unseen_list=None):
     """
     Args:
         jsonfile (str): Evaluation json file, eg: bbox.json, mask.json.
@@ -91,6 +92,7 @@ def cocoapi_eval(jsonfile,
         sigmas (nparray): keypoint labelling sigmas.
         use_area (bool): If gt annotations (eg. CrowdPose, AIC)
                          do not have 'area', please set use_area=False.
+        unseen_list(list): use fot ov_detr.
     """
     assert coco_gt != None or anno_file != None
     if style == 'keypoints_crowd':
@@ -113,6 +115,9 @@ def cocoapi_eval(jsonfile,
         coco_eval = COCOeval(coco_gt, coco_dt, style, sigmas, use_area)
     else:
         coco_eval = COCOeval(coco_gt, coco_dt, style)
+
+    if unseen_list is not None:
+        coco_eval.useCats = True
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
@@ -161,6 +166,25 @@ def cocoapi_eval(jsonfile,
         logger.info('Per-category of {} AP: \n{}'.format(style, table.table))
         logger.info("per-category PR curve has output to {} folder.".format(
             style + '_pr_curve'))
+
+    if unseen_list is not None:
+        precisions = coco_eval.eval['precision']
+        results_seen = []
+        results_unseen = []
+        for idx in range(precisions.shape[-3]):
+            # area range index 0: all area ranges
+            # max dets index -1: typically 100 per image
+            precision = precisions[0, :, idx, 0, -1]
+            precision = precision[precision > -1]
+            if precision.size:
+                ap = np.mean(precision)
+                # print(f"AP {idx}: {ap}")
+                if idx not in unseen_list:
+                    results_seen.append(float(ap * 100))
+                else:
+                    results_unseen.append(float(ap * 100))
+        logger.info(f"bbox AP seen: {np.mean(results_seen)}")
+        logger.info(f"bbox AP unseen: {np.mean(results_unseen)}")
     # flush coco evaluation result
     sys.stdout.flush()
     return coco_eval.stats
