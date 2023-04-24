@@ -1,11 +1,11 @@
 _BASE_: [
   '../datasets/culane.yml',
+  '_base_/clrnet_reader.yml',
   '_base_/clrnet_r18_fpn.yml',
   '_base_/optimizer_1x.yml',
-  '_base_/clrnet_reader.yml',
 ]
 
-# use_gpu: true
+
+
 save_dir: output
-# weights: output/clr_resnet18_culane/model_final
-# weights: weights/culane_r18.pdparams
+weights: output/clr_resnet18_culane/model_final

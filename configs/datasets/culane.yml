@@ -1,12 +1,8 @@
 metric: CULaneMetric
-num_classes: 5
+num_classes: 5 # 4 lanes + background
 
-ori_img_w: 1640
-ori_img_h: 590
-img_w: &img_w 800
-img_h: &img_h 320
 cut_height: &cut_height 270
-dataset_dir: &dataset_dir /home/yikh/mycode/CLRNet/data/CULane/
+dataset_dir: &dataset_dir /home/yikh/mycode/CLRNet/data/CULane
 
 TrainDataset:
   name: CULaneDataSet
@@ -14,10 +10,7 @@ TrainDataset:
   list_path: 'list/train_gt.txt'
   split: train
   cut_height: *cut_height
-  img_w: *img_w
-  img_h: *img_h
-  num_points: 72
-  max_lanes: 4
+  
     
 EvalDataset:
   name: CULaneDataSet
@@ -25,10 +18,6 @@ EvalDataset:
   list_path: 'list/val.txt'
   split: test
   cut_height: *cut_height
-  img_w: *img_w
-  img_h: *img_h
-  num_points: 72
-  max_lanes: 4
 
 
 TestDataset:
@@ -37,7 +26,3 @@ TestDataset:
   list_path: 'list/test.txt'
   split: test
   cut_height: *cut_height
-  img_w: *img_w
-  img_h: *img_h
-  num_points: 72
-  max_lanes: 4

@@ -1,7 +1,6 @@
 architecture: CLRNet
 # pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
 
-num_points: 72
 sample_y: 
   start: 589
   end: 230
@@ -31,7 +30,6 @@ CLRHead:
   loss: CLRNetLoss
   conf_threshold: 0.4
   nms_thres: 0.5
-  max_lanes: 4
 
 CLRNetLoss:
   cls_loss_weight : 2.0

@@ -1,6 +1,5 @@
 epoch: 15
 snapshot_epoch: 5
-save_dir: output
 
 LearningRate:
   base_lr: 0.6e-3

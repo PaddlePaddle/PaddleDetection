@@ -1,6 +1,24 @@
 worker_num: 10
+
+img_h: &img_h 320
+img_w: &img_w 800
+org_img_h: &org_img_h 590
+org_img_w: &org_img_w 1640
+num_points: &num_points 72
+max_lanes: &max_lanes 4
+
 TrainReader:
-  batch_size: 24
+  batch_size: 24 # 24 for one single GPU if use mutil GPUs please change it to 24*GPU_NUM
+  batch_transforms:
+    - CULaneResize: {prob: 1.0, img_h: *img_h, img_w: *img_w}
+    - HorizontalFlip: {prob: 0.5}
+    - ChannelShuffle: {prob: 0.1}
+    - MultiplyAndAddToBrightness: {prob: 0.6, mul: [0.85, 1.15], add: [-10, 10]}
+    - AddToHueAndSaturation: {value: {-10, 10}, prob: 0.7}
+    - OneOfBlur: {prob: 0.2, MotionBlur_k: [3,5], MedianBlur_k: [3,5]}
+    - CULaneAffine: {prob: 0.7, translate_percent_x: [-0.1,0.1], translate_percent_y: [-0.1,0.1], rotate: [-10, 10], scale: [0.8, 1.2]}
+    - CULaneResize: {prob: 1.0, img_h: *img_h, img_w: *img_w}
+    - CULaneDataProcess: {num_points: *num_points, max_lanes: *max_lanes, img_w: *img_w, img_h: *img_h}
   shuffle: True
   drop_last: False
 
@@ -9,6 +27,9 @@ TrainReader:
 
 EvalReader:
   batch_size: 24
+  batch_transforms:
+    - CULaneResize: {prob: 1.0, img_h: *img_h, img_w: *img_w}
+    - CULaneDataProcess: {num_points: *num_points, max_lanes: *max_lanes, img_w: *img_w, img_h: *img_h}
   shuffle: False
   drop_last: False
 
@@ -16,6 +37,9 @@ EvalReader:
 
 TestReader:
   batch_size: 24
+  batch_transforms:
+    - CULaneResize: {prob: 1.0, img_h: *img_h, img_w: *img_w}
+    - CULaneDataProcess: {num_points: *num_points, max_lanes: *max_lanes, img_w: *img_w, img_h: *img_h}
   shuffle: False
   drop_last: False
 
