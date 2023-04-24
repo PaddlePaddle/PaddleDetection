@@ -86,6 +86,7 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
 
   - `RT-DETR解读文章传送门`：
     -  [《超越YOLOv8，飞桨推出精度最高的实时检测器RT-DETR！》](https://mp.weixin.qq.com/s/o03QM2rZNjHVto36gcV0Yw)
+  - `代码传送门`：[RT-DETR](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rtdetr)
 
 ## 👫开源社区
 
