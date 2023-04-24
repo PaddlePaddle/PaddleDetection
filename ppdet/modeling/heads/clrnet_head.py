@@ -20,7 +20,7 @@ __all__ = ['CLRHead']
 class CLRHead(nn.Layer):
     __inject__ = ['loss']
     __shared__ = ['img_w', 'img_h', 'ori_img_h',
-                  'num_classes','cut_height','num_points']
+                  'num_classes','cut_height','num_points',"max_lanes"]
     def __init__(self, num_points=72, prior_feat_channels=64, 
                  fc_hidden_dim=64, num_priors=192, 
                  img_w=800,img_h=320,ori_img_h=590,
