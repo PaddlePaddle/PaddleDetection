@@ -2,7 +2,7 @@ metric: CULaneMetric
 num_classes: 5 # 4 lanes + background
 
 cut_height: &cut_height 270
-dataset_dir: &dataset_dir /home/yikh/mycode/CLRNet/data/CULane
+dataset_dir: &dataset_dir dataset/CULane
 
 TrainDataset:
   name: CULaneDataSet
