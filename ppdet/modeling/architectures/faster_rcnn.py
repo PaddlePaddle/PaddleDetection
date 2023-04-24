@@ -86,15 +86,16 @@ class FasterRCNN(BaseArch):
             preds, _ = self.bbox_head(body_feats, rois, rois_num, None)
             im_shape = self.inputs['im_shape']
             scale_factor = self.inputs['scale_factor']
-            bbox, bbox_num, nms_keep_idx = self.bbox_post_process(preds, (rois, rois_num),
-                                                    im_shape, scale_factor)
+            bbox, bbox_num, nms_keep_idx = self.bbox_post_process(
+                preds, (rois, rois_num), im_shape, scale_factor)
 
             # rescale the prediction back to origin image
             bboxes, bbox_pred, bbox_num = self.bbox_post_process.get_pred(
                 bbox, bbox_num, im_shape, scale_factor)
 
             if self.use_extra_data:
-                extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
+                extra_data = {
+                }  # record the bbox output before nms, such like scores and nms_keep_idx
                 """extra_data:{
                             'scores': predict scores,
                             'nms_keep_idx': bbox index before nms,
@@ -102,11 +103,11 @@ class FasterRCNN(BaseArch):
                 """
                 extra_data['scores'] = preds[1]  # predict scores (probability)
                 # Todo: get logits output
-                extra_data['nms_keep_idx'] = nms_keep_idx  # bbox index before nms
+                extra_data[
+                    'nms_keep_idx'] = nms_keep_idx  # bbox index before nms
                 return bbox_pred, bbox_num, extra_data
             else:
                 return bbox_pred, bbox_num
-
 
     def get_loss(self, ):
         rpn_loss, bbox_loss = self._forward()
@@ -120,7 +121,11 @@ class FasterRCNN(BaseArch):
     def get_pred(self):
         if self.use_extra_data:
             bbox_pred, bbox_num, extra_data = self._forward()
-            output = {'bbox': bbox_pred, 'bbox_num': bbox_num, 'extra_data': extra_data}
+            output = {
+                'bbox': bbox_pred,
+                'bbox_num': bbox_num,
+                'extra_data': extra_data
+            }
         else:
             bbox_pred, bbox_num = self._forward()
             output = {'bbox': bbox_pred, 'bbox_num': bbox_num}
@@ -131,7 +136,7 @@ class FasterRCNN(BaseArch):
         if self.neck is not None:
             body_feats = self.neck(body_feats)
         rois = [roi for roi in data['gt_bbox']]
-        rois_num = paddle.concat([paddle.shape(roi)[0] for roi in rois])
+        rois_num = paddle.concat([paddle.shape(roi)[0:1] for roi in rois])
 
         preds, _ = self.bbox_head(body_feats, rois, rois_num, None, cot=True)
         return preds
@@ -142,13 +147,13 @@ class FasterRCNN(BaseArch):
         label_list = []
 
         for step_id, data in enumerate(loader):
-            _, bbox_prob = self.target_bbox_forward(data)      
+            _, bbox_prob = self.target_bbox_forward(data)
             batch_size = data['im_id'].shape[0]
             for i in range(batch_size):
-                num_bbox = data['gt_class'][i].shape[0]           
+                num_bbox = data['gt_class'][i].shape[0]
                 train_labels = data['gt_class'][i]
                 train_labels_list.append(train_labels.numpy().squeeze(1))
-            base_labels = bbox_prob.detach().numpy()[:,:-1]
+            base_labels = bbox_prob.detach().numpy()[:, :-1]
             label_list.append(base_labels)
 
         labels = np.concatenate(train_labels_list, 0)
