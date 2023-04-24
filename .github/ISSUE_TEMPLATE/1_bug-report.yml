@@ -1,6 +1,6 @@
 name: 🐛 报BUG Bug Report
 description: 报告一个可复现的Bug以帮助我们修复PaddleDetection。 Report a bug to help us reproduce and fix it.
-labels: [type/bug-report, status/new-issue]
+labels: [bug]
 
 body:
 - type: markdown

@@ -39,7 +39,7 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval, Pose3DEval
-from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric
+from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric, CULaneMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
@@ -370,6 +370,9 @@ class Trainer(object):
             ]
         elif self.cfg.metric == 'MOTDet':
             self._metrics = [JDEDetMetric(), ]
+        elif self.cfg.metric == 'CULaneMetric':
+            output_eval = self.cfg.get('output_eval', None)
+            self._metrics = [CULaneMetric(output_eval=output_eval,cfg=self.cfg,split=self.dataset.split)]
         else:
             logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -638,7 +641,7 @@ class Trainer(object):
 
             # update metrics
             for metric in self._metrics:
-                metric.update(data, outs)
+                metric.update(data, outs)            
 
             # multi-scale inputs: all inputs have same im_id
             if isinstance(data, typing.Sequence):

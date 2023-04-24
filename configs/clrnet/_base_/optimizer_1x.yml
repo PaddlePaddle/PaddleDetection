@@ -1,0 +1,15 @@
+epoch: 15
+snapshot_epoch: 5
+
+LearningRate:
+  base_lr: 0.6e-3
+  schedulers:
+  - !CosineDecay
+    max_epochs: 15
+    use_warmup: False
+
+OptimizerBuilder:
+  regularizer: False
+  optimizer:
+    type: AdamW
+  

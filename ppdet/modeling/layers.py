@@ -1135,7 +1135,6 @@ def _convert_attention_mask(attn_mask, dtype):
     """
     return nn.layer.transformer._convert_attention_mask(attn_mask, dtype)
 
-
 @register
 class MultiHeadAttention(nn.Layer):
     """

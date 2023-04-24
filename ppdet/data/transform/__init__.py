@@ -18,15 +18,17 @@ from . import keypoint_operators
 from . import mot_operators
 from . import rotated_operators
 from . import keypoints_3d_operators
-
+from . import culane_operators
 from .operators import *
 from .batch_operators import *
 from .keypoint_operators import *
 from .mot_operators import *
 from .rotated_operators import *
 from .keypoints_3d_operators import *
+from .culane_operators import *
 
 __all__ = []
 __all__ += registered_ops
 __all__ += keypoint_operators.__all__
 __all__ += mot_operators.__all__
+__all__ += culane_operators.__all__

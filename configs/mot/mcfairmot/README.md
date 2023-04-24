@@ -48,7 +48,7 @@ PP-tracking provides an AI studio public project tutorial. Please refer to this 
 |    Model      |  Compression Strategy | Prediction Delay（T4） |Prediction Delay（V100）| Model Configuration File |Compression Algorithm Configuration File |
 | :--------------| :------- | :------: | :----: | :----: | :----: |
 | DLA-34         | baseline |    41.3  |    21.9 |[Configuration File](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|    -     |
-| DLA-34         | off-line quantization   |  37.8    |  21.2  |[Configuration File](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|[Configuration File](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/slim/post_quant/mcfairmot_ptq.yml)|
+| DLA-34         | off-line quantization   |  37.8    |  21.2  |[Configuration File](./mcfairmot_dla34_30e_1088x608_visdrone_vehicle_bytetracker.yml)|[Configuration File](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.6/configs/slim/post_quant/mcfairmot_ptq.yml)|
 
 
 ## Getting Start
