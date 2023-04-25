@@ -77,40 +77,16 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
 
 ## 📣最新进展
 
-**🔥PaddleDetection v2.6版本更新解读**
+**🔥超越YOLOv8，飞桨推出精度最高的实时检测器RT-DETR！**
 
   <div align="center">
-  <img src="https://user-images.githubusercontent.com/61035602/224244188-da8495fc-eea9-432f-bc2d-6f0144c2dde9.png"  height = "250" caption='' />
+  <img src="https://user-images.githubusercontent.com/61035602/234011700-94de22e9-bdf9-4ce2-972d-6e6b800889c8.png"  height = "250" caption='' />
   <p></p>
   </div>
 
-  - `v2.6版本版本更新解读文章传送门`：
-    -  [《PaddleDetection v2.6发布：目标小？数据缺？标注累？泛化差？PP新员逐一应对！》](https://mp.weixin.qq.com/s/SLITj5k120d_fQc7jEO8Vw)
-  - `v2.6版本重点更新体验传送门`：
-    - [PP-YOLOE+：高精度通用目标检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ppyoloe)
-    - [PP-YOLOE-R：旋转框检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/rotate/ppyoloe_r)
-    - [PP-YOLOE-SOD：小目标检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/smalldet)
-    - [PP-YOLOE-DOD：密集检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ppyoloe/application)
-    - [PP-YOLOE+_t：超轻量通用目标检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ppyoloe)
-    - [PP-YOLOE+少样本学习方案](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/few-shot)
-    - [PP-YOLOE+半监督学习方案](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/semi_det/baseline)
-    - [PP-YOLOE+模型蒸馏方案](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ppyoloe/distill)
-    - [PP-Human：行人分析工具箱，推理提速、多路视频流支持](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/deploy/pipeline)
-    - [PP-Vehicle：车辆分析工具箱，新增逆行、压线分析、推理提速、多路视频流支持](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/deploy/pipeline)
-    - [半监督检测算法合集](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/semi_det)
-    - [少样本学习算法合集](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.6/configs/few-shot)
-    - [模型蒸馏算法合集](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/ppyoloe/distill)
-    - [YOLO新增模型YOLOv8、YOLOv6-3.0](https://github.com/PaddlePaddle/PaddleYOLO/tree/release/2.6/configs)
-    - [目标检测算法新增DINO](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/dino)
-    - [目标检测算法新增YOLOF](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/yolof)
-    - [新增ViTDet系列检测模型](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/vitdet)
-    - [新增目标检测算法CenterTrack](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/mot/centertrack)
-    - [新增旋转框检测算法FCOSR](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/rotate/fcosr)
-    - [新增实例分割算法QueryInst](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/queryinst)
-    - [新增3D关键点检测算法Metro3d](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.6/configs/pose3d)
-    - [新增检测热力图可视化能力](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.6/docs/tutorials/GradCAM_cn.md)
-    - [Roadmap of PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/issues/7892)
-    - [飞桨黑客松第四期-PaddleDetection任务专区](https://github.com/PaddlePaddle/PaddleDetection/issues/7906)
+  - `RT-DETR解读文章传送门`：
+    -  [《超越YOLOv8，飞桨推出精度最高的实时检测器RT-DETR！》](https://mp.weixin.qq.com/s/o03QM2rZNjHVto36gcV0Yw)
+  - `代码传送门`：[RT-DETR](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rtdetr)
 
 ## 👫开源社区
 
@@ -132,6 +108,24 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
 </div>
 
 - **🎈社区近期活动**
+  - **🔥PaddleDetection v2.6版本更新解读**
+
+    <div align="center">
+    <img src="https://user-images.githubusercontent.com/61035602/224244188-da8495fc-eea9-432f-bc2d-6f0144c2dde9.png"  height = "250" caption='' />
+    <p></p>
+    </div>
+
+    - `v2.6版本版本更新解读文章传送门`：[《PaddleDetection v2.6发布：目标小？数据缺？标注累？泛化差？PP新员逐一应对！》](https://mp.weixin.qq.com/s/SLITj5k120d_fQc7jEO8Vw)
+
+  - **🏆半监督检测**
+
+    - `文章传送门`：[CVPR 2023 | 单阶段半监督目标检测SOTA：ARSL](https://mp.weixin.qq.com/s/UZLIGL6va2KBfofC-nKG4g)
+    - `代码传送门`：[ARSL](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/semi_det)
+
+    <div align="center">
+    <img src="https://user-images.githubusercontent.com/61035602/230522850-21873665-ba79-4f8d-8dce-43d736111df8.png"  height = "250" caption='' />
+    <p></p>
+    </div>
 
   - **👀YOLO系列专题**
 
