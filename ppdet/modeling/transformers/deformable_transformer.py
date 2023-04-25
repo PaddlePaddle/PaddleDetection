@@ -486,7 +486,10 @@ class DeformableTransformer(nn.Layer):
         spatial_shapes = []
         valid_ratios = []
         for level, src in enumerate(srcs):
-            bs, _, h, w = paddle.shape(src)
+            src_shape = paddle.shape(src)
+            bs = src_shape[0:1]
+            h = src_shape[2:3]
+            w = src_shape[3:4]
             spatial_shapes.append(paddle.concat([h, w]))
             src = src.flatten(2).transpose([0, 2, 1])
             src_flatten.append(src)
