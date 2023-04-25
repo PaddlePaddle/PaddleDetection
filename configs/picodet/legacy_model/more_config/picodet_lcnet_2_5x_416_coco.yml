@@ -21,3 +21,6 @@ PicoDet:
 LCNet:
   scale: 2.5
   feature_maps: [3, 4, 5]
+
+TrainReader:
+  batch_size: 32

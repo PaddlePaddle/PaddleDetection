@@ -50,7 +50,7 @@ inference:./deploy/python/infer.py
 --run_benchmark:False
 null:null
 ===========================train_benchmark_params==========================
-batch_size:80
+batch_size:32
 fp_items:fp32|fp16
 epoch:1
 repeat:1
