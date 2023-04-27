@@ -73,7 +73,8 @@ python tools/eval.py -c configs/rtdetr/rtdetr_r50vd_6x_coco.yml \
 
 ```shell
 python tools/infer.py -c configs/rtdetr/rtdetr_r50vd_6x_coco.yml \
-              -o weights=https://bj.bcebos.com/v1/paddledet/models/rtdetr_r50vd_6x_coco.pdparams
+              -o weights=https://bj.bcebos.com/v1/paddledet/models/rtdetr_r50vd_6x_coco.pdparams \
+              --infer_img=./demo/000000570688.jpg
 ```
 
 详情请参考[快速开始文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/GETTING_STARTED.md).
