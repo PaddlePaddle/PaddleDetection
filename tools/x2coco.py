@@ -190,7 +190,7 @@ def deal_json(ds_type, img_path, json_path):
 
 def voc_get_label_anno(ann_dir_path, ann_ids_path, labels_path):
     with open(labels_path, 'r') as f:
-        labels_str = f.read().split()
+        labels_str = f.read().split("\n")
     labels_ids = list(range(1, len(labels_str) + 1))
 
     with open(ann_ids_path, 'r') as f:
