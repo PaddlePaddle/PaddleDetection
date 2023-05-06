@@ -78,7 +78,7 @@ def argsparser():
         "--device",
         type=str,
         default='cpu',
-        help="Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU."
+        help="Choose the device you want to run, it can be: CPU/GPU/XPU/NPU, default is CPU."
     )
     parser.add_argument(
         "--run_benchmark",
