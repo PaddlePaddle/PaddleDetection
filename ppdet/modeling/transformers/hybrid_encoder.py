@@ -237,7 +237,8 @@ class HybridEncoder(nn.Layer):
             ],
             axis=1)[None, :, :]
 
-    def forward(self, feats, for_mot=False):
+
+    def forward(self, feats, for_mot=False,is_teacher=False):
         assert len(feats) == len(self.in_channels)
         # get projection features
         proj_feats = [self.input_proj[i](feat) for i, feat in enumerate(feats)]
@@ -248,7 +249,7 @@ class HybridEncoder(nn.Layer):
                 # flatten [B, C, H, W] to [B, HxW, C]
                 src_flatten = proj_feats[enc_ind].flatten(2).transpose(
                     [0, 2, 1])
-                if self.training or self.eval_size is None:
+                if self.training or self.eval_size is None or is_teacher:
                     pos_embed = self.build_2d_sincos_position_embedding(
                         w, h, self.hidden_dim, self.pe_temperature)
                 else:

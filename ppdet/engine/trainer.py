@@ -47,7 +47,7 @@ from ppdet.utils.fuse_utils import fuse_conv_bn
 from ppdet.utils import profiler
 from ppdet.modeling.post_process import multiclass_nms
 
-from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback
+from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback, SemiCheckpointer, SemiLogPrinter
 from .export_utils import _dump_infer_config, _prune_input_spec, apply_to_static
 
 from paddle.distributed.fleet.utils.hybrid_parallel_util import fused_allreduce_gradients
@@ -215,7 +215,10 @@ class Trainer(object):
 
     def _init_callbacks(self):
         if self.mode == 'train':
-            self._callbacks = [LogPrinter(self), Checkpointer(self)]
+            if self.cfg.get('ssod_method', False) and self.cfg['ssod_method']=='Trainer_Semi_detr':
+                self._callbacks = [SemiLogPrinter(self), SemiCheckpointer(self)]
+            else:
+                self._callbacks = [LogPrinter(self), Checkpointer(self)]
             if self.cfg.get('use_vdl', False):
                 self._callbacks.append(VisualDLWriter(self))
             if self.cfg.get('save_proposals', False):

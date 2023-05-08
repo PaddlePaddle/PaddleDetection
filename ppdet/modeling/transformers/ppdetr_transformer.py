@@ -36,7 +36,7 @@ from ..initializer import (linear_init_, constant_, xavier_uniform_, normal_,
 from .utils import (_get_clones, get_sine_pos_embed,
                     get_contrastive_denoising_training_group, inverse_sigmoid)
 
-__all__ = ['RTDETRTransformer']
+__all__ = ['PPDETRTransformer']
 
 
 class PPMSDeformableAttention(MSDeformableAttention):
@@ -201,13 +201,12 @@ class TransformerDecoderLayer(nn.Layer):
 
 
 class TransformerDecoder(nn.Layer):
-    def __init__(self, hidden_dim, decoder_layer, num_layers,eval_idx=-1):
+    def __init__(self, hidden_dim, decoder_layer, num_layers):
         super(TransformerDecoder, self).__init__()
         self.layers = _get_clones(decoder_layer, num_layers)
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
-        self.eval_idx = eval_idx if eval_idx >= 0 else num_layers + eval_idx
-        
+
     def forward(self,
                 tgt,
                 ref_points_unact,
@@ -242,10 +241,9 @@ class TransformerDecoder(nn.Layer):
                     dec_out_bboxes.append(
                         F.sigmoid(bbox_head[i](output) + inverse_sigmoid(
                             ref_points)))
-            elif i == self.eval_idx:
+            else:
                 dec_out_logits.append(score_head[i](output))
                 dec_out_bboxes.append(inter_ref_bbox)
-                break
 
             ref_points = inter_ref_bbox
             ref_points_detach = inter_ref_bbox.detach(
@@ -255,7 +253,7 @@ class TransformerDecoder(nn.Layer):
 
 
 @register
-class RTDETRTransformer(nn.Layer):
+class PPDETRTransformer(nn.Layer):
     __shared__ = ['num_classes', 'hidden_dim', 'eval_size']
 
     def __init__(self,
@@ -277,9 +275,8 @@ class RTDETRTransformer(nn.Layer):
                  box_noise_scale=1.0,
                  learnt_init_query=True,
                  eval_size=None,
-                 eval_idx=-1,
                  eps=1e-2):
-        super(RTDETRTransformer, self).__init__()
+        super(PPDETRTransformer, self).__init__()
         assert position_embed_type in ['sine', 'learned'], \
             f'ValueError: position_embed_type not supported {position_embed_type}!'
         assert len(backbone_feat_channels) <= num_levels
@@ -305,7 +302,7 @@ class RTDETRTransformer(nn.Layer):
             hidden_dim, nhead, dim_feedforward, dropout, activation, num_levels,
             num_decoder_points)
         self.decoder = TransformerDecoder(hidden_dim, decoder_layer,
-                                          num_decoder_layers,eval_idx)
+                                          num_decoder_layers)
 
         # denoising part
         self.denoising_class_embed = nn.Embedding(

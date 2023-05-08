@@ -80,3 +80,50 @@ def QFLv2(pred_sigmoid,
     elif reduction == "sum":
         loss = loss[valid].sum()
     return loss
+
+
+
+
+def filter_invalid(bbox, label=None, score=None, thr=0.0, min_size=0):
+    if score.numel() > 0:
+        soft_score=score.max(-1)
+        valid = soft_score >= thr
+        bbox = bbox[valid]
+
+        if label is not None:
+            label = label[valid]
+        score=score[valid]
+    if min_size is not None and bbox.shape[0] > 0:
+        bw = bbox[:, 2]
+        bh = bbox[:, 3]
+        valid = (bw > min_size) & (bh > min_size)
+        bbox = bbox[valid]
+
+        if label is not None:
+            label = label[valid]
+            score=score[valid]
+            
+    return bbox, label, score
+
+def weighted_loss(loss: dict, weight, ignore_keys=[], warmup=0):
+    if len(loss) == 0:
+        return {}
+
+    if isinstance(weight, Mapping):
+        for k, v in weight.items():
+            for name, loss_item in loss.items():
+                if (k in name) and ("loss" in name):
+                    loss[name] = sequence_mul(loss[name], v)
+    elif isinstance(weight, Number):
+        for name, loss_item in loss.items():
+            if "loss" in name:
+                if not is_match(name, ignore_keys):
+                    loss[name] = sequence_mul(loss[name], weight)
+                else:
+                    loss[name] = sequence_mul(loss[name], 0.0)
+    else:
+        raise NotImplementedError()
+
+    total_loss = paddle.add_n(list(loss.values()))
+    loss.update({'loss': total_loss})
+    return loss
