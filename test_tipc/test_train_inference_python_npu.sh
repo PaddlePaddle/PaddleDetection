@@ -40,7 +40,6 @@ FILENAME=$1
  sed -i "s/--slim_config _template_pact/ /g" $FILENAME
  sed -i "s/--slim_config _template_fpgm/ /g" $FILENAME
  sed -i "s/--slim_config _template_kl_quant/ /g" $FILENAME
- sed -i "s/gpu_list:0|0,1/gpu_list:0/g" $FILENAME
  sed -i 's/\"gpu\"/\"npu\"/g' test_tipc/test_train_inference_python.sh
 
  # parser params
