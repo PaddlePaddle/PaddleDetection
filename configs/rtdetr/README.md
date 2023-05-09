@@ -149,7 +149,7 @@ import paddle
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.core.workspace import create
 
-cfg_path = './configs/dino/ppdetr_r50_3x_coco.yml'
+cfg_path = './configs/rtdetr/rtdetr_r50vd_6x_coco.yml'
 cfg = load_config(cfg_path)
 model = create(cfg.architecture)
 
