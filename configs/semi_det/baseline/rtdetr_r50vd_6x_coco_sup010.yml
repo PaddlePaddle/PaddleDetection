@@ -1,0 +1,37 @@
+_BASE_: [
+  '../../rt-detr/rtdetr_r50vd_6x_coco.yml',
+]
+log_iter: 50
+snapshot_epoch: 2
+weights: output/rtdetr_r50vd_6x_coco/model_final
+
+
+TrainDataset:
+  !COCODataSet
+    image_dir: train2017
+    anno_path: semi_annotations/instances_train2017.1@5.json
+    dataset_dir: dataset/coco
+    data_fields: ['image', 'gt_bbox', 'gt_class']
+
+
+worker_num: 4
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - RandomDistort: {prob: 0.8}
+    - RandomExpand: {fill_value: [123.675, 116.28, 103.53]}
+    - RandomCrop: {prob: 0.8}
+    - RandomFlip: {}
+  batch_transforms:
+    - BatchRandomResize: {target_size: [480, 512, 544, 576, 608, 640, 640, 640, 672, 704, 736, 768, 800], random_size: True, random_interp: True, keep_ratio: False}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - NormalizeBox: {}
+    - BboxXYXY2XYWH: {}
+    - Permute: {}
+  batch_size: 4
+  shuffle: true
+  drop_last: true
+  collate_batch: false
+  use_shared_memory: false
+
+

@@ -53,6 +53,18 @@
   - 以上模型训练默认使用8 GPUs，总batch_size默认为16，默认初始学习率为0.01。如果改动了总batch_size，请按线性比例相应地调整学习率。
 
 
+
+### [RetinaNet](../../retinanet)
+
+|  基础模型          |    监督数据比例     |  mAP<sup>val<br>0.5:0.95 |  模型下载  |   配置文件   |
+| :---------------: | :-------------: | :---------------------: |:--------: | :---------: |
+| RT-DETR ResNet5vd |     5%    |     39.1       | [download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_sup005.pdparams) | [config](rtdetr_r50vd_6x_coco_sup005.yml) |
+| RT-DETR ResNet5vd |    10%    |     42.3       | [download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_sup010.pdparams) | [config](rtdetr_r50vd_6x_coco_sup010.yml) |
+| RT-DETR ResNet5vd |    VOC2007 |     62.7      | [download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco.pdparams) | [config](../../configs/retinanet/rtdetr_r50vd_6x_voc2007.yml) |
+
+**注意:**
+  - RT-DETR模型训练默认使用4 GPUs，总batch_size默认为16，默认初始学习率为0.0001。如果改动了总batch_size，请按线性比例相应地调整学习率。
+
 ### 注意事项
  - COCO部分监督数据集请参照 [数据集准备](../README.md) 去下载和准备，各个比例的训练集均为**从train2017中抽取部分百分比的子集**，默认使用`fold`号为1的划分子集，`sup010`表示抽取10%的监督数据训练，`sup005`表示抽取5%，`full`表示全部train2017，验证集均为val2017全量；
  - 抽取部分百分比的监督数据的抽法不同，或使用的`fold`号不同，精度都会因此而有约0.5 mAP之多的差异；

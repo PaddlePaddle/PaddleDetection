@@ -194,14 +194,14 @@ TestDataset:
     anno_path: annotations/instances_val2017.json # also support txt (like VOC's label_list.txt)
     dataset_dir: dataset/coco # if set, anno_path will be 'dataset_dir/anno_path'
 
-epoch: 300 #epoch: 60
+epoch: 500 #epoch: 60
 
 LearningRate:
   base_lr: 0.0002
   schedulers:
   - !PiecewiseDecay
     gamma: 1.0
-    milestones: [290]
+    milestones: [500]
     use_warmup: false
   - !LinearWarmup
     start_factor: 0.001

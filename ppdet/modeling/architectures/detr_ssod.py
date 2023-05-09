@@ -15,25 +15,15 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from typing import KeysView
-import copy
 from ppdet.core.workspace import register, create, merge_config
-from .meta_arch import BaseArch
-from ppdet.data.reader import transform
 import paddle
-import os
 
 import numpy as np
-from operator import itemgetter
 import paddle
 import paddle.nn.functional as F
-import paddle.distributed as dist
-from paddle.fluid import framework
 from ppdet.core.workspace import register, create
-from ppdet.modeling.bbox_utils import delta2bbox
-from ppdet.data.transform.atss_assigner import bbox_overlaps
 from ppdet.utils.logger import setup_logger
-from ppdet.modeling.ssod.utils import filter_invalid, weighted_loss
+from ppdet.modeling.ssod.utils import filter_invalid
 from .multi_stream_detector import MultiSteamDetector
 logger = setup_logger(__name__)
 
@@ -192,7 +182,7 @@ class DETR_SSOD(MultiSteamDetector):
                         proposal[:,:4],
                         proposal_label,
                         proposal_score,
-                        thr=0.7,
+                        thr=thr,
                         min_size=self.train_cfg['min_pseduo_box_size'],
                     )
                     for proposal, proposal_label ,proposal_score in zip(
