@@ -3,11 +3,11 @@
 # RTDETR-SSOD(基于RTDETR的配套半监督目标检测方法)
 
 #复现模型指标注意事项: 模型中指标是采用在监督数据训练饱和后加载监督数据所训练的模型进行半监督训练
-    例如 使用 baseline/rtdetr_r50vd_6x_coco_sup005.yml使用5%coco数据训练全监督模型，得到rtdetr_r50vd_6x_coco_sup005.pdparams,在rt_detr_ssod005_coco_no_warmup.yml中设置
-            pretrain_student_weights: rtdetr_r50vd_6x_coco_sup005.pdparams 
-            pretrain_teacher_weights: rtdetr_r50vd_6x_coco_sup005.pdparams
-    1.使用coco数据集5%和10%有标记数据和voc数据集VOC2007trainval 所训练的权重已给出请参考 semi_det/baseline/README.md.
-    2.rt_detr_ssod_voc_no_warmup.yml rt_detr_ssod005_coco_no_warmup.yml rt_detr_ssod010_coco_no_warmup.yml 是使用训练好的全监督权中直接开启半监督训练
+  - 例如 使用 baseline/rtdetr_r50vd_6x_coco_sup005.yml使用5%coco数据训练全监督模型，得到rtdetr_r50vd_6x_coco_sup005.pdparams,在rt_detr_ssod005_coco_no_warmup.yml中设置
+      - pretrain_student_weights: rtdetr_r50vd_6x_coco_sup005.pdparams 
+      - pretrain_teacher_weights: rtdetr_r50vd_6x_coco_sup005.pdparams
+  - 1.使用coco数据集5%和10%有标记数据和voc数据集VOC2007trainval 所训练的权重已给出请参考 semi_det/baseline/README.md.
+  - 2.rt_detr_ssod_voc_no_warmup.yml rt_detr_ssod005_coco_no_warmup.yml rt_detr_ssod010_coco_no_warmup.yml 是使用训练好的全监督权中直接开启半监督训练（推荐）
 ## RTDETR-SSOD模型库
 
 |      模型       |  监督数据比例 |        Sup Baseline     |    Sup Epochs (Iters)   |  Sup mAP<sup>val<br>0.5:0.95 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |

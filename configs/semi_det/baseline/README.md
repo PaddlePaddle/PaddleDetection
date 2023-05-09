@@ -60,7 +60,7 @@
 | :---------------: | :-------------: | :---------------------: |:--------: | :---------: |
 | RT-DETR ResNet5vd |     5%    |     39.1       | [download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_sup005.pdparams) | [config](rtdetr_r50vd_6x_coco_sup005.yml) |
 | RT-DETR ResNet5vd |    10%    |     42.3       | [download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco_sup010.pdparams) | [config](rtdetr_r50vd_6x_coco_sup010.yml) |
-| RT-DETR ResNet5vd |    VOC2007 |     62.7      | [download](https://paddledet.bj.bcebos.com/models/retinanet_r50_fpn_2x_coco.pdparams) | [config](../../configs/retinanet/rtdetr_r50vd_6x_voc2007.yml) |
+| RT-DETR ResNet5vd |    VOC2007 |     62.7      | [download](https://paddledet.bj.bcebos.com/models/rtdetr_r50vd_6x_voc2007.pdparams) | [config](../../configs/retinanet/rtdetr_r50vd_6x_voc2007.yml) |
 
 **注意:**
   - RT-DETR模型训练默认使用4 GPUs，总batch_size默认为16，默认初始学习率为0.0001。如果改动了总batch_size，请按线性比例相应地调整学习率。
