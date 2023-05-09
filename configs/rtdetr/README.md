@@ -2,9 +2,9 @@
 
 ## 最新动态
 
-- 发布RT-DETR-R50和RT-DETR-R101的代码和预训练模型。
-- 发布RT-DETR-L和RT-DETR-X的代码和预训练模型。
-- 发布RT-DETR-R50-Scaled伸缩更小模型范例
+- 发布RT-DETR-R50和RT-DETR-R101的代码和预训练模型
+- 发布RT-DETR-L和RT-DETR-X的代码和预训练模型
+- 发布RT-DETR-R50-Scaled伸缩更小的范例模型
 
 ## 简介
 <!-- We propose a **R**eal-**T**ime **DE**tection **TR**ansformer (RT-DETR), the first real-time end-to-end object detector to our best knowledge. Specifically, we design an efficient hybrid encoder to efficiently process multi-scale features by decoupling the intra-scale interaction and cross-scale fusion, and propose IoU-aware query selection to improve the initialization of object queries. In addition, our proposed detector supports flexibly adjustment of the inference speed by using different decoder layers without the need for retraining, which facilitates the practical application of real-time object detectors. Our RT-DETR-L achieves 53.0% AP on COCO val2017 and 114 FPS on T4 GPU, while RT-DETR-X achieves 54.8% AP and 74 FPS, outperforming all YOLO detectors of the same scale in both speed and accuracy. Furthermore, our RT-DETR-R50 achieves 53.1% AP and 108 FPS, outperforming DINO-Deformable-DETR-R50 by 2.2% AP in accuracy and by about 21 times in FPS.  -->
@@ -123,6 +123,7 @@ paddle2onnx --model_dir=./output_inference/rtdetr_r50vd_6x_coco/ \
 <summary>3. 转换成TensorRT（可选） </summary>
 
 - 确保TensorRT的版本>=8.5.1
+- 推理可以[参考例子的部分代码](https://github.com/lyuwenyu/AI/tree/master/rt)或者其他网络资源
 
 ```shell
 trtexec --onnx=./rtdetr_r50vd_6x_coco.onnx \
@@ -132,6 +133,8 @@ trtexec --onnx=./rtdetr_r50vd_6x_coco.onnx \
         --avgRuns=100 \
         --fp16
 ```
+
+-
 </details>
 
 
@@ -159,6 +162,13 @@ paddle.flops(model, None, blob, custom_ops=None, print_detail=False)
 ```
 </details>
 
+
+<details>
+<summary>2. YOLOs端到端速度测速 </summary>
+
+- 可以[参考的部分代码](https://github.com/lyuwenyu/AI/tree/master/rt)或者其他网络资源
+
+</details>
 
 
 
