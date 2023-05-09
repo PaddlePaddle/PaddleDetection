@@ -28,6 +28,6 @@ PaddleDetection非常欢迎你加入到飞桨社区的开源建设中，你可�
 - 感谢[yangyudong](https://github.com/yangyudong2020), [hchhtc123](https://github.com/hchhtc123) 开发PP-Tracking GUI界面
 - 感谢Shigure19 开发PP-TinyPose健身APP
 - 感谢[manangoel99](https://github.com/manangoel99)贡献Wandb可视化方式
-
+- 感谢百度ACG政务产品部统管通办研发组视觉研发团队贡献PP-YOLOE蒸馏方案
 
 非常感谢大家为飞桨贡献！共建飞桨繁荣社区！
