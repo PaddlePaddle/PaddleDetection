@@ -76,7 +76,7 @@ exp_num=8
 if [ ${train_img_num} != ${exp_num} ];then
     echo "Replace with npu tipc coco training annotations"
     mv $REPO_ROOT_PATH/dataset/coco/annotations/instances_train2017.json $REPO_ROOT_PATH/dataset/coco/annotations/instances_train2017_bak.json
-    wget https://raw.githubusercontent.com/YanhuiDua/PaddleDetection/npu_tipc/dataset/coco/annotations/instances_train2017.json
+    wget https://paddle-device.bj.bcebos.com/tipc/instances_train2017.json
     mv instances_train2017.json $REPO_ROOT_PATH/dataset/coco/annotations/
     rm -f instances_train2017.json
 fi
