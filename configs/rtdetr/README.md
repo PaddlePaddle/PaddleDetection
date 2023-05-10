@@ -123,7 +123,7 @@ paddle2onnx --model_dir=./output_inference/rtdetr_r50vd_6x_coco/ \
 <summary>3. 转换成TensorRT（可选） </summary>
 
 - 确保TensorRT的版本>=8.5.1
-- 推理可以[参考例子的部分代码](https://github.com/lyuwenyu/AI/tree/master/rt)或者其他网络资源
+- TRT推理可以参考[RT-DETR](https://github.com/lyuwenyu/RT-DETR)的部分代码或者其他网络资源
 
 ```shell
 trtexec --onnx=./rtdetr_r50vd_6x_coco.onnx \
@@ -163,10 +163,10 @@ paddle.flops(model, None, blob, custom_ops=None, print_detail=False)
 </details>
 
 
-<details>
+<details open>
 <summary>2. YOLOs端到端速度测速 </summary>
 
-- 可以[参考的部分代码](https://github.com/lyuwenyu/AI/tree/master/rt)或者其他网络资源
+- 可以参考[RT-DETR](https://github.com/lyuwenyu/RT-DETR) benchmark部分或者其他网络资源
 
 </details>
 
