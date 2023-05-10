@@ -65,6 +65,22 @@ grep -n '.yml' $FILENAME  | cut -d ":" -f 1 \
         sed -i 's/use_gpu/use_npu/g' "$sub_config_path"
     done
 done
+
+
+# NPU lacks operators such as deformable_conv, depthwise_conv2d_transpose, 
+# which will affects ips. Here, we reduce the number of coco training sets 
+# for npu tipc bencnmark. This is a temporary hack.
+# # TODO(duanyanhui): add vision ops for npu 
+train_img_num=`cat $REPO_ROOT_PATH/dataset/coco/annotations/instances_train2017.json | grep -o  file_name | wc -l`
+exp_num=8
+if [ ${train_img_num} != ${exp_num} ];then
+    echo "Replace with npu tipc coco training annotations"
+    mv $REPO_ROOT_PATH/dataset/coco/annotations/instances_train2017.json $REPO_ROOT_PATH/dataset/coco/annotations/instances_train2017_bak.json
+    wget https://raw.githubusercontent.com/YanhuiDua/PaddleDetection/npu_tipc/dataset/coco/annotations/instances_train2017.json
+    mv instances_train2017.json $REPO_ROOT_PATH/dataset/coco/annotations/
+    rm -f instances_train2017.json
+fi
+
 # pass parameters to test_train_inference_python.sh
 cmd="bash test_tipc/test_train_inference_python.sh ${FILENAME} $2"
 echo $cmd
