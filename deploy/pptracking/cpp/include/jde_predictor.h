@@ -57,6 +57,7 @@ class JDEPredictor {
     preprocessor_.Init(config_.preprocess_info_);
     LoadModel(model_dir, run_mode);
     this->conf_thresh_ = config_.conf_thresh_;
+    this->threshold_ = config_.conf_thresh_;
   }
 
   // Load Paddle inference model

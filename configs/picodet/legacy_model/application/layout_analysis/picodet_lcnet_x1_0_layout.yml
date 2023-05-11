@@ -26,14 +26,14 @@ metric: COCO
 num_classes: 5
 
 TrainDataset:
-  !COCODataSet
+    name: COCODataSet
     image_dir: train
     anno_path: train.json
     dataset_dir: ./dataset/publaynet/
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 
 EvalDataset:
-  !COCODataSet
+    name: COCODataSet
     image_dir: val
     anno_path: val.json
     dataset_dir: ./dataset/publaynet/
