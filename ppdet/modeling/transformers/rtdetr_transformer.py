@@ -245,6 +245,7 @@ class TransformerDecoder(nn.Layer):
             elif i == self.eval_idx:
                 dec_out_logits.append(score_head[i](output))
                 dec_out_bboxes.append(inter_ref_bbox)
+                break
 
             ref_points = inter_ref_bbox
             ref_points_detach = inter_ref_bbox.detach(

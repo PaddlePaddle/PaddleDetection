@@ -45,7 +45,7 @@ class JDE_Detector(Detector):
     """
     Args:
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
-        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU/NPU, default is CPU
         run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
         batch_size (int): size of pre batch in inference
         trt_min_shape (int): min shape for dynamic shape in trt
@@ -375,7 +375,7 @@ if __name__ == '__main__':
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)
     FLAGS.device = FLAGS.device.upper()
-    assert FLAGS.device in ['CPU', 'GPU', 'XPU'
-                            ], "device should be CPU, GPU or XPU"
+    assert FLAGS.device in ['CPU', 'GPU', 'XPU', 'NPU'
+                            ], "device should be CPU, GPU, NPU or XPU"
 
     main()

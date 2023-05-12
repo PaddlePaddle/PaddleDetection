@@ -76,6 +76,7 @@ class ConvBNAct(nn.Layer):
             padding=padding
             if isinstance(padding, str) else (kernel_size - 1) // 2,
             groups=groups,
+            weight_attr=ParamAttr(learning_rate=lr_mult),
             bias_attr=False)
         self.bn = BatchNorm2D(
             out_channels,
