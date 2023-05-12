@@ -13,7 +13,7 @@ train_infer_img_dir:./dataset/coco/test2017/
 filename:null
 ##
 trainer:norm_train
-norm_train:tools/train.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml -o
+norm_train:tools/train.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml -o worker_num=16
 pact_train:tools/train.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml --slim_config _template_pact -o
 fpgm_train:tools/train.py -c configs/picodet/legacy_model/picodet_s_320_coco.yml --slim_config _template_fpgm -o
 distill_train:null

@@ -13,7 +13,7 @@ train_infer_img_dir:./dataset/coco/test2017/
 filename:null
 ##
 trainer:norm_train
-norm_train:tools/train.py -c configs/rtdetr/rtdetr_hgnetv2_l_6x_coco.yml -o
+norm_train:tools/train.py -c configs/rtdetr/rtdetr_hgnetv2_l_6x_coco.yml -o worker_num=16
 pact_train:null
 fpgm_train:null
 distill_train:null
@@ -50,7 +50,7 @@ inference:./deploy/python/infer.py
 --run_benchmark:False
 --trt_max_shape:1600
 ===========================train_benchmark_params==========================
-batch_size:4
+batch_size:16
 fp_items:fp32|fp16
 epoch:1
 repeat:1
