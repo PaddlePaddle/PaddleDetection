@@ -14,7 +14,7 @@ RT-DETR是第一个实时端到端目标检测器。具体而言，我们设计�
 若要了解更多细节，请参考我们的论文[paper](https://arxiv.org/abs/2304.08069).
 
 <div align="center">
-  <img src="https://user-images.githubusercontent.com/17582080/236754415-992054df-fbb5-46c6-953e-89a0e183b824.png" width=500 />
+  <img src="https://github.com/PaddlePaddle/PaddleDetection/assets/17582080/3184a08e-aa4d-49cf-9079-f3695c4cc1c3" width=500 />
 </div>
 
 ## 模型
