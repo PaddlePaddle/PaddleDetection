@@ -429,10 +429,8 @@ class Trainer(object):
         model = self.model
         if self.cfg.get('to_static', False):
             model = apply_to_static(self.cfg, model)
-        sync_bn = (
-            getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
-            (self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu) and
-            self._nranks > 1)
+        sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
+                   (self.cfg.use_gpu or self.cfg.use_mlu) and self._nranks > 1)
         if sync_bn:
             model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
