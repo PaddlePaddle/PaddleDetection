@@ -293,7 +293,7 @@ class TOODHead(nn.Layer):
         pad_gt_mask = gt_meta['pad_gt_mask']
         # label assignment
         if gt_meta['epoch_id'] < self.static_assigner_epoch:
-            assigned_labels, assigned_bboxes, assigned_scores = self.static_assigner(
+            assigned_labels, assigned_bboxes, assigned_scores, _ = self.static_assigner(
                 anchors,
                 num_anchors_list,
                 gt_labels,
