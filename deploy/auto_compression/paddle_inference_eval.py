@@ -284,48 +284,6 @@ def load_predictor(
     return predictor, rerun_flag
 
 
-def get_current_memory_mb():
-    """
-    It is used to Obtain the memory usage of the CPU and GPU during the running of the program.
-    And this function Current program is time-consuming.
-    """
-    try:
-        pkg.require('pynvml')
-    except:
-        from pip._internal import main
-        main(['install', 'pynvml'])
-    try:
-        pkg.require('psutil')
-    except:
-        from pip._internal import main
-        main(['install', 'psutil'])
-    try:
-        pkg.require('GPUtil')
-    except:
-        from pip._internal import main
-        main(['install', 'GPUtil'])
-    import pynvml
-    import psutil
-    import GPUtil
-
-    gpu_id = int(os.environ.get("CUDA_VISIBLE_DEVICES", 0))
-
-    pid = os.getpid()
-    p = psutil.Process(pid)
-    info = p.memory_full_info()
-    cpu_mem = info.uss / 1024.0 / 1024.0
-    gpu_mem = 0
-    gpu_percent = 0
-    gpus = GPUtil.getGPUs()
-    if gpu_id is not None and len(gpus) > 0:
-        gpu_percent = gpus[gpu_id].load
-        pynvml.nvmlInit()
-        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-        meminfo = pynvml.nvmlDeviceGetMemoryInfo(handle)
-        gpu_mem = meminfo.used / 1024.0 / 1024.0
-    return round(cpu_mem, 4), round(gpu_mem, 4)
-
-
 def predict_image(predictor,
                   image_file,
                   image_shape=[640, 640],
@@ -367,13 +325,7 @@ def predict_image(predictor,
         time_min = min(time_min, timed)
         time_max = max(time_max, timed)
         predict_time += timed
-        cpu_mem, gpu_mem = get_current_memory_mb()
-        cpu_mems += cpu_mem
-        gpu_mems += gpu_mem
-
     time_avg = predict_time / repeats
-    print("[Benchmark]Avg cpu_mem:{} MB, avg gpu_mem: {} MB".format(
-        cpu_mems / repeats, gpu_mems / repeats))
     print("[Benchmark]Inference time(ms): min={}, max={}, avg={}".format(
         round(time_min * 1000, 2),
         round(time_max * 1000, 1), round(time_avg * 1000, 1)))
@@ -418,9 +370,6 @@ def eval(predictor, val_loader, metric, rerun_flag=False):
         time_min = min(time_min, timed)
         time_max = max(time_max, timed)
         predict_time += timed
-        cpu_mem, gpu_mem = get_current_memory_mb()
-        cpu_mems += cpu_mem
-        gpu_mems += gpu_mem
         if not FLAGS.include_nms:
             postprocess = PPYOLOEPostProcess(
                 score_threshold=0.3, nms_threshold=0.6)
@@ -436,8 +385,6 @@ def eval(predictor, val_loader, metric, rerun_flag=False):
     map_res = metric.get_results()
     metric.reset()
     time_avg = predict_time / sample_nums
-    print("[Benchmark]Avg cpu_mem:{} MB, avg gpu_mem: {} MB".format(
-        cpu_mems / sample_nums, gpu_mems / sample_nums))
     print("[Benchmark]Inference time(ms): min={}, max={}, avg={}".format(
         round(time_min * 1000, 2),
         round(time_max * 1000, 1), round(time_avg * 1000, 1)))
