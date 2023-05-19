@@ -13,7 +13,7 @@ English | [简体中文](README_cn.md)
 
 ## Model Zoo
 
-### CenterNet Results on COCO-val 2017
+### CLRNet Results on CULane dataset
 
 | backbone       | mF1 | F1@50   |    F1@75    | download | config |
 | :--------------| :------- |  :----: | :------: | :----: |:-----: |
