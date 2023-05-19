@@ -3,7 +3,7 @@ Global:
   reader_config: configs/rtdetr_reader.yml
   include_nms: True
   Evaluation: True
-  model_dir: ./rtdetr_r50vd_6x_coco/ 
+  model_dir: ./rtdetr_hgnetv2_x_6x_coco/
   model_filename: model.pdmodel
   params_filename: model.pdiparams
 
